@@ -33,6 +33,10 @@
   --border: #dfe0e5;
   --radius: 14px;
   --shadow: 0 2px 6px rgba(60, 62, 74, 0.14);
+  /* Header control sizing: the button box and the glyph inside it. Both grow
+     on phones (below) so every control stays a comfortable touch target. */
+  --hud-btn: 46px;
+  --hud-icon: 26px;
 }
 
 * {
@@ -101,7 +105,8 @@ body {
   gap: 14px;
 }
 
-/* Rounded card controls with a soft drop shadow (iOS-style chrome). */
+/* Rounded card controls with a soft drop shadow (iOS-style chrome). Sized for
+   a comfortable touch target (>= 44px, the iOS minimum) with a big glyph. */
 .hud-btn,
 .hud-smiley {
   font: inherit;
@@ -112,7 +117,8 @@ body {
   box-shadow: var(--shadow);
   padding: 6px 12px;
   cursor: pointer;
-  min-height: 40px;
+  min-height: var(--hud-btn);
+  min-width: var(--hud-btn);
 }
 
 /* Pressed / toggled-on: system-blue tinted fill, shadow tucked away. */
@@ -125,7 +131,7 @@ body {
 }
 
 .hud-smiley {
-  font-size: 22px;
+  font-size: var(--hud-icon);
   line-height: 1;
   padding: 4px 8px;
 }
@@ -140,6 +146,8 @@ body {
 
 .hud-icon-btn svg {
   display: block;
+  width: var(--hud-icon);
+  height: var(--hud-icon);
 }
 
 /* LED display: red digits on a dark rounded panel. Kept across themes, like
@@ -154,7 +162,8 @@ body {
   border: 1px solid #1c1c1e;
   border-radius: 10px;
   padding: 6px 10px;
-  min-width: 62px;
+  min-width: 74px;
+  font-size: 20px;
   text-align: center;
 }
 
@@ -229,11 +238,36 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
-  padding: 14px 18px;
+  padding: 12px 18px;
   cursor: pointer;
+  /* Icon at the left, the label (and its hint) beside it — the pygame menu
+     row. Rows without an icon (the back row) just show their text. */
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
+}
+
+.menu-entry-text {
   display: flex;
   flex-direction: column;
   gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* The menu glyphs (icons.ts): a fixed square box so every label lines up. */
+.menu-entry-icon {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  display: block;
+}
+
+.menu-entry-icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .menu-entry:active {
@@ -293,12 +327,33 @@ body {
   font-weight: 700;
 }
 
+/* Short viewports (a small phone, or landscape): trim the menu rows so the
+   longest list — the eight uniform / dual tilings — still fits without
+   scrolling where it can. */
+@media (max-height: 700px) {
+  .menu-entry {
+    padding: 9px 14px;
+    gap: 10px;
+  }
+
+  .menu-entry-icon {
+    width: 30px;
+    height: 30px;
+  }
+}
+
 /* --- Narrow screens (phones) --- */
 /* On a narrow iPhone the header carries back + flag, mine/smiley/timer, and —
    on a Klein bottle — two scroll chevrons. At the default sizes that overflows
    the viewport and pushes the chevrons off-screen, so shrink the chrome to fit:
    tighter gaps/padding, a slimmer counter, and clusters allowed to shrink. */
 @media (max-width: 480px) {
+  :root {
+    /* Still >= the 44px iOS touch minimum, with a slightly smaller glyph. */
+    --hud-btn: 44px;
+    --hud-icon: 23px;
+  }
+
   .hud {
     gap: 6px;
     padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right))
@@ -316,28 +371,30 @@ body {
 
   .hud-btn,
   .hud-smiley {
-    min-height: 34px;
-    padding: 4px 7px;
+    padding: 4px 6px;
   }
 
   .hud-icon-btn {
-    padding: 4px 6px;
-  }
-
-  .hud-icon-btn svg {
-    width: 18px;
-    height: 18px;
-  }
-
-  .hud-smiley {
-    font-size: 18px;
-    padding: 3px 6px;
+    padding: 4px 5px;
   }
 
   .hud-counter {
-    min-width: 44px;
+    min-width: 50px;
     letter-spacing: 1px;
     padding: 4px 6px;
-    font-size: 15px;
+    font-size: 16px;
+  }
+
+  /* The Klein bottle adds two scroll chevrons to the right cluster. Side by
+     side they would squeeze every control below a comfortable size on a phone,
+     so stack them instead: full-size targets, one under the other. */
+  .hud-right {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .hud-right .hud-btn {
+    min-height: 38px;
+    width: var(--hud-btn);
   }
 }

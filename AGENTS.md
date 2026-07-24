@@ -279,4 +279,4 @@ but forget a preset, `TestPresets.test_all_presets_build` fails loudly.
 - Manual: `.venv/bin/python -m minesweeper` and walk the menu, or
   `.venv/bin/python -m minesweeper --mode <mode>` to jump straight in.
 - Screenshot check for anything visual — see the headless recipe in
-  `CLAUDE.md`. For a new tiling/surface, attach a screenshot to the PR.
+  `CLAUDE.md`.

@@ -28,7 +28,14 @@ export const ROTATE_SPEED = 0.008;
 export const KEY_ROTATE_STEP = 40;
 
 const SOLID_FOV = 40; // degrees
-const SOLID_MARGIN = 1.12; // frame the unit sphere with a little air
+// Frame the unit sphere (the board's true outer hull, bevels included) so it
+// barely touches the edges of the space below the header — just enough air
+// that no rotation crops the silhouette.
+const SOLID_MARGIN = 1.03;
+/** Width/height beyond which a flat board is turned a quarter-turn on a
+ * portrait viewport (the classic 30×16 hard board, aspect 1.875, would
+ * otherwise shrink to a sliver). Mirrors GameScreen.ROTATE_ASPECT. */
+const ROTATE_ASPECT = 1.2;
 
 const X_AXIS = new Vector3(1, 0, 0);
 const Y_AXIS = new Vector3(0, 1, 0);
@@ -100,6 +107,15 @@ export class BoardRenderer {
     this.dirty = true;
   }
 
+  /** Drop the current board from the scene (leaving an empty field) — the
+   * menu draws over the canvas, so a board left in the scene would show
+   * through between its rows. */
+  clearBoard(): void {
+    if (this.board) this.scene.remove(this.board);
+    this.board = null;
+    this.dirty = true;
+  }
+
   /** Replace the board's orientation (used for per-mode initial views). */
   setOrientation(q: Quaternion): void {
     if (!this.board) return;
@@ -149,28 +165,46 @@ export class BoardRenderer {
 
     const view = this.board?.view;
     if (view?.kind === "flat") {
+      // A clearly landscape board on a portrait viewport is turned a
+      // quarter-turn (clockwise) so it fills the width instead of shrinking to
+      // a sliver — the same rule as the pygame GameScreen._rotated.
+      const rotated =
+        usableH > w && view.width > view.height * ROTATE_ASPECT;
+      if (this.board) {
+        this.board.rotation.z = rotated ? -Math.PI / 2 : 0;
+        this.board.setQuarterTurn?.(rotated);
+      }
+      const boardW = rotated ? view.height : view.width;
+      const boardH = rotated ? view.width : view.height;
       const margin = 1.06;
-      const halfW = (view.width * margin) / 2;
-      const halfH = (view.height * margin) / 2;
+      const halfW = (boardW * margin) / 2;
+      const halfH = (boardH * margin) / 2;
       // World units per CSS pixel that fits the board in the region both ways.
       const wpp = Math.max((2 * halfW) / w, (2 * halfH) / usableH);
       // Keep the frustum full-canvas (so mouse→NDC picking stays consistent),
-      // but bias it vertically so the board is top-aligned just below the
-      // header: its top edge sits at pixel `top`, spare space falls to the
-      // bottom. Horizontally centred.
+      // but bias it vertically so the board is *centred* in the region below
+      // the header rather than centred in the whole canvas (which would tuck
+      // its top under the header). Horizontally centred.
       this.orthoCamera.left = (-wpp * w) / 2;
       this.orthoCamera.right = (wpp * w) / 2;
-      this.orthoCamera.top = halfH + wpp * top;
+      this.orthoCamera.top = wpp * (top + usableH / 2);
       this.orthoCamera.bottom = this.orthoCamera.top - wpp * h;
       this.orthoCamera.updateProjectionMatrix();
     } else if (view?.kind === "solid") {
       const aspect = w / h;
       this.perspCamera.aspect = aspect;
-      // Back the camera off until the unit sphere fits the narrower fov axis.
+      // Back the camera off until the unit sphere fits the narrower axis of the
+      // region below the header — the vertical fov covers the whole canvas, so
+      // scale it down to the usable slice before comparing.
       const halfY = (SOLID_FOV * Math.PI) / 360;
       const halfX = Math.atan(Math.tan(halfY) * aspect);
-      const dist = SOLID_MARGIN / Math.sin(Math.min(halfX, halfY));
-      this.perspCamera.position.set(0, 0, dist);
+      const halfUsableY = Math.atan((Math.tan(halfY) * usableH) / h);
+      const dist = SOLID_MARGIN / Math.sin(Math.min(halfX, halfUsableY));
+      // Raise the camera so the board centres in that region too: the object
+      // drops by half the header height on screen.
+      const worldPerPx = (2 * dist * Math.tan(halfY)) / h;
+      this.perspCamera.position.set(0, (top / 2) * worldPerPx, dist);
+      this.perspCamera.lookAt(this.perspCamera.position.x, this.perspCamera.position.y, 0);
       this.perspCamera.near = Math.max(0.05, dist - 2);
       this.perspCamera.far = dist + 2;
       this.perspCamera.updateProjectionMatrix();

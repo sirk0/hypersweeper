@@ -115,8 +115,12 @@ export class SolidBoard extends Group implements BoardMesh {
     this.order = [...board.polygons.keys()];
     this.states = this.order.map(() => ({ kind: "hidden" }));
     this.order.forEach((c, i) => this.cellIndex.set(c, i));
-    this.view = { kind: "solid", radius: board.radius };
     this.twoSided = board.twoSided;
+    // The framing radius is measured below from the *built* geometry (the
+    // raised tile tops stand proud of the board's own vertex radius), so the
+    // renderer scales the real outer hull — not an inner sphere — to unit
+    // size and can frame it edge to edge.
+    let outerRadius = board.radius;
 
     const basePositions: number[] = [];
     const faceCell: number[] = [];
@@ -147,6 +151,19 @@ export class SolidBoard extends Group implements BoardMesh {
         center: centroid,
       });
       vertexCount += perCell(n);
+      // How far this cell's drawn geometry reaches: a two-sided tile lies on
+      // the surface, a closed one is raised by its bevel height.
+      if (!this.twoSided) {
+        const lift = radius * HEIGHT_FRAC;
+        for (const p of poly) {
+          const top = add3(lerp3(p, centroid, SHRINK + BEVEL), [
+            normal[0] * lift,
+            normal[1] * lift,
+            normal[2] * lift,
+          ]);
+          outerRadius = Math.max(outerRadius, Math.hypot(top[0], top[1], top[2]));
+        }
+      }
       const triangles = this.twoSided ? n : 3 * n;
       for (let t = 0; t < triangles; t++) faceCell.push(ci);
 
@@ -159,6 +176,8 @@ export class SolidBoard extends Group implements BoardMesh {
         }
       }
     });
+
+    this.view = { kind: "solid", radius: outerRadius };
 
     this.faceCell = Int32Array.from(faceCell);
     const geometry = new BufferGeometry();

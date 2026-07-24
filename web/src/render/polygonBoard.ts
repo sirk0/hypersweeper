@@ -50,6 +50,9 @@ export class PolygonBoard extends Group implements BoardMesh {
   private readonly atlas: GlyphAtlas;
   private readonly states: CellVisual[];
   private hovered = -1;
+  // The renderer turns a landscape board a quarter-turn on a portrait
+  // viewport; the digits/flags are counter-rotated so they stay upright.
+  private quarterTurn = false;
   private readonly anim = new CellAnimations();
   private meanRadius = 1;
 
@@ -205,6 +208,13 @@ export class PolygonBoard extends Group implements BoardMesh {
     this.colorAttr.needsUpdate = true;
   }
 
+  /** Draw the glyphs counter-rotated (the board is being shown turned). */
+  setQuarterTurn(on: boolean): void {
+    if (on === this.quarterTurn) return;
+    this.quarterTurn = on;
+    this.rebuildGlyphs();
+  }
+
   private rebuildGlyphs(): void {
     const pos: number[] = [];
     const uvs: number[] = [];
@@ -221,9 +231,14 @@ export class PolygonBoard extends Group implements BoardMesh {
       const s = g.inradius * 0.9 * this.anim.popScale(i, performance.now());
       const z = g.radius * HEIGHT_FRAC + 0.01;
       const [u0, v0, u1, v1] = uv;
+      // Quad corners around the cell centre; turned a quarter-turn (with the
+      // UVs left alone) when the board itself is drawn turned, so the glyph
+      // lands upright on screen.
+      const at = (dx: number, dy: number): [number, number, number] =>
+        this.quarterTurn ? [cxp - dy, cyp + dx, z] : [cxp + dx, cyp + dy, z];
       pos.push(
-        cxp - s, cyp - s, z, cxp + s, cyp - s, z, cxp + s, cyp + s, z,
-        cxp - s, cyp - s, z, cxp + s, cyp + s, z, cxp - s, cyp + s, z,
+        ...at(-s, -s), ...at(s, -s), ...at(s, s),
+        ...at(-s, -s), ...at(s, s), ...at(-s, s),
       );
       uvs.push(u0, v0, u1, v0, u1, v1, u0, v0, u1, v1, u0, v1);
     }

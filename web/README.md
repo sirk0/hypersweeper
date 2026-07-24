@@ -154,7 +154,10 @@ Practical knowledge for verifying changes by actually running the app
 - `src/session.ts` — `GameSession`: Game ↔ mesh ↔ HUD.
 - `src/input/controls.ts` — pointer/touch state machine (tap, long-press,
   right-click, drag-rotate on 3D boards).
-- `src/ui/` — HTML/CSS overlay chrome: `hud.ts` (header) and `menu.ts` (home),
+- `src/ui/` — HTML/CSS overlay chrome: `hud.ts` (header), `menu.ts` (home) and
+  `icons.ts` (the menu glyphs — the pygame `_render_icon` shapes ported to
+  inline SVG, keyed the same way: a tiling key, a family key, a mode name or a
+  home-page group key),
   both **rendered from the shared UI-screen config**.
 - `src/config/screens.ts` — typed accessor over `../data/ui/screens.json`.
 - `src/testHook.ts` — the `window.__ms` seam Playwright drives.
