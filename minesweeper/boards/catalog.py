@@ -171,7 +171,7 @@ MENU_ROOT = tuple(_MENU["root"])
 MENU_ROOT_LABELS = dict(_MENU["rootLabels"])
 
 # Flat manifolds page: the wrappable surfaces (the plane first). The flat
-# surface is labelled "Plane" here; picking any row opens the tiling picker.
+# surface is labelled "Plain" here; picking any row opens the tiling picker.
 MANIFOLD_ORDER = tuple(_MENU["manifoldOrder"])
 MANIFOLD_LABELS = dict(_MENU["manifoldLabels"])
 

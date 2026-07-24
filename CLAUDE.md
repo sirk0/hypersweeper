@@ -186,11 +186,16 @@ tolerance, ESM script placement) are documented in `web/README.md` under
 "Agent notes". Verify UI changes by looking at real screenshots, not just
 by the test suite passing.
 
+## Which version to change
+
+Two front-ends live in this repo: the Python/pygame game and the
+TypeScript/Three.js app in `web/`. **When a request does not say which one
+it means, it means the TypeScript app** — change `web/` (and the shared
+`data/*.json` when the change belongs there). Touch the Python game only
+when the request names it, or when a shared-`data/` edit necessarily
+carries over.
+
 ## Pull requests
 
-When a PR adds a new level/board or changes the UI, include a screenshot
-of the result in the PR description. Generate it locally and headless
-(see "Screenshots" above, smooth-scaled to half size to match what the
-user sees) and attach it to the PR description — do not commit PR
-screenshots to `docs/screenshots/` (that folder holds only the curated
-README shots).
+Do not commit PR screenshots to `docs/screenshots/` (that folder holds only
+the curated README shots).

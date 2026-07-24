@@ -8,18 +8,25 @@ import { screens, type HudSlot } from "../config/screens";
 // Inline SVGs for slots whose config declares an `icon` we can draw; slots
 // with no entry here fall back to their text label. The flag mirrors the
 // in-game glyph (glyphAtlas.ts drawFlag): dark pole and base, red pennant.
+// Sized by CSS (--hud-icon) rather than hard-coded width/height attributes, so
+// the header controls can grow to a comfortable touch size on phones.
 const ICONS: Record<string, string> = {
-  flag: `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+  flag: `<svg viewBox="0 0 24 24" aria-hidden="true">
     <path d="M10.2 5.8 V18.6" stroke="#202020" stroke-width="1.7" fill="none"/>
     <rect x="7.2" y="18.2" width="9.7" height="1.8" fill="#202020"/>
     <path d="M10.2 5.8 L16.4 8.9 L10.2 12 Z" fill="#e5534b"/>
   </svg>`,
+  // Back to the menu.
+  "arrow-left": `<svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M20 12 H5 M11 5 L4 12 L11 19" stroke="#202020"
+      stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`,
   // Double chevrons for the two Klein scroll controls (back / forward).
-  "chevrons-left": `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+  "chevrons-left": `<svg viewBox="0 0 24 24" aria-hidden="true">
     <path d="M17 5 L10 12 L17 19 M11 5 L4 12 L11 19" stroke="#202020"
       stroke-width="1.9" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>`,
-  "chevrons-right": `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+  "chevrons-right": `<svg viewBox="0 0 24 24" aria-hidden="true">
     <path d="M7 5 L14 12 L7 19 M13 5 L20 12 L13 19" stroke="#202020"
       stroke-width="1.9" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>`,

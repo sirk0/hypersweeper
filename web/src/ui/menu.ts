@@ -14,6 +14,7 @@ import {
   tilingAllows,
 } from "../boards/catalog";
 import { MODES } from "../boards/presets";
+import { menuIcon } from "./icons";
 
 // Geometry-first menu, mirroring the pygame MenuScreen (gui.py). The home page
 // lists Classic, Flat, Flat manifolds, Sphere, Other. Classic launches flat
@@ -42,6 +43,10 @@ const APERIODIC = MENU.aperiodic as string[];
 interface ModeEntry {
   mode: string;
   label: string;
+  /** The menu-icon key for the row: the tiling key for a wrapped tiling (so
+   * e.g. hexagons look the same on every surface), the mode itself
+   * otherwise. Matches the icon keys the pygame menu draws. */
+  icon: string;
 }
 
 interface Family {
@@ -87,7 +92,7 @@ function tilingModes(keys: string[], surfaceKey: string): ModeEntry[] {
     const tiling = TILINGS_BY_KEY.get(key);
     if (!tiling || !tilingAllows(tiling, surface)) continue;
     const mode = modeFor(key, surfaceKey);
-    if (MODES.includes(mode)) out.push({ mode, label: tiling.label });
+    if (MODES.includes(mode)) out.push({ mode, label: tiling.label, icon: key });
   }
   return out;
 }
@@ -108,6 +113,7 @@ function pickerFor(surfaceKey: string): Picker {
     const modes = APERIODIC.filter((m) => MODES.includes(m)).map((mode) => ({
       mode,
       label: MODE_LABELS[mode] ?? mode,
+      icon: mode,
     }));
     if (modes.length > 0) {
       families.push({ key: "aperiodic", label: FAMILY_LABELS["aperiodic"] ?? "Aperiodic", modes });
@@ -144,11 +150,39 @@ interface ModeGroup {
 
 type Group = PickerGroup | ManifoldGroup | ModeGroup;
 
+/** A menu row's icon (the same glyph the pygame menu draws for that key). */
+function iconEl(key: string): HTMLElement {
+  const el = document.createElement("span");
+  el.className = "menu-entry-icon";
+  el.innerHTML = menuIcon(key);
+  return el;
+}
+
+/** A row's label with its optional one-line hint underneath. */
+function textBlock(label: string, hint?: string): HTMLElement {
+  const box = document.createElement("span");
+  box.className = "menu-entry-text";
+  const labelEl = document.createElement("span");
+  labelEl.className = "menu-entry-label";
+  labelEl.textContent = label;
+  box.append(labelEl);
+  if (hint !== undefined) {
+    const hintEl = document.createElement("span");
+    hintEl.className = "menu-entry-hint";
+    hintEl.textContent = hint;
+    box.append(hintEl);
+  }
+  return box;
+}
+
 export class Menu {
   readonly root: HTMLElement;
   private difficulty = screens.defaultDifficulty;
   private readonly groups: Group[];
   private readonly body: HTMLElement;
+  /** The page currently on screen, re-runnable so returning from a board
+   * restores it (see `show`). */
+  private view: () => void = () => this.renderRoot();
 
   constructor(private readonly onSelect: (sel: MenuSelection) => void) {
     const groups: Group[] = [
@@ -190,21 +224,39 @@ export class Menu {
     this.showRoot();
   }
 
+  /** Coming back from a board reopens the page the game was launched from
+   * (the tiling picker, a family submenu, …) rather than resetting to the
+   * home page — `view` re-renders whatever page is current. */
   show(): void {
     this.root.hidden = false;
-    this.showRoot();
+    this.view();
   }
   hide(): void {
     this.root.hidden = true;
   }
 
+  /** Render `view` and remember it as the page to restore on `show()`. */
+  private go(view: () => void): void {
+    this.view = view;
+    view();
+  }
+
   private showRoot(): void {
+    this.go(() => this.renderRoot());
+  }
+
+  private renderRoot(): void {
     const list = document.createElement("ul");
     list.className = "menu-list";
     // Classic — flat squares, launched straight away (gui.py MenuScreen).
     if (MODES.includes("square")) {
       list.append(
-        this.launchRow("square", ROOT_LABELS["classic"] ?? "Classic", "Flat squares — the original."),
+        this.launchRow(
+          "square",
+          ROOT_LABELS["classic"] ?? "Classic",
+          "Flat squares — the original.",
+          "classic",
+        ),
       );
     }
     for (const group of this.groups) {
@@ -212,13 +264,12 @@ export class Menu {
       const btn = document.createElement("button");
       btn.className = "menu-entry";
       btn.dataset.group = group.key;
-      const label = document.createElement("span");
-      label.className = "menu-entry-label";
-      label.textContent = group.label;
-      const hint = document.createElement("span");
-      hint.className = "menu-entry-hint";
-      hint.textContent = this.groupHint(group);
-      btn.append(label, hint);
+      // The home "Flat" entry (which opens the tiling picker) shows a hexagon;
+      // the flat-plane surface keeps its square icon in the manifolds list.
+      btn.append(
+        iconEl(group.key === "flat" ? "hex" : group.key),
+        textBlock(group.label, this.groupHint(group)),
+      );
       btn.addEventListener("click", () => this.showGroup(group));
       li.append(btn);
       list.append(li);
@@ -233,6 +284,14 @@ export class Menu {
   }
 
   private showGroup(group: Group): void {
+    if (group.kind === "picker") {
+      this.showPicker(group.label, group.surfaceKey, () => this.showRoot());
+      return;
+    }
+    this.go(() => this.renderGroup(group));
+  }
+
+  private renderGroup(group: Group): void {
     if (group.kind === "picker") {
       this.showPicker(group.label, group.surfaceKey, () => this.showRoot());
       return;
@@ -252,14 +311,20 @@ export class Menu {
    * regular tilings directly, then the uniform / dual (and, on the plane,
    * aperiodic) families as submenus, then a Random tiling entry. */
   private showPicker(label: string, surfaceKey: string, onBack: () => void): void {
+    this.go(() => this.renderPicker(label, surfaceKey, onBack));
+  }
+
+  private renderPicker(label: string, surfaceKey: string, onBack: () => void): void {
     const picker = pickerFor(surfaceKey);
     const back = this.backRow(label, onBack);
     const list = document.createElement("ul");
     list.className = "menu-list";
-    for (const entry of picker.direct) list.append(this.entryRow(entry.mode, entry.label));
+    for (const entry of picker.direct) {
+      list.append(this.entryRow(entry.mode, entry.label, entry.icon));
+    }
     for (const family of picker.families) {
       list.append(
-        this.submenuRow(family.label, () =>
+        this.submenuRow(family.label, family.key, () =>
           this.showFamily(family, () => this.showPicker(label, surfaceKey, onBack)),
         ),
       );
@@ -270,10 +335,16 @@ export class Menu {
   }
 
   private showFamily(family: Family, onBack: () => void): void {
+    this.go(() => this.renderFamily(family, onBack));
+  }
+
+  private renderFamily(family: Family, onBack: () => void): void {
     const back = this.backRow(family.label, onBack);
     const list = document.createElement("ul");
     list.className = "menu-list";
-    for (const entry of family.modes) list.append(this.entryRow(entry.mode, entry.label));
+    for (const entry of family.modes) {
+      list.append(this.entryRow(entry.mode, entry.label, entry.icon));
+    }
     this.body.replaceChildren(back, list);
   }
 
@@ -282,7 +353,7 @@ export class Menu {
   }
 
   /** The surfaces that have any built tiling, in the shared manifold order.
-   * Matches Python's MANIFOLD_ORDER, which includes the plane ("Plane") ahead
+   * Matches Python's MANIFOLD_ORDER, which includes the plane ("Plain") ahead
    * of the wrapped surfaces. */
   private manifoldSurfaces(): SurfaceEntry[] {
     const entries: SurfaceEntry[] = [];
@@ -314,45 +385,33 @@ export class Menu {
     const btn = document.createElement("button");
     btn.className = "menu-entry";
     btn.dataset.surface = surface.key;
-    const label = document.createElement("span");
-    label.className = "menu-entry-label";
-    label.textContent = surface.label;
-    const hint = document.createElement("span");
-    hint.className = "menu-entry-hint";
-    hint.textContent = pickerHint(surface.key);
-    btn.append(label, hint);
+    btn.append(iconEl(surface.key), textBlock(surface.label, pickerHint(surface.key)));
     btn.addEventListener("click", () => this.showSurface(group, surface));
     li.append(btn);
     return li;
   }
 
-  private submenuRow(label: string, onClick: () => void): HTMLElement {
+  private submenuRow(label: string, icon: string, onClick: () => void): HTMLElement {
     const li = document.createElement("li");
     const btn = document.createElement("button");
     // menu-submenu lays the label and the › chevron out on one row.
     btn.className = "menu-entry menu-submenu";
     btn.dataset.submenu = label;
-    const span = document.createElement("span");
-    span.className = "menu-entry-label";
-    span.textContent = label;
     const chevron = document.createElement("span");
     chevron.className = "menu-entry-chevron";
     chevron.textContent = "›";
-    btn.append(span, chevron);
+    btn.append(iconEl(icon), textBlock(label), chevron);
     btn.addEventListener("click", onClick);
     li.append(btn);
     return li;
   }
 
-  private entryRow(mode: string, label: string): HTMLElement {
+  private entryRow(mode: string, label: string, icon = mode): HTMLElement {
     const li = document.createElement("li");
     const btn = document.createElement("button");
     btn.className = "menu-entry";
     btn.dataset.mode = mode;
-    const span = document.createElement("span");
-    span.className = "menu-entry-label";
-    span.textContent = label;
-    btn.append(span);
+    btn.append(iconEl(icon), textBlock(label));
     btn.addEventListener("click", () =>
       this.onSelect({ mode, difficulty: this.difficulty }),
     );
@@ -362,18 +421,12 @@ export class Menu {
 
   /** A root launch entry with a hint (e.g. Classic) — launches its mode on
    * click like entryRow, but shows a subtitle like a group row. */
-  private launchRow(mode: string, label: string, hint: string): HTMLElement {
+  private launchRow(mode: string, label: string, hint: string, icon: string): HTMLElement {
     const li = document.createElement("li");
     const btn = document.createElement("button");
     btn.className = "menu-entry";
     btn.dataset.mode = mode;
-    const span = document.createElement("span");
-    span.className = "menu-entry-label";
-    span.textContent = label;
-    const hintEl = document.createElement("span");
-    hintEl.className = "menu-entry-hint";
-    hintEl.textContent = hint;
-    btn.append(span, hintEl);
+    btn.append(iconEl(icon), textBlock(label, hint));
     btn.addEventListener("click", () =>
       this.onSelect({ mode, difficulty: this.difficulty }),
     );
@@ -388,10 +441,7 @@ export class Menu {
     const btn = document.createElement("button");
     btn.className = "menu-entry";
     btn.dataset.random = "tiling";
-    const span = document.createElement("span");
-    span.className = "menu-entry-label";
-    span.textContent = "Random tiling";
-    btn.append(span);
+    btn.append(iconEl("random"), textBlock("Random tiling"));
     btn.addEventListener("click", () => {
       const mode = pool[Math.floor(Math.random() * pool.length)];
       if (mode) this.onSelect({ mode, difficulty: this.difficulty });

@@ -99,7 +99,9 @@ class App {
 
   private showMenu(): void {
     this.screen = "menu";
+    this.session = null;
     this.hud.root.hidden = true;
+    this.renderer.clearBoard();
     this.menu.show();
     this.onResize();
   }

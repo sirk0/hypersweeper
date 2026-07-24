@@ -100,6 +100,10 @@ export interface BoardMesh extends Group {
    * content (billboarded glyphs, per-cell glyph culling on closed surfaces)
    * can follow; meshes without any may omit it. */
   orient?(rotation: Quaternion, cameraWorldPos: Vector3): void;
+  /** Told that the renderer is drawing this board turned a quarter-turn (a
+   * landscape flat board on a portrait viewport), so its glyphs can be
+   * counter-rotated and stay upright. Only flat boards are ever turned. */
+  setQuarterTurn?(on: boolean): void;
 
   // -- animations (see render/animations.ts) ---------------------------------
   /** Enable or disable this board's animations (reduced-motion / test seam).
