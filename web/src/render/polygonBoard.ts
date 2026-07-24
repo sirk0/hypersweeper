@@ -12,13 +12,15 @@ import {
   baseColorFor,
   glyphFor,
   polygonInradius,
+  WIN_GLOW,
+  WIN_TINT,
   type BoardMesh,
   type BoardView,
   type CellAnchor,
   type CellVisual,
 } from "./boardMesh";
 import { makeGlyphAtlas, type GlyphAtlas } from "./glyphAtlas";
-import { CellAnimations, rippleEntries } from "./animations";
+import { CellAnimations, rippleEntries, WIN_PER_CELL } from "./animations";
 
 // Renders an arbitrary flat polygon board (square / triangle / hex / ...) as
 // one merged beveled geometry: each convex cell becomes a raised top face
@@ -199,8 +201,11 @@ export class PolygonBoard extends Group implements BoardMesh {
     if (i === this.hovered && this.states[i]!.kind === "hidden") {
       col.offsetHSL(0, 0, 0.08);
     }
-    const light = this.anim.lightness(i, performance.now());
+    const now = performance.now();
+    const light = this.anim.lightness(i, now);
     if (light) col.offsetHSL(0, 0, light);
+    const win = this.anim.winMix(i, now);
+    if (win) col.lerp(WIN_TINT, win).multiplyScalar(1 + win * WIN_GLOW);
     const g = this.geom[i]!;
     for (let v = 0; v < g.count; v++) {
       this.colorAttr.setXYZ(g.start + v, col.r, col.g, col.b);
@@ -278,6 +283,28 @@ export class PolygonBoard extends Group implements BoardMesh {
 
   shake(): void {
     this.anim.startShake(this.view.kind === "flat" ? this.view.width * 0.02 : 0, performance.now());
+  }
+
+  celebrateWin(origin: CellId | null, flagged: CellId[]): void {
+    if (!this.anim.enabled) return;
+    const oi = origin != null ? this.cellIndex.get(origin) : undefined;
+    const oc = oi != null ? this.geom[oi]!.center : null;
+    // The wave washes over the whole board, not just the cells the winning
+    // move opened, so it reads as one sweep however the game was finished.
+    const entries = rippleEntries(
+      this.geom.map((g, i) => ({ index: i, center: g.center })),
+      oc,
+      this.meanRadius,
+      WIN_PER_CELL,
+    );
+    const now = performance.now();
+    this.anim.startWin(entries, now);
+    // The mines the win auto-flagged pop in on the same stagger, so the flags
+    // appear in the wake of the wave rather than all at once.
+    for (const cell of flagged) {
+      const i = this.cellIndex.get(cell);
+      if (i != null) this.anim.startPop(i, now, entries[i]?.delay ?? 0);
+    }
   }
 
   tickAnimations(now: number): boolean {

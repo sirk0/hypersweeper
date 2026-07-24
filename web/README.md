@@ -9,9 +9,12 @@ something is in flight (the loop stays idle otherwise): a **reveal ripple**
 (each freshly opened cell flashes brighter than its settled tone, staggered by
 its distance from the click so a wave sweeps outward across a flood fill), a
 **flag pop** (a placed flag's glyph springs in with a small ease-out-back
-overshoot), and a **lose shake** (the whole board jitters and settles when a
-mine detonates). Both meshes own their buffers, so the clock only reports what
-to redraw (recolour these cells / rebuild glyphs / offset the board). Animations
+overshoot), a **lose shake** (the whole board jitters and settles when a
+mine detonates), and a **win wave** (clearing the board sends a gold glow
+sweeping out from the winning cell over every tile, with the mines the win
+auto-flagged popping their flags in as it reaches them). Both meshes own their
+buffers, so the clock only reports what to redraw (recolour these cells /
+rebuild glyphs / offset the board). Animations
 honour `prefers-reduced-motion` out of the gate and can be toggled at runtime
 through the `window.__ms.animations(false)` test seam; the Playwright suite runs
 under emulated reduced-motion, so every visual baseline captures the settled
@@ -131,7 +134,10 @@ Practical knowledge for verifying changes by actually running the app
   *without* reduced-motion, call `window.__ms.animations(true)`, drive a
   move, then screenshot on a short `waitForTimeout` mid-flight — the reveal
   ripple/flag pop/lose shake all settle back to the static baseline within
-  ~0.5 s.
+  ~0.5 s, the win wave within ~1 s on the biggest boards. Note that the
+  *first* `page.screenshot` after a move costs ~1 s under SwiftShader
+  (shader compilation), so take shots back to back rather than sleeping
+  between them, or the whole animation is over before frame two.
 - The Python game is the behavior reference; run it headless per the
   "Screenshots" section in the repo-root CLAUDE.md when unsure how
   something is supposed to look or feel.
@@ -150,7 +156,7 @@ Practical knowledge for verifying changes by actually running the app
   `solidBoard.ts` (merged beveled cell geometry — flat plane vs. solid
   surface — per-cell colours, hover, glyph quads), `glyphAtlas.ts`
   (canvas-baked digit/flag/mine texture), `animations.ts` (the shared
-  reveal-ripple / flag-pop / lose-shake clock).
+  reveal-ripple / flag-pop / lose-shake / win-wave clock).
 - `src/session.ts` — `GameSession`: Game ↔ mesh ↔ HUD.
 - `src/input/controls.ts` — pointer/touch state machine (tap, long-press,
   right-click, drag-rotate on 3D boards).

@@ -25,6 +25,17 @@ export const COLORS = {
   exploded: new Color("#e05a5a"),
 };
 
+/** The colour a cell is blended toward at the crest of the win wave, and how far
+ * that blend is then overdriven. The grays are unsaturated, so mixing a
+ * saturated colour in is what reads as gold — but the board's diffuse lighting
+ * darkens a tile to roughly a third of its albedo, and any in-gamut gold comes
+ * out of that as mud. So the crest is pushed *past* white (vertex colours are
+ * plain floats, not clamped to 1) and the shading brings it back down bright:
+ * the wave glows rather than staining. Both meshes light the same way, so one
+ * pair of numbers serves the flat palette above and the solid's wider one. */
+export const WIN_TINT = new Color("#ffc233");
+export const WIN_GLOW = 1.4;
+
 export function baseColorFor(visual: CellVisual): Color {
   switch (visual.kind) {
     case "hidden":
@@ -115,6 +126,10 @@ export interface BoardMesh extends Group {
   popFlag(cell: CellId): void;
   /** Jitter the whole board and settle it (a detonated mine). */
   shake(): void;
+  /** Celebrate a cleared board: a gold wave sweeping out from the winning cell
+   * over every tile, with `flagged` (the mines the win auto-flagged) popping
+   * their flags in as the wave reaches them. */
+  celebrateWin(origin: CellId | null, flagged: CellId[]): void;
   /** Advance animations to `now`; returns whether another frame is needed. The
    * renderer calls this every frame and keeps rendering while it is true. */
   tickAnimations(now: number): boolean;
