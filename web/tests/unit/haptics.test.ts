@@ -41,6 +41,14 @@ describe("haptic() with the Vibration API", () => {
     haptic("lose");
     expect(vibrate).toHaveBeenCalledWith([40, 30, 40, 30, 80]);
   });
+
+  it("fires a lighter rising flourish on a win", async () => {
+    const vibrate = vi.fn();
+    vi.stubGlobal("navigator", { vibrate });
+    const haptic = await loadHaptic();
+    haptic("win");
+    expect(vibrate).toHaveBeenCalledWith([20, 40, 20, 40, 60]);
+  });
 });
 
 describe("haptic() iOS fallback (no Vibration API)", () => {
@@ -71,6 +79,16 @@ describe("haptic() iOS fallback (no Vibration API)", () => {
     const { label } = fakeDom();
     const haptic = await loadHaptic();
     haptic("lose");
+    expect(label.click).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(200);
+    expect(label.click).toHaveBeenCalledTimes(3);
+  });
+
+  it("clicks repeatedly for a win too", async () => {
+    vi.useFakeTimers();
+    const { label } = fakeDom();
+    const haptic = await loadHaptic();
+    haptic("win");
     expect(label.click).toHaveBeenCalledTimes(1);
     vi.advanceTimersByTime(200);
     expect(label.click).toHaveBeenCalledTimes(3);

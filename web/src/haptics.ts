@@ -1,6 +1,7 @@
-// Tactile feedback for game events. Two moments buzz: placing a flag (a light
-// tick) and losing (a stronger pattern). The mechanism is chosen at call time
-// by feature detection, because the platforms disagree on what's available:
+// Tactile feedback for game events. Three moments buzz: placing a flag (a light
+// tick), losing (a stronger pattern) and winning (a rising flourish). The
+// mechanism is chosen at call time by feature detection, because the platforms
+// disagree on what's available:
 //
 //   - Android/Chrome (and anything else with the Vibration API): navigator
 //     .vibrate takes a pattern, so we get real, distinct feedback per event.
@@ -8,7 +9,7 @@
 //     navigator.vibrate at all (it's undefined). The only web haptic that
 //     reaches iOS 17.4+ is the "switch" trick: toggling a hidden
 //     <input type="checkbox" switch> plays a light system tick. It's one fixed
-//     intensity, so "lose" just repeats it to feel stronger.
+//     intensity, so the heavier events just repeat it to feel stronger.
 //   - Desktop and headless test browsers: navigator.vibrate is typically a
 //     no-op function, so they take the first branch and do nothing visible —
 //     harmless, and it keeps the test seam (window.__ms) side-effect-free.
@@ -21,14 +22,19 @@
 // (e.g. a Capacitor WKWebView with @capacitor/haptics, or Core Haptics), swap
 // the implementation here and the call sites in session.ts stay unchanged.
 
-export type HapticKind = "flag" | "lose";
+export type HapticKind = "flag" | "lose" | "win";
 
 // Vibration patterns (ms). A single short pulse for a flag; a heavier
-// buzz-buzz-BUZZ for a loss.
+// buzz-buzz-BUZZ for a loss; a lighter, rising flourish for a win.
 const PATTERNS: Record<HapticKind, number | number[]> = {
   flag: 15,
   lose: [40, 30, 40, 30, 80],
+  win: [20, 40, 20, 40, 60],
 };
+
+// How many iOS ticks stand in for each pattern (see iosTick below) — the
+// single fixed-intensity tick can only convey weight by repetition.
+const IOS_TICKS: Record<HapticKind, number> = { flag: 1, lose: 3, win: 3 };
 
 function canVibrate(): boolean {
   return (
@@ -73,11 +79,9 @@ export function haptic(kind: HapticKind): void {
     navigator.vibrate(PATTERNS[kind]);
     return;
   }
-  // iOS fallback: one fixed light tick. Repeat it for a loss so the failure
-  // reads as heavier than a flag placement.
+  // iOS fallback: one fixed light tick, repeated for the heavier events so a
+  // win or a loss reads as more than a flag placement.
   iosTick();
-  if (kind === "lose" && typeof setTimeout === "function") {
-    setTimeout(iosTick, 90);
-    setTimeout(iosTick, 180);
-  }
+  if (typeof setTimeout !== "function") return;
+  for (let i = 1; i < IOS_TICKS[kind]; i++) setTimeout(iosTick, i * 90);
 }

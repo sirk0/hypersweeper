@@ -128,7 +128,7 @@ export class GameSession {
     if (this.game.state === "lost") this.exploded = gameCell;
     this.apply(changed);
     this.rippleReveal(changed, gameCell);
-    this.checkStop();
+    this.checkStop(gameCell, changed);
   }
 
   flag(cell: CellId): void {
@@ -154,7 +154,7 @@ export class GameSession {
     }
     this.apply(changed);
     this.rippleReveal(changed, chorded);
-    this.checkStop();
+    this.checkStop(chorded, changed);
   }
 
   /** Flash the cells a reveal/chord just opened, rippling out from the click. */
@@ -177,13 +177,26 @@ export class GameSession {
     if (this.startedAt == null) this.startedAt = performance.now();
   }
 
-  private checkStop(): void {
+  /** React to a move that ended the game: stop the clock, then celebrate or
+   * mourn. `origin` is the cell the move acted on (where a win wave starts) and
+   * `changed` the cells it touched — on a win those include the mines the game
+   * auto-flagged, which is exactly the set whose flags cascade in. */
+  private checkStop(origin: CellId, changed: CellId[]): void {
     if (this.game.state !== "playing" && this.stoppedAt == null) {
       this.stoppedAt = performance.now();
       if (this.game.state === "lost") {
         this.revealEndState();
         this.mesh.shake();
         haptic("lose");
+      } else if (this.game.state === "won") {
+        const autoFlagged = changed.filter(
+          (c) => this.game.isMine(c) && this.game.cellState(c) === "flagged",
+        );
+        this.mesh.celebrateWin(
+          this.geomFor(origin),
+          autoFlagged.map((c) => this.geomFor(c)),
+        );
+        haptic("win");
       }
     }
   }

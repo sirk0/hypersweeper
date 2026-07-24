@@ -3,6 +3,7 @@ import {
   CellAnimations,
   RIPPLE_PER_CELL,
   rippleEntries,
+  WIN_PER_CELL,
 } from "../../src/render/animations";
 
 // The animation clock is pure timing (the meshes own the buffers), so it tests
@@ -46,6 +47,43 @@ describe("CellAnimations flag pop", () => {
     a.step(240); // prunes the finished pop
     expect(a.pending()).toBe(false);
   });
+
+  it("keeps a delayed pop hidden until its turn, then springs", () => {
+    const a = new CellAnimations();
+    a.startPop(0, 0, 300); // rides a win wave that reaches this cell late
+    expect(a.popScale(0, 100)).toBe(0); // no glyph yet
+    expect(a.popScale(0, 300)).toBe(0); // exactly at its turn
+    expect(a.popScale(0, 500)).toBeGreaterThan(1); // overshoots once running
+    expect(a.popScale(0, 540)).toBe(1); // settled a POP_MS after its start
+    a.step(540);
+    expect(a.pending()).toBe(false);
+  });
+});
+
+describe("CellAnimations win wave", () => {
+  it("stays clear until its staggered turn, warms the cell, then settles", () => {
+    const a = new CellAnimations();
+    a.startWin([{ index: 0, delay: 200 }], 0);
+    expect(a.winMix(0, 100)).toBe(0); // before its turn in the wave
+    expect(a.winMix(0, 200)).toBe(0); // exactly at start
+    // Sample across the wave and take the strongest reading — a clear pull
+    // toward the win tint, well past halfway.
+    const peak = Math.max(...[260, 320, 400, 500].map((t) => a.winMix(0, t)));
+    expect(peak).toBeGreaterThan(0.5);
+    expect(peak).toBeLessThanOrEqual(1);
+    expect(a.winMix(0, 100_000)).toBe(0); // long settled -> back to base
+  });
+
+  it("prunes a finished wave so step() redraws each cell exactly once", () => {
+    const a = new CellAnimations();
+    a.startWin([{ index: 5, delay: 0 }], 0);
+    expect(a.step(50).recolor).toContain(5); // mid-wave: redraw
+    expect(a.pending()).toBe(true);
+    const settle = a.step(1000); // well past the wave
+    expect(settle.recolor).toContain(5); // final redraw back to base
+    expect(settle.active).toBe(false);
+    expect(a.step(1001).recolor).not.toContain(5); // gone; nothing to draw
+  });
 });
 
 describe("CellAnimations shake", () => {
@@ -66,10 +104,12 @@ describe("CellAnimations enabled gate", () => {
     const a = new CellAnimations();
     a.enabled = false;
     a.startReveals([{ index: 0, delay: 0 }], 0);
+    a.startWin([{ index: 0, delay: 0 }], 0);
     a.startPop(0, 0);
     a.startShake(2, 0);
     expect(a.pending()).toBe(false);
     expect(a.lightness(0, 10)).toBe(0);
+    expect(a.winMix(0, 10)).toBe(0);
     expect(a.popScale(0, 10)).toBe(1);
     expect(a.step(10).active).toBe(false);
   });
@@ -84,6 +124,15 @@ describe("rippleEntries", () => {
     const entries = rippleEntries(cells, [0, 0], 5);
     expect(entries[0]!.delay).toBe(0);
     expect(entries[1]!.delay).toBeCloseTo(2 * RIPPLE_PER_CELL, 5);
+  });
+
+  it("sweeps at the pace it is given (the win wave is slower)", () => {
+    const cells = [
+      { index: 0, center: [0, 0] },
+      { index: 1, center: [10, 0] },
+    ];
+    const entries = rippleEntries(cells, [0, 0], 5, WIN_PER_CELL);
+    expect(entries[1]!.delay).toBeCloseTo(2 * WIN_PER_CELL, 5);
   });
 
   it("fires everything at once when there is no origin", () => {
