@@ -175,6 +175,17 @@ Practical knowledge for verifying changes by actually running the app
   inline SVG, keyed the same way: a tiling key, a family key, a mode name or a
   home-page group key; painted in the board's shape colours),
   both **rendered from the shared UI-screen config**.
+- **The viewport the app lays out in** is `--app-h` (`styles.css`), never
+  `100vh`: on iOS Safari `100vh` is the *large* viewport — the toolbars
+  retracted — so a full-height fixed layer runs on under the bottom toolbar and
+  a board centred in it sits half the hidden strip too low, all its slack above
+  it. `App.syncViewport` keeps the var on `visualViewport.height` (`100dvh` is
+  the CSS fallback) and re-frames on the visual viewport's own resize — a mobile
+  browser grows and shrinks its chrome without ever resizing the window.
+  `tests/e2e/layout.spec.ts` pins it by stubbing a shorter visual viewport
+  (headless Chromium has no toolbar). One trap: the canvas is a *replaced*
+  element, so state both its width and height — an auto one resolves to the
+  drawing buffer's size, not to the offsets.
 
 ## Shape colour coding (`src/render/shapePalette.ts`)
 
