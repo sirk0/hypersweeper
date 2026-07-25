@@ -72,29 +72,51 @@ export const SHAPE_PALETTE = {
    * tiles — a torus square measures about 0.7 — and a wrapped tiling should
    * still read as the clean shape it is. */
   regularity: { floor: 0.3, top: 0.8 },
-  /** Fraction of the full chroma a maximally irregular tile keeps — never 0, or
-   * irregular tiles would lose their hue and stop saying what they are. */
-  irregularChroma: 0.4,
+  /** Fraction of the full chroma a maximally irregular tile keeps. Well above
+   * zero: an irregular tiling is a whole board, and muting it far would just
+   * make that board look dirty rather than make its tile look irregular. The
+   * variant split below is what tells two shapes of the same side count apart,
+   * so this only has to read as a shade of purity. */
+  irregularChroma: 0.72,
   /** How much darker a maximally irregular tile is drawn. Applied equally to
    * both states, so it never touches the hidden/opened contrast. */
-  lightnessSkew: 0.05,
+  lightnessSkew: 0.02,
 
   /** Board tones. Lightness comes from the gray each one replaces, so the
-   * hidden -> opened step is numerically the one the board always had. */
+   * hidden -> opened step is numerically the one the board always had.
+   *
+   * Chroma is carried almost entirely by the closed tiles: an opened cell sits
+   * near white, where sRGB has very little chroma left to give (about 0.03 for
+   * a red at L 0.94 against 0.14 at L 0.77), and it has a number to stay
+   * readable under. So closed tiles are properly colourful and opened ones a
+   * clean pale wash of the same hue — which is also where the eye is while
+   * playing. `cap` keeps a tone off the gamut edge, where a hue turns harsh
+   * and starts clipping.
+   *
+   * `cuspBlend` is what makes a tile *saturated* rather than merely tinted.
+   * sRGB holds almost no vivid red or blue at the gray's lightness — a red
+   * there is dusty rose whatever chroma you ask for — so a hue whose most
+   * colourful lightness sits below the gray's is drawn part of the way down
+   * toward it. The shift is applied to the closed and opened tone alike, so the
+   * step between them is still the gray board's, hue by hue; and it only ever
+   * darkens, because the hues that peak *above* the gray (yellow, green)
+   * already have all the chroma they can use up there. */
   board: {
     flat: {
       hidden: "#b4b4b4",
       revealed: "#ececec",
-      chroma: { hidden: 0.026, revealed: 0.017 },
+      chroma: { hidden: 0.145, revealed: 0.048 },
     },
-    // Wider lightness split *and* more chroma than the flat board: a curved
-    // surface's faces pick up large shading differences of their own, which
-    // swamps a tint the flat renderer's head-on lighting shows plainly.
+    // Wider lightness split than the flat board: a curved surface's faces pick
+    // up large shading differences of their own, which swamps a tint the flat
+    // renderer's head-on lighting shows plainly.
     solid: {
       hidden: "#b4b4b4",
       revealed: "#efefef",
-      chroma: { hidden: 0.042, revealed: 0.028 },
+      chroma: { hidden: 0.155, revealed: 0.052 },
     },
+    cap: 0.9,
+    cuspBlend: 0.4,
   },
 
   /** Menu icons. They share the board's hue and regularity — a triangle is red
@@ -405,14 +427,25 @@ function variantOffset(tone: ShapeTone): number {
   return count < 2 ? 0 : (tone.variant ?? 0) / (count - 1) - 0.5;
 }
 
-function toneLch(tone: ShapeTone, from: Lch, chroma: number): Lch {
+/** A shape's colour at a given base lightness: the side count's hue, the
+ * requested chroma scaled by how regular the tile is and clamped to what the
+ * gamut holds at that lightness, and the lightness itself nudged by the tile's
+ * regularity and variant. */
+function toneLch(tone: ShapeTone, baseLightness: number, chroma: number): Lch {
   const clean = cleanliness(tone.regularity);
   const { irregularChroma, lightnessSkew, variantLightness } = SHAPE_PALETTE;
-  return {
-    l: from.l - lightnessSkew * (1 - clean) + variantLightness * variantOffset(tone),
-    c: chroma * (irregularChroma + (1 - irregularChroma) * clean),
-    h: hueForTone(tone),
-  };
+  const l = baseLightness - lightnessSkew * (1 - clean) + variantLightness * variantOffset(tone);
+  const h = hueForTone(tone);
+  const wanted = chroma * (irregularChroma + (1 - irregularChroma) * clean);
+  return { l, c: Math.min(wanted, maxChroma(l, h) * SHAPE_PALETTE.board.cap), h };
+}
+
+/** How far a hue's board tones are pulled down toward the lightness where it is
+ * most colourful. Never positive: see `cuspBlend`. */
+function boardLightnessShift(tone: ShapeTone): number {
+  const reference = boardGrays.flat.hidden.l;
+  const drop = Math.min(0, cuspLightness(hueForTone(tone)) - reference);
+  return drop * SHAPE_PALETTE.board.cuspBlend;
 }
 
 export interface CellPalette {
@@ -443,9 +476,10 @@ export function cellPalette(tone: ShapeTone, surface: BoardSurface): CellPalette
   if (!palette) {
     const gray = boardGrays[surface];
     const { chroma } = SHAPE_PALETTE.board[surface];
+    const shift = boardLightnessShift(tone);
     palette = {
-      hidden: lchToColor(toneLch(tone, gray.hidden, chroma.hidden)),
-      revealed: lchToColor(toneLch(tone, gray.revealed, chroma.revealed)),
+      hidden: lchToColor(toneLch(tone, gray.hidden.l + shift, chroma.hidden)),
+      revealed: lchToColor(toneLch(tone, gray.revealed.l + shift, chroma.revealed)),
     };
     paletteCache.set(key, palette);
   }
@@ -462,5 +496,5 @@ export function iconHex(tone: ShapeTone, variant: IconVariant): string {
   const cusp = cuspLightness(hue);
   const l = cusp + (iconBase.l - cusp) * lightnessBlend + lightness[variant];
   const available = maxChroma(l, hue) * chroma * chromaScale[variant];
-  return lchToHex(toneLch(tone, { l, c: 0, h: hue }, available));
+  return lchToHex(toneLch(tone, l, available));
 }

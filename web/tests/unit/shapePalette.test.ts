@@ -35,8 +35,8 @@ function rhombus(acute: number): [number, number][] {
   ];
 }
 
-/** OkLab lightness of a colour, read back through sRGB. */
-function lightness(color: Color): number {
+/** OkLab L / chroma / hue of a colour, read back through sRGB. */
+function oklch(color: Color): { l: number; c: number; h: number } {
   const rgb = { r: 0, g: 0, b: 0 };
   color.getRGB(rgb, SRGBColorSpace);
   const lin = (c: number): number =>
@@ -45,7 +45,17 @@ function lightness(color: Color): number {
   const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
   const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
   const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
-  return 0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s;
+  const okA = 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s;
+  const okB = 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s;
+  return {
+    l: 0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s,
+    c: Math.hypot(okA, okB),
+    h: (Math.atan2(okB, okA) * 180) / Math.PI,
+  };
+}
+
+function lightness(color: Color): number {
+  return oklch(color).l;
 }
 
 describe("shape metrics", () => {
@@ -163,16 +173,24 @@ describe("shape colours", () => {
     );
   });
 
-  it("gives menu icons the board's hues at the icon set's saturation", () => {
+  it("paints a menu icon in the same hue as the board", () => {
     for (const tone of shapes) {
       for (const variant of ["base", "light", "dark", "outline"] as const) {
         expect(iconHex(tone, variant)).toMatch(/^#[0-9a-f]{6}$/);
       }
-      // vivid enough to read at 38px, unlike the faint board tone
-      const icon = new Color(iconHex(tone, "base"));
-      const board = cellPalette(tone, "flat").hidden;
-      const chroma = (c: Color): number => Math.max(c.r, c.g, c.b) - Math.min(c.r, c.g, c.b);
-      expect(chroma(icon)).toBeGreaterThan(chroma(board));
+      const icon = oklch(new Color(iconHex(tone, "base")));
+      const board = oklch(cellPalette(tone, "flat").hidden);
+      expect(Math.abs(icon.h - board.h)).toBeLessThan(2);
+    }
+  });
+
+  it("saturates the closed tile and leaves the opened one a pale wash", () => {
+    for (const tone of shapes) {
+      const p = cellPalette(tone, "flat");
+      // enough colour to read as the hue rather than a tinted gray ...
+      expect(oklch(p.hidden).c).toBeGreaterThan(0.05);
+      // ... and much less on the opened cell, which has a number to carry
+      expect(oklch(p.revealed).c).toBeLessThan(oklch(p.hidden).c);
     }
   });
 });

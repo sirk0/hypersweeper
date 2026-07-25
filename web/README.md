@@ -183,13 +183,26 @@ shape, and nothing needs to. **Hue** comes from the side count (an even
 spectrum: 3 red, 4 orange, 5 yellow, 6 green, 8 teal, 12 blue, the 13-gon
 hat violet), **chroma** from how regular the polygon is
 (`(minAngle/maxAngle + minSide/maxSide) / 2`, 1 for a regular polygon), and
-**lightness** from the cell's state — taken verbatim from the grays this
-replaced, so the hidden→opened step is exactly the one the board always had.
-The maths runs in OkLCh, not HSL, because HSL lightness is not perceptual and
-the constant hidden/opened contrast across hues depends on it. Every knob
-lives in the one `SHAPE_PALETTE` block.
+**lightness** from the cell's state — the step between the closed and opened
+tone is exactly the one the gray board had. The maths runs in OkLCh, not HSL,
+because HSL lightness is not perceptual and that constant hidden/opened
+contrast across hues depends on it. Every knob lives in the one
+`SHAPE_PALETTE` block.
 
-Two things that are easy to get wrong when touching this:
+Three things that are easy to get wrong when touching this:
+
+- **Colour lives on the closed tiles.** They carry a properly saturated tone;
+  an opened cell is a pale wash of the same hue, because it sits near white
+  (where sRGB has barely any chroma left) and has a number to stay readable
+  under. Pushing chroma into the opened tone is what makes digits hard to
+  read, not the closed one.
+- **`cuspBlend` is what makes a tile saturated rather than tinted.** sRGB
+  holds no vivid red or blue at the gray's lightness, so a hue whose most
+  colourful lightness is below the gray's is drawn part of the way down
+  toward it. Both the closed and opened tone shift together, which is what
+  keeps their step constant hue by hue. Note the renderer reflects about a
+  third of a tile's albedo, so the *screen* colour is always a good deal
+  darker than the swatch — a saturated orange albedo lands as a warm brown.
 
 - **Class shapes per board, not per cell.** The surface immersions stretch
   their tiles (a torus square measures ~0.7, and no two cells alike), so
