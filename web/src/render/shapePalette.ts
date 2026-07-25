@@ -333,20 +333,34 @@ export function shapeMetrics(poly: readonly (readonly number[])[]): ShapeTone {
  * flat colour; Penrose still splits into its thick and thin rhombi, whose
  * regularities are far apart.
  *
- * Clusters that the palette would paint the same are then merged back into
- * one. A sphere of geodesic triangles measures 0.85 and 1.00 — the projection
- * stretches sixty of the eighty — but both are simply "a regular triangle" to
- * the colour model, and splitting them would hand one group a different hue
- * for a difference the scheme does not otherwise draw. Penrose's rhombi, at
- * 0.60 and 0.85, land far enough apart to survive.
+ * Splitting one side count into several shapes only ever happens on a **flat**
+ * board, where congruent tiles measure identically and the clusters mean what
+ * they say. On a curved one the measurement cannot carry that decision: a
+ * surface of revolution makes every ring of cells congruent to itself and
+ * different from the next, so a torus of triangles reads as several triangle
+ * shapes when it has one, and torus 3.4.6.4 as eight shapes when it has three.
+ * Those boards get one class per side count, which is right for every 3D board
+ * in the catalog — none has two tiles with the same number of sides.
+ *
+ * Clusters the palette would paint the same are merged even on a flat board.
+ * That is what keeps a geodesic sphere in one colour: its triangles measure
+ * 0.85 and 1.00, the projection having left twenty of the eighty exact, but
+ * both are simply "a regular triangle" to the colour model.
+ *
+ * What that leaves is Penrose — the one board in the catalog whose tiles
+ * genuinely share a side count, its thick and thin rhombi exact at 0.83 and
+ * 0.63 on the flat plane.
  */
 export function classifyShapes<K>(
   polygons: Iterable<[K, readonly (readonly number[])[]]>,
 ): Map<K, ShapeTone> {
   const raw = new Map<K, ShapeTone>();
   const bySides = new Map<number, number[]>();
+  // Vertices with a z are a board laid on a surface — see above.
+  let curved = false;
   for (const [key, poly] of polygons) {
     const tone = shapeMetrics(poly);
+    if ((poly[0]?.length ?? 2) > 2) curved = true;
     raw.set(key, tone);
     let group = bySides.get(tone.sides);
     if (!group) bySides.set(tone.sides, (group = []));
@@ -358,6 +372,10 @@ export function classifyShapes<K>(
   const classes = new Map<number, number[]>();
   for (const [sides, values] of bySides) {
     values.sort((a, b) => a - b);
+    if (curved) {
+      classes.set(sides, [Math.round(values[Math.floor(values.length / 2)]! / snap) * snap]);
+      continue;
+    }
     const clusters: number[][] = [];
     let current: number[] = [];
     for (const v of values) {

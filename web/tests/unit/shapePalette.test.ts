@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Color, SRGBColorSpace } from "three";
+import presets from "@data/presets.json";
 import { buildBoard } from "../../src/boards/presets";
 import { COLORS } from "../../src/render/boardMesh";
 import {
@@ -122,6 +123,26 @@ describe("per-board shape classing", () => {
       const distinct = new Set([...tones.values()].map((t) => `${t.sides}/${t.regularity}`));
       expect(distinct.size).toBe(1);
     }
+  });
+
+  it("only ever gives one side count two colours on Penrose", () => {
+    // Penrose is the one board in the catalog whose tiles genuinely share a
+    // side count. Anywhere else, two colours for one side count means the
+    // classer has mistaken a surface's distortion for a second tile shape —
+    // which is what a torus of triangles, and 20 other wraps, used to do.
+    const offenders: string[] = [];
+    for (const mode of Object.keys(presets.presets)) {
+      const perSides = new Map<number, Set<number>>();
+      for (const t of classifyShapes(buildBoard(mode, "easy").polygons).values()) {
+        const seen = perSides.get(t.sides) ?? new Set<number>();
+        seen.add(t.regularity);
+        perSides.set(t.sides, seen);
+      }
+      for (const [sides, seen] of perSides) {
+        if (seen.size > 1) offenders.push(`${mode} ${sides}gon x${seen.size}`);
+      }
+    }
+    expect(offenders).toEqual(["penrose 4gon x2"]);
   });
 
   it("does not split a tiling the projection stretched into two shapes", () => {

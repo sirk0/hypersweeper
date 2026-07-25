@@ -212,6 +212,14 @@ Three things that are easy to get wrong when touching this:
   Clusters the palette would paint alike are then merged, so a projection that
   leaves some tiles exact and stretches the rest — the geodesic sphere's
   triangles split 0.85/1.00 — stays one shape in one colour.
+- **One side count is one shape on a curved board.** Splitting a side count
+  into several shapes only happens on a flat board, where congruent tiles
+  measure identically. A surface of revolution makes each ring of cells
+  congruent to itself and different from the next, so the measurement cannot
+  carry that decision there — a torus of triangles reads as several triangle
+  shapes when it has one. No 3D board in the catalog has two tiles with the
+  same number of sides; the one board that does is flat Penrose, and a unit
+  test sweeps the whole catalog to keep it the only one.
 - **Icons share the hue, not the tone.** The board tint is deliberately faint;
   at 38 px it would read as gray, so the icon profile puts each hue near the
   lightness where it is most colourful. `shape()` reads the tone off the
