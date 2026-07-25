@@ -106,6 +106,12 @@ Practical knowledge for verifying changes by actually running the app
   from `playwright.config.ts` so output matches CI. Wait for
   `body[data-ready]` before shooting. **Put the script inside `web/`** —
   Node resolves `@playwright/test` from the script's location, not the cwd.
+- **Menu icons**: `npx vite-node scripts/icon-gallery.mts out.html [group]`
+  writes every menu icon (optionally only the groups whose heading matches
+  `group`) onto one contact sheet, labelled with its key — the fastest way to
+  review a change to `src/ui/icons.ts` without walking the menu. Most icons
+  are generated from the real board geometry, so a change to a tiling,
+  a solid or a surface immersion shows up here too.
 - **The `window.__ms` seam** is the way in: `cells()`, `startBoard(mode,
   difficulty, {mines|seed})`, `reveal/flag/chord(cell)`, `rotate(dx, dy)`
   (drag-pixels), `state()`. On 3D boards `cellScreenXY(cell)` returns
@@ -171,9 +177,13 @@ Practical knowledge for verifying changes by actually running the app
   scroll chevrons at the right edge, all on a single row that shrinks on one
   fluid scale to fit a phone; `tests/e2e/hud.spec.ts` pins that),
   `menu.ts` (home) and
-  `icons.ts` (the menu glyphs — the pygame `_render_icon` shapes ported to
-  inline SVG, keyed the same way: a tiling key, a family key, a mode name or a
-  home-page group key; painted in the board's shape colours),
+  `icons.ts` (the menu glyphs as inline SVG, keyed the way the pygame menu
+  keys them: a tiling key, a family key, a mode name or a home-page group key,
+  painted in the board's shape colours. Most are **generated from the thing
+  they stand for** rather than drawn — a uniform/Laves row from a patch of the
+  real `_ArchTemplate` tiling, a sphere row from the real solid projected and
+  back-face culled, a surface row from the real immersion meshed, depth-sorted
+  and flat-shaded — so they cannot drift from the boards),
   both **rendered from the shared UI-screen config**.
 - **The viewport the app lays out in** is `--app-h` (`styles.css`), never
   `100vh`: on iOS Safari `100vh` is the *large* viewport — the toolbars
