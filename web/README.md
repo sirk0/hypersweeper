@@ -152,9 +152,10 @@ Practical knowledge for verifying changes by actually running the app
   the Klein `cellCycle`), `catalog.ts` / `presets.ts` (read `data/*.json`).
 - `src/render/` — one Three.js pipeline: `renderer.ts` (scene, ortho +
   perspective cameras, trackball rotation, resize, picking),
-  `boardMesh.ts` (shared cell-visual vocabulary — palette, glyph map, and
-  `isOpened`, the raised/sunken predicate both meshes cut their geometry
-  from), `polygonBoard.ts` / `solidBoard.ts` (merged beveled cell geometry —
+  `boardMesh.ts` (shared cell-visual vocabulary — the neutral palette, glyph
+  map, and `isOpened`, the raised/sunken predicate both meshes cut their
+  geometry from), `shapePalette.ts` (the shape colour code, below),
+  `polygonBoard.ts` / `solidBoard.ts` (merged beveled cell geometry —
   flat plane vs. solid surface — per-cell colours, hover, glyph quads; a
   closed cell is a raised button, an opened one is re-cut in place as a
   recess, which is what makes the two tell apart on a flat board lit
@@ -172,8 +173,61 @@ Practical knowledge for verifying changes by actually running the app
   `menu.ts` (home) and
   `icons.ts` (the menu glyphs — the pygame `_render_icon` shapes ported to
   inline SVG, keyed the same way: a tiling key, a family key, a mode name or a
-  home-page group key),
+  home-page group key; painted in the board's shape colours),
   both **rendered from the shared UI-screen config**.
+
+## Shape colour coding (`src/render/shapePalette.ts`)
+
+A cell's colour is derived from its polygon — nothing tags a cell with a
+shape, and nothing needs to. **Hue** comes from the side count (an even
+spectrum: 3 red, 4 orange, 5 yellow, 6 green, 8 teal, 12 blue, the 13-gon
+hat violet), **chroma** from how regular the polygon is
+(`(minAngle/maxAngle + minSide/maxSide) / 2`, 1 for a regular polygon), and
+**lightness** from the cell's state — the step between the closed and opened
+tone is exactly the one the gray board had. The maths runs in OkLCh, not HSL,
+because HSL lightness is not perceptual and that constant hidden/opened
+contrast across hues depends on it. Every knob lives in the one
+`SHAPE_PALETTE` block.
+
+Three things that are easy to get wrong when touching this:
+
+- **Colour lives on the closed tiles.** They carry a properly saturated tone;
+  an opened cell is a pale wash of the same hue, because it sits near white
+  (where sRGB has barely any chroma left) and has a number to stay readable
+  under. Pushing chroma into the opened tone is what makes digits hard to
+  read, not the closed one.
+- **`cuspBlend` is what makes a tile saturated rather than tinted.** sRGB
+  holds no vivid red or blue at the gray's lightness, so a hue whose most
+  colourful lightness is below the gray's is drawn part of the way down
+  toward it. Both the closed and opened tone shift together, which is what
+  keeps their step constant hue by hue. Note the renderer reflects about a
+  third of a tile's albedo, so the *screen* colour is always a good deal
+  darker than the swatch — a saturated orange albedo lands as a warm brown.
+
+- **Class shapes per board, not per cell.** The surface immersions stretch
+  their tiles (a torus square measures ~0.7, and no two cells alike), so
+  `classifyShapes` groups a board's cells by side count and clusters their
+  regularities; every member of a cluster gets the cluster's colour. Colouring
+  each cell by its own measurement paints a saturation gradient instead.
+  Clusters the palette would paint alike are then merged, so a projection that
+  leaves some tiles exact and stretches the rest — the geodesic sphere's
+  triangles split 0.85/1.00 — stays one shape in one colour.
+- **One side count is one shape on a curved board.** Splitting a side count
+  into several shapes only happens on a flat board, where congruent tiles
+  measure identically. A surface of revolution makes each ring of cells
+  congruent to itself and different from the next, so the measurement cannot
+  carry that decision there — a torus of triangles reads as several triangle
+  shapes when it has one. No 3D board in the catalog has two tiles with the
+  same number of sides; the one board that does is flat Penrose, and a unit
+  test sweeps the whole catalog to keep it the only one.
+- **Icons share the hue, not the tone.** The board tint is deliberately faint;
+  at 38 px it would read as gray, so the icon profile puts each hue near the
+  lightness where it is most colourful. `shape()` reads the tone off the
+  polygon it is drawing — a new icon needs an `ICON_TONES` row only when its
+  art is *not* a drawing of the board's cell (a subdivided outer polygon, an
+  idealised stand-in for an irregular tile, a solid in projection), and a
+  `null` tone opts out into the old indigo chrome (tubes, frames, the question
+  mark).
 - `src/config/screens.ts` — typed accessor over `../data/ui/screens.json`.
 - `src/testHook.ts` — the `window.__ms` seam Playwright drives.
 

@@ -1,6 +1,7 @@
 import { Color, type Group, type Quaternion, type Vector3 } from "three";
 import type { CellId, Vec3 } from "../boards/core";
 import type { Glyph } from "./glyphAtlas";
+import type { CellPalette } from "./shapePalette";
 
 // Shared vocabulary of the two board meshes (flat PolygonBoard, 3D
 // SolidBoard): per-cell visual state, the classic palette, and the interface
@@ -20,8 +21,12 @@ export type CellVisual =
 // on purpose. A flat board is lit head-on by a fixed light, so every top face
 // shades by the same factor (~0.6) and the albedo step is *all* the contrast
 // there is — a subtle one collapsed to a few percent of on-screen luminance
-// and the board read as uniformly gray. The 3D palette below (SOLID_COLORS)
-// splits just as wide for the same reason.
+// and the board read as uniformly gray.
+//
+// These are the neutral fallback now: a mesh passes `baseColorFor` the
+// shape-coded pair for the cell (render/shapePalette.ts), which tints these
+// exact lightnesses by the cell's polygon. `exploded` is never shape-coded —
+// a detonated mine has one meaning on every board.
 export const COLORS = {
   hidden: new Color("#b4b4b4"),
   revealed: new Color("#ececec"),
@@ -41,17 +46,19 @@ export const COLORS = {
 export const WIN_TINT = new Color("#ffc233");
 export const WIN_GLOW = 1.4;
 
-export function baseColorFor(visual: CellVisual): Color {
+/** The settled colour of a cell in this state. `palette` is the cell's
+ * shape-coded hidden/opened pair; without one the neutral grays are used. */
+export function baseColorFor(visual: CellVisual, palette?: CellPalette): Color {
   switch (visual.kind) {
     case "hidden":
-      return COLORS.hidden;
+      return palette?.hidden ?? COLORS.hidden;
     case "flagged":
     case "wrongFlag":
-      return COLORS.flagged;
+      return palette?.hidden ?? COLORS.flagged;
     case "revealed":
-      return COLORS.revealed;
+      return palette?.revealed ?? COLORS.revealed;
     case "mine":
-      return COLORS.mine;
+      return palette?.revealed ?? COLORS.mine;
     case "exploded":
       return COLORS.exploded;
   }
