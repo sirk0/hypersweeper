@@ -46,6 +46,20 @@
   --hud-counter-pad: clamp(4px, 1.2vw, 10px);
   --hud-counter-font: clamp(13px, 4.2vw, 20px);
   --hud-counter-min: clamp(42px, 12vw, 74px);
+  /* Height of the visible viewport, the box the whole app lays out in. NOT
+     `100vh`: on iOS Safari that is the *large* viewport (the one you get with
+     the toolbars retracted), so a full-height fixed layer runs on underneath
+     the bottom toolbar — the canvas is taller than what the user can see, and
+     a board centred in it sits low, jammed against the toolbar. `100dvh`
+     tracks the toolbars, and main.ts overwrites this with the exact
+     `visualViewport` height (the signal the pygame web presenter uses too). */
+  --app-h: 100vh;
+}
+
+@supports (height: 100dvh) {
+  :root {
+    --app-h: 100dvh;
+  }
 }
 
 * {
@@ -64,9 +78,13 @@ body {
 
 #board {
   position: fixed;
-  inset: 0;
-  width: 100vw;
-  height: 100vh;
+  top: 0;
+  left: 0;
+  /* Both axes stated explicitly: a canvas is a *replaced* element, so an auto
+     width/height resolves to the drawing buffer's size rather than to the
+     left/right (top/bottom) offsets. */
+  width: 100%;
+  height: var(--app-h);
   display: block;
   touch-action: none;
   -webkit-touch-callout: none;
@@ -76,7 +94,10 @@ body {
 
 #ui {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--app-h);
   pointer-events: none;
   display: flex;
   flex-direction: column;

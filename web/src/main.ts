@@ -37,6 +37,7 @@ class App {
     private readonly canvas: HTMLCanvasElement,
     ui: HTMLElement,
   ) {
+    this.syncViewport(); // size the layout box before anything measures it
     this.renderer = new BoardRenderer(canvas);
     this.hud = new Hud((action) => this.onAction(action));
     this.menu = new Menu((sel) => this.startGame(sel.mode, sel.difficulty));
@@ -44,6 +45,10 @@ class App {
     this.hud.root.hidden = true;
 
     window.addEventListener("resize", () => this.onResize());
+    window.addEventListener("orientationchange", () => this.onResize());
+    // A mobile browser grows and shrinks its own chrome without ever resizing
+    // the window; the visual viewport is what reports it (see syncViewport).
+    window.visualViewport?.addEventListener("resize", () => this.onResize());
     window.addEventListener("keydown", (e) => this.onKey(e));
     attachControls(canvas, {
       pick: (ndc) => this.renderer.pick(ndc),
@@ -106,9 +111,22 @@ class App {
     this.onResize();
   }
 
+  /** Lay the app out in the viewport the user can actually see. iOS Safari's
+   * `100vh` is the *large* viewport — the toolbars retracted — so a full-height
+   * fixed layer extends underneath the bottom toolbar: the canvas is taller
+   * than the visible window and a board centred in it is pushed down, cramped
+   * against the toolbar with all the slack above it. `visualViewport.height`
+   * is the on-screen height (what the pygame web presenter reads for the same
+   * reason); CSS falls back to `100dvh` before this first runs. */
+  private syncViewport(): void {
+    const h = window.visualViewport?.height ?? window.innerHeight;
+    document.documentElement.style.setProperty("--app-h", `${Math.round(h)}px`);
+  }
+
   /** Re-frame the board on viewport changes, reserving the current header
    * height at the top so the board sits below it (0 in the menu). */
   private onResize(): void {
+    this.syncViewport();
     const inset =
       this.screen === "game" && !this.hud.root.hidden
         ? this.hud.root.getBoundingClientRect().height
