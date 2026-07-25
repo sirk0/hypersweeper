@@ -8,12 +8,18 @@ import { expect, test } from "@playwright/test";
 //
 // Headless Chromium has no toolbar, so the mobile case is reproduced by
 // stubbing `visualViewport` to report a shorter height than the window, which
-// is exactly what Safari does with its toolbar shown.
+// is exactly what a mobile browser does with its toolbar shown.
 
-/** CSS px of browser chrome overlapping the bottom of the layout viewport. */
-const TOOLBAR = 90;
+/** CSS px of browser chrome overlapping the bottom of the layout viewport, in
+ * the two sizes seen on an iPhone: Safari's floating bottom bar and Chrome
+ * iOS's taller toolbar. The bug scaled with this — the board sat half the
+ * hidden strip too low — so both are pinned. */
+const TOOLBARS = [45, 90];
 
-async function stubToolbar(page: import("@playwright/test").Page): Promise<void> {
+async function stubToolbar(
+  page: import("@playwright/test").Page,
+  height: number,
+): Promise<void> {
   await page.addInitScript((toolbar: number) => {
     const real = window.visualViewport;
     const fake = {
@@ -39,7 +45,7 @@ async function stubToolbar(page: import("@playwright/test").Page): Promise<void>
       configurable: true,
       get: () => fake,
     });
-  }, TOOLBAR);
+  }, height);
 }
 
 /** Vertical span of the board on screen, from the cell centres the seam
@@ -74,31 +80,33 @@ async function chrome(page: import("@playwright/test").Page) {
 }
 
 test.describe("viewport layout", () => {
-  test("a flat board centres in the visible viewport under browser chrome", async ({
-    page,
-  }) => {
-    await stubToolbar(page);
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto("/?mode=square&difficulty=hard&seed=1");
-    await expect(page.locator("body[data-ready]")).toBeVisible();
+  for (const toolbar of TOOLBARS) {
+    test(`a flat board centres in the visible viewport under ${toolbar}px of browser chrome`, async ({
+      page,
+    }) => {
+      await stubToolbar(page, toolbar);
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.goto("/?mode=square&difficulty=hard&seed=1");
+      await expect(page.locator("body[data-ready]")).toBeVisible();
 
-    const c = await chrome(page);
-    const { hudBottom, visibleHeight } = c;
-    expect(visibleHeight).toBe(c.innerHeight - TOOLBAR);
-    // The canvas stops where the browser chrome starts, not at 100vh — and
-    // still spans the window edge to edge (a canvas is a replaced element: an
-    // auto width would silently fall back to its drawing-buffer size).
-    expect(c.canvasHeight).toBeCloseTo(visibleHeight, 0);
-    expect(c.canvasLeft).toBe(0);
-    expect(c.canvasWidth).toBeCloseTo(c.innerWidth, 0);
+      const c = await chrome(page);
+      const { hudBottom, visibleHeight } = c;
+      expect(visibleHeight).toBe(c.innerHeight - toolbar);
+      // The canvas stops where the browser chrome starts, not at 100vh — and
+      // still spans the window edge to edge (a canvas is a replaced element: an
+      // auto width would silently fall back to its drawing-buffer size).
+      expect(c.canvasHeight).toBeCloseTo(visibleHeight, 0);
+      expect(c.canvasLeft).toBe(0);
+      expect(c.canvasWidth).toBeCloseTo(c.innerWidth, 0);
 
-    // Equal air above and below: the board is centred between the header and
-    // the bottom of what the user can see.
-    const band = await boardBand(page);
-    expect(band.center).toBeCloseTo((hudBottom + visibleHeight) / 2, 0);
-    expect(band.bottom).toBeLessThanOrEqual(visibleHeight);
-    expect(band.top).toBeGreaterThanOrEqual(hudBottom);
-  });
+      // Equal air above and below: the board is centred between the header and
+      // the bottom of what the user can see.
+      const band = await boardBand(page);
+      expect(band.center).toBeCloseTo((hudBottom + visibleHeight) / 2, 0);
+      expect(band.bottom).toBeLessThanOrEqual(visibleHeight);
+      expect(band.top).toBeGreaterThanOrEqual(hudBottom);
+    });
+  }
 
   test("with no browser chrome the board centres in the whole window", async ({
     page,
@@ -117,7 +125,7 @@ test.describe("viewport layout", () => {
   test("the menu keeps its difficulty row above the browser chrome", async ({
     page,
   }) => {
-    await stubToolbar(page);
+    await stubToolbar(page, TOOLBARS.at(-1)!);
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/");
     await expect(page.locator("body[data-ready]")).toBeVisible();
