@@ -112,6 +112,8 @@ export class SolidBoard extends Group implements BoardMesh {
     // renderer scales the real outer hull — not an inner sphere — to unit
     // size and can frame it edge to edge.
     let outerRadius = board.radius;
+    // Every outermost drawn point, kept for the camera fit (see BoardView.hull).
+    const hull: number[] = [];
 
     const basePositions: number[] = [];
     const faceCell: number[] = [];
@@ -150,6 +152,7 @@ export class SolidBoard extends Group implements BoardMesh {
       vertexCount += perCell(n);
       // How far this cell's drawn geometry reaches: a two-sided tile lies on
       // the surface, a closed one is raised by its bevel height.
+      for (const p of poly) hull.push(p[0], p[1], p[2]);
       if (!this.twoSided) {
         const lift = radius * HEIGHT_FRAC;
         for (const p of poly) {
@@ -158,6 +161,7 @@ export class SolidBoard extends Group implements BoardMesh {
             normal[1] * lift,
             normal[2] * lift,
           ]);
+          hull.push(top[0], top[1], top[2]);
           outerRadius = Math.max(outerRadius, Math.hypot(top[0], top[1], top[2]));
         }
       }
@@ -174,7 +178,11 @@ export class SolidBoard extends Group implements BoardMesh {
       }
     });
 
-    this.view = { kind: "solid", radius: outerRadius };
+    this.view = {
+      kind: "solid",
+      radius: outerRadius,
+      hull: Float32Array.from(hull),
+    };
 
     this.faceCell = Int32Array.from(faceCell);
     const geometry = new BufferGeometry();
