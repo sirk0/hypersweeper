@@ -15,13 +15,18 @@ export type CellVisual =
   | { kind: "mine" }
   | { kind: "exploded" };
 
-// Classic minesweeper gray palette: raised silver tiles, a lighter flat face
-// for opened cells, a red exploded cell.
+// Classic minesweeper gray palette: raised silver tiles, a much lighter flat
+// face for opened cells, a red exploded cell. The hidden/opened step is wide
+// on purpose. A flat board is lit head-on by a fixed light, so every top face
+// shades by the same factor (~0.6) and the albedo step is *all* the contrast
+// there is — a subtle one collapsed to a few percent of on-screen luminance
+// and the board read as uniformly gray. The 3D palette below (SOLID_COLORS)
+// splits just as wide for the same reason.
 export const COLORS = {
-  hidden: new Color("#c6c6c6"),
-  revealed: new Color("#dedede"),
-  flagged: new Color("#c6c6c6"),
-  mine: new Color("#c6c6c6"),
+  hidden: new Color("#b4b4b4"),
+  revealed: new Color("#ececec"),
+  flagged: new Color("#b4b4b4"),
+  mine: new Color("#ececec"),
   exploded: new Color("#e05a5a"),
 };
 
@@ -50,6 +55,16 @@ export function baseColorFor(visual: CellVisual): Color {
     case "exploded":
       return COLORS.exploded;
   }
+}
+
+/** Whether a cell is *opened* — drawn sunken rather than as a raised button.
+ * Both meshes cut their cell geometry from this. */
+export function isOpened(visual: CellVisual): boolean {
+  return (
+    visual.kind === "revealed" ||
+    visual.kind === "mine" ||
+    visual.kind === "exploded"
+  );
 }
 
 export function glyphFor(visual: CellVisual): Glyph | null {

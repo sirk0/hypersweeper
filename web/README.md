@@ -152,9 +152,13 @@ Practical knowledge for verifying changes by actually running the app
   the Klein `cellCycle`), `catalog.ts` / `presets.ts` (read `data/*.json`).
 - `src/render/` — one Three.js pipeline: `renderer.ts` (scene, ortho +
   perspective cameras, trackball rotation, resize, picking),
-  `boardMesh.ts` (shared cell-visual vocabulary), `polygonBoard.ts` /
-  `solidBoard.ts` (merged beveled cell geometry — flat plane vs. solid
-  surface — per-cell colours, hover, glyph quads), `glyphAtlas.ts`
+  `boardMesh.ts` (shared cell-visual vocabulary — palette, glyph map, and
+  `isOpened`, the raised/sunken predicate both meshes cut their geometry
+  from), `polygonBoard.ts` / `solidBoard.ts` (merged beveled cell geometry —
+  flat plane vs. solid surface — per-cell colours, hover, glyph quads; a
+  closed cell is a raised button, an opened one is re-cut in place as a
+  recess, which is what makes the two tell apart on a flat board lit
+  head-on, where colour alone shades every face identically), `glyphAtlas.ts`
   (canvas-baked digit/flag/mine texture), `animations.ts` (the shared
   reveal-ripple / flag-pop / lose-shake / win-wave clock).
 - `src/session.ts` — `GameSession`: Game ↔ mesh ↔ HUD.

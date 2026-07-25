@@ -22,6 +22,7 @@ import {
 import {
   COLORS,
   glyphFor,
+  isOpened,
   polygonInradius,
   WIN_GLOW,
   WIN_TINT,
@@ -280,11 +281,11 @@ export class SolidBoard extends Group implements BoardMesh {
   setVisual(cell: CellId, visual: CellVisual): void {
     const i = this.cellIndex.get(cell);
     if (i == null) return;
-    const wasFlat = isFlat(this.states[i]!);
+    const wasOpen = isOpened(this.states[i]!);
     this.states[i] = visual;
     // Two-sided tiles are flat and static (state shows in colour only); closed
     // cells rise when hidden and sink when revealed, so re-extrude on that flip.
-    if (!this.twoSided && isFlat(visual) !== wasFlat) this.writeGeometry(i);
+    if (!this.twoSided && isOpened(visual) !== wasOpen) this.writeGeometry(i);
     this.writeColor(i);
     this.rebuildGlyphs();
   }
@@ -323,7 +324,7 @@ export class SolidBoard extends Group implements BoardMesh {
     const g = this.geom[i]!;
     const { poly, centroid, normal } = g;
     const n = poly.length;
-    const height = g.radius * (isFlat(this.states[i]!) ? FLAT_FRAC : HEIGHT_FRAC);
+    const height = g.radius * (isOpened(this.states[i]!) ? FLAT_FRAC : HEIGHT_FRAC);
     const lift: Vec3 = [normal[0] * height, normal[1] * height, normal[2] * height];
     const outer = poly.map((p) => lerp3(p, centroid, SHRINK));
     const top = poly.map((p) => add3(lerp3(p, centroid, SHRINK + BEVEL), lift));
@@ -555,16 +556,6 @@ export class SolidBoard extends Group implements BoardMesh {
     this.position.set(step.offset[0], step.offset[1], 0);
     return step.active;
   }
-}
-
-/** Revealed cells (numbers, mines, the exploded cell) lie flat; hidden and
- * flagged cells stay raised. */
-function isFlat(visual: CellVisual): boolean {
-  return (
-    visual.kind === "revealed" ||
-    visual.kind === "mine" ||
-    visual.kind === "exploded"
-  );
 }
 
 function centroidOf(points: readonly Vec3[]): Vec3 {

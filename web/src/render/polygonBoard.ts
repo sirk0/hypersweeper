@@ -11,6 +11,7 @@ import type { Board, CellId, Vertex } from "../boards/core";
 import {
   baseColorFor,
   glyphFor,
+  isOpened,
   polygonInradius,
   WIN_GLOW,
   WIN_TINT,
@@ -23,19 +24,31 @@ import { makeGlyphAtlas, type GlyphAtlas } from "./glyphAtlas";
 import { CellAnimations, rippleEntries, WIN_PER_CELL } from "./animations";
 
 // Renders an arbitrary flat polygon board (square / triangle / hex / ...) as
-// one merged beveled geometry: each convex cell becomes a raised top face
-// (fan-triangulated) ringed by bevel quads, giving real normals for lighting.
-// Per-cell colour is a ranged update; a single glyph-atlas mesh batches the
-// number/flag/mine quads. The 3D SolidBoard lays the same construction out on
-// a solid's surface.
+// one merged beveled geometry: each convex cell becomes a top face
+// (fan-triangulated) ringed by bevel quads — raised while the cell is closed,
+// re-cut as a recess once it is opened. Both the geometry and the colour of a
+// cell are ranged updates into the shared buffers; a single glyph-atlas mesh
+// batches the number/flag/mine quads. The 3D SolidBoard lays the same
+// construction out on a solid's surface.
 
 const SHRINK = 0.04; // pull the whole cell in from shared edges -> visible gaps
 const BEVEL = 0.16; // extra inset of the raised top face
 const HEIGHT_FRAC = 0.24; // bevel height as a fraction of the cell's "radius"
+// An opened cell is cut the other way round: a thin rim (so the sunken face
+// still reads full-size) dropping to a floor *below* the board plane. Under
+// the fixed key light that inverts the button's highlight and shadow — the
+// lit edge moves from the top of the tile to the bottom — which is what makes
+// open and closed cells tell apart at a glance. Colour alone could not: a flat
+// board is lit head-on, so every top face shades identically and only the
+// albedo step (COLORS) survives. The 3D boards get this same raised/sunken
+// distinction from SolidBoard's FLAT_FRAC.
+const SUNK_BEVEL = 0.07; // inset of the sunken floor (a narrow rim)
+const SUNK_FRAC = -0.09; // recess depth, as a fraction of the cell's "radius"
 
 interface CellGeom {
   start: number; // first vertex index in the position/color buffers
   count: number; // vertex count for this cell
+  poly: Vertex[]; // the cell's polygon in render space (centred, y up)
   center: Vertex; // render-space centroid (x, y)
   radius: number; // mean distance centroid -> vertices (bevel height)
   inradius: number; // distance centroid -> nearest edge (glyph sizing)
@@ -47,6 +60,7 @@ export class PolygonBoard extends Group implements BoardMesh {
   private readonly cellIndex = new Map<CellId, number>();
   private readonly geom: CellGeom[] = [];
   private readonly faceCell: Int32Array;
+  private readonly positionAttr: BufferAttribute;
   private readonly colorAttr: BufferAttribute;
   private readonly glyphGeometry = new BufferGeometry();
   private readonly atlas: GlyphAtlas;
@@ -71,8 +85,8 @@ export class PolygonBoard extends Group implements BoardMesh {
     const cy = board.height / 2;
     this.view = { kind: "flat", width: board.width, height: board.height };
 
-    const positions: number[] = [];
     const faceCell: number[] = [];
+    let vertexCount = 0;
 
     this.order.forEach((cell, ci) => {
       const poly = board.polygons.get(cell)!.map(([x, y]) => [x - cx, cy - y] as Vertex);
@@ -83,48 +97,31 @@ export class PolygonBoard extends Group implements BoardMesh {
       const radius =
         poly.reduce((s, p) => s + Math.hypot(p[0] - centroid[0], p[1] - centroid[1]), 0) /
         poly.length;
-      const height = radius * HEIGHT_FRAC;
-      const outer = poly.map((p) => lerp(p, centroid, SHRINK));
-      const top = poly.map((p) => lerp(p, centroid, SHRINK + BEVEL));
       const n = poly.length;
-
-      const start = positions.length / 3;
-      const push = (p: Vertex, z: number) => positions.push(p[0], p[1], z);
-      // top face: fan from centroid over the inset polygon
-      for (let e = 0; e < n; e++) {
-        push(centroid, height);
-        push(top[e]!, height);
-        push(top[(e + 1) % n]!, height);
-        faceCell.push(ci);
-      }
-      // bevel ring: outer edge (z=0) up to the inset top edge (z=height)
-      for (let e = 0; e < n; e++) {
-        const a = e;
-        const b = (e + 1) % n;
-        push(outer[a]!, 0);
-        push(outer[b]!, 0);
-        push(top[b]!, height);
-        push(outer[a]!, 0);
-        push(top[b]!, height);
-        push(top[a]!, height);
-        faceCell.push(ci, ci);
-      }
+      // n fan triangles for the top face, 2n for the bevel ring
+      const count = 9 * n;
+      for (let e = 0; e < n; e++) faceCell.push(ci);
+      for (let e = 0; e < n; e++) faceCell.push(ci, ci);
       this.geom.push({
-        start,
-        count: positions.length / 3 - start,
+        start: vertexCount,
+        count,
+        poly,
         center: centroid,
         radius,
         inradius: polygonInradius(poly, centroid),
       });
+      vertexCount += count;
     });
 
     this.faceCell = Int32Array.from(faceCell);
-    const posArr = new Float32Array(positions);
     const geometry = new BufferGeometry();
-    geometry.setAttribute("position", new BufferAttribute(posArr, 3));
-    this.colorAttr = new BufferAttribute(new Float32Array(posArr.length), 3);
+    this.positionAttr = new BufferAttribute(new Float32Array(vertexCount * 3), 3);
+    geometry.setAttribute("position", this.positionAttr);
+    this.colorAttr = new BufferAttribute(new Float32Array(vertexCount * 3), 3);
     geometry.setAttribute("color", this.colorAttr);
-    geometry.computeVertexNormals();
+    // No normal attribute: the material shades flat, so three.js derives each
+    // facet's normal in the fragment shader. That is what lets a cell's
+    // geometry be re-cut (raised <-> sunken) by writing positions alone.
 
     const cells = new Mesh(
       geometry,
@@ -159,7 +156,17 @@ export class PolygonBoard extends Group implements BoardMesh {
     this.meanRadius =
       this.geom.reduce((s, g) => s + g.radius, 0) / (this.geom.length || 1);
 
-    for (let i = 0; i < this.order.length; i++) this.writeColor(i);
+    for (let i = 0; i < this.order.length; i++) {
+      this.writeGeometry(i);
+      this.writeColor(i);
+    }
+    // Cells are re-cut in place afterwards, so pad the (raised-state) bounds by
+    // the deepest recess a cell can take rather than recomputing per update.
+    geometry.computeBoundingSphere();
+    if (geometry.boundingSphere) {
+      const maxRadius = this.geom.reduce((m, g) => Math.max(m, g.radius), 0);
+      geometry.boundingSphere.radius += maxRadius * (HEIGHT_FRAC - SUNK_FRAC);
+    }
     this.rebuildGlyphs();
   }
 
@@ -182,7 +189,9 @@ export class PolygonBoard extends Group implements BoardMesh {
   setVisual(cell: CellId, visual: CellVisual): void {
     const i = this.cellIndex.get(cell);
     if (i == null) return;
+    const wasOpen = isOpened(this.states[i]!);
     this.states[i] = visual;
+    if (isOpened(visual) !== wasOpen) this.writeGeometry(i);
     this.writeColor(i);
     this.rebuildGlyphs();
   }
@@ -194,6 +203,40 @@ export class PolygonBoard extends Group implements BoardMesh {
     this.hovered = i;
     if (prev >= 0) this.writeColor(prev);
     if (i >= 0) this.writeColor(i);
+  }
+
+  /** (Re)cut one cell into the shared position buffer: a raised beveled button
+   * while it is closed, a recess below the board plane once it is opened. */
+  private writeGeometry(i: number): void {
+    const g = this.geom[i]!;
+    const open = isOpened(this.states[i]!);
+    const height = g.radius * (open ? SUNK_FRAC : HEIGHT_FRAC);
+    const inset = open ? SUNK_BEVEL : BEVEL;
+    const n = g.poly.length;
+    const outer = g.poly.map((p) => lerp(p, g.center, SHRINK));
+    const top = g.poly.map((p) => lerp(p, g.center, SHRINK + inset));
+
+    let v = g.start;
+    const put = (p: Vertex, z: number) => this.positionAttr.setXYZ(v++, p[0], p[1], z);
+    // top face: fan from the centroid over the inset polygon
+    for (let e = 0; e < n; e++) {
+      put(g.center, height);
+      put(top[e]!, height);
+      put(top[(e + 1) % n]!, height);
+    }
+    // bevel ring: outer edge (z=0) to the inset top edge (z=height) — a wall
+    // sloping up and out on a closed cell, down and in on an opened one
+    for (let e = 0; e < n; e++) {
+      const a = e;
+      const b = (e + 1) % n;
+      put(outer[a]!, 0);
+      put(outer[b]!, 0);
+      put(top[b]!, height);
+      put(outer[a]!, 0);
+      put(top[b]!, height);
+      put(top[a]!, height);
+    }
+    this.positionAttr.needsUpdate = true;
   }
 
   private writeColor(i: number): void {
