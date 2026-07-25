@@ -22,6 +22,7 @@ import {
 } from "./boardMesh";
 import { makeGlyphAtlas, type GlyphAtlas } from "./glyphAtlas";
 import { CellAnimations, rippleEntries, WIN_PER_CELL } from "./animations";
+import { cellPalette, classifyShapes, type CellPalette } from "./shapePalette";
 
 // Renders an arbitrary flat polygon board (square / triangle / hex / ...) as
 // one merged beveled geometry: each convex cell becomes a top face
@@ -52,6 +53,7 @@ interface CellGeom {
   center: Vertex; // render-space centroid (x, y)
   radius: number; // mean distance centroid -> vertices (bevel height)
   inradius: number; // distance centroid -> nearest edge (glyph sizing)
+  palette: CellPalette; // hidden/opened tones for this cell's shape
 }
 
 export class PolygonBoard extends Group implements BoardMesh {
@@ -87,6 +89,9 @@ export class PolygonBoard extends Group implements BoardMesh {
 
     const faceCell: number[] = [];
     let vertexCount = 0;
+    // Shape colour coding: classed over the whole board at once, so a tiling
+    // the surface immersion has bent stays one colour instead of a gradient.
+    const tones = classifyShapes(board.polygons);
 
     this.order.forEach((cell, ci) => {
       const poly = board.polygons.get(cell)!.map(([x, y]) => [x - cx, cy - y] as Vertex);
@@ -109,6 +114,7 @@ export class PolygonBoard extends Group implements BoardMesh {
         center: centroid,
         radius,
         inradius: polygonInradius(poly, centroid),
+        palette: cellPalette(tones.get(cell)!, "flat"),
       });
       vertexCount += count;
     });
@@ -240,7 +246,7 @@ export class PolygonBoard extends Group implements BoardMesh {
   }
 
   private writeColor(i: number): void {
-    const col = baseColorFor(this.states[i]!).clone();
+    const col = baseColorFor(this.states[i]!, this.geom[i]!.palette).clone();
     if (i === this.hovered && this.states[i]!.kind === "hidden") {
       col.offsetHSL(0, 0, 0.08);
     }

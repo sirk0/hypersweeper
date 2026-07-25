@@ -5,15 +5,47 @@
 // one-for-one; pygame stroke widths are given in its 352-unit supersampled
 // space and scaled here by `sw`.
 
+import {
+  iconHex,
+  shapeMetrics,
+  type IconVariant,
+  type ShapeTone,
+} from "../render/shapePalette";
+
 const D = 100;
 const C = D / 2;
 
-// The palette from gui.py: a mid indigo, a lighter and a darker shade, and a
-// soft same-hue hairline outline.
-const BLUE = "#6366f1";
-const LIGHT = "#9fa6fc";
-const DARK = "#4338ca";
-const OUTLINE = "#4f52c2";
+// Icons are painted in the board's shape colours (render/shapePalette.ts): the
+// hue and regularity of the polygon being drawn, at the icon set's own
+// saturation, so a triangle is the same red in the menu as on the board. A
+// call names a *variant* — base / light / dark / outline — rather than a
+// colour, and the shape supplies the hue.
+//
+// Where the art is not a tile (the question mark, the surface tubes, the
+// frames, hairlines) a `null` tone falls back to the original indigo from
+// gui.py: a mid indigo, a lighter and a darker shade, and a soft same-hue
+// hairline outline.
+const PLAIN: Record<IconVariant, string> = {
+  base: "#6366f1",
+  light: "#9fa6fc",
+  dark: "#4338ca",
+  outline: "#4f52c2",
+};
+
+const BASE: IconVariant = "base";
+const LIGHT: IconVariant = "light";
+const DARK: IconVariant = "dark";
+
+/** The colour a variant paints `tone` in; `null` is the non-tile chrome. */
+function tint(variant: IconVariant, tone: ShapeTone | null): string {
+  return tone ? iconHex(tone, variant) : PLAIN[variant];
+}
+
+/** A tone argument left off means "read it off the polygon being drawn"; an
+ * explicit `null` means the plain chrome. */
+function toneOf(points: P[], tone: ShapeTone | null | undefined): ShapeTone | null {
+  return tone === undefined ? shapeMetrics(points) : tone;
+}
 
 /** Corner radius the flat glyphs round their corners by (gui.py _ICON_CORNER). */
 const CORNER = D * 0.03;
@@ -113,35 +145,60 @@ function roundedPath(points: P[], radius = CORNER): string {
 }
 
 /** A filled, hairline-outlined glyph shape (gui.py _icon_shape); `width` 0
- * fills without an outline. */
-function shape(points: P[], fill = BLUE, width = 4): string {
+ * fills without an outline. The colour comes from the polygon itself unless
+ * `tone` overrides it (art that does not draw its board's actual cell). */
+function shape(
+  points: P[],
+  variant: IconVariant = BASE,
+  width = 4,
+  tone?: ShapeTone | null,
+): string {
+  const t = toneOf(points, tone);
   const stroke =
     width > 0
-      ? ` stroke="${OUTLINE}" stroke-width="${n(sw(Math.max(2, width - 1)))}" stroke-linejoin="round"`
+      ? ` stroke="${tint("outline", t)}" stroke-width="${n(
+          sw(Math.max(2, width - 1)),
+        )}" stroke-linejoin="round"`
       : "";
-  return `<path d="${roundedPath(points)}" fill="${fill}"${stroke}/>`;
+  return `<path d="${roundedPath(points)}" fill="${tint(variant, t)}"${stroke}/>`;
 }
 
 /** A polygon with an inner polygon punched out of it (pygame erases the hole
  * with a transparent fill); even-odd makes the hole show the background. */
-function holed(outer: P[], inner: P[], fill = BLUE, width = 4): string {
+function holed(
+  outer: P[],
+  inner: P[],
+  variant: IconVariant = BASE,
+  width = 4,
+  tone?: ShapeTone | null,
+): string {
+  const t = toneOf(outer, tone);
   return `<path d="${roundedPath(outer)}${roundedPath(
     inner,
-  )}" fill="${fill}" fill-rule="evenodd" stroke="${OUTLINE}" stroke-width="${n(
-    sw(Math.max(2, width - 1)),
-  )}" stroke-linejoin="round"/>`;
+  )}" fill="${tint(variant, t)}" fill-rule="evenodd" stroke="${tint(
+    "outline",
+    t,
+  )}" stroke-width="${n(sw(Math.max(2, width - 1)))}" stroke-linejoin="round"/>`;
 }
 
-function line(a: P, b: P, color = DARK, width = 3): string {
-  return `<path d="M${n(a[0])} ${n(a[1])}L${n(b[0])} ${n(b[1])}" stroke="${color}" stroke-width="${n(
-    sw(width),
-  )}" stroke-linecap="round" fill="none"/>`;
+function line(a: P, b: P, variant: IconVariant = DARK, width = 3, tone: ShapeTone | null = null): string {
+  return `<path d="M${n(a[0])} ${n(a[1])}L${n(b[0])} ${n(b[1])}" stroke="${tint(
+    variant,
+    tone,
+  )}" stroke-width="${n(sw(width))}" stroke-linecap="round" fill="none"/>`;
 }
 
-function circle(cx: number, cy: number, r: number, fill = BLUE, width = 4): string {
-  return `<circle cx="${n(cx)}" cy="${n(cy)}" r="${n(r)}" fill="${fill}" stroke="${DARK}" stroke-width="${n(
-    sw(width),
-  )}"/>`;
+function circle(
+  cx: number,
+  cy: number,
+  r: number,
+  tone: ShapeTone | null = null,
+  width = 4,
+): string {
+  return `<circle cx="${n(cx)}" cy="${n(cy)}" r="${n(r)}" fill="${tint(
+    BASE,
+    tone,
+  )}" stroke="${tint(DARK, tone)}" stroke-width="${n(sw(width))}"/>`;
 }
 
 function ellipseArc(cx: number, cy: number, rx: number, ry: number): string {
@@ -155,11 +212,11 @@ function ellipse(
   cy: number,
   rx: number,
   ry: number,
-  fill = BLUE,
+  variant: IconVariant = BASE,
   width = 4,
 ): string {
-  const stroke = width > 0 ? ` stroke="${DARK}" stroke-width="${n(sw(width))}"` : "";
-  return `<path d="${ellipseArc(cx, cy, rx, ry)}" fill="${fill}"${stroke}/>`;
+  const stroke = width > 0 ? ` stroke="${PLAIN.dark}" stroke-width="${n(sw(width))}"` : "";
+  return `<path d="${ellipseArc(cx, cy, rx, ry)}" fill="${PLAIN[variant]}"${stroke}/>`;
 }
 
 /** The lower half of an ellipse's outline (the visible rim of a cylinder's
@@ -178,7 +235,7 @@ function ellipseRing(
   ry: number,
   hx: number,
   hy: number,
-  fill = BLUE,
+  variant: IconVariant = BASE,
   width = 4,
 ): string {
   return `<path d="${ellipseArc(cx, cy, rx, ry)}${ellipseArc(
@@ -186,7 +243,9 @@ function ellipseRing(
     cy,
     hx,
     hy,
-  )}" fill="${fill}" fill-rule="evenodd" stroke="${DARK}" stroke-width="${n(sw(width))}"/>`;
+  )}" fill="${PLAIN[variant]}" fill-rule="evenodd" stroke="${PLAIN.dark}" stroke-width="${n(
+    sw(width),
+  )}"/>`;
 }
 
 /** A small light shape marking which tiling a surface uses (gui.py _icon_badge). */
@@ -222,10 +281,37 @@ const ALIASES: Record<string, string> = {
 
 const SPHERES = ["sphere", "c80", "c180", "spheretri", "snubdodec"];
 
+/** What a board's cells actually are, for the icons whose art is not a drawing
+ * of one: a subdivided outer polygon (the Laves triangle tilings), an
+ * idealised regular stand-in for an irregular tile (the Laves pentagons), a
+ * solid seen in projection, or a sphere with a badge. Regularities are those of
+ * the real tile, measured shortest-edge-first — see boards/tilings.py. */
+const ICON_TONES: Record<string, ShapeTone> = {
+  trigrid: { sides: 3, regularity: 1 }, // drawn tall, the tiling is equilateral
+  tetrakis: { sides: 3, regularity: 0.604 }, // 45-45-90
+  triakis: { sides: 3, regularity: 0.414 }, // 30-30-120
+  kisrhombille: { sides: 3, regularity: 0.417 }, // 30-60-90
+  cairo: { sides: 5, regularity: 0.74 },
+  prismaticpent: { sides: 5, regularity: 0.664 },
+  floret: { sides: 5, regularity: 0.5 },
+  cube: { sides: 4, regularity: 1 },
+  cubeframe: { sides: 4, regularity: 1 },
+  steppedbipyramid: { sides: 4, regularity: 1 },
+  tetrahedron: { sides: 3, regularity: 1 },
+  tetraframe: { sides: 3, regularity: 1 },
+  sphere: { sides: 5, regularity: 0.95 },
+  snubdodec: { sides: 3, regularity: 1 },
+  spheretri: { sides: 3, regularity: 1 },
+  c80: { sides: 6, regularity: 0.95 },
+  c180: { sides: 6, regularity: 0.95 },
+};
+
 function draw(rawKey: string): string[] {
   const key = ALIASES[rawKey] ?? rawKey;
   const d = D;
   const parts: string[] = [];
+  // The cell shape this icon stands for, where its art does not draw one.
+  const cell: ShapeTone | undefined = ICON_TONES[key];
 
   if (key === "start") {
     // a question mark: a hooked stroke over a dot (the random-tiling entry)
@@ -239,7 +325,7 @@ function draw(rawKey: string): string[] {
       [d * 0.5, d * 0.55],
       [d * 0.5, d * 0.64],
     ];
-    parts.push(shape(tubePolygon(smoothCurve(control), d * 0.055)));
+    parts.push(shape(tubePolygon(smoothCurve(control), d * 0.055), BASE, 4, null));
     parts.push(circle(d * 0.5, d * 0.8, d * 0.075));
   } else if (key === "uniform") {
     // one shape of each kind: the group of uniform tilings
@@ -338,6 +424,9 @@ function draw(rawKey: string): string[] {
                 [x + w, d * 0.18],
                 [x + w / 2, d * 0.85],
               ],
+          BASE,
+          4,
+          cell,
         ),
       );
     }
@@ -504,21 +593,21 @@ function draw(rawKey: string): string[] {
   } else if (key === "prismaticpent") {
     // rows of pentagons: two stacked (the dual of elongated triangular)
     parts.push(
-      shape(ngon(C, d * 0.32, d * 0.26, 5, -90)),
-      shape(ngon(C, d * 0.68, d * 0.26, 5, 90), LIGHT),
+      shape(ngon(C, d * 0.32, d * 0.26, 5, -90), BASE, 4, cell),
+      shape(ngon(C, d * 0.68, d * 0.26, 5, 90), LIGHT, 4, cell),
     );
   } else if (key === "cairo") {
     // two pentagons in the Cairo basketweave (dual of snub square)
     parts.push(
-      shape(ngon(d * 0.37, d * 0.4, d * 0.28, 5, -108)),
-      shape(ngon(d * 0.63, d * 0.6, d * 0.28, 5, 72), LIGHT),
+      shape(ngon(d * 0.37, d * 0.4, d * 0.28, 5, -108), BASE, 4, cell),
+      shape(ngon(d * 0.63, d * 0.6, d * 0.28, 5, 72), LIGHT, 4, cell),
     );
   } else if (key === "rhombille") {
     // three rhombi meeting as an isometric cube (dual of kagome)
     const h = hexagon(C, C, d * 0.42, -90);
     parts.push(
       shape([h[0]!, h[1]!, [C, C], h[5]!], LIGHT),
-      shape([h[1]!, h[2]!, h[3]!, [C, C]], BLUE),
+      shape([h[1]!, h[2]!, h[3]!, [C, C]], BASE),
       shape([h[5]!, [C, C], h[3]!, h[4]!], DARK),
     );
   } else if (key === "floret") {
@@ -528,8 +617,9 @@ function draw(rawKey: string): string[] {
       parts.push(
         shape(
           ngon(C + d * 0.24 * Math.cos(a), C + d * 0.24 * Math.sin(a), d * 0.17, 5, 60 * k + 20),
-          k % 2 ? LIGHT : BLUE,
+          k % 2 ? LIGHT : BASE,
           3,
+          cell,
         ),
       );
     }
@@ -541,13 +631,13 @@ function draw(rawKey: string): string[] {
       [d * 0.88, d * 0.88],
       [d * 0.12, d * 0.88],
     ];
-    parts.push(shape(sq));
-    for (const corner of sq) parts.push(line([C, C], corner, DARK, 4));
+    parts.push(shape(sq, BASE, 4, cell));
+    for (const corner of sq) parts.push(line([C, C], corner, DARK, 4, cell));
   } else if (key === "triakis") {
     // a triangle split from its centre into three (dual of trunc. hex.)
     const outer = ngon(C, C + d * 0.04, d * 0.46, 3, -90);
-    parts.push(shape(outer));
-    for (const v of outer) parts.push(line([C, C + d * 0.04], v, DARK, 4));
+    parts.push(shape(outer, BASE, 4, cell));
+    for (const v of outer) parts.push(line([C, C + d * 0.04], v, DARK, 4, cell));
   } else if (key === "deltoidal" || key === "kisrhombille") {
     const h = hexagon(C, C, d * 0.44, 0);
     const mids: P[] = h.map((p, k) => [
@@ -558,16 +648,16 @@ function draw(rawKey: string): string[] {
       // a ring of kites round a centre (dual of rhombitrihexagonal)
       for (let k = 0; k < 6; k++) {
         parts.push(
-          shape([[C, C], mids[(k + 5) % 6]!, h[k]!, mids[k]!], k % 2 ? LIGHT : BLUE, 3),
+          shape([[C, C], mids[(k + 5) % 6]!, h[k]!, mids[k]!], k % 2 ? LIGHT : BASE, 3),
         );
       }
     } else {
       // a hexagon barycentrically cut into twelve right triangles
-      parts.push(shape(h));
-      for (const pt of [...h, ...mids]) parts.push(line([C, C], pt, DARK, 3));
+      parts.push(shape(h, BASE, 4, cell));
+      for (const pt of [...h, ...mids]) parts.push(line([C, C], pt, DARK, 3, cell));
     }
   } else if (SPHERES.includes(key)) {
-    parts.push(circle(C, C, d * 0.44));
+    parts.push(circle(C, C, d * 0.44, cell));
     if (key === "spheretri") {
       parts.push(badge(C, C, d * 0.2, "tri"));
     } else if (key === "snubdodec") {
@@ -602,6 +692,7 @@ function draw(rawKey: string): string[] {
               [C + d * 0.41 * Math.cos(a), C + d * 0.41 * Math.sin(a)],
               DARK,
               4,
+              cell,
             ),
           );
         }
@@ -611,31 +702,31 @@ function draw(rawKey: string): string[] {
     // an isometric cube: three visible rhombic faces, grid-lined (cube) or
     // bored through (the Menger frame)
     const h = hexagon(C, C, d * 0.4, -90); // h0 top, then clockwise
-    const faces: [P[], string][] = [
+    const faces: [P[], IconVariant][] = [
       [[h[0]!, h[1]!, [C, C], h[5]!], LIGHT], // top
-      [[h[1]!, h[2]!, h[3]!, [C, C]], BLUE], // right
+      [[h[1]!, h[2]!, h[3]!, [C, C]], BASE], // right
       [[h[5]!, [C, C], h[3]!, h[4]!], DARK], // left
     ];
     for (const [quad, fill] of faces) {
       if (key === "cube") {
-        parts.push(shape(quad, fill));
+        parts.push(shape(quad, fill, 4, cell));
         const [a, b, cc, dd] = quad as [P, P, P, P];
         for (const k of [1, 2]) {
           const t = k / 3;
-          parts.push(line(lerp(a, b, t), lerp(dd, cc, t)));
-          parts.push(line(lerp(a, dd, t), lerp(b, cc, t)));
+          parts.push(line(lerp(a, b, t), lerp(dd, cc, t), DARK, 3, cell));
+          parts.push(line(lerp(a, dd, t), lerp(b, cc, t), DARK, 3, cell));
         }
       } else {
         const fx = quad.reduce((s, p) => s + p[0], 0) / 4;
         const fy = quad.reduce((s, p) => s + p[1], 0) / 4;
         const hole: P[] = quad.map((p) => [fx + (p[0] - fx) * 0.44, fy + (p[1] - fy) * 0.44]);
-        parts.push(holed(quad, hole, fill));
+        parts.push(holed(quad, hole, fill, 4, cell));
       }
     }
   } else if (key === "steppedbipyramid") {
     // a terraced diamond: square slabs widest at the equator
     const widths = [0.34, 0.58, 0.82, 0.58, 0.34];
-    const shades = [LIGHT, LIGHT, BLUE, DARK, DARK];
+    const shades = [LIGHT, LIGHT, BASE, DARK, DARK];
     const slab = d * 0.135;
     const topY = C - (slab * widths.length) / 2;
     widths.forEach((w, idx) => {
@@ -650,25 +741,27 @@ function draw(rawKey: string): string[] {
             [C - ww / 2, y + slab],
           ],
           shades[idx],
+          4,
+          cell,
         ),
       );
     });
   } else if (key === "tetrahedron" || key === "tetraframe") {
     const outer = ngon(C, C + d * 0.04, d * 0.46, 3, -90);
-    const shades = [LIGHT, BLUE, DARK];
+    const shades = [LIGHT, BASE, DARK];
     if (key === "tetrahedron") {
       // seen down a vertex: outer triangle with edges to the centre
       for (let k = 0; k < 3; k++) {
         const [a, b] = [outer[k]!, outer[(k + 1) % 3]!];
-        parts.push(shape([a, b, [C, C]], shades[k]));
-        parts.push(line(lerp(a, b, 0.5), [C, C]));
-        parts.push(line(lerp(a, [C, C], 0.5), lerp(b, [C, C], 0.5)));
+        parts.push(shape([a, b, [C, C]], shades[k], 4, cell));
+        parts.push(line(lerp(a, b, 0.5), [C, C], DARK, 3, cell));
+        parts.push(line(lerp(a, [C, C], 0.5), lerp(b, [C, C], 0.5), DARK, 3, cell));
       }
     } else {
       // a level-1 Sierpiński tetrahedron: corner sub-triangles only
       const mids = outer.map((p, k) => lerp(p, outer[(k + 1) % 3]!, 0.5));
       for (let k = 0; k < 3; k++) {
-        parts.push(shape([outer[k]!, mids[k]!, mids[(k + 2) % 3]!], shades[k]));
+        parts.push(shape([outer[k]!, mids[k]!, mids[(k + 2) % 3]!], shades[k], 4, cell));
       }
     }
   } else if (key === "torus") {
@@ -687,10 +780,11 @@ function draw(rawKey: string): string[] {
           [d * 0.82, d * 0.8],
           [d * 0.18, d * 0.8],
         ],
-        BLUE,
+        BASE,
         0,
+        null,
       ),
-      ellipse(C, d * 0.8, d * 0.32, d * 0.12, BLUE, 0),
+      ellipse(C, d * 0.8, d * 0.32, d * 0.12, BASE, 0),
       ellipseLowerArc(C, d * 0.8, d * 0.32, d * 0.12),
       line([d * 0.18, d * 0.2], [d * 0.18, d * 0.8], DARK, 4),
       line([d * 0.82, d * 0.2], [d * 0.82, d * 0.8], DARK, 4),
@@ -719,7 +813,7 @@ function draw(rawKey: string): string[] {
       `<mask id="ms-klein-hole"><rect width="${d}" height="${d}" fill="#fff"/>` +
         `<path d="${ellipseArc(hx, hy, hrx, hry)}" fill="#000"/></mask>`,
       `<g mask="url(#ms-klein-hole)">`,
-      shape(tubePolygon(smoothCurve(control), d * 0.085)),
+      shape(tubePolygon(smoothCurve(control), d * 0.085), BASE, 4, null),
       // the bulb, over the neck's lower end so the neck dives behind it
       ellipse(d * 0.39, d * 0.67, d * 0.27, d * 0.25),
       `</g>`,
@@ -728,7 +822,7 @@ function draw(rawKey: string): string[] {
       )}"/>`,
     );
   } else {
-    parts.push(circle(C, C, d * 0.4, BLUE, 2));
+    parts.push(circle(C, C, d * 0.4, null, 2));
   }
   return parts;
 }

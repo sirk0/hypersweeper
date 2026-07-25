@@ -1,7 +1,6 @@
 import {
   BufferAttribute,
   BufferGeometry,
-  Color,
   DoubleSide,
   FrontSide,
   Group,
@@ -20,7 +19,7 @@ import {
   type Vec3,
 } from "../boards/core";
 import {
-  COLORS,
+  baseColorFor,
   glyphFor,
   isOpened,
   polygonInradius,
@@ -33,6 +32,7 @@ import {
 } from "./boardMesh";
 import { makeGlyphAtlas, type GlyphAtlas } from "./glyphAtlas";
 import { CellAnimations, rippleEntries, WIN_PER_CELL } from "./animations";
+import { cellPalette, classifyShapes, type CellPalette } from "./shapePalette";
 
 // The 3D counterpart of PolygonBoard: a Board3D's outward-wound surface
 // polygons become one merged geometry. On a closed surface each cell is an
@@ -61,19 +61,6 @@ const BASE_COLOR = "#8e8e8e"; // grout surface showing through the tile gaps
 
 const _inv = /* @__PURE__ */ new Matrix4(); // scratch for the world→local map
 
-// Wider hidden/revealed split than the flat palette: under 3D lighting the
-// faces of a curved surface pick up large shading differences of their own,
-// so the flat renderer's subtle tone step is not readable. Hidden tiles are
-// darker (the pygame HIDDEN_FACE tone), opened ones clearly lighter.
-const SOLID_COLORS: Record<CellVisual["kind"], Color> = {
-  hidden: new Color("#b4b4b4"),
-  flagged: new Color("#b4b4b4"),
-  wrongFlag: new Color("#b4b4b4"),
-  revealed: new Color("#efefef"),
-  mine: new Color("#efefef"),
-  exploded: COLORS.exploded,
-};
-
 interface CellGeom {
   start: number; // first vertex index in the position/normal/color buffers
   count: number; // vertex count for this cell (9 * polygon size)
@@ -82,6 +69,7 @@ interface CellGeom {
   normal: Vec3; // outward unit normal
   radius: number; // mean distance centroid -> vertices
   center: Vec3; // centre of the (currently raised or sunken) top face
+  palette: CellPalette; // hidden/opened tones for this cell's shape
 }
 
 export class SolidBoard extends Group implements BoardMesh {
@@ -131,6 +119,11 @@ export class SolidBoard extends Group implements BoardMesh {
     // A closed cell is a raised beveled button (3n top-fan + 6n bevel-ring
     // vertices = 3n triangles); a two-sided cell is a flat tile (n triangles).
     const perCell = (n: number) => (this.twoSided ? 3 * n : 9 * n);
+    // Shape colour coding: classed over the whole board at once, so a tiling
+    // the surface immersion has bent stays one colour instead of a gradient.
+    // The "solid" profile carries the wider hidden/opened split a curved,
+    // self-shading surface needs.
+    const tones = classifyShapes(board.polygons);
 
     this.order.forEach((cell, ci) => {
       const poly = board.polygons.get(cell)!;
@@ -152,6 +145,7 @@ export class SolidBoard extends Group implements BoardMesh {
         normal,
         radius,
         center: centroid,
+        palette: cellPalette(tones.get(cell)!, "solid"),
       });
       vertexCount += perCell(n);
       // How far this cell's drawn geometry reaches: a two-sided tile lies on
@@ -390,7 +384,7 @@ export class SolidBoard extends Group implements BoardMesh {
   }
 
   private writeColor(i: number): void {
-    const col = SOLID_COLORS[this.states[i]!.kind].clone();
+    const col = baseColorFor(this.states[i]!, this.geom[i]!.palette).clone();
     if (i === this.hovered && this.states[i]!.kind === "hidden") {
       col.offsetHSL(0, 0, 0.08);
     }

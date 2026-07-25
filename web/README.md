@@ -152,9 +152,10 @@ Practical knowledge for verifying changes by actually running the app
   the Klein `cellCycle`), `catalog.ts` / `presets.ts` (read `data/*.json`).
 - `src/render/` — one Three.js pipeline: `renderer.ts` (scene, ortho +
   perspective cameras, trackball rotation, resize, picking),
-  `boardMesh.ts` (shared cell-visual vocabulary — palette, glyph map, and
-  `isOpened`, the raised/sunken predicate both meshes cut their geometry
-  from), `polygonBoard.ts` / `solidBoard.ts` (merged beveled cell geometry —
+  `boardMesh.ts` (shared cell-visual vocabulary — the neutral palette, glyph
+  map, and `isOpened`, the raised/sunken predicate both meshes cut their
+  geometry from), `shapePalette.ts` (the shape colour code, below),
+  `polygonBoard.ts` / `solidBoard.ts` (merged beveled cell geometry —
   flat plane vs. solid surface — per-cell colours, hover, glyph quads; a
   closed cell is a raised button, an opened one is re-cut in place as a
   recess, which is what makes the two tell apart on a flat board lit
@@ -172,8 +173,37 @@ Practical knowledge for verifying changes by actually running the app
   `menu.ts` (home) and
   `icons.ts` (the menu glyphs — the pygame `_render_icon` shapes ported to
   inline SVG, keyed the same way: a tiling key, a family key, a mode name or a
-  home-page group key),
+  home-page group key; painted in the board's shape colours),
   both **rendered from the shared UI-screen config**.
+
+## Shape colour coding (`src/render/shapePalette.ts`)
+
+A cell's colour is derived from its polygon — nothing tags a cell with a
+shape, and nothing needs to. **Hue** comes from the side count (an even
+spectrum: 3 red, 4 orange, 5 yellow, 6 green, 8 teal, 12 blue, the 13-gon
+hat violet), **chroma** from how regular the polygon is
+(`(minAngle/maxAngle + minSide/maxSide) / 2`, 1 for a regular polygon), and
+**lightness** from the cell's state — taken verbatim from the grays this
+replaced, so the hidden→opened step is exactly the one the board always had.
+The maths runs in OkLCh, not HSL, because HSL lightness is not perceptual and
+the constant hidden/opened contrast across hues depends on it. Every knob
+lives in the one `SHAPE_PALETTE` block.
+
+Two things that are easy to get wrong when touching this:
+
+- **Class shapes per board, not per cell.** The surface immersions stretch
+  their tiles (a torus square measures ~0.7, and no two cells alike), so
+  `classifyShapes` groups a board's cells by side count and clusters their
+  regularities; every member of a cluster gets the cluster's colour. Colouring
+  each cell by its own measurement paints a saturation gradient instead.
+- **Icons share the hue, not the tone.** The board tint is deliberately faint;
+  at 38 px it would read as gray, so the icon profile puts each hue near the
+  lightness where it is most colourful. `shape()` reads the tone off the
+  polygon it is drawing — a new icon needs an `ICON_TONES` row only when its
+  art is *not* a drawing of the board's cell (a subdivided outer polygon, an
+  idealised stand-in for an irregular tile, a solid in projection), and a
+  `null` tone opts out into the old indigo chrome (tubes, frames, the question
+  mark).
 - `src/config/screens.ts` — typed accessor over `../data/ui/screens.json`.
 - `src/testHook.ts` — the `window.__ms` seam Playwright drives.
 
