@@ -97,15 +97,16 @@ export function makeGlyphAtlas(cellPx = 192): GlyphAtlas {
 }
 
 /**
- * A flag with the detail a big cell deserves: a tapered mast standing on a
- * two-tone plinth, a knob on top, and a pennant whose edges curve as cloth
- * does — lit across its width and folded darker where it falls away, with the
- * hoist creased against the mast.
+ * A flag with the detail a big cell deserves: a tapered mast, knobbed on top,
+ * planted in a splayed stand on a ground slab — mast, stand and slab all on one
+ * centre line — flying a pennant whose edges curve as cloth does, lit across
+ * its width, folded darker where it falls away and creased at the hoist.
  *
- * Drawn rather than set as an emoji on purpose: 🚩 is a different picture on
- * every platform (and missing outright on some Linux/CI fonts), while the
- * board's flag has to line up with the same flag the menu and the header
- * smiley draw.
+ * Drawn rather than set as an emoji: the app ships two fonts (Rubik for the
+ * board, DSEG7 for the counters) and neither carries 🚩, so an emoji flag would
+ * fall through to whatever the platform has — a different picture on every
+ * device, and nothing at all under the headless browser the visual baselines
+ * are shot in.
  */
 function drawFlag(
   ctx: CanvasRenderingContext2D,
@@ -113,39 +114,43 @@ function drawFlag(
   cy: number,
   s: number,
 ): void {
-  const poleX = cx - s * 0.13;
-  const top = cy - s * 0.34;
-  const foot = cy + s * 0.29;
+  // The mast, its stand and the ground slab all share one centre line — a flag
+  // whose pole meets its base off-centre reads as a mistake at any size.
+  const poleX = cx - s * 0.1;
+  const top = cy - s * 0.36;
+  const stand = cy + s * 0.24; // where the mast disappears into the stand
+  const ground = cy + s * 0.33;
 
-  // plinth: a shallow trapezoid on a base slab
+  // mast, tapering upward, ending in a knob; drawn first so the stand's
+  // splayed foot closes over its base
+  ctx.fillStyle = "#2b2f3a";
+  ctx.beginPath();
+  ctx.moveTo(poleX - s * 0.019, top);
+  ctx.lineTo(poleX + s * 0.019, top);
+  ctx.lineTo(poleX + s * 0.03, ground);
+  ctx.lineTo(poleX - s * 0.03, ground);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(poleX, top, s * 0.036, 0, Math.PI * 2);
+  ctx.fill();
+
+  // stand: a foot splaying out from the mast, on a ground slab
   ctx.fillStyle = "#3a3f4b";
   ctx.beginPath();
-  ctx.moveTo(cx - s * 0.11, foot - s * 0.05);
-  ctx.lineTo(cx + s * 0.11, foot - s * 0.05);
-  ctx.lineTo(cx + s * 0.2, foot + s * 0.05);
-  ctx.lineTo(cx - s * 0.2, foot + s * 0.05);
+  ctx.moveTo(poleX - s * 0.055, stand);
+  ctx.lineTo(poleX + s * 0.055, stand);
+  ctx.lineTo(poleX + s * 0.16, ground);
+  ctx.lineTo(poleX - s * 0.16, ground);
   ctx.closePath();
   ctx.fill();
   ctx.fillStyle = "#22252d";
   ctx.beginPath();
-  ctx.moveTo(cx - s * 0.2, foot + s * 0.05);
-  ctx.lineTo(cx + s * 0.2, foot + s * 0.05);
-  ctx.lineTo(cx + s * 0.2, foot + s * 0.09);
-  ctx.lineTo(cx - s * 0.2, foot + s * 0.09);
+  ctx.moveTo(poleX - s * 0.19, ground);
+  ctx.lineTo(poleX + s * 0.19, ground);
+  ctx.lineTo(poleX + s * 0.19, ground + s * 0.05);
+  ctx.lineTo(poleX - s * 0.19, ground + s * 0.05);
   ctx.closePath();
-  ctx.fill();
-
-  // mast, tapering toward the top, with a knob
-  ctx.fillStyle = "#2b2f3a";
-  ctx.beginPath();
-  ctx.moveTo(poleX - s * 0.018, top);
-  ctx.lineTo(poleX + s * 0.018, top);
-  ctx.lineTo(poleX + s * 0.032, foot - s * 0.04);
-  ctx.lineTo(poleX - s * 0.032, foot - s * 0.04);
-  ctx.closePath();
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(poleX, top, s * 0.035, 0, Math.PI * 2);
   ctx.fill();
 
   // the cloth: top edge lifting away from the mast, fly falling back
@@ -225,10 +230,14 @@ function drawCross(
 }
 
 /**
- * The mine as the bomb it is meant to read as: a shaded iron ball with tapered
- * spikes, a fuse curling out of its cap and a lit spark on the end — the
- * picture 💣 draws, without depending on an emoji font the browser may render
- * in a wholly different style (or, headless, not at all).
+ * The mine as a moored sea mine: a shaded iron sphere studded with Hertz
+ * horns, split by its casing seam and shackled to a mooring ring below. No
+ * fuse and no spark — this is the thing the board is named for, sitting there
+ * waiting, not a cartoon bomb going off.
+ *
+ * Drawn rather than set as an emoji for the same reason as the flag: neither
+ * shipped font carries 💣, so it would render differently on every device and
+ * not at all headless.
  */
 function drawMine(
   ctx: CanvasRenderingContext2D,
@@ -236,66 +245,40 @@ function drawMine(
   cy: number,
   s: number,
 ): void {
-  // Sized so the spikes, the fuse and its spark all stay inside the slot — the
-  // atlas samples with a linear filter, and anything over the edge bleeds into
-  // the neighbouring glyph.
-  const r = s * 0.25;
-  const bx = cx - s * 0.06;
-  const by = cy + s * 0.11;
+  // Sized so the horns and the mooring ring stay inside the slot — the atlas
+  // samples with a linear filter, and anything over the edge bleeds into the
+  // neighbouring glyph.
+  const r = s * 0.26;
+  const bx = cx;
+  const by = cy - s * 0.03;
 
-  // spikes, tapering out of the body
-  ctx.fillStyle = "#22252d";
+  // Hertz horns: stubby lead cylinders with rounded ends, offset half a step
+  // so none of them points straight down into the mooring ring
+  ctx.strokeStyle = "#4b5261";
+  ctx.lineWidth = r * 0.28;
+  ctx.lineCap = "round";
   for (let k = 0; k < 8; k++) {
     const a = (k * Math.PI) / 4 + Math.PI / 8;
     const [ca, sa] = [Math.cos(a), Math.sin(a)];
-    const [px, py] = [-sa, ca]; // perpendicular
-    const w = r * 0.26;
     ctx.beginPath();
-    ctx.moveTo(bx + px * w, by + py * w);
-    ctx.lineTo(bx + ca * r * 1.45, by + sa * r * 1.45);
-    ctx.lineTo(bx - px * w, by - py * w);
-    ctx.closePath();
-    ctx.fill();
+    ctx.moveTo(bx + ca * r * 0.9, by + sa * r * 0.9);
+    ctx.lineTo(bx + ca * r * 1.34, by + sa * r * 1.34);
+    ctx.stroke();
   }
 
-  // fuse: a cord out of the cap, with a spark on the end
-  ctx.strokeStyle = "#6b5238";
-  ctx.lineWidth = s * 0.045;
-  ctx.lineCap = "round";
+  // mooring ring, hanging from a shackle under the casing
+  ctx.strokeStyle = "#3a3f4b";
+  ctx.lineWidth = r * 0.16;
   ctx.beginPath();
-  ctx.moveTo(bx + r * 0.34, by - r * 0.92);
-  ctx.bezierCurveTo(
-    bx + r * 1.05,
-    by - r * 1.3,
-    bx + r * 0.65,
-    by - r * 1.7,
-    bx + r * 1.25,
-    by - r * 1.72,
-  );
+  ctx.moveTo(bx, by + r * 0.9);
+  ctx.lineTo(bx, by + r * 1.2);
   ctx.stroke();
-  const spark = ctx.createRadialGradient(
-    bx + r * 1.32,
-    by - r * 1.76,
-    0,
-    bx + r * 1.32,
-    by - r * 1.76,
-    r * 0.42,
-  );
-  spark.addColorStop(0, "#fff3c4");
-  spark.addColorStop(0.45, "#ffb020");
-  spark.addColorStop(1, "rgba(255, 120, 0, 0)");
-  ctx.fillStyle = spark;
+  ctx.lineWidth = r * 0.13;
   ctx.beginPath();
-  ctx.arc(bx + r * 1.32, by - r * 1.76, r * 0.42, 0, Math.PI * 2);
-  ctx.fill();
+  ctx.arc(bx, by + r * 1.42, r * 0.24, 0, Math.PI * 2);
+  ctx.stroke();
 
-  // the cap the fuse leaves through
-  ctx.fillStyle = "#3a3f4b";
-  ctx.beginPath();
-  ctx.ellipse(bx + r * 0.3, by - r * 0.88, r * 0.24, r * 0.16, -0.6, 0, Math.PI * 2);
-  ctx.fill();
-
-  // body: lit from the upper left, with a rim of reflected light below right
+  // casing: lit from the upper left, darkening to a rim at the lower right
   const shell = ctx.createRadialGradient(
     bx - r * 0.35,
     by - r * 0.4,
@@ -311,15 +294,23 @@ function drawMine(
   ctx.beginPath();
   ctx.arc(bx, by, r, 0, Math.PI * 2);
   ctx.fill();
-  ctx.strokeStyle = "rgba(150, 160, 180, 0.35)";
-  ctx.lineWidth = s * 0.012;
+
+  // the seam where the two halves of the casing bolt together
+  ctx.strokeStyle = "rgba(12, 14, 20, 0.55)";
+  ctx.lineWidth = r * 0.08;
   ctx.beginPath();
-  ctx.arc(bx, by, r * 0.97, Math.PI * 0.15, Math.PI * 0.75);
+  ctx.ellipse(bx, by + r * 0.12, r * 0.99, r * 0.3, 0, Math.PI * 0.02, Math.PI * 0.98);
+  ctx.stroke();
+  // reflected light along the lower rim
+  ctx.strokeStyle = "rgba(150, 160, 180, 0.3)";
+  ctx.lineWidth = r * 0.05;
+  ctx.beginPath();
+  ctx.arc(bx, by, r * 0.95, Math.PI * 0.2, Math.PI * 0.7);
   ctx.stroke();
 
   // specular highlight
-  ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+  ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
   ctx.beginPath();
-  ctx.ellipse(bx - r * 0.36, by - r * 0.38, r * 0.24, r * 0.16, -0.7, 0, Math.PI * 2);
+  ctx.ellipse(bx - r * 0.38, by - r * 0.36, r * 0.22, r * 0.15, -0.7, 0, Math.PI * 2);
   ctx.fill();
 }

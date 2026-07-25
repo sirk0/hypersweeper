@@ -6,9 +6,10 @@
 // Where an icon stands for something the app can already build, it is drawn
 // from that thing rather than approximated: a tiling row shows a patch of the
 // real tiling, a sphere row the real solid projected, a surface row the real
-// immersion meshed and shaded. What is left hand-drawn is only what has no
-// geometry to read — the question mark, the shaped boards, the cube and
-// tetrahedron and their frames.
+// immersion meshed and shaded, the two frames and the stepped bipyramid the
+// real 3D board. What is left hand-drawn is only what has no geometry to read
+// or reads better as a symbol — the question mark, the shaped flat boards, the
+// cube, the cube frame and the tetrahedron.
 
 import {
   iconHex,
@@ -23,6 +24,8 @@ import {
   snubDodecahedronBoard,
   sphereBoard,
   sphereTriangleBoard,
+  steppedBipyramidBoard,
+  tetrahedronFrameBoard,
 } from "../boards/solids";
 import type { Board3D } from "../boards/core";
 
@@ -444,22 +447,30 @@ function tilingPatch(key: string, style: PatchStyle = styleFor(key)): string[] {
 
 type V3 = readonly [number, number, number];
 
+// Built at the easy preset's parameters (data/presets.json), so an icon has as
+// many cells as the board a tap on that row opens.
 const SOLID_BUILDERS: Record<string, () => Board3D> = {
   sphere: () => sphereBoard(0),
   snubdodec: () => snubDodecahedronBoard(0),
   c80: () => c80Board(0),
   c180: () => c180Board(0),
   spheretri: () => sphereTriangleBoard(0),
+  tetraframe: () => tetrahedronFrameBoard(0, 2),
+  steppedbipyramid: () => steppedBipyramidBoard(7, 4, 0),
 };
 
 /** How each solid is turned before projecting, in degrees about x then y —
  * chosen so the face the board is named for sits in the middle of the icon. */
-const SOLID_VIEW: Record<string, [number, number]> = {
+const SOLID_VIEW: Record<string, [number, number] | [number, number, number]> = {
   sphere: [-18, 12],
   snubdodec: [-14, 20],
   c80: [-20, 10],
   c180: [-20, 10],
   spheretri: [-10, 18],
+  // Seen from just above the equator: from any higher the widest terrace hides
+  // the whole lower pyramid, and the icon stops being a bipyramid at all.
+  steppedbipyramid: [-85, 0, 28],
+  tetraframe: [-50, 18, 45],
 };
 
 const solidCache = new Map<string, Board3D>();
@@ -470,41 +481,88 @@ function solidBoard(key: string): Board3D {
   return board;
 }
 
-function rotate(p: V3, rx: number, ry: number): V3 {
+/** Spin about z, then pitch about x, then yaw about y. The spin comes first so
+ * a board with an axis of its own — the bipyramid stacks along z, the
+ * Sierpinski tetrahedron stands on a z-diagonal — can be turned about that axis
+ * before it is tipped toward the viewer. */
+function rotate(p: V3, rx: number, ry: number, rz = 0): V3 {
+  const [sz, cz] = [Math.sin(rz), Math.cos(rz)];
+  const [x0, y0] = [p[0] * cz - p[1] * sz, p[0] * sz + p[1] * cz];
   const [sx, cx] = [Math.sin(rx), Math.cos(rx)];
   const [sy, cy] = [Math.sin(ry), Math.cos(ry)];
-  const y = p[1] * cx - p[2] * sx;
-  const z1 = p[1] * sx + p[2] * cx;
-  return [p[0] * cy + z1 * sy, y, -p[0] * sy + z1 * cy];
+  const y = y0 * cx - p[2] * sx;
+  const z1 = y0 * sx + p[2] * cx;
+  return [x0 * cy + z1 * sy, y, -x0 * sy + z1 * cy];
 }
 
-/** The visible half of a closed solid, as icon-space polygons. Faces are culled
- * and shaded by how squarely they face the viewer — the same cue that makes the
- * board's 3D modes read as round — and inset a little so the tiles show their
- * seams, as the board's grout does. */
-function solidFaces(key: string): string[] {
+/**
+ * The visible half of a 3D board, as icon-space polygons: every cell shaded by
+ * how squarely it faces the viewer — the same cue that makes the board's 3D
+ * modes read as solid — and inset a little so the tiles show their seams, as
+ * the board's grout does.
+ *
+ * Which face is visible is decided one of two ways. A **round** board (every
+ * sphere-family solid) is convex about the origin, so a cell faces the viewer
+ * exactly when its centroid does — cheap, and immune to how the builder wound
+ * its polygons. A **blocky** board (the frames, the stepped bipyramid) is not:
+ * a tunnel wall or the underside of an overhang points away from its own
+ * centroid direction. Those take the polygon's own normal, which the builders
+ * wind outward for the renderer's back-face culling, and are painted back to
+ * front so a near tile covers the far one behind it.
+ */
+function solidFaces(key: string, kind: "round" | "blocky" = "round"): string[] {
   const board = solidBoard(key);
-  const [rxDeg, ryDeg] = SOLID_VIEW[key] ?? [-18, 15];
-  const [rx, ry] = [rxDeg * (Math.PI / 180), ryDeg * (Math.PI / 180)];
-  const scale = (D * 0.46) / board.radius;
-  const out: string[] = [];
+  const [rxDeg, ryDeg, rzDeg = 0] = SOLID_VIEW[key] ?? [-18, 15];
+  const rad = Math.PI / 180;
+  const [rx, ry, rz] = [rxDeg * rad, ryDeg * rad, rzDeg * rad];
+  const faces: { pts: P[]; depth: number; facing: number; tone: ShapeTone }[] = [];
+  const box: number[][] = [];
   for (const poly of board.polygons.values()) {
-    const spun = poly.map((v) => rotate(v as V3, rx, ry));
+    const spun = poly.map((v) => rotate(v as V3, rx, ry, rz));
     const mid: V3 = [
       spun.reduce((s, v) => s + v[0], 0) / spun.length,
       spun.reduce((s, v) => s + v[1], 0) / spun.length,
       spun.reduce((s, v) => s + v[2], 0) / spun.length,
     ];
-    const facing = mid[2] / Math.hypot(mid[0], mid[1], mid[2]);
+    box.push(...spun.map((v) => [v[0], v[1]]));
+    let facing: number;
+    if (kind === "round") {
+      facing = mid[2] / (Math.hypot(mid[0], mid[1], mid[2]) || 1);
+    } else {
+      const [a, b, c] = [spun[0]!, spun[1]!, spun[2]!];
+      const e1 = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+      const e2 = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
+      const nx = e1[1]! * e2[2]! - e1[2]! * e2[1]!;
+      const ny = e1[2]! * e2[0]! - e1[0]! * e2[2]!;
+      const nz = e1[0]! * e2[1]! - e1[1]! * e2[0]!;
+      facing = nz / (Math.hypot(nx, ny, nz) || 1);
+    }
     if (facing <= 0.06) continue; // back-facing, and the rim it would alias with
-    const pts: P[] = spun.map((v) => [
-      C + (mid[0] + (v[0] - mid[0]) * 0.9) * scale,
-      C - (mid[1] + (v[1] - mid[1]) * 0.9) * scale,
-    ]);
-    const variant = facing > 0.8 ? LIGHT : facing > 0.45 ? BASE : DARK;
-    out.push(shape(pts, variant, 0, shapeMetrics(poly), D * 0.008));
+    // Blocky boards have far more, far smaller cells than a sphere's, so their
+    // seams are cut thinner or the tiles dissolve into speckle.
+    const inset = kind === "round" ? 0.9 : 0.94;
+    faces.push({
+      pts: spun.map((v) => [mid[0] + (v[0] - mid[0]) * inset, mid[1] + (v[1] - mid[1]) * inset]),
+      depth: mid[2],
+      facing,
+      tone: shapeMetrics(poly),
+    });
   }
-  return out;
+  // Fit the silhouette rather than the bounding sphere, so a solid that is not
+  // round (a bipyramid, a frame) still fills the icon box.
+  const span = (k: 0 | 1): number =>
+    Math.max(...box.map((p) => p[k]!)) - Math.min(...box.map((p) => p[k]!));
+  const scale = (D * 0.92) / Math.max(span(0), span(1));
+  faces.sort((f, g) => f.depth - g.depth);
+  return faces.map((f) =>
+    shape(
+      f.pts.map(([x, y]) => [C + x * scale, C - y * scale] as P),
+      f.facing > 0.8 ? LIGHT : f.facing > 0.45 ? BASE : DARK,
+      0,
+      f.tone,
+      D * 0.008,
+    ),
+  );
 }
 
 // -- the four surfaces -------------------------------------------------------
@@ -810,79 +868,64 @@ function draw(rawKey: string): string[] {
           parts.push(line(lerp(a, dd, t), lerp(b, cc, t), DARK, 3, cell));
         }
       } else {
-        // The frame is bored right through, so the hole is a shaft, not a
-        // window: sink a copy of it toward the cube's centre, wall the two
-        // sides that face the viewer, and let the far opening go dark. Drawn
-        // before the face, whose punched-out hole is what they show through.
-        const fx = quad.reduce((s, p) => s + p[0], 0) / 4;
-        const fy = quad.reduce((s, p) => s + p[1], 0) / 4;
-        const hole: P[] = quad.map((p) => [fx + (p[0] - fx) * 0.44, fy + (p[1] - fy) * 0.44]);
-        const depth = 0.5;
-        const sunk: P[] = hole.map((p) => [
-          p[0] + (C - fx) * depth,
-          p[1] + (C - fy) * depth,
-        ]);
+        // A level-1 Menger sponge face: three by three unit squares with the
+        // middle one bored away. The bore goes right through, so it is a shaft
+        // and not a window — sink a copy of the missing square toward the
+        // cube's centre, wall the two sides that face the viewer, and let the
+        // far opening go dark. The eight tiles are drawn over the top, so the
+        // face is tiled the way the board is played on.
+        const [a, b, cc, dd] = quad as [P, P, P, P];
+        const at = (u: number, v: number): P => {
+          const top = lerp(a, b, u);
+          const bottom = lerp(dd, cc, u);
+          return lerp(top, bottom, v);
+        };
+        const hole: P[] = [at(1 / 3, 1 / 3), at(2 / 3, 1 / 3), at(2 / 3, 2 / 3), at(1 / 3, 2 / 3)];
+        const fx = (hole[0]![0] + hole[2]![0]) / 2;
+        const fy = (hole[0]![1] + hole[2]![1]) / 2;
+        const sunk: P[] = hole.map((p) => [p[0] + (C - fx) * 0.75, p[1] + (C - fy) * 0.75]);
         const area = (pts: P[]): number =>
           pts.reduce(
             (s, p, i) => s + (p[0] * pts[(i + 1) % pts.length]![1] - pts[(i + 1) % pts.length]![0] * p[1]),
             0,
           );
         const skin = tint(fill, cell ?? null);
-        parts.push(poly(sunk, darker(skin, 0.72), CORNER * 0.5));
+        parts.push(poly(sunk, darker(skin, 0.72), CORNER * 0.4));
         for (let k = 0; k < 4; k++) {
           const wall: P[] = [hole[k]!, hole[(k + 1) % 4]!, sunk[(k + 1) % 4]!, sunk[k]!];
           // the two walls turned toward the viewer wind the way the face does
           if (Math.sign(area(wall)) !== Math.sign(area(quad))) continue;
-          parts.push(poly(wall, darker(skin, 0.42), CORNER * 0.5));
+          parts.push(poly(wall, darker(skin, 0.42), CORNER * 0.4));
         }
-        parts.push(holed(quad, hole, fill, 4, cell));
+        for (let i = 0; i < 3; i++) {
+          for (let j = 0; j < 3; j++) {
+            if (i === 1 && j === 1) continue; // the bore
+            const tile: P[] = [
+              at(i / 3, j / 3),
+              at((i + 1) / 3, j / 3),
+              at((i + 1) / 3, (j + 1) / 3),
+              at(i / 3, (j + 1) / 3),
+            ];
+            parts.push(shape(tile, fill, 3, cell, CORNER * 0.4));
+          }
+        }
       }
     }
-  } else if (key === "steppedbipyramid") {
-    // The real solid's profile: square terraces stepping 7-5-3-1 out from the
-    // equator (the easy board's `base` 7 over 4 levels), so the apex is the
-    // single cell it actually is. Seen almost edge-on — from any higher the
-    // wider terrace above would hide the whole lower pyramid — with the sliver
-    // of each terrace's top surface that peeks out beside the one above it.
-    const sides = [1, 3, 5, 7, 5, 3, 1];
-    const u = (d * 0.86) / 7;
-    const ledge = u * 0.34;
-    const top = C - (u * sides.length) / 2;
-    // bottom up, so each terrace covers the hidden middle of the one below
-    for (let i = sides.length - 1; i >= 0; i--) {
-      const w = (sides[i]! * u) / 2;
-      const y = top + i * u;
-      const variant = i <= 1 ? LIGHT : i <= 3 ? BASE : DARK;
-      parts.push(
-        shape([[C - w, y], [C + w, y], [C + w, y + u], [C - w, y + u]], variant, 4, cell, u * 0.12),
-      );
-      parts.push(
-        shape(
-          [[C - w, y - ledge], [C + w, y - ledge], [C + w, y], [C - w, y]],
-          LIGHT,
-          4,
-          cell,
-          u * 0.12,
-        ),
-      );
-    }
-  } else if (key === "tetrahedron" || key === "tetraframe") {
+  } else if (key === "steppedbipyramid" || key === "tetraframe") {
+    // Both are the real board projected — a bipyramid whose terraces really do
+    // step 7-5-3-1 out from the equator, and a Sierpinski tetrahedron with its
+    // four sub-tetrahedra and the hollow between them, tiled the way they are
+    // played on.
+    parts.push(...solidFaces(key, "blocky"));
+  } else if (key === "tetrahedron") {
+    // seen down a vertex: outer triangle with edges to the centre
     const outer = ngon(C, C + d * 0.04, d * 0.46, 3, -90);
     const shades = [LIGHT, BASE, DARK];
-    if (key === "tetrahedron") {
-      // seen down a vertex: outer triangle with edges to the centre
-      for (let k = 0; k < 3; k++) {
-        const [a, b] = [outer[k]!, outer[(k + 1) % 3]!];
-        parts.push(shape([a, b, [C, C]], shades[k], 4, cell));
-        parts.push(line(lerp(a, b, 0.5), [C, C], DARK, 3, cell));
-        parts.push(line(lerp(a, [C, C], 0.5), lerp(b, [C, C], 0.5), DARK, 3, cell));
-      }
-    } else {
-      // a level-1 Sierpiński tetrahedron: corner sub-triangles only
-      const mids = outer.map((p, k) => lerp(p, outer[(k + 1) % 3]!, 0.5));
-      for (let k = 0; k < 3; k++) {
-        parts.push(shape([outer[k]!, mids[k]!, mids[(k + 2) % 3]!], shades[k], 4, cell));
-      }
+    for (let k = 0; k < 3; k++) {
+      const [a, b] = [outer[k]!, outer[(k + 1) % 3]!];
+      parts.push(shape([a, b, [C, C]], shades[k], 4, cell));
+      parts.push(line(lerp(a, b, 0.5), [C, C], DARK, 3, cell));
+      parts.push(line(lerp(a, [C, C], 0.5), lerp(b, [C, C], 0.5), DARK, 3, cell));
     }
   } else if (key === "torus") {
     parts.push(...surfaceMesh(TORUS, { view: [-62, 0] }));
