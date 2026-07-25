@@ -196,6 +196,18 @@ Practical knowledge for verifying changes by actually running the app
   (headless Chromium has no toolbar). One trap: the canvas is a *replaced*
   element, so state both its width and height — an auto one resolves to the
   drawing buffer's size, not to the offsets.
+- **A solid is framed by its silhouette, not by its bounding sphere**
+  (`BoardRenderer.frameSolid`). Boards are scaled to the unit sphere, but only
+  a ball fills one: a cylinder or a Klein bottle covered about half the width
+  of a phone screen and floated in a sea of background. The camera is instead
+  fit to the board's hull points (`BoardView.hull`, collected by
+  `solidBoard.ts`) under the *current* rotation — aimed at the centre of that
+  rotated hull, since an immersed surface does not sit centred on the board's
+  origin — and re-fit on every drag, so the board stays framed edge to edge as
+  it turns instead of being cropped by a tighter-than-worst-case zoom. The fit
+  is clamped between the old sphere fit (never smaller than before) and
+  `MAX_SOLID_ZOOM` times closer (no fisheye on a board seen edge-on, and a
+  bound on how much the framing can change mid-drag).
 
 ## Shape colour coding (`src/render/shapePalette.ts`)
 

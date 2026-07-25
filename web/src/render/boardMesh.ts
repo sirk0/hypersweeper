@@ -86,10 +86,14 @@ export function glyphFor(visual: CellVisual): Glyph | null {
 
 /** How the renderer should frame the mesh: a flat board is fit into an
  * orthographic frustum by extent; a solid is scaled to the unit sphere and
- * viewed with the perspective camera. */
+ * viewed with the perspective camera. `hull` carries the solid's outermost
+ * drawn points (mesh-local, xyz triples) so the camera can be fit to the
+ * board's real silhouette at its current orientation — the unit sphere is a
+ * loose bound for the flat ones (a torus, a cylinder, the Klein bottle),
+ * which would otherwise float in the middle of a phone screen. */
 export type BoardView =
   | { kind: "flat"; width: number; height: number }
-  | { kind: "solid"; radius: number };
+  | { kind: "solid"; radius: number; hull: Float32Array };
 
 /** A cell's anchor in mesh-local coordinates: the centre of its (raised) top
  * face and the outward face normal — what picking feedback, glyph placement
