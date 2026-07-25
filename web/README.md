@@ -209,6 +209,9 @@ Three things that are easy to get wrong when touching this:
   `classifyShapes` groups a board's cells by side count and clusters their
   regularities; every member of a cluster gets the cluster's colour. Colouring
   each cell by its own measurement paints a saturation gradient instead.
+  Clusters the palette would paint alike are then merged, so a projection that
+  leaves some tiles exact and stretches the rest — the geodesic sphere's
+  triangles split 0.85/1.00 — stays one shape in one colour.
 - **Icons share the hue, not the tone.** The board tint is deliberately faint;
   at 38 px it would read as gray, so the icon profile puts each hue near the
   lightness where it is most colourful. `shape()` reads the tone off the

@@ -124,6 +124,19 @@ describe("per-board shape classing", () => {
     }
   });
 
+  it("does not split a tiling the projection stretched into two shapes", () => {
+    // The geodesic sphere's 80 triangles measure 0.85 (60 of them, stretched by
+    // the projection) and 1.00, but both are a regular triangle as far as the
+    // palette is concerned, so they must come out one colour rather than two.
+    for (const mode of ["spheretri", "snubdodec"]) {
+      const triangles = [...classifyShapes(buildBoard(mode, "easy").polygons).values()].filter(
+        (t) => t.sides === 3,
+      );
+      expect(new Set(triangles.map((t) => t.regularity)).size).toBe(1);
+      for (const t of triangles) expect(t.variantCount).toBe(1);
+    }
+  });
+
   it("marks how many shapes share a side count", () => {
     const penrose = [...classifyShapes(buildBoard("penrose", "easy").polygons).values()];
     expect(new Set(penrose.map((t) => t.variant))).toEqual(new Set([0, 1]));

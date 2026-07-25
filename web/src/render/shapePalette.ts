@@ -146,10 +146,11 @@ export const SHAPE_PALETTE = {
   },
 
   /** Per-board shape classing (see `classifyShapes`): where to split the
-   * regularity line, what grid to snap a class to, and the share of its side
-   * count a class must reach to count as a shape of its own rather than a few
-   * cells a surface seam stretched.  */
-  cluster: { gap: 0.08, snap: 0.05, minShare: 0.08 },
+   * regularity line, what grid to snap a class to, the share of its side count
+   * a class must reach to count as a shape of its own rather than a few cells a
+   * surface seam stretched, and how far apart two classes must land on the
+   * cleanliness scale to be different *shapes* at all. */
+  cluster: { gap: 0.08, snap: 0.05, minShare: 0.08, minCleanGap: 0.15 },
 } as const;
 
 // -- OkLab / OkLCh <-> sRGB --------------------------------------------------
@@ -331,6 +332,13 @@ export function shapeMetrics(poly: readonly (readonly number[])[]): ShapeTone {
  * cluster's median snapped to a coarse grid. A torus of squares comes out one
  * flat colour; Penrose still splits into its thick and thin rhombi, whose
  * regularities are far apart.
+ *
+ * Clusters that the palette would paint the same are then merged back into
+ * one. A sphere of geodesic triangles measures 0.85 and 1.00 — the projection
+ * stretches sixty of the eighty — but both are simply "a regular triangle" to
+ * the colour model, and splitting them would hand one group a different hue
+ * for a difference the scheme does not otherwise draw. Penrose's rhombi, at
+ * 0.60 and 0.85, land far enough apart to survive.
  */
 export function classifyShapes<K>(
   polygons: Iterable<[K, readonly (readonly number[])[]]>,
@@ -345,7 +353,7 @@ export function classifyShapes<K>(
     group.push(tone.regularity);
   }
 
-  const { gap, snap, minShare } = SHAPE_PALETTE.cluster;
+  const { gap, snap, minShare, minCleanGap } = SHAPE_PALETTE.cluster;
   // sides -> the representative regularity of each distinct shape, ascending
   const classes = new Map<number, number[]>();
   for (const [sides, values] of bySides) {
@@ -365,10 +373,24 @@ export function classifyShapes<K>(
     const floor = values.length * minShare;
     let kept = clusters.filter((c) => c.length >= floor);
     if (!kept.length) kept = [clusters.reduce((a, b) => (b.length > a.length ? b : a))];
-    classes.set(
-      sides,
-      kept.map((c) => Math.round(c[Math.floor(c.length / 2)]! / snap) * snap),
-    );
+
+    // Collapse clusters the palette would paint alike (see the doc comment):
+    // the survivor is the one with the most cells, so a projection's handful of
+    // exact tiles does not outvote the many it stretched.
+    const shapes: { value: number; count: number }[] = [];
+    for (const c of kept) {
+      const value = Math.round(c[Math.floor(c.length / 2)]! / snap) * snap;
+      const previous = shapes[shapes.length - 1];
+      if (previous && cleanliness(value) - cleanliness(previous.value) < minCleanGap) {
+        if (c.length > previous.count) {
+          previous.value = value;
+          previous.count = c.length;
+        }
+        continue;
+      }
+      shapes.push({ value, count: c.length });
+    }
+    classes.set(sides, shapes.map((s) => s.value));
   }
 
   const toned = new Map<K, ShapeTone>();
