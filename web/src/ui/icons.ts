@@ -1,9 +1,14 @@
-// Menu icons — the flat modern indigo glyphs the pygame menu draws
-// (`_render_icon` in gui.py), ported to inline SVG so the two front-ends show
-// the same picture for the same row. Every icon is drawn in a 0..100 box (the
-// pygame code's `d`), so the coordinate expressions below match gui.py
-// one-for-one; pygame stroke widths are given in its 352-unit supersampled
-// space and scaled here by `sw`.
+// Menu icons, as inline SVG in a 0..100 box (the pygame menu's `d`, so the
+// coordinate expressions below still read like the `_render_icon` shapes they
+// grew out of; its stroke widths are given in a 352-unit supersampled space and
+// scaled here by `sw`).
+//
+// Where an icon stands for something the app can already build, it is drawn
+// from that thing rather than approximated: a tiling row shows a patch of the
+// real tiling, a sphere row the real solid projected, a surface row the real
+// immersion meshed and shaded. What is left hand-drawn is only what has no
+// geometry to read — the question mark, the shaped boards, the cube and
+// tetrahedron and their frames.
 
 import {
   iconHex,
@@ -11,6 +16,15 @@ import {
   type IconVariant,
   type ShapeTone,
 } from "../render/shapePalette";
+import { ARCH_TILINGS, archTemplate } from "../boards/tilings";
+import {
+  c80Board,
+  c180Board,
+  snubDodecahedronBoard,
+  sphereBoard,
+  sphereTriangleBoard,
+} from "../boards/solids";
+import type { Board3D } from "../boards/core";
 
 const D = 100;
 const C = D / 2;
@@ -78,49 +92,6 @@ function lerp(a: P, b: P, t: number): P {
   return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
 }
 
-/** A Catmull-Rom spline through `control` (endpoints duplicated) — gui.py
- * _smooth_curve, so a few hand-placed points read as one smooth curve. */
-function smoothCurve(control: P[], steps = 8): P[] {
-  const pts = [control[0]!, ...control, control[control.length - 1]!];
-  const out: P[] = [];
-  for (let i = 1; i < pts.length - 2; i++) {
-    const [p0, p1, p2, p3] = [pts[i - 1]!, pts[i]!, pts[i + 1]!, pts[i + 2]!];
-    for (let k = 0; k < steps; k++) {
-      const t = k / steps;
-      const t2 = t * t;
-      const t3 = t2 * t;
-      const at = (j: 0 | 1): number =>
-        0.5 *
-        (2 * p1[j] +
-          (-p0[j] + p2[j]) * t +
-          (2 * p0[j] - 5 * p1[j] + 4 * p2[j] - p3[j]) * t2 +
-          (-p0[j] + 3 * p1[j] - 3 * p2[j] + p3[j]) * t3);
-      out.push([at(0), at(1)]);
-    }
-  }
-  out.push(control[control.length - 1]!);
-  return out;
-}
-
-/** A filled band of half-width `radius` along `centerline` (gui.py
- * _tube_polygon): offset every point left and right, then join the sides. */
-function tubePolygon(centerline: P[], radius: number): P[] {
-  const left: P[] = [];
-  const right: P[] = [];
-  const len = centerline.length;
-  for (let i = 0; i < len; i++) {
-    const [x, y] = centerline[i]!;
-    const [ax, ay] = centerline[Math.max(0, i - 1)]!;
-    const [bx, by] = centerline[Math.min(len - 1, i + 1)]!;
-    const [tx, ty] = [bx - ax, by - ay];
-    const l = Math.hypot(tx, ty) || 1;
-    const [nx, ny] = [-ty / l, tx / l];
-    left.push([x + nx * radius, y + ny * radius]);
-    right.push([x - nx * radius, y - ny * radius]);
-  }
-  return [...left, ...right.reverse()];
-}
-
 /** A closed polygon with every corner tucked back into a short quadratic arc
  * (gui.py _round_corners), as an SVG path. */
 function roundedPath(points: P[], radius = CORNER): string {
@@ -152,6 +123,7 @@ function shape(
   variant: IconVariant = BASE,
   width = 4,
   tone?: ShapeTone | null,
+  radius = CORNER,
 ): string {
   const t = toneOf(points, tone);
   const stroke =
@@ -160,7 +132,7 @@ function shape(
           sw(Math.max(2, width - 1)),
         )}" stroke-linejoin="round"`
       : "";
-  return `<path d="${roundedPath(points)}" fill="${tint(variant, t)}"${stroke}/>`;
+  return `<path d="${roundedPath(points, radius)}" fill="${tint(variant, t)}"${stroke}/>`;
 }
 
 /** A polygon with an inner polygon punched out of it (pygame erases the hole
@@ -194,78 +166,480 @@ function circle(
   r: number,
   tone: ShapeTone | null = null,
   width = 4,
+  variant: IconVariant = BASE,
 ): string {
   return `<circle cx="${n(cx)}" cy="${n(cy)}" r="${n(r)}" fill="${tint(
-    BASE,
+    variant,
     tone,
   )}" stroke="${tint(DARK, tone)}" stroke-width="${n(sw(width))}"/>`;
 }
 
-function ellipseArc(cx: number, cy: number, rx: number, ry: number): string {
-  return `M${n(cx - rx)} ${n(cy)}a${n(rx)} ${n(ry)} 0 1 0 ${n(2 * rx)} 0a${n(rx)} ${n(
-    ry,
-  )} 0 1 0 ${n(-2 * rx)} 0Z`;
+/** Blend two #rrggbb colours. Straight sRGB: these are shading tweaks around a
+ * colour the palette already chose, not new hues. */
+function mixHex(a: string, b: string, t: number): string {
+  const parse = (h: string): number[] => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const [ra, ga, ba] = parse(a) as [number, number, number];
+  const [rb, gb, bb] = parse(b) as [number, number, number];
+  const byte = (x: number, y: number): string =>
+    Math.round(x + (y - x) * t)
+      .toString(16)
+      .padStart(2, "0");
+  return `#${byte(ra, rb)}${byte(ga, gb)}${byte(ba, bb)}`;
 }
 
-function ellipse(
-  cx: number,
-  cy: number,
-  rx: number,
-  ry: number,
-  variant: IconVariant = BASE,
-  width = 4,
-): string {
-  const stroke = width > 0 ? ` stroke="${PLAIN.dark}" stroke-width="${n(sw(width))}"` : "";
-  return `<path d="${ellipseArc(cx, cy, rx, ry)}" fill="${PLAIN[variant]}"${stroke}/>`;
+/** Deeper into shadow — for surfaces the palette has no variant for: the inside
+ * of a bored-out frame, the far side of a curved surface. */
+function darker(hex: string, t: number): string {
+  return mixHex(hex, "#111226", t);
 }
 
-/** The lower half of an ellipse's outline (the visible rim of a cylinder's
- * base — pygame draws it with an arc so no line crosses the body). */
-function ellipseLowerArc(cx: number, cy: number, rx: number, ry: number, width = 4): string {
-  return `<path d="M${n(cx - rx)} ${n(cy)}a${n(rx)} ${n(ry)} 0 1 1 ${n(
-    2 * rx,
-  )} 0" fill="none" stroke="${DARK}" stroke-width="${n(sw(width))}"/>`;
+/** A polygon in an explicit colour (the shading helpers above), outside the
+ * variant vocabulary `shape` speaks. */
+function poly(points: P[], fill: string, radius = CORNER, stroke = fill): string {
+  return `<path d="${roundedPath(points, radius)}" fill="${fill}" stroke="${stroke}" stroke-width="${n(
+    sw(1.2),
+  )}" stroke-linejoin="round"/>`;
 }
 
-/** A ring: an ellipse with a smaller one punched through it. */
-function ellipseRing(
-  cx: number,
-  cy: number,
-  rx: number,
-  ry: number,
-  hx: number,
-  hy: number,
-  variant: IconVariant = BASE,
-  width = 4,
-): string {
-  return `<path d="${ellipseArc(cx, cy, rx, ry)}${ellipseArc(
-    cx,
-    cy,
-    hx,
-    hy,
-  )}" fill="${PLAIN[variant]}" fill-rule="evenodd" stroke="${PLAIN.dark}" stroke-width="${n(
-    sw(width),
-  )}"/>`;
+// -- real tiling patches -----------------------------------------------------
+//
+// The uniform and dual-uniform icons are not hand-drawn approximations: they
+// are a patch of the actual tiling, lifted from the same `_ArchTemplate` the
+// boards are built from. So every tile has its true shape, its true size
+// relative to its neighbours (a Laves kite really is that kite), its true
+// colour — `shape()` reads the tone off the polygon, exactly as the board does
+// — and, since the tiles come out of one tiling, they meet edge to edge instead
+// of floating apart.
+//
+// Which figure is cut out of the tiling — a tile with its ring of neighbours,
+// or the rosette of tiles round one vertex — is per family; see PATCH_STYLE.
+
+interface Tile {
+  /** the template's cell-name stem — "sq", "tri", "hex", ... */
+  kind: string;
+  pts: P[];
+  centre: P;
 }
 
-/** A small light shape marking which tiling a surface uses (gui.py _icon_badge). */
-function badge(cx: number, cy: number, r: number, kind: "tri" | "hex" | "square"): string {
-  const pts: P[] =
-    kind === "tri"
-      ? [
-          [cx, cy - r],
-          [cx - r * 0.95, cy + r * 0.8],
-          [cx + r * 0.95, cy + r * 0.8],
-        ]
-      : kind === "hex"
-        ? hexagon(cx, cy, r)
-        : [
-            [cx - r, cy - r],
-            [cx + r, cy - r],
-            [cx + r, cy + r],
-            [cx - r, cy + r],
-          ];
-  return shape(pts, LIGHT, 4);
+function centroid(pts: P[]): P {
+  let x = 0;
+  let y = 0;
+  for (const p of pts) {
+    x += p[0];
+    y += p[1];
+  }
+  return [x / pts.length, y / pts.length];
+}
+
+/** Every tile of a periodic tiling across a 5x5 block of fundamental domains,
+ * in the template's own coordinates. */
+function tilingTiles(key: string): Tile[] {
+  const t = archTemplate(key);
+  const tiles: Tile[] = [];
+  for (let m = -2; m <= 2; m++) {
+    for (let n = -2; n <= 2; n++) {
+      for (const cell of t.cells) {
+        const pts: P[] = cell.refs.map((r) => {
+          const v = t.verts.get(r.tag)!;
+          return [v[0] + (r.dm + m) * t.width, v[1] + (r.dn + n) * t.height];
+        });
+        tiles.push({ kind: cell.name.replace(/\d+$/, ""), pts, centre: centroid(pts) });
+      }
+    }
+  }
+  return tiles;
+}
+
+const vkey = (p: P): string => `${Math.round(p[0] * 1e3)},${Math.round(p[1] * 1e3)}`;
+
+/** The tiles meeting at one vertex, ordered around it. `degree` picks which
+ * kind of vertex (a Laves tiling has several); the default is the busiest one,
+ * which is the only kind a uniform tiling has. */
+function rosette(key: string, degree?: number): Tile[] {
+  const tiles = tilingTiles(key);
+  const t = archTemplate(key);
+  const at = new Map<string, number[]>();
+  const pos = new Map<string, P>();
+  tiles.forEach((tile, i) => {
+    for (const p of tile.pts) {
+      const k = vkey(p);
+      pos.set(k, p);
+      const group = at.get(k);
+      if (group) group.push(i);
+      else at.set(k, [i]);
+    }
+  });
+  // Only vertices well inside the generated block have all their tiles.
+  const home: P = [t.width / 2, t.height / 2];
+  let best: string | null = null;
+  let bestScore = -Infinity;
+  for (const [k, ids] of at) {
+    const p = pos.get(k)!;
+    if (Math.abs(p[0] - home[0]) > t.width || Math.abs(p[1] - home[1]) > t.height) continue;
+    if (degree !== undefined && ids.length !== degree) continue;
+    // busiest vertex first, then the one nearest the middle of the block
+    const score = ids.length * 1e3 - Math.hypot(p[0] - home[0], p[1] - home[1]);
+    if (score > bestScore) {
+      bestScore = score;
+      best = k;
+    }
+  }
+  if (best === null) return [];
+  const hub = pos.get(best)!;
+  return at
+    .get(best)!
+    .map((i) => tiles[i]!)
+    .sort(
+      (a, b) =>
+        Math.atan2(a.centre[1] - hub[1], a.centre[0] - hub[0]) -
+        Math.atan2(b.centre[1] - hub[1], b.centre[0] - hub[0]),
+    );
+}
+
+/** One tile of the tiling with the whole ring of tiles touching it — the patch
+ * a board is built out of, centred the way `archimedeanBoard` centres its
+ * window: on the tiling's biggest tile. */
+function tileRing(key: string): Tile[] {
+  const tiles = tilingTiles(key);
+  const t = archTemplate(key);
+  const home: P = [t.width / 2, t.height / 2];
+  const inside = tiles.filter(
+    (tile) =>
+      Math.abs(tile.centre[0] - home[0]) <= t.width &&
+      Math.abs(tile.centre[1] - home[1]) <= t.height,
+  );
+  let hub = inside[0]!;
+  for (const tile of inside) {
+    const better =
+      tile.pts.length - hub.pts.length ||
+      Math.hypot(hub.centre[0] - home[0], hub.centre[1] - home[1]) -
+        Math.hypot(tile.centre[0] - home[0], tile.centre[1] - home[1]);
+    if (better > 0) hub = tile;
+  }
+  const corners = new Set(hub.pts.map(vkey));
+  const ring = tiles.filter(
+    (tile) => tile !== hub && tile.pts.some((p) => corners.has(vkey(p))),
+  );
+  ring.sort(
+    (a, b) =>
+      Math.atan2(a.centre[1] - hub.centre[1], a.centre[0] - hub.centre[0]) -
+      Math.atan2(b.centre[1] - hub.centre[1], b.centre[0] - hub.centre[0]),
+  );
+  return [hub, ...ring];
+}
+
+/** Scale a patch into the icon box (y flipped — tilings are y-up, SVG y-down). */
+function fitTiles(tiles: Tile[], box = D * 0.9): Tile[] {
+  const xs = tiles.flatMap((t) => t.pts.map((p) => p[0]));
+  const ys = tiles.flatMap((t) => t.pts.map((p) => p[1]));
+  const [minX, maxX] = [Math.min(...xs), Math.max(...xs)];
+  const [minY, maxY] = [Math.min(...ys), Math.max(...ys)];
+  const scale = box / Math.max(maxX - minX, maxY - minY, 1e-9);
+  const ox = (D - (maxX - minX) * scale) / 2;
+  const oy = (D - (maxY - minY) * scale) / 2;
+  const place = (p: P): P => [ox + (p[0] - minX) * scale, oy + (maxY - p[1]) * scale];
+  return tiles.map((t) => ({ ...t, pts: t.pts.map(place), centre: place(t.centre) }));
+}
+
+/** Neighbouring tiles of the same shape are drawn a shade apart, so a rosette
+ * of six identical pentagons still reads as six tiles; different shapes are
+ * already different hues and all stay on the base tone. */
+function patchSvg(tiles: Tile[]): string[] {
+  const counts = new Map<string, number>();
+  for (const t of tiles) counts.set(t.kind, (counts.get(t.kind) ?? 0) + 1);
+  const seen = new Map<string, number>();
+  const cycle: IconVariant[] = [BASE, LIGHT, DARK];
+  // Corners are rounded in proportion to the tiles, not to the icon box, so a
+  // twelve-triangle rosette does not dissolve into blobs.
+  const span = Math.min(
+    ...tiles.map((t) => {
+      const xs = t.pts.map((p) => p[0]);
+      const ys = t.pts.map((p) => p[1]);
+      return Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys));
+    }),
+  );
+  const radius = Math.min(CORNER, span * 0.12);
+  return tiles.map((t) => {
+    const i = seen.get(t.kind) ?? 0;
+    seen.set(t.kind, i + 1);
+    const count = counts.get(t.kind)!;
+    // Three of a kind get three shades — that is what makes rhombille read as
+    // a tumbling block and triakis as a solid corner; any other count just
+    // alternates, so no tile lands on the muddy dark end of its hue.
+    const variant = count === 1 ? BASE : count === 3 ? cycle[i % 3]! : i % 2 ? LIGHT : BASE;
+    return shape(t.pts, variant, 4, undefined, radius);
+  });
+}
+
+/** Which vertex of a Laves tiling its icon is built around, where the busiest
+ * one is not the clearest picture: a triakis triangle reads as one triangle cut
+ * in three, a tetrakis square as one square cut by its diagonals, and rhombille
+ * as the three-rhombus "tumbling block" — the figures those tilings are known
+ * by. Everything else takes the busiest vertex (the only kind a uniform tiling
+ * has, and the fullest rosette a Laves one offers). */
+const ROSETTE_DEGREE: Record<string, number> = {
+  triakis: 3,
+  tetrakis: 4,
+  rhombille: 3,
+};
+
+/** The icons whose patch is not the plain vertex rosette. */
+const PATCH_PICK: Record<string, (tiles: Tile[]) => Tile[]> = {
+  // Elongated triangular: the two squares of one row with the triangle that
+  // stands on each — the rosette's middle (downward) triangle would only make
+  // the figure lopsided.
+  elongated: (tiles) => {
+    const squares = tiles.filter((t) => t.kind === "sq");
+    const tris = tiles.filter((t) => t.kind === "tri");
+    tris.sort((a, b) => a.centre[0] - b.centre[0]);
+    return [...squares, tris[0]!, tris[tris.length - 1]!];
+  },
+};
+
+type PatchStyle = "ring" | "rosette";
+
+const VERTEX_TRANSITIVE = new Set(
+  ARCH_TILINGS.filter((t) => t.vertexTransitive).map((t) => t.key),
+);
+const ARCH_KEYS = new Set(ARCH_TILINGS.map((t) => t.key));
+
+/** Which figure a tiling's icon is cut from. A *uniform* tiling is drawn as one
+ * tile with the ring of tiles touching it — its rosette holds only three or
+ * four tiles, and a pair of octagons or dodecagons filling the box reads as a
+ * pair of circles. A *Laves* tiling is drawn as the rosette, which for a
+ * face-transitive tiling closes into the compact symmetric disc it is known by:
+ * a square cut by its diagonals, three rhombi as a tumbling block, six florets
+ * pinwheeling round a point.
+ *
+ * The exception is elongated triangular, whose icon is picked out of the
+ * rosette by hand (see PATCH_PICK). */
+const PATCH_STYLE: Record<string, PatchStyle> = { elongated: "rosette" };
+
+function styleFor(key: string): PatchStyle {
+  return PATCH_STYLE[key] ?? (VERTEX_TRANSITIVE.has(key) ? "ring" : "rosette");
+}
+
+/** Patches drawn the other way up, so the icon points the way the tiling is
+ * usually pictured. */
+const PATCH_FLIP = new Set(["triakis"]);
+
+function tilingPatch(key: string, style: PatchStyle = styleFor(key)): string[] {
+  let picked = style === "ring" ? tileRing(key) : rosette(key, ROSETTE_DEGREE[key]);
+  const pick = PATCH_PICK[key];
+  if (pick) picked = pick(picked);
+  if (PATCH_FLIP.has(key)) {
+    const flip = (p: P): P => [-p[0], -p[1]];
+    picked = picked.map((t) => ({ ...t, pts: t.pts.map(flip), centre: flip(t.centre) }));
+  }
+  return patchSvg(fitTiles(picked));
+}
+
+// -- real solids -------------------------------------------------------------
+//
+// The sphere-family icons are the actual boards seen head-on: every closed 3D
+// board is built, its front faces projected orthographically and painted in
+// their own shape colours. So the C80 icon really is a fullerene's hexagons and
+// pentagons and the snub dodecahedron really is its twelve pentagons among
+// eighty triangles — detail no hand-drawn badge carries.
+
+type V3 = readonly [number, number, number];
+
+const SOLID_BUILDERS: Record<string, () => Board3D> = {
+  sphere: () => sphereBoard(0),
+  snubdodec: () => snubDodecahedronBoard(0),
+  c80: () => c80Board(0),
+  c180: () => c180Board(0),
+  spheretri: () => sphereTriangleBoard(0),
+};
+
+/** How each solid is turned before projecting, in degrees about x then y —
+ * chosen so the face the board is named for sits in the middle of the icon. */
+const SOLID_VIEW: Record<string, [number, number]> = {
+  sphere: [-18, 12],
+  snubdodec: [-14, 20],
+  c80: [-20, 10],
+  c180: [-20, 10],
+  spheretri: [-10, 18],
+};
+
+const solidCache = new Map<string, Board3D>();
+
+function solidBoard(key: string): Board3D {
+  let board = solidCache.get(key);
+  if (!board) solidCache.set(key, (board = SOLID_BUILDERS[key]!()));
+  return board;
+}
+
+function rotate(p: V3, rx: number, ry: number): V3 {
+  const [sx, cx] = [Math.sin(rx), Math.cos(rx)];
+  const [sy, cy] = [Math.sin(ry), Math.cos(ry)];
+  const y = p[1] * cx - p[2] * sx;
+  const z1 = p[1] * sx + p[2] * cx;
+  return [p[0] * cy + z1 * sy, y, -p[0] * sy + z1 * cy];
+}
+
+/** The visible half of a closed solid, as icon-space polygons. Faces are culled
+ * and shaded by how squarely they face the viewer — the same cue that makes the
+ * board's 3D modes read as round — and inset a little so the tiles show their
+ * seams, as the board's grout does. */
+function solidFaces(key: string): string[] {
+  const board = solidBoard(key);
+  const [rxDeg, ryDeg] = SOLID_VIEW[key] ?? [-18, 15];
+  const [rx, ry] = [rxDeg * (Math.PI / 180), ryDeg * (Math.PI / 180)];
+  const scale = (D * 0.46) / board.radius;
+  const out: string[] = [];
+  for (const poly of board.polygons.values()) {
+    const spun = poly.map((v) => rotate(v as V3, rx, ry));
+    const mid: V3 = [
+      spun.reduce((s, v) => s + v[0], 0) / spun.length,
+      spun.reduce((s, v) => s + v[1], 0) / spun.length,
+      spun.reduce((s, v) => s + v[2], 0) / spun.length,
+    ];
+    const facing = mid[2] / Math.hypot(mid[0], mid[1], mid[2]);
+    if (facing <= 0.06) continue; // back-facing, and the rim it would alias with
+    const pts: P[] = spun.map((v) => [
+      C + (mid[0] + (v[0] - mid[0]) * 0.9) * scale,
+      C - (mid[1] + (v[1] - mid[1]) * 0.9) * scale,
+    ]);
+    const variant = facing > 0.8 ? LIGHT : facing > 0.45 ? BASE : DARK;
+    out.push(shape(pts, variant, 0, shapeMetrics(poly), D * 0.008));
+  }
+  return out;
+}
+
+// -- the four surfaces -------------------------------------------------------
+//
+// Torus, cylinder, Möbius strip and Klein bottle are drawn from the same
+// immersions the boards are wrapped onto (surfaces.ts), meshed into quads,
+// depth-sorted and flat-shaded. A twist that is really a twist beats any
+// arrangement of ellipse arcs: the Möbius strip shows its single edge running
+// round the band, and the Klein bottle's neck really does pass through the
+// belly and open into the inside.
+
+type SurfacePoint = (u: number, v: number) => V3;
+
+/** u round the ring, v round the tube. */
+const TORUS: SurfacePoint = (u, v) => {
+  const r = 0.42;
+  const radial = 1 + r * Math.cos(v);
+  return [radial * Math.cos(u), radial * Math.sin(u), r * Math.sin(v)];
+};
+
+/** u round the loop, v across the half-twisting band. */
+const MOBIUS: SurfacePoint = (u, v) => {
+  const radial = 1 + v * Math.cos(u / 2);
+  return [radial * Math.cos(u), radial * Math.sin(u), v * Math.sin(u / 2)];
+};
+
+/** u round the axis, v up it. */
+const CYLINDER: SurfacePoint = (u, v) => [Math.cos(u), v, Math.sin(u)];
+
+/** The classic self-intersecting bottle (kleinPoint in surfaces.ts): u runs up
+ * the belly, over the top and back down through the neck, v round the tube. */
+const KLEIN: SurfacePoint = (u, v) => {
+  const [cu, su, cv] = [Math.cos(u), Math.sin(u), Math.cos(v)];
+  const r = 1.05 * (2.5 - 1.5 * cu);
+  const x = u < Math.PI ? 3 * cu * (1 + su) + r * cu * cv : 3 * cu * (1 + su) - r * cv;
+  const y = u < Math.PI ? 8 * su + r * su * cv : 8 * su;
+  return [x, y, r * Math.sin(v)];
+};
+
+interface MeshOptions {
+  /** rotation about x then y, in degrees, before projecting */
+  view: [number, number];
+  /** v range (u always runs a full turn) */
+  vFrom?: number;
+  vTo?: number;
+  uSteps?: number;
+  vSteps?: number;
+  /** an open surface is seen from both sides, so nothing is culled */
+  twoSided?: boolean;
+}
+
+/** Flat-shaded quads of a parametric surface, far ones first. Adjacent quads
+ * share an edge, so each is stroked in its own fill: without that the
+ * antialiased seams show the page through the surface. */
+function surfaceMesh(point: SurfacePoint, opts: MeshOptions): string[] {
+  const {
+    view: [rxDeg, ryDeg],
+    vFrom = 0,
+    vTo = 2 * Math.PI,
+    uSteps = 36,
+    vSteps = 12,
+    twoSided = false,
+  } = opts;
+  const [rx, ry] = [rxDeg * (Math.PI / 180), ryDeg * (Math.PI / 180)];
+  const grid: V3[][] = [];
+  for (let i = 0; i <= uSteps; i++) {
+    const row: V3[] = [];
+    for (let j = 0; j <= vSteps; j++) {
+      row.push(
+        rotate(point((2 * Math.PI * i) / uSteps, vFrom + ((vTo - vFrom) * j) / vSteps), rx, ry),
+      );
+    }
+    grid.push(row);
+  }
+  const flat = grid.flat();
+  const bounds = (k: 0 | 1): [number, number] => [
+    Math.min(...flat.map((p) => p[k])),
+    Math.max(...flat.map((p) => p[k])),
+  ];
+  const [minX, maxX] = bounds(0);
+  const [minY, maxY] = bounds(1);
+  const scale = (D * 0.94) / Math.max(maxX - minX, maxY - minY);
+  const ox = (D - (maxX - minX) * scale) / 2 - minX * scale;
+  const oy = (D + (maxY - minY) * scale) / 2 + minY * scale;
+  const at = (p: V3): P => [ox + p[0] * scale, oy - p[1] * scale];
+
+  const light = [-0.35, 0.5, 0.79] as const;
+  const faces: { pts: P[]; depth: number; fill: string }[] = [];
+  for (let i = 0; i < uSteps; i++) {
+    for (let j = 0; j < vSteps; j++) {
+      const corners: V3[] = [
+        grid[i]![j]!,
+        grid[i + 1]![j]!,
+        grid[i + 1]![j + 1]!,
+        grid[i]![j + 1]!,
+      ];
+      const [a, b, c] = [corners[0]!, corners[1]!, corners[3]!];
+      const e1 = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+      const e2 = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
+      const nx = e1[1]! * e2[2]! - e1[2]! * e2[1]!;
+      const ny = e1[2]! * e2[0]! - e1[0]! * e2[2]!;
+      const nz = e1[0]! * e2[1]! - e1[1]! * e2[0]!;
+      const len = Math.hypot(nx, ny, nz) || 1;
+      const facing = nz / len;
+      if (!twoSided && facing <= 0) continue;
+      const lambert = Math.abs((nx * light[0] + ny * light[1] + nz * light[2]) / len);
+      faces.push({
+        pts: corners.map(at),
+        depth: corners.reduce((s, p) => s + p[2], 0) / 4,
+        // the inside of an open surface reads a shade cooler than the outside
+        fill: mixHex(
+          facing < 0 ? PLAIN.dark : PLAIN.base,
+          facing < 0 ? PLAIN.base : PLAIN.light,
+          0.15 + 0.85 * lambert,
+        ),
+      });
+    }
+  }
+  faces.sort((f, g) => f.depth - g.depth);
+  // Hundreds of quads per icon, so they are written as bare polygons at one
+  // decimal (0.04 px at the size a menu row draws them) and grown 2% about
+  // their own centre instead of being stroked — that seals the antialiased
+  // seams between neighbours, which would otherwise show the page through the
+  // surface, for none of the markup a per-path stroke costs.
+  const f1 = (v: number): string => (Math.round(v * 10) / 10).toString();
+  return faces.map((f) => {
+    const [cx, cy] = centroid(f.pts);
+    const d = f.pts
+      .map(
+        (p, i) =>
+          `${i ? "L" : "M"}${f1(cx + (p[0] - cx) * 1.02)} ${f1(cy + (p[1] - cy) * 1.02)}`,
+      )
+      .join("");
+    return `<path d="${d}Z" fill="${f.fill}"/>`;
+  });
 }
 
 /** Menu keys that reuse another key's drawing (gui.py _ICON_ALIASES). */
@@ -313,85 +687,34 @@ function draw(rawKey: string): string[] {
   // The cell shape this icon stands for, where its art does not draw one.
   const cell: ShapeTone | undefined = ICON_TONES[key];
 
+  // Every uniform and dual-uniform tiling draws a real patch of itself, and so
+  // do the two family rows: a 3.4.6.4 rosette (a triangle, a square and a
+  // hexagon in one figure) for the uniform family, and its own Laves dual for
+  // the dual-uniform one.
+  // (the two family rows are a dual pair themselves: 3.4.6.4's vertex figure
+  // for the uniform family, its Laves dual's tile rosette for the other)
+  if (ARCH_KEYS.has(key)) return tilingPatch(key);
+  if (key === "uniform") return tilingPatch("rhombitrihex", "rosette");
+  if (key === "dual") return tilingPatch("deltoidal");
+
   if (key === "start") {
-    // a question mark: a hooked stroke over a dot (the random-tiling entry)
-    const control: P[] = [
-      [d * 0.34, d * 0.3],
-      [d * 0.38, d * 0.16],
-      [d * 0.54, d * 0.11],
-      [d * 0.7, d * 0.18],
-      [d * 0.72, d * 0.35],
-      [d * 0.58, d * 0.46],
-      [d * 0.5, d * 0.55],
-      [d * 0.5, d * 0.64],
-    ];
-    parts.push(shape(tubePolygon(smoothCurve(control), d * 0.055), BASE, 4, null));
-    parts.push(circle(d * 0.5, d * 0.8, d * 0.075));
-  } else if (key === "uniform") {
-    // one shape of each kind: the group of uniform tilings
+    // The random-tiling row: a question mark set in the game's own face, Rubik.
     parts.push(
-      shape([
-        [d * 0.08, d * 0.08],
-        [d * 0.48, d * 0.08],
-        [d * 0.48, d * 0.48],
-        [d * 0.08, d * 0.48],
-      ]),
-      shape(hexagon(d * 0.72, d * 0.28, d * 0.22)),
-      shape(
-        [
-          [d * 0.28, d * 0.9],
-          [d * 0.08, d * 0.55],
-          [d * 0.48, d * 0.55],
-        ],
-        LIGHT,
-      ),
-      shape([
-        [d * 0.52, d * 0.55],
-        [d * 0.92, d * 0.55],
-        [d * 0.92, d * 0.9],
-        [d * 0.52, d * 0.9],
-      ]),
-    );
-  } else if (key === "dual") {
-    // the Laves (dual) tilings: the Cairo pentagon and rhombille rhombi
-    parts.push(
-      shape(ngon(d * 0.34, d * 0.36, d * 0.28, 5, -90)),
-      shape(
-        [
-          [d * 0.72, d * 0.34],
-          [d * 0.92, d * 0.62],
-          [d * 0.72, d * 0.9],
-          [d * 0.52, d * 0.62],
-        ],
-        LIGHT,
-      ),
-      shape(
-        [
-          [d * 0.12, d * 0.66],
-          [d * 0.44, d * 0.66],
-          [d * 0.3, d * 0.94],
-          [d * -0.02, d * 0.94],
-        ],
-        LIGHT,
-      ),
+      `<text x="${n(C)}" y="${n(d * 0.5)}" text-anchor="middle" ` +
+        `dominant-baseline="central" font-family="Rubik, system-ui, sans-serif" ` +
+        `font-weight="700" font-size="${n(d * 0.92)}" fill="${PLAIN.base}">?</text>`,
     );
   } else if (key === "flat" || key === "square" || key === "torus_tile") {
-    const gap = d * 0.04;
-    const tile = d * 0.42;
-    for (const ix of [0, 1]) {
-      for (const iy of [0, 1]) {
-        const x = C - tile - gap / 2 + ix * (tile + gap);
-        const y = C - tile - gap / 2 + iy * (tile + gap);
-        parts.push(
-          shape([
-            [x, y],
-            [x + tile, y],
-            [x + tile, y + tile],
-            [x, y + tile],
-          ]),
-        );
-      }
-    }
+    // one square, the way the hexagon icon is one hexagon
+    const r = d * 0.36;
+    parts.push(
+      shape([
+        [C - r, C - r],
+        [C + r, C - r],
+        [C + r, C + r],
+        [C - r, C + r],
+      ]),
+    );
   } else if (key === "triangle") {
     parts.push(
       holed(
@@ -408,28 +731,8 @@ function draw(rawKey: string): string[] {
       ),
     );
   } else if (key === "trigrid") {
-    const w = d * 0.46;
-    for (let i = 0; i < 3; i++) {
-      const x = d * 0.04 + i * w * 0.5;
-      parts.push(
-        shape(
-          i % 2 === 0
-            ? [
-                [x, d * 0.85],
-                [x + w, d * 0.85],
-                [x + w / 2, d * 0.18],
-              ]
-            : [
-                [x, d * 0.18],
-                [x + w, d * 0.18],
-                [x + w / 2, d * 0.85],
-              ],
-          BASE,
-          4,
-          cell,
-        ),
-      );
-    }
+    // one equilateral triangle, matching the one-square and one-hexagon icons
+    parts.push(shape(ngon(C, C + d * 0.04, d * 0.46, 3, -90), BASE, 4, cell));
   } else if (key === "hex") {
     parts.push(shape(hexagon(C, C, d * 0.44)));
   } else if (key === "hexhex") {
@@ -484,220 +787,10 @@ function draw(rawKey: string): string[] {
     const ox = (d - (maxX - minX) * sc) / 2;
     const oy = (d - (maxY - minY) * sc) / 2;
     parts.push(shape(raw.map(([x, y]) => [ox + (x - minX) * sc, oy + (maxY - y) * sc])));
-  } else if (key === "elongated") {
-    // a square row under a triangle row
-    parts.push(
-      shape([
-        [d * 0.12, d * 0.5],
-        [d * 0.5, d * 0.5],
-        [d * 0.5, d * 0.88],
-        [d * 0.12, d * 0.88],
-      ]),
-      shape([
-        [d * 0.5, d * 0.5],
-        [d * 0.88, d * 0.5],
-        [d * 0.88, d * 0.88],
-        [d * 0.5, d * 0.88],
-      ]),
-      shape(
-        [
-          [d * 0.12, d * 0.5],
-          [d * 0.5, d * 0.5],
-          [d * 0.31, d * 0.12],
-        ],
-        LIGHT,
-      ),
-      shape([
-        [d * 0.5, d * 0.5],
-        [d * 0.31, d * 0.12],
-        [d * 0.69, d * 0.12],
-      ]),
-      shape(
-        [
-          [d * 0.5, d * 0.5],
-          [d * 0.88, d * 0.5],
-          [d * 0.69, d * 0.12],
-        ],
-        LIGHT,
-      ),
-    );
-  } else if (key === "snubsquare") {
-    // an upright and a tilted square joined by triangles
-    parts.push(
-      shape(ngon(d * 0.32, d * 0.62, d * 0.26, 4, 45)),
-      shape(ngon(d * 0.68, d * 0.36, d * 0.26, 4, 15)),
-      shape(
-        [
-          [d * 0.32, d * 0.25],
-          [d * 0.5, d * 0.44],
-          [d * 0.58, d * 0.14],
-        ],
-        LIGHT,
-      ),
-      shape(
-        [
-          [d * 0.5, d * 0.6],
-          [d * 0.72, d * 0.82],
-          [d * 0.86, d * 0.6],
-        ],
-        LIGHT,
-      ),
-    );
-  } else if (key === "kagome") {
-    parts.push(shape(hexagon(C, C, d * 0.3, 0)));
-    for (let k = 0; k < 3; k++) {
-      const a = ((120 * k - 90) * Math.PI) / 180;
-      parts.push(
-        shape(
-          ngon(C + d * 0.42 * Math.cos(a), C + d * 0.42 * Math.sin(a), d * 0.15, 3, 120 * k - 90),
-          LIGHT,
-        ),
-      );
-    }
-  } else if (key === "snubhex") {
-    parts.push(shape(hexagon(C, C, d * 0.28)));
-    for (let k = 0; k < 6; k++) {
-      const a = (60 * k * Math.PI) / 180;
-      parts.push(
-        shape(
-          ngon(C + d * 0.4 * Math.cos(a), C + d * 0.4 * Math.sin(a), d * 0.12, 3, 60 * k + 30),
-          LIGHT,
-          3,
-        ),
-      );
-    }
-  } else if (key === "truncsquare") {
-    parts.push(
-      shape(ngon(C, C, d * 0.42, 8, 22.5)),
-      shape(ngon(d * 0.85, d * 0.85, d * 0.13, 4, 45), LIGHT),
-    );
-  } else if (key === "trunchex") {
-    parts.push(
-      shape(ngon(C, C, d * 0.42, 12, 15)),
-      shape(ngon(d * 0.86, d * 0.82, d * 0.13, 3, -90), LIGHT),
-    );
-  } else if (key === "rhombitrihex") {
-    // a hexagon with a square on top and a triangle in a corner
-    parts.push(
-      shape(hexagon(C, C + d * 0.06, d * 0.28, 0)),
-      shape(ngon(C, d * 0.2, d * 0.13, 4, 45), LIGHT),
-      shape(ngon(d * 0.84, d * 0.8, d * 0.12, 3, 30), LIGHT),
-    );
-  } else if (key === "trunctrihex") {
-    // a dodecagon flanked by a hexagon and a square badge
-    parts.push(
-      shape(ngon(C, C, d * 0.42, 12, 15)),
-      shape(hexagon(d * 0.83, d * 0.83, d * 0.13, 0), LIGHT),
-      shape(ngon(d * 0.17, d * 0.83, d * 0.11, 4, 45), LIGHT, 3),
-    );
-  } else if (key === "prismaticpent") {
-    // rows of pentagons: two stacked (the dual of elongated triangular)
-    parts.push(
-      shape(ngon(C, d * 0.32, d * 0.26, 5, -90), BASE, 4, cell),
-      shape(ngon(C, d * 0.68, d * 0.26, 5, 90), LIGHT, 4, cell),
-    );
-  } else if (key === "cairo") {
-    // two pentagons in the Cairo basketweave (dual of snub square)
-    parts.push(
-      shape(ngon(d * 0.37, d * 0.4, d * 0.28, 5, -108), BASE, 4, cell),
-      shape(ngon(d * 0.63, d * 0.6, d * 0.28, 5, 72), LIGHT, 4, cell),
-    );
-  } else if (key === "rhombille") {
-    // three rhombi meeting as an isometric cube (dual of kagome)
-    const h = hexagon(C, C, d * 0.42, -90);
-    parts.push(
-      shape([h[0]!, h[1]!, [C, C], h[5]!], LIGHT),
-      shape([h[1]!, h[2]!, h[3]!, [C, C]], BASE),
-      shape([h[5]!, [C, C], h[3]!, h[4]!], DARK),
-    );
-  } else if (key === "floret") {
-    // six pentagons pinwheeling round a centre (dual of snub hexagonal)
-    for (let k = 0; k < 6; k++) {
-      const a = (60 * k * Math.PI) / 180;
-      parts.push(
-        shape(
-          ngon(C + d * 0.24 * Math.cos(a), C + d * 0.24 * Math.sin(a), d * 0.17, 5, 60 * k + 20),
-          k % 2 ? LIGHT : BASE,
-          3,
-          cell,
-        ),
-      );
-    }
-  } else if (key === "tetrakis") {
-    // a square cut by both diagonals into four triangles
-    const sq: P[] = [
-      [d * 0.12, d * 0.12],
-      [d * 0.88, d * 0.12],
-      [d * 0.88, d * 0.88],
-      [d * 0.12, d * 0.88],
-    ];
-    parts.push(shape(sq, BASE, 4, cell));
-    for (const corner of sq) parts.push(line([C, C], corner, DARK, 4, cell));
-  } else if (key === "triakis") {
-    // a triangle split from its centre into three (dual of trunc. hex.)
-    const outer = ngon(C, C + d * 0.04, d * 0.46, 3, -90);
-    parts.push(shape(outer, BASE, 4, cell));
-    for (const v of outer) parts.push(line([C, C + d * 0.04], v, DARK, 4, cell));
-  } else if (key === "deltoidal" || key === "kisrhombille") {
-    const h = hexagon(C, C, d * 0.44, 0);
-    const mids: P[] = h.map((p, k) => [
-      (p[0] + h[(k + 1) % 6]![0]) / 2,
-      (p[1] + h[(k + 1) % 6]![1]) / 2,
-    ]);
-    if (key === "deltoidal") {
-      // a ring of kites round a centre (dual of rhombitrihexagonal)
-      for (let k = 0; k < 6; k++) {
-        parts.push(
-          shape([[C, C], mids[(k + 5) % 6]!, h[k]!, mids[k]!], k % 2 ? LIGHT : BASE, 3),
-        );
-      }
-    } else {
-      // a hexagon barycentrically cut into twelve right triangles
-      parts.push(shape(h, BASE, 4, cell));
-      for (const pt of [...h, ...mids]) parts.push(line([C, C], pt, DARK, 3, cell));
-    }
   } else if (SPHERES.includes(key)) {
-    parts.push(circle(C, C, d * 0.44, cell));
-    if (key === "spheretri") {
-      parts.push(badge(C, C, d * 0.2, "tri"));
-    } else if (key === "snubdodec") {
-      parts.push(shape(ngon(C, C - d * 0.06, d * 0.17, 5, -90), LIGHT));
-      for (let k = 0; k < 5; k++) {
-        const a = ((72 * k - 90) * Math.PI) / 180;
-        parts.push(
-          badge(
-            C + d * 0.3 * Math.cos(a) * 1.05,
-            C - d * 0.06 + d * 0.3 * Math.sin(a) * 1.05,
-            d * 0.08,
-            "tri",
-          ),
-        );
-      }
-    } else {
-      // pentagon centre for the pentagonal solids, hexagon for C180
-      const sides = key === "c180" ? 6 : 5;
-      const inner: P[] = [];
-      for (let k = 0; k < sides; k++) {
-        const a = (((360 / sides) * k - 90) * Math.PI) / 180;
-        inner.push([C + d * 0.2 * Math.cos(a), C + d * 0.2 * Math.sin(a)]);
-      }
-      parts.push(shape(inner, LIGHT));
-      if (key === "c80" || key === "c180") {
-        // bond lines, fullerene style
-        for (let k = 0; k < sides; k++) {
-          const a = (((360 / sides) * k - 90) * Math.PI) / 180;
-          parts.push(
-            line(
-              [C + d * 0.2 * Math.cos(a), C + d * 0.2 * Math.sin(a)],
-              [C + d * 0.41 * Math.cos(a), C + d * 0.41 * Math.sin(a)],
-              DARK,
-              4,
-              cell,
-            ),
-          );
-        }
-      }
-    }
+    // the real solid, projected: a dark disc behind it closes the silhouette
+    // where the outermost faces fall away from the viewer
+    parts.push(circle(C, C, d * 0.455, cell, 0, DARK), ...solidFaces(key));
   } else if (key === "cube" || key === "cubeframe") {
     // an isometric cube: three visible rhombic faces, grid-lined (cube) or
     // bored through (the Menger frame)
@@ -717,35 +810,62 @@ function draw(rawKey: string): string[] {
           parts.push(line(lerp(a, dd, t), lerp(b, cc, t), DARK, 3, cell));
         }
       } else {
+        // The frame is bored right through, so the hole is a shaft, not a
+        // window: sink a copy of it toward the cube's centre, wall the two
+        // sides that face the viewer, and let the far opening go dark. Drawn
+        // before the face, whose punched-out hole is what they show through.
         const fx = quad.reduce((s, p) => s + p[0], 0) / 4;
         const fy = quad.reduce((s, p) => s + p[1], 0) / 4;
         const hole: P[] = quad.map((p) => [fx + (p[0] - fx) * 0.44, fy + (p[1] - fy) * 0.44]);
+        const depth = 0.5;
+        const sunk: P[] = hole.map((p) => [
+          p[0] + (C - fx) * depth,
+          p[1] + (C - fy) * depth,
+        ]);
+        const area = (pts: P[]): number =>
+          pts.reduce(
+            (s, p, i) => s + (p[0] * pts[(i + 1) % pts.length]![1] - pts[(i + 1) % pts.length]![0] * p[1]),
+            0,
+          );
+        const skin = tint(fill, cell ?? null);
+        parts.push(poly(sunk, darker(skin, 0.72), CORNER * 0.5));
+        for (let k = 0; k < 4; k++) {
+          const wall: P[] = [hole[k]!, hole[(k + 1) % 4]!, sunk[(k + 1) % 4]!, sunk[k]!];
+          // the two walls turned toward the viewer wind the way the face does
+          if (Math.sign(area(wall)) !== Math.sign(area(quad))) continue;
+          parts.push(poly(wall, darker(skin, 0.42), CORNER * 0.5));
+        }
         parts.push(holed(quad, hole, fill, 4, cell));
       }
     }
   } else if (key === "steppedbipyramid") {
-    // a terraced diamond: square slabs widest at the equator
-    const widths = [0.34, 0.58, 0.82, 0.58, 0.34];
-    const shades = [LIGHT, LIGHT, BASE, DARK, DARK];
-    const slab = d * 0.135;
-    const topY = C - (slab * widths.length) / 2;
-    widths.forEach((w, idx) => {
-      const ww = d * w;
-      const y = topY + idx * slab;
+    // The real solid's profile: square terraces stepping 7-5-3-1 out from the
+    // equator (the easy board's `base` 7 over 4 levels), so the apex is the
+    // single cell it actually is. Seen almost edge-on — from any higher the
+    // wider terrace above would hide the whole lower pyramid — with the sliver
+    // of each terrace's top surface that peeks out beside the one above it.
+    const sides = [1, 3, 5, 7, 5, 3, 1];
+    const u = (d * 0.86) / 7;
+    const ledge = u * 0.34;
+    const top = C - (u * sides.length) / 2;
+    // bottom up, so each terrace covers the hidden middle of the one below
+    for (let i = sides.length - 1; i >= 0; i--) {
+      const w = (sides[i]! * u) / 2;
+      const y = top + i * u;
+      const variant = i <= 1 ? LIGHT : i <= 3 ? BASE : DARK;
+      parts.push(
+        shape([[C - w, y], [C + w, y], [C + w, y + u], [C - w, y + u]], variant, 4, cell, u * 0.12),
+      );
       parts.push(
         shape(
-          [
-            [C - ww / 2, y],
-            [C + ww / 2, y],
-            [C + ww / 2, y + slab],
-            [C - ww / 2, y + slab],
-          ],
-          shades[idx],
+          [[C - w, y - ledge], [C + w, y - ledge], [C + w, y], [C - w, y]],
+          LIGHT,
           4,
           cell,
+          u * 0.12,
         ),
       );
-    });
+    }
   } else if (key === "tetrahedron" || key === "tetraframe") {
     const outer = ngon(C, C + d * 0.04, d * 0.46, 3, -90);
     const shades = [LIGHT, BASE, DARK];
@@ -765,62 +885,33 @@ function draw(rawKey: string): string[] {
       }
     }
   } else if (key === "torus") {
-    parts.push(ellipseRing(C, C, d * 0.46, d * 0.28, d * 0.17, d * 0.09));
+    parts.push(...surfaceMesh(TORUS, { view: [-62, 0] }));
   } else if (key === "mobius") {
-    parts.push(ellipseRing(C, C, d * 0.45, d * 0.34, d * 0.21, d * 0.13));
-    // the twist at the front
-    parts.push(line([C - d * 0.09, d * 0.84], [C + d * 0.09, d * 0.63], DARK, 6));
-    parts.push(line([C - d * 0.09, d * 0.63], [C + d * 0.09, d * 0.84], LIGHT, 6));
+    // an open band: both faces show, and the half twist brings the far edge
+    // round to meet the near one
+    parts.push(
+      ...surfaceMesh(MOBIUS, {
+        view: [-52, 0],
+        vFrom: -0.42,
+        vTo: 0.42,
+        uSteps: 60,
+        vSteps: 3,
+        twoSided: true,
+      }),
+    );
   } else if (key === "cylinder") {
     parts.push(
-      shape(
-        [
-          [d * 0.18, d * 0.2],
-          [d * 0.82, d * 0.2],
-          [d * 0.82, d * 0.8],
-          [d * 0.18, d * 0.8],
-        ],
-        BASE,
-        0,
-        null,
-      ),
-      ellipse(C, d * 0.8, d * 0.32, d * 0.12, BASE, 0),
-      ellipseLowerArc(C, d * 0.8, d * 0.32, d * 0.12),
-      line([d * 0.18, d * 0.2], [d * 0.18, d * 0.8], DARK, 4),
-      line([d * 0.82, d * 0.2], [d * 0.82, d * 0.8], DARK, 4),
-      ellipse(C, d * 0.2, d * 0.32, d * 0.12, LIGHT),
+      ...surfaceMesh(CYLINDER, {
+        view: [-32, 0],
+        vFrom: -1.15,
+        vTo: 1.15,
+        uSteps: 36,
+        vSteps: 5,
+        twoSided: true,
+      }),
     );
   } else if (key === "klein") {
-    // the classic Klein bottle: a bulb whose neck arcs over the top and dives
-    // back in through the shoulder, opening into the interior
-    const control: P[] = [
-      [d * 0.5, d * 0.64], // the mouth, deep inside the bulb
-      [d * 0.5, d * 0.4],
-      [d * 0.52, d * 0.24],
-      [d * 0.62, d * 0.15],
-      [d * 0.75, d * 0.16],
-      [d * 0.84, d * 0.28],
-      [d * 0.82, d * 0.45],
-      [d * 0.7, d * 0.57], // plunging back toward the bulb
-      [d * 0.58, d * 0.62],
-    ];
-    // The hole where the neck passes through the bulb's shoulder into the
-    // interior is a true hole: pygame erases it, so mask it out of both the
-    // neck and the bulb rather than punching the bulb alone (which would show
-    // the neck through it), then draw its rim.
-    const [hx, hy, hrx, hry] = [d * 0.5, d * 0.6, d * 0.1, d * 0.07];
-    parts.push(
-      `<mask id="ms-klein-hole"><rect width="${d}" height="${d}" fill="#fff"/>` +
-        `<path d="${ellipseArc(hx, hy, hrx, hry)}" fill="#000"/></mask>`,
-      `<g mask="url(#ms-klein-hole)">`,
-      shape(tubePolygon(smoothCurve(control), d * 0.085), BASE, 4, null),
-      // the bulb, over the neck's lower end so the neck dives behind it
-      ellipse(d * 0.39, d * 0.67, d * 0.27, d * 0.25),
-      `</g>`,
-      `<path d="${ellipseArc(hx, hy, hrx, hry)}" fill="none" stroke="${DARK}" stroke-width="${n(
-        sw(4),
-      )}"/>`,
-    );
+    parts.push(...surfaceMesh(KLEIN, { view: [180, -18], uSteps: 48, vSteps: 14 }));
   } else {
     parts.push(circle(C, C, d * 0.4, null, 2));
   }

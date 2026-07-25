@@ -12,9 +12,13 @@ import { screens, type HudSlot } from "../config/screens";
 // the header controls can grow to a comfortable touch size on phones.
 const ICONS: Record<string, string> = {
   flag: `<svg viewBox="0 0 24 24" aria-hidden="true">
-    <path d="M10.2 5.8 V18.6" stroke="#202020" stroke-width="1.7" fill="none"/>
-    <rect x="7.2" y="18.2" width="9.7" height="1.8" fill="#202020"/>
-    <path d="M10.2 5.8 L16.4 8.9 L10.2 12 Z" fill="#e5534b"/>
+    <path d="M7.4 18.1 H16.6 L18.6 20.4 H5.4 Z" fill="#3a3f4b"/>
+    <rect x="5.4" y="20.4" width="13.2" height="1.5" fill="#22252d"/>
+    <path d="M8.5 3.8 H9.5 L9.9 18.1 H8.1 Z" fill="#2b2f3a"/>
+    <circle cx="9" cy="3.8" r="0.9" fill="#2b2f3a"/>
+    <path d="M9 4.2 C12.2 2.8 15.4 4.2 19 5.5
+             C16 7.6 12.6 8 9.5 10.9 Z" fill="#e5534b"/>
+    <path d="M19 5.5 L9.5 10.9 C12.6 8 16 7.6 19 5.5 Z" fill="#b93731"/>
   </svg>`,
   // Back to the menu.
   "arrow-left": `<svg viewBox="0 0 24 24" aria-hidden="true">

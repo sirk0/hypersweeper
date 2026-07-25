@@ -40,7 +40,10 @@ function slotIndex(glyph: Glyph): number {
   return SLOTS.indexOf(glyph);
 }
 
-export function makeGlyphAtlas(cellPx = 128): GlyphAtlas {
+// Half again the old 128: a cell on a big board (a pentagon of the 60-pentagon
+// sphere fills ~70 CSS px, so ~140 device px on a retina screen) draws the flag
+// and the mine near enough 1:1, and their detail survives.
+export function makeGlyphAtlas(cellPx = 192): GlyphAtlas {
   const canvas = document.createElement("canvas");
   canvas.width = COLS * cellPx;
   canvas.height = ROWS * cellPx;
@@ -93,30 +96,112 @@ export function makeGlyphAtlas(cellPx = 128): GlyphAtlas {
   };
 }
 
+/**
+ * A flag with the detail a big cell deserves: a tapered mast standing on a
+ * two-tone plinth, a knob on top, and a pennant whose edges curve as cloth
+ * does — lit across its width and folded darker where it falls away, with the
+ * hoist creased against the mast.
+ *
+ * Drawn rather than set as an emoji on purpose: 🚩 is a different picture on
+ * every platform (and missing outright on some Linux/CI fonts), while the
+ * board's flag has to line up with the same flag the menu and the header
+ * smiley draw.
+ */
 function drawFlag(
   ctx: CanvasRenderingContext2D,
   cx: number,
   cy: number,
   s: number,
 ): void {
-  const poleX = cx - s * 0.08;
-  ctx.strokeStyle = "#202020";
-  ctx.lineWidth = s * 0.05;
+  const poleX = cx - s * 0.13;
+  const top = cy - s * 0.34;
+  const foot = cy + s * 0.29;
+
+  // plinth: a shallow trapezoid on a base slab
+  ctx.fillStyle = "#3a3f4b";
   ctx.beginPath();
-  ctx.moveTo(poleX, cy - s * 0.28);
-  ctx.lineTo(poleX, cy + s * 0.3);
-  ctx.stroke();
-  // base
-  ctx.fillStyle = "#202020";
-  ctx.fillRect(cx - s * 0.22, cy + s * 0.28, s * 0.44, s * 0.08);
-  // flag
-  ctx.fillStyle = "#e5534b";
-  ctx.beginPath();
-  ctx.moveTo(poleX, cy - s * 0.28);
-  ctx.lineTo(poleX + s * 0.28, cy - s * 0.14);
-  ctx.lineTo(poleX, cy);
+  ctx.moveTo(cx - s * 0.11, foot - s * 0.05);
+  ctx.lineTo(cx + s * 0.11, foot - s * 0.05);
+  ctx.lineTo(cx + s * 0.2, foot + s * 0.05);
+  ctx.lineTo(cx - s * 0.2, foot + s * 0.05);
   ctx.closePath();
   ctx.fill();
+  ctx.fillStyle = "#22252d";
+  ctx.beginPath();
+  ctx.moveTo(cx - s * 0.2, foot + s * 0.05);
+  ctx.lineTo(cx + s * 0.2, foot + s * 0.05);
+  ctx.lineTo(cx + s * 0.2, foot + s * 0.09);
+  ctx.lineTo(cx - s * 0.2, foot + s * 0.09);
+  ctx.closePath();
+  ctx.fill();
+
+  // mast, tapering toward the top, with a knob
+  ctx.fillStyle = "#2b2f3a";
+  ctx.beginPath();
+  ctx.moveTo(poleX - s * 0.018, top);
+  ctx.lineTo(poleX + s * 0.018, top);
+  ctx.lineTo(poleX + s * 0.032, foot - s * 0.04);
+  ctx.lineTo(poleX - s * 0.032, foot - s * 0.04);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(poleX, top, s * 0.035, 0, Math.PI * 2);
+  ctx.fill();
+
+  // the cloth: top edge lifting away from the mast, fly falling back
+  const cloth = new Path2D();
+  cloth.moveTo(poleX, top + s * 0.015);
+  cloth.bezierCurveTo(
+    poleX + s * 0.16,
+    top - s * 0.04,
+    poleX + s * 0.3,
+    top + s * 0.02,
+    poleX + s * 0.42,
+    top + s * 0.07,
+  );
+  cloth.bezierCurveTo(
+    poleX + s * 0.3,
+    top + s * 0.15,
+    poleX + s * 0.16,
+    top + s * 0.16,
+    poleX + s * 0.02,
+    top + s * 0.27,
+  );
+  cloth.closePath();
+  const lit = ctx.createLinearGradient(poleX, top, poleX + s * 0.42, top + s * 0.2);
+  lit.addColorStop(0, "#f2695f");
+  lit.addColorStop(0.55, "#e5534b");
+  lit.addColorStop(1, "#c33a35");
+  ctx.fillStyle = lit;
+  ctx.fill(cloth);
+
+  // the fold along the lower edge, and the crease at the hoist
+  ctx.save();
+  ctx.clip(cloth);
+  ctx.fillStyle = "rgba(120, 26, 24, 0.45)";
+  ctx.beginPath();
+  ctx.moveTo(poleX + s * 0.02, top + s * 0.27);
+  ctx.bezierCurveTo(
+    poleX + s * 0.18,
+    top + s * 0.14,
+    poleX + s * 0.32,
+    top + s * 0.13,
+    poleX + s * 0.42,
+    top + s * 0.07,
+  );
+  ctx.lineTo(poleX + s * 0.42, top + s * 0.2);
+  ctx.lineTo(poleX + s * 0.02, top + s * 0.32);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = "rgba(255, 255, 255, 0.16)";
+  ctx.beginPath();
+  ctx.moveTo(poleX, top);
+  ctx.lineTo(poleX + s * 0.09, top + s * 0.01);
+  ctx.lineTo(poleX + s * 0.05, top + s * 0.3);
+  ctx.lineTo(poleX, top + s * 0.3);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
 }
 
 /** A dark X across the cell — drawn over a flag to mark it as misplaced when
@@ -139,29 +224,102 @@ function drawCross(
   ctx.stroke();
 }
 
+/**
+ * The mine as the bomb it is meant to read as: a shaded iron ball with tapered
+ * spikes, a fuse curling out of its cap and a lit spark on the end — the
+ * picture 💣 draws, without depending on an emoji font the browser may render
+ * in a wholly different style (or, headless, not at all).
+ */
 function drawMine(
   ctx: CanvasRenderingContext2D,
   cx: number,
   cy: number,
   s: number,
 ): void {
-  const r = s * 0.26;
-  ctx.strokeStyle = "#202020";
-  ctx.lineWidth = s * 0.055;
+  // Sized so the spikes, the fuse and its spark all stay inside the slot — the
+  // atlas samples with a linear filter, and anything over the edge bleeds into
+  // the neighbouring glyph.
+  const r = s * 0.25;
+  const bx = cx - s * 0.06;
+  const by = cy + s * 0.11;
+
+  // spikes, tapering out of the body
+  ctx.fillStyle = "#22252d";
   for (let k = 0; k < 8; k++) {
-    const a = (k * Math.PI) / 4;
+    const a = (k * Math.PI) / 4 + Math.PI / 8;
+    const [ca, sa] = [Math.cos(a), Math.sin(a)];
+    const [px, py] = [-sa, ca]; // perpendicular
+    const w = r * 0.26;
     ctx.beginPath();
-    ctx.moveTo(cx, cy);
-    ctx.lineTo(cx + Math.cos(a) * r * 1.35, cy + Math.sin(a) * r * 1.35);
-    ctx.stroke();
+    ctx.moveTo(bx + px * w, by + py * w);
+    ctx.lineTo(bx + ca * r * 1.45, by + sa * r * 1.45);
+    ctx.lineTo(bx - px * w, by - py * w);
+    ctx.closePath();
+    ctx.fill();
   }
-  ctx.fillStyle = "#202020";
+
+  // fuse: a cord out of the cap, with a spark on the end
+  ctx.strokeStyle = "#6b5238";
+  ctx.lineWidth = s * 0.045;
+  ctx.lineCap = "round";
   ctx.beginPath();
-  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.moveTo(bx + r * 0.34, by - r * 0.92);
+  ctx.bezierCurveTo(
+    bx + r * 1.05,
+    by - r * 1.3,
+    bx + r * 0.65,
+    by - r * 1.7,
+    bx + r * 1.25,
+    by - r * 1.72,
+  );
+  ctx.stroke();
+  const spark = ctx.createRadialGradient(
+    bx + r * 1.32,
+    by - r * 1.76,
+    0,
+    bx + r * 1.32,
+    by - r * 1.76,
+    r * 0.42,
+  );
+  spark.addColorStop(0, "#fff3c4");
+  spark.addColorStop(0.45, "#ffb020");
+  spark.addColorStop(1, "rgba(255, 120, 0, 0)");
+  ctx.fillStyle = spark;
+  ctx.beginPath();
+  ctx.arc(bx + r * 1.32, by - r * 1.76, r * 0.42, 0, Math.PI * 2);
   ctx.fill();
-  // highlight
-  ctx.fillStyle = "#ffffff";
+
+  // the cap the fuse leaves through
+  ctx.fillStyle = "#3a3f4b";
   ctx.beginPath();
-  ctx.arc(cx - r * 0.3, cy - r * 0.3, r * 0.28, 0, Math.PI * 2);
+  ctx.ellipse(bx + r * 0.3, by - r * 0.88, r * 0.24, r * 0.16, -0.6, 0, Math.PI * 2);
+  ctx.fill();
+
+  // body: lit from the upper left, with a rim of reflected light below right
+  const shell = ctx.createRadialGradient(
+    bx - r * 0.35,
+    by - r * 0.4,
+    r * 0.1,
+    bx,
+    by,
+    r * 1.15,
+  );
+  shell.addColorStop(0, "#5a616f");
+  shell.addColorStop(0.5, "#2c303a");
+  shell.addColorStop(1, "#141720");
+  ctx.fillStyle = shell;
+  ctx.beginPath();
+  ctx.arc(bx, by, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(150, 160, 180, 0.35)";
+  ctx.lineWidth = s * 0.012;
+  ctx.beginPath();
+  ctx.arc(bx, by, r * 0.97, Math.PI * 0.15, Math.PI * 0.75);
+  ctx.stroke();
+
+  // specular highlight
+  ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+  ctx.beginPath();
+  ctx.ellipse(bx - r * 0.36, by - r * 0.38, r * 0.24, r * 0.16, -0.7, 0, Math.PI * 2);
   ctx.fill();
 }
