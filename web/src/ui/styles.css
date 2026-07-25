@@ -33,10 +33,19 @@
   --border: #dfe0e5;
   --radius: 14px;
   --shadow: 0 2px 6px rgba(60, 62, 74, 0.14);
-  /* Header control sizing: the button box and the glyph inside it. Both grow
-     on phones (below) so every control stays a comfortable touch target. */
-  --hud-btn: 46px;
-  --hud-icon: 26px;
+  /* Header control sizing, all on one fluid scale — the CSS counterpart of the
+     pygame header's `_header_scale`. The square button box, the glyph inside
+     it, the gaps and the LED counter text shrink together on a narrow phone so
+     the whole row (back + flag, the centred counter / face / counter group,
+     and the two Klein scroll chevrons) stays on a single line down to a 320px
+     viewport, while every control keeps a comfortable touch size. */
+  --hud-btn: clamp(36px, 11vw, 46px);
+  --hud-icon: clamp(20px, 6.1vw, 26px);
+  --hud-gap: clamp(4px, 1.5vw, 10px);
+  --hud-pad: clamp(6px, 2vw, 14px);
+  --hud-counter-pad: clamp(4px, 1.2vw, 10px);
+  --hud-counter-font: clamp(13px, 4.2vw, 20px);
+  --hud-counter-min: clamp(42px, 12vw, 74px);
 }
 
 * {
@@ -83,30 +92,48 @@ body {
 }
 
 .hud {
-  display: flex;
+  /* Equal-width side columns around an auto middle one, so the smiley lands on
+     the exact horizontal centre of the screen whatever the side clusters hold
+     — the pygame layout, where `face_rect` is centred on `size[0] // 2` and the
+     two counters sit symmetrically either side of it. `minmax(0, 1fr)` keeps
+     the sides equal instead of letting the wider one shove the centre across
+     (the Klein bottle's two scroll chevrons make the right cluster wider). */
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  gap: var(--hud-gap);
   /* Clear the notch/status bar (top) and, in landscape, the rounded corners
      and sensor housing on the sides (viewport-fit=cover exposes these). */
-  padding: max(10px, env(safe-area-inset-top))
-    max(14px, env(safe-area-inset-right)) 10px
-    max(14px, env(safe-area-inset-left));
+  padding: max(var(--hud-pad), env(safe-area-inset-top))
+    max(var(--hud-pad), env(safe-area-inset-right)) var(--hud-pad)
+    max(var(--hud-pad), env(safe-area-inset-left));
   background: transparent;
 }
 
 .hud-cluster {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--hud-gap);
+  min-width: 0; /* a grid child defaults to min-content — let it shrink */
+}
+
+.hud-left {
+  justify-self: start;
 }
 
 .hud-center {
-  gap: 14px;
+  justify-self: center;
 }
 
-/* Rounded card controls with a soft drop shadow (iOS-style chrome). Sized for
-   a comfortable touch target (>= 44px, the iOS minimum) with a big glyph. */
+/* The Klein scroll chevrons hug the right edge, side by side on one row — the
+   same header row as everything else, on a phone as on the desktop. */
+.hud-right {
+  justify-self: end;
+}
+
+/* Rounded card controls with a soft drop shadow (iOS-style chrome). Square
+   boxes of one size, like the pygame header's `_button_side`, so the whole row
+   reads as one band of equal-height controls. */
 .hud-btn,
 .hud-smiley {
   font: inherit;
@@ -115,10 +142,11 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
-  padding: 6px 12px;
+  padding: 0;
   cursor: pointer;
-  min-height: var(--hud-btn);
-  min-width: var(--hud-btn);
+  flex: none;
+  width: var(--hud-btn);
+  height: var(--hud-btn);
 }
 
 /* Pressed / toggled-on: system-blue tinted fill, shadow tucked away. */
@@ -133,7 +161,6 @@ body {
 .hud-smiley {
   font-size: var(--hud-icon);
   line-height: 1;
-  padding: 4px 8px;
 }
 
 /* Icon-only header buttons (e.g. the flag-mode toggle). */
@@ -141,7 +168,6 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 6px 10px;
 }
 
 .hud-icon-btn svg {
@@ -150,21 +176,26 @@ body {
   height: var(--hud-icon);
 }
 
-/* LED display: red digits on a dark rounded panel. Kept across themes, like
-   the pygame counter (its PANEL/counter_fg stay dark+red under `ios`). */
+/* LED display: red digits on a dark rounded panel, flanking the smiley. The
+   panel is exactly as tall as the buttons either side of it (pygame draws its
+   counter box on the same header midline at the same height), so the row is
+   one even band rather than tall icons with squat counters between them. */
 .hud-counter {
   font-family: "DSEG7 Classic", "Courier New", monospace;
   font-variant-numeric: tabular-nums;
   font-weight: 700;
-  letter-spacing: 2px;
+  letter-spacing: clamp(1px, 0.4vw, 2px);
   color: var(--danger);
   background: #1c1c1e;
   border: 1px solid #1c1c1e;
   border-radius: 10px;
-  padding: 6px 10px;
-  min-width: 74px;
-  font-size: 20px;
-  text-align: center;
+  padding-inline: var(--hud-counter-pad);
+  min-width: var(--hud-counter-min);
+  height: var(--hud-btn);
+  font-size: var(--hud-counter-font);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* --- Menu shell --- */
@@ -343,58 +374,9 @@ body {
 }
 
 /* --- Narrow screens (phones) --- */
-/* On a narrow iPhone the header carries back + flag, mine/smiley/timer, and —
-   on a Klein bottle — two scroll chevrons. At the default sizes that overflows
-   the viewport and pushes the chevrons off-screen, so shrink the chrome to fit:
-   tighter gaps/padding, a slimmer counter, and clusters allowed to shrink. */
-@media (max-width: 480px) {
-  :root {
-    /* Still >= the 44px iOS touch minimum, with a slightly smaller glyph. */
-    --hud-btn: 44px;
-    --hud-icon: 23px;
-  }
-
-  .hud {
-    gap: 6px;
-    padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right))
-      8px max(8px, env(safe-area-inset-left));
-  }
-
-  .hud-cluster {
-    gap: 6px;
-    min-width: 0;
-  }
-
-  .hud-center {
-    gap: 8px;
-  }
-
-  .hud-btn,
-  .hud-smiley {
-    padding: 4px 6px;
-  }
-
-  .hud-icon-btn {
-    padding: 4px 5px;
-  }
-
-  .hud-counter {
-    min-width: 50px;
-    letter-spacing: 1px;
-    padding: 4px 6px;
-    font-size: 16px;
-  }
-
-  /* The Klein bottle adds two scroll chevrons to the right cluster. Side by
-     side they would squeeze every control below a comfortable size on a phone,
-     so stack them instead: full-size targets, one under the other. */
-  .hud-right {
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .hud-right .hud-btn {
-    min-height: 38px;
-    width: var(--hud-btn);
-  }
-}
+/* The header carries back + flag, mine/smiley/timer, and — on a Klein bottle —
+   two scroll chevrons: five square controls and two counters, all on one row.
+   No phone-specific rule reshapes that row any more; the viewport-relative
+   control sizes at the top shrink it to fit instead, down to a 320px viewport
+   (the narrowest iPhone) with room to spare. tests/e2e/hud.spec.ts pins the
+   fit and the centring across the iPhone widths. */

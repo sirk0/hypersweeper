@@ -160,7 +160,12 @@ Practical knowledge for verifying changes by actually running the app
 - `src/session.ts` — `GameSession`: Game ↔ mesh ↔ HUD.
 - `src/input/controls.ts` — pointer/touch state machine (tap, long-press,
   right-click, drag-rotate on 3D boards).
-- `src/ui/` — HTML/CSS overlay chrome: `hud.ts` (header), `menu.ts` (home) and
+- `src/ui/` — HTML/CSS overlay chrome: `hud.ts` (header — laid out like the
+  pygame one: back + flag at the left edge, the smiley on the exact screen
+  centre with an equal-height LED counter either side of it, and the Klein
+  scroll chevrons at the right edge, all on a single row that shrinks on one
+  fluid scale to fit a phone; `tests/e2e/hud.spec.ts` pins that),
+  `menu.ts` (home) and
   `icons.ts` (the menu glyphs — the pygame `_render_icon` shapes ported to
   inline SVG, keyed the same way: a tiling key, a family key, a mode name or a
   home-page group key),
