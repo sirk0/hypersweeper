@@ -28,10 +28,15 @@ export const ROTATE_SPEED = 0.008;
 export const KEY_ROTATE_STEP = 40;
 
 const SOLID_FOV = 40; // degrees
-// Frame the unit sphere (the board's true outer hull, bevels included) so it
-// barely touches the edges of the space below the header — just enough air
-// that no rotation crops the silhouette.
+// Air left around the board when it is framed — just enough that antialiasing
+// and the tile bevels never touch the very edge of the viewport.
 const SOLID_MARGIN = 1.03;
+// How much closer than the unit-sphere fit the camera may come. Flat boards
+// (torus, cylinder, Möbius, Klein bottle) and the faceted solids fill nothing
+// like their bounding sphere, so fitting the *silhouette* wins up to ~2× on a
+// phone; the cap keeps the perspective from going fisheye on a board that is
+// nearly edge-on, and bounds how much the framing can change as it turns.
+const MAX_SOLID_ZOOM = 2;
 /** Width/height beyond which a flat board is turned a quarter-turn on a
  * portrait viewport (the classic 30×16 hard board, aspect 1.875, would
  * otherwise shrink to a sliver). Mirrors GameScreen.ROTATE_ASPECT. */
@@ -120,7 +125,7 @@ export class BoardRenderer {
   setOrientation(q: Quaternion): void {
     if (!this.board) return;
     this.board.quaternion.copy(q);
-    this.board.orient?.(this.board.quaternion, this.perspCamera.position);
+    this.frameSolid(); // re-frames and re-culls glyphs for the new silhouette
     this.dirty = true;
   }
 
@@ -136,7 +141,7 @@ export class BoardRenderer {
         new Quaternion().setFromAxisAngle(Y_AXIS, dxPx * ROTATE_SPEED),
       );
     this.board.quaternion.premultiply(turn);
-    this.board.orient?.(this.board.quaternion, this.perspCamera.position);
+    this.frameSolid(); // the silhouette changed as it turned, so re-fit
     this.dirty = true;
   }
 
@@ -191,27 +196,113 @@ export class BoardRenderer {
       this.orthoCamera.bottom = this.orthoCamera.top - wpp * h;
       this.orthoCamera.updateProjectionMatrix();
     } else if (view?.kind === "solid") {
-      const aspect = w / h;
-      this.perspCamera.aspect = aspect;
-      // Back the camera off until the unit sphere fits the narrower axis of the
-      // region below the header — the vertical fov covers the whole canvas, so
-      // scale it down to the usable slice before comparing.
-      const halfY = (SOLID_FOV * Math.PI) / 360;
-      const halfX = Math.atan(Math.tan(halfY) * aspect);
-      const halfUsableY = Math.atan((Math.tan(halfY) * usableH) / h);
-      const dist = SOLID_MARGIN / Math.sin(Math.min(halfX, halfUsableY));
-      // Raise the camera so the board centres in that region too: the object
-      // drops by half the header height on screen.
-      const worldPerPx = (2 * dist * Math.tan(halfY)) / h;
-      this.perspCamera.position.set(0, (top / 2) * worldPerPx, dist);
-      this.perspCamera.lookAt(this.perspCamera.position.x, this.perspCamera.position.y, 0);
-      this.perspCamera.near = Math.max(0.05, dist - 2);
-      this.perspCamera.far = dist + 2;
-      this.perspCamera.updateProjectionMatrix();
-      // The camera distance sets the perspective horizon, so re-cull glyphs.
-      this.board?.orient?.(this.board.quaternion, this.perspCamera.position);
+      this.frameSolid();
     }
     this.dirty = true;
+  }
+
+  /** Place the perspective camera so the solid fills the region below the
+   * header at its current orientation. The board is scaled to the unit sphere,
+   * which is a loose bound for anything that is not a ball — a torus seen
+   * face-on covers barely half of it — so the distance is fit to the board's
+   * real silhouette (its hull points under the current rotation) and only
+   * falls back to the sphere fit as it turns edge-on. Re-fitting on every
+   * rotation is what keeps that safe: the board is framed, never cropped. */
+  private frameSolid(): void {
+    const view = this.board?.view;
+    if (!this.board || view?.kind !== "solid") return;
+    const w = this.canvas.clientWidth || window.innerWidth;
+    const h = this.canvas.clientHeight || window.innerHeight;
+    const top = Math.max(0, Math.min(this.topInset, h - 1));
+    const usableH = Math.max(1, h - top);
+
+    const aspect = w / h;
+    this.perspCamera.aspect = aspect;
+    const halfY = (SOLID_FOV * Math.PI) / 360;
+    const tanY = Math.tan(halfY);
+    // Half-angles of the region below the header: the vertical fov covers the
+    // whole canvas, so scale it down to the usable slice before fitting.
+    const tanX = tanY * aspect;
+    const tanUsableY = (tanY * usableH) / h;
+    // The loose bound: the unit sphere just touching the narrower axis. No
+    // orientation can need more room than this.
+    const sphereDist =
+      SOLID_MARGIN /
+      Math.sin(Math.min(Math.atan(tanX), Math.atan(tanUsableY)));
+    const fit = this.fitSolid(view.hull, view.radius, tanX, tanUsableY);
+    const dist = Math.max(
+      sphereDist / MAX_SOLID_ZOOM,
+      Math.min(sphereDist, fit.dist),
+    );
+
+    // Aim at the silhouette's centre (an immersed surface — the Möbius strip,
+    // the Klein bottle — does not sit centred on the board's origin), and
+    // raise the camera so the board centres in the region below the header
+    // too: the object drops by half the header height on screen.
+    const worldPerPx = (2 * dist * tanY) / h;
+    this.perspCamera.position.set(fit.cx, fit.cy + (top / 2) * worldPerPx, dist);
+    this.perspCamera.lookAt(this.perspCamera.position.x, this.perspCamera.position.y, 0);
+    this.perspCamera.near = Math.max(0.05, dist - 2);
+    this.perspCamera.far = dist + 2;
+    this.perspCamera.updateProjectionMatrix();
+    // The camera distance sets the perspective horizon, so re-cull glyphs.
+    this.board.orient?.(this.board.quaternion, this.perspCamera.position);
+  }
+
+  /** Fit the board's hull, rotated by its current quaternion and scaled to the
+   * unit sphere, into the frustum: the point the camera aims at (the centre of
+   * the rotated hull box) and the distance at which every hull point still
+   * lands inside it — a point at (x, y, z) needs `|x| * margin / tanX + z`
+   * (and the same in y) once x and y are measured from that centre. */
+  private fitSolid(
+    hull: Float32Array,
+    radius: number,
+    tanX: number,
+    tanUsableY: number,
+  ): { dist: number; cx: number; cy: number } {
+    const invR = 1 / radius;
+    const { x: qx, y: qy, z: qz, w: qw } = this.board!.quaternion;
+    // v = q * p * q⁻¹, inlined (Three's Vector3.applyQuaternion) — the hull is
+    // walked twice (centre, then distance), so keep it allocation free.
+    const rotated = (i: number, out: [number, number, number]): void => {
+      const px = hull[i]! * invR;
+      const py = hull[i + 1]! * invR;
+      const pz = hull[i + 2]! * invR;
+      const ix = qw * px + qy * pz - qz * py;
+      const iy = qw * py + qz * px - qx * pz;
+      const iz = qw * pz + qx * py - qy * px;
+      const iw = -qx * px - qy * py - qz * pz;
+      out[0] = ix * qw + iw * -qx + iy * -qz - iz * -qy;
+      out[1] = iy * qw + iw * -qy + iz * -qx - ix * -qz;
+      out[2] = iz * qw + iw * -qz + ix * -qy - iy * -qx;
+    };
+
+    const p: [number, number, number] = [0, 0, 0];
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
+    for (let i = 0; i < hull.length; i += 3) {
+      rotated(i, p);
+      if (p[0] < minX) minX = p[0];
+      if (p[0] > maxX) maxX = p[0];
+      if (p[1] < minY) minY = p[1];
+      if (p[1] > maxY) maxY = p[1];
+    }
+    if (minX > maxX) return { dist: 0, cx: 0, cy: 0 }; // no geometry
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+
+    let dist = 0;
+    for (let i = 0; i < hull.length; i += 3) {
+      rotated(i, p);
+      const need = Math.max(
+        (Math.abs(p[0] - cx) * SOLID_MARGIN) / tanX,
+        (Math.abs(p[1] - cy) * SOLID_MARGIN) / tanUsableY,
+      );
+      if (need + p[2] > dist) dist = need + p[2];
+    }
+    return { dist, cx, cy };
   }
 
   /** Cell under normalized device coords (-1..1), or null. On solids only
