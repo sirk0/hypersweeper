@@ -20,6 +20,7 @@ import {
   sharedVertexAdjacency,
   type Board3D,
   type CellId,
+  type SurfaceClip,
   type Vec3,
 } from "./core";
 import { archTemplate } from "./tilings";
@@ -135,17 +136,129 @@ function maxRadius(positions: Positions): number {
 
 /** Shift every position so their centroid sits at the origin (the bottle
  * immersion is not origin-centred; the 3D view frames and pivots about the
- * origin). Mutates and returns `positions`. */
-function kleinRecentre(positions: Positions): Positions {
+ * origin). Mutates `positions` and returns the offset that was subtracted, so
+ * `kleinClip` can map board space back into the immersion's own frame. */
+function kleinRecentre(positions: Positions): Vec3 {
   const c = centroidOf([...positions.values()]);
   for (const [k, p] of positions) positions.set(k, [p[0] - c[0], p[1] - c[1], p[2] - c[2]]);
-  return positions;
+  return c;
+}
+
+// -- the Klein bottle's self-intersection ------------------------------------
+//
+// The bottle passes through itself in exactly one place, and only the neck
+// branch is involved: a body point (u < π) has y = sin u·(8 + r·cos v) > 0 and
+// a neck point (u ≥ π) has y = 8·sin u < 0, so those two only ever meet at the
+// seams. Two neck cross-sections share a y plane — the fat one at
+// u₁ = π − asin(y/8) (r ∈ (2.5, 4]) and the thin one at u₂ = 2π + asin(y/8)
+// (r ∈ (1, 2.5]) — and the thin tube dives straight through the fat one.
+//
+// The patch of the fat sheet that ends up *inside* the thin tube is what caps
+// the view down the bore. Seen from outside the bottle the thin tube's own
+// wall stands in front of that patch, so cutting it away opens the hole up and
+// leaves the rest of the board as it was — the neck is still plainly seen
+// plunging through the belly, which is the self-intersection one wants to read.
+
+/** Centre of the neck's cross-section circle at `u`, in the x–z plane. */
+function neckCentreX(u: number): number {
+  return 3 * Math.cos(u) * (1 + Math.sin(u));
+}
+
+function kleinTubeRadius(u: number, tubeScale: number): number {
+  return tubeScale * (2.5 - 1.5 * Math.cos(u));
+}
+
+/** How far outside the *thin* neck tube a point (in the immersion's own frame)
+ * lies: negative inside it, positive outside, and +∞ where no thin
+ * cross-section reaches (the whole body half of the bottle). */
+function thinTubeDepth(p: Vec3, tubeScale: number): number {
+  const y = p[1];
+  if (y > 0 || y < -8) return Infinity;
+  const u = TWO_PI + Math.asin(Math.max(-1, Math.min(1, y / 8)));
+  return Math.hypot(p[0] - neckCentreX(u), p[2]) - kleinTubeRadius(u, tubeScale);
+}
+
+/** Same, for the fat cross-section that shares the point's y plane. A surface
+ * point sits *on* its own circle, so whichever of the two depths is nearer to
+ * zero tells which sheet the point belongs to. */
+function fatTubeDepth(p: Vec3, tubeScale: number): number {
+  const y = p[1];
+  if (y > 0 || y < -8) return Infinity;
+  const u = Math.PI - Math.asin(Math.max(-1, Math.min(1, y / 8)));
+  return Math.hypot(p[0] - neckCentreX(u), p[2]) - kleinTubeRadius(u, tubeScale);
+}
+
+// A crossing shallower than this is a tangency (the two cross-sections meet at
+// the bottom of the neck, where they are the same circle), not an overlap.
+const CLIP_EPSILON = 1e-6;
+
+/** Which sheet a cell is part of. Its *vertices* lie exactly on their own
+ * cross-section circle, so the sheet whose depths are nearer zero over the
+ * whole polygon is the one it belongs to — unlike the centroid, which on a
+ * coarse board sits a good way inside its own tube. */
+function onFatSheet(poly: readonly Vec3[], tubeScale: number): boolean {
+  let score = 0;
+  for (const p of poly) {
+    const thin = thinTubeDepth(p, tubeScale);
+    if (!Number.isFinite(thin)) continue; // the body half: no thin section here
+    score += Math.abs(thin) - Math.abs(fatTubeDepth(p, tubeScale));
+  }
+  return score > 0;
+}
+
+/** Points spread over a polygon: its vertices, its centroid, and a barycentric
+ * grid over each centroid-fan triangle. The cut patch can sit entirely inside
+ * a big cell, so corners alone would miss it. */
+function polygonSamples(poly: readonly Vec3[], steps = 4): Vec3[] {
+  const centre = centroidOf(poly);
+  const out: Vec3[] = [centre, ...poly];
+  for (let e = 0; e < poly.length; e++) {
+    const a = poly[e]!;
+    const b = poly[(e + 1) % poly.length]!;
+    for (let i = 1; i < steps; i++) {
+      for (let j = 1; i + j < steps; j++) {
+        const wa = i / steps;
+        const wb = j / steps;
+        const wc = 1 - wa - wb;
+        out.push([
+          a[0] * wa + b[0] * wb + centre[0] * wc,
+          a[1] * wa + b[1] * wb + centre[1] * wc,
+          a[2] * wa + b[2] * wb + centre[2] * wc,
+        ]);
+      }
+    }
+  }
+  return out;
+}
+
+/** The clip for a Klein board: the field the renderer cuts its cells against,
+ * plus the handful of cells the cut can reach (cells on the fat sheet with
+ * some of their area inside the thin tube). `offset` is what `kleinRecentre`
+ * subtracted, so the field takes board-space points. */
+function kleinClip(
+  cells: Cells,
+  positions: Positions,
+  offset: Vec3,
+  tubeScale: number,
+): SurfaceClip {
+  const raw = (p: Vec3): Vec3 => [p[0] + offset[0], p[1] + offset[1], p[2] + offset[2]];
+  const field = (p: Vec3): number => thinTubeDepth(raw(p), tubeScale);
+  const clipped = new Set<CellId>();
+  for (const [cell, keys] of cells) {
+    const poly = keys.map((k) => positions.get(k)!);
+    // Only the fat sheet is ever cut, so the thin tube the player looks down
+    // stays whole — cutting that one instead would empty the hole out.
+    if (!onFatSheet(poly.map(raw), tubeScale)) continue;
+    if (polygonSamples(poly).some((p) => field(p) < -CLIP_EPSILON)) clipped.add(cell);
+  }
+  return { cells: clipped, field };
 }
 
 interface AssembleOpts {
   twoSided: boolean;
   radius: number | ((positions: Positions) => number);
   cellCycle?: Map<CellId, CellId> | null;
+  clip?: SurfaceClip | null;
 }
 
 /** Build adjacency and polygons and wrap them in a Board3D. Closed surfaces
@@ -156,7 +269,7 @@ function assemble(
   cells: Cells,
   positions: Positions,
   mineCount: number,
-  { twoSided, radius, cellCycle = null }: AssembleOpts,
+  { twoSided, radius, cellCycle = null, clip = null }: AssembleOpts,
 ): Board3D {
   const adjacency = sharedVertexAdjacency(cells);
   const polygons = new Map<CellId, Vec3[]>();
@@ -165,7 +278,7 @@ function assemble(
     polygons.set(cell, twoSided ? poly : orientFromRing(poly));
   }
   const r = typeof radius === "function" ? radius(positions) : radius;
-  return { mode, polygons, adjacency, mineCount, radius: r, twoSided, cellCycle };
+  return { mode, polygons, adjacency, mineCount, radius: r, twoSided, cellCycle, clip };
 }
 
 // -- the donut ---------------------------------------------------------------
@@ -418,7 +531,7 @@ export function kleinBoard(
       cells.set(cid(i, j), [put(i, j), put(i + 1, j), put(i + 1, j + 1), put(i, j + 1)]);
     }
   }
-  kleinRecentre(positions);
+  const clip = kleinClip(cells, positions, kleinRecentre(positions), tubeScale);
 
   // one step forward along the ring. A cell is indexed by its low-j corner, so
   // at the seam the reflection maps [j, j+1] to [tube/2-j-2, tube/2-j-1] — the
@@ -435,6 +548,7 @@ export function kleinBoard(
     twoSided: true,
     radius: maxRadius,
     cellCycle,
+    clip,
   });
 }
 
@@ -490,7 +604,7 @@ export function kleinTriangleBoard(
       }
     }
   }
-  kleinRecentre(positions);
+  const clip = kleinClip(cells, positions, kleinRecentre(positions), tubeScale);
 
   // one step forward along the ring, matched by vertex set; kept only if it is
   // a bijection over the cells (a graph automorphism), else no scroll
@@ -499,6 +613,7 @@ export function kleinTriangleBoard(
     twoSided: true,
     radius: maxRadius,
     cellCycle,
+    clip,
   });
 }
 
@@ -553,7 +668,7 @@ export function kleinHexBoard(
       cellVerts.set(cid(r, c), verts);
     }
   }
-  kleinRecentre(positions);
+  const clip = kleinClip(cells, positions, kleinRecentre(positions), tubeScale);
 
   // one column forward along the ring (kx += 2), matched by vertex set (an
   // automorphism up to the seam's tube flip)
@@ -562,6 +677,7 @@ export function kleinHexBoard(
     twoSided: true,
     radius: maxRadius,
     cellCycle,
+    clip,
   });
 }
 
@@ -944,7 +1060,7 @@ export function archKleinBoard(
       }
     }
   }
-  kleinRecentre(positions);
+  const clip = kleinClip(cells, positions, kleinRecentre(positions), tubeScale);
 
   // one domain forward along the ring, matched by vertex set: a graph
   // automorphism (the seam flip carries cells to their mirror partners)
@@ -964,5 +1080,6 @@ export function archKleinBoard(
     twoSided: true,
     radius: maxRadius,
     cellCycle,
+    clip,
   });
 }

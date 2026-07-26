@@ -30,6 +30,7 @@ import {
   type CellAnchor,
   type CellVisual,
 } from "./boardMesh";
+import { clipTriangles, fanTriangles, triangleCentroid, type Tri } from "./clip";
 import { makeGlyphAtlas, type GlyphAtlas } from "./glyphAtlas";
 import { CellAnimations, rippleEntries, WIN_PER_CELL } from "./animations";
 import { cellPalette, classifyShapes, type CellPalette } from "./shapePalette";
@@ -63,13 +64,16 @@ const _inv = /* @__PURE__ */ new Matrix4(); // scratch for the world→local map
 
 interface CellGeom {
   start: number; // first vertex index in the position/normal/color buffers
-  count: number; // vertex count for this cell (9 * polygon size)
+  count: number; // vertex count for this cell (3 per triangle)
   poly: Vec3[]; // the cell's surface polygon, outward wound
   centroid: Vec3;
   normal: Vec3; // outward unit normal
   radius: number; // mean distance centroid -> vertices
   center: Vec3; // centre of the (currently raised or sunken) top face
   palette: CellPalette; // hidden/opened tones for this cell's shape
+  // Two-sided boards only: the flat tile's triangles, built once (they never
+  // re-extrude) and already cut against the surface clip.
+  tile: Tri[] | null;
 }
 
 export class SolidBoard extends Group implements BoardMesh {
@@ -118,9 +122,9 @@ export class SolidBoard extends Group implements BoardMesh {
     const basePositions: number[] = [];
     const faceCell: number[] = [];
     let vertexCount = 0;
-    // A closed cell is a raised beveled button (3n top-fan + 6n bevel-ring
-    // vertices = 3n triangles); a two-sided cell is a flat tile (n triangles).
-    const perCell = (n: number) => (this.twoSided ? 3 * n : 9 * n);
+    // Where the immersion passes through itself, the enclosed sheet is cut
+    // away so the hole can be looked into (Klein bottle; see SurfaceClip).
+    const clip = board.clip;
     // Shape colour coding: classed over the whole board at once, so a tiling
     // the surface immersion has bent stays one colour instead of a gradient.
     // The "solid" profile carries the wider hidden/opened split a curved,
@@ -139,17 +143,34 @@ export class SolidBoard extends Group implements BoardMesh {
             Math.hypot(p[0] - centroid[0], p[1] - centroid[1], p[2] - centroid[2]),
           0,
         ) / n;
+      // The cut, if this cell is one of the few the clip reaches.
+      const field = clip && clip.cells.has(cell) ? clip.field : null;
+      // A closed cell is a raised beveled button (3n top-fan + 6n bevel-ring
+      // vertices = 3n triangles); a two-sided cell is a flat tile whose
+      // triangles are fixed at build time, so a cut one keeps only what
+      // survives the clip.
+      const tile = this.twoSided
+        ? clipTriangles(
+            fanTriangles(
+              poly.map((p) => lerp3(p, centroid, SHRINK)),
+              centroid,
+            ),
+            field,
+          )
+        : null;
+      const count = tile ? 3 * tile.length : 9 * n;
       this.geom.push({
         start: vertexCount,
-        count: perCell(n),
+        count,
         poly,
         centroid,
         normal,
         radius,
-        center: centroid,
+        center: tile ? (triangleCentroid(tile) ?? centroid) : centroid,
         palette: cellPalette(tones.get(cell)!, "solid"),
+        tile,
       });
-      vertexCount += perCell(n);
+      vertexCount += count;
       // How far this cell's drawn geometry reaches: a two-sided tile lies on
       // the surface, a closed one is raised by its bevel height.
       for (const p of poly) hull.push(p[0], p[1], p[2]);
@@ -165,16 +186,15 @@ export class SolidBoard extends Group implements BoardMesh {
           outerRadius = Math.max(outerRadius, Math.hypot(top[0], top[1], top[2]));
         }
       }
-      const triangles = this.twoSided ? n : 3 * n;
+      const triangles = tile ? tile.length : 3 * n;
       for (let t = 0; t < triangles; t++) faceCell.push(ci);
 
       // Opaque base layer under the whole (unshrunk) polygon: the tile gaps
       // and the silhouette show this grout surface instead of seeing through
-      // the hollow interior.
-      for (let e = 0; e < n; e++) {
-        for (const p of [centroid, poly[e]!, poly[(e + 1) % n]!]) {
-          basePositions.push(p[0], p[1], p[2]);
-        }
+      // the hollow interior. It is cut by the same clip — grout left behind
+      // would cap the hole just as the tiles did.
+      for (const tri of clipTriangles(fanTriangles(poly, centroid), field)) {
+        for (const p of tri) basePositions.push(p[0], p[1], p[2]);
       }
     });
 
@@ -372,16 +392,14 @@ export class SolidBoard extends Group implements BoardMesh {
   /** A flat, slightly-shrunk tile fanned from the cell centroid, sitting on the
    * surface (no raise). It carries the single cell normal and is drawn
    * two-sided, so it reads the same from inside or outside; the grout base
-   * behind it shows in the shrink gap as a border line. */
+   * behind it shows in the shrink gap as a border line. The triangles were
+   * built (and clipped) once in the constructor — a flat tile never moves. */
   private writeFlatTile(i: number): void {
     const g = this.geom[i]!;
-    const { poly, centroid, normal } = g;
-    const n = poly.length;
-    const face = poly.map((p) => lerp3(p, centroid, SHRINK));
-    g.center = centroid;
+    const { normal } = g;
     let v = g.start;
-    for (let e = 0; e < n; e++) {
-      for (const p of [centroid, face[e]!, face[(e + 1) % n]!]) {
+    for (const tri of g.tile ?? []) {
+      for (const p of tri) {
         this.positionAttr.setXYZ(v, p[0], p[1], p[2]);
         this.normalAttr.setXYZ(v, normal[0], normal[1], normal[2]);
         v++;
@@ -419,6 +437,7 @@ export class SolidBoard extends Group implements BoardMesh {
       const uv = this.atlas.uv(glyph);
       if (!uv) continue;
       const g = this.geom[i]!;
+      if (g.count === 0) continue; // wholly cut away by the surface clip
       const c = g.center;
       const toCam = normalize([cam[0] - c[0], cam[1] - c[1], cam[2] - c[2]]);
       // On a closed surface only cells whose top face the camera can see carry
