@@ -100,6 +100,48 @@ describe("wrapped surfaces", () => {
     expect(kleinTriangleBoard(12, 8, 14).cellCycle).toBeNull(); // 8 ≡ 0
   });
 
+  it("only the Klein bottle carries a self-intersection clip", () => {
+    expect(kleinBoard(16, 8, 20).clip).not.toBeNull();
+    expect(kleinTriangleBoard(12, 6, 14).clip).not.toBeNull();
+    expect(kleinHexBoard(8, 6, 20).clip).not.toBeNull();
+    for (const board of [torusBoard(12, 6, 9), cylinderBoard(12, 7, 10), mobiusBoard(20, 4, 10)]) {
+      expect(board.clip).toBeNull();
+    }
+  });
+
+  it("the klein clip reaches only the cells the neck passes through", () => {
+    // The fat sheet just past the belly is pierced by the thin end of the neck,
+    // so a piece of two big cells is enclosed and must not be drawn; everything
+    // else on the board — the neck itself above all — is left whole.
+    expect([...kleinBoard(12, 6, 9).clip!.cells].sort()).toEqual(["6,2", "7,2"]);
+    expect([...kleinBoard(16, 8, 20).clip!.cells].sort()).toEqual(["8,3", "9,3"]);
+    for (const board of [kleinBoard(24, 10, 48), kleinTriangleBoard(12, 6, 14)]) {
+      expect(board.clip!.cells.size).toBeLessThan(board.polygons.size / 10);
+      for (const cell of board.clip!.cells) expect(board.polygons.has(cell)).toBe(true);
+    }
+  });
+
+  it("the klein clip field is negative only inside the enclosed patch", () => {
+    const board = kleinBoard(16, 8, 20);
+    const { field, cells } = board.clip!;
+    // every clipped cell straddles the field, and no cell is wholly enclosed
+    for (const cell of cells) {
+      const poly = board.polygons.get(cell)!;
+      expect(poly.some((p) => field(p) > 0)).toBe(true);
+    }
+    // the neck is the thin tube itself: its corners sit *on* the field's zero,
+    // never inside it, so nothing of the tube the hole looks down is cut
+    expect(cells.has("13,3")).toBe(false);
+    for (const p of board.polygons.get("13,3")!) expect(field(p)).toBeGreaterThan(-1e-9);
+  });
+
+  it("the clip is render-only: cells, adjacency and scroll are untouched", () => {
+    const board = kleinBoard(16, 8, 20);
+    expect(board.polygons.size).toBe(128);
+    expect(degrees(board)).toEqual(new Set([8]));
+    assertScrollCycle(board);
+  });
+
   it("wrap builders validate their seam arguments", () => {
     expect(() => kleinBoard(12, 5, 9)).toThrow(); // tube must be even
     expect(() => kleinTriangleBoard(10, 5, 12)).toThrow(); // tube must be even

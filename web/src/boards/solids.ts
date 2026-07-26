@@ -130,6 +130,7 @@ function convexBoard3d(
     radius,
     twoSided: false,
     cellCycle: null,
+    clip: null,
   };
 }
 
@@ -484,6 +485,7 @@ function polycubeSurface(
     radius,
     twoSided: false,
     cellCycle: null,
+    clip: null,
   };
 }
 
@@ -639,5 +641,6 @@ export function tetrahedronFrameBoard(
     radius,
     twoSided: false,
     cellCycle: null,
+    clip: null,
   };
 }

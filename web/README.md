@@ -154,8 +154,9 @@ Practical knowledge for verifying changes by actually running the app
   seedable RNG.
 - `src/boards/` — `core.ts` (Board/Board3D, adjacency, topology, vector
   helpers), `tilings.ts` (the flat regular builders), `solids.ts` (the
-  closed 3D boards), `surfaces.ts` (the torus/cylinder/Möbius/Klein wraps and
-  the Klein `cellCycle`), `catalog.ts` / `presets.ts` (read `data/*.json`).
+  closed 3D boards), `surfaces.ts` (the torus/cylinder/Möbius/Klein wraps,
+  the Klein `cellCycle` and its self-intersection `clip`), `catalog.ts` /
+  `presets.ts` (read `data/*.json`).
 - `src/render/` — one Three.js pipeline: `renderer.ts` (scene, ortho +
   perspective cameras, trackball rotation, resize, picking),
   `boardMesh.ts` (shared cell-visual vocabulary — the neutral palette, glyph
@@ -166,7 +167,11 @@ Practical knowledge for verifying changes by actually running the app
   closed cell is a raised button, an opened one is re-cut in place as a
   recess, which is what makes the two tell apart on a flat board lit
   head-on, where colour alone shades every face identically), `glyphAtlas.ts`
-  (canvas-baked digit/flag/mine texture), `animations.ts` (the shared
+  (canvas-baked digit/flag/mine texture), `clip.ts` (cutting drawn triangles
+  against a `SurfaceClip` field — how the Klein bottle drops the sheet its
+  own neck encloses, so looking into the hole shows the tube instead of a
+  cap; the surface outside the neck is untouched, so the self-intersection
+  still reads from every other angle), `animations.ts` (the shared
   reveal-ripple / flag-pop / lose-shake / win-wave clock).
 - `src/session.ts` — `GameSession`: Game ↔ mesh ↔ HUD.
 - `src/input/controls.ts` — pointer/touch state machine (tap, long-press,

@@ -33,6 +33,17 @@ export interface Board {
   height: number;
 }
 
+/** Where an immersion passes through itself, the sheet that ends up *inside*
+ * the other one caps the view down the hole. `field` is a signed function of a
+ * board-space point — negative where the surface is enclosed and must not be
+ * drawn — and `cells` lists the only cells it can touch, so the renderer clips
+ * those few and leaves the rest of the board alone. Render-only: the cells,
+ * their adjacency and the game are untouched. */
+export interface SurfaceClip {
+  cells: Set<CellId>;
+  field(p: Vec3): number;
+}
+
 export interface Board3D {
   mode: string;
   polygons: Map<CellId, Vec3[]>; // vertices on the surface, origin-centered
@@ -43,6 +54,8 @@ export interface Board3D {
   // One-step ring translation (a graph automorphism); when set, the UI lets
   // the player scroll the cell contents along it (Klein bottle, M3+).
   cellCycle: Map<CellId, CellId> | null;
+  // Set on a self-intersecting immersion (the Klein bottle); see SurfaceClip.
+  clip: SurfaceClip | null;
 }
 
 export type AnyBoard = Board | Board3D;
