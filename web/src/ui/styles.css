@@ -74,6 +74,14 @@ body {
   color: var(--text);
   font-family: "Rubik", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   overscroll-behavior: none;
+  /* No browser zoom anywhere in the app. iOS ignores `user-scalable=no`, so
+     the viewport meta alone leaves double-tap-to-zoom live: two quick taps
+     (two reveals in a row, a double tap on the smiley) blow the page up, the
+     board appears to jump, and every tap then lands on the wrong cell with no
+     way back. `manipulation` keeps taps and drags but drops the double-tap
+     gesture; the board has its own bounded pinch zoom instead (controls.ts,
+     which also blocks Safari's `gesture*` page pinch). */
+  touch-action: manipulation;
 }
 
 #board {
@@ -93,6 +101,7 @@ body {
 }
 
 #ui {
+  touch-action: manipulation;
   position: fixed;
   top: 0;
   left: 0;
@@ -157,6 +166,9 @@ body {
    reads as one band of equal-height controls. */
 .hud-btn,
 .hud-smiley {
+  /* Tap, never double-tap-zoom (the smiley is the classic victim: a double
+     tap on it zoomed the whole page in, with nothing to zoom back out). */
+  touch-action: manipulation;
   font: inherit;
   color: var(--text);
   background: var(--panel);
@@ -282,6 +294,7 @@ body {
 }
 
 .menu-entry {
+  touch-action: manipulation;
   width: 100%;
   text-align: left;
   font: inherit;
@@ -360,6 +373,7 @@ body {
 }
 
 .difficulty-btn {
+  touch-action: manipulation;
   flex: 1;
   font: inherit;
   color: var(--text);

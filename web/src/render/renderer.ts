@@ -14,6 +14,7 @@ import {
 import type { CellId } from "../boards/core";
 import { surfaceOf, viewHint } from "../boards/catalog";
 import type { BoardMesh } from "./boardMesh";
+import { anchoredPan, clampPan, clampZoom, MIN_ZOOM } from "./zoom";
 
 // One rendering pipeline for both board families. Flat boards use the
 // orthographic camera fit to the board extent; solids are scaled to the unit
@@ -41,6 +42,8 @@ const MAX_SOLID_ZOOM = 2;
  * portrait viewport (the classic 30×16 hard board, aspect 1.875, would
  * otherwise shrink to a sliver). Mirrors GameScreen.ROTATE_ASPECT. */
 const ROTATE_ASPECT = 1.2;
+/** Air left around a framed flat board (bevels and antialiasing off the edge). */
+const FLAT_MARGIN = 1.06;
 
 const X_AXIS = new Vector3(1, 0, 0);
 const Y_AXIS = new Vector3(0, 1, 0);
@@ -57,6 +60,18 @@ export class BoardRenderer {
   /** CSS px of chrome reserved at the top (the HUD header); flat boards are
    * framed in the space below it rather than centred in the whole viewport. */
   private topInset = 0;
+  /** View transform on top of the fit: 1 = the framed board, more = magnified
+   * (see zoom.ts), with the pan (world units) that keeps the magnified part of
+   * the board the player asked for on screen. */
+  private zoomLevel = MIN_ZOOM;
+  private panX = 0;
+  private panY = 0;
+  /** Screen->world scale and the pixel the view is centred on, cached by the
+   * last framing so the gesture handlers can do their arithmetic without
+   * re-deriving the whole fit. */
+  private wpp = 1;
+  private centerX = 0;
+  private centerY = 0;
 
   constructor(private readonly canvas: HTMLCanvasElement) {
     this.renderer = new WebGLRenderer({
@@ -108,6 +123,7 @@ export class BoardRenderer {
       board.scale.setScalar(1 / board.view.radius);
     }
     this.scene.add(board);
+    this.resetView(); // a new board starts framed, not where the last was left
     this.resize(); // frames the camera, then re-orients the board (below)
     this.dirty = true;
   }
@@ -162,43 +178,113 @@ export class BoardRenderer {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     this.renderer.setPixelRatio(dpr);
     this.renderer.setSize(w, h, false);
+    this.frame();
+  }
 
-    // Header height reserved at the top; the board is framed in the region
-    // below it (top of viewport = pixel `top`, height `usableH`).
+  /** The canvas, and the region of it left below the header: the box a board
+   * is framed in (top of the region = pixel `top`, height `usableH`). */
+  private viewport(): { w: number; h: number; top: number; usableH: number } {
+    const w = this.canvas.clientWidth || window.innerWidth;
+    const h = this.canvas.clientHeight || window.innerHeight;
     const top = Math.max(0, Math.min(this.topInset, h - 1));
-    const usableH = Math.max(1, h - top);
+    return { w, h, top, usableH: Math.max(1, h - top) };
+  }
 
+  /** Re-frame the current board (fit + zoom + pan) with whichever camera it
+   * uses. Cheap enough to run on every gesture step. */
+  private frame(): void {
     const view = this.board?.view;
-    if (view?.kind === "flat") {
-      // A clearly landscape board on a portrait viewport is turned a
-      // quarter-turn (clockwise) so it fills the width instead of shrinking to
-      // a sliver — the same rule as the pygame GameScreen._rotated.
-      const rotated =
-        usableH > w && view.width > view.height * ROTATE_ASPECT;
-      if (this.board) {
-        this.board.rotation.z = rotated ? -Math.PI / 2 : 0;
-        this.board.setQuarterTurn?.(rotated);
-      }
-      const boardW = rotated ? view.height : view.width;
-      const boardH = rotated ? view.width : view.height;
-      const margin = 1.06;
-      const halfW = (boardW * margin) / 2;
-      const halfH = (boardH * margin) / 2;
-      // World units per CSS pixel that fits the board in the region both ways.
-      const wpp = Math.max((2 * halfW) / w, (2 * halfH) / usableH);
-      // Keep the frustum full-canvas (so mouse→NDC picking stays consistent),
-      // but bias it vertically so the board is *centred* in the region below
-      // the header rather than centred in the whole canvas (which would tuck
-      // its top under the header). Horizontally centred.
-      this.orthoCamera.left = (-wpp * w) / 2;
-      this.orthoCamera.right = (wpp * w) / 2;
-      this.orthoCamera.top = wpp * (top + usableH / 2);
-      this.orthoCamera.bottom = this.orthoCamera.top - wpp * h;
-      this.orthoCamera.updateProjectionMatrix();
-    } else if (view?.kind === "solid") {
-      this.frameSolid();
-    }
+    if (view?.kind === "flat") this.frameFlat();
+    else if (view?.kind === "solid") this.frameSolid();
     this.dirty = true;
+  }
+
+  private frameFlat(): void {
+    const view = this.board?.view;
+    if (!this.board || view?.kind !== "flat") return;
+    const { w, h, top, usableH } = this.viewport();
+    // A clearly landscape board on a portrait viewport is turned a
+    // quarter-turn (clockwise) so it fills the width instead of shrinking to
+    // a sliver — the same rule as the pygame GameScreen._rotated.
+    const rotated = usableH > w && view.width > view.height * ROTATE_ASPECT;
+    this.board.rotation.z = rotated ? -Math.PI / 2 : 0;
+    this.board.setQuarterTurn?.(rotated);
+    const halfW = ((rotated ? view.height : view.width) * FLAT_MARGIN) / 2;
+    const halfH = ((rotated ? view.width : view.height) * FLAT_MARGIN) / 2;
+    // World units per CSS pixel: the fit that shows the whole board in the
+    // region both ways, magnified by the current zoom.
+    const wpp =
+      Math.max((2 * halfW) / w, (2 * halfH) / usableH) / this.zoomLevel;
+    // Zoomed in, the board is larger than the region and can be panned by the
+    // overhang; fitted (or smaller), it stays centred.
+    this.panX = clampPan(this.panX, halfW, (wpp * w) / 2);
+    this.panY = clampPan(this.panY, halfH, (wpp * usableH) / 2);
+    this.cacheViewMetrics(wpp, w, top, usableH);
+    // Keep the frustum full-canvas (so mouse→NDC picking stays consistent),
+    // but bias it vertically so the board is *centred* in the region below
+    // the header rather than centred in the whole canvas (which would tuck
+    // its top under the header). Horizontally centred.
+    this.orthoCamera.left = (-wpp * w) / 2 + this.panX;
+    this.orthoCamera.right = (wpp * w) / 2 + this.panX;
+    this.orthoCamera.top = wpp * (top + usableH / 2) + this.panY;
+    this.orthoCamera.bottom = this.orthoCamera.top - wpp * h;
+    this.orthoCamera.updateProjectionMatrix();
+  }
+
+  /** Remember the screen->world scale and the pixel the view is centred on
+   * (the centre of the region below the header — the same point for both
+   * cameras), which is all `zoomBy`/`panBy` need. */
+  private cacheViewMetrics(
+    wpp: number,
+    w: number,
+    top: number,
+    usableH: number,
+  ): void {
+    this.wpp = wpp;
+    this.centerX = w / 2;
+    this.centerY = top + usableH / 2;
+  }
+
+  /** Current zoom: 1 is the board framed to the viewport, up to MAX_ZOOM. */
+  get zoom(): number {
+    return this.zoomLevel;
+  }
+
+  /** Frame the board again: fitted, unpanned. */
+  resetView(): void {
+    this.zoomLevel = MIN_ZOOM;
+    this.panX = 0;
+    this.panY = 0;
+    this.frame();
+  }
+
+  /** Multiply the zoom by `factor`, keeping the board fixed under the anchor
+   * pixel (a pinch's midpoint, the mouse under the wheel; the centre of the
+   * view when omitted). Clamped to [MIN_ZOOM, MAX_ZOOM]. */
+  zoomBy(factor: number, anchorX?: number, anchorY?: number): void {
+    this.zoomTo(this.zoomLevel * factor, anchorX, anchorY);
+  }
+
+  private zoomTo(zoom: number, anchorX?: number, anchorY?: number): void {
+    const next = clampZoom(zoom);
+    if (next === this.zoomLevel || !this.board) return;
+    const before = this.wpp;
+    const after = (before * this.zoomLevel) / next;
+    const ax = anchorX ?? this.centerX;
+    const ay = anchorY ?? this.centerY;
+    this.panX = anchoredPan(this.panX, before, after, ax - this.centerX);
+    this.panY = anchoredPan(this.panY, before, after, this.centerY - ay);
+    this.zoomLevel = next;
+    this.frame();
+  }
+
+  /** Drag the board by (dx, dy) CSS pixels — it follows the finger, and the
+   * clamp in the framing keeps it from being pushed off the screen. */
+  panBy(dxPx: number, dyPx: number): void {
+    if (!this.board || (dxPx === 0 && dyPx === 0)) return;
+    this.panX -= dxPx * this.wpp;
+    this.panY += dyPx * this.wpp;
+    this.frame();
   }
 
   /** Place the perspective camera so the solid fills the region below the
@@ -211,10 +297,7 @@ export class BoardRenderer {
   private frameSolid(): void {
     const view = this.board?.view;
     if (!this.board || view?.kind !== "solid") return;
-    const w = this.canvas.clientWidth || window.innerWidth;
-    const h = this.canvas.clientHeight || window.innerHeight;
-    const top = Math.max(0, Math.min(this.topInset, h - 1));
-    const usableH = Math.max(1, h - top);
+    const { w, h, top, usableH } = this.viewport();
 
     const aspect = w / h;
     this.perspCamera.aspect = aspect;
@@ -235,12 +318,31 @@ export class BoardRenderer {
       Math.min(sphereDist, fit.dist),
     );
 
+    // Zoom magnifies the fit through the camera's own zoom rather than by
+    // dollying in, so the perspective (and the near/far shell around the
+    // board) is exactly the framed one, only closer cropped.
+    this.perspCamera.zoom = this.zoomLevel;
+    // World units per CSS pixel in the plane the board is centred on, fitted
+    // and then zoomed. The fitted board fills the region below the header, so
+    // that is also the extent the pan is allowed to travel over.
+    const fitPerPx = (2 * dist * tanY) / h;
+    const worldPerPx = fitPerPx / this.zoomLevel;
+    this.panX = clampPan(this.panX, (fitPerPx * w) / 2, (worldPerPx * w) / 2);
+    this.panY = clampPan(
+      this.panY,
+      (fitPerPx * usableH) / 2,
+      (worldPerPx * usableH) / 2,
+    );
+    this.cacheViewMetrics(worldPerPx, w, top, usableH);
     // Aim at the silhouette's centre (an immersed surface — the Möbius strip,
     // the Klein bottle — does not sit centred on the board's origin), and
     // raise the camera so the board centres in the region below the header
     // too: the object drops by half the header height on screen.
-    const worldPerPx = (2 * dist * tanY) / h;
-    this.perspCamera.position.set(fit.cx, fit.cy + (top / 2) * worldPerPx, dist);
+    this.perspCamera.position.set(
+      fit.cx + this.panX,
+      fit.cy + (top / 2) * worldPerPx + this.panY,
+      dist,
+    );
     this.perspCamera.lookAt(this.perspCamera.position.x, this.perspCamera.position.y, 0);
     this.perspCamera.near = Math.max(0.05, dist - 2);
     this.perspCamera.far = dist + 2;

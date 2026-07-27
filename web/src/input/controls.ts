@@ -6,7 +6,10 @@ import type { CellId } from "../boards/core";
 // a press that stays put and is released is a tap (reveal); held long on
 // touch it becomes a long-press (flag); moved past the threshold it becomes a
 // drag, which rotates the board when the app says the current board rotates
-// (3D) and otherwise cancels the tap. Right-click is a secondary (flag).
+// (3D), pans it when the app says it can be panned (a zoomed-in flat board),
+// and otherwise just cancels the tap. Right-click is a secondary (flag).
+// A second finger starts a pinch: it zooms the board about the midpoint and
+// pans with it, and it can never fire a tap.
 
 const MOVE_THRESHOLD = 8; // px
 const LONG_PRESS_MS = 450;
@@ -21,6 +24,16 @@ export interface ControlHandlers {
   rotates(): boolean;
   /** A drag step of (dx, dy) CSS pixels while rotating. */
   onRotate(dx: number, dy: number): void;
+  /** Whether a one-finger drag should pan the board (it is zoomed in and does
+   * not rotate). A pinch pans whatever the answer. */
+  pans(): boolean;
+  /** Drag the board by (dx, dy) CSS pixels. */
+  onPan(dx: number, dy: number): void;
+  /** Zoom by `factor` about the point (x, y) in canvas CSS pixels. */
+  onZoom(factor: number, x: number, y: number): void;
+  /** Whether a plain wheel/two-finger scroll walks the board's ring (the Klein
+   * bottle). Where it does not, the wheel zooms instead. */
+  scrolls(): boolean;
   /** One scroll step along the board's ring (Klein bottle): +1 forward, -1
    * back. Fired by the mouse wheel / two-finger trackpad scroll; a no-op off a
    * scrollable board. */
@@ -29,6 +42,10 @@ export interface ControlHandlers {
 
 // Wheel/trackpad delta accumulated per ring step (a notch is ~100px).
 const WHEEL_STEP = 40;
+// Zoom per wheel pixel. A trackpad pinch arrives as ctrl+wheel with small
+// deltas, so it gets the coarser rate; a mouse notch (~100px) the finer one.
+const CTRL_WHEEL_ZOOM = 0.01;
+const WHEEL_ZOOM = 0.0022;
 
 export function attachControls(
   canvas: HTMLCanvasElement,
@@ -42,8 +59,20 @@ export function attachControls(
   let lastY = 0;
   let moved = false;
   let rotating = false;
+  let panning = false;
   let longTimer = 0;
   let longFired = false;
+  // Live touch/pen/mouse points, so a second finger can be spotted. Pinch
+  // state is the two-finger span and midpoint from the previous move.
+  const points = new Map<number, { x: number; y: number }>();
+  let pinchSpan = 0;
+  let pinchX = 0;
+  let pinchY = 0;
+
+  const local = (clientX: number, clientY: number): { x: number; y: number } => {
+    const r = canvas.getBoundingClientRect();
+    return { x: clientX - r.left, y: clientY - r.top };
+  };
 
   const ndc = (clientX: number, clientY: number): Vector2 => {
     const r = canvas.getBoundingClientRect();
@@ -58,17 +87,49 @@ export function attachControls(
     longTimer = 0;
   };
 
+  /** The span and midpoint (canvas CSS px) of the first two live points. */
+  const pinchGeometry = (): { span: number; x: number; y: number } | null => {
+    const [a, b] = [...points.values()];
+    if (!a || !b) return null;
+    const mid = local((a.x + b.x) / 2, (a.y + b.y) / 2);
+    return { span: Math.hypot(a.x - b.x, a.y - b.y), ...mid };
+  };
+
+  const startPinch = () => {
+    const g = pinchGeometry();
+    if (!g) return;
+    // A pinch is never a tap and never a rotation: cancel whatever the first
+    // finger had started, and leave `moved` set so the release stays silent.
+    clearLong();
+    moved = true;
+    rotating = false;
+    panning = false;
+    pinchSpan = g.span;
+    pinchX = g.x;
+    pinchY = g.y;
+  };
+
   const onPointerDown = (e: PointerEvent) => {
     if (e.button === 2) return; // handled on contextmenu
+    points.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (points.size >= 2) {
+      startPinch();
+      return;
+    }
     pressed = true;
     downX = lastX = e.clientX;
     downY = lastY = e.clientY;
     moved = false;
     rotating = false;
+    panning = false;
     longFired = false;
     downCell = handlers.pick(ndc(e.clientX, e.clientY));
     // keep receiving moves when a rotation drag leaves the canvas
-    canvas.setPointerCapture?.(e.pointerId);
+    try {
+      canvas.setPointerCapture?.(e.pointerId);
+    } catch {
+      /* synthetic pointers (tests) have no capture target */
+    }
     if (downCell != null && e.pointerType !== "mouse") {
       const cell = downCell;
       longTimer = window.setTimeout(() => {
@@ -79,6 +140,25 @@ export function attachControls(
   };
 
   const onPointerMove = (e: PointerEvent) => {
+    if (points.has(e.pointerId)) {
+      points.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    }
+    if (points.size >= 2) {
+      const g = pinchGeometry();
+      if (g) {
+        if (pinchSpan > 0 && g.span > 0) {
+          handlers.onZoom(g.span / pinchSpan, g.x, g.y);
+        }
+        // Two fingers travelling together drag the board as they zoom it.
+        handlers.onPan(g.x - pinchX, g.y - pinchY);
+        pinchSpan = g.span;
+        pinchX = g.x;
+        pinchY = g.y;
+      }
+      lastX = e.clientX;
+      lastY = e.clientY;
+      return;
+    }
     if (pressed && !longFired) {
       if (
         !moved &&
@@ -87,8 +167,10 @@ export function attachControls(
         moved = true;
         clearLong();
         if (handlers.rotates()) rotating = true;
+        else if (handlers.pans()) panning = true;
       }
       if (rotating) handlers.onRotate(e.clientX - lastX, e.clientY - lastY);
+      else if (panning) handlers.onPan(e.clientX - lastX, e.clientY - lastY);
     }
     lastX = e.clientX;
     lastY = e.clientY;
@@ -98,12 +180,40 @@ export function attachControls(
   };
 
   const onPointerUp = (e: PointerEvent) => {
+    points.delete(e.pointerId);
+    if (points.size >= 1) {
+      // Lifting one finger of a pinch: re-seed from the fingers still down so
+      // the board does not jump, and keep the gesture non-tapping.
+      const g = pinchGeometry();
+      if (g) {
+        pinchSpan = g.span;
+        pinchX = g.x;
+        pinchY = g.y;
+      } else {
+        const rest = [...points.values()][0];
+        if (rest) {
+          lastX = rest.x;
+          lastY = rest.y;
+        }
+      }
+      moved = true;
+      return;
+    }
     clearLong();
     const wasRotating = rotating;
+    const wasPanning = panning;
     pressed = false;
     rotating = false;
+    panning = false;
     const cell = handlers.pick(ndc(e.clientX, e.clientY));
-    if (!longFired && !moved && !wasRotating && cell != null && cell === downCell) {
+    if (
+      !longFired &&
+      !moved &&
+      !wasRotating &&
+      !wasPanning &&
+      cell != null &&
+      cell === downCell
+    ) {
       handlers.onTap(cell);
     }
     downCell = null;
@@ -115,18 +225,33 @@ export function attachControls(
     if (cell != null) handlers.onSecondary(cell);
   };
 
-  const onCancel = () => {
+  const onCancel = (e: PointerEvent) => {
+    points.delete(e.pointerId);
     clearLong();
-    pressed = false;
-    rotating = false;
-    downCell = null;
+    if (points.size === 0) {
+      pressed = false;
+      rotating = false;
+      panning = false;
+      downCell = null;
+    }
   };
 
   const onLeave = () => handlers.onHover(null);
 
   let scrollAccum = 0;
   const onWheel = (e: WheelEvent) => {
-    e.preventDefault(); // don't let the page scroll under the board
+    e.preventDefault(); // don't let the page scroll (or zoom) under the board
+    // A trackpad pinch reaches the page as ctrl+wheel, so it always zooms; a
+    // plain wheel walks the ring on a board that has one (the Klein bottle)
+    // and zooms on every other board.
+    if (e.ctrlKey || !handlers.scrolls()) {
+      const rate = e.ctrlKey ? CTRL_WHEEL_ZOOM : WHEEL_ZOOM;
+      // deltaMode 1 counts lines, 2 pages; normalise both to pixels.
+      const px = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1);
+      const p = local(e.clientX, e.clientY);
+      handlers.onZoom(Math.exp(-px * rate), p.x, p.y);
+      return;
+    }
     scrollAccum += e.deltaY;
     while (scrollAccum >= WHEEL_STEP) {
       scrollAccum -= WHEEL_STEP;
@@ -155,5 +280,49 @@ export function attachControls(
     canvas.removeEventListener("pointerleave", onLeave);
     canvas.removeEventListener("contextmenu", onContextMenu);
     canvas.removeEventListener("wheel", onWheel);
+  };
+}
+
+/** Stop the *browser* from zooming the page on the board — the fix for the
+ * iOS bug where a double-tap (two quick reveals, a double tap on the smiley)
+ * blows the whole page up: the layout viewport then no longer matches what the
+ * player sees, the board appears to have jumped, and taps land on the wrong
+ * cells with no way back short of reloading. The app does its own board zoom
+ * instead (pinch / wheel / +,-), which is bounded and reversible.
+ *
+ * Three layers, because no single one covers every WebKit build:
+ *   - `touch-action: manipulation` on the chrome and `none` on the canvas
+ *     (styles.css) is the standards-based half;
+ *   - Safari's own `gesture*` events are the page-pinch path, which
+ *     touch-action does not govern;
+ *   - a fast second `touchend` is the classic double-tap-to-zoom trigger.
+ *     Buttons are left alone there so a double tap on the smiley still
+ *     restarts twice — `touch-action` already covers them.
+ */
+export function blockBrowserZoom(target: Document = document): () => void {
+  const DOUBLE_TAP_MS = 350;
+  let lastTouchEnd = 0;
+
+  const stop = (e: Event) => e.preventDefault();
+  const onTouchEnd = (e: Event) => {
+    const now = Date.now();
+    const onButton =
+      e.target instanceof Element && e.target.closest("button") != null;
+    if (!onButton && now - lastTouchEnd < DOUBLE_TAP_MS) e.preventDefault();
+    lastTouchEnd = now;
+  };
+
+  target.addEventListener("gesturestart", stop as EventListener);
+  target.addEventListener("gesturechange", stop as EventListener);
+  target.addEventListener("gestureend", stop as EventListener);
+  target.addEventListener("dblclick", stop as EventListener);
+  target.addEventListener("touchend", onTouchEnd, { passive: false });
+
+  return () => {
+    target.removeEventListener("gesturestart", stop as EventListener);
+    target.removeEventListener("gesturechange", stop as EventListener);
+    target.removeEventListener("gestureend", stop as EventListener);
+    target.removeEventListener("dblclick", stop as EventListener);
+    target.removeEventListener("touchend", onTouchEnd);
   };
 }

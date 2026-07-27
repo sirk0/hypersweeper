@@ -22,7 +22,8 @@ frame and gameplay assertions stay timing independent. iOS install polish:
 `viewport-fit=cover` with safe-area insets on the header and menu,
 `touch-action: none` + `-webkit-touch-callout: none` on the canvas, apple- and
 standard `mobile-web-app-capable` metas, and the maskable/apple-touch icons the
-PWA manifest already ships. A zero-dependency bundle gate (`npm run size`,
+PWA manifest already ships. The board carries its own bounded pinch/wheel zoom
+and pan, and the browser's page zoom is blocked outright — see **Zoom** below. A zero-dependency bundle gate (`npm run size`,
 enforced in CI) keeps the shipped JS + CSS under the **250 KB gzip** budget
 (currently ~145 KB). **All 105 modes, polished.**
 
@@ -175,7 +176,13 @@ Practical knowledge for verifying changes by actually running the app
   reveal-ripple / flag-pop / lose-shake / win-wave clock).
 - `src/session.ts` — `GameSession`: Game ↔ mesh ↔ HUD.
 - `src/input/controls.ts` — pointer/touch state machine (tap, long-press,
-  right-click, drag-rotate on 3D boards).
+  right-click, drag-rotate on 3D boards, pinch-zoom and drag-pan on every
+  board), plus `blockBrowserZoom` — the guard that keeps the *browser* from
+  zooming the page (see "Zoom" below).
+- `src/render/zoom.ts` — the pure view-transform arithmetic (zoom bounds, the
+  anchor that holds a point under the fingers, the pan clamp), unit tested
+  without a WebGL context; `renderer.ts` owns the state and applies it to
+  whichever camera the board uses.
 - `src/ui/` — HTML/CSS overlay chrome: `hud.ts` (header — laid out like the
   pygame one: back + flag at the left edge, the smiley on the exact screen
   centre with an equal-height LED counter either side of it, and the Klein
@@ -213,6 +220,32 @@ Practical knowledge for verifying changes by actually running the app
   is clamped between the old sphere fit (never smaller than before) and
   `MAX_SOLID_ZOOM` times closer (no fisheye on a board seen edge-on, and a
   bound on how much the framing can change mid-drag).
+
+## Zoom
+
+The board zooms **in the app**, never in the browser. Pinch on the canvas, or
+`ctrl`+wheel / a trackpad pinch, or the wheel on any board with no ring to
+scroll, or `+` / `-` / `0` (frame it again); a zoomed flat board is dragged
+with one finger, any board with two. Zoom is bounded — `MIN_ZOOM` is the fitted
+board (it can never be shrunk into the void) and `MAX_ZOOM` caps magnification
+— and the pan is clamped to the board's overhang, so no gesture can lose the
+board off-screen. A new board always starts framed. `window.__ms.zoom()` reads
+the level and `zoomBy(factor, x, y)` drives it; `tests/e2e/zoom.spec.ts` pins
+the gestures with synthetic multi-touch pointer streams (Playwright has no
+multi-touch API).
+
+The browser's own zoom is blocked on purpose (`blockBrowserZoom`,
+`touch-action` in `styles.css`). iOS ignores `user-scalable=no`, so without
+that guard a double tap — two quick reveals, a double tap on the smiley —
+zooms the *page*: the board appears to jump, taps land on the wrong cells, and
+on a standalone/PWA-ish view there is no way to zoom back out. Three layers
+cover it, because no single one holds on every WebKit build: `touch-action:
+manipulation` on the chrome (`none` on the canvas), Safari's `gesture*` events
+cancelled, and a fast second `touchend` cancelled (buttons excepted, so a
+double tap on the smiley still restarts twice). `App.syncViewport` also
+divides out `visualViewport.scale`, so a page zoom that arrives some other way
+(iOS accessibility, a desktop ctrl-+) cannot re-frame the board under the
+player's fingers.
 
 ## Shape colour coding (`src/render/shapePalette.ts`)
 
