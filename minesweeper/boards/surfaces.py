@@ -137,20 +137,26 @@ def torus_board(
 def torus_triangle_board(
     ring: int, tube: int, mine_count: int, tube_radius: float = 0.45
 ) -> Board3D:
-    """A donut tiled with triangles: each quad of the torus grid is
-    split along a diagonal, giving ``2 * ring * tube`` cells."""
+    """A donut tiled with the regular triangular tiling, exactly as the
+    cylinder is: ``ring`` triangles around the ring in every row (must be
+    even, so up/down triangles alternate across the seam) and ``tube``
+    rows around the tube (must be even, so the offset rows meet cleanly
+    where the tube closes). Every cell has 12 neighbours."""
+    if ring % 2:
+        raise ValueError("ring must be even for the triangle strip to wrap")
+    if tube % 2:
+        raise ValueError("tube must be even so the offset rows wrap")
+
     def point(key):
-        i, j = key
-        return _torus_point(2 * math.pi * i / ring,
-                            2 * math.pi * j / tube, tube_radius)
+        kx, ky = key
+        return _torus_point(2 * math.pi * kx / ring,
+                            2 * math.pi * ky / tube, tube_radius)
 
     cells = {}
-    for i in range(ring):
-        for j in range(tube):
-            a, b = (i, j), ((i + 1) % ring, j)
-            c, d = ((i + 1) % ring, (j + 1) % tube), (i, (j + 1) % tube)
-            cells[(i, j, 0)] = [a, b, c]
-            cells[(i, j, 1)] = [a, c, d]
+    for r in range(tube):
+        for i in range(ring):
+            cells[(r, i)] = [(kx % ring, ky % tube) for kx, ky
+                             in _triangle_vertices(i, r, up=(r + i) % 2 == 0)]
     return _assemble("torustri", cells, point, mine_count,
                      two_sided=False, radius=1.0 + tube_radius)
 
@@ -207,26 +213,31 @@ def mobius_board(ring: int, width_cells: int, mine_count: int) -> Board3D:
                      two_sided=True, radius=1.0 + half_width)
 
 
-def mobius_triangle_board(ring: int, width_cells: int, mine_count: int) -> Board3D:
-    """A Möbius strip tiled with triangles: each quad of the strip is
-    split along a diagonal, giving ``2 * ring * width_cells`` cells."""
-    half_width = min(0.7, math.pi * width_cells / ring / 2)
+def mobius_triangle_board(ring: int, rows: int, mine_count: int) -> Board3D:
+    """A Möbius strip tiled with the regular triangular tiling, exactly as
+    the cylinder is: ``ring`` triangles around the loop in every row,
+    ``rows`` rows across the strip. After a full loop the strip flips, so
+    the seam glues row ``r`` to row ``rows - 1 - r``; the mirror lands on
+    the offset lattice only when ``ring`` and ``rows`` share a parity."""
+    if (ring - rows) % 2:
+        raise ValueError("ring and rows must share a parity for the flipped seam")
+    # lattice x unit is half a triangle side; row height matches the cylinder's
+    half_width = min(0.7, rows * ROOT3 * 0.9 * math.pi / ring)
 
-    def key(i, j):
-        return (i - ring, width_cells - j) if i >= ring else (i, j)
+    def key(kx, ky):
+        # crossing the seam flips the strip across its centre line
+        return (kx - ring, rows - ky) if kx >= ring else (kx, ky)
 
     def point(k):
-        i, j = k
-        return _mobius_point(2 * math.pi * i / ring,
-                             half_width * (2 * j / width_cells - 1))
+        kx, ky = k
+        return _mobius_point(2 * math.pi * kx / ring,
+                             half_width * (2 * ky / rows - 1))
 
     cells = {}
-    for i in range(ring):
-        for j in range(width_cells):
-            a, b = key(i, j), key(i + 1, j)
-            c, d = key(i + 1, j + 1), key(i, j + 1)
-            cells[(i, j, 0)] = [a, b, c]
-            cells[(i, j, 1)] = [a, c, d]
+    for r in range(rows):
+        for i in range(ring):
+            cells[(r, i)] = [key(kx, ky) for kx, ky
+                             in _triangle_vertices(i, r, up=(r + i) % 2 == 0)]
     return _assemble("mobiustri", cells, point, mine_count,
                      two_sided=True, radius=1.0 + half_width)
 
@@ -337,47 +348,47 @@ def _klein_recentre(cells, raw):
 def klein_triangle_board(
     ring: int, tube: int, mine_count: int, tube_scale: float = 1.0
 ) -> Board3D:
-    """A Klein bottle tiled with triangles: each quad of the ``ring * tube``
-    bottle grid split along a diagonal, giving ``2 * ring * tube`` cells.
-    The cross-section (``tube``, must be even) wraps straight; the ring seam
-    glues flipped (``j`` -> ``tube/2 - j - 1``) like ``klein_board``.
+    """A Klein bottle tiled with the regular triangular tiling, exactly as
+    the cylinder is: ``ring`` triangles around the ring in every row,
+    ``tube`` rows around the cross-section (must be even, so the offset
+    rows meet where the tube closes). The tube wraps straight; the ring
+    seam glues it flipped (``ky`` -> ``tube/2 - 1 - ky``, the reflection
+    the bottle immersion makes there), which lands on the offset lattice
+    only when ``ring`` and ``tube // 2 - 1`` share a parity -- with the
+    ``tube = 2 (mod 4)`` the presets use, that means an even ``ring``.
 
-    The quad diagonal alternates by column (``/`` on even ``j``, ``\\`` on
-    odd) so that the seam's glide reflection carries diagonals to diagonals:
-    when ``tube`` is 2 (mod 4) the ring translation is then an automorphism
-    and the board scrolls like ``klein_board``. At other even ``tube`` the
-    triangulation admits no such scroll and ``cell_cycle`` is left ``None``
-    (the torus/Möbius triangle boards likewise offer no scroll)."""
+    The board scrolls by *two* lattice columns: a one-column shift moves
+    the offset rows onto each other and is no symmetry of the triangular
+    lattice, while two columns is the tiling's own ring translation."""
     if tube % 2:
         raise ValueError("tube must be even so the seam reflection lands on cells")
+    flip = tube // 2 - 1
+    if (ring - flip) % 2:
+        raise ValueError("ring and tube // 2 - 1 must share a parity for the seam")
 
-    def key(i, j):
-        if i >= ring:                      # crossed the ring seam: flip the tube
-            return (i - ring, (tube // 2 - j - 1) % tube)
-        return (i % ring, j % tube)
+    def key(kx, ky):
+        if kx >= ring:                     # crossed the ring seam: flip the tube
+            return (kx - ring, (flip - ky) % tube)
+        return (kx % ring, ky % tube)
 
     def raw(k):
-        i, j = k
-        return _klein_point(2 * math.pi * i / ring,
-                            2 * math.pi * (j + 0.5) / tube, tube_scale)
+        kx, ky = k
+        # half-cell offset in v keeps every vertex off the self-intersection
+        # circle (v = 0, pi), so no two distinct vertices coincide
+        return _klein_point(2 * math.pi * kx / ring,
+                            2 * math.pi * (ky + 0.5) / tube, tube_scale)
 
     cells = {}
-    for i in range(ring):
-        for j in range(tube):
-            a, b = key(i, j), key(i + 1, j)
-            c, d = key(i + 1, j + 1), key(i, j + 1)
-            if j % 2 == 0:                  # "/" diagonal a--c
-                cells[(i, j, 0)] = [a, b, c]
-                cells[(i, j, 1)] = [a, c, d]
-            else:                           # "\" diagonal b--d
-                cells[(i, j, 0)] = [a, b, d]
-                cells[(i, j, 1)] = [b, c, d]
+    for r in range(tube):
+        for i in range(ring):
+            cells[(r, i)] = [key(kx, ky) for kx, ky
+                             in _triangle_vertices(i, r, up=(r + i) % 2 == 0)]
     positions = _klein_recentre(cells, raw)
 
-    # one step forward along the ring, matched by vertex set; kept only if it
-    # is a bijection over the cells (a graph automorphism), else no scroll
+    # two lattice columns forward along the ring, matched by vertex set; kept
+    # only if it is a bijection over the cells (a graph automorphism)
     by_vertexset = {frozenset(keys): cell for cell, keys in cells.items()}
-    shifted = {cell: frozenset(key(i + 1, j) for i, j in keys)
+    shifted = {cell: frozenset(key(kx + 2, ky) for kx, ky in keys)
                for cell, keys in cells.items()}
     cell_cycle = None
     if all(s in by_vertexset for s in shifted.values()):
