@@ -37,3 +37,53 @@ test.describe("every flat board is clickable", () => {
     });
   }
 });
+
+// A press that stays under the drag threshold is a tap, and it belongs to the
+// cell it started on. It used to be thrown away unless the release point picked
+// that same cell again — so a tap that wandered a pixel or two over a cell edge
+// (routine on a touch screen) did nothing at all, while a long-press on the
+// same spot, which fires from the press, flagged it happily.
+test.describe("a tap that wanders within the threshold", () => {
+  test("reveals the cell it started on", async ({ page }) => {
+    await page.setViewportSize({ width: 900, height: 700 });
+    await page.goto("/");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    await page.evaluate(() =>
+      window.__ms!.startBoard("square", "medium", { mines: ["4,4"] }),
+    );
+
+    // A point 3px inside "4,5", and one 3px past the edge it shares with its
+    // neighbour: 6px apart, under the 8px threshold, but different cells.
+    const span = await page.evaluate(() => {
+      const ms = window.__ms!;
+      const a = ms.cellScreenXY("4,5")!;
+      const b = ms.cellScreenXY("5,5")!;
+      // The cells share an edge, so it runs through the midpoint of their
+      // centres; step 3px either side of it.
+      const dx = Math.sign(b.x - a.x) * 3;
+      const dy = Math.sign(b.y - a.y) * 3;
+      const mx = (a.x + b.x) / 2;
+      const my = (a.y + b.y) / 2;
+      const from = { x: mx - dx, y: my - dy };
+      const to = { x: mx + dx, y: my + dy };
+      return {
+        from,
+        to,
+        fromCell: ms.cellAtScreenXY(from.x, from.y),
+        toCell: ms.cellAtScreenXY(to.x, to.y),
+      };
+    });
+    // The gesture only tests what it is meant to if the two ends really do sit
+    // in different cells.
+    expect(span.fromCell).toBe("4,5");
+    expect(span.toCell).toBe("5,5");
+
+    await page.mouse.move(span.from.x, span.from.y);
+    await page.mouse.down();
+    await page.mouse.move(span.to.x, span.to.y);
+    await page.mouse.up();
+
+    expect(await page.evaluate(() => window.__ms!.cellState("4,5"))).toBe("revealed");
+    expect(await page.evaluate(() => window.__ms!.cellState("5,5"))).toBe("hidden");
+  });
+});

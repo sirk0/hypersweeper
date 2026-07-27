@@ -1,4 +1,4 @@
-import { Vector3 } from "three";
+import { Vector2, Vector3 } from "three";
 import "./ui/styles.css";
 import { isBoard3D, type CellId } from "./boards/core";
 import { hasMode } from "./boards/presets";
@@ -175,15 +175,13 @@ class App {
 
   // -- gameplay --------------------------------------------------------------
 
+  /** A tap carries the *geometric* face picking hit, not a game cell; the
+   * session owns the mapping between the two, so the reveal-or-chord choice is
+   * made there. */
   private onTap(cell: CellId): void {
     if (!this.session || this.screen !== "game") return;
-    if (this.flagMode) {
-      this.session.flag(cell);
-    } else if (this.session.game.cellState(cell) === "revealed") {
-      this.session.chord(cell);
-    } else {
-      this.session.reveal(cell);
-    }
+    if (this.flagMode) this.session.flag(cell);
+    else this.session.tap(cell);
     this.afterMove();
   }
 
@@ -309,11 +307,23 @@ class App {
     };
   }
 
+  /** The game cell shown at a point in client coordinates: the same raycast a
+   * tap runs, then the face -> game cell mapping the scroll permutes. */
+  private cellAtScreenXY(x: number, y: number): CellId | null {
+    if (!this.session) return null;
+    const r = this.canvas.getBoundingClientRect();
+    const geom = this.renderer.pick(
+      new Vector2(((x - r.left) / r.width) * 2 - 1, -(((y - r.top) / r.height) * 2 - 1)),
+    );
+    return geom == null ? null : this.session.gameFor(geom);
+  }
+
   private installSeam(): void {
     installTestHook({
       ready: () => true,
       cells: () => (this.session ? this.session.game.cells : []),
       cellScreenXY: (cell) => this.cellScreenXY(cell),
+      cellAtScreenXY: (x, y) => this.cellAtScreenXY(x, y),
       startBoard: (mode, difficulty, opts) => {
         this.startGame(mode, difficulty, opts ?? {});
       },
