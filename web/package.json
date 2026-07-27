@@ -6,6 +6,7 @@
   "description": "TypeScript + Three.js rewrite of the Minesweeper Tiles game (M0 scaffold).",
   "scripts": {
     "dev": "vite",
+    "dev:host": "vite --host",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",

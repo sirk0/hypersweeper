@@ -82,6 +82,37 @@ npm run e2e         # Playwright e2e + visual regression
 npm run e2e:update  # refresh visual baselines
 ```
 
+### Testing on a phone (LAN)
+
+`npm run dev` binds to `localhost` only. To reach the dev server from an
+iPhone (or any other device) on the same Wi-Fi, use `npm run dev:host`
+(runs `vite --host`, binding `0.0.0.0`) — Vite then prints a `Network:`
+URL (`http://<lan-ip>:5173/`) alongside `Local:`; open that URL directly
+in Safari. Note that plain `npm run dev --host` does **not** work — npm
+swallows `--host` without a `-- ` separator (`npm run dev -- --host`
+would work too, but `dev:host` avoids the footgun).
+
+- Both devices must be on the **same Wi-Fi network/SSID** — mesh systems
+  (e.g. TP-Link Deco) sometimes put a "Guest" or "IoT" network on client
+  isolation by default, which silently blocks device-to-device traffic
+  even though both show as connected; check the router app if the
+  `Network:` URL still doesn't load. iOS's "Private Wi-Fi Address" can
+  also get an iPhone treated as an unrecognized/IoT-like client by such
+  isolation features — worth disabling for that network if isolation is
+  suspected.
+- macOS may prompt "Accept incoming network connections?" for `node` the
+  first time it binds to all interfaces — allow it (and check
+  System Settings → Network → Firewall isn't set to block all incoming
+  connections).
+- The PWA service worker (`vite-plugin-pwa`) only registers in a secure
+  context, and `http://<lan-ip>:5173` isn't one (only `localhost` is
+  exempt) — offline/install behavior won't activate over LAN, but core
+  gameplay is unaffected. Test PWA/install behavior against the deployed
+  HTTPS site instead.
+- If the iPhone isn't on the same network at all (cellular, isolated
+  guest Wi-Fi), a tunnel (`ngrok http 5173`, Tailscale/Cloudflare Tunnel)
+  is the fallback.
+
 Cloud sessions: `@playwright/test` is **pinned** (not caret-ranged) to the
 version whose bundled Chromium build matches the one preinstalled in the Claude
 cloud image (`/opt/pw-browsers/chromium-<build>`), so `npm run e2e` resolves the
