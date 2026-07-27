@@ -35,6 +35,13 @@ export interface MsHook {
   /** Walk the Klein cell cycle one step (+1 forward, -1 back); no-op on boards
    * without one. */
   scroll(direction: number): void;
+  /** A cell's game state — lets a test assert *which* cell a click hit. */
+  cellState(cell: CellId): "hidden" | "revealed" | "flagged" | null;
+  /** The board's current zoom (1 = framed to the viewport). */
+  zoom(): number;
+  /** Multiply the zoom by `factor`, about a point in canvas CSS pixels (the
+   * centre of the view by default); clamped like the pinch gesture. */
+  zoomBy(factor: number, x?: number, y?: number): void;
   /** Enable or disable board animations (reveal ripple, flag pop, lose shake).
    * e2e tests disable them so a screenshot captures the settled frame. */
   animations(enabled: boolean): void;

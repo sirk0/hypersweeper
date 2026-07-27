@@ -5,7 +5,7 @@ import { hasMode } from "./boards/presets";
 import { DIFFICULTIES } from "./boards/catalog";
 import { screens } from "./config/screens";
 import { GameSession } from "./session";
-import { attachControls } from "./input/controls";
+import { attachControls, blockBrowserZoom } from "./input/controls";
 import {
   BoardRenderer,
   initialOrientation,
@@ -14,6 +14,9 @@ import {
 import { Hud } from "./ui/hud";
 import { Menu } from "./ui/menu";
 import { installTestHook } from "./testHook";
+
+/** Zoom step for one press of the +/- keys. */
+const ZOOM_KEY_STEP = 1.3;
 
 // App bootstrap: menu launches a ported board; deep links start one directly;
 // input drives reveal/flag/chord (and, on 3D boards, drag/arrow-key rotation)
@@ -58,8 +61,21 @@ class App {
       onHover: (cell) => this.hover(cell),
       rotates: () => this.screen === "game" && (this.session?.is3d ?? false),
       onRotate: (dx, dy) => this.rotate(dx, dy),
+      // A zoomed-in flat board is dragged around; a 3D one is rotated instead
+      // (two fingers still pan it).
+      pans: () =>
+        this.screen === "game" &&
+        !(this.session?.is3d ?? false) &&
+        this.renderer.zoom > 1,
+      onPan: (dx, dy) => this.pan(dx, dy),
+      onZoom: (factor, x, y) => this.zoom(factor, x, y),
+      scrolls: () =>
+        this.screen === "game" && (this.session?.hasCellCycle ?? false),
       onScroll: (direction) => this.scroll(direction),
     });
+    // The board has its own bounded zoom, so the browser's page zoom is only
+    // ever a trap here (see blockBrowserZoom).
+    blockBrowserZoom();
     this.renderer.start();
     window.setInterval(() => this.tickTimer(), 250);
 
@@ -119,7 +135,15 @@ class App {
    * is the on-screen height (what the pygame web presenter reads for the same
    * reason); CSS falls back to `100dvh` before this first runs. */
   private syncViewport(): void {
-    const h = window.visualViewport?.height ?? window.innerHeight;
+    const vv = window.visualViewport;
+    // While the page is pinch-zoomed (scale > 1) the visual viewport is a
+    // window onto the layout viewport, so reading its height directly would
+    // shrink the app to the zoomed slice and re-frame the board under the
+    // player's fingers. Undo the scale to recover the layout height and hold
+    // the layout still. Nothing here should reach a phone any more — the app
+    // blocks browser zoom (controls.ts, styles.css) — but a stray zoom (iOS
+    // accessibility, a desktop ctrl-+) must not scramble the board.
+    const h = vv ? vv.height * (vv.scale || 1) : window.innerHeight;
     document.documentElement.style.setProperty("--app-h", `${Math.round(h)}px`);
   }
 
@@ -182,6 +206,19 @@ class App {
     this.renderer.rotateBy(dxPx, dyPx);
   }
 
+  /** Magnify the board about a point in canvas CSS pixels (a pinch midpoint,
+   * the mouse under the wheel). Bounded by the renderer's zoom clamp. */
+  private zoom(factor: number, x?: number, y?: number): void {
+    if (this.screen !== "game") return;
+    this.renderer.zoomBy(factor, x, y);
+  }
+
+  /** Drag the zoomed board by (dx, dy) CSS pixels. */
+  private pan(dxPx: number, dyPx: number): void {
+    if (this.screen !== "game") return;
+    this.renderer.panBy(dxPx, dyPx);
+  }
+
   /** Walk the Klein cell cycle one step (view-layer permutation); no-op on
    * boards without one. */
   private scroll(direction: number): void {
@@ -192,7 +229,20 @@ class App {
   }
 
   private onKey(e: KeyboardEvent): void {
-    if (this.screen !== "game" || !this.session?.is3d) return;
+    if (this.screen !== "game") return;
+    // Zoom from the keyboard on every board: +/- step, 0 frames it again.
+    if (e.key === "+" || e.key === "=") this.zoom(ZOOM_KEY_STEP);
+    else if (e.key === "-" || e.key === "_") this.zoom(1 / ZOOM_KEY_STEP);
+    else if (e.key === "0") this.renderer.resetView();
+    else if (!this.session?.is3d) return;
+    else {
+      this.onKey3d(e);
+      return;
+    }
+    e.preventDefault();
+  }
+
+  private onKey3d(e: KeyboardEvent): void {
     // Bracket keys walk the Klein cell cycle (matching the wheel / scroll
     // arrows); arrows rotate the board.
     if (e.key === "[") this.scroll(-1);
@@ -277,6 +327,9 @@ class App {
         this.afterMove();
       },
       rotate: (dxPx, dyPx) => this.rotate(dxPx, dyPx),
+      cellState: (cell) => this.session?.game.cellState(cell) ?? null,
+      zoom: () => this.renderer.zoom,
+      zoomBy: (factor, x, y) => this.zoom(factor, x, y),
       scroll: (direction) => this.scroll(direction),
       animations: (enabled) => {
         this.animationsEnabled = enabled;
