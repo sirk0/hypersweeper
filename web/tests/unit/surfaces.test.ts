@@ -87,7 +87,7 @@ describe("wrapped surfaces", () => {
   });
 
   it("klein triangle/hex cell counts match Python", () => {
-    expect(kleinTriangleBoard(12, 6, 14).adjacency.size).toBe(144);
+    expect(kleinTriangleBoard(18, 6, 13).adjacency.size).toBe(108);
     expect(kleinHexBoard(6, 4, 9).adjacency.size).toBe(24);
   });
 
@@ -95,14 +95,22 @@ describe("wrapped surfaces", () => {
     assertScrollCycle(kleinHexBoard(8, 6, 20));
   });
 
-  it("klein triangles scroll only when tube is two mod four", () => {
-    assertScrollCycle(kleinTriangleBoard(12, 6, 14)); // 6 ≡ 2 (mod 4)
-    expect(kleinTriangleBoard(12, 8, 14).cellCycle).toBeNull(); // 8 ≡ 0
+  it("klein triangles carry a scroll cycle of two lattice columns", () => {
+    assertScrollCycle(kleinTriangleBoard(18, 6, 13));
+    assertScrollCycle(kleinTriangleBoard(25, 8, 20));
+  });
+
+  it("klein triangles need a ring parity matching the seam flip", () => {
+    // the seam mirror (ky -> tube/2 - 1 - ky) lands on the offset lattice
+    // only when the ring shift matches that flip's parity
+    expect(() => kleinTriangleBoard(19, 6, 13)).toThrow();
+    expect(() => kleinTriangleBoard(24, 8, 20)).toThrow();
+    expect(() => kleinTriangleBoard(10, 5, 12)).toThrow();
   });
 
   it("only the Klein bottle carries a self-intersection clip", () => {
     expect(kleinBoard(16, 8, 20).clip).not.toBeNull();
-    expect(kleinTriangleBoard(12, 6, 14).clip).not.toBeNull();
+    expect(kleinTriangleBoard(18, 6, 13).clip).not.toBeNull();
     expect(kleinHexBoard(8, 6, 20).clip).not.toBeNull();
     for (const board of [torusBoard(12, 6, 9), cylinderBoard(12, 7, 10), mobiusBoard(20, 4, 10)]) {
       expect(board.clip).toBeNull();
@@ -115,7 +123,7 @@ describe("wrapped surfaces", () => {
     // else on the board — the neck itself above all — is left whole.
     expect([...kleinBoard(12, 6, 9).clip!.cells].sort()).toEqual(["6,2", "7,2"]);
     expect([...kleinBoard(16, 8, 20).clip!.cells].sort()).toEqual(["8,3", "9,3"]);
-    for (const board of [kleinBoard(24, 10, 48), kleinTriangleBoard(12, 6, 14)]) {
+    for (const board of [kleinBoard(24, 10, 48), kleinTriangleBoard(18, 6, 13)]) {
       expect(board.clip!.cells.size).toBeLessThan(board.polygons.size / 10);
       for (const cell of board.clip!.cells) expect(board.polygons.has(cell)).toBe(true);
     }

@@ -208,10 +208,12 @@ surface.
    - `klein_board` (square): vertex flip `j -> tube/2 - j - 1` (matching
      the immersion's `v -> π - v`, `tube` **even**); the *cell* flip is
      one lower because a cell is indexed by its low-`j` corner.
-   - `klein_triangle_board`: splits each quad, diagonal alternating by
-     column so the seam glide carries diagonals to diagonals — the ring
-     translation is then an automorphism only when `tube` is 2 (mod 4)
-     (else `cell_cycle` is `None`).
+   - `klein_triangle_board`: the regular triangular lattice (the same
+     `_triangle_vertices` rows the flat and cylinder boards use), vertex
+     flip `ky -> tube/2 - 1 - ky`. Consecutive rows are offset by half a
+     step, so that mirror lands on the lattice only when `ring` matches
+     the flip's parity, and the ring translation that scrolls the board
+     is **two** lattice columns (one column swaps the row offsets).
    - `klein_hex_board`: offset hex lattice, tube reflected `ky -> 4 - ky`
      across the ring seam (`rows` **even**).
    - `arch_klein_board`: the template version, next to `arch_torus_board`

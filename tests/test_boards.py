@@ -1,4 +1,5 @@
 import math
+import statistics
 from collections import Counter, defaultdict
 
 import pytest
@@ -231,9 +232,10 @@ class TestCellCounts:
         assert all(len(p) == 3 for p in board.polygons.values())
 
     def test_triangle_and_hex_surface_counts(self):
-        assert len(torus_triangle_board(10, 5, 12).adjacency) == 100
+        # ring triangles per row x rows: one cell per lattice triangle
+        assert len(torus_triangle_board(20, 6, 14).adjacency) == 120
         assert len(torus_hex_board(6, 12, 9).adjacency) == 72
-        assert len(mobius_triangle_board(14, 4, 13).adjacency) == 112
+        assert len(mobius_triangle_board(28, 4, 13).adjacency) == 112
         assert len(mobius_hex_board(14, 3, 6).adjacency) == 42
         assert len(cylinder_triangle_board(16, 6, 11).adjacency) == 96
         assert len(cylinder_hex_board(12, 6, 9).adjacency) == 72
@@ -247,6 +249,25 @@ class TestPolygonShapes:
         assert all(len(p) == 6 for p in hex_board(3, 3, 2).polygons.values())
         assert all(len(p) == 5 for p in sphere_board(7).polygons.values())
         assert all(len(p) == 4 for p in torus_board(8, 5, 4).polygons.values())
+
+    # Every triangle-tiled surface carries the same regular triangular
+    # lattice the flat and cylinder boards do, so its cells stay as close to
+    # equilateral as the immersion's own stretch allows. Splitting a quad
+    # grid along a diagonal instead (what these boards used to do) adds a
+    # sqrt(2) edge on top of that stretch: medians 1.80 (donut), 2.20
+    # (Möbius) and 1.89 (Klein bottle), well above these limits.
+    _EDGE_RATIO_LIMITS = {"cyltri": 1.15, "torustri": 1.4,
+                          "mobiustri": 1.25, "kleintri": 1.7}
+
+    @pytest.mark.parametrize("mode", sorted(_EDGE_RATIO_LIMITS))
+    @pytest.mark.parametrize("difficulty", DIFFICULTIES)
+    def test_wrapped_triangles_are_near_equilateral(self, mode, difficulty):
+        board = build_board(mode, difficulty)
+        ratios = []
+        for polygon in board.polygons.values():
+            edges = [math.dist(polygon[i], polygon[(i + 1) % 3]) for i in range(3)]
+            ratios.append(max(edges) / min(edges))
+        assert statistics.median(ratios) < self._EDGE_RATIO_LIMITS[mode]
 
 
 class TestHat:
@@ -359,7 +380,7 @@ class TestNeighborCounts:
         assert {len(n) for n in board.adjacency.values()} == {6}
 
     def test_triangle_torus_is_borderless(self):
-        board = torus_triangle_board(10, 5, 12)
+        board = torus_triangle_board(20, 6, 14)
         assert {len(n) for n in board.adjacency.values()} == {12}
 
     def test_hex_mobius_seam_glues_flipped(self):
@@ -376,6 +397,19 @@ class TestNeighborCounts:
         with pytest.raises(ValueError):
             cylinder_triangle_board(15, 6, 11)
 
+    def test_triangle_torus_requires_even_ring_and_tube(self):
+        with pytest.raises(ValueError):
+            torus_triangle_board(15, 6, 12)
+        with pytest.raises(ValueError):
+            torus_triangle_board(20, 5, 12)
+
+    def test_triangle_mobius_requires_matching_parities(self):
+        # the seam mirror (row r -> row rows - 1 - r) only lands on the
+        # offset lattice when the ring shift matches the flip's parity
+        with pytest.raises(ValueError):
+            mobius_triangle_board(28, 5, 13)
+        mobius_triangle_board(35, 5, 13)      # both odd is fine
+
     @pytest.mark.parametrize("mode", ["hex", "trigrid"])
     @pytest.mark.parametrize("difficulty", DIFFICULTIES)
     def test_flat_grids_are_roughly_square(self, mode, difficulty):
@@ -390,7 +424,7 @@ class TestNeighborCounts:
             cube_board(4, 12),
             tetrahedron_board(8, 4),
             torus_board(12, 6, 9),
-            torus_triangle_board(10, 5, 12),
+            torus_triangle_board(20, 6, 14),
             torus_hex_board(6, 12, 9),
         ):
             for cell, polygon in board.polygons.items():
@@ -788,12 +822,20 @@ class TestKleinTilings:
         assert board.two_sided is True
 
     def test_triangle_and_hex_cell_counts(self):
-        assert len(klein_triangle_board(12, 6, 14).adjacency) == 144
+        assert len(klein_triangle_board(18, 6, 13).adjacency) == 108
         assert len(klein_hex_board(6, 4, 9).adjacency) == 24
 
     def test_triangle_tube_must_be_even(self):
         with pytest.raises(ValueError):
             klein_triangle_board(10, 5, 12)
+
+    def test_triangle_ring_parity_follows_the_seam_flip(self):
+        # the seam mirror (ky -> tube//2 - 1 - ky) lands on the offset
+        # lattice only when ring matches that flip's parity
+        with pytest.raises(ValueError):
+            klein_triangle_board(19, 6, 13)   # tube//2 - 1 even, ring odd
+        with pytest.raises(ValueError):
+            klein_triangle_board(24, 8, 20)   # tube//2 - 1 odd, ring even
 
     def test_hex_rows_must_be_even(self):
         with pytest.raises(ValueError):
@@ -811,10 +853,10 @@ class TestKleinTilings:
         # whole-hexagon cells let the ring translation act as an automorphism
         self._assert_is_scroll_cycle(klein_hex_board(8, 6, 20))
 
-    def test_triangle_scrolls_when_tube_is_two_mod_four(self):
-        # the column-alternating diagonal survives the seam glide only then
-        self._assert_is_scroll_cycle(klein_triangle_board(12, 6, 14))
-        assert klein_triangle_board(12, 8, 14).cell_cycle is None
+    def test_triangle_carries_a_scroll_cycle(self):
+        # the triangular lattice's ring translation is two lattice columns
+        self._assert_is_scroll_cycle(klein_triangle_board(18, 6, 13))
+        self._assert_is_scroll_cycle(klein_triangle_board(25, 8, 20))
 
     def test_chiral_tilings_have_no_klein(self):
         for tiling in ("snubhex", "floret"):

@@ -316,31 +316,35 @@ export function torusBoard(
   });
 }
 
-/** A donut tiled with triangles: each quad of the torus grid split along a
- * diagonal, giving `2 * ring * tube` cells. */
+/** A donut tiled with the regular triangular tiling, exactly as the cylinder
+ * is: `ring` triangles around the ring in every row (must be even, so up/down
+ * triangles alternate across the seam) and `tube` rows around the tube (must
+ * be even, so the offset rows meet cleanly where the tube closes). */
 export function torusTriangleBoard(
   ring: number,
   tube: number,
   mineCount: number,
   tubeRadius = 0.45,
 ): Board3D {
+  if (ring % 2) throw new Error("ring must be even for the triangle strip to wrap");
+  if (tube % 2) throw new Error("tube must be even so the offset rows wrap");
   const cells: Cells = new Map();
   const positions: Positions = new Map();
-  const put = (i: number, j: number): string => {
+  const put = (kx: number, ky: number): string => {
+    const i = mod(kx, ring);
+    const j = mod(ky, tube);
     const k = `${i},${j}`;
     if (!positions.has(k)) {
       positions.set(k, torusPoint(TWO_PI * i / ring, TWO_PI * j / tube, tubeRadius));
     }
     return k;
   };
-  for (let i = 0; i < ring; i++) {
-    for (let j = 0; j < tube; j++) {
-      const a = put(i, j);
-      const b = put((i + 1) % ring, j);
-      const c = put((i + 1) % ring, (j + 1) % tube);
-      const d = put(i, (j + 1) % tube);
-      cells.set(cid(i, j, 0), [a, b, c]);
-      cells.set(cid(i, j, 1), [a, c, d]);
+  for (let r = 0; r < tube; r++) {
+    for (let i = 0; i < ring; i++) {
+      cells.set(
+        cid(r, i),
+        triangleVertices(i, r, (r + i) % 2 === 0).map(([kx, ky]) => put(kx, ky)),
+      );
     }
   }
   return assemble("torustri", cells, positions, mineCount, {
@@ -418,33 +422,40 @@ export function mobiusBoard(ring: number, widthCells: number, mineCount: number)
   });
 }
 
-/** A Möbius strip tiled with triangles: each quad split along a diagonal. */
+/** A Möbius strip tiled with the regular triangular tiling, exactly as the
+ * cylinder is: `ring` triangles around the loop in every row, `rows` rows
+ * across the strip. After a full loop the strip flips, so the seam glues row
+ * `r` to row `rows - 1 - r`; the mirror lands on the offset lattice only when
+ * `ring` and `rows` share a parity. */
 export function mobiusTriangleBoard(
   ring: number,
-  widthCells: number,
+  rows: number,
   mineCount: number,
 ): Board3D {
-  const halfWidth = Math.min(0.7, (Math.PI * widthCells) / ring / 2);
+  if ((ring - rows) % 2) {
+    throw new Error("ring and rows must share a parity for the flipped seam");
+  }
+  // lattice x unit is half a triangle side; row height matches the cylinder's
+  const halfWidth = Math.min(0.7, (rows * ROOT3 * 0.9 * Math.PI) / ring);
   const cells: Cells = new Map();
   const positions: Positions = new Map();
-  const key = (i: number, j: number): [number, number] =>
-    i >= ring ? [i - ring, widthCells - j] : [i, j];
-  const put = (i: number, j: number): string => {
-    const [ci, cj] = key(i, j);
+  // crossing the seam flips the strip across its centre line
+  const key = (kx: number, ky: number): [number, number] =>
+    kx >= ring ? [kx - ring, rows - ky] : [kx, ky];
+  const put = (kx: number, ky: number): string => {
+    const [ci, cj] = key(kx, ky);
     const k = `${ci},${cj}`;
     if (!positions.has(k)) {
-      positions.set(k, mobiusPoint(TWO_PI * ci / ring, halfWidth * (2 * cj / widthCells - 1)));
+      positions.set(k, mobiusPoint(TWO_PI * ci / ring, halfWidth * (2 * cj / rows - 1)));
     }
     return k;
   };
-  for (let i = 0; i < ring; i++) {
-    for (let j = 0; j < widthCells; j++) {
-      const a = put(i, j);
-      const b = put(i + 1, j);
-      const c = put(i + 1, j + 1);
-      const d = put(i, j + 1);
-      cells.set(cid(i, j, 0), [a, b, c]);
-      cells.set(cid(i, j, 1), [a, c, d]);
+  for (let r = 0; r < rows; r++) {
+    for (let i = 0; i < ring; i++) {
+      cells.set(
+        cid(r, i),
+        triangleVertices(i, r, (r + i) % 2 === 0).map(([kx, ky]) => put(kx, ky)),
+      );
     }
   }
   return assemble("mobiustri", cells, positions, mineCount, {
@@ -552,11 +563,15 @@ export function kleinBoard(
   });
 }
 
-/** A Klein bottle tiled with triangles: each quad of the `ring * tube` bottle
- * grid split along a diagonal. The diagonal alternates by column so the seam's
- * glide carries diagonals to diagonals: when `tube ≡ 2 (mod 4)` the ring
- * translation is an automorphism and the board scrolls; otherwise `cellCycle`
- * is left null. */
+/** A Klein bottle tiled with the regular triangular tiling, exactly as the
+ * cylinder is: `ring` triangles around the ring in every row, `tube` rows
+ * around the cross-section (must be even, so the offset rows meet where the
+ * tube closes). The tube wraps straight; the ring seam glues it flipped
+ * (`ky -> tube/2 - 1 - ky`, the reflection the bottle immersion makes there),
+ * which lands on the offset lattice only when `ring` and `tube / 2 - 1` share
+ * a parity. The board scrolls by *two* lattice columns: one column moves the
+ * offset rows onto each other and is no symmetry of the triangular lattice,
+ * while two columns is the tiling's own ring translation. */
 export function kleinTriangleBoard(
   ring: number,
   tube: number,
@@ -564,18 +579,22 @@ export function kleinTriangleBoard(
   tubeScale = 1,
 ): Board3D {
   if (tube % 2) throw new Error("tube must be even so the seam reflection lands on cells");
-  const half = tube / 2;
-  const key = (i: number, j: number): [number, number] =>
-    i >= ring
-      ? [i - ring, ((half - j - 1) % tube + tube) % tube]
-      : [((i % ring) + ring) % ring, ((j % tube) + tube) % tube];
+  const flip = tube / 2 - 1;
+  if ((ring - flip) % 2) {
+    throw new Error("ring and tube / 2 - 1 must share a parity for the seam");
+  }
+  // crossing the ring seam flips the tube
+  const key = (kx: number, ky: number): [number, number] =>
+    kx >= ring ? [kx - ring, mod(flip - ky, tube)] : [mod(kx, ring), mod(ky, tube)];
   const cells: Cells = new Map();
   const cellVerts = new Map<CellId, [number, number][]>();
   const positions: Positions = new Map();
-  const put = (i: number, j: number): [string, [number, number]] => {
-    const canon = key(i, j);
+  const put = (kx: number, ky: number): [string, [number, number]] => {
+    const canon = key(kx, ky);
     const k = `${canon[0]},${canon[1]}`;
     if (!positions.has(k)) {
+      // half-cell offset in v keeps every vertex off the self-intersection
+      // circle (v = 0, π), so no two distinct vertices coincide
       positions.set(
         k,
         kleinPoint(TWO_PI * canon[0] / ring, (TWO_PI * (canon[1] + 0.5)) / tube, tubeScale),
@@ -583,32 +602,18 @@ export function kleinTriangleBoard(
     }
     return [k, canon];
   };
-  for (let i = 0; i < ring; i++) {
-    for (let j = 0; j < tube; j++) {
-      const [ak, av] = put(i, j);
-      const [bk, bv] = put(i + 1, j);
-      const [ck, cv] = put(i + 1, j + 1);
-      const [dk, dv] = put(i, j + 1);
-      if (j % 2 === 0) {
-        // "/" diagonal a--c
-        cells.set(cid(i, j, 0), [ak, bk, ck]);
-        cellVerts.set(cid(i, j, 0), [av, bv, cv]);
-        cells.set(cid(i, j, 1), [ak, ck, dk]);
-        cellVerts.set(cid(i, j, 1), [av, cv, dv]);
-      } else {
-        // "\" diagonal b--d
-        cells.set(cid(i, j, 0), [ak, bk, dk]);
-        cellVerts.set(cid(i, j, 0), [av, bv, dv]);
-        cells.set(cid(i, j, 1), [bk, ck, dk]);
-        cellVerts.set(cid(i, j, 1), [bv, cv, dv]);
-      }
+  for (let r = 0; r < tube; r++) {
+    for (let i = 0; i < ring; i++) {
+      const corners = triangleVertices(i, r, (r + i) % 2 === 0).map(([kx, ky]) => put(kx, ky));
+      cells.set(cid(r, i), corners.map(([k]) => k));
+      cellVerts.set(cid(r, i), corners.map(([, v]) => v));
     }
   }
   const clip = kleinClip(cells, positions, kleinRecentre(positions), tubeScale);
 
-  // one step forward along the ring, matched by vertex set; kept only if it is
-  // a bijection over the cells (a graph automorphism), else no scroll
-  const cellCycle = ringCycleByVertexSet(cells, cellVerts, key);
+  // two lattice columns forward along the ring, matched by vertex set; kept
+  // only if it is a bijection over the cells (a graph automorphism)
+  const cellCycle = ringCycleByVertexSet(cells, cellVerts, key, 2);
   return assemble("kleintri", cells, positions, mineCount, {
     twoSided: true,
     radius: maxRadius,
