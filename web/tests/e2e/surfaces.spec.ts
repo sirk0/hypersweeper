@@ -98,4 +98,51 @@ test.describe("M3 surfaces", () => {
     await expect(page.locator('.hud-btn[data-slot="klein-scroll-back"]')).toBeVisible();
     await expect(page.locator('.hud-btn[data-slot="klein-scroll-fwd"]')).toBeVisible();
   });
+
+  // The reported bug: on a scrolled Klein board a tap did nothing, while a flag
+  // on the same cell worked. The tap's reveal-or-chord choice was made on the
+  // *face's* own id instead of the cell the face shows, so after a scroll it
+  // chose a chord for a closed cell (and a reveal for an open one) — moves the
+  // rules ignore. Flagging never consulted the state, which is why it worked.
+  test("after a scroll, a tap still acts on the cell shown under it", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    await revealedTarget(page);
+    // A board's world transform is applied when it renders, so screen positions
+    // are only meaningful after a frame has been drawn.
+    await page.evaluate(
+      () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
+    );
+    // Aim at a revealed cell drawn on its own face and not hidden behind the
+    // neck — i.e. one the raycast really lands on.
+    const at = await page.evaluate(() => {
+      const ms = window.__ms!;
+      for (const c of ms.cells()) {
+        if (ms.cellState(c) !== "revealed") continue;
+        const xy = ms.cellScreenXY(c);
+        if (xy && ms.cellAtScreenXY(xy.x, xy.y) === c) return xy;
+      }
+      return null;
+    });
+    expect(at, "no unoccluded revealed cell to aim at").not.toBeNull();
+
+    // Scroll the ring: the geometry stays put, so the same face is still under
+    // `at` — but it now shows a different game cell, a closed one.
+    const shown = await page.evaluate(({ x, y }) => {
+      const ms = window.__ms!;
+      ms.scroll(1);
+      const cell = ms.cellAtScreenXY(x, y);
+      return { cell, state: cell == null ? null : ms.cellState(cell) };
+    }, at!);
+    expect(shown.cell, "nothing picked where the revealed cell was").not.toBeNull();
+    expect(shown.state, "the scroll did not bring a closed cell here").toBe("hidden");
+
+    await page.mouse.click(at!.x, at!.y);
+    // Revealed either way: a safe cell opens, a mine opens and ends the game.
+    // What must not happen is the tap being swallowed.
+    expect(
+      await page.evaluate((c) => window.__ms!.cellState(c), shown.cell!),
+      "the tap did nothing to the cell under it",
+    ).toBe("revealed");
+  });
 });

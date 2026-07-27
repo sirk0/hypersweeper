@@ -86,8 +86,27 @@ export class GameSession {
     return this.remapInv.get(gameCell) ?? gameCell;
   }
 
-  private toGame(geomCell: CellId): CellId {
+  /** The game cell whose contents are currently painted on a geometric face —
+   * the inverse of `geomFor`, and what every move below acts on. Public
+   * because the face id is what picking hands back: anything that asks the
+   * *game* about a face (its state, its number) has to come through here. */
+  gameFor(geomCell: CellId): CellId {
     return this.remap.get(geomCell) ?? geomCell;
+  }
+
+  /** The primary action on a tapped face: chord an already-open cell, reveal a
+   * closed one. The choice belongs here rather than in the caller because it
+   * has to be made on the *game* cell the face shows: on a scrolled Klein
+   * board the face's own id is some other cell, and deciding from that one
+   * chose the wrong move for the cell under the finger — a chord on a closed
+   * cell, or a reveal on an open one, both of which the rules ignore, so the
+   * tap silently did nothing while a flag on the same cell worked. */
+  tap(geomCell: CellId): void {
+    if (this.game.cellState(this.gameFor(geomCell)) === "revealed") {
+      this.chord(geomCell);
+    } else {
+      this.reveal(geomCell);
+    }
   }
 
   /** Scroll the cell contents one step along the ring: `direction` > 0 forward
@@ -101,7 +120,7 @@ export class GameSession {
     this.remap = next;
     this.remapInv = invert(next);
     for (const geom of this.board.polygons.keys()) {
-      this.mesh.setVisual(geom, this.visualFor(this.toGame(geom)));
+      this.mesh.setVisual(geom, this.visualFor(this.gameFor(geom)));
     }
     return true;
   }
@@ -123,7 +142,7 @@ export class GameSession {
   reveal(cell: CellId): void {
     if (this.status !== "playing") return;
     this.startTimer();
-    const gameCell = this.toGame(cell);
+    const gameCell = this.gameFor(cell);
     const changed = this.game.reveal(gameCell);
     if (this.game.state === "lost") this.exploded = gameCell;
     this.apply(changed);
@@ -133,7 +152,7 @@ export class GameSession {
 
   flag(cell: CellId): void {
     this.startTimer();
-    const gameCell = this.toGame(cell);
+    const gameCell = this.gameFor(cell);
     const wasFlagged = this.game.cellState(gameCell) === "flagged";
     this.apply(this.game.toggleFlag(gameCell));
     // Pop only on placing a flag, not on clearing one.
@@ -146,7 +165,7 @@ export class GameSession {
   chord(cell: CellId): void {
     if (this.status !== "playing") return;
     this.startTimer();
-    const chorded = this.toGame(cell);
+    const chorded = this.gameFor(cell);
     const changed = this.game.chord(chorded);
     if (this.game.state === "lost") {
       // the mine that ended the chord is whichever revealed mine exists

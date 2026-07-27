@@ -20,6 +20,10 @@ export interface MsHook {
   ready(): boolean;
   cells(): CellId[];
   cellScreenXY(cell: CellId): { x: number; y: number } | null;
+  /** The game cell shown at a point in client (CSS) coordinates — the inverse
+   * of `cellScreenXY`, resolved by the same raycast a tap uses, so a test can
+   * assert which cell a gesture actually lands on. */
+  cellAtScreenXY(x: number, y: number): CellId | null;
   state(): MsState;
   startBoard(
     mode: string,

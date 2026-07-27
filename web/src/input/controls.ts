@@ -205,16 +205,15 @@ export function attachControls(
     pressed = false;
     rotating = false;
     panning = false;
-    const cell = handlers.pick(ndc(e.clientX, e.clientY));
-    if (
-      !longFired &&
-      !moved &&
-      !wasRotating &&
-      !wasPanning &&
-      cell != null &&
-      cell === downCell
-    ) {
-      handlers.onTap(cell);
+    // Act on the cell the press landed on, not on whatever is under the point
+    // the finger lifted from. Under the threshold the gesture is a tap, and the
+    // cell the player aimed at is the one they pressed — it is also the one
+    // long-press flags. Re-picking at the release point instead meant a tap
+    // that wandered a pixel or two across a cell edge (routine on a touch
+    // screen, and cells are small on a dense board) picked a different cell and
+    // was thrown away, so the tap did nothing at all.
+    if (!longFired && !moved && !wasRotating && !wasPanning && downCell != null) {
+      handlers.onTap(downCell);
     }
     downCell = null;
   };
