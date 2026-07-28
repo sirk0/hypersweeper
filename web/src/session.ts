@@ -155,11 +155,13 @@ export class GameSession {
     const gameCell = this.gameFor(cell);
     const wasFlagged = this.game.cellState(gameCell) === "flagged";
     this.apply(this.game.toggleFlag(gameCell));
+    const isFlagged = this.game.cellState(gameCell) === "flagged";
     // Pop only on placing a flag, not on clearing one.
-    if (!wasFlagged && this.game.cellState(gameCell) === "flagged") {
-      this.mesh.popFlag(this.geomFor(gameCell));
-      haptic("flag");
-    }
+    if (!wasFlagged && isFlagged) this.mesh.popFlag(this.geomFor(gameCell));
+    // Buzz either way. A long press is invisible until it fires, so the tick
+    // is the only signal that the hold landed — withholding it when the hold
+    // *removes* a flag made half of all holds feel broken.
+    if (wasFlagged !== isFlagged) haptic("flag");
   }
 
   chord(cell: CellId): void {

@@ -3,6 +3,7 @@ import "./ui/styles.css";
 import { isBoard3D, type CellId } from "./boards/core";
 import { boardLinkQuery, parseBoardLink } from "./link";
 import { GameSession } from "./session";
+import { primeHaptics } from "./haptics";
 import { attachControls, blockBrowserZoom } from "./input/controls";
 import {
   BoardRenderer,
@@ -89,6 +90,12 @@ class App {
     // The board has its own bounded zoom, so the browser's page zoom is only
     // ever a trap here (see blockBrowserZoom).
     blockBrowserZoom();
+    // Get the iOS tick element built and laid out on the very first touch
+    // anywhere — long before a flag needs it (see primeHaptics).
+    window.addEventListener("pointerdown", () => primeHaptics(), {
+      once: true,
+      capture: true,
+    });
     subscribeSettings((s) => this.adoptSettings(s));
     this.renderer.start();
     window.setInterval(() => this.tickTimer(), 250);

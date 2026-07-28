@@ -12,7 +12,16 @@ import type { CellId } from "../boards/core";
 // pans with it, and it can never fire a tap.
 
 const MOVE_THRESHOLD = 8; // px
-const LONG_PRESS_MS = 450;
+// How far a press may drift before a *pending long press* is abandoned. Wider
+// than MOVE_THRESHOLD on purpose: a finger resting on glass for a third of a
+// second wanders further than 8px, and where that drift starts no other
+// gesture (a flat board that neither rotates nor pans) it used to throw the
+// flag away for nothing.
+const TOUCH_SLOP = 14; // px
+// Comfortably shorter than the ~500ms at which iOS's own press-and-hold
+// recognisers engage: the flag has to land before anything in the platform can
+// claim the touch. Still unmistakably a hold — a tap runs 80-120ms.
+const LONG_PRESS_MS = 350;
 
 export interface ControlHandlers {
   pick(ndc: Vector2): CellId | null;
@@ -111,6 +120,14 @@ export function attachControls(
 
   const onPointerDown = (e: PointerEvent) => {
     if (e.button === 2) return; // handled on contextmenu
+    // Second layer under `touch-action: none` (styles.css): claiming the touch
+    // up front keeps WebKit's own selection / callout / drag recognisers from
+    // engaging mid-hold and cancelling the gesture out from under the flag.
+    // Mouse presses are left alone so the contextmenu path stays untouched.
+    if (e.pointerType !== "mouse") e.preventDefault();
+    // A cancelled press can leave a timer pending (see onCancel); never let a
+    // new press stack a second one on top of it.
+    clearLong();
     points.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (points.size >= 2) {
       startPinch();
@@ -160,15 +177,16 @@ export function attachControls(
       return;
     }
     if (pressed && !longFired) {
-      if (
-        !moved &&
-        Math.hypot(e.clientX - downX, e.clientY - downY) > MOVE_THRESHOLD
-      ) {
+      const travel = Math.hypot(e.clientX - downX, e.clientY - downY);
+      if (!moved && travel > MOVE_THRESHOLD) {
         moved = true;
-        clearLong();
         if (handlers.rotates()) rotating = true;
         else if (handlers.pans()) panning = true;
       }
+      // The hold dies when the movement actually turns into another gesture,
+      // or when it leaves the touch slop — not merely when it passes the
+      // tap threshold. The tap is cancelled either way (`moved`).
+      if (rotating || panning || travel > TOUCH_SLOP) clearLong();
       if (rotating) handlers.onRotate(e.clientX - lastX, e.clientY - lastY);
       else if (panning) handlers.onPan(e.clientX - lastX, e.clientY - lastY);
     }
@@ -224,11 +242,20 @@ export function attachControls(
     if (cell != null) handlers.onSecondary(cell);
   };
 
+  // Note what this deliberately does *not* do: clear the long-press timer.
+  // WebKit fires pointercancel the moment any platform gesture recogniser
+  // claims a touch, which is the commonest way a hold dies on iOS — and a
+  // cancel is the browser taking the gesture away, not the player changing
+  // their mind, so a stationary hold that is already ticking is allowed to
+  // finish. The timer closes over its own cell and needs nothing from the
+  // state torn down here. The tap is still cancelled (`moved`), and the two
+  // places that really must stop a hold — a second finger (startPinch) and
+  // teardown — clear it explicitly.
   const onCancel = (e: PointerEvent) => {
     points.delete(e.pointerId);
-    clearLong();
     if (points.size === 0) {
       pressed = false;
+      moved = true;
       rotating = false;
       panning = false;
       downCell = null;

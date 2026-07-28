@@ -257,6 +257,43 @@ divides out `visualViewport.scale`, so a page zoom that arrives some other way
 (iOS accessibility, a desktop ctrl-+) cannot re-frame the board under the
 player's fingers.
 
+## Hold to flag, and haptics on iOS
+
+Three things in `src/input/controls.ts` exist only because of WebKit, and none
+of them can be verified here — Playwright ships no WebKit build this
+environment can download, and desktop Chromium implements neither iOS's
+gesture recognisers nor its haptic. Treat them as load-bearing:
+
+- **`pointercancel` does not cancel a pending hold.** WebKit fires it the
+  moment a platform gesture recogniser claims a touch, which is the commonest
+  way a long press dies on iOS. A cancel is the browser withdrawing the
+  gesture, not the player letting go, so a stationary hold that is already
+  ticking is allowed to finish. Only a second finger (`startPinch`) and
+  teardown stop one. The tap is still cancelled.
+- **`LONG_PRESS_MS` is 350**, comfortably under the ~500 ms at which iOS
+  claims a held touch. Do not raise it back toward 500.
+- **`TOUCH_SLOP` (14 px) is wider than `MOVE_THRESHOLD` (8 px)** on purpose. A
+  finger resting on glass drifts; the hold dies when the movement actually
+  becomes a rotate or a pan, not merely when it passes the tap threshold.
+
+`src/haptics.ts` is the only seam. `navigator.vibrate` does not exist in
+WKWebView, so on iOS — Safari, Chrome and the home-screen PWA alike — the only
+web haptic is the iOS 17.4+ "switch" trick: activating a hidden `<input
+type="checkbox" switch>` plays a light system tick. It is fussy in two ways
+worth not relearning: the tick comes from the *switch's* activation behaviour,
+so click the input rather than trusting a `<label>` to forward a synthetic
+click, and an element created and clicked in the same task has not been laid
+out and plays nothing — hence `primeHaptics()`, called from the first user
+`pointerdown` in `main.ts`. It is an undocumented side effect rather than an
+API; if a future iOS closes it there is no web path to haptics on that
+platform, and the answer is a native shell (Capacitor/WKWebView + Core
+Haptics) behind this same module.
+
+`tests/unit/controls.test.ts` pins the gesture machine (no DOM needed — the
+canvas is faked down to the four members `attachControls` touches) and
+`tests/e2e/longpress.spec.ts` pins the round trip, including a synthetic
+`pointercancel` mid-hold.
+
 ## Shape colour coding (`src/render/shapePalette.ts`)
 
 A cell's colour is derived from its polygon — nothing tags a cell with a

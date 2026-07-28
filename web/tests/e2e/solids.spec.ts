@@ -156,7 +156,7 @@ test.describe("M2 solids", () => {
       type: "touchStart",
       touchPoints: [{ x: target.x, y: target.y }],
     });
-    await page.waitForTimeout(700);
+    await page.waitForTimeout(500); // past the 350ms long-press delay
     await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
     const state = await page.evaluate(() => window.__ms!.state());
     expect(state.minesRemaining).toBe(11); // one flag planted
