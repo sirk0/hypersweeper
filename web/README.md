@@ -305,6 +305,39 @@ Three things that are easy to get wrong when touching this:
   "Settings and themes").
 - `src/testHook.ts` — the `window.__ms` seam Playwright drives.
 
+## Shareable board links
+
+A board's address *is* its share link: `?mode=<mode>&difficulty=<key>`, which
+`App.syncLocation` writes with `history.replaceState` whenever a board opens and
+clears on the way back to the menu (so reloading from the menu shows the menu).
+`replaceState`, not `pushState` — this mirrors the current view rather than
+building history the back button would have to unwind. A board opened with an
+explicit `seed` keeps it in the link, so that exact board can be handed on;
+ordinary games carry no seed and stay re-rollable on reload.
+
+Parsing lives in `src/link.ts`, apart from `main.ts` so it is unit-testable, and
+treats the query string as **untrusted**: links get typed, truncated by chat
+clients and forwarded between builds that do not offer the same boards. Every
+parameter is read on its own and only if this build knows its value — an
+unrecognised value is dropped rather than repaired, and dropping one never costs
+the others:
+
+- an unknown `mode` opens the menu, but a valid `difficulty` alongside it is
+  still applied (for the session only — someone else's link never rewrites your
+  stored preference);
+- an unknown `difficulty` still launches the board, at the stored one;
+- a `seed` is used only when it is a safe integer, since `mulberry32` does
+  `seed >>> 0` and a fraction or infinity would not reproduce the sharer's board;
+- unknown parameters are ignored, so tracking/campaign query strings are
+  harmless.
+
+`hasMode` uses `Object.hasOwn`, not `in`. With `in`, `?mode=toString` (or
+`constructor`, `valueOf`, …) resolves up the prototype chain and hands the board
+builder a function — the reason a link-facing lookup must never use `in`.
+
+`tests/unit/link.test.ts` round-trips **every** mode in the catalog at every
+difficulty, so every board the menu can launch is shareable.
+
 ## Settings and themes
 
 The gear on the menu title row opens a settings page — not a modal: it is one

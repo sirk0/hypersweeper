@@ -186,6 +186,13 @@ tolerance, ESM script placement) are documented in `web/README.md` under
 "Agent notes". Verify UI changes by looking at real screenshots, not just
 by the test suite passing.
 
+A board's address is its **share link** (`?mode=…&difficulty=…`, optional
+`seed`), written on launch and cleared on return to the menu. `src/link.ts`
+parses it as untrusted input: each parameter is read only if this build
+knows its value, and dropping one never costs the others. Any lookup
+fed from a link must use `Object.hasOwn`, never `in` — see "Shareable
+board links" in `web/README.md`.
+
 The menu's gear opens a **settings** page (theme, animations toggle, build
 version, links, update check) — one more `Menu` page rather than a modal,
 with the theme picker a page below it. Theme, difficulty and the

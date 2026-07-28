@@ -1,8 +1,7 @@
 import { Vector3 } from "three";
 import "./ui/styles.css";
 import { isBoard3D, type CellId } from "./boards/core";
-import { hasMode } from "./boards/presets";
-import { DIFFICULTIES } from "./boards/catalog";
+import { boardLinkQuery, parseBoardLink } from "./link";
 import { GameSession } from "./session";
 import { attachControls, blockBrowserZoom } from "./input/controls";
 import {
@@ -154,16 +153,33 @@ class App {
 
   // -- navigation ------------------------------------------------------------
 
+  /** Open the board a shared link names, if it names one this build has.
+   * Every parameter is validated on its own (link.ts), so a link naming a
+   * board that does not exist here still contributes its difficulty. */
   private startFromDeepLink(): boolean {
-    const params = new URLSearchParams(window.location.search);
-    const mode = params.get("mode");
-    // A deep link that names no difficulty uses the player's stored one.
-    const difficulty = params.get("difficulty") ?? this.settings.difficulty;
-    const seedRaw = params.get("seed");
-    if (!mode || !hasMode(mode) || !DIFFICULTIES.includes(difficulty)) return false;
-    const seed = seedRaw != null ? Number(seedRaw) : undefined;
-    this.startGame(mode, difficulty, seed !== undefined && !Number.isNaN(seed) ? { seed } : {});
+    const link = parseBoardLink(window.location.search);
+    // A link's difficulty applies for this session but is never persisted —
+    // opening someone else's link must not rewrite your own preference.
+    if (link.difficulty !== null) {
+      this.settings = { ...this.settings, difficulty: link.difficulty };
+    }
+    if (link.mode === null) return false;
+    this.startGame(link.mode, this.settings.difficulty, {
+      ...(link.seed !== null ? { seed: link.seed } : {}),
+    });
     return true;
+  }
+
+  /** Keep the address bar on the link that reopens what is on screen, so
+   * copying it is all sharing takes. `replaceState`, not `pushState`: this
+   * mirrors the current view rather than adding history entries the back
+   * button would then have to unwind. */
+  private syncLocation(query: string): void {
+    try {
+      window.history.replaceState(null, "", `${window.location.pathname}${query}`);
+    } catch {
+      /* a sandboxed frame may refuse; the app is unaffected */
+    }
   }
 
   private startGame(
@@ -175,6 +191,9 @@ class App {
       ...(opts.seed !== undefined ? { seed: opts.seed } : {}),
       ...(opts.mines ? { minePositions: opts.mines } : {}),
     });
+    // A board built from an explicit mine layout (the test seam) is not
+    // reproducible from a link, so it does not claim one.
+    if (!opts.mines) this.syncLocation(boardLinkQuery(mode, difficulty, opts.seed));
     this.renderer.setBoard(this.session.mesh);
     this.session.mesh.setAnimationsEnabled(this.animationsEnabled);
     if (this.session.is3d) this.renderer.setOrientation(initialOrientation(mode));
@@ -188,6 +207,7 @@ class App {
   }
 
   private showMenu(): void {
+    this.syncLocation(""); // the menu is not a board; drop the board's link
     this.screen = "menu";
     this.session = null;
     this.hud.root.hidden = true;

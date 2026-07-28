@@ -97,7 +97,10 @@ const PRESETS = presetsData.presets as Record<string, PresetSpec>;
 export const MODES: string[] = Object.keys(PRESETS);
 
 export function hasMode(mode: string): boolean {
-  return mode in PRESETS;
+  // `hasOwn`, not `in`: mode names arrive from shared links, and `in` walks the
+  // prototype chain, so `?mode=toString` (or `constructor`, `valueOf`, …) would
+  // pass validation and then hand `buildBoard` a function instead of a preset.
+  return Object.hasOwn(PRESETS, mode);
 }
 
 export function buildBoard(mode: string, difficulty: string): AnyBoard {

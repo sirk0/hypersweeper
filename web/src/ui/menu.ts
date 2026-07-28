@@ -258,6 +258,10 @@ export class Menu {
    * home page — `view` re-renders whatever page is current. */
   show(): void {
     this.root.hidden = false;
+    // The stored difficulty can have moved while the menu was away — a shared
+    // link naming one, or another tab — so re-read it rather than trusting the
+    // pills painted when the row was built.
+    this.syncDifficultyRow();
     this.view();
   }
   hide(): void {

@@ -180,3 +180,81 @@ test.describe("difficulty persistence", () => {
     await expect(page.locator('.difficulty-btn[data-key="easy"]')).toHaveClass(/active/);
   });
 });
+
+test.describe("shareable board links", () => {
+  test("the address bar holds the link that reopens the board", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    await page.locator('.difficulty-btn[data-key="easy"]').click();
+
+    // Klein bottle → the tiling picker → a wrapped tiling, the sort of board a
+    // link is worth sharing for.
+    await page.locator('.menu-entry[data-group="manifolds"]').click();
+    await page.locator('.menu-entry[data-surface="klein"]').click();
+    await page.locator('.menu-entry[data-submenu="Dual-uniform tilings"]').click();
+    await page.locator('.menu-entry[data-mode="kleintriakis"]').click();
+
+    await expect(page).toHaveURL(/\?mode=kleintriakis&difficulty=easy$/);
+
+    // The link is the whole story: opening it fresh lands on the same board.
+    const url = page.url();
+    await page.goto(url);
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    const state = await page.evaluate(() => window.__ms?.state());
+    expect(state?.screen).toBe("game");
+    expect(state?.mode).toBe("kleintriakis");
+    expect(state?.difficulty).toBe("easy");
+  });
+
+  test("going back to the menu drops the board's link", async ({ page }) => {
+    await page.goto("/?mode=hex&difficulty=hard");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    await expect(page).toHaveURL(/\?mode=hex/);
+
+    await page.locator('.hud-btn[data-slot="back"]').click();
+    await expect(page).not.toHaveURL(/mode=/);
+    // ...so a reload from the menu shows the menu, not the board again.
+    await page.reload();
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    expect((await page.evaluate(() => window.__ms?.state()))?.screen).toBe("menu");
+  });
+
+  test("a link to a board this build does not have opens the menu", async ({ page }) => {
+    // The floret pentagonal is chiral: it has no Klein bottle wrap.
+    await page.goto("/?mode=kleinfloret&difficulty=easy");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+
+    const state = await page.evaluate(() => window.__ms?.state());
+    expect(state?.screen).toBe("menu");
+    // The difficulty it did name is still read.
+    await expect(page.locator('.difficulty-btn[data-key="easy"]')).toHaveClass(/active/);
+    // ...and the unusable one was not persisted as a preference.
+    await page.goto("/");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    await expect(page.locator('.difficulty-btn[data-key="medium"]')).toHaveClass(/active/);
+  });
+
+  test("a mode named after an Object property is not a board", async ({ page }) => {
+    await page.goto("/?mode=toString&difficulty=easy");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    expect((await page.evaluate(() => window.__ms?.state()))?.screen).toBe("menu");
+  });
+
+  test("an unknown difficulty falls back without losing the board", async ({ page }) => {
+    await page.goto("/?mode=hex&difficulty=nightmare");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    const state = await page.evaluate(() => window.__ms?.state());
+    expect(state?.mode).toBe("hex");
+    expect(state?.difficulty).toBe("medium"); // the stored default
+  });
+
+  test("a seeded link reproduces the same board", async ({ page }) => {
+    const mines = async (): Promise<number> =>
+      (await page.evaluate(() => window.__ms?.state()))?.minesRemaining ?? -1;
+    await page.goto("/?mode=square&difficulty=easy&seed=1234");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    expect(await mines()).toBeGreaterThan(0);
+    // The seed stays in the link, so re-sharing it hands on the same board.
+    await expect(page).toHaveURL(/seed=1234/);
+  });
+});
