@@ -277,16 +277,29 @@ gesture recognisers nor its haptic. Treat them as load-bearing:
   becomes a rotate or a pan, not merely when it passes the tap threshold.
 
 `src/haptics.ts` is the only seam. `navigator.vibrate` does not exist in
-WKWebView, so on iOS — Safari, Chrome and the home-screen PWA alike — the only
-web haptic is the iOS 17.4+ "switch" trick: activating a hidden `<input
-type="checkbox" switch>` plays a light system tick. It is fussy in two ways
-worth not relearning: the tick comes from the *switch's* activation behaviour,
-so click the input rather than trusting a `<label>` to forward a synthetic
-click, and an element created and clicked in the same task has not been laid
-out and plays nothing — hence `primeHaptics()`, called from the first user
-`pointerdown` in `main.ts`. It is an undocumented side effect rather than an
-API; if a future iOS closes it there is no web path to haptics on that
-platform, and the answer is a native shell (Capacitor/WKWebView + Core
+WKWebView — WebKit has never shipped the Vibration API and opposes it — so on
+iOS, Safari, Chrome and the home-screen PWA are all equally silent without a
+trick. **Read this before trying to make haptics work on iOS again:**
+
+- **iOS 17.4 – 26.4**: the "switch" trick works. Activating a hidden `<input
+  type="checkbox" switch>` plays a light system tick. It is fussy in two ways
+  worth not relearning: the tick comes from the *switch's* activation
+  behaviour, so click the input rather than trusting a `<label>` to forward a
+  synthetic click, and an element created and clicked in the same task has not
+  been laid out and plays nothing — hence `primeHaptics()`, called from the
+  first user `pointerdown` in `main.ts`.
+- **iOS 26.5 and later**: there is no way to do this. Apple closed the hole in
+  26.5. A script-driven activation no longer ticks; only a real finger landing
+  directly on a real switch control does. The overlay workaround being passed
+  around (an invisible switch stretched over a button) does not help here —
+  every event that buzzes in this app is a consequence of game state, not a tap
+  on a control. The flag lands mid-hold with nothing lifted, and lose and win
+  are decided after the fact by the board; the board is one WebGL canvas with
+  no per-cell DOM, and a tick on every tap regardless of what the move did
+  would be worse than silence.
+
+The fallback is kept for 17.4–26.4, which is still a large installed base. For
+current iOS the only real answer is a native shell (Capacitor/WKWebView + Core
 Haptics) behind this same module.
 
 `tests/unit/controls.test.ts` pins the gesture machine (no DOM needed — the

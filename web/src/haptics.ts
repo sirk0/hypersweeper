@@ -5,20 +5,33 @@
 //
 //   - Android/Chrome (and anything else with the Vibration API): navigator
 //     .vibrate takes a pattern, so we get real, distinct feedback per event.
-//   - iOS — every browser there is WKWebView, so this is Safari, Chrome and
-//     the standalone/home-screen PWA alike — does NOT implement
-//     navigator.vibrate at all (it's undefined). The only web haptic that
-//     reaches iOS 17.4+ is the "switch" trick: toggling a hidden
-//     <input type="checkbox" switch> plays a light system tick. It's one fixed
-//     intensity, so the heavier events just repeat it to feel stronger.
-//     Two things the trick is fussy about, both learned the hard way:
-//     the tick comes from the *switch's* activation behaviour, so click the
-//     input rather than relying on a <label> to forward a synthetic click;
-//     and an element created and clicked in the same task has not been laid
-//     out yet and plays nothing, so primeHaptics() builds it in advance.
-//     Note it is an undocumented side effect rather than an API — Apple has
-//     never committed to it, and if a future iOS closes it there is no web
-//     path to haptics on that platform at all.
+//   - iOS 17.4 - 26.4: every browser there is WKWebView, so this is Safari,
+//     Chrome and the standalone/home-screen PWA alike, and none of them
+//     implement navigator.vibrate (WebKit has never shipped the Vibration API
+//     and opposes it). The only web haptic that ever reached them is the
+//     "switch" trick: activating a hidden <input type="checkbox" switch> plays
+//     a light system tick. It's one fixed intensity, so the heavier events
+//     just repeat it to feel stronger. Two things it is fussy about, both
+//     learned the hard way: the tick comes from the *switch's* activation
+//     behaviour, so click the input rather than relying on a <label> to
+//     forward a synthetic click; and an element created and clicked in the
+//     same task has not been laid out yet and plays nothing, so
+//     primeHaptics() builds it in advance.
+//   - iOS 26.5 and later: nothing. The trick was never an API — it was an
+//     undocumented side effect, and Apple closed it in 26.5. A *script*-driven
+//     activation of the switch no longer ticks; only a real finger landing
+//     directly on a real switch control does. That leaves no path to haptics
+//     for this app on current iOS, because every event that buzzes here is a
+//     consequence of game state rather than a tap on a control: the flag
+//     lands mid-hold with the finger still down and nothing lifted, and lose
+//     and win are decided after the fact by the board. The overlay workaround
+//     going around (an invisible switch stretched over a button, so the tap
+//     hits the control itself) cannot express any of those — the board is one
+//     WebGL canvas with no per-cell DOM, and a tick on every tap regardless
+//     of what the move did would be worse than silence.
+//     The code below is left in place for 17.4-26.4, which is still a large
+//     installed base. Do not spend another afternoon on the 26.5+ case: the
+//     answer there is a native shell (see the seam note at the bottom).
 //   - Desktop and headless test browsers: navigator.vibrate is typically a
 //     no-op function, so they take the first branch and do nothing visible —
 //     harmless, and it keeps the test seam (window.__ms) side-effect-free.
