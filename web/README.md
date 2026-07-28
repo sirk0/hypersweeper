@@ -8,10 +8,11 @@ single `CellAnimations` clock the renderer ticks each frame only while
 something is in flight (the loop stays idle otherwise): a **reveal ripple**
 (each freshly opened cell flashes brighter than its settled tone, staggered by
 its distance from the click so a wave sweeps outward across a flood fill), a
-**flag drop** (a flag the player places arrives several cells tall, standing on
-its cell, and shrinks into it — the gesture that places one on a phone is a
-hold, so the finger is covering the cell and only a flag reaching well above it
-can be seen at all), a **flag pop** (a flag the *game* places — the win wave's
+**flag drop** (a flag placed by *holding* a cell arrives several cells tall,
+standing on that cell, and shrinks into it — the finger doing the holding is
+covering the cell, so only a flag reaching well above it can be seen at all;
+a right-click and a tap in flag mode leave the cell in plain sight and get
+nothing), a **flag pop** (a flag the *game* places — the win wave's
 auto-flag cascade — springs in with a small ease-out-back
 overshoot), a **lose shake** (the whole board jitters and settles when a
 mine detonates), and a **win wave** (clearing the board sends a gold glow

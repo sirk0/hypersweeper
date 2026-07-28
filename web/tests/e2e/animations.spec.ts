@@ -86,12 +86,20 @@ test.describe("M6 animations", () => {
     // before the ones that have to land inside the drop. It doubles as the
     // settled baseline: nothing of the flag survives up here.
     const before = await page.screenshot({ clip });
+    // Only a held touch drops a flag, so synthesize one — Playwright has no
+    // touch-hold API, hence CDP (as in solids.spec.ts).
+    const client = await page.context().newCDPSession(page);
     // The drop is over in well under a second, and a screenshot is not free,
     // so give the catch a few tries rather than letting one slow frame decide.
     let caught = false;
     for (let attempt = 0; attempt < 3 && !caught; attempt++) {
-      await page.evaluate(() => window.__ms!.flag("4,4"));
+      await client.send("Input.dispatchTouchEvent", {
+        type: "touchStart",
+        touchPoints: [{ x: at.x, y: at.y }],
+      });
+      await page.waitForTimeout(550); // just past the 450 ms long-press threshold
       caught = !(await page.screenshot({ clip })).equals(before);
+      await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
       await page.waitForTimeout(600); // outlast the drop
       const after = await page.screenshot({ clip });
       expect(after.equals(before), "the drop left a mark behind").toBe(true);
@@ -100,6 +108,16 @@ test.describe("M6 animations", () => {
     expect(caught, "the drop never painted clear of the flagged cell").toBe(true);
     const state = await page.evaluate(() => window.__ms!.state());
     expect(state.minesRemaining).toBe(0); // and the flag itself landed (1 mine)
+    expect(state.revealed).toBe(0); // the hold flagged rather than revealing
+
+    // ...and every other way of flagging leaves the cell in plain sight, so it
+    // gets no drop. Same cell, same patch, same clock — but placed through the
+    // seam, which flags exactly as a right-click or a flag-mode tap does.
+    await page.evaluate(() => window.__ms!.flag("4,4")); // clear
+    await page.waitForTimeout(100);
+    await page.evaluate(() => window.__ms!.flag("4,4")); // place again, unheld
+    const unheld = await page.screenshot({ clip });
+    expect(unheld.equals(before), "an unheld flag animated anyway").toBe(true);
   });
 
   test("a detonation shakes and still registers the loss", async ({ page }) => {

@@ -9,14 +9,16 @@
 //     settled colour, staggered by its distance from the click so a wave
 //     sweeps outward across a flood fill (the mesh recolours the reported
 //     cells, adding `lightness`).
-//   * flag drop — a flag the player places lands from far above the board:
-//     an oversized flag shrinks into its cell (the mesh draws one extra quad,
-//     sized from `dropProgress`). It exists because the finger that placed
-//     the flag by holding the cell is covering that cell — the drop starts
-//     well outside the fingertip, so the placement is seen while it happens.
+//   * flag drop — a flag placed by *holding* a cell lands from far above the
+//     board: an oversized flag shrinks into its cell (the mesh draws one extra
+//     quad, sized from `dropProgress`). It exists because the finger doing the
+//     holding is covering that cell — the drop starts well outside the
+//     fingertip, so the placement is seen while it happens. No other input
+//     gets it: a right-click and a tap in flag mode both leave the cell in
+//     plain sight, where an animation would be decoration rather than news.
 //   * flag pop — a flag the *game* places springs in with a small overshoot
 //     (the mesh rebuilds glyphs, scaling each by `popScale`). This is the win
-//     wave's auto-flag cascade; the player's own flags take the drop above.
+//     wave's auto-flag cascade.
 //   * lose shake — the whole board jitters and settles when a mine detonates
 //     (the mesh offsets its group position by `shakeOffset`).
 //   * win wave — every cell warms to gold and fades back when the board is
