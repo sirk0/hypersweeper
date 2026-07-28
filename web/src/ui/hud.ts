@@ -7,9 +7,13 @@ import { screens, type HudSlot } from "../config/screens";
 
 // Inline SVGs for slots whose config declares an `icon` we can draw; slots
 // with no entry here fall back to their text label. The flag mirrors the
-// in-game glyph (glyphAtlas.ts drawFlag): dark pole and base, red pennant.
-// Sized by CSS (--hud-icon) rather than hard-coded width/height attributes, so
-// the header controls can grow to a comfortable touch size on phones.
+// in-game glyph (glyphAtlas.ts drawFlag): dark pole and base, red pennant —
+// the one icon that keeps fixed colours, because it stands for the game's own
+// flag rather than for a control. The rest stroke in `currentColor` so they
+// follow the theme's text colour (a fixed dark stroke would vanish on the dark
+// theme's buttons). Sized by CSS (--hud-icon) rather than hard-coded
+// width/height attributes, so the header controls can grow to a comfortable
+// touch size on phones.
 const ICONS: Record<string, string> = {
   flag: `<svg viewBox="0 0 24 24" aria-hidden="true">
     <path d="M6.4 18.1 H11.6 L13.6 20.4 H4.4 Z" fill="#3a3f4b"/>
@@ -22,16 +26,16 @@ const ICONS: Record<string, string> = {
   </svg>`,
   // Back to the menu.
   "arrow-left": `<svg viewBox="0 0 24 24" aria-hidden="true">
-    <path d="M20 12 H5 M11 5 L4 12 L11 19" stroke="#202020"
+    <path d="M20 12 H5 M11 5 L4 12 L11 19" stroke="currentColor"
       stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>`,
   // Double chevrons for the two Klein scroll controls (back / forward).
   "chevrons-left": `<svg viewBox="0 0 24 24" aria-hidden="true">
-    <path d="M17 5 L10 12 L17 19 M11 5 L4 12 L11 19" stroke="#202020"
+    <path d="M17 5 L10 12 L17 19 M11 5 L4 12 L11 19" stroke="currentColor"
       stroke-width="1.9" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>`,
   "chevrons-right": `<svg viewBox="0 0 24 24" aria-hidden="true">
-    <path d="M7 5 L14 12 L7 19 M13 5 L20 12 L13 19" stroke="#202020"
+    <path d="M7 5 L14 12 L7 19 M13 5 L20 12 L13 19" stroke="currentColor"
       stroke-width="1.9" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>`,
 };

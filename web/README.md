@@ -300,11 +300,53 @@ Three things that are easy to get wrong when touching this:
   `null` tone opts out into the old indigo chrome (tubes, frames, the question
   mark).
 - `src/config/screens.ts` — typed accessor over `../data/ui/screens.json`.
+- `src/ui/settings.ts` / `src/ui/theme.ts` / `src/settings.ts` — the settings
+  page, the CSS-custom-property theme applier, and the stored preferences (see
+  "Settings and themes").
 - `src/testHook.ts` — the `window.__ms` seam Playwright drives.
+
+## Settings and themes
+
+The gear on the menu title row opens a settings page — not a modal: it is one
+more `Menu` page (`Menu.showSettings`, rendered by `src/ui/settings.ts`), so it
+reuses the back row, the `.menu-entry` cards and the scrolling body.
+
+**Themes.** The seven chrome palettes live in `data/ui/screens.json` under
+`themes`; six are ported from the pygame `THEMES` registry (`minesweeper/gui.py`)
+and `dark` is web-only. `src/ui/theme.ts` applies one by writing the whole set of
+CSS custom properties onto `document.documentElement` — the `:root` block in
+`styles.css` is only the *boot* default (the `ios` palette) and must stay in step
+with that entry. Two consequences worth knowing:
+
+- **The board is never themed.** Only the chrome is, exactly as in pygame, which
+  is why the `gallery.spec.ts` baselines are theme-independent. Do not reach for
+  a theme colour in `shapePalette.ts` or `glyphAtlas.ts`.
+- **The WebGL canvas is transparent** (`alpha: true`, clear alpha 0), so the
+  field around the board is the *page* background. That is what makes the glass
+  theme's gradient show and means a theme needs no renderer call at all. Do not
+  reintroduce an opaque clear colour — it would cover the CSS background.
+- Any new chrome colour must be a `var(--…)` from `themeVars`. A hard-coded dark
+  stroke is the classic dark-theme bug (the header icons in `hud.ts` stroke in
+  `currentColor` for this reason; the flag keeps fixed colours because it is the
+  game's own glyph, not a control).
+
+`tests/test_theme_sync.py` (Python) fails if a pygame palette is retuned without
+the JSON following.
+
+**Persistence.** `src/settings.ts` is the app's only stored state — theme and the
+animations override, under one versioned `localStorage` key. Storage access is
+wrapped: Safari private mode throws, and the vitest node environment has no
+`localStorage` at all. Difficulty, flag mode, zoom and menu position stay in
+memory as before.
+
+**Version.** `__APP_VERSION__` / `__APP_COMMIT__` are Vite `define` constants
+(see `vite.config.ts`, declared in `src/vite-env.d.ts`). The version tracks
+`package.json`, which `bump-version.yml` keeps in lockstep with
+`pyproject.toml` on every push to master.
 
 ## Shared configuration
 
-UI-screen chrome (header slots, menu structure, difficulty rows, theme, smiley
+UI-screen chrome (header slots, menu structure, difficulty rows, themes, smiley
 faces) is declared once in **`data/ui/screens.json`** at the repo root and read
 by both front-ends, so the pygame and TypeScript UIs can be kept in sync from a
 single source rather than hand-matched. `src/config/screens.ts` gives the TS app

@@ -15,6 +15,7 @@ import {
 } from "../boards/catalog";
 import { MODES } from "../boards/presets";
 import { menuIcon } from "./icons";
+import { GEAR_ICON, renderSettings, type SettingsHost } from "./settings";
 
 // Geometry-first menu, mirroring the pygame MenuScreen (gui.py). The home page
 // lists Classic, Flat, Flat manifolds, Sphere, Other. Classic launches flat
@@ -184,7 +185,10 @@ export class Menu {
    * restores it (see `show`). */
   private view: () => void = () => this.renderRoot();
 
-  constructor(private readonly onSelect: (sel: MenuSelection) => void) {
+  constructor(
+    private readonly onSelect: (sel: MenuSelection) => void,
+    private readonly settings: SettingsHost,
+  ) {
     const groups: Group[] = [
       { key: "flat", label: ROOT_LABELS["flat"] ?? "Flat", kind: "picker", surfaceKey: "flat" },
       {
@@ -213,15 +217,33 @@ export class Menu {
     this.root = document.createElement("section");
     this.root.className = "menu";
 
+    this.body = document.createElement("div");
+    this.body.className = "menu-body";
+
+    this.root.append(this.header(), this.body, this.difficultyRow());
+    this.showRoot();
+  }
+
+  /** The title row: the title, and the settings gear at its right edge. The
+   * CSS balances the gear with an empty box of the same width on the left, so
+   * the title stays centred on the screen. */
+  private header(): HTMLElement {
+    const header = document.createElement("div");
+    header.className = "menu-header";
+
     const title = document.createElement("h1");
     title.className = "menu-title";
     title.textContent = screens.menu.title;
 
-    this.body = document.createElement("div");
-    this.body.className = "menu-body";
+    const gear = document.createElement("button");
+    gear.className = "menu-settings-btn";
+    gear.dataset["action"] = "settings";
+    gear.setAttribute("aria-label", "Settings");
+    gear.innerHTML = GEAR_ICON;
+    gear.addEventListener("click", () => this.showSettings());
 
-    this.root.append(title, this.body, this.difficultyRow());
-    this.showRoot();
+    header.append(title, gear);
+    return header;
   }
 
   /** Coming back from a board reopens the page the game was launched from
@@ -235,14 +257,47 @@ export class Menu {
     this.root.hidden = true;
   }
 
-  /** Render `view` and remember it as the page to restore on `show()`. */
+  /** Render `view` and remember it as the page to restore on `show()`. Every
+   * page but settings shows the difficulty row, so it is cleared here and the
+   * settings page re-sets it. */
   private go(view: () => void): void {
     this.view = view;
+    this.root.classList.remove("settings-open");
     view();
   }
 
   private showRoot(): void {
     this.go(() => this.renderRoot());
+  }
+
+  /** The settings page — one more menu page rather than a modal, so it reuses
+   * the back row, the card rows and the scrolling body. */
+  private showSettings(): void {
+    this.go(() => this.renderSettingsPage());
+  }
+
+  private renderSettingsPage(): void {
+    // Choosing a theme or flipping a toggle re-runs this page, so the tick and
+    // the switch reflect the change immediately.
+    const host: SettingsHost = {
+      theme: this.settings.theme,
+      animations: this.settings.animations,
+      setTheme: (key) => {
+        this.settings.setTheme(key);
+        this.renderSettingsPage();
+      },
+      setAnimations: (pref) => {
+        this.settings.setAnimations(pref);
+        this.renderSettingsPage();
+      },
+    };
+    // The difficulty row means nothing here; hide it and let the page have the
+    // whole height.
+    this.root.classList.add("settings-open");
+    this.body.replaceChildren(
+      this.backRow("Settings", () => this.showRoot()),
+      renderSettings(host),
+    );
   }
 
   private renderRoot(): void {

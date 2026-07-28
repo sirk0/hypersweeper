@@ -13,6 +13,14 @@ import {
 } from "./render/renderer";
 import { Hud } from "./ui/hud";
 import { Menu } from "./ui/menu";
+import type { SettingsHost } from "./ui/settings";
+import { applyTheme } from "./ui/theme";
+import {
+  animationsEnabled,
+  loadSettings,
+  saveSettings,
+  type Settings,
+} from "./settings";
 import { installTestHook } from "./testHook";
 
 /** Zoom step for one press of the +/- keys. */
@@ -30,20 +38,25 @@ class App {
   private screen: "menu" | "game" = "menu";
   private flagMode = false;
   private hovered: CellId | null = null;
-  // Board animations honour the OS reduced-motion setting out of the gate; the
-  // `window.__ms.animations(false)` test seam overrides it for deterministic e2e.
-  private animationsEnabled = !(
-    window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false
-  );
+  /** Stored preferences (theme, animations) — the app's only persisted state. */
+  private settings: Settings = loadSettings();
+  // Board animations honour the OS reduced-motion setting unless the settings
+  // screen overrides it; the `window.__ms.animations(false)` test seam overrides
+  // both for deterministic e2e.
+  private animationsEnabled = animationsEnabled(this.settings.animations);
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
     ui: HTMLElement,
   ) {
+    applyTheme(this.settings.theme); // before anything measures or paints
     this.syncViewport(); // size the layout box before anything measures it
     this.renderer = new BoardRenderer(canvas);
     this.hud = new Hud((action) => this.onAction(action));
-    this.menu = new Menu((sel) => this.startGame(sel.mode, sel.difficulty));
+    this.menu = new Menu(
+      (sel) => this.startGame(sel.mode, sel.difficulty),
+      this.settingsHost(),
+    );
     ui.append(this.hud.root, this.menu.root);
     this.hud.root.hidden = true;
 
@@ -82,6 +95,38 @@ class App {
     this.installSeam();
     if (!this.startFromDeepLink()) this.showMenu();
     requestAnimationFrame(() => document.body.setAttribute("data-ready", "1"));
+  }
+
+  // -- settings --------------------------------------------------------------
+
+  /** The live view of the preferences the settings page reads and writes.
+   * Getters rather than a snapshot, so a page re-render after a change sees the
+   * new value. */
+  private settingsHost(): SettingsHost {
+    const app = this;
+    return {
+      get theme() {
+        return app.settings.theme;
+      },
+      get animations() {
+        return app.settings.animations;
+      },
+      setTheme: (key) => this.setTheme(key),
+      setAnimations: (pref) => this.setAnimations(pref),
+    };
+  }
+
+  private setTheme(key: string): void {
+    this.settings = { ...this.settings, theme: key };
+    saveSettings(this.settings);
+    applyTheme(key); // the canvas is transparent, so CSS repaints the field too
+  }
+
+  private setAnimations(pref: boolean | null): void {
+    this.settings = { ...this.settings, animations: pref };
+    saveSettings(this.settings);
+    this.animationsEnabled = animationsEnabled(pref);
+    this.session?.mesh.setAnimationsEnabled(this.animationsEnabled);
   }
 
   // -- navigation ------------------------------------------------------------

@@ -186,6 +186,18 @@ tolerance, ESM script placement) are documented in `web/README.md` under
 "Agent notes". Verify UI changes by looking at real screenshots, not just
 by the test suite passing.
 
+The menu's gear opens a **settings** page (build version, theme picker,
+animations toggle, links, update check) — one more `Menu` page rather than
+a modal. Its themes are the six pygame `THEMES` palettes plus a web-only
+`dark`, declared in `data/ui/screens.json` and applied by `src/ui/theme.ts`
+as CSS custom properties on `:root`; `data/ui/screens.json` is the single
+source and `tests/test_theme_sync.py` guards it against the pygame side.
+Two invariants: the **board is never themed** (only chrome is, as in
+pygame), and the **WebGL canvas is transparent** so the field around the
+board is the page background — never give it an opaque clear colour again.
+New chrome colours must come from a `var(--…)`, or they break the dark
+theme. See "Settings and themes" in `web/README.md`.
+
 ## Which version to change
 
 Two front-ends live in this repo: the Python/pygame game and the
