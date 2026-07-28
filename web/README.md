@@ -310,11 +310,110 @@ Three things that are easy to get wrong when touching this:
   `null` tone opts out into the old indigo chrome (tubes, frames, the question
   mark).
 - `src/config/screens.ts` — typed accessor over `../data/ui/screens.json`.
+- `src/ui/settings.ts` / `src/ui/theme.ts` / `src/settings.ts` — the settings
+  page, the CSS-custom-property theme applier, and the stored preferences (see
+  "Settings and themes").
 - `src/testHook.ts` — the `window.__ms` seam Playwright drives.
+
+## Shareable board links
+
+A board's address *is* its share link: `?mode=<mode>&difficulty=<key>`, which
+`App.syncLocation` writes with `history.replaceState` whenever a board opens and
+clears on the way back to the menu (so reloading from the menu shows the menu).
+`replaceState`, not `pushState` — this mirrors the current view rather than
+building history the back button would have to unwind. A board opened with an
+explicit `seed` keeps it in the link, so that exact board can be handed on;
+ordinary games carry no seed and stay re-rollable on reload.
+
+Parsing lives in `src/link.ts`, apart from `main.ts` so it is unit-testable, and
+treats the query string as **untrusted**: links get typed, truncated by chat
+clients and forwarded between builds that do not offer the same boards. Every
+parameter is read on its own and only if this build knows its value — an
+unrecognised value is dropped rather than repaired, and dropping one never costs
+the others:
+
+- an unknown `mode` opens the menu, but a valid `difficulty` alongside it is
+  still applied (for the session only — someone else's link never rewrites your
+  stored preference);
+- an unknown `difficulty` still launches the board, at the stored one;
+- a `seed` is used only when it is a safe integer, since `mulberry32` does
+  `seed >>> 0` and a fraction or infinity would not reproduce the sharer's board;
+- unknown parameters are ignored, so tracking/campaign query strings are
+  harmless.
+
+`hasMode` uses `Object.hasOwn`, not `in`. With `in`, `?mode=toString` (or
+`constructor`, `valueOf`, …) resolves up the prototype chain and hands the board
+builder a function — the reason a link-facing lookup must never use `in`.
+
+`tests/unit/link.test.ts` round-trips **every** mode in the catalog at every
+difficulty, so every board the menu can launch is shareable.
+
+## Settings and themes
+
+The gear on the menu title row opens a settings page — not a modal: it is one
+more `Menu` page (`Menu.showSettings`, rendered by `src/ui/settings.ts`), so it
+reuses the back row, the `.menu-entry` cards and the scrolling body. The theme
+is a page below it in the same way (`Menu.showThemePicker`): settings shows a
+Theme row naming the current palette, and the seven-row picker lives one level
+down, which keeps the settings page short enough to read at a glance.
+
+**Themes.** The seven chrome palettes live in `data/ui/screens.json` under
+`themes`; six are ported from the pygame `THEMES` registry (`minesweeper/gui.py`)
+and `dark` is web-only. `src/ui/theme.ts` applies one by writing the whole set of
+CSS custom properties onto `document.documentElement` — the `:root` block in
+`styles.css` is only the *boot* default (the `ios` palette) and must stay in step
+with that entry. Two consequences worth knowing:
+
+- **The board is never themed.** Only the chrome is, exactly as in pygame, which
+  is why the `gallery.spec.ts` baselines are theme-independent. Do not reach for
+  a theme colour in `shapePalette.ts` or `glyphAtlas.ts`.
+- **The WebGL canvas is transparent** (`alpha: true`, clear alpha 0), so the
+  field around the board is the *page* background. That is what makes the glass
+  theme's gradient show and means a theme needs no renderer call at all. Do not
+  reintroduce an opaque clear colour — it would cover the CSS background.
+- Any new chrome colour must be a `var(--…)` from `themeVars`. A hard-coded dark
+  stroke is the classic dark-theme bug (the header icons in `hud.ts` stroke in
+  `currentColor` for this reason; the flag keeps fixed colours because it is the
+  game's own glyph, not a control).
+
+`tests/test_theme_sync.py` (Python) fails if a pygame palette is retuned without
+the JSON following.
+
+**Persistence.** `src/settings.ts` is the app's only stored state: theme,
+difficulty and the animations override. Flag mode, zoom, the menu page you are
+on and the board in progress stay in memory as before.
+
+The layout is **one stable `localStorage` key holding a record that carries its
+own `version`** — deliberately not a versioned key name (`…:v1`, `…:v2`), which
+silently resets every user on a schema change because the new build reads a key
+nobody has written. `migrate()` upgrades an old record; `LEGACY_KEYS` still picks
+up records written under the old key-per-version scheme, and the old key is
+removed only *after* the new one is written, so an interrupted migration cannot
+lose it. Four rules the tests pin:
+
+- Reading is **total and field-by-field** — one bad field costs the user that
+  field, not the record. Corrupt JSON, an array, a removed theme, a removed
+  difficulty and a storage that throws all degrade to defaults.
+- A record from a **newer** build is read for what it understands, and writing
+  **preserves the keys it does not recognise**, so an older tab or a rolled-back
+  deploy does not throw away newer preferences.
+- Storage may be absent entirely (node under vitest) or throw on write (Safari
+  private mode, quota); a refused write is dropped and the choice still applies
+  for the session.
+- `subscribeSettings` mirrors changes made in another tab (a `storage` event,
+  including `localStorage.clear()`), which `App.adoptSettings` applies.
+
+Bump `SCHEMA_VERSION` only when a field changes *meaning*; purely additive
+fields need no bump, since an old record simply lacks them.
+
+**Version.** `__APP_VERSION__` / `__APP_COMMIT__` are Vite `define` constants
+(see `vite.config.ts`, declared in `src/vite-env.d.ts`). The version tracks
+`package.json`, which `bump-version.yml` keeps in lockstep with
+`pyproject.toml` on every push to master.
 
 ## Shared configuration
 
-UI-screen chrome (header slots, menu structure, difficulty rows, theme, smiley
+UI-screen chrome (header slots, menu structure, difficulty rows, themes, smiley
 faces) is declared once in **`data/ui/screens.json`** at the repo root and read
 by both front-ends, so the pygame and TypeScript UIs can be kept in sync from a
 single source rather than hand-matched. `src/config/screens.ts` gives the TS app

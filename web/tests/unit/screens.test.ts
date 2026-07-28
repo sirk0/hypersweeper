@@ -1,27 +1,101 @@
 import { describe, expect, it } from "vitest";
-import { difficulty, screens } from "../../src/config/screens";
+import {
+  difficulty,
+  hasDifficulty,
+  hasTheme,
+  screens,
+  themeSpec,
+} from "../../src/config/screens";
+import { DEFAULT_THEME, resolveTheme, themeVars } from "../../src/ui/theme";
 
 // Smoke + invariant tests for the shared UI-screen config. These guard the
 // single source of truth the Python and TS front-ends share against structural
 // drift.
 describe("UI screen config", () => {
-  it("loads with a version and theme", () => {
+  it("loads with a version and a default theme", () => {
     expect(screens.version).toBeGreaterThan(0);
-    expect(screens.theme.background).toMatch(/^#/);
+    expect(hasTheme(screens.defaultTheme)).toBe(true);
+    expect(DEFAULT_THEME).toBe(screens.defaultTheme);
   });
 
   it("uses the modern iOS palette by default (not the classic gray)", () => {
     // Matches the pygame `ios` theme, the default on both front-ends: an airy
     // light field and the system-blue accent rather than #c0c0c0 / navy.
-    expect(screens.theme.background.toLowerCase()).toBe("#f2f2f7");
-    expect(screens.theme.panel.toLowerCase()).toBe("#ffffff");
-    expect(screens.theme.accent.toLowerCase()).toBe("#0a84ff");
-    expect(screens.theme.background.toLowerCase()).not.toBe("#c0c0c0");
+    const ios = themeSpec(screens.defaultTheme);
+    expect(ios.background.toLowerCase()).toBe("#f2f2f7");
+    expect(ios.panel.toLowerCase()).toBe("#ffffff");
+    expect(ios.accent.toLowerCase()).toBe("#0a84ff");
+    expect(ios.background.toLowerCase()).not.toBe("#c0c0c0");
+  });
+
+  it("carries the ported pygame palettes plus the web-only dark one", () => {
+    for (const key of ["ios", "flat", "neumorph", "glass", "paper", "classic", "dark"]) {
+      expect(hasTheme(key)).toBe(true);
+    }
+  });
+
+  it("every theme declares a complete palette", () => {
+    for (const [key, spec] of Object.entries(screens.themes)) {
+      expect(spec.label, key).toBeTruthy();
+      for (const field of [
+        "background",
+        "panel",
+        "text",
+        "muted",
+        "accent",
+        "onAccent",
+        "selected",
+        "border",
+        "danger",
+        "counterBg",
+      ] as const) {
+        // #rgb hex, optionally with an alpha suffix (the glass theme's
+        // translucent cards).
+        expect(spec[field], `${key}.${field}`).toMatch(/^#[0-9a-f]{6}([0-9a-f]{2})?$/i);
+      }
+      expect(typeof spec.radius, key).toBe("number");
+      expect(spec.shadow, key).toBeTruthy();
+    }
+  });
+
+  it("themeVars fills every CSS custom property styles.css declares", () => {
+    // The :root block in styles.css is only the boot default; applying a theme
+    // must overwrite the whole set, or a switch would leave stale colours.
+    for (const spec of Object.values(screens.themes)) {
+      const vars = themeVars(spec);
+      for (const name of [
+        "--bg",
+        "--bg2",
+        "--panel",
+        "--panel-blur",
+        "--text",
+        "--muted",
+        "--accent",
+        "--on-accent",
+        "--selected",
+        "--border",
+        "--danger",
+        "--counter-bg",
+        "--radius",
+        "--shadow",
+      ]) {
+        expect(vars[name], `${spec.label} ${name}`).toBeTruthy();
+      }
+    }
+  });
+
+  it("resolveTheme falls back to the default on an unknown key", () => {
+    expect(resolveTheme("dark")).toBe("dark");
+    expect(resolveTheme("no-such-theme")).toBe(DEFAULT_THEME);
+    expect(resolveTheme(null)).toBe(DEFAULT_THEME);
   });
 
   it("has difficulties and a valid default", () => {
     expect(screens.difficulties.length).toBeGreaterThan(0);
     expect(() => difficulty(screens.defaultDifficulty)).not.toThrow();
+    // settings.ts validates a stored difficulty through this.
+    expect(hasDifficulty(screens.defaultDifficulty)).toBe(true);
+    expect(hasDifficulty("nightmare")).toBe(false);
   });
 
   it("every HUD slot declares a slot name", () => {

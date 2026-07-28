@@ -11,13 +11,31 @@ export interface Difficulty {
   label: string;
 }
 
-export interface Theme {
+/** A chrome palette, ported from the pygame `THEMES` registry (gui.py). Field
+ * names follow the CSS custom properties they drive, which do not map
+ * one-to-one onto the pygame keys: `panel` is the card fill (pygame `button`)
+ * and `counterBg` is the dark LED box (pygame `panel`). Board tiles are never
+ * themed — here as in pygame, only the chrome is. */
+export interface ThemeSpec {
+  label: string;
   background: string;
+  /** Second gradient stop behind the page (glassmorphism only). */
+  background2?: string;
   panel: string;
-  accent: string;
   text: string;
   muted: string;
+  accent: string;
+  onAccent: string;
+  selected: string;
+  border: string;
   danger: string;
+  counterBg: string;
+  /** Corner radius in CSS pixels. */
+  radius: number;
+  /** A complete CSS `box-shadow` value, or "none". */
+  shadow: string;
+  /** A CSS `backdrop-filter` for the cards (glassmorphism only). */
+  panelBlur?: string;
 }
 
 export interface HudSlot {
@@ -62,7 +80,8 @@ export interface Menu {
 
 export interface ScreenConfig {
   version: number;
-  theme: Theme;
+  themes: Record<string, ThemeSpec>;
+  defaultTheme: string;
   difficulties: Difficulty[];
   defaultDifficulty: DifficultyKey;
   hud: Hud;
@@ -76,4 +95,20 @@ export function difficulty(key: DifficultyKey): Difficulty {
   const found = screens.difficulties.find((d) => d.key === key);
   if (!found) throw new Error(`unknown difficulty: ${key}`);
   return found;
+}
+
+/** The palette for a theme key; throws on an unknown one (callers that take a
+ * key from storage or a URL should check `hasTheme` first). */
+export function themeSpec(key: string): ThemeSpec {
+  const found = screens.themes[key];
+  if (!found) throw new Error(`unknown theme: ${key}`);
+  return found;
+}
+
+export function hasTheme(key: string): boolean {
+  return Object.hasOwn(screens.themes, key);
+}
+
+export function hasDifficulty(key: string): boolean {
+  return screens.difficulties.some((d) => d.key === key);
 }

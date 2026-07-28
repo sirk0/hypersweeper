@@ -77,12 +77,16 @@ export class BoardRenderer {
     this.renderer = new WebGLRenderer({
       canvas,
       antialias: true,
-      alpha: false,
+      // Transparent, so the field behind the board is the *page* background —
+      // one owner for it (the theme's CSS custom properties) instead of a
+      // clear colour that has to be kept in step with them, and gradients
+      // (the glass theme) come through as well. The board tiles themselves
+      // keep their own classic bevel colours whatever the theme, as they do
+      // in pygame.
+      alpha: true,
       powerPreference: "high-performance",
     });
-    // Airy iOS-theme field behind the board (matches CSS --bg and the pygame
-    // `ios` background; the board tiles keep their own classic bevel colours).
-    this.renderer.setClearColor(new Color("#f2f2f7"), 1);
+    this.renderer.setClearColor(new Color("#000000"), 0);
 
     this.scene = new Scene();
     // The flat board lives in pixel units (hundreds wide) with per-cell bevel

@@ -186,6 +186,29 @@ tolerance, ESM script placement) are documented in `web/README.md` under
 "Agent notes". Verify UI changes by looking at real screenshots, not just
 by the test suite passing.
 
+A board's address is its **share link** (`?mode=…&difficulty=…`, optional
+`seed`), written on launch and cleared on return to the menu. `src/link.ts`
+parses it as untrusted input: each parameter is read only if this build
+knows its value, and dropping one never costs the others. Any lookup
+fed from a link must use `Object.hasOwn`, never `in` — see "Shareable
+board links" in `web/README.md`.
+
+The menu's gear opens a **settings** page (theme, animations toggle, build
+version, links, update check) — one more `Menu` page rather than a modal,
+with the theme picker a page below it. Theme, difficulty and the
+animations override persist (`src/settings.ts`): one stable
+`localStorage` key holding a record that carries its own `version`, never
+a versioned key name — see "Settings and themes" in `web/README.md` before
+adding a field. Its themes are the six pygame `THEMES` palettes plus a web-only
+`dark`, declared in `data/ui/screens.json` and applied by `src/ui/theme.ts`
+as CSS custom properties on `:root`; `data/ui/screens.json` is the single
+source and `tests/test_theme_sync.py` guards it against the pygame side.
+Two invariants: the **board is never themed** (only chrome is, as in
+pygame), and the **WebGL canvas is transparent** so the field around the
+board is the page background — never give it an opaque clear colour again.
+New chrome colours must come from a `var(--…)`, or they break the dark
+theme. See "Settings and themes" in `web/README.md`.
+
 ## Which version to change
 
 Two front-ends live in this repo: the Python/pygame game and the

@@ -1,6 +1,13 @@
+import { createRequire } from "node:module";
 import { fileURLToPath, URL } from "node:url";
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
+
+// The settings screen reports which build is running. The version comes from
+// package.json — the bump-version workflow rewrites it (and pyproject.toml) on
+// every push to master, so it names a deployed build exactly; the short commit
+// pins it further on CI builds and is empty locally.
+const pkg = createRequire(import.meta.url)("./package.json") as { version: string };
 
 // The TypeScript build mounts under `/next/` on GitHub Pages during the
 // transition (the pygbag build keeps the site root). CI passes the full
@@ -10,6 +17,10 @@ const base = process.env.VITE_BASE ?? "/";
 
 export default defineConfig({
   base,
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version),
+    __APP_COMMIT__: JSON.stringify((process.env.GITHUB_SHA ?? "").slice(0, 7)),
+  },
   // Allow importing the repo-root `data/` directory (shared JSON that both
   // the Python and TypeScript apps read — see docs/plans). `@data` resolves
   // there so imports read `@data/ui/screens.json`.

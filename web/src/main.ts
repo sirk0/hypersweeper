@@ -1,9 +1,7 @@
 import { Vector2, Vector3 } from "three";
 import "./ui/styles.css";
 import { isBoard3D, type CellId } from "./boards/core";
-import { hasMode } from "./boards/presets";
-import { DIFFICULTIES } from "./boards/catalog";
-import { screens } from "./config/screens";
+import { boardLinkQuery, parseBoardLink } from "./link";
 import { GameSession } from "./session";
 import { attachControls, blockBrowserZoom } from "./input/controls";
 import {
@@ -13,6 +11,15 @@ import {
 } from "./render/renderer";
 import { Hud } from "./ui/hud";
 import { Menu } from "./ui/menu";
+import type { SettingsHost } from "./ui/settings";
+import { applyTheme } from "./ui/theme";
+import {
+  animationsEnabled,
+  loadSettings,
+  saveSettings,
+  subscribeSettings,
+  type Settings,
+} from "./settings";
 import { installTestHook } from "./testHook";
 
 /** Zoom step for one press of the +/- keys. */
@@ -30,20 +37,26 @@ class App {
   private screen: "menu" | "game" = "menu";
   private flagMode = false;
   private hovered: CellId | null = null;
-  // Board animations honour the OS reduced-motion setting out of the gate; the
-  // `window.__ms.animations(false)` test seam overrides it for deterministic e2e.
-  private animationsEnabled = !(
-    window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false
-  );
+  /** Stored preferences (theme, difficulty, animations) — the app's only
+   * persisted state. */
+  private settings: Settings = loadSettings();
+  // Board animations honour the OS reduced-motion setting unless the settings
+  // screen overrides it; the `window.__ms.animations(false)` test seam overrides
+  // both for deterministic e2e.
+  private animationsEnabled = animationsEnabled(this.settings.animations);
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
     ui: HTMLElement,
   ) {
+    applyTheme(this.settings.theme); // before anything measures or paints
     this.syncViewport(); // size the layout box before anything measures it
     this.renderer = new BoardRenderer(canvas);
     this.hud = new Hud((action) => this.onAction(action));
-    this.menu = new Menu((sel) => this.startGame(sel.mode, sel.difficulty));
+    this.menu = new Menu(
+      (sel) => this.startGame(sel.mode, sel.difficulty),
+      this.settingsHost(),
+    );
     ui.append(this.hud.root, this.menu.root);
     this.hud.root.hidden = true;
 
@@ -76,6 +89,7 @@ class App {
     // The board has its own bounded zoom, so the browser's page zoom is only
     // ever a trap here (see blockBrowserZoom).
     blockBrowserZoom();
+    subscribeSettings((s) => this.adoptSettings(s));
     this.renderer.start();
     window.setInterval(() => this.tickTimer(), 250);
 
@@ -84,17 +98,88 @@ class App {
     requestAnimationFrame(() => document.body.setAttribute("data-ready", "1"));
   }
 
+  // -- settings --------------------------------------------------------------
+
+  /** The live view of the preferences the settings page reads and writes.
+   * Getters rather than a snapshot, so a page re-render after a change sees the
+   * new value. */
+  private settingsHost(): SettingsHost {
+    const app = this;
+    return {
+      get theme() {
+        return app.settings.theme;
+      },
+      get difficulty() {
+        return app.settings.difficulty;
+      },
+      get animations() {
+        return app.settings.animations;
+      },
+      setTheme: (key) => this.setTheme(key),
+      setDifficulty: (key) => this.setDifficulty(key),
+      setAnimations: (pref) => this.setAnimations(pref),
+    };
+  }
+
+  private setTheme(key: string): void {
+    this.settings = { ...this.settings, theme: key };
+    saveSettings(this.settings);
+    applyTheme(key); // the canvas is transparent, so CSS repaints the field too
+  }
+
+  private setDifficulty(key: string): void {
+    this.settings = { ...this.settings, difficulty: key };
+    saveSettings(this.settings);
+  }
+
+  /** Adopt settings written by another tab. The theme is applied; the
+   * difficulty and animation preferences are picked up by the menu's next
+   * repaint and the next board. A game already in progress keeps the
+   * difficulty it was started at. */
+  private adoptSettings(settings: Settings): void {
+    this.settings = settings;
+    applyTheme(settings.theme);
+    this.animationsEnabled = animationsEnabled(settings.animations);
+    this.session?.mesh.setAnimationsEnabled(this.animationsEnabled);
+    this.menu.refresh();
+  }
+
+  private setAnimations(pref: boolean | null): void {
+    this.settings = { ...this.settings, animations: pref };
+    saveSettings(this.settings);
+    this.animationsEnabled = animationsEnabled(pref);
+    this.session?.mesh.setAnimationsEnabled(this.animationsEnabled);
+  }
+
   // -- navigation ------------------------------------------------------------
 
+  /** Open the board a shared link names, if it names one this build has.
+   * Every parameter is validated on its own (link.ts), so a link naming a
+   * board that does not exist here still contributes its difficulty. */
   private startFromDeepLink(): boolean {
-    const params = new URLSearchParams(window.location.search);
-    const mode = params.get("mode");
-    const difficulty = params.get("difficulty") ?? screens.defaultDifficulty;
-    const seedRaw = params.get("seed");
-    if (!mode || !hasMode(mode) || !DIFFICULTIES.includes(difficulty)) return false;
-    const seed = seedRaw != null ? Number(seedRaw) : undefined;
-    this.startGame(mode, difficulty, seed !== undefined && !Number.isNaN(seed) ? { seed } : {});
+    const link = parseBoardLink(window.location.search);
+    // A link's difficulty applies for this session but is never persisted —
+    // opening someone else's link must not rewrite your own preference.
+    if (link.difficulty !== null) {
+      this.settings = { ...this.settings, difficulty: link.difficulty };
+    }
+    if (link.mode === null) return false;
+    this.startGame(link.mode, this.settings.difficulty, {
+      ...(link.seed !== null ? { seed: link.seed } : {}),
+    });
     return true;
+  }
+
+  /** Keep the address bar on the link that reopens what is on screen, so
+   * copying it is all sharing takes. `replaceState`, not `pushState`: this
+   * mirrors the current view rather than adding history entries the back
+   * button would then have to unwind. */
+  private syncLocation(query: string): void {
+    try {
+      window.history.replaceState(null, "", `${window.location.pathname}${query}`);
+    } catch {
+      /* a sandboxed frame may refuse; the app is unaffected */
+    }
   }
 
   private startGame(
@@ -106,6 +191,9 @@ class App {
       ...(opts.seed !== undefined ? { seed: opts.seed } : {}),
       ...(opts.mines ? { minePositions: opts.mines } : {}),
     });
+    // A board built from an explicit mine layout (the test seam) is not
+    // reproducible from a link, so it does not claim one.
+    if (!opts.mines) this.syncLocation(boardLinkQuery(mode, difficulty, opts.seed));
     this.renderer.setBoard(this.session.mesh);
     this.session.mesh.setAnimationsEnabled(this.animationsEnabled);
     if (this.session.is3d) this.renderer.setOrientation(initialOrientation(mode));
@@ -119,6 +207,7 @@ class App {
   }
 
   private showMenu(): void {
+    this.syncLocation(""); // the menu is not a board; drop the board's link
     this.screen = "menu";
     this.session = null;
     this.hud.root.hidden = true;
