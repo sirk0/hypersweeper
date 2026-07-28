@@ -191,7 +191,7 @@ test.describe("shareable board links", () => {
     // link is worth sharing for.
     await page.locator('.menu-entry[data-group="manifolds"]').click();
     await page.locator('.menu-entry[data-surface="klein"]').click();
-    await page.locator('.menu-entry[data-submenu="Dual-uniform tilings"]').click();
+    await page.locator('.menu-entry[data-submenu="dual"]').click();
     await page.locator('.menu-entry[data-mode="kleintriakis"]').click();
 
     await expect(page).toHaveURL(/\?mode=kleintriakis&difficulty=easy$/);

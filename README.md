@@ -1,11 +1,11 @@
 # Minesweeper
 
 Classic minesweeper, but the board can be almost any surface and tiling —
-from a flat aperiodic Penrose mosaic to a fullerene sphere or a Möbius strip.
+from a flat aperiodic Penrose mosaic to a Goldberg sphere or a Möbius strip.
 
 <table>
   <tr>
-    <td align="center"><img src="docs/screenshots/c180.png" width="380"><br>C180 fullerene on a sphere</td>
+    <td align="center"><img src="docs/screenshots/c180.png" width="380"><br>Goldberg GP(3,0) on a sphere</td>
     <td align="center"><img src="docs/screenshots/mobiushex.png" width="380"><br>Hexagons on a Möbius strip</td>
   </tr>
   <tr>
@@ -16,22 +16,23 @@ from a flat aperiodic Penrose mosaic to a fullerene sphere or a Möbius strip.
 
 Pick a surface, then a tiling:
 
-- **Flat surface** — classic squares (8 neighbors), a big triangle
-  subdivided into small triangles (12), a triangle grid (12), hexagons
-  (6), a big hexagon composed of small hexagons (6), two aperiodic
-  tilings — a Penrose mosaic (P3 rhombi) and "the hat", the single
-  tridecagon monotile that tiles only aperiodically — the eight
-  Archimedean tilings: elongated triangular 3.3.3.4.4, snub square
-  3.3.4.3.4, trihexagonal/kagome 3.6.3.6, snub hexagonal 3.3.3.3.6,
-  truncated square 4.8.8, truncated hexagonal 3.12.12, rhombitrihexagonal
-  3.4.6.4, and truncated trihexagonal 4.6.12 — and their eight Laves
+- **Flat surface** — classic squares (8 neighbors), a triangle grid (12)
+  and the same triangles cut to a triangular or a hexagonal board,
+  hexagons (6) and a big hexagon composed of small hexagons (6), two
+  aperiodic tilings — a Penrose mosaic (P3 rhombi) and "the hat", the
+  single tridecagon monotile that tiles only aperiodically — the eight
+  non-regular uniform tilings: snub hexagonal 3.3.3.3.6, elongated
+  triangular 3.3.3.4.4, snub square 3.3.4.3.4, rhombitrihexagonal
+  3.4.6.4, trihexagonal 3.6.3.6, truncated hexagonal 3.12.12, truncated
+  trihexagonal 4.6.12 and truncated square 4.8.8 — and their eight Laves
   (dual) tilings, from Cairo pentagonal and rhombille to the kisrhombille.
-  The menu groups these as **Uniform tilings** and **Dual-uniform
-  tilings**; every one of them also wraps the torus, cylinder and (unless
-  chiral) the Möbius strip below
-- **Sphere (3D)** — 60 pentagons (a pentagonal hexecontahedron, 7
-  neighbors), a C80 fullerene (12 pentagons + 30 hexagons), a C180
-  fullerene (12 pentagons + 80 hexagons), 80 geodesic triangles, or a snub dodecahedron
+  The menu groups these as **Regular**, **Uniform** and **Laves**; every
+  tiling also wraps the torus, cylinder and (unless chiral) the Möbius
+  strip below
+- **Sphere (3D)** — a pentagonal hexecontahedron (60 pentagons, 7
+  neighbors), a chamfered dodecahedron (12 pentagons + 30 hexagons), the
+  Goldberg polyhedron GP(3,0) (12 pentagons + 80 hexagons), a geodesic
+  icosahedron (80 triangles), or a snub dodecahedron
   (12 pentagons + 80 triangles).
   (A sphere cannot be tiled with hexagons alone — Euler's formula
   forces 12 pentagons in.)

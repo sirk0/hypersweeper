@@ -11,7 +11,7 @@ from minesweeper.boards import (
     DIFFICULTIES,
     MODE_LABELS,
     MODES_3D,
-    OTHER_MODES,
+    POLYHEDRA_MODES,
     SHAPED_MODES,
     SPHERE_MODES,
     SURFACE_LABELS,
@@ -871,7 +871,7 @@ class TestKleinTilings:
                 arch_klein_board(tiling, 10, 4, 5)
 
     def test_arch_klein_scroll_cycle_is_an_automorphism(self):
-        board = arch_klein_board("kagome", 6, 3, 12)
+        board = arch_klein_board("trihex", 6, 3, 12)
         cycle = board.cell_cycle
         assert cycle is not None and set(cycle) == set(board.adjacency)
         assert len(set(cycle.values())) == len(cycle)
@@ -911,7 +911,8 @@ class TestWrappedArchimedean:
         """On the open surfaces every vertex fan is the configuration or
         a part of it (boundary vertices)."""
         board = build_board(mode, "easy")
-        tiling = next(t for t in _ARCH_CONFIGS if mode.endswith(t))
+        # longest suffix wins: "trihex" is also the tail of "trunctrihex"
+        tiling = max((t for t in _ARCH_CONFIGS if mode.endswith(t)), key=len)
         want = Counter(_ARCH_CONFIGS[tiling][0])
         for fan in _corner_fans(board).values():
             assert not Counter(fan) - want, (mode, fan)
@@ -941,19 +942,19 @@ class TestWrappedArchimedean:
         counts = {
             "toruselongated": (72, 168, 240),
             "torussnubsquare": (60, 126, 240),
-            "toruskagome": (96, 120, 216),
+            "torustrihex": (96, 120, 216),
             "torussnubhex": (72, 108, 252),
             "torustruncsquare": (72, 144, 224),
             "torustrunchex": (84, 120, 216),
             "cylelongated": (70, 156, 285),
             "cylsnubsquare": (60, 126, 270),
-            "cylkagome": (72, 162, 264),
+            "cyltrihex": (72, 162, 264),
             "cylsnubhex": (72, 180, 252),
             "cyltruncsquare": (54, 120, 224),
             "cyltrunchex": (72, 144, 240),
             "mobiuselongated": (72, 144, 216),
             "mobiussnubsquare": (78, 135, 204),
-            "mobiuskagome": (72, 144, 216),
+            "mobiustrihex": (72, 144, 216),
             "mobiustruncsquare": (72, 128, 220),
             "mobiustrunchex": (54, 120, 216),
             "torusrhombitrihex": (120, 168, 288),
@@ -990,7 +991,7 @@ class TestWrappedArchimedean:
             # snub hexagonal / floret pentagonal are excluded (no mirror).
             "kleinelongated": (72, 168, 240),
             "kleinsnubsquare": (30, 63, 108),
-            "kleinkagome": (96, 120, 216),
+            "kleintrihex": (96, 120, 216),
             "kleintruncsquare": (72, 144, 224),
             "kleintrunchex": (84, 120, 216),
             "kleinrhombitrihex": (120, 168, 288),
@@ -1023,7 +1024,7 @@ class TestWrappedArchimedean:
 
     def test_too_small_wraps_rejected(self):
         with pytest.raises(ValueError):
-            arch_torus_board("kagome", 1, 3, 2)
+            arch_torus_board("trihex", 1, 3, 2)
 
     def test_torus_polygons_face_outward(self):
         for tiling in sorted(_ARCH_CONFIGS):
@@ -1108,7 +1109,8 @@ class TestPresets:
 
     def test_every_mode_appears_exactly_once_in_the_menu(self):
         # the one-off (non-periodic) modes, plus every periodic tiling x surface
-        modes = list(APERIODIC_MODES + SPHERE_MODES + OTHER_MODES + SHAPED_MODES)
+        modes = list(APERIODIC_MODES + SPHERE_MODES + POLYHEDRA_MODES)
+        modes += [m for shaped in SHAPED_MODES.values() for m in shaped]
         modes += [m for _, surfaces in TILINGS.values() for m in surfaces.values()]
         assert sorted(modes) == sorted(MODE_LABELS)
         assert len(modes) == len(set(modes))

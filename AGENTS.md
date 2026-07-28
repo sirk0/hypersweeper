@@ -22,11 +22,11 @@ Import order is a strict DAG; a module only imports from the ones above it.
 | Module | Responsibility |
 |--------|----------------|
 | `core.py` | `Board` / `Board3D`, the `_shared_vertex_adjacency` neighbour rule, `_build` (lattice→pixels) and `_finalize_flat` (float→pixels), 3D vector helpers, and the topology invariants `euler_characteristic` / `boundary_components` / `corner_fans`. |
-| `tilings.py` | Regular flat builders (square/triangle/hex/hexhex), the `_ArchTemplate` system, the eight Archimedean `_*_template()` factories plus their eight Laves duals (built by `_dual_template`), and the **`ARCH_TILINGS`** registry (the one place an Archimedean or Laves tiling is declared). |
+| `tilings.py` | Regular flat builders (square/triangle/trigrid/hex/hexhex/hextri), the `_ArchTemplate` system, the eight Archimedean `_*_template()` factories plus their eight Laves duals (built by `_dual_template`), and the **`ARCH_TILINGS`** registry (the one place an Archimedean or Laves tiling is declared). |
 | `aperiodic.py` | Penrose (P3) and the Hat monotile, each with its own exact-arithmetic vertex ids. |
-| `solids.py` | Closed/convex and polycube 3D boards (sphere, fullerenes, cube, tetrahedron, frames, bipyramid). |
+| `solids.py` | Closed/convex and polycube 3D boards (pentagonal hexecontahedron, Goldberg polyhedra, geodesic icosahedron, cube, tetrahedron, frames, bipyramid). |
 | `surfaces.py` | Wrapping tilings onto surfaces: the three immersion points (`_torus_point`, `_cylinder_point`, `_mobius_point`), the shared `_assemble` tail, the nine simple `*_board` wrappers, and the Archimedean `arch_torus_board` / `arch_cylinder_board` / `arch_mobius_board`. |
-| `catalog.py` | The menu, **derived**: `SURFACE_SPECS` and `TILING_SPECS` (leaf data loaded from `data/catalog.json`) produce `MODE_LABELS`, `TILINGS`, `SURFACE_LABELS`, the geometry-first menu tables (`MENU_ROOT`/`MANIFOLD_*`/`FAMILY_*`/`SPHERE_MODES`/`OTHER_MODES`/`SHAPED_MODES`), `MODES_3D`, `mode_for`, `surface_of`, `view_hint`. |
+| `catalog.py` | The menu, **derived**: `SURFACE_SPECS` and `TILING_SPECS` (leaf data loaded from `data/catalog.json`) produce `MODE_LABELS`, `TILINGS`, `SURFACE_LABELS`, the geometry-first menu tables (`MENU_ROOT`/`MANIFOLD_*`/`FAMILY_*`/`SPHERE_MODES`/`POLYHEDRA_MODES`/`SHAPED_MODES`) and the picker helpers (`family_rows`, `picker_families`, `picker_modes`), `MODES_3D`, `mode_for`, `surface_of`, `view_hint`. |
 | `presets.py` | Difficulty presets and `build_board`. Flat regular, solid, Archimedean/Laves and aperiodic (penrose/hat) presets all load from `data/presets.json` (shared with the web port). The Archimedean rows are authored in the compact **`ARCH_PRESETS`** table (tiling → surface → difficulty → args) that `scripts/export_data.py` expands into `data/presets.json`. |
 
 `__init__.py` re-exports the whole public surface, so `from
@@ -62,10 +62,11 @@ on any diff. `make web-prepare` copies `data/` into the pygbag stage so
 the Python web build finds it at runtime.
 
 A **mode** is the string `build_board` takes. For a periodic tiling it is
-`surface.prefix + tiling.key` (e.g. `toruskagome`); `catalog.mode_for`
+`surface.prefix + tiling.key` (e.g. `torustrihex`); `catalog.mode_for`
 is the only place that convention lives. Solids/aperiodic/shaped modes
-are one-offs listed directly in the `SPHERE_MODES` / `OTHER_MODES` /
-`SHAPED_MODES` / `APERIODIC_MODES` tuples with labels in `SOLO_LABELS`.
+are one-offs listed directly in the `SPHERE_MODES` / `POLYHEDRA_MODES` /
+`APERIODIC_MODES` tuples (and `SHAPED_MODES`, which maps a regular tiling
+key to the shaped flat boards cut from it) with labels in `SOLO_LABELS`.
 
 ## Recipe: add an Archimedean (periodic) tiling
 
@@ -74,13 +75,14 @@ Example goal: a new uniform tiling `foo` (say 3.4.6.4-like).
 1. **Template** — write `_foo_template()` in `tilings.py` returning
    `_template(config, width, height, polygons, mirrored=?, glide=?)`.
    Supply one rectangular fundamental domain's cells as float-coordinate
-   polygons. Copy the closest existing factory: `_kagome_template` is the
+   polygons. Copy the closest existing factory: `_trihex_template` is the
    simplest, `_snubsquare_template` shows the p4g `glide=True` case,
    `_snubhex_template` shows a chiral tiling (`mirrored=False`). Helpers
    `_hex_lattice_polygons`, `_regular_polygon`, `_square_on_edge` build
    hexagon-lattice tilings.
 2. **Registry** — add one `ArchTiling("foo", "Foo label", config,
-   edge_directions, _foo_template)` row to `ARCH_TILINGS`. This alone
+   edge_directions, _foo_template)` row to `ARCH_TILINGS`, in
+   vertex-configuration order (the registry order is the menu order). This alone
    feeds `_ARCH_CONFIGS`, `_ARCH_TEMPLATES`, and — via `catalog` — the
    menu, mode strings, `MODES_3D`, and chirality gating (a tiling whose
    template has no mirror is automatically denied the Möbius strip).
@@ -114,8 +116,8 @@ differ from an Archimedean tiling, both handled for you:
   vertex kinds) rather than vertex-transitive. Declare it with
   `vertex_transitive=False` on its `ArchTiling` row; the vertex-config
   tests then skip it, `TestArchimedean.test_tiles_are_congruent` covers it
-  instead, and the catalog routes it into the **Dual-uniform tilings** menu
-  submenu automatically (`DUAL_ARCH` is exactly the non-vertex-transitive
+  instead, and the catalog routes it into the **Laves** menu submenu
+  automatically (`DUAL_ARCH` is exactly the non-vertex-transitive
   `ARCH_TILINGS`, so no menu edit is needed).
 - Its handedness (reflective vs chiral, hence Möbius or not) is read from
   the primal's mirror/glide automatically — the floret pentagonal (dual of
@@ -135,7 +137,7 @@ Steps (say a new primal `_foo_template` gained a dual `_bar_template`):
    `TestWrappedArchimedean.test_cell_counts` (that test asserts the count
    table matches the set of wrapped modes, so it fails until you do).
 
-No `catalog.py` menu edit is needed — the Dual-uniform submenu derives from
+No `catalog.py` menu edit is needed — the Laves submenu derives from
 `vertex_transitive`.
 
 Everything else — mode strings, `MODES_3D`, chirality gating, symmetry and
@@ -151,9 +153,11 @@ These are one-offs, not tiling×surface products.
    builders assemble `cells` + `positions` and pick an orientation
    helper (`solids._convex_board3d` for convex solids, the polycube
    assemblers, or `surfaces._assemble`).
-2. Add the mode to the right menu tuple (`SPHERE_MODES`, `OTHER_MODES`,
-   `SHAPED_MODES`, or `APERIODIC_MODES`) and its label to `SOLO_LABELS` in
-   `catalog.py`.
+2. Add the mode to the right menu table in `data/catalog.json` —
+   `menu.sphereModes`, `menu.polyhedraModes`, `menu.aperiodic`, or
+   `menu.shapedModes` (keyed by the regular tiling the shaped board is cut
+   from) — and its label to `soloLabels`. `catalog.py` loads them; the
+   exporter round-trip test keeps the two sides honest.
 3. Add the builder to `_JSON_BUILDERS` in `presets.py`, add a
    `{mode: {builder, args: {difficulty: [...]}}}` row to
    `data/presets.json` (positional args), and re-run

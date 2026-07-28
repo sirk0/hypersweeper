@@ -107,9 +107,65 @@ export const MODE_LABELS: Record<string, string> = (() => {
   return labels;
 })();
 
-// Menu groupings for the 3D one-off boards (M2: Sphere and Other).
+// Menu groupings for the 3D one-off boards (Sphere and Polyhedra).
 export const SPHERE_MODES = MENU.sphereModes as string[];
-export const OTHER_MODES = MENU.otherModes as string[];
-// The shaped flat boards (triangle of triangles, hexagon of hexagons). Python
-// lists them at the end of the Other page (catalog.py OTHER_MODES + SHAPED_MODES).
-export const SHAPED_MODES = MENU.shapedModes as string[];
+export const POLYHEDRA_MODES = MENU.polyhedraModes as string[];
+// The shaped flat boards, by the regular tiling they are made of: the same
+// tiling as the plain rectangular board, cut to a triangular or hexagonal
+// outline. They exist on the plane only, so the flat picker's Regular page
+// carries them under their tiling and no other picker shows them.
+export const SHAPED_MODES = MENU.shapedModes as Record<string, string[]>;
+
+/** The regular tilings the picker offers, in order (MENU.pickerRegular). */
+export const PICKER_REGULAR = MENU.pickerRegular as string[];
+/** The picker's family rows; "aperiodic" is added on the plane only. */
+export const PICKER_FAMILIES = ["regular", "uniform", "dual"];
+export const APERIODIC_MODES = MENU.aperiodic as string[];
+
+const FAMILY_MEMBERS: Record<string, string[]> = {
+  regular: PICKER_REGULAR,
+  uniform: UNIFORM_ARCH,
+  dual: DUAL_ARCH,
+};
+
+/** One row of a picker family: the mode it launches, its label, and the
+ * menu-icon key (the tiling key for a wrapped tiling, so e.g. hexagons look
+ * the same on every surface, the mode itself otherwise). */
+export interface FamilyRow {
+  mode: string;
+  label: string;
+  icon: string;
+}
+
+/** The rows of one picker family on a surface (port of catalog.py
+ * family_rows). Rows the surface cannot carry — a chiral tiling on a mirror
+ * seam — are dropped rather than shown disabled, as elsewhere in this menu. */
+export function familyRows(family: string, surfaceKey: string): FamilyRow[] {
+  if (family === "aperiodic") {
+    return APERIODIC_MODES.map((mode) => ({
+      mode,
+      label: MODE_LABELS[mode] ?? mode,
+      icon: mode,
+    }));
+  }
+  const surface = SURFACES.get(surfaceKey);
+  if (!surface) return [];
+  const rows: FamilyRow[] = [];
+  for (const key of FAMILY_MEMBERS[family] ?? []) {
+    const tiling = TILINGS_BY_KEY.get(key);
+    if (!tiling || !tilingAllows(tiling, surface)) continue;
+    rows.push({ mode: modeFor(key, surfaceKey), label: tiling.label, icon: key });
+    if (family === "regular" && surfaceKey === "flat") {
+      // the same tiling on a triangular / hexagonal outline
+      for (const mode of SHAPED_MODES[key] ?? []) {
+        rows.push({ mode, label: MODE_LABELS[mode] ?? mode, icon: mode });
+      }
+    }
+  }
+  return rows;
+}
+
+/** The family rows a surface's picker offers, in order. */
+export function pickerFamilies(surfaceKey: string): string[] {
+  return surfaceKey === "flat" ? [...PICKER_FAMILIES, "aperiodic"] : PICKER_FAMILIES;
+}

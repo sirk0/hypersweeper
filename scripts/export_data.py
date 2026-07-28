@@ -33,8 +33,8 @@ from minesweeper.boards.catalog import (
     MANIFOLD_ORDER,
     MENU_ROOT,
     MENU_ROOT_LABELS,
-    OTHER_MODES,
     PICKER_REGULAR,
+    POLYHEDRA_MODES,
     REGULAR_TILINGS,
     SHAPED_MODES,
     SOLO_LABELS,
@@ -86,8 +86,8 @@ def build_catalog() -> dict:
             "aperiodic": list(APERIODIC_MODES),
             "familyLabels": dict(FAMILY_LABELS),
             "sphereModes": list(SPHERE_MODES),
-            "otherModes": list(OTHER_MODES),
-            "shapedModes": list(SHAPED_MODES),
+            "polyhedraModes": list(POLYHEDRA_MODES),
+            "shapedModes": {k: list(v) for k, v in SHAPED_MODES.items()},
         },
     }
 

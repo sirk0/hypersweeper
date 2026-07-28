@@ -59,6 +59,14 @@
   ],
   "regularTilings": [
     {
+      "key": "tri",
+      "label": "Triangles",
+      "chiral": false,
+      "modeOverrides": {
+        "flat": "trigrid"
+      }
+    },
+    {
       "key": "square",
       "label": "Squares",
       "chiral": false,
@@ -67,14 +75,6 @@
         "cylinder": "cylinder",
         "mobius": "mobius",
         "klein": "klein"
-      }
-    },
-    {
-      "key": "tri",
-      "label": "Triangles",
-      "chiral": false,
-      "modeOverrides": {
-        "flat": "trigrid"
       }
     },
     {
@@ -87,18 +87,19 @@
   "soloLabels": {
     "penrose": "Penrose rhombi",
     "hat": "The Hat",
-    "sphere": "60 pentagons",
-    "c80": "C80 fullerene",
-    "c180": "C180 fullerene",
-    "spheretri": "Triangles",
+    "sphere": "Pentagonal hexecontahedron",
+    "c80": "Chamfered dodecahedron",
+    "c180": "Goldberg GP(3,0)",
+    "spheretri": "Geodesic icosahedron",
     "snubdodec": "Snub dodecahedron",
     "cube": "Cube",
     "tetrahedron": "Tetrahedron",
     "tetraframe": "Tetrahedron frame",
     "cubeframe": "Cube frame",
     "steppedbipyramid": "Stepped bipyramid",
-    "triangle": "Triangle of triangles",
-    "hexhex": "Hexagon of hexagons"
+    "triangle": "Triangles - triangular board",
+    "hextri": "Triangles - hexagonal board",
+    "hexhex": "Hexagons - hexagonal board"
   },
   "menu": {
     "root": [
@@ -106,32 +107,30 @@
       "flat",
       "manifolds",
       "sphere",
-      "other"
+      "polyhedra"
     ],
     "rootLabels": {
       "classic": "Classic",
       "flat": "Flat",
       "manifolds": "Flat manifolds",
       "sphere": "Sphere",
-      "other": "Other"
+      "polyhedra": "Polyhedra"
     },
     "manifoldOrder": [
-      "flat",
       "mobius",
       "cylinder",
       "torus",
       "klein"
     ],
     "manifoldLabels": {
-      "flat": "Plain",
       "cylinder": "Cylinder",
       "mobius": "Möbius strip",
       "klein": "Klein bottle",
       "torus": "Torus"
     },
     "pickerRegular": [
-      "square",
       "tri",
+      "square",
       "hex"
     ],
     "aperiodic": [
@@ -139,8 +138,9 @@
       "hat"
     ],
     "familyLabels": {
-      "uniform": "Uniform tilings",
-      "dual": "Dual-uniform tilings",
+      "regular": "Regular",
+      "uniform": "Uniform",
+      "dual": "Laves",
       "aperiodic": "Aperiodic"
     },
     "sphereModes": [
@@ -150,16 +150,21 @@
       "spheretri",
       "snubdodec"
     ],
-    "otherModes": [
+    "polyhedraModes": [
       "cube",
       "cubeframe",
       "tetrahedron",
       "tetraframe",
       "steppedbipyramid"
     ],
-    "shapedModes": [
-      "triangle",
-      "hexhex"
-    ]
+    "shapedModes": {
+      "tri": [
+        "triangle",
+        "hextri"
+      ],
+      "hex": [
+        "hexhex"
+      ]
+    }
   }
 }

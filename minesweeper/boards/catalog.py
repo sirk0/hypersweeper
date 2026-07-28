@@ -110,7 +110,7 @@ TILINGS_BY_KEY = {t.key: t for t in TILING_SPECS}
 
 def mode_for(tiling: str, surface: str) -> str:
     """The mode string for a (tiling, surface) pair, e.g.
-    ('kagome', 'torus') -> 'toruskagome'. The one place the naming
+    ('trihex', 'torus') -> 'torustrihex'. The one place the naming
     convention lives; the wrap builders and presets go through it."""
     return TILINGS_BY_KEY[tiling].mode(SURFACES[surface])
 
@@ -151,15 +151,16 @@ TILINGS = {
 #
 #   Classic         -> flat squares, at once
 #   Flat            -> tiling picker on the plane
-#   Flat manifolds  -> plane / cylinder / Mobius / Klein / torus -> tiling picker
+#   Flat manifolds  -> cylinder / Mobius / Klein / torus -> tiling picker
 #   Sphere          -> the spherical tilings
-#   Other           -> the solids, and the shaped boards
+#   Polyhedra       -> the solids
 #
-# The picker shows the three regular tilings directly, then the uniform, dual
-# and (flat-only) aperiodic families as submenus, then a random option; it is
-# parameterised by the surface it was reached through, so the same picker serves
-# the plane and every flat manifold. Chiral tilings are gated out of the Mobius
-# strip / Klein bottle per surface by TilingSpec.allows.
+# The picker is a list of family submenus -- Regular, Uniform, Laves and
+# (flat only) Aperiodic -- plus a random option. It is parameterised by the
+# surface it was reached through, so the same picker serves the plane and every
+# flat manifold; the plane is reached through the home page's Flat entry rather
+# than repeated in the manifolds list. Chiral tilings are gated out of the
+# Mobius strip / Klein bottle per surface by TilingSpec.allows.
 # ---------------------------------------------------------------------------
 
 # The menu taxonomy and labels live in data/catalog.json (shared with the TS
@@ -170,54 +171,41 @@ _MENU = _CATALOG["menu"]
 MENU_ROOT = tuple(_MENU["root"])
 MENU_ROOT_LABELS = dict(_MENU["rootLabels"])
 
-# Flat manifolds page: the wrappable surfaces (the plane first). The flat
-# surface is labelled "Plain" here; picking any row opens the tiling picker.
+# Flat manifolds page: the surfaces the plane wraps onto. The plane itself is
+# not repeated here -- the home page's Flat entry opens its picker.
 MANIFOLD_ORDER = tuple(_MENU["manifoldOrder"])
 MANIFOLD_LABELS = dict(_MENU["manifoldLabels"])
 
-# The tiling picker: the three regular tilings are shown directly, then the
-# uniform / dual / aperiodic families as submenus. The uniform and dual family
-# members are exactly the Archimedean (vertex-transitive) tilings and their
-# Laves duals, so they derive from ARCH_TILINGS -- adding a tiling stays a
-# one-row change. Aperiodic tilings only wrap the plane, so that family is
-# offered only when the surface is flat.
+# The tiling picker's families. The uniform and dual family members are exactly
+# the Archimedean (vertex-transitive) tilings and their Laves duals, so they
+# derive from ARCH_TILINGS -- adding a tiling stays a one-row change. Aperiodic
+# tilings only wrap the plane, so that family is offered only when the surface
+# is flat.
 PICKER_REGULAR = tuple(_MENU["pickerRegular"])
 UNIFORM_ARCH = tuple(t.key for t in ARCH_TILINGS if t.vertex_transitive)
 DUAL_ARCH = tuple(t.key for t in ARCH_TILINGS if not t.vertex_transitive)
 APERIODIC_MODES = tuple(_MENU["aperiodic"])
 FAMILY_LABELS = dict(_MENU["familyLabels"])
 FAMILY_MEMBERS = {
+    "regular": PICKER_REGULAR,
     "uniform": UNIFORM_ARCH,
     "dual": DUAL_ARCH,
     "aperiodic": APERIODIC_MODES,
 }
-# every tiling reachable through the picker (used for the random button)
-PICKER_TILINGS = PICKER_REGULAR + UNIFORM_ARCH + DUAL_ARCH
+# the picker's family rows, in order; "aperiodic" is added on the plane only
+PICKER_FAMILIES = ("regular", "uniform", "dual")
 
 # Sphere page: the spherical tilings, none of which wraps a flat surface.
 SPHERE_MODES = tuple(_MENU["sphereModes"])
 
-# Other page: the solids launch at once; "Shaped boards" opens the two shaped
-# boards as a submenu.
-OTHER_MODES = tuple(_MENU["otherModes"])
-SHAPED_MODES = tuple(_MENU["shapedModes"])
+# Polyhedra page: the solids, each launching at once.
+POLYHEDRA_MODES = tuple(_MENU["polyhedraModes"])
 
-
-def picker_modes(surface_key: str) -> tuple[str, ...]:
-    """Every mode reachable on a surface through the tiling picker -- the pool
-    the random button draws from (and the reachability guarantee in the tests).
-    The flat picker also carries the aperiodic modes."""
-    modes = [mode_for(t, surface_key) for t in PICKER_TILINGS
-             if TILINGS_BY_KEY[t].allows(SURFACES[surface_key])]
-    if surface_key == "flat":
-        modes += list(APERIODIC_MODES)
-    return tuple(dict.fromkeys(modes))
-
-
-# The pool the random "Random tiling" button draws from on the plane: every
-# flat tiling board (uniform, dual, and the aperiodic ones) -- no wrapped
-# surfaces or solids.
-FLAT_MODES = picker_modes("flat")
+# The shaped flat boards, by the regular tiling they are made of: the same
+# tiling as the plain rectangular board, cut to a triangular or hexagonal
+# outline instead. They live on the plane only, so the Regular page carries
+# them under their tiling on the flat picker and nowhere else.
+SHAPED_MODES = {k: tuple(v) for k, v in _MENU["shapedModes"].items()}
 
 # Labels for the non-periodic (one-off) modes (aperiodic, sphere, solids,
 # shaped) listed in the menu tuples above.
@@ -232,7 +220,56 @@ MODE_LABELS = {
     **SOLO_LABELS,
 }
 
-_SOLID_MODES = frozenset(SPHERE_MODES) | frozenset(OTHER_MODES)
+
+def family_rows(family: str,
+                surface_key: str) -> tuple[tuple[str, str, str, bool], ...]:
+    """The (key, label, mode, enabled) rows of one picker family on a surface.
+
+    ``key`` is what the menu reports as clicked: a tiling key for a tiling row,
+    the mode itself for a one-off board. A row a surface cannot carry (a chiral
+    tiling on a mirror seam) comes back with ``enabled`` False, and its mode
+    does not exist -- the pygame menu greys those out, the TypeScript one drops
+    them.
+    """
+    surface = SURFACES[surface_key]
+    if family == "aperiodic":
+        return tuple((m, MODE_LABELS[m], m, True) for m in APERIODIC_MODES)
+    rows: list[tuple[str, str, str, bool]] = []
+    for key in FAMILY_MEMBERS[family]:
+        spec = TILINGS_BY_KEY[key]
+        allowed = spec.allows(surface)
+        rows.append((key, spec.label, spec.mode(surface) if allowed else "",
+                     allowed))
+        if family == "regular" and surface_key == "flat":
+            # the same tiling on a triangular / hexagonal outline
+            rows += [(m, MODE_LABELS[m], m, True)
+                     for m in SHAPED_MODES.get(key, ())]
+    return tuple(rows)
+
+
+def picker_families(surface_key: str) -> tuple[str, ...]:
+    """The family rows a surface's picker offers, in order."""
+    if surface_key == "flat":
+        return PICKER_FAMILIES + ("aperiodic",)
+    return PICKER_FAMILIES
+
+
+def picker_modes(surface_key: str) -> tuple[str, ...]:
+    """Every mode reachable on a surface through the tiling picker -- the pool
+    the random button draws from (and the reachability guarantee in the tests).
+    The flat picker also carries the shaped boards and the aperiodic modes."""
+    modes = [mode for family in picker_families(surface_key)
+             for _, _, mode, enabled in family_rows(family, surface_key)
+             if enabled]
+    return tuple(dict.fromkeys(modes))
+
+
+# The pool the random button draws from on the plane: every flat tiling board
+# (regular, shaped, uniform, dual and the aperiodic ones) -- no wrapped
+# surfaces or solids.
+FLAT_MODES = picker_modes("flat")
+
+_SOLID_MODES = frozenset(SPHERE_MODES) | frozenset(POLYHEDRA_MODES)
 MODES_3D = frozenset(
     _SOLID_MODES
     | {t.mode(s) for t in TILING_SPECS for s in SURFACE_SPECS

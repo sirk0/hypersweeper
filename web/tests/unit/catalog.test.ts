@@ -2,25 +2,23 @@ import { describe, expect, it } from "vitest";
 import {
   DUAL_ARCH,
   MENU,
-  OTHER_MODES,
+  POLYHEDRA_MODES,
   SPHERE_MODES,
   SURFACES,
   TILINGS_BY_KEY,
   UNIFORM_ARCH,
-  modeFor,
+  familyRows,
+  pickerFamilies,
   tilingAllows,
 } from "../../src/boards/catalog";
 import { MODES } from "../../src/boards/presets";
 
-// The M4 catalog derivations: the uniform / dual-uniform families lifted from
-// the ARCH_TILINGS registry, chirality gating, and the guarantee that every
-// built mode is reachable through the geometry-first menu (the picker per
-// surface plus the sphere / other groups). Mirrors catalog.py's family split
-// and picker_modes reachability.
+// The catalog derivations: the uniform / Laves families lifted from the
+// ARCH_TILINGS registry, chirality gating, and the guarantee that every built
+// mode is reachable through the geometry-first menu (the picker per surface
+// plus the sphere / polyhedra groups). Mirrors catalog.py's family split and
+// picker_modes reachability.
 
-const PICKER_REGULAR = MENU.pickerRegular as string[];
-const FLAT_SHAPED = MENU.shapedModes as string[];
-const APERIODIC = MENU.aperiodic as string[];
 const MANIFOLD_ORDER = MENU.manifoldOrder as string[];
 
 describe("catalog families", () => {
@@ -45,6 +43,40 @@ describe("catalog families", () => {
       expect(tilingAllows(tiling, SURFACES.get("torus")!)).toBe(true);
     }
   });
+
+  it("lists the uniform tilings in vertex-configuration order", () => {
+    expect(UNIFORM_ARCH).toEqual([
+      "snubhex",
+      "elongated",
+      "snubsquare",
+      "rhombitrihex",
+      "trihex",
+      "trunchex",
+      "trunctrihex",
+      "truncsquare",
+    ]);
+  });
+
+  it("carries the shaped boards on the flat Regular page only", () => {
+    expect(familyRows("regular", "flat").map((r) => r.mode)).toEqual([
+      "trigrid",
+      "triangle",
+      "hextri",
+      "square",
+      "hex",
+      "hexhex",
+    ]);
+    expect(familyRows("regular", "torus").map((r) => r.mode)).toEqual([
+      "torustri",
+      "torus",
+      "torushex",
+    ]);
+  });
+
+  it("offers the aperiodic family on the plane only", () => {
+    expect(pickerFamilies("flat")).toContain("aperiodic");
+    expect(pickerFamilies("klein")).not.toContain("aperiodic");
+  });
 });
 
 describe("menu reachability", () => {
@@ -53,20 +85,13 @@ describe("menu reachability", () => {
     const add = (mode: string): void => {
       if (MODES.includes(mode)) reachable.add(mode);
     };
-    for (const surfaceKey of MANIFOLD_ORDER) {
-      const surface = SURFACES.get(surfaceKey);
-      if (!surface) continue;
-      for (const key of [...PICKER_REGULAR, ...UNIFORM_ARCH, ...DUAL_ARCH]) {
-        const tiling = TILINGS_BY_KEY.get(key);
-        if (tiling && tilingAllows(tiling, surface)) add(modeFor(key, surfaceKey));
-      }
-      if (surfaceKey === "flat") {
-        for (const m of FLAT_SHAPED) add(m);
-        for (const m of APERIODIC) add(m); // the flat picker carries the aperiodic tilings
+    for (const surfaceKey of ["flat", ...MANIFOLD_ORDER]) {
+      for (const family of pickerFamilies(surfaceKey)) {
+        for (const row of familyRows(family, surfaceKey)) add(row.mode);
       }
     }
     for (const m of SPHERE_MODES) add(m);
-    for (const m of OTHER_MODES) add(m);
+    for (const m of POLYHEDRA_MODES) add(m);
     expect(reachable).toEqual(new Set(MODES));
   });
 });

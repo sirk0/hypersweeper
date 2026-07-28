@@ -110,6 +110,26 @@
         ]
       }
     },
+    "hextri": {
+      "builder": "hextri_board",
+      "args": {
+        "easy": [
+          4,
+          15,
+          64
+        ],
+        "medium": [
+          5,
+          25,
+          56
+        ],
+        "hard": [
+          7,
+          55,
+          46
+        ]
+      }
+    },
     "torus": {
       "builder": "torus_board",
       "args": {
@@ -802,25 +822,25 @@
         ]
       }
     },
-    "kagome": {
+    "trihex": {
       "builder": "archimedean_board",
       "args": {
         "easy": [
-          "kagome",
+          "trihex",
           5,
           3,
           14,
           40
         ],
         "medium": [
-          "kagome",
+          "trihex",
           7,
           4,
           30,
           30
         ],
         "hard": [
-          "kagome",
+          "trihex",
           9,
           6,
           65,
@@ -828,25 +848,25 @@
         ]
       }
     },
-    "toruskagome": {
+    "torustrihex": {
       "builder": "arch_torus_board",
       "args": {
         "easy": [
-          "kagome",
+          "trihex",
           8,
           2,
           12,
           0.43
         ],
         "medium": [
-          "kagome",
+          "trihex",
           10,
           2,
           18,
           0.35
         ],
         "hard": [
-          "kagome",
+          "trihex",
           12,
           3,
           43,
@@ -854,25 +874,25 @@
         ]
       }
     },
-    "cylkagome": {
+    "cyltrihex": {
       "builder": "arch_cylinder_board",
       "args": {
         "easy": [
-          "kagome",
+          "trihex",
           6,
           2,
           9,
           0.8660254037844386
         ],
         "medium": [
-          "kagome",
+          "trihex",
           9,
           3,
           24,
           0.8660254037844386
         ],
         "hard": [
-          "kagome",
+          "trihex",
           11,
           4,
           55,
@@ -880,46 +900,46 @@
         ]
       }
     },
-    "mobiuskagome": {
+    "mobiustrihex": {
       "builder": "arch_mobius_board",
       "args": {
         "easy": [
-          "kagome",
+          "trihex",
           12,
           1,
           9
         ],
         "medium": [
-          "kagome",
+          "trihex",
           12,
           2,
           22
         ],
         "hard": [
-          "kagome",
+          "trihex",
           18,
           2,
           43
         ]
       }
     },
-    "kleinkagome": {
+    "kleintrihex": {
       "builder": "arch_klein_board",
       "args": {
         "easy": [
-          "kagome",
+          "trihex",
           8,
           2,
           12
         ],
         "medium": [
-          "kagome",
+          "trihex",
           10,
           2,
           18
         ],
         "hard": [
-          "kagome",
+          "trihex",
           12,
           3,
           43
