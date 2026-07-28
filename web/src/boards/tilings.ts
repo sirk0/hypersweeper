@@ -71,6 +71,27 @@ export function triangleBoard(size: number, mineCount: number, scale = 52): Boar
   return buildLattice("triangle", cells, [scale / 2, (scale * ROOT3) / 2], mineCount);
 }
 
+export function hextriBoard(side: number, mineCount: number, scale = 52): Board {
+  // A regular hexagon of side `side` cut into 6 * side^2 unit triangles: the
+  // triangular tiling on a hexagonal board, as hexhexBoard is the hexagonal
+  // one. Going down the 2 * side rows the top edge widens by a triangle side
+  // per row until the middle and narrows again; a row whose top edge is t
+  // sides wide holds 2t + 1 triangles above the middle (first and last
+  // pointing up) and 2t - 1 below it. Rows are centred in the 4 * side lattice
+  // columns, which puts the hexagon's centre on a lattice vertex and so keeps
+  // the tiling's full six-fold symmetry.
+  const cells = new Map<CellId, Vertex[]>();
+  for (let r = 0; r < 2 * side; r++) {
+    const upper = r < side;
+    const count = upper ? 2 * (side + r) + 1 : 2 * (3 * side - r) - 1;
+    const xStart = (4 * side - count - 1) / 2;
+    for (let i = 0; i < count; i++) {
+      cells.set(cid(r, i), triangleVertices(xStart + i, r, (i % 2 === 0) === upper));
+    }
+  }
+  return buildLattice("hextri", cells, [scale / 2, (scale * ROOT3) / 2], mineCount);
+}
+
 export function triangleGridBoard(
   rows: number,
   rowWidth: number,
@@ -326,8 +347,8 @@ function round3(v: number): number {
 
 // -- the eight uniform template factories ------------------------------------
 
-function kagomeTemplate(): ArchTemplate {
-  // Kagome (3.6.3.6): hexagon centres on a side-2 triangular lattice, cell
+function trihexTemplate(): ArchTemplate {
+  // Trihexagonal (3.6.3.6): hexagon centres on a side-2 triangular lattice, cell
   // vertices at the lattice edge midpoints.
   const h = ROOT3 / 2;
   const hexagon = (cx: number, cy: number): Vertex[] => [
@@ -628,24 +649,28 @@ export interface ArchTiling {
   vertexTransitive: boolean;
 }
 
+// Listed in vertex-configuration order, the order Wikipedia's "List of
+// Euclidean uniform tilings" uses, so the menu's Uniform page reads the same
+// way; the Laves block repeats it, each dual next to the position its uniform
+// tiling holds above. Mirrors ARCH_TILINGS in boards/tilings.py.
 export const ARCH_TILINGS: ArchTiling[] = [
+  { key: "snubhex", label: "Snub hexagonal", config: [3, 3, 3, 3, 6], edgeDirections: 12, template: snubhexTemplate, vertexTransitive: true },
   { key: "elongated", label: "Elongated triangular", config: [3, 3, 3, 4, 4], edgeDirections: 12, template: elongatedTemplate, vertexTransitive: true },
   { key: "snubsquare", label: "Snub square", config: [3, 3, 4, 3, 4], edgeDirections: 12, template: snubsquareTemplate, vertexTransitive: true },
-  { key: "kagome", label: "Kagome", config: [3, 6, 3, 6], edgeDirections: 12, template: kagomeTemplate, vertexTransitive: true },
-  { key: "snubhex", label: "Snub hexagonal", config: [3, 3, 3, 3, 6], edgeDirections: 12, template: snubhexTemplate, vertexTransitive: true },
-  { key: "truncsquare", label: "Truncated square", config: [4, 8, 8], edgeDirections: 8, template: truncsquareTemplate, vertexTransitive: true },
-  { key: "trunchex", label: "Truncated hexagonal", config: [3, 12, 12], edgeDirections: 12, template: trunchexTemplate, vertexTransitive: true },
   { key: "rhombitrihex", label: "Rhombitrihexagonal", config: [3, 4, 6, 4], edgeDirections: 12, template: rhombitrihexTemplate, vertexTransitive: true },
+  { key: "trihex", label: "Trihexagonal", config: [3, 6, 3, 6], edgeDirections: 12, template: trihexTemplate, vertexTransitive: true },
+  { key: "trunchex", label: "Truncated hexagonal", config: [3, 12, 12], edgeDirections: 12, template: trunchexTemplate, vertexTransitive: true },
   { key: "trunctrihex", label: "Truncated trihexagonal", config: [4, 6, 12], edgeDirections: 12, template: trunctrihexTemplate, vertexTransitive: true },
+  { key: "truncsquare", label: "Truncated square", config: [4, 8, 8], edgeDirections: 8, template: truncsquareTemplate, vertexTransitive: true },
   // the Laves (dual / Catalan) tilings -- face-transitive
+  { key: "floret", label: "Floret pentagonal", config: [3, 3, 3, 3, 6], edgeDirections: 12, template: () => dualTemplate(snubhexTemplate), vertexTransitive: false },
   { key: "prismaticpent", label: "Prismatic pentagonal", config: [3, 3, 3, 4, 4], edgeDirections: 12, template: () => dualTemplate(elongatedTemplate), vertexTransitive: false },
   { key: "cairo", label: "Cairo pentagonal", config: [3, 3, 4, 3, 4], edgeDirections: 12, template: () => dualTemplate(snubsquareTemplate), vertexTransitive: false },
-  { key: "rhombille", label: "Rhombille", config: [3, 6, 3, 6], edgeDirections: 12, template: () => dualTemplate(kagomeTemplate), vertexTransitive: false },
-  { key: "floret", label: "Floret pentagonal", config: [3, 3, 3, 3, 6], edgeDirections: 12, template: () => dualTemplate(snubhexTemplate), vertexTransitive: false },
-  { key: "tetrakis", label: "Tetrakis square", config: [4, 8, 8], edgeDirections: 8, template: () => dualTemplate(truncsquareTemplate), vertexTransitive: false },
-  { key: "triakis", label: "Triakis triangular", config: [3, 12, 12], edgeDirections: 12, template: () => dualTemplate(trunchexTemplate), vertexTransitive: false },
   { key: "deltoidal", label: "Deltoidal trihexagonal", config: [3, 4, 6, 4], edgeDirections: 12, template: () => dualTemplate(rhombitrihexTemplate), vertexTransitive: false },
+  { key: "rhombille", label: "Rhombille", config: [3, 6, 3, 6], edgeDirections: 12, template: () => dualTemplate(trihexTemplate), vertexTransitive: false },
+  { key: "triakis", label: "Triakis triangular", config: [3, 12, 12], edgeDirections: 12, template: () => dualTemplate(trunchexTemplate), vertexTransitive: false },
   { key: "kisrhombille", label: "Kisrhombille", config: [4, 6, 12], edgeDirections: 12, template: () => dualTemplate(trunctrihexTemplate), vertexTransitive: false },
+  { key: "tetrakis", label: "Tetrakis square", config: [4, 8, 8], edgeDirections: 8, template: () => dualTemplate(truncsquareTemplate), vertexTransitive: false },
 ];
 
 const ARCH_BY_KEY = new Map(ARCH_TILINGS.map((t) => [t.key, t]));

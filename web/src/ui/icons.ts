@@ -707,8 +707,7 @@ const ALIASES: Record<string, string> = {
   polyhedra: "cube",
   classic: "square", // the "Classic" home entry: flat squares
   manifolds: "torus", // the "Flat manifolds" home entry
-  other: "cube", // the "Other" home entry
-  random: "start", // the "Random tiling" picker entry
+  random: "start", // the "Random" picker entry
 };
 
 const SPHERES = ["sphere", "c80", "c180", "spheretri", "snubdodec"];
@@ -754,6 +753,14 @@ function draw(rawKey: string): string[] {
   if (ARCH_KEYS.has(key)) return tilingPatch(key);
   if (key === "uniform") return tilingPatch("rhombitrihex", "rosette");
   if (key === "dual") return tilingPatch("deltoidal");
+  if (key === "regular") {
+    // the Regular family row: one tile of each of the three regular tilings
+    return [
+      shape(ngon(d * 0.29, d * 0.31, d * 0.25, 3, -90), LIGHT),
+      shape(ngon(d * 0.73, d * 0.29, d * 0.23, 4, 45)),
+      shape(hexagon(d * 0.5, d * 0.73, d * 0.25)),
+    ];
+  }
 
   if (key === "start") {
     // The random-tiling row: a question mark set in the game's own face, Rubik.
@@ -793,6 +800,13 @@ function draw(rawKey: string): string[] {
     parts.push(shape(ngon(C, C + d * 0.04, d * 0.46, 3, -90), BASE, 4, cell));
   } else if (key === "hex") {
     parts.push(shape(hexagon(C, C, d * 0.44)));
+  } else if (key === "hextri") {
+    // the hexagonal triangle board: one hexagon cut into six triangles,
+    // vertices left and right the way the board's outline sits
+    const h = hexagon(C, C, d * 0.46, 0);
+    for (let k = 0; k < 6; k++) {
+      parts.push(shape([h[k]!, h[(k + 1) % 6]!, [C, C]], k % 2 ? BASE : LIGHT));
+    }
   } else if (key === "hexhex") {
     const r = d * 0.155;
     const centers: P[] = [[C, C]];

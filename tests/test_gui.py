@@ -15,7 +15,7 @@ from minesweeper.boards import (  # noqa: E402
     MENU_ROOT,
     MODE_LABELS,
     MODES_3D,
-    OTHER_MODES,
+    POLYHEDRA_MODES,
     SHAPED_MODES,
     SPHERE_MODES,
     TILINGS,
@@ -514,20 +514,31 @@ class TestMenu:
         assert self.click_item(menu, "flat") is None
         assert menu.path == ["flat"]
         assert self.items(menu) == {
-            "square", "tri", "hex", "uniform", "dual", "aperiodic", "random"
+            "regular", "uniform", "dual", "aperiodic", "random"
         }
 
-    def test_flat_regular_tiling_launches_at_once(self):
+    def test_flat_regular_family_lists_the_tilings_and_shaped_boards(self):
         menu = MenuScreen()
         self.click_item(menu, "flat")
+        self.click_item(menu, "regular")
+        # each regular tiling, followed by the shaped boards cut from it
+        assert [key for _, key, _, _ in menu.layout()["items"]] == [
+            "tri", "triangle", "hextri", "square", "hex", "hexhex"
+        ]
         assert self.click_item(menu, "hex") == ("start", "hex")
+
+    def test_flat_shaped_board_launches_at_once(self):
+        menu = MenuScreen()
+        self.click_item(menu, "flat")
+        self.click_item(menu, "regular")
+        assert self.click_item(menu, "hextri") == ("start", "hextri")
 
     def test_flat_uniform_family_reaches_a_tiling(self):
         menu = MenuScreen()
         self.click_item(menu, "flat")
         self.click_item(menu, "uniform")
         assert self.items(menu) == set(FAMILY_MEMBERS["uniform"])
-        assert self.click_item(menu, "kagome") == ("start", "kagome")
+        assert self.click_item(menu, "trihex") == ("start", "trihex")
 
     def test_flat_dual_family_reaches_a_laves_tiling(self):
         menu = MenuScreen()
@@ -562,16 +573,17 @@ class TestMenu:
         self.click_item(menu, "torus")
         assert menu.path == ["manifolds", "torus"]
         # aperiodic is not offered on a wrapped surface, only on the plane
-        assert self.items(menu) == {
-            "square", "tri", "hex", "uniform", "dual", "random"
-        }
+        assert self.items(menu) == {"regular", "uniform", "dual", "random"}
         self.click_item(menu, "uniform")
-        assert self.click_item(menu, "kagome") == ("start", "toruskagome")
+        assert self.click_item(menu, "trihex") == ("start", "torustrihex")
 
     def test_manifold_regular_tiling_wraps(self):
         menu = MenuScreen()
         self.click_item(menu, "manifolds")
         self.click_item(menu, "cylinder")
+        self.click_item(menu, "regular")
+        # the shaped boards exist on the plane only
+        assert self.items(menu) == {"tri", "square", "hex"}
         assert self.click_item(menu, "tri") == ("start", "cyltri")
 
     def test_manifold_random_draws_from_that_surface(self):
@@ -581,7 +593,7 @@ class TestMenu:
         result = self.click_item(menu, "random")
         assert result[0] == "start" and result[1] in picker_modes("klein")
 
-    # -- Sphere and Other ---------------------------------------------------
+    # -- Sphere and Polyhedra ------------------------------------------------
 
     def test_sphere_lists_spherical_tilings(self):
         menu = MenuScreen()
@@ -589,14 +601,11 @@ class TestMenu:
         assert self.items(menu) == set(SPHERE_MODES)
         assert self.click_item(menu, "spheretri") == ("start", "spheretri")
 
-    def test_other_lists_solids_and_shaped_boards(self):
+    def test_polyhedra_lists_the_solids(self):
         menu = MenuScreen()
-        self.click_item(menu, "other")
-        assert self.items(menu) == set(OTHER_MODES) | set(SHAPED_MODES)
+        self.click_item(menu, "polyhedra")
+        assert self.items(menu) == set(POLYHEDRA_MODES)
         assert self.click_item(menu, "cubeframe") == ("start", "cubeframe")
-        menu = MenuScreen()
-        self.click_item(menu, "other")
-        assert self.click_item(menu, "hexhex") == ("start", "hexhex")
 
     # -- reachability & gating ---------------------------------------------
 
@@ -616,9 +625,7 @@ class TestMenu:
         for surface_path in (["flat"], ["manifolds", "cylinder"],
                              ["manifolds", "mobius"], ["manifolds", "klein"],
                              ["manifolds", "torus"]):
-            for tiling in ("square", "tri", "hex"):
-                reach(*surface_path, tiling)
-            for family in ("uniform", "dual"):
+            for family in ("regular", "uniform", "dual"):
                 menu = MenuScreen()
                 for key in surface_path + [family]:
                     self.click_item(menu, key)
@@ -629,8 +636,8 @@ class TestMenu:
             reach("flat", "aperiodic", mode)
         for mode in SPHERE_MODES:
             reach("sphere", mode)
-        for mode in OTHER_MODES + SHAPED_MODES:
-            reach("other", mode)
+        for mode in POLYHEDRA_MODES:
+            reach("polyhedra", mode)
         assert reached == set(MODE_LABELS)
 
     def test_chiral_tiling_disabled_on_a_mirror_surface(self):
@@ -643,7 +650,7 @@ class TestMenu:
             self.click_item(menu, "uniform")
             enabled = {key: on for _, key, _, on in menu.layout()["items"]}
             assert enabled["snubhex"] is False
-            assert enabled["kagome"] is True
+            assert enabled["trihex"] is True
             assert self.click_item(menu, "snubhex") is None  # click ignored
             assert menu.path == ["manifolds", surface, "uniform"]
 
@@ -698,11 +705,13 @@ class TestMenu:
 
     def test_all_pages_draw(self, fonts):
         menu = MenuScreen()
-        for path in ([], ["flat"], ["flat", "uniform"], ["flat", "aperiodic"],
+        for path in ([], ["flat"], ["flat", "regular"], ["flat", "uniform"],
+                     ["flat", "aperiodic"],
                      ["manifolds"], ["manifolds", "klein"],
+                     ["manifolds", "klein", "regular"],
                      ["manifolds", "klein", "uniform"],
                      ["manifolds", "mobius", "dual"],
-                     ["sphere"], ["other"]):
+                     ["sphere"], ["polyhedra"]):
             menu.path = list(path)
             surface = pygame.Surface(menu.size)
             menu.draw(surface, fonts)
@@ -783,11 +792,11 @@ class TestIcon:
             set(MENU_ROOT)                       # home entries
             | {"random", "hex"}                  # random row + home Flat icon
             | set(MANIFOLD_ORDER)                # the flat-manifold surfaces
-            | {"uniform", "dual", "aperiodic"}   # tiling families
+            | {"regular", "uniform", "dual", "aperiodic"}  # tiling families
             | set(TILINGS)                       # every tiling row in the picker
             | set(SPHERE_MODES)
-            | set(OTHER_MODES)
-            | set(SHAPED_MODES)
+            | set(POLYHEDRA_MODES)
+            | {m for shaped in SHAPED_MODES.values() for m in shaped}
             | set(APERIODIC_MODES)
         )
         for key in sorted(keys):

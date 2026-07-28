@@ -173,7 +173,7 @@
         "label": "Flat",
         "kind": "surface",
         "surface": "flat",
-        "hint": "Regular, uniform, dual and aperiodic flat tilings."
+        "hint": "Regular, uniform, Laves and aperiodic flat tilings."
       },
       {
         "key": "manifolds",
@@ -186,14 +186,14 @@
         "key": "sphere",
         "label": "Sphere",
         "kind": "group",
-        "hint": "Spherical tilings and fullerenes.",
+        "hint": "Spherical polyhedra.",
         "children": []
       },
       {
-        "key": "other",
-        "label": "Other",
+        "key": "polyhedra",
+        "label": "Polyhedra",
         "kind": "group",
-        "hint": "Polyhedra, frames and oddities.",
+        "hint": "Solids and frames.",
         "children": []
       }
     ]

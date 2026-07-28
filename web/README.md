@@ -52,9 +52,10 @@ hidden behind the neck rotate into view (mouse wheel / two-finger scroll /
 and game state stay put. The Flat-manifolds menu drills surface → tiling →
 difficulty. 27 modes.
 
-**M2 — 3D renderer + solids.** Ports the ten closed 3D boards (sphere,
-snub dodecahedron, C80/C180 fullerenes, geodesic triangles, cube,
-tetrahedron, cube frame, tetrahedron frame, stepped bipyramid) and adds the
+**M2 — 3D renderer + solids.** Ports the ten closed 3D boards (pentagonal
+hexecontahedron, snub dodecahedron, the two Goldberg polyhedra, geodesic
+icosahedron, cube, tetrahedron, cube frame, tetrahedron frame, stepped
+bipyramid) and adds the
 3D half of the render pipeline: perspective camera, a custom trackball
 (drag to rotate, arrow keys too), per-mode starting orientations, back-face
 culling with an opaque base layer under the tile gaps, and a

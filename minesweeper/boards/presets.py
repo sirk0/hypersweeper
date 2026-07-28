@@ -47,6 +47,7 @@ from minesweeper.boards.tilings import (
     archimedean_board,
     hex_board,
     hexhex_board,
+    hextri_board,
     square_board,
     triangle_board,
     triangle_grid_board,
@@ -62,6 +63,7 @@ _JSON_BUILDERS = {
     "triangle_grid_board": triangle_grid_board,
     "hex_board": hex_board,
     "hexhex_board": hexhex_board,
+    "hextri_board": hextri_board,
     "sphere_board": sphere_board,
     "c80_board": c80_board,
     "c180_board": c180_board,
@@ -121,7 +123,7 @@ ARCH_PRESETS = {
         "mobius": {"easy": (13, 2, 10), "medium": (15, 3, 20), "hard": (17, 4, 41)},
         "klein": {"easy": (5, 2, 8), "medium": (7, 3, 19), "hard": (9, 4, 44)},
     },
-    "kagome": {
+    "trihex": {
         "flat": {"easy": (5, 3, 14, 40), "medium": (7, 4, 30, 30), "hard": (9, 6, 65, 22)},
         "torus": {"easy": (8, 2, 12, 0.43), "medium": (10, 2, 18, 0.35), "hard": (12, 3, 43, 0.43)},
         "cylinder": {"easy": (6, 2, 9, ROOT3 / 2), "medium": (9, 3, 24, ROOT3 / 2), "hard": (11, 4, 55, ROOT3 / 2)},

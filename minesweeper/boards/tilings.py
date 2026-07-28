@@ -65,6 +65,32 @@ def triangle_board(size: int, mine_count: int, scale: float = 52) -> Board:
     return _build("triangle", cells, (scale / 2, scale * ROOT3 / 2), mine_count)
 
 
+def hextri_board(side: int, mine_count: int, scale: float = 52) -> Board:
+    """A regular hexagon of side ``side`` cut into ``6 * side**2`` unit
+    triangles -- the triangular tiling on a hexagonal board, the way
+    hexhex_board is the hexagonal tiling on one.
+
+    The hexagon has ``2 * side`` rows. Going down, the top edge widens by
+    one triangle side per row until the middle, then narrows again; a row
+    whose top edge is ``t`` sides wide holds ``2t + 1`` triangles above
+    the middle (starting and ending with an upward one) and ``2t - 1``
+    below it. Rows are centred in the board's ``4 * side`` lattice
+    columns, which lands the hexagon's centre on a lattice vertex and so
+    keeps the full six-fold symmetry of the tiling.
+    """
+    cells = {}
+    for r in range(2 * side):
+        if r < side:  # upper half: top edge grows, first triangle points up
+            count, first_up = 2 * (side + r) + 1, True
+        else:  # lower half: top edge shrinks, first triangle points down
+            count, first_up = 2 * (3 * side - r) - 1, False
+        x_start = (4 * side - count - 1) // 2
+        for i in range(count):
+            up = (i % 2 == 0) == first_up
+            cells[(r, i)] = _triangle_vertices(x_start + i, r, up=up)
+    return _build("hextri", cells, (scale / 2, scale * ROOT3 / 2), mine_count)
+
+
 def triangle_grid_board(
     rows: int, row_width: int, mine_count: int, scale: float = 52
 ) -> Board:
@@ -194,8 +220,8 @@ def _template(config, width, height, polygons, mirrored=True, glide=False,
                          glide, centre)
 
 
-def _kagome_template() -> _ArchTemplate:
-    """Kagome (3.6.3.6): hexagon centers on a side-2 triangular lattice,
+def _trihex_template() -> _ArchTemplate:
+    """Trihexagonal (3.6.3.6): hexagon centers on a side-2 triangular lattice,
     cell vertices at the lattice edge midpoints. The 2 x 2*sqrt(3)
     rectangle holds two hexagons and four triangles."""
     h = ROOT3 / 2
@@ -514,8 +540,8 @@ def _cairo_template() -> _ArchTemplate:
 
 
 def _rhombille_template() -> _ArchTemplate:
-    """Rhombille (dual of the kagome / trihexagonal tiling)."""
-    return _dual_template(_kagome_template)
+    """Rhombille (dual of the trihexagonal tiling)."""
+    return _dual_template(_trihex_template)
 
 
 def _floret_template() -> _ArchTemplate:
@@ -550,8 +576,8 @@ class ArchTiling:
     tilings, fit the same registry with ``vertex_transitive=False`` -- see
     AGENTS.md. The menu catalog, mode strings, presets and tests all
     derive from this list."""
-    key: str                       # "kagome"
-    label: str                     # menu label, "Kagome"
+    key: str                       # "trihex"
+    label: str                     # menu label, "Trihexagonal"
     config: tuple[int, ...]        # for a vertex-transitive tiling, the
     #   vertex configuration (3, 6, 3, 6); for a face-transitive (Laves)
     #   tiling, the configuration of its single tile shape.
@@ -562,41 +588,45 @@ class ArchTiling:
     #   the vertex-configuration invariants do not apply to them.
 
 
+# Listed in vertex-configuration order, the order Wikipedia's "List of
+# Euclidean uniform tilings" uses, so the menu's Uniform page reads the
+# same way; the Laves block below repeats it, each dual next to the
+# position its uniform tiling holds above.
 ARCH_TILINGS = (
+    ArchTiling("snubhex", "Snub hexagonal", (3, 3, 3, 3, 6), 12,
+               _snubhex_template),
     ArchTiling("elongated", "Elongated triangular", (3, 3, 3, 4, 4), 12,
                _elongated_template),
     ArchTiling("snubsquare", "Snub square", (3, 3, 4, 3, 4), 12,
                _snubsquare_template),
-    ArchTiling("kagome", "Kagome", (3, 6, 3, 6), 12, _kagome_template),
-    ArchTiling("snubhex", "Snub hexagonal", (3, 3, 3, 3, 6), 12,
-               _snubhex_template),
-    ArchTiling("truncsquare", "Truncated square", (4, 8, 8), 8,
-               _truncsquare_template),
-    ArchTiling("trunchex", "Truncated hexagonal", (3, 12, 12), 12,
-               _trunchex_template),
     ArchTiling("rhombitrihex", "Rhombitrihexagonal", (3, 4, 6, 4), 12,
                _rhombitrihex_template),
+    ArchTiling("trihex", "Trihexagonal", (3, 6, 3, 6), 12, _trihex_template),
+    ArchTiling("trunchex", "Truncated hexagonal", (3, 12, 12), 12,
+               _trunchex_template),
     ArchTiling("trunctrihex", "Truncated trihexagonal", (4, 6, 12), 12,
                _trunctrihex_template),
+    ArchTiling("truncsquare", "Truncated square", (4, 8, 8), 8,
+               _truncsquare_template),
     # the Laves (dual / Catalan) tilings -- face-transitive, so config below
     # is the tile's Laves symbol (the dual's vertex figure) and the
     # vertex-configuration invariants do not apply.
+    ArchTiling("floret", "Floret pentagonal", (3, 3, 3, 3, 6), 12,
+               _floret_template, vertex_transitive=False),
     ArchTiling("prismaticpent", "Prismatic pentagonal", (3, 3, 3, 4, 4), 12,
                _prismaticpent_template, vertex_transitive=False),
     ArchTiling("cairo", "Cairo pentagonal", (3, 3, 4, 3, 4), 12,
                _cairo_template, vertex_transitive=False),
-    ArchTiling("rhombille", "Rhombille", (3, 6, 3, 6), 12,
-               _rhombille_template, vertex_transitive=False),
-    ArchTiling("floret", "Floret pentagonal", (3, 3, 3, 3, 6), 12,
-               _floret_template, vertex_transitive=False),
-    ArchTiling("tetrakis", "Tetrakis square", (4, 8, 8), 8,
-               _tetrakis_template, vertex_transitive=False),
-    ArchTiling("triakis", "Triakis triangular", (3, 12, 12), 12,
-               _triakis_template, vertex_transitive=False),
     ArchTiling("deltoidal", "Deltoidal trihexagonal", (3, 4, 6, 4), 12,
                _deltoidal_template, vertex_transitive=False),
+    ArchTiling("rhombille", "Rhombille", (3, 6, 3, 6), 12,
+               _rhombille_template, vertex_transitive=False),
+    ArchTiling("triakis", "Triakis triangular", (3, 12, 12), 12,
+               _triakis_template, vertex_transitive=False),
     ArchTiling("kisrhombille", "Kisrhombille", (4, 6, 12), 12,
                _kisrhombille_template, vertex_transitive=False),
+    ArchTiling("tetrakis", "Tetrakis square", (4, 8, 8), 8,
+               _tetrakis_template, vertex_transitive=False),
 )
 
 # Backward-compatible views derived from the single registry above.

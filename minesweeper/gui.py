@@ -32,23 +32,18 @@ from minesweeper.boards import (
     APERIODIC_MODES,
     DIFFICULTIES,
     FAMILY_LABELS,
-    FAMILY_MEMBERS,
     MANIFOLD_LABELS,
     MANIFOLD_ORDER,
     MENU_ROOT,
     MENU_ROOT_LABELS,
     MODE_LABELS,
     MODES_3D,
-    OTHER_MODES,
-    PICKER_REGULAR,
-    SHAPED_MODES,
+    POLYHEDRA_MODES,
     SPHERE_MODES,
-    SURFACES,
-    TILINGS,
-    TILINGS_BY_KEY,
     build_board,
-    mode_for,
+    family_rows,
     newell_normal,
+    picker_families,
     picker_modes,
     surface_of,
     view_hint,
@@ -951,8 +946,7 @@ _ICON_ALIASES = {
     "polyhedra": "cube",
     "classic": "square",    # the "Classic" home entry: flat squares
     "manifolds": "torus",   # the "Flat manifolds" home entry
-    "other": "cube",        # the "Other" home entry
-    "random": "start",      # the "Random tiling" picker entry
+    "random": "start",      # the "Random" picker entry
 }
 
 
@@ -977,6 +971,13 @@ def _render_icon(key: str) -> pygame.Surface:
         pygame.draw.circle(s, ICON_BLUE_DARK, (int(d * 0.5), int(d * 0.8)),
                            int(d * 0.075), 4)
         _icon_gloss(s, pygame.Rect(d * 0.3, d * 0.1, d * 0.44, d * 0.5), 70)
+    elif key == "regular":
+        # the three regular tilings, one tile each
+        _icon_shape(s, _ngon_points(d * 0.29, d * 0.31, d * 0.25, 3, -90),
+                    fill=ICON_BLUE_LIGHT)
+        _icon_shape(s, _ngon_points(d * 0.73, d * 0.29, d * 0.23, 4, 45))
+        _icon_shape(s, _hexagon_points(d * 0.5, d * 0.73, d * 0.25))
+        _icon_gloss(s, pygame.Rect(d * 0.06, d * 0.06, d * 0.88, d * 0.86))
     elif key == "uniform":
         # one shape of each kind: the group of uniform tilings
         _icon_shape(s, [(d * 0.08, d * 0.08), (d * 0.48, d * 0.08),
@@ -1029,6 +1030,14 @@ def _render_icon(key: str) -> pygame.Surface:
     elif key == "hex":
         _icon_shape(s, _hexagon_points(c, c, d * 0.44))
         _icon_gloss(s, pygame.Rect(d * 0.1, d * 0.08, d * 0.8, d * 0.85))
+    elif key == "hextri":
+        # the hexagonal triangle board: one hexagon cut into six triangles,
+        # vertices left and right the way the board's outline sits
+        h = _hexagon_points(c, c, d * 0.46, 0)
+        for k in range(6):
+            _icon_shape(s, [h[k], h[(k + 1) % 6], (c, c)],
+                        fill=ICON_BLUE if k % 2 else ICON_BLUE_LIGHT, width=4)
+        _icon_gloss(s, pygame.Rect(d * 0.06, d * 0.12, d * 0.88, d * 0.76))
     elif key == "hexhex":
         r = d * 0.155
         centers = [(c, c)] + [
@@ -1091,7 +1100,7 @@ def _render_icon(key: str) -> pygame.Surface:
         _icon_shape(s, [(d * 0.5, d * 0.6), (d * 0.72, d * 0.82), (d * 0.86, d * 0.6)],
                     fill=ICON_BLUE_LIGHT, width=4)
         _icon_gloss(s, pygame.Rect(d * 0.1, d * 0.08, d * 0.8, d * 0.6))
-    elif key == "kagome":
+    elif key == "trihex":
         _icon_shape(s, _hexagon_points(c, c, d * 0.3, 0), width=4)
         for k in range(3):
             angle = math.radians(120 * k - 90)
@@ -1152,7 +1161,7 @@ def _render_icon(key: str) -> pygame.Surface:
                     fill=ICON_BLUE_LIGHT, width=4)
         _icon_gloss(s, pygame.Rect(d * 0.08, d * 0.08, d * 0.84, d * 0.7))
     elif key == "rhombille":
-        # three rhombi meeting as an isometric cube (dual of kagome)
+        # three rhombi meeting as an isometric cube (dual of trihexagonal)
         h = _hexagon_points(c, c, d * 0.42, -90)
         _icon_shape(s, [h[0], h[1], (c, c), h[5]], fill=ICON_BLUE_LIGHT, width=4)
         _icon_shape(s, [h[1], h[2], h[3], (c, c)], fill=ICON_BLUE, width=4)
@@ -2045,11 +2054,13 @@ def make_screen(mode: str, difficulty: str) -> BaseGameScreen:
 
 
 class MenuScreen:
-    """A five-item home page -- Classic, Flat, Flat manifolds, Sphere, Other --
-    leading straight into a geometry and, where it applies, a shared tiling
-    picker parameterised by the surface it was reached through. A tiling a
-    surface cannot carry (snub hexagonal on the Möbius strip) is shown disabled.
-    Classic launches flat squares; each picker offers a random tiling."""
+    """A five-item home page -- Classic, Flat, Flat manifolds, Sphere,
+    Polyhedra -- leading straight into a geometry and, where it applies, a
+    shared tiling picker parameterised by the surface it was reached through.
+    The picker lists its families (Regular, Uniform, Laves and, on the plane,
+    Aperiodic) plus a random option; a tiling a surface cannot carry (snub
+    hexagonal on the Möbius strip) is shown disabled. Classic launches flat
+    squares."""
 
     WIDTH = 460 * S
     ITEM_HEIGHT = 58 * S
@@ -2098,29 +2109,30 @@ class MenuScreen:
             return "Sphere — choose a board", [
                 (m, MODE_LABELS[m], True) for m in SPHERE_MODES
             ]
-        # Other: the solids and the shaped boards, all launching at once
-        return "Other — choose a board", [
-            (m, MODE_LABELS[m], True) for m in OTHER_MODES + SHAPED_MODES
+        # Polyhedra: the solids, all launching at once
+        return "Polyhedra — choose a board", [
+            (m, MODE_LABELS[m], True) for m in POLYHEDRA_MODES
         ]
 
     def _picker_page(self, surface, surface_label, rest):
-        """The tiling picker on `surface` (and its family submenus). The three
-        regular tilings launch straight away; uniform / dual (and, on the plane,
-        aperiodic) open submenus; a random option rounds it off."""
+        """The tiling picker on `surface` (and its family submenus). The top
+        page lists the families -- Regular, Uniform, Laves and, on the plane,
+        Aperiodic -- and a random option; each family page launches its boards
+        straight away."""
         if not rest:
-            rows = [(t, TILINGS[t][0], True) for t in PICKER_REGULAR]
-            rows += [(fam, FAMILY_LABELS[fam], True) for fam in ("uniform", "dual")]
-            if surface == "flat":
-                rows.append(("aperiodic", FAMILY_LABELS["aperiodic"], True))
-            rows.append(("random", "Random tiling", True))
+            rows = [(fam, FAMILY_LABELS[fam], True)
+                    for fam in picker_families(surface)]
+            rows.append(("random", "Random", True))
             return f"{surface_label} — choose a tiling", rows
         fam = rest[0]
         heading = f"{surface_label} · {FAMILY_LABELS[fam]}"
         if fam == "aperiodic":
             return heading, [(m, MODE_LABELS[m], True) for m in APERIODIC_MODES]
+        # a tiling the surface cannot carry (a chiral one on a mirror seam) is
+        # shown greyed out rather than hidden, so the family always reads whole
         return heading, [
-            (t, TILINGS[t][0], TILINGS_BY_KEY[t].allows(SURFACES[surface]))
-            for t in FAMILY_MEMBERS[fam]
+            (key, label, enabled)
+            for key, label, _, enabled in family_rows(fam, surface)
         ]
 
     def _items(self) -> list[tuple[str, str, bool]]:
@@ -2137,7 +2149,7 @@ class MenuScreen:
         if not p:
             if key == "classic":  # flat squares, straight away
                 return ("start", "square")
-            self.path = [key]  # flat / manifolds / sphere / other
+            self.path = [key]  # flat / manifolds / sphere / polyhedra
             return None
         if p[0] == "flat":
             return self._select_picker("flat", p[1:], key)
@@ -2146,20 +2158,20 @@ class MenuScreen:
                 self.path.append(key)
                 return None
             return self._select_picker(p[1], p[2:], key)
-        # sphere or other: every row launches its board straight away
+        # sphere or polyhedra: every row launches its board straight away
         return ("start", key)
 
     def _select_picker(self, surface, rest, key):
-        if not rest:  # the picker's top page
-            if key in ("uniform", "dual", "aperiodic"):  # open a family submenu
-                self.path.append(key)
-                return None
+        if not rest:  # the picker's top page: a family submenu, or random
             if key == "random":
                 return ("start", random.choice(picker_modes(surface)))
-            return ("start", mode_for(key, surface))  # a regular tiling
-        if rest[0] == "aperiodic":  # penrose / hat, flat only
-            return ("start", key)
-        return ("start", mode_for(key, surface))  # a uniform / dual tiling
+            self.path.append(key)
+            return None
+        # a family page: every row names the board it launches
+        for row_key, _, mode, enabled in family_rows(rest[0], surface):
+            if row_key == key and enabled:
+                return ("start", mode)
+        return None
 
     def _back(self) -> None:
         if self.path:

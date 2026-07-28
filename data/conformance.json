@@ -146,6 +146,35 @@
         "hasCellCycle": false
       }
     },
+    "hextri": {
+      "easy": {
+        "cellCount": 96,
+        "mineCount": 15,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 156,
+        "vertexCount": 61,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 150,
+        "mineCount": 25,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 240,
+        "vertexCount": 91,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 294,
+        "mineCount": 55,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 462,
+        "vertexCount": 169,
+        "hasCellCycle": false
+      }
+    },
     "torus": {
       "easy": {
         "cellCount": 72,
@@ -1132,7 +1161,7 @@
         "hasCellCycle": true
       }
     },
-    "kagome": {
+    "trihex": {
       "easy": {
         "cellCount": 99,
         "mineCount": 14,
@@ -1161,7 +1190,7 @@
         "hasCellCycle": false
       }
     },
-    "toruskagome": {
+    "torustrihex": {
       "easy": {
         "cellCount": 96,
         "mineCount": 12,
@@ -1190,7 +1219,7 @@
         "hasCellCycle": false
       }
     },
-    "cylkagome": {
+    "cyltrihex": {
       "easy": {
         "cellCount": 72,
         "mineCount": 9,
@@ -1219,7 +1248,7 @@
         "hasCellCycle": false
       }
     },
-    "mobiuskagome": {
+    "mobiustrihex": {
       "easy": {
         "cellCount": 72,
         "mineCount": 9,
@@ -1248,7 +1277,7 @@
         "hasCellCycle": false
       }
     },
-    "kleinkagome": {
+    "kleintrihex": {
       "easy": {
         "cellCount": 96,
         "mineCount": 12,

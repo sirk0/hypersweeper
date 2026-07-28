@@ -1,6 +1,6 @@
 # Minesweeper (pygame)
 
-A minesweeper clone with flat and 3D boards (sphere, fullerenes, cube,
+A minesweeper clone with flat and 3D boards (spherical polyhedra, cube,
 tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
 (see `.python-version`), only dependency: `pygame-ce`.
 
@@ -13,8 +13,8 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   symbolic/barycentric keys in 3D); two cells are neighbors when they
   share a vertex. Modules: `core` (`Board`/`Board3D`, adjacency, topology
   invariants), `tilings` (flat tilings + the `ARCH_TILINGS` registry and
-  `_ArchTemplate` system), `aperiodic` (Penrose, Hat), `solids` (sphere,
-  fullerenes, cube, tetrahedron, frames), `surfaces` (donut/cylinder/
+  `_ArchTemplate` system), `aperiodic` (Penrose, Hat), `solids` (spherical
+  polyhedra, cube, tetrahedron, frames), `surfaces` (donut/cylinder/
   Möbius/Klein-bottle wrapping via shared immersion helpers), `catalog`
   (the menu, **derived** from `SURFACE_SPECS`/`TILING_SPECS`), `presets`
   (`ARCH_PRESETS` + `build_board`). The eight non-regular Archimedean
@@ -28,10 +28,13 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   seam (the same `template.mirror` the Möbius uses); the
   self-intersecting bottle immersion hides some cells behind the neck, so
   every Klein board carries a `cell_cycle` the UI scrolls along to bring
-  them into view. In the menu's shared tiling picker the three regular
-  tilings show directly, then the **Uniform tilings** (the eight
-  non-regular uniform tilings, `vertex_transitive=True` in `ARCH_TILINGS`)
-  and **Dual-uniform tilings** (their eight Laves duals) open as submenus.
+  them into view. The menu's shared tiling picker is a list of family
+  submenus: **Regular** (the three regular tilings, plus on the plane the
+  shaped boards cut from them), **Uniform** (the eight non-regular uniform
+  tilings, `vertex_transitive=True` in `ARCH_TILINGS`), **Laves** (their
+  eight duals) and, on the plane only, **Aperiodic**. `ARCH_TILINGS` is
+  listed in vertex-configuration order — Wikipedia's "List of Euclidean
+  uniform tilings" order — and that registry order is the menu order.
   **To add a tiling or surface, see `AGENTS.md`** — a tiling is
   one `ARCH_TILINGS` + one `ARCH_PRESETS` row (its uniform/dual family
   membership follows from `vertex_transitive`, no menu edit needed), a
@@ -40,7 +43,10 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   registries.
   Board-shape convention (applies to all future flat boards): a finite
   flat board should read as a roughly *square* rectangle, not a round
-  disc, and a symmetric tiling should give a symmetric board. For periodic
+  disc, and a symmetric tiling should give a symmetric board. (The named
+  shaped boards — `triangle`, `hexhex`, `hextri` — are the deliberate
+  exception: each is a polygon of the tiling's own symmetry, exactly
+  filled, never a trimmed disc.) For periodic
   tilings take a rectangular window of whole periods centred on a rotation
   centre (`archimedean_board` keeps an `nx`×`ny` domain block of the
   `_ArchTemplate` centred on the tiling's biggest tile, so the window maps
@@ -49,13 +55,15 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   centremost cells by Chebyshev distance (`max(|dx|, |dy|)`). See the
   `AGENT NOTE` in `boards/tilings.py`.
 - `minesweeper/gui.py` — pygame UI. `MenuScreen` (a geometry-first home
-  page — Classic / Flat / Flat manifolds / Sphere / Other. Classic launches
-  flat squares; Flat and each flat manifold (plane, cylinder, Möbius, Klein,
-  torus) open a shared tiling picker — regular tilings, uniform/dual family
-  submenus, aperiodic (plane only), and a random option — parameterised by
-  the surface it was reached through; Sphere and Other list their finished
-  boards. Navigation is a `path` breadcrumb driven by the `MENU_ROOT`/
-  `MANIFOLD_*`/`FAMILY_*`/`SPHERE_MODES`/`OTHER_MODES` tables in `catalog`),
+  page — Classic / Flat / Flat manifolds / Sphere / Polyhedra. Classic
+  launches flat squares; Flat (the plane) and each flat manifold (cylinder,
+  Möbius, Klein, torus) open a shared tiling picker — the Regular / Uniform
+  / Laves family submenus, Aperiodic on the plane only, and a random option
+  — parameterised by the surface it was reached through; Sphere and
+  Polyhedra list their finished boards. Navigation is a `path` breadcrumb
+  driven by the `MENU_ROOT`/`MANIFOLD_*`/`FAMILY_*`/`SPHERE_MODES`/
+  `POLYHEDRA_MODES` tables and the `family_rows`/`picker_families` helpers
+  in `catalog`),
   `GameScreen` (flat), `GameScreen3D` (orthographic
   projection, back-face culling or two-sided, depth sort, drag to
   rotate). Everything is drawn on a canvas at `UI_SCALE`(=2)× and

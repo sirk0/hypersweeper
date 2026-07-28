@@ -31,11 +31,11 @@ test.describe("M2 solids", () => {
     await page.setViewportSize({ width: 900, height: 700 });
   });
 
-  test("menu lists the Sphere and Other groups and launches a solid", async ({ page }) => {
+  test("menu lists the Sphere and Polyhedra groups and launches a solid", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator("body[data-ready]")).toBeVisible();
     await expect(page.locator('.menu-entry[data-group="sphere"]')).toBeVisible();
-    await expect(page.locator('.menu-entry[data-group="other"]')).toBeVisible();
+    await expect(page.locator('.menu-entry[data-group="polyhedra"]')).toBeVisible();
     // Drill in, back out, drill in again — then launch.
     await page.locator('.menu-entry[data-group="sphere"]').click();
     await page.locator('.menu-entry[data-action="back"]').click();

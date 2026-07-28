@@ -17,6 +17,7 @@ test.describe("M3 surfaces", () => {
     // back to the surface list, then in again — the breadcrumb works both ways
     await page.locator('.menu-entry[data-action="back"]').click();
     await page.locator('.menu-entry[data-surface="klein"]').click();
+    await page.locator('.menu-entry[data-submenu="regular"]').click();
     await page.locator('.menu-entry[data-mode="kleinhex"]').click();
     const state = await page.evaluate(() => window.__ms!.state());
     expect(state.screen).toBe("game");
