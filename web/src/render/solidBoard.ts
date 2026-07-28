@@ -32,7 +32,14 @@ import {
 } from "./boardMesh";
 import { clipTriangles, fanTriangles, triangleCentroid, type Tri } from "./clip";
 import { makeGlyphAtlas, type GlyphAtlas } from "./glyphAtlas";
-import { CellAnimations, rippleEntries, WIN_PER_CELL } from "./animations";
+import {
+  CellAnimations,
+  dropOpacity,
+  dropRise,
+  dropSize,
+  rippleEntries,
+  WIN_PER_CELL,
+} from "./animations";
 import { cellPalette, classifyShapes, type CellPalette } from "./shapePalette";
 
 // The 3D counterpart of PolygonBoard: a Board3D's outward-wound surface
@@ -51,6 +58,11 @@ import { cellPalette, classifyShapes, type CellPalette } from "./shapePalette";
 
 const SHRINK = 0.04;
 const BEVEL = 0.16;
+// The two triangles of a billboard quad, in billboard-plane units.
+const QUAD_CORNERS: readonly (readonly [number, number])[] = [
+  [-1, -1], [1, -1], [1, 1],
+  [-1, -1], [1, 1], [-1, 1],
+];
 // Lower relief than the flat renderer's 0.24: on a closed surface the cells
 // tilt against each other, and tall plateaus on big curved cells (the
 // sphere's pentagons) shingle over their neighbours at the silhouette.
@@ -91,6 +103,12 @@ export class SolidBoard extends Group implements BoardMesh {
   private readonly normalAttr: BufferAttribute;
   private readonly colorAttr: BufferAttribute;
   private readonly glyphGeometry = new BufferGeometry();
+  // The dropping flag is a mesh of its own rather than one more quad in the
+  // glyph buffer: it is drawn many times cell-size, so depth-testing it
+  // against the very solid it is landing on would slice it in half, and being
+  // its own material is what lets it fade in as it shrinks.
+  private readonly dropGeometry = new BufferGeometry();
+  private readonly dropMaterial: MeshBasicMaterial;
   private readonly atlas: GlyphAtlas;
   private readonly states: CellVisual[];
   private hovered = -1;
@@ -274,6 +292,22 @@ export class SolidBoard extends Group implements BoardMesh {
     glyphMesh.renderOrder = 1;
     this.add(glyphMesh);
 
+    // depthTest off, drawn last: the dropping flag hangs in front of the solid
+    // rather than lying on it, so nothing occludes it for the fraction of a
+    // second it is in the air. `pick` only ever raycasts the "cells" mesh, so
+    // this one can span half the board without swallowing taps.
+    this.dropMaterial = new MeshBasicMaterial({
+      map: this.atlas.texture,
+      transparent: true,
+      alphaTest: 0.4,
+      depthWrite: false,
+      depthTest: false,
+    });
+    const dropMesh = new Mesh(this.dropGeometry, this.dropMaterial);
+    dropMesh.name = "flagDrop";
+    dropMesh.renderOrder = 2;
+    this.add(dropMesh);
+
     for (let i = 0; i < this.order.length; i++) {
       this.writeGeometry(i);
       this.writeColor(i);
@@ -429,7 +463,12 @@ export class SolidBoard extends Group implements BoardMesh {
   private rebuildGlyphs(): void {
     const pos: number[] = [];
     const uvs: number[] = [];
+    const dropPos: number[] = [];
+    const dropUvs: number[] = [];
     const now = performance.now();
+    const dropIndex = this.anim.dropIndex();
+    const dropAt = this.anim.dropProgress(now);
+    const extent = this.view.kind === "solid" ? this.view.radius * 2 : 1;
     const { viewRight: u, viewUp: v, cameraLocal: cam } = this;
     for (let i = 0; i < this.order.length; i++) {
       const glyph = glyphFor(this.states[i]!);
@@ -468,37 +507,50 @@ export class SolidBoard extends Group implements BoardMesh {
         projected.reduce((a, q) => a + q[0], 0) / projected.length;
       const py =
         projected.reduce((a, q) => a + q[1], 0) / projected.length;
-      const s =
-        polygonInradius(projected, [px, py]) * 0.9 * this.anim.popScale(i, now);
-      if (!(s > 0)) continue;
+      const settled = polygonInradius(projected, [px, py]) * 0.9;
+      const s = settled * this.anim.popScale(i, now);
+      if (!(settled > 0)) continue;
       // Lift the whole billboard toward the camera by its own half-size: a
       // camera-facing quad centred on a tilted cell would otherwise dip behind
       // that cell's face on its far half and be depth-clipped (numbers/flags/
       // mines rendered "in half"). The lift (< a cell width) clears the cell's
       // own face while staying far behind any genuinely nearer wall or frame
-      // bar, so occlusion still works.
-      const lift = s * 1.3;
+      // bar, so occlusion still works. It is measured from the settled size,
+      // not the animated one: a dropping flag is many times cell-size and
+      // would otherwise be flung at the camera as it shrinks (it needs no
+      // clearance anyway — its mesh does not depth-test).
+      const lift = settled * 1.3;
       const cx = c[0] + toCam[0] * lift;
       const cy = c[1] + toCam[1] * lift;
       const cz = c[2] + toCam[2] * lift;
-      const at = (du: number, dv: number): Vec3 => [
-        cx + u[0] * (px + s * du) + v[0] * (py + s * dv),
-        cy + u[1] * (px + s * du) + v[1] * (py + s * dv),
-        cz + u[2] * (px + s * du) + v[2] * (py + s * dv),
+      const at = (du: number, dv: number, half: number, rise: number): Vec3 => [
+        cx + u[0] * (px + half * du) + v[0] * (py + half * dv + rise),
+        cy + u[1] * (px + half * du) + v[1] * (py + half * dv + rise),
+        cz + u[2] * (px + half * du) + v[2] * (py + half * dv + rise),
       ];
-      const bl = at(-1, -1);
-      const br = at(1, -1);
-      const tr = at(1, 1);
-      const tl = at(-1, 1);
-      const push = (p: Vec3) => pos.push(p[0], p[1], p[2]);
-      push(bl);
-      push(br);
-      push(tr);
-      push(bl);
-      push(tr);
-      push(tl);
       const [u0, v0, u1, v1] = uv;
-      uvs.push(u0, v0, u1, v0, u1, v1, u0, v0, u1, v1, u0, v1);
+      const quad = (
+        into: number[],
+        uvInto: number[],
+        half: number,
+        rise = 0,
+      ): void => {
+        for (const [du, dv] of QUAD_CORNERS) {
+          const p = at(du, dv, half, rise);
+          into.push(p[0], p[1], p[2]);
+        }
+        uvInto.push(u0, v0, u1, v0, u1, v1, u0, v0, u1, v1, u0, v1);
+      };
+      // A cell with a flag coming down draws only that flag — the drop lands
+      // on exactly the settled size, so the cell's own glyph takes over on the
+      // frame the drop ends and the hand-off is invisible. Drawing both would
+      // stand a second, tiny flag beside the falling one.
+      if (i === dropIndex && dropAt != null) {
+        const half = dropSize(settled, extent, dropAt);
+        quad(dropPos, dropUvs, half, dropRise(settled, half));
+      } else if (s > 0) {
+        quad(pos, uvs, s);
+      }
     }
     this.glyphGeometry.setAttribute(
       "position",
@@ -509,6 +561,16 @@ export class SolidBoard extends Group implements BoardMesh {
       new BufferAttribute(new Float32Array(uvs), 2),
     );
     this.glyphGeometry.computeBoundingSphere();
+    this.dropGeometry.setAttribute(
+      "position",
+      new BufferAttribute(new Float32Array(dropPos), 3),
+    );
+    this.dropGeometry.setAttribute(
+      "uv",
+      new BufferAttribute(new Float32Array(dropUvs), 2),
+    );
+    this.dropGeometry.computeBoundingSphere();
+    this.dropMaterial.opacity = dropOpacity(dropAt ?? 1);
   }
 
   // -- animations ------------------------------------------------------------
@@ -535,9 +597,11 @@ export class SolidBoard extends Group implements BoardMesh {
     this.anim.startReveals(rippleEntries(list, oc, this.meanRadius), performance.now());
   }
 
-  popFlag(cell: CellId): void {
+  dropFlag(cell: CellId): void {
     const i = this.cellIndex.get(cell);
-    if (i != null) this.anim.startPop(i, performance.now());
+    if (i == null) return;
+    this.anim.startDrop(i, performance.now());
+    this.rebuildGlyphs();
   }
 
   shake(): void {

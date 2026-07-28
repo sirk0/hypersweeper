@@ -8,7 +8,11 @@ single `CellAnimations` clock the renderer ticks each frame only while
 something is in flight (the loop stays idle otherwise): a **reveal ripple**
 (each freshly opened cell flashes brighter than its settled tone, staggered by
 its distance from the click so a wave sweeps outward across a flood fill), a
-**flag pop** (a placed flag's glyph springs in with a small ease-out-back
+**flag drop** (a flag the player places arrives several cells tall, standing on
+its cell, and shrinks into it — the gesture that places one on a phone is a
+hold, so the finger is covering the cell and only a flag reaching well above it
+can be seen at all), a **flag pop** (a flag the *game* places — the win wave's
+auto-flag cascade — springs in with a small ease-out-back
 overshoot), a **lose shake** (the whole board jitters and settles when a
 mine detonates), and a **win wave** (clearing the board sends a gold glow
 sweeping out from the winning cell over every tile, with the mines the win
@@ -150,11 +154,13 @@ Practical knowledge for verifying changes by actually running the app
   frame. To eyeball an animation in an ad-hoc capture, launch Chromium
   *without* reduced-motion, call `window.__ms.animations(true)`, drive a
   move, then screenshot on a short `waitForTimeout` mid-flight — the reveal
-  ripple/flag pop/lose shake all settle back to the static baseline within
-  ~0.5 s, the win wave within ~1 s on the biggest boards. Note that the
+  ripple/flag drop/flag pop/lose shake all settle back to the static baseline
+  within ~0.5 s, the win wave within ~1 s on the biggest boards. Note that the
   *first* `page.screenshot` after a move costs ~1 s under SwiftShader
   (shader compilation), so take shots back to back rather than sleeping
-  between them, or the whole animation is over before frame two.
+  between them, or the whole animation is over before frame two. That cost is
+  most of a short animation's life: pay it on a throwaway shot *before* the
+  move, or the first real frame lands after the thing you meant to catch.
 - The Python game is the behavior reference; run it headless per the
   "Screenshots" section in the repo-root CLAUDE.md when unsure how
   something is supposed to look or feel.
@@ -183,7 +189,7 @@ Practical knowledge for verifying changes by actually running the app
   own neck encloses, so looking into the hole shows the tube instead of a
   cap; the surface outside the neck is untouched, so the self-intersection
   still reads from every other angle), `animations.ts` (the shared
-  reveal-ripple / flag-pop / lose-shake / win-wave clock).
+  reveal-ripple / flag-drop / flag-pop / lose-shake / win-wave clock).
 - `src/session.ts` — `GameSession`: Game ↔ mesh ↔ HUD.
 - `src/input/controls.ts` — pointer/touch state machine (tap, long-press,
   right-click, drag-rotate on 3D boards, pinch-zoom and drag-pan on every

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   CellAnimations,
+  dropSize,
   RIPPLE_PER_CELL,
   rippleEntries,
   WIN_PER_CELL,
@@ -60,6 +61,58 @@ describe("CellAnimations flag pop", () => {
   });
 });
 
+describe("CellAnimations flag drop", () => {
+  it("runs from released to home over the drop, then reports nothing", () => {
+    const a = new CellAnimations();
+    expect(a.dropIndex()).toBeNull();
+    expect(a.dropProgress(0)).toBeNull(); // nothing dropping -> nothing to draw
+    a.startDrop(7, 0);
+    expect(a.dropIndex()).toBe(7);
+    expect(a.dropProgress(0)).toBe(0); // at its largest...
+    expect(a.dropProgress(140)).toBe(0); // ...and held there long enough to read
+    const mid = a.dropProgress(280)!;
+    expect(mid).toBeGreaterThan(0); // then under way
+    expect(mid).toBeLessThan(1);
+    expect(a.dropProgress(420)).toBeNull(); // home; the settled glyph takes over
+    expect(a.pending()).toBe(true); // until the step that prunes it
+    const done = a.step(420);
+    expect(done.glyphsDirty).toBe(true); // one last rebuild, without the drop
+    expect(a.pending()).toBe(false);
+    expect(a.dropIndex()).toBeNull();
+  });
+
+  it("keeps only the newest drop — one finger, one flag", () => {
+    const a = new CellAnimations();
+    a.startDrop(1, 0);
+    a.startDrop(2, 100);
+    expect(a.dropIndex()).toBe(2);
+    expect(a.dropProgress(100)).toBe(0); // restarted, not carried over
+  });
+});
+
+describe("dropSize", () => {
+  const settled = 1;
+
+  it("starts big and lands exactly on the settled glyph", () => {
+    const extent = 20; // 0.32 * 20 = 6.4 settled glyphs across
+    expect(dropSize(settled, extent, 0)).toBeCloseTo(6.4, 5);
+    expect(dropSize(settled, extent, 1)).toBe(settled); // invisible hand-off
+    const mid = dropSize(settled, extent, 0.5);
+    expect(mid).toBeLessThan(6.4);
+    expect(mid).toBeGreaterThan(settled);
+  });
+
+  it("stays a real gesture on a board of a few huge cells", () => {
+    // A four-cell tetrahedron: a fifth of the board is barely wider than the
+    // glyph already there, which would read as no drop at all.
+    expect(dropSize(settled, 4, 0)).toBe(4); // floor: 4x the settled glyph
+  });
+
+  it("does not swamp the screen on a board of many tiny cells", () => {
+    expect(dropSize(settled, 1000, 0)).toBe(10); // ceiling: 10x
+  });
+});
+
 describe("CellAnimations win wave", () => {
   it("stays clear until its staggered turn, warms the cell, then settles", () => {
     const a = new CellAnimations();
@@ -106,11 +159,14 @@ describe("CellAnimations enabled gate", () => {
     a.startReveals([{ index: 0, delay: 0 }], 0);
     a.startWin([{ index: 0, delay: 0 }], 0);
     a.startPop(0, 0);
+    a.startDrop(0, 0);
     a.startShake(2, 0);
     expect(a.pending()).toBe(false);
     expect(a.lightness(0, 10)).toBe(0);
     expect(a.winMix(0, 10)).toBe(0);
     expect(a.popScale(0, 10)).toBe(1);
+    expect(a.dropIndex()).toBeNull();
+    expect(a.dropProgress(10)).toBeNull();
     expect(a.step(10).active).toBe(false);
   });
 });

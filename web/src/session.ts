@@ -155,11 +155,11 @@ export class GameSession {
     const gameCell = this.gameFor(cell);
     const wasFlagged = this.game.cellState(gameCell) === "flagged";
     this.apply(this.game.toggleFlag(gameCell));
-    // Pop only on placing a flag, not on clearing one.
-    if (!wasFlagged && this.game.cellState(gameCell) === "flagged") {
-      this.mesh.popFlag(this.geomFor(gameCell));
-      haptic("flag");
-    }
+    const isFlagged = this.game.cellState(gameCell) === "flagged";
+    // Only a flag that lands drops one in; clearing one still buzzes, because
+    // the finger that held the cell is covering the change either way.
+    if (isFlagged && !wasFlagged) this.mesh.dropFlag(this.geomFor(gameCell));
+    if (isFlagged !== wasFlagged) haptic("flag");
   }
 
   chord(cell: CellId): void {
