@@ -148,8 +148,11 @@ export interface BoardMesh extends Group {
   setAnimationsEnabled(on: boolean): void;
   /** Flash the freshly revealed cells, rippling outward from `origin`. */
   pulseReveal(cells: CellId[], origin: CellId | null): void;
-  /** Spring a placed flag's glyph in with a small overshoot. */
-  popFlag(cell: CellId): void;
+  /** Land a flag placed by holding the cell: an oversized flag shrinks into
+   * it. The finger doing the holding is covering that cell, so the flag has to
+   * start outside the fingertip to be seen at all. Only that gesture calls
+   * this — see `GameSession.flag`. */
+  dropFlag(cell: CellId): void;
   /** Jitter the whole board and settle it (a detonated mine). */
   shake(): void;
   /** Celebrate a cleared board: a gold wave sweeping out from the winning cell

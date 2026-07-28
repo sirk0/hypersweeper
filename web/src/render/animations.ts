@@ -1,6 +1,6 @@
 // Board animations, shared by the flat PolygonBoard and the 3D SolidBoard.
 //
-// Four effects, all driven from a single clock the renderer ticks each frame
+// Five effects, all driven from a single clock the renderer ticks each frame
 // while anything is pending (`step`); when nothing is pending the renderer
 // leaves the loop idle (`pending`). The meshes own the buffers, so this class
 // only tracks timing and returns, per frame, what changed:
@@ -9,8 +9,16 @@
 //     settled colour, staggered by its distance from the click so a wave
 //     sweeps outward across a flood fill (the mesh recolours the reported
 //     cells, adding `lightness`).
-//   * flag pop — a placed flag's glyph springs in with a small overshoot
-//     (the mesh rebuilds glyphs, scaling each by `popScale`).
+//   * flag drop — a flag placed by *holding* a cell lands from far above the
+//     board: an oversized flag shrinks into its cell (the mesh draws one extra
+//     quad, sized from `dropProgress`). It exists because the finger doing the
+//     holding is covering that cell — the drop starts well outside the
+//     fingertip, so the placement is seen while it happens. No other input
+//     gets it: a right-click and a tap in flag mode both leave the cell in
+//     plain sight, where an animation would be decoration rather than news.
+//   * flag pop — a flag the *game* places springs in with a small overshoot
+//     (the mesh rebuilds glyphs, scaling each by `popScale`). This is the win
+//     wave's auto-flag cascade.
 //   * lose shake — the whole board jitters and settles when a mine detonates
 //     (the mesh offsets its group position by `shakeOffset`).
 //   * win wave — every cell warms to gold and fades back when the board is
@@ -32,6 +40,13 @@ const PULSE_FALL = 260; // ms
 export const RIPPLE_PER_CELL = 28; // ms
 /** Flag-pop duration. */
 const POP_MS = 240;
+/** Flag-drop duration, and the share of it the flag spends held at full size
+ * before it starts moving. The hold is the whole point: an eased shrink alone
+ * is nearest its settled size for most of its life, so the big flag — the only
+ * part of this a covered cell can show — would be gone before the eye caught
+ * it. Hold first, then travel. */
+const DROP_MS = 420;
+const DROP_HOLD = 0.35;
 /** Lose-shake duration and oscillation frequency. */
 const SHAKE_MS = 440;
 const SHAKE_HZ = 11;
@@ -52,7 +67,9 @@ export interface AnimStep {
    * (includes cells whose flash just finished, so the mesh writes them back to
    * the settled colour exactly once). */
   recolor: number[];
-  /** Whether a flag pop is in flight, so the mesh rebuilds its glyph quads. */
+  /** Whether a flag pop or drop is in flight, so the mesh rebuilds its glyph
+   * quads. Stays true for the frame one finishes on, so the mesh draws the
+   * settled glyphs (and drops the drop's quad) exactly once. */
   glyphsDirty: boolean;
   /** Board position offset for the lose-shake (`[0, 0]` when not shaking). */
   offset: [number, number];
@@ -69,6 +86,9 @@ export class CellAnimations {
   private readonly reveals = new Map<number, Reveal>();
   private readonly wins = new Map<number, Reveal>();
   private readonly pops = new Map<number, number>(); // cell index -> start time
+  // At most one drop is ever in flight: it answers a single deliberate
+  // gesture, so a second flag simply takes over the animation.
+  private drop: { index: number; start: number } | null = null;
   private shakeStart: number | null = null;
   private shakeAmp = 0;
 
@@ -91,6 +111,12 @@ export class CellAnimations {
     this.pops.set(index, now + delay);
   }
 
+  /** Begin the landing of a flag the player just placed. */
+  startDrop(index: number, now: number): void {
+    if (!this.enabled) return;
+    this.drop = { index, start: now };
+  }
+
   /** Begin a lose-shake of the given amplitude (in board world units). */
   startShake(amplitude: number, now: number): void {
     if (!this.enabled) return;
@@ -103,6 +129,7 @@ export class CellAnimations {
     this.reveals.clear();
     this.wins.clear();
     this.pops.clear();
+    this.drop = null;
     this.shakeStart = null;
   }
 
@@ -112,6 +139,7 @@ export class CellAnimations {
       this.reveals.size > 0 ||
       this.wins.size > 0 ||
       this.pops.size > 0 ||
+      this.drop != null ||
       this.shakeStart != null
     );
   }
@@ -157,6 +185,30 @@ export class CellAnimations {
     return 1 + (c + 1) * u * u * u + c * u * u; // easeOutBack, 0 → ~1.1 → 1
   }
 
+  /** The cell a flag is currently dropping onto, or null. */
+  dropIndex(): number | null {
+    return this.drop?.index ?? null;
+  }
+
+  /** How far the flag drop has come, 0 (held at its largest, where it can be
+   * read past a fingertip) to 1 (home), or null when nothing is dropping. It
+   * holds, then eases in and out, so both ends of the trip are legible and the
+   * middle is quick.
+   *
+   * This is *progress*, not a scale: how big the flag starts is a question
+   * about the board (a 30x16 grid of small cells and a four-cell tetrahedron
+   * want very different multiples of a cell), so the mesh owns that end of the
+   * interpolation and this class owns only the clock. */
+  dropProgress(now: number): number | null {
+    if (!this.drop) return null;
+    const p = (now - this.drop.start) / DROP_MS;
+    if (p <= DROP_HOLD) return 0;
+    if (p >= 1) return null;
+    const q = (p - DROP_HOLD) / (1 - DROP_HOLD);
+    const u = -2 * q + 2;
+    return q < 0.5 ? 4 * q * q * q : 1 - (u * u * u) / 2; // easeInOutCubic
+  }
+
   /** Advance every animation to `now`, pruning finished ones, and report what
    * the mesh must redraw this frame. */
   step(now: number): AnimStep {
@@ -170,10 +222,11 @@ export class CellAnimations {
       if (now - w.start >= WIN_RISE + WIN_FALL) this.wins.delete(index);
     }
 
-    const glyphsDirty = this.pops.size > 0;
+    const glyphsDirty = this.pops.size > 0 || this.drop != null;
     for (const [index, start] of this.pops) {
       if (now - start >= POP_MS) this.pops.delete(index);
     }
+    if (this.drop && now - this.drop.start >= DROP_MS) this.drop = null;
 
     const offset = this.shakeOffset(now);
 
@@ -191,6 +244,50 @@ export class CellAnimations {
     const s = Math.sin((t / 1000) * 2 * Math.PI * SHAKE_HZ) * this.shakeAmp * decay;
     return [s, s * 0.3];
   }
+}
+
+/** How big a dropping flag starts, as a fraction of the board's shorter
+ * dimension, and the bounds that keep it sane at either extreme of cell size:
+ * at least this many times the settled glyph, or a four-cell tetrahedron —
+ * where a third of the board is barely more than one glyph — would read as no
+ * drop at all; at most this many, or a 30x16 grid of small cells would drop a
+ * flag taller than the screen. */
+const DROP_START_FRAC = 0.32;
+const DROP_MIN_SCALE = 4;
+const DROP_MAX_SCALE = 10;
+
+/** How far above the cell's centre a dropping flag of this half-size sits, so
+ * that its foot stays on the cell and it grows *upward* out of it. That is
+ * both the readable direction — a finger and the hand behind it cover the
+ * cell and everything below — and the safe one: a flag several cells tall
+ * centred on its cell would hang off the bottom of the screen whenever it was
+ * planted near the near edge of the board. Zero once the flag is home, so it
+ * lands on the settled glyph. */
+export function dropRise(settled: number, half: number): number {
+  return half - settled;
+}
+
+/** The half-size of the dropping flag's quad right now: it starts big and
+ * lands on `settled`, the size of the glyph already drawn in the cell, so the
+ * hand-off at the end of the drop is invisible. `extent` is the board's
+ * shorter dimension in the same units. */
+export function dropSize(
+  settled: number,
+  extent: number,
+  progress: number,
+): number {
+  const start = Math.min(
+    Math.max(extent * DROP_START_FRAC, settled * DROP_MIN_SCALE),
+    settled * DROP_MAX_SCALE,
+  );
+  return settled + (start - settled) * (1 - progress);
+}
+
+/** A flag most of the board wide would blot out the cells it is about to land
+ * among, so it starts a little transparent and firms up as it shrinks — only a
+ * little, because being read at its largest is its whole job. */
+export function dropOpacity(progress: number): number {
+  return 0.75 + 0.25 * progress;
 }
 
 /** Turn a list of cells + their board-space centres into stagger entries for a

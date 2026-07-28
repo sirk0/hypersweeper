@@ -54,6 +54,72 @@ test.describe("M6 animations", () => {
     await expect(page.locator(".hud-smiley")).toHaveText("😎");
   });
 
+  test("a held cell drops its flag outside the fingertip", async ({ page }) => {
+    // The point of the drop: the finger placing the flag covers the cell, so
+    // the flag has to be painted well clear of it — above it, where neither
+    // the finger nor the hand behind it reaches. Sample a patch two cells up
+    // from the flagged one: untouched by the settled board, painted over while
+    // the flag is coming down.
+    await page.evaluate(() => {
+      const ms = window.__ms!;
+      ms.animations(true);
+      ms.startBoard("square", "easy", { mines: ["0,0"] });
+    });
+    await page.evaluate(
+      () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
+    );
+    const at = await page.evaluate(() => {
+      const p = window.__ms!.cellScreenXY("4,4")!;
+      const q = window.__ms!.cellScreenXY("6,4")!; // two cells away, either way
+      return { x: p.x, y: p.y, step: Math.hypot(q.x - p.x, q.y - p.y) / 2 };
+    });
+    // A band of board one to three cells above the flagged cell — clear of
+    // that cell's own glyph, and wide enough that the test does not depend on
+    // where in the flag's artwork the mast happens to fall.
+    const clip = {
+      x: at.x - 3 * at.step,
+      y: at.y - 3 * at.step,
+      width: Math.round(6 * at.step),
+      height: Math.round(2 * at.step),
+    };
+    // Shot first, so the shader compilation the README warns about is paid
+    // before the ones that have to land inside the drop. It doubles as the
+    // settled baseline: nothing of the flag survives up here.
+    const before = await page.screenshot({ clip });
+    // Only a held touch drops a flag, so synthesize one — Playwright has no
+    // touch-hold API, hence CDP (as in solids.spec.ts).
+    const client = await page.context().newCDPSession(page);
+    // The drop is over in well under a second, and a screenshot is not free,
+    // so give the catch a few tries rather than letting one slow frame decide.
+    let caught = false;
+    for (let attempt = 0; attempt < 3 && !caught; attempt++) {
+      await client.send("Input.dispatchTouchEvent", {
+        type: "touchStart",
+        touchPoints: [{ x: at.x, y: at.y }],
+      });
+      await page.waitForTimeout(550); // just past the 450 ms long-press threshold
+      caught = !(await page.screenshot({ clip })).equals(before);
+      await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+      await page.waitForTimeout(600); // outlast the drop
+      const after = await page.screenshot({ clip });
+      expect(after.equals(before), "the drop left a mark behind").toBe(true);
+      if (!caught) await page.evaluate(() => window.__ms!.flag("4,4")); // clear
+    }
+    expect(caught, "the drop never painted clear of the flagged cell").toBe(true);
+    const state = await page.evaluate(() => window.__ms!.state());
+    expect(state.minesRemaining).toBe(0); // and the flag itself landed (1 mine)
+    expect(state.revealed).toBe(0); // the hold flagged rather than revealing
+
+    // ...and every other way of flagging leaves the cell in plain sight, so it
+    // gets no drop. Same cell, same patch, same clock — but placed through the
+    // seam, which flags exactly as a right-click or a flag-mode tap does.
+    await page.evaluate(() => window.__ms!.flag("4,4")); // clear
+    await page.waitForTimeout(100);
+    await page.evaluate(() => window.__ms!.flag("4,4")); // place again, unheld
+    const unheld = await page.screenshot({ clip });
+    expect(unheld.equals(before), "an unheld flag animated anyway").toBe(true);
+  });
+
   test("a detonation shakes and still registers the loss", async ({ page }) => {
     await page.evaluate(() => {
       const ms = window.__ms!;

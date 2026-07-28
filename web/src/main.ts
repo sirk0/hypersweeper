@@ -69,7 +69,9 @@ class App {
     attachControls(canvas, {
       pick: (ndc) => this.renderer.pick(ndc),
       onTap: (cell) => this.onTap(cell),
-      onLongPress: (cell) => this.flag(cell),
+      // A long press is only ever armed for a touch or a pen (see
+      // controls.ts), so this is the one flag the player cannot see land.
+      onLongPress: (cell) => this.flag(cell, true),
       onSecondary: (cell) => this.flag(cell),
       onHover: (cell) => this.hover(cell),
       rotates: () => this.screen === "game" && (this.session?.is3d ?? false),
@@ -274,9 +276,9 @@ class App {
     this.afterMove();
   }
 
-  private flag(cell: CellId): void {
+  private flag(cell: CellId, held = false): void {
     if (!this.session || this.screen !== "game") return;
-    this.session.flag(cell);
+    this.session.flag(cell, held);
     this.afterMove();
   }
 

@@ -150,16 +150,23 @@ export class GameSession {
     this.checkStop(gameCell, changed);
   }
 
-  flag(cell: CellId): void {
+  /** Toggle the flag on a cell. `held` says the flag came from a touch held on
+   * that cell — the one input that hides what it is doing behind a fingertip,
+   * and so the only one that gets the flag drop. A mouse (right-click) and a
+   * tap in flag mode both leave the cell in plain sight; animating those would
+   * be decoration, not feedback. */
+  flag(cell: CellId, held = false): void {
     this.startTimer();
     const gameCell = this.gameFor(cell);
     const wasFlagged = this.game.cellState(gameCell) === "flagged";
     this.apply(this.game.toggleFlag(gameCell));
-    // Pop only on placing a flag, not on clearing one.
-    if (!wasFlagged && this.game.cellState(gameCell) === "flagged") {
-      this.mesh.popFlag(this.geomFor(gameCell));
-      haptic("flag");
+    const isFlagged = this.game.cellState(gameCell) === "flagged";
+    // Only a flag that lands drops one in; clearing one still buzzes, because
+    // the finger that held the cell is covering the change either way.
+    if (held && isFlagged && !wasFlagged) {
+      this.mesh.dropFlag(this.geomFor(gameCell));
     }
+    if (isFlagged !== wasFlagged) haptic("flag");
   }
 
   chord(cell: CellId): void {

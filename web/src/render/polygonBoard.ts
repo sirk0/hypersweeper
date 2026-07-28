@@ -21,7 +21,14 @@ import {
   type CellVisual,
 } from "./boardMesh";
 import { makeGlyphAtlas, type GlyphAtlas } from "./glyphAtlas";
-import { CellAnimations, rippleEntries, WIN_PER_CELL } from "./animations";
+import {
+  CellAnimations,
+  dropOpacity,
+  dropRise,
+  dropSize,
+  rippleEntries,
+  WIN_PER_CELL,
+} from "./animations";
 import { cellPalette, classifyShapes, type CellPalette } from "./shapePalette";
 
 // Renders an arbitrary flat polygon board (square / triangle / hex / ...) as
@@ -65,6 +72,12 @@ export class PolygonBoard extends Group implements BoardMesh {
   private readonly positionAttr: BufferAttribute;
   private readonly colorAttr: BufferAttribute;
   private readonly glyphGeometry = new BufferGeometry();
+  // The dropping flag is a mesh of its own rather than one more quad in the
+  // glyph buffer: it is drawn many times cell-size, so it has to sit above
+  // every neighbouring number instead of taking its turn in cell order, and
+  // being its own material is what lets it fade in as it shrinks.
+  private readonly dropGeometry = new BufferGeometry();
+  private readonly dropMaterial: MeshBasicMaterial;
   private readonly atlas: GlyphAtlas;
   private readonly states: CellVisual[];
   private hovered = -1;
@@ -158,6 +171,23 @@ export class PolygonBoard extends Group implements BoardMesh {
     glyphMesh.name = "glyphs";
     glyphMesh.renderOrder = 1;
     this.add(glyphMesh);
+
+    // depthTest off, drawn last: the dropping flag hangs over the board rather
+    // than lying on it, so nothing occludes it for the fraction of a second it is
+    // in the air. `pick` only ever raycasts the "cells" mesh, so this one can
+    // span half the board without swallowing taps.
+    this.dropMaterial = new MeshBasicMaterial({
+      map: this.atlas.texture,
+      transparent: true,
+      alphaTest: 0.4,
+      side: DoubleSide,
+      depthTest: false,
+      depthWrite: false,
+    });
+    const dropMesh = new Mesh(this.dropGeometry, this.dropMaterial);
+    dropMesh.name = "flagDrop";
+    dropMesh.renderOrder = 2;
+    this.add(dropMesh);
 
     this.meanRadius =
       this.geom.reduce((s, g) => s + g.radius, 0) / (this.geom.length || 1);
@@ -272,6 +302,15 @@ export class PolygonBoard extends Group implements BoardMesh {
   private rebuildGlyphs(): void {
     const pos: number[] = [];
     const uvs: number[] = [];
+    const dropPos: number[] = [];
+    const dropUvs: number[] = [];
+    const now = performance.now();
+    const dropIndex = this.anim.dropIndex();
+    const dropAt = this.anim.dropProgress(now);
+    const extent =
+      this.view.kind === "flat"
+        ? Math.min(this.view.width, this.view.height)
+        : 1;
     for (let i = 0; i < this.order.length; i++) {
       const glyph = glyphFor(this.states[i]!);
       if (glyph === null) continue;
@@ -282,23 +321,48 @@ export class PolygonBoard extends Group implements BoardMesh {
       // Sized by the inradius so the glyph stays inside the cell even on
       // pointy cells (triangles) where the mean vertex distance overshoots;
       // a flag pop scales this briefly for the spring-in.
-      const s = g.inradius * 0.9 * this.anim.popScale(i, performance.now());
+      const settled = g.inradius * 0.9;
+      const s = settled * this.anim.popScale(i, now);
       const z = g.radius * HEIGHT_FRAC + 0.01;
       const [u0, v0, u1, v1] = uv;
       // Quad corners around the cell centre; turned a quarter-turn (with the
       // UVs left alone) when the board itself is drawn turned, so the glyph
       // lands upright on screen.
-      const at = (dx: number, dy: number): [number, number, number] =>
-        this.quarterTurn ? [cxp - dy, cyp + dx, z] : [cxp + dx, cyp + dy, z];
-      pos.push(
-        ...at(-s, -s), ...at(s, -s), ...at(s, s),
-        ...at(-s, -s), ...at(s, s), ...at(-s, s),
-      );
-      uvs.push(u0, v0, u1, v0, u1, v1, u0, v0, u1, v1, u0, v1);
+      const at = (dx: number, dy: number, qz: number): [number, number, number] =>
+        this.quarterTurn ? [cxp - dy, cyp + dx, qz] : [cxp + dx, cyp + dy, qz];
+      const quad = (
+        into: number[],
+        uvInto: number[],
+        half: number,
+        qz: number,
+        rise = 0,
+      ): void => {
+        const lo = rise - half;
+        const hi = rise + half;
+        into.push(
+          ...at(-half, lo, qz), ...at(half, lo, qz), ...at(half, hi, qz),
+          ...at(-half, lo, qz), ...at(half, hi, qz), ...at(-half, hi, qz),
+        );
+        uvInto.push(u0, v0, u1, v0, u1, v1, u0, v0, u1, v1, u0, v1);
+      };
+      // A cell with a flag coming down draws only that flag — the drop lands
+      // on exactly the settled size, so the cell's own glyph takes over on the
+      // frame the drop ends and the hand-off is invisible. Drawing both would
+      // stand a second, tiny flag beside the falling one.
+      if (i === dropIndex && dropAt != null) {
+        const half = dropSize(settled, extent, dropAt);
+        quad(dropPos, dropUvs, half, z + 0.02, dropRise(settled, half));
+      } else {
+        quad(pos, uvs, s, z);
+      }
     }
     this.glyphGeometry.setAttribute("position", new BufferAttribute(new Float32Array(pos), 3));
     this.glyphGeometry.setAttribute("uv", new BufferAttribute(new Float32Array(uvs), 2));
     this.glyphGeometry.computeBoundingSphere();
+    this.dropGeometry.setAttribute("position", new BufferAttribute(new Float32Array(dropPos), 3));
+    this.dropGeometry.setAttribute("uv", new BufferAttribute(new Float32Array(dropUvs), 2));
+    this.dropGeometry.computeBoundingSphere();
+    this.dropMaterial.opacity = dropOpacity(dropAt ?? 1);
   }
 
   // -- animations ------------------------------------------------------------
@@ -325,9 +389,11 @@ export class PolygonBoard extends Group implements BoardMesh {
     this.anim.startReveals(rippleEntries(list, oc, this.meanRadius), performance.now());
   }
 
-  popFlag(cell: CellId): void {
+  dropFlag(cell: CellId): void {
     const i = this.cellIndex.get(cell);
-    if (i != null) this.anim.startPop(i, performance.now());
+    if (i == null) return;
+    this.anim.startDrop(i, performance.now());
+    this.rebuildGlyphs();
   }
 
   shake(): void {
