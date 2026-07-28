@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { difficulty, hasTheme, screens, themeSpec } from "../../src/config/screens";
+import {
+  difficulty,
+  hasDifficulty,
+  hasTheme,
+  screens,
+  themeSpec,
+} from "../../src/config/screens";
 import { DEFAULT_THEME, resolveTheme, themeVars } from "../../src/ui/theme";
 
 // Smoke + invariant tests for the shared UI-screen config. These guard the
@@ -87,6 +93,9 @@ describe("UI screen config", () => {
   it("has difficulties and a valid default", () => {
     expect(screens.difficulties.length).toBeGreaterThan(0);
     expect(() => difficulty(screens.defaultDifficulty)).not.toThrow();
+    // settings.ts validates a stored difficulty through this.
+    expect(hasDifficulty(screens.defaultDifficulty)).toBe(true);
+    expect(hasDifficulty("nightmare")).toBe(false);
   });
 
   it("every HUD slot declares a slot name", () => {

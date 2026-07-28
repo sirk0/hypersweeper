@@ -186,9 +186,13 @@ tolerance, ESM script placement) are documented in `web/README.md` under
 "Agent notes". Verify UI changes by looking at real screenshots, not just
 by the test suite passing.
 
-The menu's gear opens a **settings** page (build version, theme picker,
-animations toggle, links, update check) — one more `Menu` page rather than
-a modal. Its themes are the six pygame `THEMES` palettes plus a web-only
+The menu's gear opens a **settings** page (theme, animations toggle, build
+version, links, update check) — one more `Menu` page rather than a modal,
+with the theme picker a page below it. Theme, difficulty and the
+animations override persist (`src/settings.ts`): one stable
+`localStorage` key holding a record that carries its own `version`, never
+a versioned key name — see "Settings and themes" in `web/README.md` before
+adding a field. Its themes are the six pygame `THEMES` palettes plus a web-only
 `dark`, declared in `data/ui/screens.json` and applied by `src/ui/theme.ts`
 as CSS custom properties on `:root`; `data/ui/screens.json` is the single
 source and `tests/test_theme_sync.py` guards it against the pygame side.

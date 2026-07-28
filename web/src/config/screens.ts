@@ -108,3 +108,7 @@ export function themeSpec(key: string): ThemeSpec {
 export function hasTheme(key: string): boolean {
   return Object.hasOwn(screens.themes, key);
 }
+
+export function hasDifficulty(key: string): boolean {
+  return screens.difficulties.some((d) => d.key === key);
+}

@@ -15,7 +15,12 @@ import {
 } from "../boards/catalog";
 import { MODES } from "../boards/presets";
 import { menuIcon } from "./icons";
-import { GEAR_ICON, renderSettings, type SettingsHost } from "./settings";
+import {
+  GEAR_ICON,
+  renderSettings,
+  renderThemePicker,
+  type SettingsHost,
+} from "./settings";
 
 // Geometry-first menu, mirroring the pygame MenuScreen (gui.py). The home page
 // lists Classic, Flat, Flat manifolds, Sphere, Other. Classic launches flat
@@ -178,9 +183,11 @@ function textBlock(label: string, hint?: string): HTMLElement {
 
 export class Menu {
   readonly root: HTMLElement;
-  private difficulty = screens.defaultDifficulty;
   private readonly groups: Group[];
   private readonly body: HTMLElement;
+  /** The difficulty pill row, kept so a change from elsewhere (the store, or
+   * another tab) can repaint it without rebuilding the menu. */
+  private difficultyRowEl: HTMLElement | null = null;
   /** The page currently on screen, re-runnable so returning from a board
    * restores it (see `show`). */
   private view: () => void = () => this.renderRoot();
@@ -257,6 +264,13 @@ export class Menu {
     this.root.hidden = true;
   }
 
+  /** Repaint the current page from the store — used when the settings change
+   * from outside the menu (another tab writing them). */
+  refresh(): void {
+    this.syncDifficultyRow();
+    if (!this.root.hidden) this.view();
+  }
+
   /** Render `view` and remember it as the page to restore on `show()`. Every
    * page but settings shows the difficulty row, so it is cleared here and the
    * settings page re-sets it. */
@@ -276,27 +290,50 @@ export class Menu {
     this.go(() => this.renderSettingsPage());
   }
 
-  private renderSettingsPage(): void {
-    // Choosing a theme or flipping a toggle re-runs this page, so the tick and
-    // the switch reflect the change immediately.
-    const host: SettingsHost = {
+  /** A settings-page view of the preferences that re-renders `page` after any
+   * change, so the tick, the switch and the Theme row's subtitle always show
+   * the current value. */
+  private settingsPageHost(page: () => void): SettingsHost {
+    return {
       theme: this.settings.theme,
+      difficulty: this.settings.difficulty,
       animations: this.settings.animations,
       setTheme: (key) => {
         this.settings.setTheme(key);
-        this.renderSettingsPage();
+        page();
+      },
+      setDifficulty: (key) => {
+        this.settings.setDifficulty(key);
+        page();
       },
       setAnimations: (pref) => {
         this.settings.setAnimations(pref);
-        this.renderSettingsPage();
+        page();
       },
     };
+  }
+
+  private renderSettingsPage(): void {
+    const host = this.settingsPageHost(() => this.renderSettingsPage());
     // The difficulty row means nothing here; hide it and let the page have the
     // whole height.
     this.root.classList.add("settings-open");
     this.body.replaceChildren(
       this.backRow("Settings", () => this.showRoot()),
-      renderSettings(host),
+      renderSettings(host, () => this.showThemePicker()),
+    );
+  }
+
+  private showThemePicker(): void {
+    this.go(() => this.renderThemePage());
+  }
+
+  private renderThemePage(): void {
+    const host = this.settingsPageHost(() => this.renderThemePage());
+    this.root.classList.add("settings-open");
+    this.body.replaceChildren(
+      this.backRow("Theme", () => this.showSettings()),
+      renderThemePicker(host),
     );
   }
 
@@ -468,7 +505,7 @@ export class Menu {
     btn.dataset.mode = mode;
     btn.append(iconEl(icon), textBlock(label));
     btn.addEventListener("click", () =>
-      this.onSelect({ mode, difficulty: this.difficulty }),
+      this.onSelect({ mode, difficulty: this.settings.difficulty }),
     );
     li.append(btn);
     return li;
@@ -483,7 +520,7 @@ export class Menu {
     btn.dataset.mode = mode;
     btn.append(iconEl(icon), textBlock(label, hint));
     btn.addEventListener("click", () =>
-      this.onSelect({ mode, difficulty: this.difficulty }),
+      this.onSelect({ mode, difficulty: this.settings.difficulty }),
     );
     li.append(btn);
     return li;
@@ -499,12 +536,15 @@ export class Menu {
     btn.append(iconEl("random"), textBlock("Random tiling"));
     btn.addEventListener("click", () => {
       const mode = pool[Math.floor(Math.random() * pool.length)];
-      if (mode) this.onSelect({ mode, difficulty: this.difficulty });
+      if (mode) this.onSelect({ mode, difficulty: this.settings.difficulty });
     });
     li.append(btn);
     return li;
   }
 
+  /** The difficulty pills. The choice is persisted (settings.ts), so it is
+   * read from the store rather than held here, and `syncDifficultyRow` repaints
+   * the pills when it changes — from a click here, or from another tab. */
   private difficultyRow(): HTMLElement {
     const row = document.createElement("div");
     row.className = "menu-difficulty";
@@ -513,15 +553,21 @@ export class Menu {
       btn.className = "difficulty-btn";
       btn.dataset.key = d.key;
       btn.textContent = d.label;
-      btn.classList.toggle("active", d.key === this.difficulty);
       btn.addEventListener("click", () => {
-        this.difficulty = d.key;
-        for (const b of row.querySelectorAll(".difficulty-btn")) {
-          b.classList.toggle("active", (b as HTMLElement).dataset.key === d.key);
-        }
+        this.settings.setDifficulty(d.key);
+        this.syncDifficultyRow();
       });
       row.append(btn);
     }
+    this.difficultyRowEl = row;
+    this.syncDifficultyRow();
     return row;
+  }
+
+  private syncDifficultyRow(): void {
+    const active = this.settings.difficulty;
+    for (const b of this.difficultyRowEl?.querySelectorAll(".difficulty-btn") ?? []) {
+      b.classList.toggle("active", (b as HTMLElement).dataset["key"] === active);
+    }
   }
 }

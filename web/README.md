@@ -309,7 +309,10 @@ Three things that are easy to get wrong when touching this:
 
 The gear on the menu title row opens a settings page — not a modal: it is one
 more `Menu` page (`Menu.showSettings`, rendered by `src/ui/settings.ts`), so it
-reuses the back row, the `.menu-entry` cards and the scrolling body.
+reuses the back row, the `.menu-entry` cards and the scrolling body. The theme
+is a page below it in the same way (`Menu.showThemePicker`): settings shows a
+Theme row naming the current palette, and the seven-row picker lives one level
+down, which keeps the settings page short enough to read at a glance.
 
 **Themes.** The seven chrome palettes live in `data/ui/screens.json` under
 `themes`; six are ported from the pygame `THEMES` registry (`minesweeper/gui.py`)
@@ -333,11 +336,32 @@ with that entry. Two consequences worth knowing:
 `tests/test_theme_sync.py` (Python) fails if a pygame palette is retuned without
 the JSON following.
 
-**Persistence.** `src/settings.ts` is the app's only stored state — theme and the
-animations override, under one versioned `localStorage` key. Storage access is
-wrapped: Safari private mode throws, and the vitest node environment has no
-`localStorage` at all. Difficulty, flag mode, zoom and menu position stay in
-memory as before.
+**Persistence.** `src/settings.ts` is the app's only stored state: theme,
+difficulty and the animations override. Flag mode, zoom, the menu page you are
+on and the board in progress stay in memory as before.
+
+The layout is **one stable `localStorage` key holding a record that carries its
+own `version`** — deliberately not a versioned key name (`…:v1`, `…:v2`), which
+silently resets every user on a schema change because the new build reads a key
+nobody has written. `migrate()` upgrades an old record; `LEGACY_KEYS` still picks
+up records written under the old key-per-version scheme, and the old key is
+removed only *after* the new one is written, so an interrupted migration cannot
+lose it. Four rules the tests pin:
+
+- Reading is **total and field-by-field** — one bad field costs the user that
+  field, not the record. Corrupt JSON, an array, a removed theme, a removed
+  difficulty and a storage that throws all degrade to defaults.
+- A record from a **newer** build is read for what it understands, and writing
+  **preserves the keys it does not recognise**, so an older tab or a rolled-back
+  deploy does not throw away newer preferences.
+- Storage may be absent entirely (node under vitest) or throw on write (Safari
+  private mode, quota); a refused write is dropped and the choice still applies
+  for the session.
+- `subscribeSettings` mirrors changes made in another tab (a `storage` event,
+  including `localStorage.clear()`), which `App.adoptSettings` applies.
+
+Bump `SCHEMA_VERSION` only when a field changes *meaning*; purely additive
+fields need no bump, since an old record simply lacks them.
 
 **Version.** `__APP_VERSION__` / `__APP_COMMIT__` are Vite `define` constants
 (see `vite.config.ts`, declared in `src/vite-env.d.ts`). The version tracks

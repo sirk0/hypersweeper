@@ -11,15 +11,17 @@ import { THEME_KEYS } from "./theme";
 // data/ui/screens.json), the animations override, and an About block naming
 // the build.
 
-/** The gear that opens this page. Hand-drawn like the header icons in hud.ts
- * rather than generated like the board art in icons.ts, and stroked in
- * `currentColor` so it follows the theme's text colour. */
+/** The gear that opens this page, filled in `currentColor` so it follows the
+ * theme's text colour.
+ *
+ * The outline is *generated* rather than hand-drawn: eight teeth at 45°, each
+ * an arc at the tip radius joined to the root arc by slanted flanks, every
+ * point placed by (r, θ) about (12, 12). That makes it symmetric under a 45°
+ * rotation by construction — so it spans 2.52..21.48 on both axes and the hub
+ * hole sits on the exact centre, which a path typed out by hand does not. The
+ * hub is punched out by `fill-rule="evenodd"`. */
 export const GEAR_ICON = `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-  <path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z"
-    fill="none" stroke="currentColor" stroke-width="1.7"/>
-  <path d="M19.4 13a7.6 7.6 0 0 0 0-2l1.9-1.5-1.9-3.3-2.3.9a7.6 7.6 0 0 0-1.7-1L15 3.6h-3.8L10.9 6a7.6 7.6 0 0 0-1.8 1l-2.3-.9L4.9 9.5 6.8 11a7.6 7.6 0 0 0 0 2l-1.9 1.5 1.9 3.3 2.3-.9a7.6 7.6 0 0 0 1.8 1l.3 2.5H15l.4-2.5a7.6 7.6 0 0 0 1.7-1l2.3.9 1.9-3.3Z"
-    fill="none" stroke="currentColor" stroke-width="1.7"
-    stroke-linejoin="round"/>
+  <path fill="currentColor" fill-rule="evenodd" d="M21.48 10.50A9.6 9.6 0 0 1 21.48 13.50L18.60 13.65A6.8 6.8 0 0 1 17.83 15.50L19.77 17.64A9.6 9.6 0 0 1 17.64 19.77L15.50 17.83A6.8 6.8 0 0 1 13.65 18.60L13.50 21.48A9.6 9.6 0 0 1 10.50 21.48L10.35 18.60A6.8 6.8 0 0 1 8.50 17.83L6.36 19.77A9.6 9.6 0 0 1 4.23 17.64L6.17 15.50A6.8 6.8 0 0 1 5.40 13.65L2.52 13.50A9.6 9.6 0 0 1 2.52 10.50L5.40 10.35A6.8 6.8 0 0 1 6.17 8.50L4.23 6.36A9.6 9.6 0 0 1 6.36 4.23L8.50 6.17A6.8 6.8 0 0 1 10.35 5.40L10.50 2.52A9.6 9.6 0 0 1 13.50 2.52L13.65 5.40A6.8 6.8 0 0 1 15.50 6.17L17.64 4.23A9.6 9.6 0 0 1 19.77 6.36L17.83 8.50A6.8 6.8 0 0 1 18.60 10.35L21.48 10.50ZM8.6 12A3.4 3.4 0 1 0 15.4 12A3.4 3.4 0 1 0 8.6 12Z"/>
 </svg>`;
 
 /** The app's build identity: the package version, plus the short commit on a
@@ -38,12 +40,17 @@ function classicBuildHref(): string | null {
 
 const REPO_URL = "https://github.com/sirk0/minesweeper-tiles";
 
+/** The live view of the stored preferences that the menu reads and writes.
+ * Implemented by `App` over `settings.ts`. */
 export interface SettingsHost {
   /** The active theme key. */
   theme: string;
+  /** The difficulty the menu launches boards at. */
+  difficulty: string;
   /** The stored animations preference; `null` follows the OS setting. */
   animations: boolean | null;
   setTheme(key: string): void;
+  setDifficulty(key: string): void;
   setAnimations(pref: boolean | null): void;
 }
 
@@ -154,15 +161,15 @@ async function checkForUpdates(status: HTMLElement): Promise<void> {
   }
 }
 
-/** Build the settings page body. The caller (Menu) supplies the back row and
- * puts this into `.menu-body`. */
-export function renderSettings(host: SettingsHost): DocumentFragment {
+/** The theme page: the full list, ticked at the active one. Reached from the
+ * Theme row on the settings page rather than being spelled out there — seven
+ * palettes would bury the rest of the page, and the row already reports which
+ * one is on. Picking stays on the page, so the choice is visible immediately in
+ * the chrome around it. */
+export function renderThemePicker(host: SettingsHost): DocumentFragment {
   const frag = document.createDocumentFragment();
-
-  // -- Appearance ------------------------------------------------------------
-  frag.append(heading("Appearance"));
-  const themes = document.createElement("ul");
-  themes.className = "menu-list";
+  const list = document.createElement("ul");
+  list.className = "menu-list";
   for (const key of THEME_KEYS) {
     const check = document.createElement("span");
     check.className = "settings-check";
@@ -175,9 +182,36 @@ export function renderSettings(host: SettingsHost): DocumentFragment {
     btn.dataset["theme"] = key;
     btn.setAttribute("aria-pressed", String(key === host.theme));
     if (key === host.theme) btn.classList.add("active");
-    themes.append(li);
+    list.append(li);
   }
-  frag.append(themes);
+  frag.append(list);
+  return frag;
+}
+
+/** Build the settings page body. The caller (Menu) supplies the back row and
+ * puts this into `.menu-body`; `openThemes` opens the theme page. */
+export function renderSettings(host: SettingsHost, openThemes: () => void): DocumentFragment {
+  const frag = document.createDocumentFragment();
+
+  // -- Appearance ------------------------------------------------------------
+  frag.append(heading("Appearance"));
+  const appearance = document.createElement("ul");
+  appearance.className = "menu-list";
+  const chevron = document.createElement("span");
+  chevron.className = "menu-entry-chevron";
+  chevron.textContent = "›";
+  const { li: themeLi, btn: themeBtn } = buttonRow(
+    [
+      themeSwatch(host.theme),
+      textBlock("Theme", themeSpec(host.theme).label),
+      chevron,
+    ],
+    openThemes,
+    "menu-submenu",
+  );
+  themeBtn.dataset["settingsGroup"] = "theme";
+  appearance.append(themeLi);
+  frag.append(appearance);
 
   // -- Behaviour -------------------------------------------------------------
   frag.append(heading("Behaviour"));

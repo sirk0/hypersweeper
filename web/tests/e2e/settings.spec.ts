@@ -44,10 +44,31 @@ test.describe("settings", () => {
     await expect(version).toContainText(pkg.version);
   });
 
+  test("the theme row reports the current theme and opens the picker", async ({ page }) => {
+    await page.locator(".menu-settings-btn").click();
+    const row = page.locator('.menu-entry[data-settings-group="theme"]');
+    await expect(row).toContainText("Theme");
+    await expect(row).toContainText("Minimal iOS"); // the current one, as a subtitle
+    // The seven palettes are a page of their own, not spelled out here.
+    await expect(page.locator(".menu-entry[data-theme]")).toHaveCount(0);
+
+    await row.click();
+    await expect(page.locator(".menu-entry[data-theme]")).toHaveCount(7);
+    await expect(page.locator('.menu-entry[data-action="back"]')).toContainText("Theme");
+
+    // Back lands on settings, not the root menu, and the row has followed.
+    await page.locator('.menu-entry[data-theme="paper"]').click();
+    await page.locator('.menu-entry[data-action="back"]').click();
+    await expect(page.locator('.menu-entry[data-settings-group="theme"]')).toContainText(
+      "Warm Paper",
+    );
+  });
+
   test("picking a theme re-skins the chrome and survives a reload", async ({ page }) => {
     await page.locator(".menu-settings-btn").click();
     expect(await cssVar(page, "--bg")).toBe("#f2f2f7"); // the ios default
 
+    await page.locator('.menu-entry[data-settings-group="theme"]').click();
     await page.locator('.menu-entry[data-theme="dark"]').click();
     expect(await cssVar(page, "--bg")).toBe("#101014");
     expect(await cssVar(page, "--panel")).toBe("#1c1c22");
@@ -69,6 +90,7 @@ test.describe("settings", () => {
 
   test("every theme applies a complete palette", async ({ page }) => {
     await page.locator(".menu-settings-btn").click();
+    await page.locator('.menu-entry[data-settings-group="theme"]').click();
     const keys = await page
       .locator(".menu-entry[data-theme]")
       .evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset["theme"] ?? ""));
@@ -109,13 +131,52 @@ test.describe("settings", () => {
 
   test("a theme survives launching a board", async ({ page }) => {
     await page.locator(".menu-settings-btn").click();
+    await page.locator('.menu-entry[data-settings-group="theme"]').click();
     await page.locator('.menu-entry[data-theme="classic"]').click();
-    await page.locator('.menu-entry[data-action="back"]').click();
+    await page.locator('.menu-entry[data-action="back"]').click(); // to settings
+    await page.locator('.menu-entry[data-action="back"]').click(); // to the root
     await page.locator('.menu-entry[data-mode="square"]').click();
 
     const state = await page.evaluate(() => window.__ms?.state());
     expect(state?.screen).toBe("game");
     // The header counters read the theme's LED box colour.
     expect(await cssVar(page, "--counter-bg")).toBe("#18181a");
+  });
+});
+
+test.describe("difficulty persistence", () => {
+  test("the chosen difficulty survives a reload and launches boards", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    await expect(page.locator('.difficulty-btn[data-key="medium"]')).toHaveClass(/active/);
+
+    await page.locator('.difficulty-btn[data-key="hard"]').click();
+    await page.reload();
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    await expect(page.locator('.difficulty-btn[data-key="hard"]')).toHaveClass(/active/);
+    await expect(page.locator('.difficulty-btn[data-key="medium"]')).not.toHaveClass(/active/);
+
+    await page.locator('.menu-entry[data-mode="square"]').click();
+    const state = await page.evaluate(() => window.__ms?.state());
+    expect(state?.difficulty).toBe("hard");
+  });
+
+  test("a deep link with no difficulty uses the stored one", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    await page.locator('.difficulty-btn[data-key="easy"]').click();
+
+    await page.goto("/?mode=hex");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    expect((await page.evaluate(() => window.__ms?.state()))?.difficulty).toBe("easy");
+
+    // An explicit one in the link still wins, and does not overwrite the stored
+    // preference.
+    await page.goto("/?mode=hex&difficulty=hard");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    expect((await page.evaluate(() => window.__ms?.state()))?.difficulty).toBe("hard");
+    await page.goto("/");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    await expect(page.locator('.difficulty-btn[data-key="easy"]')).toHaveClass(/active/);
   });
 });

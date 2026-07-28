@@ -3,7 +3,6 @@ import "./ui/styles.css";
 import { isBoard3D, type CellId } from "./boards/core";
 import { hasMode } from "./boards/presets";
 import { DIFFICULTIES } from "./boards/catalog";
-import { screens } from "./config/screens";
 import { GameSession } from "./session";
 import { attachControls, blockBrowserZoom } from "./input/controls";
 import {
@@ -19,6 +18,7 @@ import {
   animationsEnabled,
   loadSettings,
   saveSettings,
+  subscribeSettings,
   type Settings,
 } from "./settings";
 import { installTestHook } from "./testHook";
@@ -38,7 +38,8 @@ class App {
   private screen: "menu" | "game" = "menu";
   private flagMode = false;
   private hovered: CellId | null = null;
-  /** Stored preferences (theme, animations) — the app's only persisted state. */
+  /** Stored preferences (theme, difficulty, animations) — the app's only
+   * persisted state. */
   private settings: Settings = loadSettings();
   // Board animations honour the OS reduced-motion setting unless the settings
   // screen overrides it; the `window.__ms.animations(false)` test seam overrides
@@ -89,6 +90,7 @@ class App {
     // The board has its own bounded zoom, so the browser's page zoom is only
     // ever a trap here (see blockBrowserZoom).
     blockBrowserZoom();
+    subscribeSettings((s) => this.adoptSettings(s));
     this.renderer.start();
     window.setInterval(() => this.tickTimer(), 250);
 
@@ -108,10 +110,14 @@ class App {
       get theme() {
         return app.settings.theme;
       },
+      get difficulty() {
+        return app.settings.difficulty;
+      },
       get animations() {
         return app.settings.animations;
       },
       setTheme: (key) => this.setTheme(key),
+      setDifficulty: (key) => this.setDifficulty(key),
       setAnimations: (pref) => this.setAnimations(pref),
     };
   }
@@ -120,6 +126,23 @@ class App {
     this.settings = { ...this.settings, theme: key };
     saveSettings(this.settings);
     applyTheme(key); // the canvas is transparent, so CSS repaints the field too
+  }
+
+  private setDifficulty(key: string): void {
+    this.settings = { ...this.settings, difficulty: key };
+    saveSettings(this.settings);
+  }
+
+  /** Adopt settings written by another tab. The theme is applied; the
+   * difficulty and animation preferences are picked up by the menu's next
+   * repaint and the next board. A game already in progress keeps the
+   * difficulty it was started at. */
+  private adoptSettings(settings: Settings): void {
+    this.settings = settings;
+    applyTheme(settings.theme);
+    this.animationsEnabled = animationsEnabled(settings.animations);
+    this.session?.mesh.setAnimationsEnabled(this.animationsEnabled);
+    this.menu.refresh();
   }
 
   private setAnimations(pref: boolean | null): void {
@@ -134,7 +157,8 @@ class App {
   private startFromDeepLink(): boolean {
     const params = new URLSearchParams(window.location.search);
     const mode = params.get("mode");
-    const difficulty = params.get("difficulty") ?? screens.defaultDifficulty;
+    // A deep link that names no difficulty uses the player's stored one.
+    const difficulty = params.get("difficulty") ?? this.settings.difficulty;
     const seedRaw = params.get("seed");
     if (!mode || !hasMode(mode) || !DIFFICULTIES.includes(difficulty)) return false;
     const seed = seedRaw != null ? Number(seedRaw) : undefined;
