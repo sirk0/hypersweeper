@@ -165,6 +165,50 @@ describe("per-board shape classing", () => {
     const square = [...classifyShapes(buildBoard("square", "easy").polygons).values()];
     for (const t of square) expect(t.variantCount).toBe(1);
   });
+
+  it("ignores the T-vertices of a tiling that is not edge to edge", () => {
+    // An isogonal tile carries the corners of the neighbours whose edge it
+    // splits: a rotated-triangular triangle is a six-point polygon and its
+    // hexagon a six-point polygon too. Measured raw they would be one side
+    // count in two "shapes"; measured by their corners they are a triangle
+    // and a hexagon.
+    const sides = new Set(
+      [...classifyShapes(buildBoard("rotatedtri", "easy").polygons).values()].map((t) => t.sides),
+    );
+    expect(sides).toEqual(new Set([3, 6]));
+    for (const t of classifyShapes(buildBoard("offsetsquare", "easy").polygons).values()) {
+      expect(t.sides).toBe(4);
+      expect(t.regularity).toBe(1); // a square, not an irregular hexagon
+    }
+  });
+
+  it("splits one shape into its sizes, and only where they really differ", () => {
+    const sizes = (mode: string): number =>
+      [...classifyShapes(buildBoard(mode, "easy").polygons).values()][0]!.sizeCount!;
+    expect(sizes("pythagorean")).toBe(2); // squares 2:1
+    expect(sizes("threescaletri")).toBe(3); // triangles 1 : 2 : 3
+    expect(sizes("offsetsquare")).toBe(1); // one size of square
+    // The Penrose rhombi share an edge length and their spans are only ~10%
+    // apart; hue already separates them, so they must stay one size.
+    for (const t of classifyShapes(buildBoard("penrose", "easy").polygons).values()) {
+      expect(t.sizeCount).toBe(1);
+    }
+    // every size of a shape gets used, smallest first
+    const three = [...classifyShapes(buildBoard("threescaletri", "easy").polygons).values()];
+    expect(new Set(three.map((t) => t.size))).toEqual(new Set([0, 1, 2]));
+  });
+
+  it("draws a bigger tile lighter, in both states equally", () => {
+    const small = cellPalette({ sides: 4, regularity: 1, size: 0, sizeCount: 2 }, "flat");
+    const big = cellPalette({ sides: 4, regularity: 1, size: 1, sizeCount: 2 }, "flat");
+    expect(lightness(big.hidden)).toBeGreaterThan(lightness(small.hidden));
+    expect(lightness(big.revealed)).toBeGreaterThan(lightness(small.revealed));
+    // the hidden -> opened step is the same for both, so size never eats into
+    // the contrast the board is read by
+    const step = (p: { hidden: Color; revealed: Color }): number =>
+      lightness(p.revealed) - lightness(p.hidden);
+    expect(step(big)).toBeCloseTo(step(small), 3);
+  });
 });
 
 describe("shape colours", () => {

@@ -402,7 +402,7 @@ const PATCH_PICK: Record<string, (tiles: Tile[]) => Tile[]> = {
 type PatchStyle = "ring" | "rosette";
 
 const VERTEX_TRANSITIVE = new Set(
-  ARCH_TILINGS.filter((t) => t.vertexTransitive).map((t) => t.key),
+  ARCH_TILINGS.filter((t) => t.family !== "dual").map((t) => t.key),
 );
 const ARCH_KEYS = new Set(ARCH_TILINGS.map((t) => t.key));
 
@@ -416,7 +416,18 @@ const ARCH_KEYS = new Set(ARCH_TILINGS.map((t) => t.key));
  *
  * The exception is elongated triangular, whose icon is picked out of the
  * rosette by hand (see PATCH_PICK). */
-const PATCH_STYLE: Record<string, PatchStyle> = { elongated: "rosette" };
+const PATCH_STYLE: Record<string, PatchStyle> = {
+  elongated: "rosette",
+  // The isogonal tilings are about what happens *at a vertex* — two corners
+  // and an edge running straight past them — so they are drawn as the rosette,
+  // where that T-junction is the whole picture. A ring of running-bond squares
+  // is just a plus sign.
+  // Three-scale triangular is the exception: its rosette is three triangles of
+  // nearly the same size, while the ring shows the run of sizes it is named for.
+  offsetsquare: "rosette",
+  staggeredtri: "rosette",
+  pythagorean: "rosette",
+};
 
 function styleFor(key: string): PatchStyle {
   return PATCH_STYLE[key] ?? (VERTEX_TRANSITIVE.has(key) ? "ring" : "rosette");
@@ -753,6 +764,10 @@ function draw(rawKey: string): string[] {
   if (ARCH_KEYS.has(key)) return tilingPatch(key);
   if (key === "uniform") return tilingPatch("rhombitrihex", "rosette");
   if (key === "dual") return tilingPatch("deltoidal");
+  // the Isogonal family row: rotated hexagonal, the clearest picture of what
+  // the family is — tiles sliding along each other's edges rather than meeting
+  // them, with the gaps that opens filled by a second shape
+  if (key === "isogonal") return tilingPatch("rotatedhex");
   if (key === "regular") {
     // the Regular family row: one tile of each of the three regular tilings
     return [

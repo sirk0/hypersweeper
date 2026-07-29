@@ -30,7 +30,19 @@ standard `mobile-web-app-capable` metas, and the maskable/apple-touch icons the
 PWA manifest already ships. The board carries its own bounded pinch/wheel zoom
 and pan, and the browser's page zoom is blocked outright — see **Zoom** below. A zero-dependency bundle gate (`npm run size`,
 enforced in CI) keeps the shipped JS + CSS under the **250 KB gzip** budget
-(currently ~145 KB). **All 105 modes, polished.**
+(currently ~145 KB). **All 112 modes, polished.**
+
+**M7 — Isogonal tilings.** The six isogonal tilings by convex regular polygons
+that are **not edge to edge** (`src/boards/tilings.ts`): offset square,
+staggered triangular, Pythagorean, rotated hexagonal, rotated triangular and
+three-scale triangular, each the most symmetric member of a one-parameter
+family. A tile's corner landing inside its neighbour's edge is recorded as a
+vertex of the split tile (`insertTVertices`), which is what keeps shared-vertex
+adjacency — and the Euler/boundary counts — working; it is collinear, so the
+tile is drawn and measured as the regular polygon it is. The flat tiling picker
+gains an **Isogonal** family submenu (plane only — these have no surface wraps
+yet), and the shape palette gains a size axis, since two of them use one
+polygon at several sizes. **All 112 modes.**
 
 **M5 — Aperiodic tilings.** Ports `src/boards/aperiodic.ts`: the Penrose P3
 rhombi (exact ℤ[ζ5] vertex arithmetic, Robinson-triangle deflation) and the Hat
@@ -39,7 +51,7 @@ back to an exact Eisenstein integer id). Both grow generously and trim to the
 centremost cells by Chebyshev distance for a roughly square patch. Their
 difficulty presets move into the shared `data/presets.json` (so the conformance
 oracle covers them), and the flat tiling picker gains an **Aperiodic** family
-submenu (plane only). **All 105 modes.**
+submenu (plane only). **105 modes.**
 
 **M3 — Surface wraps (regular tilings).** Wraps the square / triangle /
 hexagon tilings onto the four surfaces (`src/boards/surfaces.ts`): the closed
@@ -290,10 +302,23 @@ spectrum: 3 red, 4 orange, 5 yellow, 6 green, 8 teal, 12 blue, the 13-gon
 hat violet), **chroma** from how regular the polygon is
 (`(minAngle/maxAngle + minSide/maxSide) / 2`, 1 for a regular polygon), and
 **lightness** from the cell's state — the step between the closed and opened
-tone is exactly the one the gray board had. The maths runs in OkLCh, not HSL,
+tone is exactly the one the gray board had — plus, *within* a state, from the
+tile's **size**. The maths runs in OkLCh, not HSL,
 because HSL lightness is not perceptual and that constant hidden/opened
 contrast across hues depends on it. Every knob lives in the one
 `SHAPE_PALETTE` block.
+
+**Size is the fourth thing a tile can say.** The isogonal tilings put one
+regular polygon on the board at two or three sizes — the Pythagorean tiling's
+2:1 squares, the three-scale triangular's 1:2:3 triangles — which side count
+and regularity cannot separate at all: they are the same shape, only bigger.
+`classifyShapes` clusters tile spans (mean corner distance from the centroid)
+per side count on a *relative* gap, and `sizeLightness` spreads the classes
+apart in lightness, biggest lightest. Two rules keep that from disturbing what
+was there before: the spread shifts the closed and opened tone equally, so the
+hidden/opened contrast is untouched; and `cluster.sizeGap` is deliberately
+coarse (15%), so the Penrose rhombi — same edge length, spans 10% apart, and
+already told apart by hue — stay one size.
 
 Three things that are easy to get wrong when touching this:
 
@@ -325,7 +350,14 @@ Three things that are easy to get wrong when touching this:
   carry that decision there — a torus of triangles reads as several triangle
   shapes when it has one. No 3D board in the catalog has two tiles with the
   same number of sides; the one board that does is flat Penrose, and a unit
-  test sweeps the whole catalog to keep it the only one.
+  test sweeps the whole catalog to keep it the only one. The size axis is
+  gated the same way, and for the same reason.
+- **A collinear vertex is not a corner.** A tile of a non-edge-to-edge tiling
+  carries the corners of the neighbours whose edge it splits, so a running-bond
+  square arrives as a six-point polygon. `shapeMetrics` measures a polygon's
+  real corners (`corners()`), or every isogonal board would be painted as a
+  board of irregular hexagons. Nothing else on the board has a 180° vertex —
+  the flattest genuine corner in the catalog is a Klein-bottle quad at ~172°.
 - **Icons share the hue, not the tone.** The board tint is deliberately faint;
   at 38 px it would read as gray, so the icon profile puts each hue near the
   lightness where it is most colourful. `shape()` reads the tone off the

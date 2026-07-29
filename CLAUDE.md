@@ -28,11 +28,20 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   seam (the same `template.mirror` the Möbius uses); the
   self-intersecting bottle immersion hides some cells behind the neck, so
   every Klein board carries a `cell_cycle` the UI scrolls along to bring
-  them into view. The menu's shared tiling picker is a list of family
+  them into view. A third `ARCH_TILINGS` family, `family="isogonal"`, holds
+  the six **non-edge-to-edge** tilings by convex regular polygons (offset
+  square, staggered triangular, Pythagorean, rotated hexagonal, rotated
+  triangular, three-scale triangular): vertex-transitive, but a tile's
+  corner lands in the middle of its neighbour's edge. `_insert_t_vertices`
+  records that point on the split tile so shared-vertex adjacency still
+  finds the neighbour; it is collinear, so the drawn tile is unchanged and
+  the shape colouring drops it before measuring. They are **flat only**
+  (`TilingSpec.flat_only`) — no manifold wraps yet. The menu's shared
+  tiling picker is a list of family
   submenus: **Regular** (the three regular tilings, plus on the plane the
   shaped boards cut from them), **Uniform** (the eight non-regular uniform
-  tilings, `vertex_transitive=True` in `ARCH_TILINGS`), **Laves** (their
-  eight duals) and, on the plane only, **Aperiodic**. `ARCH_TILINGS` is
+  tilings, `family="uniform"` in `ARCH_TILINGS`), **Laves** (their
+  eight duals) and, on the plane only, **Isogonal** and **Aperiodic**. `ARCH_TILINGS` is
   listed in vertex-configuration order — Wikipedia's "List of Euclidean
   uniform tilings" order — and that registry order is the menu order.
   **To add a tiling or surface, see `AGENTS.md`** — a tiling is
@@ -58,7 +67,7 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   page — Classic / Flat / Flat manifolds / Sphere / Polyhedra. Classic
   launches flat squares; Flat (the plane) and each flat manifold (cylinder,
   Möbius, Klein, torus) open a shared tiling picker — the Regular / Uniform
-  / Laves family submenus, Aperiodic on the plane only, and a random option
+  / Laves family submenus, Isogonal and Aperiodic on the plane only, and a random option
   — parameterised by the surface it was reached through; Sphere and
   Polyhedra list their finished boards. Navigation is a `path` breadcrumb
   driven by the `MENU_ROOT`/`MANIFOLD_*`/`FAMILY_*`/`SPHERE_MODES`/

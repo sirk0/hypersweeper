@@ -4,9 +4,10 @@ import { writeFileSync } from "node:fs";
 import { menuIcon } from "../src/ui/icons";
 import {
   DUAL_ARCH,
+  ISOGONAL_ARCH,
   MENU,
   MODE_LABELS,
-  OTHER_MODES,
+  POLYHEDRA_MODES,
   SHAPED_MODES,
   SPHERE_MODES,
   TILINGS_BY_KEY,
@@ -14,15 +15,17 @@ import {
 } from "../src/boards/catalog";
 
 const groups: [string, string[]][] = [
-  ["Home page", ["classic", "flat", "manifolds", "sphere", "other"]],
+  ["Home page", ["classic", "flat", "manifolds", "sphere", "polyhedra"]],
   ["Surfaces", ["flat", "cylinder", "mobius", "klein", "torus"]],
   ["Regular tilings", MENU.pickerRegular as string[]],
-  ["Families / random", ["uniform", "dual", "aperiodic", "random"]],
+  ["Families / random", ["regular", "uniform", "dual", "isogonal", "aperiodic", "random"]],
   ["Uniform tilings", UNIFORM_ARCH],
   ["Dual-uniform tilings", DUAL_ARCH],
+  ["Isogonal tilings", ISOGONAL_ARCH],
   ["Aperiodic", ["penrose", "hat"]],
   ["Sphere", [...SPHERE_MODES]],
-  ["Other", [...OTHER_MODES, ...SHAPED_MODES]],
+  ["Polyhedra", [...POLYHEDRA_MODES]],
+  ["Shaped boards", Object.values(SHAPED_MODES).flat()],
 ];
 
 const only = process.argv[3];

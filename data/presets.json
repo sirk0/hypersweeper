@@ -2444,6 +2444,162 @@
           90
         ]
       }
+    },
+    "offsetsquare": {
+      "builder": "archimedean_board",
+      "args": {
+        "easy": [
+          "offsetsquare",
+          10,
+          5,
+          16,
+          45
+        ],
+        "medium": [
+          "offsetsquare",
+          12,
+          6,
+          26,
+          38
+        ],
+        "hard": [
+          "offsetsquare",
+          18,
+          9,
+          67,
+          26
+        ]
+      }
+    },
+    "staggeredtri": {
+      "builder": "archimedean_board",
+      "args": {
+        "easy": [
+          "staggeredtri",
+          7,
+          4,
+          18,
+          61
+        ],
+        "medium": [
+          "staggeredtri",
+          8,
+          5,
+          27,
+          51
+        ],
+        "hard": [
+          "staggeredtri",
+          12,
+          7,
+          66,
+          38
+        ]
+      }
+    },
+    "pythagorean": {
+      "builder": "archimedean_board",
+      "args": {
+        "easy": [
+          "pythagorean",
+          3,
+          3,
+          14,
+          61
+        ],
+        "medium": [
+          "pythagorean",
+          4,
+          4,
+          27,
+          45
+        ],
+        "hard": [
+          "pythagorean",
+          6,
+          6,
+          71,
+          31
+        ]
+      }
+    },
+    "rotatedhex": {
+      "builder": "archimedean_board",
+      "args": {
+        "easy": [
+          "rotatedhex",
+          5,
+          3,
+          13,
+          43
+        ],
+        "medium": [
+          "rotatedhex",
+          7,
+          4,
+          28,
+          34
+        ],
+        "hard": [
+          "rotatedhex",
+          10,
+          6,
+          72,
+          24
+        ]
+      }
+    },
+    "rotatedtri": {
+      "builder": "archimedean_board",
+      "args": {
+        "easy": [
+          "rotatedtri",
+          5,
+          3,
+          13,
+          64
+        ],
+        "medium": [
+          "rotatedtri",
+          7,
+          4,
+          27,
+          48
+        ],
+        "hard": [
+          "rotatedtri",
+          10,
+          6,
+          68,
+          34
+        ]
+      }
+    },
+    "threescaletri": {
+      "builder": "archimedean_board",
+      "args": {
+        "easy": [
+          "threescaletri",
+          5,
+          3,
+          13,
+          65
+        ],
+        "medium": [
+          "threescaletri",
+          7,
+          4,
+          28,
+          46
+        ],
+        "hard": [
+          "threescaletri",
+          10,
+          6,
+          72,
+          32
+        ]
+      }
     }
   }
 }

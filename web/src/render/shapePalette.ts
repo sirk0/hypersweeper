@@ -32,6 +32,15 @@ export interface ShapeTone {
    * apart while both stay plainly "quadrilateral". Absent = the only one. */
   variant?: number;
   variantCount?: number;
+  /** Which of the board's distinct *sizes* of this shape this is (0 = the
+   * smallest), and how many there are. The isogonal tilings put two or three
+   * sizes of one regular polygon on the same board — the Pythagorean tiling's
+   * two squares, the three-scale triangular's three triangles — which side
+   * count and regularity, the other two axes, cannot tell apart at all: they
+   * are the *same shape*, just bigger. Size is carried by lightness, the one
+   * channel a shape does not otherwise use. Absent = the only size. */
+  size?: number;
+  sizeCount?: number;
 }
 
 /** Which lightness/chroma profile a colour is drawn at. */
@@ -66,6 +75,13 @@ export const SHAPE_PALETTE = {
    * hidden/opened contrast. */
   hueSplit: 34,
   variantLightness: 0.05,
+
+  /** How far apart the extreme *sizes* of one shape are pushed in lightness —
+   * bigger tile, lighter tone. Like the variant spread it shifts both states
+   * equally, so the hidden/opened contrast is untouched, and it is the larger
+   * of the two because size is the only thing separating those tiles: a small
+   * square and a large one are the same hue and the same regularity. */
+  sizeLightness: 0.075,
 
   /** Regularity below `floor` counts as maximally irregular, at or above `top`
    * as regular. `top` sits below 1 because the surface immersions stretch their
@@ -149,8 +165,16 @@ export const SHAPE_PALETTE = {
    * regularity line, what grid to snap a class to, the share of its side count
    * a class must reach to count as a shape of its own rather than a few cells a
    * surface seam stretched, and how far apart two classes must land on the
-   * cleanliness scale to be different *shapes* at all. */
-  cluster: { gap: 0.08, snap: 0.05, minShare: 0.08, minCleanGap: 0.15 },
+   * cleanliness scale to be different *shapes* at all.
+   *
+   * `sizeGap` is the same idea one axis over: how much bigger one tile has to
+   * be than another, in span, to count as a different size. Deliberately
+   * coarse — the sizes it is there for differ by a third or a half (the
+   * Pythagorean squares are 2:1) — so that tiles which merely *measure* a
+   * little apart stay one size. The Penrose rhombi are the case that decides
+   * it: same edge length, spans 10% apart, and they are already told apart by
+   * hue, so they must not also split in lightness. */
+  cluster: { gap: 0.08, snap: 0.05, minShare: 0.08, minCleanGap: 0.15, sizeGap: 0.15 },
 } as const;
 
 // -- OkLab / OkLCh <-> sRGB --------------------------------------------------
@@ -276,23 +300,62 @@ function lchToHex(lch: Lch): string {
 
 // -- shape -> tone -----------------------------------------------------------
 
+/** How straight a vertex has to be to not be a corner at all, in radians.
+ * A tile of an isogonal tiling carries T-vertices — the corners of the
+ * neighbours whose edge it splits — sitting at exactly 180°, and counting one
+ * would make a square measure as an irregular pentagon. The threshold is far
+ * below the flattest genuine corner on any board (a Klein-bottle quad, ~172°)
+ * and far above the ~1e-6 rad that vertex-tag rounding costs. */
+const STRAIGHT = 0.02;
+
+const distance = (a: readonly number[], b: readonly number[]): number => {
+  let sum = 0;
+  for (let k = 0; k < a.length; k++) sum += (a[k]! - b[k]!) ** 2;
+  return Math.sqrt(sum);
+};
+
+/** The angle a polygon turns through at vertex `i`, unsigned. */
+function cornerAngle(poly: readonly (readonly number[])[], i: number): number {
+  const n = poly.length;
+  const prev = poly[(i + n - 1) % n]!;
+  const cur = poly[i]!;
+  const next = poly[(i + 1) % n]!;
+  const back = distance(cur, prev);
+  const side = distance(cur, next);
+  if (side === 0 || back === 0) return Math.PI;
+  let dotProduct = 0;
+  for (let k = 0; k < cur.length; k++) {
+    dotProduct += (prev[k]! - cur[k]!) * (next[k]! - cur[k]!);
+  }
+  return Math.acos(Math.min(1, Math.max(-1, dotProduct / (back * side))));
+}
+
+/** The polygon's real corners: the vertices where it actually turns. Identity
+ * for every edge-to-edge tiling; for an isogonal one it drops the T-vertices,
+ * so the tile is measured as the regular polygon it is drawn as. */
+export function corners(
+  poly: readonly (readonly number[])[],
+): readonly (readonly number[])[] {
+  if (poly.length < 3) return poly;
+  const kept = poly.filter((_, i) => Math.abs(cornerAngle(poly, i) - Math.PI) > STRAIGHT);
+  return kept.length >= 3 ? kept : poly;
+}
+
 /**
- * Side count and regularity of a polygon, in 2D or 3D (side lengths by
+ * Side count, regularity and span of a polygon, in 2D or 3D (side lengths by
  * distance, corner angles by dot product — so flat boards, solids and the
- * immersed surfaces all go through this one function).
+ * immersed surfaces all go through this one function). Collinear vertices are
+ * dropped first (see `corners`).
  *
  * Corner angles are unsigned, i.e. a reflex corner counts as its 360°
  * complement. Every board tile but the hat monotile is convex, and for the hat
  * it only means its silhouette scores as slightly more regular than it is.
  */
-export function shapeMetrics(poly: readonly (readonly number[])[]): ShapeTone {
+export function shapeMetrics(polygon: readonly (readonly number[])[]): ShapeTone {
+  const poly = corners(polygon);
   const n = poly.length;
   if (n < 3) return { sides: n, regularity: 1 };
-  const dist = (a: readonly number[], b: readonly number[]): number => {
-    let sum = 0;
-    for (let k = 0; k < a.length; k++) sum += (a[k]! - b[k]!) ** 2;
-    return Math.sqrt(sum);
-  };
+  const dist = distance;
   let minSide = Infinity;
   let maxSide = 0;
   let minAngle = Infinity;
@@ -319,6 +382,19 @@ export function shapeMetrics(poly: readonly (readonly number[])[]): ShapeTone {
     sides: n,
     regularity: Number.isFinite(regularity) ? Math.min(1, Math.max(0, regularity)) : 1,
   };
+}
+
+/** How big a tile is: the mean distance from its centroid to its corners. Works
+ * in 2D and 3D, and is proportional to edge length for a regular polygon, so
+ * two squares in a 2:1 tiling come out 2:1. */
+export function tileSpan(polygon: readonly (readonly number[])[]): number {
+  const poly = corners(polygon);
+  const dims = poly[0]?.length ?? 2;
+  const centre = new Array(dims).fill(0) as number[];
+  for (const p of poly) for (let k = 0; k < dims; k++) centre[k]! += p[k]! / poly.length;
+  let total = 0;
+  for (const p of poly) total += distance(p, centre);
+  return total / poly.length;
 }
 
 /**
@@ -355,19 +431,26 @@ export function classifyShapes<K>(
   polygons: Iterable<[K, readonly (readonly number[])[]]>,
 ): Map<K, ShapeTone> {
   const raw = new Map<K, ShapeTone>();
+  const spans = new Map<K, number>();
   const bySides = new Map<number, number[]>();
+  const spansBySides = new Map<number, number[]>();
   // Vertices with a z are a board laid on a surface — see above.
   let curved = false;
   for (const [key, poly] of polygons) {
     const tone = shapeMetrics(poly);
     if ((poly[0]?.length ?? 2) > 2) curved = true;
     raw.set(key, tone);
+    const span = tileSpan(poly);
+    spans.set(key, span);
     let group = bySides.get(tone.sides);
     if (!group) bySides.set(tone.sides, (group = []));
     group.push(tone.regularity);
+    let sizeGroup = spansBySides.get(tone.sides);
+    if (!sizeGroup) spansBySides.set(tone.sides, (sizeGroup = []));
+    sizeGroup.push(span);
   }
 
-  const { gap, snap, minShare, minCleanGap } = SHAPE_PALETTE.cluster;
+  const { gap, snap, minShare, minCleanGap, sizeGap } = SHAPE_PALETTE.cluster;
   // sides -> the representative regularity of each distinct shape, ascending
   const classes = new Map<number, number[]>();
   for (const [sides, values] of bySides) {
@@ -411,6 +494,31 @@ export function classifyShapes<K>(
     classes.set(sides, shapes.map((s) => s.value));
   }
 
+  // sides -> the representative span of each distinct size, ascending. Split
+  // on a *relative* gap, so the scale a board happens to be drawn at never
+  // matters; one size on a curved board, for the same reason regularity gets
+  // one class there (an immersion stretches every ring of cells differently).
+  const sizes = new Map<number, number[]>();
+  for (const [sideCount, values] of spansBySides) {
+    values.sort((a, b) => a - b);
+    if (curved) {
+      sizes.set(sideCount, [values[Math.floor(values.length / 2)]!]);
+      continue;
+    }
+    const groups: number[][] = [];
+    let current: number[] = [];
+    for (const v of values) {
+      const previous = current[current.length - 1];
+      if (previous !== undefined && (v - previous) / previous > sizeGap) {
+        groups.push(current);
+        current = [];
+      }
+      current.push(v);
+    }
+    if (current.length) groups.push(current);
+    sizes.set(sideCount, groups.map((g) => g[Math.floor(g.length / 2)]!));
+  }
+
   const toned = new Map<K, ShapeTone>();
   for (const [key, tone] of raw) {
     const reps = classes.get(tone.sides)!;
@@ -420,11 +528,19 @@ export function classifyShapes<K>(
         variant = i;
       }
     }
+    const sizeReps = sizes.get(tone.sides)!;
+    const span = spans.get(key)!;
+    let size = 0;
+    for (let i = 1; i < sizeReps.length; i++) {
+      if (Math.abs(span - sizeReps[i]!) < Math.abs(span - sizeReps[size]!)) size = i;
+    }
     toned.set(key, {
       sides: tone.sides,
       regularity: reps[variant]!,
       variant,
       variantCount: reps.length,
+      size,
+      sizeCount: sizeReps.length,
     });
   }
   return toned;
@@ -467,14 +583,25 @@ function variantOffset(tone: ShapeTone): number {
   return count < 2 ? 0 : (tone.variant ?? 0) / (count - 1) - 0.5;
 }
 
+/** Where this tile's size sits among the board's sizes of the shape, in
+ * -0.5..0.5 — smallest darkest, biggest lightest; 0 when there is only one. */
+function sizeOffset(tone: ShapeTone): number {
+  const count = tone.sizeCount ?? 1;
+  return count < 2 ? 0 : (tone.size ?? 0) / (count - 1) - 0.5;
+}
+
 /** A shape's colour at a given base lightness: the side count's hue, the
  * requested chroma scaled by how regular the tile is and clamped to what the
  * gamut holds at that lightness, and the lightness itself nudged by the tile's
  * regularity and variant. */
 function toneLch(tone: ShapeTone, baseLightness: number, chroma: number): Lch {
   const clean = cleanliness(tone.regularity);
-  const { irregularChroma, lightnessSkew, variantLightness } = SHAPE_PALETTE;
-  const l = baseLightness - lightnessSkew * (1 - clean) + variantLightness * variantOffset(tone);
+  const { irregularChroma, lightnessSkew, variantLightness, sizeLightness } = SHAPE_PALETTE;
+  const l =
+    baseLightness -
+    lightnessSkew * (1 - clean) +
+    variantLightness * variantOffset(tone) +
+    sizeLightness * sizeOffset(tone);
   const h = hueForTone(tone);
   const wanted = chroma * (irregularChroma + (1 - irregularChroma) * clean);
   return { l, c: Math.min(wanted, maxChroma(l, h) * SHAPE_PALETTE.board.cap), h };
@@ -511,7 +638,7 @@ const paletteCache = new Map<string, CellPalette>();
 export function cellPalette(tone: ShapeTone, surface: BoardSurface): CellPalette {
   const key = `${surface}|${tone.sides}|${tone.regularity.toFixed(3)}|${tone.variant ?? 0}/${
     tone.variantCount ?? 1
-  }`;
+  }|${tone.size ?? 0}/${tone.sizeCount ?? 1}`;
   let palette = paletteCache.get(key);
   if (!palette) {
     const gray = boardGrays[surface];
