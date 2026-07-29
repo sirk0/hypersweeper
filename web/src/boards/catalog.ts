@@ -116,6 +116,17 @@ export const MODE_LABELS: Record<string, string> = (() => {
   return labels;
 })();
 
+/** A mode's label with the surface it is wrapped on, for the places that name
+ * a board outside the menu's hierarchy. `MODE_LABELS` alone is the tiling, and
+ * that is all the menu needs — the surface is the page the board was reached
+ * through. Anywhere boards from different surfaces sit in one list (the best
+ * times page, the record dialog), the tiling alone names several boards. */
+export function fullModeLabel(mode: string): string {
+  const label = MODE_LABELS[mode] ?? mode;
+  const surface = surfaceOf(mode);
+  return surface && surface.key !== "flat" ? `${label} · ${surface.label}` : label;
+}
+
 // Menu groupings for the 3D one-off boards (Sphere and Polyhedra).
 export const SPHERE_MODES = MENU.sphereModes as string[];
 export const POLYHEDRA_MODES = MENU.polyhedraModes as string[];

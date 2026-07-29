@@ -1,4 +1,5 @@
 import { screens, themeSpec } from "../config/screens";
+import { allBestTimes } from "../leaderboard";
 import { animationsEnabled } from "../settings";
 import { THEME_KEYS } from "./theme";
 
@@ -7,9 +8,9 @@ import { THEME_KEYS } from "./theme";
 // it, built from the same `.menu-entry` cards as every other row. That keeps
 // the phone layout, the scrolling body and the back-row idiom for free.
 //
-// Three sections: the theme picker (the pygame palettes, ported in
-// data/ui/screens.json), the animations override, and an About block naming
-// the build.
+// Four sections: the best times (a page below, like the theme picker), the
+// theme picker (the pygame palettes, ported in data/ui/screens.json), the
+// animations override, and an About block naming the build.
 
 /** The gear that opens this page, filled in `currentColor` so it follows the
  * theme's text colour.
@@ -52,6 +53,15 @@ export interface SettingsHost {
   setTheme(key: string): void;
   setDifficulty(key: string): void;
   setAnimations(pref: boolean | null): void;
+}
+
+/** How many distinct boards have a recorded time — the Best times row's
+ * subtitle. Counted over the stored keys rather than the catalog, so it costs
+ * one read however many boards the build has. */
+function boardsWithTimes(): number {
+  const modes = new Set<string>();
+  for (const key of allBestTimes().keys()) modes.add(key.slice(0, key.indexOf("|")));
+  return modes.size;
 }
 
 function heading(text: string): HTMLElement {
@@ -189,9 +199,39 @@ export function renderThemePicker(host: SettingsHost): DocumentFragment {
 }
 
 /** Build the settings page body. The caller (Menu) supplies the back row and
- * puts this into `.menu-body`; `openThemes` opens the theme page. */
-export function renderSettings(host: SettingsHost, openThemes: () => void): DocumentFragment {
+ * puts this into `.menu-body`; `openThemes` and `openBestTimes` open the pages
+ * below it. */
+export function renderSettings(
+  host: SettingsHost,
+  openThemes: () => void,
+  openBestTimes: () => void,
+): DocumentFragment {
   const frag = document.createDocumentFragment();
+
+  // -- Records ---------------------------------------------------------------
+  frag.append(heading("Records"));
+  const records = document.createElement("ul");
+  records.className = "menu-list";
+  const recordsChevron = document.createElement("span");
+  recordsChevron.className = "menu-entry-chevron";
+  recordsChevron.textContent = "›";
+  const boards = boardsWithTimes();
+  const { li: bestLi, btn: bestBtn } = buttonRow(
+    [
+      textBlock(
+        "Best times",
+        boards === 0
+          ? "No times yet"
+          : `${boards} ${boards === 1 ? "board" : "boards"} · fastest three each`,
+      ),
+      recordsChevron,
+    ],
+    openBestTimes,
+    "menu-submenu",
+  );
+  bestBtn.dataset["settingsGroup"] = "best-times";
+  records.append(bestLi);
+  frag.append(records);
 
   // -- Appearance ------------------------------------------------------------
   frag.append(heading("Appearance"));

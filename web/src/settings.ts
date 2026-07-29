@@ -1,4 +1,5 @@
 import { hasDifficulty, screens } from "./config/screens";
+import { readObject, storage } from "./storage";
 import { DEFAULT_THEME, resolveTheme } from "./ui/theme";
 
 // Persisted user preferences — the app's only stored state. Gameplay state
@@ -15,10 +16,16 @@ import { DEFAULT_THEME, resolveTheme } from "./ui/theme";
 //
 // Reading is total: every field is validated on its own, so a partial, stale,
 // hand-edited or corrupt record degrades to defaults field by field rather than
-// throwing or wiping the rest. Storage access is wrapped throughout because it
-// is not always there — Safari in private mode throws on write, a browser can
-// have storage disabled by policy, and the vitest node environment has no
-// `localStorage` at all (the same reason haptics.ts guards every global).
+// throwing or wiping the rest. Reaching storage at all, and parsing a key into
+// a record, are `storage.ts`'s job — storage is not always there (Safari in
+// private mode, a policy-disabled store, the vitest node environment), and both
+// stored records answer that the same way.
+//
+// Best times are *not* here: they are game history rather than a preference,
+// they grow with every board played, and they have their own key
+// (`leaderboard.ts`). Keeping them apart is what lets this record stay small
+// enough to re-read and rewrite on every settings change and to mirror across
+// tabs on a `storage` event.
 
 const KEY = "ms:settings";
 /** Keys earlier builds wrote, newest first. Read once, migrated into `KEY`,
@@ -46,32 +53,6 @@ export const DEFAULT_SETTINGS: Settings = {
   animations: null,
 };
 
-function storage(): Storage | null {
-  try {
-    return typeof localStorage === "undefined" ? null : localStorage;
-  } catch {
-    return null; // storage disabled by policy
-  }
-}
-
-function readKey(key: string): Record<string, unknown> | null {
-  let raw: string | null;
-  try {
-    raw = storage()?.getItem(key) ?? null;
-  } catch {
-    return null;
-  }
-  if (raw === null) return null;
-  try {
-    const parsed: unknown = JSON.parse(raw);
-    // Arrays and `null` are objects to `typeof`; neither is a settings record.
-    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return null;
-    return parsed as Record<string, unknown>;
-  } catch {
-    return null; // truncated or hand-mangled JSON
-  }
-}
-
 /** Bring a record written by an older build up to the current shape. Every
  * change so far has been additive, so there is nothing to rewrite — the field
  * readers below supply the defaults for whatever is missing. The hook exists so
@@ -86,13 +67,13 @@ function migrate(rec: Record<string, unknown>, from: number): Record<string, unk
 /** The stored record, already migrated — or `null` when there is nothing
  * readable anywhere. Also the merge base for `saveSettings`. */
 function readRecord(): Record<string, unknown> | null {
-  const current = readKey(KEY);
+  const current = readObject(KEY);
   if (current) {
     const version = typeof current["version"] === "number" ? current["version"] : 1;
     return migrate(current, version);
   }
   for (const legacy of LEGACY_KEYS) {
-    const rec = readKey(legacy);
+    const rec = readObject(legacy);
     if (rec) return migrate(rec, typeof rec["version"] === "number" ? rec["version"] : 1);
   }
   return null;

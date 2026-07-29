@@ -134,9 +134,17 @@ export class GameSession {
   }
 
   private elapsed(): number {
+    return Math.floor(this.elapsedMs() / 1000);
+  }
+
+  /** Time on the clock in milliseconds — the timer stops with the game, so
+   * after a win this is the finishing time. The HUD shows whole seconds; the
+   * leaderboard ranks on this, so two wins the counter both read as 41 still
+   * order by which was actually faster. */
+  elapsedMs(): number {
     if (this.startedAt == null) return 0;
     const end = this.stoppedAt ?? performance.now();
-    return Math.floor((end - this.startedAt) / 1000);
+    return Math.max(0, end - this.startedAt);
   }
 
   reveal(cell: CellId): void {
