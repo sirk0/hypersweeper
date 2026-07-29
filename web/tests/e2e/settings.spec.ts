@@ -26,7 +26,12 @@ test.describe("settings", () => {
     await expect(page.locator('.menu-entry[data-group="flat"]')).toBeVisible();
     await page.locator('.menu-settings-btn[data-action="settings"]').click();
 
-    await expect(page.locator(".settings-heading").first()).toHaveText("Appearance");
+    await expect(page.locator(".settings-heading")).toHaveText([
+      "Records",
+      "Appearance",
+      "Behaviour",
+      "About",
+    ]);
     // The difficulty row is meaningless on this page.
     await expect(page.locator(".menu-difficulty")).toBeHidden();
     await expect(page.locator('.menu-entry[data-group="flat"]')).toHaveCount(0);

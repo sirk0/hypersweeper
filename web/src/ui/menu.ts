@@ -10,6 +10,8 @@ import {
   pickerFamilies,
 } from "../boards/catalog";
 import { MODES } from "../boards/presets";
+import { clearBestTimes } from "../leaderboard";
+import { renderBestTimes } from "./bestTimes";
 import { menuIcon } from "./icons";
 import {
   GEAR_ICON,
@@ -278,7 +280,27 @@ export class Menu {
     this.root.classList.add("settings-open");
     this.body.replaceChildren(
       this.backRow("Settings", () => this.showRoot()),
-      renderSettings(host, () => this.showThemePicker()),
+      renderSettings(
+        host,
+        () => this.showThemePicker(),
+        () => this.showBestTimes(),
+      ),
+    );
+  }
+
+  /** The best-times page — a page below settings, like the theme picker. */
+  private showBestTimes(): void {
+    this.go(() => this.renderBestTimesPage());
+  }
+
+  private renderBestTimesPage(): void {
+    this.root.classList.add("settings-open");
+    this.body.replaceChildren(
+      this.backRow("Best times", () => this.showSettings()),
+      renderBestTimes(() => {
+        clearBestTimes();
+        this.renderBestTimesPage(); // now the empty state
+      }),
     );
   }
 

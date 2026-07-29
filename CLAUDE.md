@@ -210,9 +210,15 @@ knows its value, and dropping one never costs the others. Any lookup
 fed from a link must use `Object.hasOwn`, never `in` — see "Shareable
 board links" in `web/README.md`.
 
-The menu's gear opens a **settings** page (theme, animations toggle, build
-version, links, update check) — one more `Menu` page rather than a modal,
-with the theme picker a page below it. Theme, difficulty and the
+Winning files the time with `src/leaderboard.ts`, which keeps the **fastest
+three per board per difficulty** under its own `ms:scores` key (game history,
+not a preference — see "Best times" in `web/README.md`); a time that places
+raises the app's one real modal, `src/ui/scoreDialog.ts`, and the full list
+lives under Settings › Best times.
+
+The menu's gear opens a **settings** page (best times, theme, animations
+toggle, build version, links, update check) — one more `Menu` page rather
+than a modal, with the theme picker a page below it. Theme, difficulty and the
 animations override persist (`src/settings.ts`): one stable
 `localStorage` key holding a record that carries its own `version`, never
 a versioned key name — see "Settings and themes" in `web/README.md` before

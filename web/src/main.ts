@@ -9,8 +9,10 @@ import {
   initialOrientation,
   KEY_ROTATE_STEP,
 } from "./render/renderer";
+import { bestTimes, recordTime, type ScoreEntry } from "./leaderboard";
 import { Hud } from "./ui/hud";
 import { Menu } from "./ui/menu";
+import { openScoreDialog, type ScoreDialogHandle } from "./ui/scoreDialog";
 import type { SettingsHost } from "./ui/settings";
 import { applyTheme } from "./ui/theme";
 import {
@@ -25,6 +27,12 @@ import { installTestHook } from "./testHook";
 /** Zoom step for one press of the +/- keys. */
 const ZOOM_KEY_STEP = 1.3;
 
+/** How long the record dialog waits after a win, so the board's win wave and
+ * the flags cascading in are seen before a card covers them. Skipped when
+ * animations are off — there is then nothing to wait for, and e2e runs with
+ * them off. */
+const RECORD_DIALOG_DELAY_MS = 1100;
+
 // App bootstrap: menu launches a ported board; deep links start one directly;
 // input drives reveal/flag/chord (and, on 3D boards, drag/arrow-key rotation)
 // through the GameSession; the HUD and menu render from the shared UI-screen
@@ -37,6 +45,16 @@ class App {
   private screen: "menu" | "game" = "menu";
   private flagMode = false;
   private hovered: CellId | null = null;
+  /** The record window, while it is up. */
+  private scoreDialog: ScoreDialogHandle | null = null;
+  /** Its pending open (the delay that lets the win animation play), so a
+   * restart or a walk back to the menu during that window cancels it rather
+   * than popping a card over the next board. */
+  private scoreDialogTimer = 0;
+  /** Whether this game's outcome has been through the leaderboard. One win is
+   * one record: `afterMove` runs on every move, and the timer tick and any
+   * further clicks on a finished board must not file it again. */
+  private scored = false;
   /** Stored preferences (theme, difficulty, animations) — the app's only
    * persisted state. */
   private settings: Settings = loadSettings();
@@ -58,7 +76,7 @@ class App {
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
-    ui: HTMLElement,
+    private readonly ui: HTMLElement,
   ) {
     applyTheme(this.settings.theme); // before anything measures or paints
     this.insetProbe = document.createElement("div");
@@ -207,6 +225,8 @@ class App {
     difficulty: string,
     opts: { seed?: number; mines?: CellId[] } = {},
   ): void {
+    this.dismissScoreDialog();
+    this.scored = false;
     this.session = new GameSession(mode, difficulty, {
       ...(opts.seed !== undefined ? { seed: opts.seed } : {}),
       ...(opts.mines ? { minePositions: opts.mines } : {}),
@@ -227,6 +247,7 @@ class App {
   }
 
   private showMenu(): void {
+    this.dismissScoreDialog();
     this.syncLocation(""); // the menu is not a board; drop the board's link
     this.screen = "menu";
     this.session = null;
@@ -402,6 +423,64 @@ class App {
   private afterMove(): void {
     this.syncHud();
     this.renderer.markDirty();
+    this.checkRecord();
+  }
+
+  // -- best times ------------------------------------------------------------
+
+  /** File a win with the leaderboard, and put the record window up when it
+   * made the board's top three. Every move funnels through `afterMove`, so
+   * this is the one place a finished game is noticed — however it finished
+   * (tap, chord, right-click, the test seam). A loss records nothing. */
+  private checkRecord(): void {
+    const session = this.session;
+    if (!session || this.scored || session.status !== "won") return;
+    this.scored = true;
+    const placed = recordTime(session.mode, session.difficulty, session.elapsedMs());
+    if (!placed) return;
+    const open = (): void => {
+      this.scoreDialogTimer = 0;
+      // The board can have been left or restarted during the delay.
+      if (this.screen !== "game" || this.session !== session) return;
+      this.showScoreDialog(session, placed.rank, placed.entries);
+    };
+    if (this.animationsEnabled) {
+      this.scoreDialogTimer = window.setTimeout(open, RECORD_DIALOG_DELAY_MS);
+    } else {
+      open();
+    }
+  }
+
+  private showScoreDialog(
+    session: GameSession,
+    rank: number,
+    entries: ScoreEntry[],
+  ): void {
+    this.dismissScoreDialog();
+    this.scoreDialog = openScoreDialog(this.ui, {
+      mode: session.mode,
+      difficulty: session.difficulty,
+      rank,
+      entries,
+      animate: this.animationsEnabled,
+      onPlayAgain: () => this.startGame(session.mode, session.difficulty),
+      onMenu: () => this.showMenu(),
+      onClose: () => {
+        this.scoreDialog = null;
+      },
+    });
+  }
+
+  /** Take the record window down, and cancel one that is waiting on the win
+   * animation. Called on restart and on the way back to the menu, so the card
+   * never outlives the board it is about. */
+  private dismissScoreDialog(): void {
+    if (this.scoreDialogTimer) {
+      window.clearTimeout(this.scoreDialogTimer);
+      this.scoreDialogTimer = 0;
+    }
+    this.scoreDialog?.close();
+    this.scoreDialog = null;
   }
 
   private tickTimer(): void {
@@ -488,6 +567,7 @@ class App {
         this.animationsEnabled = enabled;
         this.session?.mesh.setAnimationsEnabled(enabled);
       },
+      bestTimes: (mode, difficulty) => bestTimes(mode, difficulty),
       state: () => {
         const s = this.session;
         return {

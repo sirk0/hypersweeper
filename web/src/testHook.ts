@@ -49,6 +49,9 @@ export interface MsHook {
   /** Enable or disable board animations (reveal ripple, flag pop, lose shake).
    * e2e tests disable them so a screenshot captures the settled frame. */
   animations(enabled: boolean): void;
+  /** The stored best times for a board, fastest first — so a test can assert
+   * what a win filed without reaching into the storage record's shape. */
+  bestTimes(mode: string, difficulty: string): { ms: number; at: number }[];
 }
 
 declare global {

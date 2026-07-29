@@ -370,6 +370,10 @@ Three things that are easy to get wrong when touching this:
 - `src/ui/settings.ts` / `src/ui/theme.ts` / `src/settings.ts` — the settings
   page, the CSS-custom-property theme applier, and the stored preferences (see
   "Settings and themes").
+- `src/leaderboard.ts` / `src/ui/scoreDialog.ts` / `src/ui/bestTimes.ts` — the
+  stored best times, the window a placing win puts up and the page that lists
+  them (see "Best times"). `src/storage.ts` holds the two `localStorage`
+  helpers both stored records share.
 - `src/testHook.ts` — the `window.__ms` seam Playwright drives.
 
 ## Shareable board links
@@ -467,6 +471,56 @@ fields need no bump, since an old record simply lacks them.
 (see `vite.config.ts`, declared in `src/vite-env.d.ts`). The version tracks
 `package.json`, which `bump-version.yml` keeps in lockstep with
 `pyproject.toml` on every push to master.
+
+## Best times
+
+Winning a board files the time with `src/leaderboard.ts`, which keeps the
+**fastest three per board per difficulty** on the device; when the time places,
+a window says so.
+
+- **Its own key.** `ms:scores`, not the settings record. Best times are game
+  history rather than a preference: they grow with every board played, while
+  `ms:settings` is small on purpose so it can be rewritten on every change and
+  mirrored across tabs on a `storage` event. Both records follow the same rules
+  (one stable key holding a versioned record, total field-by-field reads,
+  guarded writes) and share `src/storage.ts`.
+- **Milliseconds rank, seconds show.** The HUD counter shows whole seconds, and
+  so does every list — but entries store `ms`, so two wins the counter both read
+  as `41` still order by which was actually faster. A time *equal* to a stored
+  one ranks below it: you have to beat a record to take its place. That case is
+  not exotic — on a small board a first click that floods the field wins in ~0 ms.
+- **Nothing readable is ever deleted.** A board key this build does not know (a
+  renamed mode, a board dropped from this deploy) is carried through every
+  write, and a board whose entry list is corrupt costs that board's records
+  rather than the whole leaderboard. Times are sorted on read, so a hand-edited
+  file still lists sensibly.
+- **A refused write still reports the rank.** Private mode and a full quota both
+  throw on `setItem`; the player did just set that time, so the window says so
+  and the record simply is not there next launch — the bargain `saveSettings`
+  makes.
+- **One win is one record.** `App.checkRecord` runs from `afterMove`, the funnel
+  every move goes through, and `App.scored` gates it, so further clicks on a
+  finished board (or the timer tick) cannot file it twice. A loss records
+  nothing.
+
+The window (`src/ui/scoreDialog.ts`) is the app's **one modal** — everything
+else that looks like a page is a page, the settings screen included. A record
+is a moment, it belongs over the board just cleared, and it has to be
+dismissible back to it, so it is a real overlay and carries the obligations:
+Escape and a backdrop click close it, focus moves in on open and back out on
+close, Tab is trapped, and its colours are all theme custom properties. It waits
+`RECORD_DIALOG_DELAY_MS` for the win wave to play, and opens straight away when
+animations are off — which is also why e2e (run under emulated reduced motion)
+sees it immediately. Leaving or restarting inside that gap cancels it.
+
+The list lives under **Settings › Best times** (`src/ui/bestTimes.ts`), one more
+`Menu` page like the theme picker, ordered by the catalog rather than by the
+storage record. Boards are named with `fullModeLabel` — the menu can call a
+wrapped tiling by its tiling alone because the surface is the page it was
+reached through, but in one flat list "Triakis triangular" names two boards.
+Clearing arms on the first tap and fires on the second, rather than calling
+`window.confirm`, which an installed iOS web app renders as a URL-badged alert
+that reads like a browser warning.
 
 ## Shared configuration
 

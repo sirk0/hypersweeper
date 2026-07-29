@@ -622,6 +622,233 @@ body {
   color: var(--muted);
 }
 
+/* --- Best times page --- */
+.best-row {
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.best-times {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.best-time {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.best-time.best {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.best-empty {
+  margin: 24px 0 0;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+/* Set off from the last board's list. The settings-page rule above zeroes the
+   block margins of every list in the body, so this has to out-specify it. */
+.menu.settings-open .menu-body > .menu-list.best-clear-row {
+  margin-top: 26px;
+}
+
+.settings-danger {
+  justify-content: center;
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.settings-danger.armed {
+  border-color: var(--danger);
+}
+
+/* --- Record dialog --- */
+/* The one modal in the app (everything else that looks like a page is a page).
+   It sits over the finished board, so the backdrop is a scrim rather than an
+   opaque field — the board that was just cleared stays visible behind it. Every
+   colour is a theme property, so it follows all seven palettes. */
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(20px, env(safe-area-inset-top)) 20px max(20px, env(safe-area-inset-bottom));
+  background: rgb(0 0 0 / 35%);
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.dialog-backdrop.open {
+  opacity: 1;
+}
+
+.dialog {
+  position: relative;
+  width: min(340px, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  padding: 22px 20px 18px;
+  text-align: center;
+  background: var(--panel);
+  backdrop-filter: var(--panel-blur);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  transform: translateY(8px) scale(0.97);
+  transition:
+    transform 160ms ease,
+    opacity 160ms ease;
+}
+
+.dialog-backdrop.open .dialog {
+  transform: none;
+}
+
+.dialog-medal {
+  display: block;
+  font-size: 44px;
+  line-height: 1;
+}
+
+.dialog-title {
+  margin: 10px 0 2px;
+  font-size: 20px;
+}
+
+.dialog-subtitle {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.score-list {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.score-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--bg);
+  border: 1px solid transparent;
+  color: var(--muted);
+}
+
+/* The row just set — the reason the window is up. */
+.score-row.current {
+  background: var(--selected);
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.score-medal {
+  flex: none;
+  font-size: 15px;
+}
+
+/* The number and its unit travel together, so the row's gap does not open up
+   between "41" and "s". */
+.score-value {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.score-time {
+  font-size: 17px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.score-unit {
+  font-size: 13px;
+}
+
+.score-when {
+  flex: none;
+  width: 62px;
+  text-align: right;
+  font-size: 12px;
+}
+
+.dialog-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.dialog-btn {
+  flex: 1;
+  touch-action: manipulation;
+  padding: 11px 12px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.dialog-btn.dialog-primary {
+  color: var(--on-accent);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.dialog-close {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  touch-action: manipulation;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  font: inherit;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.dialog-close:hover,
+.dialog-close:active {
+  color: var(--text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dialog-backdrop,
+  .dialog {
+    transition: none;
+  }
+}
+
 /* Short viewports (a small phone, or landscape): trim the menu rows so the
    longest list — the eight uniform / dual tilings — still fits without
    scrolling where it can. */
