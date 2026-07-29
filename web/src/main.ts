@@ -44,15 +44,14 @@ class App {
   // screen overrides it; the `window.__ms.animations(false)` test seam overrides
   // both for deterministic e2e.
   private animationsEnabled = animationsEnabled(this.settings.animations);
-  /** An offscreen element kept at `height: 100dvh`, read back in
-   * `syncViewport` as a floor under the `visualViewport` measurement —
-   * *only* for a standalone (home-screen) launch, see there. */
-  private readonly viewportProbe: HTMLElement;
-  /** True for a home-screen/standalone launch: no browser chrome exists at
-   * all, so the app should always fill the whole screen. `visualViewport`
-   * is trusted for an ordinary browser tab (see `syncViewport`), where a
-   * shorter reading legitimately means the toolbar is covering that strip —
-   * `tests/e2e/layout.spec.ts` pins the board sitting above it there. */
+  /** An offscreen element kept at the height of the top safe-area inset
+   * (`--safe-top`), the one CSS length `resolveHeight` has to read back. */
+  private readonly insetProbe: HTMLElement;
+  /** True for a home-screen/standalone launch, the only place the status-bar
+   * shortfall `resolveHeight` corrects can happen. An ordinary browser tab is
+   * left alone: there a viewport shorter than the screen is just the toolbar,
+   * genuinely covering that strip — `tests/e2e/layout.spec.ts` pins the board
+   * sitting above it. */
   private readonly standalone: boolean =
     window.matchMedia?.("(display-mode: standalone)").matches === true ||
     (navigator as unknown as { standalone?: boolean }).standalone === true;
@@ -62,13 +61,13 @@ class App {
     ui: HTMLElement,
   ) {
     applyTheme(this.settings.theme); // before anything measures or paints
-    this.viewportProbe = document.createElement("div");
-    this.viewportProbe.setAttribute(
+    this.insetProbe = document.createElement("div");
+    this.insetProbe.setAttribute(
       "style",
-      "position:fixed; top:0; left:0; width:0; height:100dvh; " +
+      "position:fixed; top:0; left:0; width:0; height:var(--safe-top); " +
         "visibility:hidden; pointer-events:none;",
     );
-    document.body.append(this.viewportProbe);
+    document.body.append(this.insetProbe);
     this.syncViewport(); // size the layout box before anything measures it
     this.renderer = new BoardRenderer(canvas);
     this.hud = new Hud((action) => this.onAction(action));
@@ -254,21 +253,41 @@ class App {
     // blocks browser zoom (controls.ts, styles.css) — but a stray zoom (iOS
     // accessibility, a desktop ctrl-+) must not scramble the board.
     const h = vv ? vv.height * (vv.scale || 1) : window.innerHeight;
-    // No toolbar exists at all in a standalone launch, so nothing should ever
-    // shrink the app below the full screen. Some WebKit builds report
-    // `visualViewport.height` short of it there anyway (seen as a blank strip
-    // at the bottom, unpainted by anything since #board/#ui stop above it) —
-    // floor `h` with a live `100dvh` reading, which does not carry the same
-    // bug, in that case only. An ordinary tab trusts `h` as-is: there a
-    // shorter reading legitimately means the toolbar covers that strip, and
-    // `100dvh` does not reliably track it (`tests/e2e/layout.spec.ts`).
-    const resolved = this.standalone
-      ? Math.max(h, this.viewportProbe.getBoundingClientRect().height)
-      : h;
     document.documentElement.style.setProperty(
       "--app-h",
-      `${Math.round(resolved)}px`,
+      `${Math.round(this.resolveHeight(h))}px`,
     );
+  }
+
+  /** The measured viewport height `h`, corrected for the iOS standalone
+   * status-bar shortfall.
+   *
+   * A home-screen launch runs `black-translucent` (index.html), so the page is
+   * drawn from the very top of the screen, under the status bar — but WebKit
+   * sizes the viewport as if the page started *below* it. `visualViewport`,
+   * `innerHeight` and `100dvh` alike then come back short by exactly the top
+   * safe-area inset (62px of an iPhone 16 Pro's 874), the app stops that far
+   * above the bottom of the screen, and WebKit fills the strip below it with
+   * the web view's own white — the band the player sees, in every theme.
+   *
+   * That gives the bug an exact signature: a standalone launch whose shortfall
+   * against the screen *is* the top inset. Match on it and lay out in the full
+   * screen height; leave every other case on the measured height, since a
+   * shortfall generally means something really is covering that strip (a
+   * browser toolbar, an iPad PWA sharing the screen in Split View).
+   * styles.css grows `html` by the same inset so the strip gets painted. */
+  private resolveHeight(h: number): number {
+    if (!this.standalone) return h;
+    const inset = this.insetProbe.getBoundingClientRect().height;
+    if (inset <= 0) return h;
+    // Whether `screen` swaps its axes on rotation differs by browser and
+    // version, so take the one that matches the orientation we are in.
+    const { width, height } = window.screen;
+    const screenH =
+      window.innerHeight >= window.innerWidth
+        ? Math.max(width, height)
+        : Math.min(width, height);
+    return Math.abs(screenH - h - inset) <= 1 ? screenH : h;
   }
 
   /** Re-frame the board on viewport changes, reserving the current header

@@ -48,6 +48,40 @@ async function stubToolbar(
   }, height);
 }
 
+/** Reproduce an iOS home-screen launch under the `black-translucent` status
+ * bar: `navigator.standalone` is set, the top safe-area inset is `inset` CSS px
+ * (stubbed through `--safe-top`, which is why main.ts reads the inset from
+ * there), and the screen is `screenHeight` tall while the window — what every
+ * viewport API reports — is the Playwright viewport. WebKit's bug is the case
+ * where the window is short of the screen by exactly the inset. */
+async function stubStandalone(
+  page: import("@playwright/test").Page,
+  { inset, screenHeight }: { inset: number; screenHeight: number },
+): Promise<void> {
+  await page.addInitScript(
+    ({ inset, screenHeight }: { inset: number; screenHeight: number }) => {
+      Object.defineProperty(navigator, "standalone", {
+        configurable: true,
+        get: () => true,
+      });
+      const real = window.screen;
+      Object.defineProperty(window, "screen", {
+        configurable: true,
+        get: () => ({ ...real, width: window.innerWidth, height: screenHeight }),
+      });
+      // An inline custom property outranks the `env()` one styles.css declares.
+      // The document element may not exist this early; retry once parsing has
+      // built it, still before the deferred module script runs.
+      const apply = (): boolean => {
+        document.documentElement?.style.setProperty("--safe-top", `${inset}px`);
+        return document.documentElement != null;
+      };
+      if (!apply()) document.addEventListener("readystatechange", apply);
+    },
+    { inset, screenHeight },
+  );
+}
+
 /** Vertical span of the board on screen, from the cell centres the seam
  * reports (a flat board is symmetric, so their midpoint is its centre). */
 async function boardBand(
@@ -120,6 +154,42 @@ test.describe("viewport layout", () => {
     expect(c.canvasWidth).toBeCloseTo(c.innerWidth, 0);
     const band = await boardBand(page);
     expect(band.center).toBeCloseTo((c.hudBottom + c.innerHeight) / 2, 0);
+  });
+
+  // A home-screen launch draws under the status bar (`black-translucent`), but
+  // WebKit measures the viewport as if it started below it: every height API
+  // comes back short by exactly the top safe-area inset, so the app used to
+  // stop that far above the bottom of the screen and WebKit painted the strip
+  // below it white — in every theme, since the WebGL canvas is transparent.
+  // 62px of an iPhone 16 Pro's 874 (the reported bug).
+  test("a standalone launch fills the screen the status bar is measured out of", async ({
+    page,
+  }) => {
+    await stubStandalone(page, { inset: 62, screenHeight: 874 });
+    await page.setViewportSize({ width: 402, height: 874 - 62 });
+    await page.goto("/?mode=square&difficulty=hard&seed=1");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+
+    const c = await chrome(page);
+    expect(c.innerHeight).toBe(812); // what WebKit reports, short of the screen
+    expect(c.canvasHeight).toBeCloseTo(874, 0); // what the app lays out in
+    const band = await boardBand(page);
+    expect(band.center).toBeCloseTo((c.hudBottom + 874) / 2, 0);
+  });
+
+  // Only that exact signature is corrected. An iPad PWA in Split View is
+  // standalone and far shorter than the screen too, and there the window really
+  // is all the app has.
+  test("a standalone window that is short for another reason is left alone", async ({
+    page,
+  }) => {
+    await stubStandalone(page, { inset: 62, screenHeight: 1180 });
+    await page.setViewportSize({ width: 402, height: 812 });
+    await page.goto("/?mode=square&difficulty=hard&seed=1");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+
+    const c = await chrome(page);
+    expect(c.canvasHeight).toBeCloseTo(812, 0);
   });
 
   test("the menu keeps its difficulty row above the browser chrome", async ({

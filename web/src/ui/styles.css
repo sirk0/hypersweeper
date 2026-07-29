@@ -63,11 +63,36 @@
      tracks the toolbars, and main.ts overwrites this with the exact
      `visualViewport` height (the signal the pygame web presenter uses too). */
   --app-h: 100vh;
+  /* The status-bar / notch strip at the top of the screen, which
+     `viewport-fit=cover` (index.html) hands the page rather than reserving.
+     The header and the menu clear it with `env(safe-area-inset-top)` directly;
+     this copy exists because two places need the *number*: the rule below, and
+     main.ts, which reads it back off a probe element (and which an e2e test can
+     stub by setting this property). */
+  --safe-top: env(safe-area-inset-top, 0px);
 }
 
 @supports (height: 100dvh) {
   :root {
     --app-h: 100dvh;
+  }
+}
+
+/* iOS home-screen launch, `apple-mobile-web-app-status-bar-style:
+   black-translucent`: the page is drawn from the very top of the screen, under
+   the status bar, but WebKit sizes the viewport as if it started *below* it —
+   so the document ends one status bar short of the bottom of the screen and
+   WebKit fills the leftover strip with the web view's own white, which no theme
+   touches (the WebGL canvas is transparent, so there is nothing else down
+   there). Growing the root by that same inset takes the page background all the
+   way down; main.ts lays the app itself out into it, see `resolveHeight`.
+   Deliberately only `min-height`: clipping the growth back off with an
+   `overflow: hidden` here risks taking the paint with it, and the few px of
+   page this leaves scrollable move nothing on screen — the app is fixed layers
+   over a field that is flat in every theme but glass. */
+@media (display-mode: standalone) {
+  html {
+    min-height: calc(100% + var(--safe-top));
   }
 }
 

@@ -226,6 +226,23 @@ Practical knowledge for verifying changes by actually running the app
   (headless Chromium has no toolbar). One trap: the canvas is a *replaced*
   element, so state both its width and height — an auto one resolves to the
   drawing buffer's size, not to the offsets.
+- **One measurement is not to be trusted: an iOS home-screen launch.** The app
+  runs `apple-mobile-web-app-status-bar-style: black-translucent`, so the page
+  is drawn from the very top of the screen, under the status bar — but WebKit
+  sizes the viewport as if the page started *below* it. `visualViewport`,
+  `innerHeight` **and `100dvh` alike** come back short by exactly the top
+  safe-area inset (62px of an iPhone 16 Pro's 874), the app stops that far above
+  the bottom of the screen, and WebKit fills the strip below it with the web
+  view's own white — a band no theme touches, since the WebGL canvas is
+  transparent. Two halves to the fix, and it needs both: `App.resolveHeight`
+  lays the app out in the full screen height, and the `display-mode: standalone`
+  rule in `styles.css` grows `html` by the same inset so the strip is painted.
+  Correct *only* that exact signature — a standalone launch whose shortfall
+  against `screen` **is** the top inset — because a shortfall otherwise means
+  something really is covering the strip (a browser toolbar, an iPad PWA in
+  Split View); both cases are pinned in `layout.spec.ts`. The inset reaches JS
+  through the `--safe-top` custom property, read off a hidden probe element,
+  which is also the seam the test stubs it through.
 - **A solid is framed by its silhouette, not by its bounding sphere**
   (`BoardRenderer.frameSolid`). Boards are scaled to the unit sphere, but only
   a ball fills one: a cylinder or a Klein bottle covered about half the width
