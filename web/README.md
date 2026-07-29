@@ -32,6 +32,23 @@ and pan, and the browser's page zoom is blocked outright — see **Zoom** below.
 enforced in CI) keeps the shipped JS + CSS under the **250 KB gzip** budget
 (currently ~145 KB). **All 112 modes, polished.**
 
+**M8 — Congruent-rectangle bonds.** The five brick bonds tiled by one congruent
+**rectangle** rather than by regular polygons (`src/boards/tilings.ts`, ported
+verbatim from the Python side): stacked bond, running bond, basket weave, the
+same weave three bricks at a time, and herringbone. Bricks are length 1 by
+height `r`, so a preset's `scale` is px per brick length; each bond is one
+rectangular domain — one brick, two, or a 2 x 2 block of them — and the
+staggered four reuse `insertTVertices`, since a brick corner landing inside a
+neighbour's edge is the same T-vertex the isogonal family has. The flat tiling
+picker gains a **Congruent rectangles** family submenu (plane only, no wraps
+yet), and the icon generator gains a `"domain"` patch style: a bond is drawn as
+whole periods of itself, the only figure that shows a stagger (its vertex
+rosette is two or three bricks — an L or a plus sign). Two of the five are
+affine copies of boards the game already had — a stacked bond is the classic
+8-neighbour square grid stretched and a running bond is the offset square
+tiling stretched — so they play as those do and are here for the look. **All
+117 modes.**
+
 **M7 — Isogonal tilings.** The six isogonal tilings by convex regular polygons
 that are **not edge to edge** (`src/boards/tilings.ts`): offset square,
 staggered triangular, Pythagorean, rotated hexagonal, rotated triangular and
@@ -223,7 +240,9 @@ Practical knowledge for verifying changes by actually running the app
   keys them: a tiling key, a family key, a mode name or a home-page group key,
   painted in the board's shape colours. Most are **generated from the thing
   they stand for** rather than drawn — a uniform/Laves row from a patch of the
-  real `_ArchTemplate` tiling, a sphere row from the real solid projected and
+  real `_ArchTemplate` tiling (a tile with its ring of neighbours, a vertex
+  rosette, or whole periods for a rectangle bond, per `PATCH_STYLE`), a sphere
+  row from the real solid projected and
   back-face culled, a surface row from the real immersion meshed, depth-sorted
   and flat-shaded — so they cannot drift from the boards),
   both **rendered from the shared UI-screen config**.

@@ -26,9 +26,15 @@ Pick a surface, then a tiling:
   3.4.6.4, trihexagonal 3.6.3.6, truncated hexagonal 3.12.12, truncated
   trihexagonal 4.6.12 and truncated square 4.8.8 — and their eight Laves
   (dual) tilings, from Cairo pentagonal and rhombille to the kisrhombille.
-  The menu groups these as **Regular**, **Uniform** and **Laves**; every
-  tiling also wraps the torus, cylinder and (unless chiral) the Möbius
-  strip below
+  Then, tiled by one congruent rectangle rather than by regular polygons,
+  the five brick bonds — stacked bond, running bond, basket weave, the same
+  weave three bricks at a time, and herringbone — where all the interest is
+  in how the courses are staggered.
+  The menu groups these as **Regular**, **Uniform**, **Laves**, **Isogonal**
+  (six tilings by regular polygons that are *not* edge to edge — a tile's
+  corner in the middle of its neighbour's edge), **Congruent rectangles** and
+  **Aperiodic**; the uniform and Laves tilings also wrap the torus, cylinder
+  and (unless chiral) the Möbius strip below
 - **Sphere (3D)** — a pentagonal hexecontahedron (60 pentagons, 7
   neighbors), a chamfered dodecahedron (12 pentagons + 30 hexagons), the
   Goldberg polyhedron GP(3,0) (12 pentagons + 80 hexagons), a geodesic

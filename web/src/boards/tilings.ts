@@ -984,9 +984,95 @@ function threescaletriTemplate(ratio = 0.5): ArchTemplate {
   return template([3, 3, 3, 3], width, height, cells, { mirrored: false });
 }
 
+// -- congruent-rectangle (brick bond) tilings ---------------------------------
+//
+// Drop the "regular polygon" requirement and one congruent *rectangle* tiles
+// the plane in as many ways as the rows can be staggered — the bonds a brick
+// wall or a parquet floor is laid in. Five are built below, all with bricks of
+// length 1 and height `r`, so the preset `scale` is px per brick length.
+//
+// Only the stacked bond is edge to edge; in the other four a brick corner lands
+// in the middle of a neighbour's edge, which `insertTVertices` records exactly
+// as it does for the isogonal family. They are flat-only for now (no wrap
+// builders or per-surface windows). Port of the same section in
+// boards/tilings.py — the conformance oracle compares them cell for cell.
+
+/** The rectangle with its lower-left corner at (x, y). */
+function brick(x: number, y: number, length: number, height: number): Vertex[] {
+  return [[x, y], [x + length, y], [x + length, y + height], [x, y + height]];
+}
+
+function stackedbondTemplate(ratio = 0.5): ArchTemplate {
+  // Stacked bond (pmm): bricks of length 1 and height `ratio` in a plain grid,
+  // every row aligned with the one below. One brick per domain, and the only
+  // bond here that *is* edge to edge — four brick corners at every vertex, the
+  // square tiling stretched. Both midlines are mirror lines.
+  return template([4], 1, ratio, [["brick", brick(0, 0, 1, ratio)]]);
+}
+
+function runningbondTemplate(ratio = 0.5): ArchTemplate {
+  // Running bond (cmm), the brick wall: rows of bricks, each row shifted half
+  // a brick against the one below, so every vertex is two brick corners
+  // against the middle of a third brick's edge (90 + 90 + 180). The offset
+  // square tiling stretched; like it, the domain runs from a row's centreline
+  // so the template midline is a mirror line.
+  const r = ratio;
+  return template([4], 1, 2 * r, [
+    ["brick0", brick(0, -r / 2, 1, r)],
+    ["brick1", brick(-0.5, r / 2, 1, r)],
+  ]);
+}
+
+function basketweaveTemplate(group = 2): ArchTemplate {
+  // Basket weave (p4g): `group` bricks of height 1/`group` laid side by side
+  // make a unit square block, and the blocks alternate direction on a
+  // checkerboard — the woven look, each pair of bricks crossing the pair it
+  // lies against. The 2 x 2 domain holds four blocks, so 4*`group` bricks.
+  // p4g has no plain horizontal mirror: reflecting the checkerboard swaps the
+  // two block directions, and only the extra half-period shift of a glide puts
+  // them back (hence glide). A brick centre is not a rotation centre here (a
+  // half-turn about one carries its block half a block off), so the flat
+  // window is pinned to a block *corner*, where four blocks meet: the
+  // quarter-turn centre that takes each block to the perpendicular one.
+  const r = 1 / group;
+  const polygons: [string, Vertex[]][] = [];
+  for (let bx = 0; bx < 2; bx++) {
+    for (let by = 0; by < 2; by++) {
+      for (let k = 0; k < group; k++) {
+        const polygon =
+          (bx + by) % 2 === 0
+            ? brick(bx, by + k * r, 1, r) // a block of horizontal bricks
+            : brick(bx + k * r, by, r, 1); // ... of vertical ones
+        polygons.push([`b${bx}${by}_${k}`, polygon]);
+      }
+    }
+  }
+  return template([4], 2, 2, polygons, { glide: true, centre: [0, 0] });
+}
+
+function herringboneTemplate(): ArchTemplate {
+  // Herringbone (pgg): each brick's end butts against the side of the next, so
+  // the bricks run in two perpendicular directions and the pattern advances
+  // along the diagonals in chevrons. Its unit is the L-shaped pair of one
+  // horizontal and one vertical brick, on the translation lattice
+  // (r, -r) / (3r, r) — diagonal, which is why the chevrons are; the
+  // axis-aligned superlattice of that is the 4r x 4r (= 2 x 2) domain, holding
+  // eight bricks. The 2:1 brick is what makes the L pair tile, so unlike the
+  // other bonds this one has no free ratio. pgg has only glide reflections and
+  // no mirror at all; every brick centre is a half-turn centre, so the default
+  // biggest-tile window rule already lands on one.
+  const r = 0.5;
+  const polygons: [string, Vertex[]][] = [
+    ["h", brick(0, 0, 1, r)],
+    ["v", brick(1, 0, r, 1)],
+  ];
+  const cells = periodicDomain([r, -r], [3 * r, r], 2, 2, polygons);
+  return template([4], 2, 2, cells, { mirrored: false });
+}
+
 // -- registry ----------------------------------------------------------------
 
-export type ArchFamily = "uniform" | "dual" | "isogonal";
+export type ArchFamily = "uniform" | "dual" | "isogonal" | "rectangle";
 
 export interface ArchTiling {
   key: string;
@@ -994,9 +1080,10 @@ export interface ArchTiling {
   config: number[];
   edgeDirections: number;
   template: () => ArchTemplate;
-  /** "uniform" (Archimedean), "dual" (Laves) or "isogonal" (not edge to
-   * edge). The uniform and isogonal families are vertex-transitive; the duals
-   * are face-transitive instead. */
+  /** "uniform" (Archimedean), "dual" (Laves), "isogonal" (not edge to edge) or
+   * "rectangle" (a bond of congruent rectangles, not edge to edge either). The
+   * uniform and isogonal families are vertex-transitive; the duals and the
+   * bonds are face-transitive instead. */
   family: ArchFamily;
   /** The tiling maps onto itself under some 180° rotation — true of every
    * wallpaper group here except p3 (three-scale triangular). */
@@ -1035,6 +1122,16 @@ export const ARCH_TILINGS: ArchTiling[] = [
   { key: "rotatedhex", label: "Rotated hexagonal", config: [3, 6, 6], edgeDirections: 6, template: rotatedhexTemplate, family: "isogonal", halfTurn: true },
   { key: "rotatedtri", label: "Rotated triangular", config: [3, 3, 6], edgeDirections: 6, template: rotatedtriTemplate, family: "isogonal", halfTurn: true },
   { key: "threescaletri", label: "Three-scale triangular", config: [3, 3, 3, 3], edgeDirections: 3, template: threescaletriTemplate, family: "isogonal", halfTurn: false },
+  // the bonds tiled by one congruent rectangle. What tells these apart is the
+  // stagger of their rows, not a vertex or tile symbol — neither is even well
+  // defined across the family (the three-brick basket weave has two tile
+  // orbits, its middle brick sitting differently from the outer two) — so
+  // config is just the tile: one quadrilateral.
+  { key: "stackedbond", label: "Stacked bond", config: [4], edgeDirections: 2, template: stackedbondTemplate, family: "rectangle", halfTurn: true },
+  { key: "runningbond", label: "Running bond", config: [4], edgeDirections: 2, template: runningbondTemplate, family: "rectangle", halfTurn: true },
+  { key: "basketweave", label: "Basket weave", config: [4], edgeDirections: 2, template: basketweaveTemplate, family: "rectangle", halfTurn: true },
+  { key: "basketweave3", label: "Basket weave 3x3", config: [4], edgeDirections: 2, template: () => basketweaveTemplate(3), family: "rectangle", halfTurn: true },
+  { key: "herringbone", label: "Herringbone", config: [4], edgeDirections: 2, template: herringboneTemplate, family: "rectangle", halfTurn: true },
 ];
 
 const ARCH_BY_KEY = new Map(ARCH_TILINGS.map((t) => [t.key, t]));

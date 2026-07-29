@@ -4,6 +4,7 @@ import {
   ISOGONAL_ARCH,
   MENU,
   POLYHEDRA_MODES,
+  RECTANGLE_ARCH,
   SPHERE_MODES,
   SURFACES,
   TILINGS_BY_KEY,
@@ -14,8 +15,9 @@ import {
 } from "../../src/boards/catalog";
 import { MODES } from "../../src/boards/presets";
 
-// The catalog derivations: the uniform / Laves / isogonal families lifted from
-// the ARCH_TILINGS registry, chirality and flat-only gating, and the guarantee
+// The catalog derivations: the uniform / Laves / isogonal / rectangle families
+// lifted from the ARCH_TILINGS registry, chirality and flat-only gating, and
+// the guarantee
 // that every built mode is reachable through the geometry-first menu (the
 // picker per surface plus the sphere / polyhedra groups). Mirrors catalog.py's
 // family split and picker_modes reachability.
@@ -23,11 +25,14 @@ import { MODES } from "../../src/boards/presets";
 const MANIFOLD_ORDER = MENU.manifoldOrder as string[];
 
 describe("catalog families", () => {
-  it("splits the template tilings into eight uniform, eight dual, six isogonal", () => {
+  it("splits the template tilings into 8 uniform, 8 dual, 6 isogonal, 5 bonds", () => {
     expect(UNIFORM_ARCH.length).toBe(8);
     expect(DUAL_ARCH.length).toBe(8);
     expect(ISOGONAL_ARCH.length).toBe(6);
-    expect(new Set([...UNIFORM_ARCH, ...DUAL_ARCH, ...ISOGONAL_ARCH]).size).toBe(22);
+    expect(RECTANGLE_ARCH.length).toBe(5);
+    expect(
+      new Set([...UNIFORM_ARCH, ...DUAL_ARCH, ...ISOGONAL_ARCH, ...RECTANGLE_ARCH]).size,
+    ).toBe(27);
   });
 
   it("keeps the isogonal tilings on the plane", () => {
@@ -45,6 +50,22 @@ describe("catalog families", () => {
       expect(pickerFamilies(surface)).not.toContain("isogonal");
     }
     expect(familyRows("isogonal", "flat").map((r) => r.mode)).toEqual([...ISOGONAL_ARCH]);
+  });
+
+  it("keeps the congruent-rectangle bonds on the plane", () => {
+    // Same gating as the isogonal family: no wrap builders or windows yet.
+    for (const key of RECTANGLE_ARCH) {
+      const tiling = TILINGS_BY_KEY.get(key)!;
+      expect(tilingAllows(tiling, SURFACES.get("flat")!)).toBe(true);
+      for (const surface of MANIFOLD_ORDER) {
+        expect(tilingAllows(tiling, SURFACES.get(surface)!)).toBe(false);
+      }
+    }
+    expect(pickerFamilies("flat")).toContain("rectangle");
+    for (const surface of MANIFOLD_ORDER) {
+      expect(pickerFamilies(surface)).not.toContain("rectangle");
+    }
+    expect(familyRows("rectangle", "flat").map((r) => r.mode)).toEqual([...RECTANGLE_ARCH]);
   });
 
   it("marks only the chiral tilings chiral (snub hexagonal + floret)", () => {

@@ -21,7 +21,7 @@ export interface TilingSpec {
   chiral: boolean;
   modeOverrides: Record<string, string>;
   /** The plane only: no wrap builders or preset windows for this tiling yet
-   * (the isogonal family). */
+   * (the isogonal and rectangle families — see FLAT_ONLY_ARCH_FAMILIES). */
   flatOnly?: boolean;
 }
 
@@ -37,12 +37,16 @@ export const MENU = catalog.menu;
 // as catalog.py lifts them from ARCH_TILINGS. A tiling whose fundamental-domain
 // template has no mirror is chiral (snub hexagonal, floret pentagonal), which
 // gates it out of the orientation-reversing Möbius / Klein surfaces.
+// The ARCH_TILINGS families that live on the plane only: no wrap builders and
+// no per-surface preset windows for them yet.
+const FLAT_ONLY_ARCH_FAMILIES = new Set(["isogonal", "rectangle"]);
+
 export const ARCH_TILING_SPECS: TilingSpec[] = ARCH_TILINGS.map((t) => ({
   key: t.key,
   label: t.label,
   chiral: archTemplate(t.key).mirror === null,
   modeOverrides: {},
-  flatOnly: t.family === "isogonal",
+  flatOnly: FLAT_ONLY_ARCH_FAMILIES.has(t.family),
 }));
 
 // Every periodic tiling as the menu sees it: the three regular tilings first,
@@ -51,13 +55,15 @@ export const TILING_SPECS: TilingSpec[] = [...REGULAR_TILINGS, ...ARCH_TILING_SP
 export const TILINGS_BY_KEY = new Map(TILING_SPECS.map((t) => [t.key, t]));
 
 // The picker families — exactly the ARCH_TILINGS rows of each family: the
-// vertex-transitive uniform ones, their (face-transitive) Laves duals, and the
-// isogonal ones that are not edge to edge.
+// vertex-transitive uniform ones, their (face-transitive) Laves duals, the
+// isogonal ones that are not edge to edge, and the bonds of congruent
+// rectangles.
 const familyKeys = (family: string): string[] =>
   ARCH_TILINGS.filter((t) => t.family === family).map((t) => t.key);
 export const UNIFORM_ARCH = familyKeys("uniform");
 export const DUAL_ARCH = familyKeys("dual");
 export const ISOGONAL_ARCH = familyKeys("isogonal");
+export const RECTANGLE_ARCH = familyKeys("rectangle");
 export const FAMILY_LABELS = MENU.familyLabels as Record<string, string>;
 
 /** The mode string for a (tiling, surface) pair — the one naming convention. */
@@ -127,11 +133,12 @@ export const SHAPED_MODES = MENU.shapedModes as Record<string, string[]>;
 
 /** The regular tilings the picker offers, in order (MENU.pickerRegular). */
 export const PICKER_REGULAR = MENU.pickerRegular as string[];
-/** The picker's family rows; "isogonal" and "aperiodic" are added on the plane
- * only — the isogonal tilings have no wrap builders yet, and the aperiodic ones
- * no periodic domain to glue a seam with. */
+/** The picker's family rows; "isogonal", "rectangle" and "aperiodic" are added
+ * on the plane only — the isogonal tilings and the rectangle bonds have no wrap
+ * builders yet, and the aperiodic ones no periodic domain to glue a seam
+ * with. */
 export const PICKER_FAMILIES = ["regular", "uniform", "dual"];
-export const FLAT_ONLY_FAMILIES = ["isogonal", "aperiodic"];
+export const FLAT_ONLY_FAMILIES = ["isogonal", "rectangle", "aperiodic"];
 export const APERIODIC_MODES = MENU.aperiodic as string[];
 
 const FAMILY_MEMBERS: Record<string, string[]> = {
@@ -139,6 +146,7 @@ const FAMILY_MEMBERS: Record<string, string[]> = {
   uniform: UNIFORM_ARCH,
   dual: DUAL_ARCH,
   isogonal: ISOGONAL_ARCH,
+  rectangle: RECTANGLE_ARCH,
 };
 
 /** One row of a picker family: the mode it launches, its label, and the
