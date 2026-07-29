@@ -16,6 +16,7 @@ from minesweeper.boards import (
     SPHERE_MODES,
     SURFACE_LABELS,
     TILINGS,
+    _arch_template,
     arch_klein_board,
     arch_mobius_board,
     arch_torus_board,
@@ -63,13 +64,22 @@ from minesweeper.boards import (
     euler_characteristic as _euler_characteristic,
 )
 
-# Template tilings split by symmetry type. Archimedean tilings are
-# vertex-transitive (every vertex has the same configuration); their Laves
-# duals are face-transitive (every tile congruent) and get a different set
-# of invariants. Reflective tilings (a plain mirror, not just a glide or
-# pinwheel) additionally give left-right / top-bottom symmetric boards.
+# Template tilings split by symmetry type. Archimedean (uniform) tilings are
+# vertex-transitive (every vertex has the same configuration) and edge to
+# edge; their Laves duals are face-transitive (every tile congruent) and get
+# a different set of invariants; the isogonal ones are vertex-transitive but
+# not edge to edge, so their tiles carry collinear T-vertices and the
+# corner-counting invariants have to drop those first. Reflective tilings (a
+# plain mirror, not just a glide or pinwheel) additionally give left-right /
+# top-bottom symmetric boards.
+_UNIFORM = [t.key for t in ARCH_TILINGS if t.family == "uniform"]
+# the tilings that wrap a surface at all: the isogonal family is flat-only,
+# so the wrapped-surface suites derive their subjects from the catalog
+_WRAPPED_TILINGS = [t.key for t in ARCH_TILINGS if "torus" in TILINGS[t.key][1]]
+_ISOGONAL = [t.key for t in ARCH_TILINGS if t.family == "isogonal"]
 _VERTEX_TRANSITIVE = [t.key for t in ARCH_TILINGS if t.vertex_transitive]
 _FACE_TRANSITIVE = [t.key for t in ARCH_TILINGS if not t.vertex_transitive]
+_NO_HALF_TURN = {t.key for t in ARCH_TILINGS if not t.half_turn}
 _REFLECTIVE = {
     t.key for t in ARCH_TILINGS
     if t.template().mirror is not None and not t.template().glide
@@ -456,17 +466,19 @@ class TestArchimedean:
     """The eight non-regular Archimedean tilings (six with two tile
     shapes, plus 3.4.6.4 and 4.6.12 with three)."""
 
-    @pytest.mark.parametrize("mode", sorted(_VERTEX_TRANSITIVE))
+    @pytest.mark.parametrize("mode", sorted(_UNIFORM))
     def test_has_exactly_the_two_configured_shapes(self, mode):
         config, _ = _ARCH_CONFIGS[mode]
         board = archimedean_board(mode, 5, 5, 5)
         assert {len(p) for p in board.polygons.values()} == set(config)
 
-    @pytest.mark.parametrize("mode", sorted(_VERTEX_TRANSITIVE))
+    @pytest.mark.parametrize("mode", sorted(_UNIFORM))
     def test_interior_vertex_configuration(self, mode):
         """Around every interior vertex the tile sizes must match the
-        tiling's vertex configuration (e.g. 3.3.4.3.4). Vertex-transitive
-        (Archimedean) tilings only; Laves duals vary vertex by vertex."""
+        tiling's vertex configuration (e.g. 3.3.4.3.4). Edge-to-edge
+        vertex-transitive (Archimedean) tilings only; Laves duals vary vertex
+        by vertex, and the isogonal tilings meet a vertex with a straight
+        edge (TestIsogonal covers those)."""
         config, _ = _ARCH_CONFIGS[mode]
         board = archimedean_board(mode, 5, 5, 5)
         at_vertex = defaultdict(list)
@@ -564,6 +576,12 @@ class TestArchimedean:
         """A symmetric tiling must give a symmetric board: no stray tiles
         poking out one side."""
         board = build_board(mode, difficulty)
+        if mode in _NO_HALF_TURN:
+            # p3 (three-scale triangular) has no 180-degree rotation at all,
+            # so no window of it can be rotationally symmetric; it is centred
+            # on a 3-fold centre instead, which a rectangle cannot preserve
+            # either. Nothing to assert beyond the shared invariants.
+            return
         # a rectangular window on a hexagonal tiling can leave a few edge
         # tiles unpaired, so the bar is well clear of a ragged disc (which
         # scores ~0.3) rather than a perfect 1.0
@@ -579,6 +597,118 @@ class TestArchimedean:
         sizes = sorted(len(p) for p in board.polygons.values())
         assert len(board.adjacency) == 92
         assert sizes.count(3) == 80 and sizes.count(5) == 12
+
+
+def _corners(polygon, tol=1e-3):
+    """The polygon's real corners: the vertices where it actually turns.
+
+    A tile of an isogonal tiling carries T-vertices -- the corners of the
+    neighbours whose edge it splits -- which sit at 180 degrees and are not
+    corners of the shape at all. The tolerance is generous (0.06 degrees)
+    because vertex tags are rounded to 1e-6 before the board is scaled up,
+    and miles below the 60 degrees of the sharpest real corner here.
+    """
+    n = len(polygon)
+    out = []
+    for i in range(n):
+        before, point, after = polygon[i - 1], polygon[i], polygon[(i + 1) % n]
+        v1 = (before[0] - point[0], before[1] - point[1])
+        v2 = (after[0] - point[0], after[1] - point[1])
+        angle = abs(math.atan2(v1[0] * v2[1] - v1[1] * v2[0],
+                               v1[0] * v2[0] + v1[1] * v2[1]))
+        if abs(angle - math.pi) > tol:
+            out.append((point, angle))
+    return out
+
+
+class TestIsogonal:
+    """The six isogonal tilings that are not edge to edge.
+
+    Vertex-transitive like the Archimedean tilings, but a tile's corner may
+    land in the middle of its neighbour's edge, so the invariants are stated
+    over the tiles' real corners (see _corners) with the split edges counted
+    as the 180-degree angles they are.
+    """
+
+    @pytest.mark.parametrize("mode", sorted(_ISOGONAL))
+    def test_every_tile_is_a_regular_polygon(self, mode):
+        """Convex *regular* polygons: once the T-vertices are dropped, every
+        tile has equal sides and equal angles."""
+        board = archimedean_board(mode, 4, 4, 5)
+        for polygon in board.polygons.values():
+            corners = _corners(polygon)
+            n = len(corners)
+            assert n >= 3
+            sides = [math.dist(corners[i][0], corners[(i + 1) % n][0])
+                     for i in range(n)]
+            angles = [angle for _, angle in corners]
+            # 1e-5 relative: tags are rounded to 1e-6 and then scaled up
+            assert (max(sides) - min(sides)) / max(sides) < 1e-5
+            assert max(angles) - min(angles) < 1e-4
+            assert abs(min(angles) - math.pi * (n - 2) / n) < 1e-4
+
+    @pytest.mark.parametrize("mode", sorted(_ISOGONAL))
+    def test_is_not_edge_to_edge(self, mode):
+        """The defining property of the family: some tile's corner lands
+        inside a neighbour's edge. (If this ever passes trivially, the
+        tiling belongs in the uniform family instead.)"""
+        board = archimedean_board(mode, 4, 4, 5)
+        assert any(len(_corners(p)) < len(p) for p in board.polygons.values())
+
+    @pytest.mark.parametrize("mode", sorted(_ISOGONAL))
+    def test_every_interior_vertex_is_alike(self, mode):
+        """Isogonal: every interior vertex carries the same tiles at the
+        same angles -- corners plus, where a neighbour's edge runs straight
+        through, a 180. The tile sizes must match the declared config."""
+        config, _ = _ARCH_CONFIGS[mode]
+        board = archimedean_board(mode, 5, 5, 5)
+        at_vertex = defaultdict(list)
+        for polygon in board.polygons.values():
+            sides = len(_corners(polygon))
+            n = len(polygon)
+            for i, point in enumerate(polygon):
+                before, after = polygon[i - 1], polygon[(i + 1) % n]
+                v1 = (before[0] - point[0], before[1] - point[1])
+                v2 = (after[0] - point[0], after[1] - point[1])
+                angle = abs(math.atan2(v1[0] * v2[1] - v1[1] * v2[0],
+                                       v1[0] * v2[0] + v1[1] * v2[1]))
+                key = (round(point[0], 4), round(point[1], 4))
+                at_vertex[key].append((sides, round(math.degrees(angle))))
+        species = defaultdict(int)
+        for entries in at_vertex.values():
+            if abs(sum(a for _, a in entries) - 360) < 2:  # interior only
+                species[tuple(sorted(entries))] += 1
+        assert len(species) == 1, dict(species)
+        (entries, count), = species.items()
+        assert count > 10  # the check actually saw interior vertices
+        assert sorted(s for s, _ in entries) == sorted(config)
+        assert sum(1 for _, a in entries if a == 180) >= 1
+
+    @pytest.mark.parametrize("mode", sorted(_ISOGONAL))
+    def test_tiles_the_plane_without_gaps(self, mode):
+        """One domain's tiles cover the domain exactly: their areas sum to
+        its area, so the template neither leaves a gap nor overlaps."""
+        template = _arch_template(mode)
+
+        def shoelace(points):
+            n = len(points)
+            return abs(sum(points[i][0] * points[(i + 1) % n][1]
+                           - points[(i + 1) % n][0] * points[i][1]
+                           for i in range(n))) / 2
+
+        total = 0.0
+        for _, refs in template.cells:
+            total += shoelace([(dm * template.width + tag[0],
+                                dn * template.height + tag[1])
+                               for tag, dm, dn in refs])
+        assert abs(total - template.width * template.height) < 1e-9
+
+    @pytest.mark.parametrize("mode", sorted(_UNIFORM + _FACE_TRANSITIVE))
+    def test_edge_to_edge_tilings_gain_no_t_vertices(self, mode):
+        """The T-vertex pass must be a no-op for the Archimedean and Laves
+        templates: every tile is still exactly its own corners."""
+        board = archimedean_board(mode, 4, 4, 5)
+        assert all(len(_corners(p)) == len(p) for p in board.polygons.values())
 
 
 class TestCubeFrame:
@@ -897,7 +1027,8 @@ class TestWrappedArchimedean:
         m for m in WRAPPED if any(m.endswith(t) for t in _VERTEX_TRANSITIVE)
     ]
 
-    @pytest.mark.parametrize("tiling", sorted(_VERTEX_TRANSITIVE))
+    @pytest.mark.parametrize(
+        "tiling", sorted(set(_UNIFORM) & set(_WRAPPED_TILINGS)))
     def test_torus_vertex_configuration_everywhere(self, tiling):
         """A torus has no boundary, so every single vertex must show the
         tiling's full vertex configuration."""
@@ -1027,7 +1158,7 @@ class TestWrappedArchimedean:
             arch_torus_board("trihex", 1, 3, 2)
 
     def test_torus_polygons_face_outward(self):
-        for tiling in sorted(_ARCH_CONFIGS):
+        for tiling in sorted(_WRAPPED_TILINGS):
             board = build_board("torus" + tiling, "easy")
             for cell, polygon in board.polygons.items():
                 normal = newell_normal(polygon)

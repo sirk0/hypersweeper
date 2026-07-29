@@ -22,7 +22,7 @@ Import order is a strict DAG; a module only imports from the ones above it.
 | Module | Responsibility |
 |--------|----------------|
 | `core.py` | `Board` / `Board3D`, the `_shared_vertex_adjacency` neighbour rule, `_build` (lattice→pixels) and `_finalize_flat` (float→pixels), 3D vector helpers, and the topology invariants `euler_characteristic` / `boundary_components` / `corner_fans`. |
-| `tilings.py` | Regular flat builders (square/triangle/trigrid/hex/hexhex/hextri), the `_ArchTemplate` system, the eight Archimedean `_*_template()` factories plus their eight Laves duals (built by `_dual_template`), and the **`ARCH_TILINGS`** registry (the one place an Archimedean or Laves tiling is declared). |
+| `tilings.py` | Regular flat builders (square/triangle/trigrid/hex/hexhex/hextri), the `_ArchTemplate` system, the eight Archimedean `_*_template()` factories plus their eight Laves duals (built by `_dual_template`) and the six isogonal (non-edge-to-edge) ones, and the **`ARCH_TILINGS`** registry (the one place any of them is declared). |
 | `aperiodic.py` | Penrose (P3) and the Hat monotile, each with its own exact-arithmetic vertex ids. |
 | `solids.py` | Closed/convex and polycube 3D boards (pentagonal hexecontahedron, Goldberg polyhedra, geodesic icosahedron, cube, tetrahedron, frames, bipyramid). |
 | `surfaces.py` | Wrapping tilings onto surfaces: the three immersion points (`_torus_point`, `_cylinder_point`, `_mobius_point`), the shared `_assemble` tail, the nine simple `*_board` wrappers, and the Archimedean `arch_torus_board` / `arch_cylinder_board` / `arch_mobius_board`. |
@@ -82,7 +82,8 @@ Example goal: a new uniform tiling `foo` (say 3.4.6.4-like).
    hexagon-lattice tilings.
 2. **Registry** — add one `ArchTiling("foo", "Foo label", config,
    edge_directions, _foo_template)` row to `ARCH_TILINGS`, in
-   vertex-configuration order (the registry order is the menu order). This alone
+   vertex-configuration order (the registry order is the menu order; the
+   `family` field, defaulting to `"uniform"`, picks the menu page). This alone
    feeds `_ARCH_CONFIGS`, `_ARCH_TEMPLATES`, and — via `catalog` — the
    menu, mode strings, `MODES_3D`, and chirality gating (a tiling whose
    template has no mirror is automatically denied the Möbius strip).
@@ -114,11 +115,12 @@ differ from an Archimedean tiling, both handled for you:
 
 - A Laves tiling is **face-transitive** (one congruent tile shape, several
   vertex kinds) rather than vertex-transitive. Declare it with
-  `vertex_transitive=False` on its `ArchTiling` row; the vertex-config
-  tests then skip it, `TestArchimedean.test_tiles_are_congruent` covers it
-  instead, and the catalog routes it into the **Laves** menu submenu
-  automatically (`DUAL_ARCH` is exactly the non-vertex-transitive
-  `ARCH_TILINGS`, so no menu edit is needed).
+  `family="dual"` on its `ArchTiling` row (which makes
+  `vertex_transitive` False); the vertex-config tests then skip it,
+  `TestArchimedean.test_tiles_are_congruent` covers it instead, and the
+  catalog routes it into the **Laves** menu submenu automatically
+  (`DUAL_ARCH` is exactly the `family="dual"` rows, so no menu edit is
+  needed).
 - Its handedness (reflective vs chiral, hence Möbius or not) is read from
   the primal's mirror/glide automatically — the floret pentagonal (dual of
   snub hexagonal) is chiral, so like snub hexagonal it has no Möbius wrap.
@@ -128,7 +130,7 @@ Steps (say a new primal `_foo_template` gained a dual `_bar_template`):
 1. `def _bar_template(): return _dual_template(_foo_template)` in
    `tilings.py`.
 2. Add an `ArchTiling("bar", "Bar label", config, edge_directions,
-   _bar_template, vertex_transitive=False)` row to `ARCH_TILINGS` (`config`
+   _bar_template, family="dual")` row to `ARCH_TILINGS` (`config`
    is the Laves symbol, i.e. the primal's vertex configuration).
 3. Add a `"bar"` block to `ARCH_PRESETS` (skip `mobius`/`klein` if chiral).
    The windows can copy the primal's — the dual shares its fundamental
@@ -138,10 +140,68 @@ Steps (say a new primal `_foo_template` gained a dual `_bar_template`):
    table matches the set of wrapped modes, so it fails until you do).
 
 No `catalog.py` menu edit is needed — the Laves submenu derives from
-`vertex_transitive`.
+`family`.
 
 Everything else — mode strings, `MODES_3D`, chirality gating, symmetry and
 congruence invariants — derives automatically.
+
+## Recipe: add an isogonal (non-edge-to-edge) tiling
+
+The third family in `ARCH_TILINGS`. These are vertex-transitive like the
+Archimedean tilings but **not edge to edge**: a tile's corner lands in the
+interior of its neighbour's edge (a T-vertex), so a vertex reads e.g.
+90 + 90 + 180 rather than as a corner sequence. Six ship
+(`_offsetsquare_template` … `_threescaletri_template`), each the most
+symmetric member of a one-parameter family — the parameter is a row offset
+or the ratio between two tile sizes, and it is the factory's default
+argument, so a second member is a one-line call.
+
+They use the same `_ArchTemplate`, window and preset machinery. Three things
+differ, all handled for you:
+
+- **`_insert_t_vertices`** (in `_template`) records each T-vertex as a vertex
+  of the tile whose edge it splits. The point is collinear, so the drawn
+  polygon is unchanged, but the two tiles now share a vertex id — which is
+  what `_shared_vertex_adjacency` runs on — and the tiling becomes an
+  edge-to-edge *mesh*, keeping `euler_characteristic` and
+  `boundary_components` meaningful. It is a no-op for every edge-to-edge
+  template (a test pins that).
+- **Shape measurement drops the T-vertices.** `shapeMetrics` in
+  `web/src/render/shapePalette.ts` measures a tile's real corners, so a
+  square with a split edge is a square and not an irregular hexagon. The
+  test helper `_corners` in `tests/test_boards.py` does the same.
+- **Size is a colour axis.** Two of these tilings use one regular polygon at
+  two or three sizes, which hue (side count) and chroma (regularity) cannot
+  tell apart; `classifyShapes` clusters tile spans and lightness carries the
+  result. See "Shape colour coding" in `web/README.md`.
+
+Steps, for a new isogonal tiling `foo`:
+
+1. **Template** — `_foo_template()` in `tilings.py`, returning `_template(...)`
+   over one rectangular domain, as for an Archimedean tiling. `_periodic_domain`
+   fills a domain from a translation lattice, and `_triangular_domain` wraps it
+   for the p3/p6 tilings (the |c1| x |c1|·√3 orthogonal superlattice rectangle).
+   Only build a `mirror` if the tiling really has one (of the six, only the
+   offset square and the staggered triangular do).
+2. **Registry** — one `ArchTiling("foo", "Foo label", config, edge_directions,
+   _foo_template, family="isogonal")` row. `config` is the tiles meeting at a
+   vertex, *counting* the one whose edge runs straight through. Set
+   `half_turn=False` if the tiling has no 180-degree rotation (p3), which
+   exempts it from `test_flat_board_is_symmetric`.
+3. **Presets** — a `"foo"` block in `ARCH_PRESETS` with a **`flat` column
+   only**; `family="isogonal"` sets `TilingSpec.flat_only`, which gates the
+   tiling out of every surface but the plane. Re-run `scripts/export_data.py`
+   and `export_conformance.py`.
+4. **Port it to `web/src/boards/tilings.ts`** — the same template, verbatim.
+   The conformance oracle compares the two boards cell for cell, so a
+   divergence fails `tests/unit/conformance.test.ts` immediately.
+
+`TestIsogonal` in `tests/test_boards.py` then covers the new tiling
+automatically: regular tiles, one vertex species, and a domain whose tiles'
+areas sum to its own (no gaps, no overlaps).
+
+To wrap one onto a manifold later: drop `flat_only`, add the surface columns
+to its `ARCH_PRESETS` block, and give the reflective ones a seam mirror.
 
 ## Recipe: add an aperiodic / shaped / solid board
 

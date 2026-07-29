@@ -264,7 +264,80 @@ function template(
       mirror.set(tag, { tag: image, dm: c.dm, dn: c.dn });
     }
   }
-  return { config, width, height, verts, cells, mirror, glide, centre };
+  return {
+    config,
+    width,
+    height,
+    verts,
+    cells: insertTVertices(verts, cells, width, height),
+    mirror,
+    glide,
+    centre,
+  };
+}
+
+// Tag coordinates are rounded to 1e-6, so a vertex genuinely on an edge can
+// miss it by about 1e-6; the nearest vertex that is *not* on an edge is two
+// orders of magnitude further off in every template here.
+const T_VERTEX_TOL = 1e-5;
+
+/** Split every cell edge at the vertices lying inside it.
+ *
+ * A tiling that is not edge-to-edge has vertices landing in the *interior* of a
+ * neighbouring tile's edge — a T-vertex. Recording one as a vertex of the tile
+ * whose edge it splits leaves the drawn polygon unchanged (the point is
+ * collinear) but makes the two tiles share a vertex id, which is what the
+ * shared-vertex adjacency rule runs on. It also turns the tiling into an
+ * edge-to-edge *mesh* of polygons with 180° corners, so the Euler
+ * characteristic and boundary counts stay meaningful. Edge-to-edge tilings have
+ * no such vertex, so this is a no-op for the sixteen Archimedean and Laves
+ * templates. Port of `_insert_t_vertices` in boards/tilings.py — the two must
+ * agree vertex for vertex or the conformance oracle fails. */
+function insertTVertices(
+  verts: Map<string, Vertex>,
+  cells: { name: string; refs: Ref[] }[],
+  width: number,
+  height: number,
+): { name: string; refs: Ref[] }[] {
+  const at = (tag: string, dm: number, dn: number): Vertex => {
+    const v = verts.get(tag)!;
+    return [dm * width + v[0], dn * height + v[1]];
+  };
+  return cells.map(({ name, refs }) => {
+    const points = refs.map((r) => at(r.tag, r.dm, r.dn));
+    const split: Ref[] = [];
+    for (let i = 0; i < refs.length; i++) {
+      const [ax, ay] = points[i]!;
+      const [bx, by] = points[(i + 1) % refs.length]!;
+      const ex = bx - ax;
+      const ey = by - ay;
+      const span = Math.hypot(ex, ey);
+      const found: { s: number; ref: Ref }[] = [];
+      for (
+        let dm = Math.floor(Math.min(ax, bx) / width);
+        dm <= Math.floor(Math.max(ax, bx) / width);
+        dm++
+      ) {
+        for (
+          let dn = Math.floor(Math.min(ay, by) / height);
+          dn <= Math.floor(Math.max(ay, by) / height);
+          dn++
+        ) {
+          for (const tag of verts.keys()) {
+            const [vx, vy] = at(tag, dm, dn);
+            if (Math.abs((vx - ax) * ey - (vy - ay) * ex) > T_VERTEX_TOL * span) {
+              continue; // not on the edge's line
+            }
+            const s = ((vx - ax) * ex + (vy - ay) * ey) / (span * span);
+            if (s > 1e-9 && s < 1 - 1e-9) found.push({ s, ref: { tag, dm, dn } });
+          }
+        }
+      }
+      found.sort((a, b) => a.s - b.s);
+      split.push(refs[i]!, ...found.map((f) => f.ref));
+    }
+    return { name, refs: split };
+  });
 }
 
 function regularPolygon(
@@ -638,7 +711,282 @@ function dualTemplate(primal: () => ArchTemplate): ArchTemplate {
   });
 }
 
+// -- isogonal (non-edge-to-edge) tilings -------------------------------------
+//
+// Convex regular polygons also tile the plane *without* meeting edge to edge: a
+// tile's corner can land in the interior of its neighbour's edge, a T-vertex.
+// Wikipedia's "Euclidean tilings by convex regular polygons" pictures six
+// isogonal (vertex-transitive) families of these — every vertex alike, and each
+// family carrying one free real parameter: a row offset, or the ratio between
+// two tile sizes. The six built below are their most symmetric members (offset
+// 1/2, size ratio 1/2). A seventh family exists — square rows offset in a
+// zig-zag rather than progressively — but at the half-square offset it is the
+// same tiling as the running bond below, so it is not built separately.
+//
+// They need no new machinery: each is periodic, so one rectangular domain
+// describes it, and `insertTVertices` records the T-vertices so the shared-
+// vertex adjacency rule still sees the neighbours across a split edge. The
+// extra vertex is collinear, so it is invisible when the tile is drawn;
+// `shapeMetrics` drops it before measuring, and a square with a split edge is
+// still a square. All six are flat-only (TilingSpec.flatOnly): wrapping one
+// onto a manifold needs its own preset windows per surface.
+
+function rotate2(point: Vertex, degrees: number): Vertex {
+  if (!degrees) return point;
+  const a = degrees * DEG;
+  const cos = Math.cos(a);
+  const sin = Math.sin(a);
+  return [point[0] * cos - point[1] * sin, point[0] * sin + point[1] * cos];
+}
+
+function polar(degrees: number, radius = 1): Vertex {
+  const a = degrees * DEG;
+  return [radius * Math.cos(a), radius * Math.sin(a)];
+}
+
+/** The tiles of a doubly periodic pattern whose centroids land in the
+ * `width` x `height` domain. `v1`/`v2` generate the pattern's translation
+ * lattice and `polygons` are the tiles hung off one lattice point, both in the
+ * pattern's own frame; everything is rotated by `turn` degrees into the
+ * domain's frame. Tiles are deduplicated by rounded centroid, so one shared
+ * between lattice points is kept (and named) once. */
+function periodicDomain(
+  v1: Vertex,
+  v2: Vertex,
+  width: number,
+  height: number,
+  polygons: [string, Vertex[]][],
+  turn = 0,
+  span = 8,
+): [string, Vertex[]][] {
+  interface Kept {
+    name: string;
+    gx: number;
+    gy: number;
+    points: Vertex[];
+  }
+  const kept = new Map<string, Kept>();
+  for (let m = -span; m <= span; m++) {
+    for (let n = -span; n <= span; n++) {
+      const ox = m * v1[0] + n * v2[0];
+      const oy = m * v1[1] + n * v2[1];
+      for (const [name, polygon] of polygons) {
+        const points = polygon.map((p) => rotate2([p[0] + ox, p[1] + oy], turn));
+        let gx = 0;
+        let gy = 0;
+        for (const p of points) {
+          gx += p[0];
+          gy += p[1];
+        }
+        gx /= points.length;
+        gy /= points.length;
+        if (-1e-9 <= gx && gx < width - 1e-9 && -1e-9 <= gy && gy < height - 1e-9) {
+          const [kx, ky] = [round6(gx), round6(gy)];
+          kept.set(`${name},${kx},${ky}`, { name, gx: kx, gy: ky, points });
+        }
+      }
+    }
+  }
+  // sorted by (name, x, y) exactly as the Python `sorted(kept.items())` is:
+  // the cell names have to come out in the same order in both ports
+  return [...kept.values()]
+    .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : a.gx - b.gx || a.gy - b.gy))
+    .map(({ name, points }, i) => [`${name}${i}`, points]);
+}
+
+/** One rectangular domain of a pattern on the triangular lattice generated by
+ * `c1` and its 60° rotation: the |c1| x |c1|*sqrt(3) rectangle (two lattice
+ * points), in the frame where `c1` lies along the x axis. */
+function triangularDomain(
+  c1: Vertex,
+  polygons: [string, Vertex[]][],
+): { width: number; height: number; cells: [string, Vertex[]][] } {
+  const pitch = Math.hypot(c1[0], c1[1]);
+  const turn = -Math.atan2(c1[1], c1[0]) / DEG;
+  const width = pitch;
+  const height = pitch * ROOT3;
+  return {
+    width,
+    height,
+    cells: periodicDomain(c1, rotate2(c1, 60), width, height, polygons, turn),
+  };
+}
+
+function offsetsquareTemplate(): ArchTemplate {
+  // Offset square, the running bond of a brick wall (cmm): rows of unit
+  // squares, each row shifted half a square against the one below, so every
+  // vertex is two square corners meeting the middle of a third square's edge
+  // (90 + 90 + 180). The domain runs from a square row's centreline, so the
+  // template midline is a mirror line.
+  return template([4, 4, 4], 1, 2, [
+    ["sq0", [[0, -0.5], [1, -0.5], [1, 0.5], [0, 0.5]]],
+    ["sq1", [[-0.5, 0.5], [0.5, 0.5], [0.5, 1.5], [-0.5, 1.5]]],
+  ]);
+}
+
+function staggeredtriTemplate(): ArchTemplate {
+  // Staggered triangular (cmm): strips of unit triangles, each strip shifted
+  // half an edge against the one below — half a step off the triangular
+  // tiling's own alignment, so every strip vertex lands in the middle of the
+  // neighbouring strip's edge (60 + 60 + 60 + 180). The strip mirror is a
+  // glide (reflect plus half a period).
+  const h = ROOT3 / 2;
+  return template([3, 3, 3, 3], 1, 2 * h, [
+    ["up0", [[0, 0], [1, 0], [0.5, h]]],
+    ["down0", [[-0.5, h], [0.5, h], [0, 0]]],
+    ["up1", [[0, h], [1, h], [0.5, 2 * h]]],
+    ["down1", [[-0.5, 2 * h], [0.5, 2 * h], [0, h]]],
+  ], { glide: true });
+}
+
+function pythagoreanTemplate(ratio = 0.5): ArchTemplate {
+  // Pythagorean, the two-squares tiling (p4): squares of side 1 and `ratio`
+  // laid so that four small squares surround each large one and every vertex
+  // is a large corner, a small corner and a large edge passing through
+  // (90 + 90 + 180). Its translation lattice (1, r) / (-r, 1) is tilted
+  // against the squares, so the domain is the axis-aligned superlattice square
+  // of side (1 + r*r) / r — 2.5 at r = 1/2, holding five squares of each size.
+  // p4 has no reflection at all.
+  const r = ratio;
+  const side = (1 + r * r) / r;
+  const big: Vertex[] = [[0, 0], [1, 0], [1, 1], [0, 1]];
+  const small: Vertex[] = [[1 - r, 1], [1, 1], [1, 1 + r], [1 - r, 1 + r]];
+  const polygons = periodicDomain([1, r], [-r, 1], side, side, [
+    ["big", big],
+    ["small", small],
+  ]);
+  return template([4, 4, 4], side, side, polygons, { mirrored: false });
+}
+
+function rotatedhexTemplate(gap = 0.5): ArchTemplate {
+  // Rotated hexagonal (p6), the tiling whose triangles are each ringed by
+  // three hexagons: unit hexagons slid along their shared edges until
+  // triangles of side `gap` open between them, so every vertex is a triangle
+  // corner, a hexagon corner and a hexagon edge passing through
+  // (60 + 120 + 180). One of the two one-parameter families running between
+  // the hexagonal tiling (gap 0) and the trihexagonal one (gap 1); the hexagon
+  // centres stay on a triangular lattice, of pitch sqrt(3 + gap^2), turned
+  // against the hexagons — which is what makes it chiral.
+  const corners: Vertex[] = [];
+  for (let k = 0; k < 6; k++) corners.push(polar(60 * k));
+  const n = polar(30);
+  const u = polar(120);
+  const c1: Vertex = [ROOT3 * n[0] + gap * u[0], ROOT3 * n[1] + gap * u[1]];
+  const c2 = rotate2(c1, 60);
+  const polygons: [string, Vertex[]][] = [["hex", corners]];
+  const gaps: [string, Vertex[]][] = [
+    ["up", [[0, 0], c1, c2]],
+    ["down", [c1, c2, [c1[0] + c2[0], c1[1] + c2[1]]]],
+  ];
+  for (const [name, triple] of gaps) {
+    const gx = (triple[0]![0] + triple[1]![0] + triple[2]![0]) / 3;
+    const gy = (triple[0]![1] + triple[1]![1] + triple[2]![1]) / 3;
+    polygons.push([
+      name,
+      triple.map((o) => {
+        let best = corners[0]!;
+        let bestD = Infinity;
+        for (const c of corners) {
+          const d = (o[0] + c[0] - gx) ** 2 + (o[1] + c[1] - gy) ** 2;
+          if (d < bestD) {
+            bestD = d;
+            best = c;
+          }
+        }
+        return [o[0] + best[0], o[1] + best[1]] as Vertex;
+      }),
+    ]);
+  }
+  const { width, height, cells } = triangularDomain(c1, polygons);
+  return template([3, 6, 6], width, height, cells, { mirrored: false });
+}
+
+function rotatedtriTemplate(hexagon = 0.5): ArchTemplate {
+  // Rotated triangular (p6), the tiling whose hexagons are each ringed by six
+  // triangles: unit triangles slid past each other until hexagons of side
+  // `hexagon` open at the triangular tiling's vertices, so every vertex is a
+  // hexagon corner, a triangle corner and a triangle edge passing through
+  // (60 + 120 + 180). The other family between the triangular tiling
+  // (hexagon 0) and the trihexagonal one (hexagon 1), with the roles of the
+  // two tiles swapped against rotatedhexTemplate; pitch sqrt(3*hexagon^2 + 1).
+  const h = hexagon;
+  const corners: Vertex[] = [];
+  for (let k = 0; k < 6; k++) corners.push(polar(60 * k, h));
+  const polygons: [string, Vertex[]][] = [["hex", corners]];
+  corners.forEach(([vx, vy], k) => {
+    // the triangle with a corner on this hexagon corner, its edge running
+    // along the hexagon's edge and out past the next corner
+    const a = polar(120 + 60 * k);
+    const b = polar(60 + 60 * k);
+    polygons.push(["tri", [[vx, vy], [vx + a[0], vy + a[1]], [vx + b[0], vy + b[1]]]]);
+  });
+  const c1: Vertex = [1.5 * h - 0.5, (ROOT3 / 2) * (1 + h)];
+  const { width, height, cells } = triangularDomain(c1, polygons);
+  // the 6-fold centre; the biggest-tile rule would pick either tile here, both
+  // having six vertices once the T-vertices are in, and a triangle centre is
+  // only 3-fold
+  let centre: Vertex | null = null;
+  let best = Infinity;
+  for (const [name, points] of cells) {
+    if (!name.startsWith("hex")) continue;
+    let cx = 0;
+    let cy = 0;
+    for (const p of points) {
+      cx += p[0];
+      cy += p[1];
+    }
+    cx /= points.length;
+    cy /= points.length;
+    if (cx * cx + cy * cy < best) {
+      best = cx * cx + cy * cy;
+      centre = [round6(cx), round6(cy)];
+    }
+  }
+  return template([3, 3, 6], width, height, cells, { mirrored: false, centre });
+}
+
+function threescaletriTemplate(ratio = 0.5): ArchTemplate {
+  // Three-scale triangular (p3): triangles of side `ratio`, 1 and 1 + `ratio`,
+  // one of each per lattice cell. Every edge of a big triangle is covered by a
+  // medium and a small one end to end, so every vertex is a small, a medium
+  // and a big corner against the big edge running through (60 + 60 + 60 + 180).
+  const t = ratio;
+  const bigSide = 1 + t;
+  const corners: Vertex[] = [[0, 0], [1, 0], [0.5, ROOT3 / 2]];
+  const polygons: [string, Vertex[]][] = [["med", corners]];
+  for (let i = 0; i < 3; i++) {
+    const [px, py] = corners[i]!;
+    const [qx, qy] = corners[(i + 1) % 3]!;
+    const [rx, ry] = corners[(i + 2) % 3]!;
+    const out = Math.atan2(qy - py, qx - px) / DEG;
+    const on = Math.atan2(ry - qy, rx - qx) / DEG;
+    // the big triangle outside this edge, running from p past q
+    const b1 = polar(out, bigSide);
+    const b2 = polar(out - 60, bigSide);
+    polygons.push(["big", [[px, py], [px + b1[0], py + b1[1]], [px + b2[0], py + b2[1]]]]);
+    // the small triangle in the wedge at q, between those two big ones
+    const s1 = polar(out, t);
+    const s2 = polar(on - 60, t);
+    polygons.push(["small", [[qx, qy], [qx + s1[0], qy + s1[1]], [qx + s2[0], qy + s2[1]]]]);
+  }
+  // The translation to the medium triangle on the big triangle's next edge
+  // round: that edge leaves the origin at -60°, carrying the small triangle
+  // first and the medium one behind it.
+  const near = polar(-60, t);
+  const far = polar(-60, bigSide);
+  const back = polar(-120);
+  const third: Vertex = [near[0] + back[0], near[1] + back[1]];
+  const c1: Vertex = [
+    (near[0] + far[0] + third[0]) / 3 - (corners[0]![0] + corners[1]![0] + corners[2]![0]) / 3,
+    (near[1] + far[1] + third[1]) / 3 - (corners[0]![1] + corners[1]![1] + corners[2]![1]) / 3,
+  ];
+  const { width, height, cells } = triangularDomain(c1, polygons);
+  return template([3, 3, 3, 3], width, height, cells, { mirrored: false });
+}
+
 // -- registry ----------------------------------------------------------------
+
+export type ArchFamily = "uniform" | "dual" | "isogonal";
 
 export interface ArchTiling {
   key: string;
@@ -646,7 +994,13 @@ export interface ArchTiling {
   config: number[];
   edgeDirections: number;
   template: () => ArchTemplate;
-  vertexTransitive: boolean;
+  /** "uniform" (Archimedean), "dual" (Laves) or "isogonal" (not edge to
+   * edge). The uniform and isogonal families are vertex-transitive; the duals
+   * are face-transitive instead. */
+  family: ArchFamily;
+  /** The tiling maps onto itself under some 180° rotation — true of every
+   * wallpaper group here except p3 (three-scale triangular). */
+  halfTurn: boolean;
 }
 
 // Listed in vertex-configuration order, the order Wikipedia's "List of
@@ -654,23 +1008,33 @@ export interface ArchTiling {
 // way; the Laves block repeats it, each dual next to the position its uniform
 // tiling holds above. Mirrors ARCH_TILINGS in boards/tilings.py.
 export const ARCH_TILINGS: ArchTiling[] = [
-  { key: "snubhex", label: "Snub hexagonal", config: [3, 3, 3, 3, 6], edgeDirections: 12, template: snubhexTemplate, vertexTransitive: true },
-  { key: "elongated", label: "Elongated triangular", config: [3, 3, 3, 4, 4], edgeDirections: 12, template: elongatedTemplate, vertexTransitive: true },
-  { key: "snubsquare", label: "Snub square", config: [3, 3, 4, 3, 4], edgeDirections: 12, template: snubsquareTemplate, vertexTransitive: true },
-  { key: "rhombitrihex", label: "Rhombitrihexagonal", config: [3, 4, 6, 4], edgeDirections: 12, template: rhombitrihexTemplate, vertexTransitive: true },
-  { key: "trihex", label: "Trihexagonal", config: [3, 6, 3, 6], edgeDirections: 12, template: trihexTemplate, vertexTransitive: true },
-  { key: "trunchex", label: "Truncated hexagonal", config: [3, 12, 12], edgeDirections: 12, template: trunchexTemplate, vertexTransitive: true },
-  { key: "trunctrihex", label: "Truncated trihexagonal", config: [4, 6, 12], edgeDirections: 12, template: trunctrihexTemplate, vertexTransitive: true },
-  { key: "truncsquare", label: "Truncated square", config: [4, 8, 8], edgeDirections: 8, template: truncsquareTemplate, vertexTransitive: true },
+  { key: "snubhex", label: "Snub hexagonal", config: [3, 3, 3, 3, 6], edgeDirections: 12, template: snubhexTemplate, family: "uniform", halfTurn: true },
+  { key: "elongated", label: "Elongated triangular", config: [3, 3, 3, 4, 4], edgeDirections: 12, template: elongatedTemplate, family: "uniform", halfTurn: true },
+  { key: "snubsquare", label: "Snub square", config: [3, 3, 4, 3, 4], edgeDirections: 12, template: snubsquareTemplate, family: "uniform", halfTurn: true },
+  { key: "rhombitrihex", label: "Rhombitrihexagonal", config: [3, 4, 6, 4], edgeDirections: 12, template: rhombitrihexTemplate, family: "uniform", halfTurn: true },
+  { key: "trihex", label: "Trihexagonal", config: [3, 6, 3, 6], edgeDirections: 12, template: trihexTemplate, family: "uniform", halfTurn: true },
+  { key: "trunchex", label: "Truncated hexagonal", config: [3, 12, 12], edgeDirections: 12, template: trunchexTemplate, family: "uniform", halfTurn: true },
+  { key: "trunctrihex", label: "Truncated trihexagonal", config: [4, 6, 12], edgeDirections: 12, template: trunctrihexTemplate, family: "uniform", halfTurn: true },
+  { key: "truncsquare", label: "Truncated square", config: [4, 8, 8], edgeDirections: 8, template: truncsquareTemplate, family: "uniform", halfTurn: true },
   // the Laves (dual / Catalan) tilings -- face-transitive
-  { key: "floret", label: "Floret pentagonal", config: [3, 3, 3, 3, 6], edgeDirections: 12, template: () => dualTemplate(snubhexTemplate), vertexTransitive: false },
-  { key: "prismaticpent", label: "Prismatic pentagonal", config: [3, 3, 3, 4, 4], edgeDirections: 12, template: () => dualTemplate(elongatedTemplate), vertexTransitive: false },
-  { key: "cairo", label: "Cairo pentagonal", config: [3, 3, 4, 3, 4], edgeDirections: 12, template: () => dualTemplate(snubsquareTemplate), vertexTransitive: false },
-  { key: "deltoidal", label: "Deltoidal trihexagonal", config: [3, 4, 6, 4], edgeDirections: 12, template: () => dualTemplate(rhombitrihexTemplate), vertexTransitive: false },
-  { key: "rhombille", label: "Rhombille", config: [3, 6, 3, 6], edgeDirections: 12, template: () => dualTemplate(trihexTemplate), vertexTransitive: false },
-  { key: "triakis", label: "Triakis triangular", config: [3, 12, 12], edgeDirections: 12, template: () => dualTemplate(trunchexTemplate), vertexTransitive: false },
-  { key: "kisrhombille", label: "Kisrhombille", config: [4, 6, 12], edgeDirections: 12, template: () => dualTemplate(trunctrihexTemplate), vertexTransitive: false },
-  { key: "tetrakis", label: "Tetrakis square", config: [4, 8, 8], edgeDirections: 8, template: () => dualTemplate(truncsquareTemplate), vertexTransitive: false },
+  { key: "floret", label: "Floret pentagonal", config: [3, 3, 3, 3, 6], edgeDirections: 12, template: () => dualTemplate(snubhexTemplate), family: "dual", halfTurn: true },
+  { key: "prismaticpent", label: "Prismatic pentagonal", config: [3, 3, 3, 4, 4], edgeDirections: 12, template: () => dualTemplate(elongatedTemplate), family: "dual", halfTurn: true },
+  { key: "cairo", label: "Cairo pentagonal", config: [3, 3, 4, 3, 4], edgeDirections: 12, template: () => dualTemplate(snubsquareTemplate), family: "dual", halfTurn: true },
+  { key: "deltoidal", label: "Deltoidal trihexagonal", config: [3, 4, 6, 4], edgeDirections: 12, template: () => dualTemplate(rhombitrihexTemplate), family: "dual", halfTurn: true },
+  { key: "rhombille", label: "Rhombille", config: [3, 6, 3, 6], edgeDirections: 12, template: () => dualTemplate(trihexTemplate), family: "dual", halfTurn: true },
+  { key: "triakis", label: "Triakis triangular", config: [3, 12, 12], edgeDirections: 12, template: () => dualTemplate(trunchexTemplate), family: "dual", halfTurn: true },
+  { key: "kisrhombille", label: "Kisrhombille", config: [4, 6, 12], edgeDirections: 12, template: () => dualTemplate(trunctrihexTemplate), family: "dual", halfTurn: true },
+  { key: "tetrakis", label: "Tetrakis square", config: [4, 8, 8], edgeDirections: 8, template: () => dualTemplate(truncsquareTemplate), family: "dual", halfTurn: true },
+  // the isogonal tilings that are not edge to edge: vertex-transitive like the
+  // uniform ones, but a tile's corner may land in the middle of its neighbour's
+  // edge. config counts that neighbour, so it is the tiles meeting at a vertex
+  // rather than a corner sequence.
+  { key: "offsetsquare", label: "Offset square", config: [4, 4, 4], edgeDirections: 2, template: offsetsquareTemplate, family: "isogonal", halfTurn: true },
+  { key: "staggeredtri", label: "Staggered triangular", config: [3, 3, 3, 3], edgeDirections: 3, template: staggeredtriTemplate, family: "isogonal", halfTurn: true },
+  { key: "pythagorean", label: "Pythagorean", config: [4, 4, 4], edgeDirections: 2, template: pythagoreanTemplate, family: "isogonal", halfTurn: true },
+  { key: "rotatedhex", label: "Rotated hexagonal", config: [3, 6, 6], edgeDirections: 6, template: rotatedhexTemplate, family: "isogonal", halfTurn: true },
+  { key: "rotatedtri", label: "Rotated triangular", config: [3, 3, 6], edgeDirections: 6, template: rotatedtriTemplate, family: "isogonal", halfTurn: true },
+  { key: "threescaletri", label: "Three-scale triangular", config: [3, 3, 3, 3], edgeDirections: 3, template: threescaletriTemplate, family: "isogonal", halfTurn: false },
 ];
 
 const ARCH_BY_KEY = new Map(ARCH_TILINGS.map((t) => [t.key, t]));

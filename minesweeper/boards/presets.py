@@ -220,6 +220,28 @@ ARCH_PRESETS = {
         "mobius": {"easy": (4, 2, 28), "medium": (6, 2, 44), "hard": (8, 3, 90)},
         "klein": {"easy": (5, 2, 34), "medium": (7, 2, 52), "hard": (8, 3, 90)},
     },
+    # The isogonal (non-edge-to-edge) tilings: the plane only for now
+    # (TilingSpec.flat_only), so each has a "flat" column and no seam windows.
+    # Windows chosen for a square board of about 490px at 100 / 190 / 350
+    # cells, mined at the usual 14 / 16 / 19 per cent.
+    "offsetsquare": {
+        "flat": {"easy": (10, 5, 16, 45), "medium": (12, 6, 26, 38), "hard": (18, 9, 67, 26)},
+    },
+    "staggeredtri": {
+        "flat": {"easy": (7, 4, 18, 61), "medium": (8, 5, 27, 51), "hard": (12, 7, 66, 38)},
+    },
+    "pythagorean": {
+        "flat": {"easy": (3, 3, 14, 61), "medium": (4, 4, 27, 45), "hard": (6, 6, 71, 31)},
+    },
+    "rotatedhex": {
+        "flat": {"easy": (5, 3, 13, 43), "medium": (7, 4, 28, 34), "hard": (10, 6, 72, 24)},
+    },
+    "rotatedtri": {
+        "flat": {"easy": (5, 3, 13, 64), "medium": (7, 4, 27, 48), "hard": (10, 6, 68, 34)},
+    },
+    "threescaletri": {
+        "flat": {"easy": (5, 3, 13, 65), "medium": (7, 4, 28, 46), "hard": (10, 6, 72, 32)},
+    },
 }
 
 # Load the shared presets (data/presets.json) into _PRESETS. Each row is

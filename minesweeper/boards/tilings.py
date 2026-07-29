@@ -216,8 +216,58 @@ def _template(config, width, height, polygons, mirrored=True, glide=False,
                 if distance(image, x, y) > 1e-4:
                     raise ValueError(f"mirror of {tag} is not a vertex")
             mirror[tag] = (image, dm, dn)
+    cells = _insert_t_vertices(verts, cells, width, height)
     return _ArchTemplate(config, width, height, verts, tuple(cells), mirror,
                          glide, centre)
+
+
+# Tag coordinates are rounded to 1e-6, so a vertex genuinely on an edge can
+# miss it by about 1e-6; the nearest vertex that is *not* on an edge is two
+# orders of magnitude further off in every template here.
+_T_VERTEX_TOL = 1e-5
+
+
+def _insert_t_vertices(verts, cells, width, height):
+    """Split every cell edge at the vertices lying inside it.
+
+    A tiling that is not edge-to-edge has vertices landing in the *interior*
+    of a neighbouring tile's edge -- a T-vertex. Recording one as a vertex of
+    the tile whose edge it splits leaves the drawn polygon unchanged (the
+    point is collinear) but makes the two tiles share a vertex id, which is
+    what ``_shared_vertex_adjacency`` runs on. It also turns the tiling into
+    an edge-to-edge *mesh* of polygons with 180-degree corners, so the Euler
+    characteristic and boundary counts stay meaningful. Edge-to-edge tilings
+    have no such vertex, so this is a no-op for all sixteen Archimedean and
+    Laves templates.
+    """
+    def at(tag, dm, dn):
+        return (dm * width + tag[0], dn * height + tag[1])
+
+    out = []
+    for name, refs in cells:
+        points = [at(*ref) for ref in refs]
+        split = []
+        for i, ref in enumerate(refs):
+            ax, ay = points[i]
+            bx, by = points[(i + 1) % len(refs)]
+            ex, ey = bx - ax, by - ay
+            span = math.hypot(ex, ey)
+            found = []
+            for dm in range(math.floor(min(ax, bx) / width),
+                            math.floor(max(ax, bx) / width) + 1):
+                for dn in range(math.floor(min(ay, by) / height),
+                                math.floor(max(ay, by) / height) + 1):
+                    for tag in verts:
+                        vx, vy = at(tag, dm, dn)
+                        if abs((vx - ax) * ey - (vy - ay) * ex) > _T_VERTEX_TOL * span:
+                            continue  # not on the edge's line
+                        s = ((vx - ax) * ex + (vy - ay) * ey) / (span * span)
+                        if 1e-9 < s < 1 - 1e-9:
+                            found.append((s, (tag, dm, dn)))
+            split.append(ref)
+            split.extend(hit for _, hit in sorted(found))
+        out.append((name, tuple(split)))
+    return out
 
 
 def _trihex_template() -> _ArchTemplate:
@@ -569,23 +619,262 @@ def _kisrhombille_template() -> _ArchTemplate:
     return _dual_template(_trunctrihex_template)
 
 
+# -- isogonal (non-edge-to-edge) tilings -------------------------------------
+#
+# Convex regular polygons also tile the plane *without* meeting edge to edge:
+# a tile's corner can land in the interior of its neighbour's edge, a
+# T-vertex. Wikipedia's "Euclidean tilings by convex regular polygons"
+# pictures six isogonal (vertex-transitive) families of these -- every vertex
+# alike, and each family carrying one free real parameter: a row offset, or
+# the ratio between two tile sizes. The six built below are their most
+# symmetric members (offset 1/2, size ratio 1/2). A seventh family exists --
+# square rows offset in a zig-zag rather than progressively -- but at the
+# half-square offset it is the same tiling as the running bond below, so it
+# is not built separately.
+#
+# They need no new machinery: each is periodic, so one rectangular domain
+# describes it, and _insert_t_vertices records the T-vertices so the shared-
+# vertex adjacency rule still sees the neighbours across a split edge. The
+# extra vertex is collinear, so it is invisible when the tile is drawn; the
+# renderer's shape colouring drops it before measuring, and a square with a
+# split edge is still a square.
+#
+# All six are flat-only for now (TilingSpec.flat_only): wrapping one onto a
+# manifold needs its own preset windows per surface, and for the reflective
+# two a seam mirror that survives the T-vertices.
+
+
+def _periodic_domain(v1, v2, width, height, polygons, turn=0.0, span=8):
+    """The tiles of a doubly periodic pattern whose centroids land in the
+    ``width`` x ``height`` domain.
+
+    ``v1``/``v2`` generate the pattern's translation lattice and ``polygons``
+    are the tiles hung off one lattice point, both in the pattern's own
+    frame; everything is rotated by ``turn`` degrees into the domain's frame.
+    Tiles are deduplicated by rounded centroid, so one shared between lattice
+    points is kept once (and named once)."""
+    kept = {}
+    for m in range(-span, span + 1):
+        for n in range(-span, span + 1):
+            ox = m * v1[0] + n * v2[0]
+            oy = m * v1[1] + n * v2[1]
+            for name, polygon in polygons:
+                points = [_rotate2((x + ox, y + oy), turn) for x, y in polygon]
+                gx = sum(x for x, _ in points) / len(points)
+                gy = sum(y for _, y in points) / len(points)
+                if -1e-9 <= gx < width - 1e-9 and -1e-9 <= gy < height - 1e-9:
+                    kept[(name, round(gx, 6), round(gy, 6))] = points
+    return [(f"{key[0]}{i}", points)
+            for i, (key, points) in enumerate(sorted(kept.items()))]
+
+
+def _rotate2(point, degrees):
+    if not degrees:
+        return point
+    angle = math.radians(degrees)
+    cos, sin = math.cos(angle), math.sin(angle)
+    return (point[0] * cos - point[1] * sin, point[0] * sin + point[1] * cos)
+
+
+def _triangular_domain(c1, polygons):
+    """One rectangular domain of a pattern on the triangular lattice
+    generated by ``c1`` and its 60-degree rotation: the |c1| x |c1|*sqrt(3)
+    rectangle (two lattice points), in the frame where ``c1`` lies along the
+    x axis. The same orthogonal-superlattice trick _snubhex_template uses."""
+    pitch = math.hypot(*c1)
+    turn = -math.degrees(math.atan2(c1[1], c1[0]))
+    width, height = pitch, pitch * ROOT3
+    v1, v2 = c1, _rotate2(c1, 60)
+    return width, height, _periodic_domain(v1, v2, width, height, polygons, turn)
+
+
+def _polar(degrees, radius=1.0):
+    angle = math.radians(degrees)
+    return (radius * math.cos(angle), radius * math.sin(angle))
+
+
+def _offsetsquare_template() -> _ArchTemplate:
+    """Offset square, the running bond of a brick wall (cmm): rows of unit
+    squares, each row shifted half a square against the one below, so every
+    vertex is two square corners meeting the middle of a third square's edge
+    (90 + 90 + 180). The domain runs from a square row's centreline, so the
+    template midline is a mirror line."""
+    return _template((4, 4, 4), 1.0, 2.0, [
+        ("sq0", [(0, -0.5), (1, -0.5), (1, 0.5), (0, 0.5)]),
+        ("sq1", [(-0.5, 0.5), (0.5, 0.5), (0.5, 1.5), (-0.5, 1.5)]),
+    ])
+
+
+def _staggeredtri_template() -> _ArchTemplate:
+    """Staggered triangular (cmm): strips of unit triangles, each strip
+    shifted half an edge against the one below -- half a step off the
+    triangular tiling's own alignment, so every strip vertex lands in the
+    middle of the neighbouring strip's edge (60 + 60 + 60 + 180). The
+    strip mirror is a glide (reflect plus half a period)."""
+    h = ROOT3 / 2
+    return _template((3, 3, 3, 3), 1.0, 2 * h, [
+        ("up0", [(0, 0), (1, 0), (0.5, h)]),
+        ("down0", [(-0.5, h), (0.5, h), (0, 0)]),
+        ("up1", [(0, h), (1, h), (0.5, 2 * h)]),
+        ("down1", [(-0.5, 2 * h), (0.5, 2 * h), (0, h)]),
+    ], glide=True)
+
+
+def _pythagorean_template(ratio: float = 0.5) -> _ArchTemplate:
+    """Pythagorean, the two-squares tiling (p4): squares of side 1 and
+    ``ratio`` laid so that four small squares surround each large one and
+    every vertex is a large corner, a small corner and a large edge passing
+    through (90 + 90 + 180). Its translation lattice (1, r) / (-r, 1) is
+    tilted against the squares, so the domain is the axis-aligned
+    superlattice square of side (1 + r*r) / r -- 2.5 at r = 1/2, holding
+    five squares of each size. p4 has no reflection at all."""
+    r = ratio
+    side = (1 + r * r) / r
+    big = [(0, 0), (1, 0), (1, 1), (0, 1)]
+    small = [(1 - r, 1), (1, 1), (1, 1 + r), (1 - r, 1 + r)]
+    polygons = _periodic_domain((1, r), (-r, 1), side, side,
+                                [("big", big), ("small", small)])
+    return _template((4, 4, 4), side, side, polygons, mirrored=False)
+
+
+def _rotatedhex_template(gap: float = 0.5) -> _ArchTemplate:
+    """Rotated hexagonal (p6), the tiling whose triangles are each ringed by
+    three hexagons: unit hexagons slid along their shared edges until
+    triangles of side ``gap`` open between them, so every vertex is a
+    triangle corner, a hexagon corner and a hexagon edge passing through
+    (60 + 120 + 180). One of the two one-parameter families running between
+    the hexagonal tiling (gap 0) and the trihexagonal one (gap 1); the
+    hexagon centres stay on a triangular lattice, of pitch sqrt(3 + gap^2),
+    turned against the hexagons -- which is what makes it chiral."""
+    corners = [_polar(60 * k) for k in range(6)]
+    c1 = (ROOT3 * _polar(30)[0] + gap * _polar(120)[0],
+          ROOT3 * _polar(30)[1] + gap * _polar(120)[1])
+    lattice = [(0.0, 0.0), c1, _rotate2(c1, 60)]
+    polygons = [("hex", corners)]
+    # the two triangular gaps per lattice cell: the corner each of the three
+    # surrounding hexagons reaches into the gap
+    for name, triple in (("up", (lattice[0], lattice[1], lattice[2])),
+                         ("down", (lattice[1], lattice[2],
+                                   (lattice[1][0] + lattice[2][0],
+                                    lattice[1][1] + lattice[2][1])))):
+        gx = sum(p[0] for p in triple) / 3
+        gy = sum(p[1] for p in triple) / 3
+        polygons.append((name, [
+            min(((o[0] + cx, o[1] + cy) for cx, cy in corners),
+                key=lambda p: (p[0] - gx) ** 2 + (p[1] - gy) ** 2)
+            for o in triple
+        ]))
+    width, height, cells = _triangular_domain(c1, polygons)
+    return _template((3, 6, 6), width, height, cells, mirrored=False)
+
+
+def _rotatedtri_template(hexagon: float = 0.5) -> _ArchTemplate:
+    """Rotated triangular (p6), the tiling whose hexagons are each ringed by
+    six triangles: unit triangles slid past each other until hexagons of
+    side ``hexagon`` open at the triangular tiling's vertices, so every
+    vertex is a hexagon corner, a triangle corner and a triangle edge
+    passing through (60 + 120 + 180). The other family between the
+    triangular tiling (hexagon 0) and the trihexagonal one (hexagon 1),
+    with the roles of the two tiles swapped against _rotatedhex_template;
+    lattice pitch sqrt(3*hexagon^2 + 1)."""
+    h = hexagon
+    corners = [_polar(60 * k, h) for k in range(6)]
+    polygons = [("hex", corners)]
+    for k, (vx, vy) in enumerate(corners):
+        # the triangle with a corner on this hexagon corner, its edge
+        # running along the hexagon's edge and out past the next corner
+        polygons.append(("tri", [
+            (vx, vy),
+            (vx + _polar(120 + 60 * k)[0], vy + _polar(120 + 60 * k)[1]),
+            (vx + _polar(60 + 60 * k)[0], vy + _polar(60 + 60 * k)[1]),
+        ]))
+    c1 = (1.5 * h - 0.5, ROOT3 / 2 * (1 + h))
+    width, height, cells = _triangular_domain(c1, polygons)
+    # the 6-fold centre; the biggest-tile rule would pick either tile here,
+    # both having six vertices once the T-vertices are in, and a triangle
+    # centre is only 3-fold
+    centre = min((c for name, c in
+                  ((name, (sum(x for x, _ in p) / len(p),
+                           sum(y for _, y in p) / len(p)))
+                   for name, p in cells) if name.startswith("hex")),
+                 key=lambda c: c[0] ** 2 + c[1] ** 2)
+    return _template((3, 3, 6), width, height, cells, mirrored=False,
+                     centre=(round(centre[0], 6), round(centre[1], 6)))
+
+
+def _threescaletri_template(ratio: float = 0.5) -> _ArchTemplate:
+    """Three-scale triangular (p3): triangles of side ``ratio``, 1 and
+    1 + ``ratio``, one of each per lattice cell. Every edge of a big
+    triangle is covered by a medium and a small one end to end, so every
+    vertex is a small, a medium and a big corner against the big edge
+    running through (60 + 60 + 60 + 180). p3 is the one wallpaper group
+    here with no half-turn (see ArchTiling.half_turn)."""
+    t = ratio
+    big_side = 1 + t
+    corners = [(0.0, 0.0), (1.0, 0.0), (0.5, ROOT3 / 2)]
+    polygons = [("med", corners)]
+    for i in range(3):
+        (px, py), (qx, qy) = corners[i], corners[(i + 1) % 3]
+        (rx, ry) = corners[(i + 2) % 3]
+        out = math.degrees(math.atan2(qy - py, qx - px))
+        on = math.degrees(math.atan2(ry - qy, rx - qx))
+        # the big triangle outside this edge, running from p past q
+        polygons.append(("big", [
+            (px, py),
+            (px + _polar(out, big_side)[0], py + _polar(out, big_side)[1]),
+            (px + _polar(out - 60, big_side)[0], py + _polar(out - 60, big_side)[1]),
+        ]))
+        # the small triangle in the wedge at q, between those two big ones
+        polygons.append(("small", [
+            (qx, qy),
+            (qx + _polar(out, t)[0], qy + _polar(out, t)[1]),
+            (qx + _polar(on - 60, t)[0], qy + _polar(on - 60, t)[1]),
+        ]))
+    # The translation to the medium triangle on the big triangle's next edge
+    # round: that edge leaves the origin at -60 degrees, carrying the small
+    # triangle first and the medium one behind it.
+    near = _polar(-60, t)
+    far = _polar(-60, big_side)
+    third = (near[0] + _polar(-120)[0], near[1] + _polar(-120)[1])
+    c1 = ((near[0] + far[0] + third[0]) / 3 - sum(x for x, _ in corners) / 3,
+          (near[1] + far[1] + third[1]) / 3 - sum(y for _, y in corners) / 3)
+    width, height, cells = _triangular_domain(c1, polygons)
+    return _template((3, 3, 3, 3), width, height, cells, mirrored=False)
+
+
 @dataclass(frozen=True)
 class ArchTiling:
-    """One template-based periodic tiling. The eight below are the
-    Archimedean (semiregular) tilings; their duals, the Laves (Catalan)
-    tilings, fit the same registry with ``vertex_transitive=False`` -- see
-    AGENTS.md. The menu catalog, mode strings, presets and tests all
-    derive from this list."""
+    """One template-based periodic tiling, in one of three families: the
+    ``uniform`` (Archimedean) tilings, their ``dual`` (Laves/Catalan)
+    partners, and the ``isogonal`` tilings that are not edge to edge -- see
+    AGENTS.md. The menu catalog, mode strings, presets and tests all derive
+    from this list."""
     key: str                       # "trihex"
     label: str                     # menu label, "Trihexagonal"
     config: tuple[int, ...]        # for a vertex-transitive tiling, the
-    #   vertex configuration (3, 6, 3, 6); for a face-transitive (Laves)
-    #   tiling, the configuration of its single tile shape.
-    edge_directions: int           # distinct edge directions (12 or 8)
+    #   vertex configuration (3, 6, 3, 6) -- for an isogonal one, counting
+    #   the tile whose edge passes straight through the vertex; for a
+    #   face-transitive (Laves) tiling, the configuration of its single
+    #   tile shape.
+    edge_directions: int           # distinct edge directions
     template: Callable[[], "_ArchTemplate"]
-    vertex_transitive: bool = True  # Archimedean: every vertex identical.
-    #   Laves duals are face-transitive instead (every tile congruent), so
-    #   the vertex-configuration invariants do not apply to them.
+    family: str = "uniform"        # "uniform" | "dual" | "isogonal"
+    half_turn: bool = True         # the tiling maps onto itself under some
+    #   180-degree rotation, so a window centred on one reads symmetric.
+    #   True of every wallpaper group here except p3.
+
+    @property
+    def vertex_transitive(self) -> bool:
+        """Every vertex alike -- the uniform and isogonal families. The
+        Laves duals are face-transitive instead (every tile congruent), so
+        the vertex-configuration invariants do not apply to them."""
+        return self.family != "dual"
+
+    @property
+    def edge_to_edge(self) -> bool:
+        """Tiles meet whole edge against whole edge. False for the isogonal
+        family, whose tiles carry T-vertices (see _insert_t_vertices)."""
+        return self.family != "isogonal"
 
 
 # Listed in vertex-configuration order, the order Wikipedia's "List of
@@ -612,21 +901,37 @@ ARCH_TILINGS = (
     # is the tile's Laves symbol (the dual's vertex figure) and the
     # vertex-configuration invariants do not apply.
     ArchTiling("floret", "Floret pentagonal", (3, 3, 3, 3, 6), 12,
-               _floret_template, vertex_transitive=False),
+               _floret_template, family="dual"),
     ArchTiling("prismaticpent", "Prismatic pentagonal", (3, 3, 3, 4, 4), 12,
-               _prismaticpent_template, vertex_transitive=False),
+               _prismaticpent_template, family="dual"),
     ArchTiling("cairo", "Cairo pentagonal", (3, 3, 4, 3, 4), 12,
-               _cairo_template, vertex_transitive=False),
+               _cairo_template, family="dual"),
     ArchTiling("deltoidal", "Deltoidal trihexagonal", (3, 4, 6, 4), 12,
-               _deltoidal_template, vertex_transitive=False),
+               _deltoidal_template, family="dual"),
     ArchTiling("rhombille", "Rhombille", (3, 6, 3, 6), 12,
-               _rhombille_template, vertex_transitive=False),
+               _rhombille_template, family="dual"),
     ArchTiling("triakis", "Triakis triangular", (3, 12, 12), 12,
-               _triakis_template, vertex_transitive=False),
+               _triakis_template, family="dual"),
     ArchTiling("kisrhombille", "Kisrhombille", (4, 6, 12), 12,
-               _kisrhombille_template, vertex_transitive=False),
+               _kisrhombille_template, family="dual"),
     ArchTiling("tetrakis", "Tetrakis square", (4, 8, 8), 8,
-               _tetrakis_template, vertex_transitive=False),
+               _tetrakis_template, family="dual"),
+    # the isogonal tilings that are not edge to edge: vertex-transitive like
+    # the uniform ones, but a tile's corner may land in the middle of its
+    # neighbour's edge. config counts that neighbour, so it is the tiles
+    # meeting at a vertex rather than a corner sequence.
+    ArchTiling("offsetsquare", "Offset square", (4, 4, 4), 2,
+               _offsetsquare_template, family="isogonal"),
+    ArchTiling("staggeredtri", "Staggered triangular", (3, 3, 3, 3), 3,
+               _staggeredtri_template, family="isogonal"),
+    ArchTiling("pythagorean", "Pythagorean", (4, 4, 4), 2,
+               _pythagorean_template, family="isogonal"),
+    ArchTiling("rotatedhex", "Rotated hexagonal", (3, 6, 6), 6,
+               _rotatedhex_template, family="isogonal"),
+    ArchTiling("rotatedtri", "Rotated triangular", (3, 3, 6), 6,
+               _rotatedtri_template, family="isogonal"),
+    ArchTiling("threescaletri", "Three-scale triangular", (3, 3, 3, 3), 3,
+               _threescaletri_template, family="isogonal", half_turn=False),
 )
 
 # Backward-compatible views derived from the single registry above.

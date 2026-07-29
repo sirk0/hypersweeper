@@ -141,6 +141,7 @@
       "regular": "Regular",
       "uniform": "Uniform",
       "dual": "Laves",
+      "isogonal": "Isogonal",
       "aperiodic": "Aperiodic"
     },
     "sphereModes": [

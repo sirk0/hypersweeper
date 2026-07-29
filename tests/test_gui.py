@@ -19,6 +19,7 @@ from minesweeper.boards import (  # noqa: E402
     SHAPED_MODES,
     SPHERE_MODES,
     TILINGS,
+    picker_families,
     picker_modes,
 )
 from minesweeper.game import CellState, Game, GameState  # noqa: E402
@@ -514,7 +515,7 @@ class TestMenu:
         assert self.click_item(menu, "flat") is None
         assert menu.path == ["flat"]
         assert self.items(menu) == {
-            "regular", "uniform", "dual", "aperiodic", "random"
+            "regular", "uniform", "dual", "isogonal", "aperiodic", "random"
         }
 
     def test_flat_regular_family_lists_the_tilings_and_shaped_boards(self):
@@ -621,19 +622,21 @@ class TestMenu:
             reached.add(result[1])
 
         reach("classic")
-        # the tiling picker on the plane and on every flat manifold
-        for surface_path in (["flat"], ["manifolds", "cylinder"],
-                             ["manifolds", "mobius"], ["manifolds", "klein"],
-                             ["manifolds", "torus"]):
-            for family in ("regular", "uniform", "dual"):
+        # the tiling picker on the plane and on every flat manifold. The
+        # families are whatever the catalog offers that surface -- the
+        # aperiodic and isogonal ones exist on the plane only.
+        for surface_path, surface in ((["flat"], "flat"),
+                                      (["manifolds", "cylinder"], "cylinder"),
+                                      (["manifolds", "mobius"], "mobius"),
+                                      (["manifolds", "klein"], "klein"),
+                                      (["manifolds", "torus"], "torus")):
+            for family in picker_families(surface):
                 menu = MenuScreen()
                 for key in surface_path + [family]:
                     self.click_item(menu, key)
                 for _, key, _, enabled in menu.layout()["items"]:
                     if enabled:  # chiral tilings are gated out per surface
                         reach(*surface_path, family, key)
-        for mode in APERIODIC_MODES:  # aperiodic wraps only the plane
-            reach("flat", "aperiodic", mode)
         for mode in SPHERE_MODES:
             reach("sphere", mode)
         for mode in POLYHEDRA_MODES:

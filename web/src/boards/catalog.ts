@@ -20,6 +20,9 @@ export interface TilingSpec {
   label: string;
   chiral: boolean;
   modeOverrides: Record<string, string>;
+  /** The plane only: no wrap builders or preset windows for this tiling yet
+   * (the isogonal family). */
+  flatOnly?: boolean;
 }
 
 export const DIFFICULTIES = catalog.difficulties as string[];
@@ -39,6 +42,7 @@ export const ARCH_TILING_SPECS: TilingSpec[] = ARCH_TILINGS.map((t) => ({
   label: t.label,
   chiral: archTemplate(t.key).mirror === null,
   modeOverrides: {},
+  flatOnly: t.family === "isogonal",
 }));
 
 // Every periodic tiling as the menu sees it: the three regular tilings first,
@@ -46,10 +50,14 @@ export const ARCH_TILING_SPECS: TilingSpec[] = ARCH_TILINGS.map((t) => ({
 export const TILING_SPECS: TilingSpec[] = [...REGULAR_TILINGS, ...ARCH_TILING_SPECS];
 export const TILINGS_BY_KEY = new Map(TILING_SPECS.map((t) => [t.key, t]));
 
-// The uniform / dual-uniform picker families — exactly the vertex-transitive
-// ARCH_TILINGS and their (face-transitive) Laves duals.
-export const UNIFORM_ARCH = ARCH_TILINGS.filter((t) => t.vertexTransitive).map((t) => t.key);
-export const DUAL_ARCH = ARCH_TILINGS.filter((t) => !t.vertexTransitive).map((t) => t.key);
+// The picker families — exactly the ARCH_TILINGS rows of each family: the
+// vertex-transitive uniform ones, their (face-transitive) Laves duals, and the
+// isogonal ones that are not edge to edge.
+const familyKeys = (family: string): string[] =>
+  ARCH_TILINGS.filter((t) => t.family === family).map((t) => t.key);
+export const UNIFORM_ARCH = familyKeys("uniform");
+export const DUAL_ARCH = familyKeys("dual");
+export const ISOGONAL_ARCH = familyKeys("isogonal");
 export const FAMILY_LABELS = MENU.familyLabels as Record<string, string>;
 
 /** The mode string for a (tiling, surface) pair — the one naming convention. */
@@ -64,6 +72,7 @@ export function modeFor(tilingKey: string, surfaceKey: string): string {
  * mirror-needing surface (Möbius/Klein) rejects chiral tilings, and a surface
  * may restrict itself to an explicit tiling allow-list. */
 export function tilingAllows(tiling: TilingSpec, surface: SurfaceSpec): boolean {
+  if (tiling.flatOnly && surface.key !== "flat") return false;
   if (surface.needsMirror && tiling.chiral) return false;
   if (surface.tilings && !surface.tilings.includes(tiling.key)) return false;
   return true;
@@ -118,14 +127,18 @@ export const SHAPED_MODES = MENU.shapedModes as Record<string, string[]>;
 
 /** The regular tilings the picker offers, in order (MENU.pickerRegular). */
 export const PICKER_REGULAR = MENU.pickerRegular as string[];
-/** The picker's family rows; "aperiodic" is added on the plane only. */
+/** The picker's family rows; "isogonal" and "aperiodic" are added on the plane
+ * only — the isogonal tilings have no wrap builders yet, and the aperiodic ones
+ * no periodic domain to glue a seam with. */
 export const PICKER_FAMILIES = ["regular", "uniform", "dual"];
+export const FLAT_ONLY_FAMILIES = ["isogonal", "aperiodic"];
 export const APERIODIC_MODES = MENU.aperiodic as string[];
 
 const FAMILY_MEMBERS: Record<string, string[]> = {
   regular: PICKER_REGULAR,
   uniform: UNIFORM_ARCH,
   dual: DUAL_ARCH,
+  isogonal: ISOGONAL_ARCH,
 };
 
 /** One row of a picker family: the mode it launches, its label, and the
@@ -167,5 +180,5 @@ export function familyRows(family: string, surfaceKey: string): FamilyRow[] {
 
 /** The family rows a surface's picker offers, in order. */
 export function pickerFamilies(surfaceKey: string): string[] {
-  return surfaceKey === "flat" ? [...PICKER_FAMILIES, "aperiodic"] : PICKER_FAMILIES;
+  return surfaceKey === "flat" ? [...PICKER_FAMILIES, ...FLAT_ONLY_FAMILIES] : PICKER_FAMILIES;
 }
