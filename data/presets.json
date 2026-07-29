@@ -2600,6 +2600,136 @@
           32
         ]
       }
+    },
+    "stackedbond": {
+      "builder": "archimedean_board",
+      "args": {
+        "easy": [
+          "stackedbond",
+          7,
+          14,
+          15,
+          70
+        ],
+        "medium": [
+          "stackedbond",
+          10,
+          20,
+          37,
+          45
+        ],
+        "hard": [
+          "stackedbond",
+          13,
+          26,
+          67,
+          38
+        ]
+      }
+    },
+    "runningbond": {
+      "builder": "archimedean_board",
+      "args": {
+        "easy": [
+          "runningbond",
+          7,
+          7,
+          16,
+          61
+        ],
+        "medium": [
+          "runningbond",
+          10,
+          10,
+          35,
+          45
+        ],
+        "hard": [
+          "runningbond",
+          13,
+          13,
+          69,
+          35
+        ]
+      }
+    },
+    "basketweave": {
+      "builder": "archimedean_board",
+      "args": {
+        "easy": [
+          "basketweave",
+          4,
+          4,
+          18,
+          54
+        ],
+        "medium": [
+          "basketweave",
+          5,
+          5,
+          32,
+          45
+        ],
+        "hard": [
+          "basketweave",
+          6,
+          6,
+          55,
+          38
+        ]
+      }
+    },
+    "basketweave3": {
+      "builder": "archimedean_board",
+      "args": {
+        "easy": [
+          "basketweave3",
+          3,
+          3,
+          15,
+          70
+        ],
+        "medium": [
+          "basketweave3",
+          4,
+          4,
+          31,
+          54
+        ],
+        "hard": [
+          "basketweave3",
+          5,
+          5,
+          57,
+          45
+        ]
+      }
+    },
+    "herringbone": {
+      "builder": "archimedean_board",
+      "args": {
+        "easy": [
+          "herringbone",
+          4,
+          4,
+          19,
+          58
+        ],
+        "medium": [
+          "herringbone",
+          5,
+          5,
+          34,
+          47
+        ],
+        "hard": [
+          "herringbone",
+          6,
+          6,
+          57,
+          39
+        ]
+      }
     }
   }
 }

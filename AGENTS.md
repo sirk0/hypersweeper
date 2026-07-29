@@ -22,7 +22,7 @@ Import order is a strict DAG; a module only imports from the ones above it.
 | Module | Responsibility |
 |--------|----------------|
 | `core.py` | `Board` / `Board3D`, the `_shared_vertex_adjacency` neighbour rule, `_build` (lattice→pixels) and `_finalize_flat` (float→pixels), 3D vector helpers, and the topology invariants `euler_characteristic` / `boundary_components` / `corner_fans`. |
-| `tilings.py` | Regular flat builders (square/triangle/trigrid/hex/hexhex/hextri), the `_ArchTemplate` system, the eight Archimedean `_*_template()` factories plus their eight Laves duals (built by `_dual_template`) and the six isogonal (non-edge-to-edge) ones, and the **`ARCH_TILINGS`** registry (the one place any of them is declared). |
+| `tilings.py` | Regular flat builders (square/triangle/trigrid/hex/hexhex/hextri), the `_ArchTemplate` system, the eight Archimedean `_*_template()` factories plus their eight Laves duals (built by `_dual_template`), the six isogonal (non-edge-to-edge) ones and the five congruent-rectangle bonds, and the **`ARCH_TILINGS`** registry (the one place any of them is declared, with `_FAMILY_TRAITS` saying what each family is). |
 | `aperiodic.py` | Penrose (P3) and the Hat monotile, each with its own exact-arithmetic vertex ids. |
 | `solids.py` | Closed/convex and polycube 3D boards (pentagonal hexecontahedron, Goldberg polyhedra, geodesic icosahedron, cube, tetrahedron, frames, bipyramid). |
 | `surfaces.py` | Wrapping tilings onto surfaces: the three immersion points (`_torus_point`, `_cylinder_point`, `_mobius_point`), the shared `_assemble` tail, the nine simple `*_board` wrappers, and the Archimedean `arch_torus_board` / `arch_cylinder_board` / `arch_mobius_board`. |
@@ -202,6 +202,52 @@ areas sum to its own (no gaps, no overlaps).
 
 To wrap one onto a manifold later: drop `flat_only`, add the surface columns
 to its `ARCH_PRESETS` block, and give the reflective ones a seam mirror.
+
+## Recipe: add a congruent-rectangle bond
+
+The fourth family in `ARCH_TILINGS` (`family="rectangle"`): the brick bonds,
+tiled by one congruent **rectangle** rather than by regular polygons. Five
+ship — stacked bond, running bond, basket weave, its three-brick version and
+the herringbone — and what tells them apart is only the stagger of their rows.
+So, unlike the other three families, they are **face-transitive** (every tile
+congruent, several vertex kinds) and, bar the stacked bond, **not edge to
+edge**; `_FAMILY_TRAITS` in `tilings.py` declares both, and the derived test
+lists follow. `ArchTiling.config` is not a vertex or tile symbol here (the
+three-brick weave has two tile orbits, so neither is even well defined across
+the family) but just the tile's side count, `(4,)`.
+
+They need no new machinery: `_brick(x, y, length, height)` builds a tile, and
+one rectangular domain describes each bond (one brick for the stacked bond, two
+for the running bond, a 2 x 2 block for the weaves and the herringbone), so
+`_template` and `_insert_t_vertices` do the rest. Steps, for a new bond `foo`:
+
+1. **Template** — `_foo_template()` in `tilings.py`, bricks of length 1 and
+   height `r` so the preset `scale` stays px per brick length. Build the domain
+   directly when it is a small block (`_basketweave_template`) or from the
+   pattern's translation lattice via `_periodic_domain` when it is diagonal
+   (`_herringbone_template`). Only claim a `mirror` the bond really has — pass
+   `mirrored=False` for the pgg/p4-style ones, `glide=True` where the mirror
+   needs the half-period shift.
+2. **Window centre** — a bond's tiles are all congruent, so the default
+   biggest-tile rule picks an arbitrary brick; check that a brick centre really
+   is a half-turn centre (it is for the herringbone) and otherwise pin `centre`
+   to one that is: the weaves use a block corner, their quarter-turn centre.
+   `test_flat_board_is_symmetric` is the oracle — a window centred off a
+   rotation centre scores below its 0.85 bar.
+3. **Registry** — one `ArchTiling("foo", "Foo label", (4,), 2, _foo_template,
+   family="rectangle")` row.
+4. **Presets** — a `"foo"` block in `ARCH_PRESETS` with a **`flat` column
+   only** (the family is gated to the plane by `catalog._FLAT_ONLY_FAMILIES`),
+   then re-run `scripts/export_data.py` and `export_conformance.py`.
+5. **Port it to `web/src/boards/tilings.ts`** — the same template verbatim, one
+   more `ARCH_TILINGS` row. Its menu icon is generated: the `"domain"` patch
+   style in `web/src/ui/icons.ts` draws whole periods of the bond, which is the
+   only figure that shows a stagger (a vertex rosette is two or three bricks).
+
+`TestRectangles` in `tests/test_boards.py` then covers the new bond: a domain
+covered exactly, T-vertices wherever the bond is staggered, and tiles that are
+rectangles of its aspect ratio — add that ratio to the class's `RATIOS` table,
+the one line the suite cannot derive.
 
 ## Recipe: add an aperiodic / shaped / solid board
 

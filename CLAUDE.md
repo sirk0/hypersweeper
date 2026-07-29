@@ -36,17 +36,25 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   records that point on the split tile so shared-vertex adjacency still
   finds the neighbour; it is collinear, so the drawn tile is unchanged and
   the shape colouring drops it before measuring. They are **flat only**
-  (`TilingSpec.flat_only`) — no manifold wraps yet. The menu's shared
+  (`TilingSpec.flat_only`) — no manifold wraps yet. A fourth family,
+  `family="rectangle"`, holds the five brick **bonds** tiled by one congruent
+  rectangle (stacked bond, running bond, basket weave, its three-brick
+  version, herringbone). These are face-transitive rather than
+  vertex-transitive, and — bar the stacked bond, which is a stretched square
+  tiling — not edge to edge either; `_FAMILY_TRAITS` in `tilings.py` declares
+  those two traits per family and the test lists derive from it. Flat only as
+  well. The menu's shared
   tiling picker is a list of family
   submenus: **Regular** (the three regular tilings, plus on the plane the
   shaped boards cut from them), **Uniform** (the eight non-regular uniform
   tilings, `family="uniform"` in `ARCH_TILINGS`), **Laves** (their
-  eight duals) and, on the plane only, **Isogonal** and **Aperiodic**. `ARCH_TILINGS` is
+  eight duals) and, on the plane only, **Isogonal**, **Congruent rectangles**
+  and **Aperiodic**. `ARCH_TILINGS` is
   listed in vertex-configuration order — Wikipedia's "List of Euclidean
   uniform tilings" order — and that registry order is the menu order.
   **To add a tiling or surface, see `AGENTS.md`** — a tiling is
-  one `ARCH_TILINGS` + one `ARCH_PRESETS` row (its uniform/dual family
-  membership follows from `vertex_transitive`, no menu edit needed), a
+  one `ARCH_TILINGS` + one `ARCH_PRESETS` row (its family submenu follows
+  from the `family` field, no menu edit needed), a
   surface is one `SurfaceSpec` + an immersion + a wrap builder; the menu,
   mode strings, `MODES_3D`, and chirality gating all derive from those
   registries.
@@ -67,7 +75,8 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   page — Classic / Flat / Flat manifolds / Sphere / Polyhedra. Classic
   launches flat squares; Flat (the plane) and each flat manifold (cylinder,
   Möbius, Klein, torus) open a shared tiling picker — the Regular / Uniform
-  / Laves family submenus, Isogonal and Aperiodic on the plane only, and a random option
+  / Laves family submenus, Isogonal, Congruent rectangles and Aperiodic on the
+  plane only, and a random option
   — parameterised by the surface it was reached through; Sphere and
   Polyhedra list their finished boards. Navigation is a `path` breadcrumb
   driven by the `MENU_ROOT`/`MANIFOLD_*`/`FAMILY_*`/`SPHERE_MODES`/

@@ -331,6 +331,36 @@ function tileRing(key: string): Tile[] {
   return [hub, ...ring];
 }
 
+/** A whole-periods block of the tiling — its repeat unit, repeated until the
+ * patch holds at least `MIN_DOMAIN_TILES` tiles. For a bond of congruent
+ * rectangles that is the picture: a vertex figure there is two or three bricks
+ * (an L or a plus sign) and a tile ring barely more, while a block of periods
+ * shows the whole stagger the bond is named for. A domain's cells are
+ * normalised to sit in copy (0, 0), so this is exactly whole periods — the
+ * patch tiles a rectangle and fills the icon box. */
+const MIN_DOMAIN_TILES = 6;
+
+function domainPatch(key: string): Tile[] {
+  const t = archTemplate(key);
+  // enough copies for a patch that reads as a pattern: one domain for the
+  // weaves and the herringbone (eight and twelve bricks), a block of them for
+  // the stacked and running bonds (one and two)
+  const copies = Math.max(1, Math.ceil(Math.sqrt(MIN_DOMAIN_TILES / t.cells.length)));
+  const tiles: Tile[] = [];
+  for (let m = 0; m < copies; m++) {
+    for (let n = 0; n < copies; n++) {
+      for (const cell of t.cells) {
+        const pts: P[] = cell.refs.map((r) => {
+          const v = t.verts.get(r.tag)!;
+          return [v[0] + (r.dm + m) * t.width, v[1] + (r.dn + n) * t.height];
+        });
+        tiles.push({ kind: cell.name.replace(/\d+$/, ""), pts, centre: centroid(pts) });
+      }
+    }
+  }
+  return tiles;
+}
+
 /** Scale a patch into the icon box (y flipped — tilings are y-up, SVG y-down). */
 function fitTiles(tiles: Tile[], box = D * 0.9): Tile[] {
   const xs = tiles.flatMap((t) => t.pts.map((p) => p[0]));
@@ -399,11 +429,14 @@ const PATCH_PICK: Record<string, (tiles: Tile[]) => Tile[]> = {
   },
 };
 
-type PatchStyle = "ring" | "rosette";
+type PatchStyle = "ring" | "rosette" | "domain";
 
-const VERTEX_TRANSITIVE = new Set(
-  ARCH_TILINGS.filter((t) => t.family !== "dual").map((t) => t.key),
-);
+// The tilings drawn as a tile with the ring of tiles round it rather than as a
+// vertex rosette (see styleFor): everything but the face-transitive Laves
+// duals, whose rosette is the compact figure they are known by. A rectangle
+// bond's rosette is only two or three bricks — an L or a plus sign — while its
+// ring shows the stagger the bond is named for.
+const RING_PATCH = new Set(ARCH_TILINGS.filter((t) => t.family !== "dual").map((t) => t.key));
 const ARCH_KEYS = new Set(ARCH_TILINGS.map((t) => t.key));
 
 /** Which figure a tiling's icon is cut from. A *uniform* tiling is drawn as one
@@ -413,6 +446,8 @@ const ARCH_KEYS = new Set(ARCH_TILINGS.map((t) => t.key));
  * face-transitive tiling closes into the compact symmetric disc it is known by:
  * a square cut by its diagonals, three rhombi as a tumbling block, six florets
  * pinwheeling round a point.
+ *
+ * A *rectangle bond* is drawn as one fundamental domain — see domainPatch.
  *
  * The exception is elongated triangular, whose icon is picked out of the
  * rosette by hand (see PATCH_PICK). */
@@ -427,10 +462,15 @@ const PATCH_STYLE: Record<string, PatchStyle> = {
   offsetsquare: "rosette",
   staggeredtri: "rosette",
   pythagorean: "rosette",
+  // The rectangle bonds are about the stagger of a whole course of bricks, so
+  // they are drawn as one repeat unit of the pattern.
+  ...Object.fromEntries(
+    ARCH_TILINGS.filter((t) => t.family === "rectangle").map((t) => [t.key, "domain" as const]),
+  ),
 };
 
 function styleFor(key: string): PatchStyle {
-  return PATCH_STYLE[key] ?? (VERTEX_TRANSITIVE.has(key) ? "ring" : "rosette");
+  return PATCH_STYLE[key] ?? (RING_PATCH.has(key) ? "ring" : "rosette");
 }
 
 /** Patches drawn the other way up, so the icon points the way the tiling is
@@ -438,7 +478,12 @@ function styleFor(key: string): PatchStyle {
 const PATCH_FLIP = new Set(["triakis"]);
 
 function tilingPatch(key: string, style: PatchStyle = styleFor(key)): string[] {
-  let picked = style === "ring" ? tileRing(key) : rosette(key, ROSETTE_DEGREE[key]);
+  let picked =
+    style === "ring"
+      ? tileRing(key)
+      : style === "domain"
+        ? domainPatch(key)
+        : rosette(key, ROSETTE_DEGREE[key]);
   const pick = PATCH_PICK[key];
   if (pick) picked = pick(picked);
   if (PATCH_FLIP.has(key)) {
@@ -768,6 +813,10 @@ function draw(rawKey: string): string[] {
   // the family is — tiles sliding along each other's edges rather than meeting
   // them, with the gaps that opens filled by a second shape
   if (key === "isogonal") return tilingPatch("rotatedhex");
+  // the Congruent rectangles family row: the herringbone, the bond whose
+  // staggered rectangles read as a pattern even at icon size (a stacked or
+  // running bond patch is a handful of plain bars)
+  if (key === "rectangle") return tilingPatch("herringbone");
   if (key === "regular") {
     // the Regular family row: one tile of each of the three regular tilings
     return [

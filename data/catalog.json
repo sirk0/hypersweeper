@@ -142,6 +142,7 @@
       "uniform": "Uniform",
       "dual": "Laves",
       "isogonal": "Isogonal",
+      "rectangle": "Congruent rectangles",
       "aperiodic": "Aperiodic"
     },
     "sphereModes": [

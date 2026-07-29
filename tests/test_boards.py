@@ -69,16 +69,19 @@ from minesweeper.boards import (
 # edge; their Laves duals are face-transitive (every tile congruent) and get
 # a different set of invariants; the isogonal ones are vertex-transitive but
 # not edge to edge, so their tiles carry collinear T-vertices and the
-# corner-counting invariants have to drop those first. Reflective tilings (a
-# plain mirror, not just a glide or pinwheel) additionally give left-right /
-# top-bottom symmetric boards.
+# corner-counting invariants have to drop those first; the rectangle bonds are
+# face-transitive *and* (bar the stacked bond) not edge to edge, so they get
+# both treatments. Reflective tilings (a plain mirror, not just a glide or
+# pinwheel) additionally give left-right / top-bottom symmetric boards.
 _UNIFORM = [t.key for t in ARCH_TILINGS if t.family == "uniform"]
 # the tilings that wrap a surface at all: the isogonal family is flat-only,
 # so the wrapped-surface suites derive their subjects from the catalog
 _WRAPPED_TILINGS = [t.key for t in ARCH_TILINGS if "torus" in TILINGS[t.key][1]]
 _ISOGONAL = [t.key for t in ARCH_TILINGS if t.family == "isogonal"]
+_RECTANGLE = [t.key for t in ARCH_TILINGS if t.family == "rectangle"]
 _VERTEX_TRANSITIVE = [t.key for t in ARCH_TILINGS if t.vertex_transitive]
 _FACE_TRANSITIVE = [t.key for t in ARCH_TILINGS if not t.vertex_transitive]
+_EDGE_TO_EDGE = [t.key for t in ARCH_TILINGS if t.edge_to_edge]
 _NO_HALF_TURN = {t.key for t in ARCH_TILINGS if not t.half_turn}
 _REFLECTIVE = {
     t.key for t in ARCH_TILINGS
@@ -505,12 +508,15 @@ class TestArchimedean:
 
     @pytest.mark.parametrize("mode", sorted(_FACE_TRANSITIVE))
     def test_tiles_are_congruent(self, mode):
-        """A face-transitive (Laves) tiling is built from one congruent
-        tile: every polygon has the same sorted edge lengths and interior
-        angles (up to rotation/reflection). Empty until Laves tilings land;
-        it then covers each automatically."""
+        """A face-transitive tiling (a Laves dual, a rectangle bond) is built
+        from one congruent tile: every polygon has the same sorted edge
+        lengths and interior angles (up to rotation/reflection). Measured over
+        the tiles' real corners, so a bond's brick is congruent to its
+        neighbours however many of their corners split its edges (a no-op for
+        the edge-to-edge Laves tilings -- see _corners)."""
         board = archimedean_board(mode, 5, 5, 5)
-        signatures = {_tile_signature(p) for p in board.polygons.values()}
+        signatures = {_tile_signature([c for c, _ in _corners(p)])
+                      for p in board.polygons.values()}
         assert len(signatures) == 1, f"{mode} has non-congruent tiles"
 
     @pytest.mark.parametrize("mode", sorted(_ARCH_CONFIGS))
@@ -703,12 +709,80 @@ class TestIsogonal:
                                for tag, dm, dn in refs])
         assert abs(total - template.width * template.height) < 1e-9
 
-    @pytest.mark.parametrize("mode", sorted(_UNIFORM + _FACE_TRANSITIVE))
+    @pytest.mark.parametrize("mode", sorted(_EDGE_TO_EDGE))
     def test_edge_to_edge_tilings_gain_no_t_vertices(self, mode):
-        """The T-vertex pass must be a no-op for the Archimedean and Laves
-        templates: every tile is still exactly its own corners."""
+        """The T-vertex pass must be a no-op for every template declared edge
+        to edge (the Archimedean and Laves ones): each tile is still exactly
+        its own corners."""
         board = archimedean_board(mode, 4, 4, 5)
         assert all(len(_corners(p)) == len(p) for p in board.polygons.values())
+
+
+class TestRectangles:
+    """The five bonds tiled by one congruent rectangle: stacked bond, running
+    bond, the two basket weaves and the herringbone.
+
+    Face-transitive rather than vertex-transitive (test_tiles_are_congruent
+    above covers the congruence), and all but the stacked bond stagger their
+    rows, so a brick corner lands inside a neighbour's edge.
+    """
+
+    # brick height / brick length, per bond -- the weaves need a brick per row
+    # of their block, so the three-brick weave lays a 3:1 brick
+    RATIOS = {"stackedbond": 0.5, "runningbond": 0.5, "basketweave": 0.5,
+              "basketweave3": 1 / 3, "herringbone": 0.5}
+
+    @pytest.mark.parametrize("mode", sorted(_RECTANGLE))
+    def test_every_tile_is_a_rectangle_of_the_bond_ratio(self, mode):
+        """Once the T-vertices are dropped, every tile is a rectangle -- four
+        right angles, two pairs of equal sides -- of the bond's aspect."""
+        board = archimedean_board(mode, 4, 4, 5)
+        for polygon in board.polygons.values():
+            corners = [c for c, _ in _corners(polygon)]
+            angles = [angle for _, angle in _corners(polygon)]
+            assert len(corners) == 4
+            assert all(abs(a - math.pi / 2) < 1e-4 for a in angles)
+            sides = sorted(math.dist(corners[i], corners[(i + 1) % 4])
+                           for i in range(4))
+            assert abs(sides[0] - sides[1]) < 1e-4 * sides[3]
+            assert abs(sides[2] - sides[3]) < 1e-4 * sides[3]
+            assert abs(sides[0] / sides[3] - self.RATIOS[mode]) < 1e-4
+
+    @pytest.mark.parametrize("mode", sorted(_RECTANGLE))
+    def test_tiles_the_plane_without_gaps(self, mode):
+        """One domain's bricks cover the domain exactly, so the bond neither
+        leaves a gap nor overlaps."""
+        template = _arch_template(mode)
+
+        def shoelace(points):
+            n = len(points)
+            return abs(sum(points[i][0] * points[(i + 1) % n][1]
+                           - points[(i + 1) % n][0] * points[i][1]
+                           for i in range(n))) / 2
+
+        total = 0.0
+        for _, refs in template.cells:
+            total += shoelace([(dm * template.width + tag[0],
+                                dn * template.height + tag[1])
+                               for tag, dm, dn in refs])
+        assert abs(total - template.width * template.height) < 1e-9
+
+    @pytest.mark.parametrize("mode", sorted(set(_RECTANGLE) - {"stackedbond"}))
+    def test_staggered_bonds_are_not_edge_to_edge(self, mode):
+        """A staggered bond puts a brick corner inside its neighbour's edge;
+        only the stacked bond (a stretched square tiling) meets edge to edge,
+        and _EDGE_TO_EDGE covers that side."""
+        board = archimedean_board(mode, 4, 4, 5)
+        assert any(len(_corners(p)) < len(p) for p in board.polygons.values())
+
+    def test_stacked_bond_plays_like_the_classic_board(self):
+        """The stacked bond is the square tiling stretched, so its cells have
+        the classic board's eight neighbours -- worth pinning, since that is
+        the one thing about it that is *not* new."""
+        board = archimedean_board("stackedbond", 6, 6, 5)
+        interior = [n for n in board.adjacency.values() if len(n) == 8]
+        assert len(interior) > len(board.adjacency) / 2
+        assert max(len(n) for n in board.adjacency.values()) == 8
 
 
 class TestCubeFrame:

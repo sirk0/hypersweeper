@@ -842,11 +842,104 @@ def _threescaletri_template(ratio: float = 0.5) -> _ArchTemplate:
     return _template((3, 3, 3, 3), width, height, cells, mirrored=False)
 
 
+# -- congruent-rectangle (brick bond) tilings ---------------------------------
+#
+# Drop the "regular polygon" requirement and one congruent *rectangle* tiles
+# the plane in as many ways as the rows can be staggered -- the bonds a brick
+# wall or a parquet floor is laid in. Five are built below, all with bricks of
+# length 1 and height ``r``, so the preset ``scale`` is px per brick length.
+#
+# Only the stacked bond is edge to edge; in the other four a brick corner lands
+# in the middle of a neighbour's edge, which _insert_t_vertices records exactly
+# as it does for the isogonal family. They are flat-only for now
+# (TilingSpec.flat_only): wrapping one needs its own window per surface.
+#
+# Two of the five are affine copies of boards the game already has: a stacked
+# bond is the square tiling stretched (so the same 8-neighbour graph as the
+# classic board) and a running bond is the offset square tiling stretched. They
+# are here for the look -- as a family, the bonds read incomplete without them.
+
+
+def _brick(x: float, y: float, length: float, height: float):
+    """The rectangle with its lower-left corner at (x, y)."""
+    return [(x, y), (x + length, y), (x + length, y + height), (x, y + height)]
+
+
+def _stackedbond_template(ratio: float = 0.5) -> _ArchTemplate:
+    """Stacked bond (pmm): bricks of length 1 and height ``ratio`` in a plain
+    grid, every row aligned with the one below. One brick per domain, and the
+    only bond here that *is* edge to edge -- four brick corners at every
+    vertex, the square tiling stretched. Both midlines are mirror lines."""
+    return _template((4,), 1.0, ratio,
+                     [("brick", _brick(0.0, 0.0, 1.0, ratio))])
+
+
+def _runningbond_template(ratio: float = 0.5) -> _ArchTemplate:
+    """Running bond (cmm), the brick wall: rows of bricks, each row shifted
+    half a brick against the one below, so every vertex is two brick corners
+    against the middle of a third brick's edge (90 + 90 + 180). The offset
+    square tiling stretched; like it, the domain runs from a row's centreline
+    so the template midline is a mirror line."""
+    r = ratio
+    return _template((4,), 1.0, 2 * r, [
+        ("brick0", _brick(0.0, -r / 2, 1.0, r)),
+        ("brick1", _brick(-0.5, r / 2, 1.0, r)),
+    ])
+
+
+def _basketweave_template(group: int = 2) -> _ArchTemplate:
+    """Basket weave (p4g): ``group`` bricks of height 1/``group`` laid side by
+    side make a unit square block, and the blocks alternate direction on a
+    checkerboard -- the woven look, each pair of bricks crossing the pair it
+    lies against. The 2 x 2 domain holds four blocks, so 4*``group`` bricks.
+    p4g has no plain horizontal mirror: reflecting the checkerboard swaps the
+    two block directions, and only the extra half-period shift of a glide puts
+    them back (hence glide=True). A brick centre is not a rotation centre here
+    (a half-turn about one carries its block half a block off), so the flat
+    window is pinned to a block *corner*, where four blocks meet: the
+    quarter-turn centre that takes each block to the perpendicular one."""
+    r = 1 / group
+    polygons = []
+    for bx in range(2):
+        for by in range(2):
+            for k in range(group):
+                if (bx + by) % 2 == 0:  # a block of horizontal bricks
+                    polygon = _brick(bx, by + k * r, 1.0, r)
+                else:  # ... of vertical ones
+                    polygon = _brick(bx + k * r, by, r, 1.0)
+                polygons.append((f"b{bx}{by}_{k}", polygon))
+    return _template((4,), 2.0, 2.0, polygons, glide=True,
+                     centre=(0.0, 0.0))
+
+
+def _basketweave3_template() -> _ArchTemplate:
+    """Basket weave woven three bricks at a time (see _basketweave_template)."""
+    return _basketweave_template(group=3)
+
+
+def _herringbone_template() -> _ArchTemplate:
+    """Herringbone (pgg): each brick's end butts against the side of the next,
+    so the bricks run in two perpendicular directions and the pattern advances
+    along the diagonals in chevrons. Its unit is the L-shaped pair of one
+    horizontal and one vertical brick, on the translation lattice
+    (r, -r) / (3r, r) -- diagonal, which is why the chevrons are; the
+    axis-aligned superlattice of that is the 4r x 4r (= 2 x 2) domain, holding
+    eight bricks. The 2:1 brick is what makes the L pair tile, so unlike the
+    other bonds this one has no free ratio. pgg has only glide reflections and
+    no mirror at all; every brick centre is a half-turn centre, so the default
+    biggest-tile window rule already lands on one."""
+    r = 0.5
+    polygons = [("h", _brick(0.0, 0.0, 1.0, r)), ("v", _brick(1.0, 0.0, r, 1.0))]
+    cells = _periodic_domain((r, -r), (3 * r, r), 2.0, 2.0, polygons)
+    return _template((4,), 2.0, 2.0, cells, mirrored=False)
+
+
 @dataclass(frozen=True)
 class ArchTiling:
-    """One template-based periodic tiling, in one of three families: the
+    """One template-based periodic tiling, in one of four families: the
     ``uniform`` (Archimedean) tilings, their ``dual`` (Laves/Catalan)
-    partners, and the ``isogonal`` tilings that are not edge to edge -- see
+    partners, the ``isogonal`` tilings that are not edge to edge, and the
+    ``rectangle`` bonds tiled by one congruent rectangle -- see
     AGENTS.md. The menu catalog, mode strings, presets and tests all derive
     from this list."""
     key: str                       # "trihex"
@@ -855,26 +948,40 @@ class ArchTiling:
     #   vertex configuration (3, 6, 3, 6) -- for an isogonal one, counting
     #   the tile whose edge passes straight through the vertex; for a
     #   face-transitive (Laves) tiling, the configuration of its single
-    #   tile shape.
+    #   tile shape; for a rectangle bond, just that tile's side count.
     edge_directions: int           # distinct edge directions
     template: Callable[[], "_ArchTemplate"]
-    family: str = "uniform"        # "uniform" | "dual" | "isogonal"
+    family: str = "uniform"        # a key of _FAMILY_TRAITS below
     half_turn: bool = True         # the tiling maps onto itself under some
     #   180-degree rotation, so a window centred on one reads symmetric.
     #   True of every wallpaper group here except p3.
 
     @property
     def vertex_transitive(self) -> bool:
-        """Every vertex alike -- the uniform and isogonal families. The
-        Laves duals are face-transitive instead (every tile congruent), so
-        the vertex-configuration invariants do not apply to them."""
-        return self.family != "dual"
+        """Every vertex alike -- the uniform and isogonal families. The Laves
+        duals and the rectangle bonds are face-transitive instead (every tile
+        congruent), so the vertex-configuration invariants do not apply to
+        them; TestArchimedean.test_tiles_are_congruent covers those."""
+        return _FAMILY_TRAITS[self.family][0]
 
     @property
     def edge_to_edge(self) -> bool:
         """Tiles meet whole edge against whole edge. False for the isogonal
-        family, whose tiles carry T-vertices (see _insert_t_vertices)."""
-        return self.family != "isogonal"
+        and rectangle families, whose tiles carry T-vertices (see
+        _insert_t_vertices) -- with the stacked bond the benign exception
+        inside its family, being a stretched square tiling."""
+        return _FAMILY_TRAITS[self.family][1]
+
+
+# family -> (vertex-transitive, edge to edge). A family states what holds of it
+# as a family; a member may be better behaved (the stacked bond is both), which
+# is a matter for that tiling's own tests, not for the invariants derived here.
+_FAMILY_TRAITS = {
+    "uniform": (True, True),      # Archimedean: every vertex alike
+    "dual": (False, True),        # Laves: every tile congruent
+    "isogonal": (True, False),    # every vertex alike, T-vertices and all
+    "rectangle": (False, False),  # one congruent rectangle, staggered
+}
 
 
 # Listed in vertex-configuration order, the order Wikipedia's "List of
@@ -932,6 +1039,21 @@ ARCH_TILINGS = (
                _rotatedtri_template, family="isogonal"),
     ArchTiling("threescaletri", "Three-scale triangular", (3, 3, 3, 3), 3,
                _threescaletri_template, family="isogonal", half_turn=False),
+    # the bonds tiled by one congruent rectangle. What tells these apart is
+    # the stagger of their rows, not a vertex or tile symbol -- neither is
+    # even well defined across the family (the three-brick basket weave has
+    # two tile orbits, its middle brick sitting differently from the outer
+    # two) -- so config is just the tile: one quadrilateral.
+    ArchTiling("stackedbond", "Stacked bond", (4,), 2,
+               _stackedbond_template, family="rectangle"),
+    ArchTiling("runningbond", "Running bond", (4,), 2,
+               _runningbond_template, family="rectangle"),
+    ArchTiling("basketweave", "Basket weave", (4,), 2,
+               _basketweave_template, family="rectangle"),
+    ArchTiling("basketweave3", "Basket weave 3x3", (4,), 2,
+               _basketweave3_template, family="rectangle"),
+    ArchTiling("herringbone", "Herringbone", (4,), 2,
+               _herringbone_template, family="rectangle"),
 )
 
 # Backward-compatible views derived from the single registry above.

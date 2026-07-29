@@ -999,6 +999,21 @@ def _render_icon(key: str) -> pygame.Surface:
                         (d * 0.3, d * 0.94), (d * -0.02, d * 0.94)],
                     fill=ICON_BLUE_LIGHT)
         _icon_gloss(s, pygame.Rect(d * 0.06, d * 0.08, d * 0.86, d * 0.84))
+    elif key == "rectangle":
+        # the Congruent rectangles family row: three courses of brick in a
+        # running bond, the plainest picture of a staggered rectangle tiling
+        # (the tilings under it fall back to the plain badge, as the isogonal
+        # ones do)
+        h, gap = d * 0.2, d * 0.04
+        for row in range(3):
+            y = d * 0.22 + row * (h + gap)
+            offset = -d * 0.28 if row % 2 else 0.0
+            for i in range(-1, 2):
+                x = c + offset + i * (d * 0.56 + gap)
+                _icon_shape(s, [(x - d * 0.28, y), (x + d * 0.28, y),
+                                (x + d * 0.28, y + h), (x - d * 0.28, y + h)],
+                            fill=ICON_BLUE_LIGHT if row % 2 else ICON_BLUE)
+        _icon_gloss(s, pygame.Rect(d * 0.08, d * 0.2, d * 0.84, d * 0.6))
     elif key in ("flat", "square", "torus_tile"):
         gap, tile = d * 0.04, d * 0.42
         for ix in (0, 1):

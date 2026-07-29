@@ -77,7 +77,8 @@ class TilingSpec:
     chiral: bool = False                 # no mirror/glide -> no Mobius seam
     mode_overrides: dict = field(default_factory=dict)  # surface -> mode string
     flat_only: bool = False              # the plane only: no wrap builders or
-    #   preset windows for this tiling yet (the isogonal family)
+    #   preset windows for this tiling yet (the isogonal and rectangle
+    #   families -- see _FLAT_ONLY_FAMILIES)
 
     def mode(self, surface: SurfaceSpec) -> str:
         return self.mode_overrides.get(surface.key, surface.prefix + self.key)
@@ -105,9 +106,13 @@ REGULAR_TILINGS = tuple(
     for r in _CATALOG["regularTilings"]
 )
 
+# the ARCH_TILINGS families that live on the plane only: no wrap builders and
+# no per-surface preset windows for them yet.
+_FLAT_ONLY_FAMILIES = frozenset({"isogonal", "rectangle"})
+
 TILING_SPECS = REGULAR_TILINGS + tuple(
     TilingSpec(t.key, t.label, chiral=t.template().mirror is None,
-               flat_only=t.family == "isogonal")
+               flat_only=t.family in _FLAT_ONLY_FAMILIES)
     for t in ARCH_TILINGS
 )
 TILINGS_BY_KEY = {t.key: t for t in TILING_SPECS}
@@ -161,7 +166,8 @@ TILINGS = {
 #   Polyhedra       -> the solids
 #
 # The picker is a list of family submenus -- Regular, Uniform, Laves and
-# (flat only) Isogonal and Aperiodic -- plus a random option. It is parameterised by the
+# (flat only) Isogonal, Congruent rectangles and Aperiodic -- plus a random
+# option. It is parameterised by the
 # surface it was reached through, so the same picker serves the plane and every
 # flat manifold; the plane is reached through the home page's Flat entry rather
 # than repeated in the manifolds list. Chiral tilings are gated out of the
@@ -181,15 +187,17 @@ MENU_ROOT_LABELS = dict(_MENU["rootLabels"])
 MANIFOLD_ORDER = tuple(_MENU["manifoldOrder"])
 MANIFOLD_LABELS = dict(_MENU["manifoldLabels"])
 
-# The tiling picker's families. The uniform, dual and isogonal family members
-# are exactly the ARCH_TILINGS rows of each family, so they derive from that
-# registry -- adding a tiling stays a one-row change. Aperiodic tilings only
-# exist on the plane, and the isogonal ones have no wrap builders yet, so both
-# families are offered only when the surface is flat.
+# The tiling picker's families. The uniform, dual, isogonal and rectangle
+# family members are exactly the ARCH_TILINGS rows of each family, so they
+# derive from that registry -- adding a tiling stays a one-row change.
+# Aperiodic tilings only exist on the plane, and the isogonal and rectangle
+# ones have no wrap builders yet, so those families are offered only when the
+# surface is flat.
 PICKER_REGULAR = tuple(_MENU["pickerRegular"])
 UNIFORM_ARCH = tuple(t.key for t in ARCH_TILINGS if t.family == "uniform")
 DUAL_ARCH = tuple(t.key for t in ARCH_TILINGS if t.family == "dual")
 ISOGONAL_ARCH = tuple(t.key for t in ARCH_TILINGS if t.family == "isogonal")
+RECTANGLE_ARCH = tuple(t.key for t in ARCH_TILINGS if t.family == "rectangle")
 APERIODIC_MODES = tuple(_MENU["aperiodic"])
 FAMILY_LABELS = dict(_MENU["familyLabels"])
 FAMILY_MEMBERS = {
@@ -197,12 +205,13 @@ FAMILY_MEMBERS = {
     "uniform": UNIFORM_ARCH,
     "dual": DUAL_ARCH,
     "isogonal": ISOGONAL_ARCH,
+    "rectangle": RECTANGLE_ARCH,
     "aperiodic": APERIODIC_MODES,
 }
-# the picker's family rows, in order; "isogonal" and "aperiodic" are added on
-# the plane only
+# the picker's family rows, in order; "isogonal", "rectangle" and "aperiodic"
+# are added on the plane only
 PICKER_FAMILIES = ("regular", "uniform", "dual")
-FLAT_ONLY_FAMILIES = ("isogonal", "aperiodic")
+FLAT_ONLY_FAMILIES = ("isogonal", "rectangle", "aperiodic")
 
 # Sphere page: the spherical tilings, none of which wraps a flat surface.
 SPHERE_MODES = tuple(_MENU["sphereModes"])

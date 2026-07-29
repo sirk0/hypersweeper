@@ -242,6 +242,26 @@ ARCH_PRESETS = {
     "threescaletri": {
         "flat": {"easy": (5, 3, 13, 65), "medium": (7, 4, 28, 46), "hard": (10, 6, 72, 32)},
     },
+    # The congruent-rectangle bonds: the plane only, like the isogonal family.
+    # Same recipe -- a square board of about 490px at 105 / 220 / 350 cells,
+    # mined at 14 / 16 / 19 per cent. The window counts *domains*, and a bond's
+    # domain is one brick (stacked), two (running) or a 2 x 2 block of them
+    # (the weaves and the herringbone), so the numbers differ per bond.
+    "stackedbond": {
+        "flat": {"easy": (7, 14, 15, 70), "medium": (10, 20, 37, 45), "hard": (13, 26, 67, 38)},
+    },
+    "runningbond": {
+        "flat": {"easy": (7, 7, 16, 61), "medium": (10, 10, 35, 45), "hard": (13, 13, 69, 35)},
+    },
+    "basketweave": {
+        "flat": {"easy": (4, 4, 18, 54), "medium": (5, 5, 32, 45), "hard": (6, 6, 55, 38)},
+    },
+    "basketweave3": {
+        "flat": {"easy": (3, 3, 15, 70), "medium": (4, 4, 31, 54), "hard": (5, 5, 57, 45)},
+    },
+    "herringbone": {
+        "flat": {"easy": (4, 4, 19, 58), "medium": (5, 5, 34, 47), "hard": (6, 6, 57, 39)},
+    },
 }
 
 # Load the shared presets (data/presets.json) into _PRESETS. Each row is
