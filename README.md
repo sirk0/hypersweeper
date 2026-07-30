@@ -18,9 +18,11 @@ Pick a surface, then a tiling:
 
 - **Flat surface** — classic squares (8 neighbors), a triangle grid (12)
   and the same triangles cut to a triangular or a hexagonal board,
-  hexagons (6) and a big hexagon composed of small hexagons (6), two
-  aperiodic tilings — a Penrose mosaic (P3 rhombi) and "the hat", the
-  single tridecagon monotile that tiles only aperiodically — the eight
+  hexagons (6) and a big hexagon composed of small hexagons (6), three
+  aperiodic tilings — a Penrose mosaic (P3 rhombi), "the hat", the single
+  tridecagon monotile that tiles only aperiodically, and "the spectre"
+  (Tile(1,1)), the *chiral* monotile, whose tiling uses rotations only and
+  never mirrors a tile — the eight
   non-regular uniform tilings: snub hexagonal 3.3.3.3.6, elongated
   triangular 3.3.3.4.4, snub square 3.3.4.3.4, rhombitrihexagonal
   3.4.6.4, trihexagonal 3.6.3.6, truncated hexagonal 3.12.12, truncated

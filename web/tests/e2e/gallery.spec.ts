@@ -24,9 +24,12 @@ const MODES = [
   "mobius",
   "klein",
   // M5 aperiodic flat tilings: Penrose rhombi (thick/thin) and the Hat
-  // monotile (a non-convex 13-gon), both trimmed to a square patch.
+  // monotile (a non-convex 13-gon), both trimmed to a square patch. The
+  // Spectre joins them: the same 13-gon count, but the chiral monotile, so
+  // its patch is the one with no mirrored tile in it.
   "penrose",
   "hat",
+  "spectre",
   // M7 isogonal tilings, which are not edge to edge: the two that put one
   // regular polygon on the board at several sizes, so the shots cover both the
   // T-vertex geometry and the size-lightness axis it needs.

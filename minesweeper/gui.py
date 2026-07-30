@@ -1093,6 +1093,26 @@ def _render_icon(key: str) -> pygame.Surface:
         pts = [(ox + (x - min(xs)) * sc, oy + (max(ys) - y) * sc) for x, y in raw]
         _icon_shape(s, pts, width=4)
         _icon_gloss(s, pygame.Rect(d * 0.1, d * 0.06, d * 0.8, d * 0.55))
+    elif key == "spectre":
+        # a single Spectre silhouette: Tile(1,1), the equilateral 14-gon,
+        # walked from its edge directions (multiples of 30 degrees). Turned
+        # two steps of the tiling's own 30-degree rotation, the orientation
+        # whose bounding box is nearest square, so it fills the icon box.
+        dirs = [0, 10, 1, 3, 0, 2, 5, 7, 4, 6, 6, 8, 11, 9]
+        raw, x, y = [], 0.0, 0.0
+        for direction in dirs:
+            raw.append((x, y))
+            x += math.cos(math.radians(30 * (direction + 2)))
+            y += math.sin(math.radians(30 * (direction + 2)))
+        xs = [p[0] for p in raw]
+        ys = [p[1] for p in raw]
+        span = max(max(xs) - min(xs), max(ys) - min(ys))
+        sc = d * 0.86 / span
+        ox = (d - (max(xs) - min(xs)) * sc) / 2
+        oy = (d - (max(ys) - min(ys)) * sc) / 2
+        pts = [(ox + (x - min(xs)) * sc, oy + (max(ys) - y) * sc) for x, y in raw]
+        _icon_shape(s, pts, width=4)
+        _icon_gloss(s, pygame.Rect(d * 0.08, d * 0.2, d * 0.84, d * 0.5))
     elif key == "elongated":
         # a square row under a triangle row
         _icon_shape(s, [(d * 0.12, d * 0.5), (d * 0.5, d * 0.5),
