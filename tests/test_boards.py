@@ -32,9 +32,9 @@ from minesweeper.boards import (
     cylinder_board,
     cylinder_hex_board,
     cylinder_triangle_board,
-    hat_board,
     hex_board,
     hexhex_board,
+    hextriangle_board,
     klein_board,
     klein_hex_board,
     klein_triangle_board,
@@ -43,6 +43,7 @@ from minesweeper.boards import (
     mobius_triangle_board,
     newell_normal,
     penrose_board,
+    rhombicosidodecahedron_board,
     snub_dodecahedron_board,
     spectre_board,
     sphere_board,
@@ -57,6 +58,7 @@ from minesweeper.boards import (
     torus_triangle_board,
     triangle_board,
     triangle_grid_board,
+    truncated_icosidodecahedron_board,
 )
 from minesweeper.boards import (
     boundary_components as _boundary_components,
@@ -78,8 +80,9 @@ from minesweeper.boards import (
 # both treatments. Reflective tilings (a plain mirror, not just a glide or
 # pinwheel) additionally give left-right / top-bottom symmetric boards.
 _UNIFORM = [t.key for t in ARCH_TILINGS if t.family == "uniform"]
-# the tilings that wrap a surface at all: the isogonal family is flat-only,
-# so the wrapped-surface suites derive their subjects from the catalog
+# the tilings that wrap a surface at all: derived from the catalog, so a
+# chiral tiling (no template mirror) or one without a torus preset yet drops
+# out automatically
 _WRAPPED_TILINGS = [t.key for t in ARCH_TILINGS if "torus" in TILINGS[t.key][1]]
 _ISOGONAL = [t.key for t in ARCH_TILINGS if t.family == "isogonal"]
 _RECTANGLE = [t.key for t in ARCH_TILINGS if t.family == "rectangle"]
@@ -178,11 +181,43 @@ class TestCellCounts:
         assert len(hexhex_board(3, 5).adjacency) == 37
         assert len(hexhex_board(5, 12).adjacency) == 91
 
+    def test_hextriangle_is_a_triangular_number(self):
+        # (size+1)*(size+2)/2 cells
+        assert len(hextriangle_board(3, 5).adjacency) == 10
+        assert len(hextriangle_board(12, 12).adjacency) == 91
+
+    def test_hextriangle_has_the_triangle_s_3fold_symmetry(self):
+        # (q, r) -> (size - q - r, q) is a 120-degree rotation of the hex
+        # lattice about the triangle's centre; the region and its adjacency
+        # must map onto themselves.
+        size = 8
+        board = hextriangle_board(size, 5)
+
+        def rotated(cell):
+            q, r = cell
+            return (size - q - r, q)
+
+        assert {rotated(c) for c in board.adjacency} == set(board.adjacency)
+        for cell, neighbors in board.adjacency.items():
+            assert set(map(rotated, neighbors)) == set(board.adjacency[rotated(cell)])
+
     def test_c80_is_a_chamfered_dodecahedron(self):
         board = c80_board(5)
         sizes = sorted(len(p) for p in board.polygons.values())
         assert len(board.adjacency) == 42
         assert sizes.count(5) == 12 and sizes.count(6) == 30
+
+    def test_rhombicosidodecahedron_face_mix(self):
+        board = rhombicosidodecahedron_board(10)
+        sizes = sorted(len(p) for p in board.polygons.values())
+        assert len(board.adjacency) == 62
+        assert sizes.count(3) == 20 and sizes.count(4) == 30 and sizes.count(5) == 12
+
+    def test_truncated_icosidodecahedron_face_mix(self):
+        board = truncated_icosidodecahedron_board(10)
+        sizes = sorted(len(p) for p in board.polygons.values())
+        assert len(board.adjacency) == 62
+        assert sizes.count(4) == 30 and sizes.count(6) == 20 and sizes.count(10) == 12
 
     def test_torus(self):
         assert len(torus_board(12, 6, 9).adjacency) == 72
@@ -285,52 +320,6 @@ class TestPolygonShapes:
             edges = [math.dist(polygon[i], polygon[(i + 1) % 3]) for i in range(3)]
             ratios.append(max(edges) / min(edges))
         assert statistics.median(ratios) < self._EDGE_RATIO_LIMITS[mode]
-
-
-class TestHat:
-    def test_cell_counts(self):
-        # a single H seed inflated N times; keep trims to the count
-        assert len(hat_board(1, 5).adjacency) == 25
-        assert len(hat_board(2, 28).adjacency) == 169
-        assert len(hat_board(2, 10, keep=64).adjacency) == 64
-        assert len(hat_board(3, 65, keep=430).adjacency) == 430
-
-    def test_every_cell_is_the_same_tridecagon(self):
-        # a monotile: every cell is one congruent 13-sided hat
-        board = hat_board(2, 10)
-        multisets = set()
-        for polygon in board.polygons.values():
-            assert len(polygon) == 13
-            edges = tuple(sorted(
-                round(((polygon[i][0] - polygon[(i + 1) % 13][0]) ** 2
-                       + (polygon[i][1] - polygon[(i + 1) % 13][1]) ** 2) ** 0.5, 3)
-                for i in range(13)))
-            multisets.add(edges)
-        assert len(multisets) == 1  # all hats congruent
-
-    def test_reflected_hats_are_a_minority(self):
-        # the hat tiling forces in mirror-image hats (label 'H1'), roughly
-        # one in seven, but always a strict minority
-        board = hat_board(2, 28)
-        reflected = sum(1 for cell in board.adjacency if cell[0] == "H1")
-        assert 0 < reflected < len(board.adjacency) * 0.2
-
-    def test_vertices_are_exact(self):
-        # exact Eisenstein-integer ids: distinct keys are a full lattice
-        # unit apart, so there are no floating-point near-duplicates
-        board = hat_board(2, 10, keep=48)
-        points = sorted({p for polygon in board.polygons.values() for p in polygon})
-        min_gap = min(
-            ((ax - bx) ** 2 + (ay - by) ** 2) ** 0.5
-            for i, (ax, ay) in enumerate(points)
-            for bx, by in points[i + 1:i + 30]
-        )
-        shortest_edge = min(
-            ((polygon[i][0] - polygon[(i + 1) % 13][0]) ** 2
-             + (polygon[i][1] - polygon[(i + 1) % 13][1]) ** 2) ** 0.5
-            for polygon in board.polygons.values() for i in range(13)
-        )
-        assert min_gap > shortest_edge * 0.5
 
 
 class TestSpectre:
@@ -1160,9 +1149,10 @@ class TestKleinTilings:
                          and surface_of(m).key == "klein")
 
     def test_menu_offers_klein_for_every_non_chiral_tiling(self):
-        # 3 regular + 8 Archimedean + 8 Laves = 19 tilings, minus the two
-        # chiral ones (snub hexagonal and its floret dual) = 17
-        assert len(self.KLEIN_MODES) == 17
+        # 3 regular + 8 Archimedean + 8 Laves + 6 isogonal + 5 rectangle = 30
+        # tilings, minus the chiral ones (snub hexagonal and its floret dual,
+        # 4 of the 6 isogonal, herringbone) = 23
+        assert len(self.KLEIN_MODES) == 23
         assert "kleinsnubhex" not in MODE_LABELS
         assert "kleinfloret" not in MODE_LABELS
 
@@ -1244,10 +1234,15 @@ class TestWrappedArchimedean:
         and any(mode.endswith(tiling) for tiling in _ARCH_CONFIGS)
     ]
 
-    # only the vertex-transitive (Archimedean) tilings have a single vertex
-    # configuration to check; Laves duals vary vertex by vertex.
+    # only the vertex-transitive *and* edge-to-edge tilings (the uniform
+    # family) have a single vertex configuration a raw corner-fan size can
+    # check directly; Laves duals vary vertex by vertex, and the isogonal
+    # tilings' T-vertices inflate every cell's stored corner count (see
+    # _insert_t_vertices) -- TestIsogonal covers their vertex configuration
+    # on the plane, corners measured with the T-vertices dropped.
     WRAPPED_VERTEX_TRANSITIVE = [
-        m for m in WRAPPED if any(m.endswith(t) for t in _VERTEX_TRANSITIVE)
+        m for m in WRAPPED
+        if any(m.endswith(t) for t in set(_VERTEX_TRANSITIVE) & set(_EDGE_TO_EDGE))
     ]
 
     @pytest.mark.parametrize(
@@ -1357,6 +1352,45 @@ class TestWrappedArchimedean:
             "kleintriakis": (168, 240, 432),
             "kleindeltoidal": (120, 168, 288),
             "kleinkisrhombille": (240, 336, 576),
+            # Isogonal (non-edge-to-edge) tilings: torus/cylinder for all
+            # six, Mobius/Klein only for the two with a template mirror
+            # (offset square, staggered triangular).
+            "torusoffsetsquare": (100, 200, 360),
+            "cyloffsetsquare": (100, 200, 360),
+            "mobiusoffsetsquare": (100, 200, 360),
+            "kleinoffsetsquare": (100, 200, 360),
+            "torusstaggeredtri": (96, 200, 352),
+            "cylstaggeredtri": (100, 200, 352),
+            "mobiusstaggeredtri": (98, 198, 338),
+            "kleinstaggeredtri": (100, 198, 360),
+            "toruspythagorean": (100, 200, 350),
+            "cylpythagorean": (100, 200, 350),
+            "torusrotatedhex": (96, 198, 360),
+            "cylrotatedhex": (96, 198, 360),
+            "torusrotatedtri": (96, 210, 336),
+            "cylrotatedtri": (96, 198, 360),
+            "torusthreescaletri": (96, 198, 360),
+            "cylthreescaletri": (96, 198, 360),
+            # Congruent-rectangle bonds: torus/cylinder for all five,
+            # Mobius/Klein for all but herringbone (glide-only, no mirror).
+            "torusstackedbond": (100, 196, 350),
+            "cylstackedbond": (100, 196, 350),
+            "mobiusstackedbond": (100, 196, 350),
+            "kleinstackedbond": (100, 196, 350),
+            "torusrunningbond": (100, 200, 360),
+            "cylrunningbond": (100, 200, 360),
+            "mobiusrunningbond": (100, 200, 360),
+            "kleinrunningbond": (100, 200, 360),
+            "torusbasketweave": (96, 200, 352),
+            "cylbasketweave": (96, 200, 352),
+            "mobiusbasketweave": (100, 200, 352),
+            "kleinbasketweave": (100, 200, 352),
+            "torusbasketweave3": (96, 192, 360),
+            "cylbasketweave3": (96, 192, 360),
+            "mobiusbasketweave3": (108, 198, 360),
+            "kleinbasketweave3": (108, 198, 360),
+            "torusherringbone": (96, 200, 352),
+            "cylherringbone": (96, 200, 352),
         }
         assert sorted(counts) == sorted(self.WRAPPED)
         for mode, expected in counts.items():

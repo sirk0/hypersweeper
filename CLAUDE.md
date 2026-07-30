@@ -13,7 +13,7 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   symbolic/barycentric keys in 3D); two cells are neighbors when they
   share a vertex. Modules: `core` (`Board`/`Board3D`, adjacency, topology
   invariants), `tilings` (flat tilings + the `ARCH_TILINGS` registry and
-  `_ArchTemplate` system), `aperiodic` (Penrose, Hat, Spectre), `solids` (spherical
+  `_ArchTemplate` system), `aperiodic` (Penrose, Spectre), `solids` (spherical
   polyhedra, cube, tetrahedron, frames), `surfaces` (donut/cylinder/
   Möbius/Klein-bottle wrapping via shared immersion helpers), `catalog`
   (the menu, **derived** from `SURFACE_SPECS`/`TILING_SPECS`), `presets`
@@ -35,21 +35,27 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   corner lands in the middle of its neighbour's edge. `_insert_t_vertices`
   records that point on the split tile so shared-vertex adjacency still
   finds the neighbour; it is collinear, so the drawn tile is unchanged and
-  the shape colouring drops it before measuring. They are **flat only**
-  (`TilingSpec.flat_only`) — no manifold wraps yet. A fourth family,
+  the shape colouring drops it before measuring. They wrap the torus and
+  cylinder like every other periodic family, and the two reflective ones
+  (offset square, staggered triangular) also wrap the Möbius strip and
+  Klein bottle; the other four are chiral (no template mirror), which
+  gates them out of those two seams exactly as it does snub hexagonal.
+  A fourth family,
   `family="rectangle"`, holds the five brick **bonds** tiled by one congruent
   rectangle (stacked bond, running bond, basket weave, its three-brick
   version, herringbone). These are face-transitive rather than
   vertex-transitive, and — bar the stacked bond, which is a stretched square
   tiling — not edge to edge either; `_FAMILY_TRAITS` in `tilings.py` declares
-  those two traits per family and the test lists derive from it. Flat only as
-  well. The menu's shared
+  those two traits per family and the test lists derive from it. Like the
+  isogonal family, all five wrap the torus and cylinder, and the four with a
+  template mirror (all but herringbone) also wrap the Möbius strip and Klein
+  bottle. The menu's shared
   tiling picker is a list of family
   submenus: **Regular** (the three regular tilings, plus on the plane the
   shaped boards cut from them), **Uniform** (the eight non-regular uniform
   tilings, `family="uniform"` in `ARCH_TILINGS`), **Laves** (their
-  eight duals) and, on the plane only, **Isogonal**, **Congruent rectangles**
-  and **Aperiodic**. `ARCH_TILINGS` is
+  eight duals), **Isogonal**, **Congruent rectangles** and, on the plane
+  only, **Aperiodic**. `ARCH_TILINGS` is
   listed in vertex-configuration order — Wikipedia's "List of Euclidean
   uniform tilings" order — and that registry order is the menu order.
   **To add a tiling or surface, see `AGENTS.md`** — a tiling is
@@ -61,23 +67,24 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   Board-shape convention (applies to all future flat boards): a finite
   flat board should read as a roughly *square* rectangle, not a round
   disc, and a symmetric tiling should give a symmetric board. (The named
-  shaped boards — `triangle`, `hexhex`, `hextri` — are the deliberate
-  exception: each is a polygon of the tiling's own symmetry, exactly
-  filled, never a trimmed disc.) For periodic
+  shaped boards — `triangle`, `hexhex`, `hextri`, `hextriangle` — are the
+  deliberate exception: each is a polygon of the tiling's own symmetry,
+  exactly filled, never a trimmed disc.) For periodic
   tilings take a rectangular window of whole periods centred on a rotation
   centre (`archimedean_board` keeps an `nx`×`ny` domain block of the
   `_ArchTemplate` centred on the tiling's biggest tile, so the window maps
   onto itself under the tiling's point group); for aperiodic ones
-  (`penrose_board`, `hat_board`, `spectre_board`) grow generously and trim
+  (`penrose_board`, `spectre_board`) grow generously and trim
   to the `keep` centremost cells by Chebyshev distance (`max(|dx|, |dy|)`)
   — generously enough that `keep` is a small fraction of the patch, or the
   substitution's own star-shaped outline is what the board reads as. See
   the `AGENT NOTE` in `boards/tilings.py`.
-  The three aperiodic boards each keep exact vertex ids in their own ring:
-  ℤ[ζ5] (Penrose), the Eisenstein lattice (Hat) and ℤ[ζ12] (Spectre). Only
-  the first two are discrete — ℤ[ζ12] is dense in the plane, so
-  `spectre_board` cannot snap a float vertex back to a lattice the way the
-  Hat does, and instead carries every placement of the paper's chiral
+  The two aperiodic boards each keep exact vertex ids in their own ring:
+  ℤ[ζ5] (Penrose) and ℤ[ζ12] (Spectre). Only Penrose's is discrete — ℤ[ζ12]
+  is dense in the plane, so `spectre_board` cannot snap a float vertex back
+  to a lattice the way the game's original third aperiodic board, The Hat
+  (since removed as a menu entry), did — and instead carries every
+  placement of the paper's chiral
   substitution as an exact `(rotation mod 12, mirror, translation)` triple.
   Its tile is Tile(1,1) held as an equilateral **14-gon**: the 14th corner
   is the collinear one, kept so a neighbour's corner landing there is a

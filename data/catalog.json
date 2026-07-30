@@ -86,13 +86,14 @@
   ],
   "soloLabels": {
     "penrose": "Penrose rhombi",
-    "hat": "The Hat",
     "spectre": "The Spectre",
     "sphere": "Pentagonal hexecontahedron",
     "c80": "Chamfered dodecahedron",
     "c180": "Goldberg GP(3,0)",
     "spheretri": "Geodesic icosahedron",
     "snubdodec": "Snub dodecahedron",
+    "rhombicosidodeca": "Rhombicosidodecahedron",
+    "truncicosidodeca": "Truncated icosidodecahedron",
     "cube": "Cube",
     "tetrahedron": "Tetrahedron",
     "tetraframe": "Tetrahedron frame",
@@ -100,7 +101,8 @@
     "steppedbipyramid": "Stepped bipyramid",
     "triangle": "Triangles - triangular board",
     "hextri": "Triangles - hexagonal board",
-    "hexhex": "Hexagons - hexagonal board"
+    "hexhex": "Hexagons - hexagonal board",
+    "hextriangle": "Hexagons - triangular board"
   },
   "menu": {
     "root": [
@@ -136,7 +138,6 @@
     ],
     "aperiodic": [
       "penrose",
-      "hat",
       "spectre"
     ],
     "familyLabels": {
@@ -152,7 +153,9 @@
       "c80",
       "c180",
       "spheretri",
-      "snubdodec"
+      "snubdodec",
+      "rhombicosidodeca",
+      "truncicosidodeca"
     ],
     "polyhedraModes": [
       "cube",
@@ -167,7 +170,8 @@
         "hextri"
       ],
       "hex": [
-        "hexhex"
+        "hexhex",
+        "hextriangle"
       ]
     }
   }

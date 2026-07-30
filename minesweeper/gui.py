@@ -1078,8 +1078,12 @@ def _render_icon(key: str) -> pygame.Surface:
             ]
             _icon_shape(s, points, width=4)
         _icon_gloss(s, pygame.Rect(d * 0.08, d * 0.06, d * 0.84, d * 0.6))
-    elif key == "hat":
-        # a single hat monotile silhouette (the aperiodic tridecagon)
+    elif key == "spectre":
+        # the Spectre's menu icon keeps the nicer silhouette of its removed
+        # sibling "The Hat" (the two aperiodic monotiles share a family
+        # resemblance -- Tile(1,1) is a member of the hat continuum -- and
+        # this outline reads better at icon size than a walk of the
+        # Spectre's own edge directions).
         hr3 = math.sqrt(3) / 2
         ab = [(0, 0), (-1, -1), (0, -2), (2, -2), (2, -1), (4, -2), (5, -1),
               (4, 0), (3, 0), (2, 2), (0, 3), (0, 2), (-1, 2)]
@@ -1093,26 +1097,6 @@ def _render_icon(key: str) -> pygame.Surface:
         pts = [(ox + (x - min(xs)) * sc, oy + (max(ys) - y) * sc) for x, y in raw]
         _icon_shape(s, pts, width=4)
         _icon_gloss(s, pygame.Rect(d * 0.1, d * 0.06, d * 0.8, d * 0.55))
-    elif key == "spectre":
-        # a single Spectre silhouette: Tile(1,1), the equilateral 14-gon,
-        # walked from its edge directions (multiples of 30 degrees). Turned
-        # two steps of the tiling's own 30-degree rotation, the orientation
-        # whose bounding box is nearest square, so it fills the icon box.
-        dirs = [0, 10, 1, 3, 0, 2, 5, 7, 4, 6, 6, 8, 11, 9]
-        raw, x, y = [], 0.0, 0.0
-        for direction in dirs:
-            raw.append((x, y))
-            x += math.cos(math.radians(30 * (direction + 2)))
-            y += math.sin(math.radians(30 * (direction + 2)))
-        xs = [p[0] for p in raw]
-        ys = [p[1] for p in raw]
-        span = max(max(xs) - min(xs), max(ys) - min(ys))
-        sc = d * 0.86 / span
-        ox = (d - (max(xs) - min(xs)) * sc) / 2
-        oy = (d - (max(ys) - min(ys)) * sc) / 2
-        pts = [(ox + (x - min(xs)) * sc, oy + (max(ys) - y) * sc) for x, y in raw]
-        _icon_shape(s, pts, width=4)
-        _icon_gloss(s, pygame.Rect(d * 0.08, d * 0.2, d * 0.84, d * 0.5))
     elif key == "elongated":
         # a square row under a triangle row
         _icon_shape(s, [(d * 0.12, d * 0.5), (d * 0.5, d * 0.5),
@@ -1244,7 +1228,8 @@ def _render_icon(key: str) -> pygame.Surface:
         for pt in list(h) + mids:
             pygame.draw.line(s, ICON_BLUE_DARK, (c, c), pt, 3)
         _icon_gloss(s, pygame.Rect(d * 0.1, d * 0.08, d * 0.8, d * 0.4))
-    elif key in ("sphere", "c80", "c180", "spheretri", "snubdodec"):
+    elif key in ("sphere", "c80", "c180", "spheretri", "snubdodec",
+                 "rhombicosidodeca", "truncicosidodeca"):
         fill_circle(s, int(c), int(c), int(d * 0.44), ICON_BLUE)
         pygame.draw.circle(s, ICON_BLUE_DARK, (int(c), int(c)), int(d * 0.44), 4)
         if key == "spheretri":
@@ -1258,8 +1243,10 @@ def _render_icon(key: str) -> pygame.Surface:
                 ty = c - d * 0.06 + d * 0.3 * math.sin(angle) * 1.05
                 _icon_badge(s, tx, ty, d * 0.08, "tri")
         else:
-            # pentagon center for the pentagonal solids, hexagon for C180
-            sides = 6 if key == "c180" else 5
+            # pentagon center for the pentagonal solids, hexagon for C180,
+            # square for the two square-majority solids
+            sides = 6 if key == "c180" else (
+                4 if key in ("rhombicosidodeca", "truncicosidodeca") else 5)
             inner = [
                 (c + d * 0.2 * math.cos(math.radians(360 / sides * k - 90)),
                  c + d * 0.2 * math.sin(math.radians(360 / sides * k - 90)))
@@ -1795,8 +1782,17 @@ class GameScreen(BaseGameScreen):
     # stay as designed -- turning them would look arbitrary for no gain.
     ROTATE_ASPECT = 1.2  # width/height beyond which a portrait viewport rotates
 
+    # The hexagon tiling's own flat boards (hex, hexhex, hextriangle) are
+    # built roughly square by convention, so they never cross ROTATE_ASPECT --
+    # but pointy-top hexagons read better as flat-top ones on a narrow phone,
+    # which the same quarter-turn happens to produce as a side effect. So
+    # these always turn on a portrait viewport, aspect ratio aside.
+    _HEX_TILING_MODES = frozenset({"hex", "hexhex", "hextriangle"})
+
     @property
     def _rotated(self) -> bool:
+        if self.mode in self._HEX_TILING_MODES:
+            return self._portrait
         return (
             self._portrait
             and self.board.width > self.board.height * self.ROTATE_ASPECT

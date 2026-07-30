@@ -238,6 +238,141 @@ def sphere_triangle_board(mine_count: int, frequency: int = 2) -> Board3D:
     return _convex_board3d("spheretri", cells, positions, mine_count)
 
 
+def _expand_icosahedron() -> tuple[dict, dict]:
+    """The rhombicosidodecahedron as (cells, positions): the Conway
+    "expand" (cantellation) operation on the icosahedron — 20 shrunk
+    triangles (one per face), 30 squares (one per edge, opening a gap
+    between the two faces it used to join) and 12 pentagons (one per
+    vertex, since every icosahedron vertex has degree 5). Cells are keyed
+    by the (face, vertex) incidence flags a corner is pulled toward."""
+    vertices, faces = _icosahedron()
+    positions: dict[Hashable, Vec3] = {}
+    for face_index, face in enumerate(faces):
+        centroid = tuple(sum(vertices[i][axis] for i in face) / 3 for axis in range(3))
+        for v in face:
+            positions[(face_index, v)] = _normalize(
+                tuple(0.6 * vertices[v][axis] + 0.4 * centroid[axis] for axis in range(3))
+            )
+
+    cells: dict[Cell, list] = {
+        ("f", fi): [(fi, v) for v in face] for fi, face in enumerate(faces)
+    }
+
+    edge_faces: dict[tuple[int, int], list[int]] = defaultdict(list)
+    for face_index, face in enumerate(faces):
+        for i in range(3):
+            u, v = face[i], face[(i + 1) % 3]
+            edge_faces[(min(u, v), max(u, v))].append(face_index)
+    for (u, v), face_ids in edge_faces.items():
+        f1, f2 = face_ids
+        cells[("e", u, v)] = [(f1, u), (f1, v), (f2, v), (f2, u)]
+
+    vertex_faces: dict[int, list[int]] = defaultdict(list)
+    for face_index, face in enumerate(faces):
+        for v in face:
+            vertex_faces[v].append(face_index)
+    for v, face_ids in vertex_faces.items():
+        ordered = _tangent_order(
+            vertices[v], [(fi, positions[(fi, v)]) for fi in face_ids]
+        )
+        cells[("v", v)] = [(fi, v) for fi in ordered]
+
+    return cells, positions
+
+
+def rhombicosidodecahedron_board(mine_count: int) -> Board3D:
+    """A rhombicosidodecahedron: 20 triangles, 30 squares and 12 pentagons
+    (vertex configuration 3.4.5.4), projected onto the unit sphere."""
+    cells, positions = _expand_icosahedron()
+    return _convex_board3d("rhombicosidodeca", cells, positions, mine_count)
+
+
+def _icosidodecahedron() -> tuple[dict, dict]:
+    """The icosidodecahedron as (cells, positions) — one vertex per
+    icosahedron edge midpoint, 20 triangles (one per icosahedron face) and
+    12 pentagons (one per icosahedron vertex, degree 5): the "rectify"
+    operation. Not itself a board; an intermediate step toward the
+    truncated icosidodecahedron."""
+    vertices, faces = _icosahedron()
+    positions: dict[Hashable, Vec3] = {}
+
+    def mkey(u: int, v: int) -> tuple:
+        return ("m", min(u, v), max(u, v))
+
+    neighbors: dict[int, set[int]] = defaultdict(set)
+    for face in faces:
+        for i in range(3):
+            u, v = face[i], face[(i + 1) % 3]
+            neighbors[u].add(v)
+            neighbors[v].add(u)
+            key = mkey(u, v)
+            if key not in positions:
+                a, b = vertices[u], vertices[v]
+                positions[key] = _normalize(tuple((pa + pb) / 2 for pa, pb in zip(a, b)))
+
+    cells: dict[Cell, list] = {
+        ("t", fi): [mkey(face[i], face[(i + 1) % 3]) for i in range(3)]
+        for fi, face in enumerate(faces)
+    }
+    for v, nbs in neighbors.items():
+        ordered = _tangent_order(vertices[v], [(nb, vertices[nb]) for nb in nbs])
+        cells[("p", v)] = [mkey(v, nb) for nb in ordered]
+    return cells, positions
+
+
+def _truncate(cells: dict, positions: dict, t: float = 1 / 3) -> tuple[dict, dict]:
+    """Cut every vertex of a closed mesh (cells keyed by hashable tags,
+    each an ordered ring of vertex keys) by a plane near it: a vertex of
+    degree n becomes a new n-gon face, and every original face's corners
+    are each replaced by a pair of points along its two adjacent edges —
+    the "truncate" (bevel-vertex) operation. Generic over the input mesh;
+    used to build the truncated icosidodecahedron from the
+    icosidodecahedron."""
+    neighbors: dict[Hashable, set] = defaultdict(set)
+    for keys in cells.values():
+        n = len(keys)
+        for i in range(n):
+            u, v = keys[i], keys[(i + 1) % n]
+            neighbors[u].add(v)
+            neighbors[v].add(u)
+
+    def tkey(v, nb):
+        return ("t", v, nb)
+
+    new_positions: dict[Hashable, Vec3] = {}
+    for v, nbs in neighbors.items():
+        a = positions[v]
+        for nb in nbs:
+            b = positions[nb]
+            new_positions[tkey(v, nb)] = _normalize(
+                tuple(pa + (pb - pa) * t for pa, pb in zip(a, b))
+            )
+
+    new_cells: dict[Cell, list] = {}
+    for name, keys in cells.items():
+        n = len(keys)
+        polygon = []
+        for i in range(n):
+            v = keys[i]
+            polygon.append(tkey(v, keys[i - 1]))
+            polygon.append(tkey(v, keys[(i + 1) % n]))
+        new_cells[name] = polygon
+
+    for v, nbs in neighbors.items():
+        ordered = _tangent_order(positions[v], [(nb, positions[nb]) for nb in nbs])
+        new_cells[("v", v)] = [tkey(v, nb) for nb in ordered]
+
+    return new_cells, new_positions
+
+
+def truncated_icosidodecahedron_board(mine_count: int) -> Board3D:
+    """A truncated icosidodecahedron: 30 squares, 20 hexagons and 12
+    decagons (vertex configuration 4.6.10), projected onto the unit
+    sphere — the icosidodecahedron with every vertex truncated."""
+    cells, positions = _truncate(*_icosidodecahedron())
+    return _convex_board3d("truncicosidodeca", cells, positions, mine_count)
+
+
 def cube_board(n: int, mine_count: int) -> Board3D:
     """A cube surface tiled with ``6 * n**2`` squares: each face an n x n
     grid. Vertices are integer points on ``[-n, n]**3`` (a surface vertex

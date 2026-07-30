@@ -146,6 +146,25 @@ export function hexhexBoard(radius: number, mineCount: number, scale = 20): Boar
   return buildLattice("hexhex", cells, [(scale * ROOT3) / 2, scale / 2], mineCount);
 }
 
+export function hextriangleBoard(size: number, mineCount: number, scale = 20): Board {
+  // A big equilateral triangle of small hexagons: axial (q, r) with
+  // q, r >= 0 and q + r <= size, giving (size+1)*(size+2)/2 cells -- the
+  // hexagonal tiling on a triangular board, as hextriBoard is the
+  // triangular tiling on a hexagonal one.
+  const cells = new Map<CellId, Vertex[]>();
+  for (let qq = 0; qq <= size; qq++) {
+    for (let rr = 0; rr <= size - qq; rr++) {
+      const kx = 2 * qq + rr + 1;
+      const ky = 3 * rr + 2;
+      cells.set(
+        cid(qq, rr),
+        HEX_VERTEX_OFFSETS.map(([ox, oy]) => [kx + ox, ky + oy] as Vertex),
+      );
+    }
+  }
+  return buildLattice("hextriangle", cells, [(scale * ROOT3) / 2, scale / 2], mineCount);
+}
+
 // -- Archimedean (semiregular) tilings + Laves duals -------------------------
 //
 // Port of the `_ArchTemplate` system in minesweeper/boards/tilings.py. Each of

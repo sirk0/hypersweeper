@@ -22,12 +22,12 @@ Import order is a strict DAG; a module only imports from the ones above it.
 | Module | Responsibility |
 |--------|----------------|
 | `core.py` | `Board` / `Board3D`, the `_shared_vertex_adjacency` neighbour rule, `_build` (lattice→pixels) and `_finalize_flat` (float→pixels), 3D vector helpers, and the topology invariants `euler_characteristic` / `boundary_components` / `corner_fans`. |
-| `tilings.py` | Regular flat builders (square/triangle/trigrid/hex/hexhex/hextri), the `_ArchTemplate` system, the eight Archimedean `_*_template()` factories plus their eight Laves duals (built by `_dual_template`), the six isogonal (non-edge-to-edge) ones and the five congruent-rectangle bonds, and the **`ARCH_TILINGS`** registry (the one place any of them is declared, with `_FAMILY_TRAITS` saying what each family is). |
-| `aperiodic.py` | Penrose (P3), the Hat monotile and the Spectre (Tile(1,1), the chiral monotile), each with its own exact-arithmetic vertex ids — ℤ[ζ5], the Eisenstein lattice, and ℤ[ζ12]. The Spectre's ring is *dense* in the plane, so unlike the Hat there is no lattice to snap a float vertex back to: its placements are carried as exact `(rotation, mirror, translation)` triples and no floating point enters the substitution at all. |
-| `solids.py` | Closed/convex and polycube 3D boards (pentagonal hexecontahedron, Goldberg polyhedra, geodesic icosahedron, cube, tetrahedron, frames, bipyramid). |
+| `tilings.py` | Regular flat builders (square/triangle/trigrid/hex/hexhex/hextri/hextriangle), the `_ArchTemplate` system, the eight Archimedean `_*_template()` factories plus their eight Laves duals (built by `_dual_template`), the six isogonal (non-edge-to-edge) ones and the five congruent-rectangle bonds, and the **`ARCH_TILINGS`** registry (the one place any of them is declared, with `_FAMILY_TRAITS` saying what each family is). |
+| `aperiodic.py` | Penrose (P3) and the Spectre (Tile(1,1), the chiral monotile), each with its own exact-arithmetic vertex ids — ℤ[ζ5] and ℤ[ζ12]. The Spectre's ring is *dense* in the plane, so unlike Penrose's discrete lattice there is no lattice to snap a float vertex back to: its placements are carried as exact `(rotation, mirror, translation)` triples and no floating point enters the substitution at all. |
+| `solids.py` | Closed/convex and polycube 3D boards (pentagonal hexecontahedron, Goldberg polyhedra, geodesic icosahedron, rhombicosidodecahedron, truncated icosidodecahedron, cube, tetrahedron, frames, bipyramid). |
 | `surfaces.py` | Wrapping tilings onto surfaces: the three immersion points (`_torus_point`, `_cylinder_point`, `_mobius_point`), the shared `_assemble` tail, the nine simple `*_board` wrappers, and the Archimedean `arch_torus_board` / `arch_cylinder_board` / `arch_mobius_board`. |
 | `catalog.py` | The menu, **derived**: `SURFACE_SPECS` and `TILING_SPECS` (leaf data loaded from `data/catalog.json`) produce `MODE_LABELS`, `TILINGS`, `SURFACE_LABELS`, the geometry-first menu tables (`MENU_ROOT`/`MANIFOLD_*`/`FAMILY_*`/`SPHERE_MODES`/`POLYHEDRA_MODES`/`SHAPED_MODES`) and the picker helpers (`family_rows`, `picker_families`, `picker_modes`), `MODES_3D`, `mode_for`, `surface_of`, `view_hint`. |
-| `presets.py` | Difficulty presets and `build_board`. Flat regular, solid, Archimedean/Laves and aperiodic (penrose/hat/spectre) presets all load from `data/presets.json` (shared with the web port). The Archimedean rows are authored in the compact **`ARCH_PRESETS`** table (tiling → surface → difficulty → args) that `scripts/export_data.py` expands into `data/presets.json`. |
+| `presets.py` | Difficulty presets and `build_board`. Flat regular, solid, Archimedean/Laves and aperiodic (penrose/spectre) presets all load from `data/presets.json` (shared with the web port). The Archimedean rows are authored in the compact **`ARCH_PRESETS`** table (tiling → surface → difficulty → args) that `scripts/export_data.py` expands into `data/presets.json`. |
 
 `__init__.py` re-exports the whole public surface, so `from
 minesweeper.boards import ...` is unchanged by the split.
@@ -44,9 +44,9 @@ written twice:
   `DIFFICULTIES`, `SOLO_LABELS`, and the menu taxonomy/labels. `catalog.py`
   loads these via `boards/_data.py`; the *derivations* stay in code.
 - `data/presets.json` — the difficulty presets for the **ported** modes
-  (the flat regular ones — square/triangle/trigrid/hex/hexhex — the ten
-  solids, the regular-tiling surface wraps, every Archimedean/Laves
-  tiling × surface, and the three aperiodic tilings — penrose/hat/spectre), as
+  (the flat regular ones — square/triangle/trigrid/hex/hexhex/hextriangle —
+  the twelve solids, the regular-tiling surface wraps, every Archimedean/Laves
+  tiling × surface, and the two aperiodic tilings — penrose/spectre), as
   `{mode: {builder, args}}`. The Archimedean/Laves rows carry the tiling
   key as their first arg. `presets.py` loads every row into `_PRESETS`
   via `_JSON_BUILDERS`; `_PRESETS` starts empty and holds only any
@@ -188,20 +188,25 @@ Steps, for a new isogonal tiling `foo`:
    vertex, *counting* the one whose edge runs straight through. Set
    `half_turn=False` if the tiling has no 180-degree rotation (p3), which
    exempts it from `test_flat_board_is_symmetric`.
-3. **Presets** — a `"foo"` block in `ARCH_PRESETS` with a **`flat` column
-   only**; `family="isogonal"` sets `TilingSpec.flat_only`, which gates the
-   tiling out of every surface but the plane. Re-run `scripts/export_data.py`
-   and `export_conformance.py`.
+3. **Presets** — a `"foo"` block in `ARCH_PRESETS` with `flat`, `torus` and
+   `cylinder` columns (the same `arch_torus_board`/`arch_cylinder_board`
+   machinery every Archimedean/Laves tiling wraps with — nothing isogonal-
+   specific is needed there), plus `mobius`/`klein` columns if the template
+   built a `mirror` (only offset square and staggered triangular do; a
+   chiral one stays off those two, exactly like snub hexagonal). Re-run
+   `scripts/export_data.py` and `export_conformance.py`.
 4. **Port it to `web/src/boards/tilings.ts`** — the same template, verbatim.
    The conformance oracle compares the two boards cell for cell, so a
    divergence fails `tests/unit/conformance.test.ts` immediately.
 
 `TestIsogonal` in `tests/test_boards.py` then covers the new tiling
 automatically: regular tiles, one vertex species, and a domain whose tiles'
-areas sum to its own (no gaps, no overlaps).
+areas sum to its own (no gaps, no overlaps). `TestWrappedArchimedean` covers
+the wrapped surfaces the same way it does for the uniform/dual families.
 
-To wrap one onto a manifold later: drop `flat_only`, add the surface columns
-to its `ARCH_PRESETS` block, and give the reflective ones a seam mirror.
+A brand new *family* with no wrap builders yet can still stay flat-only by
+adding its name to `catalog._FLAT_ONLY_FAMILIES` (empty today, since isogonal
+and rectangle both wrap); that flag is per family, not per tiling.
 
 ## Recipe: add a congruent-rectangle bond
 
@@ -236,9 +241,11 @@ for the running bond, a 2 x 2 block for the weaves and the herringbone), so
    rotation centre scores below its 0.85 bar.
 3. **Registry** — one `ArchTiling("foo", "Foo label", (4,), 2, _foo_template,
    family="rectangle")` row.
-4. **Presets** — a `"foo"` block in `ARCH_PRESETS` with a **`flat` column
-   only** (the family is gated to the plane by `catalog._FLAT_ONLY_FAMILIES`),
-   then re-run `scripts/export_data.py` and `export_conformance.py`.
+4. **Presets** — a `"foo"` block in `ARCH_PRESETS` with `flat`, `torus` and
+   `cylinder` columns, plus `mobius`/`klein` if the template built a `mirror`
+   (of the five, stacked bond, running bond and both basket weaves do;
+   herringbone is glide-only and stays off them), then re-run
+   `scripts/export_data.py` and `export_conformance.py`.
 5. **Port it to `web/src/boards/tilings.ts`** — the same template verbatim, one
    more `ARCH_TILINGS` row. Its menu icon is generated: the `"domain"` patch
    style in `web/src/ui/icons.ts` draws whole periods of the bond, which is the

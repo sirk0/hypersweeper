@@ -21,11 +21,13 @@ import { ARCH_TILINGS, archTemplate } from "../boards/tilings";
 import {
   c80Board,
   c180Board,
+  rhombicosidodecahedronBoard,
   snubDodecahedronBoard,
   sphereBoard,
   sphereTriangleBoard,
   steppedBipyramidBoard,
   tetrahedronFrameBoard,
+  truncatedIcosidodecahedronBoard,
 } from "../boards/solids";
 import type { Board3D } from "../boards/core";
 
@@ -511,6 +513,8 @@ const SOLID_BUILDERS: Record<string, () => Board3D> = {
   c80: () => c80Board(0),
   c180: () => c180Board(0),
   spheretri: () => sphereTriangleBoard(0),
+  rhombicosidodeca: () => rhombicosidodecahedronBoard(0),
+  truncicosidodeca: () => truncatedIcosidodecahedronBoard(0),
   tetraframe: () => tetrahedronFrameBoard(0, 2),
   steppedbipyramid: () => steppedBipyramidBoard(7, 4, 0),
 };
@@ -523,6 +527,8 @@ const SOLID_VIEW: Record<string, [number, number] | [number, number, number]> = 
   c80: [-20, 10],
   c180: [-20, 10],
   spheretri: [-10, 18],
+  rhombicosidodeca: [-16, 15],
+  truncicosidodeca: [-16, 15],
   // Seen from just above the equator: from any higher the widest terrace hides
   // the whole lower pyramid, and the icon stops being a bipyramid at all.
   steppedbipyramid: [-85, 0, 28],
@@ -766,7 +772,15 @@ const ALIASES: Record<string, string> = {
   random: "start", // the "Random" picker entry
 };
 
-const SPHERES = ["sphere", "c80", "c180", "spheretri", "snubdodec"];
+const SPHERES = [
+  "sphere",
+  "c80",
+  "c180",
+  "spheretri",
+  "snubdodec",
+  "rhombicosidodeca",
+  "truncicosidodeca",
+];
 
 /** What a board's cells actually are, for the icons whose art is not a drawing
  * of one: a subdivided outer polygon (the Laves triangle tilings), an
@@ -791,6 +805,8 @@ const ICON_TONES: Record<string, ShapeTone> = {
   spheretri: { sides: 3, regularity: 1 },
   c80: { sides: 6, regularity: 0.95 },
   c180: { sides: 6, regularity: 0.95 },
+  rhombicosidodeca: { sides: 4, regularity: 1 }, // squares are the majority face
+  truncicosidodeca: { sides: 4, regularity: 1 }, // squares are the majority face
 };
 
 function draw(rawKey: string): string[] {
@@ -879,6 +895,25 @@ function draw(rawKey: string): string[] {
       centers.push([C + 2 * r * 0.95 * Math.cos(a), C + 2 * r * 0.95 * Math.sin(a)]);
     }
     for (const [hx, hy] of centers) parts.push(shape(hexagon(hx, hy, r)));
+  } else if (key === "hextriangle") {
+    // the triangular hex board: the six-cell case (axial q, r >= 0,
+    // q + r <= 2), laid out with the same pointy-top spacing the real
+    // board uses (unit circumradius: dx = sqrt(3)/2 per q, dy = 1.5 per r).
+    const raw: P[] = [];
+    for (let qq = 0; qq <= 2; qq++) {
+      for (let rr = 0; rr <= 2 - qq; rr++) {
+        raw.push([(2 * qq + rr) * (Math.sqrt(3) / 2), rr * 1.5]);
+      }
+    }
+    const xs = raw.map((p) => p[0]);
+    const ys = raw.map((p) => p[1]);
+    const midX = (Math.min(...xs) + Math.max(...xs)) / 2;
+    const midY = (Math.min(...ys) + Math.max(...ys)) / 2;
+    const span = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys));
+    const r = (d * 0.92) / (span + 2); // +2 hex radii of padding, one each side
+    for (const [px, py] of raw) {
+      parts.push(shape(hexagon(C + (px - midX) * r, C + (py - midY) * r, r)));
+    }
   } else if (key === "penrose") {
     // a sun of five thick rhombi
     const side = d * 0.3;
@@ -895,8 +930,12 @@ function draw(rawKey: string): string[] {
         ]),
       );
     }
-  } else if (key === "hat") {
-    // a single hat monotile silhouette (the aperiodic tridecagon)
+  } else if (key === "spectre") {
+    // The Spectre's menu icon keeps the nicer silhouette of its removed
+    // sibling "The Hat" (the two aperiodic monotiles share a family
+    // resemblance -- Tile(1,1) is a member of the hat continuum -- and this
+    // outline reads better at icon size than a walk of the Spectre's own
+    // edge directions).
     const hr3 = Math.sqrt(3) / 2;
     const ab: P[] = [
       [0, 0],
@@ -923,29 +962,6 @@ function draw(rawKey: string): string[] {
     const ox = (d - (maxX - minX) * sc) / 2;
     const oy = (d - (maxY - minY) * sc) / 2;
     parts.push(shape(raw.map(([x, y]) => [ox + (x - minX) * sc, oy + (maxY - y) * sc])));
-  } else if (key === "spectre") {
-    // a single Spectre silhouette: Tile(1,1), the equilateral 14-gon, walked
-    // from its edge directions (multiples of 30°). Turned two steps of the
-    // tiling's own 30° rotation, the orientation whose bounding box is nearest
-    // square, so it fills the icon box.
-    const dirs = [0, 10, 1, 3, 0, 2, 5, 7, 4, 6, 6, 8, 11, 9];
-    const raw: P[] = [];
-    let x = 0;
-    let y = 0;
-    for (const direction of dirs) {
-      raw.push([x, y]);
-      x += Math.cos((Math.PI / 6) * (direction + 2));
-      y += Math.sin((Math.PI / 6) * (direction + 2));
-    }
-    const xs = raw.map((p) => p[0]);
-    const ys = raw.map((p) => p[1]);
-    const [minX, maxX] = [Math.min(...xs), Math.max(...xs)];
-    const [minY, maxY] = [Math.min(...ys), Math.max(...ys)];
-    const span = Math.max(maxX - minX, maxY - minY);
-    const sc = (d * 0.86) / span;
-    const ox = (d - (maxX - minX) * sc) / 2;
-    const oy = (d - (maxY - minY) * sc) / 2;
-    parts.push(shape(raw.map(([px, py]) => [ox + (px - minX) * sc, oy + (maxY - py) * sc])));
   } else if (SPHERES.includes(key)) {
     // the real solid, projected: a dark disc behind it closes the silhouette
     // where the outermost faces fall away from the viewer

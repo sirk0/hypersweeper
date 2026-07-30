@@ -342,6 +342,187 @@ export function sphereTriangleBoard(mineCount: number, frequency = 2): Board3D {
   return convexBoard3d("spheretri", cells, positions, mineCount);
 }
 
+/** The rhombicosidodecahedron as (cells, positions): the Conway "expand"
+ * (cantellation) operation on the icosahedron — 20 shrunk triangles (one per
+ * face), 30 squares (one per edge, opening a gap between the two faces it
+ * used to join) and 12 pentagons (one per vertex, since every icosahedron
+ * vertex has degree 5). Cells are keyed by the (face, vertex) incidence flags
+ * a corner is pulled toward. */
+function expandIcosahedron(): { cells: Cells; positions: Positions } {
+  const { vertices, faces } = icosahedron();
+  const positions: Positions = new Map();
+  const fkey = (faceIndex: number, v: number): string => cid("f", faceIndex, v);
+
+  faces.forEach((face, faceIndex) => {
+    const centroid = centroidOf(face.map((i) => vertices[i]!));
+    for (const v of face) {
+      const p = vertices[v]!;
+      positions.set(fkey(faceIndex, v), normalize([
+        0.6 * p[0] + 0.4 * centroid[0],
+        0.6 * p[1] + 0.4 * centroid[1],
+        0.6 * p[2] + 0.4 * centroid[2],
+      ]));
+    }
+  });
+
+  const cells: Cells = new Map();
+  faces.forEach((face, faceIndex) => {
+    cells.set(cid("f", faceIndex), face.map((v) => fkey(faceIndex, v)));
+  });
+
+  const edgeFaces = new Map<string, number[]>();
+  faces.forEach((face, faceIndex) => {
+    for (let i = 0; i < 3; i++) {
+      const [u, v] = [face[i]!, face[(i + 1) % 3]!];
+      const key = cid(Math.min(u, v), Math.max(u, v));
+      let ids = edgeFaces.get(key);
+      if (!ids) edgeFaces.set(key, (ids = []));
+      ids.push(faceIndex);
+    }
+  });
+  for (const [key, [f1, f2]] of edgeFaces) {
+    const [u, v] = key.split(",").map(Number) as [number, number];
+    cells.set(cid("e", u, v), [fkey(f1!, u), fkey(f1!, v), fkey(f2!, v), fkey(f2!, u)]);
+  }
+
+  const vertexFaces = new Map<number, number[]>();
+  faces.forEach((face, faceIndex) => {
+    for (const v of face) {
+      let ids = vertexFaces.get(v);
+      if (!ids) vertexFaces.set(v, (ids = []));
+      ids.push(faceIndex);
+    }
+  });
+  for (const [v, faceIds] of vertexFaces) {
+    const ordered = tangentOrder(
+      vertices[v]!,
+      faceIds.map((fi): [number, Vec3] => [fi, positions.get(fkey(fi, v))!]),
+    );
+    cells.set(cid("v", v), ordered.map((fi) => fkey(fi, v)));
+  }
+
+  return { cells, positions };
+}
+
+/** A rhombicosidodecahedron: 20 triangles, 30 squares and 12 pentagons
+ * (vertex configuration 3.4.5.4), projected onto the unit sphere. */
+export function rhombicosidodecahedronBoard(mineCount: number): Board3D {
+  const { cells, positions } = expandIcosahedron();
+  return convexBoard3d("rhombicosidodeca", cells, positions, mineCount);
+}
+
+/** The icosidodecahedron as (cells, positions) — one vertex per icosahedron
+ * edge midpoint, 20 triangles (one per icosahedron face) and 12 pentagons
+ * (one per icosahedron vertex, degree 5): the "rectify" operation. Not itself
+ * a board; an intermediate step toward the truncated icosidodecahedron. */
+function icosidodecahedron(): { cells: Cells; positions: Positions } {
+  const { vertices, faces } = icosahedron();
+  const positions: Positions = new Map();
+  const mkey = (u: number, v: number): string => cid("m", Math.min(u, v), Math.max(u, v));
+
+  const neighbors = new Map<number, Set<number>>();
+  const neighborsOf = (v: number): Set<number> => {
+    let set = neighbors.get(v);
+    if (!set) neighbors.set(v, (set = new Set()));
+    return set;
+  };
+  for (const face of faces) {
+    for (let i = 0; i < 3; i++) {
+      const [u, v] = [face[i]!, face[(i + 1) % 3]!];
+      neighborsOf(u).add(v);
+      neighborsOf(v).add(u);
+      const key = mkey(u, v);
+      if (!positions.has(key)) {
+        const [a, b] = [vertices[u]!, vertices[v]!];
+        positions.set(key, normalize([
+          (a[0] + b[0]) / 2,
+          (a[1] + b[1]) / 2,
+          (a[2] + b[2]) / 2,
+        ]));
+      }
+    }
+  }
+
+  const cells: Cells = new Map();
+  faces.forEach((face, faceIndex) => {
+    cells.set(cid("t", faceIndex), [0, 1, 2].map((i) => mkey(face[i]!, face[(i + 1) % 3]!)));
+  });
+  for (const [v, nbs] of neighbors) {
+    const ordered = tangentOrder(vertices[v]!, [...nbs].map((nb): [number, Vec3] => [nb, vertices[nb]!]));
+    cells.set(cid("p", v), ordered.map((nb) => mkey(v, nb)));
+  }
+  return { cells, positions };
+}
+
+/** Cut every vertex of a closed mesh (cells keyed by opaque tags, each an
+ * ordered ring of vertex keys) by a plane near it: a vertex of degree n
+ * becomes a new n-gon face, and every original face's corners are each
+ * replaced by a pair of points along its two adjacent edges — the
+ * "truncate" (bevel-vertex) operation. Generic over the input mesh; used to
+ * build the truncated icosidodecahedron from the icosidodecahedron. */
+function truncate(
+  cells: Cells,
+  positions: Positions,
+  t = 1 / 3,
+): { cells: Cells; positions: Positions } {
+  const neighbors = new Map<string, Set<string>>();
+  const neighborsOf = (v: string): Set<string> => {
+    let set = neighbors.get(v);
+    if (!set) neighbors.set(v, (set = new Set()));
+    return set;
+  };
+  for (const keys of cells.values()) {
+    const n = keys.length;
+    for (let i = 0; i < n; i++) {
+      const [u, v] = [keys[i]!, keys[(i + 1) % n]!];
+      neighborsOf(u).add(v);
+      neighborsOf(v).add(u);
+    }
+  }
+
+  const tkey = (v: string, nb: string): string => cid("t", v, nb);
+
+  const newPositions: Positions = new Map();
+  for (const [v, nbs] of neighbors) {
+    const a = positions.get(v)!;
+    for (const nb of nbs) {
+      const b = positions.get(nb)!;
+      newPositions.set(tkey(v, nb), normalize([
+        a[0] + (b[0] - a[0]) * t,
+        a[1] + (b[1] - a[1]) * t,
+        a[2] + (b[2] - a[2]) * t,
+      ]));
+    }
+  }
+
+  const newCells: Cells = new Map();
+  for (const [name, keys] of cells) {
+    const n = keys.length;
+    const polygon: string[] = [];
+    for (let i = 0; i < n; i++) {
+      const v = keys[i]!;
+      polygon.push(tkey(v, keys[(i - 1 + n) % n]!), tkey(v, keys[(i + 1) % n]!));
+    }
+    newCells.set(name, polygon);
+  }
+
+  for (const [v, nbs] of neighbors) {
+    const ordered = tangentOrder(positions.get(v)!, [...nbs].map((nb): [string, Vec3] => [nb, positions.get(nb)!]));
+    newCells.set(cid("v", v), ordered.map((nb) => tkey(v, nb)));
+  }
+
+  return { cells: newCells, positions: newPositions };
+}
+
+/** A truncated icosidodecahedron: 30 squares, 20 hexagons and 12 decagons
+ * (vertex configuration 4.6.10), projected onto the unit sphere — the
+ * icosidodecahedron with every vertex truncated. */
+export function truncatedIcosidodecahedronBoard(mineCount: number): Board3D {
+  const { cells: idCells, positions: idPositions } = icosidodecahedron();
+  const { cells, positions } = truncate(idCells, idPositions);
+  return convexBoard3d("truncicosidodeca", cells, positions, mineCount);
+}
+
 /** A cube surface tiled with `6 * n**2` squares: each face an n x n grid.
  * Vertices are integer points on `[-n, n]**3` (a surface vertex has one axis
  * at +-n; the grid lines step by 2), so cells on adjacent faces sharing a

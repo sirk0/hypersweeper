@@ -286,6 +286,24 @@ class TestPhoneLayout:
         assert screen.natural_size == size
         assert screen.polygons == polygons
 
+    @pytest.mark.parametrize("mode", ["hex", "hexhex", "hextriangle"])
+    def test_portrait_always_turns_the_hex_tiling_boards(self, mode):
+        # hex/hexhex/hextriangle are built roughly square, so they never trip
+        # the generic landscape-aspect rule -- they turn unconditionally
+        # instead, so pointy-top hexagons render flat-top on a phone.
+        screen = GameScreen(mode, "easy")
+        assert screen._rotated is False
+        size = screen.natural_size
+        screen.set_portrait(True)
+        assert screen._rotated is True
+        assert screen.natural_size != size
+        # geometry stays consistent: every cell centre still hits its cell
+        for cell, center in screen.centers.items():
+            assert screen.cell_at(center) == cell
+        screen.set_portrait(False)  # turning back restores the layout
+        assert screen._rotated is False
+        assert screen.natural_size == size
+
 
 class TestRendering:
     def draw(self, screen, fonts):
@@ -525,7 +543,7 @@ class TestMenu:
         self.click_item(menu, "regular")
         # each regular tiling, followed by the shaped boards cut from it
         assert [key for _, key, _, _ in menu.layout()["items"]] == [
-            "tri", "triangle", "hextri", "square", "hex", "hexhex"
+            "tri", "triangle", "hextri", "square", "hex", "hexhex", "hextriangle"
         ]
         assert self.click_item(menu, "hex") == ("start", "hex")
 
@@ -575,7 +593,9 @@ class TestMenu:
         self.click_item(menu, "torus")
         assert menu.path == ["manifolds", "torus"]
         # aperiodic is not offered on a wrapped surface, only on the plane
-        assert self.items(menu) == {"regular", "uniform", "dual", "random"}
+        assert self.items(menu) == {
+            "regular", "uniform", "dual", "isogonal", "rectangle", "random",
+        }
         self.click_item(menu, "uniform")
         assert self.click_item(menu, "trihex") == ("start", "torustrihex")
 

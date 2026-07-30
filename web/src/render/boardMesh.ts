@@ -92,7 +92,7 @@ export function glyphFor(visual: CellVisual): Glyph | null {
  * loose bound for the flat ones (a torus, a cylinder, the Klein bottle),
  * which would otherwise float in the middle of a phone screen. */
 export type BoardView =
-  | { kind: "flat"; width: number; height: number }
+  | { kind: "flat"; width: number; height: number; mode: string }
   | { kind: "solid"; radius: number; hull: Float32Array };
 
 /** A cell's anchor in mesh-local coordinates: the centre of its (raised) top

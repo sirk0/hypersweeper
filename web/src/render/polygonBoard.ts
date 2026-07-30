@@ -118,7 +118,12 @@ export class PolygonBoard extends Group implements BoardMesh {
     // renders upright (y up).
     const cx = board.width / 2;
     const cy = board.height / 2;
-    this.view = { kind: "flat", width: board.width, height: board.height };
+    this.view = {
+      kind: "flat",
+      width: board.width,
+      height: board.height,
+      mode: board.mode,
+    };
 
     const faceCell: number[] = [];
     let vertexCount = 0;

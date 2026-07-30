@@ -20,8 +20,9 @@ export interface TilingSpec {
   label: string;
   chiral: boolean;
   modeOverrides: Record<string, string>;
-  /** The plane only: no wrap builders or preset windows for this tiling yet
-   * (the isogonal and rectangle families — see FLAT_ONLY_ARCH_FAMILIES). */
+  /** The plane only: no wrap builders or preset windows for this tiling
+   * (currently no ARCH_TILINGS family — see FLAT_ONLY_ARCH_FAMILIES — but a
+   * future one-off tiling could set it). */
   flatOnly?: boolean;
 }
 
@@ -38,8 +39,9 @@ export const MENU = catalog.menu;
 // template has no mirror is chiral (snub hexagonal, floret pentagonal), which
 // gates it out of the orientation-reversing Möbius / Klein surfaces.
 // The ARCH_TILINGS families that live on the plane only: no wrap builders and
-// no per-surface preset windows for them yet.
-const FLAT_ONLY_ARCH_FAMILIES = new Set(["isogonal", "rectangle"]);
+// no per-surface preset windows for them yet. Empty today -- isogonal and
+// rectangle both wrap every surface their member tilings' chirality allows.
+const FLAT_ONLY_ARCH_FAMILIES = new Set<string>([]);
 
 export const ARCH_TILING_SPECS: TilingSpec[] = ARCH_TILINGS.map((t) => ({
   key: t.key,
@@ -144,12 +146,12 @@ export const SHAPED_MODES = MENU.shapedModes as Record<string, string[]>;
 
 /** The regular tilings the picker offers, in order (MENU.pickerRegular). */
 export const PICKER_REGULAR = MENU.pickerRegular as string[];
-/** The picker's family rows; "isogonal", "rectangle" and "aperiodic" are added
- * on the plane only — the isogonal tilings and the rectangle bonds have no wrap
- * builders yet, and the aperiodic ones no periodic domain to glue a seam
- * with. */
-export const PICKER_FAMILIES = ["regular", "uniform", "dual"];
-export const FLAT_ONLY_FAMILIES = ["isogonal", "rectangle", "aperiodic"];
+/** The picker's family rows; "aperiodic" is added on the plane only — the
+ * aperiodic tilings have no periodic domain to glue a seam with. Isogonal and
+ * rectangle wrap every surface their member tilings' chirality allows, just
+ * like uniform and dual. */
+export const PICKER_FAMILIES = ["regular", "uniform", "dual", "isogonal", "rectangle"];
+export const FLAT_ONLY_FAMILIES = ["aperiodic"];
 export const APERIODIC_MODES = MENU.aperiodic as string[];
 
 const FAMILY_MEMBERS: Record<string, string[]> = {

@@ -2,7 +2,7 @@
 // data/presets.json. A builder-name → function dispatch mirrors Python's
 // _JSON_BUILDERS. M1 ported the flat regular modes; M2 adds the solids.
 import presetsData from "@data/presets.json";
-import { hatBoard, penroseBoard, spectreBoard } from "./aperiodic";
+import { penroseBoard, spectreBoard } from "./aperiodic";
 import { DIFFICULTIES } from "./catalog";
 import type { AnyBoard } from "./core";
 import {
@@ -10,17 +10,20 @@ import {
   c80Board,
   cubeBoard,
   cubeFrameBoard,
+  rhombicosidodecahedronBoard,
   snubDodecahedronBoard,
   sphereBoard,
   sphereTriangleBoard,
   steppedBipyramidBoard,
   tetrahedronBoard,
   tetrahedronFrameBoard,
+  truncatedIcosidodecahedronBoard,
 } from "./solids";
 import {
   archimedeanBoard,
   hexBoard,
   hexhexBoard,
+  hextriangleBoard,
   hextriBoard,
   squareBoard,
   triangleBoard,
@@ -58,11 +61,14 @@ const BUILDERS: Record<string, Builder> = {
   hex_board: hexBoard,
   hexhex_board: hexhexBoard,
   hextri_board: hextriBoard,
+  hextriangle_board: hextriangleBoard,
   sphere_board: sphereBoard,
   c80_board: c80Board,
   c180_board: c180Board,
   sphere_triangle_board: sphereTriangleBoard,
   snub_dodecahedron_board: snubDodecahedronBoard,
+  rhombicosidodecahedron_board: rhombicosidodecahedronBoard,
+  truncated_icosidodecahedron_board: truncatedIcosidodecahedronBoard,
   cube_board: cubeBoard,
   cube_frame_board: cubeFrameBoard,
   tetrahedron_board: tetrahedronBoard,
@@ -86,7 +92,6 @@ const BUILDERS: Record<string, Builder> = {
   arch_mobius_board: archMobiusBoard,
   arch_klein_board: archKleinBoard,
   penrose_board: penroseBoard,
-  hat_board: hatBoard,
   spectre_board: spectreBoard,
 };
 

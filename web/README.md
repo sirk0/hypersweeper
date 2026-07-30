@@ -50,7 +50,8 @@ lightness whisper. See "Cell styles" and "Shape colour coding" below.
 (`src/boards/aperiodic.ts`): Tile(1,1), the *chiral* aperiodic monotile, tiled by
 the paper's own reflection-free substitution over nine collared cluster types
 (Γ the Mystic + eight collared Spectres), transforms ported from Craig S.
-Kaplan's `spectre` reference. Unlike the Hat port next to it there is **no
+Kaplan's `spectre` reference. Unlike the Hat (this game's original aperiodic
+monotile board, since removed as a menu entry) there is **no
 floating point anywhere**: every edge direction is a multiple of 30° and every
 placement is `z ↦ ζᵏz + t` (ζ = e^{iπ/6}), so the whole substitution runs in
 ℤ[ζ12] on integers. That is forced rather than tidy — ℤ[ζ12] is *dense* in the

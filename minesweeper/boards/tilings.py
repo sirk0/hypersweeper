@@ -26,10 +26,10 @@ from minesweeper.boards.core import (
 #     tilings, pinwheel rotation for the chiral ones). archimedean_board
 #     does this from the _ArchTemplate domains; square/hex/triangle boards
 #     are naturally rectangular.
-#   * Aperiodic tilings (Penrose, Hat) have no period to repeat, so grow a
-#     generous patch and trim to the ``keep`` centremost cells by
+#   * Aperiodic tilings (Penrose, Spectre) have no period to repeat, so grow
+#     a generous patch and trim to the ``keep`` centremost cells by
 #     Chebyshev distance ``max(|dx|, |dy|)`` from the centroid, which
-#     carves out a square. See penrose_board and hat_board.
+#     carves out a square. See penrose_board and spectre_board.
 # Never bound a player-facing board by Euclidean ``dx^2 + dy^2 <= r^2``:
 # that leaves a circle.
 
@@ -125,6 +125,22 @@ def hexhex_board(radius: int, mine_count: int, scale: float = 20) -> Board:
             ky = 3 * r + 3 * radius + 2
             cells[(q, r)] = [(kx + ox, ky + oy) for ox, oy in _HEX_VERTEX_OFFSETS]
     return _build("hexhex", cells, (scale * ROOT3 / 2, scale / 2), mine_count)
+
+
+def hextriangle_board(size: int, mine_count: int, scale: float = 20) -> Board:
+    """A big equilateral triangle composed of small hexagons: axial
+    coordinates (q, r) with q, r >= 0 and q + r <= size, giving
+    (size+1)*(size+2)/2 cells -- the hexagonal tiling on a triangular
+    board, the way hextri_board is the triangular tiling on a hexagonal
+    one. The corner constraint keeps the tiling's 3-fold (mirrored)
+    symmetry, the most a triangular outline can carry."""
+    cells = {}
+    for q in range(size + 1):
+        for r in range(size + 1 - q):
+            kx = 2 * q + r + 1
+            ky = 3 * r + 2
+            cells[(q, r)] = [(kx + ox, ky + oy) for ox, oy in _HEX_VERTEX_OFFSETS]
+    return _build("hextriangle", cells, (scale * ROOT3 / 2, scale / 2), mine_count)
 
 
 # -- Archimedean (semiregular) tilings ---------------------------------------
@@ -639,9 +655,10 @@ def _kisrhombille_template() -> _ArchTemplate:
 # renderer's shape colouring drops it before measuring, and a square with a
 # split edge is still a square.
 #
-# All six are flat-only for now (TilingSpec.flat_only): wrapping one onto a
-# manifold needs its own preset windows per surface, and for the reflective
-# two a seam mirror that survives the T-vertices.
+# All six wrap the torus and cylinder; the two reflective ones (offset
+# square, staggered triangular) also wrap the Mobius strip and Klein
+# bottle, their seam mirror surviving the T-vertices exactly as the
+# Archimedean/Laves tilings' does.
 
 
 def _periodic_domain(v1, v2, width, height, polygons, turn=0.0, span=8):
@@ -851,8 +868,10 @@ def _threescaletri_template(ratio: float = 0.5) -> _ArchTemplate:
 #
 # Only the stacked bond is edge to edge; in the other four a brick corner lands
 # in the middle of a neighbour's edge, which _insert_t_vertices records exactly
-# as it does for the isogonal family. They are flat-only for now
-# (TilingSpec.flat_only): wrapping one needs its own window per surface.
+# as it does for the isogonal family. All five wrap the torus and cylinder;
+# stacked bond, running bond and both basket weaves also have a template
+# mirror and so wrap the Mobius strip / Klein bottle -- herringbone (pgg) is
+# glide-only and stays off them, like the chiral isogonal tilings.
 #
 # Two of the five are affine copies of boards the game already has: a stacked
 # bond is the square tiling stretched (so the same 8-neighbour graph as the
