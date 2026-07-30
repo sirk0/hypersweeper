@@ -133,12 +133,15 @@ def hextriangle_board(size: int, mine_count: int, scale: float = 20) -> Board:
     (size+1)*(size+2)/2 cells -- the hexagonal tiling on a triangular
     board, the way hextri_board is the triangular tiling on a hexagonal
     one. The corner constraint keeps the tiling's 3-fold (mirrored)
-    symmetry, the most a triangular outline can carry."""
+    symmetry, the most a triangular outline can carry. Row r=0 is the
+    widest (size+1 cells); flipping it to the bottom (largest ky) reads as
+    a mountain -- flat base down, apex up -- rather than balanced on its
+    point."""
     cells = {}
     for q in range(size + 1):
         for r in range(size + 1 - q):
             kx = 2 * q + r + 1
-            ky = 3 * r + 2
+            ky = 3 * (size - r) + 2
             cells[(q, r)] = [(kx + ox, ky + oy) for ox, oy in _HEX_VERTEX_OFFSETS]
     return _build("hextriangle", cells, (scale * ROOT3 / 2, scale / 2), mine_count)
 

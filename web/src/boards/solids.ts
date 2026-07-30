@@ -131,6 +131,7 @@ function convexBoard3d(
     twoSided: false,
     cellCycle: null,
     clip: null,
+    cornerMask: null,
   };
 }
 
@@ -342,6 +343,17 @@ export function sphereTriangleBoard(mineCount: number, frequency = 2): Board3D {
   return convexBoard3d("spheretri", cells, positions, mineCount);
 }
 
+// Every icosahedron vertex is pulled toward its incident faces' centroid by
+// this fraction, and every point lands on the unit sphere. Because a vertex
+// and a face are both single orbits under the icosahedron's symmetry, the
+// triangles and pentagons come out equilateral for *any* fraction here — only
+// the squares (one per edge, straddling two faces) are sensitive to it, and
+// this is the fraction (found by a numeric search maximizing their
+// regularity) where they too come out square to within float precision,
+// making the whole solid a true rhombicosidodecahedron rather than merely
+// looking like one.
+const EXPAND_CENTROID_WEIGHT = 0.6496270939773015;
+
 /** The rhombicosidodecahedron as (cells, positions): the Conway "expand"
  * (cantellation) operation on the icosahedron — 20 shrunk triangles (one per
  * face), 30 squares (one per edge, opening a gap between the two faces it
@@ -352,15 +364,16 @@ function expandIcosahedron(): { cells: Cells; positions: Positions } {
   const { vertices, faces } = icosahedron();
   const positions: Positions = new Map();
   const fkey = (faceIndex: number, v: number): string => cid("f", faceIndex, v);
+  const w = EXPAND_CENTROID_WEIGHT;
 
   faces.forEach((face, faceIndex) => {
     const centroid = centroidOf(face.map((i) => vertices[i]!));
     for (const v of face) {
       const p = vertices[v]!;
       positions.set(fkey(faceIndex, v), normalize([
-        0.6 * p[0] + 0.4 * centroid[0],
-        0.6 * p[1] + 0.4 * centroid[1],
-        0.6 * p[2] + 0.4 * centroid[2],
+        (1 - w) * p[0] + w * centroid[0],
+        (1 - w) * p[1] + w * centroid[1],
+        (1 - w) * p[2] + w * centroid[2],
       ]));
     }
   });
@@ -454,16 +467,36 @@ function icosidodecahedron(): { cells: Cells; positions: Positions } {
   return { cells, positions };
 }
 
+// No single cut fraction `t` makes every truncated face regular here: the
+// icosidodecahedron's triangles want t=1/3 (an equilateral triangle cut at
+// 1/3 gives a *regular* hexagon) and its pentagons want t=1/(2+phi) =~ 0.2764
+// (the matching ratio for a regular decagon) — two different fractions.
+// Worse, its degree-4 vertices are not fourfold-symmetric (they alternate a
+// 60- and a 108-degree gap, one straddling a triangle and one a pentagon), so
+// the new vertex faces come out a fixed-proportion *rectangle*, not a
+// square, at *any* t — an unavoidable consequence of trisecting the
+// quasiregular icosidodecahedron this way rather than constructing the true
+// Archimedean solid directly (its own Wikipedia article calls the
+// "truncated" name misleading for exactly this reason). This value is the
+// fixed point where the hexagons and decagons are equally regular instead
+// (both ~0.89 by the minAngle/maxAngle-and-minSide/maxSide measure),
+// splitting the shortfall between them instead of favouring one at the
+// other's expense; the rectangle-vs-square gap in the squares is there
+// regardless of t.
+const TRUNCATE_BALANCED_T = 0.3056216365169173;
+
 /** Cut every vertex of a closed mesh (cells keyed by opaque tags, each an
  * ordered ring of vertex keys) by a plane near it: a vertex of degree n
  * becomes a new n-gon face, and every original face's corners are each
  * replaced by a pair of points along its two adjacent edges — the
  * "truncate" (bevel-vertex) operation. Generic over the input mesh; used to
- * build the truncated icosidodecahedron from the icosidodecahedron. */
+ * build the truncated icosidodecahedron from the icosidodecahedron — see
+ * `TRUNCATE_BALANCED_T` for why its faces cannot all be made regular by
+ * choosing `t`. */
 function truncate(
   cells: Cells,
   positions: Positions,
-  t = 1 / 3,
+  t = TRUNCATE_BALANCED_T,
 ): { cells: Cells; positions: Positions } {
   const neighbors = new Map<string, Set<string>>();
   const neighborsOf = (v: string): Set<string> => {
@@ -667,6 +700,7 @@ function polycubeSurface(
     twoSided: false,
     cellCycle: null,
     clip: null,
+    cornerMask: null,
   };
 }
 
@@ -823,5 +857,6 @@ export function tetrahedronFrameBoard(
     twoSided: false,
     cellCycle: null,
     clip: null,
+    cornerMask: null,
   };
 }

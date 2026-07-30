@@ -286,11 +286,12 @@ class TestPhoneLayout:
         assert screen.natural_size == size
         assert screen.polygons == polygons
 
-    @pytest.mark.parametrize("mode", ["hex", "hexhex", "hextriangle"])
+    @pytest.mark.parametrize("mode", ["hex", "hexhex", "hextriangle", "hextri"])
     def test_portrait_always_turns_the_hex_tiling_boards(self, mode):
-        # hex/hexhex/hextriangle are built roughly square, so they never trip
-        # the generic landscape-aspect rule -- they turn unconditionally
-        # instead, so pointy-top hexagons render flat-top on a phone.
+        # hex/hexhex/hextriangle/hextri are built roughly square, so they
+        # never trip the generic landscape-aspect rule -- they turn
+        # unconditionally instead, so pointy-top hexagons (or the hexagonal
+        # outline hextri shares) render flat-top on a phone.
         screen = GameScreen(mode, "easy")
         assert screen._rotated is False
         size = screen.natural_size

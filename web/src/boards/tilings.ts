@@ -150,12 +150,14 @@ export function hextriangleBoard(size: number, mineCount: number, scale = 20): B
   // A big equilateral triangle of small hexagons: axial (q, r) with
   // q, r >= 0 and q + r <= size, giving (size+1)*(size+2)/2 cells -- the
   // hexagonal tiling on a triangular board, as hextriBoard is the
-  // triangular tiling on a hexagonal one.
+  // triangular tiling on a hexagonal one. Row r=0 is the widest (size+1
+  // cells); flipping it to the bottom (largest ky) reads as a mountain --
+  // flat base down, apex up -- rather than balanced on its point.
   const cells = new Map<CellId, Vertex[]>();
   for (let qq = 0; qq <= size; qq++) {
     for (let rr = 0; rr <= size - qq; rr++) {
       const kx = 2 * qq + rr + 1;
-      const ky = 3 * rr + 2;
+      const ky = 3 * (size - rr) + 2;
       cells.set(
         cid(qq, rr),
         HEX_VERTEX_OFFSETS.map(([ox, oy]) => [kx + ox, ky + oy] as Vertex),
@@ -188,7 +190,7 @@ export interface ArchTemplate {
   width: number; // domain size in edge lengths
   height: number;
   verts: Map<string, Vertex>; // tag -> position within the domain
-  cells: { name: string; refs: Ref[] }[];
+  cells: { name: string; refs: Ref[]; real: boolean[] }[];
   mirror: Map<string, Ref> | null; // tag -> image under y -> height - y
   glide: boolean; // the mirror needs an extra width/2 x-shift (p4g)
   centre: Vertex | null; // rotation centre (domain coords) for the flat window
@@ -317,7 +319,7 @@ function insertTVertices(
   cells: { name: string; refs: Ref[] }[],
   width: number,
   height: number,
-): { name: string; refs: Ref[] }[] {
+): { name: string; refs: Ref[]; real: boolean[] }[] {
   const at = (tag: string, dm: number, dn: number): Vertex => {
     const v = verts.get(tag)!;
     return [dm * width + v[0], dn * height + v[1]];
@@ -325,6 +327,7 @@ function insertTVertices(
   return cells.map(({ name, refs }) => {
     const points = refs.map((r) => at(r.tag, r.dm, r.dn));
     const split: Ref[] = [];
+    const real: boolean[] = [];
     for (let i = 0; i < refs.length; i++) {
       const [ax, ay] = points[i]!;
       const [bx, by] = points[(i + 1) % refs.length]!;
@@ -354,8 +357,9 @@ function insertTVertices(
       }
       found.sort((a, b) => a.s - b.s);
       split.push(refs[i]!, ...found.map((f) => f.ref));
+      real.push(true, ...found.map(() => false));
     }
-    return { name, refs: split };
+    return { name, refs: split, real };
   });
 }
 

@@ -169,7 +169,7 @@ export class SolidBoard extends Group implements BoardMesh {
     // the surface immersion has bent stays one colour instead of a gradient.
     // The "solid" profile carries the wider hidden/opened split a curved,
     // self-shading surface needs.
-    const tones = classifyShapes(board.polygons);
+    const tones = classifyShapes(board.polygons, board.cornerMask);
 
     this.order.forEach((cell, ci) => {
       const poly = board.polygons.get(cell)!;

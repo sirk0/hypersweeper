@@ -42,9 +42,11 @@ const MAX_SOLID_ZOOM = 2;
  * portrait viewport (the classic 30×16 hard board, aspect 1.875, would
  * otherwise shrink to a sliver). Mirrors GameScreen.ROTATE_ASPECT. */
 const ROTATE_ASPECT = 1.2;
-/** The hexagon tiling's flat boards, always turned on a portrait viewport
- * regardless of aspect. Mirrors GameScreen._HEX_TILING_MODES. */
-const HEX_TILING_MODES = new Set(["hex", "hexhex", "hextriangle"]);
+/** The hex-shaped/hex-tiling flat boards, always turned on a portrait
+ * viewport regardless of aspect. hextri (triangular tiling, hexagonal
+ * outline) shares the square-by-convention hexagon silhouette, so it gets
+ * the same treatment. Mirrors GameScreen._ALWAYS_ROTATE_MODES. */
+const ALWAYS_ROTATE_MODES = new Set(["hex", "hexhex", "hextriangle", "hextri"]);
 /** Air left around a framed flat board (bevels and antialiasing off the edge). */
 const FLAT_MARGIN = 1.06;
 
@@ -219,7 +221,7 @@ export class BoardRenderer {
     // which the same quarter-turn happens to produce as a side effect, so
     // these always turn on a portrait viewport, aspect ratio aside.
     const portrait = usableH > w;
-    const rotated = HEX_TILING_MODES.has(view.mode)
+    const rotated = ALWAYS_ROTATE_MODES.has(view.mode)
       ? portrait
       : portrait && view.width > view.height * ROTATE_ASPECT;
     this.board.rotation.z = rotated ? -Math.PI / 2 : 0;

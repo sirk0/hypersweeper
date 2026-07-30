@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Color, SRGBColorSpace } from "three";
 import presets from "@data/presets.json";
+import { isBoard3D } from "../../src/boards/core";
 import { buildBoard } from "../../src/boards/presets";
 import { COLORS } from "../../src/render/boardMesh";
 import {
@@ -179,6 +180,32 @@ describe("per-board shape classing", () => {
     for (const t of classifyShapes(buildBoard("offsetsquare", "easy").polygons).values()) {
       expect(t.sides).toBe(4);
       expect(t.regularity).toBe(1); // a square, not an irregular hexagon
+    }
+  });
+
+  it("classes a wrapped isogonal tiling's T-vertices by cornerMask, not by angle", () => {
+    // A curved immersion can bend a T-vertex as far from flat as a genuine
+    // corner (see Board3D.cornerMask's doc comment), so the geometric
+    // STRAIGHT threshold that works on a flat board cannot be trusted here —
+    // every cell must come out a triangle regardless of how the wrap warped
+    // it, using the mask the board carries rather than re-measuring angles.
+    for (const mode of ["torusstaggeredtri", "mobiusstaggeredtri"]) {
+      const board = buildBoard(mode, "hard");
+      if (!isBoard3D(board)) throw new Error("expected a Board3D");
+      expect(board.cornerMask).not.toBeNull();
+      const tones = classifyShapes(board.polygons, board.cornerMask);
+      for (const t of tones.values()) expect(t.sides).toBe(3);
+    }
+    // rotatedhex's hexagons are ringed so tightly some cells warp severely
+    // (see the follow-up investigation); every hexagon must still measure as
+    // a hexagon and every triangle as a triangle, with nothing in between.
+    for (const mode of ["torusrotatedhex", "cylrotatedhex"]) {
+      const board = buildBoard(mode, "hard");
+      if (!isBoard3D(board)) throw new Error("expected a Board3D");
+      const sides = new Set(
+        [...classifyShapes(board.polygons, board.cornerMask).values()].map((t) => t.sides),
+      );
+      expect(sides).toEqual(new Set([3, 6]));
     }
   });
 

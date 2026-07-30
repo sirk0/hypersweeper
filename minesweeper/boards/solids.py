@@ -238,6 +238,19 @@ def sphere_triangle_board(mine_count: int, frequency: int = 2) -> Board3D:
     return _convex_board3d("spheretri", cells, positions, mine_count)
 
 
+
+# Every icosahedron vertex is pulled toward its incident faces' centroid by
+# this fraction, and every point lands on the unit sphere. Because a vertex
+# and a face are both single orbits under the icosahedron's symmetry, the
+# triangles and pentagons come out equilateral for *any* fraction here — only
+# the squares (one per edge, straddling two faces) are sensitive to it, and
+# this is the fraction (found by a numeric search maximizing their
+# regularity) where they too come out square to within float precision,
+# making the whole solid a true rhombicosidodecahedron rather than merely
+# looking like one.
+_EXPAND_CENTROID_WEIGHT = 0.6496270939773015
+
+
 def _expand_icosahedron() -> tuple[dict, dict]:
     """The rhombicosidodecahedron as (cells, positions): the Conway
     "expand" (cantellation) operation on the icosahedron — 20 shrunk
@@ -246,12 +259,13 @@ def _expand_icosahedron() -> tuple[dict, dict]:
     vertex, since every icosahedron vertex has degree 5). Cells are keyed
     by the (face, vertex) incidence flags a corner is pulled toward."""
     vertices, faces = _icosahedron()
+    w = _EXPAND_CENTROID_WEIGHT
     positions: dict[Hashable, Vec3] = {}
     for face_index, face in enumerate(faces):
         centroid = tuple(sum(vertices[i][axis] for i in face) / 3 for axis in range(3))
         for v in face:
             positions[(face_index, v)] = _normalize(
-                tuple(0.6 * vertices[v][axis] + 0.4 * centroid[axis] for axis in range(3))
+                tuple((1 - w) * vertices[v][axis] + w * centroid[axis] for axis in range(3))
             )
 
     cells: dict[Cell, list] = {
@@ -320,14 +334,33 @@ def _icosidodecahedron() -> tuple[dict, dict]:
     return cells, positions
 
 
-def _truncate(cells: dict, positions: dict, t: float = 1 / 3) -> tuple[dict, dict]:
+# No single cut fraction `t` makes every truncated face regular here: the
+# icosidodecahedron's triangles want t=1/3 (an equilateral triangle cut at 1/3
+# gives a *regular* hexagon) and its pentagons want t=1/(2+phi) =~ 0.2764 (the
+# matching ratio for a regular decagon) -- two different fractions. Worse,
+# its degree-4 vertices are not fourfold-symmetric (they alternate a 60- and a
+# 108-degree gap, one straddling a triangle and one a pentagon), so the new
+# vertex faces come out a fixed-proportion *rectangle*, not a square, at
+# *any* t -- an unavoidable consequence of trisecting the quasiregular
+# icosidodecahedron this way rather than constructing the true Archimedean
+# solid directly (its own Wikipedia article calls the "truncated" name
+# misleading for exactly this reason). This value is the fixed point where
+# the hexagons and decagons are equally regular instead (both ~0.89 by the
+# minAngle/maxAngle-and-minSide/maxSide measure), splitting the shortfall
+# between them instead of favouring one at the other's expense; the
+# rectangle-vs-square gap in the squares is there regardless of t.
+_TRUNCATE_BALANCED_T = 0.3056216365169173
+
+
+def _truncate(cells: dict, positions: dict, t: float = _TRUNCATE_BALANCED_T) -> tuple[dict, dict]:
     """Cut every vertex of a closed mesh (cells keyed by hashable tags,
     each an ordered ring of vertex keys) by a plane near it: a vertex of
     degree n becomes a new n-gon face, and every original face's corners
     are each replaced by a pair of points along its two adjacent edges —
     the "truncate" (bevel-vertex) operation. Generic over the input mesh;
     used to build the truncated icosidodecahedron from the
-    icosidodecahedron."""
+    icosidodecahedron -- see `_TRUNCATE_BALANCED_T` for why its faces cannot
+    all be made regular by choosing `t`."""
     neighbors: dict[Hashable, set] = defaultdict(set)
     for keys in cells.values():
         n = len(keys)

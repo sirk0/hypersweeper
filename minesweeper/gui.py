@@ -1785,13 +1785,16 @@ class GameScreen(BaseGameScreen):
     # The hexagon tiling's own flat boards (hex, hexhex, hextriangle) are
     # built roughly square by convention, so they never cross ROTATE_ASPECT --
     # but pointy-top hexagons read better as flat-top ones on a narrow phone,
-    # which the same quarter-turn happens to produce as a side effect. So
-    # these always turn on a portrait viewport, aspect ratio aside.
-    _HEX_TILING_MODES = frozenset({"hex", "hexhex", "hextriangle"})
+    # which the same quarter-turn happens to produce as a side effect. hextri
+    # (the triangular tiling on a hexagonal board) is square by the same
+    # convention and shares the hexagon outline, so it gets the same always-
+    # rotate treatment for a consistent silhouette across the hex-shaped
+    # boards. All four always turn on a portrait viewport, aspect ratio aside.
+    _ALWAYS_ROTATE_MODES = frozenset({"hex", "hexhex", "hextriangle", "hextri"})
 
     @property
     def _rotated(self) -> bool:
-        if self.mode in self._HEX_TILING_MODES:
+        if self.mode in self._ALWAYS_ROTATE_MODES:
             return self._portrait
         return (
             self._portrait
