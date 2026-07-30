@@ -28,9 +28,22 @@ frame and gameplay assertions stay timing independent. iOS install polish:
 `touch-action: none` + `-webkit-touch-callout: none` on the canvas, apple- and
 standard `mobile-web-app-capable` metas, and the maskable/apple-touch icons the
 PWA manifest already ships. The board carries its own bounded pinch/wheel zoom
-and pan, and the browser's page zoom is blocked outright — see **Zoom** below. A zero-dependency bundle gate (`npm run size`,
-enforced in CI) keeps the shipped JS + CSS under the **250 KB gzip** budget
-(currently ~145 KB). **All 112 modes, polished.**
+and pan, and the browser's page zoom is blocked outright — see **Zoom** below.
+There is **no bundle-size budget**: the app is a one-time download that a
+service worker then caches, and looking right is worth more here than shaving
+kilobytes off first load, so nothing in CI fails on size (see "Bundle size"
+below). **All 112 modes, polished.**
+
+**M9 — Cell styles.** How a cell is *cut* is now the player's
+(`src/render/cellStyle.ts`, Settings › Cell style): **Classic** (the beveled
+button), **Flat** (unlit plates in flat colour, wide gaps), **Soft** (rounded
+matte pillows) and **Glossy** (unlit beads, each lit from its own middle). A
+style is one table entry — a stack of concentric loops per cell, plus a finish —
+and both meshes build their geometry from it, so the two renderers stayed as they
+were. Colour is untouched by all of it: it is still the shape palette's, which in
+the same pass got a **wider size axis** — the isogonal tilings' two or three
+sizes of one polygon now differ in lightness, hue and chroma at once rather than
+by a lightness whisper. See "Cell styles" and "Shape colour coding" below.
 
 **M8 — Congruent-rectangle bonds.** The five brick bonds tiled by one congruent
 **rectangle** rather than by regular polygons (`src/boards/tilings.ts`, ported
@@ -113,7 +126,6 @@ npm run dev         # Vite dev server
 npm run typecheck   # tsc --noEmit (strict)
 npm run test        # vitest unit tests
 npm run build       # tsc + vite build (production bundle + PWA)
-npm run size        # gzip bundle audit — fails over the 250 KB budget
 npm run e2e         # Playwright e2e + visual regression
 npm run e2e:update  # refresh visual baselines
 ```
@@ -313,6 +325,61 @@ divides out `visualViewport.scale`, so a page zoom that arrives some other way
 (iOS accessibility, a desktop ctrl-+) cannot re-frame the board under the
 player's fingers.
 
+## Bundle size
+
+There is **no size budget and no CI gate**. The app is a one-time download that
+the service worker then caches, so first-load kilobytes are worth less here than
+the board looking right; a change that costs bundle size and buys appearance is
+a change worth making. What the build does keep is one piece of hygiene: `three`
+is a `manualChunks` entry of its own (`vite.config.ts`), so it keeps its hash
+when app code changes and a redeploy re-downloads only the app chunk. The
+chunk-size warning limit sits above both chunks — deliberately, so the build log
+carries no standing warning nobody intends to act on.
+
+## Cell styles (`src/render/cellStyle.ts`)
+
+How a cell is **cut**, chosen in Settings › Cell style and stored with the other
+preferences. Four: **Classic** (the beveled button that sinks when opened),
+**Flat** (unlit plates in flat colour with wide gaps), **Soft** (rounded matte
+pillows) and **Glossy** (unlit beads, each lit from its own middle). It is only
+the relief and the finish — the *colour* of a cell is the shape palette's, in
+every style, so the two can be retuned apart.
+
+A cell is a stack of concentric **loops** of its own polygon: loop 0 is the
+tile's outline, each further one is pulled in toward the centroid and lifted (or
+sunk) along the surface normal, and the innermost one is filled as the top face.
+Both meshes build from that table, so a style is one entry rather than a change
+in two renderers. Four things to know before adding or retuning one:
+
+- **A profile's loop count is its vertex count** — `n * (3 + 6 * rings)` for an
+  n-gon — and an opened cell is re-cut *in place* into the slice of the buffer
+  the closed one wrote. So `closed` and `open` must declare the same number of
+  loops; `cellStyleLoops` throws otherwise and `tests/unit/cellStyle.test.ts`
+  sweeps every style.
+- **A style is baked into the mesh when a board is built**, and no board is
+  re-cut in flight. That is safe because the setting is only reachable from the
+  settings page, which lives in the menu, and the menu is only up when no game
+  is — the picker says "applies to the next board" for the case where a board is
+  waiting behind it.
+- **A flat board is lit head-on**, so a shinier material has no angle to catch a
+  highlight at: on the plane, `roughness` is nearly invisible and the visible
+  levers are the gap, the loop layout, `unlit` (draw the palette colour as it is
+  rather than the third of it that diffuse shading returns) and `shade` (a
+  brightness gradient from the middle of the top face to its rim, interpolated by
+  the rasteriser). Glossy is a *gradient*, not a specular highlight, for exactly
+  this reason.
+- **`unlit` is a flat board's business.** On a solid the shading is what shows
+  the shape — an unlit sphere is a flat disc of tiles — so a 3D board keeps its
+  lit material whatever the style, and only the relief and the gap follow. Each
+  style therefore carries a `flat` and a `solid` profile, the latter at the lower
+  relief a curved surface needs (cells there tilt against each other, and a tall
+  plateau shingles over its neighbours at the silhouette) and never below the
+  grout. A two-sided surface (cylinder, Möbius, Klein) draws flat tiles whatever
+  the style, so only the gap reaches it.
+
+Cell styles are **not** in `data/ui/screens.json`: they are geometry for this
+renderer, with no pygame counterpart for the shared config to keep in step.
+
 ## Shape colour coding (`src/render/shapePalette.ts`)
 
 A cell's colour is derived from its polygon — nothing tags a cell with a
@@ -327,17 +394,30 @@ because HSL lightness is not perceptual and that constant hidden/opened
 contrast across hues depends on it. Every knob lives in the one
 `SHAPE_PALETTE` block.
 
-**Size is the fourth thing a tile can say.** The isogonal tilings put one
-regular polygon on the board at two or three sizes — the Pythagorean tiling's
-2:1 squares, the three-scale triangular's 1:2:3 triangles — which side count
-and regularity cannot separate at all: they are the same shape, only bigger.
+**Size is the fourth thing a tile can say**, and it gets the widest treatment of
+the three shape axes. The isogonal tilings put one regular polygon on the board
+at two or three sizes — the Pythagorean tiling's 2:1 squares, the three-scale
+triangular's 1:2:3 triangles — which side count and regularity cannot separate
+at all: they are the same shape, only bigger, and on those boards a tile's
+neighbours are mostly the *other* size, so one quiet axis was not enough.
 `classifyShapes` clusters tile spans (mean corner distance from the centroid)
-per side count on a *relative* gap, and `sizeLightness` spreads the classes
-apart in lightness, biggest lightest. Two rules keep that from disturbing what
-was there before: the spread shifts the closed and opened tone equally, so the
-hidden/opened contrast is untouched; and `cluster.sizeGap` is deliberately
-coarse (15%), so the Penrose rhombi — same edge length, spans 10% apart, and
-already told apart by hue — stay one size.
+per side count on a *relative* gap, and the classes are then pushed apart on
+three axes at once (`sizeLightness`, `sizeHueSplit`, `sizeChroma`): mostly
+lightness, with a small hue fan about the shape's own hue and more chroma on the
+smaller tile. Three rules keep that from disturbing what was there before:
+
+- the lightness spread shifts the closed and opened tone **equally**, so the
+  hidden/opened contrast the board is read by is untouched;
+- it only ever goes **down** from the shape's own tone — the biggest tile is
+  drawn exactly as a single-size shape is. The opened tone already sits near
+  white, so lifting a size above it would clip to white and lose the
+  distinction precisely where the numbers are;
+- `cluster.sizeGap` is deliberately coarse (15%), so the Penrose rhombi — same
+  edge length, spans 10% apart, and already told apart by hue — stay one size.
+
+The chroma boost is the one axis that does not always land: on the closed tone
+the hue is already at the gamut edge, so the extra is clamped away and only the
+pale opened tone actually takes it.
 
 Three things that are easy to get wrong when touching this:
 
@@ -435,7 +515,9 @@ more `Menu` page (`Menu.showSettings`, rendered by `src/ui/settings.ts`), so it
 reuses the back row, the `.menu-entry` cards and the scrolling body. The theme
 is a page below it in the same way (`Menu.showThemePicker`): settings shows a
 Theme row naming the current palette, and the seven-row picker lives one level
-down, which keeps the settings page short enough to read at a glance.
+down, which keeps the settings page short enough to read at a glance. The cell
+style (below) is a third page on the same pattern, under the same Appearance
+heading — theme is the chrome, cell style is the board.
 
 **Themes.** The seven chrome palettes live in `data/ui/screens.json` under
 `themes`; six are ported from the pygame `THEMES` registry (`minesweeper/gui.py`)
@@ -459,9 +541,16 @@ with that entry. Two consequences worth knowing:
 `tests/test_theme_sync.py` (Python) fails if a pygame palette is retuned without
 the JSON following.
 
+**Cell style.** How the board's tiles are cut — see "Cell styles" above. It is
+read when a board's mesh is built, so it applies from the next board on; the
+picker page says so, since the settings page can be reached with a game paused
+behind it. An unknown key (a record from a newer build, a hand-edited one) falls
+back to `classic` through `resolveCellStyle`, which uses `Object.hasOwn` for the
+same reason `link.ts` does.
+
 **Persistence.** `src/settings.ts` is the app's only stored state: theme,
-difficulty and the animations override. Flag mode, zoom, the menu page you are
-on and the board in progress stay in memory as before.
+difficulty, the animations override and the cell style. Flag mode, zoom, the menu
+page you are on and the board in progress stay in memory as before.
 
 The layout is **one stable `localStorage` key holding a record that carries its
 own `version`** — deliberately not a versioned key name (`…:v1`, `…:v2`), which

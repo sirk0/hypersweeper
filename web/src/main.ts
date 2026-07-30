@@ -55,8 +55,8 @@ class App {
    * one record: `afterMove` runs on every move, and the timer tick and any
    * further clicks on a finished board must not file it again. */
   private scored = false;
-  /** Stored preferences (theme, difficulty, animations) — the app's only
-   * persisted state. */
+  /** Stored preferences (theme, difficulty, animations, cell style) — the
+   * app's only persisted state. */
   private settings: Settings = loadSettings();
   // Board animations honour the OS reduced-motion setting unless the settings
   // screen overrides it; the `window.__ms.animations(false)` test seam overrides
@@ -153,9 +153,13 @@ class App {
       get animations() {
         return app.settings.animations;
       },
+      get cellStyle() {
+        return app.settings.cellStyle;
+      },
       setTheme: (key) => this.setTheme(key),
       setDifficulty: (key) => this.setDifficulty(key),
       setAnimations: (pref) => this.setAnimations(pref),
+      setCellStyle: (key) => this.setCellStyle(key),
     };
   }
 
@@ -170,10 +174,18 @@ class App {
     saveSettings(this.settings);
   }
 
+  /** Pick the relief the board's tiles are cut with. The style is baked into a
+   * board's mesh, so it takes effect on the next board — which is every board
+   * from here, since this is only reachable from the menu. */
+  private setCellStyle(key: string): void {
+    this.settings = { ...this.settings, cellStyle: key };
+    saveSettings(this.settings);
+  }
+
   /** Adopt settings written by another tab. The theme is applied; the
-   * difficulty and animation preferences are picked up by the menu's next
-   * repaint and the next board. A game already in progress keeps the
-   * difficulty it was started at. */
+   * difficulty, animation and cell-style preferences are picked up by the
+   * menu's next repaint and the next board. A game already in progress keeps
+   * the difficulty and the tile relief it was started with. */
   private adoptSettings(settings: Settings): void {
     this.settings = settings;
     applyTheme(settings.theme);
@@ -230,6 +242,7 @@ class App {
     this.session = new GameSession(mode, difficulty, {
       ...(opts.seed !== undefined ? { seed: opts.seed } : {}),
       ...(opts.mines ? { minePositions: opts.mines } : {}),
+      cellStyle: this.settings.cellStyle,
     });
     // A board built from an explicit mine layout (the test seam) is not
     // reproducible from a link, so it does not claim one.

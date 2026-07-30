@@ -531,8 +531,99 @@ body {
 
 .settings-update,
 .settings-toggle,
-.settings-theme {
+.settings-theme,
+.settings-cell-style {
   justify-content: space-between;
+}
+
+/* A cell style in miniature: a 2x2 patch of tiles cut the way that style cuts
+   them, the last one "opened". Board colours, not theme colours — the board is
+   never themed, and the swatch is a picture of the board (see settings.ts).
+   Muted tones for the lit styles (the renderer reflects about a third of a
+   tile's albedo, so a lit board really is that dusky) and the palette's own
+   bright colour for the unlit ones, since that difference is most of what
+   picking Flat or Glossy actually does. The relief is faked with gradients
+   rather than rendered — the point is to tell four styles apart in a list, and
+   the real geometry lives in render/cellStyle.ts, so keep the two in step by
+   eye when retuning a profile. */
+.cell-swatch {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  overflow: hidden;
+  background: #b7b2ab; /* what shows in the tile gaps */
+}
+
+.cell-swatch-tile {
+  background: #96703c;
+}
+
+.cell-swatch-tile.open {
+  background: #b3aba1;
+}
+
+/* Classic: a hard bevel, inverted on the opened tile. */
+.cell-swatch[data-cell-style="classic"] {
+  gap: 1px;
+  padding: 1px;
+}
+
+.cell-swatch[data-cell-style="classic"] .cell-swatch-tile {
+  border: 3px solid;
+  border-color: #b78d4d #6b4f28 #6b4f28 #b78d4d;
+}
+
+.cell-swatch[data-cell-style="classic"] .cell-swatch-tile.open {
+  border-width: 2px;
+  border-color: #8d8781 #d6cfc6 #d6cfc6 #8d8781;
+}
+
+/* Flat: unlit plate colour, wide gaps, no relief at all. */
+.cell-swatch[data-cell-style="flat"] {
+  gap: 5px;
+  padding: 3px;
+  background: var(--panel);
+}
+
+.cell-swatch[data-cell-style="flat"] .cell-swatch-tile {
+  background: #ef9f3d;
+}
+
+.cell-swatch[data-cell-style="flat"] .cell-swatch-tile.open {
+  background: #fbe3ca;
+}
+
+/* Soft: rounded pillows, the opened one dished. */
+.cell-swatch[data-cell-style="soft"] {
+  gap: 2px;
+  padding: 2px;
+}
+
+.cell-swatch[data-cell-style="soft"] .cell-swatch-tile {
+  border-radius: 6px;
+  background: radial-gradient(circle at 34% 28%, #a8813f, #7a5b2c);
+}
+
+.cell-swatch[data-cell-style="soft"] .cell-swatch-tile.open {
+  background: radial-gradient(circle at 66% 72%, #c3bbb1, #97918a);
+}
+
+/* Glossy: unlit beads, each lit from its own middle. */
+.cell-swatch[data-cell-style="gloss"] {
+  gap: 2px;
+  padding: 2px;
+}
+
+.cell-swatch[data-cell-style="gloss"] .cell-swatch-tile {
+  border-radius: 4px;
+  background: radial-gradient(circle at 50% 50%, #ffb552 0 12%, #b06f1c 92%);
+}
+
+.cell-swatch[data-cell-style="gloss"] .cell-swatch-tile.open {
+  background: radial-gradient(circle at 50% 50%, #fdf1e4 0 12%, #d8bfa5 92%);
 }
 
 /* A theme's palette in miniature: its page field, a card on it, an accent dot. */
@@ -572,7 +663,8 @@ body {
   color: var(--accent);
 }
 
-.menu-entry.settings-theme.active {
+.menu-entry.settings-theme.active,
+.menu-entry.settings-cell-style.active {
   border-color: var(--accent);
 }
 

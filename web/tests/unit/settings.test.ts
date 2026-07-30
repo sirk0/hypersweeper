@@ -41,7 +41,12 @@ function stored(store: Storage, key = KEY): Record<string, unknown> {
   return JSON.parse(store.getItem(key) ?? "{}") as Record<string, unknown>;
 }
 
-const SETTINGS: Settings = { theme: "dark", difficulty: "hard", animations: false };
+const SETTINGS: Settings = {
+  theme: "dark",
+  difficulty: "hard",
+  animations: false,
+  cellStyle: "soft",
+};
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -102,6 +107,7 @@ describe("settings validation", () => {
       theme: "dark",
       difficulty: DEFAULT_SETTINGS.difficulty,
       animations: null,
+      cellStyle: DEFAULT_SETTINGS.cellStyle,
     });
   });
 
@@ -133,6 +139,7 @@ describe("settings upgrades", () => {
       theme: "paper",
       difficulty: DEFAULT_SETTINGS.difficulty,
       animations: true,
+      cellStyle: DEFAULT_SETTINGS.cellStyle,
     });
     // Migration completes on the next write, and only then is the old key
     // dropped — an interrupted migration must not lose the record.
@@ -158,7 +165,12 @@ describe("settings upgrades", () => {
         [KEY]: JSON.stringify({ version: 99, theme: "dark", difficulty: "easy", sound: "loud" }),
       }),
     );
-    expect(loadSettings()).toEqual({ theme: "dark", difficulty: "easy", animations: null });
+    expect(loadSettings()).toEqual({
+      theme: "dark",
+      difficulty: "easy",
+      animations: null,
+      cellStyle: DEFAULT_SETTINGS.cellStyle,
+    });
   });
 
   it("preserves fields it does not recognise when writing", () => {
@@ -197,7 +209,14 @@ describe("cross-tab sync", () => {
 
     store.setItem(KEY, JSON.stringify({ theme: "dark", difficulty: "easy" }));
     fire({ key: KEY });
-    expect(seen).toEqual([{ theme: "dark", difficulty: "easy", animations: null }]);
+    expect(seen).toEqual([
+      {
+        theme: "dark",
+        difficulty: "easy",
+        animations: null,
+        cellStyle: DEFAULT_SETTINGS.cellStyle,
+      },
+    ]);
   });
 
   it("ignores other keys but honours a whole-store clear", () => {

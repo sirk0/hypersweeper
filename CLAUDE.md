@@ -225,9 +225,10 @@ not a preference — see "Best times" in `web/README.md`); a time that places
 raises the app's one real modal, `src/ui/scoreDialog.ts`, and the full list
 lives under Settings › Best times.
 
-The menu's gear opens a **settings** page (best times, theme, animations
-toggle, build version, links, update check) — one more `Menu` page rather
-than a modal, with the theme picker a page below it. Theme, difficulty and the
+The menu's gear opens a **settings** page (best times, theme, cell style,
+animations toggle, build version, links, update check) — one more `Menu` page
+rather than a modal, with the theme picker and the cell-style picker pages below
+it. Theme, difficulty, the cell style and the
 animations override persist (`src/settings.ts`): one stable
 `localStorage` key holding a record that carries its own `version`, never
 a versioned key name — see "Settings and themes" in `web/README.md` before
@@ -240,6 +241,17 @@ pygame), and the **WebGL canvas is transparent** so the field around the
 board is the page background — never give it an opaque clear colour again.
 New chrome colours must come from a `var(--…)`, or they break the dark
 theme. See "Settings and themes" in `web/README.md`.
+
+**Cell styles** (`src/render/cellStyle.ts`) are the other half of the same
+page: how a cell is *cut*, not what colour it is (that stays the shape
+palette's). A style is one table entry — a stack of concentric loops per cell
+plus a finish — that both board meshes build their geometry from, and it is
+baked in when a board's mesh is built, so it applies from the next board on.
+Two traps: `closed` and `open` must declare the **same loop count** (an opened
+cell is re-cut into the buffer slice the closed one wrote), and `unlit` is a
+**flat board's** setting only — on a solid the shading is what shows the shape.
+There is deliberately **no bundle-size budget or CI gate** for the TypeScript
+app. See "Cell styles" and "Bundle size" in `web/README.md`.
 
 ## Which version to change
 

@@ -15,6 +15,7 @@ import { renderBestTimes } from "./bestTimes";
 import { menuIcon } from "./icons";
 import {
   GEAR_ICON,
+  renderCellStylePicker,
   renderSettings,
   renderThemePicker,
   type SettingsHost,
@@ -258,6 +259,7 @@ export class Menu {
       theme: this.settings.theme,
       difficulty: this.settings.difficulty,
       animations: this.settings.animations,
+      cellStyle: this.settings.cellStyle,
       setTheme: (key) => {
         this.settings.setTheme(key);
         page();
@@ -268,6 +270,10 @@ export class Menu {
       },
       setAnimations: (pref) => {
         this.settings.setAnimations(pref);
+        page();
+      },
+      setCellStyle: (key) => {
+        this.settings.setCellStyle(key);
         page();
       },
     };
@@ -284,6 +290,7 @@ export class Menu {
         host,
         () => this.showThemePicker(),
         () => this.showBestTimes(),
+        () => this.showCellStylePicker(),
       ),
     );
   }
@@ -314,6 +321,20 @@ export class Menu {
     this.body.replaceChildren(
       this.backRow("Theme", () => this.showSettings()),
       renderThemePicker(host),
+    );
+  }
+
+  /** The cell-style page — a page below settings, like the theme picker. */
+  private showCellStylePicker(): void {
+    this.go(() => this.renderCellStylePage());
+  }
+
+  private renderCellStylePage(): void {
+    const host = this.settingsPageHost(() => this.renderCellStylePage());
+    this.root.classList.add("settings-open");
+    this.body.replaceChildren(
+      this.backRow("Cell style", () => this.showSettings()),
+      renderCellStylePicker(host),
     );
   }
 

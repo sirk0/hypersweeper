@@ -108,6 +108,58 @@ test.describe("settings", () => {
     }
   });
 
+  test("the cell style row opens a picker, and the choice sticks", async ({ page }) => {
+    await page.locator(".menu-settings-btn").click();
+    const row = page.locator('.menu-entry[data-settings-group="cell-style"]');
+    await expect(row).toContainText("Cell style");
+    await expect(row).toContainText("Classic"); // the default, as a subtitle
+    await expect(page.locator(".menu-entry[data-cell-style]")).toHaveCount(0);
+
+    await row.click();
+    await expect(page.locator(".menu-entry[data-cell-style]")).toHaveCount(4);
+    await expect(page.locator('.menu-entry[data-action="back"]')).toContainText("Cell style");
+    await expect(page.locator('.menu-entry[data-cell-style="classic"]')).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+
+    await page.locator('.menu-entry[data-cell-style="gloss"]').click();
+    await expect(page.locator('.menu-entry[data-cell-style="gloss"]')).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    // Back lands on settings, with the row reporting the new style.
+    await page.locator('.menu-entry[data-action="back"]').click();
+    await expect(row).toContainText("Glossy");
+
+    await page.reload();
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    await page.locator(".menu-settings-btn").click();
+    await expect(page.locator('.menu-entry[data-settings-group="cell-style"]')).toContainText(
+      "Glossy",
+    );
+  });
+
+  test("a board launched after picking a cell style plays normally", async ({ page }) => {
+    await page.locator(".menu-settings-btn").click();
+    await page.locator('.menu-entry[data-settings-group="cell-style"]').click();
+    await page.locator('.menu-entry[data-cell-style="flat"]').click();
+    await page.locator('.menu-entry[data-action="back"]').click(); // to settings
+    await page.locator('.menu-entry[data-action="back"]').click(); // to the root
+    await page.locator('.menu-entry[data-mode="square"]').click(); // Classic
+
+    // The relief is a different mesh per style, so what matters is that the
+    // board still builds, picks and plays: reveal a cell and read it back.
+    const revealed = await page.evaluate(() => {
+      const ms = window.__ms!;
+      const cell = ms.cells()[0]!;
+      ms.reveal(cell);
+      return ms.state().revealed;
+    });
+    expect(revealed).toBeGreaterThan(0);
+    expect((await page.evaluate(() => window.__ms?.state()))?.mode).toBe("square");
+  });
+
   test("the animations toggle persists across a reload", async ({ page }) => {
     await page.locator(".menu-settings-btn").click();
     const toggle = page.locator('.menu-entry[data-setting="animations"]');

@@ -10,7 +10,9 @@ import { Color, SRGBColorSpace } from "three";
 //                 far from any triangle
 //   lightness  <- the cell's state (hidden / opened), taken verbatim from the
 //                 classic grays this replaced, so the hidden->opened step is
-//                 unchanged
+//                 unchanged — and, within a state, the tile's *size*, the one
+//                 thing the axes above cannot see (a big square and a small one
+//                 are the same shape); a smaller tile is drawn darker
 //
 // The maths runs in OkLCh rather than HSL: HSL lightness is not perceptual (a
 // blue and a yellow at the same HSL L look nothing alike in brightness), which
@@ -37,8 +39,9 @@ export interface ShapeTone {
    * sizes of one regular polygon on the same board — the Pythagorean tiling's
    * two squares, the three-scale triangular's three triangles — which side
    * count and regularity, the other two axes, cannot tell apart at all: they
-   * are the *same shape*, just bigger. Size is carried by lightness, the one
-   * channel a shape does not otherwise use. Absent = the only size. */
+   * are the *same shape*, just bigger. Size is carried mostly by lightness (the
+   * one channel a shape does not otherwise use), with a hue fan and a chroma
+   * boost behind it — see `sizeLightness`. Absent = the only size. */
   size?: number;
   sizeCount?: number;
 }
@@ -76,12 +79,32 @@ export const SHAPE_PALETTE = {
   hueSplit: 34,
   variantLightness: 0.05,
 
-  /** How far apart the extreme *sizes* of one shape are pushed in lightness —
-   * bigger tile, lighter tone. Like the variant spread it shifts both states
-   * equally, so the hidden/opened contrast is untouched, and it is the larger
-   * of the two because size is the only thing separating those tiles: a small
-   * square and a large one are the same hue and the same regularity. */
-  sizeLightness: 0.075,
+  /** How far apart the *sizes* of one shape are pushed, on three axes at once.
+   * Size is the only thing separating those tiles — a small square and a large
+   * one are the same hue and the same regularity — and one axis alone was too
+   * quiet to read on a board (the isogonal tilings, where a tile's neighbours
+   * are mostly the *other* size), so it gets the widest treatment of the three
+   * shape axes:
+   *
+   *   lightness  the big one. Spread **downward only**, from the largest tile
+   *              (which keeps the shape's own tone) to the smallest: the opened
+   *              tone already sits near white, so lifting a size above it would
+   *              clip to white and lose the distinction it was drawn for — and
+   *              lose it exactly where the numbers are. Applied to the closed
+   *              and opened tone equally, so the hidden/opened contrast the
+   *              board is read by is untouched.
+   *   hue        a small fan about the shape's hue, spread evenly across the
+   *              sizes. Well inside the side count's ~40° slot (and inside the
+   *              variant split), so every size still reads as the same shape.
+   *   chroma     the smaller the tile the more saturated. It is the *opened*
+   *              tone this actually reaches — a pale wash sitting far from the
+   *              gamut edge, and the one on screen while playing; the closed
+   *              tone is already at the edge for its hue, so there the extra is
+   *              clamped away and size shows in lightness alone.
+   */
+  sizeLightness: 0.155,
+  sizeHueSplit: 22,
+  sizeChroma: 0.45,
 
   /** Regularity below `floor` counts as maximally irregular, at or above `top`
    * as regular. `top` sits below 1 because the surface immersions stretch their
@@ -549,9 +572,14 @@ export function classifyShapes<K>(
 // -- tone -> colour ----------------------------------------------------------
 
 /** The hue of a shape: its side count's slot, nudged within that slot when the
- * board has more than one shape with that many sides. */
+ * board has more than one shape with that many sides, and again when it has
+ * more than one size of this one. */
 function hueForTone(tone: ShapeTone): number {
-  return hueFor(tone.sides) + SHAPE_PALETTE.hueSplit * variantOffset(tone);
+  return (
+    hueFor(tone.sides) +
+    SHAPE_PALETTE.hueSplit * variantOffset(tone) +
+    SHAPE_PALETTE.sizeHueSplit * sizeOffset(tone)
+  );
 }
 
 function hueFor(sides: number): number {
@@ -583,11 +611,21 @@ function variantOffset(tone: ShapeTone): number {
   return count < 2 ? 0 : (tone.variant ?? 0) / (count - 1) - 0.5;
 }
 
-/** Where this tile's size sits among the board's sizes of the shape, in
- * -0.5..0.5 — smallest darkest, biggest lightest; 0 when there is only one. */
+/** Where this tile's size sits among the board's sizes of the shape, centred:
+ * -0.5 for the smallest, 0.5 for the biggest, 0 when there is only one. Drives
+ * the hue fan, which has no reason to favour either end. */
 function sizeOffset(tone: ShapeTone): number {
   const count = tone.sizeCount ?? 1;
   return count < 2 ? 0 : (tone.size ?? 0) / (count - 1) - 0.5;
+}
+
+/** The same position measured downward from the biggest tile: 0 for the
+ * biggest, -1 for the smallest, and 0 when the shape has only one size. This is
+ * the one the lightness and chroma spreads use — see `sizeLightness` for why
+ * they only ever go down from the shape's own tone, never up. */
+function sizeDrop(tone: ShapeTone): number {
+  const count = tone.sizeCount ?? 1;
+  return count < 2 ? 0 : (tone.size ?? 0) / (count - 1) - 1;
 }
 
 /** A shape's colour at a given base lightness: the side count's hue, the
@@ -596,14 +634,17 @@ function sizeOffset(tone: ShapeTone): number {
  * regularity and variant. */
 function toneLch(tone: ShapeTone, baseLightness: number, chroma: number): Lch {
   const clean = cleanliness(tone.regularity);
-  const { irregularChroma, lightnessSkew, variantLightness, sizeLightness } = SHAPE_PALETTE;
+  const { irregularChroma, lightnessSkew, variantLightness, sizeLightness, sizeChroma } =
+    SHAPE_PALETTE;
+  const drop = sizeDrop(tone);
   const l =
     baseLightness -
     lightnessSkew * (1 - clean) +
     variantLightness * variantOffset(tone) +
-    sizeLightness * sizeOffset(tone);
+    sizeLightness * drop;
   const h = hueForTone(tone);
-  const wanted = chroma * (irregularChroma + (1 - irregularChroma) * clean);
+  const wanted =
+    chroma * (irregularChroma + (1 - irregularChroma) * clean) * (1 - sizeChroma * drop);
   return { l, c: Math.min(wanted, maxChroma(l, h) * SHAPE_PALETTE.board.cap), h };
 }
 

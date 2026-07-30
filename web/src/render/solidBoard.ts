@@ -41,13 +41,22 @@ import {
   WIN_PER_CELL,
 } from "./animations";
 import { cellPalette, classifyShapes, type CellPalette } from "./shapePalette";
+import {
+  cellStyle,
+  cellVertexCount,
+  type CellProfile,
+  type CellStyle,
+} from "./cellStyle";
 
 // The 3D counterpart of PolygonBoard: a Board3D's outward-wound surface
 // polygons become one merged geometry. On a closed surface each cell is an
-// inset top face raised along its outward normal, ringed by bevel quads;
-// revealed cells drop their plateau to a sunken face (the classic minesweeper
-// raised/flat distinction — colour alone is ambiguous under 3D lighting), and
-// back faces are culled. On an open or non-orientable surface (M3's cylinder /
+// inset top face raised along its outward normal, ringed by the walls of the
+// cell style's loops (render/cellStyle.ts — the same profile the flat renderer
+// cuts, at the lower relief a curved surface needs, since cells there tilt
+// against each other and a tall plateau shingles over its neighbours at the
+// silhouette); revealed cells drop their plateau to a sunken face (the classic
+// minesweeper raised/flat distinction — colour alone is ambiguous under 3D
+// lighting), and back faces are culled. On an open or non-orientable surface (M3's cylinder /
 // Möbius strip / Klein bottle) each cell is instead a flat DoubleSide tile on
 // the surface, lit and coloured identically from both faces, so it reads and
 // plays the same from inside or out; grout under the tile gaps keeps them from
@@ -56,20 +65,11 @@ import { cellPalette, classifyShapes, type CellPalette } from "./shapePalette";
 // depth-tested so geometry in front of a cell hides its number (a nearer wall,
 // a nearer frame bar) instead of letting it bleed through.
 
-const SHRINK = 0.04;
-const BEVEL = 0.16;
 // The two triangles of a billboard quad, in billboard-plane units.
 const QUAD_CORNERS: readonly (readonly [number, number])[] = [
   [-1, -1], [1, -1], [1, 1],
   [-1, -1], [1, 1], [-1, 1],
 ];
-// Lower relief than the flat renderer's 0.24: on a closed surface the cells
-// tilt against each other, and tall plateaus on big curved cells (the
-// sphere's pentagons) shingle over their neighbours at the silhouette.
-const HEIGHT_FRAC = 0.1;
-// Revealed cells sink almost to the base layer (kept just above it so the
-// two never z-fight).
-const FLAT_FRAC = 0.02;
 const BASE_COLOR = "#8e8e8e"; // grout surface showing through the tile gaps
 
 const _inv = /* @__PURE__ */ new Matrix4(); // scratch for the world→local map
@@ -121,9 +121,23 @@ export class SolidBoard extends Group implements BoardMesh {
   private viewRight: Vec3 = [1, 0, 0];
   private viewUp: Vec3 = [0, 1, 0];
   private cameraLocal: Vec3 = [0, 0, 1];
+  /** The relief every cell is cut with (the player's cell style, at its 3D
+   * profile). A two-sided board draws flat tiles whatever the style, so only
+   * `gap` reaches those. */
+  private readonly profile: CellProfile;
+  /** How far the win wave's crest is overdriven past the gold tint (see
+   * CellStyle.winGlow). A 3D board is always lit — `CellStyle.unlit` is a flat
+   * board's business — so an unlit style's reduced glow does not apply here:
+   * there is shading to bring the overdrive back down. */
+  private readonly winGlow: number;
+  /** The style's across-the-tile brightness gradient, if it has one. */
+  private readonly shade: CellStyle["shade"];
 
-  constructor(board: Board3D) {
+  constructor(board: Board3D, style: CellStyle = cellStyle(null)) {
     super();
+    this.profile = style.solid;
+    this.winGlow = style.unlit ? WIN_GLOW : (style.winGlow ?? WIN_GLOW);
+    this.shade = style.shade;
     this.atlas = makeGlyphAtlas();
     this.order = [...board.polygons.keys()];
     this.states = this.order.map(() => ({ kind: "hidden" }));
@@ -163,20 +177,20 @@ export class SolidBoard extends Group implements BoardMesh {
         ) / n;
       // The cut, if this cell is one of the few the clip reaches.
       const field = clip && clip.cells.has(cell) ? clip.field : null;
-      // A closed cell is a raised beveled button (3n top-fan + 6n bevel-ring
-      // vertices = 3n triangles); a two-sided cell is a flat tile whose
-      // triangles are fixed at build time, so a cut one keeps only what
-      // survives the clip.
+      // A closed cell is a raised button: an n-triangle top fan plus a ring of
+      // n quads under it per loop gap in the profile. A two-sided cell is a
+      // flat tile whose triangles are fixed at build time, so a cut one keeps
+      // only what survives the clip.
       const tile = this.twoSided
         ? clipTriangles(
             fanTriangles(
-              poly.map((p) => lerp3(p, centroid, SHRINK)),
+              poly.map((p) => lerp3(p, centroid, this.profile.gap)),
               centroid,
             ),
             field,
           )
         : null;
-      const count = tile ? 3 * tile.length : 9 * n;
+      const count = tile ? 3 * tile.length : cellVertexCount(n, this.profile);
       this.geom.push({
         start: vertexCount,
         count,
@@ -190,12 +204,13 @@ export class SolidBoard extends Group implements BoardMesh {
       });
       vertexCount += count;
       // How far this cell's drawn geometry reaches: a two-sided tile lies on
-      // the surface, a closed one is raised by its bevel height.
+      // the surface, a closed one is raised by the top loop of its profile.
       for (const p of poly) hull.push(p[0], p[1], p[2]);
       if (!this.twoSided) {
-        const lift = radius * HEIGHT_FRAC;
+        const crown = this.profile.closed[this.profile.closed.length - 1]!;
+        const lift = radius * crown.height;
         for (const p of poly) {
-          const top = add3(lerp3(p, centroid, SHRINK + BEVEL), [
+          const top = add3(lerp3(p, centroid, this.profile.gap + crown.inset), [
             normal[0] * lift,
             normal[1] * lift,
             normal[2] * lift,
@@ -204,8 +219,7 @@ export class SolidBoard extends Group implements BoardMesh {
           outerRadius = Math.max(outerRadius, Math.hypot(top[0], top[1], top[2]));
         }
       }
-      const triangles = tile ? tile.length : 3 * n;
-      for (let t = 0; t < triangles; t++) faceCell.push(ci);
+      for (let t = 0; t < count / 3; t++) faceCell.push(ci);
 
       // Opaque base layer under the whole (unshrunk) polygon: the tile gaps
       // and the silhouette show this grout surface instead of seeing through
@@ -233,8 +247,7 @@ export class SolidBoard extends Group implements BoardMesh {
 
     const material = new MeshStandardMaterial({
       vertexColors: true,
-      roughness: 0.65,
-      metalness: 0,
+      ...style.material,
       // Closed surfaces rely on back-face culling (winding is outward);
       // open/non-orientable ones draw both faces of their flat tiles, lit and
       // coloured identically (MeshStandardMaterial flips the normal for the
@@ -373,19 +386,26 @@ export class SolidBoard extends Group implements BoardMesh {
   }
 
   /** (Re)write one cell's geometry: a flat tile at the surface for two-sided
-   * boards, else a beveled button — raised for hidden/flagged cells, sunk
-   * nearly to the base layer once revealed. */
+   * boards, else the cell style's profile for its state — the loops of the
+   * polygon pulled in and raised along the outward normal, innermost one filled
+   * as the top face. Raised for hidden/flagged cells, sunk nearly to the base
+   * layer once revealed. */
   private writeGeometry(i: number): void {
     if (this.twoSided) return this.writeFlatTile(i);
     const g = this.geom[i]!;
     const { poly, centroid, normal } = g;
     const n = poly.length;
-    const height = g.radius * (isOpened(this.states[i]!) ? FLAT_FRAC : HEIGHT_FRAC);
-    const lift: Vec3 = [normal[0] * height, normal[1] * height, normal[2] * height];
-    const outer = poly.map((p) => lerp3(p, centroid, SHRINK));
-    const top = poly.map((p) => add3(lerp3(p, centroid, SHRINK + BEVEL), lift));
-    const topCenter = add3(centroid, lift);
-    g.center = topCenter;
+    const loops = isOpened(this.states[i]!) ? this.profile.open : this.profile.closed;
+    const rings = loops.map((loop) => {
+      const height = g.radius * loop.height;
+      const lift: Vec3 = [normal[0] * height, normal[1] * height, normal[2] * height];
+      return {
+        points: poly.map((p) => add3(lerp3(p, centroid, this.profile.gap + loop.inset), lift)),
+        center: add3(centroid, lift),
+      };
+    });
+    const top = rings[rings.length - 1]!;
+    g.center = top.center;
 
     let v = g.start;
     const put = (p: Vec3, nrm: Vec3) => {
@@ -399,25 +419,27 @@ export class SolidBoard extends Group implements BoardMesh {
     // (whose polygon is not planar — e.g. the sphere's pentagons) still
     // shades as one clean facet instead of a pinwheel of fan triangles.
     for (let e = 0; e < n; e++) {
-      put(topCenter, normal);
-      put(top[e]!, normal);
-      put(top[(e + 1) % n]!, normal);
+      put(top.center, normal);
+      put(top.points[e]!, normal);
+      put(top.points[(e + 1) % n]!, normal);
     }
-    // bevel ring: outer edge on the surface up to the raised top edge.
+    // one ring of walls per loop gap, from the outer edge up to the top edge.
     // One normal per quad keeps its two (slightly non-coplanar) triangles
     // from showing a diagonal shading crease.
-    for (let e = 0; e < n; e++) {
-      const a = e;
-      const b = (e + 1) % n;
-      const quadNormal = normalize(
-        newellNormal([outer[a]!, outer[b]!, top[b]!, top[a]!]),
-      );
-      put(outer[a]!, quadNormal);
-      put(outer[b]!, quadNormal);
-      put(top[b]!, quadNormal);
-      put(outer[a]!, quadNormal);
-      put(top[b]!, quadNormal);
-      put(top[a]!, quadNormal);
+    for (let r = 1; r < rings.length; r++) {
+      const low = rings[r - 1]!.points;
+      const high = rings[r]!.points;
+      for (let e = 0; e < n; e++) {
+        const a = e;
+        const b = (e + 1) % n;
+        const quadNormal = normalize(newellNormal([low[a]!, low[b]!, high[b]!, high[a]!]));
+        put(low[a]!, quadNormal);
+        put(low[b]!, quadNormal);
+        put(high[b]!, quadNormal);
+        put(low[a]!, quadNormal);
+        put(high[b]!, quadNormal);
+        put(high[a]!, quadNormal);
+      }
     }
     this.positionAttr.needsUpdate = true;
     this.normalAttr.needsUpdate = true;
@@ -452,12 +474,24 @@ export class SolidBoard extends Group implements BoardMesh {
     const light = this.anim.lightness(i, now);
     if (light) col.offsetHSL(0, 0, light);
     const win = this.anim.winMix(i, now);
-    if (win) col.lerp(WIN_TINT, win).multiplyScalar(1 + win * WIN_GLOW);
+    if (win) col.lerp(WIN_TINT, win).multiplyScalar(1 + win * this.winGlow);
     const g = this.geom[i]!;
     for (let v = 0; v < g.count; v++) {
-      this.colorAttr.setXYZ(g.start + v, col.r, col.g, col.b);
+      const f = this.vertexShade(v, g.poly.length);
+      this.colorAttr.setXYZ(g.start + v, col.r * f, col.g * f, col.b * f);
     }
     this.colorAttr.needsUpdate = true;
+  }
+
+  /** How much brighter or darker vertex `v` of an `n`-gon cell is drawn than the
+   * cell's own colour — the style's across-the-tile gradient, or 1 when it has
+   * none, and always 1 on a two-sided board, whose clipped flat tiles have no
+   * such layout (see CellStyle.shade). A closed cell's vertices are laid out top
+   * fan first (centroid, edge, edge per triangle), then the rings of walls. */
+  private vertexShade(v: number, n: number): number {
+    if (!this.shade || this.twoSided) return 1;
+    if (v >= 3 * n) return this.shade.rim; // a wall vertex
+    return v % 3 === 0 ? this.shade.center : this.shade.rim;
   }
 
   private rebuildGlyphs(): void {

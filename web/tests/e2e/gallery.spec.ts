@@ -67,6 +67,31 @@ test.describe("board gallery", () => {
     await expect(page).toHaveScreenshot("square-revealed.png");
   });
 
+  // The same fixture in each of the other cell styles (render/cellStyle.ts), so
+  // the four reliefs are directly comparable with `square-revealed.png` above —
+  // and so a change to one profile shows up as exactly one changed baseline.
+  // The style is read when a board's mesh is built, so it is stored *before*
+  // the app boots rather than switched afterwards.
+  for (const style of ["flat", "soft", "gloss"]) {
+    test(`revealed square in the ${style} cell style`, async ({ page }) => {
+      await page.addInitScript((key: string) => {
+        localStorage.setItem("ms:settings", JSON.stringify({ version: 2, cellStyle: key }));
+      }, style);
+      await page.goto("/");
+      await expect(page.locator("body[data-ready]")).toBeVisible();
+      await page.evaluate(() => {
+        const ms = window.__ms!;
+        const mines = Array.from({ length: 9 }, (_, c) => `4,${c}`);
+        ms.startBoard("square", "easy", { mines });
+        ms.reveal("0,0");
+        ms.flag("4,4");
+        ms.reveal("4,2");
+      });
+      await page.waitForTimeout(150);
+      await expect(page).toHaveScreenshot(`square-revealed-${style}.png`);
+    });
+  }
+
   test("revealed cube with numbers, a flag and an exploded mine", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator("body[data-ready]")).toBeVisible();
