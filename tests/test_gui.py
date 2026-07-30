@@ -19,6 +19,7 @@ from minesweeper.boards import (  # noqa: E402
     SHAPED_MODES,
     SPHERE_MODES,
     TILINGS,
+    mode_for,
     picker_families,
     picker_modes,
 )
@@ -593,10 +594,12 @@ class TestMenu:
         self.click_item(menu, "manifolds")
         self.click_item(menu, "torus")
         assert menu.path == ["manifolds", "torus"]
-        # aperiodic is not offered on a wrapped surface, only on the plane
-        assert self.items(menu) == {
-            "regular", "uniform", "dual", "isogonal", "rectangle", "random",
-        }
+        # aperiodic is not offered on a wrapped surface, only on the plane;
+        # isogonal and rectangle are off the menu on torus/mobius/klein for
+        # now (too distorted at the current preset windows -- see
+        # picker_families), leaving the cylinder as the only manifold that
+        # offers them
+        assert self.items(menu) == {"regular", "uniform", "dual", "random"}
         self.click_item(menu, "uniform")
         assert self.click_item(menu, "trihex") == ("start", "torustrihex")
 
@@ -663,7 +666,17 @@ class TestMenu:
             reach("sphere", mode)
         for mode in POLYHEDRA_MODES:
             reach("polyhedra", mode)
-        assert reached == set(MODE_LABELS)
+        # isogonal and rectangle still build and have labels on torus/mobius/
+        # klein (--mode reaches them directly) but picker_families keeps them
+        # off the menu there for now, so they are the one deliberate gap here
+        off_menu = {
+            mode_for(key, surface)
+            for surface in ("torus", "mobius", "klein")
+            for family in ("isogonal", "rectangle")
+            for key in FAMILY_MEMBERS[family]
+            if mode_for(key, surface) in MODE_LABELS
+        }
+        assert reached == set(MODE_LABELS) - off_menu
 
     def test_chiral_tiling_disabled_on_a_mirror_surface(self):
         # snub hexagonal is chiral, so it cannot wrap the Möbius strip or the

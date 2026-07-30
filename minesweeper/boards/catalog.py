@@ -212,6 +212,16 @@ FAMILY_MEMBERS = {
 # the picker's family rows, in order; "aperiodic" is added on the plane only
 PICKER_FAMILIES = ("regular", "uniform", "dual", "isogonal", "rectangle")
 FLAT_ONLY_FAMILIES = ("aperiodic",)
+# Isogonal and rectangle wrap the torus/Mobius/Klein bottle without error, but
+# at their current preset windows the wrap distorts them too much to be worth
+# playing there yet -- the cylinder alone still reads well. Off the menu on
+# those three manifolds until the windows are retuned further; the builders,
+# presets and tests are untouched; a --mode still reaches them directly.
+_MANIFOLD_EXCLUDED_FAMILIES = {
+    "torus": ("isogonal", "rectangle"),
+    "mobius": ("isogonal", "rectangle"),
+    "klein": ("isogonal", "rectangle"),
+}
 
 # Sphere page: the spherical tilings, none of which wraps a flat surface.
 SPHERE_MODES = tuple(_MENU["sphereModes"])
@@ -269,7 +279,8 @@ def picker_families(surface_key: str) -> tuple[str, ...]:
     """The family rows a surface's picker offers, in order."""
     if surface_key == "flat":
         return PICKER_FAMILIES + FLAT_ONLY_FAMILIES
-    return PICKER_FAMILIES
+    excluded = _MANIFOLD_EXCLUDED_FAMILIES.get(surface_key, ())
+    return tuple(f for f in PICKER_FAMILIES if f not in excluded)
 
 
 def picker_modes(surface_key: str) -> tuple[str, ...]:

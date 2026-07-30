@@ -9,6 +9,7 @@ from minesweeper.boards.core import (
     Board3D,
     Cell,
     Vec3,
+    _cross,
     _dot,
     _normalize,
     _orient_outward,
@@ -301,108 +302,107 @@ def rhombicosidodecahedron_board(mine_count: int) -> Board3D:
     return _convex_board3d("rhombicosidodeca", cells, positions, mine_count)
 
 
-def _icosidodecahedron() -> tuple[dict, dict]:
-    """The icosidodecahedron as (cells, positions) — one vertex per
-    icosahedron edge midpoint, 20 triangles (one per icosahedron face) and
-    12 pentagons (one per icosahedron vertex, degree 5): the "rectify"
-    operation. Not itself a board; an intermediate step toward the
-    truncated icosidodecahedron."""
+def _flag_position(v_dir: Vec3, e_dir: Vec3, f_dir: Vec3) -> Vec3:
+    """The Wythoff generating point for the icosahedral (2, 3, 5) reflection
+    group: given one "flag" (a mutually incident icosahedron vertex, edge and
+    face)'s three axis directions -- ``v_dir`` the vertex (5-fold axis),
+    ``e_dir`` its edge's midpoint (2-fold axis), ``f_dir`` its face's centroid
+    (3-fold axis), the three corners of a fundamental (Schwarz) triangle whose
+    sides are the group's mirror planes -- the point inside that triangle
+    equidistant from all three mirrors. Reflecting it through the group's 120
+    symmetries generates the omnitruncated icosahedron (the truncated
+    icosidodecahedron, a.k.a. great rhombicosidodecahedron) with every edge
+    the same length by construction: unlike rectifying the icosahedron and
+    then truncating the result (a sequential approximation that, no matter
+    how the two steps are tuned, cannot make all three of its face shapes
+    regular at once -- see the git history for why), this always lands on
+    the exact Archimedean solid, because a flag's three mirrors are just
+    three planes through the origin and this point is the same distance from
+    each of them."""
+    v_dir, e_dir, f_dir = _normalize(v_dir), _normalize(e_dir), _normalize(f_dir)
+
+    def mirror_normal(a: Vec3, b: Vec3, toward: Vec3) -> Vec3:
+        n = _normalize(_cross(a, b))
+        return n if _dot(n, toward) >= 0 else (-n[0], -n[1], -n[2])
+
+    # the mirror opposite each corner is the plane through the other two
+    n_v = mirror_normal(e_dir, f_dir, v_dir)
+    n_e = mirror_normal(f_dir, v_dir, e_dir)
+    n_f = mirror_normal(v_dir, e_dir, f_dir)
+    # equidistant from all three mirrors <=> orthogonal to n_v - n_e and to
+    # n_e - n_f, i.e. their cross product (a linear, not barycentric, solve)
+    p = _normalize(_cross(
+        (n_v[0] - n_e[0], n_v[1] - n_e[1], n_v[2] - n_e[2]),
+        (n_e[0] - n_f[0], n_e[1] - n_f[1], n_e[2] - n_f[2]),
+    ))
+    if _dot(p, v_dir) + _dot(p, e_dir) + _dot(p, f_dir) < 0:
+        p = (-p[0], -p[1], -p[2])
+    return p
+
+
+def _truncated_icosidodecahedron() -> tuple[dict, dict]:
+    """The truncated icosidodecahedron as (cells, positions): the
+    omnitruncation of the icosahedron. Each vertex is a flag (icosahedron
+    vertex, edge, face mutually incident) placed by `_flag_position`; there
+    are 4 * 30 edges = 120 of them, keyed by ``(face_index, local_vertex,
+    side)`` (``side`` picks which of the vertex's two edges within that
+    face). 20 hexagons (one per face), 12 decagons (one per vertex) and 30
+    squares (one per edge)."""
     vertices, faces = _icosahedron()
     positions: dict[Hashable, Vec3] = {}
-
-    def mkey(u: int, v: int) -> tuple:
-        return ("m", min(u, v), max(u, v))
-
-    neighbors: dict[int, set[int]] = defaultdict(set)
-    for face in faces:
-        for i in range(3):
-            u, v = face[i], face[(i + 1) % 3]
-            neighbors[u].add(v)
-            neighbors[v].add(u)
-            key = mkey(u, v)
-            if key not in positions:
-                a, b = vertices[u], vertices[v]
-                positions[key] = _normalize(tuple((pa + pb) / 2 for pa, pb in zip(a, b)))
-
-    cells: dict[Cell, list] = {
-        ("t", fi): [mkey(face[i], face[(i + 1) % 3]) for i in range(3)]
+    centroids: dict[int, Vec3] = {
+        fi: tuple(sum(vertices[i][axis] for i in face) / 3 for axis in range(3))
         for fi, face in enumerate(faces)
     }
-    for v, nbs in neighbors.items():
-        ordered = _tangent_order(vertices[v], [(nb, vertices[nb]) for nb in nbs])
-        cells[("p", v)] = [mkey(v, nb) for nb in ordered]
+    for fi, face in enumerate(faces):
+        for lv in range(3):
+            v = face[lv]
+            for side in (0, 1):
+                nb = face[(lv + (1 if side == 0 else -1)) % 3]
+                emid = tuple((vertices[v][axis] + vertices[nb][axis]) / 2 for axis in range(3))
+                positions[(fi, lv, side)] = _flag_position(vertices[v], emid, centroids[fi])
+
+    cells: dict[Cell, list] = {}
+    for fi, face in enumerate(faces):
+        flags = [(fi, lv, side) for lv in range(3) for side in (0, 1)]
+        cells[("h", fi)] = _tangent_order(
+            centroids[fi], [(key, positions[key]) for key in flags]
+        )
+
+    vertex_faces: dict[int, list[tuple[int, int]]] = defaultdict(list)
+    for fi, face in enumerate(faces):
+        for lv, v in enumerate(face):
+            vertex_faces[v].append((fi, lv))
+    for v, incident in vertex_faces.items():
+        flags = [(fi, lv, side) for fi, lv in incident for side in (0, 1)]
+        cells[("d", v)] = _tangent_order(
+            vertices[v], [(key, positions[key]) for key in flags]
+        )
+
+    edge_flags: dict[tuple[int, int], list[tuple[int, int, int]]] = defaultdict(list)
+    for fi, face in enumerate(faces):
+        for i in range(3):
+            u, w = face[i], face[(i + 1) % 3]
+            lu, lw = i, (i + 1) % 3
+            side_u = 0 if face[(lu + 1) % 3] == w else 1
+            side_w = 0 if face[(lw + 1) % 3] == u else 1
+            edge_flags[(min(u, w), max(u, w))].append((fi, lu, side_u))
+            edge_flags[(min(u, w), max(u, w))].append((fi, lw, side_w))
+    for (u, w), flags in edge_flags.items():
+        centre = tuple((vertices[u][axis] + vertices[w][axis]) / 2 for axis in range(3))
+        cells[("s", u, w)] = _tangent_order(
+            centre, [(key, positions[key]) for key in flags]
+        )
+
     return cells, positions
-
-
-# No single cut fraction `t` makes every truncated face regular here: the
-# icosidodecahedron's triangles want t=1/3 (an equilateral triangle cut at 1/3
-# gives a *regular* hexagon) and its pentagons want t=1/(2+phi) =~ 0.2764 (the
-# matching ratio for a regular decagon) -- two different fractions. Worse,
-# its degree-4 vertices are not fourfold-symmetric (they alternate a 60- and a
-# 108-degree gap, one straddling a triangle and one a pentagon), so the new
-# vertex faces come out a fixed-proportion *rectangle*, not a square, at
-# *any* t -- an unavoidable consequence of trisecting the quasiregular
-# icosidodecahedron this way rather than constructing the true Archimedean
-# solid directly (its own Wikipedia article calls the "truncated" name
-# misleading for exactly this reason). This value is the fixed point where
-# the hexagons and decagons are equally regular instead (both ~0.89 by the
-# minAngle/maxAngle-and-minSide/maxSide measure), splitting the shortfall
-# between them instead of favouring one at the other's expense; the
-# rectangle-vs-square gap in the squares is there regardless of t.
-_TRUNCATE_BALANCED_T = 0.3056216365169173
-
-
-def _truncate(cells: dict, positions: dict, t: float = _TRUNCATE_BALANCED_T) -> tuple[dict, dict]:
-    """Cut every vertex of a closed mesh (cells keyed by hashable tags,
-    each an ordered ring of vertex keys) by a plane near it: a vertex of
-    degree n becomes a new n-gon face, and every original face's corners
-    are each replaced by a pair of points along its two adjacent edges —
-    the "truncate" (bevel-vertex) operation. Generic over the input mesh;
-    used to build the truncated icosidodecahedron from the
-    icosidodecahedron -- see `_TRUNCATE_BALANCED_T` for why its faces cannot
-    all be made regular by choosing `t`."""
-    neighbors: dict[Hashable, set] = defaultdict(set)
-    for keys in cells.values():
-        n = len(keys)
-        for i in range(n):
-            u, v = keys[i], keys[(i + 1) % n]
-            neighbors[u].add(v)
-            neighbors[v].add(u)
-
-    def tkey(v, nb):
-        return ("t", v, nb)
-
-    new_positions: dict[Hashable, Vec3] = {}
-    for v, nbs in neighbors.items():
-        a = positions[v]
-        for nb in nbs:
-            b = positions[nb]
-            new_positions[tkey(v, nb)] = _normalize(
-                tuple(pa + (pb - pa) * t for pa, pb in zip(a, b))
-            )
-
-    new_cells: dict[Cell, list] = {}
-    for name, keys in cells.items():
-        n = len(keys)
-        polygon = []
-        for i in range(n):
-            v = keys[i]
-            polygon.append(tkey(v, keys[i - 1]))
-            polygon.append(tkey(v, keys[(i + 1) % n]))
-        new_cells[name] = polygon
-
-    for v, nbs in neighbors.items():
-        ordered = _tangent_order(positions[v], [(nb, positions[nb]) for nb in nbs])
-        new_cells[("v", v)] = [tkey(v, nb) for nb in ordered]
-
-    return new_cells, new_positions
 
 
 def truncated_icosidodecahedron_board(mine_count: int) -> Board3D:
     """A truncated icosidodecahedron: 30 squares, 20 hexagons and 12
-    decagons (vertex configuration 4.6.10), projected onto the unit
-    sphere — the icosidodecahedron with every vertex truncated."""
-    cells, positions = _truncate(*_icosidodecahedron())
+    decagons (vertex configuration 4.6.10), projected onto the unit sphere —
+    the exact omnitruncation of the icosahedron (see `_flag_position`), so
+    every face is genuinely regular rather than merely close."""
+    cells, positions = _truncated_icosidodecahedron()
     return _convex_board3d("truncicosidodeca", cells, positions, mine_count)
 
 

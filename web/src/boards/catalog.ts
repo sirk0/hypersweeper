@@ -152,6 +152,16 @@ export const PICKER_REGULAR = MENU.pickerRegular as string[];
  * like uniform and dual. */
 export const PICKER_FAMILIES = ["regular", "uniform", "dual", "isogonal", "rectangle"];
 export const FLAT_ONLY_FAMILIES = ["aperiodic"];
+// Isogonal and rectangle wrap the torus/Mobius/Klein bottle without error, but
+// at their current preset windows the wrap distorts them too much to be worth
+// playing there yet — the cylinder alone still reads well. Off the menu on
+// those three manifolds until the windows are retuned further; the builders,
+// presets and tests are untouched; a share link still reaches them directly.
+const MANIFOLD_EXCLUDED_FAMILIES: Record<string, string[]> = {
+  torus: ["isogonal", "rectangle"],
+  mobius: ["isogonal", "rectangle"],
+  klein: ["isogonal", "rectangle"],
+};
 export const APERIODIC_MODES = MENU.aperiodic as string[];
 
 const FAMILY_MEMBERS: Record<string, string[]> = {
@@ -201,5 +211,7 @@ export function familyRows(family: string, surfaceKey: string): FamilyRow[] {
 
 /** The family rows a surface's picker offers, in order. */
 export function pickerFamilies(surfaceKey: string): string[] {
-  return surfaceKey === "flat" ? [...PICKER_FAMILIES, ...FLAT_ONLY_FAMILIES] : PICKER_FAMILIES;
+  if (surfaceKey === "flat") return [...PICKER_FAMILIES, ...FLAT_ONLY_FAMILIES];
+  const excluded = MANIFOLD_EXCLUDED_FAMILIES[surfaceKey] ?? [];
+  return PICKER_FAMILIES.filter((f) => !excluded.includes(f));
 }

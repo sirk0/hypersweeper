@@ -5,6 +5,7 @@
 // quantization the topology helpers use.
 import {
   cid,
+  cross,
   dot,
   isBoard3D,
   newellNormal,
@@ -424,135 +425,129 @@ export function rhombicosidodecahedronBoard(mineCount: number): Board3D {
   return convexBoard3d("rhombicosidodeca", cells, positions, mineCount);
 }
 
-/** The icosidodecahedron as (cells, positions) — one vertex per icosahedron
- * edge midpoint, 20 triangles (one per icosahedron face) and 12 pentagons
- * (one per icosahedron vertex, degree 5): the "rectify" operation. Not itself
- * a board; an intermediate step toward the truncated icosidodecahedron. */
-function icosidodecahedron(): { cells: Cells; positions: Positions } {
+/** The Wythoff generating point for the icosahedral (2, 3, 5) reflection
+ * group: given one "flag" (a mutually incident icosahedron vertex, edge and
+ * face)'s three axis directions — `vDir` the vertex (5-fold axis), `eDir` its
+ * edge's midpoint (2-fold axis), `fDir` its face's centroid (3-fold axis),
+ * the three corners of a fundamental (Schwarz) triangle whose sides are the
+ * group's mirror planes — the point inside that triangle equidistant from
+ * all three mirrors. Reflecting it through the group's 120 symmetries
+ * generates the omnitruncated icosahedron (the truncated icosidodecahedron,
+ * a.k.a. great rhombicosidodecahedron) with every edge the same length by
+ * construction: unlike rectifying the icosahedron and then truncating the
+ * result (a sequential approximation that, no matter how the two steps are
+ * tuned, cannot make all three of its face shapes regular at once — see the
+ * git history for why), this always lands on the exact Archimedean solid,
+ * because a flag's three mirrors are just three planes through the origin
+ * and this point is the same distance from each of them. */
+function flagPosition(vDir: Vec3, eDir: Vec3, fDir: Vec3): Vec3 {
+  const v = normalize(vDir);
+  const e = normalize(eDir);
+  const f = normalize(fDir);
+  const mirrorNormal = (a: Vec3, b: Vec3, toward: Vec3): Vec3 => {
+    const n = normalize(cross(a, b));
+    return dot(n, toward) >= 0 ? n : [-n[0], -n[1], -n[2]];
+  };
+  // the mirror opposite each corner is the plane through the other two
+  const nv = mirrorNormal(e, f, v);
+  const ne = mirrorNormal(f, v, e);
+  const nf = mirrorNormal(v, e, f);
+  // equidistant from all three mirrors <=> orthogonal to nv - ne and to
+  // ne - nf, i.e. their cross product (a linear, not barycentric, solve)
+  let p = normalize(cross(
+    [nv[0] - ne[0], nv[1] - ne[1], nv[2] - ne[2]],
+    [ne[0] - nf[0], ne[1] - nf[1], ne[2] - nf[2]],
+  ));
+  if (dot(p, v) + dot(p, e) + dot(p, f) < 0) p = [-p[0], -p[1], -p[2]];
+  return p;
+}
+
+/** The truncated icosidodecahedron as (cells, positions): the omnitruncation
+ * of the icosahedron. Each vertex is a flag (icosahedron vertex, edge, face
+ * mutually incident) placed by `flagPosition`; there are 4 * 30 edges = 120
+ * of them, keyed by `(faceIndex, localVertex, side)` (`side` picks which of
+ * the vertex's two edges within that face). 20 hexagons (one per face), 12
+ * decagons (one per vertex) and 30 squares (one per edge). */
+function truncatedIcosidodecahedron(): { cells: Cells; positions: Positions } {
   const { vertices, faces } = icosahedron();
   const positions: Positions = new Map();
-  const mkey = (u: number, v: number): string => cid("m", Math.min(u, v), Math.max(u, v));
+  const fkey = (fi: number, lv: number, side: number): string => cid("f", fi, lv, side);
+  const centroids = faces.map((face) => centroidOf(face.map((i) => vertices[i]!)));
 
-  const neighbors = new Map<number, Set<number>>();
-  const neighborsOf = (v: number): Set<number> => {
-    let set = neighbors.get(v);
-    if (!set) neighbors.set(v, (set = new Set()));
-    return set;
-  };
-  for (const face of faces) {
-    for (let i = 0; i < 3; i++) {
-      const [u, v] = [face[i]!, face[(i + 1) % 3]!];
-      neighborsOf(u).add(v);
-      neighborsOf(v).add(u);
-      const key = mkey(u, v);
-      if (!positions.has(key)) {
-        const [a, b] = [vertices[u]!, vertices[v]!];
-        positions.set(key, normalize([
-          (a[0] + b[0]) / 2,
-          (a[1] + b[1]) / 2,
-          (a[2] + b[2]) / 2,
-        ]));
+  faces.forEach((face, fi) => {
+    for (let lv = 0; lv < 3; lv++) {
+      const v = face[lv]!;
+      for (const side of [0, 1]) {
+        const nb = face[(lv + (side === 0 ? 1 : 2)) % 3]!;
+        const [a, b] = [vertices[v]!, vertices[nb]!];
+        const emid: Vec3 = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2];
+        positions.set(fkey(fi, lv, side), flagPosition(vertices[v]!, emid, centroids[fi]!));
       }
     }
-  }
+  });
 
   const cells: Cells = new Map();
-  faces.forEach((face, faceIndex) => {
-    cells.set(cid("t", faceIndex), [0, 1, 2].map((i) => mkey(face[i]!, face[(i + 1) % 3]!)));
+  faces.forEach((_, fi) => {
+    const flags: [string, Vec3][] = [];
+    for (let lv = 0; lv < 3; lv++) {
+      for (const side of [0, 1]) {
+        const key = fkey(fi, lv, side);
+        flags.push([key, positions.get(key)!]);
+      }
+    }
+    cells.set(cid("h", fi), tangentOrder(centroids[fi]!, flags));
   });
-  for (const [v, nbs] of neighbors) {
-    const ordered = tangentOrder(vertices[v]!, [...nbs].map((nb): [number, Vec3] => [nb, vertices[nb]!]));
-    cells.set(cid("p", v), ordered.map((nb) => mkey(v, nb)));
+
+  const vertexFaces = new Map<number, [number, number][]>();
+  faces.forEach((face, fi) => {
+    face.forEach((v, lv) => {
+      let list = vertexFaces.get(v);
+      if (!list) vertexFaces.set(v, (list = []));
+      list.push([fi, lv]);
+    });
+  });
+  for (const [v, incident] of vertexFaces) {
+    const flags: [string, Vec3][] = [];
+    for (const [fi, lv] of incident) {
+      for (const side of [0, 1]) {
+        const key = fkey(fi, lv, side);
+        flags.push([key, positions.get(key)!]);
+      }
+    }
+    cells.set(cid("d", v), tangentOrder(vertices[v]!, flags));
   }
+
+  const edgeFlags = new Map<string, [string, Vec3][]>();
+  faces.forEach((face, fi) => {
+    for (let i = 0; i < 3; i++) {
+      const [u, w] = [face[i]!, face[(i + 1) % 3]!];
+      const [lu, lw] = [i, (i + 1) % 3];
+      const sideU = face[(lu + 1) % 3] === w ? 0 : 1;
+      const sideW = face[(lw + 1) % 3] === u ? 0 : 1;
+      const key = cid(Math.min(u, w), Math.max(u, w));
+      let list = edgeFlags.get(key);
+      if (!list) edgeFlags.set(key, (list = []));
+      const keyU = fkey(fi, lu, sideU);
+      const keyW = fkey(fi, lw, sideW);
+      list.push([keyU, positions.get(keyU)!], [keyW, positions.get(keyW)!]);
+    }
+  });
+  for (const [key, flags] of edgeFlags) {
+    const [u, w] = key.split(",").map(Number) as [number, number];
+    const [a, b] = [vertices[u]!, vertices[w]!];
+    const centre: Vec3 = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2];
+    cells.set(cid("s", u, w), tangentOrder(centre, flags));
+  }
+
   return { cells, positions };
 }
 
-// No single cut fraction `t` makes every truncated face regular here: the
-// icosidodecahedron's triangles want t=1/3 (an equilateral triangle cut at
-// 1/3 gives a *regular* hexagon) and its pentagons want t=1/(2+phi) =~ 0.2764
-// (the matching ratio for a regular decagon) — two different fractions.
-// Worse, its degree-4 vertices are not fourfold-symmetric (they alternate a
-// 60- and a 108-degree gap, one straddling a triangle and one a pentagon), so
-// the new vertex faces come out a fixed-proportion *rectangle*, not a
-// square, at *any* t — an unavoidable consequence of trisecting the
-// quasiregular icosidodecahedron this way rather than constructing the true
-// Archimedean solid directly (its own Wikipedia article calls the
-// "truncated" name misleading for exactly this reason). This value is the
-// fixed point where the hexagons and decagons are equally regular instead
-// (both ~0.89 by the minAngle/maxAngle-and-minSide/maxSide measure),
-// splitting the shortfall between them instead of favouring one at the
-// other's expense; the rectangle-vs-square gap in the squares is there
-// regardless of t.
-const TRUNCATE_BALANCED_T = 0.3056216365169173;
-
-/** Cut every vertex of a closed mesh (cells keyed by opaque tags, each an
- * ordered ring of vertex keys) by a plane near it: a vertex of degree n
- * becomes a new n-gon face, and every original face's corners are each
- * replaced by a pair of points along its two adjacent edges — the
- * "truncate" (bevel-vertex) operation. Generic over the input mesh; used to
- * build the truncated icosidodecahedron from the icosidodecahedron — see
- * `TRUNCATE_BALANCED_T` for why its faces cannot all be made regular by
- * choosing `t`. */
-function truncate(
-  cells: Cells,
-  positions: Positions,
-  t = TRUNCATE_BALANCED_T,
-): { cells: Cells; positions: Positions } {
-  const neighbors = new Map<string, Set<string>>();
-  const neighborsOf = (v: string): Set<string> => {
-    let set = neighbors.get(v);
-    if (!set) neighbors.set(v, (set = new Set()));
-    return set;
-  };
-  for (const keys of cells.values()) {
-    const n = keys.length;
-    for (let i = 0; i < n; i++) {
-      const [u, v] = [keys[i]!, keys[(i + 1) % n]!];
-      neighborsOf(u).add(v);
-      neighborsOf(v).add(u);
-    }
-  }
-
-  const tkey = (v: string, nb: string): string => cid("t", v, nb);
-
-  const newPositions: Positions = new Map();
-  for (const [v, nbs] of neighbors) {
-    const a = positions.get(v)!;
-    for (const nb of nbs) {
-      const b = positions.get(nb)!;
-      newPositions.set(tkey(v, nb), normalize([
-        a[0] + (b[0] - a[0]) * t,
-        a[1] + (b[1] - a[1]) * t,
-        a[2] + (b[2] - a[2]) * t,
-      ]));
-    }
-  }
-
-  const newCells: Cells = new Map();
-  for (const [name, keys] of cells) {
-    const n = keys.length;
-    const polygon: string[] = [];
-    for (let i = 0; i < n; i++) {
-      const v = keys[i]!;
-      polygon.push(tkey(v, keys[(i - 1 + n) % n]!), tkey(v, keys[(i + 1) % n]!));
-    }
-    newCells.set(name, polygon);
-  }
-
-  for (const [v, nbs] of neighbors) {
-    const ordered = tangentOrder(positions.get(v)!, [...nbs].map((nb): [string, Vec3] => [nb, positions.get(nb)!]));
-    newCells.set(cid("v", v), ordered.map((nb) => tkey(v, nb)));
-  }
-
-  return { cells: newCells, positions: newPositions };
-}
-
 /** A truncated icosidodecahedron: 30 squares, 20 hexagons and 12 decagons
- * (vertex configuration 4.6.10), projected onto the unit sphere — the
- * icosidodecahedron with every vertex truncated. */
+ * (vertex configuration 4.6.10), projected onto the unit sphere — the exact
+ * omnitruncation of the icosahedron (see `flagPosition`), so every face is
+ * genuinely regular rather than merely close. */
 export function truncatedIcosidodecahedronBoard(mineCount: number): Board3D {
-  const { cells: idCells, positions: idPositions } = icosidodecahedron();
-  const { cells, positions } = truncate(idCells, idPositions);
+  const { cells, positions } = truncatedIcosidodecahedron();
   return convexBoard3d("truncicosidodeca", cells, positions, mineCount);
 }
 
