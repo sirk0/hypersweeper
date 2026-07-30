@@ -4,6 +4,7 @@ import { Game } from "./game";
 import { haptic } from "./haptics";
 import { mulberry32, type Rng } from "./rng";
 import type { BoardMesh, CellVisual } from "./render/boardMesh";
+import { cellStyle } from "./render/cellStyle";
 import { PolygonBoard } from "./render/polygonBoard";
 import { SolidBoard } from "./render/solidBoard";
 
@@ -23,6 +24,8 @@ export class GameSession {
   readonly game: Game;
   readonly mode: string;
   readonly difficulty: string;
+  /** The cell style this board's mesh was cut with (see render/cellStyle.ts). */
+  readonly cellStyle: string;
 
   private exploded: CellId | null = null;
   private startedAt: number | null = null;
@@ -42,14 +45,20 @@ export class GameSession {
   constructor(
     mode: string,
     difficulty: string,
-    opts: { seed?: number; minePositions?: CellId[] } = {},
+    opts: { seed?: number; minePositions?: CellId[]; cellStyle?: string } = {},
   ) {
     this.mode = mode;
     this.difficulty = difficulty;
     this.board = buildBoard(mode, difficulty);
+    // The cell style is baked into the mesh: a profile's loop count fixes the
+    // vertex count per cell, so it is chosen here, once, and a change takes
+    // effect on the next board (it can only be changed from the menu, where no
+    // game is in progress).
+    const style = cellStyle(opts.cellStyle);
+    this.cellStyle = style.key;
     this.mesh = isBoard3D(this.board)
-      ? new SolidBoard(this.board)
-      : new PolygonBoard(this.board);
+      ? new SolidBoard(this.board, style)
+      : new PolygonBoard(this.board, style);
     const rng: Rng | undefined =
       opts.seed !== undefined ? mulberry32(opts.seed >>> 0) : undefined;
     this.game = new Game(this.board.adjacency, {

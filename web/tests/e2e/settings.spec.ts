@@ -108,6 +108,84 @@ test.describe("settings", () => {
     }
   });
 
+  test("the cell style row opens a picker, and the choice sticks", async ({ page }) => {
+    await page.locator(".menu-settings-btn").click();
+    const row = page.locator('.menu-entry[data-settings-group="cell-style"]');
+    await expect(row).toContainText("Cell style");
+    await expect(row).toContainText("Classic"); // the default, as a subtitle
+    await expect(page.locator(".menu-entry[data-cell-style]")).toHaveCount(0);
+
+    await row.click();
+    await expect(page.locator(".menu-entry[data-cell-style]")).toHaveCount(4);
+    await expect(page.locator('.menu-entry[data-action="back"]')).toContainText("Cell style");
+    await expect(page.locator('.menu-entry[data-cell-style="classic"]')).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+
+    await page.locator('.menu-entry[data-cell-style="gloss"]').click();
+    await expect(page.locator('.menu-entry[data-cell-style="gloss"]')).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    // Back lands on settings, with the row reporting the new style.
+    await page.locator('.menu-entry[data-action="back"]').click();
+    await expect(row).toContainText("Glossy");
+
+    await page.reload();
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    await page.locator(".menu-settings-btn").click();
+    await expect(page.locator('.menu-entry[data-settings-group="cell-style"]')).toContainText(
+      "Glossy",
+    );
+  });
+
+  test("a board launched after picking a cell style plays normally", async ({ page }) => {
+    await page.locator(".menu-settings-btn").click();
+    await page.locator('.menu-entry[data-settings-group="cell-style"]').click();
+    await page.locator('.menu-entry[data-cell-style="flat"]').click();
+    await page.locator('.menu-entry[data-action="back"]').click(); // to settings
+    await page.locator('.menu-entry[data-action="back"]').click(); // to the root
+    await page.locator('.menu-entry[data-mode="square"]').click(); // Classic
+
+    // The board reports the style its mesh was actually cut with, so this is
+    // the assertion that the pick reached the renderer rather than only the
+    // settings record — and the relief is a different mesh per style, so the
+    // board must still build, pick and play: reveal a cell and read it back.
+    const revealed = await page.evaluate(() => {
+      const ms = window.__ms!;
+      const cell = ms.cells()[0]!;
+      ms.reveal(cell);
+      return ms.state().revealed;
+    });
+    expect(revealed).toBeGreaterThan(0);
+    const state = await page.evaluate(() => window.__ms?.state());
+    expect(state?.mode).toBe("square");
+    expect(state?.cellStyle).toBe("flat");
+  });
+
+  // Every style, on a flat board and on a solid: the mesh a board is built with
+  // is the style that was picked. `soft` is here because it once looked so much
+  // like `classic` that picking it read as doing nothing at all — a look is
+  // hard to assert, but "the mesh was cut with this profile" is not.
+  for (const key of ["classic", "flat", "soft", "gloss"]) {
+    test(`the ${key} style reaches the mesh of a flat board and a solid`, async ({ page }) => {
+      await page.locator(".menu-settings-btn").click();
+      await page.locator('.menu-entry[data-settings-group="cell-style"]').click();
+      await page.locator(`.menu-entry[data-cell-style="${key}"]`).click();
+
+      for (const mode of ["hex", "sphere"]) {
+        const state = await page.evaluate((m: string) => {
+          window.__ms!.startBoard(m, "easy");
+          return window.__ms!.state();
+        }, mode);
+        expect(state.mode, `${key} ${mode}`).toBe(mode);
+        expect(state.cellStyle, `${key} ${mode}`).toBe(key);
+        expect(state.cellCount, `${key} ${mode}`).toBeGreaterThan(0);
+      }
+    });
+  }
+
   test("the animations toggle persists across a reload", async ({ page }) => {
     await page.locator(".menu-settings-btn").click();
     const toggle = page.locator('.menu-entry[data-setting="animations"]');

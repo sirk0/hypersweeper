@@ -14,7 +14,11 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
-  reporter: process.env.CI ? "github" : "list",
+  // On CI: inline annotations on the run, plus the HTML report the workflow
+  // uploads as an artifact. Without the html reporter nothing writes
+  // `playwright-report/`, and the upload step warned "No files were found with
+  // the provided path" on every green run — so a failure had no report either.
+  reporter: process.env.CI ? [["github"], ["html", { open: "never" }]] : "list",
   expect: {
     toHaveScreenshot: { maxDiffPixelRatio: 0.05 },
   },

@@ -30,28 +30,22 @@ import {
   WIN_PER_CELL,
 } from "./animations";
 import { cellPalette, classifyShapes, type CellPalette } from "./shapePalette";
+import {
+  cellStyle,
+  cellVertexCount,
+  type CellProfile,
+  type CellStyle,
+} from "./cellStyle";
 
 // Renders an arbitrary flat polygon board (square / triangle / hex / ...) as
-// one merged beveled geometry: each convex cell becomes a top face
-// (fan-triangulated) ringed by bevel quads — raised while the cell is closed,
-// re-cut as a recess once it is opened. Both the geometry and the colour of a
+// one merged geometry: each convex cell becomes a top face (fan-triangulated)
+// ringed by the walls of its profile's loops — raised while the cell is closed,
+// re-cut as a recess once it is opened. How deep, how many loops and how glossy
+// is the player's `CellStyle` (render/cellStyle.ts); classic is the beveled
+// button this game has always drawn. Both the geometry and the colour of a
 // cell are ranged updates into the shared buffers; a single glyph-atlas mesh
 // batches the number/flag/mine quads. The 3D SolidBoard lays the same
 // construction out on a solid's surface.
-
-const SHRINK = 0.04; // pull the whole cell in from shared edges -> visible gaps
-const BEVEL = 0.16; // extra inset of the raised top face
-const HEIGHT_FRAC = 0.24; // bevel height as a fraction of the cell's "radius"
-// An opened cell is cut the other way round: a thin rim (so the sunken face
-// still reads full-size) dropping to a floor *below* the board plane. Under
-// the fixed key light that inverts the button's highlight and shadow — the
-// lit edge moves from the top of the tile to the bottom — which is what makes
-// open and closed cells tell apart at a glance. Colour alone could not: a flat
-// board is lit head-on, so every top face shades identically and only the
-// albedo step (COLORS) survives. The 3D boards get this same raised/sunken
-// distinction from SolidBoard's FLAT_FRAC.
-const SUNK_BEVEL = 0.07; // inset of the sunken floor (a narrow rim)
-const SUNK_FRAC = -0.09; // recess depth, as a fraction of the cell's "radius"
 
 interface CellGeom {
   start: number; // first vertex index in the position/color buffers
@@ -86,9 +80,35 @@ export class PolygonBoard extends Group implements BoardMesh {
   private quarterTurn = false;
   private readonly anim = new CellAnimations();
   private meanRadius = 1;
+  /** The relief every cell is cut with (the player's cell style), and the
+   * highest point of it — where a glyph is floated so it clears the top face of
+   * a closed *and* an opened cell. */
+  private readonly profile: CellProfile;
+  private readonly glyphHeight: number;
+  /** How far the win wave's crest is overdriven past the gold tint — the
+   * style's, since an unlit board has no shading to bring the overdrive back
+   * down (see CellStyle.winGlow). */
+  private readonly winGlow: number;
+  /** The style's across-the-tile brightness gradient, if it has one. */
+  private readonly shade: CellStyle["shade"];
+  /** Multiplier on every tile colour. 1 on an unlit style, whose tiles already
+   * arrive as the palette named them; a lit one may pay back what the diffuse
+   * shading takes (see CellStyle.albedo). */
+  private readonly albedo: number;
 
-  constructor(board: Board) {
+  constructor(board: Board, style: CellStyle = cellStyle(null)) {
     super();
+    this.profile = style.flat;
+    this.albedo = style.unlit ? 1 : (style.albedo ?? 1);
+    // The albedo boost already brightens the win crest, so it comes *out* of
+    // the overdrive rather than stacking on top of it: the wave peaks at the
+    // brightness it always did instead of clipping to white there.
+    this.winGlow = (1 + (style.winGlow ?? WIN_GLOW)) / this.albedo - 1;
+    this.shade = style.shade;
+    this.glyphHeight = Math.max(
+      ...this.profile.closed.map((l) => l.height),
+      ...this.profile.open.map((l) => l.height),
+    );
     this.atlas = makeGlyphAtlas();
     this.order = [...board.polygons.keys()];
     this.states = this.order.map(() => ({ kind: "hidden" }));
@@ -116,10 +136,9 @@ export class PolygonBoard extends Group implements BoardMesh {
         poly.reduce((s, p) => s + Math.hypot(p[0] - centroid[0], p[1] - centroid[1]), 0) /
         poly.length;
       const n = poly.length;
-      // n fan triangles for the top face, 2n for the bevel ring
-      const count = 9 * n;
-      for (let e = 0; e < n; e++) faceCell.push(ci);
-      for (let e = 0; e < n; e++) faceCell.push(ci, ci);
+      // n fan triangles for the top face, 2n for each ring of walls under it
+      const count = cellVertexCount(n, this.profile);
+      for (let t = 0; t < count / 3; t++) faceCell.push(ci);
       this.geom.push({
         start: vertexCount,
         count,
@@ -144,16 +163,17 @@ export class PolygonBoard extends Group implements BoardMesh {
 
     const cells = new Mesh(
       geometry,
-      new MeshStandardMaterial({
-        vertexColors: true,
-        roughness: 0.65,
-        metalness: 0,
-        flatShading: true,
-        // Cell polygons come from the board builders with per-board winding, so
-        // some top faces point away from the camera. DoubleSide keeps them lit
-        // and, crucially, raycast-pickable regardless of winding.
-        side: DoubleSide,
-      }),
+      // Cell polygons come from the board builders with per-board winding, so
+      // some top faces point away from the camera. DoubleSide keeps them lit
+      // and, crucially, raycast-pickable regardless of winding.
+      style.unlit
+        ? new MeshBasicMaterial({ vertexColors: true, side: DoubleSide })
+        : new MeshStandardMaterial({
+            vertexColors: true,
+            ...style.material,
+            flatShading: true,
+            side: DoubleSide,
+          }),
     );
     cells.name = "cells";
     this.add(cells);
@@ -197,11 +217,15 @@ export class PolygonBoard extends Group implements BoardMesh {
       this.writeColor(i);
     }
     // Cells are re-cut in place afterwards, so pad the (raised-state) bounds by
-    // the deepest recess a cell can take rather than recomputing per update.
+    // the full relief the style can take rather than recomputing per update.
     geometry.computeBoundingSphere();
     if (geometry.boundingSphere) {
       const maxRadius = this.geom.reduce((m, g) => Math.max(m, g.radius), 0);
-      geometry.boundingSphere.radius += maxRadius * (HEIGHT_FRAC - SUNK_FRAC);
+      const lowest = Math.min(
+        ...this.profile.closed.map((l) => l.height),
+        ...this.profile.open.map((l) => l.height),
+      );
+      geometry.boundingSphere.radius += maxRadius * (this.glyphHeight - lowest);
     }
     this.rebuildGlyphs();
   }
@@ -241,36 +265,45 @@ export class PolygonBoard extends Group implements BoardMesh {
     if (i >= 0) this.writeColor(i);
   }
 
-  /** (Re)cut one cell into the shared position buffer: a raised beveled button
-   * while it is closed, a recess below the board plane once it is opened. */
+  /** (Re)cut one cell into the shared position buffer, at the current cell
+   * style's profile for its state: the loops of the cell's polygon, pulled in
+   * and lifted (or sunk) in turn, with the innermost one filled as the top
+   * face. The two states declare the same number of loops, so the recut lands
+   * in exactly the slice of the buffer the other state wrote. */
   private writeGeometry(i: number): void {
     const g = this.geom[i]!;
-    const open = isOpened(this.states[i]!);
-    const height = g.radius * (open ? SUNK_FRAC : HEIGHT_FRAC);
-    const inset = open ? SUNK_BEVEL : BEVEL;
+    const loops = isOpened(this.states[i]!) ? this.profile.open : this.profile.closed;
     const n = g.poly.length;
-    const outer = g.poly.map((p) => lerp(p, g.center, SHRINK));
-    const top = g.poly.map((p) => lerp(p, g.center, SHRINK + inset));
+    const rings = loops.map((loop) => ({
+      points: g.poly.map((p) => lerp(p, g.center, this.profile.gap + loop.inset)),
+      z: g.radius * loop.height,
+    }));
 
     let v = g.start;
     const put = (p: Vertex, z: number) => this.positionAttr.setXYZ(v++, p[0], p[1], z);
-    // top face: fan from the centroid over the inset polygon
+    // top face: fan from the centroid over the innermost loop
+    const top = rings[rings.length - 1]!;
     for (let e = 0; e < n; e++) {
-      put(g.center, height);
-      put(top[e]!, height);
-      put(top[(e + 1) % n]!, height);
+      put(g.center, top.z);
+      put(top.points[e]!, top.z);
+      put(top.points[(e + 1) % n]!, top.z);
     }
-    // bevel ring: outer edge (z=0) to the inset top edge (z=height) — a wall
-    // sloping up and out on a closed cell, down and in on an opened one
-    for (let e = 0; e < n; e++) {
-      const a = e;
-      const b = (e + 1) % n;
-      put(outer[a]!, 0);
-      put(outer[b]!, 0);
-      put(top[b]!, height);
-      put(outer[a]!, 0);
-      put(top[b]!, height);
-      put(top[a]!, height);
+    // one ring of walls per gap between consecutive loops — sloping up and out
+    // on a closed cell, down and in on an opened one, which is what inverts the
+    // highlight and shadow under the fixed key light
+    for (let r = 1; r < rings.length; r++) {
+      const low = rings[r - 1]!;
+      const high = rings[r]!;
+      for (let e = 0; e < n; e++) {
+        const a = e;
+        const b = (e + 1) % n;
+        put(low.points[a]!, low.z);
+        put(low.points[b]!, low.z);
+        put(high.points[b]!, high.z);
+        put(low.points[a]!, low.z);
+        put(high.points[b]!, high.z);
+        put(high.points[a]!, high.z);
+      }
     }
     this.positionAttr.needsUpdate = true;
   }
@@ -284,12 +317,27 @@ export class PolygonBoard extends Group implements BoardMesh {
     const light = this.anim.lightness(i, now);
     if (light) col.offsetHSL(0, 0, light);
     const win = this.anim.winMix(i, now);
-    if (win) col.lerp(WIN_TINT, win).multiplyScalar(1 + win * WIN_GLOW);
+    if (win) col.lerp(WIN_TINT, win).multiplyScalar(1 + win * this.winGlow);
+    // Last, so everything above works in the 0..1 space it expects — `offsetHSL`
+    // on an already-boosted colour reads a lightness past 1 and clamps to white.
+    col.multiplyScalar(this.albedo);
     const g = this.geom[i]!;
     for (let v = 0; v < g.count; v++) {
-      this.colorAttr.setXYZ(g.start + v, col.r, col.g, col.b);
+      const f = this.vertexShade(v, g.poly.length);
+      this.colorAttr.setXYZ(g.start + v, col.r * f, col.g * f, col.b * f);
     }
     this.colorAttr.needsUpdate = true;
+  }
+
+  /** How much brighter or darker vertex `v` of an `n`-gon cell is drawn than the
+   * cell's own colour — the style's across-the-tile gradient, or 1 when it has
+   * none. The cell's vertices are laid out top fan first (centroid, edge, edge
+   * per triangle), then the rings of walls, so which vertex is the middle of the
+   * top face follows from the index alone. */
+  private vertexShade(v: number, n: number): number {
+    if (!this.shade) return 1;
+    if (v >= 3 * n) return this.shade.rim; // a wall vertex
+    return v % 3 === 0 ? this.shade.center : this.shade.rim;
   }
 
   /** Draw the glyphs counter-rotated (the board is being shown turned). */
@@ -323,7 +371,7 @@ export class PolygonBoard extends Group implements BoardMesh {
       // a flag pop scales this briefly for the spring-in.
       const settled = g.inradius * 0.9;
       const s = settled * this.anim.popScale(i, now);
-      const z = g.radius * HEIGHT_FRAC + 0.01;
+      const z = g.radius * this.glyphHeight + 0.01;
       const [u0, v0, u1, v1] = uv;
       // Quad corners around the cell centre; turned a quarter-turn (with the
       // UVs left alone) when the board itself is drawn turned, so the glyph

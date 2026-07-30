@@ -223,6 +223,44 @@ describe("per-board shape classing", () => {
       lightness(p.revealed) - lightness(p.hidden);
     expect(step(big)).toBeCloseTo(step(small), 3);
   });
+
+  it("separates the sizes on lightness, hue and chroma at once", () => {
+    const tone = (size: number, sizeCount: number): ShapeTone => ({
+      sides: 4,
+      regularity: 1,
+      size,
+      sizeCount,
+    });
+    const closed = (size: number, sizeCount = 3): { l: number; c: number; h: number } =>
+      oklch(cellPalette(tone(size, sizeCount), "flat").hidden);
+    const [smallest, middle, biggest] = [closed(0), closed(1), closed(2)];
+    // Three sizes come out three plainly different tones, ordered by size, and
+    // the smallest is far enough from the biggest to read across a board.
+    expect(biggest!.l - middle!.l).toBeGreaterThan(0.03);
+    expect(middle!.l - smallest!.l).toBeGreaterThan(0.03);
+    expect(biggest!.l - smallest!.l).toBeGreaterThan(0.1);
+    // Hue fans across the sizes, but stays well inside the side count's slot
+    // (~40°), so every size still reads as the same shape.
+    expect(Math.abs(biggest!.h - smallest!.h)).toBeGreaterThan(8);
+    expect(Math.abs(biggest!.h - smallest!.h)).toBeLessThan(30);
+    // A smaller tile asks for more chroma, and on the *opened* tone — the pale
+    // wash, far from the gamut edge, and the one on screen while playing —
+    // it gets it. The closed tone is already at the edge for its hue, so there
+    // the request is clamped and the size shows in lightness alone.
+    const opened = (size: number): number =>
+      oklch(cellPalette(tone(size, 3), "flat").revealed).c;
+    expect(opened(0)).toBeGreaterThan(opened(2));
+
+    // Nothing is pushed *above* the shape's own tone: the biggest tile is drawn
+    // exactly as a shape with one size is, which is what keeps the opened tone
+    // (already near white) from clipping and swallowing the distinction.
+    const only = oklch(cellPalette({ sides: 4, regularity: 1 }, "flat").hidden);
+    expect(closed(2, 3)!.l).toBeCloseTo(only.l, 6);
+    expect(oklch(cellPalette(tone(1, 2), "flat").revealed).l).toBeCloseTo(
+      oklch(cellPalette({ sides: 4, regularity: 1 }, "flat").revealed).l,
+      6,
+    );
+  });
 });
 
 describe("shape colours", () => {

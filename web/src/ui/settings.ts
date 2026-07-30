@@ -1,5 +1,6 @@
 import { screens, themeSpec } from "../config/screens";
 import { allBestTimes } from "../leaderboard";
+import { CELL_STYLE_KEYS, CELL_STYLES, cellStyle } from "../render/cellStyle";
 import { animationsEnabled } from "../settings";
 import { THEME_KEYS } from "./theme";
 
@@ -9,8 +10,9 @@ import { THEME_KEYS } from "./theme";
 // the phone layout, the scrolling body and the back-row idiom for free.
 //
 // Four sections: the best times (a page below, like the theme picker), the
-// theme picker (the pygame palettes, ported in data/ui/screens.json), the
-// animations override, and an About block naming the build.
+// appearance rows (the theme picker — the pygame palettes, ported in
+// data/ui/screens.json — and the cell style, each a page below), the animations
+// override, and an About block naming the build.
 
 /** The gear that opens this page, filled in `currentColor` so it follows the
  * theme's text colour.
@@ -50,9 +52,12 @@ export interface SettingsHost {
   difficulty: string;
   /** The stored animations preference; `null` follows the OS setting. */
   animations: boolean | null;
+  /** The active cell style key (a key in `CELL_STYLES`). */
+  cellStyle: string;
   setTheme(key: string): void;
   setDifficulty(key: string): void;
   setAnimations(pref: boolean | null): void;
+  setCellStyle(key: string): void;
 }
 
 /** How many distinct boards have a recorded time — the Best times row's
@@ -86,6 +91,23 @@ function themeSwatch(key: string): HTMLElement {
   dot.className = "theme-swatch-dot";
   dot.style.background = spec.accent;
   el.append(card, dot);
+  return el;
+}
+
+/** A cell style in miniature: four tiles cut the way that style cuts them, one
+ * of them "opened". CSS rather than a WebGL preview — the point is to tell the
+ * four apart in a list, and a canvas per row would cost a renderer each. The
+ * tiles are deliberately *not* themed (the board never is), so the swatch shows
+ * the board's own grays. */
+function cellStyleSwatch(key: string): HTMLElement {
+  const el = document.createElement("span");
+  el.className = "cell-swatch";
+  el.dataset["cellStyle"] = key;
+  for (let i = 0; i < 4; i++) {
+    const tile = document.createElement("span");
+    tile.className = i === 3 ? "cell-swatch-tile open" : "cell-swatch-tile";
+    el.append(tile);
+  }
   return el;
 }
 
@@ -198,13 +220,47 @@ export function renderThemePicker(host: SettingsHost): DocumentFragment {
   return frag;
 }
 
+/** The cell-style page: how the board's tiles are cut. A page of its own for the
+ * same reason the theme picker is one — it is a list of previews, and the
+ * settings row above it already reports which one is on. A change applies to the
+ * next board (a style fixes the mesh's vertex layout, so a board in play is
+ * never re-cut), which the page says outright rather than leaving the player to
+ * wonder why nothing moved. */
+export function renderCellStylePicker(host: SettingsHost): DocumentFragment {
+  const frag = document.createDocumentFragment();
+  const list = document.createElement("ul");
+  list.className = "menu-list";
+  for (const key of CELL_STYLE_KEYS) {
+    const style = CELL_STYLES[key]!;
+    const check = document.createElement("span");
+    check.className = "settings-check";
+    check.textContent = key === host.cellStyle ? "✓" : "";
+    const { li, btn } = buttonRow(
+      [cellStyleSwatch(key), textBlock(style.label, style.hint), check],
+      () => host.setCellStyle(key),
+      "settings-cell-style",
+    );
+    btn.dataset["cellStyle"] = key;
+    btn.setAttribute("aria-pressed", String(key === host.cellStyle));
+    if (key === host.cellStyle) btn.classList.add("active");
+    list.append(li);
+  }
+  frag.append(list);
+  const note = document.createElement("p");
+  note.className = "settings-footer";
+  note.textContent = "Applies to the next board you open.";
+  frag.append(note);
+  return frag;
+}
+
 /** Build the settings page body. The caller (Menu) supplies the back row and
- * puts this into `.menu-body`; `openThemes` and `openBestTimes` open the pages
- * below it. */
+ * puts this into `.menu-body`; `openThemes`, `openCellStyles` and
+ * `openBestTimes` open the pages below it. */
 export function renderSettings(
   host: SettingsHost,
   openThemes: () => void,
   openBestTimes: () => void,
+  openCellStyles: () => void,
 ): DocumentFragment {
   const frag = document.createDocumentFragment();
 
@@ -251,6 +307,21 @@ export function renderSettings(
   );
   themeBtn.dataset["settingsGroup"] = "theme";
   appearance.append(themeLi);
+
+  const styleChevron = document.createElement("span");
+  styleChevron.className = "menu-entry-chevron";
+  styleChevron.textContent = "›";
+  const { li: styleLi, btn: styleBtn } = buttonRow(
+    [
+      cellStyleSwatch(host.cellStyle),
+      textBlock("Cell style", cellStyle(host.cellStyle).label),
+      styleChevron,
+    ],
+    openCellStyles,
+    "menu-submenu",
+  );
+  styleBtn.dataset["settingsGroup"] = "cell-style";
+  appearance.append(styleLi);
   frag.append(appearance);
 
   // -- Behaviour -------------------------------------------------------------

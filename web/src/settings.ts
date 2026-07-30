@@ -1,4 +1,5 @@
 import { hasDifficulty, screens } from "./config/screens";
+import { DEFAULT_CELL_STYLE, resolveCellStyle } from "./render/cellStyle";
 import { readObject, storage } from "./storage";
 import { DEFAULT_THEME, resolveTheme } from "./ui/theme";
 
@@ -45,12 +46,16 @@ export interface Settings {
   /** `null` follows the OS `prefers-reduced-motion` setting; a boolean is an
    * explicit override from the settings screen. */
   animations: boolean | null;
+  /** A key in `CELL_STYLES` — the relief the board's tiles are cut with. Read
+   * when a board's mesh is built, so it applies from the next board on. */
+  cellStyle: string;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
   theme: DEFAULT_THEME,
   difficulty: screens.defaultDifficulty,
   animations: null,
+  cellStyle: DEFAULT_CELL_STYLE,
 };
 
 /** Bring a record written by an older build up to the current shape. Every
@@ -92,6 +97,11 @@ export function loadSettings(): Settings {
         ? rec["difficulty"]
         : DEFAULT_SETTINGS.difficulty,
     animations: typeof rec["animations"] === "boolean" ? rec["animations"] : null,
+    // A style this build does not have (a record from a newer one, or a
+    // hand-edited key) falls back rather than reaching a mesh builder.
+    cellStyle: resolveCellStyle(
+      typeof rec["cellStyle"] === "string" ? rec["cellStyle"] : null,
+    ),
   };
 }
 

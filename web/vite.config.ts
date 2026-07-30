@@ -64,5 +64,22 @@ export default defineConfig({
   build: {
     target: "es2022",
     sourcemap: false,
+    // Three.js is the bulk of the bundle and changes only when the dependency
+    // is bumped, so it gets a chunk of its own: an app-code deploy then leaves
+    // its hash alone and returning players (and the service worker's precache)
+    // re-download only what actually changed.
+    rollupOptions: {
+      output: {
+        manualChunks: { three: ["three"] },
+      },
+    },
+    // Rollup warns over 500 kB per chunk, which the single pre-split bundle
+    // tripped (626 kB) — the warning CI carried for every build. The split
+    // above is the actual fix (three lands at ~466 kB, the app at ~160 kB), and
+    // the raised limit keeps the warning from coming back as the app grows:
+    // this is a WebGL game whose renderer is not optional, there is
+    // deliberately no size budget here, and a standing warning nobody intends
+    // to act on only trains people to ignore the build log.
+    chunkSizeWarningLimit: 900,
   },
 });
