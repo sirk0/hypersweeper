@@ -577,6 +577,29 @@
         ]
       }
     },
+    "spectre": {
+      "builder": "spectre_board",
+      "args": {
+        "easy": [
+          3,
+          10,
+          64,
+          15.5
+        ],
+        "medium": [
+          4,
+          28,
+          150,
+          12.2
+        ],
+        "hard": [
+          4,
+          65,
+          430,
+          9
+        ]
+      }
+    },
     "elongated": {
       "builder": "archimedean_board",
       "args": {

@@ -45,6 +45,23 @@ the same pass got a **wider size axis** — the isogonal tilings' two or three
 sizes of one polygon now differ in lightness, hue and chroma at once rather than
 by a lightness whisper. See "Cell styles" and "Shape colour coding" below.
 
+**M9 — The Spectre.** A third entry in the **Aperiodic** family
+(`src/boards/aperiodic.ts`): Tile(1,1), the *chiral* aperiodic monotile, tiled by
+the paper's own reflection-free substitution over nine collared cluster types
+(Γ the Mystic + eight collared Spectres), transforms ported from Craig S.
+Kaplan's `spectre` reference. Unlike the Hat port next to it there is **no
+floating point anywhere**: every edge direction is a multiple of 30° and every
+placement is `z ↦ ζᵏz + t` (ζ = e^{iπ/6}), so the whole substitution runs in
+ℤ[ζ12] on integers. That is forced rather than tidy — ℤ[ζ12] is *dense* in the
+plane, so there is no lattice to snap a float vertex back to, and a placement is
+carried as an exact `(rotation mod 12, mirror, translation)` triple instead. The
+tile is held as an equilateral **14-gon**: the 14th corner is the collinear one,
+kept so a neighbour's corner landing there is a shared vertex id and dropped
+again by `corners`/`shapeMetrics`, so it measures as the 13-gon it is drawn as.
+Every inflation composes one reflection, which `spectreBoard` cancels at the
+seed — so no tile is ever mirrored at any level, which is the whole point.
+**All 118 modes.**
+
 **M8 — Congruent-rectangle bonds.** The five brick bonds tiled by one congruent
 **rectangle** rather than by regular polygons (`src/boards/tilings.ts`, ported
 verbatim from the Python side): stacked bond, running bond, basket weave, the
@@ -78,7 +95,8 @@ polygon at several sizes. **All 112 modes.**
 rhombi (exact ℤ[ζ5] vertex arithmetic, Robinson-triangle deflation) and the Hat
 monotile (H/T/P/F metatile substitution in floating point, each vertex snapped
 back to an exact Eisenstein integer id). Both grow generously and trim to the
-centremost cells by Chebyshev distance for a roughly square patch. Their
+centremost cells by Chebyshev distance for a roughly square patch (M9 adds the
+Spectre on the same pattern). Their
 difficulty presets move into the shared `data/presets.json` (so the conformance
 oracle covers them), and the flat tiling picker gains an **Aperiodic** family
 submenu (plane only). **105 modes.**

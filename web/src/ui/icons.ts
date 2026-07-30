@@ -923,6 +923,29 @@ function draw(rawKey: string): string[] {
     const ox = (d - (maxX - minX) * sc) / 2;
     const oy = (d - (maxY - minY) * sc) / 2;
     parts.push(shape(raw.map(([x, y]) => [ox + (x - minX) * sc, oy + (maxY - y) * sc])));
+  } else if (key === "spectre") {
+    // a single Spectre silhouette: Tile(1,1), the equilateral 14-gon, walked
+    // from its edge directions (multiples of 30°). Turned two steps of the
+    // tiling's own 30° rotation, the orientation whose bounding box is nearest
+    // square, so it fills the icon box.
+    const dirs = [0, 10, 1, 3, 0, 2, 5, 7, 4, 6, 6, 8, 11, 9];
+    const raw: P[] = [];
+    let x = 0;
+    let y = 0;
+    for (const direction of dirs) {
+      raw.push([x, y]);
+      x += Math.cos((Math.PI / 6) * (direction + 2));
+      y += Math.sin((Math.PI / 6) * (direction + 2));
+    }
+    const xs = raw.map((p) => p[0]);
+    const ys = raw.map((p) => p[1]);
+    const [minX, maxX] = [Math.min(...xs), Math.max(...xs)];
+    const [minY, maxY] = [Math.min(...ys), Math.max(...ys)];
+    const span = Math.max(maxX - minX, maxY - minY);
+    const sc = (d * 0.86) / span;
+    const ox = (d - (maxX - minX) * sc) / 2;
+    const oy = (d - (maxY - minY) * sc) / 2;
+    parts.push(shape(raw.map(([px, py]) => [ox + (px - minX) * sc, oy + (maxY - py) * sc])));
   } else if (SPHERES.includes(key)) {
     // the real solid, projected: a dark disc behind it closes the silhouette
     // where the outermost faces fall away from the viewer

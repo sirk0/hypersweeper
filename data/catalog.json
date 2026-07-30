@@ -87,6 +87,7 @@
   "soloLabels": {
     "penrose": "Penrose rhombi",
     "hat": "The Hat",
+    "spectre": "The Spectre",
     "sphere": "Pentagonal hexecontahedron",
     "c80": "Chamfered dodecahedron",
     "c180": "Goldberg GP(3,0)",
@@ -135,7 +136,8 @@
     ],
     "aperiodic": [
       "penrose",
-      "hat"
+      "hat",
+      "spectre"
     ],
     "familyLabels": {
       "regular": "Regular",
