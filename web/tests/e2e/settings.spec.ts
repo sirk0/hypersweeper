@@ -148,8 +148,10 @@ test.describe("settings", () => {
     await page.locator('.menu-entry[data-action="back"]').click(); // to the root
     await page.locator('.menu-entry[data-mode="square"]').click(); // Classic
 
-    // The relief is a different mesh per style, so what matters is that the
-    // board still builds, picks and plays: reveal a cell and read it back.
+    // The board reports the style its mesh was actually cut with, so this is
+    // the assertion that the pick reached the renderer rather than only the
+    // settings record — and the relief is a different mesh per style, so the
+    // board must still build, pick and play: reveal a cell and read it back.
     const revealed = await page.evaluate(() => {
       const ms = window.__ms!;
       const cell = ms.cells()[0]!;
@@ -157,8 +159,32 @@ test.describe("settings", () => {
       return ms.state().revealed;
     });
     expect(revealed).toBeGreaterThan(0);
-    expect((await page.evaluate(() => window.__ms?.state()))?.mode).toBe("square");
+    const state = await page.evaluate(() => window.__ms?.state());
+    expect(state?.mode).toBe("square");
+    expect(state?.cellStyle).toBe("flat");
   });
+
+  // Every style, on a flat board and on a solid: the mesh a board is built with
+  // is the style that was picked. `soft` is here because it once looked so much
+  // like `classic` that picking it read as doing nothing at all — a look is
+  // hard to assert, but "the mesh was cut with this profile" is not.
+  for (const key of ["classic", "flat", "soft", "gloss"]) {
+    test(`the ${key} style reaches the mesh of a flat board and a solid`, async ({ page }) => {
+      await page.locator(".menu-settings-btn").click();
+      await page.locator('.menu-entry[data-settings-group="cell-style"]').click();
+      await page.locator(`.menu-entry[data-cell-style="${key}"]`).click();
+
+      for (const mode of ["hex", "sphere"]) {
+        const state = await page.evaluate((m: string) => {
+          window.__ms!.startBoard(m, "easy");
+          return window.__ms!.state();
+        }, mode);
+        expect(state.mode, `${key} ${mode}`).toBe(mode);
+        expect(state.cellStyle, `${key} ${mode}`).toBe(key);
+        expect(state.cellCount, `${key} ${mode}`).toBeGreaterThan(0);
+      }
+    });
+  }
 
   test("the animations toggle persists across a reload", async ({ page }) => {
     await page.locator(".menu-settings-btn").click();

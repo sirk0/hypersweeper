@@ -259,9 +259,12 @@ page: how a cell is *cut*, not what colour it is (that stays the shape
 palette's). A style is one table entry — a stack of concentric loops per cell
 plus a finish — that both board meshes build their geometry from, and it is
 baked in when a board's mesh is built, so it applies from the next board on.
-Two traps: `closed` and `open` must declare the **same loop count** (an opened
-cell is re-cut into the buffer slice the closed one wrote), and `unlit` is a
-**flat board's** setting only — on a solid the shading is what shows the shape.
+Three traps: `closed` and `open` must declare the **same loop count** (an opened
+cell is re-cut into the buffer slice the closed one wrote); `unlit` is a **flat
+board's** setting only — on a solid the shading is what shows the shape; and a
+flat board is lit head-on, so `roughness` says nothing there (a specular finish
+only reads on a solid, as it turns) while the gap, the loop count, `unlit`,
+`albedo` and `shade` are what the plane actually shows.
 There is deliberately **no bundle-size budget or CI gate** for the TypeScript
 app. See "Cell styles" and "Bundle size" in `web/README.md`.
 

@@ -14,6 +14,10 @@ export interface MsState {
   revealed: number;
   cellCount: number;
   is3d: boolean;
+  /** The cell style the board on screen was *built* with — not the stored
+   * preference, which a board opened before the change does not follow. The one
+   * way to assert from outside that picking a style reached the mesh. */
+  cellStyle: string;
 }
 
 export interface MsHook {

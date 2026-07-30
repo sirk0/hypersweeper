@@ -82,6 +82,15 @@ export interface CellStyle {
    * no shading to bring it down, so the same overdrive would clip the crest to
    * plain white — it takes the tint nearly straight. */
   winGlow?: number;
+  /** Multiplier on a tile's colour **where it is lit** — the flat board of a lit
+   * style, and every 3D board. Diffuse shading returns only about 60% of an
+   * albedo here, which is what makes a lit board's saturated orange arrive as a
+   * dusky brown; a style that wants the palette's colour rather than a shaded
+   * version of it pays that back by asking for more albedo than exists. Kept
+   * modest: the opened tone starts near white, so a big boost clips the tiles
+   * the numbers sit on and the board goes chalky. `classic` deliberately has
+   * none — dusky is what it has always looked like. */
+  albedo?: number;
 }
 
 /** The classic tile: a raised beveled button while closed, re-cut as a recess
@@ -140,43 +149,59 @@ const FLAT: CellStyle = {
   material: { roughness: 0.7, metalness: 0 },
   unlit: true,
   winGlow: 0.12,
+  // Only the solids see this (the plane is unlit): it carries the same clean,
+  // unmuddied colour over to a 3D board, which is the whole point of the style.
+  albedo: 1.5,
 };
 
-/** A pillow: two shoulders rounding into a broad top face, and a shallow dish
- * when opened. The flat-shaded facets are what round it — each band catches the
- * key light a little differently, so the tile reads as domed rather than
- * chamfered. Matte, so the roundness comes from shape alone. */
+/** A pillow: three shoulders rounding into a broad top face, and a shallow dish
+ * when opened. This is the one style whose *lighting* does the work — the
+ * flat-shaded bands each catch the key light a little differently, so the tile
+ * reads as domed rather than chamfered, and the light comes from the top left,
+ * so the roundness is directional in a way no gradient across a tile is.
+ *
+ * That is also why it needs the bands: at two loops it was a wider bevel, which
+ * next to Classic looked like Classic and read as "the setting did nothing".
+ * Keep it at four loops with the heights easing off toward the top (0.13 →
+ * 0.21 → 0.25), which is what makes the shading fall away smoothly instead of
+ * stepping. Matte, and with the albedo paid back so the colours are the
+ * palette's rather than a dusky third of them. */
 const SOFT: CellStyle = {
   key: "soft",
   label: "Soft",
-  hint: "Rounded pillows in a soft matte finish",
+  hint: "Rounded matte pillows, lit from the top left",
   flat: {
-    gap: 0.06,
+    gap: 0.075,
     closed: [
       { inset: 0, height: 0 },
-      { inset: 0.1, height: 0.17 },
-      { inset: 0.3, height: 0.23 },
+      { inset: 0.06, height: 0.13 },
+      { inset: 0.16, height: 0.21 },
+      { inset: 0.34, height: 0.25 },
     ],
     open: [
       { inset: 0, height: 0 },
-      { inset: 0.07, height: -0.05 },
-      { inset: 0.22, height: -0.08 },
+      { inset: 0.05, height: -0.04 },
+      { inset: 0.13, height: -0.07 },
+      { inset: 0.28, height: -0.09 },
     ],
   },
   solid: {
-    gap: 0.06,
+    gap: 0.075,
     closed: [
       { inset: 0, height: 0 },
-      { inset: 0.1, height: 0.075 },
-      { inset: 0.3, height: 0.1 },
+      { inset: 0.06, height: 0.05 },
+      { inset: 0.16, height: 0.085 },
+      { inset: 0.34, height: 0.1 },
     ],
     open: [
       { inset: 0, height: 0 },
-      { inset: 0.07, height: 0.02 },
-      { inset: 0.22, height: 0.025 },
+      { inset: 0.05, height: 0.008 },
+      { inset: 0.13, height: 0.015 },
+      { inset: 0.28, height: 0.02 },
     ],
   },
   material: { roughness: 0.85, metalness: 0 },
+  albedo: 1.45,
 };
 
 /** Glass beads: each tile lit from its own middle and falling off to a dark rim
@@ -216,10 +241,16 @@ const GLOSS: CellStyle = {
       { inset: 0.3, height: 0.03 },
     ],
   },
-  material: { roughness: 0.22, metalness: 0.06 },
+  // A solid is lit, and this is where the finish earns its name: at this
+  // roughness the key light lands as a moving highlight that sweeps across the
+  // faces as the board is dragged around, which is the best thing the style
+  // does. Keep it low. The albedo is paid back too, so a turning solid is
+  // coloured glass rather than dusky plastic.
+  material: { roughness: 0.16, metalness: 0.1 },
   unlit: true,
   shade: { center: 1.04, rim: 0.72 },
   winGlow: 0.12,
+  albedo: 1.5,
 };
 
 /** The styles, in the order the settings page lists them. */

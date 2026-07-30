@@ -132,11 +132,19 @@ export class SolidBoard extends Group implements BoardMesh {
   private readonly winGlow: number;
   /** The style's across-the-tile brightness gradient, if it has one. */
   private readonly shade: CellStyle["shade"];
+  /** Multiplier on every tile colour: a 3D board is always lit, so a style that
+   * pays back what the shading takes does so on every board here (see
+   * CellStyle.albedo). */
+  private readonly albedo: number;
 
   constructor(board: Board3D, style: CellStyle = cellStyle(null)) {
     super();
     this.profile = style.solid;
-    this.winGlow = style.unlit ? WIN_GLOW : (style.winGlow ?? WIN_GLOW);
+    this.albedo = style.albedo ?? 1;
+    // A 3D board is always lit, so an unlit style's reduced overdrive does not
+    // apply here; the albedo boost does come out of it, so the win crest peaks
+    // where it always did rather than clipping to white (see PolygonBoard).
+    this.winGlow = (1 + (style.unlit ? WIN_GLOW : (style.winGlow ?? WIN_GLOW))) / this.albedo - 1;
     this.shade = style.shade;
     this.atlas = makeGlyphAtlas();
     this.order = [...board.polygons.keys()];
@@ -475,6 +483,9 @@ export class SolidBoard extends Group implements BoardMesh {
     if (light) col.offsetHSL(0, 0, light);
     const win = this.anim.winMix(i, now);
     if (win) col.lerp(WIN_TINT, win).multiplyScalar(1 + win * this.winGlow);
+    // Last, so everything above works in the 0..1 space it expects — `offsetHSL`
+    // on an already-boosted colour reads a lightness past 1 and clamps to white.
+    col.multiplyScalar(this.albedo);
     const g = this.geom[i]!;
     for (let v = 0; v < g.count; v++) {
       const f = this.vertexShade(v, g.poly.length);

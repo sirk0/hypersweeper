@@ -91,11 +91,19 @@ export class PolygonBoard extends Group implements BoardMesh {
   private readonly winGlow: number;
   /** The style's across-the-tile brightness gradient, if it has one. */
   private readonly shade: CellStyle["shade"];
+  /** Multiplier on every tile colour. 1 on an unlit style, whose tiles already
+   * arrive as the palette named them; a lit one may pay back what the diffuse
+   * shading takes (see CellStyle.albedo). */
+  private readonly albedo: number;
 
   constructor(board: Board, style: CellStyle = cellStyle(null)) {
     super();
     this.profile = style.flat;
-    this.winGlow = style.winGlow ?? WIN_GLOW;
+    this.albedo = style.unlit ? 1 : (style.albedo ?? 1);
+    // The albedo boost already brightens the win crest, so it comes *out* of
+    // the overdrive rather than stacking on top of it: the wave peaks at the
+    // brightness it always did instead of clipping to white there.
+    this.winGlow = (1 + (style.winGlow ?? WIN_GLOW)) / this.albedo - 1;
     this.shade = style.shade;
     this.glyphHeight = Math.max(
       ...this.profile.closed.map((l) => l.height),
@@ -310,6 +318,9 @@ export class PolygonBoard extends Group implements BoardMesh {
     if (light) col.offsetHSL(0, 0, light);
     const win = this.anim.winMix(i, now);
     if (win) col.lerp(WIN_TINT, win).multiplyScalar(1 + win * this.winGlow);
+    // Last, so everything above works in the 0..1 space it expects — `offsetHSL`
+    // on an already-boosted colour reads a lightness past 1 and clamps to white.
+    col.multiplyScalar(this.albedo);
     const g = this.geom[i]!;
     for (let v = 0; v < g.count; v++) {
       const f = this.vertexShade(v, g.poly.length);

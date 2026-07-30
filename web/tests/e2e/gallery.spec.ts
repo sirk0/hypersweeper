@@ -95,6 +95,21 @@ test.describe("board gallery", () => {
     });
   }
 
+  // ...and on a solid, where a style shows something else entirely: the plane
+  // is lit head-on, so a 3D board is the only place the finish (Glossy's
+  // specular sheen) and the paid-back albedo actually read.
+  for (const style of ["flat", "soft", "gloss"]) {
+    test(`sphere in the ${style} cell style`, async ({ page }) => {
+      await page.addInitScript((key: string) => {
+        localStorage.setItem("ms:settings", JSON.stringify({ version: 2, cellStyle: key }));
+      }, style);
+      await page.goto("/?mode=sphere&difficulty=easy&seed=1");
+      await expect(page.locator("body[data-ready]")).toBeVisible();
+      await page.waitForTimeout(150);
+      await expect(page).toHaveScreenshot(`sphere-${style}.png`);
+    });
+  }
+
   test("revealed cube with numbers, a flag and an exploded mine", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator("body[data-ready]")).toBeVisible();

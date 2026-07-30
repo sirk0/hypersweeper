@@ -24,6 +24,8 @@ export class GameSession {
   readonly game: Game;
   readonly mode: string;
   readonly difficulty: string;
+  /** The cell style this board's mesh was cut with (see render/cellStyle.ts). */
+  readonly cellStyle: string;
 
   private exploded: CellId | null = null;
   private startedAt: number | null = null;
@@ -53,6 +55,7 @@ export class GameSession {
     // effect on the next board (it can only be changed from the menu, where no
     // game is in progress).
     const style = cellStyle(opts.cellStyle);
+    this.cellStyle = style.key;
     this.mesh = isBoard3D(this.board)
       ? new SolidBoard(this.board, style)
       : new PolygonBoard(this.board, style);

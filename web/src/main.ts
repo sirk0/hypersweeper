@@ -592,6 +592,7 @@ class App {
           revealed: s ? s.game.revealed : 0,
           cellCount: s ? s.game.cells.length : 0,
           is3d: s?.is3d ?? false,
+          cellStyle: s?.cellStyle ?? this.settings.cellStyle,
         };
       },
     });

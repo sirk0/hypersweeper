@@ -596,19 +596,20 @@ body {
   background: #fbe3ca;
 }
 
-/* Soft: rounded pillows, the opened one dished. */
+/* Soft: rounded pillows lit from the top left, the opened one dished. Brighter
+   than Classic's tiles: the style pays back what the shading takes (albedo). */
 .cell-swatch[data-cell-style="soft"] {
-  gap: 2px;
+  gap: 3px;
   padding: 2px;
 }
 
 .cell-swatch[data-cell-style="soft"] .cell-swatch-tile {
-  border-radius: 6px;
-  background: radial-gradient(circle at 34% 28%, #a8813f, #7a5b2c);
+  border-radius: 7px;
+  background: radial-gradient(circle at 32% 26%, #cf9142, #9a6a2c);
 }
 
 .cell-swatch[data-cell-style="soft"] .cell-swatch-tile.open {
-  background: radial-gradient(circle at 66% 72%, #c3bbb1, #97918a);
+  background: radial-gradient(circle at 68% 74%, #ded6cb, #a49d94);
 }
 
 /* Glossy: unlit beads, each lit from its own middle. */

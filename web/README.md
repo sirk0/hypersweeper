@@ -34,16 +34,17 @@ service worker then caches, and looking right is worth more here than shaving
 kilobytes off first load, so nothing in CI fails on size (see "Bundle size"
 below). **All 112 modes, polished.**
 
-**M9 — Cell styles.** How a cell is *cut* is now the player's
+**M10 — Cell styles.** How a cell is *cut* is now the player's
 (`src/render/cellStyle.ts`, Settings › Cell style): **Classic** (the beveled
 button), **Flat** (unlit plates in flat colour, wide gaps), **Soft** (rounded
-matte pillows) and **Glossy** (unlit beads, each lit from its own middle). A
-style is one table entry — a stack of concentric loops per cell, plus a finish —
-and both meshes build their geometry from it, so the two renderers stayed as they
-were. Colour is untouched by all of it: it is still the shape palette's, which in
-the same pass got a **wider size axis** — the isogonal tilings' two or three
-sizes of one polygon now differ in lightness, hue and chroma at once rather than
-by a lightness whisper. See "Cell styles" and "Shape colour coding" below.
+matte pillows lit from the top left) and **Glossy** (unlit beads on the plane, a
+specular sheen that sweeps across a solid as it is dragged around). A style is
+one table entry — a stack of concentric loops per cell, plus a finish — and both
+meshes build their geometry from it, so the two renderers stayed as they were.
+Colour is untouched by all of it: it is still the shape palette's, which in the
+same pass got a **wider size axis** — the isogonal tilings' two or three sizes of
+one polygon now differ in lightness, hue and chroma at once rather than by a
+lightness whisper. See "Cell styles" and "Shape colour coding" below.
 
 **M9 — The Spectre.** A third entry in the **Aperiodic** family
 (`src/boards/aperiodic.ts`): Tile(1,1), the *chiral* aperiodic monotile, tiled by
@@ -359,9 +360,11 @@ carries no standing warning nobody intends to act on.
 How a cell is **cut**, chosen in Settings › Cell style and stored with the other
 preferences. Four: **Classic** (the beveled button that sinks when opened),
 **Flat** (unlit plates in flat colour with wide gaps), **Soft** (rounded matte
-pillows) and **Glossy** (unlit beads, each lit from its own middle). It is only
-the relief and the finish — the *colour* of a cell is the shape palette's, in
-every style, so the two can be retuned apart.
+pillows, the one style whose *lighting* does the work) and **Glossy** (unlit
+beads on the plane; on a solid, a specular sheen that sweeps across the faces as
+the board is dragged around). It is only the relief and the finish — the *colour*
+of a cell is the shape palette's, in every style, so the two can be retuned
+apart.
 
 A cell is a stack of concentric **loops** of its own polygon: loop 0 is the
 tile's outline, each further one is pulled in toward the centroid and lifted (or
@@ -382,18 +385,33 @@ in two renderers. Four things to know before adding or retuning one:
 - **A flat board is lit head-on**, so a shinier material has no angle to catch a
   highlight at: on the plane, `roughness` is nearly invisible and the visible
   levers are the gap, the loop layout, `unlit` (draw the palette colour as it is
-  rather than the third of it that diffuse shading returns) and `shade` (a
-  brightness gradient from the middle of the top face to its rim, interpolated by
-  the rasteriser). Glossy is a *gradient*, not a specular highlight, for exactly
-  this reason.
+  rather than the ~60% of it that diffuse shading returns), `albedo` (ask for
+  more colour than exists, so a *lit* style gets the palette's colour back
+  without giving up its shading) and `shade` (a brightness gradient from the
+  middle of the top face to its rim, interpolated by the rasteriser). On the
+  plane Glossy is a *gradient*, not a specular highlight, for exactly this
+  reason — the highlight is what it does on a solid.
+- **Two loops next to Classic is not a style.** Soft shipped at two loops once
+  and read as "the setting did nothing": on the plane it differs from Classic
+  only in the width of one bevel band. What separates a lit style from Classic is
+  loop *count* (four, with the heights easing off toward the top, so the shading
+  falls away instead of stepping), the gap, and the albedo. If a new style looks
+  like one that is already there, it is not worth a row in the picker.
 - **`unlit` is a flat board's business.** On a solid the shading is what shows
   the shape — an unlit sphere is a flat disc of tiles — so a 3D board keeps its
-  lit material whatever the style, and only the relief and the gap follow. Each
-  style therefore carries a `flat` and a `solid` profile, the latter at the lower
-  relief a curved surface needs (cells there tilt against each other, and a tall
-  plateau shingles over its neighbours at the silhouette) and never below the
-  grout. A two-sided surface (cylinder, Möbius, Klein) draws flat tiles whatever
-  the style, so only the gap reaches it.
+  lit material whatever the style, and only the relief, the gap, the finish and
+  the albedo follow. Each style therefore carries a `flat` and a `solid` profile,
+  the latter at the lower relief a curved surface needs (cells there tilt against
+  each other, and a tall plateau shingles over its neighbours at the silhouette)
+  and never below the grout. A two-sided surface (cylinder, Möbius, Klein) draws
+  flat tiles whatever the style, so only the gap reaches it.
+- **`albedo` is applied last, and comes out of the win glow.** Last, because
+  everything else in `writeColor` (the hover lift, the reveal ripple) works in
+  0..1 — `offsetHSL` on an already-boosted colour reads a lightness past 1 and
+  clamps to white. Out of the glow, because the win crest is deliberately
+  overdriven past white for the shading to bring back down: multiplied by the
+  boost as well it would clip, so the boost is divided out of the overdrive and
+  the wave peaks where it always did.
 
 Cell styles are **not** in `data/ui/screens.json`: they are geometry for this
 renderer, with no pygame counterpart for the shared config to keep in step.
