@@ -13,7 +13,7 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   symbolic/barycentric keys in 3D); two cells are neighbors when they
   share a vertex. Modules: `core` (`Board`/`Board3D`, adjacency, topology
   invariants), `tilings` (flat tilings + the `ARCH_TILINGS` registry and
-  `_ArchTemplate` system), `aperiodic` (Penrose, Hat), `solids` (spherical
+  `_ArchTemplate` system), `aperiodic` (Penrose, Hat, Spectre), `solids` (spherical
   polyhedra, cube, tetrahedron, frames), `surfaces` (donut/cylinder/
   Möbius/Klein-bottle wrapping via shared immersion helpers), `catalog`
   (the menu, **derived** from `SURFACE_SPECS`/`TILING_SPECS`), `presets`
@@ -68,9 +68,21 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   centre (`archimedean_board` keeps an `nx`×`ny` domain block of the
   `_ArchTemplate` centred on the tiling's biggest tile, so the window maps
   onto itself under the tiling's point group); for aperiodic ones
-  (`penrose_board`, `hat_board`) grow generously and trim to the `keep`
-  centremost cells by Chebyshev distance (`max(|dx|, |dy|)`). See the
-  `AGENT NOTE` in `boards/tilings.py`.
+  (`penrose_board`, `hat_board`, `spectre_board`) grow generously and trim
+  to the `keep` centremost cells by Chebyshev distance (`max(|dx|, |dy|)`)
+  — generously enough that `keep` is a small fraction of the patch, or the
+  substitution's own star-shaped outline is what the board reads as. See
+  the `AGENT NOTE` in `boards/tilings.py`.
+  The three aperiodic boards each keep exact vertex ids in their own ring:
+  ℤ[ζ5] (Penrose), the Eisenstein lattice (Hat) and ℤ[ζ12] (Spectre). Only
+  the first two are discrete — ℤ[ζ12] is dense in the plane, so
+  `spectre_board` cannot snap a float vertex back to a lattice the way the
+  Hat does, and instead carries every placement of the paper's chiral
+  substitution as an exact `(rotation mod 12, mirror, translation)` triple.
+  Its tile is Tile(1,1) held as an equilateral **14-gon**: the 14th corner
+  is the collinear one, kept so a neighbour's corner landing there is a
+  shared vertex id, dropped again by `shapeMetrics`/`corners` so the tile
+  measures as the 13-gon it is drawn as.
 - `minesweeper/gui.py` — pygame UI. `MenuScreen` (a geometry-first home
   page — Classic / Flat / Flat manifolds / Sphere / Polyhedra. Classic
   launches flat squares; Flat (the plane) and each flat manifold (cylinder,

@@ -6,6 +6,7 @@ import pytest
 
 from minesweeper.boards import (
     _ARCH_CONFIGS,
+    _SPECTRE_OUTLINE,
     APERIODIC_MODES,
     ARCH_TILINGS,
     DIFFICULTIES,
@@ -17,6 +18,8 @@ from minesweeper.boards import (
     SURFACE_LABELS,
     TILINGS,
     _arch_template,
+    _spectre_leaves,
+    _z12_to_xy,
     arch_klein_board,
     arch_mobius_board,
     arch_torus_board,
@@ -41,6 +44,7 @@ from minesweeper.boards import (
     newell_normal,
     penrose_board,
     snub_dodecahedron_board,
+    spectre_board,
     sphere_board,
     sphere_triangle_board,
     square_board,
@@ -327,6 +331,151 @@ class TestHat:
             for polygon in board.polygons.values() for i in range(13)
         )
         assert min_gap > shortest_edge * 0.5
+
+
+class TestSpectre:
+    """The Spectre (Tile(1,1)), the chiral aperiodic monotile.
+
+    These are the tests that say the port of the paper's substitution is
+    right: the tile is the published equilateral 14-gon, no placement is
+    ever mirrored, and the patch is an exact edge-to-edge tiling of a
+    simply connected region (no overlaps, no gaps).
+    """
+
+    def test_cell_counts(self):
+        # a single Spectre (Delta) cluster inflated N times. A Spectre
+        # cluster expands to 7 Spectres + 1 Mystic and a Mystic to 6 + 1
+        # (substitution matrix [[7, 6], [1, 1]]), and a Mystic is *two*
+        # tiles, so tiles = s + 2m over that recurrence.
+        assert len(spectre_board(0, 1).adjacency) == 1
+        assert len(spectre_board(1, 2).adjacency) == 9
+        assert len(spectre_board(2, 10).adjacency) == 71
+        assert len(spectre_board(3, 28).adjacency) == 559
+        assert len(spectre_board(4, 65).adjacency) == 4401
+        assert len(spectre_board(3, 10, keep=64).adjacency) == 64
+        assert len(spectre_board(4, 65, keep=430).adjacency) == 430
+
+    def test_the_tile_is_the_published_equilateral_14_gon(self):
+        # Tile(1,1) is "a 13-gon that is also an equilateral 14-gon, two of
+        # whose edges are collinear": 14 unit edges, and the interior angle
+        # multiset of the paper (one 180 degrees -- the flat vertex where
+        # the collinear pair meets).
+        polygon = [_z12_to_xy(v) for v in _SPECTRE_OUTLINE]
+        assert len(polygon) == 14
+        edges = [math.dist(polygon[i], polygon[(i + 1) % 14]) for i in range(14)]
+        assert all(abs(e - 1) < 1e-12 for e in edges)
+        area = sum(a[0] * b[1] - b[0] * a[1]
+                   for a, b in zip(polygon, polygon[1:] + polygon[:1]))
+        sign = -1 if area > 0 else 1  # measure into the tile either winding
+        angles = []
+        for i in range(14):
+            a, b, c = polygon[i - 1], polygon[i], polygon[(i + 1) % 14]
+            v1, v2 = (a[0] - b[0], a[1] - b[1]), (c[0] - b[0], c[1] - b[1])
+            angles.append(round(math.degrees(math.atan2(
+                sign * (v1[0] * v2[1] - v1[1] * v2[0]),
+                v1[0] * v2[0] + v1[1] * v2[1])) % 360))
+        assert sum(angles) == (14 - 2) * 180
+        # the published Tile(1,1) angle sequence, with its two reflex corners
+        # and the lone 180 at the flat vertex
+        assert angles == [90, 240, 90, 120, 270, 120, 90, 120, 270, 120,
+                          180, 120, 90, 240]
+
+    def test_every_cell_is_the_same_tile_up_to_rotation(self):
+        # a monotile, and a *chiral* one: every cell is the same 14-gon
+        # reached by a rotation alone, never a reflection. Reading each
+        # cell's edge directions (all multiples of 30 degrees) as a cyclic
+        # sequence, a rotation shifts every entry by the same amount --
+        # a reflection would reverse the sequence instead.
+        board = spectre_board(3, 28)
+        base = None
+        for polygon in board.polygons.values():
+            assert len(polygon) == 14
+            steps = []
+            for i in range(14):
+                a, b = polygon[i], polygon[(i + 1) % 14]
+                assert abs(math.dist(a, b) - math.dist(polygon[0], polygon[1])) < 1e-9
+                steps.append(round(math.degrees(
+                    math.atan2(b[1] - a[1], b[0] - a[0])) / 30) % 12)
+            if base is None:
+                base = steps
+            offsets = {(s - t) % 12 for s, t in zip(steps, base)}
+            assert len(offsets) == 1, "tile is not a pure rotation of the others"
+
+    def test_no_placement_is_ever_mirrored(self):
+        # the whole point of the chiral tiling: the substitution places
+        # tiles by rotation and translation only. Each inflation composes
+        # one reflection, which spectre_board cancels at the seed, so the
+        # mirror flag is clear at every level.
+        for levels in range(5):
+            assert {mirrored for _, (_, mirrored, _) in _spectre_leaves(levels)} == {0}
+
+    def test_mystics_are_a_fixed_fraction_of_the_tiles(self):
+        # the Mystic clusters (label Gamma1/Gamma2, two tiles each) are
+        # 2*63 of the 559 tiles at level 3 -- the m of the [[7, 6], [1, 1]]
+        # recurrence, so the labels track the clusters they came from
+        board = spectre_board(3, 28)
+        mystic = sum(1 for cell in board.adjacency if cell[0].startswith("Gamma"))
+        assert mystic == 2 * 63
+
+    def test_vertices_are_exact(self):
+        # exact Z[zeta12] ids: distinct keys are never closer than half the
+        # (unit) edge, so there are no floating-point near-duplicates. Unlike
+        # the hat's Eisenstein lattice, Z[zeta12] is dense in the plane --
+        # this is what the integer-only placements buy.
+        board = spectre_board(3, 10, keep=64)
+        points = sorted({p for polygon in board.polygons.values() for p in polygon})
+        min_gap = min(
+            math.dist(a, b)
+            for i, a in enumerate(points) for b in points[i + 1:i + 30]
+        )
+        shortest_edge = min(
+            math.dist(polygon[i], polygon[(i + 1) % 14])
+            for polygon in board.polygons.values() for i in range(14)
+        )
+        assert min_gap > shortest_edge * 0.5
+
+    def test_tiling_is_edge_to_edge(self):
+        # every tile edge is shared by at most two tiles, on exact ids --
+        # so no tile's corner lands in the middle of another's edge (which
+        # is why the flat vertex has to stay in the polygon)
+        board = spectre_board(3, 28)
+        shared = Counter()
+        for polygon in board.polygons.values():
+            for i in range(14):
+                shared[frozenset((polygon[i], polygon[(i + 1) % 14]))] += 1
+        assert max(shared.values()) == 2
+
+    def test_tiles_cover_the_patch_exactly(self):
+        # the strongest check on the substitution: the tile areas sum to the
+        # area enclosed by the patch's outer boundary, so there is neither an
+        # overlap nor a gap anywhere. The boundary is the directed edges with
+        # no opposite partner, walked as one cycle.
+        board = spectre_board(2, 10)
+
+        def shoelace(points):
+            return abs(sum(a[0] * b[1] - b[0] * a[1] for a, b
+                           in zip(points, points[1:] + points[:1]))) / 2
+
+        directed = Counter()
+        for polygon in board.polygons.values():
+            for i in range(14):
+                directed[(polygon[i], polygon[(i + 1) % 14])] += 1
+        # each directed edge used once: consistent winding, no doubled tile
+        assert set(directed.values()) == {1}
+
+        step = {a: b for a, b in directed if (b, a) not in directed}
+        assert len(step) == len({b for _, b in step.items()})
+        start = next(iter(step))
+        loop, at = [start], step[start]
+        while at != start:
+            loop.append(at)
+            at = step[at]
+        assert len(loop) == len(step)  # the boundary is a single cycle
+
+        tile_area = shoelace([_z12_to_xy(v) for v in _SPECTRE_OUTLINE])
+        scale = math.dist(*list(board.polygons.values())[0][:2])
+        assert shoelace(loop) == pytest.approx(
+            tile_area * scale**2 * len(board.polygons), rel=1e-9)
 
 
 class TestNeighborCounts:

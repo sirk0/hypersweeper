@@ -182,6 +182,20 @@ describe("per-board shape classing", () => {
     }
   });
 
+  it("measures the Spectre as the 13-gon it is drawn as", () => {
+    // Tile(1,1) is carried as an equilateral 14-gon so that the flat vertex —
+    // where a neighbour really does plant a corner — is a vertex id. It is
+    // collinear, so the tile is drawn and measured as a tridecagon, and being
+    // a monotile the whole board is one shape class in one size.
+    const tones = [...classifyShapes(buildBoard("spectre", "easy").polygons).values()];
+    for (const t of tones) {
+      expect(t.sides).toBe(13);
+      expect(t.variantCount).toBe(1);
+      expect(t.sizeCount).toBe(1);
+    }
+    expect(new Set(tones.map((t) => `${t.sides}/${t.regularity}`)).size).toBe(1);
+  });
+
   it("splits one shape into its sizes, and only where they really differ", () => {
     const sizes = (mode: string): number =>
       [...classifyShapes(buildBoard(mode, "easy").polygons).values()][0]!.sizeCount!;

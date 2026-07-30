@@ -568,3 +568,328 @@ export function hatBoard(
   });
   return finalizeFlat("hat", cellMap, positions, mineCount, scale);
 }
+
+// -- The Spectre: a chiral aperiodic monotile --------------------------------
+//
+// Tile(1,1) (Smith–Myers–Kaplan–Goodman-Strauss, 2023): a 13-gon that is also an
+// equilateral 14-gon, two of whose edges are collinear. Forbid reflections and
+// it tiles the plane only aperiodically, and this board is that reflection-free
+// tiling, grown by the paper's substitution over nine collared cluster types
+// (Γ, the Mystic, plus the eight collared Spectres Δ Θ Λ Ξ Π Σ Φ Ψ). Transforms
+// ported from Craig S. Kaplan's "spectre" reference
+// (cs.uwaterloo.ca/~csk/spectre/spectre.js, © 2023 Craig S. Kaplan).
+//
+// Unlike the Hat port above there is no floating point anywhere: every edge
+// direction is a multiple of 30° and every placement is z ↦ ζᵏz + t with
+// ζ = exp(iπ/6), so all of it runs in ℤ[ζ12] with integer arithmetic. That is
+// not a nicety here — ℤ[ζ12] is *dense* in the plane, not discrete, so there is
+// no lattice to snap a float vertex back to. Line-for-line port of
+// minesweeper/boards/aperiodic.py; see that file for the fuller commentary.
+
+/** A point of ℤ[ζ12] as 4 integer coefficients over the basis (1, ζ, ζ², ζ³),
+ * reduced by ζ⁴ = ζ² − 1. Vertex ids are these tuples, so shared-vertex
+ * adjacency is exact. */
+type Z12Point = readonly [number, number, number, number];
+
+const Z12_ZERO: Z12Point = [0, 0, 0, 0];
+
+/** Multiply by ζ, i.e. rotate 30°. */
+function zeta12Mul(p: Z12Point): Z12Point {
+  const [a, b, c, d] = p;
+  return [-d, a, b + d, c];
+}
+
+function z12Add(p: Z12Point, q: Z12Point): Z12Point {
+  return [p[0] + q[0], p[1] + q[1], p[2] + q[2], p[3] + q[3]];
+}
+
+function z12Sub(p: Z12Point, q: Z12Point): Z12Point {
+  return [p[0] - q[0], p[1] - q[1], p[2] - q[2], p[3] - q[3]];
+}
+
+/** Multiply by ζᵏ, i.e. rotate k·30° about the origin. */
+function z12Rot(p: Z12Point, k: number): Z12Point {
+  let out = p;
+  for (let i = ((k % 12) + 12) % 12; i > 0; i--) out = zeta12Mul(out);
+  return out;
+}
+
+/** Complex conjugation, which stays in the ring (ζ¹¹ = ζ − ζ³, ζ¹⁰ = 1 − ζ²,
+ * ζ⁹ = −ζ³). */
+function z12Conj(p: Z12Point): Z12Point {
+  const [a, b, c, d] = p;
+  return [a + c, b, -c, -b - d];
+}
+
+const ZETA12_BASIS: Vertex[] = [0, 1, 2, 3].map((k) => [
+  Math.cos((Math.PI * k) / 6),
+  Math.sin((Math.PI * k) / 6),
+]);
+
+function z12ToXy(p: Z12Point): Vertex {
+  let x = 0;
+  let y = 0;
+  for (let i = 0; i < 4; i++) {
+    x += p[i]! * ZETA12_BASIS[i]![0];
+    y += p[i]! * ZETA12_BASIS[i]![1];
+  }
+  return [x, y];
+}
+
+const z12Key = (p: Z12Point): string => p.join(",");
+
+/** Lexicographic order on ℤ[ζ12] coefficient tuples (matches Python tuple sort;
+ * used only as the `keep` trim's tie-break). */
+function z12Cmp(a: Z12Point, b: Z12Point): number {
+  for (let i = 0; i < 4; i++) {
+    if (a[i]! !== b[i]!) return a[i]! - b[i]!;
+  }
+  return 0;
+}
+
+const Z12_POWERS: Z12Point[] = [[1, 0, 0, 0]];
+for (let k = 0; k < 11; k++) Z12_POWERS.push(zeta12Mul(Z12_POWERS[k]!));
+
+// The 14 edge directions of Tile(1,1) in units of 30°, read off Kaplan's
+// `spectre` polygon (its frame, since the substitution transforms are stated in
+// it). Every edge is a unit step; the repeated 6 is the collinear pair, whose
+// shared endpoint is the flat 180° vertex.
+const SPECTRE_DIRS = [0, 10, 1, 3, 0, 2, 5, 7, 4, 6, 6, 8, 11, 9];
+
+// The tile's 14 corners, as the closed walk along SPECTRE_DIRS. The flat vertex
+// (index 10) stays in the polygon: the tiling is edge to edge with every edge a
+// unit step, so a neighbour really does plant a corner there and it must be a
+// vertex id for shared-vertex adjacency to find it. Being collinear it does not
+// change the drawn tile, and `corners`/`shapeMetrics` drop it before measuring,
+// so the tile still reads as the 13-gon it is.
+const SPECTRE_OUTLINE: Z12Point[] = (() => {
+  const points: Z12Point[] = [];
+  let at: Z12Point = Z12_ZERO;
+  for (const direction of SPECTRE_DIRS) {
+    points.push(at);
+    at = z12Add(at, Z12_POWERS[direction]!);
+  }
+  return points;
+})();
+
+/** The four "key" corners Kaplan's rules place clusters by (his spectre_keys). */
+const SPECTRE_QUAD: Z12Point[] = [3, 5, 7, 11].map((i) => SPECTRE_OUTLINE[i]!);
+
+/** The rigid motion z ↦ ζ^rot·(mirrored ? conj z : z) + trans. */
+type Placement = readonly [number, number, Z12Point];
+
+const PLACE_IDENT: Placement = [0, 0, Z12_ZERO];
+
+/** Kaplan's R = [-1,0,0,0,1,0], the reflection (x, y) ↦ (−x, y): as a complex
+ * map z ↦ −conj(z) = ζ⁶·conj(z). Every inflation composes one. */
+const SPECTRE_REFLECT: Placement = [6, 1, Z12_ZERO];
+
+function placePoint(at: Placement, p: Z12Point): Z12Point {
+  const [rot, mirrored, trans] = at;
+  return z12Add(z12Rot(mirrored ? z12Conj(p) : p, rot), trans);
+}
+
+/** `a` after `b`. Conjugation negates the inner rotation and conjugates the
+ * inner translation, which is all the mirror flag costs. */
+function placeCompose(a: Placement, b: Placement): Placement {
+  const [aRot, aMirror, aTrans] = a;
+  const [bRot, bMirror, bTrans] = b;
+  const inner = aMirror ? z12Conj(bTrans) : bTrans;
+  return [
+    (((aMirror ? aRot - bRot : aRot + bRot) % 12) + 12) % 12,
+    aMirror ^ bMirror,
+    z12Add(aTrans, z12Rot(inner, aRot)),
+  ];
+}
+
+// Kaplan's t_rules: (turn in degrees, key corner of the tile just placed, key
+// corner of the tile being placed).
+const SPECTRE_T_RULES: [number, number, number][] = [
+  [60, 3, 1], [0, 2, 0], [60, 3, 1], [60, 3, 1],
+  [0, 2, 0], [60, 3, 1], [-120, 3, 3],
+];
+
+// Kaplan's super_rules: which cluster type each of the eight child slots takes,
+// per parent cluster type. Slot 2 is empty for the Mystic (Gamma), which is why
+// it expands to six Spectres where the others expand to seven.
+const SPECTRE_RULES: Record<string, (string | null)[]> = {
+  Gamma:  ["Pi",  "Delta", null,  "Theta", "Sigma", "Xi",  "Phi",    "Gamma"],
+  Delta:  ["Xi",  "Delta", "Xi",  "Phi",   "Sigma", "Pi",  "Phi",    "Gamma"],
+  Theta:  ["Psi", "Delta", "Pi",  "Phi",   "Sigma", "Pi",  "Phi",    "Gamma"],
+  Lambda: ["Psi", "Delta", "Xi",  "Phi",   "Sigma", "Pi",  "Phi",    "Gamma"],
+  Xi:     ["Psi", "Delta", "Pi",  "Phi",   "Sigma", "Psi", "Phi",    "Gamma"],
+  Pi:     ["Psi", "Delta", "Xi",  "Phi",   "Sigma", "Psi", "Phi",    "Gamma"],
+  Sigma:  ["Xi",  "Delta", "Xi",  "Phi",   "Sigma", "Pi",  "Lambda", "Gamma"],
+  Phi:    ["Psi", "Delta", "Psi", "Phi",   "Sigma", "Pi",  "Phi",    "Gamma"],
+  Psi:    ["Psi", "Delta", "Psi", "Phi",   "Sigma", "Psi", "Phi",    "Gamma"],
+};
+
+/** The Mystic's two tiles: one at rest and one rotated 30° about the tile's
+ * corner 8 (Kaplan's Gamma1/Gamma2). */
+const SPECTRE_MYSTIC: [string, Placement][] = [
+  ["Gamma1", PLACE_IDENT],
+  ["Gamma2", [1, 0, SPECTRE_OUTLINE[8]!]],
+];
+
+/**
+ * One inflation step, from a cluster's key quad to the next: the eight child
+ * placements (in SPECTRE_RULES slot order) and the inflated quad, exactly as
+ * Kaplan's buildSupertiles does — the placements depend on the quad, so they are
+ * recomputed at every level.
+ */
+function spectreSupertiles(quad: Z12Point[]): [Placement[], Z12Point[]] {
+  let placements: Placement[] = [PLACE_IDENT];
+  let turned: Placement = PLACE_IDENT;
+  let corners = [...quad];
+  let total = 0;
+  for (const [turn, fromCorner, toCorner] of SPECTRE_T_RULES) {
+    total += turn;
+    if (turn) {
+      turned = [((Math.trunc(total / 30) % 12) + 12) % 12, 0, Z12_ZERO];
+      corners = quad.map((p) => placePoint(turned, p));
+    }
+    const target = placePoint(placements[placements.length - 1]!, quad[fromCorner]!);
+    const shift: Placement = [0, 0, z12Sub(target, corners[toCorner]!)];
+    placements.push(placeCompose(shift, turned));
+  }
+  placements = placements.map((at) => placeCompose(SPECTRE_REFLECT, at));
+  const inflated = [
+    placePoint(placements[6]!, quad[2]!),
+    placePoint(placements[5]!, quad[1]!),
+    placePoint(placements[3]!, quad[2]!),
+    placePoint(placements[0]!, quad[1]!),
+  ];
+  return [placements, inflated];
+}
+
+/** Every tile of a level-`levels` Spectre cluster, as [label, placement]. */
+function spectreLeaves(levels: number): [string, Placement][] {
+  let quad = SPECTRE_QUAD;
+  const tables: Placement[][] = [];
+  for (let i = 0; i < levels; i++) {
+    const [placements, inflated] = spectreSupertiles(quad);
+    quad = inflated;
+    tables.push(placements);
+  }
+
+  // Every inflation composes one reflection, so a patch grown an odd number of
+  // levels comes out mirrored as a whole. Seeding the descent with that same
+  // reflection cancels it, and every tile is then unmirrored at any level — the
+  // reflection-free tiling this board is.
+  let clusters: [string, Placement][] = [
+    ["Delta", levels % 2 ? SPECTRE_REFLECT : PLACE_IDENT],
+  ];
+  for (let i = tables.length - 1; i >= 0; i--) {
+    const placements = tables[i]!;
+    const next: [string, Placement][] = [];
+    for (const [label, at] of clusters) {
+      SPECTRE_RULES[label]!.forEach((child, slot) => {
+        if (child !== null) next.push([child, placeCompose(at, placements[slot]!)]);
+      });
+    }
+    clusters = next;
+  }
+
+  const tiles: [string, Placement][] = [];
+  for (const [label, at] of clusters) {
+    if (label === "Gamma") {
+      // a Mystic is a cluster of two tiles, not one
+      for (const [sub, subAt] of SPECTRE_MYSTIC) tiles.push([sub, placeCompose(at, subAt)]);
+    } else {
+      tiles.push([label, at]);
+    }
+  }
+  return tiles;
+}
+
+interface SpectreRow {
+  label: string;
+  ids: Z12Point[];
+  sortedIds: Z12Point[];
+  cx: number;
+  cy: number;
+}
+
+/** Lexicographic order on two tiles' sorted vertex-id lists (equal length). */
+function cmpSortedZ12(A: Z12Point[], B: Z12Point[]): number {
+  const n = Math.min(A.length, B.length);
+  for (let i = 0; i < n; i++) {
+    const c = z12Cmp(A[i]!, B[i]!);
+    if (c) return c;
+  }
+  return A.length - B.length;
+}
+
+/**
+ * The Spectre (Tile(1,1)), the chiral aperiodic monotile, grown by `levels` of
+ * the paper's reflection-free substitution from a single Spectre (Delta)
+ * cluster: 1, 9, 71, 559, 4401 tiles. `keep` trims the patch to its `keep`
+ * centremost tiles by Chebyshev distance (a roughly square board with an exact
+ * cell count); `null` keeps the whole (ragged) cluster. No tile is ever
+ * mirrored.
+ */
+export function spectreBoard(
+  levels: number,
+  mineCount: number,
+  keep: number | null = null,
+  scale = 21,
+): Board {
+  const rows: SpectreRow[] = [];
+  const seen = new Set<string>();
+  for (const [label, at] of spectreLeaves(levels)) {
+    const ids = SPECTRE_OUTLINE.map((p) => placePoint(at, p));
+    const sortedIds = [...ids].sort(z12Cmp);
+    const fs = sortedIds.map(z12Key).join(";");
+    if (seen.has(fs)) continue; // defensive: a single cluster produces no dups
+    seen.add(fs);
+    let cx = 0;
+    let cy = 0;
+    for (const v of ids) {
+      const [x, y] = z12ToXy(v);
+      cx += x;
+      cy += y;
+    }
+    rows.push({ label, ids, sortedIds, cx: cx / ids.length, cy: cy / ids.length });
+  }
+
+  if (import.meta.env.DEV) {
+    for (const row of rows) {
+      for (const v of row.ids) {
+        for (const coeff of v) {
+          if (!Number.isSafeInteger(coeff)) {
+            throw new Error(`Spectre ℤ[ζ12] coefficient overflow: ${coeff}`);
+          }
+        }
+      }
+    }
+  }
+
+  let kept = rows;
+  if (keep !== null && keep < rows.length) {
+    let gx = 0;
+    let gy = 0;
+    for (const r of rows) {
+      gx += r.cx;
+      gy += r.cy;
+    }
+    gx /= rows.length;
+    gy /= rows.length;
+    const cheb = (r: SpectreRow): number =>
+      Math.max(Math.abs(r.cx - gx), Math.abs(r.cy - gy));
+    kept = [...rows]
+      .sort((r1, r2) => cheb(r1) - cheb(r2) || cmpSortedZ12(r1.sortedIds, r2.sortedIds))
+      .slice(0, keep);
+  }
+
+  const cellMap = new Map<CellId, string[]>();
+  const positions = new Map<string, Vertex>();
+  kept.forEach((row, i) => {
+    const keys = row.ids.map((v) => {
+      const k = z12Key(v);
+      if (!positions.has(k)) positions.set(k, z12ToXy(v));
+      return k;
+    });
+    cellMap.set(cid(row.label, i), keys);
+  });
+  return finalizeFlat("spectre", cellMap, positions, mineCount, scale);
+}
