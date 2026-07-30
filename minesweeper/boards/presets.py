@@ -11,19 +11,21 @@ by scripts/export_data.py. See AGENTS.md.
 from __future__ import annotations
 
 from minesweeper.boards._data import load
-from minesweeper.boards.aperiodic import hat_board, penrose_board, spectre_board
+from minesweeper.boards.aperiodic import penrose_board, spectre_board
 from minesweeper.boards.core import DIFFICULTIES, ROOT3, Board, Board3D
 from minesweeper.boards.solids import (
     c80_board,
     c180_board,
     cube_board,
     cube_frame_board,
+    rhombicosidodecahedron_board,
     snub_dodecahedron_board,
     sphere_board,
     sphere_triangle_board,
     stepped_bipyramid_board,
     tetrahedron_board,
     tetrahedron_frame_board,
+    truncated_icosidodecahedron_board,
 )
 from minesweeper.boards.surfaces import (
     arch_cylinder_board,
@@ -48,6 +50,7 @@ from minesweeper.boards.tilings import (
     hex_board,
     hexhex_board,
     hextri_board,
+    hextriangle_board,
     square_board,
     triangle_board,
     triangle_grid_board,
@@ -64,11 +67,14 @@ _JSON_BUILDERS = {
     "hex_board": hex_board,
     "hexhex_board": hexhex_board,
     "hextri_board": hextri_board,
+    "hextriangle_board": hextriangle_board,
     "sphere_board": sphere_board,
     "c80_board": c80_board,
     "c180_board": c180_board,
     "sphere_triangle_board": sphere_triangle_board,
     "snub_dodecahedron_board": snub_dodecahedron_board,
+    "rhombicosidodecahedron_board": rhombicosidodecahedron_board,
+    "truncated_icosidodecahedron_board": truncated_icosidodecahedron_board,
     "cube_board": cube_board,
     "cube_frame_board": cube_frame_board,
     "tetrahedron_board": tetrahedron_board,
@@ -94,10 +100,8 @@ _JSON_BUILDERS = {
     "arch_mobius_board": arch_mobius_board,
     "arch_klein_board": arch_klein_board,
     # Aperiodic tilings take positional args: penrose_board(subdivisions,
-    # mine_count, scale, keep); hat_board and spectre_board(levels,
-    # mine_count, keep, scale).
+    # mine_count, scale, keep); spectre_board(levels, mine_count, keep, scale).
     "penrose_board": penrose_board,
-    "hat_board": hat_board,
     "spectre_board": spectre_board,
 }
 
@@ -222,47 +226,89 @@ ARCH_PRESETS = {
         "mobius": {"easy": (4, 2, 28), "medium": (6, 2, 44), "hard": (8, 3, 90)},
         "klein": {"easy": (5, 2, 34), "medium": (7, 2, 52), "hard": (8, 3, 90)},
     },
-    # The isogonal (non-edge-to-edge) tilings: the plane only for now
-    # (TilingSpec.flat_only), so each has a "flat" column and no seam windows.
-    # Windows chosen for a square board of about 490px at 100 / 190 / 350
-    # cells, mined at the usual 14 / 16 / 19 per cent.
+    # The isogonal (non-edge-to-edge) tilings. Flat windows chosen for a
+    # square board of about 490px at 100 / 190 / 350 cells, mined at the
+    # usual 14 / 16 / 19 per cent; the manifold windows (nx/ny domain counts
+    # or ring/rows) are tuned to the same cell-count targets and mine
+    # density, each verified to give the surface's correct topology (Euler
+    # characteristic 0 for torus/Klein, boundary components 2/1 for
+    # cylinder/Mobius). Only offset square and staggered triangular have a
+    # template mirror, so only they wrap the Mobius strip / Klein bottle.
     "offsetsquare": {
         "flat": {"easy": (10, 5, 16, 45), "medium": (12, 6, 26, 38), "hard": (18, 9, 67, 26)},
+        "torus": {"easy": (10, 5, 14, 0.45), "medium": (10, 10, 32, 0.45), "hard": (11, 16, 67, 0.45)},
+        "cylinder": {"easy": (14, 3.5, 14), "medium": (20, 5, 32), "hard": (25, 7, 66)},
+        "mobius": {"easy": (10, 5, 14), "medium": (20, 5, 32), "hard": (25, 7, 66)},
+        "klein": {"easy": (10, 5, 14), "medium": (10, 10, 32), "hard": (7, 25, 66)},
     },
     "staggeredtri": {
         "flat": {"easy": (7, 4, 18, 61), "medium": (8, 5, 27, 51), "hard": (12, 7, 66, 38)},
+        "torus": {"easy": (8, 3, 13, 0.45), "medium": (10, 5, 32, 0.45), "hard": (8, 11, 67, 0.45)},
+        "cylinder": {"easy": (10, 2.5, 14), "medium": (12, 4, 31), "hard": (16, 5.5, 67)},
+        "mobius": {"easy": (25, 2, 14), "medium": (25, 4, 32), "hard": (25, 7, 66)},
+        "klein": {"easy": (25, 2, 14), "medium": (25, 4, 32), "hard": (7, 25, 66)},
     },
     "pythagorean": {
         "flat": {"easy": (3, 3, 14, 61), "medium": (4, 4, 27, 45), "hard": (6, 6, 71, 31)},
+        "torus": {"easy": (5, 2, 14, 0.45), "medium": (4, 5, 32, 0.45), "hard": (5, 7, 66, 0.45)},
+        "cylinder": {"easy": (4, 2.5, 14), "medium": (6, 3.5, 34), "hard": (7, 5, 66)},
     },
     "rotatedhex": {
         "flat": {"easy": (5, 3, 13, 43), "medium": (7, 4, 28, 34), "hard": (10, 6, 72, 24)},
+        "torus": {"easy": (4, 4, 13, 0.45), "medium": (11, 3, 32, 0.45), "hard": (6, 10, 68, 0.45)},
+        "cylinder": {"easy": (7, 2.5, 15), "medium": (11, 3, 32), "hard": (13, 4.5, 67)},
     },
     "rotatedtri": {
         "flat": {"easy": (5, 3, 13, 64), "medium": (7, 4, 27, 48), "hard": (10, 6, 68, 34)},
+        "torus": {"easy": (8, 2, 13, 0.45), "medium": (11, 3, 32, 0.45), "hard": (5, 12, 68, 0.45)},
+        "cylinder": {"easy": (7, 2.5, 14), "medium": (10, 3.5, 32), "hard": (14, 4.5, 69)},
     },
     "threescaletri": {
         "flat": {"easy": (5, 3, 13, 65), "medium": (7, 4, 28, 46), "hard": (10, 6, 72, 32)},
+        "torus": {"easy": (8, 2, 13, 0.45), "medium": (11, 3, 32, 0.45), "hard": (5, 12, 68, 0.45)},
+        "cylinder": {"easy": (7, 2.5, 15), "medium": (11, 3, 32), "hard": (13, 4.5, 67)},
     },
-    # The congruent-rectangle bonds: the plane only, like the isogonal family.
-    # Same recipe -- a square board of about 490px at 105 / 220 / 350 cells,
-    # mined at 14 / 16 / 19 per cent. The window counts *domains*, and a bond's
-    # domain is one brick (stacked), two (running) or a 2 x 2 block of them
-    # (the weaves and the herringbone), so the numbers differ per bond.
+    # The congruent-rectangle bonds: same recipe as the isogonal family --
+    # a square board of about 105 / 220 / 350 cells, mined at 14 / 16 / 19
+    # per cent, flat and manifold windows both verified for the right
+    # topology. The window counts *domains*, and a bond's domain is one
+    # brick (stacked), two (running) or a 2 x 2 block of them (the weaves
+    # and the herringbone), so the numbers differ per bond. Stacked bond,
+    # running bond, basket weave and its three-brick version have a
+    # template mirror and so wrap the Mobius strip / Klein bottle;
+    # herringbone (pgg) is glide-only and stays off them.
     "stackedbond": {
         "flat": {"easy": (7, 14, 15, 70), "medium": (10, 20, 37, 45), "hard": (13, 26, 67, 38)},
+        "torus": {"easy": (10, 10, 14, 0.45), "medium": (8, 25, 32, 0.45), "hard": (7, 50, 66, 0.45)},
+        "cylinder": {"easy": (10, 10.5, 14), "medium": (14, 14.5, 31), "hard": (16, 22, 67)},
+        "mobius": {"easy": (10, 10, 14), "medium": (10, 20, 32), "hard": (14, 25, 66)},
+        "klein": {"easy": (10, 10, 14), "medium": (8, 25, 32), "hard": (14, 25, 66)},
     },
     "runningbond": {
         "flat": {"easy": (7, 7, 16, 61), "medium": (10, 10, 35, 45), "hard": (13, 13, 69, 35)},
+        "torus": {"easy": (10, 5, 14, 0.45), "medium": (10, 10, 32, 0.45), "hard": (11, 16, 67, 0.45)},
+        "cylinder": {"easy": (10, 5, 14), "medium": (13, 7.5, 31), "hard": (16, 11, 67)},
+        "mobius": {"easy": (10, 5, 14), "medium": (10, 10, 32), "hard": (25, 7, 66)},
+        "klein": {"easy": (10, 5, 14), "medium": (10, 10, 32), "hard": (7, 25, 66)},
     },
     "basketweave": {
         "flat": {"easy": (4, 4, 18, 54), "medium": (5, 5, 32, 45), "hard": (6, 6, 55, 38)},
+        "torus": {"easy": (4, 3, 13, 0.45), "medium": (5, 5, 32, 0.45), "hard": (4, 11, 67, 0.45)},
+        "cylinder": {"easy": (5, 2.5, 14), "medium": (7, 3.5, 31), "hard": (8, 5.5, 67)},
+        "mobius": {"easy": (25, 1, 14), "medium": (25, 2, 32), "hard": (11, 8, 67)},
+        "klein": {"easy": (5, 5, 14), "medium": (5, 10, 32), "hard": (11, 8, 67)},
     },
     "basketweave3": {
         "flat": {"easy": (3, 3, 15, 70), "medium": (4, 4, 31, 54), "hard": (5, 5, 57, 45)},
+        "torus": {"easy": (4, 2, 13, 0.45), "medium": (4, 4, 31, 0.45), "hard": (5, 6, 68, 0.45)},
+        "cylinder": {"easy": (4, 2, 13), "medium": (5, 3.5, 34), "hard": (7, 4, 64)},
+        "mobius": {"easy": (17, 1, 14), "medium": (11, 3, 32), "hard": (19, 3, 65)},
+        "klein": {"easy": (9, 2, 15), "medium": (11, 3, 32), "hard": (19, 3, 65)},
     },
     "herringbone": {
         "flat": {"easy": (4, 4, 19, 58), "medium": (5, 5, 34, 47), "hard": (6, 6, 57, 39)},
+        "torus": {"easy": (4, 3, 13, 0.45), "medium": (5, 5, 32, 0.45), "hard": (4, 11, 67, 0.45)},
+        "cylinder": {"easy": (5, 2.5, 14), "medium": (7, 3.5, 31), "hard": (8, 5.5, 67)},
     },
 }
 

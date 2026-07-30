@@ -19,6 +19,7 @@ from minesweeper.boards import (  # noqa: E402
     SHAPED_MODES,
     SPHERE_MODES,
     TILINGS,
+    mode_for,
     picker_families,
     picker_modes,
 )
@@ -286,6 +287,25 @@ class TestPhoneLayout:
         assert screen.natural_size == size
         assert screen.polygons == polygons
 
+    @pytest.mark.parametrize("mode", ["hex", "hexhex", "hextriangle", "hextri"])
+    def test_portrait_always_turns_the_hex_tiling_boards(self, mode):
+        # hex/hexhex/hextriangle/hextri are built roughly square, so they
+        # never trip the generic landscape-aspect rule -- they turn
+        # unconditionally instead, so pointy-top hexagons (or the hexagonal
+        # outline hextri shares) render flat-top on a phone.
+        screen = GameScreen(mode, "easy")
+        assert screen._rotated is False
+        size = screen.natural_size
+        screen.set_portrait(True)
+        assert screen._rotated is True
+        assert screen.natural_size != size
+        # geometry stays consistent: every cell centre still hits its cell
+        for cell, center in screen.centers.items():
+            assert screen.cell_at(center) == cell
+        screen.set_portrait(False)  # turning back restores the layout
+        assert screen._rotated is False
+        assert screen.natural_size == size
+
 
 class TestRendering:
     def draw(self, screen, fonts):
@@ -525,7 +545,7 @@ class TestMenu:
         self.click_item(menu, "regular")
         # each regular tiling, followed by the shaped boards cut from it
         assert [key for _, key, _, _ in menu.layout()["items"]] == [
-            "tri", "triangle", "hextri", "square", "hex", "hexhex"
+            "tri", "triangle", "hextri", "square", "hex", "hexhex", "hextriangle"
         ]
         assert self.click_item(menu, "hex") == ("start", "hex")
 
@@ -574,7 +594,11 @@ class TestMenu:
         self.click_item(menu, "manifolds")
         self.click_item(menu, "torus")
         assert menu.path == ["manifolds", "torus"]
-        # aperiodic is not offered on a wrapped surface, only on the plane
+        # aperiodic is not offered on a wrapped surface, only on the plane;
+        # isogonal and rectangle are off the menu on torus/mobius/klein for
+        # now (too distorted at the current preset windows -- see
+        # picker_families), leaving the cylinder as the only manifold that
+        # offers them
         assert self.items(menu) == {"regular", "uniform", "dual", "random"}
         self.click_item(menu, "uniform")
         assert self.click_item(menu, "trihex") == ("start", "torustrihex")
@@ -642,7 +666,17 @@ class TestMenu:
             reach("sphere", mode)
         for mode in POLYHEDRA_MODES:
             reach("polyhedra", mode)
-        assert reached == set(MODE_LABELS)
+        # isogonal and rectangle still build and have labels on torus/mobius/
+        # klein (--mode reaches them directly) but picker_families keeps them
+        # off the menu there for now, so they are the one deliberate gap here
+        off_menu = {
+            mode_for(key, surface)
+            for surface in ("torus", "mobius", "klein")
+            for family in ("isogonal", "rectangle")
+            for key in FAMILY_MEMBERS[family]
+            if mode_for(key, surface) in MODE_LABELS
+        }
+        assert reached == set(MODE_LABELS) - off_menu
 
     def test_chiral_tiling_disabled_on_a_mirror_surface(self):
         # snub hexagonal is chiral, so it cannot wrap the Möbius strip or the

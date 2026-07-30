@@ -323,12 +323,24 @@ function lchToHex(lch: Lch): string {
 
 // -- shape -> tone -----------------------------------------------------------
 
-/** How straight a vertex has to be to not be a corner at all, in radians.
- * A tile of an isogonal tiling carries T-vertices — the corners of the
- * neighbours whose edge it splits — sitting at exactly 180°, and counting one
- * would make a square measure as an irregular pentagon. The threshold is far
- * below the flattest genuine corner on any board (a Klein-bottle quad, ~172°)
- * and far above the ~1e-6 rad that vertex-tag rounding costs. */
+/** How straight a vertex has to be to not be a corner at all, in radians, on
+ * a *flat* polygon. A tile of an isogonal tiling carries T-vertices — the
+ * corners of the neighbours whose edge it splits — sitting at exactly 180°
+ * there, and counting one would make a square measure as an irregular
+ * pentagon. The threshold is far below the flattest genuine corner on any
+ * flat board (a Klein-bottle quad, ~172°) and far above the ~1e-6 rad that
+ * vertex-tag rounding costs.
+ *
+ * A curved immersion (torus/cylinder/Mobius/Klein) bends a flat-template
+ * straight line, so the *same* T-vertex reads anywhere up to several tens of
+ * degrees off straight there — well past this threshold, and sometimes past
+ * a tiling's own flattest genuine corner, so no geometric threshold (global or
+ * relative to the polygon's own angles) can separate the two on every curved
+ * board; a badly-warped cell can bend a real corner down as far as a
+ * T-vertex, closing the gap between them entirely. That is what
+ * `Board3D.cornerMask` is for: every curved wrap of an Archimedean/Laves
+ * template supplies one, known exactly at build time from the flat template,
+ * and `corners` uses it instead of this threshold whenever it is given. */
 const STRAIGHT = 0.02;
 
 const distance = (a: readonly number[], b: readonly number[]): number => {
@@ -355,13 +367,29 @@ function cornerAngle(poly: readonly (readonly number[])[], i: number): number {
 
 /** The polygon's real corners: the vertices where it actually turns. Identity
  * for every edge-to-edge tiling; for an isogonal one it drops the T-vertices,
- * so the tile is measured as the regular polygon it is drawn as. */
+ * so the tile is measured as the regular polygon it is drawn as.
+ *
+ * When `mask` is given (an Archimedean/Laves wrap's `Board3D.cornerMask`, one
+ * bool per polygon vertex, true = real corner) it is authoritative — known at
+ * build time from the tiling's flat template, so it needs no geometry and is
+ * exact even where a curved immersion bends a T-vertex as far from flat as a
+ * genuine corner (see `Board3D.cornerMask`'s own comment). Without one — a
+ * flat board, a solid, or any tiling with no T-vertices — the exact STRAIGHT
+ * threshold on the (necessarily flat) geometry does the same job. */
 export function corners(
   poly: readonly (readonly number[])[],
+  mask?: readonly boolean[],
 ): readonly (readonly number[])[] {
-  if (poly.length < 3) return poly;
-  const kept = poly.filter((_, i) => Math.abs(cornerAngle(poly, i) - Math.PI) > STRAIGHT);
-  return kept.length >= 3 ? kept : poly;
+  const n = poly.length;
+  if (n < 3) return poly;
+  if (mask) {
+    const kept = poly.filter((_, i) => mask[i]);
+    return kept.length >= 3 ? kept : poly;
+  }
+  // No mask: a flat board (or a shape with no T-vertices at all), where
+  // T-vertices read as ~1e-6 rad and the exact threshold alone finds them.
+  const exact = poly.filter((_, i) => Math.abs(cornerAngle(poly, i) - Math.PI) > STRAIGHT);
+  return exact.length >= 3 && exact.length < n ? exact : poly;
 }
 
 /**
@@ -374,8 +402,11 @@ export function corners(
  * complement. Every board tile but the hat monotile is convex, and for the hat
  * it only means its silhouette scores as slightly more regular than it is.
  */
-export function shapeMetrics(polygon: readonly (readonly number[])[]): ShapeTone {
-  const poly = corners(polygon);
+export function shapeMetrics(
+  polygon: readonly (readonly number[])[],
+  cornerMask?: readonly boolean[],
+): ShapeTone {
+  const poly = corners(polygon, cornerMask);
   const n = poly.length;
   if (n < 3) return { sides: n, regularity: 1 };
   const dist = distance;
@@ -410,8 +441,11 @@ export function shapeMetrics(polygon: readonly (readonly number[])[]): ShapeTone
 /** How big a tile is: the mean distance from its centroid to its corners. Works
  * in 2D and 3D, and is proportional to edge length for a regular polygon, so
  * two squares in a 2:1 tiling come out 2:1. */
-export function tileSpan(polygon: readonly (readonly number[])[]): number {
-  const poly = corners(polygon);
+export function tileSpan(
+  polygon: readonly (readonly number[])[],
+  cornerMask?: readonly boolean[],
+): number {
+  const poly = corners(polygon, cornerMask);
   const dims = poly[0]?.length ?? 2;
   const centre = new Array(dims).fill(0) as number[];
   for (const p of poly) for (let k = 0; k < dims; k++) centre[k]! += p[k]! / poly.length;
@@ -452,6 +486,7 @@ export function tileSpan(polygon: readonly (readonly number[])[]): number {
  */
 export function classifyShapes<K>(
   polygons: Iterable<[K, readonly (readonly number[])[]]>,
+  cornerMasks?: Map<K, readonly boolean[]> | null,
 ): Map<K, ShapeTone> {
   const raw = new Map<K, ShapeTone>();
   const spans = new Map<K, number>();
@@ -460,10 +495,11 @@ export function classifyShapes<K>(
   // Vertices with a z are a board laid on a surface — see above.
   let curved = false;
   for (const [key, poly] of polygons) {
-    const tone = shapeMetrics(poly);
+    const mask = cornerMasks?.get(key);
+    const tone = shapeMetrics(poly, mask);
     if ((poly[0]?.length ?? 2) > 2) curved = true;
     raw.set(key, tone);
-    const span = tileSpan(poly);
+    const span = tileSpan(poly, mask);
     spans.set(key, span);
     let group = bySides.get(tone.sides);
     if (!group) bySides.set(tone.sides, (group = []));

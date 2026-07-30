@@ -77,8 +77,8 @@ class TilingSpec:
     chiral: bool = False                 # no mirror/glide -> no Mobius seam
     mode_overrides: dict = field(default_factory=dict)  # surface -> mode string
     flat_only: bool = False              # the plane only: no wrap builders or
-    #   preset windows for this tiling yet (the isogonal and rectangle
-    #   families -- see _FLAT_ONLY_FAMILIES)
+    #   preset windows for this tiling (currently no ARCH_TILINGS family --
+    #   see _FLAT_ONLY_FAMILIES -- but a future one-off tiling could set it)
 
     def mode(self, surface: SurfaceSpec) -> str:
         return self.mode_overrides.get(surface.key, surface.prefix + self.key)
@@ -108,7 +108,7 @@ REGULAR_TILINGS = tuple(
 
 # the ARCH_TILINGS families that live on the plane only: no wrap builders and
 # no per-surface preset windows for them yet.
-_FLAT_ONLY_FAMILIES = frozenset({"isogonal", "rectangle"})
+_FLAT_ONLY_FAMILIES: frozenset[str] = frozenset()
 
 TILING_SPECS = REGULAR_TILINGS + tuple(
     TilingSpec(t.key, t.label, chiral=t.template().mirror is None,
@@ -165,8 +165,8 @@ TILINGS = {
 #   Sphere          -> the spherical tilings
 #   Polyhedra       -> the solids
 #
-# The picker is a list of family submenus -- Regular, Uniform, Laves and
-# (flat only) Isogonal, Congruent rectangles and Aperiodic -- plus a random
+# The picker is a list of family submenus -- Regular, Uniform, Laves,
+# Isogonal and Congruent rectangles, plus (flat only) Aperiodic and a random
 # option. It is parameterised by the
 # surface it was reached through, so the same picker serves the plane and every
 # flat manifold; the plane is reached through the home page's Flat entry rather
@@ -190,9 +190,10 @@ MANIFOLD_LABELS = dict(_MENU["manifoldLabels"])
 # The tiling picker's families. The uniform, dual, isogonal and rectangle
 # family members are exactly the ARCH_TILINGS rows of each family, so they
 # derive from that registry -- adding a tiling stays a one-row change.
-# Aperiodic tilings only exist on the plane, and the isogonal and rectangle
-# ones have no wrap builders yet, so those families are offered only when the
-# surface is flat.
+# Aperiodic tilings only exist on the plane (there is no periodic domain to
+# wrap), so that family alone is offered only when the surface is flat; the
+# isogonal and rectangle families wrap every surface their member tilings'
+# chirality allows, exactly like the uniform and dual families.
 PICKER_REGULAR = tuple(_MENU["pickerRegular"])
 UNIFORM_ARCH = tuple(t.key for t in ARCH_TILINGS if t.family == "uniform")
 DUAL_ARCH = tuple(t.key for t in ARCH_TILINGS if t.family == "dual")
@@ -208,10 +209,19 @@ FAMILY_MEMBERS = {
     "rectangle": RECTANGLE_ARCH,
     "aperiodic": APERIODIC_MODES,
 }
-# the picker's family rows, in order; "isogonal", "rectangle" and "aperiodic"
-# are added on the plane only
-PICKER_FAMILIES = ("regular", "uniform", "dual")
-FLAT_ONLY_FAMILIES = ("isogonal", "rectangle", "aperiodic")
+# the picker's family rows, in order; "aperiodic" is added on the plane only
+PICKER_FAMILIES = ("regular", "uniform", "dual", "isogonal", "rectangle")
+FLAT_ONLY_FAMILIES = ("aperiodic",)
+# Isogonal and rectangle wrap the torus/Mobius/Klein bottle without error, but
+# at their current preset windows the wrap distorts them too much to be worth
+# playing there yet -- the cylinder alone still reads well. Off the menu on
+# those three manifolds until the windows are retuned further; the builders,
+# presets and tests are untouched; a --mode still reaches them directly.
+_MANIFOLD_EXCLUDED_FAMILIES = {
+    "torus": ("isogonal", "rectangle"),
+    "mobius": ("isogonal", "rectangle"),
+    "klein": ("isogonal", "rectangle"),
+}
 
 # Sphere page: the spherical tilings, none of which wraps a flat surface.
 SPHERE_MODES = tuple(_MENU["sphereModes"])
@@ -269,7 +279,8 @@ def picker_families(surface_key: str) -> tuple[str, ...]:
     """The family rows a surface's picker offers, in order."""
     if surface_key == "flat":
         return PICKER_FAMILIES + FLAT_ONLY_FAMILIES
-    return PICKER_FAMILIES
+    excluded = _MANIFOLD_EXCLUDED_FAMILIES.get(surface_key, ())
+    return tuple(f for f in PICKER_FAMILIES if f not in excluded)
 
 
 def picker_modes(surface_key: str) -> tuple[str, ...]:

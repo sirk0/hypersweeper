@@ -3,6 +3,7 @@ import {
   DUAL_ARCH,
   ISOGONAL_ARCH,
   MENU,
+  MODE_LABELS,
   POLYHEDRA_MODES,
   RECTANGLE_ARCH,
   SPHERE_MODES,
@@ -10,6 +11,7 @@ import {
   TILINGS_BY_KEY,
   UNIFORM_ARCH,
   familyRows,
+  modeFor,
   pickerFamilies,
   tilingAllows,
 } from "../../src/boards/catalog";
@@ -35,34 +37,50 @@ describe("catalog families", () => {
     ).toBe(27);
   });
 
-  it("keeps the isogonal tilings on the plane", () => {
-    // They have no wrap builders or preset windows yet, so they are gated out
-    // of every surface but the plane and never appear in a manifold picker.
+  it("wraps the isogonal tilings onto every surface their chirality allows", () => {
+    // All six wrap the torus and cylinder; only the two with a template
+    // mirror (offset square, staggered triangular) also wrap the Mobius
+    // strip / Klein bottle, exactly like the uniform/dual families.
+    const mirrored = new Set(["offsetsquare", "staggeredtri"]);
     for (const key of ISOGONAL_ARCH) {
       const tiling = TILINGS_BY_KEY.get(key)!;
       expect(tilingAllows(tiling, SURFACES.get("flat")!)).toBe(true);
-      for (const surface of MANIFOLD_ORDER) {
-        expect(tilingAllows(tiling, SURFACES.get(surface)!)).toBe(false);
-      }
+      expect(tilingAllows(tiling, SURFACES.get("torus")!)).toBe(true);
+      expect(tilingAllows(tiling, SURFACES.get("cylinder")!)).toBe(true);
+      const wantMirror = mirrored.has(key);
+      expect(tilingAllows(tiling, SURFACES.get("mobius")!)).toBe(wantMirror);
+      expect(tilingAllows(tiling, SURFACES.get("klein")!)).toBe(wantMirror);
     }
-    expect(pickerFamilies("flat")).toContain("isogonal");
-    for (const surface of MANIFOLD_ORDER) {
+    // Builds fine on every manifold (checked above), but off the menu on
+    // torus/mobius/klein for now — too distorted at the current preset
+    // windows; the cylinder is the only manifold that still offers it.
+    for (const surface of ["flat", "cylinder"]) {
+      expect(pickerFamilies(surface)).toContain("isogonal");
+    }
+    for (const surface of ["torus", "mobius", "klein"]) {
       expect(pickerFamilies(surface)).not.toContain("isogonal");
     }
     expect(familyRows("isogonal", "flat").map((r) => r.mode)).toEqual([...ISOGONAL_ARCH]);
   });
 
-  it("keeps the congruent-rectangle bonds on the plane", () => {
-    // Same gating as the isogonal family: no wrap builders or windows yet.
+  it("wraps the congruent-rectangle bonds onto every surface their chirality allows", () => {
+    // All five wrap the torus and cylinder; every bond but herringbone
+    // (glide-only, no mirror) also wraps the Mobius strip / Klein bottle.
+    const mirrored = new Set(["stackedbond", "runningbond", "basketweave", "basketweave3"]);
     for (const key of RECTANGLE_ARCH) {
       const tiling = TILINGS_BY_KEY.get(key)!;
       expect(tilingAllows(tiling, SURFACES.get("flat")!)).toBe(true);
-      for (const surface of MANIFOLD_ORDER) {
-        expect(tilingAllows(tiling, SURFACES.get(surface)!)).toBe(false);
-      }
+      expect(tilingAllows(tiling, SURFACES.get("torus")!)).toBe(true);
+      expect(tilingAllows(tiling, SURFACES.get("cylinder")!)).toBe(true);
+      const wantMirror = mirrored.has(key);
+      expect(tilingAllows(tiling, SURFACES.get("mobius")!)).toBe(wantMirror);
+      expect(tilingAllows(tiling, SURFACES.get("klein")!)).toBe(wantMirror);
     }
-    expect(pickerFamilies("flat")).toContain("rectangle");
-    for (const surface of MANIFOLD_ORDER) {
+    // Off the menu on torus/mobius/klein for now, same as isogonal above.
+    for (const surface of ["flat", "cylinder"]) {
+      expect(pickerFamilies(surface)).toContain("rectangle");
+    }
+    for (const surface of ["torus", "mobius", "klein"]) {
       expect(pickerFamilies(surface)).not.toContain("rectangle");
     }
     expect(familyRows("rectangle", "flat").map((r) => r.mode)).toEqual([...RECTANGLE_ARCH]);
@@ -105,6 +123,7 @@ describe("catalog families", () => {
       "square",
       "hex",
       "hexhex",
+      "hextriangle",
     ]);
     expect(familyRows("regular", "torus").map((r) => r.mode)).toEqual([
       "torustri",
@@ -132,6 +151,18 @@ describe("menu reachability", () => {
     }
     for (const m of SPHERE_MODES) add(m);
     for (const m of POLYHEDRA_MODES) add(m);
-    expect(reachable).toEqual(new Set(MODES));
+    // isogonal and rectangle still build and have labels on torus/mobius/
+    // klein, but pickerFamilies keeps them off the menu there for now (see
+    // MANIFOLD_EXCLUDED_FAMILIES) — the one deliberate gap in reachability.
+    const offMenu = new Set<string>();
+    for (const surface of ["torus", "mobius", "klein"]) {
+      for (const family of ["isogonal", "rectangle"]) {
+        for (const key of family === "isogonal" ? ISOGONAL_ARCH : RECTANGLE_ARCH) {
+          const mode = modeFor(key, surface);
+          if (mode in MODE_LABELS) offMenu.add(mode);
+        }
+      }
+    }
+    expect(reachable).toEqual(new Set(MODES.filter((m) => !offMenu.has(m))));
   });
 });

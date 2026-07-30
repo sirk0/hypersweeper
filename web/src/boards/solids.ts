@@ -5,6 +5,7 @@
 // quantization the topology helpers use.
 import {
   cid,
+  cross,
   dot,
   isBoard3D,
   newellNormal,
@@ -131,6 +132,7 @@ function convexBoard3d(
     twoSided: false,
     cellCycle: null,
     clip: null,
+    cornerMask: null,
   };
 }
 
@@ -342,6 +344,213 @@ export function sphereTriangleBoard(mineCount: number, frequency = 2): Board3D {
   return convexBoard3d("spheretri", cells, positions, mineCount);
 }
 
+// Every icosahedron vertex is pulled toward its incident faces' centroid by
+// this fraction, and every point lands on the unit sphere. Because a vertex
+// and a face are both single orbits under the icosahedron's symmetry, the
+// triangles and pentagons come out equilateral for *any* fraction here — only
+// the squares (one per edge, straddling two faces) are sensitive to it, and
+// this is the fraction (found by a numeric search maximizing their
+// regularity) where they too come out square to within float precision,
+// making the whole solid a true rhombicosidodecahedron rather than merely
+// looking like one.
+const EXPAND_CENTROID_WEIGHT = 0.6496270939773015;
+
+/** The rhombicosidodecahedron as (cells, positions): the Conway "expand"
+ * (cantellation) operation on the icosahedron — 20 shrunk triangles (one per
+ * face), 30 squares (one per edge, opening a gap between the two faces it
+ * used to join) and 12 pentagons (one per vertex, since every icosahedron
+ * vertex has degree 5). Cells are keyed by the (face, vertex) incidence flags
+ * a corner is pulled toward. */
+function expandIcosahedron(): { cells: Cells; positions: Positions } {
+  const { vertices, faces } = icosahedron();
+  const positions: Positions = new Map();
+  const fkey = (faceIndex: number, v: number): string => cid("f", faceIndex, v);
+  const w = EXPAND_CENTROID_WEIGHT;
+
+  faces.forEach((face, faceIndex) => {
+    const centroid = centroidOf(face.map((i) => vertices[i]!));
+    for (const v of face) {
+      const p = vertices[v]!;
+      positions.set(fkey(faceIndex, v), normalize([
+        (1 - w) * p[0] + w * centroid[0],
+        (1 - w) * p[1] + w * centroid[1],
+        (1 - w) * p[2] + w * centroid[2],
+      ]));
+    }
+  });
+
+  const cells: Cells = new Map();
+  faces.forEach((face, faceIndex) => {
+    cells.set(cid("f", faceIndex), face.map((v) => fkey(faceIndex, v)));
+  });
+
+  const edgeFaces = new Map<string, number[]>();
+  faces.forEach((face, faceIndex) => {
+    for (let i = 0; i < 3; i++) {
+      const [u, v] = [face[i]!, face[(i + 1) % 3]!];
+      const key = cid(Math.min(u, v), Math.max(u, v));
+      let ids = edgeFaces.get(key);
+      if (!ids) edgeFaces.set(key, (ids = []));
+      ids.push(faceIndex);
+    }
+  });
+  for (const [key, [f1, f2]] of edgeFaces) {
+    const [u, v] = key.split(",").map(Number) as [number, number];
+    cells.set(cid("e", u, v), [fkey(f1!, u), fkey(f1!, v), fkey(f2!, v), fkey(f2!, u)]);
+  }
+
+  const vertexFaces = new Map<number, number[]>();
+  faces.forEach((face, faceIndex) => {
+    for (const v of face) {
+      let ids = vertexFaces.get(v);
+      if (!ids) vertexFaces.set(v, (ids = []));
+      ids.push(faceIndex);
+    }
+  });
+  for (const [v, faceIds] of vertexFaces) {
+    const ordered = tangentOrder(
+      vertices[v]!,
+      faceIds.map((fi): [number, Vec3] => [fi, positions.get(fkey(fi, v))!]),
+    );
+    cells.set(cid("v", v), ordered.map((fi) => fkey(fi, v)));
+  }
+
+  return { cells, positions };
+}
+
+/** A rhombicosidodecahedron: 20 triangles, 30 squares and 12 pentagons
+ * (vertex configuration 3.4.5.4), projected onto the unit sphere. */
+export function rhombicosidodecahedronBoard(mineCount: number): Board3D {
+  const { cells, positions } = expandIcosahedron();
+  return convexBoard3d("rhombicosidodeca", cells, positions, mineCount);
+}
+
+/** The Wythoff generating point for the icosahedral (2, 3, 5) reflection
+ * group: given one "flag" (a mutually incident icosahedron vertex, edge and
+ * face)'s three axis directions — `vDir` the vertex (5-fold axis), `eDir` its
+ * edge's midpoint (2-fold axis), `fDir` its face's centroid (3-fold axis),
+ * the three corners of a fundamental (Schwarz) triangle whose sides are the
+ * group's mirror planes — the point inside that triangle equidistant from
+ * all three mirrors. Reflecting it through the group's 120 symmetries
+ * generates the omnitruncated icosahedron (the truncated icosidodecahedron,
+ * a.k.a. great rhombicosidodecahedron) with every edge the same length by
+ * construction: unlike rectifying the icosahedron and then truncating the
+ * result (a sequential approximation that, no matter how the two steps are
+ * tuned, cannot make all three of its face shapes regular at once — see the
+ * git history for why), this always lands on the exact Archimedean solid,
+ * because a flag's three mirrors are just three planes through the origin
+ * and this point is the same distance from each of them. */
+function flagPosition(vDir: Vec3, eDir: Vec3, fDir: Vec3): Vec3 {
+  const v = normalize(vDir);
+  const e = normalize(eDir);
+  const f = normalize(fDir);
+  const mirrorNormal = (a: Vec3, b: Vec3, toward: Vec3): Vec3 => {
+    const n = normalize(cross(a, b));
+    return dot(n, toward) >= 0 ? n : [-n[0], -n[1], -n[2]];
+  };
+  // the mirror opposite each corner is the plane through the other two
+  const nv = mirrorNormal(e, f, v);
+  const ne = mirrorNormal(f, v, e);
+  const nf = mirrorNormal(v, e, f);
+  // equidistant from all three mirrors <=> orthogonal to nv - ne and to
+  // ne - nf, i.e. their cross product (a linear, not barycentric, solve)
+  let p = normalize(cross(
+    [nv[0] - ne[0], nv[1] - ne[1], nv[2] - ne[2]],
+    [ne[0] - nf[0], ne[1] - nf[1], ne[2] - nf[2]],
+  ));
+  if (dot(p, v) + dot(p, e) + dot(p, f) < 0) p = [-p[0], -p[1], -p[2]];
+  return p;
+}
+
+/** The truncated icosidodecahedron as (cells, positions): the omnitruncation
+ * of the icosahedron. Each vertex is a flag (icosahedron vertex, edge, face
+ * mutually incident) placed by `flagPosition`; there are 4 * 30 edges = 120
+ * of them, keyed by `(faceIndex, localVertex, side)` (`side` picks which of
+ * the vertex's two edges within that face). 20 hexagons (one per face), 12
+ * decagons (one per vertex) and 30 squares (one per edge). */
+function truncatedIcosidodecahedron(): { cells: Cells; positions: Positions } {
+  const { vertices, faces } = icosahedron();
+  const positions: Positions = new Map();
+  const fkey = (fi: number, lv: number, side: number): string => cid("f", fi, lv, side);
+  const centroids = faces.map((face) => centroidOf(face.map((i) => vertices[i]!)));
+
+  faces.forEach((face, fi) => {
+    for (let lv = 0; lv < 3; lv++) {
+      const v = face[lv]!;
+      for (const side of [0, 1]) {
+        const nb = face[(lv + (side === 0 ? 1 : 2)) % 3]!;
+        const [a, b] = [vertices[v]!, vertices[nb]!];
+        const emid: Vec3 = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2];
+        positions.set(fkey(fi, lv, side), flagPosition(vertices[v]!, emid, centroids[fi]!));
+      }
+    }
+  });
+
+  const cells: Cells = new Map();
+  faces.forEach((_, fi) => {
+    const flags: [string, Vec3][] = [];
+    for (let lv = 0; lv < 3; lv++) {
+      for (const side of [0, 1]) {
+        const key = fkey(fi, lv, side);
+        flags.push([key, positions.get(key)!]);
+      }
+    }
+    cells.set(cid("h", fi), tangentOrder(centroids[fi]!, flags));
+  });
+
+  const vertexFaces = new Map<number, [number, number][]>();
+  faces.forEach((face, fi) => {
+    face.forEach((v, lv) => {
+      let list = vertexFaces.get(v);
+      if (!list) vertexFaces.set(v, (list = []));
+      list.push([fi, lv]);
+    });
+  });
+  for (const [v, incident] of vertexFaces) {
+    const flags: [string, Vec3][] = [];
+    for (const [fi, lv] of incident) {
+      for (const side of [0, 1]) {
+        const key = fkey(fi, lv, side);
+        flags.push([key, positions.get(key)!]);
+      }
+    }
+    cells.set(cid("d", v), tangentOrder(vertices[v]!, flags));
+  }
+
+  const edgeFlags = new Map<string, [string, Vec3][]>();
+  faces.forEach((face, fi) => {
+    for (let i = 0; i < 3; i++) {
+      const [u, w] = [face[i]!, face[(i + 1) % 3]!];
+      const [lu, lw] = [i, (i + 1) % 3];
+      const sideU = face[(lu + 1) % 3] === w ? 0 : 1;
+      const sideW = face[(lw + 1) % 3] === u ? 0 : 1;
+      const key = cid(Math.min(u, w), Math.max(u, w));
+      let list = edgeFlags.get(key);
+      if (!list) edgeFlags.set(key, (list = []));
+      const keyU = fkey(fi, lu, sideU);
+      const keyW = fkey(fi, lw, sideW);
+      list.push([keyU, positions.get(keyU)!], [keyW, positions.get(keyW)!]);
+    }
+  });
+  for (const [key, flags] of edgeFlags) {
+    const [u, w] = key.split(",").map(Number) as [number, number];
+    const [a, b] = [vertices[u]!, vertices[w]!];
+    const centre: Vec3 = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2];
+    cells.set(cid("s", u, w), tangentOrder(centre, flags));
+  }
+
+  return { cells, positions };
+}
+
+/** A truncated icosidodecahedron: 30 squares, 20 hexagons and 12 decagons
+ * (vertex configuration 4.6.10), projected onto the unit sphere — the exact
+ * omnitruncation of the icosahedron (see `flagPosition`), so every face is
+ * genuinely regular rather than merely close. */
+export function truncatedIcosidodecahedronBoard(mineCount: number): Board3D {
+  const { cells, positions } = truncatedIcosidodecahedron();
+  return convexBoard3d("truncicosidodeca", cells, positions, mineCount);
+}
+
 /** A cube surface tiled with `6 * n**2` squares: each face an n x n grid.
  * Vertices are integer points on `[-n, n]**3` (a surface vertex has one axis
  * at +-n; the grid lines step by 2), so cells on adjacent faces sharing a
@@ -486,6 +695,7 @@ function polycubeSurface(
     twoSided: false,
     cellCycle: null,
     clip: null,
+    cornerMask: null,
   };
 }
 
@@ -642,5 +852,6 @@ export function tetrahedronFrameBoard(
     twoSided: false,
     cellCycle: null,
     clip: null,
+    cornerMask: null,
   };
 }

@@ -3,12 +3,14 @@ import {
   c80Board,
   cubeBoard,
   cubeFrameBoard,
+  rhombicosidodecahedronBoard,
   snubDodecahedronBoard,
   sphereBoard,
   sphereTriangleBoard,
   steppedBipyramidBoard,
   tetrahedronBoard,
   tetrahedronFrameBoard,
+  truncatedIcosidodecahedronBoard,
 } from "../../src/boards/solids";
 import type { Board3D } from "../../src/boards/core";
 
@@ -44,6 +46,24 @@ describe("solids", () => {
     expect(board.adjacency.size).toBe(92);
     expect(count(s, 3)).toBe(80);
     expect(count(s, 5)).toBe(12);
+  });
+
+  it("rhombicosidodecahedron is 20 triangles + 30 squares + 12 pentagons", () => {
+    const board = rhombicosidodecahedronBoard(10);
+    const s = sizes(board);
+    expect(board.adjacency.size).toBe(62);
+    expect(count(s, 3)).toBe(20);
+    expect(count(s, 4)).toBe(30);
+    expect(count(s, 5)).toBe(12);
+  });
+
+  it("truncated icosidodecahedron is 30 squares + 20 hexagons + 12 decagons", () => {
+    const board = truncatedIcosidodecahedronBoard(10);
+    const s = sizes(board);
+    expect(board.adjacency.size).toBe(62);
+    expect(count(s, 4)).toBe(30);
+    expect(count(s, 6)).toBe(20);
+    expect(count(s, 10)).toBe(12);
   });
 
   it("geodesic sphere has 20 * frequency^2 triangles", () => {

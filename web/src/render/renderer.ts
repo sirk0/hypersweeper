@@ -42,6 +42,11 @@ const MAX_SOLID_ZOOM = 2;
  * portrait viewport (the classic 30×16 hard board, aspect 1.875, would
  * otherwise shrink to a sliver). Mirrors GameScreen.ROTATE_ASPECT. */
 const ROTATE_ASPECT = 1.2;
+/** The hex-shaped/hex-tiling flat boards, always turned on a portrait
+ * viewport regardless of aspect. hextri (triangular tiling, hexagonal
+ * outline) shares the square-by-convention hexagon silhouette, so it gets
+ * the same treatment. Mirrors GameScreen._ALWAYS_ROTATE_MODES. */
+const ALWAYS_ROTATE_MODES = new Set(["hex", "hexhex", "hextriangle", "hextri"]);
 /** Air left around a framed flat board (bevels and antialiasing off the edge). */
 const FLAT_MARGIN = 1.06;
 
@@ -209,8 +214,16 @@ export class BoardRenderer {
     const { w, h, top, usableH } = this.viewport();
     // A clearly landscape board on a portrait viewport is turned a
     // quarter-turn (clockwise) so it fills the width instead of shrinking to
-    // a sliver — the same rule as the pygame GameScreen._rotated.
-    const rotated = usableH > w && view.width > view.height * ROTATE_ASPECT;
+    // a sliver — the same rule as the pygame GameScreen._rotated. The hexagon
+    // tiling's own flat boards (hex, hexhex, hextriangle) are built roughly
+    // square by convention, so they never cross ROTATE_ASPECT -- but
+    // pointy-top hexagons read better as flat-top ones on a narrow phone,
+    // which the same quarter-turn happens to produce as a side effect, so
+    // these always turn on a portrait viewport, aspect ratio aside.
+    const portrait = usableH > w;
+    const rotated = ALWAYS_ROTATE_MODES.has(view.mode)
+      ? portrait
+      : portrait && view.width > view.height * ROTATE_ASPECT;
     this.board.rotation.z = rotated ? -Math.PI / 2 : 0;
     this.board.setQuarterTurn?.(rotated);
     const halfW = ((rotated ? view.height : view.width) * FLAT_MARGIN) / 2;

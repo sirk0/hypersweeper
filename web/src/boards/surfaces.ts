@@ -259,6 +259,11 @@ interface AssembleOpts {
   radius: number | ((positions: Positions) => number);
   cellCycle?: Map<CellId, CellId> | null;
   clip?: SurfaceClip | null;
+  // Per-cell "is this polygon vertex a real corner" mask, in polygon order —
+  // see Board3D.cornerMask. Only the Archimedean/Laves wraps (surfaces built
+  // from an ArchTemplate) pass one; reversed in lockstep with the polygon
+  // whenever this cell's orientation gets flipped below.
+  cornerMask?: Map<CellId, boolean[]> | null;
 }
 
 /** Build adjacency and polygons and wrap them in a Board3D. Closed surfaces
@@ -269,16 +274,22 @@ function assemble(
   cells: Cells,
   positions: Positions,
   mineCount: number,
-  { twoSided, radius, cellCycle = null, clip = null }: AssembleOpts,
+  { twoSided, radius, cellCycle = null, clip = null, cornerMask = null }: AssembleOpts,
 ): Board3D {
   const adjacency = sharedVertexAdjacency(cells);
   const polygons = new Map<CellId, Vec3[]>();
+  const masks = cornerMask ? new Map<CellId, boolean[]>() : null;
   for (const [cell, keys] of cells) {
     const poly = keys.map((k) => positions.get(k)!);
-    polygons.set(cell, twoSided ? poly : orientFromRing(poly));
+    const oriented = twoSided ? poly : orientFromRing(poly);
+    polygons.set(cell, oriented);
+    if (masks) {
+      const mask = cornerMask!.get(cell);
+      if (mask) masks.set(cell, oriented[0] === poly[0] ? mask : [...mask].reverse());
+    }
   }
   const r = typeof radius === "function" ? radius(positions) : radius;
-  return { mode, polygons, adjacency, mineCount, radius: r, twoSided, cellCycle, clip };
+  return { mode, polygons, adjacency, mineCount, radius: r, twoSided, cellCycle, clip, cornerMask: masks };
 }
 
 // -- the donut ---------------------------------------------------------------
@@ -824,9 +835,10 @@ export function archTorusBoard(
   const tube = ny * H;
   const cells = new Map<CellId, string[]>();
   const positions = new Map<string, Vec3>();
+  const cornerMask = new Map<CellId, boolean[]>();
   for (let m = 0; m < nx; m++) {
     for (let n = 0; n < ny; n++) {
-      for (const { name, refs } of t.cells) {
+      for (const { name, refs, real } of t.cells) {
         const keys = refs.map((r) => {
           const M = mod(m + r.dm, nx);
           const N = mod(n + r.dn, ny);
@@ -843,13 +855,16 @@ export function archTorusBoard(
         if (new Set(keys).size < keys.length) {
           throw new Error(`${nx}x${ny} is too small for ${tiling}`);
         }
-        cells.set(cid(m, n, name), keys);
+        const key = cid(m, n, name);
+        cells.set(key, keys);
+        cornerMask.set(key, real);
       }
     }
   }
   return assemble("torus" + tiling, cells, positions, mineCount, {
     twoSided: false,
     radius: 1 + tubeRadius,
+    cornerMask,
   });
 }
 
@@ -876,10 +891,11 @@ export function archCylinderBoard(
   }
   const cells = new Map<CellId, string[]>();
   const positions = new Map<string, Vec3>();
+  const cornerMask = new Map<CellId, boolean[]>();
   const nMax = Math.ceil(rows) + 1;
   for (let m = 0; m < ring; m++) {
     for (let n = 0; n < nMax; n++) {
-      for (const { name, refs } of t.cells) {
+      for (const { name, refs, real } of t.cells) {
         const c = centroids.get(name)! + n * H;
         if (!(cut - 1e-9 <= c && c < rows * H + cut - 1e-9)) continue;
         const keys = refs.map((r) => {
@@ -895,13 +911,16 @@ export function archCylinderBoard(
         if (new Set(keys).size < keys.length) {
           throw new Error(`ring ${ring} is too small for ${tiling}`);
         }
-        cells.set(cid(m, n, name), keys);
+        const key = cid(m, n, name);
+        cells.set(key, keys);
+        cornerMask.set(key, real);
       }
     }
   }
   return assemble("cyl" + tiling, cells, positions, mineCount, {
     twoSided: true,
     radius: maxRadius,
+    cornerMask,
   });
 }
 
@@ -961,9 +980,10 @@ export function archMobiusBoard(
   }
   const cells = new Map<CellId, string[]>();
   const positions = new Map<string, Vec3>();
+  const cornerMask = new Map<CellId, boolean[]>();
   for (let m = 0; m < q + 1; m++) {
     for (let n = 0; n < rows; n++) {
-      for (const { name, refs } of t.cells) {
+      for (const { name, refs, real } of t.cells) {
         const c = centroids.get(name)! + m * W;
         if (!(-1e-9 <= c && c < length - 1e-9)) continue;
         const keys = refs.map((r) => {
@@ -975,13 +995,16 @@ export function archMobiusBoard(
         if (new Set(keys).size < keys.length) {
           throw new Error(`ring ${ring} is too small for ${tiling}`);
         }
-        cells.set(cid(m, n, name), keys);
+        const key = cid(m, n, name);
+        cells.set(key, keys);
+        cornerMask.set(key, real);
       }
     }
   }
   return assemble("mobius" + tiling, cells, positions, mineCount, {
     twoSided: true,
     radius: maxRadius,
+    cornerMask,
   });
 }
 
@@ -1044,9 +1067,10 @@ export function archKleinBoard(
   const cells = new Map<CellId, string[]>();
   const positions = new Map<string, Vec3>();
   const cellCanon = new Map<CellId, [number, number, string][]>();
+  const cornerMask = new Map<CellId, boolean[]>();
   for (let m = 0; m < q + 1; m++) {
     for (let n = 0; n < ny; n++) {
-      for (const { name, refs } of t.cells) {
+      for (const { name, refs, real } of t.cells) {
         const c = centroidsX.get(name)! + m * W;
         if (!(-1e-9 <= c && c < length - 1e-9)) continue;
         const canon: [number, number, string][] = [];
@@ -1060,8 +1084,10 @@ export function archKleinBoard(
         if (new Set(keys).size < keys.length) {
           throw new Error(`${nx}x${ny} is too small for ${tiling}`);
         }
-        cells.set(cid(m, n, name), keys);
-        cellCanon.set(cid(m, n, name), canon);
+        const key = cid(m, n, name);
+        cells.set(key, keys);
+        cellCanon.set(key, canon);
+        cornerMask.set(key, real);
       }
     }
   }
@@ -1086,5 +1112,6 @@ export function archKleinBoard(
     radius: maxRadius,
     cellCycle,
     clip,
+    cornerMask,
   });
 }

@@ -56,6 +56,14 @@ export interface Board3D {
   cellCycle: Map<CellId, CellId> | null;
   // Set on a self-intersecting immersion (the Klein bottle); see SurfaceClip.
   clip: SurfaceClip | null;
+  // Which of each cell's polygon vertices are real corners rather than
+  // T-vertices (an isogonal/rectangle tiling's non-edge-to-edge seams), in
+  // polygon order. A curved immersion can bend a T-vertex as far from flat as
+  // a genuine corner, so shape colouring cannot always tell them apart from
+  // the warped geometry alone (see shapePalette.ts `corners`) — this is the
+  // authoritative answer, known at build time from the flat template. Null
+  // for boards with no T-vertices, where the geometric fallback is exact.
+  cornerMask: Map<CellId, boolean[]> | null;
 }
 
 export type AnyBoard = Board | Board3D;
