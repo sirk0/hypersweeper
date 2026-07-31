@@ -54,6 +54,11 @@ export interface RepTile {
   children: Placement[];
   /** Rotation order of the lattice (6 triangular, 4 square). */
   order: number;
+  /** Where to centre the cell's number/flag/mine glyph, in the tile's own
+   * unrotated lattice coordinates — for a concave tile whose true centroid
+   * sits right at the reflex corner (a poor, cramped glyph spot). Unset for
+   * a tile whose centroid already fits a decent circle (the sphinx). */
+  glyphAnchor?: LatticePoint;
   rotate(p: LatticePoint): LatticePoint;
   mirror(p: LatticePoint): LatticePoint;
   toXy(p: LatticePoint): Vertex;
@@ -115,6 +120,12 @@ export const CHAIR: RepTile = {
   outline: CHAIR_OUTLINE,
   children: CHAIR_CHILDREN,
   order: 4,
+  // The centre of the "elbow" unit square — (0,0)-(1,0)-(1,1)-(0,1), the one
+  // touching both of the tile's other two squares — the south-west quadrant
+  // of the tile in its icon orientation. Ties the other two squares for
+  // inradius (each is exactly half a cell edge from its nearest boundary),
+  // so this is just the one fixed choice, not a bigger circle.
+  glyphAnchor: [0.5, 0.5],
   rotate: squareRotate,
   mirror: squareMirror,
   toXy: squareToXy,
@@ -174,9 +185,22 @@ export function repPlacements(tile: RepTile, levels: number): Placement[] {
   return placements;
 }
 
+// The menu icon (icons.ts) draws tile.toXy(...) straight into an SVG, where a
+// larger y ends up higher (icons flip y for the y-down SVG canvas); the game
+// board goes through the same-looking "flip y" in polygonBoard.ts, but into a
+// y-*up* WebGL scene, so a larger native y ends up lower there instead — the
+// two flips cancel oppositely, and the sphinx and chair render upside down
+// relative to their icons. Negating y alone here, on the board only, cancels
+// that back out.
+function boardXy(tile: RepTile, p: LatticePoint): Vertex {
+  const [x, y] = tile.toXy(p);
+  return [x, -y];
+}
+
 function repBoard(tile: RepTile, levels: number, mineCount: number, scale: number): Board {
   const cells = new Map<CellId, string[]>();
   const positions = new Map<string, Vertex>();
+  const anchors = new Map<CellId, LatticePoint>();
   for (const at of repPlacements(tile, levels)) {
     const [rot, mirrored, [tx, ty]] = at;
     // a mirrored placement reverses the outline's winding; walk it backwards
@@ -185,24 +209,31 @@ function repBoard(tile: RepTile, levels: number, mineCount: number, scale: numbe
     const keys = outline.map((v) => {
       const p = placePoint(tile, at, v);
       const key = `${p[0]},${p[1]}`;
-      if (!positions.has(key)) {
-        // The menu icon (icons.ts) draws tile.toXy(...) straight into an SVG,
-        // where a larger y ends up higher (icons flip y for the y-down SVG
-        // canvas); the game board goes through the same-looking "flip y" in
-        // polygonBoard.ts, but into a y-*up* WebGL scene, so a larger native y
-        // ends up lower there instead — the two flips cancel oppositely, and
-        // the sphinx and chair render upside down (mirrored top-to-bottom)
-        // relative to their icons. Negating y alone here, on the board only,
-        // cancels that back out.
-        const [x, y] = tile.toXy(p);
-        positions.set(key, [x, -y]);
-      }
+      if (!positions.has(key)) positions.set(key, boardXy(tile, p));
       return key;
     });
-    cells.set(cid(rot, mirrored, tx, ty), keys);
+    const cell = cid(rot, mirrored, tx, ty);
+    cells.set(cell, keys);
+    if (tile.glyphAnchor) anchors.set(cell, placePoint(tile, at, tile.glyphAnchor));
   }
   if (cells.size !== 4 ** levels) throw new Error("substitution produced overlapping placements");
-  return finalizeFlat(tile.mode, cells, positions, mineCount, scale);
+  const board = finalizeFlat(tile.mode, cells, positions, mineCount, scale);
+  if (anchors.size === 0) return board;
+  // Match finalizeFlat's own shift-then-scale exactly, off the same
+  // `positions` it read (an anchor isn't one of the cells' own vertices, so
+  // it isn't already in there).
+  let minX = Infinity;
+  let minY = Infinity;
+  for (const p of positions.values()) {
+    if (p[0] < minX) minX = p[0];
+    if (p[1] < minY) minY = p[1];
+  }
+  const glyphAnchor = new Map<CellId, Vertex>();
+  for (const [cell, anchor] of anchors) {
+    const [ax, ay] = boardXy(tile, anchor);
+    glyphAnchor.set(cell, [(ax - minX) * scale, (ay - minY) * scale]);
+  }
+  return { ...board, glyphAnchor };
 }
 
 /** The sphinx rep-tile, inflated `levels` times: 4**levels sphinxes filling one

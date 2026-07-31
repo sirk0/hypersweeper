@@ -31,6 +31,13 @@ export interface Board {
   mineCount: number;
   width: number;
   height: number;
+  // Where a cell's own polygon centroid is a poor glyph spot (a concave tile
+  // like the chair, whose centroid sits right at the reflex corner), the
+  // point to centre the number/flag/mine glyph on instead — still in
+  // pixel-space, transformed the same way the cell's own vertices are so it
+  // rides along with each cell's individual rotation/mirror on the board.
+  // Unset for every other board, which keeps sizing off the true centroid.
+  glyphAnchor?: Map<CellId, Vertex>;
 }
 
 /** Where an immersion passes through itself, the sheet that ends up *inside*

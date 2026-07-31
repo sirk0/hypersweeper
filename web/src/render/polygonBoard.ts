@@ -51,9 +51,12 @@ interface CellGeom {
   start: number; // first vertex index in the position/color buffers
   count: number; // vertex count for this cell
   poly: Vertex[]; // the cell's polygon in render space (centred, y up)
-  center: Vertex; // render-space centroid (x, y)
+  center: Vertex; // render-space centroid (x, y) — the fan/bevel/highlight anchor
   radius: number; // mean distance centroid -> vertices (bevel height)
-  inradius: number; // distance centroid -> nearest edge (glyph sizing)
+  glyphCenter: Vertex; // where the glyph is centred — board.glyphAnchor if the
+  //   board supplies one (a concave tile whose true centroid is a bad glyph
+  //   spot), else the same as `center`
+  glyphInradius: number; // distance glyphCenter -> nearest edge (glyph sizing)
   palette: CellPalette; // hidden/opened tones for this cell's shape
 }
 
@@ -140,6 +143,8 @@ export class PolygonBoard extends Group implements BoardMesh {
       const radius =
         poly.reduce((s, p) => s + Math.hypot(p[0] - centroid[0], p[1] - centroid[1]), 0) /
         poly.length;
+      const anchor = board.glyphAnchor?.get(cell);
+      const glyphCenter: Vertex = anchor ? [anchor[0] - cx, cy - anchor[1]] : centroid;
       const n = poly.length;
       // n fan triangles for the top face, 2n for each ring of walls under it
       const count = cellVertexCount(n, this.profile);
@@ -150,7 +155,8 @@ export class PolygonBoard extends Group implements BoardMesh {
         poly,
         center: centroid,
         radius,
-        inradius: polygonInradius(poly, centroid),
+        glyphCenter,
+        glyphInradius: polygonInradius(poly, glyphCenter),
         palette: cellPalette(tones.get(cell)!, "flat"),
       });
       vertexCount += count;
@@ -370,11 +376,11 @@ export class PolygonBoard extends Group implements BoardMesh {
       const uv = this.atlas.uv(glyph);
       if (!uv) continue;
       const g = this.geom[i]!;
-      const [cxp, cyp] = g.center;
+      const [cxp, cyp] = g.glyphCenter;
       // Sized by the inradius so the glyph stays inside the cell even on
       // pointy cells (triangles) where the mean vertex distance overshoots;
       // a flag pop scales this briefly for the spring-in.
-      const settled = g.inradius * 0.9;
+      const settled = g.glyphInradius * 0.9;
       const s = settled * this.anim.popScale(i, now);
       const z = g.radius * this.glyphHeight + 0.01;
       const [u0, v0, u1, v1] = uv;
