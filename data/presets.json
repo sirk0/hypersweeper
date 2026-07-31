@@ -648,6 +648,46 @@
         ]
       }
     },
+    "sphinx": {
+      "builder": "sphinx_board",
+      "args": {
+        "easy": [
+          2,
+          3,
+          33
+        ],
+        "medium": [
+          3,
+          10,
+          18
+        ],
+        "hard": [
+          4,
+          40,
+          13
+        ]
+      }
+    },
+    "chair": {
+      "builder": "chair_board",
+      "args": {
+        "easy": [
+          3,
+          10,
+          22
+        ],
+        "medium": [
+          4,
+          40,
+          16
+        ],
+        "hard": [
+          5,
+          160,
+          10
+        ]
+      }
+    },
     "elongated": {
       "builder": "archimedean_board",
       "args": {

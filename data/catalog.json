@@ -88,6 +88,8 @@
     "penrose": "Penrose rhombi",
     "spectre": "The Spectre",
     "phyllotaxis": "Phyllotactic spiral",
+    "sphinx": "Sphinx",
+    "chair": "Chair",
     "sphere": "Pentagonal hexecontahedron",
     "c80": "Chamfered dodecahedron",
     "c180": "Goldberg GP(3,0)",
@@ -142,13 +144,18 @@
       "spectre",
       "phyllotaxis"
     ],
+    "fractal": [
+      "sphinx",
+      "chair"
+    ],
     "familyLabels": {
       "regular": "Regular",
       "uniform": "Uniform",
       "dual": "Laves",
       "isogonal": "Isogonal",
       "rectangle": "Congruent rectangles",
-      "aperiodic": "Aperiodic"
+      "aperiodic": "Aperiodic",
+      "fractal": "Fractals"
     },
     "sphereModes": [
       "sphere",

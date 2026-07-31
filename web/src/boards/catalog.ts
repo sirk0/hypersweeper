@@ -146,12 +146,13 @@ export const SHAPED_MODES = MENU.shapedModes as Record<string, string[]>;
 
 /** The regular tilings the picker offers, in order (MENU.pickerRegular). */
 export const PICKER_REGULAR = MENU.pickerRegular as string[];
-/** The picker's family rows; "aperiodic" is added on the plane only — the
- * aperiodic tilings have no periodic domain to glue a seam with. Isogonal and
+/** The picker's family rows; the flat-only families are added on the plane
+ * only — an aperiodic tiling has no periodic domain to glue a seam with, and a
+ * fractal board is a self-similar shape rather than a window. Isogonal and
  * rectangle wrap every surface their member tilings' chirality allows, just
  * like uniform and dual. */
 export const PICKER_FAMILIES = ["regular", "uniform", "dual", "isogonal", "rectangle"];
-export const FLAT_ONLY_FAMILIES = ["aperiodic"];
+export const FLAT_ONLY_FAMILIES = ["aperiodic", "fractal"];
 // Isogonal and rectangle wrap the torus/Mobius/Klein bottle without error, but
 // at their current preset windows the wrap distorts them too much to be worth
 // playing there yet — the cylinder alone still reads well. Off the menu on
@@ -163,6 +164,9 @@ const MANIFOLD_EXCLUDED_FAMILIES: Record<string, string[]> = {
   klein: ["isogonal", "rectangle"],
 };
 export const APERIODIC_MODES = MENU.aperiodic as string[];
+// The fractal family: the rep-tile boards (sphinx, chair), each a patch whose
+// outline is the tile itself, scaled. One-off modes like the aperiodic ones.
+export const FRACTAL_MODES = MENU.fractal as string[];
 
 const FAMILY_MEMBERS: Record<string, string[]> = {
   regular: PICKER_REGULAR,
@@ -170,6 +174,8 @@ const FAMILY_MEMBERS: Record<string, string[]> = {
   dual: DUAL_ARCH,
   isogonal: ISOGONAL_ARCH,
   rectangle: RECTANGLE_ARCH,
+  aperiodic: APERIODIC_MODES,
+  fractal: FRACTAL_MODES,
 };
 
 /** One row of a picker family: the mode it launches, its label, and the
@@ -185,8 +191,9 @@ export interface FamilyRow {
  * family_rows). Rows the surface cannot carry — a chiral tiling on a mirror
  * seam — are dropped rather than shown disabled, as elsewhere in this menu. */
 export function familyRows(family: string, surfaceKey: string): FamilyRow[] {
-  if (family === "aperiodic") {
-    return APERIODIC_MODES.map((mode) => ({
+  if (FLAT_ONLY_FAMILIES.includes(family)) {
+    // a family of one-off boards: its members are modes, not tiling keys
+    return (FAMILY_MEMBERS[family] ?? []).map((mode) => ({
       mode,
       label: MODE_LABELS[mode] ?? mode,
       icon: mode,

@@ -29,9 +29,10 @@ import time
 import pygame
 
 from minesweeper.boards import (
-    APERIODIC_MODES,
     DIFFICULTIES,
     FAMILY_LABELS,
+    FAMILY_MEMBERS,
+    FLAT_ONLY_FAMILIES,
     MANIFOLD_LABELS,
     MANIFOLD_ORDER,
     MENU_ROOT,
@@ -39,12 +40,15 @@ from minesweeper.boards import (
     MODE_LABELS,
     MODES_3D,
     POLYHEDRA_MODES,
+    REP_TILES,
     SPHERE_MODES,
     build_board,
     family_rows,
     newell_normal,
     picker_families,
     picker_modes,
+    place_point,
+    rep_placements,
     surface_of,
     view_hint,
 )
@@ -943,6 +947,7 @@ def _icon_badge(s, cx, cy, r, shape: str) -> None:
 _ICON_ALIASES = {
     "tri": "trigrid",
     "aperiodic": "penrose",
+    "fractal": "sphinx",
     "polyhedra": "cube",
     "classic": "square",    # the "Classic" home entry: flat squares
     "manifolds": "torus",   # the "Flat manifolds" home entry
@@ -1119,6 +1124,23 @@ def _render_icon(key: str) -> pygame.Surface:
                             for x, y in hexagon],
                         fill=ICON_BLUE if k % 2 else ICON_BLUE_LIGHT, width=3)
         _icon_gloss(s, pygame.Rect(d * 0.06, d * 0.06, d * 0.88, d * 0.6))
+    elif key in REP_TILES:
+        # the rep-4 substitution itself: the four half-size tiles that fill
+        # one tile, drawn from the board's own geometry
+        tile = REP_TILES[key]
+        polygons = [[tile.to_xy(place_point(tile, at, v)) for v in tile.outline]
+                    for at in rep_placements(tile, 1)]
+        pts = [p for polygon in polygons for p in polygon]
+        min_x, max_x = min(x for x, _ in pts), max(x for x, _ in pts)
+        min_y, max_y = min(y for _, y in pts), max(y for _, y in pts)
+        sc = d * 0.84 / max(max_x - min_x, max_y - min_y)
+        ox = (d - (max_x - min_x) * sc) / 2
+        oy = (d - (max_y - min_y) * sc) / 2
+        for i, polygon in enumerate(polygons):
+            _icon_shape(s, [(ox + (x - min_x) * sc, oy + (max_y - y) * sc)
+                            for x, y in polygon],
+                        fill=ICON_BLUE if i % 2 else ICON_BLUE_LIGHT, width=3)
+        _icon_gloss(s, pygame.Rect(d * 0.08, d * 0.06, d * 0.84, d * 0.55))
     elif key == "elongated":
         # a square row under a triangle row
         _icon_shape(s, [(d * 0.12, d * 0.5), (d * 0.5, d * 0.5),
@@ -2182,8 +2204,11 @@ class MenuScreen:
             return f"{surface_label} — choose a tiling", rows
         fam = rest[0]
         heading = f"{surface_label} · {FAMILY_LABELS[fam]}"
-        if fam == "aperiodic":
-            return heading, [(m, MODE_LABELS[m], True) for m in APERIODIC_MODES]
+        if fam in FLAT_ONLY_FAMILIES:
+            # a family of one-off boards (aperiodic, fractal): its rows are
+            # modes, and every one of them exists on the plane
+            return heading, [(m, MODE_LABELS[m], True)
+                             for m in FAMILY_MEMBERS[fam]]
         # a tiling the surface cannot carry (a chiral one on a mirror seam) is
         # shown greyed out rather than hidden, so the family always reads whole
         return heading, [

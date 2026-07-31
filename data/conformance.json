@@ -987,6 +987,64 @@
         "hasCellCycle": false
       }
     },
+    "sphinx": {
+      "easy": {
+        "cellCount": 16,
+        "mineCount": 3,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 80,
+        "vertexCount": 65,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 64,
+        "mineCount": 10,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 288,
+        "vertexCount": 225,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 256,
+        "mineCount": 40,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 1088,
+        "vertexCount": 833,
+        "hasCellCycle": false
+      }
+    },
+    "chair": {
+      "easy": {
+        "cellCount": 64,
+        "mineCount": 10,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 288,
+        "vertexCount": 225,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 256,
+        "mineCount": 40,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 1088,
+        "vertexCount": 833,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 1024,
+        "mineCount": 160,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 4224,
+        "vertexCount": 3201,
+        "hasCellCycle": false
+      }
+    },
     "elongated": {
       "easy": {
         "cellCount": 97,

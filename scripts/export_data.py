@@ -29,6 +29,7 @@ from pathlib import Path
 from minesweeper.boards.catalog import (
     APERIODIC_MODES,
     FAMILY_LABELS,
+    FRACTAL_MODES,
     MANIFOLD_LABELS,
     MANIFOLD_ORDER,
     MENU_ROOT,
@@ -84,6 +85,7 @@ def build_catalog() -> dict:
             "manifoldLabels": dict(MANIFOLD_LABELS),
             "pickerRegular": list(PICKER_REGULAR),
             "aperiodic": list(APERIODIC_MODES),
+            "fractal": list(FRACTAL_MODES),
             "familyLabels": dict(FAMILY_LABELS),
             "sphereModes": list(SPHERE_MODES),
             "polyhedraModes": list(POLYHEDRA_MODES),

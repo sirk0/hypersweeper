@@ -31,6 +31,11 @@ const MODES = [
   // and the phyllotactic spiral: one equilateral hexagon in five arms, whose
   // five-fold rotational symmetry is what forbids a translation.
   "phyllotaxis",
+  // the fractal (rep-4) boards: the sphinx, whose patch is the sphinx again
+  // scaled (and whose tiles are mirrored in three of every four), and the
+  // chair, the L-shaped one -- neither is a rectangular window.
+  "sphinx",
+  "chair",
   // M7 isogonal tilings, which are not edge to edge: the two that put one
   // regular polygon on the board at several sizes, so the shots cover both the
   // T-vertex geometry and the size-lightness axis it needs.

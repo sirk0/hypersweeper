@@ -166,8 +166,8 @@ TILINGS = {
 #   Polyhedra       -> the solids
 #
 # The picker is a list of family submenus -- Regular, Uniform, Laves,
-# Isogonal and Congruent rectangles, plus (flat only) Aperiodic and a random
-# option. It is parameterised by the
+# Isogonal and Congruent rectangles, plus (flat only) Aperiodic and Fractals,
+# and a random option. It is parameterised by the
 # surface it was reached through, so the same picker serves the plane and every
 # flat manifold; the plane is reached through the home page's Flat entry rather
 # than repeated in the manifolds list. Chiral tilings are gated out of the
@@ -190,8 +190,9 @@ MANIFOLD_LABELS = dict(_MENU["manifoldLabels"])
 # The tiling picker's families. The uniform, dual, isogonal and rectangle
 # family members are exactly the ARCH_TILINGS rows of each family, so they
 # derive from that registry -- adding a tiling stays a one-row change.
-# Aperiodic tilings only exist on the plane (there is no periodic domain to
-# wrap), so that family alone is offered only when the surface is flat; the
+# The aperiodic and fractal boards only exist on the plane (there is no
+# periodic domain to wrap, and a rep-tile patch is a shape rather than a
+# window), so those families are offered only when the surface is flat; the
 # isogonal and rectangle families wrap every surface their member tilings'
 # chirality allows, exactly like the uniform and dual families.
 PICKER_REGULAR = tuple(_MENU["pickerRegular"])
@@ -200,6 +201,10 @@ DUAL_ARCH = tuple(t.key for t in ARCH_TILINGS if t.family == "dual")
 ISOGONAL_ARCH = tuple(t.key for t in ARCH_TILINGS if t.family == "isogonal")
 RECTANGLE_ARCH = tuple(t.key for t in ARCH_TILINGS if t.family == "rectangle")
 APERIODIC_MODES = tuple(_MENU["aperiodic"])
+# The fractal family: the rep-tile boards (sphinx, chair), each a patch whose
+# outline is the tile itself, scaled. Like the aperiodic ones they are one-off
+# modes rather than a tiling x surface product, so they live on the plane only.
+FRACTAL_MODES = tuple(_MENU["fractal"])
 FAMILY_LABELS = dict(_MENU["familyLabels"])
 FAMILY_MEMBERS = {
     "regular": PICKER_REGULAR,
@@ -208,10 +213,12 @@ FAMILY_MEMBERS = {
     "isogonal": ISOGONAL_ARCH,
     "rectangle": RECTANGLE_ARCH,
     "aperiodic": APERIODIC_MODES,
+    "fractal": FRACTAL_MODES,
 }
-# the picker's family rows, in order; "aperiodic" is added on the plane only
+# the picker's family rows, in order; the flat-only families (whose members are
+# one-off modes, not tilings) are added on the plane alone
 PICKER_FAMILIES = ("regular", "uniform", "dual", "isogonal", "rectangle")
-FLAT_ONLY_FAMILIES = ("aperiodic",)
+FLAT_ONLY_FAMILIES = ("aperiodic", "fractal")
 # Isogonal and rectangle wrap the torus/Mobius/Klein bottle without error, but
 # at their current preset windows the wrap distorts them too much to be worth
 # playing there yet -- the cylinder alone still reads well. Off the menu on
@@ -235,8 +242,8 @@ POLYHEDRA_MODES = tuple(_MENU["polyhedraModes"])
 # them under their tiling on the flat picker and nowhere else.
 SHAPED_MODES = {k: tuple(v) for k, v in _MENU["shapedModes"].items()}
 
-# Labels for the non-periodic (one-off) modes (aperiodic, sphere, solids,
-# shaped) listed in the menu tuples above.
+# Labels for the non-periodic (one-off) modes (aperiodic, fractal, sphere,
+# solids, shaped) listed in the menu tuples above.
 SOLO_LABELS = dict(_CATALOG["soloLabels"])
 
 # mode -> label. Periodic modes take the tiling's label; the flat triangle
@@ -260,8 +267,9 @@ def family_rows(family: str,
     them.
     """
     surface = SURFACES[surface_key]
-    if family == "aperiodic":
-        return tuple((m, MODE_LABELS[m], m, True) for m in APERIODIC_MODES)
+    if family in FLAT_ONLY_FAMILIES:
+        # a family of one-off boards: its members are modes, not tiling keys
+        return tuple((m, MODE_LABELS[m], m, True) for m in FAMILY_MEMBERS[family])
     rows: list[tuple[str, str, str, bool]] = []
     for key in FAMILY_MEMBERS[family]:
         spec = TILINGS_BY_KEY[key]
@@ -286,7 +294,8 @@ def picker_families(surface_key: str) -> tuple[str, ...]:
 def picker_modes(surface_key: str) -> tuple[str, ...]:
     """Every mode reachable on a surface through the tiling picker -- the pool
     the random button draws from (and the reachability guarantee in the tests).
-    The flat picker also carries the shaped boards and the aperiodic modes."""
+    The flat picker also carries the shaped boards and the aperiodic and
+    fractal ones."""
     modes = [mode for family in picker_families(surface_key)
              for _, _, mode, enabled in family_rows(family, surface_key)
              if enabled]
@@ -294,7 +303,7 @@ def picker_modes(surface_key: str) -> tuple[str, ...]:
 
 
 # The pool the random button draws from on the plane: every flat tiling board
-# (regular, shaped, uniform, dual and the aperiodic ones) -- no wrapped
+# (regular, shaped, uniform, dual, aperiodic and fractal) -- no wrapped
 # surfaces or solids.
 FLAT_MODES = picker_modes("flat")
 

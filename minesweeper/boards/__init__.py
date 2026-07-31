@@ -49,6 +49,8 @@ from minesweeper.boards.catalog import (  # noqa: F401
     FAMILY_LABELS,
     FAMILY_MEMBERS,
     FLAT_MODES,
+    FLAT_ONLY_FAMILIES,
+    FRACTAL_MODES,
     MANIFOLD_LABELS,
     MANIFOLD_ORDER,
     MENU_ROOT,
@@ -96,6 +98,15 @@ from minesweeper.boards.core import (  # noqa: F401
     corner_fans,
     euler_characteristic,
     newell_normal,
+)
+from minesweeper.boards.fractal import (  # noqa: F401
+    CHAIR,
+    REP_TILES,
+    SPHINX,
+    chair_board,
+    place_point,
+    rep_placements,
+    sphinx_board,
 )
 from minesweeper.boards.presets import (  # noqa: F401
     _PRESETS,

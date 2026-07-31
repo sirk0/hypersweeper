@@ -10,16 +10,22 @@ from minesweeper.boards import (
     _SPECTRE_OUTLINE,
     APERIODIC_MODES,
     ARCH_TILINGS,
+    CHAIR,
     DIFFICULTIES,
+    FRACTAL_MODES,
     MODE_LABELS,
     MODES_3D,
     POLYHEDRA_MODES,
+    ROOT3,
     SHAPED_MODES,
     SPHERE_MODES,
+    SPHINX,
     SURFACE_LABELS,
     TILINGS,
     _arch_template,
+    _finalize_flat,
     _phyllotaxis_tiles,
+    _shared_vertex_adjacency,
     _spectre_leaves,
     _z12_to_xy,
     _z_add,
@@ -33,6 +39,7 @@ from minesweeper.boards import (
     build_board,
     c80_board,
     c180_board,
+    chair_board,
     cube_board,
     cube_frame_board,
     cylinder_board,
@@ -50,11 +57,14 @@ from minesweeper.boards import (
     newell_normal,
     penrose_board,
     phyllotaxis_board,
+    place_point,
+    rep_placements,
     rhombicosidodecahedron_board,
     snub_dodecahedron_board,
     spectre_board,
     sphere_board,
     sphere_triangle_board,
+    sphinx_board,
     square_board,
     stepped_bipyramid_board,
     surface_of,
@@ -626,6 +636,223 @@ class TestPhyllotaxis:
             assert frozenset(options[0]) in patch
             for v, sectors in self._slots(options[0]).items():
                 occupied.setdefault(v, set()).update(sectors)
+
+
+class TestRepTiles:
+    """The two fractal (rep-4) boards: the sphinx and the chair.
+
+    A rep-tile board is one tile inflated ``levels`` times, so what has to
+    hold is that the dissection is real -- four half-size tiles filling the
+    tile exactly -- and that inflating it keeps every tile congruent to the
+    prototile while the patch stays a copy of it. The searches below
+    re-derive the hardcoded substitution tables from scratch (an exact cover
+    of the size-2 tile by unit tiles), which is what pins them.
+
+    Everything runs on the lattice's unit faces -- the sphinx's six unit
+    triangles, the chair's three unit squares -- each held as the sorted
+    tuple of its corner ids, so a placement moves a face by integer
+    arithmetic and coverage is exact set algebra.
+    """
+
+    @staticmethod
+    def _inside(x, y, polygon):
+        inside = False
+        for (x1, y1), (x2, y2) in zip(polygon, polygon[1:] + polygon[:1]):
+            if (y1 > y) != (y2 > y) and x < x1 + (y - y1) * (x2 - x1) / (y2 - y1):
+                inside = not inside
+        return inside
+
+    @classmethod
+    def _region(cls, tile, size=1):
+        """The unit faces inside the tile scaled by ``size``, by scanning its
+        bounding box: the ground truth the placed tiles are compared against."""
+        polygon = [tile.to_xy((x * size, y * size)) for x, y in tile.outline]
+        faces = set()
+        for a in range(-1, 4 * size + 1):
+            for b in range(-1, 3 * size + 1):
+                for corners in cls._unit_faces(tile, a, b):
+                    points = [tile.to_xy(c) for c in corners]
+                    cx = sum(x for x, _ in points) / len(points)
+                    cy = sum(y for _, y in points) / len(points)
+                    if cls._inside(cx, cy, polygon):
+                        faces.add(tuple(sorted(corners)))
+        return faces
+
+    @staticmethod
+    def _unit_faces(tile, a, b):
+        """The lattice's unit faces at cell (a, b): two triangles on the
+        triangular lattice, one square on the square lattice."""
+        if tile is SPHINX:
+            return ([(a, b), (a + 1, b), (a, b + 1)],
+                    [(a + 1, b), (a, b + 1), (a + 1, b + 1)])
+        return ([(a, b), (a + 1, b), (a + 1, b + 1), (a, b + 1)],)
+
+    @classmethod
+    def _placed(cls, tile, at):
+        """The unit faces a placed unit tile covers."""
+        return {tuple(sorted(place_point(tile, at, c) for c in face))
+                for face in cls._prototile(tile)}
+
+    _PROTOTILES: dict = {}
+
+    @classmethod
+    def _prototile(cls, tile):
+        if tile.mode not in cls._PROTOTILES:
+            cls._PROTOTILES[tile.mode] = cls._region(tile)
+        return cls._PROTOTILES[tile.mode]
+
+    @staticmethod
+    def _shoelace(points):
+        return abs(sum(a[0] * b[1] - b[0] * a[1] for a, b
+                       in zip(points, points[1:] + points[:1]))) / 2
+
+    @pytest.mark.parametrize("tile,faces", [(SPHINX, 6), (CHAIR, 3)])
+    def test_the_prototile_is_the_hexiamond_or_the_tromino(self, tile, faces):
+        assert len(self._prototile(tile)) == faces
+
+    @pytest.mark.parametrize("tile", [SPHINX, CHAIR])
+    def test_the_substitution_table_is_an_exact_dissection(self, tile):
+        # every child sits inside the size-2 parent, no two overlap, and
+        # together they cover it: the rep-4 property itself
+        parent = self._region(tile, size=2)
+        assert len(parent) == 4 * len(self._prototile(tile))
+        covered = set()
+        for child in tile.children:
+            placed = self._placed(tile, child)
+            assert placed <= parent
+            assert not placed & covered
+            covered |= placed
+        assert covered == parent
+
+    @pytest.mark.parametrize("tile", [SPHINX, CHAIR])
+    def test_the_dissection_is_the_one_the_table_holds(self, tile):
+        # an exact-cover search over every placement of the unit tile inside
+        # the size-2 tile. The sphinx's dissection is unique; the chair's
+        # tile is mirror-symmetric about its diagonal, so its comes back in
+        # several equivalent guises and the table holds the reflection-free
+        # one -- the classic chair substitution.
+        parent = self._region(tile, size=2)
+        options = [(at, placed)
+                   for rotation in range(tile.order)
+                   for mirrored in (0, 1)
+                   for tx in range(-8, 9)
+                   for ty in range(-8, 9)
+                   for at in [(rotation, mirrored, (tx, ty))]
+                   for placed in [self._placed(tile, at)]
+                   if placed <= parent]
+        solutions: list = []
+
+        def search(remaining, chosen):
+            if not remaining:
+                solutions.append(list(chosen))
+                return
+            pivot = min(remaining)
+            for at, placed in options:
+                if pivot in placed and placed <= remaining:
+                    chosen.append(at)
+                    search(remaining - placed, chosen)
+                    chosen.pop()
+
+        search(parent, [])
+        assert all(len(found) == 4 for found in solutions)
+        assert sorted(tile.children) in [sorted(found) for found in solutions]
+        if tile is SPHINX:
+            assert len(solutions) == 1  # the sphinx's dissection is unique
+        else:
+            assert all(mirrored == 0 for _, mirrored, _ in tile.children)
+
+    @pytest.mark.parametrize("tile", [SPHINX, CHAIR])
+    def test_inflation_tiles_the_supertile_exactly(self, tile):
+        # the level-3 patch covers the tile scaled by 8, with no gap and no
+        # overlap: the self-similar outline that makes these the fractal
+        # boards rather than a window cut out of a tiling
+        placements = rep_placements(tile, 3)
+        assert len(placements) == 64
+        covered = set()
+        for at in placements:
+            placed = self._placed(tile, at)
+            assert not placed & covered
+            covered |= placed
+        assert covered == self._region(tile, size=8)
+
+    def test_cell_counts_are_powers_of_four(self):
+        for levels in range(5):
+            assert len(sphinx_board(levels, 1).adjacency) == 4 ** levels
+            assert len(chair_board(levels, 1).adjacency) == 4 ** levels
+
+    def test_every_tile_is_the_prototile(self):
+        # each cell is a congruent copy of the tile -- the sphinx a pentagon
+        # of sides 3, 1, 1, 1, 2 (six unit triangles), the chair an L of
+        # three unit squares -- once the collinear step vertices along its
+        # edges are dropped
+        for board, sides, area in ((sphinx_board(3, 10, scale=1), 5, 6 * ROOT3 / 4),
+                                   (chair_board(3, 10, scale=1), 6, 3)):
+            shapes = set()
+            for polygon in board.polygons.values():
+                corners = [p for p, _ in _corners(polygon, tol=1e-6)]
+                assert len(corners) == sides
+                assert self._shoelace(polygon) == pytest.approx(area)
+                # congruent, not merely equal in area: the multiset of
+                # pairwise corner distances is the same for every tile
+                shapes.add(tuple(sorted(round(math.dist(a, b), 6)
+                                        for a in corners for b in corners)))
+            assert len(shapes) == 1
+
+    @pytest.mark.parametrize("mode", ["sphinx", "chair"])
+    def test_the_patch_is_simply_connected(self, mode):
+        # one boundary cycle and no interior hole: every edge is walked once
+        # in each direction inside the patch, so nothing overlaps either
+        board = build_board(mode, "easy")
+        directed = Counter()
+        for polygon in board.polygons.values():
+            points = [tuple(round(c, 6) for c in p) for p in polygon]
+            for a, b in zip(points, points[1:] + points[:1]):
+                directed[(a, b)] += 1
+        assert set(directed.values()) == {1}
+        assert _boundary_components(board) == 1
+        assert _euler_characteristic(board) == 1
+
+    @pytest.mark.parametrize("tile", [SPHINX, CHAIR])
+    def test_the_step_vertices_make_the_patch_a_mesh(self, tile):
+        # Neither tiling is edge to edge: a neighbour plants its corner in
+        # the middle of another tile's side. Carrying a vertex at every
+        # lattice step along each edge records those T-vertices, which is
+        # what keeps the patch a mesh -- drop them and the polygons no longer
+        # share whole edges, so the topology invariants stop reading a disc.
+        placements = rep_placements(tile, 3)
+        stepped = _finalize_flat(
+            tile.mode,
+            {at: [place_point(tile, at, v) for v in tile.outline]
+             for at in placements},
+            tile.to_xy, 1, 10)
+        corners_only = _finalize_flat(
+            tile.mode,
+            {at: [place_point(tile, at, v) for v in tile.corners()]
+             for at in placements},
+            tile.to_xy, 1, 10)
+        assert (_euler_characteristic(stepped), _boundary_components(stepped)) == (1, 1)
+        assert _euler_characteristic(corners_only) != 1
+        # none of them changes the drawn tile: they are collinear, which is
+        # why _corners drops them again before the shape is measured
+        for cell, polygon in stepped.polygons.items():
+            assert [p for p, _ in _corners(polygon, tol=1e-6)] == \
+                corners_only.polygons[cell]
+
+    def test_the_sphinx_gains_neighbours_from_its_split_edges(self):
+        # on the sphinx the T-vertices are load-bearing for the game too: a
+        # tile meeting another only across a split edge is a neighbour there
+        # and would not be one without the step vertices
+        placements = rep_placements(SPHINX, 3)
+        full = _shared_vertex_adjacency({
+            at: [place_point(SPHINX, at, v) for v in SPHINX.outline]
+            for at in placements})
+        corners_only = _shared_vertex_adjacency({
+            at: [place_point(SPHINX, at, v) for v in SPHINX.corners()]
+            for at in placements})
+        assert all(set(corners_only[cell]) < set(full[cell]) or
+                   corners_only[cell] == full[cell] for cell in full)
+        assert sum(map(len, corners_only.values())) < sum(map(len, full.values()))
+        assert min(len(n) for n in full.values()) >= 3
 
 
 class TestNeighborCounts:
@@ -1658,7 +1885,8 @@ class TestPresets:
 
     def test_every_mode_appears_exactly_once_in_the_menu(self):
         # the one-off (non-periodic) modes, plus every periodic tiling x surface
-        modes = list(APERIODIC_MODES + SPHERE_MODES + POLYHEDRA_MODES)
+        modes = list(APERIODIC_MODES + FRACTAL_MODES + SPHERE_MODES
+                     + POLYHEDRA_MODES)
         modes += [m for shaped in SHAPED_MODES.values() for m in shaped]
         modes += [m for _, surfaces in TILINGS.values() for m in surfaces.values()]
         assert sorted(modes) == sorted(MODE_LABELS)

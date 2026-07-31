@@ -34,6 +34,29 @@ service worker then caches, and looking right is worth more here than shaving
 kilobytes off first load, so nothing in CI fails on size (see "Bundle size"
 below). **All 112 modes, polished.**
 
+**M12 — Fractal (rep-tile) boards.** A new **Fractals** family in the flat
+tiling picker (`src/boards/fractal.ts`), holding two rep-4 boards: the
+**sphinx** (the pentagonal hexiamond — six unit triangles, sides 3·1·1·1·2) and
+the **chair** (the L-tromino). A rep-tile tiles a scaled copy of itself, so a
+board is one tile inflated `levels` times — 4**levels tiles whose outline is the
+tile again, scaled. That self-similar outline *is* the board: unlike every other
+flat board these are deliberately not a rectangular window (trimming the patch
+would throw away the only thing that makes them what they are), which puts them
+with the shaped boards as the exception to the square-window convention. The
+sphinx's dissection is unique — an exact-cover search of the size-2 sphinx finds
+exactly one arrangement, with three of the four children reflected — and the
+chair's is the classic reflection-free one, four quarter-turns. Both lattices
+are integer and each child translation is the parent's scaled by a power of two,
+so a placement stays an exact `(rotation, mirror, integer translation)` triple
+all the way down. Neither tiling is edge to edge, so tile outlines carry a
+vertex at every lattice step along their edges: the collinear ids are what let
+shared-vertex adjacency see a neighbour that plants its corner mid-edge, and
+`shapeMetrics` drops them again so the sphinx measures as a pentagon and the
+chair as a hexagon. Difficulty is a level of inflation: 3/4/5 for the chair
+(64/256/1024 cells), one step lower for the sphinx, whose tile is a long sliver
+that needs more room per cell (16/64/256).
+**All 157 modes.**
+
 **M11 — The phyllotactic spiral.** A fourth entry in the **Aperiodic** family
 (`src/boards/aperiodic.ts`): one equilateral convex hexagon (angles 72°/144°)
 in a five-fold spiral — the sunflower head a Voronoi tessellation of a
@@ -251,8 +274,9 @@ Practical knowledge for verifying changes by actually running the app
 - `src/game.ts`, `src/rng.ts` — pure game rules (port of `game.py`) and a
   seedable RNG.
 - `src/boards/` — `core.ts` (Board/Board3D, adjacency, topology, vector
-  helpers), `tilings.ts` (the flat regular builders), `solids.ts` (the
-  closed 3D boards), `surfaces.ts` (the torus/cylinder/Möbius/Klein wraps,
+  helpers), `tilings.ts` (the flat regular builders), `aperiodic.ts` /
+  `fractal.ts` (the aperiodic tilings and the rep-tile boards), `solids.ts`
+  (the closed 3D boards), `surfaces.ts` (the torus/cylinder/Möbius/Klein wraps,
   the Klein `cellCycle` and its self-intersection `clip`), `catalog.ts` /
   `presets.ts` (read `data/*.json`).
 - `src/render/` — one Three.js pipeline: `renderer.ts` (scene, ortho +
