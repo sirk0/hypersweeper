@@ -11,6 +11,7 @@ from minesweeper import gui as gui_mod  # noqa: E402
 from minesweeper.boards import (  # noqa: E402
     APERIODIC_MODES,
     FAMILY_MEMBERS,
+    FRACTAL_MODES,
     MANIFOLD_ORDER,
     MENU_ROOT,
     MODE_LABELS,
@@ -536,7 +537,7 @@ class TestMenu:
         assert menu.path == ["flat"]
         assert self.items(menu) == {
             "regular", "uniform", "dual", "isogonal", "rectangle", "aperiodic",
-            "random",
+            "fractal", "random",
         }
 
     def test_flat_regular_family_lists_the_tilings_and_shaped_boards(self):
@@ -575,6 +576,13 @@ class TestMenu:
         self.click_item(menu, "aperiodic")
         assert self.items(menu) == set(APERIODIC_MODES)
         assert self.click_item(menu, "penrose") == ("start", "penrose")
+
+    def test_flat_fractal_family_launches_a_mode(self):
+        menu = MenuScreen()
+        self.click_item(menu, "flat")
+        self.click_item(menu, "fractal")
+        assert self.items(menu) == set(FRACTAL_MODES)
+        assert self.click_item(menu, "sphinx") == ("start", "sphinx")
 
     def test_flat_random_tiling_launches_a_flat_board(self):
         menu = MenuScreen()
@@ -744,7 +752,7 @@ class TestMenu:
     def test_all_pages_draw(self, fonts):
         menu = MenuScreen()
         for path in ([], ["flat"], ["flat", "regular"], ["flat", "uniform"],
-                     ["flat", "aperiodic"],
+                     ["flat", "aperiodic"], ["flat", "fractal"],
                      ["manifolds"], ["manifolds", "klein"],
                      ["manifolds", "klein", "regular"],
                      ["manifolds", "klein", "uniform"],
@@ -830,12 +838,13 @@ class TestIcon:
             set(MENU_ROOT)                       # home entries
             | {"random", "hex"}                  # random row + home Flat icon
             | set(MANIFOLD_ORDER)                # the flat-manifold surfaces
-            | {"regular", "uniform", "dual", "aperiodic"}  # tiling families
+            | {"regular", "uniform", "dual", "aperiodic", "fractal"}  # families
             | set(TILINGS)                       # every tiling row in the picker
             | set(SPHERE_MODES)
             | set(POLYHEDRA_MODES)
             | {m for shaped in SHAPED_MODES.values() for m in shaped}
             | set(APERIODIC_MODES)
+            | set(FRACTAL_MODES)
         )
         for key in sorted(keys):
             icon = menu_icon(key)

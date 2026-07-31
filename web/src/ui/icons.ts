@@ -18,6 +18,7 @@ import {
   type ShapeTone,
 } from "../render/shapePalette";
 import { ARCH_TILINGS, archTemplate } from "../boards/tilings";
+import { placePoint, repPlacements, REP_TILES } from "../boards/fractal";
 import {
   c80Board,
   c180Board,
@@ -766,6 +767,7 @@ function surfaceMesh(point: SurfacePoint, opts: MeshOptions): string[] {
 const ALIASES: Record<string, string> = {
   tri: "trigrid",
   aperiodic: "penrose",
+  fractal: "sphinx", // the Fractals family row
   polyhedra: "cube",
   classic: "square", // the "Classic" home entry: flat squares
   manifolds: "torus", // the "Flat manifolds" home entry
@@ -914,6 +916,29 @@ function draw(rawKey: string): string[] {
     for (const [px, py] of raw) {
       parts.push(shape(hexagon(C + (px - midX) * r, C + (py - midY) * r, r)));
     }
+  } else if (REP_TILES[key]) {
+    // the rep-4 substitution itself: the four half-size tiles that fill one
+    // tile, drawn from the board's own geometry
+    const tile = REP_TILES[key]!;
+    const polygons = repPlacements(tile, 1).map((at) =>
+      tile.outline.map((v): P => tile.toXy(placePoint(tile, at, v))),
+    );
+    const xs = polygons.flat().map(([x]) => x!);
+    const ys = polygons.flat().map(([, y]) => y!);
+    const [minX, maxX] = [Math.min(...xs), Math.max(...xs)];
+    const [minY, maxY] = [Math.min(...ys), Math.max(...ys)];
+    const sc = (d * 0.84) / Math.max(maxX - minX, maxY - minY);
+    const ox = (d - (maxX - minX) * sc) / 2;
+    const oy = (d - (maxY - minY) * sc) / 2;
+    polygons.forEach((polygon, i) => {
+      parts.push(
+        shape(
+          polygon.map(([x, y]): P => [ox + (x! - minX) * sc, oy + (maxY - y!) * sc]),
+          i % 2 ? BASE : LIGHT,
+          3,
+        ),
+      );
+    });
   } else if (key === "penrose") {
     // a sun of five thick rhombi
     const side = d * 0.3;

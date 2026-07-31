@@ -136,6 +136,14 @@ describe("catalog families", () => {
     expect(pickerFamilies("flat")).toContain("aperiodic");
     expect(pickerFamilies("klein")).not.toContain("aperiodic");
   });
+
+  it("offers the fractal family, with its rep-tile boards, on the plane only", () => {
+    expect(pickerFamilies("flat")).toContain("fractal");
+    expect(pickerFamilies("torus")).not.toContain("fractal");
+    expect(familyRows("fractal", "flat").map((r) => r.mode)).toEqual(["sphinx", "chair"]);
+    // a one-off family's rows are modes, so each carries its own icon
+    expect(familyRows("fractal", "flat").map((r) => r.icon)).toEqual(["sphinx", "chair"]);
+  });
 });
 
 describe("menu reachability", () => {

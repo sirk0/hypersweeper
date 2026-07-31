@@ -13,8 +13,8 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   symbolic/barycentric keys in 3D); two cells are neighbors when they
   share a vertex. Modules: `core` (`Board`/`Board3D`, adjacency, topology
   invariants), `tilings` (flat tilings + the `ARCH_TILINGS` registry and
-  `_ArchTemplate` system), `aperiodic` (Penrose, Spectre, phyllotactic spiral),
-  `solids` (spherical
+  `_ArchTemplate` system), `aperiodic` (Penrose, Spectre, phyllotactic
+  spiral), `fractal` (the rep-tile boards: sphinx and chair), `solids` (spherical
   polyhedra, cube, tetrahedron, frames), `surfaces` (donut/cylinder/
   Möbius/Klein-bottle wrapping via shared immersion helpers), `catalog`
   (the menu, **derived** from `SURFACE_SPECS`/`TILING_SPECS`), `presets`
@@ -56,7 +56,7 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   shaped boards cut from them), **Uniform** (the eight non-regular uniform
   tilings, `family="uniform"` in `ARCH_TILINGS`), **Laves** (their
   eight duals), **Isogonal**, **Congruent rectangles** and, on the plane
-  only, **Aperiodic**. `ARCH_TILINGS` is
+  only, **Aperiodic** and **Fractals**. `ARCH_TILINGS` is
   listed in vertex-configuration order — Wikipedia's "List of Euclidean
   uniform tilings" order — and that registry order is the menu order.
   **To add a tiling or surface, see `AGENTS.md`** — a tiling is
@@ -101,12 +101,26 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   parallelohexagon, so each of ten 36° wedges is a plain block of its own
   translation lattice, and the odd wedges being pushed one edge out along
   `u1` is the entire spiral.
+  The two **fractal** boards are rep-tiles -- polygons that tile a scaled copy
+  of themselves. Each is one tile inflated `levels` times (rep-4, so 4**levels
+  cells: 64/256/1024 by difficulty for the chair, one level lower for the
+  sphinx, whose sliver of a tile needs more room) into a patch whose outline is
+  the tile again, scaled; that self-similar outline is the board, the second
+  deliberate exception to the square-window convention. The **sphinx** is the
+  pentagonal hexiamond on the triangular lattice (its dissection is unique --
+  three of its four children are reflected), the **chair** the L-tromino on
+  the square lattice (the classic reflection-free substitution, four
+  quarter-turns). Both lattices are integer and each child translation is the
+  parent's scaled by a power of two, so a placement stays an exact
+  `(rotation, mirror, translation)` triple; neither tiling is edge to edge, so
+  tile outlines carry a vertex at every lattice step and `corners`/
+  `shapeMetrics` drop those again before measuring.
 - `minesweeper/gui.py` — pygame UI. `MenuScreen` (a geometry-first home
   page — Classic / Flat / Flat manifolds / Sphere / Polyhedra. Classic
   launches flat squares; Flat (the plane) and each flat manifold (cylinder,
   Möbius, Klein, torus) open a shared tiling picker — the Regular / Uniform
-  / Laves family submenus, Isogonal, Congruent rectangles and Aperiodic on the
-  plane only, and a random option
+  / Laves family submenus, Isogonal, Congruent rectangles, and Aperiodic and
+  Fractals on the plane only, and a random option
   — parameterised by the surface it was reached through; Sphere and
   Polyhedra list their finished boards. Navigation is a `path` breadcrumb
   driven by the `MENU_ROOT`/`MANIFOLD_*`/`FAMILY_*`/`SPHERE_MODES`/
