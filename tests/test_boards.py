@@ -6,6 +6,7 @@ import pytest
 
 from minesweeper.boards import (
     _ARCH_CONFIGS,
+    _PHYLLO_HEX,
     _SPECTRE_OUTLINE,
     APERIODIC_MODES,
     ARCH_TILINGS,
@@ -18,8 +19,13 @@ from minesweeper.boards import (
     SURFACE_LABELS,
     TILINGS,
     _arch_template,
+    _phyllotaxis_tiles,
     _spectre_leaves,
     _z12_to_xy,
+    _z_add,
+    _z_rot,
+    _z_sub,
+    _z_to_xy,
     arch_klein_board,
     arch_mobius_board,
     arch_torus_board,
@@ -43,6 +49,7 @@ from minesweeper.boards import (
     mobius_triangle_board,
     newell_normal,
     penrose_board,
+    phyllotaxis_board,
     rhombicosidodecahedron_board,
     snub_dodecahedron_board,
     spectre_board,
@@ -465,6 +472,160 @@ class TestSpectre:
         scale = math.dist(*list(board.polygons.values())[0][:2])
         assert shoelace(loop) == pytest.approx(
             tile_area * scale**2 * len(board.polygons), rel=1e-9)
+
+
+class TestPhyllotaxis:
+    """The phyllotactic spiral: one equilateral convex hexagon
+    (72/144 degrees) in a five-fold spiral.
+
+    These tests say the construction is the tiling it claims to be: every
+    cell is that one hexagon, the patch is an exact tiling of a simply
+    connected region, it has five-fold rotational symmetry (which is what
+    rules out any translation), and the rosette of five tiles at the centre
+    leaves only one legal way to continue.
+    """
+
+    # the ten unit steps zeta^k, so an edge's direction is an integer
+    _DIRECTIONS = {_z_rot((1, 0, 0, 0), k): k for k in range(10)}
+
+    @classmethod
+    def _slots(cls, ids):
+        """The 36-degree sectors a tile covers at each of its corners, from
+        its exact vertex ids in counterclockwise order. Two tiles overlap
+        exactly when they share a corner and a sector there."""
+        out = {}
+        for i, vertex in enumerate(ids):
+            out_dir = cls._DIRECTIONS[_z_sub(ids[(i + 1) % 6], vertex)]
+            in_dir = cls._DIRECTIONS[_z_sub(ids[i - 1], vertex)]
+            out[vertex] = {(out_dir + j) % 10 for j in range((in_dir - out_dir) % 10)}
+        return out
+
+    @classmethod
+    def _placements(cls, vertex, sector, occupied):
+        """Every placement of the tile covering ``sector`` at ``vertex`` that
+        overlaps nothing already placed: each of its six corners, at each of
+        the ten rotations, deduplicated by the vertex set it lands on."""
+        found = {}
+        for rotation in range(10):
+            turned = [_z_rot(v, rotation) for v in _PHYLLO_HEX]
+            for corner in turned:
+                ids = [_z_add(_z_sub(v, corner), vertex) for v in turned]
+                slots = cls._slots(ids)
+                if sector not in slots[vertex]:
+                    continue
+                if any(occupied.get(v, set()) & taken for v, taken in slots.items()):
+                    continue
+                found[frozenset(ids)] = ids
+        return list(found.values())
+
+    def test_cell_counts(self):
+        # ten 36-degree wedges, each a rings x rings block of the tile's own
+        # translation lattice
+        assert len(phyllotaxis_board(1, 2).adjacency) == 10
+        assert len(phyllotaxis_board(3, 9).adjacency) == 90
+        assert len(phyllotaxis_board(6, 40).adjacency) == 360
+        assert len(phyllotaxis_board(8, 40, keep=160).adjacency) == 160
+
+    def test_the_tile_is_the_equilateral_72_144_hexagon(self):
+        # the one prototile: all six edges equal, angles
+        # 72, 144, 144, 72, 144, 144 -- the equilateral parallelohexagon
+        # whose 72-degree corners are the five that meet at the centre
+        board = phyllotaxis_board(3, 9)
+        for polygon in board.polygons.values():
+            assert len(polygon) == 6
+            edges = [math.dist(polygon[i], polygon[(i + 1) % 6]) for i in range(6)]
+            assert max(edges) - min(edges) < 1e-9 * max(edges)
+            angles = []
+            for i in range(6):
+                a, b, c = polygon[i - 1], polygon[i], polygon[(i + 1) % 6]
+                v1, v2 = (a[0] - b[0], a[1] - b[1]), (c[0] - b[0], c[1] - b[1])
+                angles.append(round(math.degrees(abs(math.atan2(
+                    v1[0] * v2[1] - v1[1] * v2[0],
+                    v1[0] * v2[0] + v1[1] * v2[1])))))
+            assert angles == [72, 144, 144, 72, 144, 144]
+
+    def test_tiles_cover_the_patch_exactly(self):
+        # tile areas sum to the area inside the patch's outer boundary, so
+        # the ten wedges meet with neither an overlap nor a gap
+        board = phyllotaxis_board(4, 20)
+
+        def shoelace(points):
+            return abs(sum(a[0] * b[1] - b[0] * a[1] for a, b
+                           in zip(points, points[1:] + points[:1]))) / 2
+
+        directed = Counter()
+        for polygon in board.polygons.values():
+            for i in range(6):
+                directed[(polygon[i], polygon[(i + 1) % 6])] += 1
+        assert set(directed.values()) == {1}
+
+        step = {a: b for a, b in directed if (b, a) not in directed}
+        start = next(iter(step))
+        loop, at = [start], step[start]
+        while at != start:
+            loop.append(at)
+            at = step[at]
+        assert len(loop) == len(step)  # the boundary is a single cycle
+        assert shoelace(loop) == pytest.approx(
+            sum(shoelace(p) for p in board.polygons.values()), rel=1e-9)
+
+    def test_the_patch_has_the_spiral_s_five_fold_symmetry(self):
+        # a 72-degree turn is wedge j -> wedge j+2, which keeps the odd/even
+        # offset -- so the tiling maps onto itself. It is *not* symmetric
+        # under the 36-degree turn (that would swap the two parities), which
+        # is exactly what makes the five arms curl.
+        board = phyllotaxis_board(4, 20)
+
+        def turned(cell):
+            wedge, m, n = cell
+            return ((wedge + 2) % 10, m, n)
+
+        assert {turned(c) for c in board.adjacency} == set(board.adjacency)
+        for cell, neighbors in board.adjacency.items():
+            assert set(map(turned, neighbors)) == set(board.adjacency[turned(cell)])
+
+    def test_no_translation_maps_the_patch_onto_itself(self):
+        # nonperiodicity, on the finite patch: a five-fold centre forbids any
+        # translation (the crystallographic restriction), so no vector taking
+        # one tile to another can carry the whole neighbourhood of the centre
+        # with it. The same check on a periodic tiling of the same hexagon
+        # would pass for its lattice vectors.
+        tiles = {frozenset(ids): key for key, ids in _phyllotaxis_tiles(4)}
+        centre = [ids for key, ids in _phyllotaxis_tiles(4) if key[1] < 2 and key[2] < 2]
+        origin = next(ids for key, ids in _phyllotaxis_tiles(4) if key == (0, 0, 0))
+        for target in tiles:
+            shift = _z_sub(sorted(target)[0], sorted(origin)[0])
+            if shift == (0, 0, 0, 0):
+                continue
+            assert any(frozenset(_z_add(v, shift) for v in ids) not in tiles
+                       for ids in centre)
+
+    def test_the_seed_rosette_forces_the_tiling(self):
+        # seeded with the five tiles that meet at the centre, the hexagon
+        # can be laid only one way -- which is what makes the spiral the
+        # tiling and not one of the tile's periodic ones.
+        # Filling the innermost uncovered corner each time, there is
+        # never a choice -- exactly one placement of the tile fits -- and it
+        # is always the tile the closed form puts there.
+        patch = {frozenset(ids) for _, ids in _phyllotaxis_tiles(4)}
+        placed = [ids for key, ids in _phyllotaxis_tiles(4)
+                  if key[0] % 2 == 0 and key[1:] == (0, 0)]
+        occupied: dict = {}
+        for ids in placed:
+            for vertex, sectors in self._slots(ids).items():
+                occupied.setdefault(vertex, set()).update(sectors)
+
+        for _ in range(40):
+            gaps = [(vertex, sector) for vertex, taken in occupied.items()
+                    for sector in range(10) if sector not in taken]
+            vertex, sector = min(gaps, key=lambda gap: (
+                round(math.hypot(*_z_to_xy(gap[0])), 9),
+                round(math.atan2(*reversed(_z_to_xy(gap[0]))), 9), gap[1]))
+            options = self._placements(vertex, sector, occupied)
+            assert len(options) == 1, "the seed leaves a choice"
+            assert frozenset(options[0]) in patch
+            for v, sectors in self._slots(options[0]).items():
+                occupied.setdefault(v, set()).update(sectors)
 
 
 class TestNeighborCounts:

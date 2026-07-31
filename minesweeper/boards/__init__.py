@@ -7,6 +7,10 @@ full public surface. See AGENTS.md for how to add tilings/surfaces.
 from __future__ import annotations
 
 from minesweeper.boards.aperiodic import (  # noqa: F401
+    _PHYLLO_A,
+    _PHYLLO_B,
+    _PHYLLO_HEX,
+    _PHYLLO_OFFSET,
     _PLACE_IDENT,
     _SPECTRE_DIRS,
     _SPECTRE_MYSTIC,
@@ -19,6 +23,7 @@ from minesweeper.boards.aperiodic import (  # noqa: F401
     _ZETA_BASIS,
     Z12Point,
     ZPoint,
+    _phyllotaxis_tiles,
     _place_compose,
     _place_point,
     _spectre_leaves,
@@ -30,11 +35,13 @@ from minesweeper.boards.aperiodic import (  # noqa: F401
     _z12_to_xy,
     _z_add,
     _z_div_phi,
+    _z_rot,
     _z_sub,
     _z_to_xy,
     _zeta12_mul,
     _zeta_mul,
     penrose_board,
+    phyllotaxis_board,
     spectre_board,
 )
 from minesweeper.boards.catalog import (  # noqa: F401

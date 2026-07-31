@@ -180,6 +180,141 @@ export function penroseBoard(
   return finalizeFlat("penrose", cellMap, positions, mineCount, scale);
 }
 
+// -- Phyllotactic spiral -----------------------------------------------------
+//
+// A spiral tiling by a single equilateral convex hexagon, angles 72°, 144°,
+// 144°, 72°, 144°, 144°: five tiles meet at the centre and the rest wind out
+// from it in five arms. It reads as the sunflower head a Voronoi tessellation
+// of a phyllotactic spiral draws, but it is built exactly and from one
+// congruent tile rather than sampled from spiral points. Nonperiodic, and not
+// by substitution the way Penrose and the Spectre are: the tiling has five-fold
+// rotational symmetry about its centre, and by the crystallographic restriction
+// no tiling with a five-fold centre has a translation at all. Laying it is
+// forced — from the rosette of five tiles at the centre, exactly one placement
+// of the tile fits the innermost gap at every step. Line-for-line port of
+// minesweeper/boards/aperiodic.py; see that file for the fuller commentary.
+//
+// In exact ℤ[ζ5] (the ring the Penrose board above already runs in): the tile
+// is the zonogon on three consecutive unit directions u0, u1, u2, so opposite
+// edges are parallel and equal and it tiles periodically on the lattice
+// a = u0+u1, b = u1+u2. Those sit 36° apart, so the lattice quadrant
+// {m·a + n·b : m, n ≥ 0} fills a 36° wedge and ten rotated copies fill the
+// plane. Odd wedges are pushed one tile out along u1, and that single offset is
+// the whole spiral: rotating by ζ² maps wedge j to j+2 and keeps the parity, so
+// the tiling has C5 symmetry but neither C10 nor a mirror.
+
+const Z_ZERO: ZPoint = [0, 0, 0, 0];
+
+/** Multiply by ζᵏ, i.e. rotate k·36° about the origin. */
+function zRot(p: ZPoint, k: number): ZPoint {
+  let out = p;
+  for (let i = ((k % 10) + 10) % 10; i > 0; i--) out = zetaMul(out);
+  return out;
+}
+
+function zScale(p: ZPoint, k: number): ZPoint {
+  return [p[0] * k, p[1] * k, p[2] * k, p[3] * k];
+}
+
+const Z_POWERS: ZPoint[] = [[1, 0, 0, 0]];
+for (let k = 0; k < 9; k++) Z_POWERS.push(zetaMul(Z_POWERS[k]!));
+
+// The tile: the zonogon on u0, u1, u2, walked counterclockwise from its 72°
+// corner (the one that meets the centre of the spiral).
+const PHYLLO_HEX: ZPoint[] = [
+  Z_ZERO,
+  Z_POWERS[0]!,
+  zAdd(Z_POWERS[0]!, Z_POWERS[1]!),
+  zAdd(zAdd(Z_POWERS[0]!, Z_POWERS[1]!), Z_POWERS[2]!),
+  zAdd(Z_POWERS[1]!, Z_POWERS[2]!),
+  Z_POWERS[2]!,
+];
+
+// The tile lattice (a, b) and the half-step that offsets the odd wedges.
+const PHYLLO_A = zAdd(Z_POWERS[0]!, Z_POWERS[1]!);
+const PHYLLO_B = zAdd(Z_POWERS[1]!, Z_POWERS[2]!);
+const PHYLLO_OFFSET = Z_POWERS[1]!;
+
+interface PhyllotaxisTile {
+  wedge: number;
+  m: number;
+  n: number;
+  ids: ZPoint[];
+}
+
+interface PhyllotaxisRow extends PhyllotaxisTile {
+  near: number;
+}
+
+/** The ten wedges grown `rings` lattice steps each — the whole tiling, in
+ * wedge order. */
+function phyllotaxisTiles(rings: number): PhyllotaxisTile[] {
+  const tiles: PhyllotaxisTile[] = [];
+  for (let wedge = 0; wedge < 10; wedge++) {
+    const base = wedge % 2 ? PHYLLO_OFFSET : Z_ZERO;
+    for (let m = 0; m < rings; m++) {
+      for (let n = 0; n < rings; n++) {
+        const shift = zAdd(base, zAdd(zScale(PHYLLO_A, m), zScale(PHYLLO_B, n)));
+        tiles.push({ wedge, m, n, ids: PHYLLO_HEX.map((v) => zRot(zAdd(v, shift), wedge)) });
+      }
+    }
+  }
+  return tiles;
+}
+
+/**
+ * The phyllotactic spiral: one equilateral convex hexagon
+ * (72°/144°) tiling the plane in five spiral arms. Grows the ten 36° wedges out
+ * to `rings` lattice steps each, for 10·rings² tiles, then — like
+ * `penroseBoard` and `spectreBoard` — `keep` trims the patch to its `keep`
+ * centremost tiles by Chebyshev distance from the spiral's centre, so the board
+ * reads as a square block around the five-fold rosette instead of a
+ * ten-pointed star. `null` keeps the whole patch; `scale` is pixels per edge.
+ */
+export function phyllotaxisBoard(
+  rings: number,
+  mineCount: number,
+  keep: number | null = null,
+  scale = 44,
+): Board {
+  const rows: PhyllotaxisRow[] = phyllotaxisTiles(rings).map((tile) => {
+    let cx = 0;
+    let cy = 0;
+    for (const v of tile.ids) {
+      const [x, y] = zToXy(v);
+      cx += x;
+      cy += y;
+    }
+    cx /= tile.ids.length;
+    cy /= tile.ids.length;
+    // The patch is centred on the tiling's own five-fold centre, so the trim
+    // measures from the origin rather than from a sampled centroid. Quantising
+    // the distance keeps the sort order identical to Python's, where the last
+    // bit of a cosine need not agree.
+    const near = Math.floor(Math.max(Math.abs(cx), Math.abs(cy)) * 1e6 + 0.5);
+    return { ...tile, near };
+  });
+
+  let kept = rows;
+  if (keep !== null && keep < rows.length) {
+    kept = [...rows]
+      .sort((r1, r2) => r1.near - r2.near || r1.wedge - r2.wedge || r1.m - r2.m || r1.n - r2.n)
+      .slice(0, keep);
+  }
+
+  const cellMap = new Map<CellId, string[]>();
+  const positions = new Map<string, Vertex>();
+  for (const row of kept) {
+    const keys = row.ids.map((v) => {
+      const k = zKey(v);
+      if (!positions.has(k)) positions.set(k, zToXy(v));
+      return k;
+    });
+    cellMap.set(cid(row.wedge, row.m, row.n), keys);
+  }
+  return finalizeFlat("phyllotaxis", cellMap, positions, mineCount, scale);
+}
+
 // -- The Spectre: a chiral aperiodic monotile --------------------------------
 //
 // Tile(1,1) (Smith–Myers–Kaplan–Goodman-Strauss, 2023): a 13-gon that is also an

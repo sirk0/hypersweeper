@@ -958,6 +958,35 @@
         "hasCellCycle": false
       }
     },
+    "phyllotaxis": {
+      "easy": {
+        "cellCount": 60,
+        "mineCount": 9,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 216,
+        "vertexCount": 157,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 160,
+        "mineCount": 26,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 542,
+        "vertexCount": 383,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 430,
+        "mineCount": 68,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 1393,
+        "vertexCount": 964,
+        "hasCellCycle": false
+      }
+    },
     "elongated": {
       "easy": {
         "cellCount": 97,
