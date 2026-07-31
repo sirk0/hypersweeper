@@ -2,7 +2,7 @@
 // data/presets.json. A builder-name → function dispatch mirrors Python's
 // _JSON_BUILDERS. M1 ported the flat regular modes; M2 adds the solids.
 import presetsData from "@data/presets.json";
-import { penroseBoard, spectreBoard } from "./aperiodic";
+import { penroseBoard, spectreBoard, phyllotaxisBoard } from "./aperiodic";
 import { DIFFICULTIES } from "./catalog";
 import type { AnyBoard } from "./core";
 import {
@@ -93,6 +93,7 @@ const BUILDERS: Record<string, Builder> = {
   arch_klein_board: archKleinBoard,
   penrose_board: penroseBoard,
   spectre_board: spectreBoard,
+  phyllotaxis_board: phyllotaxisBoard,
 };
 
 interface PresetSpec {

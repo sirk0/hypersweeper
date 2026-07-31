@@ -962,6 +962,39 @@ function draw(rawKey: string): string[] {
     const ox = (d - (maxX - minX) * sc) / 2;
     const oy = (d - (maxY - minY) * sc) / 2;
     parts.push(shape(raw.map(([x, y]) => [ox + (x - minX) * sc, oy + (maxY - y) * sc])));
+  } else if (key === "phyllotaxis") {
+    // the innermost ten tiles of the spiral: the five 72°/144° hexagons that
+    // meet at the centre, and the five of the odd wedges, offset one edge out —
+    // the offset that starts the arms turning
+    const u: P[] = [0, 1, 2].map((k) => [
+      Math.cos((36 * k * Math.PI) / 180),
+      Math.sin((36 * k * Math.PI) / 180),
+    ]);
+    const hex: P[] = [
+      [0, 0],
+      u[0]!,
+      [u[0]![0] + u[1]![0], u[0]![1] + u[1]![1]],
+      [u[0]![0] + u[1]![0] + u[2]![0], u[0]![1] + u[1]![1] + u[2]![1]],
+      [u[1]![0] + u[2]![0], u[1]![1] + u[2]![1]],
+      u[2]!,
+    ];
+    // |D| + |u1|: the tip of an odd wedge's tile, the patch's outer radius
+    const r = (d * 0.46) / (2 + 2 * Math.cos(Math.PI / 5));
+    for (let k = 0; k < 10; k++) {
+      const a = ((36 * k - 90) * Math.PI) / 180;
+      const [cosA, sinA] = [Math.cos(a), Math.sin(a)];
+      const [ox2, oy2] = k % 2 ? u[1]! : [0, 0];
+      parts.push(
+        shape(
+          hex.map(([x, y]): P => {
+            const [px, py] = [x + ox2, y + oy2];
+            return [C + r * (px * cosA - py * sinA), C + r * (px * sinA + py * cosA)];
+          }),
+          k % 2 ? BASE : LIGHT,
+          3,
+        ),
+      );
+    }
   } else if (SPHERES.includes(key)) {
     // the real solid, projected: a dark disc behind it closes the silhouette
     // where the outermost faces fall away from the viewer

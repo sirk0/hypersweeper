@@ -23,11 +23,11 @@ Import order is a strict DAG; a module only imports from the ones above it.
 |--------|----------------|
 | `core.py` | `Board` / `Board3D`, the `_shared_vertex_adjacency` neighbour rule, `_build` (lattice→pixels) and `_finalize_flat` (float→pixels), 3D vector helpers, and the topology invariants `euler_characteristic` / `boundary_components` / `corner_fans`. |
 | `tilings.py` | Regular flat builders (square/triangle/trigrid/hex/hexhex/hextri/hextriangle), the `_ArchTemplate` system, the eight Archimedean `_*_template()` factories plus their eight Laves duals (built by `_dual_template`), the six isogonal (non-edge-to-edge) ones and the five congruent-rectangle bonds, and the **`ARCH_TILINGS`** registry (the one place any of them is declared, with `_FAMILY_TRAITS` saying what each family is). |
-| `aperiodic.py` | Penrose (P3) and the Spectre (Tile(1,1), the chiral monotile), each with its own exact-arithmetic vertex ids — ℤ[ζ5] and ℤ[ζ12]. The Spectre's ring is *dense* in the plane, so unlike Penrose's discrete lattice there is no lattice to snap a float vertex back to: its placements are carried as exact `(rotation, mirror, translation)` triples and no floating point enters the substitution at all. |
+| `aperiodic.py` | Penrose (P3), the Spectre (Tile(1,1), the chiral monotile) and the phyllotactic spiral, each with exact-arithmetic vertex ids — ℤ[ζ5] for Penrose and the spiral, ℤ[ζ12] for the Spectre. The Spectre's ring is *dense* in the plane, so unlike Penrose's discrete lattice there is no lattice to snap a float vertex back to: its placements are carried as exact `(rotation, mirror, translation)` triples and no floating point enters the substitution at all. The spiral is the odd one out — no substitution, just ten 36° wedges of the tile's own translation lattice, the odd ones offset a step; nonperiodic because its five-fold centre forbids any translation. |
 | `solids.py` | Closed/convex and polycube 3D boards (pentagonal hexecontahedron, Goldberg polyhedra, geodesic icosahedron, rhombicosidodecahedron, truncated icosidodecahedron, cube, tetrahedron, frames, bipyramid). |
 | `surfaces.py` | Wrapping tilings onto surfaces: the three immersion points (`_torus_point`, `_cylinder_point`, `_mobius_point`), the shared `_assemble` tail, the nine simple `*_board` wrappers, and the Archimedean `arch_torus_board` / `arch_cylinder_board` / `arch_mobius_board`. |
 | `catalog.py` | The menu, **derived**: `SURFACE_SPECS` and `TILING_SPECS` (leaf data loaded from `data/catalog.json`) produce `MODE_LABELS`, `TILINGS`, `SURFACE_LABELS`, the geometry-first menu tables (`MENU_ROOT`/`MANIFOLD_*`/`FAMILY_*`/`SPHERE_MODES`/`POLYHEDRA_MODES`/`SHAPED_MODES`) and the picker helpers (`family_rows`, `picker_families`, `picker_modes`), `MODES_3D`, `mode_for`, `surface_of`, `view_hint`. |
-| `presets.py` | Difficulty presets and `build_board`. Flat regular, solid, Archimedean/Laves and aperiodic (penrose/spectre) presets all load from `data/presets.json` (shared with the web port). The Archimedean rows are authored in the compact **`ARCH_PRESETS`** table (tiling → surface → difficulty → args) that `scripts/export_data.py` expands into `data/presets.json`. |
+| `presets.py` | Difficulty presets and `build_board`. Flat regular, solid, Archimedean/Laves and aperiodic (penrose/spectre/phyllotaxis) presets all load from `data/presets.json` (shared with the web port). The Archimedean rows are authored in the compact **`ARCH_PRESETS`** table (tiling → surface → difficulty → args) that `scripts/export_data.py` expands into `data/presets.json`. |
 
 `__init__.py` re-exports the whole public surface, so `from
 minesweeper.boards import ...` is unchanged by the split.
@@ -46,7 +46,7 @@ written twice:
 - `data/presets.json` — the difficulty presets for the **ported** modes
   (the flat regular ones — square/triangle/trigrid/hex/hexhex/hextriangle —
   the twelve solids, the regular-tiling surface wraps, every Archimedean/Laves
-  tiling × surface, and the two aperiodic tilings — penrose/spectre), as
+  tiling × surface, and the three aperiodic tilings — penrose/spectre/phyllotaxis), as
   `{mode: {builder, args}}`. The Archimedean/Laves rows carry the tiling
   key as their first arg. `presets.py` loads every row into `_PRESETS`
   via `_JSON_BUILDERS`; `_PRESETS` starts empty and holds only any

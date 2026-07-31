@@ -11,7 +11,7 @@ by scripts/export_data.py. See AGENTS.md.
 from __future__ import annotations
 
 from minesweeper.boards._data import load
-from minesweeper.boards.aperiodic import penrose_board, spectre_board
+from minesweeper.boards.aperiodic import penrose_board, phyllotaxis_board, spectre_board
 from minesweeper.boards.core import DIFFICULTIES, ROOT3, Board, Board3D
 from minesweeper.boards.solids import (
     c80_board,
@@ -100,9 +100,11 @@ _JSON_BUILDERS = {
     "arch_mobius_board": arch_mobius_board,
     "arch_klein_board": arch_klein_board,
     # Aperiodic tilings take positional args: penrose_board(subdivisions,
-    # mine_count, scale, keep); spectre_board(levels, mine_count, keep, scale).
+    # mine_count, scale, keep); spectre_board(levels, mine_count, keep, scale);
+    # phyllotaxis_board(rings, mine_count, keep, scale).
     "penrose_board": penrose_board,
     "spectre_board": spectre_board,
+    "phyllotaxis_board": phyllotaxis_board,
 }
 
 # Explicit presets for the one-off boards not yet in the shared data/presets.json.

@@ -1097,6 +1097,28 @@ def _render_icon(key: str) -> pygame.Surface:
         pts = [(ox + (x - min(xs)) * sc, oy + (max(ys) - y) * sc) for x, y in raw]
         _icon_shape(s, pts, width=4)
         _icon_gloss(s, pygame.Rect(d * 0.1, d * 0.06, d * 0.8, d * 0.55))
+    elif key == "phyllotaxis":
+        # the innermost ten tiles of the spiral: the five 72/144 hexagons
+        # that meet at the centre, and the five of the odd wedges, offset
+        # one edge out -- the offset that starts the arms turning
+        u = [(math.cos(math.radians(36 * k)), math.sin(math.radians(36 * k)))
+             for k in range(3)]
+        hexagon = [(0.0, 0.0), u[0],
+                   (u[0][0] + u[1][0], u[0][1] + u[1][1]),
+                   (sum(p[0] for p in u), sum(p[1] for p in u)),
+                   (u[1][0] + u[2][0], u[1][1] + u[2][1]),
+                   u[2]]
+        # |D| + |u1|: the tip of an odd wedge's tile, the patch's outer radius
+        r = d * 0.46 / (2 + 2 * math.cos(math.radians(36)))
+        for k in range(10):
+            angle = math.radians(36 * k - 90)
+            cos_a, sin_a = math.cos(angle), math.sin(angle)
+            offset = u[1] if k % 2 else (0.0, 0.0)
+            _icon_shape(s, [(c + r * ((x + offset[0]) * cos_a - (y + offset[1]) * sin_a),
+                             c + r * ((x + offset[0]) * sin_a + (y + offset[1]) * cos_a))
+                            for x, y in hexagon],
+                        fill=ICON_BLUE if k % 2 else ICON_BLUE_LIGHT, width=3)
+        _icon_gloss(s, pygame.Rect(d * 0.06, d * 0.06, d * 0.88, d * 0.6))
     elif key == "elongated":
         # a square row under a triangle row
         _icon_shape(s, [(d * 0.12, d * 0.5), (d * 0.5, d * 0.5),

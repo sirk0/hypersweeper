@@ -22,7 +22,7 @@ const groups: [string, string[]][] = [
   ["Uniform tilings", UNIFORM_ARCH],
   ["Dual-uniform tilings", DUAL_ARCH],
   ["Isogonal tilings", ISOGONAL_ARCH],
-  ["Aperiodic", ["penrose", "hat"]],
+  ["Aperiodic", MENU.aperiodic as string[]],
   ["Sphere", [...SPHERE_MODES]],
   ["Polyhedra", [...POLYHEDRA_MODES]],
   ["Shaped boards", Object.values(SHAPED_MODES).flat()],

@@ -87,6 +87,7 @@
   "soloLabels": {
     "penrose": "Penrose rhombi",
     "spectre": "The Spectre",
+    "phyllotaxis": "Phyllotactic spiral",
     "sphere": "Pentagonal hexecontahedron",
     "c80": "Chamfered dodecahedron",
     "c180": "Goldberg GP(3,0)",
@@ -138,7 +139,8 @@
     ],
     "aperiodic": [
       "penrose",
-      "spectre"
+      "spectre",
+      "phyllotaxis"
     ],
     "familyLabels": {
       "regular": "Regular",

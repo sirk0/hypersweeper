@@ -13,7 +13,8 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   symbolic/barycentric keys in 3D); two cells are neighbors when they
   share a vertex. Modules: `core` (`Board`/`Board3D`, adjacency, topology
   invariants), `tilings` (flat tilings + the `ARCH_TILINGS` registry and
-  `_ArchTemplate` system), `aperiodic` (Penrose, Spectre), `solids` (spherical
+  `_ArchTemplate` system), `aperiodic` (Penrose, Spectre, phyllotactic spiral),
+  `solids` (spherical
   polyhedra, cube, tetrahedron, frames), `surfaces` (donut/cylinder/
   Möbius/Klein-bottle wrapping via shared immersion helpers), `catalog`
   (the menu, **derived** from `SURFACE_SPECS`/`TILING_SPECS`), `presets`
@@ -74,13 +75,13 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   centre (`archimedean_board` keeps an `nx`×`ny` domain block of the
   `_ArchTemplate` centred on the tiling's biggest tile, so the window maps
   onto itself under the tiling's point group); for aperiodic ones
-  (`penrose_board`, `spectre_board`) grow generously and trim
+  (`penrose_board`, `spectre_board`, `phyllotaxis_board`) grow generously and trim
   to the `keep` centremost cells by Chebyshev distance (`max(|dx|, |dy|)`)
   — generously enough that `keep` is a small fraction of the patch, or the
   substitution's own star-shaped outline is what the board reads as. See
   the `AGENT NOTE` in `boards/tilings.py`.
-  The two aperiodic boards each keep exact vertex ids in their own ring:
-  ℤ[ζ5] (Penrose) and ℤ[ζ12] (Spectre). Only Penrose's is discrete — ℤ[ζ12]
+  The three aperiodic boards each keep exact vertex ids in a cyclotomic ring:
+  ℤ[ζ5] (Penrose and the spiral) and ℤ[ζ12] (Spectre). Only Penrose's is discrete — ℤ[ζ12]
   is dense in the plane, so `spectre_board` cannot snap a float vertex back
   to a lattice the way the game's original third aperiodic board, The Hat
   (since removed as a menu entry), did — and instead carries every
@@ -90,6 +91,16 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   is the collinear one, kept so a neighbour's corner landing there is a
   shared vertex id, dropped again by `shapeMetrics`/`corners` so the tile
   measures as the 13-gon it is drawn as.
+  The third, `phyllotaxis_board`, is nonperiodic by **symmetry** rather than
+  by substitution: one equilateral convex hexagon (angles 72°/144°) in a
+  five-fold spiral — the sunflower-head look of a Voronoi tessellation of a
+  phyllotactic spiral, but built exactly from one congruent tile rather than
+  sampled from spiral points. The rosette of five tiles at the centre forces
+  every tile after it, and a tiling with a five-fold centre can have no
+  translation at all. It needs no deflation — the hexagon is a
+  parallelohexagon, so each of ten 36° wedges is a plain block of its own
+  translation lattice, and the odd wedges being pushed one edge out along
+  `u1` is the entire spiral.
 - `minesweeper/gui.py` — pygame UI. `MenuScreen` (a geometry-first home
   page — Classic / Flat / Flat manifolds / Sphere / Polyhedra. Classic
   launches flat squares; Flat (the plane) and each flat manifold (cylinder,

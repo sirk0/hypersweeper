@@ -34,6 +34,24 @@ service worker then caches, and looking right is worth more here than shaving
 kilobytes off first load, so nothing in CI fails on size (see "Bundle size"
 below). **All 112 modes, polished.**
 
+**M11 — The phyllotactic spiral.** A fourth entry in the **Aperiodic** family
+(`src/boards/aperiodic.ts`): one equilateral convex hexagon (angles 72°/144°)
+in a five-fold spiral — the sunflower head a Voronoi tessellation of a
+phyllotactic spiral draws, built exactly and from one congruent tile rather
+than sampled from spiral points. It is the one aperiodic board here with **no
+substitution**: the hexagon is a parallelohexagon, so it tiles periodically on
+the lattice `a = u0+u1`, `b = u1+u2`, those two sit 36° apart, and ten rotated
+copies of that lattice *quadrant* fill the plane. Pushing the odd wedges one
+edge out along `u1` is the entire spiral — five tiles meet at the centre, the
+seam between wedges winds instead of running straight, and the patch has C5 but
+neither C10 nor a mirror. Nonperiodic follows from the symmetry alone: by the
+crystallographic restriction a tiling with a five-fold centre has no
+translation, and laying it is forced — from the five-tile rosette exactly one
+placement fits each innermost gap. Runs in ℤ[ζ5], the ring the Penrose board
+already uses, so vertex ids are exact integer tuples; the trim is measured from
+the true centre (rather than a sampled centroid) and quantised, so Python and
+TypeScript pick the same cells. **All 155 modes.**
+
 **M10 — Cell styles.** How a cell is *cut* is now the player's
 (`src/render/cellStyle.ts`, Settings › Cell style): **Classic** (the beveled
 button), **Flat** (unlit plates in flat colour, wide gaps), **Soft** (rounded

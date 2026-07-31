@@ -625,6 +625,29 @@
         ]
       }
     },
+    "phyllotaxis": {
+      "builder": "phyllotaxis_board",
+      "args": {
+        "easy": [
+          5,
+          9,
+          60,
+          26
+        ],
+        "medium": [
+          8,
+          26,
+          160,
+          22
+        ],
+        "hard": [
+          11,
+          68,
+          430,
+          17
+        ]
+      }
+    },
     "elongated": {
       "builder": "archimedean_board",
       "args": {

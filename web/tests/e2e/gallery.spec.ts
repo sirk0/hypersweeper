@@ -28,6 +28,9 @@ const MODES = [
   // -- no tile in its patch is ever mirrored).
   "penrose",
   "spectre",
+  // and the phyllotactic spiral: one equilateral hexagon in five arms, whose
+  // five-fold rotational symmetry is what forbids a translation.
+  "phyllotaxis",
   // M7 isogonal tilings, which are not edge to edge: the two that put one
   // regular polygon on the board at several sizes, so the shots cover both the
   // T-vertex geometry and the size-lightness axis it needs.
