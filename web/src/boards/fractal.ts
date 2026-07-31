@@ -185,7 +185,18 @@ function repBoard(tile: RepTile, levels: number, mineCount: number, scale: numbe
     const keys = outline.map((v) => {
       const p = placePoint(tile, at, v);
       const key = `${p[0]},${p[1]}`;
-      if (!positions.has(key)) positions.set(key, tile.toXy(p));
+      if (!positions.has(key)) {
+        // The menu icon (icons.ts) draws tile.toXy(...) straight into an SVG,
+        // where a larger y ends up higher (icons flip y for the y-down SVG
+        // canvas); the game board goes through the same-looking "flip y" in
+        // polygonBoard.ts, but into a y-*up* WebGL scene, so a larger native y
+        // ends up lower there instead — the two flips cancel oppositely, and
+        // the sphinx and chair render upside down (mirrored top-to-bottom)
+        // relative to their icons. Negating y alone here, on the board only,
+        // cancels that back out.
+        const [x, y] = tile.toXy(p);
+        positions.set(key, [x, -y]);
+      }
       return key;
     });
     cells.set(cid(rot, mirrored, tx, ty), keys);
