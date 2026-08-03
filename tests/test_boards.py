@@ -15,6 +15,7 @@ from minesweeper.boards import (
     CHAIR,
     DIFFICULTIES,
     FRACTAL_MODES,
+    GOSPER,
     MODE_LABELS,
     MODES_3D,
     PENTAFLAKE,
@@ -50,6 +51,7 @@ from minesweeper.boards import (
     cylinder_board,
     cylinder_hex_board,
     cylinder_triangle_board,
+    gosper_board,
     hex_board,
     hexhex_board,
     hextriangle_board,
@@ -1111,17 +1113,201 @@ class TestPentaflake:
             assert len(pentaflake_board(levels, 1).adjacency) == 6 ** levels
 
 
+class TestGosperIsland:
+    """The fifth fractal board, and the only one whose *boundary* is the
+    fractal: 7**n plain regular hexagons in a patch with no holes at all,
+    whose outline converges on the Gosper island.
+
+    The hexagon is no rep-tile -- seven of them make a flower, not a bigger
+    hexagon -- so there is no dissection to re-derive here. What has to hold
+    instead is the arithmetic that makes the flower inflate at all: the
+    lattice is the Eisenstein integers Z[zeta], zeta = exp(i*pi/3), the
+    inflation is multiplication by 2 + zeta (norm 7), and the seven children
+    are a complete set of residues modulo it. That is what makes the patch
+    exactly the 7**n digit strings, with nothing repeated and nothing left
+    out; the oracle for the rest is plain complex arithmetic, as for the
+    pentaflake.
+    """
+
+    ZETA = cmath.exp(1j * math.pi / 3)
+    LAMBDA = 2 + cmath.exp(1j * math.pi / 3)   # the inflation, |.| = sqrt7
+
+    @classmethod
+    def _complex(cls, p):
+        a, b = p
+        return a + b * cls.ZETA
+
+    @staticmethod
+    def _divisible(p):
+        """Is the lattice point ``p`` a multiple of 2 + zeta?
+
+        Multiply by the conjugate 3 - zeta and the divisor becomes the norm:
+        p is a multiple of 2 + zeta exactly when p * (3 - zeta) is a multiple
+        of 7, which is plain integer arithmetic. ((a + b*zeta)(3 - zeta) =
+        (3a + b) + (2b - a)*zeta, since zeta**2 = zeta - 1.)
+        """
+        a, b = p
+        return (3 * a + b) % 7 == 0 and (2 * b - a) % 7 == 0
+
+    @pytest.mark.parametrize("p", [(1, 0), (0, 1), (3, -1), (-2, 4), (5, 5)])
+    def test_the_ring_is_the_eisenstein_integers(self, p):
+        # rotation is multiplication by zeta (60 degrees), the mirror is
+        # complex conjugation, and the inflation is multiplication by
+        # 2 + zeta -- all exact on integer pairs because zeta**2 = zeta - 1
+        # keeps every product in the ring
+        z = self._complex(p)
+        assert self._complex(GOSPER.rotate(p)) == pytest.approx(z * self.ZETA)
+        assert self._complex(GOSPER.mirror(p)) == pytest.approx(z.conjugate())
+        assert self._complex(GOSPER.scale(p)) == pytest.approx(z * self.LAMBDA)
+        assert GOSPER.to_xy(p) == pytest.approx((z.real, z.imag))
+        turned = p
+        for _ in range(GOSPER.order):
+            turned = GOSPER.rotate(turned)
+        assert turned == p
+        assert GOSPER.mirror(GOSPER.mirror(p)) == p
+
+    def test_the_inflation_is_sqrt7_at_19_degrees(self):
+        # the flower is seven hexagons, so the inflation scales areas by 7
+        # and lengths by sqrt7 -- and it cannot do that without turning,
+        # because scaling by sqrt7 alone takes the lattice point 1 to
+        # (sqrt7, 0), which is no lattice point at all (the ring's real
+        # elements are the plain integers). That forced turn is the whole
+        # reason the island's edge is fractal: every level is laid down
+        # askew of the one below, so the outline never settles down.
+        assert abs(self.LAMBDA) == pytest.approx(GOSPER.factor)
+        assert GOSPER.factor == pytest.approx(7 ** 0.5)
+        assert math.degrees(cmath.phase(self.LAMBDA)) == pytest.approx(19.106605, abs=1e-6)
+        # anything sqrt7 = 2.65 from the origin has coordinates well inside
+        # this box, so scanning it settles the point
+        assert all(GOSPER.to_xy((a, b)) != pytest.approx((7 ** 0.5, 0.0), abs=1e-9)
+                   for a in range(-9, 10) for b in range(-9, 10))
+
+    def test_the_seven_children_are_the_residues_mod_the_inflation(self):
+        # every child is a plain translation -- one hexagon step out along
+        # each of the six directions, plus the middle one -- and no two of
+        # them differ by a multiple of 2 + zeta. Seven classes, seven
+        # children: a complete residue system, which is exactly what makes
+        # the flower tile the plane by the inflated lattice and the digit
+        # strings below distinct
+        assert len(GOSPER.children) == 7
+        assert all(rot == 0 and not mirrored for rot, mirrored, _ in GOSPER.children)
+        digits = [t for _, _, t in GOSPER.children]
+        assert digits[0] == (0, 0)
+        theta = 1 + self.ZETA        # one step from a hexagon to a neighbour
+        assert [self._complex(d) for d in digits[1:]] == pytest.approx(
+            [theta * self.ZETA ** k for k in range(6)])
+        for i, first in enumerate(digits):
+            for second in digits[i + 1:]:
+                assert not self._divisible((first[0] - second[0], first[1] - second[1]))
+
+    @pytest.mark.parametrize("levels", [0, 1, 2, 3])
+    def test_inflation_matches_the_float_construction(self, levels):
+        # the exact placements against the same nesting done naively in
+        # complex floats: seven level-(n-1) islands, one in the middle and
+        # six a step out along the once-inflated lattice
+        def islands(n):
+            if n == 0:
+                return [0j]
+            below = islands(n - 1)
+            step = (1 + self.ZETA) * self.LAMBDA ** (n - 1)
+            offsets = [0j] + [step * self.ZETA ** k for k in range(6)]
+            return [centre + offset for offset in offsets for centre in below]
+
+        placements = substitution_placements(GOSPER, levels)
+        assert len(placements) == 7 ** levels
+
+        def rounded(points):
+            return sorted((round(x, 6), round(y, 6)) for x, y in points)
+
+        exact = rounded(GOSPER.to_xy(t) for _, _, t in placements)
+        naive = rounded((z.real, z.imag) for z in islands(levels))
+        assert [c for point in exact for c in point] == \
+            pytest.approx([c for point in naive for c in point], abs=1e-6)
+
+    def test_cell_counts_are_powers_of_seven(self):
+        for levels in range(4):
+            assert len(gosper_board(levels, 1).adjacency) == 7 ** levels
+
+    def test_every_tile_is_the_unit_regular_hexagon(self):
+        # one congruent tile, edge to edge: like the carpet and the
+        # pentaflake and unlike the two rep-tiles, it needs no collinear
+        # step vertices to stay a mesh
+        board = gosper_board(3, 10, scale=1)
+        for polygon in board.polygons.values():
+            assert len(polygon) == 6
+            assert len(_corners(polygon, tol=1e-6)) == 6
+            sides = [math.dist(a, b)
+                     for a, b in zip(polygon, polygon[1:] + polygon[:1])]
+            assert sides == pytest.approx([1] * 6)  # side = circumradius
+
+    @pytest.mark.parametrize("levels", [1, 2, 3, 4])
+    def test_the_edge_is_the_fractal_and_the_patch_is_a_disc(self, levels):
+        # 7**n hexagons but only 6*3**n edges on the boundary: the area
+        # grows by 7 a level and the perimeter by 3, so the outline's
+        # dimension is log3 / log sqrt7 = 1.129 while the patch it encloses
+        # is a plain disc -- no holes, unlike the carpet and the pentaflake,
+        # and the one fractal board here whose fractal is its edge
+        board = gosper_board(levels, 1, scale=1)
+        directed = Counter()
+        for polygon in board.polygons.values():
+            points = [tuple(round(c, 6) for c in p) for p in polygon]
+            for a, b in zip(points, points[1:] + points[:1]):
+                directed[(a, b)] += 1
+        assert set(directed.values()) == {1}
+        boundary = sum(1 for a, b in directed if (b, a) not in directed)
+        assert boundary == 6 * 3 ** levels
+        assert _euler_characteristic(board) == 1
+        assert _boundary_components(board) == 1
+
+    @pytest.mark.parametrize("levels", [1, 2, 3])
+    def test_the_island_turns_six_ways_but_never_reflects(self, levels):
+        # the seven digits are closed under multiplication by a unit, so the
+        # whole patch is: it has the hexagon's own six-fold rotation at every
+        # level. Conjugation instead sends 2 + zeta to its conjugate, i.e.
+        # the island turned the other way, so from level 2 on the patch is
+        # chiral -- the flowsnake's handedness, visible on the board
+        centres = {t for _, _, t in substitution_placements(GOSPER, levels)}
+        assert {GOSPER.rotate(t) for t in centres} == centres
+        assert ({GOSPER.mirror(t) for t in centres} == centres) == (levels == 1)
+
+    def test_a_hexagon_touches_at_most_six_others(self):
+        # a hexagon tiling is edge to edge and three hexagons meet at each
+        # corner, so sharing a vertex is sharing an edge: six neighbours at
+        # most, and on the island's ragged edge as few as three
+        board = gosper_board(3, 1)
+        assert max(len(n) for n in board.adjacency.values()) == 6
+        assert min(len(n) for n in board.adjacency.values()) == 3
+        seen, stack = set(), [next(iter(board.adjacency))]
+        while stack:
+            cell = stack.pop()
+            if cell not in seen:
+                seen.add(cell)
+                stack.extend(board.adjacency[cell])
+        assert len(seen) == len(board.adjacency)
+
+
 @pytest.mark.parametrize("mode", sorted(SUBSTITUTIONS))
 def test_a_substitutions_scale_is_its_factor(mode):
     # `factor` is the linear scale as a plain number and `scale` is that same
     # multiplication done exactly on the lattice; nothing else ties the two
-    # together, and for the pentaflake the number is irrational
+    # together, and for the pentaflake the number is irrational. `scale` is a
+    # similarity rather than a pure scaling: the Gosper island's turns the
+    # lattice 19.106 degrees as it stretches it, because no hexagon-lattice
+    # vector is sqrt7 long and multiplying by 2 + zeta is the only way to get
+    # there. So what is pinned is the length, and that whatever turn comes
+    # with it is the same for every point.
     tile = SUBSTITUTIONS[mode]
+    turns = []
     for p in tile.outline:
         before = tile.to_xy(p)
         after = tile.to_xy(tile.scale(p))
         assert math.hypot(*after) == pytest.approx(tile.factor * math.hypot(*before))
-        assert after == pytest.approx(tuple(c * tile.factor for c in before))
+        if math.hypot(*before) < 1e-9:
+            continue          # the origin, which every scaling fixes
+        turns.append(complex(*after) / complex(*before) / tile.factor)
+    assert turns == pytest.approx([turns[0]] * len(turns))
+    expected = cmath.exp(1j * math.atan2(ROOT3, 5)) if mode == "gosper" else 1
+    assert turns[0] == pytest.approx(expected)
 
 
 class TestNeighborCounts:

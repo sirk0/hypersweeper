@@ -34,6 +34,40 @@ service worker then caches, and looking right is worth more here than shaving
 kilobytes off first load, so nothing in CI fails on size (see "Bundle size"
 below). **All 112 modes, polished.**
 
+**M15 — The Gosper island.** A fifth board in the **Fractals** family, and the
+first whose *boundary* is the fractal rather than its interior: plain regular
+hexagons, no holes at all, in a patch whose outline converges on the **Gosper
+island** — the closed curve the flowsnake draws. The hexagon is no rep-tile
+(seven of them make a flower, not a bigger hexagon), so unlike the first four
+there is nothing to inflate but the *patch*: seven level-(n−1) islands, one in
+the middle and six around it, are the level-n island. Three things it brings:
+
+- **An inflation that turns.** The triangular lattice is the ring of Eisenstein
+  integers Z[ζ] (ζ = e^(iπ/3)), and the inflation is multiplication by 2 + ζ, of
+  norm 7 — a **spiral similarity**, √7 at 19.106°. It could not be anything else:
+  scaling by √7 alone would send the lattice point 1 to (√7, 0), which is no
+  lattice point. `scale` is therefore no longer a pure scaling, and
+  `test_a_substitutions_scale_is_its_factor` pins the length and the *sameness*
+  of the turn rather than assuming there is none.
+- **Seven children that are seven residues.** The flower's translations are
+  {0} and the six units, times θ = 1 + ζ — a complete set of residues modulo
+  2 + ζ (the quotient ring is F7). That is exactly what makes the level-n patch
+  the 7ⁿ digit strings θ·Σ d_k (2 + ζ)^k with nothing repeated and nothing left
+  out, and the flower tile the plane by the inflated lattice.
+- **A fractal edge on a plain disc.** 7ⁿ hexagons behind only 6·3ⁿ boundary
+  edges: area ×7 a level, perimeter ×3, so the outline's dimension is
+  log3/log√7 = 1.129 while what it encloses is a disc (χ = 1, one boundary
+  circle) — no holes, unlike the carpet and the pentaflake. The digits are
+  closed under multiplication by a unit, so the patch keeps the hexagon's
+  six-fold rotation at every level, but never a mirror past level 1: the
+  flowsnake is chiral, and the board shows it.
+
+Its hexagons meet edge to edge, so like the carpet and the pentaflake it needs no
+collinear step vertices. Difficulty is a level of inflation: level 2 (49 cells)
+easy, level 3 (343) medium, and at ×7 a level there is no fourth size worth
+playing, so hard reuses the level-3 patch at the classic hard board's ~20% mine
+density, as the carpet and the pentaflake do. **All 160 modes.**
+
 **M14 — The pentaflake.** A fourth board in the **Fractals** family: Dürer's
 pentagon, the regular pentagon scaled by φ² and refilled with six — one seated
 in each corner, sharing that corner with the parent, plus one in the middle
