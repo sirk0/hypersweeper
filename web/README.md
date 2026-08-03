@@ -34,6 +34,37 @@ service worker then caches, and looking right is worth more here than shaving
 kilobytes off first load, so nothing in CI fails on size (see "Bundle size"
 below). **All 112 modes, polished.**
 
+**M14 — The pentaflake.** A fourth board in the **Fractals** family: Dürer's
+pentagon, the regular pentagon scaled by φ² and refilled with six — one seated
+in each corner, sharing that corner with the parent, plus one in the middle
+turned a half turn. The six cover 6/φ⁴ of the inflated pentagon and what is left
+over is five **golden gnomons** (36-72-72 triangles), one per side, so like the
+carpet it is a fractal with holes rather than a dissection. Three things it
+brings that the first three did not:
+
+- **Its lattice is not integer.** Five-fold symmetry needs rank 4 — no lattice
+  of two integers carries a 72° rotation — so its vertex ids live in the
+  cyclotomic ring **Z[ζ10]** (ζ = e^(iπ/5)), as Penrose's do in Z[ζ5]. A
+  `LatticePoint` is now a tuple of *however many* integers the lattice needs, and
+  nothing in the shared machinery may index a coordinate by name. φ² = 2 + ζ² − ζ³
+  is exact in that ring, and the inflation only ever *multiplies* by the factor
+  (`inflate`), because an irrational scale cannot be divided back out of a lattice
+  point.
+- **Holes that are born, not built in.** At level 1 the five gaps still open onto
+  the patch's own boundary, so the patch is a disc. A hole appears where two
+  supertiles are glued along a whole edge — the five middle-to-corner edges of
+  every substitution — and each such edge carries 2ⁿ⁻¹ − 1 gaps down its length,
+  one from every scale below. That gives (6ⁿ − 5·2ⁿ + 4) / 4 holes, hence Euler
+  characteristic 1 − holes and holes + 1 boundary circles.
+- **Five neighbours, never more.** Three pentagons and 3·108 = 324° meet at a
+  corner, so a fourth cannot reach one: a cell touches a neighbour either across
+  a whole edge or at a single corner, and five sides is the ceiling.
+
+Difficulty is a level of inflation: level 2 (36 cells) easy, level 3 (216)
+medium, and at ×6 a level there is no fourth size worth playing, so hard reuses
+the level-3 patch at the classic hard board's ~20% mine density, exactly as the
+carpet does. **All 159 modes.**
+
 **M13 — The Sierpinski carpet.** A third board in the **Fractals** family, and
 the first one that is not a rep-tile: the unit square tripled and refilled with
 eight copies of itself — the 3×3 block *minus its centre*. The children do not

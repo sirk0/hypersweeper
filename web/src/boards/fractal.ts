@@ -1,7 +1,7 @@
-// Port of minesweeper/boards/fractal.py — the three self-similar (fractal) flat
-// boards: the sphinx, the chair and the Sierpinski carpet. Structure and cell
-// ids mirror the Python source so the two stay diffable; see it for the fuller
-// commentary.
+// Port of minesweeper/boards/fractal.py — the four self-similar (fractal) flat
+// boards: the sphinx, the chair, the Sierpinski carpet and the pentaflake.
+// Structure and cell ids mirror the Python source so the two stay diffable; see
+// it for the fuller commentary.
 //
 // Each is one tile inflated `levels` times: the tile is scaled up by the
 // substitution's `factor` and refilled with copies of itself, so the patch grows
@@ -21,51 +21,108 @@
 //     children do not fill the inflated tile, and that missing middle ninth,
 //     repeated at every scale, is the board: the one flat board that is not a
 //     disc (a level-n carpet has (8**n − 1) / 7 square holes).
+//   * The **pentaflake** (Dürer's pentagon) is the regular pentagon scaled by
+//     φ² and refilled with six: one per corner plus a half-turned middle. Like
+//     the carpet it leaves gaps — five golden gnomons, one per side — and
+//     unlike every other board here its lattice is not integer: five-fold
+//     symmetry needs rank 4, so its vertex ids live in the cyclotomic ring
+//     Z[ζ10], as Penrose's do in Z[ζ5].
 //
-// All three lattices are integer and every child translation is the parent's
-// scaled by a power of the factor, so a placement stays an exact (rotation,
-// mirror, integer translation) triple all the way down and vertex ids need no
-// tolerance.
+// Every child translation is the parent's scaled by a power of the factor, so a
+// placement stays an exact (rotation, mirror, lattice translation) triple all
+// the way down and vertex ids need no tolerance. That is why the inflation only
+// ever *multiplies* by the factor (`inflate`): the three integer lattices could
+// divide it out again, but φ² is irrational and Z[ζ10] is dense in the plane.
 //
 // The sphinx's and the chair's outlines carry a vertex at *every* lattice step
 // along their edges, not just at their corners: those two tilings are not edge
 // to edge, and the collinear ids are what let shared-vertex adjacency see a
 // neighbour that plants its corner mid-edge (the bargain the isogonal tilings
 // and the Spectre make). `shapeMetrics` drops them again, so the sphinx reads as
-// a pentagon and the chair as a hexagon. The carpet needs none of that: its unit
-// squares meet edge to edge, corner to corner.
+// a pentagon and the chair as a hexagon. The carpet and the pentaflake need none
+// of that: their tiles meet edge to edge, corner to corner.
 
 import { type Board, type CellId, cid, finalizeFlat, type Vertex } from "./core";
 
-export type LatticePoint = readonly [number, number];
+/** A vertex's coordinates in the tile's own lattice: two of them for the three
+ * integer lattices, four for the pentaflake's cyclotomic ring. */
+export type LatticePoint = readonly number[];
 
 /** The rigid motion x ↦ R^rot(M^mirror x) + translation, exactly. */
 export type Placement = readonly [number, number, LatticePoint];
-
-const IDENTITY: Placement = [0, 0, [0, 0]];
 
 const ROOT3 = Math.sqrt(3);
 
 // Triangular lattice: (a, b) stands for a·(1, 0) + b·(1/2, √3/2), so a 60°
 // rotation and a mirror are both integer maps.
-const triRotate = ([a, b]: LatticePoint): LatticePoint => [-b, a + b];
-const triMirror = ([a, b]: LatticePoint): LatticePoint => [a + b, -b];
-const triToXy = ([a, b]: LatticePoint): Vertex => [a + b / 2, (b * ROOT3) / 2];
+const triRotate = ([a, b]: LatticePoint): LatticePoint => [-b!, a! + b!];
+const triMirror = ([a, b]: LatticePoint): LatticePoint => [a! + b!, -b!];
+const triToXy = ([a, b]: LatticePoint): Vertex => [a! + b! / 2, (b! * ROOT3) / 2];
 
-const squareRotate = ([x, y]: LatticePoint): LatticePoint => [-y, x];
-const squareMirror = ([x, y]: LatticePoint): LatticePoint => [x, -y];
-const squareToXy = ([x, y]: LatticePoint): Vertex => [x, y];
+const squareRotate = ([x, y]: LatticePoint): LatticePoint => [-y!, x!];
+const squareMirror = ([x, y]: LatticePoint): LatticePoint => [x!, -y!];
+const squareToXy = ([x, y]: LatticePoint): Vertex => [x!, y!];
+
+/** Scaling on an integer lattice: multiply every coordinate. */
+const times =
+  (n: number) =>
+  (p: LatticePoint): LatticePoint =>
+    p.map((c) => c * n);
+
+// Z[ζ10] — the pentaflake's lattice, ζ = exp(iπ/5): (a, b, c, d) stands for
+// a + bζ + cζ² + dζ³. Rank 4 is forced, not a convenience: no lattice of two
+// integers carries a 72° rotation, so there is no integer plane to build a
+// five-fold tiling on (the same reason Penrose lives in Z[ζ5]). Every power
+// reduces through ζ's minimal polynomial x⁴ − x³ + x² − x + 1, i.e.
+// ζ⁴ = ζ³ − ζ² + ζ − 1 and ζ⁵ = −1.
+
+/** Multiply by ζ: a 36° turn, so the rotation order is 10. */
+const pentaRotate = ([a, b, c, d]: LatticePoint): LatticePoint => [
+  -d!,
+  a! + d!,
+  b! - d!,
+  c! + d!,
+];
+
+/** Complex conjugation, ζ^k ↦ ζ^(10−k): the mirror in the real axis
+ * (conj(ζ) = 1 − ζ + ζ² − ζ³). */
+const pentaMirror = ([a, b, c, d]: LatticePoint): LatticePoint => [
+  a! + b!,
+  -b!,
+  b! - d!,
+  -b! - c!,
+];
+
+/** Multiply by φ² = 2 + ζ² − ζ³, the inflation factor. (φ = ζ + 1/ζ =
+ * 2cos36° is real and lives in the ring, so the scaling stays exact where a
+ * float would not.) */
+function pentaScale(p: LatticePoint): LatticePoint {
+  const r2 = pentaRotate(pentaRotate(p));
+  const r3 = pentaRotate(r2);
+  return p.map((c, k) => 2 * c + r2[k]! - r3[k]!);
+}
+
+const ZETA10 = [0, 1, 2, 3].map(
+  (k): Vertex => [Math.cos((Math.PI * k) / 5), Math.sin((Math.PI * k) / 5)],
+);
+
+const pentaToXy = (p: LatticePoint): Vertex => [
+  p.reduce((sum, c, k) => sum + c * ZETA10[k]![0], 0),
+  p.reduce((sum, c, k) => sum + c * ZETA10[k]![1], 0),
+];
 
 export interface Substitution {
   mode: string;
   /** The unit tile, a vertex per lattice step along every edge, CCW. */
   outline: LatticePoint[];
   /** The unit tiles inside the tile scaled by `factor` — a dissection for a
-   * rep-tile, a dissection with a hole in it for the carpet. */
+   * rep-tile, a dissection with holes in it for the carpet and the
+   * pentaflake. */
   children: Placement[];
-  /** Linear scale of one inflation (2 for the rep-4 tiles, 3 for the carpet). */
+  /** Linear scale of one inflation (2 for the rep-4 tiles, 3 for the carpet,
+   * φ² for the pentaflake). */
   factor: number;
-  /** Rotation order of the lattice (6 triangular, 4 square). */
+  /** Rotation order of the lattice (6 triangular, 4 square, 10 for Z[ζ10]). */
   order: number;
   /** Where to centre the cell's number/flag/mine glyph, in the tile's own
    * unrotated lattice coordinates — for a concave tile whose true centroid
@@ -74,8 +131,13 @@ export interface Substitution {
   glyphAnchor?: LatticePoint;
   rotate(p: LatticePoint): LatticePoint;
   mirror(p: LatticePoint): LatticePoint;
+  /** `factor` again, done exactly on the lattice. */
+  scale(p: LatticePoint): LatticePoint;
   toXy(p: LatticePoint): Vertex;
 }
+
+/** The lattice's zero, in the tile's own coordinate count. */
+const origin = (tile: Substitution): LatticePoint => tile.outline[0]!.map(() => 0);
 
 // The sphinx: bottom edge 3, then 1 up-left, 1 left, 1 up-left, 2 down-left.
 const SPHINX_OUTLINE: LatticePoint[] = [
@@ -106,6 +168,7 @@ export const SPHINX: Substitution = {
   order: 6,
   rotate: triRotate,
   mirror: triMirror,
+  scale: times(2),
   toXy: triToXy,
 };
 
@@ -143,6 +206,7 @@ export const CHAIR: Substitution = {
   glyphAnchor: [0.5, 0.5],
   rotate: squareRotate,
   mirror: squareMirror,
+  scale: times(2),
   toXy: squareToXy,
 };
 
@@ -170,13 +234,60 @@ export const CARPET: Substitution = {
   order: 4,
   rotate: squareRotate,
   mirror: squareMirror,
+  scale: times(3),
   toXy: squareToXy,
+};
+
+// The pentaflake (Dürer's pentagon): the unit pentagon is the one of
+// circumradius 1 with a vertex on the real axis, so its corners are the five
+// even powers of ζ, walked counterclockwise.
+const PENTAGON_OUTLINE: LatticePoint[] = [
+  [1, 0, 0, 0], // ζ⁰
+  [0, 0, 1, 0], // ζ²
+  [-1, 1, -1, 1], // ζ⁴
+  [0, -1, 0, 0], // ζ⁶
+  [0, 0, 0, -1], // ζ⁸
+];
+
+// Scaled by φ² the pentagon holds six: one seated in each corner, sharing that
+// corner with the parent, plus one in the middle turned a half turn (a pentagon
+// has no half turn of its own, so the middle child is the only thing that breaks
+// the parent's five-fold symmetry down to the substitution's). A corner child's
+// centre is φζ^2k — the parent's circumradius φ² less the child's 1, along the
+// corner — and φ = 1 + ζ² − ζ³ is itself in the ring, so the translations are
+// exact.
+//
+// The middle child shares a whole edge with each corner child, and adjacent
+// corner children meet at a single point (that same edge's end, where three
+// pentagons and 3·108 = 324° meet). The 36° left over at each of the five sides
+// is the gap: a golden gnomon, and the reason this is a fractal with holes and
+// not a dissection.
+const PENTAFLAKE_CHILDREN: Placement[] = [
+  [0, 0, [1, 0, 1, -1]], // φζ⁰
+  [0, 0, [0, 1, 0, 1]], // φζ²
+  [0, 0, [-1, 0, 0, 1]], // φζ⁴
+  [0, 0, [-1, 0, -1, 0]], // φζ⁶
+  [0, 0, [1, -1, 0, -1]], // φζ⁸
+  [5, 0, [0, 0, 0, 0]], // the middle one, turned a half turn
+];
+
+export const PENTAFLAKE: Substitution = {
+  mode: "pentaflake",
+  outline: PENTAGON_OUTLINE,
+  children: PENTAFLAKE_CHILDREN,
+  factor: (3 + Math.sqrt(5)) / 2, // φ²
+  order: 10,
+  rotate: pentaRotate,
+  mirror: pentaMirror,
+  scale: pentaScale,
+  toXy: pentaToXy,
 };
 
 export const SUBSTITUTIONS: Record<string, Substitution> = {
   sphinx: SPHINX,
   chair: CHAIR,
   carpet: CARPET,
+  pentaflake: PENTAFLAKE,
 };
 
 /** The rotation/mirror part of a placement, applied to a lattice point. */
@@ -189,42 +300,53 @@ function linear(tile: Substitution, rot: number, mirrored: number, p: LatticePoi
 }
 
 export function placePoint(tile: Substitution, at: Placement, p: LatticePoint): LatticePoint {
-  const [rot, mirrored, [tx, ty]] = at;
-  const [x, y] = linear(tile, rot, mirrored, p);
-  return [x + tx, y + ty];
+  const [rot, mirrored, translation] = at;
+  return linear(tile, rot, mirrored, p).map((c, k) => c + translation[k]!);
 }
 
-/** `parent` after `child`, with the child's translation scaled to `size` (its
- * own tile's edge). Mirroring negates the inner rotation — the only thing the
- * mirror flag costs, as for the Spectre. */
-function compose(tile: Substitution, parent: Placement, child: Placement, size: number): Placement {
-  const [pRot, pMirror, [px, py]] = parent;
-  const [cRot, cMirror, [cx, cy]] = child;
-  const [dx, dy] = linear(tile, pRot, pMirror, [cx * size, cy * size]);
+/** `parent` after `child`. Mirroring negates the inner rotation — the only
+ * thing the mirror flag costs, as for the Spectre. */
+function compose(tile: Substitution, parent: Placement, child: Placement): Placement {
+  const [pRot, pMirror, pTranslation] = parent;
+  const [cRot, cMirror, cTranslation] = child;
+  const moved = linear(tile, pRot, pMirror, cTranslation);
   const rot = pMirror ? pRot - cRot : pRot + cRot;
   return [
     ((rot % tile.order) + tile.order) % tile.order,
     pMirror ^ cMirror,
-    [px + dx, py + dy],
+    moved.map((c, k) => c + pTranslation[k]!),
   ];
+}
+
+/** `p` scaled by factor**power, exactly. Only ever multiplies: the pentaflake's
+ * factor is irrational, so there is no dividing back down. */
+function inflate(tile: Substitution, p: LatticePoint, power: number): LatticePoint {
+  let out = p;
+  for (let i = 0; i < power; i++) out = tile.scale(out);
+  return out;
 }
 
 /**
  * The `children.length ** levels` unit tiles of a level-`levels` supertile.
- * Starts from one tile of edge factor**levels and substitutes downwards,
- * dividing the edge by the factor each round; the children's translations are
- * in units of their own (once-smaller) tile, so scaling them by that size keeps
- * every placement an exact lattice point.
+ * Substitutes from the top down: the first round's children are supertiles of
+ * edge factor**(levels − 1) and the last round's are unit tiles. Their
+ * translations are given in units of their own tile, so inflating them to the
+ * round's size keeps every placement an exact lattice point.
  */
 export function substitutionPlacements(tile: Substitution, levels: number): Placement[] {
   if (levels < 0) throw new Error("levels must be >= 0");
-  let placements: Placement[] = [IDENTITY];
-  let size = tile.factor ** levels;
-  for (let level = 0; level < levels; level++) {
-    size /= tile.factor;
+  let placements: Placement[] = [[0, 0, origin(tile)]];
+  for (let power = levels - 1; power >= 0; power--) {
+    const children = tile.children.map(
+      ([rot, mirrored, translation]): Placement => [
+        rot,
+        mirrored,
+        inflate(tile, translation, power),
+      ],
+    );
     const next: Placement[] = [];
     for (const parent of placements) {
-      for (const child of tile.children) next.push(compose(tile, parent, child, size));
+      for (const child of children) next.push(compose(tile, parent, child));
     }
     placements = next;
   }
@@ -253,17 +375,17 @@ function substitutionBoard(
   const positions = new Map<string, Vertex>();
   const anchors = new Map<CellId, LatticePoint>();
   for (const at of substitutionPlacements(tile, levels)) {
-    const [rot, mirrored, [tx, ty]] = at;
+    const [rot, mirrored, translation] = at;
     // a mirrored placement reverses the outline's winding; walk it backwards
     // so every cell's polygon stays counterclockwise
     const outline = mirrored ? [...tile.outline].reverse() : tile.outline;
     const keys = outline.map((v) => {
       const p = placePoint(tile, at, v);
-      const key = `${p[0]},${p[1]}`;
+      const key = p.join(",");
       if (!positions.has(key)) positions.set(key, boardXy(tile, p));
       return key;
     });
-    const cell = cid(rot, mirrored, tx, ty);
+    const cell = cid(rot, mirrored, ...translation);
     cells.set(cell, keys);
     if (tile.glyphAnchor) anchors.set(cell, placePoint(tile, at, tile.glyphAnchor));
   }
@@ -306,4 +428,12 @@ export function chairBoard(levels: number, mineCount: number, scale = 26): Board
  * block left out at every scale. `scale` is pixels per unit square edge. */
 export function carpetBoard(levels: number, mineCount: number, scale = 26): Board {
   return substitutionBoard(CARPET, levels, mineCount, scale);
+}
+
+/** The pentaflake, inflated `levels` times: 6**levels regular pentagons in a
+ * pentagon-shaped patch (1, 6, 36, 216, 1296 tiles), with a gnomon-shaped gap
+ * left over per side at every scale. `scale` is pixels per unit pentagon
+ * circumradius. */
+export function pentaflakeBoard(levels: number, mineCount: number, scale = 26): Board {
+  return substitutionBoard(PENTAFLAKE, levels, mineCount, scale);
 }

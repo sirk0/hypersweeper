@@ -144,12 +144,14 @@ describe("catalog families", () => {
       "sphinx",
       "chair",
       "carpet",
+      "pentaflake",
     ]);
     // a one-off family's rows are modes, so each carries its own icon
     expect(familyRows("fractal", "flat").map((r) => r.icon)).toEqual([
       "sphinx",
       "chair",
       "carpet",
+      "pentaflake",
     ]);
   });
 });

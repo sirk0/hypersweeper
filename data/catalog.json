@@ -91,6 +91,7 @@
     "sphinx": "Sphinx",
     "chair": "Chair",
     "carpet": "Sierpiński carpet",
+    "pentaflake": "Pentaflake",
     "sphere": "Pentagonal hexecontahedron",
     "c80": "Chamfered dodecahedron",
     "c180": "Goldberg GP(3,0)",
@@ -148,7 +149,8 @@
     "fractal": [
       "sphinx",
       "chair",
-      "carpet"
+      "carpet",
+      "pentaflake"
     ],
     "familyLabels": {
       "regular": "Regular",

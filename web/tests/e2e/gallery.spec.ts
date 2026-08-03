@@ -33,11 +33,13 @@ const MODES = [
   "phyllotaxis",
   // the fractal boards: the two rep-4 ones -- the sphinx, whose patch is the
   // sphinx again scaled (and whose tiles are mirrored in three of every four),
-  // and the chair, the L-shaped one -- plus the Sierpinski carpet, the one
-  // board with holes in it. None is a rectangular window.
+  // and the chair, the L-shaped one -- plus the two with holes in them, the
+  // Sierpinski carpet and the pentaflake (whose lattice is the only
+  // non-integer one here). None is a rectangular window.
   "sphinx",
   "chair",
   "carpet",
+  "pentaflake",
   // M7 isogonal tilings, which are not edge to edge: the two that put one
   // regular polygon on the board at several sizes, so the shots cover both the
   // T-vertex geometry and the size-lightness axis it needs.

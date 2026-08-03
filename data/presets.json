@@ -708,6 +708,26 @@
         ]
       }
     },
+    "pentaflake": {
+      "builder": "pentaflake_board",
+      "args": {
+        "easy": [
+          2,
+          5,
+          28
+        ],
+        "medium": [
+          3,
+          30,
+          18
+        ],
+        "hard": [
+          3,
+          45,
+          18
+        ]
+      }
+    },
     "elongated": {
       "builder": "archimedean_board",
       "args": {

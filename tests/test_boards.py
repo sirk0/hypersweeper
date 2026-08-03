@@ -1,3 +1,4 @@
+import cmath
 import math
 import statistics
 from collections import Counter, defaultdict
@@ -16,11 +17,13 @@ from minesweeper.boards import (
     FRACTAL_MODES,
     MODE_LABELS,
     MODES_3D,
+    PENTAFLAKE,
     POLYHEDRA_MODES,
     ROOT3,
     SHAPED_MODES,
     SPHERE_MODES,
     SPHINX,
+    SUBSTITUTIONS,
     SURFACE_LABELS,
     TILINGS,
     _arch_template,
@@ -58,6 +61,7 @@ from minesweeper.boards import (
     mobius_triangle_board,
     newell_normal,
     penrose_board,
+    pentaflake_board,
     phyllotaxis_board,
     place_point,
     rhombicosidodecahedron_board,
@@ -950,6 +954,174 @@ class TestSierpinskiCarpet:
                 seen.add(cell)
                 stack.extend(board.adjacency[cell])
         assert len(seen) == len(board.adjacency)
+
+
+class TestPentaflake:
+    """The fourth fractal board: the regular pentagon scaled by phi**2 and
+    refilled with six, one per corner plus a half-turned middle.
+
+    It is the only board here whose lattice is not integer -- five-fold
+    symmetry needs rank 4 -- so the oracle throughout is plain complex
+    arithmetic: every claim about the ring Z[zeta10] is checked against
+    ``cmath`` doing the same thing in floats, and the inflation against a
+    naive float recursion that knows nothing about lattices.
+    """
+
+    ZETA = cmath.exp(1j * math.pi / 5)
+    PHI = (1 + 5 ** 0.5) / 2
+
+    @classmethod
+    def _complex(cls, p):
+        return sum(c * cls.ZETA ** k for k, c in enumerate(p))
+
+    @staticmethod
+    def _shoelace(points):
+        return abs(sum(a[0] * b[1] - b[0] * a[1] for a, b
+                       in zip(points, points[1:] + points[:1]))) / 2
+
+    @staticmethod
+    def _holes(levels):
+        """(6**n - 5*2**n + 4) / 4 gnomon-shaped holes.
+
+        A hole is born where two supertiles are glued along a whole edge --
+        the five middle-to-corner edges of every substitution -- and each
+        such edge carries 2**(n-1) - 1 gaps down its length, one from every
+        scale below it. So holes(n) = 6*holes(n-1) + 5*(2**(n-1) - 1) from
+        holes(1) = 0, whose closed form this is: at level 1 the five gaps
+        all open onto the patch's own boundary and none is a hole yet.
+        """
+        return (6 ** levels - 5 * 2 ** levels + 4) // 4
+
+    @pytest.mark.parametrize("p", [(1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0),
+                                   (0, 0, 0, 1), (3, -1, 2, 5), (-2, 4, 0, -7)])
+    def test_the_ring_is_z_zeta10(self, p):
+        # the three lattice maps are multiplication by zeta (a 36-degree
+        # turn), complex conjugation, and multiplication by phi**2 -- all
+        # exact on integer quadruples because zeta**4 = zeta**3 - zeta**2 +
+        # zeta - 1 keeps every product back in the ring
+        z = self._complex(p)
+        assert self._complex(PENTAFLAKE.rotate(p)) == pytest.approx(z * self.ZETA)
+        assert self._complex(PENTAFLAKE.mirror(p)) == pytest.approx(z.conjugate())
+        assert self._complex(PENTAFLAKE.scale(p)) == pytest.approx(z * self.PHI ** 2)
+        assert PENTAFLAKE.to_xy(p) == pytest.approx((z.real, z.imag))
+        # 36 degrees ten times over is a full turn, and a mirror is an
+        # involution: the rotation order the placements count modulo
+        turned = p
+        for _ in range(PENTAFLAKE.order):
+            turned = PENTAFLAKE.rotate(turned)
+        assert turned == p
+        assert PENTAFLAKE.mirror(PENTAFLAKE.mirror(p)) == p
+
+    def test_the_substitution_is_five_corners_and_a_turned_middle(self):
+        # five children seated in the parent's corners, unturned, their
+        # centres phi (= the parent's phi**2 less their own 1) out along
+        # each corner, plus one in the middle turned a half turn. None is
+        # reflected: the pentaflake is achiral only because the pentagon is
+        assert len(PENTAFLAKE.children) == 6
+        assert all(not mirrored for _, mirrored, _ in PENTAFLAKE.children)
+        corners = [c for c in PENTAFLAKE.children if c[2] != PENTAFLAKE.origin]
+        assert [rot for rot, _, _ in corners] == [0] * 5
+        assert [self._complex(t) for _, _, t in corners] == pytest.approx(
+            [self.PHI * self.ZETA ** (2 * k) for k in range(5)])
+        middle, = [c for c in PENTAFLAKE.children if c[2] == PENTAFLAKE.origin]
+        assert middle[0] == PENTAFLAKE.order // 2
+
+    @pytest.mark.parametrize("levels", [0, 1, 2, 3])
+    def test_inflation_matches_the_float_construction(self, levels):
+        # the exact placements' centres against the same construction done
+        # naively in complex floats -- pentagon centres, no ring, no lattice.
+        # `turn` is what makes it a real check: the middle child is half
+        # turned, so its own corner children sit along the *odd* powers of
+        # zeta, and a recursion that ignored the turn would not match
+        def tiles(n, centre, turn):
+            if n == 0:
+                return [centre]
+            out = tiles(n - 1, centre, -turn)  # the half-turned middle
+            for k in range(5):                 # and one seated in each corner
+                offset = turn * self.PHI ** (2 * n - 1) * self.ZETA ** (2 * k)
+                out += tiles(n - 1, centre + offset, turn)
+            return out
+
+        placements = substitution_placements(PENTAFLAKE, levels)
+        assert len(placements) == 6 ** levels
+        # rounded before sorting: two centres are never closer than a
+        # pentagon's width, so 1e-6 keeps them apart while pinning the sort
+        # order against the two constructions' float noise
+        def rounded(points):
+            return sorted((round(x, 6), round(y, 6)) for x, y in points)
+
+        exact = rounded(PENTAFLAKE.to_xy(t) for _, _, t in placements)
+        naive = rounded((z.real, z.imag) for z in tiles(levels, 0j, 1 + 0j))
+        assert [c for point in exact for c in point] == \
+            pytest.approx([c for point in naive for c in point], abs=1e-6)
+
+    def test_every_tile_is_the_unit_regular_pentagon(self):
+        board = pentaflake_board(3, 10, scale=1)
+        side = 2 * math.sin(math.pi / 5)  # circumradius 1
+        for polygon in board.polygons.values():
+            assert len(polygon) == 5  # no collinear step vertices to drop
+            assert len(_corners(polygon, tol=1e-6)) == 5
+            sides = [math.dist(a, b)
+                     for a, b in zip(polygon, polygon[1:] + polygon[:1])]
+            assert sides == pytest.approx([side] * 5)
+
+    def test_the_gaps_are_golden_gnomons(self):
+        # the six children cover 6/phi**4 of the inflated pentagon, and what
+        # is left over is five golden gnomons: 36-72-72 triangles with two
+        # legs a unit pentagon side long, one per side of the parent
+        area = self._shoelace([PENTAFLAKE.to_xy(v) for v in PENTAFLAKE.outline])
+        side = 2 * math.sin(math.pi / 5)
+        gnomon = side ** 2 * math.sin(math.radians(36)) / 2
+        assert (self.PHI ** 4 - 6) * area == pytest.approx(5 * gnomon)
+
+    @pytest.mark.parametrize("levels", [1, 2, 3])
+    def test_the_patch_is_a_pentagon_with_gnomon_holes(self, levels):
+        # like the carpet and unlike the two rep-tiles this is not a disc,
+        # so chi = 1 - holes and the boundary has holes + 1 components. The
+        # tiles still meet edge to edge (every directed edge walked once),
+        # which is why the invariants read at all
+        board = pentaflake_board(levels, 1, scale=1)
+        directed = Counter()
+        for polygon in board.polygons.values():
+            points = [tuple(round(c, 6) for c in p) for p in polygon]
+            for a, b in zip(points, points[1:] + points[:1]):
+                directed[(a, b)] += 1
+        assert set(directed.values()) == {1}
+        assert _euler_characteristic(board) == 1 - self._holes(levels)
+        assert _boundary_components(board) == self._holes(levels) + 1
+
+    def test_a_pentagon_touches_at_most_five_others(self):
+        # a pentagon meets a neighbour either across a whole edge or at a
+        # single corner where three tiles and 3 * 108 = 324 degrees meet, so
+        # a fourth tile cannot reach any corner: five sides, five neighbours
+        board = pentaflake_board(3, 1)
+        assert max(len(n) for n in board.adjacency.values()) == 5
+        assert min(len(n) for n in board.adjacency.values()) == 3
+        # and the holes never cut the board in two
+        seen, stack = set(), [next(iter(board.adjacency))]
+        while stack:
+            cell = stack.pop()
+            if cell not in seen:
+                seen.add(cell)
+                stack.extend(board.adjacency[cell])
+        assert len(seen) == len(board.adjacency)
+
+    def test_cell_counts_are_powers_of_six(self):
+        for levels in range(4):
+            assert len(pentaflake_board(levels, 1).adjacency) == 6 ** levels
+
+
+@pytest.mark.parametrize("mode", sorted(SUBSTITUTIONS))
+def test_a_substitutions_scale_is_its_factor(mode):
+    # `factor` is the linear scale as a plain number and `scale` is that same
+    # multiplication done exactly on the lattice; nothing else ties the two
+    # together, and for the pentaflake the number is irrational
+    tile = SUBSTITUTIONS[mode]
+    for p in tile.outline:
+        before = tile.to_xy(p)
+        after = tile.to_xy(tile.scale(p))
+        assert math.hypot(*after) == pytest.approx(tile.factor * math.hypot(*before))
+        assert after == pytest.approx(tuple(c * tile.factor for c in before))
 
 
 class TestNeighborCounts:
