@@ -13,7 +13,12 @@ from __future__ import annotations
 from minesweeper.boards._data import load
 from minesweeper.boards.aperiodic import penrose_board, phyllotaxis_board, spectre_board
 from minesweeper.boards.core import DIFFICULTIES, ROOT3, Board, Board3D
-from minesweeper.boards.fractal import carpet_board, chair_board, sphinx_board
+from minesweeper.boards.fractal import (
+    carpet_board,
+    chair_board,
+    pentaflake_board,
+    sphinx_board,
+)
 from minesweeper.boards.solids import (
     c80_board,
     c180_board,
@@ -107,12 +112,13 @@ _JSON_BUILDERS = {
     "spectre_board": spectre_board,
     "phyllotaxis_board": phyllotaxis_board,
     # Fractal boards take positional args: sphinx_board(levels, mine_count,
-    # scale), and chair_board and carpet_board the same -- a level is a whole
-    # substitution step, so the cell count is 4**levels for the two rep-tiles
-    # and 8**levels for the carpet.
+    # scale), and the other three the same -- a level is a whole substitution
+    # step, so the cell count is 4**levels for the two rep-tiles, 8**levels for
+    # the carpet and 6**levels for the pentaflake.
     "sphinx_board": sphinx_board,
     "chair_board": chair_board,
     "carpet_board": carpet_board,
+    "pentaflake_board": pentaflake_board,
 }
 
 # Explicit presets for the one-off boards not yet in the shared data/presets.json.

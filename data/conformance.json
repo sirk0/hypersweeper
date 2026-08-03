@@ -1074,6 +1074,35 @@
         "hasCellCycle": false
       }
     },
+    "pentaflake": {
+      "easy": {
+        "cellCount": 36,
+        "mineCount": 5,
+        "euler": -4,
+        "boundaryComponents": 6,
+        "edgeCount": 140,
+        "vertexCount": 100,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 216,
+        "mineCount": 30,
+        "euler": -44,
+        "boundaryComponents": 46,
+        "edgeCount": 820,
+        "vertexCount": 560,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 216,
+        "mineCount": 45,
+        "euler": -44,
+        "boundaryComponents": 46,
+        "edgeCount": 820,
+        "vertexCount": 560,
+        "hasCellCycle": false
+      }
+    },
     "elongated": {
       "easy": {
         "cellCount": 97,

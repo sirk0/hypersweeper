@@ -14,8 +14,8 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   share a vertex. Modules: `core` (`Board`/`Board3D`, adjacency, topology
   invariants), `tilings` (flat tilings + the `ARCH_TILINGS` registry and
   `_ArchTemplate` system), `aperiodic` (Penrose, Spectre, phyllotactic
-  spiral), `fractal` (the self-similar boards: sphinx, chair and Sierpinski
-  carpet), `solids` (spherical
+  spiral), `fractal` (the self-similar boards: sphinx, chair, Sierpinski
+  carpet and pentaflake), `solids` (spherical
   polyhedra, cube, tetrahedron, frames), `surfaces` (donut/cylinder/
   Möbius/Klein-bottle wrapping via shared immersion helpers), `catalog`
   (the menu, **derived** from `SURFACE_SPECS`/`TILING_SPECS`), `presets`
@@ -102,7 +102,7 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   parallelohexagon, so each of ten 36° wedges is a plain block of its own
   translation lattice, and the odd wedges being pushed one edge out along
   `u1` is the entire spiral.
-  The three **fractal** boards are each one tile inflated `levels` times --
+  The four **fractal** boards are each one tile inflated `levels` times --
   scaled up by the substitution's `factor` and refilled with copies of itself --
   into a patch whose outline is the tile again, scaled; that self-similar
   outline is the board, the second deliberate exception to the square-window
@@ -121,12 +121,26 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   (8**n - 1) / 7 holes, hence Euler characteristic 1 - holes and holes + 1
   boundary circles -- and the reason no cell of it ever has eight neighbours
   (every 3x3 window of the grid holds exactly one cell that is ≡ (1, 1) mod 3,
-  and that one is always a hole). All three lattices are integer and each child
-  translation is the parent's scaled by a power of the factor, so a placement
-  stays an exact `(rotation, mirror, translation)` triple; the two rep-tilings
-  are not edge to edge, so their tile outlines carry a vertex at every lattice
-  step and `corners`/`shapeMetrics` drop those again before measuring (the
-  carpet's squares meet edge to edge and need none).
+  and that one is always a hole). The **pentaflake** (Dürer's pentagon) is the
+  regular pentagon scaled by φ² and refilled with six -- one seated in each
+  corner plus one in the middle turned a half turn -- so it grows 6**levels
+  (36 easy, 216 medium, and hard reuses the level-3 patch at ~20% mine
+  density, as the carpet does). Its five children leave a golden gnomon
+  (a 36-72-72 triangle) over per side, so it too has holes: a level-`n`
+  pentaflake has (6**n - 5·2**n + 4) / 4 of them, none at level 1 (there the
+  gaps still open onto the patch's own boundary) and one per whole edge two
+  supertiles are glued along after that. Three pentagons and 3·108 = 324°
+  meet at a corner, so no cell of it ever has more than five neighbours.
+  Its lattice is the one here that is not integer: five-fold symmetry needs
+  rank 4, so its vertex ids live in the cyclotomic ring ℤ[ζ10] (as Penrose's
+  do in ℤ[ζ5]) and φ² = 2 + ζ² - ζ³ is exact there. Each child translation is
+  the parent's scaled by a power of the factor, so a placement stays an exact
+  `(rotation, mirror, translation)` triple -- and the inflation only ever
+  multiplies by the factor, never divides, because there is nothing to round
+  an irrational scale back to. The two rep-tilings are not edge to edge, so
+  their tile outlines carry a vertex at every lattice step and
+  `corners`/`shapeMetrics` drop those again before measuring (the carpet's
+  squares and the pentaflake's pentagons meet edge to edge and need none).
 - `minesweeper/gui.py` — pygame UI. `MenuScreen` (a geometry-first home
   page — Classic / Flat / Flat manifolds / Sphere / Polyhedra. Classic
   launches flat squares; Flat (the plane) and each flat manifold (cylinder,

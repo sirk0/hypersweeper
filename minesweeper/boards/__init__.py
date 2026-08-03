@@ -102,10 +102,12 @@ from minesweeper.boards.core import (  # noqa: F401
 from minesweeper.boards.fractal import (  # noqa: F401
     CARPET,
     CHAIR,
+    PENTAFLAKE,
     SPHINX,
     SUBSTITUTIONS,
     carpet_board,
     chair_board,
+    pentaflake_board,
     place_point,
     sphinx_board,
     substitution_placements,
