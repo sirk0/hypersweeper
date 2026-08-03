@@ -688,6 +688,26 @@
         ]
       }
     },
+    "carpet": {
+      "builder": "carpet_board",
+      "args": {
+        "easy": [
+          2,
+          8,
+          32
+        ],
+        "medium": [
+          3,
+          80,
+          26
+        ],
+        "hard": [
+          3,
+          105,
+          26
+        ]
+      }
+    },
     "elongated": {
       "builder": "archimedean_board",
       "args": {
