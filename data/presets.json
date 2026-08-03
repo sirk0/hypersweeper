@@ -728,6 +728,26 @@
         ]
       }
     },
+    "gosper": {
+      "builder": "gosper_board",
+      "args": {
+        "easy": [
+          2,
+          6,
+          25
+        ],
+        "medium": [
+          3,
+          48,
+          16
+        ],
+        "hard": [
+          3,
+          70,
+          16
+        ]
+      }
+    },
     "elongated": {
       "builder": "archimedean_board",
       "args": {

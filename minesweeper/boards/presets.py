@@ -16,6 +16,7 @@ from minesweeper.boards.core import DIFFICULTIES, ROOT3, Board, Board3D
 from minesweeper.boards.fractal import (
     carpet_board,
     chair_board,
+    gosper_board,
     pentaflake_board,
     sphinx_board,
 )
@@ -112,13 +113,15 @@ _JSON_BUILDERS = {
     "spectre_board": spectre_board,
     "phyllotaxis_board": phyllotaxis_board,
     # Fractal boards take positional args: sphinx_board(levels, mine_count,
-    # scale), and the other three the same -- a level is a whole substitution
+    # scale), and the other four the same -- a level is a whole substitution
     # step, so the cell count is 4**levels for the two rep-tiles, 8**levels for
-    # the carpet and 6**levels for the pentaflake.
+    # the carpet, 6**levels for the pentaflake and 7**levels for the Gosper
+    # island.
     "sphinx_board": sphinx_board,
     "chair_board": chair_board,
     "carpet_board": carpet_board,
     "pentaflake_board": pentaflake_board,
+    "gosper_board": gosper_board,
 }
 
 # Explicit presets for the one-off boards not yet in the shared data/presets.json.

@@ -15,7 +15,7 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   invariants), `tilings` (flat tilings + the `ARCH_TILINGS` registry and
   `_ArchTemplate` system), `aperiodic` (Penrose, Spectre, phyllotactic
   spiral), `fractal` (the self-similar boards: sphinx, chair, Sierpinski
-  carpet and pentaflake), `solids` (spherical
+  carpet, pentaflake and Gosper island), `solids` (spherical
   polyhedra, cube, tetrahedron, frames), `surfaces` (donut/cylinder/
   Möbius/Klein-bottle wrapping via shared immersion helpers), `catalog`
   (the menu, **derived** from `SURFACE_SPECS`/`TILING_SPECS`), `presets`
@@ -102,10 +102,11 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   parallelohexagon, so each of ten 36° wedges is a plain block of its own
   translation lattice, and the odd wedges being pushed one edge out along
   `u1` is the entire spiral.
-  The four **fractal** boards are each one tile inflated `levels` times --
+  The five **fractal** boards are each one tile inflated `levels` times --
   scaled up by the substitution's `factor` and refilled with copies of itself --
-  into a patch whose outline is the tile again, scaled; that self-similar
-  outline is the board, the second deliberate exception to the square-window
+  into a patch whose outline converges on a self-similar shape (the tile again
+  for the first four, the Gosper island for the fifth); that outline is the
+  board, the second deliberate exception to the square-window
   convention. Two are rep-tiles, polygons that tile a scaled copy of
   themselves (rep-4, so 4**levels cells: 64/256/1024 by difficulty for the
   chair, one level lower for the sphinx, whose sliver of a tile needs more
@@ -140,7 +141,25 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   an irrational scale back to. The two rep-tilings are not edge to edge, so
   their tile outlines carry a vertex at every lattice step and
   `corners`/`shapeMetrics` drop those again before measuring (the carpet's
-  squares and the pentaflake's pentagons meet edge to edge and need none).
+  squares, the pentaflake's pentagons and the Gosper island's hexagons meet
+  edge to edge and need none).
+  The **Gosper island** is the one whose *boundary* is the fractal rather than
+  its interior: plain regular hexagons, no holes at all, in a patch whose
+  outline converges on the Gosper island -- the curve the flowsnake draws,
+  dimension log 3 / log √7 = 1.129, which is 7**n hexagons behind only 6·3**n
+  boundary edges. The hexagon is no rep-tile (seven make a flower, not a
+  bigger hexagon), so what inflates is the patch: seven level-(n-1) islands,
+  one in the middle and six around it. Its inflation is multiplication by the
+  Eisenstein integer 2 + ζ, of norm 7 -- a *spiral* similarity of √7 at
+  19.106°, because scaling by √7 alone would send the lattice point 1 to
+  (√7, 0), which is no lattice point -- and that forced turn per level is what
+  roughens the edge. Its seven child translations are a complete set of
+  residues mod 2 + ζ, which is why the level-`n` patch is exactly 7**n
+  distinct cells (49 easy, 343 medium, and hard reuses the level-3 patch at
+  ~20% mine density, as the carpet and the pentaflake do). The digits are
+  closed under multiplication by a unit, so the patch keeps the hexagon's
+  six-fold rotation at every level, but never a mirror past level 1: the
+  flowsnake is chiral.
 - `minesweeper/gui.py` — pygame UI. `MenuScreen` (a geometry-first home
   page — Classic / Flat / Flat manifolds / Sphere / Polyhedra. Classic
   launches flat squares; Flat (the plane) and each flat manifold (cylinder,

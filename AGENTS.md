@@ -23,7 +23,7 @@ Import order is a strict DAG; a module only imports from the ones above it.
 |--------|----------------|
 | `core.py` | `Board` / `Board3D`, the `_shared_vertex_adjacency` neighbour rule, `_build` (lattice→pixels) and `_finalize_flat` (float→pixels), 3D vector helpers, and the topology invariants `euler_characteristic` / `boundary_components` / `corner_fans`. |
 | `tilings.py` | Regular flat builders (square/triangle/trigrid/hex/hexhex/hextri/hextriangle), the `_ArchTemplate` system, the eight Archimedean `_*_template()` factories plus their eight Laves duals (built by `_dual_template`), the six isogonal (non-edge-to-edge) ones and the five congruent-rectangle bonds, and the **`ARCH_TILINGS`** registry (the one place any of them is declared, with `_FAMILY_TRAITS` saying what each family is). |
-| `fractal.py` | The self-similar (fractal) boards: the sphinx, the chair, the Sierpinski carpet and the pentaflake. One `_Substitution` record per tile — unit outline, the tiles filling the inflated copy, the inflation factor, lattice ops — and the shared inflation (`substitution_placements`) all four `*_board` builders run. The first two are rep-tiles (their children fill the tile); the carpet's and the pentaflake's leave holes, which is what makes them fractals with holes rather than shapes. Three lattices are integer; the pentaflake's is ℤ[ζ10], since five-fold symmetry needs rank 4. |
+| `fractal.py` | The self-similar (fractal) boards: the sphinx, the chair, the Sierpinski carpet, the pentaflake and the Gosper island. One `_Substitution` record per tile — unit outline, the tiles filling the inflated copy, the inflation factor, lattice ops — and the shared inflation (`substitution_placements`) all five `*_board` builders run. The first two are rep-tiles (their children fill the tile); the carpet's and the pentaflake's leave holes, which is what makes them fractals with holes rather than shapes; the Gosper island's fill it with no hole at all and put the fractal in the *outline* instead. Four lattices are integer; the pentaflake's is ℤ[ζ10], since five-fold symmetry needs rank 4. The Gosper island's inflation is the one that is not a pure scaling: multiplication by 2 + ζ, a spiral similarity of √7 at 19.106°. |
 | `aperiodic.py` | Penrose (P3), the Spectre (Tile(1,1), the chiral monotile) and the phyllotactic spiral, each with exact-arithmetic vertex ids — ℤ[ζ5] for Penrose and the spiral, ℤ[ζ12] for the Spectre. The Spectre's ring is *dense* in the plane, so unlike Penrose's discrete lattice there is no lattice to snap a float vertex back to: its placements are carried as exact `(rotation, mirror, translation)` triples and no floating point enters the substitution at all. The spiral is the odd one out — no substitution, just ten 36° wedges of the tile's own translation lattice, the odd ones offset a step; nonperiodic because its five-fold centre forbids any translation. |
 | `solids.py` | Closed/convex and polycube 3D boards (pentagonal hexecontahedron, Goldberg polyhedra, geodesic icosahedron, rhombicosidodecahedron, truncated icosidodecahedron, cube, tetrahedron, frames, bipyramid). |
 | `surfaces.py` | Wrapping tilings onto surfaces: the three immersion points (`_torus_point`, `_cylinder_point`, `_mobius_point`), the shared `_assemble` tail, the nine simple `*_board` wrappers, and the Archimedean `arch_torus_board` / `arch_cylinder_board` / `arch_mobius_board`. |
@@ -262,12 +262,16 @@ the one line the suite cannot derive.
 The **Fractals** family (`fractal.py`, `web/src/boards/fractal.ts`) holds the
 boards built by inflating one tile: the tile is scaled up by the substitution's
 `factor` and refilled with copies of itself, `levels` times, so the patch is
-`len(children)**levels` tiles and its outline is the tile again. Four ship —
-the sphinx (pentagonal hexiamond, triangular lattice) and the chair (L-tromino,
-square lattice), both rep-4 *rep-tiles* whose children fill the tile exactly,
-the Sierpinski carpet, whose eight children leave the middle ninth of the
-tripled square empty, and the pentaflake, whose six leave a golden gnomon over
-per side. Adding a fifth is one ``_Substitution`` record plus its wiring:
+`len(children)**levels` tiles and its outline converges on a self-similar shape.
+Five ship — the sphinx (pentagonal hexiamond, triangular lattice) and the chair
+(L-tromino, square lattice), both rep-4 *rep-tiles* whose children fill the tile
+exactly, the Sierpinski carpet, whose eight children leave the middle ninth of
+the tripled square empty, the pentaflake, whose six leave a golden gnomon over
+per side, and the Gosper island, whose seven hexagons fill their flower with no
+gap but do not make a hexagon — so its patch outline is the Gosper island rather
+than the tile, and its inflation turns (√7 at 19.106°, multiplication by the
+Eisenstein integer 2 + ζ) because no pure scaling by √7 stays on the lattice.
+Adding a sixth is one ``_Substitution`` record plus its wiring:
 
 1. **The tile** — a `_Substitution(mode, outline, children, factor, order,
    rotate, mirror, scale, to_xy)` in `fractal.py`. `outline` walks the unit tile
@@ -286,7 +290,9 @@ per side. Adding a fifth is one ``_Substitution`` record plus its wiring:
 
    `rotate`/`mirror`/`scale` are the lattice's own exact maps and `factor` is
    just the linear scale as a number (`test_a_substitutions_scale_is_its_factor`
-   pins the two together). A lattice point is a tuple of **however many**
+   pins the two together: `scale` must be a similarity of exactly `factor`,
+   turned or not — the Gosper island's turns, the other four do not).
+   A lattice point is a tuple of **however many**
    integers the lattice needs — two for the three integer ones, four for the
    pentaflake's ℤ[ζ10] — so nothing in the machinery may index a coordinate by
    name. And the inflation only ever *multiplies* by the factor: an irrational
@@ -297,7 +303,8 @@ per side. Adding a fifth is one ``_Substitution`` record plus its wiring:
    3/4/5 for the chair, 64/256/1024 cells; one step lower for the sphinx,
    whose tile is a long sliver that needs more room per cell. Check the top
    difficulty really reads: past ~500 cells the glyphs stop being legible —
-   which is why the carpet, growing ×8 a level, and the pentaflake, growing ×6,
+   which is why the carpet, growing ×8 a level, the pentaflake, growing ×6, and
+   the Gosper island, growing ×7,
    each spend two of their three difficulties on the level-3 patch and separate
    them by mine density instead). Re-run `scripts/export_data.py` and
    `export_conformance.py`.
@@ -317,7 +324,13 @@ independent derivation and pinning what the holes cost (Euler characteristic
 would not have): `TestSierpinskiCarpet` against the carpet's arithmetic
 definition, `TestPentaflake` against plain `cmath` — every claim about ℤ[ζ10] is
 re-checked in floats, and the inflation against a naive complex recursion that
-knows nothing about lattices.
+knows nothing about lattices. A substitution that is neither — the Gosper
+island fills its supertile exactly but the supertile is not the tile — gets one
+too: `TestGosperIsland` pins the arithmetic that makes the flower inflate (the
+seven children are a complete residue system mod 2 + ζ, which is what makes the
+7**n digit strings distinct) and then the shape of the result — a disc with
+6·3**n boundary edges to 7**n cells, six-fold symmetric and, past level 1,
+chiral.
 
 The family is flat only — an inflated patch is a shape, not a periodic window,
 so there is nothing to glue a seam with. That is one line: it is in

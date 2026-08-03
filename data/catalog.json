@@ -92,6 +92,7 @@
     "chair": "Chair",
     "carpet": "Sierpiński carpet",
     "pentaflake": "Pentaflake",
+    "gosper": "Gosper island",
     "sphere": "Pentagonal hexecontahedron",
     "c80": "Chamfered dodecahedron",
     "c180": "Goldberg GP(3,0)",
@@ -150,7 +151,8 @@
       "sphinx",
       "chair",
       "carpet",
-      "pentaflake"
+      "pentaflake",
+      "gosper"
     ],
     "familyLabels": {
       "regular": "Regular",

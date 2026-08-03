@@ -1103,6 +1103,35 @@
         "hasCellCycle": false
       }
     },
+    "gosper": {
+      "easy": {
+        "cellCount": 49,
+        "mineCount": 6,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 174,
+        "vertexCount": 126,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 343,
+        "mineCount": 48,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 1110,
+        "vertexCount": 768,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 343,
+        "mineCount": 70,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 1110,
+        "vertexCount": 768,
+        "hasCellCycle": false
+      }
+    },
     "elongated": {
       "easy": {
         "cellCount": 97,

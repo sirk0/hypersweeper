@@ -1,10 +1,11 @@
 """Self-similar (fractal) flat boards: the sphinx, the chair, the
-Sierpinski carpet and the pentaflake.
+Sierpinski carpet, the pentaflake and the Gosper island.
 
 Each is one tile inflated ``levels`` times: the tile is scaled up by the
 substitution's ``factor`` and refilled with copies of itself, so the patch
-grows by ``len(children)`` per level and its outline stays the tile,
-scaled. That self-similar outline is the board -- these are the fractal
+grows by ``len(children)`` per level and its outline converges on a
+self-similar shape -- the tile again for the first four, the Gosper island
+for the fifth. That outline is the board -- these are the fractal
 family, and unlike every other flat board they are deliberately *not* a
 rectangular window: trimming the patch to a square block would throw away
 the only thing that makes them what they are (the same exception the
@@ -37,6 +38,22 @@ The substitutions:
     other board here its lattice is not integer: five-fold symmetry needs
     rank 4, so its vertex ids live in the cyclotomic ring Z[zeta10], as
     Penrose's do in Z[zeta5].
+  * The **Gosper island** is the one whose *boundary* is the fractal. Its
+    tile is a plain regular hexagon and its patch has no holes at all; what
+    is self-similar is the outline, which converges on the Gosper island --
+    the closed curve the flowsnake draws, of dimension log3/log(sqrt7) =
+    1.129, and a level-n patch has 7**n hexagons behind only 6*3**n
+    boundary edges, which is that dimension counted out.
+    The hexagon is no rep-tile -- seven of them make a flower, not a bigger
+    hexagon -- so unlike the first four this substitution has nothing to
+    inflate but the *patch*: seven level-(n-1) islands, one in the middle
+    and six around it, are the level-n island. The inflation is
+    multiplication by the Eisenstein integer 2 + zeta, of norm 7, so it is
+    a *spiral* similarity: sqrt7 at 19.106 degrees. It could not be
+    anything else -- scaling by sqrt7 alone would send the lattice point 1
+    to (sqrt7, 0), which is no lattice point -- and that forced turn per
+    level is exactly why the island's edge is fractal while the hexagons'
+    own edges stay hexagon edges.
 
 Every child translation is the parent's scaled by a power of the factor,
 so a placement stays an exact ``(rotation, mirror, lattice translation)``
@@ -55,9 +72,9 @@ sphinx's long side), and the extra collinear ids are what let
 ``_insert_t_vertices`` makes for the isogonal tilings and the Spectre
 makes for its 14th corner. Being collinear they do not change the drawn
 tile, and ``shapeMetrics``/``corners`` drop them before measuring, so the
-sphinx still reads as a pentagon and the chair as a hexagon. The carpet
-and the pentaflake need none of that: their tiles meet edge to edge,
-corner to corner.
+sphinx still reads as a pentagon and the chair as a hexagon. The carpet,
+the pentaflake and the Gosper island need none of that: their tiles meet
+edge to edge, corner to corner.
 """
 
 from __future__ import annotations
@@ -100,6 +117,21 @@ def _tri_mirror(p: Point) -> Point:
 def _tri_to_xy(p: Point) -> tuple[float, float]:
     a, b = p
     return (a + b / 2, b * ROOT3 / 2)
+
+
+def _gosper_scale(p: Point) -> Point:
+    """Multiply by 2 + zeta, the Gosper island's inflation.
+
+    The triangular lattice is the ring of Eisenstein integers Z[zeta],
+    zeta = exp(i*pi/3), and 2 + zeta is one of its elements of norm 7 --
+    length sqrt7, argument atan(sqrt3/5) = 19.106 degrees. Scaling by
+    sqrt7 alone would leave the lattice (it would send 1 to (sqrt7, 0),
+    and the ring's real elements are the integers), so an inflation of
+    seven *must* turn as it stretches. (zeta**2 = zeta - 1, whence
+    (a + b*zeta)(2 + zeta) = (2a - b) + (a + 3b)*zeta.)
+    """
+    a, b = p
+    return (2 * a - b, a + 3 * b)
 
 
 def _square_rotate(p: Point) -> Point:
@@ -179,7 +211,10 @@ class _Substitution:
     scale: Callable[[Point], Point]        # `factor` again, done exactly on
     #                                        the lattice (the two agree, which
     #                                        is what pins `factor` when it is
-    #                                        irrational -- see TestFractals)
+    #                                        irrational -- see TestFractals).
+    #                                        A similarity, not necessarily a
+    #                                        pure scaling: the Gosper island's
+    #                                        turns as it stretches
     to_xy: Callable[[Point], tuple[float, float]]
 
     @property
@@ -290,8 +325,40 @@ PENTAFLAKE = _Substitution("pentaflake", _PENTAGON_OUTLINE, _PENTAFLAKE_CHILDREN
                            _penta_rotate, _penta_mirror, _penta_scale,
                            _penta_to_xy)
 
+# The Gosper island: the unit regular hexagon of circumradius 1, its corners
+# the six units of the lattice (zeta**k, walked counterclockwise). Hexagon
+# centres are the sublattice of index 3 generated by theta = 1 + zeta
+# (length sqrt3, 30 degrees) -- one step from a hexagon to a neighbour.
+_HEXAGON_OUTLINE: tuple[Point, ...] = (
+    (1, 0), (0, 1), (-1, 1), (-1, 0), (0, -1), (1, -1),
+)
+
+# The flower: the hexagon itself plus its six neighbours, at theta*zeta**k.
+# Those seven translations are a complete set of residues modulo 2 + zeta --
+# {0} and the six units, one per nonzero class of Z[zeta]/(2 + zeta) = F7 --
+# which is what makes the flower tile the plane by the inflated lattice and
+# the inflation a bijection on digit strings: the level-n patch is exactly
+# the 7**n sums of theta * sum(d_k * (2 + zeta)**k), all distinct.
+#
+# Every child is a plain translation. The turn is in the inflation instead:
+# each level is laid down 19.106 degrees round from the one below, and it is
+# that accumulated twist, not any gap, that roughens the island's edge.
+_GOSPER_CHILDREN: tuple[_Placement, ...] = (
+    (0, 0, (0, 0)),      # the middle of the flower
+    (0, 0, (1, 1)),      # theta
+    (0, 0, (-1, 2)),     # theta*zeta
+    (0, 0, (-2, 1)),     # theta*zeta**2
+    (0, 0, (-1, -1)),    # theta*zeta**3
+    (0, 0, (1, -2)),     # theta*zeta**4
+    (0, 0, (2, -1)),     # theta*zeta**5
+)
+
+GOSPER = _Substitution("gosper", _HEXAGON_OUTLINE, _GOSPER_CHILDREN,
+                       7 ** 0.5, 6,
+                       _tri_rotate, _tri_mirror, _gosper_scale, _tri_to_xy)
+
 SUBSTITUTIONS = {tile.mode: tile
-                 for tile in (SPHINX, CHAIR, CARPET, PENTAFLAKE)}
+                 for tile in (SPHINX, CHAIR, CARPET, PENTAFLAKE, GOSPER)}
 
 
 def _linear(tile: _Substitution, rot: int, mirrored: int, p: Point) -> Point:
@@ -393,3 +460,12 @@ def pentaflake_board(levels: int, mine_count: int, scale: float = 26) -> Board:
     gap left over per side at every scale. ``scale`` is pixels per unit
     pentagon circumradius."""
     return _substitution_board(PENTAFLAKE, levels, mine_count, scale)
+
+
+def gosper_board(levels: int, mine_count: int, scale: float = 26) -> Board:
+    """The Gosper island, inflated ``levels`` times: 7**levels regular
+    hexagons (1, 7, 49, 343, 2401 tiles) in a patch with no holes whose
+    outline converges on the Gosper island -- and which is turned 19.106
+    degrees further round with every level. ``scale`` is pixels per unit
+    hexagon circumradius."""
+    return _substitution_board(GOSPER, levels, mine_count, scale)
