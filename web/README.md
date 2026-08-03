@@ -34,6 +34,32 @@ service worker then caches, and looking right is worth more here than shaving
 kilobytes off first load, so nothing in CI fails on size (see "Bundle size"
 below). **All 112 modes, polished.**
 
+**M13 — The Sierpinski carpet.** A third board in the **Fractals** family, and
+the first one that is not a rep-tile: the unit square tripled and refilled with
+eight copies of itself — the 3×3 block *minus its centre*. The children do not
+fill the inflated tile, and that missing middle ninth, repeated at every scale,
+is the board. It reuses the family's inflation machinery unchanged; the
+`Substitution` record (ex-`RepTile`) just gained a `factor`, the linear scale of
+one inflation, so a level is ×3 in size and ×8 in cells (1, 8, 64, 512, 4096)
+instead of ×2 and ×4. Two consequences worth knowing:
+
+- **It is the one flat board that is not a disc.** A level-*n* carpet has
+  (8ⁿ − 1) / 7 square holes, so its Euler characteristic is 1 − holes and its
+  boundary has holes + 1 components. No hole ever touches another (their
+  closures are disjoint), so the patch stays a mesh with every edge walked once
+  per side, and the board is still one connected component to play on.
+- **No cell ever has eight neighbours.** Any 3×3 window of the grid holds
+  exactly one cell whose two coordinates are both ≡ 1 (mod 3), and that cell is
+  always a hole — so the carpet plays looser than the square board it is cut
+  from, with 7 neighbours at most.
+
+Its cells are unit squares meeting edge to edge, so unlike the sphinx and the
+chair it needs no collinear step vertices. Difficulty is a level of inflation
+where the growth allows: level 2 (64 cells) easy, level 3 (512) medium; ×8 per
+level leaves no fourth size worth playing — 4096 cells is far past legible — so
+hard keeps the level-3 patch and raises the mine density to the classic hard
+board's ~20%. **All 158 modes.**
+
 **M12 — Fractal (rep-tile) boards.** A new **Fractals** family in the flat
 tiling picker (`src/boards/fractal.ts`), holding two rep-4 boards: the
 **sphinx** (the pentagonal hexiamond — six unit triangles, sides 3·1·1·1·2) and
@@ -275,7 +301,7 @@ Practical knowledge for verifying changes by actually running the app
   seedable RNG.
 - `src/boards/` — `core.ts` (Board/Board3D, adjacency, topology, vector
   helpers), `tilings.ts` (the flat regular builders), `aperiodic.ts` /
-  `fractal.ts` (the aperiodic tilings and the rep-tile boards), `solids.ts`
+  `fractal.ts` (the aperiodic tilings and the self-similar boards), `solids.ts`
   (the closed 3D boards), `surfaces.ts` (the torus/cylinder/Möbius/Klein wraps,
   the Klein `cellCycle` and its self-intersection `clip`), `catalog.ts` /
   `presets.ts` (read `data/*.json`).

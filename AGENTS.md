@@ -23,7 +23,7 @@ Import order is a strict DAG; a module only imports from the ones above it.
 |--------|----------------|
 | `core.py` | `Board` / `Board3D`, the `_shared_vertex_adjacency` neighbour rule, `_build` (lattice→pixels) and `_finalize_flat` (float→pixels), 3D vector helpers, and the topology invariants `euler_characteristic` / `boundary_components` / `corner_fans`. |
 | `tilings.py` | Regular flat builders (square/triangle/trigrid/hex/hexhex/hextri/hextriangle), the `_ArchTemplate` system, the eight Archimedean `_*_template()` factories plus their eight Laves duals (built by `_dual_template`), the six isogonal (non-edge-to-edge) ones and the five congruent-rectangle bonds, and the **`ARCH_TILINGS`** registry (the one place any of them is declared, with `_FAMILY_TRAITS` saying what each family is). |
-| `fractal.py` | The rep-tile (fractal) boards: the sphinx and the chair. One `_RepTile` record per tile — unit outline, rep-4 dissection, lattice ops — and the shared inflation (`rep_placements`) both `sphinx_board` and `chair_board` build from. |
+| `fractal.py` | The self-similar (fractal) boards: the sphinx, the chair and the Sierpinski carpet. One `_Substitution` record per tile — unit outline, the tiles filling the inflated copy, the inflation factor, lattice ops — and the shared inflation (`substitution_placements`) all three `*_board` builders run. The first two are rep-tiles (their children fill the tile); the carpet's leave a hole, which is what makes it a fractal with holes rather than a shape. |
 | `aperiodic.py` | Penrose (P3), the Spectre (Tile(1,1), the chiral monotile) and the phyllotactic spiral, each with exact-arithmetic vertex ids — ℤ[ζ5] for Penrose and the spiral, ℤ[ζ12] for the Spectre. The Spectre's ring is *dense* in the plane, so unlike Penrose's discrete lattice there is no lattice to snap a float vertex back to: its placements are carried as exact `(rotation, mirror, translation)` triples and no floating point enters the substitution at all. The spiral is the odd one out — no substitution, just ten 36° wedges of the tile's own translation lattice, the odd ones offset a step; nonperiodic because its five-fold centre forbids any translation. |
 | `solids.py` | Closed/convex and polycube 3D boards (pentagonal hexecontahedron, Goldberg polyhedra, geodesic icosahedron, rhombicosidodecahedron, truncated icosidodecahedron, cube, tetrahedron, frames, bipyramid). |
 | `surfaces.py` | Wrapping tilings onto surfaces: the three immersion points (`_torus_point`, `_cylinder_point`, `_mobius_point`), the shared `_assemble` tail, the nine simple `*_board` wrappers, and the Archimedean `arch_torus_board` / `arch_cylinder_board` / `arch_mobius_board`. |
@@ -257,47 +257,58 @@ covered exactly, T-vertices wherever the bond is staggered, and tiles that are
 rectangles of its aspect ratio — add that ratio to the class's `RATIOS` table,
 the one line the suite cannot derive.
 
-## Recipe: add a fractal (rep-tile) board
+## Recipe: add a fractal (self-similar) board
 
 The **Fractals** family (`fractal.py`, `web/src/boards/fractal.ts`) holds the
-rep-tile boards: a polygon that tiles a scaled copy of itself, inflated
-``levels`` times into a patch of 4**levels tiles whose outline is the tile
-again. Two ship, both rep-4 — the sphinx (pentagonal hexiamond, triangular
-lattice) and the chair (L-tromino, square lattice). Adding a third is one
-``_RepTile`` record plus its wiring:
+boards built by inflating one tile: the tile is scaled up by the substitution's
+`factor` and refilled with copies of itself, `levels` times, so the patch is
+`len(children)**levels` tiles and its outline is the tile again. Three ship —
+the sphinx (pentagonal hexiamond, triangular lattice) and the chair (L-tromino,
+square lattice), both rep-4 *rep-tiles* whose children fill the tile exactly,
+and the Sierpinski carpet, whose eight children leave the middle ninth of the
+tripled square empty. Adding a fourth is one ``_Substitution`` record plus its
+wiring:
 
-1. **The tile** — a `_RepTile(mode, outline, children, order, rotate, mirror,
-   to_xy)` in `fractal.py`. `outline` walks the unit tile counterclockwise with
-   a vertex at **every lattice step**, not just at its corners: these tilings
-   are not edge to edge, and the collinear ids are what let shared-vertex
-   adjacency see a neighbour that plants a corner mid-edge (`corners()` drops
-   them again, as `shapeMetrics` does for the isogonal tilings). `children` is
-   the dissection of the *size-2* tile into unit tiles, as `(rotation, mirror,
-   translation)` placements; derive it with the exact-cover search
+1. **The tile** — a `_Substitution(mode, outline, children, factor, order,
+   rotate, mirror, to_xy)` in `fractal.py`. `outline` walks the unit tile
+   counterclockwise with a vertex at **every lattice step**, not just at its
+   corners, whenever the tiling is not edge to edge: the collinear ids are what
+   let shared-vertex adjacency see a neighbour that plants a corner mid-edge
+   (`corners()` drops them again, as `shapeMetrics` does for the isogonal
+   tilings). `children` places the unit tiles inside the tile scaled by
+   `factor`, as `(rotation, mirror, translation)` placements with the
+   translation in units of the *child*. For a rep-tile that is a dissection:
+   derive it with the exact-cover search
    `TestRepTiles.test_the_dissection_is_the_one_the_table_holds` runs rather
    than by hand, and keep the reflection-free solution where the tile's own
    symmetry offers one. Then a `*_board(levels, mine_count, scale)` one-liner
-   through `_rep_board`.
+   through `_substitution_board`.
 2. **Menu + presets** — add the mode to `menu.fractal` and `soloLabels` in
    `data/catalog.json`, the builder to `_JSON_BUILDERS` in `presets.py`, and a
    `{mode: {builder, args}}` row to `data/presets.json` (difficulty is a level of inflation --
    3/4/5 for the chair, 64/256/1024 cells; one step lower for the sphinx,
    whose tile is a long sliver that needs more room per cell. Check the top
-   difficulty really reads: past ~500 cells the glyphs stop being legible). Re-run
-   `scripts/export_data.py` and `export_conformance.py`.
+   difficulty really reads: past ~500 cells the glyphs stop being legible —
+   which is why the carpet, growing ×8 a level, spends two of its three
+   difficulties on the level-3 patch and separates them by mine density
+   instead). Re-run `scripts/export_data.py` and `export_conformance.py`.
 3. **Port it to `web/src/boards/fractal.ts`** — the same record, verbatim, plus
    one `BUILDERS` row in `presets.ts`. The conformance oracle compares the two
-   boards immediately. Its menu icon is generated: `REP_TILES` in
+   boards immediately. Its menu icon is generated: `SUBSTITUTIONS` in
    `web/src/ui/icons.ts` (and `gui.py`'s `_render_icon`) draws the level-1
    supertile — the substitution itself — from the board's own geometry.
 
-`TestRepTiles` then covers the new tile automatically: the dissection is exact
+`TestRepTiles` then covers a new rep-tile automatically: the dissection is exact
 and unique-up-to-symmetry, inflation tiles the supertile with no gap or overlap,
 every cell is congruent to the prototile, the patch is simply connected, and the
-step vertices are what keep it a mesh.
+step vertices are what keep it a mesh. A substitution with holes is not simply
+connected and gets its own class instead — `TestSierpinskiCarpet` checks the
+inflation against the carpet's arithmetic definition and pins what the holes
+cost: Euler characteristic 1 - holes, holes + 1 boundary circles, and one
+neighbour fewer than the square grid everywhere.
 
-The family is flat only — a rep-tile patch is a shape, not a periodic window, so
-there is nothing to glue a seam with. That is one line: it is in
+The family is flat only — an inflated patch is a shape, not a periodic window,
+so there is nothing to glue a seam with. That is one line: it is in
 `catalog.FLAT_ONLY_FAMILIES` (with `aperiodic`), which `family_rows`,
 `picker_families` and the TypeScript mirror all read.
 

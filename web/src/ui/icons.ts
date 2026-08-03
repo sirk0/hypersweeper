@@ -18,7 +18,7 @@ import {
   type ShapeTone,
 } from "../render/shapePalette";
 import { ARCH_TILINGS, archTemplate } from "../boards/tilings";
-import { placePoint, repPlacements, REP_TILES } from "../boards/fractal";
+import { placePoint, substitutionPlacements, SUBSTITUTIONS } from "../boards/fractal";
 import {
   c80Board,
   c180Board,
@@ -916,11 +916,12 @@ function draw(rawKey: string): string[] {
     for (const [px, py] of raw) {
       parts.push(shape(hexagon(C + (px - midX) * r, C + (py - midY) * r, r)));
     }
-  } else if (REP_TILES[key]) {
-    // the rep-4 substitution itself: the four half-size tiles that fill one
-    // tile, drawn from the board's own geometry
-    const tile = REP_TILES[key]!;
-    const polygons = repPlacements(tile, 1).map((at) =>
+  } else if (SUBSTITUTIONS[key]) {
+    // the substitution itself: the once-smaller tiles that fill one tile
+    // (four for the rep-tiles, eight around a hole for the carpet), drawn
+    // from the board's own geometry
+    const tile = SUBSTITUTIONS[key]!;
+    const polygons = substitutionPlacements(tile, 1).map((at) =>
       tile.outline.map((v): P => tile.toXy(placePoint(tile, at, v))),
     );
     const xs = polygons.flat().map(([x]) => x!);

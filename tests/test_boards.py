@@ -10,6 +10,7 @@ from minesweeper.boards import (
     _SPECTRE_OUTLINE,
     APERIODIC_MODES,
     ARCH_TILINGS,
+    CARPET,
     CHAIR,
     DIFFICULTIES,
     FRACTAL_MODES,
@@ -39,6 +40,7 @@ from minesweeper.boards import (
     build_board,
     c80_board,
     c180_board,
+    carpet_board,
     chair_board,
     cube_board,
     cube_frame_board,
@@ -58,7 +60,6 @@ from minesweeper.boards import (
     penrose_board,
     phyllotaxis_board,
     place_point,
-    rep_placements,
     rhombicosidodecahedron_board,
     snub_dodecahedron_board,
     spectre_board,
@@ -67,6 +68,7 @@ from minesweeper.boards import (
     sphinx_board,
     square_board,
     stepped_bipyramid_board,
+    substitution_placements,
     surface_of,
     tetrahedron_board,
     tetrahedron_frame_board,
@@ -639,7 +641,9 @@ class TestPhyllotaxis:
 
 
 class TestRepTiles:
-    """The two fractal (rep-4) boards: the sphinx and the chair.
+    """The two rep-4 fractal boards: the sphinx and the chair. (The third
+    fractal board, the Sierpinski carpet, inflates the same way but is no
+    rep-tile -- its substitution leaves a hole -- so it has its own class.)
 
     A rep-tile board is one tile inflated ``levels`` times, so what has to
     hold is that the dissection is real -- four half-size tiles filling the
@@ -766,7 +770,7 @@ class TestRepTiles:
         # the level-3 patch covers the tile scaled by 8, with no gap and no
         # overlap: the self-similar outline that makes these the fractal
         # boards rather than a window cut out of a tiling
-        placements = rep_placements(tile, 3)
+        placements = substitution_placements(tile, 3)
         assert len(placements) == 64
         covered = set()
         for at in placements:
@@ -819,7 +823,7 @@ class TestRepTiles:
         # lattice step along each edge records those T-vertices, which is
         # what keeps the patch a mesh -- drop them and the polygons no longer
         # share whole edges, so the topology invariants stop reading a disc.
-        placements = rep_placements(tile, 3)
+        placements = substitution_placements(tile, 3)
         stepped = _finalize_flat(
             tile.mode,
             {at: [place_point(tile, at, v) for v in tile.outline]
@@ -842,7 +846,7 @@ class TestRepTiles:
         # on the sphinx the T-vertices are load-bearing for the game too: a
         # tile meeting another only across a split edge is a neighbour there
         # and would not be one without the step vertices
-        placements = rep_placements(SPHINX, 3)
+        placements = substitution_placements(SPHINX, 3)
         full = _shared_vertex_adjacency({
             at: [place_point(SPHINX, at, v) for v in SPHINX.outline]
             for at in placements})
@@ -853,6 +857,99 @@ class TestRepTiles:
                    corners_only[cell] == full[cell] for cell in full)
         assert sum(map(len, corners_only.values())) < sum(map(len, full.values()))
         assert min(len(n) for n in full.values()) >= 3
+
+
+class TestSierpinskiCarpet:
+    """The third fractal board, and the only one that is not a rep-tile:
+    the unit square tripled and refilled with eight copies, the centre of
+    the 3x3 block left out at every scale.
+
+    The oracle throughout is the carpet's arithmetic definition -- a unit
+    square of the 3**n grid survives exactly when no digit pair of its
+    base-3 coordinates is (1, 1) -- which the substitution machinery knows
+    nothing about, so the two derivations pin each other.
+    """
+
+    @staticmethod
+    def _kept(levels):
+        """The cells of the level-``levels`` carpet, by the digit rule."""
+        size = 3 ** levels
+        return {(x, y)
+                for x in range(size) for y in range(size)
+                if all((x // 3 ** k) % 3 != 1 or (y // 3 ** k) % 3 != 1
+                       for k in range(levels))}
+
+    @staticmethod
+    def _holes(levels):
+        """(8**levels - 1) / 7: one hole per block at every scale."""
+        return (8 ** levels - 1) // 7
+
+    def test_the_substitution_is_the_block_minus_its_middle(self):
+        # eight unit squares, no two the same, filling the tripled square
+        # except for its centre ninth -- the hole that makes the fractal
+        assert len(CARPET.children) == 8
+        assert all(rot == 0 and not mirrored for rot, mirrored, _ in CARPET.children)
+        placed = {translation for _, _, translation in CARPET.children}
+        assert len(placed) == 8
+        block = {(x, y) for x in range(3) for y in range(3)}
+        assert placed == block - {(1, 1)}
+
+    @pytest.mark.parametrize("levels", [0, 1, 2, 3])
+    def test_inflation_is_the_digit_rule(self, levels):
+        # every placement is a plain translation, and the set of them is
+        # exactly the set of surviving squares of the 3**levels grid
+        placements = substitution_placements(CARPET, levels)
+        assert len(placements) == 8 ** levels
+        assert all(rot == 0 and not mirrored for rot, mirrored, _ in placements)
+        assert {translation for _, _, translation in placements} == self._kept(levels)
+
+    def test_cell_counts_are_powers_of_eight(self):
+        for levels in range(4):
+            assert len(carpet_board(levels, 1).adjacency) == 8 ** levels
+
+    def test_every_tile_is_the_unit_square(self):
+        # one congruent tile, edge to edge: unlike the sphinx and the chair
+        # the carpet needs no collinear step vertices to stay a mesh
+        board = carpet_board(2, 10, scale=1)
+        assert board.width == board.height == 9
+        for polygon in board.polygons.values():
+            assert len(polygon) == 4
+            xs = {x for x, _ in polygon}
+            ys = {y for _, y in polygon}
+            assert len(xs) == len(ys) == 2
+            assert max(xs) - min(xs) == max(ys) - min(ys) == 1
+
+    @pytest.mark.parametrize("levels", [1, 2, 3])
+    def test_the_patch_is_a_square_with_square_holes(self, levels):
+        # not a disc -- the one flat board that is not. Each hole is a
+        # boundary circle of its own, so chi = 1 - holes and the boundary
+        # has holes + 1 components (the outer square and one per hole);
+        # every edge is still walked at most once in each direction, so
+        # nothing overlaps and no two holes touch.
+        board = carpet_board(levels, 1, scale=1)
+        directed = Counter()
+        for polygon in board.polygons.values():
+            points = [tuple(round(c, 6) for c in p) for p in polygon]
+            for a, b in zip(points, points[1:] + points[:1]):
+                directed[(a, b)] += 1
+        assert set(directed.values()) == {1}
+        assert _euler_characteristic(board) == 1 - self._holes(levels)
+        assert _boundary_components(board) == self._holes(levels) + 1
+
+    def test_the_holes_cost_every_cell_a_neighbour(self):
+        # any 3x3 window of the grid holds exactly one cell whose two
+        # coordinates are both 1 mod 3, and that cell is always a hole --
+        # so no carpet cell ever has the square board's eight neighbours
+        board = carpet_board(3, 1)
+        assert max(len(n) for n in board.adjacency.values()) == 7
+        # and the board is still one connected component to play on
+        seen, stack = set(), [next(iter(board.adjacency))]
+        while stack:
+            cell = stack.pop()
+            if cell not in seen:
+                seen.add(cell)
+                stack.extend(board.adjacency[cell])
+        assert len(seen) == len(board.adjacency)
 
 
 class TestNeighborCounts:

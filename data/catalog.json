@@ -90,6 +90,7 @@
     "phyllotaxis": "Phyllotactic spiral",
     "sphinx": "Sphinx",
     "chair": "Chair",
+    "carpet": "Sierpiński carpet",
     "sphere": "Pentagonal hexecontahedron",
     "c80": "Chamfered dodecahedron",
     "c180": "Goldberg GP(3,0)",
@@ -146,7 +147,8 @@
     ],
     "fractal": [
       "sphinx",
-      "chair"
+      "chair",
+      "carpet"
     ],
     "familyLabels": {
       "regular": "Regular",

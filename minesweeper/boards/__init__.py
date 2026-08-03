@@ -100,13 +100,15 @@ from minesweeper.boards.core import (  # noqa: F401
     newell_normal,
 )
 from minesweeper.boards.fractal import (  # noqa: F401
+    CARPET,
     CHAIR,
-    REP_TILES,
     SPHINX,
+    SUBSTITUTIONS,
+    carpet_board,
     chair_board,
     place_point,
-    rep_placements,
     sphinx_board,
+    substitution_placements,
 )
 from minesweeper.boards.presets import (  # noqa: F401
     _PRESETS,

@@ -40,15 +40,15 @@ from minesweeper.boards import (
     MODE_LABELS,
     MODES_3D,
     POLYHEDRA_MODES,
-    REP_TILES,
     SPHERE_MODES,
+    SUBSTITUTIONS,
     build_board,
     family_rows,
     newell_normal,
     picker_families,
     picker_modes,
     place_point,
-    rep_placements,
+    substitution_placements,
     surface_of,
     view_hint,
 )
@@ -1124,12 +1124,13 @@ def _render_icon(key: str) -> pygame.Surface:
                             for x, y in hexagon],
                         fill=ICON_BLUE if k % 2 else ICON_BLUE_LIGHT, width=3)
         _icon_gloss(s, pygame.Rect(d * 0.06, d * 0.06, d * 0.88, d * 0.6))
-    elif key in REP_TILES:
-        # the rep-4 substitution itself: the four half-size tiles that fill
-        # one tile, drawn from the board's own geometry
-        tile = REP_TILES[key]
+    elif key in SUBSTITUTIONS:
+        # the substitution itself: the once-smaller tiles that fill one tile
+        # (four for the rep-tiles, eight around a hole for the carpet), drawn
+        # from the board's own geometry
+        tile = SUBSTITUTIONS[key]
         polygons = [[tile.to_xy(place_point(tile, at, v)) for v in tile.outline]
-                    for at in rep_placements(tile, 1)]
+                    for at in substitution_placements(tile, 1)]
         pts = [p for polygon in polygons for p in polygon]
         min_x, max_x = min(x for x, _ in pts), max(x for x, _ in pts)
         min_y, max_y = min(y for _, y in pts), max(y for _, y in pts)

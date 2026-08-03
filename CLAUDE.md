@@ -14,7 +14,8 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   share a vertex. Modules: `core` (`Board`/`Board3D`, adjacency, topology
   invariants), `tilings` (flat tilings + the `ARCH_TILINGS` registry and
   `_ArchTemplate` system), `aperiodic` (Penrose, Spectre, phyllotactic
-  spiral), `fractal` (the rep-tile boards: sphinx and chair), `solids` (spherical
+  spiral), `fractal` (the self-similar boards: sphinx, chair and Sierpinski
+  carpet), `solids` (spherical
   polyhedra, cube, tetrahedron, frames), `surfaces` (donut/cylinder/
   Möbius/Klein-bottle wrapping via shared immersion helpers), `catalog`
   (the menu, **derived** from `SURFACE_SPECS`/`TILING_SPECS`), `presets`
@@ -101,20 +102,31 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   parallelohexagon, so each of ten 36° wedges is a plain block of its own
   translation lattice, and the odd wedges being pushed one edge out along
   `u1` is the entire spiral.
-  The two **fractal** boards are rep-tiles -- polygons that tile a scaled copy
-  of themselves. Each is one tile inflated `levels` times (rep-4, so 4**levels
-  cells: 64/256/1024 by difficulty for the chair, one level lower for the
-  sphinx, whose sliver of a tile needs more room) into a patch whose outline is
-  the tile again, scaled; that self-similar outline is the board, the second
-  deliberate exception to the square-window convention. The **sphinx** is the
-  pentagonal hexiamond on the triangular lattice (its dissection is unique --
-  three of its four children are reflected), the **chair** the L-tromino on
-  the square lattice (the classic reflection-free substitution, four
-  quarter-turns). Both lattices are integer and each child translation is the
-  parent's scaled by a power of two, so a placement stays an exact
-  `(rotation, mirror, translation)` triple; neither tiling is edge to edge, so
-  tile outlines carry a vertex at every lattice step and `corners`/
-  `shapeMetrics` drop those again before measuring.
+  The three **fractal** boards are each one tile inflated `levels` times --
+  scaled up by the substitution's `factor` and refilled with copies of itself --
+  into a patch whose outline is the tile again, scaled; that self-similar
+  outline is the board, the second deliberate exception to the square-window
+  convention. Two are rep-tiles, polygons that tile a scaled copy of
+  themselves (rep-4, so 4**levels cells: 64/256/1024 by difficulty for the
+  chair, one level lower for the sphinx, whose sliver of a tile needs more
+  room): the **sphinx** is the pentagonal hexiamond on the triangular lattice
+  (its dissection is unique -- three of its four children are reflected), the
+  **chair** the L-tromino on the square lattice (the classic reflection-free
+  substitution, four quarter-turns). The **Sierpinski carpet** is not a
+  rep-tile: the unit square tripled and refilled with the eight subsquares of
+  the 3x3 block that are not its centre, so it grows 8**levels (64 easy, 512
+  medium; ×8 a level leaves no fourth playable size, so hard reuses the
+  level-3 patch at the classic hard board's ~20% mine density). The hole it
+  leaves at every scale makes it the one flat board that is not a disc --
+  (8**n - 1) / 7 holes, hence Euler characteristic 1 - holes and holes + 1
+  boundary circles -- and the reason no cell of it ever has eight neighbours
+  (every 3x3 window of the grid holds exactly one cell that is ≡ (1, 1) mod 3,
+  and that one is always a hole). All three lattices are integer and each child
+  translation is the parent's scaled by a power of the factor, so a placement
+  stays an exact `(rotation, mirror, translation)` triple; the two rep-tilings
+  are not edge to edge, so their tile outlines carry a vertex at every lattice
+  step and `corners`/`shapeMetrics` drop those again before measuring (the
+  carpet's squares meet edge to edge and need none).
 - `minesweeper/gui.py` — pygame UI. `MenuScreen` (a geometry-first home
   page — Classic / Flat / Flat manifolds / Sphere / Polyhedra. Classic
   launches flat squares; Flat (the plane) and each flat manifold (cylinder,
