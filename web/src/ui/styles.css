@@ -627,6 +627,37 @@ body {
   background: radial-gradient(circle at 50% 50%, #fdf1e4 0 12%, #d8bfa5 92%);
 }
 
+/* A sound preset's voice in miniature: one bar per harmonic partial, as tall
+   as that partial is loud. The heights are written inline from the preset's own
+   timbre numbers (ui/settings.ts soundSwatch), so the swatch is the spectrum
+   the engine actually synthesises rather than a picture of one. */
+.sound-swatch {
+  flex: none;
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  box-sizing: border-box;
+  width: 38px;
+  height: 38px;
+  padding: 5px 4px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--panel);
+}
+
+.sound-swatch-bar {
+  flex: 1;
+  border-radius: 1.5px;
+  background: var(--accent);
+}
+
+/* Off has no preset, so its bars come out at the floor height already; grey
+   them too, so the row reads as silence rather than as a missing swatch. */
+.sound-swatch[data-sound="off"] .sound-swatch-bar {
+  background: var(--muted);
+  opacity: 0.5;
+}
+
 /* A theme's palette in miniature: its page field, a card on it, an accent dot. */
 .theme-swatch {
   position: relative;

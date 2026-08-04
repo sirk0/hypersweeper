@@ -3,6 +3,38 @@
 The in-progress TypeScript rewrite (Three.js / WebGL), living alongside the
 Python game per `docs/plans/typescript-rewrite-same-repo.md`.
 
+**M16 — Sound.** The game has a voice (`src/audio/`), synthesised rather than
+sampled — there is no audio file in this repo, and there is not meant to be. A
+sound here is *parametric*, and that is what a folder of clips could not be:
+
+- **A tile is heard as the shape it is.** A cell's side count picks its pitch
+  (a step down the preset's scale per side, so a triangle pings at the top of
+  the range and a hexagon sits below it) *and* the number of harmonic partials
+  its tone is built from — three for a triangle, six for a hexagon. Measured by
+  the same `shapeMetrics` the shape *colours* come from, so a tile that looks
+  like a pentagon sounds like one on every board, T-vertices dropped and all.
+- **A click and a chain reaction are different sounds.** One opened cell is one
+  note; a flood fill is a **cascade**, one grain per ring of the spread, walked
+  over the game's own adjacency so the wave arrives in the order the flood
+  actually reached the cells, rising in pitch and falling in level as it goes.
+  It is staggered at the reveal ripple's own pace, so the wave is seen and
+  heard together, and thinned to a budget so half a board opening stays a wave
+  and not a wall.
+- **Stereo is where the cell is on screen.** Each grain is panned by the cell's
+  projected x (`BoardRenderer.panFor`), not by its place in the mesh — so it
+  follows the zoom, the pan, the portrait quarter-turn and a solid's rotation,
+  and a cascade sweeps across the field as it spreads.
+- **The Klein arrows are opposites.** Forward glides up while it sweeps left to
+  right; back is that exact figure reflected in both axes (a unit test pins the
+  reflection, not merely that the two differ).
+- **Three presets and Off**, under Settings › Sound: Chime, Arcade, Blocks.
+  Picking one plays it — a preset is a sound, and the click that chooses it is
+  also the user gesture a browser needs before audio may start at all.
+
+The pygame build stays silent: this is a web-only feature, so the presets live
+in TypeScript rather than in the shared `data/ui/screens.json`. See "Sound"
+below.
+
 **M6 — Polish.** Board animations (`src/render/animations.ts`), driven by a
 single `CellAnimations` clock the renderer ticks each frame only while
 something is in flight (the loop stays idle otherwise): a **reveal ripple**
@@ -678,6 +710,55 @@ builder a function — the reason a link-facing lookup must never use `in`.
 `tests/unit/link.test.ts` round-trips **every** mode in the catalog at every
 difficulty, so every board the menu can launch is shareable.
 
+## Sound (`src/audio/`)
+
+Two files, and the split between them is the point:
+
+- **`presets.ts`** — the table. One `SoundPreset` per character (Chime, Arcade,
+  Blocks), in the shape of `cellStyle.ts`: plain numbers the engine reads, so a
+  fourth character is a row here and nothing else. `off` is deliberately *not*
+  an entry — `soundPreset()` returns `null` for it, and a silenced game never
+  builds an audio graph at all.
+- **`sound.ts`** — `voicesFor(event, preset)` is **pure** (an event in, a list
+  of grains out: when, what pitch, how wide, how loud), and `playSound(event)`
+  renders those grains onto the shared `AudioContext`. Every rule the feature
+  has lives in the pure half, which is why `tests/unit/sound.test.ts` can pin
+  what the game sounds like under node with no audio stack at all. The call
+  sites (`session.ts`, and the settings preview) name events, never
+  oscillators — the same seam `haptics.ts` is for touch.
+
+Things that will bite:
+
+- **Audio cannot start without a user gesture.** A context built at load time
+  stays suspended on iOS *forever*, and everything scheduled into it is lost
+  silently. `unlockAudio()` (called once from `App`) builds and resumes it on
+  the first `pointerdown`/`keydown`/`touchend`. Nothing is audible before the
+  player's first touch, by construction — do not "fix" that by building the
+  context earlier.
+- **Pan comes from the renderer, not the mesh.** `BoardRenderer.panFor(cell)`
+  projects the cell anchor through the board's world matrix and the camera, so
+  it carries the zoom, the pan, the portrait quarter-turn and a solid's
+  rotation. `GameSession` takes it as the `panOf` option and falls back to the
+  cell's mesh-local x (the same answer for an unframed flat board) when there
+  is none — which is what keeps the session constructible in a test.
+- **A cascade is bounded, twice.** `cascade.maxVoices` thins the cells at an
+  even stride across the whole ring range (so the first ring and the last are
+  always heard), and `MAX_CASCADE_S` clamps the delay. Beyond that
+  `MAX_ACTIVE_VOICES` drops grains rather than letting a loss over a flood turn
+  into a wall. Raising any of them is a decision about the worst board (a 500+
+  cell flood on `hard`), not the average one.
+- **The shape map is lazy.** `GameSession.sidesOf` measures every cell's
+  polygon on the first sound a board plays, and never when sound is off — the
+  `soundEnabled()` guard at each call site is what keeps a silenced game from
+  paying for the feature.
+- **Testing it.** A synthesised sound leaves nothing in the DOM, so the e2e
+  suite counts the oscillators the page creates
+  (`tests/e2e/sound.spec.ts`, an init script wrapping
+  `AudioContext.prototype.createOscillator`) and reads the engine's active
+  choice back through `window.__ms.state().sound`. Counting *scheduled* nodes
+  needs no output device and no autoplay policy, which is what makes it stable
+  in CI.
+
 ## Settings and themes
 
 The gear on the menu title row opens a settings page — not a modal: it is one
@@ -718,9 +799,15 @@ behind it. An unknown key (a record from a newer build, a hand-edited one) falls
 back to `classic` through `resolveCellStyle`, which uses `Object.hasOwn` for the
 same reason `link.ts` does.
 
+**Sound.** What the game sounds like — a preset key or `"off"` — under the
+Behaviour heading, with its own picker page (see "Sound" above). Unlike the cell
+style it needs no new board: every event reads the preset when it plays, so a
+change is audible on the very next click.
+
 **Persistence.** `src/settings.ts` is the app's only stored state: theme,
-difficulty, the animations override and the cell style. Flag mode, zoom, the menu
-page you are on and the board in progress stay in memory as before.
+difficulty, the animations override, the cell style and the sound preset. Flag
+mode, zoom, the menu page you are on and the board in progress stay in memory as
+before.
 
 The layout is **one stable `localStorage` key holding a record that carries its
 own `version`** — deliberately not a versioned key name (`…:v1`, `…:v2`), which

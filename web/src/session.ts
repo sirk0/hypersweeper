@@ -1,3 +1,4 @@
+import { playSound, soundEnabled, type CellSound } from "./audio/sound";
 import { buildBoard } from "./boards/presets";
 import { isBoard3D, type AnyBoard, type CellId } from "./boards/core";
 import { Game } from "./game";
@@ -6,6 +7,7 @@ import { mulberry32, type Rng } from "./rng";
 import type { BoardMesh, CellVisual } from "./render/boardMesh";
 import { cellStyle } from "./render/cellStyle";
 import { PolygonBoard } from "./render/polygonBoard";
+import { shapeMetrics } from "./render/shapePalette";
 import { SolidBoard } from "./render/solidBoard";
 
 // GameSession mediates between the pure Game (rules), the board mesh (flat
@@ -42,10 +44,26 @@ export class GameSession {
   private remap = new Map<CellId, CellId>();
   private remapInv = new Map<CellId, CellId>();
 
+  /** Where a cell is across the stereo field, supplied by the renderer (which
+   * is the only thing that knows where the board currently *looks* like it is
+   * — see `BoardRenderer.panFor`). Without one, sound falls back to the cell's
+   * position in the mesh, which is the same answer for an unrotated flat
+   * board. */
+  private readonly panOf: ((geomCell: CellId) => number | null) | null;
+  /** Side count per cell, for the shape a sound is pitched by. Built on the
+   * first sound this board plays and never at all when sound is off — it is a
+   * pass over every cell's polygon, and a silenced game must not pay for it. */
+  private sides: Map<CellId, number> | null = null;
+
   constructor(
     mode: string,
     difficulty: string,
-    opts: { seed?: number; minePositions?: CellId[]; cellStyle?: string } = {},
+    opts: {
+      seed?: number;
+      minePositions?: CellId[];
+      cellStyle?: string;
+      panOf?: (geomCell: CellId) => number | null;
+    } = {},
   ) {
     this.mode = mode;
     this.difficulty = difficulty;
@@ -66,6 +84,7 @@ export class GameSession {
       ...(opts.minePositions ? { minePositions: opts.minePositions } : {}),
       ...(rng ? { rng } : {}),
     });
+    this.panOf = opts.panOf ?? null;
     this.cycle = isBoard3D(this.board) ? this.board.cellCycle : null;
     this.cycleInv = this.cycle ? invert(this.cycle) : null;
     for (const cell of this.board.polygons.keys()) {
@@ -131,6 +150,9 @@ export class GameSession {
     for (const geom of this.board.polygons.keys()) {
       this.mesh.setVisual(geom, this.visualFor(this.gameFor(geom)));
     }
+    // The two directions sound like each other reversed (audio/sound.ts), so
+    // the arrows are told apart by ear as well as by which one was pressed.
+    if (soundEnabled()) playSound({ kind: "scroll", direction });
     return true;
   }
 
@@ -163,7 +185,9 @@ export class GameSession {
     const changed = this.game.reveal(gameCell);
     if (this.game.state === "lost") this.exploded = gameCell;
     this.apply(changed);
-    this.rippleReveal(changed, gameCell);
+    const opened = this.openedFrom(changed);
+    this.rippleReveal(opened, gameCell);
+    this.soundReveal(opened, gameCell, false);
     this.checkStop(gameCell, changed);
   }
 
@@ -183,7 +207,17 @@ export class GameSession {
     if (held && isFlagged && !wasFlagged) {
       this.mesh.dropFlag(this.geomFor(gameCell));
     }
-    if (isFlagged !== wasFlagged) haptic("flag");
+    if (isFlagged !== wasFlagged) {
+      haptic("flag");
+      if (soundEnabled()) {
+        playSound({
+          kind: "flag",
+          on: isFlagged,
+          sides: this.sidesOf(gameCell),
+          pan: this.panFor(gameCell),
+        });
+      }
+    }
   }
 
   chord(cell: CellId): void {
@@ -196,20 +230,113 @@ export class GameSession {
       for (const c of changed) if (this.game.isMine(c)) this.exploded = c;
     }
     this.apply(changed);
-    this.rippleReveal(changed, chorded);
+    const opened = this.openedFrom(changed);
+    this.rippleReveal(opened, chorded);
+    this.soundReveal(opened, chorded, true);
     this.checkStop(chorded, changed);
   }
 
-  /** Flash the cells a reveal/chord just opened, rippling out from the click. */
-  private rippleReveal(changed: CellId[], origin: CellId): void {
-    const opened = changed.filter(
+  /** The cells a move actually opened — what both the reveal ripple and the
+   * cascade of sound are built from. */
+  private openedFrom(changed: CellId[]): CellId[] {
+    return changed.filter(
       (c) => this.game.cellState(c) === "revealed" && !this.game.isMine(c),
     );
+  }
+
+  /** Flash the cells a reveal/chord just opened, rippling out from the click. */
+  private rippleReveal(opened: CellId[], origin: CellId): void {
     if (opened.length === 0) return;
     this.mesh.pulseReveal(
       opened.map((c) => this.geomFor(c)),
       this.geomFor(origin),
     );
+  }
+
+  /** Sound the cells a move opened: one note for a single cell, a cascade
+   * spreading outward from the click for a flood fill. Each cell contributes
+   * its own shape (the pitch and the timbre) and its own place on screen (the
+   * stereo position), so what is heard is the shape of the board and the shape
+   * of the opening — see audio/sound.ts. */
+  private soundReveal(opened: CellId[], origin: CellId, chord: boolean): void {
+    if (opened.length === 0 || !soundEnabled()) return;
+    const rings = this.ringsFrom(origin, opened);
+    const cells: CellSound[] = opened.map((cell) => ({
+      sides: this.sidesOf(cell),
+      pan: this.panFor(cell),
+      ring: rings.get(cell) ?? 0,
+    }));
+    playSound({ kind: "open", cells, chord });
+  }
+
+  /** How many steps out from `origin` each opened cell is, walked over the
+   * game's own adjacency and through opened cells only — which is exactly the
+   * order the flood fill reached them in, so the cascade spreads the way the
+   * opening did. A chord can open cells the walk cannot reach (its neighbours
+   * are not all adjacent to each other); those sit one ring past the farthest
+   * it did reach, so they arrive at the end of the wave rather than on top of
+   * the click. */
+  private ringsFrom(origin: CellId, opened: CellId[]): Map<CellId, number> {
+    const inSet = new Set(opened);
+    const rings = new Map<CellId, number>();
+    const queue: CellId[] = [];
+    if (inSet.has(origin)) {
+      rings.set(origin, 0);
+      queue.push(origin);
+    } else {
+      // A chord starts from an already-open cell, so the walk starts at the
+      // neighbours it opened.
+      for (const n of this.game.neighbors(origin)) {
+        if (inSet.has(n) && !rings.has(n)) {
+          rings.set(n, 1);
+          queue.push(n);
+        }
+      }
+    }
+    let far = 0;
+    for (let i = 0; i < queue.length; i++) {
+      const cell = queue[i]!;
+      const ring = rings.get(cell)!;
+      if (ring > far) far = ring;
+      for (const n of this.game.neighbors(cell)) {
+        if (inSet.has(n) && !rings.has(n)) {
+          rings.set(n, ring + 1);
+          queue.push(n);
+        }
+      }
+    }
+    for (const cell of opened) if (!rings.has(cell)) rings.set(cell, far + 1);
+    return rings;
+  }
+
+  /** The side count of a cell's tile, the shape its voice is built from.
+   * Measured the way the shape *colours* are (`shapeMetrics`, collinear
+   * T-vertices dropped), so a tile that looks like a pentagon sounds like
+   * one. */
+  private sidesOf(cell: CellId): number {
+    if (!this.sides) {
+      this.sides = new Map();
+      const masks = isBoard3D(this.board) ? this.board.cornerMask : null;
+      for (const [id, polygon] of this.board.polygons) {
+        this.sides.set(id, shapeMetrics(polygon, masks?.get(id)).sides);
+      }
+    }
+    return this.sides.get(cell) ?? 4;
+  }
+
+  /** Where a cell is across the stereo field, -1 (left) .. +1 (right). The
+   * renderer answers for what is on screen; the fallback is the cell's place
+   * in the mesh, which agrees with it on an unrotated, unzoomed flat board. */
+  private panFor(gameCell: CellId): number {
+    const geom = this.geomFor(gameCell);
+    const projected = this.panOf?.(geom);
+    if (projected != null) return projected;
+    const anchor = this.mesh.cellAnchor(geom);
+    if (!anchor) return 0;
+    const view = this.mesh.view;
+    const half = view.kind === "flat" ? view.width / 2 : view.radius;
+    if (!(half > 0)) return 0;
+    return Math.max(-1, Math.min(1, anchor.center[0] / half));
   }
 
   hover(cell: CellId | null): void {
@@ -231,6 +358,11 @@ export class GameSession {
         this.revealEndState();
         this.mesh.shake();
         haptic("lose");
+        // At the mine, not at the click: a chord detonates a neighbour, and
+        // the blast belongs where it went off.
+        if (soundEnabled()) {
+          playSound({ kind: "lose", pan: this.panFor(this.exploded ?? origin) });
+        }
       } else if (this.game.state === "won") {
         const autoFlagged = changed.filter(
           (c) => this.game.isMine(c) && this.game.cellState(c) === "flagged",
@@ -240,6 +372,7 @@ export class GameSession {
           autoFlagged.map((c) => this.geomFor(c)),
         );
         haptic("win");
+        if (soundEnabled()) playSound({ kind: "win", pan: this.panFor(origin) });
       }
     }
   }
