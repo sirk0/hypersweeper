@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Hypersweeper has moved</title>
+    <!--
+      During the TypeScript rewrite this app was deployed under /next/ while
+      the pygame build held the site root. The TypeScript app now *is* the
+      site root, so /next/ is kept only so old links (and home-screen
+      shortcuts) still land on the game.
+
+      Vite copies public/ into dist/ verbatim, so this file is served at
+      <base>/next/ and "../" resolves to the app in both the local preview
+      (base "/") and on Pages (base "/hypersweeper/").
+
+      A visitor who installed the app from /next/ has a service worker scoped
+      there; it is unregistered below so the redirect is not answered out of a
+      stale precache next time. Only registrations under this path are touched
+      — caches on a github.io origin are shared with every other project site
+      the same user publishes, so nothing origin-wide is cleared. Browsers also
+      drop a registration whose script 404s on its update check, which
+      /next/sw.js now does.
+    -->
+    <link rel="canonical" href="../" />
+    <meta name="robots" content="noindex" />
+    <!-- Fallback for a browser that runs no script: still gets there. -->
+    <meta http-equiv="refresh" content="3; url=../" />
+    <style>
+      html {
+        color-scheme: light dark;
+        font-family:
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          sans-serif;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        text-align: center;
+        padding: 1.5rem;
+      }
+      p {
+        margin: 0.4rem 0;
+      }
+      .muted {
+        opacity: 0.7;
+        font-size: 0.9rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p>Hypersweeper now lives at the site root.</p>
+      <p class="muted"><a href="../">Continue to the game</a></p>
+    </main>
+    <script>
+      (function () {
+        // Keep the shared board link (?mode=…&difficulty=…&seed=…) and any
+        // hash: a /next/ link with parameters must open the same board here.
+        var target = "../" + window.location.search + window.location.hash;
+        function go() {
+          window.location.replace(target);
+        }
+        var sw = navigator.serviceWorker;
+        if (!sw || !sw.getRegistrations) {
+          go();
+          return;
+        }
+        // Redirect regardless of how the cleanup goes, and never hang on it.
+        var done = false;
+        function once() {
+          if (!done) {
+            done = true;
+            go();
+          }
+        }
+        setTimeout(once, 1500);
+        var here = new URL(".", window.location.href).href;
+        sw.getRegistrations()
+          .then(function (regs) {
+            return Promise.all(
+              regs
+                .filter(function (r) {
+                  return r.scope.indexOf(here) === 0;
+                })
+                .map(function (r) {
+                  return r.unregister();
+                }),
+            );
+          })
+          .then(once, once);
+      })();
+    </script>
+  </body>
+</html>

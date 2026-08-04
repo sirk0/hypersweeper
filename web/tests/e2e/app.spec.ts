@@ -39,6 +39,20 @@ test.describe("M1 app", () => {
     expect(state?.cellCount).toBe(60); // easy Penrose keeps 60 rhombi
   });
 
+  // The app was deployed under /next/ while the pygame build held the site
+  // root; that page (web/public/next/index.html) is now a redirect, and a
+  // shared link from back then must still open its board.
+  test("the legacy /next/ path redirects to the app, parameters and all", async ({
+    page,
+  }) => {
+    await page.goto("/next/?mode=hex&difficulty=easy&seed=7");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    expect(new URL(page.url()).pathname).toBe("/");
+    const state = await page.evaluate(() => window.__ms?.state());
+    expect(state?.mode).toBe("hex");
+    expect(state?.difficulty).toBe("easy");
+  });
+
   test("deep link starts a specific board", async ({ page }) => {
     await page.goto("/?mode=hex&difficulty=easy&seed=7");
     await expect(page.locator("body[data-ready]")).toBeVisible();

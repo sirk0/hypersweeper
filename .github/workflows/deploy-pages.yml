@@ -21,36 +21,28 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || !startsWith(github.event.head_commit.message, 'Bump version to')
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version-file: .python-version
-      - name: Install dependencies
-        run: pip install -r requirements-web.txt
-      - name: Build web bundle (pygbag, site root)
-        run: make web-package PY=python
-      # During the TypeScript transition the Pages artifact hosts both apps:
-      # the pygbag build stays at the site root (existing URLs unchanged) and
-      # the new TS build mounts under /next/. At parity the two swap.
+      # The TypeScript app is the deployed game and owns the site root. The
+      # pygame/pygbag build is no longer published — it stays in the repo as
+      # the reference implementation, still buildable locally with
+      # `make web-package`. `/next/`, where the TS app lived during the
+      # transition, is a redirect to the root: web/public/next/index.html,
+      # copied into dist/ by Vite like any other public asset.
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: web/package-lock.json
-      - name: Build TypeScript app (mounts at /next/)
+      - name: Build TypeScript app (site root)
         working-directory: web
         env:
-          VITE_BASE: /hypersweeper/next/
+          VITE_BASE: /hypersweeper/
         run: |
           npm ci
           npm run build
-      - name: Compose /next/ into the Pages artifact
-        run: |
-          mkdir -p build/hypersweeper/build/web/next
-          cp -r web/dist/. build/hypersweeper/build/web/next/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: build/hypersweeper/build/web
+          path: web/dist
 
   deploy:
     needs: build

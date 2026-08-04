@@ -1,11 +1,17 @@
-"""Render mid-game board screenshots for the README.
+"""Render mid-game board screenshots of the pygame build for the README.
 
 Drives the real GUI screens headlessly: seed the rng, reveal a patch of
 cells, flag a few real mines, optionally detonate one, then save the
 supersampled canvas downscaled to the size a player actually sees.
 
+The README's own gallery comes from the TypeScript app
+(`web/scripts/make-screenshots.mts`, written into docs/screenshots); the
+pygame build is the reference implementation and gets the one shot in its
+own section, so these land in docs/screenshots/pygame. Add a row to SHOTS
+to render any other board — nothing here is limited to the README set.
+
 Usage: PYTHONPATH=. python scripts/make_screenshots.py [output_dir]
-       (default output dir: docs/screenshots)
+       (default output dir: docs/screenshots/pygame)
 """
 
 from __future__ import annotations
@@ -32,9 +38,6 @@ from minesweeper.gui import (  # noqa: E402
 # mode, difficulty, seed, revealed fraction, flag count, explode?, rotation nudge
 SHOTS = [
     ("c180", "medium", 7, 0.30, 5, False, (0, 0)),
-    ("mobiushex", "medium", 3, 0.32, 4, False, (0, 0)),
-    ("penrose", "medium", 11, 0.42, 5, False, (0, 0)),
-    ("torussnubsquare", "medium", 5, 0.34, 5, True, (0, 0)),
 ]
 
 FILENAMES = {
@@ -144,7 +147,7 @@ def render(screen, path):
 
 
 def main() -> int:
-    out_dir = sys.argv[1] if len(sys.argv) > 1 else "docs/screenshots"
+    out_dir = sys.argv[1] if len(sys.argv) > 1 else "docs/screenshots/pygame"
     os.makedirs(out_dir, exist_ok=True)
 
     pygame.init()
