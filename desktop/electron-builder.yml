@@ -1,0 +1,68 @@
+# Packaging config for the desktop shell. Driven by scripts/build-mac-app.sh,
+# which stages the built web app into `app/` first — everything the bundle
+# needs is inside it, so the packaged app never asks the network for anything.
+appId: com.sirk0.hypersweeper
+productName: Hypersweeper
+copyright: Copyright © Hypersweeper contributors
+
+directories:
+  # Build artefacts land outside the source tree, in the repo's gitignored
+  # build/ directory. `resources/` (not the electron-builder default `build/`)
+  # holds the icon, because build/ is gitignored repo-wide.
+  output: ../build/desktop
+  buildResources: resources
+
+# The shell is three files plus the staged web build; node_modules holds only
+# devDependencies (electron and the builder itself), which must not ship.
+files:
+  - main.mjs
+  - serve.mjs
+  - package.json
+  - app/**/*
+asar: true
+
+# Nothing to rebuild: the shell has no runtime dependencies at all.
+npmRebuild: false
+buildDependenciesFromSource: false
+
+mac:
+  category: public.app-category.puzzle-games
+  icon: resources/icon.png
+  darkModeSupport: true
+  # Chromium's own floor; Electron 43 does not run below this.
+  minimumSystemVersion: "11.0"
+  # A local build has no Apple Developer certificate, and signing with one is
+  # not needed to run an app you built yourself. The build script ad-hoc signs
+  # the bundle afterwards, which *is* needed — Apple Silicon refuses to launch
+  # an unsigned binary. Set CSC_IDENTITY_AUTO_DISCOVERY=true and pass an
+  # identity here if you ever want a distributable, notarised build.
+  identity: null
+  # Just the .app, for the machine doing the building. The build script's
+  # --dmg / --zip / --universal flags override this on the command line.
+  target:
+    - dir
+  extendInfo:
+    # No document types, no URL schemes, no network entitlements: the app opens
+    # nothing and serves nobody.
+    LSMultipleInstancesProhibited: true
+    NSHumanReadableCopyright: Copyright © Hypersweeper contributors
+
+dmg:
+  title: Hypersweeper
+  # The usual drag-to-Applications window.
+  contents:
+    - x: 140
+      y: 200
+      type: file
+    - x: 400
+      y: 200
+      type: link
+      path: /Applications
+
+linux:
+  # Not a shipping target — it exists so the packaging itself (the file list,
+  # the asar, the icon) can be exercised on a machine that is not a Mac.
+  target: dir
+  executableName: hypersweeper
+  category: Game
+  icon: resources/icon.png

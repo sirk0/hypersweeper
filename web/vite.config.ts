@@ -16,11 +16,21 @@ const pkg = createRequire(import.meta.url)("./package.json") as { version: strin
 // redirects that path here.)
 const base = process.env.VITE_BASE ?? "/";
 
+// VITE_DESKTOP=1 builds the bundle that goes inside the macOS app (see
+// desktop/ and scripts/build-mac-app.sh). The app is served there from the
+// `app://` scheme, so the base stays "/" — what changes is that there is no
+// service worker: its whole job is caching a *deployed* build for offline use,
+// and inside a bundle whose files are already on disk it would only add a
+// second, staler copy of them and an update check with nothing to check
+// against. `__APP_DESKTOP__` lets the app drop that check from its settings.
+const desktop = process.env.VITE_DESKTOP === "1";
+
 export default defineConfig({
   base,
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
     __APP_COMMIT__: JSON.stringify((process.env.GITHUB_SHA ?? "").slice(0, 7)),
+    __APP_DESKTOP__: JSON.stringify(desktop),
   },
   // Allow importing the repo-root `data/` directory (shared JSON that both
   // the Python and TypeScript apps read — see docs/plans). `@data` resolves
@@ -33,7 +43,7 @@ export default defineConfig({
   server: {
     fs: { allow: [".", fileURLToPath(new URL("../data", import.meta.url))] },
   },
-  plugins: [
+  plugins: desktop ? [] : [
     VitePWA({
       registerType: "autoUpdate",
       includeAssets: ["favicon.svg", "apple-touch-icon.png"],

@@ -8,6 +8,8 @@
 //   web/public/icons/icon-512.png
 //   web/public/icons/maskable-512.png (full-bleed, safe-zone motif)
 //   web/public/apple-touch-icon.png   (full-bleed, iOS masks it)
+//   desktop/resources/icon.png        (macOS app icon, 1024, inset by its own
+//                                      margin — macOS does not mask)
 //
 // Run from web/:  node scripts/make-icons.mjs
 import { chromium } from "@playwright/test";
@@ -15,7 +17,9 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const PUBLIC = resolve(dirname(fileURLToPath(import.meta.url)), "../public");
+const HERE = dirname(fileURLToPath(import.meta.url));
+const PUBLIC = resolve(HERE, "../public");
+const DESKTOP = resolve(HERE, "../../desktop/resources");
 
 // The mine + pentagon motif, centred in a 512 viewBox. Reused at two scales:
 // large for the favicon/standard icons, shrunk into the safe zone for maskable.
@@ -55,6 +59,18 @@ const maskableSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 51
   <g transform="translate(256 256) scale(0.8) translate(-256 -256)">${motif}</g>
 </svg>`;
 
+// The macOS app icon. macOS applies no mask of its own — an icon draws its own
+// rounded square, inside the margin the platform grid leaves it: the large
+// squircle fills 824 of a 1024 canvas, i.e. 80% of the side. The favicon's
+// plate is 460 of 512 (90%), so it is scaled by 0.89 about the centre to land
+// there; corners stay transparent, as the dock and Finder expect.
+const macSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">${defs}
+  <g transform="translate(256 256) scale(0.89) translate(-256 -256)">
+    <rect x="26" y="26" width="460" height="460" rx="112" fill="url(#plate)" stroke="#969aa2" stroke-width="4"/>
+    ${motif}
+  </g>
+</svg>`;
+
 async function render(browser, svg, size, out, transparent) {
   const page = await browser.newPage({ viewport: { width: size, height: size } });
   const html = `<!doctype html><meta charset="utf-8">
@@ -76,5 +92,7 @@ await render(browser, faviconSvg, 192, `${PUBLIC}/icons/icon-192.png`, true);
 await render(browser, faviconSvg, 512, `${PUBLIC}/icons/icon-512.png`, true);
 await render(browser, maskableSvg, 512, `${PUBLIC}/icons/maskable-512.png`, false);
 await render(browser, maskableSvg, 180, `${PUBLIC}/apple-touch-icon.png`, false);
+// electron-builder renders the .icns from this, so it wants the full 1024.
+await render(browser, macSvg, 1024, `${DESKTOP}/icon.png`, true);
 await browser.close();
-console.log("icons written to", PUBLIC);
+console.log("icons written to", PUBLIC, "and", DESKTOP);

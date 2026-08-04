@@ -5,7 +5,9 @@ WEB_STAGE = build/hypersweeper
 WEB_OUT = $(WEB_STAGE)/build/web
 
 .PHONY: help venv install lock test lint run screenshots web-screenshots \
-        web-prepare web-package web-run clean
+        web-prepare web-package web-run clean \
+        mac-app mac-app-dmg desktop-install desktop-build desktop-run \
+        desktop-test desktop-smoke desktop-icon
 
 help:            ## list available targets
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | sed 's/:.*##/ -/' | sort
@@ -29,7 +31,7 @@ test:            ## run the test suite
 lint:            ## ruff over the code and tests
 	$(PY) -m ruff check minesweeper tests main.py
 
-run:             ## run the desktop game
+run:             ## run the pygame game
 	$(PY) -m minesweeper
 
 screenshots:     ## regenerate the pygame shot in docs/screenshots/pygame
@@ -57,5 +59,36 @@ web-run: web-prepare  ## serve the web version at http://localhost:8000
 	( sleep 5 && PYTHONPATH=. $(PY) scripts/make_web_icons.py $(WEB_OUT) ) &
 	$(PY) -m pygbag --ume_block 0 $(WEB_STAGE)
 
+# --- desktop app -------------------------------------------------------------
+# The TypeScript app packaged as a native macOS app that plays offline: the
+# built web app is staged into the Electron shell in desktop/ and served from
+# the app:// scheme inside the bundle. See desktop/README.md.
+
+mac-app:         ## build Hypersweeper.app into build/desktop (macOS only)
+	scripts/build-mac-app.sh
+
+mac-app-dmg:     ## build Hypersweeper.app plus a .dmg installer (macOS only)
+	scripts/build-mac-app.sh --dmg
+
+desktop-install: ## install the Electron shell's build tools
+	cd desktop && npm install
+
+desktop-build:   ## build the offline web bundle and stage it into the shell
+	cd web && VITE_DESKTOP=1 npm run build
+	node scripts/check-offline-assets.mjs web/dist
+	rm -rf desktop/app && cp -R web/dist desktop/app
+
+desktop-run: desktop-build  ## run the packaged game in the Electron shell
+	cd desktop && npm start
+
+desktop-test:    ## unit-test the shell's app:// path resolution
+	cd desktop && npm test
+
+desktop-smoke:   ## launch the shell with the network cut, and screenshot it
+	scripts/desktop-smoke.sh
+
+desktop-icon:    ## regenerate the app icon from the shared vector source
+	cd web && node scripts/make-icons.mjs
+
 clean:           ## remove build artifacts
-	rm -rf build
+	rm -rf build desktop/app

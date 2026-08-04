@@ -113,6 +113,19 @@ npm run build        # production bundle into web/dist
 npm run screenshots  # regenerate the gallery above
 ```
 
+### A Mac app that plays offline
+
+```sh
+make mac-app       # build/desktop/mac*/Hypersweeper.app  (run this on a Mac)
+make mac-app-dmg   # …and a drag-to-Applications .dmg
+```
+
+The same game, packaged with everything it draws — bundle, fonts, icons,
+board data — inside the app, so it needs no internet connection at all.
+The build proves that rather than promising it: it refuses to package a
+bundle that references a remote URL, and then launches the app it built
+with the network cut. See [`desktop/README.md`](desktop/README.md).
+
 `web/README.md` is the guide to the code — the renderer, the board
 builders, themes, sound, and how to drive the app headless.
 [`data/*.json`](data) is shared configuration (the board catalog, presets,

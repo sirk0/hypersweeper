@@ -88,3 +88,16 @@ jobs:
           name: playwright-report
           path: web/playwright-report/
           retention-days: 7
+      # The macOS app (desktop/) ships this same bundle inside itself, so the
+      # two properties that make it work offline are guarded here rather than
+      # only on whoever's Mac runs `make mac-app`: the desktop build must
+      # reference nothing remote, and the app:// path resolver must not let the
+      # renderer read outside it. Electron itself is not installed — that would
+      # be a 300 MB download for a check these two steps already make. It runs
+      # last because it overwrites dist/ with the desktop variant.
+      - name: Desktop bundle is self-contained
+        run: |
+          VITE_DESKTOP=1 npm run build
+          node ../scripts/check-offline-assets.mjs dist
+      - name: Desktop shell unit tests
+        run: node --test "../desktop/test/*.test.mjs"
