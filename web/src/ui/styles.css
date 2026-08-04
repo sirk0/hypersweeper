@@ -330,9 +330,9 @@ body {
   min-width: 0;
   margin: 0 0 2px;
   text-align: center;
-  /* Fluid, like the header controls (--hud-*): at 28px "Minesweeper" alone is
-     wider than the space left beside the gear on a 320px phone, and a single
-     word cannot wrap, so it would overlap the button. */
+  /* Fluid, like the header controls (--hud-*): at 28px "Hypersweeper" is wider
+     than the space left beside the gear on a 320px phone, and a single word
+     cannot wrap, so it would overlap the button. */
   font-size: clamp(19px, 6.4vw, 28px);
   overflow-wrap: break-word;
 }

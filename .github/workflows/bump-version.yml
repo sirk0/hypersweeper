@@ -38,7 +38,7 @@ jobs:
           lock = Path("web/package-lock.json")
           lock.write_text(
               re.sub(
-                  r'("name": "minesweeper-tiles-web",\s*\n\s*"version": ")\d+\.\d+\.\d+(")',
+                  r'("name": "hypersweeper-web",\s*\n\s*"version": ")\d+\.\d+\.\d+(")',
                   rf'\g<1>{new}\g<2>', lock.read_text())
           )
           print(new)

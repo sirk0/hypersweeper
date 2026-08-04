@@ -1,4 +1,4 @@
-# Minesweeper
+# Hypersweeper
 
 Classic minesweeper, but the board can be almost any surface and tiling —
 from a flat aperiodic Penrose mosaic to a Goldberg sphere or a Möbius strip.
@@ -63,7 +63,7 @@ Pick a surface, then a tiling:
 
 ## Play
 
-**In the browser:** <https://sirk0.github.io/minesweeper-tiles/>
+**In the browser:** <https://sirk0.github.io/hypersweeper/>
 (built with [pygbag](https://pygame-web.github.io), deployed from master
 by GitHub Actions)
 

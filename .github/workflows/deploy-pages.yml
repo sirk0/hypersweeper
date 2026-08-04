@@ -39,18 +39,18 @@ jobs:
       - name: Build TypeScript app (mounts at /next/)
         working-directory: web
         env:
-          VITE_BASE: /minesweeper-tiles/next/
+          VITE_BASE: /hypersweeper/next/
         run: |
           npm ci
           npm run build
       - name: Compose /next/ into the Pages artifact
         run: |
-          mkdir -p build/minesweeper/build/web/next
-          cp -r web/dist/. build/minesweeper/build/web/next/
+          mkdir -p build/hypersweeper/build/web/next
+          cp -r web/dist/. build/hypersweeper/build/web/next/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: build/minesweeper/build/web
+          path: build/hypersweeper/build/web
 
   deploy:
     needs: build

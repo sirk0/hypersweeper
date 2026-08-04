@@ -11,7 +11,7 @@ const pkg = createRequire(import.meta.url)("./package.json") as { version: strin
 
 // The TypeScript build mounts under `/next/` on GitHub Pages during the
 // transition (the pygbag build keeps the site root). CI passes the full
-// Pages path via VITE_BASE (e.g. "/minesweeper-tiles/next/"); locally and
+// Pages path via VITE_BASE (e.g. "/hypersweeper/next/"); locally and
 // under Playwright preview the default "/" keeps deep links simple.
 const base = process.env.VITE_BASE ?? "/";
 
@@ -37,8 +37,8 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["favicon.svg", "apple-touch-icon.png"],
       manifest: {
-        name: "Minesweeper Tiles",
-        short_name: "Minesweeper",
+        name: "Hypersweeper",
+        short_name: "Hypersweeper",
         description:
           "Minesweeper over exotic boards — flat tilings and 3D surfaces.",
         theme_color: "#f2f2f7",

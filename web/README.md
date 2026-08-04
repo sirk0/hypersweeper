@@ -1,4 +1,4 @@
-# Minesweeper Tiles — TypeScript + Three.js app (`web/`)
+# Hypersweeper — TypeScript + Three.js app (`web/`)
 
 The in-progress TypeScript rewrite (Three.js / WebGL), living alongside the
 Python game per `docs/plans/typescript-rewrite-same-repo.md`.

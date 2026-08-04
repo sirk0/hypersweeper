@@ -1,4 +1,4 @@
-# Minesweeper (pygame)
+# Hypersweeper (pygame)
 
 A minesweeper clone with flat and 3D boards (spherical polyhedra, cube,
 tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
