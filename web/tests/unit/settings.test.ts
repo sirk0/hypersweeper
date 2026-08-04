@@ -8,6 +8,7 @@ import {
   subscribeSettings,
   type Settings,
 } from "../../src/settings";
+import { DEFAULT_SOUND } from "../../src/audio/presets";
 import { DEFAULT_THEME } from "../../src/ui/theme";
 
 // The unit environment is node, with no `window` and no `localStorage` — the
@@ -46,6 +47,7 @@ const SETTINGS: Settings = {
   difficulty: "hard",
   animations: false,
   cellStyle: "soft",
+  sound: "arcade",
 };
 
 afterEach(() => {
@@ -108,7 +110,16 @@ describe("settings validation", () => {
       difficulty: DEFAULT_SETTINGS.difficulty,
       animations: null,
       cellStyle: DEFAULT_SETTINGS.cellStyle,
+      sound: DEFAULT_SETTINGS.sound,
     });
+  });
+
+  it("drops a sound preset this build does not have, but keeps Off", () => {
+    withStorage(fakeStorage({ [KEY]: JSON.stringify({ sound: "orchestral" }) }));
+    expect(loadSettings().sound).toBe(DEFAULT_SOUND);
+    // Silence is a choice, not a missing value — it has to survive a reload.
+    withStorage(fakeStorage({ [KEY]: JSON.stringify({ sound: "off" }) }));
+    expect(loadSettings().sound).toBe("off");
   });
 
   it("falls back on corrupt, non-object or array JSON", () => {
@@ -140,6 +151,7 @@ describe("settings upgrades", () => {
       difficulty: DEFAULT_SETTINGS.difficulty,
       animations: true,
       cellStyle: DEFAULT_SETTINGS.cellStyle,
+      sound: DEFAULT_SETTINGS.sound,
     });
     // Migration completes on the next write, and only then is the old key
     // dropped — an interrupted migration must not lose the record.
@@ -162,7 +174,12 @@ describe("settings upgrades", () => {
   it("reads what it understands from a record written by a newer build", () => {
     withStorage(
       fakeStorage({
-        [KEY]: JSON.stringify({ version: 99, theme: "dark", difficulty: "easy", sound: "loud" }),
+        [KEY]: JSON.stringify({
+          version: 99,
+          theme: "dark",
+          difficulty: "easy",
+          reverb: "cathedral",
+        }),
       }),
     );
     expect(loadSettings()).toEqual({
@@ -170,6 +187,7 @@ describe("settings upgrades", () => {
       difficulty: "easy",
       animations: null,
       cellStyle: DEFAULT_SETTINGS.cellStyle,
+      sound: DEFAULT_SETTINGS.sound,
     });
   });
 
@@ -177,10 +195,10 @@ describe("settings upgrades", () => {
     // Downgrading (an older tab, a rolled-back deploy) must not throw away a
     // newer build's preferences.
     const store = withStorage(
-      fakeStorage({ [KEY]: JSON.stringify({ version: 99, sound: "loud" }) }),
+      fakeStorage({ [KEY]: JSON.stringify({ version: 99, reverb: "cathedral" }) }),
     );
     saveSettings(SETTINGS);
-    expect(stored(store)["sound"]).toBe("loud");
+    expect(stored(store)["reverb"]).toBe("cathedral");
     expect(stored(store)["theme"]).toBe("dark");
     expect(stored(store)["version"]).toBe(SCHEMA_VERSION);
   });
@@ -215,6 +233,7 @@ describe("cross-tab sync", () => {
         difficulty: "easy",
         animations: null,
         cellStyle: DEFAULT_SETTINGS.cellStyle,
+        sound: DEFAULT_SETTINGS.sound,
       },
     ]);
   });

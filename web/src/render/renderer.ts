@@ -52,6 +52,8 @@ const FLAT_MARGIN = 1.06;
 
 const X_AXIS = new Vector3(1, 0, 0);
 const Y_AXIS = new Vector3(0, 1, 0);
+/** Scratch for `panFor`, which runs once per sounding cell of a flood fill. */
+const PAN_POINT = new Vector3();
 
 export class BoardRenderer {
   readonly renderer: WebGLRenderer;
@@ -422,6 +424,24 @@ export class BoardRenderer {
       if (need + p[2] > dist) dist = need + p[2];
     }
     return { dist, cx, cy };
+  }
+
+  /** Where a cell sits across the stereo field: its projected NDC x, clamped to
+   * -1 (hard left) .. +1 (hard right). Projection rather than the cell's
+   * position in the mesh, because what the player hears has to match what they
+   * see: the board's world matrix carries the portrait quarter-turn and a
+   * solid's rotation, and the camera carries the zoom and the pan, so a cell
+   * dragged to the left of the screen is heard on the left whatever the board
+   * is doing. Cells off the edge of a zoomed-in board clamp to the side they
+   * left by. Null when there is no board or no such cell. */
+  panFor(cell: CellId): number | null {
+    if (!this.board) return null;
+    const anchor = this.board.cellAnchor(cell);
+    if (!anchor) return null;
+    this.board.updateWorldMatrix(true, false);
+    const world = PAN_POINT.set(...anchor.center).applyMatrix4(this.board.matrixWorld);
+    const x = world.project(this.camera).x;
+    return Number.isFinite(x) ? Math.max(-1, Math.min(1, x)) : 0;
   }
 
   /** Cell under normalized device coords (-1..1), or null. On solids only

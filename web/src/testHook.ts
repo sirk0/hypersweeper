@@ -18,6 +18,10 @@ export interface MsState {
    * preference, which a board opened before the change does not follow. The one
    * way to assert from outside that picking a style reached the mesh. */
   cellStyle: string;
+  /** The sound choice the audio engine is actually on (a preset key, or
+   * `"off"`) — the one way to assert from outside that picking a preset
+   * reached it, since a synthesised sound leaves nothing in the DOM. */
+  sound: string;
 }
 
 export interface MsHook {

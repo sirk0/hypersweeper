@@ -17,6 +17,7 @@ import {
   GEAR_ICON,
   renderCellStylePicker,
   renderSettings,
+  renderSoundPicker,
   renderThemePicker,
   type SettingsHost,
 } from "./settings";
@@ -260,6 +261,7 @@ export class Menu {
       difficulty: this.settings.difficulty,
       animations: this.settings.animations,
       cellStyle: this.settings.cellStyle,
+      sound: this.settings.sound,
       setTheme: (key) => {
         this.settings.setTheme(key);
         page();
@@ -274,6 +276,10 @@ export class Menu {
       },
       setCellStyle: (key) => {
         this.settings.setCellStyle(key);
+        page();
+      },
+      setSound: (key) => {
+        this.settings.setSound(key);
         page();
       },
     };
@@ -291,7 +297,22 @@ export class Menu {
         () => this.showThemePicker(),
         () => this.showBestTimes(),
         () => this.showCellStylePicker(),
+        () => this.showSoundPicker(),
       ),
+    );
+  }
+
+  /** The sound page — a page below settings, like the theme picker. */
+  private showSoundPicker(): void {
+    this.go(() => this.renderSoundPage());
+  }
+
+  private renderSoundPage(): void {
+    const host = this.settingsPageHost(() => this.renderSoundPage());
+    this.root.classList.add("settings-open");
+    this.body.replaceChildren(
+      this.backRow("Sound", () => this.showSettings()),
+      renderSoundPicker(host),
     );
   }
 

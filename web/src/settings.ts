@@ -1,3 +1,4 @@
+import { DEFAULT_SOUND, resolveSound } from "./audio/presets";
 import { hasDifficulty, screens } from "./config/screens";
 import { DEFAULT_CELL_STYLE, resolveCellStyle } from "./render/cellStyle";
 import { readObject, storage } from "./storage";
@@ -49,6 +50,9 @@ export interface Settings {
   /** A key in `CELL_STYLES` — the relief the board's tiles are cut with. Read
    * when a board's mesh is built, so it applies from the next board on. */
   cellStyle: string;
+  /** A key in `SOUND_PRESETS`, or `"off"` — what the game sounds like. Read on
+   * every event, so a change applies to the board already in play. */
+  sound: string;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -56,6 +60,7 @@ export const DEFAULT_SETTINGS: Settings = {
   difficulty: screens.defaultDifficulty,
   animations: null,
   cellStyle: DEFAULT_CELL_STYLE,
+  sound: DEFAULT_SOUND,
 };
 
 /** Bring a record written by an older build up to the current shape. Every
@@ -102,6 +107,10 @@ export function loadSettings(): Settings {
     cellStyle: resolveCellStyle(
       typeof rec["cellStyle"] === "string" ? rec["cellStyle"] : null,
     ),
+    // Same treatment: an unknown preset (or a `null` from a build that had no
+    // sound) falls back rather than silencing the game by accident. `"off"` is
+    // a valid stored value and survives.
+    sound: resolveSound(typeof rec["sound"] === "string" ? rec["sound"] : null),
   };
 }
 

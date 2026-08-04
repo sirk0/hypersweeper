@@ -1,5 +1,6 @@
 import { Vector2, Vector3 } from "three";
 import "./ui/styles.css";
+import { setSoundPreset, soundChoice, unlockAudio } from "./audio/sound";
 import { isBoard3D, type CellId } from "./boards/core";
 import { boardLinkQuery, parseBoardLink } from "./link";
 import { GameSession } from "./session";
@@ -79,6 +80,10 @@ class App {
     private readonly ui: HTMLElement,
   ) {
     applyTheme(this.settings.theme); // before anything measures or paints
+    setSoundPreset(this.settings.sound);
+    // A browser will not let audio start outside a user gesture, so the
+    // context is built on the player's first click or key — whatever it is.
+    unlockAudio();
     this.insetProbe = document.createElement("div");
     this.insetProbe.setAttribute(
       "style",
@@ -156,10 +161,14 @@ class App {
       get cellStyle() {
         return app.settings.cellStyle;
       },
+      get sound() {
+        return app.settings.sound;
+      },
       setTheme: (key) => this.setTheme(key),
       setDifficulty: (key) => this.setDifficulty(key),
       setAnimations: (pref) => this.setAnimations(pref),
       setCellStyle: (key) => this.setCellStyle(key),
+      setSound: (key) => this.setSound(key),
     };
   }
 
@@ -182,6 +191,15 @@ class App {
     saveSettings(this.settings);
   }
 
+  /** Pick what the game sounds like (a preset, or off). Unlike the cell style
+   * this needs no new board: every event reads the preset when it plays, so a
+   * change is audible on the very next click. */
+  private setSound(key: string): void {
+    this.settings = { ...this.settings, sound: key };
+    saveSettings(this.settings);
+    setSoundPreset(key);
+  }
+
   /** Adopt settings written by another tab. The theme is applied; the
    * difficulty, animation and cell-style preferences are picked up by the
    * menu's next repaint and the next board. A game already in progress keeps
@@ -189,6 +207,7 @@ class App {
   private adoptSettings(settings: Settings): void {
     this.settings = settings;
     applyTheme(settings.theme);
+    setSoundPreset(settings.sound);
     this.animationsEnabled = animationsEnabled(settings.animations);
     this.session?.mesh.setAnimationsEnabled(this.animationsEnabled);
     this.menu.refresh();
@@ -243,6 +262,10 @@ class App {
       ...(opts.seed !== undefined ? { seed: opts.seed } : {}),
       ...(opts.mines ? { minePositions: opts.mines } : {}),
       cellStyle: this.settings.cellStyle,
+      // Sound is panned by where a cell is *on screen*, which only the
+      // renderer knows (it holds the camera, the zoom and the board's
+      // rotation).
+      panOf: (cell) => this.renderer.panFor(cell),
     });
     // A board built from an explicit mine layout (the test seam) is not
     // reproducible from a link, so it does not claim one.
@@ -593,6 +616,7 @@ class App {
           cellCount: s ? s.game.cells.length : 0,
           is3d: s?.is3d ?? false,
           cellStyle: s?.cellStyle ?? this.settings.cellStyle,
+          sound: soundChoice(),
         };
       },
     });

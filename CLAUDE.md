@@ -317,7 +317,7 @@ lives under Settings › Best times.
 The menu's gear opens a **settings** page (best times, theme, cell style,
 animations toggle, build version, links, update check) — one more `Menu` page
 rather than a modal, with the theme picker and the cell-style picker pages below
-it. Theme, difficulty, the cell style and the
+it. Theme, difficulty, the cell style, the sound preset and the
 animations override persist (`src/settings.ts`): one stable
 `localStorage` key holding a record that carries its own `version`, never
 a versioned key name — see "Settings and themes" in `web/README.md` before
@@ -344,6 +344,27 @@ only reads on a solid, as it turns) while the gap, the loop count, `unlit`,
 `albedo` and `shade` are what the plane actually shows.
 There is deliberately **no bundle-size budget or CI gate** for the TypeScript
 app. See "Cell styles" and "Bundle size" in `web/README.md`.
+
+**Sound** (`src/audio/`) is **web-only** — the pygame build is silent — and
+synthesised, never sampled: there is no audio file in the repo and there is not
+meant to be, because every sound here is derived from the move that caused it.
+A tile's voice is its own **side count** (pitch down the preset's scale per
+side, and that many harmonic partials, measured by the same `shapeMetrics` the
+shape colours use); one opened cell is one note while a **flood fill is a
+cascade**, one grain per ring of the spread walked over the game's adjacency and
+staggered at the reveal ripple's pace; each grain is panned by where its cell is
+**on screen** (`BoardRenderer.panFor` projects it, so zoom, pan, the portrait
+quarter-turn and a solid's rotation all carry); and the two **Klein scroll**
+directions are one glide and its exact reflection in pitch and pan. `presets.ts`
+holds the three characters (Chime, Arcade, Blocks) as a `cellStyle.ts`-shaped
+table — in TS, not `data/ui/screens.json`, which is the pygame-shared config —
+and `off` is the absence of an entry, so a silenced game builds no audio graph.
+`sound.ts` splits a **pure** `voicesFor(event, preset)` (where every rule lives,
+and what the unit tests pin) from the Web Audio player. Two traps: a browser
+will not start audio outside a user gesture (`unlockAudio` builds the context on
+the first pointer/key event — do not build it earlier), and a cascade is bounded
+twice (`cascade.maxVoices`, `MAX_ACTIVE_VOICES`) because the worst case is half
+a `hard` board opening at once. See "Sound" in `web/README.md`.
 
 ## Which version to change
 

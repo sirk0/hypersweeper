@@ -1,3 +1,10 @@
+import {
+  SOUND_CHOICES,
+  SOUND_OFF,
+  SOUND_PRESETS,
+  soundLabel,
+} from "../audio/presets";
+import { previewSound, setSoundPreset } from "../audio/sound";
 import { screens, themeSpec } from "../config/screens";
 import { allBestTimes } from "../leaderboard";
 import { CELL_STYLE_KEYS, CELL_STYLES, cellStyle } from "../render/cellStyle";
@@ -54,10 +61,13 @@ export interface SettingsHost {
   animations: boolean | null;
   /** The active cell style key (a key in `CELL_STYLES`). */
   cellStyle: string;
+  /** The active sound choice: a key in `SOUND_PRESETS`, or `"off"`. */
+  sound: string;
   setTheme(key: string): void;
   setDifficulty(key: string): void;
   setAnimations(pref: boolean | null): void;
   setCellStyle(key: string): void;
+  setSound(key: string): void;
 }
 
 /** How many distinct boards have a recorded time — the Best times row's
@@ -107,6 +117,30 @@ function cellStyleSwatch(key: string): HTMLElement {
     const tile = document.createElement("span");
     tile.className = i === 3 ? "cell-swatch-tile open" : "cell-swatch-tile";
     el.append(tile);
+  }
+  return el;
+}
+
+/** A preset's voice in miniature: a bar per partial, as tall as that partial is
+ * loud. Derived from the preset's own timbre numbers rather than drawn, so the
+ * three swatches differ exactly where the three presets do — Chime's harmonics
+ * fall away smoothly, Arcade's even ones are missing (the hollow square-wave
+ * tone), Blocks' drop off a cliff. `off` shows the same bars flattened. */
+function soundSwatch(key: string): HTMLElement {
+  const el = document.createElement("span");
+  el.className = "sound-swatch";
+  el.dataset["sound"] = key;
+  const preset = SOUND_PRESETS[key];
+  const bars = 5;
+  for (let k = 1; k <= bars; k++) {
+    const bar = document.createElement("span");
+    bar.className = "sound-swatch-bar";
+    const amp =
+      preset && !(preset.timbre.oddOnly && k % 2 === 0)
+        ? 1 / k ** preset.timbre.decay
+        : 0;
+    bar.style.height = `${Math.round(12 + 88 * amp)}%`;
+    el.append(bar);
   }
   return el;
 }
@@ -253,6 +287,56 @@ export function renderCellStylePicker(host: SettingsHost): DocumentFragment {
   return frag;
 }
 
+/** The sound page: the three presets and Off. A page of its own like the theme
+ * and cell-style pickers, and for the same reason — it is a list of choices,
+ * and the row above it already reports which one is on.
+ *
+ * Picking one **plays it**. A preset is a sound, so a list of names alone would
+ * be a list of guesses; and the click that chooses it is a user gesture, which
+ * is the only moment a browser will let audio start at all — so the preview is
+ * also what unlocks the first sound of the session. */
+export function renderSoundPicker(host: SettingsHost): DocumentFragment {
+  const frag = document.createDocumentFragment();
+  const list = document.createElement("ul");
+  list.className = "menu-list";
+  for (const key of SOUND_CHOICES) {
+    const preset = SOUND_PRESETS[key];
+    const check = document.createElement("span");
+    check.className = "settings-check";
+    check.textContent = key === host.sound ? "✓" : "";
+    const { li, btn } = buttonRow(
+      [
+        soundSwatch(key),
+        textBlock(
+          preset?.label ?? "Off",
+          preset?.hint ?? "No sound at all",
+        ),
+        check,
+      ],
+      () => {
+        host.setSound(key);
+        // The host has persisted it by now, so the preview plays the preset
+        // just chosen — including nothing at all for Off.
+        setSoundPreset(key);
+        if (key !== SOUND_OFF) previewSound();
+      },
+      "settings-sound",
+    );
+    btn.dataset["sound"] = key;
+    btn.setAttribute("aria-pressed", String(key === host.sound));
+    if (key === host.sound) btn.classList.add("active");
+    list.append(li);
+  }
+  frag.append(list);
+  const note = document.createElement("p");
+  note.className = "settings-footer";
+  note.textContent =
+    "Tiles are pitched by their shape, panned by where they are on the board, " +
+    "and a chain reaction opens as a cascade.";
+  frag.append(note);
+  return frag;
+}
+
 /** Build the settings page body. The caller (Menu) supplies the back row and
  * puts this into `.menu-body`; `openThemes`, `openCellStyles` and
  * `openBestTimes` open the pages below it. */
@@ -261,6 +345,7 @@ export function renderSettings(
   openThemes: () => void,
   openBestTimes: () => void,
   openCellStyles: () => void,
+  openSounds: () => void,
 ): DocumentFragment {
   const frag = document.createDocumentFragment();
 
@@ -328,6 +413,18 @@ export function renderSettings(
   frag.append(heading("Behaviour"));
   const behaviour = document.createElement("ul");
   behaviour.className = "menu-list";
+
+  const soundChevron = document.createElement("span");
+  soundChevron.className = "menu-entry-chevron";
+  soundChevron.textContent = "›";
+  const { li: soundLi, btn: soundBtn } = buttonRow(
+    [soundSwatch(host.sound), textBlock("Sound", soundLabel(host.sound)), soundChevron],
+    openSounds,
+    "menu-submenu",
+  );
+  soundBtn.dataset["settingsGroup"] = "sound";
+  behaviour.append(soundLi);
+
   const on = animationsEnabled(host.animations);
   const knob = document.createElement("span");
   knob.className = "settings-switch";
