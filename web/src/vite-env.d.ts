@@ -5,3 +5,7 @@
 // empty string locally.
 declare const __APP_VERSION__: string;
 declare const __APP_COMMIT__: string;
+// True in the bundle that ships inside the desktop app (VITE_DESKTOP=1). That
+// build has no service worker and no server to update from, so the settings
+// page leaves out the update check rather than offering one that cannot work.
+declare const __APP_DESKTOP__: boolean;

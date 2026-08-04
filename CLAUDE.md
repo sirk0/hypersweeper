@@ -373,6 +373,32 @@ the first pointer/key event — do not build it earlier), and a cascade is bound
 twice (`cascade.maxVoices`, `MAX_ACTIVE_VOICES`) because the worst case is half
 a `hard` board opening at once. See "Sound" in `web/README.md`.
 
+## Desktop app (`desktop/`) — the offline macOS build
+
+`make mac-app` (macOS only) packages the **TypeScript app** as
+`build/desktop/mac*/Hypersweeper.app`, a native app that plays with no
+internet connection; `make mac-app-dmg` adds a `.dmg`. The shell is
+Electron and deliberately tiny: `main.mjs` (window, menu, navigation
+lock, the `--smoke` self-check), `serve.mjs` (the `app://` → file
+mapping, unit-tested in `desktop/test/`) and `electron-builder.yml`.
+`scripts/build-mac-app.sh` drives it — build `web/` with
+`VITE_DESKTOP=1`, assert the bundle is self-contained
+(`scripts/check-offline-assets.mjs`), stage it into `desktop/app/`,
+package, ad-hoc sign, then launch the built `.app` to check it.
+
+The bundle is served over a **standard, secure `app://` scheme**, never
+`file://`: the game needs an origin, or `localStorage` (settings, best
+times), `history.replaceState` (share links) and the root-absolute
+`url("/fonts/…")` in `styles.css` all break. Assets are read through
+`fs`, not `net.fetch("file://…")`, because a packaged app keeps them
+inside `app.asar`. `VITE_DESKTOP=1` is the only thing the web app knows
+about the desktop, and it only *removes*: no service worker (there is no
+deployed build to cache) and no "Check for updates" row
+(`__APP_DESKTOP__`). **Keep the offline property enforced, not assumed**
+— `make desktop-smoke` runs the real app with every off-bundle request
+cancelled and fails if it asks for one URL it does not carry; it works on
+Linux/CI under Xvfb with SwiftShader. See `desktop/README.md`.
+
 ## Which version to change
 
 Two front-ends live in this repo: the Python/pygame game and the

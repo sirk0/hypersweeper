@@ -1,0 +1,3 @@
+# The web build staged into the bundle by scripts/build-mac-app.sh.
+app/
+node_modules/

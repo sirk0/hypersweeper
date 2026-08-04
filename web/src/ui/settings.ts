@@ -452,15 +452,20 @@ export function renderSettings(
   version.textContent = buildVersion();
   about.append(row([textBlock("Version"), version]));
 
-  const status = document.createElement("span");
-  status.className = "menu-entry-hint settings-status";
-  const { li: updLi, btn: updBtn } = buttonRow(
-    [textBlock("Check for updates"), status],
-    () => void checkForUpdates(status),
-    "settings-update",
-  );
-  updBtn.dataset["action"] = "check-updates";
-  about.append(updLi);
+  // The desktop app carries its build inside the bundle: there is no service
+  // worker and nothing to fetch, so the row is left out entirely rather than
+  // sitting there to report that updates are unavailable.
+  if (!__APP_DESKTOP__) {
+    const status = document.createElement("span");
+    status.className = "menu-entry-hint settings-status";
+    const { li: updLi, btn: updBtn } = buttonRow(
+      [textBlock("Check for updates"), status],
+      () => void checkForUpdates(status),
+      "settings-update",
+    );
+    updBtn.dataset["action"] = "check-updates";
+    about.append(updLi);
+  }
 
   about.append(linkRow("Source code", REPO_URL, "github.com/sirk0/hypersweeper"));
   // No link to the pygame build: it is the reference implementation in the

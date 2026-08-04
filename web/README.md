@@ -911,6 +911,24 @@ and unregistering the service worker that was scoped there; `app.spec.ts` pins
 it. Visual baselines are only authoritative in the pinned CI environment
 (software WebGL / SwiftShader).
 
+### The desktop build
+
+This same bundle ships inside the macOS app (`make mac-app`, see
+`desktop/README.md`), where it is served from an `app://` scheme rather than a
+web server. Two things about that are worth knowing while working here:
+
+- **`VITE_DESKTOP=1`** is the desktop variant of the build. It drops the
+  service worker (nothing to update from inside a bundle) and, via
+  `__APP_DESKTOP__`, the "Check for updates" row on the settings page. It is
+  the *only* thing this app knows about the desktop — resist adding a second
+  branch; if the desktop needs different behaviour, the shell should provide
+  it.
+- **The app must reference nothing remote.** No CDN, no web font, no remote
+  image: `scripts/check-offline-assets.mjs` scans the built output and fails
+  the build (and the `web` CI job) over any URL that is not an XML namespace
+  or the settings page's source-code link. Anything the app draws goes in
+  `public/` or gets imported.
+
 The README gallery at the repo root is rendered from this app by
 `npm run screenshots` (`scripts/make-screenshots.mts`): it builds, serves
 `dist/`, and drives each shot through the `window.__ms` seam with an explicit
