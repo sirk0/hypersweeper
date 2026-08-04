@@ -18,7 +18,10 @@ the offline check, the sync — works anywhere.
 
 You need Xcode (free, App Store) and CocoaPods (`brew install cocoapods`).
 
-1. `make ios-app`. It builds the bundle, syncs it into `ios/App`, and opens
+1. `make ios-app`. It installs whatever `web/package-lock.json` calls for that
+   your tree does not have yet (`scripts/ensure-web-deps.sh` — a checkout that
+   predates a new dependency is otherwise a `tsc` error about a module it cannot
+   resolve), builds the bundle, syncs it into `ios/App`, and opens
    `App.xcworkspace` — **the workspace, never the `.xcodeproj`**, because the
    Capacitor and Haptics pods are linked through it.
 2. Plug the iPhone in, unlock it, and pick it in Xcode's device menu.

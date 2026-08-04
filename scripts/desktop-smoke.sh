@@ -22,8 +22,8 @@ mkdir -p "$(dirname "$OUT")"
 
 step() { printf '\n\033[1m==> %s\033[0m\n' "$1"; }
 
+scripts/ensure-web-deps.sh
 step "Building the web app (VITE_PACKAGED=1)"
-[ -d web/node_modules ] || (cd web && npm ci)
 (cd web && VITE_PACKAGED=1 npm run build)
 
 step "Checking the bundle needs no network"
