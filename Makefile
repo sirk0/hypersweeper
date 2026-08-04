@@ -7,7 +7,8 @@ WEB_OUT = $(WEB_STAGE)/build/web
 .PHONY: help venv install lock test lint run screenshots web-screenshots \
         web-prepare web-package web-run clean \
         mac-app mac-app-dmg desktop-install desktop-build desktop-run \
-        desktop-test desktop-smoke desktop-icon
+        desktop-test desktop-smoke desktop-icon \
+        ios-app ios-run ios-prepare ios-install ios-icon
 
 help:            ## list available targets
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | sed 's/:.*##/ -/' | sort
@@ -74,7 +75,7 @@ desktop-install: ## install the Electron shell's build tools
 	cd desktop && npm install
 
 desktop-build:   ## build the offline web bundle and stage it into the shell
-	cd web && VITE_DESKTOP=1 npm run build
+	cd web && VITE_PACKAGED=1 npm run build
 	node scripts/check-offline-assets.mjs web/dist
 	rm -rf desktop/app && cp -R web/dist desktop/app
 
@@ -90,5 +91,26 @@ desktop-smoke:   ## launch the shell with the network cut, and screenshot it
 desktop-icon:    ## regenerate the app icon from the shared vector source
 	cd web && node scripts/make-icons.mjs
 
+# --- iOS app -----------------------------------------------------------------
+# The TypeScript app packaged as an iPhone app: the built bundle is synced into
+# the Capacitor project in ios/ and Xcode signs and installs it. This is the
+# build that can buzz — @capacitor/haptics reaches the Taptic Engine, which no
+# web API on iOS can. Needs a Mac with Xcode; see ios/README.md.
+
+ios-app:         ## build the game and open the iPhone project in Xcode (macOS)
+	scripts/build-ios-app.sh --open
+
+ios-run:         ## build and install straight onto a connected iPhone (macOS)
+	scripts/build-ios-app.sh --run
+
+ios-prepare:     ## build the bundle and sync it into ios/ (works anywhere)
+	scripts/build-ios-app.sh --prepare-only
+
+ios-install:     ## install the Capacitor tooling (it lives in web/)
+	cd web && npm install
+
+ios-icon:        ## regenerate the app icon and launch image from the vector source
+	cd web && node scripts/make-icons.mjs
+
 clean:           ## remove build artifacts
-	rm -rf build desktop/app
+	rm -rf build desktop/app ios/App/App/public

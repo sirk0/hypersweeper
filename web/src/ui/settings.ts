@@ -6,6 +6,7 @@ import {
 } from "../audio/presets";
 import { previewSound, setSoundPreset } from "../audio/sound";
 import { screens, themeSpec } from "../config/screens";
+import { hapticsSupported } from "../haptics";
 import { allBestTimes } from "../leaderboard";
 import { CELL_STYLE_KEYS, CELL_STYLES, cellStyle } from "../render/cellStyle";
 import { animationsEnabled } from "../settings";
@@ -55,11 +56,14 @@ export interface SettingsHost {
   cellStyle: string;
   /** The active sound choice: a key in `SOUND_PRESETS`, or `"off"`. */
   sound: string;
+  /** Whether the game buzzes on a flag, a win and a mine. */
+  haptics: boolean;
   setTheme(key: string): void;
   setDifficulty(key: string): void;
   setAnimations(pref: boolean | null): void;
   setCellStyle(key: string): void;
   setSound(key: string): void;
+  setHaptics(on: boolean): void;
 }
 
 /** How many distinct boards have a recorded time — the Best times row's
@@ -417,6 +421,28 @@ export function renderSettings(
   soundBtn.dataset["settingsGroup"] = "sound";
   behaviour.append(soundLi);
 
+  // Only where there is something to feel. On the iOS app this is the Taptic
+  // Engine; in a browser, the Vibration API (or iOS Safari's one fixed tick).
+  // A desktop browser with neither gets no row rather than a switch that
+  // promises a buzz nothing can deliver.
+  if (hapticsSupported()) {
+    const buzzKnob = document.createElement("span");
+    buzzKnob.className = "settings-switch";
+    const { li: hapticLi, btn: hapticBtn } = buttonRow(
+      [
+        textBlock("Haptics", "Buzzes on a flag, a win and a mine"),
+        buzzKnob,
+      ],
+      () => host.setHaptics(!host.haptics),
+      "settings-toggle",
+    );
+    hapticBtn.dataset["setting"] = "haptics";
+    hapticBtn.setAttribute("role", "switch");
+    hapticBtn.setAttribute("aria-checked", String(host.haptics));
+    hapticBtn.classList.toggle("on", host.haptics);
+    behaviour.append(hapticLi);
+  }
+
   const on = animationsEnabled(host.animations);
   const knob = document.createElement("span");
   knob.className = "settings-switch";
@@ -452,10 +478,10 @@ export function renderSettings(
   version.textContent = buildVersion();
   about.append(row([textBlock("Version"), version]));
 
-  // The desktop app carries its build inside the bundle: there is no service
-  // worker and nothing to fetch, so the row is left out entirely rather than
-  // sitting there to report that updates are unavailable.
-  if (!__APP_DESKTOP__) {
+  // A packaged app (macOS, iOS) carries its build inside the bundle: there is
+  // no service worker and nothing to fetch, so the row is left out entirely
+  // rather than sitting there to report that updates are unavailable.
+  if (!__APP_PACKAGED__) {
     const status = document.createElement("span");
     status.className = "menu-entry-hint settings-status";
     const { li: updLi, btn: updBtn } = buttonRow(

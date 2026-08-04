@@ -262,6 +262,7 @@ export class Menu {
       animations: this.settings.animations,
       cellStyle: this.settings.cellStyle,
       sound: this.settings.sound,
+      haptics: this.settings.haptics,
       setTheme: (key) => {
         this.settings.setTheme(key);
         page();
@@ -280,6 +281,10 @@ export class Menu {
       },
       setSound: (key) => {
         this.settings.setSound(key);
+        page();
+      },
+      setHaptics: (on) => {
+        this.settings.setHaptics(on);
         page();
       },
     };

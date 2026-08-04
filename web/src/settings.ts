@@ -53,6 +53,9 @@ export interface Settings {
   /** A key in `SOUND_PRESETS`, or `"off"` — what the game sounds like. Read on
    * every event, so a change applies to the board already in play. */
   sound: string;
+  /** Whether the game buzzes: the Taptic Engine in the iOS app, the Vibration
+   * API elsewhere. Read on every event, like `sound`. */
+  haptics: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -61,6 +64,7 @@ export const DEFAULT_SETTINGS: Settings = {
   animations: null,
   cellStyle: DEFAULT_CELL_STYLE,
   sound: DEFAULT_SOUND,
+  haptics: true,
 };
 
 /** Bring a record written by an older build up to the current shape. Every
@@ -111,6 +115,11 @@ export function loadSettings(): Settings {
     // sound) falls back rather than silencing the game by accident. `"off"` is
     // a valid stored value and survives.
     sound: resolveSound(typeof rec["sound"] === "string" ? rec["sound"] : null),
+    // Additive field: a record from a build without haptics simply lacks it and
+    // takes the default (on), which is what a device that can buzz should do
+    // out of the box.
+    haptics:
+      typeof rec["haptics"] === "boolean" ? rec["haptics"] : DEFAULT_SETTINGS.haptics,
   };
 }
 
