@@ -4,7 +4,7 @@ PY ?= $(VENV)/bin/python
 WEB_STAGE = build/hypersweeper
 WEB_OUT = $(WEB_STAGE)/build/web
 
-.PHONY: help venv install lock test lint run screenshots \
+.PHONY: help venv install lock test lint run screenshots web-screenshots \
         web-prepare web-package web-run clean
 
 help:            ## list available targets
@@ -32,8 +32,11 @@ lint:            ## ruff over the code and tests
 run:             ## run the desktop game
 	$(PY) -m minesweeper
 
-screenshots:     ## regenerate the README screenshots into docs/screenshots
+screenshots:     ## regenerate the pygame shot in docs/screenshots/pygame
 	PYTHONPATH=. $(PY) scripts/make_screenshots.py
+
+web-screenshots: ## regenerate the README gallery from the TypeScript app
+	cd web && npm run screenshots
 
 web-prepare:     ## stage the browser app files into $(WEB_STAGE)
 	rm -rf $(WEB_STAGE)
@@ -42,6 +45,8 @@ web-prepare:     ## stage the browser app files into $(WEB_STAGE)
 	cp -r minesweeper $(WEB_STAGE)/minesweeper
 	cp -r data $(WEB_STAGE)/data  # shared JSON config read at runtime
 
+# Not deployed any more — the TypeScript app in web/ is what GitHub Pages
+# serves. Kept for running the pygame build in a browser locally.
 web-package: web-prepare  ## build the browser bundle into $(WEB_OUT)
 	$(PY) -m pygbag --ume_block 0 --build $(WEB_STAGE)
 	PYTHONPATH=. $(PY) scripts/make_web_icons.py $(WEB_OUT)

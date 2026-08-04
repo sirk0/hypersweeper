@@ -195,14 +195,19 @@ The venv already has everything; recreate with `make venv`.
 Dependency groups in pyproject.toml: `web` (pygbag), `test` (pytest,
 ruff), `all` (both); locked to requirements[-web|-test|-all].txt by
 `make lock` (uv). The Makefile wraps all common commands (`make help`);
-CI runs `make test`/`make lint`, Pages deploys `make web-package`.
+CI runs `make test`/`make lint`. Pages deploys the **TypeScript** app in
+`web/`, not this one — `make web-package` is a local build only.
 
 ## Web build (pygbag)
 
 `main.py` is the browser entry point; the game loop is async
-(`App.run_async`) so pygbag can yield to the browser each frame.
-`.github/workflows/deploy-pages.yml` builds and deploys to GitHub Pages
-on every push to master. Browser-specific care in the code: no plain
+(`App.run_async`) so pygbag can yield to the browser each frame. This
+build is **no longer deployed** — `.github/workflows/deploy-pages.yml`
+publishes the TypeScript app at the site root (and `/next/`, where that
+app lived during the rewrite, redirects there via
+`web/public/next/index.html`) — so `make web-package` / `make web-run`
+are for running the pygame version in a browser locally. Browser-specific
+care in the code: no plain
 `import pygame.gfxdraw` (pygbag's scanner would search PyPI for it;
 gfxdraw doesn't exist in wasm at all — `_GFX` fallbacks in gui.py),
 pygame key constants read via `getattr` at module level, and `main.py`
@@ -290,9 +295,11 @@ shows it downscaled by `UI_SCALE`. To preview what the user sees,
 
 ## TypeScript app (`web/`)
 
-The in-progress TypeScript/Three.js rewrite lives in `web/` and shares its
+The TypeScript/Three.js app lives in `web/` and shares its
 config and conformance oracle with the Python game through `data/*.json`
-(see AGENTS.md). Commands (`npm run typecheck/test/build`, Playwright
+(see AGENTS.md). It is **the deployed game** — GitHub Pages serves it at
+the site root; the pygame build is the reference implementation and is not
+published. Commands (`npm run typecheck/test/build/screenshots`, Playwright
 `e2e`) and — important when changing anything visual or interactive —
 **how to drive and screenshot the app headless, plus the gotchas that
 actually bite** (the `window.__ms` seam, flood-fill devouring sparse mine
@@ -378,4 +385,6 @@ carries over.
 ## Pull requests
 
 Do not commit PR screenshots to `docs/screenshots/` (that folder holds only
-the curated README shots).
+the curated README shots: the gallery, rendered from the TypeScript app by
+`cd web && npm run screenshots`, and the one pygame shot under
+`docs/screenshots/pygame/` from `make screenshots`).

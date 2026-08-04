@@ -3,14 +3,26 @@
 Classic minesweeper, but the board can be almost any surface and tiling —
 from a flat aperiodic Penrose mosaic to a Goldberg sphere or a Möbius strip.
 
+**Play in the browser:** <https://sirk0.github.io/hypersweeper/>
+(the TypeScript/WebGL app in [`web/`](web), deployed from master by GitHub
+Actions; installable, and it works offline once loaded)
+
 <table>
   <tr>
-    <td align="center"><img src="docs/screenshots/c180.png" width="380"><br>Goldberg GP(3,0) on a sphere</td>
-    <td align="center"><img src="docs/screenshots/mobiushex.png" width="380"><br>Hexagons on a Möbius strip</td>
+    <td align="center"><img src="docs/screenshots/c180.png" width="380"><br>Goldberg GP(3,0) on a sphere <sub>· Minimal iOS</sub></td>
+    <td align="center"><img src="docs/screenshots/mobiushex.png" width="380"><br>Hexagons on a Möbius strip <sub>· Dark</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/screenshots/penrose.png" width="380"><br>Penrose rhombi</td>
-    <td align="center"><img src="docs/screenshots/torussnubsquare-lost.png" width="380"><br>Snub square on a donut (boom)</td>
+    <td align="center"><img src="docs/screenshots/penrose.png" width="380"><br>Penrose rhombi <sub>· Warm Paper</sub></td>
+    <td align="center"><img src="docs/screenshots/torussnubsquare-lost.png" width="380"><br>Snub square on a donut, boom <sub>· Classic</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/gosper.png" width="380"><br>Hexagons in a Gosper island <sub>· Soft Neumorphism</sub></td>
+    <td align="center"><img src="docs/screenshots/hexhex.png" width="380"><br>A hexagon of hexagons <sub>· Flat Material</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/menu.png" width="380"><br>The menu <sub>· Glassmorphism</sub></td>
+    <td align="center"><img src="docs/screenshots/themes.png" width="380"><br>Seven themes, chrome only — a board is never themed</td>
   </tr>
 </table>
 
@@ -18,11 +30,7 @@ Pick a surface, then a tiling:
 
 - **Flat surface** — classic squares (8 neighbors), a triangle grid (12)
   and the same triangles cut to a triangular or a hexagonal board,
-  hexagons (6) and a big hexagon composed of small hexagons (6), three
-  aperiodic tilings — a Penrose mosaic (P3 rhombi), "the hat", the single
-  tridecagon monotile that tiles only aperiodically, and "the spectre"
-  (Tile(1,1)), the *chiral* monotile, whose tiling uses rotations only and
-  never mirrors a tile — the eight
+  hexagons (6) and a big hexagon composed of small hexagons (6); the eight
   non-regular uniform tilings: snub hexagonal 3.3.3.3.6, elongated
   triangular 3.3.3.4.4, snub square 3.3.4.3.4, rhombitrihexagonal
   3.4.6.4, trihexagonal 3.6.3.6, truncated hexagonal 3.12.12, truncated
@@ -31,17 +39,25 @@ Pick a surface, then a tiling:
   Then, tiled by one congruent rectangle rather than by regular polygons,
   the five brick bonds — stacked bond, running bond, basket weave, the same
   weave three bricks at a time, and herringbone — where all the interest is
-  in how the courses are staggered.
+  in how the courses are staggered. Three tilings have no translation at
+  all: a Penrose mosaic (P3 rhombi), "the spectre" (Tile(1,1)), the *chiral*
+  monotile whose tiling uses rotations only and never mirrors a tile, and a
+  phyllotactic spiral of one equilateral hexagon in five arms. Five more are
+  self-similar — one tile inflated into a patch shaped like itself: the
+  sphinx, the chair, the Sierpiński carpet, the pentaflake, and hexagons
+  filling a Gosper island.
   The menu groups these as **Regular**, **Uniform**, **Laves**, **Isogonal**
   (six tilings by regular polygons that are *not* edge to edge — a tile's
-  corner in the middle of its neighbour's edge), **Congruent rectangles** and
-  **Aperiodic**; the uniform and Laves tilings also wrap the torus, cylinder
-  and (unless chiral) the Möbius strip below
+  corner in the middle of its neighbour's edge), **Congruent rectangles**,
+  **Aperiodic** and **Fractals**; every periodic family also wraps the
+  cylinder and the torus below, and — unless the tiling is chiral — the
+  Möbius strip and the Klein bottle too
 - **Sphere (3D)** — a pentagonal hexecontahedron (60 pentagons, 7
   neighbors), a chamfered dodecahedron (12 pentagons + 30 hexagons), the
   Goldberg polyhedron GP(3,0) (12 pentagons + 80 hexagons), a geodesic
-  icosahedron (80 triangles), or a snub dodecahedron
-  (12 pentagons + 80 triangles).
+  icosahedron (80 triangles), a snub dodecahedron
+  (12 pentagons + 80 triangles), a rhombicosidodecahedron or a truncated
+  icosidodecahedron.
   (A sphere cannot be tiled with hexagons alone — Euler's formula
   forces 12 pentagons in.)
 - **Polyhedra (3D)** — a cube tiled with squares (6 faces), a
@@ -53,57 +69,85 @@ Pick a surface, then a tiling:
   bipyramid (two stepped pyramids stitched base-to-base into a terraced
   diamond); tiled by triangles or squares, cells stitching across the
   edges where faces meet, inner walls and step shoulders included
-- **Torus (3D)** — squares, triangles, or pure hexagons (possible
-  because the torus has Euler characteristic 0); the grid wraps in
-  both directions, so there are no border cells
-- **Möbius strip (3D)** — squares, triangles, or hexagons on a
-  one-sided surface; the strip glues to itself with a flip
-- **Cylinder (3D)** — squares, triangles, or hexagons around an open
-  tube
+- **Torus (3D)** — the grid wraps in both directions, so there are no
+  border cells; pure hexagons are possible here, because the torus has
+  Euler characteristic 0
+- **Möbius strip (3D)** — a one-sided surface: the strip glues to itself
+  with a flip, so a chiral tiling cannot wrap it at all
+- **Klein bottle (3D)** — the donut glued with that same flip, one-sided
+  and closed; the immersion hides cells behind its own neck, so the board
+  scrolls to bring them round
+- **Cylinder (3D)** — an open tube, wrapping in one direction only
 
-## Play
+## Playing
 
-**In the browser:** <https://sirk0.github.io/hypersweeper/>
-(built with [pygbag](https://pygame-web.github.io), deployed from master
-by GitHub Actions)
+- **Left-click / tap** — reveal a cell (the first reveal is always safe);
+  click a revealed number to chord
+- **Right-click**, **long-press**, or the flag button in the header —
+  toggle a flag
+- **Face button** — new game; the **`<` button** goes back to the menu
+- **Drag** a 3D board to turn it (arrow keys too); **pinch** or
+  <kbd>ctrl</kbd>+wheel to zoom any board, <kbd>0</kbd> to frame it again
+- On a Klein bottle, the **chevrons** (or <kbd>[</kbd> / <kbd>]</kbd>)
+  scroll the board round its neck
 
-On the desktop:
-
-```sh
-pip install -r requirements.txt
-python3 -m minesweeper
-```
-
-The menu picks a topology, then one of its tilings and a difficulty.
-In game:
-
-- **Left-click** — reveal a cell (the first reveal is always safe);
-  left-click a revealed number to chord
-- **Right-click** — toggle a flag
-- **Face button** or `n` — new game
-- `1` / `2` / `3` — switch to easy / medium / hard
-- **`<` button** or `Escape` — back to the menu
-
-On 3D boards, **drag** with the left button (or use the arrow keys) to
-rotate the surface; a short click reveals.
-
-`python3 -m minesweeper --mode hex [difficulty]` skips the menu.
+Every board is a **link** — `?mode=…&difficulty=…`, plus a `seed` to share
+the exact layout. Winning files the time: the fastest three per board and
+difficulty live under Settings › Best times. Settings also holds the seven
+themes, four cell styles, three sound presets (synthesised from the move
+that caused them — a tile's side count is its voice) and an animations
+toggle.
 
 ## Development
 
+The game is a TypeScript/Three.js app in [`web/`](web):
+
 ```sh
-make venv     # create .venv with every dependency group
-make test     # run the test suite
-make lint     # ruff
-make run      # desktop game
-make web-run  # browser version at http://localhost:8000
-make help     # everything else
+cd web
+npm install
+npm run dev          # http://localhost:5173
+npm run typecheck    # tsc
+npm run test         # vitest unit tests
+npm run e2e          # Playwright e2e + visual regression
+npm run build        # production bundle into web/dist
+npm run screenshots  # regenerate the gallery above
 ```
 
-Dependency groups live in `pyproject.toml` (`web`, `test`, `all`) with
-locked `requirements*.txt` files regenerated by `make lock` (uv).
+`web/README.md` is the guide to the code — the renderer, the board
+builders, themes, sound, and how to drive the app headless.
+[`data/*.json`](data) is shared configuration (the board catalog, presets,
+UI screens) that both implementations read, plus a conformance oracle
+exported from the Python game and replayed by the TypeScript tests, so the
+two can never disagree about the rules.
 
-Tests run headless via SDL's dummy video driver.
+## The pygame implementation
+
+<img src="docs/screenshots/pygame/c180.png" width="300" align="right">
+
+The original game is a Python/pygame app and stays in the repo as the
+**reference implementation** — the behaviour the TypeScript port is checked
+against, and the place `data/*.json` is exported from. It is no longer
+deployed to the web; the site root serves the TypeScript app (`/next/`,
+where that app lived during the rewrite, redirects there).
+
+```sh
+pip install -r requirements.txt
+python3 -m minesweeper                 # menu
+python3 -m minesweeper --mode hex      # skip the menu
+python3 -m minesweeper --theme paper   # one of the six pygame themes
+```
+
+Controls match the web app; `n` starts a new game, `1` / `2` / `3` switch
+difficulty and `Escape` goes back to the menu.
+
+```sh
+make venv     # create .venv with every dependency group
+make test     # pytest
+make lint     # ruff
+make run      # desktop game
+make web-run  # the pygbag browser build at http://localhost:8000
+make help     # everything else
+```
 
 Code layout: `minesweeper/game.py` holds the rules over an arbitrary
 cell graph; `minesweeper/boards/` generates the tilings (cell
@@ -111,4 +155,4 @@ vertices get exact hashable ids — lattice points in 2D, symbolic keys
 in 3D — and two cells are neighbors when they share a vertex); the
 sphere is built with the Conway gyro operation on an icosahedron;
 `minesweeper/gui.py` is the pygame interface, including the rotatable
-orthographic 3D view.
+orthographic 3D view. Tests run headless via SDL's dummy video driver.

@@ -40,14 +40,6 @@ export function buildVersion(): string {
   return __APP_COMMIT__ ? `${__APP_VERSION__} (${__APP_COMMIT__})` : __APP_VERSION__;
 }
 
-/** The pygame build, which GitHub Pages serves at the site root while this app
- * mounts under `/next/`. `null` when there is no such sibling (the dev server
- * and any plain-root deploy), so the link is only offered where it works. */
-function classicBuildHref(): string | null {
-  const base = import.meta.env.BASE_URL;
-  return base.endsWith("next/") ? base.slice(0, -"next/".length) : null;
-}
-
 const REPO_URL = "https://github.com/sirk0/hypersweeper";
 
 /** The live view of the stored preferences that the menu reads and writes.
@@ -471,10 +463,9 @@ export function renderSettings(
   about.append(updLi);
 
   about.append(linkRow("Source code", REPO_URL, "github.com/sirk0/hypersweeper"));
-  const classic = classicBuildHref();
-  if (classic) {
-    about.append(linkRow("Original pygame build", classic, "The Python version of this game"));
-  }
+  // No link to the pygame build: it is the reference implementation in the
+  // repo, not a deployed sibling of this app, and has not been served since
+  // this one took the site root.
   frag.append(about);
 
   const footer = document.createElement("p");

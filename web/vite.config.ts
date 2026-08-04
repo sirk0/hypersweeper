@@ -9,10 +9,11 @@ import { VitePWA } from "vite-plugin-pwa";
 // pins it further on CI builds and is empty locally.
 const pkg = createRequire(import.meta.url)("./package.json") as { version: string };
 
-// The TypeScript build mounts under `/next/` on GitHub Pages during the
-// transition (the pygbag build keeps the site root). CI passes the full
-// Pages path via VITE_BASE (e.g. "/hypersweeper/next/"); locally and
-// under Playwright preview the default "/" keeps deep links simple.
+// This app is what GitHub Pages serves, at the site root of the project page.
+// CI passes that path via VITE_BASE ("/hypersweeper/"); locally and under
+// Playwright preview the default "/" keeps deep links simple. (During the
+// rewrite the build mounted under "/next/" instead; public/next/index.html
+// redirects that path here.)
 const base = process.env.VITE_BASE ?? "/";
 
 export default defineConfig({

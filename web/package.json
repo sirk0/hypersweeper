@@ -13,7 +13,8 @@
     "test:watch": "vitest",
     "e2e": "playwright test",
     "e2e:update": "playwright test --update-snapshots",
-    "icons": "node scripts/make-icons.mjs"
+    "icons": "node scripts/make-icons.mjs",
+    "screenshots": "vite-node scripts/make-screenshots.mts"
   },
   "dependencies": {
     "three": "^0.171.0"

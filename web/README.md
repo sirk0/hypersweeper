@@ -1,7 +1,9 @@
 # Hypersweeper — TypeScript + Three.js app (`web/`)
 
-The in-progress TypeScript rewrite (Three.js / WebGL), living alongside the
-Python game per `docs/plans/typescript-rewrite-same-repo.md`.
+The TypeScript rewrite (Three.js / WebGL) of the Python game, per
+`docs/plans/typescript-rewrite-same-repo.md`. This is the app GitHub Pages
+serves at the site root; the pygame build stays in the repo as the reference
+implementation and is not deployed (see **Deploy** below).
 
 **M16 — Sound.** The game has a voice (`src/audio/`), synthesised rather than
 sampled — there is no audio file in this repo, and there is not meant to be. A
@@ -899,7 +901,18 @@ approach to the board catalog and presets (see the plan).
 ## Deploy
 
 CI (`.github/workflows/ci.yml`, `web` job) typechecks, unit-tests, builds and
-runs the e2e/visual suite. During the transition GitHub Pages hosts both apps:
-the pygbag build at the site root, this app under `/next/` (Vite `base` set from
-`VITE_BASE` in `deploy-pages.yml`). Visual baselines are only authoritative in
-the pinned CI environment (software WebGL / SwiftShader).
+runs the e2e/visual suite. `deploy-pages.yml` then builds this app with
+`VITE_BASE=/hypersweeper/` and publishes `dist/` as the whole Pages site — **it
+is the deployed game**; the pygbag build of the pygame version is no longer
+published (it is still buildable locally with `make web-package`). During the
+rewrite this app mounted under `/next/` instead, so `public/next/index.html`
+redirects that path to the root, carrying the board link's query and hash over
+and unregistering the service worker that was scoped there; `app.spec.ts` pins
+it. Visual baselines are only authoritative in the pinned CI environment
+(software WebGL / SwiftShader).
+
+The README gallery at the repo root is rendered from this app by
+`npm run screenshots` (`scripts/make-screenshots.mts`): it builds, serves
+`dist/`, and drives each shot through the `window.__ms` seam with an explicit
+mine layout, one theme per shot. Add a row to its `SHOTS` table to add a
+picture; `SHOTS=menu.png npm run screenshots` re-renders just one.
