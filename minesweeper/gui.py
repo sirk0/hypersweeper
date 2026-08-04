@@ -2362,7 +2362,7 @@ class MenuScreen:
         mouse = canvas_mouse()
         layout = self.layout()
 
-        title = fonts.get(30 * S).render("MINESWEEPER", True, TEXT)
+        title = fonts.get(30 * S).render("HYPERSWEEPER", True, TEXT)
         surface.blit(title, title.get_rect(center=(self.WIDTH // 2, 44 * S)))
         subtitle = fonts.get(14 * S).render(self._subtitle(), True, MUTED)
         surface.blit(subtitle, subtitle.get_rect(center=(self.WIDTH // 2, 72 * S)))
@@ -2468,7 +2468,7 @@ class _DesktopPresenter:
         self._points = points
         if self._window is None:
             self._window = self._video.Window(
-                "Minesweeper", size=points, allow_high_dpi=True
+                "Hypersweeper", size=points, allow_high_dpi=True
             )
             self._window.set_icon(self._icon)
             self._renderer = self._video.Renderer(self._window)
@@ -2653,7 +2653,7 @@ class App:
         """Main loop. Async so the browser build (pygbag) can yield to the
         event loop every frame; on the desktop it runs under asyncio.run."""
         pygame.init()
-        pygame.display.set_caption("Minesweeper")
+        pygame.display.set_caption("Hypersweeper")
         if sys.platform == "emscripten":
             presenter: _WebPresenter | _DesktopPresenter = _WebPresenter()
         else:

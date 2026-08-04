@@ -48,7 +48,7 @@ function classicBuildHref(): string | null {
   return base.endsWith("next/") ? base.slice(0, -"next/".length) : null;
 }
 
-const REPO_URL = "https://github.com/sirk0/minesweeper-tiles";
+const REPO_URL = "https://github.com/sirk0/hypersweeper";
 
 /** The live view of the stored preferences that the menu reads and writes.
  * Implemented by `App` over `settings.ts`. */
@@ -470,7 +470,7 @@ export function renderSettings(
   updBtn.dataset["action"] = "check-updates";
   about.append(updLi);
 
-  about.append(linkRow("Source code", REPO_URL, "github.com/sirk0/minesweeper-tiles"));
+  about.append(linkRow("Source code", REPO_URL, "github.com/sirk0/hypersweeper"));
   const classic = classicBuildHref();
   if (classic) {
     about.append(linkRow("Original pygame build", classic, "The Python version of this game"));

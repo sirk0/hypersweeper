@@ -1,7 +1,7 @@
 VENV ?= .venv
 PY ?= $(VENV)/bin/python
 
-WEB_STAGE = build/minesweeper
+WEB_STAGE = build/hypersweeper
 WEB_OUT = $(WEB_STAGE)/build/web
 
 .PHONY: help venv install lock test lint run screenshots \

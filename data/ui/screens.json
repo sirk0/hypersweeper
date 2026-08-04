@@ -159,7 +159,7 @@
     "pressed": "😮"
   },
   "menu": {
-    "title": "Minesweeper Tiles",
+    "title": "Hypersweeper",
     "root": [
       {
         "key": "classic",

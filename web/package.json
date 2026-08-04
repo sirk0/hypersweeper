@@ -1,9 +1,9 @@
 {
-  "name": "minesweeper-tiles-web",
+  "name": "hypersweeper-web",
   "private": true,
   "version": "0.2.43",
   "type": "module",
-  "description": "TypeScript + Three.js rewrite of the Minesweeper Tiles game (M0 scaffold).",
+  "description": "TypeScript + Three.js rewrite of the Hypersweeper game (M0 scaffold).",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
