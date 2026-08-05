@@ -202,9 +202,9 @@ CI runs `make test`/`make lint`. Pages deploys the **TypeScript** app in
 
 `main.py` is the browser entry point; the game loop is async
 (`App.run_async`) so pygbag can yield to the browser each frame. This
-build is **no longer deployed** — `.github/workflows/deploy-pages.yml`
-publishes the TypeScript app at the site root (and `/next/`, where that
-app lived during the rewrite, redirects there via
+build is **no longer deployed** — `deploy-pages.yml` and
+`deploy-cloudflare.yml` publish the TypeScript app at the site root (and
+`/next/`, where that app lived during the rewrite, redirects there via
 `web/public/next/index.html`) — so `make web-package` / `make web-run`
 are for running the pygame version in a browser locally. Browser-specific
 care in the code: no plain
@@ -297,9 +297,11 @@ shows it downscaled by `UI_SCALE`. To preview what the user sees,
 
 The TypeScript/Three.js app lives in `web/` and shares its
 config and conformance oracle with the Python game through `data/*.json`
-(see AGENTS.md). It is **the deployed game** — GitHub Pages serves it at
-the site root; the pygame build is the reference implementation and is not
-published. Commands (`npm run typecheck/test/build/screenshots`, Playwright
+(see AGENTS.md). It is **the deployed game** — GitHub Pages and Cloudflare
+Pages both serve it at the site root while the game moves from the first to
+the second (two workflows, one build each, differing only in `VITE_BASE`;
+see "Deploy" in `web/README.md`); the pygame build is the reference
+implementation and is not published. Commands (`npm run typecheck/test/build/screenshots`, Playwright
 `e2e`) and — important when changing anything visual or interactive —
 **how to drive and screenshot the app headless, plus the gotchas that
 actually bite** (the `window.__ms` seam, flood-fill devouring sparse mine
