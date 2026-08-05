@@ -1,7 +1,7 @@
-// Generate the app icons for the TypeScript ("/next/") web app from a single
-// vector source: a mine inside a steel-blue pentagon on a silver plate. The
-// favicon ships as crisp SVG; the PWA/apple PNGs are rasterised from the same
-// vector via headless Chromium (so edges stay clean).
+// Generate the app icons for the TypeScript web app from a single vector
+// source: the game's own moored sea mine sitting on a pentagon cell, on a deep
+// indigo plate. The favicon ships as crisp SVG; the PWA/apple/desktop PNGs are
+// rasterised from the same vector via headless Chromium (so edges stay clean).
 //
 //   web/public/favicon.svg            (vector, rounded plate)
 //   web/public/icons/icon-192.png
@@ -10,6 +10,23 @@
 //   web/public/apple-touch-icon.png   (full-bleed, iOS masks it)
 //   desktop/resources/icon.png        (macOS app icon, 1024, inset by its own
 //                                      margin — macOS does not mask)
+//
+// Two things here are quotations from the game rather than icon art, and should
+// stay that way:
+//
+//   the pentagon's colour  is the one a five-sided cell is painted in
+//                          (render/shapePalette.ts: hue follows side count, so
+//                          a pentagon is that olive yellow on every board).
+//                          The face's gradient is a narrow band either side of
+//                          that colour — enough to read as lit from above,
+//                          little enough that the tile is still plainly it —
+//                          and the bevel wall is its dark variant.
+//   the mine               is drawMine() from render/glyphAtlas.ts, transcribed
+//                          to SVG at the same proportions (everything is a
+//                          multiple of the casing radius `r`): eight Hertz
+//                          horns, the lit iron casing, the bolt seam, the
+//                          reflected light along the lower rim, the mooring
+//                          ring, the specular.
 //
 // Run from web/:  node scripts/make-icons.mjs
 import { chromium } from "@playwright/test";
@@ -21,34 +38,133 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const PUBLIC = resolve(HERE, "../public");
 const DESKTOP = resolve(HERE, "../../desktop/resources");
 
-// The mine + pentagon motif, centred in a 512 viewBox. Reused at two scales:
-// large for the favicon/standard icons, shrunk into the safe zone for maskable.
+const n = (v) => Number(v.toFixed(2)).toString();
+
+// -- the pentagon ------------------------------------------------------------
+// Point-up, and near enough edge to edge: the circumradius is set so the two
+// side vertices leave the plate's straight edge ~21 units of margin at 512, and
+// the whole figure is shifted down by (R - R·cos36°)/2 so its bounding box —
+// not its circumcircle — is what sits centred on the canvas.
+const R = 220;
+const CX = 256;
+const CY = 256 + R * (1 - Math.cos(Math.PI / 5)) / 2;
+
+/** The five corners of a point-up regular pentagon, scaled about its centre. */
+function pentagon(scale = 1) {
+  return Array.from({ length: 5 }, (_, i) => {
+    const a = -Math.PI / 2 + (i * 2 * Math.PI) / 5;
+    return [CX + Math.cos(a) * R * scale, CY + Math.sin(a) * R * scale];
+  });
+}
+
+const points = (pts) => pts.map(([x, y]) => `${n(x)},${n(y)}`).join(" ");
+
+// -- the mine ----------------------------------------------------------------
+// drawMine() in render/glyphAtlas.ts, in SVG. Its canvas arcs become path `A`
+// commands; its focal radial gradient becomes an fr= radialGradient.
+
+/** Point on a circle/ellipse at canvas parameter `t` (y grows downward). */
+const on = (cx, cy, rx, ry, t) => [cx + rx * Math.cos(t), cy + ry * Math.sin(t)];
+
+function mine(bx, by, r) {
+  const horns = [];
+  for (let k = 0; k < 8; k++) {
+    // offset half a step, so none of them points straight down into the ring
+    const a = (k * Math.PI) / 4 + Math.PI / 8;
+    const [ca, sa] = [Math.cos(a), Math.sin(a)];
+    horns.push(
+      `M${n(bx + ca * r * 0.9)} ${n(by + sa * r * 0.9)}` +
+        `L${n(bx + ca * r * 1.34)} ${n(by + sa * r * 1.34)}`,
+    );
+  }
+  // the seam where the two halves of the casing bolt together: the lower half
+  // of a flat ellipse, right corner round to left
+  const seamA = on(bx, by + r * 0.12, r * 0.99, r * 0.3, Math.PI * 0.02);
+  const seamB = on(bx, by + r * 0.12, r * 0.99, r * 0.3, Math.PI * 0.98);
+  // reflected light along the lower rim
+  const rimA = on(bx, by, r * 0.95, r * 0.95, Math.PI * 0.2);
+  const rimB = on(bx, by, r * 0.95, r * 0.95, Math.PI * 0.7);
+  return `
+  <g>
+    <path d="${horns.join(" ")}" fill="none" stroke="#4b5261"
+          stroke-width="${n(r * 0.28)}" stroke-linecap="round"/>
+    <path d="M${n(bx)} ${n(by + r * 0.9)}L${n(bx)} ${n(by + r * 1.2)}"
+          fill="none" stroke="#3a3f4b" stroke-width="${n(r * 0.16)}"/>
+    <circle cx="${n(bx)}" cy="${n(by + r * 1.42)}" r="${n(r * 0.24)}"
+            fill="none" stroke="#3a3f4b" stroke-width="${n(r * 0.13)}"/>
+    <circle cx="${n(bx)}" cy="${n(by)}" r="${n(r)}" fill="url(#shell)"/>
+    <path d="M${n(seamA[0])} ${n(seamA[1])}A${n(r * 0.99)} ${n(r * 0.3)} 0 0 1 ${n(
+      seamB[0],
+    )} ${n(seamB[1])}" fill="none" stroke="#0c0e14" stroke-opacity="0.55"
+          stroke-width="${n(r * 0.08)}"/>
+    <path d="M${n(rimA[0])} ${n(rimA[1])}A${n(r * 0.95)} ${n(r * 0.95)} 0 0 1 ${n(
+      rimB[0],
+    )} ${n(rimB[1])}" fill="none" stroke="#96a0b4" stroke-opacity="0.3"
+          stroke-width="${n(r * 0.05)}"/>
+    <ellipse cx="${n(bx - r * 0.38)}" cy="${n(by - r * 0.36)}"
+             rx="${n(r * 0.22)}" ry="${n(r * 0.15)}" fill="#ffffff"
+             fill-opacity="0.85"
+             transform="rotate(-40.1 ${n(bx - r * 0.38)} ${n(by - r * 0.36)})"/>
+  </g>`;
+}
+
+// The casing radius, and where it sits. The mine hangs its mooring ring below
+// the casing, so the assembly is centred on the pentagon by lifting the casing:
+// what ends up centred is the span from the top horn to the bottom of the ring.
+const MINE_R = 100;
+const MINE_Y = CY - 15;
+
+// -- the motif ---------------------------------------------------------------
+// A pentagon cell, beveled the way a board tile is (an outer wall in the
+// shape's dark tone, the face inset from it), carrying the mine.
 const motif = `
-  <polygon points="256,81 422,202 359,398 153,398 90,202"
-           fill="url(#pent)" stroke="#2a4c8e" stroke-width="8" stroke-linejoin="round"/>
-  <g stroke="#141414" stroke-width="22" stroke-linecap="round">
-    <line x1="164" y1="262" x2="348" y2="262"/>
-    <line x1="256" y1="170" x2="256" y2="354"/>
-    <line x1="191" y1="197" x2="321" y2="327"/>
-    <line x1="191" y1="327" x2="321" y2="197"/>
+  <g filter="url(#drop)">
+    <polygon points="${points(pentagon())}" fill="#6f691c"
+             stroke="#6f691c" stroke-width="6" stroke-linejoin="round"/>
+    <polygon points="${points(pentagon(0.945))}" fill="url(#pent)"
+             stroke-linejoin="round"/>
   </g>
-  <circle cx="256" cy="262" r="58" fill="#141414"/>
-  <circle cx="235" cy="241" r="17" fill="#ffffff"/>`;
+  ${mine(CX, MINE_Y, MINE_R)}`;
 
 const defs = `
   <defs>
     <linearGradient id="plate" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#eef0f4"/><stop offset="1" stop-color="#c6cad2"/>
+      <stop offset="0" stop-color="#39406b"/><stop offset="1" stop-color="#151a2e"/>
     </linearGradient>
     <linearGradient id="pent" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#6a94e0"/><stop offset="1" stop-color="#3a68b8"/>
+      <stop offset="0" stop-color="#d9d15c"/>
+      <stop offset="0.5" stop-color="#c4bb41"/>
+      <stop offset="1" stop-color="#a49b31"/>
     </linearGradient>
+    <radialGradient id="shell" gradientUnits="userSpaceOnUse"
+                    cx="${n(CX)}" cy="${n(MINE_Y)}" r="${n(MINE_R * 1.15)}"
+                    fx="${n(CX - MINE_R * 0.35)}" fy="${n(MINE_Y - MINE_R * 0.4)}"
+                    fr="${n(MINE_R * 0.1)}">
+      <stop offset="0" stop-color="#5a616f"/>
+      <stop offset="0.5" stop-color="#2c303a"/>
+      <stop offset="1" stop-color="#141720"/>
+    </radialGradient>
+    <filter id="drop" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="7" stdDeviation="9"
+                    flood-color="#05060d" flood-opacity="0.5"/>
+    </filter>
   </defs>`;
 
-// Rounded silver plate with transparent corners — the browser-tab favicon and
-// the standard (non-maskable) install icons.
+// The plate: a deep indigo squircle, lit from the top, with a hairline of its
+// own light along the upper edge. Dark on purpose — the pentagon's olive yellow
+// is a light colour, and it needs a dark ground to read as a tile sitting on
+// something rather than as a yellow blob.
+const plate = (x, y, w, rx) => `
+  <rect x="${n(x)}" y="${n(y)}" width="${n(w)}" height="${n(w)}" rx="${n(rx)}"
+        fill="url(#plate)"/>
+  <rect x="${n(x + 2)}" y="${n(y + 2)}" width="${n(w - 4)}" height="${n(w - 4)}"
+        rx="${n(rx - 2)}" fill="none" stroke="#ffffff" stroke-opacity="0.13"
+        stroke-width="3"/>`;
+
+// Rounded plate with transparent corners — the browser-tab favicon and the
+// standard (non-maskable) install icons.
 const faviconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">${defs}
-  <rect x="26" y="26" width="460" height="460" rx="112" fill="url(#plate)" stroke="#969aa2" stroke-width="4"/>
+  ${plate(26, 26, 460, 112)}
   ${motif}
 </svg>`;
 
@@ -66,7 +182,7 @@ const maskableSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 51
 // there; corners stay transparent, as the dock and Finder expect.
 const macSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">${defs}
   <g transform="translate(256 256) scale(0.89) translate(-256 -256)">
-    <rect x="26" y="26" width="460" height="460" rx="112" fill="url(#plate)" stroke="#969aa2" stroke-width="4"/>
+    ${plate(26, 26, 460, 112)}
     ${motif}
   </g>
 </svg>`;

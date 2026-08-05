@@ -346,6 +346,17 @@ Practical knowledge for verifying changes by actually running the app
   review a change to `src/ui/icons.ts` without walking the menu. Most icons
   are generated from the real board geometry, so a change to a tiling,
   a solid or a surface immersion shows up here too.
+- **App icon**: `node scripts/make-icons.mjs` (or `make desktop-icon` from the
+  repo root) writes every icon the app ships — `public/favicon.svg`, the two
+  PWA PNGs, the maskable and apple-touch ones, and `desktop/resources/icon.png`
+  for the macOS build — from one vector source in that script. Two parts of it
+  are quotations from the game and should stay in step with it: the pentagon is
+  painted in the colour `shapePalette.ts` gives a five-sided cell, and the mine
+  is `drawMine()` from `render/glyphAtlas.ts` transcribed to SVG at the same
+  proportions. Rasterising is Chromium, so pass
+  `PLAYWRIGHT_CHROMIUM_EXECUTABLE` where the browser is not on the default
+  path. Review the result at *icon* sizes (16 px through the dock's 128), not
+  at 512 — that is where a design either survives or turns to mud.
 - **The `window.__ms` seam** is the way in: `cells()`, `startBoard(mode,
   difficulty, {mines|seed})`, `reveal/flag/chord(cell)`, `rotate(dx, dy)`
   (drag-pixels), `state()`. On 3D boards `cellScreenXY(cell)` returns
