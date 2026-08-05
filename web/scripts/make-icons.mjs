@@ -197,7 +197,7 @@ const macSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" wi
 // larger than any phone, so the plate is small enough to survive the crop.
 const splashSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">${defs}
   <g transform="translate(256 256) scale(0.28) translate(-256 -256)">
-    <rect x="26" y="26" width="460" height="460" rx="112" fill="url(#plate)" stroke="#969aa2" stroke-width="4"/>
+    ${plate(26, 26, 460, 112)}
     ${motif}
   </g>
 </svg>`;
