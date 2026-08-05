@@ -1,22 +1,55 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
     <linearGradient id="plate" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#eef0f4"/><stop offset="1" stop-color="#c6cad2"/>
+      <stop offset="0" stop-color="#39406b"/><stop offset="1" stop-color="#151a2e"/>
     </linearGradient>
     <linearGradient id="pent" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#6a94e0"/><stop offset="1" stop-color="#3a68b8"/>
+      <stop offset="0" stop-color="#d9d15c"/>
+      <stop offset="0.5" stop-color="#c4bb41"/>
+      <stop offset="1" stop-color="#a49b31"/>
     </linearGradient>
+    <radialGradient id="shell" gradientUnits="userSpaceOnUse"
+                    cx="256" cy="262.01" r="115"
+                    fx="221" fy="222.01"
+                    fr="10">
+      <stop offset="0" stop-color="#5a616f"/>
+      <stop offset="0.5" stop-color="#2c303a"/>
+      <stop offset="1" stop-color="#141720"/>
+    </radialGradient>
+    <filter id="drop" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="7" stdDeviation="9"
+                    flood-color="#05060d" flood-opacity="0.5"/>
+    </filter>
   </defs>
-  <rect x="26" y="26" width="460" height="460" rx="112" fill="url(#plate)" stroke="#969aa2" stroke-width="4"/>
   
-  <polygon points="256,81 422,202 359,398 153,398 90,202"
-           fill="url(#pent)" stroke="#2a4c8e" stroke-width="8" stroke-linejoin="round"/>
-  <g stroke="#141414" stroke-width="22" stroke-linecap="round">
-    <line x1="164" y1="262" x2="348" y2="262"/>
-    <line x1="256" y1="170" x2="256" y2="354"/>
-    <line x1="191" y1="197" x2="321" y2="327"/>
-    <line x1="191" y1="327" x2="321" y2="197"/>
+  <rect x="26" y="26" width="460" height="460" rx="112"
+        fill="url(#plate)"/>
+  <rect x="28" y="28" width="456" height="456"
+        rx="110" fill="none" stroke="#ffffff" stroke-opacity="0.13"
+        stroke-width="3"/>
+  
+  <g filter="url(#drop)">
+    <polygon points="256,57.01 465.23,209.02 385.31,454.99 126.69,454.99 46.77,209.02" fill="#6f691c"
+             stroke="#6f691c" stroke-width="6" stroke-linejoin="round"/>
+    <polygon points="256,69.11 453.72,212.76 378.2,445.2 133.8,445.2 58.28,212.76" fill="url(#pent)"
+             stroke-linejoin="round"/>
   </g>
-  <circle cx="256" cy="262" r="58" fill="#141414"/>
-  <circle cx="235" cy="241" r="17" fill="#ffffff"/>
+  
+  <g>
+    <path d="M339.15 296.45L379.8 313.29 M290.44 345.16L307.28 385.81 M221.56 345.16L204.72 385.81 M172.85 296.45L132.2 313.29 M172.85 227.57L132.2 210.73 M221.56 178.86L204.72 138.21 M290.44 178.86L307.28 138.21 M339.15 227.57L379.8 210.73" fill="none" stroke="#4b5261"
+          stroke-width="28" stroke-linecap="round"/>
+    <path d="M256 352.01L256 382.01"
+          fill="none" stroke="#3a3f4b" stroke-width="16"/>
+    <circle cx="256" cy="404.01" r="24"
+            fill="none" stroke="#3a3f4b" stroke-width="13"/>
+    <circle cx="256" cy="262.01" r="100" fill="url(#shell)"/>
+    <path d="M354.8 275.89A99 30 0 0 1 157.2 275.89" fill="none" stroke="#0c0e14" stroke-opacity="0.55"
+          stroke-width="8"/>
+    <path d="M332.86 317.85A95 95 0 0 1 200.16 338.86" fill="none" stroke="#96a0b4" stroke-opacity="0.3"
+          stroke-width="5"/>
+    <ellipse cx="218" cy="226.01"
+             rx="22" ry="15" fill="#ffffff"
+             fill-opacity="0.85"
+             transform="rotate(-40.1 218 226.01)"/>
+  </g>
 </svg>
