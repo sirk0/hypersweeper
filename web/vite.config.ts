@@ -1,6 +1,6 @@
 import { createRequire } from "node:module";
 import { fileURLToPath, URL } from "node:url";
-import { defineConfig } from "vite";
+import { defineConfig, type Connect } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 
 // The settings screen reports which build is running. The version comes from
@@ -26,12 +26,54 @@ const base = process.env.VITE_BASE ?? "/";
 // app drop that check from its settings.
 const packaged = process.env.VITE_PACKAGED === "1";
 
+// VITE_ANALYTICS=1 builds the bundle that carries the anonymous play counter
+// (src/analytics.ts). It is *opt-in per build* rather than on by default,
+// because the counter posts to a Cloudflare Pages Function and only one of the
+// places this app runs has one. Everywhere else the post would 404 — and a
+// failed subresource load is logged to the console by the browser itself, which
+// no amount of care in our own code can swallow, so a build with nowhere to
+// report to must not carry the reporter at all. That means: on for the
+// Cloudflare deploy (and for the e2e run, whose webServer sets it), off for the
+// GitHub Pages deploy, off for `npm run dev` (your own clicks are not data),
+// and off for the packaged apps twice over — `packaged` vetoes it outright, so
+// no build script can turn it on there by accident.
+const analytics = !packaged && process.env.VITE_ANALYTICS === "1";
+
+// Answer the analytics endpoint the way the deployed host does, so a dev server
+// and `vite preview` are faithful to it. In production `/api/tally` is a
+// Cloudflare Pages Function (functions/api/tally.ts) that always replies 204;
+// without this, the same post here is a 404, and a failed subresource load is
+// logged to the console by the *browser* — noise no application code can
+// swallow, and noise the e2e suite would then have to learn to ignore. Nothing
+// is recorded: to exercise the real Function, run `wrangler pages dev`.
+const tallyStub = {
+  name: "hypersweeper:tally-stub",
+  configureServer: (server: { middlewares: Connect.Server }) =>
+    void server.middlewares.use(stubTally),
+  configurePreviewServer: (server: { middlewares: Connect.Server }) =>
+    void server.middlewares.use(stubTally),
+};
+
+function stubTally(
+  req: { url?: string | undefined; method?: string | undefined },
+  res: { statusCode: number; end(): void },
+  next: () => void,
+): void {
+  if (req.method !== "POST" || !(req.url ?? "").endsWith("/api/tally")) {
+    next();
+    return;
+  }
+  res.statusCode = 204;
+  res.end();
+}
+
 export default defineConfig({
   base,
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
     __APP_COMMIT__: JSON.stringify((process.env.GITHUB_SHA ?? "").slice(0, 7)),
     __APP_PACKAGED__: JSON.stringify(packaged),
+    __APP_ANALYTICS__: JSON.stringify(analytics),
   },
   // Allow importing the repo-root `data/` directory (shared JSON that both
   // the Python and TypeScript apps read — see docs/plans). `@data` resolves
@@ -45,6 +87,7 @@ export default defineConfig({
     fs: { allow: [".", fileURLToPath(new URL("../data", import.meta.url))] },
   },
   plugins: packaged ? [] : [
+    tallyStub,
     VitePWA({
       registerType: "autoUpdate",
       includeAssets: ["favicon.svg", "apple-touch-icon.png"],
@@ -70,6 +113,11 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,svg,png,woff2,json}"],
+        // The Pages Function under /api/ is the one path that is not part of
+        // the app shell. A POST is not a navigation request, so today's config
+        // already leaves it alone; this says so, and keeps it true if the
+        // navigation fallback is ever widened.
+        navigateFallbackDenylist: [/^\/api\//],
       },
     }),
   ],

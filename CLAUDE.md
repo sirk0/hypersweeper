@@ -375,6 +375,34 @@ the first pointer/key event — do not build it earlier), and a cascade is bound
 twice (`cascade.maxVoices`, `MAX_ACTIVE_VOICES`) because the worst case is half
 a `hard` board opening at once. See "Sound" in `web/README.md`.
 
+**Analytics** (`src/analytics.ts`, `functions/api/tally.ts`) is the app's **only
+outbound request**, and it counts two things: which boards get opened and how
+often they get won. Two events per game — a `start` when a board opens and an
+`end` carrying `won`/`lost` and the seconds — posted to a Cloudflare Pages
+Function on the app's own origin, which writes one Workers Analytics Engine row
+each. There is deliberately **no abandon event**: a board opened and never
+finished is `plays − finished`, which `scripts/metrics.mjs` (`make metrics`)
+derives. Nothing identifies anyone — no cookie, no id, no seed, no user agent —
+and the collector stores nothing from the request either (no IP, no country: a
+rare board plus a country is an identifier). Settings › Privacy turns it off,
+read on every event like the sound preset. As with `sound.ts`, a **pure** half
+holds the rules: `analyticsEvent.ts` is `payloadFor`/`parseEvent`, imported by
+*both* the browser and the Function so the two cannot drift, validating modes
+against the real `data/presets.json` with `Set` lookups (`in` is how `link.ts`
+got bitten). Three traps: the `functions/` directory is only picked up because
+the deploy runs wrangler from `web/` beside `wrangler.toml`; the dataset's blob
+positions are a contract with the report script, append-only; and every count
+in that script is `SUM(_sample_interval)`, never `COUNT(*)`, because Analytics
+Engine samples. The counter is **opt-in per build** (`VITE_ANALYTICS=1` →
+`__APP_ANALYTICS__`, vetoed outright by `VITE_PACKAGED`): only the Cloudflare
+deploy and the e2e run carry it, because a post to a host with no Function 404s
+and the *browser* logs that to the console — so the GitHub Pages build, the dev
+server and the packaged apps carry no client at all, and
+`scripts/check-offline-assets.mjs` asserts the packaged case with a second pass
+for same-origin paths (its URL scan only sees absolute ones). Locally the
+`tallyStub` middleware in `vite.config.ts` answers `204` like the Function, so a
+dev server matches the deployed host. See "Analytics" in `web/README.md`.
+
 ## Desktop app (`desktop/`) — the offline macOS build
 
 `make mac-app` (macOS only) packages the **TypeScript app** as

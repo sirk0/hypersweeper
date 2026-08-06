@@ -510,6 +510,16 @@ body {
   margin-top: 10px;
 }
 
+/* A sentence explaining a section, under its rows. Left-aligned and tight
+   against the list it belongs to — unlike .settings-footer, which is the
+   centred sign-off at the very bottom of the page. */
+.settings-note {
+  margin: 8px 2px 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
 /* Rows that only report something (the version) — a card, but not a control. */
 .settings-static {
   cursor: default;

@@ -30,6 +30,9 @@ test.describe("settings", () => {
       "Records",
       "Appearance",
       "Behaviour",
+      // Privacy is its own section, and absent from the packaged builds — which
+      // carry no collector to switch off (see "Analytics" in the README).
+      "Privacy",
       "About",
     ]);
     // The difficulty row is meaningless on this page.

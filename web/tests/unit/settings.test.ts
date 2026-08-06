@@ -49,6 +49,7 @@ const SETTINGS: Settings = {
   cellStyle: "soft",
   sound: "arcade",
   haptics: false,
+  analytics: false,
 };
 
 afterEach(() => {
@@ -113,7 +114,21 @@ describe("settings validation", () => {
       cellStyle: DEFAULT_SETTINGS.cellStyle,
       sound: DEFAULT_SETTINGS.sound,
       haptics: DEFAULT_SETTINGS.haptics,
+      analytics: DEFAULT_SETTINGS.analytics,
     });
+  });
+
+  it("defaults the additive booleans a record written before them lacks", () => {
+    // A record from a build with no haptics and no analytics must pick both up
+    // at their defaults rather than reading as off — this is what "additive
+    // fields need no SCHEMA_VERSION bump" has to mean in practice.
+    withStorage(fakeStorage({ [KEY]: JSON.stringify({ version: 2, theme: "dark" }) }));
+    const loaded = loadSettings();
+    expect(loaded.haptics).toBe(true);
+    expect(loaded.analytics).toBe(true);
+    // And a stored `false` is a choice, so it survives.
+    withStorage(fakeStorage({ [KEY]: JSON.stringify({ analytics: false }) }));
+    expect(loadSettings().analytics).toBe(false);
   });
 
   it("drops a sound preset this build does not have, but keeps Off", () => {
@@ -155,6 +170,7 @@ describe("settings upgrades", () => {
       cellStyle: DEFAULT_SETTINGS.cellStyle,
       sound: DEFAULT_SETTINGS.sound,
       haptics: DEFAULT_SETTINGS.haptics,
+      analytics: DEFAULT_SETTINGS.analytics,
     });
     // Migration completes on the next write, and only then is the old key
     // dropped — an interrupted migration must not lose the record.
@@ -192,6 +208,7 @@ describe("settings upgrades", () => {
       cellStyle: DEFAULT_SETTINGS.cellStyle,
       sound: DEFAULT_SETTINGS.sound,
       haptics: DEFAULT_SETTINGS.haptics,
+      analytics: DEFAULT_SETTINGS.analytics,
     });
   });
 
@@ -239,6 +256,7 @@ describe("cross-tab sync", () => {
         cellStyle: DEFAULT_SETTINGS.cellStyle,
         sound: DEFAULT_SETTINGS.sound,
         haptics: DEFAULT_SETTINGS.haptics,
+        analytics: DEFAULT_SETTINGS.analytics,
       },
     ]);
   });

@@ -58,12 +58,15 @@ export interface SettingsHost {
   sound: string;
   /** Whether the game buzzes on a flag, a win and a mine. */
   haptics: boolean;
+  /** Whether anonymous play counts are reported. */
+  analytics: boolean;
   setTheme(key: string): void;
   setDifficulty(key: string): void;
   setAnimations(pref: boolean | null): void;
   setCellStyle(key: string): void;
   setSound(key: string): void;
   setHaptics(on: boolean): void;
+  setAnalytics(on: boolean): void;
 }
 
 /** How many distinct boards have a recorded time — the Best times row's
@@ -466,6 +469,44 @@ export function renderSettings(
   animBtn.classList.toggle("on", on);
   behaviour.append(animLi);
   frag.append(behaviour);
+
+  // -- Privacy ---------------------------------------------------------------
+  // Its own section rather than a fourth Behaviour row: sound, haptics and
+  // animations are what the game *does*, and this is what leaves the machine.
+  // Someone who came to the settings page looking for it should find it by
+  // heading. Left out entirely of any build that carries no collector — the
+  // packaged apps, the GitHub Pages build, a dev server (analytics.ts folds
+  // away under __APP_ANALYTICS__) — because a switch there would promise
+  // something with nothing behind it, exactly as with the update row below and
+  // the haptics row on a device that cannot buzz.
+  if (__APP_ANALYTICS__) {
+    frag.append(heading("Privacy"));
+    const privacy = document.createElement("ul");
+    privacy.className = "menu-list";
+    const statsKnob = document.createElement("span");
+    statsKnob.className = "settings-switch";
+    const { li: statsLi, btn: statsBtn } = buttonRow(
+      [
+        textBlock("Analytics", "Anonymous counts of which boards are played and won"),
+        statsKnob,
+      ],
+      () => host.setAnalytics(!host.analytics),
+      "settings-toggle",
+    );
+    statsBtn.dataset["setting"] = "analytics";
+    statsBtn.setAttribute("role", "switch");
+    statsBtn.setAttribute("aria-checked", String(host.analytics));
+    statsBtn.classList.toggle("on", host.analytics);
+    privacy.append(statsLi);
+    frag.append(privacy);
+
+    const note = document.createElement("p");
+    note.className = "settings-note";
+    note.textContent =
+      "No account, no cookie, no identifier — only the board's name, the " +
+      "difficulty, whether it was won and how long it took.";
+    frag.append(note);
+  }
 
   // -- About -----------------------------------------------------------------
   frag.append(heading("About"));

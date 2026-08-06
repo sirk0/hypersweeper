@@ -56,6 +56,10 @@ export interface Settings {
   /** Whether the game buzzes: the Taptic Engine in the iOS app, the Vibration
    * API elsewhere. Read on every event, like `sound`. */
   haptics: boolean;
+  /** Whether anonymous play counts are reported (Settings › Privacy). Read on
+   * every event too, so turning it off silences the game already in progress.
+   * Meaningless in the packaged builds, which carry no collector at all. */
+  analytics: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -65,6 +69,7 @@ export const DEFAULT_SETTINGS: Settings = {
   cellStyle: DEFAULT_CELL_STYLE,
   sound: DEFAULT_SOUND,
   haptics: true,
+  analytics: true,
 };
 
 /** Bring a record written by an older build up to the current shape. Every
@@ -120,6 +125,11 @@ export function loadSettings(): Settings {
     // out of the box.
     haptics:
       typeof rec["haptics"] === "boolean" ? rec["haptics"] : DEFAULT_SETTINGS.haptics,
+    // Additive in the same way: a record from a build before the collector
+    // existed lacks the key and takes the default (on), which is what the
+    // hosted game does out of the box and what the Privacy row then shows.
+    analytics:
+      typeof rec["analytics"] === "boolean" ? rec["analytics"] : DEFAULT_SETTINGS.analytics,
   };
 }
 

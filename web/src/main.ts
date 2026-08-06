@@ -1,5 +1,6 @@
 import { Vector2, Vector3 } from "three";
 import "./ui/styles.css";
+import { setAnalyticsEnabled, trackGame } from "./analytics";
 import { setSoundPreset, soundChoice, unlockAudio } from "./audio/sound";
 import { isBoard3D, type CellId } from "./boards/core";
 import { setHapticsEnabled } from "./haptics";
@@ -57,6 +58,10 @@ class App {
    * one record: `afterMove` runs on every move, and the timer tick and any
    * further clicks on a finished board must not file it again. */
   private scored = false;
+  /** Whether this game's ending has been reported (analytics.ts). Its own
+   * guard rather than `scored`: that one is the leaderboard's and a *loss*
+   * must not consume it — a loss is reported here and files no record. */
+  private tracked = false;
   /** Stored preferences (theme, difficulty, animations, cell style) — the
    * app's only persisted state. */
   private settings: Settings = loadSettings();
@@ -83,6 +88,7 @@ class App {
     applyTheme(this.settings.theme); // before anything measures or paints
     setSoundPreset(this.settings.sound);
     setHapticsEnabled(this.settings.haptics);
+    setAnalyticsEnabled(this.settings.analytics);
     // A browser will not let audio start outside a user gesture, so the
     // context is built on the player's first click or key — whatever it is.
     unlockAudio();
@@ -169,12 +175,16 @@ class App {
       get haptics() {
         return app.settings.haptics;
       },
+      get analytics() {
+        return app.settings.analytics;
+      },
       setTheme: (key) => this.setTheme(key),
       setDifficulty: (key) => this.setDifficulty(key),
       setAnimations: (pref) => this.setAnimations(pref),
       setCellStyle: (key) => this.setCellStyle(key),
       setSound: (key) => this.setSound(key),
       setHaptics: (on) => this.setHaptics(on),
+      setAnalytics: (on) => this.setAnalytics(on),
     };
   }
 
@@ -215,6 +225,14 @@ class App {
     setHapticsEnabled(on);
   }
 
+  /** Turn anonymous play counts on or off. Read on every event like the two
+   * above, so switching it off mid-board suppresses that board's ending too. */
+  private setAnalytics(on: boolean): void {
+    this.settings = { ...this.settings, analytics: on };
+    saveSettings(this.settings);
+    setAnalyticsEnabled(on);
+  }
+
   /** Adopt settings written by another tab. The theme is applied; the
    * difficulty, animation and cell-style preferences are picked up by the
    * menu's next repaint and the next board. A game already in progress keeps
@@ -224,6 +242,7 @@ class App {
     applyTheme(settings.theme);
     setSoundPreset(settings.sound);
     setHapticsEnabled(settings.haptics);
+    setAnalyticsEnabled(settings.analytics);
     this.animationsEnabled = animationsEnabled(settings.animations);
     this.session?.mesh.setAnimationsEnabled(this.animationsEnabled);
     this.menu.refresh();
@@ -274,6 +293,7 @@ class App {
   ): void {
     this.dismissScoreDialog();
     this.scored = false;
+    this.tracked = false;
     this.session = new GameSession(mode, difficulty, {
       ...(opts.seed !== undefined ? { seed: opts.seed } : {}),
       ...(opts.mines ? { minePositions: opts.mines } : {}),
@@ -296,6 +316,10 @@ class App {
     this.flagMode = false;
     this.syncHud();
     this.onResize();
+    // Last, so a mode `buildBoard` rejects throws before it is counted as a
+    // play. A HUD restart comes back through here, so it counts as a new one —
+    // "boards opened" is the measure, not "distinct players".
+    trackGame({ kind: "start", mode, difficulty });
   }
 
   private showMenu(): void {
@@ -475,7 +499,32 @@ class App {
   private afterMove(): void {
     this.syncHud();
     this.renderer.markDirty();
+    // Before the leaderboard: `checkRecord` can open the record window
+    // synchronously (animations off), and nothing here should depend on
+    // whether it did.
+    this.trackFinish();
     this.checkRecord();
+  }
+
+  /** Report how a game ended, once. Every move funnels through `afterMove`, so
+   * this — like `checkRecord` — is the one place a finished game is noticed,
+   * however it finished. Unlike `checkRecord` it also sees a **loss**, which
+   * the leaderboard never does, and a loss is half of what a success rate is
+   * made of. `tickTimer` calls `syncHud` alone, so no clock tick can reach
+   * this and no finished board is counted twice. */
+  private trackFinish(): void {
+    const session = this.session;
+    if (!session || this.tracked) return;
+    const status = session.status;
+    if (status !== "won" && status !== "lost") return;
+    this.tracked = true;
+    trackGame({
+      kind: "end",
+      mode: session.mode,
+      difficulty: session.difficulty,
+      outcome: status,
+      ms: session.elapsedMs(),
+    });
   }
 
   // -- best times ------------------------------------------------------------

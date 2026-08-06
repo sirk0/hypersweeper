@@ -10,3 +10,9 @@ declare const __APP_COMMIT__: string;
 // from, so the settings page leaves out the update check rather than offering
 // one that cannot work.
 declare const __APP_PACKAGED__: boolean;
+// True in a build that carries the anonymous play counter (VITE_ANALYTICS=1,
+// and never in a packaged one). Only the Cloudflare deploy has the Pages
+// Function the counter posts to, so every other build leaves it out entirely
+// rather than posting into a 404 the browser then logs. See "Analytics" in
+// web/README.md.
+declare const __APP_ANALYTICS__: boolean;

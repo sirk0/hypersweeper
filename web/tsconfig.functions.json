@@ -1,0 +1,13 @@
+{
+  // The Pages Function is a Worker, not a page: no DOM, and the Cloudflare
+  // globals (`PagesFunction`, `AnalyticsEngineDataset`) instead. It needs its
+  // own config for that, which is why `npm run typecheck` runs tsc twice.
+  // `src/analyticsEvent.ts` appears in both — it is the shared contract, and
+  // compiling it under a DOM-less lib is what proves it stayed pure.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2022"],
+    "types": ["@cloudflare/workers-types"]
+  },
+  "include": ["functions", "src/analyticsEvent.ts"]
+}
