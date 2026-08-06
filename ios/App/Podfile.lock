@@ -1,0 +1,28 @@
+PODS:
+  - Capacitor (7.6.8):
+    - CapacitorCordova
+  - CapacitorCordova (7.6.8)
+  - CapacitorHaptics (7.0.5):
+    - Capacitor
+
+DEPENDENCIES:
+  - "Capacitor (from `../../web/node_modules/@capacitor/ios`)"
+  - "CapacitorCordova (from `../../web/node_modules/@capacitor/ios`)"
+  - "CapacitorHaptics (from `../../web/node_modules/@capacitor/haptics`)"
+
+EXTERNAL SOURCES:
+  Capacitor:
+    :path: "../../web/node_modules/@capacitor/ios"
+  CapacitorCordova:
+    :path: "../../web/node_modules/@capacitor/ios"
+  CapacitorHaptics:
+    :path: "../../web/node_modules/@capacitor/haptics"
+
+SPEC CHECKSUMS:
+  Capacitor: ff6bf01336ac353098378828aff465095a89e459
+  CapacitorCordova: e61ee8c40101b8cd011d0224261606a290c082cf
+  CapacitorHaptics: 1b145fa83c622e5383a3bac04ea81e2514f0b0f5
+
+PODFILE CHECKSUM: 27844003759a4f5138e55ac59b6cb07335be8086
+
+COCOAPODS: 1.17.0
