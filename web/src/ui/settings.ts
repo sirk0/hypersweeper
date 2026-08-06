@@ -5,12 +5,11 @@ import {
   soundLabel,
 } from "../audio/presets";
 import { previewSound, setSoundPreset } from "../audio/sound";
-import { screens, themeSpec } from "../config/screens";
+import { screens } from "../config/screens";
 import { hapticsSupported } from "../haptics";
 import { allBestTimes } from "../leaderboard";
-import { CELL_STYLE_KEYS, CELL_STYLES, cellStyle } from "../render/cellStyle";
 import { animationsEnabled } from "../settings";
-import { THEME_KEYS } from "./theme";
+import { THEME_KEYS, theme as themeDef, themePalette, themeVars } from "./theme";
 
 // The settings page. It is not a modal: the menu already has a page mechanism
 // (`Menu.go`, which re-runs the current view), so settings is one more page in
@@ -18,9 +17,10 @@ import { THEME_KEYS } from "./theme";
 // the phone layout, the scrolling body and the back-row idiom for free.
 //
 // Four sections: the best times (a page below, like the theme picker), the
-// appearance rows (the theme picker — the pygame palettes, ported in
-// data/ui/screens.json — and the cell style, each a page below), the animations
-// override, and an About block naming the build.
+// theme (one page below — a theme now carries the chrome palette *and* the
+// board's cell style, so there is no second appearance picker to pair with it),
+// the sound / haptics / animations behaviour rows, and an About block naming the
+// build.
 
 /** The gear that opens this page, filled in `currentColor` so it follows the
  * theme's text colour.
@@ -52,8 +52,6 @@ export interface SettingsHost {
   difficulty: string;
   /** The stored animations preference; `null` follows the OS setting. */
   animations: boolean | null;
-  /** The active cell style key (a key in `CELL_STYLES`). */
-  cellStyle: string;
   /** The active sound choice: a key in `SOUND_PRESETS`, or `"off"`. */
   sound: string;
   /** Whether the game buzzes on a flag, a win and a mine. */
@@ -61,7 +59,6 @@ export interface SettingsHost {
   setTheme(key: string): void;
   setDifficulty(key: string): void;
   setAnimations(pref: boolean | null): void;
-  setCellStyle(key: string): void;
   setSound(key: string): void;
   setHaptics(on: boolean): void;
 }
@@ -82,38 +79,37 @@ function heading(text: string): HTMLElement {
   return el;
 }
 
-/** A theme's palette in miniature: its page field, a card on top and an accent
- * dot — enough to tell the seven apart at a glance without naming colours. */
+/** A theme in miniature: its page field (texture and all), a chrome card on it,
+ * a strip of board tiles cut the way that theme cuts them — one of the four
+ * "opened" — and an accent dot. Both halves of what a theme now means, so the
+ * picker shows the difference rather than naming it.
+ *
+ * It is not a picture of the theme, it *is* the theme: every custom property
+ * `applyTheme` writes to the document is written to this 38px box instead, so
+ * the miniature resolves its colours through the same `var(--…)` chain the real
+ * chrome does and no colour is written twice. The tiles are CSS rather than a
+ * WebGL preview — the point is to tell four rows apart in a list, and a canvas
+ * per row would cost a renderer each. */
 function themeSwatch(key: string): HTMLElement {
-  const spec = themeSpec(key);
+  const spec = themeDef(key);
   const el = document.createElement("span");
   el.className = "theme-swatch";
-  el.style.background = spec.background;
-  el.style.borderColor = spec.border;
+  for (const [name, value] of Object.entries(themeVars(themePalette(key), spec.texture))) {
+    el.style.setProperty(name, value);
+  }
   const card = document.createElement("span");
   card.className = "theme-swatch-card";
-  card.style.background = spec.panel;
-  const dot = document.createElement("span");
-  dot.className = "theme-swatch-dot";
-  dot.style.background = spec.accent;
-  el.append(card, dot);
-  return el;
-}
-
-/** A cell style in miniature: four tiles cut the way that style cuts them, one
- * of them "opened". CSS rather than a WebGL preview — the point is to tell the
- * four apart in a list, and a canvas per row would cost a renderer each. The
- * tiles are deliberately *not* themed (the board never is), so the swatch shows
- * the board's own grays. */
-function cellStyleSwatch(key: string): HTMLElement {
-  const el = document.createElement("span");
-  el.className = "cell-swatch";
-  el.dataset["cellStyle"] = key;
+  const cells = document.createElement("span");
+  cells.className = "cell-swatch";
+  cells.dataset["cellStyle"] = spec.cellStyle;
   for (let i = 0; i < 4; i++) {
     const tile = document.createElement("span");
     tile.className = i === 3 ? "cell-swatch-tile open" : "cell-swatch-tile";
-    el.append(tile);
+    cells.append(tile);
   }
+  const dot = document.createElement("span");
+  dot.className = "theme-swatch-dot";
+  el.append(card, cells, dot);
   return el;
 }
 
@@ -224,20 +220,25 @@ async function checkForUpdates(status: HTMLElement): Promise<void> {
 }
 
 /** The theme page: the full list, ticked at the active one. Reached from the
- * Theme row on the settings page rather than being spelled out there — seven
- * palettes would bury the rest of the page, and the row already reports which
- * one is on. Picking stays on the page, so the choice is visible immediately in
- * the chrome around it. */
+ * Theme row on the settings page rather than being spelled out there — the rows
+ * carry a preview each and would bury the rest of the page, and the row already
+ * reports which one is on. Picking stays on the page, so the choice is visible
+ * immediately in the chrome around it.
+ *
+ * A theme changes the **board** too now (its cell style), and a style fixes the
+ * mesh's vertex layout, so a board in play is never re-cut — hence the footer.
+ * The chrome half of the change is instant either way. */
 export function renderThemePicker(host: SettingsHost): DocumentFragment {
   const frag = document.createDocumentFragment();
   const list = document.createElement("ul");
   list.className = "menu-list";
   for (const key of THEME_KEYS) {
+    const spec = themeDef(key);
     const check = document.createElement("span");
     check.className = "settings-check";
     check.textContent = key === host.theme ? "✓" : "";
     const { li, btn } = buttonRow(
-      [themeSwatch(key), textBlock(themeSpec(key).label), check],
+      [themeSwatch(key), textBlock(spec.label, spec.hint), check],
       () => host.setTheme(key),
       "settings-theme",
     );
@@ -247,44 +248,15 @@ export function renderThemePicker(host: SettingsHost): DocumentFragment {
     list.append(li);
   }
   frag.append(list);
-  return frag;
-}
-
-/** The cell-style page: how the board's tiles are cut. A page of its own for the
- * same reason the theme picker is one — it is a list of previews, and the
- * settings row above it already reports which one is on. A change applies to the
- * next board (a style fixes the mesh's vertex layout, so a board in play is
- * never re-cut), which the page says outright rather than leaving the player to
- * wonder why nothing moved. */
-export function renderCellStylePicker(host: SettingsHost): DocumentFragment {
-  const frag = document.createDocumentFragment();
-  const list = document.createElement("ul");
-  list.className = "menu-list";
-  for (const key of CELL_STYLE_KEYS) {
-    const style = CELL_STYLES[key]!;
-    const check = document.createElement("span");
-    check.className = "settings-check";
-    check.textContent = key === host.cellStyle ? "✓" : "";
-    const { li, btn } = buttonRow(
-      [cellStyleSwatch(key), textBlock(style.label, style.hint), check],
-      () => host.setCellStyle(key),
-      "settings-cell-style",
-    );
-    btn.dataset["cellStyle"] = key;
-    btn.setAttribute("aria-pressed", String(key === host.cellStyle));
-    if (key === host.cellStyle) btn.classList.add("active");
-    list.append(li);
-  }
-  frag.append(list);
   const note = document.createElement("p");
   note.className = "settings-footer";
-  note.textContent = "Applies to the next board you open.";
+  note.textContent = "The board's tiles change on the next board you open.";
   frag.append(note);
   return frag;
 }
 
 /** The sound page: the three presets and Off. A page of its own like the theme
- * and cell-style pickers, and for the same reason — it is a list of choices,
+ * picker, and for the same reason — it is a list of choices,
  * and the row above it already reports which one is on.
  *
  * Picking one **plays it**. A preset is a sound, so a list of names alone would
@@ -334,13 +306,12 @@ export function renderSoundPicker(host: SettingsHost): DocumentFragment {
 }
 
 /** Build the settings page body. The caller (Menu) supplies the back row and
- * puts this into `.menu-body`; `openThemes`, `openCellStyles` and
- * `openBestTimes` open the pages below it. */
+ * puts this into `.menu-body`; `openThemes`, `openBestTimes` and `openSounds`
+ * open the pages below it. */
 export function renderSettings(
   host: SettingsHost,
   openThemes: () => void,
   openBestTimes: () => void,
-  openCellStyles: () => void,
   openSounds: () => void,
 ): DocumentFragment {
   const frag = document.createDocumentFragment();
@@ -380,7 +351,7 @@ export function renderSettings(
   const { li: themeLi, btn: themeBtn } = buttonRow(
     [
       themeSwatch(host.theme),
-      textBlock("Theme", themeSpec(host.theme).label),
+      textBlock("Theme", themeDef(host.theme).label),
       chevron,
     ],
     openThemes,
@@ -388,21 +359,6 @@ export function renderSettings(
   );
   themeBtn.dataset["settingsGroup"] = "theme";
   appearance.append(themeLi);
-
-  const styleChevron = document.createElement("span");
-  styleChevron.className = "menu-entry-chevron";
-  styleChevron.textContent = "›";
-  const { li: styleLi, btn: styleBtn } = buttonRow(
-    [
-      cellStyleSwatch(host.cellStyle),
-      textBlock("Cell style", cellStyle(host.cellStyle).label),
-      styleChevron,
-    ],
-    openCellStyles,
-    "menu-submenu",
-  );
-  styleBtn.dataset["settingsGroup"] = "cell-style";
-  appearance.append(styleLi);
   frag.append(appearance);
 
   // -- Behaviour -------------------------------------------------------------

@@ -336,35 +336,69 @@ only). That shape is *derived* from the shared port in the "web menu" section of
 `src/boards/catalog.ts`, so `data/catalog.json` and the pygame menu are
 untouched; `tests/unit/menu.test.ts` pins it.
 
-The menu's gear opens a **settings** page (best times, theme, cell style,
-animations toggle, build version, links, update check) — one more `Menu` page
-rather than a modal, with the theme picker and the cell-style picker pages below
-it. The **?** beside it opens a how-to-play page (`src/ui/help.ts`) built the
-same way, its text in TS rather than in the pygame-shared `screens.json`. Theme, difficulty, the cell style, the sound preset and the
+The menu's gear opens a **settings** page (best times, theme, sound,
+haptics, animations toggle, build version, links, update check) — one more
+`Menu` page rather than a modal, with the theme, best-times and sound pages
+below it. The header carries the gear at its right edge and a **?** at its
+left — one button per side, so the two balance and the title
+"Hypersweeper", a single unbreakable word, stays on one line on a narrow
+phone. The **?** opens a how-to-play page (`src/ui/help.ts`) built the
+same way, its text in TS rather than in the pygame-shared `screens.json`.
+Theme, difficulty, the sound preset, haptics and the
 animations override persist (`src/settings.ts`): one stable
 `localStorage` key holding a record that carries its own `version`, never
 a versioned key name — see "Settings and themes" in `web/README.md` before
-adding a field. Its themes are the six pygame `THEMES` palettes plus a web-only
-`dark`, declared in `data/ui/screens.json` and applied by `src/ui/theme.ts`
-as CSS custom properties on `:root`; `data/ui/screens.json` is the single
-source and `tests/test_theme_sync.py` guards it against the pygame side.
-Two invariants: the **board is never themed** (only chrome is, as in
-pygame), and the **WebGL canvas is transparent** so the field around the
-board is the page background — never give it an opaque clear colour again.
-New chrome colours must come from a `var(--…)`, or they break the dark
-theme. See "Settings and themes" in `web/README.md`.
+adding a field.
 
-**Cell styles** (`src/render/cellStyle.ts`) are the other half of the same
-page: how a cell is *cut*, not what colour it is (that stays the shape
-palette's). A style is one table entry — a stack of concentric loops per cell
-plus a finish — that both board meshes build their geometry from, and it is
-baked in when a board's mesh is built, so it applies from the next board on.
-Three traps: `closed` and `open` must declare the **same loop count** (an opened
-cell is re-cut into the buffer slice the closed one wrote); `unlit` is a **flat
-board's** setting only — on a solid the shading is what shows the shape; and a
-flat board is lit head-on, so `roughness` says nothing there (a specular finish
-only reads on a solid, as it turns) while the gap, the loop count, `unlit`,
-`albedo` and `shade` are what the plane actually shows.
+A **theme** is the app's one look setting: the chrome palette, the page
+behind the board, *and* how the board's cells are cut. There are four —
+**Light** (the `ios` palette + flat cells; the default), **Dark** (the
+web-only dark palette + flat cells), **Classic** (the classic palette +
+the beveled button, drawn in **gray** — a quotation of the pygame board's
+own `HIDDEN_FACE`/`REVEALED_FACE`, guarded by `test_theme_sync.py`) and
+**Realistic** (the `ios` palette over a textured page: glossy beads while
+closed, **matte** flat-floored pans once opened, translucent on a flat
+board so the page's grain shows through them). The four are declared in `src/ui/theme.ts`, which is
+web-only because pygame has neither cell styles nor page textures; the
+seven **palettes** they compose are still the shared, pygame-ported ones
+in `data/ui/screens.json`, guarded by `tests/test_theme_sync.py`. A theme
+never adds a colour to a palette. Its chrome is applied as CSS custom
+properties on `:root`; the `styles.css` `:root` block is the boot default
+(Light's) and must stay in step. Invariants: the **board is themed only
+as far as its cell style says** — the shape colour code still owns the
+hues, and exactly one style (`classic`, via `monochrome`) switches it off
+for the gray 1990s board — and the **WebGL canvas is transparent** so the
+field around the board, and what shows through a translucent opened cell,
+is the page background; never give it an opaque clear colour again. New
+chrome colours must come from a `var(--…)`, or they break the dark theme.
+A theme's board half lands on the **next** board (a cell style fixes the
+mesh's vertex layout); its chrome is instant. See "Settings and themes"
+in `web/README.md`, including the v2→v3 migration that reads the old
+palette/cell-style *pair* together.
+
+**Cell styles** (`src/render/cellStyle.ts`) are what a theme names: how a
+cell is *cut*, and — for `classic` alone — whether it is shape-coloured at
+all. A style is one table entry (a stack of concentric loops per cell plus
+a finish) that both board meshes build their geometry from, one entry per
+theme, keyed by the theme's key. Traps: `closed` and `open` must declare
+the **same loop count** (an opened cell is re-cut into the buffer slice
+the closed one wrote); `unlit` and `openAlpha` are **flat board**
+settings only — on a solid the shading is what shows the shape, and a
+solid's cells overlap on screen so one mesh cannot sort their
+transparency; a flat board is lit head-on, so `roughness` says nothing
+there (a specular finish only reads on a solid, as it turns) while the
+gap, the loop count, `unlit`, `albedo` and `shade` are what the plane
+actually shows; `shade` **ramps over the loops** (`vertexShade`), so
+extra loops buy a smoother dome — shading the top face alone paints a
+bright disc on a flat field; and `openShade` is the same gradient for an
+**opened** cell, which is how a style makes its two states two
+*materials* (a centre hotspot reads as polished, a flat one as matte).
+The flat tiles of a two-sided surface (cylinder, Möbius, Klein) have no
+loops to ramp over and are cut by the Klein clip besides, so they measure
+the falloff off the geometry instead (`radialFalloff` in
+`solidBoard.ts`). A lit style's `albedo` pays back what diffuse shading
+takes — the head-on top face returns about 0.32, so `1/0.32 ≈ 3.1` pays
+it back exactly, which is what `classic` needs to land on its grays.
 There is deliberately **no bundle-size budget or CI gate** for the TypeScript
 app. See "Cell styles" and "Bundle size" in `web/README.md`.
 

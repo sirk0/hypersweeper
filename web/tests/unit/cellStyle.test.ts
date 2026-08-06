@@ -9,6 +9,7 @@ import {
   resolveCellStyle,
   type CellProfile,
 } from "../../src/render/cellStyle";
+import { THEME_KEYS, themeCellStyle } from "../../src/ui/theme";
 
 // The cell-relief table. The invariants here are the ones a bad profile would
 // otherwise break *in the vertex buffer* — a cell writing more vertices than it
@@ -26,18 +27,37 @@ const crown = (p: CellProfile, state: "closed" | "open"): number =>
   p[state][p[state].length - 1]!.height;
 
 describe("cell styles", () => {
-  it("has the classic style as the default", () => {
+  it("has the flat style as the default — the one the Light theme names", () => {
     expect(CELL_STYLE_KEYS[0]).toBe(DEFAULT_CELL_STYLE);
-    expect(cellStyle(DEFAULT_CELL_STYLE).key).toBe("classic");
+    expect(cellStyle(DEFAULT_CELL_STYLE).key).toBe("flat");
+  });
+
+  it("holds exactly the styles the themes name", () => {
+    // The table is no longer a picker of its own: every entry must be reachable
+    // through a theme, and every theme must name an entry that exists.
+    expect(new Set(THEME_KEYS.map((k) => themeCellStyle(k)))).toEqual(
+      new Set(CELL_STYLE_KEYS),
+    );
   });
 
   it("falls back for a style this build does not have", () => {
-    // Stored settings, so: a key from a newer build, and a key that is only an
-    // Object property (the `in` vs `Object.hasOwn` trap).
+    // The key reaches a mesh builder from a theme record, so: a key from a
+    // newer build, and a key that is only an Object property (the `in` vs
+    // `Object.hasOwn` trap). "gloss" and "soft" were styles before the merge.
     expect(resolveCellStyle("hologram")).toBe(DEFAULT_CELL_STYLE);
     expect(resolveCellStyle("toString")).toBe(DEFAULT_CELL_STYLE);
     expect(resolveCellStyle(null)).toBe(DEFAULT_CELL_STYLE);
-    expect(resolveCellStyle("soft")).toBe("soft");
+    expect(resolveCellStyle("gloss")).toBe(DEFAULT_CELL_STYLE);
+    expect(resolveCellStyle("realistic")).toBe("realistic");
+  });
+
+  it("draws the classic board in gray and every other board in shape colours", () => {
+    // "Classic cells are always gray" is the one place a style reaches past
+    // relief into colour, so pin which style does it.
+    expect(cellStyle("classic").monochrome).toBe(true);
+    for (const key of CELL_STYLE_KEYS.filter((k) => k !== "classic")) {
+      expect(CELL_STYLES[key]!.monochrome, key).toBeUndefined();
+    }
   });
 
   it("keys every style by its own key, and labels it", () => {

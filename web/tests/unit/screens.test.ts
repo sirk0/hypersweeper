@@ -6,16 +6,20 @@ import {
   screens,
   themeSpec,
 } from "../../src/config/screens";
-import { DEFAULT_THEME, resolveTheme, themeVars } from "../../src/ui/theme";
+import { DEFAULT_THEME, resolveTheme, themePalette, themeVars } from "../../src/ui/theme";
 
 // Smoke + invariant tests for the shared UI-screen config. These guard the
 // single source of truth the Python and TS front-ends share against structural
 // drift.
 describe("UI screen config", () => {
-  it("loads with a version and a default theme", () => {
+  it("loads with a version and a default palette", () => {
     expect(screens.version).toBeGreaterThan(0);
     expect(hasTheme(screens.defaultTheme)).toBe(true);
-    expect(DEFAULT_THEME).toBe(screens.defaultTheme);
+    // The app's default *theme* is no longer this file's `defaultTheme`: a
+    // theme carries a cell style too, so the web's theme list lives in
+    // ui/theme.ts and only borrows the palettes from here. It must still boot
+    // into the palette this file (and pygame) call the default.
+    expect(themePalette(DEFAULT_THEME)).toEqual(themeSpec(screens.defaultTheme));
   });
 
   it("uses the modern iOS palette by default (not the classic gray)", () => {

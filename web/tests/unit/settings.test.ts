@@ -46,7 +46,6 @@ const SETTINGS: Settings = {
   theme: "dark",
   difficulty: "hard",
   animations: false,
-  cellStyle: "soft",
   sound: "arcade",
   haptics: false,
 };
@@ -110,7 +109,6 @@ describe("settings validation", () => {
       theme: "dark",
       difficulty: DEFAULT_SETTINGS.difficulty,
       animations: null,
-      cellStyle: DEFAULT_SETTINGS.cellStyle,
       sound: DEFAULT_SETTINGS.sound,
       haptics: DEFAULT_SETTINGS.haptics,
     });
@@ -144,15 +142,15 @@ describe("settings validation", () => {
 describe("settings upgrades", () => {
   it("reads a v1 record from the legacy key and keeps its values", () => {
     // v1 had no `difficulty`; the missing field takes the default and the rest
-    // must survive the move.
+    // must survive the move. `paper` was a chrome palette, and v3 has no theme
+    // named after it, so it migrates to the default look (see below).
     const store = withStorage(
       fakeStorage({ [LEGACY]: JSON.stringify({ theme: "paper", animations: true }) }),
     );
     expect(loadSettings()).toEqual({
-      theme: "paper",
+      theme: DEFAULT_THEME,
       difficulty: DEFAULT_SETTINGS.difficulty,
       animations: true,
-      cellStyle: DEFAULT_SETTINGS.cellStyle,
       sound: DEFAULT_SETTINGS.sound,
       haptics: DEFAULT_SETTINGS.haptics,
     });
@@ -161,14 +159,43 @@ describe("settings upgrades", () => {
     expect(store.getItem(LEGACY)).not.toBeNull();
     saveSettings(loadSettings());
     expect(store.getItem(LEGACY)).toBeNull();
-    expect(stored(store)["theme"]).toBe("paper");
+    expect(stored(store)["theme"]).toBe(DEFAULT_THEME);
+  });
+
+  // v2 kept a chrome palette in `theme` and a separate `cellStyle` beside it;
+  // v3 merged the two into one theme. The pair is read together, so a player's
+  // old *look* is carried over rather than each field being reset on its own.
+  it.each([
+    // A palette whose name a v3 theme kept means what it always did.
+    [{ theme: "classic", cellStyle: "flat" }, "classic"],
+    [{ theme: "dark", cellStyle: "classic" }, "dark"],
+    // Otherwise the cell style is the better evidence of what was wanted.
+    [{ theme: "ios", cellStyle: "gloss" }, "realistic"],
+    [{ theme: "paper", cellStyle: "gloss" }, "realistic"],
+    // ...and a palette with no theme of its own and no glossy cells lands on
+    // the default, as does a record naming nothing this build knows.
+    [{ theme: "neumorph", cellStyle: "soft" }, DEFAULT_THEME],
+    [{ theme: "glass" }, DEFAULT_THEME],
+    [{ cellStyle: "classic" }, DEFAULT_THEME],
+  ])("migrates the v2 palette/cell-style pair %o to %s", (rec, expected) => {
+    withStorage(fakeStorage({ [KEY]: JSON.stringify({ ...rec, version: 2 }) }));
+    expect(loadSettings().theme).toBe(expected);
+  });
+
+  it("leaves a v2 record's cellStyle in the store for a downgrade", () => {
+    const store = withStorage(
+      fakeStorage({ [KEY]: JSON.stringify({ theme: "ios", cellStyle: "gloss", version: 2 }) }),
+    );
+    saveSettings(loadSettings());
+    expect(stored(store)["theme"]).toBe("realistic");
+    expect(stored(store)["cellStyle"]).toBe("gloss");
   });
 
   it("prefers the current key over a stale legacy one", () => {
     withStorage(
       fakeStorage({
         [KEY]: JSON.stringify({ theme: "dark", version: SCHEMA_VERSION }),
-        [LEGACY]: JSON.stringify({ theme: "paper" }),
+        [LEGACY]: JSON.stringify({ theme: "classic" }),
       }),
     );
     expect(loadSettings().theme).toBe("dark");
@@ -189,7 +216,6 @@ describe("settings upgrades", () => {
       theme: "dark",
       difficulty: "easy",
       animations: null,
-      cellStyle: DEFAULT_SETTINGS.cellStyle,
       sound: DEFAULT_SETTINGS.sound,
       haptics: DEFAULT_SETTINGS.haptics,
     });
@@ -236,8 +262,7 @@ describe("cross-tab sync", () => {
         theme: "dark",
         difficulty: "easy",
         animations: null,
-        cellStyle: DEFAULT_SETTINGS.cellStyle,
-        sound: DEFAULT_SETTINGS.sound,
+          sound: DEFAULT_SETTINGS.sound,
         haptics: DEFAULT_SETTINGS.haptics,
       },
     ]);

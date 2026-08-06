@@ -9,20 +9,20 @@ Actions; installable, and it works offline once loaded)
 
 <table>
   <tr>
-    <td align="center"><img src="docs/screenshots/c180.png" width="380"><br>Goldberg GP(3,0) on a sphere <sub>· Minimal iOS</sub></td>
+    <td align="center"><img src="docs/screenshots/c180.png" width="380"><br>Goldberg GP(3,0) on a sphere <sub>· Light</sub></td>
     <td align="center"><img src="docs/screenshots/mobiushex.png" width="380"><br>Hexagons on a Möbius strip <sub>· Dark</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/screenshots/penrose.png" width="380"><br>Penrose rhombi <sub>· Warm Paper</sub></td>
+    <td align="center"><img src="docs/screenshots/penrose.png" width="380"><br>Penrose rhombi <sub>· Realistic</sub></td>
     <td align="center"><img src="docs/screenshots/torussnubsquare-lost.png" width="380"><br>Snub square on a donut, boom <sub>· Classic</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/screenshots/gosper.png" width="380"><br>Hexagons in a Gosper island <sub>· Soft Neumorphism</sub></td>
-    <td align="center"><img src="docs/screenshots/hexhex.png" width="380"><br>A hexagon of hexagons <sub>· Flat Material</sub></td>
+    <td align="center"><img src="docs/screenshots/gosper.png" width="380"><br>Hexagons in a Gosper island <sub>· Realistic</sub></td>
+    <td align="center"><img src="docs/screenshots/hexhex.png" width="380"><br>A hexagon of hexagons <sub>· Light</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/screenshots/menu.png" width="380"><br>The menu <sub>· Glassmorphism</sub></td>
-    <td align="center"><img src="docs/screenshots/themes.png" width="380"><br>Seven themes, chrome only — a board is never themed</td>
+    <td align="center"><img src="docs/screenshots/menu.png" width="380"><br>The menu <sub>· Dark</sub></td>
+    <td align="center"><img src="docs/screenshots/themes.png" width="380"><br>Four themes — chrome, page and how a cell is cut</td>
   </tr>
 </table>
 
@@ -93,10 +93,10 @@ Pick a surface, then a tiling:
 
 Every board is a **link** — `?mode=…&difficulty=…`, plus a `seed` to share
 the exact layout. Winning files the time: the fastest three per board and
-difficulty live under Settings › Best times. Settings also holds the seven
-themes, four cell styles, three sound presets (synthesised from the move
-that caused them — a tile's side count is its voice), a haptics switch and
-an animations toggle.
+difficulty live under Settings › Best times. Settings also holds the
+four themes (each one chrome palette, page and cell style together),
+three sound presets (synthesised from the move that caused them — a tile's
+side count is its voice), a haptics switch and an animations toggle.
 
 ## Development
 

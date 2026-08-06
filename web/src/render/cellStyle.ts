@@ -1,7 +1,10 @@
-// How a cell is *cut* — the relief a tile is drawn with, independent of the
-// colour it is drawn in (that is shapePalette.ts's job, and the two are
-// deliberately separate: a style changes every board's look without touching
-// the shape colour code).
+// How a cell is *cut* — the relief a tile is drawn with, and (for the one style
+// that asks for it) whether it is coloured by shape at all.
+//
+// A style is no longer a setting of its own: the **theme** names one (see
+// ui/theme.ts), so picking "Classic" or "Realistic" changes the chrome and the
+// board together rather than leaving the player to pair two lists by hand.
+// There is one table entry per theme, and the keys match the theme keys.
 //
 // A cell is a stack of concentric loops of its own polygon: loop 0 is the
 // tile's outline on the board surface, each further loop is pulled in toward
@@ -72,24 +75,63 @@ export interface CellStyle {
    * carries a smooth radial falloff — the one way to shade a tile that does not
    * go through the lighting, which is what makes it work on an unlit style and
    * on a flat board, where every top face faces the camera and the lighting has
-   * almost nothing to say. Not applied to the flat tiles of a two-sided surface:
-   * those are cut by the Klein clip, which leaves no rim/centre structure to
-   * hang it on. */
+   * almost nothing to say.
+   *
+   * How the falloff is laid down depends on the cell. A cell with relief ramps
+   * it over the profile's loops (`vertexShade` below); the flat tiles of a
+   * two-sided surface (cylinder, Möbius, Klein) have no loops and are cut by
+   * the Klein clip besides, so theirs is measured off the geometry instead
+   * (`radialFalloff` in solidBoard.ts). Either way it is the same bead, which is
+   * what those surfaces need most — a flat tile with no relief has nothing else
+   * to shade it. */
   shade?: { center: number; rim: number };
+  /** The same gradient for an **opened** cell, when the two states should not be
+   * made of the same material. Defaults to `shade`.
+   *
+   * A centre hotspot is what reads as *polished*: it is the highlight a curved,
+   * shiny thing throws back at you, and on a flat board it is the only thing
+   * saying so, since the head-on lighting has nothing to add. So flattening it
+   * is what reads as **matte** — an opened cell lit evenly across its floor,
+   * next to closed cells that each carry a bright middle. That difference in
+   * *material* is a second channel telling opened from closed, alongside the
+   * relief and the tone, and it costs nothing: the gradient is already being
+   * written per vertex, and which one to use is known from the cell's state. */
+  openShade?: { center: number; rim: number };
   /** How far past the gold tint the win wave's crest is overdriven, if not the
    * default. Vertex colours are not clamped, so a lit tile is pushed past white
    * and the shading brings it back down bright (see WIN_GLOW). An unlit tile has
    * no shading to bring it down, so the same overdrive would clip the crest to
    * plain white — it takes the tint nearly straight. */
   winGlow?: number;
+  /** Draw every cell in the board's plain grays instead of its shape colour.
+   * The one thing here that is not relief: the classic look is a gray
+   * minesweeper board, and a shape-coloured one is a different game to look at
+   * however it is cut. `shapePalette.ts` still measures the shapes (the menu
+   * icons and the sound are keyed off the same tones); this only says the
+   * *board* does not paint them. */
+  monochrome?: true;
+  /** Opacity of an **opened** cell on a flat board, if the style wants the page
+   * to show through one. Only the flat board: there the WebGL canvas is
+   * transparent, so what comes through a translucent tile is the themed page
+   * behind it — the texture, on a theme that has one — and the tiles of a
+   * tiling never overlap each other on screen, so one merged mesh needs no
+   * per-triangle depth sorting to look right. A solid keeps opaque tiles: its
+   * cells *do* overlap on screen (a two-sided surface draws its far side
+   * through its near one), and one mesh cannot sort that. */
+  openAlpha?: number;
   /** Multiplier on a tile's colour **where it is lit** — the flat board of a lit
-   * style, and every 3D board. Diffuse shading returns only about 60% of an
-   * albedo here, which is what makes a lit board's saturated orange arrive as a
-   * dusky brown; a style that wants the palette's colour rather than a shaded
-   * version of it pays that back by asking for more albedo than exists. Kept
-   * modest: the opened tone starts near white, so a big boost clips the tiles
-   * the numbers sit on and the board goes chalky. `classic` deliberately has
-   * none — dusky is what it has always looked like. */
+   * style, and every 3D board. Diffuse shading returns only about a third of an
+   * albedo here (measured on a flat board's head-on top face: 0.32), which is
+   * what makes a lit board's saturated orange arrive as a dusky brown; a style
+   * that wants the palette's colour rather than a shaded version of it pays that
+   * back by asking for more albedo than exists.
+   *
+   * `1 / 0.32 ≈ 3.1` is therefore what *exactly* pays it back, and it is what
+   * `classic` uses, because that style is quoting a specific board and has to
+   * land on its specific grays. A style painting shape colours wants less: the
+   * opened tone starts near white, so boosting it that far clips the tiles the
+   * numbers sit on and the board goes chalky. Vertex colours are not clamped, so
+   * a value above 1 is fine — the shading is what brings it back down. */
   albedo?: number;
 }
 
@@ -97,11 +139,19 @@ export interface CellStyle {
  * once opened. Under the fixed key light that inverts the highlight and shadow
  * — the lit edge moves from the top of the tile to the bottom — which is what
  * makes open and closed cells tell apart at a glance on a flat board, where
- * every top face shades identically and colour alone would have to carry it. */
+ * every top face shades identically and colour alone would have to carry it.
+ *
+ * And it is **gray**: the classic theme is the 1990s board, which never had a
+ * colour on it but the numbers. That is what `monochrome` is for — the shape
+ * colour code is switched off for this style, so a board of hexagons and one of
+ * squares are the same gray, exactly as the original was. Nothing is lost by
+ * it: the relief is doing the whole job of telling closed from opened here, and
+ * that is the classic board's own idiom. */
 const CLASSIC: CellStyle = {
   key: "classic",
   label: "Classic",
-  hint: "Beveled buttons that sink when opened",
+  hint: "Gray beveled buttons that sink when opened",
+  monochrome: true,
   flat: {
     gap: 0.04,
     closed: [{ inset: 0, height: 0 }, { inset: 0.16, height: 0.24 }],
@@ -116,6 +166,16 @@ const CLASSIC: CellStyle = {
     open: [{ inset: 0, height: 0 }, { inset: 0.16, height: 0.02 }],
   },
   material: { roughness: 0.65, metalness: 0 },
+  // The classic board is *lit* — the bevel's highlight and shadow, and their
+  // inversion when a cell opens, come from the key light, so this style cannot
+  // go unlit the way Flat and Realistic do. Diffuse shading returns only about
+  // 32% of an albedo here, which is what made the board read as charcoal rather
+  // than as the silver-gray it is quoting; the boost pays exactly that back, so
+  // a closed top face lands on `mono.hidden` and an opened floor on
+  // `mono.revealed`. The bevel walls are boosted with it and the lit edge clips
+  // to near-white, which is right: the classic bevel's light edge always was
+  // white. Measured, not guessed — `1 / 0.3246`.
+  albedo: 3.08,
 };
 
 /** Flat colour: unlit plates with a wide gap and no relief at all — the tiling
@@ -154,121 +214,101 @@ const FLAT: CellStyle = {
   albedo: 1.5,
 };
 
-/** A pillow: three shoulders rounding into a broad top face, and a shallow dish
- * when opened. This is the one style whose *lighting* does the work — the
- * flat-shaded bands each catch the key light a little differently, so the tile
- * reads as domed rather than chamfered, and the light comes from the top left,
- * so the roundness is directional in a way no gradient across a tile is.
+/** Realistic: glass beads on a real surface. The theme this belongs to pairs it
+ * with a textured page, and the three parts work together.
  *
- * That is also why it needs the bands: at two loops it was a wider bevel, which
- * next to Classic looked like Classic and read as "the setting did nothing".
- * Keep it at four loops with the heights easing off toward the top (0.13 →
- * 0.21 → 0.25), which is what makes the shading fall away smoothly instead of
- * stepping. Matte, and with the albedo paid back so the colours are the
- * palette's rather than a dusky third of them. */
-const SOFT: CellStyle = {
-  key: "soft",
-  label: "Soft",
-  hint: "Rounded matte pillows, lit from the top left",
-  flat: {
-    gap: 0.075,
-    closed: [
-      { inset: 0, height: 0 },
-      { inset: 0.06, height: 0.13 },
-      { inset: 0.16, height: 0.21 },
-      { inset: 0.34, height: 0.25 },
-    ],
-    open: [
-      { inset: 0, height: 0 },
-      { inset: 0.05, height: -0.04 },
-      { inset: 0.13, height: -0.07 },
-      { inset: 0.28, height: -0.09 },
-    ],
-  },
-  solid: {
-    gap: 0.075,
-    closed: [
-      { inset: 0, height: 0 },
-      { inset: 0.06, height: 0.05 },
-      { inset: 0.16, height: 0.085 },
-      { inset: 0.34, height: 0.1 },
-    ],
-    open: [
-      { inset: 0, height: 0 },
-      { inset: 0.05, height: 0.008 },
-      { inset: 0.13, height: 0.015 },
-      { inset: 0.28, height: 0.02 },
-    ],
-  },
-  material: { roughness: 0.85, metalness: 0 },
-  albedo: 1.45,
-};
-
-/** Glass beads: each tile lit from its own middle and falling off to a dark rim
- * (`shade`), on a domed profile, unlit so the gradient is the whole of it. That
- * gradient is the trick — a lit dome on a flat board is what "Soft" already is,
- * because the board is lit head-on and a shinier material has no angle to catch
- * a highlight at, so the difference has to come from the colour across the tile
- * rather than from the light. Reads as a board of glass beads; the opened tiles,
- * pale to start with, come out as the shallow dishes between them. */
-const GLOSS: CellStyle = {
-  key: "gloss",
-  label: "Glossy",
-  hint: "Glass beads, each lit from its middle",
+ * **On a flat board** the tile is a five-loop dome — a chamfer off the grout, a
+ * shoulder, a shallow crown — lit from its own middle and falling off to a dark
+ * rim (`shade`). That gradient is the trick, and the reason the extra loops are
+ * worth their vertices: a flat board is lit head-on, so a shinier *material* has
+ * no angle to catch a highlight at and the roundness has to come from the colour
+ * across the tile plus a silhouette with enough steps in it to read as curved
+ * rather than chamfered.
+ *
+ * **On a solid** the same profile is flattened (a curved surface's cells tilt
+ * against each other, and a tall plateau shingles over its neighbours at the
+ * silhouette) and the finish earns its name instead: at this roughness the key
+ * light lands as a moving highlight that sweeps across the faces as the board is
+ * dragged around. The albedo is paid back so a turning solid is coloured glass
+ * rather than dusky plastic.
+ *
+ * **Opened cells are translucent** (`openAlpha`, flat boards only — see the
+ * field). An opened tile is glass with the page showing through it, which is
+ * what ties the board to the theme's texture instead of leaving it floating on
+ * top; kept high enough that the number on it stays the most contrasted thing
+ * in the cell. */
+const REALISTIC: CellStyle = {
+  key: "realistic",
+  label: "Realistic",
+  hint: "Glass beads over a textured page",
   flat: {
     gap: 0.05,
     closed: [
       { inset: 0, height: 0 },
-      { inset: 0.09, height: 0.22 },
-      { inset: 0.3, height: 0.28 },
+      { inset: 0.05, height: 0.13 },
+      { inset: 0.12, height: 0.22 },
+      { inset: 0.22, height: 0.27 },
+      { inset: 0.42, height: 0.29 },
     ],
+    // A pan, not a dish: the wall drops fast and then the floor is flat. The
+    // closed profile eases its heights off toward the crown, which is what
+    // curves it; holding these level instead is the geometric half of the matte
+    // reading, and it keeps the number sitting on a plane rather than in a bowl.
     open: [
       { inset: 0, height: 0 },
-      { inset: 0.06, height: -0.06 },
-      { inset: 0.3, height: -0.1 },
+      { inset: 0.05, height: -0.085 },
+      { inset: 0.12, height: -0.105 },
+      { inset: 0.22, height: -0.11 },
+      { inset: 0.42, height: -0.11 },
     ],
   },
   solid: {
     gap: 0.05,
     closed: [
       { inset: 0, height: 0 },
-      { inset: 0.09, height: 0.07 },
-      { inset: 0.3, height: 0.11 },
+      { inset: 0.05, height: 0.042 },
+      { inset: 0.12, height: 0.072 },
+      { inset: 0.22, height: 0.093 },
+      { inset: 0.42, height: 0.105 },
     ],
     open: [
       { inset: 0, height: 0 },
-      { inset: 0.06, height: 0.02 },
-      { inset: 0.3, height: 0.03 },
+      { inset: 0.05, height: 0.022 },
+      { inset: 0.12, height: 0.028 },
+      { inset: 0.22, height: 0.03 },
+      { inset: 0.42, height: 0.03 },
     ],
   },
-  // A solid is lit, and this is where the finish earns its name: at this
-  // roughness the key light lands as a moving highlight that sweeps across the
-  // faces as the board is dragged around, which is the best thing the style
-  // does. Keep it low. The albedo is paid back too, so a turning solid is
-  // coloured glass rather than dusky plastic.
   material: { roughness: 0.16, metalness: 0.1 },
   unlit: true,
-  shade: { center: 1.04, rim: 0.72 },
+  shade: { center: 1.06, rim: 0.7 },
+  // Nearly flat, and that is the point — see `openShade`. A touch of falloff is
+  // kept so the recess still reads as one; take it to a constant and the opened
+  // cells lose their edges against each other.
+  openShade: { center: 0.99, rim: 0.92 },
   winGlow: 0.12,
   albedo: 1.5,
+  openAlpha: 0.74,
 };
 
-/** The styles, in the order the settings page lists them. */
+/** The styles, one per theme (`ui/theme.ts` names them by these keys). Two
+ * themes share `flat` — Light and Dark differ in chrome, not in how a tile is
+ * cut — which is why this is still a table of its own rather than a field
+ * inlined into each theme. */
 export const CELL_STYLES: Record<string, CellStyle> = {
-  classic: CLASSIC,
   flat: FLAT,
-  soft: SOFT,
-  gloss: GLOSS,
+  classic: CLASSIC,
+  realistic: REALISTIC,
 };
 
 export const CELL_STYLE_KEYS: readonly string[] = Object.keys(CELL_STYLES);
 
-/** The style a board is drawn in when nothing says otherwise. Classic: the
- * board this game has always drawn, and the one the visual baselines pin. */
-export const DEFAULT_CELL_STYLE = "classic";
+/** The style a board is drawn in when nothing says otherwise — the one the
+ * default (Light) theme names. */
+export const DEFAULT_CELL_STYLE = "flat";
 
 /** The named style, or the default for anything this build does not know —
- * `Object.hasOwn`, never `in`, since the key can arrive from stored settings
+ * `Object.hasOwn`, never `in`, since the key can arrive from a theme record
  * written by another build (and `"toString"` is not a cell style). */
 export function resolveCellStyle(key: string | null | undefined): string {
   return key != null && Object.hasOwn(CELL_STYLES, key) ? key : DEFAULT_CELL_STYLE;
@@ -296,4 +336,40 @@ export function cellStyleLoops(profile: CellProfile): number {
  * consecutive loops is a ring of `sides` quads. */
 export function cellVertexCount(sides: number, profile: CellProfile): number {
   return sides * (3 + 6 * (cellStyleLoops(profile) - 1));
+}
+
+/** How much brighter or darker vertex `v` of an `n`-sided cell is drawn than the
+ * cell's own colour, under a style's across-the-tile gradient (`CellStyle.shade`).
+ *
+ * The ramp runs from `rim` at the cell's outer edge to `center` at its very
+ * middle, spread over the profile's `loops` — every ring of walls a step
+ * brighter than the one outside it. Spreading it is the whole point: a flat
+ * board is lit head-on, so the *only* thing that can make a tile read as domed
+ * rather than as a plate is the colour across it, and shading the top face
+ * alone (what this did when the one style with a gradient had three loops)
+ * paints a bright disc on a flat field instead of a bead. It also means a style
+ * can buy a smoother dome by adding loops, which is what the extra vertices of a
+ * detailed profile are for.
+ *
+ * The vertex layout is the one `writeGeometry` lays down in both meshes, and is
+ * fixed by `cellVertexCount`: `n` fan triangles of (centroid, crown edge, crown
+ * edge) first, then one ring of `n` quads per gap between consecutive loops,
+ * outermost gap first, each quad written low(a) low(b) high(b) low(a) high(b)
+ * high(a). */
+export function vertexShade(
+  shade: NonNullable<CellStyle["shade"]>,
+  loops: number,
+  v: number,
+  n: number,
+): number {
+  // Loop 0 is the outermost (at the grout) and sits at `rim`; the centroid,
+  // one step past the innermost loop, is `center`.
+  const at = (loop: number): number =>
+    shade.rim + (shade.center - shade.rim) * (loop / loops);
+  if (v < 3 * n) return v % 3 === 0 ? shade.center : at(loops - 1);
+  const w = v - 3 * n;
+  const ring = Math.floor(w / (6 * n)); // the gap above loop `ring`
+  const j = w % 6;
+  const onLowLoop = j === 0 || j === 1 || j === 3;
+  return at(onLowLoop ? ring : ring + 1);
 }

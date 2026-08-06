@@ -71,20 +71,27 @@ test.describe("settings", () => {
     await page.locator('.menu-header-btn[data-action="settings"]').click();
     const row = page.locator('.menu-entry[data-settings-group="theme"]');
     await expect(row).toContainText("Theme");
-    await expect(row).toContainText("Minimal iOS"); // the current one, as a subtitle
-    // The seven palettes are a page of their own, not spelled out here.
+    await expect(row).toContainText("Light"); // the current one, as a subtitle
+    // The themes are a page of their own, not spelled out here.
     await expect(page.locator(".menu-entry[data-theme]")).toHaveCount(0);
 
     await row.click();
-    await expect(page.locator(".menu-entry[data-theme]")).toHaveCount(7);
+    await expect(page.locator(".menu-entry[data-theme]")).toHaveCount(4);
     await expect(page.locator('.menu-entry[data-action="back"]')).toContainText("Theme");
 
     // Back lands on settings, not the root menu, and the row has followed.
-    await page.locator('.menu-entry[data-theme="paper"]').click();
+    await page.locator('.menu-entry[data-theme="realistic"]').click();
     await page.locator('.menu-entry[data-action="back"]').click();
     await expect(page.locator('.menu-entry[data-settings-group="theme"]')).toContainText(
-      "Warm Paper",
+      "Realistic",
     );
+  });
+
+  // Appearance is one setting now: a theme carries the chrome palette *and* the
+  // board's cell style, so there is no second picker to pair with it.
+  test("there is no cell style picker beside the theme", async ({ page }) => {
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
+    await expect(page.locator('.menu-entry[data-settings-group="cell-style"]')).toHaveCount(0);
   });
 
   test("picking a theme re-skins the chrome and survives a reload", async ({ page }) => {
@@ -117,7 +124,7 @@ test.describe("settings", () => {
     const keys = await page
       .locator(".menu-entry[data-theme]")
       .evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset["theme"] ?? ""));
-    expect(keys.length).toBeGreaterThanOrEqual(7);
+    expect(keys.length).toBeGreaterThanOrEqual(4);
     for (const key of keys) {
       await page.locator(`.menu-entry[data-theme="${key}"]`).click();
       for (const name of ["--bg", "--panel", "--text", "--accent", "--counter-bg"]) {
@@ -126,48 +133,18 @@ test.describe("settings", () => {
     }
   });
 
-  test("the cell style row opens a picker, and the choice sticks", async ({ page }) => {
+  test("a board launched after picking a theme is cut with that theme's cells", async ({
+    page,
+  }) => {
     await page.locator('.menu-header-btn[data-action="settings"]').click();
-    const row = page.locator('.menu-entry[data-settings-group="cell-style"]');
-    await expect(row).toContainText("Cell style");
-    await expect(row).toContainText("Classic"); // the default, as a subtitle
-    await expect(page.locator(".menu-entry[data-cell-style]")).toHaveCount(0);
-
-    await row.click();
-    await expect(page.locator(".menu-entry[data-cell-style]")).toHaveCount(4);
-    await expect(page.locator('.menu-entry[data-action="back"]')).toContainText("Cell style");
-    await expect(page.locator('.menu-entry[data-cell-style="classic"]')).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
-
-    await page.locator('.menu-entry[data-cell-style="gloss"]').click();
-    await expect(page.locator('.menu-entry[data-cell-style="gloss"]')).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
-    // Back lands on settings, with the row reporting the new style.
-    await page.locator('.menu-entry[data-action="back"]').click();
-    await expect(row).toContainText("Glossy");
-
-    await page.reload();
-    await expect(page.locator("body[data-ready]")).toBeVisible();
-    await page.locator('.menu-header-btn[data-action="settings"]').click();
-    await expect(page.locator('.menu-entry[data-settings-group="cell-style"]')).toContainText(
-      "Glossy",
-    );
-  });
-
-  test("a board launched after picking a cell style plays normally", async ({ page }) => {
-    await page.locator('.menu-header-btn[data-action="settings"]').click();
-    await page.locator('.menu-entry[data-settings-group="cell-style"]').click();
-    await page.locator('.menu-entry[data-cell-style="flat"]').click();
+    await page.locator('.menu-entry[data-settings-group="theme"]').click();
+    await page.locator('.menu-entry[data-theme="classic"]').click();
     await page.locator('.menu-entry[data-action="back"]').click(); // to settings
     await page.locator('.menu-entry[data-action="back"]').click(); // to the root
     await page.locator('.menu-entry[data-mode="square"]').click(); // Classic
 
     // The board reports the style its mesh was actually cut with, so this is
-    // the assertion that the pick reached the renderer rather than only the
+    // the assertion that the theme reached the renderer rather than only the
     // settings record — and the relief is a different mesh per style, so the
     // board must still build, pick and play: reveal a cell and read it back.
     const revealed = await page.evaluate(() => {
@@ -179,18 +156,26 @@ test.describe("settings", () => {
     expect(revealed).toBeGreaterThan(0);
     const state = await page.evaluate(() => window.__ms?.state());
     expect(state?.mode).toBe("square");
-    expect(state?.cellStyle).toBe("flat");
+    expect(state?.cellStyle).toBe("classic");
   });
 
-  // Every style, on a flat board and on a solid: the mesh a board is built with
-  // is the style that was picked. `soft` is here because it once looked so much
-  // like `classic` that picking it read as doing nothing at all — a look is
-  // hard to assert, but "the mesh was cut with this profile" is not.
-  for (const key of ["classic", "flat", "soft", "gloss"]) {
-    test(`the ${key} style reaches the mesh of a flat board and a solid`, async ({ page }) => {
+  // Every theme, on a flat board and on a solid: the mesh a board is built with
+  // is the one the theme names. A look is hard to assert; "the mesh was cut with
+  // this profile" is not — and Realistic is the case that matters most, since it
+  // is the only style whose colour buffer carries an alpha channel, so a board
+  // that fails to build with it fails here rather than as a blank canvas.
+  for (const [key, style] of [
+    ["light", "flat"],
+    ["dark", "flat"],
+    ["classic", "classic"],
+    ["realistic", "realistic"],
+  ]) {
+    test(`the ${key} theme's cells reach the mesh of a flat board and a solid`, async ({
+      page,
+    }) => {
       await page.locator('.menu-header-btn[data-action="settings"]').click();
-      await page.locator('.menu-entry[data-settings-group="cell-style"]').click();
-      await page.locator(`.menu-entry[data-cell-style="${key}"]`).click();
+      await page.locator('.menu-entry[data-settings-group="theme"]').click();
+      await page.locator(`.menu-entry[data-theme="${key}"]`).click();
 
       for (const mode of ["hex", "sphere"]) {
         const state = await page.evaluate((m: string) => {
@@ -198,7 +183,7 @@ test.describe("settings", () => {
           return window.__ms!.state();
         }, mode);
         expect(state.mode, `${key} ${mode}`).toBe(mode);
-        expect(state.cellStyle, `${key} ${mode}`).toBe(key);
+        expect(state.cellStyle, `${key} ${mode}`).toBe(style);
         expect(state.cellCount, `${key} ${mode}`).toBeGreaterThan(0);
       }
     });
