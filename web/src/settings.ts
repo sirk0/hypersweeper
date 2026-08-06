@@ -1,6 +1,5 @@
 import { DEFAULT_SOUND, resolveSound } from "./audio/presets";
 import { hasDifficulty, screens } from "./config/screens";
-import { DEFAULT_CELL_STYLE, resolveCellStyle } from "./render/cellStyle";
 import { readObject, storage } from "./storage";
 import { DEFAULT_THEME, resolveTheme } from "./ui/theme";
 
@@ -37,19 +36,18 @@ const LEGACY_KEYS = ["ms:settings:v1"];
 /** Bump when a field changes *meaning* (a rename, a different unit). Purely
  * additive fields need no bump: an old record simply lacks them and picks up
  * the default. `migrate` must handle every version below this one. */
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 export interface Settings {
-  /** A key in `screens.themes`. */
+  /** A key in `THEME_KEYS` — the app's one look setting, carrying the chrome
+   * palette *and* how the board's cells are cut (see ui/theme.ts). Until v3
+   * this was a palette alone, with a separate `cellStyle` beside it. */
   theme: string;
   /** A key in `screens.difficulties` — the board size the menu launches at. */
   difficulty: string;
   /** `null` follows the OS `prefers-reduced-motion` setting; a boolean is an
    * explicit override from the settings screen. */
   animations: boolean | null;
-  /** A key in `CELL_STYLES` — the relief the board's tiles are cut with. Read
-   * when a board's mesh is built, so it applies from the next board on. */
-  cellStyle: string;
   /** A key in `SOUND_PRESETS`, or `"off"` — what the game sounds like. Read on
    * every event, so a change applies to the board already in play. */
   sound: string;
@@ -62,19 +60,48 @@ export const DEFAULT_SETTINGS: Settings = {
   theme: DEFAULT_THEME,
   difficulty: screens.defaultDifficulty,
   animations: null,
-  cellStyle: DEFAULT_CELL_STYLE,
   sound: DEFAULT_SOUND,
   haptics: true,
 };
 
-/** Bring a record written by an older build up to the current shape. Every
- * change so far has been additive, so there is nothing to rewrite — the field
- * readers below supply the defaults for whatever is missing. The hook exists so
- * that a future *renaming* change has one obvious place to live, and so the
- * version is checked rather than assumed. */
+/** What a pre-v3 `theme` (a chrome palette) becomes now that a theme carries the
+ * board's look too. Two keys survive unchanged because the themes named after
+ * them kept them; the other four palettes have no theme of their own any more
+ * and land on the default. */
+const V2_THEMES: Record<string, string> = {
+  ios: "light",
+  flat: "light",
+  neumorph: "light",
+  glass: "light",
+  paper: "light",
+  classic: "classic",
+  dark: "dark",
+};
+
+/** Bring a record written by an older build up to the current shape.
+ *
+ * v1 (theme + animations) -> v2 (adds difficulty) was purely additive, so there
+ * was nothing to rewrite and the field readers below supplied the defaults.
+ *
+ * v2 -> v3 is the first change that is not: `theme` used to name a chrome
+ * palette, with `cellStyle` a separate setting beside it, and now it names a
+ * finished look carrying both. So the old pair is translated into the one theme
+ * that best matches it — which is why the *pair* is read here rather than each
+ * field on its own, and why a v2 player who had chosen the glossy cells lands on
+ * Realistic rather than being flattened to Light with everyone else. The stale
+ * `cellStyle` key is left in the record: `saveSettings` carries unknown keys
+ * over anyway, and a downgrade to a v2 build should find its setting intact. */
 function migrate(rec: Record<string, unknown>, from: number): Record<string, unknown> {
   if (from >= SCHEMA_VERSION) return rec;
-  // v1 (theme + animations) -> v2 (adds difficulty): nothing to rewrite.
+  if (from < 3) {
+    const palette = typeof rec["theme"] === "string" ? rec["theme"] : "";
+    const cells = typeof rec["cellStyle"] === "string" ? rec["cellStyle"] : "";
+    const mapped = Object.hasOwn(V2_THEMES, palette) ? V2_THEMES[palette]! : DEFAULT_THEME;
+    // A palette that named a theme of its own wins — "classic" meant the
+    // classic look then and means it now. Otherwise the cell style is the
+    // better evidence of what the player was after.
+    rec = { ...rec, theme: mapped === DEFAULT_THEME && cells === "gloss" ? "realistic" : mapped };
+  }
   return rec;
 }
 
@@ -106,11 +133,6 @@ export function loadSettings(): Settings {
         ? rec["difficulty"]
         : DEFAULT_SETTINGS.difficulty,
     animations: typeof rec["animations"] === "boolean" ? rec["animations"] : null,
-    // A style this build does not have (a record from a newer one, or a
-    // hand-edited key) falls back rather than reaching a mesh builder.
-    cellStyle: resolveCellStyle(
-      typeof rec["cellStyle"] === "string" ? rec["cellStyle"] : null,
-    ),
     // Same treatment: an unknown preset (or a `null` from a build that had no
     // sound) falls back rather than silencing the game by accident. `"off"` is
     // a valid stored value and survives.

@@ -19,7 +19,6 @@ import { HELP_ICON, renderHelp } from "./help";
 import { menuIcon } from "./icons";
 import {
   GEAR_ICON,
-  renderCellStylePicker,
   renderSettings,
   renderSoundPicker,
   renderThemePicker,
@@ -212,9 +211,12 @@ export class Menu {
     this.showRoot();
   }
 
-  /** The title row: the title, and the how-to-play ? and settings gear at its
-   * right edge. The CSS balances the two buttons with an empty box of the same
-   * width on the left, so the title stays centred on the screen. */
+  /** The title row: the how-to-play ? at the left edge, the title, the settings
+   * gear at the right edge. One button per side rather than both on the right —
+   * two buttons stacked on one side cost the title twice the width, and on a
+   * narrow phone "Hypersweeper" is a single unbreakable word that then does not
+   * fit on one line. Split, the two sides balance each other, so the title stays
+   * centred on the screen with the most room a header row can give it. */
   private header(): HTMLElement {
     const header = document.createElement("div");
     header.className = "menu-header";
@@ -223,14 +225,17 @@ export class Menu {
     title.className = "menu-title";
     title.textContent = screens.menu.title;
 
+    const lead = document.createElement("div");
+    lead.className = "menu-header-actions menu-header-lead";
+    lead.append(this.headerButton("help", "How to play", HELP_ICON, () => this.showHelp()));
+
     const actions = document.createElement("div");
     actions.className = "menu-header-actions";
     actions.append(
-      this.headerButton("help", "How to play", HELP_ICON, () => this.showHelp()),
       this.headerButton("settings", "Settings", GEAR_ICON, () => this.showSettings()),
     );
 
-    header.append(title, actions);
+    header.append(lead, title, actions);
     return header;
   }
 
@@ -312,7 +317,6 @@ export class Menu {
       theme: this.settings.theme,
       difficulty: this.settings.difficulty,
       animations: this.settings.animations,
-      cellStyle: this.settings.cellStyle,
       sound: this.settings.sound,
       haptics: this.settings.haptics,
       setTheme: (key) => {
@@ -325,10 +329,6 @@ export class Menu {
       },
       setAnimations: (pref) => {
         this.settings.setAnimations(pref);
-        page();
-      },
-      setCellStyle: (key) => {
-        this.settings.setCellStyle(key);
         page();
       },
       setSound: (key) => {
@@ -353,7 +353,6 @@ export class Menu {
         host,
         () => this.showThemePicker(),
         () => this.showBestTimes(),
-        () => this.showCellStylePicker(),
         () => this.showSoundPicker(),
       ),
     );
@@ -399,20 +398,6 @@ export class Menu {
     this.body.replaceChildren(
       this.backRow("Theme", () => this.showSettings()),
       renderThemePicker(host),
-    );
-  }
-
-  /** The cell-style page — a page below settings, like the theme picker. */
-  private showCellStylePicker(): void {
-    this.go(() => this.renderCellStylePage());
-  }
-
-  private renderCellStylePage(): void {
-    const host = this.settingsPageHost(() => this.renderCellStylePage());
-    this.root.classList.add("settings-open");
-    this.body.replaceChildren(
-      this.backRow("Cell style", () => this.showSettings()),
-      renderCellStylePicker(host),
     );
   }
 
