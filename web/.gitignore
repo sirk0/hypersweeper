@@ -2,6 +2,7 @@ node_modules/
 dist/
 dev-dist/
 *.tsbuildinfo
+.vite/
 
 # Playwright
 /test-results/
