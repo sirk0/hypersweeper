@@ -48,6 +48,7 @@ const SETTINGS: Settings = {
   animations: false,
   cellStyle: "soft",
   sound: "arcade",
+  haptics: false,
 };
 
 afterEach(() => {
@@ -111,6 +112,7 @@ describe("settings validation", () => {
       animations: null,
       cellStyle: DEFAULT_SETTINGS.cellStyle,
       sound: DEFAULT_SETTINGS.sound,
+      haptics: DEFAULT_SETTINGS.haptics,
     });
   });
 
@@ -152,6 +154,7 @@ describe("settings upgrades", () => {
       animations: true,
       cellStyle: DEFAULT_SETTINGS.cellStyle,
       sound: DEFAULT_SETTINGS.sound,
+      haptics: DEFAULT_SETTINGS.haptics,
     });
     // Migration completes on the next write, and only then is the old key
     // dropped — an interrupted migration must not lose the record.
@@ -188,6 +191,7 @@ describe("settings upgrades", () => {
       animations: null,
       cellStyle: DEFAULT_SETTINGS.cellStyle,
       sound: DEFAULT_SETTINGS.sound,
+      haptics: DEFAULT_SETTINGS.haptics,
     });
   });
 
@@ -234,6 +238,7 @@ describe("cross-tab sync", () => {
         animations: null,
         cellStyle: DEFAULT_SETTINGS.cellStyle,
         sound: DEFAULT_SETTINGS.sound,
+        haptics: DEFAULT_SETTINGS.haptics,
       },
     ]);
   });

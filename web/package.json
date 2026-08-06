@@ -1,7 +1,7 @@
 {
   "name": "hypersweeper-web",
   "private": true,
-  "version": "0.2.47",
+  "version": "0.2.50",
   "license": "MIT",
   "type": "module",
   "description": "TypeScript + Three.js rewrite of the Hypersweeper game (M0 scaffold).",
@@ -18,9 +18,13 @@
     "screenshots": "vite-node scripts/make-screenshots.mts"
   },
   "dependencies": {
+    "@capacitor/core": "^7.6.8",
+    "@capacitor/haptics": "^7.0.5",
     "three": "^0.171.0"
   },
   "devDependencies": {
+    "@capacitor/cli": "^7.6.8",
+    "@capacitor/ios": "^7.6.8",
     "@playwright/test": "1.56.1",
     "@types/node": "^22.20.1",
     "@types/three": "^0.171.0",

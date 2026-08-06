@@ -202,9 +202,9 @@ CI runs `make test`/`make lint`. Pages deploys the **TypeScript** app in
 
 `main.py` is the browser entry point; the game loop is async
 (`App.run_async`) so pygbag can yield to the browser each frame. This
-build is **no longer deployed** — `.github/workflows/deploy-pages.yml`
-publishes the TypeScript app at the site root (and `/next/`, where that
-app lived during the rewrite, redirects there via
+build is **no longer deployed** — `deploy-pages.yml` and
+`deploy-cloudflare.yml` publish the TypeScript app at the site root (and
+`/next/`, where that app lived during the rewrite, redirects there via
 `web/public/next/index.html`) — so `make web-package` / `make web-run`
 are for running the pygame version in a browser locally. Browser-specific
 care in the code: no plain
@@ -297,9 +297,11 @@ shows it downscaled by `UI_SCALE`. To preview what the user sees,
 
 The TypeScript/Three.js app lives in `web/` and shares its
 config and conformance oracle with the Python game through `data/*.json`
-(see AGENTS.md). It is **the deployed game** — GitHub Pages serves it at
-the site root; the pygame build is the reference implementation and is not
-published. Commands (`npm run typecheck/test/build/screenshots`, Playwright
+(see AGENTS.md). It is **the deployed game** — GitHub Pages and Cloudflare
+Pages both serve it at the site root while the game moves from the first to
+the second (two workflows, one build each, differing only in `VITE_BASE`;
+see "Deploy" in `web/README.md`); the pygame build is the reference
+implementation and is not published. Commands (`npm run typecheck/test/build/screenshots`, Playwright
 `e2e`) and — important when changing anything visual or interactive —
 **how to drive and screenshot the app headless, plus the gotchas that
 actually bite** (the `window.__ms` seam, flood-fill devouring sparse mine
@@ -382,7 +384,7 @@ Electron and deliberately tiny: `main.mjs` (window, menu, navigation
 lock, the `--smoke` self-check), `serve.mjs` (the `app://` → file
 mapping, unit-tested in `desktop/test/`) and `electron-builder.yml`.
 `scripts/build-mac-app.sh` drives it — build `web/` with
-`VITE_DESKTOP=1`, assert the bundle is self-contained
+`VITE_PACKAGED=1`, assert the bundle is self-contained
 (`scripts/check-offline-assets.mjs`), stage it into `desktop/app/`,
 package, ad-hoc sign, then launch the built `.app` to check it.
 
@@ -391,13 +393,49 @@ The bundle is served over a **standard, secure `app://` scheme**, never
 times), `history.replaceState` (share links) and the root-absolute
 `url("/fonts/…")` in `styles.css` all break. Assets are read through
 `fs`, not `net.fetch("file://…")`, because a packaged app keeps them
-inside `app.asar`. `VITE_DESKTOP=1` is the only thing the web app knows
-about the desktop, and it only *removes*: no service worker (there is no
-deployed build to cache) and no "Check for updates" row
-(`__APP_DESKTOP__`). **Keep the offline property enforced, not assumed**
-— `make desktop-smoke` runs the real app with every off-bundle request
-cancelled and fails if it asks for one URL it does not carry; it works on
-Linux/CI under Xvfb with SwiftShader. See `desktop/README.md`.
+inside `app.asar`. `VITE_PACKAGED=1` — shared with the iOS build below —
+is the only thing the web app knows about being packaged, and it only
+*removes*: no service worker (there is no deployed build to cache) and no
+"Check for updates" row (`__APP_PACKAGED__`). **Keep the offline property
+enforced, not assumed** — `make desktop-smoke` runs the real app with
+every off-bundle request cancelled and fails if it asks for one URL it
+does not carry; it works on Linux/CI under Xvfb with SwiftShader. See
+`desktop/README.md`.
+
+## iOS app (`ios/`) — the iPhone build, and the only one that can buzz
+
+`make ios-app` (macOS only) packages the **TypeScript app** as an iPhone
+app: the built bundle is synced into a Capacitor WKWebView project and
+Xcode signs and installs it. `make ios-run` builds straight onto a
+connected phone; `make ios-prepare` does everything but the Xcode half and
+so runs anywhere (Linux, CI). `scripts/build-ios-app.sh` drives it — build
+`web/` with `VITE_PACKAGED=1`, assert the bundle is self-contained
+(`scripts/check-offline-assets.mjs`), then `npx cap sync ios`.
+
+The Capacitor project root is **`web/`** (`web/capacitor.config.json`,
+with `ios.path` pointing at `ios/`), not `ios/`: the CLI and the pods
+resolve from the same `node_modules` the app's own
+`import { Haptics } from "@capacitor/haptics"` does, so the JS and the pod
+that answers it cannot drift. `ios/App` is committed (it is Capacitor's
+template plus the generated icons and an `Info.plist` line);
+`ios/App/App/public` is the synced bundle and is not, like `desktop/app`.
+
+**The haptics are the reason this exists.** `web/src/haptics.ts` is the
+single seam and picks its mechanism at call time: natively it is
+`impact(Light)` for a flag, `notification(Error)` for a mine and
+`notification(Success)` for a win; in a browser, `navigator.vibrate` with
+a pattern; on iOS Safari, the one fixed tick a hidden
+`<input type="checkbox" switch>` plays, because that is all the web
+platform offers there. Settings › Haptics turns it off (stored like the
+sound preset, read on every event) and the row is hidden where nothing can
+buzz. The trap: a plugin missing from Capacitor's `PluginHeaders` — what
+the native side injects to say which plugins the binary carries — is
+silently served by its **web** implementation, so the app builds, runs and
+does nothing on the phone. `web/tests/e2e/haptics.spec.ts` pins the whole
+chain without a device, booting the page with Capacitor's real
+`native-bridge.js` over a fake `webkit.messageHandlers.bridge` and
+asserting what a played board posts to the native side. See
+`ios/README.md`.
 
 It is also **shipped**, via Homebrew: this repo is its own tap, so
 `Formula/hypersweeper.rb` here is what `brew tap sirk0/hypersweeper

@@ -1,8 +1,9 @@
 # Hypersweeper — TypeScript + Three.js app (`web/`)
 
 The TypeScript rewrite (Three.js / WebGL) of the Python game, per
-`docs/plans/typescript-rewrite-same-repo.md`. This is the app GitHub Pages
-serves at the site root; the pygame build stays in the repo as the reference
+`docs/plans/typescript-rewrite-same-repo.md`. This is the app served at the
+site root, by GitHub Pages and Cloudflare Pages both while the game moves
+between them; the pygame build stays in the repo as the reference
 implementation and is not deployed (see **Deploy** below).
 
 **M16 — Sound.** The game has a voice (`src/audio/`), synthesised rather than
@@ -912,28 +913,50 @@ approach to the board catalog and presets (see the plan).
 ## Deploy
 
 CI (`.github/workflows/ci.yml`, `web` job) typechecks, unit-tests, builds and
-runs the e2e/visual suite. `deploy-pages.yml` then builds this app with
-`VITE_BASE=/hypersweeper/` and publishes `dist/` as the whole Pages site — **it
+runs the e2e/visual suite. Two deploy workflows then publish this app — **it
 is the deployed game**; the pygbag build of the pygame version is no longer
-published (it is still buildable locally with `make web-package`). During the
+published (it is still buildable locally with `make web-package`).
+
+The two run side by side while the game moves off GitHub Pages, from the same
+commit, differing only in `VITE_BASE` — the serving path is baked into the
+bundle at build time (asset URLs, the PWA manifest, the service worker
+scope), so one artifact cannot serve both:
+
+| Workflow | Host | `VITE_BASE` |
+| --- | --- | --- |
+| `deploy-pages.yml` | GitHub Pages project site | `/hypersweeper/` |
+| `deploy-cloudflare.yml` | Cloudflare Pages, domain root | `/` (the default) |
+
+The Cloudflare job needs two repository secrets, `CLOUDFLARE_API_TOKEN` (a
+token with the *Cloudflare Pages: Edit* permission) and
+`CLOUDFLARE_ACCOUNT_ID`, and a Pages project that already exists — a direct-
+upload project named `hypersweeper` whose production branch is `master`
+(`wrangler pages project create hypersweeper --production-branch=master`).
+`wrangler pages deploy` does not create one in CI. When Pages is retired,
+deleting `deploy-pages.yml` is the whole change; nothing in the source
+hardcodes a base path. During the
 rewrite this app mounted under `/next/` instead, so `public/next/index.html`
 redirects that path to the root, carrying the board link's query and hash over
 and unregistering the service worker that was scoped there; `app.spec.ts` pins
 it. Visual baselines are only authoritative in the pinned CI environment
 (software WebGL / SwiftShader).
 
-### The desktop build
+### The packaged builds (macOS, iOS)
 
 This same bundle ships inside the macOS app (`make mac-app`, see
-`desktop/README.md`), where it is served from an `app://` scheme rather than a
-web server. Two things about that are worth knowing while working here:
+`desktop/README.md`), where it is served from an `app://` scheme, and inside the
+iPhone app (`make ios-app`, see `ios/README.md`), where a Capacitor WKWebView
+serves it from `capacitor://localhost`. Two things about that are worth knowing
+while working here:
 
-- **`VITE_DESKTOP=1`** is the desktop variant of the build. It drops the
-  service worker (nothing to update from inside a bundle) and, via
-  `__APP_DESKTOP__`, the "Check for updates" row on the settings page. It is
-  the *only* thing this app knows about the desktop — resist adding a second
-  branch; if the desktop needs different behaviour, the shell should provide
-  it.
+- **`VITE_PACKAGED=1`** is the variant of the build that ships *inside* an app.
+  It drops the service worker (nothing to update from inside a bundle) and, via
+  `__APP_PACKAGED__`, the "Check for updates" row on the settings page. It is
+  the *only* build-time thing this app knows about either shell — resist adding
+  a second branch; if a shell needs different behaviour, the shell should
+  provide it. (Runtime is a different matter: `haptics.ts` asks Capacitor at
+  call time whether it is running natively, because the *same* bundle has to
+  work in a browser tab and on a phone.)
 - **The app must reference nothing remote.** No CDN, no web font, no remote
   image: `scripts/check-offline-assets.mjs` scans the built output and fails
   the build (and the `web` CI job) over any URL that is not an XML namespace

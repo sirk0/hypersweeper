@@ -112,8 +112,8 @@ Every board is a **link** — `?mode=…&difficulty=…`, plus a `seed` to share
 the exact layout. Winning files the time: the fastest three per board and
 difficulty live under Settings › Best times. Settings also holds the seven
 themes, four cell styles, three sound presets (synthesised from the move
-that caused them — a tile's side count is its voice) and an animations
-toggle.
+that caused them — a tile's side count is its voice), a haptics switch and
+an animations toggle.
 
 ## Development
 
@@ -142,6 +142,20 @@ board data — inside the app, so it needs no internet connection at all.
 The build proves that rather than promising it: it refuses to package a
 bundle that references a remote URL, and then launches the app it built
 with the network cut. See [`desktop/README.md`](desktop/README.md).
+
+### An iPhone app that buzzes
+
+```sh
+make ios-app       # build the game and open the project in Xcode  (on a Mac)
+make ios-run       # …or build straight onto a connected iPhone
+```
+
+The same game again, wrapped in a Capacitor WKWebView so it installs on a
+phone and plays offline — and, being native, can reach the **Taptic
+Engine**: a light tick when a flag lands, the system's sharp error buzz
+when you step on a mine, its success buzz when the board falls. No web API
+on iOS can ask for that. Building it needs a Mac with Xcode; a free Apple
+ID signs it for 7 days at a time. See [`ios/README.md`](ios/README.md).
 
 `web/README.md` is the guide to the code — the renderer, the board
 builders, themes, sound, and how to drive the app headless.

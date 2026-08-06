@@ -11,7 +11,7 @@
 class Hypersweeper < Formula
   desc "Minesweeper on flat tilings, polyhedra and closed surfaces"
   homepage "https://github.com/sirk0/hypersweeper"
-  url "https://github.com/sirk0/hypersweeper/archive/refs/tags/v0.2.47.tar.gz"
+  url "https://github.com/sirk0/hypersweeper/archive/refs/tags/v0.2.50.tar.gz"
   sha256 "0000000000000000000000000000000000000000000000000000000000000000"
   license "MIT"
   head "https://github.com/sirk0/hypersweeper.git", branch: "master"
@@ -23,7 +23,7 @@ class Hypersweeper < Formula
 
   def install
     # The same script a maintainer runs locally, unchanged and with no
-    # release-only path: it builds web/ with VITE_DESKTOP=1, refuses to package
+    # release-only path: it builds web/ with VITE_PACKAGED=1, refuses to package
     # a bundle that references a remote URL, runs the shell's unit tests, and
     # ad-hoc signs the result. No arch flag, so this builds only the slice this
     # Mac needs. --no-verify skips its launch check, which the test block below

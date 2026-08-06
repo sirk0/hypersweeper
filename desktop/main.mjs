@@ -336,7 +336,7 @@ app.whenReady().then(async () => {
   if (!DIST) {
     console.error(
       "No built web app found. Run `make mac-app` (or, from web/, " +
-        "`VITE_DESKTOP=1 npm run build`) before starting the shell.",
+        "`VITE_PACKAGED=1 npm run build`) before starting the shell.",
     );
     app.exit(1);
     return;

@@ -1,5 +1,10 @@
 name: Deploy to GitHub Pages
 
+# One of two deploys running side by side while the game moves to Cloudflare
+# (deploy-cloudflare.yml). Both build the same app from the same commit and
+# differ only in VITE_BASE — a project site serves from /hypersweeper/, a
+# domain root from /. This file is the one to delete when Pages is retired.
+
 on:
   push:
     branches: [master]

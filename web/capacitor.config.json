@@ -1,0 +1,11 @@
+{
+  "appId": "io.github.sirk0.hypersweeper",
+  "appName": "Hypersweeper",
+  "webDir": "dist",
+  "backgroundColor": "#f2f2f7",
+  "ios": {
+    "path": "../ios",
+    "contentInset": "never",
+    "scrollEnabled": false
+  }
+}
