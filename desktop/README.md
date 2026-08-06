@@ -44,13 +44,14 @@ Chromium's file loader cannot.
 
 ### What the desktop build changes in the web app
 
-One flag, `VITE_DESKTOP=1` (see `web/vite.config.ts`), and it only removes
+One flag, `VITE_PACKAGED=1` (see `web/vite.config.ts`) — shared with the iPhone
+app, which is packaged the same way (`ios/README.md`) — and it only removes
 things:
 
 - **no service worker.** Its job is to cache a *deployed* build for offline
   use. Inside a bundle whose files are already on the disk, it would add a
   second, staler copy of them and nothing else.
-- **no "Check for updates" row** in settings (`__APP_DESKTOP__` in
+- **no "Check for updates" row** in settings (`__APP_PACKAGED__` in
   `web/src/ui/settings.ts`). There is no server to check against; a row that
   can only ever report failure is worse than no row.
 

@@ -15,11 +15,14 @@ import { extname, join, relative } from "node:path";
  *  - XML namespace identifiers, which name a spec and are never fetched;
  *  - the source-code link on the settings page, which only opens when the
  *    player clicks it (and the desktop shell hands it to the system browser).
- *  - sourcemap/spec references in vendored comments, which ship no request. */
+ *  - sourcemap/spec references in vendored comments, which ship no request;
+ *  - the Capacitor license banner (`/*! Capacitor: https://capacitorjs.com/ …`),
+ *    a comment the minifier keeps in the bridge the iOS app talks through. */
 const ALLOWED = [
   /^https?:\/\/(www\.)?w3\.org\//,
   /^https?:\/\/github\.com\/sirk0\/hypersweeper/,
   /^https?:\/\/(www\.)?khronos\.org\//,
+  /^https?:\/\/(www\.)?capacitorjs\.com\/$/,
 ];
 
 /** Files whose contents can carry a load. Fonts/images are binary and are

@@ -922,18 +922,22 @@ and unregistering the service worker that was scoped there; `app.spec.ts` pins
 it. Visual baselines are only authoritative in the pinned CI environment
 (software WebGL / SwiftShader).
 
-### The desktop build
+### The packaged builds (macOS, iOS)
 
 This same bundle ships inside the macOS app (`make mac-app`, see
-`desktop/README.md`), where it is served from an `app://` scheme rather than a
-web server. Two things about that are worth knowing while working here:
+`desktop/README.md`), where it is served from an `app://` scheme, and inside the
+iPhone app (`make ios-app`, see `ios/README.md`), where a Capacitor WKWebView
+serves it from `capacitor://localhost`. Two things about that are worth knowing
+while working here:
 
-- **`VITE_DESKTOP=1`** is the desktop variant of the build. It drops the
-  service worker (nothing to update from inside a bundle) and, via
-  `__APP_DESKTOP__`, the "Check for updates" row on the settings page. It is
-  the *only* thing this app knows about the desktop — resist adding a second
-  branch; if the desktop needs different behaviour, the shell should provide
-  it.
+- **`VITE_PACKAGED=1`** is the variant of the build that ships *inside* an app.
+  It drops the service worker (nothing to update from inside a bundle) and, via
+  `__APP_PACKAGED__`, the "Check for updates" row on the settings page. It is
+  the *only* build-time thing this app knows about either shell — resist adding
+  a second branch; if a shell needs different behaviour, the shell should
+  provide it. (Runtime is a different matter: `haptics.ts` asks Capacitor at
+  call time whether it is running natively, because the *same* bundle has to
+  work in a browser tab and on a phone.)
 - **The app must reference nothing remote.** No CDN, no web font, no remote
   image: `scripts/check-offline-assets.mjs` scans the built output and fails
   the build (and the `web` CI job) over any URL that is not an XML namespace

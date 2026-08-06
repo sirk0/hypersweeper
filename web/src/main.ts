@@ -2,6 +2,7 @@ import { Vector2, Vector3 } from "three";
 import "./ui/styles.css";
 import { setSoundPreset, soundChoice, unlockAudio } from "./audio/sound";
 import { isBoard3D, type CellId } from "./boards/core";
+import { setHapticsEnabled } from "./haptics";
 import { boardLinkQuery, parseBoardLink } from "./link";
 import { GameSession } from "./session";
 import { attachControls, blockBrowserZoom } from "./input/controls";
@@ -81,6 +82,7 @@ class App {
   ) {
     applyTheme(this.settings.theme); // before anything measures or paints
     setSoundPreset(this.settings.sound);
+    setHapticsEnabled(this.settings.haptics);
     // A browser will not let audio start outside a user gesture, so the
     // context is built on the player's first click or key — whatever it is.
     unlockAudio();
@@ -164,11 +166,15 @@ class App {
       get sound() {
         return app.settings.sound;
       },
+      get haptics() {
+        return app.settings.haptics;
+      },
       setTheme: (key) => this.setTheme(key),
       setDifficulty: (key) => this.setDifficulty(key),
       setAnimations: (pref) => this.setAnimations(pref),
       setCellStyle: (key) => this.setCellStyle(key),
       setSound: (key) => this.setSound(key),
+      setHaptics: (on) => this.setHaptics(on),
     };
   }
 
@@ -200,6 +206,15 @@ class App {
     setSoundPreset(key);
   }
 
+  /** Turn tactile feedback on or off. Like the sound preset and unlike the
+   * cell style, this needs no new board: `haptic()` reads the flag on every
+   * event, so it applies to the game already in progress. */
+  private setHaptics(on: boolean): void {
+    this.settings = { ...this.settings, haptics: on };
+    saveSettings(this.settings);
+    setHapticsEnabled(on);
+  }
+
   /** Adopt settings written by another tab. The theme is applied; the
    * difficulty, animation and cell-style preferences are picked up by the
    * menu's next repaint and the next board. A game already in progress keeps
@@ -208,6 +223,7 @@ class App {
     this.settings = settings;
     applyTheme(settings.theme);
     setSoundPreset(settings.sound);
+    setHapticsEnabled(settings.haptics);
     this.animationsEnabled = animationsEnabled(settings.animations);
     this.session?.mesh.setAnimationsEnabled(this.animationsEnabled);
     this.menu.refresh();

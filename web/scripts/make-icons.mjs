@@ -10,6 +10,8 @@
 //   web/public/apple-touch-icon.png   (full-bleed, iOS masks it)
 //   desktop/resources/icon.png        (macOS app icon, 1024, inset by its own
 //                                      margin — macOS does not mask)
+//   ios/App/App/Assets.xcassets/…     (the iPhone app icon, 1024 full-bleed —
+//                                      iOS masks it — and the launch image)
 //
 // Two things here are quotations from the game rather than icon art, and should
 // stay that way:
@@ -37,6 +39,7 @@ import { fileURLToPath } from "node:url";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PUBLIC = resolve(HERE, "../public");
 const DESKTOP = resolve(HERE, "../../desktop/resources");
+const IOS = resolve(HERE, "../../ios/App/App/Assets.xcassets");
 
 const n = (v) => Number(v.toFixed(2)).toString();
 
@@ -187,6 +190,18 @@ const macSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" wi
   </g>
 </svg>`;
 
+// The iOS launch image. Deliberately *transparent*: LaunchScreen.storyboard
+// draws it over `systemBackgroundColor`, so a motif on nothing is white on a
+// light phone and black on a dark one, while a baked-in background would flash
+// the wrong colour half the time. It is shown scaleAspectFill in a square far
+// larger than any phone, so the plate is small enough to survive the crop.
+const splashSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">${defs}
+  <g transform="translate(256 256) scale(0.28) translate(-256 -256)">
+    ${plate(26, 26, 460, 112)}
+    ${motif}
+  </g>
+</svg>`;
+
 async function render(browser, svg, size, out, transparent) {
   const page = await browser.newPage({ viewport: { width: size, height: size } });
   const html = `<!doctype html><meta charset="utf-8">
@@ -210,5 +225,21 @@ await render(browser, maskableSvg, 512, `${PUBLIC}/icons/maskable-512.png`, fals
 await render(browser, maskableSvg, 180, `${PUBLIC}/apple-touch-icon.png`, false);
 // electron-builder renders the .icns from this, so it wants the full 1024.
 await render(browser, macSvg, 1024, `${DESKTOP}/icon.png`, true);
+// iOS: one 1024 icon for the whole size ladder (Xcode derives the rest), and
+// the launch image at the 2732 the asset catalogue's three scales all share.
+await render(
+  browser,
+  maskableSvg,
+  1024,
+  `${IOS}/AppIcon.appiconset/AppIcon-512@2x.png`,
+  false,
+);
+for (const name of [
+  "splash-2732x2732.png",
+  "splash-2732x2732-1.png",
+  "splash-2732x2732-2.png",
+]) {
+  await render(browser, splashSvg, 2732, `${IOS}/Splash.imageset/${name}`, true);
+}
 await browser.close();
-console.log("icons written to", PUBLIC, "and", DESKTOP);
+console.log("icons written to", PUBLIC + ",", DESKTOP, "and", IOS);

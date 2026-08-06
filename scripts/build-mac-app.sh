@@ -58,13 +58,11 @@ fi
 
 # --- 1. the game ------------------------------------------------------------
 if [ "$SKIP_WEB" = 0 ]; then
-  step "Building the web app (VITE_DESKTOP=1)"
-  if [ ! -d web/node_modules ]; then
-    (cd web && npm ci)
-  fi
-  # VITE_DESKTOP drops the service worker and the update check: inside a bundle
-  # there is no deployed build to update from. See web/vite.config.ts.
-  (cd web && VITE_DESKTOP=1 npm run build)
+  scripts/ensure-web-deps.sh
+  step "Building the web app (VITE_PACKAGED=1)"
+  # VITE_PACKAGED drops the service worker and the update check: inside a
+  # bundle there is no deployed build to update from. See web/vite.config.ts.
+  (cd web && VITE_PACKAGED=1 npm run build)
 fi
 [ -f web/dist/index.html ] || die "web/dist is empty — build the web app first"
 
