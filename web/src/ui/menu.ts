@@ -1,17 +1,21 @@
 import { screens } from "../config/screens";
 import {
-  FAMILY_LABELS,
   MENU,
+  MENU_FAMILY_LABELS,
   MODE_LABELS,
   POLYHEDRA_MODES,
   SPHERE_MODES,
   SURFACES,
-  familyRows,
-  pickerFamilies,
+  flatMenuModes,
+  menuFamilies,
+  menuFamilyRows,
+  menuTilingRows,
+  threeDMenuModes,
 } from "../boards/catalog";
-import { MODES } from "../boards/presets";
+import { hasMode } from "../boards/presets";
 import { clearBestTimes } from "../leaderboard";
 import { renderBestTimes } from "./bestTimes";
+import { HELP_ICON, renderHelp } from "./help";
 import { menuIcon } from "./icons";
 import {
   GEAR_ICON,
@@ -22,16 +26,19 @@ import {
   type SettingsHost,
 } from "./settings";
 
-// Geometry-first menu, mirroring the pygame MenuScreen (gui.py). The home page
-// lists Classic, Flat, Flat manifolds, Sphere, Polyhedra. Classic launches flat
-// squares straight away; Flat and every flat manifold (cylinder, Möbius, Klein,
-// torus) open the same tiling picker — the Regular, Uniform, Laves and
-// (plane-only) Aperiodic families as submenus, then a Random entry. The plane
-// is reached through Flat rather than repeated in the manifolds list; its
-// Regular page also carries the shaped boards (a triangular or hexagonal
-// outline instead of the default rectangle). Sphere and Polyhedra list their
-// finished boards. Title, difficulty row and theme come from the shared
-// UI-screen config.
+// Play-first menu. The home page is Classic (flat squares, launched straight
+// away), Flat and 3D — one tap each for a random board from that half of the
+// catalogue — and Custom, which opens the geometry-first tree the pygame
+// MenuScreen (gui.py) shows at its root: Flat, Flat manifolds, Sphere,
+// Polyhedra. The plane and every flat manifold (cylinder, Möbius, Klein,
+// torus) open the same tiling picker: the three regular tilings promoted to
+// the top, then the Uniform, Laves, Isogonal, Congruent-rectangles and
+// (plane-only) Aperiodic and Fractals families as submenus. On the plane one
+// more submenu holds the shaped boards — the same regular tilings cut to a
+// triangular or hexagonal outline instead of the default rectangle. Sphere and
+// Polyhedra list their finished boards. Title, difficulty row and theme come
+// from the shared UI-screen config; the header's gear and ? open the settings
+// and how-to-play pages.
 
 export interface MenuSelection {
   mode: string;
@@ -57,35 +64,49 @@ interface Family {
   modes: ModeEntry[];
 }
 
-/** The tiling picker for a surface: the families (regular, uniform, dual and,
- * on the plane, aperiodic) that have any built modes on that surface. */
+/** The tiling picker for a surface: the regular tilings it carries, promoted
+ * to rows of their own, then the families (uniform, dual and, on the plane,
+ * the shaped boards, aperiodic and fractals) with any built modes on it. */
 interface Picker {
+  tilings: ModeEntry[];
   families: Family[];
 }
 
-/** Every mode reachable through a surface's picker — the pool the Random entry
- * draws from (mirrors catalog.py picker_modes). */
-function pickerModes(picker: Picker): string[] {
-  return picker.families.flatMap((f) => f.modes.map((m) => m.mode));
+/** The one-line description of a surface's picker: what is on its page — the
+ * promoted tilings and then the families — so the hint reflects everything
+ * reachable through it. */
+function pickerHint(surfaceKey: string): string {
+  const picker = pickerFor(surfaceKey);
+  const labels = [...picker.tilings, ...picker.families].map((r) => r.label);
+  return labels.join(" · ");
 }
 
-/** The one-line description of a surface's picker: the families available on
- * it, so the hint reflects everything reachable through it. */
-function pickerHint(surfaceKey: string): string {
-  return pickerFor(surfaceKey)
-    .families.map((f) => f.label)
-    .join(" · ");
+/** Family rows whose icon is not their own key. The `regular` family no longer
+ * holds the regular tilings (they are promoted to rows of their own), so the
+ * pygame Regular page's tri/square/hex trio would misname it — and that trio
+ * is the home page's Custom glyph. It shows a shaped board instead: what it
+ * actually holds. */
+const FAMILY_ICONS: Record<string, string> = { regular: "hexhex" };
+
+/** Rows of a picker, dropping the modes this build has not got. */
+function builtRows(rows: readonly ModeEntry[]): ModeEntry[] {
+  return rows.filter((r) => hasMode(r.mode));
 }
 
 function pickerFor(surfaceKey: string): Picker {
   const families: Family[] = [];
-  for (const key of pickerFamilies(surfaceKey)) {
-    const modes = familyRows(key, surfaceKey).filter((r) => MODES.includes(r.mode));
+  for (const key of menuFamilies(surfaceKey)) {
+    const modes = builtRows(menuFamilyRows(key, surfaceKey));
     if (modes.length > 0) {
-      families.push({ key, label: FAMILY_LABELS[key] ?? key, modes });
+      families.push({ key, label: MENU_FAMILY_LABELS[key] ?? key, modes });
     }
   }
-  return { families };
+  return { tilings: builtRows(menuTilingRows(surfaceKey)), families };
+}
+
+/** A home-page random pool, filtered to the modes this build has got. */
+function randomPool(modes: string[]): string[] {
+  return modes.filter(hasMode);
 }
 
 interface SurfaceEntry {
@@ -165,7 +186,8 @@ export class Menu {
         surfaces: this.manifoldSurfaces(),
       },
       { key: "sphere", label: ROOT_LABELS["sphere"] ?? "Sphere", kind: "modes", modes: [...SPHERE_MODES] },
-      // Polyhedra: the solids (the shaped flat boards live under Flat › Regular).
+      // Polyhedra: the solids (the shaped flat boards live under Flat ›
+      // Non-square boards).
       {
         key: "polyhedra",
         label: ROOT_LABELS["polyhedra"] ?? "Polyhedra",
@@ -174,9 +196,10 @@ export class Menu {
       },
     ];
     this.groups = groups.filter((g) => {
-      if (g.kind === "modes") return (g.modes = g.modes.filter((m) => MODES.includes(m))).length > 0;
+      if (g.kind === "modes") return (g.modes = g.modes.filter(hasMode)).length > 0;
       if (g.kind === "manifolds") return g.surfaces.length > 0;
-      return pickerFor(g.surfaceKey).families.length > 0;
+      const picker = pickerFor(g.surfaceKey);
+      return picker.tilings.length > 0 || picker.families.length > 0;
     });
 
     this.root = document.createElement("section");
@@ -189,9 +212,9 @@ export class Menu {
     this.showRoot();
   }
 
-  /** The title row: the title, and the settings gear at its right edge. The
-   * CSS balances the gear with an empty box of the same width on the left, so
-   * the title stays centred on the screen. */
+  /** The title row: the title, and the how-to-play ? and settings gear at its
+   * right edge. The CSS balances the two buttons with an empty box of the same
+   * width on the left, so the title stays centred on the screen. */
   private header(): HTMLElement {
     const header = document.createElement("div");
     header.className = "menu-header";
@@ -200,15 +223,30 @@ export class Menu {
     title.className = "menu-title";
     title.textContent = screens.menu.title;
 
-    const gear = document.createElement("button");
-    gear.className = "menu-settings-btn";
-    gear.dataset["action"] = "settings";
-    gear.setAttribute("aria-label", "Settings");
-    gear.innerHTML = GEAR_ICON;
-    gear.addEventListener("click", () => this.showSettings());
+    const actions = document.createElement("div");
+    actions.className = "menu-header-actions";
+    actions.append(
+      this.headerButton("help", "How to play", HELP_ICON, () => this.showHelp()),
+      this.headerButton("settings", "Settings", GEAR_ICON, () => this.showSettings()),
+    );
 
-    header.append(title, gear);
+    header.append(title, actions);
     return header;
+  }
+
+  private headerButton(
+    action: string,
+    label: string,
+    icon: string,
+    onClick: () => void,
+  ): HTMLElement {
+    const btn = document.createElement("button");
+    btn.className = "menu-header-btn";
+    btn.dataset["action"] = action;
+    btn.setAttribute("aria-label", label);
+    btn.innerHTML = icon;
+    btn.addEventListener("click", onClick);
+    return btn;
   }
 
   /** Coming back from a board reopens the page the game was launched from
@@ -250,6 +288,20 @@ export class Menu {
    * the back row, the card rows and the scrolling body. */
   private showSettings(): void {
     this.go(() => this.renderSettingsPage());
+  }
+
+  /** The how-to-play page — a page off the home row, built like settings. */
+  private showHelp(): void {
+    this.go(() => this.renderHelpPage());
+  }
+
+  private renderHelpPage(): void {
+    // Static text: the difficulty row means nothing here either.
+    this.root.classList.add("settings-open");
+    this.body.replaceChildren(
+      this.backRow("How to play", () => this.showRoot()),
+      renderHelp(),
+    );
   }
 
   /** A settings-page view of the preferences that re-renders `page` after any
@@ -364,11 +416,13 @@ export class Menu {
     );
   }
 
+  /** The home page: Classic, one random board from each half of the
+   * catalogue, and Custom for the whole tree. */
   private renderRoot(): void {
     const list = document.createElement("ul");
     list.className = "menu-list";
     // Classic — flat squares, launched straight away (gui.py MenuScreen).
-    if (MODES.includes("square")) {
+    if (hasMode("square")) {
       list.append(
         this.launchRow(
           "square",
@@ -378,13 +432,57 @@ export class Menu {
         ),
       );
     }
+    const flat = randomPool(flatMenuModes());
+    if (flat.length > 0) {
+      list.append(
+        this.randomRow(
+          "flat",
+          flat,
+          ROOT_LABELS["flat"] ?? "Flat",
+          "A random flat tiling.",
+          // the same hexagon the old Flat entry showed
+          "hex",
+        ),
+      );
+    }
+    const threeD = randomPool(threeDMenuModes());
+    if (threeD.length > 0) {
+      list.append(
+        this.randomRow("3d", threeD, "3D", "A random manifold, sphere or polyhedron.", "3d"),
+      );
+    }
+    if (this.groups.length > 0) {
+      const li = document.createElement("li");
+      const btn = document.createElement("button");
+      btn.className = "menu-entry";
+      btn.dataset.group = "custom";
+      btn.append(
+        iconEl("custom"),
+        textBlock("Custom", this.groups.map((g) => g.label).join(" · ")),
+      );
+      btn.addEventListener("click", () => this.showCustom());
+      li.append(btn);
+      list.append(li);
+    }
+    this.body.replaceChildren(list);
+  }
+
+  private showCustom(): void {
+    this.go(() => this.renderCustom());
+  }
+
+  /** The Custom page: pick a geometry — the plane, a flat manifold, the
+   * sphere or a polyhedron — and drill down from there. */
+  private renderCustom(): void {
+    const list = document.createElement("ul");
+    list.className = "menu-list";
     for (const group of this.groups) {
       const li = document.createElement("li");
       const btn = document.createElement("button");
       btn.className = "menu-entry";
       btn.dataset.group = group.key;
-      // The home "Flat" entry (which opens the tiling picker) shows a hexagon;
-      // the flat-plane surface keeps its square icon in the manifolds list.
+      // The "Flat" entry (which opens the tiling picker) shows a hexagon; the
+      // flat-plane surface keeps its square icon in the manifolds list.
       btn.append(
         iconEl(group.key === "flat" ? "hex" : group.key),
         textBlock(group.label, this.groupHint(group)),
@@ -393,7 +491,7 @@ export class Menu {
       li.append(btn);
       list.append(li);
     }
-    this.body.replaceChildren(list);
+    this.body.replaceChildren(this.backRow("Custom", () => this.showRoot()), list);
   }
 
   private groupHint(group: Group): string {
@@ -404,7 +502,7 @@ export class Menu {
 
   private showGroup(group: Group): void {
     if (group.kind === "picker") {
-      this.showPicker(group.label, group.surfaceKey, () => this.showRoot());
+      this.showPicker(group.label, group.surfaceKey, () => this.showCustom());
       return;
     }
     this.go(() => this.renderGroup(group));
@@ -412,10 +510,10 @@ export class Menu {
 
   private renderGroup(group: Group): void {
     if (group.kind === "picker") {
-      this.showPicker(group.label, group.surfaceKey, () => this.showRoot());
+      this.showPicker(group.label, group.surfaceKey, () => this.showCustom());
       return;
     }
-    const back = this.backRow(group.label, () => this.showRoot());
+    const back = this.backRow(group.label, () => this.showCustom());
     const list = document.createElement("ul");
     list.className = "menu-list";
     if (group.kind === "modes") {
@@ -427,8 +525,9 @@ export class Menu {
   }
 
   /** The shared tiling picker for a surface (the plane or a flat manifold):
-   * the Regular / Uniform / Laves (and, on the plane, Aperiodic) families as
-   * submenus, then a Random entry. */
+   * the three regular tilings as rows of their own, then the Uniform / Laves /
+   * Isogonal / Congruent-rectangles (and, on the plane, Non-square boards,
+   * Aperiodic and Fractals) families as submenus. */
   private showPicker(label: string, surfaceKey: string, onBack: () => void): void {
     this.go(() => this.renderPicker(label, surfaceKey, onBack));
   }
@@ -438,6 +537,9 @@ export class Menu {
     const back = this.backRow(label, onBack);
     const list = document.createElement("ul");
     list.className = "menu-list";
+    for (const tiling of picker.tilings) {
+      list.append(this.entryRow(tiling.mode, tiling.label, tiling.icon));
+    }
     for (const family of picker.families) {
       list.append(
         this.submenuRow(family.label, family.key, () =>
@@ -445,8 +547,6 @@ export class Menu {
         ),
       );
     }
-    const pool = pickerModes(picker);
-    if (pool.length > 0) list.append(this.randomRow(pool));
     this.body.replaceChildren(back, list);
   }
 
@@ -517,7 +617,7 @@ export class Menu {
     const chevron = document.createElement("span");
     chevron.className = "menu-entry-chevron";
     chevron.textContent = "›";
-    btn.append(iconEl(key), textBlock(label), chevron);
+    btn.append(iconEl(FAMILY_ICONS[key] ?? key), textBlock(label), chevron);
     btn.addEventListener("click", onClick);
     li.append(btn);
     return li;
@@ -551,14 +651,21 @@ export class Menu {
     return li;
   }
 
-  /** The "Random" picker entry — resolves to a random mode from the
-   * surface's picker pool at click time (mirrors gui.py's random choice). */
-  private randomRow(pool: string[]): HTMLElement {
+  /** A home-page random entry (Flat, 3D) — resolves to a random mode from its
+   * pool at click time, so it is a different board every tap (mirrors gui.py's
+   * random choice). */
+  private randomRow(
+    key: string,
+    pool: string[],
+    label: string,
+    hint: string,
+    icon: string,
+  ): HTMLElement {
     const li = document.createElement("li");
     const btn = document.createElement("button");
     btn.className = "menu-entry";
-    btn.dataset.random = "tiling";
-    btn.append(iconEl("random"), textBlock("Random"));
+    btn.dataset.random = key;
+    btn.append(iconEl(icon), textBlock(label, hint));
     btn.addEventListener("click", () => {
       const mode = pool[Math.floor(Math.random() * pool.length)];
       if (mode) this.onSelect({ mode, difficulty: this.settings.difficulty });

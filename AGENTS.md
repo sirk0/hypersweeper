@@ -351,7 +351,11 @@ These are one-offs, not tiling×surface products.
    `menu.sphereModes`, `menu.polyhedraModes`, `menu.aperiodic`, or
    `menu.shapedModes` (keyed by the regular tiling the shaped board is cut
    from) — and its label to `soloLabels`. `catalog.py` loads them; the
-   exporter round-trip test keeps the two sides honest.
+   exporter round-trip test keeps the two sides honest. Both menus follow
+   from that table: on the web a `shapedModes` entry lands under **Custom ›
+   Flat › Non-square boards** (the regular tilings themselves are rows of the
+   picker there), and everything else joins the home page's Flat or 3D random
+   pool along with its group.
 3. Add the builder to `_JSON_BUILDERS` in `presets.py`, add a
    `{mode: {builder, args: {difficulty: [...]}}}` row to
    `data/presets.json` (positional args), and re-run
@@ -459,7 +463,9 @@ surface.
 One menu edit is needed: add the surface key to `MANIFOLD_ORDER` and a
 label to `MANIFOLD_LABELS` in `catalog.py` so it appears (in your chosen
 position) on the Flat manifolds page — that page lists its surfaces
-explicitly. Everything else is still derived: `MODE_LABELS`, `TILINGS`,
+explicitly (on the web that page is under **Custom**, and the new surface
+also joins the home page's 3D random pool, both derived). Everything else is
+still derived: `MODE_LABELS`, `TILINGS`,
 `MODES_3D`, `mode_for`, `surface_of`, `view_hint`, the picker's per-surface
 gating and the random pool all follow from the `SurfaceSpec`. The `klein`
 modes join the wrapped-surface

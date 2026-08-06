@@ -92,7 +92,7 @@ const SHOTS: Shot[] = [
     file: "themes.png",
     theme: "ios",
     clicks: [
-      '.menu-settings-btn[data-action="settings"]',
+      '.menu-header-btn[data-action="settings"]',
       '.menu-entry[data-settings-group="theme"]',
     ],
   },
