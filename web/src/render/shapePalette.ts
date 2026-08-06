@@ -156,6 +156,17 @@ export const SHAPE_PALETTE = {
     },
     cap: 0.9,
     cuspBlend: 0.4,
+    /** The **classic** board's grays, used by the one cell style that switches
+     * the shape colours off (`CellStyle.monochrome`). Not the anchors above:
+     * those were chosen for the colour scheme — the opened tone was pushed near
+     * white so a pale wash of a hue still reads under a number — and a gray
+     * board drawn at them has a hidden/opened step far wider than the classic
+     * board ever had. These are a quotation instead, of `HIDDEN_FACE` and
+     * `REVEALED_FACE` in the pygame build (minesweeper/gui.py), which is this
+     * game's own classic board. The step between them is small on purpose: the
+     * beveled relief is what tells closed from opened here, which is the whole
+     * classic idiom. */
+    mono: { hidden: "#bdbdbd", revealed: "#cdcdcd" },
   },
 
   /** Menu icons. They share the board's hue and regularity — a triangle is red
@@ -721,10 +732,12 @@ function grayPalette(surface: BoardSurface): CellPalette {
   if (!palette) {
     // Through the same OkLCh -> sRGB path every coloured tone takes (rather
     // than straight off the hex), so a gray board and a chroma-0 shape colour
-    // are the same colour under three's colour management.
+    // are the same colour under three's colour management. One pair for both
+    // surfaces: the anchors above split flat and solid to keep a *tint* legible
+    // under a curved surface's own shading, and there is no tint here.
     palette = {
-      hidden: lchToColor(boardGrays[surface].hidden),
-      revealed: lchToColor(boardGrays[surface].revealed),
+      hidden: lchToColor(hexToLch(SHAPE_PALETTE.board.mono.hidden)),
+      revealed: lchToColor(hexToLch(SHAPE_PALETTE.board.mono.revealed)),
     };
     paletteCache.set(key, palette);
   }

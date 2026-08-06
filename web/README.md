@@ -16,13 +16,31 @@ four:
 - **Classic** — the `classic` palette and the beveled button, drawn in **gray**:
   the one place a cell style reaches past relief into colour
   (`CellStyle.monochrome`), because the 1990s board never had a colour on it but
-  the numbers.
+  the numbers. Its two grays are a quotation of the pygame board's own
+  `HIDDEN_FACE`/`REVEALED_FACE`, and the style carries the albedo that pays back
+  what the diffuse shading takes, so a top face lands on them exactly rather
+  than on the third of them a lit board would otherwise show.
 - **Realistic** — the `ios` palette over a **textured page**, with glass-bead
   cells: a five-loop dome on the plane, a specular sheen that sweeps across a
   solid as it is dragged around, and **translucent opened cells** on a flat
-  board, so the page's grain shows through the tiles you have opened.
+  board, so the page's grain shows through the tiles you have opened. Its two
+  states are two *materials*: a closed cell is polished (a bright centre
+  hotspot), an opened one matte (`CellStyle.openShade` — a nearly flat gradient
+  over a flat-floored pan), which tells them apart on a third channel besides
+  the relief and the tone.
 
-Two pieces of the renderer moved to make that last one work. The across-the-tile
+Two more things the four needed. **Classic is the pygame board's own gray** —
+`SHAPE_PALETTE.board.mono` quotes `HIDDEN_FACE`/`REVEALED_FACE` from
+`minesweeper/gui.py` (guarded by `tests/test_theme_sync.py`) rather than reusing
+the shape palette's anchors, whose hidden→opened step was widened for *colour*
+and reads far too wide in gray; and the style carries `albedo: 3.08`, which is
+`1 / 0.32`, the measured diffuse return of a head-on top face, so a closed tile
+lands on `#bdbdbd` and an opened one on `#cdcdcd` instead of on a third of them.
+**Realistic's two states are two materials** — polished closed, matte opened
+(`CellStyle.openShade` plus a flat-floored open profile), because a centre
+hotspot is what reads as shiny and flattening it is what reads as matte.
+
+Two pieces of the renderer moved to make the glass work. The across-the-tile
 gradient (`CellStyle.shade`) used to paint the top face alone, which on a
 five-loop profile is a bright disc on a flat field; it now **ramps over the
 loops**, so a style can buy a smoother dome by adding relief. And the flat tiles
@@ -620,6 +638,14 @@ in two renderers. Four things to know before adding or retuning one:
   cell's middle out to its rim, interpolated by the rasteriser). On the plane
   Realistic is a *gradient*, not a specular highlight, for exactly this reason —
   the highlight is what it does on a solid.
+- **`shade` is per state, and that is a *material*.** `openShade` overrides it
+  for opened cells. A centre hotspot is what reads as polished — it is the
+  highlight a curved shiny thing throws back, and on a head-on flat board it is
+  the *only* thing saying so, since the lighting has nothing to add. Flatten it
+  and the cell reads as matte. Realistic uses that: glass beads closed, matte
+  pans opened. It costs nothing (the gradient is already written per vertex) and
+  the geometry should follow — a profile whose heights ease off toward the crown
+  curves, one holding them level after the wall does not.
 - **`shade` ramps over the loops, and that is what buys detail.** A vertex's
   factor is `rim` at the outermost loop and `center` at the centroid, stepped by
   ring (`vertexShade`). Shading the top face alone — which is what this did when
@@ -631,10 +657,12 @@ in two renderers. Four things to know before adding or retuning one:
 - **A two-sided surface measures its gradient instead of ramping it.** The
   cylinder, Möbius strip and Klein bottle draw flat tiles with no loop stack, and
   the Klein clip can leave a vertex anywhere in one, so there is no ring order to
-  ramp over. `radialShades` (solidBoard.ts) takes the distance from the cell's
-  centre at build time: centroid → `center`, tile edge → `rim`, a cut vertex
-  wherever it truly falls. Same bead, and those surfaces need it most — a flat
-  tile with no relief has nothing else to shade it.
+  ramp over. `radialFalloff` (solidBoard.ts) measures the distance from the
+  cell's centre at build time — 1 at the centroid, 0 at the tile's edge, a cut
+  vertex wherever it truly falls — and the gradient rides on *that* at write
+  time, so the same tile can go from polished to matte when it opens. Same bead,
+  and those surfaces need it most: a flat tile with no relief has nothing else
+  to shade it.
 - **`monochrome` is the one thing here that is not relief.** The classic style
   draws the board in its plain grays, shape colour code and all switched off:
   a gray minesweeper board is what "Classic" means, and a shape-coloured one is a

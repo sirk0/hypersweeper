@@ -14,6 +14,7 @@ crosses over — pygame's draw-style knobs (``style``, ``neu``, ``button_hover``
 """
 
 import json
+import re
 from pathlib import Path
 
 from minesweeper.gui import THEMES
@@ -79,3 +80,27 @@ def test_web_only_themes_are_complete():
     required = set(COLOUR_FIELDS) - {"background2"} | {"label", "radius", "shadow"}
     for name, spec in _themes().items():
         assert required <= set(spec), name
+
+
+# The classic board's grays are the other colour this repo writes twice: the
+# TypeScript app's `classic` cell style switches the shape colours off and draws
+# the board in a quotation of the pygame faces below, so that the two builds'
+# classic boards are the same gray. Nothing else shares them — they are board
+# colours, not chrome, so they are not in `data/ui/screens.json` — which is why
+# this is a test rather than a shared config entry.
+SHAPE_PALETTE = (
+    Path(__file__).resolve().parent.parent / "web" / "src" / "render" / "shapePalette.ts"
+)
+
+
+def test_the_web_classic_board_quotes_the_pygame_grays():
+    from minesweeper.gui import HIDDEN_FACE, REVEALED_FACE
+
+    source = SHAPE_PALETTE.read_text(encoding="utf-8")
+    match = re.search(
+        r'mono:\s*\{\s*hidden:\s*"(#[0-9a-f]{6})",\s*revealed:\s*"(#[0-9a-f]{6})"',
+        source,
+    )
+    assert match, "SHAPE_PALETTE.board.mono not found in shapePalette.ts"
+    assert match.group(1) == _hex(HIDDEN_FACE)
+    assert match.group(2) == _hex(REVEALED_FACE)

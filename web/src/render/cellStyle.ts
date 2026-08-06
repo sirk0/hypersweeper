@@ -81,10 +81,22 @@ export interface CellStyle {
    * it over the profile's loops (`vertexShade` below); the flat tiles of a
    * two-sided surface (cylinder, Möbius, Klein) have no loops and are cut by
    * the Klein clip besides, so theirs is measured off the geometry instead
-   * (`radialShades` in solidBoard.ts). Either way it is the same bead, which is
+   * (`radialFalloff` in solidBoard.ts). Either way it is the same bead, which is
    * what those surfaces need most — a flat tile with no relief has nothing else
    * to shade it. */
   shade?: { center: number; rim: number };
+  /** The same gradient for an **opened** cell, when the two states should not be
+   * made of the same material. Defaults to `shade`.
+   *
+   * A centre hotspot is what reads as *polished*: it is the highlight a curved,
+   * shiny thing throws back at you, and on a flat board it is the only thing
+   * saying so, since the head-on lighting has nothing to add. So flattening it
+   * is what reads as **matte** — an opened cell lit evenly across its floor,
+   * next to closed cells that each carry a bright middle. That difference in
+   * *material* is a second channel telling opened from closed, alongside the
+   * relief and the tone, and it costs nothing: the gradient is already being
+   * written per vertex, and which one to use is known from the cell's state. */
+  openShade?: { center: number; rim: number };
   /** How far past the gold tint the win wave's crest is overdriven, if not the
    * default. Vertex colours are not clamped, so a lit tile is pushed past white
    * and the shading brings it back down bright (see WIN_GLOW). An unlit tile has
@@ -108,13 +120,18 @@ export interface CellStyle {
    * through its near one), and one mesh cannot sort that. */
   openAlpha?: number;
   /** Multiplier on a tile's colour **where it is lit** — the flat board of a lit
-   * style, and every 3D board. Diffuse shading returns only about 60% of an
-   * albedo here, which is what makes a lit board's saturated orange arrive as a
-   * dusky brown; a style that wants the palette's colour rather than a shaded
-   * version of it pays that back by asking for more albedo than exists. Kept
-   * modest: the opened tone starts near white, so a big boost clips the tiles
-   * the numbers sit on and the board goes chalky. `classic` deliberately has
-   * none — dusky is what it has always looked like. */
+   * style, and every 3D board. Diffuse shading returns only about a third of an
+   * albedo here (measured on a flat board's head-on top face: 0.32), which is
+   * what makes a lit board's saturated orange arrive as a dusky brown; a style
+   * that wants the palette's colour rather than a shaded version of it pays that
+   * back by asking for more albedo than exists.
+   *
+   * `1 / 0.32 ≈ 3.1` is therefore what *exactly* pays it back, and it is what
+   * `classic` uses, because that style is quoting a specific board and has to
+   * land on its specific grays. A style painting shape colours wants less: the
+   * opened tone starts near white, so boosting it that far clips the tiles the
+   * numbers sit on and the board goes chalky. Vertex colours are not clamped, so
+   * a value above 1 is fine — the shading is what brings it back down. */
   albedo?: number;
 }
 
@@ -149,6 +166,16 @@ const CLASSIC: CellStyle = {
     open: [{ inset: 0, height: 0 }, { inset: 0.16, height: 0.02 }],
   },
   material: { roughness: 0.65, metalness: 0 },
+  // The classic board is *lit* — the bevel's highlight and shadow, and their
+  // inversion when a cell opens, come from the key light, so this style cannot
+  // go unlit the way Flat and Realistic do. Diffuse shading returns only about
+  // 32% of an albedo here, which is what made the board read as charcoal rather
+  // than as the silver-gray it is quoting; the boost pays exactly that back, so
+  // a closed top face lands on `mono.hidden` and an opened floor on
+  // `mono.revealed`. The bevel walls are boosted with it and the lit edge clips
+  // to near-white, which is right: the classic bevel's light edge always was
+  // white. Measured, not guessed — `1 / 0.3246`.
+  albedo: 3.08,
 };
 
 /** Flat colour: unlit plates with a wide gap and no relief at all — the tiling
@@ -223,12 +250,16 @@ const REALISTIC: CellStyle = {
       { inset: 0.22, height: 0.27 },
       { inset: 0.42, height: 0.29 },
     ],
+    // A pan, not a dish: the wall drops fast and then the floor is flat. The
+    // closed profile eases its heights off toward the crown, which is what
+    // curves it; holding these level instead is the geometric half of the matte
+    // reading, and it keeps the number sitting on a plane rather than in a bowl.
     open: [
       { inset: 0, height: 0 },
-      { inset: 0.04, height: -0.03 },
-      { inset: 0.1, height: -0.07 },
-      { inset: 0.2, height: -0.1 },
-      { inset: 0.4, height: -0.11 },
+      { inset: 0.05, height: -0.085 },
+      { inset: 0.12, height: -0.105 },
+      { inset: 0.22, height: -0.11 },
+      { inset: 0.42, height: -0.11 },
     ],
   },
   solid: {
@@ -242,15 +273,19 @@ const REALISTIC: CellStyle = {
     ],
     open: [
       { inset: 0, height: 0 },
-      { inset: 0.04, height: 0.008 },
-      { inset: 0.1, height: 0.016 },
-      { inset: 0.2, height: 0.024 },
-      { inset: 0.4, height: 0.03 },
+      { inset: 0.05, height: 0.022 },
+      { inset: 0.12, height: 0.028 },
+      { inset: 0.22, height: 0.03 },
+      { inset: 0.42, height: 0.03 },
     ],
   },
   material: { roughness: 0.16, metalness: 0.1 },
   unlit: true,
   shade: { center: 1.06, rim: 0.7 },
+  // Nearly flat, and that is the point — see `openShade`. A touch of falloff is
+  // kept so the recess still reads as one; take it to a constant and the opened
+  // cells lose their edges against each other.
+  openShade: { center: 0.99, rim: 0.92 },
   winGlow: 0.12,
   albedo: 1.5,
   openAlpha: 0.74,

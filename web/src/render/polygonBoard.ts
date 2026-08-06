@@ -94,9 +94,11 @@ export class PolygonBoard extends Group implements BoardMesh {
    * style's, since an unlit board has no shading to bring the overdrive back
    * down (see CellStyle.winGlow). */
   private readonly winGlow: number;
-  /** The style's across-the-tile brightness gradient, if it has one, and the
-   * loop count it is ramped over (see `vertexShade`). */
+  /** The style's across-the-tile brightness gradients — one per cell state, so
+   * an opened cell can be a different *material* from a closed one (see
+   * CellStyle.openShade) — and the loop count they are ramped over. */
   private readonly shade: CellStyle["shade"];
+  private readonly openShade: CellStyle["shade"];
   private readonly loops: number;
   /** Multiplier on every tile colour. 1 on an unlit style, whose tiles already
    * arrive as the palette named them; a lit one may pay back what the diffuse
@@ -116,6 +118,7 @@ export class PolygonBoard extends Group implements BoardMesh {
     // brightness it always did instead of clipping to white there.
     this.winGlow = (1 + (style.winGlow ?? WIN_GLOW)) / this.albedo - 1;
     this.shade = style.shade;
+    this.openShade = style.openShade ?? style.shade;
     this.loops = cellStyleLoops(this.profile);
     this.openAlpha = style.openAlpha ?? null;
     this.glyphHeight = Math.max(
@@ -356,10 +359,11 @@ export class PolygonBoard extends Group implements BoardMesh {
     const g = this.geom[i]!;
     // Opened cells go translucent on a style that asks for it; closed ones stay
     // solid, or the board would be a window rather than a field of tiles.
-    const alpha =
-      this.openAlpha === null || !isOpened(this.states[i]!) ? 1 : this.openAlpha;
+    const opened = isOpened(this.states[i]!);
+    const alpha = this.openAlpha === null || !opened ? 1 : this.openAlpha;
+    const shade = opened ? this.openShade : this.shade;
     for (let v = 0; v < g.count; v++) {
-      const f = this.shade ? vertexShade(this.shade, this.loops, v, g.poly.length) : 1;
+      const f = shade ? vertexShade(shade, this.loops, v, g.poly.length) : 1;
       if (this.colorAttr.itemSize === 4) {
         this.colorAttr.setXYZW(g.start + v, col.r * f, col.g * f, col.b * f, alpha);
       } else {

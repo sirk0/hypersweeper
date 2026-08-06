@@ -88,38 +88,36 @@ interface CellGeom {
   // Two-sided boards only: the flat tile's triangles, built once (they never
   // re-extrude) and already cut against the surface clip.
   tile: Tri[] | null;
-  // ...and, on a style with a gradient, one brightness factor per tile vertex.
-  // A two-sided cell has no loop stack for `vertexShade` to ramp over, so its
-  // gradient is measured off the geometry instead — see `radialShades`.
-  tileShades: Float32Array | null;
+  // ...and, on a style with a gradient, how far each of that tile's vertices
+  // sits from the cell's centre, 1 at the centroid and 0 out at the edge. A
+  // two-sided cell has no loop stack for `vertexShade` to ramp over, so its
+  // gradient is measured off the geometry instead — see `radialFalloff`. The
+  // *falloff* is stored rather than the finished factor because which gradient
+  // it is applied to depends on the cell's state, which changes in play.
+  tileFalloff: Float32Array | null;
 }
 
-/** The across-the-tile gradient of a **two-sided** cell, one factor per vertex
- * of its (already clipped) triangles.
+/** Where each vertex of a **two-sided** cell's (already clipped) triangles sits
+ * across the tile: 1 at the centroid, 0 out at its edge. That is the axis a
+ * style's gradient is applied along, and it is measured once here because the
+ * geometry never moves — only which gradient rides on it changes, when the cell
+ * opens.
  *
- * The other cells get theirs from the profile: their vertices arrive in a known
- * order, ring by ring, so `vertexShade` can ramp `rim` to `center` over the
- * loops without looking at a coordinate. A two-sided cell has no loops at all —
- * it is a flat tile on the surface, fan-triangulated and then cut by the Klein
- * clip, which can leave any number of vertices anywhere in it — so the same
- * ramp has nothing to hang on, and the tiles used to come out flat colour
- * whatever the style asked for. Measuring the distance from the cell's centre
- * instead gives the same bead, and survives the clip: a vertex at the centroid
- * is `center`, one out at the tile's edge is `rim`, and a cut vertex lands
- * wherever it truly is between them. */
-function radialShades(
-  tile: Tri[],
-  centroid: Vec3,
-  radius: number,
-  shade: NonNullable<CellStyle["shade"]>,
-): Float32Array {
+ * Every other cell gets its gradient from the profile: those vertices arrive in
+ * a known order, ring by ring, so `vertexShade` can ramp `rim` to `center` over
+ * the loops without looking at a coordinate. A two-sided cell has no loops at
+ * all — it is a flat tile on the surface, fan-triangulated and then cut by the
+ * Klein clip, which can leave any number of vertices anywhere in it — so the
+ * same ramp has nothing to hang on, and the tiles used to come out flat colour
+ * whatever the style asked for. Distance from the centre gives the same bead and
+ * survives the clip: a cut vertex lands wherever it truly is. */
+function radialFalloff(tile: Tri[], centroid: Vec3, radius: number): Float32Array {
   const out = new Float32Array(tile.length * 3);
   let i = 0;
   for (const tri of tile) {
     for (const p of tri) {
       const d = Math.hypot(p[0] - centroid[0], p[1] - centroid[1], p[2] - centroid[2]);
-      const t = radius > 0 ? Math.max(0, Math.min(1, 1 - d / radius)) : 1;
-      out[i++] = shade.rim + (shade.center - shade.rim) * t;
+      out[i++] = radius > 0 ? Math.max(0, Math.min(1, 1 - d / radius)) : 1;
     }
   }
   return out;
@@ -167,9 +165,11 @@ export class SolidBoard extends Group implements BoardMesh {
    * board's business — so an unlit style's reduced glow does not apply here:
    * there is shading to bring the overdrive back down. */
   private readonly winGlow: number;
-  /** The style's across-the-tile brightness gradient, if it has one, and the
-   * loop count it is ramped over (see `vertexShade`). */
+  /** The style's across-the-tile brightness gradients — one per cell state, so
+   * an opened cell can be a different *material* from a closed one (see
+   * CellStyle.openShade) — and the loop count they are ramped over. */
   private readonly shade: CellStyle["shade"];
+  private readonly openShade: CellStyle["shade"];
   private readonly loops: number;
   /** Multiplier on every tile colour: a 3D board is always lit, so a style that
    * pays back what the shading takes does so on every board here (see
@@ -185,6 +185,7 @@ export class SolidBoard extends Group implements BoardMesh {
     // where it always did rather than clipping to white (see PolygonBoard).
     this.winGlow = (1 + (style.unlit ? WIN_GLOW : (style.winGlow ?? WIN_GLOW))) / this.albedo - 1;
     this.shade = style.shade;
+    this.openShade = style.openShade ?? style.shade;
     this.loops = cellStyleLoops(this.profile);
     this.atlas = makeGlyphAtlas();
     this.order = [...board.polygons.keys()];
@@ -248,8 +249,7 @@ export class SolidBoard extends Group implements BoardMesh {
         radius,
         center: tile ? (triangleCentroid(tile) ?? centroid) : centroid,
         palette: cellPalette(tones.get(cell)!, "solid", style.monochrome),
-        tileShades:
-          tile && style.shade ? radialShades(tile, centroid, radius, style.shade) : null,
+        tileFalloff: tile && style.shade ? radialFalloff(tile, centroid, radius) : null,
         tile,
       });
       vertexCount += count;
@@ -529,14 +529,20 @@ export class SolidBoard extends Group implements BoardMesh {
     // on an already-boosted colour reads a lightness past 1 and clamps to white.
     col.multiplyScalar(this.albedo);
     const g = this.geom[i]!;
+    // Which of the style's two gradients this cell is wearing — an opened cell
+    // may be a different material from a closed one (see CellStyle.openShade).
+    const shade = isOpened(this.states[i]!) ? this.openShade : this.shade;
     for (let v = 0; v < g.count; v++) {
-      // A two-sided cell's gradient was measured off its geometry at build time
-      // (`radialShades`); every other cell ramps over its profile's loops.
-      const f = g.tileShades
-        ? g.tileShades[v]!
-        : this.shade && !this.twoSided
-          ? vertexShade(this.shade, this.loops, v, g.poly.length)
-          : 1;
+      // A two-sided cell rides its gradient along a falloff measured off the
+      // geometry at build time (`radialFalloff`), since it has no loops; every
+      // other cell ramps over its profile's loops.
+      const f = !shade
+        ? 1
+        : g.tileFalloff
+          ? shade.rim + (shade.center - shade.rim) * g.tileFalloff[v]!
+          : this.twoSided
+            ? 1
+            : vertexShade(shade, this.loops, v, g.poly.length);
       this.colorAttr.setXYZ(g.start + v, col.r * f, col.g * f, col.b * f);
     }
     this.colorAttr.needsUpdate = true;

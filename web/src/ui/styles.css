@@ -587,22 +587,23 @@ body {
 }
 
 /* Classic: a hard bevel, inverted on the opened tile — and gray, because that
-   is what the Classic theme's cells are (CellStyle.monochrome). */
+   is what the Classic theme's cells are (CellStyle.monochrome). The two fills
+   are SHAPE_PALETTE.board.mono, i.e. the pygame board's own faces. */
 .cell-swatch[data-cell-style="classic"] {
   gap: 1px;
-  background: #7f7f7f;
+  background: #9a9a9a;
 }
 
 .cell-swatch[data-cell-style="classic"] .cell-swatch-tile {
-  background: #b4b4b4;
+  background: #bdbdbd;
   border: 1.5px solid;
-  border-color: #dcdcdc #878787 #878787 #dcdcdc;
+  border-color: #e6e6e6 #8b8b8b #8b8b8b #e6e6e6;
 }
 
 .cell-swatch[data-cell-style="classic"] .cell-swatch-tile.open {
-  background: #ececec;
+  background: #cdcdcd;
   border-width: 1px;
-  border-color: #8a8a8a #f6f6f6 #f6f6f6 #8a8a8a;
+  border-color: #8b8b8b #eeeeee #eeeeee #8b8b8b;
 }
 
 /* Flat: unlit plate colour, wide gaps, no relief at all. */
@@ -620,8 +621,10 @@ body {
   background: #fbe3ca;
 }
 
-/* Realistic: glass beads, each lit from its own middle, and an opened tile the
-   page shows through — the `openAlpha` the real board draws it at. */
+/* Realistic: glass beads, each lit from its own middle — and an opened tile
+   that is deliberately *not* one: flat matte colour at the `openAlpha` the real
+   board draws it at, so the page shows through. That contrast of materials is
+   what the theme's two states look like (see CellStyle.openShade). */
 .cell-swatch[data-cell-style="realistic"] {
   gap: 1px;
   padding: 1px;
@@ -634,11 +637,7 @@ body {
 }
 
 .cell-swatch[data-cell-style="realistic"] .cell-swatch-tile.open {
-  background: radial-gradient(
-    circle at 50% 50%,
-    rgba(253, 241, 228, 0.74) 0 12%,
-    rgba(216, 191, 165, 0.74) 92%
-  );
+  background: rgba(246, 231, 216, 0.74);
 }
 
 /* A sound preset's voice in miniature: one bar per harmonic partial, as tall
