@@ -222,3 +222,82 @@ export function pickerFamilies(surfaceKey: string): string[] {
   const excluded = MANIFOLD_EXCLUDED_FAMILIES[surfaceKey] ?? [];
   return PICKER_FAMILIES.filter((f) => !excluded.includes(f));
 }
+
+// -- the web menu -----------------------------------------------------------
+// Everything above is the port of catalog.py, shared with the pygame menu.
+// Below is the web menu's own shape, derived from it: the three regular
+// tilings are promoted to the top of every picker page rather than sitting in
+// a Regular submenu, which leaves that submenu holding the shaped boards
+// alone (hence its own label), and the Random entry moves off the pickers on
+// to the home page, where it becomes one flat pool and one 3D pool. None of
+// this is filtered by what is actually built -- callers pass their own
+// `hasMode`, as the menu already does for family rows.
+
+/** The modes that are a regular tiling cut to a triangular or hexagonal
+ * outline rather than the default rectangle. They exist on the plane only. */
+const SHAPED_MODE_SET = new Set(Object.values(SHAPED_MODES).flat());
+
+export function isShapedMode(mode: string): boolean {
+  return SHAPED_MODE_SET.has(mode);
+}
+
+/** The rows promoted to the top of a surface's picker: the regular tilings it
+ * carries (Triangles, Squares, Hexagons), without the shaped boards the
+ * Regular family also holds on the plane. */
+export function menuTilingRows(surfaceKey: string): FamilyRow[] {
+  return familyRows("regular", surfaceKey).filter((r) => !isShapedMode(r.mode));
+}
+
+/** The shaped boards, the Regular family's remainder once its tilings are
+ * promoted. Empty off the plane, which has none. */
+export function menuShapedRows(surfaceKey: string): FamilyRow[] {
+  return familyRows("regular", surfaceKey).filter((r) => isShapedMode(r.mode));
+}
+
+/** One family's rows as the web menu shows them: `regular` is the shaped
+ * boards alone (its tilings are promoted), every other family unchanged. */
+export function menuFamilyRows(family: string, surfaceKey: string): FamilyRow[] {
+  return family === "regular" ? menuShapedRows(surfaceKey) : familyRows(family, surfaceKey);
+}
+
+/** The family submenus a surface's picker offers, in order: `pickerFamilies`
+ * minus `regular` wherever promoting its tilings leaves nothing behind (every
+ * manifold -- the shaped boards are flat-only). */
+export function menuFamilies(surfaceKey: string): string[] {
+  return pickerFamilies(surfaceKey).filter(
+    (f) => f !== "regular" || menuShapedRows(surfaceKey).length > 0,
+  );
+}
+
+/** The web menu's family labels: `regular` no longer names the regular
+ * tilings (they are promoted) but the shaped boards left behind. The shared
+ * FAMILY_LABELS still says "Regular" -- that is the pygame menu's page. */
+export const MENU_FAMILY_LABELS: Record<string, string> = {
+  ...FAMILY_LABELS,
+  regular: "Non-square boards",
+};
+
+/** Every mode a surface's picker page can reach, promoted rows included. */
+export function surfaceMenuModes(surfaceKey: string): string[] {
+  const modes = menuTilingRows(surfaceKey).map((r) => r.mode);
+  for (const family of menuFamilies(surfaceKey)) {
+    for (const row of menuFamilyRows(family, surfaceKey)) modes.push(row.mode);
+  }
+  return modes;
+}
+
+/** The home page's Flat pool: every board the flat picker reaches. */
+export function flatMenuModes(): string[] {
+  return surfaceMenuModes("flat");
+}
+
+/** The home page's 3D pool: every board on a flat manifold, plus the spheres
+ * and the polyhedra -- everything Custom reaches that is not the plane. */
+export function threeDMenuModes(): string[] {
+  const modes: string[] = [];
+  for (const surfaceKey of MENU.manifoldOrder as string[]) {
+    modes.push(...surfaceMenuModes(surfaceKey));
+  }
+  modes.push(...SPHERE_MODES, ...POLYHEDRA_MODES);
+  return modes;
+}

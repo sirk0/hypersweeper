@@ -161,7 +161,9 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   six-fold rotation at every level, but never a mirror past level 1: the
   flowsnake is chiral.
 - `minesweeper/gui.py` — pygame UI. `MenuScreen` (a geometry-first home
-  page — Classic / Flat / Flat manifolds / Sphere / Polyhedra. Classic
+  page — Classic / Flat / Flat manifolds / Sphere / Polyhedra; **the pygame
+  menu only** — the web menu was restructured in `web/` alone and is
+  described in the TypeScript section below. Classic
   launches flat squares; Flat (the plane) and each flat manifold (cylinder,
   Möbius, Klein, torus) open a shared tiling picker — the Regular / Uniform
   / Laves family submenus, Isogonal, Congruent rectangles, and Aperiodic and
@@ -323,10 +325,22 @@ not a preference — see "Best times" in `web/README.md`); a time that places
 raises the app's one real modal, `src/ui/scoreDialog.ts`, and the full list
 lives under Settings › Best times.
 
+Its **menu** is play-first, and deliberately not the pygame one: the home page
+is Classic, Flat, 3D and Custom (`src/ui/menu.ts`). Flat and 3D each launch a
+*random* board — the flat picker's pool, and every flat manifold plus the
+spheres and polyhedra — so no picker carries a Random row; Custom holds the old
+root (Flat, Flat manifolds, Sphere, Polyhedra). In every tiling picker the three
+regular tilings are promoted to rows of their own, leaving the Regular family
+holding the shaped boards alone under the label **Non-square boards** (plane
+only). That shape is *derived* from the shared port in the "web menu" section of
+`src/boards/catalog.ts`, so `data/catalog.json` and the pygame menu are
+untouched; `tests/unit/menu.test.ts` pins it.
+
 The menu's gear opens a **settings** page (best times, theme, cell style,
 animations toggle, build version, links, update check) — one more `Menu` page
 rather than a modal, with the theme picker and the cell-style picker pages below
-it. Theme, difficulty, the cell style, the sound preset and the
+it. The **?** beside it opens a how-to-play page (`src/ui/help.ts`) built the
+same way, its text in TS rather than in the pygame-shared `screens.json`. Theme, difficulty, the cell style, the sound preset and the
 animations override persist (`src/settings.ts`): one stable
 `localStorage` key holding a record that carries its own `version`, never
 a versioned key name — see "Settings and themes" in `web/README.md` before

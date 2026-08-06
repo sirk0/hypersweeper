@@ -152,7 +152,7 @@ test.describe("record window", () => {
     await expect(dialog(page)).toHaveCount(0); // still waiting
 
     await page.locator('.hud-btn[data-slot="back"]').click();
-    await expect(page.locator('.menu-entry[data-group="flat"]')).toBeVisible();
+    await expect(page.locator('.menu-entry[data-group="custom"]')).toBeVisible();
     await page.waitForTimeout(1500); // past the delay the window would have used
     await expect(dialog(page)).toHaveCount(0);
     // The time was still filed — only the announcement was dropped.
@@ -171,7 +171,7 @@ test.describe("best times page", () => {
   });
 
   test("settings lists the stored times per board and difficulty", async ({ page }) => {
-    await page.locator(".menu-settings-btn").click();
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
     const row = page.locator('.menu-entry[data-settings-group="best-times"]');
     await expect(row).toContainText("Best times");
     await expect(row).toContainText("1 board");
@@ -186,7 +186,7 @@ test.describe("best times page", () => {
   });
 
   test("clearing asks first, then empties the list", async ({ page }) => {
-    await page.locator(".menu-settings-btn").click();
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
     await page.locator('.menu-entry[data-settings-group="best-times"]').click();
 
     const clear = page.locator('[data-action="clear-best-times"]');
@@ -211,7 +211,7 @@ test.describe("best times page, fresh install", () => {
   test("is reachable and says so when there is nothing to show", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator("body[data-ready]")).toBeVisible();
-    await page.locator(".menu-settings-btn").click();
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
     await expect(page.locator('.menu-entry[data-settings-group="best-times"]')).toContainText(
       "No times yet",
     );

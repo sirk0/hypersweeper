@@ -6,6 +6,22 @@ site root, by GitHub Pages and Cloudflare Pages both while the game moves
 between them; the pygame build stays in the repo as the reference
 implementation and is not deployed (see **Deploy** below).
 
+**M17 — Play-first menu.** The home page is no longer the geometry tree: it is
+**Classic**, **Flat**, **3D** and **Custom** (`src/ui/menu.ts`). Flat and 3D are
+one tap each for a random board — the flat picker's pool, and every flat
+manifold plus the spheres and polyhedra — which is why the per-picker Random
+row is gone. Custom holds what the root used to be (Flat, Flat manifolds,
+Sphere, Polyhedra), and inside every tiling picker the three regular tilings are
+**promoted** to rows of their own, so a surface page reads Triangles · Squares ·
+Hexagons · Uniform · Laves · … . On the plane that leaves the Regular family
+holding the shaped boards alone, relabelled **Non-square boards**. The header
+gains a **?** beside the gear, opening a How-to-play page (`src/ui/help.ts`)
+built like the settings pages. All of this is web-only: it is derived in the
+"web menu" section of `src/boards/catalog.ts` (`menuTilingRows`,
+`menuFamilies`, `menuFamilyRows`, `flatMenuModes`, `threeDMenuModes`,
+`MENU_FAMILY_LABELS`) from the shared port above it, so `data/catalog.json` and
+the pygame menu are untouched and keep their own shape.
+
 **M16 — Sound.** The game has a voice (`src/audio/`), synthesised rather than
 sampled — there is no audio file in this repo, and there is not meant to be. A
 sound here is *parametric*, and that is what a folder of clips could not be:
@@ -284,7 +300,7 @@ automorphism); the session scrolls it as a **view-layer permutation** — a
 hidden behind the neck rotate into view (mouse wheel / two-finger scroll /
 `[` `]` keys / the two header chevrons, back and forward) while the geometry
 and game state stay put. The Flat-manifolds menu drills surface → tiling →
-difficulty. 27 modes.
+difficulty (under **Custom** since M17). 27 modes.
 
 **M2 — 3D renderer + solids.** Ports the ten closed 3D boards (pentagonal
 hexecontahedron, snub dodecahedron, the two Goldberg polyhedra, geodesic
@@ -777,7 +793,14 @@ Things that will bite:
 
 The gear on the menu title row opens a settings page — not a modal: it is one
 more `Menu` page (`Menu.showSettings`, rendered by `src/ui/settings.ts`), so it
-reuses the back row, the `.menu-entry` cards and the scrolling body. The theme
+reuses the back row, the `.menu-entry` cards and the scrolling body. The **?**
+beside it is the same pattern with no state at all (`Menu.showHelp`, rendered by
+`src/ui/help.ts`): its text lives in TS rather than in `data/ui/screens.json`,
+which is the config the pygame build shares and which has no help page. Both
+buttons are `.menu-header-btn[data-action=…]` inside `.menu-header-actions`,
+balanced by a `::before` spacer of the same width so the title stays centred —
+add a third button and the shared `--menu-header-actions` width is the one thing
+to change. The theme
 is a page below it in the same way (`Menu.showThemePicker`): settings shows a
 Theme row naming the current palette, and the seven-row picker lives one level
 down, which keeps the settings page short enough to read at a glance. The cell
@@ -909,6 +932,15 @@ by both front-ends, so the pygame and TypeScript UIs can be kept in sync from a
 single source rather than hand-matched. `src/config/screens.ts` gives the TS app
 compile-time types over it. Later milestones extend the same shared-`data/`
 approach to the board catalog and presets (see the plan).
+
+Shared does not mean identical. `src/boards/catalog.ts` is a faithful port of
+`minesweeper/boards/catalog.py` over `data/catalog.json` — and where the two
+menus deliberately differ (M17's promoted regular tilings, the shaped-board
+family's own label, the home page's random pools), the difference is *derived*
+in that file's "web menu" section rather than pushed into the shared JSON. So
+`data/catalog.json` keeps describing the pygame menu, its exporter still
+round-trips (`tests/test_data_sync.py`), and `tests/unit/catalog.test.ts` pins
+the port while `tests/unit/menu.test.ts` pins the web shape.
 
 ## Deploy
 

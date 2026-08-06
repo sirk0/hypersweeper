@@ -309,20 +309,37 @@ body {
   color: var(--muted);
 }
 
-/* Title row: the gear at the right, balanced by an empty box of the same width
-   at the left so the title stays centred on the screen. Both are laid out in
-   flow rather than absolutely, so on a narrow phone — where the title wraps to
-   two lines — it reflows around the gear instead of running underneath it. */
+/* Title row: the how-to-play ? and the settings gear at the right, balanced by
+   an empty box of the same width at the left so the title stays centred on the
+   screen. Both sides are laid out in flow rather than absolutely, so on a
+   narrow phone — where the title wraps to two lines — it reflows around the
+   buttons instead of running underneath them. The spacer and the button box
+   share one width, so adding or dropping a button keeps the title centred. */
 .menu-header {
   display: flex;
   align-items: center;
   gap: 4px;
+  /* Two buttons and the 4px between them. Fluid like the HUD controls
+     (--hud-*): two full-size buttons on each side of a 320px phone leave
+     "Hypersweeper" too little room to stay on two lines, so they shrink with
+     the viewport the way the header's own controls do. */
+  --menu-header-btn: clamp(32px, 10vw, 40px);
+  --menu-header-actions: calc(2 * var(--menu-header-btn) + 4px);
 }
 
 .menu-header::before {
   content: "";
   flex: none;
-  width: 40px;
+  width: var(--menu-header-actions);
+}
+
+.menu-header-actions {
+  flex: none;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px;
+  width: var(--menu-header-actions);
 }
 
 .menu-title {
@@ -337,14 +354,14 @@ body {
   overflow-wrap: break-word;
 }
 
-.menu-settings-btn {
+.menu-header-btn {
   flex: none;
   touch-action: manipulation;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: var(--menu-header-btn);
+  height: var(--menu-header-btn);
   padding: 0;
   font: inherit;
   color: var(--muted);
@@ -354,14 +371,14 @@ body {
   cursor: pointer;
 }
 
-.menu-settings-btn svg {
+.menu-header-btn svg {
   display: block;
-  width: 24px;
-  height: 24px;
+  width: 60%;
+  height: 60%;
 }
 
-.menu-settings-btn:hover,
-.menu-settings-btn:active {
+.menu-header-btn:hover,
+.menu-header-btn:active {
   color: var(--accent);
   background: var(--selected);
 }

@@ -45,7 +45,7 @@ test.describe("sound settings", () => {
   });
 
   test("the Sound row opens a picker of three presets and Off", async ({ page }) => {
-    await page.locator(".menu-settings-btn").click();
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
     const row = page.locator('.menu-entry[data-settings-group="sound"]');
     await expect(row).toContainText("Sound");
     await expect(row).toContainText("Chime"); // the default, as a subtitle
@@ -64,7 +64,7 @@ test.describe("sound settings", () => {
   });
 
   test("picking a preset reaches the engine and survives a reload", async ({ page }) => {
-    await page.locator(".menu-settings-btn").click();
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
     await page.locator('.menu-entry[data-settings-group="sound"]').click();
     await page.locator('.menu-entry[data-sound="arcade"]').click();
     await expect(page.locator('.menu-entry[data-sound="arcade"]')).toHaveAttribute(
@@ -82,14 +82,14 @@ test.describe("sound settings", () => {
     await page.reload();
     await expect(page.locator("body[data-ready]")).toBeVisible();
     expect(await page.evaluate(() => window.__ms?.state().sound)).toBe("arcade");
-    await page.locator(".menu-settings-btn").click();
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
     await expect(page.locator('.menu-entry[data-settings-group="sound"]')).toContainText(
       "Arcade",
     );
   });
 
   test("Off is a choice that sticks, not a missing value", async ({ page }) => {
-    await page.locator(".menu-settings-btn").click();
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
     await page.locator('.menu-entry[data-settings-group="sound"]').click();
     await page.locator('.menu-entry[data-sound="off"]').click();
     await page.locator('.menu-entry[data-action="back"]').click();
@@ -137,7 +137,7 @@ test.describe("sound in play", () => {
   });
 
   test("Off plays nothing at all", async ({ page }) => {
-    await page.locator(".menu-settings-btn").click();
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
     await page.locator('.menu-entry[data-settings-group="sound"]').click();
     await page.locator('.menu-entry[data-sound="off"]').click();
     await page.locator('.menu-entry[data-action="back"]').click();

@@ -12,12 +12,13 @@ test.describe("M3 surfaces", () => {
   test("Flat manifolds menu drills surface → tiling and launches a wrap", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator("body[data-ready]")).toBeVisible();
+    await page.locator('.menu-entry[data-group="custom"]').click();
     await page.locator('.menu-entry[data-group="manifolds"]').click();
     await page.locator('.menu-entry[data-surface="torus"]').click();
     // back to the surface list, then in again — the breadcrumb works both ways
     await page.locator('.menu-entry[data-action="back"]').click();
     await page.locator('.menu-entry[data-surface="klein"]').click();
-    await page.locator('.menu-entry[data-submenu="regular"]').click();
+    // the regular tilings sit at the top of the picker, not in a submenu
     await page.locator('.menu-entry[data-mode="kleinhex"]').click();
     const state = await page.evaluate(() => window.__ms!.state());
     expect(state.screen).toBe("game");

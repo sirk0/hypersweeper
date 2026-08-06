@@ -148,7 +148,7 @@ test.describe("iOS haptics through the Capacitor bridge", () => {
   });
 
   test("the Haptics switch silences the bridge", async ({ page }) => {
-    await page.locator(".menu-settings-btn").click();
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
     const toggle = page.locator('.menu-entry[data-setting="haptics"]');
     await expect(toggle).toHaveAttribute("aria-checked", "true");
     await toggle.click();
@@ -164,7 +164,7 @@ test.describe("iOS haptics through the Capacitor bridge", () => {
     // And the choice survives a reload, like every other setting.
     await page.reload();
     await expect(page.locator("body[data-ready]")).toBeVisible();
-    await page.locator(".menu-settings-btn").click();
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
     await expect(page.locator('.menu-entry[data-setting="haptics"]')).toHaveAttribute(
       "aria-checked",
       "false",
@@ -186,7 +186,7 @@ test.describe("in a plain browser tab", () => {
     ).toBe("web");
     // Chromium implements the Vibration API, so the row is offered here — as it
     // is on an Android phone, where it does something.
-    await page.locator(".menu-settings-btn").click();
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
     await expect(page.locator('.menu-entry[data-setting="haptics"]')).toContainText(
       "Haptics",
     );

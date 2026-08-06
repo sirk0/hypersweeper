@@ -23,8 +23,8 @@ test.describe("settings", () => {
   });
 
   test("the gear opens settings and back returns to the menu", async ({ page }) => {
-    await expect(page.locator('.menu-entry[data-group="flat"]')).toBeVisible();
-    await page.locator('.menu-settings-btn[data-action="settings"]').click();
+    await expect(page.locator('.menu-entry[data-group="custom"]')).toBeVisible();
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
 
     await expect(page.locator(".settings-heading")).toHaveText([
       "Records",
@@ -34,15 +34,33 @@ test.describe("settings", () => {
     ]);
     // The difficulty row is meaningless on this page.
     await expect(page.locator(".menu-difficulty")).toBeHidden();
-    await expect(page.locator('.menu-entry[data-group="flat"]')).toHaveCount(0);
+    await expect(page.locator('.menu-entry[data-group="custom"]')).toHaveCount(0);
 
     await page.locator('.menu-entry[data-action="back"]').click();
-    await expect(page.locator('.menu-entry[data-group="flat"]')).toBeVisible();
+    await expect(page.locator('.menu-entry[data-group="custom"]')).toBeVisible();
+    await expect(page.locator(".menu-difficulty")).toBeVisible();
+  });
+
+  test("the ? opens how to play and back returns to the menu", async ({ page }) => {
+    await page.locator('.menu-header-btn[data-action="help"]').click();
+
+    await expect(page.locator(".settings-heading")).toHaveText([
+      "The game",
+      "Playing",
+      "Boards in space",
+      "Choosing a board",
+    ]);
+    // Static text: no launchable row, and no difficulty row either.
+    await expect(page.locator(".menu-entry[data-mode]")).toHaveCount(0);
+    await expect(page.locator(".menu-difficulty")).toBeHidden();
+
+    await page.locator('.menu-entry[data-action="back"]').click();
+    await expect(page.locator('.menu-entry[data-group="custom"]')).toBeVisible();
     await expect(page.locator(".menu-difficulty")).toBeVisible();
   });
 
   test("reports the build version from package.json", async ({ page }) => {
-    await page.locator(".menu-settings-btn").click();
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
     const version = page.locator('[data-value="version"]');
     // Locally the commit is empty, so the text is the bare version; in CI it
     // reads "0.2.25 (abc1234)".
@@ -50,7 +68,7 @@ test.describe("settings", () => {
   });
 
   test("the theme row reports the current theme and opens the picker", async ({ page }) => {
-    await page.locator(".menu-settings-btn").click();
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
     const row = page.locator('.menu-entry[data-settings-group="theme"]');
     await expect(row).toContainText("Theme");
     await expect(row).toContainText("Minimal iOS"); // the current one, as a subtitle
@@ -70,7 +88,7 @@ test.describe("settings", () => {
   });
 
   test("picking a theme re-skins the chrome and survives a reload", async ({ page }) => {
-    await page.locator(".menu-settings-btn").click();
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
     expect(await cssVar(page, "--bg")).toBe("#f2f2f7"); // the ios default
 
     await page.locator('.menu-entry[data-settings-group="theme"]').click();
@@ -94,7 +112,7 @@ test.describe("settings", () => {
   });
 
   test("every theme applies a complete palette", async ({ page }) => {
-    await page.locator(".menu-settings-btn").click();
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
     await page.locator('.menu-entry[data-settings-group="theme"]').click();
     const keys = await page
       .locator(".menu-entry[data-theme]")
@@ -109,7 +127,7 @@ test.describe("settings", () => {
   });
 
   test("the cell style row opens a picker, and the choice sticks", async ({ page }) => {
-    await page.locator(".menu-settings-btn").click();
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
     const row = page.locator('.menu-entry[data-settings-group="cell-style"]');
     await expect(row).toContainText("Cell style");
     await expect(row).toContainText("Classic"); // the default, as a subtitle
@@ -134,14 +152,14 @@ test.describe("settings", () => {
 
     await page.reload();
     await expect(page.locator("body[data-ready]")).toBeVisible();
-    await page.locator(".menu-settings-btn").click();
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
     await expect(page.locator('.menu-entry[data-settings-group="cell-style"]')).toContainText(
       "Glossy",
     );
   });
 
   test("a board launched after picking a cell style plays normally", async ({ page }) => {
-    await page.locator(".menu-settings-btn").click();
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
     await page.locator('.menu-entry[data-settings-group="cell-style"]').click();
     await page.locator('.menu-entry[data-cell-style="flat"]').click();
     await page.locator('.menu-entry[data-action="back"]').click(); // to settings
@@ -170,7 +188,7 @@ test.describe("settings", () => {
   // hard to assert, but "the mesh was cut with this profile" is not.
   for (const key of ["classic", "flat", "soft", "gloss"]) {
     test(`the ${key} style reaches the mesh of a flat board and a solid`, async ({ page }) => {
-      await page.locator(".menu-settings-btn").click();
+      await page.locator('.menu-header-btn[data-action="settings"]').click();
       await page.locator('.menu-entry[data-settings-group="cell-style"]').click();
       await page.locator(`.menu-entry[data-cell-style="${key}"]`).click();
 
@@ -187,7 +205,7 @@ test.describe("settings", () => {
   }
 
   test("the animations toggle persists across a reload", async ({ page }) => {
-    await page.locator(".menu-settings-btn").click();
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
     const toggle = page.locator('.menu-entry[data-setting="animations"]');
     // The suite runs under emulated reduced motion, so the OS default is off.
     await expect(toggle).toHaveAttribute("aria-checked", "false");
@@ -197,7 +215,7 @@ test.describe("settings", () => {
 
     await page.reload();
     await expect(page.locator("body[data-ready]")).toBeVisible();
-    await page.locator(".menu-settings-btn").click();
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
     await expect(page.locator('.menu-entry[data-setting="animations"]')).toHaveAttribute(
       "aria-checked",
       "true",
@@ -205,7 +223,7 @@ test.describe("settings", () => {
   });
 
   test("the update check reports a result", async ({ page }) => {
-    await page.locator(".menu-settings-btn").click();
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
     await page.locator('.menu-entry[data-action="check-updates"]').click();
     // Whatever the outcome (no service worker under `vite preview`, or an
     // up-to-date one), the button must say something rather than hang.
@@ -213,7 +231,7 @@ test.describe("settings", () => {
   });
 
   test("a theme survives launching a board", async ({ page }) => {
-    await page.locator(".menu-settings-btn").click();
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
     await page.locator('.menu-entry[data-settings-group="theme"]').click();
     await page.locator('.menu-entry[data-theme="classic"]').click();
     await page.locator('.menu-entry[data-action="back"]').click(); // to settings
@@ -272,6 +290,7 @@ test.describe("shareable board links", () => {
 
     // Klein bottle → the tiling picker → a wrapped tiling, the sort of board a
     // link is worth sharing for.
+    await page.locator('.menu-entry[data-group="custom"]').click();
     await page.locator('.menu-entry[data-group="manifolds"]').click();
     await page.locator('.menu-entry[data-surface="klein"]').click();
     await page.locator('.menu-entry[data-submenu="dual"]').click();

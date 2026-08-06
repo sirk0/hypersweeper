@@ -34,6 +34,7 @@ test.describe("M2 solids", () => {
   test("menu lists the Sphere and Polyhedra groups and launches a solid", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator("body[data-ready]")).toBeVisible();
+    await page.locator('.menu-entry[data-group="custom"]').click();
     await expect(page.locator('.menu-entry[data-group="sphere"]')).toBeVisible();
     await expect(page.locator('.menu-entry[data-group="polyhedra"]')).toBeVisible();
     // Drill in, back out, drill in again — then launch.
