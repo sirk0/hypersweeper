@@ -1,0 +1,63 @@
+name: Deploy to Cloudflare Pages
+
+# The second of two deploys running side by side during the move off GitHub
+# Pages. Both build the same TypeScript app from the same commit; the only
+# difference is `VITE_BASE`, because the two hosts serve it from different
+# paths:
+#
+#   GitHub Pages    project site  →  /hypersweeper/   (deploy-pages.yml)
+#   Cloudflare      domain root   →  /                (here)
+#
+# That path is baked into the bundle at build time — asset URLs, the PWA
+# manifest and the service worker scope all derive from it — so one artifact
+# cannot serve both and each host gets its own build. Nothing else differs,
+# and no source file hardcodes the base (public/next/index.html redirects
+# with a relative "../", so it works under either).
+#
+# When GitHub Pages goes away, delete deploy-pages.yml and this file is the
+# whole deploy.
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Deploys are not worth queueing: a newer commit supersedes an older one, and
+# the group is separate from the Pages deploy so the two never block each
+# other.
+concurrency:
+  group: cloudflare-pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # Skip the automated version-bump commits, exactly as the Pages deploy
+    # does, so both hosts stay on the same build.
+    if: github.event_name == 'workflow_dispatch' || !startsWith(github.event.head_commit.message, 'Bump version to')
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Build TypeScript app (site root)
+        working-directory: web
+        # No VITE_BASE: vite.config.ts defaults to "/", which is what
+        # Cloudflare serves from.
+        run: |
+          npm ci
+          npm run build
+      - name: Publish to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # `--branch` decides production vs preview: Cloudflare compares it
+          # against the project's production branch, so this must match the
+          # `--production-branch` the project was created with.
+          command: pages deploy web/dist --project-name=hypersweeper --branch=master
