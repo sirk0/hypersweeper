@@ -8,3 +8,4 @@ dev-dist/
 /playwright-report/
 /blob-report/
 /.playwright/
+/.vite/
