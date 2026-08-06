@@ -9,9 +9,14 @@ permissions:
 
 jobs:
   bump:
-    # skip the commit this workflow itself pushes
-    if: "!startsWith(github.event.head_commit.message, 'Bump version to')"
+    # skip the commits this workflow and the release it calls push themselves
+    if: >-
+      !startsWith(github.event.head_commit.message, 'Bump version to')
+      && !startsWith(github.event.head_commit.message, 'Update Homebrew formula to')
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.bump.outputs.version }}
+      sha: ${{ steps.push.outputs.sha }}
     steps:
       - uses: actions/checkout@v4
       - name: Increment the shared version (Python + TypeScript in sync)
@@ -41,14 +46,45 @@ jobs:
                   r'("name": "hypersweeper-web",\s*\n\s*"version": ")\d+\.\d+\.\d+(")',
                   rf'\g<1>{new}\g<2>', lock.read_text())
           )
+
+          # And the Electron shell (desktop/), which is where electron-builder
+          # reads the version it stamps into the .app — so without this the
+          # app a user builds through Homebrew reports the wrong one.
+          # The lock names itself twice, so this sub is deliberately uncounted.
+          desktop = Path("desktop/package.json")
+          desktop.write_text(
+              re.sub(r'("version":\s*")\d+\.\d+\.\d+(")', rf'\g<1>{new}\g<2>',
+                     desktop.read_text(), count=1)
+          )
+          desktop_lock = Path("desktop/package-lock.json")
+          desktop_lock.write_text(
+              re.sub(
+                  r'("name": "hypersweeper-desktop",\s*\n\s*"version": ")\d+\.\d+\.\d+(")',
+                  rf'\g<1>{new}\g<2>', desktop_lock.read_text())
+          )
           print(new)
           EOF
           )
           echo "version=$new_version" >> "$GITHUB_OUTPUT"
       - name: Commit and push
+        id: push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add pyproject.toml web/package.json web/package-lock.json
+          git add pyproject.toml web/package.json web/package-lock.json \
+                  desktop/package.json desktop/package-lock.json
           git commit -m "Bump version to ${{ steps.bump.outputs.version }}"
           git push
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  # Every bump is a release, and a release is just a tag: the Homebrew formula
+  # builds the app from the tag's source tarball, so nothing is published.
+  # `ref` is the commit the bump just pushed — without it the release would tag
+  # the version from before the bump.
+  release:
+    needs: bump
+    permissions:
+      contents: write
+    uses: ./.github/workflows/release.yml
+    with:
+      ref: ${{ needs.bump.outputs.sha }}

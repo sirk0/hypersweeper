@@ -399,6 +399,34 @@ deployed build to cache) and no "Check for updates" row
 cancelled and fails if it asks for one URL it does not carry; it works on
 Linux/CI under Xvfb with SwiftShader. See `desktop/README.md`.
 
+It is also **shipped**, via Homebrew: this repo is its own tap, so
+`Formula/hypersweeper.rb` here is what `brew tap sirk0/hypersweeper
+<url> && brew install hypersweeper` installs. It is a **formula, not a
+cask** — deliberately: **nothing binary is ever published**. A release is
+just a git tag, and the formula builds the app on the machine installing
+it, from the source tarball GitHub generates for that tag. Do not
+reintroduce a published `.dmg`; that was tried and rejected. Two things
+follow. Because the user builds it, the bundle carries no quarantine
+attribute and there is no Gatekeeper bypass to maintain. And because
+Homebrew reserves `/Applications` for casks, the app lands in the
+Homebrew prefix and the formula's `caveats` offers the symlink.
+
+Every push to master patch-bumps the version (`bump-version.yml`), and
+**every bump is a release**: the bump job calls `release.yml`, a minute
+of Linux that tags the bump commit, checksums the tag's tarball, and runs
+`scripts/update-formula.py` to rewrite the formula's `url` and `sha256`.
+It is a *called* workflow, not a tag-triggered one, because a tag pushed
+with `GITHUB_TOKEN` starts no workflow run. The formula runs
+`scripts/build-mac-app.sh` unchanged rather than reimplementing the
+build, re-signs the bundle after `prefix.install` (installing a keg can
+touch Mach-O files, and a broken signature will not launch on Apple
+Silicon), and uses the shell's existing `--smoke` flag as its `brew test`.
+`desktop/package.json` is version-synced by `bump-version.yml` because
+electron-builder reads the version from *there*, not `pyproject.toml`.
+`tests/test_formula.py` pins the formula against the files it names — it
+is the only check that covers the formula at all, since nothing else here
+is Ruby or runs on a Mac.
+
 ## Which version to change
 
 Two front-ends live in this repo: the Python/pygame game and the

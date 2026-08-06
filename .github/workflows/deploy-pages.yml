@@ -17,8 +17,12 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    # skip the automated version-bump commits
-    if: github.event_name == 'workflow_dispatch' || !startsWith(github.event.head_commit.message, 'Bump version to')
+    # skip the automated version-bump and formula-update commits: neither
+    # changes anything the deployed site serves
+    if: >-
+      github.event_name == 'workflow_dispatch'
+      || (!startsWith(github.event.head_commit.message, 'Bump version to')
+      && !startsWith(github.event.head_commit.message, 'Update Homebrew formula to'))
     steps:
       - uses: actions/checkout@v4
       # The TypeScript app is the deployed game and owns the site root. The

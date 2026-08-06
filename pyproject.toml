@@ -3,6 +3,8 @@ name = "minesweeper"
 version = "0.2.47"
 description = "A minesweeper clone with square, triangle and hexagon boards"
 requires-python = ">=3.13"
+license = "MIT"
+license-files = ["LICENSE"]
 dependencies = ["pygame-ce>=2.5"]
 
 [project.optional-dependencies]
@@ -14,7 +16,8 @@ all = ["minesweeper[web]", "minesweeper[test]"]
 minesweeper = "minesweeper.gui:main"
 
 [build-system]
-requires = ["setuptools>=61"]
+# >=77 for PEP 639: `license` as an SPDX string and `license-files`.
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]

@@ -1,0 +1,107 @@
+name: Release the macOS app
+
+# A release here is a git tag and nothing else. The Homebrew formula in
+# Formula/ builds the app on the machine installing it, from the source tarball
+# GitHub generates for the tag — so there is no binary to publish, no macOS
+# runner needed to build one, and this job is a minute of Linux.
+#
+# It is a *called* workflow rather than one triggered by the tag it pushes,
+# because a tag pushed with the default GITHUB_TOKEN does not start a new
+# workflow run — GitHub's recursion guard. The `ref` input is load-bearing for
+# the same reason: a called workflow's checkout defaults to the caller's SHA,
+# which for a version bump is the commit *before* the bump.
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: Commit or tag to release. Must already carry the version being released.
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Commit or tag to release (defaults to the branch this is run from)
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  # One release at a time: two bumps in quick succession would otherwise race
+  # over the formula commit on master.
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+          # The job tags what it checked out and pushes a commit to master, so
+          # it needs real history, not a shallow clone.
+          fetch-depth: 0
+
+      - name: Read the version being released
+        id: v
+        # pyproject.toml is the source of truth; bump-version.yml keeps
+        # web/ and desktop/ in step with it.
+        run: |
+          version=$(python3 - <<'EOF'
+          import re
+          from pathlib import Path
+
+          text = Path("pyproject.toml").read_text()
+          print(re.search(r'^version = "(.+)"$', text, re.M).group(1))
+          EOF
+          )
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+
+      - name: Tag it
+        run: |
+          tag="${{ steps.v.outputs.tag }}"
+          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+            echo "$tag already exists"
+          else
+            git tag "$tag"
+            git push origin "$tag"
+          fi
+
+      - name: Checksum the source tarball GitHub generates for the tag
+        id: src
+        run: |
+          url="https://github.com/${{ github.repository }}/archive/refs/tags/${{ steps.v.outputs.tag }}.tar.gz"
+          out="$RUNNER_TEMP/src.tar.gz"
+          # GitHub takes a moment to serve the archive for a tag it has just
+          # been given, so this is a wait rather than a single request.
+          for attempt in 1 2 3 4 5 6; do
+            if curl -fsSL -o "$out" "$url" && [ -s "$out" ]; then
+              echo "sha256=$(sha256sum "$out" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "attempt $attempt: $url not ready yet"
+            sleep 10
+          done
+          echo "::error::$url never became available"
+          exit 1
+
+      - name: Point the Homebrew formula at it
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin master
+          git checkout -B master origin/master
+          python3 scripts/update-formula.py \
+            --version "${{ steps.v.outputs.version }}" \
+            --sha256 "${{ steps.src.outputs.sha256 }}"
+          git add Formula/hypersweeper.rb
+          if git diff --cached --quiet; then
+            echo "formula already up to date"
+          else
+            git commit -m "Update Homebrew formula to ${{ steps.v.outputs.version }}"
+            git push origin master
+          fi

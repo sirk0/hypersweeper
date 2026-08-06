@@ -2,6 +2,7 @@
   "name": "hypersweeper-desktop",
   "private": true,
   "version": "0.2.45",
+  "license": "MIT",
   "description": "Electron shell that packages the Hypersweeper web app as an offline macOS app.",
   "author": "Hypersweeper contributors",
   "repository": "https://github.com/sirk0/hypersweeper",

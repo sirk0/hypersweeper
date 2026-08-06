@@ -102,6 +102,54 @@ Developer ID certificate and notarisation. To do that, set `identity` in
 `electron-builder.yml` (and `CSC_IDENTITY_AUTO_DISCOVERY=true`) and add a
 notarisation step; nothing else about the build changes.
 
+Which is why the app is shipped as a **formula and not a cask**: it is built on
+the machine that installs it, so it is always an app you built yourself, and
+the quarantine problem never arises. A cask would have to download a prebuilt,
+un-notarised bundle and strip `com.apple.quarantine` off it afterwards — a real
+Gatekeeper bypass, and one Homebrew is actively closing off (it has removed
+`--no-quarantine`, and drops Gatekeeper-failing casks from its own tap in
+September 2026).
+
+### Installing it
+
+This repo is its own Homebrew tap, so:
+
+```sh
+brew tap sirk0/hypersweeper https://github.com/sirk0/hypersweeper
+brew install hypersweeper
+```
+
+[`Formula/hypersweeper.rb`](../Formula/hypersweeper.rb) runs
+`scripts/build-mac-app.sh --no-verify` — the same script, no install-only path,
+so the offline check and the shell's unit tests gate what gets installed — and
+then re-signs the bundle where it landed, because installing a keg can touch
+Mach-O files and a broken signature will not launch at all. `brew test` runs
+the `--smoke` self-check against the installed app, which is the same proof of
+the offline property that `make desktop-smoke` gives. No arch flag, so a user
+builds only the slice their Mac needs.
+
+Formulae may not install into `/Applications` — Homebrew reserves that for
+casks — so the app lands in `$(brew --prefix)/opt/hypersweeper/` and the
+formula's `caveats` offers the symlink. A `hypersweeper` launcher goes in
+`bin`. The build needs `node` and a few minutes; nothing it downloads is kept.
+
+### How a release is cut
+
+Every push to master patch-bumps the version (`.github/workflows/bump-version.yml`),
+and every bump is a release — but a release here is **just a git tag**. The
+bump job calls `release.yml`, a minute of Linux that tags the bump commit,
+checksums the source tarball GitHub generates for the tag, and runs
+`scripts/update-formula.py` to point the formula at it. There is no artifact
+to publish and no macOS runner in the loop.
+
+It is a *called* workflow rather than one triggered by the tag it pushes,
+because a tag pushed with the default `GITHUB_TOKEN` starts no workflow run.
+`bump-version.yml` also keeps `desktop/package.json` in step with
+`pyproject.toml`, because that is where electron-builder reads the version it
+stamps into the bundle. `tests/test_formula.py` pins the formula against the
+files it names, so a renamed script or product fails here rather than in a
+stranger's install.
+
 ## Other platforms
 
 The shell is not macOS-specific — `npx electron-builder --linux dir` (or

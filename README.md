@@ -7,6 +7,23 @@ from a flat aperiodic Penrose mosaic to a Goldberg sphere or a Möbius strip.
 (the TypeScript/WebGL app in [`web/`](web), deployed from master by GitHub
 Actions; installable, and it works offline once loaded)
 
+**Install on a Mac:**
+
+```sh
+brew tap sirk0/hypersweeper https://github.com/sirk0/hypersweeper
+brew install hypersweeper
+```
+
+The same game as a native app that needs no internet connection at all —
+every asset it draws is inside the bundle. Nothing binary is published:
+[the formula](Formula/hypersweeper.rb) builds the app on your own Mac from
+the source, which takes a few minutes and pulls in `node` to do it. Because
+you built it, there is no Gatekeeper prompt and nothing to un-quarantine.
+Homebrew asks you to trust a third-party tap the first time, and formulae
+may not install into `/Applications`, so `brew` prints the one-line symlink
+if you want it there. The tap is this repo, which is why `brew tap` takes a
+URL.
+
 <table>
   <tr>
     <td align="center"><img src="docs/screenshots/c180.png" width="380"><br>Goldberg GP(3,0) on a sphere <sub>· Minimal iOS</sub></td>
