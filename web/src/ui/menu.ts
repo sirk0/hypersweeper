@@ -1,6 +1,7 @@
 import { screens } from "../config/screens";
 import {
   MENU,
+  MENU_FAMILY_HINTS,
   MENU_FAMILY_LABELS,
   MODE_LABELS,
   POLYHEDRA_MODES,
@@ -298,6 +299,18 @@ export class Menu {
   /** The how-to-play page — a page off the home row, built like settings. */
   private showHelp(): void {
     this.go(() => this.renderHelpPage());
+  }
+
+  /** The same page, opened over a live board by the header's help button.
+   *
+   * Deliberately *not* through `go()`: `view` is the page to restore when the
+   * board is finally left, and that must stay the picker the game was launched
+   * from rather than becoming this. `onBack` returns to the board instead of to
+   * the home page, so the game survives a look at the rules. */
+  showHelpOverGame(onBack: () => void): void {
+    this.root.hidden = false;
+    this.root.classList.add("settings-open");
+    this.body.replaceChildren(this.backRow("How to play", onBack), renderHelp());
   }
 
   private renderHelpPage(): void {
@@ -613,7 +626,13 @@ export class Menu {
     const chevron = document.createElement("span");
     chevron.className = "menu-entry-chevron";
     chevron.textContent = "›";
-    btn.append(iconEl(FAMILY_ICONS[key] ?? key), textBlock(label), chevron);
+    // "Laves" and "Isogonal" name a classification, not a look — the hint is
+    // what tells a player choosing a board what they would be playing on.
+    btn.append(
+      iconEl(FAMILY_ICONS[key] ?? key),
+      textBlock(label, MENU_FAMILY_HINTS[key]),
+      chevron,
+    );
     btn.addEventListener("click", onClick);
     li.append(btn);
     return li;
@@ -673,7 +692,24 @@ export class Menu {
   /** The difficulty pills. The choice is persisted (settings.ts), so it is
    * read from the store rather than held here, and `syncDifficultyRow` repaints
    * the pills when it changes — from a click here, or from another tab. */
+  /** The persistent difficulty picker: a heading and the three pills.
+   *
+   * The heading is not decoration — without it the home page ends in three bare
+   * words with nothing saying what they select, which is the first thing a new
+   * player sees. It deliberately carries no board sizes: `data/presets.json`
+   * takes positional arguments per builder (`square` easy is `[9, 9, 10, 32]`,
+   * `triangle` easy is `[8, 10, 60]`), so there is no mine count to read out
+   * that would be right for more than one of the boards this row applies to. */
   private difficultyRow(): HTMLElement {
+    const wrap = document.createElement("div");
+    wrap.className = "menu-difficulty-block";
+    const heading = document.createElement("h2");
+    // Its own class rather than `settings-heading`: that one is the settings
+    // page's section heading, and sharing it would make `.settings-heading` an
+    // ambiguous selector on every page (the difficulty row is always mounted).
+    heading.className = "menu-difficulty-heading";
+    heading.textContent = "Difficulty";
+
     const row = document.createElement("div");
     row.className = "menu-difficulty";
     for (const d of screens.difficulties) {
@@ -689,7 +725,8 @@ export class Menu {
     }
     this.difficultyRowEl = row;
     this.syncDifficultyRow();
-    return row;
+    wrap.append(heading, row);
+    return wrap;
   }
 
   private syncDifficultyRow(): void {

@@ -105,7 +105,12 @@ async function chrome(page: import("@playwright/test").Page) {
       canvasLeft: canvas.left,
       canvasWidth: canvas.width,
       canvasHeight: canvas.height,
-      hudBottom: document.querySelector(".hud")!.getBoundingClientRect().bottom,
+      // The whole header block the board is framed below: the header row *and*
+      // the caption under it naming the board (`App.onResize` reserves both).
+      headerBottom: (
+        document.querySelector(".board-caption:not([hidden])") ??
+        document.querySelector(".hud")!
+      ).getBoundingClientRect().bottom,
       visibleHeight: window.visualViewport?.height ?? window.innerHeight,
       innerHeight: window.innerHeight,
       innerWidth: window.innerWidth,
@@ -124,7 +129,7 @@ test.describe("viewport layout", () => {
       await expect(page.locator("body[data-ready]")).toBeVisible();
 
       const c = await chrome(page);
-      const { hudBottom, visibleHeight } = c;
+      const { headerBottom, visibleHeight } = c;
       expect(visibleHeight).toBe(c.innerHeight - toolbar);
       // The canvas stops where the browser chrome starts, not at 100vh — and
       // still spans the window edge to edge (a canvas is a replaced element: an
@@ -136,9 +141,9 @@ test.describe("viewport layout", () => {
       // Equal air above and below: the board is centred between the header and
       // the bottom of what the user can see.
       const band = await boardBand(page);
-      expect(band.center).toBeCloseTo((hudBottom + visibleHeight) / 2, 0);
+      expect(band.center).toBeCloseTo((headerBottom + visibleHeight) / 2, 0);
       expect(band.bottom).toBeLessThanOrEqual(visibleHeight);
-      expect(band.top).toBeGreaterThanOrEqual(hudBottom);
+      expect(band.top).toBeGreaterThanOrEqual(headerBottom);
     });
   }
 
@@ -153,7 +158,7 @@ test.describe("viewport layout", () => {
     expect(c.canvasHeight).toBeCloseTo(c.innerHeight, 0);
     expect(c.canvasWidth).toBeCloseTo(c.innerWidth, 0);
     const band = await boardBand(page);
-    expect(band.center).toBeCloseTo((c.hudBottom + c.innerHeight) / 2, 0);
+    expect(band.center).toBeCloseTo((c.headerBottom + c.innerHeight) / 2, 0);
   });
 
   // A home-screen launch draws under the status bar (`black-translucent`), but
@@ -174,7 +179,7 @@ test.describe("viewport layout", () => {
     expect(c.innerHeight).toBe(812); // what WebKit reports, short of the screen
     expect(c.canvasHeight).toBeCloseTo(874, 0); // what the app lays out in
     const band = await boardBand(page);
-    expect(band.center).toBeCloseTo((c.hudBottom + 874) / 2, 0);
+    expect(band.center).toBeCloseTo((c.headerBottom + 874) / 2, 0);
   });
 
   // Only that exact signature is corrected. An iPad PWA in Split View is

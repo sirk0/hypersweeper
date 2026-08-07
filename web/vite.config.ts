@@ -39,6 +39,56 @@ const packaged = process.env.VITE_PACKAGED === "1";
 // no build script can turn it on there by accident.
 const analytics = !packaged && process.env.VITE_ANALYTICS === "1";
 
+// Where this build will be served from, origin *and* base path, with a trailing
+// slash — the one thing a bundle cannot work out for itself and a link preview
+// cannot do without. Open Graph and Twitter cards are read by crawlers that do
+// not run JavaScript and do not reliably resolve relative URLs, so `og:image`
+// and `og:url` have to be absolute and have to be right at build time. The
+// default is the GitHub Pages project site, so a local build still emits valid
+// tags; each deploy workflow overrides it with the host it is publishing to.
+const siteUrl = (process.env.VITE_SITE_URL ?? "https://sirk0.github.io/hypersweeper/").replace(
+  /\/*$/,
+  "/",
+);
+
+const SOCIAL_DESCRIPTION =
+  "Minesweeper over exotic boards — flat tilings and 3D surfaces.";
+
+/** Inject the link-preview tags into `index.html` at build time.
+ *
+ * A plugin rather than `%VITE_SITE_URL%` in the HTML, because Vite's HTML env
+ * substitution reads the `.env` files rather than whatever the CI job exported,
+ * and a placeholder that silently survives into `dist/` is exactly the failure
+ * this is meant to prevent.
+ *
+ * Not applied to packaged builds: inside the macOS and iOS bundles there is no
+ * crawler to read them, and an absolute `https://` URL in the HTML is precisely
+ * what `scripts/check-offline-assets.mjs` exists to reject. */
+const socialMeta = {
+  name: "hypersweeper:social-meta",
+  transformIndexHtml(html: string): string {
+    const image = `${siteUrl}og.png`;
+    const tags = [
+      `<meta name="description" content="${SOCIAL_DESCRIPTION}" />`,
+      `<link rel="canonical" href="${siteUrl}" />`,
+      `<meta property="og:type" content="website" />`,
+      `<meta property="og:site_name" content="Hypersweeper" />`,
+      `<meta property="og:title" content="Hypersweeper" />`,
+      `<meta property="og:description" content="${SOCIAL_DESCRIPTION}" />`,
+      `<meta property="og:url" content="${siteUrl}" />`,
+      `<meta property="og:image" content="${image}" />`,
+      `<meta property="og:image:width" content="1200" />`,
+      `<meta property="og:image:height" content="630" />`,
+      `<meta property="og:image:alt" content="A Hypersweeper board part way through a game." />`,
+      `<meta name="twitter:card" content="summary_large_image" />`,
+      `<meta name="twitter:title" content="Hypersweeper" />`,
+      `<meta name="twitter:description" content="${SOCIAL_DESCRIPTION}" />`,
+      `<meta name="twitter:image" content="${image}" />`,
+    ];
+    return html.replace("</head>", `  ${tags.join("\n    ")}\n  </head>`);
+  },
+};
+
 // Answer the analytics endpoint the way the deployed host does, so a dev server
 // and `vite preview` are faithful to it. In production `/api/tally` is a
 // Cloudflare Pages Function (functions/api/tally.ts) that always replies 204;
@@ -87,6 +137,7 @@ export default defineConfig({
     fs: { allow: [".", fileURLToPath(new URL("../data", import.meta.url))] },
   },
   plugins: packaged ? [] : [
+    socialMeta,
     tallyStub,
     VitePWA({
       registerType: "autoUpdate",

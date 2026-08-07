@@ -54,6 +54,11 @@ export interface Hud {
   left: HudSlot[];
   center: HudSlot[];
   right: HudSlot[];
+  /** Controls that belong to the board rather than to the game, drawn on the
+   * caption row under the header (see ui/boardInfo.ts). Kept out of the header
+   * because they appear only on the boards that have them, and the header row
+   * is already full at phone widths. */
+  boardBar: HudSlot[];
 }
 
 export interface SmileyFaces {

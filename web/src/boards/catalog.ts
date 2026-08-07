@@ -277,6 +277,25 @@ export const MENU_FAMILY_LABELS: Record<string, string> = {
   regular: "Non-square boards",
 };
 
+/** One line under each family row, saying what the name means.
+ *
+ * Every other row in the menu carries a hint; these were the only ones that did
+ * not, and they are the ones that need it most -- "Laves" and "Isogonal" are
+ * names from the literature, not descriptions, and a player deciding what to
+ * play next has nothing to go on. Kept short enough for one line on a phone,
+ * and phrased by what the *board* looks like rather than by the classification
+ * it comes from. */
+export const MENU_FAMILY_HINTS: Record<string, string> = {
+  regular: "Triangles and hexagons, cut to shape",
+  uniform: "Two or three shapes, same at every corner",
+  // Keyed `dual`; "Laves" is only its label (see `menu.familyLabels`).
+  dual: "Their duals — one shape throughout",
+  isogonal: "A corner meets the middle of an edge",
+  rectangle: "Brick bonds, one rectangle throughout",
+  aperiodic: "Never repeats: Penrose, Spectre, spiral",
+  fractal: "One tile, grown into itself",
+};
+
 /** Every mode a surface's picker page can reach, promoted rows included. */
 export function surfaceMenuModes(surfaceKey: string): string[] {
   const modes = menuTilingRows(surfaceKey).map((r) => r.mode);

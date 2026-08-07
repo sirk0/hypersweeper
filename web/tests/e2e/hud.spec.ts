@@ -3,14 +3,20 @@ import { expect, test } from "@playwright/test";
 // Header layout parity with the pygame game (see `draw_header` in gui.py): the
 // smiley sits on the exact horizontal centre of the screen with the two LED
 // counters symmetric either side of it, every control in the row is the same
-// height, and the Klein bottle's two scroll chevrons live in that same row at
-// the right edge — including on a phone, where the whole row still has to fit
-// the viewport.
+// height, and the whole row fits the viewport on a phone.
+//
+// The header carries **two slots a side** — back and flag-mode at the left,
+// how-to-play and share at the right — around that centred block. Seven
+// controls is what one row holds at 320px, so the Klein bottle's two scroll
+// chevrons are *not* here: they belong to the board rather than to the game and
+// are drawn on the caption row under the header (`ui/boardInfo.ts`). Putting
+// them back in this row would wrap it on exactly the board that has the most to
+// fit, which is what this file exists to prevent.
 
 // Widths worth pinning: the narrowest iPhone still in circulation (320, SE 1st
 // gen), the SE 2/3 and the 12/13/14 class, the Pro Max class, and a desktop
-// window. The Klein bottle is the worst case — it is the only board that adds
-// the two scroll chevrons.
+// window. The Klein bottle is still the case to check — it is the board that
+// carries extra controls, now on the row below.
 const VIEWPORTS = [
   { name: "iPhone SE (1st gen)", width: 320, height: 568 },
   { name: "iPhone SE (2nd/3rd gen)", width: 375, height: 667 },
@@ -61,8 +67,8 @@ test.describe("game header", () => {
         "mine-counter",
         "smiley",
         "timer",
-        "klein-scroll-back",
-        "klein-scroll-fwd",
+        "help",
+        "share",
       ]);
 
       // One row: every control overlaps the others vertically, and nothing is
@@ -96,9 +102,9 @@ test.describe("game header", () => {
     });
   }
 
-  test("a board without a cell cycle centres the smiley too", async ({ page }) => {
-    // The side clusters are lopsided here (back + flag on the left, nothing on
-    // the right), which must not shift the centre group off the middle.
+  test("a board without a cell cycle carries the same header", async ({ page }) => {
+    // Every board gets the same seven controls — the two sides are equal, which
+    // is what keeps the centre group on the middle of the screen.
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/?mode=square&difficulty=easy&seed=1");
     await expect(page.locator("body[data-ready]")).toBeVisible();
@@ -110,8 +116,73 @@ test.describe("game header", () => {
       "mine-counter",
       "smiley",
       "timer",
+      "help",
+      "share",
     ]);
     const smiley = boxes.find((b) => b.slot === "smiley")!;
     expect((smiley.left + smiley.right) / 2).toBeCloseTo(390 / 2, 1);
+  });
+
+  test("the Klein scroll chevrons sit on the board bar, not in the header", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 320, height: 568 });
+    await page.goto("/?mode=klein&difficulty=easy&seed=1");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+
+    // Below the header, beside the board's name — and below every header
+    // control, so the two rows really are two rows.
+    const header = await headerBoxes(page);
+    const headerBottom = Math.max(...header.map((b) => b.bottom));
+    for (const slot of ["klein-scroll-back", "klein-scroll-fwd"]) {
+      const btn = page.locator(`.board-caption [data-slot="${slot}"]`);
+      await expect(btn).toBeVisible();
+      expect((await btn.boundingBox())!.y).toBeGreaterThanOrEqual(headerBottom);
+    }
+    await expect(page.locator(`.hud [data-slot="klein-scroll-back"]`)).toHaveCount(0);
+
+    // The caption names the board, and nothing overflows the phone.
+    await expect(page.locator(".board-caption-name")).toHaveText("Squares · Klein bottle");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(320);
+  });
+
+  test("the gesture hint shows on the first board ever, and never again", async ({
+    page,
+  }) => {
+    // The app's only first-run affordance: long-press-to-flag is otherwise
+    // documented on the how-to-play page and nowhere a new player will look.
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    await page.locator('.menu-entry[data-mode="square"]').click();
+
+    const hint = page.locator(".board-hint");
+    await expect(hint).toBeVisible();
+    await expect(hint).toContainText("to flag");
+
+    // It has done its job the moment a move is made.
+    await page.evaluate(() => window.__ms!.reveal(window.__ms!.cells()[0]!));
+    await expect(hint).toBeHidden();
+
+    // And it is spent: a second board, and a reload, get nothing.
+    await page.locator('.hud-btn[data-slot="back"]').click();
+    await page.locator('.menu-entry[data-mode="square"]').click();
+    await expect(page.locator(".board-caption-name")).toHaveText("Squares");
+    await expect(hint).toBeHidden();
+
+    await page.reload();
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    await expect(hint).toBeHidden();
+  });
+
+  test("a board with no cycle shows its name and no board-bar controls", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/?mode=hexhex&difficulty=easy&seed=1");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+
+    await expect(page.locator(".board-caption-name")).toHaveText("Hexagons - hexagonal board");
+    await expect(page.locator('.board-caption [data-slot="klein-scroll-fwd"]')).toBeHidden();
   });
 });

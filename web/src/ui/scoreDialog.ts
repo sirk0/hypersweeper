@@ -1,6 +1,7 @@
 import { difficulty as difficultySpec } from "../config/screens";
 import { fullModeLabel } from "../boards/catalog";
 import { formatTime, TOP_N, type ScoreEntry } from "../leaderboard";
+import type { ShareResult } from "../share";
 
 // The window a win puts up when the time makes the board's top three.
 //
@@ -19,6 +20,8 @@ import { formatTime, TOP_N, type ScoreEntry } from "../leaderboard";
 
 const MEDALS = ["🥇", "🥈", "🥉"];
 const RANK_TITLES = ["New best time!", "Second best time", "Third best time"];
+/** How long the share button says what happened before going back to "Share". */
+const SHARE_LABEL_MS = 2000;
 
 export interface ScoreDialogOptions {
   mode: string;
@@ -32,6 +35,10 @@ export interface ScoreDialogOptions {
   onPlayAgain(): void;
   onMenu(): void;
   onClose(): void;
+  /** Offer this board's link. Resolves with how it went, so the button can say
+   * "Link copied" when nothing visible happened (see share.ts). Omitted when
+   * the board has no link to share — a layout from the test seam. */
+  onShare?: (() => Promise<ShareResult>) | undefined;
 }
 
 export interface ScoreDialogHandle {
@@ -131,6 +138,32 @@ export function openScoreDialog(
   });
   actions.append(again, menu);
 
+  // Sharing is the one action here that does *not* dismiss the card: the player
+  // is looking at the time they just set, and the share sheet (or the clipboard
+  // toast) belongs on top of it, not instead of it.
+  const share = el("button", "dialog-btn dialog-share", "Share");
+  share.dataset["action"] = "share";
+  if (opts.onShare) {
+    let resetLabel = 0;
+    share.addEventListener("click", () => {
+      window.clearTimeout(resetLabel);
+      void opts.onShare!().then((result) => {
+        // A share sheet is its own feedback; a clipboard write is invisible and
+        // has to say so, or the button reads as broken.
+        if (result === "shared") return;
+        share.textContent = result === "copied" ? "Link copied" : "Could not share";
+        share.dataset["state"] = result;
+        resetLabel = window.setTimeout(() => {
+          share.textContent = "Share";
+          delete share.dataset["state"];
+        }, SHARE_LABEL_MS);
+      });
+    });
+    actions.append(share);
+    // Three buttons: the stylesheet gives the primary a row of its own.
+    actions.classList.add("has-share");
+  }
+
   const dismiss = el("button", "dialog-close", "×");
   dismiss.dataset["action"] = "close";
   dismiss.setAttribute("aria-label", "Close");
@@ -160,7 +193,9 @@ export function openScoreDialog(
     // Keep tabbing inside the dialog while it is up: without this the focus
     // ring walks off into the HUD behind the backdrop, where clicks do not land.
     if (e.key !== "Tab") return;
-    const focusable = [dismiss, again, menu];
+    // Share is in the ring only when it is on the card — a board with no link
+    // does not get the button, and an unattached one must not swallow a tab.
+    const focusable = opts.onShare ? [dismiss, again, menu, share] : [dismiss, again, menu];
     const first = focusable[0]!;
     const last = focusable[focusable.length - 1]!;
     const active = document.activeElement;

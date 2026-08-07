@@ -119,7 +119,7 @@
   ],
   "defaultDifficulty": "medium",
   "hud": {
-    "_comment": "Header row: left cluster, centred status cluster, right cluster. Slots are rendered left-to-right within each cluster; a front-end shows only the slots it supports at a given board.",
+    "_comment": "Header row: left cluster, centred status cluster, right cluster. Slots are rendered left-to-right within each cluster; a front-end shows only the slots it supports at a given board. The two side clusters are kept the same size (two slots each) on purpose: the web header lays them out as equal grid columns either side of an auto-width centre, so an extra slot on one side alone wraps that column onto a second row while the other stays half empty.",
     "left": [
       { "slot": "back", "label": "Back", "icon": "arrow-left", "action": "menu" },
       {
@@ -136,6 +136,21 @@
       { "slot": "timer", "kind": "counter", "source": "elapsedSeconds", "digits": 3 }
     ],
     "right": [
+      {
+        "slot": "help",
+        "label": "How to play",
+        "icon": "help",
+        "action": "help"
+      },
+      {
+        "slot": "share",
+        "label": "Share this board",
+        "icon": "share",
+        "action": "share"
+      }
+    ],
+    "_boardBarComment": "Controls that belong to the board rather than to the game: they sit on the caption row under the header, beside the board's name, not in the header row itself. The header holds two slots a side and the centred status block, which is all that fits on one row on a phone; these are shown only on a board that has them, so putting them there would wrap that row on exactly the boards that have the most to fit.",
+    "boardBar": [
       {
         "slot": "klein-scroll-back",
         "label": "Scroll back",

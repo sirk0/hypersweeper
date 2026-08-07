@@ -41,6 +41,10 @@ jobs:
         working-directory: web
         env:
           VITE_BASE: /hypersweeper/
+          # Absolute origin + base, for the link-preview tags (og:url, og:image).
+          # A crawler does not run JavaScript, so these cannot be worked out at
+          # runtime and have to be right at build time.
+          VITE_SITE_URL: https://sirk0.github.io/hypersweeper/
         run: |
           npm ci
           npm run build

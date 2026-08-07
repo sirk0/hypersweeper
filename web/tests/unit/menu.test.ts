@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   ISOGONAL_ARCH,
   MENU,
+  MENU_FAMILY_HINTS,
   MENU_FAMILY_LABELS,
   MODE_LABELS,
   POLYHEDRA_MODES,
@@ -51,6 +52,25 @@ describe("picker pages", () => {
     expect(MENU_FAMILY_LABELS["regular"]).toBe("Non-square boards");
     for (const surface of MANIFOLD_ORDER) {
       expect(menuFamilyRows("regular", surface)).toEqual([]);
+    }
+  });
+
+  it("gives every family row a hint, keyed by the family's own key", () => {
+    // "Laves" and "Isogonal" name a classification rather than a look, so the
+    // hint is what a player choosing a board actually reads. The trap this
+    // pins: the label is "Laves" but the *key* is `dual`, and a hint filed
+    // under the label simply never appears.
+    const families = new Set<string>();
+    for (const surface of ["flat", ...MANIFOLD_ORDER]) {
+      for (const family of menuFamilies(surface)) families.add(family);
+    }
+    expect(families.size).toBeGreaterThan(0);
+    for (const family of families) {
+      expect(MENU_FAMILY_HINTS[family], family).toBeTruthy();
+    }
+    // And no hint filed under a key no family has.
+    for (const key of Object.keys(MENU_FAMILY_HINTS)) {
+      expect(families.has(key), key).toBe(true);
     }
   });
 

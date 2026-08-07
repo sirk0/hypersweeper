@@ -52,6 +52,16 @@ const MODES = [
 test.describe("board gallery", () => {
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize({ width: 900, height: 700 });
+    // Every test gets a fresh browser context, so without this every board here
+    // is a *first* board and carries the one-time gesture hint — chrome rather
+    // than the render these shots are of, and worse, chrome on a seven-second
+    // timer that a slow shot would race. The per-theme tests below write their
+    // own settings record; this one only has to cover the rest.
+    await page.addInitScript(() => {
+      if (!localStorage.getItem("ms:settings")) {
+        localStorage.setItem("ms:settings", JSON.stringify({ version: 3, seenHint: true }));
+      }
+    });
   });
 
   for (const mode of MODES) {
@@ -90,7 +100,7 @@ test.describe("board gallery", () => {
   for (const style of ["dark", "classic", "realistic"]) {
     test(`revealed square in the ${style} theme`, async ({ page }) => {
       await page.addInitScript((key: string) => {
-        localStorage.setItem("ms:settings", JSON.stringify({ version: 3, theme: key }));
+        localStorage.setItem("ms:settings", JSON.stringify({ version: 3, theme: key, seenHint: true }));
       }, style);
       await page.goto("/");
       await expect(page.locator("body[data-ready]")).toBeVisible();
@@ -113,7 +123,7 @@ test.describe("board gallery", () => {
   for (const style of ["dark", "classic", "realistic"]) {
     test(`sphere in the ${style} theme`, async ({ page }) => {
       await page.addInitScript((key: string) => {
-        localStorage.setItem("ms:settings", JSON.stringify({ version: 3, theme: key }));
+        localStorage.setItem("ms:settings", JSON.stringify({ version: 3, theme: key, seenHint: true }));
       }, style);
       await page.goto("/?mode=sphere&difficulty=easy&seed=1");
       await expect(page.locator("body[data-ready]")).toBeVisible();

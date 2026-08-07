@@ -51,7 +51,7 @@ test.describe("M1 app", () => {
     expect(state?.screen).toBe("game");
     expect(state?.difficulty).toBe("easy");
     expect(state?.is3d).toBe(false);
-    await expect(page).toHaveURL(new RegExp(`\\?mode=${state?.mode}&difficulty=easy$`));
+    await expect(page).toHaveURL(new RegExp(`\\?mode=${state?.mode}&difficulty=easy&seed=\\d+$`));
     await expect(page.locator(".hud-smiley")).toBeVisible();
   });
 
@@ -61,7 +61,7 @@ test.describe("M1 app", () => {
     const state = await page.evaluate(() => window.__ms?.state());
     expect(state?.screen).toBe("game");
     expect(state?.is3d).toBe(true);
-    await expect(page).toHaveURL(new RegExp(`\\?mode=${state?.mode}&difficulty=easy$`));
+    await expect(page).toHaveURL(new RegExp(`\\?mode=${state?.mode}&difficulty=easy&seed=\\d+$`));
   });
 
   // The app was deployed under /next/ while the pygame build held the site
