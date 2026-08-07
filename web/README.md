@@ -748,6 +748,16 @@ The rest of what to know before changing one:
   faceted at any resolution. The same goes for colour — a tone per *triangle*
   bands the ball, and because the two triangles of a quad take different rings
   the bands come out as a sawtooth. Both ramps are per vertex.
+- **A marker is sized by its cell's *inradius*, not its mean vertex distance.**
+  `CellGeom.fit` — centroid to nearest *edge*, measured once in the cell's own
+  plane — is the width a thing standing on the tile has to fit inside, and it is
+  what the billboards have always used. The mean vertex distance is not a width
+  at all on a stretched surface: the immersions bend cells into slivers whose
+  mean is set by the long axis, which put a bomb several times wider than its own
+  tile on a torus wrap. The two differ by no fixed factor either — 0.48 on the
+  sphere's kites, 0.60 on the plain torus, under 0.09 on the isogonal Klein
+  wraps. Where a cell is a genuine sliver its marker is genuinely tiny, exactly
+  as its number is.
 - **Markers rebuild on cell state, not on rotation.** Nothing about them depends
   on the camera, so `rebuildMarkers` is deliberately *not* called from `orient()`
   — which fires on every frame of a drag — only from the constructor,
@@ -772,7 +782,8 @@ The rest of what to know before changing one:
 
 Review shots: `node scripts/marker-shots.mjs <outdir>` against a running
 `vite preview` plants flags on a sphere, a cube, a torus, a cylinder, a Möbius
-strip and a Klein bottle, photographs each front, overhead and three-quarter,
+strip, a Klein bottle and two stretched torus wraps (the sliver cells that the
+inradius sizing is for), photographs each front, overhead and three-quarter,
 then loses a game on the sphere *and* on the Möbius strip (bombs, the hot one
 that ended it, a gray pin under its cross — and, on the strip, the check that one
 casing shows from both faces) and shoots a flat board as the untouched control.

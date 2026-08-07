@@ -12,6 +12,7 @@ import {
   Vector3,
 } from "three";
 import {
+  cross,
   newellNormal,
   normalize,
   type Board3D,
@@ -84,6 +85,17 @@ interface CellGeom {
   centroid: Vec3;
   normal: Vec3; // outward unit normal
   radius: number; // mean distance centroid -> vertices
+  // The cell's **inradius** in its own plane: the distance from the centroid to
+  // the nearest *edge*, not to the vertices. That is the width a thing standing
+  // on the cell has to fit inside, and on a stretched tiling it is nothing like
+  // `radius` — the immersions bend cells into long thin slivers whose mean
+  // vertex distance is set by the long axis, so a marker sized off `radius`
+  // there is several times wider than the tile it sits on. The billboards have
+  // always been sized this way (`polygonInradius` in `rebuildGlyphs`, measured
+  // per frame in the *billboard* plane); this is the same measurement taken once
+  // in the cell's own plane, so a model can use it without depending on where
+  // the camera is.
+  fit: number;
   center: Vec3; // centre of the (currently raised or sunken) top face
   palette: CellPalette; // hidden/opened tones for this cell's shape
   // Two-sided boards only: the flat tile's triangles, built once (they never
@@ -233,6 +245,23 @@ export class SolidBoard extends Group implements BoardMesh {
             Math.hypot(p[0] - centroid[0], p[1] - centroid[1], p[2] - centroid[2]),
           0,
         ) / n;
+      // ...and the inradius, measured in the cell's own tangent plane (see
+      // CellGeom.fit). Any two perpendicular in-plane axes will do — nothing
+      // downstream cares which way they point, only how far the nearest edge is.
+      const ex = normalize(
+        cross(normal, Math.abs(normal[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0]),
+      );
+      const ey = cross(normal, ex);
+      const fit = polygonInradius(
+        poly.map((p): [number, number] => {
+          const d: Vec3 = [p[0] - centroid[0], p[1] - centroid[1], p[2] - centroid[2]];
+          return [
+            d[0] * ex[0] + d[1] * ex[1] + d[2] * ex[2],
+            d[0] * ey[0] + d[1] * ey[1] + d[2] * ey[2],
+          ];
+        }),
+        [0, 0],
+      );
       // The cut, if this cell is one of the few the clip reaches.
       const field = clip && clip.cells.has(cell) ? clip.field : null;
       // A closed cell is a raised button: an n-triangle top fan plus a ring of
@@ -256,6 +285,7 @@ export class SolidBoard extends Group implements BoardMesh {
         centroid,
         normal,
         radius,
+        fit,
         center: tile ? (triangleCentroid(tile) ?? centroid) : centroid,
         palette: cellPalette(tones.get(cell)!, "solid", style.monochrome),
         tileFalloff: tile && style.shade ? radialFalloff(tile, centroid, radius) : null,
@@ -287,7 +317,7 @@ export class SolidBoard extends Group implements BoardMesh {
       // (and why only they pay it). On a two-sided board the marker stands both
       // ways, so both tips go in.
       if (this.solidMarkers) {
-        const reach = radius * MARKER_REACH;
+        const reach = fit * MARKER_REACH;
         for (const s of this.twoSided ? [1, -1] : [1]) {
           const tip = add3(centroid, [
             normal[0] * reach * s,
@@ -682,7 +712,7 @@ export class SolidBoard extends Group implements BoardMesh {
       // the tallest thing a marker style can put there instead, so the X is
       // drawn across the pin the way a cancellation should be.
       const lift =
-        glyph === "cross" ? g.radius * MARKER_REACH * 1.1 : settled * 1.3;
+        glyph === "cross" ? g.fit * MARKER_REACH * 1.1 : settled * 1.3;
       const cx = c[0] + toCam[0] * lift;
       const cy = c[1] + toCam[1] * lift;
       const cz = c[2] + toCam[2] * lift;
@@ -767,7 +797,11 @@ export class SolidBoard extends Group implements BoardMesh {
       if (i === dropIndex && dropping) continue;
       const g = this.geom[i]!;
       if (g.count === 0) continue; // wholly cut away by the surface clip
-      const scale = g.radius * this.anim.popScale(i, now);
+      // Sized off the cell's inradius, not its mean vertex distance: a model
+      // has to fit *between the edges* of the tile it stands on, and on a
+      // stretched immersion those are two very different numbers (see
+      // CellGeom.fit). This is the same measure the billboards use.
+      const scale = g.fit * this.anim.popScale(i, now);
       writeMarker(marker, g.center, g.normal, scale, pos, nrm, col);
       // A two-sided cell has no consistent outward direction to stand on — the
       // Möbius strip and the Klein bottle cannot have one at all, and nothing

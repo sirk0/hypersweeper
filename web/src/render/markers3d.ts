@@ -35,17 +35,31 @@ import { FLAG_COLORS, MINE_COLORS } from "./glyphAtlas";
 /** A pin, a dead (wrongly-placed) pin, a mine, and the mine that went off. */
 export type Marker = "pin" | "deadPin" | "bomb" | "bombHot";
 
-/** Every length is a fraction of the cell's radius, so a marker is the same size
- * relative to its tile on a 12-cell cube and a 500-cell sphere. */
-const STEM_H = 0.34;
-const STEM_R0 = 0.05;
-const STEM_R1 = 0.038;
+/** Every length is a fraction of the cell's **inradius** (`CellGeom.fit` — its
+ * centroid-to-nearest-edge distance), which is what the billboards have always
+ * been sized by and the only measure that makes a marker *fit its tile*.
+ *
+ * The obvious alternative, the mean centroid-to-vertex distance, is what these
+ * were first written against, and on a stretched surface it is not a width at
+ * all: the immersions bend cells into long thin slivers whose mean vertex
+ * distance is set by the long axis, so a bomb sized that way came out several
+ * times wider than the tile under it. The ratio between the two is not a
+ * constant either — it is 0.48 on the sphere's kites, 0.60 on the plain torus
+ * and under 0.09 on the isogonal Klein wraps — which is exactly why one of them
+ * is a size and the other is not.
+ *
+ * Calibrated so the widest part of each model lands at ~0.76 of the inradius,
+ * just inside the 0.9 the glyph quads use. That leaves the sphere, the board
+ * these were tuned by eye on, drawing them at the size it always did. */
+const STEM_H = 0.71;
+const STEM_R0 = 0.105;
+const STEM_R1 = 0.08;
 const STEM_SIDES = 10;
-const HEAD_R = 0.3;
+const HEAD_R = 0.63;
 
 /** The casing, and how far the spikes reach past it — the ratios `drawMine`
  * uses (horns from 0.9r to 1.34r), rounded to what reads in three dimensions. */
-const BOMB_R = 0.3;
+const BOMB_R = 0.63;
 const SPIKE_FROM = 0.84;
 const SPIKE_TO = 1.2;
 const SPIKE_R = 0.21;
@@ -62,7 +76,7 @@ const SPHERE_SEGMENTS = 18;
 const SPHERE_RINGS = 12;
 
 /** How far the tallest model reaches above the cell it stands on, as a fraction
- * of the cell's radius — the pin, whose head is the higher of the two. The
+ * of the cell's inradius — the pin, whose head is the higher of the two. The
  * renderer frames a marker board with this much clearance over every cell (see
  * `SolidBoard`'s hull), because the camera fit is measured once at build time
  * and a marker outside it is one the board's rim crops in half. */

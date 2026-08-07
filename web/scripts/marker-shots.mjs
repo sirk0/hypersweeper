@@ -19,7 +19,10 @@ const BASE = "http://localhost:4173";
 // Closed solids first, then the flat manifolds — the torus is closed and was
 // already getting markers, the other three are the two-sided ones this round
 // switched on, and they are the interesting case (one marker per face).
-const BOARDS = ["sphere", "cube", "torus", "cylinder", "mobius", "klein"];
+const BOARDS = ["sphere", "cube", "torus", "cylinder", "mobius", "klein",
+  // A stretched wrap, where the cells are long thin slivers: the case that
+  // showed a marker sized off the mean vertex distance is not sized at all.
+  "torusrhombille", "torusstaggeredtri"];
 
 const settle = (page) =>
   page.evaluate(
@@ -87,7 +90,7 @@ for (const mode of BOARDS) {
 // is. Twice — once on a closed solid and once on a two-sided one, where the
 // point to check is that a single casing straddles the tile and shows from
 // either face (a pin needs two copies there; a bomb does not).
-for (const mode of ["sphere", "mobius"]) {
+for (const mode of ["sphere", "mobius", "torusrhombille"]) {
   const { ctx, page } = await open(mode);
   await page.evaluate((m) => {
     const ms = window.__ms;
