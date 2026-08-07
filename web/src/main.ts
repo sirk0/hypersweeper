@@ -12,6 +12,7 @@ import { isBoard3D, type CellId } from "./boards/core";
 import { setHapticsEnabled } from "./haptics";
 import { boardLinkQuery, parseBoardLink } from "./link";
 import { GameSession } from "./session";
+import { shareBoard } from "./share";
 import { attachControls, blockBrowserZoom } from "./input/controls";
 import {
   BoardRenderer,
@@ -19,6 +20,7 @@ import {
   KEY_ROTATE_STEP,
 } from "./render/renderer";
 import { bestTimes, recordTime, type ScoreEntry } from "./leaderboard";
+import { BoardInfo } from "./ui/boardInfo";
 import { Hud } from "./ui/hud";
 import { Menu } from "./ui/menu";
 import { openScoreDialog, type ScoreDialogHandle } from "./ui/scoreDialog";
@@ -50,6 +52,7 @@ class App {
   private readonly renderer: BoardRenderer;
   private readonly hud: Hud;
   private readonly menu: Menu;
+  private readonly boardInfo: BoardInfo;
   private session: GameSession | null = null;
   private screen: "menu" | "game" = "menu";
   private flagMode = false;
@@ -113,7 +116,11 @@ class App {
       (sel) => this.startGame(sel.mode, sel.difficulty),
       this.settingsHost(),
     );
-    ui.append(this.hud.root, this.menu.root);
+    this.boardInfo = new BoardInfo((action) => this.onAction(action));
+    // Caption after the header in the flex column (it reads as part of the
+    // header block, and the board is framed below both); the hint is positioned
+    // over the board, so its place in the column does not matter.
+    ui.append(this.hud.root, this.boardInfo.caption, this.menu.root, this.boardInfo.hint);
     this.hud.root.hidden = true;
 
     window.addEventListener("resize", () => this.onResize());
@@ -308,8 +315,15 @@ class App {
     this.dismissScoreDialog();
     this.scored = false;
     this.tracked = false;
+    // Every ordinary game is dealt from a seed, generated here when the caller
+    // has none, so that the board is a thing you can hand to someone else: the
+    // address bar and the share button both name *this* layout rather than
+    // "another board of this kind". Re-rolling is the smiley (or Play again),
+    // which comes back through here with no seed and so deals a new one.
+    const seed =
+      opts.mines ? undefined : (opts.seed ?? (Math.random() * 2 ** 32) >>> 0);
     this.session = new GameSession(mode, difficulty, {
-      ...(opts.seed !== undefined ? { seed: opts.seed } : {}),
+      ...(seed !== undefined ? { seed } : {}),
       ...(opts.mines ? { minePositions: opts.mines } : {}),
       cellStyle: themeCellStyle(this.settings.theme),
       // Sound is panned by where a cell is *on screen*, which only the
@@ -319,13 +333,22 @@ class App {
     });
     // A board built from an explicit mine layout (the test seam) is not
     // reproducible from a link, so it does not claim one.
-    if (!opts.mines) this.syncLocation(boardLinkQuery(mode, difficulty, opts.seed));
+    if (!opts.mines) this.syncLocation(boardLinkQuery(mode, difficulty, seed));
     this.renderer.setBoard(this.session.mesh);
     this.session.mesh.setAnimationsEnabled(this.animationsEnabled);
     if (this.session.is3d) this.renderer.setOrientation(initialOrientation(mode));
     this.screen = "game";
     this.menu.hide();
     this.hud.root.hidden = false;
+    this.boardInfo.setBoard(mode, this.session.hasCellCycle);
+    // The first board this browser ever opens gets the gesture hint, once. It
+    // is stored before it is shown, so a reload mid-hint does not re-earn it.
+    this.boardInfo.dismissHint();
+    if (!this.settings.seenHint) {
+      this.settings = { ...this.settings, seenHint: true };
+      saveSettings(this.settings);
+      this.boardInfo.showHint();
+    }
     this.hovered = null;
     this.flagMode = false;
     this.syncHud();
@@ -336,12 +359,40 @@ class App {
     trackGame({ kind: "start", mode, difficulty });
   }
 
+  /** The how-to-play page, over a live board.
+   *
+   * The game is not torn down — the canvas is only hidden, so the mesh, the
+   * mine layout and the clock all survive — and the back row returns to it.
+   * This is the one menu page a game can reach: "how do I flag?" is a question
+   * asked *while* playing, and the back button beside it would have cost the
+   * board. `visibility` rather than `display` keeps the canvas's layout box, so
+   * the WebGL context is never resized out from under the scene, and it stops
+   * the hidden board from taking taps meant for the page. */
+  private showHelp(): void {
+    if (this.screen !== "game") return;
+    this.dismissScoreDialog();
+    this.hud.root.hidden = true;
+    this.boardInfo.hide();
+    this.canvas.style.visibility = "hidden";
+    this.menu.showHelpOverGame(() => {
+      this.menu.hide();
+      this.canvas.style.visibility = "";
+      this.hud.root.hidden = false;
+      if (this.session) this.boardInfo.setBoard(this.session.mode, this.session.hasCellCycle);
+      this.onResize();
+    });
+  }
+
   private showMenu(): void {
     this.dismissScoreDialog();
+    // A game left from the help page put the canvas away; leaving for the menu
+    // has to bring it back, or the next board is drawn on a hidden canvas.
+    this.canvas.style.visibility = "";
     this.syncLocation(""); // the menu is not a board; drop the board's link
     this.screen = "menu";
     this.session = null;
     this.hud.root.hidden = true;
+    this.boardInfo.hide();
     this.renderer.clearBoard();
     this.menu.show();
     this.onResize();
@@ -405,10 +456,16 @@ class App {
    * height at the top so the board sits below it (0 in the menu). */
   private onResize(): void {
     this.syncViewport();
-    const inset =
-      this.screen === "game" && !this.hud.root.hidden
-        ? this.hud.root.getBoundingClientRect().height
-        : 0;
+    // The header *and* the caption under it: both sit in the `#ui` column above
+    // the board, so the board is framed below the pair. Measured off the
+    // caption's bottom rather than summed, so the column's own spacing counts.
+    const header =
+      this.screen === "game" && !this.hud.root.hidden ? this.hud.root : null;
+    const inset = !header
+      ? 0
+      : this.boardInfo.caption.hidden
+        ? header.getBoundingClientRect().height
+        : this.boardInfo.caption.getBoundingClientRect().bottom;
     this.renderer.setTopInset(inset);
     this.renderer.resize();
   }
@@ -424,7 +481,29 @@ class App {
       this.scroll(-1);
     } else if (action === "klein-scroll-fwd") {
       this.scroll(1);
+    } else if (action === "share") {
+      void this.shareCurrentBoard();
+    } else if (action === "help") {
+      this.showHelp();
     }
+  }
+
+  /** Hand the board on screen to someone else. The header button gives no
+   * feedback of its own on a clipboard write, so it borrows the flag button's
+   * `active` styling for a moment — a share sheet is its own feedback. */
+  private async shareCurrentBoard(): Promise<void> {
+    const session = this.session;
+    if (!session) return;
+    const result = await shareBoard({
+      mode: session.mode,
+      difficulty: session.difficulty,
+      seed: session.seed,
+    });
+    if (result === "shared") return;
+    const btn = this.hud.root.querySelector<HTMLElement>('[data-slot="share"]');
+    if (!btn) return;
+    btn.dataset["state"] = result;
+    window.setTimeout(() => delete btn.dataset["state"], 1600);
   }
 
   // -- gameplay --------------------------------------------------------------
@@ -511,6 +590,8 @@ class App {
   }
 
   private afterMove(): void {
+    // The hint has done its job the moment the player makes a move.
+    this.boardInfo.dismissHint();
     this.syncHud();
     this.renderer.markDirty();
     // Before the leaderboard: `checkRecord` can open the record window
@@ -580,6 +661,20 @@ class App {
       animate: this.animationsEnabled,
       onPlayAgain: () => this.startGame(session.mode, session.difficulty),
       onMenu: () => this.showMenu(),
+      // The win's time goes with the link — the card is about the time, so the
+      // message someone receives should say it too. A board with no seed (the
+      // test seam) has no link, and gets no button.
+      ...(session.seed !== null
+        ? {
+            onShare: () =>
+              shareBoard({
+                mode: session.mode,
+                difficulty: session.difficulty,
+                seed: session.seed,
+                elapsedMs: session.elapsedMs(),
+              }),
+          }
+        : {}),
       onClose: () => {
         this.scoreDialog = null;
       },

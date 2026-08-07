@@ -53,13 +53,20 @@
      the whole row (back + flag, the centred counter / face / counter group,
      and the two Klein scroll chevrons) stays on a single line down to a 320px
      viewport, while every control keeps a comfortable touch size. */
-  --hud-btn: clamp(36px, 11vw, 46px);
-  --hud-icon: clamp(20px, 6.1vw, 26px);
-  --hud-gap: clamp(4px, 1.5vw, 10px);
-  --hud-pad: clamp(6px, 2vw, 14px);
-  --hud-counter-pad: clamp(4px, 1.2vw, 10px);
-  --hud-counter-font: clamp(13px, 4.2vw, 20px);
-  --hud-counter-min: clamp(42px, 12vw, 74px);
+  /* The header carries up to nine controls at once — back, flag, help, the two
+     Klein chevrons, share, and the counter/smiley/counter block — and they all
+     sit on one row, because the smiley has to stay on the exact screen centre
+     (see `.hud`). The floors below are what that worst case needs at 320px: a
+     side cluster is `minmax(0, 1fr)`, so anything wider does not scroll, it
+     *overlaps* the centre and swallows a button whole. Raise a floor only after
+     re-checking the Klein bottle at 320px. */
+  --hud-btn: clamp(31px, 9.6vw, 46px);
+  --hud-icon: clamp(17px, 5.4vw, 26px);
+  --hud-gap: clamp(3px, 1.2vw, 10px);
+  --hud-pad: clamp(5px, 2vw, 14px);
+  --hud-counter-pad: clamp(3px, 1.2vw, 10px);
+  --hud-counter-font: clamp(12px, 4.2vw, 20px);
+  --hud-counter-min: clamp(33px, 10.5vw, 74px);
   /* Height of the visible viewport, the box the whole app lays out in. NOT
      `100vh`: on iOS Safari that is the *large* viewport (the one you get with
      the toolbars retracted), so a full-height fixed layer runs on underneath
@@ -161,6 +168,91 @@ body {
   pointer-events: auto;
 }
 
+/* --- Board caption and first-run hint --- */
+
+/* Names the board under the header, and carries the board's own controls (the
+   Klein scroll chevrons). Sits in the `#ui` flex column, so it is part of the
+   block `App.onResize` measures and frames the board below. */
+.board-caption {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--hud-gap);
+  padding: 0 16px 6px;
+  /* The strip itself is not a target; its buttons put this back. */
+  pointer-events: none;
+}
+
+.board-caption-name {
+  color: var(--muted);
+  font-size: clamp(12px, 3.4vw, 15px);
+  font-weight: 600;
+  /* One line: a long name (a Laves tiling on a Klein bottle) shortens rather
+     than pushing the board down. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Smaller than a header control — this row is secondary, and the chevrons sit
+   beside text rather than in a band of equal-height buttons. */
+.board-bar-btn {
+  pointer-events: auto;
+  width: auto;
+  min-width: calc(var(--hud-btn) * 0.82);
+  height: calc(var(--hud-btn) * 0.72);
+  padding: 0 6px;
+  flex: none;
+}
+
+.board-bar-btn[hidden] {
+  display: none;
+}
+
+.board-caption[hidden] {
+  display: none;
+}
+
+/* Shown once ever, over the board. Absolutely positioned rather than in the
+   column, so the board does not jump when it goes. */
+.board-hint {
+  position: fixed;
+  left: 50%;
+  bottom: max(28px, env(safe-area-inset-bottom));
+  transform: translate(-50%, 8px);
+  z-index: 3;
+  max-width: min(92vw, 420px);
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: var(--panel);
+  backdrop-filter: var(--panel-blur);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  color: var(--text);
+  font-size: clamp(13px, 3.6vw, 15px);
+  font-weight: 600;
+  text-align: center;
+  opacity: 0;
+  transition: opacity 220ms ease, transform 220ms ease;
+  /* A tap aimed at the board must not be eaten by the hint sitting over it. */
+  pointer-events: none;
+}
+
+.board-hint.open {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.board-hint[hidden] {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .board-hint {
+    transition: none;
+  }
+}
+
 /* --- HUD header --- */
 .hud[hidden] {
   display: none;
@@ -190,6 +282,13 @@ body {
   align-items: center;
   gap: var(--hud-gap);
   min-width: 0; /* a grid child defaults to min-content — let it shrink */
+  /* A side column is `minmax(0, 1fr)`, so content wider than its share does not
+     scroll — it overflows *into* the centre and hides a button behind an LED
+     counter. Wrapping instead costs a second row (only on the Klein bottle at
+     phone widths, the one board with nine controls), which the board absorbs by
+     itself: `App.onResize` reserves the header's *measured* height. */
+  flex-wrap: wrap;
+  row-gap: var(--hud-gap);
 }
 
 .hud-left {
@@ -204,6 +303,16 @@ body {
    same header row as everything else, on a phone as on the desktop. */
 .hud-right {
   justify-self: end;
+  /* Wrapped rows stay against the right edge, so the cluster reads as one block
+     hugging the corner rather than a ragged left-aligned pile. */
+  justify-content: flex-end;
+}
+
+/* The centre block is the one that must never wrap: the mine counter, the
+   smiley and the timer are read as one unit, and the smiley is the app's
+   restart button sitting on the exact screen centre. */
+.hud-center {
+  flex-wrap: nowrap;
 }
 
 /* Rounded card controls with a soft drop shadow (iOS-style chrome). Square
@@ -521,8 +630,25 @@ body {
    scrolling body. Two things differ: the difficulty row is meaningless here, and
    the content is a top-aligned stack of titled sections rather than one list
    centred in the body. */
-.menu.settings-open .menu-difficulty {
+/* The settings, theme, sound, best-times and help pages select no board, so the
+   whole difficulty block goes with them. */
+.menu.settings-open .menu-difficulty-block {
   display: none;
+}
+
+/* The same small-caps label a settings section uses, but its own class rather
+   than `.settings-heading` — the difficulty block is mounted on every page, so
+   sharing that class would make it an ambiguous selector everywhere. Tighter
+   too: this one sits at the bottom of the page, directly above its own row
+   rather than opening a list. */
+.menu-difficulty-heading {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: center;
 }
 
 .menu.settings-open .menu-body > .menu-list {
@@ -1022,14 +1148,24 @@ body {
   font-size: 12px;
 }
 
+/* Three buttons do not fit side by side on a phone — "Play again" breaks across
+   two lines and the row reads as a squeeze. So the primary takes a row of its
+   own and the two secondary actions share the one below it. */
 .dialog-actions {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
   margin-top: 18px;
 }
 
+/* Only when there are three: with Play again and Menu alone (a board with no
+   link to share) the two sit side by side as they always did. */
+.dialog-actions.has-share .dialog-primary {
+  grid-column: 1 / -1;
+}
+
 .dialog-btn {
-  flex: 1;
+  min-width: 0;
   touch-action: manipulation;
   padding: 11px 12px;
   font: inherit;

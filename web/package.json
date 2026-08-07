@@ -14,7 +14,8 @@
     "e2e": "playwright test",
     "e2e:update": "playwright test --update-snapshots",
     "icons": "node scripts/make-icons.mjs",
-    "screenshots": "vite-node scripts/make-screenshots.mts"
+    "screenshots": "vite-node scripts/make-screenshots.mts",
+    "og": "vite-node scripts/make-og-image.mts"
   },
   "dependencies": {
     "@capacitor/core": "^7.6.8",

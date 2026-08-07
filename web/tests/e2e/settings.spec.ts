@@ -16,6 +16,34 @@ function cssVar(page: Page, name: string): Promise<string> {
   );
 }
 
+/** A fingerprint of the board's mine layout, for asserting that two boards are
+ * (or are not) the same one.
+ *
+ * The test seam exposes no mine list, and it should not: a player cannot see
+ * one either. So this plays the board instead — open cells in index order until
+ * the game ends, then take the set of cells that ended up revealed. A loss
+ * turns up every mine, so that set is a function of the layout, and playing in
+ * a fixed order makes it a *deterministic* one. Mines are placed on the first
+ * reveal from the seeded RNG with that first cell kept safe (`game.ts`
+ * `placeMines`), so the same seed opened in the same order lays them out the
+ * same way every time.
+ *
+ * Destructive by nature — it finishes the game. Call it last, or reload after. */
+async function minePattern(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const hook = window.__ms!;
+    for (const cell of hook.cells()) {
+      if (hook.state().status !== "playing") break;
+      if (hook.cellState(cell) === "hidden") hook.reveal(cell);
+    }
+    return hook
+      .cells()
+      .filter((c) => hook.cellState(c) === "revealed")
+      .map(String)
+      .sort();
+  });
+}
+
 test.describe("settings", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/");
@@ -291,16 +319,34 @@ test.describe("shareable board links", () => {
     await page.locator('.menu-entry[data-submenu="dual"]').click();
     await page.locator('.menu-entry[data-mode="kleintriakis"]').click();
 
-    await expect(page).toHaveURL(/\?mode=kleintriakis&difficulty=easy$/);
+    // Every ordinary game is dealt from a seed, and the link carries it — so
+    // the link names *this* board rather than another one of the same kind.
+    await expect(page).toHaveURL(/\?mode=kleintriakis&difficulty=easy&seed=\d+$/);
 
-    // The link is the whole story: opening it fresh lands on the same board.
+    // The link is the whole story: opening it fresh lands on the same board...
     const url = page.url();
+    const before = await minePattern(page);
     await page.goto(url);
     await expect(page.locator("body[data-ready]")).toBeVisible();
     const state = await page.evaluate(() => window.__ms?.state());
     expect(state?.screen).toBe("game");
     expect(state?.mode).toBe("kleintriakis");
     expect(state?.difficulty).toBe("easy");
+    // ...with the same mines under it, which is what sharing a board means.
+    expect(await minePattern(page)).toEqual(before);
+  });
+
+  test("the smiley deals a new board, and the link follows it", async ({ page }) => {
+    // The other half of always-seeding: a reload replays the board, so there
+    // has to be something that does not. Restart asks for a fresh seed.
+    await page.goto("/?mode=square&difficulty=easy&seed=4242");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    const first = await minePattern(page);
+
+    await page.locator(".hud-smiley").click();
+    await expect(page).not.toHaveURL(/seed=4242/);
+    await expect(page).toHaveURL(/\?mode=square&difficulty=easy&seed=\d+$/);
+    expect(await minePattern(page)).not.toEqual(first);
   });
 
   test("going back to the menu drops the board's link", async ({ page }) => {
