@@ -7,6 +7,11 @@
 // asserts it instead — every remote URL in the built output has to be one of
 // the two kinds that are fine, and anything else stops the build.
 //
+// Two passes, because a request need not name a host: the app's own analytics
+// collector is a *relative* path on whatever origin serves the app, which the
+// URL scan cannot see. FORBIDDEN below is the second pass, and the only
+// automated proof that the collector really was compiled out of this build.
+//
 //   node scripts/check-offline-assets.mjs web/dist
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { extname, join, relative } from "node:path";
@@ -24,6 +29,15 @@ const ALLOWED = [
   /^https?:\/\/(www\.)?khronos\.org\//,
   /^https?:\/\/(www\.)?capacitorjs\.com\/$/,
 ];
+
+/** Same-origin paths that must not survive into a packaged bundle even though
+ * they name no host. `web/src/analytics.ts` posts anonymous play counts to a
+ * Cloudflare Pages Function, behind the build-time constant `__APP_ANALYTICS__`
+ * — which `VITE_PACKAGED=1` vetoes outright, so the transport and this string
+ * with it are supposed to be gone from the macOS and iOS bundles. This pass is
+ * what proves that, and it is the whole reason the app can promise those builds
+ * talk to nothing. */
+const FORBIDDEN = ["api/tally"];
 
 /** Files whose contents can carry a load. Fonts/images are binary and are
  * checked only by being present. */
@@ -57,6 +71,11 @@ for (const file of walk(root)) {
   for (const match of text.match(URL_RE) ?? []) {
     if (ALLOWED.some((re) => re.test(match))) continue;
     problems.push(`${relative(root, file)}: ${match}`);
+  }
+  for (const path of FORBIDDEN) {
+    if (text.includes(path)) {
+      problems.push(`${relative(root, file)}: same-origin request to ${path}`);
+    }
   }
 }
 

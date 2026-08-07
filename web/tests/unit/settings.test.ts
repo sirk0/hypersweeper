@@ -49,6 +49,7 @@ const SETTINGS: Settings = {
   sound: "arcade",
   volume: 0.5,
   haptics: false,
+  analytics: false,
 };
 
 afterEach(() => {
@@ -113,7 +114,21 @@ describe("settings validation", () => {
       sound: DEFAULT_SETTINGS.sound,
       volume: DEFAULT_SETTINGS.volume,
       haptics: DEFAULT_SETTINGS.haptics,
+      analytics: DEFAULT_SETTINGS.analytics,
     });
+  });
+
+  it("defaults the additive booleans a record written before them lacks", () => {
+    // A record from a build with no haptics and no analytics must pick both up
+    // at their defaults rather than reading as off — this is what "additive
+    // fields need no SCHEMA_VERSION bump" has to mean in practice.
+    withStorage(fakeStorage({ [KEY]: JSON.stringify({ version: 2, theme: "dark" }) }));
+    const loaded = loadSettings();
+    expect(loaded.haptics).toBe(true);
+    expect(loaded.analytics).toBe(true);
+    // And a stored `false` is a choice, so it survives.
+    withStorage(fakeStorage({ [KEY]: JSON.stringify({ analytics: false }) }));
+    expect(loadSettings().analytics).toBe(false);
   });
 
   it("clamps a stored volume, and falls back on one that is not a number", () => {
@@ -170,6 +185,7 @@ describe("settings upgrades", () => {
       sound: DEFAULT_SETTINGS.sound,
       volume: DEFAULT_SETTINGS.volume,
       haptics: DEFAULT_SETTINGS.haptics,
+      analytics: DEFAULT_SETTINGS.analytics,
     });
     // Migration completes on the next write, and only then is the old key
     // dropped — an interrupted migration must not lose the record.
@@ -236,6 +252,7 @@ describe("settings upgrades", () => {
       sound: DEFAULT_SETTINGS.sound,
       volume: DEFAULT_SETTINGS.volume,
       haptics: DEFAULT_SETTINGS.haptics,
+      analytics: DEFAULT_SETTINGS.analytics,
     });
   });
 
@@ -283,6 +300,7 @@ describe("cross-tab sync", () => {
           sound: DEFAULT_SETTINGS.sound,
         volume: DEFAULT_SETTINGS.volume,
         haptics: DEFAULT_SETTINGS.haptics,
+        analytics: DEFAULT_SETTINGS.analytics,
       },
     ]);
   });

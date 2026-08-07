@@ -9,3 +9,7 @@ dev-dist/
 /blob-report/
 /.playwright/
 /.vite/
+
+# wrangler (the Pages Function's local state and secrets)
+/.wrangler/
+/.dev.vars

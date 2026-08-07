@@ -49,6 +49,11 @@ jobs:
         working-directory: web
         # No VITE_BASE: vite.config.ts defaults to "/", which is what
         # Cloudflare serves from.
+        env:
+          # This is the one host that serves the Pages Function the anonymous
+          # play counter posts to, so it is the one build that carries the
+          # counter. Elsewhere the post would 404 and the browser would log it.
+          VITE_ANALYTICS: "1"
         run: |
           npm ci
           npm run build
@@ -57,7 +62,16 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # From web/, so wrangler resolves its project root there and finds
+          # both web/wrangler.toml and — the reason for this — web/functions/,
+          # which serves /api/tally. A deploy run from the repo root uploads
+          # dist/ alone and the collector silently does not exist.
+          workingDirectory: web
+          # No directory argument and no --project-name: both come from
+          # wrangler.toml (`pages_build_output_dir` and `name`), and passing the
+          # directory positionally alongside that config is an error.
+          #
           # `--branch` decides production vs preview: Cloudflare compares it
           # against the project's production branch, so this must match the
           # `--production-branch` the project was created with.
-          command: pages deploy web/dist --project-name=hypersweeper --branch=master
+          command: pages deploy --branch=master

@@ -1,0 +1,21 @@
+# Cloudflare Pages configuration for the deployed app.
+#
+# Its presence is what makes `wrangler pages deploy` pick up `functions/`: the
+# project root wrangler resolves is this file's directory, so the Functions
+# directory has to sit beside it (web/functions/) rather than at the repo root.
+# That is why the deploy workflow runs wrangler from `web/`.
+#
+# Inert everywhere else — the GitHub Pages deploy, the Vite build and the
+# packaged macOS/iOS builds never read it.
+
+name = "hypersweeper"           # must match the Pages project name
+compatibility_date = "2025-01-01"
+pages_build_output_dir = "dist" # so `pages deploy` needs no directory argument
+
+# The dataset the collector writes to (functions/api/tally.ts). Datasets are
+# created implicitly on their first write; there is nothing to provision. If the
+# report stays empty after a deploy, check that this binding is listed under
+# Pages project -> Settings -> Functions -> Bindings.
+[[analytics_engine_datasets]]
+binding = "GAME_EVENTS"
+dataset = "hypersweeper_game_events"

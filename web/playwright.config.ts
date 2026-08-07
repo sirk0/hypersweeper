@@ -50,6 +50,12 @@ export default defineConfig({
   ],
   webServer: {
     command: "npm run build && npm run preview -- --port " + PORT + " --strictPort",
+    // The anonymous play counter is opt-in per build (see vite.config.ts), and
+    // analytics.spec.ts is the suite that drives it. `vite preview` serves no
+    // Pages Function, so those posts really 404 — which is deliberate: it is
+    // the same thing a host without the Function does, and the spec asserts
+    // the game is unaffected by it.
+    env: { VITE_ANALYTICS: "1" },
     port: PORT,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
