@@ -32,7 +32,9 @@ import {
 import { cellPalette, classifyShapes, type CellPalette } from "./shapePalette";
 import {
   cellStyle,
+  cellStyleLoops,
   cellVertexCount,
+  vertexShade,
   type CellProfile,
   type CellStyle,
 } from "./cellStyle";
@@ -92,12 +94,20 @@ export class PolygonBoard extends Group implements BoardMesh {
    * style's, since an unlit board has no shading to bring the overdrive back
    * down (see CellStyle.winGlow). */
   private readonly winGlow: number;
-  /** The style's across-the-tile brightness gradient, if it has one. */
+  /** The style's across-the-tile brightness gradients — one per cell state, so
+   * an opened cell can be a different *material* from a closed one (see
+   * CellStyle.openShade) — and the loop count they are ramped over. */
   private readonly shade: CellStyle["shade"];
+  private readonly openShade: CellStyle["shade"];
+  private readonly loops: number;
   /** Multiplier on every tile colour. 1 on an unlit style, whose tiles already
    * arrive as the palette named them; a lit one may pay back what the diffuse
    * shading takes (see CellStyle.albedo). */
   private readonly albedo: number;
+  /** How opaque an opened cell is drawn, or `null` on a style with no
+   * translucency — which is also what decides whether the colour buffer carries
+   * an alpha channel at all (see the constructor). */
+  private readonly openAlpha: number | null;
 
   constructor(board: Board, style: CellStyle = cellStyle(null)) {
     super();
@@ -108,6 +118,9 @@ export class PolygonBoard extends Group implements BoardMesh {
     // brightness it always did instead of clipping to white there.
     this.winGlow = (1 + (style.winGlow ?? WIN_GLOW)) / this.albedo - 1;
     this.shade = style.shade;
+    this.openShade = style.openShade ?? style.shade;
+    this.loops = cellStyleLoops(this.profile);
+    this.openAlpha = style.openAlpha ?? null;
     this.glyphHeight = Math.max(
       ...this.profile.closed.map((l) => l.height),
       ...this.profile.open.map((l) => l.height),
@@ -157,7 +170,7 @@ export class PolygonBoard extends Group implements BoardMesh {
         radius,
         glyphCenter,
         glyphInradius: polygonInradius(poly, glyphCenter),
-        palette: cellPalette(tones.get(cell)!, "flat"),
+        palette: cellPalette(tones.get(cell)!, "flat", style.monochrome),
       });
       vertexCount += count;
     });
@@ -166,24 +179,35 @@ export class PolygonBoard extends Group implements BoardMesh {
     const geometry = new BufferGeometry();
     this.positionAttr = new BufferAttribute(new Float32Array(vertexCount * 3), 3);
     geometry.setAttribute("position", this.positionAttr);
-    this.colorAttr = new BufferAttribute(new Float32Array(vertexCount * 3), 3);
+    // RGB, or RGBA on a style whose opened cells let the page through: three.js
+    // reads a per-vertex alpha only from a 4-component colour attribute, so the
+    // channel is added exactly where it is used and every other style keeps the
+    // buffer (and the shader) it always had.
+    const channels = this.openAlpha === null ? 3 : 4;
+    this.colorAttr = new BufferAttribute(new Float32Array(vertexCount * channels), channels);
     geometry.setAttribute("color", this.colorAttr);
     // No normal attribute: the material shades flat, so three.js derives each
     // facet's normal in the fragment shader. That is what lets a cell's
     // geometry be re-cut (raised <-> sunken) by writing positions alone.
 
+    // A translucent board still writes depth: the tiles of a tiling do not
+    // overlap each other on screen, so nothing behind a tile needs to survive
+    // it, and keeping the depth write is what stops a cell's own walls from
+    // showing through its top face.
+    const translucent = this.openAlpha === null ? {} : { transparent: true };
     const cells = new Mesh(
       geometry,
       // Cell polygons come from the board builders with per-board winding, so
       // some top faces point away from the camera. DoubleSide keeps them lit
       // and, crucially, raycast-pickable regardless of winding.
       style.unlit
-        ? new MeshBasicMaterial({ vertexColors: true, side: DoubleSide })
+        ? new MeshBasicMaterial({ vertexColors: true, side: DoubleSide, ...translucent })
         : new MeshStandardMaterial({
             vertexColors: true,
             ...style.material,
             flatShading: true,
             side: DoubleSide,
+            ...translucent,
           }),
     );
     cells.name = "cells";
@@ -333,22 +357,20 @@ export class PolygonBoard extends Group implements BoardMesh {
     // on an already-boosted colour reads a lightness past 1 and clamps to white.
     col.multiplyScalar(this.albedo);
     const g = this.geom[i]!;
+    // Opened cells go translucent on a style that asks for it; closed ones stay
+    // solid, or the board would be a window rather than a field of tiles.
+    const opened = isOpened(this.states[i]!);
+    const alpha = this.openAlpha === null || !opened ? 1 : this.openAlpha;
+    const shade = opened ? this.openShade : this.shade;
     for (let v = 0; v < g.count; v++) {
-      const f = this.vertexShade(v, g.poly.length);
-      this.colorAttr.setXYZ(g.start + v, col.r * f, col.g * f, col.b * f);
+      const f = shade ? vertexShade(shade, this.loops, v, g.poly.length) : 1;
+      if (this.colorAttr.itemSize === 4) {
+        this.colorAttr.setXYZW(g.start + v, col.r * f, col.g * f, col.b * f, alpha);
+      } else {
+        this.colorAttr.setXYZ(g.start + v, col.r * f, col.g * f, col.b * f);
+      }
     }
     this.colorAttr.needsUpdate = true;
-  }
-
-  /** How much brighter or darker vertex `v` of an `n`-gon cell is drawn than the
-   * cell's own colour — the style's across-the-tile gradient, or 1 when it has
-   * none. The cell's vertices are laid out top fan first (centroid, edge, edge
-   * per triangle), then the rings of walls, so which vertex is the middle of the
-   * top face follows from the index alone. */
-  private vertexShade(v: number, n: number): number {
-    if (!this.shade) return 1;
-    if (v >= 3 * n) return this.shade.rim; // a wall vertex
-    return v % 3 === 0 ? this.shade.center : this.shade.rim;
   }
 
   /** Draw the glyphs counter-rotated (the board is being shown turned). */

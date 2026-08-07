@@ -7,9 +7,11 @@
 // the `window.__ms` seam: start the board with an explicit mine layout (so the
 // script knows where the mines are and nothing has to be guessed), open a
 // central patch, flag a few mines, optionally detonate one, and screenshot.
-// Each shot picks a UI theme, written into the settings record before the app
-// boots — the board itself is never themed, the chrome and the page behind it
-// are, which is what these shots are meant to show.
+// Each shot picks a theme, written into the settings record before the app
+// boots. A theme is the chrome palette, the page behind the board *and* how the
+// board's cells are cut (ui/theme.ts), so the four are spread over these shots
+// to show all of it — the shape colours themselves are not themed and stay the
+// same in every one.
 //
 // Software WebGL (the same SwiftShader flags the e2e suite uses) keeps the
 // output identical on a machine with no GPU, e.g. CI or a cloud session.
@@ -37,7 +39,7 @@ const BASE = `http://localhost:${PORT}/`;
 interface Shot {
   /** File name written into the output directory. */
   file: string;
-  /** A key in `data/ui/screens.json` themes. */
+  /** A key in `THEME_KEYS` (web/src/ui/theme.ts). */
   theme: string;
   /** Board shots: the mode to open. Omitted for a chrome shot. */
   mode?: string;
@@ -59,11 +61,12 @@ interface Shot {
 
 const BOARD_VIEW = { width: 520, height: 600 };
 
-// One shot per theme (seven of them), spread over the renderer's range: a
-// sphere, a non-orientable surface, an aperiodic tiling, a torus mid-explosion,
-// a fractal patch, a flat regular board, and the two chrome screens.
+// Spread over the renderer's range — a sphere, a non-orientable surface, an
+// aperiodic tiling, a torus mid-explosion, a fractal patch, a flat regular
+// board, and the two chrome screens — with the four themes distributed over
+// them, twice each.
 const SHOTS: Shot[] = [
-  { file: "c180.png", theme: "ios", mode: "c180", seed: 7, reveal: 0.34, flags: 5 },
+  { file: "c180.png", theme: "light", mode: "c180", seed: 7, reveal: 0.34, flags: 5 },
   {
     file: "mobiushex.png",
     theme: "dark",
@@ -75,7 +78,7 @@ const SHOTS: Shot[] = [
     // band that comes back joined to its own other side.
     rotate: [70, 40],
   },
-  { file: "penrose.png", theme: "paper", mode: "penrose", seed: 11, reveal: 0.36, flags: 5 },
+  { file: "penrose.png", theme: "realistic", mode: "penrose", seed: 11, reveal: 0.36, flags: 5 },
   {
     file: "torussnubsquare-lost.png",
     theme: "classic",
@@ -85,14 +88,14 @@ const SHOTS: Shot[] = [
     flags: 4,
     explode: true,
   },
-  { file: "gosper.png", theme: "neumorph", mode: "gosper", seed: 2, reveal: 0.38, flags: 4 },
-  { file: "hexhex.png", theme: "flat", mode: "hexhex", seed: 9, reveal: 0.36, flags: 4 },
-  { file: "menu.png", theme: "glass" },
+  { file: "gosper.png", theme: "realistic", mode: "gosper", seed: 2, reveal: 0.38, flags: 4 },
+  { file: "hexhex.png", theme: "light", mode: "hexhex", seed: 9, reveal: 0.36, flags: 4 },
+  { file: "menu.png", theme: "dark" },
   {
     file: "themes.png",
-    theme: "ios",
+    theme: "light",
     clicks: [
-      '.menu-settings-btn[data-action="settings"]',
+      '.menu-header-btn[data-action="settings"]',
       '.menu-entry[data-settings-group="theme"]',
     ],
   },
@@ -154,7 +157,7 @@ async function shoot(browser: Browser, shot: Shot, outDir: string): Promise<void
   // reads it at boot. Sound is off: a screenshot run must not build an audio
   // graph, and the preset is irrelevant to the picture.
   const settings = JSON.stringify({
-    version: 2,
+    version: 3,
     theme: shot.theme,
     animations: false,
     sound: "off",

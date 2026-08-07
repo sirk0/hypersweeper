@@ -82,15 +82,15 @@ test.describe("board gallery", () => {
     await expect(page).toHaveScreenshot("square-revealed.png");
   });
 
-  // The same fixture in each of the other cell styles (render/cellStyle.ts), so
-  // the four reliefs are directly comparable with `square-revealed.png` above —
-  // and so a change to one profile shows up as exactly one changed baseline.
-  // The style is read when a board's mesh is built, so it is stored *before*
-  // the app boots rather than switched afterwards.
-  for (const style of ["flat", "soft", "gloss"]) {
-    test(`revealed square in the ${style} cell style`, async ({ page }) => {
+  // The same fixture in each of the other themes, so the four looks are directly
+  // comparable with `square-revealed.png` above (which is the default, Light) —
+  // and so a change to one theme shows up as exactly one changed baseline. A
+  // theme's cell style is read when a board's mesh is built, so it is stored
+  // *before* the app boots rather than switched afterwards.
+  for (const style of ["dark", "classic", "realistic"]) {
+    test(`revealed square in the ${style} theme`, async ({ page }) => {
       await page.addInitScript((key: string) => {
-        localStorage.setItem("ms:settings", JSON.stringify({ version: 2, cellStyle: key }));
+        localStorage.setItem("ms:settings", JSON.stringify({ version: 3, theme: key }));
       }, style);
       await page.goto("/");
       await expect(page.locator("body[data-ready]")).toBeVisible();
@@ -107,13 +107,13 @@ test.describe("board gallery", () => {
     });
   }
 
-  // ...and on a solid, where a style shows something else entirely: the plane
-  // is lit head-on, so a 3D board is the only place the finish (Glossy's
-  // specular sheen) and the paid-back albedo actually read.
-  for (const style of ["flat", "soft", "gloss"]) {
-    test(`sphere in the ${style} cell style`, async ({ page }) => {
+  // ...and on a solid, where a theme's cells show something else entirely: the
+  // plane is lit head-on, so a 3D board is the only place the finish
+  // (Realistic's specular sheen) and the paid-back albedo actually read.
+  for (const style of ["dark", "classic", "realistic"]) {
+    test(`sphere in the ${style} theme`, async ({ page }) => {
       await page.addInitScript((key: string) => {
-        localStorage.setItem("ms:settings", JSON.stringify({ version: 2, cellStyle: key }));
+        localStorage.setItem("ms:settings", JSON.stringify({ version: 3, theme: key }));
       }, style);
       await page.goto("/?mode=sphere&difficulty=easy&seed=1");
       await expect(page.locator("body[data-ready]")).toBeVisible();

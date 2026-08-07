@@ -169,7 +169,7 @@ test.describe("play counts", () => {
   }) => {
     await ready(page);
 
-    await page.locator(".menu-settings-btn").click();
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
     const toggle = page.locator('.menu-entry[data-setting="analytics"]');
     await expect(toggle).toHaveAttribute("aria-checked", "true");
     await toggle.click();
@@ -188,7 +188,7 @@ test.describe("play counts", () => {
     // And the choice survives a reload, like every other setting.
     await page.reload();
     await expect(page.locator("body[data-ready]")).toBeVisible();
-    await page.locator(".menu-settings-btn").click();
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
     await expect(page.locator('.menu-entry[data-setting="analytics"]')).toHaveAttribute(
       "aria-checked",
       "false",

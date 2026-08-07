@@ -6,6 +6,73 @@ site root, by GitHub Pages and Cloudflare Pages both while the game moves
 between them; the pygame build stays in the repo as the reference
 implementation and is not deployed (see **Deploy** below).
 
+**M18 — One look setting.** Appearance was two pickers that had to be paired by
+hand — a chrome palette and a cell style, sixteen combinations, most of which
+nobody designed. They are now one **theme** (`src/ui/theme.ts`), and there are
+four:
+
+- **Light** — the `ios` palette, flat colour tiles. The default.
+- **Dark** — the same board on the web-only dark palette.
+- **Classic** — the `classic` palette and the beveled button, drawn in **gray**:
+  the one place a cell style reaches past relief into colour
+  (`CellStyle.monochrome`), because the 1990s board never had a colour on it but
+  the numbers. Its two grays are a quotation of the pygame board's own
+  `HIDDEN_FACE`/`REVEALED_FACE`, and the style carries the albedo that pays back
+  what the diffuse shading takes, so a top face lands on them exactly rather
+  than on the third of them a lit board would otherwise show.
+- **Realistic** — the `ios` palette over a **textured page**, with glass-bead
+  cells: a five-loop dome on the plane, a specular sheen that sweeps across a
+  solid as it is dragged around, and **translucent opened cells** on a flat
+  board, so the page's grain shows through the tiles you have opened. Its two
+  states are two *materials*: a closed cell is polished (a bright centre
+  hotspot), an opened one matte (`CellStyle.openShade` — a nearly flat gradient
+  over a flat-floored pan), which tells them apart on a third channel besides
+  the relief and the tone.
+
+Two more things the four needed. **Classic is the pygame board's own gray** —
+`SHAPE_PALETTE.board.mono` quotes `HIDDEN_FACE`/`REVEALED_FACE` from
+`minesweeper/gui.py` (guarded by `tests/test_theme_sync.py`) rather than reusing
+the shape palette's anchors, whose hidden→opened step was widened for *colour*
+and reads far too wide in gray; and the style carries `albedo: 3.08`, which is
+`1 / 0.32`, the measured diffuse return of a head-on top face, so a closed tile
+lands on `#bdbdbd` and an opened one on `#cdcdcd` instead of on a third of them.
+**Realistic's two states are two materials** — polished closed, matte opened
+(`CellStyle.openShade` plus a flat-floored open profile), because a centre
+hotspot is what reads as shiny and flattening it is what reads as matte.
+
+Two pieces of the renderer moved to make the glass work. The across-the-tile
+gradient (`CellStyle.shade`) used to paint the top face alone, which on a
+five-loop profile is a bright disc on a flat field; it now **ramps over the
+loops**, so a style can buy a smoother dome by adding relief. And the flat tiles
+of a two-sided surface (cylinder, Möbius, Klein) had no gradient at all, because
+they have no loops to ramp over and the Klein clip can leave a vertex anywhere in
+them — they now measure it **off the geometry**, distance from the cell's centre,
+which survives the clip and gives those surfaces the same bead. The seven
+palettes stay in `data/ui/screens.json` (pygame's, guarded by
+`tests/test_theme_sync.py`); a theme *composes* one rather than adding colours to
+it. Stored settings migrate: the old palette/cell-style pair is read together, so
+a player who had picked the glossy cells lands on Realistic rather than being
+flattened to Light with everyone else. The menu header also moved its **?** to
+the left edge, one button per side, so "Hypersweeper" — a single unbreakable word
+— keeps the whole middle and stays on one line on a 320px phone. See "Settings
+and themes" and "Cell styles" below.
+
+**M17 — Play-first menu.** The home page is no longer the geometry tree: it is
+**Classic**, **Flat**, **3D** and **Custom** (`src/ui/menu.ts`). Flat and 3D are
+one tap each for a random board — the flat picker's pool, and every flat
+manifold plus the spheres and polyhedra — which is why the per-picker Random
+row is gone. Custom holds what the root used to be (Flat, Flat manifolds,
+Sphere, Polyhedra), and inside every tiling picker the three regular tilings are
+**promoted** to rows of their own, so a surface page reads Triangles · Squares ·
+Hexagons · Uniform · Laves · … . On the plane that leaves the Regular family
+holding the shaped boards alone, relabelled **Non-square boards**. The header
+gains a **?** beside the gear, opening a How-to-play page (`src/ui/help.ts`)
+built like the settings pages. All of this is web-only: it is derived in the
+"web menu" section of `src/boards/catalog.ts` (`menuTilingRows`,
+`menuFamilies`, `menuFamilyRows`, `flatMenuModes`, `threeDMenuModes`,
+`MENU_FAMILY_LABELS`) from the shared port above it, so `data/catalog.json` and
+the pygame menu are untouched and keep their own shape.
+
 **M16 — Sound.** The game has a voice (`src/audio/`), synthesised rather than
 sampled — there is no audio file in this repo, and there is not meant to be. A
 sound here is *parametric*, and that is what a folder of clips could not be:
@@ -201,17 +268,15 @@ already uses, so vertex ids are exact integer tuples; the trim is measured from
 the true centre (rather than a sampled centroid) and quantised, so Python and
 TypeScript pick the same cells. **All 155 modes.**
 
-**M10 — Cell styles.** How a cell is *cut* is now the player's
-(`src/render/cellStyle.ts`, Settings › Cell style): **Classic** (the beveled
-button), **Flat** (unlit plates in flat colour, wide gaps), **Soft** (rounded
-matte pillows lit from the top left) and **Glossy** (unlit beads on the plane, a
-specular sheen that sweeps across a solid as it is dragged around). A style is
-one table entry — a stack of concentric loops per cell, plus a finish — and both
-meshes build their geometry from it, so the two renderers stayed as they were.
-Colour is untouched by all of it: it is still the shape palette's, which in the
-same pass got a **wider size axis** — the isogonal tilings' two or three sizes of
-one polygon now differ in lightness, hue and chroma at once rather than by a
-lightness whisper. See "Cell styles" and "Shape colour coding" below.
+**M10 — Cell styles.** How a cell is *cut* is part of the **theme**
+(`src/render/cellStyle.ts`): a stack of concentric loops per cell plus a finish,
+which both meshes build their geometry from, so the two renderers stayed as they
+were. It shipped as a picker of its own beside the theme and was merged into it
+in M18 (below). Colour is untouched by all of it: it is still the shape
+palette's, which in the same pass got a **wider size axis** — the isogonal
+tilings' two or three sizes of one polygon now differ in lightness, hue and
+chroma at once rather than by a lightness whisper. See "Cell styles" and "Shape
+colour coding" below.
 
 **M9 — The Spectre.** A third entry in the **Aperiodic** family
 (`src/boards/aperiodic.ts`): Tile(1,1), the *chiral* aperiodic monotile, tiled by
@@ -284,7 +349,7 @@ automorphism); the session scrolls it as a **view-layer permutation** — a
 hidden behind the neck rotate into view (mouse wheel / two-finger scroll /
 `[` `]` keys / the two header chevrons, back and forward) while the geometry
 and game state stay put. The Flat-manifolds menu drills surface → tiling →
-difficulty. 27 modes.
+difficulty (under **Custom** since M17). 27 modes.
 
 **M2 — 3D renderer + solids.** Ports the ten closed 3D boards (pentagonal
 hexecontahedron, snub dodecahedron, the two Goldberg polyhedra, geodesic
@@ -546,14 +611,16 @@ carries no standing warning nobody intends to act on.
 
 ## Cell styles (`src/render/cellStyle.ts`)
 
-How a cell is **cut**, chosen in Settings › Cell style and stored with the other
-preferences. Four: **Classic** (the beveled button that sinks when opened),
-**Flat** (unlit plates in flat colour with wide gaps), **Soft** (rounded matte
-pillows, the one style whose *lighting* does the work) and **Glossy** (unlit
-beads on the plane; on a solid, a specular sheen that sweeps across the faces as
-the board is dragged around). It is only the relief and the finish — the *colour*
-of a cell is the shape palette's, in every style, so the two can be retuned
-apart.
+How a cell is **cut**. Not a setting of its own: the **theme** names one (see
+"Settings and themes"), so the table has one entry per theme and the keys match
+the theme keys. Three, because Light and Dark share `flat` — they differ in
+chrome, not in how a tile is cut: **classic** (the beveled button that sinks when
+opened, and the one style that is *also* gray — see `monochrome` below),
+**flat** (unlit plates in flat colour with wide gaps) and **realistic** (a
+five-loop glass bead; on the plane a gradient and translucent opened cells, on a
+solid a specular sheen that sweeps across the faces as the board is dragged
+around). Otherwise it is only the relief and the finish — the *colour* of a cell
+is the shape palette's, so the two can be retuned apart.
 
 A cell is a stack of concentric **loops** of its own polygon: loop 0 is the
 tile's outline, each further one is pulled in toward the centroid and lifted (or
@@ -567,25 +634,58 @@ in two renderers. Four things to know before adding or retuning one:
   loops; `cellStyleLoops` throws otherwise and `tests/unit/cellStyle.test.ts`
   sweeps every style.
 - **A style is baked into the mesh when a board is built**, and no board is
-  re-cut in flight. That is safe because the setting is only reachable from the
+  re-cut in flight. That is safe because the theme is only reachable from the
   settings page, which lives in the menu, and the menu is only up when no game
-  is — the picker says "applies to the next board" for the case where a board is
-  waiting behind it.
+  is — the theme picker says the board's tiles change on the next board, for the
+  case where one is waiting behind it. The chrome half of a theme is instant.
 - **A flat board is lit head-on**, so a shinier material has no angle to catch a
   highlight at: on the plane, `roughness` is nearly invisible and the visible
   levers are the gap, the loop layout, `unlit` (draw the palette colour as it is
   rather than the ~60% of it that diffuse shading returns), `albedo` (ask for
   more colour than exists, so a *lit* style gets the palette's colour back
   without giving up its shading) and `shade` (a brightness gradient from the
-  middle of the top face to its rim, interpolated by the rasteriser). On the
-  plane Glossy is a *gradient*, not a specular highlight, for exactly this
-  reason — the highlight is what it does on a solid.
-- **Two loops next to Classic is not a style.** Soft shipped at two loops once
-  and read as "the setting did nothing": on the plane it differs from Classic
-  only in the width of one bevel band. What separates a lit style from Classic is
-  loop *count* (four, with the heights easing off toward the top, so the shading
-  falls away instead of stepping), the gap, and the albedo. If a new style looks
-  like one that is already there, it is not worth a row in the picker.
+  cell's middle out to its rim, interpolated by the rasteriser). On the plane
+  Realistic is a *gradient*, not a specular highlight, for exactly this reason —
+  the highlight is what it does on a solid.
+- **`shade` is per state, and that is a *material*.** `openShade` overrides it
+  for opened cells. A centre hotspot is what reads as polished — it is the
+  highlight a curved shiny thing throws back, and on a head-on flat board it is
+  the *only* thing saying so, since the lighting has nothing to add. Flatten it
+  and the cell reads as matte. Realistic uses that: glass beads closed, matte
+  pans opened. It costs nothing (the gradient is already written per vertex) and
+  the geometry should follow — a profile whose heights ease off toward the crown
+  curves, one holding them level after the wall does not.
+- **`shade` ramps over the loops, and that is what buys detail.** A vertex's
+  factor is `rim` at the outermost loop and `center` at the centroid, stepped by
+  ring (`vertexShade`). Shading the top face alone — which is what this did when
+  the only style with a gradient had three loops — paints a bright disc on a flat
+  field rather than a bead, so on a five-loop profile it looked *worse* than on a
+  three-loop one. Ramped, extra loops buy a smoother dome, which is what the
+  vertices of a detailed profile are for. Two loops next to Classic is still not
+  a style: on the plane it differs only in the width of one bevel band.
+- **A two-sided surface measures its gradient instead of ramping it.** The
+  cylinder, Möbius strip and Klein bottle draw flat tiles with no loop stack, and
+  the Klein clip can leave a vertex anywhere in one, so there is no ring order to
+  ramp over. `radialFalloff` (solidBoard.ts) measures the distance from the
+  cell's centre at build time — 1 at the centroid, 0 at the tile's edge, a cut
+  vertex wherever it truly falls — and the gradient rides on *that* at write
+  time, so the same tile can go from polished to matte when it opens. Same bead,
+  and those surfaces need it most: a flat tile with no relief has nothing else
+  to shade it.
+- **`monochrome` is the one thing here that is not relief.** The classic style
+  draws the board in its plain grays, shape colour code and all switched off:
+  a gray minesweeper board is what "Classic" means, and a shape-coloured one is a
+  different game to look at however the tiles are cut. `shapePalette.ts` still
+  *measures* the shapes (the menu icons and the sound are keyed off the same
+  tones); only the board stops painting them.
+- **`openAlpha` is a flat board's business.** An opened cell can go translucent,
+  and what comes through it is the themed page — the texture, on a theme that has
+  one — because the WebGL canvas is transparent. Only on the plane: the tiles of a
+  tiling never overlap each other on screen, so one merged mesh needs no
+  per-triangle depth sorting, while a solid's cells *do* overlap (a two-sided
+  surface draws its far side through its near one) and one mesh cannot sort that.
+  The colour buffer grows to four components exactly where the channel is used,
+  so every other style keeps the buffer and the shader it always had.
 - **`unlit` is a flat board's business.** On a solid the shading is what shows
   the shape — an unlit sphere is a flat disc of tiles — so a 3D board keeps its
   lit material whatever the style, and only the relief, the gap, the finish and
@@ -603,7 +703,8 @@ in two renderers. Four things to know before adding or retuning one:
   the wave peaks where it always did.
 
 Cell styles are **not** in `data/ui/screens.json`: they are geometry for this
-renderer, with no pygame counterpart for the shared config to keep in step.
+renderer, with no pygame counterpart for the shared config to keep in step. The
+themes that name them are not there either, for the same reason — see below.
 
 ## Shape colour coding (`src/render/shapePalette.ts`)
 
@@ -741,7 +842,9 @@ Two files, and the split between them is the point:
   Blocks), in the shape of `cellStyle.ts`: plain numbers the engine reads, so a
   fourth character is a row here and nothing else. `off` is deliberately *not*
   an entry — `soundPreset()` returns `null` for it, and a silenced game never
-  builds an audio graph at all.
+  builds an audio graph at all. It also holds the guards a stored record has to
+  pass before it reaches the engine: `resolveSound` for the key, `clampVolume`
+  for the level.
 - **`sound.ts`** — `voicesFor(event, preset)` is **pure** (an event in, a list
   of grains out: when, what pitch, how wide, how loud), and `playSound(event)`
   renders those grains onto the shared `AudioContext`. Every rule the feature
@@ -764,6 +867,17 @@ Things that will bite:
   rotation. `GameSession` takes it as the `panOf` option and falls back to the
   cell's mesh-local x (the same answer for an unframed flat board) when there
   is none — which is what keeps the session constructible in a test.
+- **Volume is the master gain, not a preset number.** A preset's own gains are
+  the *balance* between the game's sounds (a flag against a cascade);
+  Settings › Sound › **Volume** is how loud that whole balance plays, so
+  `setSoundVolume` scales the one master `GainNode` and `voicesFor` stays pure
+  and preset-only. `off` is still a different thing from a volume of zero: it
+  mutes the same gain, but it is also what stops the engine building voices at
+  all. Both moves are 30 ms ramps — stepping a gain discontinuously clicks —
+  and the slider is deliberately the one settings control that does **not**
+  re-render its page, because the player is still holding it: dragging feeds
+  the engine live (audible in the cascade already ringing), and only letting go
+  persists the value and plays the preview.
 - **A cascade is bounded, twice.** `cascade.maxVoices` thins the cells at an
   even stride across the whole ring range (so the first ring and the last are
   always heard), and `MAX_CASCADE_S` clamps the delay. Beyond that
@@ -778,7 +892,8 @@ Things that will bite:
   suite counts the oscillators the page creates
   (`tests/e2e/sound.spec.ts`, an init script wrapping
   `AudioContext.prototype.createOscillator`) and reads the engine's active
-  choice back through `window.__ms.state().sound`. Counting *scheduled* nodes
+  choice back through `window.__ms.state().sound` (and the level through
+  `state().volume`). Counting *scheduled* nodes
   needs no output device and no autoplay policy, which is what makes it stable
   in CI.
 
@@ -786,23 +901,52 @@ Things that will bite:
 
 The gear on the menu title row opens a settings page — not a modal: it is one
 more `Menu` page (`Menu.showSettings`, rendered by `src/ui/settings.ts`), so it
-reuses the back row, the `.menu-entry` cards and the scrolling body. The theme
-is a page below it in the same way (`Menu.showThemePicker`): settings shows a
-Theme row naming the current palette, and the seven-row picker lives one level
-down, which keeps the settings page short enough to read at a glance. The cell
-style (below) is a third page on the same pattern, under the same Appearance
-heading — theme is the chrome, cell style is the board.
+reuses the back row, the `.menu-entry` cards and the scrolling body. The **?**
+beside it is the same pattern with no state at all (`Menu.showHelp`, rendered by
+`src/ui/help.ts`): its text lives in TS rather than in `data/ui/screens.json`,
+which is the config the pygame build shares and which has no help page. Both
+buttons are `.menu-header-btn[data-action=…]` inside `.menu-header-actions`, one
+per side — the **?** at the left edge, the gear at the right — so the two balance
+each other and the title keeps the whole middle. Both on the right cost the title
+twice that width, and "Hypersweeper" is a single unbreakable word that then does
+not fit on one line on a narrow phone. A third button means picking a side and
+adjusting the shared `--menu-header-actions` width, which is what the empty side
+is sized from. The theme is a page below settings in the same way
+(`Menu.showThemePicker`): settings shows a Theme row naming the current one, and
+the four-row picker lives one level down, which keeps the settings page short
+enough to read at a glance.
 
-**Themes.** The seven chrome palettes live in `data/ui/screens.json` under
-`themes`; six are ported from the pygame `THEMES` registry (`minesweeper/gui.py`)
-and `dark` is web-only. `src/ui/theme.ts` applies one by writing the whole set of
-CSS custom properties onto `document.documentElement` — the `:root` block in
-`styles.css` is only the *boot* default (the `ios` palette) and must stay in step
-with that entry. Two consequences worth knowing:
+**Themes.** A theme is the app's **one** look setting: the chrome palette, the
+page behind the board, *and* how the board's cells are cut. There are four —
+Light, Dark, Classic, Realistic — and they are declared in `src/ui/theme.ts`,
+not in `data/ui/screens.json`. The distinction matters:
 
-- **The board is never themed.** Only the chrome is, exactly as in pygame, which
-  is why the `gallery.spec.ts` baselines are theme-independent. Do not reach for
-  a theme colour in `shapePalette.ts` or `glyphAtlas.ts`.
+- The seven **palettes** are still shared config (`data/ui/screens.json` under
+  `themes`; six ported from the pygame `THEMES` registry in `minesweeper/gui.py`,
+  `dark` web-only), and `tests/test_theme_sync.py` still fails if one is retuned
+  without the JSON following. A theme *composes* a palette; it never adds colours
+  to one. Light and Realistic share `ios` and differ in the board and the page
+  texture.
+- The **list** is web-only because pygame has neither cell styles nor page
+  textures, so its six presets could never be this list. That is the same split
+  the menu already has (`catalog.ts`'s web-menu section).
+
+`applyTheme` writes the whole set of CSS custom properties onto
+`document.documentElement` — the `:root` block in `styles.css` is only the *boot*
+default (Light's, i.e. the `ios` palette) and must stay in step with it. Things
+worth knowing:
+
+- **The board is themed only as far as a cell style says.** The shape colour code
+  (`shapePalette.ts`) still owns the hues, and exactly one style switches it off:
+  `classic`, whose `monochrome` flag draws the board in its plain grays. No theme
+  reaches into `shapePalette.ts` or `glyphAtlas.ts` for a colour, and the
+  `gallery.spec.ts` baselines that are not per-theme are shot in the default one.
+- **A theme's board half lands on the next board.** A cell style fixes the mesh's
+  vertex layout, so nothing is re-cut in flight; the chrome half is instant. The
+  picker page says so.
+- **An unknown theme key falls back to Light** through `resolveTheme`, which uses
+  `Object.hasOwn` for the same reason `link.ts` does. That is also the safety net
+  under the v2→v3 migration below.
 - **The WebGL canvas is transparent** (`alpha: true`, clear alpha 0), so the
   field around the board is the *page* background. That is what makes the glass
   theme's gradient show and means a theme needs no renderer call at all. Do not
@@ -815,29 +959,53 @@ with that entry. Two consequences worth knowing:
 `tests/test_theme_sync.py` (Python) fails if a pygame palette is retuned without
 the JSON following.
 
-**Cell style.** How the board's tiles are cut — see "Cell styles" above. It is
-read when a board's mesh is built, so it applies from the next board on; the
-picker page says so, since the settings page can be reached with a game paused
-behind it. An unknown key (a record from a newer build, a hand-edited one) falls
-back to `classic` through `resolveCellStyle`, which uses `Object.hasOwn` for the
-same reason `link.ts` does.
+**The v2 → v3 migration.** Until v3, `theme` named a chrome palette and
+`cellStyle` sat beside it as a second setting. `migrate` in `settings.ts` reads
+the **pair** — not each field on its own — because only the pair says what look a
+player had chosen: a palette a v3 theme is named after (`classic`, `dark`) wins
+outright, and otherwise the old cell style is the better evidence, so someone on
+`ios` + `gloss` lands on Realistic rather than being flattened to Light with
+everyone else. The stale `cellStyle` key is deliberately left in the record —
+`saveSettings` carries unknown keys over anyway, and a downgrade to a v2 build
+should find its setting intact.
 
 **Sound.** What the game sounds like — a preset key or `"off"` — under the
-Behaviour heading, with its own picker page (see "Sound" above). Unlike the cell
-style it needs no new board: every event reads the preset when it plays, so a
-change is audible on the very next click.
+Behaviour heading, with its own picker page (see "Sound" above). Unlike a theme's
+cells it needs no new board: every event reads the preset when it plays, so a
+change is audible on the very next click. The picker page also carries
+**Volume**, a 0..1 level stored beside the preset and starting at half: it is a
+level rather than a character, so turning it down keeps the preset, and it is
+left off the page entirely under `off`, where there is nothing to set. It sits
+in the *same* list as the presets — `.menu-body` is a gapless flex column, so a
+second `<ul>` would butt straight against the first. The settings row above
+reports both ("Chime · 60%").
+
+**Haptics.** A plain boolean, and the one row that is **conditional**:
+`hapticsSupported()` (`src/haptics.ts`) offers it only where something can
+actually buzz — the native iOS shell, or a *mobile* browser with
+`navigator.vibrate`, which in practice means Android. A desktop browser defines
+`navigator.vibrate` with no hardware behind it, and iOS Safari implements no web
+haptic at all, so neither gets a switch; `haptic()` is gated on the same check,
+so a `haptics: true` carried in from a phone is inert rather than driving a
+mechanism that does nothing.
+
+**No outward links.** The About block reports what the build *is* (its version,
+and whether a newer one is waiting) and nothing more — a settings page that
+sends the player to another site is not part of playing the game.
+`tests/e2e/settings.spec.ts` asserts the page holds no anchors at all.
 
 **Analytics.** Whether anonymous play counts are reported — see "Analytics"
 above. Its own **Privacy** heading rather than a fourth Behaviour row: sound,
 haptics and animations are what the game *does*, and this is what leaves the
 machine, which someone who came looking for it should be able to find by
-heading. Left out of the packaged builds entirely, like the "Check for updates"
-row, because those carry no collector to switch off.
+heading. Present only in a build that carries the counter at all — the same
+principle as the Haptics row needing a device that can buzz, and the "Check for
+updates" row needing a deployed build to check against.
 
 **Persistence.** `src/settings.ts` is the app's only stored state: theme,
-difficulty, the animations override, the cell style, the sound preset, the
-haptics flag and the analytics flag. Flag mode, zoom, the menu page you are on
-and the board in progress stay in memory as before.
+difficulty, the animations override, haptics, the analytics flag, and the sound
+preset with its volume. Flag mode, zoom, the menu page you are on and the board
+in progress stay in memory as before.
 
 The layout is **one stable `localStorage` key holding a record that carries its
 own `version`** — deliberately not a versioned key name (`…:v1`, `…:v2`), which
@@ -1053,6 +1221,15 @@ by both front-ends, so the pygame and TypeScript UIs can be kept in sync from a
 single source rather than hand-matched. `src/config/screens.ts` gives the TS app
 compile-time types over it. Later milestones extend the same shared-`data/`
 approach to the board catalog and presets (see the plan).
+
+Shared does not mean identical. `src/boards/catalog.ts` is a faithful port of
+`minesweeper/boards/catalog.py` over `data/catalog.json` — and where the two
+menus deliberately differ (M17's promoted regular tilings, the shaped-board
+family's own label, the home page's random pools), the difference is *derived*
+in that file's "web menu" section rather than pushed into the shared JSON. So
+`data/catalog.json` keeps describing the pygame menu, its exporter still
+round-trips (`tests/test_data_sync.py`), and `tests/unit/catalog.test.ts` pins
+the port while `tests/unit/menu.test.ts` pins the web shape.
 
 ## Deploy
 

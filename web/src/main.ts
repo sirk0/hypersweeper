@@ -1,7 +1,13 @@
 import { Vector2, Vector3 } from "three";
 import "./ui/styles.css";
 import { setAnalyticsEnabled, trackGame } from "./analytics";
-import { setSoundPreset, soundChoice, unlockAudio } from "./audio/sound";
+import {
+  setSoundPreset,
+  setSoundVolume,
+  soundChoice,
+  soundVolume,
+  unlockAudio,
+} from "./audio/sound";
 import { isBoard3D, type CellId } from "./boards/core";
 import { setHapticsEnabled } from "./haptics";
 import { boardLinkQuery, parseBoardLink } from "./link";
@@ -17,7 +23,7 @@ import { Hud } from "./ui/hud";
 import { Menu } from "./ui/menu";
 import { openScoreDialog, type ScoreDialogHandle } from "./ui/scoreDialog";
 import type { SettingsHost } from "./ui/settings";
-import { applyTheme } from "./ui/theme";
+import { applyTheme, themeCellStyle } from "./ui/theme";
 import {
   animationsEnabled,
   loadSettings,
@@ -87,6 +93,7 @@ class App {
   ) {
     applyTheme(this.settings.theme); // before anything measures or paints
     setSoundPreset(this.settings.sound);
+    setSoundVolume(this.settings.volume);
     setHapticsEnabled(this.settings.haptics);
     setAnalyticsEnabled(this.settings.analytics);
     // A browser will not let audio start outside a user gesture, so the
@@ -166,11 +173,11 @@ class App {
       get animations() {
         return app.settings.animations;
       },
-      get cellStyle() {
-        return app.settings.cellStyle;
-      },
       get sound() {
         return app.settings.sound;
+      },
+      get volume() {
+        return app.settings.volume;
       },
       get haptics() {
         return app.settings.haptics;
@@ -181,8 +188,8 @@ class App {
       setTheme: (key) => this.setTheme(key),
       setDifficulty: (key) => this.setDifficulty(key),
       setAnimations: (pref) => this.setAnimations(pref),
-      setCellStyle: (key) => this.setCellStyle(key),
       setSound: (key) => this.setSound(key),
+      setVolume: (level) => this.setVolume(level),
       setHaptics: (on) => this.setHaptics(on),
       setAnalytics: (on) => this.setAnalytics(on),
     };
@@ -191,19 +198,15 @@ class App {
   private setTheme(key: string): void {
     this.settings = { ...this.settings, theme: key };
     saveSettings(this.settings);
-    applyTheme(key); // the canvas is transparent, so CSS repaints the field too
+    // The canvas is transparent, so CSS repaints the field too. The board half
+    // of a theme (its cell style) is baked into a mesh, so it takes effect on
+    // the next board — which is every board from here, since the theme picker
+    // is only reachable from the menu.
+    applyTheme(key);
   }
 
   private setDifficulty(key: string): void {
     this.settings = { ...this.settings, difficulty: key };
-    saveSettings(this.settings);
-  }
-
-  /** Pick the relief the board's tiles are cut with. The style is baked into a
-   * board's mesh, so it takes effect on the next board — which is every board
-   * from here, since this is only reachable from the menu. */
-  private setCellStyle(key: string): void {
-    this.settings = { ...this.settings, cellStyle: key };
     saveSettings(this.settings);
   }
 
@@ -214,6 +217,16 @@ class App {
     this.settings = { ...this.settings, sound: key };
     saveSettings(this.settings);
     setSoundPreset(key);
+  }
+
+  /** Set how loud the game plays. Like the preset, this reaches the graph
+   * already running, so the slider is audible while it is dragged; unlike it,
+   * the engine has usually been told already (the slider feeds it live) and
+   * this call is what makes the level survive a reload. */
+  private setVolume(level: number): void {
+    setSoundVolume(level);
+    this.settings = { ...this.settings, volume: soundVolume() };
+    saveSettings(this.settings);
   }
 
   /** Turn tactile feedback on or off. Like the sound preset and unlike the
@@ -233,14 +246,15 @@ class App {
     setAnalyticsEnabled(on);
   }
 
-  /** Adopt settings written by another tab. The theme is applied; the
-   * difficulty, animation and cell-style preferences are picked up by the
-   * menu's next repaint and the next board. A game already in progress keeps
-   * the difficulty and the tile relief it was started with. */
+  /** Adopt settings written by another tab. The theme's chrome is applied at
+   * once; its board half (the tile relief) and the difficulty are picked up by
+   * the next board. A game already in progress keeps the difficulty and the
+   * tile relief it was started with. */
   private adoptSettings(settings: Settings): void {
     this.settings = settings;
     applyTheme(settings.theme);
     setSoundPreset(settings.sound);
+    setSoundVolume(settings.volume);
     setHapticsEnabled(settings.haptics);
     setAnalyticsEnabled(settings.analytics);
     this.animationsEnabled = animationsEnabled(settings.animations);
@@ -297,7 +311,7 @@ class App {
     this.session = new GameSession(mode, difficulty, {
       ...(opts.seed !== undefined ? { seed: opts.seed } : {}),
       ...(opts.mines ? { minePositions: opts.mines } : {}),
-      cellStyle: this.settings.cellStyle,
+      cellStyle: themeCellStyle(this.settings.theme),
       // Sound is panned by where a cell is *on screen*, which only the
       // renderer knows (it holds the camera, the zoom and the board's
       // rotation).
@@ -680,8 +694,9 @@ class App {
           revealed: s ? s.game.revealed : 0,
           cellCount: s ? s.game.cells.length : 0,
           is3d: s?.is3d ?? false,
-          cellStyle: s?.cellStyle ?? this.settings.cellStyle,
+          cellStyle: s?.cellStyle ?? themeCellStyle(this.settings.theme),
           sound: soundChoice(),
+          volume: soundVolume(),
         };
       },
     });

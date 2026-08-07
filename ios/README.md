@@ -63,19 +63,21 @@ worker and the settings page drops its "Check for updates" row.
 time. Inside this app `Capacitor.isNativePlatform()` is true and the three game
 events become real Taptic calls:
 
-| Event | Native | Everywhere else |
-|-------|--------|-----------------|
+| Event | Native | A mobile browser with `navigator.vibrate` |
+|-------|--------|-------------------------------------------|
 | flag placed or cleared | `impact(Light)` | one 15 ms vibration |
 | **mine** | `notification(Error)` | a heavy 5-pulse pattern |
 | board cleared | `notification(Success)` | a lighter rising pattern |
 
 `Error` is the sharp double buzz iOS itself plays to say *that went wrong* —
 which is exactly what stepping on a mine is, and what a browser on iOS cannot
-ask for at any weight. In Safari (including a home-screen PWA) the only haptic
-that exists at all is a single fixed-intensity tick from a hidden
-`<input type="checkbox" switch>`, and it is what the web build still falls back
-to. Settings › **Haptics** switches all of it off, and the row is hidden where
-nothing can buzz.
+ask for at any weight. It cannot ask for one at *any* weight, in fact: Safari
+(including a home-screen PWA) does not implement the Vibration API, and the
+hidden `<input type="checkbox" switch>` tick that once stood in for it does not
+actually buzz, so it is gone. Only this app and a mobile browser with a working
+`navigator.vibrate` — Android — have a mechanism at all; everywhere else
+`hapticsSupported()` is false, `haptic()` does nothing and Settings ›
+**Haptics** shows no row. Where it does show, it switches all of it off.
 
 The plugin is reached through Capacitor's normal bridge, so it needs three
 things to line up: the JS package (`@capacitor/haptics` in `web/package.json`),

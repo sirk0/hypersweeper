@@ -770,8 +770,10 @@ const ALIASES: Record<string, string> = {
   fractal: "sphinx", // the Fractals family row
   polyhedra: "cube",
   classic: "square", // the "Classic" home entry: flat squares
-  manifolds: "torus", // the "Flat manifolds" home entry
-  random: "start", // the "Random" picker entry
+  manifolds: "torus", // the "Flat manifolds" entry under Custom
+  "3d": "sphere", // the "3D" home entry: a random board off the plane
+  custom: "regular", // the "Custom" home entry: one tile of each regular tiling
+  random: "start", // the pygame menu's "Random" picker entry
 };
 
 const SPHERES = [

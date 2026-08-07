@@ -156,6 +156,17 @@ export const SHAPE_PALETTE = {
     },
     cap: 0.9,
     cuspBlend: 0.4,
+    /** The **classic** board's grays, used by the one cell style that switches
+     * the shape colours off (`CellStyle.monochrome`). Not the anchors above:
+     * those were chosen for the colour scheme — the opened tone was pushed near
+     * white so a pale wash of a hue still reads under a number — and a gray
+     * board drawn at them has a hidden/opened step far wider than the classic
+     * board ever had. These are a quotation instead, of `HIDDEN_FACE` and
+     * `REVEALED_FACE` in the pygame build (minesweeper/gui.py), which is this
+     * game's own classic board. The step between them is small on purpose: the
+     * beveled relief is what tells closed from opened here, which is the whole
+     * classic idiom. */
+    mono: { hidden: "#bdbdbd", revealed: "#cdcdcd" },
   },
 
   /** Menu icons. They share the board's hue and regularity — a triangle is red
@@ -710,9 +721,38 @@ const boardGrays = {
 
 const paletteCache = new Map<string, CellPalette>();
 
-/** The hidden/opened pair a cell of this shape is drawn in. Memoised: a board
+/** The plain gray pair — the board's own tones with no hue on them at all, i.e.
+ * exactly the grays every anchor above is derived from. The Classic theme's
+ * board (`CellStyle.monochrome`) is drawn in these: a shape-coloured board is a
+ * different game to look at, whatever the tiles are cut like. Memoised per
+ * surface like the coloured ones. */
+function grayPalette(surface: BoardSurface): CellPalette {
+  const key = `${surface}|gray`;
+  let palette = paletteCache.get(key);
+  if (!palette) {
+    // Through the same OkLCh -> sRGB path every coloured tone takes (rather
+    // than straight off the hex), so a gray board and a chroma-0 shape colour
+    // are the same colour under three's colour management. One pair for both
+    // surfaces: the anchors above split flat and solid to keep a *tint* legible
+    // under a curved surface's own shading, and there is no tint here.
+    palette = {
+      hidden: lchToColor(hexToLch(SHAPE_PALETTE.board.mono.hidden)),
+      revealed: lchToColor(hexToLch(SHAPE_PALETTE.board.mono.revealed)),
+    };
+    paletteCache.set(key, palette);
+  }
+  return palette;
+}
+
+/** The hidden/opened pair a cell of this shape is drawn in — or, when the cell
+ * style is monochrome, the board's grays whatever the shape. Memoised: a board
  * has thousands of cells and a handful of shapes. */
-export function cellPalette(tone: ShapeTone, surface: BoardSurface): CellPalette {
+export function cellPalette(
+  tone: ShapeTone,
+  surface: BoardSurface,
+  monochrome = false,
+): CellPalette {
+  if (monochrome) return grayPalette(surface);
   const key = `${surface}|${tone.sides}|${tone.regularity.toFixed(3)}|${tone.variant ?? 0}/${
     tone.variantCount ?? 1
   }|${tone.size ?? 0}/${tone.sizeCount ?? 1}`;
