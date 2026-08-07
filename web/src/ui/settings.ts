@@ -290,17 +290,13 @@ export function renderSoundPicker(host: SettingsHost): DocumentFragment {
     if (key === host.sound) btn.classList.add("active");
     list.append(li);
   }
-  frag.append(list);
-
   // Off has no level to set, so the slider is left out rather than sitting
   // there doing nothing; picking a preset re-renders the page and brings it
-  // back.
-  if (host.sound !== SOUND_OFF) {
-    const levels = document.createElement("ul");
-    levels.className = "menu-list";
-    levels.append(volumeRow(host));
-    frag.append(levels);
-  }
+  // back. It joins the same list as the presets so the page keeps one rhythm —
+  // a second `<ul>` would butt against the first, since the rows are spaced by
+  // the list's own gap.
+  if (host.sound !== SOUND_OFF) list.append(volumeRow(host));
+  frag.append(list);
 
   const note = document.createElement("p");
   note.className = "settings-footer";

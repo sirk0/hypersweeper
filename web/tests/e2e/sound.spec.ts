@@ -92,7 +92,7 @@ test.describe("sound settings", () => {
     await page.locator('.menu-header-btn[data-action="settings"]').click();
     await page.locator('.menu-entry[data-settings-group="sound"]').click();
     const slider = page.locator('.settings-range[data-setting="volume"]');
-    await expect(slider).toHaveValue("100");
+    await expect(slider).toHaveValue("50"); // the default, half volume
 
     // `fill` sets the value and fires input+change, which is what a drag and a
     // release do — the first feeds the engine live, the second persists.

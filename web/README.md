@@ -964,9 +964,11 @@ should find its setting intact.
 Behaviour heading, with its own picker page (see "Sound" above). Unlike a theme's
 cells it needs no new board: every event reads the preset when it plays, so a
 change is audible on the very next click. The picker page also carries
-**Volume**, a 0..1 level stored beside the preset: it is a level rather than a
-character, so turning it down keeps the preset, and it is left off the page
-entirely under `off`, where there is nothing to set. The settings row above
+**Volume**, a 0..1 level stored beside the preset and starting at half: it is a
+level rather than a character, so turning it down keeps the preset, and it is
+left off the page entirely under `off`, where there is nothing to set. It sits
+in the *same* list as the presets — `.menu-body` is a gapless flex column, so a
+second `<ul>` would butt straight against the first. The settings row above
 reports both ("Chime · 60%").
 
 **Haptics.** A plain boolean, and the one row that is **conditional**:

@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  clampVolume,
   DEFAULT_SOUND,
+  DEFAULT_VOLUME,
   resolveSound,
   SOUND_CHOICES,
   SOUND_OFF,
@@ -392,6 +394,19 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+describe("clampVolume", () => {
+  it("holds a stored level inside 0..1, and rejects what is not a number", () => {
+    expect(clampVolume(0.4)).toBe(0.4);
+    expect(clampVolume(0)).toBe(0);
+    expect(clampVolume(1)).toBe(1);
+    expect(clampVolume(4)).toBe(1);
+    expect(clampVolume(-2)).toBe(0);
+    // A NaN would poison a Web Audio ramp for good, so it never reaches one.
+    expect(clampVolume(Number.NaN)).toBe(DEFAULT_VOLUME);
+    expect(clampVolume(Number.POSITIVE_INFINITY)).toBe(DEFAULT_VOLUME);
+  });
+});
+
 describe("playSound", () => {
   it("builds an oscillator per grain and pans it where the cell is", async () => {
     const audio = fakeAudio();
@@ -458,8 +473,32 @@ describe("playSound", () => {
     });
     engine.setSoundPreset(SOUND_OFF);
     expect(audio.gains[0]!.value).toBe(0);
+    // ...and choosing a preset again lifts the mute back to the volume in
+    // force, not to full blast.
     engine.setSoundPreset("chime");
-    expect(audio.gains[0]!.value).toBe(1);
+    expect(audio.gains[0]!.value).toBe(DEFAULT_VOLUME);
+  });
+
+  it("scales the master gain to the volume, and holds it under Off", async () => {
+    const audio = fakeAudio();
+    const engine = await loadEngine();
+    engine.setSoundPreset("chime");
+    engine.playSound({ kind: "open", cells: [cell(4)] });
+    const master = audio.gains[0]!;
+    expect(master.value).toBe(DEFAULT_VOLUME);
+
+    engine.setSoundVolume(0.25);
+    expect(engine.soundVolume()).toBe(0.25);
+    expect(master.value).toBe(0.25);
+
+    // Off wins over the level while it is chosen, and the level is what the
+    // gain comes back to.
+    engine.setSoundPreset(SOUND_OFF);
+    expect(master.value).toBe(0);
+    engine.setSoundVolume(0.75);
+    expect(master.value).toBe(0);
+    engine.setSoundPreset("chime");
+    expect(master.value).toBe(0.75);
   });
 
   it("stays quiet while the tab is in the background", async () => {

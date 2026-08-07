@@ -317,6 +317,15 @@ body {
   color: var(--muted);
 }
 
+/* The back row is a sibling of the page content, not part of its list, and
+   `.menu-body` is a gapless flex column — so without this it butts straight
+   against the first card below it. One list gap keeps every page (the pickers,
+   whose content starts with a list, and settings, whose first heading adds its
+   own margin on top) reading as one evenly spaced stack. */
+.menu-body > .menu-back {
+  margin-bottom: 8px;
+}
+
 /* Title row: the how-to-play ? and the settings gear at the right, balanced by
    an empty box of the same width at the left so the title stays centred on the
    screen. Both sides are laid out in flow rather than absolutely, so on a

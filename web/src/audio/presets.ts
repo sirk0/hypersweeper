@@ -239,9 +239,12 @@ export function soundPreset(key: string | null | undefined): SoundPreset | null 
   return resolved === SOUND_OFF ? null : SOUND_PRESETS[resolved]!;
 }
 
-/** Full volume — what every build before the slider played at, and so the
- * level a record without one means. */
-export const DEFAULT_VOLUME = 1;
+/** Half volume, and the level a record without one means. The presets are
+ * balanced against each other, not against the room: at the top of the range a
+ * cascade on a big board is louder than a player who has just opened the game
+ * asked for, so the slider starts halfway and has somewhere to go in both
+ * directions. */
+export const DEFAULT_VOLUME = 0.5;
 
 /** The 0..1 level `value` stands for. Like `resolveSound`, this is the guard
  * between a stored record and the engine: a level can arrive from another
