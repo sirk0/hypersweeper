@@ -33,7 +33,7 @@ import {
 } from "./boardMesh";
 import { clipTriangles, fanTriangles, triangleCentroid, type Tri } from "./clip";
 import { makeGlyphAtlas, type Glyph, type GlyphAtlas } from "./glyphAtlas";
-import { MARKER_REACH, writeMarker, type Marker } from "./markers3d";
+import { markerDrop, MARKER_REACH, writeMarker, type Marker } from "./markers3d";
 import {
   CellAnimations,
   dropOpacity,
@@ -164,6 +164,13 @@ export class SolidBoard extends Group implements BoardMesh {
   // markers stay one draw call. False on every other style.
   private readonly solidMarkers: boolean;
   private readonly markerGeometry = new BufferGeometry();
+  // ...and the one pin currently being planted by a held cell, which is a mesh
+  // of its own for the same reason the 2D drop is: it is drawn many times
+  // cell-size, so depth-testing it against the very solid it is landing on
+  // would bury it, and being its own material is what lets it fade in as it
+  // shrinks. Null on a style without markers, where the 2D drop does this job.
+  private readonly markerDropGeometry = new BufferGeometry();
+  private markerDropMaterial: MeshStandardMaterial | null = null;
   private readonly atlas: GlyphAtlas;
   private readonly states: CellVisual[];
   private hovered = -1;
@@ -458,6 +465,25 @@ export class SolidBoard extends Group implements BoardMesh {
       );
       markerMesh.name = "markers";
       this.add(markerMesh);
+
+      // The pin being planted by a held cell. Same material, but transparent and
+      // out of the depth test — an oversized pin has to hang *in front of* the
+      // solid for the fraction of a second it is in the air, not be swallowed by
+      // it, and the whole point of drawing it oversized is that the finger doing
+      // the holding is covering the cell it will land on.
+      this.markerDropMaterial = new MeshStandardMaterial({
+        vertexColors: true,
+        roughness: 0.52,
+        metalness: 0,
+        side: DoubleSide,
+        transparent: true,
+        depthTest: false,
+        depthWrite: false,
+      });
+      const markerDropMesh = new Mesh(this.markerDropGeometry, this.markerDropMaterial);
+      markerDropMesh.name = "markerDrop";
+      markerDropMesh.renderOrder = 3;
+      this.add(markerDropMesh);
     }
 
     for (let i = 0; i < this.order.length; i++) {
@@ -785,18 +811,65 @@ export class SolidBoard extends Group implements BoardMesh {
     const pos: number[] = [];
     const nrm: number[] = [];
     const col: number[] = [];
+    const dropPos: number[] = [];
+    const dropNrm: number[] = [];
+    const dropCol: number[] = [];
     const now = performance.now();
     const dropIndex = this.anim.dropIndex();
-    const dropping = this.anim.dropProgress(now) != null;
+    const dropAt = this.anim.dropProgress(now);
     for (let i = 0; i < this.order.length; i++) {
       const marker = markerFor(this.states[i]!);
       if (marker === null) continue;
-      // The cell with a flag falling onto it is drawn by the oversized drop
-      // billboard alone until it lands (see `rebuildGlyphs`), or the settling
-      // flag and the pin would both be there.
-      if (i === dropIndex && dropping) continue;
       const g = this.geom[i]!;
       if (g.count === 0) continue; // wholly cut away by the surface clip
+      // A pin planted by *holding* the cell lands rather than appearing: it
+      // comes down oversized and shrinks onto its tile. That is feedback, not
+      // decoration — the finger doing the holding is covering the very cell the
+      // pin is going to, so at settled size the player would see nothing happen
+      // until they lifted it. The 2D flag billboard has always done this; on a
+      // style with markers it is suppressed (`billboardBesideMarker` gives a
+      // flagged cell no glyph at all), so the pin has to do its own, or holding
+      // a cell on this theme animates nothing.
+      //
+      // It goes in a buffer of its own, drawn without depth testing, so the
+      // oversized pin hangs in front of the solid instead of being buried in it.
+      if (i === dropIndex && dropAt != null) {
+        const { scale: dScale, rise } = markerDrop(dropAt, g.fit);
+        // It falls down the *screen*, not down the cell's normal: on a cell
+        // facing the camera the normal points at the viewer, so a pin coming in
+        // along it would approach from behind the fingertip and never be seen.
+        // The hand covers the cell and everything below it, so above is where
+        // there is room.
+        const from: Vec3 = [
+          g.center[0] + this.viewUp[0] * rise,
+          g.center[1] + this.viewUp[1] * rise,
+          g.center[2] + this.viewUp[2] * rise,
+        ];
+        // ...and it stands upright on screen while it is up there, tipping into
+        // the cell's own normal as it lands — a pin held over the board, then
+        // pushed in. At `dropAt` 1 the axis *is* the normal, so the hand-off to
+        // the standing pin is exact.
+        const axis: Vec3 = [
+          this.viewUp[0] + (g.normal[0] - this.viewUp[0]) * dropAt,
+          this.viewUp[1] + (g.normal[1] - this.viewUp[1]) * dropAt,
+          this.viewUp[2] + (g.normal[2] - this.viewUp[2]) * dropAt,
+        ];
+        // A cell whose normal is near enough the exact opposite of screen-up
+        // leaves the blend passing through zero halfway, which `normalize`
+        // turns into NaN and sprays across the buffer. Nothing to interpolate
+        // there, so don't.
+        const straight = Math.hypot(axis[0], axis[1], axis[2]) < 0.2;
+        writeMarker(
+          marker,
+          from,
+          straight ? g.normal : axis,
+          dScale,
+          dropPos,
+          dropNrm,
+          dropCol,
+        );
+        continue;
+      }
       // Sized off the cell's inradius, not its mean vertex distance: a model
       // has to fit *between the edges* of the tile it stands on, and on a
       // stretched immersion those are two very different numbers (see
@@ -834,6 +907,22 @@ export class SolidBoard extends Group implements BoardMesh {
       "color",
       new BufferAttribute(new Float32Array(col), 3),
     );
+    this.markerDropGeometry.setAttribute(
+      "position",
+      new BufferAttribute(new Float32Array(dropPos), 3),
+    );
+    this.markerDropGeometry.setAttribute(
+      "normal",
+      new BufferAttribute(new Float32Array(dropNrm), 3),
+    );
+    this.markerDropGeometry.setAttribute(
+      "color",
+      new BufferAttribute(new Float32Array(dropCol), 3),
+    );
+    this.markerDropGeometry.computeBoundingSphere();
+    if (this.markerDropMaterial) {
+      this.markerDropMaterial.opacity = dropOpacity(dropAt ?? 1);
+    }
     this.markerGeometry.computeBoundingSphere();
   }
 

@@ -774,9 +774,24 @@ The rest of what to know before changing one:
   and the pin is already the flag. That one billboard is lifted past
   `MARKER_REACH` rather than by its own half-size, or the X draws behind the
   pin's head and its four arms read as spikes.
-- **The flag drop stays a billboard.** It is drawn many times cell-size and must
-  not depth-test; `rebuildMarkers` skips the pin for that one cell while the drop
-  is in flight, so the hand-off is the same invisible one it always was.
+- **A held cell plants its pin with a drop of its own.** The 2D flag drop — the
+  oversized quad that falls in when a flag is placed by *holding* a cell on
+  touch — is not drawn on a marker style, because a flagged cell there has no
+  billboard at all; without a replacement, the one gesture that most needs
+  feedback animated nothing. So the pin does it: `markerDrop` in `markers3d.ts`
+  brings it down oversized and fades it in, in a buffer of its own drawn without
+  depth testing so it hangs in front of the solid rather than inside it.
+
+  Two things are deliberate. It falls down the **screen**, not down the cell's
+  normal — on a cell facing the camera the normal points at the viewer, so a pin
+  arriving along it would come from behind the fingertip and never be seen, and
+  the hand covers the cell and everything below. And it stands **upright on
+  screen** while it is up there, tipping into the cell's own normal as it lands,
+  which at progress 1 is exactly the normal, so the hand-off to the standing pin
+  is invisible. It is also far smaller than the 2D drop (about 2x settled, not up
+  to 10x): a picture has to be enormous to read as the same flag, but a pin is an
+  object with a size, and one several times too big reads as a mistake rather
+  than an arrival. What it has instead is height.
 - **Nothing waves.** An animated cloth would keep `tickAnimations` returning
   `true` forever, against the renderer's on-demand loop.
 
@@ -786,7 +801,8 @@ strip, a Klein bottle and two stretched torus wraps (the sliver cells that the
 inradius sizing is for), photographs each front, overhead and three-quarter,
 then loses a game on the sphere *and* on the Möbius strip (bombs, the hot one
 that ended it, a gray pin under its cross — and, on the strip, the check that one
-casing shows from both faces) and shoots a flat board as the untouched control.
+casing shows from both faces), long-presses a cell to catch the pin drop
+mid-flight, and shoots a flat board as the untouched control.
 
 ## Shape colour coding (`src/render/shapePalette.ts`)
 

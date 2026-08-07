@@ -82,6 +82,37 @@ const SPHERE_RINGS = 12;
  * and a marker outside it is one the board's rim crops in half. */
 export const MARKER_REACH = STEM_H + HEAD_R * 1.62;
 
+/** A pin planted by *holding* a cell descends onto it: how big it starts, as a
+ * multiple of its settled size, and how far above the cell it starts, in
+ * multiples of its own height.
+ *
+ * The 2D flag drop this replaces is far bigger — up to ten times the settled
+ * glyph — because it is a picture, and a picture has to be enormous before a
+ * player reads it as the same flag that will end up in the cell. A pin does not:
+ * it is an object with a size, and one three times too big reads as a mistake
+ * rather than as an arrival. What it has instead is *height*, which a flat quad
+ * pinned to the board could never use, so the drop is mostly a fall.
+ *
+ * Both numbers exist for one reason: the finger doing the holding is sitting on
+ * the cell, so the pin has to be somewhere else — above it — for the moment it
+ * is worth watching. */
+const DROP_START_SCALE = 1.9;
+const DROP_START_HEIGHT = 0.9;
+
+/** The size and the height above its cell of a pin `progress` of the way
+ * through its drop (0 at the top, 1 landed — both settle to exactly the resting
+ * values at 1, so the hand-off to the standing pin is invisible). */
+export function markerDrop(progress: number, fit: number): { scale: number; rise: number } {
+  const ease = 1 - progress;
+  return {
+    scale: fit * (1 + (DROP_START_SCALE - 1) * ease),
+    // Quadratic, so it falls the way a thing dropped falls — slowly out of the
+    // top of the arc and fast into the cell — rather than sliding down at a
+    // constant rate.
+    rise: fit * MARKER_REACH * DROP_START_HEIGHT * ease * ease,
+  };
+}
+
 // Converted once. `new Color(hex)` is the same sRGB -> working-space conversion
 // the cell colours go through in boardMesh.ts, so the markers and the board are
 // written into their buffers in the same space.

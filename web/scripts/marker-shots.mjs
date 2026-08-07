@@ -135,6 +135,59 @@ for (const mode of ["sphere", "mobius", "torusrhombille"]) {
   console.log(`${mode} loss`);
 }
 
+// Holding a cell plants a pin, and the planting is animated: the pin comes down
+// oversized and upright, above the finger that is covering the cell. Shot at the
+// instant the flag lands (a real long press over CDP, since this is a touch
+// gesture) and again once it has settled. Animations have to be on, so this
+// context does not ask for reduced motion the way the others do.
+{
+  const ctx = await browser.newContext({
+    viewport: { width: 900, height: 900 },
+    deviceScaleFactor: 1,
+    reducedMotion: "no-preference",
+  });
+  await ctx.addInitScript(() => {
+    localStorage.setItem(
+      "ms:settings",
+      JSON.stringify({ version: 3, theme: "realistic", animations: true }),
+    );
+  });
+  const page = await ctx.newPage();
+  await page.goto(`${BASE}/?mode=sphere&difficulty=easy&seed=7`);
+  await page.waitForSelector("body[data-ready]");
+  await settle(page);
+  const at = await page.evaluate(() => {
+    const ms = window.__ms;
+    const mid = [window.innerWidth / 2, window.innerHeight / 2];
+    return ms
+      .cells()
+      .map((c) => ms.cellScreenXY(c))
+      .filter((p) => p !== null)
+      .sort(
+        (a, z) =>
+          Math.hypot(a.x - mid[0], a.y - mid[1]) - Math.hypot(z.x - mid[0], z.y - mid[1]),
+      )[0];
+  });
+  const before = await page.evaluate(() => window.__ms.state().minesRemaining);
+  const client = await ctx.newCDPSession(page);
+  await client.send("Input.dispatchTouchEvent", {
+    type: "touchStart",
+    touchPoints: [{ x: at.x, y: at.y }],
+  });
+  // Wait on the flag actually landing rather than on a guessed delay: the drop
+  // is 420ms and a SwiftShader screenshot costs most of that, so a fixed wait
+  // reliably arrives after it is over.
+  await page.waitForFunction((n) => window.__ms.state().minesRemaining !== n, before, {
+    timeout: 5000,
+  });
+  await page.screenshot({ path: join(OUT, "sphere-pin-drop.png") });
+  await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+  await page.waitForTimeout(600);
+  await page.screenshot({ path: join(OUT, "sphere-pin-landed.png") });
+  await ctx.close();
+  console.log("pin drop");
+}
+
 // Controls: a flat board keeps the billboards, whatever the theme says.
 {
   const { ctx, page } = await open("hex");
