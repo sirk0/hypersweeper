@@ -22,6 +22,9 @@ export interface MsState {
    * `"off"`) — the one way to assert from outside that picking a preset
    * reached it, since a synthesised sound leaves nothing in the DOM. */
   sound: string;
+  /** The level the audio engine is scaled to, 0..1 — the same story as `sound`
+   * for the volume slider, which likewise leaves nothing in the DOM. */
+  volume: number;
 }
 
 export interface MsHook {

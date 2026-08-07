@@ -1,4 +1,4 @@
-import { DEFAULT_SOUND, resolveSound } from "./audio/presets";
+import { clampVolume, DEFAULT_SOUND, DEFAULT_VOLUME, resolveSound } from "./audio/presets";
 import { hasDifficulty, screens } from "./config/screens";
 import { readObject, storage } from "./storage";
 import { DEFAULT_THEME, resolveTheme } from "./ui/theme";
@@ -51,6 +51,11 @@ export interface Settings {
   /** A key in `SOUND_PRESETS`, or `"off"` — what the game sounds like. Read on
    * every event, so a change applies to the board already in play. */
   sound: string;
+  /** How loud that is, 0..1 — the ceiling every voice is scaled by. Separate
+   * from `sound` because it is a level rather than a character: turning it down
+   * keeps the preset, and `off` is still the only silence with no audio graph
+   * behind it. */
+  volume: number;
   /** Whether the game buzzes: the Taptic Engine in the iOS app, the Vibration
    * API elsewhere. Read on every event, like `sound`. */
   haptics: boolean;
@@ -61,6 +66,7 @@ export const DEFAULT_SETTINGS: Settings = {
   difficulty: screens.defaultDifficulty,
   animations: null,
   sound: DEFAULT_SOUND,
+  volume: DEFAULT_VOLUME,
   haptics: true,
 };
 
@@ -137,6 +143,13 @@ export function loadSettings(): Settings {
     // sound) falls back rather than silencing the game by accident. `"off"` is
     // a valid stored value and survives.
     sound: resolveSound(typeof rec["sound"] === "string" ? rec["sound"] : null),
+    // Additive field, and a number rather than a key: anything that is not a
+    // finite 0..1 level (a string, a NaN, a record from a build without it)
+    // falls back to full volume, which is what every earlier build played at.
+    volume:
+      typeof rec["volume"] === "number"
+        ? clampVolume(rec["volume"])
+        : DEFAULT_SETTINGS.volume,
     // Additive field: a record from a build without haptics simply lacks it and
     // takes the default (on), which is what a device that can buzz should do
     // out of the box.

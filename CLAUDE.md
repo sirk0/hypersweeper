@@ -336,15 +336,16 @@ only). That shape is *derived* from the shared port in the "web menu" section of
 `src/boards/catalog.ts`, so `data/catalog.json` and the pygame menu are
 untouched; `tests/unit/menu.test.ts` pins it.
 
-The menu's gear opens a **settings** page (best times, theme, sound,
-haptics, animations toggle, build version, links, update check) — one more
+The menu's gear opens a **settings** page (best times, theme, sound and
+its volume, haptics where anything can buzz, animations toggle, build
+version, update check) — one more
 `Menu` page rather than a modal, with the theme, best-times and sound pages
-below it. The header carries the gear at its right edge and a **?** at its
+below it. Nothing on it links off the site. The header carries the gear at its right edge and a **?** at its
 left — one button per side, so the two balance and the title
 "Hypersweeper", a single unbreakable word, stays on one line on a narrow
 phone. The **?** opens a how-to-play page (`src/ui/help.ts`) built the
 same way, its text in TS rather than in the pygame-shared `screens.json`.
-Theme, difficulty, the sound preset, haptics and the
+Theme, difficulty, the sound preset and its volume, haptics and the
 animations override persist (`src/settings.ts`): one stable
 `localStorage` key holding a record that carries its own `version`, never
 a versioned key name — see "Settings and themes" in `web/README.md` before
@@ -471,12 +472,16 @@ template plus the generated icons and an `Info.plist` line);
 **The haptics are the reason this exists.** `web/src/haptics.ts` is the
 single seam and picks its mechanism at call time: natively it is
 `impact(Light)` for a flag, `notification(Error)` for a mine and
-`notification(Success)` for a win; in a browser, `navigator.vibrate` with
-a pattern; on iOS Safari, the one fixed tick a hidden
-`<input type="checkbox" switch>` plays, because that is all the web
-platform offers there. Settings › Haptics turns it off (stored like the
-sound preset, read on every event) and the row is hidden where nothing can
-buzz. The trap: a plugin missing from Capacitor's `PluginHeaders` — what
+`notification(Success)` for a win; in a **mobile** browser with the
+Vibration API — Android, in practice — `navigator.vibrate` with a pattern.
+Nowhere else, and `hapticsSupported()` is that rule: a desktop browser
+defines `navigator.vibrate` with nothing to shake, and iOS Safari offers no
+web haptic at all (the hidden `<input type="checkbox" switch>` tick that
+once stood in for it is gone — it does not buzz). Both get no Settings ›
+Haptics row, and `haptic()` itself is gated on the same check, so a stored
+`haptics: true` carried over from a phone is inert. Where the row is shown
+it turns everything off (stored like the sound preset, read on every
+event). The trap: a plugin missing from Capacitor's `PluginHeaders` — what
 the native side injects to say which plugins the binary carries — is
 silently served by its **web** implementation, so the app builds, runs and
 does nothing on the phone. `web/tests/e2e/haptics.spec.ts` pins the whole

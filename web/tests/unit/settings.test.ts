@@ -47,6 +47,7 @@ const SETTINGS: Settings = {
   difficulty: "hard",
   animations: false,
   sound: "arcade",
+  volume: 0.5,
   haptics: false,
 };
 
@@ -110,8 +111,23 @@ describe("settings validation", () => {
       difficulty: DEFAULT_SETTINGS.difficulty,
       animations: null,
       sound: DEFAULT_SETTINGS.sound,
+      volume: DEFAULT_SETTINGS.volume,
       haptics: DEFAULT_SETTINGS.haptics,
     });
+  });
+
+  it("clamps a stored volume, and falls back on one that is not a number", () => {
+    for (const [raw, level] of [
+      [0.4, 0.4],
+      [2, 1],
+      [-1, 0],
+      [0, 0],
+      ["loud", DEFAULT_SETTINGS.volume],
+      [null, DEFAULT_SETTINGS.volume],
+    ] as const) {
+      withStorage(fakeStorage({ [KEY]: JSON.stringify({ volume: raw }) }));
+      expect(loadSettings().volume, String(raw)).toBe(level);
+    }
   });
 
   it("drops a sound preset this build does not have, but keeps Off", () => {
@@ -152,6 +168,7 @@ describe("settings upgrades", () => {
       difficulty: DEFAULT_SETTINGS.difficulty,
       animations: true,
       sound: DEFAULT_SETTINGS.sound,
+      volume: DEFAULT_SETTINGS.volume,
       haptics: DEFAULT_SETTINGS.haptics,
     });
     // Migration completes on the next write, and only then is the old key
@@ -217,6 +234,7 @@ describe("settings upgrades", () => {
       difficulty: "easy",
       animations: null,
       sound: DEFAULT_SETTINGS.sound,
+      volume: DEFAULT_SETTINGS.volume,
       haptics: DEFAULT_SETTINGS.haptics,
     });
   });
@@ -263,6 +281,7 @@ describe("cross-tab sync", () => {
         difficulty: "easy",
         animations: null,
           sound: DEFAULT_SETTINGS.sound,
+        volume: DEFAULT_SETTINGS.volume,
         haptics: DEFAULT_SETTINGS.haptics,
       },
     ]);

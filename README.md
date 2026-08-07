@@ -96,7 +96,8 @@ the exact layout. Winning files the time: the fastest three per board and
 difficulty live under Settings › Best times. Settings also holds the
 four themes (each one chrome palette, page and cell style together),
 three sound presets (synthesised from the move that caused them — a tile's
-side count is its voice), a haptics switch and an animations toggle.
+side count is its voice) with a volume slider, an animations toggle, and —
+on a phone that can buzz — a haptics switch.
 
 ## Development
 

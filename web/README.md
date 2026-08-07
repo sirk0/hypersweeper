@@ -833,7 +833,9 @@ Two files, and the split between them is the point:
   Blocks), in the shape of `cellStyle.ts`: plain numbers the engine reads, so a
   fourth character is a row here and nothing else. `off` is deliberately *not*
   an entry — `soundPreset()` returns `null` for it, and a silenced game never
-  builds an audio graph at all.
+  builds an audio graph at all. It also holds the guards a stored record has to
+  pass before it reaches the engine: `resolveSound` for the key, `clampVolume`
+  for the level.
 - **`sound.ts`** — `voicesFor(event, preset)` is **pure** (an event in, a list
   of grains out: when, what pitch, how wide, how loud), and `playSound(event)`
   renders those grains onto the shared `AudioContext`. Every rule the feature
@@ -856,6 +858,17 @@ Things that will bite:
   rotation. `GameSession` takes it as the `panOf` option and falls back to the
   cell's mesh-local x (the same answer for an unframed flat board) when there
   is none — which is what keeps the session constructible in a test.
+- **Volume is the master gain, not a preset number.** A preset's own gains are
+  the *balance* between the game's sounds (a flag against a cascade);
+  Settings › Sound › **Volume** is how loud that whole balance plays, so
+  `setSoundVolume` scales the one master `GainNode` and `voicesFor` stays pure
+  and preset-only. `off` is still a different thing from a volume of zero: it
+  mutes the same gain, but it is also what stops the engine building voices at
+  all. Both moves are 30 ms ramps — stepping a gain discontinuously clicks —
+  and the slider is deliberately the one settings control that does **not**
+  re-render its page, because the player is still holding it: dragging feeds
+  the engine live (audible in the cascade already ringing), and only letting go
+  persists the value and plays the preview.
 - **A cascade is bounded, twice.** `cascade.maxVoices` thins the cells at an
   even stride across the whole ring range (so the first ring and the last are
   always heard), and `MAX_CASCADE_S` clamps the delay. Beyond that
@@ -870,7 +883,8 @@ Things that will bite:
   suite counts the oscillators the page creates
   (`tests/e2e/sound.spec.ts`, an init script wrapping
   `AudioContext.prototype.createOscillator`) and reads the engine's active
-  choice back through `window.__ms.state().sound`. Counting *scheduled* nodes
+  choice back through `window.__ms.state().sound` (and the level through
+  `state().volume`). Counting *scheduled* nodes
   needs no output device and no autoplay policy, which is what makes it stable
   in CI.
 
@@ -949,11 +963,29 @@ should find its setting intact.
 **Sound.** What the game sounds like — a preset key or `"off"` — under the
 Behaviour heading, with its own picker page (see "Sound" above). Unlike a theme's
 cells it needs no new board: every event reads the preset when it plays, so a
-change is audible on the very next click.
+change is audible on the very next click. The picker page also carries
+**Volume**, a 0..1 level stored beside the preset: it is a level rather than a
+character, so turning it down keeps the preset, and it is left off the page
+entirely under `off`, where there is nothing to set. The settings row above
+reports both ("Chime · 60%").
+
+**Haptics.** A plain boolean, and the one row that is **conditional**:
+`hapticsSupported()` (`src/haptics.ts`) offers it only where something can
+actually buzz — the native iOS shell, or a *mobile* browser with
+`navigator.vibrate`, which in practice means Android. A desktop browser defines
+`navigator.vibrate` with no hardware behind it, and iOS Safari implements no web
+haptic at all, so neither gets a switch; `haptic()` is gated on the same check,
+so a `haptics: true` carried in from a phone is inert rather than driving a
+mechanism that does nothing.
+
+**No outward links.** The About block reports what the build *is* (its version,
+and whether a newer one is waiting) and nothing more — a settings page that
+sends the player to another site is not part of playing the game.
+`tests/e2e/settings.spec.ts` asserts the page holds no anchors at all.
 
 **Persistence.** `src/settings.ts` is the app's only stored state: theme,
-difficulty, the animations override, the cell style and the sound preset. Flag
-mode, zoom, the menu page you are on and the board in progress stay in memory as
+difficulty, the animations override, haptics, and the sound preset with its
+volume. Flag mode, zoom, the menu page you are on and the board in progress stay in memory as
 before.
 
 The layout is **one stable `localStorage` key holding a record that carries its

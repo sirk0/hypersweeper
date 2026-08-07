@@ -318,6 +318,7 @@ export class Menu {
       difficulty: this.settings.difficulty,
       animations: this.settings.animations,
       sound: this.settings.sound,
+      volume: this.settings.volume,
       haptics: this.settings.haptics,
       setTheme: (key) => {
         this.settings.setTheme(key);
@@ -334,6 +335,11 @@ export class Menu {
       setSound: (key) => {
         this.settings.setSound(key);
         page();
+      },
+      // No re-render: this arrives from a slider the player is still holding,
+      // and rebuilding the page would pull it out from under them.
+      setVolume: (level) => {
+        this.settings.setVolume(level);
       },
       setHaptics: (on) => {
         this.settings.setHaptics(on);

@@ -4,7 +4,7 @@ import {
   SOUND_PRESETS,
   soundLabel,
 } from "../audio/presets";
-import { previewSound, setSoundPreset } from "../audio/sound";
+import { previewSound, setSoundPreset, setSoundVolume } from "../audio/sound";
 import { screens } from "../config/screens";
 import { hapticsSupported } from "../haptics";
 import { allBestTimes } from "../leaderboard";
@@ -21,6 +21,9 @@ import { THEME_KEYS, theme as themeDef, themePalette, themeVars } from "./theme"
 // board's cell style, so there is no second appearance picker to pair with it),
 // the sound / haptics / animations behaviour rows, and an About block naming the
 // build.
+//
+// The Haptics row is conditional (`hapticsSupported`) and the About block holds
+// no outward links: what is here is what this build can actually do.
 
 /** The gear that opens this page, filled in `currentColor` so it follows the
  * theme's text colour.
@@ -41,8 +44,6 @@ export function buildVersion(): string {
   return __APP_COMMIT__ ? `${__APP_VERSION__} (${__APP_COMMIT__})` : __APP_VERSION__;
 }
 
-const REPO_URL = "https://github.com/sirk0/hypersweeper";
-
 /** The live view of the stored preferences that the menu reads and writes.
  * Implemented by `App` over `settings.ts`. */
 export interface SettingsHost {
@@ -54,13 +55,23 @@ export interface SettingsHost {
   animations: boolean | null;
   /** The active sound choice: a key in `SOUND_PRESETS`, or `"off"`. */
   sound: string;
+  /** How loud it plays, 0..1. */
+  volume: number;
   /** Whether the game buzzes on a flag, a win and a mine. */
   haptics: boolean;
   setTheme(key: string): void;
   setDifficulty(key: string): void;
   setAnimations(pref: boolean | null): void;
   setSound(key: string): void;
+  /** Persist the volume. Unlike the other setters this must **not** re-render
+   * the page: it is called from a slider the player is still holding. */
+  setVolume(level: number): void;
   setHaptics(on: boolean): void;
+}
+
+/** A 0..1 level as the percentage the slider row reports. */
+function volumeLabel(level: number): string {
+  return `${Math.round(level * 100)}%`;
 }
 
 /** How many distinct boards have a recorded time — the Best times row's
@@ -176,22 +187,6 @@ function buttonRow(
   return { li, btn };
 }
 
-function linkRow(label: string, href: string, hint: string): HTMLElement {
-  const li = document.createElement("li");
-  const a = document.createElement("a");
-  a.className = "menu-entry settings-link";
-  a.href = href;
-  a.target = "_blank";
-  a.rel = "noopener noreferrer";
-  a.append(textBlock(label, hint));
-  const chevron = document.createElement("span");
-  chevron.className = "menu-entry-chevron";
-  chevron.textContent = "›";
-  a.append(chevron);
-  li.append(a);
-  return li;
-}
-
 /** Ask the service worker for a fresh build. In dev (and any browser without
  * one) there is nothing registered, which is reported rather than hidden. */
 async function checkForUpdates(status: HTMLElement): Promise<void> {
@@ -296,6 +291,17 @@ export function renderSoundPicker(host: SettingsHost): DocumentFragment {
     list.append(li);
   }
   frag.append(list);
+
+  // Off has no level to set, so the slider is left out rather than sitting
+  // there doing nothing; picking a preset re-renders the page and brings it
+  // back.
+  if (host.sound !== SOUND_OFF) {
+    const levels = document.createElement("ul");
+    levels.className = "menu-list";
+    levels.append(volumeRow(host));
+    frag.append(levels);
+  }
+
   const note = document.createElement("p");
   note.className = "settings-footer";
   note.textContent =
@@ -303,6 +309,46 @@ export function renderSoundPicker(host: SettingsHost): DocumentFragment {
     "and a chain reaction opens as a cascade.";
   frag.append(note);
   return frag;
+}
+
+/** The volume row: a slider capping how loud the game plays, under the preset
+ * list on the sound page (it is a level for the preset chosen there, so this is
+ * where it belongs — the settings row above reports both).
+ *
+ * It is the one control here that does not re-render its page, because the
+ * player is still holding it: dragging feeds the engine directly, so the change
+ * is audible in the cascade already ringing, and only letting go persists the
+ * value and plays the preview. The label is updated in place for the same
+ * reason. */
+function volumeRow(host: SettingsHost): HTMLElement {
+  const li = document.createElement("li");
+  const box = document.createElement("div");
+  box.className = "menu-entry settings-static settings-volume";
+  const text = textBlock("Volume", volumeLabel(host.volume));
+  const hint = text.querySelector(".menu-entry-hint");
+
+  const slider = document.createElement("input");
+  slider.type = "range";
+  slider.className = "settings-range";
+  slider.min = "0";
+  slider.max = "100";
+  slider.step = "5";
+  slider.value = String(Math.round(host.volume * 100));
+  slider.dataset["setting"] = "volume";
+  slider.setAttribute("aria-label", "Volume");
+  const level = (): number => Number(slider.value) / 100;
+  slider.addEventListener("input", () => {
+    setSoundVolume(level());
+    if (hint) hint.textContent = volumeLabel(level());
+  });
+  slider.addEventListener("change", () => {
+    host.setVolume(level());
+    previewSound(); // the same sample the preset rows play, at the new level
+  });
+
+  box.append(text, slider);
+  li.append(box);
+  return li;
 }
 
 /** Build the settings page body. The caller (Menu) supplies the back row and
@@ -369,8 +415,14 @@ export function renderSettings(
   const soundChevron = document.createElement("span");
   soundChevron.className = "menu-entry-chevron";
   soundChevron.textContent = "›";
+  // Both halves of the sound setting, since the page below holds both: which
+  // preset, and how loud it plays.
+  const soundHint =
+    host.sound === SOUND_OFF
+      ? soundLabel(host.sound)
+      : `${soundLabel(host.sound)} · ${volumeLabel(host.volume)}`;
   const { li: soundLi, btn: soundBtn } = buttonRow(
-    [soundSwatch(host.sound), textBlock("Sound", soundLabel(host.sound)), soundChevron],
+    [soundSwatch(host.sound), textBlock("Sound", soundHint), soundChevron],
     openSounds,
     "menu-submenu",
   );
@@ -449,10 +501,9 @@ export function renderSettings(
     about.append(updLi);
   }
 
-  about.append(linkRow("Source code", REPO_URL, "github.com/sirk0/hypersweeper"));
-  // No link to the pygame build: it is the reference implementation in the
-  // repo, not a deployed sibling of this app, and has not been served since
-  // this one took the site root.
+  // Nothing links out of here: the About block reports what this build *is*
+  // (its version, and whether a newer one is waiting), and a settings page that
+  // sends the player to another site is not part of playing the game.
   frag.append(about);
 
   const footer = document.createElement("p");
