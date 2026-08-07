@@ -12,6 +12,7 @@ import {
   Vector3,
 } from "three";
 import {
+  cross,
   newellNormal,
   normalize,
   type Board3D,
@@ -31,7 +32,8 @@ import {
   type CellVisual,
 } from "./boardMesh";
 import { clipTriangles, fanTriangles, triangleCentroid, type Tri } from "./clip";
-import { makeGlyphAtlas, type GlyphAtlas } from "./glyphAtlas";
+import { makeGlyphAtlas, type Glyph, type GlyphAtlas } from "./glyphAtlas";
+import { markerDrop, MARKER_REACH, writeMarker, type Marker } from "./markers3d";
 import {
   CellAnimations,
   dropOpacity,
@@ -83,6 +85,17 @@ interface CellGeom {
   centroid: Vec3;
   normal: Vec3; // outward unit normal
   radius: number; // mean distance centroid -> vertices
+  // The cell's **inradius** in its own plane: the distance from the centroid to
+  // the nearest *edge*, not to the vertices. That is the width a thing standing
+  // on the cell has to fit inside, and on a stretched tiling it is nothing like
+  // `radius` — the immersions bend cells into long thin slivers whose mean
+  // vertex distance is set by the long axis, so a marker sized off `radius`
+  // there is several times wider than the tile it sits on. The billboards have
+  // always been sized this way (`polygonInradius` in `rebuildGlyphs`, measured
+  // per frame in the *billboard* plane); this is the same measurement taken once
+  // in the cell's own plane, so a model can use it without depending on where
+  // the camera is.
+  fit: number;
   center: Vec3; // centre of the (currently raised or sunken) top face
   palette: CellPalette; // hidden/opened tones for this cell's shape
   // Two-sided boards only: the flat tile's triangles, built once (they never
@@ -144,6 +157,20 @@ export class SolidBoard extends Group implements BoardMesh {
   // its own material is what lets it fade in as it shrinks.
   private readonly dropGeometry = new BufferGeometry();
   private readonly dropMaterial: MeshBasicMaterial;
+  // A style that stands real models on its flagged and mined cells
+  // (CellStyle.solidMarkers) builds them into this one merged buffer, the way
+  // the glyph quads are built: the set of marked cells changes on nearly every
+  // move, so the whole thing is rewritten rather than edited, and the board's
+  // markers stay one draw call. False on every other style.
+  private readonly solidMarkers: boolean;
+  private readonly markerGeometry = new BufferGeometry();
+  // ...and the one pin currently being planted by a held cell, which is a mesh
+  // of its own for the same reason the 2D drop is: it is drawn many times
+  // cell-size, so depth-testing it against the very solid it is landing on
+  // would bury it, and being its own material is what lets it fade in as it
+  // shrinks. Null on a style without markers, where the 2D drop does this job.
+  private readonly markerDropGeometry = new BufferGeometry();
+  private markerDropMaterial: MeshStandardMaterial | null = null;
   private readonly atlas: GlyphAtlas;
   private readonly states: CellVisual[];
   private hovered = -1;
@@ -192,6 +219,7 @@ export class SolidBoard extends Group implements BoardMesh {
     this.states = this.order.map(() => ({ kind: "hidden" }));
     this.order.forEach((c, i) => this.cellIndex.set(c, i));
     this.twoSided = board.twoSided;
+    this.solidMarkers = style.solidMarkers ?? false;
     // The framing radius is measured below from the *built* geometry (the
     // raised tile tops stand proud of the board's own vertex radius), so the
     // renderer scales the real outer hull — not an inner sphere — to unit
@@ -224,6 +252,23 @@ export class SolidBoard extends Group implements BoardMesh {
             Math.hypot(p[0] - centroid[0], p[1] - centroid[1], p[2] - centroid[2]),
           0,
         ) / n;
+      // ...and the inradius, measured in the cell's own tangent plane (see
+      // CellGeom.fit). Any two perpendicular in-plane axes will do — nothing
+      // downstream cares which way they point, only how far the nearest edge is.
+      const ex = normalize(
+        cross(normal, Math.abs(normal[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0]),
+      );
+      const ey = cross(normal, ex);
+      const fit = polygonInradius(
+        poly.map((p): [number, number] => {
+          const d: Vec3 = [p[0] - centroid[0], p[1] - centroid[1], p[2] - centroid[2]];
+          return [
+            d[0] * ex[0] + d[1] * ex[1] + d[2] * ex[2],
+            d[0] * ey[0] + d[1] * ey[1] + d[2] * ey[2],
+          ];
+        }),
+        [0, 0],
+      );
       // The cut, if this cell is one of the few the clip reaches.
       const field = clip && clip.cells.has(cell) ? clip.field : null;
       // A closed cell is a raised button: an n-triangle top fan plus a ring of
@@ -247,6 +292,7 @@ export class SolidBoard extends Group implements BoardMesh {
         centroid,
         normal,
         radius,
+        fit,
         center: tile ? (triangleCentroid(tile) ?? centroid) : centroid,
         palette: cellPalette(tones.get(cell)!, "solid", style.monochrome),
         tileFalloff: tile && style.shade ? radialFalloff(tile, centroid, radius) : null,
@@ -267,6 +313,26 @@ export class SolidBoard extends Group implements BoardMesh {
           ]);
           hull.push(top[0], top[1], top[2]);
           outerRadius = Math.max(outerRadius, Math.hypot(top[0], top[1], top[2]));
+        }
+      }
+      // A style that stands models on its cells has to be framed with room for
+      // one: the camera fit walks this hull, and a marker outside it is a marker
+      // the board's rim crops in half. One point per cell, at the tip of the
+      // tallest model that cell could carry — so a board is framed as if every
+      // cell were flagged, and nothing pops out of frame when one is. It costs a
+      // permanent zoom-out on those styles, which is the price of never cropping
+      // (and why only they pay it). On a two-sided board the marker stands both
+      // ways, so both tips go in.
+      if (this.solidMarkers) {
+        const reach = fit * MARKER_REACH;
+        for (const s of this.twoSided ? [1, -1] : [1]) {
+          const tip = add3(centroid, [
+            normal[0] * reach * s,
+            normal[1] * reach * s,
+            normal[2] * reach * s,
+          ]);
+          hull.push(tip[0], tip[1], tip[2]);
+          outerRadius = Math.max(outerRadius, Math.hypot(tip[0], tip[1], tip[2]));
         }
       }
       for (let t = 0; t < count / 3; t++) faceCell.push(ci);
@@ -371,6 +437,55 @@ export class SolidBoard extends Group implements BoardMesh {
     dropMesh.renderOrder = 2;
     this.add(dropMesh);
 
+    // The standing pins and bombs, on the styles that ask for them. Ordinary
+    // lit, *opaque* geometry — it takes the same hemisphere + key light the
+    // tiles do, which is what makes a marker read as an object on the board
+    // rather than a sticker over it, and staying opaque sidesteps the sort
+    // problem a solid's overlapping cells have (see CellStyle.openAlpha).
+    //
+    // `flatShading` is deliberately **off**: the models write their own
+    // per-vertex normals, radial on every sphere, and that is the only thing
+    // making a head of a few hundred triangles read as having no edges at all.
+    // Turning it on throws those away and the pins come back faceted.
+    //
+    // `pick` only ever raycasts the "cells" mesh, so a marker can never swallow
+    // a tap meant for its tile.
+    if (this.solidMarkers) {
+      const markerMesh = new Mesh(
+        this.markerGeometry,
+        new MeshStandardMaterial({
+          vertexColors: true,
+          roughness: 0.52,
+          metalness: 0,
+          // Every model is a closed solid, so FrontSide would do — but a marker
+          // that came out inside-out from a winding slip would be invisible
+          // rather than merely wrong, and these are cheap enough not to gamble.
+          side: DoubleSide,
+        }),
+      );
+      markerMesh.name = "markers";
+      this.add(markerMesh);
+
+      // The pin being planted by a held cell. Same material, but transparent and
+      // out of the depth test — an oversized pin has to hang *in front of* the
+      // solid for the fraction of a second it is in the air, not be swallowed by
+      // it, and the whole point of drawing it oversized is that the finger doing
+      // the holding is covering the cell it will land on.
+      this.markerDropMaterial = new MeshStandardMaterial({
+        vertexColors: true,
+        roughness: 0.52,
+        metalness: 0,
+        side: DoubleSide,
+        transparent: true,
+        depthTest: false,
+        depthWrite: false,
+      });
+      const markerDropMesh = new Mesh(this.markerDropGeometry, this.markerDropMaterial);
+      markerDropMesh.name = "markerDrop";
+      markerDropMesh.renderOrder = 3;
+      this.add(markerDropMesh);
+    }
+
     for (let i = 0; i < this.order.length; i++) {
       this.writeGeometry(i);
       this.writeColor(i);
@@ -379,6 +494,7 @@ export class SolidBoard extends Group implements BoardMesh {
       this.geom.reduce((s, g) => s + g.radius, 0) / (this.geom.length || 1);
     geometry.computeBoundingSphere();
     this.rebuildGlyphs();
+    this.rebuildMarkers();
   }
 
   get cellCount(): number {
@@ -407,6 +523,7 @@ export class SolidBoard extends Group implements BoardMesh {
     if (!this.twoSided && isOpened(visual) !== wasOpen) this.writeGeometry(i);
     this.writeColor(i);
     this.rebuildGlyphs();
+    this.rebuildMarkers();
   }
 
   setHover(cell: CellId | null): void {
@@ -559,7 +676,13 @@ export class SolidBoard extends Group implements BoardMesh {
     const extent = this.view.kind === "solid" ? this.view.radius * 2 : 1;
     const { viewRight: u, viewUp: v, cameraLocal: cam } = this;
     for (let i = 0; i < this.order.length; i++) {
-      const glyph = glyphFor(this.states[i]!);
+      // Where a model stands on the cell, the billboard steps aside: a flag and
+      // a mine become the pin and the bomb, and a *wrong* flag keeps only the
+      // dark X, since the gray pin under it is already the flag the crossed-out
+      // glyph would be drawing again.
+      const glyph = this.solidMarkers
+        ? billboardBesideMarker(this.states[i]!)
+        : glyphFor(this.states[i]!);
       if (glyph === null) continue;
       const uv = this.atlas.uv(glyph);
       if (!uv) continue;
@@ -607,7 +730,15 @@ export class SolidBoard extends Group implements BoardMesh {
       // not the animated one: a dropping flag is many times cell-size and
       // would otherwise be flung at the camera as it shrinks (it needs no
       // clearance anyway — its mesh does not depth-test).
-      const lift = settled * 1.3;
+      //
+      // The one billboard that has to clear more than a cell face is the cross
+      // over a wrongly-placed flag: there is a pin standing on that cell, and at
+      // the ordinary lift the X comes out *behind* its head, which eats the
+      // middle of the mark and leaves four arms reading as spikes. Lift it past
+      // the tallest thing a marker style can put there instead, so the X is
+      // drawn across the pin the way a cancellation should be.
+      const lift =
+        glyph === "cross" ? g.fit * MARKER_REACH * 1.1 : settled * 1.3;
       const cx = c[0] + toCam[0] * lift;
       const cy = c[1] + toCam[1] * lift;
       const cz = c[2] + toCam[2] * lift;
@@ -634,6 +765,10 @@ export class SolidBoard extends Group implements BoardMesh {
       // frame the drop ends and the hand-off is invisible. Drawing both would
       // stand a second, tiny flag beside the falling one.
       if (i === dropIndex && dropAt != null) {
+        // The drop stays a billboard even under a marker style: it is drawn many
+        // times cell-size and must not depth-test, and `rebuildMarkers` skips
+        // the standing pin for exactly this cell, so the hand-off on the frame
+        // the drop ends is the same invisible one it always was.
         const half = dropSize(settled, extent, dropAt);
         quad(dropPos, dropUvs, half, dropRise(settled, half));
       } else if (s > 0) {
@@ -661,6 +796,136 @@ export class SolidBoard extends Group implements BoardMesh {
     this.dropMaterial.opacity = dropOpacity(dropAt ?? 1);
   }
 
+  /** (Re)build the standing pins and bombs, on the styles that ask for them.
+   *
+   * Kept out of `rebuildGlyphs` on purpose. Nothing about a marker depends on
+   * where the camera is — the models are rotationally symmetric about the axis
+   * they stand on, and the two-sided surfaces get one on each face rather than
+   * a camera-facing one — so this does *not* run from `orient()`, which fires on
+   * every frame of a drag. A smooth sphere is several hundred triangles per
+   * marked cell; rewriting all of them sixty times a second to produce the
+   * identical buffer would be the most expensive thing on the board. Cell state
+   * is the only input, so cell state is the only trigger. */
+  private rebuildMarkers(): void {
+    if (!this.solidMarkers) return;
+    const pos: number[] = [];
+    const nrm: number[] = [];
+    const col: number[] = [];
+    const dropPos: number[] = [];
+    const dropNrm: number[] = [];
+    const dropCol: number[] = [];
+    const now = performance.now();
+    const dropIndex = this.anim.dropIndex();
+    const dropAt = this.anim.dropProgress(now);
+    for (let i = 0; i < this.order.length; i++) {
+      const marker = markerFor(this.states[i]!);
+      if (marker === null) continue;
+      const g = this.geom[i]!;
+      if (g.count === 0) continue; // wholly cut away by the surface clip
+      // A pin planted by *holding* the cell lands rather than appearing: it
+      // comes down oversized and shrinks onto its tile. That is feedback, not
+      // decoration — the finger doing the holding is covering the very cell the
+      // pin is going to, so at settled size the player would see nothing happen
+      // until they lifted it. The 2D flag billboard has always done this; on a
+      // style with markers it is suppressed (`billboardBesideMarker` gives a
+      // flagged cell no glyph at all), so the pin has to do its own, or holding
+      // a cell on this theme animates nothing.
+      //
+      // It goes in a buffer of its own, drawn without depth testing, so the
+      // oversized pin hangs in front of the solid instead of being buried in it.
+      if (i === dropIndex && dropAt != null) {
+        const { scale: dScale, rise } = markerDrop(dropAt, g.fit);
+        // It falls down the *screen*, not down the cell's normal: on a cell
+        // facing the camera the normal points at the viewer, so a pin coming in
+        // along it would approach from behind the fingertip and never be seen.
+        // The hand covers the cell and everything below it, so above is where
+        // there is room.
+        const from: Vec3 = [
+          g.center[0] + this.viewUp[0] * rise,
+          g.center[1] + this.viewUp[1] * rise,
+          g.center[2] + this.viewUp[2] * rise,
+        ];
+        // ...and it stands upright on screen while it is up there, tipping into
+        // the cell's own normal as it lands — a pin held over the board, then
+        // pushed in. At `dropAt` 1 the axis *is* the normal, so the hand-off to
+        // the standing pin is exact.
+        const axis: Vec3 = [
+          this.viewUp[0] + (g.normal[0] - this.viewUp[0]) * dropAt,
+          this.viewUp[1] + (g.normal[1] - this.viewUp[1]) * dropAt,
+          this.viewUp[2] + (g.normal[2] - this.viewUp[2]) * dropAt,
+        ];
+        // A cell whose normal is near enough the exact opposite of screen-up
+        // leaves the blend passing through zero halfway, which `normalize`
+        // turns into NaN and sprays across the buffer. Nothing to interpolate
+        // there, so don't.
+        const straight = Math.hypot(axis[0], axis[1], axis[2]) < 0.2;
+        writeMarker(
+          marker,
+          from,
+          straight ? g.normal : axis,
+          dScale,
+          dropPos,
+          dropNrm,
+          dropCol,
+        );
+        continue;
+      }
+      // Sized off the cell's inradius, not its mean vertex distance: a model
+      // has to fit *between the edges* of the tile it stands on, and on a
+      // stretched immersion those are two very different numbers (see
+      // CellGeom.fit). This is the same measure the billboards use.
+      const scale = g.fit * this.anim.popScale(i, now);
+      writeMarker(marker, g.center, g.normal, scale, pos, nrm, col);
+      // A two-sided cell has no consistent outward direction to stand on — the
+      // Möbius strip and the Klein bottle cannot have one at all, and nothing
+      // orients the cylinder — and it is drawn from both faces. A **pin** stands
+      // off one of them, so it needs a second copy the other way or it is
+      // missing from one side and buried under the surface from the other. A
+      // **bomb** does not: its casing is centred on the tile and straddles it,
+      // so the one model already pokes out both ways.
+      if (this.twoSided && marker !== "bomb" && marker !== "bombHot") {
+        writeMarker(
+          marker,
+          g.center,
+          [-g.normal[0], -g.normal[1], -g.normal[2]],
+          scale,
+          pos,
+          nrm,
+          col,
+        );
+      }
+    }
+    this.markerGeometry.setAttribute(
+      "position",
+      new BufferAttribute(new Float32Array(pos), 3),
+    );
+    this.markerGeometry.setAttribute(
+      "normal",
+      new BufferAttribute(new Float32Array(nrm), 3),
+    );
+    this.markerGeometry.setAttribute(
+      "color",
+      new BufferAttribute(new Float32Array(col), 3),
+    );
+    this.markerDropGeometry.setAttribute(
+      "position",
+      new BufferAttribute(new Float32Array(dropPos), 3),
+    );
+    this.markerDropGeometry.setAttribute(
+      "normal",
+      new BufferAttribute(new Float32Array(dropNrm), 3),
+    );
+    this.markerDropGeometry.setAttribute(
+      "color",
+      new BufferAttribute(new Float32Array(dropCol), 3),
+    );
+    this.markerDropGeometry.computeBoundingSphere();
+    if (this.markerDropMaterial) {
+      this.markerDropMaterial.opacity = dropOpacity(dropAt ?? 1);
+    }
+    this.markerGeometry.computeBoundingSphere();
+  }
+
   // -- animations ------------------------------------------------------------
 
   setAnimationsEnabled(on: boolean): void {
@@ -670,6 +935,7 @@ export class SolidBoard extends Group implements BoardMesh {
       this.position.set(0, 0, 0);
       for (let i = 0; i < this.order.length; i++) this.writeColor(i);
       this.rebuildGlyphs();
+      this.rebuildMarkers();
     }
   }
 
@@ -690,6 +956,7 @@ export class SolidBoard extends Group implements BoardMesh {
     if (i == null) return;
     this.anim.startDrop(i, performance.now());
     this.rebuildGlyphs();
+    this.rebuildMarkers();
   }
 
   shake(): void {
@@ -725,10 +992,39 @@ export class SolidBoard extends Group implements BoardMesh {
     if (!this.anim.pending()) return false;
     const step = this.anim.step(now);
     for (const i of step.recolor) this.writeColor(i);
-    if (step.glyphsDirty) this.rebuildGlyphs();
+    if (step.glyphsDirty) {
+      this.rebuildGlyphs();
+      this.rebuildMarkers();
+    }
     this.position.set(step.offset[0], step.offset[1], 0);
     return step.active;
   }
+}
+
+/** The model that stands on a cell in this state, on a style with markers, or
+ * null for the states that carry no object — a plain hidden cell, and a revealed
+ * one, whose number is a number and stays a billboard. */
+function markerFor(visual: CellVisual): Marker | null {
+  switch (visual.kind) {
+    case "flagged":
+      return "pin";
+    case "wrongFlag":
+      return "deadPin";
+    case "mine":
+      return "bomb";
+    case "exploded":
+      return "bombHot";
+    default:
+      return null;
+  }
+}
+
+/** The billboard a cell still needs *beside* its model. Only one state does: a
+ * misplaced flag, where the pin is the flag and the dark X is the news. The
+ * cells with no model at all fall through to the ordinary glyph. */
+function billboardBesideMarker(visual: CellVisual): Glyph | null {
+  if (visual.kind === "wrongFlag") return "cross";
+  return markerFor(visual) === null ? glyphFor(visual) : null;
 }
 
 function centroidOf(points: readonly Vec3[]): Vec3 {

@@ -58,6 +58,11 @@ export interface Theme {
  * has no repeat the eye can find at that size. */
 const WOVEN = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.42'/%3E%3C/svg%3E")`;
 
+/** The Realistic page: the vignette first (under), the grain over it, so the
+ * grain is even across the page and only the light falls off toward the
+ * corners. */
+const REALISTIC_PAGE = `${WOVEN}, radial-gradient(120% 90% at 50% 0%, #ffffff 0%, #ffffff00 55%), radial-gradient(140% 110% at 50% 100%, #b9bfcf55 0%, #b9bfcf00 60%)`;
+
 const THEMES: Theme[] = [
   {
     key: "light",
@@ -83,12 +88,10 @@ const THEMES: Theme[] = [
   {
     key: "realistic",
     label: "Realistic",
-    hint: "Glass tiles on a textured surface",
+    hint: "Glass tiles, and real flags on a board you can turn",
     palette: "ios",
     cellStyle: "realistic",
-    // Vignette first (under), grain over it, so the grain is even across the
-    // page and only the light falls off toward the corners.
-    texture: `${WOVEN}, radial-gradient(120% 90% at 50% 0%, #ffffff 0%, #ffffff00 55%), radial-gradient(140% 110% at 50% 100%, #b9bfcf55 0%, #b9bfcf00 60%)`,
+    texture: REALISTIC_PAGE,
   },
 ];
 
@@ -100,13 +103,27 @@ export const THEME_KEYS: readonly string[] = THEMES.map((t) => t.key);
 /** The look the app boots into. */
 export const DEFAULT_THEME = "light";
 
+/** Keys that named a theme this build has folded away, and what they became.
+ * `realistic1/2/3` were the three flag markers offered side by side while the
+ * shape was being chosen; the pin won and Realistic *is* it now, so a record
+ * written by that build should land there rather than be read as a stranger and
+ * flattened to Light. */
+const ALIASES: Record<string, string> = {
+  realistic1: "realistic",
+  realistic2: "realistic",
+  realistic3: "realistic",
+};
+
 /** The theme key to actually use for `key` — the default when it names one that
  * no longer exists. That covers the builds before themes and cell styles were
  * merged, whose stored `ios` / `flat` / `neumorph` / `glass` / `paper` land here
  * and fall back to Light; `classic` and `dark` survive the rename because they
- * kept their keys. */
+ * kept their keys. `Object.hasOwn`, never `in`, for the alias lookup: the key
+ * comes out of a stored record, and `"toString"` is not a theme. */
 export function resolveTheme(key: string | null | undefined): string {
-  return key != null && BY_KEY.has(key) ? key : DEFAULT_THEME;
+  if (key == null) return DEFAULT_THEME;
+  const aliased = Object.hasOwn(ALIASES, key) ? ALIASES[key]! : key;
+  return BY_KEY.has(aliased) ? aliased : DEFAULT_THEME;
 }
 
 /** The named theme, or the default for an unknown key. */

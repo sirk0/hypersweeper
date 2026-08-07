@@ -359,7 +359,18 @@ the beveled button, drawn in **gray** — a quotation of the pygame board's
 own `HIDDEN_FACE`/`REVEALED_FACE`, guarded by `test_theme_sync.py`) and
 **Realistic** (the `ios` palette over a textured page: glossy beads while
 closed, **matte** flat-floored pans once opened, translucent on a flat
-board so the page's grain shows through them). The four are declared in `src/ui/theme.ts`, which is
+board so the page's grain shows through them). Realistic is also the one that
+stops drawing a flag and a mine as *pictures* on a board you can turn: on every
+3D board — the flat manifolds included — a flagged cell carries a **pin** (a stem
+under a round head) and a mined one, once a loss reveals it, a spiked **bomb**
+(`src/render/markers3d.ts`, switched on by `CellStyle.solidMarkers`). Both are
+rotationally symmetric about the axis they stand on, which is the point: a flag
+with a *front* — the pennant this shipped as first — goes edge-on seen straight
+down its own pole, and on a solid that is every cell facing you. The two-sided
+surfaces (cylinder, Möbius, Klein) have no consistent outward normal and are
+drawn from both faces, so they get one **pin** per face — but only one bomb,
+whose casing is centred on the tile and straddles it; flat boards keep the
+billboards, since a plane is only seen from one angle. The four are declared in `src/ui/theme.ts`, which is
 web-only because pygame has neither cell styles nor page textures; the
 seven **palettes** they compose are still the shared, pygame-ported ones
 in `data/ui/screens.json`, guarded by `tests/test_theme_sync.py`. A theme

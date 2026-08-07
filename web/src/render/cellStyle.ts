@@ -133,6 +133,17 @@ export interface CellStyle {
    * numbers sit on and the board goes chalky. Vertex colours are not clamped, so
    * a value above 1 is fine — the shading is what brings it back down. */
   albedo?: number;
+  /** **3D boards only**: stand real models on the cells carrying a flag or a
+   * mine — a pin and a spiked bomb, `render/markers3d.ts` — instead of the
+   * atlas's flat billboards. Absent means the billboards, as it always was.
+   *
+   * A flat board never gets them, whatever the style says: a plane is only ever
+   * seen from one angle, so a model there would be a picture of one anyway, at
+   * several hundred more vertices. Every board you can *turn* does, the
+   * two-sided surfaces (cylinder, Möbius strip, Klein bottle) included — those
+   * have no consistent outward normal, so `SolidBoard` stands one marker on each
+   * face rather than picking a side. */
+  solidMarkers?: true;
 }
 
 /** The classic tile: a raised beveled button while closed, re-cut as a recess
@@ -289,6 +300,12 @@ const REALISTIC: CellStyle = {
   winGlow: 0.12,
   albedo: 1.5,
   openAlpha: 0.74,
+  // ...and on a board you can turn, a flag and a mine stop being pictures: a
+  // pin stands on the flagged cells and a spiked bomb sits on the mined ones
+  // once a loss reveals them. Of a piece with the rest of the style — the
+  // argument for a bead over a plate is the argument for an object over a
+  // billboard, and it is the same argument the flat board cannot use.
+  solidMarkers: true,
 };
 
 /** The styles, one per theme (`ui/theme.ts` names them by these keys). Two

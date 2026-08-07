@@ -706,6 +706,104 @@ Cell styles are **not** in `data/ui/screens.json`: they are geometry for this
 renderer, with no pygame counterpart for the shared config to keep in step. The
 themes that name them are not there either, for the same reason — see below.
 
+## 3D markers (`src/render/markers3d.ts`)
+
+A flag and a mine are normally atlas billboards (`glyphAtlas.ts`), and on a board
+you can **turn** that is a picture of a flag rather than a flag: drag a sphere
+around and they never turn with it, because they are not objects. A cell style
+can ask for real models instead — `solidMarkers` in `cellStyle.ts`, which
+Realistic sets — and then a flagged cell carries a **pin** (a stem under a round
+head) and a mined one, once a loss reveals it, a **bomb** (a casing half sunk
+into the tile, studded with stubby horns — proportioned off `drawMine` so the 2D
+and 3D mines are one object seen two ways).
+
+Both models are **rotationally symmetric about the axis they stand on**, and
+that is the design rule, learned the hard way. This shipped first as three
+variants to compare — a pennant swivelled toward the viewer, three pennants at
+120 degrees, and the pin — because a pennant is a sheet containing its own pole
+and so goes edge-on seen straight *down* that pole, which on a solid is every
+cell facing you. Turning the cloth toward the camera is provably the best a
+single pennant can do (`up x toCam` maximises the projected area of a sheet that
+must contain `up`) and it still fails there. A pin has no front, so it has no
+angle it fails at; the other two are gone.
+
+The rest of what to know before changing one:
+
+- **Flat boards never get a model**, whatever the style says: a plane is seen
+  from one angle, so a model there is a picture of one at several hundred more
+  vertices. Every board you can turn does, including the two-sided flat manifolds.
+- **A two-sided cell gets one *pin* on each face, and one bomb.** The cylinder,
+  Möbius strip and Klein bottle have no consistent outward normal — `assemble` in
+  `boards/surfaces.ts` deliberately skips `orientFromRing` for them, and the last
+  two cannot have one at all — and they are drawn from both faces. A pin stands
+  *off* a face, so a single one is missing from one side and buried under the
+  surface from the other; a second copy the other way costs nothing, since the
+  far one is occluded. A bomb needs no such thing: its casing is centred **on**
+  the tile rather than resting on it, so the one model straddles the surface and
+  pokes out equally both ways — which is also why a mine reads as half buried
+  where it was laid rather than as something someone put there.
+- **No visible edges** comes from *normals*, not from triangle count. Every
+  sphere writes **radial** per-vertex normals and the marker material has
+  `flatShading` off; turning it on throws them away and the pins come back
+  faceted at any resolution. The same goes for colour — a tone per *triangle*
+  bands the ball, and because the two triangles of a quad take different rings
+  the bands come out as a sawtooth. Both ramps are per vertex.
+- **A marker is sized by its cell's *inradius*, not its mean vertex distance.**
+  `CellGeom.fit` — centroid to nearest *edge*, measured once in the cell's own
+  plane — is the width a thing standing on the tile has to fit inside, and it is
+  what the billboards have always used. The mean vertex distance is not a width
+  at all on a stretched surface: the immersions bend cells into slivers whose
+  mean is set by the long axis, which put a bomb several times wider than its own
+  tile on a torus wrap. The two differ by no fixed factor either — 0.48 on the
+  sphere's kites, 0.60 on the plain torus, under 0.09 on the isogonal Klein
+  wraps. Where a cell is a genuine sliver its marker is genuinely tiny, exactly
+  as its number is.
+- **Markers rebuild on cell state, not on rotation.** Nothing about them depends
+  on the camera, so `rebuildMarkers` is deliberately *not* called from `orient()`
+  — which fires on every frame of a drag — only from the constructor,
+  `setVisual`, `dropFlag`, `setAnimationsEnabled` and an animation tick. Several
+  hundred triangles per marked cell is not a thing to rewrite at 60fps to produce
+  the identical buffer.
+- **A marker style is framed with room for one.** `SolidBoard` pushes a hull
+  point per cell at `MARKER_REACH` above it, so the camera fit sees a board where
+  every cell is flagged and nothing is cropped at the rim when one is. It costs a
+  permanent zoom-out on those styles; the alternative was markers sliced in half
+  at the silhouette, since the fit is measured once at build time.
+- **A wrong flag is a gray pin under the bare `cross` glyph** — a slot added to
+  the atlas for it, since the ordinary `wrongFlag` glyph is a flag *with* a cross
+  and the pin is already the flag. That one billboard is lifted past
+  `MARKER_REACH` rather than by its own half-size, or the X draws behind the
+  pin's head and its four arms read as spikes.
+- **A held cell plants its pin with a drop of its own.** The 2D flag drop — the
+  oversized quad that falls in when a flag is placed by *holding* a cell on
+  touch — is not drawn on a marker style, because a flagged cell there has no
+  billboard at all; without a replacement, the one gesture that most needs
+  feedback animated nothing. So the pin does it: `markerDrop` in `markers3d.ts`
+  brings it down oversized and fades it in, in a buffer of its own drawn without
+  depth testing so it hangs in front of the solid rather than inside it.
+
+  Two things are deliberate. It falls down the **screen**, not down the cell's
+  normal — on a cell facing the camera the normal points at the viewer, so a pin
+  arriving along it would come from behind the fingertip and never be seen, and
+  the hand covers the cell and everything below. And it stands **upright on
+  screen** while it is up there, tipping into the cell's own normal as it lands,
+  which at progress 1 is exactly the normal, so the hand-off to the standing pin
+  is invisible. It is also far smaller than the 2D drop (about 2x settled, not up
+  to 10x): a picture has to be enormous to read as the same flag, but a pin is an
+  object with a size, and one several times too big reads as a mistake rather
+  than an arrival. What it has instead is height.
+- **Nothing waves.** An animated cloth would keep `tickAnimations` returning
+  `true` forever, against the renderer's on-demand loop.
+
+Review shots: `node scripts/marker-shots.mjs <outdir>` against a running
+`vite preview` plants flags on a sphere, a cube, a torus, a cylinder, a Möbius
+strip, a Klein bottle and two stretched torus wraps (the sliver cells that the
+inradius sizing is for), photographs each front, overhead and three-quarter,
+then loses a game on the sphere *and* on the Möbius strip (bombs, the hot one
+that ended it, a gray pin under its cross — and, on the strip, the check that one
+casing shows from both faces), long-presses a cell to catch the pin drop
+mid-flight, and shoots a flat board as the untouched control.
+
 ## Shape colour coding (`src/render/shapePalette.ts`)
 
 A cell's colour is derived from its polygon — nothing tags a cell with a
@@ -917,9 +1015,10 @@ the four-row picker lives one level down, which keeps the settings page short
 enough to read at a glance.
 
 **Themes.** A theme is the app's **one** look setting: the chrome palette, the
-page behind the board, *and* how the board's cells are cut. There are four —
-Light, Dark, Classic, Realistic — and they are declared in `src/ui/theme.ts`,
-not in `data/ui/screens.json`. The distinction matters:
+page behind the board, *and* how the board's cells are cut — and, on Realistic,
+whether a flag and a mine are billboards or real models (see "3D markers"
+above). There are four — Light, Dark, Classic, Realistic — and they are declared
+in `src/ui/theme.ts`, not in `data/ui/screens.json`. The distinction matters:
 
 - The seven **palettes** are still shared config (`data/ui/screens.json` under
   `themes`; six ported from the pygame `THEMES` registry in `minesweeper/gui.py`,
