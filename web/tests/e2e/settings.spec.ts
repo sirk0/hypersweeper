@@ -67,6 +67,12 @@ test.describe("settings", () => {
     await expect(version).toContainText(pkg.version);
   });
 
+  test("the About block links out to nothing", async ({ page }) => {
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
+    // The page reports what this build is; it does not send the player away.
+    await expect(page.locator(".menu-body a")).toHaveCount(0);
+  });
+
   test("the theme row reports the current theme and opens the picker", async ({ page }) => {
     await page.locator('.menu-header-btn[data-action="settings"]').click();
     const row = page.locator('.menu-entry[data-settings-group="theme"]');

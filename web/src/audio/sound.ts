@@ -1,5 +1,7 @@
 import {
+  clampVolume,
   DEFAULT_SOUND,
+  DEFAULT_VOLUME,
   resolveSound,
   SOUND_OFF,
   soundPreset,
@@ -282,6 +284,12 @@ export function voicesFor(event: SoundEvent, preset: SoundPreset): Voice[] {
 // -- the player ---------------------------------------------------------------
 
 let choice: string = DEFAULT_SOUND;
+/** The ceiling every voice is scaled by (Settings › Sound › Volume), 0..1. The
+ * presets' own gains are the *balance* between the game's sounds — a flag
+ * against a cascade — and this is how loud that whole balance plays, so it
+ * belongs on the master gain rather than in `voicesFor`, which stays pure and
+ * preset-only. */
+let volume = DEFAULT_VOLUME;
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
 let noiseBuffer: AudioBuffer | null = null;
@@ -295,14 +303,37 @@ const waveCache = new Map<string, PeriodicWave>();
  * stored record from another build cannot reach the engine. */
 export function setSoundPreset(key: string | null | undefined): void {
   choice = resolveSound(key);
+  rampMaster();
+}
+
+/** Set the ceiling every sound plays at, 0..1 (Settings › Sound › Volume).
+ * Clamped here, so a stored record from another build cannot push the master
+ * gain past 1 or negative. Applied to the graph already running, like the
+ * preset: the slider is audible while it is dragged. */
+export function setSoundVolume(level: number): void {
+  volume = clampVolume(level);
+  rampMaster();
+}
+
+/** The volume in force — what the settings slider shows. */
+export function soundVolume(): number {
+  return volume;
+}
+
+/** Move the master gain to what the current choice and volume ask for. Off is
+ * a mute rather than a stop, so it silences what is *already* ringing (a
+ * cascade can be a second long) — and every move is a short ramp, since
+ * stepping a gain discontinuously clicks. */
+function rampMaster(): void {
   if (!master || !ctx) return;
-  // Choosing Off silences what is *already* ringing (a cascade can be a second
-  // long), and choosing a preset again lifts the mute — over a few
-  // milliseconds either way, since stepping a gain discontinuously clicks.
   const now = ctx.currentTime;
   master.gain.cancelScheduledValues(now);
   master.gain.setValueAtTime(master.gain.value, now);
-  master.gain.linearRampToValueAtTime(choice === SOUND_OFF ? 0 : 1, now + 0.03);
+  master.gain.linearRampToValueAtTime(masterLevel(), now + 0.03);
+}
+
+function masterLevel(): number {
+  return choice === SOUND_OFF ? 0 : volume;
 }
 
 /** The active choice — what the settings page ticks. */
@@ -330,7 +361,9 @@ function audioContext(): AudioContext | null {
     return null; // a policy-disabled or exhausted audio stack
   }
   master = ctx.createGain();
-  master.gain.value = 1;
+  // The graph is built on the first gesture, long after the stored preferences
+  // were applied, so it opens at whatever they asked for.
+  master.gain.value = masterLevel();
   master.connect(ctx.destination);
   return ctx;
 }

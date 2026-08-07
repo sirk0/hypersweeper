@@ -239,6 +239,22 @@ export function soundPreset(key: string | null | undefined): SoundPreset | null 
   return resolved === SOUND_OFF ? null : SOUND_PRESETS[resolved]!;
 }
 
+/** Half volume, and the level a record without one means. The presets are
+ * balanced against each other, not against the room: at the top of the range a
+ * cascade on a big board is louder than a player who has just opened the game
+ * asked for, so the slider starts halfway and has somewhere to go in both
+ * directions. */
+export const DEFAULT_VOLUME = 0.5;
+
+/** The 0..1 level `value` stands for. Like `resolveSound`, this is the guard
+ * between a stored record and the engine: a level can arrive from another
+ * build's settings, and a gain outside 0..1 (or a NaN, which poisons a Web
+ * Audio ramp for good) must never reach the master gain. */
+export function clampVolume(value: number): number {
+  if (!Number.isFinite(value)) return DEFAULT_VOLUME;
+  return Math.min(1, Math.max(0, value));
+}
+
 /** A choice's label for the settings row. */
 export function soundLabel(key: string | null | undefined): string {
   const resolved = resolveSound(key);

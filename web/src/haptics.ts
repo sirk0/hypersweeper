@@ -11,20 +11,20 @@ import { Haptics, ImpactStyle, NotificationType } from "@capacitor/haptics";
 //     error/success notification patterns for a loss and a win. This is the
 //     only branch that reaches Core Haptics, and it is the reason the native
 //     app exists: no web API on iOS can ask for a buzz of a chosen weight.
-//   - Android/Chrome (and anything else with the Vibration API): navigator
-//     .vibrate takes a pattern, so we get real, distinct feedback per event.
-//   - iOS Safari — including a standalone/home-screen PWA — does NOT implement
-//     navigator.vibrate at all (it's undefined). The only web haptic that
-//     reaches iOS 17.4+ is the "switch" trick: toggling a hidden
-//     <input type="checkbox" switch> plays a light system tick. It's one fixed
-//     intensity, so the heavier events just repeat it to feel stronger.
-//   - Desktop and headless test browsers: navigator.vibrate is typically a
-//     no-op function, so they take the vibration branch and do nothing visible
-//     — harmless, and it keeps the test seam (window.__ms) side-effect-free.
+//   - A mobile browser with the Vibration API (Android/Chrome and friends):
+//     navigator.vibrate takes a pattern, so we get real, distinct feedback per
+//     event.
+//   - Everywhere else — iOS Safari, and every desktop browser — there is
+//     nothing to feel, so there is nothing to do. iOS Safari does not implement
+//     navigator.vibrate at all; the hidden `<input type="checkbox" switch>`
+//     trick that once stood in for it is gone, because in practice it does not
+//     buzz. Desktop Chrome *defines* navigator.vibrate on a machine with
+//     nothing to shake, so the mechanism check below is not the API's presence
+//     alone — a promise the hardware cannot keep is worse than no switch at
+//     all, and `hapticsSupported()` is what hides the settings row.
 //
 // All global access is guarded so importing this module under the node unit
-// test environment (no window/navigator/document) is safe, and the hidden
-// switch element is created lazily on first use rather than at import time.
+// test environment (no window/navigator/document) is safe.
 // The two Capacitor imports are safe there and in the browser too:
 // `isNativePlatform()` is false outside the native shell, and the Haptics
 // plugin loads its web implementation lazily — a browser that never takes the
@@ -42,10 +42,6 @@ const PATTERNS: Record<HapticKind, number | number[]> = {
   lose: [40, 30, 40, 30, 80],
   win: [20, 40, 20, 40, 60],
 };
-
-// How many iOS ticks stand in for each pattern (see iosTick below) — the
-// single fixed-intensity tick can only convey weight by repetition.
-const IOS_TICKS: Record<HapticKind, number> = { flag: 1, lose: 3, win: 3 };
 
 /** Whether the player wants any of this (Settings › Haptics). Read on every
  * event, like the sound preset, so a change applies to the board already in
@@ -79,52 +75,30 @@ function canVibrate(): boolean {
   );
 }
 
-/** Whether this device has *any* haptic mechanism — what decides whether the
- * settings page offers the row at all, since a switch for feedback the hardware
- * cannot give is a promise the app can't keep. Chrome defines
- * `navigator.vibrate` even on a desktop with nothing to shake and nothing in
- * the web platform distinguishes that, so it counts as supported here; what the
- * check really rules out is a browser with no mechanism at all. */
-export function hapticsSupported(): boolean {
-  if (isNative() || canVibrate()) return true;
-  // iOS Safari's hidden switch is the one remaining mechanism, and iOS the one
-  // place it does anything.
+/** A browser on a phone or tablet — the only kind whose `navigator.vibrate`
+ * reaches hardware. Chrome defines the API on a desktop with nothing to shake,
+ * so the API's presence alone says nothing; the form factor is what does. The
+ * UA-Client-Hints `mobile` flag answers it exactly where it exists (Chromium,
+ * which is also where the Vibration API lives), and the user-agent string is
+ * the fallback for everything else. */
+function isMobileBrowser(): boolean {
   if (typeof navigator === "undefined") return false;
-  const ua = navigator.userAgent ?? "";
-  if (/iPhone|iPad|iPod/.test(ua)) return true;
-  // iPadOS reports itself as a Mac; a touch-capable "Mac" is an iPad.
-  return /Macintosh/.test(ua) && (navigator.maxTouchPoints ?? 0) > 1;
+  const hints = (navigator as Navigator & { userAgentData?: { mobile?: boolean } })
+    .userAgentData;
+  if (typeof hints?.mobile === "boolean") return hints.mobile;
+  return /Android|Mobile|iPhone|iPad|iPod/i.test(navigator.userAgent ?? "");
 }
 
-let iosSwitch: HTMLLabelElement | null = null;
-
-// Lazily build the hidden <label><input type="checkbox" switch></label>. iOS
-// plays a haptic tick when a switch-styled checkbox is toggled by a click, so
-// clicking the label is how we ask for feedback on iOS.
-function iosSwitchElement(): HTMLLabelElement | null {
-  if (typeof document === "undefined") return null;
-  if (iosSwitch) return iosSwitch;
-  const label = document.createElement("label");
-  label.setAttribute("aria-hidden", "true");
-  Object.assign(label.style, {
-    position: "absolute",
-    width: "1px",
-    height: "1px",
-    overflow: "hidden",
-    opacity: "0",
-    pointerEvents: "none",
-  });
-  const input = document.createElement("input");
-  input.type = "checkbox";
-  input.setAttribute("switch", ""); // Safari-only switch appearance -> haptic
-  label.appendChild(input);
-  document.body.appendChild(label);
-  iosSwitch = label;
-  return label;
-}
-
-function iosTick(): void {
-  iosSwitchElement()?.click();
+/** Whether this device has a haptic mechanism that actually buzzes — what
+ * decides whether the settings page offers the row at all, since a switch for
+ * feedback the hardware cannot give is a promise the app can't keep.
+ *
+ * Two things qualify: the native shell (the Taptic Engine), and a *mobile*
+ * browser with the Vibration API, which in practice means Android. Everything
+ * else gets no row — a desktop browser because its `navigator.vibrate` is a
+ * no-op, and iOS Safari because the web platform offers it no haptic at all. */
+export function hapticsSupported(): boolean {
+  return isNative() || (canVibrate() && isMobileBrowser());
 }
 
 /** The Taptic Engine, through the native bridge. A flag is a light impact; the
@@ -146,18 +120,13 @@ function nativeHaptic(kind: HapticKind): void {
 /** Fire tactile feedback for a game event, if the player left it on and the
  * platform supports it. */
 export function haptic(kind: HapticKind): void {
-  if (!enabled) return;
+  // The support check gates the *call*, not just the settings row: a player who
+  // left the switch on before moving to a device that cannot buzz (or whose
+  // stored record came from one) must not drive a mechanism that does nothing.
+  if (!enabled || !hapticsSupported()) return;
   if (isNative()) {
     nativeHaptic(kind);
     return;
   }
-  if (canVibrate()) {
-    navigator.vibrate(PATTERNS[kind]);
-    return;
-  }
-  // iOS fallback: one fixed light tick, repeated for the heavier events so a
-  // win or a loss reads as more than a flag placement.
-  iosTick();
-  if (typeof setTimeout !== "function") return;
-  for (let i = 1; i < IOS_TICKS[kind]; i++) setTimeout(iosTick, i * 90);
+  navigator.vibrate(PATTERNS[kind]);
 }

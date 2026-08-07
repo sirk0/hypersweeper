@@ -173,9 +173,7 @@ test.describe("iOS haptics through the Capacitor bridge", () => {
 });
 
 test.describe("in a plain browser tab", () => {
-  test("the platform is plain web, and the settings row still offers the buzz", async ({
-    page,
-  }) => {
+  test("the platform is plain web, and no haptics row is offered", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator("body[data-ready]")).toBeVisible();
     expect(
@@ -184,11 +182,29 @@ test.describe("in a plain browser tab", () => {
           (window as unknown as { Capacitor?: { getPlatform(): string } }).Capacitor?.getPlatform(),
       ),
     ).toBe("web");
-    // Chromium implements the Vibration API, so the row is offered here — as it
-    // is on an Android phone, where it does something.
+    // Chromium *defines* navigator.vibrate on this desktop runner, and it
+    // shakes nothing — which is the whole reason the row is gated on the form
+    // factor and not on the API. A desktop browser, and iOS Safari (which has
+    // no web haptic at all), get no switch; an Android phone still does.
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
+    await expect(page.locator('.menu-entry[data-setting="haptics"]')).toHaveCount(0);
+  });
+
+  test("an Android phone still gets the row", async ({ browser }) => {
+    const context = await browser.newContext({
+      userAgent:
+        "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Mobile Safari/537.36",
+      hasTouch: true,
+      isMobile: true,
+      viewport: { width: 412, height: 915 },
+    });
+    const page = await context.newPage();
+    await page.goto("/");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
     await page.locator('.menu-header-btn[data-action="settings"]').click();
     await expect(page.locator('.menu-entry[data-setting="haptics"]')).toContainText(
       "Haptics",
     );
+    await context.close();
   });
 });

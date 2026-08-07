@@ -317,6 +317,15 @@ body {
   color: var(--muted);
 }
 
+/* The back row is a sibling of the page content, not part of its list, and
+   `.menu-body` is a gapless flex column — so without this it butts straight
+   against the first card below it. One list gap keeps every page (the pickers,
+   whose content starts with a list, and settings, whose first heading adds its
+   own margin on top) reading as one evenly spaced stack. */
+.menu-body > .menu-back {
+  margin-bottom: 8px;
+}
+
 /* Title row: the how-to-play ? and the settings gear at the right, balanced by
    an empty box of the same width at the left so the title stays centred on the
    screen. Both sides are laid out in flow rather than absolutely, so on a
@@ -538,11 +547,6 @@ body {
   cursor: default;
 }
 
-.settings-link {
-  text-decoration: none;
-  justify-content: space-between;
-}
-
 .settings-value {
   color: var(--muted);
   font-variant-numeric: tabular-nums;
@@ -758,6 +762,75 @@ body {
   .settings-switch::after {
     transition: none;
   }
+}
+
+/* The volume slider (Settings › Sound). A native <input type="range">, because
+   the platform one is what a phone already knows how to drag, but with the
+   track and thumb restyled from the theme's own custom properties — the default
+   chrome is the one control that would not follow a theme. `accent-color` is
+   not enough: it tints the track but leaves it the browser's shape and size, so
+   the track is drawn here and the thumb sized for a fingertip. */
+.settings-volume {
+  justify-content: space-between;
+  gap: 16px;
+  cursor: default;
+}
+
+.settings-range {
+  flex: 1 1 auto;
+  max-width: 180px;
+  min-width: 96px;
+  height: 26px;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  touch-action: none; /* dragging the slider must not scroll the page */
+}
+
+.settings-range::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--border);
+}
+
+.settings-range::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--border);
+}
+
+.settings-range::-moz-range-progress {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+.settings-range::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: -8px; /* centres the thumb on the 4px track */
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.settings-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.settings-range:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
 }
 
 .settings-footer {

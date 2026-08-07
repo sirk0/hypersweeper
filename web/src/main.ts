@@ -1,6 +1,12 @@
 import { Vector2, Vector3 } from "three";
 import "./ui/styles.css";
-import { setSoundPreset, soundChoice, unlockAudio } from "./audio/sound";
+import {
+  setSoundPreset,
+  setSoundVolume,
+  soundChoice,
+  soundVolume,
+  unlockAudio,
+} from "./audio/sound";
 import { isBoard3D, type CellId } from "./boards/core";
 import { setHapticsEnabled } from "./haptics";
 import { boardLinkQuery, parseBoardLink } from "./link";
@@ -82,6 +88,7 @@ class App {
   ) {
     applyTheme(this.settings.theme); // before anything measures or paints
     setSoundPreset(this.settings.sound);
+    setSoundVolume(this.settings.volume);
     setHapticsEnabled(this.settings.haptics);
     // A browser will not let audio start outside a user gesture, so the
     // context is built on the player's first click or key — whatever it is.
@@ -163,13 +170,17 @@ class App {
       get sound() {
         return app.settings.sound;
       },
+      get volume() {
+        return app.settings.volume;
+      },
       get haptics() {
         return app.settings.haptics;
       },
       setTheme: (key) => this.setTheme(key),
       setDifficulty: (key) => this.setDifficulty(key),
       setAnimations: (pref) => this.setAnimations(pref),
-        setSound: (key) => this.setSound(key),
+      setSound: (key) => this.setSound(key),
+      setVolume: (level) => this.setVolume(level),
       setHaptics: (on) => this.setHaptics(on),
     };
   }
@@ -198,6 +209,16 @@ class App {
     setSoundPreset(key);
   }
 
+  /** Set how loud the game plays. Like the preset, this reaches the graph
+   * already running, so the slider is audible while it is dragged; unlike it,
+   * the engine has usually been told already (the slider feeds it live) and
+   * this call is what makes the level survive a reload. */
+  private setVolume(level: number): void {
+    setSoundVolume(level);
+    this.settings = { ...this.settings, volume: soundVolume() };
+    saveSettings(this.settings);
+  }
+
   /** Turn tactile feedback on or off. Like the sound preset and unlike the
    * cell style, this needs no new board: `haptic()` reads the flag on every
    * event, so it applies to the game already in progress. */
@@ -215,6 +236,7 @@ class App {
     this.settings = settings;
     applyTheme(settings.theme);
     setSoundPreset(settings.sound);
+    setSoundVolume(settings.volume);
     setHapticsEnabled(settings.haptics);
     this.animationsEnabled = animationsEnabled(settings.animations);
     this.session?.mesh.setAnimationsEnabled(this.animationsEnabled);
@@ -625,6 +647,7 @@ class App {
           is3d: s?.is3d ?? false,
           cellStyle: s?.cellStyle ?? themeCellStyle(this.settings.theme),
           sound: soundChoice(),
+          volume: soundVolume(),
         };
       },
     });

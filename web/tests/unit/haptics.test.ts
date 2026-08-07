@@ -3,12 +3,12 @@ import type { HapticKind } from "../../src/haptics";
 
 // haptics dispatch picks its mechanism by feature detection at call time. The
 // physical buzz can't be observed headless, but the dispatch is pure logic:
-// inside the native shell we assert the Taptic call the bridge is handed; with
-// navigator.vibrate present, the pattern it's called with; with neither, that
-// the iOS <input switch> fallback is created and clicked.
-// The module reads ambient `navigator` / `document` globals and caches the
-// switch element in a module-level singleton, so each test resets the module
-// registry and re-imports, and stubs the globals via vi (node already defines a
+// inside the native shell we assert the Taptic call the bridge is handed; on a
+// mobile browser with navigator.vibrate, the pattern it's called with; anywhere
+// else — a desktop browser whose vibrate is a no-op, iOS Safari, which has no
+// mechanism at all — that nothing is driven and no switch is offered.
+// The module reads the ambient `navigator` global, so each test resets the
+// module registry and re-imports, and stubs it via vi (node already defines a
 // getter-only `navigator`, so plain assignment won't do).
 //
 // The Capacitor bridge is mocked for the whole file — `native` defaults to
@@ -60,12 +60,23 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+/** What an Android phone reports: the Vibration API on a mobile form factor —
+ * the one browser combination that actually buzzes. */
+function androidNavigator(vibrate: () => void): { vibrate: () => void } & Record<string, unknown> {
+  return {
+    vibrate,
+    userAgent:
+      "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Mobile Safari/537.36",
+    userAgentData: { mobile: true },
+  };
+}
+
 describe("haptic() in the native iOS shell", () => {
   beforeEach(() => {
     bridge.native = true;
     // The Taptic Engine wins even where the Vibration API exists: a pattern of
     // on/off milliseconds is not what an iPhone can play.
-    vi.stubGlobal("navigator", { vibrate: vi.fn() });
+    vi.stubGlobal("navigator", androidNavigator(vi.fn()));
   });
 
   it("plays a light impact for a flag", async () => {
@@ -89,7 +100,7 @@ describe("haptic() in the native iOS shell", () => {
 
   it("takes the native branch instead of vibrating", async () => {
     const vibrate = vi.fn();
-    vi.stubGlobal("navigator", { vibrate });
+    vi.stubGlobal("navigator", androidNavigator(vibrate));
     const haptic = await loadHaptic();
     haptic("lose");
     expect(vibrate).not.toHaveBeenCalled();
@@ -115,7 +126,7 @@ describe("the haptics switch", () => {
   it("silences every mechanism when turned off", async () => {
     bridge.native = true;
     const vibrate = vi.fn();
-    vi.stubGlobal("navigator", { vibrate });
+    vi.stubGlobal("navigator", androidNavigator(vibrate));
     const { haptic, setHapticsEnabled, hapticsEnabled } = await loadModule();
     setHapticsEnabled(false);
     expect(hapticsEnabled()).toBe(false);
@@ -128,7 +139,7 @@ describe("the haptics switch", () => {
 
   it("buzzes again when turned back on", async () => {
     const vibrate = vi.fn();
-    vi.stubGlobal("navigator", { vibrate });
+    vi.stubGlobal("navigator", androidNavigator(vibrate));
     const { haptic, setHapticsEnabled } = await loadModule();
     setHapticsEnabled(false);
     haptic("flag");
@@ -146,115 +157,106 @@ describe("hapticsSupported()", () => {
     expect(hapticsSupported()).toBe(true);
   });
 
-  it("is true wherever the Vibration API exists", async () => {
-    vi.stubGlobal("navigator", { vibrate: vi.fn() });
+  it("is true on a mobile browser with the Vibration API — an Android phone", async () => {
+    vi.stubGlobal("navigator", androidNavigator(vi.fn()));
     const { hapticsSupported } = await loadModule();
     expect(hapticsSupported()).toBe(true);
   });
 
-  it("is true on iOS Safari, which has the switch tick and nothing else", async () => {
+  it("falls back to the user-agent string where client hints are missing", async () => {
+    vi.stubGlobal("navigator", {
+      vibrate: vi.fn(),
+      userAgent: "Mozilla/5.0 (Android 14; Mobile; rv:127.0) Gecko/127.0 Firefox/127.0",
+    });
+    const { hapticsSupported } = await loadModule();
+    expect(hapticsSupported()).toBe(true);
+  });
+
+  it("is false on a desktop browser, whose vibrate() shakes nothing", async () => {
+    vi.stubGlobal("navigator", {
+      vibrate: vi.fn(),
+      userAgent:
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36",
+      userAgentData: { mobile: false },
+    });
+    const { hapticsSupported } = await loadModule();
+    expect(hapticsSupported()).toBe(false);
+  });
+
+  it("is false in iOS Safari, which has no web haptic at all", async () => {
+    // No `vibrate`: WebKit does not implement the Vibration API, and the
+    // hidden-switch tick that used to stand in for it does not buzz.
     vi.stubGlobal("navigator", {
       userAgent:
         "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15",
-    });
-    const { hapticsSupported } = await loadModule();
-    expect(hapticsSupported()).toBe(true);
-  });
-
-  it("is true on an iPad, which reports itself as a Mac", async () => {
-    vi.stubGlobal("navigator", {
-      userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15",
       maxTouchPoints: 5,
     });
     const { hapticsSupported } = await loadModule();
-    expect(hapticsSupported()).toBe(true);
+    expect(hapticsSupported()).toBe(false);
   });
 
-  it("is false on a desktop browser with no mechanism at all", async () => {
+  it("is false on an iPad, which reports itself as a touch-capable Mac", async () => {
     vi.stubGlobal("navigator", {
-      userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Safari/605.1.15",
-      maxTouchPoints: 0,
+      userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15",
+      maxTouchPoints: 5,
     });
     const { hapticsSupported } = await loadModule();
     expect(hapticsSupported()).toBe(false);
   });
 });
 
-describe("haptic() with the Vibration API", () => {
+describe("haptic() on a mobile browser with the Vibration API", () => {
+  beforeEach(() => {
+    vi.stubGlobal("navigator", androidNavigator(vi.fn()));
+  });
+
+  function vibrateSpy(): ReturnType<typeof vi.fn> {
+    return navigator.vibrate as unknown as ReturnType<typeof vi.fn>;
+  }
+
   it("fires a short single pulse for a placed flag", async () => {
-    const vibrate = vi.fn();
-    vi.stubGlobal("navigator", { vibrate });
     const haptic = await loadHaptic();
     haptic("flag");
-    expect(vibrate).toHaveBeenCalledWith(15);
+    expect(vibrateSpy()).toHaveBeenCalledWith(15);
   });
 
   it("fires a heavier multi-pulse pattern on a loss", async () => {
-    const vibrate = vi.fn();
-    vi.stubGlobal("navigator", { vibrate });
     const haptic = await loadHaptic();
     haptic("lose");
-    expect(vibrate).toHaveBeenCalledWith([40, 30, 40, 30, 80]);
+    expect(vibrateSpy()).toHaveBeenCalledWith([40, 30, 40, 30, 80]);
   });
 
   it("fires a lighter rising flourish on a win", async () => {
-    const vibrate = vi.fn();
-    vi.stubGlobal("navigator", { vibrate });
     const haptic = await loadHaptic();
     haptic("win");
-    expect(vibrate).toHaveBeenCalledWith([20, 40, 20, 40, 60]);
+    expect(vibrateSpy()).toHaveBeenCalledWith([20, 40, 20, 40, 60]);
   });
 });
 
-describe("haptic() iOS fallback (no Vibration API)", () => {
-  function fakeDom() {
-    const input = { type: "", setAttribute: vi.fn() };
-    const label = {
-      style: {} as Record<string, string>,
-      setAttribute: vi.fn(),
-      appendChild: vi.fn(),
-      click: vi.fn(),
-    };
-    const createElement = vi.fn((tag: string) => (tag === "input" ? input : label));
-    vi.stubGlobal("navigator", {}); // no vibrate
-    vi.stubGlobal("document", { createElement, body: { appendChild: vi.fn() } });
-    return { label, input, createElement };
-  }
-
-  it("builds a hidden switch and clicks it once for a flag", async () => {
-    const { input, label } = fakeDom();
-    const haptic = await loadHaptic();
-    haptic("flag");
-    expect(input.setAttribute).toHaveBeenCalledWith("switch", "");
-    expect(label.click).toHaveBeenCalledTimes(1);
-  });
-
-  it("clicks repeatedly for a loss to feel stronger", async () => {
-    vi.useFakeTimers();
-    const { label } = fakeDom();
+// Where nothing can buzz, nothing is driven — the settings row is hidden there,
+// but a record carrying `haptics: true` from a phone must be inert too.
+describe("haptic() where there is no mechanism", () => {
+  it("does not vibrate on a desktop browser, whose vibrate() is a no-op", async () => {
+    const vibrate = vi.fn();
+    vi.stubGlobal("navigator", {
+      vibrate,
+      userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Chrome/126 Safari/537.36",
+      userAgentData: { mobile: false },
+    });
     const haptic = await loadHaptic();
     haptic("lose");
-    expect(label.click).toHaveBeenCalledTimes(1);
-    vi.advanceTimersByTime(200);
-    expect(label.click).toHaveBeenCalledTimes(3);
+    expect(vibrate).not.toHaveBeenCalled();
   });
 
-  it("clicks repeatedly for a win too", async () => {
-    vi.useFakeTimers();
-    const { label } = fakeDom();
+  it("does nothing in iOS Safari, and touches no DOM doing it", async () => {
+    const createElement = vi.fn();
+    vi.stubGlobal("navigator", {
+      userAgent:
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15",
+    });
+    vi.stubGlobal("document", { createElement, body: { appendChild: vi.fn() } });
     const haptic = await loadHaptic();
-    haptic("win");
-    expect(label.click).toHaveBeenCalledTimes(1);
-    vi.advanceTimersByTime(200);
-    expect(label.click).toHaveBeenCalledTimes(3);
-  });
-
-  it("reuses the same switch element across calls", async () => {
-    const { createElement } = fakeDom();
-    const haptic = await loadHaptic();
-    haptic("flag");
-    haptic("flag");
-    // Built once (label + input on the first call), then reused.
-    expect(createElement).toHaveBeenCalledTimes(2);
+    for (const kind of ["flag", "lose", "win"] as const) haptic(kind);
+    expect(createElement).not.toHaveBeenCalled();
   });
 });
