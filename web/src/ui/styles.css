@@ -628,22 +628,19 @@ body {
 /* Realistic: glass beads, each lit from its own middle — and an opened tile
    that is deliberately *not* one: flat matte colour at the `openAlpha` the real
    board draws it at, so the page shows through. That contrast of materials is
-   what the theme's two states look like (see CellStyle.openShade).
-   Prefix-matched: the `realistic1/2/3` variants differ only in the 3D flag they
-   stand on a solid's flagged cells, which a four-tile swatch cannot show, so all
-   four share this one. */
-.cell-swatch[data-cell-style^="realistic"] {
+   what the theme's two states look like (see CellStyle.openShade). */
+.cell-swatch[data-cell-style="realistic"] {
   gap: 1px;
   padding: 1px;
   background: transparent;
 }
 
-.cell-swatch[data-cell-style^="realistic"] .cell-swatch-tile {
+.cell-swatch[data-cell-style="realistic"] .cell-swatch-tile {
   border-radius: 3px;
   background: radial-gradient(circle at 50% 50%, #ffb552 0 12%, #b06f1c 92%);
 }
 
-.cell-swatch[data-cell-style^="realistic"] .cell-swatch-tile.open {
+.cell-swatch[data-cell-style="realistic"] .cell-swatch-tile.open {
   background: rgba(246, 231, 216, 0.74);
 }
 

@@ -6,17 +6,19 @@ import { CanvasTexture, LinearFilter, SRGBColorSpace, Texture } from "three";
 // changes so glyphs stay crisp.
 
 // A digit 1..12 (shared-vertex adjacency on triangles/hexagons can exceed 8),
-// a flag, a mine, or a crossed-out flag (a misplaced flag revealed on loss).
-// 0 means empty.
-export type Glyph = number | "flag" | "mine" | "wrongFlag";
+// a flag, a mine, a crossed-out flag (a misplaced flag revealed on loss), or
+// that cross on its own — which is what a misplaced flag needs on a board whose
+// style stands a real 3D pin on the cell, since the pin is already the flag and
+// only the "you were wrong" mark is missing. 0 means empty.
+export type Glyph = number | "flag" | "mine" | "wrongFlag" | "cross";
 
 // Slot order in the atlas grid. Index 0 (empty) is intentionally blank.
-// 16 slots fill the 4x4 grid exactly.
 const SLOTS: Glyph[] = [
   0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, "flag", "mine", "wrongFlag",
+  "cross",
 ];
 const COLS = 4;
-const ROWS = 4; // 4x4 = 16 slots, all used
+const ROWS = 5; // 4x5 = 20 slots; the last three are spare
 
 // Classic minesweeper digit colours; 9+ reuse a neutral dark tone.
 const DIGIT_COLORS: Record<number, string> = {
@@ -31,7 +33,7 @@ const DIGIT_COLORS: Record<number, string> = {
 };
 
 /** The flag's own colours. Named here because `drawFlag` below is where they
- * were first chosen, and `render/flagModel.ts` — the 3D marker that stands on a
+ * were first chosen, and `render/markers3d.ts` — the 3D pin that stands on a
  * flagged cell instead of this billboard on some themes — has to land on the
  * same family or the two looks would be two different flags. Deliberately fixed
  * rather than themed: the flag is the game's own glyph, not a control (see
@@ -44,6 +46,20 @@ export const FLAG_COLORS = {
   clothLit: "#f2695f",
   cloth: "#e5534b",
   clothShade: "#c33a35",
+} as const;
+
+/** The mine's, for the same reason — `render/markers3d.ts` builds the 3D bomb
+ * that stands on a mined cell where a style asks for one, and it and `drawMine`
+ * below are meant to be the same object seen two ways. The casing is a radial
+ * gradient in 2D; in 3D the lighting does that, so the three casing tones are
+ * named for what they are rather than by gradient stop. */
+export const MINE_COLORS = {
+  /** The casing where the key light lands. */
+  casingLit: "#5a616f",
+  casing: "#2c303a",
+  /** ...and where it falls away, at the terminator. */
+  casingShade: "#141720",
+  spike: "#4b5261",
 } as const;
 
 export interface GlyphAtlas {
@@ -83,6 +99,8 @@ export function makeGlyphAtlas(cellPx = 192): GlyphAtlas {
       drawFlag(ctx, cx, cy, cellPx);
     } else if (glyph === "wrongFlag") {
       drawFlag(ctx, cx, cy, cellPx);
+      drawCross(ctx, cx, cy, cellPx);
+    } else if (glyph === "cross") {
       drawCross(ctx, cx, cy, cellPx);
     } else {
       drawMine(ctx, cx, cy, cellPx);
@@ -270,7 +288,7 @@ function drawMine(
 
   // Hertz horns: stubby lead cylinders with rounded ends, offset half a step
   // so none of them points straight down into the mooring ring
-  ctx.strokeStyle = "#4b5261";
+  ctx.strokeStyle = MINE_COLORS.spike;
   ctx.lineWidth = r * 0.28;
   ctx.lineCap = "round";
   for (let k = 0; k < 8; k++) {
@@ -303,9 +321,9 @@ function drawMine(
     by,
     r * 1.15,
   );
-  shell.addColorStop(0, "#5a616f");
-  shell.addColorStop(0.5, "#2c303a");
-  shell.addColorStop(1, "#141720");
+  shell.addColorStop(0, MINE_COLORS.casingLit);
+  shell.addColorStop(0.5, MINE_COLORS.casing);
+  shell.addColorStop(1, MINE_COLORS.casingShade);
   ctx.fillStyle = shell;
   ctx.beginPath();
   ctx.arc(bx, by, r, 0, Math.PI * 2);

@@ -82,9 +82,7 @@ test.describe("settings", () => {
     await expect(page.locator(".menu-entry[data-theme]")).toHaveCount(0);
 
     await row.click();
-    // Light, Dark, Classic, Realistic, and the three Realistic flag-marker
-    // variants (see render/flagModel.ts).
-    await expect(page.locator(".menu-entry[data-theme]")).toHaveCount(7);
+    await expect(page.locator(".menu-entry[data-theme]")).toHaveCount(4);
     await expect(page.locator('.menu-entry[data-action="back"]')).toContainText("Theme");
 
     // Back lands on settings, not the root menu, and the row has followed.
