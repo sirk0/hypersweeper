@@ -771,10 +771,12 @@ export class SolidBoard extends Group implements BoardMesh {
       writeMarker(marker, g.center, g.normal, scale, pos, nrm, col);
       // A two-sided cell has no consistent outward direction to stand on — the
       // Möbius strip and the Klein bottle cannot have one at all, and nothing
-      // orients the cylinder — and it is drawn from both faces, so one marker
-      // would be missing from one side and buried under the surface from the
-      // other. Stand one each way instead.
-      if (this.twoSided) {
+      // orients the cylinder — and it is drawn from both faces. A **pin** stands
+      // off one of them, so it needs a second copy the other way or it is
+      // missing from one side and buried under the surface from the other. A
+      // **bomb** does not: its casing is centred on the tile and straddles it,
+      // so the one model already pokes out both ways.
+      if (this.twoSided && marker !== "bomb" && marker !== "bombHot") {
         writeMarker(
           marker,
           g.center,

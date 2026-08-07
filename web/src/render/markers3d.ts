@@ -46,9 +46,13 @@ const HEAD_R = 0.3;
 /** The casing, and how far the spikes reach past it — the ratios `drawMine`
  * uses (horns from 0.9r to 1.34r), rounded to what reads in three dimensions. */
 const BOMB_R = 0.3;
-const SPIKE_FROM = 0.82;
-const SPIKE_TO = 1.42;
-const SPIKE_R = 0.15;
+const SPIKE_FROM = 0.84;
+const SPIKE_TO = 1.2;
+const SPIKE_R = 0.21;
+/** Blunt: the horn narrows to this fraction of its base and is then capped flat
+ * rather than run out to a point. `drawMine`'s are round-capped lead cylinders,
+ * not needles, and a needle at this size is a hairline that reads as noise. */
+const SPIKE_TAPER = 0.72;
 const SPIKE_SIDES = 7;
 
 /** Segments around, rings pole to pole. Enough that the silhouette of a head
@@ -273,7 +277,7 @@ const SPIKE_DIRS: Vec3[] = (() => {
   return raw.map(normalize);
 })();
 
-/** One spike: a cone from a small ring on the casing out to a point. */
+/** One horn: a short, barely-tapered stub off the casing, capped flat. */
 function spike(f: Frame, cy: number, r: number, dir: Vec3): void {
   // A basis around the spike's own axis. The axis is a fixed icosahedral
   // direction, so any perpendicular does; take the more distant coordinate axis
@@ -291,11 +295,18 @@ function spike(f: Frame, cy: number, r: number, dir: Vec3): void {
       dir[2] * along * r + u[2] * c * r + v[2] * s * r,
     ];
   };
-  const tip: Local = [dir[0] * SPIKE_TO * r, cy + dir[1] * SPIKE_TO * r, dir[2] * SPIKE_TO * r];
+  const cap: Local = [dir[0] * SPIKE_TO * r, cy + dir[1] * SPIKE_TO * r, dir[2] * SPIKE_TO * r];
+  const outer = SPIKE_R * SPIKE_TAPER;
   for (let i = 0; i < SPIKE_SIDES; i++) {
     // Flat-shaded on purpose: a lead horn is a machined stub, and the facets
     // are what tell it apart from the smooth casing it is set into.
-    tri(f, at(i, SPIKE_R, SPIKE_FROM), at(i + 1, SPIKE_R, SPIKE_FROM), tip, SPIKE);
+    const a0 = at(i, SPIKE_R, SPIKE_FROM);
+    const a1 = at(i + 1, SPIKE_R, SPIKE_FROM);
+    const b0 = at(i, outer, SPIKE_TO);
+    const b1 = at(i + 1, outer, SPIKE_TO);
+    tri(f, a0, a1, b1, SPIKE);
+    tri(f, a0, b1, b0, SPIKE);
+    tri(f, cap, b0, b1, SPIKE);
   }
 }
 
@@ -350,12 +361,11 @@ export function writeMarker(
   const [lit, mid, shade] = hot
     ? [HOT_LIT, HOT, HOT_SHADE]
     : [CASING_LIT, CASING, CASING_SHADE];
-  // The casing rests on the tile rather than on a stem: a mine is a thing lying
-  // where it was buried, not a marker someone planted. Its lowest spikes then
-  // reach below the surface, which is what they should do — on a closed solid
-  // the tile hides them, and on a two-sided surface, where there is a second
-  // casing on the far face anyway, they read as the far one's studding.
-  const cy = BOMB_R;
-  sphere(f, cy, BOMB_R, scale, lit, mid, shade);
-  for (const dir of SPIKE_DIRS) spike(f, cy, BOMB_R, dir);
+  // The casing is centred **on** the surface rather than resting on it: a mine
+  // is a thing half buried where it was laid, not a marker someone planted. It
+  // is also what makes one bomb enough on a two-sided surface — a sphere
+  // straddling the tile pokes out equally on both faces, so unlike the pin it
+  // needs no second copy for the far side (see `SolidBoard.rebuildMarkers`).
+  sphere(f, 0, BOMB_R, scale, lit, mid, shade);
+  for (const dir of SPIKE_DIRS) spike(f, 0, BOMB_R, dir);
 }

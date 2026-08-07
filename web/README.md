@@ -704,9 +704,9 @@ you can **turn** that is a picture of a flag rather than a flag: drag a sphere
 around and they never turn with it, because they are not objects. A cell style
 can ask for real models instead — `solidMarkers` in `cellStyle.ts`, which
 Realistic sets — and then a flagged cell carries a **pin** (a stem under a round
-head) and a mined one, once a loss reveals it, a **bomb** (a casing studded with
-spikes, proportioned off `drawMine` so the 2D and 3D mines are one object seen
-two ways).
+head) and a mined one, once a loss reveals it, a **bomb** (a casing half sunk
+into the tile, studded with stubby horns — proportioned off `drawMine` so the 2D
+and 3D mines are one object seen two ways).
 
 Both models are **rotationally symmetric about the axis they stand on**, and
 that is the design rule, learned the hard way. This shipped first as three
@@ -723,12 +723,16 @@ The rest of what to know before changing one:
 - **Flat boards never get a model**, whatever the style says: a plane is seen
   from one angle, so a model there is a picture of one at several hundred more
   vertices. Every board you can turn does, including the two-sided flat manifolds.
-- **A two-sided cell gets one marker on each face.** The cylinder, Möbius strip
-  and Klein bottle have no consistent outward normal — `assemble` in
+- **A two-sided cell gets one *pin* on each face, and one bomb.** The cylinder,
+  Möbius strip and Klein bottle have no consistent outward normal — `assemble` in
   `boards/surfaces.ts` deliberately skips `orientFromRing` for them, and the last
-  two cannot have one at all — and they are drawn from both faces, so a single
-  pin would be missing from one side and buried under the surface from the other.
-  Standing one each way costs nothing: the far one is occluded by the surface.
+  two cannot have one at all — and they are drawn from both faces. A pin stands
+  *off* a face, so a single one is missing from one side and buried under the
+  surface from the other; a second copy the other way costs nothing, since the
+  far one is occluded. A bomb needs no such thing: its casing is centred **on**
+  the tile rather than resting on it, so the one model straddles the surface and
+  pokes out equally both ways — which is also why a mine reads as half buried
+  where it was laid rather than as something someone put there.
 - **No visible edges** comes from *normals*, not from triangle count. Every
   sphere writes **radial** per-vertex normals and the marker material has
   `flatShading` off; turning it on throws them away and the pins come back
@@ -760,8 +764,9 @@ The rest of what to know before changing one:
 Review shots: `node scripts/marker-shots.mjs <outdir>` against a running
 `vite preview` plants flags on a sphere, a cube, a torus, a cylinder, a Möbius
 strip and a Klein bottle, photographs each front, overhead and three-quarter,
-then loses a game on the sphere (bombs, the hot one that ended it, a gray pin
-under its cross) and shoots a flat board as the untouched control.
+then loses a game on the sphere *and* on the Möbius strip (bombs, the hot one
+that ended it, a gray pin under its cross — and, on the strip, the check that one
+casing shows from both faces) and shoots a flat board as the untouched control.
 
 ## Shape colour coding (`src/render/shapePalette.ts`)
 

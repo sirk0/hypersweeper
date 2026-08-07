@@ -368,7 +368,8 @@ rotationally symmetric about the axis they stand on, which is the point: a flag
 with a *front* — the pennant this shipped as first — goes edge-on seen straight
 down its own pole, and on a solid that is every cell facing you. The two-sided
 surfaces (cylinder, Möbius, Klein) have no consistent outward normal and are
-drawn from both faces, so they get one marker per face; flat boards keep the
+drawn from both faces, so they get one **pin** per face — but only one bomb,
+whose casing is centred on the tile and straddles it; flat boards keep the
 billboards, since a plane is only seen from one angle. The four are declared in `src/ui/theme.ts`, which is
 web-only because pygame has neither cell styles nor page textures; the
 seven **palettes** they compose are still the shared, pygame-ported ones

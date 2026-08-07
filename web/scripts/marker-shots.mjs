@@ -84,17 +84,19 @@ for (const mode of BOARDS) {
 
 // A loss, so the bombs come out: plant a known mine layout, flag one cell that
 // is *not* a mine (that is the wrong flag, gray pin + X), then step on one that
-// is.
-{
-  const { ctx, page } = await open("sphere");
-  await page.evaluate(() => {
+// is. Twice — once on a closed solid and once on a two-sided one, where the
+// point to check is that a single casing straddles the tile and shows from
+// either face (a pin needs two copies there; a bomb does not).
+for (const mode of ["sphere", "mobius"]) {
+  const { ctx, page } = await open(mode);
+  await page.evaluate((m) => {
     const ms = window.__ms;
     // Every other cell a mine, so a good share of the visible face carries one
     // whichever way the board happens to be turned.
     const mines = ms.cells().filter((_, i) => i % 2 === 0);
-    ms.startBoard("sphere", "easy", { mines });
+    ms.startBoard(m, "easy", { mines });
     window.__mines = mines;
-  });
+  }, mode);
   // A second round-trip before measuring: the board's world transform is
   // applied when it renders, so `cellScreenXY` in the same evaluate as
   // `startBoard` reads stale matrices and answers with cells from all over.
@@ -122,12 +124,12 @@ for (const mode of BOARDS) {
     ms.reveal(central(cells.filter((c) => mines.has(c))));
   });
   await settle(page);
-  await page.screenshot({ path: join(OUT, "sphere-lost.png") });
+  await page.screenshot({ path: join(OUT, `${mode}-lost.png`) });
   await page.evaluate(() => window.__ms.rotate(0, 210));
   await settle(page);
-  await page.screenshot({ path: join(OUT, "sphere-lost-top.png") });
+  await page.screenshot({ path: join(OUT, `${mode}-lost-turned.png`) });
   await ctx.close();
-  console.log("sphere loss");
+  console.log(`${mode} loss`);
 }
 
 // Controls: a flat board keeps the billboards, whatever the theme says.
