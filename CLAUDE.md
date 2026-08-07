@@ -359,7 +359,14 @@ the beveled button, drawn in **gray** — a quotation of the pygame board's
 own `HIDDEN_FACE`/`REVEALED_FACE`, guarded by `test_theme_sync.py`) and
 **Realistic** (the `ios` palette over a textured page: glossy beads while
 closed, **matte** flat-floored pans once opened, translucent on a flat
-board so the page's grain shows through them). The four are declared in `src/ui/theme.ts`, which is
+board so the page's grain shows through them). Realistic also ships three
+**prototype variants** beside it — **Realistic 1/2/3**, seven rows in all —
+identical to it but for the 3D flag they stand on a *solid* board's flagged
+cells: a swivelled pennant, three pennants at 120°, and a round-headed pin
+(`src/render/flagModel.ts`, named by `CellStyle.flagMarker`). They exist to be
+compared, because a pennant contains its own pole and so goes edge-on seen from
+straight above; flat boards and the two-sided surfaces keep the flat billboard.
+All of them are declared in `src/ui/theme.ts`, which is
 web-only because pygame has neither cell styles nor page textures; the
 seven **palettes** they compose are still the shared, pygame-ported ones
 in `data/ui/screens.json`, guarded by `tests/test_theme_sync.py`. A theme

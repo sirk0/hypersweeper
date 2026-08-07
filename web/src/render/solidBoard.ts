@@ -12,6 +12,7 @@ import {
   Vector3,
 } from "three";
 import {
+  cross,
   newellNormal,
   normalize,
   type Board3D,
@@ -32,6 +33,7 @@ import {
 } from "./boardMesh";
 import { clipTriangles, fanTriangles, triangleCentroid, type Tri } from "./clip";
 import { makeGlyphAtlas, type GlyphAtlas } from "./glyphAtlas";
+import { writeFlagModel, type FlagMarker } from "./flagModel";
 import {
   CellAnimations,
   dropOpacity,
@@ -144,6 +146,14 @@ export class SolidBoard extends Group implements BoardMesh {
   // its own material is what lets it fade in as it shrinks.
   private readonly dropGeometry = new BufferGeometry();
   private readonly dropMaterial: MeshBasicMaterial;
+  // A style that stands real flags on its flagged cells (CellStyle.flagMarker)
+  // builds them into this one merged buffer, the way the glyph quads are built:
+  // the set of flagged cells changes on nearly every move, so the whole thing is
+  // rewritten rather than edited, and the board's flags stay one draw call.
+  // Null on every other style, and on the two-sided surfaces — see `flagMarker`
+  // in cellStyle.ts for why those are excluded.
+  private readonly flagMarker: FlagMarker | null;
+  private readonly flagGeometry = new BufferGeometry();
   private readonly atlas: GlyphAtlas;
   private readonly states: CellVisual[];
   private hovered = -1;
@@ -192,6 +202,7 @@ export class SolidBoard extends Group implements BoardMesh {
     this.states = this.order.map(() => ({ kind: "hidden" }));
     this.order.forEach((c, i) => this.cellIndex.set(c, i));
     this.twoSided = board.twoSided;
+    this.flagMarker = this.twoSided ? null : (style.flagMarker ?? null);
     // The framing radius is measured below from the *built* geometry (the
     // raised tile tops stand proud of the board's own vertex radius), so the
     // renderer scales the real outer hull — not an inner sphere — to unit
@@ -370,6 +381,28 @@ export class SolidBoard extends Group implements BoardMesh {
     dropMesh.name = "flagDrop";
     dropMesh.renderOrder = 2;
     this.add(dropMesh);
+
+    // The standing flags, on the styles that ask for them. Ordinary lit,
+    // *opaque* geometry — it takes the same hemisphere + key light the tiles do,
+    // which is what makes a marker read as an object on the board rather than a
+    // sticker over it, and staying opaque sidesteps the sort problem a solid's
+    // overlapping cells have (see CellStyle.openAlpha). DoubleSide because a
+    // pennant is a single sheet with no inside. `pick` only ever raycasts the
+    // "cells" mesh, so a flag can never swallow a tap meant for its tile.
+    if (this.flagMarker) {
+      const flagMesh = new Mesh(
+        this.flagGeometry,
+        new MeshStandardMaterial({
+          vertexColors: true,
+          roughness: 0.62,
+          metalness: 0,
+          flatShading: true,
+          side: DoubleSide,
+        }),
+      );
+      flagMesh.name = "flags";
+      this.add(flagMesh);
+    }
 
     for (let i = 0; i < this.order.length; i++) {
       this.writeGeometry(i);
@@ -553,6 +586,14 @@ export class SolidBoard extends Group implements BoardMesh {
     const uvs: number[] = [];
     const dropPos: number[] = [];
     const dropUvs: number[] = [];
+    // The standing flags are built in this same pass rather than in one of their
+    // own: they need the per-cell `toCam` computed below (the `cloth` marker
+    // swivels to face the viewer), they replace the glyph quad for the cells
+    // that carry one, and every trigger that dirties the glyphs — a move, a
+    // rotation, an animation frame — dirties them too. One walk, one hook.
+    const flagPos: number[] = [];
+    const flagNrm: number[] = [];
+    const flagCol: number[] = [];
     const now = performance.now();
     const dropIndex = this.anim.dropIndex();
     const dropAt = this.anim.dropProgress(now);
@@ -567,6 +608,35 @@ export class SolidBoard extends Group implements BoardMesh {
       if (g.count === 0) continue; // wholly cut away by the surface clip
       const c = g.center;
       const toCam = normalize([cam[0] - c[0], cam[1] - c[1], cam[2] - c[2]]);
+      // A real flag stands on the cell instead of the billboard, on the styles
+      // that ask for one. Done *before* the facing cull below: this is solid
+      // geometry, depth-tested against the board like anything else, so the near
+      // hemisphere hides the far side's flags on its own — and a pole on a cell
+      // just past the horizon genuinely does peek over it, which the cull would
+      // wrongly snap away as the board turns.
+      const standing = this.flagMarker !== null && this.states[i]!.kind === "flagged";
+      if (standing && !(i === dropIndex && dropAt != null)) {
+        writeFlagModel(
+          this.flagMarker!,
+          c,
+          g.normal,
+          // Where the cloth flies. `cloth` is the one that swivels — `up x toCam`
+          // puts its face toward the viewer, so a single pennant never goes
+          // edge-on — while `vanes` and `pin` take a direction fixed to the cell
+          // and so turn with the board, which is the whole point of those two.
+          this.flagMarker === "cloth"
+            ? cross(g.normal, toCam)
+            : [
+                g.poly[0]![0] - g.centroid[0],
+                g.poly[0]![1] - g.centroid[1],
+                g.poly[0]![2] - g.centroid[2],
+              ],
+          g.radius * this.anim.popScale(i, now),
+          flagPos,
+          flagNrm,
+          flagCol,
+        );
+      }
       // On a closed surface only cells whose top face the camera can see carry
       // a glyph, so the far hemisphere's numbers never billboard onto the front
       // (the per-cell camera direction makes the horizon the true perspective
@@ -634,9 +704,13 @@ export class SolidBoard extends Group implements BoardMesh {
       // frame the drop ends and the hand-off is invisible. Drawing both would
       // stand a second, tiny flag beside the falling one.
       if (i === dropIndex && dropAt != null) {
+        // The drop stays a billboard even under a standing-flag style: it is
+        // drawn many times cell-size and must not depth-test, and the standing
+        // model is skipped for exactly this cell above, so the hand-off on the
+        // frame the drop ends is the same invisible one it always was.
         const half = dropSize(settled, extent, dropAt);
         quad(dropPos, dropUvs, half, dropRise(settled, half));
-      } else if (s > 0) {
+      } else if (s > 0 && !standing) {
         quad(pos, uvs, s);
       }
     }
@@ -659,6 +733,21 @@ export class SolidBoard extends Group implements BoardMesh {
     );
     this.dropGeometry.computeBoundingSphere();
     this.dropMaterial.opacity = dropOpacity(dropAt ?? 1);
+    if (this.flagMarker) {
+      this.flagGeometry.setAttribute(
+        "position",
+        new BufferAttribute(new Float32Array(flagPos), 3),
+      );
+      this.flagGeometry.setAttribute(
+        "normal",
+        new BufferAttribute(new Float32Array(flagNrm), 3),
+      );
+      this.flagGeometry.setAttribute(
+        "color",
+        new BufferAttribute(new Float32Array(flagCol), 3),
+      );
+      this.flagGeometry.computeBoundingSphere();
+    }
   }
 
   // -- animations ------------------------------------------------------------

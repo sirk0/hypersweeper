@@ -6,7 +6,10 @@ import { cellStyle } from "../render/cellStyle";
 // used to be a second, independent picker; pairing the two by hand was a job
 // nobody wanted, and half the sixteen combinations looked like nothing anyone
 // designed. So a theme now names its cell style (render/cellStyle.ts) and the
-// picker below Settings is a list of four finished looks.
+// picker below Settings is a list of finished looks. Three of them (Realistic
+// 1/2/3) are the same look differing only in the 3D flag marker they stand on a
+// solid's flagged cells — a prototype meant to be compared side by side against
+// the plain Realistic they are cut from.
 //
 // Runtime theming for the chrome works as it always did: every colour the UI
 // paints with is a CSS custom property declared on `:root` in styles.css;
@@ -18,9 +21,10 @@ import { cellStyle } from "../render/cellStyle";
 //
 // The **palettes** are still the shared, pygame-ported ones in
 // `data/ui/screens.json` (guarded by tests/test_theme_sync.py), and this file
-// does not add colours to them — it *composes* them. Three of the four themes
-// take a palette straight; Light and Realistic share the `ios` one and differ in
-// the board and the page texture. That is what keeps the sync test meaningful
+// does not add colours to them — it *composes* them. Dark and Classic take a
+// palette straight; Light and the Realistic family share the `ios` one and
+// differ in the board and the page texture. That is what keeps the sync test
+// meaningful
 // while the web's theme *list* stops being the pygame one: pygame has no cell
 // styles and no textures, so its six presets could never be this list.
 //
@@ -58,6 +62,11 @@ export interface Theme {
  * has no repeat the eye can find at that size. */
 const WOVEN = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.42'/%3E%3C/svg%3E")`;
 
+/** The Realistic page, shared by the four themes that use it: the vignette first
+ * (under), the grain over it, so the grain is even across the page and only the
+ * light falls off toward the corners. */
+const REALISTIC_PAGE = `${WOVEN}, radial-gradient(120% 90% at 50% 0%, #ffffff 0%, #ffffff00 55%), radial-gradient(140% 110% at 50% 100%, #b9bfcf55 0%, #b9bfcf00 60%)`;
+
 const THEMES: Theme[] = [
   {
     key: "light",
@@ -86,9 +95,37 @@ const THEMES: Theme[] = [
     hint: "Glass tiles on a textured surface",
     palette: "ios",
     cellStyle: "realistic",
-    // Vignette first (under), grain over it, so the grain is even across the
-    // page and only the light falls off toward the corners.
-    texture: `${WOVEN}, radial-gradient(120% 90% at 50% 0%, #ffffff 0%, #ffffff00 55%), radial-gradient(140% 110% at 50% 100%, #b9bfcf55 0%, #b9bfcf00 60%)`,
+    texture: REALISTIC_PAGE,
+  },
+  // Realistic again, three times, differing in exactly one thing: what a flag on
+  // a **3D** board is made of. Everything else — the palette, the page texture,
+  // the beads and the pans — is the theme above, because the point of having
+  // three is to compare the markers on an otherwise identical board, with plain
+  // Realistic left in place as the flat-billboard control. See `flagMarker` in
+  // render/cellStyle.ts and the three shapes in render/flagModel.ts.
+  {
+    key: "realistic1",
+    label: "Realistic 1",
+    hint: "Standing flags, cloth turned toward you",
+    palette: "ios",
+    cellStyle: "realistic1",
+    texture: REALISTIC_PAGE,
+  },
+  {
+    key: "realistic2",
+    label: "Realistic 2",
+    hint: "Standing flags with three vanes",
+    palette: "ios",
+    cellStyle: "realistic2",
+    texture: REALISTIC_PAGE,
+  },
+  {
+    key: "realistic3",
+    label: "Realistic 3",
+    hint: "Rounded pin markers",
+    palette: "ios",
+    cellStyle: "realistic3",
+    texture: REALISTIC_PAGE,
   },
 ];
 

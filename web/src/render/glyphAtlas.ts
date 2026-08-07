@@ -30,6 +30,22 @@ const DIGIT_COLORS: Record<number, string> = {
   8: "#6b6b6b",
 };
 
+/** The flag's own colours. Named here because `drawFlag` below is where they
+ * were first chosen, and `render/flagModel.ts` — the 3D marker that stands on a
+ * flagged cell instead of this billboard on some themes — has to land on the
+ * same family or the two looks would be two different flags. Deliberately fixed
+ * rather than themed: the flag is the game's own glyph, not a control (see
+ * README, "Settings and themes"). `ui/hud.ts` still spells its copy out by hand,
+ * since that one is an inline SVG string. */
+export const FLAG_COLORS = {
+  mast: "#2b2f3a",
+  stand: "#3a3f4b",
+  slab: "#22252d",
+  clothLit: "#f2695f",
+  cloth: "#e5534b",
+  clothShade: "#c33a35",
+} as const;
+
 export interface GlyphAtlas {
   texture: Texture;
   /** UV rect [u0, v0, u1, v1] for a glyph, or null for empty. */
@@ -123,7 +139,7 @@ function drawFlag(
 
   // mast, tapering upward, ending in a knob; drawn first so the stand's
   // splayed foot closes over its base
-  ctx.fillStyle = "#2b2f3a";
+  ctx.fillStyle = FLAG_COLORS.mast;
   ctx.beginPath();
   ctx.moveTo(poleX - s * 0.019, top);
   ctx.lineTo(poleX + s * 0.019, top);
@@ -136,7 +152,7 @@ function drawFlag(
   ctx.fill();
 
   // stand: a foot splaying out from the mast, on a ground slab
-  ctx.fillStyle = "#3a3f4b";
+  ctx.fillStyle = FLAG_COLORS.stand;
   ctx.beginPath();
   ctx.moveTo(poleX - s * 0.055, stand);
   ctx.lineTo(poleX + s * 0.055, stand);
@@ -144,7 +160,7 @@ function drawFlag(
   ctx.lineTo(poleX - s * 0.16, ground);
   ctx.closePath();
   ctx.fill();
-  ctx.fillStyle = "#22252d";
+  ctx.fillStyle = FLAG_COLORS.slab;
   ctx.beginPath();
   ctx.moveTo(poleX - s * 0.19, ground);
   ctx.lineTo(poleX + s * 0.19, ground);
@@ -174,9 +190,9 @@ function drawFlag(
   );
   cloth.closePath();
   const lit = ctx.createLinearGradient(poleX, top, poleX + s * 0.42, top + s * 0.2);
-  lit.addColorStop(0, "#f2695f");
-  lit.addColorStop(0.55, "#e5534b");
-  lit.addColorStop(1, "#c33a35");
+  lit.addColorStop(0, FLAG_COLORS.clothLit);
+  lit.addColorStop(0.55, FLAG_COLORS.cloth);
+  lit.addColorStop(1, FLAG_COLORS.clothShade);
   ctx.fillStyle = lit;
   ctx.fill(cloth);
 

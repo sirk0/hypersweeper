@@ -24,6 +24,8 @@
 // re-cuts a board in flight: the setting is only reachable from the settings
 // page, which lives in the menu, and the menu is only up when no game is.
 
+import type { FlagMarker } from "./flagModel";
+
 /** One loop of a cell's profile. `inset` is how much further in the loop sits
  * than the tile's outline, as a fraction of the way from the cell's polygon to
  * its centroid, and on top of `gap` (so 0 is the outline itself); `height` is
@@ -133,6 +135,21 @@ export interface CellStyle {
    * numbers sit on and the board goes chalky. Vertex colours are not clamped, so
    * a value above 1 is fine — the shading is what brings it back down. */
   albedo?: number;
+  /** **3D boards only**: stand a real model on a flagged cell instead of the
+   * atlas's flat billboard (`render/flagModel.ts`). Absent means the billboard,
+   * as it always was, and that is what the flat board always gets — a plane is
+   * only ever seen from one angle, so a model there would be a picture of one
+   * anyway, at more vertices.
+   *
+   * The two-sided surfaces (cylinder, Möbius strip, Klein bottle) are the other
+   * exception, and for the reason their tiles are flat: they are drawn from both
+   * faces, so a pole standing out of one side would be a pole driven through the
+   * other. `SolidBoard` drops the marker there.
+   *
+   * Which shape is a *theme's* choice rather than a property of the relief —
+   * three of the styles below are the same glass bead differing only here, so
+   * the three looks can be compared on the same board. */
+  flagMarker?: FlagMarker;
 }
 
 /** The classic tile: a raised beveled button while closed, re-cut as a recess
@@ -291,6 +308,25 @@ const REALISTIC: CellStyle = {
   openAlpha: 0.74,
 };
 
+/** Realistic again, with a **standing flag** on a 3D board's flagged cells
+ * instead of the atlas billboard every other style uses (see `flagMarker` and
+ * `render/flagModel.ts`).
+ *
+ * Three of them, and nothing else about the tiles differs — same beads, same
+ * pans, same texture behind them — because the question these exist to answer is
+ * only about the marker: a flag is an object with a *front*, and a board you can
+ * turn to look down on is a board that will eventually show you its top. So the
+ * three run from the most flag-like to the most legible (a swivelled pennant, a
+ * fixed three-vane one, a round-headed pin), and the theme list carries all
+ * three next to the plain Realistic they are cut from, so the four can be
+ * compared on one board. */
+const realisticWith = (
+  key: string,
+  label: string,
+  hint: string,
+  flagMarker: FlagMarker,
+): CellStyle => ({ ...REALISTIC, key, label, hint, flagMarker });
+
 /** The styles, one per theme (`ui/theme.ts` names them by these keys). Two
  * themes share `flat` — Light and Dark differ in chrome, not in how a tile is
  * cut — which is why this is still a table of its own rather than a field
@@ -299,6 +335,24 @@ export const CELL_STYLES: Record<string, CellStyle> = {
   flat: FLAT,
   classic: CLASSIC,
   realistic: REALISTIC,
+  realistic1: realisticWith(
+    "realistic1",
+    "Realistic 1",
+    "Standing flags, cloth turned toward you",
+    "cloth",
+  ),
+  realistic2: realisticWith(
+    "realistic2",
+    "Realistic 2",
+    "Standing flags with three vanes",
+    "vanes",
+  ),
+  realistic3: realisticWith(
+    "realistic3",
+    "Realistic 3",
+    "Rounded pin markers",
+    "pin",
+  ),
 };
 
 export const CELL_STYLE_KEYS: readonly string[] = Object.keys(CELL_STYLES);
