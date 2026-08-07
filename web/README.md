@@ -375,12 +375,21 @@ boards.
 cd web
 npm install
 npm run dev         # Vite dev server
-npm run typecheck   # tsc --noEmit (strict)
+npm run typecheck   # tsc --noEmit (strict), twice: the app, then functions/
 npm run test        # vitest unit tests
-npm run build       # tsc + vite build (production bundle + PWA)
+npm run build       # typecheck + vite build (production bundle + PWA)
 npm run e2e         # Playwright e2e + visual regression
 npm run e2e:update  # refresh visual baselines
 ```
+
+`typecheck` runs `tsc` twice because the Pages Function in `functions/` is a
+Worker, not a page: no DOM, and the Cloudflare globals instead. It gets its own
+`tsconfig.functions.json`, which also compiles the shared `src/analyticsEvent.ts`
+under a DOM-less lib — which is what proves that file stayed pure.
+
+From the repo root, `make metrics` prints play counts and win rates from the
+deployed app (see "Analytics" below); it needs `CF_ACCOUNT_ID` and a read-only
+`CF_API_TOKEN`.
 
 Cloud sessions: `@playwright/test` is **pinned** (not caret-ranged) to the
 version whose bundled Chromium build matches the one preinstalled in the Claude
@@ -1057,10 +1066,18 @@ and whether a newer one is waiting) and nothing more — a settings page that
 sends the player to another site is not part of playing the game.
 `tests/e2e/settings.spec.ts` asserts the page holds no anchors at all.
 
+**Analytics.** Whether anonymous play counts are reported — see "Analytics"
+above. Its own **Privacy** heading rather than a fourth Behaviour row: sound,
+haptics and animations are what the game *does*, and this is what leaves the
+machine, which someone who came looking for it should be able to find by
+heading. Present only in a build that carries the counter at all — the same
+principle as the Haptics row needing a device that can buzz, and the "Check for
+updates" row needing a deployed build to check against.
+
 **Persistence.** `src/settings.ts` is the app's only stored state: theme,
-difficulty, the animations override, haptics, and the sound preset with its
-volume. Flag mode, zoom, the menu page you are on and the board in progress stay in memory as
-before.
+difficulty, the animations override, haptics, the analytics flag, and the sound
+preset with its volume. Flag mode, zoom, the menu page you are on and the board
+in progress stay in memory as before.
 
 The layout is **one stable `localStorage` key holding a record that carries its
 own `version`** — deliberately not a versioned key name (`…:v1`, `…:v2`), which
@@ -1140,6 +1157,134 @@ Clearing arms on the first tap and fires on the second, rather than calling
 `window.confirm`, which an installed iOS web app renders as a URL-badged alert
 that reads like a browser warning.
 
+## Analytics
+
+The deployed game counts **which boards get opened and how often they get won**
+— the two things board difficulty was otherwise being tuned blind on. It is the
+only outbound request the app makes; everything else it knows lives in
+`localStorage`.
+
+**Two events per game**, and no third:
+
+| when | event |
+| --- | --- |
+| a board opens (`App.startGame`, after the session is built) | `start` |
+| the move that finishes it (`App.afterMove` → `trackFinish`) | `end` + `won`/`lost` + seconds |
+
+There is deliberately **no abandon event**. A board opened and never finished is
+`plays − finished`, which the report derives — so a `pagehide` hook that would
+also fire on every menu return and every restart is not needed, and there is one
+less thing to keep exactly-once.
+
+**What is sent** is the whole of it: `{ v: 1, e, m: mode, d: difficulty, o?:
+outcome, s?: seconds }`. No cookie, no identifier, no session id, no seed, no
+board layout, no theme, no user agent, no referrer. The collector stores nothing
+about the *request* either — no IP, no country, no colo, nothing from
+`request.cf`. A rare board plus a country is an identifier, and not being one is
+the entire promise here. Settings › Privacy › Analytics turns it off; it is read
+on every event, like the sound preset and the haptics flag, so switching it off
+mid-board also suppresses that board's ending.
+
+**The pure half and the transport half.** `src/analyticsEvent.ts` decides what
+an event *is* — `payloadFor` (client) and `parseEvent` (collector), validating
+modes and difficulties against the real `data/presets.json` and
+`data/catalog.json`, so a board added to the catalog is understood by the
+collector the moment it deploys. `src/analytics.ts` is only the wire:
+`sendBeacon`, falling through to a `keepalive` fetch, never awaited, never read,
+never thrown from. The split is `audio/sound.ts`'s — `voicesFor` beside its
+player — and it is what lets the node unit tests pin the whole contract in one
+round-trip assertion. Lookups are `Set`-based, never `in` and never a plain
+object: mode names arrive over the network here, and `link.ts` already carries
+that scar (`?mode=constructor`).
+
+**Why both hooks live in `App`, not `GameSession`.** `checkStop` in `session.ts`
+is the other candidate and it is the wrong one: `App.afterMove` already runs on
+every terminal move and already owns the once-per-game bookkeeping, so putting
+the second guard next to the first is what keeps them from drifting; the `start`
+event has to come from `App` regardless; and threading `__APP_PACKAGED__` into
+the hottest file in the app to keep the packaged builds silent is worse than one
+call up here. `trackFinish` has **its own** `tracked` flag rather than reusing
+the leaderboard's `scored` — a loss is reported and files no record, and must
+not consume the other's guard.
+
+A **restart counts as a new play**: the HUD smiley routes back through
+`startGame`. "Boards opened" is the measure, not "distinct players".
+
+**The collector** is a Cloudflare Pages Function, and the only server-side code
+in the repo. It gates on method and `Sec-Fetch-Site`, caps the body at 512 bytes
+(by the claimed `content-length` and again by measurement), validates with
+`parseEvent`, and writes one Analytics Engine data point. Junk and success both
+answer `204` with an empty body, so it is no oracle for what the validator
+accepts. The path is `tally` rather than `event`/`track`/`collect` because those
+are the words content blockers match on.
+
+It is two files. `functions/api/_tally.ts` holds everything, in standard web
+types plus one hand-written interface for the binding — a leading underscore
+keeps a file out of Pages routing, and with no Worker types in it
+`tests/unit/tally.test.ts` can drive the whole request path under vitest.
+`functions/api/tally.ts` is the `PagesFunction` wrapper, and one `onRequest`
+switching on the method rather than `onRequestPost` beside a catch-all, whose
+precedence rules are not worth depending on.
+
+Dataset schema. **The blob positions are the contract with
+`scripts/metrics.mjs`, which reads them by number: append only, never
+renumber.**
+
+```
+index1  board mode ("hexhex")     double1  seconds on the clock (0 on a start)
+blob1   "start" | "end"
+blob2   difficulty ("easy")
+blob3   "won" | "lost" | ""       (empty on a start)
+```
+
+`index1` is the mode because Analytics Engine samples per index, so a board
+nobody plays keeps its fidelity while a popular one is being sampled.
+
+**Reading the numbers**: `make metrics` (or `node scripts/metrics.mjs`), with
+`CF_ACCOUNT_ID` and a `CF_API_TOKEN` carrying *Account → Account Analytics:
+Read* — a second, read-only token, not the deploy one. Flags: `--days=N`,
+`--mode=TEXT`, `--min=N` (marks rows too thin to read a win rate off), `--json`.
+
+Two traps in that script, both commented there. Every count is
+`SUM(_sample_interval)` and never `COUNT(*)` — Analytics Engine stores a
+*sample* under load and that column is how many real events a stored row stands
+for; getting it wrong yields plausible numbers that are wrong by the sampling
+rate, worst for exactly the popular boards worth reading. And the SQL uses a
+plain `GROUP BY` with the pivot done in JS, because the dialect is a narrow
+ClickHouse subset and conditional aggregates are not worth betting a report on.
+
+**Read every count as a floor.** It is sampled; content blockers eat some posts;
+players can switch it off; and the GitHub Pages host has no Functions at all, so
+everything it serves posts into a 404. All four err the same way.
+
+**The counter is opt-in per build**, via `VITE_ANALYTICS=1` → the
+`__APP_ANALYTICS__` define. Only one place this app runs has the Pages Function
+to post to:
+
+| build | counter | why |
+| --- | --- | --- |
+| Cloudflare deploy | **yes** | the host that serves the Function |
+| e2e (`playwright.config.ts` sets it) | **yes** | `analytics.spec.ts` drives it |
+| GitHub Pages deploy | no | no Functions there |
+| `npm run dev` | no | your own clicks are not data |
+| packaged (macOS, iOS) | no | vetoed by `packaged`, whatever the flag says |
+
+This is not tidiness. A post to a host without the Function 404s, and **the
+browser logs that failure to the console itself** — no care taken in
+`analytics.ts` can swallow it, so a build with nowhere to report to must not
+carry a reporter. (`sound.spec.ts` asserts a played board logs no console errors
+and is what caught this.) A build that does carry it is served locally by the
+`tallyStub` middleware in `vite.config.ts`, which answers `204` exactly as the
+Function does, so `vite preview` and `npm run dev` behave like the deployed
+host; to exercise the real Function, `wrangler pages dev`.
+
+Where the flag is off, `COLLECTING` is a false constant and the compiler removes
+the transport, the endpoint string and the Privacy row along with it. For the
+packaged builds that is asserted rather than assumed:
+`scripts/check-offline-assets.mjs` gained a second pass over a `FORBIDDEN` list
+of same-origin paths, because its URL scan only ever saw absolute `https?://`
+ones and would have let a relative endpoint straight through.
+
 ## Shared configuration
 
 UI-screen chrome (header slots, menu structure, difficulty rows, themes, smiley
@@ -1180,7 +1325,29 @@ token with the *Cloudflare Pages: Edit* permission) and
 `CLOUDFLARE_ACCOUNT_ID`, and a Pages project that already exists — a direct-
 upload project named `hypersweeper` whose production branch is `master`
 (`wrangler pages project create hypersweeper --production-branch=master`).
-`wrangler pages deploy` does not create one in CI. When Pages is retired,
+`wrangler pages deploy` does not create one in CI.
+
+That job runs wrangler **from `web/`** (`workingDirectory: web`), which is the
+whole reason `web/wrangler.toml` exists: wrangler's project root is the config
+file's directory, and `functions/` — the analytics collector — has to sit beside
+it to be picked up at all. The config also carries the deploy directory
+(`pages_build_output_dir = "dist"`), the project name and the `GAME_EVENTS`
+Analytics Engine binding, which is why the deploy command passes neither a
+directory nor `--project-name` (passing the directory positionally alongside
+that setting is an error). Run from the repo root instead and the deploy quietly
+uploads `dist/` alone: the site works and the collector does not exist.
+
+After the first deploy, check that **Pages project → Settings → Functions →
+Bindings** lists `GAME_EVENTS`. That is the most likely thing to be wrong, and
+its failure is silent — the Function still answers `204` by design, and the
+report simply stays empty. If config-file bindings are not honoured for the
+project, add it in the dashboard for Production *and* Preview.
+
+Locally, `npm run dev` does not serve `/api/tally`; the post 404s and the game
+is unaffected, which is the same failure mode the GitHub Pages host has. To run
+the Function, `npm run build && npx wrangler pages dev` from `web/` — but note
+Analytics Engine writes are a no-op in local dev, so verifying a write end to
+end takes a real deploy. When Pages is retired,
 deleting `deploy-pages.yml` is the whole change; nothing in the source
 hardcodes a base path. During the
 rewrite this app mounted under `/next/` instead, so `public/next/index.html`
@@ -1209,7 +1376,12 @@ while working here:
   image: `scripts/check-offline-assets.mjs` scans the built output and fails
   the build (and the `web` CI job) over any URL that is not an XML namespace
   or the settings page's source-code link. Anything the app draws goes in
-  `public/` or gets imported.
+  `public/` or gets imported. A request need not name a host, though — the
+  analytics collector is a *relative* path on whatever origin serves the app —
+  so the script has a second pass over a `FORBIDDEN` list of same-origin paths.
+  That pass is the only automated proof that `__APP_PACKAGED__` really folded
+  the collector out; add to the list, not just to `ALLOWED`, when a same-origin
+  endpoint appears.
 
 The README gallery at the repo root is rendered from this app by
 `npm run screenshots` (`scripts/make-screenshots.mts`): it builds, serves

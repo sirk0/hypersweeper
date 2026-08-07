@@ -99,6 +99,13 @@ three sound presets (synthesised from the move that caused them — a tile's
 side count is its voice) with a volume slider, an animations toggle, and —
 on a phone that can buzz — a haptics switch.
 
+The hosted game counts, anonymously, which boards get opened and how often
+they get won — the board's name, the difficulty, whether it was won and how
+long it took, and nothing else. No account, no cookie, no identifier; the
+switch is Settings › Privacy › Analytics. The macOS and iPhone apps send
+nothing at all: they are built without the collector, not merely with it
+switched off.
+
 ## Development
 
 The game is a TypeScript/Three.js app in [`web/`](web):

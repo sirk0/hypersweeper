@@ -30,6 +30,10 @@ test.describe("settings", () => {
       "Records",
       "Appearance",
       "Behaviour",
+      // Privacy is its own section, and present only in a build that carries
+      // the play counter — which the e2e build does, because playwright.config
+      // sets VITE_ANALYTICS (see "Analytics" in the README).
+      "Privacy",
       "About",
     ]);
     // The difficulty row is meaningless on this page.

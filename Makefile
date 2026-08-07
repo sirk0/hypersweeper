@@ -5,7 +5,7 @@ WEB_STAGE = build/hypersweeper
 WEB_OUT = $(WEB_STAGE)/build/web
 
 .PHONY: help venv install lock test lint run screenshots web-screenshots \
-        web-prepare web-package web-run clean \
+        metrics web-prepare web-package web-run clean \
         mac-app mac-app-dmg desktop-install desktop-build desktop-run \
         desktop-test desktop-smoke desktop-icon \
         ios-app ios-run ios-prepare ios-install ios-icon
@@ -40,6 +40,11 @@ screenshots:     ## regenerate the pygame shot in docs/screenshots/pygame
 
 web-screenshots: ## regenerate the README gallery from the TypeScript app
 	cd web && npm run screenshots
+
+# Needs CF_ACCOUNT_ID and a read-only CF_API_TOKEN (Account Analytics: Read).
+# Pass flags through as ARGS="--days=7 --mode=klein".
+metrics:         ## play counts and win rates from the deployed app
+	node scripts/metrics.mjs $(ARGS)
 
 web-prepare:     ## stage the browser app files into $(WEB_STAGE)
 	rm -rf $(WEB_STAGE)

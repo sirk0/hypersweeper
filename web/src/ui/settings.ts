@@ -16,14 +16,17 @@ import { THEME_KEYS, theme as themeDef, themePalette, themeVars } from "./theme"
 // it, built from the same `.menu-entry` cards as every other row. That keeps
 // the phone layout, the scrolling body and the back-row idiom for free.
 //
-// Four sections: the best times (a page below, like the theme picker), the
+// Five sections: the best times (a page below, like the theme picker), the
 // theme (one page below — a theme now carries the chrome palette *and* the
 // board's cell style, so there is no second appearance picker to pair with it),
-// the sound / haptics / animations behaviour rows, and an About block naming the
-// build.
+// the sound / haptics / animations behaviour rows, the Privacy switch, and an
+// About block naming the build.
 //
-// The Haptics row is conditional (`hapticsSupported`) and the About block holds
-// no outward links: what is here is what this build can actually do.
+// Two of those are conditional, on the same principle: a row is only offered
+// where the thing behind it exists. Haptics needs a device that can buzz
+// (`hapticsSupported`); Privacy needs a build that carries the play counter
+// (`__APP_ANALYTICS__`). The About block holds no outward links: what is here is
+// what this build can actually do.
 
 /** The gear that opens this page, filled in `currentColor` so it follows the
  * theme's text colour.
@@ -59,6 +62,8 @@ export interface SettingsHost {
   volume: number;
   /** Whether the game buzzes on a flag, a win and a mine. */
   haptics: boolean;
+  /** Whether anonymous play counts are reported. */
+  analytics: boolean;
   setTheme(key: string): void;
   setDifficulty(key: string): void;
   setAnimations(pref: boolean | null): void;
@@ -67,6 +72,7 @@ export interface SettingsHost {
    * the page: it is called from a slider the player is still holding. */
   setVolume(level: number): void;
   setHaptics(on: boolean): void;
+  setAnalytics(on: boolean): void;
 }
 
 /** A 0..1 level as the percentage the slider row reports. */
@@ -470,6 +476,44 @@ export function renderSettings(
   animBtn.classList.toggle("on", on);
   behaviour.append(animLi);
   frag.append(behaviour);
+
+  // -- Privacy ---------------------------------------------------------------
+  // Its own section rather than a fourth Behaviour row: sound, haptics and
+  // animations are what the game *does*, and this is what leaves the machine.
+  // Someone who came to the settings page looking for it should find it by
+  // heading. Left out entirely of any build that carries no collector — the
+  // packaged apps, the GitHub Pages build, a dev server (analytics.ts folds
+  // away under __APP_ANALYTICS__) — because a switch there would promise
+  // something with nothing behind it, exactly as with the update row below and
+  // the haptics row on a device that cannot buzz.
+  if (__APP_ANALYTICS__) {
+    frag.append(heading("Privacy"));
+    const privacy = document.createElement("ul");
+    privacy.className = "menu-list";
+    const statsKnob = document.createElement("span");
+    statsKnob.className = "settings-switch";
+    const { li: statsLi, btn: statsBtn } = buttonRow(
+      [
+        textBlock("Analytics", "Anonymous counts of which boards are played and won"),
+        statsKnob,
+      ],
+      () => host.setAnalytics(!host.analytics),
+      "settings-toggle",
+    );
+    statsBtn.dataset["setting"] = "analytics";
+    statsBtn.setAttribute("role", "switch");
+    statsBtn.setAttribute("aria-checked", String(host.analytics));
+    statsBtn.classList.toggle("on", host.analytics);
+    privacy.append(statsLi);
+    frag.append(privacy);
+
+    const note = document.createElement("p");
+    note.className = "settings-note";
+    note.textContent =
+      "No account, no cookie, no identifier — only the board's name, the " +
+      "difficulty, whether it was won and how long it took.";
+    frag.append(note);
+  }
 
   // -- About -----------------------------------------------------------------
   frag.append(heading("About"));
