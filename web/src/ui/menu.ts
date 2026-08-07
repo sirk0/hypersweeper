@@ -264,7 +264,7 @@ export class Menu {
     // link naming one, or another tab — so re-read it rather than trusting the
     // pills painted when the row was built.
     this.syncDifficultyRow();
-    this.view();
+    this.render();
   }
   hide(): void {
     this.root.hidden = true;
@@ -274,16 +274,26 @@ export class Menu {
    * from outside the menu (another tab writing them). */
   refresh(): void {
     this.syncDifficultyRow();
-    if (!this.root.hidden) this.view();
+    if (!this.root.hidden) this.render();
   }
 
-  /** Render `view` and remember it as the page to restore on `show()`. Every
-   * page but settings shows the difficulty row, so it is cleared here and the
-   * settings page re-sets it. */
+  /** Paint the current page.
+   *
+   * `settings-open` (which hides the difficulty block, since those pages select
+   * no board) is cleared here and re-added by each page that wants it, so it is
+   * re-derived on *every* render rather than only on navigation. It used to be
+   * cleared in `go` alone, which left it stale on any path that renders without
+   * navigating: opening how-to-play over a live board sets it outside `go`, and
+   * the next `show()` then painted the home page with no difficulty row. */
+  private render(): void {
+    this.root.classList.remove("settings-open");
+    this.view();
+  }
+
+  /** Render `view` and remember it as the page to restore on `show()`. */
   private go(view: () => void): void {
     this.view = view;
-    this.root.classList.remove("settings-open");
-    view();
+    this.render();
   }
 
   private showRoot(): void {

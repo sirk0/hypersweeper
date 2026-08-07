@@ -175,6 +175,55 @@ test.describe("game header", () => {
     await expect(hint).toBeHidden();
   });
 
+  test("help opened from a game leaves the menu intact behind it", async ({ page }) => {
+    // Classic -> ? -> Back -> Back. How-to-play hides the difficulty block
+    // (those pages select no board), and that used to be cleared only when the
+    // menu *navigated* — so coming back from the board re-rendered the home
+    // page with the block still hidden and no way to change difficulty.
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    await expect(page.locator(".menu-difficulty")).toBeVisible();
+
+    await page.locator('.menu-entry[data-mode="square"]').click();
+    await page.locator('.hud-btn[data-slot="help"]').click();
+    await expect(page.locator(".menu-difficulty")).toBeHidden();
+
+    // Back to the board: the game is still the one that was running.
+    await page.locator(".menu-back").click();
+    await expect(page.locator(".hud-smiley")).toBeVisible();
+    expect((await page.evaluate(() => window.__ms?.state()))?.screen).toBe("game");
+
+    // ...and back to the menu, which is whole.
+    await page.locator('.hud-btn[data-slot="back"]').click();
+    await expect(page.locator(".menu-difficulty")).toBeVisible();
+    await expect(page.locator('.difficulty-btn[data-key="hard"]')).toBeVisible();
+    await expect(page.locator('.menu-entry[data-mode="square"]')).toBeVisible();
+  });
+
+  test("help over a game keeps the board and the page it was launched from", async ({
+    page,
+  }) => {
+    // Reached through a picker rather than Classic: leaving the board must
+    // still land on that picker, so opening help must not overwrite the stored
+    // page the way an ordinary navigation would.
+    await page.goto("/");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    await page.locator('.menu-entry[data-group="custom"]').click();
+    await page.locator('.menu-entry[data-group="manifolds"]').click();
+    await page.locator('.menu-entry[data-surface="klein"]').click();
+    await page.locator('.menu-entry[data-mode="klein"]').click();
+
+    const before = await page.evaluate(() => window.__ms!.state());
+    await page.locator('.hud-btn[data-slot="help"]').click();
+    await page.locator(".menu-back").click();
+    // The same game, not a new one: the board is hidden, never torn down.
+    expect(await page.evaluate(() => window.__ms!.state())).toEqual(before);
+
+    await page.locator('.hud-btn[data-slot="back"]').click();
+    await expect(page.locator('.menu-entry[data-mode="klein"]')).toBeVisible();
+  });
+
   test("a board with no cycle shows its name and no board-bar controls", async ({
     page,
   }) => {
