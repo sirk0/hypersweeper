@@ -44,24 +44,26 @@ FIXED_GEOMETRY = {
     "sphere", "spheretri", "c80", "c180", "snubdodec",
     "rhombicosidodeca", "truncicosidodeca",
 }
-COARSE_GEOMETRY = {"sphinx", "chair", "carpet", "pentaflake", "gosper", "cubeframe"}
+COARSE_GEOMETRY = {"sphinx", "chair", "carpet", "pentaflake", "gosper"}
 EXEMPT = FIXED_GEOMETRY | COARSE_GEOMETRY
 
 # Single rows where the size band loses to a bar that matters more. Keyed by
 # (mode, difficulty) so exempting one board does not quietly exempt its other
 # two difficulties.
 EXEMPT_ROWS = {
-    # 3.4.6.4 has a six-cell domain, so its windows near 81 cells are 78 and
-    # 107 -- and the 78 one is not a symmetric patch of the tiling, which
-    # `test_flat_board_is_symmetric` rightly refuses. The board-shape
-    # convention outranks the size band, so this board is 107 cells.
-    ("rhombitrihex", "easy"),
-    # Same story on three rolled boards: their easy windows step 84 -> 108
-    # cells, and the smaller one is a hoop far too long for its width. A
-    # squarer board at 108 beats a correctly-sized one shaped like a bracelet.
-    ("cylrotatedhex", "easy"),
-    ("cylthreescaletri", "easy"),
-    ("mobiusbasketweave", "easy"),
+    # Kisrhombille packs 24 cells into a domain two tiles wide, so the
+    # smallest tube or strip of it with enough tiles around to *close* as one
+    # -- rather than crumple into a twisted lozenge, which three domains
+    # around does -- is six domains, and that is already 144 cells. Reading as
+    # the surface outranks the size band (`resize.MIN_RING`).
+    ("cylkisrhombille", "easy"),
+    ("mobiuskisrhombille", "easy"),
+    # The stepped bipyramid's terraces have to run all the way to a single
+    # cube at each apex, or it is a slab rather than a diamond, and that fixes
+    # `levels` to (base + 1) / 2 on an odd base. The solid then steps 38 -> 64
+    # -> 102 cells, and 102 is the closest thing to 81 that is actually a
+    # bipyramid.
+    ("steppedbipyramid", "easy"),
 }
 
 # Everything else is held to two bars rather than one. A single +-15% rule
