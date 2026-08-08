@@ -108,6 +108,27 @@ SHAPE_SWEEP = {
     "tubescale": (0.7, 0.85, 1.0, 1.15, 1.3),
 }
 
+# How hard squareness pushes. A flat board is judged on the board's own aspect
+# and a rolled one on its unrolled window, since the immersion hides it.
+FLAT_ASPECT_WEIGHT = 2.0
+# cells this close to regular are not stretched; the no-regression bar on cell
+# shape never bites below it
+SHAPE_BAR_FLOOR = 1.15
+# ...and what the Mobius strip is allowed instead, buying board shape with tile
+# shape (see the note where it is applied)
+MOBIUS_SHAPE_BAR = 1.8
+# A tube or strip needs enough segments around to read as one: pushing for a
+# square window alone will happily return a Mobius band 5 cells around and 15
+# across, which is a twisted lozenge rather than a loop.
+MIN_RING = 12
+ROLLED_ASPECT_WEIGHT = 1.2
+
+
+def _rolled_flat(builder: str) -> bool:
+    """The surfaces a flat sheet rolls onto with little or no stretching."""
+    return "cylinder" in builder or "mobius" in builder
+
+
 # how many windows to actually build per row; the rest are further from the
 # target count than these and would lose on size anyway
 CANDIDATE_LIMIT = 70
@@ -316,10 +337,21 @@ def _score(mode: str, board, target: int, is_flat: bool,
     n = len(board.adjacency)
     size_penalty = abs(math.log(n / target))
     if is_flat:
-        shape_penalty = math.log(aspect(board))
+        shape_penalty = FLAT_ASPECT_WEIGHT * math.log(aspect(board))
     else:
         mean, p90 = distortion_summary(board.polygons)
         shape_penalty = math.log(mean) + 0.5 * math.log(p90)
+        # A cylinder is developable and a Mobius strip nearly so: rolling a
+        # sheet into a tube stretches almost nothing, so cell distortion is
+        # blind to their proportions and the search is free to return a tube 6
+        # cells around and 80 tall. On those two the window aspect is the only
+        # signal there is, and it has to carry real weight -- the tiles may end
+        # up a little more stretched, which on a strip is the right trade for a
+        # board you can actually read.
+        if spec is not None and trial is not None and _rolled_flat(builder):
+            shape_penalty += ROLLED_ASPECT_WEIGHT * math.log(
+                _window_aspect(builder, spec, trial)
+            )
     return size_penalty + SHAPE_WEIGHT * shape_penalty
 
 
@@ -416,8 +448,22 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
         grids = grids[:CANDIDATE_LIMIT]
 
     lo, hi = target * (1 - BAND), target * (1 + BAND)
-    # prefer not to hand back cells worse-shaped than the ones already shipping
-    shape_bar = edge_ratio(probe) * 1.02
+    # Prefer not to hand back cells worse-shaped than the ones already
+    # shipping -- but never let that veto a board whose cells are fine in
+    # absolute terms. Measured against a degenerate 6-around, 80-tall tube
+    # whose cells happen to be square to the third decimal, a purely relative
+    # bar rejects the 21x23 cylinder for having cells at 1.107 instead of
+    # 1.061, and so defends the very shape it should be replacing. Under the
+    # floor, a tile is not stretched by any standard worth enforcing.
+    shape_bar = max(edge_ratio(probe) * 1.02, SHAPE_BAR_FLOOR)
+    if _rolled_flat(builder) and "mobius" in builder:
+        # A Mobius strip closes with a half twist, so a *wide* one is stretched
+        # by the immersion however its window is chosen: keeping its tiles
+        # near-regular forces a band 80 cells around and 6 across, which reads
+        # as a hoop rather than a board. Here the board's shape is worth more
+        # than the tiles', so the cell-shape bar is loosened to let the aspect
+        # term pick a squarer strip.
+        shape_bar = max(shape_bar, MOBIUS_SHAPE_BAR)
 
     def collect(in_band: bool, keep_shape: bool, fair: bool = True) -> list:
         found = []
@@ -441,6 +487,8 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
             # here rather than traded off in the score, where they would fight
             # the distortion term on the curved surfaces that do not need it.
             if _window_aspect(builder, spec, trial) > MAX_WINDOW_ASPECT:
+                continue
+            if _rolled_flat(builder) and len(knobs) == 2 and trial[knobs[0]] < MIN_RING:
                 continue
             if keep_shape and not is_flat and edge_ratio(board) > shape_bar:
                 continue

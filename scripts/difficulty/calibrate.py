@@ -64,16 +64,28 @@ ROW_SECONDS = 45.0
 # could tell apart, which is the thing the number is for.
 TOLERANCE = 0.04
 
+# The density floor, and the one place win-rate parity is deliberately given
+# up.
+#
+# Some tilings force coin flips in the endgame no matter how well you play --
+# rhombille finishes with four hidden cells holding two mines, each at exactly
+# 0.5, and nothing on the board can separate them. Matching classic easy's
+# 96.5% on such a board needs about 3% density, and a board that sparse is one
+# the opening click clears outright: measured, `torusrhombille` easy was won on
+# the first click 61% of the time and `pentaflake` easy 59%.
+#
+# So below this floor the answer stops being a game, and the floor wins. A
+# board that cannot reach its target at the floor keeps the floor, is recorded
+# `fair: false` with the rate it actually lands at, and the front-end warns
+# about it rather than pretending it is an easy board.
+MIN_DENSITY = 0.10
+MAX_DENSITY = 0.45
+
 # A board where most cells have an identical twin cannot be calibrated at all:
 # each mine landing alone in a pair forces a coin flip, so the win rate is
 # 0.5**mines whatever the density. Those boards are given a plain density and
 # recorded as uncalibrated rather than being chased to a target they cannot
 # reach. See the triakis note in AGENTS.md.
-# The density band the search stays inside. Every board calibrated so far has
-# landed between about 4 and 38 per cent, and below that band the solver is
-# slower by orders of magnitude for no useful answer.
-MIN_DENSITY = 0.03
-MAX_DENSITY = 0.45
 
 UNCALIBRATABLE_SHARE = 0.5
 FALLBACK_DENSITY = {"easy": 0.13, "medium": 0.16, "hard": 0.20}
@@ -140,6 +152,7 @@ def calibrate_row(args: tuple) -> dict:
             density=round(mines / n, 4),
             winRate=round(rate, 4),
             calibrated=True,
+            fair=True,
             reason="the reference board, pinned to the classic mine counts",
             seconds=round(time.time() - started, 1),
         )
@@ -153,6 +166,7 @@ def calibrate_row(args: tuple) -> dict:
             density=round(mines / n, 4),
             winRate=round(rate, 4),
             calibrated=False,
+            fair=False,
             reason="most cells have an indistinguishable twin, so the win rate "
             "is 0.5**mines at any density",
             seconds=round(time.time() - started, 1),
@@ -174,15 +188,28 @@ def calibrate_row(args: tuple) -> dict:
         row["leastGames"] = min(row.get("leastGames", games), played)
         return value
 
-    # 1. bracket the crossing, within a sane density band.
-    #
-    # The band is not a guard rail on the answer, it is one on the search: at a
-    # few per cent the opening click floods most of the board and leaves a
-    # frontier of hundreds of components, which is the most expensive thing
-    # this solver can be asked to evaluate. No board calibrates anywhere near
-    # there, so walking down into it pays the worst cost for an answer that is
-    # never used.
+    # 1. bracket the crossing, within the density band.
     lo, hi = max(1, int(MIN_DENSITY * n)), min(n - 1, int(MAX_DENSITY * n))
+
+    # The floor is a real answer, not just a search bound: if the board is
+    # already *harder* than its target with the fewest mines it may carry, no
+    # number of mines will help and taking more away is what produced boards
+    # the opening click clears. Stop here and say so.
+    floor_rate = rate_at(lo, FINAL_GAMES)
+    if floor_rate < target - TOLERANCE:
+        row.update(
+            mines=lo,
+            density=round(lo / n, 4),
+            winRate=round(floor_rate, 4),
+            calibrated=False,
+            fair=False,
+            reason="the tiling forces coin flips in the endgame, so even at the "
+            f"{MIN_DENSITY:.0%} density floor the board plays harder than this "
+            "difficulty's target; fewer mines would only make it a board the "
+            "first click can clear",
+            seconds=round(time.time() - started, 1),
+        )
+        return row
     guess = max(lo, min(hi, round(0.15 * n)))
     rate = rate_at(guess, SEARCH_GAMES)
     if rate > target:
@@ -223,7 +250,7 @@ def calibrate_row(args: tuple) -> dict:
     # worth, which converges in two or three tries instead of scanning.
     best = None
     seen: dict[int, float] = {}
-    mines = max(1, min(n - 2, (lo + hi) // 2))
+    mines = max(lo, min(hi, (lo + hi) // 2))
     for _ in range(6):
         if out_of_time() and best is not None:
             break
@@ -244,7 +271,7 @@ def calibrate_row(args: tuple) -> dict:
         step = max(-8, min(8, int(step)))
         if step == 0:
             step = 1 if value > target else -1
-        nxt = max(1, min(n - 2, mines + step))
+        nxt = max(lo, min(hi, mines + step))
         if nxt in seen and abs(nxt - mines) <= 1:
             break
         mines = nxt
@@ -257,7 +284,7 @@ def calibrate_row(args: tuple) -> dict:
     # the count that fits. Only runs when the walk missed, so it costs nothing
     # on the boards that converged.
     if abs(best[1] - target) > TOLERANCE and not out_of_time():
-        for mines in range(max(1, best[0] - 2), min(n - 1, best[0] + 2) + 1):
+        for mines in range(max(lo, best[0] - 2), min(hi, best[0] + 2) + 1):
             if mines in seen or out_of_time():
                 continue
             seen[mines] = value = rate_at(mines, FINAL_GAMES)
@@ -269,6 +296,7 @@ def calibrate_row(args: tuple) -> dict:
         density=round(mines / n, 4),
         winRate=round(rate, 4),
         calibrated=abs(rate - target) <= TOLERANCE,
+        fair=True,
         seconds=round(time.time() - started, 1),
     )
     if not row["calibrated"]:
