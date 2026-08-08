@@ -14,7 +14,7 @@ import { screens, type HudSlot } from "../config/screens";
 // theme's buttons). Sized by CSS (--hud-icon) rather than hard-coded
 // width/height attributes, so the header controls can grow to a comfortable
 // touch size on phones.
-const ICONS: Record<string, string> = {
+export const ICONS: Record<string, string> = {
   flag: `<svg viewBox="0 0 24 24" aria-hidden="true">
     <path d="M6.4 18.1 H11.6 L13.6 20.4 H4.4 Z" fill="#3a3f4b"/>
     <rect x="3.6" y="20.4" width="10.8" height="1.5" fill="#22252d"/>
@@ -29,7 +29,9 @@ const ICONS: Record<string, string> = {
     <path d="M20 12 H5 M11 5 L4 12 L11 19" stroke="currentColor"
       stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>`,
-  // Double chevrons for the two Klein scroll controls (back / forward).
+  // Double chevrons for the two Klein scroll controls (back / forward). Drawn
+  // on the board bar rather than in this header (see ui/boardInfo.ts), but kept
+  // in one icon table so a slot's `icon` name resolves the same either way.
   "chevrons-left": `<svg viewBox="0 0 24 24" aria-hidden="true">
     <path d="M17 5 L10 12 L17 19 M11 5 L4 12 L11 19" stroke="currentColor"
       stroke-width="1.9" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
@@ -37,6 +39,23 @@ const ICONS: Record<string, string> = {
   "chevrons-right": `<svg viewBox="0 0 24 24" aria-hidden="true">
     <path d="M7 5 L14 12 L7 19 M13 5 L20 12 L13 19" stroke="currentColor"
       stroke-width="1.9" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`,
+  // Hand this board to someone: a box with an arrow leaving it upward. The
+  // platform-neutral drawing rather than the iOS glyph, since this header is
+  // also a desktop one.
+  share: `<svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M12 3 L12 15 M8 7 L12 3 L16 7" stroke="currentColor"
+      stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M5 12 L5 20 L19 20 L19 12" stroke="currentColor"
+      stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`,
+  // How to play. The same question mark the menu header carries (help.ts), so
+  // the two read as one control wherever the player meets it.
+  help: `<svg viewBox="0 0 24 24" aria-hidden="true">
+    <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8" fill="none"/>
+    <path d="M9.2 9.3a2.9 2.9 0 1 1 3.6 2.85V14" stroke="currentColor"
+      stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="12" cy="17" r="1.05" fill="currentColor"/>
   </svg>`,
 };
 

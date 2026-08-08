@@ -61,8 +61,11 @@ function parseSeed(raw: string | null): number | null {
 }
 
 /** The query string for a board, for the address bar. Only the parameters that
- * identify the board: a seed is carried only when the board was opened with
- * one, so an ordinary game stays re-rollable on reload. */
+ * identify the board — and the seed is one of them: every ordinary game is
+ * dealt from a seed (`App.startGame`), so the link names *this* layout and a
+ * reload replays it rather than dealing a fresh board. Re-rolling is the
+ * smiley, which asks for a new seed. Only a board built from an explicit mine
+ * layout (the test seam) has none to carry. */
 export function boardLinkQuery(
   mode: string,
   difficulty: string,

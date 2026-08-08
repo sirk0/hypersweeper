@@ -28,6 +28,11 @@ export class GameSession {
   readonly difficulty: string;
   /** The cell style this board's mesh was cut with (see render/cellStyle.ts). */
   readonly cellStyle: string;
+  /** The seed this board's mines were dealt from, when it was dealt from one.
+   * `null` for a board built from an explicit mine layout (the test seam),
+   * which no seed reproduces. It is what makes a board shareable — see
+   * `share.ts` — so it is carried here rather than only in the address bar. */
+  readonly seed: number | null;
 
   private exploded: CellId | null = null;
   private startedAt: number | null = null;
@@ -77,6 +82,9 @@ export class GameSession {
     this.mesh = isBoard3D(this.board)
       ? new SolidBoard(this.board, style)
       : new PolygonBoard(this.board, style);
+    // An explicit mine layout is not reproducible from a seed, so a board
+    // built from one claims none even if a seed was passed alongside it.
+    this.seed = opts.minePositions ? null : (opts.seed ?? null);
     const rng: Rng | undefined =
       opts.seed !== undefined ? mulberry32(opts.seed >>> 0) : undefined;
     this.game = new Game(this.board.adjacency, {

@@ -63,6 +63,12 @@ export interface Settings {
    * every event too, so turning it off silences the game already in progress.
    * Meaningless in the packaged builds, which carry no collector at all. */
   analytics: boolean;
+  /** Whether the player has already been shown how to open and flag a cell.
+   * Set the first time a board is opened, so the hint over the board is a
+   * first-run thing and never appears again. Not a preference the settings
+   * page offers — it is a fact about this browser, kept here because this is
+   * the record that already survives a reload. */
+  seenHint: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -73,6 +79,7 @@ export const DEFAULT_SETTINGS: Settings = {
   volume: DEFAULT_VOLUME,
   haptics: true,
   analytics: true,
+  seenHint: false,
 };
 
 /** What a pre-v3 `theme` (a chrome palette) becomes now that a theme carries the
@@ -165,6 +172,10 @@ export function loadSettings(): Settings {
     // hosted game does out of the box and what the Privacy row then shows.
     analytics:
       typeof rec["analytics"] === "boolean" ? rec["analytics"] : DEFAULT_SETTINGS.analytics,
+    // Purely additive, so it needs no schema bump: a record written by an older
+    // build simply lacks it and the player gets the hint once, which is right.
+    seenHint:
+      typeof rec["seenHint"] === "boolean" ? rec["seenHint"] : DEFAULT_SETTINGS.seenHint,
   };
 }
 

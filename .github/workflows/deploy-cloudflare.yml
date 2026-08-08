@@ -54,6 +54,12 @@ jobs:
           # play counter posts to, so it is the one build that carries the
           # counter. Elsewhere the post would 404 and the browser would log it.
           VITE_ANALYTICS: "1"
+          # Absolute origin + base, for the link-preview tags (og:url, og:image);
+          # a crawler runs no JavaScript, so these are fixed at build time. Set
+          # the repository variable SITE_URL to this deploy's own domain — until
+          # it exists the fallback names the GitHub Pages site, which previews
+          # correctly but points shares at the other host.
+          VITE_SITE_URL: ${{ vars.SITE_URL || 'https://sirk0.github.io/hypersweeper/' }}
         run: |
           npm ci
           npm run build

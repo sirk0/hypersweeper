@@ -50,6 +50,7 @@ const SETTINGS: Settings = {
   volume: 0.5,
   haptics: false,
   analytics: false,
+  seenHint: true,
 };
 
 afterEach(() => {
@@ -115,6 +116,7 @@ describe("settings validation", () => {
       volume: DEFAULT_SETTINGS.volume,
       haptics: DEFAULT_SETTINGS.haptics,
       analytics: DEFAULT_SETTINGS.analytics,
+      seenHint: DEFAULT_SETTINGS.seenHint,
     });
   });
 
@@ -186,6 +188,7 @@ describe("settings upgrades", () => {
       volume: DEFAULT_SETTINGS.volume,
       haptics: DEFAULT_SETTINGS.haptics,
       analytics: DEFAULT_SETTINGS.analytics,
+      seenHint: DEFAULT_SETTINGS.seenHint,
     });
     // Migration completes on the next write, and only then is the old key
     // dropped — an interrupted migration must not lose the record.
@@ -253,6 +256,7 @@ describe("settings upgrades", () => {
       volume: DEFAULT_SETTINGS.volume,
       haptics: DEFAULT_SETTINGS.haptics,
       analytics: DEFAULT_SETTINGS.analytics,
+      seenHint: DEFAULT_SETTINGS.seenHint,
     });
   });
 
@@ -301,6 +305,7 @@ describe("cross-tab sync", () => {
         volume: DEFAULT_SETTINGS.volume,
         haptics: DEFAULT_SETTINGS.haptics,
         analytics: DEFAULT_SETTINGS.analytics,
+        seenHint: DEFAULT_SETTINGS.seenHint,
       },
     ]);
   });

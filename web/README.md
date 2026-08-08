@@ -403,6 +403,75 @@ is present with
 (the config honours it). CI installs the pinned build itself, so it is
 self-consistent regardless of the image.
 
+## Sharing the game
+
+Three pieces, all aimed at the same thing: a board someone can hand to
+someone else.
+
+**The link preview.** `index.html` carries no social tags of its own — they are
+injected at build time by the `socialMeta` plugin in `vite.config.ts`, because
+`og:image` and `og:url` have to be **absolute** (a crawler runs no JavaScript
+and will not resolve a relative one) and only the build knows where it is being
+published. That comes from **`VITE_SITE_URL`**, origin *and* base path with a
+trailing slash; both deploy workflows set it, and the default is the GitHub
+Pages project site so a local build still emits valid tags. The plugin is not
+applied to packaged builds: inside the macOS and iOS bundles there is no crawler
+to read the tags, and an absolute `https://` URL in the HTML is exactly what
+`scripts/check-offline-assets.mjs` exists to reject.
+
+The card itself is `public/og.png`, 1200×630, written by `npm run og`
+(`scripts/make-og-image.mts`) — rendered from the real app through the same
+`window.__ms` seam and SwiftShader launch args the screenshot script uses, from
+a fixed seed, so it is reproducible and cannot drift from what the game looks
+like. It is a *solid* mid-game, because "minesweeper but on shapes" is the pitch
+and a flat grid does not say it.
+
+**The share button**, `src/share.ts`, split pure/impure like `sound.ts`:
+`shareUrlFor`/`shareTextFor` hold every rule and are what the unit tests pin,
+`shareBoard` wraps the browser. `navigator.share` first (on a phone that is the
+share sheet), else the clipboard; a share sheet the player *cancels* falls
+through to the clipboard rather than reporting failure, since dismissing one is
+a normal outcome. The trap fixed there: `nav.clipboard?.writeText(…)` on a
+platform with no clipboard evaluates to `undefined`, which awaits happily — so
+the button would have said "Link copied" having copied nothing. It is offered in
+two places, the header and the record window, and both pass the session's seed.
+
+**The seed** is what makes any of it mean anything — see "Shareable board
+links" above.
+
+## Telling the player where they are
+
+`src/ui/boardInfo.ts` owns the row under the header, and two things on it.
+
+The **caption** names the board (`fullModeLabel`). Nothing on the game screen
+did before, and the menu's Flat and 3D rows each open a *random* board — so a
+player could be dropped on a truncated icosahedron with no way to find out what
+it was. It is also what makes a screenshot of the game say what it is.
+
+That row is also where the **Klein scroll chevrons** live, rather than in the
+header. The header holds two slots a side — back and flag-mode, how-to-play and
+share — around the centred counter/smiley/counter block, and seven controls is
+what one row holds at 320px. The chevrons belong to the *board* rather than to
+the game, they appear only on the one board that already has the most to fit,
+and putting them back in the header wraps that row on exactly that board.
+`tests/e2e/hud.spec.ts` pins all of this. They are declared in
+`data/ui/screens.json` under `hud.boardBar`, beside the header's own clusters.
+
+The **first-run hint** is the app's only onboarding: one dismissible line over
+the first board this browser ever opens, saying how to open a cell and how to
+flag one. Long-press-to-flag and right-click-to-flag were documented on the
+how-to-play page and nowhere a new player would look. It is spent via
+`settings.seenHint` (purely additive, so no `SCHEMA_VERSION` bump) and goes on
+the first move. **Any test that screenshots a board must seed `seenHint: true`**
+— every Playwright test gets a fresh context, so without it every board is a
+first board, and the hint carries a seven-second timer a slow shot would race.
+
+The how-to-play page is reachable **from inside a game** through the header's ?.
+It opens over the live board — the canvas is hidden with `visibility`, not torn
+down, so the mesh, the mine layout and the clock survive — and deliberately does
+not go through `Menu.go`, whose stored `view` must stay the picker the game was
+launched from.
+
 ## Agent notes: driving the app headless
 
 Practical knowledge for verifying changes by actually running the app
@@ -905,9 +974,17 @@ A board's address *is* its share link: `?mode=<mode>&difficulty=<key>`, which
 `App.syncLocation` writes with `history.replaceState` whenever a board opens and
 clears on the way back to the menu (so reloading from the menu shows the menu).
 `replaceState`, not `pushState` — this mirrors the current view rather than
-building history the back button would have to unwind. A board opened with an
-explicit `seed` keeps it in the link, so that exact board can be handed on;
-ordinary games carry no seed and stay re-rollable on reload.
+building history the back button would have to unwind.
+
+**Every ordinary game carries a `seed`**, generated in `App.startGame` when the
+caller has none, so the link names *this* mine layout rather than "another board
+of this kind" — which is what makes the share button (`src/share.ts`) worth
+having, and what lets a player hand a board to someone else. The consequence to
+know: a reload replays the board you were on instead of dealing a fresh one.
+Re-rolling is the smiley (or the record window's **Play again**), both of which
+come back through `startGame` with no seed. Only a board built from an explicit
+mine layout — the `window.__ms` test seam — has no seed to carry, and it claims
+no link at all.
 
 Parsing lives in `src/link.ts`, apart from `main.ts` so it is unit-testable, and
 treats the query string as **untrusted**: links get typed, truncated by chat
