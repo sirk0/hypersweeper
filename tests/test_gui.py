@@ -316,15 +316,25 @@ class TestRendering:
 
     @pytest.mark.parametrize("mode", MODES_2D)
     def test_draw_all_game_phases_in_every_mode(self, mode, fonts):
-        screen = GameScreen(mode, "easy")
-        self.draw(screen, fonts)  # fresh board
-        first = next(iter(screen.centers))
-        screen.handle_event(mouse_event(screen.centers[first]))
-        flag_target = next(
-            cell
-            for cell in screen.game.cells
-            if screen.game.cell_state(cell) is CellState.HIDDEN
-        )
+        # The opening click floods, and on the smallest boards (sphinx easy is
+        # 16 cells) that sometimes clears the whole field in one go, leaving
+        # nothing hidden to flag. Retry until we get a board with a mid-game.
+        for _ in range(50):
+            screen = GameScreen(mode, "easy")
+            self.draw(screen, fonts)  # fresh board
+            first = next(iter(screen.centers))
+            screen.handle_event(mouse_event(screen.centers[first]))
+            flag_target = next(
+                (
+                    cell
+                    for cell in screen.game.cells
+                    if screen.game.cell_state(cell) is CellState.HIDDEN
+                ),
+                None,
+            )
+            if flag_target is not None:
+                break
+        assert flag_target is not None, f"{mode}: every opening click won"
         screen.handle_event(mouse_event(screen.centers[flag_target], button=3))
         self.draw(screen, fonts)  # mid-game with reveals and a flag
         screen.game.toggle_flag(flag_target)

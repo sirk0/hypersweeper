@@ -81,8 +81,8 @@ Pick a surface, then a tiling:
 
 ## Playing
 
-- **Left-click / tap** — reveal a cell (the first reveal is always safe);
-  click a revealed number to chord
+- **Left-click / tap** — reveal a cell (the first reveal always opens an
+  empty area); click a revealed number to chord
 - **Right-click**, **long-press**, or the flag button in the header —
   toggle a flag
 - **Face button** — new game; the **`<` button** goes back to the menu

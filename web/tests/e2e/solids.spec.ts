@@ -151,6 +151,10 @@ test.describe("M2 solids", () => {
     await page.goto("/?mode=cube&difficulty=easy&seed=5");
     await expect(page.locator("body[data-ready]")).toBeVisible();
     const target = await visibleCell(page);
+    // The board's mine count is calibrated, so read it rather than pinning a
+    // number here: what this test is about is that the long press planted one
+    // flag and did not rotate the solid into a reveal.
+    const before = await page.evaluate(() => window.__ms!.state().minesRemaining);
     // Synthesize a stationary touch press held past the long-press delay.
     const client = await page.context().newCDPSession(page);
     await client.send("Input.dispatchTouchEvent", {
@@ -160,7 +164,7 @@ test.describe("M2 solids", () => {
     await page.waitForTimeout(700);
     await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
     const state = await page.evaluate(() => window.__ms!.state());
-    expect(state.minesRemaining).toBe(11); // one flag planted
+    expect(state.minesRemaining).toBe(before - 1); // one flag planted
     expect(state.revealed).toBe(0);
   });
 });

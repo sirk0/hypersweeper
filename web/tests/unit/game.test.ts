@@ -52,7 +52,26 @@ describe("mine placement", () => {
     game.reveal(C(4, 4));
     expect(game.cells.filter((c) => game.isMine(c)).length).toBe(10);
   });
-  it("first reveal is never a mine", () => {
+  it("first reveal opens a zero", () => {
+    const adjacency = squareBoard(9, 9, 1).adjacency;
+    for (let seed = 0; seed < 50; seed++) {
+      const game = new Game(adjacency, { mineCount: 10, rng: mulberry32(seed) });
+      game.reveal(C(4, 4));
+      expect(game.adjacentMines(C(4, 4))).toBe(0);
+      expect(game.cells.filter((c) => game.cellState(c) === "revealed").length)
+        .toBeGreaterThan(1);
+    }
+  });
+  it("first reveal opens a zero on a board with no interior", () => {
+    const adjacency = squareBoard(1, 12, 1).adjacency;
+    for (let seed = 0; seed < 30; seed++) {
+      const game = new Game(adjacency, { mineCount: 3, rng: mulberry32(seed) });
+      game.reveal(C(0, 5));
+      expect(game.adjacentMines(C(0, 5))).toBe(0);
+    }
+  });
+  it("too dense for a zero falls back to a safe first click", () => {
+    // 25 cells and 24 mines leaves no room for an empty neighbourhood.
     const adjacency = squareBoard(5, 5, 1).adjacency;
     for (let seed = 0; seed < 50; seed++) {
       const game = new Game(adjacency, { mineCount: 24, rng: mulberry32(seed) });
