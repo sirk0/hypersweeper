@@ -91,6 +91,9 @@ Example goal: a new uniform tiling `foo` (say 3.4.6.4-like).
 3. **Presets** — add a `"foo": {...}` block to `ARCH_PRESETS` in
    `presets.py` with `flat` / `torus` / `cylinder` / `mobius` / `klein`
    args per difficulty. Omit `mobius` / `klein` if the tiling is chiral.
+   Seed the windows by hand if you like, but the sizes and mine counts that
+   ship come from `scripts/difficulty/` — see "Choosing a size and a mine
+   count" below; do not pick a density by eye.
    Run `scripts/export_data.py` (and `export_conformance.py`) to expand it
    into `data/presets.json` (and refresh the oracle); both front-ends load
    from there.
@@ -135,7 +138,9 @@ Steps (say a new primal `_foo_template` gained a dual `_bar_template`):
    is the Laves symbol, i.e. the primal's vertex configuration).
 3. Add a `"bar"` block to `ARCH_PRESETS` (skip `mobius`/`klein` if chiral).
    The windows can copy the primal's — the dual shares its fundamental
-   domain; only retune the mine counts to the dual's tile count.
+   domain — but the mine counts must be re-measured, not scaled: a dual has
+   a different tile count *and* a different degree, and both move the win
+   rate. See "Choosing a size and a mine count" below.
 4. Add the tiling's wrapped cell counts to
    `TestWrappedArchimedean.test_cell_counts` (that test asserts the count
    table matches the set of wrapped modes, so it fails until you do).
@@ -472,6 +477,56 @@ modes join the wrapped-surface
 invariant suite (`TestWrappedArchimedean` / `TestKleinTilings`) so
 χ = 0 / 0 boundary circles are checked automatically; if you add the spec
 but forget a preset, `TestPresets.test_all_presets_build` fails loudly.
+
+## Choosing a size and a mine count
+
+**Do not invent either.** Both are measured, by `scripts/difficulty/`, and a
+hand-picked density is the one thing this game cannot get right by eye.
+
+1. **Size** — easy/medium/hard track the classic Windows boards, 81 / 256 /
+   480 cells, within ±15%. `scripts/difficulty/resize.py` searches a
+   builder's size knobs for a window that hits the count, keeps the right
+   topology, and (on the wrapped surfaces) leaves cells least distorted;
+   declare the new builder's knobs in its `SPEC` table. Boards with no size
+   knob — the named solids — and the fractals, which quantise by whole
+   substitution steps, keep their geometry and are listed as exceptions in
+   `tests/test_presets.py`.
+2. **Mine count** — `scripts/difficulty/calibrate.py` plays the board a few
+   thousand times with a reference solver and moves the mine count until the
+   win rate matches the classic board's at that difficulty. Run it for the
+   one new mode: `PYTHONPATH=. python -m scripts.difficulty.calibrate
+   --only <mode>`, then `python -m scripts.difficulty.apply`.
+
+Why not a density: adjacency is shared-vertex, so degree runs from 4 to 21
+across the zoo, and a number spread over 21 cells says far less than the same
+number over 6. At one density a hexagonal board plays much easier than a
+triangular one, and a seamless torus easier than the flat board it wraps
+(a corner constrains less than an interior cell). The calibrated densities
+span 2–36% as a result: on 84 cells a hexagonal torus still wins every game
+at 8 mines where a square one is already down to 90% at 6.
+
+**The one floor is the opening, and it is measured too.** The first click
+opens a *zero*, so a board sparse enough for that flood to reach every safe
+cell is won by clicking once — a real win rate, and not a game.
+`calibrate.opening_floor` bisects for the fewest mines at which the opening
+alone finishes under 1% of games and starts the search there. Do not
+substitute a density: what makes an opening a walkover is size and degree
+together, and the flat 10% floor this replaced left a 36-cell pentaflake
+winnable on the first click 8% of the time while needlessly overmining a
+512-cell carpet by 20 mines.
+
+**Check the board is playable at all.** `metrics.indistinguishable_cells`
+counts cells sharing a closed neighbourhood with another cell: no sequence of
+numbers can ever separate those, so a mine landing alone in such a pair forces
+a coin flip. A board mostly made of them cannot be calibrated to any target —
+its win rate is 0.5^mines whatever the density. The five triakis boards are
+exactly that and ship uncalibrated and flagged. If a new tiling scores above
+zero here, say so in its preset comment; above half its cells and the board is
+not a puzzle. Every row the calibration cannot bring on target lands in the
+generated `data/difficulty.json`, which the TypeScript app reads
+(`web/src/boards/fairness.ts`) to mark the menu row and to deal the board less
+often at random — so a new unfair board needs no front-end edit, only a
+`scripts/difficulty/report.py` re-run.
 
 ## Verifying a change
 

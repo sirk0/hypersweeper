@@ -59,6 +59,36 @@ class TestMinePlacement:
             assert not game.is_mine((2, 3))
             assert game.state is not GameState.LOST
 
+    def test_first_reveal_opens_a_zero(self):
+        """The first click floods: no mine touches it, so it reads zero."""
+        adjacency = square_board(9, 9, 1).adjacency
+        for seed in range(50):
+            game = Game(adjacency, 10, rng=random.Random(seed))
+            game.reveal((4, 4))
+            assert game.adjacent_mines((4, 4)) == 0
+            assert sum(
+                1 for cell in game.cells
+                if game.cell_state(cell) is CellState.REVEALED
+            ) > 1
+
+    def test_first_reveal_opens_a_zero_on_a_board_with_no_interior(self):
+        """A 1xN strip is all boundary; the neighbourhood is still held back."""
+        adjacency = square_board(1, 12, 1).adjacency
+        for seed in range(30):
+            game = Game(adjacency, 3, rng=random.Random(seed))
+            game.reveal((0, 5))
+            assert game.adjacent_mines((0, 5)) == 0
+
+    def test_too_dense_for_a_zero_falls_back_to_a_safe_first_click(self):
+        """25 cells and 24 mines leaves no room for an empty neighbourhood,
+        so the weaker guarantee applies: safe, but not necessarily a zero."""
+        adjacency = square_board(5, 5, 1).adjacency
+        for seed in range(50):
+            game = Game(adjacency, 24, rng=random.Random(seed))
+            game.reveal((2, 3))
+            assert not game.is_mine((2, 3))
+            assert game.state is not GameState.LOST
+
     def test_explicit_mine_positions_are_used(self):
         game = make_game(mines={(1, 1), (2, 2)})
         assert game.is_mine((1, 1))

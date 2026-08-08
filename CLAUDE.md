@@ -81,6 +81,49 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   — generously enough that `keep` is a small fraction of the patch, or the
   substitution's own star-shaped outline is what the board reads as. See
   the `AGENT NOTE` in `boards/tilings.py`.
+  **Size and mine-count convention — difficulty is measured, not assumed.**
+  A board's easy/medium/hard sizes track the classic Windows boards (81 /
+  256 / 480 cells, within ±15%), and its mine count is *calibrated* so the
+  probability of winning under optimal play matches the classic board's at
+  that difficulty. **Never pick a mine count from a density.** A flat
+  percentage is exactly what this game cannot use: adjacency here is
+  shared-vertex, so a cell has 4 neighbours on the pentaflake and 21 on the
+  triakis boards, and a number spread over 21 cells says far less than the
+  same number over 6 — at one density a hexagonal board plays much easier
+  than a triangular one. Boundary moves it the same way (a corner
+  constrains less than an interior cell, so a seamless torus is easier than
+  the flat board it wraps), which is why the calibrated densities range from
+  2% to 36% rather than clustering near classic's 12/16/21%. Measured on
+  84-cell tori, a hexagonal one (degree 6) still wins every game at 8 mines
+  where a square one (degree 8) is already down to 90% at 6. The
+  numbers come from `scripts/difficulty/` — a reference solver
+  (single-point deduction plus exact frontier probabilities by a memoised
+  DP) plays each board a few thousand times while a search moves the mine
+  count onto the target; `scripts/difficulty/report.md` is the audit trail
+  and `targets.json` the measured classic yardstick. Rerun it for a new
+  board rather than guessing (see `AGENTS.md`). Three consequences worth
+  knowing. The first click is guaranteed to open a *zero*, not merely to
+  miss a mine (`Game._place_mines`, with a fallback when a board is too
+  dense to allow one) — so a board can hit its target win rate and still not
+  be a game, because a flood that reaches every safe cell *is* the win. That
+  is the one floor under the search, and it is **measured, never a
+  density**: `calibrate.opening_floor` bisects for the fewest mines at which
+  the opening click alone finishes fewer than 1% of games, which is a
+  property of the board's size and degree together (a 36-cell pentaflake at
+  8% is cleared outright 8 times in a hundred; a 216-cell one at 5% never
+  is). An earlier flat 10% floor both left the small boards broken and
+  overmined the large ones, recording 65 rows as unreachable when they were
+  only over-floored. Second, a board whose cells have **indistinguishable
+  twins** — the same closed neighbourhood, so no number can ever separate
+  them — cannot be calibrated at all, because each mine landing alone in a
+  pair forces a coin flip. The five triakis boards are entirely made of such
+  pairs (win rate is 0.5^mines at any density) and are shipped uncalibrated
+  and flagged; `metrics.indistinguishable_cells` is the check. Third, those
+  boards and the handful of others that cannot reach their target (rhombille
+  and its wrapped forms end with a pocket at exactly even odds) are listed
+  in the generated `data/difficulty.json`; the TypeScript app reads it in
+  `web/src/boards/fairness.ts` to mark the menu row with a ⚠ and to deal
+  those boards a quarter as often from the Flat/3D random launchers.
   The three aperiodic boards each keep exact vertex ids in a cyclotomic ring:
   ℤ[ζ5] (Penrose and the spiral) and ℤ[ζ12] (Spectre). Only Penrose's is discrete — ℤ[ζ12]
   is dense in the plane, so `spectre_board` cannot snap a float vertex back

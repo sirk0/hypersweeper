@@ -165,8 +165,24 @@ export class Game {
 
   // -- internals -------------------------------------------------------------
 
+  /**
+   * Place the mines, keeping the first reveal a zero so it floods.
+   *
+   * The clicked cell *and its neighbours* are held back, so the first reveal
+   * always opens an area rather than a lone number. Small dense boards may not
+   * have room for that -- a cell plus its neighbours is already 22 of a
+   * 42-cell degree-21 board -- so when the free cells would not hold every
+   * mine we fall back to keeping only the clicked cell safe, which is the
+   * weaker guarantee the game shipped with. Mirrors `_place_mines` in
+   * minesweeper/game.py; the rule matches, the layouts need not (the two rngs
+   * differ and nothing depends on them agreeing).
+   */
   private placeMines(safe: CellId): void {
-    const candidates = this.cells.filter((c) => c !== safe);
+    const forbidden = new Set<CellId>([safe, ...(this.adjacency.get(safe) ?? [])]);
+    let candidates = this.cells.filter((c) => !forbidden.has(c));
+    if (candidates.length < this.mineCount) {
+      candidates = this.cells.filter((c) => c !== safe);
+    }
     this.mines = new Set(sample(candidates, this.mineCount, this.rng));
     this.minesPlaced = true;
   }

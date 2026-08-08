@@ -38,7 +38,11 @@ test.describe("M1 app", () => {
     const state = await page.evaluate(() => window.__ms?.state());
     expect(state?.screen).toBe("game");
     expect(state?.mode).toBe("penrose");
-    expect(state?.cellCount).toBe(60); // easy Penrose keeps 60 rhombi
+    // An easy board is about the size of the classic easy board (81 cells) --
+    // the calibrated convention, so the exact count moves when a board is
+    // retuned and pinning it here would only rot.
+    expect(state?.cellCount).toBeGreaterThan(60);
+    expect(state?.cellCount).toBeLessThan(105);
   });
 
   // The home page's two one-tap entries. Which board they deal is random, so
@@ -84,6 +88,8 @@ test.describe("M1 app", () => {
     const state = await page.evaluate(() => window.__ms?.state());
     expect(state?.mode).toBe("hex");
     expect(state?.difficulty).toBe("easy");
-    expect(state?.cellCount).toBe(99);
+    // as above: an easy board is sized against the classic easy board
+    expect(state?.cellCount).toBeGreaterThan(60);
+    expect(state?.cellCount).toBeLessThan(105);
   });
 });

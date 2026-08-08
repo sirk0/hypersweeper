@@ -1253,12 +1253,22 @@ export function archimedeanBoard(
 
   const halfW = (nx * W) / 2;
   const halfH = (ny * H) / 2;
+  // The window is closed at both ends, so a row of centroids landing exactly
+  // on it is kept on *both* sides and the patch stays symmetric about the
+  // centre. That makes the tolerance load-bearing rather than cosmetic: a
+  // template's `centre` is stored rounded to six decimals, so the window edge
+  // can miss a centroid by ~5e-7 -- far more than a 1e-9 slack -- and dropping
+  // the row at one edge while keeping the row at the other is exactly the
+  // half-column offset that leaves stray tiles down one side. Must match
+  // `archimedean_board` in `minesweeper/boards/tilings.py` exactly, or
+  // `conformance.test.ts` will see a different cell count.
+  const slack = 1e-6 * Math.max(1, W, H);
   const cells = new Map<CellId, string[]>();
   const positions = new Map<string, Vertex>();
   for (const [cell, g] of grown) {
     if (
-      Math.abs(g.centroid[0] - cx0) <= halfW + 1e-9 &&
-      Math.abs(g.centroid[1] - cy0) <= halfH + 1e-9
+      Math.abs(g.centroid[0] - cx0) <= halfW + slack &&
+      Math.abs(g.centroid[1] - cy0) <= halfH + slack
     ) {
       const keys = g.verts.map((v) => {
         const ks = `${v.m},${v.n},${v.tag}`;

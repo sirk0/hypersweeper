@@ -333,8 +333,14 @@ class TestPolygonShapes:
     # grid along a diagonal instead (what these boards used to do) adds a
     # sqrt(2) edge on top of that stretch: medians 1.80 (donut), 2.20
     # (Möbius) and 1.89 (Klein bottle), well above these limits.
+    # The Mobius strip's limit is deliberately the loosest of the four. A band
+    # whose triangles stay near-equilateral has to be about 80 cells around and
+    # 6 across, which reads as a hoop rather than a board; the half twist means
+    # any *wider* strip is stretched by the immersion however the window is
+    # chosen. Board shape was judged worth more than tile shape here, so the
+    # strip is squarer and its triangles are correspondingly less regular.
     _EDGE_RATIO_LIMITS = {"cyltri": 1.15, "torustri": 1.4,
-                          "mobiustri": 1.25, "kleintri": 1.7}
+                          "mobiustri": 1.8, "kleintri": 1.7}
 
     @pytest.mark.parametrize("mode", sorted(_EDGE_RATIO_LIMITS))
     @pytest.mark.parametrize("difficulty", DIFFICULTIES)
@@ -1569,15 +1575,21 @@ class TestArchimedean:
             # on a 3-fold centre instead, which a rectangle cannot preserve
             # either. Nothing to assert beyond the shared invariants.
             return
-        # a rectangular window on a hexagonal tiling can leave a few edge
-        # tiles unpaired, so the bar is well clear of a ragged disc (which
-        # scores ~0.3) rather than a perfect 1.0
+        # Exactly, not approximately. `archimedean_board` cuts its window on a
+        # closed interval about a rotation centre, so a row of centroids
+        # landing on the edge is kept on *both* sides and every tile has a
+        # partner. The bar used to be 0.85, and what hid under it was a
+        # tolerance bug: `_ArchTemplate.centre` is stored rounded to six
+        # decimals, the window edge missed a centroid by 5e-7, and the row was
+        # dropped at one edge and kept at the other -- a half-column offset
+        # that left a line of stray tiles down one side of nine tilings and
+        # still scored 0.94. Nothing here may be approximately symmetric.
         rotation = self._symmetry(board, lambda cx, cy, x, y: (2 * cx - x, 2 * cy - y))
-        assert rotation >= 0.85
+        assert rotation == 1.0
         if mode in self.REFLECTIVE:
             lr = self._symmetry(board, lambda cx, cy, x, y: (2 * cx - x, y))
             tb = self._symmetry(board, lambda cx, cy, x, y: (x, 2 * cy - y))
-            assert max(lr, tb) >= 0.9
+            assert max(lr, tb) == 1.0
 
     def test_snub_dodecahedron_is_12_pentagons_80_triangles(self):
         board = snub_dodecahedron_board(10)
@@ -2132,108 +2144,100 @@ class TestWrappedArchimedean:
 
     def test_cell_counts(self):
         counts = {
-            "toruselongated": (72, 168, 240),
-            "torussnubsquare": (60, 126, 240),
-            "torustrihex": (96, 120, 216),
-            "torussnubhex": (72, 108, 252),
-            "torustruncsquare": (72, 144, 224),
-            "torustrunchex": (84, 120, 216),
-            "cylelongated": (70, 156, 285),
-            "cylsnubsquare": (60, 126, 270),
-            "cyltrihex": (72, 162, 264),
-            "cylsnubhex": (72, 180, 252),
-            "cyltruncsquare": (54, 120, 224),
-            "cyltrunchex": (72, 144, 240),
-            "mobiuselongated": (72, 144, 216),
-            "mobiussnubsquare": (78, 135, 204),
-            "mobiustrihex": (72, 144, 216),
-            "mobiustruncsquare": (72, 128, 220),
-            "mobiustrunchex": (54, 120, 216),
-            "torusrhombitrihex": (120, 168, 288),
-            "torustrunctrihex": (120, 168, 288),
-            "cylrhombitrihex": (96, 180, 252),
-            "cyltrunctrihex": (96, 180, 252),
-            "mobiusrhombitrihex": (96, 144, 288),
-            "mobiustrunctrihex": (96, 144, 288),
-            # Laves (dual) tilings
-            "torusprismaticpent": (48, 112, 160),
-            "cylprismaticpent": (40, 96, 180),
-            "mobiusprismaticpent": (48, 96, 144),
-            "toruscairo": (40, 84, 160),
-            "cylcairo": (40, 84, 180),
-            "mobiuscairo": (52, 90, 136),
-            "torusrhombille": (96, 120, 216),
-            "cylrhombille": (72, 162, 264),
-            "mobiusrhombille": (72, 144, 216),
-            "torusfloret": (48, 72, 168),
-            "cylfloret": (48, 120, 168),
-            "torustetrakis": (144, 288, 448),
-            "cyltetrakis": (108, 240, 448),
-            "mobiustetrakis": (144, 256, 440),
-            "torustriakis": (168, 240, 432),
-            "cyltriakis": (144, 288, 480),
-            "mobiustriakis": (108, 240, 432),
-            "torusdeltoidal": (120, 168, 288),
-            "cyldeltoidal": (96, 180, 252),
-            "mobiusdeltoidal": (96, 144, 288),
-            "toruskisrhombille": (240, 336, 576),
-            "cylkisrhombille": (192, 360, 504),
-            "mobiuskisrhombille": (192, 288, 576),
-            # Klein bottle: closed like the torus, glued with a flip. Chiral
-            # snub hexagonal / floret pentagonal are excluded (no mirror).
-            "kleinelongated": (72, 168, 240),
-            "kleinsnubsquare": (30, 63, 108),
-            "kleintrihex": (96, 120, 216),
-            "kleintruncsquare": (72, 144, 224),
-            "kleintrunchex": (84, 120, 216),
-            "kleinrhombitrihex": (120, 168, 288),
-            "kleintrunctrihex": (120, 168, 288),
-            "kleinprismaticpent": (48, 112, 160),
-            "kleincairo": (20, 42, 72),
-            "kleinrhombille": (96, 120, 216),
-            "kleintetrakis": (144, 288, 448),
-            "kleintriakis": (168, 240, 432),
-            "kleindeltoidal": (120, 168, 288),
-            "kleinkisrhombille": (240, 336, 576),
-            # Isogonal (non-edge-to-edge) tilings: torus/cylinder for all
-            # six, Mobius/Klein only for the two with a template mirror
-            # (offset square, staggered triangular).
-            "torusoffsetsquare": (100, 200, 352),
-            "cyloffsetsquare": (98, 200, 350),
-            "mobiusoffsetsquare": (100, 200, 350),
-            "kleinoffsetsquare": (100, 200, 350),
-            "torusstaggeredtri": (96, 200, 352),
-            "cylstaggeredtri": (100, 192, 352),
-            "mobiusstaggeredtri": (100, 200, 350),
-            "kleinstaggeredtri": (100, 200, 350),
-            "toruspythagorean": (100, 200, 350),
-            "cylpythagorean": (100, 210, 350),
-            "torusrotatedhex": (96, 198, 360),
-            "cylrotatedhex": (105, 198, 351),
-            "torusrotatedtri": (96, 198, 360),
-            "cylrotatedtri": (98, 200, 364),
-            "torusthreescaletri": (96, 198, 360),
-            "cylthreescaletri": (105, 198, 351),
-            # Congruent-rectangle bonds: torus/cylinder for all five,
-            # Mobius/Klein for all but herringbone (glide-only, no mirror).
-            "torusstackedbond": (100, 200, 350),
-            "cylstackedbond": (100, 196, 352),
-            "mobiusstackedbond": (100, 200, 350),
-            "kleinstackedbond": (100, 200, 350),
-            "torusrunningbond": (100, 200, 352),
-            "cylrunningbond": (100, 195, 352),
-            "mobiusrunningbond": (100, 200, 350),
-            "kleinrunningbond": (100, 200, 350),
-            "torusbasketweave": (96, 200, 352),
-            "cylbasketweave": (100, 196, 352),
-            "mobiusbasketweave": (100, 200, 352),
-            "kleinbasketweave": (100, 200, 352),
-            "torusbasketweave3": (96, 192, 360),
-            "cylbasketweave3": (96, 210, 336),
-            "mobiusbasketweave3": (102, 198, 342),
-            "kleinbasketweave3": (108, 198, 342),
-            "torusherringbone": (96, 200, 352),
-            "cylherringbone": (100, 196, 352),
+            "toruselongated": (84, 270, 486),
+            "torussnubsquare": (84, 264, 480),
+            "torustrihex": (84, 270, 480),
+            "torussnubhex": (90, 252, 432),
+            "torustruncsquare": (80, 252, 480),
+            "torustrunchex": (84, 252, 480),
+            "cylelongated": (84, 247, 425),
+            "cylsnubsquare": (72, 288, 504),
+            "cyltrihex": (72, 288, 504),
+            "cylsnubhex": (90, 234, 432),
+            "cyltruncsquare": (72, 264, 512),
+            "cyltrunchex": (72, 288, 504),
+            "mobiuselongated": (72, 228, 468),
+            "mobiussnubsquare": (78, 228, 486),
+            "mobiustrihex": (72, 288, 480),
+            "mobiustruncsquare": (72, 260, 480),
+            "mobiustrunchex": (72, 288, 480),
+            "torusrhombitrihex": (84, 264, 468),
+            "torustrunctrihex": (72, 264, 468),
+            "cylrhombitrihex": (84, 288, 432),
+            "cyltrunctrihex": (84, 288, 432),
+            "mobiusrhombitrihex": (84, 288, 432),
+            "mobiustrunctrihex": (84, 288, 432),
+            "torusprismaticpent": (80, 252, 480),
+            "cylprismaticpent": (72, 256, 552),
+            "mobiusprismaticpent": (72, 224, 528),
+            "toruscairo": (84, 256, 480),
+            "cylcairo": (96, 288, 528),
+            "mobiuscairo": (76, 230, 462),
+            "torusrhombille": (84, 252, 480),
+            "cylrhombille": (72, 288, 504),
+            "mobiusrhombille": (72, 252, 510),
+            "torusfloret": (84, 264, 468),
+            "cylfloret": (84, 288, 432),
+            "torustetrakis": (84, 256, 448),
+            "cyltetrakis": (96, 288, 528),
+            "mobiustetrakis": (96, 288, 480),
+            "torustriakis": (72, 264, 504),
+            "cyltriakis": (84, 288, 432),
+            "mobiustriakis": (72, 288, 468),
+            "torusdeltoidal": (84, 264, 468),
+            "cyldeltoidal": (84, 288, 432),
+            "mobiusdeltoidal": (84, 288, 432),
+            "toruskisrhombille": (72, 288, 480),
+            "cylkisrhombille": (72, 288, 408),
+            "mobiuskisrhombille": (72, 288, 408),
+            "kleinelongated": (78, 264, 486),
+            "kleinsnubsquare": (81, 252, 486),
+            "kleintrihex": (84, 252, 480),
+            "kleintruncsquare": (80, 256, 480),
+            "kleintrunchex": (84, 252, 480),
+            "kleinrhombitrihex": (84, 264, 468),
+            "kleintrunctrihex": (84, 264, 468),
+            "kleinprismaticpent": (76, 252, 480),
+            "kleincairo": (78, 250, 490),
+            "kleinrhombille": (84, 264, 480),
+            "kleintetrakis": (84, 252, 480),
+            "kleintriakis": (72, 264, 480),
+            "kleindeltoidal": (72, 240, 468),
+            "kleinkisrhombille": (72, 288, 480),
+            "torusoffsetsquare": (80, 252, 476),
+            "cyloffsetsquare": (84, 256, 484),
+            "mobiusoffsetsquare": (78, 266, 468),
+            "kleinoffsetsquare": (78, 260, 476),
+            "torusstaggeredtri": (84, 240, 484),
+            "cylstaggeredtri": (72, 288, 476),
+            "mobiusstaggeredtri": (78, 250, 490),
+            "kleinstaggeredtri": (84, 270, 496),
+            "toruspythagorean": (80, 270, 480),
+            "cylpythagorean": (75, 225, 480),
+            "torusrotatedhex": (84, 252, 480),
+            "cylrotatedhex": (108, 288, 468),
+            "torusrotatedtri": (84, 252, 480),
+            "cylrotatedtri": (96, 240, 456),
+            "torusthreescaletri": (84, 252, 480),
+            "cylthreescaletri": (108, 288, 468),
+            "torusstackedbond": (84, 253, 480),
+            "cylstackedbond": (84, 276, 465),
+            "mobiusstackedbond": (91, 270, 460),
+            "kleinstackedbond": (80, 253, 480),
+            "torusrunningbond": (80, 252, 476),
+            "cylrunningbond": (72, 276, 512),
+            "mobiusrunningbond": (72, 238, 460),
+            "kleinrunningbond": (78, 260, 476),
+            "torusbasketweave": (80, 256, 480),
+            "cylbasketweave": (80, 240, 528),
+            "mobiusbasketweave": (104, 228, 460),
+            "kleinbasketweave": (88, 272, 460),
+            "torusbasketweave3": (72, 252, 480),
+            "cylbasketweave3": (84, 234, 432),
+            "mobiusbasketweave3": (78, 270, 456),
+            "kleinbasketweave3": (78, 270, 456),
+            "torusherringbone": (80, 256, 480),
+            "cylherringbone": (80, 240, 528),
         }
         assert sorted(counts) == sorted(self.WRAPPED)
         for mode, expected in counts.items():
