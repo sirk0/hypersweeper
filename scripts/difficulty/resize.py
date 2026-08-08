@@ -40,6 +40,8 @@ from scripts.difficulty.metrics import (
 ROOT = Path(__file__).resolve().parent.parent.parent
 TARGETS = {"easy": 81, "medium": 256, "hard": 480}
 BAND = 0.15
+# the wider bar `tests/test_presets.py` fails on outright; see `collect`
+OUTER_BAND = 0.25
 # how hard to push shape against size; a window 10% off target is worth about
 # as much as one 10% more distorted
 SHAPE_WEIGHT = 1.0
@@ -78,10 +80,11 @@ SPEC: dict[str, dict] = {
     "rhombicosidodecahedron_board": dict(size=(), mine=0, shape=None),
     "truncated_icosidodecahedron_board": dict(size=(), mine=0, shape=None),
     "cube_board": dict(size=(0,), mine=1, shape=None),
-    "cube_frame_board": dict(size=(0,), mine=2, shape=None, hold=(1,)),
+    "cube_frame_board": dict(size=(0, 1), mine=2, shape=None, grid="cubeframe"),
     "tetrahedron_board": dict(size=(1,), mine=0, shape=None),
     "tetrahedron_frame_board": dict(size=(1,), mine=0, shape=None),
-    "stepped_bipyramid_board": dict(size=(0, 1), mine=2, shape=None),
+    "stepped_bipyramid_board": dict(size=(0, 1), mine=2, shape=None,
+                                    grid="bipyramid"),
     # aperiodic: ``keep`` is exact, the growth arg only has to be generous
     "penrose_board": dict(size=(3,), mine=1, shape=2, kind="scale", grow=0),
     "spectre_board": dict(size=(2,), mine=1, shape=3, kind="scale", grow=0),
@@ -98,6 +101,41 @@ SPEC: dict[str, dict] = {
     "arch_mobius_board": dict(size=(1, 2), mine=3, shape=None, lead=1),
     "arch_klein_board": dict(size=(1, 2), mine=3, shape=4, kind="tubescale", lead=1),
 }
+
+# Two solids whose two knobs are not independent: taken as a free grid they
+# offer degenerate shapes at the right cell count -- a cube frame bored out to
+# a one-cube hollow, which reads as a solid cube with a pinhole, and a stepped
+# bipyramid two levels tall, which is a slab rather than a diamond. So their
+# candidates are enumerated rather than swept.
+#
+#   * ``cube_frame_board(n, thickness)``: the hollow is ``n - 2*thickness``, and
+#     it has to stay a real hollow -- a third of the cube, so the twelve edge
+#     bars still read as bars.
+#   * ``stepped_bipyramid_board(base, levels)``: the terraces must run all the
+#     way to a single cube top and bottom, which is ``levels = (base + 1) / 2``
+#     on an odd base.
+def _grid_cubeframe() -> list[list[int]]:
+    return [
+        [n, thickness]
+        for n in range(3, 17)
+        for thickness in range(1, n // 2 + 1)
+        if 2 * thickness < n and n - 2 * thickness >= math.ceil(n / 3)
+    ]
+
+
+def _grid_bipyramid() -> list[list[int]]:
+    return [[base, (base + 1) // 2] for base in range(3, 24, 2)]
+
+
+GRIDS = {"cubeframe": _grid_cubeframe, "bipyramid": _grid_bipyramid}
+
+# Fractal levels a difficulty may not use, and why. ``resize`` scores a coarse
+# board on cell count alone, but the level below the one named here cannot be
+# *played* at the difficulty: measured, the level-2 pentaflake is 36 cells, and
+# the fewest mines that stop its opening click clearing the board outright
+# already drag its win rate to 83% against an easy target of 96.5%. The
+# level-3 patch calibrates cleanly at 10 mines. See `calibrate.opening_floor`.
+COARSE_MIN_LEVEL = {("pentaflake", "easy"): 3}
 
 # The donut builders take a tube *radius* (a fraction of the ring radius); the
 # Klein builders take a tube *scale* around 1.0. Same role -- the surface's own
@@ -119,7 +157,10 @@ SHAPE_BAR_FLOOR = 1.15
 MOBIUS_SHAPE_BAR = 1.8
 # A tube or strip needs enough segments around to read as one: pushing for a
 # square window alone will happily return a Mobius band 5 cells around and 15
-# across, which is a twisted lozenge rather than a loop.
+# across, which is a twisted lozenge rather than a loop. Counted in *cells*
+# around the seam, not in domain copies -- a triakis domain is two tiles wide
+# and twelve cells big, so a ring of twelve domains is a 288-cell board and the
+# bar in domain units rejects every easy window there is (see `_ring_cells`).
 MIN_RING = 12
 ROLLED_ASPECT_WEIGHT = 1.2
 
@@ -307,6 +348,52 @@ def _window_aspect(builder: str, spec: dict, trial: list) -> float:
     return max(ratio, 1 / ratio)
 
 
+_TILE_WIDTH: dict[str, float] = {}
+
+
+def _tile_width(tiling: str) -> float:
+    """Median tile width in one domain of an Archimedean template.
+
+    The seam knob counts *domain copies*, and a domain is anything from one
+    tile wide (the stacked bond) to nearly four (truncated hexagonal). Dividing
+    the ring's length by this turns the knob into the number of tiles the loop
+    actually closes over, which is what ``MIN_RING`` means.
+    """
+    if tiling not in _TILE_WIDTH:
+        import statistics
+
+        from minesweeper.boards.tilings import _arch_template
+
+        template = _arch_template(tiling)
+        widths = []
+        for _name, refs in template.cells:
+            xs = [template.verts[tag][0] + dm * template.width
+                  for tag, dm, _dn in refs]
+            widths.append(max(xs) - min(xs))
+        _TILE_WIDTH[tiling] = statistics.median(widths) or 1.0
+    return _TILE_WIDTH[tiling]
+
+
+def _ring_cells(builder: str, spec: dict, trial: list) -> float:
+    """How many tiles the seam closes over, for the ``MIN_RING`` bar.
+
+    The plain surface builders take the count in cells already; the
+    Archimedean ones take it in domain copies, so it is converted.
+    """
+    ring = trial[spec["size"][0]]
+    if not spec.get("lead"):
+        return float(ring)
+    try:
+        from minesweeper.boards.tilings import _arch_template
+
+        template = _arch_template(trial[0])
+    except Exception:
+        return float(ring)
+    # the slack absorbs the float division: a ring of exactly MIN_RING tiles
+    # must not fail the bar because the width divides to 11.9999996
+    return ring * template.width / _tile_width(trial[0]) + 1e-6
+
+
 def edge_ratio(board) -> float:
     """Median longest-to-shortest edge over the board's tiles.
 
@@ -378,9 +465,12 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
     best = None
     if grow is not None:
         # aperiodic: keep exactly the target, growing the patch until the kept
-        # block is a small fraction of it (or the substitution's own star
-        # outline is what the board reads as)
-        for growth in range(2, 8):
+        # block is a small fraction of it -- or the substitution's own outline
+        # is what the board reads as, which on the phyllotactic spiral is a
+        # ten-pointed star. The range has to run well past the growth a small
+        # board needs: the spiral's patch is 10*rings**2, so a 480-cell board
+        # only stops being a star at twelve rings.
+        for growth in range(2, 26):
             trial = list(args)
             trial[grow] = growth
             trial[knobs[0]] = target
@@ -396,7 +486,7 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
                 patch = len(_build(builder, full).adjacency)
             except Exception:
                 patch = len(board.adjacency)
-            if patch < 3 * target and growth < 7:
+            if patch < 3 * target and growth < 25:
                 continue
             trial = _rescale(builder, spec, trial, probe)
             board = _build(builder, trial)
@@ -412,14 +502,20 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
         return best
 
     grids: list[list] = []
+    wider: list[list] = []
     domains = bool(spec.get("lead"))
-    if len(knobs) == 1:
+    if spec.get("grid"):
+        grids = GRIDS[spec["grid"]]()
+    elif len(knobs) == 1:
         # One knob, and cell count rises with it -- often quadratically
         # (``cube_board`` is 6n**2, ``hexhex_board`` 3r**2-3r+1). Walk upwards
         # and stop as soon as the board overshoots, or a range wide enough for
         # the two-knob builders would ask for a 150,000-cell cube.
+        floor = COARSE_MIN_LEVEL.get((mode, difficulty), 0) if coarse else 0
         grids = []
         for value in _candidate_values(args[knobs[0]], coarse, domains):
+            if value < floor:
+                continue
             trial = list(args)
             trial[knobs[0]] = value
             try:
@@ -443,9 +539,19 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
         # so the kept range is wider than the band itself.
         per = len(probe.adjacency) / max(1e-9, args[knobs[0]] * args[knobs[1]])
         want = target / per
-        grids = [g for g in grids if 0.7 * want <= g[0] * g[1] <= 1.35 * want]
-        grids.sort(key=lambda g: abs(math.log(g[0] * g[1] / max(1e-9, want))))
-        grids = grids[:CANDIDATE_LIMIT]
+        near = sorted(grids, key=lambda g: abs(math.log(g[0] * g[1]
+                                                        / max(1e-9, want))))
+        grids = [g for g in near
+                 if 0.7 * want <= g[0] * g[1] <= 1.35 * want][:CANDIDATE_LIMIT]
+        # ...and a wider net for the fallback passes. A tiling with a big
+        # domain can have no window at all near the target that also reads as
+        # the surface: kisrhombille packs 24 cells into a domain two tiles
+        # wide, so the smallest Mobius strip of it with enough segments to
+        # close as a band is 144 cells against an easy target of 81. A board
+        # half again too big beats a twisted lozenge, but only the wide net
+        # can see it.
+        wider = [g for g in near
+                 if 0.25 * want <= g[0] * g[1] <= 4.0 * want][:CANDIDATE_LIMIT]
 
     lo, hi = target * (1 - BAND), target * (1 + BAND)
     # Prefer not to hand back cells worse-shaped than the ones already
@@ -465,9 +571,10 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
         # term pick a squarer strip.
         shape_bar = max(shape_bar, MOBIUS_SHAPE_BAR)
 
-    def collect(in_band: bool, keep_shape: bool, fair: bool = True) -> list:
+    def collect(in_band: bool, keep_shape: bool, fair: bool = True,
+                net: list | None = None) -> list:
         found = []
-        for values in grids:
+        for values in (grids if net is None else net):
             trial = list(args)
             for knob, value in zip(knobs, values):
                 trial[knob] = value
@@ -488,7 +595,11 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
             # the distortion term on the curved surfaces that do not need it.
             if _window_aspect(builder, spec, trial) > MAX_WINDOW_ASPECT:
                 continue
-            if _rolled_flat(builder) and len(knobs) == 2 and trial[knobs[0]] < MIN_RING:
+            if (
+                _rolled_flat(builder)
+                and len(knobs) == 2
+                and _ring_cells(builder, spec, trial) < MIN_RING
+            ):
                 continue
             if keep_shape and not is_flat and edge_ratio(board) > shape_bar:
                 continue
@@ -500,7 +611,20 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
             # already all twins, a relative bar permits itself.
             if fair and indistinguishable_cells(board.adjacency) > 0:
                 continue
-            penalty = 0.0 if in_band else 10.0
+            # Two tiers, because the size bands are two bars rather than one:
+            # missing +-15% is what the search is trying not to do, and missing
+            # +-25% as well is what `test_no_board_is_far_from_the_classic_size`
+            # refuses outright. Without the second tier a size score of pure
+            # |log| picks 326 cells over 198 against a 256 target -- a hair
+            # closer in log terms, and the only one of the two the suite fails.
+            # Out of the band, size stops being one term among several and
+            # becomes the thing to minimise: the shape terms are tuned to
+            # choose between windows that are all about the right size, and
+            # left to compete on their own they will take a 288-cell cylinder
+            # over a 144-cell one against a target of 81 for a better aspect.
+            penalty = 0.0 if in_band else 10.0 + 2.0 * abs(math.log(n / target))
+            if not (target * (1 - OUTER_BAND) <= n <= target * (1 + OUTER_BAND)):
+                penalty += 1.0
             found.append((
                 _score(mode, board, target, is_flat, builder, spec, trial) + penalty,
                 trial, n,
@@ -516,10 +640,13 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
         or collect(in_band=True, keep_shape=False)
         or collect(in_band=False, keep_shape=True)
         or collect(in_band=False, keep_shape=False)
+        or collect(in_band=False, keep_shape=True, net=wider)
+        or collect(in_band=False, keep_shape=False, net=wider)
         # last resort only: a board of indistinguishable twins is barely a
         # puzzle, so it is preferred to nothing at all and to nothing else
         or collect(in_band=True, keep_shape=False, fair=False)
         or collect(in_band=False, keep_shape=False, fair=False)
+        or collect(in_band=False, keep_shape=False, fair=False, net=wider)
     )
     if not scored:
         return dict(args=list(args), cells=len(probe.adjacency), fixed=True,

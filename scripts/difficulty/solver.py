@@ -532,6 +532,55 @@ def win_rate(
     return (wins / played if played else 0.0), abandoned, played
 
 
+def opening_win_rate(
+    neighbors: Sequence[Sequence[int]],
+    mine_count: int,
+    games: int,
+    seed: int,
+) -> float:
+    """How often the opening click alone finishes the board.
+
+    A board can hit its target win rate and still not be a game: with the
+    zero-opening first click, a board sparse enough for its flood to reach
+    every safe cell is *won* by clicking once. That is the failure mode a mine
+    count must not have, and it is a property of the board rather than of a
+    density -- a 36-cell pentaflake at 8% is cleared outright 8 times in a
+    hundred, while a 216-cell one at 5% never is.
+
+    No solver: the opening reveal is the whole game here, so this is a flood
+    fill, thousands of times cheaper than ``win_rate`` and cheap enough to
+    check every row against.
+    """
+    n = len(neighbors)
+    rng = random.Random(seed)
+    goal = n - mine_count
+    wins = 0
+    for _ in range(games):
+        start = rng.randrange(n)
+        forbidden = {start, *neighbors[start]}
+        pool = [i for i in range(n) if i not in forbidden]
+        if len(pool) < mine_count:
+            pool = [i for i in range(n) if i != start]
+        mines = set(rng.sample(pool, mine_count))
+        numbers = [sum(1 for j in neighbors[i] if j in mines) for i in range(n)]
+        seen = bytearray(n)
+        seen[start] = 1
+        count = 1
+        stack = [start]
+        while stack:
+            c = stack.pop()
+            if numbers[c]:
+                continue
+            for j in neighbors[c]:
+                if not seen[j]:
+                    seen[j] = 1
+                    count += 1
+                    stack.append(j)
+        if count >= goal:
+            wins += 1
+    return wins / games
+
+
 def mean_degree(adjacency: dict[object, Iterable[object]]) -> float:
     """Average neighbour count -- the axis the old flat densities ignored."""
     return sum(len(tuple(v)) for v in adjacency.values()) / len(adjacency)

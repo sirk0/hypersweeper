@@ -21,6 +21,7 @@ from scripts.difficulty.solver import (
     BudgetExceeded,
     _component_counts,
     frontier_probabilities,
+    opening_win_rate,
     play,
     to_neighbor_lists,
 )
@@ -178,3 +179,49 @@ class TestPlay:
         neighbors = to_neighbor_lists(board.adjacency)
         for seed in range(20):
             assert play(neighbors, 1, random.Random(seed)).won
+
+
+class TestOpeningWinRate:
+    """The floor under every calibrated mine count (``calibrate.opening_floor``).
+
+    It answers one question -- how often the opening click alone finishes the
+    board -- and the whole point of measuring it rather than assuming a density
+    is that it depends on the board, so these pin the two ends of that.
+    """
+
+    def test_a_board_with_one_mine_is_often_a_walkover(self):
+        # 36 cells and a single mine: the flood reveals the mine's neighbours
+        # without expanding through them, so the whole board opens at a stroke
+        # unless the mine sits where one of those neighbours has no other way
+        # in -- against an edge, which is about half of the places it can land.
+        board = square_board(6, 6, 1)
+        neighbors = to_neighbor_lists(board.adjacency)
+        assert opening_win_rate(neighbors, 1, 400, 1) > 0.3
+
+    def test_the_classic_board_is_never_won_by_its_opening(self):
+        board = square_board(9, 9, 10)
+        neighbors = to_neighbor_lists(board.adjacency)
+        assert opening_win_rate(neighbors, 10, 400, 1) == 0.0
+
+    def test_it_falls_as_mines_are_added(self):
+        board = square_board(8, 8, 1)
+        neighbors = to_neighbor_lists(board.adjacency)
+        rates = [opening_win_rate(neighbors, m, 300, 7) for m in (1, 2, 3, 4)]
+        assert rates == sorted(rates, reverse=True)
+        assert rates[0] > rates[-1]
+
+    def test_it_agrees_with_the_games_own_flood(self):
+        """A win here must be a win in ``Game``: same rule, same fallback."""
+        board = square_board(5, 5, 1)
+        cells = list(board.adjacency)
+        neighbors = to_neighbor_lists(board.adjacency)
+        rate = opening_win_rate(neighbors, 3, 300, 5)
+        rng = random.Random(5)
+        wins = 0
+        for _ in range(300):
+            game = Game(board.adjacency, 3, rng=random.Random(rng.randrange(1 << 30)))
+            game.reveal(rng.choice(cells))
+            wins += game.state is not CellState and game.state.name == "WON"
+        # two independent samples of the same quantity, so they agree to within
+        # sampling noise rather than exactly
+        assert abs(wins / 300 - rate) < 0.1

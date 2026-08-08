@@ -84,6 +84,17 @@ def main() -> int:
         "flat 14/16/19 per cent could not express.\n"
     )
 
+    floors = sorted(r["openingFloor"] / r["cells"] for r in rows
+                    if "openingFloor" in r)
+    if floors:
+        out.append(
+            "The only floor under the search is the **opening**: the fewest "
+            "mines at which the first click alone stops finishing the board "
+            f"(`calibrate.opening_floor`). As a density that runs "
+            f"{floors[0]:.1%} to {floors[-1]:.1%} across the zoo — which is "
+            "why it is measured per board rather than set as a percentage.\n"
+        )
+
     out.append("## Every board\n")
     out.append("| mode | deg | easy | medium | hard |")
     out.append("| --- | --- | --- | --- | --- |")

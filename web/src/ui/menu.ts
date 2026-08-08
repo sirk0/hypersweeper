@@ -13,6 +13,7 @@ import {
   menuTilingRows,
   threeDMenuModes,
 } from "../boards/catalog";
+import { pickWeighted, unfairHint } from "../boards/fairness";
 import { hasMode } from "../boards/presets";
 import { clearBestTimes } from "../leaderboard";
 import { renderBestTimes } from "./bestTimes";
@@ -653,7 +654,20 @@ export class Menu {
     const btn = document.createElement("button");
     btn.className = "menu-entry";
     btn.dataset.mode = mode;
-    btn.append(iconEl(icon), textBlock(label));
+    // A board whose tiling forces coin flips is marked here rather than left
+    // to feel like bad luck at the table. The mark goes on the row because the
+    // difficulty pills are at the foot of the page: by the time one is chosen
+    // the board is already picked.
+    const hint = unfairHint(mode);
+    btn.append(iconEl(icon), textBlock(label, hint));
+    if (hint !== undefined) {
+      btn.dataset.unfair = "1";
+      const warn = document.createElement("span");
+      warn.className = "menu-entry-warning";
+      warn.textContent = "⚠";
+      warn.setAttribute("aria-label", hint);
+      btn.append(warn);
+    }
     btn.addEventListener("click", () =>
       this.onSelect({ mode, difficulty: this.settings.difficulty }),
     );
@@ -692,7 +706,11 @@ export class Menu {
     btn.dataset.random = key;
     btn.append(iconEl(icon), textBlock(label, hint));
     btn.addEventListener("click", () => {
-      const mode = pool[Math.floor(Math.random() * pool.length)];
+      // Weighted, not uniform: the boards whose tiling forces guesses are
+      // still in the pool -- they are real boards and some players like them
+      // -- but a tap meant to produce a nice surprise should not land on one
+      // as often as on a board that can actually be solved.
+      const mode = pickWeighted(pool);
       if (mode) this.onSelect({ mode, difficulty: this.settings.difficulty });
     });
     li.append(btn);

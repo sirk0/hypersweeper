@@ -31,6 +31,9 @@ from pathlib import Path
 
 from minesweeper.boards import presets as P
 from scripts.difficulty.metrics import indistinguishable_cells, mean_degree
+from scripts.difficulty.solver import (
+    opening_win_rate as solver_opening,
+)
 from scripts.difficulty.solver import to_neighbor_lists, win_rate
 
 HERE = Path(__file__).resolve().parent
@@ -52,7 +55,7 @@ FINAL_SECONDS = 10.0
 # And a ceiling on the whole row, so termination never depends on the search
 # converging. A row that runs out stops with the best mine count it has found
 # and says so, which is a far better outcome than one board holding the sweep.
-ROW_SECONDS = 45.0
+ROW_SECONDS = 60.0
 
 # How close to the target a win rate must land to count as calibrated.
 #
@@ -64,21 +67,26 @@ ROW_SECONDS = 45.0
 # could tell apart, which is the thing the number is for.
 TOLERANCE = 0.04
 
-# The density floor, and the one place win-rate parity is deliberately given
-# up.
+# The floor, and the one place win-rate parity is deliberately given up.
 #
 # Some tilings force coin flips in the endgame no matter how well you play --
 # rhombille finishes with four hidden cells holding two mines, each at exactly
 # 0.5, and nothing on the board can separate them. Matching classic easy's
-# 96.5% on such a board needs about 3% density, and a board that sparse is one
+# 96.5% on such a board needs very few mines, and a board that sparse is one
 # the opening click clears outright: measured, `torusrhombille` easy was won on
 # the first click 61% of the time and `pentaflake` easy 59%.
 #
-# So below this floor the answer stops being a game, and the floor wins. A
-# board that cannot reach its target at the floor keeps the floor, is recorded
-# `fair: false` with the rate it actually lands at, and the front-end warns
-# about it rather than pretending it is an easy board.
-MIN_DENSITY = 0.10
+# The floor is therefore *that* -- how often the opening click alone finishes
+# the board -- and not a density. A flat percentage cannot express it: a
+# 36-cell pentaflake at 8% is cleared outright 8 times in a hundred while a
+# 216-cell one at 5% never is, so a 10% floor both leaves the small board
+# broken and needlessly overmines the large one, which is what left 65 rows
+# recorded as unreachable when they were only over-floored. A board that
+# cannot reach its target once its opening is no longer a walkover keeps that
+# mine count, is recorded `fair: false` with the rate it actually lands at,
+# and the front-end warns about it rather than pretending it is an easy board.
+OPENING_CEILING = 0.01  # at most 1 game in 100 won by the first click alone
+OPENING_GAMES = 1500  # enough to resolve that; a flood fill, so it is cheap
 MAX_DENSITY = 0.45
 
 # A board where most cells have an identical twin cannot be calibrated at all:
@@ -120,6 +128,28 @@ def targets(jobs: int = 1) -> dict[str, float]:
             flush=True,
         )
     return out
+
+
+def opening_floor(neighbors, seed: int) -> int:
+    """The fewest mines that stop the opening click winning outright.
+
+    The rate falls monotonically in the mine count (more mines, smaller flood),
+    so this bisects. It is measured per board rather than assumed, because what
+    makes an opening a walkover is the board's size and degree together: the
+    same 8% density is a walkover on 36 cells and never one on 216.
+    """
+    n = len(neighbors)
+    hi = min(n - 1, max(1, int(MAX_DENSITY * n)))
+    if solver_opening(neighbors, 1, OPENING_GAMES, seed) <= OPENING_CEILING:
+        return 1
+    lo = 1  # known bad
+    while lo + 1 < hi:
+        mid = (lo + hi) // 2
+        if solver_opening(neighbors, mid, OPENING_GAMES, seed) <= OPENING_CEILING:
+            hi = mid
+        else:
+            lo = mid
+    return hi
 
 
 def calibrate_row(args: tuple) -> dict:
@@ -173,7 +203,15 @@ def calibrate_row(args: tuple) -> dict:
         )
         return row
 
-    row_deadline = started + ROW_SECONDS
+    # 1. bracket the crossing, above the opening floor.
+    #
+    # The floor is a flood fill rather than a solver run, but on a 500-cell
+    # board its bisect still costs a few seconds, so the row's own budget only
+    # starts once it is known -- charging it to the search would starve exactly
+    # the biggest boards.
+    lo, hi = opening_floor(neighbors, seed), min(n - 1, int(MAX_DENSITY * n))
+    row["openingFloor"] = lo
+    row_deadline = time.time() + ROW_SECONDS
 
     def out_of_time() -> bool:
         return time.time() > row_deadline
@@ -188,9 +226,6 @@ def calibrate_row(args: tuple) -> dict:
         row["leastGames"] = min(row.get("leastGames", games), played)
         return value
 
-    # 1. bracket the crossing, within the density band.
-    lo, hi = max(1, int(MIN_DENSITY * n)), min(n - 1, int(MAX_DENSITY * n))
-
     # The floor is a real answer, not just a search bound: if the board is
     # already *harder* than its target with the fewest mines it may carry, no
     # number of mines will help and taking more away is what produced boards
@@ -203,10 +238,11 @@ def calibrate_row(args: tuple) -> dict:
             winRate=round(floor_rate, 4),
             calibrated=False,
             fair=False,
-            reason="the tiling forces coin flips in the endgame, so even at the "
-            f"{MIN_DENSITY:.0%} density floor the board plays harder than this "
+            reason="the tiling forces coin flips in the endgame, so even with "
+            "the fewest mines that stop the opening click clearing the board "
+            f"outright ({lo}, {lo / n:.0%}) it plays harder than this "
             "difficulty's target; fewer mines would only make it a board the "
-            "first click can clear",
+            "first click can win",
             seconds=round(time.time() - started, 1),
         )
         return row

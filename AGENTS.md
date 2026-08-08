@@ -505,6 +505,16 @@ triangular one, and a seamless torus easier than the flat board it wraps
 span 2–36% as a result: on 84 cells a hexagonal torus still wins every game
 at 8 mines where a square one is already down to 90% at 6.
 
+**The one floor is the opening, and it is measured too.** The first click
+opens a *zero*, so a board sparse enough for that flood to reach every safe
+cell is won by clicking once — a real win rate, and not a game.
+`calibrate.opening_floor` bisects for the fewest mines at which the opening
+alone finishes under 1% of games and starts the search there. Do not
+substitute a density: what makes an opening a walkover is size and degree
+together, and the flat 10% floor this replaced left a 36-cell pentaflake
+winnable on the first click 8% of the time while needlessly overmining a
+512-cell carpet by 20 mines.
+
 **Check the board is playable at all.** `metrics.indistinguishable_cells`
 counts cells sharing a closed neighbourhood with another cell: no sequence of
 numbers can ever separate those, so a mine landing alone in such a pair forces
@@ -512,7 +522,11 @@ a coin flip. A board mostly made of them cannot be calibrated to any target —
 its win rate is 0.5^mines whatever the density. The five triakis boards are
 exactly that and ship uncalibrated and flagged. If a new tiling scores above
 zero here, say so in its preset comment; above half its cells and the board is
-not a puzzle.
+not a puzzle. Every row the calibration cannot bring on target lands in the
+generated `data/difficulty.json`, which the TypeScript app reads
+(`web/src/boards/fairness.ts`) to mark the menu row and to deal the board less
+often at random — so a new unfair board needs no front-end edit, only a
+`scripts/difficulty/report.py` re-run.
 
 ## Verifying a change
 

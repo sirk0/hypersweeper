@@ -1145,11 +1145,21 @@ def archimedean_board(
             key=lambda c: (c[0] - mid_x) ** 2 + (c[1] - mid_y) ** 2,
         )
     half_w, half_h = nx * width_units / 2, ny * height_units / 2
+    # The window is closed at both ends, so a row of centroids landing exactly
+    # on it is kept on *both* sides and the patch stays symmetric about the
+    # centre. That makes the tolerance load-bearing rather than cosmetic:
+    # ``_ArchTemplate.centre`` is stored rounded to six decimals, so the window
+    # edge can miss a centroid by ~5e-7 -- far more than a 1e-9 slack -- and
+    # dropping the row at one edge while keeping the row at the other is
+    # exactly the half-column offset that leaves stray tiles down one side.
+    # Anything below a tile is safe here; centroids are never this close
+    # together.
+    slack = 1e-6 * max(1.0, width_units, height_units)
     cells = {
         cell: keys
         for cell, keys in grown.items()
-        if abs(centroid[cell][0] - cx) <= half_w + 1e-9
-        and abs(centroid[cell][1] - cy) <= half_h + 1e-9
+        if abs(centroid[cell][0] - cx) <= half_w + slack
+        and abs(centroid[cell][1] - cy) <= half_h + slack
     }
 
     return _finalize_flat(tiling, cells, position, mine_count, scale)

@@ -1575,15 +1575,21 @@ class TestArchimedean:
             # on a 3-fold centre instead, which a rectangle cannot preserve
             # either. Nothing to assert beyond the shared invariants.
             return
-        # a rectangular window on a hexagonal tiling can leave a few edge
-        # tiles unpaired, so the bar is well clear of a ragged disc (which
-        # scores ~0.3) rather than a perfect 1.0
+        # Exactly, not approximately. `archimedean_board` cuts its window on a
+        # closed interval about a rotation centre, so a row of centroids
+        # landing on the edge is kept on *both* sides and every tile has a
+        # partner. The bar used to be 0.85, and what hid under it was a
+        # tolerance bug: `_ArchTemplate.centre` is stored rounded to six
+        # decimals, the window edge missed a centroid by 5e-7, and the row was
+        # dropped at one edge and kept at the other -- a half-column offset
+        # that left a line of stray tiles down one side of nine tilings and
+        # still scored 0.94. Nothing here may be approximately symmetric.
         rotation = self._symmetry(board, lambda cx, cy, x, y: (2 * cx - x, 2 * cy - y))
-        assert rotation >= 0.85
+        assert rotation == 1.0
         if mode in self.REFLECTIVE:
             lr = self._symmetry(board, lambda cx, cy, x, y: (2 * cx - x, y))
             tb = self._symmetry(board, lambda cx, cy, x, y: (x, 2 * cy - y))
-            assert max(lr, tb) >= 0.9
+            assert max(lr, tb) == 1.0
 
     def test_snub_dodecahedron_is_12_pentagons_80_triangles(self):
         board = snub_dodecahedron_board(10)

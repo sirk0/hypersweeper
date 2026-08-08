@@ -581,6 +581,17 @@ body {
   font-size: 13px;
 }
 
+/* The mark on a board whose tiling forces guesses (fairness.ts). It sits at
+   the right edge opposite the icon, and its colour is the palette's own
+   `--danger` so it carries in every theme rather than being a hard-coded
+   amber that vanishes on the dark one. */
+.menu-entry-warning {
+  color: var(--danger);
+  font-size: 18px;
+  line-height: 1;
+  flex: none;
+}
+
 /* Submenu rows (Uniform / Dual-uniform / Aperiodic) lay the label and the ›
    chevron out on a single row, chevron pinned to the right edge. */
 .menu-entry.menu-submenu {
