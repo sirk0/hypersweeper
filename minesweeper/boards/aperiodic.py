@@ -118,8 +118,19 @@ def penrose_board(
         }
         gx = sum(c[0] for c in centroid.values()) / len(centroid)
         gy = sum(c[1] for c in centroid.values()) / len(centroid)
-        kept = sorted(cells, key=lambda cell: (
-            max(abs(centroid[cell][0] - gx), abs(centroid[cell][1] - gy)), cell))
+
+        def near(cell) -> int:
+            # Quantised, like the spiral's trim (``phyllotaxis_board``): the
+            # patch is ten-fold symmetric, so tiles come in sets at the *same*
+            # distance, and the raw float is a cosine whose last bit need not
+            # agree with the TypeScript port's. Compared exactly, a tie at the
+            # cut rank is then broken the other way there and the two builds
+            # keep different tiles -- same cell count, different edge count,
+            # which is what `conformance.test.ts` catches.
+            distance = max(abs(centroid[cell][0] - gx), abs(centroid[cell][1] - gy))
+            return math.floor(distance * 1e6 + 0.5)
+
+        kept = sorted(cells, key=lambda cell: (near(cell), cell))
         cells = {cell: cells[cell] for cell in kept[:keep]}
 
     return _finalize_flat("penrose", cells, _z_to_xy, mine_count, scale)
@@ -499,11 +510,14 @@ def spectre_board(
     if keep is not None and keep < len(rows):
         # Chebyshev distance from the patch centre, as penrose_board does:
         # it trims to a square block rather than a disc, so the board reads
-        # square and packs more tiles onto the screen.
+        # square and packs more tiles onto the screen. Quantised for the same
+        # reason as there -- a tie at the cut rank must break the same way in
+        # the TypeScript port, whose last cosine bit need not agree.
         gx = sum(r[2] for r in rows) / len(rows)
         gy = sum(r[3] for r in rows) / len(rows)
-        rows.sort(key=lambda r: (max(abs(r[2] - gx), abs(r[3] - gy)),
-                                 tuple(sorted(r[1]))))
+        rows.sort(key=lambda r: (
+            math.floor(max(abs(r[2] - gx), abs(r[3] - gy)) * 1e6 + 0.5),
+            tuple(sorted(r[1]))))
         rows = rows[:keep]
 
     cells: dict[Cell, list] = {

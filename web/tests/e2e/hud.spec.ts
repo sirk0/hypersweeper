@@ -141,8 +141,14 @@ test.describe("game header", () => {
     }
     await expect(page.locator(`.hud [data-slot="klein-scroll-back"]`)).toHaveCount(0);
 
-    // The caption names the board, and nothing overflows the phone.
-    await expect(page.locator(".board-caption-name")).toHaveText("Squares · Klein bottle");
+    // The caption names the board, and nothing overflows the phone. The
+    // square Klein bottle is one of the boards whose tiling forces guesses
+    // (data/difficulty.json), so it also carries the warning mark -- worth
+    // pinning here, since the caption is the only place a board dealt by the
+    // random launchers ever shows it.
+    await expect(page.locator(".board-caption-name")).toHaveText(
+      "Squares · Klein bottle ⚠",
+    );
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(320);
   });
 

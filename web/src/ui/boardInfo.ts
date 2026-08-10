@@ -1,4 +1,5 @@
 import { fullModeLabel } from "../boards/catalog";
+import { unfairHint } from "../boards/fairness";
 import { screens } from "../config/screens";
 import { ICONS } from "./hud";
 
@@ -80,7 +81,14 @@ export class BoardInfo {
 
   /** Name the board on screen, and show the controls it has. */
   setBoard(mode: string, hasCellCycle = false): void {
-    this.nameEl.textContent = fullModeLabel(mode);
+    // The caption is also where a flagged board gets its warning. The menu row
+    // carries one too, but the Flat and 3D entries deal a board at random and
+    // never show that row -- and this is the board where losing is not the
+    // player's fault, so it is the one that most needs saying.
+    const warning = unfairHint(mode);
+    this.nameEl.textContent =
+      warning === undefined ? fullModeLabel(mode) : `${fullModeLabel(mode)} ⚠`;
+    this.nameEl.title = warning ?? "";
     for (const btn of this.barButtons) {
       const cond = btn.dataset["visibleWhen"];
       btn.hidden = cond === "hasCellCycle" ? !hasCellCycle : false;

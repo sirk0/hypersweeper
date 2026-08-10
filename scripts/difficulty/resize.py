@@ -727,6 +727,32 @@ def _one(job: tuple) -> tuple:
     return mode, difficulty, before, search(mode, builder, args, difficulty)
 
 
+def _share_reused_scales(out: dict[str, dict]) -> None:
+    """Draw two difficulties of the same patch at the same size.
+
+    A row is searched on its own, and ``_rescale`` keeps each board the width
+    it already had -- right while every difficulty is a different board, wrong
+    for the fractals, where two difficulties can be the *same* patch differing
+    only in mine count. Left alone, the pentaflake's easy board inherits the
+    width of the level-2 patch it replaced and is drawn at 60% of its own
+    medium, which are the same 216 cells. Hardest wins: it is the row whose
+    width the level was tuned at.
+    """
+    for spec in out.values():
+        builder = spec["builder"]
+        knobs = SPEC[builder]
+        if not knobs.get("coarse") or knobs.get("shape") is None:
+            continue
+        shape, level = knobs["shape"], knobs["size"][0]
+        rows = [spec["args"].get(d) for d in ("hard", "medium", "easy")]
+        scale: dict[int, float] = {}
+        for row in rows:
+            if row is None or len(row["args"]) <= shape:
+                continue
+            scale.setdefault(row["args"][level], row["args"][shape])
+            row["args"][shape] = scale[row["args"][level]]
+
+
 def main() -> int:
     import argparse
     import multiprocessing as mp
@@ -761,6 +787,7 @@ def main() -> int:
             f"  (target {TARGETS[difficulty]}){flag}",
             flush=True,
         )
+    _share_reused_scales(out)
     path = Path(__file__).parent / "geometry.json"
     path.write_text(json.dumps(out, indent=2) + "\n")
     print(f"\nwrote {path}")

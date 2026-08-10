@@ -157,9 +157,16 @@ export function penroseBoard(
     }
     gx /= cells.length;
     gy /= cells.length;
+    // Quantised, like the spiral's trim: the patch is ten-fold symmetric, so
+    // tiles come in sets at the *same* distance, and the raw float is a cosine
+    // whose last bit need not agree with Python's. Compared exactly, a tie at
+    // the cut rank is broken the other way in one of the two builds and they
+    // keep different tiles -- same cell count, different edge count. Must
+    // match `penrose_board` in `minesweeper/boards/aperiodic.py`.
     const cheb = (cell: PenroseCell): number => {
       const c = centroid.get(cell)!;
-      return Math.max(Math.abs(c[0] - gx), Math.abs(c[1] - gy));
+      const distance = Math.max(Math.abs(c[0] - gx), Math.abs(c[1] - gy));
+      return Math.floor(distance * 1e6 + 0.5);
     };
     kept = [...cells].sort(
       (m, n) => cheb(m) - cheb(n) || m.color - n.color || m.index - n.index,
@@ -623,8 +630,10 @@ export function spectreBoard(
     }
     gx /= rows.length;
     gy /= rows.length;
+    // Quantised for the same reason as the Penrose trim above: a tie at the
+    // cut rank has to break the same way in both builds.
     const cheb = (r: SpectreRow): number =>
-      Math.max(Math.abs(r.cx - gx), Math.abs(r.cy - gy));
+      Math.floor(Math.max(Math.abs(r.cx - gx), Math.abs(r.cy - gy)) * 1e6 + 0.5);
     kept = [...rows]
       .sort((r1, r2) => cheb(r1) - cheb(r2) || cmpSortedZ12(r1.sortedIds, r2.sortedIds))
       .slice(0, keep);
