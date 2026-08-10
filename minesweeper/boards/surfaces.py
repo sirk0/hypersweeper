@@ -592,14 +592,28 @@ def arch_cylinder_board(
                      two_sided=True, radius=_max_radius)
 
 
-def arch_mobius_board(tiling: str, ring: int, rows: int, mine_count: int) -> Board3D:
+def arch_mobius_board(
+    tiling: str, ring: int, rows: float, mine_count: int
+) -> Board3D:
     """An Archimedean tiling on a Möbius strip: ``ring`` domain copies
     around, ``rows`` across; after a full loop the strip glues to its
     start flipped. The flip needs a horizontal mirror symmetry. p4g
     (snub square) only has a glide — mirror plus half a domain — so its
     ring counts half-domains and must be odd for the seam to close.
     3.3.3.3.6 (snub hexagonal) is chiral: no mirror, no glide, so no
-    Möbius strip at all (its mirror image is a different tiling)."""
+    Möbius strip at all (its mirror image is a different tiling).
+
+    The band runs from ``template.mobius_cut`` to ``cut + rows*height``,
+    and ``rows`` may be fractional exactly as on the cylinder — a strip
+    two and a half domains across is what a cut halfway up the domain
+    needs. What is *not* free is the fractional part: a Möbius strip has
+    one edge, so the seam glues the band's bottom rim to its top, and the
+    flip y -> 2*cut + strip - y is only a symmetry of the tiling when
+    ``rows + 2*cut/height`` is a whole number of periods. Get that wrong
+    and the two rims are different rows of the tiling — half the edge
+    reading one way and half the other — so it is checked here rather
+    than left to the presets. See the MOBIUS CUT note in ``tilings.py``.
+    """
     template = _arch_template(tiling)
     if template.mirror is None:
         raise ValueError(f"{tiling} is chiral and cannot wrap a Möbius strip")
@@ -610,14 +624,23 @@ def arch_mobius_board(tiling: str, ring: int, rows: int, mine_count: int) -> Boa
     else:
         halves = 2 * ring
     width, height = template.width, template.height
+    cut = template.mobius_cut
     q, odd = divmod(halves, 2)
     length = halves * width / 2
     strip = rows * height
+    # whole periods between the band's two rims, counted from the cut
+    seam = rows + 2 * cut / height
+    if abs(seam - round(seam)) > 1e-6:
+        raise ValueError(
+            f"rows {rows} does not close the {tiling} seam: "
+            f"rows + 2*cut/height = {seam}, which must be a whole number"
+        )
+    seam = round(seam)
     half_width = min(0.7, math.pi * strip / length / 2)
 
     def flipped(mi: int, ni: int, tag):
         image, dm, dn = template.mirror[tag]
-        return image, mi + dm - odd, rows - 1 - ni + dn
+        return image, mi + dm - odd, seam - 1 - ni + dn
 
     def canonical(mi: int, ni: int, tag):
         # bring x = mi*width + vx into [0, length), flipping at the seam;
@@ -632,7 +655,7 @@ def arch_mobius_board(tiling: str, ring: int, rows: int, mine_count: int) -> Boa
         mi, ni, tag = key
         vx, vy = template.verts[tag]
         u = 2 * math.pi * (mi * width + vx) / length
-        v = half_width * (2 * (ni * height + vy) / strip - 1)
+        v = half_width * (2 * (ni * height + vy - cut) / strip - 1)
         return _mobius_point(u, v)
 
     centroids = {
@@ -640,12 +663,22 @@ def arch_mobius_board(tiling: str, ring: int, rows: int, mine_count: int) -> Boa
         / len(refs)
         for name, refs in template.cells
     }
+    heights = {
+        name: sum(dn * height + template.verts[tag][1] for tag, _, dn in refs)
+        / len(refs)
+        for name, refs in template.cells
+    }
     cells = {}
     for m in range(q + 1):
-        for n in range(rows):
+        # every row copy that can reach into the band: a cell's centroid
+        # sits in [0, height), so copy n spans [n*height, (n+1)*height)
+        for n in range(math.floor(cut / height),
+                       math.floor((cut + strip) / height) + 1):
             for name, refs in template.cells:
                 if not -1e-9 <= centroids[name] + m * width < length - 1e-9:
                     continue  # this domain copy of the cell is past the seam
+                if not cut - 1e-9 <= heights[name] + n * height < cut + strip - 1e-9:
+                    continue  # ... or outside the band
                 keys = [canonical(m + dm, n + dn, tag) for tag, dm, dn in refs]
                 if len(set(keys)) < len(keys):
                     raise ValueError(f"ring {ring} is too small for {tiling}")

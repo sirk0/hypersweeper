@@ -25,7 +25,20 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   `_dual_template` — wrap onto the donut/cylinder/Möbius/Klein-bottle via
   `_ArchTemplate` (one rectangular periodic domain + modular seam gluing;
   snub hexagonal and its dual the floret pentagonal are chiral, so no
-  Möbius and no Klein bottle — both seams reverse orientation). The
+  Möbius and no Klein bottle — both seams reverse orientation). A
+  Möbius strip has **one** edge, so the band's two rims are two arcs of
+  the same circle and the tiling has to look the same at both: the band
+  runs from the template's `mobius_cut` to `cut + rows*height`, `rows` may
+  be fractional (as on the cylinder) and `rows + 2*cut/height` must come
+  out a whole number, which is what makes the band's centre line a mirror
+  of its rows. The cut never falls on a row of tile *centres* — cutting
+  there keeps the row at one rim and drops it at the other, which is what
+  six of the eight uniform tilings shipped as — and it runs along a
+  horizontal edge-line of the tiling wherever there is one, so the strip's
+  edge is a straight circle rather than a zigzag. See the MOBIUS CUT note
+  in `boards/tilings.py`; the two rules are measured on every shipped
+  preset by `TestWrappedArchimedean.test_mobius_band_is_symmetric` and
+  `test_mobius_rim_is_straight_where_the_tiling_allows`. The
   Klein bottle glues like the donut but flips the tube across the ring
   seam (the same `template.mirror` the Möbius uses); the
   self-intersecting bottle immersion hides some cells behind the neck, so

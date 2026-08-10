@@ -177,15 +177,44 @@ class _ArchTemplate:
     #   coords) for the flat window; None => centre on the biggest tile.
     #   Face-transitive (Laves) tilings whose highest rotation centre sits
     #   on a vertex, not a tile centroid (e.g. pentagon tiles), set this.
+    mobius_cut: float = 0.0  # where the Mobius band starts within the
+    #   repeating rows -- see MOBIUS CUT below and arch_mobius_board.
+
+
+# AGENT NOTE (the Mobius cut). A Mobius strip has *one* edge, and the seam
+# glues the band's bottom rim to its top: whatever a row of tiles does at
+# y = cut it must also do at y = cut + strip, or half the edge reads one way
+# and half the other. Two rules follow, and ``mobius_cut`` is how a template
+# states its answer to them.
+#
+#   * The band must be *symmetric* about its own centre line. The seam flip
+#     is y -> 2*cut + strip - y, which is the template's mirror composed with
+#     a whole number of vertical periods -- so ``rows + 2*cut/height`` has to
+#     come out a whole number (arch_mobius_board checks), and no tile centroid
+#     may sit *on* the cut. A centroid exactly on it is the failure this
+#     field exists to fix: that row is kept at the bottom of the band and its
+#     mirror at the top is not, so the strip carries one row of hexagons (or
+#     squares, or dodecagons) more than its own reflection.
+#   * Given that, cut where the rim comes out *straight* if the tiling has a
+#     horizontal line of edges at all (trihexagonal's kagome line, the
+#     elongated triangular's square courses, the offset square and running
+#     bond rows); otherwise halfway between the two rows the cut separates,
+#     which is the least ragged the rim can be.
+#
+# Most templates want cut 0 -- their tiles already straddle y = 0 with none
+# centred on it -- so the field defaults to 0.0 and only the ten tilings that
+# need otherwise pass one. ``tests/test_boards.py`` measures both rules on
+# every shipped Mobius preset rather than trusting the numbers here.
 
 
 def _template(config, width, height, polygons, mirrored=True, glide=False,
-              centre=None):
+              centre=None, mobius_cut=0.0):
     """Build a template from one domain's worth of cell polygons in float
     coordinates. Each vertex is canonicalized into [0, width) x [0, height);
     the rounded canonical position doubles as its exact hashable tag.
     ``centre`` optionally pins the flat-window rotation centre in domain
-    coordinates (see _ArchTemplate.centre)."""
+    coordinates (see _ArchTemplate.centre) and ``mobius_cut`` where the
+    Mobius band starts (see _ArchTemplate.mobius_cut)."""
 
     def reduce(value: float, size: float) -> tuple[float, int]:
         # the slack absorbs tag rounding, so values that are exactly on a
@@ -237,7 +266,7 @@ def _template(config, width, height, polygons, mirrored=True, glide=False,
             mirror[tag] = (image, dm, dn)
     cells = _insert_t_vertices(verts, cells, width, height)
     return _ArchTemplate(config, width, height, verts, tuple(cells), mirror,
-                         glide, centre)
+                         glide, centre, mobius_cut)
 
 
 # Tag coordinates are rounded to 1e-6, so a vertex genuinely on an edge can
@@ -308,7 +337,11 @@ def _trihex_template() -> _ArchTemplate:
         ("tri2", [(2, ROOT3), (2.5, ROOT3 + h), (1.5, ROOT3 + h)]),
         ("tri3", [(1.5, ROOT3 + h), (1, 2 * ROOT3), (0.5, ROOT3 + h)]),
     ]
-    return _template((3, 6, 3, 6), 2.0, 2 * ROOT3, polygons)
+    # kagome: the tiling is made of straight lines, and the horizontal family
+    # runs along y = sqrt(3)/2 -- a hexagon's flat top against the triangles'
+    # bases. Cutting the Mobius band there leaves it a straight edge; cutting
+    # at 0 puts a hexagon centre on the seam.
+    return _template((3, 6, 3, 6), 2.0, 2 * ROOT3, polygons, mobius_cut=h)
 
 
 def _truncsquare_template() -> _ArchTemplate:
@@ -319,7 +352,11 @@ def _truncsquare_template() -> _ArchTemplate:
     octagon = [(0.5, p), (p, 0.5), (p, -0.5), (0.5, -p),
                (-0.5, -p), (-p, -0.5), (-p, 0.5), (-0.5, p)]
     square = [(p - q, p), (p, p - q), (p + q, p), (p, p + q)]
-    return _template((4, 8, 8), a, a, [("oct", octagon), ("sq", square)])
+    # no horizontal line runs through this tiling -- the tilted squares poke
+    # below every octagon course -- so the band is cut midway between the two,
+    # which is also the only cut with no tile centre on it.
+    return _template((4, 8, 8), a, a, [("oct", octagon), ("sq", square)],
+                     mobius_cut=a / 4)
 
 
 def _elongated_template() -> _ArchTemplate:
@@ -337,7 +374,12 @@ def _elongated_template() -> _ArchTemplate:
         ("tri2", [(0.5, 1.5 + h), (1.5, 1.5 + h), (1, 1.5 + 2 * h)]),
         ("tri3", [(1, 1.5 + 2 * h), (1.5, 1.5 + h), (2, 1.5 + 2 * h)]),
     ]
-    return _template((3, 3, 3, 4, 4), 1.0, 2 + ROOT3, polygons)
+    # a square course's own bottom edge is a straight line right across the
+    # tiling, so the Mobius band is cut there and comes out square course /
+    # triangle course / ... / square course, flat-edged at both rims. Cutting
+    # at 0 would put the square row's *centre* on the seam.
+    return _template((3, 3, 3, 4, 4), 1.0, 2 + ROOT3, polygons,
+                     mobius_cut=-0.5)
 
 
 def _snubsquare_template() -> _ArchTemplate:
@@ -440,7 +482,11 @@ def _trunchex_template() -> _ArchTemplate:
         ]
 
     polygons = around(0, 0, "0") + around(a / 2, a * ROOT3 / 2, "1")
-    return _template((3, 12, 12), a, a * ROOT3, polygons)
+    # the triangles hang half an edge below every dodecagon course, so there
+    # is no straight horizontal line; the band is cut midway between the two
+    # courses, which keeps a dodecagon centre off the seam.
+    return _template((3, 12, 12), a, a * ROOT3, polygons,
+                     mobius_cut=a * ROOT3 / 4)
 
 
 def _hex_lattice_polygons(centre_at, hexagon_at, decorate, width, height):
@@ -511,7 +557,12 @@ def _rhombitrihex_template() -> _ArchTemplate:
 
     width, height = a, a * ROOT3
     polygons = _hex_lattice_polygons(centre_at, hexagon_at, decorate, width, height)
-    return _template((3, 4, 6, 4), width, height, polygons)
+    # the courses run hexagon+square (y = 0), triangle, square, triangle,
+    # hexagon+square (y = height/2), ... with no horizontal line anywhere; the
+    # band is cut midway between a triangle course and the hexagon course
+    # above it, keeping the hexagon centres off the seam.
+    return _template((3, 4, 6, 4), width, height, polygons,
+                     mobius_cut=5 * height / 12)
 
 
 def _trunctrihex_template() -> _ArchTemplate:
@@ -544,7 +595,12 @@ def _trunctrihex_template() -> _ArchTemplate:
 
     width, height = a, a * ROOT3
     polygons = _hex_lattice_polygons(centre_at, dodecagon_at, decorate, width, height)
-    return _template((4, 6, 12), width, height, polygons)
+    # courses of dodecagon+square (y = 0), hexagon, square, hexagon, ...; no
+    # horizontal line, so the band is cut midway between the square course and
+    # the hexagon course above it -- the narrowest gap here, but the only pair
+    # whose rims interlock rather than leaving a dodecagon on the seam.
+    return _template((4, 6, 12), width, height, polygons,
+                     mobius_cut=7 * height / 24)
 
 
 # -- Laves (dual / Catalan) tilings ------------------------------------------
@@ -559,7 +615,8 @@ def _trunctrihex_template() -> _ArchTemplate:
 # where reflective, mirror centre of both tilings).
 
 
-def _dual_template(primal: Callable[[], _ArchTemplate]) -> _ArchTemplate:
+def _dual_template(primal: Callable[[], _ArchTemplate],
+                   mobius_cut: float = 0.0) -> _ArchTemplate:
     p = primal()
     width, height = p.width, p.height
 
@@ -594,8 +651,12 @@ def _dual_template(primal: Callable[[], _ArchTemplate]) -> _ArchTemplate:
          for name, (cx, cy) in centres.items() if sides[name] == widest),
         key=lambda c: c[0] ** 2 + c[1] ** 2,
     )
+    # The dual's own tiles sit where the primal's vertices are, so its courses
+    # are not the primal's and its Mobius cut is measured afresh -- passed in
+    # rather than inherited from ``p``.
     return _template(p.config, width, height, polygons,
-                     mirrored=p.mirror is not None, glide=p.glide, centre=centre)
+                     mirrored=p.mirror is not None, glide=p.glide,
+                     centre=centre, mobius_cut=mobius_cut)
 
 
 def _prismaticpent_template() -> _ArchTemplate:
@@ -604,13 +665,19 @@ def _prismaticpent_template() -> _ArchTemplate:
 
 
 def _cairo_template() -> _ArchTemplate:
-    """Cairo pentagonal (dual of the snub square tiling)."""
-    return _dual_template(_snubsquare_template)
+    """Cairo pentagonal (dual of the snub square tiling). Its pentagons
+    interlock in pairs, so no horizontal line runs through it; the Mobius band
+    is cut midway between two courses, which halves the rim's zigzag against
+    the cut at 0 the tiling shipped with."""
+    return _dual_template(_snubsquare_template, mobius_cut=(2 + ROOT3) ** 0.5 / 4)
 
 
 def _rhombille_template() -> _ArchTemplate:
-    """Rhombille (dual of the trihexagonal tiling)."""
-    return _dual_template(_trihex_template)
+    """Rhombille (dual of the trihexagonal tiling). Unlike its primal it has
+    no horizontal line -- every course of rhombi points through the next -- so
+    the Mobius band is cut midway between two courses; the cut at 0 the tiling
+    shipped with ran through a rhombus centre."""
+    return _dual_template(_trihex_template, mobius_cut=3 * ROOT3 / 4)
 
 
 def _floret_template() -> _ArchTemplate:
@@ -719,10 +786,13 @@ def _offsetsquare_template() -> _ArchTemplate:
     vertex is two square corners meeting the middle of a third square's edge
     (90 + 90 + 180). The domain runs from a square row's centreline, so the
     template midline is a mirror line."""
+    # A row's own top edge runs straight across the tiling (the squares above
+    # only meet it, never cross it), so the Mobius band is cut there rather
+    # than along the midline, which would leave a square centre on the seam.
     return _template((4, 4, 4), 1.0, 2.0, [
         ("sq0", [(0, -0.5), (1, -0.5), (1, 0.5), (0, 0.5)]),
         ("sq1", [(-0.5, 0.5), (0.5, 0.5), (0.5, 1.5), (-0.5, 1.5)]),
-    ])
+    ], mobius_cut=0.5)
 
 
 def _staggeredtri_template() -> _ArchTemplate:
@@ -903,10 +973,12 @@ def _runningbond_template(ratio: float = 0.5) -> _ArchTemplate:
     square tiling stretched; like it, the domain runs from a row's centreline
     so the template midline is a mirror line."""
     r = ratio
+    # cut on a course's top edge, as the offset square tiling is (the Mobius
+    # band wants a straight rim, and the midline runs through a brick).
     return _template((4,), 1.0, 2 * r, [
         ("brick0", _brick(0.0, -r / 2, 1.0, r)),
         ("brick1", _brick(-0.5, r / 2, 1.0, r)),
-    ])
+    ], mobius_cut=r / 2)
 
 
 def _basketweave_template(group: int = 2) -> _ArchTemplate:

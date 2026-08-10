@@ -27,8 +27,8 @@ Every board's mine count, chosen so its win probability under the reference solv
   - `kleintriakis`/hard: 0.0% vs 50.9% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `kleintriakis`/medium: 0.0% vs 87.1% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `kleintriakis`/easy: 0.0% vs 96.5% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
-  - `mobiusrhombille`/easy: 72.6% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (6, 8%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
-  - `mobiusrhombille`/medium: 77.1% vs 87.1% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (10, 3%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
+  - `mobiusrhombille`/medium: 77.4% vs 87.1% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (10, 4%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
+  - `mobiusrhombille`/easy: 73.7% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (6, 8%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
   - `mobiustriakis`/easy: 0.0% vs 96.5% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `mobiustriakis`/hard: 0.0% vs 50.9% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `mobiustriakis`/medium: 0.0% vs 87.1% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
@@ -46,7 +46,7 @@ Every board's mine count, chosen so its win probability under the reference solv
   - `triakis`/medium: 0.0% vs 87.1% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `triakis`/easy: 1.8% vs 96.5% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `truncicosidodeca`/hard: 45.9% vs 50.9% — no integer mine count lands within tolerance; this is the closest
-- 87 rows had games the solver abandoned (its frontier DP hit its node budget); their rates are measured over the games that finished:
+- 90 rows had games the solver abandoned (its frontier DP hit its node budget); their rates are measured over the games that finished:
   - `torustrunchex`/hard: 168 abandoned
   - `torusrotatedhex`/hard: 144 abandoned
   - `kleintri`/hard: 75 abandoned
@@ -60,7 +60,7 @@ Every board's mine count, chosen so its win probability under the reference solv
 
 Densities run from 2.8% to 36.2% (median 16.7%) — the spread the old flat 14/16/19 per cent could not express.
 
-The only floor under the search is the **opening**: the fewest mines at which the first click alone stops finishing the board (`calibrate.opening_floor`). As a density that runs 1.2% to 16.7% across the zoo — which is why it is measured per board rather than set as a percentage.
+The only floor under the search is the **opening**: the fewest mines at which the first click alone stops finishing the board (`calibrate.opening_floor`). As a density that runs 1.3% to 16.7% across the zoo — which is why it is measured per board rather than set as a percentage.
 
 ## Every board
 
@@ -141,26 +141,26 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `mobius` | 7.0 | 84c 12m (14%) 98% | 252c 44m (17%) 89% | 480c 103m (21%) 53% |
 | `mobiusbasketweave` | 6.3 | 72c 12m (17%) 97% | 228c 39m (17%) 90% | 460c 95m (21%) 51% |
 | `mobiusbasketweave3` | 6.2 | 84c 7m (8%) 95% | 270c 31m (11%) 86% | 456c 77m (17%) 51% |
-| `mobiuscairo` | 6.6 | 90c 14m (16%) 98% | 230c 41m (18%) 86% | 462c 93m (20%) 53% |
+| `mobiuscairo` | 6.7 | 75c 10m (13%) 95% | 253c 39m (15%) 85% | 495c 95m (19%) 52% |
 | `mobiusdeltoidal` | 7.2 | 72c 10m (14%) 99% | 264c 39m (15%) 87% | 468c 95m (20%) 50% |
-| `mobiuselongated` | 8.3 | 72c 11m (15%) 96% | 276c 40m (14%) 89% | 540c 112m (21%) 54% |
+| `mobiuselongated` | 9.4 | 91c 6m (7%) 95% | 286c 44m (15%) 83% | 416c 83m (20%) 50% |
 | `mobiushex` | 5.2 | 80c 14m (18%) 95% | 252c 48m (19%) 85% | 481c 108m (22%) 52% |
 | `mobiuskisrhombille` | 12.8 | 144c 7m (5%) 95% | 240c 15m (6%) 85% | 528c 52m (10%) 53% |
-| `mobiusoffsetsquare` | 5.7 | 90c 14m (16%) 98% | 280c 53m (19%) 87% | 456c 104m (23%) 49% |
+| `mobiusoffsetsquare` | 5.7 | 80c 15m (19%) 95% | 252c 48m (19%) 87% | 520c 114m (22%) 49% |
 | `mobiusprismaticpent` | 6.2 | 72c 8m (11%) 97% | 224c 43m (19%) 83% | 444c 98m (22%) 54% |
-| `mobiusrhombille` | 7.3 | 72c 6m (8%) 73% ⚠ | 288c 10m (3%) 77% ⚠ | 504c 20m (4%) 51% |
-| `mobiusrhombitrihex` | 6.6 | 72c 5m (7%) 95% | 264c 22m (8%) 84% | 540c 68m (13%) 50% |
-| `mobiusrunningbond` | 5.3 | 72c 12m (17%) 98% | 240c 46m (19%) 90% | 504c 117m (23%) 49% |
+| `mobiusrhombille` | 9.4 | 77c 6m (8%) 74% ⚠ | 285c 10m (4%) 77% ⚠ | 550c 20m (4%) 54% |
+| `mobiusrhombitrihex` | 7.7 | 84c 6m (7%) 93% | 286c 21m (7%) 90% | 532c 68m (13%) 53% |
+| `mobiusrunningbond` | 5.8 | 84c 16m (19%) 97% | 260c 52m (20%) 90% | 459c 110m (24%) 47% |
 | `mobiussnubsquare` | 9.4 | 78c 12m (15%) 97% | 228c 41m (18%) 88% | 486c 112m (23%) 53% |
 | `mobiusstackedbond` | 7.1 | 84c 15m (18%) 94% | 260c 47m (18%) 88% | 459c 109m (24%) 50% |
 | `mobiusstaggeredtri` | 7.7 | 90c 16m (18%) 98% | 270c 57m (21%) 85% | 468c 118m (25%) 51% |
 | `mobiustetrakis` | 10.2 | 80c 8m (10%) 96% | 280c 28m (10%) 90% | 456c 69m (15%) 48% |
 | `mobiustri` | 11.1 | 85c 12m (14%) 99% | 261c 60m (23%) 85% | 480c 128m (27%) 50% |
 | `mobiustriakis` | 15.2 | 84c 11m (13%) 0% ⚠ | 264c 42m (16%) 0% ⚠ | 540c 108m (20%) 0% ⚠ |
-| `mobiustrihex` | 7.0 | 84c 13m (15%) 98% | 288c 52m (18%) 89% | 504c 111m (22%) 52% |
-| `mobiustrunchex` | 5.1 | 84c 4m (5%) 95% | 288c 10m (3%) 91% | 504c 34m (7%) 48% |
-| `mobiustruncsquare` | 5.7 | 88c 9m (10%) 97% | 240c 32m (13%) 88% | 504c 84m (17%) 48% |
-| `mobiustrunctrihex` | 5.0 | 72c 8m (11%) 95% | 264c 31m (12%) 90% | 540c 83m (15%) 49% |
+| `mobiustrihex` | 7.4 | 81c 11m (14%) 95% | 225c 37m (16%) 89% | 420c 86m (20%) 49% |
+| `mobiustrunchex` | 5.1 | 81c 4m (5%) 94% | 225c 11m (5%) 88% | 420c 30m (7%) 52% |
+| `mobiustruncsquare` | 5.5 | 77c 4m (5%) 97% | 260c 29m (11%) 85% | 459c 68m (15%) 53% |
+| `mobiustrunctrihex` | 5.7 | 80c 5m (6%) 96% | 280c 27m (10%) 83% | 420c 54m (13%) 54% |
 | `offsetsquare` | 5.6 | 77c 12m (16%) 95% | 281c 46m (16%) 88% | 495c 102m (21%) 51% |
 | `penrose` | 8.8 | 81c 6m (7%) 92% ⚠ | 256c 17m (7%) 88% | 480c 48m (10%) 47% |
 | `pentaflake` | 4.4 | 216c 11m (5%) 95% | 216c 15m (7%) 88% | 216c 27m (12%) 52% |
