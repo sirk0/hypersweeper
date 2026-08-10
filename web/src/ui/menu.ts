@@ -13,7 +13,12 @@ import {
   menuTilingRows,
   threeDMenuModes,
 } from "../boards/catalog";
-import { pickWeighted, unfairHint } from "../boards/fairness";
+import {
+  blockedExplanation,
+  fairnessHint,
+  modeFairness,
+  pickWeighted,
+} from "../boards/fairness";
 import { hasMode } from "../boards/presets";
 import { clearBestTimes } from "../leaderboard";
 import { renderBestTimes } from "./bestTimes";
@@ -322,6 +327,34 @@ export class Menu {
     this.root.hidden = false;
     this.root.classList.add("settings-open");
     this.body.replaceChildren(this.backRow("How to play", onBack), renderHelp());
+  }
+
+  /** The page a blocked board's row opens instead of a game.
+   *
+   * It is a page rather than a dead row or a hidden one: a row that does
+   * nothing when tapped reads as a bug, and dropping the board from the menu
+   * would make the catalogue lie about which tilings are built. Saying why is
+   * the only honest option, and the why is interesting. */
+  private showBlocked(mode: string, label: string): void {
+    const back = this.view;
+    this.root.classList.add("settings-open");
+    const heading = document.createElement("h2");
+    heading.className = "menu-difficulty-heading";
+    heading.textContent = `${label} — not playable`;
+    const body = document.createElement("p");
+    body.className = "menu-blocked-body";
+    body.textContent = blockedExplanation(mode, this.settings.difficulty);
+    const wrap = document.createElement("div");
+    wrap.className = "menu-blocked";
+    wrap.dataset.mode = mode;
+    wrap.append(heading, body);
+    this.body.replaceChildren(
+      this.backRow(label, () => {
+        this.view = back;
+        this.render();
+      }),
+      wrap,
+    );
   }
 
   private renderHelpPage(): void {
@@ -654,23 +687,32 @@ export class Menu {
     const btn = document.createElement("button");
     btn.className = "menu-entry";
     btn.dataset.mode = mode;
-    // A board whose tiling forces coin flips is marked here rather than left
-    // to feel like bad luck at the table. The mark goes on the row because the
+    // A board the tiling is against is graded here rather than left to feel
+    // like bad luck at the table. The mark goes on the row because the
     // difficulty pills are at the foot of the page: by the time one is chosen
-    // the board is already picked.
-    const hint = unfairHint(mode);
+    // the board is already picked. A blocked board keeps its row -- the tiling
+    // is still worth looking at, and hiding it would only make the catalogue
+    // lie about what it holds -- but the row opens the explanation instead of
+    // a game.
+    const level = modeFairness(mode);
+    const hint = fairnessHint(level);
     btn.append(iconEl(icon), textBlock(label, hint));
-    if (hint !== undefined) {
-      btn.dataset.unfair = "1";
+    if (level !== "ok") {
+      btn.dataset.fairness = level;
       const warn = document.createElement("span");
       warn.className = "menu-entry-warning";
-      warn.textContent = "⚠";
-      warn.setAttribute("aria-label", hint);
+      warn.textContent = level === "blocked" ? "⛔" : "⚠";
+      warn.setAttribute("aria-label", hint ?? "");
       btn.append(warn);
     }
-    btn.addEventListener("click", () =>
-      this.onSelect({ mode, difficulty: this.settings.difficulty }),
-    );
+    if (level === "blocked") {
+      btn.setAttribute("aria-disabled", "true");
+      btn.addEventListener("click", () => this.showBlocked(mode, label));
+    } else {
+      btn.addEventListener("click", () =>
+        this.onSelect({ mode, difficulty: this.settings.difficulty }),
+      );
+    }
     li.append(btn);
     return li;
   }

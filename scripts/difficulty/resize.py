@@ -160,14 +160,65 @@ MOBIUS_SHAPE_BAR = 1.8
 # across, which is a twisted lozenge rather than a loop. Counted in *cells*
 # around the seam, not in domain copies -- a triakis domain is two tiles wide
 # and twelve cells big, so a ring of twelve domains is a 288-cell board and the
-# bar in domain units rejects every easy window there is (see `_ring_cells`).
+# bar in domain units rejects every easy window there is (see `_wrap_cells`).
 MIN_RING = 12
+# ...and, on a donut or a bottle, a floor in *domain copies* under the ring.
+# Three copies round a loop is not a loop: the immersion has three flat facets
+# to bend through a full turn, so it folds like paper instead of curving --
+# which is what the Klein kisrhombille and triakis easy boards (3x1 and 3x2
+# windows) actually looked like. Only the ring: the tube may legitimately be
+# one domain deep where the domain is tall, and 24 shipped rows are, so a
+# floor on both directions rejects boards nothing is wrong with.
+#
+# Deliberately in domain copies rather than in tiles, and deliberately not
+# MIN_RING. Which knob is the long way round is not fixed: a donut's two
+# circumferences differ by its tube radius, so the *right* window is lopsided,
+# and which knob carries the lopsidedness varies by builder -- measured,
+# `torushex` at 6 tiles around and 14 across distorts its cells by 1.08 where
+# the 12-around window a seam bar would force distorts them by 2.01. A tile
+# count is no better: kisrhombille packs 24 very unequal triangles into a
+# domain, so the median tile span says its domain is 2.4 tiles wide when the
+# thing that actually has to bend is the domain. On a closed surface the
+# immersion really does stretch what does not fit, so cell distortion can be
+# trusted to pick the ratio; this only has to rule out the folds it cannot
+# see, and every window it rejects is one of five.
+MIN_WRAP_DOMAINS = 4
+
+# And a *playability* bar, on the square-lattice donut and bottle only.
+#
+# A wrap direction six cells long is a ring the mines can slide around: with
+# two of them in one six-cell slice and the rest of the board solved, the two
+# arrangements are indistinguishable and the endgame is a guess. Measured, the
+# 14x6 square donut tops out at 82% against an easy target of 96.5% however
+# its mines are counted, and 9x9 hits 96.5% exactly; the 13x6 Klein bottle
+# goes from 76% to 96.0% at 10x8. Both were flagged unfair, and neither needed
+# to be.
+#
+# Restricted to these two builders because it is not a general truth and the
+# measurement says so: `torushex` at 6 cells around and 14 across wins 96.2%
+# and has the best-shaped cells of any window at its size (1.08 against 1.61
+# for the squarer one). Six hexagons around a ring are not six squares around
+# a ring -- a hexagon has six neighbours and its rings interlock -- so the bar
+# is written where it was measured rather than assumed everywhere.
+MIN_WRAP_CELLS = 8
+SQUARE_LATTICE_CLOSED = {"torus_board", "klein_board"}
 ROLLED_ASPECT_WEIGHT = 1.2
 
 
 def _rolled_flat(builder: str) -> bool:
     """The surfaces a flat sheet rolls onto with little or no stretching."""
     return "cylinder" in builder or "mobius" in builder
+
+
+def _closed_tube(builder: str) -> bool:
+    """The surfaces whose *second* knob wraps as well as the first.
+
+    A cylinder and a Mobius strip have an open second direction -- a rim and
+    an edge -- so only the seam needs enough tiles around it. A donut and a
+    Klein bottle close both ways, and a window one or two domains tall gives
+    the tube a cross-section of three or four facets.
+    """
+    return "torus" in builder or "klein" in builder
 
 
 # how many windows to actually build per row; the rest are further from the
@@ -230,7 +281,8 @@ def _topology_ok(mode: str, board) -> bool:
     return True
 
 
-def _candidate_values(current, coarse: bool, domains: bool = True) -> list:
+def _candidate_values(current, coarse: bool, domains: bool = True,
+                      half_steps: bool = False) -> list:
     """Values to try for one size knob.
 
     The Archimedean builders count *domain copies*, each worth several cells,
@@ -245,7 +297,18 @@ def _candidate_values(current, coarse: bool, domains: bool = True) -> list:
     if isinstance(current, float) and not float(current).is_integer():
         frac = current - math.floor(current)
         return [n + frac for n in range(1, 31)]
-    return list(range(1, 41 if domains else 161))
+    values: list = list(range(1, 41 if domains else 161))
+    if half_steps:
+        # `arch_cylinder_board` takes a fractional row count to land its rim
+        # flat, and a half row is a real option on any tiling whose domain is
+        # two brick courses tall -- but only the rows whose *incumbent* was
+        # already fractional ever got offered one, which is an accident of
+        # what shipped rather than a property of the tiling. Measured,
+        # `cylbasketweave3` easy at 5 x 1.5 is 90 cells and draws as square,
+        # where the best whole-row window is 6 x 1 and draws twice as wide as
+        # it is tall.
+        values += [n + 0.5 for n in range(1, 41 if domains else 161)]
+    return values
 
 
 def _rescale(builder: str, spec: dict, trial: list, before) -> list:
@@ -348,50 +411,91 @@ def _window_aspect(builder: str, spec: dict, trial: list) -> float:
     return max(ratio, 1 / ratio)
 
 
-_TILE_WIDTH: dict[str, float] = {}
+_TILE_SPAN: dict[str, tuple[float, float]] = {}
 
 
-def _tile_width(tiling: str) -> float:
-    """Median tile width in one domain of an Archimedean template.
+def _tile_span(tiling: str) -> tuple[float, float]:
+    """Median tile width and height in one domain of an Archimedean template.
 
-    The seam knob counts *domain copies*, and a domain is anything from one
-    tile wide (the stacked bond) to nearly four (truncated hexagonal). Dividing
-    the ring's length by this turns the knob into the number of tiles the loop
-    actually closes over, which is what ``MIN_RING`` means.
+    A wrap knob counts *domain copies*, and a domain is anything from one tile
+    wide (the stacked bond) to nearly four (truncated hexagonal). Dividing the
+    domain's size by this turns a knob into the number of tiles that direction
+    actually closes over, which is what ``MIN_RING`` and ``MIN_TUBE`` mean.
     """
-    if tiling not in _TILE_WIDTH:
+    if tiling not in _TILE_SPAN:
         import statistics
 
         from minesweeper.boards.tilings import _arch_template
 
         template = _arch_template(tiling)
-        widths = []
+        widths, heights = [], []
         for _name, refs in template.cells:
             xs = [template.verts[tag][0] + dm * template.width
                   for tag, dm, _dn in refs]
+            ys = [template.verts[tag][1] + dn * template.height
+                  for tag, _dm, dn in refs]
             widths.append(max(xs) - min(xs))
-        _TILE_WIDTH[tiling] = statistics.median(widths) or 1.0
-    return _TILE_WIDTH[tiling]
+            heights.append(max(ys) - min(ys))
+        _TILE_SPAN[tiling] = (statistics.median(widths) or 1.0,
+                              statistics.median(heights) or 1.0)
+    return _TILE_SPAN[tiling]
 
 
-def _ring_cells(builder: str, spec: dict, trial: list) -> float:
-    """How many tiles the seam closes over, for the ``MIN_RING`` bar.
+def _wrap_cells(builder: str, spec: dict, trial: list, axis: int) -> float:
+    """How many tiles the window closes over along ``axis`` (0 = seam, 1 = tube).
 
     The plain surface builders take the count in cells already; the
     Archimedean ones take it in domain copies, so it is converted.
     """
-    ring = trial[spec["size"][0]]
+    knobs = spec["size"]
+    if axis >= len(knobs):
+        return float("inf")
+    count = trial[knobs[axis]]
     if not spec.get("lead"):
-        return float(ring)
+        return float(count)
     try:
         from minesweeper.boards.tilings import _arch_template
 
         template = _arch_template(trial[0])
     except Exception:
-        return float(ring)
+        return float(count)
+    domain = template.width if axis == 0 else template.height
     # the slack absorbs the float division: a ring of exactly MIN_RING tiles
     # must not fail the bar because the width divides to 11.9999996
-    return ring * template.width / _tile_width(trial[0]) + 1e-6
+    return count * domain / _tile_span(trial[0])[axis] + 1e-6
+
+
+def _rolled_screen_aspect(builder: str, spec: dict, trial: list) -> float:
+    """How far a rolled board is from square *as drawn*, as a ratio >= 1.
+
+    A cylinder's unrolled window and its silhouette are not the same shape:
+    rolling a window of circumference ``c`` into a tube of height ``h`` draws a
+    rectangle ``c / pi`` wide by ``h`` tall, so the square *window* the plain
+    aspect term asks for is a tube three times taller than it is wide -- which
+    is what every cylinder in the catalogue had become. Squaring the silhouette
+    instead means an unrolled window about pi times wider than it is tall.
+
+    Neither extreme is the answer on its own, which is why this is a term in
+    the score rather than a bar: it pulls toward a square silhouette while cell
+    distortion pulls back toward a square window, and the boards land between.
+    """
+    ratio = _window_aspect(builder, spec, trial)
+    if not math.isfinite(ratio):
+        return ratio
+    knobs = spec["size"]
+    a, b = trial[knobs[0]], trial[knobs[1]]
+    if not a or not b:
+        return float("inf")
+    if spec.get("lead"):
+        try:
+            from minesweeper.boards.tilings import _arch_template
+
+            template = _arch_template(trial[0])
+            a, b = a * template.width, b * template.height
+        except Exception:
+            pass
+    drawn = (a / math.pi) / b
+    return max(drawn, 1 / drawn)
 
 
 def edge_ratio(board) -> float:
@@ -437,7 +541,7 @@ def _score(mode: str, board, target: int, is_flat: bool,
         # board you can actually read.
         if spec is not None and trial is not None and _rolled_flat(builder):
             shape_penalty += ROLLED_ASPECT_WEIGHT * math.log(
-                _window_aspect(builder, spec, trial)
+                _rolled_screen_aspect(builder, spec, trial)
             )
     return size_penalty + SHAPE_WEIGHT * shape_penalty
 
@@ -526,8 +630,9 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
             if n > 3 * target:
                 break
     else:
+        halves = builder == "arch_cylinder_board"
         va = _candidate_values(args[knobs[0]], coarse, domains)
-        vb = _candidate_values(args[knobs[1]], coarse, domains)
+        vb = _candidate_values(args[knobs[1]], coarse, domains, half_steps=halves)
         grids = [[a, b] for a in va for b in vb]
         # Building every combination is thousands of boards per row, and each
         # build is followed by a topology check and two shape measurements that
@@ -595,12 +700,22 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
             # the distortion term on the curved surfaces that do not need it.
             if _window_aspect(builder, spec, trial) > MAX_WINDOW_ASPECT:
                 continue
-            if (
-                _rolled_flat(builder)
-                and len(knobs) == 2
-                and _ring_cells(builder, spec, trial) < MIN_RING
-            ):
-                continue
+            # Enough tiles around whatever actually closes, or the immersion
+            # folds the window instead of wrapping it. A cylinder and a strip
+            # close one way and are developable, so the seam carries the whole
+            # bar; a donut and a bottle close both ways and only need a floor
+            # under the smaller of the two, distortion having the casting vote
+            # on the ratio.
+            if len(knobs) == 2:
+                if _rolled_flat(builder):
+                    if _wrap_cells(builder, spec, trial, 0) < MIN_RING:
+                        continue
+                elif _closed_tube(builder) and spec.get("lead"):
+                    if trial[knobs[0]] < MIN_WRAP_DOMAINS:
+                        continue
+                elif builder in SQUARE_LATTICE_CLOSED:
+                    if min(trial[knobs[0]], trial[knobs[1]]) < MIN_WRAP_CELLS:
+                        continue
             if keep_shape and not is_flat and edge_ratio(board) > shape_bar:
                 continue
             # A window can hit the cell count, keep its topology and still not

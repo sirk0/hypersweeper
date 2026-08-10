@@ -141,13 +141,14 @@ test.describe("game header", () => {
     }
     await expect(page.locator(`.hud [data-slot="klein-scroll-back"]`)).toHaveCount(0);
 
-    // The caption names the board, and nothing overflows the phone. The
-    // square Klein bottle is one of the boards whose tiling forces guesses
-    // (data/difficulty.json), so it also carries the warning mark -- worth
-    // pinning here, since the caption is the only place a board dealt by the
-    // random launchers ever shows it.
-    await expect(page.locator(".board-caption-name")).toHaveText(
-      "Squares · Klein bottle ⚠",
+    // The caption names the board, and nothing overflows the phone. Matched
+    // by prefix, not exactly: a board the calibration grades as harder than
+    // its difficulty carries a warning mark after the name, and which boards
+    // those are moves whenever the calibration is re-run. The mark itself is
+    // pinned in tests/unit/fairness.test.ts, where it does not depend on one
+    // board's mine count.
+    await expect(page.locator(".board-caption-name")).toContainText(
+      "Squares · Klein bottle",
     );
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(320);
   });
