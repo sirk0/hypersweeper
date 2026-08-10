@@ -90,21 +90,21 @@
       }
     },
     "mobiusrhombille": {
-      "easy": {
-        "level": "warn",
-        "winRate": 0.7257,
-        "target": 0.965,
-        "indistinguishable": 0,
-        "cells": 72,
-        "reason": "the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (6, 8%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win"
-      },
       "medium": {
         "level": "warn",
-        "winRate": 0.7714,
+        "winRate": 0.7743,
         "target": 0.871,
         "indistinguishable": 0,
-        "cells": 288,
-        "reason": "the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (10, 3%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win"
+        "cells": 285,
+        "reason": "the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (10, 4%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win"
+      },
+      "easy": {
+        "level": "warn",
+        "winRate": 0.7371,
+        "target": 0.965,
+        "indistinguishable": 0,
+        "cells": 77,
+        "reason": "the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (6, 8%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win"
       }
     },
     "mobiustriakis": {

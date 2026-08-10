@@ -81,6 +81,15 @@ Example goal: a new uniform tiling `foo` (say 3.4.6.4-like).
    `_snubhex_template` shows a chiral tiling (`mirrored=False`). Helpers
    `_hex_lattice_polygons`, `_regular_polygon`, `_square_on_edge` build
    hexagon-lattice tilings.
+   If the tiling wraps a Möbius strip, pick its `mobius_cut` here too — the
+   height within the domain the band starts at. It must not have a tile
+   *centre* on it (a Möbius strip has one edge, so the band's two rims are
+   arcs of the same circle, and a row centred on the cut is kept at one rim
+   and missing at the other), and it should run along a horizontal edge-line
+   of the tiling if there is one, so the strip's edge comes out straight
+   rather than a zigzag. See the MOBIUS CUT note above `_template`;
+   `TestWrappedArchimedean.test_mobius_band_is_symmetric` and
+   `test_mobius_rim_is_straight_where_the_tiling_allows` measure both.
 2. **Registry** — add one `ArchTiling("foo", "Foo label", config,
    edge_directions, _foo_template)` row to `ARCH_TILINGS`, in
    vertex-configuration order (the registry order is the menu order; the
@@ -91,6 +100,9 @@ Example goal: a new uniform tiling `foo` (say 3.4.6.4-like).
 3. **Presets** — add a `"foo": {...}` block to `ARCH_PRESETS` in
    `presets.py` with `flat` / `torus` / `cylinder` / `mobius` / `klein`
    args per difficulty. Omit `mobius` / `klein` if the tiling is chiral.
+   A `mobius` row count may be fractional, as a `cylinder` one may, and
+   with a non-zero `mobius_cut` it *must* be: `rows + 2*cut/height` has to
+   be a whole number or `arch_mobius_board` refuses to build the board.
    Seed the windows by hand if you like, but the sizes and mine counts that
    ship come from `scripts/difficulty/` — see "Choosing a size and a mine
    count" below; do not pick a density by eye.
@@ -132,7 +144,10 @@ differ from an Archimedean tiling, both handled for you:
 Steps (say a new primal `_foo_template` gained a dual `_bar_template`):
 
 1. `def _bar_template(): return _dual_template(_foo_template)` in
-   `tilings.py`.
+   `tilings.py`. The dual's `mobius_cut` is a second argument to
+   `_dual_template` rather than inherited: its tiles sit where the primal's
+   *vertices* are, so its courses are not the primal's (Cairo pentagonal and
+   rhombille both need one where their primals do not).
 2. Add an `ArchTiling("bar", "Bar label", config, edge_directions,
    _bar_template, family="dual")` row to `ARCH_TILINGS` (`config`
    is the Laves symbol, i.e. the primal's vertex configuration).

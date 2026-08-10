@@ -194,7 +194,26 @@ export interface ArchTemplate {
   mirror: Map<string, Ref> | null; // tag -> image under y -> height - y
   glide: boolean; // the mirror needs an extra width/2 x-shift (p4g)
   centre: Vertex | null; // rotation centre (domain coords) for the flat window
+  mobiusCut: number; // where the Mobius band starts within the repeating rows
 }
+
+// THE MOBIUS CUT. A Mobius strip has *one* edge, and the seam glues the band's
+// bottom rim to its top: whatever a row of tiles does at y = cut it must also
+// do at y = cut + strip, or half the edge reads one way and half the other.
+// Two rules follow, and `mobiusCut` is how a template states its answer:
+//
+//   * The band must be symmetric about its own centre line. The seam flip is
+//     y -> 2*cut + strip - y, the template's mirror composed with a whole
+//     number of vertical periods -- so `rows + 2*cut/height` has to come out a
+//     whole number (archMobiusBoard checks), and no tile centroid may sit *on*
+//     the cut, or that row is kept at the bottom of the band and its mirror at
+//     the top is not.
+//   * Given that, cut where the rim comes out straight if the tiling has a
+//     horizontal line of edges at all; otherwise halfway between the two rows
+//     the cut separates, which is the least ragged the rim can be.
+//
+// Most templates want cut 0. Kept in step with `mobius_cut` in
+// minesweeper/boards/tilings.py by data/conformance.json.
 
 type Polygon = readonly (readonly [number, number])[];
 
@@ -212,7 +231,12 @@ function template(
   width: number,
   height: number,
   polygons: readonly (readonly [string, Polygon])[],
-  { mirrored = true, glide = false, centre = null as Vertex | null } = {},
+  {
+    mirrored = true,
+    glide = false,
+    centre = null as Vertex | null,
+    mobiusCut = 0,
+  } = {},
 ): ArchTemplate {
   const reduce = (value: number, size: number): [number, number] => {
     // the slack absorbs tag rounding, so values exactly on a domain edge land
@@ -294,6 +318,7 @@ function template(
     mirror,
     glide,
     centre,
+    mobiusCut,
   };
 }
 
@@ -463,7 +488,10 @@ function trihexTemplate(): ArchTemplate {
     ["tri2", [[2, ROOT3], [2.5, ROOT3 + h], [1.5, ROOT3 + h]]],
     ["tri3", [[1.5, ROOT3 + h], [1, 2 * ROOT3], [0.5, ROOT3 + h]]],
   ];
-  return template([3, 6, 3, 6], 2, 2 * ROOT3, polygons);
+  // kagome: the horizontal family of straight lines runs along y = sqrt(3)/2,
+  // so the Mobius band cut there keeps a straight edge (cut 0 would put a
+  // hexagon centre on the seam).
+  return template([3, 6, 3, 6], 2, 2 * ROOT3, polygons, { mobiusCut: h });
 }
 
 function truncsquareTemplate(): ArchTemplate {
@@ -488,7 +516,9 @@ function truncsquareTemplate(): ArchTemplate {
     [p + q, p],
     [p, p + q],
   ];
-  return template([4, 8, 8], a, a, [["oct", octagon], ["sq", square]]);
+  // no horizontal line runs through this tiling, so the Mobius band is cut
+  // midway between the octagon and square courses.
+  return template([4, 8, 8], a, a, [["oct", octagon], ["sq", square]], { mobiusCut: a / 4 });
 }
 
 function elongatedTemplate(): ArchTemplate {
@@ -503,7 +533,9 @@ function elongatedTemplate(): ArchTemplate {
     ["tri2", [[0.5, 1.5 + h], [1.5, 1.5 + h], [1, 1.5 + 2 * h]]],
     ["tri3", [[1, 1.5 + 2 * h], [1.5, 1.5 + h], [2, 1.5 + 2 * h]]],
   ];
-  return template([3, 3, 3, 4, 4], 1, 2 + ROOT3, polygons);
+  // a square course's own bottom edge runs straight across the tiling, so the
+  // Mobius band is cut there and comes out flat-edged at both rims.
+  return template([3, 3, 3, 4, 4], 1, 2 + ROOT3, polygons, { mobiusCut: -0.5 });
 }
 
 function snubsquareTemplate(): ArchTemplate {
@@ -607,7 +639,9 @@ function trunchexTemplate(): ArchTemplate {
     ];
   };
   const polygons = [...around(0, 0, "0"), ...around(a / 2, (a * ROOT3) / 2, "1")];
-  return template([3, 12, 12], a, a * ROOT3, polygons);
+  // the triangles hang below every dodecagon course, so there is no horizontal
+  // line; the Mobius band is cut midway between the two courses.
+  return template([3, 12, 12], a, a * ROOT3, polygons, { mobiusCut: (a * ROOT3) / 4 });
 }
 
 function rhombitrihexTemplate(): ArchTemplate {
@@ -630,7 +664,12 @@ function rhombitrihexTemplate(): ArchTemplate {
   };
   const width = a;
   const height = a * ROOT3;
-  return template([3, 4, 6, 4], width, height, hexLatticePolygons(centreAt, hexagonAt, decorate, width, height));
+  // courses of hexagon+square, triangle, square, triangle, ... and no
+  // horizontal line; the Mobius band is cut midway between a triangle course
+  // and the hexagon course above it.
+  return template([3, 4, 6, 4], width, height, hexLatticePolygons(centreAt, hexagonAt, decorate, width, height), {
+    mobiusCut: (5 * height) / 12,
+  });
 }
 
 function trunctrihexTemplate(): ArchTemplate {
@@ -665,16 +704,25 @@ function trunctrihexTemplate(): ArchTemplate {
   };
   const width = a;
   const height = a * ROOT3;
-  return template([4, 6, 12], width, height, hexLatticePolygons(centreAt, dodecagonAt, decorate, width, height));
+  // courses of dodecagon+square, hexagon, square, hexagon, ... and no
+  // horizontal line; the Mobius band is cut midway between the square course
+  // and the hexagon course above it.
+  return template([4, 6, 12], width, height, hexLatticePolygons(centreAt, dodecagonAt, decorate, width, height), {
+    mobiusCut: (7 * height) / 24,
+  });
 }
 
 // -- Laves (dual / Catalan) tilings ------------------------------------------
 //
 // Each Laves tiling is the dual of one Archimedean tiling: a vertex at every
 // tile centre, joined across every shared edge. `dualTemplate` builds it
-// mechanically from the primal template.
+// mechanically from the primal template. Its second argument is the dual's own
+// Mobius cut (see THE MOBIUS CUT above), measured on the dual rather than
+// inherited: Cairo pentagonal and rhombille both have a tile centre on y = 0
+// and are cut midway between two courses instead, the other six duals want the
+// default 0.
 
-function dualTemplate(primal: () => ArchTemplate): ArchTemplate {
+function dualTemplate(primal: () => ArchTemplate, mobiusCut = 0): ArchTemplate {
   const p = primal();
   const { width, height } = p;
   const centroidOf = (refs: Ref[]): Vertex => {
@@ -727,10 +775,14 @@ function dualTemplate(primal: () => ArchTemplate): ArchTemplate {
       centre = [wx, wy];
     }
   }
+  // The dual's tiles sit where the primal's vertices are, so its courses are
+  // not the primal's and its Mobius cut is measured afresh rather than
+  // inherited from `p`.
   return template(p.config, width, height, polygons, {
     mirrored: p.mirror !== null,
     glide: p.glide,
     centre,
+    mobiusCut,
   });
 }
 
@@ -840,11 +892,13 @@ function offsetsquareTemplate(): ArchTemplate {
   // squares, each row shifted half a square against the one below, so every
   // vertex is two square corners meeting the middle of a third square's edge
   // (90 + 90 + 180). The domain runs from a square row's centreline, so the
-  // template midline is a mirror line.
+  // template midline is a mirror line. A row's own top edge runs straight
+  // across the tiling, so the Mobius band is cut there rather than along the
+  // midline, which would leave a square centre on the seam.
   return template([4, 4, 4], 1, 2, [
     ["sq0", [[0, -0.5], [1, -0.5], [1, 0.5], [0, 0.5]]],
     ["sq1", [[-0.5, 0.5], [0.5, 0.5], [0.5, 1.5], [-0.5, 1.5]]],
-  ]);
+  ], { mobiusCut: 0.5 });
 }
 
 function staggeredtriTemplate(): ArchTemplate {
@@ -1039,11 +1093,13 @@ function runningbondTemplate(ratio = 0.5): ArchTemplate {
   // against the middle of a third brick's edge (90 + 90 + 180). The offset
   // square tiling stretched; like it, the domain runs from a row's centreline
   // so the template midline is a mirror line.
+  // Cut on a course's top edge, as the offset square tiling is: the Mobius
+  // band wants a straight rim, and the midline runs through a brick.
   const r = ratio;
   return template([4], 1, 2 * r, [
     ["brick0", brick(0, -r / 2, 1, r)],
     ["brick1", brick(-0.5, r / 2, 1, r)],
-  ]);
+  ], { mobiusCut: r / 2 });
 }
 
 function basketweaveTemplate(group = 2): ArchTemplate {
@@ -1129,9 +1185,9 @@ export const ARCH_TILINGS: ArchTiling[] = [
   // the Laves (dual / Catalan) tilings -- face-transitive
   { key: "floret", label: "Floret pentagonal", config: [3, 3, 3, 3, 6], edgeDirections: 12, template: () => dualTemplate(snubhexTemplate), family: "dual", halfTurn: true },
   { key: "prismaticpent", label: "Prismatic pentagonal", config: [3, 3, 3, 4, 4], edgeDirections: 12, template: () => dualTemplate(elongatedTemplate), family: "dual", halfTurn: true },
-  { key: "cairo", label: "Cairo pentagonal", config: [3, 3, 4, 3, 4], edgeDirections: 12, template: () => dualTemplate(snubsquareTemplate), family: "dual", halfTurn: true },
+  { key: "cairo", label: "Cairo pentagonal", config: [3, 3, 4, 3, 4], edgeDirections: 12, template: () => dualTemplate(snubsquareTemplate, Math.sqrt(2 + ROOT3) / 4), family: "dual", halfTurn: true },
   { key: "deltoidal", label: "Deltoidal trihexagonal", config: [3, 4, 6, 4], edgeDirections: 12, template: () => dualTemplate(rhombitrihexTemplate), family: "dual", halfTurn: true },
-  { key: "rhombille", label: "Rhombille", config: [3, 6, 3, 6], edgeDirections: 12, template: () => dualTemplate(trihexTemplate), family: "dual", halfTurn: true },
+  { key: "rhombille", label: "Rhombille", config: [3, 6, 3, 6], edgeDirections: 12, template: () => dualTemplate(trihexTemplate, (3 * ROOT3) / 4), family: "dual", halfTurn: true },
   { key: "triakis", label: "Triakis triangular", config: [3, 12, 12], edgeDirections: 12, template: () => dualTemplate(trunchexTemplate), family: "dual", halfTurn: true },
   { key: "kisrhombille", label: "Kisrhombille", config: [4, 6, 12], edgeDirections: 12, template: () => dualTemplate(trunctrihexTemplate), family: "dual", halfTurn: true },
   { key: "tetrakis", label: "Tetrakis square", config: [4, 8, 8], edgeDirections: 8, template: () => dualTemplate(truncsquareTemplate), family: "dual", halfTurn: true },

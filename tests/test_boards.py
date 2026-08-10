@@ -94,6 +94,7 @@ from minesweeper.boards import (
 from minesweeper.boards import (
     euler_characteristic as _euler_characteristic,
 )
+from minesweeper.boards.presets import ARCH_PRESETS
 
 # Template tilings split by symmetry type. Archimedean (uniform) tilings are
 # vertex-transitive (every vertex has the same configuration) and edge to
@@ -2156,26 +2157,26 @@ class TestWrappedArchimedean:
             "cylsnubhex": (90, 243, 432),
             "cyltruncsquare": (77, 260, 476),
             "cyltrunchex": (81, 270, 504),
-            "mobiuselongated": (72, 276, 540),
+            "mobiuselongated": (91, 286, 416),
             "mobiussnubsquare": (78, 228, 486),
-            "mobiustrihex": (84, 288, 504),
-            "mobiustruncsquare": (88, 240, 504),
-            "mobiustrunchex": (84, 288, 504),
+            "mobiustrihex": (81, 225, 420),
+            "mobiustruncsquare": (77, 260, 459),
+            "mobiustrunchex": (81, 225, 420),
             "torusrhombitrihex": (84, 264, 468),
             "torustrunctrihex": (72, 264, 468),
             "cylrhombitrihex": (72, 264, 480),
             "cyltrunctrihex": (72, 264, 435),
-            "mobiusrhombitrihex": (72, 264, 540),
-            "mobiustrunctrihex": (72, 264, 540),
+            "mobiusrhombitrihex": (84, 286, 532),
+            "mobiustrunctrihex": (80, 280, 420),
             "torusprismaticpent": (80, 252, 480),
             "cylprismaticpent": (72, 224, 468),
             "mobiusprismaticpent": (72, 224, 444),
             "toruscairo": (84, 256, 480),
             "cylcairo": (80, 252, 480),
-            "mobiuscairo": (90, 230, 462),
+            "mobiuscairo": (75, 253, 495),
             "torusrhombille": (84, 252, 480),
             "cylrhombille": (81, 270, 504),
-            "mobiusrhombille": (72, 288, 504),
+            "mobiusrhombille": (77, 285, 550),
             "torusfloret": (84, 264, 468),
             "cylfloret": (84, 264, 450),
             "torustetrakis": (84, 256, 448),
@@ -2206,7 +2207,7 @@ class TestWrappedArchimedean:
             "kleinkisrhombille": (96, 288, 480),
             "torusoffsetsquare": (80, 252, 476),
             "cyloffsetsquare": (80, 252, 468),
-            "mobiusoffsetsquare": (90, 280, 456),
+            "mobiusoffsetsquare": (80, 252, 520),
             "kleinoffsetsquare": (78, 260, 476),
             "torusstaggeredtri": (84, 240, 484),
             "cylstaggeredtri": (72, 266, 450),
@@ -2226,7 +2227,7 @@ class TestWrappedArchimedean:
             "kleinstackedbond": (80, 253, 480),
             "torusrunningbond": (80, 252, 476),
             "cylrunningbond": (84, 260, 476),
-            "mobiusrunningbond": (72, 240, 504),
+            "mobiusrunningbond": (84, 260, 459),
             "kleinrunningbond": (78, 260, 476),
             "torusbasketweave": (80, 256, 480),
             "cylbasketweave": (72, 280, 504),
@@ -2243,6 +2244,79 @@ class TestWrappedArchimedean:
         for mode, expected in counts.items():
             for difficulty, count in zip(DIFFICULTIES, expected):
                 assert len(build_board(mode, difficulty).adjacency) == count
+
+    # The tilings that have a horizontal line of edges to cut along, so their
+    # Mobius band comes out with a straight rim (see the MOBIUS CUT note in
+    # boards/tilings.py). The rest are cut halfway between two courses and get
+    # a symmetric zigzag instead.
+    MOBIUS_STRAIGHT_RIM = {
+        "elongated", "trihex", "prismaticpent", "deltoidal", "triakis",
+        "kisrhombille", "tetrakis", "offsetsquare", "staggeredtri",
+        "stackedbond", "runningbond", "basketweave", "basketweave3",
+    }
+
+    MOBIUS_MODES = sorted(m for m in WRAPPED if m.startswith("mobius"))
+
+    @staticmethod
+    def _band_rows(mode, difficulty):
+        """Where across the band each row of tiles sits, and how tall the band
+        is: one domain column's worth of tile centres, measured from the cut
+        that ``arch_mobius_board`` starts the band at."""
+        tiling = max((t for t in _ARCH_CONFIGS if mode.endswith(t)), key=len)
+        template = _arch_template(tiling)
+        height, cut = template.height, template.mobius_cut
+        strip = ARCH_PRESETS[tiling]["mobius"][difficulty][1] * height
+        rows = []
+        for name, refs in template.cells:
+            y = sum(dn * height + template.verts[tag][1] for tag, _, dn in refs)
+            y /= len(refs)
+            for n in range(math.floor(cut / height) - 1,
+                           math.ceil((cut + strip) / height) + 1):
+                if cut - 1e-9 <= y + n * height < cut + strip - 1e-9:
+                    rows.append(y + n * height - cut)
+        return rows, strip
+
+    @pytest.mark.parametrize("difficulty", DIFFICULTIES)
+    @pytest.mark.parametrize("mode", MOBIUS_MODES)
+    def test_mobius_band_is_symmetric(self, mode, difficulty):
+        """A Mobius strip has *one* edge, so the band's two rims are two arcs
+        of the same circle: whatever the tiling does at one rim it must do at
+        the other, or half the edge reads one way and half the other. Which
+        makes the band's centre line a mirror of its rows.
+
+        This is the check a tiling's ``mobius_cut`` has to pass. Cut a band
+        where a row of tile *centres* falls and that row is kept at one rim
+        and not at the other -- which is what six of the eight uniform
+        tilings, and rhombille, shipped as.
+        """
+        rows, strip = self._band_rows(mode, difficulty)
+        assert rows
+        for here, there in zip(sorted(rows), sorted(strip - row for row in rows)):
+            assert abs(here - there) < 1e-6, f"{mode} {difficulty} band is lopsided"
+
+    @pytest.mark.parametrize("mode", MOBIUS_MODES)
+    def test_mobius_rim_is_straight_where_the_tiling_allows(self, mode):
+        """...and where the tiling has a horizontal edge-line, the cut runs
+        along it, so the strip's single edge is a clean circle rather than a
+        zigzag: every boundary vertex the same distance across the band.
+
+        Measured on the immersion, where that distance is just how far the
+        point lies from the strip's core circle.
+        """
+        tiling = max((t for t in _ARCH_CONFIGS if mode.endswith(t)), key=len)
+        board = build_board(mode, "medium")
+        edges = Counter()
+        for polygon in board.polygons.values():
+            points = [tuple(round(c, 6) for c in p) for p in polygon]
+            for edge in zip(points, points[1:] + points[:1]):
+                edges[frozenset(edge)] += 1
+        rim = [math.hypot(math.hypot(x, y) - 1.0, z)
+               for edge, count in edges.items() if count == 1 for x, y, z in edge]
+        spread = max(rim) - min(rim)
+        if tiling in self.MOBIUS_STRAIGHT_RIM:
+            assert spread < 1e-4, f"{mode} rim is not a straight line"
+        else:
+            assert spread > 1e-3  # a zigzag; nothing better is available
 
     def test_snubhex_is_chiral_so_no_mobius(self):
         # 3.3.3.3.6 has no mirror or glide symmetry: its mirror image is
