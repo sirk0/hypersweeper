@@ -4,38 +4,22 @@
     "cylrhombille": {
       "medium": {
         "level": "warn",
-        "winRate": 0.7771,
+        "winRate": 0.72,
         "target": 0.871,
         "indistinguishable": 0,
         "cells": 270,
-        "reason": "the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (9, 3%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win"
+        "reason": "the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (10, 4%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win"
       },
       "easy": {
         "level": "warn",
-        "winRate": 0.74,
+        "winRate": 0.76,
         "target": 0.965,
         "indistinguishable": 0,
-        "cells": 72,
-        "reason": "the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (6, 8%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win"
+        "cells": 81,
+        "reason": "the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (6, 7%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win"
       }
     },
     "cyltriakis": {
-      "hard": {
-        "level": "blocked",
-        "winRate": 0.0,
-        "target": 0.509,
-        "indistinguishable": 480,
-        "cells": 480,
-        "reason": "most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density"
-      },
-      "medium": {
-        "level": "blocked",
-        "winRate": 0.0,
-        "target": 0.871,
-        "indistinguishable": 252,
-        "cells": 252,
-        "reason": "most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density"
-      },
       "easy": {
         "level": "blocked",
         "winRate": 0.0,
@@ -43,16 +27,22 @@
         "indistinguishable": 84,
         "cells": 84,
         "reason": "most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density"
-      }
-    },
-    "klein": {
-      "easy": {
-        "level": "warn",
-        "winRate": 0.7257,
-        "target": 0.965,
-        "indistinguishable": 0,
-        "cells": 78,
-        "reason": "the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (9, 12%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win"
+      },
+      "hard": {
+        "level": "blocked",
+        "winRate": 0.0,
+        "target": 0.509,
+        "indistinguishable": 450,
+        "cells": 450,
+        "reason": "most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density"
+      },
+      "medium": {
+        "level": "blocked",
+        "winRate": 0.0,
+        "target": 0.871,
+        "indistinguishable": 264,
+        "cells": 264,
+        "reason": "most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density"
       }
     },
     "kleinrhombille": {
@@ -94,20 +84,12 @@
         "level": "blocked",
         "winRate": 0.0,
         "target": 0.965,
-        "indistinguishable": 72,
-        "cells": 72,
+        "indistinguishable": 96,
+        "cells": 96,
         "reason": "most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density"
       }
     },
     "mobiusrhombille": {
-      "medium": {
-        "level": "warn",
-        "winRate": 0.7857,
-        "target": 0.871,
-        "indistinguishable": 0,
-        "cells": 252,
-        "reason": "the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (9, 4%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win"
-      },
       "easy": {
         "level": "warn",
         "winRate": 0.7257,
@@ -115,31 +97,39 @@
         "indistinguishable": 0,
         "cells": 72,
         "reason": "the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (6, 8%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win"
+      },
+      "medium": {
+        "level": "warn",
+        "winRate": 0.7714,
+        "target": 0.871,
+        "indistinguishable": 0,
+        "cells": 288,
+        "reason": "the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (10, 3%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win"
       }
     },
     "mobiustriakis": {
-      "hard": {
-        "level": "blocked",
-        "winRate": 0.0,
-        "target": 0.509,
-        "indistinguishable": 464,
-        "cells": 480,
-        "reason": "most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density"
-      },
-      "medium": {
-        "level": "blocked",
-        "winRate": 0.0,
-        "target": 0.871,
-        "indistinguishable": 238,
-        "cells": 252,
-        "reason": "most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density"
-      },
       "easy": {
         "level": "blocked",
         "winRate": 0.0,
         "target": 0.965,
         "indistinguishable": 70,
         "cells": 84,
+        "reason": "most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density"
+      },
+      "hard": {
+        "level": "blocked",
+        "winRate": 0.0,
+        "target": 0.509,
+        "indistinguishable": 510,
+        "cells": 540,
+        "reason": "most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density"
+      },
+      "medium": {
+        "level": "blocked",
+        "winRate": 0.0,
+        "target": 0.871,
+        "indistinguishable": 242,
+        "cells": 264,
         "reason": "most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density"
       }
     },
@@ -151,16 +141,6 @@
         "indistinguishable": 0,
         "cells": 80,
         "reason": "the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (5, 6%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win"
-      }
-    },
-    "torus": {
-      "easy": {
-        "level": "warn",
-        "winRate": 0.8114,
-        "target": 0.965,
-        "indistinguishable": 0,
-        "cells": 84,
-        "reason": "the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (8, 10%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win"
       }
     },
     "torusrhombille": {
@@ -210,10 +190,10 @@
       },
       "easy": {
         "level": "blocked",
-        "winRate": 0.0526,
+        "winRate": 0.0,
         "target": 0.965,
-        "indistinguishable": 72,
-        "cells": 72,
+        "indistinguishable": 96,
+        "cells": 96,
         "reason": "most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density"
       }
     },

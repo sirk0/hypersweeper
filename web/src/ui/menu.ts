@@ -706,7 +706,9 @@ export class Menu {
       btn.append(warn);
     }
     if (level === "blocked") {
-      btn.setAttribute("aria-disabled", "true");
+      // Deliberately *not* `aria-disabled`: the row is a working control that
+      // opens the explanation, and claiming it is disabled would both lie to a
+      // screen reader and tell every actionability check not to click it.
       btn.addEventListener("click", () => this.showBlocked(mode, label));
     } else {
       btn.addEventListener("click", () =>

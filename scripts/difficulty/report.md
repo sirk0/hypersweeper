@@ -14,42 +14,41 @@ Every board's mine count, chosen so its win probability under the reference solv
 
 - 480 rows, 448 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
 - 32 could not be brought on target:
-  - `cylrhombille`/medium: 77.7% vs 87.1% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (9, 3%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
-  - `cylrhombille`/easy: 74.0% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (6, 8%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
+  - `cylinder`/easy: 89.1% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (7, 9%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
+  - `cylrhombille`/medium: 72.0% vs 87.1% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (10, 4%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
+  - `cylrhombille`/easy: 76.0% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (6, 7%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
+  - `cylrotatedhex`/easy: 89.1% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (4, 5%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
+  - `cyltriakis`/easy: 0.0% vs 96.5% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `cyltriakis`/hard: 0.0% vs 50.9% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `cyltriakis`/medium: 0.0% vs 87.1% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
-  - `cyltriakis`/easy: 0.0% vs 96.5% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `kisrhombille`/easy: 91.4% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (5, 7%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
-  - `klein`/easy: 72.6% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (9, 12%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
   - `kleinrhombille`/medium: 74.6% vs 87.1% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (9, 3%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
   - `kleinrhombille`/easy: 52.0% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (6, 7%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
   - `kleintriakis`/hard: 0.0% vs 50.9% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `kleintriakis`/medium: 0.0% vs 87.1% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `kleintriakis`/easy: 0.0% vs 96.5% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
-  - `mobiusrhombille`/medium: 78.6% vs 87.1% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (9, 4%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
   - `mobiusrhombille`/easy: 72.6% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (6, 8%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
+  - `mobiusrhombille`/medium: 77.1% vs 87.1% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (10, 3%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
+  - `mobiustriakis`/easy: 0.0% vs 96.5% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `mobiustriakis`/hard: 0.0% vs 50.9% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `mobiustriakis`/medium: 0.0% vs 87.1% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
-  - `mobiustriakis`/easy: 0.0% vs 96.5% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `penrose`/easy: 91.7% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (6, 7%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
   - `rhombicosidodeca`/hard: 46.1% vs 50.9% — no integer mine count lands within tolerance; this is the closest
   - `rhombille`/easy: 75.7% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (5, 6%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
-  - `torus`/easy: 81.1% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (8, 10%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
   - `torusrhombille`/medium: 74.0% vs 87.1% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (9, 4%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
   - `torusrhombille`/easy: 64.9% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (5, 6%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
   - `torusstackedbond`/easy: 77.4% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (9, 11%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
   - `torustriakis`/hard: 0.0% vs 50.9% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `torustriakis`/medium: 0.0% vs 87.1% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
-  - `torustriakis`/easy: 5.3% vs 96.5% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
+  - `torustriakis`/easy: 0.0% vs 96.5% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `torustrunchex`/easy: 91.1% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (5, 6%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
   - `triakis`/hard: 0.0% vs 50.9% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `triakis`/medium: 0.0% vs 87.1% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `triakis`/easy: 1.8% vs 96.5% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `truncicosidodeca`/hard: 45.9% vs 50.9% — no integer mine count lands within tolerance; this is the closest
-- 97 rows had games the solver abandoned (its frontier DP hit its node budget); their rates are measured over the games that finished:
+- 87 rows had games the solver abandoned (its frontier DP hit its node budget); their rates are measured over the games that finished:
   - `torustrunchex`/hard: 168 abandoned
   - `torusrotatedhex`/hard: 144 abandoned
-  - `cyltrunchex`/hard: 117 abandoned
   - `kleintri`/hard: 75 abandoned
   - `kleintrunchex`/hard: 71 abandoned
   - `toruselongated`/hard: 54 abandoned
@@ -57,10 +56,11 @@ Every board's mine count, chosen so its win probability under the reference solv
   - `kleinrhombille`/hard: 32 abandoned
   - `torussnubsquare`/hard: 32 abandoned
   - `kleintri`/medium: 28 abandoned
+  - `toruselongated`/medium: 25 abandoned
 
-Densities run from 2.8% to 36.2% (median 16.9%) — the spread the old flat 14/16/19 per cent could not express.
+Densities run from 2.8% to 36.2% (median 16.7%) — the spread the old flat 14/16/19 per cent could not express.
 
-The only floor under the search is the **opening**: the fewest mines at which the first click alone stops finishing the board (`calibrate.opening_floor`). As a density that runs 1.3% to 16.7% across the zoo — which is why it is measured per board rather than set as a percentage.
+The only floor under the search is the **opening**: the fewest mines at which the first click alone stops finishing the board (`calibrate.opening_floor`). As a density that runs 1.2% to 16.7% across the zoo — which is why it is measured per board rather than set as a percentage.
 
 ## Every board
 
@@ -75,36 +75,36 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `chair` | 6.3 | 64c 6m (9%) 95% | 256c 36m (14%) 83% | 256c 49m (19%) 51% |
 | `cube` | 8.0 | 96c 18m (19%) 99% | 294c 66m (22%) 89% | 486c 130m (27%) 47% |
 | `cubeframe` | 8.4 | 72c 17m (24%) 99% | 264c 53m (20%) 86% | 480c 126m (26%) 50% |
-| `cylbasketweave` | 6.7 | 72c 10m (14%) 99% | 264c 47m (18%) 85% | 480c 102m (21%) 52% |
-| `cylbasketweave3` | 6.4 | 72c 5m (7%) 96% | 270c 27m (10%) 89% | 432c 82m (19%) 51% |
-| `cylcairo` | 6.7 | 72c 12m (17%) 93% | 256c 43m (17%) 90% | 484c 104m (21%) 49% |
-| `cyldeltoidal` | 8.6 | 72c 10m (14%) 97% | 288c 44m (15%) 85% | 480c 100m (21%) 51% |
-| `cylelongated` | 9.7 | 84c 6m (7%) 95% | 247c 37m (15%) 88% | 425c 93m (22%) 47% |
-| `cylfloret` | 7.7 | 84c 9m (11%) 97% | 252c 34m (13%) 87% | 480c 90m (19%) 50% |
-| `cylherringbone` | 5.7 | 72c 10m (14%) 96% | 264c 50m (19%) 86% | 480c 111m (23%) 54% |
-| `cylhex` | 5.8 | 84c 12m (14%) 99% | 256c 53m (21%) 88% | 484c 116m (24%) 50% |
-| `cylinder` | 7.7 | 84c 13m (15%) 97% | 256c 49m (19%) 89% | 484c 117m (24%) 49% |
-| `cylkisrhombille` | 14.9 | 144c 6m (4%) 97% | 288c 22m (8%) 85% | 432c 56m (13%) 47% |
-| `cyloffsetsquare` | 5.8 | 84c 15m (18%) 96% | 256c 55m (21%) 87% | 484c 114m (24%) 51% |
-| `cylprismaticpent` | 6.8 | 72c 8m (11%) 96% | 256c 51m (20%) 88% | 528c 123m (23%) 54% |
-| `cylpythagorean` | 5.8 | 75c 10m (13%) 97% | 275c 43m (16%) 85% | 490c 89m (18%) 50% |
-| `cylrhombille` | 9.5 | 72c 6m (8%) 74% ⚠ | 270c 9m (3%) 78% ⚠ | 504c 20m (4%) 48% |
-| `cylrhombitrihex` | 7.7 | 72c 5m (7%) 96% | 288c 28m (10%) 87% | 480c 67m (14%) 55% |
-| `cylrotatedhex` | 5.7 | 75c 4m (5%) 94% | 270c 13m (5%) 86% | 468c 32m (7%) 51% |
-| `cylrotatedtri` | 5.8 | 72c 11m (15%) 96% | 288c 59m (20%) 84% | 456c 105m (23%) 53% |
-| `cylrunningbond` | 5.9 | 72c 14m (19%) 94% | 276c 57m (21%) 90% | 512c 120m (23%) 53% |
-| `cylsnubhex` | 9.6 | 90c 6m (7%) 99% | 270c 34m (13%) 89% | 504c 100m (20%) 53% |
-| `cylsnubsquare` | 9.5 | 84c 12m (14%) 95% | 294c 52m (18%) 90% | 486c 117m (24%) 52% |
-| `cylstackedbond` | 7.8 | 84c 13m (15%) 98% | 276c 52m (19%) 85% | 465c 113m (24%) 49% |
-| `cylstaggeredtri` | 7.8 | 72c 14m (19%) 96% | 288c 62m (22%) 87% | 476c 120m (25%) 51% |
-| `cyltetrakis` | 13.3 | 72c 8m (11%) 98% | 288c 29m (10%) 86% | 484c 69m (14%) 52% |
-| `cylthreescaletri` | 7.7 | 81c 12m (15%) 98% | 270c 54m (20%) 86% | 468c 111m (24%) 49% |
-| `cyltri` | 11.6 | 84c 15m (18%) 99% | 256c 58m (23%) 87% | 484c 133m (27%) 48% |
-| `cyltriakis` | 19.9 | 84c 11m (13%) 0% ⚠ | 252c 40m (16%) 0% ⚠ | 480c 96m (20%) 0% ⚠ |
-| `cyltrihex` | 7.7 | 72c 12m (17%) 95% | 270c 52m (19%) 85% | 504c 112m (22%) 47% |
-| `cyltrunchex` | 5.7 | 90c 5m (6%) 95% | 270c 17m (6%) 86% | 504c 39m (8%) 53% |
-| `cyltruncsquare` | 5.8 | 80c 8m (10%) 99% | 242c 37m (15%) 84% | 512c 88m (17%) 53% |
-| `cyltrunctrihex` | 5.8 | 72c 7m (10%) 97% | 288c 39m (14%) 87% | 480c 82m (17%) 49% |
+| `cylbasketweave` | 5.7 | 72c 10m (14%) 99% | 280c 46m (16%) 89% | 504c 101m (20%) 53% |
+| `cylbasketweave3` | 6.2 | 90c 7m (8%) 93% | 240c 29m (12%) 84% | 462c 73m (16%) 54% |
+| `cylcairo` | 6.5 | 80c 12m (15%) 96% | 252c 41m (16%) 86% | 480c 95m (20%) 52% |
+| `cyldeltoidal` | 7.2 | 72c 10m (14%) 97% | 264c 42m (16%) 88% | 450c 91m (20%) 51% |
+| `cylelongated` | 9.4 | 91c 6m (7%) 97% | 286c 45m (16%) 85% | 416c 79m (19%) 52% |
+| `cylfloret` | 6.7 | 84c 9m (11%) 97% | 264c 33m (12%) 85% | 450c 77m (17%) 52% |
+| `cylherringbone` | 5.0 | 72c 10m (14%) 96% | 280c 52m (19%) 84% | 504c 110m (22%) 48% |
+| `cylhex` | 5.7 | 80c 15m (19%) 95% | 252c 49m (19%) 89% | 480c 107m (22%) 50% |
+| `cylinder` | 7.5 | 80c 7m (9%) 89% ⚠ | 252c 47m (19%) 86% | 480c 106m (22%) 49% |
+| `cylkisrhombille` | 12.8 | 144c 6m (4%) 97% | 288c 17m (6%) 86% | 480c 52m (11%) 52% |
+| `cyloffsetsquare` | 5.7 | 80c 11m (14%) 99% | 252c 48m (19%) 87% | 468c 104m (22%) 55% |
+| `cylprismaticpent` | 5.5 | 72c 8m (11%) 96% | 224c 42m (19%) 84% | 468c 102m (22%) 55% |
+| `cylpythagorean` | 5.2 | 75c 10m (13%) 97% | 225c 31m (14%) 90% | 480c 84m (18%) 48% |
+| `cylrhombille` | 9.3 | 81c 6m (7%) 76% ⚠ | 270c 10m (4%) 72% ⚠ | 504c 20m (4%) 49% |
+| `cylrhombitrihex` | 6.7 | 72c 5m (7%) 96% | 264c 21m (8%) 88% | 480c 59m (12%) 54% |
+| `cylrotatedhex` | 5.5 | 81c 4m (5%) 89% ⚠ | 270c 12m (4%) 84% | 420c 28m (7%) 49% |
+| `cylrotatedtri` | 5.0 | 72c 11m (15%) 96% | 224c 40m (18%) 89% | 420c 91m (22%) 51% |
+| `cylrunningbond` | 5.8 | 84c 17m (20%) 96% | 260c 52m (20%) 87% | 476c 111m (23%) 50% |
+| `cylsnubhex` | 8.3 | 90c 6m (7%) 99% | 243c 24m (10%) 87% | 432c 71m (16%) 52% |
+| `cylsnubsquare` | 8.3 | 84c 12m (14%) 95% | 231c 38m (16%) 89% | 480c 108m (22%) 52% |
+| `cylstackedbond` | 7.1 | 84c 13m (15%) 98% | 273c 48m (18%) 91% | 476c 112m (24%) 51% |
+| `cylstaggeredtri` | 6.7 | 72c 14m (19%) 96% | 266c 56m (21%) 86% | 450c 109m (24%) 51% |
+| `cyltetrakis` | 12.4 | 81c 6m (7%) 95% | 255c 18m (7%) 86% | 480c 68m (14%) 55% |
+| `cylthreescaletri` | 6.7 | 81c 12m (15%) 98% | 270c 51m (19%) 85% | 420c 94m (22%) 50% |
+| `cyltri` | 11.3 | 80c 15m (19%) 97% | 252c 58m (23%) 87% | 480c 129m (27%) 47% |
+| `cyltriakis` | 15.7 | 84c 11m (13%) 0% ⚠ | 264c 42m (16%) 0% ⚠ | 450c 90m (20%) 0% ⚠ |
+| `cyltrihex` | 7.5 | 81c 9m (11%) 99% | 270c 47m (17%) 85% | 504c 102m (20%) 54% |
+| `cyltrunchex` | 5.7 | 81c 4m (5%) 94% | 270c 13m (5%) 87% | 504c 34m (7%) 51% |
+| `cyltruncsquare` | 5.7 | 77c 8m (10%) 99% | 260c 40m (15%) 87% | 476c 85m (18%) 54% |
+| `cyltrunctrihex` | 5.0 | 72c 7m (10%) 97% | 264c 32m (12%) 90% | 435c 58m (13%) 53% |
 | `deltoidal` | 8.3 | 76c 6m (8%) 98% | 248c 28m (11%) 83% | 490c 84m (17%) 48% |
 | `elongated` | 9.0 | 85c 5m (6%) 98% | 219c 26m (12%) 90% | 543c 92m (17%) 55% |
 | `floret` | 7.4 | 72c 7m (10%) 97% | 288c 37m (13%) 86% | 480c 81m (17%) 52% |
@@ -115,14 +115,14 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `hextri` | 11.1 | 96c 14m (15%) 97% | 294c 56m (19%) 86% | 486c 117m (24%) 49% |
 | `hextriangle` | 5.6 | 78c 9m (12%) 97% | 253c 38m (15%) 89% | 465c 97m (21%) 49% |
 | `kisrhombille` | 14.2 | 72c 5m (7%) 91% ⚠ | 288c 21m (7%) 85% | 432c 50m (12%) 50% |
-| `klein` | 8.0 | 78c 9m (12%) 73% ⚠ | 260c 55m (21%) 91% | 476c 126m (26%) 50% |
+| `klein` | 8.0 | 80c 14m (18%) 99% | 260c 55m (21%) 91% | 476c 126m (26%) 50% |
 | `kleinbasketweave` | 7.0 | 88c 12m (14%) 99% | 272c 50m (18%) 89% | 460c 107m (23%) 47% |
 | `kleinbasketweave3` | 6.7 | 78c 12m (15%) 97% | 270c 56m (21%) 91% | 456c 111m (24%) 51% |
 | `kleincairo` | 7.0 | 78c 14m (18%) 95% | 250c 47m (19%) 88% | 490c 113m (23%) 50% |
 | `kleindeltoidal` | 9.0 | 72c 12m (17%) 95% | 240c 41m (17%) 87% | 468c 102m (22%) 48% |
 | `kleinelongated` | 10.0 | 78c 17m (22%) 93% | 264c 59m (22%) 84% | 486c 127m (26%) 48% |
 | `kleinhex` | 6.0 | 84c 16m (19%) 99% | 252c 57m (23%) 88% | 480c 122m (25%) 55% |
-| `kleinkisrhombille` | 16.0 | 72c 7m (10%) 95% | 288c 29m (10%) 88% | 480c 68m (14%) 47% |
+| `kleinkisrhombille` | 16.0 | 96c 9m (9%) 98% | 288c 29m (10%) 88% | 480c 68m (14%) 47% |
 | `kleinoffsetsquare` | 6.0 | 78c 15m (19%) 98% | 260c 57m (22%) 85% | 476c 120m (25%) 54% |
 | `kleinprismaticpent` | 7.0 | 76c 10m (13%) 97% | 252c 56m (22%) 86% | 480c 116m (24%) 49% |
 | `kleinrhombille` | 10.0 | 84c 6m (7%) 52% ⚠ | 264c 9m (3%) 75% ⚠ | 480c 18m (4%) 52% |
@@ -133,34 +133,34 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `kleinstaggeredtri` | 8.0 | 84c 18m (21%) 97% | 270c 66m (24%) 84% | 496c 134m (27%) 52% |
 | `kleintetrakis` | 14.0 | 84c 9m (11%) 94% | 252c 24m (10%) 85% | 480c 67m (14%) 53% |
 | `kleintri` | 12.0 | 84c 18m (21%) 98% | 260c 70m (27%) 89% | 480c 140m (29%) 52% |
-| `kleintriakis` | 21.0 | 72c 9m (12%) 0% ⚠ | 264c 42m (16%) 0% ⚠ | 480c 96m (20%) 0% ⚠ |
+| `kleintriakis` | 21.0 | 96c 12m (12%) 0% ⚠ | 264c 42m (16%) 0% ⚠ | 480c 96m (20%) 0% ⚠ |
 | `kleintrihex` | 8.0 | 84c 18m (21%) 96% | 252c 54m (21%) 88% | 480c 122m (25%) 51% |
 | `kleintrunchex` | 6.0 | 84c 5m (6%) 94% | 252c 17m (7%) 87% | 480c 45m (9%) 52% |
 | `kleintruncsquare` | 6.0 | 80c 7m (9%) 93% | 256c 48m (19%) 85% | 480c 98m (20%) 50% |
 | `kleintrunctrihex` | 6.0 | 84c 12m (14%) 96% | 264c 42m (16%) 86% | 468c 89m (19%) 54% |
-| `mobius` | 7.6 | 84c 12m (14%) 98% | 250c 43m (17%) 89% | 476c 108m (23%) 51% |
+| `mobius` | 7.0 | 84c 12m (14%) 98% | 252c 44m (17%) 89% | 480c 103m (21%) 53% |
 | `mobiusbasketweave` | 6.3 | 72c 12m (17%) 97% | 228c 39m (17%) 90% | 460c 95m (21%) 51% |
 | `mobiusbasketweave3` | 6.2 | 84c 7m (8%) 95% | 270c 31m (11%) 86% | 456c 77m (17%) 51% |
 | `mobiuscairo` | 6.6 | 90c 14m (16%) 98% | 230c 41m (18%) 86% | 462c 93m (20%) 53% |
-| `mobiusdeltoidal` | 8.4 | 72c 10m (14%) 99% | 240c 37m (15%) 89% | 432c 89m (21%) 51% |
-| `mobiuselongated` | 9.4 | 72c 11m (15%) 96% | 228c 37m (16%) 91% | 468c 100m (21%) 53% |
-| `mobiushex` | 5.7 | 80c 14m (18%) 95% | 253c 51m (20%) 86% | 480c 109m (23%) 51% |
-| `mobiuskisrhombille` | 14.4 | 144c 7m (5%) 95% | 288c 18m (6%) 89% | 432c 48m (11%) 53% |
-| `mobiusoffsetsquare` | 5.8 | 78c 12m (15%) 99% | 266c 53m (20%) 85% | 468c 111m (24%) 48% |
-| `mobiusprismaticpent` | 6.6 | 72c 8m (11%) 97% | 224c 43m (19%) 83% | 528c 118m (22%) 51% |
-| `mobiusrhombille` | 9.5 | 72c 6m (8%) 73% ⚠ | 252c 9m (4%) 79% ⚠ | 510c 20m (4%) 54% |
-| `mobiusrhombitrihex` | 7.7 | 72c 5m (7%) 95% | 252c 28m (11%) 83% | 480c 64m (13%) 54% |
-| `mobiusrunningbond` | 5.7 | 72c 12m (17%) 98% | 238c 50m (21%) 85% | 460c 108m (23%) 51% |
+| `mobiusdeltoidal` | 7.2 | 72c 10m (14%) 99% | 264c 39m (15%) 87% | 468c 95m (20%) 50% |
+| `mobiuselongated` | 8.3 | 72c 11m (15%) 96% | 276c 40m (14%) 89% | 540c 112m (21%) 54% |
+| `mobiushex` | 5.2 | 80c 14m (18%) 95% | 252c 48m (19%) 85% | 481c 108m (22%) 52% |
+| `mobiuskisrhombille` | 12.8 | 144c 7m (5%) 95% | 240c 15m (6%) 85% | 528c 52m (10%) 53% |
+| `mobiusoffsetsquare` | 5.7 | 90c 14m (16%) 98% | 280c 53m (19%) 87% | 456c 104m (23%) 49% |
+| `mobiusprismaticpent` | 6.2 | 72c 8m (11%) 97% | 224c 43m (19%) 83% | 444c 98m (22%) 54% |
+| `mobiusrhombille` | 7.3 | 72c 6m (8%) 73% ⚠ | 288c 10m (3%) 77% ⚠ | 504c 20m (4%) 51% |
+| `mobiusrhombitrihex` | 6.6 | 72c 5m (7%) 95% | 264c 22m (8%) 84% | 540c 68m (13%) 50% |
+| `mobiusrunningbond` | 5.3 | 72c 12m (17%) 98% | 240c 46m (19%) 90% | 504c 117m (23%) 49% |
 | `mobiussnubsquare` | 9.4 | 78c 12m (15%) 97% | 228c 41m (18%) 88% | 486c 112m (23%) 53% |
-| `mobiusstackedbond` | 7.7 | 84c 15m (18%) 94% | 255c 48m (19%) 88% | 460c 112m (24%) 49% |
-| `mobiusstaggeredtri` | 7.7 | 78c 14m (18%) 98% | 250c 54m (22%) 88% | 490c 122m (25%) 53% |
-| `mobiustetrakis` | 12.8 | 80c 8m (10%) 96% | 264c 27m (10%) 88% | 480c 69m (14%) 51% |
-| `mobiustri` | 11.4 | 85c 12m (14%) 99% | 261c 60m (23%) 85% | 481c 125m (26%) 54% |
-| `mobiustriakis` | 19.8 | 84c 11m (13%) 0% ⚠ | 252c 40m (16%) 0% ⚠ | 480c 96m (20%) 0% ⚠ |
-| `mobiustrihex` | 7.6 | 84c 13m (15%) 98% | 264c 51m (19%) 89% | 480c 107m (22%) 54% |
-| `mobiustrunchex` | 5.7 | 84c 4m (5%) 95% | 264c 13m (5%) 87% | 480c 34m (7%) 47% |
-| `mobiustruncsquare` | 5.7 | 80c 8m (10%) 98% | 260c 34m (13%) 91% | 480c 81m (17%) 55% |
-| `mobiustrunctrihex` | 5.7 | 72c 8m (11%) 95% | 288c 35m (12%) 89% | 480c 82m (17%) 47% |
+| `mobiusstackedbond` | 7.1 | 84c 15m (18%) 94% | 260c 47m (18%) 88% | 459c 109m (24%) 50% |
+| `mobiusstaggeredtri` | 7.7 | 90c 16m (18%) 98% | 270c 57m (21%) 85% | 468c 118m (25%) 51% |
+| `mobiustetrakis` | 10.2 | 80c 8m (10%) 96% | 280c 28m (10%) 90% | 456c 69m (15%) 48% |
+| `mobiustri` | 11.1 | 85c 12m (14%) 99% | 261c 60m (23%) 85% | 480c 128m (27%) 50% |
+| `mobiustriakis` | 15.2 | 84c 11m (13%) 0% ⚠ | 264c 42m (16%) 0% ⚠ | 540c 108m (20%) 0% ⚠ |
+| `mobiustrihex` | 7.0 | 84c 13m (15%) 98% | 288c 52m (18%) 89% | 504c 111m (22%) 52% |
+| `mobiustrunchex` | 5.1 | 84c 4m (5%) 95% | 288c 10m (3%) 91% | 504c 34m (7%) 48% |
+| `mobiustruncsquare` | 5.7 | 88c 9m (10%) 97% | 240c 32m (13%) 88% | 504c 84m (17%) 48% |
+| `mobiustrunctrihex` | 5.0 | 72c 8m (11%) 95% | 264c 31m (12%) 90% | 540c 83m (15%) 49% |
 | `offsetsquare` | 5.6 | 77c 12m (16%) 95% | 281c 46m (16%) 88% | 495c 102m (21%) 51% |
 | `penrose` | 8.8 | 81c 6m (7%) 92% ⚠ | 256c 17m (7%) 88% | 480c 48m (10%) 47% |
 | `pentaflake` | 4.4 | 216c 11m (5%) 95% | 216c 15m (7%) 88% | 216c 27m (12%) 52% |
@@ -186,18 +186,18 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `steppedbipyramid` | 8.1 | 102c 21m (21%) 95% | 198c 46m (23%) 90% | 486c 128m (26%) 52% |
 | `tetraframe` | 11.9 | 64c 7m (11%) 99% | 256c 37m (14%) 85% | 400c 83m (21%) 51% |
 | `tetrahedron` | 11.9 | 100c 19m (19%) 96% | 256c 66m (26%) 88% | 484c 143m (30%) 54% |
-| `tetrakis` | 12.7 | 84c 5m (6%) 96% | 256c 27m (11%) 90% | 480c 68m (14%) 55% |
+| `tetrakis` | 12.2 | 84c 5m (6%) 96% | 256c 27m (11%) 90% | 552c 59m (11%) 54% |
 | `threescaletri` | 7.6 | 85c 12m (14%) 97% | 263c 45m (17%) 87% | 537c 115m (21%) 48% |
-| `torus` | 8.0 | 84c 8m (10%) 81% ⚠ | 261c 42m (16%) 83% | 480c 123m (26%) 53% |
+| `torus` | 8.0 | 80c 14m (18%) 99% | 261c 42m (16%) 83% | 480c 123m (26%) 53% |
 | `torusbasketweave` | 7.0 | 80c 12m (15%) 98% | 256c 46m (18%) 89% | 480c 109m (23%) 53% |
-| `torusbasketweave3` | 6.7 | 72c 15m (21%) 96% | 252c 53m (21%) 88% | 480c 115m (24%) 51% |
+| `torusbasketweave3` | 6.7 | 84c 12m (14%) 99% | 252c 53m (21%) 88% | 480c 115m (24%) 51% |
 | `toruscairo` | 7.0 | 84c 12m (14%) 99% | 256c 47m (18%) 85% | 480c 105m (22%) 52% |
 | `torusdeltoidal` | 9.0 | 84c 12m (14%) 96% | 264c 44m (17%) 83% | 468c 102m (22%) 52% |
 | `toruselongated` | 10.0 | 84c 16m (19%) 98% | 270c 61m (23%) 86% | 486c 123m (25%) 52% |
 | `torusfloret` | 8.0 | 84c 12m (14%) 99% | 264c 47m (18%) 84% | 468c 97m (21%) 51% |
 | `torusherringbone` | 6.0 | 80c 17m (21%) 95% | 256c 60m (23%) 86% | 480c 122m (25%) 50% |
 | `torushex` | 6.0 | 84c 18m (21%) 96% | 260c 58m (22%) 87% | 476c 119m (25%) 54% |
-| `toruskisrhombille` | 16.0 | 72c 5m (7%) 100% | 288c 26m (9%) 90% | 480c 68m (14%) 51% |
+| `toruskisrhombille` | 16.0 | 96c 6m (6%) 99% | 288c 26m (9%) 90% | 480c 68m (14%) 51% |
 | `torusoffsetsquare` | 6.0 | 80c 15m (19%) 97% | 252c 59m (23%) 85% | 476c 120m (25%) 51% |
 | `torusprismaticpent` | 7.0 | 80c 11m (14%) 97% | 252c 58m (23%) 84% | 480c 118m (25%) 49% |
 | `toruspythagorean` | 6.0 | 80c 12m (15%) 99% | 270c 47m (17%) 87% | 480c 96m (20%) 53% |
@@ -213,7 +213,7 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `torustetrakis` | 14.0 | 84c 7m (8%) 98% | 256c 29m (11%) 83% | 448c 68m (15%) 47% |
 | `torusthreescaletri` | 8.0 | 84c 18m (21%) 93% | 252c 56m (22%) 87% | 480c 120m (25%) 53% |
 | `torustri` | 12.0 | 80c 17m (21%) 97% | 256c 69m (27%) 89% | 480c 138m (29%) 52% |
-| `torustriakis` | 21.0 | 72c 9m (12%) 5% ⚠ | 264c 42m (16%) 0% ⚠ | 504c 101m (20%) 0% ⚠ |
+| `torustriakis` | 21.0 | 96c 12m (12%) 0% ⚠ | 264c 42m (16%) 0% ⚠ | 504c 101m (20%) 0% ⚠ |
 | `torustrihex` | 8.0 | 84c 18m (21%) 94% | 270c 60m (22%) 84% | 480c 118m (25%) 51% |
 | `torustrunchex` | 6.0 | 84c 5m (6%) 91% ⚠ | 252c 16m (6%) 91% | 480c 40m (8%) 50% |
 | `torustruncsquare` | 6.0 | 80c 7m (9%) 94% | 252c 39m (15%) 88% | 480c 98m (20%) 52% |
