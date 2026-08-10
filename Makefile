@@ -30,7 +30,7 @@ test:            ## run the test suite
 	$(PY) -m pytest -q
 
 lint:            ## ruff over the code and tests
-	$(PY) -m ruff check minesweeper tests main.py
+	$(PY) -m ruff check minesweeper tests scripts main.py
 
 run:             ## run the pygame game
 	$(PY) -m minesweeper

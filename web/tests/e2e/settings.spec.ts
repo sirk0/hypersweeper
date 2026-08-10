@@ -317,11 +317,14 @@ test.describe("shareable board links", () => {
     await page.locator('.menu-entry[data-group="manifolds"]').click();
     await page.locator('.menu-entry[data-surface="klein"]').click();
     await page.locator('.menu-entry[data-submenu="dual"]').click();
-    await page.locator('.menu-entry[data-mode="kleintriakis"]').click();
+    // A Laves tiling that is actually playable: the triakis boards are all
+    // look-alike pairs, so their rows open the explanation rather than a game
+    // (src/boards/fairness.ts).
+    await page.locator('.menu-entry[data-mode="kleintetrakis"]').click();
 
     // Every ordinary game is dealt from a seed, and the link carries it — so
     // the link names *this* board rather than another one of the same kind.
-    await expect(page).toHaveURL(/\?mode=kleintriakis&difficulty=easy&seed=\d+$/);
+    await expect(page).toHaveURL(/\?mode=kleintetrakis&difficulty=easy&seed=\d+$/);
 
     // The link is the whole story: opening it fresh lands on the same board...
     const url = page.url();
@@ -330,7 +333,7 @@ test.describe("shareable board links", () => {
     await expect(page.locator("body[data-ready]")).toBeVisible();
     const state = await page.evaluate(() => window.__ms?.state());
     expect(state?.screen).toBe("game");
-    expect(state?.mode).toBe("kleintriakis");
+    expect(state?.mode).toBe("kleintetrakis");
     expect(state?.difficulty).toBe("easy");
     // ...with the same mines under it, which is what sharing a board means.
     expect(await minePattern(page)).toEqual(before);

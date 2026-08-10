@@ -38,7 +38,11 @@ test.describe("M1 app", () => {
     const state = await page.evaluate(() => window.__ms?.state());
     expect(state?.screen).toBe("game");
     expect(state?.mode).toBe("penrose");
-    expect(state?.cellCount).toBe(60); // easy Penrose keeps 60 rhombi
+    // An easy board is about the size of the classic easy board (81 cells) --
+    // the calibrated convention, so the exact count moves when a board is
+    // retuned and pinning it here would only rot.
+    expect(state?.cellCount).toBeGreaterThan(60);
+    expect(state?.cellCount).toBeLessThan(105);
   });
 
   // The home page's two one-tap entries. Which board they deal is random, so
@@ -84,6 +88,36 @@ test.describe("M1 app", () => {
     const state = await page.evaluate(() => window.__ms?.state());
     expect(state?.mode).toBe("hex");
     expect(state?.difficulty).toBe("easy");
-    expect(state?.cellCount).toBe(99);
+    // as above: an easy board is sized against the classic easy board
+    expect(state?.cellCount).toBeGreaterThan(60);
+    expect(state?.cellCount).toBeLessThan(105);
+  });
+
+  test("a board that cannot be won opens an explanation, not a game", async ({
+    page,
+  }) => {
+    // The triakis tilings put every cell in a look-alike pair, so no number can
+    // ever separate one: measured, they are won under one time in a hundred at
+    // every difficulty. Their rows stay in the menu -- the catalogue should not
+    // lie about which tilings are built -- but they are marked, dimmed, and say
+    // why instead of dealing a board (src/boards/fairness.ts).
+    await page.locator('.menu-entry[data-group="custom"]').click();
+    await page.locator('.menu-entry[data-group="flat"]').click();
+    await page.locator('.menu-entry[data-submenu="dual"]').click();
+    const row = page.locator('.menu-entry[data-mode="triakis"]');
+    await expect(row).toHaveAttribute("data-fairness", "blocked");
+    await row.click();
+
+    await expect(page.locator(".menu-blocked")).toBeVisible();
+    await expect(page.locator(".menu-blocked-body")).toContainText("look-alike");
+    expect((await page.evaluate(() => window.__ms?.state()))?.screen).toBe("menu");
+  });
+
+  test("a link to a board that cannot be won lands on the menu", async ({ page }) => {
+    // Nothing stops someone pasting one, and opening a board that cannot be
+    // finished is worse than showing the menu.
+    await page.goto("/?mode=triakis&difficulty=easy&seed=1");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    expect((await page.evaluate(() => window.__ms?.state()))?.screen).toBe("menu");
   });
 });

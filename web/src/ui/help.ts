@@ -5,7 +5,7 @@
 // the config the pygame build shares, and the pygame build has no help page.
 //
 // Everything here is a statement about the code, so keep it true: the rules
-// are `src/game.ts` (first click safe, chording), the gestures
+// are `src/game.ts` (first click opens a zero, chording), the gestures
 // `src/input/controls.ts`, the keys `App.onKey` in `src/main.ts`, and the
 // header slots `data/ui/screens.json`.
 
@@ -31,7 +31,8 @@ const SECTIONS: Section[] = [
       [
         "Open every cell that is not a mine",
         "Clear the board and you win. Open a mine and the game is over — but the " +
-          "first cell you open is never one, so you can always start anywhere.",
+          "first cell you open never touches one, so wherever you start you get " +
+          "an open area to work from.",
       ],
       [
         "A number counts the mines around a cell",

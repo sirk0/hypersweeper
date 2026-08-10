@@ -1,4 +1,5 @@
 import { fullModeLabel } from "../boards/catalog";
+import { fairnessHint, fairnessOf } from "../boards/fairness";
 import { screens } from "../config/screens";
 import { ICONS } from "./hud";
 
@@ -79,8 +80,17 @@ export class BoardInfo {
   }
 
   /** Name the board on screen, and show the controls it has. */
-  setBoard(mode: string, hasCellCycle = false): void {
-    this.nameEl.textContent = fullModeLabel(mode);
+  setBoard(mode: string, difficulty: string, hasCellCycle = false): void {
+    // The caption is also where a graded board says so. The menu row carries
+    // the mark too, but the Flat and 3D entries deal a board at random and
+    // never show that row -- and this is the board where losing is not the
+    // player's fault, so it is the one that most needs saying. Only `warn`
+    // reaches here: a blocked board never opens.
+    const level = fairnessOf(mode, difficulty);
+    const warning = fairnessHint(level);
+    this.nameEl.textContent =
+      warning === undefined ? fullModeLabel(mode) : `${fullModeLabel(mode)} ⚠`;
+    this.nameEl.title = warning ?? "";
     for (const btn of this.barButtons) {
       const cond = btn.dataset["visibleWhen"];
       btn.hidden = cond === "hasCellCycle" ? !hasCellCycle : false;

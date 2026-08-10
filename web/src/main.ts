@@ -9,6 +9,7 @@ import {
   unlockAudio,
 } from "./audio/sound";
 import { isBoard3D, type CellId } from "./boards/core";
+import { fairnessOf } from "./boards/fairness";
 import { setHapticsEnabled } from "./haptics";
 import { boardLinkQuery, parseBoardLink } from "./link";
 import { GameSession } from "./session";
@@ -289,6 +290,10 @@ class App {
       this.settings = { ...this.settings, difficulty: link.difficulty };
     }
     if (link.mode === null) return false;
+    // A link can name a board that is in the catalogue but not playable -- the
+    // triakis tilings, whose cells all come in indistinguishable pairs. Fall
+    // through to the menu rather than opening one; the row there explains why.
+    if (fairnessOf(link.mode, this.settings.difficulty) === "blocked") return false;
     this.startGame(link.mode, this.settings.difficulty, {
       ...(link.seed !== null ? { seed: link.seed } : {}),
     });
@@ -340,7 +345,7 @@ class App {
     this.screen = "game";
     this.menu.hide();
     this.hud.root.hidden = false;
-    this.boardInfo.setBoard(mode, this.session.hasCellCycle);
+    this.boardInfo.setBoard(mode, difficulty, this.session.hasCellCycle);
     // The first board this browser ever opens gets the gesture hint, once. It
     // is stored before it is shown, so a reload mid-hint does not re-earn it.
     this.boardInfo.dismissHint();
@@ -378,7 +383,13 @@ class App {
       this.menu.hide();
       this.canvas.style.visibility = "";
       this.hud.root.hidden = false;
-      if (this.session) this.boardInfo.setBoard(this.session.mode, this.session.hasCellCycle);
+      if (this.session) {
+        this.boardInfo.setBoard(
+          this.session.mode,
+          this.session.difficulty,
+          this.session.hasCellCycle,
+        );
+      }
       this.onResize();
     });
   }

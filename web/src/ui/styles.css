@@ -581,6 +581,35 @@ body {
   font-size: 13px;
 }
 
+/* The mark on a board the tiling is against (fairness.ts). It sits at the
+   right edge opposite the icon, and its colour is the palette's own `--danger`
+   so it carries in every theme rather than being a hard-coded amber that
+   vanishes on the dark one. */
+.menu-entry-warning {
+  color: var(--danger);
+  font-size: 18px;
+  line-height: 1;
+  flex: none;
+}
+
+/* A blocked board keeps its row and stays tappable — the row opens the
+   explanation — but reads as unavailable rather than as a board you could
+   choose. */
+.menu-entry[data-fairness="blocked"] {
+  opacity: 0.6;
+}
+
+.menu-blocked {
+  padding: 4px 18px 18px;
+}
+
+.menu-blocked-body {
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
 /* Submenu rows (Uniform / Dual-uniform / Aperiodic) lay the label and the ›
    chevron out on a single row, chevron pinned to the right edge. */
 .menu-entry.menu-submenu {
