@@ -57,6 +57,24 @@ FINAL_SECONDS = 10.0
 # and says so, which is a far better outcome than one board holding the sweep.
 ROW_SECONDS = 60.0
 
+# Every sample size and every wall-clock cap is multiplied by ``--effort``.
+# The sweep as a whole has to fit in half an hour, and at that budget a row
+# near the crossing is decided by 350 games -- a standard error of about two
+# and a half points, which is most of the four-point tolerance. That is why a
+# handful of rows land a few mines out: measured again at 1200 games, `chair`
+# hard wants 49 mines (49.7%) where 350 games chose 52 (46.6%). A second pass
+# over just the rows that missed can afford several times the samples, because
+# there are thirty of them and not four hundred. See ``--redo`` in ``main``.
+EFFORT = 1.0
+
+
+def _scaled(value: float) -> float:
+    return value * EFFORT
+
+
+def _games(count: int) -> int:
+    return max(1, round(count * EFFORT))
+
 # How close to the target a win rate must land to count as calibrated.
 #
 # This is set by what the sampling can actually resolve, not by ambition: a
@@ -176,7 +194,8 @@ def calibrate_row(args: tuple) -> dict:
         # The classic board defines the target; calibrating it against itself
         # would only let sampling noise walk it off 10/40/99.
         mines = PINNED_MINES[mode][difficulty]
-        rate, _, _ = win_rate(neighbors, mines, FINAL_GAMES, seed, seconds=FINAL_SECONDS)
+        rate, _, _ = win_rate(neighbors, mines, _games(FINAL_GAMES), seed,
+                              seconds=_scaled(FINAL_SECONDS))
         row.update(
             mines=mines,
             density=round(mines / n, 4),
@@ -190,7 +209,8 @@ def calibrate_row(args: tuple) -> dict:
 
     if twins > UNCALIBRATABLE_SHARE * n:
         mines = max(1, round(FALLBACK_DENSITY[difficulty] * n))
-        rate, _, _ = win_rate(neighbors, mines, SEARCH_GAMES, seed, seconds=SEARCH_SECONDS)
+        rate, _, _ = win_rate(neighbors, mines, _games(SEARCH_GAMES), seed,
+                              seconds=_scaled(SEARCH_SECONDS))
         row.update(
             mines=mines,
             density=round(mines / n, 4),
@@ -211,7 +231,7 @@ def calibrate_row(args: tuple) -> dict:
     # the biggest boards.
     lo, hi = opening_floor(neighbors, seed), min(n - 1, int(MAX_DENSITY * n))
     row["openingFloor"] = lo
-    row_deadline = time.time() + ROW_SECONDS
+    row_deadline = time.time() + _scaled(ROW_SECONDS)
 
     def out_of_time() -> bool:
         return time.time() > row_deadline
@@ -219,11 +239,12 @@ def calibrate_row(args: tuple) -> dict:
     def rate_at(mines: int, games: int) -> float:
         # one seed for every evaluation, so the noise is common across mine
         # counts and the measured curve stays monotone enough to bracket
-        cap = SEARCH_SECONDS if games <= SEARCH_GAMES else FINAL_SECONDS
-        value, abandoned, played = win_rate(neighbors, mines, games, seed, seconds=cap)
+        cap = _scaled(SEARCH_SECONDS if games <= SEARCH_GAMES else FINAL_SECONDS)
+        value, abandoned, played = win_rate(
+            neighbors, mines, _games(games), seed, seconds=cap)
         if abandoned:
             row["abandoned"] = row.get("abandoned", 0) + abandoned
-        row["leastGames"] = min(row.get("leastGames", games), played)
+        row["leastGames"] = min(row.get("leastGames", _games(games)), played)
         return value
 
     # The floor is a real answer, not just a search bound: if the board is
@@ -348,7 +369,20 @@ def main() -> int:
     parser.add_argument("--geometry", default=str(HERE / "geometry.json"))
     parser.add_argument("--out", default=str(HERE / "calibration.jsonl"))
     parser.add_argument("--only", default="", help="comma-separated modes")
+    parser.add_argument(
+        "--effort", type=float, default=1.0,
+        help="multiply every sample size and wall-clock budget; "
+             "use with --redo",
+    )
+    parser.add_argument(
+        "--redo", action="store_true",
+        help="drop the rows that missed tolerance from the checkpoint and "
+             "measure them again (the rows that landed are kept as they are)",
+    )
     options = parser.parse_args()
+
+    global EFFORT
+    EFFORT = options.effort
 
     geometry = json.loads(Path(options.geometry).read_text())
     reference = targets()
@@ -357,10 +391,21 @@ def main() -> int:
     done: set[tuple[str, str]] = set()
     out_path = Path(options.out)
     if out_path.exists():
+        kept = []
         for line in out_path.read_text().splitlines():
-            if line.strip():
-                row = json.loads(line)
-                done.add((row["mode"], row["difficulty"]))
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            # A row that could not be brought on target is worth another go at
+            # a bigger budget; one that *cannot* reach its target however long
+            # it runs (the tiling forces coin flips) is not, and neither is one
+            # that already landed.
+            if options.redo and not row.get("calibrated") and row.get("fair", True):
+                continue
+            kept.append(line)
+            done.add((row["mode"], row["difficulty"]))
+        if options.redo:
+            out_path.write_text("".join(f"{line}\n" for line in kept))
         print(f"resuming: {len(done)} rows already done")
 
     wanted = set(options.only.split(",")) if options.only else None
