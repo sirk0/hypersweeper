@@ -12,15 +12,16 @@ Every board's mine count, chosen so its win probability under the reference solv
 
 ## Coverage
 
-- 480 rows, 448 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
-- 32 could not be brought on target:
+- 477 rows, 444 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
+- 33 could not be brought on target:
   - `cylinder`/easy: 89.1% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (7, 9%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
-  - `cylrhombille`/medium: 72.0% vs 87.1% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (10, 4%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
-  - `cylrhombille`/easy: 76.0% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (6, 7%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
-  - `cylrotatedhex`/easy: 89.1% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (4, 5%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
-  - `cyltriakis`/easy: 0.0% vs 96.5% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
+  - `cylkisrhombille`/easy: 88.3% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (5, 7%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
+  - `cylrhombille`/medium: 77.4% vs 87.1% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (9, 4%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
+  - `cylrhombille`/easy: 65.7% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (7, 8%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
+  - `cylrhombitrihex`/easy: 91.4% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (6, 7%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
   - `cyltriakis`/hard: 0.0% vs 50.9% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `cyltriakis`/medium: 0.0% vs 87.1% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
+  - `cyltriakis`/easy: 1.2% vs 96.5% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `kisrhombille`/easy: 91.4% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (5, 7%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
   - `kleinrhombille`/medium: 74.6% vs 87.1% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (9, 3%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
   - `kleinrhombille`/easy: 52.0% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (6, 7%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
@@ -46,7 +47,7 @@ Every board's mine count, chosen so its win probability under the reference solv
   - `triakis`/medium: 0.0% vs 87.1% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `triakis`/easy: 1.8% vs 96.5% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `truncicosidodeca`/hard: 45.9% vs 50.9% — no integer mine count lands within tolerance; this is the closest
-- 90 rows had games the solver abandoned (its frontier DP hit its node budget); their rates are measured over the games that finished:
+- 95 rows had games the solver abandoned (its frontier DP hit its node budget); their rates are measured over the games that finished:
   - `torustrunchex`/hard: 168 abandoned
   - `torusrotatedhex`/hard: 144 abandoned
   - `kleintri`/hard: 75 abandoned
@@ -75,36 +76,35 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `chair` | 6.3 | 64c 6m (9%) 95% | 256c 36m (14%) 83% | 256c 49m (19%) 51% |
 | `cube` | 8.0 | 96c 18m (19%) 99% | 294c 66m (22%) 89% | 486c 130m (27%) 47% |
 | `cubeframe` | 8.4 | 72c 17m (24%) 99% | 264c 53m (20%) 86% | 480c 126m (26%) 50% |
-| `cylbasketweave` | 5.7 | 72c 10m (14%) 99% | 280c 46m (16%) 89% | 504c 101m (20%) 53% |
+| `cylbasketweave` | 6.6 | 80c 12m (15%) 99% | 240c 41m (17%) 85% | 504c 101m (20%) 53% |
 | `cylbasketweave3` | 6.2 | 90c 7m (8%) 93% | 240c 29m (12%) 84% | 462c 73m (16%) 54% |
-| `cylcairo` | 6.5 | 80c 12m (15%) 96% | 252c 41m (16%) 86% | 480c 95m (20%) 52% |
-| `cyldeltoidal` | 7.2 | 72c 10m (14%) 97% | 264c 42m (16%) 88% | 450c 91m (20%) 51% |
-| `cylelongated` | 9.4 | 91c 6m (7%) 97% | 286c 45m (16%) 85% | 416c 79m (19%) 52% |
-| `cylfloret` | 6.7 | 84c 9m (11%) 97% | 264c 33m (12%) 85% | 450c 77m (17%) 52% |
-| `cylherringbone` | 5.0 | 72c 10m (14%) 96% | 280c 52m (19%) 84% | 504c 110m (22%) 48% |
+| `cylcairo` | 6.6 | 80c 9m (11%) 98% | 252c 32m (13%) 91% | 456c 84m (18%) 53% |
+| `cyldeltoidal` | 8.3 | 72c 10m (14%) 97% | 264c 42m (16%) 88% | 450c 91m (20%) 51% |
+| `cylelongated` | 9.2 | 91c 6m (7%) 97% | 230c 33m (14%) 87% | 512c 99m (19%) 53% |
+| `cylfloret` | 7.3 | 84c 9m (11%) 98% | 264c 41m (16%) 83% | 450c 81m (18%) 51% |
+| `cylherringbone` | 5.7 | 90c 14m (16%) 97% | 250c 42m (17%) 91% | 490c 105m (21%) 53% |
 | `cylhex` | 5.7 | 80c 15m (19%) 95% | 252c 49m (19%) 89% | 480c 107m (22%) 50% |
 | `cylinder` | 7.5 | 80c 7m (9%) 89% ⚠ | 252c 47m (19%) 86% | 480c 106m (22%) 49% |
-| `cylkisrhombille` | 12.8 | 144c 6m (4%) 97% | 288c 17m (6%) 86% | 480c 52m (11%) 52% |
-| `cyloffsetsquare` | 5.7 | 80c 11m (14%) 99% | 252c 48m (19%) 87% | 468c 104m (22%) 55% |
-| `cylprismaticpent` | 5.5 | 72c 8m (11%) 96% | 224c 42m (19%) 84% | 468c 102m (22%) 55% |
-| `cylpythagorean` | 5.2 | 75c 10m (13%) 97% | 225c 31m (14%) 90% | 480c 84m (18%) 48% |
-| `cylrhombille` | 9.3 | 81c 6m (7%) 76% ⚠ | 270c 10m (4%) 72% ⚠ | 504c 20m (4%) 49% |
-| `cylrhombitrihex` | 6.7 | 72c 5m (7%) 96% | 264c 21m (8%) 88% | 480c 59m (12%) 54% |
-| `cylrotatedhex` | 5.5 | 81c 4m (5%) 89% ⚠ | 270c 12m (4%) 84% | 420c 28m (7%) 49% |
-| `cylrotatedtri` | 5.0 | 72c 11m (15%) 96% | 224c 40m (18%) 89% | 420c 91m (22%) 51% |
-| `cylrunningbond` | 5.8 | 84c 17m (20%) 96% | 260c 52m (20%) 87% | 476c 111m (23%) 50% |
-| `cylsnubhex` | 8.3 | 90c 6m (7%) 99% | 243c 24m (10%) 87% | 432c 71m (16%) 52% |
-| `cylsnubsquare` | 8.3 | 84c 12m (14%) 95% | 231c 38m (16%) 89% | 480c 108m (22%) 52% |
-| `cylstackedbond` | 7.1 | 84c 13m (15%) 98% | 273c 48m (18%) 91% | 476c 112m (24%) 51% |
-| `cylstaggeredtri` | 6.7 | 72c 14m (19%) 96% | 266c 56m (21%) 86% | 450c 109m (24%) 51% |
-| `cyltetrakis` | 12.4 | 81c 6m (7%) 95% | 255c 18m (7%) 86% | 480c 68m (14%) 55% |
-| `cylthreescaletri` | 6.7 | 81c 12m (15%) 98% | 270c 51m (19%) 85% | 420c 94m (22%) 50% |
+| `cylkisrhombille` | 14.4 | 72c 5m (7%) 88% ⚠ | 288c 17m (6%) 86% | 480c 52m (11%) 52% |
+| `cyloffsetsquare` | 5.7 | 80c 14m (18%) 96% | 252c 47m (19%) 87% | 468c 102m (22%) 55% |
+| `cylprismaticpent` | 6.5 | 90c 14m (16%) 98% | 270c 51m (19%) 87% | 456c 101m (22%) 51% |
+| `cylpythagorean` | 5.6 | 85c 10m (12%) 97% | 261c 33m (13%) 88% | 468c 77m (16%) 52% |
+| `cylrhombille` | 9.3 | 90c 7m (8%) 66% ⚠ | 240c 9m (4%) 77% ⚠ | 462c 19m (4%) 50% |
+| `cylrhombitrihex` | 7.6 | 84c 6m (7%) 91% ⚠ | 286c 23m (8%) 85% | 480c 60m (12%) 55% |
+| `cylrotatedhex` | 5.7 | 81c 4m (5%) 93% | 270c 13m (5%) 87% | 504c 36m (7%) 47% |
+| `cylrotatedtri` | 5.7 | 81c 14m (17%) 93% | 270c 49m (18%) 88% | 504c 111m (22%) 48% |
+| `cylrunningbond` | 5.8 | 84c 16m (19%) 96% | 260c 52m (20%) 87% | 476c 112m (24%) 52% |
+| `cylsnubhex` | 9.2 | 75c 7m (9%) 93% | 264c 36m (14%) 86% | 504c 98m (19%) 50% |
+| `cylsnubsquare` | 9.3 | 84c 12m (14%) 95% | 231c 38m (16%) 89% | 480c 108m (22%) 51% |
+| `cylstackedbond` | 7.6 | 84c 13m (15%) 98% | 260c 52m (20%) 85% | 459c 107m (23%) 53% |
+| `cylstaggeredtri` | 7.6 | 72c 14m (19%) 96% | 266c 56m (21%) 86% | 468c 115m (25%) 47% |
+| `cyltetrakis` | 12.8 | 72c 8m (11%) 98% | 280c 26m (9%) 90% | 456c 69m (15%) 48% |
 | `cyltri` | 11.3 | 80c 15m (19%) 97% | 252c 58m (23%) 87% | 480c 129m (27%) 47% |
-| `cyltriakis` | 15.7 | 84c 11m (13%) 0% ⚠ | 264c 42m (16%) 0% ⚠ | 450c 90m (20%) 0% ⚠ |
-| `cyltrihex` | 7.5 | 81c 9m (11%) 99% | 270c 47m (17%) 85% | 504c 102m (20%) 54% |
-| `cyltrunchex` | 5.7 | 81c 4m (5%) 94% | 270c 13m (5%) 87% | 504c 34m (7%) 51% |
-| `cyltruncsquare` | 5.7 | 77c 8m (10%) 99% | 260c 40m (15%) 87% | 476c 85m (18%) 54% |
-| `cyltrunctrihex` | 5.0 | 72c 7m (10%) 97% | 264c 32m (12%) 90% | 435c 58m (13%) 53% |
+| `cyltriakis` | 18.7 | 84c 11m (13%) 1% ⚠ | 264c 42m (16%) 0% ⚠ | 450c 90m (20%) 0% ⚠ |
+| `cyltrihex` | 7.5 | 81c 9m (11%) 99% | 270c 47m (17%) 85% | 504c 102m (20%) 55% |
+| `cyltrunchex` | 5.7 | 81c 4m (5%) 94% | 270c 13m (5%) 87% | 504c 37m (7%) 54% |
+| `cyltruncsquare` | 5.5 | 77c 5m (6%) 95% | 260c 30m (12%) 85% | 459c 70m (15%) 48% |
+| `cyltrunctrihex` | 5.8 | 80c 6m (8%) 94% | 242c 21m (9%) 86% | 510c 71m (14%) 48% |
 | `deltoidal` | 8.3 | 76c 6m (8%) 98% | 248c 28m (11%) 83% | 490c 84m (17%) 48% |
 | `elongated` | 9.0 | 85c 5m (6%) 98% | 219c 26m (12%) 90% | 543c 92m (17%) 55% |
 | `floret` | 7.4 | 72c 7m (10%) 97% | 288c 37m (13%) 86% | 480c 81m (17%) 52% |

@@ -12,6 +12,7 @@
       "prefix": "",
       "is3d": false,
       "needsMirror": false,
+      "needsFlip": false,
       "boundaryComponents": null,
       "tilt": null,
       "tilings": null
@@ -22,6 +23,7 @@
       "prefix": "mobius",
       "is3d": true,
       "needsMirror": true,
+      "needsFlip": false,
       "boundaryComponents": 1,
       "tilt": -0.8,
       "tilings": null
@@ -32,6 +34,7 @@
       "prefix": "cyl",
       "is3d": true,
       "needsMirror": false,
+      "needsFlip": true,
       "boundaryComponents": 2,
       "tilt": -0.35,
       "tilings": null
@@ -42,6 +45,7 @@
       "prefix": "torus",
       "is3d": true,
       "needsMirror": false,
+      "needsFlip": false,
       "boundaryComponents": 0,
       "tilt": -1.0,
       "tilings": null
@@ -52,6 +56,7 @@
       "prefix": "klein",
       "is3d": true,
       "needsMirror": true,
+      "needsFlip": false,
       "boundaryComponents": 0,
       "tilt": -0.4,
       "tilings": null

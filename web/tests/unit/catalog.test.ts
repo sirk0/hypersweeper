@@ -37,8 +37,10 @@ describe("catalog families", () => {
     ).toBe(27);
   });
 
-  it("wraps the isogonal tilings onto every surface their chirality allows", () => {
-    // All six wrap the torus and cylinder; only the two with a template
+  it("wraps the isogonal tilings onto every surface their symmetry allows", () => {
+    // All six wrap the torus; all but three-scale triangular wrap the cylinder,
+    // whose two rims have to be the same curve and whose tiling therefore has
+    // to reverse y somewhere (p3 never does). Only the two with a template
     // mirror (offset square, staggered triangular) also wrap the Mobius
     // strip / Klein bottle, exactly like the uniform/dual families.
     const mirrored = new Set(["offsetsquare", "staggeredtri"]);
@@ -46,7 +48,9 @@ describe("catalog families", () => {
       const tiling = TILINGS_BY_KEY.get(key)!;
       expect(tilingAllows(tiling, SURFACES.get("flat")!)).toBe(true);
       expect(tilingAllows(tiling, SURFACES.get("torus")!)).toBe(true);
-      expect(tilingAllows(tiling, SURFACES.get("cylinder")!)).toBe(true);
+      expect(tilingAllows(tiling, SURFACES.get("cylinder")!)).toBe(
+        key !== "threescaletri",
+      );
       const wantMirror = mirrored.has(key);
       expect(tilingAllows(tiling, SURFACES.get("mobius")!)).toBe(wantMirror);
       expect(tilingAllows(tiling, SURFACES.get("klein")!)).toBe(wantMirror);

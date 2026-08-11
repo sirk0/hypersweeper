@@ -54,6 +54,7 @@ def _surface_json(s) -> dict:
         "prefix": s.prefix,
         "is3d": s.is_3d,
         "needsMirror": s.needs_mirror,
+        "needsFlip": s.needs_flip,
         "boundaryComponents": s.boundary_components,
         "tilt": s.tilt,
         "tilings": sorted(s.tilings) if s.tilings is not None else None,

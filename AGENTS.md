@@ -81,28 +81,38 @@ Example goal: a new uniform tiling `foo` (say 3.4.6.4-like).
    `_snubhex_template` shows a chiral tiling (`mirrored=False`). Helpers
    `_hex_lattice_polygons`, `_regular_polygon`, `_square_on_edge` build
    hexagon-lattice tilings.
-   If the tiling wraps a Möbius strip, pick its `mobius_cut` here too — the
-   height within the domain the band starts at. It must not have a tile
-   *centre* on it (a Möbius strip has one edge, so the band's two rims are
-   arcs of the same circle, and a row centred on the cut is kept at one rim
-   and missing at the other), and it should run along a horizontal edge-line
-   of the tiling if there is one, so the strip's edge comes out straight
-   rather than a zigzag. See the MOBIUS CUT note above `_template`;
-   `TestWrappedArchimedean.test_mobius_band_is_symmetric` and
-   `test_mobius_rim_is_straight_where_the_tiling_allows` measure both.
+   Pick the tiling's `cut` here too — the height within the domain at which
+   the cylinder's strip and the Möbius band both start. It must not have a
+   tile *centre* on it (a row centred on the cut is kept at one rim and
+   missing at the other, which leaves a Möbius band lopsided and a
+   cylinder's two rims different curves), and it should run along a
+   horizontal edge-line of the tiling if there is one, so the rims come out
+   straight rather than zigzag. What a `cut` does *not* have to state is
+   where the tiling reverses y: `_flip_levels` measures that into
+   `_ArchTemplate.flips` (horizontal mirrors and glides, and half turns,
+   which is why a chiral tiling still wraps a cylinder). See the AGENT NOTE
+   on the cut above `_template`;
+   `TestWrappedArchimedean.test_mobius_band_is_symmetric`,
+   `test_cylinder_rims_are_the_same_curve`, the two
+   `..._rim_is_straight_where_the_tiling_allows` tests and
+   `test_no_tile_centre_sits_on_the_cut` measure every rule.
 2. **Registry** — add one `ArchTiling("foo", "Foo label", config,
    edge_directions, _foo_template)` row to `ARCH_TILINGS`, in
    vertex-configuration order (the registry order is the menu order; the
    `family` field, defaulting to `"uniform"`, picks the menu page). This alone
    feeds `_ARCH_CONFIGS`, `_ARCH_TEMPLATES`, and — via `catalog` — the
-   menu, mode strings, `MODES_3D`, and chirality gating (a tiling whose
-   template has no mirror is automatically denied the Möbius strip).
+   menu, mode strings, `MODES_3D`, and the symmetry gating (a tiling whose
+   template has no mirror is automatically denied the Möbius strip and the
+   Klein bottle, and one whose template never reverses y at all — p3 — the
+   cylinder).
 3. **Presets** — add a `"foo": {...}` block to `ARCH_PRESETS` in
    `presets.py` with `flat` / `torus` / `cylinder` / `mobius` / `klein`
-   args per difficulty. Omit `mobius` / `klein` if the tiling is chiral.
-   A `mobius` row count may be fractional, as a `cylinder` one may, and
-   with a non-zero `mobius_cut` it *must* be: `rows + 2*cut/height` has to
-   be a whole number or `arch_mobius_board` refuses to build the board.
+   args per difficulty. Omit `mobius` / `klein` if the tiling is chiral, and
+   `cylinder` if it never reverses y. Both open surfaces constrain the row
+   count, and neither is left to the preset: a Möbius band needs
+   `rows + 2*cut/height` to be a whole number, and a cylinder needs
+   `cut + rows*height/2` to land on one of `template.flips` (which is what
+   `resize._cylinder_rows` enumerates), or the builders refuse the board.
    Seed the windows by hand if you like, but the sizes and mine counts that
    ship come from `scripts/difficulty/` — see "Choosing a size and a mine
    count" below; do not pick a density by eye.
@@ -144,10 +154,11 @@ differ from an Archimedean tiling, both handled for you:
 Steps (say a new primal `_foo_template` gained a dual `_bar_template`):
 
 1. `def _bar_template(): return _dual_template(_foo_template)` in
-   `tilings.py`. The dual's `mobius_cut` is a second argument to
+   `tilings.py`. The dual's `cut` is a second argument to
    `_dual_template` rather than inherited: its tiles sit where the primal's
    *vertices* are, so its courses are not the primal's (Cairo pentagonal and
-   rhombille both need one where their primals do not).
+   rhombille both need one where their primals do not, and the floret
+   pentagonal needs one for its cylinder although it has no Möbius wrap).
 2. Add an `ArchTiling("bar", "Bar label", config, edge_directions,
    _bar_template, family="dual")` row to `ARCH_TILINGS` (`config`
    is the Laves symbol, i.e. the primal's vertex configuration).
@@ -214,7 +225,10 @@ Steps, for a new isogonal tiling `foo`:
    machinery every Archimedean/Laves tiling wraps with — nothing isogonal-
    specific is needed there), plus `mobius`/`klein` columns if the template
    built a `mirror` (only offset square and staggered triangular do; a
-   chiral one stays off those two, exactly like snub hexagonal). Re-run
+   chiral one stays off those two, exactly like snub hexagonal). Drop the
+   `cylinder` column too if `template.flips` came out empty — three-scale
+   triangular, p3, is the one tiling here that reverses y at no height, so
+   no strip of it ends in two rims that are the same curve. Re-run
    `scripts/export_data.py` and `export_conformance.py`.
 4. **Port it to `web/src/boards/tilings.ts`** — the same template, verbatim.
    The conformance oracle compares the two boards cell for cell, so a
@@ -502,7 +516,12 @@ hand-picked density is the one thing this game cannot get right by eye.
    480 cells, within ±15%. `scripts/difficulty/resize.py` searches a
    builder's size knobs for a window that hits the count, keeps the right
    topology, and (on the wrapped surfaces) leaves cells least distorted;
-   declare the new builder's knobs in its `SPEC` table. Boards with no size
+   declare the new builder's knobs in its `SPEC` table. `--only <modes>`
+   searches those rows alone and leaves every other row of `geometry.json`
+   as it was, which is how one family is re-measured without disturbing the
+   rest. A knob that is not free says so there rather than in the presets:
+   a cylinder's row count comes from `_cylinder_rows`, the values that
+   centre its strip on a height where the tiling reverses y. Boards with no size
    knob — the named solids — and the fractals, which quantise by whole
    substitution steps, keep their geometry and are listed as exceptions in
    `tests/test_presets.py`.

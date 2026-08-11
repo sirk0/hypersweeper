@@ -33,6 +33,9 @@ class SurfaceSpec:
     is_3d: bool                       # rendered by GameScreen3D
     needs_mirror: bool                # seam reverses orientation: excludes
     #                                   chiral tilings (snub hexagonal)
+    needs_flip: bool                  # ends on two rims that have to match:
+    #                                   excludes a tiling that never reverses
+    #                                   y at all (three-scale triangular)
     boundary_components: int | None   # topological invariant; None for flat
     tilt: float | None = None         # GameScreen3D initial x-rotation
     tilings: frozenset[str] | None = None  # restrict to these tiling keys;
@@ -56,6 +59,7 @@ def _surface_from_json(row: dict) -> SurfaceSpec:
         prefix=row["prefix"],
         is_3d=row["is3d"],
         needs_mirror=row["needsMirror"],
+        needs_flip=row["needsFlip"],
         boundary_components=row["boundaryComponents"],
         tilt=row["tilt"],
         tilings=frozenset(tilings) if tilings is not None else None,
@@ -75,6 +79,10 @@ class TilingSpec:
     key: str
     label: str
     chiral: bool = False                 # no mirror/glide -> no Mobius seam
+    reverses_y: bool = True              # some horizontal mirror or half turn
+    #   maps the tiling onto itself with y reversed, so a strip of it can end
+    #   in two rims that are the same curve -> a cylinder. p3 (three-scale
+    #   triangular) has neither; see _ArchTemplate.flips.
     mode_overrides: dict = field(default_factory=dict)  # surface -> mode string
     flat_only: bool = False              # the plane only: no wrap builders or
     #   preset windows for this tiling (currently no ARCH_TILINGS family --
@@ -87,6 +95,8 @@ class TilingSpec:
         if self.flat_only and surface.key != "flat":
             return False
         if surface.needs_mirror and self.chiral:
+            return False
+        if surface.needs_flip and not self.reverses_y:
             return False
         if surface.tilings is not None and self.key not in surface.tilings:
             return False
@@ -112,6 +122,7 @@ _FLAT_ONLY_FAMILIES: frozenset[str] = frozenset()
 
 TILING_SPECS = REGULAR_TILINGS + tuple(
     TilingSpec(t.key, t.label, chiral=t.template().mirror is None,
+               reverses_y=bool(t.template().flips),
                flat_only=t.family in _FLAT_ONLY_FAMILIES)
     for t in ARCH_TILINGS
 )

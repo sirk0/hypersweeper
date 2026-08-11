@@ -869,20 +869,48 @@ export function archTorusBoard(
 }
 
 /** An Archimedean tiling around the side of a cylinder: `ring` domain copies
- * around, `rows` (may be fractional) up the axis, open ends. `cut` shifts where
- * the strip starts within the repeating rows. */
+ * around, `rows` (may be fractional) up the axis, open ends. The strip runs
+ * from `template.cut` to `cut + rows*height`.
+ *
+ * A cylinder's two rims must be the same curve, or the tube reads as cut off
+ * square at one end and ragged at the other. That asks the strip to be
+ * symmetric about its own centre line, `cut + rows*height/2`, under an isometry
+ * the cylinder itself has: a mirror in that plane, or a half turn about a
+ * horizontal axis in it (which a chiral tiling with no mirror still offers, and
+ * which is why the snubs wrap a cylinder but no Möbius strip). `template.flips`
+ * holds the heights where the tiling does one or the other, so the centre line
+ * has to land on one of them, and `rows` is what puts it there. See THE CUT in
+ * tilings.ts. */
 export function archCylinderBoard(
   tiling: string,
   ring: number,
   rows: number,
   mineCount: number,
-  cut = 0,
 ): Board3D {
   const t = archTemplate(tiling);
   const W = t.width;
   const H = t.height;
+  const cut = t.cut;
   const unit = TWO_PI / (ring * W); // arc length of one edge unit
   const middle = (rows * H) / 2 + cut;
+  if (!t.flips.length) {
+    throw new Error(
+      `${tiling} never reverses y (p3 has no mirror and no half turn), ` +
+        "so no strip of it has two matching rims",
+    );
+  }
+  // whole half periods between the strip's centre line and a flip level; the
+  // slack is the float noise in a level measured off tile centroids, orders of
+  // magnitude under the gap between one row of centres and the next
+  const periods = t.flips.map((flip) => (middle - flip) / (H / 2));
+  if (Math.min(...periods.map((p) => Math.abs(p - Math.round(p)))) > 1e-5) {
+    throw new Error(
+      `rows ${rows} leaves the ${tiling} rims different curves: the strip's ` +
+        `centre line is ${(((middle % (H / 2)) + H / 2) % (H / 2)).toFixed(4)} into the rows ` +
+        `and the tiling only reverses y at ${t.flips.map((f) => f.toFixed(4)).join(", ")} ` +
+        `(mod ${(H / 2).toFixed(4)})`,
+    );
+  }
   const centroids = new Map<string, number>();
   for (const { name, refs } of t.cells) {
     let s = 0;
@@ -929,7 +957,7 @@ export function archCylinderBoard(
  * `template.mirror`. Chiral tilings are refused; p4g (glide-only) counts
  * half-domains, so `ring` must be odd there.
  *
- * The band runs from `template.mobiusCut` to `cut + rows*height`, and `rows`
+ * The band runs from `template.cut` to `cut + rows*height`, and `rows`
  * may be fractional exactly as on the cylinder. What is *not* free is its
  * fractional part: a Möbius strip has one edge, so the seam glues the band's
  * bottom rim to its top, and the flip y -> 2*cut + strip - y is a symmetry of
@@ -953,7 +981,7 @@ export function archMobiusBoard(
   }
   const W = t.width;
   const H = t.height;
-  const cut = t.mobiusCut;
+  const cut = t.cut;
   const q = Math.floor(halves / 2);
   const odd = halves % 2;
   const length = (halves * W) / 2;
