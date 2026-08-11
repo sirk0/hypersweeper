@@ -194,25 +194,34 @@ export interface ArchTemplate {
   mirror: Map<string, Ref> | null; // tag -> image under y -> height - y
   glide: boolean; // the mirror needs an extra width/2 x-shift (p4g)
   centre: Vertex | null; // rotation centre (domain coords) for the flat window
-  mobiusCut: number; // where the Mobius band starts within the repeating rows
+  cut: number; // where a rim or a seam falls within the repeating rows
+  flips: number[]; // the heights, mod height/2, at which the tiling maps onto
+  // itself with y reversed -- what a cylinder's two rims need to match
 }
 
-// THE MOBIUS CUT. A Mobius strip has *one* edge, and the seam glues the band's
-// bottom rim to its top: whatever a row of tiles does at y = cut it must also
-// do at y = cut + strip, or half the edge reads one way and half the other.
-// Two rules follow, and `mobiusCut` is how a template states its answer:
+// THE CUT. Two surfaces end the tiling on a horizontal line: the cylinder,
+// whose strip runs from y = cut to y = cut + rows*height and stops there in two
+// rims, and the Mobius strip, which glues those two ends to each other and,
+// having *one* edge, needs whatever the tiling does at y = cut to be what it
+// does at y = cut + strip as well. Both want the same of the line, and `cut` is
+// how a template answers:
 //
-//   * The band must be symmetric about its own centre line. The seam flip is
-//     y -> 2*cut + strip - y, the template's mirror composed with a whole
-//     number of vertical periods -- so `rows + 2*cut/height` has to come out a
-//     whole number (archMobiusBoard checks), and no tile centroid may sit *on*
-//     the cut, or that row is kept at the bottom of the band and its mirror at
-//     the top is not.
+//   * The strip must be symmetric about its own centre line, or its two ends
+//     are different rows of the tiling. Which flips count differs by surface:
+//     a Mobius seam reverses y and leaves x running on, so it needs the
+//     template's *mirror* (axes y = 0 and y = height/2) composed with whole
+//     periods -- `rows + 2*cut/height` a whole number, which archMobiusBoard
+//     checks. A cylinder can also be turned upside down about a horizontal
+//     axis, which reverses x too, so a **half turn** serves it as well as a
+//     mirror -- and a chiral tiling with no mirror still has one. `flips`
+//     collects both kinds; archCylinderBoard asks that the strip's centre line
+//     land on one. Either way no tile centroid may sit *on* the cut, or that
+//     row is kept at one end and its image at the other is not.
 //   * Given that, cut where the rim comes out straight if the tiling has a
 //     horizontal line of edges at all; otherwise halfway between the two rows
 //     the cut separates, which is the least ragged the rim can be.
 //
-// Most templates want cut 0. Kept in step with `mobius_cut` in
+// Most templates want cut 0. Kept in step with `cut` in
 // minesweeper/boards/tilings.py by data/conformance.json.
 
 type Polygon = readonly (readonly [number, number])[];
@@ -235,7 +244,7 @@ function template(
     mirrored = true,
     glide = false,
     centre = null as Vertex | null,
-    mobiusCut = 0,
+    cut = 0,
   } = {},
 ): ArchTemplate {
   const reduce = (value: number, size: number): [number, number] => {
@@ -318,9 +327,130 @@ function template(
     mirror,
     glide,
     centre,
-    mobiusCut,
+    cut,
+    flips: flipLevels(width, height, polygons),
   };
 }
+
+/** The heights at which the tiling maps onto itself with y reversed.
+ *
+ * Two isometries do that and still fit a cylinder, whose own freedom is a turn
+ * about its axis (any x shift) and a reflection in a plane through it (x
+ * reversed): a horizontal **mirror** or glide line, y -> 2*level - y with x
+ * shifted, and a **half turn** about a point at that height, which reverses x
+ * too. Either carries a strip's top rim onto its bottom one, so a strip centred
+ * on such a height comes out with two rims that are the same curve.
+ *
+ * Two of them compose to a vertical translation, so the levels repeat every
+ * height/2 and are returned reduced into [0, height/2). p3 -- three-scale
+ * triangular -- is the one wallpaper group here with neither kind and gets
+ * none: no strip of it has matching rims. */
+function flipLevels(
+  width: number,
+  height: number,
+  polygons: readonly (readonly [string, Polygon])[],
+): number[] {
+  // a hair below a period is the same place as the origin; a tile whose
+  // vertices are computed (every Laves dual's are) misses by ~1e-6
+  const wrapped = (point: readonly [number, number]): [number, number] => {
+    let x = point[0] % width;
+    let y = point[1] % height;
+    if (x < 0) x += width;
+    if (y < 0) y += height;
+    return [x > width - FLIP_TOL ? 0 : x, y > height - FLIP_TOL ? 0 : y];
+  };
+  const centre = (points: readonly (readonly [number, number])[]): [number, number] => {
+    let cx = 0;
+    let cy = 0;
+    for (const [x, y] of points) {
+      cx += x;
+      cy += y;
+    }
+    return wrapped([cx / points.length, cy / points.length]);
+  };
+  /** The same tile, allowing for where its outline starts and which way round
+   * it runs -- a mirror reverses the winding. Compared as a cycle rather than
+   * as a sorted list: two vertices of one tiling can share a coordinate to the
+   * last bit and sort either way round. */
+  const same = (one: [number, number][], other: [number, number][]): boolean => {
+    if (one.length !== other.length) return false;
+    for (const turned of [other, [...other].reverse()]) {
+      for (let i = 0; i < turned.length; i++) {
+        let all = true;
+        for (let k = 0; k < one.length && all; k++) {
+          const a = one[k]!;
+          const b = turned[(i + k) % turned.length]!;
+          all = Math.abs(a[0] - b[0]) < FLIP_TOL && Math.abs(a[1] - b[1]) < FLIP_TOL;
+        }
+        if (all) return true;
+      }
+    }
+    return false;
+  };
+
+  const tiles = polygons.map(([, polygon]) => ({
+    outline: polygon.map((point) => wrapped(point)),
+    centre: centre(polygon),
+    polygon,
+  }));
+  // tiles bucketed by centre, so the image of one is looked up rather than
+  // searched for; the bucket is far wider than the tolerance, and its
+  // neighbours are swept too, so nothing falls down a rounding crack
+  const grid = new Map<string, [number, number][][]>();
+  for (const tile of tiles) {
+    const key = `${Math.floor(tile.centre[0] * 100)},${Math.floor(tile.centre[1] * 100)}`;
+    const bucket = grid.get(key);
+    if (bucket) bucket.push(tile.outline);
+    else grid.set(key, [tile.outline]);
+  }
+  /** Is this polygon one of the tiling's own tiles? */
+  const present = (points: readonly (readonly [number, number])[]): boolean => {
+    const [cx, cy] = centre(points);
+    const want = points.map((point) => wrapped(point));
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let dy = -1; dy <= 1; dy++) {
+        const key = `${Math.floor(cx * 100) + dx},${Math.floor(cy * 100) + dy}`;
+        for (const other of grid.get(key) ?? []) {
+          if (same(want, other)) return true;
+        }
+      }
+    }
+    return false;
+  };
+
+  const [ax, ay] = tiles[0]!.centre;
+  const levels: number[] = [];
+  for (const { centre: [cx, cy] } of tiles) {
+    // the flip has to send the first tile onto this one, which fixes it up to
+    // the half period between one flip level and the next
+    for (const level of [(ay + cy) / 2, (ay + cy) / 2 + height / 2]) {
+      for (const reverse of [true, false]) {
+        // half turn, or plain mirror
+        const shift = reverse ? cx + ax : cx - ax;
+        const maps = tiles.every(({ polygon }) =>
+          present(
+            polygon.map(([x, y]) => [reverse ? shift - x : x + shift, 2 * level - y] as const),
+          ),
+        );
+        if (!maps) continue;
+        // rounded only enough to tidy the arithmetic: what the level is *near*
+        // was settled by the match above, and archCylinderBoard measures rows
+        // against it exactly
+        let found = level % (height / 2);
+        if (found < 0) found += height / 2;
+        found = found > height / 2 - FLIP_TOL ? 0 : Math.round(found * 1e9) / 1e9;
+        if (levels.every((seen) => Math.abs(found - seen) > FLIP_TOL)) levels.push(found);
+      }
+    }
+  }
+  return levels.sort((a, b) => a - b);
+}
+
+// How far two tiles may sit apart and still be the same tile. Template vertices
+// are stored rounded to 1e-6 and a dual's are computed centroids of those, so a
+// tiling is only symmetric to about that; the closest two *different* vertices
+// in any template here are four orders of magnitude further apart.
+const FLIP_TOL = 1e-4;
 
 // Tag coordinates are rounded to 1e-6, so a vertex genuinely on an edge can
 // miss it by about 1e-6; the nearest vertex that is *not* on an edge is two
@@ -491,7 +621,7 @@ function trihexTemplate(): ArchTemplate {
   // kagome: the horizontal family of straight lines runs along y = sqrt(3)/2,
   // so the Mobius band cut there keeps a straight edge (cut 0 would put a
   // hexagon centre on the seam).
-  return template([3, 6, 3, 6], 2, 2 * ROOT3, polygons, { mobiusCut: h });
+  return template([3, 6, 3, 6], 2, 2 * ROOT3, polygons, { cut: h });
 }
 
 function truncsquareTemplate(): ArchTemplate {
@@ -518,7 +648,7 @@ function truncsquareTemplate(): ArchTemplate {
   ];
   // no horizontal line runs through this tiling, so the Mobius band is cut
   // midway between the octagon and square courses.
-  return template([4, 8, 8], a, a, [["oct", octagon], ["sq", square]], { mobiusCut: a / 4 });
+  return template([4, 8, 8], a, a, [["oct", octagon], ["sq", square]], { cut: a / 4 });
 }
 
 function elongatedTemplate(): ArchTemplate {
@@ -535,7 +665,7 @@ function elongatedTemplate(): ArchTemplate {
   ];
   // a square course's own bottom edge runs straight across the tiling, so the
   // Mobius band is cut there and comes out flat-edged at both rims.
-  return template([3, 3, 3, 4, 4], 1, 2 + ROOT3, polygons, { mobiusCut: -0.5 });
+  return template([3, 3, 3, 4, 4], 1, 2 + ROOT3, polygons, { cut: -0.5 });
 }
 
 function snubsquareTemplate(): ArchTemplate {
@@ -617,7 +747,10 @@ function snubhexTemplate(): ArchTemplate {
       if (inDomain(points)) polygons.push([`h${m},${n}`, points]);
     }
   }
-  return template([3, 3, 3, 3, 6], width, height, polygons, { mirrored: false });
+  return template([3, 3, 3, 3, 6], width, height, polygons, {
+    mirrored: false,
+    cut: height / 7,
+  });
 }
 
 function trunchexTemplate(): ArchTemplate {
@@ -641,7 +774,7 @@ function trunchexTemplate(): ArchTemplate {
   const polygons = [...around(0, 0, "0"), ...around(a / 2, (a * ROOT3) / 2, "1")];
   // the triangles hang below every dodecagon course, so there is no horizontal
   // line; the Mobius band is cut midway between the two courses.
-  return template([3, 12, 12], a, a * ROOT3, polygons, { mobiusCut: (a * ROOT3) / 4 });
+  return template([3, 12, 12], a, a * ROOT3, polygons, { cut: (a * ROOT3) / 4 });
 }
 
 function rhombitrihexTemplate(): ArchTemplate {
@@ -668,7 +801,7 @@ function rhombitrihexTemplate(): ArchTemplate {
   // horizontal line; the Mobius band is cut midway between a triangle course
   // and the hexagon course above it.
   return template([3, 4, 6, 4], width, height, hexLatticePolygons(centreAt, hexagonAt, decorate, width, height), {
-    mobiusCut: (5 * height) / 12,
+    cut: (5 * height) / 12,
   });
 }
 
@@ -708,7 +841,7 @@ function trunctrihexTemplate(): ArchTemplate {
   // horizontal line; the Mobius band is cut midway between the square course
   // and the hexagon course above it.
   return template([4, 6, 12], width, height, hexLatticePolygons(centreAt, dodecagonAt, decorate, width, height), {
-    mobiusCut: (7 * height) / 24,
+    cut: (7 * height) / 24,
   });
 }
 
@@ -722,7 +855,7 @@ function trunctrihexTemplate(): ArchTemplate {
 // and are cut midway between two courses instead, the other six duals want the
 // default 0.
 
-function dualTemplate(primal: () => ArchTemplate, mobiusCut = 0): ArchTemplate {
+function dualTemplate(primal: () => ArchTemplate, cut = 0): ArchTemplate {
   const p = primal();
   const { width, height } = p;
   const centroidOf = (refs: Ref[]): Vertex => {
@@ -782,7 +915,7 @@ function dualTemplate(primal: () => ArchTemplate, mobiusCut = 0): ArchTemplate {
     mirrored: p.mirror !== null,
     glide: p.glide,
     centre,
-    mobiusCut,
+    cut,
   });
 }
 
@@ -898,7 +1031,7 @@ function offsetsquareTemplate(): ArchTemplate {
   return template([4, 4, 4], 1, 2, [
     ["sq0", [[0, -0.5], [1, -0.5], [1, 0.5], [0, 0.5]]],
     ["sq1", [[-0.5, 0.5], [0.5, 0.5], [0.5, 1.5], [-0.5, 1.5]]],
-  ], { mobiusCut: 0.5 });
+  ], { cut: 0.5 });
 }
 
 function staggeredtriTemplate(): ArchTemplate {
@@ -932,7 +1065,10 @@ function pythagoreanTemplate(ratio = 0.5): ArchTemplate {
     ["big", big],
     ["small", small],
   ]);
-  return template([4, 4, 4], side, side, polygons, { mirrored: false });
+  // every quarter of a domain is a row of square centres, so the cut goes an
+  // eighth up: on the centres themselves a row is kept at one rim of a cylinder
+  // and dropped at the other
+  return template([4, 4, 4], side, side, polygons, { mirrored: false, cut: side / 20 });
 }
 
 function rotatedhexTemplate(gap = 0.5): ArchTemplate {
@@ -975,7 +1111,9 @@ function rotatedhexTemplate(gap = 0.5): ArchTemplate {
     ]);
   }
   const { width, height, cells } = triangularDomain(c1, polygons);
-  return template([3, 6, 6], width, height, cells, { mirrored: false });
+  // a quarter domain up: the hexagon rows sit every sixth of it, and this is
+  // the gap whose rim runs flattest (see THE CUT)
+  return template([3, 6, 6], width, height, cells, { mirrored: false, cut: height / 4 });
 }
 
 function rotatedtriTemplate(hexagon = 0.5): ArchTemplate {
@@ -1019,7 +1157,7 @@ function rotatedtriTemplate(hexagon = 0.5): ArchTemplate {
       centre = [round6(cx), round6(cy)];
     }
   }
-  return template([3, 3, 6], width, height, cells, { mirrored: false, centre });
+  return template([3, 3, 6], width, height, cells, { mirrored: false, centre, cut: height / 4 });
 }
 
 function threescaletriTemplate(ratio = 0.5): ArchTemplate {
@@ -1099,7 +1237,7 @@ function runningbondTemplate(ratio = 0.5): ArchTemplate {
   return template([4], 1, 2 * r, [
     ["brick0", brick(0, -r / 2, 1, r)],
     ["brick1", brick(-0.5, r / 2, 1, r)],
-  ], { mobiusCut: r / 2 });
+  ], { cut: r / 2 });
 }
 
 function basketweaveTemplate(group = 2): ArchTemplate {
@@ -1146,7 +1284,8 @@ function herringboneTemplate(): ArchTemplate {
     ["v", brick(1, 0, r, 1)],
   ];
   const cells = periodicDomain([r, -r], [3 * r, r], 2, 2, polygons);
-  return template([4], 2, 2, cells, { mirrored: false });
+  // brick centres lie every quarter domain, so the cut goes an eighth up
+  return template([4], 2, 2, cells, { mirrored: false, cut: 0.125 });
 }
 
 // -- registry ----------------------------------------------------------------
@@ -1183,7 +1322,7 @@ export const ARCH_TILINGS: ArchTiling[] = [
   { key: "trunctrihex", label: "Truncated trihexagonal", config: [4, 6, 12], edgeDirections: 12, template: trunctrihexTemplate, family: "uniform", halfTurn: true },
   { key: "truncsquare", label: "Truncated square", config: [4, 8, 8], edgeDirections: 8, template: truncsquareTemplate, family: "uniform", halfTurn: true },
   // the Laves (dual / Catalan) tilings -- face-transitive
-  { key: "floret", label: "Floret pentagonal", config: [3, 3, 3, 3, 6], edgeDirections: 12, template: () => dualTemplate(snubhexTemplate), family: "dual", halfTurn: true },
+  { key: "floret", label: "Floret pentagonal", config: [3, 3, 3, 3, 6], edgeDirections: 12, template: () => dualTemplate(snubhexTemplate, (15 * Math.sqrt(21)) / 28), family: "dual", halfTurn: true },
   { key: "prismaticpent", label: "Prismatic pentagonal", config: [3, 3, 3, 4, 4], edgeDirections: 12, template: () => dualTemplate(elongatedTemplate), family: "dual", halfTurn: true },
   { key: "cairo", label: "Cairo pentagonal", config: [3, 3, 4, 3, 4], edgeDirections: 12, template: () => dualTemplate(snubsquareTemplate, Math.sqrt(2 + ROOT3) / 4), family: "dual", halfTurn: true },
   { key: "deltoidal", label: "Deltoidal trihexagonal", config: [3, 4, 6, 4], edgeDirections: 12, template: () => dualTemplate(rhombitrihexTemplate), family: "dual", halfTurn: true },

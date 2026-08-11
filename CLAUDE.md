@@ -26,19 +26,34 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   `_ArchTemplate` (one rectangular periodic domain + modular seam gluing;
   snub hexagonal and its dual the floret pentagonal are chiral, so no
   Möbius and no Klein bottle — both seams reverse orientation). A
-  Möbius strip has **one** edge, so the band's two rims are two arcs of
-  the same circle and the tiling has to look the same at both: the band
-  runs from the template's `mobius_cut` to `cut + rows*height`, `rows` may
-  be fractional (as on the cylinder) and `rows + 2*cut/height` must come
-  out a whole number, which is what makes the band's centre line a mirror
-  of its rows. The cut never falls on a row of tile *centres* — cutting
-  there keeps the row at one rim and drops it at the other, which is what
-  six of the eight uniform tilings shipped as — and it runs along a
-  horizontal edge-line of the tiling wherever there is one, so the strip's
-  edge is a straight circle rather than a zigzag. See the MOBIUS CUT note
-  in `boards/tilings.py`; the two rules are measured on every shipped
-  preset by `TestWrappedArchimedean.test_mobius_band_is_symmetric` and
-  `test_mobius_rim_is_straight_where_the_tiling_allows`. The
+  **cut** — one number per template, `_ArchTemplate.cut` — is where both
+  open surfaces end the tiling, and both need the strip **symmetric about
+  its own centre line**. A Möbius strip has one edge, so its two rims are
+  two arcs of the same circle; a cylinder has two, and they have to be the
+  same curve or the tube reads as cut off square at one end and gnawed at
+  the other. The seam of a Möbius band reverses y and leaves x running on,
+  so its flip has to be the template's *mirror*: `rows + 2*cut/height` must
+  come out a whole number (`rows` may be fractional, as on the cylinder). A
+  cylinder can also be turned upside down about a horizontal axis, which
+  reverses x too, so a **half turn** serves it as well as a mirror — which
+  is how the chiral tilings (the snubs, and four of the isogonal six) get
+  matching rims with no mirror at all. `_flip_levels` measures the heights
+  where a tiling reverses y either way into `_ArchTemplate.flips`, and
+  `arch_cylinder_board` asks that `cut + rows*height/2` land on one of
+  them. Three-scale triangular (p3) reverses y at no height in any
+  orientation — no mirror, no half turn — so it is the one tiling with no
+  cylinder at all, gated out of the menu by `SurfaceSpec.needs_flip` as
+  chirality gates the snubs out of the Möbius strip. On either surface the
+  cut never falls on a row of tile *centres* — cutting there keeps the row
+  at one rim and drops it at the other, which is what six of the eight
+  uniform tilings shipped as on the Möbius strip — and it runs along a
+  horizontal edge-line of the tiling wherever there is one, so the rim is a
+  straight circle rather than a zigzag. See the AGENT NOTE on the cut in
+  `boards/tilings.py`; every rule is measured on every shipped preset by
+  `TestWrappedArchimedean.test_mobius_band_is_symmetric`,
+  `test_cylinder_rims_are_the_same_curve`,
+  `test_{mobius,cylinder}_rim_is_straight_where_the_tiling_allows` and
+  `test_no_tile_centre_sits_on_the_cut`. The
   Klein bottle glues like the donut but flips the tube across the ring
   seam (the same `template.mirror` the Möbius uses); the
   self-intersecting bottle immersion hides some cells behind the neck, so
@@ -50,11 +65,13 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   corner lands in the middle of its neighbour's edge. `_insert_t_vertices`
   records that point on the split tile so shared-vertex adjacency still
   finds the neighbour; it is collinear, so the drawn tile is unchanged and
-  the shape colouring drops it before measuring. They wrap the torus and
-  cylinder like every other periodic family, and the two reflective ones
-  (offset square, staggered triangular) also wrap the Möbius strip and
-  Klein bottle; the other four are chiral (no template mirror), which
-  gates them out of those two seams exactly as it does snub hexagonal.
+  the shape colouring drops it before measuring. They wrap the torus like
+  every other periodic family, and all but three-scale triangular the
+  cylinder (p3 reverses y at no height, so no strip of it has two matching
+  rims); the two reflective ones (offset square, staggered triangular) also
+  wrap the Möbius strip and Klein bottle, and the other four are chiral (no
+  template mirror), which gates them out of those two seams exactly as it
+  does snub hexagonal.
   A fourth family,
   `family="rectangle"`, holds the five brick **bonds** tiled by one congruent
   rectangle (stacked bond, running bond, basket weave, its three-brick

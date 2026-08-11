@@ -37,6 +37,7 @@ from minesweeper.boards import (
     _z_rot,
     _z_sub,
     _z_to_xy,
+    arch_cylinder_board,
     arch_klein_board,
     arch_mobius_board,
     arch_torus_board,
@@ -2151,11 +2152,11 @@ class TestWrappedArchimedean:
             "torussnubhex": (90, 252, 432),
             "torustruncsquare": (80, 252, 480),
             "torustrunchex": (84, 252, 480),
-            "cylelongated": (91, 286, 416),
+            "cylelongated": (91, 230, 512),
             "cylsnubsquare": (84, 231, 480),
             "cyltrihex": (81, 270, 504),
-            "cylsnubhex": (90, 243, 432),
-            "cyltruncsquare": (77, 260, 476),
+            "cylsnubhex": (75, 264, 504),
+            "cyltruncsquare": (77, 260, 459),
             "cyltrunchex": (81, 270, 504),
             "mobiuselongated": (91, 286, 416),
             "mobiussnubsquare": (78, 228, 486),
@@ -2164,23 +2165,23 @@ class TestWrappedArchimedean:
             "mobiustrunchex": (81, 225, 420),
             "torusrhombitrihex": (84, 264, 468),
             "torustrunctrihex": (72, 264, 468),
-            "cylrhombitrihex": (72, 264, 480),
-            "cyltrunctrihex": (72, 264, 435),
+            "cylrhombitrihex": (84, 286, 480),
+            "cyltrunctrihex": (80, 242, 510),
             "mobiusrhombitrihex": (84, 286, 532),
             "mobiustrunctrihex": (80, 280, 420),
             "torusprismaticpent": (80, 252, 480),
-            "cylprismaticpent": (72, 224, 468),
+            "cylprismaticpent": (90, 270, 456),
             "mobiusprismaticpent": (72, 224, 444),
             "toruscairo": (84, 256, 480),
-            "cylcairo": (80, 252, 480),
+            "cylcairo": (80, 252, 456),
             "mobiuscairo": (75, 253, 495),
             "torusrhombille": (84, 252, 480),
-            "cylrhombille": (81, 270, 504),
+            "cylrhombille": (90, 240, 462),
             "mobiusrhombille": (77, 285, 550),
             "torusfloret": (84, 264, 468),
             "cylfloret": (84, 264, 450),
             "torustetrakis": (84, 256, 448),
-            "cyltetrakis": (81, 255, 480),
+            "cyltetrakis": (72, 280, 456),
             "mobiustetrakis": (80, 280, 456),
             "torustriakis": (96, 264, 504),
             "cyltriakis": (84, 264, 450),
@@ -2189,7 +2190,7 @@ class TestWrappedArchimedean:
             "cyldeltoidal": (72, 264, 450),
             "mobiusdeltoidal": (72, 264, 468),
             "toruskisrhombille": (96, 288, 480),
-            "cylkisrhombille": (144, 288, 480),
+            "cylkisrhombille": (72, 288, 480),
             "mobiuskisrhombille": (144, 240, 528),
             "kleinelongated": (78, 264, 486),
             "kleinsnubsquare": (81, 252, 486),
@@ -2210,19 +2211,18 @@ class TestWrappedArchimedean:
             "mobiusoffsetsquare": (80, 252, 520),
             "kleinoffsetsquare": (78, 260, 476),
             "torusstaggeredtri": (84, 240, 484),
-            "cylstaggeredtri": (72, 266, 450),
+            "cylstaggeredtri": (72, 266, 468),
             "mobiusstaggeredtri": (90, 270, 468),
             "kleinstaggeredtri": (84, 270, 496),
             "toruspythagorean": (80, 270, 480),
-            "cylpythagorean": (75, 225, 480),
+            "cylpythagorean": (85, 261, 468),
             "torusrotatedhex": (84, 252, 480),
-            "cylrotatedhex": (81, 270, 420),
+            "cylrotatedhex": (81, 270, 504),
             "torusrotatedtri": (84, 252, 480),
-            "cylrotatedtri": (72, 224, 420),
+            "cylrotatedtri": (81, 270, 504),
             "torusthreescaletri": (84, 252, 480),
-            "cylthreescaletri": (81, 270, 420),
             "torusstackedbond": (84, 253, 480),
-            "cylstackedbond": (84, 273, 476),
+            "cylstackedbond": (84, 260, 459),
             "mobiusstackedbond": (84, 260, 459),
             "kleinstackedbond": (80, 253, 480),
             "torusrunningbond": (80, 252, 476),
@@ -2230,7 +2230,7 @@ class TestWrappedArchimedean:
             "mobiusrunningbond": (84, 260, 459),
             "kleinrunningbond": (78, 260, 476),
             "torusbasketweave": (80, 256, 480),
-            "cylbasketweave": (72, 280, 504),
+            "cylbasketweave": (80, 240, 504),
             "mobiusbasketweave": (72, 228, 460),
             "kleinbasketweave": (88, 272, 460),
             "torusbasketweave3": (84, 252, 480),
@@ -2238,7 +2238,7 @@ class TestWrappedArchimedean:
             "mobiusbasketweave3": (84, 270, 456),
             "kleinbasketweave3": (78, 270, 456),
             "torusherringbone": (80, 256, 480),
-            "cylherringbone": (72, 280, 504),
+            "cylherringbone": (90, 250, 490),
         }
         assert sorted(counts) == sorted(self.WRAPPED)
         for mode, expected in counts.items():
@@ -2246,16 +2246,19 @@ class TestWrappedArchimedean:
                 assert len(build_board(mode, difficulty).adjacency) == count
 
     # The tilings that have a horizontal line of edges to cut along, so their
-    # Mobius band comes out with a straight rim (see the MOBIUS CUT note in
-    # boards/tilings.py). The rest are cut halfway between two courses and get
-    # a symmetric zigzag instead.
-    MOBIUS_STRAIGHT_RIM = {
+    # band or tube comes out with a straight rim (see the AGENT NOTE on the cut
+    # in boards/tilings.py). The rest are cut halfway between two courses and
+    # get a symmetric zigzag instead. One list for both surfaces, because they
+    # share the cut: every tiling here is straight on the Mobius strip and on
+    # the cylinder alike.
+    STRAIGHT_RIM = {
         "elongated", "trihex", "prismaticpent", "deltoidal", "triakis",
         "kisrhombille", "tetrakis", "offsetsquare", "staggeredtri",
         "stackedbond", "runningbond", "basketweave", "basketweave3",
     }
 
     MOBIUS_MODES = sorted(m for m in WRAPPED if m.startswith("mobius"))
+    CYLINDER_MODES = sorted(m for m in WRAPPED if m.startswith("cyl"))
 
     @staticmethod
     def _band_rows(mode, difficulty):
@@ -2264,7 +2267,7 @@ class TestWrappedArchimedean:
         that ``arch_mobius_board`` starts the band at."""
         tiling = max((t for t in _ARCH_CONFIGS if mode.endswith(t)), key=len)
         template = _arch_template(tiling)
-        height, cut = template.height, template.mobius_cut
+        height, cut = template.height, template.cut
         strip = ARCH_PRESETS[tiling]["mobius"][difficulty][1] * height
         rows = []
         for name, refs in template.cells:
@@ -2284,7 +2287,7 @@ class TestWrappedArchimedean:
         the other, or half the edge reads one way and half the other. Which
         makes the band's centre line a mirror of its rows.
 
-        This is the check a tiling's ``mobius_cut`` has to pass. Cut a band
+        This is the check a tiling's ``cut`` has to pass. Cut a band
         where a row of tile *centres* falls and that row is kept at one rim
         and not at the other -- which is what six of the eight uniform
         tilings, and rhombille, shipped as.
@@ -2313,10 +2316,119 @@ class TestWrappedArchimedean:
         rim = [math.hypot(math.hypot(x, y) - 1.0, z)
                for edge, count in edges.items() if count == 1 for x, y, z in edge]
         spread = max(rim) - min(rim)
-        if tiling in self.MOBIUS_STRAIGHT_RIM:
+        if tiling in self.STRAIGHT_RIM:
             assert spread < 1e-4, f"{mode} rim is not a straight line"
         else:
             assert spread > 1e-3  # a zigzag; nothing better is available
+
+    @staticmethod
+    def _rim_points(board):
+        """The two rims of a cylinder, as lists of (angle round the axis,
+        height up it). The axis is y and the strip is centred on 0, so the
+        sign of a rim vertex's height says which rim it is on."""
+        edges = Counter()
+        for polygon in board.polygons.values():
+            points = [tuple(round(c, 6) for c in p) for p in polygon]
+            for edge in zip(points, points[1:] + points[:1]):
+                edges[frozenset(edge)] += 1
+        low, high = [], []
+        for edge, count in edges.items():
+            if count != 1:
+                continue
+            for x, y, z in edge:
+                (low if y < 0 else high).append((math.atan2(z, x), y))
+        return sorted(set(low)), sorted(set(high))
+
+    @staticmethod
+    def _rim_cycle(points):
+        """A rim reduced to what a turn about the axis leaves alone: the
+        cyclic sequence of (gap to the next vertex round, height)."""
+        points = sorted(points)
+        return [((b[0] - a[0]) % (2 * math.pi), a[1])
+                for a, b in zip(points, points[1:] + points[:1])]
+
+    @classmethod
+    def _same_rim(cls, one, other) -> bool:
+        """Are two rims the same curve up to a turn about the axis -- i.e. do
+        their cycles agree at some rotation? The slack is 1e-4: template
+        vertices are stored rounded to 1e-6 (see _template), so a tiling is
+        only symmetric to that, and the immersion carries the rounding
+        through."""
+        a, b = cls._rim_cycle(one), cls._rim_cycle(other)
+        if len(a) != len(b):
+            return False
+        return any(all(abs(p - q) < 1e-4 and abs(u - v) < 1e-4
+                       for (p, u), (q, v) in zip(a, b[i:] + b[:i]))
+                   for i in range(len(b)))
+
+    @pytest.mark.parametrize("difficulty", DIFFICULTIES)
+    @pytest.mark.parametrize("mode", CYLINDER_MODES)
+    def test_cylinder_rims_are_the_same_curve(self, mode, difficulty):
+        """A cylinder ends in two rims, and they have to be the same curve --
+        or the tube reads as cut off cleanly at one end and gnawed at the
+        other. Which is what nine of the tilings shipped as: a strip a whole
+        number of periods long has its top rim a *translate* of its bottom
+        one, and a translate of a zigzag is the zigzag upside down.
+
+        The same curve means: carried onto each other by an isometry of the
+        cylinder that swaps its ends, which is a mirror in the mid plane or a
+        half turn about a horizontal axis, either composed with a free turn
+        about the cylinder's own axis. So flip the top rim both ways and ask
+        whether either lands on the bottom one, up to that turn.
+        """
+        board = build_board(mode, difficulty)
+        low, high = self._rim_points(board)
+        assert low and len(low) == len(high), f"{mode} {difficulty} rims differ"
+        mirror = [(angle, -y) for angle, y in high]
+        half_turn = [(-angle, -y) for angle, y in high]
+        assert (self._same_rim(low, mirror) or self._same_rim(low, half_turn)), (
+            f"{mode} {difficulty} rims are different curves")
+
+    @pytest.mark.parametrize("mode", CYLINDER_MODES)
+    def test_cylinder_rim_is_straight_where_the_tiling_allows(self, mode):
+        """...and where the tiling has a horizontal edge-line the cut runs
+        along it, so both rims are clean circles rather than zigzags. Same
+        rule and same list as the Mobius strip's single edge, since the two
+        surfaces cut at the same ``template.cut``."""
+        tiling = max((t for t in _ARCH_CONFIGS if mode.endswith(t)), key=len)
+        board = build_board(mode, "medium")
+        low, high = self._rim_points(board)
+        spread = max(max(y for _, y in high) - min(y for _, y in high),
+                     max(y for _, y in low) - min(y for _, y in low))
+        if tiling in self.STRAIGHT_RIM:
+            assert spread < 1e-4, f"{mode} rims are not straight lines"
+        else:
+            assert spread > 1e-3  # a zigzag; nothing better is available
+
+    @pytest.mark.parametrize("tiling", sorted(_ARCH_CONFIGS))
+    def test_no_tile_centre_sits_on_the_cut(self, tiling):
+        """The cut may not fall on a row of tile *centres*, on either
+        surface. A centroid exactly there is kept at the bottom of the strip
+        and its image at the top is not, so the strip carries one row more
+        than its own reflection -- lopsided on the Mobius strip, mismatched
+        rims on the cylinder."""
+        template = _arch_template(tiling)
+        height = template.height
+        for _, refs in template.cells:
+            centre = sum(dn * height + template.verts[tag][1]
+                         for tag, _, dn in refs) / len(refs)
+            gap = (centre - template.cut) % height
+            assert min(gap, height - gap) > 1e-3, f"{tiling} cut is on a row"
+
+    def test_threescaletri_never_reverses_y_so_no_cylinder(self):
+        # p3 has no mirror in any direction and no half turn either, so no
+        # strip of it ends in two rims that are the same curve
+        assert _arch_template("threescaletri").flips == ()
+        assert "cylthreescaletri" not in MODE_LABELS
+        with pytest.raises(ValueError):
+            arch_cylinder_board("threescaletri", 9, 2, 12)
+
+    def test_cylinder_rows_have_to_centre_the_strip_on_a_flip(self):
+        # trihex reverses y every half domain, so whole and half rows both
+        # work and a quarter row does not
+        arch_cylinder_board("trihex", 9, 1.5, 9)
+        with pytest.raises(ValueError):
+            arch_cylinder_board("trihex", 9, 1.25, 9)
 
     def test_snubhex_is_chiral_so_no_mobius(self):
         # 3.3.3.3.6 has no mirror or glide symmetry: its mirror image is

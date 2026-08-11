@@ -554,18 +554,47 @@ def arch_torus_board(
 
 
 def arch_cylinder_board(
-    tiling: str, ring: int, rows: float, mine_count: int, cut: float = 0.0
+    tiling: str, ring: int, rows: float, mine_count: int
 ) -> Board3D:
     """An Archimedean tiling around the side of a cylinder: ``ring``
-    domain copies around, ``rows`` up the axis, open ends. ``cut``
-    shifts where the strip starts within the repeating rows and ``rows``
-    may be fractional: along a tiling's horizontal edge-lines these make
-    the rims flat. Tilings without such lines (the snubs) get a clean
-    but zigzag rim: cells are only ever whole."""
+    domain copies around, ``rows`` up the axis, open ends.
+
+    The strip runs from ``template.cut`` to ``cut + rows*height``, and
+    ``rows`` may be fractional: along a tiling's horizontal edge-lines the
+    two together make the rims flat. Tilings without such lines get a clean
+    but zigzag rim — cells are only ever whole.
+
+    A cylinder's two rims must be the **same curve**, or the tube reads as
+    cut off square at one end and ragged at the other. That asks the strip
+    to be symmetric about its own centre line, ``cut + rows*height/2``,
+    under an isometry the cylinder itself has: a mirror in that plane, or a
+    half turn about a horizontal axis in it (which a chiral tiling with no
+    mirror still offers, and which is why the snubs wrap a cylinder but no
+    Möbius strip). ``template.flips`` holds the heights where the tiling
+    does one or the other, so the centre line has to land on one of them,
+    and ``rows`` is what puts it there — checked here rather than left to
+    the presets. See the AGENT NOTE on the cut in ``tilings.py``.
+    """
     template = _arch_template(tiling)
     height = template.height
+    cut = template.cut
     unit = 2 * math.pi / (ring * template.width)  # arc length of one edge unit
     middle = rows * height / 2 + cut
+    if not template.flips:
+        raise ValueError(
+            f"{tiling} never reverses y (p3 has no mirror and no half turn), "
+            "so no strip of it has two matching rims")
+    # whole half periods between the strip's centre line and a flip level;
+    # the slack is the float noise in a level measured off tile centroids,
+    # orders of magnitude under the gap between one row of centres and the next
+    periods = [(middle - flip) / (height / 2) for flip in template.flips]
+    if min(abs(p - round(p)) for p in periods) > 1e-5:
+        raise ValueError(
+            f"rows {rows} leaves the {tiling} rims different curves: the "
+            f"strip's centre line is {middle % (height / 2):.4f} into the "
+            f"rows and the tiling only reverses y at "
+            f"{[round(flip, 4) for flip in template.flips]} (mod "
+            f"{height / 2:.4f})")
 
     def point(key):
         m, n, tag = key
@@ -603,7 +632,7 @@ def arch_mobius_board(
     3.3.3.3.6 (snub hexagonal) is chiral: no mirror, no glide, so no
     Möbius strip at all (its mirror image is a different tiling).
 
-    The band runs from ``template.mobius_cut`` to ``cut + rows*height``,
+    The band runs from ``template.cut`` to ``cut + rows*height``,
     and ``rows`` may be fractional exactly as on the cylinder — a strip
     two and a half domains across is what a cut halfway up the domain
     needs. What is *not* free is the fractional part: a Möbius strip has
@@ -624,7 +653,7 @@ def arch_mobius_board(
     else:
         halves = 2 * ring
     width, height = template.width, template.height
-    cut = template.mobius_cut
+    cut = template.cut
     q, odd = divmod(halves, 2)
     length = halves * width / 2
     strip = rows * height

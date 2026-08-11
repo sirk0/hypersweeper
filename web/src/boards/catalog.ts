@@ -10,6 +10,7 @@ export interface SurfaceSpec {
   prefix: string;
   is3d: boolean;
   needsMirror: boolean;
+  needsFlip: boolean;
   boundaryComponents: number | null;
   tilt: number | null;
   tilings: string[] | null;
@@ -19,6 +20,11 @@ export interface TilingSpec {
   key: string;
   label: string;
   chiral: boolean;
+  /** Some horizontal mirror or half turn maps the tiling onto itself with y
+   * reversed, so a strip of it can end in two rims that are the same curve — a
+   * cylinder. p3 (three-scale triangular) has neither; see ArchTemplate.flips.
+   * The regular tilings in data/catalog.json omit it, and all three do. */
+  reversesY?: boolean;
   modeOverrides: Record<string, string>;
   /** The plane only: no wrap builders or preset windows for this tiling
    * (currently no ARCH_TILINGS family — see FLAT_ONLY_ARCH_FAMILIES — but a
@@ -37,7 +43,9 @@ export const MENU = catalog.menu;
 // tilings.ts ARCH_TILINGS registry — the one place they are declared — exactly
 // as catalog.py lifts them from ARCH_TILINGS. A tiling whose fundamental-domain
 // template has no mirror is chiral (snub hexagonal, floret pentagonal), which
-// gates it out of the orientation-reversing Möbius / Klein surfaces.
+// gates it out of the orientation-reversing Möbius / Klein surfaces; one whose
+// template never reverses y at all (three-scale triangular, p3) is gated out of
+// the cylinder, whose two rims have to be the same curve.
 // The ARCH_TILINGS families that live on the plane only: no wrap builders and
 // no per-surface preset windows for them yet. Empty today -- isogonal and
 // rectangle both wrap every surface their member tilings' chirality allows.
@@ -47,6 +55,7 @@ export const ARCH_TILING_SPECS: TilingSpec[] = ARCH_TILINGS.map((t) => ({
   key: t.key,
   label: t.label,
   chiral: archTemplate(t.key).mirror === null,
+  reversesY: archTemplate(t.key).flips.length > 0,
   modeOverrides: {},
   flatOnly: FLAT_ONLY_ARCH_FAMILIES.has(t.family),
 }));
@@ -77,11 +86,13 @@ export function modeFor(tilingKey: string, surfaceKey: string): string {
 }
 
 /** Whether a tiling can wrap a surface (port of TilingSpec.allows): a
- * mirror-needing surface (Möbius/Klein) rejects chiral tilings, and a surface
- * may restrict itself to an explicit tiling allow-list. */
+ * mirror-needing surface (Möbius/Klein) rejects chiral tilings, a flip-needing
+ * one (the cylinder) rejects a tiling that never reverses y, and a surface may
+ * restrict itself to an explicit tiling allow-list. */
 export function tilingAllows(tiling: TilingSpec, surface: SurfaceSpec): boolean {
   if (tiling.flatOnly && surface.key !== "flat") return false;
   if (surface.needsMirror && tiling.chiral) return false;
+  if (surface.needsFlip && tiling.reversesY === false) return false;
   if (surface.tilings && !surface.tilings.includes(tiling.key)) return false;
   return true;
 }

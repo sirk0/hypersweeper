@@ -281,8 +281,7 @@ def _topology_ok(mode: str, board) -> bool:
     return True
 
 
-def _candidate_values(current, coarse: bool, domains: bool = True,
-                      half_steps: bool = False) -> list:
+def _candidate_values(current, coarse: bool, domains: bool = True) -> list:
     """Values to try for one size knob.
 
     The Archimedean builders count *domain copies*, each worth several cells,
@@ -297,18 +296,25 @@ def _candidate_values(current, coarse: bool, domains: bool = True,
     if isinstance(current, float) and not float(current).is_integer():
         frac = current - math.floor(current)
         return [n + frac for n in range(1, 31)]
-    values: list = list(range(1, 41 if domains else 161))
-    if half_steps:
-        # `arch_cylinder_board` takes a fractional row count to land its rim
-        # flat, and a half row is a real option on any tiling whose domain is
-        # two brick courses tall -- but only the rows whose *incumbent* was
-        # already fractional ever got offered one, which is an accident of
-        # what shipped rather than a property of the tiling. Measured,
-        # `cylbasketweave3` easy at 5 x 1.5 is 90 cells and draws as square,
-        # where the best whole-row window is 6 x 1 and draws twice as wide as
-        # it is tall.
-        values += [n + 0.5 for n in range(1, 41 if domains else 161)]
-    return values
+    return list(range(1, 41 if domains else 161))
+
+
+def _cylinder_rows(tiling: str, limit: int = 40) -> list[float]:
+    """The row counts ``arch_cylinder_board`` will accept for a tiling: those
+    that land the strip's centre line on one of the template's flip levels."""
+    from minesweeper.boards.tilings import _arch_template
+
+    template = _arch_template(tiling)
+    half = template.height / 2
+    fractions = {round(((flip - template.cut) / half) % 1.0, 6)
+                 for flip in template.flips}
+    rows = {round(whole + fraction, 6)
+            for fraction in fractions for whole in range(limit)}
+    # half a domain is a real window, not a degenerate one: a Laves domain
+    # can be a dozen cells tall, and the tilings whose only flip level is
+    # halfway up (deltoidal, triakis) have nothing shorter to offer an easy
+    # board. What rules out a bracelet is MIN_RING, further down.
+    return sorted(value for value in rows if value > 0.25)
 
 
 def _rescale(builder: str, spec: dict, trial: list, before) -> list:
@@ -630,9 +636,15 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
             if n > 3 * target:
                 break
     else:
-        halves = builder == "arch_cylinder_board"
         va = _candidate_values(args[knobs[0]], coarse, domains)
-        vb = _candidate_values(args[knobs[1]], coarse, domains, half_steps=halves)
+        if builder == "arch_cylinder_board":
+            # a cylinder's row count is not a free knob: it is what puts the
+            # strip's centre line on a height where the tiling reverses y, or
+            # the board's two rims are different curves and the builder
+            # refuses it (see arch_cylinder_board)
+            vb = _cylinder_rows(args[0])
+        else:
+            vb = _candidate_values(args[knobs[1]], coarse, domains)
         grids = [[a, b] for a in va for b in vb]
         # Building every combination is thousands of boards per row, and each
         # build is followed by a topology check and two shape measurements that
@@ -874,15 +886,26 @@ def main() -> int:
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--jobs", type=int, default=max(1, mp.cpu_count() - 1))
+    parser.add_argument("--only", default="", help="comma-separated modes")
     options = parser.parse_args()
 
     presets = json.loads((ROOT / "data" / "presets.json").read_text())["presets"]
+    only = {mode for mode in options.only.split(",") if mode}
+    path = Path(__file__).parent / "geometry.json"
+    # searching one family only: every row not asked for keeps what it already
+    # measured, so the file stays whole for `apply`
+    out: dict[str, dict] = (
+        {mode: spec for mode, spec in json.loads(path.read_text()).items()
+         if mode in presets}
+        if only and path.exists() else {}
+    )
     jobs = []
-    out: dict[str, dict] = {}
     for mode, spec in sorted(presets.items()):
         builder = spec["builder"]
         if builder not in SPEC:
             print(f"  !! no knob spec for {builder} ({mode})")
+            continue
+        if only and mode not in only:
             continue
         out[mode] = {"builder": builder, "args": {}}
         for difficulty in ("easy", "medium", "hard"):
@@ -903,7 +926,6 @@ def main() -> int:
             flush=True,
         )
     _share_reused_scales(out)
-    path = Path(__file__).parent / "geometry.json"
     path.write_text(json.dumps(out, indent=2) + "\n")
     print(f"\nwrote {path}")
     return 0
