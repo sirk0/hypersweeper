@@ -87,7 +87,16 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   shaped boards cut from them), **Uniform** (the eight non-regular uniform
   tilings, `family="uniform"` in `ARCH_TILINGS`), **Laves** (their
   eight duals), **Isogonal**, **Congruent rectangles** and, on the plane
-  only, **Aperiodic** and **Fractals**. `ARCH_TILINGS` is
+  only, **Aperiodic** and **Fractals**. Every family is offered on every
+  surface its members' chirality allows, bar one: **Congruent rectangles**
+  is on the plane and the cylinder only. Those five bonds wrap the
+  torus/Möbius/Klein bottle without error, but their preset windows have
+  not been re-measured since `resize.corner_indices` taught the shape
+  metric to drop a T-vertex, and at the windows they have the wrap
+  distorts them too much to be worth playing — `_MANIFOLD_EXCLUDED_FAMILIES`
+  in `catalog.py` (and its mirror in `web/src/boards/catalog.ts`) is where
+  that one gap lives, and a `--mode` or a share link still reaches those
+  boards directly. `ARCH_TILINGS` is
   listed in vertex-configuration order — Wikipedia's "List of Euclidean
   uniform tilings" order — and that registry order is the menu order.
   **To add a tiling or surface, see `AGENTS.md`** — a tiling is
@@ -239,7 +248,8 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   described in the TypeScript section below. Classic
   launches flat squares; Flat (the plane) and each flat manifold (cylinder,
   Möbius, Klein, torus) open a shared tiling picker — the Regular / Uniform
-  / Laves family submenus, Isogonal, Congruent rectangles, and Aperiodic and
+  / Laves family submenus, Isogonal, Congruent rectangles (the plane and the
+  cylinder only, as above), and Aperiodic and
   Fractals on the plane only, and a random option
   — parameterised by the surface it was reached through; Sphere and
   Polyhedra list their finished boards. Navigation is a `path` breadcrumb

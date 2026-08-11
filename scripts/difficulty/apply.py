@@ -68,13 +68,22 @@ def _format(value, original: str) -> str:
     that is what holds on to ``ROOT3 / 2`` and ``21**0.5 / 4``, the exact seam
     offsets that land a cylinder's rim flat, instead of flattening them to
     rounded decimals.
+
+    "Did not move" is judged to 1e-6, not to the last bit, because that is the
+    precision a value survives the round trip at: ``resize._cylinder_rows``
+    rounds the row counts it enumerates to six decimals, so a cylinder row the
+    search re-picked unchanged comes back 5e-8 away from the expression that
+    wrote it. Compared exactly, every such row is rewritten as a decimal and
+    the seam offset is lost. Nothing here moves by less than 0.05 when it moves
+    at all -- a row count steps by a quarter domain, a tube radius by 0.05, a
+    mine by one -- so the slack cannot hide a real change.
     """
     original = original.strip()
     if isinstance(value, bool) or value is None:
         return repr(value)
     was = _value_of(original)
     if was is not None and isinstance(value, (int, float)):
-        if abs(float(was) - float(value)) < 1e-9:
+        if abs(float(was) - float(value)) < 1e-6:
             return original
     if isinstance(value, int):
         return str(value)

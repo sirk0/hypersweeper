@@ -55,14 +55,11 @@ describe("catalog families", () => {
       expect(tilingAllows(tiling, SURFACES.get("mobius")!)).toBe(wantMirror);
       expect(tilingAllows(tiling, SURFACES.get("klein")!)).toBe(wantMirror);
     }
-    // Builds fine on every manifold (checked above), but off the menu on
-    // torus/mobius/klein for now — too distorted at the current preset
-    // windows; the cylinder is the only manifold that still offers it.
-    for (const surface of ["flat", "cylinder"]) {
+    // ...and it is offered on every one of them: the windows were re-measured
+    // against the same shape metric the rest of the zoo uses, once that metric
+    // stopped counting a T-vertex as a corner.
+    for (const surface of ["flat", "cylinder", "torus", "mobius", "klein"]) {
       expect(pickerFamilies(surface)).toContain("isogonal");
-    }
-    for (const surface of ["torus", "mobius", "klein"]) {
-      expect(pickerFamilies(surface)).not.toContain("isogonal");
     }
     expect(familyRows("isogonal", "flat").map((r) => r.mode)).toEqual([...ISOGONAL_ARCH]);
   });
@@ -80,7 +77,8 @@ describe("catalog families", () => {
       expect(tilingAllows(tiling, SURFACES.get("mobius")!)).toBe(wantMirror);
       expect(tilingAllows(tiling, SURFACES.get("klein")!)).toBe(wantMirror);
     }
-    // Off the menu on torus/mobius/klein for now, same as isogonal above.
+    // Off the menu on torus/mobius/klein for now: unlike the isogonal family
+    // above, these windows have not been re-measured.
     for (const surface of ["flat", "cylinder"]) {
       expect(pickerFamilies(surface)).toContain("rectangle");
     }
@@ -175,16 +173,15 @@ describe("menu reachability", () => {
     }
     for (const m of SPHERE_MODES) add(m);
     for (const m of POLYHEDRA_MODES) add(m);
-    // isogonal and rectangle still build and have labels on torus/mobius/
-    // klein, but pickerFamilies keeps them off the menu there for now (see
-    // MANIFOLD_EXCLUDED_FAMILIES) — the one deliberate gap in reachability.
+    // The congruent-rectangle bonds still build and have labels on
+    // torus/mobius/klein, but pickerFamilies keeps them off the menu there for
+    // now (see MANIFOLD_EXCLUDED_FAMILIES) — the one deliberate gap in
+    // reachability.
     const offMenu = new Set<string>();
     for (const surface of ["torus", "mobius", "klein"]) {
-      for (const family of ["isogonal", "rectangle"]) {
-        for (const key of family === "isogonal" ? ISOGONAL_ARCH : RECTANGLE_ARCH) {
-          const mode = modeFor(key, surface);
-          if (mode in MODE_LABELS) offMenu.add(mode);
-        }
+      for (const key of RECTANGLE_ARCH) {
+        const mode = modeFor(key, surface);
+        if (mode in MODE_LABELS) offMenu.add(mode);
       }
     }
     expect(reachable).toEqual(new Set(MODES.filter((m) => !offMenu.has(m))));

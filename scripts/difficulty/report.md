@@ -47,7 +47,7 @@ Every board's mine count, chosen so its win probability under the reference solv
   - `triakis`/medium: 0.0% vs 87.1% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `triakis`/easy: 1.8% vs 96.5% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `truncicosidodeca`/hard: 45.9% vs 50.9% — no integer mine count lands within tolerance; this is the closest
-- 95 rows had games the solver abandoned (its frontier DP hit its node budget); their rates are measured over the games that finished:
+- 93 rows had games the solver abandoned (its frontier DP hit its node budget); their rates are measured over the games that finished:
   - `torustrunchex`/hard: 168 abandoned
   - `torusrotatedhex`/hard: 144 abandoned
   - `kleintri`/hard: 75 abandoned
@@ -130,7 +130,7 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `kleinrunningbond` | 6.0 | 78c 15m (19%) 99% | 260c 57m (22%) 87% | 476c 119m (25%) 48% |
 | `kleinsnubsquare` | 10.0 | 81c 18m (22%) 96% | 252c 62m (25%) 87% | 486c 132m (27%) 52% |
 | `kleinstackedbond` | 8.0 | 80c 15m (19%) 97% | 253c 62m (25%) 85% | 480c 127m (26%) 50% |
-| `kleinstaggeredtri` | 8.0 | 84c 18m (21%) 97% | 270c 66m (24%) 84% | 496c 134m (27%) 52% |
+| `kleinstaggeredtri` | 8.0 | 84c 18m (21%) 97% | 248c 58m (23%) 88% | 468c 128m (27%) 52% |
 | `kleintetrakis` | 14.0 | 84c 9m (11%) 94% | 252c 24m (10%) 85% | 480c 67m (14%) 53% |
 | `kleintri` | 12.0 | 84c 18m (21%) 98% | 260c 70m (27%) 89% | 480c 140m (29%) 52% |
 | `kleintriakis` | 21.0 | 96c 12m (12%) 0% ⚠ | 264c 42m (16%) 0% ⚠ | 480c 96m (20%) 0% ⚠ |
@@ -146,14 +146,14 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `mobiuselongated` | 9.4 | 91c 6m (7%) 95% | 286c 44m (15%) 83% | 416c 83m (20%) 50% |
 | `mobiushex` | 5.2 | 80c 14m (18%) 95% | 252c 48m (19%) 85% | 481c 108m (22%) 52% |
 | `mobiuskisrhombille` | 12.8 | 144c 7m (5%) 95% | 240c 15m (6%) 85% | 528c 52m (10%) 53% |
-| `mobiusoffsetsquare` | 5.7 | 80c 15m (19%) 95% | 252c 48m (19%) 87% | 520c 114m (22%) 49% |
+| `mobiusoffsetsquare` | 5.6 | 80c 15m (19%) 95% | 252c 48m (19%) 87% | 507c 113m (22%) 52% |
 | `mobiusprismaticpent` | 6.2 | 72c 8m (11%) 97% | 224c 43m (19%) 83% | 444c 98m (22%) 54% |
 | `mobiusrhombille` | 9.4 | 77c 6m (8%) 74% ⚠ | 285c 10m (4%) 77% ⚠ | 550c 20m (4%) 54% |
 | `mobiusrhombitrihex` | 7.7 | 84c 6m (7%) 93% | 286c 21m (7%) 90% | 532c 68m (13%) 53% |
 | `mobiusrunningbond` | 5.8 | 84c 16m (19%) 97% | 260c 52m (20%) 90% | 459c 110m (24%) 47% |
 | `mobiussnubsquare` | 9.4 | 78c 12m (15%) 97% | 228c 41m (18%) 88% | 486c 112m (23%) 53% |
 | `mobiusstackedbond` | 7.1 | 84c 15m (18%) 94% | 260c 47m (18%) 88% | 459c 109m (24%) 50% |
-| `mobiusstaggeredtri` | 7.7 | 90c 16m (18%) 98% | 270c 57m (21%) 85% | 468c 118m (25%) 51% |
+| `mobiusstaggeredtri` | 7.5 | 76c 13m (17%) 98% | 264c 56m (21%) 86% | 470c 118m (25%) 49% |
 | `mobiustetrakis` | 10.2 | 80c 8m (10%) 96% | 280c 28m (10%) 90% | 456c 69m (15%) 48% |
 | `mobiustri` | 11.1 | 85c 12m (14%) 99% | 261c 60m (23%) 85% | 480c 128m (27%) 50% |
 | `mobiustriakis` | 15.2 | 84c 11m (13%) 0% ⚠ | 264c 42m (16%) 0% ⚠ | 540c 108m (20%) 0% ⚠ |
@@ -198,7 +198,7 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `torusherringbone` | 6.0 | 80c 17m (21%) 95% | 256c 60m (23%) 86% | 480c 122m (25%) 50% |
 | `torushex` | 6.0 | 84c 18m (21%) 96% | 260c 58m (22%) 87% | 476c 119m (25%) 54% |
 | `toruskisrhombille` | 16.0 | 96c 6m (6%) 99% | 288c 26m (9%) 90% | 480c 68m (14%) 51% |
-| `torusoffsetsquare` | 6.0 | 80c 15m (19%) 97% | 252c 59m (23%) 85% | 476c 120m (25%) 51% |
+| `torusoffsetsquare` | 6.0 | 84c 16m (19%) 98% | 252c 59m (23%) 85% | 476c 120m (25%) 51% |
 | `torusprismaticpent` | 7.0 | 80c 11m (14%) 97% | 252c 58m (23%) 84% | 480c 118m (25%) 49% |
 | `toruspythagorean` | 6.0 | 80c 12m (15%) 99% | 270c 47m (17%) 87% | 480c 96m (20%) 53% |
 | `torusrhombille` | 10.0 | 84c 5m (6%) 65% ⚠ | 252c 9m (4%) 74% ⚠ | 480c 17m (4%) 54% |
@@ -209,7 +209,7 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `torussnubhex` | 10.0 | 90c 18m (20%) 95% | 252c 51m (20%) 90% | 432c 107m (25%) 54% |
 | `torussnubsquare` | 10.0 | 84c 9m (11%) 99% | 264c 63m (24%) 87% | 480c 129m (27%) 52% |
 | `torusstackedbond` | 8.0 | 84c 9m (11%) 77% ⚠ | 253c 58m (23%) 88% | 480c 126m (26%) 51% |
-| `torusstaggeredtri` | 8.0 | 84c 18m (21%) 97% | 240c 59m (25%) 83% | 484c 131m (27%) 51% |
+| `torusstaggeredtri` | 8.0 | 84c 18m (21%) 97% | 256c 58m (23%) 90% | 480c 131m (27%) 49% |
 | `torustetrakis` | 14.0 | 84c 7m (8%) 98% | 256c 29m (11%) 83% | 448c 68m (15%) 47% |
 | `torusthreescaletri` | 8.0 | 84c 18m (21%) 93% | 252c 56m (22%) 87% | 480c 120m (25%) 53% |
 | `torustri` | 12.0 | 80c 17m (21%) 97% | 256c 69m (27%) 89% | 480c 138m (29%) 52% |

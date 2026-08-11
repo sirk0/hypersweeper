@@ -210,6 +210,42 @@ def _rolled_flat(builder: str) -> bool:
     return "cylinder" in builder or "mobius" in builder
 
 
+def _mobius_band_clamped(builder: str, spec: dict, trial: list) -> bool:
+    """Does the immersion have to narrow this Mobius band to draw it?
+
+    ``arch_mobius_board`` draws a band as wide as the window is tall, which is
+    what keeps its tiles their planar shape -- but only up to
+    ``MOBIUS_HALF_WIDTH``, past which the loop's hole closes to a point and the
+    band folds through its own axis. Beyond that the extra rows buy no width at
+    all: they are squeezed into the same band, so every tile is stretched
+    further round the loop and nothing is gained. Measured, the staggered
+    triangular strip asked for a half-width of 1.09 and got 0.70, which drew it
+    as a nearly closed disc of slivers three times longer than they are wide,
+    where every uncapped strip in the catalogue draws its tiles at two.
+
+    So a clamped window is rejected outright rather than scored: the board it
+    draws is not the board the window describes, and the search's own aspect
+    term -- which reads the window, not the drawing -- would go on rewarding
+    rows that only make the tiles worse.
+    """
+    if builder != "arch_mobius_board":
+        return False
+    from minesweeper.boards.surfaces import MOBIUS_HALF_WIDTH, mobius_half_width
+    from minesweeper.boards.tilings import _arch_template
+
+    try:
+        template = _arch_template(trial[0])
+        ring, rows = trial[spec["size"][0]], trial[spec["size"][1]]
+    except Exception:
+        return False
+    halves = ring if template.glide else 2 * ring
+    length = halves * template.width / 2
+    if length <= 0:
+        return False
+    strip = rows * template.height
+    return mobius_half_width(strip, length) >= MOBIUS_HALF_WIDTH - 1e-9
+
+
 def _closed_tube(builder: str) -> bool:
     """The surfaces whose *second* knob wraps as well as the first.
 
@@ -285,18 +321,25 @@ def _candidate_values(current, coarse: bool, domains: bool = True) -> list:
     """Values to try for one size knob.
 
     The Archimedean builders count *domain copies*, each worth several cells,
-    so a few dozen is plenty. The plain surface builders count **cells**, and
+    so several dozen is plenty. The plain surface builders count **cells**, and
     the shipped presets already go well past that -- ``mobiustri`` hard was 49
     around -- so they need a much wider range. Capping them at 40 leaves the
     search no long-and-thin window at 480 cells and it settles for a squarish
     one whose triangles are badly stretched.
+
+    Sixty domains rather than forty, because a domain can be one tile wide: a
+    staggered-triangular Mobius strip has to be about 47 domains around before
+    it is long enough that the immersion can draw its 480 cells without
+    narrowing the band (see ``_mobius_band_clamped``), and at forty there was
+    no such window in the grid at all. Windows are filtered on their product
+    before any board is built, so the wider range costs a list, not a search.
     """
     if coarse:  # a fractal level is a whole substitution step
         return [1, 2, 3, 4, 5]
     if isinstance(current, float) and not float(current).is_integer():
         frac = current - math.floor(current)
         return [n + frac for n in range(1, 31)]
-    return list(range(1, 41 if domains else 161))
+    return list(range(1, 61 if domains else 161))
 
 
 def _cylinder_rows(tiling: str, limit: int = 40) -> list[float]:
@@ -504,7 +547,48 @@ def _rolled_screen_aspect(builder: str, spec: dict, trial: list) -> float:
     return max(drawn, 1 / drawn)
 
 
-def edge_ratio(board) -> float:
+_CORNERS: dict[str, dict[str, tuple[int, ...]]] = {}
+
+
+def corner_indices(tiling: str) -> dict[str, tuple[int, ...]]:
+    """Which vertices of each template cell are real corners, by cell name.
+
+    A tiling that is not edge to edge -- the isogonal families and four of the
+    five bonds -- carries **T-vertices**: the corner of a neighbour landing in
+    the middle of this tile's edge, recorded by ``_insert_t_vertices`` so the
+    shared-vertex adjacency still finds that neighbour. It sits at 180 degrees
+    and is no corner of the shape, so an edge it splits must be measured whole
+    or a square reads as a tile with two long sides and two short ones. This is
+    the same thing ``tests/test_boards._corners`` drops and the renderer's
+    shape colouring drops, decided here on the **flat** template, where a
+    T-vertex is exactly collinear -- on a wrapped board the surface bends it,
+    and on the stretched windows this measure exists to reject it can bend it
+    further than a real corner.
+    """
+    if tiling not in _CORNERS:
+        from minesweeper.boards.tilings import _arch_template
+
+        template = _arch_template(tiling)
+        out = {}
+        for name, refs in template.cells:
+            points = [(dm * template.width + template.verts[tag][0],
+                       dn * template.height + template.verts[tag][1])
+                      for tag, dm, dn in refs]
+            n = len(points)
+            keep = []
+            for i in range(n):
+                (bx, by), (px, py), (ax, ay) = points[i - 1], points[i], points[(i + 1) % n]
+                v1, v2 = (bx - px, by - py), (ax - px, ay - py)
+                angle = abs(math.atan2(v1[0] * v2[1] - v1[1] * v2[0],
+                                       v1[0] * v2[0] + v1[1] * v2[1]))
+                if abs(angle - math.pi) > 1e-3:
+                    keep.append(i)
+            out[name] = tuple(keep)
+        _CORNERS[tiling] = out
+    return _CORNERS[tiling]
+
+
+def edge_ratio(board, corners: dict[str, tuple[int, ...]] | None = None) -> float:
     """Median longest-to-shortest edge over the board's tiles.
 
     The suite already holds some modes to a bar on this
@@ -514,10 +598,26 @@ def edge_ratio(board) -> float:
     one long edge and two short ones. Rather than copy those per-mode limits
     here, the search simply refuses to make any board's cells worse-shaped than
     it already found them.
+
+    ``corners`` names the vertices that really are corners, per template cell
+    name (see ``corner_indices``); without it a T-vertex's two half-edges are
+    counted as two short sides, which stands the measure on its head. Measured
+    that way an *undistorted* staggered-triangular donut scores 2.05 -- a whole
+    edge against its neighbour's half -- and the 3.3-to-1 stretched one scores
+    1.13, because the stretch happens to even the two out. The bar is a
+    no-regression bar, so it then locks the search inside the stretched window
+    it should be replacing.
     """
     ratios = []
-    for points in board.polygons.values():
+    for cell, points in board.polygons.items():
+        keep = None
+        if corners is not None and isinstance(cell, tuple):
+            keep = corners.get(cell[-1])
+        if keep is not None:
+            points = [points[i] for i in keep]
         n = len(points)
+        if n < 3:
+            continue
         edges = [math.dist(points[i], points[(i + 1) % n]) for i in range(n)]
         shortest = min(edges)
         if shortest > 0:
@@ -671,6 +771,9 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
                  if 0.25 * want <= g[0] * g[1] <= 4.0 * want][:CANDIDATE_LIMIT]
 
     lo, hi = target * (1 - BAND), target * (1 + BAND)
+    # the tilings that are not edge to edge need their T-vertices dropped
+    # before any tile of theirs is measured (see `corner_indices`)
+    corners = corner_indices(args[0]) if spec.get("lead") else None
     # Prefer not to hand back cells worse-shaped than the ones already
     # shipping -- but never let that veto a board whose cells are fine in
     # absolute terms. Measured against a degenerate 6-around, 80-tall tube
@@ -678,7 +781,7 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
     # bar rejects the 21x23 cylinder for having cells at 1.107 instead of
     # 1.061, and so defends the very shape it should be replacing. Under the
     # floor, a tile is not stretched by any standard worth enforcing.
-    shape_bar = max(edge_ratio(probe) * 1.02, SHAPE_BAR_FLOOR)
+    shape_bar = max(edge_ratio(probe, corners) * 1.02, SHAPE_BAR_FLOOR)
     if _rolled_flat(builder) and "mobius" in builder:
         # A Mobius strip closes with a half twist, so a *wide* one is stretched
         # by the immersion however its window is chosen: keeping its tiles
@@ -728,7 +831,10 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
                 elif builder in SQUARE_LATTICE_CLOSED:
                     if min(trial[knobs[0]], trial[knobs[1]]) < MIN_WRAP_CELLS:
                         continue
-            if keep_shape and not is_flat and edge_ratio(board) > shape_bar:
+            # ...and a band no wider than the immersion will actually draw
+            if _mobius_band_clamped(builder, spec, trial):
+                continue
+            if keep_shape and not is_flat and edge_ratio(board, corners) > shape_bar:
                 continue
             # A window can hit the cell count, keep its topology and still not
             # be a puzzle: three cells around a cylinder gives every cell the
@@ -819,7 +925,7 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
                 # the radius reshapes the cells too, so it faces the same bar
                 # the window did -- otherwise a fatter tube buys a better
                 # isoperimetric score by stretching every tile
-                if edge_ratio(board) > shape_bar:
+                if edge_ratio(board, corners) > shape_bar:
                     continue
                 refined.append((_score(mode, board, TARGETS[difficulty], False,
                                        builder, spec, cand), cand, n))

@@ -245,27 +245,34 @@ ARCH_PRESETS = {
         "mobius": {"easy": (6, 1, 7), "medium": (10, 1, 15), "hard": (11, 2, 52)},
         "klein": {"easy": (4, 1, 9, 1.3), "medium": (6, 2, 29, 1.3), "hard": (10, 2, 68, 1.0)},
     },
-    # The isogonal (non-edge-to-edge) tilings. Flat windows chosen for a
-    # square board of about 490px at 100 / 190 / 350 cells, mined at the
-    # usual 14 / 16 / 19 per cent; the manifold windows (nx/ny domain counts
-    # or ring/rows) are tuned to the same cell-count targets and mine
-    # density, each verified to give the surface's correct topology (Euler
-    # characteristic 0 for torus/Klein, boundary components 2/1 for
-    # cylinder/Mobius). Only offset square and staggered triangular have a
-    # template mirror, so only they wrap the Mobius strip / Klein bottle.
+    # The isogonal (non-edge-to-edge) tilings. Every window here is measured
+    # -- `scripts/difficulty/resize.py` for the size and shape, `calibrate.py`
+    # for the mine count -- and each verified to give the surface's correct
+    # topology (Euler characteristic 0 for torus/Klein, boundary components
+    # 2/1 for cylinder/Mobius). Only offset square and staggered triangular
+    # have a template mirror, so only they wrap the Mobius strip / Klein
+    # bottle.
+    #
+    # The manifold windows were re-measured once `resize` stopped counting a
+    # T-vertex as a corner: a split edge read as two short sides, so the shape
+    # bar scored a stretched window better than an undistorted one and then
+    # defended it. Before that the staggered triangular donut was 11 domains
+    # around and 11 across -- 3.3 times longer round the ring than across the
+    # tube -- and the whole family was kept off the torus/Mobius/Klein menus
+    # for the distortion it caused.
     "offsetsquare": {
         "flat": {"easy": (8, 4, 12, 55), "medium": (16, 8, 46, 29.059), "hard": (21, 11, 102, 22.455)},
-        "torus": {"easy": (10, 4, 15, 0.45), "medium": (21, 6, 59, 0.52), "hard": (34, 7, 120, 0.38)},
+        "torus": {"easy": (14, 3, 16, 0.38), "medium": (21, 6, 59, 0.52), "hard": (34, 7, 120, 0.38)},
         "cylinder": {"easy": (16, 2.5, 14), "medium": (28, 4.5, 47), "hard": (39, 6, 102)},
-        "mobius": {"easy": (16, 2.5, 15), "medium": (28, 4.5, 48), "hard": (40, 6.5, 114)},
+        "mobius": {"easy": (16, 2.5, 15), "medium": (28, 4.5, 48), "hard": (39, 6.5, 113)},
         "klein": {"easy": (13, 3, 15, 1.0), "medium": (26, 5, 57, 1.15), "hard": (34, 7, 120, 1.3)},
     },
     "staggeredtri": {
         "flat": {"easy": (5, 3, 10, 81.333), "medium": (10, 6, 50, 41.727), "hard": (14, 8, 110, 32.933)},
-        "torus": {"easy": (7, 3, 18, 0.45), "medium": (10, 6, 59, 0.45), "hard": (11, 11, 131, 0.52)},
+        "torus": {"easy": (7, 3, 18, 0.52), "medium": (16, 4, 58, 0.38), "hard": (20, 6, 131, 0.45)},
         "cylinder": {"easy": (12, 1.5, 14), "medium": (19, 3.5, 56), "hard": (26, 4.5, 115)},
-        "mobius": {"easy": (15, 3, 16), "medium": (27, 5, 57), "hard": (39, 6, 118)},
-        "klein": {"easy": (21, 2, 18, 1.0), "medium": (27, 5, 66, 1.15), "hard": (31, 8, 134, 1.0)},
+        "mobius": {"easy": (19, 2, 13), "medium": (33, 4, 56), "hard": (47, 5, 118)},
+        "klein": {"easy": (21, 2, 18, 1.0), "medium": (31, 4, 58, 1.15), "hard": (39, 6, 128, 1.3)},
     },
     "pythagorean": {
         "flat": {"easy": (2, 4, 6, 81.333), "medium": (5, 5, 30, 38.077), "hard": (7, 7, 77, 27.556)},

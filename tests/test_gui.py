@@ -613,11 +613,12 @@ class TestMenu:
         self.click_item(menu, "torus")
         assert menu.path == ["manifolds", "torus"]
         # aperiodic is not offered on a wrapped surface, only on the plane;
-        # isogonal and rectangle are off the menu on torus/mobius/klein for
-        # now (too distorted at the current preset windows -- see
+        # the congruent-rectangle bonds are off the menu on torus/mobius/klein
+        # for now (too distorted at the current preset windows -- see
         # picker_families), leaving the cylinder as the only manifold that
         # offers them
-        assert self.items(menu) == {"regular", "uniform", "dual", "random"}
+        assert self.items(menu) == {"regular", "uniform", "dual", "isogonal",
+                                    "random"}
         self.click_item(menu, "uniform")
         assert self.click_item(menu, "trihex") == ("start", "torustrihex")
 
@@ -667,7 +668,7 @@ class TestMenu:
         reach("classic")
         # the tiling picker on the plane and on every flat manifold. The
         # families are whatever the catalog offers that surface -- the
-        # aperiodic and isogonal ones exist on the plane only.
+        # aperiodic and fractal ones exist on the plane only.
         for surface_path, surface in ((["flat"], "flat"),
                                       (["manifolds", "cylinder"], "cylinder"),
                                       (["manifolds", "mobius"], "mobius"),
@@ -684,14 +685,14 @@ class TestMenu:
             reach("sphere", mode)
         for mode in POLYHEDRA_MODES:
             reach("polyhedra", mode)
-        # isogonal and rectangle still build and have labels on torus/mobius/
-        # klein (--mode reaches them directly) but picker_families keeps them
-        # off the menu there for now, so they are the one deliberate gap here
+        # the congruent-rectangle bonds still build and have labels on
+        # torus/mobius/klein (--mode reaches them directly) but
+        # picker_families keeps them off the menu there for now, so they are
+        # the one deliberate gap here
         off_menu = {
             mode_for(key, surface)
             for surface in ("torus", "mobius", "klein")
-            for family in ("isogonal", "rectangle")
-            for key in FAMILY_MEMBERS[family]
+            for key in FAMILY_MEMBERS["rectangle"]
             if mode_for(key, surface) in MODE_LABELS
         }
         assert reached == set(MODE_LABELS) - off_menu
