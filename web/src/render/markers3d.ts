@@ -31,6 +31,18 @@ import { FLAG_COLORS, MINE_COLORS } from "./glyphAtlas";
 // rebuild markers only when a cell's *state* changes rather than on every frame
 // of a drag — worth having, because a smooth sphere is not a cheap thing to
 // rewrite sixty times a second.
+//
+// **Every pin is the same object.** Only where it stands, which way is up and
+// how big it is differ between one and the next, so each of the four models is
+// generated **once** — by running the shape code below against the identity
+// frame — and thereafter placed by transforming that template
+// (`MODELS`/`writeMarker`). That matters because the trigonometry, the normals
+// and the colour ramp are the expensive part: a bomb is 648 triangles, and
+// regenerating one from scratch costs thousands of short-lived arrays where
+// replaying it costs one multiply-add per coordinate and a bulk copy of the
+// colours. A board full of pins used to rebuild in tens of milliseconds; it now
+// rebuilds in tens of microseconds, which is what makes a Klein scroll and a
+// board-wide reveal feel instant.
 
 /** A pin, a dead (wrongly-placed) pin, a mine, and the mine that went off. */
 export type Marker = "pin" | "deadPin" | "bomb" | "bombHot";
@@ -355,40 +367,38 @@ function spike(f: Frame, cy: number, r: number, dir: Vec3): void {
   }
 }
 
-/**
- * Append one marker's triangles to `pos` / `nrm` / `col`.
- *
- * `origin` is where it is planted (the cell's top-face centre) and `up` the
- * direction it stands in — the cell's normal, so a marker leans with its tile as
- * the solid turns, which is most of what says it is standing on the board rather
- * than painted on it. On a two-sided surface, whose cells have no consistent
- * outward direction at all, the caller writes the marker twice with `up` negated
- * the second time, so there is one on each face.
- *
- * `scale` is the cell's radius (times the flag-pop animation's scale, when one
- * is running), and every constant above is a fraction of it.
- */
-export function writeMarker(
-  kind: Marker,
-  origin: Vec3,
-  up: Vec3,
-  scale: number,
-  pos: number[],
-  nrm: number[],
-  col: number[],
-): void {
-  if (!(scale > 0)) return;
-  const ey = normalize(up);
-  // Nothing here has a front, so the two axes across the marker are free: any
-  // perpendicular will do, and the cheap one is a cross with whichever
-  // coordinate axis `ey` is least aligned with.
-  const ex = normalize(cross(ey, Math.abs(ey[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0]));
-  const ez = cross(ex, ey);
+/** One marker kind, generated once in its own frame: unit `scale`, standing on
+ * the origin, +y up. Positions are fractions of a cell's inradius (the caller
+ * multiplies by it), normals are already unit, and the colours never depend on
+ * anything outside this file, so they are copied straight through. */
+interface MarkerModel {
+  pos: Float32Array;
+  nrm: Float32Array;
+  col: Float32Array;
+  verts: number;
+}
+
+/** Where a marker's triangles are written, and how many vertices are in there
+ * already. `writeMarker` advances `count`; the caller sizes the arrays up front
+ * from `markerVertexCount`. */
+export interface MarkerSink {
+  pos: Float32Array;
+  nrm: Float32Array;
+  col: Float32Array;
+  count: number;
+}
+
+function buildModel(kind: Marker): MarkerModel {
+  const pos: number[] = [];
+  const nrm: number[] = [];
+  const col: number[] = [];
+  // The identity frame: unit axes and no offset, so a point placed through it
+  // comes out exactly as the shape code wrote it.
   const f: Frame = {
-    origin,
-    ex: [ex[0] * scale, ex[1] * scale, ex[2] * scale],
-    ey: [ey[0] * scale, ey[1] * scale, ey[2] * scale],
-    ez: [ez[0] * scale, ez[1] * scale, ez[2] * scale],
+    origin: [0, 0, 0],
+    ex: [1, 0, 0],
+    ey: [0, 1, 0],
+    ez: [0, 0, 1],
     pos,
     nrm,
     col,
@@ -398,19 +408,100 @@ export function writeMarker(
     const [lit, mid, shade] = dead
       ? [DEAD_LIT, DEAD, DEAD_SHADE]
       : [HEAD_LIT, HEAD, HEAD_SHADE];
-    drum(f, 0, STEM_H, STEM_R0, STEM_R1, STEM_SIDES, dead ? FOOT : STEM, scale, true);
-    sphere(f, STEM_H + HEAD_R * 0.62, HEAD_R, scale, lit, mid, shade);
-    return;
+    drum(f, 0, STEM_H, STEM_R0, STEM_R1, STEM_SIDES, dead ? FOOT : STEM, 1, true);
+    sphere(f, STEM_H + HEAD_R * 0.62, HEAD_R, 1, lit, mid, shade);
+  } else {
+    const hot = kind === "bombHot";
+    const [lit, mid, shade] = hot
+      ? [HOT_LIT, HOT, HOT_SHADE]
+      : [CASING_LIT, CASING, CASING_SHADE];
+    // The casing is centred **on** the surface rather than resting on it: a mine
+    // is a thing half buried where it was laid, not a marker someone planted. It
+    // is also what makes one bomb enough on a two-sided surface — a sphere
+    // straddling the tile pokes out equally on both faces, so unlike the pin it
+    // needs no second copy for the far side (see `SolidBoard.rebuildMarkers`).
+    sphere(f, 0, BOMB_R, 1, lit, mid, shade);
+    for (const dir of SPIKE_DIRS) spike(f, 0, BOMB_R, dir);
   }
-  const hot = kind === "bombHot";
-  const [lit, mid, shade] = hot
-    ? [HOT_LIT, HOT, HOT_SHADE]
-    : [CASING_LIT, CASING, CASING_SHADE];
-  // The casing is centred **on** the surface rather than resting on it: a mine
-  // is a thing half buried where it was laid, not a marker someone planted. It
-  // is also what makes one bomb enough on a two-sided surface — a sphere
-  // straddling the tile pokes out equally on both faces, so unlike the pin it
-  // needs no second copy for the far side (see `SolidBoard.rebuildMarkers`).
-  sphere(f, 0, BOMB_R, scale, lit, mid, shade);
-  for (const dir of SPIKE_DIRS) spike(f, 0, BOMB_R, dir);
+  return {
+    pos: Float32Array.from(pos),
+    nrm: Float32Array.from(nrm),
+    col: Float32Array.from(col),
+    verts: pos.length / 3,
+  };
+}
+
+const MODELS = new Map<Marker, MarkerModel>();
+
+function model(kind: Marker): MarkerModel {
+  let m = MODELS.get(kind);
+  if (!m) {
+    m = buildModel(kind);
+    MODELS.set(kind, m);
+  }
+  return m;
+}
+
+/** How many vertices one of these takes in the buffer — what a caller needs to
+ * size its arrays before writing any. */
+export function markerVertexCount(kind: Marker): number {
+  return model(kind).verts;
+}
+
+/**
+ * Place one marker's triangles into `out`, starting at `out.count`.
+ *
+ * `origin` is where it is planted (the cell's top-face centre) and `up` the
+ * direction it stands in — the cell's normal, so a marker leans with its tile as
+ * the solid turns, which is most of what says it is standing on the board rather
+ * than painted on it. On a two-sided surface, whose cells have no consistent
+ * outward direction at all, the caller writes the marker twice with `up` negated
+ * the second time, so there is one on each face.
+ *
+ * `scale` is the cell's inradius (times the flag-pop animation's scale, when one
+ * is running), and every constant above is a fraction of it.
+ *
+ * This is the whole hot path: a copy of the model's colours and, per vertex,
+ * three multiply-adds for the position and three more for the normal. The axes
+ * are pre-scaled — exactly as the frame used to be — so a placed position is
+ * bit-for-bit what generating the model in place produced. The normal needs no
+ * `normalize`: `ex`/`ey`/`ez` are orthonormal, so a unit model normal comes out
+ * of the rotation still unit.
+ */
+export function writeMarker(
+  kind: Marker,
+  origin: Vec3,
+  up: Vec3,
+  scale: number,
+  out: MarkerSink,
+): void {
+  if (!(scale > 0)) return;
+  const ey = normalize(up);
+  // Nothing here has a front, so the two axes across the marker are free: any
+  // perpendicular will do, and the cheap one is a cross with whichever
+  // coordinate axis `ey` is least aligned with.
+  const ex = normalize(cross(ey, Math.abs(ey[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0]));
+  const ez = cross(ex, ey);
+  const m = model(kind);
+  const base = out.count * 3;
+  out.col.set(m.col, base);
+  const [ox, oy, oz] = origin;
+  const [rx, ry, rz] = ex;
+  const [ux, uy, uz] = ey;
+  const [fx, fy, fz] = ez;
+  const sxx = rx * scale, sxy = ry * scale, sxz = rz * scale;
+  const syx = ux * scale, syy = uy * scale, syz = uz * scale;
+  const szx = fx * scale, szy = fy * scale, szz = fz * scale;
+  const { pos: mp, nrm: mn } = m;
+  for (let j = 0, end = m.verts * 3; j < end; j += 3) {
+    const px = mp[j]!, py = mp[j + 1]!, pz = mp[j + 2]!;
+    out.pos[base + j] = ox + sxx * px + syx * py + szx * pz;
+    out.pos[base + j + 1] = oy + sxy * px + syy * py + szy * pz;
+    out.pos[base + j + 2] = oz + sxz * px + syz * py + szz * pz;
+    const nx = mn[j]!, ny = mn[j + 1]!, nz = mn[j + 2]!;
+    out.nrm[base + j] = rx * nx + ux * ny + fx * nz;
+    out.nrm[base + j + 1] = ry * nx + uy * ny + fy * nz;
+    out.nrm[base + j + 2] = rz * nx + uz * ny + fz * nz;
+  }
+  out.count += m.verts;
 }

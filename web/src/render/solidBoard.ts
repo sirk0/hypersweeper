@@ -9,6 +9,7 @@ import {
   MeshBasicMaterial,
   MeshStandardMaterial,
   Quaternion,
+  Sphere,
   Vector3,
 } from "three";
 import {
@@ -33,7 +34,14 @@ import {
 } from "./boardMesh";
 import { clipTriangles, fanTriangles, triangleCentroid, type Tri } from "./clip";
 import { makeGlyphAtlas, type Glyph, type GlyphAtlas } from "./glyphAtlas";
-import { markerDrop, MARKER_REACH, writeMarker, type Marker } from "./markers3d";
+import {
+  markerDrop,
+  markerVertexCount,
+  MARKER_REACH,
+  writeMarker,
+  type Marker,
+  type MarkerSink,
+} from "./markers3d";
 import {
   CellAnimations,
   dropOpacity,
@@ -77,6 +85,93 @@ const QUAD_CORNERS: readonly (readonly [number, number])[] = [
 const BASE_COLOR = "#8e8e8e"; // grout surface showing through the tile gaps
 
 const _inv = /* @__PURE__ */ new Matrix4(); // scratch for the world→local map
+
+/** A geometry whose attributes are rewritten *in full* on every rebuild — the
+ * glyph billboards and the standing markers, whose contents change with the
+ * board's state or its rotation rather than cell by cell.
+ *
+ * The arrays are **grow-only**: a rebuild that fits in what is already there
+ * writes into it and flags `needsUpdate`, and only one that needs more room
+ * allocates. The alternative, and what this replaces, is
+ * `setAttribute(new BufferAttribute(new Float32Array(pushedNumbers)))` per
+ * rebuild — a fresh allocation, a fresh attribute and a fresh GPU upload every
+ * time, on a path that runs on every frame of a drag.
+ *
+ * `setDrawRange` is what makes a grow-only buffer safe: the tail left over from
+ * a larger previous rebuild stays in the array but is not drawn. The bounding
+ * sphere has to respect the same range — `computeBoundingSphere` would measure
+ * the stale tail — so it is computed here over the live vertices only. */
+class DynGeometry {
+  readonly geometry = new BufferGeometry();
+  /** One Float32Array per attribute, in the order given to the constructor. */
+  readonly arrays: Float32Array[] = [];
+  private capacity = 0;
+
+  constructor(private readonly spec: readonly (readonly [string, number])[]) {
+    for (const _ of spec) this.arrays.push(new Float32Array(0));
+  }
+
+  /** Make room for `verts` vertices, allocating only when it has to grow. */
+  reserve(verts: number): void {
+    if (verts <= this.capacity) return;
+    // Grow in steps rather than exactly: the marked-cell count creeps up one
+    // flag at a time, and resizing on each would be the allocation churn this
+    // exists to avoid.
+    this.capacity = Math.max(verts, Math.ceil(this.capacity * 1.5), 64);
+    this.spec.forEach(([name, items], i) => {
+      this.arrays[i] = new Float32Array(this.capacity * items);
+      this.geometry.setAttribute(
+        name,
+        new BufferAttribute(this.arrays[i]!, items),
+      );
+    });
+  }
+
+  /** Publish a rebuild that wrote `verts` vertices. */
+  commit(verts: number): void {
+    for (const [name] of this.spec) {
+      const attr = this.geometry.getAttribute(name) as BufferAttribute | undefined;
+      if (attr) attr.needsUpdate = true;
+    }
+    this.geometry.setDrawRange(0, verts);
+    this.setBounds(verts);
+  }
+
+  /** The bounding sphere of the first `verts` positions. Three's own
+   * `computeBoundingSphere` reads the whole attribute, which on a grow-only
+   * buffer includes whatever a bigger earlier rebuild left behind — that would
+   * both oversize the sphere and, once the leftovers are stale coordinates,
+   * misplace it. */
+  private setBounds(verts: number): void {
+    const pos = this.arrays[0]!;
+    const sphere = (this.geometry.boundingSphere ??= new Sphere());
+    if (verts === 0) {
+      sphere.center.set(0, 0, 0);
+      sphere.radius = 0;
+      return;
+    }
+    let minX = Infinity, minY = Infinity, minZ = Infinity;
+    let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+    for (let j = 0, end = verts * 3; j < end; j += 3) {
+      const x = pos[j]!, y = pos[j + 1]!, z = pos[j + 2]!;
+      if (x < minX) minX = x;
+      if (y < minY) minY = y;
+      if (z < minZ) minZ = z;
+      if (x > maxX) maxX = x;
+      if (y > maxY) maxY = y;
+      if (z > maxZ) maxZ = z;
+    }
+    const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2, cz = (minZ + maxZ) / 2;
+    let r2 = 0;
+    for (let j = 0, end = verts * 3; j < end; j += 3) {
+      const dx = pos[j]! - cx, dy = pos[j + 1]! - cy, dz = pos[j + 2]! - cz;
+      const d2 = dx * dx + dy * dy + dz * dz;
+      if (d2 > r2) r2 = d2;
+    }
+    sphere.center.set(cx, cy, cz);
+    sphere.radius = Math.sqrt(r2);
+  }
+}
 
 interface CellGeom {
   start: number; // first vertex index in the position/normal/color buffers
@@ -150,12 +245,18 @@ export class SolidBoard extends Group implements BoardMesh {
   private readonly positionAttr: BufferAttribute;
   private readonly normalAttr: BufferAttribute;
   private readonly colorAttr: BufferAttribute;
-  private readonly glyphGeometry = new BufferGeometry();
+  private readonly glyphGeometry = new DynGeometry([
+    ["position", 3],
+    ["uv", 2],
+  ]);
   // The dropping flag is a mesh of its own rather than one more quad in the
   // glyph buffer: it is drawn many times cell-size, so depth-testing it
   // against the very solid it is landing on would slice it in half, and being
   // its own material is what lets it fade in as it shrinks.
-  private readonly dropGeometry = new BufferGeometry();
+  private readonly dropGeometry = new DynGeometry([
+    ["position", 3],
+    ["uv", 2],
+  ]);
   private readonly dropMaterial: MeshBasicMaterial;
   // A style that stands real models on its flagged and mined cells
   // (CellStyle.solidMarkers) builds them into this one merged buffer, the way
@@ -163,14 +264,39 @@ export class SolidBoard extends Group implements BoardMesh {
   // move, so the whole thing is rewritten rather than edited, and the board's
   // markers stay one draw call. False on every other style.
   private readonly solidMarkers: boolean;
-  private readonly markerGeometry = new BufferGeometry();
+  private readonly markerGeometry = new DynGeometry([
+    ["position", 3],
+    ["normal", 3],
+    ["color", 3],
+  ]);
   // ...and the one pin currently being planted by a held cell, which is a mesh
   // of its own for the same reason the 2D drop is: it is drawn many times
   // cell-size, so depth-testing it against the very solid it is landing on
   // would bury it, and being its own material is what lets it fade in as it
   // shrinks. Null on a style without markers, where the 2D drop does this job.
-  private readonly markerDropGeometry = new BufferGeometry();
+  private readonly markerDropGeometry = new DynGeometry([
+    ["position", 3],
+    ["normal", 3],
+    ["color", 3],
+  ]);
   private markerDropMaterial: MeshStandardMaterial | null = null;
+  /** Whether the glyph billboards / the standing markers need regenerating
+   * before the next frame is drawn.
+   *
+   * Both rebuilds are whole-board passes, and the callers that matter change
+   * many cells at once: a loss turns over every mine (`revealEndState`), a
+   * Klein scroll rewrites *every* cell's contents (`GameSession.scroll`), and a
+   * flood fill opens a wide patch. Rebuilding inside `setVisual` made each of
+   * those quadratic — 476 full marker rebuilds for one press of a scroll arrow
+   * — for no benefit at all, since nothing is drawn between the calls. So
+   * `setVisual` marks, and `tickAnimations` flushes once, on the frame that is
+   * about to be rendered anyway.
+   *
+   * This is the same rule `rebuildMarkers` already documents for the camera:
+   * regenerate on the input that actually changed, not on every call that could
+   * have changed it. */
+  private glyphsDirty = false;
+  private markersDirty = false;
   private readonly atlas: GlyphAtlas;
   private readonly states: CellVisual[];
   private hovered = -1;
@@ -401,7 +527,7 @@ export class SolidBoard extends Group implements BoardMesh {
     this.add(base);
 
     const glyphMesh = new Mesh(
-      this.glyphGeometry,
+      this.glyphGeometry.geometry,
       new MeshBasicMaterial({
         map: this.atlas.texture,
         transparent: true,
@@ -432,7 +558,7 @@ export class SolidBoard extends Group implements BoardMesh {
       depthWrite: false,
       depthTest: false,
     });
-    const dropMesh = new Mesh(this.dropGeometry, this.dropMaterial);
+    const dropMesh = new Mesh(this.dropGeometry.geometry, this.dropMaterial);
     dropMesh.name = "flagDrop";
     dropMesh.renderOrder = 2;
     this.add(dropMesh);
@@ -452,7 +578,7 @@ export class SolidBoard extends Group implements BoardMesh {
     // a tap meant for its tile.
     if (this.solidMarkers) {
       const markerMesh = new Mesh(
-        this.markerGeometry,
+        this.markerGeometry.geometry,
         new MeshStandardMaterial({
           vertexColors: true,
           roughness: 0.52,
@@ -480,7 +606,10 @@ export class SolidBoard extends Group implements BoardMesh {
         depthTest: false,
         depthWrite: false,
       });
-      const markerDropMesh = new Mesh(this.markerDropGeometry, this.markerDropMaterial);
+      const markerDropMesh = new Mesh(
+        this.markerDropGeometry.geometry,
+        this.markerDropMaterial,
+      );
       markerDropMesh.name = "markerDrop";
       markerDropMesh.renderOrder = 3;
       this.add(markerDropMesh);
@@ -516,14 +645,32 @@ export class SolidBoard extends Group implements BoardMesh {
   setVisual(cell: CellId, visual: CellVisual): void {
     const i = this.cellIndex.get(cell);
     if (i == null) return;
-    const wasOpen = isOpened(this.states[i]!);
+    const previous = this.states[i]!;
+    const wasOpen = isOpened(previous);
     this.states[i] = visual;
     // Two-sided tiles are flat and static (state shows in colour only); closed
     // cells rise when hidden and sink when revealed, so re-extrude on that flip.
     if (!this.twoSided && isOpened(visual) !== wasOpen) this.writeGeometry(i);
     this.writeColor(i);
-    this.rebuildGlyphs();
-    this.rebuildMarkers();
+    this.glyphsDirty = true;
+    // A marker is a function of `markerFor(state)` and nothing else the caller
+    // can change here, so a state change that leaves that alone leaves the
+    // whole marker buffer alone too. That is what makes a flood fill free: it
+    // opens hundreds of cells and every one of them goes to `revealed`, which
+    // carries no model.
+    if (this.solidMarkers && markerFor(previous) !== markerFor(visual)) {
+      this.markersDirty = true;
+    }
+  }
+
+  /** Regenerate whatever `setVisual` marked, once, before the frame that needs
+   * it. Returns whether there was anything to do — the renderer draws on the
+   * back of that. */
+  private flushDirty(): boolean {
+    if (!this.glyphsDirty && !this.markersDirty) return false;
+    if (this.glyphsDirty) this.rebuildGlyphs();
+    if (this.markersDirty) this.rebuildMarkers();
+    return true;
   }
 
   setHover(cell: CellId | null): void {
@@ -666,10 +813,16 @@ export class SolidBoard extends Group implements BoardMesh {
   }
 
   private rebuildGlyphs(): void {
-    const pos: number[] = [];
-    const uvs: number[] = [];
-    const dropPos: number[] = [];
-    const dropUvs: number[] = [];
+    this.glyphsDirty = false;
+    // One quad — six vertices — per cell at the very most, and the drop is a
+    // single quad, so both buffers can be sized up front and written straight
+    // into rather than pushed onto and copied out.
+    this.glyphGeometry.reserve(this.order.length * 6);
+    this.dropGeometry.reserve(6);
+    const [pos, uvs] = this.glyphGeometry.arrays as [Float32Array, Float32Array];
+    const [dropPos, dropUvs] = this.dropGeometry.arrays as [Float32Array, Float32Array];
+    let nv = 0; // vertices written to the glyph buffer
+    let dv = 0; // ...and to the drop buffer
     const now = performance.now();
     const dropIndex = this.anim.dropIndex();
     const dropAt = this.anim.dropProgress(now);
@@ -749,16 +902,23 @@ export class SolidBoard extends Group implements BoardMesh {
       ];
       const [u0, v0, u1, v1] = uv;
       const quad = (
-        into: number[],
-        uvInto: number[],
+        into: Float32Array,
+        uvInto: Float32Array,
+        vert: number,
         half: number,
         rise = 0,
       ): void => {
+        let k = vert * 3;
         for (const [du, dv] of QUAD_CORNERS) {
           const p = at(du, dv, half, rise);
-          into.push(p[0], p[1], p[2]);
+          into[k++] = p[0];
+          into[k++] = p[1];
+          into[k++] = p[2];
         }
-        uvInto.push(u0, v0, u1, v0, u1, v1, u0, v0, u1, v1, u0, v1);
+        uvInto.set(
+          [u0, v0, u1, v0, u1, v1, u0, v0, u1, v1, u0, v1],
+          vert * 2,
+        );
       };
       // A cell with a flag coming down draws only that flag — the drop lands
       // on exactly the settled size, so the cell's own glyph takes over on the
@@ -770,29 +930,15 @@ export class SolidBoard extends Group implements BoardMesh {
         // the standing pin for exactly this cell, so the hand-off on the frame
         // the drop ends is the same invisible one it always was.
         const half = dropSize(settled, extent, dropAt);
-        quad(dropPos, dropUvs, half, dropRise(settled, half));
+        quad(dropPos, dropUvs, dv, half, dropRise(settled, half));
+        dv += 6;
       } else if (s > 0) {
-        quad(pos, uvs, s);
+        quad(pos, uvs, nv, s);
+        nv += 6;
       }
     }
-    this.glyphGeometry.setAttribute(
-      "position",
-      new BufferAttribute(new Float32Array(pos), 3),
-    );
-    this.glyphGeometry.setAttribute(
-      "uv",
-      new BufferAttribute(new Float32Array(uvs), 2),
-    );
-    this.glyphGeometry.computeBoundingSphere();
-    this.dropGeometry.setAttribute(
-      "position",
-      new BufferAttribute(new Float32Array(dropPos), 3),
-    );
-    this.dropGeometry.setAttribute(
-      "uv",
-      new BufferAttribute(new Float32Array(dropUvs), 2),
-    );
-    this.dropGeometry.computeBoundingSphere();
+    this.glyphGeometry.commit(nv);
+    this.dropGeometry.commit(dv);
     this.dropMaterial.opacity = dropOpacity(dropAt ?? 1);
   }
 
@@ -807,16 +953,40 @@ export class SolidBoard extends Group implements BoardMesh {
    * identical buffer would be the most expensive thing on the board. Cell state
    * is the only input, so cell state is the only trigger. */
   private rebuildMarkers(): void {
+    this.markersDirty = false;
     if (!this.solidMarkers) return;
-    const pos: number[] = [];
-    const nrm: number[] = [];
-    const col: number[] = [];
-    const dropPos: number[] = [];
-    const dropNrm: number[] = [];
-    const dropCol: number[] = [];
     const now = performance.now();
     const dropIndex = this.anim.dropIndex();
     const dropAt = this.anim.dropProgress(now);
+    // Size the buffer before writing anything: a model's vertex count is fixed
+    // per kind, so one cheap pass over the states says exactly how much room
+    // the whole board needs and the write below never has to grow mid-flight.
+    let need = 0;
+    for (let i = 0; i < this.order.length; i++) {
+      const marker = markerFor(this.states[i]!);
+      if (marker === null || this.geom[i]!.count === 0) continue;
+      if (i === dropIndex && dropAt != null) continue; // the drop's own buffer
+      need += markerVertexCount(marker);
+      // A pin gets a second copy on the far face of a two-sided surface; a bomb
+      // straddles the tile and does not (see below).
+      if (this.twoSided && marker !== "bomb" && marker !== "bombHot") {
+        need += markerVertexCount(marker);
+      }
+    }
+    this.markerGeometry.reserve(need);
+    this.markerDropGeometry.reserve(markerVertexCount("pin"));
+    const [mp, mn, mc] = this.markerGeometry.arrays as [
+      Float32Array,
+      Float32Array,
+      Float32Array,
+    ];
+    const [dp, dn, dc] = this.markerDropGeometry.arrays as [
+      Float32Array,
+      Float32Array,
+      Float32Array,
+    ];
+    const sink: MarkerSink = { pos: mp, nrm: mn, col: mc, count: 0 };
+    const dropSink: MarkerSink = { pos: dp, nrm: dn, col: dc, count: 0 };
     for (let i = 0; i < this.order.length; i++) {
       const marker = markerFor(this.states[i]!);
       if (marker === null) continue;
@@ -859,15 +1029,7 @@ export class SolidBoard extends Group implements BoardMesh {
         // turns into NaN and sprays across the buffer. Nothing to interpolate
         // there, so don't.
         const straight = Math.hypot(axis[0], axis[1], axis[2]) < 0.2;
-        writeMarker(
-          marker,
-          from,
-          straight ? g.normal : axis,
-          dScale,
-          dropPos,
-          dropNrm,
-          dropCol,
-        );
+        writeMarker(marker, from, straight ? g.normal : axis, dScale, dropSink);
         continue;
       }
       // Sized off the cell's inradius, not its mean vertex distance: a model
@@ -875,7 +1037,7 @@ export class SolidBoard extends Group implements BoardMesh {
       // stretched immersion those are two very different numbers (see
       // CellGeom.fit). This is the same measure the billboards use.
       const scale = g.fit * this.anim.popScale(i, now);
-      writeMarker(marker, g.center, g.normal, scale, pos, nrm, col);
+      writeMarker(marker, g.center, g.normal, scale, sink);
       // A two-sided cell has no consistent outward direction to stand on — the
       // Möbius strip and the Klein bottle cannot have one at all, and nothing
       // orients the cylinder — and it is drawn from both faces. A **pin** stands
@@ -889,41 +1051,15 @@ export class SolidBoard extends Group implements BoardMesh {
           g.center,
           [-g.normal[0], -g.normal[1], -g.normal[2]],
           scale,
-          pos,
-          nrm,
-          col,
+          sink,
         );
       }
     }
-    this.markerGeometry.setAttribute(
-      "position",
-      new BufferAttribute(new Float32Array(pos), 3),
-    );
-    this.markerGeometry.setAttribute(
-      "normal",
-      new BufferAttribute(new Float32Array(nrm), 3),
-    );
-    this.markerGeometry.setAttribute(
-      "color",
-      new BufferAttribute(new Float32Array(col), 3),
-    );
-    this.markerDropGeometry.setAttribute(
-      "position",
-      new BufferAttribute(new Float32Array(dropPos), 3),
-    );
-    this.markerDropGeometry.setAttribute(
-      "normal",
-      new BufferAttribute(new Float32Array(dropNrm), 3),
-    );
-    this.markerDropGeometry.setAttribute(
-      "color",
-      new BufferAttribute(new Float32Array(dropCol), 3),
-    );
-    this.markerDropGeometry.computeBoundingSphere();
+    this.markerGeometry.commit(sink.count);
+    this.markerDropGeometry.commit(dropSink.count);
     if (this.markerDropMaterial) {
       this.markerDropMaterial.opacity = dropOpacity(dropAt ?? 1);
     }
-    this.markerGeometry.computeBoundingSphere();
   }
 
   // -- animations ------------------------------------------------------------
@@ -989,7 +1125,12 @@ export class SolidBoard extends Group implements BoardMesh {
   }
 
   tickAnimations(now: number): boolean {
-    if (!this.anim.pending()) return false;
+    // Ahead of the early-out, because a batch of `setVisual` calls with no
+    // animation running still has to reach the screen. The renderer calls this
+    // on every frame whether or not it means to draw, so nothing can be left
+    // marked and unflushed.
+    const flushed = this.flushDirty();
+    if (!this.anim.pending()) return flushed;
     const step = this.anim.step(now);
     for (const i of step.recolor) this.writeColor(i);
     if (step.glyphsDirty) {
