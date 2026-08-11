@@ -1,7 +1,7 @@
 {
   "name": "hypersweeper-web",
   "private": true,
-  "version": "0.2.58",
+  "version": "0.2.59",
   "type": "module",
   "description": "TypeScript + Three.js rewrite of the Hypersweeper game (M0 scaffold).",
   "scripts": {
