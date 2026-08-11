@@ -830,9 +830,38 @@ The rest of what to know before changing one:
 - **Markers rebuild on cell state, not on rotation.** Nothing about them depends
   on the camera, so `rebuildMarkers` is deliberately *not* called from `orient()`
   — which fires on every frame of a drag — only from the constructor,
-  `setVisual`, `dropFlag`, `setAnimationsEnabled` and an animation tick. Several
+  `dropFlag`, `setAnimationsEnabled` and an animation tick. Several
   hundred triangles per marked cell is not a thing to rewrite at 60fps to produce
   the identical buffer.
+- **...and once per batch, not once per cell.** `setVisual` only *marks*
+  (`glyphsDirty` / `markersDirty`); `tickAnimations` flushes, ahead of its own
+  early-out, on the frame that is about to be drawn anyway. This matters because
+  every caller that matters changes many cells at once — a loss turns over every
+  mine, a Klein scroll rewrites *all* of them, a flood fill opens a wide patch —
+  and rebuilding inside `setVisual` made each of those quadratic. On
+  `klein`/`hard` one press of a scroll arrow cost **36 seconds**, a loss 6, and
+  each flag placed rebuilt every pin already standing. Two rules keep it that
+  way: a per-cell path must never call `rebuildGlyphs`/`rebuildMarkers` directly,
+  and `setVisual` raises `markersDirty` only when `markerFor` actually changes —
+  which is what makes a flood fill free, since a revealed cell carries no model.
+  `tests/e2e/markers.spec.ts` pins all of it with timing thresholds three orders
+  of magnitude clear of the fixed cost.
+- **A model is generated once and then placed.** Every pin is the same object;
+  only where it stands, which way is up and how big it is differ. So each kind is
+  built once in its own unit frame (`MODELS` in `markers3d.ts`) and `writeMarker`
+  transforms that template into the board's buffer — three multiply-adds per
+  coordinate and a bulk copy of the colours, instead of the trigonometry, the
+  per-vertex normals and the thousands of short-lived arrays that generating a
+  648-triangle bomb from scratch costs. The frame's axes are orthonormal, so a
+  placed normal needs no renormalising; the axes are pre-multiplied by the cell
+  size, so a placed position is bit-for-bit what generating it in place gave.
+- **The marker and glyph buffers are grow-only.** `DynGeometry` in
+  `solidBoard.ts` keeps one `Float32Array` per attribute and replaces the
+  `BufferAttribute` only when a rebuild needs more room; `setDrawRange` keeps the
+  tail of a bigger earlier rebuild out of the draw. Its bounding sphere is
+  computed over the live range by hand — `computeBoundingSphere` would measure
+  that stale tail. This is a live cost even without markers, since
+  `rebuildGlyphs` runs from `orient()` on every frame of a drag.
 - **A marker style is framed with room for one.** `SolidBoard` pushes a hull
   point per cell at `MARKER_REACH` above it, so the camera fit sees a board where
   every cell is flagged and nothing is cropped at the rim when one is. It costs a
