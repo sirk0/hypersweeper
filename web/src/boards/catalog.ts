@@ -164,15 +164,18 @@ export const PICKER_REGULAR = MENU.pickerRegular as string[];
  * like uniform and dual. */
 export const PICKER_FAMILIES = ["regular", "uniform", "dual", "isogonal", "rectangle"];
 export const FLAT_ONLY_FAMILIES = ["aperiodic", "fractal"];
-// Isogonal and rectangle wrap the torus/Mobius/Klein bottle without error, but
-// at their current preset windows the wrap distorts them too much to be worth
-// playing there yet — the cylinder alone still reads well. Off the menu on
-// those three manifolds until the windows are retuned further; the builders,
-// presets and tests are untouched; a share link still reaches them directly.
+// The congruent-rectangle bonds wrap the torus/Mobius/Klein bottle without
+// error, but at their current preset windows the wrap distorts them too much to
+// be worth playing there — the cylinder, which is developable and so stretches
+// nothing, still reads well. Off the menu on those three manifolds until the
+// windows are retuned; the builders, presets and tests are untouched, and a
+// share link still reaches them directly. The isogonal family was here too and
+// is not any more: its windows were re-measured and now leave their tiles no
+// more distorted than the Laves boards already shipping on the same surface.
 const MANIFOLD_EXCLUDED_FAMILIES: Record<string, string[]> = {
-  torus: ["isogonal", "rectangle"],
-  mobius: ["isogonal", "rectangle"],
-  klein: ["isogonal", "rectangle"],
+  torus: ["rectangle"],
+  mobius: ["rectangle"],
+  klein: ["rectangle"],
 };
 export const APERIODIC_MODES = MENU.aperiodic as string[];
 // The fractal family: the rep-tile boards (sphinx, chair), each a patch whose

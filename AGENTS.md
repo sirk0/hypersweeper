@@ -521,10 +521,24 @@ hand-picked density is the one thing this game cannot get right by eye.
    as it was, which is how one family is re-measured without disturbing the
    rest. A knob that is not free says so there rather than in the presets:
    a cylinder's row count comes from `_cylinder_rows`, the values that
-   centre its strip on a height where the tiling reverses y. Boards with no size
+   centre its strip on a height where the tiling reverses y, and a Möbius
+   band's row count stops where the immersion would have to narrow the band
+   to draw it (`_mobius_band_clamped`) — past that the extra rows buy no
+   width, only stretched tiles. Boards with no size
    knob — the named solids — and the fractals, which quantise by whole
    substitution steps, keep their geometry and are listed as exceptions in
    `tests/test_presets.py`.
+
+   **A tiling that is not edge to edge needs its T-vertices dropped before any
+   tile of it is measured** (`resize.corner_indices`, the same thing
+   `tests/test_boards._corners` and the renderer's shape colouring drop). A
+   T-vertex splits an edge in two, so counted as a corner it turns the shape
+   bar upside down: an *undistorted* staggered-triangular donut measured 2.05
+   on it — a whole edge against its neighbour's half — where the 3.3-to-1
+   stretched window measured 1.13, because the stretch happens to even the two
+   out. The bar is a no-regression bar, so it then defended the stretched
+   window against every good one, which is how six isogonal wraps came to be
+   too distorted to put on the menu.
 2. **Mine count** — `scripts/difficulty/calibrate.py` plays the board a few
    thousand times with a reference solver and moves the mine count until the
    win rate matches the classic board's at that difficulty. Run it for the

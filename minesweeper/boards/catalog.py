@@ -230,15 +230,21 @@ FAMILY_MEMBERS = {
 # one-off modes, not tilings) are added on the plane alone
 PICKER_FAMILIES = ("regular", "uniform", "dual", "isogonal", "rectangle")
 FLAT_ONLY_FAMILIES = ("aperiodic", "fractal")
-# Isogonal and rectangle wrap the torus/Mobius/Klein bottle without error, but
-# at their current preset windows the wrap distorts them too much to be worth
-# playing there yet -- the cylinder alone still reads well. Off the menu on
-# those three manifolds until the windows are retuned further; the builders,
-# presets and tests are untouched; a --mode still reaches them directly.
+# The congruent-rectangle bonds wrap the torus/Mobius/Klein bottle without
+# error, but at their current preset windows the wrap distorts them too much to
+# be worth playing there -- the cylinder, which is developable and so stretches
+# nothing, still reads well. Off the menu on those three manifolds until the
+# windows are retuned; the builders, presets and tests are untouched, and a
+# --mode still reaches them directly. The isogonal family was here too and is
+# not any more: its windows were re-measured, and every one of them now leaves
+# its tiles no more distorted than the Laves boards already shipping on the
+# same surface. See `scripts/difficulty/resize.py` -- the measure was blind to
+# the T-vertices these tilings carry, so it had been reading the stretched
+# windows as the good ones.
 _MANIFOLD_EXCLUDED_FAMILIES = {
-    "torus": ("isogonal", "rectangle"),
-    "mobius": ("isogonal", "rectangle"),
-    "klein": ("isogonal", "rectangle"),
+    "torus": ("rectangle",),
+    "mobius": ("rectangle",),
+    "klein": ("rectangle",),
 }
 
 # Sphere page: the spherical tilings, none of which wraps a flat surface.

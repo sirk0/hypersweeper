@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  ISOGONAL_ARCH,
   MENU,
   MENU_FAMILY_HINTS,
   MENU_FAMILY_LABELS,
@@ -85,10 +84,10 @@ describe("picker pages", () => {
       "fractal",
     ]);
     expect(menuFamilies("cylinder")).toEqual(["uniform", "dual", "isogonal", "rectangle"]);
-    // the torus, Möbius strip and Klein bottle still drop isogonal and the
-    // congruent rectangles (MANIFOLD_EXCLUDED_FAMILIES)
+    // the torus, Möbius strip and Klein bottle still drop the congruent
+    // rectangles (MANIFOLD_EXCLUDED_FAMILIES)
     for (const surface of ["torus", "mobius", "klein"]) {
-      expect(menuFamilies(surface)).toEqual(["uniform", "dual"]);
+      expect(menuFamilies(surface)).toEqual(["uniform", "dual", "isogonal"]);
     }
   });
 
@@ -135,12 +134,13 @@ describe("menu reachability", () => {
     for (const mode of flatMenuModes()) add(mode); // the Flat pool, and Custom › Flat
     for (const mode of threeDMenuModes()) add(mode); // the 3D pool, and the rest of Custom
 
-    // isogonal and rectangle still build and have labels on torus/mobius/
-    // klein, but menuFamilies keeps them off the menu there for now (see
-    // MANIFOLD_EXCLUDED_FAMILIES) — the one deliberate gap in reachability.
+    // The congruent-rectangle bonds still build and have labels on
+    // torus/mobius/klein, but menuFamilies keeps them off the menu there for
+    // now (see MANIFOLD_EXCLUDED_FAMILIES) — the one deliberate gap in
+    // reachability.
     const offMenu = new Set<string>();
     for (const surface of ["torus", "mobius", "klein"]) {
-      for (const key of [...ISOGONAL_ARCH, ...RECTANGLE_ARCH]) {
+      for (const key of RECTANGLE_ARCH) {
         const mode = modeFor(key, surface);
         if (mode in MODE_LABELS) offMenu.add(mode);
       }

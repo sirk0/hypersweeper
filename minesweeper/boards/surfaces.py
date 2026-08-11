@@ -189,12 +189,27 @@ def torus_hex_board(
 
 # -- the Möbius strip --------------------------------------------------------
 
+# The widest half-band the immersion will draw, as a fraction of the loop
+# radius. A Möbius band of half-width w runs from radius 1 - w to 1 + w, so at
+# 1 the hole closes to a point and past it the band folds through its own axis.
+# Every Möbius builder below sizes its band to keep the tiles their planar
+# shape -- half-width pi*strip/length/2, the band as wide as the tiling is
+# tall -- and clamps it here when the window asks for more, which squashes the
+# tiles instead. A window that hits the clamp is therefore not the window it
+# looks like, which is why `scripts/difficulty/resize.py` refuses to pick one.
+MOBIUS_HALF_WIDTH = 0.7
+
+
+def mobius_half_width(strip: float, length: float) -> float:
+    """How wide to draw a band of ``strip`` across and ``length`` around."""
+    return min(MOBIUS_HALF_WIDTH, math.pi * strip / length / 2)
+
 
 def mobius_board(ring: int, width_cells: int, mine_count: int) -> Board3D:
     """A Möbius strip tiled with quadrilaterals: ``ring`` segments
     around, ``width_cells`` across. After a full loop the strip flips,
     so column ``ring`` glues to column 0 upside down."""
-    half_width = min(0.7, math.pi * width_cells / ring / 2)
+    half_width = mobius_half_width(width_cells, ring)
 
     def key(i, j):
         return (i - ring, width_cells - j) if i >= ring else (i, j)
@@ -222,7 +237,7 @@ def mobius_triangle_board(ring: int, rows: int, mine_count: int) -> Board3D:
     if (ring - rows) % 2:
         raise ValueError("ring and rows must share a parity for the flipped seam")
     # lattice x unit is half a triangle side; row height matches the cylinder's
-    half_width = min(0.7, rows * ROOT3 * 0.9 * math.pi / ring)
+    half_width = mobius_half_width(2 * rows * ROOT3 * 0.9, ring)
 
     def key(kx, ky):
         # crossing the seam flips the strip across its centre line
@@ -250,7 +265,7 @@ def mobius_hex_board(ring: int, rows: int, mine_count: int) -> Board3D:
         raise ValueError("rows must be odd so the lattice survives the flip")
     kx_period = 2 * ring
     ky_top = 3 * rows + 1  # the flip mirrors ky about the strip center
-    half_width = min(0.7, math.pi * rows / ring)
+    half_width = mobius_half_width(2 * rows, ring)
 
     def key(kx, ky):
         return (kx - kx_period, ky_top - ky) if kx >= kx_period else (kx, ky)
@@ -665,7 +680,7 @@ def arch_mobius_board(
             f"rows + 2*cut/height = {seam}, which must be a whole number"
         )
     seam = round(seam)
-    half_width = min(0.7, math.pi * strip / length / 2)
+    half_width = mobius_half_width(strip, length)
 
     def flipped(mi: int, ni: int, tag):
         image, dm, dn = template.mirror[tag]
