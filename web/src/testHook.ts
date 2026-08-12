@@ -25,6 +25,15 @@ export interface MsState {
   /** The level the audio engine is scaled to, 0..1 — the same story as `sound`
    * for the volume slider, which likewise leaves nothing in the DOM. */
   volume: number;
+  /** How brightly the Realistic markers are lit right now: the swell, the
+   * detonation flash, and the ember under both (`render/markerGlow.ts`). Null
+   * on a board with no markers to light.
+   *
+   * The light lives in a shader uniform, so like a synthesised sound it leaves
+   * nothing in the DOM — and unlike the ripple it is over in about half a
+   * second, which is quicker than a screenshot round trip under SwiftShader.
+   * Reading the numbers is the only way to assert it from outside. */
+  glow: { amount: number; blast: number; base: number } | null;
 }
 
 export interface MsHook {

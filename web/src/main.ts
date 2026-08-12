@@ -803,6 +803,7 @@ class App {
           cellStyle: s?.cellStyle ?? themeCellStyle(this.settings.theme),
           sound: soundChoice(),
           volume: soundVolume(),
+          glow: s?.mesh.markerGlowLevel?.() ?? null,
         };
       },
     });

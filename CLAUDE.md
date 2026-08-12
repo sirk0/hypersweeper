@@ -453,7 +453,26 @@ down its own pole, and on a solid that is every cell facing you. The two-sided
 surfaces (cylinder, Möbius, Klein) have no consistent outward normal and are
 drawn from both faces, so they get one **pin** per face — but only one bomb,
 whose casing is centred on the tile and straddles it; flat boards keep the
-billboards, since a plane is only seen from one angle. The four are declared in `src/ui/theme.ts`, which is
+billboards, since a plane is only seen from one angle. Those markers **glow**
+(`src/render/markerGlow.ts`), and they glow at what the sound says: a front of
+light spreads from the click at the reveal ripple's own pace
+(`RIPPLE_PER_CELL`), so each pin brightens as the cells near it open, as bright
+as the move was big (logarithmically in the count) and as warm as the tiles were
+many-sided — the same `sides - 3` ramp `noteFor` pitches a voice by, so a
+hexagonal board glows unlike a triangular one. The swell holds only while the
+front is still inside the flood and then falls back to a faint resting ember; a
+mine going off runs the same machinery hot, flashing and **swelling** the bomb
+that went off, racing a shockwave out three times faster than a reveal, and
+leaving the markers warm for the rest of the loss screen. The whole effect is
+**one static per-vertex weight** (which parts of a model light up: a pin's head
+and not its stem, nothing at all on a dead pin) and **eleven uniforms** rewritten
+per frame in a shader patched onto the marker material — no geometry is rebuilt
+and no vertex colour varies with time, because `rebuildMarkers` is a whole-board
+pass that `tests/e2e/markers.spec.ts` pins as never running for a flood fill. The
+resting ember is a *look* rather than a motion and so survives reduced motion;
+the wave, the shockwave and the swell go with the Animations toggle, and
+`wantsMarkerGlow` going false with them is what keeps a flood from measuring
+rings nothing will show. The four are declared in `src/ui/theme.ts`, which is
 web-only because pygame has neither cell styles nor page textures; the
 seven **palettes** they compose are still the shared, pygame-ported ones
 in `data/ui/screens.json`, guarded by `tests/test_theme_sync.py`. A theme

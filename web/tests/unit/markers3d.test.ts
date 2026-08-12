@@ -20,6 +20,8 @@ function sink(verts: number): MarkerSink {
     pos: new Float32Array(verts * 3),
     nrm: new Float32Array(verts * 3),
     col: new Float32Array(verts * 3),
+    // One weight per vertex, not three — the glow attribute is 1-wide.
+    glow: new Float32Array(verts),
     count: 0,
   };
 }
@@ -123,6 +125,56 @@ describe("3D markers", () => {
     const dead = place("deadPin", [0, 0, 0], [0, 1, 0], 1);
     expect([...dead.col]).not.toEqual([...first.col]);
     expect(markerVertexCount("bombHot")).toBe(markerVertexCount("bomb"));
+  });
+
+  it("gives each kind its own glow weights, and the same ones every time", () => {
+    // The static half of the Realistic glow. It has to behave exactly as the
+    // colours do — a property of the model, never of where it is standing —
+    // because that is what lets a lit board be eleven uniforms and no rebuild.
+    for (const kind of KINDS) {
+      const n = markerVertexCount(kind);
+      const first = place(kind, [0, 0, 0], [0, 1, 0], 1);
+      const again = place(kind, [3, 1, 2], [1, 0, 0], 0.2);
+      expect([...again.glow]).toEqual([...first.glow]);
+      expect(first.glow.length).toBe(n); // one per vertex, not three
+      for (const g of first.glow) expect(g).toBeGreaterThanOrEqual(0);
+      for (const g of first.glow) expect(g).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it("lights the head of a pin and not its stem", () => {
+    // A pin is a lamp on a post: the head takes the light and the stem does not,
+    // or the whole model glows and reads as paint rather than as an object with
+    // something lit on top of it.
+    const pin = place("pin", [0, 0, 0], [0, 1, 0], 1);
+    // The stem is drawn first and the head after it, so the first vertex is a
+    // stem vertex and the brightest is the head's crown.
+    const stem = pin.glow[0]!;
+    const peak = Math.max(...pin.glow);
+    expect(peak).toBeCloseTo(1, 5);
+    expect(stem).toBeGreaterThan(0); // dark would read as two objects, not one
+    expect(stem).toBeLessThan(peak / 4);
+    // ...and the head is ramped rather than flat, so it lights from the top the
+    // way it is already coloured from the top: its last vertex is its underside.
+    const underside = pin.glow[pin.count - 1]!;
+    expect(underside).toBeLessThan(peak);
+    expect(underside).toBeGreaterThan(stem);
+  });
+
+  it("leaves a dead pin dark and lights the bomb that went off hardest", () => {
+    // A flag that turned out to be wrong has the life gone out of it, which is
+    // already what its gray paint says; the bomb that ended the game is the one
+    // the loss is *about*, so it outglows the mines merely uncovered beside it.
+    const dead = place("deadPin", [0, 0, 0], [0, 1, 0], 1);
+    for (const g of dead.glow) expect(g).toBe(0);
+    const bomb = place("bomb", [0, 0, 0], [0, 1, 0], 1);
+    const hot = place("bombHot", [0, 0, 0], [0, 1, 0], 1);
+    const peak = (s: { glow: Float32Array; count: number }) => {
+      let m = 0;
+      for (let v = 0; v < s.count; v++) m = Math.max(m, s.glow[v]!);
+      return m;
+    };
+    expect(peak(hot)).toBeGreaterThan(peak(bomb));
   });
 
   it("draws nothing for a cell with no size", () => {

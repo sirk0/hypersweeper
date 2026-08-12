@@ -150,6 +150,26 @@ const HOT_LIT = new Color("#ffb15a");
 const HOT = new Color("#e0603a");
 const HOT_SHADE = new Color("#7d2418");
 
+/** How much each part of a model wants to light up, 0..1 — the static half of
+ * the Realistic glow (`render/markerGlow.ts` owns the moving half). A pin's
+ * **head** is the lamp and its stem is not; a bomb's casing carries more of it
+ * than its horns, which are machined lead and read better dark. A **dead pin**
+ * is zero throughout: a flag that turned out to be wrong has the life gone out
+ * of it, which is already the whole idea of that model.
+ *
+ * Written per vertex, not per model, for the same reason the colours are (see
+ * `sphere`) — a lamp that switches on across a whole ball at one value reads as
+ * paint, where a ramp from the crown down reads as light. */
+const GLOW_HEAD = 1;
+const GLOW_STEM = 0.12;
+const GLOW_DEAD = 0;
+const GLOW_CASING = 0.55;
+const GLOW_SPIKE = 0.35;
+const GLOW_HOT_CASING = 1;
+const GLOW_HOT_SPIKE = 0.7;
+/** What is left of a sphere's glow weight at its underside — see `sphere`. */
+const GLOW_UNDERSIDE = 0.45;
+
 /** A point in the marker's own frame: +y up the axis it stands on. */
 type Local = [number, number, number];
 
@@ -164,6 +184,11 @@ interface Frame {
   pos: number[];
   nrm: number[];
   col: number[];
+  glo: number[];
+  /** The glow weight `tri` stamps on what it writes — a pen the shape code sets
+   * and then draws with, so no primitive needs a parameter for it. `sphere`
+   * moves it ring by ring inside its own loop, which is what ramps a head. */
+  glow: number;
 }
 
 function place(f: Frame, p: Local): Vec3 {
@@ -197,6 +222,7 @@ function tri(
   c: Local,
   colors: Color | [Color, Color, Color],
   normals?: [Vec3, Vec3, Vec3],
+  glows?: [number, number, number],
 ): void {
   const p = place(f, a);
   const q = place(f, b);
@@ -216,6 +242,8 @@ function tri(
   f.pos.push(p[0], p[1], p[2], q[0], q[1], q[2], r[0], r[1], r[2]);
   for (const n of ns) f.nrm.push(n[0], n[1], n[2]);
   for (const c of cs) f.col.push(c.r, c.g, c.b);
+  if (glows) f.glo.push(glows[0], glows[1], glows[2]);
+  else f.glo.push(f.glow, f.glow, f.glow);
 }
 
 /** A tapered n-sided drum between two heights — the pin's stem, its little
@@ -277,6 +305,12 @@ function sphere(
   // One colour per ring, so the ramp is computed RINGS+1 times rather than once
   // per vertex. Crown to equator is lit->mid, equator to base mid->shade.
   const tones: Color[] = [];
+  // ...and one glow weight per ring beside it, on the same schedule and for the
+  // same reason: a ball lit at one value across all of it reads as paint, and a
+  // weight per *triangle* would band it. The pen (`f.glow`) is the crown, and
+  // the underside keeps `GLOW_UNDERSIDE` of it — a head glows from the top, the
+  // way it is already coloured from the top.
+  const glows: number[] = [];
   for (let ring = 0; ring <= SPHERE_RINGS; ring++) {
     const t = ring / SPHERE_RINGS;
     tones.push(
@@ -284,6 +318,7 @@ function sphere(
         ? lit.clone().lerp(mid, t * 2)
         : mid.clone().lerp(shade, (t - 0.5) * 2),
     );
+    glows.push(f.glow * (1 - (1 - GLOW_UNDERSIDE) * t));
   }
   const at = (ring: number, seg: number): Local => {
     const phi = (ring / SPHERE_RINGS) * Math.PI;
@@ -300,6 +335,8 @@ function sphere(
   for (let ring = 0; ring < SPHERE_RINGS; ring++) {
     const up = tones[ring]!;
     const down = tones[ring + 1]!;
+    const gu = glows[ring]!;
+    const gd = glows[ring + 1]!;
     for (let seg = 0; seg < SPHERE_SEGMENTS; seg++) {
       const a = at(ring, seg);
       const b = at(ring, seg + 1);
@@ -307,12 +344,12 @@ function sphere(
       const d = at(ring + 1, seg);
       // The poles collapse to a point, so those rings are triangles.
       if (ring === 0) {
-        tri(f, a, c, d, [up, down, down], [nAt(a), nAt(c), nAt(d)]);
+        tri(f, a, c, d, [up, down, down], [nAt(a), nAt(c), nAt(d)], [gu, gd, gd]);
       } else if (ring === SPHERE_RINGS - 1) {
-        tri(f, a, b, c, [up, up, down], [nAt(a), nAt(b), nAt(c)]);
+        tri(f, a, b, c, [up, up, down], [nAt(a), nAt(b), nAt(c)], [gu, gu, gd]);
       } else {
-        tri(f, a, b, c, [up, up, down], [nAt(a), nAt(b), nAt(c)]);
-        tri(f, a, c, d, [up, down, down], [nAt(a), nAt(c), nAt(d)]);
+        tri(f, a, b, c, [up, up, down], [nAt(a), nAt(b), nAt(c)], [gu, gu, gd]);
+        tri(f, a, c, d, [up, down, down], [nAt(a), nAt(c), nAt(d)], [gu, gd, gd]);
       }
     }
   }
@@ -375,6 +412,8 @@ interface MarkerModel {
   pos: Float32Array;
   nrm: Float32Array;
   col: Float32Array;
+  /** One weight per vertex, not three — see `MarkerSink.glow`. */
+  glow: Float32Array;
   verts: number;
 }
 
@@ -385,6 +424,11 @@ export interface MarkerSink {
   pos: Float32Array;
   nrm: Float32Array;
   col: Float32Array;
+  /** The static half of the Realistic glow: how much this vertex lights up when
+   * the board's markers are lit. **One float per vertex**, so it is indexed by
+   * `count` where the others are indexed by `count * 3` — the one place here
+   * where that is not the same number. */
+  glow: Float32Array;
   count: number;
 }
 
@@ -392,6 +436,7 @@ function buildModel(kind: Marker): MarkerModel {
   const pos: number[] = [];
   const nrm: number[] = [];
   const col: number[] = [];
+  const glo: number[] = [];
   // The identity frame: unit axes and no offset, so a point placed through it
   // comes out exactly as the shape code wrote it.
   const f: Frame = {
@@ -402,13 +447,17 @@ function buildModel(kind: Marker): MarkerModel {
     pos,
     nrm,
     col,
+    glo,
+    glow: 0,
   };
   if (kind === "pin" || kind === "deadPin") {
     const dead = kind === "deadPin";
     const [lit, mid, shade] = dead
       ? [DEAD_LIT, DEAD, DEAD_SHADE]
       : [HEAD_LIT, HEAD, HEAD_SHADE];
+    f.glow = dead ? GLOW_DEAD : GLOW_STEM;
     drum(f, 0, STEM_H, STEM_R0, STEM_R1, STEM_SIDES, dead ? FOOT : STEM, 1, true);
+    f.glow = dead ? GLOW_DEAD : GLOW_HEAD;
     sphere(f, STEM_H + HEAD_R * 0.62, HEAD_R, 1, lit, mid, shade);
   } else {
     const hot = kind === "bombHot";
@@ -420,13 +469,16 @@ function buildModel(kind: Marker): MarkerModel {
     // is also what makes one bomb enough on a two-sided surface — a sphere
     // straddling the tile pokes out equally on both faces, so unlike the pin it
     // needs no second copy for the far side (see `SolidBoard.rebuildMarkers`).
+    f.glow = hot ? GLOW_HOT_CASING : GLOW_CASING;
     sphere(f, 0, BOMB_R, 1, lit, mid, shade);
+    f.glow = hot ? GLOW_HOT_SPIKE : GLOW_SPIKE;
     for (const dir of SPIKE_DIRS) spike(f, 0, BOMB_R, dir);
   }
   return {
     pos: Float32Array.from(pos),
     nrm: Float32Array.from(nrm),
     col: Float32Array.from(col),
+    glow: Float32Array.from(glo),
     verts: pos.length / 3,
   };
 }
@@ -485,6 +537,11 @@ export function writeMarker(
   const m = model(kind);
   const base = out.count * 3;
   out.col.set(m.col, base);
+  // A weight is one float per vertex, so this one is offset by `count` rather
+  // than by `count * 3`. Like the colours it never depends on where the marker
+  // stands, which is what keeps the glow off the rebuild path entirely: the
+  // *amount* of light is a uniform, and this is only ever which parts take it.
+  out.glow.set(m.glow, out.count);
   const [ox, oy, oz] = origin;
   const [rx, ry, rz] = ex;
   const [ux, uy, uz] = ey;
