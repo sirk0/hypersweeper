@@ -396,7 +396,7 @@ export class SolidBoard extends Group implements BoardMesh {
         [0, 0],
       );
       // The cut, if this cell is one of the few the clip reaches.
-      const field = clip && clip.cells.has(cell) ? clip.field : null;
+      const cut = clip && clip.cells.has(cell) ? clip.solid : null;
       // A closed cell is a raised button: an n-triangle top fan plus a ring of
       // n quads under it per loop gap in the profile. A two-sided cell is a
       // flat tile whose triangles are fixed at build time, so a cut one keeps
@@ -407,7 +407,7 @@ export class SolidBoard extends Group implements BoardMesh {
               poly.map((p) => lerp3(p, centroid, this.profile.gap)),
               centroid,
             ),
-            field,
+            cut,
           )
         : null;
       const count = tile ? 3 * tile.length : cellVertexCount(n, this.profile);
@@ -467,7 +467,7 @@ export class SolidBoard extends Group implements BoardMesh {
       // and the silhouette show this grout surface instead of seeing through
       // the hollow interior. It is cut by the same clip — grout left behind
       // would cap the hole just as the tiles did.
-      for (const tri of clipTriangles(fanTriangles(poly, centroid), field)) {
+      for (const tri of clipTriangles(fanTriangles(poly, centroid), cut)) {
         for (const p of tri) basePositions.push(p[0], p[1], p[2]);
       }
     });

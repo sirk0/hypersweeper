@@ -471,6 +471,31 @@ mesh's vertex layout); its chrome is instant. See "Settings and themes"
 in `web/README.md`, including the v2→v3 migration that reads the old
 palette/cell-style *pair* together.
 
+**The Klein bottle's self-intersection** (`src/boards/clipSolid.ts`) is the
+one place the app cuts geometry away. The immersion passes through itself,
+and the sheet that ends up *inside* the neck caps the view down the bore, so
+`kleinClip` picks that patch out and the renderer drops it. The rule that
+matters: cut against the **drawn** tube, never the smooth one. A board is
+drawn as flat tiles, so the neck as drawn is a polygon inscribed in the
+immersion's circle — inside it everywhere but at its corners — and cutting
+against the circle both ate tiles at the bottom of the bottle, where the two
+sheets converge on one circle and the chords cross it, and left a slit along
+the self-intersection, where the cut followed the circle and the tube that
+should hide it followed the chords. The region is built from the tube's own
+triangles: horizontal **slabs** at every vertex height (inside one, a
+triangle either spans the whole height or is absent), one convex **wedge**
+per triangle within a slab (its angular sector, walled by its own plane —
+and two triangles sharing an edge share the wall through it, so the wedges
+tile a region that is nowhere near convex; a cell is fanned from its
+centroid, so the tube's cross-section is a *star* that dips inward between
+its corners, and a single convex bound leaves those dips uncut), and a
+convex difference to subtract them. So the cut is a different exact polyline
+on every tiling and at every size — the tessellation's own crossing rather
+than an idealisation of it. See "The Klein bottle's self-intersection" in
+`web/README.md` for the traps (the wedge-wall drift `SLAB_STEP` pays for,
+the flat fold cell that lies in a slab's own floor, and why `CLIP_MIN_AREA`
+would rather leave a hair too much than take a hair too much).
+
 **Cell styles** (`src/render/cellStyle.ts`) are what a theme names: how a
 cell is *cut*, and — for `classic` alone — whether it is shape-coloured at
 all. A style is one table entry (a stack of concentric loops per cell plus

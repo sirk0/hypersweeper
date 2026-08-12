@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { clipTriangles, fanTriangles, triangleCentroid, type Tri } from "../../src/render/clip";
+import { insideOccluder } from "../../src/boards/clipSolid";
 import { kleinBoard, torusBoard } from "../../src/boards/surfaces";
 import type { Vec3 } from "../../src/boards/core";
 
 // The cut the 3D renderer makes where an immersion passes through itself: the
 // enclosed sheet is dropped so the hole can be looked down (Klein bottle).
+// What the region *is* is `clipSolid.test.ts`; this is the renderer's face of
+// it — the fan, the cut, and where a cut cell's number ends up.
 
 const SQUARE: Vec3[] = [
   [-1, -1, 0],
@@ -31,59 +34,51 @@ function area(tris: readonly Tri[]): number {
 describe("surface clip", () => {
   const square = fanTriangles(SQUARE, [0, 0, 0]);
 
-  it("passes geometry through untouched when there is no field", () => {
+  it("fans a polygon from its centre, in polygon winding", () => {
+    expect(square).toHaveLength(4);
+    expect(square[0]).toEqual([[0, 0, 0], SQUARE[0], SQUARE[1]]);
+    expect(area(square)).toBeCloseTo(4);
+  });
+
+  it("passes geometry through untouched when there is nothing to cut", () => {
     expect(clipTriangles(square, null)).toBe(square);
-  });
-
-  it("keeps a polygon the field never reaches, drops one it swallows", () => {
-    expect(area(clipTriangles(square, () => 1))).toBeCloseTo(4);
-    expect(clipTriangles(square, () => -1)).toEqual([]);
-  });
-
-  it("cuts a straight field exactly at its zero line", () => {
-    // x >= 0 keeps the right half of the 2x2 square
-    expect(area(clipTriangles(square, (p) => p[0]))).toBeCloseTo(2);
-    // a quarter: x >= 0 and y >= 0 applied one after the other
-    const half = clipTriangles(square, (p) => p[0]);
-    expect(area(clipTriangles(half, (p) => p[1]))).toBeCloseTo(1);
-  });
-
-  it("follows a curved field, which flat corner tests would miss", () => {
-    // a disc of radius 0.5 punched out of the middle of the square: every
-    // corner of every fan triangle is outside it, so the cut only shows up
-    // because the clipper subdivides first. The boundary is straight per leaf,
-    // so the hole comes out a hair small — within a few percent of the disc.
-    const punched = clipTriangles(square, (p) => Math.hypot(p[0], p[1]) - 0.5);
-    const hole = 4 - area(punched);
-    expect(hole).toBeGreaterThan(Math.PI * 0.25 * 0.9);
-    expect(hole).toBeLessThan(Math.PI * 0.25 * 1.1);
-    for (const tri of punched) {
-      for (const p of tri) expect(Math.hypot(p[0], p[1])).toBeGreaterThan(0.49);
-    }
+    expect(clipTriangles(square, [])).toBe(square);
   });
 
   it("weights a cut cell's centre onto the material that is left", () => {
-    const right = clipTriangles(square, (p) => p[0]);
+    const right: Tri[] = [
+      [
+        [0, -1, 0],
+        [1, -1, 0],
+        [1, 1, 0],
+      ],
+      [
+        [0, -1, 0],
+        [1, 1, 0],
+        [0, 1, 0],
+      ],
+    ];
     expect(triangleCentroid(right)![0]).toBeCloseTo(0.5);
     expect(triangleCentroid([])).toBeNull();
   });
 
   it("takes a real Klein cell's enclosed patch off it, and only that", () => {
     const board = kleinBoard(16, 8, 20);
-    const { field, cells } = board.clip!;
+    const { solid, cells, occluder } = board.clip!;
+    expect(cells.size).toBeGreaterThan(0);
     for (const cell of cells) {
       const poly = board.polygons.get(cell)!;
       const whole = fanTriangles(poly, centroid(poly));
-      const cut = clipTriangles(whole, field);
+      const cut = clipTriangles(whole, solid);
       expect(area(cut)).toBeGreaterThan(0); // a piece, never the whole cell
       expect(area(cut)).toBeLessThan(area(whole));
-      // Nothing of substance is left standing inside the neck: the cut edge is
-      // straight per leaf triangle, so what survives can only reach a sliver
-      // (here under a fiftieth of a cell) past the curved boundary.
-      const size = Math.sqrt(area(whole));
+      // Nothing of substance is left standing inside the neck, and the cell's
+      // number moves onto what survives.
       for (const tri of cut) {
-        expect(field(triangleCentroid([tri])!)).toBeGreaterThan(-size / 50);
+        if (area([tri]) < area(whole) * 1e-4) continue; // a rounding sliver
+        expect(insideOccluder(occluder, triangleCentroid([tri])!)).toBe(false);
       }
+      expect(triangleCentroid(cut)).not.toBeNull();
     }
     expect(torusBoard(12, 6, 9).clip).toBeNull();
   });
