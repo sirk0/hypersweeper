@@ -176,6 +176,39 @@ test.describe("board gallery", () => {
     await expect(page).toHaveScreenshot("klein-scrolled.png", { mask: [timer] });
   });
 
+  test("a Realistic sphere's pins carry their resting ember", async ({ page }) => {
+    // The markers' own baseline: the standing pins, lit by nothing but the
+    // glow's resting level. That ember is a *look* rather than a motion, so
+    // unlike the wave it survives this suite's reduced-motion setting and is
+    // exactly what a settled frame should show — which makes this the one shot
+    // that would catch it drifting. The wave and the blast are measured instead
+    // (tests/e2e/animations.spec.ts): both are over inside a second, which is
+    // quicker than a screenshot round trip here.
+    await page.addInitScript(() => {
+      localStorage.setItem(
+        "ms:settings",
+        JSON.stringify({ version: 3, theme: "realistic", seenHint: true }),
+      );
+    });
+    await page.goto("/");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    await page.evaluate(() => window.__ms!.startBoard("sphere", "easy"));
+    // `cellScreenXY` needs a drawn frame before it can answer, and answering
+    // null is what marks a cell on the far side — so the pins go on the face in
+    // shot rather than behind the ball.
+    await page.waitForTimeout(150);
+    await page.evaluate(() => {
+      const ms = window.__ms!;
+      const visible = ms.cells().filter((c) => ms.cellScreenXY(c) !== null);
+      const step = Math.max(1, Math.floor(visible.length / 8));
+      const mines = Array.from({ length: 7 }, (_, i) => visible[i * step]!);
+      ms.startBoard("sphere", "easy", { mines });
+      for (const c of mines) ms.flag(c);
+    });
+    await page.waitForTimeout(150);
+    await expect(page).toHaveScreenshot("sphere-realistic-pins.png");
+  });
+
   test("sphere glyphs stay on the visible hemisphere", async ({ page }) => {
     // Flagging every cell makes any glyph that leaks past the silhouette onto
     // the back surface plainly visible — the regression guard for the

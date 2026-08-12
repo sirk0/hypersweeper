@@ -1,6 +1,7 @@
 import {
   BufferAttribute,
   BufferGeometry,
+  Color,
   DoubleSide,
   FrontSide,
   Group,
@@ -50,6 +51,14 @@ import {
   rippleEntries,
   WIN_PER_CELL,
 } from "./animations";
+import {
+  GLOW_BLAST,
+  GLOW_COOL,
+  GLOW_GLOBAL_SHARE,
+  GLOW_WARM,
+  MarkerGlow,
+  type GlowCell,
+} from "./markerGlow";
 import { cellPalette, classifyShapes, type CellPalette } from "./shapePalette";
 import {
   cellStyle,
@@ -173,6 +182,110 @@ class DynGeometry {
   }
 }
 
+/** The uniforms the marker glow is driven by — the moving half of the effect,
+ * against the static per-vertex `glow` weight the models carry. Eleven scalars
+ * rewritten per frame is the entire per-frame cost of a lit board: no geometry
+ * is rebuilt, no buffer is re-uploaded, and `rebuildMarkers` is not called.
+ * Distances are in board units (the clock reports cell widths; the board
+ * multiplies by `meanRadius`). */
+interface GlowUniforms {
+  /** Where the wave started, in board-local space — the clicked cell's centre,
+   * or the mine's on a loss. The shockwave shares it, since a detonation drops
+   * any reveal in flight (`MarkerGlow.detonate`). */
+  uGlowOrigin: { value: Vector3 };
+  uGlowFront: { value: number };
+  uGlowWidth: { value: number };
+  uGlowAmount: { value: number };
+  uGlowBase: { value: number };
+  uGlowColor: { value: Color };
+  uBlast: { value: number };
+  uBlastFront: { value: number };
+  /** How far a vertex near the blast is pushed along its own normal — the
+   * detonated bomb swelling, done in the vertex stage so a loss costs no
+   * rebuild either. */
+  uBlastSwell: { value: number };
+  /** How close to the blast a vertex has to be to swell at all. */
+  uBlastReach: { value: number };
+  uBlastColor: { value: Color };
+}
+
+/** How far the swell pushes at the peak of a blast, and how far out it reaches,
+ * both as fractions of a cell width. The reach covers the detonated cell and
+ * just laps its neighbours; the swell is well inside the clearance the camera
+ * fit already reserves for a pin (`MARKER_REACH`), so a bomb can bulge without
+ * being cropped at the board's rim. */
+const BLAST_SWELL = 0.1;
+const BLAST_REACH = 1.1;
+
+/** Declarations added to the vertex stage. */
+const GLOW_VERT_HEAD = /* glsl */ `
+attribute float glow;
+uniform vec3 uGlowOrigin;
+uniform float uBlastSwell;
+uniform float uBlastReach;
+varying float vGlow;
+varying float vGlowDist;
+varying float vBlastNear;
+`;
+
+/** ...and the work it does: hand the weight and the distance to the fragment
+ * stage, and bulge the bomb that went off. */
+const GLOW_VERT_BODY = /* glsl */ `
+vGlow = glow;
+vGlowDist = distance(position, uGlowOrigin);
+vBlastNear = 1.0 - smoothstep(0.0, uBlastReach, vGlowDist);
+transformed += normal * (uBlastSwell * glow * vBlastNear);
+`;
+
+const GLOW_FRAG_HEAD = /* glsl */ `
+uniform float uGlowFront;
+uniform float uGlowWidth;
+uniform float uGlowAmount;
+uniform float uGlowBase;
+uniform vec3 uGlowColor;
+uniform float uBlast;
+uniform float uBlastFront;
+uniform vec3 uBlastColor;
+varying float vGlow;
+varying float vGlowDist;
+varying float vBlastNear;
+
+float glowBand(float dist, float front, float width) {
+  float d = (dist - front) / width;
+  return exp(-d * d);
+}
+`;
+
+/** The light itself, added to the emissive term so it survives the lighting
+ * rather than being multiplied away by it. A marker takes the resting ember
+ * always, a share of the swell everywhere and the rest of it as the front
+ * crosses; a blast adds white, hottest on the bomb that went off and trailing
+ * out along its shockwave. */
+const GLOW_FRAG_BODY = /* glsl */ `
+float wave = uGlowAmount * (${GLOW_GLOBAL_SHARE.toFixed(2)} + ${(1 - GLOW_GLOBAL_SHARE).toFixed(2)} * glowBand(vGlowDist, uGlowFront, uGlowWidth));
+float shock = uBlast * max(vBlastNear, 0.55 * glowBand(vGlowDist, uBlastFront, uGlowWidth));
+totalEmissiveRadiance += vGlow * (uGlowColor * (uGlowBase + wave) + uBlastColor * shock);
+`;
+
+/** Teach a marker material to glow. Both marker materials take the *same*
+ * patch: a dropping pin is the same object as a planted one and lights the
+ * same, and since Three keys its program cache on `onBeforeCompile.toString()`
+ * one shared function means one compiled program rather than two. */
+function patchGlow(material: MeshStandardMaterial, uniforms: GlowUniforms): void {
+  material.onBeforeCompile = (shader) => {
+    Object.assign(shader.uniforms, uniforms);
+    shader.vertexShader = shader.vertexShader
+      .replace("#include <common>", `#include <common>\n${GLOW_VERT_HEAD}`)
+      .replace("#include <begin_vertex>", `#include <begin_vertex>\n${GLOW_VERT_BODY}`);
+    shader.fragmentShader = shader.fragmentShader
+      .replace("#include <common>", `#include <common>\n${GLOW_FRAG_HEAD}`)
+      .replace(
+        "#include <emissivemap_fragment>",
+        `#include <emissivemap_fragment>\n${GLOW_FRAG_BODY}`,
+      );
+  };
+}
+
 interface CellGeom {
   start: number; // first vertex index in the position/normal/color buffers
   count: number; // vertex count for this cell (3 per triangle)
@@ -268,6 +381,11 @@ export class SolidBoard extends Group implements BoardMesh {
     ["position", 3],
     ["normal", 3],
     ["color", 3],
+    // The static half of the Realistic glow: one weight per vertex, saying how
+    // much of this frame's light that part of the model takes. Written once
+    // with the model and never touched again — the *amount* of light is a
+    // uniform, which is what keeps a glowing board off the rebuild path.
+    ["glow", 1],
   ]);
   // ...and the one pin currently being planted by a held cell, which is a mesh
   // of its own for the same reason the 2D drop is: it is drawn many times
@@ -278,8 +396,18 @@ export class SolidBoard extends Group implements BoardMesh {
     ["position", 3],
     ["normal", 3],
     ["color", 3],
+    // The static half of the Realistic glow: one weight per vertex, saying how
+    // much of this frame's light that part of the model takes. Written once
+    // with the model and never touched again — the *amount* of light is a
+    // uniform, which is what keeps a glowing board off the rebuild path.
+    ["glow", 1],
   ]);
   private markerDropMaterial: MeshStandardMaterial | null = null;
+  /** The light the markers carry, and the uniforms it is written into. Null on
+   * a style without markers, where there is nothing to light. */
+  private readonly glow = new MarkerGlow();
+  private glowUniforms: GlowUniforms | null = null;
+  private readonly glowColor = new Color();
   /** Whether the glyph billboards / the standing markers need regenerating
    * before the next frame is drawn.
    *
@@ -577,18 +705,33 @@ export class SolidBoard extends Group implements BoardMesh {
     // `pick` only ever raycasts the "cells" mesh, so a marker can never swallow
     // a tap meant for its tile.
     if (this.solidMarkers) {
-      const markerMesh = new Mesh(
-        this.markerGeometry.geometry,
-        new MeshStandardMaterial({
-          vertexColors: true,
-          roughness: 0.52,
-          metalness: 0,
-          // Every model is a closed solid, so FrontSide would do — but a marker
-          // that came out inside-out from a winding slip would be invisible
-          // rather than merely wrong, and these are cheap enough not to gamble.
-          side: DoubleSide,
-        }),
-      );
+      // Both marker materials glow, and both are patched with the same function
+      // so the two meshes share one compiled program — see `patchGlow`.
+      const uniforms: GlowUniforms = {
+        uGlowOrigin: { value: new Vector3() },
+        uGlowFront: { value: 0 },
+        uGlowWidth: { value: 1 },
+        uGlowAmount: { value: 0 },
+        uGlowBase: { value: 0 },
+        uGlowColor: { value: new Color(GLOW_COOL) },
+        uBlast: { value: 0 },
+        uBlastFront: { value: 0 },
+        uBlastSwell: { value: 0 },
+        uBlastReach: { value: 1 },
+        uBlastColor: { value: new Color(GLOW_BLAST) },
+      };
+      this.glowUniforms = uniforms;
+      const markerMaterial = new MeshStandardMaterial({
+        vertexColors: true,
+        roughness: 0.52,
+        metalness: 0,
+        // Every model is a closed solid, so FrontSide would do — but a marker
+        // that came out inside-out from a winding slip would be invisible
+        // rather than merely wrong, and these are cheap enough not to gamble.
+        side: DoubleSide,
+      });
+      patchGlow(markerMaterial, uniforms);
+      const markerMesh = new Mesh(this.markerGeometry.geometry, markerMaterial);
       markerMesh.name = "markers";
       this.add(markerMesh);
 
@@ -606,6 +749,7 @@ export class SolidBoard extends Group implements BoardMesh {
         depthTest: false,
         depthWrite: false,
       });
+      patchGlow(this.markerDropMaterial, uniforms);
       const markerDropMesh = new Mesh(
         this.markerDropGeometry.geometry,
         this.markerDropMaterial,
@@ -975,18 +1119,20 @@ export class SolidBoard extends Group implements BoardMesh {
     }
     this.markerGeometry.reserve(need);
     this.markerDropGeometry.reserve(markerVertexCount("pin"));
-    const [mp, mn, mc] = this.markerGeometry.arrays as [
+    const [mp, mn, mc, mg] = this.markerGeometry.arrays as [
       Float32Array,
-      Float32Array,
-      Float32Array,
-    ];
-    const [dp, dn, dc] = this.markerDropGeometry.arrays as [
       Float32Array,
       Float32Array,
       Float32Array,
     ];
-    const sink: MarkerSink = { pos: mp, nrm: mn, col: mc, count: 0 };
-    const dropSink: MarkerSink = { pos: dp, nrm: dn, col: dc, count: 0 };
+    const [dp, dn, dc, dg] = this.markerDropGeometry.arrays as [
+      Float32Array,
+      Float32Array,
+      Float32Array,
+      Float32Array,
+    ];
+    const sink: MarkerSink = { pos: mp, nrm: mn, col: mc, glow: mg, count: 0 };
+    const dropSink: MarkerSink = { pos: dp, nrm: dn, col: dc, glow: dg, count: 0 };
     for (let i = 0; i < this.order.length; i++) {
       const marker = markerFor(this.states[i]!);
       if (marker === null) continue;
@@ -1066,6 +1212,9 @@ export class SolidBoard extends Group implements BoardMesh {
 
   setAnimationsEnabled(on: boolean): void {
     this.anim.enabled = on;
+    // The marker glow's *wave* is motion and goes with the rest of them; its
+    // resting ember is a look, not a motion, and stays (`MarkerGlow.enabled`).
+    this.glow.enabled = on;
     if (!on) {
       this.anim.reset();
       this.position.set(0, 0, 0);
@@ -1073,6 +1222,48 @@ export class SolidBoard extends Group implements BoardMesh {
       this.rebuildGlyphs();
       this.rebuildMarkers();
     }
+  }
+
+  /** True when this board stands real markers *and* their glow is live, so a
+   * move is worth measuring for it. `GameSession` asks before it walks the
+   * flood, so a board with animations off pays nothing at all. */
+  get wantsMarkerGlow(): boolean {
+    return this.solidMarkers && this.glow.enabled;
+  }
+
+  /** Light the markers for the cells a move just opened: a front spreads from
+   * `origin` at the reveal ripple's own pace and every pin brightens as it
+   * passes. Touches no geometry — only the clock and, next frame, eleven
+   * uniforms — which is what keeps a flood fill free of the marker rebuild. */
+  glowMarkers(cells: GlowCell[], origin: CellId | null): void {
+    if (!this.solidMarkers) return;
+    this.setGlowOrigin(origin);
+    this.glow.reveal(cells, performance.now());
+  }
+
+  /** Set the markers alight: a mine went off on `cell`. */
+  blastMarkers(cell: CellId | null): void {
+    if (!this.solidMarkers) return;
+    this.setGlowOrigin(cell);
+    this.glow.detonate(performance.now());
+  }
+
+  /** What the markers are lit to right now, read off the uniforms the last
+   * frame wrote — see `MsState.glow`. */
+  markerGlowLevel(): { amount: number; blast: number; base: number } | null {
+    const u = this.glowUniforms;
+    if (!u) return null;
+    return {
+      amount: u.uGlowAmount.value,
+      blast: u.uBlast.value,
+      base: u.uGlowBase.value,
+    };
+  }
+
+  private setGlowOrigin(cell: CellId | null): void {
+    const i = cell != null ? this.cellIndex.get(cell) : undefined;
+    const c = i != null ? this.geom[i]!.center : null;
+    if (c) this.glowUniforms?.uGlowOrigin.value.set(c[0], c[1], c[2]);
   }
 
   pulseReveal(cells: CellId[], origin: CellId | null): void {
@@ -1130,7 +1321,11 @@ export class SolidBoard extends Group implements BoardMesh {
     // on every frame whether or not it means to draw, so nothing can be left
     // marked and unflushed.
     const flushed = this.flushDirty();
-    if (!this.anim.pending()) return flushed;
+    // Likewise ahead of it: the marker glow is a clock of its own, and one that
+    // runs while `CellAnimations` has nothing pending (a lone opened cell casts
+    // no ripple worth the name but still lights the pins).
+    const glowing = this.updateGlow(now);
+    if (!this.anim.pending()) return flushed || glowing;
     const step = this.anim.step(now);
     for (const i of step.recolor) this.writeColor(i);
     if (step.glyphsDirty) {
@@ -1138,9 +1333,32 @@ export class SolidBoard extends Group implements BoardMesh {
       this.rebuildMarkers();
     }
     this.position.set(step.offset[0], step.offset[1], 0);
-    return step.active;
+    return step.active || glowing;
+  }
+
+  /** Write this frame's light into the marker shader's uniforms, and say
+   * whether it will want another frame. The clock reports cell widths; the
+   * board turns them into its own units here, so the wave travels at the same
+   * visual speed on a four-cell tetrahedron and a 480-cell Klein bottle. */
+  private updateGlow(now: number): boolean {
+    const u = this.glowUniforms;
+    if (!u) return false;
+    const s = this.glow.sample(now);
+    u.uGlowFront.value = s.front * this.meanRadius;
+    u.uGlowWidth.value = s.width * this.meanRadius;
+    u.uGlowAmount.value = s.amount;
+    u.uGlowBase.value = s.base;
+    u.uGlowColor.value.copy(this.glowColor.set(GLOW_COOL).lerp(WARM_GLOW, s.tone));
+    u.uBlast.value = s.blast;
+    u.uBlastFront.value = s.blastFront * this.meanRadius;
+    u.uBlastSwell.value = s.blast * BLAST_SWELL * this.meanRadius;
+    u.uBlastReach.value = BLAST_REACH * this.meanRadius;
+    return this.glow.pending();
   }
 }
+
+/** The warm end of the glow's tone ramp, converted once. */
+const WARM_GLOW = new Color(GLOW_WARM);
 
 /** The model that stands on a cell in this state, on a style with markers, or
  * null for the states that carry no object — a plain hidden cell, and a revealed

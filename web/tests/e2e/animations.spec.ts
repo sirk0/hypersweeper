@@ -120,6 +120,134 @@ test.describe("M6 animations", () => {
     expect(unheld.equals(before), "an unheld flag animated anyway").toBe(true);
   });
 
+  // -- the Realistic marker glow ---------------------------------------------
+  //
+  // The light the pins carry lives entirely in a shader uniform, so — like a
+  // synthesised sound — it leaves nothing in the DOM to assert against, and
+  // unlike the ripple it is over in about half a second, which is quicker than
+  // a screenshot round trip under SwiftShader. `state().glow` is the window on
+  // it. The rules themselves are pinned in tests/unit/markerGlow.test.ts; what
+  // is worth an e2e is that the wiring reaches the board at all, from the game
+  // through the session to the uniforms, and that it comes back down.
+
+  /** A Realistic sphere with `flags` pins on it and its mines known. Realistic
+   * has to be stored before the page boots: a cell style is baked into the mesh
+   * when a board is built, so picking it afterwards lands on the *next* one. */
+  async function realisticSphere(page: import("@playwright/test").Page) {
+    await page.addInitScript(() => {
+      localStorage.setItem(
+        "ms:settings",
+        JSON.stringify({ version: 3, theme: "realistic", sound: "off", seenHint: true }),
+      );
+    });
+    await page.goto("/");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    return page.evaluate(() => {
+      const ms = window.__ms!;
+      ms.animations(true);
+      ms.startBoard("sphere", "easy"); // enumerate the cells first
+      const cells = ms.cells();
+      // Two mines, both far from the opener, so one reveal is a wide flood
+      // rather than the single numbered cell an ordinary easy board opens.
+      ms.startBoard("sphere", "easy", { mines: cells.slice(0, 2) });
+      for (const c of cells.slice(2, 8)) ms.flag(c);
+      return { opener: cells[cells.length - 1]!, mine: cells[0]! };
+    });
+  }
+
+  test("a flood lights the pins and lets them go out again", async ({ page }) => {
+    const { opener } = await realisticSphere(page);
+    const at = await page.evaluate(async (cell) => {
+      const ms = window.__ms!;
+      const frame = () => new Promise((r) => requestAnimationFrame(r));
+      await frame();
+      const rest = ms.state().glow!;
+      ms.reveal(cell);
+      // Sample across the wave rather than at one instant: the render loop
+      // stalls for hundreds of milliseconds under SwiftShader while a flood
+      // recolours, so any single moment can miss the crest.
+      const t0 = performance.now();
+      let peak = 0;
+      while (performance.now() - t0 < 700) {
+        await frame();
+        peak = Math.max(peak, ms.state().glow!.amount);
+      }
+      return { rest, peak, after: ms.state().glow! };
+    }, opener);
+
+    // At rest a pin carries only its ember — a look, not a light show.
+    expect(at.rest.amount).toBe(0);
+    expect(at.rest.base).toBeGreaterThan(0);
+    // The flood lights them...
+    expect(at.peak).toBeGreaterThan(0.2);
+    // ...and once it has finished opening they are back to the ember. This is
+    // the "glow goes back to very low after the click's cells are open" rule,
+    // measured on a real board.
+    expect(at.after.amount).toBe(0);
+    expect(at.after.base).toBe(at.rest.base);
+  });
+
+  test("a mine going off flashes white and leaves the markers warm", async ({ page }) => {
+    const { mine } = await realisticSphere(page);
+    const at = await page.evaluate(async (cell) => {
+      const ms = window.__ms!;
+      const frame = () => new Promise((r) => requestAnimationFrame(r));
+      await frame();
+      const rest = ms.state().glow!;
+      ms.reveal(cell);
+      const t0 = performance.now();
+      let peak = 0;
+      while (performance.now() - t0 < 1400) {
+        await frame();
+        peak = Math.max(peak, ms.state().glow!.blast);
+      }
+      return { rest, peak, after: ms.state().glow!, status: ms.state().status };
+    }, mine);
+
+    expect(at.status).toBe("lost");
+    expect(at.peak).toBeGreaterThan(0.5); // a detonation is not a flood fill
+    expect(at.after.blast).toBe(0);
+    // The board is dark again, but warmer than it was: embers for the rest of
+    // the loss screen.
+    expect(at.after.base).toBeGreaterThan(at.rest.base);
+  });
+
+  test("a board with animations off keeps the ember and nothing else", async ({ page }) => {
+    // Reduced motion turns off motion. A resting ember does not move, so it is
+    // part of what a Realistic marker *is* rather than something it does — and
+    // `wantsMarkerGlow` going false with it is what keeps a flood from paying
+    // for a walk nothing will use (see tests/e2e/markers.spec.ts).
+    const { opener } = await realisticSphere(page);
+    const glow = await page.evaluate(async (cell) => {
+      const ms = window.__ms!;
+      ms.animations(false);
+      const frame = () => new Promise((r) => requestAnimationFrame(r));
+      ms.reveal(cell);
+      let peak = 0;
+      for (let i = 0; i < 20; i++) {
+        await frame();
+        peak = Math.max(peak, ms.state().glow!.amount);
+      }
+      return { peak, base: ms.state().glow!.base };
+    }, opener);
+    expect(glow.peak).toBe(0);
+    expect(glow.base).toBeGreaterThan(0);
+  });
+
+  test("a board without markers has no glow to report", async ({ page }) => {
+    // The flat board implements none of it, and neither does a 3D board on a
+    // style that draws billboards — `state().glow` is null rather than zero, so
+    // the two cases stay tellable apart.
+    await page.goto("/");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    const glow = await page.evaluate(() => {
+      const ms = window.__ms!;
+      ms.startBoard("square", "easy", { mines: ["0,0"] });
+      return ms.state().glow;
+    });
+    expect(glow).toBeNull();
+  });
+
   test("a detonation shakes and still registers the loss", async ({ page }) => {
     await page.evaluate(() => {
       const ms = window.__ms!;

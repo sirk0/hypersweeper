@@ -902,6 +902,84 @@ that ended it, a gray pin under its cross — and, on the strip, the check that 
 casing shows from both faces), long-presses a cell to catch the pin drop
 mid-flight, and shoots a flat board as the untouched control.
 
+### The pins glow (`src/render/markerGlow.ts`)
+
+A move already reaches the player twice: the tiles it opened **flash**, rippling
+outward from the click at `RIPPLE_PER_CELL` ms per cell width, and each opened
+tile **sounds**, pitched and timbred by its own side count. The markers are the
+third reading of the same event. A front of light spreads from the click at that
+same pace and every standing pin brightens as it crosses, then falls back to the
+faint ember it carries at rest.
+
+What the light *says* is what the sound says, from the same two facts:
+
+- **How much, from how many.** A one-cell open is a tick and a two-hundred cell
+  flood is a swell, logarithmically — the step from 1 to 20 cells is most of the
+  range and the step from 100 to 200 is barely visible.
+- **What colour, from what shape.** The mean side count of the opened cells,
+  ramped over the span `noteFor` ramps the pitch over (index `sides - 3`,
+  clamped), so a shape that sounds low glows warm. On a board of one tiling that
+  is a constant — a hexagonal board glows unlike a triangular one — and on the
+  uniform, Laves and isogonal boards it moves move to move.
+- **It stops.** The swell holds only while the front is still inside the flood,
+  then falls away. A board that has finished opening is a board at rest.
+
+A mine going off runs the same machinery hot: a white flash on the bomb that
+went off, which also **swells**, a shockwave that outruns a reveal three to one,
+and an ember that stays warm for the rest of the loss screen.
+
+The traps, and the reason the design looks the way it does:
+
+- **A glow must not cost a rebuild.** `rebuildMarkers` is a whole-board pass of
+  several hundred triangles per marked cell, kept off the camera path on purpose
+  (above) and guarded by timing thresholds in `tests/e2e/markers.spec.ts`,
+  including *a flood fill touches no marker at all*. So the light is **one static
+  per-vertex attribute** (`glow` — how much each part of a model lights up, the
+  head of a pin and not its stem, zero on a dead pin) and **eleven uniforms**
+  rewritten per frame in `SolidBoard.updateGlow`. No geometry moves, and the
+  vertex colours never vary with time — `tests/unit/markers3d.test.ts` pins both.
+- **The wave is spatial, and it is computed in the shader.** Each vertex knows
+  its own distance from `uGlowOrigin`, so a front sweeping the board costs a
+  scalar per frame rather than a buffer upload. Because it measures `position`
+  rather than a per-marker anchor, the light climbs a pin slightly as the front
+  passes, which is free and reads well.
+- **`onBeforeCompile`, on both marker materials, with the same function.** Three
+  keys its program cache on `onBeforeCompile.toString()`, so one shared patch
+  compiles one program for the standing pins and the dropping one — and a
+  dropping pin lights like a planted one, which is what it is.
+- **There is no bloom.** The app has no post-processing and the canvas is
+  deliberately transparent, so the glow is an **emissive** term added to
+  `totalEmissiveRadiance` — added, so the lighting cannot multiply it away.
+  `PEAK_MAX` is well under 1 for that reason: an emissive of 1 roughly doubles a
+  pin head's brightness and washes it from red out to pale peach, which reads as
+  the model changing colour rather than as light passing over it.
+- **The resting ember is not gated by reduced motion.** It does not move, so it
+  is part of what a Realistic marker *is*; what `animations(false)` turns off is
+  the wave, the shockwave and the swell. `wantsMarkerGlow` goes false with them,
+  which is what stops `GameSession` walking a flood's rings for a light nothing
+  will show.
+- **Rings and sides are measured once per move.** Both used to live inside the
+  sound path, behind `soundEnabled()`; the glow needs them too and plays in
+  silence, so `GameSession.reactToReveal` computes them for whichever of the two
+  wants them. `panFor` stays behind the sound gate — it projects a cell through
+  the camera, and only the stereo field needs that.
+
+**Testing it.** The rules are pure and pinned in `tests/unit/markerGlow.test.ts`,
+driven with explicit `now` values and no browser. End to end, the light lives in
+a uniform and so leaves nothing in the DOM, and the whole wave is over in about
+half a second — quicker than a screenshot round trip under SwiftShader, which
+*will* stall for hundreds of milliseconds mid-flood and drop the crest between
+frames. So `state().glow` reports it (`amount`, `blast`, `base`, or null on a
+board with no markers) and `tests/e2e/animations.spec.ts` samples across the wave
+rather than at an instant. The one thing a screenshot can hold is the resting
+ember, which is what `sphere-realistic-pins.png` is for.
+
+Review shots: `node scripts/glow-shots.mjs <outdir>` against a running
+`vite preview`. To photograph the crest, temporarily hold the envelope open
+(`+ 6000` on `travel` in `swell`) and slow the front (`RIPPLE_PER_CELL * 24`);
+that is how the numbers above were tuned by eye, and it is the only way to see
+one frame of a wave that real timings sweep past.
+
 ## Shape colour coding (`src/render/shapePalette.ts`)
 
 A cell's colour is derived from its polygon — nothing tags a cell with a

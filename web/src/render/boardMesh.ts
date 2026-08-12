@@ -1,6 +1,7 @@
 import { Color, type Group, type Quaternion, type Vector3 } from "three";
 import type { CellId, Vec3 } from "../boards/core";
 import type { Glyph } from "./glyphAtlas";
+import type { GlowCell } from "./markerGlow";
 import type { CellPalette } from "./shapePalette";
 
 // Shared vocabulary of the two board meshes (flat PolygonBoard, 3D
@@ -162,4 +163,24 @@ export interface BoardMesh extends Group {
   /** Advance animations to `now`; returns whether another frame is needed. The
    * renderer calls this every frame and keeps rendering while it is true. */
   tickAnimations(now: number): boolean;
+
+  // -- the Realistic marker glow (see render/markerGlow.ts) -------------------
+  // Only a board that stands real pins and bombs has anything to light, so all
+  // three are optional and the flat board implements none of them.
+
+  /** Whether a move is worth measuring for the marker glow — true only on a
+   * board with markers whose glow is live. `GameSession` asks first, so a board
+   * with animations off never pays for the walk. */
+  readonly wantsMarkerGlow?: boolean;
+  /** Light the markers for the cells a move just opened, as a front spreading
+   * from `origin` at the reveal ripple's pace. How bright follows how many
+   * cells opened, and what colour follows what shape they were — the same two
+   * facts the sound cascade is built from. */
+  glowMarkers?(cells: GlowCell[], origin: CellId | null): void;
+  /** Set the markers alight: a mine went off on `cell`. */
+  blastMarkers?(cell: CellId | null): void;
+  /** How lit the markers are at this instant — the test seam's only window on
+   * an effect that lives entirely in a shader uniform. Null when there is
+   * nothing to light. */
+  markerGlowLevel?(): { amount: number; blast: number; base: number } | null;
 }

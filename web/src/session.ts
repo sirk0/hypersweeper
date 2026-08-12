@@ -194,8 +194,7 @@ export class GameSession {
     if (this.game.state === "lost") this.exploded = gameCell;
     this.apply(changed);
     const opened = this.openedFrom(changed);
-    this.rippleReveal(opened, gameCell);
-    this.soundReveal(opened, gameCell, false);
+    this.reactToReveal(opened, gameCell, false);
     this.checkStop(gameCell, changed);
   }
 
@@ -239,8 +238,7 @@ export class GameSession {
     }
     this.apply(changed);
     const opened = this.openedFrom(changed);
-    this.rippleReveal(opened, chorded);
-    this.soundReveal(opened, chorded, true);
+    this.reactToReveal(opened, chorded, true);
     this.checkStop(chorded, changed);
   }
 
@@ -252,29 +250,48 @@ export class GameSession {
     );
   }
 
-  /** Flash the cells a reveal/chord just opened, rippling out from the click. */
-  private rippleReveal(opened: CellId[], origin: CellId): void {
+  /** Everything a move's opened cells set off, measured once.
+   *
+   * Three readings of one event, and they must agree, so they are built from
+   * one walk rather than three. The tiles **flash**, rippling out from the
+   * click. The Realistic board's pins **glow**, a front of light spreading at
+   * the same pace. And each opened cell **sounds**, pitched and timbred by its
+   * own shape and panned by where it is on screen (audio/sound.ts).
+   *
+   * The shared measurements are the flood's rings (how far out from the click
+   * each cell was opened) and each cell's side count. Both used to be computed
+   * inside the sound path and paid for only when the sound was on; the glow
+   * needs them too and plays in silence, so they moved out here — but only when
+   * something is actually going to use them, which is what keeps a klein/hard
+   * flood as cheap as it was. `panFor` stays behind the sound gate: it projects
+   * a cell through the camera, and only the stereo field needs that. */
+  private reactToReveal(opened: CellId[], origin: CellId, chord: boolean): void {
     if (opened.length === 0) return;
     this.mesh.pulseReveal(
       opened.map((c) => this.geomFor(c)),
       this.geomFor(origin),
     );
-  }
-
-  /** Sound the cells a move opened: one note for a single cell, a cascade
-   * spreading outward from the click for a flood fill. Each cell contributes
-   * its own shape (the pitch and the timbre) and its own place on screen (the
-   * stereo position), so what is heard is the shape of the board and the shape
-   * of the opening — see audio/sound.ts. */
-  private soundReveal(opened: CellId[], origin: CellId, chord: boolean): void {
-    if (opened.length === 0 || !soundEnabled()) return;
+    const glowing = this.mesh.wantsMarkerGlow === true;
+    const sounding = soundEnabled();
+    if (!glowing && !sounding) return;
     const rings = this.ringsFrom(origin, opened);
-    const cells: CellSound[] = opened.map((cell) => ({
-      sides: this.sidesOf(cell),
-      pan: this.panFor(cell),
-      ring: rings.get(cell) ?? 0,
-    }));
-    playSound({ kind: "open", cells, chord });
+    if (glowing) {
+      this.mesh.glowMarkers?.(
+        opened.map((cell) => ({
+          sides: this.sidesOf(cell),
+          ring: rings.get(cell) ?? 0,
+        })),
+        this.geomFor(origin),
+      );
+    }
+    if (sounding) {
+      const cells: CellSound[] = opened.map((cell) => ({
+        sides: this.sidesOf(cell),
+        pan: this.panFor(cell),
+        ring: rings.get(cell) ?? 0,
+      }));
+      playSound({ kind: "open", cells, chord });
+    }
   }
 
   /** How many steps out from `origin` each opened cell is, walked over the
@@ -365,6 +382,10 @@ export class GameSession {
       if (this.game.state === "lost") {
         this.revealEndState();
         this.mesh.shake();
+        // At the mine, not at the click, for the same reason the blast is heard
+        // there: a chord detonates a neighbour, and the light belongs where it
+        // went off.
+        this.mesh.blastMarkers?.(this.geomFor(this.exploded ?? origin));
         haptic("lose");
         // At the mine, not at the click: a chord detonates a neighbour, and
         // the blast belongs where it went off.
