@@ -3,15 +3,12 @@ import {
   MENU,
   MENU_FAMILY_HINTS,
   MENU_FAMILY_LABELS,
-  MODE_LABELS,
   POLYHEDRA_MODES,
-  RECTANGLE_ARCH,
   SPHERE_MODES,
   flatMenuModes,
   menuFamilies,
   menuFamilyRows,
   menuTilingRows,
-  modeFor,
   threeDMenuModes,
 } from "../../src/boards/catalog";
 import { MODES, hasMode } from "../../src/boards/presets";
@@ -83,11 +80,10 @@ describe("picker pages", () => {
       "aperiodic",
       "fractal",
     ]);
-    expect(menuFamilies("cylinder")).toEqual(["uniform", "dual", "isogonal", "rectangle"]);
-    // the torus, Möbius strip and Klein bottle still drop the congruent
-    // rectangles (MANIFOLD_EXCLUDED_FAMILIES)
-    for (const surface of ["torus", "mobius", "klein"]) {
-      expect(menuFamilies(surface)).toEqual(["uniform", "dual", "isogonal"]);
+    // every manifold carries the same four families: only the plane has
+    // shaped boards to fill a Regular page, and aperiodic/fractal boards
+    for (const surface of ["cylinder", "torus", "mobius", "klein"]) {
+      expect(menuFamilies(surface)).toEqual(["uniform", "dual", "isogonal", "rectangle"]);
     }
   });
 
@@ -134,17 +130,7 @@ describe("menu reachability", () => {
     for (const mode of flatMenuModes()) add(mode); // the Flat pool, and Custom › Flat
     for (const mode of threeDMenuModes()) add(mode); // the 3D pool, and the rest of Custom
 
-    // The congruent-rectangle bonds still build and have labels on
-    // torus/mobius/klein, but menuFamilies keeps them off the menu there for
-    // now (see MANIFOLD_EXCLUDED_FAMILIES) — the one deliberate gap in
-    // reachability.
-    const offMenu = new Set<string>();
-    for (const surface of ["torus", "mobius", "klein"]) {
-      for (const key of RECTANGLE_ARCH) {
-        const mode = modeFor(key, surface);
-        if (mode in MODE_LABELS) offMenu.add(mode);
-      }
-    }
-    expect(reachable).toEqual(new Set(MODES.filter((m) => !offMenu.has(m))));
+    // no gaps: every mode this build knows is reachable from the menu
+    expect(reachable).toEqual(new Set(MODES));
   });
 });

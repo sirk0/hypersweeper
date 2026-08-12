@@ -88,15 +88,23 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   tilings, `family="uniform"` in `ARCH_TILINGS`), **Laves** (their
   eight duals), **Isogonal**, **Congruent rectangles** and, on the plane
   only, **Aperiodic** and **Fractals**. Every family is offered on every
-  surface its members' chirality allows, bar one: **Congruent rectangles**
-  is on the plane and the cylinder only. Those five bonds wrap the
-  torus/Möbius/Klein bottle without error, but their preset windows have
-  not been re-measured since `resize.corner_indices` taught the shape
-  metric to drop a T-vertex, and at the windows they have the wrap
-  distorts them too much to be worth playing — `_MANIFOLD_EXCLUDED_FAMILIES`
-  in `catalog.py` (and its mirror in `web/src/boards/catalog.ts`) is where
-  that one gap lives, and a `--mode` or a share link still reaches those
-  boards directly. `ARCH_TILINGS` is
+  surface its members' chirality allows, with no exceptions left:
+  `picker_families` in `catalog.py` (and its mirror in
+  `web/src/boards/catalog.ts`) now only drops the two flat-only families,
+  and everything else a surface refuses it refuses one row at a time, in
+  `family_rows`, on chirality. **Congruent rectangles** was the last gap,
+  off the torus/Möbius/Klein bottle because the wrap squashed its bricks;
+  what was really wrong was the measure that picked the windows, which
+  scored a tile on how *round* it was and so spent the surface's free axis
+  on squaring the rectangles off — on the stacked bond, whose adjacency is
+  the square tiling's already, that left a donut with no bricks left to
+  see. `resize.planar_shape` measures a window against the tiling's own
+  tile instead, and re-measured that way the same donut keeps them (see
+  "Size and mine-count convention" below). One caveat outlives the fix: the
+  Möbius immersion draws every board on it stretched 2 to 1 along the loop
+  (`mobius_half_width` is half the isometric width — every Möbius board in
+  the game has this, it is not the bonds'), so a 2-to-1 brick lands on the
+  strip as a 4-to-1 slat, and no window changes that. `ARCH_TILINGS` is
   listed in vertex-configuration order — Wikipedia's "List of Euclidean
   uniform tilings" order — and that registry order is the menu order.
   **To add a tiling or surface, see `AGENTS.md`** — a tiling is
@@ -139,7 +147,14 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   (single-point deduction plus exact frontier probabilities by a memoised
   DP) plays each board a few thousand times while a search moves the mine
   count onto the target; `scripts/difficulty/report.md` is the audit trail
-  and `targets.json` the measured classic yardstick. Rerun it for a new
+  and `targets.json` the measured classic yardstick. The size half of that
+  search (`resize.py`) picks the window whose cells come closest to their
+  **planar** shape, and "their own" is load-bearing: every measure of cell
+  shape here is a measure of *roundness*, which is the same thing only for
+  a tiling of regular polygons. `resize.planar_shape` measures the tiling's
+  own tile off its template and both the score and the no-regression bar
+  read the deviation from *that*, or a wrap that rounds a 2-to-1 brick off
+  into a square scores as an improvement. Rerun it for a new
   board rather than guessing (see `AGENTS.md`). Three consequences worth
   knowing. The first click is guaranteed to open a *zero*, not merely to
   miss a mine (`Game._place_mines`, with a fallback when a board is too
@@ -248,8 +263,8 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   described in the TypeScript section below. Classic
   launches flat squares; Flat (the plane) and each flat manifold (cylinder,
   Möbius, Klein, torus) open a shared tiling picker — the Regular / Uniform
-  / Laves family submenus, Isogonal, Congruent rectangles (the plane and the
-  cylinder only, as above), and Aperiodic and
+  / Laves family submenus, Isogonal and Congruent rectangles on every
+  surface, Aperiodic and
   Fractals on the plane only, and a random option
   — parameterised by the surface it was reached through; Sphere and
   Polyhedra list their finished boards. Navigation is a `path` breadcrumb

@@ -20,7 +20,6 @@ from minesweeper.boards import (  # noqa: E402
     SHAPED_MODES,
     SPHERE_MODES,
     TILINGS,
-    mode_for,
     picker_families,
     picker_modes,
 )
@@ -612,13 +611,10 @@ class TestMenu:
         self.click_item(menu, "manifolds")
         self.click_item(menu, "torus")
         assert menu.path == ["manifolds", "torus"]
-        # aperiodic is not offered on a wrapped surface, only on the plane;
-        # the congruent-rectangle bonds are off the menu on torus/mobius/klein
-        # for now (too distorted at the current preset windows -- see
-        # picker_families), leaving the cylinder as the only manifold that
-        # offers them
+        # aperiodic and fractal are not offered on a wrapped surface, only on
+        # the plane; every other family is offered on every manifold
         assert self.items(menu) == {"regular", "uniform", "dual", "isogonal",
-                                    "random"}
+                                    "rectangle", "random"}
         self.click_item(menu, "uniform")
         assert self.click_item(menu, "trihex") == ("start", "torustrihex")
 
@@ -685,17 +681,8 @@ class TestMenu:
             reach("sphere", mode)
         for mode in POLYHEDRA_MODES:
             reach("polyhedra", mode)
-        # the congruent-rectangle bonds still build and have labels on
-        # torus/mobius/klein (--mode reaches them directly) but
-        # picker_families keeps them off the menu there for now, so they are
-        # the one deliberate gap here
-        off_menu = {
-            mode_for(key, surface)
-            for surface in ("torus", "mobius", "klein")
-            for key in FAMILY_MEMBERS["rectangle"]
-            if mode_for(key, surface) in MODE_LABELS
-        }
-        assert reached == set(MODE_LABELS) - off_menu
+        # every mode with a label is reachable from the menu -- no gaps
+        assert reached == set(MODE_LABELS)
 
     def test_chiral_tiling_disabled_on_a_mirror_surface(self):
         # snub hexagonal is chiral, so it cannot wrap the Möbius strip or the
