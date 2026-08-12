@@ -29,6 +29,19 @@ export interface Timbre {
   decay: number;
   /** Keep only the odd partials (the hollow, square-ish tone of a chiptune). */
   oddOnly: boolean;
+  /** How far the grain's *brightness* falls by the time it ends, as a multiple
+   * of its own fundamental: the low-pass tracking each voice opens wide enough
+   * at the strike to pass every partial the tile's side count asked for, then
+   * closes to here.
+   *
+   * This is the difference between a struck thing and an oscillator. A real
+   * bar, bead or block loses its high partials far faster than its
+   * fundamental — brightness decays quicker than loudness — where a periodic
+   * wave under one envelope holds its eighth harmonic exactly as long as its
+   * first, which is the sound of a machine. The shape is still heard, because
+   * the attack is where a timbre is read: a hexagon opens with six partials
+   * whatever it closes to. */
+  close: number;
 }
 
 /** The shape of one grain of sound: how fast it arrives, how long it lasts and
@@ -98,6 +111,19 @@ export interface SoundPreset {
     rise: number;
     /** How much quieter each further ring is (per ring, floored at 35%). */
     falloff: number;
+    /** How far a ring's arrival wanders off the beat, as a fraction of
+     * `step` — and how far its level wanders, at a fifth of that.
+     *
+     * A cascade lands its rings on an exact grid of `step` ms at an exact
+     * level curve, which is a metronome: nothing struck by hand ever repeats
+     * that evenly, and the ear reads the regularity as machinery. The wobble
+     * is deterministic (a golden-ratio sequence on the ring number, so it
+     * never settles into a pattern of its own and `voicesFor` stays pure), it
+     * leaves the clicked cell exactly on the beat, and it stays under half a
+     * step so the wave still arrives in order.
+     *
+     * Arcade keeps its low: a chiptune is *supposed* to sound sequenced. */
+    swing: number;
   };
   /** Gain of the extra low grain a *chord* drops under the move — the one
    * move that opens several cells from an already-open one. */
@@ -128,6 +154,14 @@ export interface SoundPreset {
   };
   /** Noise mixed into the percussive voices, 0 (a pure tone) to 1. */
   noise: number;
+  /** Seconds over which that noise falls away on a tile's voice — the mallet
+   * hitting, rather than a hiss laid under the whole note. Held at a constant
+   * level for the length of the grain (which is what this used to do) noise
+   * reads as circuit hum; given its own fast decay it reads as contact, and
+   * it is most of what makes a soft sound sound *struck*. The mine's blast
+   * and the Klein scroll's rush want their noise sustained, so they leave
+   * this off. */
+  strike: number;
 }
 
 // The three collections. A pentatonic has no semitone and no tritone, so no
@@ -166,7 +200,7 @@ const CHIME: SoundPreset = {
   key: "chime",
   label: "Chime",
   hint: "Soft mallets, one note per tile shape",
-  timbre: { partialCap: 8, decay: 1.8, oddOnly: false },
+  timbre: { partialCap: 8, decay: 1.8, oddOnly: false, close: 2.2 },
   // The root is a triangle, and the roots are set so that the boards played
   // most keep their pitch through the retuning: a plain square board lands
   // within a semitone of where it used to ring in all three presets. A
@@ -175,8 +209,8 @@ const CHIME: SoundPreset = {
   rootHz: 1046,
   grid: PENTATONIC_BRIGHT,
   degrees: SPELLING,
-  open: { attack: 0.004, duration: 0.3, gain: 0.5 },
-  cascade: { step: 30, maxVoices: 14, rise: 0.5, falloff: 0.06 },
+  open: { attack: 0.016, duration: 0.34, gain: 0.5 },
+  cascade: { step: 30, maxVoices: 14, rise: 0.5, falloff: 0.06, swing: 0.55 },
   chordAccent: 1.2,
   flag: { attack: 0.003, duration: 0.17, gain: 0.45, interval: 5 },
   lose: {
@@ -194,6 +228,7 @@ const CHIME: SoundPreset = {
     noise: 0.1,
   },
   noise: 0.12,
+  strike: 0.05,
 };
 
 /** Square-wave blips: odd partials only, short and bright, with a noisy
@@ -204,12 +239,12 @@ const ARCADE: SoundPreset = {
   key: "arcade",
   label: "Arcade",
   hint: "Bright chiptune blips and a noisy blast",
-  timbre: { partialCap: 6, decay: 1.1, oddOnly: true },
+  timbre: { partialCap: 6, decay: 1.1, oddOnly: true, close: 5 },
   rootHz: 988,
   grid: PENTATONIC_DARK,
   degrees: SPELLING,
-  open: { attack: 0.002, duration: 0.13, gain: 0.34 },
-  cascade: { step: 24, maxVoices: 16, rise: 0.7, falloff: 0.05 },
+  open: { attack: 0.005, duration: 0.14, gain: 0.34 },
+  cascade: { step: 24, maxVoices: 16, rise: 0.7, falloff: 0.05, swing: 0.15 },
   chordAccent: 1.35,
   flag: { attack: 0.001, duration: 0.1, gain: 0.32, interval: 7 },
   lose: {
@@ -227,6 +262,7 @@ const ARCADE: SoundPreset = {
     noise: 0.05,
   },
   noise: 0.2,
+  strike: 0.03,
 };
 
 /** Wooden knocks: a low body under a lot of filtered noise, everything short.
@@ -236,14 +272,14 @@ const BLOCKS: SoundPreset = {
   key: "blocks",
   label: "Blocks",
   hint: "Dry wooden knocks, low and short",
-  timbre: { partialCap: 4, decay: 2.4, oddOnly: false },
+  timbre: { partialCap: 4, decay: 2.4, oddOnly: false, close: 1.6 },
   // Up from 340: the spelling descends three octaves, and at the old root a
   // 12- or 13-gon board sat under 50 Hz, which a phone cannot reproduce.
   rootHz: 415,
   grid: PENTATONIC_OPEN,
   degrees: SPELLING_OPEN,
-  open: { attack: 0.001, duration: 0.11, gain: 0.5 },
-  cascade: { step: 22, maxVoices: 18, rise: 0.25, falloff: 0.04 },
+  open: { attack: 0.005, duration: 0.15, gain: 0.5 },
+  cascade: { step: 22, maxVoices: 18, rise: 0.25, falloff: 0.04, swing: 0.6 },
   chordAccent: 1.3,
   flag: { attack: 0.001, duration: 0.09, gain: 0.44, interval: 4 },
   lose: {
@@ -261,6 +297,7 @@ const BLOCKS: SoundPreset = {
     noise: 0.45,
   },
   noise: 0.55,
+  strike: 0.035,
 };
 
 /** The presets, in the order the settings page lists them. */

@@ -68,7 +68,14 @@ export interface Voice {
   partials: number;
   /** Noise mixed in, 0 (a pure tone) to 1 (a pure hiss). */
   noise: number;
-  /** Low-pass cutoff over the whole grain, when it wants one. */
+  /** Seconds over which that noise falls away, when it is a *strike* rather
+   * than a texture: the mallet hitting the tile, gone long before the tone it
+   * started is. Absent, the noise holds for the whole grain, which is what the
+   * mine's blast and the Klein scroll's rush want. */
+  noiseDecay?: number;
+  /** Low-pass cutoff over the whole grain, when it wants one. Absent, the
+   * grain gets the tracking filter instead (`playVoice`), which opens on its
+   * own partials and closes to `timbre.close`. */
   cutoff?: number;
 }
 
@@ -135,20 +142,39 @@ function thin(cells: readonly CellSound[], max: number): CellSound[] {
   return out;
 }
 
+/** How far ring `n` wanders off the beat, -0.5..0.5. A golden-ratio sequence:
+ * deterministic, so `voicesFor` stays pure and its tests can pin it, but
+ * low-discrepancy, so it never settles into a pattern the ear can hear as a
+ * rhythm of its own. Ring 0 is exactly on the beat — that grain is the cell
+ * under the finger, and a click has to answer at once. */
+function swingOf(ring: number): number {
+  if (ring <= 0) return 0;
+  const x = ring * 0.6180339887498949;
+  return (x - Math.floor(x)) - 0.5;
+}
+
 function openVoice(preset: SoundPreset, cell: CellSound, ring: number): Voice {
   // Whole degrees of the grid, capped at an octave: the rings of a flood
   // overlap, so a fractional rise would put each one out of tune with the
   // last instead of stacking the collection.
   const rise = Math.min(preset.grid.length, Math.round(ring * preset.cascade.rise));
+  // Off the metronome. Held under half a step, so the wave still arrives in
+  // ring order however far out it goes.
+  const swing = swingOf(ring) * Math.min(0.49, preset.cascade.swing);
+  const beat = ((ring + swing) * preset.cascade.step) / 1000;
   return {
-    delay: Math.min(MAX_CASCADE_S, (ring * preset.cascade.step) / 1000),
+    delay: Math.max(0, Math.min(MAX_CASCADE_S, beat)),
     freq: semitones(preset.rootHz, gridNote(preset, degreeFor(preset, cell.sides) - rise)),
     pan: clampPan(cell.pan),
     duration: preset.open.duration,
     attack: preset.open.attack,
-    gain: preset.open.gain * Math.max(0.35, 1 - ring * preset.cascade.falloff),
+    gain:
+      preset.open.gain *
+      Math.max(0.35, 1 - ring * preset.cascade.falloff) *
+      (1 + swingOf(ring + 1) * preset.cascade.swing * 0.4),
     partials: partialsFor(preset, cell.sides),
     noise: preset.noise,
+    noiseDecay: preset.strike,
   };
 }
 
@@ -225,6 +251,7 @@ export function voicesFor(event: SoundEvent, preset: SoundPreset): Voice[] {
           gain: preset.flag.gain * (event.on ? 1 : 0.8),
           partials: partialsFor(preset, event.sides),
           noise: preset.noise * 0.5,
+          noiseDecay: preset.strike,
         },
       ];
     }
@@ -470,15 +497,23 @@ function playVoice(c: AudioContext, out: GainNode, v: Voice, t0: number, preset:
   env.gain.exponentialRampToValueAtTime(Math.max(v.gain, floor * 2), start + v.attack);
   env.gain.exponentialRampToValueAtTime(floor, end);
 
-  let tail: AudioNode = env;
-  if (v.cutoff != null) {
-    const filter = c.createBiquadFilter();
-    filter.type = "lowpass";
-    filter.frequency.setValueAtTime(v.cutoff, start);
-    filter.frequency.exponentialRampToValueAtTime(Math.max(60, v.cutoff * 0.2), end);
-    env.connect(filter);
-    tail = filter;
-  }
+  // Brightness falls faster than loudness. A struck bar, bead or block sheds
+  // its high partials in the first few tens of milliseconds and rings on at
+  // the fundamental; a periodic wave under one gain envelope holds its eighth
+  // harmonic exactly as long as its first, which is the sound of an
+  // oscillator rather than of a thing being hit. So every grain runs through
+  // a low-pass that opens wide enough to pass all the partials its side count
+  // asked for — the attack is where a timbre is read, so the shape still
+  // carries — and closes to `timbre.close` times its own fundamental.
+  const nyquist = c.sampleRate * 0.45;
+  const open = v.cutoff ?? Math.min(nyquist, v.freq * (v.partials + 1.5));
+  const shut = v.cutoff != null ? v.cutoff * 0.2 : v.freq * preset.timbre.close;
+  const filter = c.createBiquadFilter();
+  filter.type = "lowpass";
+  filter.frequency.setValueAtTime(Math.max(60, open), start);
+  filter.frequency.exponentialRampToValueAtTime(Math.max(60, Math.min(open, shut)), end);
+  env.connect(filter);
+  const tail: AudioNode = filter;
   // StereoPannerNode is the whole point of the feature, but it is also the one
   // node here an old WebKit may not have; without it the grain still sounds,
   // centred.
@@ -518,11 +553,23 @@ function playVoice(c: AudioContext, out: GainNode, v: Voice, t0: number, preset:
     src.buffer = noise(c);
     src.loop = true;
     const g = c.createGain();
-    g.gain.value = v.noise;
+    // A strike, not a hiss: on a tile's voice the noise is the mallet making
+    // contact, so it decays in its own few tens of milliseconds and leaves the
+    // tone ringing alone. Held flat under the whole grain — which is what this
+    // did, and what the mine's blast and the scroll's rush still want — it
+    // reads as circuit hum, and it is most of what made the soft presets sound
+    // synthetic.
+    const noiseEnd = v.noiseDecay != null ? Math.min(end, start + v.attack + v.noiseDecay) : end;
+    if (v.noiseDecay != null) {
+      g.gain.setValueAtTime(v.noise, start);
+      g.gain.exponentialRampToValueAtTime(0.0001, noiseEnd);
+    } else {
+      g.gain.value = v.noise;
+    }
     src.connect(g);
     g.connect(env);
     src.start(start);
-    src.stop(end + 0.02);
+    src.stop(noiseEnd + 0.02);
   }
 }
 

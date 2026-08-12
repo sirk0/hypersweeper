@@ -26,6 +26,7 @@ import {
 // left with nothing but node plumbing.
 
 const CHIME = SOUND_PRESETS["chime"]!;
+const BLOCKS = SOUND_PRESETS["blocks"]!;
 
 function cell(sides: number, pan = 0, ring = 0): CellSound {
   return { sides, pan, ring };
@@ -209,6 +210,53 @@ describe("a click versus a recursive opening", () => {
   it("says nothing when a move opened nothing", () => {
     expect(voicesFor({ kind: "open", cells: [] }, CHIME)).toEqual([]);
   });
+
+  it("lands the cascade off the beat rather than on a metronome", () => {
+    // Rings on an exact grid of `step` ms at an exact level curve is the
+    // sound of a sequencer. The wobble is deterministic — same board, same
+    // flood, same result — but low-discrepancy, so it never becomes a pattern
+    // of its own.
+    eachPreset((preset, key) => {
+      // Exactly the preset's budget, so nothing is thinned and grain `i` is
+      // ring `i`.
+      const wide = Array.from({ length: preset.cascade.maxVoices }, (_, ring) => cell(4, 0, ring));
+      const voices = voicesFor({ kind: "open", cells: wide }, preset);
+      const beats = voices.map((v) => (v.delay * 1000) / preset.cascade.step);
+      // The click itself is exactly on time — it is under the finger.
+      expect(beats[0], key).toBe(0);
+      const off = beats.filter((b) => Math.abs(b - Math.round(b)) > 1e-9);
+      expect(off.length, key).toBeGreaterThan(voices.length / 2);
+      // ...but never by so much that the wave arrives out of order, or early.
+      expect(beats, key).toEqual([...beats].sort((a, b) => a - b));
+      for (const b of beats) expect(b, key).toBeGreaterThanOrEqual(0);
+      for (let i = 0; i < beats.length; i++) {
+        expect(Math.abs(beats[i]! - i), `${key} ring ${i}`).toBeLessThan(0.5);
+      }
+      // The levels wander too, so no two rings are struck exactly alike.
+      const gains = new Set(voices.map((v) => v.gain));
+      expect(gains.size, key).toBe(voices.length);
+    });
+  });
+
+  it("makes a tile's noise a strike rather than a hiss under the note", () => {
+    // Noise held flat under the whole grain reads as hum; given its own fast
+    // decay it reads as the mallet making contact.
+    eachPreset((preset, key) => {
+      const [open] = voicesFor({ kind: "open", cells: [cell(4)] }, preset);
+      expect(open!.noiseDecay, key).toBe(preset.strike);
+      expect(open!.noiseDecay!, key).toBeLessThan(open!.duration);
+      const [flag] = voicesFor({ kind: "flag", on: true, sides: 4, pan: 0 }, preset);
+      expect(flag!.noiseDecay, key).toBe(preset.strike);
+      // The mine's blast and the Klein scroll's rush are textures, not
+      // contacts: their noise holds for the whole grain.
+      for (const v of voicesFor({ kind: "lose", pan: 0 }, preset)) {
+        expect(v.noiseDecay, key).toBeUndefined();
+      }
+      for (const v of voicesFor({ kind: "scroll", direction: 1 }, preset)) {
+        expect(v.noiseDecay, key).toBeUndefined();
+      }
+    });
+  });
 });
 
 describe("flags, mines and wins", () => {
@@ -350,11 +398,19 @@ interface FakeAudio {
   panners: FakeParam[];
   /** Every gain node built, in order — the first is the engine's master. */
   gains: FakeParam[];
+  /** Every low-pass built, in order: one per grain. */
+  filters: { type: string; frequency: FakeParam }[];
   buffers: number;
 }
 
 function fakeAudio(): FakeAudio {
-  const state: FakeAudio = { oscillators: [], panners: [], gains: [], buffers: 0 };
+  const state: FakeAudio = {
+    oscillators: [],
+    panners: [],
+    gains: [],
+    filters: [],
+    buffers: 0,
+  };
   class FakeContext {
     currentTime = 1;
     state = "running";
@@ -365,11 +421,11 @@ function fakeAudio(): FakeAudio {
       state.gains.push(gain);
       return { gain, connect: vi.fn() };
     };
-    createBiquadFilter = () => ({
-      type: "",
-      frequency: param(1000),
-      connect: vi.fn(),
-    });
+    createBiquadFilter = () => {
+      const filter = { type: "", frequency: param(1000), connect: vi.fn() };
+      state.filters.push(filter);
+      return filter;
+    };
     createStereoPanner = () => {
       const pan = param(0);
       state.panners.push(pan);
@@ -452,6 +508,48 @@ describe("playSound", () => {
     expect(osc.stopped[0]!).toBeGreaterThan(osc.started[0]!);
     expect(audio.panners).toHaveLength(1);
     expect(audio.panners[0]!.value).toBeCloseTo(-0.75);
+  });
+
+  it("closes each grain's brightness as it rings, but not its attack", async () => {
+    // The one rule that separates a struck thing from an oscillator: a real
+    // bar sheds its high partials long before its fundamental. Held under one
+    // gain envelope the eighth harmonic rings exactly as long as the first,
+    // and the ear hears a machine.
+    const audio = fakeAudio();
+    const engine = await loadEngine();
+    engine.setSoundPreset("chime");
+    engine.playSound({ kind: "open", cells: [cell(6)] });
+
+    expect(audio.filters).toHaveLength(1);
+    const { type, frequency } = audio.filters[0]!;
+    expect(type).toBe("lowpass");
+    const [opens, closes] = frequency.events;
+    const hex = noteFor(CHIME, 6);
+    // Open enough at the strike to pass all six of a hexagon's partials, so
+    // the tile's shape is still read from its attack...
+    expect(opens!.value).toBeGreaterThan(hex * 6);
+    // ...and shut to a couple of harmonics by the time it has rung out.
+    expect(closes!.value).toBeCloseTo(hex * CHIME.timbre.close);
+    expect(closes!.time).toBeGreaterThan(opens!.time);
+  });
+
+  it("lets the strike's noise go before the note it started", async () => {
+    const audio = fakeAudio();
+    const engine = await loadEngine();
+    engine.setSoundPreset("blocks"); // the noisiest of the three
+    engine.playSound({ kind: "open", cells: [cell(4)] });
+
+    expect(audio.buffers).toBe(1);
+    // The noise gain is the one that opens at full level and ramps away to
+    // nothing. The grain's own envelope also ends at nothing, but it *starts*
+    // there too — it has to rise through the attack first.
+    const noiseGain = audio.gains.find(
+      (g) => g.events.length > 1 && g.events[0]!.value > 0.01 && g.events.at(-1)!.value < 0.001,
+    );
+    expect(noiseGain, "the strike's noise decays").toBeDefined();
+    const span = noiseGain!.events.at(-1)!.time - noiseGain!.events[0]!.time;
+    expect(span).toBeCloseTo(BLOCKS.strike);
+    expect(span).toBeLessThan(BLOCKS.open.duration);
   });
 
   it("schedules a flood's grains in the future, spread out", async () => {

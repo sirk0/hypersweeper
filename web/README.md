@@ -1274,6 +1274,39 @@ Two consequences worth knowing before touching the numbers:
 `flag.interval` is the one pitch left in semitones. A flag is a lone gesture
 rather than part of a chord, so its glide is free to leave the grid.
 
+### Why it does not sound like a machine
+
+Being in tune is not the same as sounding soft, and three of the four things
+that made this read as *robotic* are not about pitch at all:
+
+- **Brightness has to fall faster than loudness.** A periodic wave under one
+  gain envelope holds its eighth harmonic exactly as long as its first, which
+  no struck object does — a bar, a bead or a block sheds its high partials in
+  the first few tens of milliseconds and rings on at the fundamental. Every
+  grain now runs through a low-pass that *tracks its own pitch*: open at
+  `freq * (partials + 1.5)` so the attack still passes every partial the side
+  count asked for, closing to `timbre.close` times the fundamental by the end.
+  Rendering a click through an `OfflineAudioContext` and measuring the
+  1.8–9 kHz band against the 200–900 Hz one: before, the ratio *rose* from
+  0.017 at the strike to 0.035 as the note decayed; now it falls to 0.005,
+  with the strike unchanged. The shape is still heard, because the attack is
+  where a timbre is read.
+- **Noise is a strike, not a hiss.** `preset.noise` used to hold flat under the
+  whole grain, which is the sound of circuit hum. `strike` gives it its own
+  fast decay, so it reads as the mallet making contact and is gone long before
+  the tone it started. The mine's blast and the Klein scroll's rush leave
+  `noiseDecay` off, because those two really are sustained textures.
+- **A cascade on an exact grid is a metronome.** `cascade.swing` wanders each
+  ring's arrival off the beat, and its level with it. It is deterministic — a
+  golden-ratio sequence on the ring number, so `voicesFor` stays pure and its
+  tests can pin it, and low-discrepancy, so it never settles into a rhythm of
+  its own. Ring 0 stays exactly on the beat (that grain is under the finger,
+  and a click has to answer at once) and the wobble stays under half a step,
+  so the wave still arrives in order. Arcade's is deliberately near zero: a
+  chiptune is *supposed* to sound sequenced.
+- **Attacks were clicks.** 1–4 ms onsets on a short grain read as a beep;
+  the soft presets are now 5–16 ms.
+
 Things that will bite:
 
 - **Audio cannot start without a user gesture.** A context built at load time

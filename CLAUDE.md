@@ -568,7 +568,19 @@ fifth, sixth or octave, so a new tiling cannot introduce a clash. The cascade's
 rise is in **whole degrees** for the same reason — as a fraction of a semitone
 per ring it put the ten overlapping rings of a flood a fifth of a tone apart,
 and no fixed semitone interval can be safe (a consonance plus two semitones is
-a tritone). Two traps: a browser
+a tritone). Being in tune is not the same as sounding **soft**, and what keeps
+this from reading as a machine is three rules in the player rather than in the
+pitch: every grain runs through a low-pass **tracking its own fundamental**
+(open at the strike so the tile's partial count is still heard, closed to
+`timbre.close` by the end — brightness falls faster than loudness, which is
+what a struck thing does and an oscillator does not); `strike` gives the
+grain's noise its own fast decay so it is the **mallet hitting** rather than a
+hiss laid under the note (the mine's blast and the scroll's rush keep theirs
+sustained); and `cascade.swing` wanders each ring off the beat and off the
+level curve, deterministically (a golden-ratio sequence on the ring number, so
+`voicesFor` stays pure), because a flood landing on an exact grid of `step` ms
+is a metronome. Arcade's swing is near zero on purpose — a chiptune should
+sound sequenced. Two traps: a browser
 will not start audio outside a user gesture (`unlockAudio` builds the context on
 the first pointer/key event — do not build it earlier), and a cascade is bounded
 twice (`cascade.maxVoices`, `MAX_ACTIVE_VOICES`) because the worst case is half
