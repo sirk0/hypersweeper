@@ -4411,12 +4411,12 @@
     },
     "torusbasketweave3": {
       "easy": {
-        "cellCount": 84,
-        "mineCount": 12,
+        "cellCount": 96,
+        "mineCount": 20,
         "euler": 0,
         "boundaryComponents": 0,
-        "edgeCount": 224,
-        "vertexCount": 140,
+        "edgeCount": 256,
+        "vertexCount": 160,
         "hasCellCycle": false
       },
       "medium": {
@@ -4498,12 +4498,12 @@
     },
     "kleinbasketweave3": {
       "easy": {
-        "cellCount": 78,
-        "mineCount": 12,
+        "cellCount": 84,
+        "mineCount": 15,
         "euler": 0,
         "boundaryComponents": 0,
-        "edgeCount": 208,
-        "vertexCount": 130,
+        "edgeCount": 224,
+        "vertexCount": 140,
         "hasCellCycle": true
       },
       "medium": {

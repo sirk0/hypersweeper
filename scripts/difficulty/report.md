@@ -58,7 +58,7 @@ Every board's mine count, chosen so its win probability under the reference solv
   - `kleintri`/medium: 28 abandoned
   - `toruselongated`/medium: 25 abandoned
 
-Densities run from 2.8% to 36.2% (median 16.7%) — the spread the old flat 14/16/19 per cent could not express.
+Densities run from 2.8% to 36.2% (median 16.9%) — the spread the old flat 14/16/19 per cent could not express.
 
 The only floor under the search is the **opening**: the fewest mines at which the first click alone stops finishing the board (`calibrate.opening_floor`). As a density that runs 1.3% to 16.7% across the zoo — which is why it is measured per board rather than set as a percentage.
 
@@ -116,7 +116,7 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `kisrhombille` | 14.2 | 72c 5m (7%) 91% ⚠ | 288c 21m (7%) 85% | 432c 50m (12%) 50% |
 | `klein` | 8.0 | 80c 14m (18%) 99% | 260c 55m (21%) 91% | 476c 126m (26%) 50% |
 | `kleinbasketweave` | 7.0 | 88c 12m (14%) 99% | 272c 50m (18%) 89% | 460c 107m (23%) 47% |
-| `kleinbasketweave3` | 6.7 | 78c 12m (15%) 97% | 252c 48m (19%) 85% | 456c 111m (24%) 51% |
+| `kleinbasketweave3` | 6.7 | 84c 15m (18%) 98% | 252c 48m (19%) 85% | 456c 111m (24%) 51% |
 | `kleincairo` | 7.0 | 78c 14m (18%) 95% | 250c 47m (19%) 88% | 490c 113m (23%) 50% |
 | `kleindeltoidal` | 9.0 | 72c 12m (17%) 95% | 240c 41m (17%) 87% | 468c 102m (22%) 48% |
 | `kleinelongated` | 10.0 | 78c 17m (22%) 93% | 264c 59m (22%) 84% | 486c 127m (26%) 48% |
@@ -189,7 +189,7 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `threescaletri` | 7.6 | 85c 12m (14%) 97% | 263c 45m (17%) 87% | 537c 115m (21%) 48% |
 | `torus` | 8.0 | 80c 14m (18%) 99% | 261c 42m (16%) 83% | 480c 123m (26%) 53% |
 | `torusbasketweave` | 7.0 | 80c 12m (15%) 98% | 256c 46m (18%) 89% | 480c 105m (22%) 51% |
-| `torusbasketweave3` | 6.7 | 84c 12m (14%) 99% | 252c 53m (21%) 88% | 480c 115m (24%) 51% |
+| `torusbasketweave3` | 6.7 | 96c 20m (21%) 95% | 252c 53m (21%) 88% | 480c 115m (24%) 51% |
 | `toruscairo` | 7.0 | 84c 12m (14%) 99% | 256c 47m (18%) 85% | 480c 105m (22%) 52% |
 | `torusdeltoidal` | 9.0 | 84c 12m (14%) 96% | 264c 44m (17%) 83% | 468c 102m (22%) 52% |
 | `toruselongated` | 10.0 | 84c 16m (19%) 98% | 270c 61m (23%) 86% | 486c 123m (25%) 52% |

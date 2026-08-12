@@ -3580,10 +3580,10 @@
       "args": {
         "easy": [
           "basketweave3",
-          7,
-          1,
-          12,
-          0.28
+          4,
+          2,
+          20,
+          0.52
         ],
         "medium": [
           "basketweave3",
@@ -3652,10 +3652,10 @@
       "args": {
         "easy": [
           "basketweave3",
-          13,
-          1,
-          12,
-          0.85
+          7,
+          2,
+          15,
+          1.3
         ],
         "medium": [
           "basketweave3",

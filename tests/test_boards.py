@@ -2233,10 +2233,10 @@ class TestWrappedArchimedean:
             "cylbasketweave": (80, 240, 504),
             "mobiusbasketweave": (72, 228, 460),
             "kleinbasketweave": (88, 272, 460),
-            "torusbasketweave3": (84, 252, 480),
+            "torusbasketweave3": (96, 252, 480),
             "cylbasketweave3": (90, 240, 462),
             "mobiusbasketweave3": (78, 270, 456),
-            "kleinbasketweave3": (78, 252, 456),
+            "kleinbasketweave3": (84, 252, 456),
             "torusherringbone": (80, 256, 480),
             "cylherringbone": (90, 250, 490),
         }

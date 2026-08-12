@@ -187,6 +187,30 @@ MIN_RING = 12
 # see, and every window it rejects is one of five.
 MIN_WRAP_DOMAINS = 4
 
+# ...and the same sentence again, measured on the tile instead of the domain:
+# no single tile may span more than a quarter of a direction that *closes*.
+#
+# The two are not the same bar, because a domain is not one tile. A window can
+# have plenty of domains round a loop and still hand one tile a huge slice of
+# the other one: the three-brick basket weave packs twelve cells into a 2x2
+# domain and six of them are a whole domain long, so one row of domains across
+# the tube gives those tiles **half the turn**. A tile is drawn flat, and a
+# flat quadrilateral spanning half a circle is a plate through its axis -- what
+# `torusbasketweave3` and `kleinbasketweave3` easy shipped as, a broken ring of
+# slabs with the tube missing between them. `MIN_WRAP_DOMAINS` cannot see it
+# (seven domains round the ring is plenty) and neither can cell distortion,
+# which measures each tile's own shape and finds those plates perfectly
+# well-proportioned.
+#
+# A quarter is where the shipped catalogue stops looking like a surface,
+# measured board by board: at half a turn the tile passes through the axis; at
+# a third (`toruskisrhombille`, `torusfloret`, `torusdeltoidal` easy) the ring
+# is visibly holed; at a quarter (`torustrihex`, `torusbasketweave` easy) it is
+# chunky but whole, and a dozen shipped rows sit exactly there. Applied to the
+# seam on every wrapped surface and to the tube as well on the closed ones --
+# a cylinder's rim and a Mobius band's edge are open, so only their seam turns.
+MAX_TILE_TURN = 0.25
+
 # And a *playability* bar, on the square-lattice donut and bottle only.
 #
 # A wrap direction six cells long is a ring the mines can slide around: with
@@ -491,6 +515,54 @@ def _tile_span(tiling: str) -> tuple[float, float]:
         _TILE_SPAN[tiling] = (statistics.median(widths) or 1.0,
                               statistics.median(heights) or 1.0)
     return _TILE_SPAN[tiling]
+
+
+_WIDEST_TILE: dict[str, tuple[float, float]] = {}
+
+
+def widest_tile(tiling: str) -> tuple[float, float]:
+    """The *biggest* tile's width and height, as fractions of one domain.
+
+    The median above answers "how many tiles is a domain"; this answers "how
+    much of a domain is one tile", which is the question a fold asks (see
+    ``MAX_TILE_TURN``). They part company exactly where a domain holds tiles of
+    very different sizes -- the three-brick basket weave's median height is a
+    sixth of its domain and its largest is a half.
+    """
+    if tiling not in _WIDEST_TILE:
+        from minesweeper.boards.tilings import _arch_template
+
+        template = _arch_template(tiling)
+        width = height = 0.0
+        for _name, refs in template.cells:
+            xs = [template.verts[tag][0] + dm * template.width
+                  for tag, dm, _dn in refs]
+            ys = [template.verts[tag][1] + dn * template.height
+                  for tag, _dm, dn in refs]
+            width = max(width, max(xs) - min(xs))
+            height = max(height, max(ys) - min(ys))
+        _WIDEST_TILE[tiling] = (width / template.width or 1.0,
+                                height / template.height or 1.0)
+    return _WIDEST_TILE[tiling]
+
+
+def _tile_turn(spec: dict, trial: list, axis: int) -> float:
+    """What fraction of a closing direction the widest tile spans.
+
+    Zero -- nothing to reject -- for the builders whose knobs count cells
+    rather than domain copies: there one tile *is* one step of the knob, so
+    ``MIN_RING`` and ``MIN_WRAP_CELLS`` already say this.
+    """
+    knobs = spec["size"]
+    if not spec.get("lead") or axis >= len(knobs):
+        return 0.0
+    copies = trial[knobs[axis]]
+    if not copies:
+        return float("inf")
+    try:
+        return widest_tile(trial[0])[axis] / copies
+    except Exception:
+        return 0.0
 
 
 def _wrap_cells(builder: str, spec: dict, trial: list, axis: int) -> float:
@@ -930,6 +1002,13 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
                 elif builder in SQUARE_LATTICE_CLOSED:
                     if min(trial[knobs[0]], trial[knobs[1]]) < MIN_WRAP_CELLS:
                         continue
+            # ...and no one tile taking a quarter turn or more of anything
+            # that closes: the seam always does, the tube only on a donut or
+            # a bottle (see MAX_TILE_TURN)
+            axes = (0, 1) if _closed_tube(builder) else (0,)
+            if any(_tile_turn(spec, trial, axis) > MAX_TILE_TURN + 1e-9
+                   for axis in axes):
+                continue
             # ...and a band no wider than the immersion will actually draw
             if _mobius_band_clamped(builder, spec, trial):
                 continue

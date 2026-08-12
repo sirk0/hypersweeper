@@ -154,7 +154,13 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   a tiling of regular polygons. `resize.planar_shape` measures the tiling's
   own tile off its template and both the score and the no-regression bar
   read the deviation from *that*, or a wrap that rounds a 2-to-1 brick off
-  into a square scores as an improvement. Rerun it for a new
+  into a square scores as an improvement. No measure of cell shape can see a
+  **fold**, though — a flat tile cutting through a donut's axis is perfectly
+  well-proportioned — so two separate bars rule those out: `MIN_WRAP_DOMAINS`
+  wants enough domains round the ring, and `MAX_TILE_TURN` keeps any one
+  *tile* to at most a quarter of a direction that closes, which is what a
+  domain count misses when a domain holds tiles of very different sizes.
+  Rerun it for a new
   board rather than guessing (see `AGENTS.md`). Three consequences worth
   knowing. The first click is guaranteed to open a *zero*, not merely to
   miss a mine (`Game._place_mines`, with a fallback when a board is too

@@ -554,6 +554,20 @@ hand-picked density is the one thing this game cannot get right by eye.
    square tiling's is a torus with nothing left to tell apart from `torus`.
    Measured against the template's own tile the same donut keeps them (2.11 to
    1 at 21x11), which is what put the family on all four manifolds.
+
+   **No cell-shape measure can see a fold, so a window needs the two bars that
+   can.** Cell distortion asks whether each tile is the shape it should be, and
+   a flat plate cutting through a donut's axis passes that with room to spare.
+   `MIN_WRAP_DOMAINS` keeps enough domains round the *ring*; `MAX_TILE_TURN`
+   keeps any one **tile** to at most a quarter of a direction that closes,
+   which is the same sentence measured on the thing that actually bends. They
+   catch different windows: the three-brick basket weave puts twelve cells in a
+   2x2 domain and six of them are a whole domain long, so `torusbasketweave3`
+   and `kleinbasketweave3` easy had seven and thirteen domains round the ring —
+   plenty — and one row across the tube, which handed those six tiles **half
+   the turn each** and drew both boards as a broken ring of slabs. Look at a
+   new wrapped board before believing its numbers; a fold photographs much
+   worse than it measures.
 2. **Mine count** — `scripts/difficulty/calibrate.py` plays the board a few
    thousand times with a reference solver and moves the mine count until the
    win rate matches the classic board's at that difficulty. Run it for the
