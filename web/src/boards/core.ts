@@ -6,6 +6,8 @@
 // only needs to be deterministic (a string sort), not identical to Python's
 // tuple sort — the conformance tests assert invariants, not order.
 
+import type { ClipPiece, Tri } from "./clipSolid";
+
 export type CellId = string;
 export type Vertex = [number, number];
 export type Vec3 = [number, number, number];
@@ -41,14 +43,19 @@ export interface Board {
 }
 
 /** Where an immersion passes through itself, the sheet that ends up *inside*
- * the other one caps the view down the hole. `field` is a signed function of a
- * board-space point — negative where the surface is enclosed and must not be
- * drawn — and `cells` lists the only cells it can touch, so the renderer clips
- * those few and leaves the rest of the board alone. Render-only: the cells,
- * their adjacency and the game are untouched. */
+ * the other one caps the view down the hole. `solid` is the enclosed region as
+ * the board is really drawn — see `clipSolid.ts`, which builds it out of the
+ * occluding sheet's own triangles so the cut lands on the exact polyline where
+ * the two drawn sheets meet — and `cells` lists the only cells it reaches, so
+ * the renderer cuts those few and leaves the rest of the board alone.
+ * Render-only: the cells, their adjacency and the game are untouched. */
 export interface SurfaceClip {
   cells: Set<CellId>;
-  field(p: Vec3): number;
+  solid: ClipPiece[];
+  /** The occluding sheet's own drawn triangles, which `solid` decomposes the
+   * inside of — kept so a test can measure the cut against the geometry it is
+   * meant to meet rather than against the derivation. */
+  occluder: Tri[];
 }
 
 export interface Board3D {

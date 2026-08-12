@@ -23,6 +23,15 @@ import {
   type SurfaceClip,
   type Vec3,
 } from "./core";
+import {
+  buildClipSolid,
+  fanTriangles,
+  pruneSolid,
+  reachesSolid,
+  trianglesArea,
+  trianglesBelow,
+  type Tri,
+} from "./clipSolid";
 import { archTemplate } from "./tilings";
 
 const mod = (a: number, b: number): number => ((a % b) + b) % b;
@@ -158,6 +167,14 @@ function kleinRecentre(positions: Positions): Vec3 {
 // wall stands in front of that patch, so cutting it away opens the hole up and
 // leaves the rest of the board as it was — the neck is still plainly seen
 // plunging through the belly, which is the self-intersection one wants to read.
+//
+// The two circles above are what the *immersion* does; what the board draws is
+// tiles, flat ones, so the drawn tube is the polygon inscribed in its circle.
+// Only the classification below (which sheet a cell is on) reads the circles —
+// the cut itself is made against the drawn triangles, in `clipSolid.ts`, which
+// is what keeps the two sheets meeting edge to edge instead of leaving a slit
+// along the self-intersection and eating the tiles at the bottom of the bottle,
+// where the two circles converge and the chords between them cross over.
 
 /** Centre of the neck's cross-section circle at `u`, in the x–z plane. */
 function neckCentreX(u: number): number {
@@ -188,53 +205,33 @@ function fatTubeDepth(p: Vec3, tubeScale: number): number {
   return Math.hypot(p[0] - neckCentreX(u), p[2]) - kleinTubeRadius(u, tubeScale);
 }
 
-// A crossing shallower than this is a tangency (the two cross-sections meet at
-// the bottom of the neck, where they are the same circle), not an overlap.
-const CLIP_EPSILON = 1e-6;
-
-/** Which sheet a cell is part of. Its *vertices* lie exactly on their own
+/** Which sheet of the neck a cell is part of, or null for the body (where no
+ * thin cross-section reaches). Its *vertices* lie exactly on their own
  * cross-section circle, so the sheet whose depths are nearer zero over the
  * whole polygon is the one it belongs to — unlike the centroid, which on a
  * coarse board sits a good way inside its own tube. */
-function onFatSheet(poly: readonly Vec3[], tubeScale: number): boolean {
+function neckSheet(poly: readonly Vec3[], tubeScale: number): "fat" | "thin" | null {
+  // The body sits at y >= 0 and touches y = 0 only along the two seams, so a
+  // cell is on the neck exactly when some vertex of it hangs below. Without
+  // that a body cell whose seam corner reads as depth 0 would join the tube
+  // and bound an enclosed region where there is nothing but the belly.
+  if (!poly.some((p) => p[1] < 0)) return null;
   let score = 0;
   for (const p of poly) {
     const thin = thinTubeDepth(p, tubeScale);
     if (!Number.isFinite(thin)) continue; // the body half: no thin section here
     score += Math.abs(thin) - Math.abs(fatTubeDepth(p, tubeScale));
   }
-  return score > 0;
+  return score > 0 ? "fat" : "thin";
 }
 
-/** Points spread over a polygon: its vertices, its centroid, and a barycentric
- * grid over each centroid-fan triangle. The cut patch can sit entirely inside
- * a big cell, so corners alone would miss it. */
-function polygonSamples(poly: readonly Vec3[], steps = 4): Vec3[] {
-  const centre = centroidOf(poly);
-  const out: Vec3[] = [centre, ...poly];
-  for (let e = 0; e < poly.length; e++) {
-    const a = poly[e]!;
-    const b = poly[(e + 1) % poly.length]!;
-    for (let i = 1; i < steps; i++) {
-      for (let j = 1; i + j < steps; j++) {
-        const wa = i / steps;
-        const wb = j / steps;
-        const wc = 1 - wa - wb;
-        out.push([
-          a[0] * wa + b[0] * wb + centre[0] * wc,
-          a[1] * wa + b[1] * wb + centre[1] * wc,
-          a[2] * wa + b[2] * wb + centre[2] * wc,
-        ]);
-      }
-    }
-  }
-  return out;
-}
-
-/** The clip for a Klein board: the field the renderer cuts its cells against,
- * plus the handful of cells the cut can reach (cells on the fat sheet with
- * some of their area inside the thin tube). `offset` is what `kleinRecentre`
- * subtracted, so the field takes board-space points. */
+/** The clip for a Klein board: the enclosed region the renderer cuts its cells
+ * against, plus the handful of cells the cut reaches. The region is built from
+ * the *drawn* triangles of the thin tube — the same centroid fan the renderer
+ * lays its opaque base layer down as — so a cell comes off exactly where the
+ * tube that is meant to hide it begins, on every tiling and at every size.
+ * `offset` is what `kleinRecentre` subtracted, so the sheet classification can
+ * read the immersion's own frame while the region stays in board space. */
 function kleinClip(
   cells: Cells,
   positions: Positions,
@@ -242,17 +239,43 @@ function kleinClip(
   tubeScale: number,
 ): SurfaceClip {
   const raw = (p: Vec3): Vec3 => [p[0] + offset[0], p[1] + offset[1], p[2] + offset[2]];
-  const field = (p: Vec3): number => thinTubeDepth(raw(p), tubeScale);
-  const clipped = new Set<CellId>();
+  const seam = -offset[1]; // board-space height of the immersion's own y = 0
+  const fat: [CellId, Vec3[]][] = [];
+  const tube: Tri[] = [];
   for (const [cell, keys] of cells) {
     const poly = keys.map((k) => positions.get(k)!);
+    const sheet = neckSheet(poly.map(raw), tubeScale);
     // Only the fat sheet is ever cut, so the thin tube the player looks down
     // stays whole — cutting that one instead would empty the hole out.
-    if (!onFatSheet(poly.map(raw), tubeScale)) continue;
-    if (polygonSamples(poly).some((p) => field(p) < -CLIP_EPSILON)) clipped.add(cell);
+    if (sheet === "fat") fat.push([cell, poly]);
+    else if (sheet === "thin") tube.push(...fanTriangles(poly, centroidOf(poly)));
   }
-  return { cells: clipped, field };
+  const occluder = trianglesBelow(tube, seam);
+  const whole = buildClipSolid(occluder);
+  const clipped = new Set<CellId>();
+  const reached: Vec3[][] = [];
+  for (const [cell, poly] of fat) {
+    const tris = fanTriangles(poly, centroidOf(poly));
+    // Exact rather than sampled: the enclosed patch can sit wholly inside one
+    // big cell, and a sliver off one corner is still a sliver that has to go.
+    if (reachesSolid(tris, whole, CLIP_MIN_AREA * trianglesArea(tris))) {
+      clipped.add(cell);
+      reached.push(poly);
+    }
+  }
+  // The whole tube's interior is decomposed to find those cells; only the part
+  // of it near them is ever subtracted from anything, and the rest is a few
+  // thousand pieces a phone would carry around for the length of the game.
+  return { cells: clipped, solid: pruneSolid(whole, reached), occluder };
 }
+
+/** Below this share of its own area a cell is not worth cutting. All round the
+ * bottom of the bottle the tube's rim *is* the other sheet's rim — they share
+ * their vertices — so the two meet in slivers that are rounding rather than
+ * geometry, and re-cutting a cell to drop a ten-thousandth of it buys nothing
+ * but triangles. What is left uncut is inside the tube, where it cannot be
+ * seen; leaving a hair too much is the safe way to be wrong. */
+const CLIP_MIN_AREA = 1e-4;
 
 interface AssembleOpts {
   twoSided: boolean;

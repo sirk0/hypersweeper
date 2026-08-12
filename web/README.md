@@ -557,7 +557,9 @@ Practical knowledge for verifying changes by actually running the app
   helpers), `tilings.ts` (the flat regular builders), `aperiodic.ts` /
   `fractal.ts` (the aperiodic tilings and the self-similar boards), `solids.ts`
   (the closed 3D boards), `surfaces.ts` (the torus/cylinder/Möbius/Klein wraps,
-  the Klein `cellCycle` and its self-intersection `clip`), `catalog.ts` /
+  the Klein `cellCycle` and its self-intersection `clip`), `clipSolid.ts` (what
+  that clip cuts against — the region the *drawn* neck encloses, exactly; see
+  "The Klein bottle's self-intersection" below), `catalog.ts` /
   `presets.ts` (read `data/*.json`).
 - `src/render/` — one Three.js pipeline: `renderer.ts` (scene, ortho +
   perspective cameras, trackball rotation, resize, picking),
@@ -569,11 +571,11 @@ Practical knowledge for verifying changes by actually running the app
   closed cell is a raised button, an opened one is re-cut in place as a
   recess, which is what makes the two tell apart on a flat board lit
   head-on, where colour alone shades every face identically), `glyphAtlas.ts`
-  (canvas-baked digit/flag/mine texture), `clip.ts` (cutting drawn triangles
-  against a `SurfaceClip` field — how the Klein bottle drops the sheet its
-  own neck encloses, so looking into the hole shows the tube instead of a
-  cap; the surface outside the neck is untouched, so the self-intersection
-  still reads from every other angle), `animations.ts` (the shared
+  (canvas-baked digit/flag/mine texture), `clip.ts` (the renderer's face of
+  the `SurfaceClip` — how the Klein bottle drops the sheet its own neck
+  encloses, so looking into the hole shows the tube instead of a cap; the
+  surface outside the neck is untouched, so the self-intersection still reads
+  from every other angle), `animations.ts` (the shared
   reveal-ripple / flag-drop / flag-pop / lose-shake / win-wave clock).
 - `src/session.ts` — `GameSession`: Game ↔ mesh ↔ HUD.
 - `src/input/controls.ts` — pointer/touch state machine (tap, long-press,
@@ -774,6 +776,89 @@ in two renderers. Four things to know before adding or retuning one:
 Cell styles are **not** in `data/ui/screens.json`: they are geometry for this
 renderer, with no pygame counterpart for the shared config to keep in step. The
 themes that name them are not there either, for the same reason — see below.
+
+## The Klein bottle's self-intersection (`src/boards/clipSolid.ts`)
+
+The Klein bottle cannot be embedded in three dimensions, so its immersion passes
+through itself: the neck dives through the belly, and the patch of the far sheet
+that ends up *inside* the neck caps the view down the bore. `kleinClip` in
+`surfaces.ts` picks that patch out and the renderer cuts it away, which is what
+makes the hole read as a hole.
+
+**Cut against the drawn tube, never the smooth one.** The board is drawn as flat
+tiles, so the neck as drawn is a *polygon* inscribed in the circle the immersion
+stands for — inside it everywhere but at its corners, and by a good margin on a
+coarse board. Cutting against the circle is therefore wrong in two visible ways,
+and both were shipped for a while:
+
+- **At the bottom of the bottle** the two sheets converge on one circle (they
+  meet at the fold, where the neck turns back on itself). The chords the tiles
+  are drawn as cross over there, so the circle-shaped cut took bites out of
+  tiles that nothing stands in front of — holes one could see the far side of
+  the board through, worst on the coarsest boards, where the chords are deepest.
+- **Along the self-intersection** the cut edge followed the circle while the
+  tube meant to hide it followed the chords, leaving a slit between them.
+
+Cutting against the drawn triangles fixes both by construction: whatever comes
+off is behind the tube, because the tube is what defined it. The cut is a
+different polyline on every tiling and at every size, which is the point — it is
+the tessellation's own crossing, not an idealisation of it.
+
+**How the region is built.** The neck's cross-sections are horizontal, which is
+the lever:
+
+1. Slice the drawn tube at every height one of its vertices sits at. Inside such
+   a **slab** every triangle either spans the full height or is absent — there
+   is no vertex in between for it to start or stop at.
+2. Over one slab the tube is a band around its axis, so what it encloses splits
+   into one **wedge** per triangle: the angular sector that triangle spans,
+   floored and ceiled by the slab and walled by the triangle's own plane. Two
+   triangles sharing an edge share the sector wall through it, so the wedges
+   tile the interior with no gap and no overlap. That matters because the region
+   is nowhere near convex — a cell is fanned from its centroid, which on a
+   coarse board sits well inside the ring of its corners, so the tube's own
+   cross-section is a **star**, dipping inward between every pair of corners. A
+   single convex bound per slab leaves those dips uncut, and on the coarsest
+   boards that is most of the cap.
+3. A polygon minus a convex piece decomposes into convex parts
+   (`P \ ∩Hᵢ = ⋃ᵢ P ∩ H₁ ∩ … ∩ Hᵢ₋₁ ∩ ¬Hᵢ`), so subtracting the union is a run
+   of half-space clips — exact, with no sampling and no subdivision, and with
+   the crossing points on a shared edge coming out identical for both cells, so
+   the cut never cracks.
+
+Traps, all of them paid for:
+
+- **A wedge's walls are pinned at its slab's mid height** and the crossing
+  drifts as the tube leans, so a wedge is only exactly its triangle's sector in
+  the middle of its slab. `SLAB_STEP` splits a tall slab into steps to shrink
+  that drift with it; it is the one approximation left, and it is what lets a
+  four-domain board (a tube two rows tall) come out as sharp as a forty-domain
+  one.
+- **A flat cell lying in a slab's own floor** — the fold at the bottom of the
+  bottle is horizontal, and the slabs are cut at exactly the heights its
+  vertices sit at — must be settled before it is clipped, or it comes out both
+  peeled off and kept, and is drawn twice. `subtractConvex` classifies a plane
+  the polygon only touches as one that takes nothing, and the bounding-box tests
+  count touching as reaching for the same reason.
+- **The occluder stops at the seam.** The neck runs on past its own tube into
+  the belly, and up there it is no longer one loop per height; there is nothing
+  left to cut either, the other sheet ending at the same seam.
+- **`CLIP_MIN_AREA` is a floor on what is worth cutting.** All round the bottom
+  the tube's rim *is* the other sheet's rim — they share their vertices — so the
+  two meet in slivers that are rounding rather than geometry. Re-cutting a cell
+  to drop a ten-thousandth of it buys nothing but triangles, and what is left
+  uncut is inside the tube where it cannot be seen: leaving a hair too much is
+  the safe way to be wrong, and cutting a hair too much is the way that shows.
+- **The decomposition is pruned to the cells that are cut.** The whole tube's
+  interior is decomposed to *find* those cells, and only the part of it near
+  them is ever subtracted from anything; the rest would be a few thousand pieces
+  a phone carries around for the length of the game.
+
+`SurfaceClip.occluder` keeps the tube's own triangles, so a test can measure the
+cut against the geometry it is meant to meet rather than against the derivation
+of it — `insideOccluder` is an independent parity test through the drawn
+cross-section, and `tests/unit/clipSolid.test.ts` and `surfaces.test.ts` pin the
+two answers together.
 
 ## 3D markers (`src/render/markers3d.ts`)
 
