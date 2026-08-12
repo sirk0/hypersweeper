@@ -240,8 +240,9 @@ areas sum to its own (no gaps, no overlaps). `TestWrappedArchimedean` covers
 the wrapped surfaces the same way it does for the uniform/dual families.
 
 A brand new *family* with no wrap builders yet can still stay flat-only by
-adding its name to `catalog._FLAT_ONLY_FAMILIES` (empty today, since isogonal
-and rectangle both wrap); that flag is per family, not per tiling.
+adding its name to `catalog.FLAT_ONLY_FAMILIES` (the aperiodic and fractal
+boards, which have no periodic domain to glue a seam with — every family that
+*is* a tiling registry wraps); that flag is per family, not per tiling.
 
 ## Recipe: add a congruent-rectangle bond
 
@@ -539,6 +540,42 @@ hand-picked density is the one thing this game cannot get right by eye.
    out. The bar is a no-regression bar, so it then defended the stretched
    window against every good one, which is how six isogonal wraps came to be
    too distorted to put on the menu.
+
+   **A tiling whose tile is not near-regular needs measuring against its own
+   tile, not against a circle** (`resize.planar_shape`, read by both the score
+   and that same bar). Cell distortion scores a tile against the regular
+   polygon of its side count and the edge ratio against one with equal sides,
+   so for a tiling of regular polygons "closest to its planar shape" and
+   "roundest" are the same instruction — and for the congruent-rectangle bonds
+   they are opposite ones. A 2-to-1 brick scores 1.13 undistorted, so the
+   search read *squaring it off* as an improvement and spent the surface's
+   free axis doing exactly that: the stacked-bond donut drew its rectangles at
+   1.48 to 1, squarer than the plane, which on a tiling whose adjacency is the
+   square tiling's is a torus with nothing left to tell apart from `torus`.
+   Measured against the template's own tile the same donut keeps them (2.11 to
+   1 at 21x11), which is what put the family on all four manifolds.
+
+   **No cell-shape measure can see a fold, so a window needs the two bars that
+   can.** Cell distortion asks whether each tile is the shape it should be, and
+   a flat plate cutting through a donut's axis passes that with room to spare.
+   `MIN_WRAP_DOMAINS` keeps enough domains round the *ring*; `MAX_TILE_TURN`
+   keeps any one **tile** to at most a quarter of a direction that closes,
+   which is the same sentence measured on the thing that actually bends. They
+   catch different windows: the three-brick basket weave puts twelve cells in a
+   2x2 domain and six of them are a whole domain long, so `torusbasketweave3`
+   and `kleinbasketweave3` easy had seven and thirteen domains round the ring —
+   plenty — and one row across the tube, which handed those six tiles **half
+   the turn each** and drew both boards as a broken ring of slabs. Twenty more
+   donut and bottle easy rows were folded the same way, one row of domains
+   across the tube apiece, and moved when the bar arrived — mostly from 84
+   cells to 96, which is the step the geometry forces once the tube costs a
+   whole second domain, and twice much further (`toruskisrhombille` and
+   `kleinkisrhombille` easy cannot be built under 192, `torussnubhex` under
+   144, so those three are `EXEMPT_ROWS` in `tests/test_presets.py`). Look at
+   a new wrapped board before believing its numbers; a fold photographs much
+   worse than it measures.
+   `TestWrappedWindowsDoNotFold` reads the rule back off the shipped presets,
+   so a hand-edited window cannot put one back.
 2. **Mine count** — `scripts/difficulty/calibrate.py` plays the board a few
    thousand times with a reference solver and moves the mine count until the
    win rate matches the classic board's at that difficulty. Run it for the

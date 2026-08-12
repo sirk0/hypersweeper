@@ -171,16 +171,6 @@
         "reason": "the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (5, 6%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win"
       }
     },
-    "torusstackedbond": {
-      "easy": {
-        "level": "warn",
-        "winRate": 0.7743,
-        "target": 0.965,
-        "indistinguishable": 0,
-        "cells": 84,
-        "reason": "the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (9, 11%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win"
-      }
-    },
     "torustriakis": {
       "hard": {
         "level": "blocked",

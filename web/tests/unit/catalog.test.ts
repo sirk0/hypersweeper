@@ -3,7 +3,6 @@ import {
   DUAL_ARCH,
   ISOGONAL_ARCH,
   MENU,
-  MODE_LABELS,
   POLYHEDRA_MODES,
   RECTANGLE_ARCH,
   SPHERE_MODES,
@@ -11,7 +10,6 @@ import {
   TILINGS_BY_KEY,
   UNIFORM_ARCH,
   familyRows,
-  modeFor,
   pickerFamilies,
   tilingAllows,
 } from "../../src/boards/catalog";
@@ -77,13 +75,10 @@ describe("catalog families", () => {
       expect(tilingAllows(tiling, SURFACES.get("mobius")!)).toBe(wantMirror);
       expect(tilingAllows(tiling, SURFACES.get("klein")!)).toBe(wantMirror);
     }
-    // Off the menu on torus/mobius/klein for now: unlike the isogonal family
-    // above, these windows have not been re-measured.
-    for (const surface of ["flat", "cylinder"]) {
+    // ...and, since the windows were re-measured against the bond's own
+    // brick rather than against a regular polygon, on the menu of every one.
+    for (const surface of ["flat", "cylinder", "torus", "mobius", "klein"]) {
       expect(pickerFamilies(surface)).toContain("rectangle");
-    }
-    for (const surface of ["torus", "mobius", "klein"]) {
-      expect(pickerFamilies(surface)).not.toContain("rectangle");
     }
     expect(familyRows("rectangle", "flat").map((r) => r.mode)).toEqual([...RECTANGLE_ARCH]);
   });
@@ -173,17 +168,7 @@ describe("menu reachability", () => {
     }
     for (const m of SPHERE_MODES) add(m);
     for (const m of POLYHEDRA_MODES) add(m);
-    // The congruent-rectangle bonds still build and have labels on
-    // torus/mobius/klein, but pickerFamilies keeps them off the menu there for
-    // now (see MANIFOLD_EXCLUDED_FAMILIES) — the one deliberate gap in
-    // reachability.
-    const offMenu = new Set<string>();
-    for (const surface of ["torus", "mobius", "klein"]) {
-      for (const key of RECTANGLE_ARCH) {
-        const mode = modeFor(key, surface);
-        if (mode in MODE_LABELS) offMenu.add(mode);
-      }
-    }
-    expect(reachable).toEqual(new Set(MODES.filter((m) => !offMenu.has(m))));
+    // no gaps: every mode this build knows is reachable from the menu
+    expect(reachable).toEqual(new Set(MODES));
   });
 });

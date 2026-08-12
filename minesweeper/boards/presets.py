@@ -136,14 +136,14 @@ _PRESETS: dict = {}
 ARCH_PRESETS = {
     "elongated": {
         "flat": {"easy": (6, 2, 5, 65.143), "medium": (11, 3, 26, 39.417), "hard": (17, 5, 92, 25.0)},
-        "torus": {"easy": (14, 1, 16, 0.28), "medium": (15, 3, 61, 0.52), "hard": (27, 3, 123, 0.38)},
+        "torus": {"easy": (7, 2, 18, 0.52), "medium": (15, 3, 61, 0.52), "hard": (27, 3, 123, 0.38)},
         "cylinder": {"easy": (13, 1 + 1 / (2 + ROOT3), 6), "medium": (23, 1.5 + 1 / (2 + ROOT3), 33), "hard": (32, 2.5 + 1 / (2 + ROOT3), 99)},
         "mobius": {"easy": (13, 1 + 1 / (2 + ROOT3), 6), "medium": (22, 2 + 1 / (2 + ROOT3), 44), "hard": (32, 2 + 1 / (2 + ROOT3), 83)},
-        "klein": {"easy": (13, 1, 17, 0.85), "medium": (22, 2, 59, 0.85), "hard": (27, 3, 127, 1.15)},
+        "klein": {"easy": (7, 2, 16, 1.3), "medium": (22, 2, 59, 0.85), "hard": (27, 3, 127, 1.15)},
     },
     "snubsquare": {
         "flat": {"easy": (4, 3, 9, 54), "medium": (6, 6, 35, 38.217), "hard": (9, 9, 107, 26.149)},
-        "torus": {"easy": (7, 2, 9, 0.28), "medium": (11, 4, 63, 0.33), "hard": (16, 5, 129, 0.28)},
+        "torus": {"easy": (5, 3, 20, 0.52), "medium": (11, 4, 63, 0.33), "hard": (16, 5, 129, 0.28)},
         "cylinder": {"easy": (7, 2, 12), "medium": (11, 3.5, 38), "hard": (16, 5, 108)},
         "mobius": {"easy": (13, 2, 12), "medium": (19, 4, 41), "hard": (27, 6, 112)},
         "klein": {"easy": (9, 3, 18, 1.3), "medium": (21, 4, 62, 1.3), "hard": (27, 6, 132, 1.3)},
@@ -157,7 +157,7 @@ ARCH_PRESETS = {
     },
     "snubhex": {
         "flat": {"easy": (2, 2, 8, 56.737), "medium": (5, 3, 32, 33), "hard": (7, 4, 104, 23.771)},
-        "torus": {"easy": (5, 1, 18, 0.38), "medium": (7, 2, 51, 0.45), "hard": (8, 3, 107, 0.49)},
+        "torus": {"easy": (4, 2, 26, 0.52), "medium": (7, 2, 51, 0.45), "hard": (8, 3, 107, 0.49)},
         "cylinder": {"easy": (5, 11 / 14, 7), "medium": (8, 1 + 11 / 14, 36), "hard": (12, 2 + 2 / 7, 98)},
     },
     "truncsquare": {
@@ -169,34 +169,34 @@ ARCH_PRESETS = {
     },
     "trunchex": {
         "flat": {"easy": (4, 3, 4, 26.6), "medium": (8, 5, 13, 14), "hard": (12, 7, 38, 9.308)},
-        "torus": {"easy": (7, 2, 5, 0.45), "medium": (14, 3, 16, 0.35), "hard": (20, 4, 40, 0.33)},
+        "torus": {"easy": (5, 3, 6, 0.52), "medium": (14, 3, 16, 0.35), "hard": (20, 4, 40, 0.33)},
         "cylinder": {"easy": (9, 1.5, 4), "medium": (15, 3, 13), "hard": (21, 4, 37)},
         "mobius": {"easy": (9, 1.5, 4), "medium": (15, 2.5, 11), "hard": (20, 3.5, 30)},
-        "klein": {"easy": (7, 2, 5, 1.0), "medium": (14, 3, 17, 1.15), "hard": (16, 5, 45, 1.3)},
+        "klein": {"easy": (5, 3, 6, 1.3), "medium": (14, 3, 17, 1.15), "hard": (16, 5, 45, 1.3)},
     },
     "rhombitrihex": {
         "flat": {"easy": (3, 2, 6, 48.457), "medium": (6, 3, 24, 26.53), "hard": (8, 5, 69, 19.979)},
-        "torus": {"easy": (7, 1, 9, 0.28), "medium": (11, 2, 37, 0.28), "hard": (13, 3, 81, 0.38)},
+        "torus": {"easy": (4, 2, 14, 0.52), "medium": (11, 2, 37, 0.28), "hard": (13, 3, 81, 0.38)},
         "cylinder": {"easy": (6, 1 + 1 / 6, 6), "medium": (11, 2 + 1 / 6, 23), "hard": (15, 2 + 2 / 3, 60)},
         "mobius": {"easy": (6, 1 + 1 / 6, 6), "medium": (11, 2 + 1 / 6, 21), "hard": (14, 3 + 1 / 6, 68)},
-        "klein": {"easy": (7, 1, 10, 0.7), "medium": (11, 2, 37, 0.85), "hard": (13, 3, 83, 1.15)},
+        "klein": {"easy": (4, 2, 11, 1.3), "medium": (11, 2, 37, 0.85), "hard": (13, 3, 83, 1.15)},
     },
     "trunctrihex": {
         "flat": {"easy": (3, 2, 9, 27.89), "medium": (6, 3, 30, 14.864), "hard": (8, 5, 83, 11.25)},
-        "torus": {"easy": (6, 1, 12, 0.33), "medium": (11, 2, 41, 0.28), "hard": (13, 3, 87, 0.38)},
+        "torus": {"easy": (4, 2, 13, 0.52), "medium": (11, 2, 41, 0.28), "hard": (13, 3, 87, 0.38)},
         "cylinder": {"easy": (5, 1 + 5 / 12, 6), "medium": (11, 1 + 11 / 12, 21), "hard": (15, 2 + 11 / 12, 71)},
         "mobius": {"easy": (5, 1 + 5 / 12, 5), "medium": (10, 2 + 5 / 12, 27), "hard": (15, 2 + 5 / 12, 54)},
-        "klein": {"easy": (7, 1, 12, 0.7), "medium": (11, 2, 42, 0.85), "hard": (13, 3, 89, 1.3)},
+        "klein": {"easy": (4, 2, 14, 1.3), "medium": (11, 2, 42, 0.85), "hard": (13, 3, 89, 1.3)},
     },
     # Laves (dual) tilings: same fundamental domain as the Archimedean tiling
     # they dualise, so the windows/seams carry over; only the mine counts are
     # retuned to the dual's (different) tile counts.
     "prismaticpent": {
         "flat": {"easy": (9, 2, 10, 45.6), "medium": (14, 4, 40, 31.533), "hard": (21, 6, 105, 20.455)},
-        "torus": {"easy": (20, 1, 11, 0.28), "medium": (21, 3, 58, 0.45), "hard": (40, 3, 118, 0.28)},
+        "torus": {"easy": (11, 2, 19, 0.52), "medium": (21, 3, 58, 0.45), "hard": (40, 3, 118, 0.28)},
         "cylinder": {"easy": (15, 1.5, 14), "medium": (27, 2.5, 51), "hard": (38, 3, 101)},
         "mobius": {"easy": (18, 1, 8), "medium": (28, 2, 43), "hard": (37, 3, 98)},
-        "klein": {"easy": (19, 1, 10, 0.7), "medium": (21, 3, 56, 1.3), "hard": (40, 3, 116, 0.85)},
+        "klein": {"easy": (10, 2, 17, 1.3), "medium": (21, 3, 56, 1.3), "hard": (40, 3, 116, 0.85)},
     },
     "cairo": {
         "flat": {"easy": (4, 5, 8, 54), "medium": (8, 8, 24, 28.559), "hard": (11, 11, 81, 21.226)},
@@ -214,15 +214,15 @@ ARCH_PRESETS = {
     },
     "floret": {
         "flat": {"easy": (3, 2, 7, 44), "medium": (6, 4, 37, 26.591), "hard": (8, 5, 81, 20.414)},
-        "torus": {"easy": (7, 1, 12, 0.28), "medium": (11, 2, 47, 0.28), "hard": (13, 3, 97, 0.38)},
+        "torus": {"easy": (4, 2, 16, 0.52), "medium": (11, 2, 47, 0.28), "hard": (13, 3, 97, 0.38)},
         "cylinder": {"easy": (7, 1, 9), "medium": (11, 2, 41), "hard": (15, 2.5, 81)},
     },
     "tetrakis": {
         "flat": {"easy": (3, 6, 5, 43.5), "medium": (8, 8, 27, 24.938), "hard": (11, 12, 59, 17.609)},
-        "torus": {"easy": (7, 3, 7, 0.52), "medium": (16, 4, 29, 0.28), "hard": (16, 7, 68, 0.45)},
+        "torus": {"easy": (5, 4, 9, 0.52), "medium": (16, 4, 29, 0.28), "hard": (17, 7, 68, 0.45)},
         "cylinder": {"easy": (9, 2, 8), "medium": (14, 5, 26), "hard": (19, 6, 69)},
         "mobius": {"easy": (10, 2, 8), "medium": (14, 5, 28), "hard": (19, 6, 69)},
-        "klein": {"easy": (7, 3, 9, 1.3), "medium": (21, 3, 24, 0.7), "hard": (24, 5, 67, 0.85)},
+        "klein": {"easy": (5, 4, 9, 1.3), "medium": (16, 4, 29, 0.85), "hard": (24, 5, 67, 0.85)},
     },
     "triakis": {
         "flat": {"easy": (3, 2, 10, 35.286), "medium": (5, 4, 40, 21.359), "hard": (8, 5, 98, 13.588)},
@@ -233,17 +233,17 @@ ARCH_PRESETS = {
     },
     "deltoidal": {
         "flat": {"easy": (3, 2, 6, 49.692), "medium": (5, 4, 28, 31.767), "hard": (8, 5, 84, 20.212)},
-        "torus": {"easy": (7, 1, 12, 0.28), "medium": (11, 2, 44, 0.28), "hard": (13, 3, 102, 0.38)},
+        "torus": {"easy": (4, 2, 13, 0.52), "medium": (11, 2, 44, 0.28), "hard": (13, 3, 102, 0.38)},
         "cylinder": {"easy": (6, 1, 10), "medium": (11, 2, 42), "hard": (15, 2.5, 91)},
         "mobius": {"easy": (6, 1, 10), "medium": (11, 2, 39), "hard": (13, 3, 95)},
-        "klein": {"easy": (6, 1, 12, 0.85), "medium": (10, 2, 41, 1.0), "hard": (13, 3, 102, 1.15)},
+        "klein": {"easy": (4, 2, 13, 1.3), "medium": (10, 2, 41, 1.0), "hard": (13, 3, 102, 1.15)},
     },
     "kisrhombille": {
         "flat": {"easy": (3, 1, 5, 28), "medium": (4, 3, 21, 22.5), "hard": (6, 3, 50, 15.167)},
-        "torus": {"easy": (4, 1, 6, 0.45), "medium": (6, 2, 26, 0.52), "hard": (10, 2, 68, 0.33)},
+        "torus": {"easy": (4, 2, 12, 0.52), "medium": (6, 2, 26, 0.52), "hard": (10, 2, 68, 0.33)},
         "cylinder": {"easy": (6, 0.5, 5), "medium": (8, 1.5, 17), "hard": (10, 2, 52)},
         "mobius": {"easy": (6, 1, 7), "medium": (10, 1, 15), "hard": (11, 2, 52)},
-        "klein": {"easy": (4, 1, 9, 1.3), "medium": (6, 2, 29, 1.3), "hard": (10, 2, 68, 1.0)},
+        "klein": {"easy": (4, 2, 12, 1.3), "medium": (6, 2, 29, 1.3), "hard": (10, 2, 68, 1.0)},
     },
     # The isogonal (non-edge-to-edge) tilings. Every window here is measured
     # -- `scripts/difficulty/resize.py` for the size and shape, `calibrate.py`
@@ -281,7 +281,7 @@ ARCH_PRESETS = {
     },
     "rotatedhex": {
         "flat": {"easy": (4, 3, 4, 48.212), "medium": (8, 5, 14, 28.814), "hard": (12, 7, 40, 20.329)},
-        "torus": {"easy": (7, 2, 5, 0.45), "medium": (14, 3, 16, 0.33), "hard": (20, 4, 41, 0.33)},
+        "torus": {"easy": (5, 3, 6, 0.52), "medium": (14, 3, 16, 0.33), "hard": (20, 4, 41, 0.33)},
         "cylinder": {"easy": (9, 1.5, 4), "medium": (15, 3, 13), "hard": (21, 4, 36)},
     },
     "rotatedtri": {
@@ -291,7 +291,7 @@ ARCH_PRESETS = {
     },
     "threescaletri": {
         "flat": {"easy": (4, 3, 12, 77.817), "medium": (8, 5, 45, 40.929), "hard": (12, 7, 115, 27.104)},
-        "torus": {"easy": (7, 2, 18, 0.45), "medium": (14, 3, 56, 0.33), "hard": (20, 4, 120, 0.33)},
+        "torus": {"easy": (5, 3, 18, 0.52), "medium": (14, 3, 56, 0.33), "hard": (20, 4, 120, 0.33)},
     },
     # The congruent-rectangle bonds: same recipe as the isogonal family --
     # a square board of about 105 / 220 / 350 cells, mined at 14 / 16 / 19
@@ -304,31 +304,31 @@ ARCH_PRESETS = {
     # herringbone (pgg) is glide-only and stays off them.
     "stackedbond": {
         "flat": {"easy": (6, 12, 11, 70), "medium": (10, 22, 42, 45), "hard": (15, 31, 99, 32.933)},
-        "torus": {"easy": (14, 6, 9, 0.38), "medium": (23, 11, 58, 0.45), "hard": (32, 15, 126, 0.45)},
+        "torus": {"easy": (20, 4, 15, 0.38), "medium": (21, 12, 58, 0.33), "hard": (24, 20, 131, 0.45)},
         "cylinder": {"easy": (12, 7, 13), "medium": (20, 13, 52), "hard": (27, 17, 107)},
-        "mobius": {"easy": (12, 7, 15), "medium": (20, 13, 47), "hard": (27, 17, 109)},
+        "mobius": {"easy": (12, 7, 15), "medium": (20, 13, 47), "hard": (28, 17, 113)},
         "klein": {"easy": (16, 5, 15, 0.85), "medium": (23, 11, 62, 1.3), "hard": (32, 15, 127, 1.3)},
     },
     "runningbond": {
         "flat": {"easy": (6, 6, 12, 69.714), "medium": (11, 11, 45, 41.25), "hard": (15, 15, 100, 30.625)},
-        "torus": {"easy": (10, 4, 14, 0.45), "medium": (21, 6, 57, 0.52), "hard": (34, 7, 120, 0.38)},
+        "torus": {"easy": (10, 4, 14, 0.45), "medium": (18, 7, 58, 0.45), "hard": (30, 8, 122, 0.28)},
         "cylinder": {"easy": (12, 3.5, 16), "medium": (20, 6.5, 52), "hard": (28, 8.5, 112)},
         "mobius": {"easy": (12, 3.5, 16), "medium": (20, 6.5, 52), "hard": (27, 8.5, 110)},
-        "klein": {"easy": (13, 3, 15, 1.0), "medium": (26, 5, 57, 1.15), "hard": (34, 7, 119, 1.3)},
+        "klein": {"easy": (14, 3, 15, 1.3), "medium": (26, 5, 57, 1.15), "hard": (34, 7, 119, 1.3)},
     },
     "basketweave": {
         "flat": {"easy": (3, 3, 10, 72), "medium": (6, 6, 44, 37.5), "hard": (8, 8, 99, 28.5)},
-        "torus": {"easy": (5, 2, 12, 0.45), "medium": (8, 4, 46, 0.45), "hard": (12, 5, 109, 0.38)},
+        "torus": {"easy": (5, 2, 12, 0.45), "medium": (8, 4, 46, 0.45), "hard": (15, 4, 105, 0.28)},
         "cylinder": {"easy": (5, 2, 12), "medium": (10, 3, 41), "hard": (14, 4.5, 101)},
         "mobius": {"easy": (9, 2, 12), "medium": (19, 3, 39), "hard": (23, 5, 95)},
         "klein": {"easy": (11, 2, 12, 1.3), "medium": (17, 4, 50, 1.15), "hard": (23, 5, 107, 1.3)},
     },
     "basketweave3": {
         "flat": {"easy": (2, 3, 6, 105), "medium": (4, 5, 21, 54), "hard": (6, 6, 64, 37.5)},
-        "torus": {"easy": (7, 1, 12, 0.45), "medium": (7, 3, 53, 0.38), "hard": (10, 4, 115, 0.38)},
+        "torus": {"easy": (4, 2, 20, 0.52), "medium": (7, 3, 53, 0.38), "hard": (10, 4, 115, 0.38)},
         "cylinder": {"easy": (5, 1.5, 7), "medium": (8, 2.5, 29), "hard": (11, 3.5, 73)},
-        "mobius": {"easy": (7, 2, 7), "medium": (15, 3, 31), "hard": (19, 4, 77)},
-        "klein": {"easy": (13, 1, 12, 0.85), "medium": (15, 3, 56, 1.15), "hard": (19, 4, 111, 1.3)},
+        "mobius": {"easy": (13, 1, 6), "medium": (15, 3, 31), "hard": (19, 4, 77)},
+        "klein": {"easy": (7, 2, 15, 1.3), "medium": (21, 2, 48, 0.7), "hard": (19, 4, 111, 1.3)},
     },
     "herringbone": {
         "flat": {"easy": (3, 3, 11, 75.846), "medium": (5, 6, 42, 44.864), "hard": (8, 8, 108, 29.545)},

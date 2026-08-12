@@ -797,10 +797,10 @@
       "args": {
         "easy": [
           "elongated",
-          14,
-          1,
-          16,
-          0.28
+          7,
+          2,
+          18,
+          0.52
         ],
         "medium": [
           "elongated",
@@ -869,10 +869,10 @@
       "args": {
         "easy": [
           "elongated",
-          13,
-          1,
-          17,
-          0.85
+          7,
+          2,
+          16,
+          1.3
         ],
         "medium": [
           "elongated",
@@ -921,10 +921,10 @@
       "args": {
         "easy": [
           "snubsquare",
-          7,
-          2,
-          9,
-          0.28
+          5,
+          3,
+          20,
+          0.52
         ],
         "medium": [
           "snubsquare",
@@ -1169,10 +1169,10 @@
       "args": {
         "easy": [
           "snubhex",
-          5,
-          1,
-          18,
-          0.38
+          4,
+          2,
+          26,
+          0.52
         ],
         "medium": [
           "snubhex",
@@ -1368,10 +1368,10 @@
       "args": {
         "easy": [
           "trunchex",
-          7,
-          2,
           5,
-          0.45
+          3,
+          6,
+          0.52
         ],
         "medium": [
           "trunchex",
@@ -1440,10 +1440,10 @@
       "args": {
         "easy": [
           "trunchex",
-          7,
-          2,
           5,
-          1.0
+          3,
+          6,
+          1.3
         ],
         "medium": [
           "trunchex",
@@ -1492,10 +1492,10 @@
       "args": {
         "easy": [
           "rhombitrihex",
-          7,
-          1,
-          9,
-          0.28
+          4,
+          2,
+          14,
+          0.52
         ],
         "medium": [
           "rhombitrihex",
@@ -1564,10 +1564,10 @@
       "args": {
         "easy": [
           "rhombitrihex",
-          7,
-          1,
-          10,
-          0.7
+          4,
+          2,
+          11,
+          1.3
         ],
         "medium": [
           "rhombitrihex",
@@ -1616,10 +1616,10 @@
       "args": {
         "easy": [
           "trunctrihex",
-          6,
-          1,
-          12,
-          0.33
+          4,
+          2,
+          13,
+          0.52
         ],
         "medium": [
           "trunctrihex",
@@ -1688,10 +1688,10 @@
       "args": {
         "easy": [
           "trunctrihex",
-          7,
-          1,
-          12,
-          0.7
+          4,
+          2,
+          14,
+          1.3
         ],
         "medium": [
           "trunctrihex",
@@ -1740,10 +1740,10 @@
       "args": {
         "easy": [
           "prismaticpent",
-          20,
-          1,
           11,
-          0.28
+          2,
+          19,
+          0.52
         ],
         "medium": [
           "prismaticpent",
@@ -1812,10 +1812,10 @@
       "args": {
         "easy": [
           "prismaticpent",
-          19,
-          1,
           10,
-          0.7
+          2,
+          17,
+          1.3
         ],
         "medium": [
           "prismaticpent",
@@ -2112,10 +2112,10 @@
       "args": {
         "easy": [
           "floret",
-          7,
-          1,
-          12,
-          0.28
+          4,
+          2,
+          16,
+          0.52
         ],
         "medium": [
           "floret",
@@ -2187,9 +2187,9 @@
       "args": {
         "easy": [
           "tetrakis",
-          7,
-          3,
-          7,
+          5,
+          4,
+          9,
           0.52
         ],
         "medium": [
@@ -2201,7 +2201,7 @@
         ],
         "hard": [
           "tetrakis",
-          16,
+          17,
           7,
           68,
           0.45
@@ -2259,17 +2259,17 @@
       "args": {
         "easy": [
           "tetrakis",
-          7,
-          3,
+          5,
+          4,
           9,
           1.3
         ],
         "medium": [
           "tetrakis",
-          21,
-          3,
-          24,
-          0.7
+          16,
+          4,
+          29,
+          0.85
         ],
         "hard": [
           "tetrakis",
@@ -2435,10 +2435,10 @@
       "args": {
         "easy": [
           "deltoidal",
-          7,
-          1,
-          12,
-          0.28
+          4,
+          2,
+          13,
+          0.52
         ],
         "medium": [
           "deltoidal",
@@ -2507,10 +2507,10 @@
       "args": {
         "easy": [
           "deltoidal",
-          6,
-          1,
-          12,
-          0.85
+          4,
+          2,
+          13,
+          1.3
         ],
         "medium": [
           "deltoidal",
@@ -2560,9 +2560,9 @@
         "easy": [
           "kisrhombille",
           4,
-          1,
-          6,
-          0.45
+          2,
+          12,
+          0.52
         ],
         "medium": [
           "kisrhombille",
@@ -2632,8 +2632,8 @@
         "easy": [
           "kisrhombille",
           4,
-          1,
-          9,
+          2,
+          12,
           1.3
         ],
         "medium": [
@@ -3006,10 +3006,10 @@
       "args": {
         "easy": [
           "rotatedhex",
-          7,
-          2,
           5,
-          0.45
+          3,
+          6,
+          0.52
         ],
         "medium": [
           "rotatedhex",
@@ -3156,10 +3156,10 @@
       "args": {
         "easy": [
           "threescaletri",
-          7,
-          2,
+          5,
+          3,
           18,
-          0.45
+          0.52
         ],
         "medium": [
           "threescaletri",
@@ -3208,23 +3208,23 @@
       "args": {
         "easy": [
           "stackedbond",
-          14,
-          6,
-          9,
+          20,
+          4,
+          15,
           0.38
         ],
         "medium": [
           "stackedbond",
-          23,
-          11,
+          21,
+          12,
           58,
-          0.45
+          0.33
         ],
         "hard": [
           "stackedbond",
-          32,
-          15,
-          126,
+          24,
+          20,
+          131,
           0.45
         ]
       }
@@ -3269,9 +3269,9 @@
         ],
         "hard": [
           "stackedbond",
-          27,
+          28,
           17,
-          109
+          113
         ]
       }
     },
@@ -3339,17 +3339,17 @@
         ],
         "medium": [
           "runningbond",
-          21,
-          6,
-          57,
-          0.52
+          18,
+          7,
+          58,
+          0.45
         ],
         "hard": [
           "runningbond",
-          34,
-          7,
-          120,
-          0.38
+          30,
+          8,
+          122,
+          0.28
         ]
       }
     },
@@ -3404,10 +3404,10 @@
       "args": {
         "easy": [
           "runningbond",
-          13,
+          14,
           3,
           15,
-          1.0
+          1.3
         ],
         "medium": [
           "runningbond",
@@ -3470,10 +3470,10 @@
         ],
         "hard": [
           "basketweave",
-          12,
-          5,
-          109,
-          0.38
+          15,
+          4,
+          105,
+          0.28
         ]
       }
     },
@@ -3580,10 +3580,10 @@
       "args": {
         "easy": [
           "basketweave3",
-          7,
-          1,
-          12,
-          0.45
+          4,
+          2,
+          20,
+          0.52
         ],
         "medium": [
           "basketweave3",
@@ -3629,9 +3629,9 @@
       "args": {
         "easy": [
           "basketweave3",
-          7,
-          2,
-          7
+          13,
+          1,
+          6
         ],
         "medium": [
           "basketweave3",
@@ -3652,17 +3652,17 @@
       "args": {
         "easy": [
           "basketweave3",
-          13,
-          1,
-          12,
-          0.85
+          7,
+          2,
+          15,
+          1.3
         ],
         "medium": [
           "basketweave3",
-          15,
-          3,
-          56,
-          1.15
+          21,
+          2,
+          48,
+          0.7
         ],
         "hard": [
           "basketweave3",

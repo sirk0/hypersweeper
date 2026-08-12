@@ -16,8 +16,11 @@ constant cell count, and that free axis is worth spending: a window whose
 aspect does not match the surface's stretches every tile, which is why cells on
 some donuts read as squashed ovals rather than the hexagons they are in the
 plane. Among the windows that hit the count, the search takes the one whose
-cells are least distorted, and tunes the tube radius jointly since that is the
-other half of what sets the surface's own proportions.
+cells are closest to the shape they have in the plane -- their *own* shape,
+measured by ``planar_shape``, so that a tiling whose tile is meant to be long
+keeps it rather than having the wrap square it off -- and tunes the tube radius
+jointly since that is the other half of what sets the surface's own
+proportions.
 
 Run: ``PYTHONPATH=. python -m scripts.difficulty.resize``
 """
@@ -183,6 +186,38 @@ MIN_RING = 12
 # trusted to pick the ratio; this only has to rule out the folds it cannot
 # see, and every window it rejects is one of five.
 MIN_WRAP_DOMAINS = 4
+
+# ...and the same sentence again, measured on the tile instead of the domain:
+# no single tile may span more than a quarter of a direction that *closes*.
+#
+# The two are not the same bar, because a domain is not one tile. A window can
+# have plenty of domains round a loop and still hand one tile a huge slice of
+# the other one: the three-brick basket weave packs twelve cells into a 2x2
+# domain and six of them are a whole domain long, so one row of domains across
+# the tube gives those tiles **half the turn**. A tile is drawn flat, and a
+# flat quadrilateral spanning half a circle is a plate through its axis -- what
+# `torusbasketweave3` and `kleinbasketweave3` easy shipped as, a broken ring of
+# slabs with the tube missing between them. `MIN_WRAP_DOMAINS` cannot see it
+# (seven domains round the ring is plenty) and neither can cell distortion,
+# which measures each tile's own shape and finds those plates perfectly
+# well-proportioned.
+#
+# A quarter is where the shipped catalogue stops looking like a surface,
+# measured board by board: at half a turn the tile passes through the axis; at
+# a third (`toruskisrhombille`, `torusfloret`, `torusdeltoidal` easy) the ring
+# is visibly holed; at a quarter (`torustrihex`, `torusbasketweave` easy) it is
+# chunky but whole, and a dozen shipped rows sit exactly there. Applied to the
+# seam on every wrapped surface and to the tube as well on the closed ones --
+# a cylinder's rim and a Mobius band's edge are open, so only their seam turns,
+# and a *flat* board has no seam at all, so the bar does not apply to it.
+MAX_TILE_TURN = 0.25
+# ...and how far over it a window may be and still count as on it. A dozen
+# shipped rows sit at exactly a quarter -- `torustrihex`, `torusrhombille`,
+# `torustriakis`, `kleinstaggeredtri` easy among them -- and land 3e-8 above it,
+# because a template's vertices are rounded to about six places before any of
+# this is measured. The slack has to clear that noise and nothing else: the
+# nearest real value below a quarter is a fifth.
+TILE_TURN_SLACK = 1e-4
 
 # And a *playability* bar, on the square-lattice donut and bottle only.
 #
@@ -490,6 +525,54 @@ def _tile_span(tiling: str) -> tuple[float, float]:
     return _TILE_SPAN[tiling]
 
 
+_WIDEST_TILE: dict[str, tuple[float, float]] = {}
+
+
+def widest_tile(tiling: str) -> tuple[float, float]:
+    """The *biggest* tile's width and height, as fractions of one domain.
+
+    The median above answers "how many tiles is a domain"; this answers "how
+    much of a domain is one tile", which is the question a fold asks (see
+    ``MAX_TILE_TURN``). They part company exactly where a domain holds tiles of
+    very different sizes -- the three-brick basket weave's median height is a
+    sixth of its domain and its largest is a half.
+    """
+    if tiling not in _WIDEST_TILE:
+        from minesweeper.boards.tilings import _arch_template
+
+        template = _arch_template(tiling)
+        width = height = 0.0
+        for _name, refs in template.cells:
+            xs = [template.verts[tag][0] + dm * template.width
+                  for tag, dm, _dn in refs]
+            ys = [template.verts[tag][1] + dn * template.height
+                  for tag, _dm, dn in refs]
+            width = max(width, max(xs) - min(xs))
+            height = max(height, max(ys) - min(ys))
+        _WIDEST_TILE[tiling] = (width / template.width or 1.0,
+                                height / template.height or 1.0)
+    return _WIDEST_TILE[tiling]
+
+
+def _tile_turn(spec: dict, trial: list, axis: int) -> float:
+    """What fraction of a closing direction the widest tile spans.
+
+    Zero -- nothing to reject -- for the builders whose knobs count cells
+    rather than domain copies: there one tile *is* one step of the knob, so
+    ``MIN_RING`` and ``MIN_WRAP_CELLS`` already say this.
+    """
+    knobs = spec["size"]
+    if not spec.get("lead") or axis >= len(knobs):
+        return 0.0
+    copies = trial[knobs[axis]]
+    if not copies:
+        return float("inf")
+    try:
+        return widest_tile(trial[0])[axis] / copies
+    except Exception:
+        return 0.0
+
+
 def _wrap_cells(builder: str, spec: dict, trial: list, axis: int) -> float:
     """How many tiles the window closes over along ``axis`` (0 = seam, 1 = tube).
 
@@ -588,6 +671,89 @@ def corner_indices(tiling: str) -> dict[str, tuple[int, ...]]:
     return _CORNERS[tiling]
 
 
+_PLANAR: dict[str, tuple[float, float, float]] = {}
+
+
+class _Polygons:
+    """The one attribute ``edge_ratio`` reads, so a bare polygon dict can be
+    measured without building a board around it."""
+
+    def __init__(self, polygons: dict):
+        self.polygons = polygons
+
+
+def planar_shape(tiling: str) -> tuple[float, float, float]:
+    """A tiling's own ``(distortion mean, p90, edge ratio)``, measured flat.
+
+    The shape half of this search is "cells as close to their planar shape as
+    the surface allows", and every measure of it is a measure of *roundness*:
+    ``cell_distortion`` scores a tile against the regular polygon of the same
+    side count, ``edge_ratio`` against a tile whose edges are all one length.
+    For a tiling of regular polygons those are the same thing -- the planar
+    tile already scores 1.0, so the only way a window moves the number is by
+    stretching. For a tiling whose tile is *meant* to be long they are not, and
+    the difference is not a rounding error: a congruent-rectangle bond is a
+    2-to-1 brick (a 3-to-1 one in the three-brick basket weave), which scores
+    1.13 to 1.47 undistorted.
+
+    Left uncorrected, the search reads "rounder" as "better" and spends the
+    surface's free axis on *squaring the bricks* -- which is not a less
+    distorted board but a differently distorted one, and on the stacked bond,
+    whose adjacency is the square tiling's already, it is a torus with no
+    bricks left to see. Measured against the tiling's own tile instead, the
+    same donut keeps them: 21x11 at a tube radius of 0.28 draws its rectangles
+    at 2.11 to 1 where the window that minimises absolute roundness draws them
+    at 1.48, squarer than the plane.
+
+    Taken off the **template** rather than off a built flat board: the two
+    agree to a fraction of a percent (a board trims part-cells at its edges,
+    which reweights the mix a little where a domain holds tiles of several
+    sizes), and the template needs neither a preset nor a window to exist.
+    T-vertices are counted here exactly as the board counts them -- kept for
+    the isoperimetric measure, which sees a polygon's side count, and dropped
+    by ``corner_indices`` for the edge ratio, which measures its sides.
+    """
+    if tiling not in _PLANAR:
+        from minesweeper.boards.tilings import _arch_template
+
+        template = _arch_template(tiling)
+        polygons = {
+            (0, 0, name): [(dm * template.width + template.verts[tag][0],
+                            dn * template.height + template.verts[tag][1])
+                           for tag, dm, dn in refs]
+            for name, refs in template.cells
+        }
+        mean, p90 = distortion_summary(polygons)
+        _PLANAR[tiling] = (mean, p90,
+                           edge_ratio(_Polygons(polygons),
+                                      corner_indices(tiling)))
+    return _PLANAR[tiling]
+
+
+def _planar_reference(spec: dict, trial: list | None) -> tuple[float, float, float]:
+    """The planar shape to measure a candidate window against.
+
+    ``(1.0, 1.0, 1.0)`` -- a perfectly round tile -- for the builders that are
+    not Archimedean, which are the square, triangular and hexagonal surfaces
+    whose planar tiles really are regular. There the deviation below is the
+    plain roundness measure this search has always used.
+    """
+    if not spec.get("lead") or not trial:
+        return (1.0, 1.0, 1.0)
+    try:
+        return planar_shape(trial[0])
+    except Exception:
+        return (1.0, 1.0, 1.0)
+
+
+def _off_planar(value: float, planar: float) -> float:
+    """How far one shape measurement sits from its planar reference, as a
+    ratio >= 1 in whichever direction it missed."""
+    if value <= 0 or planar <= 0:
+        return float("inf")
+    return max(value / planar, planar / value)
+
+
 def edge_ratio(board, corners: dict[str, tuple[int, ...]] | None = None) -> float:
     """Median longest-to-shortest edge over the board's tiles.
 
@@ -637,7 +803,12 @@ def _score(mode: str, board, target: int, is_flat: bool,
         shape_penalty = FLAT_ASPECT_WEIGHT * math.log(aspect(board))
     else:
         mean, p90 = distortion_summary(board.polygons)
-        shape_penalty = math.log(mean) + 0.5 * math.log(p90)
+        # ...against the tiling's *own* tile, not against a regular polygon:
+        # a window that rounds a brick off into a square has not undone the
+        # wrap's distortion, it has added its own (see `planar_shape`).
+        base_mean, base_p90, _ = _planar_reference(spec or {}, trial)
+        shape_penalty = (math.log(_off_planar(mean, base_mean))
+                         + 0.5 * math.log(_off_planar(p90, base_p90)))
         # A cylinder is developable and a Mobius strip nearly so: rolling a
         # sheet into a tube stretches almost nothing, so cell distortion is
         # blind to their proportions and the search is free to return a tube 6
@@ -781,7 +952,15 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
     # bar rejects the 21x23 cylinder for having cells at 1.107 instead of
     # 1.061, and so defends the very shape it should be replacing. Under the
     # floor, a tile is not stretched by any standard worth enforcing.
-    shape_bar = max(edge_ratio(probe, corners) * 1.02, SHAPE_BAR_FLOOR)
+    # Measured, again, as a deviation from the tiling's own tile rather than
+    # from a regular one: a bond's flat edge ratio is 2 (3 on the three-brick
+    # basket weave), and a bar that reads those as already-bad both refuses
+    # every faithful window and waves through the squashed one. With a planar
+    # reference of 1.0 -- every builder that is not Archimedean -- this is the
+    # ratio it has always been.
+    base_edge = _planar_reference(spec, args)[2]
+    shape_bar = max(_off_planar(edge_ratio(probe, corners), base_edge) * 1.02,
+                    SHAPE_BAR_FLOOR)
     if _rolled_flat(builder) and "mobius" in builder:
         # A Mobius strip closes with a half twist, so a *wide* one is stretched
         # by the immersion however its window is chosen: keeping its tiles
@@ -831,10 +1010,20 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
                 elif builder in SQUARE_LATTICE_CLOSED:
                     if min(trial[knobs[0]], trial[knobs[1]]) < MIN_WRAP_CELLS:
                         continue
+            # ...and no one tile taking more than a quarter turn of anything
+            # that closes: the seam on any wrapped surface, the tube as well
+            # on a donut or a bottle, and neither on a plane (see
+            # MAX_TILE_TURN)
+            if not is_flat:
+                axes = (0, 1) if _closed_tube(builder) else (0,)
+                if any(_tile_turn(spec, trial, axis)
+                       > MAX_TILE_TURN + TILE_TURN_SLACK for axis in axes):
+                    continue
             # ...and a band no wider than the immersion will actually draw
             if _mobius_band_clamped(builder, spec, trial):
                 continue
-            if keep_shape and not is_flat and edge_ratio(board, corners) > shape_bar:
+            if keep_shape and not is_flat and _off_planar(
+                    edge_ratio(board, corners), base_edge) > shape_bar:
                 continue
             # A window can hit the cell count, keep its topology and still not
             # be a puzzle: three cells around a cylinder gives every cell the
@@ -925,7 +1114,7 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
                 # the radius reshapes the cells too, so it faces the same bar
                 # the window did -- otherwise a fatter tube buys a better
                 # isoperimetric score by stretching every tile
-                if edge_ratio(board, corners) > shape_bar:
+                if _off_planar(edge_ratio(board, corners), base_edge) > shape_bar:
                     continue
                 refined.append((_score(mode, board, TARGETS[difficulty], False,
                                        builder, spec, cand), cand, n))
