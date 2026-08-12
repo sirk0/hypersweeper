@@ -565,9 +565,17 @@ hand-picked density is the one thing this game cannot get right by eye.
    2x2 domain and six of them are a whole domain long, so `torusbasketweave3`
    and `kleinbasketweave3` easy had seven and thirteen domains round the ring —
    plenty — and one row across the tube, which handed those six tiles **half
-   the turn each** and drew both boards as a broken ring of slabs. Look at a
-   new wrapped board before believing its numbers; a fold photographs much
+   the turn each** and drew both boards as a broken ring of slabs. Twenty more
+   donut and bottle easy rows were folded the same way, one row of domains
+   across the tube apiece, and moved when the bar arrived — mostly from 84
+   cells to 96, which is the step the geometry forces once the tube costs a
+   whole second domain, and twice much further (`toruskisrhombille` and
+   `kleinkisrhombille` easy cannot be built under 192, `torussnubhex` under
+   144, so those three are `EXEMPT_ROWS` in `tests/test_presets.py`). Look at
+   a new wrapped board before believing its numbers; a fold photographs much
    worse than it measures.
+   `TestWrappedWindowsDoNotFold` reads the rule back off the shipped presets,
+   so a hand-edited window cannot put one back.
 2. **Mine count** — `scripts/difficulty/calibrate.py` plays the board a few
    thousand times with a reference solver and moves the mine count until the
    win rate matches the classic board's at that difficulty. Run it for the

@@ -58,6 +58,17 @@ EXEMPT_ROWS = {
     # the surface outranks the size band (`resize.MIN_RING`).
     ("cylkisrhombille", "easy"),
     ("mobiuskisrhombille", "easy"),
+    # The same arithmetic on a donut and a bottle, from the other bar: a tile
+    # may not span more than a quarter of a direction that closes, or it is
+    # drawn as a flat plate through the axis rather than a facet of a tube
+    # (`resize.MAX_TILE_TURN`). Kisrhombille's tallest triangle is a third of
+    # its domain, so the tube needs two domain rows, the ring needs four, and
+    # 4x2 of a 24-cell domain is 192 cells with nothing smaller legal. Snub
+    # hexagonal is the same story on an 18-cell domain: 4x2 is 144, and one
+    # row across gave its widest tile 0.43 of the turn.
+    ("toruskisrhombille", "easy"),
+    ("kleinkisrhombille", "easy"),
+    ("torussnubhex", "easy"),
     # The stepped bipyramid's terraces have to run all the way to a single
     # cube at each apex, or it is a slab rather than a diamond, and that fixes
     # `levels` to (base + 1) / 2 on an odd base. The solid then steps 38 -> 64
@@ -79,7 +90,17 @@ OUTER_BAND = 0.25
 # them, and against a target of 81 that is a step of 15-30% -- so a board often
 # has 84 and 96 to choose from and nothing between. The bar is set just above
 # what those steps force, so it still catches the convention rotting.
-NEAR_MISS_ALLOWANCE = 0.08
+#
+# It went from 8% to 11% when `resize.MAX_TILE_TURN` arrived. That bar stops a
+# single tile spanning more than a quarter of a direction that closes, and on a
+# donut or a bottle the cheapest way to satisfy it is a second row of domains
+# across the tube -- which doubles the step the *other* knob has to move in.
+# Seven easy rows (`torusdeltoidal`, `torusfloret`, `torusrhombitrihex`,
+# `torustrunctrihex` and their Klein counterparts) therefore go from 84 cells
+# to 96 with nothing in between, and 96 against 81 is 18.5%. That is the step
+# the geometry forces, not a preset drifting: every one of them was folded at
+# 84 and is a surface at 96.
+NEAR_MISS_ALLOWANCE = 0.11
 
 
 def _conformance() -> dict:
@@ -169,6 +190,53 @@ class TestBoardSizes:
             cells = stats[difficulty]["cellCount"]
             mines = stats[difficulty]["mineCount"]
             assert 0 < mines < cells, f"{mode}/{difficulty}: {mines} of {cells}"
+
+
+class TestWrappedWindowsDoNotFold:
+    """No shipped wrapped board may hand one tile a big slice of a turn.
+
+    A tile is drawn flat, so a tile spanning half of a direction that closes is
+    a plate through that tube's axis rather than a facet of it -- which is what
+    `torusbasketweave3` and `kleinbasketweave3` easy once shipped as, a broken
+    ring of slabs, and what twenty more donut and bottle rows shipped as more
+    mildly. Nothing else in the suite can see it: the topology is right (a fold
+    is still a torus combinatorially) and every tile's own shape measures fine.
+
+    The bar itself lives with the search that has to apply it
+    (`resize.MAX_TILE_TURN`); this is the same rule read back off the shipped
+    presets, so a hand-edited window cannot reintroduce the fold.
+    """
+
+    @pytest.mark.parametrize("difficulty", DIFFICULTIES)
+    def test_no_tile_spans_more_than_a_quarter_of_a_closing_direction(self, difficulty):
+        from scripts.difficulty.resize import (
+            MAX_TILE_TURN,
+            SPEC,
+            TILE_TURN_SLACK,
+            _closed_tube,
+            _tile_turn,
+        )
+
+        presets = json.loads((DATA / "presets.json").read_text())["presets"]
+        folded = {}
+        for mode, spec in presets.items():
+            builder = spec["builder"]
+            # only the wrapped Archimedean builders: a plane has no seam, and
+            # the plain surface builders count cells rather than domains, so
+            # one tile is one step of the knob by construction
+            if builder not in SPEC or not SPEC[builder].get("lead"):
+                continue
+            if builder == "archimedean_board":
+                continue
+            axes = (0, 1) if _closed_tube(builder) else (0,)
+            turn = max(_tile_turn(SPEC[builder], spec["args"][difficulty], a)
+                       for a in axes)
+            if turn > MAX_TILE_TURN + TILE_TURN_SLACK:
+                folded[mode] = round(turn, 3)
+        assert folded == {}, (
+            f"{difficulty} windows whose widest tile spans more than "
+            f"{MAX_TILE_TURN:.0%} of a turn: {folded}"
+        )
 
 
 class TestDifficultyOrdering:

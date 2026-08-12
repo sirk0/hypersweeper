@@ -208,8 +208,16 @@ MIN_WRAP_DOMAINS = 4
 # is visibly holed; at a quarter (`torustrihex`, `torusbasketweave` easy) it is
 # chunky but whole, and a dozen shipped rows sit exactly there. Applied to the
 # seam on every wrapped surface and to the tube as well on the closed ones --
-# a cylinder's rim and a Mobius band's edge are open, so only their seam turns.
+# a cylinder's rim and a Mobius band's edge are open, so only their seam turns,
+# and a *flat* board has no seam at all, so the bar does not apply to it.
 MAX_TILE_TURN = 0.25
+# ...and how far over it a window may be and still count as on it. A dozen
+# shipped rows sit at exactly a quarter -- `torustrihex`, `torusrhombille`,
+# `torustriakis`, `kleinstaggeredtri` easy among them -- and land 3e-8 above it,
+# because a template's vertices are rounded to about six places before any of
+# this is measured. The slack has to clear that noise and nothing else: the
+# nearest real value below a quarter is a fifth.
+TILE_TURN_SLACK = 1e-4
 
 # And a *playability* bar, on the square-lattice donut and bottle only.
 #
@@ -1002,13 +1010,15 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
                 elif builder in SQUARE_LATTICE_CLOSED:
                     if min(trial[knobs[0]], trial[knobs[1]]) < MIN_WRAP_CELLS:
                         continue
-            # ...and no one tile taking a quarter turn or more of anything
-            # that closes: the seam always does, the tube only on a donut or
-            # a bottle (see MAX_TILE_TURN)
-            axes = (0, 1) if _closed_tube(builder) else (0,)
-            if any(_tile_turn(spec, trial, axis) > MAX_TILE_TURN + 1e-9
-                   for axis in axes):
-                continue
+            # ...and no one tile taking more than a quarter turn of anything
+            # that closes: the seam on any wrapped surface, the tube as well
+            # on a donut or a bottle, and neither on a plane (see
+            # MAX_TILE_TURN)
+            if not is_flat:
+                axes = (0, 1) if _closed_tube(builder) else (0,)
+                if any(_tile_turn(spec, trial, axis)
+                       > MAX_TILE_TURN + TILE_TURN_SLACK for axis in axes):
+                    continue
             # ...and a band no wider than the immersion will actually draw
             if _mobius_band_clamped(builder, spec, trial):
                 continue
