@@ -32,6 +32,7 @@ import {
   type BoardView,
   type CellAnchor,
   type CellVisual,
+  type PickLayer,
 } from "./boardMesh";
 import { clipTriangles, fanTriangles, triangleCentroid, type Tri } from "./clip";
 import { makeGlyphAtlas, type Glyph, type GlyphAtlas } from "./glyphAtlas";
@@ -92,6 +93,20 @@ const QUAD_CORNERS: readonly (readonly [number, number])[] = [
   [-1, -1], [1, 1], [-1, 1],
 ];
 const BASE_COLOR = "#8e8e8e"; // grout surface showing through the tile gaps
+
+// How far past its own polygon a cell's grout is laid, as a fraction of the way
+// out from the cell's centre. Two neighbours' grout meets exactly on the edge
+// they share, and a ray aimed straight down that edge can be rejected by the
+// triangles on *both* sides of it — each carries the edge in its own vertex
+// order and computes its own barely-negative barycentric for the point, so a
+// crack a rounding error wide opens between them. It is only reachable by
+// hitting the edge to within that error, but a fold line landing on the middle
+// of the canvas does exactly that for a whole column of clicks, and on a
+// two-sided surface the ray goes through the crack and picks a cell on the far
+// sheet. Overlapping the grout is what closes it; a ten-thousandth of a cell is
+// orders of magnitude more than the crack needs and a hundredth of a screen
+// pixel, so the board is drawn as it was.
+const BASE_OVERLAP = 0.0001;
 
 const _inv = /* @__PURE__ */ new Matrix4(); // scratch for the world→local map
 
@@ -355,6 +370,10 @@ export class SolidBoard extends Group implements BoardMesh {
   private readonly cellIndex = new Map<CellId, number>();
   private readonly geom: CellGeom[] = [];
   private readonly faceCell: Int32Array;
+  /** The same map for the grout mesh, which is picked alongside the tiles
+   * (see PICK_LAYERS): its triangles cover the whole cell polygon, gap
+   * included, so every visible point of the surface belongs to a cell. */
+  private readonly baseFaceCell: Int32Array;
   private readonly positionAttr: BufferAttribute;
   private readonly normalAttr: BufferAttribute;
   private readonly colorAttr: BufferAttribute;
@@ -484,6 +503,7 @@ export class SolidBoard extends Group implements BoardMesh {
 
     const basePositions: number[] = [];
     const faceCell: number[] = [];
+    const baseFaceCell: number[] = [];
     let vertexCount = 0;
     // Where the immersion passes through itself, the enclosed sheet is cut
     // away so the hole can be looked into (Klein bottle; see SurfaceClip).
@@ -594,9 +614,14 @@ export class SolidBoard extends Group implements BoardMesh {
       // Opaque base layer under the whole (unshrunk) polygon: the tile gaps
       // and the silhouette show this grout surface instead of seeing through
       // the hollow interior. It is cut by the same clip — grout left behind
-      // would cap the hole just as the tiles did.
-      for (const tri of clipTriangles(fanTriangles(poly, centroid), cut)) {
+      // would cap the hole just as the tiles did. Being the whole polygon, it
+      // is also what a click in a gap picks, so it is mapped back to its cell
+      // exactly as the tiles are — and laid a hair over its own edges, so that
+      // a pick ray cannot slip between two cells (see BASE_OVERLAP).
+      const skirt = poly.map((p) => lerp3(p, centroid, -BASE_OVERLAP));
+      for (const tri of clipTriangles(fanTriangles(skirt, centroid), cut)) {
         for (const p of tri) basePositions.push(p[0], p[1], p[2]);
+        baseFaceCell.push(ci);
       }
     });
 
@@ -607,6 +632,7 @@ export class SolidBoard extends Group implements BoardMesh {
     };
 
     this.faceCell = Int32Array.from(faceCell);
+    this.baseFaceCell = Int32Array.from(baseFaceCell);
     const geometry = new BufferGeometry();
     this.positionAttr = new BufferAttribute(new Float32Array(vertexCount * 3), 3);
     this.normalAttr = new BufferAttribute(new Float32Array(vertexCount * 3), 3);
@@ -774,8 +800,8 @@ export class SolidBoard extends Group implements BoardMesh {
     return this.order.length;
   }
 
-  cellForFace(faceIndex: number): CellId | null {
-    const ci = this.faceCell[faceIndex];
+  cellForFace(faceIndex: number, layer: PickLayer = "cells"): CellId | null {
+    const ci = (layer === "base" ? this.baseFaceCell : this.faceCell)[faceIndex];
     return ci == null ? null : (this.order[ci] ?? null);
   }
 

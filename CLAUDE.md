@@ -490,6 +490,23 @@ mesh's vertex layout); its chrome is instant. See "Settings and themes"
 in `web/README.md`, including the v2→v3 migration that reads the old
 palette/cell-style *pair* together.
 
+**Picking** (`Renderer.pick`) is a ray, and it must land on the cell
+*drawn* where it lands — which takes both layers of the board, the tiles
+and the grout under them (`PICK_LAYERS` in `render/boardMesh.ts`),
+nearest hit wins. A tile is shrunk by the cell style's gap, so the grout
+line between two tiles is no part of any tile; picking the tiles alone
+left about a tenth of the board aimable at nothing, and on a two-sided
+surface (cylinder, Möbius, Klein), where both faces are drawn and nothing
+is culled, the ray carried on through the board and picked a cell on the
+**far sheet** — a click aimed between two safe tiles in front opened, or
+detonated, a cell behind them. The grout is the whole cell polygon, and
+it is laid a hair past its own edges (`BASE_OVERLAP`) so that two
+neighbours overlap rather than meeting exactly on a shared edge: a ray
+aimed down that edge can be rejected by the triangles on *both* sides of
+it, a crack a rounding error wide that a fold line landing on the middle
+of the canvas hits for a whole column of clicks. See "Picking" in
+`web/README.md`; `tests/e2e/picking.spec.ts` pins all of it.
+
 **The Klein bottle's self-intersection** (`src/boards/clipSolid.ts`) is the
 one place the app cuts geometry away. The immersion passes through itself,
 and the sheet that ends up *inside* the neck caps the view down the bore, so

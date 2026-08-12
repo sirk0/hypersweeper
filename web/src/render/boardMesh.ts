@@ -128,9 +128,24 @@ export function polygonInradius(
   return best;
 }
 
+/** The named meshes a pick ray is cast against, nearest hit wins (see
+ * `Renderer.pick`). `"cells"` is the drawn tiles; `"base"` is the grout a solid
+ * lays under them, over the *whole* of every cell polygon. The grout has to be
+ * picked as well as drawn: a cell's tile is shrunk by the cell style's gap, and
+ * a ray aimed at a gap misses the tile it looks like it hit. On a flat board
+ * that only makes the click do nothing, but on a two-sided surface (cylinder,
+ * Möbius strip, Klein bottle) both faces are drawn, so the ray carried on
+ * through the tube and came out on a cell of the *far* sheet — a click on the
+ * grout line between two tiles opened, or detonated, a cell on the other side
+ * of the board. */
+export type PickLayer = "cells" | "base";
+export const PICK_LAYERS: readonly PickLayer[] = ["cells", "base"];
+
 export interface BoardMesh extends Group {
   readonly view: BoardView;
-  cellForFace(faceIndex: number): CellId | null;
+  /** The cell a pick ray hit: the face index within the layer's mesh, and
+   * which layer that was (a mesh with no grout may ignore it). */
+  cellForFace(faceIndex: number, layer?: PickLayer): CellId | null;
   cellAnchor(cell: CellId): CellAnchor | null;
   setVisual(cell: CellId, visual: CellVisual): void;
   setHover(cell: CellId | null): void;
