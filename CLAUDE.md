@@ -544,8 +544,8 @@ app. See "Cell styles" and "Bundle size" in `web/README.md`.
 **Sound** (`src/audio/`) is **web-only** — the pygame build is silent — and
 synthesised, never sampled: there is no audio file in the repo and there is not
 meant to be, because every sound here is derived from the move that caused it.
-A tile's voice is its own **side count** (pitch down the preset's scale per
-side, and that many harmonic partials, measured by the same `shapeMetrics` the
+A tile's voice is its own **side count** (a degree of the preset's pitch grid,
+and that many harmonic partials, measured by the same `shapeMetrics` the
 shape colours use); one opened cell is one note while a **flood fill is a
 cascade**, one grain per ring of the spread walked over the game's adjacency and
 staggered at the reveal ripple's pace; each grain is panned by where its cell is
@@ -556,7 +556,19 @@ holds the three characters (Chime, Arcade, Blocks) as a `cellStyle.ts`-shaped
 table — in TS, not `data/ui/screens.json`, which is the pygame-shared config —
 and `off` is the absence of an entry, so a silenced game builds no audio graph.
 `sound.ts` splits a **pure** `voicesFor(event, preset)` (where every rule lives,
-and what the unit tests pin) from the Web Audio player. Two traps: a browser
+and what the unit tests pin) from the Web Audio player. A move opens several
+cells at once, so the thing holding those voices together is that **every pitch
+is a member of one collection**: a preset's `grid` is one octave of an
+anhemitonic pentatonic (no semitone, no tritone) and its `degrees` say which
+degree each side count takes — *not* one degree per side, but a spelling chosen
+so the shape sets that genuinely share a board come out as chords. Those sets
+are measured, not assumed: `tests/unit/soundHarmony.test.ts` builds every mode,
+collects its side counts and fails on any pair that is not a third, fourth,
+fifth, sixth or octave, so a new tiling cannot introduce a clash. The cascade's
+rise is in **whole degrees** for the same reason — as a fraction of a semitone
+per ring it put the ten overlapping rings of a flood a fifth of a tone apart,
+and no fixed semitone interval can be safe (a consonance plus two semitones is
+a tritone). Two traps: a browser
 will not start audio outside a user gesture (`unlockAudio` builds the context on
 the first pointer/key event — do not build it earlier), and a cascade is bounded
 twice (`cascade.maxVoices`, `MAX_ACTIVE_VOICES`) because the worst case is half

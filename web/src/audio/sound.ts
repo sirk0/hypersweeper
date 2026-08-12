@@ -88,12 +88,30 @@ function semitones(hz: number, steps: number): number {
   return hz * 2 ** (steps / 12);
 }
 
-/** The pitch of a tile with `sides` sides: a step down the preset's scale per
- * side, clamped at both ends (a triangle at the root; anything past the
- * scale's length — the Spectre's 13-gon — at its bottom). */
+/** Semitones below the root at grid degree `degree`. The grid is one octave
+ * of the preset's collection and repeats in both directions, so a degree past
+ * its end drops an octave and a *negative* degree rises above the root — which
+ * is what lets the win flourish walk up off the top of it. */
+export function gridNote(preset: SoundPreset, degree: number): number {
+  const n = preset.grid.length;
+  const i = ((degree % n) + n) % n;
+  return preset.grid[i]! - 12 * Math.floor(degree / n);
+}
+
+/** Which degree of the grid a tile with `sides` sides takes, clamped at both
+ * ends (a triangle at the root; anything past the spelling's length — the
+ * Spectre's 13-gon — at its bottom). */
+export function degreeFor(preset: SoundPreset, sides: number): number {
+  const i = Math.max(0, Math.min(preset.degrees.length - 1, Math.round(sides) - 3));
+  return preset.degrees[i]!;
+}
+
+/** The pitch of a tile with `sides` sides: its degree of the preset's grid,
+ * below the root. The spelling is chosen so that the shape sets which share a
+ * board come out as chords rather than as whatever one-degree-per-side
+ * happened to give (see `degrees` in audio/presets.ts). */
 export function noteFor(preset: SoundPreset, sides: number): number {
-  const i = Math.max(0, Math.min(preset.scale.length - 1, Math.round(sides) - 3));
-  return semitones(preset.rootHz, preset.scale[i]!);
+  return semitones(preset.rootHz, gridNote(preset, degreeFor(preset, sides)));
 }
 
 /** How many harmonics a tile's voice is built from: its own side count, capped.
@@ -118,10 +136,13 @@ function thin(cells: readonly CellSound[], max: number): CellSound[] {
 }
 
 function openVoice(preset: SoundPreset, cell: CellSound, ring: number): Voice {
-  const rise = Math.min(12, ring * preset.cascade.rise);
+  // Whole degrees of the grid, capped at an octave: the rings of a flood
+  // overlap, so a fractional rise would put each one out of tune with the
+  // last instead of stacking the collection.
+  const rise = Math.min(preset.grid.length, Math.round(ring * preset.cascade.rise));
   return {
     delay: Math.min(MAX_CASCADE_S, (ring * preset.cascade.step) / 1000),
-    freq: semitones(noteFor(preset, cell.sides), rise),
+    freq: semitones(preset.rootHz, gridNote(preset, degreeFor(preset, cell.sides) - rise)),
     pan: clampPan(cell.pan),
     duration: preset.open.duration,
     attack: preset.open.attack,
@@ -138,6 +159,11 @@ function openVoice(preset: SoundPreset, cell: CellSound, ring: number): Voice {
  * The rules:
  *   - **shape**: pitch and partial count both come from the cell's side count,
  *     so a triangle, a square, a pentagon and a hexagon are four voices.
+ *   - **one collection**: every pitch here is a degree of the preset's grid —
+ *     the shapes, the cascade's rise, the chord's bass note and the win
+ *     flourish alike. A move opens several shapes at once, and their voices
+ *     have to be a chord rather than a coincidence; keeping the whole engine
+ *     on one pentatonic is what guarantees it whatever the board.
  *   - **stereo**: a grain is panned where its cell is on screen, so a board
  *     opened on the left is heard on the left.
  *   - **a click vs. a flood**: one opened cell is one note; a recursive
@@ -158,9 +184,18 @@ export function voicesFor(event: SoundEvent, preset: SoundPreset): Voice[] {
       const origin =
         event.cells.find((c) => c.ring === 0) ?? event.cells[0]!;
       if (event.chord) {
+        // An octave below the *deepest* shape the move opened, not below the
+        // chorded cell's: on a board of several shapes the chorded cell need
+        // not be the lowest of them, and the accent has to stay the bass note
+        // under the chord rather than land in the middle of it.
+        let deepest = degreeFor(preset, origin.sides);
+        for (const cell of event.cells) {
+          const degree = degreeFor(preset, cell.sides);
+          if (degree > deepest) deepest = degree;
+        }
         voices.push({
           ...openVoice(preset, origin, 0),
-          freq: noteFor(preset, origin.sides) / 2,
+          freq: semitones(preset.rootHz, gridNote(preset, deepest + preset.grid.length)),
           gain: preset.open.gain * preset.chordAccent,
         });
       }
@@ -225,11 +260,14 @@ export function voicesFor(event: SoundEvent, preset: SoundPreset): Voice[] {
 
     case "win": {
       const { notes, step, interval } = preset.win;
-      const base = preset.rootHz / 2;
+      // Up the grid from an octave below the root, `interval` degrees a note.
+      // The notes overlap, so the flourish is a chord as much as a run — a
+      // constant semitone interval spelled an augmented triad.
+      const start = preset.grid.length;
       const last = Math.max(1, notes - 1);
       return Array.from({ length: notes }, (_, i) => ({
         delay: (i * step) / 1000,
-        freq: semitones(base, i * interval),
+        freq: semitones(preset.rootHz, gridNote(preset, start - i * interval)),
         // The flourish sweeps the whole field, leaning toward the winning
         // click — the board is cleared, so the celebration is not local to
         // one cell the way an opening is.

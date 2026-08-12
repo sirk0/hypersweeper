@@ -1220,6 +1220,60 @@ Two files, and the split between them is the point:
   sites (`session.ts`, and the settings preview) name events, never
   oscillators — the same seam `haptics.ts` is for touch.
 
+### One collection, and a spelling measured against the catalog
+
+A move opens *several cells at once* — a chord move, and every flood fill —
+so their voices are heard together whether or not anybody tuned them. The
+rule that makes that a chord rather than a coincidence: **every pitch the
+engine can produce is a degree of the preset's `grid`**, one octave of an
+anhemitonic pentatonic repeating in both directions (`gridNote`). No
+semitone, no tritone, so members can be stacked in any combination. The
+shapes, the cascade's rise, the chord's bass note and the win flourish all
+land on it.
+
+Which degree a *shape* takes is `degrees`, and it is deliberately not one
+degree per side. One degree per side is what the game shipped with, and it
+made the intervals an accident of the indexing: the Blocks preset gave the
+truncated-square board a tritone between its squares and its octagons, and
+two of the three presets gave a triangle and a square a whole tone — which
+on the rhombitrihexagonal board (triangles, squares *and* hexagons) is the
+one that gets noticed. So the spelling skips degrees, chosen against the
+sets of side counts that genuinely share a board. Measured across every mode
+in `data/presets.json` those sets are
+
+    {3,4} {3,5} {3,6} {3,12} {4,8} {5,6} {3,4,6} {3,4,5} {4,6,12} {4,6,10}
+
+and nothing else — never four shapes at once, and every wrapped surface
+repeats its flat template's set exactly. `tests/unit/soundHarmony.test.ts`
+re-measures them from the boards rather than trusting that list, and fails
+on any pair that is not a third, a fourth, a fifth, a sixth or an octave, so
+a new tiling cannot quietly introduce a clash. On the three-shape boards the
+result is an actual triad (Chime: 1046 / 698 / 440 Hz on `rhombitrihex`);
+Arcade rotates the same collection so the same sets come out minor.
+
+Two consequences worth knowing before touching the numbers:
+
+- **The cascade rises by whole degrees, never by semitones.** `cascade.rise`
+  used to be a fraction of a semitone per ring (0.8 for Chime), and the rings
+  of a flood *overlap* — a grain rings for `open.duration` against a stagger
+  of `cascade.step`, so ten rings sound at once. Every ring landed a fifth of
+  a tone from the last: beating, not a chord, and it did it on monotile
+  boards too. Adding a fixed semitone interval cannot be made safe (a
+  consonance plus two semitones is a tritone); transposing *within* the
+  collection can, which is the whole reason the grid is a separate field from
+  the spelling.
+- **The roots are anchored on the boards people play.** Spreading the shapes
+  onto chord tones widens each preset's range to about three octaves, so the
+  roots were raised to compensate: a plain square board lands within a
+  semitone of where it used to ring in all three presets. A hexagon board
+  drops a third — that widened square-to-hexagon gap *is* the triad, so it
+  cannot be anchored as well. Blocks moved 340 → 415 Hz for a second reason:
+  at the old root its 12- and 13-gon boards sat under 50 Hz, which a phone
+  cannot reproduce.
+
+`flag.interval` is the one pitch left in semitones. A flag is a lone gesture
+rather than part of a chord, so its glide is free to leave the grid.
+
 Things that will bite:
 
 - **Audio cannot start without a user gesture.** A context built at load time

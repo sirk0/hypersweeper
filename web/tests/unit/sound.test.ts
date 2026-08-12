@@ -52,12 +52,43 @@ describe("the preset table", () => {
     expect(soundLabel(SOUND_OFF)).toBe("Off");
   });
 
-  it("gives every preset a scale long enough for the catalog's tiles", () => {
-    // The Spectre is a 13-gon; anything past the scale clamps to its bottom.
+  it("gives every preset a spelling long enough for the catalog's tiles", () => {
+    // The Spectre is a 13-gon; anything past the spelling clamps to its
+    // bottom.
     eachPreset((preset, key) => {
-      expect(preset.scale.length, key).toBeGreaterThanOrEqual(11);
+      expect(preset.degrees.length, key).toBeGreaterThanOrEqual(11);
       expect(preset.cascade.maxVoices, key).toBeGreaterThan(1);
       expect(preset.win.notes, key).toBeGreaterThan(1);
+    });
+  });
+
+  it("spells every grid as a collection with no semitone and no tritone", () => {
+    // This is the whole guarantee: any two members of an anhemitonic
+    // pentatonic are consonant, so voices can be stacked in any combination
+    // without one of them landing a semitone or a tritone from another.
+    eachPreset((preset, key) => {
+      expect(preset.grid[0], key).toBe(0);
+      const octave = [...preset.grid, preset.grid[0]! - 12];
+      for (let i = 0; i + 1 < octave.length; i++) {
+        const step = octave[i]! - octave[i + 1]!;
+        expect(step, `${key} step ${i}`).toBeGreaterThanOrEqual(2);
+        expect(step, `${key} step ${i}`).toBeLessThanOrEqual(3);
+      }
+      for (const a of preset.grid) {
+        for (const b of preset.grid) {
+          const cls = Math.abs(a - b) % 12;
+          expect(cls === 1 || cls === 6 || cls === 11, `${key} ${a}/${b}`).toBe(false);
+        }
+      }
+    });
+  });
+
+  it("gives the shapes a degree apiece, descending", () => {
+    eachPreset((preset, key) => {
+      expect(preset.degrees[0], key).toBe(0);
+      for (let i = 0; i + 1 < preset.degrees.length; i++) {
+        expect(preset.degrees[i + 1]!, `${key} ${i}`).toBeGreaterThan(preset.degrees[i]!);
+      }
     });
   });
 });
@@ -80,9 +111,9 @@ describe("a cell's voice follows its shape", () => {
     expect(partialsFor(CHIME, 1)).toBeGreaterThanOrEqual(1);
   });
 
-  it("clamps past the ends of the scale rather than running off it", () => {
-    const bottom = noteFor(CHIME, CHIME.scale.length + 2);
-    expect(bottom).toBe(noteFor(CHIME, CHIME.scale.length + 40));
+  it("clamps past the ends of the spelling rather than running off it", () => {
+    const bottom = noteFor(CHIME, CHIME.degrees.length + 2);
+    expect(bottom).toBe(noteFor(CHIME, CHIME.degrees.length + 40));
     expect(noteFor(CHIME, 3)).toBe(CHIME.rootHz);
   });
 
