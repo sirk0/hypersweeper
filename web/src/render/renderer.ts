@@ -13,7 +13,7 @@ import {
 } from "three";
 import type { CellId } from "../boards/core";
 import { surfaceOf, viewHint } from "../boards/catalog";
-import type { BoardMesh } from "./boardMesh";
+import { PICK_LAYERS, type BoardMesh, type PickLayer } from "./boardMesh";
 import { anchoredPan, clampPan, clampZoom, MIN_ZOOM } from "./zoom";
 
 // One rendering pipeline for both board families. Flat boards use the
@@ -444,17 +444,25 @@ export class BoardRenderer {
     return Number.isFinite(x) ? Math.max(-1, Math.min(1, x)) : 0;
   }
 
-  /** Cell under normalized device coords (-1..1), or null. On solids only
-   * front faces are hit — back cells are culled from picking too. */
+  /** Cell under normalized device coords (-1..1), or null. The ray is cast at
+   * every drawn layer of the surface — the tiles and the grout under their gaps
+   * (PICK_LAYERS) — and the nearest hit wins, so a click lands on the cell the
+   * player can see at that point and never on one behind it. On solids only
+   * front faces are hit — back cells are culled from picking too, as they are
+   * from drawing; a two-sided surface culls neither, which is why picking the
+   * grout matters there (see PICK_LAYERS). */
   pick(ndc: Vector2): CellId | null {
-    if (!this.board) return null;
+    const board = this.board;
+    if (!board) return null;
     this.raycaster.setFromCamera(ndc, this.camera);
-    const cells = this.board.getObjectByName("cells");
-    if (!cells) return null;
-    const hits = this.raycaster.intersectObject(cells, false);
+    const targets = PICK_LAYERS.map((name) => board.getObjectByName(name)).filter(
+      (mesh) => mesh != null,
+    );
+    if (targets.length === 0) return null;
+    const hits = this.raycaster.intersectObjects(targets, false);
     const hit = hits[0];
     if (!hit || hit.faceIndex == null) return null;
-    return this.board.cellForFace(hit.faceIndex);
+    return board.cellForFace(hit.faceIndex, hit.object.name as PickLayer);
   }
 
   private renderOnce = (): void => {

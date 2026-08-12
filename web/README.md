@@ -669,6 +669,43 @@ divides out `visualViewport.scale`, so a page zoom that arrives some other way
 (iOS accessibility, a desktop ctrl-+) cannot re-frame the board under the
 player's fingers.
 
+## Picking (`Renderer.pick`)
+
+A click is a ray, and the cell it lands on is the one **drawn** where it lands.
+That takes both layers of the board: the tiles *and* the grout under them
+(`PICK_LAYERS` in `render/boardMesh.ts`), nearest hit wins. A tile is shrunk by
+the cell style's gap, so the grout line between two tiles — about a tenth of the
+board — is not part of any tile, and picking the tiles alone left it aimable at
+nothing. On a flat board that only made the click do nothing. On a two-sided
+surface (cylinder, Möbius strip, Klein bottle) both faces are drawn and nothing
+is culled, so the ray went on through the board and picked a cell on the **far
+sheet**: a click aimed between two safe tiles in front opened, or detonated, a
+cell behind them. The grout is the whole cell polygon, so with it in the ray's
+path every point of the surface belongs to the cell you can see there.
+
+Two traps live here:
+
+- **A shared edge is a crack.** Two neighbours' grout meets exactly on the edge
+  between them, and a ray aimed straight down that edge can be rejected by the
+  triangles on *both* sides of it — each carries the edge in its own vertex
+  order and computes its own barely-negative barycentric for the point. The
+  crack is a rounding error wide and so sounds unreachable, but a fold line of
+  the board landing on the middle of the canvas hits it for a whole column of
+  clicks, and on a two-sided surface the ray comes out on the far sheet again.
+  `BASE_OVERLAP` in `render/solidBoard.ts` closes it by laying each cell's grout
+  a ten-thousandth of a cell past its own edges: orders of magnitude more than
+  the crack needs, a hundredth of a screen pixel on the board.
+- **`cellScreenXY` is not the inverse of `cellAtScreenXY`** on a two-sided
+  surface. Nothing is culled there, so it reports a position for a cell hidden
+  behind the immersion too; round-trip through `cellAtScreenXY` when a test
+  needs a cell that is genuinely on top (`tests/e2e/picking.spec.ts` does).
+
+What is *not* a bug: a pick on the far sheet where the near one does not cover
+it — the open ends of a cylinder show the inside of the far wall, and the Klein
+bottle's neck is cut away where it passes through the body (see below), which is
+a real hole in the surface. Both are cells the player can see and should be able
+to click.
+
 ## Bundle size
 
 There is **no size budget and no CI gate**. The app is a one-time download that
