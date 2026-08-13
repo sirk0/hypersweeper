@@ -529,9 +529,11 @@ faces close up only because the surface curves. The five **fractal** boards
 have no period, but their *tiles* do — the Gosper island is plain hexagons,
 two sphinxes or two chairs fill a parallelogram, the Sierpinski carpet is
 periodic once you stop inflating — so they get their own tile laid down the
-plain way rather than a crop of a fractal; only the pentaflake needs a
-stand-in, and it takes the Cairo, since regular pentagons do not tile the
-plane at all (which is why that board has holes). Two of the three
+plain way rather than a crop of a fractal. The pentaflake takes two tiles
+rather than one: regular pentagons do not tile the plane (which is why that
+board has holes), but pentagons and 36° rhombs do — three pentagons round a
+point leave the rhomb's 36° corner and two leave its 144° one, which fixes the
+ratio at two pentagons to one rhomb. Two of the three
 **aperiodic** boards go the same way — an aperiodic tiling has no repeat, so
 a page that repeats can only be its *tile*: the phyllotactic hexagon is a
 parallelohexagon and tiles by translation alone (the spiral is in how the

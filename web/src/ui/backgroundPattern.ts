@@ -29,8 +29,8 @@
 //  * The five **fractal** boards do not repeat, but their tiles do: the Gosper
 //    island is plain hexagons, the sphinx and the chair are rep-tiles that also
 //    tile the plane in pairs, and the Sierpinski carpet is periodic once you
-//    stop inflating. The pentaflake is the one exception; see
-//    PENTAFLAKE_PATTERN.
+//    stop inflating. The pentaflake takes two tiles rather than one — regular
+//    pentagons do not tile the plane, but pentagons and 36° rhombs do.
 //  * Two of the three **aperiodic** boards are the same story. The
 //    phyllotactic spiral's hexagon is a *parallelohexagon*, so it tiles by
 //    translation alone — the spiral is in how the board's wedges are offset,
@@ -361,6 +361,26 @@ const DOMAINS: Record<string, () => Domain> = {
       [PHYLLO_U[1]![0] + PHYLLO_U[2]![0], PHYLLO_U[1]![1] + PHYLLO_U[2]![1]],
     ),
 
+  // Two regular pentagons and one thin rhomb, on the lattice a torus
+  // exact-cover search turns up for them — the smallest cell there is, and the
+  // one the corner count above predicts. See PENT_U.
+  pentaflake: () => {
+    const pent = walk([0, 2, 4, 6, 8]);
+    const rhomb = walk([0, 1, 5, 6]);
+    const apex = pent[3]!; // the pentagon's far corner, (1/2, sin 72° + sin 36°)
+    const shoulder = pent[2]!;
+    const PHI = (1 + Math.sqrt(5)) / 2;
+    return latticeDomain(
+      [
+        placeTile(pent, 0, [0, 0]),
+        placeTile(pent, 3, apex),
+        placeTile(rhomb, 8, [apex[0] - PHI, apex[1]]),
+      ],
+      [-shoulder[0], -shoulder[1]],
+      [PHI * PHI - apex[0], -apex[1]],
+    );
+  },
+
   // Two rows of diamonds: a course of Penrose's fat rhombs (72°) and a course
   // of its thin ones (36°), which is the plainest periodic tiling the two of
   // them make. Each course fills a strip on its own, so the only question is
@@ -396,12 +416,43 @@ const DOMAINS: Record<string, () => Domain> = {
   },
 };
 
-/** The pentaflake's stand-in. Regular pentagons do not tile the plane — that is
- * exactly why the pentaflake is a fractal with gnomon-shaped holes rather than
- * a tiling — so a *periodic* pentagon page has to be some other pentagon, and
- * the Cairo is the one people picture when they hear the word. It is already in
- * the catalogue (`ARCH_TILINGS`), so this costs no geometry. */
-const PENTAFLAKE_PATTERN = "cairo";
+/** The pentaflake's page: regular pentagons and thin rhombs.
+ *
+ * Regular pentagons alone do not tile the plane — that is exactly why the
+ * pentaflake is a fractal with gnomon-shaped holes rather than a tiling — but
+ * pentagons *and* 36° rhombs do, and periodically. Three pentagons round a
+ * point leave 360 − 3·108 = 36°, which is the rhomb's sharp corner, and two
+ * leave 144°, which is its blunt one; count corners over those two vertex
+ * figures (5p = 3a + 2b with a = b = 2r) and the ratio comes out at two
+ * pentagons to one rhomb, which is the cell below.
+ *
+ * Both tiles have unit edges and every edge direction is a multiple of 36°, so
+ * the whole thing lives in ℤ[ζ10] — the pentaflake's own ring
+ * (boards/fractal.ts). The lattice is not rectangular; `latticeDomain` finds
+ * the rectangle inside it. */
+const PENT_U = (k: number): Vertex => [
+  Math.cos((36 * k * Math.PI) / 180),
+  Math.sin((36 * k * Math.PI) / 180),
+];
+
+/** The closed walk of unit steps in the given 36° directions. */
+function walk(dirs: number[]): Vertex[] {
+  const pts: Vertex[] = [];
+  let [x, y] = [0, 0];
+  for (const d of dirs) {
+    pts.push([x, y]);
+    const [dx, dy] = PENT_U(d);
+    x += dx;
+    y += dy;
+  }
+  return pts;
+}
+
+/** A tile turned `rot` steps of 36° and moved to `at`. */
+const placeTile = (tile: Vertex[], rot: number, at: Vertex): Vertex[] => {
+  const [c, s] = PENT_U(rot);
+  return tile.map(([x, y]): Vertex => [x * c - y * s + at[0], x * s + y * c + at[1]]);
+};
 
 /** The three genuinely aperiodic boards: no period exists, so their page is a
  * crop of the real tiling, repeated. Two honest artefacts come with that — the
@@ -438,10 +489,9 @@ const MODE_PATTERN = new Map<string, string>();
     for (const mode of modes) MODE_PATTERN.set(mode, tiling);
   }
   // The fractal boards: their own tile, laid down periodically (see DOMAINS).
-  for (const mode of ["sphinx", "chair", "carpet", "gosper"]) {
+  for (const mode of ["sphinx", "chair", "carpet", "gosper", "pentaflake"]) {
     MODE_PATTERN.set(mode, mode);
   }
-  MODE_PATTERN.set("pentaflake", PENTAFLAKE_PATTERN);
   for (const mode of APERIODIC_MODES) MODE_PATTERN.set(mode, mode);
   // The polyhedra are folded flat grids — a cube and the stepped bipyramid are
   // squares, a tetrahedron is triangles — so they take that grid. The sphere

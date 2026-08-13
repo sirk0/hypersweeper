@@ -1481,7 +1481,12 @@ back to the plain field.
   no template, so their domains are written out in this module. The five
   **fractal** boards do not repeat, but their tiles do — the Gosper island is
   plain hexagons, two sphinxes or two chairs fill a parallelogram, the carpet is
-  periodic once you stop inflating. Two of the three **aperiodic** boards are
+  periodic once you stop inflating. The pentaflake takes two tiles rather than
+  one: regular pentagons famously do not tile the plane (which is why that board
+  has gnomon-shaped holes), but pentagons *and* 36° rhombs do. Three pentagons
+  round a point leave 36°, the rhomb's sharp corner, and two leave 144°, its
+  blunt one; counting corners over those two vertex figures fixes the ratio at
+  two pentagons to one rhomb, and a torus exact-cover search finds that cell. Two of the three **aperiodic** boards are
   the same story: the phyllotactic hexagon is a *parallelohexagon*, so it tiles
   by translation alone (the spiral is in how the board's wedges are offset, not
   in the tile), and Penrose's two rhombs make a plain periodic tiling as

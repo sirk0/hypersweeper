@@ -111,12 +111,12 @@ describe("which pattern a mode gets", () => {
   it("lays the fractal boards' own tiles down periodically", () => {
     // Their patches do not repeat, but the tiles they are made of do — plain
     // hexagons for the Gosper island, and the sphinx, the chair and the carpet
-    // block as themselves. Only the pentaflake needs a stand-in: regular
-    // pentagons do not tile the plane, which is why that board has holes.
-    for (const mode of ["sphinx", "chair", "carpet", "gosper"]) {
+    // block as themselves. Regular pentagons famously do not tile the plane,
+    // which is why the pentaflake has holes, but pentagons *and* 36° rhombs
+    // do — two of the first to one of the second.
+    for (const mode of ["sphinx", "chair", "carpet", "gosper", "pentaflake"]) {
       expect(patternKey(mode)).toBe(mode);
     }
-    expect(patternKey("pentaflake")).toBe("cairo");
     for (const mode of FRACTAL_MODES) expect(PERIODIC).toContain(patternKey(mode));
   });
 
