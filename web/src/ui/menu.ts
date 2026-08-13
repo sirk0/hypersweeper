@@ -377,6 +377,7 @@ export class Menu {
       sound: this.settings.sound,
       volume: this.settings.volume,
       haptics: this.settings.haptics,
+      backgrounds: this.settings.backgrounds,
       analytics: this.settings.analytics,
       setTheme: (key) => {
         this.settings.setTheme(key);
@@ -388,6 +389,10 @@ export class Menu {
       },
       setAnimations: (pref) => {
         this.settings.setAnimations(pref);
+        page();
+      },
+      setBackgrounds: (on) => {
+        this.settings.setBackgrounds(on);
         page();
       },
       setSound: (key) => {

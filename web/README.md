@@ -1188,6 +1188,8 @@ Three things that are easy to get wrong when touching this:
   `null` tone opts out into the old indigo chrome (tubes, frames, the question
   mark).
 - `src/config/screens.ts` — typed accessor over `../data/ui/screens.json`.
+- `src/ui/backgroundPattern.ts` — the board's own tiling as the page behind it,
+  on the Realistic theme (see "The page follows the board's tiling").
 - `src/ui/settings.ts` / `src/ui/theme.ts` / `src/settings.ts` — the settings
   page, the CSS-custom-property theme applier, and the stored preferences (see
   "Settings and themes").
@@ -1450,6 +1452,100 @@ worth knowing:
 
 `tests/test_theme_sync.py` (Python) fails if a pygame palette is retuned without
 the JSON following.
+
+### The page follows the board's tiling
+
+Realistic's page is not one texture: behind the grain it carries **the board's
+own tiling**, drawn very small and very faint (`src/ui/backgroundPattern.ts`).
+Open `torustrihex` and the paper behind it is trihexagonal; open `kleincairo`
+and it is Cairo pentagons. On Realistic the opened cells are translucent, so
+that page is what shows *through* the board as well as around it.
+
+It is **opt-in**: Settings › Appearance › **Custom backgrounds**, off by
+default. The row sits beside Theme rather than under Behaviour (this is what the
+page is made of, not what the game does) and is shown whatever theme is active,
+with the hint saying that only Realistic has a pattern to draw — better than a
+row that appears and disappears with the theme.
+
+`patternLayer(mode)` returns one CSS `background-image` layer — an inline SVG
+data URI, because the packaged builds assert the bundle fetches nothing. It goes
+into its own `--bg-pattern` property, above `--bg-texture` in the `html, body`
+list. Wiring: `applyTheme(key, mode)` takes the mode; every caller goes through
+`App.paintTheme` (`main.ts`), which reads it off the session, so a theme switch
+or a change synced from another tab keeps the board's pattern and the menu goes
+back to the plain field. The setting is applied there too, by withholding the
+*mode*: with no board named there is nothing to follow, which is the state the
+menu is in anyway.
+
+- **It follows the tiling, not the surface.** All five surfaces of a tiling
+  share one tile, so the cache holds 38 entries for 159 modes. `tilingOf(mode)`
+  in `boards/catalog.ts` is the inverse of `modeFor` — not a prefix strip, since
+  `torustri`, `torustriakis` and `torustrihex` are three tilings on one surface.
+- **The pattern is the board's tile, laid down periodically.** A board's own
+  patch may be aperiodic, fractal or wrapped round a solid, but what the page
+  wants is the *tile* — and nearly every tile in the catalogue tiles the plane
+  periodically by itself. The 27 `ARCH_TILINGS` come from `archTemplate`, whose
+  fundamental domain *is* a seamless repeat tile; the three regular tilings have
+  no template, so their domains are written out in this module. The five
+  **fractal** boards do not repeat, but their tiles do — the Gosper island is
+  plain hexagons, two sphinxes or two chairs fill a parallelogram, and the
+  Sierpinski carpet is unit squares. The pentaflake takes two tiles rather than
+  one: regular pentagons famously do not tile the plane (which is why that board
+  has gnomon-shaped holes), but pentagons *and* 36° rhombs do. Three pentagons
+  round a point leave 36°, the rhomb's sharp corner, and two leave 144°, its
+  blunt one; counting corners over those two vertex figures fixes the ratio at
+  two pentagons to one rhomb, and a torus exact-cover search finds that cell.
+
+  Two of the three **aperiodic** boards are the same story: the phyllotactic
+  hexagon is a *parallelohexagon*, so it tiles
+  by translation alone (the spiral is in how the board's wedges are offset, not
+  in the tile), and Penrose's two rhombs make a plain periodic tiling as
+  alternating courses of fat and thin diamonds — the interfaces line up because
+  a fat course shifts by cos 72° and a mirrored thin one by −cos 36°, which sum
+  to exactly −½, so four courses come back a whole edge.
+
+  The **Spectre** is the one board whose page is a relative rather than its own
+  tile. Tile(1,1) has no periodic cell of its own small enough to use — an
+  exhaustive torus exact-cover search over the lattices in ℤ[ζ12] that could
+  carry a two-tile cell finds none — and letting other figures in, as the
+  pentaflake does, is not enough either. One Spectre with a square, a 30° rhomb
+  and a 60° rhomb *does* tile the plane, and the search finds that cell; but its
+  lattice contains **no orthogonal pair at all**, so there is no rectangle
+  anywhere in it, and a CSS background tiles a rectangle. Nor does any other: no
+  cell of one or two Spectres with up to four triangles, squares or 30°/60°
+  rhombs has a rectangular sublattice. So it takes the **deltoidal
+  trihexagonal** tiling instead — the hat continuum, of which Tile(1,1) is the
+  equilateral member, is drawn as polykites on exactly that, eight kites to a
+  hat.
+
+  A tiling whose lattice is not rectangular — the phyllotactic
+  one is a rhombus at 36° — goes through `latticeDomain`, which finds the
+  smallest rectangle *inside* the lattice and fills it with the cosets between.
+- **Traps.** Every placed point is snapped to a tenth of a pixel *before*
+  de-duplication and with a tie-break epsilon: a shared edge is computed twice
+  by two routes through the lattice, and without that the two copies disagree in
+  the last bits, both survive, and the line is stroked twice — plainly darker at
+  7% alpha. The same snapping is what makes a tile seam-free, since a whole-tile
+  shift is a whole number of grid steps. Hand-written tiles keep a vertex at
+  every lattice step (the chair's two collinear ones are load-bearing) or
+  neighbours disagree about where an edge ends. And a hole cannot be drawn with
+  outlines — the cells around it draw its boundary either way — so the carpet
+  washes its holes in faintly, which is the only thing that stops its page being
+  a plain square grid.
+- **Screenshots cannot see it.** A 7%-alpha hairline moves a pixel by about
+  0.05, under Playwright's default per-pixel `threshold` of 0.2, so every
+  Realistic baseline keeps passing whether the pattern renders or not — and
+  `--update-snapshots` will not rewrite a baseline that passes. The e2e
+  assertions read `--bg-pattern` instead; `tests/unit/backgroundPattern.test.ts`
+  pins the geometry (every mode classified, tiles seamless under a one-tile
+  shift, no line drawn twice). To *look* at one, raise the alpha — replace
+  `stroke-opacity='0.07'` in the layer — or it will not survive review at all.
+- **The pentaflake is a compromise.** Regular pentagons do not tile the plane —
+  that is exactly why that board is a fractal with gnomon-shaped holes — so its
+  page is the Cairo pentagonal tiling, the pentagon tiling that does.
+- **Only Realistic is patterned** (`Theme.patterned`). The settings swatches
+  call `themeVars` with the texture and no pattern, so they show the theme
+  rather than whatever board was last open; keep it that way.
 
 **The v2 → v3 migration.** Until v3, `theme` named a chrome palette and
 `cellStyle` sat beside it as a second setting. `migrate` in `settings.ts` reads

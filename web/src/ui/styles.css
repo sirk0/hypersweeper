@@ -35,6 +35,12 @@
      consumed by a `background-image` list, where an empty value would
      invalidate the whole declaration. */
   --bg-texture: none;
+  /* The board's own tiling, drawn very faintly over the texture — set by
+     `applyTheme` from the mode on screen (ui/backgroundPattern.ts), and `none`
+     on the menu and on the three themes that want a flat field. Over rather
+     than under: the grain is 0.42-opacity turbulence, and a hairline beneath it
+     reads as more noise. */
+  --bg-pattern: none;
   --panel: #ffffff;
   --panel-blur: none; /* frosted cards, for the glass theme */
   --text: #1c1c1e;
@@ -117,10 +123,12 @@ body {
   margin: 0;
   height: 100%;
   /* The page field: the theme's colour gradient (flat for every theme whose
-     two stops are equal), with the theme's texture layers over it. The board
-     canvas is transparent, so this shows around the board — and, on a theme
-     whose opened cells are translucent, *through* them. */
+     two stops are equal), with the theme's texture layers over it and, on a
+     board, that board's own tiling over those. The board canvas is
+     transparent, so this shows around the board — and, on a theme whose opened
+     cells are translucent, *through* them. */
   background:
+    var(--bg-pattern),
     var(--bg-texture),
     linear-gradient(160deg, var(--bg), var(--bg2));
   color: var(--text);
@@ -844,7 +852,12 @@ body {
 /* A theme in miniature, and literally so: ui/settings.ts writes the theme's
    whole custom-property set onto this element, so everything inside resolves
    its colours (and the page texture) through the same `var(--…)` the real
-   chrome uses. Nothing here names a palette colour. */
+   chrome uses. Nothing here names a palette colour.
+
+   Deliberately *without* --bg-pattern: a swatch is a picture of the theme, not
+   of a board. `themeVars` leaves that property out unless it is given one, and
+   ui/settings.ts calls it with only the texture, so this needs no guard of its
+   own — but the list below has to stay two layers for that to hold. */
 .theme-swatch {
   position: relative;
   flex: none;

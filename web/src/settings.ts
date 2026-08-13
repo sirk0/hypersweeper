@@ -59,6 +59,12 @@ export interface Settings {
   /** Whether the game buzzes: the Taptic Engine in the iOS app, the Vibration
    * API elsewhere. Read on every event, like `sound`. */
   haptics: boolean;
+  /** Whether the page behind the board is patterned with that board's own
+   * tiling (Settings › Appearance, and only the Realistic theme has one at
+   * all — see ui/backgroundPattern.ts). Off by default: it is a flourish, and
+   * a flourish is something to turn on rather than something to discover
+   * already running. */
+  backgrounds: boolean;
   /** Whether anonymous play counts are reported (Settings › Privacy). Read on
    * every event too, so turning it off silences the game already in progress.
    * Meaningless in the packaged builds, which carry no collector at all. */
@@ -78,6 +84,7 @@ export const DEFAULT_SETTINGS: Settings = {
   sound: DEFAULT_SOUND,
   volume: DEFAULT_VOLUME,
   haptics: true,
+  backgrounds: false,
   analytics: true,
   seenHint: false,
 };
@@ -167,6 +174,12 @@ export function loadSettings(): Settings {
     // out of the box.
     haptics:
       typeof rec["haptics"] === "boolean" ? rec["haptics"] : DEFAULT_SETTINGS.haptics,
+    // Additive, and defaulting *off*: a record from a build before the page
+    // could be patterned lacks the key, and should look the way it did.
+    backgrounds:
+      typeof rec["backgrounds"] === "boolean"
+        ? rec["backgrounds"]
+        : DEFAULT_SETTINGS.backgrounds,
     // Additive in the same way: a record from a build before the collector
     // existed lacks the key and takes the default (on), which is what the
     // hosted game does out of the box and what the Privacy row then shows.

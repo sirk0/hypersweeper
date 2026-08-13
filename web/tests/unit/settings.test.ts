@@ -49,6 +49,7 @@ const SETTINGS: Settings = {
   sound: "arcade",
   volume: 0.5,
   haptics: false,
+  backgrounds: true,
   analytics: false,
   seenHint: true,
 };
@@ -92,6 +93,24 @@ describe("settings persistence", () => {
   });
 });
 
+describe("custom backgrounds", () => {
+  it("is off out of the box, on a fresh record and on an old one", () => {
+    // The page pattern is opt-in: a player who has never seen the switch, and
+    // one whose record was written before it existed, both get the plain page.
+    expect(DEFAULT_SETTINGS.backgrounds).toBe(false);
+    const store = withStorage(fakeStorage());
+    expect(loadSettings().backgrounds).toBe(false);
+    store.setItem(KEY, JSON.stringify({ version: 3, theme: "realistic" }));
+    expect(loadSettings().backgrounds).toBe(false);
+    // ...and a stored `true` survives, since it is a real choice.
+    store.setItem(KEY, JSON.stringify({ version: 3, backgrounds: true }));
+    expect(loadSettings().backgrounds).toBe(true);
+    // A non-boolean is not a choice.
+    store.setItem(KEY, JSON.stringify({ version: 3, backgrounds: "yes" }));
+    expect(loadSettings().backgrounds).toBe(false);
+  });
+});
+
 describe("settings validation", () => {
   it("drops a theme that no longer exists", () => {
     withStorage(fakeStorage({ [KEY]: JSON.stringify({ theme: "vaporwave" }) }));
@@ -115,6 +134,7 @@ describe("settings validation", () => {
       sound: DEFAULT_SETTINGS.sound,
       volume: DEFAULT_SETTINGS.volume,
       haptics: DEFAULT_SETTINGS.haptics,
+      backgrounds: DEFAULT_SETTINGS.backgrounds,
       analytics: DEFAULT_SETTINGS.analytics,
       seenHint: DEFAULT_SETTINGS.seenHint,
     });
@@ -187,6 +207,7 @@ describe("settings upgrades", () => {
       sound: DEFAULT_SETTINGS.sound,
       volume: DEFAULT_SETTINGS.volume,
       haptics: DEFAULT_SETTINGS.haptics,
+      backgrounds: DEFAULT_SETTINGS.backgrounds,
       analytics: DEFAULT_SETTINGS.analytics,
       seenHint: DEFAULT_SETTINGS.seenHint,
     });
@@ -255,6 +276,7 @@ describe("settings upgrades", () => {
       sound: DEFAULT_SETTINGS.sound,
       volume: DEFAULT_SETTINGS.volume,
       haptics: DEFAULT_SETTINGS.haptics,
+      backgrounds: DEFAULT_SETTINGS.backgrounds,
       analytics: DEFAULT_SETTINGS.analytics,
       seenHint: DEFAULT_SETTINGS.seenHint,
     });
@@ -304,6 +326,7 @@ describe("cross-tab sync", () => {
           sound: DEFAULT_SETTINGS.sound,
         volume: DEFAULT_SETTINGS.volume,
         haptics: DEFAULT_SETTINGS.haptics,
+      backgrounds: DEFAULT_SETTINGS.backgrounds,
         analytics: DEFAULT_SETTINGS.analytics,
         seenHint: DEFAULT_SETTINGS.seenHint,
       },

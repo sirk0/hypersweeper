@@ -17,7 +17,7 @@ import {
   type IconVariant,
   type ShapeTone,
 } from "../render/shapePalette";
-import { ARCH_TILINGS, archTemplate } from "../boards/tilings";
+import { ARCH_TILINGS, type ArchTemplate, archTemplate, templateCells } from "../boards/tilings";
 import { placePoint, substitutionPlacements, SUBSTITUTIONS } from "../boards/fractal";
 import {
   c80Board,
@@ -243,17 +243,19 @@ function tilingTiles(key: string): Tile[] {
   const t = archTemplate(key);
   const tiles: Tile[] = [];
   for (let m = -2; m <= 2; m++) {
-    for (let n = -2; n <= 2; n++) {
-      for (const cell of t.cells) {
-        const pts: P[] = cell.refs.map((r) => {
-          const v = t.verts.get(r.tag)!;
-          return [v[0] + (r.dm + m) * t.width, v[1] + (r.dn + n) * t.height];
-        });
-        tiles.push({ kind: cell.name.replace(/\d+$/, ""), pts, centre: centroid(pts) });
-      }
-    }
+    for (let n = -2; n <= 2; n++) tiles.push(...copyTiles(t, m, n));
   }
   return tiles;
+}
+
+/** One domain copy as icon tiles: the template's own geometry, plus the kind
+ * stem and the centroid this file sorts and shades by. */
+function copyTiles(t: ArchTemplate, m: number, n: number): Tile[] {
+  return templateCells(t, m, n).map(({ name, pts }) => ({
+    kind: name.replace(/\d+$/, ""),
+    pts: pts as P[],
+    centre: centroid(pts as P[]),
+  }));
 }
 
 const vkey = (p: P): string => `${Math.round(p[0] * 1e3)},${Math.round(p[1] * 1e3)}`;
@@ -351,15 +353,7 @@ function domainPatch(key: string): Tile[] {
   const copies = Math.max(1, Math.ceil(Math.sqrt(MIN_DOMAIN_TILES / t.cells.length)));
   const tiles: Tile[] = [];
   for (let m = 0; m < copies; m++) {
-    for (let n = 0; n < copies; n++) {
-      for (const cell of t.cells) {
-        const pts: P[] = cell.refs.map((r) => {
-          const v = t.verts.get(r.tag)!;
-          return [v[0] + (r.dm + m) * t.width, v[1] + (r.dn + n) * t.height];
-        });
-        tiles.push({ kind: cell.name.replace(/\d+$/, ""), pts, centre: centroid(pts) });
-      }
-    }
+    for (let n = 0; n < copies; n++) tiles.push(...copyTiles(t, m, n));
   }
   return tiles;
 }

@@ -1,5 +1,6 @@
 import { hasTheme as hasPalette, themeSpec as paletteSpec, type ThemeSpec } from "../config/screens";
 import { cellStyle } from "../render/cellStyle";
+import { patternLayer } from "./backgroundPattern";
 
 // A theme is the app's **one** look setting: the chrome palette, how the
 // board's cells are cut, and what the page behind them is made of. Cell style
@@ -44,6 +45,11 @@ export interface Theme {
    * gradient), because a strict CSP and the offline builds both forbid fetching
    * one. Absent on the themes that want a plain field. */
   texture?: string;
+  /** The page behind a board follows that board's own tiling
+   * (ui/backgroundPattern.ts). Only Realistic: the other three want the flat
+   * field they were designed as, and only Realistic has translucent opened
+   * cells for the pattern to show through. */
+  patterned?: boolean;
 }
 
 /** The Realistic theme's page: a fine woven grain over a soft vignette, so the
@@ -92,6 +98,7 @@ const THEMES: Theme[] = [
     palette: "ios",
     cellStyle: "realistic",
     texture: REALISTIC_PAGE,
+    patterned: true,
   },
 ];
 
@@ -149,10 +156,25 @@ export function themeCellStyle(key: string | null | undefined): string {
 }
 
 /** The CSS custom properties a theme writes, as a plain map. Kept separate from
- * the DOM write so it can be unit-tested under the node environment. */
-export function themeVars(spec: ThemeSpec, texture?: string): Record<string, string> {
+ * the DOM write so it can be unit-tested under the node environment.
+ *
+ * `pattern` is the board's tiling drawn behind the page, and it is a *third*
+ * argument rather than something folded into `texture` for one reason:
+ * `themeSwatch` (ui/settings.ts) writes this whole set onto a 44px box to draw
+ * the theme picker's rows, and calls it with two. A swatch is a picture of the
+ * theme, not of a board you are not playing, so it wants the plain page — and
+ * it gets it by default, with nothing to remember. */
+export function themeVars(
+  spec: ThemeSpec,
+  texture?: string,
+  pattern?: string,
+): Record<string, string> {
   return {
     "--bg": spec.background,
+    // The tiling layer, above the texture (see styles.css). `none` rather than
+    // an empty string, as with --bg-texture: an empty value would invalidate
+    // the whole `background` shorthand it lands in.
+    "--bg-pattern": pattern ?? "none",
     // Only the glass palette has a second stop; the rest paint flat, which the
     // `body` rule expresses as a gradient between two identical colours.
     "--bg2": spec.background2 ?? spec.background,
@@ -175,15 +197,21 @@ export function themeVars(spec: ThemeSpec, texture?: string): Record<string, str
   };
 }
 
-/** Paint `key` onto the document. Safe to call under the node unit environment
- * (where there is no `document`), like haptics.ts. */
-export function applyTheme(key: string): void {
+/** Paint `key` onto the document, for the board `mode` if one is open. Safe to
+ * call under the node unit environment (where there is no `document`), like
+ * haptics.ts.
+ *
+ * `mode` is what makes the page follow the board. Pass null on the menu; every
+ * caller goes through `App.paintTheme` (main.ts), which reads it off the
+ * session so a theme change mid-board keeps that board's pattern. */
+export function applyTheme(key: string, mode?: string | null): void {
   if (typeof document === "undefined") return;
   const resolved = resolveTheme(key);
   const spec = theme(resolved);
   const palette = themePalette(resolved);
+  const pattern = spec.patterned ? (patternLayer(mode) ?? undefined) : undefined;
   const root = document.documentElement;
-  for (const [name, value] of Object.entries(themeVars(palette, spec.texture))) {
+  for (const [name, value] of Object.entries(themeVars(palette, spec.texture, pattern))) {
     root.style.setProperty(name, value);
   }
   root.dataset["theme"] = resolved;
