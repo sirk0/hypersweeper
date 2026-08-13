@@ -28,18 +28,19 @@
 //    the units and the orientation those builders use.
 //  * The five **fractal** boards do not repeat, but their tiles do: the Gosper
 //    island is plain hexagons, the sphinx and the chair are rep-tiles that also
-//    tile the plane in pairs, and the Sierpinski carpet is periodic once you
-//    stop inflating. The pentaflake takes two tiles rather than one — regular
+//    tile the plane in pairs, and the Sierpinski carpet is built of unit
+//    squares. The pentaflake takes two tiles rather than one — regular
 //    pentagons do not tile the plane, but pentagons and 36° rhombs do.
-//  * Two of the three **aperiodic** boards are the same story. The
+//  * All three **aperiodic** boards are the same story. The
 //    phyllotactic spiral's hexagon is a *parallelohexagon*, so it tiles by
 //    translation alone — the spiral is in how the board's wedges are offset,
 //    not in the tile. Penrose's two rhombs make a plain periodic tiling as
 //    alternating courses of fat and thin diamonds. Neither is the board's own
 //    tiling, and neither pretends to be: an aperiodic tiling has no repeat, so
 //    a page that repeats can only be its tile.
-//  * The **Spectre** is the one tile with no periodic tiling small enough to
-//    use, so it alone is a cropped patch of the real board. See PATCH_BUILDERS.
+//  * The **Spectre** is the one board whose page is a relative rather than its
+//    own tile; see SPECTRE_PATTERN. Every page here repeats, with no tier that
+//    is a crop of a real board.
 //  * The spheres have no flat tiling at all, so they get circles.
 //
 // Every one of those reduces to `{width, height, cells}` (or, for the spheres,
@@ -47,8 +48,7 @@
 // encodes it. A tiling whose lattice is not rectangular goes through
 // `latticeDomain`, which finds a rectangle inside it.
 
-import type { Board, Vertex } from "../boards/core";
-import { spectreBoard } from "../boards/aperiodic";
+import type { Vertex } from "../boards/core";
 import {
   APERIODIC_MODES,
   POLYHEDRA_MODES,
@@ -70,29 +70,9 @@ import { archTemplate, templateCells } from "../boards/tilings";
  * bonds as a hatch and the dodecagons nearly board-sized. */
 const CELL_AREA_PX = 108;
 
-/** About how many line segments an aperiodic tile may hold — roughly 20–30 KB
- * encoded, which is the whole reason that tier is bounded at all: a period
- * carries one copy of a repeat, a crop carries every edge it draws. */
-const PATCH_SEGMENT_BUDGET = 1600;
 
-/** How much room an aperiodic tile's cell gets, per corner it has. Cells there
- * are coarser than the periodic tier's, and by a tile's own complexity: a
- * Penrose rhombus reads at any size, while a Spectre is a fourteen-gon and at
- * ten pixels is a smudge. It also spends the segment budget where it buys
- * something — the same budget as four hundred rhombi is two hundred spectres. */
-const PATCH_AREA_PER_CORNER_PX = 70;
 
-/** The largest share of a patch's shorter side the crop window may take. These
- * boards are grown and trimmed to a disc, so a window near the full width would
- * hang off the rim however it is placed. */
-const PATCH_WINDOW = 0.62;
 
-/** How full the crop window has to be before it is accepted — the fraction of
- * *sampled points* the tiling actually covers. `PATCH_WINDOW` is a guess about
- * a disc, and a patch is rarely one; this measures instead of guessing. A bay
- * of empty paper anywhere in the window shows up on the page as a smudge, and
- * shows up four times over where the tile's corners meet, so the bar is high. */
-const PATCH_FILL = 0.995;
 
 /** No repeat tile smaller than this on either axis. Rounding the tile to whole
  * pixels keeps it crisp across the seam; a tiny tile would round badly (and a
@@ -104,9 +84,6 @@ const MIN_TILE_PX = 36;
  * dropped for an unparsable colour. */
 const INK = "#4a5568";
 const INK_ALPHA = 0.07;
-/** A washed hole is a whole area rather than a line, so it reads much stronger
- * than the stroke at the same alpha; two thirds lands it about level. */
-const HOLE_ALPHA = 0.035;
 const STROKE_PX = 1;
 
 // -- geometry ---------------------------------------------------------------
@@ -120,11 +97,6 @@ interface Domain {
   width: number;
   height: number;
   cells: Vertex[][];
-  /** Where the tiling has a hole rather than a tile. Stroked outlines alone
-   * cannot show one — a missing cell's boundary is still drawn, by the cells
-   * around it — so a hole is washed in faintly instead. Only the Sierpinski
-   * carpet has any, and without them its page would be a plain square grid. */
-  holes?: Vertex[][];
 }
 
 const shift = (cell: Vertex[], dx: number, dy: number): Vertex[] =>
@@ -302,31 +274,6 @@ const DOMAINS: Record<string, () => Domain> = {
     cells: [hexagon(0, 0, false), hexagon(1.5, H3, false)],
   }),
 
-  // The Sierpinski carpet is periodic once you stop inflating: take the
-  // construction two levels deep and repeat the 9x9 block. Two levels rather
-  // than one because the carpet is *holes at more than one scale* — one level
-  // is a square grid with every ninth cell missing, which is a grid — so this
-  // block carries the eight small holes and the big one they surround.
-  carpet: () => {
-    const gone = (x: number, y: number, step: number): boolean =>
-      Math.floor(x / step) % 3 === 1 && Math.floor(y / step) % 3 === 1;
-    const cells: Vertex[][] = [];
-    const holes: Vertex[][] = [];
-    for (let y = 0; y < 9; y++) {
-      for (let x = 0; x < 9; x++) {
-        if (gone(x, y, 3)) continue; // inside the big hole; drawn once, below
-        (gone(x, y, 1) ? holes : cells).push(unitSquare(x, y));
-      }
-    }
-    holes.push([
-      [3, 3],
-      [6, 3],
-      [6, 6],
-      [3, 6],
-    ]);
-    return { width: 9, height: 9, cells, holes };
-  },
-
   // Two chairs — one of them upside down — fill a 3 x 2 rectangle, and that
   // rectangle tiles the plane. (The board's own chair tiling is the
   // substitution, which is reflection-free and not periodic; this is the same
@@ -363,18 +310,18 @@ const DOMAINS: Record<string, () => Domain> = {
 
   // Two regular pentagons and one thin rhomb, on the lattice a torus
   // exact-cover search turns up for them — the smallest cell there is, and the
-  // one the corner count above predicts. See PENT_U.
+  // one the corner count in the note below predicts.
   pentaflake: () => {
-    const pent = walk([0, 2, 4, 6, 8]);
-    const rhomb = walk([0, 1, 5, 6]);
+    const pent = walk([0, 2, 4, 6, 8], 10);
+    const rhomb = walk([0, 1, 5, 6], 10);
     const apex = pent[3]!; // the pentagon's far corner, (1/2, sin 72° + sin 36°)
     const shoulder = pent[2]!;
     const PHI = (1 + Math.sqrt(5)) / 2;
     return latticeDomain(
       [
-        placeTile(pent, 0, [0, 0]),
-        placeTile(pent, 3, apex),
-        placeTile(rhomb, 8, [apex[0] - PHI, apex[1]]),
+        placeTile(pent, 0, [0, 0], 10),
+        placeTile(pent, 3, apex, 10),
+        placeTile(rhomb, 8, [apex[0] - PHI, apex[1]], 10),
       ],
       [-shoulder[0], -shoulder[1]],
       [PHI * PHI - apex[0], -apex[1]],
@@ -416,6 +363,24 @@ const DOMAINS: Record<string, () => Domain> = {
   },
 };
 
+/** The Spectre's page: the tiling its own tile is a *shape of*.
+ *
+ * Tile(1,1) — the Spectre with straight edges — has no periodic cell of its
+ * own that is small enough to draw with: an exhaustive torus exact-cover search
+ * over the lattices in ℤ[ζ12] that could carry a two-tile cell finds none. Let
+ * other figures in, as the pentaflake does, and one does turn up — one Spectre
+ * with a square, a 30° rhomb and a 60° rhomb tile the plane together — but that
+ * cell is no use here: **its lattice contains no orthogonal pair at all**, so
+ * there is no rectangle anywhere in it, and a CSS background tiles a rectangle.
+ * Nor does any other: no cell of one or two Spectres with up to four triangles,
+ * squares or 30°/60° rhombs has a rectangular sublattice.
+ *
+ * So this board takes a relative instead. The hat continuum — of which Tile(1,1)
+ * is the equilateral member — is drawn as **polykites on the deltoidal
+ * trihexagonal tiling**, eight kites to a hat; that is the tiling the Spectre is
+ * cut from, and it is already in the catalogue. */
+const SPECTRE_PATTERN = "deltoidal";
+
 /** The pentaflake's page: regular pentagons and thin rhombs.
  *
  * Regular pentagons alone do not tile the plane — that is exactly why the
@@ -430,47 +395,32 @@ const DOMAINS: Record<string, () => Domain> = {
  * the whole thing lives in ℤ[ζ10] — the pentaflake's own ring
  * (boards/fractal.ts). The lattice is not rectangular; `latticeDomain` finds
  * the rectangle inside it. */
-const PENT_U = (k: number): Vertex => [
-  Math.cos((36 * k * Math.PI) / 180),
-  Math.sin((36 * k * Math.PI) / 180),
+/** The unit vector `k` steps of a full turn divided `order` ways. */
+const unitAt = (k: number, order: number): Vertex => [
+  Math.cos((2 * Math.PI * k) / order),
+  Math.sin((2 * Math.PI * k) / order),
 ];
 
-/** The closed walk of unit steps in the given 36° directions. */
-function walk(dirs: number[]): Vertex[] {
+/** The closed walk of unit steps in the given directions — how both of the
+ * tile families below are stated, since every tile in them has unit edges and
+ * every edge direction is a multiple of one angle. */
+function walk(dirs: number[], order: number): Vertex[] {
   const pts: Vertex[] = [];
   let [x, y] = [0, 0];
   for (const d of dirs) {
     pts.push([x, y]);
-    const [dx, dy] = PENT_U(d);
+    const [dx, dy] = unitAt(d, order);
     x += dx;
     y += dy;
   }
   return pts;
 }
 
-/** A tile turned `rot` steps of 36° and moved to `at`. */
-const placeTile = (tile: Vertex[], rot: number, at: Vertex): Vertex[] => {
-  const [c, s] = PENT_U(rot);
+/** A tile turned `rot` steps and moved to `at`. */
+const placeTile = (tile: Vertex[], rot: number, at: Vertex, order: number): Vertex[] => {
+  const [c, s] = unitAt(rot, order);
   return tile.map(([x, y]): Vertex => [x * c - y * s + at[0], x * s + y * c + at[1]]);
 };
-
-/** The three genuinely aperiodic boards: no period exists, so their page is a
- * crop of the real tiling, repeated. Two honest artefacts come with that — the
- * repeat itself (aperiodicity is a global property and a tile cannot carry it),
- * and line ends that do not meet their continuation across the tile edge. At
- * this contrast neither is findable without being told, and the alternative —
- * three of a hundred and fifty-nine boards with a visibly different page — is
- * the thing a player *would* notice.
- *
- * Built a level below the real easy board, and memoised, so only the first open
- * of one of these three pays for it. */
-const PATCH_BUILDERS: Record<string, () => Board> = {
-  spectre: () => spectreBoard(3, 0, null, 21),
-};
-
-/** The pattern keys whose tile is a crop rather than a period — everything else
- * repeats seamlessly, and the tests hold it to that. */
-export const CROP_KEYS: readonly string[] = Object.keys(PATCH_BUILDERS);
 
 // -- what a mode is patterned with ------------------------------------------
 
@@ -489,10 +439,18 @@ const MODE_PATTERN = new Map<string, string>();
     for (const mode of modes) MODE_PATTERN.set(mode, tiling);
   }
   // The fractal boards: their own tile, laid down periodically (see DOMAINS).
-  for (const mode of ["sphinx", "chair", "carpet", "gosper", "pentaflake"]) {
+  for (const mode of ["sphinx", "chair", "gosper", "pentaflake"]) {
     MODE_PATTERN.set(mode, mode);
   }
+  // The Sierpinski carpet is built out of plain unit squares, so that is its
+  // page. Its *holes* are what the board is named for, but a hole cannot be
+  // drawn with outlines — the cells around it draw its boundary either way —
+  // and washing them in was a second way of drawing, for one board.
+  MODE_PATTERN.set("carpet", "square");
+  // Penrose and the phyllotactic spiral each draw their own tile; the Spectre
+  // is the one that cannot (see SPECTRE_PATTERN).
   for (const mode of APERIODIC_MODES) MODE_PATTERN.set(mode, mode);
+  MODE_PATTERN.set("spectre", SPECTRE_PATTERN);
   // The polyhedra are folded flat grids — a cube and the stepped bipyramid are
   // squares, a tetrahedron is triangles — so they take that grid. The sphere
   // family is the one group with no flat tiling behind it: a geodesic's
@@ -585,9 +543,6 @@ function collect(
   }
 }
 
-const polygon = (pts: Vertex[]): string =>
-  `<path d='M${pts.map(([x, y]) => `${num(snap(x))},${num(snap(y))}`).join("L")}Z'/>`;
-
 const pathData = (segments: Iterable<Segment>): string =>
   [...segments].map(([x1, y1, x2, y2]) => `M${num(x1)},${num(y1)}L${num(x2)},${num(y2)}`).join("");
 
@@ -610,7 +565,7 @@ const svg = (w: number, h: number, body: string): string =>
  * The widest cell in the catalogue spans 1.08 domains (rotated hexagonal), so
  * one copy of margin on each side is enough. */
 function periodicTile(domain: Domain): string {
-  const { width, height, cells, holes } = domain;
+  const { width, height, cells } = domain;
   const s = Math.sqrt(CELL_AREA_PX / meanCellArea(cells));
   const kx = Math.max(1, Math.ceil(MIN_TILE_PX / (width * s)));
   const ky = Math.max(1, Math.ceil(MIN_TILE_PX / (height * s)));
@@ -619,7 +574,6 @@ function periodicTile(domain: Domain): string {
   const sx = w / (kx * width);
   const sy = h / (ky * height);
   const segments = new Map<string, Segment>();
-  const washes: string[] = [];
   for (let m = -1; m <= kx; m++) {
     for (let n = -1; n <= ky; n++) {
       // y is flipped: a tiling is y-up and SVG is y-down.
@@ -628,13 +582,9 @@ function periodicTile(domain: Domain): string {
         h - (y + n * height) * sy,
       ];
       collect(cells, place, w, h, segments);
-      for (const hole of holes ?? []) washes.push(polygon(hole.map(place)));
     }
   }
-  const body =
-    (washes.length ? `<g stroke='none' fill='${INK}' fill-opacity='${HOLE_ALPHA}'>${washes.join("")}</g>` : "") +
-    `<path d='${pathData(segments.values())}'/>`;
-  return svg(w, h, body);
+  return svg(w, h, `<path d='${pathData(segments.values())}'/>`);
 }
 
 /** Hex-packed circles, for the boards with no flat tiling to follow. Packed
@@ -666,134 +616,10 @@ function circleTile(): string {
   return svg(w, h, body.join(""));
 }
 
-/** Where a patch has tiling under it and where it has bare paper, as a raster
- * with a summed-area table over it — so the coverage of *any* window is three
- * additions rather than a sweep over every cell in it. Built by scan-converting
- * the cells once; the alternative, point-testing each candidate window against
- * the polygons near it, is the same answer some thousands of times slower. */
-function coverageTable(cells: Vertex[][], step: number, w: number, h: number) {
-  const nx = Math.max(1, Math.ceil(w / step));
-  const ny = Math.max(1, Math.ceil(h / step));
-  const hit = new Uint8Array(nx * ny);
-  for (const cell of cells) {
-    let [lo, hi] = [Infinity, -Infinity];
-    for (const [, y] of cell) {
-      lo = Math.min(lo, y);
-      hi = Math.max(hi, y);
-    }
-    for (let j = Math.max(0, Math.floor(lo / step)); j < Math.min(ny, Math.ceil(hi / step)); j++) {
-      const y = (j + 0.5) * step;
-      const xs: number[] = [];
-      for (let a = 0, b = cell.length - 1; a < cell.length; b = a++) {
-        const [x1, y1] = cell[a]!;
-        const [x2, y2] = cell[b]!;
-        if (y1 > y !== y2 > y) xs.push(x1 + ((y - y1) / (y2 - y1)) * (x2 - x1));
-      }
-      xs.sort((p, q) => p - q);
-      for (let k = 0; k + 1 < xs.length; k += 2) {
-        const from = Math.max(0, Math.ceil(xs[k]! / step - 0.5));
-        const to = Math.min(nx - 1, Math.floor(xs[k + 1]! / step - 0.5));
-        for (let i = from; i <= to; i++) hit[j * nx + i] = 1;
-      }
-    }
-  }
-  // Summed-area table, one row and column of zeros in front so a window that
-  // starts at the edge needs no special case.
-  const sum = new Int32Array((nx + 1) * (ny + 1));
-  for (let j = 0; j < ny; j++) {
-    for (let i = 0; i < nx; i++) {
-      sum[(j + 1) * (nx + 1) + i + 1] =
-        hit[j * nx + i]! +
-        sum[j * (nx + 1) + i + 1]! +
-        sum[(j + 1) * (nx + 1) + i]! -
-        sum[j * (nx + 1) + i]!;
-    }
-  }
-  /** The share of the window at `(ox, oy)` of side `side` that is covered. */
-  return (side: number, ox: number, oy: number): number => {
-    const i0 = Math.max(0, Math.min(nx, Math.round(ox / step)));
-    const j0 = Math.max(0, Math.min(ny, Math.round(oy / step)));
-    const i1 = Math.max(i0, Math.min(nx, Math.round((ox + side) / step)));
-    const j1 = Math.max(j0, Math.min(ny, Math.round((oy + side) / step)));
-    const area = (i1 - i0) * (j1 - j0);
-    if (area === 0) return 0;
-    const total =
-      sum[j1 * (nx + 1) + i1]! -
-      sum[j0 * (nx + 1) + i1]! -
-      sum[j1 * (nx + 1) + i0]! +
-      sum[j0 * (nx + 1) + i0]!;
-    return total / area;
-  };
-}
-
-/** A square crop of a real aperiodic board, used as the repeat tile.
- *
- * Two things are fitted rather than fixed. The **window** is as large as the
- * patch and the segment budget allow, because the wider it is the further apart
- * the repeat lands; and it is not simply the centre — these boards are grown
- * and trimmed to a disc, and a Spectre patch is ragged at its rim — so
- * candidate origins are scored and the fullest wins, then the window shrinks
- * until that best placement is genuinely full.
- *
- * "Full" is measured by **sampling the window and asking whether a tile covers
- * each point**, not by counting the cells whose centroid lands inside. Counting
- * centroids cannot see a hole: a window can hold its full quota of cells and
- * still have a bay of empty paper at one edge, because the cells it counted are
- * bunched elsewhere. That is exactly what the Spectre's crop had — a blank
- * region big enough to read as a smudge on the page once the tile repeated.
- *
- * The **cell size** then follows from the tile's own corner count, and the
- * tile's pixel size from the two together. */
-function patchTile(mode: string): string {
-  const board = PATCH_BUILDERS[mode]!();
-  const cells = [...board.polygons.values()];
-  const mean = meanCellArea(cells);
-  // Each cell contributes about half its corners as unique edges; the other
-  // half belong to its neighbours.
-  const corners = cells.reduce((sum, cell) => sum + cell.length, 0) / cells.length;
-  const maxCells = (2 * PATCH_SEGMENT_BUDGET) / corners;
-
-  // A raster fine enough to see a bay of bare paper: a few steps across a
-  // cell, which for the Spectre is about fifteen board units.
-  const fill = coverageTable(cells, Math.sqrt(mean) / 4, board.width, board.height);
-
-  // A full window holds one cell per mean cell area, so this is the widest one
-  // the segment budget pays for.
-  let side = Math.min(
-    PATCH_WINDOW * Math.min(board.width, board.height),
-    Math.sqrt(maxCells * mean),
-  );
-  let best: Vertex = [0, 0];
-  const steps = 8;
-  for (let attempt = 0; attempt < 12; attempt++) {
-    let bestFill = -1;
-    for (let i = 0; i <= steps; i++) {
-      for (let j = 0; j <= steps; j++) {
-        const ox = Math.max(0, ((board.width - side) * i) / steps);
-        const oy = Math.max(0, ((board.height - side) * j) / steps);
-        const got = fill(side, ox, oy);
-        if (got > bestFill) {
-          bestFill = got;
-          best = [ox, oy];
-        }
-      }
-    }
-    if (bestFill >= PATCH_FILL) break;
-    side *= 0.92;
-  }
-  const s = Math.sqrt((corners * PATCH_AREA_PER_CORNER_PX) / mean);
-  const w = Math.round(side * s);
-  const segments = new Map<string, Segment>();
-  const place = ([x, y]: Vertex): Vertex => [(x - best[0]) * s, (y - best[1]) * s];
-  collect(cells, place, w, w, segments);
-  return svg(w, w, `<path d='${pathData(segments.values())}'/>`);
-}
-
 /** The tile for a pattern key, as an SVG document. Exported for the tests,
  * which run under the node environment and cannot read a stylesheet. */
 export function patternSvg(key: string): string {
   if (key === "circles") return circleTile();
-  if (PATCH_BUILDERS[key]) return patchTile(key);
   const domain = DOMAINS[key];
   if (domain) return periodicTile(domain());
   const t = archTemplate(key); // throws on an unknown key: a bug in the table

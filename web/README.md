@@ -1488,30 +1488,37 @@ menu is in anyway.
   fundamental domain *is* a seamless repeat tile; the three regular tilings have
   no template, so their domains are written out in this module. The five
   **fractal** boards do not repeat, but their tiles do — the Gosper island is
-  plain hexagons, two sphinxes or two chairs fill a parallelogram, the carpet is
-  periodic once you stop inflating. The pentaflake takes two tiles rather than
+  plain hexagons, two sphinxes or two chairs fill a parallelogram, and the
+  Sierpinski carpet is unit squares. The pentaflake takes two tiles rather than
   one: regular pentagons famously do not tile the plane (which is why that board
   has gnomon-shaped holes), but pentagons *and* 36° rhombs do. Three pentagons
   round a point leave 36°, the rhomb's sharp corner, and two leave 144°, its
   blunt one; counting corners over those two vertex figures fixes the ratio at
-  two pentagons to one rhomb, and a torus exact-cover search finds that cell. Two of the three **aperiodic** boards are
-  the same story: the phyllotactic hexagon is a *parallelohexagon*, so it tiles
+  two pentagons to one rhomb, and a torus exact-cover search finds that cell.
+
+  Two of the three **aperiodic** boards are the same story: the phyllotactic
+  hexagon is a *parallelohexagon*, so it tiles
   by translation alone (the spiral is in how the board's wedges are offset, not
   in the tile), and Penrose's two rhombs make a plain periodic tiling as
   alternating courses of fat and thin diamonds — the interfaces line up because
   a fat course shifts by cos 72° and a mirrored thin one by −cos 36°, which sum
-  to exactly −½, so four courses come back a whole edge. Only the **Spectre** is
-  left with no periodic tiling small enough to use, and it alone is a crop
-  (`CROP_KEYS`). Tile(1,1) is known to tile periodically, but not with a small
-  cell: an exhaustive search over the 16 792 lattices in ℤ[ζ12] that could carry
-  a two-tile cell finds none (the search is a torus exact-cover, validated
-  against a regular hexagon, whose one-tile cell it finds). Its crop window is
-  chosen by **measured coverage** — the patch is rasterised once and a
-  summed-area table makes any window's fill three additions — rather than by
-  counting the cells whose centroid falls inside. Counting centroids cannot see
-  a hole: a window can hold its full quota of cells and still have a bay of bare
-  paper at one edge, and that bay reads as a smudge on the page, four times over
-  where the tile's corners meet. A tiling whose lattice is not rectangular — the phyllotactic
+  to exactly −½, so four courses come back a whole edge.
+
+  The **Spectre** is the one board whose page is a relative rather than its own
+  tile. Tile(1,1) has no periodic cell of its own small enough to use — an
+  exhaustive torus exact-cover search over the lattices in ℤ[ζ12] that could
+  carry a two-tile cell finds none — and letting other figures in, as the
+  pentaflake does, is not enough either. One Spectre with a square, a 30° rhomb
+  and a 60° rhomb *does* tile the plane, and the search finds that cell; but its
+  lattice contains **no orthogonal pair at all**, so there is no rectangle
+  anywhere in it, and a CSS background tiles a rectangle. Nor does any other: no
+  cell of one or two Spectres with up to four triangles, squares or 30°/60°
+  rhombs has a rectangular sublattice. So it takes the **deltoidal
+  trihexagonal** tiling instead — the hat continuum, of which Tile(1,1) is the
+  equilateral member, is drawn as polykites on exactly that, eight kites to a
+  hat.
+
+  A tiling whose lattice is not rectangular — the phyllotactic
   one is a rhombus at 36° — goes through `latticeDomain`, which finds the
   smallest rectangle *inside* the lattice and fills it with the cosets between.
 - **Traps.** Every placed point is snapped to a tenth of a pixel *before*

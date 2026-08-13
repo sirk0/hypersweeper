@@ -1,10 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  CROP_KEYS,
-  patternKey,
-  patternLayer,
-  patternSvg,
-} from "../../src/ui/backgroundPattern";
+import { patternKey, patternLayer, patternSvg } from "../../src/ui/backgroundPattern";
 import {
   APERIODIC_MODES,
   FRACTAL_MODES,
@@ -34,10 +29,10 @@ for (const mode of MODES) {
   if (key !== null) BY_KEY.set(key, [...(BY_KEY.get(key) ?? []), mode]);
 }
 
-/** The keys whose tile is a period rather than a crop. Almost all of them: a
- * board's patch may be aperiodic or fractal, but its *tile* nearly always tiles
- * the plane periodically on its own, and that is what the page draws. */
-const PERIODIC = [...BY_KEY.keys()].filter((k) => !CROP_KEYS.includes(k));
+/** Every key. All of them are periods: a board's patch may be aperiodic or
+ * fractal, but its *tile* tiles the plane periodically on its own — given, for
+ * two of them, a couple of other figures to tile with. */
+const PERIODIC = [...BY_KEY.keys()];
 
 type Seg = [number, number, number, number];
 
@@ -48,7 +43,6 @@ type Seg = [number, number, number, number];
 function segmentsOf(key: string): Seg[] {
   const segs: Seg[] = [];
   for (const [, d] of patternSvg(key).matchAll(/<path d='([^']*)'\/>/g)) {
-    if (d!.includes("Z")) continue; // a closed path is a washed hole, not a line
     for (const m of d!.matchAll(/M(-?[\d.]+),(-?[\d.]+)L(-?[\d.]+),(-?[\d.]+)/g)) {
       segs.push([+m[1]!, +m[2]!, +m[3]!, +m[4]!]);
     }
@@ -100,23 +94,25 @@ describe("which pattern a mode gets", () => {
     // A tiling with no repeat cannot be a repeating page, so what the page
     // draws is the *tile*: the phyllotactic hexagon is a parallelohexagon and
     // tiles by translation alone, and Penrose's two rhombs make a plain
-    // periodic tiling as alternating courses. Only the Spectre is left with no
-    // periodic tiling small enough to use.
-    expect(PERIODIC).toContain(patternKey("penrose"));
-    expect(PERIODIC).toContain(patternKey("phyllotaxis"));
-    expect(CROP_KEYS).toEqual(["spectre"]);
-    for (const mode of APERIODIC_MODES) expect(patternKey(mode)).toBe(mode);
+    // periodic tiling as alternating courses. The Spectre is the one board that
+    // cannot draw its own tile at all — no cell it belongs to has a rectangular
+    // lattice — so it takes the tiling the hat continuum is cut from.
+    expect(patternKey("penrose")).toBe("penrose");
+    expect(patternKey("phyllotaxis")).toBe("phyllotaxis");
+    expect(patternKey("spectre")).toBe("deltoidal");
+    for (const mode of APERIODIC_MODES) expect(PERIODIC).toContain(patternKey(mode));
   });
 
   it("lays the fractal boards' own tiles down periodically", () => {
     // Their patches do not repeat, but the tiles they are made of do — plain
-    // hexagons for the Gosper island, and the sphinx, the chair and the carpet
-    // block as themselves. Regular pentagons famously do not tile the plane,
-    // which is why the pentaflake has holes, but pentagons *and* 36° rhombs
-    // do — two of the first to one of the second.
-    for (const mode of ["sphinx", "chair", "carpet", "gosper", "pentaflake"]) {
+    // hexagons for the Gosper island, and the sphinx and the chair as
+    // themselves. Regular pentagons famously do not tile the plane, which is
+    // why the pentaflake has holes, but pentagons *and* 36° rhombs do — two of
+    // the first to one of the second. The Sierpinski carpet is unit squares.
+    for (const mode of ["sphinx", "chair", "gosper", "pentaflake"]) {
       expect(patternKey(mode)).toBe(mode);
     }
+    expect(patternKey("carpet")).toBe("square");
     for (const mode of FRACTAL_MODES) expect(PERIODIC).toContain(patternKey(mode));
   });
 
@@ -165,10 +161,8 @@ describe("the tile", () => {
 
   it("stays small enough to live in a style property", () => {
     for (const [key, modes] of BY_KEY) {
-      const size = patternLayer(modes[0]!)!.length;
-      // A period carries one repeat; a crop of an aperiodic patch carries every
-      // edge it draws, and is bounded by PATCH_SEGMENT_BUDGET instead.
-      expect(size, key).toBeLessThan(CROP_KEYS.includes(key) ? 40_000 : 12_000);
+      // Every tile is one repeat of a period, so none of them is large.
+      expect(patternLayer(modes[0]!)!.length, key).toBeLessThan(12_000);
     }
   });
 
@@ -181,7 +175,13 @@ describe("the tile", () => {
 });
 
 describe("the geometry", () => {
-  it("repeats the periodic tiles seamlessly", () => {
+  it("repeats every tile seamlessly — there are no crops left", () => {
+    // *Every* page is a period now: a board's patch may be aperiodic or
+    // fractal, but its tile tiles the plane on its own (given, for the
+    // pentaflake, a couple of other figures to tile with), and the Spectre —
+    // the one tile that cannot — borrows a relative's tiling rather than a
+    // cropped patch of itself. So this runs over the whole catalogue.
+    expect(PERIODIC.length).toBe(BY_KEY.size);
     // The tile is drawn from a block of domain copies around the viewBox and
     // clipped, so a cell straddling the edge arrives whole from the tile next
     // door. Stated as the property that makes that true: every segment shifted
