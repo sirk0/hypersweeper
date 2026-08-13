@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { patternKey, patternLayer, patternSvg } from "../../src/ui/backgroundPattern";
+import {
+  CROP_KEYS,
+  patternKey,
+  patternLayer,
+  patternSvg,
+} from "../../src/ui/backgroundPattern";
 import {
   APERIODIC_MODES,
   FRACTAL_MODES,
@@ -29,8 +34,10 @@ for (const mode of MODES) {
   if (key !== null) BY_KEY.set(key, [...(BY_KEY.get(key) ?? []), mode]);
 }
 
-/** The keys whose tile is a period rather than a crop of an aperiodic patch. */
-const PERIODIC = [...BY_KEY.keys()].filter((k) => !APERIODIC_MODES.includes(k));
+/** The keys whose tile is a period rather than a crop. Almost all of them: a
+ * board's patch may be aperiodic or fractal, but its *tile* nearly always tiles
+ * the plane periodically on its own, and that is what the page draws. */
+const PERIODIC = [...BY_KEY.keys()].filter((k) => !CROP_KEYS.includes(k));
 
 type Seg = [number, number, number, number];
 
@@ -87,6 +94,18 @@ describe("which pattern a mode gets", () => {
     expect(patternKey("tetraframe")).toBe("tri");
     for (const mode of SPHERE_MODES) expect(patternKey(mode)).toBe("circles");
     for (const mode of POLYHEDRA_MODES) expect(patternKey(mode)).not.toBe("circles");
+  });
+
+  it("lays the aperiodic boards' own tiles down periodically where it can", () => {
+    // A tiling with no repeat cannot be a repeating page, so what the page
+    // draws is the *tile*: the phyllotactic hexagon is a parallelohexagon and
+    // tiles by translation alone, and Penrose's two rhombs make a plain
+    // periodic tiling as alternating courses. Only the Spectre is left with no
+    // periodic tiling small enough to use.
+    expect(PERIODIC).toContain(patternKey("penrose"));
+    expect(PERIODIC).toContain(patternKey("phyllotaxis"));
+    expect(CROP_KEYS).toEqual(["spectre"]);
+    for (const mode of APERIODIC_MODES) expect(patternKey(mode)).toBe(mode);
   });
 
   it("lays the fractal boards' own tiles down periodically", () => {
@@ -149,7 +168,7 @@ describe("the tile", () => {
       const size = patternLayer(modes[0]!)!.length;
       // A period carries one repeat; a crop of an aperiodic patch carries every
       // edge it draws, and is bounded by PATCH_SEGMENT_BUDGET instead.
-      expect(size, key).toBeLessThan(APERIODIC_MODES.includes(key) ? 40_000 : 12_000);
+      expect(size, key).toBeLessThan(CROP_KEYS.includes(key) ? 40_000 : 12_000);
     }
   });
 

@@ -14,32 +14,41 @@
 // CDN is a texture that does not exist offline. The only URL a tile may contain
 // is the SVG namespace, which that checker already allows.
 //
-// FOUR SOURCES OF GEOMETRY, ONE PIPELINE.
+// THE PATTERN IS THE BOARD'S TILE, LAID DOWN PERIODICALLY.
+//
+// A board's own patch may be aperiodic, a fractal or wrapped round a solid, but
+// what the page wants is the *tile* — and nearly every tile in the catalogue
+// tiles the plane periodically all by itself, which is what makes a seamless
+// repeat possible at all.
 //
 //  * The 27 `ARCH_TILINGS` come from `archTemplate`: a rectangular fundamental
 //    domain, which is exactly a seamless repeat tile.
 //  * The three regular tilings have no template — they are direct lattice
 //    builders in boards/tilings.ts — so their domains are written out below, in
 //    the units and the orientation those builders use.
-//  * The five **fractal** boards do not repeat, but their *tiles* do: the
-//    Gosper island is plain hexagons, the sphinx and the chair are rep-tiles
-//    that also tile the plane periodically (two of either fill a parallelogram),
-//    and the Sierpinski carpet is the 3x3 block with its middle ninth missing —
-//    which is periodic on its own. So they get a period of their own tile
-//    rather than a crop of a fractal patch: seamless, and about a hundredth of
-//    the markup. The pentaflake is the exception and the compromise; see
+//  * The five **fractal** boards do not repeat, but their tiles do: the Gosper
+//    island is plain hexagons, the sphinx and the chair are rep-tiles that also
+//    tile the plane in pairs, and the Sierpinski carpet is periodic once you
+//    stop inflating. The pentaflake is the one exception; see
 //    PENTAFLAKE_PATTERN.
-//  * The three **aperiodic** boards have no period by construction, so they are
-//    the one tier that is a cropped patch of the real board, repeated. See
-//    PATCH_BUILDERS.
+//  * Two of the three **aperiodic** boards are the same story. The
+//    phyllotactic spiral's hexagon is a *parallelohexagon*, so it tiles by
+//    translation alone — the spiral is in how the board's wedges are offset,
+//    not in the tile. Penrose's two rhombs make a plain periodic tiling as
+//    alternating courses of fat and thin diamonds. Neither is the board's own
+//    tiling, and neither pretends to be: an aperiodic tiling has no repeat, so
+//    a page that repeats can only be its tile.
+//  * The **Spectre** is the one tile with no periodic tiling small enough to
+//    use, so it alone is a cropped patch of the real board. See PATCH_BUILDERS.
 //  * The spheres have no flat tiling at all, so they get circles.
 //
 // Every one of those reduces to `{width, height, cells}` (or, for the spheres,
 // circle centres) in its own units, and one pipeline scales it, strokes it and
-// encodes it.
+// encodes it. A tiling whose lattice is not rectangular goes through
+// `latticeDomain`, which finds a rectangle inside it.
 
 import type { Board, Vertex } from "../boards/core";
-import { penroseBoard, phyllotaxisBoard, spectreBoard } from "../boards/aperiodic";
+import { spectreBoard } from "../boards/aperiodic";
 import {
   APERIODIC_MODES,
   POLYHEDRA_MODES,
@@ -121,6 +130,60 @@ interface Domain {
 const shift = (cell: Vertex[], dx: number, dy: number): Vertex[] =>
   cell.map(([x, y]): Vertex => [x + dx, y + dy]);
 
+/** A `Domain` from a tiling given as tiles plus the lattice they repeat on.
+ *
+ * A rectangle is what a CSS background can tile, and most lattices are not
+ * rectangular — the phyllotactic hexagon's is a rhombus at 36°. But a lattice
+ * only needs to *contain* a rectangle: any orthogonal pair of lattice vectors
+ * spans one, and the tiles in it are the tile set repeated over the cosets in
+ * between. So: find the smallest orthogonal pair, turn it onto the axes, and
+ * fill it.
+ *
+ * The search is over small integer combinations, which is enough because the
+ * rectangle wanted is the smallest one — a rhombic lattice, the case here,
+ * always has `v1 ± v2` and so index 2. A lattice with no orthogonal pair at all
+ * has no rectangular tile either; this throws rather than emit a patch that
+ * does not repeat. */
+function latticeDomain(tiles: Vertex[][], v1: Vertex, v2: Vertex): Domain {
+  const RANGE = 6;
+  const combos: { v: Vertex; i: number; j: number }[] = [];
+  for (let i = -RANGE; i <= RANGE; i++) {
+    for (let j = -RANGE; j <= RANGE; j++) {
+      if (i === 0 && j === 0) continue;
+      combos.push({ v: [i * v1[0] + j * v2[0], i * v1[1] + j * v2[1]], i, j });
+    }
+  }
+  let best: { a: Vertex; b: Vertex; area: number } | null = null;
+  for (const p of combos) {
+    for (const q of combos) {
+      const dot = p.v[0] * q.v[0] + p.v[1] * q.v[1];
+      const det = p.v[0] * q.v[1] - p.v[1] * q.v[0];
+      if (Math.abs(dot) > 1e-9 || det <= 1e-9) continue;
+      if (!best || det < best.area) best = { a: p.v, b: q.v, area: det };
+    }
+  }
+  if (!best) throw new Error("no rectangular sublattice");
+  // Turn `a` onto +x; `b` is perpendicular to it, so it lands on +y.
+  const width = Math.hypot(best.a[0], best.a[1]);
+  const height = Math.hypot(best.b[0], best.b[1]);
+  const [cos, sin] = [best.a[0] / width, -best.a[1] / width];
+  const turn = ([x, y]: Vertex): Vertex => [x * cos - y * sin, x * sin + y * cos];
+  // One tile set per coset of the rectangle's lattice inside the tiling's own:
+  // every i·v1 + j·v2, reduced into the rectangle and de-duplicated.
+  const cells: Vertex[][] = [];
+  const seen = new Set<string>();
+  for (const { v } of [{ v: [0, 0] as Vertex }, ...combos]) {
+    const [x, y] = turn(v);
+    const rx = x - Math.floor(x / width + 1e-9) * width;
+    const ry = y - Math.floor(y / height + 1e-9) * height;
+    const key = `${Math.round(rx * 1e6)},${Math.round(ry * 1e6)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    for (const tile of tiles) cells.push(shift(tile.map(turn), rx, ry));
+  }
+  return { width, height, cells };
+}
+
 const hexagon = (cx: number, cy: number, rotated: boolean): Vertex[] =>
   [0, 1, 2, 3, 4, 5].map((k): Vertex => {
     const a = ((k * 60 + (rotated ? 90 : 0)) * Math.PI) / 180;
@@ -161,6 +224,30 @@ const CHAIR_TILE: Vertex[] = [
   [1, 2],
   [0, 2],
   [0, 1],
+];
+
+/** The phyllotactic spiral's tile: the equilateral convex hexagon with angles
+ * 72° and 144°, written the way boards/aperiodic.ts does — the partial sums of
+ * three unit vectors 36° apart, so its opposite sides are equal and parallel.
+ * That makes it a *parallelohexagon*, which tiles the plane by translation
+ * alone on the lattice `u0 + u1`, `u1 + u2` (`PHYLLO_A` and `PHYLLO_B` there).
+ * The board's spiral comes from how the ten wedges are offset against each
+ * other, not from the tile; laid down plainly, the same hexagon is periodic. */
+const PHYLLO_U: Vertex[] = [0, 1, 2].map((k): Vertex => [
+  Math.cos((36 * k * Math.PI) / 180),
+  Math.sin((36 * k * Math.PI) / 180),
+]);
+
+const PHYLLO_TILE: Vertex[] = [
+  [0, 0],
+  PHYLLO_U[0]!,
+  [PHYLLO_U[0]![0] + PHYLLO_U[1]![0], PHYLLO_U[0]![1] + PHYLLO_U[1]![1]],
+  [
+    PHYLLO_U[0]![0] + PHYLLO_U[1]![0] + PHYLLO_U[2]![0],
+    PHYLLO_U[0]![1] + PHYLLO_U[1]![1] + PHYLLO_U[2]![1],
+  ],
+  [PHYLLO_U[1]![0] + PHYLLO_U[2]![0], PHYLLO_U[1]![1] + PHYLLO_U[2]![1]],
+  PHYLLO_U[2]!,
 ];
 
 /** A tile turned a half turn about `(cx, cy)`. Both rep-tiles tile the plane in
@@ -262,6 +349,51 @@ const DOMAINS: Record<string, () => Domain> = {
       shift(halfTurn(SPHINX_TILE, 2, H3), k, k * ROOT3),
     ]),
   }),
+
+  // The phyllotactic hexagon on its own translation lattice — no spiral, since
+  // a spiral is not periodic, but the same tile and the same five-fold angles.
+  // The lattice is a rhombus (|u0 + u1| = |u1 + u2|), so its smallest
+  // rectangle is spanned by the two diagonals and holds two hexagons.
+  phyllotaxis: () =>
+    latticeDomain(
+      [PHYLLO_TILE],
+      [PHYLLO_U[0]![0] + PHYLLO_U[1]![0], PHYLLO_U[0]![1] + PHYLLO_U[1]![1]],
+      [PHYLLO_U[1]![0] + PHYLLO_U[2]![0], PHYLLO_U[1]![1] + PHYLLO_U[2]![1]],
+    ),
+
+  // Two rows of diamonds: a course of Penrose's fat rhombs (72°) and a course
+  // of its thin ones (36°), which is the plainest periodic tiling the two of
+  // them make. Each course fills a strip on its own, so the only question is
+  // whether the strips ever line up again: a fat course shifts the vertices
+  // along its upper edge by cos 72° and a thin one *mirrored* by cos 144°,
+  // which is −cos 36°, and those sum to exactly −1/2. Two of each, and the
+  // pattern has come back a whole edge — so the period is four courses, and
+  // every interface is edge to edge.
+  penrose: () => {
+    const rhomb = (y: number, x: number, deg: number): Vertex[] => {
+      const [dx, dy] = [Math.cos((deg * Math.PI) / 180), Math.sin((deg * Math.PI) / 180)];
+      return [
+        [x, y],
+        [x + 1, y],
+        [x + 1 + dx, y + dy],
+        [x + dx, y + dy],
+      ];
+    };
+    const [fat, thin] = [Math.sin((72 * Math.PI) / 180), Math.sin((36 * Math.PI) / 180)];
+    let [y, x] = [0, 0];
+    const cells: Vertex[][] = [];
+    for (const [deg, rise] of [
+      [72, fat],
+      [144, thin],
+      [72, fat],
+      [144, thin],
+    ] as const) {
+      cells.push(rhomb(y, x, deg));
+      x += Math.cos((deg * Math.PI) / 180);
+      y += rise;
+    }
+    return { width: 1, height: y, cells };
+  },
 };
 
 /** The pentaflake's stand-in. Regular pentagons do not tile the plane — that is
@@ -282,10 +414,12 @@ const PENTAFLAKE_PATTERN = "cairo";
  * Built a level below the real easy board, and memoised, so only the first open
  * of one of these three pays for it. */
 const PATCH_BUILDERS: Record<string, () => Board> = {
-  penrose: () => penroseBoard(6, 0, 300, null),
   spectre: () => spectreBoard(3, 0, null, 21),
-  phyllotaxis: () => phyllotaxisBoard(8, 0, null, 44),
 };
+
+/** The pattern keys whose tile is a crop rather than a period — everything else
+ * repeats seamlessly, and the tests hold it to that. */
+export const CROP_KEYS: readonly string[] = Object.keys(PATCH_BUILDERS);
 
 // -- what a mode is patterned with ------------------------------------------
 

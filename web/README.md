@@ -1473,14 +1473,28 @@ back to the plain field.
   share one tile, so the cache holds 38 entries for 159 modes. `tilingOf(mode)`
   in `boards/catalog.ts` is the inverse of `modeFor` — not a prefix strip, since
   `torustri`, `torustriakis` and `torustrihex` are three tilings on one surface.
-- **Four sources, one pipeline.** The 27 `ARCH_TILINGS` come from
-  `archTemplate`, whose fundamental domain *is* a seamless repeat tile. The
-  three regular tilings have no template, so their domains are written out in
-  this module. The five **fractal** boards do not repeat, but their tiles do —
-  the Gosper island is plain hexagons, two sphinxes or two chairs fill a
-  parallelogram, and the carpet is periodic once you stop inflating — so they
-  get a period of their own tile instead of a crop. Only the three genuinely
-  **aperiodic** boards are a cropped patch of the real board, repeated.
+- **The pattern is the board's tile, laid down periodically.** A board's own
+  patch may be aperiodic, fractal or wrapped round a solid, but what the page
+  wants is the *tile* — and nearly every tile in the catalogue tiles the plane
+  periodically by itself. The 27 `ARCH_TILINGS` come from `archTemplate`, whose
+  fundamental domain *is* a seamless repeat tile; the three regular tilings have
+  no template, so their domains are written out in this module. The five
+  **fractal** boards do not repeat, but their tiles do — the Gosper island is
+  plain hexagons, two sphinxes or two chairs fill a parallelogram, the carpet is
+  periodic once you stop inflating. Two of the three **aperiodic** boards are
+  the same story: the phyllotactic hexagon is a *parallelohexagon*, so it tiles
+  by translation alone (the spiral is in how the board's wedges are offset, not
+  in the tile), and Penrose's two rhombs make a plain periodic tiling as
+  alternating courses of fat and thin diamonds — the interfaces line up because
+  a fat course shifts by cos 72° and a mirrored thin one by −cos 36°, which sum
+  to exactly −½, so four courses come back a whole edge. Only the **Spectre** is
+  left with no periodic tiling small enough to use, and it alone is a crop
+  (`CROP_KEYS`). Tile(1,1) is known to tile periodically, but not with a small
+  cell: an exhaustive search over the 16 792 lattices in ℤ[ζ12] that could carry
+  a two-tile cell finds none (the search is a torus exact-cover, validated
+  against a regular hexagon, whose one-tile cell it finds). A tiling whose lattice is not rectangular — the phyllotactic
+  one is a rhombus at 36° — goes through `latticeDomain`, which finds the
+  smallest rectangle *inside* the lattice and fills it with the cosets between.
 - **Traps.** Every placed point is snapped to a tenth of a pixel *before*
   de-duplication and with a tie-break epsilon: a shared edge is computed twice
   by two routes through the lattice, and without that the two copies disagree in

@@ -531,10 +531,22 @@ two sphinxes or two chairs fill a parallelogram, the Sierpinski carpet is
 periodic once you stop inflating — so they get their own tile laid down the
 plain way rather than a crop of a fractal; only the pentaflake needs a
 stand-in, and it takes the Cairo, since regular pentagons do not tile the
-plane at all (which is why that board has holes). The three genuinely
-**aperiodic** boards are the one tier that is a crop, sized against a
-segment budget and a fill check so the window is neither over-long nor part
-empty. Two traps outlive the geometry. Every point is snapped to a tenth of
+plane at all (which is why that board has holes). Two of the three
+**aperiodic** boards go the same way — an aperiodic tiling has no repeat, so
+a page that repeats can only be its *tile*: the phyllotactic hexagon is a
+parallelohexagon and tiles by translation alone (the spiral is in how the
+board's ten wedges are offset, not in the tile), and Penrose's two rhombs
+tile as alternating courses of fat and thin diamonds, which close up because
+a fat course shifts by cos 72° and a mirrored thin one by −cos 36°, summing
+to exactly −½ so four courses come back a whole edge. The **Spectre** is the
+one board left on a crop: Tile(1,1) is known to tile periodically, but the cell
+is not a small one — an exhaustive search over the 16 792 lattices in ℤ[ζ12]
+that could carry a **two**-tile cell finds none, and several thousand of the
+four-tile ones are clear too — so there is nothing small enough to draw a page
+with, and the Spectre alone keeps a cropped patch of the real board. A tiling whose
+lattice is not rectangular (the phyllotactic one is a rhombus at 36°) goes
+through `latticeDomain`, which finds the smallest rectangle *inside* the
+lattice and fills it with the cosets in between. Two traps outlive the geometry. Every point is snapped to a tenth of
 a pixel **before** de-duplication, with a tie-break epsilon: a shared edge
 is computed twice by two routes through the lattice, and unsnapped the two
 copies disagree in the last bits, both survive, and the line is stroked
