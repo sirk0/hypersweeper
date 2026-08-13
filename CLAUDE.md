@@ -449,8 +449,8 @@ left — one button per side, so the two balance and the title
 "Hypersweeper", a single unbreakable word, stays on one line on a narrow
 phone. The **?** opens a how-to-play page (`src/ui/help.ts`) built the
 same way, its text in TS rather than in the pygame-shared `screens.json`.
-Theme, difficulty, the sound preset and its volume, haptics and the
-animations override persist (`src/settings.ts`): one stable
+Theme, difficulty, the sound preset and its volume, haptics, custom
+backgrounds and the animations override persist (`src/settings.ts`): one stable
 `localStorage` key holding a record that carries its own `version`, never
 a versioned key name — see "Settings and themes" in `web/README.md` before
 adding a field.
@@ -511,8 +511,12 @@ mesh's vertex layout); its chrome is instant. See "Settings and themes"
 in `web/README.md`, including the v2→v3 migration that reads the old
 palette/cell-style *pair* together.
 
-Realistic's page carries one thing more: **the board's own tiling**, drawn
-very small and very faint behind the grain (`src/ui/backgroundPattern.ts`),
+Realistic's page can carry one thing more: **the board's own tiling**, drawn
+very small and very faint behind the grain (`src/ui/backgroundPattern.ts`).
+It is **opt-in** — Settings › Appearance › Custom backgrounds, off by
+default, because a flourish is something to turn on rather than something to
+find already running; the switch withholds the *mode*, so with no board named
+there is nothing for the page to follow. Switched on,
 so a trihexagonal torus sits on trihexagonal paper and the detail is
 something a player finds rather than is shown. It follows the *tiling*, not
 the surface — all five surfaces of one tiling share a tile, 38 for the
@@ -545,7 +549,13 @@ one board left on a crop: Tile(1,1) is known to tile periodically, but the cell
 is not a small one — an exhaustive search over the 16 792 lattices in ℤ[ζ12]
 that could carry a **two**-tile cell finds none, and several thousand of the
 four-tile ones are clear too — so there is nothing small enough to draw a page
-with, and the Spectre alone keeps a cropped patch of the real board. A tiling whose
+with, and the Spectre alone keeps a cropped patch of the real board. That
+crop's window is measured for **coverage** — a raster of the patch with a
+summed-area table over it, so any window's fill is three additions — and not
+by counting the cells whose centroid lands inside, which cannot see a hole:
+the window can hold its full quota and still have a bay of bare paper at one
+edge, which is what the Spectre's page had, four times over where the tile's
+corners met. A tiling whose
 lattice is not rectangular (the phyllotactic one is a rhombus at 36°) goes
 through `latticeDomain`, which finds the smallest rectangle *inside* the
 lattice and fills it with the cosets in between. Two traps outlive the geometry. Every point is snapped to a tenth of

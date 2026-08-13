@@ -1461,13 +1461,21 @@ Open `torustrihex` and the paper behind it is trihexagonal; open `kleincairo`
 and it is Cairo pentagons. On Realistic the opened cells are translucent, so
 that page is what shows *through* the board as well as around it.
 
+It is **opt-in**: Settings › Appearance › **Custom backgrounds**, off by
+default. The row sits beside Theme rather than under Behaviour (this is what the
+page is made of, not what the game does) and is shown whatever theme is active,
+with the hint saying that only Realistic has a pattern to draw — better than a
+row that appears and disappears with the theme.
+
 `patternLayer(mode)` returns one CSS `background-image` layer — an inline SVG
 data URI, because the packaged builds assert the bundle fetches nothing. It goes
 into its own `--bg-pattern` property, above `--bg-texture` in the `html, body`
 list. Wiring: `applyTheme(key, mode)` takes the mode; every caller goes through
 `App.paintTheme` (`main.ts`), which reads it off the session, so a theme switch
 or a change synced from another tab keeps the board's pattern and the menu goes
-back to the plain field.
+back to the plain field. The setting is applied there too, by withholding the
+*mode*: with no board named there is nothing to follow, which is the state the
+menu is in anyway.
 
 - **It follows the tiling, not the surface.** All five surfaces of a tiling
   share one tile, so the cache holds 38 entries for 159 modes. `tilingOf(mode)`
@@ -1497,7 +1505,13 @@ back to the plain field.
   (`CROP_KEYS`). Tile(1,1) is known to tile periodically, but not with a small
   cell: an exhaustive search over the 16 792 lattices in ℤ[ζ12] that could carry
   a two-tile cell finds none (the search is a torus exact-cover, validated
-  against a regular hexagon, whose one-tile cell it finds). A tiling whose lattice is not rectangular — the phyllotactic
+  against a regular hexagon, whose one-tile cell it finds). Its crop window is
+  chosen by **measured coverage** — the patch is rasterised once and a
+  summed-area table makes any window's fill three additions — rather than by
+  counting the cells whose centroid falls inside. Counting centroids cannot see
+  a hole: a window can hold its full quota of cells and still have a bay of bare
+  paper at one edge, and that bay reads as a smudge on the page, four times over
+  where the tile's corners meet. A tiling whose lattice is not rectangular — the phyllotactic
   one is a rhombus at 36° — goes through `latticeDomain`, which finds the
   smallest rectangle *inside* the lattice and fills it with the cosets between.
 - **Traps.** Every placed point is snapped to a tenth of a pixel *before*

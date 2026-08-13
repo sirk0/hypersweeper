@@ -258,11 +258,41 @@ test.describe("settings", () => {
   // pattern is a 7%-alpha hairline, which moves a pixel by about 0.05 — well
   // under Playwright's default per-pixel `threshold` of 0.2 — so a screenshot
   // comparison cannot see whether it rendered at all.
+  test("the page is plain until custom backgrounds are switched on", async ({ page }) => {
+    // Off by default, on every theme: the pattern is a flourish, and a flourish
+    // is something to turn on rather than something to find already running.
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
+    await page.locator('.menu-entry[data-settings-group="theme"]').click();
+    await page.locator('.menu-entry[data-theme="realistic"]').click();
+    await page.locator('.menu-entry[data-action="back"]').click();
+    await expect(page.locator('.menu-entry[data-setting="backgrounds"]')).toHaveAttribute(
+      "aria-checked",
+      "false",
+    );
+    await page.locator('.menu-entry[data-action="back"]').click();
+    await page.evaluate(() => window.__ms!.startBoard("torustrihex", "easy"));
+    expect(await cssVar(page, "--bg-pattern")).toBe("none");
+    await page.locator('.hud-btn[data-slot="back"]').click();
+
+    // ...and on once the switch is, over the board already in play, since the
+    // page is CSS and needs no new board.
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
+    await page.locator('.menu-entry[data-setting="backgrounds"]').click();
+    await expect(page.locator('.menu-entry[data-setting="backgrounds"]')).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    await page.locator('.menu-entry[data-action="back"]').click();
+    await page.evaluate(() => window.__ms!.startBoard("torustrihex", "easy"));
+    expect(await cssVar(page, "--bg-pattern")).toContain("data:image/svg+xml");
+  });
+
   test("the Realistic page follows the board's tiling", async ({ page }) => {
     await page.locator('.menu-header-btn[data-action="settings"]').click();
     await page.locator('.menu-entry[data-settings-group="theme"]').click();
     await page.locator('.menu-entry[data-theme="realistic"]').click();
     await page.locator('.menu-entry[data-action="back"]').click(); // to settings
+    await page.locator('.menu-entry[data-setting="backgrounds"]').click(); // opt in
     await page.locator('.menu-entry[data-action="back"]').click(); // to the root
 
     // The menu is not a board, so it keeps the plain themed field.
@@ -287,6 +317,9 @@ test.describe("settings", () => {
   });
 
   test("only the Realistic theme patterns the page", async ({ page }) => {
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
+    await page.locator('.menu-entry[data-setting="backgrounds"]').click(); // opt in
+    await page.locator('.menu-entry[data-action="back"]').click();
     for (const key of ["light", "dark", "classic"]) {
       await page.locator('.menu-header-btn[data-action="settings"]').click();
       await page.locator('.menu-entry[data-settings-group="theme"]').click();

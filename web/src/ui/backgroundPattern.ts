@@ -88,11 +88,11 @@ const PATCH_AREA_PER_CORNER_PX = 70;
 const PATCH_WINDOW = 0.62;
 
 /** How full the crop window has to be before it is accepted — the fraction of
- * its area actually covered by tiles. `PATCH_WINDOW` is a guess about a disc,
- * and a patch that is not a disc (the phyllotactic rosette is a five-armed
- * star) needs the window pulled in further; this measures instead of guessing.
- * Anything less and the page shows a rectangle of blank paper. */
-const PATCH_FILL = 0.985;
+ * *sampled points* the tiling actually covers. `PATCH_WINDOW` is a guess about
+ * a disc, and a patch is rarely one; this measures instead of guessing. A bay
+ * of empty paper anywhere in the window shows up on the page as a smudge, and
+ * shows up four times over where the tile's corners meet, so the bar is high. */
+const PATCH_FILL = 0.995;
 
 /** No repeat tile smaller than this on either axis. Rounding the tile to whole
  * pixels keeps it crisp across the seam; a tiny tile would round badly (and a
@@ -666,17 +666,84 @@ function circleTile(): string {
   return svg(w, h, body.join(""));
 }
 
+/** Where a patch has tiling under it and where it has bare paper, as a raster
+ * with a summed-area table over it — so the coverage of *any* window is three
+ * additions rather than a sweep over every cell in it. Built by scan-converting
+ * the cells once; the alternative, point-testing each candidate window against
+ * the polygons near it, is the same answer some thousands of times slower. */
+function coverageTable(cells: Vertex[][], step: number, w: number, h: number) {
+  const nx = Math.max(1, Math.ceil(w / step));
+  const ny = Math.max(1, Math.ceil(h / step));
+  const hit = new Uint8Array(nx * ny);
+  for (const cell of cells) {
+    let [lo, hi] = [Infinity, -Infinity];
+    for (const [, y] of cell) {
+      lo = Math.min(lo, y);
+      hi = Math.max(hi, y);
+    }
+    for (let j = Math.max(0, Math.floor(lo / step)); j < Math.min(ny, Math.ceil(hi / step)); j++) {
+      const y = (j + 0.5) * step;
+      const xs: number[] = [];
+      for (let a = 0, b = cell.length - 1; a < cell.length; b = a++) {
+        const [x1, y1] = cell[a]!;
+        const [x2, y2] = cell[b]!;
+        if (y1 > y !== y2 > y) xs.push(x1 + ((y - y1) / (y2 - y1)) * (x2 - x1));
+      }
+      xs.sort((p, q) => p - q);
+      for (let k = 0; k + 1 < xs.length; k += 2) {
+        const from = Math.max(0, Math.ceil(xs[k]! / step - 0.5));
+        const to = Math.min(nx - 1, Math.floor(xs[k + 1]! / step - 0.5));
+        for (let i = from; i <= to; i++) hit[j * nx + i] = 1;
+      }
+    }
+  }
+  // Summed-area table, one row and column of zeros in front so a window that
+  // starts at the edge needs no special case.
+  const sum = new Int32Array((nx + 1) * (ny + 1));
+  for (let j = 0; j < ny; j++) {
+    for (let i = 0; i < nx; i++) {
+      sum[(j + 1) * (nx + 1) + i + 1] =
+        hit[j * nx + i]! +
+        sum[j * (nx + 1) + i + 1]! +
+        sum[(j + 1) * (nx + 1) + i]! -
+        sum[j * (nx + 1) + i]!;
+    }
+  }
+  /** The share of the window at `(ox, oy)` of side `side` that is covered. */
+  return (side: number, ox: number, oy: number): number => {
+    const i0 = Math.max(0, Math.min(nx, Math.round(ox / step)));
+    const j0 = Math.max(0, Math.min(ny, Math.round(oy / step)));
+    const i1 = Math.max(i0, Math.min(nx, Math.round((ox + side) / step)));
+    const j1 = Math.max(j0, Math.min(ny, Math.round((oy + side) / step)));
+    const area = (i1 - i0) * (j1 - j0);
+    if (area === 0) return 0;
+    const total =
+      sum[j1 * (nx + 1) + i1]! -
+      sum[j0 * (nx + 1) + i1]! -
+      sum[j1 * (nx + 1) + i0]! +
+      sum[j0 * (nx + 1) + i0]!;
+    return total / area;
+  };
+}
+
 /** A square crop of a real aperiodic board, used as the repeat tile.
  *
  * Two things are fitted rather than fixed. The **window** is as large as the
  * patch and the segment budget allow, because the wider it is the further apart
  * the repeat lands; and it is not simply the centre — these boards are grown
- * and trimmed to a disc, and a Penrose or Spectre patch is ragged at its rim —
- * so candidate origins are scored by how much tiling they actually cover, the
- * fullest wins, and the window shrinks until that best placement is genuinely
- * full. Without that a crop comes out part empty, which reads as a blank
- * rectangle rather than as a pattern. The **cell size** then follows from the
- * tile's own corner count, and the tile's pixel size from the two together. */
+ * and trimmed to a disc, and a Spectre patch is ragged at its rim — so
+ * candidate origins are scored and the fullest wins, then the window shrinks
+ * until that best placement is genuinely full.
+ *
+ * "Full" is measured by **sampling the window and asking whether a tile covers
+ * each point**, not by counting the cells whose centroid lands inside. Counting
+ * centroids cannot see a hole: a window can hold its full quota of cells and
+ * still have a bay of empty paper at one edge, because the cells it counted are
+ * bunched elsewhere. That is exactly what the Spectre's crop had — a blank
+ * region big enough to read as a smudge on the page once the tile repeated.
+ *
+ * The **cell size** then follows from the tile's own corner count, and the
+ * tile's pixel size from the two together. */
 function patchTile(mode: string): string {
   const board = PATCH_BUILDERS[mode]!();
   const cells = [...board.polygons.values()];
@@ -685,22 +752,11 @@ function patchTile(mode: string): string {
   // half belong to its neighbours.
   const corners = cells.reduce((sum, cell) => sum + cell.length, 0) / cells.length;
   const maxCells = (2 * PATCH_SEGMENT_BUDGET) / corners;
-  const centres = cells.map((cell): Vertex => {
-    let x = 0;
-    let y = 0;
-    for (const [px, py] of cell) {
-      x += px;
-      y += py;
-    }
-    return [x / cell.length, y / cell.length];
-  });
-  const inside = (side: number, ox: number, oy: number): number => {
-    let count = 0;
-    for (const [cx, cy] of centres) {
-      if (cx >= ox && cx < ox + side && cy >= oy && cy < oy + side) count++;
-    }
-    return count;
-  };
+
+  // A raster fine enough to see a bay of bare paper: a few steps across a
+  // cell, which for the Spectre is about fifteen board units.
+  const fill = coverageTable(cells, Math.sqrt(mean) / 4, board.width, board.height);
+
   // A full window holds one cell per mean cell area, so this is the widest one
   // the segment budget pays for.
   let side = Math.min(
@@ -709,22 +765,21 @@ function patchTile(mode: string): string {
   );
   let best: Vertex = [0, 0];
   const steps = 8;
-  for (let attempt = 0; attempt < 10; attempt++) {
-    let bestCount = -1;
+  for (let attempt = 0; attempt < 12; attempt++) {
+    let bestFill = -1;
     for (let i = 0; i <= steps; i++) {
       for (let j = 0; j <= steps; j++) {
         const ox = Math.max(0, ((board.width - side) * i) / steps);
         const oy = Math.max(0, ((board.height - side) * j) / steps);
-        const count = inside(side, ox, oy);
-        if (count > bestCount) {
-          bestCount = count;
+        const got = fill(side, ox, oy);
+        if (got > bestFill) {
+          bestFill = got;
           best = [ox, oy];
         }
       }
     }
-    // Full enough, and inside the budget? Then this is the window.
-    if ((bestCount * mean) / (side * side) >= PATCH_FILL && bestCount <= maxCells) break;
-    side *= 0.9;
+    if (bestFill >= PATCH_FILL) break;
+    side *= 0.92;
   }
   const s = Math.sqrt((corners * PATCH_AREA_PER_CORNER_PX) / mean);
   const w = Math.round(side * s);

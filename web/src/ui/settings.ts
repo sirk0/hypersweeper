@@ -62,6 +62,8 @@ export interface SettingsHost {
   volume: number;
   /** Whether the game buzzes on a flag, a win and a mine. */
   haptics: boolean;
+  /** Whether the page behind the board follows that board's own tiling. */
+  backgrounds: boolean;
   /** Whether anonymous play counts are reported. */
   analytics: boolean;
   setTheme(key: string): void;
@@ -72,6 +74,7 @@ export interface SettingsHost {
    * the page: it is called from a slider the player is still holding. */
   setVolume(level: number): void;
   setHaptics(on: boolean): void;
+  setBackgrounds(on: boolean): void;
   setAnalytics(on: boolean): void;
 }
 
@@ -407,6 +410,32 @@ export function renderSettings(
   );
   themeBtn.dataset["settingsGroup"] = "theme";
   appearance.append(themeLi);
+
+  // Beside the theme rather than under Behaviour: this is what the page is
+  // made of, not what the game does. It is shown whatever theme is active,
+  // unlike the conditional rows below — the setting is real either way, and
+  // only its *effect* waits for a theme that has a pattern to draw. Saying so
+  // in the hint beats a row that appears and disappears with the theme.
+  const bgKnob = document.createElement("span");
+  bgKnob.className = "settings-switch";
+  const { li: bgLi, btn: bgBtn } = buttonRow(
+    [
+      textBlock(
+        "Custom backgrounds",
+        themeDef(host.theme).patterned
+          ? "The page behind the board follows its own tiling"
+          : "The page follows the board's tiling, on the Realistic theme",
+      ),
+      bgKnob,
+    ],
+    () => host.setBackgrounds(!host.backgrounds),
+    "settings-toggle",
+  );
+  bgBtn.dataset["setting"] = "backgrounds";
+  bgBtn.setAttribute("role", "switch");
+  bgBtn.setAttribute("aria-checked", String(host.backgrounds));
+  bgBtn.classList.toggle("on", host.backgrounds);
+  appearance.append(bgLi);
   frag.append(appearance);
 
   // -- Behaviour -------------------------------------------------------------

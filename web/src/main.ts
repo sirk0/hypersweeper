@@ -190,6 +190,9 @@ class App {
       get haptics() {
         return app.settings.haptics;
       },
+      get backgrounds() {
+        return app.settings.backgrounds;
+      },
       get analytics() {
         return app.settings.analytics;
       },
@@ -199,6 +202,7 @@ class App {
       setSound: (key) => this.setSound(key),
       setVolume: (level) => this.setVolume(level),
       setHaptics: (on) => this.setHaptics(on),
+      setBackgrounds: (on) => this.setBackgrounds(on),
       setAnalytics: (on) => this.setAnalytics(on),
     };
   }
@@ -210,10 +214,11 @@ class App {
    * theme switch or a change synced from another tab has to keep the pattern of
    * the board still on screen. */
   private paintTheme(): void {
-    applyTheme(
-      this.settings.theme,
-      this.screen === "game" ? (this.session?.mode ?? null) : null,
-    );
+    // The pattern is opt-in, so what the setting withholds is the *mode*: with
+    // no board named there is nothing for the page to follow, which is the
+    // same state the menu is in.
+    const following = this.settings.backgrounds && this.screen === "game";
+    applyTheme(this.settings.theme, following ? (this.session?.mode ?? null) : null);
   }
 
   private setTheme(key: string): void {
@@ -257,6 +262,15 @@ class App {
     this.settings = { ...this.settings, haptics: on };
     saveSettings(this.settings);
     setHapticsEnabled(on);
+  }
+
+  /** Turn the board's own tiling behind the page on or off. Like the sound
+   * preset and unlike the cell style it needs no new board — the page is CSS,
+   * so it repaints at once, over the game in progress. */
+  private setBackgrounds(on: boolean): void {
+    this.settings = { ...this.settings, backgrounds: on };
+    saveSettings(this.settings);
+    this.paintTheme();
   }
 
   /** Turn anonymous play counts on or off. Read on every event like the two
