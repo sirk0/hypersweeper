@@ -100,10 +100,17 @@ export function tilingAllows(tiling: TilingSpec, surface: SurfaceSpec): boolean 
 // mode -> the SurfaceSpec it wraps (regular + Archimedean/Laves tilings across
 // every surface they allow). Mirrors catalog.py's _MODE_SURFACE.
 const MODE_SURFACE = new Map<string, SurfaceSpec>();
+// ...and the other half of the same product: mode -> the tiling key it is made
+// of. `modeFor` is a concatenation, so this cannot be recovered by stripping a
+// prefix (`torustri`, `torustriakis` and `torustrihex` are three tilings on one
+// surface); inverting the product is the only honest way, and it is
+// collision-free because `modeFor` is injective across the whole catalogue.
+const MODE_TILING = new Map<string, string>();
 for (const tiling of TILING_SPECS) {
   for (const surface of SURFACE_SPECS) {
     if (tilingAllows(tiling, surface)) {
       MODE_SURFACE.set(modeFor(tiling.key, surface.key), surface);
+      MODE_TILING.set(modeFor(tiling.key, surface.key), tiling.key);
     }
   }
 }
@@ -112,6 +119,13 @@ for (const tiling of TILING_SPECS) {
  * one-off solid/aperiodic/shaped mode. */
 export function surfaceOf(mode: string): SurfaceSpec | null {
   return MODE_SURFACE.get(mode) ?? null;
+}
+
+/** The tiling a periodic (tiling × surface) mode is made of, or null for a
+ * one-off solid/aperiodic/shaped mode. The twin of `surfaceOf`: between them
+ * they name the two halves a periodic mode is built from. */
+export function tilingOf(mode: string): string | null {
+  return MODE_TILING.get(mode) ?? null;
 }
 
 /** The initial x-rotation (tilt) for a wrapped mode, or null when the mode is

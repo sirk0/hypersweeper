@@ -1367,6 +1367,25 @@ export function archTemplate(tiling: string): ArchTemplate {
   return t;
 }
 
+/** Copy `(m, n)` of a template's repeat, as absolute polygons in template
+ * (edge-length) units. The one expression that turns a cell's tag references
+ * into geometry; `archimedeanBoard` below needs the vertex *keys* as well and
+ * so keeps its own loop, but everything that only wants the shapes — the menu
+ * icons, the page pattern — goes through here. */
+export function templateCells(
+  t: ArchTemplate,
+  m: number,
+  n: number,
+): { name: string; pts: Vertex[] }[] {
+  return t.cells.map((cell) => ({
+    name: cell.name,
+    pts: cell.refs.map((r): Vertex => {
+      const v = t.verts.get(r.tag)!;
+      return [v[0] + (r.dm + m) * t.width, v[1] + (r.dn + n) * t.height];
+    }),
+  }));
+}
+
 /** A flat, roughly `nx` by `ny` domain rectangle of an Archimedean tiling,
  * built from the tiling's periodic domain (the same template that wraps the
  * donut/cylinder/Möbius/Klein). The window is centred on the larger tile

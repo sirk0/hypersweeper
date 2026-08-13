@@ -511,6 +511,41 @@ mesh's vertex layout); its chrome is instant. See "Settings and themes"
 in `web/README.md`, including the v2→v3 migration that reads the old
 palette/cell-style *pair* together.
 
+Realistic's page carries one thing more: **the board's own tiling**, drawn
+very small and very faint behind the grain (`src/ui/backgroundPattern.ts`),
+so a trihexagonal torus sits on trihexagonal paper and the detail is
+something a player finds rather than is shown. It follows the *tiling*, not
+the surface — all five surfaces of one tiling share a tile, 38 for the
+whole catalogue — through `tilingOf` in `boards/catalog.ts`, the inverse of
+`modeFor` (not a prefix strip: `torustri`, `torustriakis` and `torustrihex`
+are three tilings on one surface). Each tile is an inline SVG data URI in
+its own `--bg-pattern` property, and the geometry comes from whatever the
+board is made of: the 27 `ARCH_TILINGS` from `archTemplate`, whose
+fundamental domain *is* a seamless repeat tile; the three regular tilings
+from domains written out in that module; the polyhedra from the flat grid
+they are folded out of (a cube and the stepped bipyramid are squares, a
+tetrahedron triangles), leaving circles for the sphere family alone, whose
+faces close up only because the surface curves. The five **fractal** boards
+have no period, but their *tiles* do — the Gosper island is plain hexagons,
+two sphinxes or two chairs fill a parallelogram, the Sierpinski carpet is
+periodic once you stop inflating — so they get their own tile laid down the
+plain way rather than a crop of a fractal; only the pentaflake needs a
+stand-in, and it takes the Cairo, since regular pentagons do not tile the
+plane at all (which is why that board has holes). The three genuinely
+**aperiodic** boards are the one tier that is a crop, sized against a
+segment budget and a fill check so the window is neither over-long nor part
+empty. Two traps outlive the geometry. Every point is snapped to a tenth of
+a pixel **before** de-duplication, with a tie-break epsilon: a shared edge
+is computed twice by two routes through the lattice, and unsnapped the two
+copies disagree in the last bits, both survive, and the line is stroked
+twice — plainly darker at 7% alpha — while the same snapping is what makes
+the tile seam-free, a whole-tile shift being a whole number of grid steps.
+And **a screenshot cannot see any of this**: a 7% hairline moves a pixel by
+about 0.05, under Playwright's default 0.2 threshold, so every Realistic
+baseline passes whether the pattern renders or not; the e2e assertions read
+`--bg-pattern` and `tests/unit/backgroundPattern.test.ts` pins the geometry
+instead. See "The page follows the board's tiling" in `web/README.md`.
+
 **Picking** (`Renderer.pick`) is a ray, and it must land on the cell
 *drawn* where it lands — which takes both layers of the board, the tiles
 and the grout under them (`PICK_LAYERS` in `render/boardMesh.ts`),

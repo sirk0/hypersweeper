@@ -253,6 +253,52 @@ test.describe("settings", () => {
     await expect(page.locator(".settings-status")).not.toBeEmpty();
   });
 
+  // The Realistic page follows the board's own tiling (ui/backgroundPattern.ts).
+  // Asserted through --bg-pattern rather than by screenshot on purpose: the
+  // pattern is a 7%-alpha hairline, which moves a pixel by about 0.05 — well
+  // under Playwright's default per-pixel `threshold` of 0.2 — so a screenshot
+  // comparison cannot see whether it rendered at all.
+  test("the Realistic page follows the board's tiling", async ({ page }) => {
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
+    await page.locator('.menu-entry[data-settings-group="theme"]').click();
+    await page.locator('.menu-entry[data-theme="realistic"]').click();
+    await page.locator('.menu-entry[data-action="back"]').click(); // to settings
+    await page.locator('.menu-entry[data-action="back"]').click(); // to the root
+
+    // The menu is not a board, so it keeps the plain themed field.
+    expect(await cssVar(page, "--bg-pattern")).toBe("none");
+
+    await page.evaluate(() => window.__ms!.startBoard("torustrihex", "easy"));
+    const trihex = await cssVar(page, "--bg-pattern");
+    expect(trihex).toContain("data:image/svg+xml");
+
+    // The tiling is what it follows, not the surface it is wrapped on...
+    await page.evaluate(() => window.__ms!.startBoard("trihex", "easy"));
+    expect(await cssVar(page, "--bg-pattern")).toBe(trihex);
+
+    // ...so a different tiling is a different page.
+    await page.evaluate(() => window.__ms!.startBoard("torushex", "easy"));
+    expect(await cssVar(page, "--bg-pattern")).not.toBe(trihex);
+
+    // A board still open keeps its pattern when the theme is re-applied.
+    await page.evaluate(() => window.__ms!.startBoard("torustrihex", "easy"));
+    await page.locator('.hud-btn[data-slot="back"]').click();
+    expect(await cssVar(page, "--bg-pattern")).toBe("none");
+  });
+
+  test("only the Realistic theme patterns the page", async ({ page }) => {
+    for (const key of ["light", "dark", "classic"]) {
+      await page.locator('.menu-header-btn[data-action="settings"]').click();
+      await page.locator('.menu-entry[data-settings-group="theme"]').click();
+      await page.locator(`.menu-entry[data-theme="${key}"]`).click();
+      await page.locator('.menu-entry[data-action="back"]').click();
+      await page.locator('.menu-entry[data-action="back"]').click();
+      await page.evaluate(() => window.__ms!.startBoard("torustrihex", "easy"));
+      expect(await cssVar(page, "--bg-pattern"), key).toBe("none");
+      await page.locator('.hud-btn[data-slot="back"]').click();
+    }
+  });
+
   test("a theme survives launching a board", async ({ page }) => {
     await page.locator('.menu-header-btn[data-action="settings"]').click();
     await page.locator('.menu-entry[data-settings-group="theme"]').click();

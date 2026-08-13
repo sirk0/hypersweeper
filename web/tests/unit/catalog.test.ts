@@ -7,11 +7,15 @@ import {
   RECTANGLE_ARCH,
   SPHERE_MODES,
   SURFACES,
+  SURFACE_SPECS,
   TILINGS_BY_KEY,
+  TILING_SPECS,
   UNIFORM_ARCH,
   familyRows,
+  modeFor,
   pickerFamilies,
   tilingAllows,
+  tilingOf,
 } from "../../src/boards/catalog";
 import { MODES } from "../../src/boards/presets";
 
@@ -170,5 +174,33 @@ describe("menu reachability", () => {
     for (const m of POLYHEDRA_MODES) add(m);
     // no gaps: every mode this build knows is reachable from the menu
     expect(reachable).toEqual(new Set(MODES));
+  });
+});
+
+describe("mode -> tiling", () => {
+  it("inverts the tiling x surface product, collision-free", () => {
+    // `tilingOf` is `surfaceOf`'s twin: between them they name the two halves a
+    // periodic mode is built from. It cannot be a prefix strip — `torustri`,
+    // `torustriakis` and `torustrihex` are three tilings on one surface — so
+    // what it needs to be is exactly the inverse of `modeFor`.
+    let pairs = 0;
+    for (const tiling of TILING_SPECS) {
+      for (const surface of SURFACE_SPECS) {
+        if (!tilingAllows(tiling, surface)) continue;
+        expect(tilingOf(modeFor(tiling.key, surface.key))).toBe(tiling.key);
+        pairs++;
+      }
+    }
+    expect(pairs).toBe(135);
+  });
+
+  it("has no tiling for the one-off boards", () => {
+    // The solids, the aperiodic and fractal patches and the shaped flats are
+    // not products of the catalogue, so they answer null — as they do for
+    // `surfaceOf`.
+    for (const mode of [...SPHERE_MODES, ...POLYHEDRA_MODES, "penrose", "sphinx", "hexhex"]) {
+      expect(tilingOf(mode)).toBe(null);
+    }
+    expect(tilingOf("nosuchboard")).toBe(null);
   });
 });

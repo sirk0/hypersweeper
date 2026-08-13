@@ -95,7 +95,7 @@ class App {
     private readonly canvas: HTMLCanvasElement,
     private readonly ui: HTMLElement,
   ) {
-    applyTheme(this.settings.theme); // before anything measures or paints
+    this.paintTheme(); // before anything measures or paints
     setSoundPreset(this.settings.sound);
     setSoundVolume(this.settings.volume);
     setHapticsEnabled(this.settings.haptics);
@@ -203,6 +203,19 @@ class App {
     };
   }
 
+  /** Paint the theme for what is on screen. The chrome half is the theme alone;
+   * the page half also depends on the board, since on Realistic the page
+   * follows that board's own tiling (ui/backgroundPattern.ts). Everything that
+   * repaints the theme goes through here so the mode is never forgotten — a
+   * theme switch or a change synced from another tab has to keep the pattern of
+   * the board still on screen. */
+  private paintTheme(): void {
+    applyTheme(
+      this.settings.theme,
+      this.screen === "game" ? (this.session?.mode ?? null) : null,
+    );
+  }
+
   private setTheme(key: string): void {
     this.settings = { ...this.settings, theme: key };
     saveSettings(this.settings);
@@ -210,7 +223,7 @@ class App {
     // of a theme (its cell style) is baked into a mesh, so it takes effect on
     // the next board — which is every board from here, since the theme picker
     // is only reachable from the menu.
-    applyTheme(key);
+    this.paintTheme();
   }
 
   private setDifficulty(key: string): void {
@@ -260,7 +273,7 @@ class App {
    * tile relief it was started with. */
   private adoptSettings(settings: Settings): void {
     this.settings = settings;
-    applyTheme(settings.theme);
+    this.paintTheme();
     setSoundPreset(settings.sound);
     setSoundVolume(settings.volume);
     setHapticsEnabled(settings.haptics);
@@ -343,6 +356,7 @@ class App {
     this.session.mesh.setAnimationsEnabled(this.animationsEnabled);
     if (this.session.is3d) this.renderer.setOrientation(initialOrientation(mode));
     this.screen = "game";
+    this.paintTheme(); // the page picks up this board's tiling
     this.menu.hide();
     this.hud.root.hidden = false;
     this.boardInfo.setBoard(mode, difficulty, this.session.hasCellCycle);
@@ -402,6 +416,7 @@ class App {
     this.syncLocation(""); // the menu is not a board; drop the board's link
     this.screen = "menu";
     this.session = null;
+    this.paintTheme(); // no board, so the page goes back to the plain field
     this.hud.root.hidden = true;
     this.boardInfo.hide();
     this.renderer.clearBoard();
