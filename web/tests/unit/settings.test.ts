@@ -43,7 +43,8 @@ function stored(store: Storage, key = KEY): Record<string, unknown> {
 }
 
 const SETTINGS: Settings = {
-  theme: "dark",
+  theme: "classic",
+  scheme: "dark",
   difficulty: "hard",
   animations: false,
   sound: "arcade",
@@ -113,7 +114,9 @@ describe("custom backgrounds", () => {
 
 describe("settings validation", () => {
   it("drops a theme that no longer exists", () => {
-    withStorage(fakeStorage({ [KEY]: JSON.stringify({ theme: "vaporwave" }) }));
+    withStorage(
+      fakeStorage({ [KEY]: JSON.stringify({ theme: "vaporwave", version: SCHEMA_VERSION }) }),
+    );
     expect(loadSettings().theme).toBe(DEFAULT_THEME);
   });
 
@@ -125,10 +128,18 @@ describe("settings validation", () => {
   it("keeps the valid fields of a partly invalid record", () => {
     // One bad field must not cost the user the others.
     withStorage(
-      fakeStorage({ [KEY]: JSON.stringify({ theme: "dark", difficulty: 7, animations: "yes" }) }),
+      fakeStorage({
+        [KEY]: JSON.stringify({
+          theme: "classic",
+          difficulty: 7,
+          animations: "yes",
+          version: SCHEMA_VERSION,
+        }),
+      }),
     );
     expect(loadSettings()).toEqual({
-      theme: "dark",
+      theme: "classic",
+      scheme: DEFAULT_SETTINGS.scheme,
       difficulty: DEFAULT_SETTINGS.difficulty,
       animations: null,
       sound: DEFAULT_SETTINGS.sound,
@@ -144,7 +155,7 @@ describe("settings validation", () => {
     // A record from a build with no haptics and no analytics must pick both up
     // at their defaults rather than reading as off — this is what "additive
     // fields need no SCHEMA_VERSION bump" has to mean in practice.
-    withStorage(fakeStorage({ [KEY]: JSON.stringify({ version: 2, theme: "dark" }) }));
+    withStorage(fakeStorage({ [KEY]: JSON.stringify({ version: 2, theme: "classic" }) }));
     const loaded = loadSettings();
     expect(loaded.haptics).toBe(true);
     expect(loaded.analytics).toBe(true);
@@ -195,13 +206,15 @@ describe("settings validation", () => {
 describe("settings upgrades", () => {
   it("reads a v1 record from the legacy key and keeps its values", () => {
     // v1 had no `difficulty`; the missing field takes the default and the rest
-    // must survive the move. `paper` was a chrome palette, and v3 has no theme
-    // named after it, so it migrates to the default look (see below).
+    // must survive the move. `paper` was a chrome palette, and v3 had no theme
+    // named after it, so it migrates through the v3 default (Light) and comes
+    // out of v4 as Flat — the two migrations run in series (see below).
     const store = withStorage(
       fakeStorage({ [LEGACY]: JSON.stringify({ theme: "paper", animations: true }) }),
     );
     expect(loadSettings()).toEqual({
-      theme: DEFAULT_THEME,
+      theme: "flat",
+      scheme: DEFAULT_SETTINGS.scheme,
       difficulty: DEFAULT_SETTINGS.difficulty,
       animations: true,
       sound: DEFAULT_SETTINGS.sound,
@@ -216,27 +229,62 @@ describe("settings upgrades", () => {
     expect(store.getItem(LEGACY)).not.toBeNull();
     saveSettings(loadSettings());
     expect(store.getItem(LEGACY)).toBeNull();
-    expect(stored(store)["theme"]).toBe(DEFAULT_THEME);
+    expect(stored(store)["theme"]).toBe("flat");
   });
 
   // v2 kept a chrome palette in `theme` and a separate `cellStyle` beside it;
   // v3 merged the two into one theme. The pair is read together, so a player's
   // old *look* is carried over rather than each field being reset on its own.
+  //
+  // The two migrations run in **series**, so these expectations are what a v2
+  // record comes out as after v3 -> v4 as well: the v3 answer, put through
+  // V3_THEMES. `light` and `dark` were one look on two palettes, so both are
+  // Flat now — which is why a v2 `glass` player must still pass through `light`
+  // rather than landing on the current default.
   it.each([
     // A palette whose name a v3 theme kept means what it always did.
     [{ theme: "classic", cellStyle: "flat" }, "classic"],
-    [{ theme: "dark", cellStyle: "classic" }, "dark"],
+    [{ theme: "dark", cellStyle: "classic" }, "flat"],
     // Otherwise the cell style is the better evidence of what was wanted.
     [{ theme: "ios", cellStyle: "gloss" }, "realistic"],
     [{ theme: "paper", cellStyle: "gloss" }, "realistic"],
     // ...and a palette with no theme of its own and no glossy cells lands on
-    // the default, as does a record naming nothing this build knows.
-    [{ theme: "neumorph", cellStyle: "soft" }, DEFAULT_THEME],
-    [{ theme: "glass" }, DEFAULT_THEME],
-    [{ cellStyle: "classic" }, DEFAULT_THEME],
+    // Flat by way of the v3 default, as does a record naming nothing this build
+    // knows.
+    [{ theme: "neumorph", cellStyle: "soft" }, "flat"],
+    [{ theme: "glass" }, "flat"],
+    [{ cellStyle: "classic" }, "flat"],
   ])("migrates the v2 palette/cell-style pair %o to %s", (rec, expected) => {
     withStorage(fakeStorage({ [KEY]: JSON.stringify({ ...rec, version: 2 }) }));
     expect(loadSettings().theme).toBe(expected);
+  });
+
+  // v3 kept the colour scheme inside the theme: Light and Dark were the same
+  // look (the `flat` cell style) on two palettes. v4 splits them, so the look
+  // survives and the scheme does not — everyone comes out on `auto`, which is
+  // the new default and what most people would have chosen had it existed.
+  it.each([
+    [{ theme: "light" }, "flat"],
+    [{ theme: "dark" }, "flat"],
+    [{ theme: "classic" }, "classic"],
+    [{ theme: "realistic" }, "realistic"],
+    // A theme this build has never had, and a record with no theme at all.
+    [{ theme: "vaporwave" }, DEFAULT_THEME],
+    [{}, DEFAULT_THEME],
+  ])("migrates the v3 theme %o to %s on auto", (rec, expected) => {
+    withStorage(fakeStorage({ [KEY]: JSON.stringify({ ...rec, version: 3 }) }));
+    const loaded = loadSettings();
+    expect(loaded.theme).toBe(expected);
+    expect(loaded.scheme).toBe("auto");
+  });
+
+  it("keeps a v4 record's scheme, and defaults an unreadable one", () => {
+    withStorage(fakeStorage({ [KEY]: JSON.stringify({ scheme: "dark", version: 4 }) }));
+    expect(loadSettings().scheme).toBe("dark");
+    withStorage(fakeStorage({ [KEY]: JSON.stringify({ scheme: "sepia", version: 4 }) }));
+    expect(loadSettings().scheme).toBe(DEFAULT_SETTINGS.scheme);
+    withStorage(fakeStorage({ [KEY]: JSON.stringify({ scheme: 3, version: 4 }) }));
+    expect(loadSettings().scheme).toBe(DEFAULT_SETTINGS.scheme);
   });
 
   it("leaves a v2 record's cellStyle in the store for a downgrade", () => {
@@ -251,11 +299,11 @@ describe("settings upgrades", () => {
   it("prefers the current key over a stale legacy one", () => {
     withStorage(
       fakeStorage({
-        [KEY]: JSON.stringify({ theme: "dark", version: SCHEMA_VERSION }),
-        [LEGACY]: JSON.stringify({ theme: "classic" }),
+        [KEY]: JSON.stringify({ theme: "classic", version: SCHEMA_VERSION }),
+        [LEGACY]: JSON.stringify({ theme: "realistic" }),
       }),
     );
-    expect(loadSettings().theme).toBe("dark");
+    expect(loadSettings().theme).toBe("classic");
   });
 
   it("reads what it understands from a record written by a newer build", () => {
@@ -263,14 +311,15 @@ describe("settings upgrades", () => {
       fakeStorage({
         [KEY]: JSON.stringify({
           version: 99,
-          theme: "dark",
+          theme: "classic",
           difficulty: "easy",
           reverb: "cathedral",
         }),
       }),
     );
     expect(loadSettings()).toEqual({
-      theme: "dark",
+      theme: "classic",
+      scheme: DEFAULT_SETTINGS.scheme,
       difficulty: "easy",
       animations: null,
       sound: DEFAULT_SETTINGS.sound,
@@ -290,7 +339,8 @@ describe("settings upgrades", () => {
     );
     saveSettings(SETTINGS);
     expect(stored(store)["reverb"]).toBe("cathedral");
-    expect(stored(store)["theme"]).toBe("dark");
+    expect(stored(store)["theme"]).toBe("classic");
+    expect(stored(store)["scheme"]).toBe("dark");
     expect(stored(store)["version"]).toBe(SCHEMA_VERSION);
   });
 });
@@ -316,11 +366,15 @@ describe("cross-tab sync", () => {
     const seen: Settings[] = [];
     subscribeSettings((s) => seen.push(s));
 
-    store.setItem(KEY, JSON.stringify({ theme: "dark", difficulty: "easy" }));
+    store.setItem(
+      KEY,
+      JSON.stringify({ theme: "classic", difficulty: "easy", version: SCHEMA_VERSION }),
+    );
     fire({ key: KEY });
     expect(seen).toEqual([
       {
-        theme: "dark",
+        theme: "classic",
+        scheme: DEFAULT_SETTINGS.scheme,
         difficulty: "easy",
         animations: null,
           sound: DEFAULT_SETTINGS.sound,
@@ -334,7 +388,7 @@ describe("cross-tab sync", () => {
   });
 
   it("ignores other keys but honours a whole-store clear", () => {
-    withStorage(fakeStorage({ [KEY]: JSON.stringify({ theme: "dark" }) }));
+    withStorage(fakeStorage({ [KEY]: JSON.stringify({ theme: "classic" }) }));
     const { fire } = withWindow();
     const seen: Settings[] = [];
     subscribeSettings((s) => seen.push(s));

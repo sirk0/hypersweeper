@@ -265,14 +265,70 @@ describe("only Realistic is patterned", () => {
   });
 
   it("leaves --bg-pattern off unless it is given one", () => {
-    // ui/settings.ts draws the theme picker's swatches by calling themeVars
-    // with the texture and no pattern, so a swatch shows the theme rather than
-    // whatever board was last open. That is this default, and nothing else.
+    // ui/settings.ts draws the pickers' swatches by calling themeVars with the
+    // texture and no pattern, so a swatch shows the theme rather than whatever
+    // board was last open. That is this default, and nothing else.
     for (const key of THEME_KEYS) {
       const spec = theme(key);
-      expect(themeVars(themeSpec(spec.palette), spec.texture)["--bg-pattern"]).toBe("none");
+      for (const scheme of ["light", "dark"] as const) {
+        expect(
+          themeVars(themeSpec(spec.palette[scheme]), spec.texture?.[scheme])["--bg-pattern"],
+          `${key}/${scheme}`,
+        ).toBe("none");
+      }
     }
     const vars = themeVars(themeSpec("ios"), undefined, patternLayer("trihex")!);
     expect(vars["--bg-pattern"]).toContain("data:image/svg+xml");
+  });
+});
+
+describe("the ink follows the colour scheme", () => {
+  // A hairline works by moving the page toward its opposite, so the light
+  // scheme's dark slate over a near-black page is not faint, it is absent: it
+  // shifts a pixel by about four values in 255. The dark scheme therefore gets
+  // a *lighter* ink than its page, and the two tiles have to be two tiles.
+  const strokeOf = (svg: string): string =>
+    /stroke='(#[0-9a-f]{6})'/.exec(svg)?.[1] ?? "";
+  const alphaOf = (svg: string): number =>
+    Number(/stroke-opacity='([\d.]+)'/.exec(svg)?.[1] ?? "0");
+  const luma = (hex: string): number =>
+    [1, 3, 5]
+      .map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
+      .reduce((sum, c, i) => sum + [0.2126, 0.7152, 0.0722][i]! * c, 0);
+
+  it("inks light on a dark page and dark on a light one", () => {
+    const light = patternSvg("trihex", "light");
+    const dark = patternSvg("trihex", "dark");
+    // Against their own pages: #f2f2f7 and #101014 (data/ui/screens.json).
+    expect(luma(strokeOf(light))).toBeLessThan(luma("#f2f2f7"));
+    expect(luma(strokeOf(dark))).toBeGreaterThan(luma("#101014"));
+    // Both stay a hairline rather than a hatch.
+    expect(alphaOf(light)).toBeGreaterThan(0);
+    expect(alphaOf(light)).toBeLessThan(0.15);
+    expect(alphaOf(dark)).toBeGreaterThan(0);
+    expect(alphaOf(dark)).toBeLessThan(0.15);
+  });
+
+  it("draws the same geometry either way", () => {
+    // The scheme is a colour, not a shape: strip the stroke attributes and the
+    // two documents must be identical, or a page would shift when the sun goes
+    // down.
+    const bare = (svg: string): string =>
+      svg.replace(/stroke='[^']*'/, "").replace(/stroke-opacity='[^']*'/, "");
+    expect(bare(patternSvg("trihex", "dark"))).toBe(bare(patternSvg("trihex", "light")));
+  });
+
+  it("memoises per scheme, not per tiling alone", () => {
+    // The ink is baked into the data URI, so a cache keyed on geometry alone
+    // would hand the first scheme to open a tiling back to the second — and one
+    // of the two would get a hairline the colour of its own page. Asked in both
+    // orders, since the bug is order-dependent by construction.
+    const darkFirst = patternLayer("torushex", "dark");
+    const lightAfter = patternLayer("torushex", "light");
+    expect(darkFirst).not.toBe(lightAfter);
+    expect(patternLayer("torushex", "dark")).toBe(darkFirst);
+    expect(patternLayer("torushex", "light")).toBe(lightAfter);
+    // ...and the menu still has no pattern at all, on either scheme.
+    expect(patternLayer(null, "dark")).toBeNull();
   });
 });

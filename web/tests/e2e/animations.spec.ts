@@ -137,7 +137,7 @@ test.describe("M6 animations", () => {
     await page.addInitScript(() => {
       localStorage.setItem(
         "ms:settings",
-        JSON.stringify({ version: 3, theme: "realistic", sound: "off", seenHint: true }),
+        JSON.stringify({ version: 4, theme: "realistic", sound: "off", seenHint: true }),
       );
     });
     await page.goto("/");

@@ -1,7 +1,13 @@
 import { clampVolume, DEFAULT_SOUND, DEFAULT_VOLUME, resolveSound } from "./audio/presets";
 import { hasDifficulty, screens } from "./config/screens";
 import { readObject, storage } from "./storage";
-import { DEFAULT_THEME, resolveTheme } from "./ui/theme";
+import {
+  DEFAULT_SCHEME,
+  DEFAULT_THEME,
+  resolveScheme,
+  resolveTheme,
+  type SchemePref,
+} from "./ui/theme";
 
 // Persisted user preferences — the app's only stored state. Gameplay state
 // (flag mode, zoom, which menu page you are on, the board in progress) stays in
@@ -36,13 +42,20 @@ const LEGACY_KEYS = ["ms:settings:v1"];
 /** Bump when a field changes *meaning* (a rename, a different unit). Purely
  * additive fields need no bump: an old record simply lacks them and picks up
  * the default. `migrate` must handle every version below this one. */
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 export interface Settings {
-  /** A key in `THEME_KEYS` — the app's one look setting, carrying the chrome
-   * palette *and* how the board's cells are cut (see ui/theme.ts). Until v3
-   * this was a palette alone, with a separate `cellStyle` beside it. */
+  /** A key in `THEME_KEYS` — how the board's cells are cut and what the page is
+   * made of (see ui/theme.ts). Until v3 this was a chrome palette alone, with a
+   * separate `cellStyle` beside it; until v4 it was that *and* the colour
+   * scheme, which is now `scheme` below. */
   theme: string;
+  /** `"auto"`, `"light"` or `"dark"` — which palette the theme paints its
+   * chrome with. `auto` follows the device's `prefers-color-scheme`, resolved
+   * at paint time by `activeScheme`, the same way `animations: null` defers to
+   * `prefers-reduced-motion`. Read on every repaint, so an OS switch reaches a
+   * board already in play. */
+  scheme: SchemePref;
   /** A key in `screens.difficulties` — the board size the menu launches at. */
   difficulty: string;
   /** `null` follows the OS `prefers-reduced-motion` setting; a boolean is an
@@ -79,6 +92,7 @@ export interface Settings {
 
 export const DEFAULT_SETTINGS: Settings = {
   theme: DEFAULT_THEME,
+  scheme: DEFAULT_SCHEME,
   difficulty: screens.defaultDifficulty,
   animations: null,
   sound: DEFAULT_SOUND,
@@ -89,10 +103,13 @@ export const DEFAULT_SETTINGS: Settings = {
   seenHint: false,
 };
 
-/** What a pre-v3 `theme` (a chrome palette) becomes now that a theme carries the
- * board's look too. Two keys survive unchanged because the themes named after
+/** What a pre-v3 `theme` (a chrome palette) becomes once a theme carries the
+ * board's look too. Two keys survive unchanged because the v3 themes named after
  * them kept them; the other four palettes have no theme of their own any more
- * and land on the default. */
+ * and land on the v3 default.
+ *
+ * These are **v3** keys, not current ones — the two tables run in series, so
+ * this one may only ever speak v3. */
 const V2_THEMES: Record<string, string> = {
   ios: "light",
   flat: "light",
@@ -101,6 +118,24 @@ const V2_THEMES: Record<string, string> = {
   paper: "light",
   classic: "classic",
   dark: "dark",
+};
+
+/** The v3 default, written out rather than read from `DEFAULT_THEME`. It was the
+ * same constant when v2 -> v3 was the only migration, and letting it drift with
+ * the current default would silently re-aim every v2 record: a `glass` player
+ * would land on today's default (Realistic) instead of passing through `light`
+ * to Flat. */
+const V3_DEFAULT = "light";
+
+/** What a v3 `theme` (a look *and* a colour scheme) becomes now that the scheme
+ * is its own setting. Light and Dark were the same look — both cut their cells
+ * with the `flat` style — so both are Flat, and the scheme half is not
+ * recovered: everyone lands on `auto` by simply not having the key. */
+const V3_THEMES: Record<string, string> = {
+  light: "flat",
+  dark: "flat",
+  classic: "classic",
+  realistic: "realistic",
 };
 
 /** Bring a record written by an older build up to the current shape.
@@ -115,17 +150,32 @@ const V2_THEMES: Record<string, string> = {
  * field on its own, and why a v2 player who had chosen the glossy cells lands on
  * Realistic rather than being flattened to Light with everyone else. The stale
  * `cellStyle` key is left in the record: `saveSettings` carries unknown keys
- * over anyway, and a downgrade to a v2 build should find its setting intact. */
+ * over anyway, and a downgrade to a v2 build should find its setting intact.
+ *
+ * v3 -> v4 splits that theme in two: `theme` keeps the look and the new `scheme`
+ * takes the colour. Light and Dark were one look on two palettes, so both become
+ * Flat. The scheme itself is *not* carried over — the key is simply absent, and
+ * an absent key is `auto`, so everyone comes out following their device. That is
+ * a deliberate product call rather than a limitation: `auto` is the new default
+ * and it is the setting most people would have picked had it existed.
+ *
+ * The branches run in **series**, not as alternatives: a v1 record passes
+ * through both, so each may only speak the vocabulary of the version it is
+ * upgrading *to*. */
 function migrate(rec: Record<string, unknown>, from: number): Record<string, unknown> {
   if (from >= SCHEMA_VERSION) return rec;
   if (from < 3) {
     const palette = typeof rec["theme"] === "string" ? rec["theme"] : "";
     const cells = typeof rec["cellStyle"] === "string" ? rec["cellStyle"] : "";
-    const mapped = Object.hasOwn(V2_THEMES, palette) ? V2_THEMES[palette]! : DEFAULT_THEME;
+    const mapped = Object.hasOwn(V2_THEMES, palette) ? V2_THEMES[palette]! : V3_DEFAULT;
     // A palette that named a theme of its own wins — "classic" meant the
     // classic look then and means it now. Otherwise the cell style is the
     // better evidence of what the player was after.
-    rec = { ...rec, theme: mapped === DEFAULT_THEME && cells === "gloss" ? "realistic" : mapped };
+    rec = { ...rec, theme: mapped === V3_DEFAULT && cells === "gloss" ? "realistic" : mapped };
+  }
+  if (from < 4) {
+    const look = typeof rec["theme"] === "string" ? rec["theme"] : "";
+    rec = { ...rec, theme: Object.hasOwn(V3_THEMES, look) ? V3_THEMES[look]! : DEFAULT_THEME };
   }
   return rec;
 }
@@ -153,6 +203,9 @@ export function loadSettings(): Settings {
     // A theme or difficulty that has since been removed (or was never valid)
     // falls back rather than propagating an unknown key into the UI.
     theme: resolveTheme(typeof rec["theme"] === "string" ? rec["theme"] : null),
+    // Same treatment, and it doubles as the additive-field reader: a record
+    // from before the split has no `scheme` at all and lands on `auto`.
+    scheme: resolveScheme(typeof rec["scheme"] === "string" ? rec["scheme"] : null),
     difficulty:
       typeof rec["difficulty"] === "string" && hasDifficulty(rec["difficulty"])
         ? rec["difficulty"]

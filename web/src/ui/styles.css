@@ -19,25 +19,34 @@
 }
 
 :root {
-  /* Modern "Minimal iOS" chrome: airy light background, white cards, system
-     blue accent, soft drop shadows. Mirrors the pygame `ios` theme, which is
-     the default there too, so the two front-ends match.
+  /* The app's default look: the Realistic theme on the light colour scheme —
+     the "Minimal iOS" palette (airy light background, white cards, system blue
+     accent, soft drop shadows; the pygame `ios` theme, so the two front-ends
+     match) under Realistic's woven page.
 
-     These are the *boot* values only. The whole set is a theme (the pygame
-     palettes, ported into data/ui/screens.json), and ui/theme.ts overwrites
-     every property below on the document element when one is chosen — so the
-     values here are what the first frame paints, before the stored theme is
-     applied, and they must stay in step with the `ios` entry in that file. */
+     These are the *boot* values only. The set is a theme and a scheme together
+     (the pygame palettes, ported into data/ui/screens.json), and ui/theme.ts
+     overwrites every property below on the document element once the stored
+     settings are read — so the values here are what the first frame paints, and
+     they must stay in step with `DEFAULT_THEME` under `light` in ui/theme.ts.
+
+     `color-scheme` is here for the same reason: it is what the browser paints
+     the scrollbar and the flash between documents with. */
+  color-scheme: light;
   --bg: #f2f2f7;
   --bg2: #f2f2f7; /* second gradient stop; equal = a flat field */
   /* Background layers drawn *over* that field — the Realistic theme's grain
-     and vignette. `none` (not empty) on the themes without one: this is
-     consumed by a `background-image` list, where an empty value would
-     invalidate the whole declaration. */
-  --bg-texture: none;
+     and vignette, which is `REALISTIC_PAGE.light` in ui/theme.ts written out.
+     `none` (not empty) on the themes without one: this is consumed by a
+     `background-image` list, where an empty value would invalidate the whole
+     declaration. */
+  --bg-texture:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.42'/%3E%3C/svg%3E"),
+    radial-gradient(120% 90% at 50% 0%, #ffffff 0%, #ffffff00 55%),
+    radial-gradient(140% 110% at 50% 100%, #b9bfcf55 0%, #b9bfcf00 60%);
   /* The board's own tiling, drawn very faintly over the texture — set by
      `applyTheme` from the mode on screen (ui/backgroundPattern.ts), and `none`
-     on the menu and on the three themes that want a flat field. Over rather
+     on the menu and on the two themes that want a flat field. Over rather
      than under: the grain is 0.42-opacity turbulence, and a hairline beneath it
      reads as more noise. */
   --bg-pattern: none;
@@ -90,6 +99,40 @@
   --safe-top: env(safe-area-inset-top, 0px);
 }
 
+/* The boot frame for a device that prefers dark. The default colour scheme is
+   `auto`, so most players on a dark phone want the dark palette — and until
+   main.ts has read localStorage and called `applyTheme`, the block above is
+   what paints, which would be one white flash on every launch.
+
+   This can never fight an explicit choice: `applyTheme` writes these as *inline*
+   properties on the document element, and an inline declaration beats any
+   stylesheet rule whatever the media query says. So the moment the app boots,
+   this block stops mattering — it only ever covers the frames before that.
+
+   Same rule as the block above: it must stay in step with `DEFAULT_THEME` under
+   `dark` in ui/theme.ts. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #101014;
+    --bg2: #101014;
+    --bg-texture:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.16'/%3E%3C/svg%3E"),
+      radial-gradient(120% 90% at 50% 0%, #2a2f3d 0%, #2a2f3d00 55%),
+      radial-gradient(140% 110% at 50% 100%, #00000088 0%, #00000000 60%);
+    --panel: #1c1c22;
+    --text: #f2f2f7;
+    --muted: #8e8e96;
+    --accent: #0a84ff;
+    --on-accent: #ffffff;
+    --danger: #ff5c5c;
+    --selected: #16324f;
+    --border: #2c2c34;
+    --counter-bg: #000000;
+    --shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+  }
+}
+
 @supports (height: 100dvh) {
   :root {
     --app-h: 100dvh;
@@ -107,7 +150,7 @@
    Deliberately only `min-height`: clipping the growth back off with an
    `overflow: hidden` here risks taking the paint with it, and the few px of
    page this leaves scrollable move nothing on screen — the app is fixed layers
-   over a field that is flat in every theme but glass. */
+   over a field that is flat but for the Realistic theme's vignette. */
 @media (display-mode: standalone) {
   html {
     min-height: calc(100% + var(--safe-top));
@@ -739,7 +782,7 @@ body {
    style cuts them, one of them opened. Nested inside `.theme-swatch`, which
    sets every theme custom property on itself — so `var(--panel)` below is the
    *row's* panel colour, not the page's. The relief is faked with gradients
-   rather than rendered — the point is to tell four rows apart in a list, and
+   rather than rendered — the point is to tell a few rows apart in a list, and
    the real geometry lives in render/cellStyle.ts, so keep the two in step by
    eye when retuning a profile. */
 .cell-swatch {

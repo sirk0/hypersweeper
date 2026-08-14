@@ -26,6 +26,7 @@ import { HELP_ICON, renderHelp } from "./help";
 import { menuIcon } from "./icons";
 import {
   GEAR_ICON,
+  renderSchemePicker,
   renderSettings,
   renderSoundPicker,
   renderThemePicker,
@@ -372,6 +373,7 @@ export class Menu {
   private settingsPageHost(page: () => void): SettingsHost {
     return {
       theme: this.settings.theme,
+      scheme: this.settings.scheme,
       difficulty: this.settings.difficulty,
       animations: this.settings.animations,
       sound: this.settings.sound,
@@ -381,6 +383,10 @@ export class Menu {
       analytics: this.settings.analytics,
       setTheme: (key) => {
         this.settings.setTheme(key);
+        page();
+      },
+      setScheme: (pref) => {
+        this.settings.setScheme(pref);
         page();
       },
       setDifficulty: (key) => {
@@ -425,6 +431,7 @@ export class Menu {
       renderSettings(
         host,
         () => this.showThemePicker(),
+        () => this.showSchemePicker(),
         () => this.showBestTimes(),
         () => this.showSoundPicker(),
       ),
@@ -471,6 +478,21 @@ export class Menu {
     this.body.replaceChildren(
       this.backRow("Theme", () => this.showSettings()),
       renderThemePicker(host),
+    );
+  }
+
+  /** The colour scheme page — the theme picker's twin, one level below
+   * settings in the same way. */
+  private showSchemePicker(): void {
+    this.go(() => this.renderSchemePage());
+  }
+
+  private renderSchemePage(): void {
+    const host = this.settingsPageHost(() => this.renderSchemePage());
+    this.root.classList.add("settings-open");
+    this.body.replaceChildren(
+      this.backRow("Colour scheme", () => this.showSettings()),
+      renderSchemePicker(host),
     );
   }
 

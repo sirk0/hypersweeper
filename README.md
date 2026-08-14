@@ -22,7 +22,7 @@ Actions; installable, and it works offline once loaded)
   </tr>
   <tr>
     <td align="center"><img src="docs/screenshots/menu.png" width="380"><br>The menu <sub>· Dark</sub></td>
-    <td align="center"><img src="docs/screenshots/themes.png" width="380"><br>Four themes — chrome, page and how a cell is cut</td>
+    <td align="center"><img src="docs/screenshots/themes.png" width="380"><br>Three themes — the page and how a cell is cut — over three colour schemes</td>
   </tr>
 </table>
 
@@ -94,7 +94,8 @@ Pick a surface, then a tiling:
 Every board is a **link** — `?mode=…&difficulty=…`, plus a `seed` to share
 the exact layout. Winning files the time: the fastest three per board and
 difficulty live under Settings › Best times. Settings also holds the
-four themes (each one chrome palette, page and cell style together),
+three themes (the page behind the board and how its cells are cut) over
+three colour schemes (auto, following the device, plus light and dark),
 three sound presets (synthesised from the move that caused them — a tile's
 side count is its voice) with a volume slider, an animations toggle, and —
 on a phone that can buzz — a haptics switch.

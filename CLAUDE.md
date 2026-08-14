@@ -440,30 +440,40 @@ only). That shape is *derived* from the shared port in the "web menu" section of
 `src/boards/catalog.ts`, so `data/catalog.json` and the pygame menu are
 untouched; `tests/unit/menu.test.ts` pins it.
 
-The menu's gear opens a **settings** page (best times, theme, sound and
+The menu's gear opens a **settings** page (best times, theme, colour
+scheme, sound and
 its volume, haptics where anything can buzz, animations toggle, build
 version, update check) — one more
-`Menu` page rather than a modal, with the theme, best-times and sound pages
-below it. Nothing on it links off the site. The header carries the gear at its right edge and a **?** at its
+`Menu` page rather than a modal, with the theme, colour-scheme, best-times
+and sound pages below it. Nothing on it links off the site. The header carries the gear at its right edge and a **?** at its
 left — one button per side, so the two balance and the title
 "Hypersweeper", a single unbreakable word, stays on one line on a narrow
 phone. The **?** opens a how-to-play page (`src/ui/help.ts`) built the
 same way, its text in TS rather than in the pygame-shared `screens.json`.
-Theme, difficulty, the sound preset and its volume, haptics, custom
+Theme, colour scheme, difficulty, the sound preset and its volume, haptics,
+custom
 backgrounds and the animations override persist (`src/settings.ts`): one stable
 `localStorage` key holding a record that carries its own `version`, never
 a versioned key name — see "Settings and themes" in `web/README.md` before
 adding a field.
 
-A **theme** is the app's one look setting: the chrome palette, the page
-behind the board, *and* how the board's cells are cut. There are four —
-**Light** (the `ios` palette + flat cells; the default), **Dark** (the
-web-only dark palette + flat cells), **Classic** (the classic palette +
-the beveled button, drawn in **gray** — a quotation of the pygame board's
-own `HIDDEN_FACE`/`REVEALED_FACE`, guarded by `test_theme_sync.py`) and
-**Realistic** (the `ios` palette over a textured page: glossy beads while
-closed, **matte** flat-floored pans once opened, translucent on a flat
-board so the page's grain shows through them). Realistic is also the one that
+The look is **two** settings on two independent axes. A **theme** is how the
+board's cells are cut and what the page behind them is made of; there are three
+— **Realistic** (a textured page: glossy beads while closed, **matte**
+flat-floored pans once opened, translucent on a flat board so the page's grain
+shows through them; the default), **Flat** (unlit plates in flat colour with
+wide gaps) and **Classic** (the beveled button, drawn in **gray** — a quotation
+of the pygame board's own `HIDDEN_FACE`/`REVEALED_FACE`, guarded by
+`test_theme_sync.py`), one per entry in `render/cellStyle.ts`. A **colour
+scheme** is which palette paints the chrome: **Auto** (the device's own
+`prefers-color-scheme`, resolved live by `activeScheme`/`onSchemeChange` and the
+default), **Light** or **Dark**. So a theme names a *pair* of palettes — `ios`/
+`dark` for Realistic and Flat, `classic`/`classicDark` (a black page) for
+Classic — and the two web-only entries in `data/ui/screens.json` are exactly the
+dark halves the six pygame presets could never supply. **A scheme never reaches
+the board**: the tiles are lit head-on by a fixed rig and read the same either
+way, so Classic dark is a black page with the same gray beveled board on it.
+Realistic is also the one that
 stops drawing a flag and a mine as *pictures* on a board you can turn: on every
 3D board — the flat manifolds included — a flagged cell carries a **pin** (a stem
 under a round head) and a mined one, once a loss reveals it, a spiked **bomb**
@@ -493,23 +503,28 @@ pass that `tests/e2e/markers.spec.ts` pins as never running for a flood fill. Th
 resting ember is a *look* rather than a motion and so survives reduced motion;
 the wave, the shockwave and the swell go with the Animations toggle, and
 `wantsMarkerGlow` going false with them is what keeps a flood from measuring
-rings nothing will show. The four are declared in `src/ui/theme.ts`, which is
-web-only because pygame has neither cell styles nor page textures; the
-seven **palettes** they compose are still the shared, pygame-ported ones
-in `data/ui/screens.json`, guarded by `tests/test_theme_sync.py`. A theme
-never adds a colour to a palette. Its chrome is applied as CSS custom
+rings nothing will show. Both lists are declared in `src/ui/theme.ts`, which is
+web-only because pygame has neither cell styles, page textures nor a dark
+mode; the eight **palettes** they compose are still the shared, pygame-ported
+ones in `data/ui/screens.json`, guarded by `tests/test_theme_sync.py`. A theme
+never adds a colour to a palette. The chrome is applied as CSS custom
 properties on `:root`; the `styles.css` `:root` block is the boot default
-(Light's) and must stay in step. Invariants: the **board is themed only
+(Realistic on light) and must stay in step, as must the
+`prefers-color-scheme: dark` block beside it, which is what keeps an `auto`
+player on a dark device from a white flash on every launch. Invariants: the
+**board is themed only
 as far as its cell style says** — the shape colour code still owns the
 hues, and exactly one style (`classic`, via `monochrome`) switches it off
 for the gray 1990s board — and the **WebGL canvas is transparent** so the
 field around the board, and what shows through a translucent opened cell,
 is the page background; never give it an opaque clear colour again. New
-chrome colours must come from a `var(--…)`, or they break the dark theme.
+chrome colours must come from a `var(--…)`, or they break the dark scheme.
 A theme's board half lands on the **next** board (a cell style fixes the
-mesh's vertex layout); its chrome is instant. See "Settings and themes"
-in `web/README.md`, including the v2→v3 migration that reads the old
-palette/cell-style *pair* together.
+mesh's vertex layout); its chrome, and a scheme whole, are instant. See
+"Settings and themes" in `web/README.md`, including the v2→v3→v4
+migrations — the first reads the old palette/cell-style *pair* together, the
+second splits the theme from the scheme and lands everyone on Auto, and the
+two run in series.
 
 Realistic's page can carry one thing more: **the board's own tiling**, drawn
 very small and very faint behind the grain (`src/ui/backgroundPattern.ts`).
@@ -523,8 +538,12 @@ the surface — all five surfaces of one tiling share a tile, 38 for the
 whole catalogue — through `tilingOf` in `boards/catalog.ts`, the inverse of
 `modeFor` (not a prefix strip: `torustri`, `torustriakis` and `torustrihex`
 are three tilings on one surface). Each tile is an inline SVG data URI in
-its own `--bg-pattern` property, and the geometry comes from whatever the
-board is made of: the 27 `ARCH_TILINGS` from `archTemplate`, whose
+its own `--bg-pattern` property, its ink chosen by the **colour scheme** (a
+data URI is its own document, so `currentColor` reaches nothing inside it —
+and the dark ink is *lighter* than its page, at its own alpha, since a dark
+hairline on a dark page moves a pixel by about four values in 255; the scheme
+is in the memo key for the same reason), and the geometry comes from whatever
+the board is made of: the 27 `ARCH_TILINGS` from `archTemplate`, whose
 fundamental domain *is* a seamless repeat tile; the three regular tilings
 from domains written out in that module; the polyhedra from the flat grid
 they are folded out of (a cube and the stepped bipyramid are squares, a

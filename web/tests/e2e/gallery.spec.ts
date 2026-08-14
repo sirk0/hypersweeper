@@ -49,19 +49,45 @@ const MODES = [
   "threescaletri",
 ];
 
+/** The look every shot below is taken in unless it is a shot *of* a look.
+ *
+ * Deliberately **not** the app's default, which is Realistic: that page is
+ * full-frame turbulence, which no PNG can compress, and it took a board
+ * baseline from 30 KB to 650 KB — 21 MB over the gallery, in a repo whose whole
+ * history is 17 MB. These shots are of the *boards*, so the cheapest, quietest
+ * page is also the one a geometry regression shows up against most clearly.
+ * Flat on light is that page. */
+const BASE_LOOK = { theme: "flat", scheme: "light" };
+
+/** Every other finished look: the three themes crossed with the two colour
+ * schemes, less `BASE_LOOK`, which is already shot as `square-revealed.png`
+ * and the `board-*.png` set. A second baseline of the same pixels under a
+ * second name is one that can drift apart from its twin. */
+const LOOKS: [string, string][] = [
+  ["realistic", "light"],
+  ["realistic", "dark"],
+  ["flat", "dark"],
+  ["classic", "light"],
+  ["classic", "dark"],
+];
+
 test.describe("board gallery", () => {
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize({ width: 900, height: 700 });
     // Every test gets a fresh browser context, so without this every board here
     // is a *first* board and carries the one-time gesture hint — chrome rather
     // than the render these shots are of, and worse, chrome on a seven-second
-    // timer that a slow shot would race. The per-theme tests below write their
-    // own settings record; this one only has to cover the rest.
-    await page.addInitScript(() => {
+    // timer that a slow shot would race. The look is pinned rather than left at
+    // the app's default; see BASE_LOOK. The per-look tests below write their own
+    // settings record, so this only fills in where none is set.
+    await page.addInitScript((look: { theme: string; scheme: string }) => {
       if (!localStorage.getItem("ms:settings")) {
-        localStorage.setItem("ms:settings", JSON.stringify({ version: 3, seenHint: true }));
+        localStorage.setItem(
+          "ms:settings",
+          JSON.stringify({ version: 4, ...look, seenHint: true }),
+        );
       }
-    });
+    }, BASE_LOOK);
   });
 
   for (const mode of MODES) {
@@ -92,16 +118,22 @@ test.describe("board gallery", () => {
     await expect(page).toHaveScreenshot("square-revealed.png");
   });
 
-  // The same fixture in each of the other themes, so the four looks are directly
-  // comparable with `square-revealed.png` above (which is the default, Light) —
-  // and so a change to one theme shows up as exactly one changed baseline. A
-  // theme's cell style is read when a board's mesh is built, so it is stored
-  // *before* the app boots rather than switched afterwards.
-  for (const style of ["dark", "classic", "realistic"]) {
-    test(`revealed square in the ${style} theme`, async ({ page }) => {
-      await page.addInitScript((key: string) => {
-        localStorage.setItem("ms:settings", JSON.stringify({ version: 3, theme: key, seenHint: true }));
-      }, style);
+  // The same fixture in each look, so they are directly comparable with
+  // `square-revealed.png` above (which is `BASE_LOOK`, Flat on the light
+  // scheme) — and so a change to one shows up as exactly one changed baseline.
+  //
+  // A look is two settings now, so this is a *product*: every theme on the light
+  // scheme, and every theme on dark. A theme's cell style is read when a board's
+  // mesh is built, so both are stored *before* the app boots rather than
+  // switched afterwards.
+  for (const [style, scheme] of LOOKS) {
+    test(`revealed square in the ${style} theme, ${scheme}`, async ({ page }) => {
+      await page.addInitScript((look: string[]) => {
+        localStorage.setItem(
+          "ms:settings",
+          JSON.stringify({ version: 4, theme: look[0], scheme: look[1], seenHint: true }),
+        );
+      }, [style, scheme]);
       await page.goto("/");
       await expect(page.locator("body[data-ready]")).toBeVisible();
       await page.evaluate(() => {
@@ -113,22 +145,25 @@ test.describe("board gallery", () => {
         ms.reveal("4,2");
       });
       await page.waitForTimeout(150);
-      await expect(page).toHaveScreenshot(`square-revealed-${style}.png`);
+      await expect(page).toHaveScreenshot(`square-revealed-${style}-${scheme}.png`);
     });
   }
 
   // ...and on a solid, where a theme's cells show something else entirely: the
   // plane is lit head-on, so a 3D board is the only place the finish
   // (Realistic's specular sheen) and the paid-back albedo actually read.
-  for (const style of ["dark", "classic", "realistic"]) {
-    test(`sphere in the ${style} theme`, async ({ page }) => {
-      await page.addInitScript((key: string) => {
-        localStorage.setItem("ms:settings", JSON.stringify({ version: 3, theme: key, seenHint: true }));
-      }, style);
+  for (const [style, scheme] of LOOKS) {
+    test(`sphere in the ${style} theme, ${scheme}`, async ({ page }) => {
+      await page.addInitScript((look: string[]) => {
+        localStorage.setItem(
+          "ms:settings",
+          JSON.stringify({ version: 4, theme: look[0], scheme: look[1], seenHint: true }),
+        );
+      }, [style, scheme]);
       await page.goto("/?mode=sphere&difficulty=easy&seed=1");
       await expect(page.locator("body[data-ready]")).toBeVisible();
       await page.waitForTimeout(150);
-      await expect(page).toHaveScreenshot(`sphere-${style}.png`);
+      await expect(page).toHaveScreenshot(`sphere-${style}-${scheme}.png`);
     });
   }
 
@@ -187,7 +222,7 @@ test.describe("board gallery", () => {
     await page.addInitScript(() => {
       localStorage.setItem(
         "ms:settings",
-        JSON.stringify({ version: 3, theme: "realistic", seenHint: true }),
+        JSON.stringify({ version: 4, theme: "realistic", scheme: "light", seenHint: true }),
       );
     });
     await page.goto("/");

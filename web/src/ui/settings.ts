@@ -9,18 +9,32 @@ import { screens } from "../config/screens";
 import { hapticsSupported } from "../haptics";
 import { allBestTimes } from "../leaderboard";
 import { animationsEnabled } from "../settings";
-import { THEME_KEYS, theme as themeDef, themePalette, themeVars } from "./theme";
+import {
+  activeScheme,
+  SCHEME_KEYS,
+  SCHEME_LABELS,
+  THEME_KEYS,
+  theme as themeDef,
+  themePalette,
+  themeVars,
+  type Scheme,
+  type SchemePref,
+} from "./theme";
 
 // The settings page. It is not a modal: the menu already has a page mechanism
 // (`Menu.go`, which re-runs the current view), so settings is one more page in
 // it, built from the same `.menu-entry` cards as every other row. That keeps
 // the phone layout, the scrolling body and the back-row idiom for free.
 //
-// Five sections: the best times (a page below, like the theme picker), the
-// theme (one page below — a theme now carries the chrome palette *and* the
-// board's cell style, so there is no second appearance picker to pair with it),
-// the sound / haptics / animations behaviour rows, the Privacy switch, and an
-// About block naming the build.
+// Five sections: the best times (a page below, like the theme picker), the two
+// appearance settings — the theme (the board's cell style and the page it sits
+// on) and the colour scheme (which palette the chrome paints with), each a page
+// below — the sound / haptics / animations behaviour rows, the Privacy switch,
+// and an About block naming the build.
+//
+// Two pages rather than one list of every combination: the two axes are
+// independent, so a single picker would be nine rows that all have to be read to
+// find the two facts they encode.
 //
 // Two of those are conditional, on the same principle: a row is only offered
 // where the thing behind it exists. Haptics needs a device that can buzz
@@ -52,6 +66,8 @@ export function buildVersion(): string {
 export interface SettingsHost {
   /** The active theme key. */
   theme: string;
+  /** The stored colour-scheme preference; `"auto"` follows the device. */
+  scheme: SchemePref;
   /** The difficulty the menu launches boards at. */
   difficulty: string;
   /** The stored animations preference; `null` follows the OS setting. */
@@ -67,6 +83,7 @@ export interface SettingsHost {
   /** Whether anonymous play counts are reported. */
   analytics: boolean;
   setTheme(key: string): void;
+  setScheme(pref: SchemePref): void;
   setDifficulty(key: string): void;
   setAnimations(pref: boolean | null): void;
   setSound(key: string): void;
@@ -108,13 +125,19 @@ function heading(text: string): HTMLElement {
  * `applyTheme` writes to the document is written to this 38px box instead, so
  * the miniature resolves its colours through the same `var(--…)` chain the real
  * chrome does and no colour is written twice. The tiles are CSS rather than a
- * WebGL preview — the point is to tell four rows apart in a list, and a canvas
- * per row would cost a renderer each. */
-function themeSwatch(key: string): HTMLElement {
+ * WebGL preview — the point is to tell a few rows apart in a list, and a canvas
+ * per row would cost a renderer each.
+ *
+ * Both pickers draw with it, which is why `scheme` is a parameter rather than
+ * something read off the host: the theme page shows every theme under the scheme
+ * in force, and the scheme page shows the theme in force under every scheme. */
+function themeSwatch(key: string, scheme: Scheme): HTMLElement {
   const spec = themeDef(key);
   const el = document.createElement("span");
   el.className = "theme-swatch";
-  for (const [name, value] of Object.entries(themeVars(themePalette(key), spec.texture))) {
+  for (const [name, value] of Object.entries(
+    themeVars(themePalette(key, scheme), spec.texture?.[scheme]),
+  )) {
     el.style.setProperty(name, value);
   }
   const card = document.createElement("span");
@@ -242,7 +265,7 @@ export function renderThemePicker(host: SettingsHost): DocumentFragment {
     check.className = "settings-check";
     check.textContent = key === host.theme ? "✓" : "";
     const { li, btn } = buttonRow(
-      [themeSwatch(key), textBlock(spec.label, spec.hint), check],
+      [themeSwatch(key, activeScheme(host.scheme)), textBlock(spec.label, spec.hint), check],
       () => host.setTheme(key),
       "settings-theme",
     );
@@ -256,6 +279,54 @@ export function renderThemePicker(host: SettingsHost): DocumentFragment {
   note.className = "settings-footer";
   note.textContent = "The board's tiles change on the next board you open.";
   frag.append(note);
+  return frag;
+}
+
+/** The colour scheme page: Auto, Light, Dark. A page of its own beside the
+ * theme, and for the same reason the sound picker is one — it is a short list of
+ * choices, and the settings row above already reports which is on.
+ *
+ * Each row wears the *current theme* under that scheme, so the list previews
+ * what picking it does rather than naming a colour. Auto shows whichever way the
+ * device currently leans and says so, which is the same shape as the Animations
+ * row's "Following your system setting (on/off)" — a preference that defers has
+ * to show what it is deferring to, or it reads as broken on the day the two
+ * disagree.
+ *
+ * No footer about the next board: unlike a theme, a scheme is chrome and page
+ * only. The board is lit head-on by a fixed rig and reads the same either way,
+ * so the change is complete the moment it is made — including on a board still
+ * in play behind the menu. */
+export function renderSchemePicker(host: SettingsHost): DocumentFragment {
+  const frag = document.createDocumentFragment();
+  const list = document.createElement("ul");
+  list.className = "menu-list";
+  const following = activeScheme("auto");
+  for (const key of SCHEME_KEYS) {
+    const check = document.createElement("span");
+    check.className = "settings-check";
+    check.textContent = key === host.scheme ? "✓" : "";
+    const hint =
+      key === "auto"
+        ? `Following your device (${SCHEME_LABELS[following].toLowerCase()})`
+        : key === "light"
+          ? "Always the light palette"
+          : "Always the dark palette";
+    const { li, btn } = buttonRow(
+      [
+        themeSwatch(host.theme, key === "auto" ? following : key),
+        textBlock(SCHEME_LABELS[key], hint),
+        check,
+      ],
+      () => host.setScheme(key),
+      "settings-theme",
+    );
+    btn.dataset["scheme"] = key;
+    btn.setAttribute("aria-pressed", String(key === host.scheme));
+    if (key === host.scheme) btn.classList.add("active");
+    list.append(li);
+  }
+  frag.append(list);
   return frag;
 }
 
@@ -362,6 +433,7 @@ function volumeRow(host: SettingsHost): HTMLElement {
 export function renderSettings(
   host: SettingsHost,
   openThemes: () => void,
+  openSchemes: () => void,
   openBestTimes: () => void,
   openSounds: () => void,
 ): DocumentFragment {
@@ -399,9 +471,10 @@ export function renderSettings(
   const chevron = document.createElement("span");
   chevron.className = "menu-entry-chevron";
   chevron.textContent = "›";
+  const scheme = activeScheme(host.scheme);
   const { li: themeLi, btn: themeBtn } = buttonRow(
     [
-      themeSwatch(host.theme),
+      themeSwatch(host.theme, scheme),
       textBlock("Theme", themeDef(host.theme).label),
       chevron,
     ],
@@ -410,6 +483,31 @@ export function renderSettings(
   );
   themeBtn.dataset["settingsGroup"] = "theme";
   appearance.append(themeLi);
+
+  // The second half of what used to be one setting. It reports the *choice*
+  // rather than what the choice resolves to, with the resolution in brackets —
+  // "Auto" alone would leave a player who wanted dark unable to tell whether
+  // their device had been asked and answered light, or the setting had not
+  // taken.
+  const schemeChevron = document.createElement("span");
+  schemeChevron.className = "menu-entry-chevron";
+  schemeChevron.textContent = "›";
+  const { li: schemeLi, btn: schemeBtn } = buttonRow(
+    [
+      themeSwatch(host.theme, scheme),
+      textBlock(
+        "Colour scheme",
+        host.scheme === "auto"
+          ? `Auto · ${SCHEME_LABELS[scheme].toLowerCase()}`
+          : SCHEME_LABELS[host.scheme],
+      ),
+      schemeChevron,
+    ],
+    openSchemes,
+    "menu-submenu",
+  );
+  schemeBtn.dataset["settingsGroup"] = "scheme";
+  appearance.append(schemeLi);
 
   // Beside the theme rather than under Behaviour: this is what the page is
   // made of, not what the game does. It is shown whatever theme is active,

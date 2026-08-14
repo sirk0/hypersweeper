@@ -8,6 +8,11 @@
 // very faint, on purpose: the detail is meant to be something a player notices
 // after a while, not decoration competing with the board.
 //
+// The ink follows the **colour scheme**, and it has to be baked into the tile
+// rather than inherited: a `background-image` data URI is its own document, so
+// `currentColor` means nothing inside it. Hence `INKS` below, and hence the
+// scheme in the memo key.
+//
 // Everything here is one CSS `background-image` layer — an inline SVG data URI.
 // It has to be: the packaged macOS and iOS builds assert the bundle fetches
 // nothing (scripts/check-offline-assets.mjs), so a texture that is a file on a
@@ -58,6 +63,7 @@ import {
 } from "../boards/catalog";
 import { MODES } from "../boards/presets";
 import { archTemplate, templateCells } from "../boards/tilings";
+import type { Scheme } from "./theme";
 
 // -- the look ---------------------------------------------------------------
 
@@ -79,11 +85,21 @@ const CELL_AREA_PX = 108;
  * 12 px tile is 30 000 draws on a large page). */
 const MIN_TILE_PX = 36;
 
-/** The ink. Written plainly: `layer()` percent-encodes the whole document, so
- * a `#` escaped here would come back out as `%2523` and the stroke would be
- * dropped for an unparsable colour. */
-const INK = "#4a5568";
-const INK_ALPHA = 0.07;
+/** The ink, per colour scheme. Written plainly: `layer()` percent-encodes the
+ * whole document, so a `#` escaped here would come back out as `%2523` and the
+ * stroke would be dropped for an unparsable colour.
+ *
+ * The dark entry is not the light one turned up. A hairline works by moving the
+ * page a little way toward its opposite, so on a near-black page the ink has to
+ * be *lighter* than the page, not darker: `#4a5568` at 7% over `#101014` shifts
+ * a pixel by about four values in 255 — it renders, it costs the same, and it is
+ * invisible. And the alpha does not carry across either, because a page's
+ * headroom is not symmetric: 7% of the way from `#f2f2f7` down is a wider
+ * perceptual step than 7% of the way from `#101014` up. */
+const INKS: Record<Scheme, { color: string; alpha: number }> = {
+  light: { color: "#4a5568", alpha: 0.07 },
+  dark: { color: "#c8d2e4", alpha: 0.1 },
+};
 const STROKE_PX = 1;
 
 // -- geometry ---------------------------------------------------------------
@@ -513,9 +529,10 @@ const num = (v: number): string => String(v);
 /** Collect a tile's polygon edges as pixel segments, each drawn **once**.
  *
  * De-duplication is not just compression: stroking every cell as a closed path
- * paints each shared edge twice, and at seven percent alpha that makes every
- * interior line twice as dark as a boundary one — the pattern comes out
- * blotchy exactly where the tiling is most regular. */
+ * paints each shared edge twice, and at these alphas that makes every interior
+ * line twice as far from the page as a boundary one — darker on the light
+ * scheme, brighter on the dark one, and blotchy on both exactly where the
+ * tiling is most regular. */
 function collect(
   cells: Vertex[][],
   place: (p: Vertex) => Vertex,
@@ -551,10 +568,14 @@ const pathData = (segments: Iterable<Segment>): string =>
  * the intrinsic `width`/`height` are what make the layer repeat at the right
  * size without a `background-size` to say so. Without those attributes Chrome
  * falls back to 300x150 and Firefox stretches the tile to the page. */
-const svg = (w: number, h: number, body: string): string =>
-  `<svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}' viewBox='0 0 ${w} ${h}'>` +
-  `<g fill='none' stroke='${INK}' stroke-opacity='${INK_ALPHA}' ` +
-  `stroke-width='${STROKE_PX}'>${body}</g></svg>`;
+const svg = (w: number, h: number, body: string, scheme: Scheme): string => {
+  const ink = INKS[scheme];
+  return (
+    `<svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}' viewBox='0 0 ${w} ${h}'>` +
+    `<g fill='none' stroke='${ink.color}' stroke-opacity='${ink.alpha}' ` +
+    `stroke-width='${STROKE_PX}'>${body}</g></svg>`
+  );
+};
 
 /** A seamless tile of a periodic domain.
  *
@@ -564,7 +585,7 @@ const svg = (w: number, h: number, body: string): string =>
  * this side and its other half arrives from the neighbouring copy of the tile.
  * The widest cell in the catalogue spans 1.08 domains (rotated hexagonal), so
  * one copy of margin on each side is enough. */
-function periodicTile(domain: Domain): string {
+function periodicTile(domain: Domain, scheme: Scheme): string {
   const { width, height, cells } = domain;
   const s = Math.sqrt(CELL_AREA_PX / meanCellArea(cells));
   const kx = Math.max(1, Math.ceil(MIN_TILE_PX / (width * s)));
@@ -584,7 +605,7 @@ function periodicTile(domain: Domain): string {
       collect(cells, place, w, h, segments);
     }
   }
-  return svg(w, h, `<path d='${pathData(segments.values())}'/>`);
+  return svg(w, h, `<path d='${pathData(segments.values())}'/>`, scheme);
 }
 
 /** Hex-packed circles, for the boards with no flat tiling to follow. Packed
@@ -592,7 +613,7 @@ function periodicTile(domain: Domain): string {
  * board you turn. The Voronoi cell of a hexagonal packing at spacing `d` is a
  * hexagon of area d²√3/2, so `d` follows from the same target area every tiling
  * uses and the circles come out the size of everything else's tiles. */
-function circleTile(): string {
+function circleTile(scheme: Scheme): string {
   const d = Math.sqrt((2 * CELL_AREA_PX) / ROOT3);
   const kx = Math.max(1, Math.ceil(MIN_TILE_PX / d));
   const ky = Math.max(1, Math.ceil(MIN_TILE_PX / (d * ROOT3)));
@@ -613,21 +634,24 @@ function circleTile(): string {
       }
     }
   }
-  return svg(w, h, body.join(""));
+  return svg(w, h, body.join(""), scheme);
 }
 
 /** The tile for a pattern key, as an SVG document. Exported for the tests,
  * which run under the node environment and cannot read a stylesheet. */
-export function patternSvg(key: string): string {
-  if (key === "circles") return circleTile();
+export function patternSvg(key: string, scheme: Scheme = "light"): string {
+  if (key === "circles") return circleTile(scheme);
   const domain = DOMAINS[key];
-  if (domain) return periodicTile(domain());
+  if (domain) return periodicTile(domain(), scheme);
   const t = archTemplate(key); // throws on an unknown key: a bug in the table
-  return periodicTile({
-    width: t.width,
-    height: t.height,
-    cells: templateCells(t, 0, 0).map((c) => c.pts),
-  });
+  return periodicTile(
+    {
+      width: t.width,
+      height: t.height,
+      cells: templateCells(t, 0, 0).map((c) => c.pts),
+    },
+    scheme,
+  );
 }
 
 /** An SVG document as a CSS `background-image` layer.
@@ -650,16 +674,25 @@ function layer(doc: string): string {
 
 const CACHE = new Map<string, string>();
 
-/** The `background-image` layer for the page behind `mode`, or null on the menu
- * and for a mode this build has not got. Memoised by pattern key, so the whole
- * catalogue costs at most one tile per distinct geometry. */
-export function patternLayer(mode: string | null | undefined): string | null {
+/** The `background-image` layer for the page behind `mode` under `scheme`, or
+ * null on the menu and for a mode this build has not got. Memoised, so the whole
+ * catalogue costs at most one tile per distinct geometry per scheme.
+ *
+ * **The scheme is in the cache key**, not just in the tile: the ink is baked
+ * into the data URI, so a cache keyed on geometry alone would hand the first
+ * scheme to open a tiling back to the second, and one of the two would get a
+ * hairline the same colour as its page. */
+export function patternLayer(
+  mode: string | null | undefined,
+  scheme: Scheme = "light",
+): string | null {
   const key = patternKey(mode);
   if (key === null) return null;
-  let built = CACHE.get(key);
+  const cacheKey = `${scheme}:${key}`;
+  let built = CACHE.get(cacheKey);
   if (built === undefined) {
-    built = layer(patternSvg(key));
-    CACHE.set(key, built);
+    built = layer(patternSvg(key, scheme));
+    CACHE.set(cacheKey, built);
   }
   return built;
 }

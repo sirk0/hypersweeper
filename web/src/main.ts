@@ -26,7 +26,7 @@ import { Hud } from "./ui/hud";
 import { Menu } from "./ui/menu";
 import { openScoreDialog, type ScoreDialogHandle } from "./ui/scoreDialog";
 import type { SettingsHost } from "./ui/settings";
-import { applyTheme, themeCellStyle } from "./ui/theme";
+import { applyTheme, onSchemeChange, themeCellStyle, type SchemePref } from "./ui/theme";
 import {
   animationsEnabled,
   loadSettings,
@@ -156,6 +156,12 @@ class App {
     // ever a trap here (see blockBrowserZoom).
     blockBrowserZoom();
     subscribeSettings((s) => this.adoptSettings(s));
+    // The colour scheme may be the device's rather than a stored choice, and a
+    // phone switches itself at dusk. Nothing else notices, so the page would sit
+    // on the wrong palette until the next reload.
+    onSchemeChange(() => {
+      if (this.settings.scheme === "auto") this.paintTheme();
+    });
     this.renderer.start();
     window.setInterval(() => this.tickTimer(), 250);
 
@@ -174,6 +180,9 @@ class App {
     return {
       get theme() {
         return app.settings.theme;
+      },
+      get scheme() {
+        return app.settings.scheme;
       },
       get difficulty() {
         return app.settings.difficulty;
@@ -197,6 +206,7 @@ class App {
         return app.settings.analytics;
       },
       setTheme: (key) => this.setTheme(key),
+      setScheme: (pref) => this.setScheme(pref),
       setDifficulty: (key) => this.setDifficulty(key),
       setAnimations: (pref) => this.setAnimations(pref),
       setSound: (key) => this.setSound(key),
@@ -218,7 +228,11 @@ class App {
     // no board named there is nothing for the page to follow, which is the
     // same state the menu is in.
     const following = this.settings.backgrounds && this.screen === "game";
-    applyTheme(this.settings.theme, following ? (this.session?.mode ?? null) : null);
+    applyTheme(
+      this.settings.theme,
+      this.settings.scheme,
+      following ? (this.session?.mode ?? null) : null,
+    );
   }
 
   private setTheme(key: string): void {
@@ -228,6 +242,14 @@ class App {
     // of a theme (its cell style) is baked into a mesh, so it takes effect on
     // the next board — which is every board from here, since the theme picker
     // is only reachable from the menu.
+    this.paintTheme();
+  }
+
+  /** Unlike a theme this lands whole and at once: a scheme is the chrome
+   * palette and the page, and the board is not cut differently for it. */
+  private setScheme(pref: SchemePref): void {
+    this.settings = { ...this.settings, scheme: pref };
+    saveSettings(this.settings);
     this.paintTheme();
   }
 

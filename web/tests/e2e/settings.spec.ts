@@ -1,11 +1,11 @@
 import { createRequire } from "node:module";
 import { expect, test, type Page } from "@playwright/test";
 
-// The settings page: the gear on the menu, the theme picker, the animations
-// toggle and the About block. Themes are asserted through the computed CSS
-// custom properties rather than by screenshot — they are the thing the theme
-// actually sets, and they survive the anti-aliasing noise a software-WebGL
-// screenshot carries.
+// The settings page: the gear on the menu, the theme and colour-scheme pickers,
+// the animations toggle and the About block. Both look settings are asserted
+// through the computed CSS custom properties rather than by screenshot — they
+// are the thing a theme actually sets, and they survive the anti-aliasing noise
+// a software-WebGL screenshot carries.
 
 const pkg = createRequire(import.meta.url)("../../package.json") as { version: string };
 
@@ -109,42 +109,65 @@ test.describe("settings", () => {
     await page.locator('.menu-header-btn[data-action="settings"]').click();
     const row = page.locator('.menu-entry[data-settings-group="theme"]');
     await expect(row).toContainText("Theme");
-    await expect(row).toContainText("Light"); // the current one, as a subtitle
+    await expect(row).toContainText("Realistic"); // the current one, as a subtitle
     // The themes are a page of their own, not spelled out here.
     await expect(page.locator(".menu-entry[data-theme]")).toHaveCount(0);
 
     await row.click();
-    await expect(page.locator(".menu-entry[data-theme]")).toHaveCount(4);
+    await expect(page.locator(".menu-entry[data-theme]")).toHaveCount(3);
     await expect(page.locator('.menu-entry[data-action="back"]')).toContainText("Theme");
 
     // Back lands on settings, not the root menu, and the row has followed.
-    await page.locator('.menu-entry[data-theme="realistic"]').click();
+    await page.locator('.menu-entry[data-theme="classic"]').click();
     await page.locator('.menu-entry[data-action="back"]').click();
     await expect(page.locator('.menu-entry[data-settings-group="theme"]')).toContainText(
-      "Realistic",
+      "Classic",
     );
   });
 
-  // Appearance is one setting now: a theme carries the chrome palette *and* the
-  // board's cell style, so there is no second picker to pair with it.
+  test("the colour scheme is its own row and its own page", async ({ page }) => {
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
+    const row = page.locator('.menu-entry[data-settings-group="scheme"]');
+    await expect(row).toContainText("Colour scheme");
+    // Auto by default, and it says which way the device leans rather than
+    // leaving the player unable to tell "auto" from "not applied".
+    await expect(row).toContainText("Auto");
+    await expect(page.locator(".menu-entry[data-scheme]")).toHaveCount(0);
+
+    await row.click();
+    await expect(page.locator(".menu-entry[data-scheme]")).toHaveCount(3);
+    await expect(page.locator('.menu-entry[data-action="back"]')).toContainText(
+      "Colour scheme",
+    );
+    await expect(page.locator('.menu-entry[data-scheme="auto"]')).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+
+  // Appearance is two settings now, and the second is the colour scheme rather
+  // than the cell style: a theme still carries the board's cells, so there is no
+  // picker to pair with it there.
   test("there is no cell style picker beside the theme", async ({ page }) => {
     await page.locator('.menu-header-btn[data-action="settings"]').click();
     await expect(page.locator('.menu-entry[data-settings-group="cell-style"]')).toHaveCount(0);
   });
 
-  test("picking a theme re-skins the chrome and survives a reload", async ({ page }) => {
+  test("picking a scheme re-skins the chrome and survives a reload", async ({ page }) => {
     await page.locator('.menu-header-btn[data-action="settings"]').click();
     expect(await cssVar(page, "--bg")).toBe("#f2f2f7"); // the ios default
 
-    await page.locator('.menu-entry[data-settings-group="theme"]').click();
-    await page.locator('.menu-entry[data-theme="dark"]').click();
+    await page.locator('.menu-entry[data-settings-group="scheme"]').click();
+    await page.locator('.menu-entry[data-scheme="dark"]').click();
     expect(await cssVar(page, "--bg")).toBe("#101014");
     expect(await cssVar(page, "--panel")).toBe("#1c1c22");
-    await expect(page.locator('.menu-entry[data-theme="dark"]')).toHaveAttribute(
+    await expect(page.locator('.menu-entry[data-scheme="dark"]')).toHaveAttribute(
       "aria-pressed",
       "true",
     );
-    await expect(page.locator('html')).toHaveAttribute("data-theme", "dark");
+    await expect(page.locator("html")).toHaveAttribute("data-scheme", "dark");
+    // ...and the theme is untouched by it: the two axes are independent.
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "realistic");
     // The browser chrome follows too.
     await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute(
       "content",
@@ -156,18 +179,75 @@ test.describe("settings", () => {
     expect(await cssVar(page, "--bg")).toBe("#101014");
   });
 
-  test("every theme applies a complete palette", async ({ page }) => {
+  test("auto follows the device, and an explicit choice does not", async ({ page }) => {
+    // Polled, not read once: `emulateMedia` returns before the page's
+    // `prefers-color-scheme` listener has run, so a bare read races the repaint.
+    const bg = (): ReturnType<typeof expect.poll> =>
+      expect.poll(() => cssVar(page, "--bg"));
+
+    // The default is auto, so the page is the device's — and it repaints when
+    // the device changes its mind, with no reload.
+    await page.emulateMedia({ colorScheme: "dark" });
+    await bg().toBe("#101014");
+    await page.emulateMedia({ colorScheme: "light" });
+    await bg().toBe("#f2f2f7");
+
+    // ...including over a board already in play, since a scheme is chrome and
+    // page only and needs no new mesh.
+    await page.evaluate(() => window.__ms!.startBoard("hex", "easy"));
+    await page.emulateMedia({ colorScheme: "dark" });
+    await bg().toBe("#101014");
+    await page.locator('.hud-btn[data-slot="back"]').click();
+
+    // An explicit Light stops asking.
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
+    await page.locator('.menu-entry[data-settings-group="scheme"]').click();
+    await page.locator('.menu-entry[data-scheme="light"]').click();
+    await bg().toBe("#f2f2f7");
+    await page.emulateMedia({ colorScheme: "dark" });
+    // Still light after the device switched — and given a moment to be wrong.
+    await page.waitForTimeout(150);
+    expect(await cssVar(page, "--bg")).toBe("#f2f2f7");
+    await page.emulateMedia({ colorScheme: "no-preference" });
+  });
+
+  test("classic dark is a black page with the gray board still on it", async ({ page }) => {
     await page.locator('.menu-header-btn[data-action="settings"]').click();
     await page.locator('.menu-entry[data-settings-group="theme"]').click();
-    const keys = await page
-      .locator(".menu-entry[data-theme]")
-      .evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset["theme"] ?? ""));
-    expect(keys.length).toBeGreaterThanOrEqual(4);
-    for (const key of keys) {
-      await page.locator(`.menu-entry[data-theme="${key}"]`).click();
-      for (const name of ["--bg", "--panel", "--text", "--accent", "--counter-bg"]) {
-        expect(await cssVar(page, name), `${key} ${name}`).not.toBe("");
+    await page.locator('.menu-entry[data-theme="classic"]').click();
+    await page.locator('.menu-entry[data-action="back"]').click();
+    await page.locator('.menu-entry[data-settings-group="scheme"]').click();
+    await page.locator('.menu-entry[data-scheme="dark"]').click();
+    expect(await cssVar(page, "--bg")).toBe("#000000");
+    expect(await cssVar(page, "--radius")).toBe("0px"); // still the square 1990s chrome
+
+    // The board does not go dark with the page — the classic cells are gray in
+    // both schemes, which is what "Classic" means.
+    const state = await page.evaluate(() => {
+      window.__ms!.startBoard("square", "easy");
+      return window.__ms!.state();
+    });
+    expect(state.cellStyle).toBe("classic");
+  });
+
+  test("every theme applies a complete palette, on both schemes", async ({ page }) => {
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
+    for (const scheme of ["light", "dark"]) {
+      await page.locator('.menu-entry[data-settings-group="scheme"]').click();
+      await page.locator(`.menu-entry[data-scheme="${scheme}"]`).click();
+      await page.locator('.menu-entry[data-action="back"]').click();
+      await page.locator('.menu-entry[data-settings-group="theme"]').click();
+      const keys = await page
+        .locator(".menu-entry[data-theme]")
+        .evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset["theme"] ?? ""));
+      expect(keys.length).toBe(3);
+      for (const key of keys) {
+        await page.locator(`.menu-entry[data-theme="${key}"]`).click();
+        for (const name of ["--bg", "--panel", "--text", "--accent", "--counter-bg"]) {
+          expect(await cssVar(page, name), `${key}/${scheme} ${name}`).not.toBe("");
+        }
       }
+      await page.locator('.menu-entry[data-action="back"]').click();
     }
   });
 
@@ -203,10 +283,9 @@ test.describe("settings", () => {
   // is the only style whose colour buffer carries an alpha channel, so a board
   // that fails to build with it fails here rather than as a blank canvas.
   for (const [key, style] of [
-    ["light", "flat"],
-    ["dark", "flat"],
-    ["classic", "classic"],
     ["realistic", "realistic"],
+    ["flat", "flat"],
+    ["classic", "classic"],
   ]) {
     test(`the ${key} theme's cells reach the mesh of a flat board and a solid`, async ({
       page,
@@ -320,7 +399,7 @@ test.describe("settings", () => {
     await page.locator('.menu-header-btn[data-action="settings"]').click();
     await page.locator('.menu-entry[data-setting="backgrounds"]').click(); // opt in
     await page.locator('.menu-entry[data-action="back"]').click();
-    for (const key of ["light", "dark", "classic"]) {
+    for (const key of ["flat", "classic"]) {
       await page.locator('.menu-header-btn[data-action="settings"]').click();
       await page.locator('.menu-entry[data-settings-group="theme"]').click();
       await page.locator(`.menu-entry[data-theme="${key}"]`).click();
@@ -330,6 +409,31 @@ test.describe("settings", () => {
       expect(await cssVar(page, "--bg-pattern"), key).toBe("none");
       await page.locator('.hud-btn[data-slot="back"]').click();
     }
+  });
+
+  // The whole point of the ink being per scheme: on the dark page the light
+  // scheme's slate hairline is about four values in 255, which is not a faint
+  // pattern, it is no pattern. Asserted on the layer rather than by screenshot
+  // for the reason given above — at these alphas a screenshot cannot see it
+  // either way.
+  test("the dark page gets a pattern of its own, not the light one", async ({ page }) => {
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
+    await page.locator('.menu-entry[data-setting="backgrounds"]').click(); // opt in
+    await page.locator('.menu-entry[data-action="back"]').click();
+    await page.evaluate(() => window.__ms!.startBoard("torustrihex", "easy"));
+    const light = await cssVar(page, "--bg-pattern");
+    expect(light).toContain("data:image/svg+xml");
+
+    await page.locator('.hud-btn[data-slot="back"]').click();
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
+    await page.locator('.menu-entry[data-settings-group="scheme"]').click();
+    await page.locator('.menu-entry[data-scheme="dark"]').click();
+    await page.locator('.menu-entry[data-action="back"]').click();
+    await page.locator('.menu-entry[data-action="back"]').click();
+    await page.evaluate(() => window.__ms!.startBoard("torustrihex", "easy"));
+    const dark = await cssVar(page, "--bg-pattern");
+    expect(dark).toContain("data:image/svg+xml");
+    expect(dark).not.toBe(light);
   });
 
   test("a theme survives launching a board", async ({ page }) => {

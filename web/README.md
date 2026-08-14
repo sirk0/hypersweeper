@@ -6,6 +6,32 @@ site root, by GitHub Pages and Cloudflare Pages both while the game moves
 between them; the pygame build stays in the repo as the reference
 implementation and is not deployed (see **Deploy** below).
 
+**M19 — Theme and colour scheme, apart.** M18 folded appearance into one theme,
+and folded one setting too many in with it: Light and Dark were the *same* look
+(both cut with the `flat` style, neither textured) on two palettes, while Classic
+and Realistic were two looks with no dark form at all. So the glass tiles on a
+dark page were unreachable, and nothing in the app knew what the device
+preferred. Appearance is two settings again — but on the two axes that are
+actually independent, so every combination exists rather than most of them being
+undesigned:
+
+- a **theme** — how the cells are cut and what the page is made of. **Realistic**
+  (now the default), **Flat**, **Classic**, one per entry in `cellStyle.ts`.
+- a **colour scheme** — which palette the chrome paints with. **Auto** (the
+  default: the device's own `prefers-color-scheme`, resolved live, so a phone
+  that switches itself at dusk takes the page with it), **Light**, **Dark**.
+
+A theme therefore names a *pair* of palettes, and the two the pygame presets
+could never supply are the new web-only ones: `classic`/**`classicDark`**, a
+black page under the same gray beveled board. The board itself does not go dark —
+it is lit head-on by a fixed rig and reads the same either way, which is what the
+old Dark theme already shipped. The one thing that did have to follow the scheme
+is the **custom-backgrounds hairline**: its ink is baked into a data URI, and
+`#4a5568` at 7% over `#101014` moves a pixel by four values in 255, so the dark
+page gets a *lighter* ink at its own alpha — and the scheme joins the memo key,
+or the first scheme to open a tiling hands its tile to the second. See "Settings
+and themes" below, including the v3→v4 migration.
+
 **M18 — One look setting.** Appearance was two pickers that had to be paired by
 hand — a chrome palette and a cell style, sixteen combinations, most of which
 nobody designed. They are now one **theme** (`src/ui/theme.ts`), and there are
@@ -47,12 +73,13 @@ loops**, so a style can buy a smoother dome by adding relief. And the flat tiles
 of a two-sided surface (cylinder, Möbius, Klein) had no gradient at all, because
 they have no loops to ramp over and the Klein clip can leave a vertex anywhere in
 them — they now measure it **off the geometry**, distance from the cell's centre,
-which survives the clip and gives those surfaces the same bead. The seven
-palettes stay in `data/ui/screens.json` (pygame's, guarded by
-`tests/test_theme_sync.py`); a theme *composes* one rather than adding colours to
-it. Stored settings migrate: the old palette/cell-style pair is read together, so
-a player who had picked the glossy cells lands on Realistic rather than being
-flattened to Light with everyone else. The menu header also moved its **?** to
+which survives the clip and gives those surfaces the same bead. The eight
+palettes stay in `data/ui/screens.json` (pygame's six plus the two web-only dark
+halves, guarded by `tests/test_theme_sync.py`); a theme *composes* a light/dark
+pair of them rather than adding colours to one. Stored settings migrate: the old
+palette/cell-style pair is read together, so a player who had picked the glossy
+cells lands on Realistic rather than being flattened with everyone else, and the
+v4 split takes the colour scheme back out of the theme. The menu header also moved its **?** to
 the left edge, one button per side, so "Hypersweeper" — a single unbreakable word
 — keeps the whole middle and stays on one line on a 320px phone. See "Settings
 and themes" and "Cell styles" below.
@@ -721,8 +748,9 @@ carries no standing warning nobody intends to act on.
 
 How a cell is **cut**. Not a setting of its own: the **theme** names one (see
 "Settings and themes"), so the table has one entry per theme and the keys match
-the theme keys. Three, because Light and Dark share `flat` — they differ in
-chrome, not in how a tile is cut: **classic** (the beveled button that sinks when
+the theme keys — one each, a bijection since the colour scheme became its own
+setting and Light and Dark stopped being two themes sharing `flat`. Three:
+**classic** (the beveled button that sinks when
 opened, and the one style that is *also* gray — see `monochrome` below),
 **flat** (unlit plates in flat colour with wide gaps) and **realistic** (a
 five-loop glass bead; on the plane a gradient and translucent opened cells, on a
@@ -1404,43 +1432,81 @@ each other and the title keeps the whole middle. Both on the right cost the titl
 twice that width, and "Hypersweeper" is a single unbreakable word that then does
 not fit on one line on a narrow phone. A third button means picking a side and
 adjusting the shared `--menu-header-actions` width, which is what the empty side
-is sized from. The theme is a page below settings in the same way
-(`Menu.showThemePicker`): settings shows a Theme row naming the current one, and
-the four-row picker lives one level down, which keeps the settings page short
-enough to read at a glance.
+is sized from. Both look settings are pages below settings in the same way
+(`Menu.showThemePicker`, `Menu.showSchemePicker`): settings shows a Theme row and
+a Colour scheme row naming the current values, and the pickers live one level
+down, which keeps the settings page short enough to read at a glance. Two pages
+rather than one list of every combination — the axes are independent, so a single
+picker would be nine rows that all have to be read to find the two facts they
+encode.
 
-**Themes.** A theme is the app's **one** look setting: the chrome palette, the
-page behind the board, *and* how the board's cells are cut — and, on Realistic,
-whether a flag and a mine are billboards or real models (see "3D markers"
-above). There are four — Light, Dark, Classic, Realistic — and they are declared
-in `src/ui/theme.ts`, not in `data/ui/screens.json`. The distinction matters:
+**Themes and the colour scheme.** The look is **two** settings, on two axes that
+have nothing to say to each other:
 
-- The seven **palettes** are still shared config (`data/ui/screens.json` under
+- a **theme** — how the board's cells are cut, what the page behind them is made
+  of, and (on Realistic) whether a flag and a mine are billboards or real models
+  (see "3D markers" above). Three of them: **Realistic** (the default), **Flat**,
+  **Classic**, one per entry in `render/cellStyle.ts`.
+- a **colour scheme** — which palette the chrome paints with. **Auto** (the
+  default; the device's own `prefers-color-scheme`), **Light**, **Dark**.
+
+They were one setting until v4, and the four themes it offered — Light, Dark,
+Classic, Realistic — were the two axes tangled. Light and Dark were the *same*
+look (both cut with the `flat` style, neither textured) on two palettes, while
+Classic and Realistic were two looks with no dark form at all; so the glass tiles
+on a dark page were unreachable, and nothing in the app knew what the device
+preferred. Split, every combination exists.
+
+Both lists are declared in `src/ui/theme.ts`, not in `data/ui/screens.json`. The
+distinction matters:
+
+- The eight **palettes** are still shared config (`data/ui/screens.json` under
   `themes`; six ported from the pygame `THEMES` registry in `minesweeper/gui.py`,
-  `dark` web-only), and `tests/test_theme_sync.py` still fails if one is retuned
-  without the JSON following. A theme *composes* a palette; it never adds colours
-  to one. Light and Realistic share `ios` and differ in the board and the page
-  texture.
-- The **list** is web-only because pygame has neither cell styles nor page
-  textures, so its six presets could never be this list. That is the same split
-  the menu already has (`catalog.ts`'s web-menu section).
+  `dark` and `classicDark` web-only), and `tests/test_theme_sync.py` still fails
+  if one is retuned without the JSON following. A theme *composes* palettes, two
+  at a time — `Theme.palette` is a `{light, dark}` pair — and never adds a colour
+  to one. The two web-only entries are exactly the dark halves the pygame presets
+  could never supply: `ios`/`dark` and `classic`/`classicDark`.
+- The **lists** are web-only because pygame has neither cell styles, page
+  textures nor a dark mode, so its six presets could never be these axes. That is
+  the same split the menu already has (`catalog.ts`'s web-menu section).
 
-`applyTheme` writes the whole set of CSS custom properties onto
-`document.documentElement` — the `:root` block in `styles.css` is only the *boot*
-default (Light's, i.e. the `ios` palette) and must stay in step with it. Things
-worth knowing:
+`applyTheme(theme, schemePref, mode?)` writes the whole set of CSS custom
+properties onto `document.documentElement` — the `:root` block in `styles.css` is
+only the *boot* default (Realistic on light) and must stay in step with it, as
+must the `prefers-color-scheme: dark` block beside it. Things worth knowing:
 
+- **`auto` is resolved at paint time, and it is live.** `activeScheme` reads
+  `matchMedia("(prefers-color-scheme: dark)")` exactly as `animationsEnabled`
+  reads reduced motion, and guards `window` the same way for the node unit
+  environment. `onSchemeChange` is the other half: `App` subscribes to the media
+  query and repaints when the device switches, because nothing else would notice
+  and the page would sit on the wrong palette until the next reload.
+- **A scheme is chrome and page only.** The board's tiles are lit head-on by a
+  fixed rig and read the same either way — which is what the old Dark theme
+  already shipped, a light-toned board on a dark page — so `shapePalette.ts`,
+  `glyphAtlas.ts` and the renderer's lighting take no scheme argument at all.
+  Classic dark is a black page with the same gray beveled board on it.
 - **The board is themed only as far as a cell style says.** The shape colour code
   (`shapePalette.ts`) still owns the hues, and exactly one style switches it off:
   `classic`, whose `monochrome` flag draws the board in its plain grays. No theme
-  reaches into `shapePalette.ts` or `glyphAtlas.ts` for a colour, and the
-  `gallery.spec.ts` baselines that are not per-theme are shot in the default one.
-- **A theme's board half lands on the next board.** A cell style fixes the mesh's
-  vertex layout, so nothing is re-cut in flight; the chrome half is instant. The
-  picker page says so.
-- **An unknown theme key falls back to Light** through `resolveTheme`, which uses
-  `Object.hasOwn` for the same reason `link.ts` does. That is also the safety net
-  under the v2→v3 migration below.
+  reaches into `shapePalette.ts` or `glyphAtlas.ts` for a colour.
+- **The gallery is shot in Flat on light, not in the default.** Realistic's page
+  is full-frame turbulence, which no PNG compresses: pointing the `board-*.png`
+  set at the default took the baselines from 30 KB each to 650 KB, 21 MB over the
+  gallery, in a repo whose whole history is 17 MB. `BASE_LOOK` in
+  `gallery.spec.ts` pins the quiet page instead — which is also the one a
+  *geometry* regression, what those shots are for, shows up against most
+  clearly — and the five `LOOKS` shots cover the rest of the product.
+- **A theme's board half lands on the next board; a scheme lands whole.** A cell
+  style fixes the mesh's vertex layout, so nothing is re-cut in flight and the
+  theme picker's footer says so. A scheme needs no new mesh, so it applies to the
+  board already in play — which is why the scheme page carries no footer.
+- **An unknown theme key falls back to Realistic** through `resolveTheme`, which
+  uses `Object.hasOwn` for the same reason `link.ts` does; `light` and `dark`
+  are *aliases* onto Flat rather than strangers, since both cut their cells that
+  way. `resolveScheme` is the same shape and falls back to `auto`. Those are also
+  the safety net under the v3→v4 migration below.
 - **The WebGL canvas is transparent** (`alpha: true`, clear alpha 0), so the
   field around the board is the *page* background. That is what makes the glass
   theme's gradient show and means a theme needs no renderer call at all. Do not
@@ -1539,7 +1605,17 @@ menu is in anyway.
   assertions read `--bg-pattern` instead; `tests/unit/backgroundPattern.test.ts`
   pins the geometry (every mode classified, tiles seamless under a one-tile
   shift, no line drawn twice). To *look* at one, raise the alpha — replace
-  `stroke-opacity='0.07'` in the layer — or it will not survive review at all.
+  `stroke-opacity` in the layer — or it will not survive review at all.
+- **The ink follows the colour scheme, and the memo key has to follow it too.**
+  `INKS` in `backgroundPattern.ts` holds one colour and alpha per scheme, baked
+  into the data URI — a `background-image` is its own document, so `currentColor`
+  means nothing inside it. The dark entry is not the light one turned up: a
+  hairline works by moving the page toward its opposite, so `#4a5568` at 7% over
+  `#101014` shifts a pixel by about four values in 255 — it renders, it costs the
+  same, and it is invisible. Hence a *lighter* ink than the page, at its own
+  alpha, and hence the scheme in the `CACHE` key: keyed on geometry alone, the
+  first scheme to open a tiling hands its tile to the second and one of the two
+  gets a hairline the colour of its own page.
 - **The pentaflake is a compromise.** Regular pentagons do not tile the plane —
   that is exactly why that board is a fractal with gnomon-shaped holes — so its
   page is the Cairo pentagonal tiling, the pentagon tiling that does.
@@ -1547,7 +1623,7 @@ menu is in anyway.
   call `themeVars` with the texture and no pattern, so they show the theme
   rather than whatever board was last open; keep it that way.
 
-**The v2 → v3 migration.** Until v3, `theme` named a chrome palette and
+**The v2 → v3 → v4 migrations.** Until v3, `theme` named a chrome palette and
 `cellStyle` sat beside it as a second setting. `migrate` in `settings.ts` reads
 the **pair** — not each field on its own — because only the pair says what look a
 player had chosen: a palette a v3 theme is named after (`classic`, `dark`) wins
@@ -1556,6 +1632,19 @@ outright, and otherwise the old cell style is the better evidence, so someone on
 everyone else. The stale `cellStyle` key is deliberately left in the record —
 `saveSettings` carries unknown keys over anyway, and a downgrade to a v2 build
 should find its setting intact.
+
+v4 splits that theme in two: `theme` keeps the look and the new `scheme` takes
+the colour. Light and Dark were one look on two palettes, so both become Flat.
+The scheme is deliberately **not** carried over — the key is simply absent, and an
+absent key is `auto` — so everyone comes out following their device, which is the
+new default and what most people would have chosen had it existed.
+
+Two things about the pair of branches. They run in **series**, not as
+alternatives: a v1 record passes through both, so each may only speak the
+vocabulary of the version it upgrades *to*. And that is why the v2 branch falls
+back to a written-out `V3_DEFAULT = "light"` rather than to `DEFAULT_THEME` —
+letting it drift with the current default would silently re-aim every v2 record,
+sending a `glass` player to Realistic instead of through Light to Flat.
 
 **Sound.** What the game sounds like — a preset key or `"off"` — under the
 Behaviour heading, with its own picker page (see "Sound" above). Unlike a theme's
@@ -1590,9 +1679,9 @@ heading. Present only in a build that carries the counter at all — the same
 principle as the Haptics row needing a device that can buzz, and the "Check for
 updates" row needing a deployed build to check against.
 
-**Persistence.** `src/settings.ts` is the app's only stored state: theme,
-difficulty, the animations override, haptics, the analytics flag, and the sound
-preset with its volume. Flag mode, zoom, the menu page you are on and the board
+**Persistence.** `src/settings.ts` is the app's only stored state: theme, colour
+scheme, difficulty, the animations override, haptics, the analytics flag, and the
+sound preset with its volume. Flag mode, zoom, the menu page you are on and the board
 in progress stay in memory as before.
 
 The layout is **one stable `localStorage` key holding a record that carries its

@@ -35,7 +35,7 @@ test.describe("3D markers stay cheap in bulk", () => {
     await page.addInitScript(() => {
       localStorage.setItem(
         "ms:settings",
-        JSON.stringify({ version: 3, theme: "realistic", animations: false, sound: "off" }),
+        JSON.stringify({ version: 4, theme: "realistic", animations: false, sound: "off" }),
       );
     });
     await page.goto("/");
