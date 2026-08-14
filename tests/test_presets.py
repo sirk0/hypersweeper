@@ -238,6 +238,74 @@ class TestWrappedWindowsDoNotFold:
             f"{MAX_TILE_TURN:.0%} of a turn: {folded}"
         )
 
+    # The rows whose tiling is too coarse to keep its facet step under the bar
+    # at the classic size, and what they measure. A domain of a dozen cells has
+    # only seven copies to spend on an 81-cell donut, and no arrangement of
+    # seven is smooth; the alternative the search offered was a 216-cell "easy"
+    # board, which is not an easier outcome than a chunky one. So these are
+    # listed rather than fixed -- and listed exactly, so that a window drifting
+    # further into the fold is still a failure.
+    CHUNKY = {
+        ("torustriakis", "easy"): 0.259,
+        ("torustriakis", "medium"): 0.259,
+        ("kleintriakis", "easy"): 0.259,
+        ("kleintriakis", "medium"): 0.259,
+        ("kleintriakis", "hard"): 0.259,
+        ("torusbasketweave3", "easy"): 0.259,
+        ("torustrunctrihex", "easy"): 0.227,
+        ("kleintrunctrihex", "easy"): 0.227,
+        ("torusbasketweave", "easy"): 0.217,
+        ("torusherringbone", "easy"): 0.217,
+        ("torustetrakis", "easy"): 0.217,
+        ("kleintetrakis", "easy"): 0.217,
+        ("torusrotatedhex", "easy"): 0.206,
+    }
+
+    @pytest.mark.parametrize("difficulty", DIFFICULTIES)
+    def test_no_tile_cuts_a_chord_its_neighbours_stand_proud_of(self, difficulty):
+        """...and the same fold seen from the side.
+
+        The bar above asks how deep one tile cuts; this asks whether the tiles
+        beside it cut as deep. Where they do the board is a prism and reads as
+        one -- `torusstackedbond` easy is four equal facets round its tube,
+        chunky and whole. Where they do not the shallow tiles stand proud of
+        the deep ones and the surface reads as loose slabs, which is what
+        `kleinbasketweave3` medium shipped as: bricks a third of a domain tall
+        against bricks a whole domain tall, two domains round the tube, one
+        course sagging 0.29 of the radius beside a course sagging 0.03.
+
+        See `resize.MAX_FACET_STEP`; `CHUNKY` above is the measured list of
+        rows whose tiling cannot do better at the classic size.
+        """
+        from scripts.difficulty.resize import (
+            MAX_FACET_STEP,
+            SPEC,
+            TILE_TURN_SLACK,
+            _closed_tube,
+            _facet_step,
+        )
+
+        presets = json.loads((DATA / "presets.json").read_text())["presets"]
+        stepped = {}
+        for mode, spec in presets.items():
+            builder = spec["builder"]
+            if builder not in SPEC or not SPEC[builder].get("lead"):
+                continue
+            if builder == "archimedean_board":
+                continue
+            axes = (0, 1) if _closed_tube(builder) else (0,)
+            step = max(_facet_step(SPEC[builder], spec["args"][difficulty], a)
+                       for a in axes)
+            if step > MAX_FACET_STEP + TILE_TURN_SLACK:
+                stepped[mode] = round(step, 3)
+        expected = {mode: value for (mode, level), value in self.CHUNKY.items()
+                    if level == difficulty}
+        assert stepped == expected, (
+            f"{difficulty} windows whose deepest tile chord sits more than "
+            f"{MAX_FACET_STEP:.0%} of the radius inside the shallowest: "
+            f"{stepped}"
+        )
+
 
 class TestDifficultyOrdering:
     @pytest.mark.parametrize("mode", _modes())

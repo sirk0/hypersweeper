@@ -45,7 +45,7 @@ Every board's mine count, chosen so its win probability under the reference solv
   - `triakis`/medium: 0.0% vs 87.1% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `triakis`/easy: 1.8% vs 96.5% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `truncicosidodeca`/hard: 45.9% vs 50.9% — no integer mine count lands within tolerance; this is the closest
-- 101 rows had games the solver abandoned (its frontier DP hit its node budget); their rates are measured over the games that finished:
+- 103 rows had games the solver abandoned (its frontier DP hit its node budget); their rates are measured over the games that finished:
   - `torustrunchex`/hard: 168 abandoned
   - `torusrotatedhex`/hard: 144 abandoned
   - `kleintri`/hard: 75 abandoned
@@ -114,8 +114,8 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `hextriangle` | 5.6 | 78c 9m (12%) 97% | 253c 38m (15%) 89% | 465c 97m (21%) 49% |
 | `kisrhombille` | 14.2 | 72c 5m (7%) 91% ⚠ | 288c 21m (7%) 85% | 432c 50m (12%) 50% |
 | `klein` | 8.0 | 80c 14m (18%) 99% | 260c 55m (21%) 91% | 476c 126m (26%) 50% |
-| `kleinbasketweave` | 7.0 | 88c 12m (14%) 99% | 272c 50m (18%) 89% | 460c 107m (23%) 47% |
-| `kleinbasketweave3` | 6.7 | 84c 15m (18%) 98% | 252c 48m (19%) 85% | 456c 111m (24%) 51% |
+| `kleinbasketweave` | 7.0 | 84c 13m (15%) 98% | 272c 50m (18%) 89% | 460c 107m (23%) 47% |
+| `kleinbasketweave3` | 6.7 | 90c 18m (20%) 95% | 270c 56m (21%) 91% | 456c 111m (24%) 51% |
 | `kleincairo` | 7.0 | 78c 14m (18%) 95% | 250c 47m (19%) 88% | 490c 113m (23%) 50% |
 | `kleindeltoidal` | 9.0 | 96c 13m (14%) 98% | 240c 41m (17%) 87% | 468c 102m (22%) 48% |
 | `kleinelongated` | 10.0 | 84c 16m (19%) 98% | 264c 59m (22%) 84% | 486c 127m (26%) 48% |
@@ -128,18 +128,18 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `kleinrunningbond` | 6.0 | 84c 15m (18%) 98% | 260c 57m (22%) 87% | 476c 119m (25%) 48% |
 | `kleinsnubsquare` | 10.0 | 81c 18m (22%) 96% | 252c 62m (25%) 87% | 486c 132m (27%) 52% |
 | `kleinstackedbond` | 8.0 | 80c 15m (19%) 97% | 253c 62m (25%) 85% | 480c 127m (26%) 50% |
-| `kleinstaggeredtri` | 8.0 | 84c 18m (21%) 97% | 248c 58m (23%) 88% | 468c 128m (27%) 52% |
-| `kleintetrakis` | 14.0 | 80c 9m (11%) 96% | 256c 29m (11%) 85% | 480c 67m (14%) 53% |
+| `kleinstaggeredtri` | 8.0 | 84c 18m (21%) 97% | 264c 62m (23%) 87% | 492c 131m (27%) 54% |
+| `kleintetrakis` | 14.0 | 80c 9m (11%) 96% | 260c 27m (10%) 88% | 480c 67m (14%) 51% |
 | `kleintri` | 12.0 | 84c 18m (21%) 98% | 260c 70m (27%) 89% | 480c 140m (29%) 52% |
 | `kleintriakis` | 21.0 | 96c 12m (12%) 0% ⚠ | 264c 42m (16%) 0% ⚠ | 480c 96m (20%) 0% ⚠ |
-| `kleintrihex` | 8.0 | 84c 18m (21%) 96% | 252c 54m (21%) 88% | 480c 122m (25%) 51% |
+| `kleintrihex` | 8.0 | 90c 16m (18%) 99% | 252c 54m (21%) 88% | 480c 121m (25%) 51% |
 | `kleintrunchex` | 6.0 | 90c 6m (7%) 96% | 252c 17m (7%) 87% | 480c 45m (9%) 52% |
 | `kleintruncsquare` | 6.0 | 80c 7m (9%) 93% | 256c 48m (19%) 85% | 480c 98m (20%) 50% |
-| `kleintrunctrihex` | 6.0 | 96c 14m (15%) 96% | 264c 42m (16%) 86% | 468c 89m (19%) 54% |
+| `kleintrunctrihex` | 6.0 | 96c 14m (15%) 96% | 252c 41m (16%) 89% | 468c 89m (19%) 54% |
 | `mobius` | 7.0 | 84c 12m (14%) 98% | 252c 44m (17%) 89% | 480c 103m (21%) 53% |
-| `mobiusbasketweave` | 6.3 | 72c 12m (17%) 97% | 228c 39m (17%) 90% | 460c 95m (21%) 51% |
-| `mobiusbasketweave3` | 6.2 | 78c 6m (8%) 93% | 270c 31m (11%) 86% | 456c 77m (17%) 51% |
-| `mobiuscairo` | 6.7 | 75c 10m (13%) 95% | 253c 39m (15%) 85% | 495c 95m (19%) 52% |
+| `mobiusbasketweave` | 6.5 | 88c 15m (17%) 95% | 228c 39m (17%) 90% | 464c 93m (20%) 55% |
+| `mobiusbasketweave3` | 6.2 | 78c 6m (8%) 93% | 270c 31m (11%) 86% | 504c 86m (17%) 51% |
+| `mobiuscairo` | 6.0 | 85c 9m (11%) 97% | 261c 38m (15%) 86% | 507c 94m (19%) 52% |
 | `mobiusdeltoidal` | 7.2 | 72c 10m (14%) 99% | 264c 39m (15%) 87% | 468c 95m (20%) 50% |
 | `mobiuselongated` | 9.4 | 91c 6m (7%) 95% | 286c 44m (15%) 83% | 416c 83m (20%) 50% |
 | `mobiushex` | 5.2 | 80c 14m (18%) 95% | 252c 48m (19%) 85% | 481c 108m (22%) 52% |
@@ -149,9 +149,9 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `mobiusrhombille` | 9.4 | 77c 6m (8%) 74% ⚠ | 285c 10m (4%) 77% ⚠ | 550c 20m (4%) 54% |
 | `mobiusrhombitrihex` | 7.7 | 84c 6m (7%) 93% | 286c 21m (7%) 90% | 532c 68m (13%) 53% |
 | `mobiusrunningbond` | 5.8 | 84c 16m (19%) 97% | 260c 52m (20%) 90% | 459c 110m (24%) 47% |
-| `mobiussnubsquare` | 9.4 | 78c 12m (15%) 97% | 228c 41m (18%) 88% | 486c 112m (23%) 53% |
+| `mobiussnubsquare` | 9.3 | 78c 12m (15%) 97% | 276c 43m (16%) 90% | 465c 102m (22%) 54% |
 | `mobiusstackedbond` | 7.1 | 84c 15m (18%) 94% | 260c 47m (18%) 88% | 476c 113m (24%) 47% |
-| `mobiusstaggeredtri` | 7.5 | 76c 13m (17%) 98% | 264c 56m (21%) 86% | 470c 118m (25%) 49% |
+| `mobiusstaggeredtri` | 7.6 | 70c 9m (13%) 99% | 246c 49m (20%) 89% | 490c 118m (24%) 54% |
 | `mobiustetrakis` | 10.2 | 80c 8m (10%) 96% | 280c 28m (10%) 90% | 456c 69m (15%) 48% |
 | `mobiustri` | 11.1 | 85c 12m (14%) 99% | 261c 60m (23%) 85% | 480c 128m (27%) 50% |
 | `mobiustriakis` | 15.2 | 84c 11m (13%) 0% ⚠ | 264c 42m (16%) 0% ⚠ | 540c 108m (20%) 0% ⚠ |
@@ -208,14 +208,14 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `torussnubsquare` | 10.0 | 90c 20m (22%) 95% | 264c 63m (24%) 87% | 480c 129m (27%) 52% |
 | `torusstackedbond` | 8.0 | 80c 15m (19%) 98% | 252c 58m (23%) 84% | 480c 131m (27%) 48% |
 | `torusstaggeredtri` | 8.0 | 84c 18m (21%) 97% | 256c 58m (23%) 90% | 480c 131m (27%) 49% |
-| `torustetrakis` | 14.0 | 80c 9m (11%) 96% | 256c 29m (11%) 83% | 476c 68m (14%) 53% |
+| `torustetrakis` | 14.0 | 80c 9m (11%) 96% | 260c 26m (10%) 91% | 476c 68m (14%) 53% |
 | `torusthreescaletri` | 8.0 | 90c 18m (20%) 95% | 252c 56m (22%) 87% | 480c 120m (25%) 53% |
 | `torustri` | 12.0 | 80c 17m (21%) 97% | 256c 69m (27%) 89% | 480c 138m (29%) 52% |
 | `torustriakis` | 21.0 | 96c 12m (12%) 0% ⚠ | 264c 42m (16%) 0% ⚠ | 504c 101m (20%) 0% ⚠ |
-| `torustrihex` | 8.0 | 84c 18m (21%) 94% | 270c 60m (22%) 84% | 480c 118m (25%) 51% |
+| `torustrihex` | 8.0 | 90c 18m (20%) 96% | 270c 60m (22%) 84% | 480c 116m (24%) 53% |
 | `torustrunchex` | 6.0 | 90c 6m (7%) 97% | 252c 16m (6%) 91% | 480c 40m (8%) 50% |
 | `torustruncsquare` | 6.0 | 80c 7m (9%) 94% | 252c 39m (15%) 88% | 480c 98m (20%) 52% |
-| `torustrunctrihex` | 6.0 | 96c 13m (14%) 98% | 264c 41m (16%) 83% | 468c 87m (19%) 52% |
+| `torustrunctrihex` | 6.0 | 96c 13m (14%) 98% | 288c 47m (16%) 87% | 468c 87m (19%) 52% |
 | `triakis` | 18.7 | 76c 10m (13%) 2% ⚠ | 248c 40m (16%) 0% ⚠ | 490c 98m (20%) 0% ⚠ |
 | `triangle` | 10.9 | 81c 5m (6%) 98% | 256c 37m (14%) 87% | 484c 104m (21%) 49% |
 | `trigrid` | 11.0 | 77c 8m (10%) 97% | 252c 37m (15%) 88% | 476c 108m (23%) 52% |

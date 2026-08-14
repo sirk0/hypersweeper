@@ -185,6 +185,39 @@ class TestInvariants:
     def test_mine_count_leaves_safe_cells(self, board):
         assert 0 < board.mine_count < len(board.adjacency)
 
+    def test_every_edge_belongs_to_two_tiles_or_a_boundary(self, board):
+        """No point of the drawing lies in the middle of somebody's line.
+
+        Half the tilings here are not edge to edge -- a brick corner lands in
+        the middle of a neighbouring brick's edge -- and ``_insert_t_vertices``
+        answers that by recording the point on the tile whose edge it splits.
+        Miss one and the split tile keeps a single long edge where its two
+        neighbours have two short ones, so that edge is used *once* in the
+        middle of the surface: the adjacency loses a pair of neighbours, and on
+        a curved surface the long edge is a chord where the two short ones bend
+        with the tile beside them, which draws as a lens-shaped crack.
+
+        Counting how many tiles each edge belongs to catches all of it exactly
+        and cheaply: two in the interior, one along a rim. The flat boards and
+        the open surfaces have rims; a donut, a bottle and the solids have
+        none, so every edge of theirs must be shared.
+        """
+        used = Counter()
+        for polygon in board.polygons.values():
+            points = [tuple(round(c, 7) for c in point) for point in polygon]
+            for index, point in enumerate(points):
+                used[frozenset((point, points[(index + 1) % len(points)]))] += 1
+        assert set(used.values()) <= {1, 2}, (
+            f"{board.mode}: edges shared by {sorted(set(used.values()))} tiles"
+        )
+        if board.mode in MODES_3D and not board.two_sided:
+            loose = [edge for edge, count in used.items() if count == 1]
+            assert not loose, (
+                f"{board.mode}: {len(loose)} edges belong to one tile on a "
+                "closed surface"
+            )
+
+
 
 class TestCellCounts:
     def test_square(self):
@@ -2148,7 +2181,7 @@ class TestWrappedArchimedean:
         counts = {
             "toruselongated": (84, 270, 486),
             "torussnubsquare": (90, 264, 480),
-            "torustrihex": (84, 270, 480),
+            "torustrihex": (90, 270, 480),
             "torussnubhex": (144, 252, 432),
             "torustruncsquare": (80, 252, 480),
             "torustrunchex": (90, 252, 480),
@@ -2159,12 +2192,12 @@ class TestWrappedArchimedean:
             "cyltruncsquare": (77, 260, 459),
             "cyltrunchex": (81, 270, 504),
             "mobiuselongated": (91, 286, 416),
-            "mobiussnubsquare": (78, 228, 486),
+            "mobiussnubsquare": (78, 276, 465),
             "mobiustrihex": (81, 225, 420),
             "mobiustruncsquare": (77, 260, 459),
             "mobiustrunchex": (81, 225, 420),
             "torusrhombitrihex": (96, 264, 468),
-            "torustrunctrihex": (96, 264, 468),
+            "torustrunctrihex": (96, 288, 468),
             "cylrhombitrihex": (84, 286, 480),
             "cyltrunctrihex": (80, 242, 510),
             "mobiusrhombitrihex": (84, 286, 532),
@@ -2174,13 +2207,13 @@ class TestWrappedArchimedean:
             "mobiusprismaticpent": (72, 224, 444),
             "toruscairo": (84, 256, 480),
             "cylcairo": (80, 252, 456),
-            "mobiuscairo": (75, 253, 495),
+            "mobiuscairo": (85, 261, 507),
             "torusrhombille": (84, 252, 480),
             "cylrhombille": (90, 240, 462),
             "mobiusrhombille": (77, 285, 550),
             "torusfloret": (96, 264, 468),
             "cylfloret": (84, 264, 450),
-            "torustetrakis": (80, 256, 476),
+            "torustetrakis": (80, 260, 476),
             "cyltetrakis": (72, 280, 456),
             "mobiustetrakis": (80, 280, 456),
             "torustriakis": (96, 264, 504),
@@ -2194,15 +2227,15 @@ class TestWrappedArchimedean:
             "mobiuskisrhombille": (144, 240, 528),
             "kleinelongated": (84, 264, 486),
             "kleinsnubsquare": (81, 252, 486),
-            "kleintrihex": (84, 252, 480),
+            "kleintrihex": (90, 252, 480),
             "kleintruncsquare": (80, 256, 480),
             "kleintrunchex": (90, 252, 480),
             "kleinrhombitrihex": (96, 264, 468),
-            "kleintrunctrihex": (96, 264, 468),
+            "kleintrunctrihex": (96, 252, 468),
             "kleinprismaticpent": (80, 252, 480),
             "kleincairo": (78, 250, 490),
             "kleinrhombille": (84, 264, 480),
-            "kleintetrakis": (80, 256, 480),
+            "kleintetrakis": (80, 260, 480),
             "kleintriakis": (96, 264, 480),
             "kleindeltoidal": (96, 240, 468),
             "kleinkisrhombille": (192, 288, 480),
@@ -2212,8 +2245,8 @@ class TestWrappedArchimedean:
             "kleinoffsetsquare": (78, 260, 476),
             "torusstaggeredtri": (84, 256, 480),
             "cylstaggeredtri": (72, 266, 468),
-            "mobiusstaggeredtri": (76, 264, 470),
-            "kleinstaggeredtri": (84, 248, 468),
+            "mobiusstaggeredtri": (70, 246, 490),
+            "kleinstaggeredtri": (84, 264, 492),
             "toruspythagorean": (80, 270, 480),
             "cylpythagorean": (85, 261, 468),
             "torusrotatedhex": (90, 252, 480),
@@ -2231,12 +2264,12 @@ class TestWrappedArchimedean:
             "kleinrunningbond": (84, 260, 476),
             "torusbasketweave": (80, 256, 480),
             "cylbasketweave": (80, 240, 504),
-            "mobiusbasketweave": (72, 228, 460),
-            "kleinbasketweave": (88, 272, 460),
+            "mobiusbasketweave": (88, 228, 464),
+            "kleinbasketweave": (84, 272, 460),
             "torusbasketweave3": (96, 252, 480),
             "cylbasketweave3": (90, 240, 462),
-            "mobiusbasketweave3": (78, 270, 456),
-            "kleinbasketweave3": (84, 252, 456),
+            "mobiusbasketweave3": (78, 270, 504),
+            "kleinbasketweave3": (90, 270, 456),
             "torusherringbone": (80, 256, 480),
             "cylherringbone": (90, 250, 490),
         }
