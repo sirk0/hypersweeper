@@ -25,6 +25,7 @@ import {
 } from "./core";
 import {
   buildClipSolid,
+  capOpenRims,
   fanTriangles,
   pruneSolid,
   reachesSolid,
@@ -250,7 +251,10 @@ function kleinClip(
     if (sheet === "fat") fat.push([cell, poly]);
     else if (sheet === "thin") tube.push(...fanTriangles(poly, centroidOf(poly)));
   }
-  const occluder = trianglesBelow(tube, seam);
+  // Closed off at its rims: the fold it shares with the fat sheet and the seam
+  // it runs into the belly at are open, and an open rim has no inside — see
+  // `capOpenRims`.
+  const occluder = capOpenRims(trianglesBelow(tube, seam));
   const whole = buildClipSolid(occluder);
   const clipped = new Set<CellId>();
   const reached: Vec3[][] = [];

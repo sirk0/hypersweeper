@@ -52,9 +52,11 @@ export interface Board {
 export interface SurfaceClip {
   cells: Set<CellId>;
   solid: ClipPiece[];
-  /** The occluding sheet's own drawn triangles, which `solid` decomposes the
-   * inside of — kept so a test can measure the cut against the geometry it is
-   * meant to meet rather than against the derivation. */
+  /** The occluding sheet's own drawn triangles, closed off at its rims (see
+   * `capOpenRims`), which `solid` decomposes the inside of — kept so a test can
+   * measure the cut against the geometry it is meant to meet rather than
+   * against the derivation. Closed because an open rim has no inside: a parity
+   * test through an arc answers by which way the arc happens to face. */
   occluder: Tri[];
 }
 

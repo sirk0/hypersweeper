@@ -872,20 +872,43 @@ the tessellation's own crossing, not an idealisation of it.
 **How the region is built.** The neck's cross-sections are horizontal, which is
 the lever:
 
-1. Slice the drawn tube at every height one of its vertices sits at. Inside such
+1. **Close the tube off at its rims.** A tube stops somewhere — at the fold it
+   shares its rim with the other sheet, at the seam it runs on into the belly —
+   and across an open rim there is no inside to speak of: a horizontal plane
+   through one meets the surface in an *arc* rather than a loop, so a parity
+   test answers by which way the arc happens to face and a decomposition has no
+   boundary to stop at. `capOpenRims` finds every edge no second triangle
+   answers, links them into loops, and lids each with a fan from its own centre.
+   It matters most at the bottom of the bottle, where the rim the two sheets
+   share zigzags over a good part of the tube's height; the lid lies *in* that
+   rim, so the other sheet stays outside it and the fold keeps its tiles.
+2. Slice the drawn tube at every height one of its vertices sits at. Inside such
    a **slab** every triangle either spans the full height or is absent — there
    is no vertex in between for it to start or stop at.
-2. Over one slab the tube is a band around its axis, so what it encloses splits
-   into one **wedge** per triangle: the angular sector that triangle spans,
-   floored and ceiled by the slab and walled by the triangle's own plane. Two
-   triangles sharing an edge share the sector wall through it, so the wedges
-   tile the interior with no gap and no overlap. That matters because the region
-   is nowhere near convex — a cell is fanned from its centroid, which on a
-   coarse board sits well inside the ring of its corners, so the tube's own
-   cross-section is a **star**, dipping inward between every pair of corners. A
-   single convex bound per slab leaves those dips uncut, and on the coarsest
-   boards that is most of the cap.
-3. A polygon minus a convex piece decomposes into convex parts
+3. Over one slab the tube is a band, and its section at the slab's mid height is
+   a closed **polyline** — the intersection this whole module is about. Every
+   triangle crossing that height crosses it on exactly two of its edges, and an
+   edge two triangles share hands both of them the same crossing, so the section
+   links up *exactly*: no tolerance, no ordering guessed at, the tessellation's
+   own crossing rather than a sort by angle. The polyline is then cut into
+   **ears**, one convex piece each. An ear's steps of the loop are walled by the
+   tube triangles' own planes, so the cut still follows the tube as it leans
+   through the slab; its diagonals are walled by vertical planes that both ears
+   sharing one build from the same two points, so the pieces tile the interior
+   with no gap and no overlap.
+4. **Triangulating rather than fanning is what makes that last claim true.** The
+   section is nowhere near convex — a cell is fanned from its centroid, which on
+   a coarse board sits well inside the ring of its corners, so the tube's own
+   cross-section is a **star**, dipping inward between every pair of corners —
+   and on some tilings the dips run deep enough that the star is not even *star
+   shaped about its own centre*. A fan of wedges from that centre, which is what
+   this did first, then covers part of the interior twice and part of it not at
+   all; what it misses is left uncut, and on the board that is a slab of the
+   outer sheet standing in the middle of the bore. Measured over the tube's own
+   box, the fan left 2% of the interior uncovered on `kleintrunctrihex` and
+   `kleinrhombitrihex`, and reached 3% *past* the tube on `kleintriakis`; ears
+   leave 0.2% and 0.05%, which is the slab-lean shell below and nothing more.
+5. A polygon minus a convex piece decomposes into convex parts
    (`P \ ∩Hᵢ = ⋃ᵢ P ∩ H₁ ∩ … ∩ Hᵢ₋₁ ∩ ¬Hᵢ`), so subtracting the union is a run
    of half-space clips — exact, with no sampling and no subdivision, and with
    the crossing points on a shared edge coming out identical for both cells, so
@@ -893,12 +916,26 @@ the lever:
 
 Traps, all of them paid for:
 
-- **A wedge's walls are pinned at its slab's mid height** and the crossing
-  drifts as the tube leans, so a wedge is only exactly its triangle's sector in
-  the middle of its slab. `SLAB_STEP` splits a tall slab into steps to shrink
-  that drift with it; it is the one approximation left, and it is what lets a
-  four-domain board (a tube two rows tall) come out as sharp as a forty-domain
-  one.
+- **A piece's walls are pinned at its slab's mid height** and the section drifts
+  as the tube leans, so a piece is only exactly its own sector in the middle of
+  its slab. `SLAB_STEP` splits a tall slab into steps to shrink that drift with
+  it; it is the one approximation left, and it is what lets a four-domain board
+  (a tube two rows tall) come out as sharp as a forty-domain one.
+- **Which side of a wall is in never comes from measuring a point against it.**
+  An ear is wound one way by construction, so its winding says which side is in;
+  re-deriving that as a signed area in a different operand order rounds a thin
+  ear's own orientation down to nothing, and a tube triangle lying nearly flat
+  loses it the same way (its normal is nearly vertical, and the point to measure
+  is at the same height as the plane). The tube triangle takes its side from the
+  vertical wall standing along it instead: the two meet the mid height in the
+  very same line.
+- **A section can run dead straight**, wherever two of the tube's triangles meet
+  edge on — down the plane a bottle is symmetric about, above all. A vertex in
+  the middle of a straight run is an ear of no area, which no ear clipping can
+  take; it bounds nothing either, so it is dropped and the run becomes one step,
+  walled by the vertical plane through its ends. Without that the whole slab
+  falls back on the fan, which is how a crescent-shaped section came to have its
+  own bite filled in.
 - **A flat cell lying in a slab's own floor** — the fold at the bottom of the
   bottle is horizontal, and the slabs are cut at exactly the heights its
   vertices sit at — must be settled before it is clipped, or it comes out both
@@ -907,7 +944,11 @@ Traps, all of them paid for:
   count touching as reaching for the same reason.
 - **The occluder stops at the seam.** The neck runs on past its own tube into
   the belly, and up there it is no longer one loop per height; there is nothing
-  left to cut either, the other sheet ending at the same seam.
+  left to cut either, the other sheet ending at the same seam. The truncation
+  computes each crossing once, off the edge's own two ends in a fixed order:
+  computed twice, once from each end, the two copies come out a rounding apart
+  and each then reads as a rim of its own — a tube full of rims links up into no
+  section at all.
 - **`CLIP_MIN_AREA` is a floor on what is worth cutting.** All round the bottom
   the tube's rim *is* the other sheet's rim — they share their vertices — so the
   two meet in slivers that are rounding rather than geometry. Re-cutting a cell
@@ -919,11 +960,16 @@ Traps, all of them paid for:
   them is ever subtracted from anything; the rest would be a few thousand pieces
   a phone carries around for the length of the game.
 
-`SurfaceClip.occluder` keeps the tube's own triangles, so a test can measure the
-cut against the geometry it is meant to meet rather than against the derivation
-of it — `insideOccluder` is an independent parity test through the drawn
-cross-section, and `tests/unit/clipSolid.test.ts` and `surfaces.test.ts` pin the
-two answers together.
+`SurfaceClip.occluder` keeps the tube's own triangles, closed off at its rims, so
+a test can measure the cut against the geometry it is meant to meet rather than
+against the derivation of it — `insideOccluder` is an independent parity test
+through the drawn cross-section, and it only means anything on a closed surface,
+which is the second reason for the lids. `tests/unit/clipSolid.test.ts` and
+`surfaces.test.ts` pin the two answers together: the region against the parity
+test over the tube's own box on every Klein preset, a section that is not star
+shaped about its centre, an open rim before and after it is capped, and — the
+one that says what all of it is *for* — that no drawn cell of any Klein board is
+left standing a real distance inside the bore.
 
 ## 3D markers (`src/render/markers3d.ts`)
 

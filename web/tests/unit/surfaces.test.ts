@@ -12,6 +12,7 @@ import {
   torusHexBoard,
 } from "../../src/boards/surfaces";
 import {
+  buildClipSolid,
   fanTriangles,
   insideOccluder,
   solidDepth,
@@ -19,6 +20,7 @@ import {
   trianglesArea,
   type Tri,
 } from "../../src/boards/clipSolid";
+import { buildBoard } from "../../src/boards/presets";
 import type { Board3D, CellId, Vec3 } from "../../src/boards/core";
 
 // Structural invariants of the wrapped surfaces, mirrored from the Python suite
@@ -128,9 +130,11 @@ describe("wrapped surfaces", () => {
   it("the klein clip reaches only the cells the neck passes through", () => {
     // The fat sheet just past the belly is pierced by the thin end of the neck,
     // so a piece of a couple of big cells is enclosed and must not be drawn;
-    // everything else — the neck itself above all — is left whole.
-    expect([...kleinBoard(12, 6, 9).clip!.cells].sort()).toEqual(["6,2", "7,2"]);
-    expect([...kleinBoard(16, 8, 20).clip!.cells].sort()).toEqual(["8,3", "9,3"]);
+    // everything else — the neck itself above all — is left whole. Round the
+    // fold the two sheets share their rim, and a few cells there lose a
+    // hairline to it; the cells that lose anything one could see are the two.
+    expect(reallyCut(kleinBoard(12, 6, 9))).toEqual(["6,2", "7,2"]);
+    expect(reallyCut(kleinBoard(16, 8, 20))).toEqual(["8,3", "9,3"]);
     for (const board of [kleinBoard(24, 10, 48), kleinTriangleBoard(18, 6, 13)]) {
       expect(board.clip!.cells.size).toBeLessThan(board.polygons.size / 10);
       for (const cell of board.clip!.cells) expect(board.polygons.has(cell)).toBe(true);
@@ -206,6 +210,91 @@ describe("wrapped surfaces", () => {
     }
   });
 
+  it("leaves no piece of the outer sheet standing inside the neck", () => {
+    // What the cut is *for*. Whatever survives it and still lies inside the
+    // drawn tube is a slab of the belly hanging in the middle of the bore —
+    // which is what one sees looking down a Klein bottle's mouth. Points on the
+    // tube's own surface are the tube, so only material a real distance inside
+    // it counts; the depth is measured against the occluder's own triangles,
+    // not against the region derived from them.
+    for (const board of [
+      buildBoard("kleinhex", "medium"),
+      buildBoard("kleintrunctrihex", "easy"),
+      buildBoard("kleinrhombitrihex", "easy"),
+      buildBoard("kleindeltoidal", "easy"),
+      buildBoard("kleintriakis", "easy"),
+      buildBoard("kleinbasketweave3", "easy"),
+    ] as Board3D[]) {
+      const { cells, solid, occluder } = board.clip!;
+      const deep = board.radius * 0.02;
+      let inside = 0;
+      let total = 0;
+      for (const [cell, poly] of board.polygons) {
+        const whole = fanTriangles(poly, centroid(poly));
+        const kept = cells.has(cell) ? subtractSolid(whole, solid) : whole;
+        total += trianglesArea(whole);
+        for (const tri of kept) {
+          const at = centroid(tri);
+          if (!insideOccluder(occluder, at)) continue;
+          if (surfaceDistance(occluder, at) < deep) continue;
+          inside += trianglesArea([tri]);
+        }
+      }
+      expect(inside / total).toBeLessThan(1e-4);
+    }
+  });
+
+  it("encloses exactly what the drawn neck encloses, on every klein preset", () => {
+    // The region and the tube it was built from, compared over a grid through
+    // the tube's own box: the two must agree bar a shell the thickness of one
+    // slab's lean, where a wall pinned at the slab's mid height and the tube it
+    // stands for have drifted apart. A decomposition that missed a slice of the
+    // interior — what a fan from the section's centre does wherever the section
+    // is not star shaped about it — showed up here as 2% of the box left
+    // uncovered, and on the board that reads as an uncut cell in the bore.
+    for (const mode of ["kleinhex", "kleintri", "kleintrunctrihex", "kleinrhombitrihex",
+      "kleinprismaticpent", "kleintriakis", "kleindeltoidal"]) {
+      for (const difficulty of ["easy", "medium", "hard"]) {
+        const board = buildBoard(mode, difficulty) as Board3D;
+        const occluder = board.clip!.occluder;
+        const solid = buildClipSolid(occluder);
+        let lo: Vec3 = [Infinity, Infinity, Infinity];
+        let hi: Vec3 = [-Infinity, -Infinity, -Infinity];
+        for (const t of occluder) {
+          for (const p of t) {
+            for (let a = 0; a < 3; a++) {
+              lo[a] = Math.min(lo[a]!, p[a]!);
+              hi[a] = Math.max(hi[a]!, p[a]!);
+            }
+          }
+        }
+        let uncovered = 0;
+        let over = 0;
+        let n = 0;
+        const N = 15;
+        // Different offsets per axis: share one and the grid lies along the 45°
+        // lines of its own lattice, which are where the pieces meet.
+        const off = [1 / Math.PI, 1 / Math.E, Math.SQRT1_2];
+        for (let i = 1; i < N; i++) {
+          for (let j = 1; j < N; j++) {
+            for (let k = 1; k < N; k++) {
+              const p = [i, j, k].map(
+                (s, a) => lo[a]! + ((hi[a]! - lo[a]!) * (s + off[a]!)) / (N + 1),
+              ) as Vec3;
+              n++;
+              const drawn = insideOccluder(occluder, p);
+              const derived = solidDepth(solid, p) < 0;
+              if (drawn && !derived) uncovered++;
+              if (!drawn && derived) over++;
+            }
+          }
+        }
+        expect(uncovered / n).toBeLessThan(0.005);
+        expect(over / n).toBeLessThan(0.005);
+      }
+    }
+  });
+
   it("the clip is render-only: cells, adjacency and scroll are untouched", () => {
     const board = kleinBoard(16, 8, 20);
     expect(board.polygons.size).toBe(128);
@@ -223,6 +312,73 @@ describe("wrapped surfaces", () => {
     expect(() => cylinderHexBoard(12, 6, 9)).not.toThrow();
   });
 });
+
+/** The cells a Klein board's cut takes anything one could see from — a
+ * hundredth of the cell or more. Every board has a handful more that lose a
+ * hairline where the two sheets share their rim round the fold. */
+function reallyCut(board: Board3D): CellId[] {
+  const { cells, solid } = board.clip!;
+  const out: CellId[] = [];
+  for (const cell of cells) {
+    const whole = fanTriangles(board.polygons.get(cell)!, centroid(board.polygons.get(cell)!));
+    const gone = 1 - trianglesArea(subtractSolid(whole, solid)) / trianglesArea(whole);
+    if (gone > 0.01) out.push(cell);
+  }
+  return out.sort();
+}
+
+/** How far a point lies from the tube's surface, in three dimensions — zero on
+ * it. Unlike `sectionDistance` this measures against the triangles themselves,
+ * so a point in the middle of one reads zero rather than half a chord. */
+function surfaceDistance(occluder: readonly Tri[], p: Vec3): number {
+  let best = Infinity;
+  for (const t of occluder) best = Math.min(best, triangleDistance(t, p));
+  return best;
+}
+
+function triangleDistance(t: Tri, p: Vec3): number {
+  const sub = (a: Vec3, b: Vec3): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+  const dot = (a: Vec3, b: Vec3): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const [a, b, c] = t;
+  const ab = sub(b, a);
+  const ac = sub(c, a);
+  const ap = sub(p, a);
+  const d1 = dot(ab, ap);
+  const d2 = dot(ac, ap);
+  if (d1 <= 0 && d2 <= 0) return Math.hypot(...ap);
+  const bp = sub(p, b);
+  const d3 = dot(ab, bp);
+  const d4 = dot(ac, bp);
+  if (d3 >= 0 && d4 <= d3) return Math.hypot(...bp);
+  const vc = d1 * d4 - d3 * d2;
+  if (vc <= 0 && d1 >= 0 && d3 <= 0) {
+    const v = d1 / (d1 - d3);
+    return Math.hypot(ap[0] - ab[0] * v, ap[1] - ab[1] * v, ap[2] - ab[2] * v);
+  }
+  const cp = sub(p, c);
+  const d5 = dot(ab, cp);
+  const d6 = dot(ac, cp);
+  if (d6 >= 0 && d5 <= d6) return Math.hypot(...cp);
+  const vb = d5 * d2 - d1 * d6;
+  if (vb <= 0 && d2 >= 0 && d6 <= 0) {
+    const w = d2 / (d2 - d6);
+    return Math.hypot(ap[0] - ac[0] * w, ap[1] - ac[1] * w, ap[2] - ac[2] * w);
+  }
+  const va = d3 * d6 - d5 * d4;
+  if (va <= 0 && d4 - d3 >= 0 && d5 - d6 >= 0) {
+    const w = (d4 - d3) / (d4 - d3 + (d5 - d6));
+    const bc = sub(c, b);
+    return Math.hypot(bp[0] - bc[0] * w, bp[1] - bc[1] * w, bp[2] - bc[2] * w);
+  }
+  const scale = 1 / (va + vb + vc);
+  const v = vb * scale;
+  const w = vc * scale;
+  return Math.hypot(
+    ap[0] - ab[0] * v - ac[0] * w,
+    ap[1] - ab[1] * v - ac[1] * w,
+    ap[2] - ab[2] * v - ac[2] * w,
+  );
+}
 
 function centroid(points: readonly Vec3[]): Vec3 {
   const c: Vec3 = [0, 0, 0];

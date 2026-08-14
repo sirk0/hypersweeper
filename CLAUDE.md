@@ -614,19 +614,33 @@ against the circle both ate tiles at the bottom of the bottle, where the two
 sheets converge on one circle and the chords cross it, and left a slit along
 the self-intersection, where the cut followed the circle and the tube that
 should hide it followed the chords. The region is built from the tube's own
-triangles: horizontal **slabs** at every vertex height (inside one, a
-triangle either spans the whole height or is absent), one convex **wedge**
-per triangle within a slab (its angular sector, walled by its own plane —
-and two triangles sharing an edge share the wall through it, so the wedges
-tile a region that is nowhere near convex; a cell is fanned from its
-centroid, so the tube's cross-section is a *star* that dips inward between
-its corners, and a single convex bound leaves those dips uncut), and a
-convex difference to subtract them. So the cut is a different exact polyline
-on every tiling and at every size — the tessellation's own crossing rather
-than an idealisation of it. See "The Klein bottle's self-intersection" in
-`web/README.md` for the traps (the wedge-wall drift `SLAB_STEP` pays for,
-the flat fold cell that lies in a slab's own floor, and why `CLIP_MIN_AREA`
-would rather leave a hair too much than take a hair too much).
+triangles: the tube **closed off at its rims** first (`capOpenRims` — across
+an open rim there is no inside at all, a horizontal plane meeting it in an
+arc rather than a loop, which is what the fold at the bottom of the bottle
+is), then horizontal **slabs** at every vertex height (inside one, a
+triangle either spans the whole height or is absent), then the tube's
+**section polyline** at each slab's mid height — linked up exactly, every
+triangle crossing that height crossing it on two of its edges and an edge
+two triangles share handing both the same crossing — cut into **ears**, one
+convex piece each (walled by the tube triangles' own planes along the
+loop, so the cut follows the tube as it leans, and by vertical planes along
+the diagonals, which both ears sharing one build from the same two points),
+and a convex difference to subtract them. So the cut is a different exact
+polyline on every tiling and at every size — the tessellation's own crossing
+rather than an idealisation of it. **Triangulate the section; never fan it.**
+The section is a star (a cell is fanned from its centroid, so it dips inward
+between its corners) and on some tilings the dips run deep enough that it is
+not even star-shaped about its own centre — where a fan of wedges from that
+centre covers part of the interior twice and part not at all, leaves what it
+missed uncut, and stands a slab of the outer sheet in the middle of the bore
+(2% of the tube's interior on `kleintrunctrihex` and `kleinrhombitrihex`, and
+3% *past* it on `kleintriakis`; ears leave 0.2% and 0.05%). See "The Klein
+bottle's self-intersection" in `web/README.md` for the traps (the piece-wall
+drift `SLAB_STEP` pays for, why a wall's inward side is never re-derived by
+measuring a point against it, the straight run of section points no ear
+clipping can take, the flat fold cell that lies in a slab's own floor, and
+why `CLIP_MIN_AREA` would rather leave a hair too much than take a hair too
+much).
 
 **Cell styles** (`src/render/cellStyle.ts`) are what a theme names: how a
 cell is *cut*, and — for `classic` alone — whether it is shape-coloured at
