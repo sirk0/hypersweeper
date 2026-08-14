@@ -1,7 +1,7 @@
 {
   "_comment": "Declarative UI-screen configuration shared across implementations. This describes screen chrome (headers, menus, difficulty rows) so the pygame (Python) and Three.js (TypeScript) front-ends can be kept in sync from one source instead of hand-matching layouts. Board geometry lives elsewhere (see docs/plans/typescript-rewrite-same-repo.md); this file is UI only. Schema: web/src/config/screens.ts.",
   "version": 2,
-  "_themeComment": "Chrome palettes, ported from the pygame THEMES registry (minesweeper/gui.py) so both front-ends offer the same looks; tests/test_theme_sync.py guards the two against drift. Field names follow the web's CSS custom properties, which do NOT map one-to-one onto the pygame keys: `panel` is the card fill (pygame `button`) and `counterBg` is the dark LED box (pygame `panel`). A colour may carry an alpha suffix (#rrggbbaa) where the web look needs one. `dark` is web-only — all six pygame presets are light.",
+  "_themeComment": "Chrome palettes, ported from the pygame THEMES registry (minesweeper/gui.py) so both front-ends offer the same looks; tests/test_theme_sync.py guards the two against drift. Field names follow the web's CSS custom properties, which do NOT map one-to-one onto the pygame keys: `panel` is the card fill (pygame `button`) and `counterBg` is the dark LED box (pygame `panel`). A colour may carry an alpha suffix (#rrggbbaa) where the web look needs one. `dark` and `classicDark` are web-only — all six pygame presets are light, and those two are the dark halves of a pair: a theme (web/src/ui/theme.ts) names one palette per colour scheme, so `ios`/`dark` and `classic`/`classicDark` are the two pairs it composes.",
   "defaultTheme": "ios",
   "themes": {
     "ios": {
@@ -110,6 +110,21 @@
       "counterBg": "#000000",
       "radius": 14,
       "shadow": "0 2px 6px rgba(0, 0, 0, 0.5)"
+    },
+    "classicDark": {
+      "label": "Classic Dark",
+      "background": "#000000",
+      "panel": "#1e1e1e",
+      "text": "#d8d8d8",
+      "muted": "#8a8a8a",
+      "accent": "#5a7bff",
+      "onAccent": "#ffffff",
+      "selected": "#23305c",
+      "border": "#4a4a4a",
+      "danger": "#ff463c",
+      "counterBg": "#000000",
+      "radius": 0,
+      "shadow": "none"
     }
   },
   "difficulties": [

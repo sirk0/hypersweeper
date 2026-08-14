@@ -7,11 +7,12 @@
 // the `window.__ms` seam: start the board with an explicit mine layout (so the
 // script knows where the mines are and nothing has to be guessed), open a
 // central patch, flag a few mines, optionally detonate one, and screenshot.
-// Each shot picks a theme, written into the settings record before the app
-// boots. A theme is the chrome palette, the page behind the board *and* how the
-// board's cells are cut (ui/theme.ts), so the four are spread over these shots
-// to show all of it — the shape colours themselves are not themed and stay the
-// same in every one.
+// Each shot picks a theme and a colour scheme, written into the settings record
+// before the app boots. A theme is the page behind the board and how the board's
+// cells are cut, and a scheme is the palette that paints the chrome
+// (ui/theme.ts), so the combinations are spread over these shots to show both
+// axes — the shape colours themselves are not themed and stay the same in every
+// one.
 //
 // Software WebGL (the same SwiftShader flags the e2e suite uses) keeps the
 // output identical on a machine with no GPU, e.g. CI or a cloud session.
@@ -41,6 +42,9 @@ interface Shot {
   file: string;
   /** A key in `THEME_KEYS` (web/src/ui/theme.ts). */
   theme: string;
+  /** `"light"` or `"dark"`. Never `"auto"`: a screenshot must not depend on the
+   * machine it is rendered on. */
+  scheme: "light" | "dark";
   /** Board shots: the mode to open. Omitted for a chrome shot. */
   mode?: string;
   difficulty?: string;
@@ -63,13 +67,14 @@ const BOARD_VIEW = { width: 520, height: 600 };
 
 // Spread over the renderer's range — a sphere, a non-orientable surface, an
 // aperiodic tiling, a torus mid-explosion, a fractal patch, a flat regular
-// board, and the two chrome screens — with the four themes distributed over
-// them, twice each.
+// board, and the two chrome screens — with the three themes and both schemes
+// distributed over them.
 const SHOTS: Shot[] = [
-  { file: "c180.png", theme: "light", mode: "c180", seed: 7, reveal: 0.34, flags: 5 },
+  { file: "c180.png", theme: "flat", scheme: "light", mode: "c180", seed: 7, reveal: 0.34, flags: 5 },
   {
     file: "mobiushex.png",
-    theme: "dark",
+    theme: "flat",
+    scheme: "dark",
     mode: "mobiushex",
     seed: 3,
     reveal: 0.34,
@@ -78,22 +83,48 @@ const SHOTS: Shot[] = [
     // band that comes back joined to its own other side.
     rotate: [70, 40],
   },
-  { file: "penrose.png", theme: "realistic", mode: "penrose", seed: 11, reveal: 0.36, flags: 5 },
+  {
+    file: "penrose.png",
+    theme: "realistic",
+    scheme: "light",
+    mode: "penrose",
+    seed: 11,
+    reveal: 0.36,
+    flags: 5,
+  },
   {
     file: "torussnubsquare-lost.png",
     theme: "classic",
+    scheme: "light",
     mode: "torussnubsquare",
     seed: 5,
     reveal: 0.34,
     flags: 4,
     explode: true,
   },
-  { file: "gosper.png", theme: "realistic", mode: "gosper", seed: 2, reveal: 0.38, flags: 4 },
-  { file: "hexhex.png", theme: "light", mode: "hexhex", seed: 9, reveal: 0.36, flags: 4 },
-  { file: "menu.png", theme: "dark" },
+  {
+    file: "gosper.png",
+    theme: "realistic",
+    scheme: "dark",
+    mode: "gosper",
+    seed: 2,
+    reveal: 0.38,
+    flags: 4,
+  },
+  {
+    file: "hexhex.png",
+    theme: "classic",
+    scheme: "dark",
+    mode: "hexhex",
+    seed: 9,
+    reveal: 0.36,
+    flags: 4,
+  },
+  { file: "menu.png", theme: "realistic", scheme: "dark" },
   {
     file: "themes.png",
-    theme: "light",
+    theme: "realistic",
+    scheme: "light",
     clicks: [
       '.menu-header-btn[data-action="settings"]',
       '.menu-entry[data-settings-group="theme"]',
@@ -157,8 +188,9 @@ async function shoot(browser: Browser, shot: Shot, outDir: string): Promise<void
   // reads it at boot. Sound is off: a screenshot run must not build an audio
   // graph, and the preset is irrelevant to the picture.
   const settings = JSON.stringify({
-    version: 3,
+    version: 4,
     theme: shot.theme,
+    scheme: shot.scheme,
     animations: false,
     sound: "off",
   });

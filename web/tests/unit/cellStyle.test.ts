@@ -27,17 +27,19 @@ const crown = (p: CellProfile, state: "closed" | "open"): number =>
   p[state][p[state].length - 1]!.height;
 
 describe("cell styles", () => {
-  it("has the flat style as the default — the one the Light theme names", () => {
+  it("has the flat style as the default — the one the Flat theme names", () => {
     expect(CELL_STYLE_KEYS[0]).toBe(DEFAULT_CELL_STYLE);
     expect(cellStyle(DEFAULT_CELL_STYLE).key).toBe("flat");
   });
 
-  it("holds exactly the styles the themes name", () => {
+  it("holds exactly the styles the themes name, one each", () => {
     // The table is no longer a picker of its own: every entry must be reachable
-    // through a theme, and every theme must name an entry that exists.
-    expect(new Set(THEME_KEYS.map((k) => themeCellStyle(k)))).toEqual(
-      new Set(CELL_STYLE_KEYS),
-    );
+    // through a theme, and every theme must name an entry that exists. It is a
+    // *bijection* now that the colour scheme is its own setting — Light and Dark
+    // were the two themes that shared a style, and they are one theme (Flat).
+    const named = THEME_KEYS.map((k) => themeCellStyle(k));
+    expect(new Set(named)).toEqual(new Set(CELL_STYLE_KEYS));
+    expect(named).toHaveLength(CELL_STYLE_KEYS.length);
   });
 
   it("falls back for a style this build does not have", () => {
