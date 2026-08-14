@@ -600,8 +600,18 @@ it is laid a hair past its own edges (`BASE_OVERLAP`) so that two
 neighbours overlap rather than meeting exactly on a shared edge: a ray
 aimed down that edge can be rejected by the triangles on *both* sides of
 it, a crack a rounding error wide that a fold line landing on the middle
-of the canvas hits for a whole column of clicks. See "Picking" in
-`web/README.md`; `tests/e2e/picking.spec.ts` pins all of it.
+of the canvas hits for a whole column of clicks. The ray also has to be
+cast at the point the **pointer** is at, which a plain `MouseEvent` does
+not carry: `pointermove` reports a fractional `clientX` and the
+`contextmenu` that a right-click raises reports it cut down to a whole
+number, up to a pixel down and to the left. So the hover highlight and
+the flag aimed at two different points, and within a pixel of a cell
+edge — the seam between two cells, which is exactly where a careful
+player puts the pointer — they picked two different cells: one cell lit
+up and the pin landed on its neighbour. `pointerPoint` in
+`input/controls.ts` aims the secondary action at the pointer's own last
+position instead. See "Picking" in `web/README.md`;
+`tests/e2e/picking.spec.ts` pins all of it.
 
 **The Klein bottle's self-intersection** (`src/boards/clipSolid.ts`) is the
 one place the app cuts geometry away. The immersion passes through itself,

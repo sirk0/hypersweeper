@@ -164,6 +164,60 @@ test.describe("picking a two-sided surface", () => {
     expect(jumps, "a pixel step jumped to another part of the board").toEqual([]);
   });
 
+  // A flag has to land on the cell the player is pointing at — the one the hover
+  // highlight is on. It did not: a PointerEvent carries fractional client
+  // coordinates and a plain MouseEvent (`contextmenu`) carries the same point cut
+  // down to whole pixels, so the hover picked one cell and the right-click that
+  // followed it picked from a point up to a pixel up and to the left. Anywhere
+  // but at a cell edge that is the same cell; within a pixel of the seam it is
+  // the neighbour, and the pin went to a cell the player was not aiming at.
+  //
+  // Measured at sub-pixel steps across the widest seam, which is where the whole
+  // pixel of slip has somewhere else to land.
+  test("cylinder: a right-click flags the cell the pointer is on", async ({ page }) => {
+    const seen = await visibleCells(page, "cylinder");
+    const { a, b } = seams(seen)[0]!;
+
+    // Where along the seam the picked cell changes over, to a pixel.
+    const coarse = walk(a, b);
+    const picked = await page.evaluate(
+      (points) => points.map((p) => window.__ms!.cellAtScreenXY(p.x, p.y)),
+      coarse,
+    );
+    const over = picked.findIndex((c, i) => i > 0 && c !== picked[i - 1]);
+    expect(over, "the seam never changed cell").toBeGreaterThan(0);
+
+    // ...then across it in twentieths of a pixel, so the points cover every
+    // fractional offset a cut-down coordinate could throw away.
+    const edge = coarse[over]!;
+    const step = 0.05;
+    const dx = (b.x - a.x) / (coarse.length - 1);
+    const dy = (b.y - a.y) / (coarse.length - 1);
+    const scale = step / Math.hypot(dx, dy);
+    const points = Array.from({ length: 61 }, (_, i) => ({
+      x: edge.x + dx * scale * (i - 30),
+      y: edge.y + dy * scale * (i - 30),
+    }));
+
+    const strays: string[] = [];
+    for (const p of points) {
+      const aimed = await page.evaluate(
+        ({ x, y }) => window.__ms!.cellAtScreenXY(x, y),
+        p,
+      );
+      await page.mouse.move(p.x, p.y);
+      await page.mouse.click(p.x, p.y, { button: "right" });
+      const flagged = await page.evaluate(() =>
+        window.__ms!.cells().filter((c) => window.__ms!.cellState(c) === "flagged"),
+      );
+      if (flagged.length !== 1 || flagged[0] !== aimed) {
+        strays.push(`(${p.x.toFixed(2)}, ${p.y.toFixed(2)}): on ${aimed}, flagged ${flagged}`);
+      }
+      for (const c of flagged) await page.evaluate((c) => window.__ms!.flag(c), c);
+    }
+    expect(strays.slice(0, 8), "a flag landed off the cell it was aimed at").toEqual([]);
+  });
+
   // What the bug cost a player: the far sheet is the half of the board they
   // cannot see, so a click aimed at a safe tile in front lost the game on a
   // mine behind it.
