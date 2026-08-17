@@ -108,7 +108,10 @@
     "cube": "Cube",
     "tetrahedron": "Tetrahedron",
     "tetraframe": "Tetrahedron frame",
+    "octahedron": "Octahedron",
+    "icosahedron": "Icosahedron",
     "cubeframe": "Cube frame",
+    "steppedpyramid": "Stepped pyramid",
     "steppedbipyramid": "Stepped bipyramid",
     "triangle": "Triangles - triangular board",
     "hextri": "Triangles - hexagonal board",
@@ -182,6 +185,9 @@
       "cubeframe",
       "tetrahedron",
       "tetraframe",
+      "octahedron",
+      "icosahedron",
+      "steppedpyramid",
       "steppedbipyramid"
     ],
     "shapedModes": {

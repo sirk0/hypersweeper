@@ -92,8 +92,12 @@ SPEC: dict[str, dict] = {
     "cube_frame_board": dict(size=(0, 1), mine=2, shape=None, grid="cubeframe"),
     "tetrahedron_board": dict(size=(1,), mine=0, shape=None),
     "tetrahedron_frame_board": dict(size=(1,), mine=0, shape=None),
+    "octahedron_board": dict(size=(1,), mine=0, shape=None),
+    "icosahedron_board": dict(size=(1,), mine=0, shape=None),
     "stepped_bipyramid_board": dict(size=(0, 1), mine=2, shape=None,
                                     grid="bipyramid"),
+    "stepped_pyramid_board": dict(size=(0, 1), mine=2, shape=None,
+                                  grid="steppedpyramid"),
     # aperiodic: ``keep`` is exact, the growth arg only has to be generous
     "penrose_board": dict(size=(3,), mine=1, shape=2, kind="scale", grow=0),
     "spectre_board": dict(size=(2,), mine=1, shape=3, kind="scale", grow=0),
@@ -126,6 +130,10 @@ SPEC: dict[str, dict] = {
 #   * ``stepped_bipyramid_board(base, levels)``: the terraces must run all the
 #     way to a single cube top and bottom, which is ``levels = (base + 1) / 2``
 #     on an odd base.
+#   * ``stepped_pyramid_board(base, levels)``: the same relation, one pyramid
+#     rather than two mirrored ones -- the terraces still have to run all the
+#     way to a single-cell apex, or a shallow window reads as a slab with one
+#     lip rather than a pyramid.
 def _grid_cubeframe() -> list[list[int]]:
     return [
         [n, thickness]
@@ -139,7 +147,15 @@ def _grid_bipyramid() -> list[list[int]]:
     return [[base, (base + 1) // 2] for base in range(3, 24, 2)]
 
 
-GRIDS = {"cubeframe": _grid_cubeframe, "bipyramid": _grid_bipyramid}
+def _grid_steppedpyramid() -> list[list[int]]:
+    return [[base, (base + 1) // 2] for base in range(3, 24, 2)]
+
+
+GRIDS = {
+    "cubeframe": _grid_cubeframe,
+    "bipyramid": _grid_bipyramid,
+    "steppedpyramid": _grid_steppedpyramid,
+}
 
 # Fractal levels a difficulty may not use, and why. ``resize`` scores a coarse
 # board on cell count alone, but the level below the one named here cannot be

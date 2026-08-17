@@ -493,7 +493,17 @@ export function initialOrientation(mode: string): Quaternion {
   const qy = (a: number) => new Quaternion().setFromAxisAngle(Y_AXIS, a);
   // flat-faced solids show only one face head-on; a 3/4 turn reveals three
   // faces at once
-  if (["cube", "tetrahedron", "cubeframe", "steppedbipyramid"].includes(mode)) {
+  if (
+    [
+      "cube",
+      "tetrahedron",
+      "cubeframe",
+      "steppedbipyramid",
+      "octahedron",
+      "icosahedron",
+      "steppedpyramid",
+    ].includes(mode)
+  ) {
     return qx(-0.5).multiply(qy(0.6));
   }
   // a tetrahedron viewed down a 2-fold axis looks like a flat square; turn

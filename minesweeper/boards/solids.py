@@ -49,6 +49,25 @@ def _icosahedron() -> tuple[list[Vec3], list[tuple[int, int, int]]]:
     return vertices, faces
 
 
+def _octahedron() -> tuple[list[Vec3], list[tuple[int, int, int]]]:
+    """A regular octahedron: six vertices on the coordinate axes, the eight
+    faces one per octant (every choice of sign for each axis)."""
+    vertices: list[Vec3] = [
+        (1.0, 0.0, 0.0), (-1.0, 0.0, 0.0),
+        (0.0, 1.0, 0.0), (0.0, -1.0, 0.0),
+        (0.0, 0.0, 1.0), (0.0, 0.0, -1.0),
+    ]
+    faces = []
+    for ix in (0, 1):
+        for iy in (2, 3):
+            for iz in (4, 5):
+                a, b, c = vertices[ix], vertices[iy], vertices[iz]
+                normal = newell_normal([a, b, c])
+                outward = sum(n * (pa + pb + pc) for n, pa, pb, pc in zip(normal, a, b, c))
+                faces.append((ix, iy, iz) if outward > 0 else (ix, iz, iy))
+    return vertices, faces
+
+
 def _tetrahedron() -> tuple[list[Vec3], list[tuple[int, int, int]]]:
     """A regular tetrahedron: four vertices on alternate cube corners,
     the four faces being the four vertex triples. Winding is arbitrary
@@ -546,6 +565,24 @@ def stepped_bipyramid_board(base: int, levels: int, mine_count: int) -> Board3D:
     return _polycube_surface("steppedbipyramid", solid, (base, base, height), mine_count)
 
 
+def stepped_pyramid_board(base: int, levels: int, mine_count: int) -> Board3D:
+    """A single stepped pyramid (a Mesoamerican-style ziggurat): square
+    terraces stepping in from a full ``base`` x ``base`` foundation to a
+    ``base - 2*(levels - 1)`` apex. Unlike `stepped_bipyramid_board` -- one
+    of these mirrored base-to-base, so the shared foundation square sits
+    inside the solid -- there is nothing below layer 0 here, so the
+    foundation is itself on the boundary and, like every terrace step and
+    side wall, a playable cell."""
+    if not (levels >= 2 and base - 2 * (levels - 1) >= 1):
+        raise ValueError("need levels >= 2 and a positive apex square")
+
+    def solid(i: int, j: int, k: int) -> bool:
+        margin = k  # each step up from the foundation shrinks by 1
+        return margin <= i < base - margin and margin <= j < base - margin
+
+    return _polycube_surface("steppedpyramid", solid, (base, base, levels), mine_count)
+
+
 def tetrahedron_board(mine_count: int, frequency: int = 4) -> Board3D:
     """A regular tetrahedron tiled with triangles: each of the 4 faces
     subdivided into ``frequency**2`` cells, kept flat on the faces."""
@@ -554,6 +591,30 @@ def tetrahedron_board(mine_count: int, frequency: int = 4) -> Board3D:
     cells = {("t", n): list(triangle) for n, triangle in enumerate(triangles)}
     radius = max(math.hypot(*p) for p in positions.values())
     return _convex_board3d("tetrahedron", cells, positions, mine_count, radius=radius)
+
+
+def octahedron_board(mine_count: int, frequency: int = 3) -> Board3D:
+    """A regular octahedron tiled with triangles: each of the 8 faces
+    subdivided into ``frequency**2`` cells, kept flat on the faces (the
+    same flat, non-projected subdivision `tetrahedron_board` uses)."""
+    vertices, faces = _octahedron()
+    positions, triangles = _geodesic(frequency, vertices, faces, project=False)
+    cells = {("t", n): list(triangle) for n, triangle in enumerate(triangles)}
+    radius = max(math.hypot(*p) for p in positions.values())
+    return _convex_board3d("octahedron", cells, positions, mine_count, radius=radius)
+
+
+def icosahedron_board(mine_count: int, frequency: int = 2) -> Board3D:
+    """A regular icosahedron tiled with triangles: each of the 20 faces
+    subdivided into ``frequency**2`` cells, kept flat on the faces --
+    unlike `sphere_triangle_board`, which projects the same subdivision
+    onto the unit sphere, this keeps the solid's flat facets (and their
+    creased edges) intact."""
+    vertices, faces = _icosahedron()
+    positions, triangles = _geodesic(frequency, vertices, faces, project=False)
+    cells = {("t", n): list(triangle) for n, triangle in enumerate(triangles)}
+    radius = max(math.hypot(*p) for p in positions.values())
+    return _convex_board3d("icosahedron", cells, positions, mine_count, radius=radius)
 
 
 def tetrahedron_frame_board(mine_count: int, frequency: int = 4) -> Board3D:

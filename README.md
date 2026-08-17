@@ -61,14 +61,17 @@ Pick a surface, then a tiling:
   (A sphere cannot be tiled with hexagons alone — Euler's formula
   forces 12 pentagons in.)
 - **Polyhedra (3D)** — a cube tiled with squares (6 faces), a
-  tetrahedron tiled with triangles (4 faces), a tetrahedron frame (a
-  level-1 Sierpiński tetrahedron: the middle triangle removed from each
-  face, leaving four corner tetrahedra that meet at the edge midpoints),
-  a cube frame (a cube with a square tunnel bored through each pair of
-  opposite faces — a level-1 Menger sponge, genus 5), or a stepped
-  bipyramid (two stepped pyramids stitched base-to-base into a terraced
-  diamond); tiled by triangles or squares, cells stitching across the
-  edges where faces meet, inner walls and step shoulders included
+  tetrahedron tiled with triangles (4 faces), an octahedron (8 faces) or
+  an icosahedron (20 faces) tiled with triangles the same flat way, a
+  tetrahedron frame (a level-1 Sierpiński tetrahedron: the middle triangle
+  removed from each face, leaving four corner tetrahedra that meet at the
+  edge midpoints), a cube frame (a cube with a square tunnel bored through
+  each pair of opposite faces — a level-1 Menger sponge, genus 5), a
+  stepped pyramid (square terraces narrowing to a single-cell apex, its
+  foundation itself a playable face since nothing mirrors it below), or a
+  stepped bipyramid (two of those pyramids stitched base-to-base into a
+  terraced diamond); tiled by triangles or squares, cells stitching across
+  the edges where faces meet, inner walls and step shoulders included
 - **Torus (3D)** — the grid wraps in both directions, so there are no
   border cells; pure hexagons are possible here, because the torus has
   Euler characteristic 0

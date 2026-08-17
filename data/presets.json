@@ -577,6 +577,60 @@
         ]
       }
     },
+    "octahedron": {
+      "builder": "octahedron_board",
+      "args": {
+        "easy": [
+          17,
+          3
+        ],
+        "medium": [
+          73,
+          6
+        ],
+        "hard": [
+          150,
+          8
+        ]
+      }
+    },
+    "icosahedron": {
+      "builder": "icosahedron_board",
+      "args": {
+        "easy": [
+          21,
+          2
+        ],
+        "medium": [
+          84,
+          4
+        ],
+        "hard": [
+          149,
+          5
+        ]
+      }
+    },
+    "steppedpyramid": {
+      "builder": "stepped_pyramid_board",
+      "args": {
+        "easy": [
+          5,
+          3,
+          18
+        ],
+        "medium": [
+          9,
+          5,
+          59
+        ],
+        "hard": [
+          13,
+          7,
+          138
+        ]
+      }
+    },
     "steppedbipyramid": {
       "builder": "stepped_bipyramid_board",
       "args": {

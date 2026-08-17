@@ -1363,6 +1363,21 @@ def _render_icon(key: str) -> pygame.Surface:
                     (c + ww / 2, y + slab), (c - ww / 2, y + slab)]
             _icon_shape(s, rect, fill=shades[idx], width=4)
         _icon_gloss(s, pygame.Rect(d * 0.12, d * 0.14, d * 0.76, d * 0.34))
+    elif key == "steppedpyramid":
+        # a single terraced triangle: square slabs narrowest at a one-cell
+        # apex, widening to the foundation (half of the bipyramid's diamond,
+        # with nothing mirrored below it)
+        widths = (0.34, 0.58, 0.82)
+        shades = (ICON_BLUE_LIGHT, ICON_BLUE, ICON_BLUE_DARK)
+        slab = d * 0.16
+        top = c - slab * len(widths) / 2
+        for idx, w in enumerate(widths):
+            ww = d * w
+            y = top + idx * slab
+            rect = [(c - ww / 2, y), (c + ww / 2, y),
+                    (c + ww / 2, y + slab), (c - ww / 2, y + slab)]
+            _icon_shape(s, rect, fill=shades[idx], width=4)
+        _icon_gloss(s, pygame.Rect(d * 0.12, d * 0.14, d * 0.76, d * 0.34))
     elif key == "tetrahedron":
         # a tetrahedron seen down a vertex: outer triangle with edges to
         # the center, each sub-face lightly triangulated
@@ -1392,6 +1407,25 @@ def _render_icon(key: str) -> pygame.Surface:
         for k in range(3):
             _icon_shape(s, [outer[k], mids[k], mids[(k - 1) % 3]],
                         fill=shades[k], width=4)
+        _icon_gloss(s, pygame.Rect(d * 0.18, d * 0.1, d * 0.64, d * 0.4))
+    elif key == "octahedron":
+        # an octahedron seen down a 4-fold vertex axis: outer square with
+        # spokes to the center, each quadrant a separate face
+        outer = _ngon_points(c, c + d * 0.04, d * 0.46, 4, -90)
+        shades = (ICON_BLUE_LIGHT, ICON_BLUE, ICON_BLUE_DARK, ICON_BLUE)
+        for k in range(4):
+            a, b = outer[k], outer[(k + 1) % 4]
+            _icon_shape(s, [a, b, (c, c)], fill=shades[k], width=4)
+        _icon_gloss(s, pygame.Rect(d * 0.18, d * 0.1, d * 0.64, d * 0.4))
+    elif key == "icosahedron":
+        # an icosahedron seen down a 5-fold vertex axis: outer pentagon
+        # with spokes to the center, echoing the snub dodecahedron's ring
+        outer = _ngon_points(c, c + d * 0.04, d * 0.46, 5, -90)
+        shades = (ICON_BLUE_LIGHT, ICON_BLUE, ICON_BLUE_DARK, ICON_BLUE,
+                  ICON_BLUE_LIGHT)
+        for k in range(5):
+            a, b = outer[k], outer[(k + 1) % 5]
+            _icon_shape(s, [a, b, (c, c)], fill=shades[k], width=4)
         _icon_gloss(s, pygame.Rect(d * 0.18, d * 0.1, d * 0.64, d * 0.4))
     elif key == "torus":
         band = pygame.Rect(d * 0.04, d * 0.22, d * 0.92, d * 0.56)
@@ -1915,7 +1949,8 @@ class GameScreen3D(BaseGameScreen):
     def _initial_rotation(self):
         # flat-faced solids show only one face head-on; a 3/4 turn reveals
         # three faces at once
-        if self.mode in ("cube", "tetrahedron", "cubeframe", "steppedbipyramid"):
+        if self.mode in ("cube", "tetrahedron", "cubeframe", "steppedbipyramid",
+                        "octahedron", "icosahedron", "steppedpyramid"):
             return mat_mul(rot_x(-0.5), rot_y(0.6))
         # a tetrahedron viewed down a 2-fold axis looks like a flat square;
         # turn to a vertex-first 3/4 view so the frame's gaps read clearly

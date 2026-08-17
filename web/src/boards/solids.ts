@@ -87,6 +87,34 @@ function icosahedron(): VertexFaces {
   return { vertices, faces };
 }
 
+/** A regular octahedron: six vertices on the coordinate axes, the eight
+ * faces one per octant (every choice of sign for each axis). */
+function octahedron(): VertexFaces {
+  const vertices: Vec3[] = [
+    [1, 0, 0],
+    [-1, 0, 0],
+    [0, 1, 0],
+    [0, -1, 0],
+    [0, 0, 1],
+    [0, 0, -1],
+  ];
+  const faces: [number, number, number][] = [];
+  for (const ix of [0, 1]) {
+    for (const iy of [2, 3]) {
+      for (const iz of [4, 5]) {
+        const [a, b, c] = [vertices[ix]!, vertices[iy]!, vertices[iz]!];
+        const normal = newellNormal([a, b, c]);
+        const outward =
+          normal[0] * (a[0] + b[0] + c[0]) +
+          normal[1] * (a[1] + b[1] + c[1]) +
+          normal[2] * (a[2] + b[2] + c[2]);
+        faces.push(outward > 0 ? [ix, iy, iz] : [ix, iz, iy]);
+      }
+    }
+  }
+  return { vertices, faces };
+}
+
 /** A regular tetrahedron: four vertices on alternate cube corners, the four
  * faces being the four vertex triples. Winding is arbitrary (each subdivided
  * cell is re-oriented outward on assembly). */
@@ -753,6 +781,28 @@ export function steppedBipyramidBoard(
   );
 }
 
+/** A single stepped pyramid (a Mesoamerican-style ziggurat): square terraces
+ * stepping in from a full `base` x `base` foundation to a
+ * `base - 2*(levels - 1)` apex. Unlike `steppedBipyramidBoard` — one of these
+ * mirrored base-to-base, so the shared foundation square sits inside the
+ * solid — there is nothing below layer 0 here, so the foundation is itself
+ * on the boundary and, like every terrace step and side wall, a playable
+ * cell. */
+export function steppedPyramidBoard(
+  base: number,
+  levels: number,
+  mineCount: number,
+): Board3D {
+  if (!(levels >= 2 && base - 2 * (levels - 1) >= 1)) {
+    throw new Error("need levels >= 2 and a positive apex square");
+  }
+  const solid = (i: number, j: number, k: number): boolean => {
+    const margin = k; // each step up from the foundation shrinks by 1
+    return margin <= i && i < base - margin && margin <= j && j < base - margin;
+  };
+  return polycubeSurface("steppedpyramid", solid, [base, base, levels], mineCount);
+}
+
 /** A regular tetrahedron tiled with triangles: each of the 4 faces
  * subdivided into `frequency**2` cells, kept flat on the faces. */
 export function tetrahedronBoard(mineCount: number, frequency = 4): Board3D {
@@ -764,6 +814,36 @@ export function tetrahedronBoard(mineCount: number, frequency = 4): Board3D {
     radius = Math.max(radius, Math.hypot(p[0], p[1], p[2]));
   }
   return convexBoard3d("tetrahedron", cells, positions, mineCount, radius);
+}
+
+/** A regular octahedron tiled with triangles: each of the 8 faces
+ * subdivided into `frequency**2` cells, kept flat on the faces (the same
+ * flat, non-projected subdivision `tetrahedronBoard` uses). */
+export function octahedronBoard(mineCount: number, frequency = 3): Board3D {
+  const { positions, triangles } = geodesic(frequency, octahedron(), false);
+  const cells: Cells = new Map();
+  triangles.forEach((triangle, n) => cells.set(cid("t", n), [...triangle]));
+  let radius = 0;
+  for (const p of positions.values()) {
+    radius = Math.max(radius, Math.hypot(p[0], p[1], p[2]));
+  }
+  return convexBoard3d("octahedron", cells, positions, mineCount, radius);
+}
+
+/** A regular icosahedron tiled with triangles: each of the 20 faces
+ * subdivided into `frequency**2` cells, kept flat on the faces — unlike
+ * `sphereTriangleBoard`, which projects the same subdivision onto the unit
+ * sphere, this keeps the solid's flat facets (and their creased edges)
+ * intact. */
+export function icosahedronBoard(mineCount: number, frequency = 2): Board3D {
+  const { positions, triangles } = geodesic(frequency, icosahedron(), false);
+  const cells: Cells = new Map();
+  triangles.forEach((triangle, n) => cells.set(cid("t", n), [...triangle]));
+  let radius = 0;
+  for (const p of positions.values()) {
+    radius = Math.max(radius, Math.hypot(p[0], p[1], p[2]));
+  }
+  return convexBoard3d("icosahedron", cells, positions, mineCount, radius);
 }
 
 /** A level-1 Sierpiński tetrahedron: midpoint-subdividing a regular

@@ -472,8 +472,14 @@ const MODE_PATTERN = new Map<string, string>();
   // family is the one group with no flat tiling behind it: a geodesic's
   // triangles and a Catalan solid's faces only close up because the surface
   // curves. Those get circles, which have no tiling to be wrong about.
+  const TRIANGLE_FACED = new Set([
+    "tetrahedron",
+    "tetraframe",
+    "octahedron",
+    "icosahedron",
+  ]);
   for (const mode of POLYHEDRA_MODES) {
-    MODE_PATTERN.set(mode, mode === "tetrahedron" || mode === "tetraframe" ? "tri" : "square");
+    MODE_PATTERN.set(mode, TRIANGLE_FACED.has(mode) ? "tri" : "square");
   }
   for (const mode of SPHERE_MODES) MODE_PATTERN.set(mode, "circles");
 }

@@ -22,11 +22,14 @@ import { placePoint, substitutionPlacements, SUBSTITUTIONS } from "../boards/fra
 import {
   c80Board,
   c180Board,
+  icosahedronBoard,
+  octahedronBoard,
   rhombicosidodecahedronBoard,
   snubDodecahedronBoard,
   sphereBoard,
   sphereTriangleBoard,
   steppedBipyramidBoard,
+  steppedPyramidBoard,
   tetrahedronFrameBoard,
   truncatedIcosidodecahedronBoard,
 } from "../boards/solids";
@@ -511,7 +514,10 @@ const SOLID_BUILDERS: Record<string, () => Board3D> = {
   rhombicosidodeca: () => rhombicosidodecahedronBoard(0),
   truncicosidodeca: () => truncatedIcosidodecahedronBoard(0),
   tetraframe: () => tetrahedronFrameBoard(0, 2),
+  octahedron: () => octahedronBoard(0, 3),
+  icosahedron: () => icosahedronBoard(0, 2),
   steppedbipyramid: () => steppedBipyramidBoard(7, 4, 0),
+  steppedpyramid: () => steppedPyramidBoard(5, 3, 0),
 };
 
 /** How each solid is turned before projecting, in degrees about x then y —
@@ -527,7 +533,15 @@ const SOLID_VIEW: Record<string, [number, number] | [number, number, number]> = 
   // Seen from just above the equator: from any higher the widest terrace hides
   // the whole lower pyramid, and the icon stops being a bipyramid at all.
   steppedbipyramid: [-85, 0, 28],
+  // Half of the bipyramid's view: seen just above the foundation, so the
+  // apex and the terraces both read rather than the foundation hiding
+  // everything above it or the apex hiding everything below.
+  steppedpyramid: [-70, 0, 28],
   tetraframe: [-50, 18, 45],
+  // Down a 4-fold vertex axis and tipped, so three of the eight faces show.
+  octahedron: [-24, 24],
+  // Down a 5-fold vertex axis and tipped, echoing the snub dodecahedron's view.
+  icosahedron: [-18, 22],
 };
 
 const solidCache = new Map<string, Board3D>();
@@ -796,8 +810,11 @@ const ICON_TONES: Record<string, ShapeTone> = {
   cube: { sides: 4, regularity: 1 },
   cubeframe: { sides: 4, regularity: 1 },
   steppedbipyramid: { sides: 4, regularity: 1 },
+  steppedpyramid: { sides: 4, regularity: 1 },
   tetrahedron: { sides: 3, regularity: 1 },
   tetraframe: { sides: 3, regularity: 1 },
+  octahedron: { sides: 3, regularity: 1 },
+  icosahedron: { sides: 3, regularity: 1 },
   sphere: { sides: 5, regularity: 0.95 },
   snubdodec: { sides: 3, regularity: 1 },
   spheretri: { sides: 3, regularity: 1 },
@@ -1083,11 +1100,19 @@ function draw(rawKey: string): string[] {
         }
       }
     }
-  } else if (key === "steppedbipyramid" || key === "tetraframe") {
-    // Both are the real board projected — a bipyramid whose terraces really do
-    // step 7-5-3-1 out from the equator, and a Sierpinski tetrahedron with its
-    // four sub-tetrahedra and the hollow between them, tiled the way they are
-    // played on.
+  } else if (
+    key === "steppedbipyramid" ||
+    key === "steppedpyramid" ||
+    key === "tetraframe" ||
+    key === "octahedron" ||
+    key === "icosahedron"
+  ) {
+    // All are the real board projected — a bipyramid whose terraces really do
+    // step 7-5-3-1 out from the equator, a single stepped pyramid (the same
+    // terraces with a playable foundation instead of a mirrored twin), a
+    // Sierpinski tetrahedron with its four sub-tetrahedra and the hollow
+    // between them, and the octahedron/icosahedron's own flat triangular
+    // facets — all tiled the way they are played on.
     parts.push(...solidFaces(key, "blocky"));
   } else if (key === "tetrahedron") {
     // seen down a vertex: outer triangle with edges to the centre
