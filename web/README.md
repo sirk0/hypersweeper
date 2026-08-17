@@ -722,6 +722,20 @@ Two traps live here:
   `BASE_OVERLAP` in `render/solidBoard.ts` closes it by laying each cell's grout
   a ten-thousandth of a cell past its own edges: orders of magnitude more than
   the crack needs, a hundredth of a screen pixel on the board.
+- **A MouseEvent does not know where the pointer is** — not to the pixel. A
+  `PointerEvent` carries fractional client coordinates (`clientX` of 394.7);
+  `mousedown`, `click` and `contextmenu` carry the same point cut down to whole
+  numbers, always down and to the left, by up to a pixel. The hover highlight
+  comes from `pointermove` and the right-click flag came from `contextmenu`, so
+  the two aimed at points a pixel apart: everywhere but at a cell edge that is
+  the same cell, and within a pixel of the seam it is the neighbour — the player
+  saw one cell light up and the pin land on another. `attachControls` keeps the
+  pointer's real position from the last pointer event and aims the secondary
+  action there whenever the MouseEvent is that same point rounded off
+  (`pointerPoint` in `input/controls.ts`); a context menu raised from the
+  keyboard, which no pointer event precedes, still uses its own coordinates.
+  Nothing else picks from a MouseEvent — a tap picks at `pointerdown`, which is
+  a PointerEvent and so already agrees with the highlight.
 - **`cellScreenXY` is not the inverse of `cellAtScreenXY`** on a two-sided
   surface. Nothing is culled there, so it reports a position for a cell hidden
   behind the immersion too; round-trip through `cellAtScreenXY` when a test

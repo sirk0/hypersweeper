@@ -68,6 +68,15 @@ export function attachControls(
   let pinchSpan = 0;
   let pinchX = 0;
   let pinchY = 0;
+  // The pointer's real position, kept from the last pointer event. A
+  // PointerEvent carries fractional client coordinates; a plain MouseEvent
+  // (`contextmenu`, `click`, `mousedown`) carries the same point cut down to
+  // whole pixels. Picking from the cut-down pair aims up to a pixel away from
+  // where the pointer actually is, and a pixel is the whole story at a cell
+  // edge: hovering the seam between two cells highlighted one and right-clicking
+  // flagged the other. See `pointerPoint`.
+  let pointerX = Number.NaN;
+  let pointerY = Number.NaN;
 
   const local = (clientX: number, clientY: number): { x: number; y: number } => {
     const r = canvas.getBoundingClientRect();
@@ -81,6 +90,16 @@ export function attachControls(
       -(((clientY - r.top) / r.height) * 2 - 1),
     );
   };
+
+  /** Where to aim a MouseEvent's pick. The pointer's own last position when
+   * this event is that same point rounded off (which is what a right-click is:
+   * `contextmenu` follows `pointerdown` with no chance to move in between), and
+   * the event's own coordinates otherwise — a context menu raised from the
+   * keyboard has no pointer behind it. */
+  const pointerPoint = (e: MouseEvent): { x: number; y: number } =>
+    Math.abs(pointerX - e.clientX) < 1 && Math.abs(pointerY - e.clientY) < 1
+      ? { x: pointerX, y: pointerY }
+      : { x: e.clientX, y: e.clientY };
 
   const clearLong = () => {
     if (longTimer) window.clearTimeout(longTimer);
@@ -110,6 +129,8 @@ export function attachControls(
   };
 
   const onPointerDown = (e: PointerEvent) => {
+    pointerX = e.clientX;
+    pointerY = e.clientY;
     if (e.button === 2) return; // handled on contextmenu
     points.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (points.size >= 2) {
@@ -140,6 +161,8 @@ export function attachControls(
   };
 
   const onPointerMove = (e: PointerEvent) => {
+    pointerX = e.clientX;
+    pointerY = e.clientY;
     if (points.has(e.pointerId)) {
       points.set(e.pointerId, { x: e.clientX, y: e.clientY });
     }
@@ -220,7 +243,8 @@ export function attachControls(
 
   const onContextMenu = (e: MouseEvent) => {
     e.preventDefault();
-    const cell = handlers.pick(ndc(e.clientX, e.clientY));
+    const p = pointerPoint(e);
+    const cell = handlers.pick(ndc(p.x, p.y));
     if (cell != null) handlers.onSecondary(cell);
   };
 
