@@ -12,7 +12,7 @@ Every board's mine count, chosen so its win probability under the reference solv
 
 ## Coverage
 
-- 486 rows, 455 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
+- 489 rows, 458 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
 - 31 could not be brought on target:
   - `cylinder`/easy: 89.1% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (7, 9%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
   - `cylkisrhombille`/easy: 88.3% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (5, 7%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
@@ -45,7 +45,7 @@ Every board's mine count, chosen so its win probability under the reference solv
   - `triakis`/medium: 0.0% vs 87.1% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `triakis`/easy: 1.8% vs 96.5% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `truncicosidodeca`/hard: 45.9% vs 50.9% — no integer mine count lands within tolerance; this is the closest
-- 108 rows had games the solver abandoned (its frontier DP hit its node budget); their rates are measured over the games that finished:
+- 110 rows had games the solver abandoned (its frontier DP hit its node budget); their rates are measured over the games that finished:
   - `torustrunchex`/hard: 168 abandoned
   - `torusrotatedhex`/hard: 144 abandoned
   - `kleintri`/hard: 75 abandoned
@@ -104,6 +104,7 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `cyltruncsquare` | 5.5 | 77c 5m (6%) 95% | 260c 30m (12%) 85% | 459c 70m (15%) 48% |
 | `cyltrunctrihex` | 5.8 | 80c 6m (8%) 94% | 242c 21m (9%) 86% | 510c 71m (14%) 48% |
 | `deltoidal` | 8.3 | 76c 6m (8%) 98% | 248c 28m (11%) 83% | 490c 84m (17%) 48% |
+| `dodecahedron` | 11.0 | 60c 16m (27%) 95% | 240c 64m (27%) 88% | 540c 160m (30%) 48% |
 | `elongated` | 9.0 | 85c 5m (6%) 98% | 219c 26m (12%) 90% | 543c 92m (17%) 55% |
 | `floret` | 7.4 | 72c 7m (10%) 97% | 288c 37m (13%) 86% | 480c 81m (17%) 52% |
 | `gosper` | 5.5 | 49c 7m (14%) 99% | 343c 54m (16%) 86% | 343c 71m (21%) 49% |

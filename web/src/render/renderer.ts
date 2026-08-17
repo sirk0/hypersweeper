@@ -501,6 +501,7 @@ export function initialOrientation(mode: string): Quaternion {
       "steppedbipyramid",
       "octahedron",
       "icosahedron",
+      "dodecahedron",
       "steppedpyramid",
     ].includes(mode)
   ) {

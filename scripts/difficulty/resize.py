@@ -94,6 +94,7 @@ SPEC: dict[str, dict] = {
     "tetrahedron_frame_board": dict(size=(1,), mine=0, shape=None),
     "octahedron_board": dict(size=(1,), mine=0, shape=None),
     "icosahedron_board": dict(size=(1,), mine=0, shape=None),
+    "dodecahedron_board": dict(size=(1,), mine=0, shape=None),
     "stepped_bipyramid_board": dict(size=(0, 1), mine=2, shape=None,
                                     grid="bipyramid"),
     "stepped_pyramid_board": dict(size=(0, 1), mine=2, shape=None,

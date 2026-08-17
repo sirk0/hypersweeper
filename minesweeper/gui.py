@@ -39,7 +39,9 @@ from minesweeper.boards import (
     MENU_ROOT_LABELS,
     MODE_LABELS,
     MODES_3D,
-    POLYHEDRA_MODES,
+    POLYHEDRA_GROUP_LABELS,
+    POLYHEDRA_GROUP_MEMBERS,
+    POLYHEDRA_GROUP_ORDER,
     SPHERE_MODES,
     SUBSTITUTIONS,
     build_board,
@@ -949,6 +951,8 @@ _ICON_ALIASES = {
     "aperiodic": "penrose",
     "fractal": "sphinx",
     "polyhedra": "cube",
+    "platonic": "tetrahedron",       # the "Platonic solids" polyhedra group
+    "other": "steppedbipyramid",     # the "Other polyhedra" group (frames, stacks)
     "classic": "square",    # the "Classic" home entry: flat squares
     "manifolds": "torus",   # the "Flat manifolds" home entry
     "random": "start",      # the "Random" picker entry
@@ -1427,6 +1431,17 @@ def _render_icon(key: str) -> pygame.Surface:
             a, b = outer[k], outer[(k + 1) % 5]
             _icon_shape(s, [a, b, (c, c)], fill=shades[k], width=4)
         _icon_gloss(s, pygame.Rect(d * 0.18, d * 0.1, d * 0.64, d * 0.4))
+    elif key == "dodecahedron":
+        # one pentagonal face fanned into 5 triangles from its centre --
+        # exactly the wedge tiling the board itself uses -- echoing how the
+        # hextri icon shows one hexagon cut into six triangles
+        h = _ngon_points(c, c, d * 0.46, 5, -90)
+        shades = (ICON_BLUE_LIGHT, ICON_BLUE, ICON_BLUE_DARK, ICON_BLUE,
+                  ICON_BLUE_LIGHT)
+        for k in range(5):
+            _icon_shape(s, [h[k], h[(k + 1) % 5], (c, c)],
+                        fill=shades[k], width=4)
+        _icon_gloss(s, pygame.Rect(d * 0.06, d * 0.12, d * 0.88, d * 0.76))
     elif key == "torus":
         band = pygame.Rect(d * 0.04, d * 0.22, d * 0.92, d * 0.56)
         pygame.draw.ellipse(s, ICON_BLUE, band)
@@ -1950,7 +1965,8 @@ class GameScreen3D(BaseGameScreen):
         # flat-faced solids show only one face head-on; a 3/4 turn reveals
         # three faces at once
         if self.mode in ("cube", "tetrahedron", "cubeframe", "steppedbipyramid",
-                        "octahedron", "icosahedron", "steppedpyramid"):
+                        "octahedron", "icosahedron", "steppedpyramid",
+                        "dodecahedron"):
             return mat_mul(rot_x(-0.5), rot_y(0.6))
         # a tetrahedron viewed down a 2-fold axis looks like a flat square;
         # turn to a vertex-first 3/4 view so the frame's gaps read clearly
@@ -2223,9 +2239,15 @@ class MenuScreen:
             return "Sphere — choose a board", [
                 (m, MODE_LABELS[m], True) for m in SPHERE_MODES
             ]
-        # Polyhedra: the solids, all launching at once
-        return "Polyhedra — choose a board", [
-            (m, MODE_LABELS[m], True) for m in POLYHEDRA_MODES
+        # Polyhedra: choose a group (Platonic solids, or everything else --
+        # the frames and the stepped pyramids), then a board
+        if len(p) == 1:
+            return "Polyhedra — choose a group", [
+                (g, POLYHEDRA_GROUP_LABELS[g], True) for g in POLYHEDRA_GROUP_ORDER
+            ]
+        group = p[1]
+        return f"Polyhedra — {POLYHEDRA_GROUP_LABELS[group]}", [
+            (m, MODE_LABELS[m], True) for m in POLYHEDRA_GROUP_MEMBERS[group]
         ]
 
     def _picker_page(self, surface, surface_label, rest):
@@ -2275,7 +2297,11 @@ class MenuScreen:
                 self.path.append(key)
                 return None
             return self._select_picker(p[1], p[2:], key)
-        # sphere or polyhedra: every row launches its board straight away
+        if p[0] == "polyhedra" and len(p) == 1:  # picked a group
+            self.path.append(key)
+            return None
+        # sphere, or a polyhedra group: every row launches its board straight
+        # away
         return ("start", key)
 
     def _select_picker(self, surface, rest, key):

@@ -611,6 +611,23 @@
         ]
       }
     },
+    "dodecahedron": {
+      "builder": "dodecahedron_board",
+      "args": {
+        "easy": [
+          16,
+          1
+        ],
+        "medium": [
+          64,
+          2
+        ],
+        "hard": [
+          160,
+          3
+        ]
+      }
+    },
     "steppedpyramid": {
       "builder": "stepped_pyramid_board",
       "args": {

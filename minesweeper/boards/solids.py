@@ -49,6 +49,42 @@ def _icosahedron() -> tuple[list[Vec3], list[tuple[int, int, int]]]:
     return vertices, faces
 
 
+def _dodecahedron() -> tuple[list[Vec3], list[tuple[int, int, int]]]:
+    """A regular dodecahedron, already fanned into triangles: its 12
+    pentagonal faces are the icosahedron's dual (a Platonic solid's
+    face-centroid dual is exactly its regular dual, since the symmetry
+    group is transitive on both faces and vertices, so every centroid
+    lands the same distance out) -- one dodecahedron corner per
+    icosahedron face, one dodecahedron pentagon per icosahedron vertex,
+    the five icosahedron faces around it. Each pentagon is then split into
+    5 triangles fanned from its own planar centre (the plain average of
+    its 5 corners, *not* pushed back out to the corners' sphere, which is
+    what keeps the fan flat rather than tenting outward). The vertex list
+    is the 20 corners followed by the 12 fan centres; the face list is
+    5*12 = 60 triangles."""
+    ico_vertices, ico_faces = _icosahedron()
+    corners = [
+        _normalize(tuple(sum(ico_vertices[i][axis] for i in face) / 3 for axis in range(3)))
+        for face in ico_faces
+    ]
+    vertex_faces: dict[int, list[int]] = defaultdict(list)
+    for face_index, face in enumerate(ico_faces):
+        for v in face:
+            vertex_faces[v].append(face_index)
+
+    vertices = list(corners)
+    faces = []
+    for v, face_ids in vertex_faces.items():
+        ordered = _tangent_order(ico_vertices[v], [(fi, corners[fi]) for fi in face_ids])
+        pentagon = [corners[fi] for fi in ordered]
+        center = tuple(sum(p[axis] for p in pentagon) / 5 for axis in range(3))
+        center_index = len(vertices)
+        vertices.append(center)
+        for i in range(5):
+            faces.append((center_index, ordered[i], ordered[(i + 1) % 5]))
+    return vertices, faces
+
+
 def _octahedron() -> tuple[list[Vec3], list[tuple[int, int, int]]]:
     """A regular octahedron: six vertices on the coordinate axes, the eight
     faces one per octant (every choice of sign for each axis)."""
@@ -615,6 +651,22 @@ def icosahedron_board(mine_count: int, frequency: int = 2) -> Board3D:
     cells = {("t", n): list(triangle) for n, triangle in enumerate(triangles)}
     radius = max(math.hypot(*p) for p in positions.values())
     return _convex_board3d("icosahedron", cells, positions, mine_count, radius=radius)
+
+
+def dodecahedron_board(mine_count: int, frequency: int = 1) -> Board3D:
+    """A regular dodecahedron tiled with triangles: each of its 12
+    pentagonal faces fanned from its own centre into 5 triangles --
+    ``frequency=1`` is exactly that fan, 60 cells -- and each of those 60
+    wedges further subdivided into ``frequency**2`` flat triangles for the
+    larger difficulties, the same flat, non-projected subdivision the other
+    Platonic solids use. A regular pentagon is not equilateral like the
+    other Platonic faces, so its wedges are the one facet here that stay a
+    little off-square (72-54-54 triangles) at any frequency."""
+    vertices, faces = _dodecahedron()
+    positions, triangles = _geodesic(frequency, vertices, faces, project=False)
+    cells = {("t", n): list(triangle) for n, triangle in enumerate(triangles)}
+    radius = max(math.hypot(*p) for p in positions.values())
+    return _convex_board3d("dodecahedron", cells, positions, mine_count, radius=radius)
 
 
 def tetrahedron_frame_board(mine_count: int, frequency: int = 4) -> Board3D:

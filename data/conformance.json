@@ -929,6 +929,35 @@
         "hasCellCycle": false
       }
     },
+    "dodecahedron": {
+      "easy": {
+        "cellCount": 60,
+        "mineCount": 16,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 90,
+        "vertexCount": 32,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 240,
+        "mineCount": 64,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 360,
+        "vertexCount": 122,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 540,
+        "mineCount": 160,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 810,
+        "vertexCount": 272,
+        "hasCellCycle": false
+      }
+    },
     "steppedpyramid": {
       "easy": {
         "cellCount": 86,

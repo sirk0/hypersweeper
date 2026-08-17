@@ -27,7 +27,7 @@ Import order is a strict DAG; a module only imports from the ones above it.
 | `aperiodic.py` | Penrose (P3), the Spectre (Tile(1,1), the chiral monotile) and the phyllotactic spiral, each with exact-arithmetic vertex ids — ℤ[ζ5] for Penrose and the spiral, ℤ[ζ12] for the Spectre. The Spectre's ring is *dense* in the plane, so unlike Penrose's discrete lattice there is no lattice to snap a float vertex back to: its placements are carried as exact `(rotation, mirror, translation)` triples and no floating point enters the substitution at all. The spiral is the odd one out — no substitution, just ten 36° wedges of the tile's own translation lattice, the odd ones offset a step; nonperiodic because its five-fold centre forbids any translation. |
 | `solids.py` | Closed/convex and polycube 3D boards (pentagonal hexecontahedron, Goldberg polyhedra, geodesic icosahedron, rhombicosidodecahedron, truncated icosidodecahedron, cube, tetrahedron, frames, bipyramid). |
 | `surfaces.py` | Wrapping tilings onto surfaces: the three immersion points (`_torus_point`, `_cylinder_point`, `_mobius_point`), the shared `_assemble` tail, the nine simple `*_board` wrappers, and the Archimedean `arch_torus_board` / `arch_cylinder_board` / `arch_mobius_board`. |
-| `catalog.py` | The menu, **derived**: `SURFACE_SPECS` and `TILING_SPECS` (leaf data loaded from `data/catalog.json`) produce `MODE_LABELS`, `TILINGS`, `SURFACE_LABELS`, the geometry-first menu tables (`MENU_ROOT`/`MANIFOLD_*`/`FAMILY_*`/`SPHERE_MODES`/`POLYHEDRA_MODES`/`SHAPED_MODES`) and the picker helpers (`family_rows`, `picker_families`, `picker_modes`), `MODES_3D`, `mode_for`, `surface_of`, `view_hint`. |
+| `catalog.py` | The menu, **derived**: `SURFACE_SPECS` and `TILING_SPECS` (leaf data loaded from `data/catalog.json`) produce `MODE_LABELS`, `TILINGS`, `SURFACE_LABELS`, the geometry-first menu tables (`MENU_ROOT`/`MANIFOLD_*`/`FAMILY_*`/`SPHERE_MODES`/`POLYHEDRA_GROUP_*`/`POLYHEDRA_MODES`/`SHAPED_MODES`) and the picker helpers (`family_rows`, `picker_families`, `picker_modes`), `MODES_3D`, `mode_for`, `surface_of`, `view_hint`. |
 | `presets.py` | Difficulty presets and `build_board`. Flat regular, solid, Archimedean/Laves and aperiodic (penrose/spectre/phyllotaxis) presets all load from `data/presets.json` (shared with the web port). The Archimedean rows are authored in the compact **`ARCH_PRESETS`** table (tiling → surface → difficulty → args) that `scripts/export_data.py` expands into `data/presets.json`. |
 
 `__init__.py` re-exports the whole public surface, so `from
@@ -415,14 +415,18 @@ These are one-offs, not tiling×surface products.
    helper (`solids._convex_board3d` for convex solids, the polycube
    assemblers, or `surfaces._assemble`).
 2. Add the mode to the right menu table in `data/catalog.json` —
-   `menu.sphereModes`, `menu.polyhedraModes`, `menu.aperiodic`, or
-   `menu.shapedModes` (keyed by the regular tiling the shaped board is cut
-   from) — and its label to `soloLabels`. `catalog.py` loads them; the
-   exporter round-trip test keeps the two sides honest. Both menus follow
-   from that table: on the web a `shapedModes` entry lands under **Custom ›
-   Flat › Non-square boards** (the regular tilings themselves are rows of the
-   picker there), and everything else joins the home page's Flat or 3D random
-   pool along with its group.
+   `menu.sphereModes`, one `menu.polyhedraGroups[*].modes` (Platonic solids,
+   or everything else), `menu.aperiodic`, or `menu.shapedModes` (keyed by the
+   regular tiling the shaped board is cut from) — and its label to
+   `soloLabels`. `catalog.py` loads them (`POLYHEDRA_MODES` is derived by
+   flattening `polyhedraGroups`, so nothing else needs to know the polyhedra
+   page has two rows rather than one); the exporter round-trip test keeps the
+   two sides honest. Both menus follow from that table: on the web a
+   `shapedModes` entry lands under **Custom › Flat › Non-square boards** (the
+   regular tilings themselves are rows of the picker there), the Polyhedra
+   page is a group picker exactly like Flat manifolds (choose a group, then a
+   board), and everything else joins the home page's Flat or 3D random pool
+   along with its group.
 3. Add the builder to `_JSON_BUILDERS` in `presets.py`, add a
    `{mode: {builder, args: {difficulty: [...]}}}` row to
    `data/presets.json` (positional args), and re-run

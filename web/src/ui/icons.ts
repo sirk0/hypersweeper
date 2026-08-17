@@ -22,6 +22,7 @@ import { placePoint, substitutionPlacements, SUBSTITUTIONS } from "../boards/fra
 import {
   c80Board,
   c180Board,
+  dodecahedronBoard,
   icosahedronBoard,
   octahedronBoard,
   rhombicosidodecahedronBoard,
@@ -516,6 +517,7 @@ const SOLID_BUILDERS: Record<string, () => Board3D> = {
   tetraframe: () => tetrahedronFrameBoard(0, 2),
   octahedron: () => octahedronBoard(0, 3),
   icosahedron: () => icosahedronBoard(0, 2),
+  dodecahedron: () => dodecahedronBoard(0, 1),
   steppedbipyramid: () => steppedBipyramidBoard(7, 4, 0),
   steppedpyramid: () => steppedPyramidBoard(5, 3, 0),
 };
@@ -542,6 +544,8 @@ const SOLID_VIEW: Record<string, [number, number] | [number, number, number]> = 
   octahedron: [-24, 24],
   // Down a 5-fold vertex axis and tipped, echoing the snub dodecahedron's view.
   icosahedron: [-18, 22],
+  // Down a 3-fold vertex axis and tipped, so three of its twelve pentagons show.
+  dodecahedron: [-20, 20],
 };
 
 const solidCache = new Map<string, Board3D>();
@@ -815,6 +819,7 @@ const ICON_TONES: Record<string, ShapeTone> = {
   tetraframe: { sides: 3, regularity: 1 },
   octahedron: { sides: 3, regularity: 1 },
   icosahedron: { sides: 3, regularity: 1 },
+  dodecahedron: { sides: 3, regularity: 0.8 }, // the pentagon's fan wedge, 72-54-54
   sphere: { sides: 5, regularity: 0.95 },
   snubdodec: { sides: 3, regularity: 1 },
   spheretri: { sides: 3, regularity: 1 },
@@ -1105,14 +1110,16 @@ function draw(rawKey: string): string[] {
     key === "steppedpyramid" ||
     key === "tetraframe" ||
     key === "octahedron" ||
-    key === "icosahedron"
+    key === "icosahedron" ||
+    key === "dodecahedron"
   ) {
     // All are the real board projected — a bipyramid whose terraces really do
     // step 7-5-3-1 out from the equator, a single stepped pyramid (the same
     // terraces with a playable foundation instead of a mirrored twin), a
     // Sierpinski tetrahedron with its four sub-tetrahedra and the hollow
-    // between them, and the octahedron/icosahedron's own flat triangular
-    // facets — all tiled the way they are played on.
+    // between them, the octahedron/icosahedron's own flat triangular facets,
+    // and the dodecahedron's pentagons already fanned into triangles — all
+    // tiled the way they are played on.
     parts.push(...solidFaces(key, "blocky"));
   } else if (key === "tetrahedron") {
     // seen down a vertex: outer triangle with edges to the centre

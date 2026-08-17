@@ -7245,5 +7245,43 @@
         "indistinguishable": 0
       }
     }
+  },
+  "dodecahedron": {
+    "builder": "dodecahedron_board",
+    "args": {
+      "medium": {
+        "args": [
+          1,
+          2
+        ],
+        "cells": 240,
+        "score": 0.0947,
+        "distortionMean": 1.0203,
+        "distortionP90": 1.0203,
+        "indistinguishable": 0
+      },
+      "easy": {
+        "args": [
+          1,
+          1
+        ],
+        "cells": 60,
+        "score": 11.9304,
+        "distortionMean": 1.0203,
+        "distortionP90": 1.0203,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          1,
+          3
+        ],
+        "cells": 540,
+        "score": 0.1479,
+        "distortionMean": 1.0203,
+        "distortionP90": 1.0203,
+        "indistinguishable": 0
+      }
+    }
   }
 }
