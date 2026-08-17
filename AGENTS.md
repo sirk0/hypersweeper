@@ -197,7 +197,39 @@ differ, all handled for you:
   what `_shared_vertex_adjacency` runs on — and the tiling becomes an
   edge-to-edge *mesh*, keeping `euler_characteristic` and
   `boundary_components` meaningful. It is a no-op for every edge-to-edge
-  template (a test pins that).
+  template (a test pins that). Miss one and the split tile keeps a single
+  long edge where its two neighbours have two short ones: the adjacency
+  loses a pair, and on a curved surface that long edge is a chord where the
+  short ones bend with the tile beside them, so the board draws a
+  lens-shaped crack. `TestInvariants.test_every_edge_belongs_to_two_tiles_or
+  _a_boundary` catches exactly that, on every board in the catalogue, by
+  counting how many tiles each edge belongs to — two inside, one on a rim,
+  and none unshared on a closed surface.
+- **…and on a curved surface the T-vertices are put back on their chord**
+  (`_straight_vertices` in `tilings.py`, `_wrapped_positions` in
+  `surfaces.py`; the TypeScript port is `straightVertices` /
+  `straightenPositions`). A T-vertex is collinear in the plane, so nothing
+  distinguishes placing it on the line from computing it from its own
+  coordinates — until the line becomes a chord, at which point a point placed
+  on the *surface* stands off it. The tile whose edge it splits kinks
+  outward, and where a **run** of them crosses one tile the tile breaks into
+  strips each cutting its own chord. The three-brick basket weave is that
+  case: three bricks across one square block, so a block that should read as
+  one flat patch read as three, and `kleinbasketweave3` easy drew as gaps and
+  slivers. Straightened, the rule is the flat one continued — a point
+  collinear in the plane stays collinear on the surface — and a block is one
+  flat patch. The board is a slightly coarser model of the surface for it and
+  a much truer picture of the tiling, which is the trade to keep making.
+  Two limits, both deliberate: a **run with no end** has no chord to lie on
+  (a running bond's mortar line is unbroken, so every vertex along it is a
+  through vertex and the walk never reaches a corner) and is left alone — the
+  walk gives up rather than guessing, so only the two basket weaves carry a
+  rule today; and a vertex on a **rim** is left alone too, because a
+  cylinder's rims and a Möbius band's edge are drawn as clean circles and
+  pulling their vertices in scallops them. The conformance oracle is
+  combinatorial and cannot see any of this, so
+  `scripts/export_straighten_fixture.py` dumps the rules and the geometry
+  and `web/tests/unit/straighten.test.ts` pins the port against them.
 - **Shape measurement drops the T-vertices.** `shapeMetrics` in
   `web/src/render/shapePalette.ts` measures a tile's real corners, so a
   square with a split edge is a square and not an irregular hexagon. The
@@ -555,26 +587,77 @@ hand-picked density is the one thing this game cannot get right by eye.
    Measured against the template's own tile the same donut keeps them (2.11 to
    1 at 21x11), which is what put the family on all four manifolds.
 
-   **No cell-shape measure can see a fold, so a window needs the two bars that
-   can.** Cell distortion asks whether each tile is the shape it should be, and
-   a flat plate cutting through a donut's axis passes that with room to spare.
-   `MIN_WRAP_DOMAINS` keeps enough domains round the *ring*; `MAX_TILE_TURN`
-   keeps any one **tile** to at most a quarter of a direction that closes,
-   which is the same sentence measured on the thing that actually bends. They
-   catch different windows: the three-brick basket weave puts twelve cells in a
-   2x2 domain and six of them are a whole domain long, so `torusbasketweave3`
-   and `kleinbasketweave3` easy had seven and thirteen domains round the ring —
-   plenty — and one row across the tube, which handed those six tiles **half
-   the turn each** and drew both boards as a broken ring of slabs. Twenty more
-   donut and bottle easy rows were folded the same way, one row of domains
-   across the tube apiece, and moved when the bar arrived — mostly from 84
-   cells to 96, which is the step the geometry forces once the tube costs a
-   whole second domain, and twice much further (`toruskisrhombille` and
-   `kleinkisrhombille` easy cannot be built under 192, `torussnubhex` under
-   144, so those three are `EXEMPT_ROWS` in `tests/test_presets.py`). Look at
-   a new wrapped board before believing its numbers; a fold photographs much
-   worse than it measures.
-   `TestWrappedWindowsDoNotFold` reads the rule back off the shipped presets,
+   **No cell-shape measure can see a fold, so a window needs the three bars
+   that can.** Cell distortion asks whether each tile is the shape it should
+   be, and a flat plate cutting through a donut's axis passes that with room to
+   spare. `MIN_WRAP_DOMAINS` keeps enough domains round the *ring*;
+   `MAX_TILE_TURN` keeps any one **tile** to at most a quarter of a direction
+   that closes, which is the same sentence measured on the thing that actually
+   bends. They catch different windows: the three-brick basket weave puts
+   twelve cells in a 2x2 domain and six of them are a whole domain long, so
+   `torusbasketweave3` and `kleinbasketweave3` easy had seven and thirteen
+   domains round the ring — plenty — and one row across the tube, which handed
+   those six tiles **half the turn each** and drew both boards as a broken ring
+   of slabs. Twenty more donut and bottle easy rows were folded the same way,
+   one row of domains across the tube apiece, and moved when the bar arrived —
+   mostly from 84 cells to 96, which is the step the geometry forces once the
+   tube costs a whole second domain, and twice much further
+   (`toruskisrhombille` and `kleinkisrhombille` easy cannot be built under 192,
+   `torussnubhex` under 144, so those three are `EXEMPT_ROWS` in
+   `tests/test_presets.py`).
+
+   `MIN_WRAP_DOMAINS` counts **whole** domains (`_wrap_copies`), which is not
+   the ring knob where the seam glues through a glide: `kleinbasketweave3`
+   easy passed it at five, and five halves is two and a half copies round a
+   Klein bottle, which is the crumpled sheet the bar exists to forbid. Four
+   whole domains of a 12-cell domain two deep is 108 cells against a target of
+   81, so that row is an `EXEMPT_ROWS` entry — reading as a surface outranks
+   the size band, and a bigger board that looks right beats a
+   correctly-sized one that does not.
+
+   The third bar is the same fold seen from the *side*, and it is what a
+   quarter turn alone still let through. `MAX_FACET_STEP` asks not how deep one
+   tile cuts but whether the tiles beside it cut as deep: a tile spanning
+   `2*pi*f` of a closing direction is a chord, so its middle sits
+   `1 - cos(pi*f)` of the radius in, and the board reads as a surface while
+   every tile sags alike (`torusstackedbond` easy is four equal facets round
+   its tube, chunky and whole) and as loose slabs when they do not. A fifth of
+   the radius is where the shipped catalogue stops looking like a surface, so
+   that is the bar. `kleinbasketweave3` medium is what it was written for: a
+   2x2 domain of bricks a third of a domain tall against bricks a whole domain
+   tall, two domains round the tube, one course sagging 0.29 of the radius
+   beside a course sagging 0.03, so a quarter-turn plate jutted through three
+   fine ones and the bottle came out a stack of warped slats. It moved from
+   21x2 to 15x3 and eight more donut and bottle rows with it. (The two basket
+   weaves are off that list now, and not because their windows moved again:
+   the step is measured to a tile's **anchors**, so once a block is drawn flat
+   its three bricks are strips of one facet rather than three facets a third
+   the depth of the ones beside them.) Unlike the other
+   two this bar **gives way**: a domain of a dozen cells has seven copies to
+   spend on an 81-cell donut and no arrangement of seven is smooth, so held
+   hard it answered `torustriakis` and `torustrunctrihex` easy with 180- and
+   216-cell boards, which is not an easier outcome than a chunky one. Inside
+   the band it is a bar; outside it, a term (`FOLD_WEIGHT`, on the excess
+   only), and the thirteen rows that still miss it are listed in
+   `TestWrappedWindowsDoNotFold.CHUNKY` with what they measure.
+
+   **A glide seam's ring knob counts half-domains, and every measure here has
+   to fold it back** (`resize._wrap_copies`, switched on by `halves` in
+   `SPEC`). A Möbius strip and a Klein bottle glue their seam through the
+   template's horizontal mirror, and p4g (snub square, Cairo, staggered
+   triangular, both basket weaves) has only a *glide* — mirror plus half a
+   domain — so `arch_mobius_board`/`arch_klein_board` take `ring` in halves and
+   want it odd. Read straight, the knob said those ten boards' loops were twice
+   as long as they are, which halved the turn and the facet step and doubled
+   the window aspect: the aspect term then paid for length it was not getting
+   and drew `mobiusstaggeredtri` easy as a band so wide its hole had nearly
+   closed. Corrected, it is an open ribbon, and ten more Möbius and bottle rows
+   moved with it.
+
+   Look at a new wrapped board before believing its numbers; a fold photographs
+   much worse than it measures — `web/scripts/fold-shots.mjs` takes the shots
+   against a running preview server.
+   `TestWrappedWindowsDoNotFold` reads both rules back off the shipped presets,
    so a hand-edited window cannot put one back.
 2. **Mine count** — `scripts/difficulty/calibrate.py` plays the board a few
    thousand times with a reference solver and moves the mine count until the

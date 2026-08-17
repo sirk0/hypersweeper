@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import lru_cache
 from typing import Callable
 
@@ -182,6 +182,10 @@ class _ArchTemplate:
     flips: tuple[float, ...] = ()  # the heights, given mod height/2, at which
     #   the tiling maps onto itself with y reversed. Measured by _flip_levels;
     #   what a cylinder's two rims need to come out the same curve.
+    straight: dict = field(default_factory=dict)  # tag -> (t, ref, ref): the
+    #   T-vertices, each as a point a fraction t of the way along the chord
+    #   between the two corners its line runs between. Empty for every
+    #   edge-to-edge template. See _straight_vertices and _straightened.
 
 
 # AGENT NOTE (the cut). Two surfaces end the tiling on a horizontal line. The
@@ -368,7 +372,8 @@ def _template(config, width, height, polygons, mirrored=True, glide=False,
     cells = _insert_t_vertices(verts, cells, width, height)
     return _ArchTemplate(config, width, height, verts, tuple(cells), mirror,
                          glide, centre, cut,
-                         _flip_levels(width, height, polygons))
+                         _flip_levels(width, height, polygons),
+                         _straight_vertices(verts, cells, width, height))
 
 
 # Tag coordinates are rounded to 1e-6, so a vertex genuinely on an edge can
@@ -417,6 +422,120 @@ def _insert_t_vertices(verts, cells, width, height):
             split.append(ref)
             split.extend(hit for _, hit in sorted(found))
         out.append((name, tuple(split)))
+    return out
+
+
+def _straight_vertices(verts, cells, width, height):
+    """Which vertices lie in the *middle of a line*, and between which corners.
+
+    A **through vertex** is one some tile carries a 180-degree corner at: a
+    neighbour's corner landing inside that tile's edge, which is what
+    ``_insert_t_vertices`` records. In the plane it is invisible -- the point
+    sits on the line either way. On a curved surface it is not. Placed on the
+    surface it bulges off the chord its line has become, which kinks the tile
+    whose edge it splits and, where a *run* of them crosses one tile, breaks
+    that tile into a fan of facets pointing different ways: the three-brick
+    basket weave lays three bricks across one square block, so a block that
+    should read as one flat patch reads as three, each cutting its own chord.
+
+    Each such vertex is recorded here as ``t`` of the way along the chord
+    between the two nearest vertices the tiling does *not* run through, and
+    ``_straightened`` puts it there when a surface builder wraps the template.
+    The rule is the flat one continued: a point collinear in the plane stays
+    collinear on the surface. Empty for every edge-to-edge template, which has
+    no such vertex.
+
+    Not every T-vertex qualifies, and the exception is the point. A running
+    bond's horizontal mortar line is *unbroken* -- every vertex along it is a
+    through vertex of the brick below or above -- so the run never reaches a
+    corner and there is no chord to lie on. (Nothing is lost: a bond whose
+    every tile is congruent and aligned spans the same fraction of a turn per
+    tile whichever way it is wrapped, which is the case that already reads as
+    a surface.) The walk below is what tells the two apart, and it gives up
+    rather than guessing.
+    """
+    def at(ref):
+        tag, dm, dn = ref
+        return (dm * width + tag[0], dn * height + tag[1])
+
+    # every edge of the periodic tiling, as a step from one tag to another
+    steps = {tag: set() for tag in verts}
+    through = set()
+    for _name, refs in cells:
+        count = len(refs)
+        for i, (tag, dm, dn) in enumerate(refs):
+            for j in (i - 1, i + 1):
+                tag2, dm2, dn2 = refs[j % count]
+                steps[tag].add((tag2, dm2 - dm, dn2 - dn))
+            # a 180-degree corner of this tile: the tiling runs through it
+            back = at((refs[i - 1][0], refs[i - 1][1] - dm, refs[i - 1][2] - dn))
+            fwd = refs[(i + 1) % count]
+            ahead = at((fwd[0], fwd[1] - dm, fwd[2] - dn))
+            bx, by = back[0] - tag[0], back[1] - tag[1]
+            fx, fy = ahead[0] - tag[0], ahead[1] - tag[1]
+            scale = math.hypot(bx, by) * math.hypot(fx, fy)
+            if bx * fx + by * fy < 0 and abs(bx * fy - by * fx) <= _T_VERTEX_TOL * scale:
+                through.add(tag)
+    if not through:
+        return {}
+
+    def direction(tag, step):
+        x, y = at(step)
+        return (x - tag[0], y - tag[1])
+
+    def onward(here, dx, dy):
+        """The one step out of ``here`` carrying on in direction (dx, dy)."""
+        ahead = [
+            step for step in steps[here]
+            if (lambda v: v[0] * dx + v[1] * dy > 0
+                and abs(v[0] * dy - v[1] * dx)
+                <= _T_VERTEX_TOL * math.hypot(*v) * math.hypot(dx, dy))(
+                    direction(here, step))
+        ]
+        return ahead[0] if len(ahead) == 1 else None
+
+    # long enough to cross any template here (the widest run is a three-brick
+    # block, two vertices); a walk that has not stopped by now is on a line
+    # with no corner in it at all
+    LIMIT = 8
+
+    def walk(tag, step):
+        """Follow the line from ``tag`` in the direction of ``step`` to the
+        first vertex the tiling does not run through, or None if there is
+        none."""
+        ref = step
+        for _ in range(LIMIT):
+            if ref[0] not in through:
+                return ref
+            dx, dy = direction(tag, ref)
+            nxt = onward(ref[0], dx, dy)
+            if nxt is None:
+                return None
+            ref = (nxt[0], ref[1] + nxt[1], ref[2] + nxt[2])
+        return None
+
+    out = {}
+    for tag in through:
+        # the two ways along the line the tiling runs through this vertex; any
+        # other edge here is a branch (a T's stem) and no part of the chord
+        along = []
+        for step in steps[tag]:
+            for other in steps[tag]:
+                ax, ay = direction(tag, step)
+                bx, by = direction(tag, other)
+                if ax * bx + ay * by < 0 and abs(ax * by - ay * bx) <= (
+                        _T_VERTEX_TOL * math.hypot(ax, ay) * math.hypot(bx, by)):
+                    along.append(step)
+                    break
+        ends = [walk(tag, step) for step in along]
+        unique = {end for end in ends if end is not None}
+        if len(ends) != 2 or len(unique) != 2:
+            continue  # an unbroken line, or a fork: leave it on the surface
+        a, b = sorted(unique)
+        (ax, ay), (bx, by) = at(a), at(b)
+        span = math.hypot(bx - ax, by - ay)
+        t = math.hypot(tag[0] - ax, tag[1] - ay) / span
+        out[tag] = (t, a, b)
     return out
 
 

@@ -547,6 +547,68 @@ def _arch_cells(template, nx: int, ny: int, tiling: str, wrap_rows: bool = True)
     return cells
 
 
+def _boundary_keys(cells) -> set:
+    """The vertex keys on a rim: an edge belonging to one cell is a boundary
+    edge, and both its ends are on the boundary. Empty on a closed surface."""
+    used = {}
+    for keys in cells.values():
+        for a, b in zip(keys, keys[1:] + keys[:1]):
+            used[frozenset((a, b))] = used.get(frozenset((a, b)), 0) + 1
+    return {key for edge, count in used.items() if count == 1 for key in edge}
+
+
+def _wrapped_positions(template, cells, point, anchor):
+    """Every vertex placed, with the tiling's straight lines kept straight.
+
+    A tiling that is not edge to edge carries vertices the tiling runs
+    *through* -- a neighbour's corner sitting inside a tile's edge. In the
+    plane the point lies on the line whether it is placed there or computed
+    from its own coordinates, so nothing distinguishes the two. On a curved
+    surface the line has become a chord, and a point placed on the *surface*
+    stands off it: the tile whose edge it splits kinks outward, and where a
+    run of them crosses one tile -- the three-brick basket weave lays three
+    bricks across one square block -- the block breaks into strips each
+    cutting its own chord, which is what read as gaps and slivers.
+
+    ``template.straight`` says which vertices those are and which chord each
+    belongs on (see ``_straight_vertices``); here they are moved back onto it,
+    in 3D, after the rest of the surface is placed. The board is a slightly
+    coarser model of the surface for it -- a block is now one flat patch rather
+    than three bending ones -- and a much truer picture of the tiling.
+
+    ``anchor(m, n, tag)`` is the builder's own key for a vertex offset from
+    another, which is where the seam glue lives: on a Mobius strip or a Klein
+    bottle it is ``canonical``, so a chord crossing the seam is still the
+    chord of the two ends as *that* board glues them.
+
+    A vertex on a **rim** is left where it is. A cylinder's two rims and a
+    Mobius band's single edge run along a horizontal line of the tiling
+    wherever one is available (see THE CUT in ``tilings.py``), which draws them
+    as clean circles; pulling their through vertices in onto chords scallops
+    that circle, which is a worse trade than a tile kinked along the one edge
+    nothing is on the other side of. Closed surfaces have no rim, so the
+    donut and the bottle -- where the fold actually is -- straighten
+    throughout.
+    """
+    positions = {key: point(key) for keys in cells.values() for key in keys}
+    if not template.straight:
+        return positions
+    placed = dict(positions)
+    rim = _boundary_keys(cells)
+    for key in positions:
+        m, n, tag = key
+        rule = template.straight.get(tag)
+        if rule is None or key in rim:
+            continue
+        t, (tag_a, dm_a, dn_a), (tag_b, dm_b, dn_b) = rule
+        a = positions.get(anchor(m + dm_a, n + dn_a, tag_a))
+        b = positions.get(anchor(m + dm_b, n + dn_b, tag_b))
+        if a is None or b is None:
+            continue  # an end outside the window (a cylinder rim): leave it
+        placed[key] = tuple(pa + (pb - pa) * t for pa, pb in zip(a, b))
+    return placed
+
+
 def arch_torus_board(
     tiling: str, nx: int, ny: int, mine_count: int, tube_radius: float = 0.45
 ) -> Board3D:
@@ -564,7 +626,10 @@ def arch_torus_board(
                             tube_radius)
 
     cells = _arch_cells(template, nx, ny, tiling)
-    return _assemble("torus" + tiling, cells, point, mine_count,
+    positions = _wrapped_positions(
+        template, cells, point,
+        lambda m, n, tag: (m % nx, n % ny, tag))
+    return _assemble("torus" + tiling, cells, positions.__getitem__, mine_count,
                      two_sided=False, radius=1.0 + tube_radius)
 
 
@@ -632,7 +697,10 @@ def arch_cylinder_board(
                 if len(set(keys)) < len(keys):
                     raise ValueError(f"ring {ring} is too small for {tiling}")
                 cells[(m, n, name)] = keys
-    return _assemble("cyl" + tiling, cells, point, mine_count,
+    positions = _wrapped_positions(
+        template, cells, point,
+        lambda m, n, tag: ((m % ring), n, tag))
+    return _assemble("cyl" + tiling, cells, positions.__getitem__, mine_count,
                      two_sided=True, radius=_max_radius)
 
 
@@ -727,7 +795,8 @@ def arch_mobius_board(
                 if len(set(keys)) < len(keys):
                     raise ValueError(f"ring {ring} is too small for {tiling}")
                 cells[(m, n, name)] = keys
-    return _assemble("mobius" + tiling, cells, point, mine_count,
+    positions = _wrapped_positions(template, cells, point, canonical)
+    return _assemble("mobius" + tiling, cells, positions.__getitem__, mine_count,
                      two_sided=True, radius=_max_radius)
 
 
@@ -801,7 +870,8 @@ def arch_klein_board(
                     raise ValueError(f"{nx}x{ny} is too small for {tiling}")
                 cells[(m, n, name)] = keys
 
-    positions = _klein_recentre(cells, point)
+    positions = _klein_recentre(
+        cells, _wrapped_positions(template, cells, point, canonical).__getitem__)
 
     # one domain forward along the ring, matched by vertex set: a graph
     # automorphism (the seam flip carries cells to their mirror partners)

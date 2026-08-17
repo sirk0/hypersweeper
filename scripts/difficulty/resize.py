@@ -22,6 +22,12 @@ keeps it rather than having the wrap square it off -- and tunes the tube radius
 jointly since that is the other half of what sets the surface's own
 proportions.
 
+**Fold.** No measure of cell shape can see one: a flat tile cutting through a
+donut's axis is perfectly well-proportioned. So three bars rule folds out
+directly -- ``MIN_WRAP_DOMAINS`` on the domains round the ring,
+``MAX_TILE_TURN`` on how much of a closing direction one tile spans, and
+``MAX_FACET_STEP`` on how much deeper it cuts than the tiles beside it.
+
 Run: ``PYTHONPATH=. python -m scripts.difficulty.resize``
 """
 
@@ -101,9 +107,12 @@ SPEC: dict[str, dict] = {
     "archimedean_board": dict(size=(1, 2), mine=3, shape=4, kind="scale", lead=1),
     "arch_torus_board": dict(size=(1, 2), mine=3, shape=4, kind="tube", lead=1),
     "arch_cylinder_board": dict(size=(1, 2), mine=3, shape=4, kind="cut", lead=1),
-    "arch_mobius_board": dict(size=(1, 2), mine=3, shape=None, lead=1),
-    "arch_klein_board": dict(size=(1, 2), mine=3, shape=4, kind="tubescale", lead=1),
+    "arch_mobius_board": dict(size=(1, 2), mine=3, shape=None, lead=1, halves=True),
+    "arch_klein_board": dict(size=(1, 2), mine=3, shape=4, kind="tubescale", lead=1,
+                             halves=True),
 }
+# ``halves``: the ring knob counts *half*-domains where the tiling glues its
+# seam through a glide rather than a plain mirror -- see ``_wrap_copies``.
 
 # Two solids whose two knobs are not independent: taken as a free grid they
 # offer degenerate shapes at the right cell count -- a cube frame bored out to
@@ -218,6 +227,41 @@ MAX_TILE_TURN = 0.25
 # this is measured. The slack has to clear that noise and nothing else: the
 # nearest real value below a quarter is a fifth.
 TILE_TURN_SLACK = 1e-4
+
+# ...and one more time, on what the tiles do *to each other*.
+#
+# The bar above asks how deep one tile cuts; this asks whether its neighbours
+# cut as deep. A tile spanning an angle `2*pi*f` of a closing direction is a
+# chord, so its middle sits `1 - cos(pi*f)` of the radius inside the surface --
+# call that the tile's sag. Where every tile sags alike the board is a prism
+# and reads as one: `torusstackedbond` easy is four equal facets round its
+# tube, chunky and perfectly whole. Where they do not, the shallow tiles stand
+# proud of the deep ones by the difference, and the surface reads as loose
+# slabs with the sides of the deep tiles showing between them -- which is what
+# `kleinbasketweave3` medium shipped as. Its 2 x 2 domain holds bricks a third
+# of a domain tall laid against bricks a whole domain tall, so with two domains
+# round the tube one course sags 0.29 of the radius where the course beside it
+# sags 0.03, and a quarter-turn plate juts through three fine ones.
+#
+# The step is what the eye reads, not the turn: measured over the shipped
+# catalogue the two part company exactly on the uneven domains. A fifth of the
+# radius is where a board stops looking like a surface -- photographed row by
+# row, `torustriakis`, `torusbasketweave3` and `torustrunctrihex` easy sit at
+# 0.23 to 0.26 and are visibly holed, `torusrhombille` and `torussnubhex` easy
+# at 0.16 are chunky and whole -- and, like the turn, it applies to the seam on
+# every wrapped surface and to the tube as well on the closed ones. Unlike the
+# turn it gives way to the size band (see `collect`), so the three named above
+# still ship: at 81 cells their domain has nothing better to offer.
+MAX_FACET_STEP = 0.20
+# ...and what the same measure is worth as a *term*, for the rows whose tiling
+# is too coarse to meet the bar at the classic easy size. Only the excess
+# counts: a window inside the bar pays nothing, so this cannot pull a board
+# that was already smooth enough into a different window for a hundredth of a
+# radius, and among the windows that are left to a coarse tiling the least
+# folded one wins by enough to outweigh a few percent of cell count -- which is
+# what it takes to keep `torusbasketweave3` easy off a one-domain tube, where
+# a single brick would take a whole half turn.
+FOLD_WEIGHT = 3.0
 
 # And a *playability* bar, on the square-lattice donut and bottle only.
 #
@@ -469,7 +513,9 @@ def _window_aspect(builder: str, spec: dict, trial: list) -> float:
     a tube distorts nothing -- so cell distortion is blind to their
     proportions, and without this a search that only minimises distortion is
     free to return a 40-around, 1-row bracelet. Measured in the tiling's own
-    domain units where there are any, and in raw knob counts otherwise.
+    domain units where there are any -- whole domains, so a glide seam's
+    half-domain ring knob does not read as twice the loop it is (see
+    ``_wrap_copies``) -- and in raw knob counts otherwise.
 
     The cap this feeds is deliberately loose. These boards are *meant* to be
     long and thin: the wrapped surfaces have always been many cells around and
@@ -480,7 +526,7 @@ def _window_aspect(builder: str, spec: dict, trial: list) -> float:
     knobs = spec["size"]
     if len(knobs) != 2:
         return 1.0
-    a, b = trial[knobs[0]], trial[knobs[1]]
+    a, b = _wrap_copies(spec, trial, 0), trial[knobs[1]]
     if not a or not b:
         return float("inf")
     if spec.get("lead"):
@@ -525,33 +571,84 @@ def _tile_span(tiling: str) -> tuple[float, float]:
     return _TILE_SPAN[tiling]
 
 
-_WIDEST_TILE: dict[str, tuple[float, float]] = {}
+_TILE_FRACTIONS: dict[str, tuple[tuple[float, ...], tuple[float, ...]]] = {}
 
 
-def widest_tile(tiling: str) -> tuple[float, float]:
-    """The *biggest* tile's width and height, as fractions of one domain.
+def tile_fractions(tiling: str) -> tuple[tuple[float, ...], tuple[float, ...]]:
+    """Every tile's width and height, as fractions of one domain.
 
-    The median above answers "how many tiles is a domain"; this answers "how
-    much of a domain is one tile", which is the question a fold asks (see
-    ``MAX_TILE_TURN``). They part company exactly where a domain holds tiles of
-    very different sizes -- the three-brick basket weave's median height is a
-    sixth of its domain and its largest is a half.
+    The median span above answers "how many tiles is a domain"; this answers
+    "how much of a domain is each tile", which is the question a fold asks (see
+    ``MAX_TILE_TURN`` and ``MAX_FACET_STEP``). The two part company exactly
+    where a domain holds tiles of very different sizes -- the three-brick
+    basket weave's median height is a sixth of its domain and its largest a
+    half.
+
+    Measured to the tile's **anchors**, not to its own corners: a vertex the
+    tiling runs through is placed on the chord between the corners its line
+    runs between (``_straight_vertices``, ``_wrapped_positions``), so a tile
+    cornered on such vertices does not cut a chord of its own -- it is a strip
+    of the bigger flat patch they span, and that patch is the facet the fold is
+    a property of. The three-brick basket weave is the case: its bricks are
+    thirds of a square block, and once the block is flat the tube is a ring of
+    whole blocks rather than a ring of bricks a third the depth of the ones
+    beside them.
     """
-    if tiling not in _WIDEST_TILE:
+    if tiling not in _TILE_FRACTIONS:
         from minesweeper.boards.tilings import _arch_template
 
         template = _arch_template(tiling)
-        width = height = 0.0
+        widths, heights = [], []
         for _name, refs in template.cells:
+            corners = []
+            for tag, dm, dn in refs:
+                rule = template.straight.get(tag)
+                if rule is None:
+                    corners.append((tag, dm, dn))
+                    continue
+                _t, (tag_a, dm_a, dn_a), (tag_b, dm_b, dn_b) = rule
+                corners.append((tag_a, dm + dm_a, dn + dn_a))
+                corners.append((tag_b, dm + dm_b, dn + dn_b))
             xs = [template.verts[tag][0] + dm * template.width
-                  for tag, dm, _dn in refs]
+                  for tag, dm, _dn in corners]
             ys = [template.verts[tag][1] + dn * template.height
-                  for tag, _dm, dn in refs]
-            width = max(width, max(xs) - min(xs))
-            height = max(height, max(ys) - min(ys))
-        _WIDEST_TILE[tiling] = (width / template.width or 1.0,
-                                height / template.height or 1.0)
-    return _WIDEST_TILE[tiling]
+                  for tag, _dm, dn in corners]
+            widths.append((max(xs) - min(xs)) / template.width)
+            heights.append((max(ys) - min(ys)) / template.height)
+        _TILE_FRACTIONS[tiling] = (tuple(widths) or (1.0,),
+                                   tuple(heights) or (1.0,))
+    return _TILE_FRACTIONS[tiling]
+
+
+def widest_tile(tiling: str) -> tuple[float, float]:
+    """The biggest tile's width and height, as fractions of one domain."""
+    widths, heights = tile_fractions(tiling)
+    return max(widths), max(heights)
+
+
+def _wrap_copies(spec: dict, trial: list, axis: int) -> float:
+    """How many whole domain copies the window closes over along ``axis``.
+
+    Not always the knob: a Mobius strip and a Klein bottle glue their seam
+    through the template's horizontal mirror, and a tiling whose mirror is a
+    *glide* -- mirror plus half a domain: snub square, Cairo, staggered
+    triangular and both basket weaves -- takes its ring knob in half-domains,
+    which must then be odd for the seam to close. Read
+    straight, the knob says a `kleinbasketweave` ring is twice the loop it is,
+    and every measure below that divides by it halves what a tile actually
+    spans.
+    """
+    knobs = spec["size"]
+    copies = float(trial[knobs[axis]])
+    if axis == 0 and spec.get("halves"):
+        try:
+            from minesweeper.boards.tilings import _arch_template
+
+            if _arch_template(trial[0]).glide:
+                copies /= 2
+        except Exception:
+            pass
+    return copies
 
 
 def _tile_turn(spec: dict, trial: list, axis: int) -> float:
@@ -564,11 +661,32 @@ def _tile_turn(spec: dict, trial: list, axis: int) -> float:
     knobs = spec["size"]
     if not spec.get("lead") or axis >= len(knobs):
         return 0.0
-    copies = trial[knobs[axis]]
-    if not copies:
-        return float("inf")
     try:
+        copies = _wrap_copies(spec, trial, axis)
+        if not copies:
+            return float("inf")
         return widest_tile(trial[0])[axis] / copies
+    except Exception:
+        return 0.0
+
+
+def _facet_step(spec: dict, trial: list, axis: int) -> float:
+    """How far the deepest tile chord sits inside the shallowest, over the
+    radius, around a closing direction (see ``MAX_FACET_STEP``).
+
+    Zero for the builders whose knobs count cells: there every tile takes the
+    same bite of the turn, so a prism is all they can be.
+    """
+    knobs = spec["size"]
+    if not spec.get("lead") or axis >= len(knobs):
+        return 0.0
+    try:
+        copies = _wrap_copies(spec, trial, axis)
+        if not copies:
+            return float("inf")
+        sags = [1 - math.cos(math.pi * min(fraction / copies, 1.0))
+                for fraction in tile_fractions(trial[0])[axis]]
+        return max(sags) - min(sags)
     except Exception:
         return 0.0
 
@@ -577,12 +695,13 @@ def _wrap_cells(builder: str, spec: dict, trial: list, axis: int) -> float:
     """How many tiles the window closes over along ``axis`` (0 = seam, 1 = tube).
 
     The plain surface builders take the count in cells already; the
-    Archimedean ones take it in domain copies, so it is converted.
+    Archimedean ones take it in domain copies -- half-domains on a glide seam,
+    which ``_wrap_copies`` folds back -- so it is converted.
     """
     knobs = spec["size"]
     if axis >= len(knobs):
         return float("inf")
-    count = trial[knobs[axis]]
+    count = _wrap_copies(spec, trial, axis)
     if not spec.get("lead"):
         return float(count)
     try:
@@ -615,7 +734,7 @@ def _rolled_screen_aspect(builder: str, spec: dict, trial: list) -> float:
     if not math.isfinite(ratio):
         return ratio
     knobs = spec["size"]
-    a, b = trial[knobs[0]], trial[knobs[1]]
+    a, b = _wrap_copies(spec, trial, 0), trial[knobs[1]]
     if not a or not b:
         return float("inf")
     if spec.get("lead"):
@@ -820,6 +939,16 @@ def _score(mode: str, board, target: int, is_flat: bool,
             shape_penalty += ROLLED_ASPECT_WEIGHT * math.log(
                 _rolled_screen_aspect(builder, spec, trial)
             )
+        # ...and the fold, as a term as well as a bar. Where the bar has to be
+        # dropped -- a domain of a dozen cells has too few copies to spend on
+        # an 81-cell donut -- something still has to prefer the least folded of
+        # the windows that are left, and nothing else here can see a fold at
+        # all: distortion measures each tile's own shape and finds a plate
+        # through the tube's axis perfectly well-proportioned.
+        if spec is not None and trial is not None:
+            axes = (0, 1) if _closed_tube(builder) else (0,)
+            step = max(_facet_step(spec, trial, axis) for axis in axes)
+            shape_penalty += FOLD_WEIGHT * max(step - MAX_FACET_STEP, 0.0)
     return size_penalty + SHAPE_WEIGHT * shape_penalty
 
 
@@ -971,7 +1100,7 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
         shape_bar = max(shape_bar, MOBIUS_SHAPE_BAR)
 
     def collect(in_band: bool, keep_shape: bool, fair: bool = True,
-                net: list | None = None) -> list:
+                net: list | None = None, fold: bool = True) -> list:
         found = []
         for values in (grids if net is None else net):
             trial = list(args)
@@ -1005,7 +1134,11 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
                     if _wrap_cells(builder, spec, trial, 0) < MIN_RING:
                         continue
                 elif _closed_tube(builder) and spec.get("lead"):
-                    if trial[knobs[0]] < MIN_WRAP_DOMAINS:
+                    # whole domains: a glide seam's knob counts halves, and
+                    # `kleinbasketweave3` easy passing this bar at five of
+                    # them -- two and a half copies round a Klein bottle -- is
+                    # what it looked like
+                    if _wrap_copies(spec, trial, 0) < MIN_WRAP_DOMAINS:
                         continue
                 elif builder in SQUARE_LATTICE_CLOSED:
                     if min(trial[knobs[0]], trial[knobs[1]]) < MIN_WRAP_CELLS:
@@ -1018,6 +1151,16 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
                 axes = (0, 1) if _closed_tube(builder) else (0,)
                 if any(_tile_turn(spec, trial, axis)
                        > MAX_TILE_TURN + TILE_TURN_SLACK for axis in axes):
+                    continue
+                # ...and no tile cutting a chord its neighbours stand proud
+                # of, which is the same fold seen from the side (see
+                # MAX_FACET_STEP). Unlike the quarter above, this one gives
+                # way: every shipped row can keep its widest tile under a
+                # quarter turn at the classic size, and the coarse-domain
+                # tilings cannot keep the step under a fifth as well.
+                if fold and any(_facet_step(spec, trial, axis)
+                                > MAX_FACET_STEP + TILE_TURN_SLACK
+                                for axis in axes):
                     continue
             # ...and a band no wider than the immersion will actually draw
             if _mobius_band_clamped(builder, spec, trial):
@@ -1057,18 +1200,34 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
     # size is a worse outcome than one whose tiles are slightly more stretched,
     # so the shape guard gives way before the size does, and size gives way
     # only when nothing in the band builds at all.
+    #
+    # The facet-step guard sits between the two, and giving way at all is the
+    # point: a tiling whose domain is a dozen cells has only a handful of
+    # domains to spend on an 81-cell donut, and no arrangement of seven of them
+    # is smooth. Held hard, the bar answered `torustriakis` and
+    # `torustrunctrihex` easy with 180- and 216-cell boards -- twice the
+    # classic easy size, which is not an easier outcome than a chunky one. So a
+    # chunky window in the band beats a smooth one far outside it, and the flag
+    # is recorded either way (`folded` below) so the report says which boards
+    # could not be smoothed. `MAX_TILE_TURN` is not in this cascade: every row
+    # in the catalogue can meet it in band, so it stays the hard bar it was.
     scored = (
         collect(in_band=True, keep_shape=True)
         or collect(in_band=True, keep_shape=False)
+        or collect(in_band=True, keep_shape=True, fold=False)
+        or collect(in_band=True, keep_shape=False, fold=False)
         or collect(in_band=False, keep_shape=True)
         or collect(in_band=False, keep_shape=False)
-        or collect(in_band=False, keep_shape=True, net=wider)
-        or collect(in_band=False, keep_shape=False, net=wider)
+        or collect(in_band=False, keep_shape=True, fold=False)
+        or collect(in_band=False, keep_shape=False, fold=False)
+        or collect(in_band=False, keep_shape=True, net=wider, fold=False)
+        or collect(in_band=False, keep_shape=False, net=wider, fold=False)
         # last resort only: a board of indistinguishable twins is barely a
         # puzzle, so it is preferred to nothing at all and to nothing else
-        or collect(in_band=True, keep_shape=False, fair=False)
-        or collect(in_band=False, keep_shape=False, fair=False)
-        or collect(in_band=False, keep_shape=False, fair=False, net=wider)
+        or collect(in_band=True, keep_shape=False, fair=False, fold=False)
+        or collect(in_band=False, keep_shape=False, fair=False, fold=False)
+        or collect(in_band=False, keep_shape=False, fair=False, net=wider,
+                   fold=False)
     )
     if not scored:
         return dict(args=list(args), cells=len(probe.adjacency), fixed=True,
@@ -1093,7 +1252,8 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
         # tiling. Symmetry is the harder bar -- the suite fails on it, and a
         # lopsided window is the thing the board-shape convention exists to
         # forbid -- so widen the size search rather than ship the asymmetry.
-        wider = sorted(collect(in_band=False, keep_shape=False), key=lambda r: r[0])
+        wider = sorted(collect(in_band=False, keep_shape=False, fold=False),
+                       key=lambda r: r[0])
         index = first_symmetric(wider)
         if index >= 0:
             scored = wider
@@ -1133,7 +1293,7 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
         trial = _rescale(builder, spec, trial, probe)
     board = _build(builder, trial)
     mean, p90 = distortion_summary(board.polygons)
-    return dict(
+    result = dict(
         args=trial,
         cells=len(board.adjacency),
         score=round(score, 4),
@@ -1141,6 +1301,15 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
         distortionP90=round(p90, 4),
         indistinguishable=indistinguishable_cells(board.adjacency),
     )
+    if not is_flat and spec.get("lead"):
+        axes = (0, 1) if _closed_tube(builder) else (0,)
+        step = max(_facet_step(spec, trial, axis) for axis in axes)
+        result["facetStep"] = round(step, 4)
+        if step > MAX_FACET_STEP + TILE_TURN_SLACK:
+            # kept on the record: this window is the least folded one of the
+            # right size, not one that met the bar
+            result["folded"] = True
+    return result
 
 
 def _one(job: tuple) -> tuple:

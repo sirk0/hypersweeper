@@ -197,6 +197,9 @@ export interface ArchTemplate {
   cut: number; // where a rim or a seam falls within the repeating rows
   flips: number[]; // the heights, mod height/2, at which the tiling maps onto
   // itself with y reversed -- what a cylinder's two rims need to match
+  straight: Map<string, { t: number; a: Ref; b: Ref }>; // tag -> the chord it
+  // belongs on: a fraction `t` of the way from `a` to `b`. Empty for every
+  // edge-to-edge template. See straightVertices and straightenPositions.
 }
 
 // THE CUT. Two surfaces end the tiling on a horizontal line: the cylinder,
@@ -318,16 +321,18 @@ function template(
       mirror.set(tag, { tag: image, dm: c.dm, dn: c.dn });
     }
   }
+  const split = insertTVertices(verts, cells, width, height);
   return {
     config,
     width,
     height,
     verts,
-    cells: insertTVertices(verts, cells, width, height),
+    cells: split,
     mirror,
     glide,
     centre,
     cut,
+    straight: straightVertices(verts, split, width, height),
     flips: flipLevels(width, height, polygons),
   };
 }
@@ -516,6 +521,132 @@ function insertTVertices(
     }
     return { name, refs: split, real };
   });
+}
+
+/** Which vertices lie in the *middle of a line*, and between which corners.
+ *
+ * A **through vertex** is one some tile carries a 180° corner at: a neighbour's
+ * corner landing inside that tile's edge, which is what `insertTVertices`
+ * records. In the plane it is invisible — the point sits on the line either
+ * way. On a curved surface it is not: placed on the surface it bulges off the
+ * chord its line has become, which kinks the tile whose edge it splits and,
+ * where a *run* of them crosses one tile, breaks that tile into a fan of facets
+ * pointing different ways. The three-brick basket weave is the case — three
+ * bricks laid across one square block, so a block that should read as one flat
+ * patch reads as three, each cutting its own chord.
+ *
+ * Each such vertex is recorded as `t` of the way along the chord between the
+ * two nearest vertices the tiling does *not* run through, and
+ * `straightenPositions` puts it there when a surface builder wraps the
+ * template. Not every T-vertex qualifies: a running bond's horizontal mortar
+ * line is unbroken, so the walk never reaches a corner and there is no chord to
+ * lie on — it gives up rather than guessing. Port of `_straight_vertices` in
+ * boards/tilings.py; the two must agree or the conformance oracle fails. */
+function straightVertices(
+  verts: Map<string, Vertex>,
+  cells: { name: string; refs: Ref[] }[],
+  width: number,
+  height: number,
+): Map<string, { t: number; a: Ref; b: Ref }> {
+  const at = (r: Ref): Vertex => {
+    const v = verts.get(r.tag)!;
+    return [r.dm * width + v[0], r.dn * height + v[1]];
+  };
+  const refKey = (r: Ref): string => `${r.tag}|${r.dm}|${r.dn}`;
+  // every edge of the periodic tiling, as a step from one tag to another
+  const steps = new Map<string, Map<string, Ref>>();
+  for (const tag of verts.keys()) steps.set(tag, new Map());
+  const through = new Set<string>();
+  for (const { refs } of cells) {
+    const count = refs.length;
+    for (let i = 0; i < count; i++) {
+      const r = refs[i]!;
+      const prev = refs[(i - 1 + count) % count]!;
+      const next = refs[(i + 1) % count]!;
+      const out = steps.get(r.tag)!;
+      for (const o of [prev, next]) {
+        const step = { tag: o.tag, dm: o.dm - r.dm, dn: o.dn - r.dn };
+        out.set(refKey(step), step);
+      }
+      const here = verts.get(r.tag)!;
+      const [bx0, by0] = at({ tag: prev.tag, dm: prev.dm - r.dm, dn: prev.dn - r.dn });
+      const [fx0, fy0] = at({ tag: next.tag, dm: next.dm - r.dm, dn: next.dn - r.dn });
+      const bx = bx0 - here[0];
+      const by = by0 - here[1];
+      const fx = fx0 - here[0];
+      const fy = fy0 - here[1];
+      const scale = Math.hypot(bx, by) * Math.hypot(fx, fy);
+      // a 180° corner of this tile: the tiling runs through it
+      if (bx * fx + by * fy < 0 && Math.abs(bx * fy - by * fx) <= T_VERTEX_TOL * scale) {
+        through.add(r.tag);
+      }
+    }
+  }
+  const out = new Map<string, { t: number; a: Ref; b: Ref }>();
+  if (through.size === 0) return out;
+
+  const direction = (tag: string, step: Ref): Vertex => {
+    const here = verts.get(tag)!;
+    const p = at(step);
+    return [p[0] - here[0], p[1] - here[1]];
+  };
+  const onward = (here: string, dx: number, dy: number): Ref | null => {
+    const ahead: Ref[] = [];
+    for (const step of steps.get(here)!.values()) {
+      const [vx, vy] = direction(here, step);
+      if (vx * dx + vy * dy <= 0) continue; // back the way we came
+      if (Math.abs(vx * dy - vy * dx) <= T_VERTEX_TOL * Math.hypot(vx, vy) * Math.hypot(dx, dy)) {
+        ahead.push(step);
+      }
+    }
+    return ahead.length === 1 ? ahead[0]! : null;
+  };
+  // long enough to cross any template here; a walk still going is on a line
+  // with no corner in it at all
+  const LIMIT = 8;
+  const walk = (tag: string, step: Ref): Ref | null => {
+    let ref = step;
+    for (let i = 0; i < LIMIT; i++) {
+      if (!through.has(ref.tag)) return ref;
+      const [dx, dy] = direction(tag, ref);
+      const next = onward(ref.tag, dx, dy);
+      if (next === null) return null;
+      ref = { tag: next.tag, dm: ref.dm + next.dm, dn: ref.dn + next.dn };
+    }
+    return null;
+  };
+
+  for (const tag of through) {
+    // the two ways along the line the tiling runs through this vertex; any
+    // other edge here is a branch (a T's stem) and no part of the chord
+    const along: Ref[] = [];
+    const here = [...steps.get(tag)!.values()];
+    for (const step of here) {
+      const [ax, ay] = direction(tag, step);
+      for (const other of here) {
+        const [bx, by] = direction(tag, other);
+        if (
+          ax * bx + ay * by < 0 &&
+          Math.abs(ax * by - ay * bx) <= T_VERTEX_TOL * Math.hypot(ax, ay) * Math.hypot(bx, by)
+        ) {
+          along.push(step);
+          break;
+        }
+      }
+    }
+    if (along.length !== 2) continue;
+    const ends = along.map((step) => walk(tag, step));
+    const unique = new Map<string, Ref>();
+    for (const end of ends) if (end !== null) unique.set(refKey(end), end);
+    if (unique.size !== 2) continue; // an unbroken line, or a fork
+    const [a, b] = [...unique.keys()].sort().map((k) => unique.get(k)!) as [Ref, Ref];
+    const [ax, ay] = at(a);
+    const [bx, by] = at(b);
+    const v = verts.get(tag)!;
+    const span = Math.hypot(bx - ax, by - ay);
+    out.set(tag, { t: Math.hypot(v[0] - ax, v[1] - ay) / span, a, b });
+  }
+  return out;
 }
 
 function regularPolygon(

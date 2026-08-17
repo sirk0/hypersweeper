@@ -69,6 +69,15 @@ EXEMPT_ROWS = {
     ("toruskisrhombille", "easy"),
     ("kleinkisrhombille", "easy"),
     ("torussnubhex", "easy"),
+    # And once more from `resize.MIN_WRAP_DOMAINS`, on the tiling whose ring
+    # knob counts *half*-domains. A Klein bottle glues the three-brick basket
+    # weave's seam through a glide, so the odd ring counts the search can offer
+    # step two halves -- one whole domain -- at a time, and four whole domains
+    # round the ring is the fewest that reads as a loop rather than a crumpled
+    # sheet. Nine halves of a 12-cell domain, two domains deep, is 108 cells,
+    # and the next window down is two and a half domains round: what shipped
+    # before, and what drew as gaps and slivers.
+    ("kleinbasketweave3", "easy"),
     # The stepped bipyramid's terraces have to run all the way to a single
     # cube at each apex, or it is a slab rather than a diamond, and that fixes
     # `levels` to (base + 1) / 2 on an odd base. The solid then steps 38 -> 64
@@ -236,6 +245,78 @@ class TestWrappedWindowsDoNotFold:
         assert folded == {}, (
             f"{difficulty} windows whose widest tile spans more than "
             f"{MAX_TILE_TURN:.0%} of a turn: {folded}"
+        )
+
+    # The rows whose tiling is too coarse to keep its facet step under the bar
+    # at the classic size, and what they measure. A domain of a dozen cells has
+    # only seven copies to spend on an 81-cell donut, and no arrangement of
+    # seven is smooth; the alternative the search offered was a 216-cell "easy"
+    # board, which is not an easier outcome than a chunky one. So these are
+    # listed rather than fixed -- and listed exactly, so that a window drifting
+    # further into the fold is still a failure.
+    #
+    # The two basket weaves are not among them any more, and not because their
+    # windows moved: their bricks are thirds of a square block, and once the
+    # block is drawn flat (`_straight_vertices`) the tube is a ring of whole
+    # blocks rather than a ring of bricks a third the depth of the ones beside
+    # them, so the step it measures is zero.
+    CHUNKY = {
+        ("torustriakis", "easy"): 0.259,
+        ("torustriakis", "medium"): 0.259,
+        ("kleintriakis", "easy"): 0.259,
+        ("kleintriakis", "medium"): 0.259,
+        ("kleintriakis", "hard"): 0.259,
+        ("torustrunctrihex", "easy"): 0.227,
+        ("kleintrunctrihex", "easy"): 0.227,
+        ("torusherringbone", "easy"): 0.217,
+        ("torustetrakis", "easy"): 0.217,
+        ("kleintetrakis", "easy"): 0.217,
+        ("torusrotatedhex", "easy"): 0.206,
+    }
+
+    @pytest.mark.parametrize("difficulty", DIFFICULTIES)
+    def test_no_tile_cuts_a_chord_its_neighbours_stand_proud_of(self, difficulty):
+        """...and the same fold seen from the side.
+
+        The bar above asks how deep one tile cuts; this asks whether the tiles
+        beside it cut as deep. Where they do the board is a prism and reads as
+        one -- `torusstackedbond` easy is four equal facets round its tube,
+        chunky and whole. Where they do not the shallow tiles stand proud of
+        the deep ones and the surface reads as loose slabs, which is what
+        `kleinbasketweave3` medium shipped as: bricks a third of a domain tall
+        against bricks a whole domain tall, two domains round the tube, one
+        course sagging 0.29 of the radius beside a course sagging 0.03.
+
+        See `resize.MAX_FACET_STEP`; `CHUNKY` above is the measured list of
+        rows whose tiling cannot do better at the classic size.
+        """
+        from scripts.difficulty.resize import (
+            MAX_FACET_STEP,
+            SPEC,
+            TILE_TURN_SLACK,
+            _closed_tube,
+            _facet_step,
+        )
+
+        presets = json.loads((DATA / "presets.json").read_text())["presets"]
+        stepped = {}
+        for mode, spec in presets.items():
+            builder = spec["builder"]
+            if builder not in SPEC or not SPEC[builder].get("lead"):
+                continue
+            if builder == "archimedean_board":
+                continue
+            axes = (0, 1) if _closed_tube(builder) else (0,)
+            step = max(_facet_step(SPEC[builder], spec["args"][difficulty], a)
+                       for a in axes)
+            if step > MAX_FACET_STEP + TILE_TURN_SLACK:
+                stepped[mode] = round(step, 3)
+        expected = {mode: value for (mode, level), value in self.CHUNKY.items()
+                    if level == difficulty}
+        assert stepped == expected, (
+            f"{difficulty} windows whose deepest tile chord sits more than "
+            f"{MAX_FACET_STEP:.0%} of the radius inside the shallowest: "
+            f"{stepped}"
         )
 
 

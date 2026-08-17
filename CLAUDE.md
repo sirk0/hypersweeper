@@ -65,7 +65,18 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   corner lands in the middle of its neighbour's edge. `_insert_t_vertices`
   records that point on the split tile so shared-vertex adjacency still
   finds the neighbour; it is collinear, so the drawn tile is unchanged and
-  the shape colouring drops it before measuring. They wrap the torus like
+  the shape colouring drops it before measuring. Collinear **in the plane**,
+  that is: wrapped onto a surface the line is a chord, and a point placed on
+  the surface stands off it, so the split tile kinks outward and a *run* of
+  such points across one tile breaks it into strips each cutting its own
+  chord. `_straight_vertices` records which vertices the tiling runs through
+  and which chord each belongs on, and `_wrapped_positions` puts them back
+  there — the flat rule continued, at the price of a slightly coarser model
+  of the surface. Two limits: a run with no end has no chord (a running
+  bond's mortar line is unbroken, so only the two basket weaves carry a rule
+  today), and a vertex on a **rim** is left alone, since a cylinder's rims
+  and a Möbius band's edge are drawn as clean circles and pulling their
+  vertices in would scallop them. They wrap the torus like
   every other periodic family, and all but three-scale triangular the
   cylinder (p3 reverses y at no height, so no strip of it has two matching
   rims); the two reflective ones (offset square, staggered triangular) also
@@ -156,10 +167,33 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   read the deviation from *that*, or a wrap that rounds a 2-to-1 brick off
   into a square scores as an improvement. No measure of cell shape can see a
   **fold**, though — a flat tile cutting through a donut's axis is perfectly
-  well-proportioned — so two separate bars rule those out: `MIN_WRAP_DOMAINS`
-  wants enough domains round the ring, and `MAX_TILE_TURN` keeps any one
+  well-proportioned — so three separate bars rule those out: `MIN_WRAP_DOMAINS`
+  wants enough domains round the ring, `MAX_TILE_TURN` keeps any one
   *tile* to at most a quarter of a direction that closes, which is what a
-  domain count misses when a domain holds tiles of very different sizes.
+  domain count misses when a domain holds tiles of very different sizes, and
+  `MAX_FACET_STEP` is the same fold seen from the side — a tile spanning
+  `2*pi*f` of a closing direction is a chord whose middle sits `1 - cos(pi*f)`
+  of the radius in, and what reads as broken is not the depth but the
+  *difference*: where every tile sags alike the board is a prism and reads as
+  one (`torusstackedbond` easy is four equal facets round its tube), and where
+  they do not the shallow tiles stand proud of the deep ones. A fifth of the
+  radius is the bar. That is the one that had `kleinbasketweave3` medium —
+  bricks a third of a domain tall against bricks a whole domain tall, two
+  domains round the tube — drawing a quarter-turn plate through three fine
+  courses; it is at 15x3 now, with eight more donut and bottle rows moved with
+  it. The step is measured to a tile's **anchors**, so a brick that is a strip
+  of a flat block counts as the block: the two basket weaves need no window of
+  their own once `_straight_vertices` draws that block flat. All three bars
+  count **whole** domains, which the ring knob is not where the seam glues
+  through a glide — `kleinbasketweave3` easy passed `MIN_WRAP_DOMAINS` at five
+  half-domains, two and a half copies round a bottle, and drew as gaps and
+  slivers for it; at four whole domains it is 108 cells against a target of 81
+  and an `EXEMPT_ROWS` row, a bigger board that looks right beating a
+  correctly-sized one that does not.
+  Unlike the other two the facet step gives way to the size band (a domain of a dozen
+  cells has seven copies to spend on an 81-cell donut and none of the seven
+  arrangements is smooth), so thirteen rows still miss it and are listed with
+  their measurements in `TestWrappedWindowsDoNotFold.CHUNKY`.
   Rerun it for a new
   board rather than guessing (see `AGENTS.md`). Three consequences worth
   knowing. The first click is guaranteed to open a *zero*, not merely to
