@@ -69,6 +69,15 @@ EXEMPT_ROWS = {
     ("toruskisrhombille", "easy"),
     ("kleinkisrhombille", "easy"),
     ("torussnubhex", "easy"),
+    # And once more from `resize.MIN_WRAP_DOMAINS`, on the tiling whose ring
+    # knob counts *half*-domains. A Klein bottle glues the three-brick basket
+    # weave's seam through a glide, so the odd ring counts the search can offer
+    # step two halves -- one whole domain -- at a time, and four whole domains
+    # round the ring is the fewest that reads as a loop rather than a crumpled
+    # sheet. Nine halves of a 12-cell domain, two domains deep, is 108 cells,
+    # and the next window down is two and a half domains round: what shipped
+    # before, and what drew as gaps and slivers.
+    ("kleinbasketweave3", "easy"),
     # The stepped bipyramid's terraces have to run all the way to a single
     # cube at each apex, or it is a slab rather than a diamond, and that fixes
     # `levels` to (base + 1) / 2 on an odd base. The solid then steps 38 -> 64
@@ -245,16 +254,20 @@ class TestWrappedWindowsDoNotFold:
     # board, which is not an easier outcome than a chunky one. So these are
     # listed rather than fixed -- and listed exactly, so that a window drifting
     # further into the fold is still a failure.
+    #
+    # The two basket weaves are not among them any more, and not because their
+    # windows moved: their bricks are thirds of a square block, and once the
+    # block is drawn flat (`_straight_vertices`) the tube is a ring of whole
+    # blocks rather than a ring of bricks a third the depth of the ones beside
+    # them, so the step it measures is zero.
     CHUNKY = {
         ("torustriakis", "easy"): 0.259,
         ("torustriakis", "medium"): 0.259,
         ("kleintriakis", "easy"): 0.259,
         ("kleintriakis", "medium"): 0.259,
         ("kleintriakis", "hard"): 0.259,
-        ("torusbasketweave3", "easy"): 0.259,
         ("torustrunctrihex", "easy"): 0.227,
         ("kleintrunctrihex", "easy"): 0.227,
-        ("torusbasketweave", "easy"): 0.217,
         ("torusherringbone", "easy"): 0.217,
         ("torustetrakis", "easy"): 0.217,
         ("kleintetrakis", "easy"): 0.217,

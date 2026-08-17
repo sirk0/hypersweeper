@@ -32,7 +32,7 @@ import {
   trianglesBelow,
   type Tri,
 } from "./clipSolid";
-import { archTemplate } from "./tilings";
+import { archTemplate, type ArchTemplate } from "./tilings";
 
 const mod = (a: number, b: number): number => ((a % b) + b) % b;
 
@@ -844,6 +844,70 @@ export function cylinderHexBoard(ring: number, rows: number, mineCount: number):
 
 /** An Archimedean tiling wrapped around a donut: `nx` domain copies around the
  * ring, `ny` around the tube. */
+/** Move every vertex the tiling runs *through* back onto its chord.
+ *
+ * A tiling that is not edge to edge carries vertices a neighbour's corner sits
+ * inside the edge of. In the plane the point lies on the line whether it is
+ * placed there or computed from its own coordinates. On a curved surface the
+ * line has become a chord, and a point placed on the *surface* stands off it:
+ * the tile whose edge it splits kinks outward, and where a run of them crosses
+ * one tile — the three-brick basket weave lays three bricks across one square
+ * block — the block breaks into strips each cutting its own chord, which is
+ * what read as gaps and slivers.
+ *
+ * `template.straight` says which vertices those are and which chord each
+ * belongs on; here they are moved back onto it, in 3D, after the rest of the
+ * surface is placed. `anchor` is the builder's own key for a vertex offset
+ * from another, which is where the seam glue lives: on a Möbius strip or a
+ * Klein bottle it is `canonical`, so a chord crossing the seam is the chord of
+ * the two ends as *that* board glues them. Port of `_wrapped_positions` in
+ * boards/surfaces.py. */
+function straightenPositions(
+  t: ArchTemplate,
+  cells: Cells,
+  positions: Positions,
+  anchor: (m: number, n: number, tag: string) => string,
+): void {
+  if (t.straight.size === 0) return;
+  // a vertex on a rim stays where it is: a cylinder's rims and a Möbius band's
+  // edge run along a horizontal line of the tiling wherever one is available,
+  // which draws them as clean circles, and pulling their through vertices in
+  // onto chords scallops that circle
+  const used = new Map<string, number>();
+  for (const keys of cells.values()) {
+    for (let i = 0; i < keys.length; i++) {
+      const a = keys[i]!;
+      const b = keys[(i + 1) % keys.length]!;
+      const edge = a < b ? `${a}|${b}` : `${b}|${a}`;
+      used.set(edge, (used.get(edge) ?? 0) + 1);
+    }
+  }
+  const rim = new Set<string>();
+  for (const [edge, count] of used) {
+    if (count === 1) for (const key of edge.split("|")) rim.add(key);
+  }
+  const placed: [string, Vec3][] = [];
+  for (const key of positions.keys()) {
+    if (rim.has(key)) continue;
+    // a position key is `${m},${n},${tag}` and a tag is itself `${x},${y}`
+    const parts = key.split(",");
+    const tag = parts.slice(2).join(",");
+    const rule = t.straight.get(tag);
+    if (rule === undefined) continue;
+    const m = Number(parts[0]);
+    const n = Number(parts[1]);
+    const a = positions.get(anchor(m + rule.a.dm, n + rule.a.dn, rule.a.tag));
+    const b = positions.get(anchor(m + rule.b.dm, n + rule.b.dn, rule.b.tag));
+    if (a === undefined || b === undefined) continue; // an end off the window
+    placed.push([key, [
+      a[0] + (b[0] - a[0]) * rule.t,
+      a[1] + (b[1] - a[1]) * rule.t,
+      a[2] + (b[2] - a[2]) * rule.t,
+    ]]);
+  }
+  for (const [key, p] of placed) positions.set(key, p);
+}
+
 export function archTorusBoard(
   tiling: string,
   nx: number,
@@ -884,6 +948,7 @@ export function archTorusBoard(
       }
     }
   }
+  straightenPositions(t, cells, positions, (m, n, tag) => `${mod(m, nx)},${mod(n, ny)},${tag}`);
   return assemble("torus" + tiling, cells, positions, mineCount, {
     twoSided: false,
     radius: 1 + tubeRadius,
@@ -968,6 +1033,7 @@ export function archCylinderBoard(
       }
     }
   }
+  straightenPositions(t, cells, positions, (m, n, tag) => `${mod(m, ring)},${n},${tag}`);
   return assemble("cyl" + tiling, cells, positions, mineCount, {
     twoSided: true,
     radius: maxRadius,
@@ -1079,6 +1145,10 @@ export function archMobiusBoard(
       }
     }
   }
+  straightenPositions(t, cells, positions, (m, n, tag) => {
+    const c = canonical(m, n, tag);
+    return `${c[0]},${c[1]},${c[2]}`;
+  });
   return assemble("mobius" + tiling, cells, positions, mineCount, {
     twoSided: true,
     radius: maxRadius,
@@ -1169,6 +1239,10 @@ export function archKleinBoard(
       }
     }
   }
+  straightenPositions(t, cells, positions, (m, n, tag) => {
+    const c = canonical(m, n, tag);
+    return `${c[0]},${c[1]},${c[2]}`;
+  });
   const clip = kleinClip(cells, positions, kleinRecentre(positions), tubeScale);
 
   // one domain forward along the ring, matched by vertex set: a graph

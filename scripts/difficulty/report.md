@@ -57,7 +57,7 @@ Every board's mine count, chosen so its win probability under the reference solv
   - `kleintri`/medium: 28 abandoned
   - `toruselongated`/medium: 25 abandoned
 
-Densities run from 2.8% to 36.2% (median 16.9%) — the spread the old flat 14/16/19 per cent could not express.
+Densities run from 2.8% to 36.2% (median 17.0%) — the spread the old flat 14/16/19 per cent could not express.
 
 The only floor under the search is the **opening**: the fewest mines at which the first click alone stops finishing the board (`calibrate.opening_floor`). As a density that runs 1.3% to 16.7% across the zoo — which is why it is measured per board rather than set as a percentage.
 
@@ -114,8 +114,8 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `hextriangle` | 5.6 | 78c 9m (12%) 97% | 253c 38m (15%) 89% | 465c 97m (21%) 49% |
 | `kisrhombille` | 14.2 | 72c 5m (7%) 91% ⚠ | 288c 21m (7%) 85% | 432c 50m (12%) 50% |
 | `klein` | 8.0 | 80c 14m (18%) 99% | 260c 55m (21%) 91% | 476c 126m (26%) 50% |
-| `kleinbasketweave` | 7.0 | 84c 13m (15%) 98% | 272c 50m (18%) 89% | 460c 107m (23%) 47% |
-| `kleinbasketweave3` | 6.7 | 90c 18m (20%) 95% | 270c 56m (21%) 91% | 456c 111m (24%) 51% |
+| `kleinbasketweave` | 7.0 | 72c 13m (18%) 98% | 272c 50m (18%) 89% | 460c 107m (23%) 47% |
+| `kleinbasketweave3` | 6.7 | 108c 21m (19%) 98% | 270c 56m (21%) 91% | 504c 119m (24%) 51% |
 | `kleincairo` | 7.0 | 78c 14m (18%) 95% | 250c 47m (19%) 88% | 490c 113m (23%) 50% |
 | `kleindeltoidal` | 9.0 | 96c 13m (14%) 98% | 240c 41m (17%) 87% | 468c 102m (22%) 48% |
 | `kleinelongated` | 10.0 | 84c 16m (19%) 98% | 264c 59m (22%) 84% | 486c 127m (26%) 48% |

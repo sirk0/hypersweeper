@@ -4353,12 +4353,12 @@
     },
     "kleinbasketweave": {
       "easy": {
-        "cellCount": 84,
+        "cellCount": 72,
         "mineCount": 13,
         "euler": 0,
         "boundaryComponents": 0,
-        "edgeCount": 210,
-        "vertexCount": 126,
+        "edgeCount": 180,
+        "vertexCount": 108,
         "hasCellCycle": true
       },
       "medium": {
@@ -4498,12 +4498,12 @@
     },
     "kleinbasketweave3": {
       "easy": {
-        "cellCount": 90,
-        "mineCount": 18,
+        "cellCount": 108,
+        "mineCount": 21,
         "euler": 0,
         "boundaryComponents": 0,
-        "edgeCount": 240,
-        "vertexCount": 150,
+        "edgeCount": 288,
+        "vertexCount": 180,
         "hasCellCycle": true
       },
       "medium": {
@@ -4516,12 +4516,12 @@
         "hasCellCycle": true
       },
       "hard": {
-        "cellCount": 456,
-        "mineCount": 111,
+        "cellCount": 504,
+        "mineCount": 119,
         "euler": 0,
         "boundaryComponents": 0,
-        "edgeCount": 1216,
-        "vertexCount": 760,
+        "edgeCount": 1344,
+        "vertexCount": 840,
         "hasCellCycle": true
       }
     },

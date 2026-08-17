@@ -583,6 +583,16 @@ def tile_fractions(tiling: str) -> tuple[tuple[float, ...], tuple[float, ...]]:
     where a domain holds tiles of very different sizes -- the three-brick
     basket weave's median height is a sixth of its domain and its largest a
     half.
+
+    Measured to the tile's **anchors**, not to its own corners: a vertex the
+    tiling runs through is placed on the chord between the corners its line
+    runs between (``_straight_vertices``, ``_wrapped_positions``), so a tile
+    cornered on such vertices does not cut a chord of its own -- it is a strip
+    of the bigger flat patch they span, and that patch is the facet the fold is
+    a property of. The three-brick basket weave is the case: its bricks are
+    thirds of a square block, and once the block is flat the tube is a ring of
+    whole blocks rather than a ring of bricks a third the depth of the ones
+    beside them.
     """
     if tiling not in _TILE_FRACTIONS:
         from minesweeper.boards.tilings import _arch_template
@@ -590,10 +600,19 @@ def tile_fractions(tiling: str) -> tuple[tuple[float, ...], tuple[float, ...]]:
         template = _arch_template(tiling)
         widths, heights = [], []
         for _name, refs in template.cells:
+            corners = []
+            for tag, dm, dn in refs:
+                rule = template.straight.get(tag)
+                if rule is None:
+                    corners.append((tag, dm, dn))
+                    continue
+                _t, (tag_a, dm_a, dn_a), (tag_b, dm_b, dn_b) = rule
+                corners.append((tag_a, dm + dm_a, dn + dn_a))
+                corners.append((tag_b, dm + dm_b, dn + dn_b))
             xs = [template.verts[tag][0] + dm * template.width
-                  for tag, dm, _dn in refs]
+                  for tag, dm, _dn in corners]
             ys = [template.verts[tag][1] + dn * template.height
-                  for tag, _dm, dn in refs]
+                  for tag, _dm, dn in corners]
             widths.append((max(xs) - min(xs)) / template.width)
             heights.append((max(ys) - min(ys)) / template.height)
         _TILE_FRACTIONS[tiling] = (tuple(widths) or (1.0,),
@@ -1115,7 +1134,11 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
                     if _wrap_cells(builder, spec, trial, 0) < MIN_RING:
                         continue
                 elif _closed_tube(builder) and spec.get("lead"):
-                    if trial[knobs[0]] < MIN_WRAP_DOMAINS:
+                    # whole domains: a glide seam's knob counts halves, and
+                    # `kleinbasketweave3` easy passing this bar at five of
+                    # them -- two and a half copies round a Klein bottle -- is
+                    # what it looked like
+                    if _wrap_copies(spec, trial, 0) < MIN_WRAP_DOMAINS:
                         continue
                 elif builder in SQUARE_LATTICE_CLOSED:
                     if min(trial[knobs[0]], trial[knobs[1]]) < MIN_WRAP_CELLS:

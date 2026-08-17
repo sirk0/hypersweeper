@@ -396,6 +396,21 @@ are the foundation this builds on. Boards are built from the **same**
 (`data/conformance.json`) asserts the two implementations produce identical
 boards.
 
+That oracle is **combinatorial** — cell, edge and vertex counts, Euler
+characteristic, boundary components — which is everything the two ports can
+disagree about *structurally* and nothing they can disagree about
+*positionally*. One rule moves points without changing any of those counts:
+`straightVertices` / `straightenPositions` put a vertex the tiling runs
+*through* (a neighbour's corner sitting inside a tile's edge) back onto the
+chord its line has become, so a three-brick basket-weave block is drawn as one
+flat patch rather than three strips each cutting its own chord. The oracle is
+blind to it, so `scripts/export_straighten_fixture.py` dumps the rules and the
+resulting geometry into `tests/unit/straighten.fixture.json` and
+`tests/unit/straighten.test.ts` compares this port against them coordinate by
+coordinate. Regenerate the fixture whenever the rule or a basket-weave preset
+changes. See "Recipe: add an isogonal tiling" in `AGENTS.md` for why the rule
+skips unbroken lines and rim vertices.
+
 ## Commands
 
 ```sh
