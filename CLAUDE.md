@@ -16,7 +16,8 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   `_ArchTemplate` system), `aperiodic` (Penrose, Spectre, phyllotactic
   spiral), `fractal` (the self-similar boards: sphinx, chair, Sierpinski
   carpet, pentaflake and Gosper island), `solids` (spherical
-  polyhedra, cube, tetrahedron, frames), `surfaces` (donut/cylinder/
+  polyhedra, cube, tetrahedron, frames), `catalan` (the thirteen Catalan
+  solids), `surfaces` (donut/cylinder/
   Möbius/Klein-bottle wrapping via shared immersion helpers), `catalog`
   (the menu, **derived** from `SURFACE_SPECS`/`TILING_SPECS`), `presets`
   (`ARCH_PRESETS` + `build_board`). The eight non-regular Archimedean
@@ -297,8 +298,40 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   closed under multiplication by a unit, so the patch keeps the hexagon's
   six-fold rotation at every level, but never a mirror past level 1: the
   flowsnake is chiral.
+  The **thirteen Catalan solids** (`boards/catalan.py`) are the duals of the
+  Archimedean solids, and they come off one recipe rather than thirteen tables
+  of coordinates. Every Archimedean solid is a single point's orbit -- the
+  **Wythoff generating point** -- in the Schwarz triangle of a Platonic
+  symmetry group, so: take a base (tetrahedron, cube, icosahedron -- one per
+  group) and one **flag** (a mutually incident vertex, edge and face, whose
+  three axes are the triangle's corners); find that point; put a Catalan vertex
+  at `n / <w, n>` on each face axis `n`, which is **polar duality** about the
+  unit sphere; and group the base's flags into faces by the Conway operation.
+  Six operations over three groups is exactly thirteen. Five of the six pin
+  their point with two *linear* mirror constraints, so the answer is one cross
+  product (`solids._wythoff_point`, which the truncated icosidodecahedron's own
+  `_flag_position` is now the omnitruncation case of); the sixth, `gyro`, is
+  **chiral** -- a snub uses no mirror at all -- and its point is solved for by
+  Newton on "all three edges equal", landing on the snub cube's tribonacci
+  coordinates exactly. Because the radii come from that one point, every face
+  is planar, congruent and the same distance from the centre by construction,
+  which is what `TestCatalanSolids` measures rather than assumes.
+  Twelve to a hundred and twenty faces is not a board, so each face is **cut
+  into smaller copies of itself** and that is these boards' only size knob:
+  triangles through the same `solids._geodesic` the Platonic solids use, quads
+  through `_quad_grid`, and pentagons -- which cannot be cut into pentagons at
+  all -- fanned into five quads first (so `frequency=0` is the bare pentagons,
+  which is the 60-cell board `sphere` has always been). The grid is square
+  rather than a free `n x m`, and that is forced: an `n x m` grid needs each
+  face's *opposite* edges to carry the same count, and a rhombic Catalan solid
+  is a zonohedron whose zones pairwise share a face, so no such 2-colouring
+  exists. `sphere` keeps its mode name -- it is a board's address in a share
+  link and in the best-times table -- but is now drawn faceted rather than
+  projected onto the sphere, and lives under **Catalan solids** rather than
+  Sphere.
 - `minesweeper/gui.py` — pygame UI. `MenuScreen` (a geometry-first home
-  page — Classic / Flat / Flat manifolds / Sphere / Polyhedra; **the pygame
+  page — Classic / Flat / Flat manifolds / Sphere / Platonic solids /
+  Catalan solids / Polyhedra; **the pygame
   menu only** — the web menu was restructured in `web/` alone and is
   described in the TypeScript section below. Classic
   launches flat squares; Flat (the plane) and each flat manifold (cylinder,
@@ -306,10 +339,13 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   / Laves family submenus, Isogonal and Congruent rectangles on every
   surface, Aperiodic and
   Fractals on the plane only, and a random option
-  — parameterised by the surface it was reached through; Sphere and
-  Polyhedra list their finished boards. Navigation is a `path` breadcrumb
-  driven by the `MENU_ROOT`/`MANIFOLD_*`/`FAMILY_*`/`SPHERE_MODES`/
-  `POLYHEDRA_MODES` tables and the `family_rows`/`picker_families` helpers
+  — parameterised by the surface it was reached through. The last four are
+  **solid groups**: a flat list of finished boards, one click from the home
+  page, all four declared by one `menu.solidGroups` table in
+  `data/catalog.json` so a new group is a data row rather than menu code.
+  Navigation is a `path` breadcrumb
+  driven by the `MENU_ROOT`/`MANIFOLD_*`/`FAMILY_*`/`SOLID_GROUP_*` tables
+  and the `family_rows`/`picker_families` helpers
   in `catalog`),
   `GameScreen` (flat), `GameScreen3D` (orthographic
   projection, back-face culling or two-sided, depth sort, drag to
@@ -467,7 +503,8 @@ Its **menu** is play-first, and deliberately not the pygame one: the home page
 is Classic, Flat, 3D and Custom (`src/ui/menu.ts`). Flat and 3D each launch a
 *random* board — the flat picker's pool, and every flat manifold plus the
 spheres and polyhedra — so no picker carries a Random row; Custom holds the old
-root (Flat, Flat manifolds, Sphere, Polyhedra). In every tiling picker the three
+root (Flat, Flat manifolds, Sphere, Platonic solids, Catalan solids,
+Polyhedra). In every tiling picker the three
 regular tilings are promoted to rows of their own, leaving the Regular family
 holding the shaped boards alone under the label **Non-square boards** (plane
 only). That shape is *derived* from the shared port in the "web menu" section of
@@ -579,10 +616,16 @@ hairline on a dark page moves a pixel by about four values in 255; the scheme
 is in the memo key for the same reason), and the geometry comes from whatever
 the board is made of: the 27 `ARCH_TILINGS` from `archTemplate`, whose
 fundamental domain *is* a seamless repeat tile; the three regular tilings
-from domains written out in that module; the polyhedra from the flat grid
-they are folded out of (a cube and the stepped bipyramid are squares, a
-tetrahedron triangles), leaving circles for the sphere family alone, whose
-faces close up only because the surface curves. The five **fractal** boards
+from domains written out in that module; the Platonic solids and the frames
+from the flat grid they are folded out of (a cube and the stepped bipyramid
+are squares, a tetrahedron triangles); and each **Catalan** solid from the
+Laves tiling of the same Conway operation — the plane's own face-transitive
+duals, so a rhombic solid really does sit on a tiling of rhombi and a
+disdyakis one on a barycentric subdivision (`join` → rhombille, `ortho` →
+deltoidal trihexagonal, `meta` → kisrhombille, `gyro` → the pentagonal Laves
+dual of the matching snub, `kis` → whichever of the plane's two kis tilings
+raises its pyramids on the same kind of face). That leaves circles for the
+sphere family alone, whose faces close up only because the surface curves. The five **fractal** boards
 have no period, but their *tiles* do — the Gosper island is plain hexagons,
 two sphinxes or two chairs fill a parallelogram, the Sierpinski carpet is
 periodic once you stop inflating — so they get their own tile laid down the

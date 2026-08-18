@@ -35,13 +35,12 @@ from minesweeper.boards.catalog import (
     MENU_ROOT,
     MENU_ROOT_LABELS,
     PICKER_REGULAR,
-    POLYHEDRA_GROUP_LABELS,
-    POLYHEDRA_GROUP_MEMBERS,
-    POLYHEDRA_GROUP_ORDER,
     REGULAR_TILINGS,
     SHAPED_MODES,
+    SOLID_GROUP_LABELS,
+    SOLID_GROUP_MEMBERS,
+    SOLID_GROUP_ORDER,
     SOLO_LABELS,
-    SPHERE_MODES,
     SURFACE_SPECS,
 )
 from minesweeper.boards.core import DIFFICULTIES
@@ -83,21 +82,25 @@ def build_catalog() -> dict:
         "soloLabels": dict(SOLO_LABELS),
         "menu": {
             "root": list(MENU_ROOT),
-            "rootLabels": dict(MENU_ROOT_LABELS),
+            # a solid group's row takes its label from the group itself, so
+            # only the entries that are not solid groups are stored here
+            "rootLabels": {
+                k: v for k, v in MENU_ROOT_LABELS.items()
+                if k not in SOLID_GROUP_LABELS
+            },
             "manifoldOrder": list(MANIFOLD_ORDER),
             "manifoldLabels": dict(MANIFOLD_LABELS),
             "pickerRegular": list(PICKER_REGULAR),
             "aperiodic": list(APERIODIC_MODES),
             "fractal": list(FRACTAL_MODES),
             "familyLabels": dict(FAMILY_LABELS),
-            "sphereModes": list(SPHERE_MODES),
-            "polyhedraGroups": [
+            "solidGroups": [
                 {
                     "key": g,
-                    "label": POLYHEDRA_GROUP_LABELS[g],
-                    "modes": list(POLYHEDRA_GROUP_MEMBERS[g]),
+                    "label": SOLID_GROUP_LABELS[g],
+                    "modes": list(SOLID_GROUP_MEMBERS[g]),
                 }
-                for g in POLYHEDRA_GROUP_ORDER
+                for g in SOLID_GROUP_ORDER
             ],
             "shapedModes": {k: list(v) for k, v in SHAPED_MODES.items()},
         },

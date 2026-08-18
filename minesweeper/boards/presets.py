@@ -12,6 +12,21 @@ from __future__ import annotations
 
 from minesweeper.boards._data import load
 from minesweeper.boards.aperiodic import penrose_board, phyllotaxis_board, spectre_board
+from minesweeper.boards.catalan import (
+    deltoidal_hexecontahedron_board,
+    deltoidal_icositetrahedron_board,
+    disdyakis_dodecahedron_board,
+    disdyakis_triacontahedron_board,
+    pentagonal_icositetrahedron_board,
+    pentakis_dodecahedron_board,
+    rhombic_dodecahedron_board,
+    rhombic_triacontahedron_board,
+    sphere_board,
+    tetrakis_hexahedron_board,
+    triakis_icosahedron_board,
+    triakis_octahedron_board,
+    triakis_tetrahedron_board,
+)
 from minesweeper.boards.core import DIFFICULTIES, ROOT3, Board, Board3D
 from minesweeper.boards.fractal import (
     carpet_board,
@@ -30,7 +45,6 @@ from minesweeper.boards.solids import (
     octahedron_board,
     rhombicosidodecahedron_board,
     snub_dodecahedron_board,
-    sphere_board,
     sphere_triangle_board,
     stepped_bipyramid_board,
     stepped_pyramid_board,
@@ -79,7 +93,6 @@ _JSON_BUILDERS = {
     "hexhex_board": hexhex_board,
     "hextri_board": hextri_board,
     "hextriangle_board": hextriangle_board,
-    "sphere_board": sphere_board,
     "c80_board": c80_board,
     "c180_board": c180_board,
     "sphere_triangle_board": sphere_triangle_board,
@@ -95,6 +108,21 @@ _JSON_BUILDERS = {
     "dodecahedron_board": dodecahedron_board,
     "stepped_bipyramid_board": stepped_bipyramid_board,
     "stepped_pyramid_board": stepped_pyramid_board,
+    # The thirteen Catalan solids (boards/catalan.py). Every one takes
+    # (mine_count, frequency), the face subdivision being their only size knob.
+    "triakis_tetrahedron_board": triakis_tetrahedron_board,
+    "rhombic_dodecahedron_board": rhombic_dodecahedron_board,
+    "triakis_octahedron_board": triakis_octahedron_board,
+    "tetrakis_hexahedron_board": tetrakis_hexahedron_board,
+    "deltoidal_icositetrahedron_board": deltoidal_icositetrahedron_board,
+    "pentagonal_icositetrahedron_board": pentagonal_icositetrahedron_board,
+    "disdyakis_dodecahedron_board": disdyakis_dodecahedron_board,
+    "rhombic_triacontahedron_board": rhombic_triacontahedron_board,
+    "triakis_icosahedron_board": triakis_icosahedron_board,
+    "pentakis_dodecahedron_board": pentakis_dodecahedron_board,
+    "deltoidal_hexecontahedron_board": deltoidal_hexecontahedron_board,
+    "sphere_board": sphere_board,
+    "disdyakis_triacontahedron_board": disdyakis_triacontahedron_board,
     "torus_board": torus_board,
     "torus_triangle_board": torus_triangle_board,
     "torus_hex_board": torus_hex_board,

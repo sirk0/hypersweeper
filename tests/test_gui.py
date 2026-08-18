@@ -16,11 +16,10 @@ from minesweeper.boards import (  # noqa: E402
     MENU_ROOT,
     MODE_LABELS,
     MODES_3D,
-    POLYHEDRA_GROUP_MEMBERS,
-    POLYHEDRA_GROUP_ORDER,
-    POLYHEDRA_MODES,
     SHAPED_MODES,
-    SPHERE_MODES,
+    SOLID_GROUP_MEMBERS,
+    SOLID_GROUP_ORDER,
+    SOLID_MODES,
     TILINGS,
     picker_families,
     picker_modes,
@@ -636,32 +635,44 @@ class TestMenu:
         result = self.click_item(menu, "random")
         assert result[0] == "start" and result[1] in picker_modes("klein")
 
-    # -- Sphere and Polyhedra ------------------------------------------------
+    # -- the solid groups ----------------------------------------------------
+
+    def test_every_solid_group_is_a_home_row(self):
+        # Sphere, Platonic solids, Catalan solids and Polyhedra all sit on the
+        # home page: no group picker in between
+        menu = MenuScreen()
+        assert set(SOLID_GROUP_ORDER) <= self.items(menu)
+
+    def test_solid_group_lists_its_boards_one_click_in(self):
+        for group in SOLID_GROUP_ORDER:
+            menu = MenuScreen()
+            self.click_item(menu, group)
+            assert menu.path == [group]
+            assert self.items(menu) == set(SOLID_GROUP_MEMBERS[group])
 
     def test_sphere_lists_spherical_tilings(self):
         menu = MenuScreen()
         self.click_item(menu, "sphere")
-        assert self.items(menu) == set(SPHERE_MODES)
         assert self.click_item(menu, "spheretri") == ("start", "spheretri")
 
-    def test_polyhedra_lists_the_groups(self):
+    def test_platonic_solids_launch_at_once(self):
         menu = MenuScreen()
-        self.click_item(menu, "polyhedra")
-        assert self.items(menu) == set(POLYHEDRA_GROUP_ORDER)
-
-    def test_polyhedra_group_lists_its_solids(self):
-        menu = MenuScreen()
-        self.click_item(menu, "polyhedra")
         self.click_item(menu, "platonic")
-        assert menu.path == ["polyhedra", "platonic"]
-        assert self.items(menu) == set(POLYHEDRA_GROUP_MEMBERS["platonic"])
         assert self.click_item(menu, "dodecahedron") == ("start", "dodecahedron")
 
-    def test_polyhedra_other_group_lists_the_rest(self):
+    def test_catalan_group_holds_the_thirteen_duals(self):
+        assert len(SOLID_GROUP_MEMBERS["catalan"]) == 13
+        # the pentagonal hexecontahedron is one of them, under its old mode
+        # name -- a share link and a best time both address a board by it
+        assert "sphere" in SOLID_GROUP_MEMBERS["catalan"]
+        assert "sphere" not in SOLID_GROUP_MEMBERS["sphere"]
+        menu = MenuScreen()
+        self.click_item(menu, "catalan")
+        assert self.click_item(menu, "rhombictriaconta") == ("start", "rhombictriaconta")
+
+    def test_polyhedra_holds_the_frames_and_the_stacks(self):
         menu = MenuScreen()
         self.click_item(menu, "polyhedra")
-        self.click_item(menu, "other")
-        assert self.items(menu) == set(POLYHEDRA_GROUP_MEMBERS["other"])
         assert self.click_item(menu, "cubeframe") == ("start", "cubeframe")
 
     # -- reachability & gating ---------------------------------------------
@@ -693,11 +704,9 @@ class TestMenu:
                 for _, key, _, enabled in menu.layout()["items"]:
                     if enabled:  # chiral tilings are gated out per surface
                         reach(*surface_path, family, key)
-        for mode in SPHERE_MODES:
-            reach("sphere", mode)
-        for group in POLYHEDRA_GROUP_ORDER:
-            for mode in POLYHEDRA_GROUP_MEMBERS[group]:
-                reach("polyhedra", group, mode)
+        for group in SOLID_GROUP_ORDER:
+            for mode in SOLID_GROUP_MEMBERS[group]:
+                reach(group, mode)
         # every mode with a label is reachable from the menu -- no gaps
         assert reached == set(MODE_LABELS)
 
@@ -772,7 +781,7 @@ class TestMenu:
                      ["manifolds", "klein", "regular"],
                      ["manifolds", "klein", "uniform"],
                      ["manifolds", "mobius", "dual"],
-                     ["sphere"], ["polyhedra"]):
+                     ["sphere"], ["platonic"], ["catalan"], ["polyhedra"]):
             menu.path = list(path)
             surface = pygame.Surface(menu.size)
             menu.draw(surface, fonts)
@@ -855,9 +864,8 @@ class TestIcon:
             | set(MANIFOLD_ORDER)                # the flat-manifold surfaces
             | {"regular", "uniform", "dual", "aperiodic", "fractal"}  # families
             | set(TILINGS)                       # every tiling row in the picker
-            | set(SPHERE_MODES)
-            | set(POLYHEDRA_MODES)
-            | set(POLYHEDRA_GROUP_ORDER)          # the polyhedra groups
+            | set(SOLID_MODES)
+            | set(SOLID_GROUP_ORDER)              # the four solid-group rows
             | {m for shaped in SHAPED_MODES.values() for m in shaped}
             | set(APERIODIC_MODES)
             | set(FRACTAL_MODES)

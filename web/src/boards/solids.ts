@@ -22,8 +22,8 @@ export { isBoard3D };
 
 const ROOT3 = Math.sqrt(3);
 
-type Positions = Map<string, Vec3>;
-type Cells = Map<CellId, string[]>;
+export type Positions = Map<string, Vec3>;
+export type Cells = Map<CellId, string[]>;
 
 function gcdAll(values: number[]): number {
   let g = 0;
@@ -34,7 +34,7 @@ function gcdAll(values: number[]): number {
   return g;
 }
 
-function centroidOf(points: readonly Vec3[]): Vec3 {
+export function centroidOf(points: readonly Vec3[]): Vec3 {
   const c: Vec3 = [0, 0, 0];
   for (const p of points) {
     c[0] += p[0];
@@ -44,12 +44,12 @@ function centroidOf(points: readonly Vec3[]): Vec3 {
   return [c[0] / points.length, c[1] / points.length, c[2] / points.length];
 }
 
-interface VertexFaces {
+export interface VertexFaces {
   vertices: Vec3[];
   faces: [number, number, number][];
 }
 
-function icosahedron(): VertexFaces {
+export function icosahedron(): VertexFaces {
   const phi = (1 + Math.sqrt(5)) / 2;
   const vertices: Vec3[] = [];
   for (const x of [-1, 1]) {
@@ -161,7 +161,7 @@ function octahedron(): VertexFaces {
 /** A regular tetrahedron: four vertices on alternate cube corners, the four
  * faces being the four vertex triples. Winding is arbitrary (each subdivided
  * cell is re-oriented outward on assembly). */
-function tetrahedron(): VertexFaces {
+export function tetrahedron(): VertexFaces {
   const vertices: Vec3[] = [
     [1, 1, 1],
     [1, -1, -1],
@@ -181,7 +181,7 @@ function tetrahedron(): VertexFaces {
  * centroid direction. Correct for any convex solid that contains the origin
  * (sphere, cube, tetrahedron): every surface point has a positive dot with
  * its face's outward normal. */
-function convexBoard3d(
+export function convexBoard3d(
   mode: string,
   cells: Cells,
   positions: Positions,
@@ -209,10 +209,15 @@ function convexBoard3d(
 
 // -- 3D builders --------------------------------------------------------------
 
-/** The pentagonal hexecontahedron as (cells, vertex positions): the Conway
- * "gyro" operation on an icosahedron — each triangular face gains a center
- * vertex, each edge two division points, and every (face, corner) pair
- * becomes one pentagon. */
+/** Sixty spherical pentagons as (cells, vertex positions): the Conway "gyro"
+ * operation on an icosahedron — each triangular face gains a center vertex,
+ * each edge two division points, and every (face, corner) pair becomes one
+ * pentagon, every point pushed out to the unit sphere.
+ *
+ * This is the pentagonal hexecontahedron's combinatorics, not its metric: the
+ * edge points sit at plain thirds rather than where the snub dodecahedron's
+ * dual would put them, which is what makes dualising these centers give a snub
+ * dodecahedron with regular faces. The flat-faced solid is `catalan.ts`. */
 function gyroPentagons(): { cells: Cells; positions: Positions } {
   const { vertices, faces } = icosahedron();
   const positions: Positions = new Map();
@@ -265,15 +270,10 @@ function gyroPentagons(): { cells: Cells; positions: Positions } {
 
 /** A sphere tiled with 60 pentagons (a pentagonal hexecontahedron, projected
  * onto the unit sphere). Every pentagon has exactly 7 neighbors. */
-export function sphereBoard(mineCount: number): Board3D {
-  const { cells, positions } = gyroPentagons();
-  return convexBoard3d("sphere", cells, positions, mineCount);
-}
-
 /** A snub dodecahedron: 12 pentagons and 80 triangles (vertex configuration
  * 3.3.3.3.5), projected onto the unit sphere. Built as the dual of the
- * pentagonal hexecontahedron: one cell per hexecontahedron vertex, made of
- * the surrounding pentagon centers. */
+ * spherical gyro pentagons: one cell per pentagon vertex, made of the
+ * surrounding pentagon centers. */
 export function snubDodecahedronBoard(mineCount: number): Board3D {
   const { cells: pentagons, positions } = gyroPentagons();
   const centers: Positions = new Map();
@@ -312,7 +312,7 @@ export function snubDodecahedronBoard(mineCount: number): Board3D {
  * Returns (positions, triangles). Vertex keys are gcd-normalized barycentric
  * weights over the corners, so vertices on shared edges match exactly across
  * faces. */
-function geodesic(
+export function geodesic(
   frequency: number,
   base?: VertexFaces,
   project = true,
@@ -511,7 +511,34 @@ export function rhombicosidodecahedronBoard(mineCount: number): Board3D {
  * git history for why), this always lands on the exact Archimedean solid,
  * because a flag's three mirrors are just three planes through the origin
  * and this point is the same distance from each of them. */
-function flagPosition(vDir: Vec3, eDir: Vec3, fDir: Vec3): Vec3 {
+export type Mirror = "v" | "e" | "f";
+
+/** The Wythoff generating point of a Schwarz triangle: given one "flag" (a
+ * mutually incident vertex, edge and face)'s three axis directions — `vDir`
+ * the vertex axis, `eDir` its edge's midpoint, `fDir` its face's centroid, the
+ * three corners of a fundamental (Schwarz) triangle whose sides are the
+ * group's mirror planes — the point lying *on* the mirrors named by `zero` and
+ * at *equal* distances from those named by `equal`.
+ *
+ * Reflecting it through the group's symmetries generates a uniform polyhedron
+ * with every edge the same length by construction: unlike rectifying a solid
+ * and then truncating the result (a sequential approximation that, no matter
+ * how the two steps are tuned, cannot make all of its face shapes regular at
+ * once), this always lands on the exact Archimedean solid, because a flag's
+ * three mirrors are just three planes through the origin and both constraint
+ * kinds are linear in the point. Two constraints, so the answer is one cross
+ * product.
+ *
+ * `catalan.ts` reads every non-chiral Conway operation off this;
+ * `equal=["v","e","f"]` — equidistant from all three — is the omnitruncation,
+ * which is `flagPosition` below. */
+export function wythoffPoint(
+  vDir: Vec3,
+  eDir: Vec3,
+  fDir: Vec3,
+  zero: Mirror[] = [],
+  equal: Mirror[] = [],
+): Vec3 {
   const v = normalize(vDir);
   const e = normalize(eDir);
   const f = normalize(fDir);
@@ -520,17 +547,29 @@ function flagPosition(vDir: Vec3, eDir: Vec3, fDir: Vec3): Vec3 {
     return dot(n, toward) >= 0 ? n : [-n[0], -n[1], -n[2]];
   };
   // the mirror opposite each corner is the plane through the other two
-  const nv = mirrorNormal(e, f, v);
-  const ne = mirrorNormal(f, v, e);
-  const nf = mirrorNormal(v, e, f);
-  // equidistant from all three mirrors <=> orthogonal to nv - ne and to
-  // ne - nf, i.e. their cross product (a linear, not barycentric, solve)
-  let p = normalize(cross(
-    [nv[0] - ne[0], nv[1] - ne[1], nv[2] - ne[2]],
-    [ne[0] - nf[0], ne[1] - nf[1], ne[2] - nf[2]],
-  ));
+  const n: Record<Mirror, Vec3> = {
+    v: mirrorNormal(e, f, v),
+    e: mirrorNormal(f, v, e),
+    f: mirrorNormal(v, e, f),
+  };
+  const rows: Vec3[] = zero.map((c) => n[c]);
+  for (let i = 0; i + 1 < equal.length; i++) {
+    const a = n[equal[i]!];
+    const b = n[equal[i + 1]!];
+    rows.push([a[0] - b[0], a[1] - b[1], a[2] - b[2]]);
+  }
+  if (rows.length !== 2) throw new Error("a Wythoff point needs two constraints");
+  let p = normalize(cross(rows[0]!, rows[1]!));
   if (dot(p, v) + dot(p, e) + dot(p, f) < 0) p = [-p[0], -p[1], -p[2]];
   return p;
+}
+
+/** The Wythoff generating point for the icosahedral (2, 3, 5) reflection
+ * group: the point inside the flag's fundamental triangle equidistant from all
+ * three of its mirrors, which generates the omnitruncated icosahedron (the
+ * truncated icosidodecahedron). */
+function flagPosition(vDir: Vec3, eDir: Vec3, fDir: Vec3): Vec3 {
+  return wythoffPoint(vDir, eDir, fDir, [], ["v", "e", "f"]);
 }
 
 /** The truncated icosidodecahedron as (cells, positions): the omnitruncation

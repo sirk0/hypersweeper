@@ -412,13 +412,220 @@
       "builder": "sphere_board",
       "args": {
         "easy": [
-          10
+          10,
+          0
         ],
         "medium": [
-          14
+          65,
+          1
         ],
         "hard": [
-          19
+          76,
+          1
+        ]
+      }
+    },
+    "triakistetra": {
+      "builder": "triakis_tetrahedron_board",
+      "args": {
+        "easy": [
+          25,
+          3
+        ],
+        "medium": [
+          76,
+          5
+        ],
+        "hard": [
+          125,
+          6
+        ]
+      }
+    },
+    "rhombicdodeca": {
+      "builder": "rhombic_dodecahedron_board",
+      "args": {
+        "easy": [
+          19,
+          3
+        ],
+        "medium": [
+          72,
+          5
+        ],
+        "hard": [
+          116,
+          6
+        ]
+      }
+    },
+    "triakisocta": {
+      "builder": "triakis_octahedron_board",
+      "args": {
+        "easy": [
+          20,
+          2
+        ],
+        "medium": [
+          47,
+          3
+        ],
+        "hard": [
+          108,
+          4
+        ]
+      }
+    },
+    "tetrakishexa": {
+      "builder": "tetrakis_hexahedron_board",
+      "args": {
+        "easy": [
+          25,
+          2
+        ],
+        "medium": [
+          58,
+          3
+        ],
+        "hard": [
+          115,
+          4
+        ]
+      }
+    },
+    "deltoidalicositetra": {
+      "builder": "deltoidal_icositetrahedron_board",
+      "args": {
+        "easy": [
+          21,
+          2
+        ],
+        "medium": [
+          51,
+          3
+        ],
+        "hard": [
+          103,
+          4
+        ]
+      }
+    },
+    "pentagonalicositetra": {
+      "builder": "pentagonal_icositetrahedron_board",
+      "args": {
+        "easy": [
+          23,
+          1
+        ],
+        "medium": [
+          109,
+          2
+        ],
+        "hard": [
+          126,
+          2
+        ]
+      }
+    },
+    "disdyakisdodeca": {
+      "builder": "disdyakis_dodecahedron_board",
+      "args": {
+        "easy": [
+          6,
+          1
+        ],
+        "medium": [
+          50,
+          2
+        ],
+        "hard": [
+          125,
+          3
+        ]
+      }
+    },
+    "rhombictriaconta": {
+      "builder": "rhombic_triacontahedron_board",
+      "args": {
+        "easy": [
+          28,
+          2
+        ],
+        "medium": [
+          62,
+          3
+        ],
+        "hard": [
+          127,
+          4
+        ]
+      }
+    },
+    "triakisicosa": {
+      "builder": "triakis_icosahedron_board",
+      "args": {
+        "easy": [
+          37,
+          2
+        ],
+        "medium": [
+          47,
+          2
+        ],
+        "hard": [
+          131,
+          3
+        ]
+      }
+    },
+    "pentakisdodeca": {
+      "builder": "pentakis_dodecahedron_board",
+      "args": {
+        "easy": [
+          14,
+          1
+        ],
+        "medium": [
+          64,
+          2
+        ],
+        "hard": [
+          159,
+          3
+        ]
+      }
+    },
+    "deltoidalhexeconta": {
+      "builder": "deltoidal_hexecontahedron_board",
+      "args": {
+        "easy": [
+          12,
+          1
+        ],
+        "medium": [
+          53,
+          2
+        ],
+        "hard": [
+          140,
+          3
+        ]
+      }
+    },
+    "disdyakistriaconta": {
+      "builder": "disdyakis_triacontahedron_board",
+      "args": {
+        "easy": [
+          8,
+          1
+        ],
+        "medium": [
+          113,
+          2
+        ],
+        "hard": [
+          135,
+          2
         ]
       }
     },

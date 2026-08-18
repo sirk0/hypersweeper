@@ -160,19 +160,18 @@ export function fullModeLabel(mode: string): string {
   return surface && surface.key !== "flat" ? `${label} · ${surface.label}` : label;
 }
 
-// Menu groupings for the 3D one-off boards (Sphere and Polyhedra).
-export const SPHERE_MODES = MENU.sphereModes as string[];
-// The Polyhedra page is a group picker (Platonic solids, then everything
-// else -- the frames and the stepped pyramids); POLYHEDRA_MODES is every
-// board it reaches, flattened, for the places (fairness weighting, the
+// The solid pages -- Sphere, Platonic solids, Catalan solids and Polyhedra --
+// each a flat list of boards. One table declares all four, so adding a solid is
+// one row in data/catalog.json and no menu code at all. SOLID_MODES is every
+// board they reach, flattened, for the places (fairness weighting, the
 // background pattern, the icon gallery) that just need the whole set.
-export interface PolyhedraGroup {
+export interface SolidGroup {
   key: string;
   label: string;
   modes: string[];
 }
-export const POLYHEDRA_GROUPS = MENU.polyhedraGroups as PolyhedraGroup[];
-export const POLYHEDRA_MODES: string[] = POLYHEDRA_GROUPS.flatMap((g) => g.modes);
+export const SOLID_GROUPS = MENU.solidGroups as SolidGroup[];
+export const SOLID_MODES: string[] = SOLID_GROUPS.flatMap((g) => g.modes);
 // The shaped flat boards, by the regular tiling they are made of: the same
 // tiling as the plain rectangular board, cut to a triangular or hexagonal
 // outline. They exist on the plane only, so the flat picker's Regular page
@@ -336,13 +335,13 @@ export function flatMenuModes(): string[] {
   return surfaceMenuModes("flat");
 }
 
-/** The home page's 3D pool: every board on a flat manifold, plus the spheres
- * and the polyhedra -- everything Custom reaches that is not the plane. */
+/** The home page's 3D pool: every board on a flat manifold, plus every solid --
+ * everything Custom reaches that is not the plane. */
 export function threeDMenuModes(): string[] {
   const modes: string[] = [];
   for (const surfaceKey of MENU.manifoldOrder as string[]) {
     modes.push(...surfaceMenuModes(surfaceKey));
   }
-  modes.push(...SPHERE_MODES, ...POLYHEDRA_MODES);
+  modes.push(...SOLID_MODES);
   return modes;
 }

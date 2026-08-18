@@ -12,7 +12,7 @@ import {
   WebGLRenderer,
 } from "three";
 import type { CellId } from "../boards/core";
-import { surfaceOf, viewHint } from "../boards/catalog";
+import { SOLID_GROUPS, surfaceOf, viewHint } from "../boards/catalog";
 import { PICK_LAYERS, type BoardMesh, type PickLayer } from "./boardMesh";
 import { anchoredPan, clampPan, clampZoom, MIN_ZOOM } from "./zoom";
 
@@ -488,11 +488,21 @@ export class BoardRenderer {
 }
 
 /** The per-mode starting orientation (port of GameScreen3D._initial_rotation). */
+const CATALAN_MODES = new Set(
+  SOLID_GROUPS.find((g) => g.key === "catalan")?.modes ?? [],
+);
+
 export function initialOrientation(mode: string): Quaternion {
   const qx = (a: number) => new Quaternion().setFromAxisAngle(X_AXIS, a);
   const qy = (a: number) => new Quaternion().setFromAxisAngle(Y_AXIS, a);
+  // the triakis tetrahedron is the shallowest solid here — its pyramids rise
+  // about a fifth of the way to the next face — so the shared 3/4 turn below
+  // lands square on one of them and the board reads as a flat triangle. Down a
+  // vertex of the tetrahedron it was raised on, three pyramids show at once.
+  if (mode === "triakistetra") return qx(-0.95).multiply(qy(0.78));
   // flat-faced solids show only one face head-on; a 3/4 turn reveals three
-  // faces at once
+  // faces at once. Every Catalan solid is flat-faced too, so the group joins
+  // the list whole rather than a board at a time.
   if (
     [
       "cube",
@@ -503,7 +513,8 @@ export function initialOrientation(mode: string): Quaternion {
       "icosahedron",
       "dodecahedron",
       "steppedpyramid",
-    ].includes(mode)
+    ].includes(mode) ||
+    CATALAN_MODES.has(mode)
   ) {
     return qx(-0.5).multiply(qy(0.6));
   }

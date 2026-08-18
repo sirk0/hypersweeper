@@ -5,14 +5,34 @@ import {
   cubeFrameBoard,
   rhombicosidodecahedronBoard,
   snubDodecahedronBoard,
-  sphereBoard,
   sphereTriangleBoard,
   steppedBipyramidBoard,
   tetrahedronBoard,
   tetrahedronFrameBoard,
   truncatedIcosidodecahedronBoard,
 } from "../../src/boards/solids";
-import type { Board3D } from "../../src/boards/core";
+import {
+  deltoidalHexecontahedronBoard,
+  deltoidalIcositetrahedronBoard,
+  disdyakisDodecahedronBoard,
+  disdyakisTriacontahedronBoard,
+  pentagonalIcositetrahedronBoard,
+  pentakisDodecahedronBoard,
+  rhombicDodecahedronBoard,
+  rhombicTriacontahedronBoard,
+  sphereBoard,
+  tetrakisHexahedronBoard,
+  triakisIcosahedronBoard,
+  triakisOctahedronBoard,
+  triakisTetrahedronBoard,
+} from "../../src/boards/catalan";
+import {
+  boundaryComponents,
+  eulerCharacteristic,
+  newellNormal,
+  type Board3D,
+  type Vec3,
+} from "../../src/boards/core";
 
 // Structural invariants of the solids, mirrored from the Python suite
 // (tests/test_boards.py) — shape mixes and vertex degrees the conformance
@@ -113,5 +133,90 @@ describe("solids", () => {
       expect(board.twoSided).toBe(false);
       expect(board.cellCycle).toBeNull();
     }
+  });
+});
+
+// The thirteen Catalan solids, in menu order, with the face count each is
+// named for. Mirrors tests/test_boards.py::TestCatalanSolids — the properties
+// that tell a Catalan solid from something merely Catalan-shaped, none of
+// which survives a construction that is only topologically right.
+const CATALAN: [string, (m: number, f?: number) => Board3D, number, number][] = [
+  ["triakistetra", triakisTetrahedronBoard, 12, 3],
+  ["rhombicdodeca", rhombicDodecahedronBoard, 12, 4],
+  ["triakisocta", triakisOctahedronBoard, 24, 3],
+  ["tetrakishexa", tetrakisHexahedronBoard, 24, 3],
+  ["deltoidalicositetra", deltoidalIcositetrahedronBoard, 24, 4],
+  ["pentagonalicositetra", pentagonalIcositetrahedronBoard, 24, 5],
+  ["disdyakisdodeca", disdyakisDodecahedronBoard, 48, 3],
+  ["rhombictriaconta", rhombicTriacontahedronBoard, 30, 4],
+  ["triakisicosa", triakisIcosahedronBoard, 60, 3],
+  ["pentakisdodeca", pentakisDodecahedronBoard, 60, 3],
+  ["deltoidalhexeconta", deltoidalHexecontahedronBoard, 60, 4],
+  ["sphere", sphereBoard, 60, 5],
+  ["disdyakistriaconta", disdyakisTriacontahedronBoard, 120, 3],
+];
+
+function faceNormal(polygon: Vec3[]): Vec3 {
+  const n = newellNormal(polygon);
+  const len = Math.hypot(n[0], n[1], n[2]);
+  return [n[0] / len, n[1] / len, n[2] / len];
+}
+
+describe("Catalan solids", () => {
+  for (const [mode, build, faces, sides] of CATALAN) {
+    const bare = build(0, sides === 5 ? 0 : 1);
+
+    it(`${mode} is ${faces} congruent planar ${sides}-gons on one insphere`, () => {
+      expect(bare.polygons.size).toBe(faces);
+      expect(new Set(sizes(bare))).toEqual(new Set([sides]));
+
+      const shapes = new Set<string>();
+      const radii = new Set<number>();
+      for (const polygon of bare.polygons.values()) {
+        const centre: Vec3 = [0, 1, 2].map(
+          (a) => polygon.reduce((s, p) => s + p[a]!, 0) / polygon.length,
+        ) as Vec3;
+        const normal = faceNormal(polygon);
+        // planar
+        for (const p of polygon) {
+          const off = [0, 1, 2].reduce((s, a) => s + normal[a]! * (p[a]! - centre[a]!), 0);
+          expect(Math.abs(off)).toBeLessThan(1e-9);
+        }
+        // congruent, and every face plane the same distance out
+        const edges = polygon.map((p, i) => {
+          const q = polygon[(i + 1) % polygon.length]!;
+          return Math.round(Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]) * 1e9) / 1e9;
+        });
+        shapes.add([...edges].sort((a, b) => a - b).join(","));
+        const d = [0, 1, 2].reduce((s, a) => s + normal[a]! * polygon[0]![a]!, 0);
+        radii.add(Math.round(Math.abs(d) * 1e9) / 1e9);
+      }
+      expect(shapes.size, `${mode} face shapes`).toBe(1);
+      expect(radii.size, `${mode} insphere radii`).toBe(1);
+    });
+
+    it(`${mode} stays closed at every subdivision`, () => {
+      // the size knob's real risk is a subdivision vertex on a shared edge
+      // keyed differently by the two faces that meet there: the board would
+      // still draw, and the cells either side of the seam would simply stop
+      // being neighbours
+      for (const frequency of [1, 2, 3]) {
+        const board = build(0, frequency);
+        const perFace = sides === 5 ? 5 * frequency ** 2 : frequency ** 2;
+        expect(board.polygons.size).toBe(faces * perFace);
+        expect(eulerCharacteristic(board)).toBe(2);
+        expect(boundaryComponents(board)).toBe(0);
+      }
+    });
+  }
+
+  it("the pentagonal hexecontahedron keeps its seven-neighbour pentagons", () => {
+    // `sphere` is the one Catalan solid that was already in the game, drawn
+    // projected onto the unit sphere. Rebuilt flat-faced it is the same board
+    // to the game, so a share link or a best time still addresses it.
+    const board = sphereBoard(10, 0);
+    expect(board.polygons.size).toBe(60);
+    expect(new Set(sizes(board))).toEqual(new Set([5]));
+    expect(new Set([...board.adjacency.values()].map((n) => n.length))).toEqual(new Set([7]));
   });
 });

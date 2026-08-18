@@ -56,9 +56,8 @@
 import type { Vertex } from "../boards/core";
 import {
   APERIODIC_MODES,
-  POLYHEDRA_MODES,
   SHAPED_MODES,
-  SPHERE_MODES,
+  SOLID_GROUPS,
   tilingOf,
 } from "../boards/catalog";
 import { MODES } from "../boards/presets";
@@ -440,6 +439,31 @@ const placeTile = (tile: Vertex[], rot: number, at: Vertex, order: number): Vert
 
 // -- what a mode is patterned with ------------------------------------------
 
+function solidGroup(key: string): string[] {
+  return SOLID_GROUPS.find((g) => g.key === key)?.modes ?? [];
+}
+
+/** Each Catalan solid's page: the Laves tiling of the same Conway operation.
+ * join -> rhombille, ortho -> deltoidal trihexagonal, meta -> kisrhombille (the
+ * hexagonal tiling's own barycentric subdivision), gyro -> the pentagonal Laves
+ * dual of the matching snub, and kis -> whichever of the plane's two kis
+ * tilings raises its pyramids on the same kind of face. */
+const CATALAN_PATTERN: Record<string, string> = {
+  triakistetra: "triakis",
+  rhombicdodeca: "rhombille",
+  triakisocta: "triakis",
+  tetrakishexa: "tetrakis",
+  deltoidalicositetra: "deltoidal",
+  pentagonalicositetra: "cairo",
+  disdyakisdodeca: "kisrhombille",
+  rhombictriaconta: "rhombille",
+  triakisicosa: "triakis",
+  pentakisdodeca: "tetrakis",
+  deltoidalhexeconta: "deltoidal",
+  sphere: "floret",
+  disdyakistriaconta: "kisrhombille",
+};
+
 /** The pattern key every mode of the same geometry shares — "trihex" for all
  * five surfaces of the trihexagonal tiling, so the cache holds one entry for
  * the lot. `null` for a mode this build has not got (a link from a newer one). */
@@ -467,12 +491,9 @@ const MODE_PATTERN = new Map<string, string>();
   // is the one that cannot (see SPECTRE_PATTERN).
   for (const mode of APERIODIC_MODES) MODE_PATTERN.set(mode, mode);
   MODE_PATTERN.set("spectre", SPECTRE_PATTERN);
-  // The polyhedra are folded flat grids — a cube and the stepped bipyramid are
-  // squares, a tetrahedron (and every other Platonic solid but the cube) is
-  // triangles — so they take that grid. The sphere
-  // family is the one group with no flat tiling behind it: a geodesic's
-  // triangles and a Catalan solid's faces only close up because the surface
-  // curves. Those get circles, which have no tiling to be wrong about.
+  // The Platonic solids and the frames are folded flat grids — a cube and the
+  // stepped bipyramid are squares, a tetrahedron (and every other Platonic
+  // solid but the cube) is triangles — so they take that grid.
   const TRIANGLE_FACED = new Set([
     "tetrahedron",
     "tetraframe",
@@ -480,10 +501,26 @@ const MODE_PATTERN = new Map<string, string>();
     "icosahedron",
     "dodecahedron",
   ]);
-  for (const mode of POLYHEDRA_MODES) {
-    MODE_PATTERN.set(mode, TRIANGLE_FACED.has(mode) ? "tri" : "square");
+  for (const key of ["platonic", "polyhedra"]) {
+    for (const mode of solidGroup(key)) {
+      MODE_PATTERN.set(mode, TRIANGLE_FACED.has(mode) ? "tri" : "square");
+    }
   }
-  for (const mode of SPHERE_MODES) MODE_PATTERN.set(mode, "circles");
+  // A Catalan solid takes the **Laves tiling of the same Conway operation**:
+  // the eight Laves tilings are the plane's own face-transitive duals, so the
+  // page under a rhombic solid really is a tiling of rhombi and the page under
+  // a disdyakis one really is a barycentric subdivision. The plane has only two
+  // "kis" Laves tilings, so a kis solid takes the one whose pyramids are raised
+  // on a face of the same kind: the tetrakis square where they sit on squares
+  // (or, closest available, pentagons), the triakis triangular where they sit
+  // on triangles.
+  for (const [mode, tiling] of Object.entries(CATALAN_PATTERN)) {
+    MODE_PATTERN.set(mode, tiling);
+  }
+  // The sphere family is the one group with no flat tiling behind it: a
+  // geodesic's triangles only close up because the surface curves. Those get
+  // circles, which have no tiling to be wrong about.
+  for (const mode of solidGroup("sphere")) MODE_PATTERN.set(mode, "circles");
 }
 
 /** The pattern key for `mode` — shared by every mode drawn with the same

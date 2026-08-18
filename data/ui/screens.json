@@ -128,15 +128,29 @@
     }
   },
   "difficulties": [
-    { "key": "easy", "label": "Easy" },
-    { "key": "medium", "label": "Medium" },
-    { "key": "hard", "label": "Hard" }
+    {
+      "key": "easy",
+      "label": "Easy"
+    },
+    {
+      "key": "medium",
+      "label": "Medium"
+    },
+    {
+      "key": "hard",
+      "label": "Hard"
+    }
   ],
   "defaultDifficulty": "medium",
   "hud": {
     "_comment": "Header row: left cluster, centred status cluster, right cluster. Slots are rendered left-to-right within each cluster; a front-end shows only the slots it supports at a given board. The two side clusters are kept the same size (two slots each) on purpose: the web header lays them out as equal grid columns either side of an auto-width centre, so an extra slot on one side alone wraps that column onto a second row while the other stays half empty.",
     "left": [
-      { "slot": "back", "label": "Back", "icon": "arrow-left", "action": "menu" },
+      {
+        "slot": "back",
+        "label": "Back",
+        "icon": "arrow-left",
+        "action": "menu"
+      },
       {
         "slot": "flag-mode",
         "label": "Flag mode",
@@ -146,9 +160,23 @@
       }
     ],
     "center": [
-      { "slot": "mine-counter", "kind": "counter", "source": "minesRemaining", "digits": 3 },
-      { "slot": "smiley", "kind": "reset", "action": "restart" },
-      { "slot": "timer", "kind": "counter", "source": "elapsedSeconds", "digits": 3 }
+      {
+        "slot": "mine-counter",
+        "kind": "counter",
+        "source": "minesRemaining",
+        "digits": 3
+      },
+      {
+        "slot": "smiley",
+        "kind": "reset",
+        "action": "restart"
+      },
+      {
+        "slot": "timer",
+        "kind": "counter",
+        "source": "elapsedSeconds",
+        "digits": 3
+      }
     ],
     "right": [
       {
@@ -210,20 +238,39 @@
         "label": "Flat manifolds",
         "kind": "group",
         "hint": "Wrap a flat tiling onto a cylinder, Möbius strip, torus or Klein bottle.",
-        "children": ["cylinder", "mobius", "torus", "klein"]
+        "children": [
+          "cylinder",
+          "mobius",
+          "torus",
+          "klein"
+        ]
       },
       {
         "key": "sphere",
         "label": "Sphere",
         "kind": "group",
-        "hint": "Spherical polyhedra.",
+        "hint": "Tilings of the sphere itself.",
+        "children": []
+      },
+      {
+        "key": "platonic",
+        "label": "Platonic solids",
+        "kind": "group",
+        "hint": "The five regular solids.",
+        "children": []
+      },
+      {
+        "key": "catalan",
+        "label": "Catalan solids",
+        "kind": "group",
+        "hint": "The thirteen duals of the Archimedean solids.",
         "children": []
       },
       {
         "key": "polyhedra",
         "label": "Polyhedra",
         "kind": "group",
-        "hint": "Solids and frames.",
+        "hint": "Hollow frames, and pyramids stitched into terraces.",
         "children": []
       }
     ]

@@ -166,7 +166,7 @@ TILINGS = {
 # ---------------------------------------------------------------------------
 # Menu navigation taxonomy
 #
-# The menu is geometry-first: a five-item home page, each leading straight to a
+# The menu is geometry-first: a home page whose every entry leads straight to a
 # geometry (or a group of them) and then, where it applies, to a shared tiling
 # picker.
 #
@@ -174,7 +174,15 @@ TILINGS = {
 #   Flat            -> tiling picker on the plane
 #   Flat manifolds  -> cylinder / Mobius / Klein / torus -> tiling picker
 #   Sphere          -> the spherical tilings
-#   Polyhedra       -> the solids
+#   Platonic solids -> the five regular solids
+#   Catalan solids  -> the thirteen duals of the Archimedean solids
+#   Polyhedra       -> the frames and the stepped pyramids
+#
+# The last four are all *solid groups*: a flat list of boards, each row
+# launching at once. They differ only in which boards they hold, so one table
+# in data/catalog.json (menu.solidGroups) declares all four and both menus
+# derive their pages from it -- adding a solid is one row there and no menu
+# code at all.
 #
 # The picker is a list of family submenus -- Regular, Uniform, Laves,
 # Isogonal and Congruent rectangles, plus (flat only) Aperiodic and Fractals,
@@ -189,9 +197,8 @@ TILINGS = {
 # menu); the derivations below stay in code.
 _MENU = _CATALOG["menu"]
 
-# Home page: the five top-level entries, in order.
+# Home page: the top-level entries, in order.
 MENU_ROOT = tuple(_MENU["root"])
-MENU_ROOT_LABELS = dict(_MENU["rootLabels"])
 
 # Flat manifolds page: the surfaces the plane wraps onto. The plane itself is
 # not repeated here -- the home page's Flat entry opens its picker.
@@ -231,19 +238,17 @@ FAMILY_MEMBERS = {
 PICKER_FAMILIES = ("regular", "uniform", "dual", "isogonal", "rectangle")
 FLAT_ONLY_FAMILIES = ("aperiodic", "fractal")
 
-# Sphere page: the spherical tilings, none of which wraps a flat surface.
-SPHERE_MODES = tuple(_MENU["sphereModes"])
+# The solid pages: Sphere, Platonic solids, Catalan solids and Polyhedra, each
+# a flat list of boards. Mirrors MANIFOLD_ORDER/MANIFOLD_LABELS -- one order
+# tuple, one label dict, plus the members each group holds.
+SOLID_GROUP_ORDER = tuple(g["key"] for g in _MENU["solidGroups"])
+SOLID_GROUP_LABELS = {g["key"]: g["label"] for g in _MENU["solidGroups"]}
+SOLID_GROUP_MEMBERS = {g["key"]: tuple(g["modes"]) for g in _MENU["solidGroups"]}
+SOLID_MODES = tuple(m for g in SOLID_GROUP_ORDER for m in SOLID_GROUP_MEMBERS[g])
 
-# Polyhedra page: a group picker (Platonic solids, then everything else --
-# the frames and the stepped pyramids), each row launching at once. Mirrors
-# MANIFOLD_ORDER/MANIFOLD_LABELS: one order tuple, one label dict, plus the
-# members each group holds.
-POLYHEDRA_GROUP_ORDER = tuple(g["key"] for g in _MENU["polyhedraGroups"])
-POLYHEDRA_GROUP_LABELS = {g["key"]: g["label"] for g in _MENU["polyhedraGroups"]}
-POLYHEDRA_GROUP_MEMBERS = {g["key"]: tuple(g["modes"]) for g in _MENU["polyhedraGroups"]}
-POLYHEDRA_MODES = tuple(
-    m for g in POLYHEDRA_GROUP_ORDER for m in POLYHEDRA_GROUP_MEMBERS[g]
-)
+# A solid group's label is also its home-page row's label, so the two cannot
+# drift; only the entries that are not solid groups need one of their own.
+MENU_ROOT_LABELS = {**dict(_MENU["rootLabels"]), **SOLID_GROUP_LABELS}
 
 # The shaped flat boards, by the regular tiling they are made of: the same
 # tiling as the plain rectangular board, cut to a triangular or hexagonal
@@ -251,8 +256,8 @@ POLYHEDRA_MODES = tuple(
 # them under their tiling on the flat picker and nowhere else.
 SHAPED_MODES = {k: tuple(v) for k, v in _MENU["shapedModes"].items()}
 
-# Labels for the non-periodic (one-off) modes (aperiodic, fractal, sphere,
-# solids, shaped) listed in the menu tuples above.
+# Labels for the non-periodic (one-off) modes (aperiodic, fractal, solid,
+# shaped) listed in the menu tuples above.
 SOLO_LABELS = dict(_CATALOG["soloLabels"])
 
 # mode -> label. Periodic modes take the tiling's label; the flat triangle
@@ -321,9 +326,8 @@ def picker_modes(surface_key: str) -> tuple[str, ...]:
 # surfaces or solids.
 FLAT_MODES = picker_modes("flat")
 
-_SOLID_MODES = frozenset(SPHERE_MODES) | frozenset(POLYHEDRA_MODES)
 MODES_3D = frozenset(
-    _SOLID_MODES
+    frozenset(SOLID_MODES)
     | {t.mode(s) for t in TILING_SPECS for s in SURFACE_SPECS
        if s.is_3d and t.allows(s)}
 )

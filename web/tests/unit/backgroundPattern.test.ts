@@ -3,8 +3,7 @@ import { patternKey, patternLayer, patternSvg } from "../../src/ui/backgroundPat
 import {
   APERIODIC_MODES,
   FRACTAL_MODES,
-  POLYHEDRA_MODES,
-  SPHERE_MODES,
+  SOLID_GROUPS,
   modeFor,
   tilingAllows,
   tilingOf,
@@ -61,7 +60,7 @@ describe("which pattern a mode gets", () => {
     // backgroundPattern.ts would leave that board on a blank page.
     const missing = MODES.filter((mode) => patternKey(mode) === null);
     expect(missing).toEqual([]);
-    expect(MODES.length).toBe(163);
+    expect(MODES.length).toBe(175);
   });
 
   it("follows the tiling, not the surface", () => {
@@ -78,16 +77,31 @@ describe("which pattern a mode gets", () => {
 
   it("gives a folded flat grid to the polyhedra and circles to the spheres", () => {
     // A cube, its Menger frame and the stepped bipyramid are square grids
-    // wrapped round a solid; a tetrahedron and its frame are triangles. Only
-    // the sphere family — geodesics and Catalan solids, whose faces close up
-    // because the surface curves — has no flat tiling to follow.
+    // wrapped round a solid; a tetrahedron and its frame are triangles. A
+    // Catalan solid takes the Laves tiling of the same Conway operation — the
+    // plane's own face-transitive duals. Only the sphere family, whose
+    // geodesic triangles close up because the surface curves, has no flat
+    // tiling to follow.
     expect(patternKey("cube")).toBe("square");
     expect(patternKey("cubeframe")).toBe("square");
     expect(patternKey("steppedbipyramid")).toBe("square");
     expect(patternKey("tetrahedron")).toBe("tri");
     expect(patternKey("tetraframe")).toBe("tri");
-    for (const mode of SPHERE_MODES) expect(patternKey(mode)).toBe("circles");
-    for (const mode of POLYHEDRA_MODES) expect(patternKey(mode)).not.toBe("circles");
+    const group = (key: string): string[] =>
+      SOLID_GROUPS.find((g) => g.key === key)?.modes ?? [];
+    for (const mode of group("sphere")) expect(patternKey(mode)).toBe("circles");
+    for (const key of ["platonic", "catalan", "polyhedra"]) {
+      for (const mode of group(key)) expect(patternKey(mode)).not.toBe("circles");
+    }
+    // the Laves dual of each Conway operation: rhombille under a rhombic
+    // solid, the deltoidal trihexagonal under a kite one, the hexagonal
+    // tiling's own barycentric subdivision under a disdyakis one, and a
+    // pentagonal Laves tiling under each chiral pentagonal solid
+    expect(patternKey("rhombictriaconta")).toBe("rhombille");
+    expect(patternKey("deltoidalhexeconta")).toBe("deltoidal");
+    expect(patternKey("disdyakisdodeca")).toBe("kisrhombille");
+    expect(patternKey("pentagonalicositetra")).toBe("cairo");
+    expect(patternKey("sphere")).toBe("floret");
   });
 
   it("lays the aperiodic boards' own tiles down periodically where it can", () => {
@@ -169,7 +183,8 @@ describe("the tile", () => {
   it("is built once per geometry, not once per mode", () => {
     expect(patternLayer("trihex")).toBe(patternLayer("torustrihex"));
     expect(patternLayer("torus")).toBe(patternLayer("cube"));
-    expect(patternLayer("sphere")).toBe(patternLayer("c80"));
+    expect(patternLayer("spheretri")).toBe(patternLayer("c80"));
+    expect(patternLayer("sphere")).toBe(patternLayer("floret"));
     expect(patternLayer("penrose")).toBe(patternLayer("penrose"));
   });
 });

@@ -39,10 +39,8 @@ from minesweeper.boards import (
     MENU_ROOT_LABELS,
     MODE_LABELS,
     MODES_3D,
-    POLYHEDRA_GROUP_LABELS,
-    POLYHEDRA_GROUP_MEMBERS,
-    POLYHEDRA_GROUP_ORDER,
-    SPHERE_MODES,
+    SOLID_GROUP_LABELS,
+    SOLID_GROUP_MEMBERS,
     SUBSTITUTIONS,
     build_board,
     family_rows,
@@ -950,13 +948,78 @@ _ICON_ALIASES = {
     "tri": "trigrid",
     "aperiodic": "penrose",
     "fractal": "sphinx",
-    "polyhedra": "cube",
-    "platonic": "tetrahedron",       # the "Platonic solids" polyhedra group
-    "other": "steppedbipyramid",     # the "Other polyhedra" group (frames, stacks)
+    # the four solid-group home rows borrow one of their own members' icons:
+    # there is no board named "platonic" or "catalan" to draw
+    "platonic": "tetrahedron",
+    "catalan": "rhombictriaconta",
+    "polyhedra": "steppedbipyramid",  # the frames and the stepped pyramids
     "classic": "square",    # the "Classic" home entry: flat squares
     "manifolds": "torus",   # the "Flat manifolds" home entry
     "random": "start",      # the "Random" picker entry
 }
+
+
+# How each Catalan solid is turned before projecting, in degrees about x then
+# y -- chosen so the face the solid is named for reads rather than pointing
+# straight at or away from the viewer.
+_CATALAN_VIEW = {
+    "triakistetra": (-18, 20),
+    "rhombicdodeca": (-20, 12),
+    "triakisocta": (-22, 18),
+    "tetrakishexa": (-20, 12),
+    "deltoidalicositetra": (-20, 15),
+    "pentagonalicositetra": (-18, 20),
+    "disdyakisdodeca": (-22, 18),
+    "rhombictriaconta": (-14, 20),
+    "triakisicosa": (-18, 22),
+    "pentakisdodeca": (-20, 20),
+    "deltoidalhexeconta": (-16, 18),
+    "sphere": (-18, 12),
+    "disdyakistriaconta": (-16, 20),
+}
+assert set(_CATALAN_VIEW) == set(SOLID_GROUP_MEMBERS["catalan"])
+
+
+def _icon_solid(surface, mode: str, d: float) -> None:
+    """A Catalan solid's icon: the real board, seen head-on.
+
+    Unlike the rest of these icons -- which are hand-drawn figures -- there is
+    no drawing of a disdyakis triacontahedron that a reader could tell from a
+    pentakis dodecahedron, so each is built at its own easy preset, its front
+    faces projected orthographically and shaded by how far each tilts from the
+    viewer. What the icon shows is the board a tap on that row opens.
+    """
+    board = build_board(mode, "easy")
+    pitch, yaw = (math.radians(a) for a in _CATALAN_VIEW[mode])
+    cp, sp, cy, sy = math.cos(pitch), math.sin(pitch), math.cos(yaw), math.sin(yaw)
+
+    def project(point):
+        x, y, z = point
+        x, z = x * cy + z * sy, z * cy - x * sy
+        y, z = y * cp - z * sp, z * cp + y * sp
+        return x, y, z
+
+    scale = d * 0.44 / board.radius
+    faces = []
+    for polygon in board.polygons.values():
+        turned = [project(p) for p in polygon]
+        normal = newell_normal(turned)
+        length = math.hypot(*normal)
+        if length == 0 or normal[2] <= 0:  # back-face cull
+            continue
+        faces.append((
+            sum(p[2] for p in turned) / len(turned),
+            [(d / 2 + p[0] * scale, d / 2 - p[1] * scale) for p in turned],
+            normal[2] / length,
+        ))
+    for _, points, lit in sorted(faces):
+        # the same three tones the hand-drawn solids use, picked by how square
+        # the facet is to the viewer
+        fill = ICON_BLUE_LIGHT if lit > 0.86 else (
+            ICON_BLUE if lit > 0.55 else ICON_BLUE_DARK)
+        pts = [(int(x), int(y)) for x, y in points]
+        fill_polygon(surface, points, fill)
+        outline_polygon(surface, pts, ICON_OUTLINE)
 
 
 def _render_icon(key: str) -> pygame.Surface:
@@ -1505,6 +1568,8 @@ def _render_icon(key: str) -> pygame.Surface:
         pygame.draw.ellipse(s, (0, 0, 0, 0), hole)
         pygame.draw.ellipse(s, ICON_BLUE_DARK, hole, 4)
         _icon_gloss(s, pygame.Rect(d * 0.5, d * 0.12, d * 0.36, d * 0.32), 70)
+    elif key in _CATALAN_VIEW:
+        _icon_solid(s, key, d)
     else:
         fill_circle(s, int(c), int(c), int(d * 0.4), ICON_BLUE)
         pygame.draw.circle(s, ICON_BLUE_DARK, (int(c), int(c)), int(d * 0.4), 2)
@@ -1963,15 +2028,23 @@ class GameScreen3D(BaseGameScreen):
 
     def _initial_rotation(self):
         # flat-faced solids show only one face head-on; a 3/4 turn reveals
-        # three faces at once
+        # three faces at once. Every Catalan solid is flat-faced too, so the
+        # group joins the list whole rather than a board at a time.
         if self.mode in ("cube", "tetrahedron", "cubeframe", "steppedbipyramid",
                         "octahedron", "icosahedron", "steppedpyramid",
-                        "dodecahedron"):
+                        "dodecahedron") or self.mode in SOLID_GROUP_MEMBERS["catalan"]:
             return mat_mul(rot_x(-0.5), rot_y(0.6))
         # a tetrahedron viewed down a 2-fold axis looks like a flat square;
         # turn to a vertex-first 3/4 view so the frame's gaps read clearly
         if self.mode == "tetraframe":
             return mat_mul(rot_x(-0.62), rot_y(0.45))
+        # the triakis tetrahedron is the shallowest solid here -- its pyramids
+        # rise about a fifth of the way to the next face -- so the shared 3/4
+        # turn lands square on one of them and the board reads as a flat
+        # triangle. Down a vertex of the tetrahedron it was raised on, three
+        # pyramids show at once and it reads as a solid
+        if self.mode == "triakistetra":
+            return mat_mul(rot_x(-0.95), rot_y(0.78))
         # the Klein bottle reads best from a 3/4 turn: the neck diving
         # through the body (the self-intersection) is then plainly visible
         if surface_of(self.mode) is not None and surface_of(self.mode).key == "klein":
@@ -2235,19 +2308,10 @@ class MenuScreen:
                     (s, MANIFOLD_LABELS[s], True) for s in MANIFOLD_ORDER
                 ]
             return self._picker_page(p[1], MANIFOLD_LABELS[p[1]], p[2:])
-        if p[0] == "sphere":
-            return "Sphere — choose a board", [
-                (m, MODE_LABELS[m], True) for m in SPHERE_MODES
-            ]
-        # Polyhedra: choose a group (Platonic solids, or everything else --
-        # the frames and the stepped pyramids), then a board
-        if len(p) == 1:
-            return "Polyhedra — choose a group", [
-                (g, POLYHEDRA_GROUP_LABELS[g], True) for g in POLYHEDRA_GROUP_ORDER
-            ]
-        group = p[1]
-        return f"Polyhedra — {POLYHEDRA_GROUP_LABELS[group]}", [
-            (m, MODE_LABELS[m], True) for m in POLYHEDRA_GROUP_MEMBERS[group]
+        # a solid group -- Sphere, Platonic solids, Catalan solids or
+        # Polyhedra: a flat list of boards, each row launching at once
+        return f"{SOLID_GROUP_LABELS[p[0]]} — choose a board", [
+            (m, MODE_LABELS[m], True) for m in SOLID_GROUP_MEMBERS[p[0]]
         ]
 
     def _picker_page(self, surface, surface_label, rest):
@@ -2288,7 +2352,7 @@ class MenuScreen:
         if not p:
             if key == "classic":  # flat squares, straight away
                 return ("start", "square")
-            self.path = [key]  # flat / manifolds / sphere / polyhedra
+            self.path = [key]  # flat / manifolds / or one of the solid groups
             return None
         if p[0] == "flat":
             return self._select_picker("flat", p[1:], key)
@@ -2297,11 +2361,7 @@ class MenuScreen:
                 self.path.append(key)
                 return None
             return self._select_picker(p[1], p[2:], key)
-        if p[0] == "polyhedra" and len(p) == 1:  # picked a group
-            self.path.append(key)
-            return None
-        # sphere, or a polyhedra group: every row launches its board straight
-        # away
+        # a solid group: every row launches its board straight away
         return ("start", key)
 
     def _select_picker(self, surface, rest, key):

@@ -4,8 +4,7 @@ import {
   MENU_FAMILY_HINTS,
   MENU_FAMILY_LABELS,
   MODE_LABELS,
-  POLYHEDRA_GROUPS,
-  SPHERE_MODES,
+  SOLID_GROUPS,
   SURFACES,
   flatMenuModes,
   menuFamilies,
@@ -92,20 +91,19 @@ function pickerHint(surfaceKey: string): string {
  * holds the regular tilings (they are promoted to rows of their own), so the
  * pygame Regular page's tri/square/hex trio would misname it — and that trio
  * is the home page's Custom glyph. It shows a shaped board instead: what it
- * actually holds. The two Polyhedra groups (`platonic`, `other`) borrow one
- * of their own members' icons, the same way — there is no board named
- * "platonic" or "other" to draw. */
+ * actually holds. */
 const FAMILY_ICONS: Record<string, string> = {
   regular: "hexhex",
-  platonic: "tetrahedron",
-  other: "steppedbipyramid",
 };
 
-/** The Polyhedra group rows' hints — `MENU_FAMILY_HINTS` is keyed by tiling
- * family and says nothing about these two. */
-const POLYHEDRA_GROUP_HINTS: Record<string, string> = {
+/** What each solid page holds, in a line. Listing the boards instead (which is
+ * what `groupHint` does for a mode group) runs to thirteen names on the Catalan
+ * page and reads as a wall rather than a description. */
+const SOLID_GROUP_HINTS: Record<string, string> = {
+  sphere: "Tilings of the sphere itself",
   platonic: "The five regular solids",
-  other: "Hollow frames, and pyramids stitched into terraces",
+  catalan: "The thirteen duals of the Archimedean solids",
+  polyhedra: "Hollow frames, and pyramids stitched into terraces",
 };
 
 /** Rows of a picker, dropping the modes this build has not got. */
@@ -155,17 +153,7 @@ interface ModeGroup {
   modes: string[];
 }
 
-/** A group whose page is itself a list of submenus rather than boards --
- * today just Polyhedra (Platonic solids, then everything else), the same
- * shape a picker's family page is, reusing `Family`/`submenuRow`. */
-interface ModeFamilyGroup {
-  key: string;
-  label: string;
-  kind: "modeFamilies";
-  families: Family[];
-}
-
-type Group = PickerGroup | ManifoldGroup | ModeGroup | ModeFamilyGroup;
+type Group = PickerGroup | ManifoldGroup | ModeGroup;
 
 /** A menu row's icon (the same glyph the pygame menu draws for that key). */
 function iconEl(key: string): HTMLElement {
@@ -215,29 +203,19 @@ export class Menu {
         kind: "manifolds",
         surfaces: this.manifoldSurfaces(),
       },
-      { key: "sphere", label: ROOT_LABELS["sphere"] ?? "Sphere", kind: "modes", modes: [...SPHERE_MODES] },
-      // Polyhedra: a group picker -- Platonic solids, then everything else
-      // (the frames and the stepped pyramids) -- exactly like Flat manifolds
-      // (the shaped flat boards live under Flat › Non-square boards).
-      {
-        key: "polyhedra",
-        label: ROOT_LABELS["polyhedra"] ?? "Polyhedra",
-        kind: "modeFamilies",
-        families: POLYHEDRA_GROUPS.map((g) => ({
-          key: g.key,
-          label: g.label,
-          modes: g.modes.map((m) => ({ mode: m, label: MODE_LABELS[m] ?? m, icon: m })),
-        })),
-      },
+      // The four solid pages -- Sphere, Platonic solids, Catalan solids and
+      // Polyhedra -- are one flat board list each, so they all come off the
+      // shared table rather than being spelled out here. (The shaped flat
+      // boards live under Flat › Non-square boards.)
+      ...SOLID_GROUPS.map((g): Group => ({
+        key: g.key,
+        label: g.label,
+        kind: "modes",
+        modes: [...g.modes],
+      })),
     ];
     this.groups = groups.filter((g) => {
       if (g.kind === "modes") return (g.modes = g.modes.filter(hasMode)).length > 0;
-      if (g.kind === "modeFamilies") {
-        g.families = g.families
-          .map((f) => ({ ...f, modes: builtRows(f.modes) }))
-          .filter((f) => f.modes.length > 0);
-        return g.families.length > 0;
-      }
       if (g.kind === "manifolds") return g.surfaces.length > 0;
       const picker = pickerFor(g.surfaceKey);
       return picker.tilings.length > 0 || picker.families.length > 0;
@@ -609,8 +587,9 @@ export class Menu {
   }
 
   private groupHint(group: Group): string {
-    if (group.kind === "modes") return group.modes.map((m) => MODE_LABELS[m] ?? m).join(" · ");
-    if (group.kind === "modeFamilies") return group.families.map((f) => f.label).join(" · ");
+    if (group.kind === "modes") {
+      return SOLID_GROUP_HINTS[group.key] ?? group.modes.map((m) => MODE_LABELS[m] ?? m).join(" · ");
+    }
     if (group.kind === "manifolds") return group.surfaces.map((s) => s.label).join(" · ");
     return pickerHint(group.surfaceKey);
   }
@@ -633,17 +612,6 @@ export class Menu {
     list.className = "menu-list";
     if (group.kind === "modes") {
       for (const mode of group.modes) list.append(this.entryRow(mode, MODE_LABELS[mode] ?? mode));
-    } else if (group.kind === "modeFamilies") {
-      for (const family of group.families) {
-        list.append(
-          this.submenuRow(
-            family.label,
-            family.key,
-            () => this.showFamily(family, () => this.showGroup(group)),
-            POLYHEDRA_GROUP_HINTS[family.key],
-          ),
-        );
-      }
     } else {
       for (const surface of group.surfaces) list.append(this.surfaceRow(group, surface));
     }

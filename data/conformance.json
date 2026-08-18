@@ -563,21 +563,369 @@
         "hasCellCycle": false
       },
       "medium": {
+        "cellCount": 300,
+        "mineCount": 65,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 600,
+        "vertexCount": 302,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 300,
+        "mineCount": 76,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 600,
+        "vertexCount": 302,
+        "hasCellCycle": false
+      }
+    },
+    "triakistetra": {
+      "easy": {
+        "cellCount": 108,
+        "mineCount": 25,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 162,
+        "vertexCount": 56,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 300,
+        "mineCount": 76,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 450,
+        "vertexCount": 152,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 432,
+        "mineCount": 125,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 648,
+        "vertexCount": 218,
+        "hasCellCycle": false
+      }
+    },
+    "rhombicdodeca": {
+      "easy": {
+        "cellCount": 108,
+        "mineCount": 19,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 216,
+        "vertexCount": 110,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 300,
+        "mineCount": 72,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 600,
+        "vertexCount": 302,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 432,
+        "mineCount": 116,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 864,
+        "vertexCount": 434,
+        "hasCellCycle": false
+      }
+    },
+    "triakisocta": {
+      "easy": {
+        "cellCount": 96,
+        "mineCount": 20,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 144,
+        "vertexCount": 50,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 216,
+        "mineCount": 47,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 324,
+        "vertexCount": 110,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 384,
+        "mineCount": 108,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 576,
+        "vertexCount": 194,
+        "hasCellCycle": false
+      }
+    },
+    "tetrakishexa": {
+      "easy": {
+        "cellCount": 96,
+        "mineCount": 25,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 144,
+        "vertexCount": 50,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 216,
+        "mineCount": 58,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 324,
+        "vertexCount": 110,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 384,
+        "mineCount": 115,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 576,
+        "vertexCount": 194,
+        "hasCellCycle": false
+      }
+    },
+    "deltoidalicositetra": {
+      "easy": {
+        "cellCount": 96,
+        "mineCount": 21,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 192,
+        "vertexCount": 98,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 216,
+        "mineCount": 51,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 432,
+        "vertexCount": 218,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 384,
+        "mineCount": 103,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 768,
+        "vertexCount": 386,
+        "hasCellCycle": false
+      }
+    },
+    "pentagonalicositetra": {
+      "easy": {
+        "cellCount": 120,
+        "mineCount": 23,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 240,
+        "vertexCount": 122,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 480,
+        "mineCount": 109,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 960,
+        "vertexCount": 482,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 480,
+        "mineCount": 126,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 960,
+        "vertexCount": 482,
+        "hasCellCycle": false
+      }
+    },
+    "disdyakisdodeca": {
+      "easy": {
+        "cellCount": 48,
+        "mineCount": 6,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 72,
+        "vertexCount": 26,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 192,
+        "mineCount": 50,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 288,
+        "vertexCount": 98,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 432,
+        "mineCount": 125,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 648,
+        "vertexCount": 218,
+        "hasCellCycle": false
+      }
+    },
+    "rhombictriaconta": {
+      "easy": {
+        "cellCount": 120,
+        "mineCount": 28,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 240,
+        "vertexCount": 122,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 270,
+        "mineCount": 62,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 540,
+        "vertexCount": 272,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 480,
+        "mineCount": 127,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 960,
+        "vertexCount": 482,
+        "hasCellCycle": false
+      }
+    },
+    "triakisicosa": {
+      "easy": {
+        "cellCount": 240,
+        "mineCount": 37,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 360,
+        "vertexCount": 122,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 240,
+        "mineCount": 47,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 360,
+        "vertexCount": 122,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 540,
+        "mineCount": 131,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 810,
+        "vertexCount": 272,
+        "hasCellCycle": false
+      }
+    },
+    "pentakisdodeca": {
+      "easy": {
         "cellCount": 60,
         "mineCount": 14,
         "euler": 2,
         "boundaryComponents": 0,
-        "edgeCount": 150,
-        "vertexCount": 92,
+        "edgeCount": 90,
+        "vertexCount": 32,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 240,
+        "mineCount": 64,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 360,
+        "vertexCount": 122,
         "hasCellCycle": false
       },
       "hard": {
-        "cellCount": 60,
-        "mineCount": 19,
+        "cellCount": 540,
+        "mineCount": 159,
         "euler": 2,
         "boundaryComponents": 0,
-        "edgeCount": 150,
-        "vertexCount": 92,
+        "edgeCount": 810,
+        "vertexCount": 272,
+        "hasCellCycle": false
+      }
+    },
+    "deltoidalhexeconta": {
+      "easy": {
+        "cellCount": 60,
+        "mineCount": 12,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 120,
+        "vertexCount": 62,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 240,
+        "mineCount": 53,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 480,
+        "vertexCount": 242,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 540,
+        "mineCount": 140,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 1080,
+        "vertexCount": 542,
+        "hasCellCycle": false
+      }
+    },
+    "disdyakistriaconta": {
+      "easy": {
+        "cellCount": 120,
+        "mineCount": 8,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 180,
+        "vertexCount": 62,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 480,
+        "mineCount": 113,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 720,
+        "vertexCount": 242,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 480,
+        "mineCount": 135,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 720,
+        "vertexCount": 242,
         "hasCellCycle": false
       }
     },
