@@ -20,6 +20,21 @@ import {
 import { ARCH_TILINGS, type ArchTemplate, archTemplate, templateCells } from "../boards/tilings";
 import { placePoint, substitutionPlacements, SUBSTITUTIONS } from "../boards/fractal";
 import {
+  deltoidalHexecontahedronBoard,
+  deltoidalIcositetrahedronBoard,
+  disdyakisDodecahedronBoard,
+  disdyakisTriacontahedronBoard,
+  pentagonalIcositetrahedronBoard,
+  pentakisDodecahedronBoard,
+  rhombicDodecahedronBoard,
+  rhombicTriacontahedronBoard,
+  sphereBoard,
+  tetrakisHexahedronBoard,
+  triakisIcosahedronBoard,
+  triakisOctahedronBoard,
+  triakisTetrahedronBoard,
+} from "../boards/catalan";
+import {
   c80Board,
   c180Board,
   dodecahedronBoard,
@@ -27,7 +42,6 @@ import {
   octahedronBoard,
   rhombicosidodecahedronBoard,
   snubDodecahedronBoard,
-  sphereBoard,
   sphereTriangleBoard,
   steppedBipyramidBoard,
   steppedPyramidBoard,
@@ -520,7 +534,41 @@ const SOLID_BUILDERS: Record<string, () => Board3D> = {
   dodecahedron: () => dodecahedronBoard(0, 1),
   steppedbipyramid: () => steppedBipyramidBoard(7, 4, 0),
   steppedpyramid: () => steppedPyramidBoard(5, 3, 0),
+  // The thirteen Catalan solids, at their own easy frequencies. There is no
+  // drawing of a disdyakis triacontahedron a reader could tell from a pentakis
+  // dodecahedron, so every one of these is the real board.
+  triakistetra: () => triakisTetrahedronBoard(0, 3),
+  rhombicdodeca: () => rhombicDodecahedronBoard(0, 3),
+  triakisocta: () => triakisOctahedronBoard(0, 2),
+  tetrakishexa: () => tetrakisHexahedronBoard(0, 2),
+  deltoidalicositetra: () => deltoidalIcositetrahedronBoard(0, 2),
+  pentagonalicositetra: () => pentagonalIcositetrahedronBoard(0, 1),
+  disdyakisdodeca: () => disdyakisDodecahedronBoard(0, 1),
+  rhombictriaconta: () => rhombicTriacontahedronBoard(0, 2),
+  triakisicosa: () => triakisIcosahedronBoard(0, 2),
+  pentakisdodeca: () => pentakisDodecahedronBoard(0, 1),
+  deltoidalhexeconta: () => deltoidalHexecontahedronBoard(0, 1),
+  disdyakistriaconta: () => disdyakisTriacontahedronBoard(0, 1),
 };
+
+/** The thirteen Catalan solids, drawn as the real board in projection like the
+ * Platonic ones — see SOLID_BUILDERS. Kept as its own list so the icon branch
+ * and the view table cannot drift apart. */
+const CATALAN_ICONS = [
+  "triakistetra",
+  "rhombicdodeca",
+  "triakisocta",
+  "tetrakishexa",
+  "deltoidalicositetra",
+  "pentagonalicositetra",
+  "disdyakisdodeca",
+  "rhombictriaconta",
+  "triakisicosa",
+  "pentakisdodeca",
+  "deltoidalhexeconta",
+  "sphere",
+  "disdyakistriaconta",
+];
 
 /** How each solid is turned before projecting, in degrees about x then y —
  * chosen so the face the board is named for sits in the middle of the icon. */
@@ -546,6 +594,20 @@ const SOLID_VIEW: Record<string, [number, number] | [number, number, number]> = 
   icosahedron: [-18, 22],
   // Down a 3-fold vertex axis and tipped, so three of its twelve pentagons show.
   dodecahedron: [-20, 20],
+  // The Catalan solids, each turned so the face it is named for reads rather
+  // than pointing straight at or away from the viewer.
+  triakistetra: [-18, 20],
+  rhombicdodeca: [-20, 12],
+  triakisocta: [-22, 18],
+  tetrakishexa: [-20, 12],
+  deltoidalicositetra: [-20, 15],
+  pentagonalicositetra: [-18, 20],
+  disdyakisdodeca: [-22, 18],
+  rhombictriaconta: [-14, 20],
+  triakisicosa: [-18, 22],
+  pentakisdodeca: [-20, 20],
+  deltoidalhexeconta: [-16, 18],
+  disdyakistriaconta: [-16, 20],
 };
 
 const solidCache = new Map<string, Board3D>();
@@ -780,7 +842,12 @@ const ALIASES: Record<string, string> = {
   tri: "trigrid",
   aperiodic: "penrose",
   fractal: "sphinx", // the Fractals family row
-  polyhedra: "cube",
+  // the solid-group rows borrow one of their own members' icons: there is no
+  // board named "platonic" or "catalan" to draw, and "polyhedra" now holds the
+  // frames and the stacks rather than the cube
+  platonic: "tetrahedron",
+  catalan: "rhombictriaconta",
+  polyhedra: "steppedbipyramid",
   classic: "square", // the "Classic" home entry: flat squares
   manifolds: "torus", // the "Flat manifolds" entry under Custom
   "3d": "sphere", // the "3D" home entry: a random board off the plane
@@ -789,7 +856,6 @@ const ALIASES: Record<string, string> = {
 };
 
 const SPHERES = [
-  "sphere",
   "c80",
   "c180",
   "spheretri",
@@ -1111,14 +1177,16 @@ function draw(rawKey: string): string[] {
     key === "tetraframe" ||
     key === "octahedron" ||
     key === "icosahedron" ||
-    key === "dodecahedron"
+    key === "dodecahedron" ||
+    CATALAN_ICONS.includes(key)
   ) {
     // All are the real board projected — a bipyramid whose terraces really do
     // step 7-5-3-1 out from the equator, a single stepped pyramid (the same
     // terraces with a playable foundation instead of a mirrored twin), a
     // Sierpinski tetrahedron with its four sub-tetrahedra and the hollow
     // between them, the octahedron/icosahedron's own flat triangular facets,
-    // and the dodecahedron's pentagons already fanned into triangles — all
+    // the dodecahedron's pentagons already fanned into triangles, and every
+    // Catalan solid's own flat faces cut into the cells it is played on — all
     // tiled the way they are played on.
     parts.push(...solidFaces(key, "blocky"));
   } else if (key === "tetrahedron") {

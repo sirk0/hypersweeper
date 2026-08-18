@@ -87,9 +87,11 @@ and themes" and "Cell styles" below.
 **M17 — Play-first menu.** The home page is no longer the geometry tree: it is
 **Classic**, **Flat**, **3D** and **Custom** (`src/ui/menu.ts`). Flat and 3D are
 one tap each for a random board — the flat picker's pool, and every flat
-manifold plus the spheres and polyhedra — which is why the per-picker Random
+manifold plus every solid — which is why the per-picker Random
 row is gone. Custom holds what the root used to be (Flat, Flat manifolds,
-Sphere, Polyhedra), and inside every tiling picker the three regular tilings are
+Sphere, Platonic solids, Catalan solids, Polyhedra — four flat board lists
+declared by one `menu.solidGroups` table in `data/catalog.json`), and inside
+every tiling picker the three regular tilings are
 **promoted** to rows of their own, so a surface page reads Triangles · Squares ·
 Hexagons · Uniform · Laves · … . On the plane that leaves the Regular family
 holding the shaped boards alone, relabelled **Non-square boards**. The header

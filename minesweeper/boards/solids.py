@@ -134,10 +134,18 @@ def _convex_board3d(
 
 
 def _gyro_pentagons() -> tuple[dict, dict]:
-    """The pentagonal hexecontahedron as (cells, vertex positions):
-    the Conway "gyro" operation on an icosahedron — each triangular
-    face gains a center vertex, each edge two division points, and
-    every (face, corner) pair becomes one pentagon."""
+    """Sixty spherical pentagons as (cells, vertex positions): the Conway
+    "gyro" operation on an icosahedron — each triangular face gains a center
+    vertex, each edge two division points, and every (face, corner) pair
+    becomes one pentagon, every point pushed out to the unit sphere.
+
+    This is the pentagonal hexecontahedron's combinatorics, not its metric: the
+    edge points sit at plain thirds rather than where the snub dodecahedron's
+    dual would put them, so the pentagons are congruent on the sphere but not
+    the Catalan solid's flat ones — which is exactly what the board built from
+    it here wants, since dualising these centers gives a snub dodecahedron
+    whose faces are regular. The flat-faced solid is
+    `catalan.sphere_board`."""
     vertices, faces = _icosahedron()
     positions: dict[Hashable, Vec3] = {}
 
@@ -174,20 +182,12 @@ def _gyro_pentagons() -> tuple[dict, dict]:
     return cells, positions
 
 
-def sphere_board(mine_count: int) -> Board3D:
-    """A sphere tiled with 60 pentagons (a pentagonal hexecontahedron,
-    projected onto the unit sphere). Every pentagon has exactly 7
-    neighbors."""
-    cells, positions = _gyro_pentagons()
-    return _convex_board3d("sphere", cells, positions, mine_count)
-
-
 def snub_dodecahedron_board(mine_count: int) -> Board3D:
     """A snub dodecahedron: 12 pentagons and 80 triangles (vertex
     configuration 3.3.3.3.5), projected onto the unit sphere.
 
-    Built as the dual of the pentagonal hexecontahedron: one cell per
-    hexecontahedron vertex, made of the surrounding pentagon centers.
+    Built as the dual of the spherical gyro pentagons: one cell per pentagon
+    vertex, made of the surrounding pentagon centers.
     """
     pentagons, positions = _gyro_pentagons()
     centers = {
@@ -357,42 +357,69 @@ def rhombicosidodecahedron_board(mine_count: int) -> Board3D:
     return _convex_board3d("rhombicosidodeca", cells, positions, mine_count)
 
 
-def _flag_position(v_dir: Vec3, e_dir: Vec3, f_dir: Vec3) -> Vec3:
-    """The Wythoff generating point for the icosahedral (2, 3, 5) reflection
-    group: given one "flag" (a mutually incident icosahedron vertex, edge and
-    face)'s three axis directions -- ``v_dir`` the vertex (5-fold axis),
-    ``e_dir`` its edge's midpoint (2-fold axis), ``f_dir`` its face's centroid
-    (3-fold axis), the three corners of a fundamental (Schwarz) triangle whose
-    sides are the group's mirror planes -- the point inside that triangle
-    equidistant from all three mirrors. Reflecting it through the group's 120
-    symmetries generates the omnitruncated icosahedron (the truncated
-    icosidodecahedron, a.k.a. great rhombicosidodecahedron) with every edge
-    the same length by construction: unlike rectifying the icosahedron and
-    then truncating the result (a sequential approximation that, no matter
-    how the two steps are tuned, cannot make all three of its face shapes
-    regular at once -- see the git history for why), this always lands on
-    the exact Archimedean solid, because a flag's three mirrors are just
-    three planes through the origin and this point is the same distance from
-    each of them."""
-    v_dir, e_dir, f_dir = _normalize(v_dir), _normalize(e_dir), _normalize(f_dir)
+def _mirror_normals(v_dir: Vec3, e_dir: Vec3, f_dir: Vec3) -> dict[str, Vec3]:
+    """The three mirror planes of a flag's Schwarz triangle, as inward unit
+    normals. The mirror *opposite* a corner is the plane through the other two.
+    """
 
-    def mirror_normal(a: Vec3, b: Vec3, toward: Vec3) -> Vec3:
+    def normal(a: Vec3, b: Vec3, toward: Vec3) -> Vec3:
         n = _normalize(_cross(a, b))
         return n if _dot(n, toward) >= 0 else (-n[0], -n[1], -n[2])
 
-    # the mirror opposite each corner is the plane through the other two
-    n_v = mirror_normal(e_dir, f_dir, v_dir)
-    n_e = mirror_normal(f_dir, v_dir, e_dir)
-    n_f = mirror_normal(v_dir, e_dir, f_dir)
-    # equidistant from all three mirrors <=> orthogonal to n_v - n_e and to
-    # n_e - n_f, i.e. their cross product (a linear, not barycentric, solve)
-    p = _normalize(_cross(
-        (n_v[0] - n_e[0], n_v[1] - n_e[1], n_v[2] - n_e[2]),
-        (n_e[0] - n_f[0], n_e[1] - n_f[1], n_e[2] - n_f[2]),
-    ))
+    return {
+        "v": normal(e_dir, f_dir, v_dir),
+        "e": normal(f_dir, v_dir, e_dir),
+        "f": normal(v_dir, e_dir, f_dir),
+    }
+
+
+def _wythoff_point(
+    v_dir: Vec3,
+    e_dir: Vec3,
+    f_dir: Vec3,
+    zero: tuple[str, ...] = (),
+    equal: tuple[str, ...] = (),
+) -> Vec3:
+    """The Wythoff generating point of a Schwarz triangle: given one "flag" (a
+    mutually incident vertex, edge and face)'s three axis directions --
+    ``v_dir`` the vertex axis, ``e_dir`` its edge's midpoint, ``f_dir`` its
+    face's centroid, the three corners of a fundamental (Schwarz) triangle
+    whose sides are the group's mirror planes -- the point lying *on* the
+    mirrors named by ``zero`` and at *equal* distances from those named by
+    ``equal``.
+
+    Reflecting it through the group's symmetries generates a uniform polyhedron
+    with every edge the same length by construction: unlike rectifying a solid
+    and then truncating the result (a sequential approximation that, no matter
+    how the two steps are tuned, cannot make all of its face shapes regular at
+    once -- see the git history for why), this always lands on the exact
+    Archimedean solid, because a flag's three mirrors are just three planes
+    through the origin and both constraint kinds are linear in the point. Two
+    constraints, so the answer is one cross product.
+
+    ``boards/catalan.py`` reads every non-chiral Conway operation off this;
+    ``equal=("v", "e", "f")`` -- equidistant from all three -- is the
+    omnitruncation, which is `_flag_position` below.
+    """
+    v_dir, e_dir, f_dir = _normalize(v_dir), _normalize(e_dir), _normalize(f_dir)
+    n = _mirror_normals(v_dir, e_dir, f_dir)
+    rows = [n[c] for c in zero]
+    rows += [tuple(a - b for a, b in zip(n[x], n[y])) for x, y in zip(equal, equal[1:])]
+    if len(rows) != 2:
+        raise ValueError("a Wythoff point needs exactly two linear constraints")
+    p = _normalize(_cross(rows[0], rows[1]))
     if _dot(p, v_dir) + _dot(p, e_dir) + _dot(p, f_dir) < 0:
         p = (-p[0], -p[1], -p[2])
     return p
+
+
+def _flag_position(v_dir: Vec3, e_dir: Vec3, f_dir: Vec3) -> Vec3:
+    """The Wythoff generating point for the icosahedral (2, 3, 5) reflection
+    group: the point inside the flag's fundamental triangle equidistant from
+    all three of its mirrors. Reflecting it through the group's 120 symmetries
+    generates the omnitruncated icosahedron (the truncated icosidodecahedron,
+    a.k.a. great rhombicosidodecahedron)."""
+    return _wythoff_point(v_dir, e_dir, f_dir, equal=("v", "e", "f"))
 
 
 def _truncated_icosidodecahedron() -> tuple[dict, dict]:

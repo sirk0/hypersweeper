@@ -3,9 +3,8 @@ import {
   DUAL_ARCH,
   ISOGONAL_ARCH,
   MENU,
-  POLYHEDRA_MODES,
   RECTANGLE_ARCH,
-  SPHERE_MODES,
+  SOLID_MODES,
   SURFACES,
   SURFACE_SPECS,
   TILINGS_BY_KEY,
@@ -170,8 +169,7 @@ describe("menu reachability", () => {
         for (const row of familyRows(family, surfaceKey)) add(row.mode);
       }
     }
-    for (const m of SPHERE_MODES) add(m);
-    for (const m of POLYHEDRA_MODES) add(m);
+    for (const m of SOLID_MODES) add(m);
     // no gaps: every mode this build knows is reachable from the menu
     expect(reachable).toEqual(new Set(MODES));
   });
@@ -198,7 +196,7 @@ describe("mode -> tiling", () => {
     // The solids, the aperiodic and fractal patches and the shaped flats are
     // not products of the catalogue, so they answer null — as they do for
     // `surfaceOf`.
-    for (const mode of [...SPHERE_MODES, ...POLYHEDRA_MODES, "penrose", "sphinx", "hexhex"]) {
+    for (const mode of [...SOLID_MODES, "penrose", "sphinx", "hexhex"]) {
       expect(tilingOf(mode)).toBe(null);
     }
     expect(tilingOf("nosuchboard")).toBe(null);

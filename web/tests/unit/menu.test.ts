@@ -3,8 +3,7 @@ import {
   MENU,
   MENU_FAMILY_HINTS,
   MENU_FAMILY_LABELS,
-  POLYHEDRA_MODES,
-  SPHERE_MODES,
+  SOLID_MODES,
   flatMenuModes,
   menuFamilies,
   menuFamilyRows,
@@ -106,10 +105,10 @@ describe("home page pools", () => {
     expect(flat).not.toContain("sphere");
   });
 
-  it("draws the 3D pool from the manifolds, the spheres and the polyhedra", () => {
+  it("draws the 3D pool from the manifolds and every solid", () => {
     expect(threeD).toContain("cylhex");
     expect(threeD).toContain("kleintriakis");
-    for (const mode of [...SPHERE_MODES, ...POLYHEDRA_MODES]) expect(threeD).toContain(mode);
+    for (const mode of SOLID_MODES) expect(threeD).toContain(mode);
     expect(threeD).not.toContain("square");
     expect(threeD).not.toContain("penrose");
   });

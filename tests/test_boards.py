@@ -19,10 +19,9 @@ from minesweeper.boards import (
     MODE_LABELS,
     MODES_3D,
     PENTAFLAKE,
-    POLYHEDRA_MODES,
     ROOT3,
     SHAPED_MODES,
-    SPHERE_MODES,
+    SOLID_MODES,
     SPHINX,
     SUBSTITUTIONS,
     SURFACE_LABELS,
@@ -95,6 +94,24 @@ from minesweeper.boards import (
 from minesweeper.boards import (
     euler_characteristic as _euler_characteristic,
 )
+from minesweeper.boards.catalan import (
+    deltoidal_hexecontahedron_board,
+    deltoidal_icositetrahedron_board,
+    disdyakis_dodecahedron_board,
+    disdyakis_triacontahedron_board,
+    pentagonal_icositetrahedron_board,
+    pentakis_dodecahedron_board,
+    rhombic_dodecahedron_board,
+    rhombic_triacontahedron_board,
+    tetrakis_hexahedron_board,
+    triakis_icosahedron_board,
+    triakis_octahedron_board,
+    triakis_tetrahedron_board,
+)
+from minesweeper.boards.catalan import (
+    sphere_board as catalan_sphere_board,
+)
+from minesweeper.boards.core import newell_normal as _newell_normal
 from minesweeper.boards.presets import ARCH_PRESETS
 
 # Template tilings split by symmetry type. Archimedean (uniform) tilings are
@@ -2563,8 +2580,7 @@ class TestPresets:
 
     def test_every_mode_appears_exactly_once_in_the_menu(self):
         # the one-off (non-periodic) modes, plus every periodic tiling x surface
-        modes = list(APERIODIC_MODES + FRACTAL_MODES + SPHERE_MODES
-                     + POLYHEDRA_MODES)
+        modes = list(APERIODIC_MODES + FRACTAL_MODES + SOLID_MODES)
         modes += [m for shaped in SHAPED_MODES.values() for m in shaped]
         modes += [m for _, surfaces in TILINGS.values() for m in surfaces.values()]
         assert sorted(modes) == sorted(MODE_LABELS)
@@ -2573,3 +2589,143 @@ class TestPresets:
     def test_tilings_use_known_surfaces(self):
         for _, surfaces in TILINGS.values():
             assert set(surfaces) <= set(SURFACE_LABELS)
+
+
+# The thirteen Catalan solids, in menu order, with the face count each is
+# named for. Every one is `faces * frequency**2` cells (the two chiral ones
+# fan each pentagon into five quadrilaterals first, so `frequency=0` is the
+# bare pentagons and anything above multiplies by five as well).
+_CATALAN_SOLIDS = [
+    ("triakistetra", triakis_tetrahedron_board, 12, 3),
+    ("rhombicdodeca", rhombic_dodecahedron_board, 12, 4),
+    ("triakisocta", triakis_octahedron_board, 24, 3),
+    ("tetrakishexa", tetrakis_hexahedron_board, 24, 3),
+    ("deltoidalicositetra", deltoidal_icositetrahedron_board, 24, 4),
+    ("pentagonalicositetra", pentagonal_icositetrahedron_board, 24, 5),
+    ("disdyakisdodeca", disdyakis_dodecahedron_board, 48, 3),
+    ("rhombictriaconta", rhombic_triacontahedron_board, 30, 4),
+    ("triakisicosa", triakis_icosahedron_board, 60, 3),
+    ("pentakisdodeca", pentakis_dodecahedron_board, 60, 3),
+    ("deltoidalhexeconta", deltoidal_hexecontahedron_board, 60, 4),
+    ("sphere", catalan_sphere_board, 60, 5),
+    ("disdyakistriaconta", disdyakis_triacontahedron_board, 120, 3),
+]
+
+
+def _face_normal(polygon):
+    normal = _newell_normal(polygon)
+    length = math.hypot(*normal)
+    return tuple(c / length for c in normal)
+
+
+class TestCatalanSolids:
+    """The duals of the Archimedean solids.
+
+    Four properties tell a Catalan solid from something merely Catalan-shaped,
+    and none of them survives a construction that is only topologically right:
+    every face is **planar**, every face is **congruent** to every other, every
+    face plane is the same distance from the centre (so the solid has an
+    **insphere**), and the whole thing closes as a sphere. The builders derive
+    all of that from one Wythoff point per solid rather than from a table of
+    coordinates, so these are the checks that the derivation is sound.
+    """
+
+    @pytest.mark.parametrize(
+        "mode,builder,faces,sides", _CATALAN_SOLIDS, ids=[c[0] for c in _CATALAN_SOLIDS]
+    )
+    def test_face_count_and_shape(self, mode, builder, faces, sides):
+        board = builder(0, 0 if sides == 5 else 1)
+        assert len(board.polygons) == faces
+        assert {len(p) for p in board.polygons.values()} == {sides}
+
+    @pytest.mark.parametrize(
+        "mode,builder,faces,sides", _CATALAN_SOLIDS, ids=[c[0] for c in _CATALAN_SOLIDS]
+    )
+    def test_faces_are_planar(self, mode, builder, faces, sides):
+        board = builder(0, 0 if sides == 5 else 1)
+        for polygon in board.polygons.values():
+            centre = tuple(sum(p[a] for p in polygon) / len(polygon) for a in range(3))
+            normal = _face_normal(polygon)
+            off = max(
+                abs(sum(n * (p - c) for n, p, c in zip(normal, point, centre)))
+                for point in polygon
+            )
+            assert off < 1e-9, f"{mode}: face out of plane by {off}"
+
+    @pytest.mark.parametrize(
+        "mode,builder,faces,sides", _CATALAN_SOLIDS, ids=[c[0] for c in _CATALAN_SOLIDS]
+    )
+    def test_faces_are_congruent(self, mode, builder, faces, sides):
+        board = builder(0, 0 if sides == 5 else 1)
+        shapes = {
+            tuple(sorted(
+                round(math.dist(p[i], p[(i + 1) % len(p)]), 9) for i in range(len(p))
+            ))
+            for p in board.polygons.values()
+        }
+        assert len(shapes) == 1, f"{mode}: {len(shapes)} face shapes, expected 1"
+
+    @pytest.mark.parametrize(
+        "mode,builder,faces,sides", _CATALAN_SOLIDS, ids=[c[0] for c in _CATALAN_SOLIDS]
+    )
+    def test_every_face_touches_one_insphere(self, mode, builder, faces, sides):
+        board = builder(0, 0 if sides == 5 else 1)
+        radii = {
+            round(abs(sum(n * p for n, p in zip(_face_normal(polygon), polygon[0]))), 9)
+            for polygon in board.polygons.values()
+        }
+        assert len(radii) == 1, f"{mode}: face planes at {sorted(radii)}"
+
+    @pytest.mark.parametrize(
+        "mode,builder,faces,sides", _CATALAN_SOLIDS, ids=[c[0] for c in _CATALAN_SOLIDS]
+    )
+    def test_subdivision_keeps_the_surface_closed(self, mode, builder, faces, sides):
+        """The size knob's real risk is a subdivision vertex on a shared edge
+        keyed differently by the two faces that meet there: the board would
+        still draw, and the two rows of cells either side of the seam would
+        simply stop being neighbours. Euler characteristic 2 at every
+        frequency is what rules that out."""
+        for frequency in (1, 2, 3):
+            board = builder(0, frequency)
+            per_face = 5 * frequency**2 if sides == 5 else frequency**2
+            assert len(board.polygons) == faces * per_face
+            assert _euler_characteristic(board) == 2
+            assert _boundary_components(board) == 0
+
+    def test_the_chiral_pair_has_no_mirror(self):
+        """The two pentagonal ones are duals of the snubs, so they are chiral:
+        no reflection of the solid is a rotation of it. Measured as a vertex
+        set: mirroring in x maps the solid onto itself only if some rotation
+        undoes it, and for these two none does -- while for a non-chiral
+        Catalan solid (here the rhombic triacontahedron, built on the same
+        icosahedral base) the mirrored vertex set is the original."""
+
+        def vertex_set(board):
+            return {
+                tuple(round(c, 6) for c in point)
+                for polygon in board.polygons.values()
+                for point in polygon
+            }
+
+        def mirrored(points):
+            return {(-x, y, z) for x, y, z in points}
+
+        # the reflective one: its own mirror image, vertex for vertex
+        plain = vertex_set(rhombic_triacontahedron_board(0, 1))
+        assert mirrored(plain) == plain
+        # the chiral ones: no shared vertex set under the same reflection,
+        # which is only possible because the mirror is not a symmetry
+        for builder in (pentagonal_icositetrahedron_board, catalan_sphere_board):
+            points = vertex_set(builder(0, 0))
+            assert mirrored(points) != points
+
+    def test_sphere_keeps_its_sixty_seven_neighbour_pentagons(self):
+        """The pentagonal hexecontahedron is the one Catalan solid that was
+        already in the game -- as `sphere`, drawn projected onto the unit
+        sphere. Rebuilt flat-faced it is the same board to the game: 60
+        pentagons, every one with exactly 7 neighbours, so a share link or a
+        best time recorded against the old one still addresses this."""
+        board = catalan_sphere_board(10, 0)
+        assert len(board.polygons) == 60
+        assert {len(p) for p in board.polygons.values()} == {5}
+        assert {len(n) for n in board.adjacency.values()} == {7}

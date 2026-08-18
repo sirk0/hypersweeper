@@ -98,7 +98,19 @@
     "carpet": "Sierpiński carpet",
     "pentaflake": "Pentaflake",
     "gosper": "Gosper island",
+    "triakistetra": "Triakis tetrahedron",
+    "rhombicdodeca": "Rhombic dodecahedron",
+    "triakisocta": "Triakis octahedron",
+    "tetrakishexa": "Tetrakis hexahedron",
+    "deltoidalicositetra": "Deltoidal icositetrahedron",
+    "pentagonalicositetra": "Pentagonal icositetrahedron",
+    "disdyakisdodeca": "Disdyakis dodecahedron",
+    "rhombictriaconta": "Rhombic triacontahedron",
+    "triakisicosa": "Triakis icosahedron",
+    "pentakisdodeca": "Pentakis dodecahedron",
+    "deltoidalhexeconta": "Deltoidal hexecontahedron",
     "sphere": "Pentagonal hexecontahedron",
+    "disdyakistriaconta": "Disdyakis triacontahedron",
     "c80": "Chamfered dodecahedron",
     "c180": "Goldberg GP(3,0)",
     "spheretri": "Geodesic icosahedron",
@@ -125,14 +137,14 @@
       "flat",
       "manifolds",
       "sphere",
+      "platonic",
+      "catalan",
       "polyhedra"
     ],
     "rootLabels": {
       "classic": "Classic",
       "flat": "Flat",
-      "manifolds": "Flat manifolds",
-      "sphere": "Sphere",
-      "polyhedra": "Polyhedra"
+      "manifolds": "Flat manifolds"
     },
     "manifoldOrder": [
       "mobius",
@@ -172,16 +184,19 @@
       "aperiodic": "Aperiodic",
       "fractal": "Fractals"
     },
-    "sphereModes": [
-      "sphere",
-      "c80",
-      "c180",
-      "spheretri",
-      "snubdodec",
-      "rhombicosidodeca",
-      "truncicosidodeca"
-    ],
-    "polyhedraGroups": [
+    "solidGroups": [
+      {
+        "key": "sphere",
+        "label": "Sphere",
+        "modes": [
+          "c80",
+          "c180",
+          "spheretri",
+          "snubdodec",
+          "rhombicosidodeca",
+          "truncicosidodeca"
+        ]
+      },
       {
         "key": "platonic",
         "label": "Platonic solids",
@@ -194,8 +209,27 @@
         ]
       },
       {
-        "key": "other",
-        "label": "Other polyhedra",
+        "key": "catalan",
+        "label": "Catalan solids",
+        "modes": [
+          "triakistetra",
+          "rhombicdodeca",
+          "triakisocta",
+          "tetrakishexa",
+          "deltoidalicositetra",
+          "pentagonalicositetra",
+          "disdyakisdodeca",
+          "rhombictriaconta",
+          "triakisicosa",
+          "pentakisdodeca",
+          "deltoidalhexeconta",
+          "sphere",
+          "disdyakistriaconta"
+        ]
+      },
+      {
+        "key": "polyhedra",
+        "label": "Polyhedra",
         "modes": [
           "tetraframe",
           "cubeframe",

@@ -25,9 +25,10 @@ Import order is a strict DAG; a module only imports from the ones above it.
 | `tilings.py` | Regular flat builders (square/triangle/trigrid/hex/hexhex/hextri/hextriangle), the `_ArchTemplate` system, the eight Archimedean `_*_template()` factories plus their eight Laves duals (built by `_dual_template`), the six isogonal (non-edge-to-edge) ones and the five congruent-rectangle bonds, and the **`ARCH_TILINGS`** registry (the one place any of them is declared, with `_FAMILY_TRAITS` saying what each family is). |
 | `fractal.py` | The self-similar (fractal) boards: the sphinx, the chair, the Sierpinski carpet, the pentaflake and the Gosper island. One `_Substitution` record per tile — unit outline, the tiles filling the inflated copy, the inflation factor, lattice ops — and the shared inflation (`substitution_placements`) all five `*_board` builders run. The first two are rep-tiles (their children fill the tile); the carpet's and the pentaflake's leave holes, which is what makes them fractals with holes rather than shapes; the Gosper island's fill it with no hole at all and put the fractal in the *outline* instead. Four lattices are integer; the pentaflake's is ℤ[ζ10], since five-fold symmetry needs rank 4. The Gosper island's inflation is the one that is not a pure scaling: multiplication by 2 + ζ, a spiral similarity of √7 at 19.106°. |
 | `aperiodic.py` | Penrose (P3), the Spectre (Tile(1,1), the chiral monotile) and the phyllotactic spiral, each with exact-arithmetic vertex ids — ℤ[ζ5] for Penrose and the spiral, ℤ[ζ12] for the Spectre. The Spectre's ring is *dense* in the plane, so unlike Penrose's discrete lattice there is no lattice to snap a float vertex back to: its placements are carried as exact `(rotation, mirror, translation)` triples and no floating point enters the substitution at all. The spiral is the odd one out — no substitution, just ten 36° wedges of the tile's own translation lattice, the odd ones offset a step; nonperiodic because its five-fold centre forbids any translation. |
-| `solids.py` | Closed/convex and polycube 3D boards (pentagonal hexecontahedron, Goldberg polyhedra, geodesic icosahedron, rhombicosidodecahedron, truncated icosidodecahedron, cube, tetrahedron, frames, bipyramid). |
+| `solids.py` | Closed/convex and polycube 3D boards (spherical gyro pentagons, Goldberg polyhedra, geodesic icosahedron, rhombicosidodecahedron, truncated icosidodecahedron, cube, tetrahedron, frames, bipyramid), plus the shared `_wythoff_point` every uniform solid here and every Catalan solid next door is generated from. |
+| `catalan.py` | The thirteen Catalan solids, the duals of the Archimedean solids. One recipe for all of them: a Platonic base and one flag, the Wythoff generating point of its Schwarz triangle (`solids._wythoff_point` for the five non-chiral Conway operations, `_snub_point` for the chiral one), a Catalan vertex at `n / <w, n>` on each face axis — polar duality — and the base's flags grouped into faces by the operation. Faces are then subdivided (`solids._geodesic` for triangles, `_quad_grid` for quadrilaterals, a five-way fan first for pentagons), which is these boards' only size knob. |
 | `surfaces.py` | Wrapping tilings onto surfaces: the three immersion points (`_torus_point`, `_cylinder_point`, `_mobius_point`), the shared `_assemble` tail, the nine simple `*_board` wrappers, and the Archimedean `arch_torus_board` / `arch_cylinder_board` / `arch_mobius_board`. |
-| `catalog.py` | The menu, **derived**: `SURFACE_SPECS` and `TILING_SPECS` (leaf data loaded from `data/catalog.json`) produce `MODE_LABELS`, `TILINGS`, `SURFACE_LABELS`, the geometry-first menu tables (`MENU_ROOT`/`MANIFOLD_*`/`FAMILY_*`/`SPHERE_MODES`/`POLYHEDRA_GROUP_*`/`POLYHEDRA_MODES`/`SHAPED_MODES`) and the picker helpers (`family_rows`, `picker_families`, `picker_modes`), `MODES_3D`, `mode_for`, `surface_of`, `view_hint`. |
+| `catalog.py` | The menu, **derived**: `SURFACE_SPECS` and `TILING_SPECS` (leaf data loaded from `data/catalog.json`) produce `MODE_LABELS`, `TILINGS`, `SURFACE_LABELS`, the geometry-first menu tables (`MENU_ROOT`/`MANIFOLD_*`/`FAMILY_*`/`SOLID_GROUP_*`/`SOLID_MODES`/`SHAPED_MODES`) and the picker helpers (`family_rows`, `picker_families`, `picker_modes`), `MODES_3D`, `mode_for`, `surface_of`, `view_hint`. |
 | `presets.py` | Difficulty presets and `build_board`. Flat regular, solid, Archimedean/Laves and aperiodic (penrose/spectre/phyllotaxis) presets all load from `data/presets.json` (shared with the web port). The Archimedean rows are authored in the compact **`ARCH_PRESETS`** table (tiling → surface → difficulty → args) that `scripts/export_data.py` expands into `data/presets.json`. |
 
 `__init__.py` re-exports the whole public surface, so `from
@@ -42,11 +43,12 @@ in repo-root JSON that **both** front-ends read — so a value is never
 written twice:
 
 - `data/catalog.json` — `SURFACE_SPECS`, the regular `TilingSpec` rows,
-  `DIFFICULTIES`, `SOLO_LABELS`, and the menu taxonomy/labels. `catalog.py`
+  `DIFFICULTIES`, `SOLO_LABELS`, and the menu taxonomy/labels (including
+  `menu.solidGroups`, the four solid pages). `catalog.py`
   loads these via `boards/_data.py`; the *derivations* stay in code.
 - `data/presets.json` — the difficulty presets for the **ported** modes
   (the flat regular ones — square/triangle/trigrid/hex/hexhex/hextriangle —
-  the twelve solids, the regular-tiling surface wraps, every Archimedean/Laves
+  the solids, the regular-tiling surface wraps, every Archimedean/Laves
   tiling × surface, and the three aperiodic tilings — penrose/spectre/phyllotaxis), as
   `{mode: {builder, args}}`. The Archimedean/Laves rows carry the tiling
   key as their first arg. `presets.py` loads every row into `_PRESETS`
@@ -65,7 +67,7 @@ the Python web build finds it at runtime.
 A **mode** is the string `build_board` takes. For a periodic tiling it is
 `surface.prefix + tiling.key` (e.g. `torustrihex`); `catalog.mode_for`
 is the only place that convention lives. Solids/aperiodic/shaped modes
-are one-offs listed directly in the `SPHERE_MODES` / `POLYHEDRA_MODES` /
+are one-offs listed directly in the `SOLID_GROUP_MEMBERS` /
 `APERIODIC_MODES` tuples (and `SHAPED_MODES`, which maps a regular tiling
 key to the shaped flat boards cut from it) with labels in `SOLO_LABELS`.
 
@@ -414,19 +416,24 @@ These are one-offs, not tiling×surface products.
    builders assemble `cells` + `positions` and pick an orientation
    helper (`solids._convex_board3d` for convex solids, the polycube
    assemblers, or `surfaces._assemble`).
-2. Add the mode to the right menu table in `data/catalog.json` —
-   `menu.sphereModes`, one `menu.polyhedraGroups[*].modes` (Platonic solids,
-   or everything else), `menu.aperiodic`, or `menu.shapedModes` (keyed by the
-   regular tiling the shaped board is cut from) — and its label to
-   `soloLabels`. `catalog.py` loads them (`POLYHEDRA_MODES` is derived by
-   flattening `polyhedraGroups`, so nothing else needs to know the polyhedra
-   page has two rows rather than one); the exporter round-trip test keeps the
-   two sides honest. Both menus follow from that table: on the web a
-   `shapedModes` entry lands under **Custom › Flat › Non-square boards** (the
-   regular tilings themselves are rows of the picker there), the Polyhedra
-   page is a group picker exactly like Flat manifolds (choose a group, then a
-   board), and everything else joins the home page's Flat or 3D random pool
-   along with its group.
+2. Add the mode to the right menu table in `data/catalog.json` — one
+   `menu.solidGroups[*].modes` (Sphere, Platonic solids, Catalan solids or
+   Polyhedra), `menu.aperiodic`, or `menu.shapedModes` (keyed by the regular
+   tiling the shaped board is cut from) — and its label to `soloLabels`.
+   `catalog.py` loads them (`SOLID_MODES` is derived by flattening
+   `solidGroups`, so nothing else needs to know how many solid pages there
+   are); the exporter round-trip test keeps the two sides honest. Both menus
+   follow from that table: on the web a `shapedModes` entry lands under
+   **Custom › Flat › Non-square boards** (the regular tilings themselves are
+   rows of the picker there), each solid group is a home-page row leading
+   straight to a flat list of its boards, and everything else joins the home
+   page's Flat or 3D random pool along with its group.
+
+   A **new solid group** is one more `menu.solidGroups` row: its key joins
+   `menu.root`, both menus grow a page, and the only code either side needs is
+   an icon for the row (`_ICON_ALIASES` in `gui.py`, `ALIASES` in
+   `web/src/ui/icons.ts` — there is no board named "catalan" to draw) and a
+   one-line hint (`SOLID_GROUP_HINTS` in `web/src/ui/menu.ts`).
 3. Add the builder to `_JSON_BUILDERS` in `presets.py`, add a
    `{mode: {builder, args: {difficulty: [...]}}}` row to
    `data/presets.json` (positional args), and re-run
@@ -562,9 +569,27 @@ hand-picked density is the one thing this game cannot get right by eye.
    band's row count stops where the immersion would have to narrow the band
    to draw it (`_mobius_band_clamped`) — past that the extra rows buy no
    width, only stretched tiles. Boards with no size
-   knob — the named solids — and the fractals, which quantise by whole
+   knob — the sphere family — and the fractals, which quantise by whole
    substitution steps, keep their geometry and are listed as exceptions in
    `tests/test_presets.py`.
+
+   **A knob that cannot distort anything must say so** (`rigid` in `SPEC`).
+   The shape half of this search measures *roundness*, which is only the same
+   thing as "closest to its planar shape" for a tiling of regular polygons --
+   `planar_shape` fixes that for the brick bonds by measuring against the
+   template's own tile. The Catalan solids are the case it cannot fix: their
+   cells lie flat on a face of the solid at every frequency, so nothing is
+   distorted at any setting, and a Catalan face is by definition not round (a
+   golden rhombus, a kite, a 30-30-120 sliver). Left switched on, the shape
+   term read "subdivide further" as "less distorted" and chose the size for it
+   -- a 300-cell pentagonal hexecontahedron and a 240-cell triakis icosahedron
+   on the easy row against a target of 81. With nothing for shape to say, size
+   decides alone.
+
+   **A knob's floor is not always 1** (`floor` in `SPEC`). The two chiral
+   Catalan solids take `frequency=0`, meaning "do not fan the pentagons at
+   all", and that is their whole small end: fanned once, a pentagonal
+   hexecontahedron is already 300 cells against the 60 it ships at easy.
 
    **A tiling that is not edge to edge needs its T-vertices dropped before any
    tile of it is measured** (`resize.corner_indices`, the same thing

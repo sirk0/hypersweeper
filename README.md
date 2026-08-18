@@ -52,20 +52,29 @@ Pick a surface, then a tiling:
   **Aperiodic** and **Fractals**; every periodic family also wraps the
   cylinder and the torus below, and — unless the tiling is chiral — the
   Möbius strip and the Klein bottle too
-- **Sphere (3D)** — a pentagonal hexecontahedron (60 pentagons, 7
-  neighbors), a chamfered dodecahedron (12 pentagons + 30 hexagons), the
-  Goldberg polyhedron GP(3,0) (12 pentagons + 80 hexagons), a geodesic
+- **Sphere (3D)** — a chamfered dodecahedron (12 pentagons + 30 hexagons),
+  the Goldberg polyhedron GP(3,0) (12 pentagons + 80 hexagons), a geodesic
   icosahedron (80 triangles), a snub dodecahedron
   (12 pentagons + 80 triangles), a rhombicosidodecahedron or a truncated
-  icosidodecahedron.
+  icosidodecahedron — each rounded onto the sphere itself.
   (A sphere cannot be tiled with hexagons alone — Euler's formula
   forces 12 pentagons in.)
-- **Polyhedra (3D)** — a group picker: **Platonic solids** (the five regular
-  solids, each tiled with triangles or squares, flat and creased at the
-  edges rather than rounded onto a sphere) — a tetrahedron (4 faces), a cube
-  (6, squares), an octahedron (8), a dodecahedron (12 pentagons, each fanned
-  into 5 triangles from its own centre) and an icosahedron (20) — and
-  **Other polyhedra** — a tetrahedron frame (a level-1 Sierpiński
+- **Platonic solids (3D)** — the five regular solids, each tiled with
+  triangles or squares, flat and creased at the edges rather than rounded
+  onto a sphere: a tetrahedron (4 faces), a cube (6, squares), an octahedron
+  (8), a dodecahedron (12 pentagons, each fanned into 5 triangles from its
+  own centre) and an icosahedron (20)
+- **Catalan solids (3D)** — all thirteen duals of the Archimedean solids,
+  flat-faced, each face cut into smaller copies of itself to make a board:
+  the triakis tetrahedron, rhombic dodecahedron, triakis octahedron,
+  tetrakis hexahedron, deltoidal icositetrahedron, pentagonal
+  icositetrahedron, disdyakis dodecahedron, rhombic triacontahedron, triakis
+  icosahedron, pentakis dodecahedron, deltoidal hexecontahedron, pentagonal
+  hexecontahedron (60 pentagons, 7 neighbors) and disdyakis triacontahedron.
+  Unlike the Archimedean solids these are *face*-transitive — one congruent
+  face throughout, and no face regular: golden rhombi, kites, scalene
+  triangles, irregular pentagons
+- **Polyhedra (3D)** — a tetrahedron frame (a level-1 Sierpiński
   tetrahedron: the middle triangle removed from each face, leaving four
   corner tetrahedra that meet at the edge midpoints), a cube frame (a cube
   with a square tunnel bored through each pair of opposite faces — a level-1

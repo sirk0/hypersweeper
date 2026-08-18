@@ -41,7 +41,7 @@ BAND = 0.15
 # Anything else outside the band is a bug in the preset, not a new exception:
 # add it here only after checking the builder genuinely cannot land closer.
 FIXED_GEOMETRY = {
-    "sphere", "spheretri", "c80", "c180", "snubdodec",
+    "spheretri", "c80", "c180", "snubdodec",
     "rhombicosidodeca", "truncicosidodeca",
 }
 COARSE_GEOMETRY = {"sphinx", "chair", "carpet", "pentaflake", "gosper"}
@@ -91,6 +91,41 @@ EXEMPT_ROWS = {
     # subdivision at all), so 60 is the closest an 81-cell target can be hit;
     # 240 and 540 both land inside the ordinary band against 256 and 480.
     ("dodecahedron", "easy"),
+    # The Catalan solids, whose ladder is the same shape as the dodecahedron's
+    # and much coarser: a solid of F faces cut `frequency` ways along each edge
+    # is F * frequency**2 cells, so the rungs are F, 4F, 9F, 16F -- the second
+    # is already four times the first. Against an easy target of 81 that leaves
+    # a 12-face solid choosing between 48 and 108, a 24-face one between 24 and
+    # 96, a 60-face one between 60 and 240, and a 120-face one between 120 and
+    # 480. The rows below are the ones where neither rung lands within 25%; the
+    # ones that miss only the inner band are counted against
+    # NEAR_MISS_ALLOWANCE like every other near-miss.
+    ("triakistetra", "easy"),      # 48 or 108
+    ("rhombicdodeca", "easy"),     # 48 or 108
+    ("disdyakisdodeca", "easy"),   # 48 or 192
+    ("rhombictriaconta", "easy"),  # 30 or 120
+    ("pentakisdodeca", "easy"),    # 60 or 240
+    ("deltoidalhexeconta", "easy"),  # 60 or 240
+    ("disdyakistriaconta", "easy"),  # 120 or 480
+    ("disdyakistriaconta", "medium"),  # 120 or 480
+    # ...and the triakis icosahedron's small rung is not merely small, it is
+    # unplayable: at frequency 1 every one of its 60 triangles has an
+    # indistinguishable twin (the two halves of a pyramid face share a closed
+    # neighbourhood), exactly as the flat triakis tilings do, so the win rate
+    # would be a coin flip per mine at any density. 240 is the first rung that
+    # is a puzzle at all, and a board three times too big beats one that cannot
+    # be played -- `resize` rules the small rung out on `metrics`, not on size.
+    ("triakisicosa", "easy"),
+    # The two chiral ones are coarser again, because a pentagon cannot be cut
+    # into pentagons: the only subdivision fans each face into five
+    # quadrilaterals first, so the very first step multiplies by five and the
+    # ladder is 24 -> 120 -> 480 and 60 -> 300 -> 1200. Both of the pentagonal
+    # icositetrahedron's small rows and both of the hexecontahedron's outer
+    # ones are that step, not a preset left untuned.
+    ("pentagonalicositetra", "easy"),    # 24 or 120
+    ("pentagonalicositetra", "medium"),  # 120 or 480
+    ("sphere", "easy"),                  # 60 or 300
+    ("sphere", "hard"),                  # 300 or 1200
 }
 
 # Everything else is held to two bars rather than one. A single +-15% rule
@@ -116,7 +151,13 @@ OUTER_BAND = 0.25
 # to 96 with nothing in between, and 96 against 81 is 18.5%. That is the step
 # the geometry forces, not a preset drifting: every one of them was folded at
 # 84 and is a surface at 96.
-NEAR_MISS_ALLOWANCE = 0.11
+#
+# It went from 11% to 12% when the Catalan solids arrived, for the same kind of
+# reason: a 24-face solid's easy row has 24 and 96 to choose from and nothing
+# between, so the triakis octahedron, the tetrakis hexahedron and the deltoidal
+# icositetrahedron each land at 96. Their rows are inside the outer band, so
+# they are counted here rather than exempted (see EXEMPT_ROWS).
+NEAR_MISS_ALLOWANCE = 0.12
 
 
 def _conformance() -> dict:

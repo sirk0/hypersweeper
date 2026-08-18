@@ -4912,27 +4912,36 @@
     "args": {
       "easy": {
         "args": [
-          10
+          10,
+          0
         ],
         "cells": 60,
-        "fixed": true,
-        "reason": "the cell count is the solid"
+        "score": 11.9003,
+        "distortionMean": 1.0722,
+        "distortionP90": 1.0722,
+        "indistinguishable": 0
       },
       "medium": {
         "args": [
-          14
+          14,
+          1
         ],
-        "cells": 60,
-        "fixed": true,
-        "reason": "the cell count is the solid"
+        "cells": 300,
+        "score": 10.4758,
+        "distortionMean": 1.0713,
+        "distortionP90": 1.1013,
+        "indistinguishable": 0
       },
       "hard": {
         "args": [
-          19
+          19,
+          1
         ],
-        "cells": 60,
-        "fixed": true,
-        "reason": "the cell count is the solid"
+        "cells": 300,
+        "score": 12.41,
+        "distortionMean": 1.0713,
+        "distortionP90": 1.1013,
+        "indistinguishable": 0
       }
     }
   },
@@ -7280,6 +7289,462 @@
         "score": 0.1479,
         "distortionMean": 1.0203,
         "distortionP90": 1.0203,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "deltoidalhexeconta": {
+    "builder": "deltoidal_hexecontahedron_board",
+    "args": {
+      "medium": {
+        "args": [
+          10,
+          2
+        ],
+        "cells": 240,
+        "score": 0.0645,
+        "distortionMean": 1.0307,
+        "distortionP90": 1.0379,
+        "indistinguishable": 0
+      },
+      "easy": {
+        "args": [
+          10,
+          1
+        ],
+        "cells": 60,
+        "score": 11.9003,
+        "distortionMean": 1.0487,
+        "distortionP90": 1.0487,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          10,
+          3
+        ],
+        "cells": 540,
+        "score": 0.1178,
+        "distortionMean": 1.0273,
+        "distortionP90": 1.0527,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "deltoidalicositetra": {
+    "builder": "deltoidal_icositetrahedron_board",
+    "args": {
+      "easy": {
+        "args": [
+          10,
+          2
+        ],
+        "cells": 96,
+        "score": 10.5097,
+        "distortionMean": 1.0203,
+        "distortionP90": 1.0432,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          10,
+          3
+        ],
+        "cells": 216,
+        "score": 10.5097,
+        "distortionMean": 1.019,
+        "distortionP90": 1.0573,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          10,
+          4
+        ],
+        "cells": 384,
+        "score": 10.6694,
+        "distortionMean": 1.0185,
+        "distortionP90": 1.0396,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "disdyakisdodeca": {
+    "builder": "disdyakis_dodecahedron_board",
+    "args": {
+      "easy": {
+        "args": [
+          10,
+          1
+        ],
+        "cells": 48,
+        "score": 12.5697,
+        "distortionMean": 1.1341,
+        "distortionP90": 1.1341,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          10,
+          2
+        ],
+        "cells": 192,
+        "score": 10.863,
+        "distortionMean": 1.1341,
+        "distortionP90": 1.1341,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          10,
+          3
+        ],
+        "cells": 432,
+        "score": 0.1054,
+        "distortionMean": 1.1341,
+        "distortionP90": 1.1341,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "disdyakistriaconta": {
+    "builder": "disdyakis_triacontahedron_board",
+    "args": {
+      "easy": {
+        "args": [
+          10,
+          1
+        ],
+        "cells": 120,
+        "score": 12.1791,
+        "distortionMean": 1.1959,
+        "distortionP90": 1.1959,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          10,
+          2
+        ],
+        "cells": 480,
+        "score": 0.0,
+        "distortionMean": 1.1959,
+        "distortionP90": 1.1959,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          10,
+          2
+        ],
+        "cells": 480,
+        "score": 12.8858,
+        "distortionMean": 1.1959,
+        "distortionP90": 1.1959,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "pentagonalicositetra": {
+    "builder": "pentagonal_icositetrahedron_board",
+    "args": {
+      "easy": {
+        "args": [
+          10,
+          1
+        ],
+        "cells": 120,
+        "score": 12.1791,
+        "distortionMean": 1.0429,
+        "distortionP90": 1.0467,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          10,
+          2
+        ],
+        "cells": 480,
+        "score": 0.0,
+        "distortionMean": 1.0318,
+        "distortionP90": 1.0541,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          10,
+          2
+        ],
+        "cells": 480,
+        "score": 12.8858,
+        "distortionMean": 1.0318,
+        "distortionP90": 1.0541,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "pentakisdodeca": {
+    "builder": "pentakis_dodecahedron_board",
+    "args": {
+      "easy": {
+        "args": [
+          10,
+          1
+        ],
+        "cells": 60,
+        "score": 11.9003,
+        "distortionMean": 1.0107,
+        "distortionP90": 1.0107,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          10,
+          2
+        ],
+        "cells": 240,
+        "score": 0.0645,
+        "distortionMean": 1.0107,
+        "distortionP90": 1.0107,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          10,
+          3
+        ],
+        "cells": 540,
+        "score": 0.1178,
+        "distortionMean": 1.0107,
+        "distortionP90": 1.0107,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "rhombicdodeca": {
+    "builder": "rhombic_dodecahedron_board",
+    "args": {
+      "easy": {
+        "args": [
+          10,
+          3
+        ],
+        "cells": 108,
+        "score": 11.863,
+        "distortionMean": 1.0607,
+        "distortionP90": 1.0607,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          10,
+          6
+        ],
+        "cells": 432,
+        "score": 0.1054,
+        "distortionMean": 1.0607,
+        "distortionP90": 1.0607,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          10,
+          5
+        ],
+        "cells": 300,
+        "score": 10.4758,
+        "distortionMean": 1.0607,
+        "distortionP90": 1.0607,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "rhombictriaconta": {
+    "builder": "rhombic_triacontahedron_board",
+    "args": {
+      "easy": {
+        "args": [
+          10,
+          2
+        ],
+        "cells": 120,
+        "score": 12.1791,
+        "distortionMean": 1.118,
+        "distortionP90": 1.118,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          10,
+          3
+        ],
+        "cells": 270,
+        "score": 0.0532,
+        "distortionMean": 1.118,
+        "distortionP90": 1.118,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          10,
+          4
+        ],
+        "cells": 480,
+        "score": 0.0,
+        "distortionMean": 1.118,
+        "distortionP90": 1.118,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "tetrakishexa": {
+    "builder": "tetrakis_hexahedron_board",
+    "args": {
+      "easy": {
+        "args": [
+          10,
+          2
+        ],
+        "cells": 96,
+        "score": 10.5097,
+        "distortionMean": 1.0758,
+        "distortionP90": 1.0758,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          10,
+          3
+        ],
+        "cells": 216,
+        "score": 10.5097,
+        "distortionMean": 1.0758,
+        "distortionP90": 1.0758,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          10,
+          4
+        ],
+        "cells": 384,
+        "score": 10.6694,
+        "distortionMean": 1.0758,
+        "distortionP90": 1.0758,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "triakisicosa": {
+    "builder": "triakis_icosahedron_board",
+    "args": {
+      "easy": {
+        "args": [
+          10,
+          2
+        ],
+        "cells": 240,
+        "score": 14.2586,
+        "distortionMean": 1.526,
+        "distortionP90": 1.526,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          10,
+          2
+        ],
+        "cells": 240,
+        "score": 0.0645,
+        "distortionMean": 1.526,
+        "distortionP90": 1.526,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          10,
+          3
+        ],
+        "cells": 540,
+        "score": 0.1178,
+        "distortionMean": 1.526,
+        "distortionP90": 1.526,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "triakisocta": {
+    "builder": "triakis_octahedron_board",
+    "args": {
+      "easy": {
+        "args": [
+          10,
+          2
+        ],
+        "cells": 96,
+        "score": 10.5097,
+        "distortionMean": 1.4868,
+        "distortionP90": 1.4868,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          10,
+          3
+        ],
+        "cells": 216,
+        "score": 10.5097,
+        "distortionMean": 1.4868,
+        "distortionP90": 1.4868,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          10,
+          4
+        ],
+        "cells": 384,
+        "score": 10.6694,
+        "distortionMean": 1.4868,
+        "distortionP90": 1.4868,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "triakistetra": {
+    "builder": "triakis_tetrahedron_board",
+    "args": {
+      "easy": {
+        "args": [
+          10,
+          3
+        ],
+        "cells": 108,
+        "score": 11.863,
+        "distortionMean": 1.4042,
+        "distortionP90": 1.4042,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          10,
+          6
+        ],
+        "cells": 432,
+        "score": 0.1054,
+        "distortionMean": 1.4042,
+        "distortionP90": 1.4042,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          10,
+          5
+        ],
+        "cells": 300,
+        "score": 10.4758,
+        "distortionMean": 1.4042,
+        "distortionP90": 1.4042,
         "indistinguishable": 0
       }
     }

@@ -81,7 +81,6 @@ SPEC: dict[str, dict] = {
     "cylinder_triangle_board": dict(size=(0, 1), mine=2, shape=None),
     "cylinder_hex_board": dict(size=(0, 1), mine=2, shape=None),
     # the named solids: the cell count *is* the solid, so only mines move
-    "sphere_board": dict(size=(), mine=0, shape=None),
     "c80_board": dict(size=(), mine=0, shape=None),
     "c180_board": dict(size=(), mine=0, shape=None),
     "sphere_triangle_board": dict(size=(), mine=0, shape=None),
@@ -99,6 +98,34 @@ SPEC: dict[str, dict] = {
                                     grid="bipyramid"),
     "stepped_pyramid_board": dict(size=(0, 1), mine=2, shape=None,
                                   grid="steppedpyramid"),
+    # The Catalan solids: one knob each, the face subdivision, so the cell
+    # count is (face count) * frequency**2 -- and for the two pentagonal ones
+    # 5 * frequency**2 per face, frequency 0 meaning the bare pentagons.
+    #
+    # ``rigid`` because a Catalan solid's cells cannot be distorted by the
+    # search at all: every one lies flat on a face of the solid, and the knob
+    # only cuts those faces smaller. The shape term measures *roundness*, and a
+    # Catalan face is by definition not round -- a golden rhombus, a kite, a
+    # 30-30-120 sliver -- so left switched on it reads "subdivide further" as
+    # "less distorted" and picks the board's size for it: it put a 300-cell
+    # pentagonal hexecontahedron and a 240-cell triakis icosahedron on the easy
+    # row against a target of 81. This is the same trap `planar_shape` fixes for
+    # the brick bonds, in the one form it cannot fix: a pentagon's fan
+    # quadrilaterals are not the pentagon, so there is no one planar tile to
+    # measure them against. With nothing for shape to say, size decides alone.
+    "triakis_tetrahedron_board": dict(size=(1,), mine=0, shape=None, rigid=True),
+    "rhombic_dodecahedron_board": dict(size=(1,), mine=0, shape=None, rigid=True),
+    "triakis_octahedron_board": dict(size=(1,), mine=0, shape=None, rigid=True),
+    "tetrakis_hexahedron_board": dict(size=(1,), mine=0, shape=None, rigid=True),
+    "deltoidal_icositetrahedron_board": dict(size=(1,), mine=0, shape=None, rigid=True),
+    "pentagonal_icositetrahedron_board": dict(size=(1,), mine=0, shape=None, rigid=True, floor=0),
+    "disdyakis_dodecahedron_board": dict(size=(1,), mine=0, shape=None, rigid=True),
+    "rhombic_triacontahedron_board": dict(size=(1,), mine=0, shape=None, rigid=True),
+    "triakis_icosahedron_board": dict(size=(1,), mine=0, shape=None, rigid=True),
+    "pentakis_dodecahedron_board": dict(size=(1,), mine=0, shape=None, rigid=True),
+    "deltoidal_hexecontahedron_board": dict(size=(1,), mine=0, shape=None, rigid=True),
+    "sphere_board": dict(size=(1,), mine=0, shape=None, rigid=True, floor=0),
+    "disdyakis_triacontahedron_board": dict(size=(1,), mine=0, shape=None, rigid=True),
     # aperiodic: ``keep`` is exact, the growth arg only has to be generous
     "penrose_board": dict(size=(3,), mine=1, shape=2, kind="scale", grow=0),
     "spectre_board": dict(size=(2,), mine=1, shape=3, kind="scale", grow=0),
@@ -413,7 +440,8 @@ def _topology_ok(mode: str, board) -> bool:
     return True
 
 
-def _candidate_values(current, coarse: bool, domains: bool = True) -> list:
+def _candidate_values(current, coarse: bool, domains: bool = True,
+                      floor: int = 1) -> list:
     """Values to try for one size knob.
 
     The Archimedean builders count *domain copies*, each worth several cells,
@@ -435,7 +463,7 @@ def _candidate_values(current, coarse: bool, domains: bool = True) -> list:
     if isinstance(current, float) and not float(current).is_integer():
         frac = current - math.floor(current)
         return [n + frac for n in range(1, 31)]
-    return list(range(1, 61 if domains else 161))
+    return list(range(floor, 61 if domains else 161))
 
 
 def _cylinder_rows(tiling: str, limit: int = 40) -> list[float]:
@@ -935,6 +963,8 @@ def _score(mode: str, board, target: int, is_flat: bool,
            trial: list | None = None) -> float:
     n = len(board.adjacency)
     size_penalty = abs(math.log(n / target))
+    if spec is not None and spec.get("rigid"):
+        return size_penalty
     if is_flat:
         shape_penalty = FLAT_ASPECT_WEIGHT * math.log(aspect(board))
     else:
@@ -1040,7 +1070,8 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
         # the two-knob builders would ask for a 150,000-cell cube.
         floor = COARSE_MIN_LEVEL.get((mode, difficulty), 0) if coarse else 0
         grids = []
-        for value in _candidate_values(args[knobs[0]], coarse, domains):
+        for value in _candidate_values(args[knobs[0]], coarse, domains,
+                                       spec.get("floor", 1)):
             if value < floor:
                 continue
             trial = list(args)
@@ -1053,7 +1084,8 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
             if n > 3 * target:
                 break
     else:
-        va = _candidate_values(args[knobs[0]], coarse, domains)
+        va = _candidate_values(args[knobs[0]], coarse, domains,
+                               spec.get("floor", 1))
         if builder == "arch_cylinder_board":
             # a cylinder's row count is not a free knob: it is what puts the
             # strip's centre line on a height where the tiling reverses y, or
@@ -1061,7 +1093,8 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
             # refuses it (see arch_cylinder_board)
             vb = _cylinder_rows(args[0])
         else:
-            vb = _candidate_values(args[knobs[1]], coarse, domains)
+            vb = _candidate_values(args[knobs[1]], coarse, domains,
+                                   spec.get("floor", 1))
         grids = [[a, b] for a in va for b in vb]
         # Building every combination is thousands of boards per row, and each
         # build is followed by a topology check and two shape measurements that
@@ -1105,8 +1138,9 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
     # reference of 1.0 -- every builder that is not Archimedean -- this is the
     # ratio it has always been.
     base_edge = _planar_reference(spec, args)[2]
-    shape_bar = max(_off_planar(edge_ratio(probe, corners), base_edge) * 1.02,
-                    SHAPE_BAR_FLOOR)
+    shape_bar = (float("inf") if spec.get("rigid")
+                 else max(_off_planar(edge_ratio(probe, corners), base_edge) * 1.02,
+                          SHAPE_BAR_FLOOR))
     if _rolled_flat(builder) and "mobius" in builder:
         # A Mobius strip closes with a half twist, so a *wide* one is stretched
         # by the immersion however its window is chosen: keeping its tiles
