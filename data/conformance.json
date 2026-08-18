@@ -871,6 +871,122 @@
         "hasCellCycle": false
       }
     },
+    "octahedron": {
+      "easy": {
+        "cellCount": 72,
+        "mineCount": 17,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 108,
+        "vertexCount": 38,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 288,
+        "mineCount": 73,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 432,
+        "vertexCount": 146,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 512,
+        "mineCount": 150,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 768,
+        "vertexCount": 258,
+        "hasCellCycle": false
+      }
+    },
+    "icosahedron": {
+      "easy": {
+        "cellCount": 80,
+        "mineCount": 21,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 120,
+        "vertexCount": 42,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 320,
+        "mineCount": 84,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 480,
+        "vertexCount": 162,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 500,
+        "mineCount": 149,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 750,
+        "vertexCount": 252,
+        "hasCellCycle": false
+      }
+    },
+    "dodecahedron": {
+      "easy": {
+        "cellCount": 60,
+        "mineCount": 16,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 90,
+        "vertexCount": 32,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 240,
+        "mineCount": 64,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 360,
+        "vertexCount": 122,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 540,
+        "mineCount": 160,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 810,
+        "vertexCount": 272,
+        "hasCellCycle": false
+      }
+    },
+    "steppedpyramid": {
+      "easy": {
+        "cellCount": 86,
+        "mineCount": 18,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 172,
+        "vertexCount": 88,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 262,
+        "mineCount": 59,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 524,
+        "vertexCount": 264,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 534,
+        "mineCount": 138,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 1068,
+        "vertexCount": 536,
+        "hasCellCycle": false
+      }
+    },
     "steppedbipyramid": {
       "easy": {
         "cellCount": 102,

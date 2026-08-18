@@ -84,6 +84,13 @@ EXEMPT_ROWS = {
     # -> 102 cells, and 102 is the closest thing to 81 that is actually a
     # bipyramid.
     ("steppedbipyramid", "easy"),
+    # The dodecahedron's tile is a pentagon fanned into 5 triangles from its
+    # own centre, and its only size knob subdivides that fan further --
+    # `frequency**2` per wedge, so the board steps 60 -> 240 -> 540 cells.
+    # `frequency` cannot go below 1 (that is the plain fan itself, no
+    # subdivision at all), so 60 is the closest an 81-cell target can be hit;
+    # 240 and 540 both land inside the ordinary band against 256 and 480.
+    ("dodecahedron", "easy"),
 }
 
 # Everything else is held to two bars rather than one. A single +-15% rule

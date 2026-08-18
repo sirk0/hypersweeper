@@ -49,6 +49,24 @@ test.describe("M2 solids", () => {
     expect(state.cellCount).toBe(60);
   });
 
+  test("Polyhedra is a group picker (Platonic solids, then everything else)", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    await page.locator('.difficulty-btn[data-key="easy"]').click();
+    await page.locator('.menu-entry[data-group="custom"]').click();
+    await page.locator('.menu-entry[data-group="polyhedra"]').click();
+    await expect(page.locator('.menu-entry[data-submenu="platonic"]')).toBeVisible();
+    await expect(page.locator('.menu-entry[data-submenu="other"]')).toBeVisible();
+    await page.locator('.menu-entry[data-submenu="platonic"]').click();
+    await expect(page.locator('.menu-entry[data-mode="dodecahedron"]')).toBeVisible();
+    await page.locator('.menu-entry[data-mode="dodecahedron"]').click();
+    const state = await page.evaluate(() => window.__ms!.state());
+    expect(state.screen).toBe("game");
+    expect(state.mode).toBe("dodecahedron");
+    expect(state.is3d).toBe(true);
+    expect(state.cellCount).toBe(60);
+  });
+
   test("a plain click reveals; a drag rotates without revealing", async ({ page }) => {
     await page.goto("/?mode=cube&difficulty=easy&seed=5");
     await expect(page.locator("body[data-ready]")).toBeVisible();
@@ -135,6 +153,10 @@ test.describe("M2 solids", () => {
     "cubeframe",
     "tetrahedron",
     "tetraframe",
+    "octahedron",
+    "icosahedron",
+    "dodecahedron",
+    "steppedpyramid",
     "steppedbipyramid",
   ]) {
     test(`${mode} reveals on a real click`, async ({ page }) => {

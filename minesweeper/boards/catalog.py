@@ -234,8 +234,16 @@ FLAT_ONLY_FAMILIES = ("aperiodic", "fractal")
 # Sphere page: the spherical tilings, none of which wraps a flat surface.
 SPHERE_MODES = tuple(_MENU["sphereModes"])
 
-# Polyhedra page: the solids, each launching at once.
-POLYHEDRA_MODES = tuple(_MENU["polyhedraModes"])
+# Polyhedra page: a group picker (Platonic solids, then everything else --
+# the frames and the stepped pyramids), each row launching at once. Mirrors
+# MANIFOLD_ORDER/MANIFOLD_LABELS: one order tuple, one label dict, plus the
+# members each group holds.
+POLYHEDRA_GROUP_ORDER = tuple(g["key"] for g in _MENU["polyhedraGroups"])
+POLYHEDRA_GROUP_LABELS = {g["key"]: g["label"] for g in _MENU["polyhedraGroups"]}
+POLYHEDRA_GROUP_MEMBERS = {g["key"]: tuple(g["modes"]) for g in _MENU["polyhedraGroups"]}
+POLYHEDRA_MODES = tuple(
+    m for g in POLYHEDRA_GROUP_ORDER for m in POLYHEDRA_GROUP_MEMBERS[g]
+)
 
 # The shaped flat boards, by the regular tiling they are made of: the same
 # tiling as the plain rectangular board, cut to a triangular or hexagonal

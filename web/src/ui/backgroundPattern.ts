@@ -468,12 +468,20 @@ const MODE_PATTERN = new Map<string, string>();
   for (const mode of APERIODIC_MODES) MODE_PATTERN.set(mode, mode);
   MODE_PATTERN.set("spectre", SPECTRE_PATTERN);
   // The polyhedra are folded flat grids — a cube and the stepped bipyramid are
-  // squares, a tetrahedron is triangles — so they take that grid. The sphere
+  // squares, a tetrahedron (and every other Platonic solid but the cube) is
+  // triangles — so they take that grid. The sphere
   // family is the one group with no flat tiling behind it: a geodesic's
   // triangles and a Catalan solid's faces only close up because the surface
   // curves. Those get circles, which have no tiling to be wrong about.
+  const TRIANGLE_FACED = new Set([
+    "tetrahedron",
+    "tetraframe",
+    "octahedron",
+    "icosahedron",
+    "dodecahedron",
+  ]);
   for (const mode of POLYHEDRA_MODES) {
-    MODE_PATTERN.set(mode, mode === "tetrahedron" || mode === "tetraframe" ? "tri" : "square");
+    MODE_PATTERN.set(mode, TRIANGLE_FACED.has(mode) ? "tri" : "square");
   }
   for (const mode of SPHERE_MODES) MODE_PATTERN.set(mode, "circles");
 }

@@ -7128,5 +7128,160 @@
         "indistinguishable": 0
       }
     }
+  },
+  "icosahedron": {
+    "builder": "icosahedron_board",
+    "args": {
+      "easy": {
+        "args": [
+          1,
+          2
+        ],
+        "cells": 80,
+        "score": 0.0124,
+        "distortionMean": 1.0,
+        "distortionP90": 1.0,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          1,
+          5
+        ],
+        "cells": 500,
+        "score": 0.0408,
+        "distortionMean": 1.0,
+        "distortionP90": 1.0,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          1,
+          4
+        ],
+        "cells": 320,
+        "score": 10.6694,
+        "distortionMean": 1.0,
+        "distortionP90": 1.0,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "octahedron": {
+    "builder": "octahedron_board",
+    "args": {
+      "easy": {
+        "args": [
+          1,
+          3
+        ],
+        "cells": 72,
+        "score": 0.1178,
+        "distortionMean": 1.0,
+        "distortionP90": 1.0,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          1,
+          6
+        ],
+        "cells": 288,
+        "score": 0.1178,
+        "distortionMean": 1.0,
+        "distortionP90": 1.0,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          1,
+          8
+        ],
+        "cells": 512,
+        "score": 0.0645,
+        "distortionMean": 1.0,
+        "distortionP90": 1.0,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "steppedpyramid": {
+    "builder": "stepped_pyramid_board",
+    "args": {
+      "easy": {
+        "args": [
+          5,
+          3,
+          1
+        ],
+        "cells": 86,
+        "score": 0.0599,
+        "distortionMean": 1.0,
+        "distortionP90": 1.0,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          9,
+          5,
+          1
+        ],
+        "cells": 262,
+        "score": 0.0232,
+        "distortionMean": 1.0,
+        "distortionP90": 1.0,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          13,
+          7,
+          1
+        ],
+        "cells": 534,
+        "score": 0.1066,
+        "distortionMean": 1.0,
+        "distortionP90": 1.0,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "dodecahedron": {
+    "builder": "dodecahedron_board",
+    "args": {
+      "medium": {
+        "args": [
+          1,
+          2
+        ],
+        "cells": 240,
+        "score": 0.0947,
+        "distortionMean": 1.0203,
+        "distortionP90": 1.0203,
+        "indistinguishable": 0
+      },
+      "easy": {
+        "args": [
+          1,
+          1
+        ],
+        "cells": 60,
+        "score": 11.9304,
+        "distortionMean": 1.0203,
+        "distortionP90": 1.0203,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          1,
+          3
+        ],
+        "cells": 540,
+        "score": 0.1479,
+        "distortionMean": 1.0203,
+        "distortionP90": 1.0203,
+        "indistinguishable": 0
+      }
+    }
   }
 }

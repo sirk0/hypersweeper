@@ -35,7 +35,9 @@ from minesweeper.boards.catalog import (
     MENU_ROOT,
     MENU_ROOT_LABELS,
     PICKER_REGULAR,
-    POLYHEDRA_MODES,
+    POLYHEDRA_GROUP_LABELS,
+    POLYHEDRA_GROUP_MEMBERS,
+    POLYHEDRA_GROUP_ORDER,
     REGULAR_TILINGS,
     SHAPED_MODES,
     SOLO_LABELS,
@@ -89,7 +91,14 @@ def build_catalog() -> dict:
             "fractal": list(FRACTAL_MODES),
             "familyLabels": dict(FAMILY_LABELS),
             "sphereModes": list(SPHERE_MODES),
-            "polyhedraModes": list(POLYHEDRA_MODES),
+            "polyhedraGroups": [
+                {
+                    "key": g,
+                    "label": POLYHEDRA_GROUP_LABELS[g],
+                    "modes": list(POLYHEDRA_GROUP_MEMBERS[g]),
+                }
+                for g in POLYHEDRA_GROUP_ORDER
+            ],
             "shapedModes": {k: list(v) for k, v in SHAPED_MODES.items()},
         },
     }

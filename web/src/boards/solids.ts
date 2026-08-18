@@ -87,6 +87,77 @@ function icosahedron(): VertexFaces {
   return { vertices, faces };
 }
 
+/** A regular dodecahedron, already fanned into triangles: its 12 pentagonal
+ * faces are the icosahedron's dual (a Platonic solid's face-centroid dual is
+ * exactly its regular dual, since the symmetry group is transitive on both
+ * faces and vertices, so every centroid lands the same distance out) — one
+ * dodecahedron corner per icosahedron face, one dodecahedron pentagon per
+ * icosahedron vertex, the five icosahedron faces around it. Each pentagon is
+ * then split into 5 triangles fanned from its own planar centre (the plain
+ * average of its 5 corners, *not* pushed back out to the corners' sphere,
+ * which is what keeps the fan flat rather than tenting outward). The vertex
+ * list is the 20 corners followed by the 12 fan centres; the face list is
+ * 5*12 = 60 triangles. */
+function dodecahedron(): VertexFaces {
+  const { vertices: icoVertices, faces: icoFaces } = icosahedron();
+  const corners = icoFaces.map((face) =>
+    normalize(centroidOf(face.map((i) => icoVertices[i]!))),
+  );
+  const vertexFaces = new Map<number, number[]>();
+  icoFaces.forEach((face, faceIndex) => {
+    for (const v of face) {
+      let ids = vertexFaces.get(v);
+      if (!ids) vertexFaces.set(v, (ids = []));
+      ids.push(faceIndex);
+    }
+  });
+
+  const vertices: Vec3[] = [...corners];
+  const faces: [number, number, number][] = [];
+  for (const [v, faceIds] of vertexFaces) {
+    const ordered = tangentOrder(
+      icoVertices[v]!,
+      faceIds.map((fi): [number, Vec3] => [fi, corners[fi]!]),
+    );
+    const pentagon = ordered.map((fi) => corners[fi]!);
+    const center = centroidOf(pentagon);
+    const centerIndex = vertices.length;
+    vertices.push(center);
+    for (let i = 0; i < 5; i++) {
+      faces.push([centerIndex, ordered[i]!, ordered[(i + 1) % 5]!]);
+    }
+  }
+  return { vertices, faces };
+}
+
+/** A regular octahedron: six vertices on the coordinate axes, the eight
+ * faces one per octant (every choice of sign for each axis). */
+function octahedron(): VertexFaces {
+  const vertices: Vec3[] = [
+    [1, 0, 0],
+    [-1, 0, 0],
+    [0, 1, 0],
+    [0, -1, 0],
+    [0, 0, 1],
+    [0, 0, -1],
+  ];
+  const faces: [number, number, number][] = [];
+  for (const ix of [0, 1]) {
+    for (const iy of [2, 3]) {
+      for (const iz of [4, 5]) {
+        const [a, b, c] = [vertices[ix]!, vertices[iy]!, vertices[iz]!];
+        const normal = newellNormal([a, b, c]);
+        const outward =
+          normal[0] * (a[0] + b[0] + c[0]) +
+          normal[1] * (a[1] + b[1] + c[1]) +
+          normal[2] * (a[2] + b[2] + c[2]);
+        faces.push(outward > 0 ? [ix, iy, iz] : [ix, iz, iy]);
+      }
+    }
+  }
+  return { vertices, faces };
+}
+
 /** A regular tetrahedron: four vertices on alternate cube corners, the four
  * faces being the four vertex triples. Winding is arbitrary (each subdivided
  * cell is re-oriented outward on assembly). */
@@ -753,6 +824,28 @@ export function steppedBipyramidBoard(
   );
 }
 
+/** A single stepped pyramid (a Mesoamerican-style ziggurat): square terraces
+ * stepping in from a full `base` x `base` foundation to a
+ * `base - 2*(levels - 1)` apex. Unlike `steppedBipyramidBoard` — one of these
+ * mirrored base-to-base, so the shared foundation square sits inside the
+ * solid — there is nothing below layer 0 here, so the foundation is itself
+ * on the boundary and, like every terrace step and side wall, a playable
+ * cell. */
+export function steppedPyramidBoard(
+  base: number,
+  levels: number,
+  mineCount: number,
+): Board3D {
+  if (!(levels >= 2 && base - 2 * (levels - 1) >= 1)) {
+    throw new Error("need levels >= 2 and a positive apex square");
+  }
+  const solid = (i: number, j: number, k: number): boolean => {
+    const margin = k; // each step up from the foundation shrinks by 1
+    return margin <= i && i < base - margin && margin <= j && j < base - margin;
+  };
+  return polycubeSurface("steppedpyramid", solid, [base, base, levels], mineCount);
+}
+
 /** A regular tetrahedron tiled with triangles: each of the 4 faces
  * subdivided into `frequency**2` cells, kept flat on the faces. */
 export function tetrahedronBoard(mineCount: number, frequency = 4): Board3D {
@@ -764,6 +857,55 @@ export function tetrahedronBoard(mineCount: number, frequency = 4): Board3D {
     radius = Math.max(radius, Math.hypot(p[0], p[1], p[2]));
   }
   return convexBoard3d("tetrahedron", cells, positions, mineCount, radius);
+}
+
+/** A regular octahedron tiled with triangles: each of the 8 faces
+ * subdivided into `frequency**2` cells, kept flat on the faces (the same
+ * flat, non-projected subdivision `tetrahedronBoard` uses). */
+export function octahedronBoard(mineCount: number, frequency = 3): Board3D {
+  const { positions, triangles } = geodesic(frequency, octahedron(), false);
+  const cells: Cells = new Map();
+  triangles.forEach((triangle, n) => cells.set(cid("t", n), [...triangle]));
+  let radius = 0;
+  for (const p of positions.values()) {
+    radius = Math.max(radius, Math.hypot(p[0], p[1], p[2]));
+  }
+  return convexBoard3d("octahedron", cells, positions, mineCount, radius);
+}
+
+/** A regular icosahedron tiled with triangles: each of the 20 faces
+ * subdivided into `frequency**2` cells, kept flat on the faces — unlike
+ * `sphereTriangleBoard`, which projects the same subdivision onto the unit
+ * sphere, this keeps the solid's flat facets (and their creased edges)
+ * intact. */
+export function icosahedronBoard(mineCount: number, frequency = 2): Board3D {
+  const { positions, triangles } = geodesic(frequency, icosahedron(), false);
+  const cells: Cells = new Map();
+  triangles.forEach((triangle, n) => cells.set(cid("t", n), [...triangle]));
+  let radius = 0;
+  for (const p of positions.values()) {
+    radius = Math.max(radius, Math.hypot(p[0], p[1], p[2]));
+  }
+  return convexBoard3d("icosahedron", cells, positions, mineCount, radius);
+}
+
+/** A regular dodecahedron tiled with triangles: each of its 12 pentagonal
+ * faces fanned from its own centre into 5 triangles — `frequency=1` is
+ * exactly that fan, 60 cells — and each of those 60 wedges further
+ * subdivided into `frequency**2` flat triangles for the larger
+ * difficulties, the same flat, non-projected subdivision the other Platonic
+ * solids use. A regular pentagon is not equilateral like the other Platonic
+ * faces, so its wedges are the one facet here that stay a little off-square
+ * (72-54-54 triangles) at any frequency. */
+export function dodecahedronBoard(mineCount: number, frequency = 1): Board3D {
+  const { positions, triangles } = geodesic(frequency, dodecahedron(), false);
+  const cells: Cells = new Map();
+  triangles.forEach((triangle, n) => cells.set(cid("t", n), [...triangle]));
+  let radius = 0;
+  for (const p of positions.values()) {
+    radius = Math.max(radius, Math.hypot(p[0], p[1], p[2]));
+  }
+  return convexBoard3d("dodecahedron", cells, positions, mineCount, radius);
 }
 
 /** A level-1 Sierpiński tetrahedron: midpoint-subdividing a regular

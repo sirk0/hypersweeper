@@ -60,15 +60,20 @@ Pick a surface, then a tiling:
   icosidodecahedron.
   (A sphere cannot be tiled with hexagons alone — Euler's formula
   forces 12 pentagons in.)
-- **Polyhedra (3D)** — a cube tiled with squares (6 faces), a
-  tetrahedron tiled with triangles (4 faces), a tetrahedron frame (a
-  level-1 Sierpiński tetrahedron: the middle triangle removed from each
-  face, leaving four corner tetrahedra that meet at the edge midpoints),
-  a cube frame (a cube with a square tunnel bored through each pair of
-  opposite faces — a level-1 Menger sponge, genus 5), or a stepped
-  bipyramid (two stepped pyramids stitched base-to-base into a terraced
-  diamond); tiled by triangles or squares, cells stitching across the
-  edges where faces meet, inner walls and step shoulders included
+- **Polyhedra (3D)** — a group picker: **Platonic solids** (the five regular
+  solids, each tiled with triangles or squares, flat and creased at the
+  edges rather than rounded onto a sphere) — a tetrahedron (4 faces), a cube
+  (6, squares), an octahedron (8), a dodecahedron (12 pentagons, each fanned
+  into 5 triangles from its own centre) and an icosahedron (20) — and
+  **Other polyhedra** — a tetrahedron frame (a level-1 Sierpiński
+  tetrahedron: the middle triangle removed from each face, leaving four
+  corner tetrahedra that meet at the edge midpoints), a cube frame (a cube
+  with a square tunnel bored through each pair of opposite faces — a level-1
+  Menger sponge, genus 5), a stepped pyramid (square terraces narrowing to a
+  single-cell apex, its foundation itself a playable face since nothing
+  mirrors it below), and a stepped bipyramid (two of those pyramids stitched
+  base-to-base into a terraced diamond). Cells stitch across the edges where
+  faces meet, inner walls and step shoulders included
 - **Torus (3D)** — the grid wraps in both directions, so there are no
   border cells; pure hexagons are possible here, because the torus has
   Euler characteristic 0

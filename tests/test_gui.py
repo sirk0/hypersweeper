@@ -16,6 +16,8 @@ from minesweeper.boards import (  # noqa: E402
     MENU_ROOT,
     MODE_LABELS,
     MODES_3D,
+    POLYHEDRA_GROUP_MEMBERS,
+    POLYHEDRA_GROUP_ORDER,
     POLYHEDRA_MODES,
     SHAPED_MODES,
     SPHERE_MODES,
@@ -642,10 +644,24 @@ class TestMenu:
         assert self.items(menu) == set(SPHERE_MODES)
         assert self.click_item(menu, "spheretri") == ("start", "spheretri")
 
-    def test_polyhedra_lists_the_solids(self):
+    def test_polyhedra_lists_the_groups(self):
         menu = MenuScreen()
         self.click_item(menu, "polyhedra")
-        assert self.items(menu) == set(POLYHEDRA_MODES)
+        assert self.items(menu) == set(POLYHEDRA_GROUP_ORDER)
+
+    def test_polyhedra_group_lists_its_solids(self):
+        menu = MenuScreen()
+        self.click_item(menu, "polyhedra")
+        self.click_item(menu, "platonic")
+        assert menu.path == ["polyhedra", "platonic"]
+        assert self.items(menu) == set(POLYHEDRA_GROUP_MEMBERS["platonic"])
+        assert self.click_item(menu, "dodecahedron") == ("start", "dodecahedron")
+
+    def test_polyhedra_other_group_lists_the_rest(self):
+        menu = MenuScreen()
+        self.click_item(menu, "polyhedra")
+        self.click_item(menu, "other")
+        assert self.items(menu) == set(POLYHEDRA_GROUP_MEMBERS["other"])
         assert self.click_item(menu, "cubeframe") == ("start", "cubeframe")
 
     # -- reachability & gating ---------------------------------------------
@@ -679,8 +695,9 @@ class TestMenu:
                         reach(*surface_path, family, key)
         for mode in SPHERE_MODES:
             reach("sphere", mode)
-        for mode in POLYHEDRA_MODES:
-            reach("polyhedra", mode)
+        for group in POLYHEDRA_GROUP_ORDER:
+            for mode in POLYHEDRA_GROUP_MEMBERS[group]:
+                reach("polyhedra", group, mode)
         # every mode with a label is reachable from the menu -- no gaps
         assert reached == set(MODE_LABELS)
 
@@ -840,6 +857,7 @@ class TestIcon:
             | set(TILINGS)                       # every tiling row in the picker
             | set(SPHERE_MODES)
             | set(POLYHEDRA_MODES)
+            | set(POLYHEDRA_GROUP_ORDER)          # the polyhedra groups
             | {m for shaped in SHAPED_MODES.values() for m in shaped}
             | set(APERIODIC_MODES)
             | set(FRACTAL_MODES)

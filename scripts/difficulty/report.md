@@ -12,7 +12,7 @@ Every board's mine count, chosen so its win probability under the reference solv
 
 ## Coverage
 
-- 477 rows, 446 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
+- 489 rows, 458 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
 - 31 could not be brought on target:
   - `cylinder`/easy: 89.1% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (7, 9%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
   - `cylkisrhombille`/easy: 88.3% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (5, 7%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
@@ -45,7 +45,7 @@ Every board's mine count, chosen so its win probability under the reference solv
   - `triakis`/medium: 0.0% vs 87.1% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `triakis`/easy: 1.8% vs 96.5% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `truncicosidodeca`/hard: 45.9% vs 50.9% — no integer mine count lands within tolerance; this is the closest
-- 103 rows had games the solver abandoned (its frontier DP hit its node budget); their rates are measured over the games that finished:
+- 110 rows had games the solver abandoned (its frontier DP hit its node budget); their rates are measured over the games that finished:
   - `torustrunchex`/hard: 168 abandoned
   - `torusrotatedhex`/hard: 144 abandoned
   - `kleintri`/hard: 75 abandoned
@@ -54,10 +54,10 @@ Every board's mine count, chosen so its win probability under the reference solv
   - `torussnubhex`/hard: 39 abandoned
   - `kleinrhombille`/hard: 32 abandoned
   - `torussnubsquare`/hard: 32 abandoned
+  - `icosahedron`/hard: 29 abandoned
   - `kleintri`/medium: 28 abandoned
-  - `toruselongated`/medium: 25 abandoned
 
-Densities run from 2.8% to 36.2% (median 17.0%) — the spread the old flat 14/16/19 per cent could not express.
+Densities run from 2.8% to 36.2% (median 17.1%) — the spread the old flat 14/16/19 per cent could not express.
 
 The only floor under the search is the **opening**: the fewest mines at which the first click alone stops finishing the board (`calibrate.opening_floor`). As a density that runs 1.3% to 16.7% across the zoo — which is why it is measured per board rather than set as a percentage.
 
@@ -104,6 +104,7 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `cyltruncsquare` | 5.5 | 77c 5m (6%) 95% | 260c 30m (12%) 85% | 459c 70m (15%) 48% |
 | `cyltrunctrihex` | 5.8 | 80c 6m (8%) 94% | 242c 21m (9%) 86% | 510c 71m (14%) 48% |
 | `deltoidal` | 8.3 | 76c 6m (8%) 98% | 248c 28m (11%) 83% | 490c 84m (17%) 48% |
+| `dodecahedron` | 11.0 | 60c 16m (27%) 95% | 240c 64m (27%) 88% | 540c 160m (30%) 48% |
 | `elongated` | 9.0 | 85c 5m (6%) 98% | 219c 26m (12%) 90% | 543c 92m (17%) 55% |
 | `floret` | 7.4 | 72c 7m (10%) 97% | 288c 37m (13%) 86% | 480c 81m (17%) 52% |
 | `gosper` | 5.5 | 49c 7m (14%) 99% | 343c 54m (16%) 86% | 343c 71m (21%) 49% |
@@ -112,6 +113,7 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `hexhex` | 5.6 | 91c 14m (15%) 98% | 271c 51m (19%) 85% | 469c 102m (22%) 55% |
 | `hextri` | 11.1 | 96c 14m (15%) 97% | 294c 56m (19%) 86% | 486c 117m (24%) 49% |
 | `hextriangle` | 5.6 | 78c 9m (12%) 97% | 253c 38m (15%) 89% | 465c 97m (21%) 49% |
+| `icosahedron` | 11.8 | 80c 21m (26%) 96% | 320c 84m (26%) 90% | 500c 149m (30%) 55% |
 | `kisrhombille` | 14.2 | 72c 5m (7%) 91% ⚠ | 288c 21m (7%) 85% | 432c 50m (12%) 50% |
 | `klein` | 8.0 | 80c 14m (18%) 99% | 260c 55m (21%) 91% | 476c 126m (26%) 50% |
 | `kleinbasketweave` | 7.0 | 72c 13m (18%) 98% | 272c 50m (18%) 89% | 460c 107m (23%) 47% |
@@ -159,6 +161,7 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `mobiustrunchex` | 5.1 | 81c 4m (5%) 94% | 225c 11m (5%) 88% | 420c 30m (7%) 52% |
 | `mobiustruncsquare` | 5.5 | 77c 4m (5%) 97% | 260c 29m (11%) 85% | 459c 68m (15%) 53% |
 | `mobiustrunctrihex` | 5.7 | 80c 5m (6%) 96% | 280c 27m (10%) 83% | 420c 54m (13%) 54% |
+| `octahedron` | 11.9 | 72c 17m (24%) 97% | 288c 73m (25%) 89% | 512c 150m (29%) 54% |
 | `offsetsquare` | 5.6 | 77c 12m (16%) 95% | 281c 46m (16%) 88% | 495c 102m (21%) 51% |
 | `penrose` | 8.8 | 81c 6m (7%) 92% ⚠ | 256c 17m (7%) 88% | 480c 48m (10%) 47% |
 | `pentaflake` | 4.4 | 216c 11m (5%) 95% | 216c 15m (7%) 88% | 216c 27m (12%) 52% |
@@ -182,6 +185,7 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `stackedbond` | 7.4 | 91c 11m (12%) 98% | 253c 42m (17%) 84% | 465c 99m (21%) 48% |
 | `staggeredtri` | 7.5 | 71c 10m (14%) 98% | 263c 50m (19%) 85% | 479c 110m (23%) 52% |
 | `steppedbipyramid` | 8.1 | 102c 21m (21%) 95% | 198c 46m (23%) 90% | 486c 128m (26%) 52% |
+| `steppedpyramid` | 8.0 | 86c 18m (21%) 94% | 262c 59m (23%) 89% | 534c 138m (26%) 51% |
 | `tetraframe` | 11.9 | 64c 7m (11%) 99% | 256c 37m (14%) 85% | 400c 83m (21%) 51% |
 | `tetrahedron` | 11.9 | 100c 19m (19%) 96% | 256c 66m (26%) 88% | 484c 143m (30%) 54% |
 | `tetrakis` | 12.2 | 84c 5m (6%) 96% | 256c 27m (11%) 90% | 552c 59m (11%) 54% |

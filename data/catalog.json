@@ -108,7 +108,11 @@
     "cube": "Cube",
     "tetrahedron": "Tetrahedron",
     "tetraframe": "Tetrahedron frame",
+    "octahedron": "Octahedron",
+    "icosahedron": "Icosahedron",
+    "dodecahedron": "Dodecahedron",
     "cubeframe": "Cube frame",
+    "steppedpyramid": "Stepped pyramid",
     "steppedbipyramid": "Stepped bipyramid",
     "triangle": "Triangles - triangular board",
     "hextri": "Triangles - hexagonal board",
@@ -177,12 +181,28 @@
       "rhombicosidodeca",
       "truncicosidodeca"
     ],
-    "polyhedraModes": [
-      "cube",
-      "cubeframe",
-      "tetrahedron",
-      "tetraframe",
-      "steppedbipyramid"
+    "polyhedraGroups": [
+      {
+        "key": "platonic",
+        "label": "Platonic solids",
+        "modes": [
+          "tetrahedron",
+          "cube",
+          "octahedron",
+          "dodecahedron",
+          "icosahedron"
+        ]
+      },
+      {
+        "key": "other",
+        "label": "Other polyhedra",
+        "modes": [
+          "tetraframe",
+          "cubeframe",
+          "steppedpyramid",
+          "steppedbipyramid"
+        ]
+      }
     ],
     "shapedModes": {
       "tri": [
