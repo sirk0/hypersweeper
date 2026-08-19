@@ -952,7 +952,7 @@ _ICON_ALIASES = {
     # there is no board named "platonic" or "catalan" to draw
     "platonic": "tetrahedron",
     "catalan": "rhombictriaconta",
-    "polyhedra": "steppedbipyramid",  # the frames and the stepped pyramids
+    "polyhedra": "steppedbipyramid",  # frames, stepped pyramids, brick cubes
     "classic": "square",    # the "Classic" home entry: flat squares
     "manifolds": "torus",   # the "Flat manifolds" home entry
     "random": "start",      # the "Random" picker entry
@@ -1394,6 +1394,47 @@ def _render_icon(key: str) -> pygame.Surface:
                 t = k / 3
                 pygame.draw.line(s, ICON_BLUE_DARK, lerp(a, b, t), lerp(dd, cc, t), 3)
                 pygame.draw.line(s, ICON_BLUE_DARK, lerp(a, dd, t), lerp(b, cc, t), 3)
+        _icon_gloss(s, pygame.Rect(d * 0.12, d * 0.1, d * 0.76, d * 0.4))
+    elif key in ("cubestackedbond", "cubebasketweave", "cubebasketweave3"):
+        # the cube again, its three visible faces laid in brick courses
+        # rather than ruled into squares: two blocks each way, each block
+        # cut into the bond's bricks and, for the weaves, turned a quarter
+        # on a checkerboard -- which is the whole of a weave. (The real
+        # board runs its courses along a different axis on each pair of
+        # faces; at icon size that reads as noise, so all three are drawn
+        # the same way round.)
+        courses, checkered = {"cubestackedbond": (2, False),
+                              "cubebasketweave": (2, True),
+                              "cubebasketweave3": (3, True)}[key]
+        r = d * 0.4
+        h = _hexagon_points(c, c, r, -90)  # h0 top, then clockwise
+        faces = [
+            ([h[0], h[1], (c, c), h[5]], ICON_BLUE_LIGHT),  # top
+            ([h[1], h[2], h[3], (c, c)], ICON_BLUE),        # right
+            ([h[5], (c, c), h[3], h[4]], ICON_BLUE_DARK),   # left
+        ]
+        for quad, fill in faces:
+            _icon_shape(s, quad, fill=fill, width=4)
+            a, b, _far, dd = quad  # a parallelogram: a + (b-a) + (dd-a)
+
+            def at(u, v, a=a, b=b, dd=dd):
+                return (a[0] + (b[0] - a[0]) * u + (dd[0] - a[0]) * v,
+                        a[1] + (b[1] - a[1]) * u + (dd[1] - a[1]) * v)
+
+            for bi in range(2):
+                for bj in range(2):
+                    turned = checkered and (bi + bj) % 2 == 1
+                    for k in range(1, courses):
+                        t = k / courses / 2
+                        if turned:
+                            ends = (at(bi / 2 + t, bj / 2),
+                                    at(bi / 2 + t, bj / 2 + 0.5))
+                        else:
+                            ends = (at(bi / 2, bj / 2 + t),
+                                    at(bi / 2 + 0.5, bj / 2 + t))
+                        pygame.draw.line(s, ICON_BLUE_DARK, *ends, 3)
+            pygame.draw.line(s, ICON_BLUE_DARK, at(0.5, 0), at(0.5, 1), 3)
+            pygame.draw.line(s, ICON_BLUE_DARK, at(0, 0.5), at(1, 0.5), 3)
         _icon_gloss(s, pygame.Rect(d * 0.12, d * 0.1, d * 0.76, d * 0.4))
     elif key == "cubeframe":
         # an isometric cube with a square hole punched through each of the
@@ -2032,7 +2073,8 @@ class GameScreen3D(BaseGameScreen):
         # group joins the list whole rather than a board at a time.
         if self.mode in ("cube", "tetrahedron", "cubeframe", "steppedbipyramid",
                         "octahedron", "icosahedron", "steppedpyramid",
-                        "dodecahedron") or self.mode in SOLID_GROUP_MEMBERS["catalan"]:
+                        "dodecahedron", "cubestackedbond", "cubebasketweave",
+                        "cubebasketweave3") or self.mode in SOLID_GROUP_MEMBERS["catalan"]:
             return mat_mul(rot_x(-0.5), rot_y(0.6))
         # a tetrahedron viewed down a 2-fold axis looks like a flat square;
         # turn to a vertex-first 3/4 view so the frame's gaps read clearly

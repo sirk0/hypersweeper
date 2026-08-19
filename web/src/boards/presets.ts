@@ -28,6 +28,7 @@ import {
 import { DIFFICULTIES } from "./catalog";
 import type { AnyBoard } from "./core";
 import {
+  brickCubeBoard,
   c180Board,
   c80Board,
   cubeBoard,
@@ -95,6 +96,8 @@ const BUILDERS: Record<string, Builder> = {
   truncated_icosidodecahedron_board: truncatedIcosidodecahedronBoard,
   cube_board: cubeBoard,
   cube_frame_board: cubeFrameBoard,
+  // the three brick bonds that lay on a square face, one cube each
+  brick_cube_board: brickCubeBoard,
   tetrahedron_board: tetrahedronBoard,
   tetrahedron_frame_board: tetrahedronFrameBoard,
   octahedron_board: octahedronBoard,

@@ -1161,6 +1161,93 @@
         "hasCellCycle": false
       }
     },
+    "cubestackedbond": {
+      "easy": {
+        "cellCount": 108,
+        "mineCount": 21,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 234,
+        "vertexCount": 128,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 300,
+        "mineCount": 63,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 630,
+        "vertexCount": 332,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 432,
+        "mineCount": 109,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 900,
+        "vertexCount": 470,
+        "hasCellCycle": false
+      }
+    },
+    "cubebasketweave": {
+      "easy": {
+        "cellCount": 108,
+        "mineCount": 21,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 270,
+        "vertexCount": 164,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 300,
+        "mineCount": 57,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 750,
+        "vertexCount": 452,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 432,
+        "mineCount": 98,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 1080,
+        "vertexCount": 650,
+        "hasCellCycle": false
+      }
+    },
+    "cubebasketweave3": {
+      "easy": {
+        "cellCount": 72,
+        "mineCount": 12,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 192,
+        "vertexCount": 122,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 288,
+        "mineCount": 60,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 768,
+        "vertexCount": 482,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 450,
+        "mineCount": 110,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 1200,
+        "vertexCount": 752,
+        "hasCellCycle": false
+      }
+    },
     "tetrahedron": {
       "easy": {
         "cellCount": 100,

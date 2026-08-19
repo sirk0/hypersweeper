@@ -148,6 +148,7 @@ from minesweeper.boards.solids import (  # noqa: F401
     _polycube_surface,
     _tetrahedron,
     _wythoff_point,
+    brick_cube_board,
     c80_board,
     c180_board,
     cube_board,

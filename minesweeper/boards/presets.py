@@ -36,6 +36,7 @@ from minesweeper.boards.fractal import (
     sphinx_board,
 )
 from minesweeper.boards.solids import (
+    brick_cube_board,
     c80_board,
     c180_board,
     cube_board,
@@ -101,6 +102,8 @@ _JSON_BUILDERS = {
     "truncated_icosidodecahedron_board": truncated_icosidodecahedron_board,
     "cube_board": cube_board,
     "cube_frame_board": cube_frame_board,
+    # the three brick bonds that lay on a square face, one cube each
+    "brick_cube_board": brick_cube_board,
     "tetrahedron_board": tetrahedron_board,
     "tetrahedron_frame_board": tetrahedron_frame_board,
     "octahedron_board": octahedron_board,

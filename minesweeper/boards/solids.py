@@ -514,6 +514,139 @@ def cube_board(n: int, mine_count: int) -> Board3D:
     return _convex_board3d("cube", cells, positions, mine_count, radius=ROOT3)
 
 
+# -- brick-bond cubes ---------------------------------------------------------
+#
+# Three of the five congruent-rectangle bonds (`tilings.py`, family
+# "rectangle") lay on a cube, and they are exactly the three whose fundamental
+# block is a *square*: the stacked bond is two 1x1/2 bricks stacked, the basket
+# weave two laid one way or the other in a checkerboard, and the three-brick
+# weave three 1x1/3 bricks the same way. The running bond's block is offset half
+# a brick and the herringbone's is a diagonal, so neither fills a square face.
+
+_BRICK_BLOCK = 6  # lattice units per block: divisible by 2 and by 3
+
+
+def _brick_courses(count: int, turned: bool) -> list[tuple[int, int, int, int]]:
+    """One block's bricks as ``(u0, v0, u1, v1)`` in block-local units:
+    ``count`` courses laid across the block, or turned a quarter-turn."""
+    step = _BRICK_BLOCK // count
+    if turned:
+        return [(k * step, 0, (k + 1) * step, _BRICK_BLOCK) for k in range(count)]
+    return [(0, k * step, _BRICK_BLOCK, (k + 1) * step) for k in range(count)]
+
+
+# bond -> (bricks per block, whether the block turns on a checkerboard). The
+# stacked bond lays every block the same way (it is a stretched square tiling);
+# both weaves alternate, which is the whole of the weave.
+BRICK_BONDS = {
+    "stackedbond": (2, False),
+    "basketweave": (2, True),
+    "basketweave3": (3, True),
+}
+
+
+def _split_at_lattice_points(cells: dict[Cell, list]) -> dict[Cell, list]:
+    """Insert every vertex that lies *inside* another cell's edge into that
+    edge -- the 3D twin of ``tilings._insert_t_vertices``.
+
+    A brick cube needs it twice over. Within a face the weaves are not edge to
+    edge: a course's end abuts the middle of the turned brick beside it. And at
+    the twelve cube edges the two faces subdivide the shared line differently,
+    because a face's bricks run along one of its two directions and no choice
+    of directions makes all twelve agree (each face halves exactly one of its
+    edge directions, and around a corner the three faces cannot be coloured to
+    match). Recorded as a vertex of the brick whose edge it splits, the point
+    is collinear -- the drawn rectangle is unchanged -- but the two bricks now
+    share a vertex id, which is what `_shared_vertex_adjacency` runs on and
+    what makes the mesh close: without it the Euler characteristic is not 2 and
+    a cube edge counts as a boundary.
+
+    Vertices are integer triples and every brick edge is axis-aligned, so this
+    is exact integer arithmetic with no tolerance to get wrong.
+    """
+    vertices = {key for keys in cells.values() for key in keys}
+    out: dict[Cell, list] = {}
+    for cell, keys in cells.items():
+        split = []
+        for a, b in zip(keys, keys[1:] + keys[:1]):
+            split.append(a)
+            delta = tuple(y - x for x, y in zip(a, b))
+            steps = max(abs(d) for d in delta)
+            unit = tuple(d // steps for d in delta)
+            for s in range(1, steps):
+                point = tuple(a[k] + unit[k] * s for k in range(3))
+                if point in vertices:
+                    split.append(point)
+        out[cell] = split
+    return out
+
+
+def brick_cube_board(bond: str, n: int, mine_count: int) -> Board3D:
+    """A cube surface tiled with one congruent rectangle: each face an n x n
+    grid of square blocks, each block cut into the bond's bricks, so the board
+    is ``6 * bricks * n**2`` cells (12 n**2 for the two-brick bonds, 18 n**2
+    for the three-brick weave).
+
+    Vertices are integer points on ``[-N, N]**3`` where ``N = 3n`` (a surface
+    vertex has one axis at +-N; a block is 6 units, so a half- and a
+    third-split both land on the lattice), which is what lets bricks meeting
+    at a cube edge or corner share a vertex id and become neighbors.
+
+    A face's bricks run along the first of its two axes taken cyclically
+    (x-face -> y, y-face -> z, z-face -> x), so the six faces are related by
+    the cube's own rotations rather than one face being laid out differently
+    from the rest. That leaves the bond broken at some of the twelve edges --
+    a brick cannot run round a corner -- and `_split_at_lattice_points` is
+    what stitches the mesh back together across the break.
+    """
+    if bond not in BRICK_BONDS:
+        raise ValueError(f"unknown brick bond: {bond}")
+    if n < 1:
+        raise ValueError("need at least one block per face side")
+    count, checkered = BRICK_BONDS[bond]
+    block = _BRICK_BLOCK
+    half = n * block // 2
+
+    cells: dict[Cell, list] = {}
+    for axis in range(3):
+        u_axis, v_axis = (axis + 1) % 3, (axis + 2) % 3
+        for sign in (-1, 1):
+            # A weave's quarter-turn centres are its block *corners*, and a
+            # face centre is one only when n is even. So for even n the
+            # checkerboard has to be flipped on the three negative faces, or
+            # the two halves of the cube carry the pattern in opposite phase
+            # where they meet: measured, that costs an even-n weave cube all
+            # but 6 of its 24 rotations and fans its neighbour counts out from
+            # two classes into four (a 6-cell class of degree 5 appears, one
+            # per face). Flipped, every size of every bond keeps a symmetry
+            # group of order 24 -- the full rotation group for even n, and the
+            # 12 rotations plus inversion the odd sizes already had.
+            phase = 1 if n % 2 == 0 and sign < 0 else 0
+            for i in range(n):
+                for j in range(n):
+                    turned = checkered and (i + j + phase) % 2 == 1
+                    for b, (u0, v0, u1, v1) in enumerate(
+                        _brick_courses(count, turned)
+                    ):
+                        keys = []
+                        for du, dv in ((u0, v0), (u1, v0), (u1, v1), (u0, v1)):
+                            coord = [0, 0, 0]
+                            coord[axis] = sign * half
+                            coord[u_axis] = -half + i * block + du
+                            coord[v_axis] = -half + j * block + dv
+                            keys.append(tuple(coord))
+                        cells[(axis, sign, i, j, b)] = keys
+
+    cells = _split_at_lattice_points(cells)
+    positions = {
+        key: (key[0] / half, key[1] / half, key[2] / half)
+        for keys in cells.values()
+        for key in keys
+    }
+    mode = "cube" + bond
+    return _convex_board3d(mode, cells, positions, mine_count, radius=ROOT3)
+
+
 def _polycube_board3d(mode, cells, positions, mine_count, radius) -> Board3D:
     """Assemble a closed but non-convex polycube surface. Each cell is a
     unit square already wound outward by the builder (its outward normal

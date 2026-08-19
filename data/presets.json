@@ -750,6 +750,66 @@
         ]
       }
     },
+    "cubestackedbond": {
+      "builder": "brick_cube_board",
+      "args": {
+        "easy": [
+          "stackedbond",
+          3,
+          21
+        ],
+        "medium": [
+          "stackedbond",
+          5,
+          63
+        ],
+        "hard": [
+          "stackedbond",
+          6,
+          109
+        ]
+      }
+    },
+    "cubebasketweave": {
+      "builder": "brick_cube_board",
+      "args": {
+        "easy": [
+          "basketweave",
+          3,
+          21
+        ],
+        "medium": [
+          "basketweave",
+          5,
+          57
+        ],
+        "hard": [
+          "basketweave",
+          6,
+          98
+        ]
+      }
+    },
+    "cubebasketweave3": {
+      "builder": "brick_cube_board",
+      "args": {
+        "easy": [
+          "basketweave3",
+          2,
+          12
+        ],
+        "medium": [
+          "basketweave3",
+          4,
+          60
+        ],
+        "hard": [
+          "basketweave3",
+          5,
+          110
+        ]
+      }
+    },
     "tetrahedron": {
       "builder": "tetrahedron_board",
       "args": {

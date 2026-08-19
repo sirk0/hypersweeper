@@ -174,6 +174,11 @@ test.describe("M2 solids", () => {
     "dodecahedron",
     "steppedpyramid",
     "steppedbipyramid",
+    // the three brick cubes: the only solid whose cells are rectangles, so
+    // the only one where a shrunk tile and its grout are not square
+    "cubestackedbond",
+    "cubebasketweave",
+    "cubebasketweave3",
   ]) {
     test(`${mode} reveals on a real click`, async ({ page }) => {
       await page.goto(`/?mode=${mode}&difficulty=easy&seed=2`);

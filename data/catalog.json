@@ -124,6 +124,9 @@
     "icosahedron": "Icosahedron",
     "dodecahedron": "Dodecahedron",
     "cubeframe": "Cube frame",
+    "cubestackedbond": "Stacked bond cube",
+    "cubebasketweave": "Basket weave cube",
+    "cubebasketweave3": "Basket weave 3x3 cube",
     "steppedpyramid": "Stepped pyramid",
     "steppedbipyramid": "Stepped bipyramid",
     "triangle": "Triangles - triangular board",
@@ -234,7 +237,10 @@
           "tetraframe",
           "cubeframe",
           "steppedpyramid",
-          "steppedbipyramid"
+          "steppedbipyramid",
+          "cubestackedbond",
+          "cubebasketweave",
+          "cubebasketweave3"
         ]
       }
     ],

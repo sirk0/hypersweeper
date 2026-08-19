@@ -35,6 +35,7 @@ import {
   triakisTetrahedronBoard,
 } from "../boards/catalan";
 import {
+  brickCubeBoard,
   c80Board,
   c180Board,
   dodecahedronBoard,
@@ -534,6 +535,10 @@ const SOLID_BUILDERS: Record<string, () => Board3D> = {
   dodecahedron: () => dodecahedronBoard(0, 1),
   steppedbipyramid: () => steppedBipyramidBoard(7, 4, 0),
   steppedpyramid: () => steppedPyramidBoard(5, 3, 0),
+  // the three brick cubes, at their own easy block counts
+  cubestackedbond: () => brickCubeBoard("stackedbond", 3, 0),
+  cubebasketweave: () => brickCubeBoard("basketweave", 3, 0),
+  cubebasketweave3: () => brickCubeBoard("basketweave3", 2, 0),
   // The thirteen Catalan solids, at their own easy frequencies. There is no
   // drawing of a disdyakis triacontahedron a reader could tell from a pentakis
   // dodecahedron, so every one of these is the real board.
@@ -588,6 +593,11 @@ const SOLID_VIEW: Record<string, [number, number] | [number, number, number]> = 
   // everything above it or the apex hiding everything below.
   steppedpyramid: [-70, 0, 28],
   tetraframe: [-50, 18, 45],
+  // the brick cubes take the same 3/4 turn the board does, so three faces
+  // show and the courses can be seen running a different way on each
+  cubestackedbond: [-30, 35],
+  cubebasketweave: [-30, 35],
+  cubebasketweave3: [-30, 35],
   // Down a 4-fold vertex axis and tipped, so three of the eight faces show.
   octahedron: [-24, 24],
   // Down a 5-fold vertex axis and tipped, echoing the snub dodecahedron's view.
@@ -881,6 +891,12 @@ const ICON_TONES: Record<string, ShapeTone> = {
   cubeframe: { sides: 4, regularity: 1 },
   steppedbipyramid: { sides: 4, regularity: 1 },
   steppedpyramid: { sides: 4, regularity: 1 },
+  // a brick, not a square. All four angles are right, so `shapeMetrics`
+  // averages a perfect 1 against the side ratio: 0.75 for a 2-to-1 brick,
+  // 2/3 for the three-brick weave's 3-to-1 one
+  cubestackedbond: { sides: 4, regularity: 0.75 },
+  cubebasketweave: { sides: 4, regularity: 0.75 },
+  cubebasketweave3: { sides: 4, regularity: 2 / 3 },
   tetrahedron: { sides: 3, regularity: 1 },
   tetraframe: { sides: 3, regularity: 1 },
   octahedron: { sides: 3, regularity: 1 },
@@ -1174,6 +1190,9 @@ function draw(rawKey: string): string[] {
   } else if (
     key === "steppedbipyramid" ||
     key === "steppedpyramid" ||
+    key === "cubestackedbond" ||
+    key === "cubebasketweave" ||
+    key === "cubebasketweave3" ||
     key === "tetraframe" ||
     key === "octahedron" ||
     key === "icosahedron" ||

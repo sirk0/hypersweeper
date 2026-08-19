@@ -1,4 +1,5 @@
 import cmath
+import itertools
 import math
 import statistics
 from collections import Counter, defaultdict
@@ -41,6 +42,7 @@ from minesweeper.boards import (
     arch_mobius_board,
     arch_torus_board,
     archimedean_board,
+    brick_cube_board,
     build_board,
     c80_board,
     c180_board,
@@ -1672,6 +1674,26 @@ def _corners(polygon, tol=1e-3):
     return out
 
 
+def _corners3d(polygon, tol=1e-9):
+    """The 3D twin of `_corners`: a planar tile's real corners, the collinear
+    ones dropped. A brick on a cube carries T-vertices for the same reason a
+    tile of an isogonal tiling does, and here they are exactly collinear -- a
+    cube face is planar and a cube edge is a straight line -- so the test is
+    a zero cross product rather than an angle within a tolerance."""
+    n = len(polygon)
+    out = []
+    for i in range(n):
+        before, point, after = polygon[i - 1], polygon[i], polygon[(i + 1) % n]
+        u = [before[k] - point[k] for k in range(3)]
+        v = [after[k] - point[k] for k in range(3)]
+        cross = (u[1] * v[2] - u[2] * v[1],
+                 u[2] * v[0] - u[0] * v[2],
+                 u[0] * v[1] - u[1] * v[0])
+        if math.hypot(*cross) > tol:
+            out.append(point)
+    return out
+
+
 class TestIsogonal:
     """The six isogonal tilings that are not edge to edge.
 
@@ -2558,6 +2580,110 @@ class TestPolyhedra:
                     seen.add(neighbor)
                     stack.append(neighbor)
         assert len(seen) == len(adjacency)
+
+
+class TestBrickCubes:
+    """The three brick bonds that lay on a cube.
+
+    Three of the five congruent-rectangle bonds have a *square* fundamental
+    block -- the stacked bond, the basket weave and its three-brick version --
+    so a square face can be filled with whole blocks. The running bond's block
+    is offset half a brick and the herringbone's is diagonal, and neither
+    fills a square, which is why there is no cube of either.
+    """
+
+    # bricks per block, and the brick's short-to-long side ratio: the same
+    # numbers TestRectangles.RATIOS holds for the flat bonds
+    BONDS = {"stackedbond": (2, 0.5),
+             "basketweave": (2, 0.5),
+             "basketweave3": (3, 1 / 3)}
+
+    @pytest.mark.parametrize("bond", sorted(BONDS))
+    @pytest.mark.parametrize("n", [2, 3, 4])
+    def test_six_faces_of_blocks_of_bricks(self, bond, n):
+        bricks = self.BONDS[bond][0]
+        board = brick_cube_board(bond, n, 5)
+        assert len(board.polygons) == 6 * bricks * n * n
+
+    @pytest.mark.parametrize("bond", sorted(BONDS))
+    @pytest.mark.parametrize("n", [2, 3, 4])
+    def test_every_tile_is_a_rectangle_of_the_bond_ratio(self, bond, n):
+        """Once the T-vertices are dropped, every tile is a rectangle of the
+        bond's aspect -- the 3D twin of the same test on the flat bonds. A
+        cube face is planar and a cube edge is straight, so a spliced vertex
+        is exactly collinear and the brick is drawn unchanged."""
+        ratio = self.BONDS[bond][1]
+        for polygon in brick_cube_board(bond, n, 5).polygons.values():
+            corners = _corners3d(polygon)
+            assert len(corners) == 4
+            sides = sorted(math.dist(corners[i], corners[(i + 1) % 4])
+                           for i in range(4))
+            assert abs(sides[0] - sides[1]) < 1e-9 * sides[3]
+            assert abs(sides[2] - sides[3]) < 1e-9 * sides[3]
+            assert abs(sides[0] / sides[3] - ratio) < 1e-9
+
+    @pytest.mark.parametrize("bond", sorted(BONDS))
+    @pytest.mark.parametrize("n", [2, 3])
+    def test_closed_sphere_surface(self, bond, n):
+        """The T-vertex splice is what makes this true: without it a cube edge
+        the two faces cut differently belongs to one cell on one side and two
+        on the other, which reads as a boundary and drops the characteristic
+        well below 2."""
+        board = brick_cube_board(bond, n, 5)
+        assert _boundary_components(board) == 0
+        assert _euler_characteristic(board) == 2
+
+    @pytest.mark.parametrize("bond", sorted(BONDS))
+    @pytest.mark.parametrize("n", [2, 3])
+    def test_faces_stitch_into_one_connected_surface(self, bond, n):
+        adjacency = brick_cube_board(bond, n, 5).adjacency
+        start = next(iter(adjacency))
+        seen, stack = {start}, [start]
+        while stack:
+            for neighbor in adjacency[stack.pop()]:
+                if neighbor not in seen:
+                    seen.add(neighbor)
+                    stack.append(neighbor)
+        assert len(seen) == len(adjacency)
+
+    @pytest.mark.parametrize("bond", ["basketweave", "basketweave3"])
+    @pytest.mark.parametrize("n", [2, 3, 4, 5])
+    def test_a_weave_cube_keeps_the_cubes_symmetry(self, bond, n):
+        """A weave's quarter-turn centres are its block corners, so a face
+        centre is one only when n is even -- and the checkerboard therefore has
+        to be flipped on the three negative faces at even n. Unflipped, the two
+        halves of the cube meet out of phase and the board keeps only 6 of the
+        cube's 48 symmetries. The neighbour counts are the visible half of
+        that: they fan out into four classes, six cells of them alone on a
+        face.
+
+        Measured as: every symmetry of the cube that maps the board's tiles
+        onto tiles, over all 48 signed axis permutations. A weave cube keeps 24
+        of them at every size, but not the same 24 -- an odd n keeps 12
+        rotations and their inversions, an even n the full rotation group and
+        no reflection at all, the weave on a cube being chiral. Either way it
+        is half of what the cube has and all that a face whose centre is only a
+        half-turn centre can offer.
+        """
+        board = brick_cube_board(bond, n, 5)
+        tiles = {frozenset(tuple(round(c, 9) for c in point)
+                           for point in polygon)
+                 for polygon in board.polygons.values()}
+        kept = 0
+        for permutation in itertools.permutations(range(3)):
+            for signs in itertools.product((1, -1), repeat=3):
+                matrix = [[0] * 3 for _ in range(3)]
+                for row, column in enumerate(permutation):
+                    matrix[row][column] = signs[row]
+                turned = {
+                    frozenset(tuple(round(sum(matrix[r][k] * point[k]
+                                              for k in range(3)), 9)
+                                    for r in range(3))
+                              for point in tile)
+                    for tile in tiles
+                }
+                kept += turned == tiles
+        assert kept == 24
 
 
 class TestPresets:

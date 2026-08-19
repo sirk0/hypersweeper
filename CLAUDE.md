@@ -116,7 +116,25 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   Möbius immersion draws every board on it stretched 2 to 1 along the loop
   (`mobius_half_width` is half the isometric width — every Möbius board in
   the game has this, it is not the bonds'), so a 2-to-1 brick lands on the
-  strip as a 4-to-1 slat, and no window changes that. `ARCH_TILINGS` is
+  strip as a 4-to-1 slat, and no window changes that. Three of the five also
+  leave the flat manifolds altogether and land on a **cube**
+  (`solids.brick_cube_board`, the `cubestackedbond` / `cubebasketweave` /
+  `cubebasketweave3` boards under Polyhedra): the stacked bond and the two
+  weaves are exactly the bonds whose fundamental block is a *square*, so a
+  square face fills with whole blocks, while the running bond's block is
+  offset half a brick and the herringbone's is diagonal. A brick cannot run
+  round a corner — at a corner of the cube the three faces cannot all agree
+  on which of their two directions the courses run along — so the bond breaks
+  at the twelve edges, and `_split_at_lattice_points` (the 3D twin of
+  `_insert_t_vertices`) splices the neighbouring face's cuts into each
+  boundary brick so the two still share a vertex id. It is not cosmetic:
+  without it a cube edge belongs to one cell on one side and two on the
+  other, which reads as a boundary and puts the Euler characteristic below 2.
+  One rule of the weaves outlives the plane: their quarter-turn centres are
+  block *corners*, so a face centre is one only when n is even, and at even n
+  the checkerboard has to be flipped on the three negative faces or the two
+  halves of the cube meet out of phase — measured, that costs the board all
+  but 6 of the cube's 48 symmetries. `ARCH_TILINGS` is
   listed in vertex-configuration order — Wikipedia's "List of Euclidean
   uniform tilings" order — and that registry order is the menu order.
   **To add a tiling or surface, see `AGENTS.md`** — a tiling is

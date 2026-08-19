@@ -506,6 +506,14 @@ const MODE_PATTERN = new Map<string, string>();
       MODE_PATTERN.set(mode, TRIANGLE_FACED.has(mode) ? "tri" : "square");
     }
   }
+  // ...except the three brick cubes, which are in that group and are made of
+  // rectangles rather than squares. They are the one board whose page the
+  // folded-grid rule would flatly contradict: a cube laid in a brick bond,
+  // sitting on squared paper. Each takes its own bond, which is a tiling this
+  // module already draws from `archTemplate` for the flat and wrapped boards.
+  for (const bond of ["stackedbond", "basketweave", "basketweave3"]) {
+    MODE_PATTERN.set("cube" + bond, bond);
+  }
   // A Catalan solid takes the **Laves tiling of the same Conway operation**:
   // the eight Laves tilings are the plane's own face-transitive duals, so the
   // page under a rhombic solid really is a tiling of rhombi and the page under

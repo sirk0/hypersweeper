@@ -103,7 +103,7 @@ const SOLID_GROUP_HINTS: Record<string, string> = {
   sphere: "Tilings of the sphere itself",
   platonic: "The five regular solids",
   catalan: "The thirteen duals of the Archimedean solids",
-  polyhedra: "Hollow frames, and pyramids stitched into terraces",
+  polyhedra: "Hollow frames, terraced pyramids and cubes laid in brick",
 };
 
 /** Rows of a picker, dropping the modes this build has not got. */
