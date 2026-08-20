@@ -651,3 +651,183 @@ export function spectreBoard(
   });
   return finalizeFlat("spectre", cellMap, positions, mineCount, scale);
 }
+
+// -- brick spiral and brick pinwheel -----------------------------------------
+//
+// Port of the same section in minesweeper/boards/aperiodic.py. Two nonperiodic
+// boards on the plain integer square lattice, tiled by 2×1 bricks wound around
+// a centre tile — nonperiodic by how they are *wound* rather than by a
+// substitution, as the phyllotactic spiral above is. Cell ids are the tile's
+// lower-left corner and size, so unlike the three tilings above there is no
+// trim, no distance to quantise and no sort whose tie-break has to match
+// Python's.
+
+/** Lower-left corner, then width and height. */
+type Brick = readonly [number, number, number, number];
+
+const brickKey = (x: number, y: number): string => `${x},${y}`;
+
+/**
+ * The rectangle walked counterclockwise, split at every lattice point inside
+ * one of its edges that is some tile's corner — a T-vertex. Port of
+ * `_brick_outline`; the test is conditional on purpose (see the Python
+ * docstring: splitting unconditionally would leave half-edges unmatched and
+ * drop the Euler characteristic below the 1 a disc must have).
+ */
+function brickOutline(brick: Brick, corners: ReadonlySet<string>): Vertex[] {
+  const [x, y, w, h] = brick;
+  const walk: Vertex[] = [
+    [x, y],
+    [x + w, y],
+    [x + w, y + h],
+    [x, y + h],
+  ];
+  const ring: Vertex[] = [];
+  for (let i = 0; i < walk.length; i += 1) {
+    const a = walk[i]!;
+    const b = walk[(i + 1) % walk.length]!;
+    const steps = Math.max(Math.abs(b[0] - a[0]), Math.abs(b[1] - a[1]));
+    const ux = (b[0] - a[0]) / steps;
+    const uy = (b[1] - a[1]) / steps;
+    ring.push(a);
+    for (let s = 1; s < steps; s += 1) {
+      const point: Vertex = [a[0] + ux * s, a[1] + uy * s];
+      if (corners.has(brickKey(point[0], point[1]))) ring.push(point);
+    }
+  }
+  return ring;
+}
+
+/** Finish a list of axis-aligned bricks into a flat board. */
+function brickBoard(
+  mode: string,
+  bricks: readonly Brick[],
+  mineCount: number,
+  scale: number,
+): Board {
+  const corners = new Set<string>();
+  for (const [x, y, w, h] of bricks) {
+    corners.add(brickKey(x, y));
+    corners.add(brickKey(x + w, y));
+    corners.add(brickKey(x + w, y + h));
+    corners.add(brickKey(x, y + h));
+  }
+  const cellMap = new Map<CellId, string[]>();
+  const positions = new Map<string, Vertex>();
+  for (const brick of bricks) {
+    const keys = brickOutline(brick, corners).map((p) => {
+      const k = brickKey(p[0], p[1]);
+      if (!positions.has(k)) positions.set(k, p);
+      return k;
+    });
+    cellMap.set(cid(brick[0], brick[1], brick[2], brick[3]), keys);
+  }
+  if (cellMap.size !== bricks.length) throw new Error("two bricks share a place");
+  return finalizeFlat(mode, cellMap, positions, mineCount, scale);
+}
+
+/** The brick covering two cells that share an edge. */
+function lay(a: readonly [number, number], b: readonly [number, number]): Brick {
+  const x = Math.min(a[0], b[0]);
+  const y = Math.min(a[1], b[1]);
+  return a[1] === b[1] ? [x, y, 2, 1] : [x, y, 1, 2];
+}
+
+/**
+ * The spiral's bricks, in the order the arm lays them (port of
+ * `_brick_spiral_tiles`). `side - 2` shells, each adding one row and one
+ * column on two adjacent sides, the corner walking NE, NW, SW, SE and round
+ * again; which arm takes the corner cell follows from the rectangle's height,
+ * and taking it there is what leaves both arms an even number of cells long.
+ */
+export function brickSpiralTiles(side: number): Brick[] {
+  if (side < 2) throw new Error("side must be >= 2");
+  let x0 = 0;
+  let y0 = 0;
+  let x1 = 2;
+  let y1 = 1;
+  const bricks: Brick[] = [[0, 0, 2, 1]];
+  for (let step = 0; step < side - 2; step += 1) {
+    const height = y1 - y0;
+    const phase = step % 4;
+    const columnX = phase === 0 || phase === 3 ? x1 : x0 - 1;
+    const rowY = phase === 0 || phase === 1 ? y1 : y0 - 1;
+    if (phase === 0 || phase === 3) x1 += 1;
+    else x0 -= 1;
+    if (phase === 0 || phase === 1) y1 += 1;
+    else y0 -= 1;
+    const column: [number, number][] = [];
+    const row: [number, number][] = [];
+    for (let y = y0; y < y1; y += 1) {
+      if (height % 2 !== 0 || y !== rowY) column.push([columnX, y]);
+    }
+    for (let x = x0; x < x1; x += 1) {
+      if (height % 2 === 0 || x !== columnX) row.push([x, rowY]);
+    }
+    for (const arm of [column, row]) {
+      for (let i = 0; i < arm.length; i += 2) bricks.push(lay(arm[i]!, arm[i + 1]!));
+    }
+  }
+  // One last row caps the w × (w - 1) rectangle to a square, on the side the
+  // next shell would have grown so the arm carries on rather than doubling
+  // back. It is the only run whose length is not forced even: on an odd side
+  // the far end is left over, and that lone cell is the board's one 1×1.
+  const phase = (side - 2) % 4;
+  const rowY = phase === 0 || phase === 1 ? y1 : y0 - 1;
+  const strip: [number, number][] = [];
+  for (let x = x0; x < x1; x += 1) strip.push([x, rowY]);
+  for (let i = 0; i < strip.length - 1; i += 2) bricks.push(lay(strip[i]!, strip[i + 1]!));
+  if (strip.length % 2 !== 0) bricks.push([strip[strip.length - 1]![0], rowY, 1, 1]);
+  return bricks;
+}
+
+/**
+ * The pinwheel's bricks, ring by ring outwards from the centre square (port of
+ * `_brick_pinwheel_tiles`). Ring k holds 8k cells: four arms of k bricks, the
+ * first along the ring's bottom edge and the other three its images under the
+ * quarter turn (x, y) → (-y, x). Each arm stops one cell short of the corner,
+ * which the next arm round takes — that offset is the pinwheel.
+ */
+export function brickPinwheelTiles(side: number): Brick[] {
+  if (side < 1) throw new Error("side must be >= 1");
+  const rings = Math.floor((side - 1) / 2);
+  const bricks: Brick[] = [[0, 0, 1, 1]];
+  for (let k = 1; k <= rings; k += 1) {
+    for (let j = 0; j < k; j += 1) {
+      let a: [number, number] = [-k + 2 * j, -k];
+      let b: [number, number] = [-k + 2 * j + 1, -k];
+      for (let t = 0; t < 4; t += 1) {
+        bricks.push(lay(a, b));
+        a = [-a[1], a[0]];
+        b = [-b[1], b[0]];
+      }
+    }
+  }
+  if (side % 2 === 0) {
+    // An even side cannot be rings alone (they only ever make an odd square),
+    // so one width-1 L shell finishes it: a whole top row, then the right
+    // column, whose odd cell count leaves the second 1×1 in the corner.
+    const edge = rings + 1;
+    for (let x = -rings; x < edge; x += 2) bricks.push([x, edge, 2, 1]);
+    for (let y = edge - 1; y > -rings; y -= 2) bricks.push([edge, y - 1, 1, 2]);
+    bricks.push([edge, -rings, 1, 1]);
+  }
+  return bricks;
+}
+
+/**
+ * A single arm of 2×1 bricks winding out from a central brick, filling a
+ * `side` × `side` square. An odd side ends on one 1×1, in a corner.
+ */
+export function brickSpiralBoard(side: number, mineCount: number, scale = 30): Board {
+  return brickBoard("brickspiral", brickSpiralTiles(side), mineCount, scale);
+}
+
+/**
+ * Square rings of 2×1 bricks pinwheeling about a central 1×1 square, filling a
+ * `side` × `side` square. An odd side is four-fold symmetric; an even one adds
+ * an L shell and a second 1×1 in a corner.
+ */
+export function brickPinwheelBoard(side: number, mineCount: number, scale = 30): Board {
+  return brickBoard("brickpinwheel", brickPinwheelTiles(side), mineCount, scale);
+}

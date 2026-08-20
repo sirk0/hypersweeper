@@ -13,8 +13,8 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   symbolic/barycentric keys in 3D); two cells are neighbors when they
   share a vertex. Modules: `core` (`Board`/`Board3D`, adjacency, topology
   invariants), `tilings` (flat tilings + the `ARCH_TILINGS` registry and
-  `_ArchTemplate` system), `aperiodic` (Penrose, Spectre, phyllotactic
-  spiral), `fractal` (the self-similar boards: sphinx, chair, Sierpinski
+  `_ArchTemplate` system), `aperiodic` (Penrose, Spectre, the phyllotactic
+  spiral and the two brick boards), `fractal` (the self-similar boards: sphinx, chair, Sierpinski
   carpet, pentaflake and Gosper island), `solids` (spherical
   polyhedra, cube, tetrahedron, frames), `catalan` (the thirteen Catalan
   solids), `surfaces` (donut/cylinder/
@@ -152,11 +152,14 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   tilings take a rectangular window of whole periods centred on a rotation
   centre (`archimedean_board` keeps an `nx`×`ny` domain block of the
   `_ArchTemplate` centred on the tiling's biggest tile, so the window maps
-  onto itself under the tiling's point group); for aperiodic ones
-  (`penrose_board`, `spectre_board`, `phyllotaxis_board`) grow generously and trim
+  onto itself under the tiling's point group); for the aperiodic ones built by
+  substitution or by wedge (`penrose_board`, `spectre_board`,
+  `phyllotaxis_board`) grow generously and trim
   to the `keep` centremost cells by Chebyshev distance (`max(|dx|, |dy|)`)
   — generously enough that `keep` is a small fraction of the patch, or the
-  substitution's own star-shaped outline is what the board reads as. See
+  substitution's own star-shaped outline is what the board reads as. The two
+  brick boards need neither: they fill a square exactly by construction, so
+  the side length is both the size knob and the window. See
   the `AGENT NOTE` in `boards/tilings.py`.
   **Size and mine-count convention — difficulty is measured, not assumed.**
   A board's easy/medium/hard sizes track the classic Windows boards (81 /
@@ -237,7 +240,7 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   in the generated `data/difficulty.json`; the TypeScript app reads it in
   `web/src/boards/fairness.ts` to mark the menu row with a ⚠ and to deal
   those boards a quarter as often from the Flat/3D random launchers.
-  The three aperiodic boards each keep exact vertex ids in a cyclotomic ring:
+  Three of the five aperiodic boards keep exact vertex ids in a cyclotomic ring:
   ℤ[ζ5] (Penrose and the spiral) and ℤ[ζ12] (Spectre). Only Penrose's is discrete — ℤ[ζ12]
   is dense in the plane, so `spectre_board` cannot snap a float vertex back
   to a lattice the way the game's original third aperiodic board, The Hat
@@ -258,6 +261,36 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   parallelohexagon, so each of ten 36° wedges is a plain block of its own
   translation lattice, and the odd wedges being pushed one edge out along
   `u1` is the entire spiral.
+  The last two, `brick_spiral_board` and `brick_pinwheel_board`, are
+  nonperiodic by symmetry as well, and are the plainest boards in the game:
+  2×1 **bricks** on the integer square lattice, filling a `side`×`side` square
+  exactly, so the size knob is the side alone and the cell count is
+  `(side² + squares) / 2`. The **spiral** starts from one brick and grows by
+  shells that add a row and a column on two adjacent sides, the corner turning
+  a quarter each time, so a single arm winds outward; the rectangle always
+  satisfies `w = h + 1`, which is what makes every shell (`w + h + 1` cells)
+  even and splits it into two straight arms of even length, so it is whole
+  bricks throughout. A last strip caps the rectangle to a square, and on an odd
+  side the one cell it leaves over is the **1×1 in a corner**. The
+  **pinwheel** starts from one 1×1 square and grows by square rings: ring `k`
+  is 8k cells laid as four arms of `k` bricks, each a quarter turn from the
+  last, which gives it exact four-fold rotation and no mirror at all; an even
+  side needs one width-1 L shell besides, and that shell's odd cell count is
+  what puts a second 1×1 in a corner. Neither has a `keep` trim, so neither has
+  a Chebyshev distance to quantise or a sort whose tie-break has to be
+  reproduced in the TypeScript port — the family's usual porting hazard does
+  not apply. What does need care is the **T-vertices**: a brick's corner
+  routinely lands in the middle of a neighbour's long side, and
+  `_brick_outline` splits each axis-aligned edge at the lattice points that are
+  genuinely some tile's corner (the 2D twin of
+  `solids._split_at_lattice_points`). That test is *conditional*, unlike the
+  chair's outline, which carries a vertex at every lattice step: emitting them
+  unconditionally here would split an edge whose neighbour across it keeps its
+  own edge whole, the two would stop matching, and the half-edges would count
+  as boundary and drop the Euler characteristic below the 1 a disc must have.
+  Since both tile shapes are quadrilaterals, the 1×1 is told from a brick not
+  by hue but by the **size** axis of the shape colouring, which is why it reads
+  as one darker tile on the board and is what the menu icons mark.
   The five **fractal** boards are each one tile inflated `levels` times --
   scaled up by the substitution's `factor` and refilled with copies of itself --
   into a patch whose outline converges on a self-similar shape (the tile again

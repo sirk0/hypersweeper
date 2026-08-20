@@ -7871,5 +7871,87 @@
         "indistinguishable": 0
       }
     }
+  },
+  "brickpinwheel": {
+    "builder": "brick_pinwheel_board",
+    "args": {
+      "easy": {
+        "args": [
+          13,
+          10,
+          27.0
+        ],
+        "cells": 85,
+        "score": 0.0482,
+        "distortionMean": 1.2785,
+        "distortionP90": 1.299,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          23,
+          32,
+          19.5
+        ],
+        "cells": 265,
+        "score": 0.0346,
+        "distortionMean": 1.2879,
+        "distortionP90": 1.299,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          31,
+          58,
+          17.7
+        ],
+        "cells": 481,
+        "score": 0.0021,
+        "distortionMean": 1.2909,
+        "distortionP90": 1.299,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "brickspiral": {
+    "builder": "brick_spiral_board",
+    "args": {
+      "easy": {
+        "args": [
+          13,
+          10,
+          27.0
+        ],
+        "cells": 85,
+        "score": 0.0482,
+        "distortionMean": 1.2778,
+        "distortionP90": 1.299,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          23,
+          32,
+          19.5
+        ],
+        "cells": 265,
+        "score": 0.0346,
+        "distortionMean": 1.2804,
+        "distortionP90": 1.299,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          31,
+          58,
+          17.7
+        ],
+        "cells": 481,
+        "score": 0.0021,
+        "distortionMean": 1.2853,
+        "distortionP90": 1.299,
+        "indistinguishable": 0
+      }
+    }
   }
 }

@@ -1538,6 +1538,64 @@
         "hasCellCycle": false
       }
     },
+    "brickspiral": {
+      "easy": {
+        "cellCount": 85,
+        "mineCount": 13,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 256,
+        "vertexCount": 172,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 265,
+        "mineCount": 43,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 785,
+        "vertexCount": 521,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 481,
+        "mineCount": 100,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 1429,
+        "vertexCount": 949,
+        "hasCellCycle": false
+      }
+    },
+    "brickpinwheel": {
+      "easy": {
+        "cellCount": 85,
+        "mineCount": 13,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 256,
+        "vertexCount": 172,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 265,
+        "mineCount": 49,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 796,
+        "vertexCount": 532,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 481,
+        "mineCount": 109,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 1444,
+        "vertexCount": 964,
+        "hasCellCycle": false
+      }
+    },
     "sphinx": {
       "easy": {
         "cellCount": 64,

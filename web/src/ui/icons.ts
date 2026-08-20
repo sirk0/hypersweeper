@@ -19,6 +19,7 @@ import {
 } from "../render/shapePalette";
 import { ARCH_TILINGS, type ArchTemplate, archTemplate, templateCells } from "../boards/tilings";
 import { placePoint, substitutionPlacements, SUBSTITUTIONS } from "../boards/fractal";
+import { brickPinwheelTiles, brickSpiralTiles } from "../boards/aperiodic";
 import {
   deltoidalHexecontahedronBoard,
   deltoidalIcositetrahedronBoard,
@@ -1124,6 +1125,32 @@ function draw(rawKey: string): string[] {
             return [C + r * (px * cosA - py * sinA), C + r * (px * sinA + py * cosA)];
           }),
           k % 2 ? BASE : LIGHT,
+          3,
+        ),
+      );
+    }
+  } else if (key === "brickspiral" || key === "brickpinwheel") {
+    // the side-5 board itself, thirteen tiles: the smallest patch that already
+    // shows how each one winds. What tells the two apart at icon size is the
+    // one 1×1 among the bricks, picked out in the darker tone — the spiral's
+    // in a corner, the pinwheel's at the centre it turns about
+    const tiles = key === "brickspiral" ? brickSpiralTiles(5) : brickPinwheelTiles(5);
+    const minX = Math.min(...tiles.map((t) => t[0]));
+    const minY = Math.min(...tiles.map((t) => t[1]));
+    const sc = (d * 0.84) / 5;
+    const o = (d - 5 * sc) / 2;
+    for (const [x, y, w, h] of tiles) {
+      const left = o + (x - minX) * sc;
+      const top = o + (5 - (y - minY) - h) * sc;
+      parts.push(
+        shape(
+          [
+            [left, top],
+            [left + w * sc, top],
+            [left + w * sc, top + h * sc],
+            [left, top + h * sc],
+          ],
+          w === 1 && h === 1 ? BASE : LIGHT,
           3,
         ),
       );

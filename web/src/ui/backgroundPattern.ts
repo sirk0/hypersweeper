@@ -396,6 +396,16 @@ const DOMAINS: Record<string, () => Domain> = {
  * cut from, and it is already in the catalogue. */
 const SPECTRE_PATTERN = "deltoidal";
 
+/** The two brick boards' page: the running bond.
+ *
+ * Both are wound out of one 2:1 brick, and what has no period is the
+ * *winding* — the tile itself tiles the plane perfectly well, as any wall
+ * does. So unlike the Spectre this is still the board's own tile; it is only
+ * laid in courses rather than in a spiral, which is what a page that repeats
+ * can draw. The bond is already in the catalogue, so it comes off
+ * `archTemplate` like every other periodic page. */
+const BRICK_PATTERN = "runningbond";
+
 /** The pentaflake's page: regular pentagons and thin rhombs.
  *
  * Regular pentagons alone do not tile the plane — that is exactly why the
@@ -491,6 +501,11 @@ const MODE_PATTERN = new Map<string, string>();
   // is the one that cannot (see SPECTRE_PATTERN).
   for (const mode of APERIODIC_MODES) MODE_PATTERN.set(mode, mode);
   MODE_PATTERN.set("spectre", SPECTRE_PATTERN);
+  // ...and so are the two brick boards, for the opposite reason: their tile
+  // has a period, their winding has not (see BRICK_PATTERN).
+  for (const mode of ["brickspiral", "brickpinwheel"]) {
+    MODE_PATTERN.set(mode, BRICK_PATTERN);
+  }
   // The Platonic solids and the frames are folded flat grids — a cube and the
   // stepped bipyramid are squares, a tetrahedron (and every other Platonic
   // solid but the cube) is triangles — so they take that grid.

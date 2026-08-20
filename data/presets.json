@@ -1004,6 +1004,46 @@
         ]
       }
     },
+    "brickspiral": {
+      "builder": "brick_spiral_board",
+      "args": {
+        "easy": [
+          13,
+          13,
+          27.0
+        ],
+        "medium": [
+          23,
+          43,
+          19.5
+        ],
+        "hard": [
+          31,
+          100,
+          17.7
+        ]
+      }
+    },
+    "brickpinwheel": {
+      "builder": "brick_pinwheel_board",
+      "args": {
+        "easy": [
+          13,
+          13,
+          27.0
+        ],
+        "medium": [
+          23,
+          49,
+          19.5
+        ],
+        "hard": [
+          31,
+          109,
+          17.7
+        ]
+      }
+    },
     "sphinx": {
       "builder": "sphinx_board",
       "args": {

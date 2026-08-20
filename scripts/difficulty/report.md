@@ -12,7 +12,7 @@ Every board's mine count, chosen so its win probability under the reference solv
 
 ## Coverage
 
-- 534 rows, 503 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
+- 540 rows, 509 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
 - 31 could not be brought on target:
   - `cylinder`/easy: 89.1% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (7, 9%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
   - `cylkisrhombille`/easy: 88.3% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (5, 7%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
@@ -67,6 +67,8 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | --- | --- | --- | --- | --- |
 | `basketweave` | 6.3 | 72c 10m (14%) 98% | 288c 44m (15%) 86% | 512c 99m (19%) 48% |
 | `basketweave3` | 6.1 | 72c 6m (8%) 96% | 240c 21m (9%) 90% | 432c 64m (15%) 55% |
+| `brickpinwheel` | 5.6 | 85c 13m (15%) 99% | 265c 49m (18%) 90% | 481c 109m (23%) 48% |
+| `brickspiral` | 5.7 | 85c 13m (15%) 99% | 265c 43m (16%) 89% | 481c 100m (21%) 55% |
 | `c180` | 5.9 | 92c 21m (23%) 95% | 92c 23m (25%) 85% | 92c 28m (30%) 50% |
 | `c80` | 5.7 | 42c 10m (24%) 96% | 42c 12m (29%) 85% | 42c 15m (36%) 50% |
 | `cairo` | 6.4 | 80c 8m (10%) 96% | 256c 24m (9%) 90% | 484c 81m (17%) 51% |
