@@ -513,6 +513,9 @@ export function initialOrientation(mode: string): Quaternion {
       "icosahedron",
       "dodecahedron",
       "steppedpyramid",
+      "cubestackedbond",
+      "cubebasketweave",
+      "cubebasketweave3",
     ].includes(mode) ||
     CATALAN_MODES.has(mode)
   ) {

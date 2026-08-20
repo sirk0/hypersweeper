@@ -60,7 +60,7 @@ import {
   MarkerGlow,
   type GlowCell,
 } from "./markerGlow";
-import { cellPalette, classifyShapes, type CellPalette } from "./shapePalette";
+import { cellPalette, classifyShapes, corners, type CellPalette } from "./shapePalette";
 import {
   cellStyle,
   cellStyleLoops,
@@ -305,6 +305,11 @@ interface CellGeom {
   start: number; // first vertex index in the position/normal/color buffers
   count: number; // vertex count for this cell (3 per triangle)
   poly: Vec3[]; // the cell's surface polygon, outward wound
+  // ...and the same polygon with its T-vertices dropped: the corners it is
+  // actually *shaped* by. Everything that measures the cell — its centre, its
+  // radius, its inradius, the glyph that has to fit inside it — reads this,
+  // while everything that draws it reads `poly`. See the note in `rebuild`.
+  shape: Vec3[];
   centroid: Vec3;
   normal: Vec3; // outward unit normal
   radius: number; // mean distance centroid -> vertices
@@ -517,15 +522,28 @@ export class SolidBoard extends Group implements BoardMesh {
     this.order.forEach((cell, ci) => {
       const poly = board.polygons.get(cell)!;
       const n = poly.length;
-      const centroid = centroidOf(poly);
+      // Measure the cell off its **real corners**, not off every vertex it is
+      // drawn with. A tiling that is not edge to edge carries T-vertices —
+      // extra points sitting flat in the middle of an edge — and an unweighted
+      // vertex mean is dragged toward whichever edge has them: a brick with one
+      // T-vertex on a long edge has its centre pulled a fifth of the way to
+      // that edge, and since `fit` is a `min` over the edges it is the distance
+      // to that very edge that then wins. Measured, a brick cube's split cells
+      // came out at 0.80x (0.67x on the three-brick weave) with the number both
+      // shrunk and shoved off-centre, and the gap inset below lopsided with it.
+      // The polygon is still *drawn* with every vertex — neighbours have to
+      // keep tessellating — only the measurement changes, so this is the
+      // identity for every board that has no T-vertex.
+      const shape = corners(poly, board.cornerMask?.get(cell)) as Vec3[];
+      const centroid = centroidOf(shape);
       const normal = normalize(newellNormal(poly));
       const radius =
-        poly.reduce(
+        shape.reduce(
           (s, p) =>
             s +
             Math.hypot(p[0] - centroid[0], p[1] - centroid[1], p[2] - centroid[2]),
           0,
-        ) / n;
+        ) / shape.length;
       // ...and the inradius, measured in the cell's own tangent plane (see
       // CellGeom.fit). Any two perpendicular in-plane axes will do — nothing
       // downstream cares which way they point, only how far the nearest edge is.
@@ -534,7 +552,7 @@ export class SolidBoard extends Group implements BoardMesh {
       );
       const ey = cross(normal, ex);
       const fit = polygonInradius(
-        poly.map((p): [number, number] => {
+        shape.map((p): [number, number] => {
           const d: Vec3 = [p[0] - centroid[0], p[1] - centroid[1], p[2] - centroid[2]];
           return [
             d[0] * ex[0] + d[1] * ex[1] + d[2] * ex[2],
@@ -563,6 +581,7 @@ export class SolidBoard extends Group implements BoardMesh {
         start: vertexCount,
         count,
         poly,
+        shape,
         centroid,
         normal,
         radius,
@@ -1030,7 +1049,7 @@ export class SolidBoard extends Group implements BoardMesh {
       // the projected footprint's inradius (as the pygame renderer does per
       // frame), so a number never crosses its cell's edges however tilted
       // the cell currently is.
-      const projected = g.poly.map((p): [number, number] => {
+      const projected = g.shape.map((p): [number, number] => {
         const d: Vec3 = [p[0] - c[0], p[1] - c[1], p[2] - c[2]];
         return [
           d[0] * u[0] + d[1] * u[1] + d[2] * u[2],

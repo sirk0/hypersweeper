@@ -12,7 +12,7 @@ Every board's mine count, chosen so its win probability under the reference solv
 
 ## Coverage
 
-- 525 rows, 494 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
+- 534 rows, 503 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
 - 31 could not be brought on target:
   - `cylinder`/easy: 89.1% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (7, 9%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
   - `cylkisrhombille`/easy: 88.3% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (5, 7%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
@@ -57,7 +57,7 @@ Every board's mine count, chosen so its win probability under the reference solv
   - `kleinrhombille`/hard: 32 abandoned
   - `torussnubsquare`/hard: 32 abandoned
 
-Densities run from 2.8% to 36.2% (median 17.7%) — the spread the old flat 14/16/19 per cent could not express.
+Densities run from 2.8% to 36.2% (median 17.9%) — the spread the old flat 14/16/19 per cent could not express.
 
 The only floor under the search is the **opening**: the fewest mines at which the first click alone stops finishing the board (`calibrate.opening_floor`). As a density that runs 1.3% to 16.7% across the zoo — which is why it is measured per board rather than set as a percentage.
 
@@ -73,7 +73,10 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `carpet` | 5.7 | 64c 7m (11%) 95% | 512c 42m (8%) 88% | 512c 71m (14%) 51% |
 | `chair` | 6.3 | 64c 6m (9%) 95% | 256c 36m (14%) 83% | 256c 49m (19%) 51% |
 | `cube` | 8.0 | 96c 18m (19%) 99% | 294c 66m (22%) 89% | 486c 130m (27%) 47% |
+| `cubebasketweave` | 6.9 | 108c 21m (19%) 93% | 300c 57m (19%) 85% | 432c 98m (23%) 51% |
+| `cubebasketweave3` | 6.6 | 72c 12m (17%) 98% | 288c 60m (21%) 87% | 450c 110m (24%) 48% |
 | `cubeframe` | 8.4 | 72c 17m (24%) 99% | 264c 53m (20%) 86% | 480c 126m (26%) 50% |
+| `cubestackedbond` | 7.8 | 108c 21m (19%) 94% | 300c 63m (21%) 84% | 432c 109m (25%) 52% |
 | `cylbasketweave` | 6.6 | 80c 12m (15%) 99% | 240c 41m (17%) 85% | 504c 101m (20%) 53% |
 | `cylbasketweave3` | 6.2 | 90c 7m (8%) 93% | 240c 29m (12%) 84% | 462c 73m (16%) 54% |
 | `cylcairo` | 6.6 | 80c 9m (11%) 98% | 252c 32m (13%) 91% | 456c 84m (18%) 53% |

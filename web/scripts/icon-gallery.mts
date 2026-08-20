@@ -7,28 +7,32 @@ import {
   ISOGONAL_ARCH,
   MENU,
   MODE_LABELS,
-  POLYHEDRA_MODES,
+  RECTANGLE_ARCH,
   SHAPED_MODES,
-  SPHERE_MODES,
+  SOLID_GROUPS,
   TILINGS_BY_KEY,
   UNIFORM_ARCH,
 } from "../src/boards/catalog";
 
+// The solid pages come off the one shared table, so a new group (or a new
+// board in one) shows up here without an edit -- which is how the Catalan
+// solids arrived after the two fixed lists this used to carry went stale.
 const groups: [string, string[]][] = [
-  ["Home page", ["classic", "flat", "manifolds", "sphere", "polyhedra"]],
+  ["Home page", [...(MENU.root as string[])]],
   ["Surfaces", ["flat", "cylinder", "mobius", "klein", "torus"]],
   ["Regular tilings", MENU.pickerRegular as string[]],
   [
     "Families / random",
-    ["regular", "uniform", "dual", "isogonal", "aperiodic", "fractal", "random"],
+    ["regular", "uniform", "dual", "isogonal", "rectangle", "aperiodic",
+     "fractal", "random"],
   ],
   ["Uniform tilings", UNIFORM_ARCH],
   ["Dual-uniform tilings", DUAL_ARCH],
   ["Isogonal tilings", ISOGONAL_ARCH],
+  ["Congruent rectangles", RECTANGLE_ARCH],
   ["Aperiodic", MENU.aperiodic as string[]],
   ["Fractal", MENU.fractal as string[]],
-  ["Sphere", [...SPHERE_MODES]],
-  ["Polyhedra", [...POLYHEDRA_MODES]],
+  ...SOLID_GROUPS.map((group) => [group.label, [...group.modes]] as [string, string[]]),
   ["Shaped boards", Object.values(SHAPED_MODES).flat()],
 ];
 

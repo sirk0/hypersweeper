@@ -326,6 +326,39 @@ covered exactly, T-vertices wherever the bond is staggered, and tiles that are
 rectangles of its aspect ratio — add that ratio to the class's `RATIOS` table,
 the one line the suite cannot derive.
 
+Three of the five also leave the flat surfaces entirely and land on a **cube**
+(`solids.brick_cube_board`, the `cubestackedbond` / `cubebasketweave` /
+`cubebasketweave3` boards in the Polyhedra group). What decides whether a bond
+can is whether its fundamental block is a *square*: the stacked bond is two
+bricks stacked, the two weaves two or three laid one way or the other, so a
+square face fills with whole blocks — while the running bond's block is offset
+half a brick and the herringbone's is diagonal, and neither fills a square. For
+a new bond with a square block, one `BRICK_BONDS` row (bricks per block,
+whether the block turns on a checkerboard) is the whole builder change. Two
+things there are worth knowing before touching it:
+
+* **The bond breaks at the cube's edges, and that is not a bug to fix.** A
+  face's bricks run along one of its two directions, and at a corner the three
+  faces cannot all agree, so some of the twelve edges are cut differently on
+  their two sides. `_split_at_lattice_points` — the 3D twin of
+  `_insert_t_vertices`, in exact integer arithmetic since the lattice is
+  `[-3n, 3n]**3` — splices each face's cuts into the other's boundary bricks so
+  the two still share a vertex id. It is load-bearing: without it a cube edge
+  belongs to one cell on one side and two on the other, which reads as a
+  boundary and puts the Euler characteristic below 2.
+* **A weave's phase depends on the parity of `n`.** Its quarter-turn centres
+  are block *corners*, so a face centre is one only when `n` is even; at even
+  `n` the checkerboard is flipped on the three negative faces, or the two
+  halves of the cube meet out of phase and the board keeps 6 of the cube's 48
+  symmetries instead of 24. `TestBrickCubes` measures that directly.
+
+`resize.SPEC` wants `rigid=True` there and, deliberately, **no `lead`**, though
+the first argument is a bond key like the Archimedean rows'. `lead` does not
+mean "arg 0 is a string": it means the knobs count copies of that tiling's
+periodic domain around a seam, and every wrap bar downstream reads it that way.
+A cube has no seam, and read as if it had, the bars threw out the 108-cell
+stacked-bond cube and left 192 against a target of 81.
+
 ## Recipe: add a fractal (self-similar) board
 
 The **Fractals** family (`fractal.py`, `web/src/boards/fractal.ts`) holds the

@@ -176,7 +176,7 @@ TILINGS = {
 #   Sphere          -> the spherical tilings
 #   Platonic solids -> the five regular solids
 #   Catalan solids  -> the thirteen duals of the Archimedean solids
-#   Polyhedra       -> the frames and the stepped pyramids
+#   Polyhedra       -> the frames, the stepped pyramids and the brick cubes
 #
 # The last four are all *solid groups*: a flat list of boards, each row
 # launching at once. They differ only in which boards they hold, so one table

@@ -82,7 +82,12 @@ Pick a surface, then a tiling:
   single-cell apex, its foundation itself a playable face since nothing
   mirrors it below), and a stepped bipyramid (two of those pyramids stitched
   base-to-base into a terraced diamond). Cells stitch across the edges where
-  faces meet, inner walls and step shoulders included
+  faces meet, inner walls and step shoulders included. Three more are the
+  same cube laid in **brick bonds** — stacked bond, basket weave and its
+  three-brick version, the three congruent-rectangle bonds whose block is a
+  square and so fills a square face. A brick cannot run round a corner, so
+  the courses break at some of the twelve edges; the bricks either side still
+  meet as neighbours
 - **Torus (3D)** — the grid wraps in both directions, so there are no
   border cells; pure hexagons are possible here, because the torus has
   Euler characteristic 0

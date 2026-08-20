@@ -88,6 +88,19 @@ SPEC: dict[str, dict] = {
     "rhombicosidodecahedron_board": dict(size=(), mine=0, shape=None),
     "truncated_icosidodecahedron_board": dict(size=(), mine=0, shape=None),
     "cube_board": dict(size=(0,), mine=1, shape=None),
+    # The three brick bonds laid on a cube: one knob, the blocks per face side.
+    # ``rigid`` for the same reason the Catalan solids are -- every brick lies
+    # flat on a face at every n, so the knob cannot distort one, and the shape
+    # term measures *roundness*, which a 2-to-1 brick is never going to have.
+    #
+    # And deliberately **no ``lead``**, though the first argument is a bond key
+    # and looks like the Archimedean rows'. ``lead`` does not mean "arg 0 is a
+    # string": it means the knobs count copies of that tiling's periodic domain
+    # around a seam, and every wrap bar downstream reads it that way. A cube
+    # has no seam and n counts blocks on a face, so the bars measured a wrap
+    # that is not there and threw out the 108-cell stacked-bond cube, leaving
+    # 192 against a target of 81.
+    "brick_cube_board": dict(size=(1,), mine=2, shape=None, rigid=True),
     "cube_frame_board": dict(size=(0, 1), mine=2, shape=None, grid="cubeframe"),
     "tetrahedron_board": dict(size=(1,), mine=0, shape=None),
     "tetrahedron_frame_board": dict(size=(1,), mine=0, shape=None),

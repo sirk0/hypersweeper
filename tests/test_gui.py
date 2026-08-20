@@ -670,10 +670,15 @@ class TestMenu:
         self.click_item(menu, "catalan")
         assert self.click_item(menu, "rhombictriaconta") == ("start", "rhombictriaconta")
 
-    def test_polyhedra_holds_the_frames_and_the_stacks(self):
+    def test_polyhedra_holds_the_frames_the_stacks_and_the_brick_cubes(self):
         menu = MenuScreen()
         self.click_item(menu, "polyhedra")
         assert self.click_item(menu, "cubeframe") == ("start", "cubeframe")
+        menu = MenuScreen()
+        self.click_item(menu, "polyhedra")
+        assert self.click_item(menu, "cubebasketweave") == (
+            "start", "cubebasketweave"
+        )
 
     # -- reachability & gating ---------------------------------------------
 

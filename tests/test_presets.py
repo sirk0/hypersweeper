@@ -78,6 +78,17 @@ EXEMPT_ROWS = {
     # and the next window down is two and a half domains round: what shipped
     # before, and what drew as gaps and slivers.
     ("kleinbasketweave3", "easy"),
+    # A brick cube's only knob is the blocks per face side, and each block
+    # holds a whole bond -- two bricks for the stacked bond and the basket
+    # weave, three for the three-brick weave -- so the ladder is 6 * bricks *
+    # n**2 and the two-brick bonds step 48 -> 108 -> 192 straight past an
+    # 81-cell target. 108 is the closer of the two by a long way (48 is barely
+    # half the target), and there is nothing in between: a face is square, so n
+    # is one number rather than two, and half a block is not a block. The
+    # three-brick weave needs no exemption -- its 18 n**2 ladder puts 72 inside
+    # the band -- which is the whole difference between the rows.
+    ("cubestackedbond", "easy"),   # 48 or 108
+    ("cubebasketweave", "easy"),   # 48 or 108
     # The stepped bipyramid's terraces have to run all the way to a single
     # cube at each apex, or it is a slab rather than a diamond, and that fixes
     # `levels` to (base + 1) / 2 on an odd base. The solid then steps 38 -> 64

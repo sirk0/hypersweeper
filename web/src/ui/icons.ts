@@ -35,6 +35,7 @@ import {
   triakisTetrahedronBoard,
 } from "../boards/catalan";
 import {
+  brickCubeBoard,
   c80Board,
   c180Board,
   dodecahedronBoard,
@@ -48,7 +49,7 @@ import {
   tetrahedronFrameBoard,
   truncatedIcosidodecahedronBoard,
 } from "../boards/solids";
-import type { Board3D } from "../boards/core";
+import { newellNormal, type Board3D, type Vec3 } from "../boards/core";
 
 const D = 100;
 const C = D / 2;
@@ -534,6 +535,10 @@ const SOLID_BUILDERS: Record<string, () => Board3D> = {
   dodecahedron: () => dodecahedronBoard(0, 1),
   steppedbipyramid: () => steppedBipyramidBoard(7, 4, 0),
   steppedpyramid: () => steppedPyramidBoard(5, 3, 0),
+  // the three brick cubes, at their own easy block counts
+  cubestackedbond: () => brickCubeBoard("stackedbond", 3, 0),
+  cubebasketweave: () => brickCubeBoard("basketweave", 3, 0),
+  cubebasketweave3: () => brickCubeBoard("basketweave3", 2, 0),
   // The thirteen Catalan solids, at their own easy frequencies. There is no
   // drawing of a disdyakis triacontahedron a reader could tell from a pentakis
   // dodecahedron, so every one of these is the real board.
@@ -588,6 +593,14 @@ const SOLID_VIEW: Record<string, [number, number] | [number, number, number]> = 
   // everything above it or the apex hiding everything below.
   steppedpyramid: [-70, 0, 28],
   tetraframe: [-50, 18, 45],
+  // The brick cubes, turned so three faces show and the courses read running a
+  // different way on each. Just shallow enough that the top face clears the
+  // `facing > 0.8` line (cos 24 * cos 28 = 0.807) and so takes the light tone:
+  // at a steeper 3/4 turn no face did, and all three came out in the same two
+  // shades, which reads flat next to the other blocky solids.
+  cubestackedbond: [-24, 28],
+  cubebasketweave: [-24, 28],
+  cubebasketweave3: [-24, 28],
   // Down a 4-fold vertex axis and tipped, so three of the eight faces show.
   octahedron: [-24, 24],
   // Down a 5-fold vertex axis and tipped, echoing the snub dodecahedron's view.
@@ -666,13 +679,17 @@ function solidFaces(key: string, kind: "round" | "blocky" = "round"): string[] {
     if (kind === "round") {
       facing = mid[2] / (Math.hypot(mid[0], mid[1], mid[2]) || 1);
     } else {
-      const [a, b, c] = [spun[0]!, spun[1]!, spun[2]!];
-      const e1 = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
-      const e2 = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
-      const nx = e1[1]! * e2[2]! - e1[2]! * e2[1]!;
-      const ny = e1[2]! * e2[0]! - e1[0]! * e2[2]!;
-      const nz = e1[0]! * e2[1]! - e1[1]! * e2[0]!;
-      facing = nz / (Math.hypot(nx, ny, nz) || 1);
+      // Newell's normal, summed over every edge, rather than the cross product
+      // of the first three vertices: a face whose first three points happen to
+      // be **collinear** has no normal by that rule, and the answer is not a
+      // clean zero the `|| 1` guard could catch but rounding noise, so `facing`
+      // comes out as an arbitrary value in [-1, 1]. Half such faces are then
+      // culled below and the rest take a random shade. That is no hypothetical:
+      // a brick cube's `splitAtLatticePoints` emits `corner, splits-of-edge-0,
+      // corner, …`, so every brick whose first edge carries a T-vertex lands
+      // exactly there — a quarter of the faces on a basket-weave cube.
+      const n = newellNormal(spun as Vec3[]);
+      facing = n[2] / (Math.hypot(n[0], n[1], n[2]) || 1);
     }
     if (facing <= 0.06) continue; // back-facing, and the rim it would alias with
     // Blocky boards have far more, far smaller cells than a sphere's, so their
@@ -881,6 +898,12 @@ const ICON_TONES: Record<string, ShapeTone> = {
   cubeframe: { sides: 4, regularity: 1 },
   steppedbipyramid: { sides: 4, regularity: 1 },
   steppedpyramid: { sides: 4, regularity: 1 },
+  // a brick, not a square. All four angles are right, so `shapeMetrics`
+  // averages a perfect 1 against the side ratio: 0.75 for a 2-to-1 brick,
+  // 2/3 for the three-brick weave's 3-to-1 one
+  cubestackedbond: { sides: 4, regularity: 0.75 },
+  cubebasketweave: { sides: 4, regularity: 0.75 },
+  cubebasketweave3: { sides: 4, regularity: 2 / 3 },
   tetrahedron: { sides: 3, regularity: 1 },
   tetraframe: { sides: 3, regularity: 1 },
   octahedron: { sides: 3, regularity: 1 },
@@ -1174,6 +1197,9 @@ function draw(rawKey: string): string[] {
   } else if (
     key === "steppedbipyramid" ||
     key === "steppedpyramid" ||
+    key === "cubestackedbond" ||
+    key === "cubebasketweave" ||
+    key === "cubebasketweave3" ||
     key === "tetraframe" ||
     key === "octahedron" ||
     key === "icosahedron" ||

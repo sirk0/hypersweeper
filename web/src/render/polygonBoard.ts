@@ -29,7 +29,7 @@ import {
   rippleEntries,
   WIN_PER_CELL,
 } from "./animations";
-import { cellPalette, classifyShapes, type CellPalette } from "./shapePalette";
+import { cellPalette, classifyShapes, type CellPalette, corners } from "./shapePalette";
 import {
   cellStyle,
   cellStyleLoops,
@@ -149,13 +149,23 @@ export class PolygonBoard extends Group implements BoardMesh {
 
     this.order.forEach((cell, ci) => {
       const poly = board.polygons.get(cell)!.map(([x, y]) => [x - cx, cy - y] as Vertex);
+      // Measured off the cell's **real corners** — see the note in
+      // solidBoard.ts's `rebuild`. A tiling that is not edge to edge carries
+      // T-vertices, and an unweighted vertex mean is dragged toward whichever
+      // edge has them, which both shrinks the glyph (the inradius is a `min`
+      // over the edges, so the pulled-toward edge wins) and shoves it
+      // off-centre. Most of the bonds are safe by accident, their T-vertices
+      // being centrally symmetric; the three-brick basket weave is not, and had
+      // been drawing the numbers on its two outer bricks at two thirds size.
+      // Identity for every board with no T-vertex.
+      const shape = corners(poly) as Vertex[];
       const centroid: Vertex = [
-        poly.reduce((s, p) => s + p[0], 0) / poly.length,
-        poly.reduce((s, p) => s + p[1], 0) / poly.length,
+        shape.reduce((s, p) => s + p[0], 0) / shape.length,
+        shape.reduce((s, p) => s + p[1], 0) / shape.length,
       ];
       const radius =
-        poly.reduce((s, p) => s + Math.hypot(p[0] - centroid[0], p[1] - centroid[1]), 0) /
-        poly.length;
+        shape.reduce((s, p) => s + Math.hypot(p[0] - centroid[0], p[1] - centroid[1]), 0) /
+        shape.length;
       const anchor = board.glyphAnchor?.get(cell);
       const glyphCenter: Vertex = anchor ? [anchor[0] - cx, cy - anchor[1]] : centroid;
       const n = poly.length;
@@ -169,7 +179,7 @@ export class PolygonBoard extends Group implements BoardMesh {
         center: centroid,
         radius,
         glyphCenter,
-        glyphInradius: polygonInradius(poly, glyphCenter),
+        glyphInradius: polygonInradius(shape, glyphCenter),
         palette: cellPalette(tones.get(cell)!, "flat", style.monochrome),
       });
       vertexCount += count;

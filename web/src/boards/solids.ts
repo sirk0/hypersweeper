@@ -701,6 +701,176 @@ export function cubeBoard(n: number, mineCount: number): Board3D {
   return convexBoard3d("cube", cells, positions, mineCount, ROOT3);
 }
 
+// -- brick-bond cubes -------------------------------------------------------
+//
+// Three of the five congruent-rectangle bonds (boards/tilings.ts, family
+// "rectangle") lay on a cube, and they are exactly the three whose fundamental
+// block is a *square*: the stacked bond is two 1x1/2 bricks stacked, the basket
+// weave two laid one way or the other in a checkerboard, and the three-brick
+// weave three 1x1/3 bricks the same way. The running bond's block is offset
+// half a brick and the herringbone's is a diagonal, so neither fills a square
+// face.
+
+const BRICK_BLOCK = 6; // lattice units per block: divisible by 2 and by 3
+
+/** bond -> [bricks per block, whether the block turns on a checkerboard]. */
+export const BRICK_BONDS: Record<string, [number, boolean]> = {
+  stackedbond: [2, false],
+  basketweave: [2, true],
+  basketweave3: [3, true],
+};
+
+/** One block's bricks as `[u0, v0, u1, v1]` in block-local units: `count`
+ * courses laid across the block, or turned a quarter-turn. */
+function brickCourses(
+  count: number,
+  turned: boolean,
+): [number, number, number, number][] {
+  const step = BRICK_BLOCK / count;
+  const out: [number, number, number, number][] = [];
+  for (let k = 0; k < count; k++) {
+    out.push(
+      turned
+        ? [k * step, 0, (k + 1) * step, BRICK_BLOCK]
+        : [0, k * step, BRICK_BLOCK, (k + 1) * step],
+    );
+  }
+  return out;
+}
+
+/** Insert every vertex that lies *inside* another cell's edge into that edge —
+ * the 3D twin of `insertTVertices` in tilings.ts.
+ *
+ * A brick cube needs it twice over. Within a face the weaves are not edge to
+ * edge: a course's end abuts the middle of the turned brick beside it. And at
+ * the twelve cube edges the two faces subdivide the shared line differently,
+ * because a face's bricks run along one of its two directions and no choice of
+ * directions makes all twelve agree. Recorded as a vertex of the brick whose
+ * edge it splits, the point is collinear — the drawn rectangle is unchanged —
+ * but the two bricks now share a vertex id, which is what
+ * `sharedVertexAdjacency` runs on and what makes the mesh close: without it the
+ * Euler characteristic is not 2 and a cube edge counts as a boundary.
+ *
+ * Vertices are integer triples and every brick edge is axis-aligned, so this is
+ * exact integer arithmetic with no tolerance to get wrong. */
+function splitAtLatticePoints(
+  cells: Map<string, Vec3[]>,
+): Map<string, Vec3[]> {
+  const vertices = new Set<string>();
+  for (const keys of cells.values()) {
+    for (const key of keys) vertices.add(cid(...key));
+  }
+  const out = new Map<string, Vec3[]>();
+  for (const [cell, keys] of cells) {
+    const split: Vec3[] = [];
+    for (let i = 0; i < keys.length; i++) {
+      const a = keys[i]!;
+      const b = keys[(i + 1) % keys.length]!;
+      split.push(a);
+      const delta = [b[0] - a[0], b[1] - a[1], b[2] - a[2]] as Vec3;
+      const steps = Math.max(...delta.map(Math.abs));
+      const unit = delta.map((d) => d / steps) as Vec3;
+      for (let s = 1; s < steps; s++) {
+        const point: Vec3 = [
+          a[0] + unit[0] * s,
+          a[1] + unit[1] * s,
+          a[2] + unit[2] * s,
+        ];
+        if (vertices.has(cid(...point))) split.push(point);
+      }
+    }
+    out.set(cell, split);
+  }
+  return out;
+}
+
+/** A cube surface tiled with one congruent rectangle: each face an n x n grid
+ * of square blocks, each block cut into the bond's bricks, so the board is
+ * `6 * bricks * n**2` cells (12 n**2 for the two-brick bonds, 18 n**2 for the
+ * three-brick weave).
+ *
+ * Vertices are integer points on `[-N, N]**3` where `N = 3n` (a surface vertex
+ * has one axis at +-N; a block is 6 units, so a half- and a third-split both
+ * land on the lattice), which is what lets bricks meeting at a cube edge or
+ * corner share a vertex id and become neighbors.
+ *
+ * A face's bricks run along the first of its two axes taken cyclically (x-face
+ * -> y, y-face -> z, z-face -> x), so the six faces are related by the cube's
+ * own rotations rather than one face being laid out differently from the rest.
+ * That leaves the bond broken at some of the twelve edges — a brick cannot run
+ * round a corner — and `splitAtLatticePoints` is what stitches the mesh back
+ * together across the break. */
+export function brickCubeBoard(
+  bond: string,
+  n: number,
+  mineCount: number,
+): Board3D {
+  const spec = BRICK_BONDS[bond];
+  if (!spec) throw new Error(`unknown brick bond: ${bond}`);
+  if (n < 1) throw new Error("need at least one block per face side");
+  const [count, checkered] = spec;
+  const block = BRICK_BLOCK;
+  const half = (n * block) / 2;
+
+  let cells = new Map<string, Vec3[]>();
+  for (let axis = 0; axis < 3; axis++) {
+    const uAxis = (axis + 1) % 3;
+    const vAxis = (axis + 2) % 3;
+    for (const sign of [-1, 1]) {
+      // A weave's quarter-turn centres are its block *corners*, and a face
+      // centre is one only when n is even. So for even n the checkerboard has
+      // to be flipped on the three negative faces, or the two halves of the
+      // cube carry the pattern in opposite phase where they meet: measured,
+      // that costs an even-n weave cube all but 6 of its 24 rotations and fans
+      // its neighbour counts out from two classes into four (a 6-cell class of
+      // degree 5 appears, one per face). Flipped, every size of every bond
+      // keeps a symmetry group of order 24 — the full rotation group for even
+      // n, and the 12 rotations plus inversion the odd sizes already had.
+      const phase = n % 2 === 0 && sign < 0 ? 1 : 0;
+      for (let i = 0; i < n; i++) {
+        for (let j = 0; j < n; j++) {
+          const turned = checkered && (i + j + phase) % 2 === 1;
+          const courses = brickCourses(count, turned);
+          for (let b = 0; b < courses.length; b++) {
+            const [u0, v0, u1, v1] = courses[b]!;
+            const keys: Vec3[] = [];
+            for (const [du, dv] of [
+              [u0, v0],
+              [u1, v0],
+              [u1, v1],
+              [u0, v1],
+            ] as const) {
+              const coord: Vec3 = [0, 0, 0];
+              coord[axis] = sign * half;
+              coord[uAxis] = -half + i * block + du;
+              coord[vAxis] = -half + j * block + dv;
+              keys.push(coord);
+            }
+            cells.set(cid(axis, sign, i, j, b), keys);
+          }
+        }
+      }
+    }
+  }
+
+  cells = splitAtLatticePoints(cells);
+  const keyed: Cells = new Map();
+  const positions: Positions = new Map();
+  for (const [cell, keys] of cells) {
+    keyed.set(
+      cell,
+      keys.map((key) => {
+        const id = cid(...key);
+        if (!positions.has(id)) {
+          positions.set(id, [key[0] / half, key[1] / half, key[2] / half]);
+        }
+        return id;
+      }),
+    );
+  }
+  return convexBoard3d("cube" + bond, keyed, positions, mineCount, ROOT3);
+}
+
 /** The boundary of a polycube (a union of axis-aligned unit cubes), tiled by
  * unit squares. `solid(i, j, k)` says whether the unit cube at integer
  * indices is filled; `extent` is the `(nx, ny, nz)` bounding box. Cubes are
