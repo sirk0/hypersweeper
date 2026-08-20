@@ -1238,6 +1238,32 @@ Three things that are easy to get wrong when touching this:
   real corners (`corners()`), or every isogonal board would be painted as a
   board of irregular hexagons. Nothing else on the board has a 180° vertex —
   the flattest genuine corner in the catalog is a Klein-bottle quad at ~172°.
+- **...and neither is it a place to measure a cell *from*.** The colour is not
+  the only thing that reads a polygon: so do the cell's centre, its radius, the
+  inradius the number has to fit inside, and the inset the mesh is drawn with.
+  All of them took the plain **vertex average** as the centre, which a
+  collinear vertex drags toward whichever edge carries it — and since the
+  inradius is a `min` over the edges, the distance to that very edge is then
+  what wins. A brick with one T-vertex on a long edge came out at **0.80** of
+  its true size (0.667 on the three-brick weave), with the number both shrunk
+  and shoved off-centre and its grout gap wider on one side than the other.
+  `solidBoard`/`polygonBoard` measure `corners(poly, board.cornerMask?.get(cell))`
+  and *draw* the full polygon; on a board with no T-vertex that is the identity,
+  which two before/after screenshots of a sphere and a cube confirm to the
+  pixel. The mask is not optional where there is one: a curved immersion bends
+  a T-vertex as far from flat as a real corner, which is why `Board3D.cornerMask`
+  exists at all.
+- **A face normal must be Newell's, not a cross product of three vertices.**
+  `solidFaces` in `ui/icons.ts` took the icon's back-face test from the first
+  three points of each polygon. `splitAtLatticePoints` emits `corner,
+  splits-of-edge-0, corner, …`, so a brick whose first edge carries a T-vertex
+  has three *collinear* points there — and the answer is not a clean zero the
+  `|| 1` guard would catch but rounding noise, so `facing` came out as an
+  arbitrary number in [-1, 1]: half those faces were culled outright, leaving
+  the near-black panel showing through, and the rest took a random shade. A
+  quarter of a basket-weave cube's bricks went that way. `newellNormal` sums
+  over every edge and cannot degenerate; it is what the real renderer has always
+  used, which is exactly why the board drew correctly while its icon did not.
 - **Icons share the hue, not the tone.** The board tint is deliberately faint;
   at 38 px it would read as gray, so the icon profile puts each hue near the
   lightness where it is most colourful. `shape()` reads the tone off the
