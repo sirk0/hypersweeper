@@ -396,7 +396,7 @@ const DOMAINS: Record<string, () => Domain> = {
  * cut from, and it is already in the catalogue. */
 const SPECTRE_PATTERN = "deltoidal";
 
-/** The brick spiral's page: the running bond.
+/** The brick rings' page: the running bond.
  *
  * It is wound out of one 2:1 brick, and what has no period is the *winding*
  * — the tile itself tiles the plane perfectly well, as any wall does. So
@@ -501,9 +501,9 @@ const MODE_PATTERN = new Map<string, string>();
   // is the one that cannot (see SPECTRE_PATTERN).
   for (const mode of APERIODIC_MODES) MODE_PATTERN.set(mode, mode);
   MODE_PATTERN.set("spectre", SPECTRE_PATTERN);
-  // ...and so is the brick spiral, for the opposite reason: its tile has a
+  // ...and so are the brick rings, for the opposite reason: their tile has a
   // period, its winding has not (see BRICK_PATTERN).
-  MODE_PATTERN.set("brickspiral", BRICK_PATTERN);
+  MODE_PATTERN.set("brickrings", BRICK_PATTERN);
   // The Platonic solids and the frames are folded flat grids — a cube and the
   // stepped bipyramid are squares, a tetrahedron (and every other Platonic
   // solid but the cube) is triangles — so they take that grid.

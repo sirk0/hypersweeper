@@ -1538,32 +1538,32 @@
         "hasCellCycle": false
       }
     },
-    "brickspiral": {
+    "brickrings": {
       "easy": {
-        "cellCount": 78,
-        "mineCount": 14,
+        "cellCount": 72,
+        "mineCount": 12,
         "euler": 1,
         "boundaryComponents": 1,
-        "edgeCount": 235,
-        "vertexCount": 158,
+        "edgeCount": 217,
+        "vertexCount": 146,
         "hasCellCycle": false
       },
       "medium": {
-        "cellCount": 253,
-        "mineCount": 48,
+        "cellCount": 242,
+        "mineCount": 47,
         "euler": 1,
         "boundaryComponents": 1,
-        "edgeCount": 760,
-        "vertexCount": 508,
+        "edgeCount": 727,
+        "vertexCount": 486,
         "hasCellCycle": false
       },
       "hard": {
-        "cellCount": 465,
-        "mineCount": 106,
+        "cellCount": 512,
+        "mineCount": 114,
         "euler": 1,
         "boundaryComponents": 1,
-        "edgeCount": 1396,
-        "vertexCount": 932,
+        "edgeCount": 1537,
+        "vertexCount": 1026,
         "hasCellCycle": false
       }
     },

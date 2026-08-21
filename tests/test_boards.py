@@ -28,7 +28,7 @@ from minesweeper.boards import (
     SURFACE_LABELS,
     TILINGS,
     _arch_template,
-    _brick_spiral_tiles,
+    _brick_rings_tiles,
     _finalize_flat,
     _phyllotaxis_tiles,
     _shared_vertex_adjacency,
@@ -707,17 +707,18 @@ class TestPhyllotaxis:
                 occupied.setdefault(v, set()).update(sectors)
 
 
-class TestBrickSpiral:
-    """The brick spiral: 2x1 bricks winding out of a 2x2 block.
+class TestBrickRings:
+    """The brick rings: 2x1 bricks in concentric square rings about a 2x2 core.
 
-    These say the board is the winding it claims to be -- an exact tiling of a
-    ``width`` x (``width`` - 1) rectangle in whole bricks, with one mirror and
-    no translation -- and that the T-vertices, where a brick's corner meets the
-    middle of a neighbour's long side, are recorded, which is what keeps the
-    patch a mesh and the neighbours neighbours.
+    These say the board is the pattern it claims to be -- an exact tiling of
+    the 2r x 2r square in whole bricks, ring by ring, with the square's two
+    mirrors and half turn but not its quarter turn, and no translation -- and
+    that the T-vertices, where a brick's corner meets the middle of a
+    neighbour's long side, are recorded, which is what keeps the patch a mesh
+    and the neighbours neighbours.
     """
 
-    WIDTHS = (2, 3, 4, 5, 8, 9, 12, 13, 23)
+    RINGS = (1, 2, 3, 4, 6, 8, 11, 15)
 
     @staticmethod
     def _cells(bricks):
@@ -726,85 +727,90 @@ class TestBrickSpiral:
                        for x, y, w, h in bricks
                        for dx in range(w) for dy in range(h))
 
-    @staticmethod
-    def _normalised(bricks):
-        """The brick set shifted so the rectangle's corner sits at the origin,
-        which is what makes two transformed copies comparable."""
-        min_x = min(x for x, _, _, _ in bricks)
-        min_y = min(y for _, y, _, _ in bricks)
-        return frozenset((x - min_x, y - min_y, w, h) for x, y, w, h in bricks)
-
+    # The 2k x 2k square spans -k .. k-1, so its centre is the lattice
+    # *midpoint* (-0.5, -0.5) and a reflection takes the cell x to -1-x. A
+    # brick's image therefore starts at -x-w rather than at -x.
     @staticmethod
     def _turned(bricks):
-        """A quarter turn: the cell (x, y) goes to (-y, x), so a brick's
-        lower-left corner is its old top-left one, turned, and its sides swap."""
-        return [(-(y + h - 1), x, h, w) for x, y, w, h in bricks]
+        """A quarter turn about the centre: the cell (x, y) goes to (-1-y, x),
+        so the brick's sides swap."""
+        return {(-y - h, x, h, w) for x, y, w, h in bricks}
 
     @staticmethod
     def _flipped(bricks):
-        """The mirror across a horizontal line: (x, y) goes to (x, -y)."""
-        return [(x, -(y + h - 1), w, h) for x, y, w, h in bricks]
+        """The mirror across the horizontal centre line."""
+        return {(x, -y - h, w, h) for x, y, w, h in bricks}
 
     @staticmethod
     def _mirrored(bricks):
-        """The mirror across a vertical line: (x, y) goes to (-x, y)."""
-        return [(-(x + w - 1), y, w, h) for x, y, w, h in bricks]
+        """The mirror across the vertical centre line."""
+        return {(-x - w, y, w, h) for x, y, w, h in bricks}
 
-    @pytest.mark.parametrize("width", WIDTHS)
-    def test_the_bricks_cover_the_rectangle_exactly(self, width):
-        cells = self._cells(_brick_spiral_tiles(width))
+    @staticmethod
+    def _depth(cell):
+        """Which ring a cell belongs to: ring k spans -k .. k-1 on both axes."""
+        x, y = cell
+        return max(-x, x + 1, -y, y + 1)
+
+    @pytest.mark.parametrize("rings", RINGS)
+    def test_the_bricks_cover_the_square_exactly(self, rings):
+        cells = self._cells(_brick_rings_tiles(rings))
         assert set(cells.values()) == {1}  # nothing covered twice
-        assert len(cells) == width * (width - 1)  # and nothing left uncovered
+        assert len(cells) == (2 * rings) ** 2  # and nothing left uncovered
         xs = {x for x, _ in cells}
         ys = {y for _, y in cells}
-        assert (max(xs) - min(xs), max(ys) - min(ys)) == (width - 1, width - 2)
+        assert (max(xs) - min(xs), max(ys) - min(ys)) == (2 * rings - 1,) * 2
 
-    @pytest.mark.parametrize("width", WIDTHS)
-    def test_every_tile_is_a_whole_brick(self, width):
-        # The point of the shells: each is w + h + 1 cells with w = h + 1, so
-        # every one is even and splits into two even-length straight arms.
-        # Nothing is ever left over, at any width -- no 1x1 anywhere.
-        assert {(w, h) for _, _, w, h in _brick_spiral_tiles(width)} <= {(2, 1), (1, 2)}
+    @pytest.mark.parametrize("rings", RINGS)
+    def test_every_tile_is_a_whole_brick(self, rings):
+        # Ring k is 2k cells along each of its rows and 2k - 2 up each side,
+        # both even, so nothing is ever left over -- no 1x1 at any size.
+        assert {(w, h) for _, _, w, h in _brick_rings_tiles(rings)} <= {(2, 1), (1, 2)}
 
-    @pytest.mark.parametrize("width", WIDTHS)
-    def test_cell_counts(self, width):
-        assert len(_brick_spiral_tiles(width)) == width * (width - 1) // 2
+    @pytest.mark.parametrize("rings", RINGS)
+    def test_cell_counts(self, rings):
+        # 4k - 2 bricks in ring k, so 2r**2 in all
+        assert len(_brick_rings_tiles(rings)) == 2 * rings ** 2
 
-    @pytest.mark.parametrize("width", (5, 9, 13, 23))
-    def test_the_hub_is_a_2x2_block_of_two_bricks(self, width):
-        # what the board winds out of: the centre brick and the one the first
-        # shell lays directly above it, filling the 2x2 the arm turns about
-        hub = [b for b in _brick_spiral_tiles(width)
-               if 0 <= b[0] and b[0] + b[2] <= 2 and 0 <= b[1] and b[1] + b[3] <= 2]
-        assert sorted(hub) == [(0, 0, 2, 1), (0, 1, 2, 1)]
+    @pytest.mark.parametrize("rings", RINGS)
+    def test_each_ring_is_a_square_frame_laid_the_same_way(self, rings):
+        # the construction, stated as a property: the tiles at depth k are
+        # exactly the boundary of the 2k x 2k square, its top and bottom rows
+        # in horizontal bricks and its two sides in vertical ones
+        bricks = _brick_rings_tiles(rings)
+        by_ring: dict = {}
+        for brick in bricks:
+            depths = {self._depth(c) for c in self._cells([brick])}
+            assert len(depths) == 1, "a brick straddles two rings"
+            by_ring.setdefault(depths.pop(), []).append(brick)
+        assert sorted(by_ring) == list(range(1, rings + 1))
+        for k, ring in by_ring.items():
+            lo, hi = -k, k - 1
+            square = {(x, y) for x in range(lo, hi + 1) for y in range(lo, hi + 1)}
+            inner = {(x, y) for x in range(lo + 1, hi) for y in range(lo + 1, hi)}
+            assert set(self._cells(ring)) == square - inner
+            for x, y, w, h in ring:
+                # a row brick lies flat, a side brick stands up
+                assert (w, h) == ((2, 1) if y in (lo, hi) else (1, 2))
 
-    @pytest.mark.parametrize("width", range(3, 25))
-    def test_it_reflects_once_and_never_turns(self, width):
-        # The winding carries exactly one mirror, and which axis it lies on
-        # follows the width's parity -- horizontal through the hub when the
-        # width is odd (every shipped board), vertical when it is even. It has
-        # nothing else: a quarter turn cannot even map the rectangle onto
-        # itself (the sides differ by one), and the half turn does not either.
-        # Being mirrored at every width is what makes "pinwheel" the wrong name
-        # for it: a pinwheel is chiral, and this never is.
-        bricks = _brick_spiral_tiles(width)
-        here = self._normalised(bricks)
-        across = self._normalised(self._flipped(bricks)) == here
-        down = self._normalised(self._mirrored(bricks)) == here
-        assert [across, down] == [width % 2 == 1, width % 2 == 0]
-        assert self._normalised(self._turned(bricks)) != here
-        assert self._normalised(self._turned(self._turned(bricks))) != here
+    @pytest.mark.parametrize("rings", (2, 3, 6, 11, 15))
+    def test_it_has_the_square_s_mirrors_but_not_its_quarter_turn(self, rings):
+        # Both mirrors and, as their composition, the half turn. Not the
+        # quarter turn: a ring's rows are horizontal bricks where its sides are
+        # vertical ones, so turning it a quarter lays bricks across bricks.
+        bricks = set(_brick_rings_tiles(rings))
+        assert self._flipped(bricks) == bricks
+        assert self._mirrored(bricks) == bricks
+        assert self._flipped(self._mirrored(bricks)) == bricks  # the half turn
+        assert self._turned(bricks) != bricks
 
     def test_no_translation_maps_the_patch_onto_itself(self):
         # nonperiodicity on the finite patch, the check TestPhyllotaxis makes.
-        # The tiles taken are well inside the board, so it is the winding that
-        # rules a shift out rather than the boundary; a periodic bond of the
-        # same brick would pass every one of its lattice vectors here.
-        patch = set(_brick_spiral_tiles(23))
-        cells = self._cells(patch)
-        cx = (min(x for x, _ in cells) + max(x for x, _ in cells)) / 2
-        cy = (min(y for _, y in cells) + max(y for _, y in cells)) / 2
-        core = [b for b in patch if abs(b[0] - cx) < 5 and abs(b[1] - cy) < 5]
+        # The tiles taken are well inside the board, so it is the ring
+        # structure that rules a shift out rather than the boundary; a periodic
+        # bond of the same brick would pass every one of its lattice vectors.
+        patch = set(_brick_rings_tiles(11))
+        core = [b for b in patch if abs(b[0]) < 5 and abs(b[1]) < 5]
         assert len(core) > 10
         for dx in range(-6, 7):
             for dy in range(-6, 7):
@@ -818,12 +824,12 @@ class TestBrickSpiral:
         # side. Recording it there -- and only where it is genuinely some
         # tile's corner -- is what leaves every edge shared by two tiles, so
         # the topology still reads a disc. Drop them and it does not.
-        board = build_board("brickspiral", "easy")
+        board = build_board("brickrings", "easy")
         assert (_euler_characteristic(board), _boundary_components(board)) == (1, 1)
         corners_only = _finalize_flat(
-            "brickspiral",
+            "brickrings",
             {(x, y, w, h): [(x, y), (x + w, y), (x + w, y + h), (x, y + h)]
-             for x, y, w, h in _brick_spiral_tiles(13)},
+             for x, y, w, h in _brick_rings_tiles(6)},
             lambda p: (float(p[0]), float(p[1])), 1, 10)
         assert _euler_characteristic(corners_only) != 1
         # none of them changes the drawn tile: they are collinear, which is
@@ -835,10 +841,10 @@ class TestBrickSpiral:
         # the T-vertices are load-bearing for the game too: a brick lying
         # alongside the middle of another's long side is a neighbour there,
         # and would not be one without them
-        full = build_board("brickspiral", "easy").adjacency
+        full = build_board("brickrings", "easy").adjacency
         corners_only = _shared_vertex_adjacency(
             {(x, y, w, h): [(x, y), (x + w, y), (x + w, y + h), (x, y + h)]
-             for x, y, w, h in _brick_spiral_tiles(13)})
+             for x, y, w, h in _brick_rings_tiles(6)})
         assert all(set(corners_only[cell]) <= set(full[cell]) for cell in full)
         assert sum(map(len, corners_only.values())) < sum(map(len, full.values()))
 

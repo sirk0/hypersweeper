@@ -527,28 +527,29 @@ def spectre_board(
 
 
 
-# -- the brick spiral --------------------------------------------------------
+
+# -- the brick rings ---------------------------------------------------------
 #
 # One nonperiodic board on the plain integer square lattice, tiled by 2x1
-# bricks winding out of a 2x2 block. It is no substitution: like the
-# phyllotactic spiral above it is nonperiodic by how it is *wound*, and a
-# winding admits no translation at all.
+# bricks in concentric square rings about a 2x2 core. It is no substitution:
+# like the phyllotactic spiral above it is nonperiodic by *symmetry*, and a
+# pattern with a distinguished centre admits no translation at all.
 #
-# The centre is one brick; the first shell lays a second directly above it,
-# and those two are the 2x2 block the rest of the board winds out of. Each of
-# ``width - 2`` shells adds one row and one column on two adjacent sides, the
-# corner walking NE, NW, SW, SE and round again, which is what winds the arm
-# outward. The rectangle always satisfies ``w = h + 1``, and that is what
-# makes every shell -- ``w + h + 1`` cells -- even and splits it into two
-# straight arms of even length, so **every** tile is a whole brick, at every
-# width. The board is the ``width`` x (``width`` - 1) rectangle the shells
-# leave, so the size knob is the width alone and the cell count is
-# ``width * (width - 1) / 2``.
+# Ring k is the boundary of the 2k x 2k square about the origin: its top and
+# bottom rows are laid in horizontal bricks and its two sides in vertical
+# ones. Both runs are even -- a row is 2k cells and a side 2k - 2 -- so every
+# tile is a whole brick at every size, with no odd cell to special-case and no
+# 1x1 anywhere. Ring 1 is the core, two bricks stacked into a 2x2.
 #
-# It carries exactly one mirror at every width -- horizontal through the
-# centre block when the width is odd, vertical when it is even, and every
-# shipped board is odd -- and nothing else: no rotation, and -- the property
-# that puts it in this module -- no translation.
+# ``rings`` rings fill the 2``rings`` x 2``rings`` square exactly, so the size
+# knob is the ring count alone and the cell count is ``2 * rings**2``. Only an
+# even side can be tiled by bricks alone -- an odd-sided square has odd area --
+# which is why the knob counts rings rather than cells across.
+#
+# It carries the square's two mirrors and its half turn, but not its quarter
+# turn: a ring's top and bottom are horizontal bricks where its sides are
+# vertical ones, so turning it a quarter takes bricks across bricks. And no
+# translation, which is the property that puts it in this module.
 #
 # Vertex ids are the integer lattice points themselves and cell ids are
 # ``(x, y, w, h)``, a tile's lower-left corner and size, so unlike the three
@@ -608,46 +609,31 @@ def _brick_board(mode: str, bricks: list[Brick], mine_count: int, scale: float) 
     return _finalize_flat(mode, cells, _lattice_to_xy, mine_count, scale)
 
 
-def _lay(a: tuple[int, int], b: tuple[int, int]) -> Brick:
-    """The brick covering two cells that share an edge."""
-    x, y = min(a[0], b[0]), min(a[1], b[1])
-    return (x, y, 2, 1) if a[1] == b[1] else (x, y, 1, 2)
+def _brick_rings_tiles(rings: int) -> list[Brick]:
+    """The board's bricks, ring by ring outwards from the 2x2 core.
 
-
-def _brick_spiral_tiles(width: int) -> list[Brick]:
-    """The spiral's bricks, in the order the arm lays them.
-
-    ``width - 2`` shells, each adding one row and one column on two adjacent
-    sides; the shell's corner walks NE, NW, SW, SE and round again. Which of a
-    shell's two arms takes the corner cell follows from the rectangle's
-    height: taking it there is what leaves both arms an even number of cells
-    long, so both are whole bricks and the board never needs an odd tile.
+    Ring k is the boundary of the 2k x 2k square about the origin: ``k``
+    horizontal bricks along its top row and ``k`` along its bottom, then
+    ``k - 1`` vertical ones up each side. That is ``4k - 2`` bricks a ring and
+    ``2 * rings**2`` in all -- and every run is even, so nothing is ever left
+    over.
     """
-    if width < 2:
-        raise ValueError("width must be >= 2")
-    x0, y0, x1, y1 = 0, 0, 2, 1  # the centre brick
-    bricks: list[Brick] = [(0, 0, 2, 1)]
-    for step in range(width - 2):
-        height = y1 - y0
-        phase = step % 4
-        column_x = x1 if phase in (0, 3) else x0 - 1
-        row_y = y1 if phase in (0, 1) else y0 - 1
-        x0, x1 = (x0, x1 + 1) if phase in (0, 3) else (x0 - 1, x1)
-        y0, y1 = (y0, y1 + 1) if phase in (0, 1) else (y0 - 1, y1)
-        if height % 2:
-            column = [(column_x, y) for y in range(y0, y1)]
-            row = [(x, row_y) for x in range(x0, x1) if x != column_x]
-        else:
-            column = [(column_x, y) for y in range(y0, y1) if y != row_y]
-            row = [(x, row_y) for x in range(x0, x1)]
-        for arm in (column, row):
-            for i in range(0, len(arm), 2):
-                bricks.append(_lay(arm[i], arm[i + 1]))
+    if rings < 1:
+        raise ValueError("rings must be >= 1")
+    bricks: list[Brick] = []
+    for k in range(1, rings + 1):
+        lo, hi = -k, k - 1  # the 2k x 2k square, centred on the origin
+        for x in range(lo, hi, 2):  # its top and bottom rows...
+            bricks.append((x, lo, 2, 1))
+            bricks.append((x, hi, 2, 1))
+        for y in range(lo + 1, hi - 1, 2):  # ...and its two sides
+            bricks.append((lo, y, 1, 2))
+            bricks.append((hi, y, 1, 2))
     return bricks
 
 
-def brick_spiral_board(width: int, mine_count: int, scale: float = 30) -> Board:
-    """2x1 bricks winding out of a 2x2 block, one arm turning outward to fill
-    a ``width`` x (``width`` - 1) rectangle. Every tile is a whole brick.
+def brick_rings_board(rings: int, mine_count: int, scale: float = 30) -> Board:
+    """2x1 bricks in ``rings`` concentric square rings about a 2x2 core,
+    filling the 2``rings`` x 2``rings`` square. Every tile is a whole brick.
     """
-    return _brick_board("brickspiral", _brick_spiral_tiles(width), mine_count, scale)
+    return _brick_board("brickrings", _brick_rings_tiles(rings), mine_count, scale)

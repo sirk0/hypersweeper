@@ -3,7 +3,7 @@
 // _JSON_BUILDERS. M1 ported the flat regular modes; M2 adds the solids.
 import presetsData from "@data/presets.json";
 import {
-  brickSpiralBoard,
+  brickRingsBoard,
   penroseBoard,
   spectreBoard,
   phyllotaxisBoard,
@@ -145,7 +145,7 @@ const BUILDERS: Record<string, Builder> = {
   penrose_board: penroseBoard,
   spectre_board: spectreBoard,
   phyllotaxis_board: phyllotaxisBoard,
-  brick_spiral_board: brickSpiralBoard,
+  brick_rings_board: brickRingsBoard,
   sphinx_board: sphinxBoard,
   chair_board: chairBoard,
   carpet_board: carpetBoard,

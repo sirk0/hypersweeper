@@ -652,14 +652,15 @@ export function spectreBoard(
   return finalizeFlat("spectre", cellMap, positions, mineCount, scale);
 }
 
-// -- the brick spiral --------------------------------------------------------
+// -- the brick rings ---------------------------------------------------------
 //
 // Port of the same section in minesweeper/boards/aperiodic.py. One nonperiodic
-// board on the plain integer square lattice, tiled by 2×1 bricks winding out of
-// a 2×2 block — nonperiodic by how it is *wound* rather than by a substitution,
-// as the phyllotactic spiral above is. Cell ids are the tile's lower-left
-// corner and size, so unlike the three tilings above there is no trim, no
-// distance to quantise and no sort whose tie-break has to match Python's.
+// board on the plain integer square lattice, tiled by 2×1 bricks in concentric
+// square rings about a 2×2 core — nonperiodic by *symmetry* rather than by a
+// substitution, as the phyllotactic spiral above is. Cell ids are the tile's
+// lower-left corner and size, so unlike the three tilings above there is no
+// trim, no distance to quantise and no sort whose tie-break has to match
+// Python's.
 
 /** Lower-left corner, then width and height. */
 type Brick = readonly [number, number, number, number];
@@ -725,56 +726,36 @@ function brickBoard(
   return finalizeFlat(mode, cellMap, positions, mineCount, scale);
 }
 
-/** The brick covering two cells that share an edge. */
-function lay(a: readonly [number, number], b: readonly [number, number]): Brick {
-  const x = Math.min(a[0], b[0]);
-  const y = Math.min(a[1], b[1]);
-  return a[1] === b[1] ? [x, y, 2, 1] : [x, y, 1, 2];
-}
-
 /**
- * The spiral's bricks, in the order the arm lays them (port of
- * `_brick_spiral_tiles`). `width - 2` shells, each adding one row and one
- * column on two adjacent sides, the corner walking NE, NW, SW, SE and round
- * again; which arm takes the corner cell follows from the rectangle's height,
- * and taking it there is what leaves both arms an even number of cells long,
- * so every tile is a whole brick.
+ * The board's bricks, ring by ring outwards from the 2×2 core (port of
+ * `_brick_rings_tiles`). Ring k is the boundary of the 2k × 2k square about
+ * the origin: `k` horizontal bricks along its top row and `k` along its
+ * bottom, then `k - 1` vertical ones up each side. That is `4k - 2` bricks a
+ * ring and `2 * rings²` in all — and every run is even, so nothing is ever
+ * left over.
  */
-export function brickSpiralTiles(width: number): Brick[] {
-  if (width < 2) throw new Error("width must be >= 2");
-  let x0 = 0;
-  let y0 = 0;
-  let x1 = 2;
-  let y1 = 1;
-  const bricks: Brick[] = [[0, 0, 2, 1]];
-  for (let step = 0; step < width - 2; step += 1) {
-    const height = y1 - y0;
-    const phase = step % 4;
-    const columnX = phase === 0 || phase === 3 ? x1 : x0 - 1;
-    const rowY = phase === 0 || phase === 1 ? y1 : y0 - 1;
-    if (phase === 0 || phase === 3) x1 += 1;
-    else x0 -= 1;
-    if (phase === 0 || phase === 1) y1 += 1;
-    else y0 -= 1;
-    const column: [number, number][] = [];
-    const row: [number, number][] = [];
-    for (let y = y0; y < y1; y += 1) {
-      if (height % 2 !== 0 || y !== rowY) column.push([columnX, y]);
+export function brickRingsTiles(rings: number): Brick[] {
+  if (rings < 1) throw new Error("rings must be >= 1");
+  const bricks: Brick[] = [];
+  for (let k = 1; k <= rings; k += 1) {
+    const lo = -k;
+    const hi = k - 1; // the 2k × 2k square, centred on the origin
+    for (let x = lo; x < hi; x += 2) {
+      // its top and bottom rows...
+      bricks.push([x, lo, 2, 1], [x, hi, 2, 1]);
     }
-    for (let x = x0; x < x1; x += 1) {
-      if (height % 2 === 0 || x !== columnX) row.push([x, rowY]);
-    }
-    for (const arm of [column, row]) {
-      for (let i = 0; i < arm.length; i += 2) bricks.push(lay(arm[i]!, arm[i + 1]!));
+    for (let y = lo + 1; y < hi - 1; y += 2) {
+      // ...and its two sides
+      bricks.push([lo, y, 1, 2], [hi, y, 1, 2]);
     }
   }
   return bricks;
 }
 
 /**
- * 2×1 bricks winding out of a 2×2 block, one arm turning outward to fill a
- * `width` × (`width` - 1) rectangle. Every tile is a whole brick.
+ * 2×1 bricks in `rings` concentric square rings about a 2×2 core, filling the
+ * 2`rings` × 2`rings` square. Every tile is a whole brick.
  */
-export function brickSpiralBoard(width: number, mineCount: number, scale = 30): Board {
-  return brickBoard("brickspiral", brickSpiralTiles(width), mineCount, scale);
+export function brickRingsBoard(rings: number, mineCount: number, scale = 30): Board {
+  return brickBoard("brickrings", brickRingsTiles(rings), mineCount, scale);
 }

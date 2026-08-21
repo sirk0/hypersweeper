@@ -119,10 +119,10 @@ describe("which pattern a mode gets", () => {
     expect(patternKey("penrose")).toBe("penrose");
     expect(patternKey("phyllotaxis")).toBe("phyllotaxis");
     expect(patternKey("spectre")).toBe("deltoidal");
-    // The brick spiral is the other way about: its tile is a plain 2:1
+    // The brick rings are the other way about: their tile is a plain 2:1
     // brick and tiles the plane as any wall does, so the page is that wall —
     // what does not repeat is the winding, which no page can draw.
-    expect(patternKey("brickspiral")).toBe("runningbond");
+    expect(patternKey("brickrings")).toBe("runningbond");
     for (const mode of APERIODIC_MODES) expect(PERIODIC).toContain(patternKey(mode));
   });
 

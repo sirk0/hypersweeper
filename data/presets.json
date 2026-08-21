@@ -1004,23 +1004,23 @@
         ]
       }
     },
-    "brickspiral": {
-      "builder": "brick_spiral_board",
+    "brickrings": {
+      "builder": "brick_rings_board",
       "args": {
         "easy": [
-          13,
-          14,
+          6,
+          12,
           27.0
         ],
         "medium": [
-          23,
-          48,
+          11,
+          47,
           19.5
         ],
         "hard": [
-          31,
-          106,
-          17.7
+          16,
+          114,
+          16.594
         ]
       }
     },

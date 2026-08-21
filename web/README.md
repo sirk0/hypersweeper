@@ -1625,11 +1625,11 @@ menu is in anyway.
   in the tile), and Penrose's two rhombs make a plain periodic tiling as
   alternating courses of fat and thin diamonds — the interfaces line up because
   a fat course shifts by cos 72° and a mirrored thin one by −cos 36°, which sum
-  to exactly −½, so four courses come back a whole edge. The brick spiral is
-  the easiest of the lot: its tile is a plain 2:1 brick, which tiles the plane
-  as any wall does, so it takes the **running bond** (`BRICK_PATTERN`) — a
+  to exactly −½, so four courses come back a whole edge. The brick rings are
+  the easiest of the lot: their tile is a plain 2:1 brick, which tiles the plane
+  as any wall does, so they take the **running bond** (`BRICK_PATTERN`) — a
   tiling this module already draws from `archTemplate`. What has no period on
-  that board is the winding, and no page that repeats can draw a winding.
+  that board is the nesting, and no page that repeats can draw a centre.
 
   The **Spectre** is the one board whose page is a relative rather than its own
   tile. Tile(1,1) has no periodic cell of its own small enough to use — an

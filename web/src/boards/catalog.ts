@@ -317,7 +317,7 @@ export const MENU_FAMILY_HINTS: Record<string, string> = {
   dual: "Their duals — one shape throughout",
   isogonal: "A corner meets the middle of an edge",
   rectangle: "Brick bonds, one rectangle throughout",
-  aperiodic: "Never repeats: Penrose, the Spectre, two spirals",
+  aperiodic: "Never repeats: Penrose, the Spectre, a spiral, brick rings",
   fractal: "One tile, grown into itself",
 };
 
