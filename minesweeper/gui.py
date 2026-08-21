@@ -43,7 +43,6 @@ from minesweeper.boards import (
     SOLID_GROUP_MEMBERS,
     SUBSTITUTIONS,
     _brick_pinwheel_tiles,
-    _brick_spiral_tiles,
     build_board,
     family_rows,
     newell_normal,
@@ -1193,24 +1192,23 @@ def _render_icon(key: str) -> pygame.Surface:
                             for x, y in hexagon],
                         fill=ICON_BLUE if k % 2 else ICON_BLUE_LIGHT, width=3)
         _icon_gloss(s, pygame.Rect(d * 0.06, d * 0.06, d * 0.88, d * 0.6))
-    elif key in ("brickspiral", "brickpinwheel"):
-        # the side-5 board itself, thirteen tiles: the smallest patch that
-        # already shows how each one winds. What tells the two apart at icon
-        # size is the one 1x1 among the bricks, picked out in the darker tone
-        # -- the spiral's in a corner, the pinwheel's at the centre it turns
-        # about
-        tiles = (_brick_spiral_tiles(5) if key == "brickspiral"
-                 else _brick_pinwheel_tiles(5))
+    elif key == "brickpinwheel":
+        # the width-5 board itself, ten bricks: the smallest patch that already
+        # shows the arm turning. The two bricks of the 2x2 block it turns about
+        # are picked out in the darker tone -- the board is named for them, and
+        # they are what tells it from a plain bond at icon size
+        tiles = _brick_pinwheel_tiles(5)
         min_x = min(x for x, _, _, _ in tiles)
         min_y = min(y for _, y, _, _ in tiles)
         sc = d * 0.84 / 5
         ox = (d - 5 * sc) / 2
+        oy = (d - 4 * sc) / 2
         for x, y, w, h in tiles:
-            left, top = ox + (x - min_x) * sc, ox + (5 - (y - min_y) - h) * sc
+            left, top = ox + (x - min_x) * sc, oy + (4 - (y - min_y) - h) * sc
+            hub = 0 <= x and x + w <= 2 and 0 <= y and y + h <= 2
             _icon_shape(s, [(left, top), (left + w * sc, top),
                             (left + w * sc, top + h * sc), (left, top + h * sc)],
-                        fill=ICON_BLUE if (w, h) == (1, 1) else ICON_BLUE_LIGHT,
-                        width=3)
+                        fill=ICON_BLUE if hub else ICON_BLUE_LIGHT, width=3)
         _icon_gloss(s, pygame.Rect(d * 0.08, d * 0.06, d * 0.84, d * 0.55))
     elif key in SUBSTITUTIONS:
         # the substitution itself: the once-smaller tiles that fill one tile

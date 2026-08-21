@@ -29,7 +29,6 @@ from minesweeper.boards import (
     TILINGS,
     _arch_template,
     _brick_pinwheel_tiles,
-    _brick_spiral_tiles,
     _finalize_flat,
     _phyllotaxis_tiles,
     _shared_vertex_adjacency,
@@ -708,20 +707,17 @@ class TestPhyllotaxis:
                 occupied.setdefault(v, set()).update(sectors)
 
 
-class TestBrickBoards:
-    """The brick spiral and the brick pinwheel: 2x1 bricks wound around a
-    centre tile, filling a square exactly.
+class TestBrickPinwheel:
+    """The brick pinwheel: 2x1 bricks turning about a 2x2 block.
 
-    These say each is the winding it claims to be -- an exact tiling of the
-    square, in bricks but for the one or two cells the parity leaves over, and
-    wound so that no translation carries it onto itself -- and that the
-    T-vertices, where a brick's corner meets the middle of a neighbour's long
-    side, are recorded, which is what keeps the patch a mesh and the
-    neighbours neighbours.
+    These say the board is the winding it claims to be -- an exact tiling of a
+    ``width`` x (``width`` - 1) rectangle in whole bricks, with one mirror and
+    no translation -- and that the T-vertices, where a brick's corner meets the
+    middle of a neighbour's long side, are recorded, which is what keeps the
+    patch a mesh and the neighbours neighbours.
     """
 
-    SIDES = (2, 3, 4, 5, 8, 9, 12, 13, 23)
-    TILINGS = (_brick_spiral_tiles, _brick_pinwheel_tiles)
+    WIDTHS = (2, 3, 4, 5, 8, 9, 12, 13, 23)
 
     @staticmethod
     def _cells(bricks):
@@ -732,7 +728,7 @@ class TestBrickBoards:
 
     @staticmethod
     def _normalised(bricks):
-        """The brick set shifted so the square's corner sits at the origin,
+        """The brick set shifted so the rectangle's corner sits at the origin,
         which is what makes two transformed copies comparable."""
         min_x = min(x for x, _, _, _ in bricks)
         min_y = min(y for _, y, _, _ in bricks)
@@ -745,81 +741,55 @@ class TestBrickBoards:
         return [(-(y + h - 1), x, h, w) for x, y, w, h in bricks]
 
     @staticmethod
-    def _mirrored(bricks):
-        return [(-(x + w - 1), y, w, h) for x, y, w, h in bricks]
+    def _flipped(bricks):
+        """The mirror across a horizontal line: (x, y) goes to (x, -y)."""
+        return [(x, -(y + h - 1), w, h) for x, y, w, h in bricks]
 
-    @pytest.mark.parametrize("tiles", TILINGS)
-    @pytest.mark.parametrize("side", SIDES)
-    def test_the_bricks_cover_the_square_exactly(self, tiles, side):
-        cells = self._cells(tiles(side))
+    @pytest.mark.parametrize("width", WIDTHS)
+    def test_the_bricks_cover_the_rectangle_exactly(self, width):
+        cells = self._cells(_brick_pinwheel_tiles(width))
         assert set(cells.values()) == {1}  # nothing covered twice
-        assert len(cells) == side * side  # and nothing left uncovered
+        assert len(cells) == width * (width - 1)  # and nothing left uncovered
         xs = {x for x, _ in cells}
         ys = {y for _, y in cells}
-        assert (max(xs) - min(xs), max(ys) - min(ys)) == (side - 1, side - 1)
+        assert (max(xs) - min(xs), max(ys) - min(ys)) == (width - 1, width - 2)
 
-    @pytest.mark.parametrize("tiles", TILINGS)
-    @pytest.mark.parametrize("side", SIDES)
-    def test_every_tile_is_a_brick_or_a_unit_square(self, tiles, side):
-        assert {(w, h) for _, _, w, h in tiles(side)} <= {(2, 1), (1, 2), (1, 1)}
+    @pytest.mark.parametrize("width", WIDTHS)
+    def test_every_tile_is_a_whole_brick(self, width):
+        # The point of the shells: each is w + h + 1 cells with w = h + 1, so
+        # every one is even and splits into two even-length straight arms.
+        # Nothing is ever left over, at any width -- no 1x1 anywhere.
+        assert {(w, h) for _, _, w, h in _brick_pinwheel_tiles(width)} <= {(2, 1), (1, 2)}
 
-    @pytest.mark.parametrize("side", SIDES)
-    def test_only_the_parity_ever_calls_for_a_unit_square(self, side):
-        # The point of starting the spiral on a brick and the pinwheel on a
-        # square: every shell of either comes out even, so the only 1x1s are
-        # the pinwheel's centre and the cell an odd-area square has left over
-        # -- which is the corner square the two are named for.
-        def squares(bricks):
-            return [b for b in bricks if (b[2], b[3]) == (1, 1)]
+    @pytest.mark.parametrize("width", WIDTHS)
+    def test_cell_counts(self, width):
+        assert len(_brick_pinwheel_tiles(width)) == width * (width - 1) // 2
 
-        spiral = squares(_brick_spiral_tiles(side))
-        assert len(spiral) == side % 2
-        pinwheel = squares(_brick_pinwheel_tiles(side))
-        assert len(pinwheel) == 2 - side % 2
-        assert (0, 0, 1, 1) in pinwheel  # the pinwheel's first one is its centre
+    @pytest.mark.parametrize("width", (5, 9, 13, 23))
+    def test_the_hub_is_a_2x2_block_of_two_bricks(self, width):
+        # what the board is named for: the centre brick and the one the first
+        # shell lays directly above it, filling the 2x2 the rest turns about
+        hub = [b for b in _brick_pinwheel_tiles(width)
+               if 0 <= b[0] and b[0] + b[2] <= 2 and 0 <= b[1] and b[1] + b[3] <= 2]
+        assert sorted(hub) == [(0, 0, 2, 1), (0, 1, 2, 1)]
 
-        # ...and every leftover sits in a corner of the square
-        for bricks, leftovers in ((_brick_spiral_tiles(side), spiral),
-                                  (_brick_pinwheel_tiles(side), pinwheel[1:])):
-            cells = self._cells(bricks)
-            xs = {x for x, _ in cells}
-            ys = {y for _, y in cells}
-            for x, y, _, _ in leftovers:
-                assert x in (min(xs), max(xs)) and y in (min(ys), max(ys))
-
-    @pytest.mark.parametrize("side", SIDES)
-    def test_cell_counts(self, side):
-        # half the square, plus whatever the parity leaves over
-        assert len(_brick_spiral_tiles(side)) == (side * side + side % 2) // 2
-        assert len(_brick_pinwheel_tiles(side)) == \
-            (side * side + 1) // 2 + (1 - side % 2)
-
-    @pytest.mark.parametrize("side", (5, 9, 13, 23))
-    def test_the_pinwheel_turns_onto_itself_but_never_reflects(self, side):
-        # An odd-sided pinwheel is exactly four-fold symmetric about its centre
-        # square. It has no mirror: the offset that makes a ring four arms
-        # rather than a ring is chiral, and that is what winds it.
-        bricks = _brick_pinwheel_tiles(side)
-        assert self._normalised(self._turned(bricks)) == self._normalised(bricks)
-        assert self._normalised(self._mirrored(bricks)) != self._normalised(bricks)
-
-    @pytest.mark.parametrize("side", (9, 13, 23))
-    def test_the_spiral_has_no_symmetry_at_all(self, side):
-        # one arm, so nothing carries it onto itself -- not a quarter turn
-        # (that is the pinwheel), not a half turn, not a mirror
-        bricks = _brick_spiral_tiles(side)
+    @pytest.mark.parametrize("width", (9, 13, 23))
+    def test_it_reflects_but_never_turns(self, width):
+        # The winding carries one mirror, horizontal through the hub, and
+        # nothing else. A quarter turn cannot even map the rectangle onto
+        # itself (the sides differ by one), and the half turn does not either.
+        bricks = _brick_pinwheel_tiles(width)
         here = self._normalised(bricks)
+        assert self._normalised(self._flipped(bricks)) == here
         assert self._normalised(self._turned(bricks)) != here
         assert self._normalised(self._turned(self._turned(bricks))) != here
-        assert self._normalised(self._mirrored(bricks)) != here
 
-    @pytest.mark.parametrize("tiles", TILINGS)
-    def test_no_translation_maps_the_patch_onto_itself(self, tiles):
+    def test_no_translation_maps_the_patch_onto_itself(self):
         # nonperiodicity on the finite patch, the check TestPhyllotaxis makes.
         # The tiles taken are well inside the board, so it is the winding that
         # rules a shift out rather than the boundary; a periodic bond of the
         # same brick would pass every one of its lattice vectors here.
-        patch = set(tiles(23))
+        patch = set(_brick_pinwheel_tiles(23))
         cells = self._cells(patch)
         cx = (min(x for x, _ in cells) + max(x for x, _ in cells)) / 2
         cy = (min(y for _, y in cells) + max(y for _, y in cells)) / 2
@@ -832,20 +802,17 @@ class TestBrickBoards:
                 assert any((x + dx, y + dy, w, h) not in patch
                            for x, y, w, h in core)
 
-    @pytest.mark.parametrize("mode,tiles",
-                             [("brickspiral", _brick_spiral_tiles),
-                              ("brickpinwheel", _brick_pinwheel_tiles)])
-    def test_the_step_vertices_make_the_patch_a_mesh(self, mode, tiles):
+    def test_the_step_vertices_make_the_patch_a_mesh(self):
         # A brick's corner routinely lands in the middle of a neighbour's long
         # side. Recording it there -- and only where it is genuinely some
         # tile's corner -- is what leaves every edge shared by two tiles, so
         # the topology still reads a disc. Drop them and it does not.
-        board = build_board(mode, "easy")
+        board = build_board("brickpinwheel", "easy")
         assert (_euler_characteristic(board), _boundary_components(board)) == (1, 1)
         corners_only = _finalize_flat(
-            mode,
+            "brickpinwheel",
             {(x, y, w, h): [(x, y), (x + w, y), (x + w, y + h), (x, y + h)]
-             for x, y, w, h in tiles(13)},
+             for x, y, w, h in _brick_pinwheel_tiles(13)},
             lambda p: (float(p[0]), float(p[1])), 1, 10)
         assert _euler_characteristic(corners_only) != 1
         # none of them changes the drawn tile: they are collinear, which is
@@ -853,19 +820,17 @@ class TestBrickBoards:
         for polygon in board.polygons.values():
             assert len(_corners(polygon, tol=1e-6)) == 4
 
-    @pytest.mark.parametrize("mode,tiles",
-                             [("brickspiral", _brick_spiral_tiles),
-                              ("brickpinwheel", _brick_pinwheel_tiles)])
-    def test_the_split_edges_are_what_make_the_neighbours(self, mode, tiles):
+    def test_the_split_edges_are_what_make_the_neighbours(self):
         # the T-vertices are load-bearing for the game too: a brick lying
         # alongside the middle of another's long side is a neighbour there,
         # and would not be one without them
-        full = build_board(mode, "easy").adjacency
+        full = build_board("brickpinwheel", "easy").adjacency
         corners_only = _shared_vertex_adjacency(
             {(x, y, w, h): [(x, y), (x + w, y), (x + w, y + h), (x, y + h)]
-             for x, y, w, h in tiles(13)})
+             for x, y, w, h in _brick_pinwheel_tiles(13)})
         assert all(set(corners_only[cell]) <= set(full[cell]) for cell in full)
         assert sum(map(len, corners_only.values())) < sum(map(len, full.values()))
+
 
 class TestRepTiles:
     """The two rep-4 fractal boards: the sphinx and the chair. (The third

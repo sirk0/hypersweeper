@@ -14,7 +14,7 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   share a vertex. Modules: `core` (`Board`/`Board3D`, adjacency, topology
   invariants), `tilings` (flat tilings + the `ARCH_TILINGS` registry and
   `_ArchTemplate` system), `aperiodic` (Penrose, Spectre, the phyllotactic
-  spiral and the two brick boards), `fractal` (the self-similar boards: sphinx, chair, Sierpinski
+  spiral and the brick pinwheel), `fractal` (the self-similar boards: sphinx, chair, Sierpinski
   carpet, pentaflake and Gosper island), `solids` (spherical
   polyhedra, cube, tetrahedron, frames), `catalan` (the thirteen Catalan
   solids), `surfaces` (donut/cylinder/
@@ -157,9 +157,9 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   `phyllotaxis_board`) grow generously and trim
   to the `keep` centremost cells by Chebyshev distance (`max(|dx|, |dy|)`)
   — generously enough that `keep` is a small fraction of the patch, or the
-  substitution's own star-shaped outline is what the board reads as. The two
-  brick boards need neither: they fill a square exactly by construction, so
-  the side length is both the size knob and the window. See
+  substitution's own star-shaped outline is what the board reads as. The brick
+  pinwheel needs neither: its shells build the whole board, so its width is
+  both the size knob and the window. See
   the `AGENT NOTE` in `boards/tilings.py`.
   **Size and mine-count convention — difficulty is measured, not assumed.**
   A board's easy/medium/hard sizes track the classic Windows boards (81 /
@@ -261,36 +261,35 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   parallelohexagon, so each of ten 36° wedges is a plain block of its own
   translation lattice, and the odd wedges being pushed one edge out along
   `u1` is the entire spiral.
-  The last two, `brick_spiral_board` and `brick_pinwheel_board`, are
-  nonperiodic by symmetry as well, and are the plainest boards in the game:
-  2×1 **bricks** on the integer square lattice, filling a `side`×`side` square
-  exactly, so the size knob is the side alone and the cell count is
-  `(side² + squares) / 2`. The **spiral** starts from one brick and grows by
-  shells that add a row and a column on two adjacent sides, the corner turning
-  a quarter each time, so a single arm winds outward; the rectangle always
-  satisfies `w = h + 1`, which is what makes every shell (`w + h + 1` cells)
-  even and splits it into two straight arms of even length, so it is whole
-  bricks throughout. A last strip caps the rectangle to a square, and on an odd
-  side the one cell it leaves over is the **1×1 in a corner**. The
-  **pinwheel** starts from one 1×1 square and grows by square rings: ring `k`
-  is 8k cells laid as four arms of `k` bricks, each a quarter turn from the
-  last, which gives it exact four-fold rotation and no mirror at all; an even
-  side needs one width-1 L shell besides, and that shell's odd cell count is
-  what puts a second 1×1 in a corner. Neither has a `keep` trim, so neither has
-  a Chebyshev distance to quantise or a sort whose tie-break has to be
-  reproduced in the TypeScript port — the family's usual porting hazard does
-  not apply. What does need care is the **T-vertices**: a brick's corner
-  routinely lands in the middle of a neighbour's long side, and
-  `_brick_outline` splits each axis-aligned edge at the lattice points that are
-  genuinely some tile's corner (the 2D twin of
-  `solids._split_at_lattice_points`). That test is *conditional*, unlike the
-  chair's outline, which carries a vertex at every lattice step: emitting them
-  unconditionally here would split an edge whose neighbour across it keeps its
-  own edge whole, the two would stop matching, and the half-edges would count
-  as boundary and drop the Euler characteristic below the 1 a disc must have.
-  Since both tile shapes are quadrilaterals, the 1×1 is told from a brick not
-  by hue but by the **size** axis of the shape colouring, which is why it reads
-  as one darker tile on the board and is what the menu icons mark.
+  The last, `brick_pinwheel_board`, is nonperiodic by symmetry as well, and is
+  the plainest board in the game: 2×1 **bricks** on the integer square lattice,
+  turning about a **2×2 block** — the centre brick and the one the first shell
+  lays directly above it, which is what the board is named for. Each of
+  `width - 2` shells adds one row and one column on two adjacent sides, the
+  corner walking NE, NW, SW, SE and round again, so a single arm winds outward.
+  The rectangle always satisfies `w = h + 1`, and that is what makes every shell
+  (`w + h + 1` cells) even and splits it into two straight arms of even length,
+  so **every** tile is a whole brick at every width — there is no odd cell to
+  special-case and no 1×1 anywhere. The board is the `width`×(`width` − 1)
+  rectangle the shells leave, so the size knob is the width alone and the cell
+  count is `width·(width − 1)/2`. It carries one mirror, horizontal through the
+  block, and nothing else: no rotation, and — the property that puts it in this
+  module — no translation. It has no `keep` trim, so it has no Chebyshev
+  distance to quantise and no sort whose tie-break has to be reproduced in the
+  TypeScript port; the family's usual porting hazard does not apply. What does
+  need care is the **T-vertices**: a brick's corner routinely lands in the
+  middle of a neighbour's long side, and `_brick_outline` splits each
+  axis-aligned edge at the lattice points that are genuinely some tile's corner
+  (the 2D twin of `solids._split_at_lattice_points`). That test is
+  *conditional*, unlike the chair's outline, which carries a vertex at every
+  lattice step: emitting them unconditionally here would split an edge whose
+  neighbour across it keeps its own edge whole, the two would stop matching, and
+  the half-edges would count as boundary and drop the Euler characteristic below
+  the 1 a disc must have. Its size search is the one flat row marked `rigid` in
+  `scripts/difficulty/resize.py`: the board's aspect is always
+  `width/(width − 1)` by construction, so the flat shape term is a monotone
+  "bigger is better" with no shape content, and left on it outvotes the size
+  penalty.
   The five **fractal** boards are each one tile inflated `levels` times --
   scaled up by the substitution's `factor` and refilled with copies of itself --
   into a patch whose outline converges on a self-similar shape (the tile again

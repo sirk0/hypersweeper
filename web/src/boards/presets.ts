@@ -4,7 +4,6 @@
 import presetsData from "@data/presets.json";
 import {
   brickPinwheelBoard,
-  brickSpiralBoard,
   penroseBoard,
   spectreBoard,
   phyllotaxisBoard,
@@ -146,7 +145,6 @@ const BUILDERS: Record<string, Builder> = {
   penrose_board: penroseBoard,
   spectre_board: spectreBoard,
   phyllotaxis_board: phyllotaxisBoard,
-  brick_spiral_board: brickSpiralBoard,
   brick_pinwheel_board: brickPinwheelBoard,
   sphinx_board: sphinxBoard,
   chair_board: chairBoard,

@@ -1619,18 +1619,17 @@ menu is in anyway.
   blunt one; counting corners over those two vertex figures fixes the ratio at
   two pentagons to one rhomb, and a torus exact-cover search finds that cell.
 
-  Four of the five **aperiodic** boards are the same story: the phyllotactic
+  Three of the four **aperiodic** boards are the same story: the phyllotactic
   hexagon is a *parallelohexagon*, so it tiles
   by translation alone (the spiral is in how the board's wedges are offset, not
   in the tile), and Penrose's two rhombs make a plain periodic tiling as
   alternating courses of fat and thin diamonds — the interfaces line up because
   a fat course shifts by cos 72° and a mirrored thin one by −cos 36°, which sum
-  to exactly −½, so four courses come back a whole edge. The brick spiral and
-  the brick pinwheel are the easiest of the lot: their tile is a plain 2:1
-  brick, which tiles the plane as any wall does, so they take the **running
-  bond** (`BRICK_PATTERN`) — a tiling this module already draws from
-  `archTemplate`. What has no period on those two boards is the winding, and no
-  page that repeats can draw a winding.
+  to exactly −½, so four courses come back a whole edge. The brick pinwheel is
+  the easiest of the lot: its tile is a plain 2:1 brick, which tiles the plane
+  as any wall does, so it takes the **running bond** (`BRICK_PATTERN`) — a
+  tiling this module already draws from `archTemplate`. What has no period on
+  that board is the winding, and no page that repeats can draw a winding.
 
   The **Spectre** is the one board whose page is a relative rather than its own
   tile. Tile(1,1) has no periodic cell of its own small enough to use — an

@@ -526,34 +526,31 @@ def spectre_board(
     return _finalize_flat("spectre", cells, _z12_to_xy, mine_count, scale)
 
 
-# -- brick spiral and brick pinwheel -----------------------------------------
+
+# -- the brick pinwheel ------------------------------------------------------
 #
-# Two nonperiodic boards on the plain integer square lattice, tiled by 2x1
-# bricks wound around a centre tile. Neither is a substitution: like the
-# phyllotactic spiral above they are nonperiodic by how they are *wound*, and
-# a spiral admits no translation at all.
+# One nonperiodic board on the plain integer square lattice, tiled by 2x1
+# bricks turning about a 2x2 block. It is no substitution: like the
+# phyllotactic spiral above it is nonperiodic by how it is *wound*, and a
+# winding admits no translation at all.
 #
-#   * ``brick_spiral_board`` starts from one brick and grows by shells that
-#     add a row and a column on two adjacent sides, the corner turning a
-#     quarter each time, so a single arm of bricks winds outward. The
-#     rectangle always satisfies ``w = h + 1``, which is what makes every
-#     shell -- ``w + h + 1`` cells -- even, and each shell splits into two
-#     straight arms of even length, so it is whole bricks throughout. A last
-#     strip caps the rectangle to a square; an odd side leaves one cell over,
-#     and that is the 1x1, in a corner.
-#   * ``brick_pinwheel_board`` starts from one 1x1 square and grows by square
-#     rings. Ring k is 8k cells laid as four arms of k bricks, each arm a
-#     quarter turn from the last, so the board has the pinwheel's exact
-#     four-fold rotation and no mirror. An odd side is exactly that; an even
-#     one adds a width-1 L shell, whose odd cell count is what puts a second
-#     1x1 in a corner.
+# The centre is one brick; the first shell lays a second directly above it,
+# and those two are the 2x2 block the rest of the board turns about. Each of
+# ``width - 2`` shells adds one row and one column on two adjacent sides, the
+# corner walking NE, NW, SW, SE and round again, which is what winds the arm
+# outward. The rectangle always satisfies ``w = h + 1``, and that is what
+# makes every shell -- ``w + h + 1`` cells -- even and splits it into two
+# straight arms of even length, so **every** tile is a whole brick, at every
+# width. The board is the ``width`` x (``width`` - 1) rectangle the shells
+# leave, so the size knob is the width alone and the cell count is
+# ``width * (width - 1) / 2``.
 #
-# Both fill their square exactly, so the size knob is the side length alone
-# and the cell count is (side**2 + squares) / 2. Vertex ids are the integer
-# lattice points themselves and cell ids are ``(x, y, w, h)``, a tile's
-# lower-left corner and size -- so unlike the three tilings above there is no
-# trim, no distance to quantise and no sort whose tie-break has to be
-# reproduced in the TypeScript port.
+# It carries one mirror, horizontal through the centre block, and nothing
+# else: no rotation, and -- the property that puts it in this module -- no
+# translation. Vertex ids are the integer lattice points themselves and cell
+# ids are ``(x, y, w, h)``, a tile's lower-left corner and size, so unlike the
+# three tilings above there is no trim, no distance to quantise and no sort
+# whose tie-break has to be reproduced in the TypeScript port.
 
 Brick = tuple[int, int, int, int]  # lower-left corner, then width and height
 
@@ -614,20 +611,20 @@ def _lay(a: tuple[int, int], b: tuple[int, int]) -> Brick:
     return (x, y, 2, 1) if a[1] == b[1] else (x, y, 1, 2)
 
 
-def _brick_spiral_tiles(side: int) -> list[Brick]:
-    """The spiral's bricks, in the order the arm lays them.
+def _brick_pinwheel_tiles(width: int) -> list[Brick]:
+    """The pinwheel's bricks, in the order the arm lays them.
 
-    ``side - 2`` shells, each adding one row and one column on two adjacent
-    sides; the shell's corner walks NE, NW, SW, SE and round again, which is
-    what winds the arm. Which of a shell's two arms takes the corner cell
-    follows from the rectangle's height: taking it there is what leaves both
-    arms an even number of cells long, so both are whole bricks.
+    ``width - 2`` shells, each adding one row and one column on two adjacent
+    sides; the shell's corner walks NE, NW, SW, SE and round again. Which of a
+    shell's two arms takes the corner cell follows from the rectangle's
+    height: taking it there is what leaves both arms an even number of cells
+    long, so both are whole bricks and the board never needs an odd tile.
     """
-    if side < 2:
-        raise ValueError("side must be >= 2")
+    if width < 2:
+        raise ValueError("width must be >= 2")
     x0, y0, x1, y1 = 0, 0, 2, 1  # the centre brick
     bricks: list[Brick] = [(0, 0, 2, 1)]
-    for step in range(side - 2):
+    for step in range(width - 2):
         height = y1 - y0
         phase = step % 4
         column_x = x1 if phase in (0, 3) else x0 - 1
@@ -643,61 +640,11 @@ def _brick_spiral_tiles(side: int) -> list[Brick]:
         for arm in (column, row):
             for i in range(0, len(arm), 2):
                 bricks.append(_lay(arm[i], arm[i + 1]))
-    # One last row caps the w x (w - 1) rectangle to a square, on the side the
-    # next shell would have grown so the arm carries on rather than doubling
-    # back. It is the only run whose length is not forced even: on an odd side
-    # the far end is left over, and that lone cell is the board's one 1x1.
-    row_y = y1 if (side - 2) % 4 in (0, 1) else y0 - 1
-    strip = [(x, row_y) for x in range(x0, x1)]
-    for i in range(0, len(strip) - 1, 2):
-        bricks.append(_lay(strip[i], strip[i + 1]))
-    if len(strip) % 2:
-        bricks.append((strip[-1][0], row_y, 1, 1))
     return bricks
 
 
-def _brick_pinwheel_tiles(side: int) -> list[Brick]:
-    """The pinwheel's bricks, ring by ring outwards from the centre square.
-
-    Ring k holds 8k cells: four arms of k bricks, the first laid along the
-    ring's bottom edge and the other three its images under the quarter turn
-    ``(x, y) -> (-y, x)``. Each arm stops one cell short of the corner, which
-    the next arm round takes -- that offset is the pinwheel.
+def brick_pinwheel_board(width: int, mine_count: int, scale: float = 30) -> Board:
+    """2x1 bricks turning about a 2x2 block, an arm winding outward to fill a
+    ``width`` x (``width`` - 1) rectangle. Every tile is a whole brick.
     """
-    if side < 1:
-        raise ValueError("side must be >= 1")
-    rings = (side - 1) // 2
-    bricks: list[Brick] = [(0, 0, 1, 1)]
-    for k in range(1, rings + 1):
-        for j in range(k):
-            a, b = (-k + 2 * j, -k), (-k + 2 * j + 1, -k)
-            for _ in range(4):
-                bricks.append(_lay(a, b))
-                a, b = (-a[1], a[0]), (-b[1], b[0])
-    if side % 2 == 0:
-        # An even side cannot be rings alone (they only ever make an odd
-        # square), so one width-1 L shell finishes it: a whole top row, then
-        # the right column, whose odd cell count leaves the second 1x1 in the
-        # corner. It is the one part of the board with no four-fold symmetry.
-        edge = rings + 1
-        for x in range(-rings, edge, 2):
-            bricks.append((x, edge, 2, 1))
-        for y in range(edge - 1, -rings, -2):
-            bricks.append((edge, y - 1, 1, 2))
-        bricks.append((edge, -rings, 1, 1))
-    return bricks
-
-
-def brick_spiral_board(side: int, mine_count: int, scale: float = 30) -> Board:
-    """A single arm of 2x1 bricks winding out from a central brick, filling a
-    ``side`` x ``side`` square. An odd side ends on one 1x1, in a corner.
-    """
-    return _brick_board("brickspiral", _brick_spiral_tiles(side), mine_count, scale)
-
-
-def brick_pinwheel_board(side: int, mine_count: int, scale: float = 30) -> Board:
-    """Square rings of 2x1 bricks pinwheeling about a central 1x1 square,
-    filling a ``side`` x ``side`` square. An odd side is four-fold symmetric;
-    an even one adds an L shell and a second 1x1 in a corner.
-    """
-    return _brick_board("brickpinwheel", _brick_pinwheel_tiles(side), mine_count, scale)
+    return _brick_board("brickpinwheel", _brick_pinwheel_tiles(width), mine_count, scale)

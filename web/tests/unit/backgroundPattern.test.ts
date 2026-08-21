@@ -60,7 +60,7 @@ describe("which pattern a mode gets", () => {
     // backgroundPattern.ts would leave that board on a blank page.
     const missing = MODES.filter((mode) => patternKey(mode) === null);
     expect(missing).toEqual([]);
-    expect(MODES.length).toBe(180);
+    expect(MODES.length).toBe(179);
   });
 
   it("follows the tiling, not the surface", () => {
@@ -119,10 +119,9 @@ describe("which pattern a mode gets", () => {
     expect(patternKey("penrose")).toBe("penrose");
     expect(patternKey("phyllotaxis")).toBe("phyllotaxis");
     expect(patternKey("spectre")).toBe("deltoidal");
-    // The two brick boards are the other way about: their tile is a plain 2:1
+    // The brick pinwheel is the other way about: its tile is a plain 2:1
     // brick and tiles the plane as any wall does, so the page is that wall —
     // what does not repeat is the winding, which no page can draw.
-    expect(patternKey("brickspiral")).toBe("runningbond");
     expect(patternKey("brickpinwheel")).toBe("runningbond");
     for (const mode of APERIODIC_MODES) expect(PERIODIC).toContain(patternKey(mode));
   });

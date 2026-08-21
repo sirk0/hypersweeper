@@ -7878,77 +7878,36 @@
       "easy": {
         "args": [
           13,
-          10,
-          27.0
-        ],
-        "cells": 85,
-        "score": 0.0482,
-        "distortionMean": 1.2785,
-        "distortionP90": 1.299,
-        "indistinguishable": 0
-      },
-      "medium": {
-        "args": [
-          23,
-          32,
-          19.5
-        ],
-        "cells": 265,
-        "score": 0.0346,
-        "distortionMean": 1.2879,
-        "distortionP90": 1.299,
-        "indistinguishable": 0
-      },
-      "hard": {
-        "args": [
-          31,
-          58,
-          17.7
-        ],
-        "cells": 481,
-        "score": 0.0021,
-        "distortionMean": 1.2909,
-        "distortionP90": 1.299,
-        "indistinguishable": 0
-      }
-    }
-  },
-  "brickspiral": {
-    "builder": "brick_spiral_board",
-    "args": {
-      "easy": {
-        "args": [
           13,
-          10,
           27.0
         ],
-        "cells": 85,
-        "score": 0.0482,
-        "distortionMean": 1.2778,
+        "cells": 78,
+        "score": 0.0377,
+        "distortionMean": 1.2797,
         "distortionP90": 1.299,
         "indistinguishable": 0
       },
       "medium": {
         "args": [
           23,
-          32,
+          43,
           19.5
         ],
-        "cells": 265,
-        "score": 0.0346,
-        "distortionMean": 1.2804,
+        "cells": 253,
+        "score": 0.0118,
+        "distortionMean": 1.2883,
         "distortionP90": 1.299,
         "indistinguishable": 0
       },
       "hard": {
         "args": [
           31,
-          58,
+          100,
           17.7
         ],
-        "cells": 481,
-        "score": 0.0021,
-        "distortionMean": 1.2853,
+        "cells": 465,
+        "score": 0.0317,
+        "distortionMean": 1.2911,
         "distortionP90": 1.299,
         "indistinguishable": 0
       }

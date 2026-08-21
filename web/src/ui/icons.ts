@@ -19,7 +19,7 @@ import {
 } from "../render/shapePalette";
 import { ARCH_TILINGS, type ArchTemplate, archTemplate, templateCells } from "../boards/tilings";
 import { placePoint, substitutionPlacements, SUBSTITUTIONS } from "../boards/fractal";
-import { brickPinwheelTiles, brickSpiralTiles } from "../boards/aperiodic";
+import { brickPinwheelTiles } from "../boards/aperiodic";
 import {
   deltoidalHexecontahedronBoard,
   deltoidalIcositetrahedronBoard,
@@ -1129,19 +1129,21 @@ function draw(rawKey: string): string[] {
         ),
       );
     }
-  } else if (key === "brickspiral" || key === "brickpinwheel") {
-    // the side-5 board itself, thirteen tiles: the smallest patch that already
-    // shows how each one winds. What tells the two apart at icon size is the
-    // one 1×1 among the bricks, picked out in the darker tone — the spiral's
-    // in a corner, the pinwheel's at the centre it turns about
-    const tiles = key === "brickspiral" ? brickSpiralTiles(5) : brickPinwheelTiles(5);
+  } else if (key === "brickpinwheel") {
+    // the width-5 board itself, ten bricks: the smallest patch that already
+    // shows the arm turning. The two bricks of the 2×2 block it turns about are
+    // picked out in the darker tone — the board is named for them, and they are
+    // what tells it from a plain bond at icon size
+    const tiles = brickPinwheelTiles(5);
     const minX = Math.min(...tiles.map((t) => t[0]));
     const minY = Math.min(...tiles.map((t) => t[1]));
     const sc = (d * 0.84) / 5;
-    const o = (d - 5 * sc) / 2;
+    const ox = (d - 5 * sc) / 2;
+    const oy = (d - 4 * sc) / 2;
     for (const [x, y, w, h] of tiles) {
-      const left = o + (x - minX) * sc;
-      const top = o + (5 - (y - minY) - h) * sc;
+      const left = ox + (x - minX) * sc;
+      const top = oy + (4 - (y - minY) - h) * sc;
+      const hub = x >= 0 && x + w <= 2 && y >= 0 && y + h <= 2;
       parts.push(
         shape(
           [
@@ -1150,7 +1152,7 @@ function draw(rawKey: string): string[] {
             [left + w * sc, top + h * sc],
             [left, top + h * sc],
           ],
-          w === 1 && h === 1 ? BASE : LIGHT,
+          hub ? BASE : LIGHT,
           3,
         ),
       );

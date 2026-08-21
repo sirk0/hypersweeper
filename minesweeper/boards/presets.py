@@ -13,7 +13,6 @@ from __future__ import annotations
 from minesweeper.boards._data import load
 from minesweeper.boards.aperiodic import (
     brick_pinwheel_board,
-    brick_spiral_board,
     penrose_board,
     phyllotaxis_board,
     spectre_board,
@@ -157,9 +156,8 @@ _JSON_BUILDERS = {
     "penrose_board": penrose_board,
     "spectre_board": spectre_board,
     "phyllotaxis_board": phyllotaxis_board,
-    # The two brick boards fill a square exactly, so their only size knob
-    # is the side length: brick_spiral_board(side, mine_count, scale).
-    "brick_spiral_board": brick_spiral_board,
+    # The brick pinwheel's shells build the whole board, so its only size
+    # knob is the width: brick_pinwheel_board(width, mine_count, scale).
     "brick_pinwheel_board": brick_pinwheel_board,
     # Fractal boards take positional args: sphinx_board(levels, mine_count,
     # scale), and the other four the same -- a level is a whole substitution
