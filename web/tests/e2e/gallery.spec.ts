@@ -31,6 +31,10 @@ const MODES = [
   // and the phyllotactic spiral: one equilateral hexagon in five arms, whose
   // five-fold rotational symmetry is what forbids a translation.
   "phyllotaxis",
+  // and the brick rings, nonperiodic by symmetry rather than by substitution:
+  // 2x1 bricks in concentric square rings about a 2x2 core. It is the flat
+  // board whose tiles are rectangles rather than regular polygons.
+  "brickrings",
   // the fractal boards: the two rep-4 ones -- the sphinx, whose patch is the
   // sphinx again scaled (and whose tiles are mirrored in three of every four),
   // and the chair, the L-shaped one -- plus the two with holes in them, the

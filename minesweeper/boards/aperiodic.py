@@ -524,3 +524,116 @@ def spectre_board(
         (label, i): ids for i, (label, ids, _, _) in enumerate(rows)
     }
     return _finalize_flat("spectre", cells, _z12_to_xy, mine_count, scale)
+
+
+
+
+# -- the brick rings ---------------------------------------------------------
+#
+# One nonperiodic board on the plain integer square lattice, tiled by 2x1
+# bricks in concentric square rings about a 2x2 core. It is no substitution:
+# like the phyllotactic spiral above it is nonperiodic by *symmetry*, and a
+# pattern with a distinguished centre admits no translation at all.
+#
+# Ring k is the boundary of the 2k x 2k square about the origin: its top and
+# bottom rows are laid in horizontal bricks and its two sides in vertical
+# ones. Both runs are even -- a row is 2k cells and a side 2k - 2 -- so every
+# tile is a whole brick at every size, with no odd cell to special-case and no
+# 1x1 anywhere. Ring 1 is the core, two bricks stacked into a 2x2.
+#
+# ``rings`` rings fill the 2``rings`` x 2``rings`` square exactly, so the size
+# knob is the ring count alone and the cell count is ``2 * rings**2``. Only an
+# even side can be tiled by bricks alone -- an odd-sided square has odd area --
+# which is why the knob counts rings rather than cells across.
+#
+# It carries the square's two mirrors and its half turn, but not its quarter
+# turn: a ring's top and bottom are horizontal bricks where its sides are
+# vertical ones, so turning it a quarter takes bricks across bricks. And no
+# translation, which is the property that puts it in this module.
+#
+# Vertex ids are the integer lattice points themselves and cell ids are
+# ``(x, y, w, h)``, a tile's lower-left corner and size, so unlike the three
+# tilings above there is no trim, no distance to quantise and no sort whose
+# tie-break has to be reproduced in the TypeScript port.
+
+Brick = tuple[int, int, int, int]  # lower-left corner, then width and height
+
+
+def _lattice_to_xy(p: tuple[int, int]) -> tuple[float, float]:
+    return (float(p[0]), float(p[1]))
+
+
+def _brick_outline(brick: Brick, corners: set[tuple[int, int]]) -> list[tuple[int, int]]:
+    """The rectangle walked counterclockwise, split at every lattice point
+    inside one of its edges that is some tile's corner -- a T-vertex.
+
+    The 2D twin of ``solids._split_at_lattice_points``: a brick's corner
+    routinely lands in the middle of a neighbour's long edge, and recording it
+    there leaves the drawn rectangle unchanged (the point is collinear) while
+    making the two share a vertex id, which is what
+    ``_shared_vertex_adjacency`` runs on. Every edge is axis-aligned on the
+    integer lattice, so this is exact integer arithmetic with no tolerance.
+
+    The test is *conditional* on purpose. Emitting every lattice step
+    unconditionally, the way the chair's outline in ``fractal.py`` does, would
+    split an edge whose neighbour across it keeps its own edge whole: the two
+    stop matching, the half-edges count as boundary and the Euler
+    characteristic drops below the 1 a disc must have. One pass is enough --
+    a point that is anyone's corner is in ``corners`` from the start, so every
+    tile whose edge crosses it picks it up together.
+    """
+    x, y, w, h = brick
+    walk = ((x, y), (x + w, y), (x + w, y + h), (x, y + h))
+    ring: list[tuple[int, int]] = []
+    for a, b in zip(walk, walk[1:] + walk[:1]):
+        steps = max(abs(b[0] - a[0]), abs(b[1] - a[1]))
+        ux, uy = (b[0] - a[0]) // steps, (b[1] - a[1]) // steps
+        ring.append(a)
+        for s in range(1, steps):
+            point = (a[0] + ux * s, a[1] + uy * s)
+            if point in corners:
+                ring.append(point)
+    return ring
+
+
+def _brick_board(mode: str, bricks: list[Brick], mine_count: int, scale: float) -> Board:
+    """Finish a list of axis-aligned bricks into a flat board."""
+    corners: set[tuple[int, int]] = set()
+    for x, y, w, h in bricks:
+        corners.update(((x, y), (x + w, y), (x + w, y + h), (x, y + h)))
+    cells: dict[Cell, list[tuple[int, int]]] = {
+        brick: _brick_outline(brick, corners) for brick in bricks
+    }
+    if len(cells) != len(bricks):
+        raise ValueError("two bricks share a place")
+    return _finalize_flat(mode, cells, _lattice_to_xy, mine_count, scale)
+
+
+def _brick_rings_tiles(rings: int) -> list[Brick]:
+    """The board's bricks, ring by ring outwards from the 2x2 core.
+
+    Ring k is the boundary of the 2k x 2k square about the origin: ``k``
+    horizontal bricks along its top row and ``k`` along its bottom, then
+    ``k - 1`` vertical ones up each side. That is ``4k - 2`` bricks a ring and
+    ``2 * rings**2`` in all -- and every run is even, so nothing is ever left
+    over.
+    """
+    if rings < 1:
+        raise ValueError("rings must be >= 1")
+    bricks: list[Brick] = []
+    for k in range(1, rings + 1):
+        lo, hi = -k, k - 1  # the 2k x 2k square, centred on the origin
+        for x in range(lo, hi, 2):  # its top and bottom rows...
+            bricks.append((x, lo, 2, 1))
+            bricks.append((x, hi, 2, 1))
+        for y in range(lo + 1, hi - 1, 2):  # ...and its two sides
+            bricks.append((lo, y, 1, 2))
+            bricks.append((hi, y, 1, 2))
+    return bricks
+
+
+def brick_rings_board(rings: int, mine_count: int, scale: float = 30) -> Board:
+    """2x1 bricks in ``rings`` concentric square rings about a 2x2 core,
+    filling the 2``rings`` x 2``rings`` square. Every tile is a whole brick.
+    """
+    return _brick_board("brickrings", _brick_rings_tiles(rings), mine_count, scale)

@@ -7871,5 +7871,46 @@
         "indistinguishable": 0
       }
     }
+  },
+  "brickrings": {
+    "builder": "brick_rings_board",
+    "args": {
+      "easy": {
+        "args": [
+          6,
+          14,
+          27.0
+        ],
+        "cells": 72,
+        "score": 0.1178,
+        "distortionMean": 1.2789,
+        "distortionP90": 1.299,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          11,
+          48,
+          19.5
+        ],
+        "cells": 242,
+        "score": 0.0562,
+        "distortionMean": 1.2881,
+        "distortionP90": 1.299,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          16,
+          106,
+          16.594
+        ],
+        "cells": 512,
+        "score": 0.0645,
+        "distortionMean": 1.2915,
+        "distortionP90": 1.299,
+        "indistinguishable": 0
+      }
+    }
   }
 }

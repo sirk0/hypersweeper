@@ -651,3 +651,111 @@ export function spectreBoard(
   });
   return finalizeFlat("spectre", cellMap, positions, mineCount, scale);
 }
+
+// -- the brick rings ---------------------------------------------------------
+//
+// Port of the same section in minesweeper/boards/aperiodic.py. One nonperiodic
+// board on the plain integer square lattice, tiled by 2×1 bricks in concentric
+// square rings about a 2×2 core — nonperiodic by *symmetry* rather than by a
+// substitution, as the phyllotactic spiral above is. Cell ids are the tile's
+// lower-left corner and size, so unlike the three tilings above there is no
+// trim, no distance to quantise and no sort whose tie-break has to match
+// Python's.
+
+/** Lower-left corner, then width and height. */
+type Brick = readonly [number, number, number, number];
+
+const brickKey = (x: number, y: number): string => `${x},${y}`;
+
+/**
+ * The rectangle walked counterclockwise, split at every lattice point inside
+ * one of its edges that is some tile's corner — a T-vertex. Port of
+ * `_brick_outline`; the test is conditional on purpose (see the Python
+ * docstring: splitting unconditionally would leave half-edges unmatched and
+ * drop the Euler characteristic below the 1 a disc must have).
+ */
+function brickOutline(brick: Brick, corners: ReadonlySet<string>): Vertex[] {
+  const [x, y, w, h] = brick;
+  const walk: Vertex[] = [
+    [x, y],
+    [x + w, y],
+    [x + w, y + h],
+    [x, y + h],
+  ];
+  const ring: Vertex[] = [];
+  for (let i = 0; i < walk.length; i += 1) {
+    const a = walk[i]!;
+    const b = walk[(i + 1) % walk.length]!;
+    const steps = Math.max(Math.abs(b[0] - a[0]), Math.abs(b[1] - a[1]));
+    const ux = (b[0] - a[0]) / steps;
+    const uy = (b[1] - a[1]) / steps;
+    ring.push(a);
+    for (let s = 1; s < steps; s += 1) {
+      const point: Vertex = [a[0] + ux * s, a[1] + uy * s];
+      if (corners.has(brickKey(point[0], point[1]))) ring.push(point);
+    }
+  }
+  return ring;
+}
+
+/** Finish a list of axis-aligned bricks into a flat board. */
+function brickBoard(
+  mode: string,
+  bricks: readonly Brick[],
+  mineCount: number,
+  scale: number,
+): Board {
+  const corners = new Set<string>();
+  for (const [x, y, w, h] of bricks) {
+    corners.add(brickKey(x, y));
+    corners.add(brickKey(x + w, y));
+    corners.add(brickKey(x + w, y + h));
+    corners.add(brickKey(x, y + h));
+  }
+  const cellMap = new Map<CellId, string[]>();
+  const positions = new Map<string, Vertex>();
+  for (const brick of bricks) {
+    const keys = brickOutline(brick, corners).map((p) => {
+      const k = brickKey(p[0], p[1]);
+      if (!positions.has(k)) positions.set(k, p);
+      return k;
+    });
+    cellMap.set(cid(brick[0], brick[1], brick[2], brick[3]), keys);
+  }
+  if (cellMap.size !== bricks.length) throw new Error("two bricks share a place");
+  return finalizeFlat(mode, cellMap, positions, mineCount, scale);
+}
+
+/**
+ * The board's bricks, ring by ring outwards from the 2×2 core (port of
+ * `_brick_rings_tiles`). Ring k is the boundary of the 2k × 2k square about
+ * the origin: `k` horizontal bricks along its top row and `k` along its
+ * bottom, then `k - 1` vertical ones up each side. That is `4k - 2` bricks a
+ * ring and `2 * rings²` in all — and every run is even, so nothing is ever
+ * left over.
+ */
+export function brickRingsTiles(rings: number): Brick[] {
+  if (rings < 1) throw new Error("rings must be >= 1");
+  const bricks: Brick[] = [];
+  for (let k = 1; k <= rings; k += 1) {
+    const lo = -k;
+    const hi = k - 1; // the 2k × 2k square, centred on the origin
+    for (let x = lo; x < hi; x += 2) {
+      // its top and bottom rows...
+      bricks.push([x, lo, 2, 1], [x, hi, 2, 1]);
+    }
+    for (let y = lo + 1; y < hi - 1; y += 2) {
+      // ...and its two sides
+      bricks.push([lo, y, 1, 2], [hi, y, 1, 2]);
+    }
+  }
+  return bricks;
+}
+
+/**
+ * 2×1 bricks in `rings` concentric square rings about a 2×2 core, filling the
+ * 2`rings` × 2`rings` square. Every tile is a whole brick.
+ */
+export function brickRingsBoard(rings: number, mineCount: number, scale = 30): Board {
+  return brickBoard("brickrings", brickRingsTiles(rings), mineCount, scale);
+}

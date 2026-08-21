@@ -143,6 +143,12 @@ SPEC: dict[str, dict] = {
     "penrose_board": dict(size=(3,), mine=1, shape=2, kind="scale", grow=0),
     "spectre_board": dict(size=(2,), mine=1, shape=3, kind="scale", grow=0),
     "phyllotaxis_board": dict(size=(2,), mine=1, shape=3, kind="scale", grow=0),
+    # the brick rings: one knob, the number of concentric rings, and the cell
+    # count is 2 * rings**2 -- a fine enough ladder to hit every target
+    # without a patch to trim, so neither ``grow`` nor ``coarse`` applies.
+    # The board is a square, so the flat shape term is log(1) = 0 for every
+    # candidate and the size penalty decides alone; no ``rigid`` needed.
+    "brick_rings_board": dict(size=(0,), mine=1, shape=2, kind="scale"),
     # fractals: one whole substitution step at a time
     "sphinx_board": dict(size=(0,), mine=1, shape=2, kind="scale", coarse=True),
     "chair_board": dict(size=(0,), mine=1, shape=2, kind="scale", coarse=True),

@@ -19,6 +19,7 @@ import {
 } from "../render/shapePalette";
 import { ARCH_TILINGS, type ArchTemplate, archTemplate, templateCells } from "../boards/tilings";
 import { placePoint, substitutionPlacements, SUBSTITUTIONS } from "../boards/fractal";
+import { brickRingsTiles } from "../boards/aperiodic";
 import {
   deltoidalHexecontahedronBoard,
   deltoidalIcositetrahedronBoard,
@@ -1124,6 +1125,33 @@ function draw(rawKey: string): string[] {
             return [C + r * (px * cosA - py * sinA), C + r * (px * sinA + py * cosA)];
           }),
           k % 2 ? BASE : LIGHT,
+          3,
+        ),
+      );
+    }
+  } else if (key === "brickrings") {
+    // the two-ring board, eight bricks in a 4×4 square: the smallest patch that
+    // already shows a ring closing round the core. The core's own two bricks
+    // are picked out in the darker tone — it is what the rings nest about, and
+    // what tells the board from a plain bond at icon size
+    const tiles = brickRingsTiles(2);
+    const minX = Math.min(...tiles.map((t) => t[0]));
+    const minY = Math.min(...tiles.map((t) => t[1]));
+    const sc = (d * 0.84) / 4;
+    const o = (d - 4 * sc) / 2;
+    for (const [x, y, w, h] of tiles) {
+      const left = o + (x - minX) * sc;
+      const top = o + (4 - (y - minY) - h) * sc;
+      const core = x >= -1 && x + w <= 1 && y >= -1 && y + h <= 1;
+      parts.push(
+        shape(
+          [
+            [left, top],
+            [left + w * sc, top],
+            [left + w * sc, top + h * sc],
+            [left, top + h * sc],
+          ],
+          core ? BASE : LIGHT,
           3,
         ),
       );

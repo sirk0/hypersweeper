@@ -1004,6 +1004,26 @@
         ]
       }
     },
+    "brickrings": {
+      "builder": "brick_rings_board",
+      "args": {
+        "easy": [
+          6,
+          12,
+          27.0
+        ],
+        "medium": [
+          11,
+          47,
+          19.5
+        ],
+        "hard": [
+          16,
+          114,
+          16.594
+        ]
+      }
+    },
     "sphinx": {
       "builder": "sphinx_board",
       "args": {

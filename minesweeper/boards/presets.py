@@ -11,7 +11,12 @@ by scripts/export_data.py. See AGENTS.md.
 from __future__ import annotations
 
 from minesweeper.boards._data import load
-from minesweeper.boards.aperiodic import penrose_board, phyllotaxis_board, spectre_board
+from minesweeper.boards.aperiodic import (
+    brick_rings_board,
+    penrose_board,
+    phyllotaxis_board,
+    spectre_board,
+)
 from minesweeper.boards.catalan import (
     deltoidal_hexecontahedron_board,
     deltoidal_icositetrahedron_board,
@@ -151,6 +156,9 @@ _JSON_BUILDERS = {
     "penrose_board": penrose_board,
     "spectre_board": spectre_board,
     "phyllotaxis_board": phyllotaxis_board,
+    # The brick rings fill their square exactly, so the only size knob is
+    # the ring count: brick_rings_board(rings, mine_count, scale).
+    "brick_rings_board": brick_rings_board,
     # Fractal boards take positional args: sphinx_board(levels, mine_count,
     # scale), and the other four the same -- a level is a whole substitution
     # step, so the cell count is 4**levels for the two rep-tiles, 8**levels for
