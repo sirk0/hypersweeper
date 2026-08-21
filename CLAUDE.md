@@ -422,18 +422,18 @@ The venv already has everything; recreate with `make venv`.
 Dependency groups in pyproject.toml: `web` (pygbag), `test` (pytest,
 ruff), `all` (both); locked to requirements[-web|-test|-all].txt by
 `make lock` (uv). The Makefile wraps all common commands (`make help`);
-CI runs `make test`/`make lint`. Pages deploys the **TypeScript** app in
-`web/`, not this one — `make web-package` is a local build only.
+CI runs `make test`/`make lint`. The deploy publishes the **TypeScript** app
+in `web/`, not this one — `make web-package` is a local build only.
 
 ## Web build (pygbag)
 
 `main.py` is the browser entry point; the game loop is async
 (`App.run_async`) so pygbag can yield to the browser each frame. This
-build is **no longer deployed** — `deploy-pages.yml` and
-`deploy-cloudflare.yml` publish the TypeScript app at the site root (and
-`/next/`, where that app lived during the rewrite, redirects there via
-`web/public/next/index.html`) — so `make web-package` / `make web-run`
-are for running the pygame version in a browser locally. Browser-specific
+build is **no longer deployed** — `deploy-cloudflare.yml` publishes the
+TypeScript app at the site root (and `/next/`, where that app lived during
+the rewrite, redirects there via `web/public/next/index.html`) — so
+`make web-package` / `make web-run` are for running the pygame version in a
+browser locally. Browser-specific
 care in the code: no plain
 `import pygame.gfxdraw` (pygbag's scanner would search PyPI for it;
 gfxdraw doesn't exist in wasm at all — `_GFX` fallbacks in gui.py),
@@ -524,11 +524,12 @@ shows it downscaled by `UI_SCALE`. To preview what the user sees,
 
 The TypeScript/Three.js app lives in `web/` and shares its
 config and conformance oracle with the Python game through `data/*.json`
-(see AGENTS.md). It is **the deployed game** — GitHub Pages and Cloudflare
-Pages both serve it at the site root while the game moves from the first to
-the second (two workflows, one build each, differing only in `VITE_BASE`;
-see "Deploy" in `web/README.md`); the pygame build is the reference
-implementation and is not published. Commands (`npm run typecheck/test/build/screenshots`, Playwright
+(see AGENTS.md). It is **the deployed game** — one workflow,
+`deploy-cloudflare.yml`, publishes it to Cloudflare Pages at the site root
+(see "Deploy" in `web/README.md`); the pygame build is the reference
+implementation and is not published. It used to be deployed to GitHub Pages
+as well, under `/hypersweeper/`; that host now serves a one-page redirect
+(`.github/pages-redirect/`, published by `redirect-pages.yml`). Commands (`npm run typecheck/test/build/screenshots`, Playwright
 `e2e`) and — important when changing anything visual or interactive —
 **how to drive and screenshot the app headless, plus the gotchas that
 actually bite** (the `window.__ms` seam, flood-fill devouring sparse mine
@@ -858,9 +859,9 @@ in that script is `SUM(_sample_interval)`, never `COUNT(*)`, because Analytics
 Engine samples. The counter is **opt-in per build** (`VITE_ANALYTICS=1` →
 `__APP_ANALYTICS__`, vetoed outright by `VITE_PACKAGED`): only the Cloudflare
 deploy and the e2e run carry it, because a post to a host with no Function 404s
-and the *browser* logs that to the console — so the GitHub Pages build, the dev
-server and the packaged apps carry no client at all, and
-`scripts/check-offline-assets.mjs` asserts the packaged case with a second pass
+and the *browser* logs that to the console — so the dev server and the packaged
+apps carry no client at all, and `scripts/check-offline-assets.mjs` asserts the
+packaged case with a second pass
 for same-origin paths (its URL scan only sees absolute ones). Locally the
 `tallyStub` middleware in `vite.config.ts` answers `204` like the Function, so a
 dev server matches the deployed host. See "Analytics" in `web/README.md`.

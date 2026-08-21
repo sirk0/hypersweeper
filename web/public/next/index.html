@@ -10,16 +10,16 @@
       shortcuts) still land on the game.
 
       Vite copies public/ into dist/ verbatim, so this file is served at
-      <base>/next/ and "../" resolves to the app in both the local preview
-      (base "/") and on Pages (base "/hypersweeper/").
+      <base>/next/ and "../" resolves to the app whatever the base is — the
+      deployed "/" and any subdirectory build alike.
 
       A visitor who installed the app from /next/ has a service worker scoped
       there; it is unregistered below so the redirect is not answered out of a
-      stale precache next time. Only registrations under this path are touched
-      — caches on a github.io origin are shared with every other project site
-      the same user publishes, so nothing origin-wide is cleared. Browsers also
-      drop a registration whose script 404s on its update check, which
-      /next/sw.js now does.
+      stale precache next time. Only registrations under this path are touched:
+      the app's own worker, scoped at the root, is what serves the page being
+      redirected to, and clearing anything origin-wide would take that out
+      along with these. Browsers also drop a registration whose script 404s on its
+      update check, which /next/sw.js now does.
     -->
     <link rel="canonical" href="../" />
     <meta name="robots" content="noindex" />

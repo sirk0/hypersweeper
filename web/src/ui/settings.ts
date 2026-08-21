@@ -609,9 +609,9 @@ export function renderSettings(
   // animations are what the game *does*, and this is what leaves the machine.
   // Someone who came to the settings page looking for it should find it by
   // heading. Left out entirely of any build that carries no collector — the
-  // packaged apps, the GitHub Pages build, a dev server (analytics.ts folds
-  // away under __APP_ANALYTICS__) — because a switch there would promise
-  // something with nothing behind it, exactly as with the update row below and
+  // packaged apps, a dev server (analytics.ts folds away under
+  // __APP_ANALYTICS__) — because a switch there would promise something with
+  // nothing behind it, exactly as with the update row below and
   // the haptics row on a device that cannot buzz.
   if (__APP_ANALYTICS__) {
     frag.append(heading("Privacy"));

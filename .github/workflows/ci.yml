@@ -5,6 +5,16 @@ on:
     branches: [master]
   pull_request:
 
+permissions:
+  contents: read
+
+# A run superseded by a newer push to the same PR is wasted work, and the `web`
+# job installs a browser and runs the whole Playwright suite. Only PRs are
+# cancelled: every commit on master should keep its own result.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   test:
     runs-on: ubuntu-latest

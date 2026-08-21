@@ -5,8 +5,8 @@
 # directory has to sit beside it (web/functions/) rather than at the repo root.
 # That is why the deploy workflow runs wrangler from `web/`.
 #
-# Inert everywhere else — the GitHub Pages deploy, the Vite build and the
-# packaged macOS/iOS builds never read it.
+# Inert everywhere else — the Vite build and the packaged macOS/iOS builds
+# never read it.
 
 name = "hypersweeper"           # must match the Pages project name
 compatibility_date = "2025-01-01"

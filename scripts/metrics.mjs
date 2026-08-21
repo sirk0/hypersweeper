@@ -19,9 +19,9 @@
 // sampling rate happened to be — silently, and worst for the popular boards
 // that are the ones worth reading.
 //
-// The numbers are estimates for three more reasons, all of them one-directional:
-// content blockers eat some posts, players can switch reporting off, and the
-// GitHub Pages host has no Functions at all. Read every count as a floor.
+// The numbers are estimates for two more reasons, both of them one-directional:
+// content blockers eat some posts, and players can switch reporting off. Read
+// every count as a floor.
 import { createRequire } from "node:module";
 
 const DATASET = "hypersweeper_game_events";

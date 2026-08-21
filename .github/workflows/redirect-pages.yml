@@ -1,0 +1,42 @@
+name: Redirect GitHub Pages
+
+# The game used to be deployed here as well as to Cloudflare Pages, one build
+# each, while it moved between the two hosts. Cloudflare is now the only deploy
+# (deploy-cloudflare.yml); all this workflow publishes is a one-page redirect,
+# so links and home-screen shortcuts that still point at the project site land
+# on the game rather than on a stale copy of it.
+#
+# The payload is static, so this runs when the payload changes and not on every
+# push — and needs no Node, no build and none of the app's environment.
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - .github/pages-redirect/**
+      - .github/workflows/redirect-pages.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .github/pages-redirect
+      - id: deployment
+        uses: actions/deploy-pages@v4

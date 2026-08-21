@@ -9,11 +9,12 @@ import { VitePWA } from "vite-plugin-pwa";
 // pins it further on CI builds and is empty locally.
 const pkg = createRequire(import.meta.url)("./package.json") as { version: string };
 
-// This app is what GitHub Pages serves, at the site root of the project page.
-// CI passes that path via VITE_BASE ("/hypersweeper/"); locally and under
-// Playwright preview the default "/" keeps deep links simple. (During the
-// rewrite the build mounted under "/next/" instead; public/next/index.html
-// redirects that path here.)
+// Where the app is mounted. The deploy serves it from a domain root, so
+// nothing sets VITE_BASE any more and the default is what every build uses;
+// the override stays because the bundle derives asset URLs, the PWA manifest
+// and the service worker scope from it, and a subdirectory host would need it
+// again. (During the rewrite the build mounted under "/next/";
+// public/next/index.html redirects that path here.)
 const base = process.env.VITE_BASE ?? "/";
 
 // VITE_PACKAGED=1 builds the bundle that ships *inside* an app rather than on
@@ -33,10 +34,10 @@ const packaged = process.env.VITE_PACKAGED === "1";
 // failed subresource load is logged to the console by the browser itself, which
 // no amount of care in our own code can swallow, so a build with nowhere to
 // report to must not carry the reporter at all. That means: on for the
-// Cloudflare deploy (and for the e2e run, whose webServer sets it), off for the
-// GitHub Pages deploy, off for `npm run dev` (your own clicks are not data),
-// and off for the packaged apps twice over — `packaged` vetoes it outright, so
-// no build script can turn it on there by accident.
+// Cloudflare deploy (and for the e2e run, whose webServer sets it), off for
+// `npm run dev` (your own clicks are not data), and off for the packaged apps
+// twice over — `packaged` vetoes it outright, so no build script can turn it on
+// there by accident.
 const analytics = !packaged && process.env.VITE_ANALYTICS === "1";
 
 // Where this build will be served from, origin *and* base path, with a trailing
@@ -44,9 +45,10 @@ const analytics = !packaged && process.env.VITE_ANALYTICS === "1";
 // cannot do without. Open Graph and Twitter cards are read by crawlers that do
 // not run JavaScript and do not reliably resolve relative URLs, so `og:image`
 // and `og:url` have to be absolute and have to be right at build time. The
-// default is the GitHub Pages project site, so a local build still emits valid
-// tags; each deploy workflow overrides it with the host it is publishing to.
-const siteUrl = (process.env.VITE_SITE_URL ?? "https://sirk0.github.io/hypersweeper/").replace(
+// default is the deployed host, so a local build emits the same tags it will;
+// the deploy workflow passes the repository variable SITE_URL over it, which is
+// how a custom domain gets in without a code change.
+const siteUrl = (process.env.VITE_SITE_URL ?? "https://hypersweeper.pages.dev/").replace(
   /\/*$/,
   "/",
 );
