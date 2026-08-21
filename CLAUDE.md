@@ -14,7 +14,7 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   share a vertex. Modules: `core` (`Board`/`Board3D`, adjacency, topology
   invariants), `tilings` (flat tilings + the `ARCH_TILINGS` registry and
   `_ArchTemplate` system), `aperiodic` (Penrose, Spectre, the phyllotactic
-  spiral and the brick pinwheel), `fractal` (the self-similar boards: sphinx, chair, Sierpinski
+  spiral and the brick spiral), `fractal` (the self-similar boards: sphinx, chair, Sierpinski
   carpet, pentaflake and Gosper island), `solids` (spherical
   polyhedra, cube, tetrahedron, frames), `catalan` (the thirteen Catalan
   solids), `surfaces` (donut/cylinder/
@@ -158,7 +158,7 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   to the `keep` centremost cells by Chebyshev distance (`max(|dx|, |dy|)`)
   — generously enough that `keep` is a small fraction of the patch, or the
   substitution's own star-shaped outline is what the board reads as. The brick
-  pinwheel needs neither: its shells build the whole board, so its width is
+  spiral needs neither: its shells build the whole board, so its width is
   both the size knob and the window. See
   the `AGENT NOTE` in `boards/tilings.py`.
   **Size and mine-count convention — difficulty is measured, not assumed.**
@@ -261,10 +261,10 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   parallelohexagon, so each of ten 36° wedges is a plain block of its own
   translation lattice, and the odd wedges being pushed one edge out along
   `u1` is the entire spiral.
-  The last, `brick_pinwheel_board`, is nonperiodic by symmetry as well, and is
+  The last, `brick_spiral_board`, is nonperiodic by symmetry as well, and is
   the plainest board in the game: 2×1 **bricks** on the integer square lattice,
-  turning about a **2×2 block** — the centre brick and the one the first shell
-  lays directly above it, which is what the board is named for. Each of
+  winding out of a **2×2 block** — the centre brick and the one the first shell
+  lays directly above it. Each of
   `width - 2` shells adds one row and one column on two adjacent sides, the
   corner walking NE, NW, SW, SE and round again, so a single arm winds outward.
   The rectangle always satisfies `w = h + 1`, and that is what makes every shell
@@ -272,9 +272,13 @@ tetrahedron, donut, Möbius strip, cylinder, Klein bottle). Python 3.13
   so **every** tile is a whole brick at every width — there is no odd cell to
   special-case and no 1×1 anywhere. The board is the `width`×(`width` − 1)
   rectangle the shells leave, so the size knob is the width alone and the cell
-  count is `width·(width − 1)/2`. It carries one mirror, horizontal through the
-  block, and nothing else: no rotation, and — the property that puts it in this
-  module — no translation. It has no `keep` trim, so it has no Chebyshev
+  count is `width·(width − 1)/2`. It carries exactly **one mirror** at every
+  width — horizontal through the block when the width is odd, vertical when it
+  is even, and every shipped board is odd — and nothing else: no rotation, and
+  — the property that puts it in this module — no translation. Being mirrored
+  at every width is why it is a *spiral* and not a pinwheel: a pinwheel is
+  chiral, turns four ways, and is besides the name of a well-known aperiodic
+  tiling by a 1-2 right triangle that this is nothing like. It has no `keep` trim, so it has no Chebyshev
   distance to quantise and no sort whose tie-break has to be reproduced in the
   TypeScript port; the family's usual porting hazard does not apply. What does
   need care is the **T-vertices**: a brick's corner routinely lands in the

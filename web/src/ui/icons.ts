@@ -19,7 +19,7 @@ import {
 } from "../render/shapePalette";
 import { ARCH_TILINGS, type ArchTemplate, archTemplate, templateCells } from "../boards/tilings";
 import { placePoint, substitutionPlacements, SUBSTITUTIONS } from "../boards/fractal";
-import { brickPinwheelTiles } from "../boards/aperiodic";
+import { brickSpiralTiles } from "../boards/aperiodic";
 import {
   deltoidalHexecontahedronBoard,
   deltoidalIcositetrahedronBoard,
@@ -1129,12 +1129,12 @@ function draw(rawKey: string): string[] {
         ),
       );
     }
-  } else if (key === "brickpinwheel") {
+  } else if (key === "brickspiral") {
     // the width-5 board itself, ten bricks: the smallest patch that already
     // shows the arm turning. The two bricks of the 2×2 block it turns about are
     // picked out in the darker tone — the board is named for them, and they are
     // what tells it from a plain bond at icon size
-    const tiles = brickPinwheelTiles(5);
+    const tiles = brickSpiralTiles(5);
     const minX = Math.min(...tiles.map((t) => t[0]));
     const minY = Math.min(...tiles.map((t) => t[1]));
     const sc = (d * 0.84) / 5;

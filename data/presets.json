@@ -1004,22 +1004,22 @@
         ]
       }
     },
-    "brickpinwheel": {
-      "builder": "brick_pinwheel_board",
+    "brickspiral": {
+      "builder": "brick_spiral_board",
       "args": {
         "easy": [
           13,
-          12,
+          14,
           27.0
         ],
         "medium": [
           23,
-          46,
+          48,
           19.5
         ],
         "hard": [
           31,
-          104,
+          106,
           17.7
         ]
       }

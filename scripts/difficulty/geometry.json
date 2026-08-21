@@ -7872,13 +7872,13 @@
       }
     }
   },
-  "brickpinwheel": {
-    "builder": "brick_pinwheel_board",
+  "brickspiral": {
+    "builder": "brick_spiral_board",
     "args": {
       "easy": {
         "args": [
           13,
-          13,
+          12,
           27.0
         ],
         "cells": 78,
@@ -7890,7 +7890,7 @@
       "medium": {
         "args": [
           23,
-          43,
+          46,
           19.5
         ],
         "cells": 253,
@@ -7902,7 +7902,7 @@
       "hard": {
         "args": [
           31,
-          100,
+          104,
           17.7
         ],
         "cells": 465,

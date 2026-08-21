@@ -1538,10 +1538,10 @@
         "hasCellCycle": false
       }
     },
-    "brickpinwheel": {
+    "brickspiral": {
       "easy": {
         "cellCount": 78,
-        "mineCount": 12,
+        "mineCount": 14,
         "euler": 1,
         "boundaryComponents": 1,
         "edgeCount": 235,
@@ -1550,7 +1550,7 @@
       },
       "medium": {
         "cellCount": 253,
-        "mineCount": 46,
+        "mineCount": 48,
         "euler": 1,
         "boundaryComponents": 1,
         "edgeCount": 760,
@@ -1559,7 +1559,7 @@
       },
       "hard": {
         "cellCount": 465,
-        "mineCount": 104,
+        "mineCount": 106,
         "euler": 1,
         "boundaryComponents": 1,
         "edgeCount": 1396,

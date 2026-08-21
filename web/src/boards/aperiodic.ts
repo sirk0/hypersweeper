@@ -652,10 +652,10 @@ export function spectreBoard(
   return finalizeFlat("spectre", cellMap, positions, mineCount, scale);
 }
 
-// -- the brick pinwheel ------------------------------------------------------
+// -- the brick spiral --------------------------------------------------------
 //
 // Port of the same section in minesweeper/boards/aperiodic.py. One nonperiodic
-// board on the plain integer square lattice, tiled by 2×1 bricks turning about
+// board on the plain integer square lattice, tiled by 2×1 bricks winding out of
 // a 2×2 block — nonperiodic by how it is *wound* rather than by a substitution,
 // as the phyllotactic spiral above is. Cell ids are the tile's lower-left
 // corner and size, so unlike the three tilings above there is no trim, no
@@ -733,14 +733,14 @@ function lay(a: readonly [number, number], b: readonly [number, number]): Brick 
 }
 
 /**
- * The pinwheel's bricks, in the order the arm lays them (port of
- * `_brick_pinwheel_tiles`). `width - 2` shells, each adding one row and one
+ * The spiral's bricks, in the order the arm lays them (port of
+ * `_brick_spiral_tiles`). `width - 2` shells, each adding one row and one
  * column on two adjacent sides, the corner walking NE, NW, SW, SE and round
  * again; which arm takes the corner cell follows from the rectangle's height,
  * and taking it there is what leaves both arms an even number of cells long,
  * so every tile is a whole brick.
  */
-export function brickPinwheelTiles(width: number): Brick[] {
+export function brickSpiralTiles(width: number): Brick[] {
   if (width < 2) throw new Error("width must be >= 2");
   let x0 = 0;
   let y0 = 0;
@@ -772,9 +772,9 @@ export function brickPinwheelTiles(width: number): Brick[] {
 }
 
 /**
- * 2×1 bricks turning about a 2×2 block, an arm winding outward to fill a
+ * 2×1 bricks winding out of a 2×2 block, one arm turning outward to fill a
  * `width` × (`width` - 1) rectangle. Every tile is a whole brick.
  */
-export function brickPinwheelBoard(width: number, mineCount: number, scale = 30): Board {
-  return brickBoard("brickpinwheel", brickPinwheelTiles(width), mineCount, scale);
+export function brickSpiralBoard(width: number, mineCount: number, scale = 30): Board {
+  return brickBoard("brickspiral", brickSpiralTiles(width), mineCount, scale);
 }

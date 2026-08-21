@@ -143,7 +143,7 @@ SPEC: dict[str, dict] = {
     "penrose_board": dict(size=(3,), mine=1, shape=2, kind="scale", grow=0),
     "spectre_board": dict(size=(2,), mine=1, shape=3, kind="scale", grow=0),
     "phyllotaxis_board": dict(size=(2,), mine=1, shape=3, kind="scale", grow=0),
-    # the brick pinwheel: one knob, the width, and the cell count is
+    # the brick spiral: one knob, the width, and the cell count is
     # width * (width - 1) / 2 -- a fine enough ladder to hit every target
     # without a patch to trim, so neither ``grow`` nor ``coarse`` applies.
     # ``floor=2`` because the winding needs its centre brick and a one-cell
@@ -158,7 +158,7 @@ SPEC: dict[str, dict] = {
     # penalty by a thousandth and takes the hard board to 496 cells where
     # 465 is nearer the target. ``shape`` stays set so ``_rescale`` still
     # holds the board its width on screen.
-    "brick_pinwheel_board": dict(size=(0,), mine=1, shape=2, kind="scale",
+    "brick_spiral_board": dict(size=(0,), mine=1, shape=2, kind="scale",
                                  floor=2, rigid=True),
     # fractals: one whole substitution step at a time
     "sphinx_board": dict(size=(0,), mine=1, shape=2, kind="scale", coarse=True),

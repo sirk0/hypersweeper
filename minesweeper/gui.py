@@ -42,7 +42,7 @@ from minesweeper.boards import (
     SOLID_GROUP_LABELS,
     SOLID_GROUP_MEMBERS,
     SUBSTITUTIONS,
-    _brick_pinwheel_tiles,
+    _brick_spiral_tiles,
     build_board,
     family_rows,
     newell_normal,
@@ -1192,12 +1192,12 @@ def _render_icon(key: str) -> pygame.Surface:
                             for x, y in hexagon],
                         fill=ICON_BLUE if k % 2 else ICON_BLUE_LIGHT, width=3)
         _icon_gloss(s, pygame.Rect(d * 0.06, d * 0.06, d * 0.88, d * 0.6))
-    elif key == "brickpinwheel":
+    elif key == "brickspiral":
         # the width-5 board itself, ten bricks: the smallest patch that already
         # shows the arm turning. The two bricks of the 2x2 block it turns about
         # are picked out in the darker tone -- the board is named for them, and
         # they are what tells it from a plain bond at icon size
-        tiles = _brick_pinwheel_tiles(5)
+        tiles = _brick_spiral_tiles(5)
         min_x = min(x for x, _, _, _ in tiles)
         min_y = min(y for _, y, _, _ in tiles)
         sc = d * 0.84 / 5

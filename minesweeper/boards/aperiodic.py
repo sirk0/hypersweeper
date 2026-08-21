@@ -527,15 +527,15 @@ def spectre_board(
 
 
 
-# -- the brick pinwheel ------------------------------------------------------
+# -- the brick spiral --------------------------------------------------------
 #
 # One nonperiodic board on the plain integer square lattice, tiled by 2x1
-# bricks turning about a 2x2 block. It is no substitution: like the
+# bricks winding out of a 2x2 block. It is no substitution: like the
 # phyllotactic spiral above it is nonperiodic by how it is *wound*, and a
 # winding admits no translation at all.
 #
 # The centre is one brick; the first shell lays a second directly above it,
-# and those two are the 2x2 block the rest of the board turns about. Each of
+# and those two are the 2x2 block the rest of the board winds out of. Each of
 # ``width - 2`` shells adds one row and one column on two adjacent sides, the
 # corner walking NE, NW, SW, SE and round again, which is what winds the arm
 # outward. The rectangle always satisfies ``w = h + 1``, and that is what
@@ -545,12 +545,15 @@ def spectre_board(
 # leave, so the size knob is the width alone and the cell count is
 # ``width * (width - 1) / 2``.
 #
-# It carries one mirror, horizontal through the centre block, and nothing
-# else: no rotation, and -- the property that puts it in this module -- no
-# translation. Vertex ids are the integer lattice points themselves and cell
-# ids are ``(x, y, w, h)``, a tile's lower-left corner and size, so unlike the
-# three tilings above there is no trim, no distance to quantise and no sort
-# whose tie-break has to be reproduced in the TypeScript port.
+# It carries exactly one mirror at every width -- horizontal through the
+# centre block when the width is odd, vertical when it is even, and every
+# shipped board is odd -- and nothing else: no rotation, and -- the property
+# that puts it in this module -- no translation.
+#
+# Vertex ids are the integer lattice points themselves and cell ids are
+# ``(x, y, w, h)``, a tile's lower-left corner and size, so unlike the three
+# tilings above there is no trim, no distance to quantise and no sort whose
+# tie-break has to be reproduced in the TypeScript port.
 
 Brick = tuple[int, int, int, int]  # lower-left corner, then width and height
 
@@ -611,8 +614,8 @@ def _lay(a: tuple[int, int], b: tuple[int, int]) -> Brick:
     return (x, y, 2, 1) if a[1] == b[1] else (x, y, 1, 2)
 
 
-def _brick_pinwheel_tiles(width: int) -> list[Brick]:
-    """The pinwheel's bricks, in the order the arm lays them.
+def _brick_spiral_tiles(width: int) -> list[Brick]:
+    """The spiral's bricks, in the order the arm lays them.
 
     ``width - 2`` shells, each adding one row and one column on two adjacent
     sides; the shell's corner walks NE, NW, SW, SE and round again. Which of a
@@ -643,8 +646,8 @@ def _brick_pinwheel_tiles(width: int) -> list[Brick]:
     return bricks
 
 
-def brick_pinwheel_board(width: int, mine_count: int, scale: float = 30) -> Board:
-    """2x1 bricks turning about a 2x2 block, an arm winding outward to fill a
-    ``width`` x (``width`` - 1) rectangle. Every tile is a whole brick.
+def brick_spiral_board(width: int, mine_count: int, scale: float = 30) -> Board:
+    """2x1 bricks winding out of a 2x2 block, one arm turning outward to fill
+    a ``width`` x (``width`` - 1) rectangle. Every tile is a whole brick.
     """
-    return _brick_board("brickpinwheel", _brick_pinwheel_tiles(width), mine_count, scale)
+    return _brick_board("brickspiral", _brick_spiral_tiles(width), mine_count, scale)

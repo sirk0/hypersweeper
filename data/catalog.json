@@ -93,7 +93,7 @@
     "penrose": "Penrose rhombi",
     "spectre": "The Spectre",
     "phyllotaxis": "Phyllotactic spiral",
-    "brickpinwheel": "Brick pinwheel",
+    "brickspiral": "Brick spiral",
     "sphinx": "Sphinx",
     "chair": "Chair",
     "carpet": "Sierpiński carpet",
@@ -171,7 +171,7 @@
       "penrose",
       "spectre",
       "phyllotaxis",
-      "brickpinwheel"
+      "brickspiral"
     ],
     "fractal": [
       "sphinx",
