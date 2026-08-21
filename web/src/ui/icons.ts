@@ -1130,19 +1130,23 @@ function draw(rawKey: string): string[] {
       );
     }
   } else if (key === "brickspiral") {
-    // the width-5 board itself, ten bricks: the smallest patch that already
-    // shows the arm turning. The two bricks of the 2×2 block it turns about are
-    // picked out in the darker tone — the board is named for them, and they are
-    // what tells it from a plain bond at icon size
-    const tiles = brickSpiralTiles(5);
+    // the width-5 board with the last shell's column arm dropped: eight bricks
+    // in a 4×4 square, which is the square the winding passes through mid-shell
+    // (each shell adds a row *and* a column, so the board is square exactly
+    // halfway through one) and so fills the icon box where the 5×4 board it
+    // grows into would be letterboxed. The two bricks of the 2×2 block it turns
+    // about are picked out in the darker tone — the board is named for them,
+    // and they are what tells it from a plain bond at icon size
+    const grown = brickSpiralTiles(5);
+    const arm = Math.min(...grown.map((t) => t[0]));
+    const tiles = grown.filter((t) => t[0] > arm);
     const minX = Math.min(...tiles.map((t) => t[0]));
     const minY = Math.min(...tiles.map((t) => t[1]));
-    const sc = (d * 0.84) / 5;
-    const ox = (d - 5 * sc) / 2;
-    const oy = (d - 4 * sc) / 2;
+    const sc = (d * 0.84) / 4;
+    const o = (d - 4 * sc) / 2;
     for (const [x, y, w, h] of tiles) {
-      const left = ox + (x - minX) * sc;
-      const top = oy + (4 - (y - minY) - h) * sc;
+      const left = o + (x - minX) * sc;
+      const top = o + (4 - (y - minY) - h) * sc;
       const hub = x >= 0 && x + w <= 2 && y >= 0 && y + h <= 2;
       parts.push(
         shape(

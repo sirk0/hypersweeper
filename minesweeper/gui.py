@@ -1193,18 +1193,23 @@ def _render_icon(key: str) -> pygame.Surface:
                         fill=ICON_BLUE if k % 2 else ICON_BLUE_LIGHT, width=3)
         _icon_gloss(s, pygame.Rect(d * 0.06, d * 0.06, d * 0.88, d * 0.6))
     elif key == "brickspiral":
-        # the width-5 board itself, ten bricks: the smallest patch that already
-        # shows the arm turning. The two bricks of the 2x2 block it turns about
-        # are picked out in the darker tone -- the board is named for them, and
-        # they are what tells it from a plain bond at icon size
-        tiles = _brick_spiral_tiles(5)
+        # the width-5 board with the last shell's column arm dropped: eight
+        # bricks in a 4x4 square, which is the square the winding passes
+        # through mid-shell (each shell adds a row *and* a column, so the
+        # board is square exactly halfway through one) and so fills the icon
+        # box where the 5x4 board it grows into would be letterboxed. The two
+        # bricks of the 2x2 block it turns about are picked out in the darker
+        # tone -- the board is named for them, and they are what tells it from
+        # a plain bond at icon size
+        grown = _brick_spiral_tiles(5)
+        arm = min(bx for bx, _, _, _ in grown)
+        tiles = [t for t in grown if t[0] > arm]
         min_x = min(x for x, _, _, _ in tiles)
         min_y = min(y for _, y, _, _ in tiles)
-        sc = d * 0.84 / 5
-        ox = (d - 5 * sc) / 2
-        oy = (d - 4 * sc) / 2
+        sc = d * 0.84 / 4
+        o = (d - 4 * sc) / 2
         for x, y, w, h in tiles:
-            left, top = ox + (x - min_x) * sc, oy + (4 - (y - min_y) - h) * sc
+            left, top = o + (x - min_x) * sc, o + (4 - (y - min_y) - h) * sc
             hub = 0 <= x and x + w <= 2 and 0 <= y and y + h <= 2
             _icon_shape(s, [(left, top), (left + w * sc, top),
                             (left + w * sc, top + h * sc), (left, top + h * sc)],
