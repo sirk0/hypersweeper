@@ -2010,6 +2010,85 @@ Function, `npm run build && npx wrangler pages dev` from `web/` — but note
 Analytics Engine writes are a no-op in local dev, so verifying a write end to
 end takes a real deploy.
 
+### PR previews
+
+Every pull request gets its own live build, at a URL that does not change as the
+branch does:
+
+```
+https://pr-<number>.hypersweeper.pages.dev
+```
+
+`pr-preview.yml` publishes it on every push to the PR and edits one sticky
+comment with the link, so the change can be checked on a phone rather than on a
+laptop with the branch checked out; `pr-<number>` is also the Cloudflare
+`--branch`, which is both what classifies the deploy as a preview rather than
+production and what the alias above is derived from. The git branch name is
+deliberately *not* used: Cloudflare lowercases, substitutes and truncates a
+branch into an alias, and a name like `claude/pr-deploy-cloudflare-71qkmu` comes
+back mangled.
+
+It does not wait for CI — the `web` job installs Chromium and runs the whole
+visual suite, and gating on that would put the phone minutes behind the push.
+Two things differ from the production bundle, both on purpose. There is no
+`VITE_ANALYTICS`, so a preview carries no play counter and preview games stay
+out of the real numbers. And `VITE_NO_SW=1` leaves the service worker out: a PR
+reuses one URL across pushes, and a root-scoped precache there is a phone
+showing the push before last, which is the one failure mode a preview must not
+have. `VITE_NO_SW` is the narrow knob for that — `VITE_PACKAGED` also drops the
+worker but takes `socialMeta`, `tallyStub` and the update row with it, which is
+the offline-app build, not this. With nothing registered, Settings › Check for
+updates reports "running from source". The job also writes a `dist/_headers`
+carrying `X-Robots-Tag: noindex` (into `dist/`, never `public/`, so production
+stays indexable) and passes the preview's own origin as `VITE_SITE_URL`, or
+every preview's `og:url` and `<link rel="canonical">` would point at production.
+
+Closing or merging the PR deletes every deployment made under `pr-<number>`,
+which is what takes the alias with it. wrangler has no
+`pages deployment delete`, so the `destroy` job calls the REST API directly:
+`force=true` is required for the branch's latest deployment, and the ids are
+collected across every page *before* any deletion, since deleting mid-pagination
+shifts the pages. **The one thing that can go wrong is the token**: a Cloudflare
+API token narrower than *Cloudflare Pages: Edit* deploys perfectly happily and
+then fails to delete, so the step reports the API's own errors and exits
+non-zero rather than swallowing them. `pr-preview-sweep.yml` is the safety net
+under all of this — daily, plus a `workflow_dispatch` button, it deletes the
+previews of every `pr-<number>` the GitHub API reports as `closed`, because the
+teardown is event-driven and events get missed (a cancelled run, a closed PR
+while Actions were off, a deploy landing just after its own cancellation). It
+deletes only on an explicit `closed`: an open PR, a number that no longer
+exists, or an API hiccup are all left alone, since a stale preview living
+another day costs nothing and deleting a live one out from under someone testing
+on their phone is the failure that matters.
+
+**Why a fork's pull request gets no preview, and why that guard must stay.**
+Both jobs are gated on
+`github.event.pull_request.head.repo.full_name == github.repository`. Two
+independent things stop a stranger, either sufficient: a fork cannot push a
+branch to this repository, and GitHub withholds `secrets.*` from a
+`pull_request` run whose head is a fork, so the deploy could not authenticate
+even with the guard removed. A job whose `if` is false is skipped before a
+runner is allocated, so a hundred drive-by pull requests cost this workflow no
+minutes at all. Only someone who can already push a branch here — write access,
+which already grants the token and `master` — can cause a preview.
+
+Which is also why the workflow must **never** be moved to
+`pull_request_target`: that runs with the secrets *and* a writable token against
+fork-authored code, and the build step runs `npm ci`, which executes lifecycle
+scripts out of the pull request's own `package.json`. That is a straight
+handover of the deploy token to anyone who opens a PR.
+
+Two repository settings do the rest, and they are worth re-checking because
+nothing in the repo can enforce them. Settings → Actions → General → *Fork pull
+request workflows from outside collaborators* should be **"Require approval for
+all outside collaborators"**; the default gates first-time contributors only,
+which lets anyone with one merged PR in the past run workflows unprompted
+forever after — and the real cost surface for a flood is `ci.yml`, which runs
+Python, Node and a Playwright Chromium install on every pull request including
+forks. And *Workflow permissions* should default to read-only, with each
+workflow granting what it needs in its own `permissions:` block, which is how
+they are all written here already.
+
 **The retired GitHub Pages deploy.** The game was published to the project site
 as well, under `/hypersweeper/`, while it moved between the two hosts. That
 workflow is gone; `redirect-pages.yml` now publishes

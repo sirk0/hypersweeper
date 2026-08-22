@@ -1,0 +1,111 @@
+name: Sweep stale PR previews
+
+# The safety net under pr-preview.yml's `destroy` job. That teardown is
+# event-driven, and events get missed: the close event's run can be cancelled by
+# the concurrency group, the Cloudflare API can fail, a pull request can be
+# closed while Actions are disabled, or a deploy can land moments after its own
+# cancellation. A preview that outlives its pull request is exactly the thing
+# that accumulates, so once a day this deletes every preview whose PR is closed.
+#
+# It also cleans up anything left over from before previews existed, and gives a
+# workflow_dispatch button to purge by hand.
+#
+# A separate file rather than a third job in pr-preview.yml, because that
+# workflow's concurrency group is keyed on a PR number a schedule event does not
+# have.
+#
+# Deliberately conservative: it deletes only for a pull request the GitHub API
+# explicitly reports as `closed`. Anything else — an open PR, a number that no
+# longer exists, an API hiccup — is left alone and logged. Leaving a stale
+# preview up for another day is nothing; deleting a live one out from under
+# someone testing on their phone is the failure that matters.
+
+on:
+  schedule:
+    # Daily, off the hour: GitHub's own advice, since the top of the hour is
+    # when every scheduled workflow on the platform queues at once.
+    - cron: "17 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete previews whose pull request is closed
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          api="https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/pages/projects/hypersweeper/deployments"
+
+          # Collect (branch, id) pairs first, across every page: deleting as we
+          # paginate would shift the pages under us. Only `pr-<number>` branches
+          # are ours to touch — anything else on the project was put there by
+          # something this workflow knows nothing about.
+          pairs=()
+          page=1
+          while [ "$page" -le 50 ]; do
+            resp=$(curl -sS -H "Authorization: Bearer $CF_API_TOKEN" "$api?env=preview&page=$page")
+            if [ "$(jq -r '.success' <<<"$resp")" != "true" ]; then
+              echo "Cloudflare API error listing deployments:" >&2
+              jq -r '.errors' <<<"$resp" >&2
+              exit 1
+            fi
+            if [ "$(jq '.result | length' <<<"$resp")" -eq 0 ]; then
+              break
+            fi
+            while read -r pair; do
+              [ -n "$pair" ] && pairs+=("$pair")
+            done < <(jq -r '
+              .result[]
+              | .deployment_trigger.metadata.branch as $b
+              | select($b != null and ($b | test("^pr-[0-9]+$")))
+              | "\($b) \(.id)"' <<<"$resp")
+            page=$((page + 1))
+          done
+
+          if [ "${#pairs[@]}" -eq 0 ]; then
+            echo "No pr-<number> preview deployments on the project."
+            exit 0
+          fi
+
+          # One PR lookup per branch, not per deployment.
+          declare -A state_of
+          for pair in "${pairs[@]}"; do
+            branch=${pair%% *}
+            if [ -n "${state_of[$branch]:-}" ]; then
+              continue
+            fi
+            number=${branch#pr-}
+            pr=$(curl -sS -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/$REPO/pulls/$number")
+            state_of[$branch]=$(jq -r '.state // "unknown"' <<<"$pr")
+            echo "$branch -> ${state_of[$branch]}"
+          done
+
+          deleted=0
+          for pair in "${pairs[@]}"; do
+            branch=${pair%% *}
+            id=${pair##* }
+            if [ "${state_of[$branch]}" != "closed" ]; then
+              continue
+            fi
+            resp=$(curl -sS -X DELETE -H "Authorization: Bearer $CF_API_TOKEN" "$api/$id?force=true")
+            if [ "$(jq -r '.success' <<<"$resp")" != "true" ]; then
+              echo "Cloudflare API error deleting $id ($branch):" >&2
+              jq -r '.errors' <<<"$resp" >&2
+              exit 1
+            fi
+            echo "  deleted $id ($branch)"
+            deleted=$((deleted + 1))
+          done
+
+          echo "Swept $deleted stale preview deployment(s)." >> "$GITHUB_STEP_SUMMARY"

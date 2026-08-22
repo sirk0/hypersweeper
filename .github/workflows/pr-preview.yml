@@ -1,0 +1,265 @@
+name: PR preview
+
+# A live, shareable build of every pull request, so a change can be checked on
+# a phone instead of on a laptop that has the branch checked out. Each PR gets
+# one fixed URL — https://pr-<number>.hypersweeper.pages.dev — that every push
+# to it redeploys, and closing or merging the PR deletes it again.
+#
+# It is the production deploy (deploy-cloudflare.yml) with three differences.
+# `--branch` is `pr-<number>` rather than `master`: Cloudflare decides
+# production-versus-preview by comparing that against the project's production
+# branch, and derives the URL above from the same string. `VITE_ANALYTICS` is
+# *not* set, so the bundle carries no play counter at all and preview games stay
+# out of the real numbers (the counter is opt-in per build — see
+# web/vite.config.ts). And `VITE_NO_SW=1` leaves the service worker out, because
+# a PR reuses one URL across pushes and a root-scoped precache there is a phone
+# showing the push before last — the one failure mode a preview must not have.
+#
+# Everything else is deliberately identical, above all `workingDirectory: web`:
+# wrangler's project root is wrangler.toml's directory, so that is what makes it
+# pick up web/functions/. Run from the repo root and the deploy quietly uploads
+# dist/ alone.
+#
+# It does not wait for ci.yml. The `web` job there installs Chromium and runs
+# the whole Playwright visual suite; gating on it would put the phone minutes
+# behind the push, and CI reports its own red or green on the PR regardless.
+#
+# SECURITY — this must stay on `pull_request` and must NEVER be moved to
+# `pull_request_target`. `pull_request` runs a fork's PR with no `secrets.*` and
+# a read-only token, which is why a stranger cannot reach the Cloudflare
+# credentials here. `pull_request_target` would run with both *against
+# fork-authored code*, and the build below runs `npm ci`, which executes
+# lifecycle scripts out of the PR's own package.json — that is a straight
+# handover of the deploy token to anyone who opens a pull request. The same-repo
+# guard on both jobs is the second, independent layer. See "PR previews" in
+# web/README.md.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+
+# Least privilege at the top; each job asks for what it actually needs.
+permissions:
+  contents: read
+
+# Per PR, and deliberately *not* deploy-cloudflare.yml's global
+# `cloudflare-pages` group: sharing that one would have every push to a PR
+# cancel a production deploy, and every push to master cancel a preview. Keyed
+# on the PR number, so a burst of pushes leaves one run standing rather than
+# five and the close event cancels that PR's in-flight deploy before tearing the
+# preview down.
+concurrency:
+  group: pr-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    # Same-repo PRs only, for two independent reasons, either sufficient: a fork
+    # cannot push a branch here, and a `pull_request` run from a fork is handed
+    # no `secrets.*`, so the deploy could not authenticate even with this guard
+    # removed. A job whose `if` is false is skipped before a runner is allocated
+    # and bills nothing, so drive-by pull requests cost this workflow no
+    # minutes. Dependabot's branches are same-repo, but it gets its own
+    # read-only token and its own secret store, so it is excluded here rather
+    # than left to fail red.
+    if: >-
+      github.event.action != 'closed'
+      && github.event.pull_request.head.repo.full_name == github.repository
+      && github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write # the sticky comment carrying the URL
+    steps:
+      # Default ref: the PR merged into its base, which is what ci.yml builds
+      # too. The preview should be the thing that would land, not the branch in
+      # isolation.
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Build TypeScript app (preview)
+        working-directory: web
+        env:
+          # No VITE_ANALYTICS, and that is the whole of it: `__APP_ANALYTICS__`
+          # is false unless the variable is set, and the compiler then drops the
+          # transport, the endpoint and the Settings privacy row.
+          VITE_NO_SW: "1"
+          # The URL Cloudflare will serve this at — known before the deploy runs,
+          # because the branch alias is derived from `--branch` below. Without
+          # it every preview's og:url and <link rel="canonical"> would point at
+          # the production origin.
+          VITE_SITE_URL: https://pr-${{ github.event.pull_request.number }}.hypersweeper.pages.dev/
+          # On a pull_request event GITHUB_SHA is the throwaway merge commit,
+          # which matches nothing a reader can see. The in-app build label
+          # (__APP_COMMIT__) wants the PR head.
+          GITHUB_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          npm ci
+          npm run build
+          # A preview is a real, reachable page on a real domain; keep it from
+          # competing with the site in search results. Written into dist/ rather
+          # than committed to public/, so production stays indexable.
+          printf '/*\n  X-Robots-Tag: noindex\n' > dist/_headers
+      - name: Publish preview to Cloudflare Pages
+        id: deploy
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # From web/, so wrangler resolves wrangler.toml and — the reason for
+          # this — functions/. See the header.
+          workingDirectory: web
+          # `pr-<number>` rather than the git branch name: it is already
+          # lowercase letters, digits and a dash, so Cloudflare's branch
+          # normalisation leaves it alone (a name like
+          # `claude/pr-deploy-cloudflare-71qkmu` comes out mangled and
+          # truncated); it can never collide with the production branch; and it
+          # gives the destroy job below an exact filter.
+          command: pages deploy --branch=pr-${{ github.event.pull_request.number }}
+      - name: Comment the preview URL
+        uses: actions/github-script@v7
+        env:
+          PREVIEW_URL: https://pr-${{ github.event.pull_request.number }}.hypersweeper.pages.dev
+          # wrangler-action reports the immutable per-deploy URL. Treated as a
+          # nicety: if that output is ever renamed or dropped, the line is
+          # omitted rather than the step failing.
+          DEPLOY_URL: ${{ steps.deploy.outputs.deployment-url }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        with:
+          script: |
+            const { PREVIEW_URL, DEPLOY_URL, HEAD_SHA } = process.env;
+            // The marker is what makes the comment sticky: every push edits the
+            // one comment rather than adding another to scroll past.
+            const MARKER = "<!-- pr-preview -->";
+            const base = context.payload.pull_request.base.ref;
+            const body = [
+              MARKER,
+              `### 📱 [Play this PR](${PREVIEW_URL})`,
+              "",
+              `\`${PREVIEW_URL}\``,
+              "",
+              `Built from \`${HEAD_SHA.slice(0, 7)}\` merged into \`${base}\`.`,
+              DEPLOY_URL && !DEPLOY_URL.startsWith(PREVIEW_URL)
+                ? `This exact build: ${DEPLOY_URL}`
+                : null,
+              "",
+              "A preview build carries no play counter and no service worker, so"
+                + " a reload always shows the newest push. It is deleted when"
+                + " this pull request is closed or merged.",
+            ].filter((line) => line !== null).join("\n");
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              ...context.repo,
+              issue_number: context.issue.number,
+              per_page: 100,
+            });
+            const existing = comments.find((c) => (c.body ?? "").includes(MARKER));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                ...context.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                ...context.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+      - name: Preview URL in the run summary
+        env:
+          PREVIEW_URL: https://pr-${{ github.event.pull_request.number }}.hypersweeper.pages.dev
+        run: |
+          {
+            echo "### PR preview"
+            echo ""
+            echo "$PREVIEW_URL"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  destroy:
+    # The same guard as `deploy`, for the same two reasons. No checkout: after a
+    # PR closes its merge ref can be gone, and this job needs no files anyway —
+    # which is also why it asks for no `contents` permission.
+    if: >-
+      github.event.action == 'closed'
+      && github.event.pull_request.head.repo.full_name == github.repository
+      && github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write # to edit the comment the deploy job left
+    steps:
+      - name: Delete this PR's preview deployments
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PR_BRANCH: pr-${{ github.event.pull_request.number }}
+        # wrangler has no `pages deployment delete`, so this is the REST API by
+        # hand. Deleting every deployment made under the branch is what takes
+        # the alias with it, and `force=true` is what allows the branch's latest
+        # one to go. It needs the same *Cloudflare Pages: Edit* permission the
+        # deploy already uses; a narrower token deploys happily and fails here,
+        # which is why the step reports the API's own errors and exits non-zero
+        # rather than swallowing them.
+        run: |
+          set -euo pipefail
+          api="https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/pages/projects/hypersweeper/deployments"
+
+          # Collect the ids first, across every page: deleting as we paginate
+          # would shift the pages under us and silently skip deployments.
+          ids=()
+          page=1
+          while [ "$page" -le 50 ]; do
+            resp=$(curl -sS -H "Authorization: Bearer $CF_API_TOKEN" "$api?env=preview&page=$page")
+            if [ "$(jq -r '.success' <<<"$resp")" != "true" ]; then
+              echo "Cloudflare API error listing deployments:" >&2
+              jq -r '.errors' <<<"$resp" >&2
+              exit 1
+            fi
+            if [ "$(jq '.result | length' <<<"$resp")" -eq 0 ]; then
+              break
+            fi
+            while read -r id; do
+              [ -n "$id" ] && ids+=("$id")
+            done < <(jq -r --arg b "$PR_BRANCH" \
+              '.result[] | select(.deployment_trigger.metadata.branch == $b) | .id' <<<"$resp")
+            page=$((page + 1))
+          done
+
+          if [ "${#ids[@]}" -eq 0 ]; then
+            echo "No preview deployments found for $PR_BRANCH."
+            exit 0
+          fi
+
+          echo "Deleting ${#ids[@]} preview deployment(s) for $PR_BRANCH."
+          for id in "${ids[@]}"; do
+            resp=$(curl -sS -X DELETE -H "Authorization: Bearer $CF_API_TOKEN" "$api/$id?force=true")
+            if [ "$(jq -r '.success' <<<"$resp")" != "true" ]; then
+              echo "Cloudflare API error deleting $id:" >&2
+              jq -r '.errors' <<<"$resp" >&2
+              exit 1
+            fi
+            echo "  deleted $id"
+          done
+      - name: Note the teardown on the pull request
+        # Only ever edits: a PR that never had a preview gets no comment now.
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const MARKER = "<!-- pr-preview -->";
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              ...context.repo,
+              issue_number: context.issue.number,
+              per_page: 100,
+            });
+            const existing = comments.find((c) => (c.body ?? "").includes(MARKER));
+            if (!existing) return;
+            await github.rest.issues.updateComment({
+              ...context.repo,
+              comment_id: existing.id,
+              body: `${MARKER}\n### 🧹 Preview deleted\n\nThe preview for this pull request was torn down when it closed.`,
+            });
