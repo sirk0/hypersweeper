@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Hypersweeper has moved</title>
+    <!--
+      The whole of what GitHub Pages serves now. The game is deployed to
+      Cloudflare Pages alone (.github/workflows/deploy-cloudflare.yml); this
+      page is here so an old link to the project site still gets there.
+
+      Kept deliberately plain — two things it does not do, so nobody assumes
+      they were missed:
+
+      - It drops a shared board link's query (?mode=…&difficulty=…&seed=…):
+        carrying it over takes script, and this is a handful of old links.
+      - It does not clear the service worker the app's last deploy registered
+        at /hypersweeper/sw.js, which precached the old index.html — so a
+        returning visitor may be served that once more before seeing this. The
+        browser drops the registration by itself when its update check for
+        sw.js 404s, which it now does.
+    -->
+    <link rel="canonical" href="https://hypersweeper.pages.dev/" />
+    <meta http-equiv="refresh" content="0; url=https://hypersweeper.pages.dev/" />
+    <style>
+      html {
+        color-scheme: light dark;
+        font-family:
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          sans-serif;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        text-align: center;
+        padding: 1.5rem;
+      }
+      p {
+        margin: 0.4rem 0;
+      }
+      .muted {
+        opacity: 0.7;
+        font-size: 0.9rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p>
+        Hypersweeper has moved to
+        <a href="https://hypersweeper.pages.dev/">hypersweeper.pages.dev</a>.
+      </p>
+      <p class="muted">Taking you there now.</p>
+    </main>
+  </body>
+</html>

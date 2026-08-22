@@ -15,13 +15,13 @@ import { payloadFor, type GameEvent } from "./analyticsEvent";
 //
 //   - It cannot break a move. Every global is reached defensively, the whole
 //     post is wrapped, nothing is awaited and no failure is surfaced. A 404
-//     (the GitHub Pages host has no Functions), a blocked request (an
-//     adblocker) and a 204 are all the same to the game.
+//     (a host with no Pages Function), a blocked request (an adblocker) and a
+//     204 are all the same to the game.
 //   - It is absent, not merely idle, from every build that has nowhere to
 //     report to. `__APP_ANALYTICS__` is a build-time constant (vite.config.ts),
-//     so in the packaged apps, the GitHub Pages build and `npm run dev` every
-//     branch below folds away and the endpoint string never reaches the output
-//     — which scripts/check-offline-assets.mjs asserts for the packaged case.
+//     so in the packaged apps and under `npm run dev` every branch below folds
+//     away and the endpoint string never reaches the output — which
+//     scripts/check-offline-assets.mjs asserts for the packaged case.
 //     This is not tidiness: a post to a host with no Pages Function 404s, and
 //     the *browser* logs that to the console, which no care taken here can
 //     swallow. A build with no collector must not carry a client for one.

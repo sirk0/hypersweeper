@@ -53,8 +53,8 @@ web-prepare:     ## stage the browser app files into $(WEB_STAGE)
 	cp -r minesweeper $(WEB_STAGE)/minesweeper
 	cp -r data $(WEB_STAGE)/data  # shared JSON config read at runtime
 
-# Not deployed any more — the TypeScript app in web/ is what GitHub Pages
-# serves. Kept for running the pygame build in a browser locally.
+# Not deployed any more — the TypeScript app in web/ is what the deploy
+# publishes. Kept for running the pygame build in a browser locally.
 web-package: web-prepare  ## build the browser bundle into $(WEB_OUT)
 	$(PY) -m pygbag --ume_block 0 --build $(WEB_STAGE)
 	PYTHONPATH=. $(PY) scripts/make_web_icons.py $(WEB_OUT)

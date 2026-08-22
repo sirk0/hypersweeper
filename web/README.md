@@ -2,9 +2,8 @@
 
 The TypeScript rewrite (Three.js / WebGL) of the Python game, per
 `docs/plans/typescript-rewrite-same-repo.md`. This is the app served at the
-site root, by GitHub Pages and Cloudflare Pages both while the game moves
-between them; the pygame build stays in the repo as the reference
-implementation and is not deployed (see **Deploy** below).
+site root by Cloudflare Pages; the pygame build stays in the repo as the
+reference implementation and is not deployed (see **Deploy** below).
 
 **M19 — Theme and colour scheme, apart.** M18 folded appearance into one theme,
 and folded one setting too many in with it: Light and Dark were the *same* look
@@ -457,10 +456,11 @@ injected at build time by the `socialMeta` plugin in `vite.config.ts`, because
 `og:image` and `og:url` have to be **absolute** (a crawler runs no JavaScript
 and will not resolve a relative one) and only the build knows where it is being
 published. That comes from **`VITE_SITE_URL`**, origin *and* base path with a
-trailing slash; both deploy workflows set it, and the default is the GitHub
-Pages project site so a local build still emits valid tags. The plugin is not
-applied to packaged builds: inside the macOS and iOS bundles there is no crawler
-to read the tags, and an absolute `https://` URL in the HTML is exactly what
+trailing slash; the deploy workflow sets it from the repository variable
+`SITE_URL`, and the default is the deployed host so a local build emits the
+same tags it will. The plugin is not applied to packaged builds: inside the
+macOS and iOS bundles there is no crawler to read the tags, and an absolute
+`https://` URL in the HTML is exactly what
 `scripts/check-offline-assets.mjs` exists to reject.
 
 The card itself is `public/og.png`, 1200×630, written by `npm run og`
@@ -1920,8 +1920,7 @@ plain `GROUP BY` with the pivot done in JS, because the dialect is a narrow
 ClickHouse subset and conditional aggregates are not worth betting a report on.
 
 **Read every count as a floor.** It is sampled; content blockers eat some posts;
-players can switch it off; and the GitHub Pages host has no Functions at all, so
-everything it serves posts into a 404. All four err the same way.
+and players can switch it off. All three err the same way.
 
 **The counter is opt-in per build**, via `VITE_ANALYTICS=1` → the
 `__APP_ANALYTICS__` define. Only one place this app runs has the Pages Function
@@ -1931,7 +1930,6 @@ to post to:
 | --- | --- | --- |
 | Cloudflare deploy | **yes** | the host that serves the Function |
 | e2e (`playwright.config.ts` sets it) | **yes** | `analytics.spec.ts` drives it |
-| GitHub Pages deploy | no | no Functions there |
 | `npm run dev` | no | your own clicks are not data |
 | packaged (macOS, iOS) | no | vetoed by `packaged`, whatever the flag says |
 
@@ -1972,24 +1970,21 @@ the port while `tests/unit/menu.test.ts` pins the web shape.
 ## Deploy
 
 CI (`.github/workflows/ci.yml`, `web` job) typechecks, unit-tests, builds and
-runs the e2e/visual suite. Two deploy workflows then publish this app — **it
-is the deployed game**; the pygbag build of the pygame version is no longer
-published (it is still buildable locally with `make web-package`).
+runs the e2e/visual suite. `deploy-cloudflare.yml` then publishes this app to
+Cloudflare Pages on every push to `master` — **it is the deployed game**; the
+pygbag build of the pygame version is no longer published (it is still
+buildable locally with `make web-package`).
 
-The two run side by side while the game moves off GitHub Pages, from the same
-commit, differing only in `VITE_BASE` — the serving path is baked into the
-bundle at build time (asset URLs, the PWA manifest, the service worker
-scope), so one artifact cannot serve both:
+It is served from the domain root, so the job sets no `VITE_BASE` and takes
+`vite.config.ts`'s default `"/"`. That path is baked into the bundle at build
+time — asset URLs, the PWA manifest, the service worker scope all derive from
+it — so a host serving the app from a subdirectory would need a build of its
+own rather than a copy of this one.
 
-| Workflow | Host | `VITE_BASE` |
-| --- | --- | --- |
-| `deploy-pages.yml` | GitHub Pages project site | `/hypersweeper/` |
-| `deploy-cloudflare.yml` | Cloudflare Pages, domain root | `/` (the default) |
-
-The Cloudflare job needs two repository secrets, `CLOUDFLARE_API_TOKEN` (a
-token with the *Cloudflare Pages: Edit* permission) and
-`CLOUDFLARE_ACCOUNT_ID`, and a Pages project that already exists — a direct-
-upload project named `hypersweeper` whose production branch is `master`
+The job needs two repository secrets, `CLOUDFLARE_API_TOKEN` (a token with the
+*Cloudflare Pages: Edit* permission) and `CLOUDFLARE_ACCOUNT_ID`, and a Pages
+project that already exists — a direct-upload project named `hypersweeper`
+whose production branch is `master`
 (`wrangler pages project create hypersweeper --production-branch=master`).
 `wrangler pages deploy` does not create one in CI.
 
@@ -2010,17 +2005,27 @@ report simply stays empty. If config-file bindings are not honoured for the
 project, add it in the dashboard for Production *and* Preview.
 
 Locally, `npm run dev` does not serve `/api/tally`; the post 404s and the game
-is unaffected, which is the same failure mode the GitHub Pages host has. To run
-the Function, `npm run build && npx wrangler pages dev` from `web/` — but note
+is unaffected — which is why no local build carries the counter. To run the
+Function, `npm run build && npx wrangler pages dev` from `web/` — but note
 Analytics Engine writes are a no-op in local dev, so verifying a write end to
-end takes a real deploy. When Pages is retired,
-deleting `deploy-pages.yml` is the whole change; nothing in the source
-hardcodes a base path. During the
-rewrite this app mounted under `/next/` instead, so `public/next/index.html`
-redirects that path to the root, carrying the board link's query and hash over
-and unregistering the service worker that was scoped there; `app.spec.ts` pins
-it. Visual baselines are only authoritative in the pinned CI environment
-(software WebGL / SwiftShader).
+end takes a real deploy.
+
+**The retired GitHub Pages deploy.** The game was published to the project site
+as well, under `/hypersweeper/`, while it moved between the two hosts. That
+workflow is gone; `redirect-pages.yml` now publishes
+`.github/pages-redirect/index.html` there instead — a static page that redirects
+to the Cloudflare site, so old links still land on the game. It is deliberately
+plain: no script, so a shared board link's query is dropped, and it does not
+clear the service worker the last app deploy registered at `/hypersweeper/sw.js`
+(the browser drops that registration itself once its update check for `sw.js`
+404s, so a returning visitor may see the cached old app one more time). Being
+static, it publishes on a change to itself rather than on every push.
+
+During the rewrite this app mounted under `/next/` instead, so
+`public/next/index.html` redirects that path to the root, carrying the board
+link's query and hash over and unregistering the service worker that was scoped
+there; `app.spec.ts` pins it. Visual baselines are only authoritative in the
+pinned CI environment (software WebGL / SwiftShader).
 
 ### The packaged builds (macOS, iOS)
 

@@ -3,7 +3,7 @@
 Classic minesweeper, but the board can be almost any surface and tiling —
 from a flat aperiodic Penrose mosaic to a Goldberg sphere or a Möbius strip.
 
-**Play in the browser:** <https://sirk0.github.io/hypersweeper/>
+**Play in the browser:** <https://hypersweeper.pages.dev/>
 (the TypeScript/WebGL app in [`web/`](web), deployed from master by GitHub
 Actions; installable, and it works offline once loaded)
 
