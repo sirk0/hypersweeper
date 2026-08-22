@@ -43,6 +43,13 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
+          # A blank secret here does not fail the run — it builds a malformed
+          # URL and Cloudflare answers with a cryptic "could not route"
+          # instead of naming the missing credential.
+          if [ -z "$CF_API_TOKEN" ] || [ -z "$CF_ACCOUNT_ID" ]; then
+            echo "CLOUDFLARE_API_TOKEN or CLOUDFLARE_ACCOUNT_ID is empty for this job run." >&2
+            exit 1
+          fi
           api="https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/pages/projects/hypersweeper/deployments"
 
           # Collect (branch, id) pairs first, across every page: deleting as we
