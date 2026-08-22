@@ -40,6 +40,19 @@ const packaged = process.env.VITE_PACKAGED === "1";
 // there by accident.
 const analytics = !packaged && process.env.VITE_ANALYTICS === "1";
 
+// VITE_NO_SW=1 keeps the service worker out of an otherwise ordinary web build.
+// The PR-preview deploy (.github/workflows/pr-preview.yml) sets it: every push
+// to a pull request lands on that PR's one fixed URL, and a root-scoped
+// precache there is a phone showing the push before last — the one failure mode
+// a preview must not have, since checking the change on the phone is the whole
+// point of it. `packaged` already implies this by dropping every plugin; this
+// is the narrower knob, and it deliberately leaves `socialMeta`, `tallyStub`
+// and `__APP_PACKAGED__` alone, so a preview is the deployed build minus the
+// worker rather than the offline-app build. With nothing registered, the
+// settings page's update row reports "running from source" — the branch
+// `checkForUpdates` was written for.
+const noServiceWorker = process.env.VITE_NO_SW === "1";
+
 // Where this build will be served from, origin *and* base path, with a trailing
 // slash — the one thing a bundle cannot work out for itself and a link preview
 // cannot do without. Open Graph and Twitter cards are read by crawlers that do
@@ -141,7 +154,10 @@ export default defineConfig({
   plugins: packaged ? [] : [
     socialMeta,
     tallyStub,
-    VitePWA({
+    // Dropped, and the web manifest with it, when VITE_NO_SW=1 — see the flag
+    // above. The other two plugins stay: a preview build is the deployed build
+    // minus the worker, not the packaged one.
+    ...(noServiceWorker ? [] : [VitePWA({
       registerType: "autoUpdate",
       includeAssets: ["favicon.svg", "apple-touch-icon.png"],
       manifest: {
@@ -172,7 +188,7 @@ export default defineConfig({
         // navigation fallback is ever widened.
         navigateFallbackDenylist: [/^\/api\//],
       },
-    }),
+    })]),
   ],
   build: {
     target: "es2022",

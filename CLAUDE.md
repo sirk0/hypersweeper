@@ -524,12 +524,22 @@ shows it downscaled by `UI_SCALE`. To preview what the user sees,
 
 The TypeScript/Three.js app lives in `web/` and shares its
 config and conformance oracle with the Python game through `data/*.json`
-(see AGENTS.md). It is **the deployed game** — one workflow,
-`deploy-cloudflare.yml`, publishes it to Cloudflare Pages at the site root
+(see AGENTS.md). It is **the deployed game** — `deploy-cloudflare.yml`
+publishes it to Cloudflare Pages at the site root on every push to `master`
 (see "Deploy" in `web/README.md`); the pygame build is the reference
 implementation and is not published. It used to be deployed to GitHub Pages
 as well, under `/hypersweeper/`; that host now serves a one-page redirect
-(`.github/pages-redirect/`, published by `redirect-pages.yml`). Commands (`npm run typecheck/test/build/screenshots`, Playwright
+(`.github/pages-redirect/`, published by `redirect-pages.yml`). Every pull request gets a **preview**
+of its own from `pr-preview.yml` — the same deploy under the Cloudflare
+branch `pr-<number>`, which serves it at
+`https://pr-<n>.hypersweeper.pages.dev` and is the whole reason a change can
+be checked on a phone rather than on a laptop with the branch checked out.
+A preview build carries no play counter (no `VITE_ANALYTICS`) and no service
+worker (`VITE_NO_SW=1`, the narrow flag beside `VITE_PACKAGED` in
+`vite.config.ts` — a PR reuses one URL across pushes, and a precache there
+means a phone showing the push before last). Closing the PR deletes it, with
+`pr-preview-sweep.yml` as the daily safety net; fork PRs get no preview at
+all, and "PR previews" in `web/README.md` says why that guard has to stay. Commands (`npm run typecheck/test/build/screenshots`, Playwright
 `e2e`) and — important when changing anything visual or interactive —
 **how to drive and screenshot the app headless, plus the gotchas that
 actually bite** (the `window.__ms` seam, flood-fill devouring sparse mine
