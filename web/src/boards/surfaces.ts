@@ -16,11 +16,17 @@
 // to one point and the seam closes.
 import {
   cid,
+  isAutomorphism,
+  isIdentity,
+  isInvolution,
   orientOutward,
   sharedVertexAdjacency,
+  SYMMETRY_IDS,
   type Board3D,
+  type BoardSymmetry,
   type CellId,
   type SurfaceClip,
+  type SymmetryId,
   type Vec3,
 } from "./core";
 import {
@@ -280,7 +286,11 @@ const CLIP_MIN_AREA = 1e-4;
 interface AssembleOpts {
   twoSided: boolean;
   radius: number | ((positions: Positions) => number);
-  cellCycle?: Map<CellId, CellId> | null;
+  /** Symmetries this builder *offers*; `assemble` keeps the ones that really
+   * are automorphisms of the adjacency it builds. Several may share an id (two
+   * candidate mirror axes, a translation and the glide that stands in for it
+   * when the plain one misses the lattice) — the first that survives wins. */
+  symmetries?: SymmetryCandidate[];
   clip?: SurfaceClip | null;
   // Per-cell "is this polygon vertex a real corner" mask, in polygon order —
   // see Board3D.cornerMask. Only the Archimedean/Laves wraps (surfaces built
@@ -297,7 +307,7 @@ function assemble(
   cells: Cells,
   positions: Positions,
   mineCount: number,
-  { twoSided, radius, cellCycle = null, clip = null, cornerMask = null }: AssembleOpts,
+  { twoSided, radius, symmetries = [], clip = null, cornerMask = null }: AssembleOpts,
 ): Board3D {
   const adjacency = sharedVertexAdjacency(cells);
   const polygons = new Map<CellId, Vec3[]>();
@@ -312,7 +322,234 @@ function assemble(
     }
   }
   const r = typeof radius === "function" ? radius(positions) : radius;
-  return { mode, polygons, adjacency, mineCount, radius: r, twoSided, cellCycle, clip, cornerMask: masks };
+  return {
+    mode,
+    polygons,
+    adjacency,
+    mineCount,
+    radius: r,
+    twoSided,
+    symmetries: keepSymmetries(adjacency, symmetries),
+    clip,
+    cornerMask: masks,
+  };
+}
+
+// -- board symmetries --------------------------------------------------------
+//
+// A wrapped board is a flat tiling glued to itself, so the motions of the plane
+// that survive the gluing permute its cells. Those that do are what the UI
+// offers as controls: they move the *contents* along the surface while the
+// geometry stays put, which is how a cell hidden behind the Klein bottle's neck
+// or down the inside of a donut is brought out where it can be played.
+//
+// Which motions survive is a question about the gluing, not about the tiling,
+// and the answers are not the obvious ones. A donut keeps both translations and
+// (where the tiling is not chiral) both mirrors. A Klein bottle keeps the ring
+// translation and the mirrors, but *not* the tube translation: crossing the ring
+// seam reverses the tube, so conjugating a tube step by it gives that step back
+// inverted, and only the half-tube step -- which is its own inverse -- descends.
+// An open surface has no translation across it at all, and only the reflection
+// in its own centre line, since any other would take the band off itself.
+//
+// So a builder offers candidates and the board measures them: `keepSymmetries`
+// throws out anything that is not an automorphism of the adjacency it just
+// built. Nothing here is asserted from the algebra above -- the algebra only
+// says which candidates are worth offering.
+
+/** A symmetry a builder offers, before the board has checked it. `build`
+ * returns null when the motion did not even land on the board's own cells, and
+ * is only called until one candidate for an id survives -- a mirror whose axis
+ * has to be searched for offers a handful, and the later ones are never walked.
+ */
+interface SymmetryCandidate {
+  id: SymmetryId;
+  build: () => Map<CellId, CellId> | null;
+}
+
+/** The candidates that really are symmetries, in `SYMMETRY_IDS` order and at
+ * most one per id.
+ *
+ * A **mirror must be its own inverse**. What a template offers under
+ * `mirror-tube` is sometimes a *glide* reflection — p4g (the snub square tiling
+ * and its Cairo dual) has no plain horizontal mirror, only a mirror composed
+ * with half a domain along the ring — and that is a different motion with a
+ * different undo. One button cannot honestly be both, so the glide is dropped
+ * rather than drawn as a reflection: those boards keep their two translations
+ * and no mirror across the tube. A vertical mirror is always an involution
+ * (`x -> axis - x` squares to the identity in the plane), so only this one is
+ * ever affected. */
+function keepSymmetries(
+  adjacency: Map<CellId, CellId[]>,
+  candidates: SymmetryCandidate[],
+): BoardSymmetry[] {
+  const kept: BoardSymmetry[] = [];
+  for (const id of SYMMETRY_IDS) {
+    for (const candidate of candidates) {
+      if (candidate.id !== id) continue;
+      const cycle = candidate.build();
+      // An identity is a real symmetry and a useless button: a two-cell tube's
+      // half turn, a mirror whose axis runs through every cell.
+      if (!cycle || isIdentity(cycle) || !isAutomorphism(adjacency, cycle)) continue;
+      const involution = isInvolution(cycle);
+      if (!involution && id.startsWith("mirror-")) continue; // a glide, see above
+      kept.push({ id, cycle, involution });
+      break;
+    }
+  }
+  return kept;
+}
+
+/** Sorted, joined vertex-key set -- a frozenset stand-in for matching a cell to
+ * its moved image. */
+function vertexSetKey(keys: string[]): string {
+  return [...keys].sort().join(";");
+}
+
+/** The cell permutation a permutation of the *vertex keys* induces, or null
+ * when it induces none: a cell whose moved vertex set is no cell of this board,
+ * or two cells landing on one. Adjacency here is "these two cells share a
+ * vertex key", so a vertex map that carries every cell onto a cell is an
+ * automorphism -- but the vertex map itself need not be one, which is why
+ * `keepSymmetries` measures the result rather than trusting it. */
+function cellsUnderVertexMap(
+  cells: Cells,
+  vertexMap: (key: string) => string,
+): Map<CellId, CellId> | null {
+  const byVertexSet = new Map<string, CellId>();
+  for (const [cell, keys] of cells) byVertexSet.set(vertexSetKey(keys), cell);
+  const moved = new Map<CellId, CellId>();
+  for (const [cell, keys] of cells) {
+    const target = byVertexSet.get(vertexSetKey(keys.map(vertexMap)));
+    if (target === undefined) return null;
+    moved.set(cell, target);
+  }
+  return moved;
+}
+
+/** A motion of a two-coordinate lattice (the regular wraps' vertex keys are
+ * `"a,b"`), or of the domain grid the Archimedean wraps key by. */
+type LatticeMotion = (a: number, b: number) => [number, number];
+type DomainMotion = (m: number, n: number, tag: string) => [number, number, string];
+
+/** Candidates for a board whose vertex keys are `"a,b"` lattice pairs: apply
+ * the motion, then the board's own seam canonicalization. */
+function latticeCandidates(
+  cells: Cells,
+  canonical: LatticeMotion,
+  motions: readonly (readonly [SymmetryId, LatticeMotion])[],
+): SymmetryCandidate[] {
+  return motions.map(([id, motion]) => ({
+    id,
+    build: () =>
+      cellsUnderVertexMap(cells, (key) => {
+        const cut = key.indexOf(",");
+        const [a, b] = motion(Number(key.slice(0, cut)), Number(key.slice(cut + 1)));
+        const [ca, cb] = canonical(a, b);
+        return `${ca},${cb}`;
+      }),
+  }));
+}
+
+/** The same for the Archimedean wraps, whose vertex keys are
+ * `"domainColumn,domainRow,tag"` and whose tag is itself an `"x,y"` pair. */
+function domainCandidates(
+  cells: Cells,
+  canonical: DomainMotion,
+  motions: readonly (readonly [SymmetryId, DomainMotion | null])[],
+): SymmetryCandidate[] {
+  return motions.map(([id, motion]) => ({
+    id,
+    build: () =>
+      motion === null
+        ? null
+        : cellsUnderVertexMap(cells, (key) => {
+            const parts = key.split(",");
+            const [m, n, tag] = motion(
+              Number(parts[0]),
+              Number(parts[1]),
+              parts.slice(2).join(","),
+            );
+            const c = canonical(m, n, tag);
+            return `${c[0]},${c[1]},${c[2]}`;
+          }),
+  }));
+}
+
+/** How far apart two template vertices may be and still be the same one. Tags
+ * are rounded to 1e-6 and a Laves dual's vertices are computed centroids of
+ * those, so a tiling is only symmetric to about that; the closest two genuinely
+ * different vertices in any template here are orders of magnitude further
+ * apart. Matches tilings.ts FLIP_TOL. */
+const MIRROR_TOL = 1e-4;
+
+/** Reflections of a template in a *vertical* line, as motions of the domain
+ * grid.
+ *
+ * `template` records only the horizontal mirror, which is the one the Möbius
+ * and Klein seams are glued through; the vertical one has to be looked for. A
+ * reflection `x -> axis - x` can only map the vertex set onto itself if it
+ * sends the first vertex to some vertex, so the axis is one of a short list of
+ * sums -- and reflecting about `axis` and about `axis + width` are the same
+ * motion of the wrapped board, so the list is all of it.
+ *
+ * Every axis that maps the vertices onto themselves is offered; whether it maps
+ * the *tiling* onto itself, and whether the seam gluing keeps it, are left to
+ * `keepSymmetries` to measure. */
+function templateXMirrors(t: ArchTemplate): DomainMotion[] {
+  const W = t.width;
+  const entries = [...t.verts];
+  const first = entries[0];
+  if (first === undefined) return [];
+  const found: DomainMotion[] = [];
+  const seen = new Set<string>();
+  for (const [, xy] of entries) {
+    const axis = first[1][0] + xy[0];
+    // tag -> its image, as the template's own (tag, domain offset) pair
+    const images = new Map<string, { tag: string; dm: number }>();
+    let complete = true;
+    for (const [tag, v] of entries) {
+      const x = axis - v[0];
+      const dm = Math.floor(x / W + 1e-5);
+      const rx = x - dm * W;
+      let image: string | null = null;
+      for (const [other, o] of entries) {
+        if (Math.abs(o[0] - rx) < MIRROR_TOL && Math.abs(o[1] - v[1]) < MIRROR_TOL) {
+          image = other;
+          break;
+        }
+      }
+      if (image === null) {
+        complete = false;
+        break;
+      }
+      images.set(tag, { tag: image, dm });
+    }
+    if (!complete) continue;
+    const signature = [...images].map(([k, v]) => `${k}>${v.tag}@${v.dm}`).join("|");
+    if (seen.has(signature)) continue;
+    seen.add(signature);
+    found.push((m, n, tag) => {
+      const image = images.get(tag)!;
+      return [-m + image.dm, n, image.tag];
+    });
+  }
+  return found;
+}
+
+/** The template's mirror as a motion of the domain grid: a reflection of the
+ * whole plane in the horizontal line `axis` domain rows up, `y -> axis*H - y`.
+ * `template` stores it as `y -> H - y` per vertex (tag -> tag', with the domain
+ * copy it lands in), which puts a vertex of copy `n` in copy `axis - 1 - n +
+ * dn`; the x half-period a glide mirror adds is already folded into `dm` and
+ * the image tag. Null for a chiral tiling, which has no mirror at all. */
+function templateMirror(t: ArchTemplate, axis: number): DomainMotion | null {
+  const mirror = t.mirror;
+  if (mirror === null || !Number.isInteger(axis)) return null;
+  return (m, n, tag) => {
+    const image = mirror.get(tag)!;
+    return [m + image.dm, axis - 1 - n + image.dn, image.tag];
+  };
 }
 
 // -- the donut ---------------------------------------------------------------
@@ -344,9 +581,22 @@ export function torusBoard(
       ]);
     }
   }
+  // A donut keeps every motion of the square lattice that its two periods do:
+  // both translations, and the two mirrors in the axes through the seams.
+  const symmetries = latticeCandidates(
+    cells,
+    (i, j) => [mod(i, ring), mod(j, tube)],
+    [
+      ["ring", (i, j) => [i + 1, j]],
+      ["tube", (i, j) => [i, j + 1]],
+      ["mirror-ring", (i, j) => [-i, j]],
+      ["mirror-tube", (i, j) => [i, -j]],
+    ],
+  );
   return assemble("torus", cells, positions, mineCount, {
     twoSided: false,
     radius: 1 + tubeRadius,
+    symmetries,
   });
 }
 
@@ -381,9 +631,23 @@ export function torusTriangleBoard(
       );
     }
   }
+  // Up and down triangles alternate along a row and up the rows alike, so the
+  // tiling's own translations are two lattice columns and two rows -- one of
+  // either takes an up triangle to a down one, which is no cell of the board.
+  const symmetries = latticeCandidates(
+    cells,
+    (kx, ky) => [mod(kx, ring), mod(ky, tube)],
+    [
+      ["ring", (kx, ky) => [kx + 2, ky]],
+      ["tube", (kx, ky) => [kx, ky + 2]],
+      ["mirror-ring", (kx, ky) => [-kx, ky]],
+      ["mirror-tube", (kx, ky) => [kx, -ky]],
+    ],
+  );
   return assemble("torustri", cells, positions, mineCount, {
     twoSided: false,
     radius: 1 + tubeRadius,
+    symmetries,
   });
 }
 
@@ -420,9 +684,23 @@ export function torusHexBoard(
       );
     }
   }
+  // Alternate rows of hexagons are offset half a column, so the tube
+  // translation is two rows (ky += 6) and the tube mirror is the one whose axis
+  // runs through a row of cell centres (ky = 2), not through ky = 0.
+  const symmetries = latticeCandidates(
+    cells,
+    (kx, ky) => [mod(kx, kxPeriod), mod(ky, kyPeriod)],
+    [
+      ["ring", (kx, ky) => [kx + 2, ky]],
+      ["tube", (kx, ky) => [kx, ky + 6]],
+      ["mirror-ring", (kx, ky) => [-kx, ky]],
+      ["mirror-tube", (kx, ky) => [kx, 4 - ky]],
+    ],
+  );
   return assemble("torushex", cells, positions, mineCount, {
     twoSided: false,
     radius: 1 + tubeRadius,
+    symmetries,
   });
 }
 
@@ -450,9 +728,22 @@ export function mobiusBoard(ring: number, widthCells: number, mineCount: number)
       cells.set(cid(i, j), [put(i, j), put(i + 1, j), put(i + 1, j + 1), put(i, j + 1)]);
     }
   }
+  // The band is open across, so nothing translates that way; the one
+  // reflection it has across itself is in its own centre line. Along the loop
+  // both a translation and a reflection survive the flipped seam.
+  const symmetries = latticeCandidates(
+    cells,
+    (i, j) => (mod(Math.floor(i / ring), 2) ? [mod(i, ring), widthCells - j] : [mod(i, ring), j]),
+    [
+      ["ring", (i, j) => [i + 1, j]],
+      ["mirror-ring", (i, j) => [-i, j]],
+      ["mirror-tube", (i, j) => [i, widthCells - j]],
+    ],
+  );
   return assemble("mobius", cells, positions, mineCount, {
     twoSided: true,
     radius: 1 + halfWidth,
+    symmetries,
   });
 }
 
@@ -492,9 +783,21 @@ export function mobiusTriangleBoard(
       );
     }
   }
+  const symmetries = latticeCandidates(
+    cells,
+    (kx, ky) => (mod(Math.floor(kx / ring), 2) ? [mod(kx, ring), rows - ky] : [mod(kx, ring), ky]),
+    [
+      ["ring", (kx, ky) => [kx + 2, ky]],
+      ["mirror-ring", (kx, ky) => [-kx, ky]],
+      // reversing y turns an up triangle into a down one, so the centre-line
+      // mirror lands on the board's own cells only for an even row count
+      ["mirror-tube", (kx, ky) => [kx, rows - ky]],
+    ],
+  );
   return assemble("mobiustri", cells, positions, mineCount, {
     twoSided: true,
     radius: 1 + halfWidth,
+    symmetries,
   });
 }
 
@@ -527,26 +830,36 @@ export function mobiusHexBoard(ring: number, rows: number, mineCount: number): B
       );
     }
   }
+  const symmetries = latticeCandidates(
+    cells,
+    (kx, ky) =>
+      mod(Math.floor(kx / kxPeriod), 2)
+        ? [mod(kx, kxPeriod), kyTop - ky]
+        : [mod(kx, kxPeriod), ky],
+    [
+      ["ring", (kx, ky) => [kx + 2, ky]],
+      ["mirror-ring", (kx, ky) => [-kx, ky]],
+      ["mirror-tube", (kx, ky) => [kx, kyTop - ky]],
+    ],
+  );
   return assemble("mobiushex", cells, positions, mineCount, {
     twoSided: true,
     radius: 1 + halfWidth,
+    symmetries,
   });
 }
 
 // -- the Klein bottle --------------------------------------------------------
 
-/** Sorted, joined vertex-key set — a frozenset stand-in for matching a cell to
- * its ring-shifted image. */
-function vertexSetKey(keys: string[]): string {
-  return [...keys].sort().join(";");
-}
-
 /** A Klein bottle tiled with `ring * tube` quadrilaterals, shaped as the
  * classic self-intersecting bottle. The cross-section (`tube`, must be even)
  * wraps straight; after a full loop round the ring the tube seam glues flipped
  * (`j -> tube/2 - j - 1`), so the surface is closed yet non-orientable. Carries
- * a `cellCycle` — the one-step ring translation — so the UI can scroll cell
- * contents past the self-intersection. */
+ * the ring translation, so the UI can move cell contents past the
+ * self-intersection, and the half-tube step, which brings the sheet inside the
+ * neck out. A whole-tube step is *not* among them: the seam reverses the tube,
+ * so conjugating one by the seam gives it back inverted (see the symmetry note
+ * above `keepSymmetries`). */
 export function kleinBoard(
   ring: number,
   tube: number,
@@ -578,21 +891,24 @@ export function kleinBoard(
   }
   const clip = kleinClip(cells, positions, kleinRecentre(positions), tubeScale);
 
-  // one step forward along the ring. A cell is indexed by its low-j corner, so
-  // at the seam the reflection maps [j, j+1] to [tube/2-j-2, tube/2-j-1] — the
-  // cell flip is one below the vertex flip used in key().
-  const cellCycle = new Map<CellId, CellId>();
-  for (let i = 0; i < ring; i++) {
-    for (let j = 0; j < tube; j++) {
-      const to =
-        i + 1 >= ring ? cid(0, ((half - j - 2) % tube + tube) % tube) : cid(i + 1, j);
-      cellCycle.set(cid(i, j), to);
-    }
-  }
+  // `key` only glues one loop; a motion may cross the seam any number of times,
+  // and the flip is an involution, so it is the parity of the loops that counts.
+  const canonical = (i: number, j: number): [number, number] =>
+    mod(Math.floor(i / ring), 2)
+      ? [mod(i, ring), mod(half - j - 1, tube)]
+      : [mod(i, ring), mod(j, tube)];
+  const symmetries = latticeCandidates(cells, canonical, [
+    ["ring", (i, j) => [i + 1, j]],
+    ["tube", (i, j) => [i, j + half]],
+    ["mirror-ring", (i, j) => [-i, j]],
+    // a tube mirror survives only in the two axes the seam's own flip fixes
+    ["mirror-tube", (i, j) => [i, half - 1 - j]],
+    ["mirror-tube", (i, j) => [i, tube - 1 - j]],
+  ]);
   return assemble("klein", cells, positions, mineCount, {
     twoSided: true,
     radius: maxRadius,
-    cellCycle,
+    symmetries,
     clip,
   });
 }
@@ -621,9 +937,8 @@ export function kleinTriangleBoard(
   const key = (kx: number, ky: number): [number, number] =>
     kx >= ring ? [kx - ring, mod(flip - ky, tube)] : [mod(kx, ring), mod(ky, tube)];
   const cells: Cells = new Map();
-  const cellVerts = new Map<CellId, [number, number][]>();
   const positions: Positions = new Map();
-  const put = (kx: number, ky: number): [string, [number, number]] => {
+  const put = (kx: number, ky: number): string => {
     const canon = key(kx, ky);
     const k = `${canon[0]},${canon[1]}`;
     if (!positions.has(k)) {
@@ -634,24 +949,38 @@ export function kleinTriangleBoard(
         kleinPoint(TWO_PI * canon[0] / ring, (TWO_PI * (canon[1] + 0.5)) / tube, tubeScale),
       );
     }
-    return [k, canon];
+    return k;
   };
   for (let r = 0; r < tube; r++) {
     for (let i = 0; i < ring; i++) {
-      const corners = triangleVertices(i, r, (r + i) % 2 === 0).map(([kx, ky]) => put(kx, ky));
-      cells.set(cid(r, i), corners.map(([k]) => k));
-      cellVerts.set(cid(r, i), corners.map(([, v]) => v));
+      cells.set(
+        cid(r, i),
+        triangleVertices(i, r, (r + i) % 2 === 0).map(([kx, ky]) => put(kx, ky)),
+      );
     }
   }
   const clip = kleinClip(cells, positions, kleinRecentre(positions), tubeScale);
 
-  // two lattice columns forward along the ring, matched by vertex set; kept
-  // only if it is a bijection over the cells (a graph automorphism)
-  const cellCycle = ringCycleByVertexSet(cells, cellVerts, key, 2);
+  const canonical = (kx: number, ky: number): [number, number] =>
+    mod(Math.floor(kx / ring), 2)
+      ? [mod(kx, ring), mod(flip - ky, tube)]
+      : [mod(kx, ring), mod(ky, tube)];
+  const symmetries = latticeCandidates(cells, canonical, [
+    // one lattice column moves the offset rows onto each other and is no
+    // symmetry of the triangular lattice; two columns is its ring translation
+    ["ring", (kx, ky) => [kx + 2, ky]],
+    // half the tube, and -- where that lands an up triangle on a down one --
+    // the glide that carries a column along with it
+    ["tube", (kx, ky) => [kx, ky + tube / 2]],
+    ["tube", (kx, ky) => [kx + 1, ky + tube / 2]],
+    ["mirror-ring", (kx, ky) => [-kx, ky]],
+    ["mirror-tube", (kx, ky) => [kx, flip - ky]],
+    ["mirror-tube", (kx, ky) => [kx, flip + tube / 2 - ky]],
+  ]);
   return assemble("kleintri", cells, positions, mineCount, {
     twoSided: true,
     radius: maxRadius,
-    cellCycle,
+    symmetries,
     clip,
   });
 }
@@ -673,9 +1002,8 @@ export function kleinHexBoard(
       ? [((kx - kxPeriod) % kxPeriod + kxPeriod) % kxPeriod, ((4 - ky) % kyPeriod + kyPeriod) % kyPeriod]
       : [((kx % kxPeriod) + kxPeriod) % kxPeriod, ((ky % kyPeriod) + kyPeriod) % kyPeriod];
   const cells: Cells = new Map();
-  const cellVerts = new Map<CellId, [number, number][]>();
   const positions: Positions = new Map();
-  const put = (kx: number, ky: number): [string, [number, number]] => {
+  const put = (kx: number, ky: number): string => {
     const canon = key(kx, ky);
     const k = `${canon[0]},${canon[1]}`;
     if (!positions.has(k)) {
@@ -690,60 +1018,40 @@ export function kleinHexBoard(
         ),
       );
     }
-    return [k, canon];
+    return k;
   };
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < ring; c++) {
       const kx = 2 * c + (r % 2) + 1;
       const ky = 3 * r + 2;
-      const keys: string[] = [];
-      const verts: [number, number][] = [];
-      for (const [ox, oy] of HEX_VERTEX_OFFSETS) {
-        const [k, canon] = put(kx + ox, ky + oy);
-        keys.push(k);
-        verts.push(canon);
-      }
-      cells.set(cid(r, c), keys);
-      cellVerts.set(cid(r, c), verts);
+      cells.set(
+        cid(r, c),
+        HEX_VERTEX_OFFSETS.map(([ox, oy]) => put(kx + ox, ky + oy)),
+      );
     }
   }
   const clip = kleinClip(cells, positions, kleinRecentre(positions), tubeScale);
 
-  // one column forward along the ring (kx += 2), matched by vertex set (an
-  // automorphism up to the seam's tube flip)
-  const cellCycle = ringCycleByVertexSet(cells, cellVerts, key, 2);
+  const canonical = (kx: number, ky: number): [number, number] =>
+    mod(Math.floor(kx / kxPeriod), 2)
+      ? [mod(kx, kxPeriod), mod(4 - ky, kyPeriod)]
+      : [mod(kx, kxPeriod), mod(ky, kyPeriod)];
+  const symmetries = latticeCandidates(cells, canonical, [
+    ["ring", (kx, ky) => [kx + 2, ky]],
+    // half the tube is rows/2 rows of hexagons, and alternate rows are offset
+    // half a column, so an odd half needs the glide
+    ["tube", (kx, ky) => [kx, ky + kyPeriod / 2]],
+    ["tube", (kx, ky) => [kx + 1, ky + kyPeriod / 2]],
+    ["mirror-ring", (kx, ky) => [-kx, ky]],
+    ["mirror-tube", (kx, ky) => [kx, 4 - ky]],
+    ["mirror-tube", (kx, ky) => [kx, 4 + kyPeriod / 2 - ky]],
+  ]);
   return assemble("kleinhex", cells, positions, mineCount, {
     twoSided: true,
     radius: maxRadius,
-    cellCycle,
+    symmetries,
     clip,
   });
-}
-
-/** Build the ring-translation cell cycle by matching each cell's forward-shifted
- * vertex set back to a generated cell. `shift` is the per-axis forward step in
- * the first lattice coordinate (1 for the unit grids, 2 for the hex column
- * lattice). Returns null when the shift is not a bijection over the cells. */
-function ringCycleByVertexSet(
-  cells: Cells,
-  cellVerts: Map<CellId, [number, number][]>,
-  key: (a: number, b: number) => [number, number],
-  shift = 1,
-): Map<CellId, CellId> | null {
-  const byVertexSet = new Map<string, CellId>();
-  for (const [cell, keys] of cells) byVertexSet.set(vertexSetKey(keys), cell);
-  const cellCycle = new Map<CellId, CellId>();
-  for (const [cell, verts] of cellVerts) {
-    const shifted = verts.map(([a, b]) => {
-      const [ca, cb] = key(a + shift, b);
-      return `${ca},${cb}`;
-    });
-    const target = byVertexSet.get(vertexSetKey(shifted));
-    if (target === undefined) return null;
-    cellCycle.set(cell, target);
-  }
-  if (new Set(cellCycle.values()).size !== cellCycle.size) return null;
-  return cellCycle;
 }
 
 // -- the cylinder ------------------------------------------------------------
@@ -767,9 +1075,21 @@ export function cylinderBoard(ring: number, rows: number, mineCount: number): Bo
       cells.set(cid(i, j), [put(i, j), put((i + 1) % ring, j), put((i + 1) % ring, j + 1), put(i, j + 1)]);
     }
   }
+  // Open at both ends: a turn about the axis and the two mirrors, but no
+  // translation along it.
+  const symmetries = latticeCandidates(
+    cells,
+    (i, j) => [mod(i, ring), j],
+    [
+      ["ring", (i, j) => [i + 1, j]],
+      ["mirror-ring", (i, j) => [-i, j]],
+      ["mirror-tube", (i, j) => [i, rows - j]],
+    ],
+  );
   return assemble("cylinder", cells, positions, mineCount, {
     twoSided: true,
     radius: Math.hypot(1, height / 2),
+    symmetries,
   });
 }
 
@@ -797,9 +1117,19 @@ export function cylinderTriangleBoard(ring: number, rows: number, mineCount: num
       );
     }
   }
+  const symmetries = latticeCandidates(
+    cells,
+    (kx, ky) => [mod(kx, ring), ky],
+    [
+      ["ring", (kx, ky) => [kx + 2, ky]],
+      ["mirror-ring", (kx, ky) => [-kx, ky]],
+      ["mirror-tube", (kx, ky) => [kx, rows - ky]],
+    ],
+  );
   return assemble("cyltri", cells, positions, mineCount, {
     twoSided: true,
     radius: Math.hypot(1, height / 2),
+    symmetries,
   });
 }
 
@@ -829,9 +1159,20 @@ export function cylinderHexBoard(ring: number, rows: number, mineCount: number):
       );
     }
   }
+  const symmetries = latticeCandidates(
+    cells,
+    (kx, ky) => [mod(kx, kxPeriod), ky],
+    [
+      ["ring", (kx, ky) => [kx + 2, ky]],
+      ["mirror-ring", (kx, ky) => [-kx, ky]],
+      // the band runs ky = 0 .. 3*rows + 1, so its centre line is that top
+      ["mirror-tube", (kx, ky) => [kx, 3 * rows + 1 - ky]],
+    ],
+  );
   return assemble("cylhex", cells, positions, mineCount, {
     twoSided: true,
     radius: Math.hypot(1, height / 2),
+    symmetries,
   });
 }
 
@@ -949,9 +1290,22 @@ export function archTorusBoard(
     }
   }
   straightenPositions(t, cells, positions, (m, n, tag) => `${mod(m, nx)},${mod(n, ny)},${tag}`);
+  // Both domain translations, and both of the tiling's mirrors where it has
+  // them (a chiral tiling has neither).
+  const symmetries = domainCandidates(
+    cells,
+    (m, n, tag) => [mod(m, nx), mod(n, ny), tag],
+    [
+      ["ring", (m, n, tag) => [m + 1, n, tag]],
+      ["tube", (m, n, tag) => [m, n + 1, tag]],
+      ["mirror-tube", templateMirror(t, 0)],
+      ...templateXMirrors(t).map((m) => ["mirror-ring", m] as const),
+    ],
+  );
   return assemble("torus" + tiling, cells, positions, mineCount, {
     twoSided: false,
     radius: 1 + tubeRadius,
+    symmetries,
     cornerMask,
   });
 }
@@ -1034,9 +1388,25 @@ export function archCylinderBoard(
     }
   }
   straightenPositions(t, cells, positions, (m, n, tag) => `${mod(m, ring)},${n},${tag}`);
+  // The strip's own centre line is the only horizontal axis it can be mirrored
+  // in, and it lands on the domain grid only when the reflection y -> 2*middle
+  // - y is a whole number of domain rows. Where the strip's rims match through
+  // a *half turn* instead (a chiral tiling has no mirror at all, which is how
+  // the snubs wrap a cylinder), there is no mirror here either.
+  const mirrorAxis = (2 * middle) / H;
+  const symmetries = domainCandidates(
+    cells,
+    (m, n, tag) => [mod(m, ring), n, tag],
+    [
+      ["ring", (m, n, tag) => [m + 1, n, tag]],
+      ["mirror-tube", templateMirror(t, Math.round(mirrorAxis * 1e6) / 1e6)],
+      ...templateXMirrors(t).map((m) => ["mirror-ring", m] as const),
+    ],
+  );
   return assemble("cyl" + tiling, cells, positions, mineCount, {
     twoSided: true,
     radius: maxRadius,
+    symmetries,
     cornerMask,
   });
 }
@@ -1149,9 +1519,17 @@ export function archMobiusBoard(
     const c = canonical(m, n, tag);
     return `${c[0]},${c[1]},${c[2]}`;
   });
+  // `flipped` is this same mirror with the seam's half-loop x-shift on top;
+  // without that shift it is the band's own centre-line reflection.
+  const symmetries = domainCandidates(cells, canonical, [
+    ["ring", (m, n, tag) => [m + 1, n, tag]],
+    ["mirror-tube", templateMirror(t, seam)],
+    ...templateXMirrors(t).map((m) => ["mirror-ring", m] as const),
+  ]);
   return assemble("mobius" + tiling, cells, positions, mineCount, {
     twoSided: true,
     radius: maxRadius,
+    symmetries,
     cornerMask,
   });
 }
@@ -1159,7 +1537,8 @@ export function archMobiusBoard(
 /** An Archimedean tiling wrapped onto the Klein bottle: `nx` domain copies
  * around the ring, `ny` around the tube. The tube wraps straight; the ring seam
  * glues the tube flipped through `template.mirror`, so the surface is closed yet
- * non-orientable. Carries a `cellCycle` — one domain forward along the ring. */
+ * non-orientable. Carries one domain forward along the ring, the half-tube step
+ * (the whole one does not survive the seam) and the tube mirror. */
 export function archKleinBoard(
   tiling: string,
   nx: number,
@@ -1214,17 +1593,14 @@ export function archKleinBoard(
   }
   const cells = new Map<CellId, string[]>();
   const positions = new Map<string, Vec3>();
-  const cellCanon = new Map<CellId, [number, number, string][]>();
   const cornerMask = new Map<CellId, boolean[]>();
   for (let m = 0; m < q + 1; m++) {
     for (let n = 0; n < ny; n++) {
       for (const { name, refs, real } of t.cells) {
         const c = centroidsX.get(name)! + m * W;
         if (!(-1e-9 <= c && c < length - 1e-9)) continue;
-        const canon: [number, number, string][] = [];
         const keys = refs.map((r) => {
           const cc = canonical(m + r.dm, n + r.dn, r.tag);
-          canon.push(cc);
           const ks = `${cc[0]},${cc[1]},${cc[2]}`;
           if (!positions.has(ks)) positions.set(ks, point(cc[0], cc[1], cc[2]));
           return ks;
@@ -1234,7 +1610,6 @@ export function archKleinBoard(
         }
         const key = cid(m, n, name);
         cells.set(key, keys);
-        cellCanon.set(key, canon);
         cornerMask.set(key, real);
       }
     }
@@ -1245,24 +1620,21 @@ export function archKleinBoard(
   });
   const clip = kleinClip(cells, positions, kleinRecentre(positions), tubeScale);
 
-  // one domain forward along the ring, matched by vertex set: a graph
-  // automorphism (the seam flip carries cells to their mirror partners)
-  const byVertexSet = new Map<string, CellId>();
-  for (const [cell, keys] of cells) byVertexSet.set(vertexSetKey(keys), cell);
-  const cellCycle = new Map<CellId, CellId>();
-  for (const [cell, canon] of cellCanon) {
-    const shifted = canon.map((v) => {
-      const cc = canonical(v[0] + 1, v[1], v[2]);
-      return `${cc[0]},${cc[1]},${cc[2]}`;
-    });
-    const target = byVertexSet.get(vertexSetKey(shifted));
-    if (target === undefined) throw new Error(`klein cell cycle incomplete for ${tiling}`);
-    cellCycle.set(cell, target);
-  }
+  const symmetries = domainCandidates(cells, canonical, [
+    // one domain forward along the ring: the seam flip carries the cells it
+    // crosses to their mirror partners
+    ["ring", (m, n, tag) => [m + 1, n, tag]],
+    ["tube", (m, n, tag) => [m, n + ny / 2, tag]],
+    ["mirror-tube", templateMirror(t, 0)],
+    ["mirror-tube", templateMirror(t, ny / 2)],
+    ...templateXMirrors(t).map((m) => ["mirror-ring", m] as const),
+  ]);
+  const ring = symmetries.find((c) => c.id === "ring");
+  if (!ring?.build()) throw new Error(`klein ring translation incomplete for ${tiling}`);
   return assemble("klein" + tiling, cells, positions, mineCount, {
     twoSided: true,
     radius: maxRadius,
-    cellCycle,
+    symmetries,
     clip,
     cornerMask,
   });

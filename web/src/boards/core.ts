@@ -58,6 +58,87 @@ export interface SurfaceClip {
   occluder: Tri[];
 }
 
+/** The four board symmetries the UI offers, in the order their controls are
+ * drawn. A wrapped surface has two directions — round the **ring** (the loop
+ * through the hole) and round the **tube** (the cross-section) — and each can
+ * carry a translation, a reflection, or neither. */
+export const SYMMETRY_IDS = ["ring", "tube", "mirror-ring", "mirror-tube"] as const;
+
+export type SymmetryId = (typeof SYMMETRY_IDS)[number];
+
+/** One symmetry of a board: a permutation of its cells that preserves
+ * adjacency, so the contents can be moved along it and every number still
+ * counts the mines around it.
+ *
+ * It moves *contents*, never geometry — the surface stays exactly where it is
+ * drawn and the game underneath is untouched, which is what lets a board carry
+ * one mid-game. That is the whole point on a surface part of which cannot be
+ * brought into view by turning it: the Klein bottle's neck hides the sheet it
+ * passes through, and a donut's inner wall is only ever glimpsed through the
+ * hole. Stepping the contents round the tube brings the inside out.
+ *
+ * `involution` is measured, not declared: a reflection is its own inverse, so
+ * it gets one button rather than a back/forward pair. */
+export interface BoardSymmetry {
+  id: SymmetryId;
+  /** cell -> the cell its contents move to, one step forward. */
+  cycle: Map<CellId, CellId>;
+  /** Whether applying it twice is the identity (a reflection, or a half turn
+   * round a tube of exactly two cells). */
+  involution: boolean;
+}
+
+/** Whether `cycle` really is an automorphism of `adjacency`: a bijection over
+ * the same cells that carries neighbours to neighbours. Every candidate
+ * symmetry is put through this before a board keeps it — a lattice motion that
+ * looks like a symmetry of the flat tiling need not survive the seam gluing (a
+ * Klein bottle's tube translation is the standard example: conjugating it by
+ * the ring seam inverts it, so only the *half*-tube step descends), and a
+ * permutation that is not an automorphism would silently deal a board wrong
+ * numbers. */
+export function isAutomorphism(
+  adjacency: Map<CellId, CellId[]>,
+  cycle: Map<CellId, CellId>,
+): boolean {
+  if (cycle.size !== adjacency.size) return false;
+  const images = new Set<CellId>();
+  for (const [cell, image] of cycle) {
+    if (!adjacency.has(cell) || !adjacency.has(image)) return false;
+    images.add(image);
+  }
+  if (images.size !== cycle.size) return false;
+  for (const [cell, neighbours] of adjacency) {
+    const there = new Set(adjacency.get(cycle.get(cell)!)!);
+    if (there.size !== neighbours.length) return false;
+    for (const n of neighbours) if (!there.has(cycle.get(n)!)) return false;
+  }
+  return true;
+}
+
+/** Whether every cell comes back to itself after two steps. */
+export function isInvolution(cycle: Map<CellId, CellId>): boolean {
+  for (const [cell, image] of cycle) if (cycle.get(image) !== cell) return false;
+  return true;
+}
+
+/** Whether the permutation moves nothing (a candidate worth no button). */
+export function isIdentity(cycle: Map<CellId, CellId>): boolean {
+  for (const [cell, image] of cycle) if (cell !== image) return false;
+  return true;
+}
+
+export function invertCycle(cycle: Map<CellId, CellId>): Map<CellId, CellId> {
+  const out = new Map<CellId, CellId>();
+  for (const [from, to] of cycle) out.set(to, from);
+  return out;
+}
+
+/** A board's symmetry by id, or null when it has none of that kind. */
+export function symmetryOf(board: AnyBoard, id: SymmetryId): BoardSymmetry | null {
+  if (!isBoard3D(board)) return null;
+  return board.symmetries.find((s) => s.id === id) ?? null;
+}
+
 export interface Board3D {
   mode: string;
   polygons: Map<CellId, Vec3[]>; // vertices on the surface, origin-centered
@@ -65,9 +146,11 @@ export interface Board3D {
   mineCount: number;
   radius: number; // max vertex distance from the origin
   twoSided: boolean; // open/non-orientable surfaces show both sides
-  // One-step ring translation (a graph automorphism); when set, the UI lets
-  // the player scroll the cell contents along it (Klein bottle, M3+).
-  cellCycle: Map<CellId, CellId> | null;
+  // The symmetries the UI offers as controls, in SYMMETRY_IDS order. Every one
+  // is an automorphism of `adjacency` (checked at build time, see
+  // isAutomorphism); flat boards and the solids carry none. Empty for
+  // everything but the four flat manifolds.
+  symmetries: BoardSymmetry[];
   // Set on a self-intersecting immersion (the Klein bottle); see SurfaceClip.
   clip: SurfaceClip | null;
   // Which of each cell's polygon vertices are real corners rather than

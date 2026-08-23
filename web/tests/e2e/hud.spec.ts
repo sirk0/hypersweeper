@@ -123,7 +123,7 @@ test.describe("game header", () => {
     expect((smiley.left + smiley.right) / 2).toBeCloseTo(390 / 2, 1);
   });
 
-  test("the Klein scroll chevrons sit on the board bar, not in the header", async ({
+  test("the symmetry controls sit on the board bar, not in the header", async ({
     page,
   }) => {
     await page.setViewportSize({ width: 320, height: 568 });
@@ -134,12 +134,12 @@ test.describe("game header", () => {
     // control, so the two rows really are two rows.
     const header = await headerBoxes(page);
     const headerBottom = Math.max(...header.map((b) => b.bottom));
-    for (const slot of ["klein-scroll-back", "klein-scroll-fwd"]) {
+    for (const slot of ["symmetry-ring-back", "symmetry-ring-fwd", "symmetry-tube-fwd"]) {
       const btn = page.locator(`.board-caption [data-slot="${slot}"]`);
       await expect(btn).toBeVisible();
       expect((await btn.boundingBox())!.y).toBeGreaterThanOrEqual(headerBottom);
     }
-    await expect(page.locator(`.hud [data-slot="klein-scroll-back"]`)).toHaveCount(0);
+    await expect(page.locator(`.hud [data-slot="symmetry-ring-back"]`)).toHaveCount(0);
 
     // The caption names the board, and nothing overflows the phone. Matched
     // by prefix, not exactly: a board the calibration grades as harder than
@@ -231,7 +231,7 @@ test.describe("game header", () => {
     await expect(page.locator('.menu-entry[data-mode="klein"]')).toBeVisible();
   });
 
-  test("a board with no cycle shows its name and no board-bar controls", async ({
+  test("a board with no symmetries shows its name and no board-bar controls", async ({
     page,
   }) => {
     await page.setViewportSize({ width: 390, height: 844 });
@@ -239,6 +239,8 @@ test.describe("game header", () => {
     await expect(page.locator("body[data-ready]")).toBeVisible();
 
     await expect(page.locator(".board-caption-name")).toHaveText("Hexagons - hexagonal board");
-    await expect(page.locator('.board-caption [data-slot="klein-scroll-fwd"]')).toBeHidden();
+    for (const slot of ["symmetry-ring-fwd", "symmetry-tube-fwd", "symmetry-mirror-tube-fwd"]) {
+      await expect(page.locator(`.board-caption [data-slot="${slot}"]`)).toBeHidden();
+    }
   });
 });

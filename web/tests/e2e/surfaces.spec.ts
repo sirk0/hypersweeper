@@ -1,8 +1,8 @@
 import { expect, test } from "@playwright/test";
 
-// M3: the wrapped surfaces — the Flat-manifolds menu drill-down and the Klein
-// bottle's cell-cycle scroll (a view-layer permutation that walks cell contents
-// past the self-intersection while the game state and geometry stay put).
+// M3: the wrapped surfaces — the Flat-manifolds menu drill-down and the board
+// symmetries (view-layer permutations that walk cell contents round the ring or
+// round the tube while the game state and the geometry stay put).
 
 test.describe("M3 surfaces", () => {
   test.beforeEach(async ({ page }) => {
@@ -90,15 +90,77 @@ test.describe("M3 surfaces", () => {
     expect(moved, "wheel scroll did not move the cell").toBe(true);
   });
 
-  test("a wrapped board has no cell cycle unless it is a Klein bottle", async ({ page }) => {
+  test("each surface shows the controls its own gluing leaves it", async ({ page }) => {
+    // A donut wraps both ways, so it steps round the ring and round the tube; a
+    // cylinder is open across, so it has no tube step at all; a Klein bottle's
+    // seam reverses the tube, so its tube step is a half turn and its own undo,
+    // and it gets one button rather than a pair.
+    const shown = async () =>
+      page.$$eval(".board-caption .board-bar-btn", (nodes) =>
+        nodes
+          .filter((n) => !(n as HTMLElement).hidden)
+          .map((n) => (n as HTMLElement).dataset["slot"]),
+      );
+
     await page.goto("/?mode=torus&difficulty=easy&seed=1");
     await expect(page.locator("body[data-ready]")).toBeVisible();
-    // The two Klein scroll controls are hidden on non-Klein surfaces.
-    await expect(page.locator('.hud-btn[data-slot="klein-scroll-fwd"]')).toBeHidden();
+    expect(await shown()).toEqual([
+      "symmetry-ring-back",
+      "symmetry-ring-fwd",
+      "symmetry-tube-back",
+      "symmetry-tube-fwd",
+      "symmetry-mirror-ring-fwd",
+      "symmetry-mirror-tube-fwd",
+    ]);
+
+    await page.goto("/?mode=cylinder&difficulty=easy&seed=1");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    expect(await shown()).toEqual([
+      "symmetry-ring-back",
+      "symmetry-ring-fwd",
+      "symmetry-mirror-ring-fwd",
+      "symmetry-mirror-tube-fwd",
+    ]);
+
     await page.goto("/?mode=klein&difficulty=easy&seed=1");
     await expect(page.locator("body[data-ready]")).toBeVisible();
-    await expect(page.locator('.hud-btn[data-slot="klein-scroll-back"]')).toBeVisible();
-    await expect(page.locator('.hud-btn[data-slot="klein-scroll-fwd"]')).toBeVisible();
+    expect(await shown()).toEqual([
+      "symmetry-ring-back",
+      "symmetry-ring-fwd",
+      "symmetry-tube-fwd",
+      "symmetry-mirror-ring-fwd",
+      "symmetry-mirror-tube-fwd",
+    ]);
+
+    // and a board with no symmetry at all shows none of them
+    await page.goto("/?mode=hexhex&difficulty=easy&seed=1");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    expect(await shown()).toEqual([]);
+  });
+
+  test("the tube control moves a cell to the far side of the donut", async ({ page }) => {
+    // The reason the pair exists: a donut's inner wall is only ever glimpsed
+    // through the hole, and no amount of turning the board brings it round.
+    // Rolling the contents round the tube does.
+    await page.goto("/?mode=torus&difficulty=easy&seed=1");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    const moved = await page.evaluate(() => {
+      const ms = window.__ms!;
+      const cell = ms.cells().find((c) => ms.cellScreenXY(c) != null)!;
+      const before = ms.cellScreenXY(cell)!;
+      ms.scroll(1, "tube");
+      const after = ms.cellScreenXY(cell);
+      return {
+        gone: after == null,
+        distance: after ? Math.hypot(after.x - before.x, after.y - before.y) : Infinity,
+        state: ms.state(),
+      };
+    });
+    // it either turned to the hidden inside or landed somewhere visibly else
+    expect(moved.gone || moved.distance > 3).toBe(true);
+    // and, like the ring step, it is a pure view permutation
+    expect(moved.state.status).toBe("playing");
+    expect(moved.state.revealed).toBe(0);
   });
 
   // The reported bug: on a scrolled Klein board a tap did nothing, while a flag

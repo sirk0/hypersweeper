@@ -201,7 +201,7 @@ export function convexBoard3d(
     mineCount,
     radius,
     twoSided: false,
-    cellCycle: null,
+    symmetries: [],
     clip: null,
     cornerMask: null,
   };
@@ -973,7 +973,7 @@ function polycubeSurface(
     mineCount,
     radius,
     twoSided: false,
-    cellCycle: null,
+    symmetries: [],
     clip: null,
     cornerMask: null,
   };
@@ -1201,7 +1201,7 @@ export function tetrahedronFrameBoard(
     mineCount,
     radius,
     twoSided: false,
-    cellCycle: null,
+    symmetries: [],
     clip: null,
     cornerMask: null,
   };

@@ -128,10 +128,12 @@ describe("solids", () => {
     expect(() => steppedBipyramidBoard(4, 1, 5)).toThrow();
   });
 
-  it("solids are closed and one-sided with no cell cycle", () => {
+  it("solids are closed and one-sided with no symmetry controls", () => {
+    // A solid is fully seen by turning it, so it gets none: the controls exist
+    // for the surfaces a drag cannot bring round (see boards/core.ts).
     for (const board of [sphereBoard(7), cubeBoard(4, 12)]) {
       expect(board.twoSided).toBe(false);
-      expect(board.cellCycle).toBeNull();
+      expect(board.symmetries).toEqual([]);
     }
   });
 });

@@ -8,7 +8,7 @@ import {
   soundVolume,
   unlockAudio,
 } from "./audio/sound";
-import { isBoard3D, type CellId } from "./boards/core";
+import { isBoard3D, type CellId, type SymmetryId } from "./boards/core";
 import { fairnessOf } from "./boards/fairness";
 import { setHapticsEnabled } from "./haptics";
 import { boardLinkQuery, parseBoardLink } from "./link";
@@ -22,7 +22,7 @@ import {
 } from "./render/renderer";
 import { bestTimes, recordTime, type ScoreEntry } from "./leaderboard";
 import { BoardInfo } from "./ui/boardInfo";
-import { Hud } from "./ui/hud";
+import { boardConditions, Hud } from "./ui/hud";
 import { Menu } from "./ui/menu";
 import { openScoreDialog, type ScoreDialogHandle } from "./ui/scoreDialog";
 import type { SettingsHost } from "./ui/settings";
@@ -148,9 +148,10 @@ class App {
         this.renderer.zoom > 1,
       onPan: (dx, dy) => this.pan(dx, dy),
       onZoom: (factor, x, y) => this.zoom(factor, x, y),
-      scrolls: () =>
-        this.screen === "game" && (this.session?.hasCellCycle ?? false),
-      onScroll: (direction) => this.scroll(direction),
+      // The wheel walks the ring; with shift held it rolls round the tube, on
+      // the boards that have one.
+      scrolls: (id) => this.screen === "game" && (this.session?.has(id) ?? false),
+      onScroll: (id, direction) => this.move(id, direction),
     });
     // The board has its own bounded zoom, so the browser's page zoom is only
     // ever a trap here (see blockBrowserZoom).
@@ -395,7 +396,7 @@ class App {
     this.paintTheme(); // the page picks up this board's tiling
     this.menu.hide();
     this.hud.root.hidden = false;
-    this.boardInfo.setBoard(mode, difficulty, this.session.hasCellCycle);
+    this.boardInfo.setBoard(mode, difficulty, boardConditions(this.session.symmetries));
     // The first board this browser ever opens gets the gesture hint, once. It
     // is stored before it is shown, so a reload mid-hint does not re-earn it.
     this.boardInfo.dismissHint();
@@ -437,7 +438,7 @@ class App {
         this.boardInfo.setBoard(
           this.session.mode,
           this.session.difficulty,
-          this.session.hasCellCycle,
+          boardConditions(this.session.symmetries),
         );
       }
       this.onResize();
@@ -539,10 +540,11 @@ class App {
       this.hud.setState({ flagMode: this.flagMode });
     } else if (action === "restart" && this.session) {
       this.startGame(this.session.mode, this.session.difficulty);
-    } else if (action === "klein-scroll-back") {
-      this.scroll(-1);
-    } else if (action === "klein-scroll-fwd") {
-      this.scroll(1);
+    } else if (action.startsWith("symmetry:")) {
+      // `symmetry:<id>:<direction>` — one step along one of the board's own
+      // symmetries; see data/ui/screens.json boardBar.
+      const [, id, direction] = action.split(":");
+      this.move(id as SymmetryId, Number(direction));
     } else if (action === "share") {
       void this.shareCurrentBoard();
     } else if (action === "help") {
@@ -612,11 +614,11 @@ class App {
     this.renderer.panBy(dxPx, dyPx);
   }
 
-  /** Walk the Klein cell cycle one step (view-layer permutation); no-op on
-   * boards without one. */
-  private scroll(direction: number): void {
+  /** Move the board's contents one step along one of its symmetries (a
+   * view-layer permutation); no-op on boards without that one. */
+  private move(id: SymmetryId, direction: number): void {
     if (this.screen !== "game") return;
-    if (this.session?.scroll(direction)) {
+    if (this.session?.move(id, direction)) {
       this.renderer.markDirty();
     }
   }
@@ -636,10 +638,14 @@ class App {
   }
 
   private onKey3d(e: KeyboardEvent): void {
-    // Bracket keys walk the Klein cell cycle (matching the wheel / scroll
-    // arrows); arrows rotate the board.
-    if (e.key === "[") this.scroll(-1);
-    else if (e.key === "]") this.scroll(1);
+    // Brackets step the contents round the ring (matching the wheel and the
+    // board bar's chevrons) and comma/period round the tube; arrow keys rotate
+    // the board. The two reflections are on the board bar only — there is no
+    // key left that reads as one.
+    if (e.key === "[") this.move("ring", -1);
+    else if (e.key === "]") this.move("ring", 1);
+    else if (e.key === ",") this.move("tube", -1);
+    else if (e.key === ".") this.move("tube", 1);
     else {
       const step = KEY_ROTATE_STEP;
       if (e.key === "ArrowLeft") this.rotate(-step, 0);
@@ -767,7 +773,7 @@ class App {
       elapsedSeconds: s.elapsedSeconds,
       status: s.status,
       flagMode: this.flagMode,
-      hasCellCycle: this.session.hasCellCycle,
+      conditions: boardConditions(this.session.symmetries),
     });
   }
 
@@ -778,8 +784,9 @@ class App {
   private cellScreenXY(cell: CellId): { x: number; y: number } | null {
     if (!this.session) return null;
     const mesh = this.session.mesh;
-    // A game cell's contents are painted on its (possibly scrolled) geometric
-    // face; anchor there so the reported position follows the Klein scroll.
+    // A game cell's contents are painted on its (possibly moved) geometric
+    // face; anchor there so the reported position follows the symmetry
+    // controls.
     const anchor = mesh.cellAnchor(this.session.geomFor(cell));
     if (!anchor) return null;
     mesh.updateWorldMatrix(true, false);
@@ -802,7 +809,8 @@ class App {
   }
 
   /** The game cell shown at a point in client coordinates: the same raycast a
-   * tap runs, then the face -> game cell mapping the scroll permutes. */
+   * tap runs, then the face -> game cell mapping the symmetry controls
+   * permute. */
   private cellAtScreenXY(x: number, y: number): CellId | null {
     if (!this.session) return null;
     const r = this.canvas.getBoundingClientRect();
@@ -834,7 +842,7 @@ class App {
       cellState: (cell) => this.session?.game.cellState(cell) ?? null,
       zoom: () => this.renderer.zoom,
       zoomBy: (factor, x, y) => this.zoom(factor, x, y),
-      scroll: (direction) => this.scroll(direction),
+      scroll: (direction, id) => this.move(id ?? "ring", direction),
       animations: (enabled) => {
         this.animationsEnabled = enabled;
         this.session?.mesh.setAnimationsEnabled(enabled);

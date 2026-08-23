@@ -492,14 +492,17 @@ did before, and the menu's Flat and 3D rows each open a *random* board — so a
 player could be dropped on a truncated icosahedron with no way to find out what
 it was. It is also what makes a screenshot of the game say what it is.
 
-That row is also where the **Klein scroll chevrons** live, rather than in the
+That row is also where the **board-symmetry controls** live, rather than in the
 header. The header holds two slots a side — back and flag-mode, how-to-play and
 share — around the centred counter/smiley/counter block, and seven controls is
-what one row holds at 320px. The chevrons belong to the *board* rather than to
-the game, they appear only on the one board that already has the most to fit,
-and putting them back in the header wraps that row on exactly that board.
-`tests/e2e/hud.spec.ts` pins all of this. They are declared in
-`data/ui/screens.json` under `hud.boardBar`, beside the header's own clusters.
+what one row holds at 320px. These belong to the *board* rather than to the
+game, a board can carry six or seven of them at once, and putting them in the
+header would wrap that row on exactly the boards with the most to fit. They are
+declared in `data/ui/screens.json` under `hud.boardBar`, beside the header's own
+clusters, and the caption row wraps rather than shrinking them below a touch
+size. `tests/e2e/hud.spec.ts` pins all of this.
+
+See **Board symmetries** below for what they do and which boards have which.
 
 The **first-run hint** is the app's only onboarding: one dismissible line over
 the first board this browser ever opens, saying how to open a cell and how to
@@ -872,6 +875,95 @@ in two renderers. Four things to know before adding or retuning one:
 Cell styles are **not** in `data/ui/screens.json`: they are geometry for this
 renderer, with no pygame counterpart for the shared config to keep in step. The
 themes that name them are not there either, for the same reason — see below.
+
+## Board symmetries (`src/boards/core.ts`, `src/boards/surfaces.ts`)
+
+A wrapped board is a flat tiling glued to itself, so the motions of the plane
+that survive the gluing permute its cells. Those are the board's **symmetries**,
+and each one the UI offers is a button on the caption row: the contents slide
+along it while the geometry stays exactly where it is drawn, and the game never
+notices, because a symmetry is by definition an automorphism of the adjacency —
+every number still counts the mines beside it.
+
+This began as the Klein bottle's scroll: the bottle's neck passes through its
+own belly, so a few cells are hidden behind it and no amount of turning the
+board brings them out. It generalises because the same is true elsewhere. **A
+donut's inner wall** is only ever glimpsed through the hole; a cylinder's inside
+only at a shallow angle through its ends. Rolling the contents round the tube
+brings them round the outside instead. The solids are the boards that get
+*none*: a drag turns them and every face comes past, so permuting the contents
+would only cost the player their place. Flat boards get none for the plainer
+reason that nothing on them is hidden at all.
+
+### What survives the gluing is not what you would guess
+
+Four are offered, `SYMMETRY_IDS` in `boards/core.ts`: a step round the **ring**
+(the loop through the hole), a step round the **tube** (the cross-section), and
+a reflection in each. Which of them a surface keeps is a question about the seam,
+not about the tiling:
+
+- A **donut** keeps all four (where the tiling is not chiral): both translations
+  commute with both gluings, and both mirrors do.
+- A **Klein bottle** keeps the ring step and both mirrors, but **not** the tube
+  step. Crossing the ring seam reverses the tube, so conjugating a tube
+  translation by it gives that translation back *inverted* — it does not
+  descend. The **half**-tube step does, because it is its own inverse; that is
+  the one on the board, and it is exactly the move that swaps the sheet inside
+  the neck for the one outside it. Where half the tube is an odd number of rows
+  and the plain step would land the tiling off its own lattice, the half step
+  carries a glide along the ring with it.
+- A **cylinder** and a **Möbius strip** are open across, so nothing translates
+  that way at all. Both turn about their axis (the Möbius seam flips the band,
+  so a cell returns only after *two* loops), and both reflect in their own centre
+  line — the only horizontal axis that maps an open band onto itself.
+- A **chiral** tiling has no mirror to offer, on any surface. That is the same
+  chirality that keeps the snubs off the Möbius strip and the Klein bottle
+  (`tilingAllows` in `catalog.ts`), read here one symmetry at a time.
+
+### Candidates in, measured symmetries out
+
+None of the above is asserted from the algebra. A builder *offers* candidates —
+`latticeCandidates` / `domainCandidates` in `surfaces.ts`, each a motion of the
+board's own lattice composed with its own seam canonicalization — and
+`keepSymmetries` throws out everything that is not an automorphism of the
+adjacency it has just built (`isAutomorphism`). So the algebra only decides
+which candidates are worth *trying*; the board decides what it has. Several
+candidates may share an id and the first that survives wins, which is how a
+mirror whose axis has to be searched for, or a translation that needs a glide
+on some sizes and not others, is expressed without a special case per board.
+`involution` is measured the same way, and is what draws a reflection one button
+rather than a back/forward pair.
+
+Two consequences worth knowing:
+
+- The **Archimedean wraps** get their tube mirror from `template.mirror`, which
+  is the horizontal reflection the Möbius and Klein seams are glued through. The
+  vertical one is not recorded, so `templateXMirrors` looks for it: a reflection
+  `x -> axis - x` can only map the vertex set onto itself if it sends the first
+  vertex to *some* vertex, which is a short list of axes to try, and every one
+  that maps the vertices is offered for `keepSymmetries` to rule on.
+- A **glide** template (p4g — the snub square tiling and its Cairo dual) has no
+  plain horizontal mirror, only a glide reflection, so what it offers under
+  `mirror-tube` is not an involution: reflect, and the board comes back half a
+  domain further round the ring. That is a different motion with a different
+  undo, and one button cannot honestly be both it and a mirror, so
+  `keepSymmetries` drops it — those boards keep their two translations and show
+  no mirror across the tube. A *vertical* mirror is never affected: `x -> axis
+  - x` squares to the identity in the plane, so it is an involution wherever it
+  survives at all.
+
+The controls are declared in `data/ui/screens.json` under `hud.boardBar` and
+drawn by `ui/boardInfo.ts`: `symmetry:<id>` shows a control on a board with that
+symmetry, `symmetry-pair:<id>` shows the second of a pair only where the
+symmetry is not its own inverse — which today means the two mirrors and a Klein
+bottle's half-tube step get one button and the translations two. The mouse wheel
+walks the ring and shift+wheel the tube (ctrl+wheel still zooms, as it already
+did on the Klein bottle, which is the board this behaviour is inherited from);
+`[` / `]` and `,` / `.` do the same from the keyboard. The **pygame
+build has none of this** — it keeps the single Klein `cell_cycle` it always had,
+which is why the conformance oracle's `hasCellCycle` is checked one way only
+(see `tests/unit/conformance.test.ts`); the symmetry sets themselves are pinned
+in `tests/unit/symmetries.test.ts` and `tests/unit/surfaces.test.ts`.
 
 ## The Klein bottle's self-intersection (`src/boards/clipSolid.ts`)
 

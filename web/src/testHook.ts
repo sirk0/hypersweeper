@@ -1,4 +1,4 @@
-import type { CellId } from "./boards/core";
+import type { CellId, SymmetryId } from "./boards/core";
 
 // The typed test seam Playwright drives. A canvas has no per-cell DOM, so e2e
 // tests translate a cell id to current screen coordinates via `cellScreenXY`
@@ -56,9 +56,9 @@ export interface MsHook {
   /** Rotate a 3D board as a drag of (dx, dy) CSS pixels would; no-op on
    * flat boards. */
   rotate(dxPx: number, dyPx: number): void;
-  /** Walk the Klein cell cycle one step (+1 forward, -1 back); no-op on boards
-   * without one. */
-  scroll(direction: number): void;
+  /** Step the board's contents one move along one of its symmetries (+1
+   * forward, -1 back), defaulting to the ring; no-op on a board without it. */
+  scroll(direction: number, id?: SymmetryId): void;
   /** A cell's game state — lets a test assert *which* cell a click hit. */
   cellState(cell: CellId): "hidden" | "revealed" | "flagged" | null;
   /** The board's current zoom (1 = framed to the viewport). */

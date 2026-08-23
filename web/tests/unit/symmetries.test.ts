@@ -1,0 +1,211 @@
+import { describe, expect, it } from "vitest";
+import { surfaceOf } from "../../src/boards/catalog";
+import {
+  isAutomorphism,
+  isBoard3D,
+  SYMMETRY_IDS,
+  type BoardSymmetry,
+  type CellId,
+  type SymmetryId,
+} from "../../src/boards/core";
+import { buildBoard, MODES } from "../../src/boards/presets";
+import { screens } from "../../src/config/screens";
+import { boardConditions, ICONS, slotVisible } from "../../src/ui/hud";
+
+// The board symmetries, over the whole catalogue rather than one board at a
+// time (tests/unit/surfaces.test.ts does that). Two things are being pinned:
+// that every symmetry a board ships really is an automorphism of its own
+// adjacency — the numbers still count the mines around them however far the
+// contents have been moved — and that which surfaces have which is the answer
+// the gluing gives, not one anybody chose.
+
+/** The surface family a mode wraps onto, or null for a flat board or a solid. */
+function surfaceKey(mode: string): string | null {
+  return surfaceOf(mode)?.key ?? null;
+}
+
+const WRAPPED = MODES.filter((mode) => {
+  const key = surfaceKey(mode);
+  return key !== null && key !== "flat";
+});
+
+/** Applying a permutation twice. */
+function squared(cycle: Map<CellId, CellId>): Map<CellId, CellId> {
+  return new Map([...cycle].map(([cell, image]) => [cell, cycle.get(image)!]));
+}
+
+function measuredInvolution(cycle: Map<CellId, CellId>): boolean {
+  return [...squared(cycle)].every(([cell, image]) => cell === image);
+}
+
+/** Every power of the ring translation, the identity first — the subgroup a
+ * board's contents can be turned into by pressing one arrow. */
+function ringPowers(ring: Map<CellId, CellId>): Map<CellId, CellId>[] {
+  const identity = new Map([...ring.keys()].map((cell) => [cell, cell]));
+  const powers = [identity];
+  for (let power = new Map(ring); ; power = new Map([...power].map(([c, i]) => [c, ring.get(i)!]))) {
+    if ([...power].every(([cell, image]) => cell === image)) return powers;
+    powers.push(power);
+  }
+}
+
+describe("board symmetries", () => {
+  it("the catalogue has wrapped boards to check", () => {
+    // a guard on the filter above: a typo there would empty every sweep below
+    expect(WRAPPED.length).toBeGreaterThan(100);
+  });
+
+  it("every symmetry every wrapped board ships is a graph automorphism", () => {
+    for (const mode of WRAPPED) {
+      const board = buildBoard(mode, "easy");
+      expect(isBoard3D(board)).toBe(true);
+      if (!isBoard3D(board)) continue;
+      for (const symmetry of board.symmetries) {
+        expect(
+          isAutomorphism(board.adjacency, symmetry.cycle),
+          `${mode}: ${symmetry.id} is not an automorphism`,
+        ).toBe(true);
+        expect(
+          symmetry.involution,
+          `${mode}: ${symmetry.id} involution flag`,
+        ).toBe(measuredInvolution(symmetry.cycle));
+        // a symmetry that moves nothing is a button that does nothing
+        expect([...symmetry.cycle].some(([c, image]) => c !== image)).toBe(true);
+      }
+      // listed in the order the controls are drawn, at most one of each
+      const ids = board.symmetries.map((s) => s.id);
+      expect(ids).toEqual([...SYMMETRY_IDS].filter((id) => ids.includes(id)));
+    }
+  });
+
+  it("every wrapped board turns about its own axis", () => {
+    // the ring translation is the one motion every one of the four surfaces
+    // keeps: it is what the Klein bottle shipped with, and the other three glue
+    // their ring seam the same way
+    for (const mode of WRAPPED) {
+      const board = buildBoard(mode, "easy");
+      const ids = isBoard3D(board) ? board.symmetries.map((s) => s.id) : [];
+      expect(ids, `${mode} has no ring step`).toContain("ring");
+    }
+  });
+
+  it("only the closed surfaces translate round the tube", () => {
+    // a cylinder and a Möbius band are open across, so there is nothing to
+    // translate into; a torus and a Klein bottle wrap both ways
+    for (const mode of WRAPPED) {
+      const board = buildBoard(mode, "easy");
+      const ids = isBoard3D(board) ? board.symmetries.map((s) => s.id) : [];
+      const open = ["cylinder", "mobius"].includes(surfaceKey(mode)!);
+      if (open) expect(ids, `${mode} translates across an open band`).not.toContain("tube");
+    }
+  });
+
+  it("a Klein bottle's tube step is never more than half way round", () => {
+    // The ring seam reverses the tube, so conjugating a whole-tube step by it
+    // gives that step back inverted and it does not descend to the bottle. What
+    // does is the *half* step, which is its own inverse — or, where an odd
+    // number of rows would land the tiling off its own lattice, that step with
+    // a glide along the ring. Either way, twice is no further round the tube:
+    // the square is a ring translation (the identity, for the plain half turn).
+    let checked = 0;
+    for (const mode of WRAPPED) {
+      if (surfaceKey(mode) !== "klein") continue;
+      const board = buildBoard(mode, "easy");
+      if (!isBoard3D(board)) continue;
+      const tube = board.symmetries.find((s) => s.id === "tube");
+      if (!tube) continue;
+      const ring = board.symmetries.find((s) => s.id === "ring")!.cycle;
+      expect(ringPowers(ring), `${mode}: tube twice is a further tube move`)
+        .toContainEqual(squared(tube.cycle));
+      checked++;
+    }
+    expect(checked).toBeGreaterThan(10);
+  });
+
+  it("flat boards and solids carry none", () => {
+    // Nothing on them is hidden that turning the view cannot bring round, and a
+    // flat board cannot be turned at all — moving the contents would only
+    // scramble a board the player can already see all of.
+    for (const mode of MODES) {
+      if (WRAPPED.includes(mode)) continue;
+      const board = buildBoard(mode, "easy");
+      if (isBoard3D(board)) expect(board.symmetries, mode).toEqual([]);
+    }
+  });
+});
+
+describe("the board bar's symmetry controls", () => {
+  const slots = screens.hud.boardBar;
+
+  it("offers a control for every symmetry there is, and a back one per translation", () => {
+    for (const id of SYMMETRY_IDS) {
+      expect(slots.some((s) => s.action === `symmetry:${id}:1`), id).toBe(true);
+      // a mirror is its own undo and gets no second button
+      expect(slots.some((s) => s.action === `symmetry:${id}:-1`), id).toBe(
+        !id.startsWith("mirror-"),
+      );
+    }
+  });
+
+  it("no board ships a mirror that is not its own undo", () => {
+    // what a p4g template offers across the tube is a *glide* reflection, and
+    // one button cannot honestly be both that and a mirror — see keepSymmetries
+    for (const mode of WRAPPED) {
+      const board = buildBoard(mode, "easy");
+      if (!isBoard3D(board)) continue;
+      for (const symmetry of board.symmetries) {
+        if (!symmetry.id.startsWith("mirror-")) continue;
+        expect(symmetry.involution, `${mode}: ${symmetry.id}`).toBe(true);
+      }
+    }
+  });
+
+  it("every slot draws an icon this build has and names a real symmetry", () => {
+    for (const slot of slots) {
+      expect(slot.icon && ICONS[slot.icon], slot.slot).toBeTruthy();
+      expect(slot.label, slot.slot).toBeTruthy();
+      const [kind, id, direction] = slot.action!.split(":");
+      expect(kind).toBe("symmetry");
+      expect(SYMMETRY_IDS).toContain(id as SymmetryId);
+      expect(["1", "-1"]).toContain(direction);
+      // the back half of a pair is the one that hides on an involution
+      const want = direction === "-1" ? "symmetry-pair" : "symmetry";
+      expect(slot.visibleWhen).toBe(`${want}:${id}`);
+    }
+  });
+
+  it("a reflection gets one button and a translation two", () => {
+    const symmetry = (id: SymmetryId, involution: boolean): BoardSymmetry => ({
+      id,
+      involution,
+      cycle: new Map(),
+    });
+    const shown = (conditions: Set<string>) =>
+      slots.filter((s) => slotVisible(s.visibleWhen, conditions)).map((s) => s.slot);
+
+    expect(shown(boardConditions([symmetry("ring", false)]))).toEqual([
+      "symmetry-ring-back",
+      "symmetry-ring-fwd",
+    ]);
+    expect(shown(boardConditions([symmetry("mirror-tube", true)]))).toEqual([
+      "symmetry-mirror-tube-fwd",
+    ]);
+    expect(shown(boardConditions([]))).toEqual([]);
+  });
+
+  it("the Klein bottle shows its ring pair and one tube button", () => {
+    const board = buildBoard("klein", "easy");
+    expect(isBoard3D(board)).toBe(true);
+    if (!isBoard3D(board)) return;
+    const conditions = boardConditions(board.symmetries);
+    const shown = slots.filter((s) => slotVisible(s.visibleWhen, conditions));
+    expect(shown.map((s) => s.slot)).toEqual([
+      "symmetry-ring-back",
+      "symmetry-ring-fwd",
+      // the tube step is a half turn, so it is its own undo
+      "symmetry-tube-fwd",
+      "symmetry-mirror-ring-fwd",
+      "symmetry-mirror-tube-fwd",
+    ]);
+  });
+});

@@ -66,15 +66,17 @@
      pygame header's `_header_scale`. The square button box, the glyph inside
      it, the gaps and the LED counter text shrink together on a narrow phone so
      the whole row (back + flag, the centred counter / face / counter group,
-     and the two Klein scroll chevrons) stays on a single line down to a 320px
-     viewport, while every control keeps a comfortable touch size. */
-  /* The header carries up to nine controls at once — back, flag, help, the two
-     Klein chevrons, share, and the counter/smiley/counter block — and they all
-     sit on one row, because the smiley has to stay on the exact screen centre
-     (see `.hud`). The floors below are what that worst case needs at 320px: a
-     side cluster is `minmax(0, 1fr)`, so anything wider does not scroll, it
-     *overlaps* the centre and swallows a button whole. Raise a floor only after
-     re-checking the Klein bottle at 320px. */
+     help + share) stays on a single line down to a 320px viewport, while every
+     control keeps a comfortable touch size. The board's own symmetry controls
+     are drawn a size down on the caption row below (`.board-bar-btn`), on the
+     same scale. */
+  /* The header carries seven controls at once — back, flag, help, share and the
+     counter/smiley/counter block — and they all sit on one row, because the
+     smiley has to stay on the exact screen centre (see `.hud`). The floors
+     below are what that worst case needs at 320px: a side cluster is
+     `minmax(0, 1fr)`, so anything wider does not scroll, it *overlaps* the
+     centre and swallows a button whole. Raise a floor only after re-checking a
+     board that carries every symmetry control at 320px. */
   --hud-btn: clamp(31px, 9.6vw, 46px);
   --hud-icon: clamp(17px, 5.4vw, 26px);
   --hud-gap: clamp(3px, 1.2vw, 10px);
@@ -228,6 +230,11 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  /* A board with every symmetry carries six or seven controls, which will not
+     fit beside its name on a narrow phone; the row wraps rather than shrinking
+     them below a touch size, and the board is framed below whatever height
+     that comes to (main.ts onResize measures the caption's bottom). */
+  flex-wrap: wrap;
   gap: var(--hud-gap);
   padding: 0 16px 6px;
   /* The strip itself is not a target; its buttons put this back. */
@@ -238,11 +245,28 @@ body {
   color: var(--muted);
   font-size: clamp(12px, 3.4vw, 15px);
   font-weight: 600;
+  /* Shrink before the row wraps: a long name gives way to the controls. */
+  flex: 0 1 auto;
+  min-width: 3em;
   /* One line: a long name (a Laves tiling on a Klein bottle) shortens rather
      than pushing the board down. */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* The board's symmetry controls, grouped so they wrap as a block rather than
+   leaving one button stranded under the rest. */
+.board-caption-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--hud-gap);
+  flex: 0 0 auto;
+}
+
+.board-caption-controls[hidden] {
+  display: none;
 }
 
 /* Smaller than a header control — this row is secondary, and the chevrons sit

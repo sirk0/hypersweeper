@@ -193,20 +193,49 @@
       }
     ],
     "_boardBarComment": "Controls that belong to the board rather than to the game: they sit on the caption row under the header, beside the board's name, not in the header row itself. The header holds two slots a side and the centred status block, which is all that fits on one row on a phone; these are shown only on a board that has them, so putting them there would wrap that row on exactly the boards that have the most to fit.",
+    "_symmetryComment": "One control per symmetry the board carries (boards/core.ts BoardSymmetry): a step round the ring, a step round the tube, and the reflection in each. `symmetry:<id>` shows a control on a board that has that symmetry at all; `symmetry-pair:<id>` shows the second of a pair only where the symmetry is not its own inverse. A reflection always is one -- `keepSymmetries` drops a candidate mirror that is not -- and so is a Klein bottle's half-tube step, so those get a single button where a translation gets two.",
     "boardBar": [
       {
-        "slot": "klein-scroll-back",
-        "label": "Scroll back",
+        "slot": "symmetry-ring-back",
+        "label": "Shift back around the ring",
         "icon": "chevrons-left",
-        "action": "klein-scroll-back",
-        "visibleWhen": "hasCellCycle"
+        "action": "symmetry:ring:-1",
+        "visibleWhen": "symmetry-pair:ring"
       },
       {
-        "slot": "klein-scroll-fwd",
-        "label": "Scroll forward",
+        "slot": "symmetry-ring-fwd",
+        "label": "Shift forward around the ring",
         "icon": "chevrons-right",
-        "action": "klein-scroll-fwd",
-        "visibleWhen": "hasCellCycle"
+        "action": "symmetry:ring:1",
+        "visibleWhen": "symmetry:ring"
+      },
+      {
+        "slot": "symmetry-tube-back",
+        "label": "Roll back around the tube",
+        "icon": "chevrons-up",
+        "action": "symmetry:tube:-1",
+        "visibleWhen": "symmetry-pair:tube"
+      },
+      {
+        "slot": "symmetry-tube-fwd",
+        "label": "Roll forward around the tube",
+        "icon": "chevrons-down",
+        "action": "symmetry:tube:1",
+        "visibleWhen": "symmetry:tube"
+      },
+      {
+        "slot": "symmetry-mirror-ring-fwd",
+        "label": "Reflect along the ring",
+        "icon": "mirror-vertical",
+        "action": "symmetry:mirror-ring:1",
+        "visibleWhen": "symmetry:mirror-ring"
+      },
+      {
+        "slot": "symmetry-mirror-tube-fwd",
+        "label": "Reflect across the tube",
+        "icon": "mirror-horizontal",
+        "action": "symmetry:mirror-tube:1",
+        "visibleWhen": "symmetry:mirror-tube"
       }
     ]
   },

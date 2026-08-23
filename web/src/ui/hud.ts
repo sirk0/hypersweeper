@@ -1,3 +1,4 @@
+import type { BoardSymmetry } from "../boards/core";
 import { screens, type HudSlot } from "../config/screens";
 
 // The game header, rendered from the shared UI-screen config
@@ -29,9 +30,12 @@ export const ICONS: Record<string, string> = {
     <path d="M20 12 H5 M11 5 L4 12 L11 19" stroke="currentColor"
       stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>`,
-  // Double chevrons for the two Klein scroll controls (back / forward). Drawn
-  // on the board bar rather than in this header (see ui/boardInfo.ts), but kept
-  // in one icon table so a slot's `icon` name resolves the same either way.
+  // The board-symmetry controls. Double chevrons step the contents round the
+  // ring (left/right) and round the tube (up/down); the mirror pairs reflect
+  // them in an axis along or across it, drawn as a shape and its image in a
+  // dashed mirror line. All are drawn on the board bar rather than in this
+  // header (see ui/boardInfo.ts), but kept in one icon table so a slot's `icon`
+  // name resolves the same either way.
   "chevrons-left": `<svg viewBox="0 0 24 24" aria-hidden="true">
     <path d="M17 5 L10 12 L17 19 M11 5 L4 12 L11 19" stroke="currentColor"
       stroke-width="1.9" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
@@ -39,6 +43,31 @@ export const ICONS: Record<string, string> = {
   "chevrons-right": `<svg viewBox="0 0 24 24" aria-hidden="true">
     <path d="M7 5 L14 12 L7 19 M13 5 L20 12 L13 19" stroke="currentColor"
       stroke-width="1.9" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`,
+  "chevrons-up": `<svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M5 17 L12 10 L19 17 M5 11 L12 4 L19 11" stroke="currentColor"
+      stroke-width="1.9" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`,
+  "chevrons-down": `<svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M5 7 L12 14 L19 7 M5 13 L12 20 L19 13" stroke="currentColor"
+      stroke-width="1.9" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`,
+  // Named for the mirror *line*: "vertical" reflects left to right (along the
+  // ring), "horizontal" top to bottom (across the tube). One each — a mirror is
+  // its own undo, and `keepSymmetries` keeps no mirror that is not.
+  "mirror-vertical": `<svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M12 3 V21" stroke="currentColor" stroke-width="1.5"
+      stroke-dasharray="2.4 2.6" stroke-linecap="round"/>
+    <path d="M4 6 L10.2 12 L4 18 Z" fill="currentColor"/>
+    <path d="M20 6 L13.8 12 L20 18 Z" fill="none" stroke="currentColor"
+      stroke-width="1.6" stroke-linejoin="round"/>
+  </svg>`,
+  "mirror-horizontal": `<svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M3 12 H21" stroke="currentColor" stroke-width="1.5"
+      stroke-dasharray="2.4 2.6" stroke-linecap="round"/>
+    <path d="M6 4 L18 4 L12 10.2 Z" fill="currentColor"/>
+    <path d="M6 20 L18 20 L12 13.8 Z" fill="none" stroke="currentColor"
+      stroke-width="1.6" stroke-linejoin="round"/>
   </svg>`,
   // Hand this board to someone: a box with an arrow leaving it upward. The
   // platform-neutral drawing rather than the iOS glyph, since this header is
@@ -64,7 +93,32 @@ export interface HudState {
   elapsedSeconds: number;
   status: "playing" | "won" | "lost";
   flagMode: boolean;
-  hasCellCycle: boolean;
+  /** Which of the config's `visibleWhen` conditions this board meets — see
+   * `boardConditions`. */
+  conditions: ReadonlySet<string>;
+}
+
+/** The `visibleWhen` conditions a board satisfies (see the boardBar section of
+ * `data/ui/screens.json`): `symmetry:<id>` for every symmetry it carries, and
+ * `symmetry-pair:<id>` for the ones that are not their own inverse. A
+ * reflection is, and so is a Klein bottle's half-tube step, so those get one
+ * button where a translation gets a back/forward pair. */
+export function boardConditions(symmetries: readonly BoardSymmetry[]): Set<string> {
+  const conditions = new Set<string>();
+  for (const symmetry of symmetries) {
+    conditions.add(`symmetry:${symmetry.id}`);
+    if (!symmetry.involution) conditions.add(`symmetry-pair:${symmetry.id}`);
+  }
+  return conditions;
+}
+
+/** Whether a slot with this `visibleWhen` shows on a board meeting
+ * `conditions`. A slot with no condition always shows. */
+export function slotVisible(
+  condition: string | undefined,
+  conditions: ReadonlySet<string>,
+): boolean {
+  return condition === undefined || conditions.has(condition);
 }
 
 export class Hud {
@@ -74,7 +128,7 @@ export class Hud {
     elapsedSeconds: 0,
     status: "playing",
     flagMode: false,
-    hasCellCycle: false,
+    conditions: new Set<string>(),
   };
   private readonly counters = new Map<string, HTMLElement>();
   private smiley: HTMLButtonElement | null = null;
@@ -152,10 +206,10 @@ export class Hud {
     }
     if (this.smiley) this.smiley.textContent = screens.smiley[this.state.status];
     if (this.flagBtn) this.flagBtn.classList.toggle("active", this.state.flagMode);
-    // Toggle config-driven conditional visibility (e.g. Klein scroll arrows).
+    // Toggle config-driven conditional visibility (the board-symmetry controls;
+    // no header slot carries one today, but a slot reads the same either way).
     for (const btn of this.root.querySelectorAll<HTMLElement>("[data-visible-when]")) {
-      const cond = btn.dataset.visibleWhen;
-      const visible = cond === "hasCellCycle" ? this.state.hasCellCycle : true;
+      const visible = slotVisible(btn.dataset.visibleWhen, this.state.conditions);
       btn.style.display = visible ? "" : "none";
     }
   }

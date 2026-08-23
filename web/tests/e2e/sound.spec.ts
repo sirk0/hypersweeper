@@ -189,10 +189,10 @@ test.describe("sound in play", () => {
     expect(await oscillators(page)).toBe(before);
   });
 
-  test("the Klein scroll arrows sound, in both directions", async ({ page }) => {
+  test("the symmetry arrows sound, in both directions", async ({ page }) => {
     await page.evaluate(() => window.__ms?.startBoard("klein", "easy"));
-    const back = page.locator('[data-slot="klein-scroll-back"]');
-    const fwd = page.locator('[data-slot="klein-scroll-fwd"]');
+    const back = page.locator('[data-slot="symmetry-ring-back"]');
+    const fwd = page.locator('[data-slot="symmetry-ring-fwd"]');
     await expect(fwd).toBeVisible();
 
     const before = await oscillators(page);
