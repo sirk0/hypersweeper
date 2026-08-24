@@ -7,6 +7,7 @@
 // tuple sort — the conformance tests assert invariants, not order.
 
 import type { ClipPiece, Tri } from "./clipSolid";
+import { planeSymmetries, type BoardSymmetry } from "./symmetry";
 
 export type CellId = string;
 export type Vertex = [number, number];
@@ -33,6 +34,12 @@ export interface Board {
   mineCount: number;
   width: number;
   height: number;
+  // The rotations and reflections of the plane that map this patch onto itself,
+  // as cell permutations — measured off the drawing by `planeSymmetries`, not
+  // declared by the builder. The UI offers each as a control that slides the
+  // contents along it. A finite patch has no translations, so `ring` and `tube`
+  // never appear here.
+  symmetries: BoardSymmetry[];
   // Where a cell's own polygon centroid is a poor glyph spot (a concave tile
   // like the chair, whose centroid sits right at the reflex corner), the
   // point to centre the number/flag/mine glyph on instead — still in
@@ -58,86 +65,21 @@ export interface SurfaceClip {
   occluder: Tri[];
 }
 
-/** The four board symmetries the UI offers, in the order their controls are
- * drawn. A wrapped surface has two directions — round the **ring** (the loop
- * through the hole) and round the **tube** (the cross-section) — and each can
- * carry a translation, a reflection, or neither. */
-export const SYMMETRY_IDS = ["ring", "tube", "mirror-ring", "mirror-tube"] as const;
-
-export type SymmetryId = (typeof SYMMETRY_IDS)[number];
-
-/** One symmetry of a board: a permutation of its cells that preserves
- * adjacency, so the contents can be moved along it and every number still
- * counts the mines around it.
- *
- * It moves *contents*, never geometry — the surface stays exactly where it is
- * drawn and the game underneath is untouched, which is what lets a board carry
- * one mid-game. That is the whole point on a surface part of which cannot be
- * brought into view by turning it: the Klein bottle's neck hides the sheet it
- * passes through, and a donut's inner wall is only ever glimpsed through the
- * hole. Stepping the contents round the tube brings the inside out.
- *
- * `involution` is measured, not declared: a reflection is its own inverse, so
- * it gets one button rather than a back/forward pair. */
-export interface BoardSymmetry {
-  id: SymmetryId;
-  /** cell -> the cell its contents move to, one step forward. */
-  cycle: Map<CellId, CellId>;
-  /** Whether applying it twice is the identity (a reflection, or a half turn
-   * round a tube of exactly two cells). */
-  involution: boolean;
-}
-
-/** Whether `cycle` really is an automorphism of `adjacency`: a bijection over
- * the same cells that carries neighbours to neighbours. Every candidate
- * symmetry is put through this before a board keeps it — a lattice motion that
- * looks like a symmetry of the flat tiling need not survive the seam gluing (a
- * Klein bottle's tube translation is the standard example: conjugating it by
- * the ring seam inverts it, so only the *half*-tube step descends), and a
- * permutation that is not an automorphism would silently deal a board wrong
- * numbers. */
-export function isAutomorphism(
-  adjacency: Map<CellId, CellId[]>,
-  cycle: Map<CellId, CellId>,
-): boolean {
-  if (cycle.size !== adjacency.size) return false;
-  const images = new Set<CellId>();
-  for (const [cell, image] of cycle) {
-    if (!adjacency.has(cell) || !adjacency.has(image)) return false;
-    images.add(image);
-  }
-  if (images.size !== cycle.size) return false;
-  for (const [cell, neighbours] of adjacency) {
-    const there = new Set(adjacency.get(cycle.get(cell)!)!);
-    if (there.size !== neighbours.length) return false;
-    for (const n of neighbours) if (!there.has(cycle.get(n)!)) return false;
-  }
-  return true;
-}
-
-/** Whether every cell comes back to itself after two steps. */
-export function isInvolution(cycle: Map<CellId, CellId>): boolean {
-  for (const [cell, image] of cycle) if (cycle.get(image) !== cell) return false;
-  return true;
-}
-
-/** Whether the permutation moves nothing (a candidate worth no button). */
-export function isIdentity(cycle: Map<CellId, CellId>): boolean {
-  for (const [cell, image] of cycle) if (cell !== image) return false;
-  return true;
-}
-
-export function invertCycle(cycle: Map<CellId, CellId>): Map<CellId, CellId> {
-  const out = new Map<CellId, CellId>();
-  for (const [from, to] of cycle) out.set(to, from);
-  return out;
-}
-
-/** A board's symmetry by id, or null when it has none of that kind. */
-export function symmetryOf(board: AnyBoard, id: SymmetryId): BoardSymmetry | null {
-  if (!isBoard3D(board)) return null;
-  return board.symmetries.find((s) => s.id === id) ?? null;
-}
+// The board symmetries live in their own module (see boards/symmetry.ts, which
+// explains what they are and why the flat and wrapped boards find them by
+// different routes); re-exported here so a board's own module is the one place
+// to import from.
+export {
+  invertCycle,
+  isAutomorphism,
+  isIdentity,
+  isInvolution,
+  keepSymmetries,
+  planeSymmetries,
+  symmetryOf,
+  SYMMETRY_IDS,
+} from "./symmetry";
+export type { BoardSymmetry, SymmetryCandidate, SymmetryId } from "./symmetry";
 
 export interface Board3D {
   mode: string;
@@ -229,7 +171,7 @@ export function buildLattice(
       if (y > height) height = y;
     }
   }
-  return { mode, polygons, adjacency, mineCount, width, height };
+  return flatBoard({ mode, polygons, adjacency, mineCount, width, height });
 }
 
 /**
@@ -271,7 +213,23 @@ export function finalizeFlat(
       if (y > height) height = y;
     }
   }
-  return { mode, polygons, adjacency, mineCount, width, height };
+  return flatBoard({ mode, polygons, adjacency, mineCount, width, height });
+}
+
+/** Finish a flat board by measuring its point group.
+ *
+ * Deferred until something asks: a board's symmetries are wanted once, when it
+ * is put on screen, and the conformance suite builds every board in the
+ * catalogue at every difficulty without ever looking. Cached on first read, so
+ * a caller sees a plain property. */
+function flatBoard(board: Omit<Board, "symmetries">): Board {
+  let measured: BoardSymmetry[] | null = null;
+  return {
+    ...board,
+    get symmetries(): BoardSymmetry[] {
+      return (measured ??= planeSymmetries(board.polygons, board.adjacency));
+    },
+  };
 }
 
 // -- topology (surface invariants; shared with the conformance oracle) -------

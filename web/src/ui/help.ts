@@ -83,12 +83,13 @@ const SECTIONS: Section[] = [
           "amount of turning brings round. The buttons under the board's name " +
           "slide its contents along the board's own symmetries — round the " +
           "ring (‹‹ ››, or the [ and ] keys), round the tube (⌃ ⌄, or , and " +
-          "·), and reflected in either. The board itself never moves, and " +
-          "neither does the game: every number still counts the mines beside " +
-          "it. Each surface gets the moves its shape allows, so a cylinder has " +
-          "no way round its tube and a Klein bottle can only go half way. The " +
-          "wheel slides such a board round the ring, and shift and the wheel " +
-          "round the tube.",
+          "·), turned (⟲ ⟳, or ; and ’) and mirrored either way. The board " +
+          "itself never moves, and neither does the game: every number still " +
+          "counts the mines beside it. Each board gets the moves its own shape " +
+          "allows — a cylinder has no way round its tube, a Klein bottle can " +
+          "only go half way, and a flat board has no way round at all but " +
+          "turns and mirrors like the square it is. The wheel slides a wrapped " +
+          "board round the ring, and shift and the wheel round the tube.",
       ],
     ],
   },

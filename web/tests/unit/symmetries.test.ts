@@ -38,6 +38,18 @@ function measuredInvolution(cycle: Map<CellId, CellId>): boolean {
   return [...squared(cycle)].every(([cell, image]) => cell === image);
 }
 
+/** How many steps take a cell back to where it started. */
+function cycleOrder(cycle: Map<CellId, CellId>): number {
+  const start = cycle.keys().next().value as CellId;
+  let at = cycle.get(start)!;
+  let order = 1;
+  while (at !== start) {
+    at = cycle.get(at)!;
+    order++;
+  }
+  return order;
+}
+
 /** Every power of the ring translation, the identity first — the subgroup a
  * board's contents can be turned into by pressing one arrow. */
 function ringPowers(ring: Map<CellId, CellId>): Map<CellId, CellId>[] {
@@ -122,15 +134,68 @@ describe("board symmetries", () => {
     expect(checked).toBeGreaterThan(10);
   });
 
-  it("flat boards and solids carry none", () => {
-    // Nothing on them is hidden that turning the view cannot bring round, and a
-    // flat board cannot be turned at all — moving the contents would only
-    // scramble a board the player can already see all of.
+  it("solids carry none", () => {
+    // A solid is fully seen by turning it, so every cell is reachable already;
+    // permuting the contents would only cost the player their place. The
+    // symmetries of a *flat* board are found a different way (planeSymmetries),
+    // and it does get them.
     for (const mode of MODES) {
-      if (WRAPPED.includes(mode)) continue;
       const board = buildBoard(mode, "easy");
-      if (isBoard3D(board)) expect(board.symmetries, mode).toEqual([]);
+      if (isBoard3D(board) && !WRAPPED.includes(mode)) {
+        expect(board.symmetries, mode).toEqual([]);
+      }
     }
+  });
+
+  it("a flat board has its own rotations and mirrors, and no translation", () => {
+    // A finite patch cannot be slid onto itself, so `ring` and `tube` never
+    // appear; what it has is its point group, measured off the drawing.
+    for (const mode of MODES) {
+      const board = buildBoard(mode, "easy");
+      if (isBoard3D(board)) continue;
+      const ids = board.symmetries.map((s) => s.id);
+      expect(ids, mode).not.toContain("ring");
+      expect(ids, mode).not.toContain("tube");
+      for (const symmetry of board.symmetries) {
+        expect(
+          isAutomorphism(board.adjacency, symmetry.cycle),
+          `${mode}: ${symmetry.id} is not an automorphism`,
+        ).toBe(true);
+        expect(symmetry.involution, `${mode}: ${symmetry.id}`).toBe(
+          measuredInvolution(symmetry.cycle),
+        );
+      }
+    }
+  });
+
+  it("the classic square board turns a quarter and the wide one only a half", () => {
+    // The board the player knows: 9x9 and 16x16 are square, so a quarter turn
+    // lands on the board itself; 30x16 is not, and only the half turn does.
+    const quarter = buildBoard("square", "easy").symmetries.find((s) => s.id === "turn")!;
+    expect(quarter).toBeDefined();
+    expect(quarter.involution).toBe(false);
+    expect(cycleOrder(quarter.cycle)).toBe(4);
+    // the corner opposite, a quarter of the way round
+    expect(quarter.cycle.get("0,0")).toBeDefined();
+    expect(quarter.cycle.get(quarter.cycle.get("0,0")!)).not.toBe("0,0");
+
+    const half = buildBoard("square", "hard").symmetries.find((s) => s.id === "turn")!;
+    expect(half).toBeDefined();
+    expect(half.involution).toBe(true);
+    // and both mirrors, which a rectangle keeps
+    expect(buildBoard("square", "hard").symmetries.map((s) => s.id)).toEqual([
+      "turn",
+      "mirror-ring",
+      "mirror-tube",
+    ]);
+  });
+
+  it("a chiral flat board has rotations and no mirror", () => {
+    // The Gosper island: its inflation is a spiral similarity, so the patch
+    // keeps the hexagon's six-fold turn and never a mirror past level 1 (see
+    // boards/fractal.ts). Measured here, not declared there.
+    const ids = buildBoard("gosper", "easy").symmetries.map((s) => s.id);
+    expect(ids).toEqual(["turn"]);
   });
 });
 
@@ -202,8 +267,10 @@ describe("the board bar's symmetry controls", () => {
     expect(shown.map((s) => s.slot)).toEqual([
       "symmetry-ring-back",
       "symmetry-ring-fwd",
-      // the tube step is a half turn, so it is its own undo
+      // the tube step is a half turn, so it is its own undo — as is `turn`
+      // itself on every wrapped surface
       "symmetry-tube-fwd",
+      "symmetry-turn-fwd",
       "symmetry-mirror-ring-fwd",
       "symmetry-mirror-tube-fwd",
     ]);

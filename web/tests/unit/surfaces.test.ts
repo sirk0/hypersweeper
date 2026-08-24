@@ -79,8 +79,9 @@ describe("wrapped surfaces", () => {
     const board = torusBoard(12, 6, 9);
     expect(degrees(board)).toEqual(new Set([8]));
     expect(board.twoSided).toBe(false);
-    // a donut keeps both translations of the square lattice and both mirrors
-    expect(ids(board)).toEqual(["ring", "tube", "mirror-ring", "mirror-tube"]);
+    // a donut is closed both ways, so it keeps every motion of the square
+    // lattice: both translations, the half turn and both mirrors
+    expect(ids(board)).toEqual(["ring", "tube", "turn", "mirror-ring", "mirror-tube"]);
     for (const id of ids(board)) assertSymmetry(board, id);
   });
 
@@ -103,8 +104,9 @@ describe("wrapped surfaces", () => {
   it("cylinder and Möbius are two-sided and turn about their axis", () => {
     for (const board of [cylinderBoard(12, 7, 10), mobiusBoard(20, 4, 10)]) {
       expect(board.twoSided).toBe(true);
-      // open across, so no translation that way — but both reflections
-      expect(ids(board)).toEqual(["ring", "mirror-ring", "mirror-tube"]);
+      // open across, so no translation that way — but it can still be turned
+      // end over end, and both reflections survive
+      expect(ids(board)).toEqual(["ring", "turn", "mirror-ring", "mirror-tube"]);
       for (const id of ids(board)) assertSymmetry(board, id);
     }
   });
@@ -132,7 +134,7 @@ describe("wrapped surfaces", () => {
 
   it("the Klein bottle's only tube step is the half turn", () => {
     const board = kleinBoard(12, 6, 9);
-    expect(ids(board)).toEqual(["ring", "tube", "mirror-ring", "mirror-tube"]);
+    expect(ids(board)).toEqual(["ring", "tube", "turn", "mirror-ring", "mirror-tube"]);
     for (const id of ids(board)) assertSymmetry(board, id);
     // The ring seam reverses the tube, so conjugating a whole-tube step by it
     // gives that step back inverted and only the half step -- its own inverse

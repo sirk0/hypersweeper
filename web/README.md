@@ -876,31 +876,54 @@ Cell styles are **not** in `data/ui/screens.json`: they are geometry for this
 renderer, with no pygame counterpart for the shared config to keep in step. The
 themes that name them are not there either, for the same reason — see below.
 
-## Board symmetries (`src/boards/core.ts`, `src/boards/surfaces.ts`)
+## Board symmetries (`src/boards/symmetry.ts`, `src/boards/surfaces.ts`)
 
-A wrapped board is a flat tiling glued to itself, so the motions of the plane
-that survive the gluing permute its cells. Those are the board's **symmetries**,
-and each one the UI offers is a button on the caption row: the contents slide
-along it while the geometry stays exactly where it is drawn, and the game never
-notices, because a symmetry is by definition an automorphism of the adjacency —
-every number still counts the mines beside it.
+A board's **symmetries** are the permutations of its cells that preserve
+adjacency. Each one the UI offers is a button on the caption row: the contents
+slide along it while the geometry stays exactly where it is drawn, and the game
+never notices, because every number still counts the mines beside it.
 
 This began as the Klein bottle's scroll: the bottle's neck passes through its
 own belly, so a few cells are hidden behind it and no amount of turning the
 board brings them out. It generalises because the same is true elsewhere. **A
 donut's inner wall** is only ever glimpsed through the hole; a cylinder's inside
 only at a shallow angle through its ends. Rolling the contents round the tube
-brings them round the outside instead. The solids are the boards that get
-*none*: a drag turns them and every face comes past, so permuting the contents
-would only cost the player their place. Flat boards get none for the plainer
-reason that nothing on them is hidden at all.
+brings them round the outside instead. On a **flat** board nothing is hidden at
+all, and the controls are a way of looking at the same puzzle from another angle
+rather than a way of reaching part of it — the classic 9×9 grid turns a quarter
+and mirrors both ways. The **solids** are the boards that get *none*: a drag
+turns them and every face comes past, so permuting the contents would only cost
+the player their place.
+
+### Five ids, and two ways of finding them
+
+`SYMMETRY_IDS` in `boards/symmetry.ts`: a step round the **ring** (the loop
+through the hole), a step round the **tube** (the cross-section), a **turn**,
+and a reflection in each of the two directions. The ring and tube names carry
+over to a flat board from the window a wrapped one is cut from — its x becomes
+the ring and its y the tube — so `mirror-ring` is the reflection that swaps left
+for right on either kind of board.
+
+The two kinds hide their symmetry in different places, so there are two ways in:
+
+- A **wrapped** board's drawn cells are not congruent — a donut's inner tiles
+  are smaller than its outer ones — so nothing can be found by looking at the
+  geometry. `surfaces.ts` offers candidate motions of the board's own lattice.
+- A **flat** board is a finite patch with no translations at all, but its
+  symmetries *are* congruences of the drawing. `planeSymmetries` measures them,
+  which needs nothing from the builder and works the same on a square grid, a
+  Penrose window and a Gosper island. Every symmetry fixes the centroid of the
+  cell centres, so each is pinned by where it sends *one* cell — and the
+  outermost cell is the one to ask, since only a cell the same distance from the
+  centre can be its image. A candidate is not believed on centres alone: the
+  whole polygon has to land on the target's (the sphinx patch is one tile in
+  four orientations, so centres coinciding proves nothing) and the permutation
+  still has to be an automorphism.
 
 ### What survives the gluing is not what you would guess
 
-Four are offered, `SYMMETRY_IDS` in `boards/core.ts`: a step round the **ring**
-(the loop through the hole), a step round the **tube** (the cross-section), and
-a reflection in each. Which of them a surface keeps is a question about the seam,
-not about the tiling:
+Which of the five a wrapped surface keeps is a question about the seam, not
+about the tiling:
 
 - A **donut** keeps all four (where the tiling is not chiral): both translations
   commute with both gluings, and both mirrors do.
@@ -913,12 +936,19 @@ not about the tiling:
   and the plain step would land the tiling off its own lattice, the half step
   carries a glide along the ring with it.
 - A **cylinder** and a **Möbius strip** are open across, so nothing translates
-  that way at all. Both turn about their axis (the Möbius seam flips the band,
-  so a cell returns only after *two* loops), and both reflect in their own centre
-  line — the only horizontal axis that maps an open band onto itself.
-- A **chiral** tiling has no mirror to offer, on any surface. That is the same
-  chirality that keeps the snubs off the Möbius strip and the Klein bottle
-  (`tilingAllows` in `catalog.ts`), read here one symmetry at a time.
+  that way at all — but an open band can still be turned **end over end**, a
+  half turn about a horizontal axis through its middle, and that is the `turn`
+  they carry. They also turn about their own axis (the Möbius seam flips the
+  band, so a cell returns only after *two* loops), and reflect in their own
+  centre line — the only horizontal axis that maps an open band onto itself.
+  Which of the mirror and the half turn actually survives is the same question
+  `flips` answers for the rims (see THE CUT in `tilings.ts`), and a chiral tiling
+  has only the half turn: it is why the snubs wrap a cylinder at all.
+- A **chiral** tiling has no mirror to offer, on any surface — but it does have
+  half turns, so `turn` reaches almost everywhere the mirrors do not. Three-scale
+  triangular (p3) is the one tiling with neither: its rotations are all
+  three-fold, so its torus is the only wrapped board in the catalogue with no
+  flip of any kind.
 
 ### Candidates in, measured symmetries out
 
@@ -936,12 +966,15 @@ rather than a back/forward pair.
 
 Two consequences worth knowing:
 
-- The **Archimedean wraps** get their tube mirror from `template.mirror`, which
-  is the horizontal reflection the Möbius and Klein seams are glued through. The
-  vertical one is not recorded, so `templateXMirrors` looks for it: a reflection
-  `x -> axis - x` can only map the vertex set onto itself if it sends the first
-  vertex to *some* vertex, which is a short list of axes to try, and every one
-  that maps the vertices is offered for `keepSymmetries` to rule on.
+- The **Archimedean wraps** find every motion the same way, off the template's
+  own vertex set rather than out of `template.mirror` (which records only the
+  reflection the Möbius and Klein seams are glued through). A reflection or a
+  half turn can only map the vertex set onto itself if it sends the first vertex
+  to *some* vertex, which fixes it — so there is one candidate per vertex, a
+  short list, and every one is offered for `keepSymmetries` to rule on. A half
+  turn's centre gets both coordinates from that one pairing; `levels` then says
+  which horizontal line it may sit on (an open band's own centre, the two a
+  Klein seam leaves standing, or anywhere on a donut).
 - A **glide** template (p4g — the snub square tiling and its Cairo dual) has no
   plain horizontal mirror, only a glide reflection, so what it offers under
   `mirror-tube` is not an involution: reflect, and the board comes back half a
@@ -955,15 +988,17 @@ Two consequences worth knowing:
 The controls are declared in `data/ui/screens.json` under `hud.boardBar` and
 drawn by `ui/boardInfo.ts`: `symmetry:<id>` shows a control on a board with that
 symmetry, `symmetry-pair:<id>` shows the second of a pair only where the
-symmetry is not its own inverse — which today means the two mirrors and a Klein
-bottle's half-tube step get one button and the translations two. The mouse wheel
+symmetry is not its own inverse — which means the two mirrors, every wrapped
+surface's half turn and a Klein bottle's half-tube step get one button, while a
+translation and a flat board's quarter or sixth turn get two. The mouse wheel
 walks the ring and shift+wheel the tube (ctrl+wheel still zooms, as it already
 did on the Klein bottle, which is the board this behaviour is inherited from);
-`[` / `]` and `,` / `.` do the same from the keyboard. The **pygame
-build has none of this** — it keeps the single Klein `cell_cycle` it always had,
-which is why the conformance oracle's `hasCellCycle` is checked one way only
-(see `tests/unit/conformance.test.ts`); the symmetry sets themselves are pinned
-in `tests/unit/symmetries.test.ts` and `tests/unit/surfaces.test.ts`.
+`[` / `]`, `,` / `.` and `;` / `'` do the ring, the tube and the turn from the
+keyboard, on flat boards as well as wrapped ones. The **pygame build has none of
+this** — it keeps the single Klein `cell_cycle` it always had, which is why the
+conformance oracle's `hasCellCycle` is checked one way only (see
+`tests/unit/conformance.test.ts`); the symmetry sets themselves are pinned in
+`tests/unit/symmetries.test.ts` and `tests/unit/surfaces.test.ts`.
 
 ## The Klein bottle's self-intersection (`src/boards/clipSolid.ts`)
 

@@ -752,43 +752,57 @@ up and the pin landed on its neighbour. `pointerPoint` in
 position instead. See "Picking" in `web/README.md`;
 `tests/e2e/picking.spec.ts` pins all of it.
 
-**Board symmetries** (`Board3D.symmetries`, built in `boards/surfaces.ts`,
-declared as controls in `data/ui/screens.json` `hud.boardBar`) are what the
-Klein bottle's scroll grew into. A wrapped board is a flat tiling glued to
-itself, so the motions of the plane that survive the gluing permute its cells;
-each one the UI keeps is a button that slides the *contents* along it while the
-geometry stays put and the game is untouched — a symmetry is an automorphism of
-the adjacency, so every number still counts the mines beside it. The point is
-the part of a surface **no drag brings round**: the bottle's neck hides the
-sheet it passes through, and a donut's inner wall is only ever glimpsed through
-the hole. Four are offered — a step round the **ring** (the loop), a step round
-the **tube** (the cross-section) and a reflection in each — and which a surface
-keeps is a question about its seam, not its tiling. A donut keeps all four. A
-Klein bottle keeps the ring step and both mirrors but **not** the tube step:
-crossing the ring seam reverses the tube, so conjugating a tube translation by
-it gives that translation back inverted, and only the **half**-tube step, which
-is its own inverse, descends — which is exactly the move that swaps the sheet
-inside the neck for the one outside. A cylinder and a Möbius strip are open
-across, so nothing translates that way at all; they turn about their axis (the
-Möbius seam flips the band, so a cell returns only after two loops) and reflect
-in their own centre line. A chiral tiling has no mirror on any surface, the same
-chirality that keeps the snubs off those two seams. None of that is asserted:
-a builder *offers* candidate lattice motions and `keepSymmetries` throws out
-whatever is not an automorphism of the adjacency it has just built, so the
-algebra only decides what is worth trying — and several candidates may share an
-id, first survivor wins, which is how a mirror whose axis has to be searched for
-(`templateXMirrors`) or a translation that needs a glide at some sizes costs no
-special case. `involution` is measured too, and is what draws a reflection one
+**Board symmetries** (`boards/symmetry.ts`, declared as controls in
+`data/ui/screens.json` `hud.boardBar`) are what the Klein bottle's scroll grew
+into: the permutations of a board's cells that preserve adjacency, each offered
+as a button that slides the *contents* along while the geometry stays put and
+the game is untouched — every number still counts the mines beside it. On a
+wrapped surface the point is the part **no drag brings round**: the bottle's
+neck hides the sheet it passes through, and a donut's inner wall is only ever
+glimpsed through the hole. On a **flat** board nothing is hidden, and the same
+controls are a way of looking at the same puzzle from another angle — the
+classic 9x9 grid turns a quarter and mirrors both ways, the 30x16 one only a
+half. **Solids carry none**: a drag brings every face past already, so moving
+the contents would only cost the player their place. Five ids — a step round the
+**ring** (the loop), a step round the **tube** (the cross-section), a **turn**,
+and a reflection in each; the ring/tube names carry over to a flat board from
+the window a wrapped one is cut from, whose x becomes the ring and whose y the
+tube. Which a surface keeps is a question about its seam, not its tiling. A
+donut keeps all five. A Klein bottle keeps the ring step, the turn and both
+mirrors but **not** the tube step: crossing the ring seam reverses the tube, so
+conjugating a tube translation by it gives that translation back inverted, and
+only the **half**-tube step, which is its own inverse, descends — exactly the
+move that swaps the sheet inside the neck for the one outside. A cylinder and a
+Möbius strip are open across, so nothing translates that way at all; they turn
+about their own axis (the Möbius seam flips the band, so a cell returns only
+after two loops), reflect in their own centre line, and — the motion an open
+edge does not cost them — turn **end over end** about a horizontal axis. A
+chiral tiling has no mirror on any surface, the same chirality that keeps the
+snubs off those two seams, but it does have half turns, which is why a snub
+cylinder has matching rims at all; three-scale triangular (p3) has neither and
+is the one wrapped board with no flip of any kind. None of that is asserted for
+a wrapped board: a builder *offers* candidate lattice motions and
+`keepSymmetries` throws out whatever is not an automorphism of the adjacency it
+has just built, so the algebra only decides what is worth trying — and several
+candidates may share an id, first survivor wins, which is how a mirror or half
+turn whose centre has to be searched for (`templateHalfTurns`,
+`templateXMirrors`, one candidate per template vertex) or a translation that
+needs a glide at some sizes costs no special case. A **flat** board's are found
+the other way round, by measuring: `planeSymmetries` fixes each motion by where
+it sends the outermost cell, then checks the whole polygon lands on its target
+(congruent tiles in four orientations, as on the sphinx, share centres) and that
+the permutation is an automorphism — so it needs nothing from the builder and
+works the same on a square grid, a Penrose window and a Gosper island.
+`involution` is measured too, and is what draws a reflection or a half turn one
 button rather than a pair — and a **mirror that is not one is dropped**: what a
-p4g template (snub square, Cairo) offers across the tube is a *glide* reflection,
-a different motion with a different undo, and one button cannot honestly be both. **Solids and flat boards carry none** — a solid is
-fully seen by turning it and a flat board hides nothing, so moving the contents
-would only cost the player their place. The **pygame build has none of this**:
-it keeps the single Klein `cell_cycle` it always had, which is why the
-conformance oracle's `hasCellCycle` is now checked one way only (a board the
-reference can scroll is one this app can scroll). See "Board symmetries" in
-`web/README.md`; `tests/unit/symmetries.test.ts` pins the sets and
-`tests/e2e/surfaces.spec.ts` the controls.
+p4g template (snub square, Cairo) offers across the tube is a *glide*
+reflection, a different motion with a different undo, and one button cannot
+honestly be both. The **pygame build has none of this**: it keeps the single
+Klein `cell_cycle` it always had, which is why the conformance oracle's
+`hasCellCycle` is now checked one way only (a board the reference can scroll is
+one this app can scroll). See "Board symmetries" in `web/README.md`;
+`tests/unit/symmetries.test.ts` pins the sets and `tests/e2e/surfaces.spec.ts`
+the controls.
 
 **The Klein bottle's self-intersection** (`src/boards/clipSolid.ts`) is the
 one place the app cuts geometry away. The immersion passes through itself,

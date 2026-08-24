@@ -52,6 +52,23 @@ export const ICONS: Record<string, string> = {
     <path d="M5 7 L12 14 L19 7 M5 13 L12 20 L19 13" stroke="currentColor"
       stroke-width="1.9" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>`,
+  // Turn the board: a circle most of the way round, with the arrow at the top
+  // saying which way. On a flat board it is that board's own smallest rotation
+  // (a quarter turn on a square grid, a sixth on a hexagonal one); on every
+  // wrapped surface it is the half turn that stands it on its head, which is
+  // its own undo and so draws one button rather than the pair.
+  "rotate-right": `<svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M19.5 12 A7.5 7.5 0 1 1 12 4.5" stroke="currentColor"
+      stroke-width="1.9" fill="none" stroke-linecap="round"/>
+    <path d="M8.9 1.4 L12.6 4.5 L8.9 7.6" stroke="currentColor"
+      stroke-width="1.9" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`,
+  "rotate-left": `<svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M4.5 12 A7.5 7.5 0 1 0 12 4.5" stroke="currentColor"
+      stroke-width="1.9" fill="none" stroke-linecap="round"/>
+    <path d="M15.1 1.4 L11.4 4.5 L15.1 7.6" stroke="currentColor"
+      stroke-width="1.9" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`,
   // Named for the mirror *line*: "vertical" reflects left to right (along the
   // ring), "horizontal" top to bottom (across the tube). One each — a mirror is
   // its own undo, and `keepSymmetries` keeps no mirror that is not.

@@ -100,7 +100,7 @@ export class GameSession {
       ...(rng ? { rng } : {}),
     });
     this.panOf = opts.panOf ?? null;
-    for (const symmetry of isBoard3D(this.board) ? this.board.symmetries : []) {
+    for (const symmetry of this.board.symmetries) {
       this.moves.set(symmetry.id, [symmetry.cycle, invertCycle(symmetry.cycle)]);
     }
     for (const cell of this.board.polygons.keys()) {
@@ -120,7 +120,7 @@ export class GameSession {
   /** The symmetries this board can be moved along, in `SYMMETRY_IDS` order.
    * Drives which board-bar controls are shown, and the wheel/gesture input. */
   get symmetries(): readonly BoardSymmetry[] {
-    return isBoard3D(this.board) ? this.board.symmetries : [];
+    return this.board.symmetries;
   }
 
   /** Whether the board carries this symmetry at all. */

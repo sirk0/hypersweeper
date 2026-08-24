@@ -623,13 +623,30 @@ class App {
     }
   }
 
+  /** The keys that step a board along one of its symmetries. Three pairs, one
+   * per motion that has a direction; the two mirrors are on the board bar only,
+   * since there is no key left that reads as one. */
+  private static readonly SYMMETRY_KEYS: Record<string, [SymmetryId, number]> = {
+    "[": ["ring", -1],
+    "]": ["ring", 1],
+    ",": ["tube", -1],
+    ".": ["tube", 1],
+    ";": ["turn", -1],
+    "'": ["turn", 1],
+  };
+
   private onKey(e: KeyboardEvent): void {
     if (this.screen !== "game") return;
     // Zoom from the keyboard on every board: +/- step, 0 frames it again.
     if (e.key === "+" || e.key === "=") this.zoom(ZOOM_KEY_STEP);
     else if (e.key === "-" || e.key === "_") this.zoom(1 / ZOOM_KEY_STEP);
     else if (e.key === "0") this.renderer.resetView();
-    else if (!this.session?.is3d) return;
+    else if (Object.hasOwn(App.SYMMETRY_KEYS, e.key)) {
+      // On every board, not only a 3D one: a flat board has no ring to walk
+      // but it does have its own turn and mirrors.
+      const [id, direction] = App.SYMMETRY_KEYS[e.key]!;
+      this.move(id, direction);
+    } else if (!this.session?.is3d) return;
     else {
       this.onKey3d(e);
       return;
@@ -638,22 +655,13 @@ class App {
   }
 
   private onKey3d(e: KeyboardEvent): void {
-    // Brackets step the contents round the ring (matching the wheel and the
-    // board bar's chevrons) and comma/period round the tube; arrow keys rotate
-    // the board. The two reflections are on the board bar only — there is no
-    // key left that reads as one.
-    if (e.key === "[") this.move("ring", -1);
-    else if (e.key === "]") this.move("ring", 1);
-    else if (e.key === ",") this.move("tube", -1);
-    else if (e.key === ".") this.move("tube", 1);
-    else {
-      const step = KEY_ROTATE_STEP;
-      if (e.key === "ArrowLeft") this.rotate(-step, 0);
-      else if (e.key === "ArrowRight") this.rotate(step, 0);
-      else if (e.key === "ArrowUp") this.rotate(0, -step);
-      else if (e.key === "ArrowDown") this.rotate(0, step);
-      else return;
-    }
+    // Arrow keys rotate the board (the symmetry keys are handled above).
+    const step = KEY_ROTATE_STEP;
+    if (e.key === "ArrowLeft") this.rotate(-step, 0);
+    else if (e.key === "ArrowRight") this.rotate(step, 0);
+    else if (e.key === "ArrowUp") this.rotate(0, -step);
+    else if (e.key === "ArrowDown") this.rotate(0, step);
+    else return;
     e.preventDefault();
   }
 

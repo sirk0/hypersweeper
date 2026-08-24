@@ -16,16 +16,14 @@
 // to one point and the seam closes.
 import {
   cid,
-  isAutomorphism,
-  isIdentity,
-  isInvolution,
+  keepSymmetries,
   orientOutward,
   sharedVertexAdjacency,
-  SYMMETRY_IDS,
   type Board3D,
   type BoardSymmetry,
   type CellId,
   type SurfaceClip,
+  type SymmetryCandidate,
   type SymmetryId,
   type Vec3,
 } from "./core";
@@ -322,6 +320,10 @@ function assemble(
     }
   }
   const r = typeof radius === "function" ? radius(positions) : radius;
+  // Deferred, as a flat board's are (core.ts `flatBoard`): a board's symmetries
+  // are wanted once, when it goes on screen, and the conformance suite builds
+  // every board in the catalogue at every difficulty without ever asking.
+  let kept: BoardSymmetry[] | null = null;
   return {
     mode,
     polygons,
@@ -329,7 +331,9 @@ function assemble(
     mineCount,
     radius: r,
     twoSided,
-    symmetries: keepSymmetries(adjacency, symmetries),
+    get symmetries(): BoardSymmetry[] {
+      return (kept ??= keepSymmetries(adjacency, symmetries));
+    },
     clip,
     cornerMask: masks,
   };
@@ -350,55 +354,16 @@ function assemble(
 // seam reverses the tube, so conjugating a tube step by it gives that step back
 // inverted, and only the half-tube step -- which is its own inverse -- descends.
 // An open surface has no translation across it at all, and only the reflection
-// in its own centre line, since any other would take the band off itself.
+// in its own centre line, since any other would take the band off itself -- but
+// it can still be turned end over end, a half turn about a horizontal axis
+// through its middle, which reverses *both* directions at once and is a
+// symmetry of the tube whether or not either mirror is (a chiral tiling has no
+// mirror anywhere and still has this).
 //
 // So a builder offers candidates and the board measures them: `keepSymmetries`
 // throws out anything that is not an automorphism of the adjacency it just
 // built. Nothing here is asserted from the algebra above -- the algebra only
 // says which candidates are worth offering.
-
-/** A symmetry a builder offers, before the board has checked it. `build`
- * returns null when the motion did not even land on the board's own cells, and
- * is only called until one candidate for an id survives -- a mirror whose axis
- * has to be searched for offers a handful, and the later ones are never walked.
- */
-interface SymmetryCandidate {
-  id: SymmetryId;
-  build: () => Map<CellId, CellId> | null;
-}
-
-/** The candidates that really are symmetries, in `SYMMETRY_IDS` order and at
- * most one per id.
- *
- * A **mirror must be its own inverse**. What a template offers under
- * `mirror-tube` is sometimes a *glide* reflection — p4g (the snub square tiling
- * and its Cairo dual) has no plain horizontal mirror, only a mirror composed
- * with half a domain along the ring — and that is a different motion with a
- * different undo. One button cannot honestly be both, so the glide is dropped
- * rather than drawn as a reflection: those boards keep their two translations
- * and no mirror across the tube. A vertical mirror is always an involution
- * (`x -> axis - x` squares to the identity in the plane), so only this one is
- * ever affected. */
-function keepSymmetries(
-  adjacency: Map<CellId, CellId[]>,
-  candidates: SymmetryCandidate[],
-): BoardSymmetry[] {
-  const kept: BoardSymmetry[] = [];
-  for (const id of SYMMETRY_IDS) {
-    for (const candidate of candidates) {
-      if (candidate.id !== id) continue;
-      const cycle = candidate.build();
-      // An identity is a real symmetry and a useless button: a two-cell tube's
-      // half turn, a mirror whose axis runs through every cell.
-      if (!cycle || isIdentity(cycle) || !isAutomorphism(adjacency, cycle)) continue;
-      const involution = isInvolution(cycle);
-      if (!involution && id.startsWith("mirror-")) continue; // a glide, see above
-      kept.push({ id, cycle, involution });
-      break;
-    }
-  }
-  return kept;
-}
 
 /** Sorted, joined vertex-key set -- a frozenset stand-in for matching a cell to
  * its moved image. */
@@ -483,73 +448,149 @@ function domainCandidates(
  * apart. Matches tilings.ts FLIP_TOL. */
 const MIRROR_TOL = 1e-4;
 
-/** Reflections of a template in a *vertical* line, as motions of the domain
- * grid.
- *
- * `template` records only the horizontal mirror, which is the one the Möbius
- * and Klein seams are glued through; the vertical one has to be looked for. A
- * reflection `x -> axis - x` can only map the vertex set onto itself if it
- * sends the first vertex to some vertex, so the axis is one of a short list of
- * sums -- and reflecting about `axis` and about `axis + width` are the same
- * motion of the wrapped board, so the list is all of it.
- *
- * Every axis that maps the vertices onto themselves is offered; whether it maps
- * the *tiling* onto itself, and whether the seam gluing keeps it, are left to
- * `keepSymmetries` to measure. */
-function templateXMirrors(t: ArchTemplate): DomainMotion[] {
-  const W = t.width;
-  const entries = [...t.verts];
-  const first = entries[0];
+/** Find `(x, y)` among the template's own vertices, as the tag it lands on and
+ * the domain copy it lands in. Null when it is no vertex of the tiling. */
+function tagAt(
+  t: ArchTemplate,
+  x: number,
+  y: number,
+): { tag: string; dm: number; dn: number } | null {
+  const dm = Math.floor(x / t.width + 1e-5);
+  const dn = Math.floor(y / t.height + 1e-5);
+  const rx = x - dm * t.width;
+  const ry = y - dn * t.height;
+  for (const [tag, v] of t.verts) {
+    if (Math.abs(v[0] - rx) < MIRROR_TOL && Math.abs(v[1] - ry) < MIRROR_TOL) {
+      return { tag, dm, dn };
+    }
+  }
+  return null;
+}
+
+/** The coordinates a reflection of the vertex set can be centred on. Any such
+ * reflection sends the first vertex to *some* vertex, which fixes it, so this
+ * short list is all there is to try -- and reflecting about `axis` and about
+ * `axis + width` are the same motion once the board is wrapped, so no more are
+ * wanted. `coordinate` picks the axis: 0 for a vertical mirror line, 1 for a
+ * horizontal one. */
+function mirrorAxes(t: ArchTemplate, coordinate: 0 | 1): number[] {
+  const first = [...t.verts.values()][0];
   if (first === undefined) return [];
+  return [...t.verts.values()].map((v) => first[coordinate] + v[coordinate]);
+}
+
+/** Which of `levels` a candidate centred at `raw` can be slid onto by whole
+ * domain rows -- the tiling repeats every `height`, so a level is reachable
+ * exactly when it agrees with the candidate's own modulo that. `null` means the
+ * surface leaves the line free, which is what a closed direction allows, and
+ * the candidate keeps its own. */
+function levelsFor(t: ArchTemplate, raw: number, levels: readonly number[] | null): number[] {
+  if (levels === null) return [raw];
+  return levels.filter((level) => {
+    const gap = ((level - raw) % t.height + t.height) % t.height;
+    return Math.min(gap, t.height - gap) < MIRROR_TOL;
+  });
+}
+
+/** The template's own tag table for a motion of the plane, or null when the
+ * motion is no symmetry of the vertex set. `image` says where the motion sends
+ * a vertex at (x, y) within one domain. */
+function tagTable(
+  t: ArchTemplate,
+  image: (x: number, y: number) => [number, number],
+): Map<string, { tag: string; dm: number; dn: number }> | null {
+  const table = new Map<string, { tag: string; dm: number; dn: number }>();
+  for (const [tag, v] of t.verts) {
+    const [x, y] = image(v[0], v[1]);
+    const at = tagAt(t, x, y);
+    if (at === null) return null;
+    table.set(tag, at);
+  }
+  return table;
+}
+
+function tableSignature(table: Map<string, { tag: string; dm: number; dn: number }>): string {
+  return [...table].map(([k, v]) => `${k}>${v.tag}@${v.dm},${v.dn}`).join("|");
+}
+
+/** Half turns of a template, as motions of the domain grid: `(x, y) -> (across
+ * - x, level - y)`, which reverses both directions at once.
+ *
+ * This is the motion an open surface keeps when neither mirror survives -- a
+ * cylinder or a Möbius band turned end over end -- and a **chiral** tiling,
+ * which has no mirror anywhere, still has it. That is the same fact that lets
+ * the snubs wrap a cylinder with two matching rims (see THE CUT in tilings.ts).
+ *
+ * A half turn sends the first vertex to *some* vertex, and that one pairing
+ * fixes both coordinates of its centre, so there is one candidate per vertex.
+ * `levels` restricts the horizontal line the centre may lie on: an open band
+ * can only be turned about its own centre line, and a Klein bottle only about
+ * the two the ring seam leaves standing. Null leaves it free, which is what a
+ * donut allows. */
+function templateHalfTurns(t: ArchTemplate, levels: readonly number[] | null): DomainMotion[] {
   const found: DomainMotion[] = [];
   const seen = new Set<string>();
-  for (const [, xy] of entries) {
-    const axis = first[1][0] + xy[0];
-    // tag -> its image, as the template's own (tag, domain offset) pair
-    const images = new Map<string, { tag: string; dm: number }>();
-    let complete = true;
-    for (const [tag, v] of entries) {
-      const x = axis - v[0];
-      const dm = Math.floor(x / W + 1e-5);
-      const rx = x - dm * W;
-      let image: string | null = null;
-      for (const [other, o] of entries) {
-        if (Math.abs(o[0] - rx) < MIRROR_TOL && Math.abs(o[1] - v[1]) < MIRROR_TOL) {
-          image = other;
-          break;
-        }
-      }
-      if (image === null) {
-        complete = false;
-        break;
-      }
-      images.set(tag, { tag: image, dm });
+  const across = mirrorAxes(t, 0);
+  const down = mirrorAxes(t, 1);
+  for (let i = 0; i < across.length; i++) {
+    for (const level of levelsFor(t, down[i]!, levels)) {
+      const table = tagTable(t, (x, y) => [across[i]! - x, level - y]);
+      if (table === null) continue;
+      const signature = tableSignature(table);
+      if (seen.has(signature)) continue;
+      seen.add(signature);
+      found.push((m, n, tag) => {
+        const image = table.get(tag)!;
+        return [-m + image.dm, -n + image.dn, image.tag];
+      });
     }
-    if (!complete) continue;
-    const signature = [...images].map(([k, v]) => `${k}>${v.tag}@${v.dm}`).join("|");
-    if (seen.has(signature)) continue;
-    seen.add(signature);
-    found.push((m, n, tag) => {
-      const image = images.get(tag)!;
-      return [-m + image.dm, n, image.tag];
-    });
   }
   return found;
 }
 
-/** The template's mirror as a motion of the domain grid: a reflection of the
- * whole plane in the horizontal line `axis` domain rows up, `y -> axis*H - y`.
- * `template` stores it as `y -> H - y` per vertex (tag -> tag', with the domain
- * copy it lands in), which puts a vertex of copy `n` in copy `axis - 1 - n +
- * dn`; the x half-period a glide mirror adds is already folded into `dm` and
- * the image tag. Null for a chiral tiling, which has no mirror at all. */
-function templateMirror(t: ArchTemplate, axis: number): DomainMotion | null {
-  const mirror = t.mirror;
-  if (mirror === null || !Number.isInteger(axis)) return null;
-  return (m, n, tag) => {
-    const image = mirror.get(tag)!;
-    return [m + image.dm, axis - 1 - n + image.dn, image.tag];
-  };
+/** Reflections of a template in a *horizontal* line, `y -> level - y`.
+ *
+ * The x coordinate is untouched, so a **glide** -- p4g's mirror, which carries
+ * half a domain along the ring with it -- matches nothing here and is never
+ * offered, which is what `keepSymmetries` would do with it anyway. `levels` as
+ * for `templateHalfTurns`. */
+function templateYMirrors(t: ArchTemplate, levels: readonly number[] | null): DomainMotion[] {
+  const found: DomainMotion[] = [];
+  const seen = new Set<string>();
+  for (const raw of mirrorAxes(t, 1)) {
+    for (const level of levelsFor(t, raw, levels)) {
+      const table = tagTable(t, (x, y) => [x, level - y]);
+      if (table === null) continue;
+      const signature = tableSignature(table);
+      if (seen.has(signature)) continue;
+      seen.add(signature);
+      found.push((m, n, tag) => {
+        const image = table.get(tag)!;
+        return [m + image.dm, -n + image.dn, image.tag];
+      });
+    }
+  }
+  return found;
+}
+
+/** Reflections of a template in a *vertical* line, `x -> axis - x`. The
+ * template records only the horizontal mirror, the one the Möbius and Klein
+ * seams are glued through, so this one is looked for. */
+function templateXMirrors(t: ArchTemplate): DomainMotion[] {
+  const found: DomainMotion[] = [];
+  const seen = new Set<string>();
+  for (const axis of mirrorAxes(t, 0)) {
+    const table = tagTable(t, (x, y) => [axis - x, y]);
+    if (table === null) continue;
+    const signature = tableSignature(table);
+    if (seen.has(signature)) continue;
+    seen.add(signature);
+    found.push((m, n, tag) => {
+      const image = table.get(tag)!;
+      return [-m + image.dm, n + image.dn, image.tag];
+    });
+  }
+  return found;
 }
 
 // -- the donut ---------------------------------------------------------------
@@ -589,6 +630,7 @@ export function torusBoard(
     [
       ["ring", (i, j) => [i + 1, j]],
       ["tube", (i, j) => [i, j + 1]],
+      ["turn", (i, j) => [-i, -j]],
       ["mirror-ring", (i, j) => [-i, j]],
       ["mirror-tube", (i, j) => [i, -j]],
     ],
@@ -640,6 +682,11 @@ export function torusTriangleBoard(
     [
       ["ring", (kx, ky) => [kx + 2, ky]],
       ["tube", (kx, ky) => [kx, ky + 2]],
+      // a half turn about the lattice origin, or about the point half a cell
+      // over: up and down triangles alternate, so which one lands on a cell
+      // depends on the parity of the row count
+      ["turn", (kx, ky) => [-kx, -ky]],
+      ["turn", (kx, ky) => [1 - kx, -ky]],
       ["mirror-ring", (kx, ky) => [-kx, ky]],
       ["mirror-tube", (kx, ky) => [kx, -ky]],
     ],
@@ -693,6 +740,8 @@ export function torusHexBoard(
     [
       ["ring", (kx, ky) => [kx + 2, ky]],
       ["tube", (kx, ky) => [kx, ky + 6]],
+      ["turn", (kx, ky) => [-kx, 4 - ky]],
+      ["turn", (kx, ky) => [1 - kx, 4 - ky]],
       ["mirror-ring", (kx, ky) => [-kx, ky]],
       ["mirror-tube", (kx, ky) => [kx, 4 - ky]],
     ],
@@ -736,6 +785,8 @@ export function mobiusBoard(ring: number, widthCells: number, mineCount: number)
     (i, j) => (mod(Math.floor(i / ring), 2) ? [mod(i, ring), widthCells - j] : [mod(i, ring), j]),
     [
       ["ring", (i, j) => [i + 1, j]],
+      // end over end: the one motion across the band that needs no mirror
+      ["turn", (i, j) => [-i, widthCells - j]],
       ["mirror-ring", (i, j) => [-i, j]],
       ["mirror-tube", (i, j) => [i, widthCells - j]],
     ],
@@ -788,6 +839,8 @@ export function mobiusTriangleBoard(
     (kx, ky) => (mod(Math.floor(kx / ring), 2) ? [mod(kx, ring), rows - ky] : [mod(kx, ring), ky]),
     [
       ["ring", (kx, ky) => [kx + 2, ky]],
+      ["turn", (kx, ky) => [-kx, rows - ky]],
+      ["turn", (kx, ky) => [1 - kx, rows - ky]],
       ["mirror-ring", (kx, ky) => [-kx, ky]],
       // reversing y turns an up triangle into a down one, so the centre-line
       // mirror lands on the board's own cells only for an even row count
@@ -838,6 +891,8 @@ export function mobiusHexBoard(ring: number, rows: number, mineCount: number): B
         : [mod(kx, kxPeriod), ky],
     [
       ["ring", (kx, ky) => [kx + 2, ky]],
+      ["turn", (kx, ky) => [-kx, kyTop - ky]],
+      ["turn", (kx, ky) => [1 - kx, kyTop - ky]],
       ["mirror-ring", (kx, ky) => [-kx, ky]],
       ["mirror-tube", (kx, ky) => [kx, kyTop - ky]],
     ],
@@ -900,6 +955,8 @@ export function kleinBoard(
   const symmetries = latticeCandidates(cells, canonical, [
     ["ring", (i, j) => [i + 1, j]],
     ["tube", (i, j) => [i, j + half]],
+    ["turn", (i, j) => [-i, half - 1 - j]],
+    ["turn", (i, j) => [-i, tube - 1 - j]],
     ["mirror-ring", (i, j) => [-i, j]],
     // a tube mirror survives only in the two axes the seam's own flip fixes
     ["mirror-tube", (i, j) => [i, half - 1 - j]],
@@ -973,6 +1030,10 @@ export function kleinTriangleBoard(
     // the glide that carries a column along with it
     ["tube", (kx, ky) => [kx, ky + tube / 2]],
     ["tube", (kx, ky) => [kx + 1, ky + tube / 2]],
+    ["turn", (kx, ky) => [-kx, flip - ky]],
+    ["turn", (kx, ky) => [1 - kx, flip - ky]],
+    ["turn", (kx, ky) => [-kx, flip + tube / 2 - ky]],
+    ["turn", (kx, ky) => [1 - kx, flip + tube / 2 - ky]],
     ["mirror-ring", (kx, ky) => [-kx, ky]],
     ["mirror-tube", (kx, ky) => [kx, flip - ky]],
     ["mirror-tube", (kx, ky) => [kx, flip + tube / 2 - ky]],
@@ -1042,6 +1103,10 @@ export function kleinHexBoard(
     // half a column, so an odd half needs the glide
     ["tube", (kx, ky) => [kx, ky + kyPeriod / 2]],
     ["tube", (kx, ky) => [kx + 1, ky + kyPeriod / 2]],
+    ["turn", (kx, ky) => [-kx, 4 - ky]],
+    ["turn", (kx, ky) => [1 - kx, 4 - ky]],
+    ["turn", (kx, ky) => [-kx, 4 + kyPeriod / 2 - ky]],
+    ["turn", (kx, ky) => [1 - kx, 4 + kyPeriod / 2 - ky]],
     ["mirror-ring", (kx, ky) => [-kx, ky]],
     ["mirror-tube", (kx, ky) => [kx, 4 - ky]],
     ["mirror-tube", (kx, ky) => [kx, 4 + kyPeriod / 2 - ky]],
@@ -1082,6 +1147,8 @@ export function cylinderBoard(ring: number, rows: number, mineCount: number): Bo
     (i, j) => [mod(i, ring), j],
     [
       ["ring", (i, j) => [i + 1, j]],
+      // end over end about a horizontal axis: an open tube still has this
+      ["turn", (i, j) => [-i, rows - j]],
       ["mirror-ring", (i, j) => [-i, j]],
       ["mirror-tube", (i, j) => [i, rows - j]],
     ],
@@ -1122,6 +1189,8 @@ export function cylinderTriangleBoard(ring: number, rows: number, mineCount: num
     (kx, ky) => [mod(kx, ring), ky],
     [
       ["ring", (kx, ky) => [kx + 2, ky]],
+      ["turn", (kx, ky) => [-kx, rows - ky]],
+      ["turn", (kx, ky) => [1 - kx, rows - ky]],
       ["mirror-ring", (kx, ky) => [-kx, ky]],
       ["mirror-tube", (kx, ky) => [kx, rows - ky]],
     ],
@@ -1164,6 +1233,8 @@ export function cylinderHexBoard(ring: number, rows: number, mineCount: number):
     (kx, ky) => [mod(kx, kxPeriod), ky],
     [
       ["ring", (kx, ky) => [kx + 2, ky]],
+      ["turn", (kx, ky) => [-kx, 3 * rows + 1 - ky]],
+      ["turn", (kx, ky) => [1 - kx, 3 * rows + 1 - ky]],
       ["mirror-ring", (kx, ky) => [-kx, ky]],
       // the band runs ky = 0 .. 3*rows + 1, so its centre line is that top
       ["mirror-tube", (kx, ky) => [kx, 3 * rows + 1 - ky]],
@@ -1290,15 +1361,18 @@ export function archTorusBoard(
     }
   }
   straightenPositions(t, cells, positions, (m, n, tag) => `${mod(m, nx)},${mod(n, ny)},${tag}`);
-  // Both domain translations, and both of the tiling's mirrors where it has
-  // them (a chiral tiling has neither).
+  // Both domain translations, and every rotation and mirror the tiling itself
+  // has: a donut is closed both ways, so no motion of the plane is ruled out by
+  // the gluing and the horizontal line a mirror or a half turn is centred on is
+  // free (`null` below).
   const symmetries = domainCandidates(
     cells,
     (m, n, tag) => [mod(m, nx), mod(n, ny), tag],
     [
       ["ring", (m, n, tag) => [m + 1, n, tag]],
       ["tube", (m, n, tag) => [m, n + 1, tag]],
-      ["mirror-tube", templateMirror(t, 0)],
+      ...templateHalfTurns(t, null).map((m) => ["turn", m] as const),
+      ...templateYMirrors(t, null).map((m) => ["mirror-tube", m] as const),
       ...templateXMirrors(t).map((m) => ["mirror-ring", m] as const),
     ],
   );
@@ -1388,18 +1462,20 @@ export function archCylinderBoard(
     }
   }
   straightenPositions(t, cells, positions, (m, n, tag) => `${mod(m, ring)},${n},${tag}`);
-  // The strip's own centre line is the only horizontal axis it can be mirrored
-  // in, and it lands on the domain grid only when the reflection y -> 2*middle
-  // - y is a whole number of domain rows. Where the strip's rims match through
-  // a *half turn* instead (a chiral tiling has no mirror at all, which is how
-  // the snubs wrap a cylinder), there is no mirror here either.
-  const mirrorAxis = (2 * middle) / H;
+  // The strip's own centre line is the only horizontal line it can be flipped
+  // about: any other would carry the band off itself. It is guaranteed to be
+  // one the tiling reverses y at -- that is what `flips` was checked for above,
+  // and it is what makes the two rims the same curve -- but a mirror and a half
+  // turn are two different ways of doing it and a chiral tiling has only the
+  // second, which is how the snubs wrap a cylinder at all.
+  const centreLine = [2 * middle];
   const symmetries = domainCandidates(
     cells,
     (m, n, tag) => [mod(m, ring), n, tag],
     [
       ["ring", (m, n, tag) => [m + 1, n, tag]],
-      ["mirror-tube", templateMirror(t, Math.round(mirrorAxis * 1e6) / 1e6)],
+      ...templateHalfTurns(t, centreLine).map((m) => ["turn", m] as const),
+      ...templateYMirrors(t, centreLine).map((m) => ["mirror-tube", m] as const),
       ...templateXMirrors(t).map((m) => ["mirror-ring", m] as const),
     ],
   );
@@ -1519,11 +1595,13 @@ export function archMobiusBoard(
     const c = canonical(m, n, tag);
     return `${c[0]},${c[1]},${c[2]}`;
   });
-  // `flipped` is this same mirror with the seam's half-loop x-shift on top;
-  // without that shift it is the band's own centre-line reflection.
+  // The band's own centre line, as on the cylinder -- `flipped` is that same
+  // reflection with the seam's half-loop x-shift on top.
+  const centreLine = [seam * H];
   const symmetries = domainCandidates(cells, canonical, [
     ["ring", (m, n, tag) => [m + 1, n, tag]],
-    ["mirror-tube", templateMirror(t, seam)],
+    ...templateHalfTurns(t, centreLine).map((m) => ["turn", m] as const),
+    ...templateYMirrors(t, centreLine).map((m) => ["mirror-tube", m] as const),
     ...templateXMirrors(t).map((m) => ["mirror-ring", m] as const),
   ]);
   return assemble("mobius" + tiling, cells, positions, mineCount, {
@@ -1620,13 +1698,16 @@ export function archKleinBoard(
   });
   const clip = kleinClip(cells, positions, kleinRecentre(positions), tubeScale);
 
+  const seamLines = [0, tubeTotal / 2];
   const symmetries = domainCandidates(cells, canonical, [
     // one domain forward along the ring: the seam flip carries the cells it
     // crosses to their mirror partners
     ["ring", (m, n, tag) => [m + 1, n, tag]],
     ["tube", (m, n, tag) => [m, n + ny / 2, tag]],
-    ["mirror-tube", templateMirror(t, 0)],
-    ["mirror-tube", templateMirror(t, ny / 2)],
+    // the ring seam reverses the tube, so only the two lines it fixes are left
+    // for a flip: the one it reflects in and the one half a tube away
+    ...templateHalfTurns(t, seamLines).map((m) => ["turn", m] as const),
+    ...templateYMirrors(t, seamLines).map((m) => ["mirror-tube", m] as const),
     ...templateXMirrors(t).map((m) => ["mirror-ring", m] as const),
   ]);
   const ring = symmetries.find((c) => c.id === "ring");

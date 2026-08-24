@@ -193,7 +193,7 @@
       }
     ],
     "_boardBarComment": "Controls that belong to the board rather than to the game: they sit on the caption row under the header, beside the board's name, not in the header row itself. The header holds two slots a side and the centred status block, which is all that fits on one row on a phone; these are shown only on a board that has them, so putting them there would wrap that row on exactly the boards that have the most to fit.",
-    "_symmetryComment": "One control per symmetry the board carries (boards/core.ts BoardSymmetry): a step round the ring, a step round the tube, and the reflection in each. `symmetry:<id>` shows a control on a board that has that symmetry at all; `symmetry-pair:<id>` shows the second of a pair only where the symmetry is not its own inverse. A reflection always is one -- `keepSymmetries` drops a candidate mirror that is not -- and so is a Klein bottle's half-tube step, so those get a single button where a translation gets two.",
+    "_symmetryComment": "One control per symmetry the board carries (boards/symmetry.ts BoardSymmetry): a step round the ring, a step round the tube, a rotation, and the reflection in each. A flat board has no translations but does have the last three; the ring and tube names carry over from the flat window a wrapped board is cut from, whose x becomes the ring and whose y the tube. `symmetry:<id>` shows a control on a board that has that symmetry at all; `symmetry-pair:<id>` shows the second of a pair only where the symmetry is not its own inverse. A reflection always is one -- `keepSymmetries` drops a candidate mirror that is not -- and so is a Klein bottle's half-tube step, so those get a single button where a translation gets two.",
     "boardBar": [
       {
         "slot": "symmetry-ring-back",
@@ -224,15 +224,29 @@
         "visibleWhen": "symmetry:tube"
       },
       {
+        "slot": "symmetry-turn-back",
+        "label": "Turn the board back",
+        "icon": "rotate-left",
+        "action": "symmetry:turn:-1",
+        "visibleWhen": "symmetry-pair:turn"
+      },
+      {
+        "slot": "symmetry-turn-fwd",
+        "label": "Turn the board",
+        "icon": "rotate-right",
+        "action": "symmetry:turn:1",
+        "visibleWhen": "symmetry:turn"
+      },
+      {
         "slot": "symmetry-mirror-ring-fwd",
-        "label": "Reflect along the ring",
+        "label": "Mirror left to right",
         "icon": "mirror-vertical",
         "action": "symmetry:mirror-ring:1",
         "visibleWhen": "symmetry:mirror-ring"
       },
       {
         "slot": "symmetry-mirror-tube-fwd",
-        "label": "Reflect across the tube",
+        "label": "Mirror top to bottom",
         "icon": "mirror-horizontal",
         "action": "symmetry:mirror-tube:1",
         "visibleWhen": "symmetry:mirror-tube"
