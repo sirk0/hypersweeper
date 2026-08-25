@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { surfaceOf } from "../../src/boards/catalog";
+import { SOLID_MODES, surfaceOf } from "../../src/boards/catalog";
 import {
   isAutomorphism,
   isBoard3D,
+  symmetryOf,
   SYMMETRY_IDS,
   type BoardSymmetry,
   type CellId,
@@ -28,6 +29,10 @@ const WRAPPED = MODES.filter((mode) => {
   const key = surfaceKey(mode);
   return key !== null && key !== "flat";
 });
+
+/** The closed solids: the spheres, the Platonic and Catalan solids, the frames
+ * and the polycubes — every board the menu's solid groups deal. */
+const SOLIDS = SOLID_MODES.filter((mode) => MODES.includes(mode));
 
 /** Applying a permutation twice. */
 function squared(cycle: Map<CellId, CellId>): Map<CellId, CellId> {
@@ -134,22 +139,102 @@ describe("board symmetries", () => {
     expect(checked).toBeGreaterThan(10);
   });
 
-  it("solids carry none", () => {
-    // A solid is fully seen by turning it, so every cell is reachable already;
-    // permuting the contents would only cost the player their place. The
-    // symmetries of a *flat* board are found a different way (planeSymmetries),
-    // and it does get them.
-    for (const mode of MODES) {
+  it("every solid has a point group of its own, and it is measured", () => {
+    // Thirteen Catalan solids, five Platonic ones, the frames, the pyramids and
+    // the brick cubes: every one gets whatever its own shape has, found by
+    // measuring rather than out of a table (boards/symmetry.ts solidSymmetries).
+    for (const mode of SOLIDS) {
       const board = buildBoard(mode, "easy");
-      if (isBoard3D(board) && !WRAPPED.includes(mode)) {
-        expect(board.symmetries, mode).toEqual([]);
+      expect(isBoard3D(board), mode).toBe(true);
+      if (!isBoard3D(board)) continue;
+      expect(board.symmetries.length, `${mode} has no symmetry at all`).toBeGreaterThan(0);
+      const ids = board.symmetries.map((s) => s.id);
+      // a solid has no translation: every control it carries is a rotation or a
+      // reflection, and `ring`/`tube` name axes rather than steps along a seam
+      expect(ids).toEqual([...SYMMETRY_IDS].filter((id) => ids.includes(id)));
+      for (const symmetry of board.symmetries) {
+        expect(
+          isAutomorphism(board.adjacency, symmetry.cycle),
+          `${mode}: ${symmetry.id} is not an automorphism`,
+        ).toBe(true);
+        expect(symmetry.involution, `${mode}: ${symmetry.id}`).toBe(
+          measuredInvolution(symmetry.cycle),
+        );
       }
     }
   });
 
+  it("no board offers the same move under two names", () => {
+    // A patch with a single mirror line answers to both mirror ids, and a solid
+    // with a single axis to all three rotation ids; two buttons that do the same
+    // thing are one button and a puzzle.
+    for (const mode of MODES) {
+      const board = buildBoard(mode, "easy");
+      const cycles = board.symmetries.map((s) => s.cycle);
+      for (let i = 0; i < cycles.length; i++) {
+        for (let j = i + 1; j < cycles.length; j++) {
+          const same = [...cycles[i]!].every(([cell, image]) => cycles[j]!.get(cell) === image);
+          expect(same, `${mode}: ${board.symmetries[i]!.id} = ${board.symmetries[j]!.id}`).toBe(
+            false,
+          );
+        }
+      }
+    }
+  });
+
+  it("the cube turns a quarter about three axes and mirrors in two planes", () => {
+    // What anyone would say about a cube if asked, and what the measurement has
+    // to come back with.
+    const board = buildBoard("cube", "easy");
+    expect(isBoard3D(board)).toBe(true);
+    if (!isBoard3D(board)) return;
+    expect(board.symmetries.map((s) => s.id)).toEqual([
+      "ring",
+      "tube",
+      "turn",
+      "mirror-ring",
+      "mirror-tube",
+    ]);
+    for (const id of ["ring", "tube", "turn"] as const) {
+      expect(cycleOrder(symmetryOf(board, id)!.cycle), `${id} is not a quarter turn`).toBe(4);
+    }
+    for (const id of ["mirror-ring", "mirror-tube"] as const) {
+      expect(symmetryOf(board, id)!.involution).toBe(true);
+    }
+  });
+
+  it("each solid gets its own group, not the cube's", () => {
+    // The orders the shapes themselves have: a tetrahedron thirds where a cube
+    // quarters, an icosahedron fifths, and a *chiral* solid — the pentagonal
+    // hexecontahedron is the snub operation's dual — has no mirror anywhere.
+    const spin = (mode: string) => cycleOrder(symmetryOf(buildBoard(mode, "easy"), "ring")!.cycle);
+    expect(spin("tetrahedron")).toBe(3);
+    expect(spin("octahedron")).toBe(4);
+    expect(spin("icosahedron")).toBe(5);
+    expect(spin("dodecahedron")).toBe(5);
+    // a square pyramid has one axis and no second kind of mirror at all
+    const pyramid = buildBoard("steppedpyramid", "easy");
+    expect(pyramid.symmetries.map((s) => s.id)).toEqual(["ring", "mirror-ring"]);
+    expect(spin("steppedpyramid")).toBe(4);
+    for (const chiral of ["sphere", "snubdodec", "pentagonalicositetra"]) {
+      const ids = buildBoard(chiral, "easy").symmetries.map((s) => s.id);
+      expect(ids, `${chiral} should have no mirror`).not.toContain("mirror-ring");
+      expect(ids, `${chiral} should have no mirror`).not.toContain("mirror-tube");
+      expect(ids).toContain("ring");
+    }
+  });
+
+  it("a cube frame finds the axes through the holes in its faces", () => {
+    // Its four-fold axes pass through the middle of each face, where the frame
+    // has no cell, no corner and no edge — nothing pointing at them. They are
+    // found as the line two of its mirror planes meet in.
+    expect(cycleOrder(symmetryOf(buildBoard("cubeframe", "easy"), "ring")!.cycle)).toBe(4);
+  });
+
   it("a flat board has its own rotations and mirrors, and no translation", () => {
     // A finite patch cannot be slid onto itself, so `ring` and `tube` never
-    // appear; what it has is its point group, measured off the drawing.
+    // appear (on a solid they name rotation axes instead); what a flat board
+    // has is its point group, measured off the drawing.
     for (const mode of MODES) {
       const board = buildBoard(mode, "easy");
       if (isBoard3D(board)) continue;

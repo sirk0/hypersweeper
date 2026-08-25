@@ -234,15 +234,13 @@ test.describe("game header", () => {
   test("a board with no symmetries shows its name and no board-bar controls", async ({
     page,
   }) => {
-    // A solid: a drag brings every face round already, so it carries no
-    // symmetry controls at all (a flat board does — see surfaces.spec.ts).
+    // An aperiodic patch, trimmed to its centremost cells, is symmetric about
+    // nothing — one of the few boards in the catalogue with no control at all.
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto("/?mode=sphere&difficulty=easy&seed=1");
+    await page.goto("/?mode=penrose&difficulty=easy&seed=1");
     await expect(page.locator("body[data-ready]")).toBeVisible();
 
-    await expect(page.locator(".board-caption-name")).toContainText(
-      "Pentagonal hexecontahedron",
-    );
+    await expect(page.locator(".board-caption-name")).toContainText("Penrose");
     await expect(page.locator(".board-caption .board-bar-btn:not([hidden])")).toHaveCount(0);
   });
 });

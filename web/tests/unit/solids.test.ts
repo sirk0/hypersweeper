@@ -128,13 +128,22 @@ describe("solids", () => {
     expect(() => steppedBipyramidBoard(4, 1, 5)).toThrow();
   });
 
-  it("solids are closed and one-sided with no symmetry controls", () => {
-    // A solid is fully seen by turning it, so it gets none: the controls exist
-    // for the surfaces a drag cannot bring round (see boards/core.ts).
+  it("solids are closed and one-sided, and carry their own point group", () => {
+    // Measured off the polyhedron, so each gets its own: the pentagonal
+    // hexecontahedron is chiral and has no mirror, the cube quarters about
+    // three axes. See tests/unit/symmetries.test.ts for the whole catalogue.
     for (const board of [sphereBoard(7), cubeBoard(4, 12)]) {
       expect(board.twoSided).toBe(false);
-      expect(board.symmetries).toEqual([]);
+      expect(board.symmetries.map((s) => s.id)).toContain("ring");
     }
+    expect(sphereBoard(7).symmetries.map((s) => s.id)).toEqual(["ring", "tube", "turn"]);
+    expect(cubeBoard(4, 12).symmetries.map((s) => s.id)).toEqual([
+      "ring",
+      "tube",
+      "turn",
+      "mirror-ring",
+      "mirror-tube",
+    ]);
   });
 });
 

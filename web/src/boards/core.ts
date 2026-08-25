@@ -7,7 +7,7 @@
 // tuple sort — the conformance tests assert invariants, not order.
 
 import type { ClipPiece, Tri } from "./clipSolid";
-import { planeSymmetries, type BoardSymmetry } from "./symmetry";
+import { planeSymmetries, solidSymmetries, type BoardSymmetry } from "./symmetry";
 
 export type CellId = string;
 export type Vertex = [number, number];
@@ -76,6 +76,7 @@ export {
   isInvolution,
   keepSymmetries,
   planeSymmetries,
+  solidSymmetries,
   symmetryOf,
   SYMMETRY_IDS,
 } from "./symmetry";
@@ -228,6 +229,21 @@ function flatBoard(board: Omit<Board, "symmetries">): Board {
     ...board,
     get symmetries(): BoardSymmetry[] {
       return (measured ??= planeSymmetries(board.polygons, board.adjacency));
+    },
+  };
+}
+
+/** The same for a closed solid, whose point group `solidSymmetries` measures
+ * off the polyhedron it is drawn as. The wrapped surfaces do *not* come through
+ * here: their cells are not congruent (a donut's inner tiles are smaller than
+ * its outer ones), so nothing of theirs can be found by looking at the
+ * geometry, and `surfaces.ts` offers lattice motions instead. */
+export function solidBoard(board: Omit<Board3D, "symmetries">): Board3D {
+  let measured: BoardSymmetry[] | null = null;
+  return {
+    ...board,
+    get symmetries(): BoardSymmetry[] {
+      return (measured ??= solidSymmetries(board.polygons, board.adjacency));
     },
   };
 }

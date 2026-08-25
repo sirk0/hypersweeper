@@ -759,15 +759,17 @@ as a button that slides the *contents* along while the geometry stays put and
 the game is untouched — every number still counts the mines beside it. On a
 wrapped surface the point is the part **no drag brings round**: the bottle's
 neck hides the sheet it passes through, and a donut's inner wall is only ever
-glimpsed through the hole. On a **flat** board nothing is hidden, and the same
-controls are a way of looking at the same puzzle from another angle — the
-classic 9x9 grid turns a quarter and mirrors both ways, the 30x16 one only a
-half. **Solids carry none**: a drag brings every face past already, so moving
-the contents would only cost the player their place. Five ids — a step round the
+glimpsed through the hole. On a **flat** board or a **solid** nothing is hidden
+that the view cannot reach, and the same controls are a way of looking at the
+same puzzle from another angle — the classic 9x9 grid turns a quarter and
+mirrors both ways, the 30x16 one only a half, and a cube quarters about three
+axes. Five ids — a step round the
 **ring** (the loop), a step round the **tube** (the cross-section), a **turn**,
 and a reflection in each; the ring/tube names carry over to a flat board from
 the window a wrapped one is cut from, whose x becomes the ring and whose y the
-tube. Which a surface keeps is a question about its seam, not its tiling. A
+tube, and on a **solid** they are rotations about the board's principal axis and
+one across it. Which a surface keeps is a question about its seam, not its
+tiling. A
 donut keeps all five. A Klein bottle keeps the ring step, the turn and both
 mirrors but **not** the tube step: crossing the ring seam reverses the tube, so
 conjugating a tube translation by it gives that translation back inverted, and
@@ -792,7 +794,22 @@ the other way round, by measuring: `planeSymmetries` fixes each motion by where
 it sends the outermost cell, then checks the whole polygon lands on its target
 (congruent tiles in four orientations, as on the sphinx, share centres) and that
 the permutation is an automorphism — so it needs nothing from the builder and
-works the same on a square grid, a Penrose window and a Gosper island.
+works the same on a square grid, a Penrose window and a Gosper island. A
+**solid**'s are measured too, by `solidSymmetries`, and each comes out with its
+own: a cube quarters about three axes and mirrors in two planes, a tetrahedron
+thirds and never quarters, an icosahedron fifths, a square pyramid has one axis
+and no second kind of mirror, and a chiral solid (the pentagonal
+hexecontahedron, the snub operation's dual) has no mirror anywhere. In three
+dimensions one cell no longer pins a motion, so an axis has to be found first:
+it passes through a face centre, a vertex or an edge midpoint, all of which
+subdividing leaves among the board's own cell centres, corners and edge
+midpoints — except on a **cube frame**, whose four-fold axes go through the hole
+in the middle of each face, and which are found instead as the line two mirror
+planes meet in. A high-symmetry solid has scores of symmetries and walking every
+cell for each cost most of a second, so the search runs on a sample of eighteen
+cells and only the five motions actually offered are built in full for
+`keepSymmetries` to rule on. Five buttons cannot be a group of forty-eight;
+what they are is a set that generates it.
 `involution` is measured too, and is what draws a reflection or a half turn one
 button rather than a pair — and a **mirror that is not one is dropped**: what a
 p4g template (snub square, Cairo) offers across the tube is a *glide*

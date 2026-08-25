@@ -193,32 +193,32 @@
       }
     ],
     "_boardBarComment": "Controls that belong to the board rather than to the game: they sit on the caption row under the header, beside the board's name, not in the header row itself. The header holds two slots a side and the centred status block, which is all that fits on one row on a phone; these are shown only on a board that has them, so putting them there would wrap that row on exactly the boards that have the most to fit.",
-    "_symmetryComment": "One control per symmetry the board carries (boards/symmetry.ts BoardSymmetry): a step round the ring, a step round the tube, a rotation, and the reflection in each. A flat board has no translations but does have the last three; the ring and tube names carry over from the flat window a wrapped board is cut from, whose x becomes the ring and whose y the tube. `symmetry:<id>` shows a control on a board that has that symmetry at all; `symmetry-pair:<id>` shows the second of a pair only where the symmetry is not its own inverse. A reflection always is one -- `keepSymmetries` drops a candidate mirror that is not -- and so is a Klein bottle's half-tube step, so those get a single button where a translation gets two.",
+    "_symmetryComment": "One control per symmetry the board carries (boards/symmetry.ts BoardSymmetry). The ids are named for a wrapped surface, whose two directions are round the ring and round the tube, and carry over to the other two kinds: a flat board is the window such a surface is cut from, so its x is the ring and its y the tube, and on a solid `ring` and `tube` are rotations about the board's principal axis and one across it. The labels say what the control does to the board rather than naming a seam, because one label has to serve all three. `symmetry:<id>` shows a control on a board that has that symmetry at all; `symmetry-pair:<id>` shows the second of a pair only where the symmetry is not its own inverse. A reflection always is one -- `keepSymmetries` drops a candidate mirror that is not -- and so is a Klein bottle's half-tube step, so those get a single button where a translation gets two.",
     "boardBar": [
       {
         "slot": "symmetry-ring-back",
-        "label": "Shift back around the ring",
+        "label": "Spin the board back",
         "icon": "chevrons-left",
         "action": "symmetry:ring:-1",
         "visibleWhen": "symmetry-pair:ring"
       },
       {
         "slot": "symmetry-ring-fwd",
-        "label": "Shift forward around the ring",
+        "label": "Spin the board",
         "icon": "chevrons-right",
         "action": "symmetry:ring:1",
         "visibleWhen": "symmetry:ring"
       },
       {
         "slot": "symmetry-tube-back",
-        "label": "Roll back around the tube",
+        "label": "Roll the board back",
         "icon": "chevrons-up",
         "action": "symmetry:tube:-1",
         "visibleWhen": "symmetry-pair:tube"
       },
       {
         "slot": "symmetry-tube-fwd",
-        "label": "Roll forward around the tube",
+        "label": "Roll the board",
         "icon": "chevrons-down",
         "action": "symmetry:tube:1",
         "visibleWhen": "symmetry:tube"

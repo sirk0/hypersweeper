@@ -87,9 +87,9 @@ const SECTIONS: Section[] = [
           "itself never moves, and neither does the game: every number still " +
           "counts the mines beside it. Each board gets the moves its own shape " +
           "allows — a cylinder has no way round its tube, a Klein bottle can " +
-          "only go half way, and a flat board has no way round at all but " +
-          "turns and mirrors like the square it is. The wheel slides a wrapped " +
-          "board round the ring, and shift and the wheel round the tube.",
+          "only go half way, a cube quarters about three axes, and a flat " +
+          "board turns and mirrors like the square it is. The wheel slides a " +
+          "wrapped board round the ring, and shift and the wheel round the tube.",
       ],
     ],
   },

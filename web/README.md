@@ -888,23 +888,24 @@ own belly, so a few cells are hidden behind it and no amount of turning the
 board brings them out. It generalises because the same is true elsewhere. **A
 donut's inner wall** is only ever glimpsed through the hole; a cylinder's inside
 only at a shallow angle through its ends. Rolling the contents round the tube
-brings them round the outside instead. On a **flat** board nothing is hidden at
-all, and the controls are a way of looking at the same puzzle from another angle
-rather than a way of reaching part of it — the classic 9×9 grid turns a quarter
-and mirrors both ways. The **solids** are the boards that get *none*: a drag
-turns them and every face comes past, so permuting the contents would only cost
-the player their place.
+brings them round the outside instead. On a **flat** board or a **solid**
+nothing is hidden that the view cannot reach, and the controls are a way of
+looking at the same puzzle from another angle rather than a way of reaching part
+of it — the classic 9×9 grid turns a quarter and mirrors both ways, and a cube
+quarters about three axes.
 
-### Five ids, and two ways of finding them
+### Five ids, and three ways of finding them
 
 `SYMMETRY_IDS` in `boards/symmetry.ts`: a step round the **ring** (the loop
 through the hole), a step round the **tube** (the cross-section), a **turn**,
-and a reflection in each of the two directions. The ring and tube names carry
-over to a flat board from the window a wrapped one is cut from — its x becomes
-the ring and its y the tube — so `mirror-ring` is the reflection that swaps left
-for right on either kind of board.
+and a reflection in each of the two directions. The names are the wrapped
+surface's and carry over to the other two kinds: a flat board is the window such
+a surface is cut from, so its x is the ring and its y the tube, and on a solid
+`ring` and `tube` are rotations about the board's principal axis and one across
+it. The labels the player sees say what the control does to the board rather
+than naming a seam, because one label has to serve all three.
 
-The two kinds hide their symmetry in different places, so there are two ways in:
+Where the symmetries are hidden differs by kind, so there are three ways in:
 
 - A **wrapped** board's drawn cells are not congruent — a donut's inner tiles
   are smaller than its outer ones — so nothing can be found by looking at the
@@ -919,6 +920,9 @@ The two kinds hide their symmetry in different places, so there are two ways in:
   whole polygon has to land on the target's (the sphinx patch is one tile in
   four orientations, so centres coinciding proves nothing) and the permutation
   still has to be an automorphism.
+- A **solid** is measured the same way, in three dimensions. See below — what
+  changes is that one cell no longer pins a motion, because a rotation has an
+  axis to find first.
 
 ### What survives the gluing is not what you would guess
 
@@ -985,12 +989,50 @@ Two consequences worth knowing:
   - x` squares to the identity in the plane, so it is an involution wherever it
   survives at all.
 
+### A solid's point group (`solidSymmetries`)
+
+Thirteen Catalan solids, five Platonic ones, the frames, the pyramids and the
+brick cubes would be twenty tables of axes to keep in step with twenty builders,
+so none of it is declared: a solid is drawn as the thing it is, every symmetry
+of the polyhedron is a symmetry of the picture, and the group is measured off
+the drawing. Each board gets its own — a cube quarters about three axes, a
+tetrahedron thirds and never quarters, an icosahedron fifths, a square pyramid
+has one axis and no second kind of mirror at all, and a **chiral** solid (the
+pentagonal hexecontahedron, which is the snub operation's dual) has no mirror
+anywhere. `tests/unit/symmetries.test.ts` pins those.
+
+Three things make it work:
+
+- **Where to look for an axis.** A symmetry axis of a polyhedron passes through
+  a face centre, a vertex or an edge midpoint, and subdividing the faces leaves
+  all three among the board's own cell centres, cell corners and cell-edge
+  midpoints. A **mirror normal** need be none of those — a plane running between
+  two cells is normal to the line joining their centres, and a tetrahedron's six
+  mirrors are each normal to the edge opposite the one they contain, a direction
+  no point of the solid lies on — so edge vectors and centre differences are
+  offered too.
+- **Where that is not enough.** A cube *frame*'s four-fold axes go through the
+  hole in the middle of each face, where there is no cell, no corner and no edge
+  pointing at them. They are found as the line two of its mirror planes meet in,
+  which is why the mirrors are searched for first.
+- **Not walking the board for each.** A disdyakis triacontahedron has a hundred
+  and twenty symmetries, and testing each against every cell cost most of a
+  second on a board the player is waiting for. The search runs on a **sample** —
+  two cells chosen to reject nearly everything on two lookups, plus a spread of
+  sixteen more — and only the five motions actually offered as controls are ever
+  built in full, which `keepSymmetries` then measures against the whole
+  adjacency. Five buttons cannot be a group of forty-eight, so what they are is
+  a set that generates it: three rotation axes, the first the board's own
+  highest-order one and the others as near perpendicular to it as the solid
+  allows, plus a mirror through that first axis and one across it.
+
 The controls are declared in `data/ui/screens.json` under `hud.boardBar` and
 drawn by `ui/boardInfo.ts`: `symmetry:<id>` shows a control on a board with that
 symmetry, `symmetry-pair:<id>` shows the second of a pair only where the
 symmetry is not its own inverse — which means the two mirrors, every wrapped
 surface's half turn and a Klein bottle's half-tube step get one button, while a
-translation and a flat board's quarter or sixth turn get two. The mouse wheel
+translation and a cube's or a flat board's quarter turn get two. A board with
+everything shows eight; the caption row wraps rather than shrinking them. The mouse wheel
 walks the ring and shift+wheel the tube (ctrl+wheel still zooms, as it already
 did on the Klein bottle, which is the board this behaviour is inherited from);
 `[` / `]`, `,` / `.` and `;` / `'` do the ring, the tube and the turn from the

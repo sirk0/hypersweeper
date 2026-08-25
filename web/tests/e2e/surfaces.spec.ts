@@ -148,10 +148,46 @@ test.describe("M3 surfaces", () => {
       "symmetry-mirror-tube-fwd",
     ]);
 
-    // and a solid, which a drag already brings every face of round, shows none
-    await page.goto("/?mode=sphere&difficulty=easy&seed=1");
+    // A solid gets its own point group: a cube quarters about three axes and
+    // mirrors in two planes, which is what anyone would say about a cube.
+    await page.goto("/?mode=cube&difficulty=easy&seed=1");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    expect(await shown()).toEqual([
+      "symmetry-ring-back",
+      "symmetry-ring-fwd",
+      "symmetry-tube-back",
+      "symmetry-tube-fwd",
+      "symmetry-turn-back",
+      "symmetry-turn-fwd",
+      "symmetry-mirror-ring-fwd",
+      "symmetry-mirror-tube-fwd",
+    ]);
+
+    // and a board with no symmetry at all — an aperiodic patch trimmed to its
+    // centremost cells is not symmetric about anything — shows none of them
+    await page.goto("/?mode=penrose&difficulty=easy&seed=1");
     await expect(page.locator("body[data-ready]")).toBeVisible();
     expect(await shown()).toEqual([]);
+  });
+
+  test("a solid's quarter turn moves a cell round its own axis", async ({ page }) => {
+    await page.goto("/?mode=cube&difficulty=easy&seed=1");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    const moved = await page.evaluate(() => {
+      const ms = window.__ms!;
+      const cell = ms.cells().find((c) => ms.cellScreenXY(c) != null)!;
+      const before = ms.cellScreenXY(cell)!;
+      ms.scroll(1, "ring");
+      const after = ms.cellScreenXY(cell);
+      return {
+        gone: after == null,
+        distance: after ? Math.hypot(after.x - before.x, after.y - before.y) : Infinity,
+        state: ms.state(),
+      };
+    });
+    // a quarter of the way round is either off the visible faces or a long way
+    expect(moved.gone || moved.distance > 20).toBe(true);
+    expect(moved.state.status).toBe("playing");
   });
 
   test("the classic board turns a quarter, and the game is untouched", async ({ page }) => {

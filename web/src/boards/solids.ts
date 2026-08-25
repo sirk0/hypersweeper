@@ -12,6 +12,7 @@ import {
   normalize,
   orientOutward,
   sharedVertexAdjacency,
+  solidBoard,
   tangentOrder,
   type Board3D,
   type CellId,
@@ -194,17 +195,16 @@ export function convexBoard3d(
     const polygon = keys.map((key) => positions.get(key)!);
     polygons.set(cell, orientOutward(polygon, centroidOf(polygon)));
   }
-  return {
+  return solidBoard({
     mode,
     polygons,
     adjacency,
     mineCount,
     radius,
     twoSided: false,
-    symmetries: [],
     clip: null,
     cornerMask: null,
-  };
+  });
 }
 
 // -- 3D builders --------------------------------------------------------------
@@ -966,17 +966,16 @@ function polycubeSurface(
       keys.map((key) => positions.get(key)!),
     );
   }
-  return {
+  return solidBoard({
     mode,
     polygons,
     adjacency,
     mineCount,
     radius,
     twoSided: false,
-    symmetries: [],
     clip: null,
     cornerMask: null,
-  };
+  });
 }
 
 /** The surface of a cube frame (a level-1 Menger sponge): an `n x n x n`
@@ -1194,15 +1193,14 @@ export function tetrahedronFrameBoard(
   for (const p of positions.values()) {
     radius = Math.max(radius, Math.hypot(p[0], p[1], p[2]));
   }
-  return {
+  return solidBoard({
     mode: "tetraframe",
     polygons,
     adjacency,
     mineCount,
     radius,
     twoSided: false,
-    symmetries: [],
     clip: null,
     cornerMask: null,
-  };
+  });
 }
