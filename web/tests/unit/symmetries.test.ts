@@ -55,6 +55,43 @@ function cycleOrder(cycle: Map<CellId, CellId>): number {
   return order;
 }
 
+/** How many distinct arrangements the controls can put the board into: the
+ * order of the group they generate. */
+function groupOrder(symmetries: readonly BoardSymmetry[]): number {
+  return closure(symmetries).size;
+}
+
+/** Whether the group `symmetries` generate contains `target`. */
+function reaches(symmetries: readonly BoardSymmetry[], target: Map<CellId, CellId>): boolean {
+  return closure(symmetries).has(signature(target));
+}
+
+function signature(cycle: Map<CellId, CellId>): string {
+  return [...cycle.keys()].sort().map((cell) => cycle.get(cell)!).join(",");
+}
+
+/** Every permutation the controls can compose, keyed by signature. */
+function closure(symmetries: readonly BoardSymmetry[]): Set<string> {
+  const first = symmetries[0];
+  if (first === undefined) return new Set();
+  const cells = [...first.cycle.keys()].sort();
+  const identity = new Map(cells.map((cell) => [cell, cell]));
+  const seen = new Set([signature(identity)]);
+  const queue = [identity];
+  for (let head = 0; head < queue.length; head++) {
+    for (const symmetry of symmetries) {
+      const next = new Map(
+        [...queue[head]!].map(([cell, image]) => [cell, symmetry.cycle.get(image)!]),
+      );
+      const key = signature(next);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      queue.push(next);
+    }
+  }
+  return seen;
+}
+
 /** Every power of the ring translation, the identity first — the subgroup a
  * board's contents can be turned into by pressing one arrow. */
 function ringPowers(ring: Map<CellId, CellId>): Map<CellId, CellId>[] {
@@ -182,24 +219,61 @@ describe("board symmetries", () => {
     }
   });
 
-  it("the cube turns a quarter about three axes and mirrors in two planes", () => {
-    // What anyone would say about a cube if asked, and what the measurement has
-    // to come back with.
+  it("the cube reaches all forty-eight of its symmetries from three controls", () => {
+    // A cube quarters about three axes and mirrors in nine planes, and every
+    // one of those is a combination of two quarter turns and one mirror — so
+    // three controls is what it is offered, and they reach the whole group.
     const board = buildBoard("cube", "easy");
     expect(isBoard3D(board)).toBe(true);
     if (!isBoard3D(board)) return;
-    expect(board.symmetries.map((s) => s.id)).toEqual([
-      "ring",
-      "tube",
-      "turn",
-      "mirror-ring",
-      "mirror-tube",
-    ]);
-    for (const id of ["ring", "tube", "turn"] as const) {
+    expect(board.symmetries.map((s) => s.id)).toEqual(["ring", "tube", "mirror-ring"]);
+    for (const id of ["ring", "tube"] as const) {
       expect(cycleOrder(symmetryOf(board, id)!.cycle), `${id} is not a quarter turn`).toBe(4);
     }
-    for (const id of ["mirror-ring", "mirror-tube"] as const) {
-      expect(symmetryOf(board, id)!.involution).toBe(true);
+    expect(symmetryOf(board, "mirror-ring")!.involution).toBe(true);
+    expect(groupOrder(board.symmetries)).toBe(48);
+  });
+
+  it("the controls of a board reach its whole symmetry group", () => {
+    // The orders are the textbook ones, and they are what the *reduced* set of
+    // buttons still generates: dropping a control only ever drops one the rest
+    // could already make.
+    const orders: [string, string, number][] = [
+      ["cube", "easy", 48], // Oh
+      ["octahedron", "easy", 48], // the cube's own group, on its dual
+      ["tetrahedron", "easy", 24], // Td
+      ["icosahedron", "easy", 120], // Ih, from a fifth-turn and one mirror
+      ["dodecahedron", "easy", 120],
+      ["sphere", "easy", 60], // I: the snub dual is chiral, so rotations only
+      ["square", "easy", 8], // D4 — the classic 9x9 grid
+      ["square", "hard", 4], // 30x16 is a rectangle: a half turn and a mirror
+      ["hexhex", "easy", 12], // D6
+      ["gosper", "easy", 6], // C6: the flowsnake is chiral
+    ];
+    for (const [mode, difficulty, order] of orders) {
+      const board = buildBoard(mode, difficulty);
+      expect(groupOrder(board.symmetries), `${mode}/${difficulty}`).toBe(order);
+    }
+  });
+
+  it("no control is a combination of the others", () => {
+    // The rule the whole reduction exists for. The one exception is a wrapped
+    // board's two translations, which are kept whatever the algebra says (see
+    // `irredundant`): a step is how a hidden cell is reached at all.
+    for (const mode of MODES) {
+      const board = buildBoard(mode, "easy");
+      const wrapped = WRAPPED.includes(mode);
+      const symmetries = board.symmetries;
+      if (symmetries.length < 2) continue;
+      for (let i = 0; i < symmetries.length; i++) {
+        const id = symmetries[i]!.id;
+        if (wrapped && (id === "ring" || id === "tube")) continue;
+        const others = symmetries.filter((_, j) => j !== i);
+        expect(
+          reaches(others, symmetries[i]!.cycle),
+          `${mode}: ${id} is a combination of the others`,
+        ).toBe(false);
+      }
     }
   });
 
@@ -267,11 +341,11 @@ describe("board symmetries", () => {
     const half = buildBoard("square", "hard").symmetries.find((s) => s.id === "turn")!;
     expect(half).toBeDefined();
     expect(half.involution).toBe(true);
-    // and both mirrors, which a rectangle keeps
+    // a rectangle has both mirrors, but the second is the first after the half
+    // turn, so only one is offered
     expect(buildBoard("square", "hard").symmetries.map((s) => s.id)).toEqual([
       "turn",
       "mirror-ring",
-      "mirror-tube",
     ]);
   });
 
@@ -353,11 +427,10 @@ describe("the board bar's symmetry controls", () => {
       "symmetry-ring-back",
       "symmetry-ring-fwd",
       // the tube step is a half turn, so it is its own undo — as is `turn`
-      // itself on every wrapped surface
+      // itself on every wrapped surface; both mirrors are combinations of those
+      // and are not offered
       "symmetry-tube-fwd",
       "symmetry-turn-fwd",
-      "symmetry-mirror-ring-fwd",
-      "symmetry-mirror-tube-fwd",
     ]);
   });
 });

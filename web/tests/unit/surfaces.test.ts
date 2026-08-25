@@ -79,9 +79,11 @@ describe("wrapped surfaces", () => {
     const board = torusBoard(12, 6, 9);
     expect(degrees(board)).toEqual(new Set([8]));
     expect(board.twoSided).toBe(false);
-    // a donut is closed both ways, so it keeps every motion of the square
-    // lattice: both translations, the half turn and both mirrors
-    expect(ids(board)).toEqual(["ring", "tube", "turn", "mirror-ring", "mirror-tube"]);
+    // A donut is closed both ways, so it has every motion of the square
+    // lattice; what it *offers* is the ones that are not combinations of the
+    // others, and the mirror across the tube is the half turn after the mirror
+    // along the ring (see `irredundant`).
+    expect(ids(board)).toEqual(["ring", "tube", "turn", "mirror-ring"]);
     for (const id of ids(board)) assertSymmetry(board, id);
   });
 
@@ -104,11 +106,18 @@ describe("wrapped surfaces", () => {
   it("cylinder and Möbius are two-sided and turn about their axis", () => {
     for (const board of [cylinderBoard(12, 7, 10), mobiusBoard(20, 4, 10)]) {
       expect(board.twoSided).toBe(true);
-      // open across, so no translation that way — but it can still be turned
-      // end over end, and both reflections survive
-      expect(ids(board)).toEqual(["ring", "turn", "mirror-ring", "mirror-tube"]);
+      // open across, so no translation that way — but both can still be turned
+      // end over end, and both keep the step round their own axis
+      expect(ids(board)).toContain("ring");
+      expect(ids(board)).toContain("turn");
+      expect(ids(board)).not.toContain("tube");
       for (const id of ids(board)) assertSymmetry(board, id);
     }
+    // A cylinder keeps one mirror on top of those; a Möbius band's is already
+    // the end-over-end turn after a step round the loop, because its seam
+    // flips the band — so it is not offered.
+    expect(ids(cylinderBoard(12, 7, 10))).toEqual(["ring", "turn", "mirror-ring"]);
+    expect(ids(mobiusBoard(20, 4, 10))).toEqual(["ring", "turn"]);
   });
 
   it("the Möbius ring step returns only after two loops", () => {
@@ -134,7 +143,9 @@ describe("wrapped surfaces", () => {
 
   it("the Klein bottle's only tube step is the half turn", () => {
     const board = kleinBoard(12, 6, 9);
-    expect(ids(board)).toEqual(["ring", "tube", "turn", "mirror-ring", "mirror-tube"]);
+    // both mirrors are combinations of the turn and each other, so neither is
+    // offered: the bottle's three controls are its two steps and its half turn
+    expect(ids(board)).toEqual(["ring", "tube", "turn"]);
     for (const id of ids(board)) assertSymmetry(board, id);
     // The ring seam reverses the tube, so conjugating a whole-tube step by it
     // gives that step back inverted and only the half step -- its own inverse

@@ -332,7 +332,9 @@ function assemble(
     radius: r,
     twoSided,
     get symmetries(): BoardSymmetry[] {
-      return (kept ??= keepSymmetries(adjacency, symmetries));
+      // The two translations are never given up, however the algebra falls —
+      // see `irredundant`. They are what a wrapped board's controls are *for*.
+      return (kept ??= keepSymmetries(adjacency, symmetries, ["ring", "tube"]));
     },
     clip,
     cornerMask: masks,

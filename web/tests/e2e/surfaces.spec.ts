@@ -90,12 +90,14 @@ test.describe("M3 surfaces", () => {
     expect(moved, "wheel scroll did not move the cell").toBe(true);
   });
 
-  test("each surface shows the controls its own gluing leaves it", async ({ page }) => {
+  test("each board shows the controls it has and no combination of them", async ({ page }) => {
     // A donut wraps both ways, so it steps round the ring and round the tube; a
     // cylinder is open across, so it has no tube step at all — but it can still
     // be turned end over end; a Klein bottle's seam reverses the tube, so its
     // tube step is a half turn and its own undo, and it gets one button rather
-    // than a pair.
+    // than a pair. What none of them shows is a control the others can already
+    // make: a donut's second mirror is its half turn after the first, and a
+    // Klein bottle's two mirrors are both combinations of its three steps.
     const shown = async () =>
       page.$$eval(".board-caption .board-bar-btn", (nodes) =>
         nodes
@@ -112,7 +114,6 @@ test.describe("M3 surfaces", () => {
       "symmetry-tube-fwd",
       "symmetry-turn-fwd",
       "symmetry-mirror-ring-fwd",
-      "symmetry-mirror-tube-fwd",
     ]);
 
     await page.goto("/?mode=cylinder&difficulty=easy&seed=1");
@@ -122,7 +123,6 @@ test.describe("M3 surfaces", () => {
       "symmetry-ring-fwd",
       "symmetry-turn-fwd",
       "symmetry-mirror-ring-fwd",
-      "symmetry-mirror-tube-fwd",
     ]);
 
     await page.goto("/?mode=klein&difficulty=easy&seed=1");
@@ -132,24 +132,22 @@ test.describe("M3 surfaces", () => {
       "symmetry-ring-fwd",
       "symmetry-tube-fwd",
       "symmetry-turn-fwd",
-      "symmetry-mirror-ring-fwd",
-      "symmetry-mirror-tube-fwd",
     ]);
 
     // A flat board has no translations, but it does have its own turn and its
-    // own mirrors — the classic 9x9 grid is square, so a quarter turn lands on
-    // it and the pair of arrows is shown.
+    // own mirror — the classic 9x9 grid is square, so a quarter turn lands on
+    // it and the pair of arrows is shown. Its second mirror is the turn twice
+    // and the first, so it is not offered.
     await page.goto("/?mode=square&difficulty=easy&seed=1");
     await expect(page.locator("body[data-ready]")).toBeVisible();
     expect(await shown()).toEqual([
       "symmetry-turn-back",
       "symmetry-turn-fwd",
       "symmetry-mirror-ring-fwd",
-      "symmetry-mirror-tube-fwd",
     ]);
 
-    // A solid gets its own point group: a cube quarters about three axes and
-    // mirrors in two planes, which is what anyone would say about a cube.
+    // A solid gets its own point group, reduced the same way: two of a cube's
+    // three quarter turns and one of its nine mirrors reach all forty-eight.
     await page.goto("/?mode=cube&difficulty=easy&seed=1");
     await expect(page.locator("body[data-ready]")).toBeVisible();
     expect(await shown()).toEqual([
@@ -157,10 +155,7 @@ test.describe("M3 surfaces", () => {
       "symmetry-ring-fwd",
       "symmetry-tube-back",
       "symmetry-tube-fwd",
-      "symmetry-turn-back",
-      "symmetry-turn-fwd",
       "symmetry-mirror-ring-fwd",
-      "symmetry-mirror-tube-fwd",
     ]);
 
     // and a board with no symmetry at all — an aperiodic patch trimmed to its

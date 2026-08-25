@@ -814,7 +814,17 @@ what they are is a set that generates it.
 button rather than a pair — and a **mirror that is not one is dropped**: what a
 p4g template (snub square, Cairo) offers across the tube is a *glide*
 reflection, a different motion with a different undo, and one button cannot
-honestly be both. The **pygame build has none of this**: it keeps the single
+honestly be both. Last, **no control survives that the others can already
+make**: `irredundant` tests each against the group the rest generate and drops
+it when it turns up there, so a donut sheds the mirror across its tube (its half
+turn after the other mirror), a cube shows two of its three quarter turns and
+one of its nine mirrors, and an icosahedron reaches all hundred and twenty of
+its symmetries from a fifth-turn and one plane. Dropping never costs a board a
+motion — the buttons generate the same group either way, and
+`tests/unit/symmetries.test.ts` pins its order. The one exception is a wrapped
+board's two **translations**, kept whatever the algebra says: on a triangular
+cylinder with an odd row count the ring step is the square of a half turn and a
+mirror, and a step is the motion the whole feature exists for. The **pygame build has none of this**: it keeps the single
 Klein `cell_cycle` it always had, which is why the conformance oracle's
 `hasCellCycle` is now checked one way only (a board the reference can scroll is
 one this app can scroll). See "Board symmetries" in `web/README.md`;

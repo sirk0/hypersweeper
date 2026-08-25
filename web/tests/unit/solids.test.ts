@@ -136,14 +136,8 @@ describe("solids", () => {
       expect(board.twoSided).toBe(false);
       expect(board.symmetries.map((s) => s.id)).toContain("ring");
     }
-    expect(sphereBoard(7).symmetries.map((s) => s.id)).toEqual(["ring", "tube", "turn"]);
-    expect(cubeBoard(4, 12).symmetries.map((s) => s.id)).toEqual([
-      "ring",
-      "tube",
-      "turn",
-      "mirror-ring",
-      "mirror-tube",
-    ]);
+    expect(sphereBoard(7).symmetries.map((s) => s.id)).toEqual(["ring", "tube"]);
+    expect(cubeBoard(4, 12).symmetries.map((s) => s.id)).toEqual(["ring", "tube", "mirror-ring"]);
   });
 });
 

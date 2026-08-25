@@ -989,6 +989,39 @@ Two consequences worth knowing:
   - x` squares to the identity in the plane, so it is an involution wherever it
   survives at all.
 
+### One button per motion nothing else can make
+
+Five controls offered blind are not five *different* things to do. A donut's
+mirror across the tube is its half turn after the mirror along the ring; a
+cube's third quarter turn is the other two combined, and once one of its nine
+mirrors is there the rest are a rotation away; the classic 9×9 grid's horizontal
+mirror is its quarter turn twice and then the vertical one. Each of those is a
+button a player has to *learn* is redundant.
+
+So `irredundant` (in `keepSymmetries`, so all three derivations get it) tests
+each control against the group the **others** generate and drops it when it
+turns up there. Dropping never costs the board a motion — a control only goes
+when the rest still reach it — so the buttons always generate the same group
+they did before, which `tests/unit/symmetries.test.ts` pins by measuring its
+order: 48 for a cube from three controls, 120 for an icosahedron from *two*, 8
+for the classic 9×9 grid, 6 for the chiral Gosper island.
+
+Two details:
+
+- **A translation is never dropped**, and that exception is the one place the
+  rule is not followed. On a triangular cylinder with an odd row count the ring
+  step is the *square* of a half turn and a mirror, so minimality would take the
+  spin arrows away and leave the player pressing four buttons to move the board
+  one column; nine donuts and thirty-odd cylinders would be left with
+  reflections and nothing else. A step is the motion the whole feature exists
+  for — the only one that moves the board a little rather than turning it inside
+  out — so `assemble` passes `ring` and `tube` as essential.
+- **The order controls are given up in** decides which of a mutually redundant
+  pair survives: mirror across the tube first, then the mirror along the ring,
+  then the turn, then the two steps. One pass suffices, because the set of
+  others only ever shrinks as the pass goes on, so a control kept against a
+  larger group stays out of every smaller one.
+
 ### A solid's point group (`solidSymmetries`)
 
 Thirteen Catalan solids, five Platonic ones, the frames, the pyramids and the
@@ -1021,10 +1054,17 @@ Three things make it work:
   two cells chosen to reject nearly everything on two lookups, plus a spread of
   sixteen more — and only the five motions actually offered as controls are ever
   built in full, which `keepSymmetries` then measures against the whole
-  adjacency. Five buttons cannot be a group of forty-eight, so what they are is
-  a set that generates it: three rotation axes, the first the board's own
-  highest-order one and the others as near perpendicular to it as the solid
-  allows, plus a mirror through that first axis and one across it.
+  adjacency.
+- **Choosing a generating chain, not five nice axes.** Each control is picked
+  against the group its predecessors already reach — cheaply, over 3×3 matrices
+  rather than cell permutations, since a point group has at most a hundred and
+  twenty elements and the two groups are the same one. Chosen on geometry alone
+  an icosahedron gets two half turns about axes perpendicular to its five-fold
+  one, and the second is just the first after a spin; chosen this way it gets a
+  second fifth-turn. `compactRotations` then closes the survivors up onto
+  `ring`, `tube`, `turn` in order, because on a solid those ids are only axis
+  one, two and three and a board left holding the second and third would draw
+  its second and third icons and no first.
 
 The controls are declared in `data/ui/screens.json` under `hud.boardBar` and
 drawn by `ui/boardInfo.ts`: `symmetry:<id>` shows a control on a board with that

@@ -131,6 +131,7 @@ export interface SymmetryCandidate {
 export function keepSymmetries(
   adjacency: Map<CellId, CellId[]>,
   candidates: readonly SymmetryCandidate[],
+  essential: readonly SymmetryId[] = [],
 ): BoardSymmetry[] {
   const kept: BoardSymmetry[] = [];
   const same = (a: Map<CellId, CellId>, b: Map<CellId, CellId>) => {
@@ -151,7 +152,132 @@ export function keepSymmetries(
       break;
     }
   }
-  return kept;
+  return irredundant(kept, essential);
+}
+
+// -- one button per motion that cannot be had any other way -------------------
+
+/** The order the controls are given up in when one turns out to be a
+ * combination of the others.
+ *
+ * The two translations are what the whole thing exists for — a Klein bottle's
+ * ring step and a donut's tube step are how a hidden cell is reached at all —
+ * so they are the last to go. `turn` outranks the mirrors because it is the one
+ * motion of the three that is not a reflection, and because it is what an open
+ * band has instead of a translation across itself. Between the mirrors, the one
+ * across the tube goes first: `turn` composed with the other gets it back. */
+const GIVE_UP_ORDER: SymmetryId[] = ["mirror-tube", "mirror-ring", "turn", "tube", "ring"];
+
+/** At most this many group elements are enumerated before a membership test
+ * gives up and says no. Every board here generates a group of at most four
+ * times its own cell count (a donut's translations, its half turn and a
+ * mirror), so nothing real comes near it; the cap is there so a board nobody
+ * anticipated cannot hang the app while it opens. */
+const GROUP_LIMIT = 20000;
+
+/**
+ * Drop every control whose motion is a product of the others.
+ *
+ * Five buttons offered blind are not five *different* things to do. A donut's
+ * half turn is its two mirrors one after the other; a cube's third quarter turn
+ * is the other two combined, and once one mirror is there the second is a
+ * rotation away. Left in, each of those is a button a player has to learn is
+ * redundant. So each control is tested against the group the *others* generate,
+ * in the order above, and dropped when it turns up in it.
+ *
+ * Dropping never costs the board a motion: a control only goes when the rest
+ * still reach it, so the group the buttons generate is the same afterwards. And
+ * one pass suffices — the set of others only ever shrinks as the pass goes on,
+ * so a control kept against a larger group stays out of every smaller one.
+ *
+ * `essential` names controls to leave alone whatever the algebra says. A
+ * wrapped surface passes its two **translations**, and they are the exception
+ * that proves the rule: on a triangular cylinder with an odd row count the ring
+ * step is the *square* of a half turn and a mirror, so minimality would take the
+ * spin arrows away and leave the player pressing four buttons to move the board
+ * one column. A step is the motion the whole feature exists for — it is how a
+ * cell behind the Klein bottle's neck is reached at all, and it is the only
+ * control that moves the board a little rather than turning it inside out.
+ * Nine donuts and thirty-odd cylinders would otherwise be left with reflections
+ * and nothing else.
+ */
+function irredundant(kept: BoardSymmetry[], essential: readonly SymmetryId[]): BoardSymmetry[] {
+  if (kept.length < 2) return kept;
+  const cells = [...kept[0]!.cycle.keys()].sort();
+  const index = new Map(cells.map((cell, i) => [cell, i]));
+  const permutations = new Map<SymmetryId, Int32Array>();
+  for (const symmetry of kept) {
+    const p = new Int32Array(cells.length);
+    for (const [cell, image] of symmetry.cycle) p[index.get(cell)!] = index.get(image)!;
+    permutations.set(symmetry.id, p);
+  }
+  let surviving = [...kept];
+  for (const id of GIVE_UP_ORDER) {
+    if (essential.includes(id)) continue;
+    if (surviving.length < 2 || !surviving.some((s) => s.id === id)) continue;
+    const others = surviving.filter((s) => s.id !== id).map((s) => permutations.get(s.id)!);
+    if (generatedBy(permutations.get(id)!, others)) {
+      surviving = surviving.filter((s) => s.id !== id);
+    }
+  }
+  return surviving;
+}
+
+/** Compose two permutations: the cell `after` sends `before`'s image to. */
+function compose(after: Int32Array, before: Int32Array): Int32Array {
+  const out = new Int32Array(before.length);
+  for (let i = 0; i < before.length; i++) out[i] = after[before[i]!]!;
+  return out;
+}
+
+function samePermutation(a: Int32Array, b: Int32Array): boolean {
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+  return true;
+}
+
+/** A cheap hash of a permutation, so the closure below can keep a set of them
+ * without building a string per element. Collisions are resolved by comparing
+ * the arrays. */
+function hashPermutation(p: Int32Array): number {
+  let hash = 0;
+  for (let i = 0; i < p.length; i++) hash = (Math.imul(hash, 31) + p[i]!) | 0;
+  return hash;
+}
+
+/** Whether `target` is a product of `generators` — closing the group they
+ * generate, breadth first, and stopping the moment the target turns up. A
+ * generator's inverse comes for free: the group is finite, so every element is
+ * some power of itself away from the identity. */
+function generatedBy(target: Int32Array, generators: Int32Array[]): boolean {
+  if (generators.length === 0) return false;
+  const size = target.length;
+  const identity = new Int32Array(size);
+  for (let i = 0; i < size; i++) identity[i] = i;
+  const seen = new Map<number, Int32Array[]>();
+  const remember = (p: Int32Array): boolean => {
+    const hash = hashPermutation(p);
+    const bucket = seen.get(hash);
+    if (bucket === undefined) {
+      seen.set(hash, [p]);
+      return true;
+    }
+    if (bucket.some((other) => samePermutation(other, p))) return false;
+    bucket.push(p);
+    return true;
+  };
+  const queue: Int32Array[] = [identity];
+  remember(identity);
+  let count = 1;
+  for (let head = 0; head < queue.length; head++) {
+    for (const generator of generators) {
+      const next = compose(generator, queue[head]!);
+      if (samePermutation(next, target)) return true;
+      if (!remember(next)) continue;
+      if (++count > GROUP_LIMIT) return false;
+      queue.push(next);
+    }
+  }
+  return false;
 }
 
 // -- flat boards: the point group, measured off the drawing -------------------
@@ -409,7 +535,27 @@ export function planeSymmetries(
       candidates.push({ id, build: () => permutation(reflection(centre, angle)) });
     }
   }
+  // The rotations are the board's own axes, in no order the player can see, so
+  // once `keepSymmetries` has dropped whatever the rest can reach the survivors
+  // close up: the first rotation left is the one drawn with the first icon.
   return keepSymmetries(adjacency, candidates);
+}
+
+/** Re-letter a solid's surviving rotations onto `ring`, `tube`, `turn` in order.
+ *
+ * On a wrapped surface those ids mean three different things — two translations
+ * and a turn — and must not be shuffled. On a solid they are only axis one, two
+ * and three, so a board left with the second and third would otherwise draw the
+ * up-and-down chevrons and the turn arrows and no left-and-right ones, which
+ * reads as a missing button rather than as a board with two axes. The mirrors
+ * keep their own ids: those two icons draw a vertical and a horizontal mirror
+ * line, and which the plane is was measured. */
+function compactRotations(symmetries: BoardSymmetry[]): BoardSymmetry[] {
+  const spins: SymmetryId[] = ["ring", "tube", "turn"];
+  let next = 0;
+  return symmetries.map((symmetry) =>
+    spins.includes(symmetry.id) ? { ...symmetry, id: spins[next++]! } : symmetry,
+  );
 }
 
 /** How far a mirror axis is from `want`, mod π (an axis and its opposite are
@@ -466,6 +612,63 @@ function planeReflection(n: Vec3): Mat3 {
     -2 * x * y, 1 - 2 * y * y, -2 * y * z,
     -2 * x * z, -2 * y * z, 1 - 2 * z * z,
   ];
+}
+
+/** The group a handful of orthogonal matrices generate, kept as a set of keys
+ * so a candidate can be asked whether it adds anything.
+ *
+ * This is the cheap half of choosing a solid's controls. A point group has at
+ * most a hundred and twenty elements and a matrix is nine numbers, so closing
+ * it over and over costs nothing — where closing the same group over *cell
+ * permutations* would mean walking a five-hundred-cell board a hundred and
+ * twenty times. The two are the same group: no symmetry of a board here fixes
+ * every one of its cells but the identity. */
+class MatrixGroup {
+  private readonly elements: Mat3[] = [];
+  private readonly keys = new Set<string>();
+
+  constructor() {
+    this.push([1, 0, 0, 0, 1, 0, 0, 0, 1]);
+  }
+
+  private static key(m: Mat3): string {
+    return m.map((v) => (Math.round(v * 1e6) / 1e6 || 0).toFixed(6)).join(",");
+  }
+
+  private push(m: Mat3): boolean {
+    const key = MatrixGroup.key(m);
+    if (this.keys.has(key)) return false;
+    this.keys.add(key);
+    this.elements.push(m);
+    return true;
+  }
+
+  has(m: Mat3): boolean {
+    return this.keys.has(MatrixGroup.key(m));
+  }
+
+  /** Add a generator and close again. */
+  add(m: Mat3): void {
+    if (!this.push(m)) return;
+    for (let head = 0; head < this.elements.length; head++) {
+      for (const other of [...this.elements]) {
+        this.push(multiply(this.elements[head]!, other));
+        if (this.elements.length > 400) return; // no point group here is near it
+      }
+    }
+  }
+}
+
+function multiply(a: Mat3, b: Mat3): Mat3 {
+  const out = new Array<number>(9).fill(0);
+  for (let r = 0; r < 3; r++) {
+    for (let c = 0; c < 3; c++) {
+      let sum = 0;
+      for (let k = 0; k < 3; k++) sum += a[r * 3 + k]! * b[k * 3 + c]!;
+      out[r * 3 + c] = sum;
+    }
+  }
+  return out as unknown as Mat3;
 }
 
 function dot(a: Vec3, b: Vec3): number {
@@ -679,85 +882,63 @@ export function solidSymmetries(
   }
   if (found.length === 0 && normals.length === 0) return [];
 
-  // ---- phase two: choose five, and let keepSymmetries rule on them ---------
+  // ---- phase two: choose a generating chain --------------------------------
   //
-  // Five controls cannot be a group of forty-eight, so what is offered is a set
-  // that generates it and nothing twice: three rotation axes and two mirror
-  // planes, each taken once and struck off.
+  // Five controls cannot be a group of a hundred and twenty, so what is offered
+  // is a set that generates it — and every one of them has to *add* something,
+  // or it is a button whose job another button already does. So each is picked
+  // against the group its predecessors already reach: the highest-order axis
+  // first, then the best axis that is not already a combination of it, and so
+  // on. Choosing on geometry alone gives an icosahedron two half turns about
+  // perpendicular axes, the second of which is the first one composed with the
+  // spin; choosing this way gives it a second fifth-turn instead.
   found.sort((a, b) => b.order - a.order);
   const perpendicular = (a: Vec3, b: Vec3) => Math.abs(dot(a, b)) < 1e-6;
-  const parallel = (a: Vec3, b: Vec3) => Math.abs(dot(a, b)) > 1 - 1e-6;
+  const reach = new MatrixGroup();
 
-  const takenAxes = new Set<string>();
-  /** The highest-order axis not yet spoken for, by the first of `wants` that
-   * anything answers to. */
-  const takeAxis = (...wants: ((axis: Vec3) => boolean)[]) => {
-    for (const want of [...wants, () => true]) {
-      for (const rotation of found) {
-        const key = axisKey(rotation.axis)!;
-        if (takenAxes.has(key) || !want(rotation.axis)) continue;
-        takenAxes.add(key);
-        return rotation;
-      }
-    }
-    return null;
-  };
-  // The three axes a player expects of a cube: its own quarter turn, and two
-  // more at right angles to it. Where the solid has no perpendicular pair — a
-  // tetrahedron's three-fold axes are perpendicular to nothing — the second and
-  // third fall back to any other axis, which still turns it somewhere new; and
-  // where it has only one axis at all (a pyramid), there is nothing to fall
-  // back to and it gets the one control it deserves.
-  const ring = takeAxis();
-  const principal = ring?.axis ?? null;
-  const tube = principal && takeAxis((a) => perpendicular(a, principal));
-  const turn =
-    principal && tube
-      ? takeAxis(
-          (a) => perpendicular(a, principal) && perpendicular(a, tube.axis),
-          (a) => perpendicular(a, principal),
-        )
-      : null;
-
-  const takenNormals = new Set<string>();
-  /** Unlike `takeAxis` this adds no catch-all: a caller that will settle for any
-   * unused plane says so. */
-  const takeNormal = (...wants: ((normal: Vec3) => boolean)[]) => {
+  /** The first motion, by the first of `wants` anything answers to, that the
+   * chosen ones cannot already make. Adding it widens what they reach. */
+  const take = <T>(
+    from: readonly T[],
+    motion: (candidate: T) => Mat3,
+    ...wants: ((candidate: T) => boolean)[]
+  ): T | null => {
     for (const want of wants) {
-      for (const normal of normals) {
-        const key = axisKey(normal)!;
-        if (takenNormals.has(key) || !want(normal)) continue;
-        takenNormals.add(key);
-        return normal;
+      for (const candidate of from) {
+        if (!want(candidate) || reach.has(motion(candidate))) continue;
+        reach.add(motion(candidate));
+        return candidate;
       }
     }
     return null;
   };
+  const spun = (r: { axis: Vec3; order: number }) => turns(r.axis, r.order);
+  const anything = () => true;
+
+  // The three axes a player expects of a cube: its own quarter turn, and two
+  // more at right angles to it. A tetrahedron has no perpendicular pair — its
+  // three-fold axes are perpendicular to nothing — so the second and third fall
+  // back to any axis that still adds a motion, and a pyramid, which has one
+  // axis and nothing else, gets the one control it deserves.
+  const ring = take(found, spun, anything);
+  const principal = ring?.axis ?? null;
+  const across = (r: { axis: Vec3 }) => principal !== null && perpendicular(r.axis, principal);
+  const tube = ring && take(found, spun, across, anything);
+  const turn = tube && take(found, spun, across, anything);
+
   // A mirror is named for the direction it reverses, as on a wrapped surface:
   // the plane *containing* the principal axis reverses the spin round it, and
-  // the plane across it swaps the solid's two ends. An icosahedron has no plane
-  // across its five-fold axis and a tetrahedron none across its three-fold one,
-  // so the second falls back to a plane at some other angle, which is still a
-  // second mirror and still worth a button.
-  const mirrorRing = takeNormal(
-    (n) => principal !== null && perpendicular(n, principal),
-    () => true,
-  );
-  // No catch-all here: where every plane the solid has contains its principal
-  // axis — a pyramid's four do — there is no second *kind* of mirror to offer,
-  // and a button that repeated the first under another name would be a lie.
-  const mirrorTube = principal
-    ? takeNormal(
-        (n) => parallel(n, principal),
-        (n) => !perpendicular(n, principal),
-      )
-    : null;
+  // the plane across it swaps the solid's two ends. Once one is in, a second is
+  // usually a rotation away and is not offered.
+  const containsAxis = (n: Vec3) => principal !== null && perpendicular(n, principal);
+  const mirrorRing = take(normals, planeReflection, containsAxis, anything);
+  const mirrorTube = mirrorRing && take(normals, planeReflection, (n) => !containsAxis(n));
 
   const candidates: SymmetryCandidate[] = [];
-  const spin = (id: SymmetryId, r: { axis: Vec3; order: number } | null) => {
-    if (r) candidates.push({ id, build: () => permutation(turns(r.axis, r.order)) });
+  const spin = (id: SymmetryId, r: { axis: Vec3; order: number } | null | undefined) => {
+    if (r) candidates.push({ id, build: () => permutation(spun(r)) });
   };
-  const flip = (id: SymmetryId, normal: Vec3 | null) => {
+  const flip = (id: SymmetryId, normal: Vec3 | null | undefined) => {
     if (normal) candidates.push({ id, build: () => permutation(planeReflection(normal)) });
   };
   spin("ring", ring);
@@ -765,5 +946,8 @@ export function solidSymmetries(
   spin("turn", turn);
   flip("mirror-ring", mirrorRing);
   flip("mirror-tube", mirrorTube);
-  return keepSymmetries(adjacency, candidates);
+  // The rotations are the board's own axes, in no order the player can see, so
+  // once `keepSymmetries` has dropped whatever the rest can reach the survivors
+  // close up: the first rotation left is the one drawn with the first icon.
+  return compactRotations(keepSymmetries(adjacency, candidates));
 }

@@ -86,10 +86,10 @@ const SECTIONS: Section[] = [
           "·), turned (⟲ ⟳, or ; and ’) and mirrored either way. The board " +
           "itself never moves, and neither does the game: every number still " +
           "counts the mines beside it. Each board gets the moves its own shape " +
-          "allows — a cylinder has no way round its tube, a Klein bottle can " +
-          "only go half way, a cube quarters about three axes, and a flat " +
-          "board turns and mirrors like the square it is. The wheel slides a " +
-          "wrapped board round the ring, and shift and the wheel round the tube.",
+          "allows, and only the ones nothing else can make: a cube quarters " +
+          "about two axes and mirrors in one plane, and everything else it can " +
+          "do is those in some order. The wheel slides a wrapped board round " +
+          "the ring, and shift and the wheel round the tube.",
       ],
     ],
   },
