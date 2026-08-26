@@ -22,6 +22,7 @@ import {
 } from "./render/renderer";
 import { bestTimes, recordTime, type ScoreEntry } from "./leaderboard";
 import { BoardInfo } from "./ui/boardInfo";
+import { symmetryPictures } from "./ui/symmetryIcon";
 import { boardConditions, Hud } from "./ui/hud";
 import { Menu } from "./ui/menu";
 import { openScoreDialog, type ScoreDialogHandle } from "./ui/scoreDialog";
@@ -396,7 +397,12 @@ class App {
     this.paintTheme(); // the page picks up this board's tiling
     this.menu.hide();
     this.hud.root.hidden = false;
-    this.boardInfo.setBoard(mode, difficulty, boardConditions(this.session.symmetries));
+    this.boardInfo.setBoard(
+      mode,
+      difficulty,
+      boardConditions(this.session.symmetries),
+      symmetryPictures(this.session.board, mode, this.renderer.quarterTurned),
+    );
     // The first board this browser ever opens gets the gesture hint, once. It
     // is stored before it is shown, so a reload mid-hint does not re-earn it.
     this.boardInfo.dismissHint();
@@ -439,6 +445,7 @@ class App {
           this.session.mode,
           this.session.difficulty,
           boardConditions(this.session.symmetries),
+          this.symmetryPictures(),
         );
       }
       this.onResize();
@@ -531,6 +538,19 @@ class App {
         : this.boardInfo.caption.getBoundingClientRect().bottom;
     this.renderer.setTopInset(inset);
     this.renderer.resize();
+    // A landscape flat board turns a quarter on a portrait viewport, and the
+    // mirror line a control draws turns with it (see ui/symmetryIcon.ts).
+    if (this.screen === "game") this.boardInfo.drawIcons(this.symmetryPictures());
+  }
+
+  /** What each of this board's controls does, as the view has it. */
+  private symmetryPictures() {
+    if (!this.session) return new Map();
+    return symmetryPictures(
+      this.session.board,
+      this.session.mode,
+      this.renderer.quarterTurned,
+    );
   }
 
   private onAction(action: string): void {

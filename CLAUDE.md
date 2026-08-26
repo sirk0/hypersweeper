@@ -829,7 +829,21 @@ Klein `cell_cycle` it always had, which is why the conformance oracle's
 `hasCellCycle` is now checked one way only (a board the reference can scroll is
 one this app can scroll). See "Board symmetries" in `web/README.md`;
 `tests/unit/symmetries.test.ts` pins the sets and `tests/e2e/surfaces.spec.ts`
-the controls.
+the controls. Each control's **icon is generated from the motion it makes**
+(`ui/symmetryIcon.ts`), not picked from a table: a turn draws the fraction of a
+circle it really is on the faint whole (a quarter reads as a quarter, a sixth as
+a sixth) with its axis beside it as a line at the angle it makes on screen or a
+dot where it points at the viewer; a reflection draws its plane as a dashed disc
+at the attitude it really has, which comes out a vertical line, a horizontal one,
+or a circle where the plane faces the viewer and no line could say anything (a
+cylinder's mirror swaps its near wall for its far one). Only a *step* along a
+seam keeps a fixed drawing, the double chevrons, having no angle to show. The
+measurement needs nothing from the builders — a reflection's displacements are
+its own normal and a rotation's are at right angles to its axis — and the order
+is the whole permutation's, since a cell on the axis comes home after one press.
+Drawing the turn's circle *projected* was tried and dropped: it puts the axis in
+the picture for free, but a cube's axes lie almost across the screen at its
+opening view and a quarter of an ellipse that thin is a scribble.
 
 **The Klein bottle's self-intersection** (`src/boards/clipSolid.ts`) is the
 one place the app cuts geometry away. The immersion passes through itself,

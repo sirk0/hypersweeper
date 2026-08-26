@@ -1066,6 +1066,53 @@ Three things make it work:
   one, two and three and a board left holding the second and third would draw
   its second and third icons and no first.
 
+### What the icons say (`src/ui/symmetryIcon.ts`)
+
+A chevron pair and a circular arrow say "this moves the board" and nothing else.
+A cube's quarter turn drew the same arrow as an icosahedron's fifth-turn, and a
+mirror in a vertical plane the same glyph as one in a horizontal plane. So the
+icons are not a table of drawings picked by slot: each is **generated from the
+motion the button makes**, measured off the board's own geometry at the view it
+opens in. Three pictures:
+
+- A **step** along a seam — a wrapped board's ring and tube translations — keeps
+  the double chevrons. It has no angle: it slides the board one column along.
+- A **turn** draws the fraction of a circle it really is, on the faint whole, so
+  a quarter reads as a quarter and a sixth as a sixth. Its **axis** is drawn
+  beside it: a line across the icon at the angle the axis makes on screen, or a
+  dot in the middle where it points at the viewer — the old convention for a
+  line coming out of the page, and what tells a cube's two quarter turns apart.
+- A **reflection** draws its plane as a dashed disc at the attitude it really
+  has, with a two-headed arrow through it. A vertical plane comes out as a
+  vertical dashed line with the arrow across it, a horizontal one as a
+  horizontal line with the arrow up and down, and a plane square-on to the
+  viewer as a dashed *circle* with the arrow leaning out of the page — a
+  cylinder's mirror swaps its near wall for its far one, which no line could
+  ever have said.
+
+The measurement needs nothing from the builders. A reflection moves every point
+straight across its plane, so the displacements are the plane's own normal, up
+to the sign they are flipped to agree on; a rotation moves every point at right
+angles to its axis, so the axis is the cross product of two displacements that
+are not parallel, and the sign that says which way it winds comes from summing
+`from × to`. The order is the whole permutation's, not one cell's — a cell *on
+the axis* comes home after a single press, which would call the Gosper island's
+sixth-turn a step.
+
+One thing was tried and dropped: drawing the turn's own circle **projected**, so
+the ellipse opens and closes with the axis and puts it in the picture for free.
+It is the truer drawing, and it is how the reflection's disc is still drawn —
+but a cube's axes lie almost across the screen at its opening view, and a
+quarter of an ellipse that thin is a scribble. The angle stopped being legible
+on exactly the boards with the most of them, so the arc is drawn square-on and
+the axis beside it.
+
+Two details worth knowing. The icons are re-drawn on every re-frame, because the
+renderer turns a landscape flat board a quarter round on a portrait viewport and
+the mirror line turns with it. And the buttons carry `data-motion`,
+`data-turns` and `data-mirror`, which is what the tests assert against: 26
+pixels of glyph are no evidence.
+
 The controls are declared in `data/ui/screens.json` under `hud.boardBar` and
 drawn by `ui/boardInfo.ts`: `symmetry:<id>` shows a control on a board with that
 symmetry, `symmetry-pair:<id>` shows the second of a pair only where the
@@ -1076,7 +1123,9 @@ everything shows eight; the caption row wraps rather than shrinking them. The mo
 walks the ring and shift+wheel the tube (ctrl+wheel still zooms, as it already
 did on the Klein bottle, which is the board this behaviour is inherited from);
 `[` / `]`, `,` / `.` and `;` / `'` do the ring, the tube and the turn from the
-keyboard, on flat boards as well as wrapped ones. The **pygame build has none of
+keyboard, on flat boards as well as wrapped ones. Each button's tooltip is
+generated with its icon and says the same thing in words — "Turn 90°", "Mirror
+in a vertical plane (left to right)". The **pygame build has none of
 this** — it keeps the single Klein `cell_cycle` it always had, which is why the
 conformance oracle's `hasCellCycle` is checked one way only (see
 `tests/unit/conformance.test.ts`); the symmetry sets themselves are pinned in

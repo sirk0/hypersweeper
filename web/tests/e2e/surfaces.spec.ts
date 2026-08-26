@@ -165,6 +165,68 @@ test.describe("M3 surfaces", () => {
     expect(await shown()).toEqual([]);
   });
 
+  test("a control's icon says what its motion is", async ({ page }) => {
+    // The icons are generated from the motion each button makes, so what the
+    // player sees is the actual angle and the actual plane. Asserted on what
+    // the drawing was made from: 26 pixels of glyph are no evidence.
+    const drawn = async () =>
+      page.$$eval(".board-caption .board-bar-btn", (nodes) =>
+        nodes
+          .filter((n) => !(n as HTMLElement).hidden)
+          .map((n) => {
+            const el = n as HTMLElement;
+            const turns = el.dataset["turns"];
+            const mirror = el.dataset["mirror"];
+            return `${el.dataset["slot"]}=${el.dataset["motion"]}${
+              turns ? `/${360 / Number(turns)}` : ""
+            }${mirror ? `/${mirror}` : ""}`;
+          }),
+      );
+
+    // A cube quarters about two axes; its mirror plane lies flat on screen at
+    // the three-quarter view it opens in.
+    await page.goto("/?mode=cube&difficulty=easy&seed=1");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    expect(await drawn()).toEqual([
+      "symmetry-ring-back=turn/90",
+      "symmetry-ring-fwd=turn/90",
+      "symmetry-tube-back=turn/90",
+      "symmetry-tube-fwd=turn/90",
+      "symmetry-mirror-ring-fwd=reflection/horizontal",
+    ]);
+
+    // A hexagonal board turns a sixth where the square one turns a quarter, and
+    // both mirror in a plane standing up on the screen.
+    await page.goto("/?mode=hexhex&difficulty=easy&seed=1");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    expect(await drawn()).toEqual([
+      "symmetry-turn-back=turn/60",
+      "symmetry-turn-fwd=turn/60",
+      "symmetry-mirror-ring-fwd=reflection/vertical",
+    ]);
+
+    await page.goto("/?mode=square&difficulty=easy&seed=1");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    expect(await drawn()).toEqual([
+      "symmetry-turn-back=turn/90",
+      "symmetry-turn-fwd=turn/90",
+      "symmetry-mirror-ring-fwd=reflection/vertical",
+    ]);
+
+    // A donut's two translations are steps and have no angle to show; its turn
+    // is the half that stands it on its head.
+    await page.goto("/?mode=torus&difficulty=easy&seed=1");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    expect(await drawn()).toEqual([
+      "symmetry-ring-back=step",
+      "symmetry-ring-fwd=step",
+      "symmetry-tube-back=step",
+      "symmetry-tube-fwd=step",
+      "symmetry-turn-fwd=turn/180",
+      "symmetry-mirror-ring-fwd=reflection/horizontal",
+    ]);
+  });
+
   test("a solid's quarter turn moves a cell round its own axis", async ({ page }) => {
     await page.goto("/?mode=cube&difficulty=easy&seed=1");
     await expect(page.locator("body[data-ready]")).toBeVisible();

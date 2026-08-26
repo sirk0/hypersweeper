@@ -71,6 +71,7 @@ export class BoardRenderer {
    * (see zoom.ts), with the pan (world units) that keeps the magnified part of
    * the board the player asked for on screen. */
   private zoomLevel = MIN_ZOOM;
+  private turned = false;
   private panX = 0;
   private panY = 0;
   /** Screen->world scale and the pixel the view is centred on, cached by the
@@ -228,6 +229,7 @@ export class BoardRenderer {
       : portrait && view.width > view.height * ROTATE_ASPECT;
     this.board.rotation.z = rotated ? -Math.PI / 2 : 0;
     this.board.setQuarterTurn?.(rotated);
+    this.turned = rotated;
     const halfW = ((rotated ? view.height : view.width) * FLAT_MARGIN) / 2;
     const halfH = ((rotated ? view.width : view.height) * FLAT_MARGIN) / 2;
     // World units per CSS pixel: the fit that shows the whole board in the
@@ -265,6 +267,14 @@ export class BoardRenderer {
   }
 
   /** Current zoom: 1 is the board framed to the viewport, up to MAX_ZOOM. */
+  /** Whether a flat board is currently being shown turned a quarter (a
+   * landscape board on a portrait viewport — see `frameFlat`). The symmetry
+   * controls draw their mirror lines as the player sees them, so they turn with
+   * it. Always false for a solid, which is turned by its orientation instead. */
+  get quarterTurned(): boolean {
+    return this.turned;
+  }
+
   get zoom(): number {
     return this.zoomLevel;
   }

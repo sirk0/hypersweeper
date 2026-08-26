@@ -88,8 +88,10 @@ const SECTIONS: Section[] = [
           "counts the mines beside it. Each board gets the moves its own shape " +
           "allows, and only the ones nothing else can make: a cube quarters " +
           "about two axes and mirrors in one plane, and everything else it can " +
-          "do is those in some order. The wheel slides a wrapped board round " +
-          "the ring, and shift and the wheel round the tube.",
+          "do is those in some order. Every button is drawn from its own move — " +
+          "the arc is the angle it turns by, and the dashed line is the plane " +
+          "it mirrors in. The wheel slides a wrapped board round the ring, and " +
+          "shift and the wheel round the tube.",
       ],
     ],
   },

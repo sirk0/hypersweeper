@@ -30,12 +30,16 @@ export const ICONS: Record<string, string> = {
     <path d="M20 12 H5 M11 5 L4 12 L11 19" stroke="currentColor"
       stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>`,
-  // The board-symmetry controls. Double chevrons step the contents round the
-  // ring (left/right) and round the tube (up/down); the mirror pairs reflect
-  // them in an axis along or across it, drawn as a shape and its image in a
-  // dashed mirror line. All are drawn on the board bar rather than in this
-  // header (see ui/boardInfo.ts), but kept in one icon table so a slot's `icon`
+  // The board-symmetry controls, drawn on the board bar rather than in this
+  // header (see ui/boardInfo.ts) but kept in one icon table so a slot's `icon`
   // name resolves the same either way.
+  //
+  // The double chevrons are the finished article: a **step** round the ring
+  // (left/right) or round the tube (up/down) has no angle to show. The turn and
+  // mirror drawings below are only what a button holds until the board it
+  // belongs to has been measured — each of those is generated from the motion
+  // the button really makes, so the arc is the actual angle and the mirror line
+  // the actual plane (ui/symmetryIcon.ts).
   "chevrons-left": `<svg viewBox="0 0 24 24" aria-hidden="true">
     <path d="M17 5 L10 12 L17 19 M11 5 L4 12 L11 19" stroke="currentColor"
       stroke-width="1.9" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
@@ -52,11 +56,8 @@ export const ICONS: Record<string, string> = {
     <path d="M5 7 L12 14 L19 7 M5 13 L12 20 L19 13" stroke="currentColor"
       stroke-width="1.9" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>`,
-  // Turn the board: a circle most of the way round, with the arrow at the top
-  // saying which way. On a flat board it is that board's own smallest rotation
-  // (a quarter turn on a square grid, a sixth on a hexagonal one); on every
-  // wrapped surface it is the half turn that stands it on its head, which is
-  // its own undo and so draws one button rather than the pair.
+  // Fallbacks (see above): a generic turn and a generic mirror, replaced by the
+  // board's own the moment one is on screen.
   "rotate-right": `<svg viewBox="0 0 24 24" aria-hidden="true">
     <path d="M19.5 12 A7.5 7.5 0 1 1 12 4.5" stroke="currentColor"
       stroke-width="1.9" fill="none" stroke-linecap="round"/>
@@ -69,9 +70,7 @@ export const ICONS: Record<string, string> = {
     <path d="M15.1 1.4 L11.4 4.5 L15.1 7.6" stroke="currentColor"
       stroke-width="1.9" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>`,
-  // Named for the mirror *line*: "vertical" reflects left to right (along the
-  // ring), "horizontal" top to bottom (across the tube). One each — a mirror is
-  // its own undo, and `keepSymmetries` keeps no mirror that is not.
+
   "mirror-vertical": `<svg viewBox="0 0 24 24" aria-hidden="true">
     <path d="M12 3 V21" stroke="currentColor" stroke-width="1.5"
       stroke-dasharray="2.4 2.6" stroke-linecap="round"/>
