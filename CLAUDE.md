@@ -752,6 +752,99 @@ up and the pin landed on its neighbour. `pointerPoint` in
 position instead. See "Picking" in `web/README.md`;
 `tests/e2e/picking.spec.ts` pins all of it.
 
+**Board symmetries** (`boards/symmetry.ts`, declared as controls in
+`data/ui/screens.json` `hud.boardBar`) are what the Klein bottle's scroll grew
+into: the permutations of a board's cells that preserve adjacency, each offered
+as a button that slides the *contents* along while the geometry stays put and
+the game is untouched — every number still counts the mines beside it. On a
+wrapped surface the point is the part **no drag brings round**: the bottle's
+neck hides the sheet it passes through, and a donut's inner wall is only ever
+glimpsed through the hole. On a **flat** board or a **solid** nothing is hidden
+that the view cannot reach, and the same controls are a way of looking at the
+same puzzle from another angle — the classic 9x9 grid turns a quarter and
+mirrors both ways, the 30x16 one only a half, and a cube quarters about three
+axes. Five ids — a step round the
+**ring** (the loop), a step round the **tube** (the cross-section), a **turn**,
+and a reflection in each; the ring/tube names carry over to a flat board from
+the window a wrapped one is cut from, whose x becomes the ring and whose y the
+tube, and on a **solid** they are rotations about the board's principal axis and
+one across it. Which a surface keeps is a question about its seam, not its
+tiling. A
+donut keeps all five. A Klein bottle keeps the ring step, the turn and both
+mirrors but **not** the tube step: crossing the ring seam reverses the tube, so
+conjugating a tube translation by it gives that translation back inverted, and
+only the **half**-tube step, which is its own inverse, descends — exactly the
+move that swaps the sheet inside the neck for the one outside. A cylinder and a
+Möbius strip are open across, so nothing translates that way at all; they turn
+about their own axis (the Möbius seam flips the band, so a cell returns only
+after two loops), reflect in their own centre line, and — the motion an open
+edge does not cost them — turn **end over end** about a horizontal axis. A
+chiral tiling has no mirror on any surface, the same chirality that keeps the
+snubs off those two seams, but it does have half turns, which is why a snub
+cylinder has matching rims at all; three-scale triangular (p3) has neither and
+is the one wrapped board with no flip of any kind. None of that is asserted for
+a wrapped board: a builder *offers* candidate lattice motions and
+`keepSymmetries` throws out whatever is not an automorphism of the adjacency it
+has just built, so the algebra only decides what is worth trying — and several
+candidates may share an id, first survivor wins, which is how a mirror or half
+turn whose centre has to be searched for (`templateHalfTurns`,
+`templateXMirrors`, one candidate per template vertex) or a translation that
+needs a glide at some sizes costs no special case. A **flat** board's are found
+the other way round, by measuring: `planeSymmetries` fixes each motion by where
+it sends the outermost cell, then checks the whole polygon lands on its target
+(congruent tiles in four orientations, as on the sphinx, share centres) and that
+the permutation is an automorphism — so it needs nothing from the builder and
+works the same on a square grid, a Penrose window and a Gosper island. A
+**solid**'s are measured too, by `solidSymmetries`, and each comes out with its
+own: a cube quarters about three axes and mirrors in two planes, a tetrahedron
+thirds and never quarters, an icosahedron fifths, a square pyramid has one axis
+and no second kind of mirror, and a chiral solid (the pentagonal
+hexecontahedron, the snub operation's dual) has no mirror anywhere. In three
+dimensions one cell no longer pins a motion, so an axis has to be found first:
+it passes through a face centre, a vertex or an edge midpoint, all of which
+subdividing leaves among the board's own cell centres, corners and edge
+midpoints — except on a **cube frame**, whose four-fold axes go through the hole
+in the middle of each face, and which are found instead as the line two mirror
+planes meet in. A high-symmetry solid has scores of symmetries and walking every
+cell for each cost most of a second, so the search runs on a sample of eighteen
+cells and only the five motions actually offered are built in full for
+`keepSymmetries` to rule on. Five buttons cannot be a group of forty-eight;
+what they are is a set that generates it.
+`involution` is measured too, and is what draws a reflection or a half turn one
+button rather than a pair — and a **mirror that is not one is dropped**: what a
+p4g template (snub square, Cairo) offers across the tube is a *glide*
+reflection, a different motion with a different undo, and one button cannot
+honestly be both. Last, **no control survives that the others can already
+make**: `irredundant` tests each against the group the rest generate and drops
+it when it turns up there, so a donut sheds the mirror across its tube (its half
+turn after the other mirror), a cube shows two of its three quarter turns and
+one of its nine mirrors, and an icosahedron reaches all hundred and twenty of
+its symmetries from a fifth-turn and one plane. Dropping never costs a board a
+motion — the buttons generate the same group either way, and
+`tests/unit/symmetries.test.ts` pins its order. The one exception is a wrapped
+board's two **translations**, kept whatever the algebra says: on a triangular
+cylinder with an odd row count the ring step is the square of a half turn and a
+mirror, and a step is the motion the whole feature exists for. The **pygame build has none of this**: it keeps the single
+Klein `cell_cycle` it always had, which is why the conformance oracle's
+`hasCellCycle` is now checked one way only (a board the reference can scroll is
+one this app can scroll). See "Board symmetries" in `web/README.md`;
+`tests/unit/symmetries.test.ts` pins the sets and `tests/e2e/surfaces.spec.ts`
+the controls. Each control's **icon is generated from the motion it makes**
+(`ui/symmetryIcon.ts`), not picked from a table: a turn draws the fraction of a
+circle it really is on the faint whole (a quarter reads as a quarter, a sixth as
+a sixth) with its axis beside it as a line at the angle it makes on screen or a
+dot where it points at the viewer; a reflection draws its plane as a dashed disc
+at the attitude it really has, which comes out a vertical line, a horizontal one,
+or a circle where the plane faces the viewer and no line could say anything (a
+cylinder's mirror swaps its near wall for its far one). Only a *step* along a
+seam keeps a fixed drawing, the double chevrons, having no angle to show. The
+measurement needs nothing from the builders — a reflection's displacements are
+its own normal and a rotation's are at right angles to its axis — and the order
+is the whole permutation's, since a cell on the axis comes home after one press.
+Drawing the turn's circle *projected* was tried and dropped: it puts the axis in
+the picture for free, but a cube's axes lie almost across the screen at its
+opening view and a quarter of an ellipse that thin is a scribble.
+
 **The Klein bottle's self-intersection** (`src/boards/clipSolid.ts`) is the
 one place the app cuts geometry away. The immersion passes through itself,
 and the sheet that ends up *inside* the neck caps the view down the bore, so

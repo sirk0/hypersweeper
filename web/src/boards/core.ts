@@ -7,6 +7,7 @@
 // tuple sort — the conformance tests assert invariants, not order.
 
 import type { ClipPiece, Tri } from "./clipSolid";
+import { planeSymmetries, solidSymmetries, type BoardSymmetry } from "./symmetry";
 
 export type CellId = string;
 export type Vertex = [number, number];
@@ -33,6 +34,12 @@ export interface Board {
   mineCount: number;
   width: number;
   height: number;
+  // The rotations and reflections of the plane that map this patch onto itself,
+  // as cell permutations — measured off the drawing by `planeSymmetries`, not
+  // declared by the builder. The UI offers each as a control that slides the
+  // contents along it. A finite patch has no translations, so `ring` and `tube`
+  // never appear here.
+  symmetries: BoardSymmetry[];
   // Where a cell's own polygon centroid is a poor glyph spot (a concave tile
   // like the chair, whose centroid sits right at the reflex corner), the
   // point to centre the number/flag/mine glyph on instead — still in
@@ -58,6 +65,23 @@ export interface SurfaceClip {
   occluder: Tri[];
 }
 
+// The board symmetries live in their own module (see boards/symmetry.ts, which
+// explains what they are and why the flat and wrapped boards find them by
+// different routes); re-exported here so a board's own module is the one place
+// to import from.
+export {
+  invertCycle,
+  isAutomorphism,
+  isIdentity,
+  isInvolution,
+  keepSymmetries,
+  planeSymmetries,
+  solidSymmetries,
+  symmetryOf,
+  SYMMETRY_IDS,
+} from "./symmetry";
+export type { BoardSymmetry, SymmetryCandidate, SymmetryId } from "./symmetry";
+
 export interface Board3D {
   mode: string;
   polygons: Map<CellId, Vec3[]>; // vertices on the surface, origin-centered
@@ -65,9 +89,11 @@ export interface Board3D {
   mineCount: number;
   radius: number; // max vertex distance from the origin
   twoSided: boolean; // open/non-orientable surfaces show both sides
-  // One-step ring translation (a graph automorphism); when set, the UI lets
-  // the player scroll the cell contents along it (Klein bottle, M3+).
-  cellCycle: Map<CellId, CellId> | null;
+  // The symmetries the UI offers as controls, in SYMMETRY_IDS order. Every one
+  // is an automorphism of `adjacency` (checked at build time, see
+  // isAutomorphism); flat boards and the solids carry none. Empty for
+  // everything but the four flat manifolds.
+  symmetries: BoardSymmetry[];
   // Set on a self-intersecting immersion (the Klein bottle); see SurfaceClip.
   clip: SurfaceClip | null;
   // Which of each cell's polygon vertices are real corners rather than
@@ -146,7 +172,7 @@ export function buildLattice(
       if (y > height) height = y;
     }
   }
-  return { mode, polygons, adjacency, mineCount, width, height };
+  return flatBoard({ mode, polygons, adjacency, mineCount, width, height });
 }
 
 /**
@@ -188,7 +214,38 @@ export function finalizeFlat(
       if (y > height) height = y;
     }
   }
-  return { mode, polygons, adjacency, mineCount, width, height };
+  return flatBoard({ mode, polygons, adjacency, mineCount, width, height });
+}
+
+/** Finish a flat board by measuring its point group.
+ *
+ * Deferred until something asks: a board's symmetries are wanted once, when it
+ * is put on screen, and the conformance suite builds every board in the
+ * catalogue at every difficulty without ever looking. Cached on first read, so
+ * a caller sees a plain property. */
+function flatBoard(board: Omit<Board, "symmetries">): Board {
+  let measured: BoardSymmetry[] | null = null;
+  return {
+    ...board,
+    get symmetries(): BoardSymmetry[] {
+      return (measured ??= planeSymmetries(board.polygons, board.adjacency));
+    },
+  };
+}
+
+/** The same for a closed solid, whose point group `solidSymmetries` measures
+ * off the polyhedron it is drawn as. The wrapped surfaces do *not* come through
+ * here: their cells are not congruent (a donut's inner tiles are smaller than
+ * its outer ones), so nothing of theirs can be found by looking at the
+ * geometry, and `surfaces.ts` offers lattice motions instead. */
+export function solidBoard(board: Omit<Board3D, "symmetries">): Board3D {
+  let measured: BoardSymmetry[] | null = null;
+  return {
+    ...board,
+    get symmetries(): BoardSymmetry[] {
+      return (measured ??= solidSymmetries(board.polygons, board.adjacency));
+    },
+  };
 }
 
 // -- topology (surface invariants; shared with the conformance oracle) -------

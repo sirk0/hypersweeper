@@ -1,8 +1,8 @@
 import { expect, test } from "@playwright/test";
 
-// M3: the wrapped surfaces — the Flat-manifolds menu drill-down and the Klein
-// bottle's cell-cycle scroll (a view-layer permutation that walks cell contents
-// past the self-intersection while the game state and geometry stay put).
+// M3: the wrapped surfaces — the Flat-manifolds menu drill-down and the board
+// symmetries (view-layer permutations that walk cell contents round the ring or
+// round the tube while the game state and the geometry stay put).
 
 test.describe("M3 surfaces", () => {
   test.beforeEach(async ({ page }) => {
@@ -90,15 +90,205 @@ test.describe("M3 surfaces", () => {
     expect(moved, "wheel scroll did not move the cell").toBe(true);
   });
 
-  test("a wrapped board has no cell cycle unless it is a Klein bottle", async ({ page }) => {
+  test("each board shows the controls it has and no combination of them", async ({ page }) => {
+    // A donut wraps both ways, so it steps round the ring and round the tube; a
+    // cylinder is open across, so it has no tube step at all — but it can still
+    // be turned end over end; a Klein bottle's seam reverses the tube, so its
+    // tube step is a half turn and its own undo, and it gets one button rather
+    // than a pair. What none of them shows is a control the others can already
+    // make: a donut's second mirror is its half turn after the first, and a
+    // Klein bottle's two mirrors are both combinations of its three steps.
+    const shown = async () =>
+      page.$$eval(".board-caption .board-bar-btn", (nodes) =>
+        nodes
+          .filter((n) => !(n as HTMLElement).hidden)
+          .map((n) => (n as HTMLElement).dataset["slot"]),
+      );
+
     await page.goto("/?mode=torus&difficulty=easy&seed=1");
     await expect(page.locator("body[data-ready]")).toBeVisible();
-    // The two Klein scroll controls are hidden on non-Klein surfaces.
-    await expect(page.locator('.hud-btn[data-slot="klein-scroll-fwd"]')).toBeHidden();
+    expect(await shown()).toEqual([
+      "symmetry-ring-back",
+      "symmetry-ring-fwd",
+      "symmetry-tube-back",
+      "symmetry-tube-fwd",
+      "symmetry-turn-fwd",
+      "symmetry-mirror-ring-fwd",
+    ]);
+
+    await page.goto("/?mode=cylinder&difficulty=easy&seed=1");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    expect(await shown()).toEqual([
+      "symmetry-ring-back",
+      "symmetry-ring-fwd",
+      "symmetry-turn-fwd",
+      "symmetry-mirror-ring-fwd",
+    ]);
+
     await page.goto("/?mode=klein&difficulty=easy&seed=1");
     await expect(page.locator("body[data-ready]")).toBeVisible();
-    await expect(page.locator('.hud-btn[data-slot="klein-scroll-back"]')).toBeVisible();
-    await expect(page.locator('.hud-btn[data-slot="klein-scroll-fwd"]')).toBeVisible();
+    expect(await shown()).toEqual([
+      "symmetry-ring-back",
+      "symmetry-ring-fwd",
+      "symmetry-tube-fwd",
+      "symmetry-turn-fwd",
+    ]);
+
+    // A flat board has no translations, but it does have its own turn and its
+    // own mirror — the classic 9x9 grid is square, so a quarter turn lands on
+    // it and the pair of arrows is shown. Its second mirror is the turn twice
+    // and the first, so it is not offered.
+    await page.goto("/?mode=square&difficulty=easy&seed=1");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    expect(await shown()).toEqual([
+      "symmetry-turn-back",
+      "symmetry-turn-fwd",
+      "symmetry-mirror-ring-fwd",
+    ]);
+
+    // A solid gets its own point group, reduced the same way: two of a cube's
+    // three quarter turns and one of its nine mirrors reach all forty-eight.
+    await page.goto("/?mode=cube&difficulty=easy&seed=1");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    expect(await shown()).toEqual([
+      "symmetry-ring-back",
+      "symmetry-ring-fwd",
+      "symmetry-tube-back",
+      "symmetry-tube-fwd",
+      "symmetry-mirror-ring-fwd",
+    ]);
+
+    // and a board with no symmetry at all — an aperiodic patch trimmed to its
+    // centremost cells is not symmetric about anything — shows none of them
+    await page.goto("/?mode=penrose&difficulty=easy&seed=1");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    expect(await shown()).toEqual([]);
+  });
+
+  test("a control's icon says what its motion is", async ({ page }) => {
+    // The icons are generated from the motion each button makes, so what the
+    // player sees is the actual angle and the actual plane. Asserted on what
+    // the drawing was made from: 26 pixels of glyph are no evidence.
+    const drawn = async () =>
+      page.$$eval(".board-caption .board-bar-btn", (nodes) =>
+        nodes
+          .filter((n) => !(n as HTMLElement).hidden)
+          .map((n) => {
+            const el = n as HTMLElement;
+            const turns = el.dataset["turns"];
+            const mirror = el.dataset["mirror"];
+            return `${el.dataset["slot"]}=${el.dataset["motion"]}${
+              turns ? `/${360 / Number(turns)}` : ""
+            }${mirror ? `/${mirror}` : ""}`;
+          }),
+      );
+
+    // A cube quarters about two axes; its mirror plane lies flat on screen at
+    // the three-quarter view it opens in.
+    await page.goto("/?mode=cube&difficulty=easy&seed=1");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    expect(await drawn()).toEqual([
+      "symmetry-ring-back=turn/90",
+      "symmetry-ring-fwd=turn/90",
+      "symmetry-tube-back=turn/90",
+      "symmetry-tube-fwd=turn/90",
+      "symmetry-mirror-ring-fwd=reflection/horizontal",
+    ]);
+
+    // A hexagonal board turns a sixth where the square one turns a quarter, and
+    // both mirror in a plane standing up on the screen.
+    await page.goto("/?mode=hexhex&difficulty=easy&seed=1");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    expect(await drawn()).toEqual([
+      "symmetry-turn-back=turn/60",
+      "symmetry-turn-fwd=turn/60",
+      "symmetry-mirror-ring-fwd=reflection/vertical",
+    ]);
+
+    await page.goto("/?mode=square&difficulty=easy&seed=1");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    expect(await drawn()).toEqual([
+      "symmetry-turn-back=turn/90",
+      "symmetry-turn-fwd=turn/90",
+      "symmetry-mirror-ring-fwd=reflection/vertical",
+    ]);
+
+    // A donut's two translations are steps and have no angle to show; its turn
+    // is the half that stands it on its head.
+    await page.goto("/?mode=torus&difficulty=easy&seed=1");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    expect(await drawn()).toEqual([
+      "symmetry-ring-back=step",
+      "symmetry-ring-fwd=step",
+      "symmetry-tube-back=step",
+      "symmetry-tube-fwd=step",
+      "symmetry-turn-fwd=turn/180",
+      "symmetry-mirror-ring-fwd=reflection/horizontal",
+    ]);
+  });
+
+  test("a solid's quarter turn moves a cell round its own axis", async ({ page }) => {
+    await page.goto("/?mode=cube&difficulty=easy&seed=1");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    const moved = await page.evaluate(() => {
+      const ms = window.__ms!;
+      const cell = ms.cells().find((c) => ms.cellScreenXY(c) != null)!;
+      const before = ms.cellScreenXY(cell)!;
+      ms.scroll(1, "ring");
+      const after = ms.cellScreenXY(cell);
+      return {
+        gone: after == null,
+        distance: after ? Math.hypot(after.x - before.x, after.y - before.y) : Infinity,
+        state: ms.state(),
+      };
+    });
+    // a quarter of the way round is either off the visible faces or a long way
+    expect(moved.gone || moved.distance > 20).toBe(true);
+    expect(moved.state.status).toBe("playing");
+  });
+
+  test("the classic board turns a quarter, and the game is untouched", async ({ page }) => {
+    await page.goto("/?mode=square&difficulty=easy&seed=1");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    const moved = await page.evaluate(() => {
+      const ms = window.__ms!;
+      ms.reveal("0,0");
+      const before = ms.cellScreenXY("0,0")!;
+      ms.scroll(1, "turn");
+      const after = ms.cellScreenXY("0,0")!;
+      return { before, after, state: ms.state() };
+    });
+    // a corner of a 9x9 grid goes to another corner: a long way, and not back
+    expect(
+      Math.hypot(moved.after.x - moved.before.x, moved.after.y - moved.before.y),
+    ).toBeGreaterThan(50);
+    expect(moved.state.status).toBe("playing");
+    expect(moved.state.revealed).toBeGreaterThan(0);
+  });
+
+  test("the tube control moves a cell to the far side of the donut", async ({ page }) => {
+    // The reason the pair exists: a donut's inner wall is only ever glimpsed
+    // through the hole, and no amount of turning the board brings it round.
+    // Rolling the contents round the tube does.
+    await page.goto("/?mode=torus&difficulty=easy&seed=1");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    const moved = await page.evaluate(() => {
+      const ms = window.__ms!;
+      const cell = ms.cells().find((c) => ms.cellScreenXY(c) != null)!;
+      const before = ms.cellScreenXY(cell)!;
+      ms.scroll(1, "tube");
+      const after = ms.cellScreenXY(cell);
+      return {
+        gone: after == null,
+        distance: after ? Math.hypot(after.x - before.x, after.y - before.y) : Infinity,
+        state: ms.state(),
+      };
+    });
+    // it either turned to the hidden inside or landed somewhere visibly else
+    expect(moved.gone || moved.distance > 3).toBe(true);
+    // and, like the ring step, it is a pure view permutation
+    expect(moved.state.status).toBe("playing");
+    expect(moved.state.revealed).toBe(0);
   });
 
   // The reported bug: on a scrolled Klein board a tap did nothing, while a flag

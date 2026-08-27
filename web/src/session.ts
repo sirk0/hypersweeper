@@ -1,6 +1,13 @@
 import { playSound, soundEnabled, type CellSound } from "./audio/sound";
 import { buildBoard } from "./boards/presets";
-import { isBoard3D, type AnyBoard, type CellId } from "./boards/core";
+import {
+  invertCycle,
+  isBoard3D,
+  type AnyBoard,
+  type BoardSymmetry,
+  type CellId,
+  type SymmetryId,
+} from "./boards/core";
 import { Game } from "./game";
 import { haptic } from "./haptics";
 import { mulberry32, type Rng } from "./rng";
@@ -38,14 +45,14 @@ export class GameSession {
   private startedAt: number | null = null;
   private stoppedAt: number | null = null;
 
-  // View-layer scroll for the Klein bottle. `cycle` is the one-step ring
-  // translation (a graph automorphism); scrolling walks a permutation between
-  // geometric faces and the game cells painted on them, so cells hidden behind
-  // the self-intersection rotate into view without the geometry moving.
+  // View-layer motion along the board's own symmetries (see boards/core.ts
+  // BoardSymmetry): each is a graph automorphism, and applying one walks a
+  // permutation between geometric faces and the game cells painted on them, so
+  // cells hidden behind the Klein bottle's neck or down the inside of a donut
+  // come into view without the geometry moving and without the game noticing.
   // `remap` sends each geometric face -> the game cell shown on it (identity
-  // until scrolled); `remapInv` is its inverse (game cell -> geometric face).
-  private readonly cycle: Map<CellId, CellId> | null;
-  private readonly cycleInv: Map<CellId, CellId> | null;
+  // until the board is moved); `remapInv` is its inverse.
+  private readonly moves = new Map<SymmetryId, [Map<CellId, CellId>, Map<CellId, CellId>]>();
   private remap = new Map<CellId, CellId>();
   private remapInv = new Map<CellId, CellId>();
 
@@ -93,8 +100,9 @@ export class GameSession {
       ...(rng ? { rng } : {}),
     });
     this.panOf = opts.panOf ?? null;
-    this.cycle = isBoard3D(this.board) ? this.board.cellCycle : null;
-    this.cycleInv = this.cycle ? invert(this.cycle) : null;
+    for (const symmetry of this.board.symmetries) {
+      this.moves.set(symmetry.id, [symmetry.cycle, invertCycle(symmetry.cycle)]);
+    }
     for (const cell of this.board.polygons.keys()) {
       this.remap.set(cell, cell);
       this.remapInv.set(cell, cell);
@@ -109,10 +117,15 @@ export class GameSession {
     return isBoard3D(this.board);
   }
 
-  /** Whether this board carries a ring translation the player can scroll along
-   * (the Klein bottle). Drives the HUD scroll arrows and wheel/gesture input. */
-  get hasCellCycle(): boolean {
-    return this.cycle != null;
+  /** The symmetries this board can be moved along, in `SYMMETRY_IDS` order.
+   * Drives which board-bar controls are shown, and the wheel/gesture input. */
+  get symmetries(): readonly BoardSymmetry[] {
+    return this.board.symmetries;
+  }
+
+  /** Whether the board carries this symmetry at all. */
+  has(id: SymmetryId): boolean {
+    return this.moves.has(id);
   }
 
   /** The geometric face a game cell's contents are currently painted on
@@ -145,16 +158,18 @@ export class GameSession {
     }
   }
 
-  /** Scroll the cell contents one step along the ring: `direction` > 0 forward
-   * (`cycle`), < 0 backward (`cycleInv`). No-op off a Klein board. Returns
-   * whether it scrolled. */
-  scroll(direction: number): boolean {
-    if (!this.cycle || !this.cycleInv) return false;
-    const cyc = direction > 0 ? this.cycle : this.cycleInv;
+  /** Move the cell contents one step along one of the board's symmetries:
+   * `direction` > 0 forward, < 0 backward (the inverse permutation — the same
+   * step for a reflection, which is its own inverse). No-op when the board does
+   * not have that symmetry. Returns whether it moved. */
+  move(id: SymmetryId, direction: number): boolean {
+    const pair = this.moves.get(id);
+    if (!pair) return false;
+    const cyc = direction > 0 ? pair[0] : pair[1];
     const next = new Map<CellId, CellId>();
     for (const [geom, game] of this.remap) next.set(geom, cyc.get(game) ?? game);
     this.remap = next;
-    this.remapInv = invert(next);
+    this.remapInv = invertCycle(next);
     for (const geom of this.board.polygons.keys()) {
       this.mesh.setVisual(geom, this.visualFor(this.gameFor(geom)));
     }
@@ -443,10 +458,4 @@ export class GameSession {
     }
     return { kind: "hidden" };
   }
-}
-
-function invert(map: Map<CellId, CellId>): Map<CellId, CellId> {
-  const out = new Map<CellId, CellId>();
-  for (const [k, v] of map) out.set(v, k);
-  return out;
 }

@@ -1,5 +1,5 @@
 import { Vector2 } from "three";
-import type { CellId } from "../boards/core";
+import type { CellId, SymmetryId } from "../boards/core";
 
 // Pointer/touch input. Emits high-level gestures; the app maps them onto game
 // actions. The gesture state machine disambiguates tap / long-press / drag:
@@ -31,13 +31,13 @@ export interface ControlHandlers {
   onPan(dx: number, dy: number): void;
   /** Zoom by `factor` about the point (x, y) in canvas CSS pixels. */
   onZoom(factor: number, x: number, y: number): void;
-  /** Whether a plain wheel/two-finger scroll walks the board's ring (the Klein
-   * bottle). Where it does not, the wheel zooms instead. */
-  scrolls(): boolean;
-  /** One scroll step along the board's ring (Klein bottle): +1 forward, -1
-   * back. Fired by the mouse wheel / two-finger trackpad scroll; a no-op off a
-   * scrollable board. */
-  onScroll(direction: number): void;
+  /** Whether the board carries this symmetry, so the wheel should walk it
+   * rather than zoom. */
+  scrolls(id: SymmetryId): boolean;
+  /** One step along one of the board's symmetries: +1 forward, -1 back. Fired
+   * by the mouse wheel / two-finger trackpad scroll; a no-op off a board that
+   * has it. */
+  onScroll(id: SymmetryId, direction: number): void;
 }
 
 // Wheel/trackpad delta accumulated per ring step (a notch is ~100px).
@@ -265,24 +265,28 @@ export function attachControls(
   const onWheel = (e: WheelEvent) => {
     e.preventDefault(); // don't let the page scroll (or zoom) under the board
     // A trackpad pinch reaches the page as ctrl+wheel, so it always zooms; a
-    // plain wheel walks the ring on a board that has one (the Klein bottle)
-    // and zooms on every other board.
-    if (e.ctrlKey || !handlers.scrolls()) {
+    // plain wheel walks the ring on a board that has one, shift+wheel rolls it
+    // round the tube, and the wheel zooms on every other board. Shift turns a
+    // vertical wheel into a horizontal one in some browsers, so take whichever
+    // axis the event actually carries.
+    const id: SymmetryId = e.shiftKey ? "tube" : "ring";
+    const delta = e.deltaY || e.deltaX;
+    if (e.ctrlKey || !handlers.scrolls(id)) {
       const rate = e.ctrlKey ? CTRL_WHEEL_ZOOM : WHEEL_ZOOM;
       // deltaMode 1 counts lines, 2 pages; normalise both to pixels.
-      const px = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1);
+      const px = delta * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1);
       const p = local(e.clientX, e.clientY);
       handlers.onZoom(Math.exp(-px * rate), p.x, p.y);
       return;
     }
-    scrollAccum += e.deltaY;
+    scrollAccum += delta;
     while (scrollAccum >= WHEEL_STEP) {
       scrollAccum -= WHEEL_STEP;
-      handlers.onScroll(1);
+      handlers.onScroll(id, 1);
     }
     while (scrollAccum <= -WHEEL_STEP) {
       scrollAccum += WHEEL_STEP;
-      handlers.onScroll(-1);
+      handlers.onScroll(id, -1);
     }
   };
 

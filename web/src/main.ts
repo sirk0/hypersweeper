@@ -8,7 +8,7 @@ import {
   soundVolume,
   unlockAudio,
 } from "./audio/sound";
-import { isBoard3D, type CellId } from "./boards/core";
+import { isBoard3D, type CellId, type SymmetryId } from "./boards/core";
 import { fairnessOf } from "./boards/fairness";
 import { setHapticsEnabled } from "./haptics";
 import { boardLinkQuery, parseBoardLink } from "./link";
@@ -22,7 +22,8 @@ import {
 } from "./render/renderer";
 import { bestTimes, recordTime, type ScoreEntry } from "./leaderboard";
 import { BoardInfo } from "./ui/boardInfo";
-import { Hud } from "./ui/hud";
+import { symmetryPictures } from "./ui/symmetryIcon";
+import { boardConditions, Hud } from "./ui/hud";
 import { Menu } from "./ui/menu";
 import { openScoreDialog, type ScoreDialogHandle } from "./ui/scoreDialog";
 import type { SettingsHost } from "./ui/settings";
@@ -148,9 +149,10 @@ class App {
         this.renderer.zoom > 1,
       onPan: (dx, dy) => this.pan(dx, dy),
       onZoom: (factor, x, y) => this.zoom(factor, x, y),
-      scrolls: () =>
-        this.screen === "game" && (this.session?.hasCellCycle ?? false),
-      onScroll: (direction) => this.scroll(direction),
+      // The wheel walks the ring; with shift held it rolls round the tube, on
+      // the boards that have one.
+      scrolls: (id) => this.screen === "game" && (this.session?.has(id) ?? false),
+      onScroll: (id, direction) => this.move(id, direction),
     });
     // The board has its own bounded zoom, so the browser's page zoom is only
     // ever a trap here (see blockBrowserZoom).
@@ -395,7 +397,12 @@ class App {
     this.paintTheme(); // the page picks up this board's tiling
     this.menu.hide();
     this.hud.root.hidden = false;
-    this.boardInfo.setBoard(mode, difficulty, this.session.hasCellCycle);
+    this.boardInfo.setBoard(
+      mode,
+      difficulty,
+      boardConditions(this.session.symmetries),
+      symmetryPictures(this.session.board, mode, this.renderer.quarterTurned),
+    );
     // The first board this browser ever opens gets the gesture hint, once. It
     // is stored before it is shown, so a reload mid-hint does not re-earn it.
     this.boardInfo.dismissHint();
@@ -437,7 +444,8 @@ class App {
         this.boardInfo.setBoard(
           this.session.mode,
           this.session.difficulty,
-          this.session.hasCellCycle,
+          boardConditions(this.session.symmetries),
+          this.symmetryPictures(),
         );
       }
       this.onResize();
@@ -530,6 +538,19 @@ class App {
         : this.boardInfo.caption.getBoundingClientRect().bottom;
     this.renderer.setTopInset(inset);
     this.renderer.resize();
+    // A landscape flat board turns a quarter on a portrait viewport, and the
+    // mirror line a control draws turns with it (see ui/symmetryIcon.ts).
+    if (this.screen === "game") this.boardInfo.drawIcons(this.symmetryPictures());
+  }
+
+  /** What each of this board's controls does, as the view has it. */
+  private symmetryPictures() {
+    if (!this.session) return new Map();
+    return symmetryPictures(
+      this.session.board,
+      this.session.mode,
+      this.renderer.quarterTurned,
+    );
   }
 
   private onAction(action: string): void {
@@ -539,10 +560,11 @@ class App {
       this.hud.setState({ flagMode: this.flagMode });
     } else if (action === "restart" && this.session) {
       this.startGame(this.session.mode, this.session.difficulty);
-    } else if (action === "klein-scroll-back") {
-      this.scroll(-1);
-    } else if (action === "klein-scroll-fwd") {
-      this.scroll(1);
+    } else if (action.startsWith("symmetry:")) {
+      // `symmetry:<id>:<direction>` — one step along one of the board's own
+      // symmetries; see data/ui/screens.json boardBar.
+      const [, id, direction] = action.split(":");
+      this.move(id as SymmetryId, Number(direction));
     } else if (action === "share") {
       void this.shareCurrentBoard();
     } else if (action === "help") {
@@ -612,14 +634,26 @@ class App {
     this.renderer.panBy(dxPx, dyPx);
   }
 
-  /** Walk the Klein cell cycle one step (view-layer permutation); no-op on
-   * boards without one. */
-  private scroll(direction: number): void {
+  /** Move the board's contents one step along one of its symmetries (a
+   * view-layer permutation); no-op on boards without that one. */
+  private move(id: SymmetryId, direction: number): void {
     if (this.screen !== "game") return;
-    if (this.session?.scroll(direction)) {
+    if (this.session?.move(id, direction)) {
       this.renderer.markDirty();
     }
   }
+
+  /** The keys that step a board along one of its symmetries. Three pairs, one
+   * per motion that has a direction; the two mirrors are on the board bar only,
+   * since there is no key left that reads as one. */
+  private static readonly SYMMETRY_KEYS: Record<string, [SymmetryId, number]> = {
+    "[": ["ring", -1],
+    "]": ["ring", 1],
+    ",": ["tube", -1],
+    ".": ["tube", 1],
+    ";": ["turn", -1],
+    "'": ["turn", 1],
+  };
 
   private onKey(e: KeyboardEvent): void {
     if (this.screen !== "game") return;
@@ -627,7 +661,12 @@ class App {
     if (e.key === "+" || e.key === "=") this.zoom(ZOOM_KEY_STEP);
     else if (e.key === "-" || e.key === "_") this.zoom(1 / ZOOM_KEY_STEP);
     else if (e.key === "0") this.renderer.resetView();
-    else if (!this.session?.is3d) return;
+    else if (Object.hasOwn(App.SYMMETRY_KEYS, e.key)) {
+      // On every board, not only a 3D one: a flat board has no ring to walk
+      // but it does have its own turn and mirrors.
+      const [id, direction] = App.SYMMETRY_KEYS[e.key]!;
+      this.move(id, direction);
+    } else if (!this.session?.is3d) return;
     else {
       this.onKey3d(e);
       return;
@@ -636,18 +675,13 @@ class App {
   }
 
   private onKey3d(e: KeyboardEvent): void {
-    // Bracket keys walk the Klein cell cycle (matching the wheel / scroll
-    // arrows); arrows rotate the board.
-    if (e.key === "[") this.scroll(-1);
-    else if (e.key === "]") this.scroll(1);
-    else {
-      const step = KEY_ROTATE_STEP;
-      if (e.key === "ArrowLeft") this.rotate(-step, 0);
-      else if (e.key === "ArrowRight") this.rotate(step, 0);
-      else if (e.key === "ArrowUp") this.rotate(0, -step);
-      else if (e.key === "ArrowDown") this.rotate(0, step);
-      else return;
-    }
+    // Arrow keys rotate the board (the symmetry keys are handled above).
+    const step = KEY_ROTATE_STEP;
+    if (e.key === "ArrowLeft") this.rotate(-step, 0);
+    else if (e.key === "ArrowRight") this.rotate(step, 0);
+    else if (e.key === "ArrowUp") this.rotate(0, -step);
+    else if (e.key === "ArrowDown") this.rotate(0, step);
+    else return;
     e.preventDefault();
   }
 
@@ -767,7 +801,7 @@ class App {
       elapsedSeconds: s.elapsedSeconds,
       status: s.status,
       flagMode: this.flagMode,
-      hasCellCycle: this.session.hasCellCycle,
+      conditions: boardConditions(this.session.symmetries),
     });
   }
 
@@ -778,8 +812,9 @@ class App {
   private cellScreenXY(cell: CellId): { x: number; y: number } | null {
     if (!this.session) return null;
     const mesh = this.session.mesh;
-    // A game cell's contents are painted on its (possibly scrolled) geometric
-    // face; anchor there so the reported position follows the Klein scroll.
+    // A game cell's contents are painted on its (possibly moved) geometric
+    // face; anchor there so the reported position follows the symmetry
+    // controls.
     const anchor = mesh.cellAnchor(this.session.geomFor(cell));
     if (!anchor) return null;
     mesh.updateWorldMatrix(true, false);
@@ -802,7 +837,8 @@ class App {
   }
 
   /** The game cell shown at a point in client coordinates: the same raycast a
-   * tap runs, then the face -> game cell mapping the scroll permutes. */
+   * tap runs, then the face -> game cell mapping the symmetry controls
+   * permute. */
   private cellAtScreenXY(x: number, y: number): CellId | null {
     if (!this.session) return null;
     const r = this.canvas.getBoundingClientRect();
@@ -834,7 +870,7 @@ class App {
       cellState: (cell) => this.session?.game.cellState(cell) ?? null,
       zoom: () => this.renderer.zoom,
       zoomBy: (factor, x, y) => this.zoom(factor, x, y),
-      scroll: (direction) => this.scroll(direction),
+      scroll: (direction, id) => this.move(id ?? "ring", direction),
       animations: (enabled) => {
         this.animationsEnabled = enabled;
         this.session?.mesh.setAnimationsEnabled(enabled);

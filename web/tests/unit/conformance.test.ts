@@ -5,7 +5,7 @@ import {
   boundaryComponents,
   edgeCount,
   eulerCharacteristic,
-  isBoard3D,
+  symmetryOf,
   vertexCount,
   type AnyBoard,
 } from "../../src/boards/core";
@@ -55,9 +55,14 @@ describe("board conformance oracle", () => {
         expect(boundaryComponents(board)).toBe(want.boundaryComponents);
         expect(edgeCount(board)).toBe(want.edgeCount);
         expect(vertexCount(board)).toBe(want.vertexCount);
-        expect(isBoard3D(board) && board.cellCycle != null).toBe(
-          want.hasCellCycle,
-        );
+        // One-directional on purpose. `hasCellCycle` is what the pygame
+        // reference builds — the Klein bottle's ring translation, and nothing
+        // else — while this app derives the whole symmetry group of every
+        // wrapped surface and offers it as controls (see boards/core.ts
+        // BoardSymmetry). So the oracle pins that a board the reference can
+        // scroll is one this app can scroll too; the boards that gained a ring
+        // step here are pinned in tests/unit/surfaces.test.ts instead.
+        if (want.hasCellCycle) expect(symmetryOf(board, "ring")).not.toBeNull();
         checkInvariants(board);
       });
     }

@@ -19,30 +19,47 @@ import {
   trianglesArea,
   type Tri,
 } from "../../src/boards/clipSolid";
-import type { Board3D, CellId, Vec3 } from "../../src/boards/core";
+import {
+  isAutomorphism,
+  symmetryOf,
+  type Board3D,
+  type CellId,
+  type SymmetryId,
+  type Vec3,
+} from "../../src/boards/core";
 
 // Structural invariants of the wrapped surfaces, mirrored from the Python suite
 // (tests/test_boards.py TestKleinBottle / TestKleinTilings and the wrap
-// invariants) — neighbour degrees, two-sidedness, and the cell-cycle graph
-// automorphism the conformance oracle's aggregate counts don't pin down.
+// invariants) — neighbour degrees, two-sidedness, and the board symmetries the
+// conformance oracle's aggregate counts don't pin down.
 
 function degrees(board: Board3D): Set<number> {
   return new Set([...board.adjacency.values()].map((n) => n.length));
 }
 
-/** A cell_cycle is a bijective adjacency-preserving permutation of the cells:
- * neighbours map to neighbours, so the board reads correctly at every scroll
- * offset. */
-function assertScrollCycle(board: Board3D): void {
-  const cycle = board.cellCycle;
-  expect(cycle).not.toBeNull();
-  const cyc = cycle!;
-  expect(new Set(cyc.keys())).toEqual(new Set(board.adjacency.keys()));
-  expect(new Set(cyc.values()).size).toBe(cyc.size); // a bijection
+function ids(board: Board3D): SymmetryId[] {
+  return board.symmetries.map((s) => s.id);
+}
+
+/** A symmetry is a bijective adjacency-preserving permutation of the cells:
+ * neighbours map to neighbours, so the board reads correctly however far it has
+ * been moved along. Measured here independently of the check `assemble` makes,
+ * on the board it actually shipped. */
+function assertSymmetry(board: Board3D, id: SymmetryId): void {
+  const symmetry = symmetryOf(board, id);
+  expect(symmetry, `${board.mode} has no ${id} symmetry`).not.toBeNull();
+  const cycle = symmetry!.cycle;
+  expect(new Set(cycle.keys())).toEqual(new Set(board.adjacency.keys()));
+  expect(new Set(cycle.values()).size).toBe(cycle.size); // a bijection
+  expect(isAutomorphism(board.adjacency, cycle)).toBe(true);
   for (const [cell, neighbors] of board.adjacency) {
-    const shifted = new Set(board.adjacency.get(cyc.get(cell)!)!);
-    for (const n of neighbors) expect(shifted.has(cyc.get(n)!)).toBe(true);
+    const shifted = new Set(board.adjacency.get(cycle.get(cell)!)!);
+    for (const n of neighbors) expect(shifted.has(cycle.get(n)!)).toBe(true);
   }
+  // a reflection is its own undo, a translation is not: the flag the UI draws
+  // one button rather than a pair from
+  const twice = new Map([...cycle].map(([c, image]) => [c, cycle.get(image)!]));
+  expect(symmetry!.involution).toBe([...twice].every(([c, image]) => c === image));
 }
 
 /** The order of the cell cycle: how many steps return a cell to itself. */
@@ -62,7 +79,22 @@ describe("wrapped surfaces", () => {
     const board = torusBoard(12, 6, 9);
     expect(degrees(board)).toEqual(new Set([8]));
     expect(board.twoSided).toBe(false);
-    expect(board.cellCycle).toBeNull();
+    // A donut is closed both ways, so it has every motion of the square
+    // lattice; what it *offers* is the ones that are not combinations of the
+    // others, and the mirror across the tube is the half turn after the mirror
+    // along the ring (see `irredundant`).
+    expect(ids(board)).toEqual(["ring", "tube", "turn", "mirror-ring"]);
+    for (const id of ids(board)) assertSymmetry(board, id);
+  });
+
+  it("the torus tube step walks a cell all the way round the cross-section", () => {
+    const board = torusBoard(12, 6, 9);
+    const tube = symmetryOf(board, "tube")!;
+    expect(tube.involution).toBe(false);
+    // six rows round the tube: six steps and a cell is back where it started,
+    // having been on the inside of the ring half way along
+    expect(cycleOrder(tube.cycle)).toBe(6);
+    expect(cycleOrder(symmetryOf(board, "ring")!.cycle)).toBe(12);
   });
 
   it("torus of hexagons is borderless with six neighbours each", () => {
@@ -71,11 +103,26 @@ describe("wrapped surfaces", () => {
     expect(board.twoSided).toBe(false);
   });
 
-  it("cylinder and Möbius are two-sided with no scroll cycle", () => {
+  it("cylinder and Möbius are two-sided and turn about their axis", () => {
     for (const board of [cylinderBoard(12, 7, 10), mobiusBoard(20, 4, 10)]) {
       expect(board.twoSided).toBe(true);
-      expect(board.cellCycle).toBeNull();
+      // open across, so no translation that way — but both can still be turned
+      // end over end, and both keep the step round their own axis
+      expect(ids(board)).toContain("ring");
+      expect(ids(board)).toContain("turn");
+      expect(ids(board)).not.toContain("tube");
+      for (const id of ids(board)) assertSymmetry(board, id);
     }
+    // A cylinder keeps one mirror on top of those; a Möbius band's is already
+    // the end-over-end turn after a step round the loop, because its seam
+    // flips the band — so it is not offered.
+    expect(ids(cylinderBoard(12, 7, 10))).toEqual(["ring", "turn", "mirror-ring"]);
+    expect(ids(mobiusBoard(20, 4, 10))).toEqual(["ring", "turn"]);
+  });
+
+  it("the Möbius ring step returns only after two loops", () => {
+    // the seam flips the band, so one loop lands a cell on its mirror image
+    expect(cycleOrder(symmetryOf(mobiusBoard(20, 4, 10), "ring")!.cycle)).toBe(40);
   });
 
   it("klein square is a closed non-orientable surface, 8 neighbours each", () => {
@@ -85,13 +132,43 @@ describe("wrapped surfaces", () => {
   });
 
   it("klein carries a ring-translation graph automorphism", () => {
-    assertScrollCycle(kleinBoard(12, 6, 9));
-    assertScrollCycle(kleinBoard(16, 8, 20));
+    assertSymmetry(kleinBoard(12, 6, 9), "ring");
+    assertSymmetry(kleinBoard(16, 8, 20), "ring");
   });
 
-  it("klein cell cycle has period twice the ring (seam flips the tube)", () => {
+  it("klein ring cycle has period twice the ring (seam flips the tube)", () => {
     // crossing the seam flips the tube, so a cell returns only after two loops
-    expect(cycleOrder(kleinBoard(12, 6, 9).cellCycle!)).toBe(24);
+    expect(cycleOrder(symmetryOf(kleinBoard(12, 6, 9), "ring")!.cycle)).toBe(24);
+  });
+
+  it("the Klein bottle's only tube step is the half turn", () => {
+    const board = kleinBoard(12, 6, 9);
+    // both mirrors are combinations of the turn and each other, so neither is
+    // offered: the bottle's three controls are its two steps and its half turn
+    expect(ids(board)).toEqual(["ring", "tube", "turn"]);
+    for (const id of ids(board)) assertSymmetry(board, id);
+    // The ring seam reverses the tube, so conjugating a whole-tube step by it
+    // gives that step back inverted and only the half step -- its own inverse
+    // -- descends to the bottle. That is what brings the sheet inside the neck
+    // out: three of the six rows, straight to the other side.
+    const tube = symmetryOf(board, "tube")!;
+    expect(tube.involution).toBe(true);
+    expect(cycleOrder(tube.cycle)).toBe(2);
+    // and it really is the half step, not some other pairing
+    expect(tube.cycle.get("0,0")).toBe("0,3");
+  });
+
+  it("a whole-tube step is no symmetry of the Klein bottle", () => {
+    // the negative half of the rule above, measured rather than argued: the
+    // permutation exists, it just is not adjacency-preserving
+    const board = kleinBoard(12, 6, 9);
+    const step = new Map(
+      [...board.adjacency.keys()].map((cell) => {
+        const [i, j] = cell.split(",").map(Number);
+        return [cell, `${i},${(j! + 1) % 6}`] as const;
+      }),
+    );
+    expect(isAutomorphism(board.adjacency, step)).toBe(false);
   });
 
   it("klein triangle/hex cell counts match Python", () => {
@@ -100,12 +177,32 @@ describe("wrapped surfaces", () => {
   });
 
   it("klein hexagons carry a scroll cycle", () => {
-    assertScrollCycle(kleinHexBoard(8, 6, 20));
+    assertSymmetry(kleinHexBoard(8, 6, 20), "ring");
   });
 
   it("klein triangles carry a scroll cycle of two lattice columns", () => {
-    assertScrollCycle(kleinTriangleBoard(18, 6, 13));
-    assertScrollCycle(kleinTriangleBoard(25, 8, 20));
+    assertSymmetry(kleinTriangleBoard(18, 6, 13), "ring");
+    assertSymmetry(kleinTriangleBoard(25, 8, 20), "ring");
+  });
+
+  it("every symmetry a wrapped board ships really is one", () => {
+    const boards = [
+      torusBoard(12, 6, 9),
+      torusHexBoard(6, 12, 9),
+      cylinderBoard(12, 7, 10),
+      cylinderTriangleBoard(12, 6, 10),
+      cylinderHexBoard(6, 5, 10),
+      mobiusBoard(20, 4, 10),
+      mobiusHexBoard(9, 3, 10),
+      kleinBoard(12, 6, 9),
+      kleinTriangleBoard(18, 6, 13),
+      kleinHexBoard(8, 6, 20),
+    ];
+    for (const board of boards) {
+      // every wrapped surface turns about its axis, whatever else it has
+      expect(ids(board)).toContain("ring");
+      for (const id of ids(board)) assertSymmetry(board, id);
+    }
   });
 
   it("klein triangles need a ring parity matching the seam flip", () => {
@@ -206,11 +303,11 @@ describe("wrapped surfaces", () => {
     }
   });
 
-  it("the clip is render-only: cells, adjacency and scroll are untouched", () => {
+  it("the clip is render-only: cells, adjacency and symmetries are untouched", () => {
     const board = kleinBoard(16, 8, 20);
     expect(board.polygons.size).toBe(128);
     expect(degrees(board)).toEqual(new Set([8]));
-    assertScrollCycle(board);
+    for (const id of ids(board)) assertSymmetry(board, id);
   });
 
   it("wrap builders validate their seam arguments", () => {

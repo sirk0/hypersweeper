@@ -74,13 +74,24 @@ const SECTIONS: Section[] = [
       [
         "Zoom",
         "Scroll or pinch to zoom, and drag a zoomed-in flat board to pan. " +
-          "The + and − keys zoom too, and 0 puts the view back.",
+          "The + and − keys zoom too, and 0 puts the view back. On a board " +
+          "the wheel slides along instead (below), hold ctrl to zoom.",
       ],
       [
-        "The Klein bottle",
-        "Its tube passes through itself, which hides a few cells behind the " +
-          "neck. The ‹‹ and ›› buttons at the right of the header (or the [ and " +
-          "] keys) scroll the board round to bring them into view.",
+        "Move the cells along",
+        "A donut's inner wall and the Klein bottle's neck hide cells that no " +
+          "amount of turning brings round. The buttons under the board's name " +
+          "slide its contents along the board's own symmetries — round the " +
+          "ring (‹‹ ››, or the [ and ] keys), round the tube (⌃ ⌄, or , and " +
+          "·), turned (⟲ ⟳, or ; and ’) and mirrored either way. The board " +
+          "itself never moves, and neither does the game: every number still " +
+          "counts the mines beside it. Each board gets the moves its own shape " +
+          "allows, and only the ones nothing else can make: a cube quarters " +
+          "about two axes and mirrors in one plane, and everything else it can " +
+          "do is those in some order. Every button is drawn from its own move — " +
+          "the arc is the angle it turns by, and the dashed line is the plane " +
+          "it mirrors in. The wheel slides a wrapped board round the ring, and " +
+          "shift and the wheel round the tube.",
       ],
     ],
   },

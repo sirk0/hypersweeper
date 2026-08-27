@@ -1,7 +1,8 @@
 import { fullModeLabel } from "../boards/catalog";
 import { fairnessHint, fairnessOf } from "../boards/fairness";
 import { screens } from "../config/screens";
-import { ICONS } from "./hud";
+import { ICONS, slotVisible } from "./hud";
+import { planeLie, symmetryIcon, type SymmetryPicture } from "./symmetryIcon";
 
 // Two small things drawn over a board, both about telling the player what they
 // are looking at.
@@ -31,11 +32,13 @@ function isTouch(): boolean {
 export class BoardInfo {
   /** The caption strip. Sits in the `#ui` flex column directly under the
    * header, so it is part of the space the board is framed below. It also
-   * carries the board's own controls — the Klein scroll chevrons — which do not
-   * fit in the header row on a phone once it holds two slots a side. */
+   * carries the board's own controls — the symmetry chevrons and mirrors —
+   * which do not fit in the header row on a phone once it holds two slots a
+   * side. A board with all of them shows six or seven, so the row wraps. */
   readonly caption: HTMLElement;
   private readonly nameEl: HTMLElement;
   private readonly barButtons: HTMLElement[] = [];
+  private readonly controls: HTMLElement;
   /** The first-run hint, positioned over the board rather than in the column —
    * it is transient, and reserving layout for it would shift the board when it
    * left. */
@@ -51,6 +54,14 @@ export class BoardInfo {
     this.nameEl = document.createElement("span");
     this.nameEl.className = "board-caption-name";
     this.caption.append(this.nameEl);
+
+    // The controls sit in a group of their own so they wrap as a block: on a
+    // narrow phone a board with six of them and a long name does not fit on one
+    // line, and one orphaned button below the rest reads as a mistake where the
+    // whole row dropping under the name reads as a row.
+    const controls = document.createElement("div");
+    controls.className = "board-caption-controls";
+    this.caption.append(controls);
 
     // Built from the shared config like the header's slots, and with the same
     // `hud-btn` classes and `data-slot` names, so a control reads and is found
@@ -68,8 +79,9 @@ export class BoardInfo {
       if (slot.action) btn.addEventListener("click", () => onAction(slot.action!));
       btn.hidden = true;
       this.barButtons.push(btn);
-      this.caption.append(btn);
+      controls.append(btn);
     }
+    this.controls = controls;
 
     this.hint = document.createElement("div");
     this.hint.className = "board-hint";
@@ -79,8 +91,17 @@ export class BoardInfo {
     this.hint.setAttribute("role", "status");
   }
 
-  /** Name the board on screen, and show the controls it has. */
-  setBoard(mode: string, difficulty: string, hasCellCycle = false): void {
+  /** Name the board on screen, and show the controls it has. `conditions` is
+   * what the board's symmetries make true (see `boardConditions`); a slot with
+   * no `visibleWhen` is always shown. `pictures` says what each control's
+   * motion looks like, which is what its icon is drawn from — see
+   * ui/symmetryIcon.ts. */
+  setBoard(
+    mode: string,
+    difficulty: string,
+    conditions: ReadonlySet<string> = new Set(),
+    pictures: ReadonlyMap<string, SymmetryPicture> = new Map(),
+  ): void {
     // The caption is also where a graded board says so. The menu row carries
     // the mark too, but the Flat and 3D entries deal a board at random and
     // never show that row -- and this is the board where losing is not the
@@ -92,14 +113,40 @@ export class BoardInfo {
       warning === undefined ? fullModeLabel(mode) : `${fullModeLabel(mode)} ⚠`;
     this.nameEl.title = warning ?? "";
     for (const btn of this.barButtons) {
-      const cond = btn.dataset["visibleWhen"];
-      btn.hidden = cond === "hasCellCycle" ? !hasCellCycle : false;
+      btn.hidden = !slotVisible(btn.dataset["visibleWhen"], conditions);
     }
-    this.caption.classList.toggle(
-      "has-controls",
-      this.barButtons.some((b) => !b.hidden),
-    );
+    this.drawIcons(pictures);
+    // An empty group would still take its gap in the row, nudging the name off
+    // centre on every board that has no controls at all.
+    this.controls.hidden = this.barButtons.every((b) => b.hidden);
     this.caption.hidden = false;
+  }
+
+  /** Re-draw the icons alone. The renderer turns a landscape flat board on its
+   * side when the viewport goes portrait, and a mirror line turns with it, so
+   * this is called again whenever the board is re-framed. */
+  drawIcons(pictures: ReadonlyMap<string, SymmetryPicture>): void {
+    for (const btn of this.barButtons) {
+      const slot = screens.hud.boardBar.find((entry) => entry.slot === btn.dataset["slot"]);
+      if (!slot?.action) continue;
+      const [, id, step] = slot.action.split(":");
+      const picture = pictures.get(id ?? "");
+      const drawn = picture ? symmetryIcon(picture, Number(step)) : null;
+      const fallback = slot.icon ? ICONS[slot.icon] : undefined;
+      const icon = drawn ?? fallback;
+      if (icon) btn.innerHTML = icon;
+      // the icon says what the motion is, so the label can stop guessing
+      const label = (picture && describe(picture, Number(step))) ?? slot.label ?? slot.slot;
+      btn.setAttribute("aria-label", label);
+      btn.title = label;
+      // what a test asserts against: the pixels of a 26px glyph are no evidence
+      if (!picture) continue;
+      btn.dataset["motion"] = picture.kind;
+      if (picture.kind === "turn") btn.dataset["turns"] = String(picture.turns);
+      else delete btn.dataset["turns"];
+      if (picture.kind === "reflection") btn.dataset["mirror"] = planeLie(picture.normal);
+      else delete btn.dataset["mirror"];
+    }
   }
 
   hide(): void {
@@ -134,4 +181,23 @@ export class BoardInfo {
     this.hint.classList.remove("open");
     this.hint.hidden = true;
   }
+}
+
+/** What a control does, in words, for the tooltip and for a screen reader: the
+ * icon's own content spelled out. A turn names its angle, a reflection the line
+ * it mirrors in. */
+function describe(picture: SymmetryPicture, direction: number): string | null {
+  if (picture.kind === "turn") {
+    const degrees = Math.round(360 / picture.turns);
+    return direction < 0 ? `Turn back ${degrees}°` : `Turn ${degrees}°`;
+  }
+  if (picture.kind === "reflection") {
+    return {
+      vertical: "Mirror in a vertical plane (left to right)",
+      horizontal: "Mirror in a horizontal plane (top to bottom)",
+      diagonal: "Mirror in a diagonal plane",
+      facing: "Mirror in the plane facing you (front to back)",
+    }[planeLie(picture.normal)];
+  }
+  return null;
 }
