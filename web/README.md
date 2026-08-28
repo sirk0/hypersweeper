@@ -507,17 +507,11 @@ alone, and puts the name on that same line through `--board-name-top`), and a
 board zoomed up over it simply covers it. `pointer-events: none`, so a tap on
 the name is a tap on the cell drawn over it.
 
-The row under the header carries two things. Centred, the **board-symmetry
-controls**, shown only on a board that has them (`hud.boardBar`). At its right
-end, **how-to-play** (`hud.boardRight`), on every board — it is not a board
-control, it is there because the header's right-hand pair is the die and the ⓘ,
-and "how do I flag?" is a question asked *while* playing. The row is a
-three-column grid, the header's own arrangement (equal side columns around an
-auto middle), so the controls stay on the screen's centre line whatever is
-beside them, and it is the controls that wrap when a board carries seven of them
-at 320px. The header holds two slots a side — back and
-flag-mode, a random board and about-this-board — around the centred
-counter/smiley/counter block, and seven controls is
+The row under the header is where the **board-symmetry controls** live, rather
+than in the header, and they are all that is on it: a board with none has no row
+at all, since the name is no longer in it to hold it open. The header holds two
+slots a side — back and flag-mode, a random board and about-this-board — around
+the centred counter/smiley/counter block, and seven controls is
 what one row holds at 320px. These belong to the *board* rather than to the
 game, a board can carry six or seven of them at once, and putting them in the
 header would wrap that row on exactly the boards with the most to fit. They are
@@ -536,13 +530,14 @@ the first move. **Any test that screenshots a board must seed `seenHint: true`**
 — every Playwright test gets a fresh context, so without it every board is a
 first board, and the hint carries a seven-second timer a slow shot would race.
 
-The how-to-play page is reachable **from inside a game** through the ? at the
-right of the row under the header (it sat in the header itself until the die
-took that slot).
-It opens over the live board — the canvas is hidden with `visibility`, not torn
-down, so the mesh, the mine layout and the clock survive — and deliberately does
-not go through `Menu.go`, whose stored `view` must stay the picker the game was
-launched from.
+The how-to-play page is **not reachable from inside a game**, and that is a
+decision rather than an omission. It had a header slot, and briefly the right
+end of the control row; a game screen already carries a header, a row of board
+controls and the board itself, and a link to a page of prose on top of that is
+clutter. The rules live behind the menu's ?, which is where a player who wants
+them is looking, and the first-run hint teaches the one gesture a new player
+cannot guess. `Menu.showHelpOverGame` and `App.showHelp` went with the button —
+the canvas-hiding, `view`-preserving machinery they needed has no caller now.
 
 ### The info window (`src/ui/boardFacts.ts`, `src/ui/infoDialog.ts`)
 

@@ -217,14 +217,13 @@ describe("UI screen config", () => {
   });
 
   it("every HUD slot declares a slot name", () => {
-    // Every cluster the two rows are built from: the header's three, the board
-    // controls centred on the row below, and that row's right-hand end.
+    // Every cluster the two rows are built from: the header's three, and the
+    // board's own controls on the row below.
     const slots = [
       ...screens.hud.left,
       ...screens.hud.center,
       ...screens.hud.right,
       ...screens.hud.boardBar,
-      ...screens.hud.boardRight,
     ];
     expect(slots.length).toBeGreaterThan(0);
     for (const s of slots) expect(s.slot).toBeTruthy();

@@ -433,42 +433,8 @@ class App {
     trackGame({ kind: "start", mode, difficulty });
   }
 
-  /** The how-to-play page, over a live board.
-   *
-   * The game is not torn down — the canvas is only hidden, so the mesh, the
-   * mine layout and the clock all survive — and the back row returns to it.
-   * This is the one menu page a game can reach: "how do I flag?" is a question
-   * asked *while* playing, and the back button beside it would have cost the
-   * board. `visibility` rather than `display` keeps the canvas's layout box, so
-   * the WebGL context is never resized out from under the scene, and it stops
-   * the hidden board from taking taps meant for the page. */
-  private showHelp(): void {
-    if (this.screen !== "game") return;
-    this.dismissDialogs();
-    this.hud.root.hidden = true;
-    this.boardInfo.hide();
-    this.canvas.style.visibility = "hidden";
-    this.menu.showHelpOverGame(() => {
-      this.menu.hide();
-      this.canvas.style.visibility = "";
-      this.hud.root.hidden = false;
-      if (this.session) {
-        this.boardInfo.setBoard(
-          this.session.mode,
-          this.session.difficulty,
-          boardConditions(this.session.symmetries),
-          this.symmetryPictures(),
-        );
-      }
-      this.onResize();
-    });
-  }
-
   private showMenu(): void {
     this.dismissDialogs();
-    // A game left from the help page put the canvas away; leaving for the menu
-    // has to bring it back, or the next board is drawn on a hidden canvas.
-    this.canvas.style.visibility = "";
     this.syncLocation(""); // the menu is not a board; drop the board's link
     this.screen = "menu";
     this.session = null;
@@ -587,8 +553,6 @@ class App {
       this.showBoardInfo();
     } else if (action === "random") {
       this.startRandomBoard();
-    } else if (action === "help") {
-      this.showHelp();
     }
   }
 

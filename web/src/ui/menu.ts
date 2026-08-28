@@ -323,18 +323,6 @@ export class Menu {
     this.go(() => this.renderHelpPage());
   }
 
-  /** The same page, opened over a live board by the header's help button.
-   *
-   * Deliberately *not* through `go()`: `view` is the page to restore when the
-   * board is finally left, and that must stay the picker the game was launched
-   * from rather than becoming this. `onBack` returns to the board instead of to
-   * the home page, so the game survives a look at the rules. */
-  showHelpOverGame(onBack: () => void): void {
-    this.root.hidden = false;
-    this.root.classList.add("settings-open");
-    this.body.replaceChildren(this.backRow("How to play", onBack), renderHelp());
-  }
-
   /** The page a blocked board's row opens instead of a game.
    *
    * It is a page rather than a dead row or a hidden one: a row that does

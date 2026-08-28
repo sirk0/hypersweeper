@@ -7,8 +7,9 @@ import { expect, test } from "@playwright/test";
 //
 // The header carries **two slots a side** — back and flag-mode at the left,
 // a random board and about-this-board at the right — around that centred block.
-// How-to-play moved down to the right-hand end of the caption row when the die
-// took its slot, and `tests` for it look for it there. Seven
+// How-to-play is not on this screen at all: it is a page, it lives behind the
+// menu's ?, and a game screen already carries a header, a control row and the
+// board. Seven
 // controls is what one row holds at 320px, so the Klein bottle's two scroll
 // chevrons are *not* here: they belong to the board rather than to the game and
 // are drawn on the caption row under the header (`ui/boardInfo.ts`). Putting
@@ -184,55 +185,6 @@ test.describe("game header", () => {
     await expect(hint).toBeHidden();
   });
 
-  test("help opened from a game leaves the menu intact behind it", async ({ page }) => {
-    // Classic -> ? -> Back -> Back. How-to-play hides the difficulty block
-    // (those pages select no board), and that used to be cleared only when the
-    // menu *navigated* — so coming back from the board re-rendered the home
-    // page with the block still hidden and no way to change difficulty.
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto("/");
-    await expect(page.locator("body[data-ready]")).toBeVisible();
-    await expect(page.locator(".menu-difficulty")).toBeVisible();
-
-    await page.locator('.menu-entry[data-mode="square"]').click();
-    await page.locator('.board-caption [data-slot="help"]').click();
-    await expect(page.locator(".menu-difficulty")).toBeHidden();
-
-    // Back to the board: the game is still the one that was running.
-    await page.locator(".menu-back").click();
-    await expect(page.locator(".hud-smiley")).toBeVisible();
-    expect((await page.evaluate(() => window.__ms?.state()))?.screen).toBe("game");
-
-    // ...and back to the menu, which is whole.
-    await page.locator('.hud-btn[data-slot="back"]').click();
-    await expect(page.locator(".menu-difficulty")).toBeVisible();
-    await expect(page.locator('.difficulty-btn[data-key="hard"]')).toBeVisible();
-    await expect(page.locator('.menu-entry[data-mode="square"]')).toBeVisible();
-  });
-
-  test("help over a game keeps the board and the page it was launched from", async ({
-    page,
-  }) => {
-    // Reached through a picker rather than Classic: leaving the board must
-    // still land on that picker, so opening help must not overwrite the stored
-    // page the way an ordinary navigation would.
-    await page.goto("/");
-    await expect(page.locator("body[data-ready]")).toBeVisible();
-    await page.locator('.menu-entry[data-group="custom"]').click();
-    await page.locator('.menu-entry[data-group="manifolds"]').click();
-    await page.locator('.menu-entry[data-surface="klein"]').click();
-    await page.locator('.menu-entry[data-mode="klein"]').click();
-
-    const before = await page.evaluate(() => window.__ms!.state());
-    await page.locator('.board-caption [data-slot="help"]').click();
-    await page.locator(".menu-back").click();
-    // The same game, not a new one: the board is hidden, never torn down.
-    expect(await page.evaluate(() => window.__ms!.state())).toEqual(before);
-
-    await page.locator('.hud-btn[data-slot="back"]').click();
-    await expect(page.locator('.menu-entry[data-mode="klein"]')).toBeVisible();
-  });
-
   test("a board with no symmetries shows its name and no board-bar controls", async ({
     page,
   }) => {
@@ -243,11 +195,9 @@ test.describe("game header", () => {
     await expect(page.locator("body[data-ready]")).toBeVisible();
 
     await expect(page.locator(".board-name")).toContainText("Penrose");
-    await expect(
-      page.locator(".board-caption-controls .board-bar-btn:not([hidden])"),
-    ).toHaveCount(0);
-    // The strip is still there for how-to-play, which every board carries.
-    await expect(page.locator('.board-caption [data-slot="help"]')).toBeVisible();
+    await expect(page.locator(".board-caption .board-bar-btn:not([hidden])")).toHaveCount(0);
+    // Nothing left in the strip, so it reserves no height at all.
+    await expect(page.locator(".board-caption")).toBeHidden();
   });
 
   test("the board's name is drawn behind the board, not above it", async ({ page }) => {
@@ -348,44 +298,18 @@ test.describe("game header", () => {
     expect(state.is3d).toBe(true);
   });
 
-  test("how-to-play sits at the right of the row under the header", async ({ page }) => {
-    // It moved off the header when the die took its slot. The board's own
-    // controls stay on the screen's centre line beside it.
-    await page.setViewportSize({ width: 320, height: 568 });
+  test("the game screen offers neither share nor how-to-play", async ({ page }) => {
+    // Both were header slots and both left. Sharing is the win window's, where
+    // the link goes with a time worth sending; how-to-play is a page, and it
+    // belongs behind the menu's ? rather than on top of a live board. What
+    // their slots carry now is the die and the ⓘ.
+    await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/?mode=klein&difficulty=easy&seed=1");
     await expect(page.locator("body[data-ready]")).toBeVisible();
-
-    const box = await page.evaluate(() => {
-      const help = document.querySelector('.board-caption [data-slot="help"]')!;
-      const controls = [
-        ...document.querySelectorAll<HTMLElement>(
-          ".board-caption-controls .board-bar-btn:not([hidden])",
-        ),
-      ].map((b) => b.getBoundingClientRect());
-      const h = help.getBoundingClientRect();
-      return {
-        helpRight: h.right,
-        helpLeft: h.left,
-        controlsRight: Math.max(...controls.map((c) => c.right)),
-        controlsCentre:
-          (Math.min(...controls.map((c) => c.left)) + Math.max(...controls.map((c) => c.right))) / 2,
-        width: window.innerWidth,
-      };
-    });
-    // Right of every board control, and hard against the right edge.
-    expect(box.helpLeft).toBeGreaterThanOrEqual(box.controlsRight);
-    expect(box.width - box.helpRight).toBeLessThan(24);
-    // ...and the controls are still centred on the screen.
-    expect(box.controlsCentre).toBeCloseTo(box.width / 2, 0);
-    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(320);
-  });
-
-  test("the game header no longer offers a share button", async ({ page }) => {
-    // Sharing is the win window's, where the link goes with a time worth
-    // sending; the header slot it used to have is the info button now.
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto("/?mode=square&difficulty=easy&seed=1");
-    await expect(page.locator("body[data-ready]")).toBeVisible();
-    await expect(page.locator('.hud [data-slot="share"]')).toHaveCount(0);
+    for (const slot of ["share", "help"]) {
+      await expect(page.locator(`[data-slot="${slot}"]`)).toHaveCount(0);
+    }
+    await expect(page.locator('.hud-btn[data-slot="random"]')).toBeVisible();
+    await expect(page.locator('.hud-btn[data-slot="info"]')).toBeVisible();
   });
 });

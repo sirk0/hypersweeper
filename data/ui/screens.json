@@ -192,15 +192,6 @@
         "action": "info"
       }
     ],
-    "_boardRightComment": "The right-hand end of that same caption row, for a control that belongs to neither the game's header nor the board: how-to-play. It sat in the header until the header's second right-hand slot went to the random-board button, and it is a question asked *while* playing, so it stays on screen rather than going back to the menu alone. Kept apart from `boardBar` because it is not a board control -- it is drawn on every board, in its own cell at the right, while `boardBar` is centred and shows only what the board has.",
-    "boardRight": [
-      {
-        "slot": "help",
-        "label": "How to play",
-        "icon": "help",
-        "action": "help"
-      }
-    ],
     "_boardBarComment": "Controls that belong to the board rather than to the game: they sit on the caption row under the header, beside the board's name, not in the header row itself. The header holds two slots a side and the centred status block, which is all that fits on one row on a phone; these are shown only on a board that has them, so putting them there would wrap that row on exactly the boards that have the most to fit.",
     "_symmetryComment": "One control per symmetry the board carries (boards/symmetry.ts BoardSymmetry). The ids are named for a wrapped surface, whose two directions are round the ring and round the tube, and carry over to the other two kinds: a flat board is the window such a surface is cut from, so its x is the ring and its y the tube, and on a solid `ring` and `tube` are rotations about the board's principal axis and one across it. The labels say what the control does to the board rather than naming a seam, because one label has to serve all three. `symmetry:<id>` shows a control on a board that has that symmetry at all; `symmetry-pair:<id>` shows the second of a pair only where the symmetry is not its own inverse. A reflection always is one -- `keepSymmetries` drops a candidate mirror that is not -- and so is a Klein bottle's half-tube step, so those get a single button where a translation gets two.",
     "boardBar": [

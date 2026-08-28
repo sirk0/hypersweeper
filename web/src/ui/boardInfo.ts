@@ -17,15 +17,13 @@ import { planeLie, symmetryIcon, type SymmetryPicture } from "./symmetryIcon";
 // height and a board zoomed up over it simply covers it. What the name *means*
 // is spelled out by the header's info button (ui/infoDialog.ts).
 //
-// **The caption** is the row under the header, and it carries two things: the
-// board's own controls — the symmetry chevrons and mirrors, centred, and shown
-// only on a board that has them — and, at its right end, how-to-play. That last
-// one is not a board control at all; it is here because the header's two
-// right-hand slots are the random board and the info window, and "how do I
-// flag?" is a question asked *while* playing, so it has to stay on screen. The
-// two groups are declared separately (`hud.boardBar`, `hud.boardRight`) and are
-// laid out in their own cells, so the controls stay on the centre line whatever
-// is beside them.
+// **The caption** is the row under the header carrying the board's own
+// controls, the symmetry chevrons and mirrors, which do not fit in the header
+// row once it holds two slots a side. Nothing else is on that row: a board with
+// no symmetries has no row at all. How-to-play briefly sat at its right end and
+// was taken off again — the game screen already carries a header, a control row
+// and the board itself, and a page link on top of that is clutter; the menu's ?
+// is where the rules live.
 //
 // **The hint** is the app's only first-run affordance. Long-press-to-flag and
 // right-click-to-flag were documented on the how-to-play page and nowhere else,
@@ -62,9 +60,9 @@ function button(slot: HudSlot, onAction: (action: string) => void): HTMLButtonEl
 
 export class BoardInfo {
   /** The caption strip: the board's own controls (the symmetry chevrons and
-   * mirrors) centred, how-to-play at the right. Sits in the `#ui` flex column
-   * directly under the header, so it is part of the space the board is framed
-   * below. A board with all of them shows six or seven, so the group wraps. */
+   * mirrors). Sits in the `#ui` flex column directly under the header, so it is
+   * part of the space the board is framed below. A board with all of them shows
+   * six or seven, so the row wraps; a board with none hides the strip. */
   readonly caption: HTMLElement;
   /** The board's name, drawn behind the board. Not in the `#ui` column at all —
    * the app inserts it before the canvas (see the `App` constructor), which is
@@ -111,13 +109,6 @@ export class BoardInfo {
     }
     this.controls = controls;
 
-    // The right-hand cell: how-to-play, on every board. Its own group so the
-    // grid can hold the controls on the centre line with this beside them.
-    const aside = document.createElement("div");
-    aside.className = "board-caption-aside";
-    for (const slot of screens.hud.boardRight) aside.append(button(slot, onAction));
-    this.caption.append(aside);
-
     this.hint = document.createElement("div");
     this.hint.className = "board-hint";
     this.hint.hidden = true;
@@ -151,10 +142,12 @@ export class BoardInfo {
       btn.hidden = !slotVisible(btn.dataset["visibleWhen"], conditions);
     }
     this.drawIcons(pictures);
-    // An empty group would still take its gap in the row, nudging the centred
-    // controls off centre on every board that has none at all.
-    this.controls.hidden = this.barButtons.every((b) => b.hidden);
-    this.caption.hidden = false;
+    // A board with no controls hides the strip outright rather than reserving
+    // an empty row: the name is not in it, so there is nothing in there to
+    // reserve the height for.
+    const bare = this.barButtons.every((b) => b.hidden);
+    this.controls.hidden = bare;
+    this.caption.hidden = bare;
     this.nameLayer.hidden = false;
   }
 
