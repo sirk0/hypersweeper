@@ -6,18 +6,16 @@ import {
   MODE_LABELS,
   SOLID_GROUPS,
   SURFACES,
-  flatMenuModes,
   menuFamilies,
   menuFamilyRows,
   menuTilingRows,
-  threeDMenuModes,
 } from "../boards/catalog";
 import {
   blockedExplanation,
   fairnessHint,
   modeFairness,
-  pickWeighted,
 } from "../boards/fairness";
+import { randomMode, randomPool, type RandomKind } from "../boards/randomBoard";
 import { hasMode } from "../boards/presets";
 import { clearBestTimes } from "../leaderboard";
 import { renderBestTimes } from "./bestTimes";
@@ -120,11 +118,6 @@ function pickerFor(surfaceKey: string): Picker {
     }
   }
   return { tilings: builtRows(menuTilingRows(surfaceKey)), families };
-}
-
-/** A home-page random pool, filtered to the modes this build has got. */
-function randomPool(modes: string[]): string[] {
-  return modes.filter(hasMode);
 }
 
 interface SurfaceEntry {
@@ -524,12 +517,11 @@ export class Menu {
         ),
       );
     }
-    const flat = randomPool(flatMenuModes());
+    const flat = randomPool("flat");
     if (flat.length > 0) {
       list.append(
         this.randomRow(
           "flat",
-          flat,
           ROOT_LABELS["flat"] ?? "Flat",
           "A random flat tiling.",
           // the same hexagon the old Flat entry showed
@@ -537,10 +529,10 @@ export class Menu {
         ),
       );
     }
-    const threeD = randomPool(threeDMenuModes());
+    const threeD = randomPool("3d");
     if (threeD.length > 0) {
       list.append(
-        this.randomRow("3d", threeD, "3D", "A random manifold, sphere or polyhedron.", "3d"),
+        this.randomRow("3d", "3D", "A random manifold, sphere or polyhedron.", "3d"),
       );
     }
     if (this.groups.length > 0) {
@@ -779,11 +771,10 @@ export class Menu {
   }
 
   /** A home-page random entry (Flat, 3D) — resolves to a random mode from its
-   * pool at click time, so it is a different board every tap (mirrors gui.py's
-   * random choice). */
+   * half of the catalogue at click time, so it is a different board every tap
+   * (mirrors gui.py's random choice). */
   private randomRow(
-    key: string,
-    pool: string[],
+    key: RandomKind,
     label: string,
     hint: string,
     icon: string,
@@ -797,8 +788,9 @@ export class Menu {
       // Weighted, not uniform: the boards whose tiling forces guesses are
       // still in the pool -- they are real boards and some players like them
       // -- but a tap meant to produce a nice surprise should not land on one
-      // as often as on a board that can actually be solved.
-      const mode = pickWeighted(pool);
+      // as often as on a board that can actually be solved
+      // (boards/randomBoard.ts, shared with the record window's New board).
+      const mode = randomMode(key);
       if (mode) this.onSelect({ mode, difficulty: this.settings.difficulty });
     });
     li.append(btn);

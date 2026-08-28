@@ -66,11 +66,11 @@
      pygame header's `_header_scale`. The square button box, the glyph inside
      it, the gaps and the LED counter text shrink together on a narrow phone so
      the whole row (back + flag, the centred counter / face / counter group,
-     help + share) stays on a single line down to a 320px viewport, while every
+     help + info) stays on a single line down to a 320px viewport, while every
      control keeps a comfortable touch size. The board's own symmetry controls
      are drawn a size down on the caption row below (`.board-bar-btn`), on the
      same scale. */
-  /* The header carries seven controls at once — back, flag, help, share and the
+  /* The header carries seven controls at once — back, flag, help, info and the
      counter/smiley/counter block — and they all sit on one row, because the
      smiley has to stay on the exact screen centre (see `.hud`). The floors
      below are what that worst case needs at 320px: a side cluster is
@@ -221,17 +221,55 @@ body {
   pointer-events: auto;
 }
 
-/* --- Board caption and first-run hint --- */
+/* --- Board name, caption and first-run hint --- */
 
-/* Names the board under the header, and carries the board's own controls (the
-   Klein scroll chevrons). Sits in the `#ui` flex column, so it is part of the
-   block `App.onResize` measures and frames the board below. */
+/* The board's name, drawn *behind* the board: its own fixed layer, inserted
+   before the canvas (main.ts) so tree order paints the transparent canvas over
+   it. So it costs the board no height, and a board zoomed up over it covers it
+   — which is the point. `--board-name-top` is the line the board is framed
+   from (App.onResize), so the name sits at the top of the play field. */
+.board-name-layer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: var(--board-name-top, 0px);
+  padding: 2px 16px 0;
+  text-align: center;
+  /* Behind the board, and never a target: a tap here is a tap on the cell that
+     is drawn over it. */
+  pointer-events: none;
+}
+
+.board-name-layer[hidden] {
+  display: none;
+}
+
+.board-name {
+  color: var(--muted);
+  font-size: clamp(12px, 3.6vw, 16px);
+  font-weight: 600;
+  /* A label, not a caption: it reads as part of the page behind the board
+     rather than as chrome above it. */
+  opacity: 0.72;
+  letter-spacing: 0.01em;
+  /* One line: a long name (a Laves tiling on a Klein bottle) shortens rather
+     than wrapping across the top of the board. */
+  display: inline-block;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Carries the board's own controls (the symmetry chevrons and mirrors). Sits in
+   the `#ui` flex column, so it is part of the block `App.onResize` measures and
+   frames the board below; a board with no controls hides it entirely. */
 .board-caption {
   display: flex;
   align-items: center;
   justify-content: center;
   /* A board with every symmetry carries six or seven controls, which will not
-     fit beside its name on a narrow phone; the row wraps rather than shrinking
+     fit on one line on a narrow phone; the row wraps rather than shrinking
      them below a touch size, and the board is framed below whatever height
      that comes to (main.ts onResize measures the caption's bottom). */
   flex-wrap: wrap;
@@ -239,20 +277,6 @@ body {
   padding: 0 16px 6px;
   /* The strip itself is not a target; its buttons put this back. */
   pointer-events: none;
-}
-
-.board-caption-name {
-  color: var(--muted);
-  font-size: clamp(12px, 3.4vw, 15px);
-  font-weight: 600;
-  /* Shrink before the row wraps: a long name gives way to the controls. */
-  flex: 0 1 auto;
-  min-width: 3em;
-  /* One line: a long name (a Laves tiling on a Klein bottle) shortens rather
-     than pushing the board down. */
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 /* The board's symmetry controls, grouped so they wrap as a block rather than
@@ -1138,11 +1162,11 @@ body {
   border-color: var(--danger);
 }
 
-/* --- Record dialog --- */
-/* The one modal in the app (everything else that looks like a page is a page).
-   It sits over the finished board, so the backdrop is a scrim rather than an
-   opaque field — the board that was just cleared stays visible behind it. Every
-   colour is a theme property, so it follows all seven palettes. */
+/* --- Dialogs: the record window and the info window --- */
+/* The app's two modals (everything else that looks like a page is a page). Both
+   sit over a live board, so the backdrop is a scrim rather than an opaque field
+   — the board stays visible behind them. Every colour is a theme property, so
+   they follow all eight palettes. */
 .dialog-backdrop {
   position: fixed;
   inset: 0;
@@ -1267,9 +1291,11 @@ body {
   margin-top: 18px;
 }
 
-/* Only when there are three: with Play again and Menu alone (a board with no
-   link to share) the two sit side by side as they always did. */
-.dialog-actions.has-share .dialog-primary {
+/* Two buttons sit side by side and four make a square; three would leave an odd
+   one out below a pair, which reads as a mistake, so the primary takes a row of
+   its own. One (the info window's Done) does the same. */
+.dialog-actions[data-buttons="1"] .dialog-btn,
+.dialog-actions[data-buttons="3"] .dialog-primary {
   grid-column: 1 / -1;
 }
 
@@ -1313,6 +1339,108 @@ body {
 .dialog-close:hover,
 .dialog-close:active {
   color: var(--text);
+}
+
+/* --- Info window --- */
+/* What the board is (ui/infoDialog.ts): a list of facts about it, then one row
+   per kind of tile with the colour the board paints it. Left-aligned rather
+   than centred like the record card — these are rows to read down, and a
+   centred label against a centred value has nothing to line up on. */
+.info-dialog {
+  text-align: left;
+}
+
+.info-dialog .dialog-title,
+.info-dialog .dialog-subtitle {
+  text-align: center;
+}
+
+.info-facts {
+  margin: 16px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.info-fact {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 12px;
+  border-radius: 10px;
+  background: var(--bg);
+}
+
+.info-fact-label {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.info-fact-value {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: right;
+}
+
+.info-heading {
+  margin: 18px 0 6px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.info-shapes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.info-shape {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px;
+  border-radius: 10px;
+  background: var(--bg);
+  font-size: 14px;
+}
+
+/* The tile's own colour, at the menu icons' saturation (the board's is faint by
+   design). A border, so a pale shape still reads as a chip on the pale row. */
+.info-swatch {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+
+.info-shape-name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.info-shape-count {
+  flex: none;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The ⚠ the board's name carries, spelled out: this board's tiling forces
+   guesses. */
+.info-warning {
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
 }
 
 @media (prefers-reduced-motion: reduce) {

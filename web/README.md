@@ -478,23 +478,40 @@ through to the clipboard rather than reporting failure, since dismissing one is
 a normal outcome. The trap fixed there: `nav.clipboard?.writeText(…)` on a
 platform with no clipboard evaluates to `undefined`, which awaits happily — so
 the button would have said "Link copied" having copied nothing. It is offered in
-two places, the header and the record window, and both pass the session's seed.
+**one** place, the record window, and passes the session's seed and the winning
+time. The game header carried one too and does not any more: a link is worth
+sending when it comes with a time, the header's two right-hand slots are all
+that fits at 320px, and the second of them now says what the board *is*
+(**The info window** below).
 
 **The seed** is what makes any of it mean anything — see "Shareable board
 links" above.
 
 ## Telling the player where they are
 
-`src/ui/boardInfo.ts` owns the row under the header, and two things on it.
+`src/ui/boardInfo.ts` owns the board's name and the row of controls under the
+header.
 
-The **caption** names the board (`fullModeLabel`). Nothing on the game screen
-did before, and the menu's Flat and 3D rows each open a *random* board — so a
-player could be dropped on a truncated icosahedron with no way to find out what
-it was. It is also what makes a screenshot of the game say what it is.
+The **name** (`fullModeLabel`) says which board it is. Nothing on the game
+screen did before, and the menu's Flat and 3D rows each open a *random* board —
+so a player could be dropped on a truncated icosahedron with no way to find out
+what it was. It is also what makes a screenshot of the game say what it is.
 
-That row is also where the **board-symmetry controls** live, rather than in the
-header. The header holds two slots a side — back and flag-mode, how-to-play and
-share — around the centred counter/smiley/counter block, and seven controls is
+It is drawn **behind the board**, not above it: its own fixed layer, inserted
+before `<canvas id="board">` (the `App` constructor), so tree order paints the
+transparent canvas over it — no z-index anywhere, and none would work from
+inside `#ui`, which is itself a fixed element and therefore its own stacking
+context. Two things follow, and both are the point: the name costs the board no
+height (`App.onResize` frames the board below the header and the control row
+alone, and puts the name on that same line through `--board-name-top`), and a
+board zoomed up over it simply covers it. `pointer-events: none`, so a tap on
+the name is a tap on the cell drawn over it.
+
+The row under the header is where the **board-symmetry controls** live, rather
+than in the header; a board with none hides the row outright, since the name is
+no longer in it to hold it open. The header holds two slots a side — back and
+flag-mode, how-to-play and about-this-board — around the centred
+counter/smiley/counter block, and seven controls is
 what one row holds at 320px. These belong to the *board* rather than to the
 game, a board can carry six or seven of them at once, and putting them in the
 header would wrap that row on exactly the boards with the most to fit. They are
@@ -518,6 +535,53 @@ It opens over the live board — the canvas is hidden with `visibility`, not tor
 down, so the mesh, the mine layout and the clock survive — and deliberately does
 not go through `Menu.go`, whose stored `view` must stay the picker the game was
 launched from.
+
+### The info window (`src/ui/boardFacts.ts`, `src/ui/infoDialog.ts`)
+
+The header's ⓘ answers the question the name raises: *what is this?* The family
+the tiling comes from (Uniform, Laves, Isogonal, Congruent rectangles, Aperiodic,
+Fractals, or the solid group), the surface it is wrapped on, how many cells there
+are and how many mines, and then one row per kind of tile — its name, its count
+and the colour the board paints it in (`iconHex`, the menu icons' saturation;
+the board's own tint is faint by design and reads as off-white at 14px). A board
+graded ⚠ says why, here, because the mark on the name is a tooltip on a desktop
+and nothing at all on a phone.
+
+Everything in it is **derived**, never tabulated — a new tiling describes itself
+with no edit to `boardFacts.ts`:
+
+- **Counts** come from `classifyShapes` over the live board's polygons, grouped
+  by the same `(sides, variant, size)` classing that colours the board. So the
+  window is a key for the board behind it: what it lists is what is on screen.
+- **Names** come from measuring a tile — equal sides and equal angles, measured
+  separately, because they are what tell a rectangle from a rhombus and a
+  brick bond from "quadrilaterals". Two further shapes English has a word for
+  are picked out: the isosceles triangle (half the Laves duals) and the kite
+  (the deltoidal ones).
+- **A wrapped board is named off the flat tiling, not off its drawn cells.** The
+  immersion bends every tile — a hexagonal torus measures 0.80 regular — so
+  naming from the geometry would call the hexagonal tiling irregular. The tiles
+  come from the tiling's own periodic domain instead
+  (`templateCells(archTemplate(key), 0, 0)`, no board built), matched by side
+  count, which is exactly what `classifyShapes` gives a curved board one class
+  of. The three regular tilings need no template.
+- **Nothing is called equiangular past a quadrilateral.** Corner angles are
+  measured unsigned (as `shapeMetrics` measures them), so a reflex corner reads
+  as its complement — the chair's L-tromino would otherwise qualify. Side
+  lengths carry no such ambiguity, hence "Equilateral hexagons" for the
+  phyllotactic tile.
+- **Two classes with the same name are told apart** by size where they are two
+  sizes of one tile ("Squares · large", the Pythagorean tiling) and by their
+  sharpest corner otherwise ("Rhombi · 36°", Penrose).
+
+`tests/unit/boardFacts.test.ts` pins the naming and sweeps every mode this build
+ships (every cell counted exactly once, every board with a family and a shape
+list); `tests/e2e/hud.spec.ts` pins the window itself.
+
+The window and the record window share one shell, `src/ui/modal.ts`: those two
+are the app's only modals — everything else that looks like a page *is* a page —
+and Escape, the backdrop click, the focus ring and the open transition belong to
+neither of them individually.
 
 ## Agent notes: driving the app headless
 
@@ -2062,15 +2126,27 @@ a window says so.
   finished board (or the timer tick) cannot file it twice. A loss records
   nothing.
 
-The window (`src/ui/scoreDialog.ts`) is the app's **one modal** — everything
-else that looks like a page is a page, the settings screen included. A record
-is a moment, it belongs over the board just cleared, and it has to be
-dismissible back to it, so it is a real overlay and carries the obligations:
-Escape and a backdrop click close it, focus moves in on open and back out on
-close, Tab is trapped, and its colours are all theme custom properties. It waits
+The window (`src/ui/scoreDialog.ts`) is one of the app's **two modals** — the
+info window is the other, and everything else that looks like a page is a page,
+the settings screen included. A record is a moment, it belongs over the board
+just cleared, and it has to be dismissible back to it, so it is a real overlay
+and carries the obligations — Escape, the backdrop click, the trapped Tab ring,
+focus restored on close — which live in `src/ui/modal.ts` for both windows;
+its colours are all theme custom properties. It waits
 `RECORD_DIALOG_DELAY_MS` for the win wave to play, and opens straight away when
 animations are off — which is also why e2e (run under emulated reduced motion)
 sees it immediately. Leaving or restarting inside that gap cancels it.
+
+It offers up to four things, and the stylesheet lays them out by how many there
+are (`data-buttons`): two side by side, four as a square, three with the primary
+on a row of its own. **Play again** re-deals the same board. **New board** deals
+a random one from the half of the catalogue this board came from — flat if it
+was flat, otherwise a manifold, sphere or polyhedron — through
+`src/boards/randomBoard.ts`, which is the home page's Flat and 3D pools and
+their fairness weighting, shared rather than re-derived. **Share** hands out the
+board's link (and is the only place the app offers one — the game header's share
+button is gone). **Menu** goes home. A board built from an explicit mine layout
+(the test seam) has no seed, so it gets no Share.
 
 The list lives under **Settings › Best times** (`src/ui/bestTimes.ts`), one more
 `Menu` page like the theme picker, ordered by the catalog rather than by the

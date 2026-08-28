@@ -85,22 +85,25 @@ export const ICONS: Record<string, string> = {
     <path d="M6 20 L18 20 L12 13.8 Z" fill="none" stroke="currentColor"
       stroke-width="1.6" stroke-linejoin="round"/>
   </svg>`,
-  // Hand this board to someone: a box with an arrow leaving it upward. The
-  // platform-neutral drawing rather than the iOS glyph, since this header is
-  // also a desktop one.
-  share: `<svg viewBox="0 0 24 24" aria-hidden="true">
-    <path d="M12 3 L12 15 M8 7 L12 3 L16 7" stroke="currentColor"
-      stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M5 12 L5 20 L19 20 L19 12" stroke="currentColor"
-      stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  // What this board is: the info window (ui/infoDialog.ts). The same ring as
+  // the ? beside it, with the i's dot and stem on one centre line for the same
+  // reason the question mark's are.
+  info: `<svg viewBox="0 0 24 24" aria-hidden="true">
+    <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8" fill="none"/>
+    <circle cx="12" cy="7.6" r="1.05" fill="currentColor"/>
+    <path d="M12 10.9 V16.9" stroke="currentColor" stroke-width="1.8"
+      fill="none" stroke-linecap="round"/>
   </svg>`,
   // How to play. The same question mark the menu header carries (help.ts), so
-  // the two read as one control wherever the player meets it.
+  // the two read as one control wherever the player meets it. The hook ends on
+  // the glyph's own centre line (x = 12) and the dot sits under it: drawn with
+  // the stem ending anywhere else, the dot reads as knocked sideways, which is
+  // exactly what it was.
   help: `<svg viewBox="0 0 24 24" aria-hidden="true">
     <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8" fill="none"/>
-    <path d="M9.2 9.3a2.9 2.9 0 1 1 3.6 2.85V14" stroke="currentColor"
+    <path d="M9.1 9.5a2.9 2.9 0 1 1 2.9 3.3 V14.6" stroke="currentColor"
       stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-    <circle cx="12" cy="17" r="1.05" fill="currentColor"/>
+    <circle cx="12" cy="17.4" r="1.05" fill="currentColor"/>
   </svg>`,
 };
 

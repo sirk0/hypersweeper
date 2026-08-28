@@ -186,10 +186,10 @@
         "action": "help"
       },
       {
-        "slot": "share",
-        "label": "Share this board",
-        "icon": "share",
-        "action": "share"
+        "slot": "info",
+        "label": "About this board",
+        "icon": "info",
+        "action": "info"
       }
     ],
     "_boardBarComment": "Controls that belong to the board rather than to the game: they sit on the caption row under the header, beside the board's name, not in the header row itself. The header holds two slots a side and the centred status block, which is all that fits on one row on a phone; these are shown only on a board that has them, so putting them there would wrap that row on exactly the boards that have the most to fit.",

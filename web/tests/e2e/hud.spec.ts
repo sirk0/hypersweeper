@@ -6,7 +6,7 @@ import { expect, test } from "@playwright/test";
 // height, and the whole row fits the viewport on a phone.
 //
 // The header carries **two slots a side** — back and flag-mode at the left,
-// how-to-play and share at the right — around that centred block. Seven
+// how-to-play and about-this-board at the right — around that centred block. Seven
 // controls is what one row holds at 320px, so the Klein bottle's two scroll
 // chevrons are *not* here: they belong to the board rather than to the game and
 // are drawn on the caption row under the header (`ui/boardInfo.ts`). Putting
@@ -68,7 +68,7 @@ test.describe("game header", () => {
         "smiley",
         "timer",
         "help",
-        "share",
+        "info",
       ]);
 
       // One row: every control overlaps the others vertically, and nothing is
@@ -117,7 +117,7 @@ test.describe("game header", () => {
       "smiley",
       "timer",
       "help",
-      "share",
+      "info",
     ]);
     const smiley = boxes.find((b) => b.slot === "smiley")!;
     expect((smiley.left + smiley.right) / 2).toBeCloseTo(390 / 2, 1);
@@ -147,7 +147,7 @@ test.describe("game header", () => {
     // those are moves whenever the calibration is re-run. The mark itself is
     // pinned in tests/unit/fairness.test.ts, where it does not depend on one
     // board's mine count.
-    await expect(page.locator(".board-caption-name")).toContainText(
+    await expect(page.locator(".board-name")).toContainText(
       "Squares · Klein bottle",
     );
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(320);
@@ -174,7 +174,7 @@ test.describe("game header", () => {
     // And it is spent: a second board, and a reload, get nothing.
     await page.locator('.hud-btn[data-slot="back"]').click();
     await page.locator('.menu-entry[data-mode="square"]').click();
-    await expect(page.locator(".board-caption-name")).toHaveText("Squares");
+    await expect(page.locator(".board-name")).toHaveText("Squares");
     await expect(hint).toBeHidden();
 
     await page.reload();
@@ -240,7 +240,92 @@ test.describe("game header", () => {
     await page.goto("/?mode=penrose&difficulty=easy&seed=1");
     await expect(page.locator("body[data-ready]")).toBeVisible();
 
-    await expect(page.locator(".board-caption-name")).toContainText("Penrose");
+    await expect(page.locator(".board-name")).toContainText("Penrose");
     await expect(page.locator(".board-caption .board-bar-btn:not([hidden])")).toHaveCount(0);
+    // Nothing left in the strip, so it reserves no height at all.
+    await expect(page.locator(".board-caption")).toBeHidden();
+  });
+
+  test("the board's name is drawn behind the board, not above it", async ({ page }) => {
+    // The name is a label on the page rather than chrome: it costs the board no
+    // height (the board is framed below the header alone) and a board zoomed
+    // over it covers it, which is what puts it behind the transparent canvas.
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/?mode=square&difficulty=easy&seed=1");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+
+    const placed = await page.evaluate(() => {
+      const name = document.querySelector<HTMLElement>(".board-name-layer")!;
+      const canvas = document.getElementById("board")!;
+      return {
+        beforeCanvas:
+          name.compareDocumentPosition(canvas) === Node.DOCUMENT_POSITION_FOLLOWING,
+        inUi: document.getElementById("ui")!.contains(name),
+        events: getComputedStyle(name).pointerEvents,
+        top: name.getBoundingClientRect().top,
+        headerBottom: document.querySelector(".hud")!.getBoundingClientRect().bottom,
+      };
+    });
+    expect(placed.beforeCanvas).toBe(true);
+    expect(placed.inUi).toBe(false);
+    expect(placed.events).toBe("none");
+    // It sits on the line the board is framed from, under the header.
+    expect(placed.top).toBeGreaterThanOrEqual(placed.headerBottom - 1);
+  });
+
+  test("the info button says what the board is", async ({ page }) => {
+    // The one place the app explains a board: dealt one at random by Flat or
+    // 3D, or handed one by a link, this is how a player finds out what they are
+    // looking at.
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/?mode=kleincairo&difficulty=easy&seed=1");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+
+    await page.locator('.hud-btn[data-slot="info"]').click();
+    const dialog = page.locator('.dialog-backdrop[data-dialog="info"]');
+    await expect(dialog).toBeVisible();
+    await expect(dialog.locator("#info-dialog-title")).toHaveText("Cairo pentagonal · Klein bottle");
+
+    // The family it comes from, the surface it is wrapped on, and its size.
+    const facts = await dialog
+      .locator(".info-fact")
+      .evaluateAll((rows) =>
+        rows.map((r) => [
+          r.querySelector(".info-fact-label")!.textContent,
+          r.querySelector(".info-fact-value")!.textContent,
+        ]),
+      );
+    expect(facts).toContainEqual(["Family", "Laves"]);
+    expect(facts).toContainEqual(["Surface", "Klein bottle"]);
+    const cells = await page.evaluate(() => window.__ms!.state().cellCount);
+    expect(facts).toContainEqual(["Cells", String(cells)]);
+
+    // And what its tiles are, counted — the pentagons of a Cairo tiling, bent
+    // by the immersion but pentagons still.
+    const shapes = await dialog
+      .locator(".info-shape")
+      .evaluateAll((rows) =>
+        rows.map((r) => [
+          r.querySelector(".info-shape-name")!.textContent,
+          r.querySelector(".info-shape-count")!.textContent,
+        ]),
+      );
+    expect(shapes).toEqual([["Irregular pentagons", String(cells)]]);
+    // Every row carries the colour the board paints that shape in.
+    await expect(dialog.locator(".info-shape .info-swatch")).toHaveCount(shapes.length);
+
+    // Escape closes it, and the board is still there to go back to.
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+    await expect(page.locator(".board-name")).toContainText("Cairo pentagonal");
+  });
+
+  test("the game header no longer offers a share button", async ({ page }) => {
+    // Sharing is the win window's, where the link goes with a time worth
+    // sending; the header slot it used to have is the info button now.
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/?mode=square&difficulty=easy&seed=1");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    await expect(page.locator('.hud [data-slot="share"]')).toHaveCount(0);
   });
 });

@@ -558,8 +558,29 @@ board links" in `web/README.md`.
 Winning files the time with `src/leaderboard.ts`, which keeps the **fastest
 three per board per difficulty** under its own `ms:scores` key (game history,
 not a preference — see "Best times" in `web/README.md`); a time that places
-raises the app's one real modal, `src/ui/scoreDialog.ts`, and the full list
-lives under Settings › Best times.
+raises the record window (`src/ui/scoreDialog.ts`), and the full list
+lives under Settings › Best times. That window offers up to four things — the
+same board again, a **new board** dealt at random from the half of the catalogue
+this one came from (flat wins deal flat, `src/boards/randomBoard.ts`, the home
+page's own pools and fairness weighting), the board's **share** link, and the
+menu — and it is where sharing lives: the game header carried a share button and
+does not any more.
+
+The game screen instead names the board **behind** it — its own fixed layer
+inserted before the transparent canvas (`src/ui/boardInfo.ts`), so the name
+costs the board no height and a board zoomed over it covers it — and the header
+slot that share had is an **info** button. That opens the app's second window
+(`src/ui/infoDialog.ts` over `src/ui/boardFacts.ts`): the family the tiling comes
+from (Uniform, Laves, Isogonal…), the surface it is wrapped on, the cell and
+mine counts, and one row per kind of tile with its count and the colour the board
+paints it. It is all *derived* — counts from the same `classifyShapes` that
+colours the board, names from measuring a tile's sides and angles — so a new
+tiling describes itself with no edit; and a **wrapped** board is named off its
+flat template rather than off its drawn cells, because an immersion bends every
+tile and a hexagonal torus is a tiling by regular hexagons however bent. The two
+windows share one shell, `src/ui/modal.ts` (Escape, backdrop, focus ring); they
+are the app's only modals, everything else that looks like a page being a page.
+See "The info window" in `web/README.md`.
 
 Its **menu** is play-first, and deliberately not the pygame one: the home page
 is Classic, Flat, 3D and Custom (`src/ui/menu.ts`). Flat and 3D each launch a
