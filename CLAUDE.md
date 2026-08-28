@@ -568,8 +568,14 @@ does not any more.
 
 The game screen instead names the board **behind** it — its own fixed layer
 inserted before the transparent canvas (`src/ui/boardInfo.ts`), so the name
-costs the board no height and a board zoomed over it covers it — and the header
-slot that share had is an **info** button. That opens the app's second window
+costs the board no height and a board zoomed over it covers it — and its header
+carries a **die** and an **info** button where share and the ? used to be. The
+die is `App.startRandomBoard`: the record window's New board without having to
+win first, always on screen, abandoning the board in progress as the smiley
+does. The ? moved down to the right-hand end of the row under the header
+(`hud.boardRight` in `data/ui/screens.json`, beside the centred board-symmetry
+controls of `hud.boardBar`) — it is a question asked while playing, so it stays
+on the game screen rather than going back to the menu alone. That opens the app's second window
 (`src/ui/infoDialog.ts` over `src/ui/boardFacts.ts`): the family the tiling comes
 from (Uniform, Laves, Isogonal…), the surface it is wrapped on, the cell and
 mine counts, and one row per kind of tile with its count and the colour the board

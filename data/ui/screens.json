@@ -180,16 +180,25 @@
     ],
     "right": [
       {
-        "slot": "help",
-        "label": "How to play",
-        "icon": "help",
-        "action": "help"
+        "slot": "random",
+        "label": "Random board",
+        "icon": "random",
+        "action": "random"
       },
       {
         "slot": "info",
         "label": "About this board",
         "icon": "info",
         "action": "info"
+      }
+    ],
+    "_boardRightComment": "The right-hand end of that same caption row, for a control that belongs to neither the game's header nor the board: how-to-play. It sat in the header until the header's second right-hand slot went to the random-board button, and it is a question asked *while* playing, so it stays on screen rather than going back to the menu alone. Kept apart from `boardBar` because it is not a board control -- it is drawn on every board, in its own cell at the right, while `boardBar` is centred and shows only what the board has.",
+    "boardRight": [
+      {
+        "slot": "help",
+        "label": "How to play",
+        "icon": "help",
+        "action": "help"
       }
     ],
     "_boardBarComment": "Controls that belong to the board rather than to the game: they sit on the caption row under the header, beside the board's name, not in the header row itself. The header holds two slots a side and the centred status block, which is all that fits on one row on a phone; these are shown only on a board that has them, so putting them there would wrap that row on exactly the boards that have the most to fit.",

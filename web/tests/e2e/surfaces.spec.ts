@@ -98,8 +98,10 @@ test.describe("M3 surfaces", () => {
     // than a pair. What none of them shows is a control the others can already
     // make: a donut's second mirror is its half turn after the first, and a
     // Klein bottle's two mirrors are both combinations of its three steps.
+    // The centred *controls* group, not the whole row: its right-hand end
+    // carries how-to-play, which is on every board and is no board control.
     const shown = async () =>
-      page.$$eval(".board-caption .board-bar-btn", (nodes) =>
+      page.$$eval(".board-caption-controls .board-bar-btn", (nodes) =>
         nodes
           .filter((n) => !(n as HTMLElement).hidden)
           .map((n) => (n as HTMLElement).dataset["slot"]),
@@ -170,7 +172,7 @@ test.describe("M3 surfaces", () => {
     // player sees is the actual angle and the actual plane. Asserted on what
     // the drawing was made from: 26 pixels of glyph are no evidence.
     const drawn = async () =>
-      page.$$eval(".board-caption .board-bar-btn", (nodes) =>
+      page.$$eval(".board-caption-controls .board-bar-btn", (nodes) =>
         nodes
           .filter((n) => !(n as HTMLElement).hidden)
           .map((n) => {

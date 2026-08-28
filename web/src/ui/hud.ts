@@ -88,6 +88,19 @@ export const ICONS: Record<string, string> = {
   // What this board is: the info window (ui/infoDialog.ts). The same ring as
   // the ? beside it, with the i's dot and stem on one centre line for the same
   // reason the question mark's are.
+  // Another board, dealt at random from the half of the catalogue this one came
+  // from (boards/randomBoard.ts). A die, and deliberately not the shuffle
+  // arrows: this board already has controls that reorder its contents (the
+  // symmetry chevrons on the row below), and a shuffle glyph in the header
+  // would read as one more of those rather than as a new board. Three pips on
+  // the diagonal — five turn into a blot at the 26px this is drawn at.
+  random: `<svg viewBox="0 0 24 24" aria-hidden="true">
+    <rect x="3.4" y="3.4" width="17.2" height="17.2" rx="4.4" stroke="currentColor"
+      stroke-width="1.8" fill="none"/>
+    <circle cx="8.3" cy="8.3" r="1.55" fill="currentColor"/>
+    <circle cx="12" cy="12" r="1.55" fill="currentColor"/>
+    <circle cx="15.7" cy="15.7" r="1.55" fill="currentColor"/>
+  </svg>`,
   info: `<svg viewBox="0 0 24 24" aria-hidden="true">
     <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8" fill="none"/>
     <circle cx="12" cy="7.6" r="1.05" fill="currentColor"/>

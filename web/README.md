@@ -480,9 +480,9 @@ platform with no clipboard evaluates to `undefined`, which awaits happily — so
 the button would have said "Link copied" having copied nothing. It is offered in
 **one** place, the record window, and passes the session's seed and the winning
 time. The game header carried one too and does not any more: a link is worth
-sending when it comes with a time, the header's two right-hand slots are all
-that fits at 320px, and the second of them now says what the board *is*
-(**The info window** below).
+sending when it comes with a time, and the header's two right-hand slots are all
+that fits at 320px. They hold the **die** (another board at random, see below)
+and the **ⓘ** (what this board is).
 
 **The seed** is what makes any of it mean anything — see "Shareable board
 links" above.
@@ -507,10 +507,16 @@ alone, and puts the name on that same line through `--board-name-top`), and a
 board zoomed up over it simply covers it. `pointer-events: none`, so a tap on
 the name is a tap on the cell drawn over it.
 
-The row under the header is where the **board-symmetry controls** live, rather
-than in the header; a board with none hides the row outright, since the name is
-no longer in it to hold it open. The header holds two slots a side — back and
-flag-mode, how-to-play and about-this-board — around the centred
+The row under the header carries two things. Centred, the **board-symmetry
+controls**, shown only on a board that has them (`hud.boardBar`). At its right
+end, **how-to-play** (`hud.boardRight`), on every board — it is not a board
+control, it is there because the header's right-hand pair is the die and the ⓘ,
+and "how do I flag?" is a question asked *while* playing. The row is a
+three-column grid, the header's own arrangement (equal side columns around an
+auto middle), so the controls stay on the screen's centre line whatever is
+beside them, and it is the controls that wrap when a board carries seven of them
+at 320px. The header holds two slots a side — back and
+flag-mode, a random board and about-this-board — around the centred
 counter/smiley/counter block, and seven controls is
 what one row holds at 320px. These belong to the *board* rather than to the
 game, a board can carry six or seven of them at once, and putting them in the
@@ -530,7 +536,9 @@ the first move. **Any test that screenshots a board must seed `seenHint: true`**
 — every Playwright test gets a fresh context, so without it every board is a
 first board, and the hint carries a seven-second timer a slow shot would race.
 
-The how-to-play page is reachable **from inside a game** through the header's ?.
+The how-to-play page is reachable **from inside a game** through the ? at the
+right of the row under the header (it sat in the header itself until the die
+took that slot).
 It opens over the live board — the canvas is hidden with `visibility`, not torn
 down, so the mesh, the mine layout and the clock survive — and deliberately does
 not go through `Menu.go`, whose stored `view` must stay the picker the game was
@@ -2143,10 +2151,13 @@ on a row of its own. **Play again** re-deals the same board. **New board** deals
 a random one from the half of the catalogue this board came from — flat if it
 was flat, otherwise a manifold, sphere or polyhedron — through
 `src/boards/randomBoard.ts`, which is the home page's Flat and 3D pools and
-their fairness weighting, shared rather than re-derived. **Share** hands out the
-board's link (and is the only place the app offers one — the game header's share
-button is gone). **Menu** goes home. A board built from an explicit mine layout
-(the test seam) has no seed, so it gets no Share.
+their fairness weighting, shared rather than re-derived. It is the same call as
+the header's die (`App.startRandomBoard`), which is that move without having to
+win first; both abandon the board in progress the way the smiley does, without
+asking. **Share** hands out the board's link (and is the only place the app
+offers one — the game header's share button is gone). **Menu** goes home. A
+board built from an explicit mine layout (the test seam) has no seed, so it gets
+no Share.
 
 The list lives under **Settings › Best times** (`src/ui/bestTimes.ts`), one more
 `Menu` page like the theme picker, ordered by the catalog rather than by the

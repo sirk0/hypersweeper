@@ -59,6 +59,10 @@ export interface Hud {
    * because they appear only on the boards that have them, and the header row
    * is already full at phone widths. */
   boardBar: HudSlot[];
+  /** The right-hand end of that same row: how-to-play, which belongs to neither
+   * the header (whose two right-hand slots are the random board and this one's
+   * old place) nor the board. Shown on every board, unlike `boardBar`. */
+  boardRight: HudSlot[];
 }
 
 export interface SmileyFaces {

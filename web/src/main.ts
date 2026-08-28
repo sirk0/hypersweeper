@@ -585,9 +585,25 @@ class App {
       this.move(id as SymmetryId, Number(direction));
     } else if (action === "info") {
       this.showBoardInfo();
+    } else if (action === "random") {
+      this.startRandomBoard();
     } else if (action === "help") {
       this.showHelp();
     }
+  }
+
+  /** Deal another board at random, from the half of the catalogue the one on
+   * screen came from — flat deals flat, anything off the plane deals another
+   * manifold, sphere or polyhedron — at the difficulty being played. The record
+   * window's "New board" is the same move (boards/randomBoard.ts, the home
+   * page's own pools and fairness weighting); this is it without having to win
+   * first, which is what makes the catalogue something to wander through. Like
+   * the smiley, it abandons the board in progress without asking. */
+  private startRandomBoard(): void {
+    const session = this.session;
+    if (!session || this.screen !== "game") return;
+    const mode = randomMode(session.is3d ? "3d" : "flat");
+    if (mode) this.startGame(mode, session.difficulty);
   }
 
   /** What the board on screen is: its family, its surface, its size and what
@@ -783,14 +799,9 @@ class App {
       entries,
       animate: this.animationsEnabled,
       onPlayAgain: () => this.startGame(session.mode, session.difficulty),
-      // Another board of the same kind of geometry: a flat board deals a flat
-      // one, anything off the plane deals another manifold, sphere or
-      // polyhedron. The same pools and the same fairness weighting as the home
-      // page's Flat and 3D rows (boards/randomBoard.ts).
-      onNewBoard: () => {
-        const mode = randomMode(session.is3d ? "3d" : "flat");
-        if (mode) this.startGame(mode, session.difficulty);
-      },
+      // The same move the header's die makes, from the card that is up when a
+      // board is finished rather than from the row over one being played.
+      onNewBoard: () => this.startRandomBoard(),
       onMenu: () => this.showMenu(),
       // The win's time goes with the link — the card is about the time, so the
       // message someone receives should say it too. A board with no seed (the

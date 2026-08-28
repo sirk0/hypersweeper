@@ -6,7 +6,9 @@ import { expect, test } from "@playwright/test";
 // height, and the whole row fits the viewport on a phone.
 //
 // The header carries **two slots a side** — back and flag-mode at the left,
-// how-to-play and about-this-board at the right — around that centred block. Seven
+// a random board and about-this-board at the right — around that centred block.
+// How-to-play moved down to the right-hand end of the caption row when the die
+// took its slot, and `tests` for it look for it there. Seven
 // controls is what one row holds at 320px, so the Klein bottle's two scroll
 // chevrons are *not* here: they belong to the board rather than to the game and
 // are drawn on the caption row under the header (`ui/boardInfo.ts`). Putting
@@ -67,7 +69,7 @@ test.describe("game header", () => {
         "mine-counter",
         "smiley",
         "timer",
-        "help",
+        "random",
         "info",
       ]);
 
@@ -116,7 +118,7 @@ test.describe("game header", () => {
       "mine-counter",
       "smiley",
       "timer",
-      "help",
+      "random",
       "info",
     ]);
     const smiley = boxes.find((b) => b.slot === "smiley")!;
@@ -193,7 +195,7 @@ test.describe("game header", () => {
     await expect(page.locator(".menu-difficulty")).toBeVisible();
 
     await page.locator('.menu-entry[data-mode="square"]').click();
-    await page.locator('.hud-btn[data-slot="help"]').click();
+    await page.locator('.board-caption [data-slot="help"]').click();
     await expect(page.locator(".menu-difficulty")).toBeHidden();
 
     // Back to the board: the game is still the one that was running.
@@ -222,7 +224,7 @@ test.describe("game header", () => {
     await page.locator('.menu-entry[data-mode="klein"]').click();
 
     const before = await page.evaluate(() => window.__ms!.state());
-    await page.locator('.hud-btn[data-slot="help"]').click();
+    await page.locator('.board-caption [data-slot="help"]').click();
     await page.locator(".menu-back").click();
     // The same game, not a new one: the board is hidden, never torn down.
     expect(await page.evaluate(() => window.__ms!.state())).toEqual(before);
@@ -241,9 +243,11 @@ test.describe("game header", () => {
     await expect(page.locator("body[data-ready]")).toBeVisible();
 
     await expect(page.locator(".board-name")).toContainText("Penrose");
-    await expect(page.locator(".board-caption .board-bar-btn:not([hidden])")).toHaveCount(0);
-    // Nothing left in the strip, so it reserves no height at all.
-    await expect(page.locator(".board-caption")).toBeHidden();
+    await expect(
+      page.locator(".board-caption-controls .board-bar-btn:not([hidden])"),
+    ).toHaveCount(0);
+    // The strip is still there for how-to-play, which every board carries.
+    await expect(page.locator('.board-caption [data-slot="help"]')).toBeVisible();
   });
 
   test("the board's name is drawn behind the board, not above it", async ({ page }) => {
@@ -318,6 +322,62 @@ test.describe("game header", () => {
     await page.keyboard.press("Escape");
     await expect(dialog).toBeHidden();
     await expect(page.locator(".board-name")).toContainText("Cairo pentagonal");
+  });
+
+  test("the die deals another board of the same kind, mid-game", async ({ page }) => {
+    // The record window's "New board" without having to win first: the point of
+    // a 179-board catalogue is wandering through it. Flat board in, flat board
+    // out — and a 3D one deals another manifold, sphere or polyhedron.
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/?mode=hex&difficulty=easy&seed=1");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    await page.evaluate(() => window.__ms!.reveal(window.__ms!.cells()[0]!));
+
+    await page.locator('.hud-btn[data-slot="random"]').click();
+    let state = await page.evaluate(() => window.__ms!.state());
+    expect(state.screen).toBe("game");
+    expect(state.status).toBe("playing"); // a fresh board, not the one played
+    expect(state.revealed).toBe(0);
+    expect(state.difficulty).toBe("easy"); // the difficulty being played
+    expect(state.is3d).toBe(false);
+
+    await page.goto("/?mode=torus&difficulty=easy&seed=1");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    await page.locator('.hud-btn[data-slot="random"]').click();
+    state = await page.evaluate(() => window.__ms!.state());
+    expect(state.is3d).toBe(true);
+  });
+
+  test("how-to-play sits at the right of the row under the header", async ({ page }) => {
+    // It moved off the header when the die took its slot. The board's own
+    // controls stay on the screen's centre line beside it.
+    await page.setViewportSize({ width: 320, height: 568 });
+    await page.goto("/?mode=klein&difficulty=easy&seed=1");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+
+    const box = await page.evaluate(() => {
+      const help = document.querySelector('.board-caption [data-slot="help"]')!;
+      const controls = [
+        ...document.querySelectorAll<HTMLElement>(
+          ".board-caption-controls .board-bar-btn:not([hidden])",
+        ),
+      ].map((b) => b.getBoundingClientRect());
+      const h = help.getBoundingClientRect();
+      return {
+        helpRight: h.right,
+        helpLeft: h.left,
+        controlsRight: Math.max(...controls.map((c) => c.right)),
+        controlsCentre:
+          (Math.min(...controls.map((c) => c.left)) + Math.max(...controls.map((c) => c.right))) / 2,
+        width: window.innerWidth,
+      };
+    });
+    // Right of every board control, and hard against the right edge.
+    expect(box.helpLeft).toBeGreaterThanOrEqual(box.controlsRight);
+    expect(box.width - box.helpRight).toBeLessThan(24);
+    // ...and the controls are still centred on the screen.
+    expect(box.controlsCentre).toBeCloseTo(box.width / 2, 0);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(320);
   });
 
   test("the game header no longer offers a share button", async ({ page }) => {

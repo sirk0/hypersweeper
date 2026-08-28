@@ -261,18 +261,20 @@ body {
   text-overflow: ellipsis;
 }
 
-/* Carries the board's own controls (the symmetry chevrons and mirrors). Sits in
-   the `#ui` flex column, so it is part of the block `App.onResize` measures and
-   frames the board below; a board with no controls hides it entirely. */
+/* Carries the board's own controls (the symmetry chevrons and mirrors) and, at
+   its right end, how-to-play. Sits in the `#ui` flex column, so it is part of
+   the block `App.onResize` measures and frames the board below.
+
+   Three columns, the header's own arrangement: equal side columns around an
+   auto middle, so the controls stay on the screen's centre line whatever sits
+   beside them. The middle is `minmax(0, auto)` so that when a board carries
+   every symmetry on a 320px phone it is the *controls* that wrap (they are a
+   wrapping flex row of their own), rather than the help button being pushed
+   off the edge. */
 .board-caption {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr);
   align-items: center;
-  justify-content: center;
-  /* A board with every symmetry carries six or seven controls, which will not
-     fit on one line on a narrow phone; the row wraps rather than shrinking
-     them below a touch size, and the board is framed below whatever height
-     that comes to (main.ts onResize measures the caption's bottom). */
-  flex-wrap: wrap;
   gap: var(--hud-gap);
   padding: 0 16px 6px;
   /* The strip itself is not a target; its buttons put this back. */
@@ -282,11 +284,21 @@ body {
 /* The board's symmetry controls, grouped so they wrap as a block rather than
    leaving one button stranded under the rest. */
 .board-caption-controls {
+  grid-column: 2;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: var(--hud-gap);
-  flex: 0 0 auto;
+}
+
+/* The right-hand cell: how-to-play, on every board (`hud.boardRight`). Its own
+   column, so a board with no symmetry controls still shows it and a board with
+   seven does not push it off the screen. */
+.board-caption-aside {
+  grid-column: 3;
+  justify-self: end;
+  display: flex;
+  gap: var(--hud-gap);
 }
 
 .board-caption-controls[hidden] {

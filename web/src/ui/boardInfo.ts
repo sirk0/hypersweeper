@@ -1,6 +1,6 @@
 import { fullModeLabel } from "../boards/catalog";
 import { fairnessHint, fairnessOf } from "../boards/fairness";
-import { screens } from "../config/screens";
+import { screens, type HudSlot } from "../config/screens";
 import { ICONS, slotVisible } from "./hud";
 import { planeLie, symmetryIcon, type SymmetryPicture } from "./symmetryIcon";
 
@@ -17,9 +17,15 @@ import { planeLie, symmetryIcon, type SymmetryPicture } from "./symmetryIcon";
 // height and a board zoomed up over it simply covers it. What the name *means*
 // is spelled out by the header's info button (ui/infoDialog.ts).
 //
-// **The caption** is the row under the header carrying the board's own
-// controls, the symmetry chevrons and mirrors, which do not fit in the header
-// row once it holds two slots a side.
+// **The caption** is the row under the header, and it carries two things: the
+// board's own controls — the symmetry chevrons and mirrors, centred, and shown
+// only on a board that has them — and, at its right end, how-to-play. That last
+// one is not a board control at all; it is here because the header's two
+// right-hand slots are the random board and the info window, and "how do I
+// flag?" is a question asked *while* playing, so it has to stay on screen. The
+// two groups are declared separately (`hud.boardBar`, `hud.boardRight`) and are
+// laid out in their own cells, so the controls stay on the centre line whatever
+// is beside them.
 //
 // **The hint** is the app's only first-run affordance. Long-press-to-flag and
 // right-click-to-flag were documented on the how-to-play page and nowhere else,
@@ -37,11 +43,28 @@ function isTouch(): boolean {
   return typeof window.matchMedia === "function" && window.matchMedia("(hover: none)").matches;
 }
 
+/** One control on the caption row, from its shared-config slot: the same
+ * `hud-btn` classes and `data-slot` name the header's own buttons carry, so a
+ * control reads and is found the same wherever it is drawn. */
+function button(slot: HudSlot, onAction: (action: string) => void): HTMLButtonElement {
+  const btn = document.createElement("button");
+  btn.className = "hud-btn hud-icon-btn board-bar-btn";
+  btn.dataset.slot = slot.slot;
+  const icon = slot.icon ? ICONS[slot.icon] : undefined;
+  if (icon) btn.innerHTML = icon;
+  else btn.textContent = slot.label ?? slot.slot;
+  btn.setAttribute("aria-label", slot.label ?? slot.slot);
+  btn.title = slot.label ?? slot.slot;
+  if (slot.visibleWhen) btn.dataset.visibleWhen = slot.visibleWhen;
+  if (slot.action) btn.addEventListener("click", () => onAction(slot.action!));
+  return btn;
+}
+
 export class BoardInfo {
   /** The caption strip: the board's own controls (the symmetry chevrons and
-   * mirrors). Sits in the `#ui` flex column directly under the header, so it is
-   * part of the space the board is framed below. A board with all of them shows
-   * six or seven, so the row wraps; a board with none hides the strip. */
+   * mirrors) centred, how-to-play at the right. Sits in the `#ui` flex column
+   * directly under the header, so it is part of the space the board is framed
+   * below. A board with all of them shows six or seven, so the group wraps. */
   readonly caption: HTMLElement;
   /** The board's name, drawn behind the board. Not in the `#ui` column at all —
    * the app inserts it before the canvas (see the `App` constructor), which is
@@ -81,21 +104,19 @@ export class BoardInfo {
     // `hud-btn` classes and `data-slot` names, so a control reads and is found
     // the same wherever it is drawn.
     for (const slot of screens.hud.boardBar) {
-      const btn = document.createElement("button");
-      btn.className = "hud-btn hud-icon-btn board-bar-btn";
-      btn.dataset.slot = slot.slot;
-      const icon = slot.icon ? ICONS[slot.icon] : undefined;
-      if (icon) btn.innerHTML = icon;
-      else btn.textContent = slot.label ?? slot.slot;
-      btn.setAttribute("aria-label", slot.label ?? slot.slot);
-      btn.title = slot.label ?? slot.slot;
-      if (slot.visibleWhen) btn.dataset.visibleWhen = slot.visibleWhen;
-      if (slot.action) btn.addEventListener("click", () => onAction(slot.action!));
-      btn.hidden = true;
+      const btn = button(slot, onAction);
+      btn.hidden = true; // until the board says it has this symmetry
       this.barButtons.push(btn);
       controls.append(btn);
     }
     this.controls = controls;
+
+    // The right-hand cell: how-to-play, on every board. Its own group so the
+    // grid can hold the controls on the centre line with this beside them.
+    const aside = document.createElement("div");
+    aside.className = "board-caption-aside";
+    for (const slot of screens.hud.boardRight) aside.append(button(slot, onAction));
+    this.caption.append(aside);
 
     this.hint = document.createElement("div");
     this.hint.className = "board-hint";
@@ -130,12 +151,10 @@ export class BoardInfo {
       btn.hidden = !slotVisible(btn.dataset["visibleWhen"], conditions);
     }
     this.drawIcons(pictures);
-    // A board with no controls hides the strip outright rather than reserving
-    // an empty row: the name has left it, so there is nothing in there to
-    // reserve the height for.
-    const bare = this.barButtons.every((b) => b.hidden);
-    this.controls.hidden = bare;
-    this.caption.hidden = bare;
+    // An empty group would still take its gap in the row, nudging the centred
+    // controls off centre on every board that has none at all.
+    this.controls.hidden = this.barButtons.every((b) => b.hidden);
+    this.caption.hidden = false;
     this.nameLayer.hidden = false;
   }
 
