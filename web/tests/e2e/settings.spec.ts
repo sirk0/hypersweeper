@@ -324,12 +324,62 @@ test.describe("settings", () => {
     );
   });
 
-  test("the update check reports a result", async ({ page }) => {
+  // The update check asks the *server* which build it is serving
+  // (`version.json`, emitted by vite.config.ts) and compares it with the
+  // constants compiled into the bundle. It used to ask the service worker
+  // whether anything was installing, which is a race the worker usually wins:
+  // it updates itself quietly on launch, so by the time the check looked there
+  // was nothing installing and the page — still the old build — was told it was
+  // the latest. Closing and reopening the app then produced the new version,
+  // which is how the bug was found. The three tests below are that story: the
+  // real stamp, a newer one, and no answer at all.
+  test("the update check reports this build as the latest", async ({ page }) => {
     await page.locator('.menu-header-btn[data-action="settings"]').click();
     await page.locator('.menu-entry[data-action="check-updates"]').click();
-    // Whatever the outcome (no service worker under `vite preview`, or an
-    // up-to-date one), the button must say something rather than hang.
-    await expect(page.locator(".settings-status")).not.toBeEmpty();
+    await expect(page.locator(".settings-status")).toHaveText("You are on the latest build.");
+  });
+
+  test("a newly deployed build is found and loaded", async ({ page }) => {
+    // What a deploy looks like from inside a running app: the same URL, a
+    // different stamp. Served once, so the reload the check performs lands on
+    // the real (matching) stamp again — as a phone would, having just fetched
+    // the new bundle.
+    let served = 0;
+    const navigations: string[] = [];
+    page.on("framenavigated", (frame) => {
+      if (frame === page.mainFrame()) navigations.push(frame.url());
+    });
+    await page.route("**/version.json*", async (route) => {
+      served += 1;
+      if (served > 1) {
+        await route.continue();
+        return;
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ version: "99.0.0", commit: "deadbee" }),
+      });
+    });
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
+    await page.locator('.menu-entry[data-action="check-updates"]').click();
+    // The reload is the update, and it has to actually happen: the app comes
+    // back at the menu root, so the settings page — and the row just clicked —
+    // is gone.
+    await expect(page.locator('.menu-entry[data-action="check-updates"]')).toHaveCount(0);
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    await expect(page.locator('.menu-header-btn[data-action="settings"]')).toBeVisible();
+    expect(navigations.length).toBeGreaterThan(0);
+    expect(served).toBeGreaterThan(0);
+  });
+
+  test("a server it cannot reach is never reported as up to date", async ({ page }) => {
+    // Every check an installed app makes offline. Saying "you are on the latest
+    // build" here would be the same lie by a different route.
+    await page.route("**/version.json*", (route) => route.abort());
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
+    await page.locator('.menu-entry[data-action="check-updates"]').click();
+    await expect(page.locator(".settings-status")).toHaveText("Could not check for updates.");
   });
 
   // The Realistic page follows the board's own tiling (ui/backgroundPattern.ts).

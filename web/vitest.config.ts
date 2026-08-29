@@ -11,6 +11,10 @@ export default defineConfig({
   define: {
     __APP_PACKAGED__: false,
     __APP_ANALYTICS__: true,
+    // What `update.ts` calls this build when it compares itself with the
+    // deployed stamp. Any pair will do — the tests supply the other side.
+    __APP_VERSION__: '"0.0.0-test"',
+    __APP_COMMIT__: '"testing"',
   },
   resolve: {
     alias: {

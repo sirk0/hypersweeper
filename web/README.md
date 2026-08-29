@@ -2098,6 +2098,73 @@ fields need no bump, since an old record simply lacks them.
 `package.json`, which `bump-version.yml` keeps in lockstep with
 `pyproject.toml` on every push to master.
 
+### Check for updates (`src/update.ts`)
+
+The About block's update row, and the one part of the settings page that is a
+question about the *world* rather than about a stored preference.
+
+It used to ask the service worker: `registration.update()`, then
+`registration.installing ?? registration.waiting` — anything there means a new
+build is on its way, nothing there means you are on the latest. Both halves of
+that are wrong, because `registerType: "autoUpdate"` gives the generated worker
+`skipWaiting()` and `clientsClaim()`, so a new build passes through installing
+and waiting on its own and never pauses in either. Worse, the worker checks for
+itself on **every launch** (`registerSW.js` registers, and registering updates),
+so the ordinary sequence is: a build is deployed, the player opens the app, the
+worker quietly fetches and activates the new build while the page that just
+loaded is still the old one — and a check made now finds nothing installing and
+says **"You are on the latest build"** to a player looking at the previous
+version. Close the app, reopen it, and there is the new version. That was the
+bug, and it reproduces in desktop Chromium in about forty seconds: install a
+build, deploy another, reload, check.
+
+So the check does not ask the worker. Every non-packaged build emits a
+`version.json` naming itself — version *and* short commit, since a PR preview
+publishes many builds under one version number — and `checkForUpdate` fetches it
+and compares it with the constants compiled into the running bundle. That is a
+fact about the server rather than the state of a cache's state machine, and it
+is true whatever the worker is doing. Three points of care:
+
+- **The stamp must come from the network.** The fetch carries `cache:
+  "no-store"` and a `?t=` cache-buster; the query is what keeps it off the
+  precache, since Workbox matches a precached URL exactly (bar the `utm_` /
+  `fbclid` parameters it is told to ignore), so an unrecognised parameter misses
+  every route and falls through. Belt and braces, `globIgnores` keeps
+  `version.json` out of the precache manifest altogether: a stamp served from
+  the worker's own cache could only ever name the build that installed the
+  worker, and the check would confirm this build to itself for ever.
+- **A failed fetch is not "up to date".** Offline — which is every check an
+  installed app makes with no signal — and a host with no stamp both come back
+  "Could not check for updates.". A body that is not the shape we asked for is
+  the same answer: `parseStamp` treats it as untrusted input, the way `link.ts`
+  treats a share link.
+- **Only then is the worker involved**, and only as machinery for *getting* the
+  new build: `loadDeployedBuild` calls `update()` and waits for the incoming
+  worker to reach `activated`, because only then has its precache replaced the
+  old one and only then does a reload serve something new. It subscribes to
+  `updatefound` *before* that call and keeps listening for `ARRIVAL_GRACE_MS`
+  after it, rather than reading `installing`/`waiting` at the instant the
+  promise resolves — the spec resolves it as the install *begins*, so an engine
+  that sets the property a tick later would look exactly like the next case, and
+  reloading there is the old mistake in the other direction. If there is no
+  incoming worker the active one is already the newest this device has (the
+  quiet-update case above) and the reload is enough on its own. If the install
+  does not finish inside `SETTLE_TIMEOUT_MS`, or goes `redundant`, the row says
+  the download is still running and the next launch will finish it — reloading
+  into the same old build would teach the player nothing, which is where the
+  old code's fixed 800 ms `setTimeout` also landed.
+
+With no worker registered at all — a dev server, a PR preview, `VITE_NO_SW=1` —
+there is no cache between the page and the server, so the reload *is* the
+update. (That row therefore no longer reports "running from source": a preview
+build can now genuinely tell you whether the push you are looking at is the
+latest one, which on the URL a PR reuses across pushes is worth more.)
+
+`tests/unit/update.test.ts` pins the comparison, the stamp parsing and every
+branch of the settle-then-reload path against a hand-driven fake worker;
+`tests/e2e/settings.spec.ts` pins the three outcomes the row can show, driving a
+"deploy" by fulfilling the `version.json` request once with a newer stamp.
+
 ## Best times
 
 Winning a board files the time with `src/leaderboard.ts`, which keeps the
@@ -2510,10 +2577,13 @@ out of the real numbers. And `VITE_NO_SW=1` leaves the service worker out: a PR
 reuses one URL across pushes, and a root-scoped precache there is a phone
 showing the push before last, which is the one failure mode a preview must not
 have. `VITE_NO_SW` is the narrow knob for that — `VITE_PACKAGED` also drops the
-worker but takes `socialMeta`, `tallyStub` and the update row with it, which is
-the offline-app build, not this. With nothing registered, Settings › Check for
-updates reports "running from source". The job also writes a `dist/_headers`
-carrying `X-Robots-Tag: noindex` (into `dist/`, never `public/`, so production
+worker but takes `socialMeta`, `tallyStub`, `versionStamp` and the update row
+with it, which is the offline-app build, not this. A preview still emits its
+`version.json`, so Settings › Check for updates answers there too — commit
+against commit, which is the only comparison that says anything on a URL that
+serves many builds under one version number — and with no worker registered the
+reload it then performs is the whole update. The job also writes a
+`dist/_headers` carrying `X-Robots-Tag: noindex` (into `dist/`, never `public/`, so production
 stays indexable) and passes the preview's own origin as `VITE_SITE_URL`, or
 every preview's `og:url` and `<link rel="canonical">` would point at production.
 
@@ -2604,7 +2674,8 @@ while working here:
   analytics collector is a *relative* path on whatever origin serves the app —
   so the script has a second pass over a `FORBIDDEN` list of same-origin paths.
   That pass is the only automated proof that `__APP_PACKAGED__` really folded
-  the collector out; add to the list, not just to `ALLOWED`, when a same-origin
+  the collector out — and, since the update check joined it, the build stamp
+  `version.json` too; add to the list, not just to `ALLOWED`, when a same-origin
   endpoint appears.
 
 The README gallery at the repo root is rendered from this app by
