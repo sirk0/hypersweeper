@@ -1323,10 +1323,10 @@ export class SolidBoard extends Group implements BoardMesh {
     this.anim.startReveals(rippleEntries(list, oc, this.meanRadius), performance.now());
   }
 
-  dropFlag(cell: CellId): void {
+  dropFlag(cell: CellId, ms?: number): void {
     const i = this.cellIndex.get(cell);
     if (i == null) return;
-    this.anim.startDrop(i, performance.now());
+    this.anim.startDrop(i, performance.now(), ms);
     this.rebuildGlyphs();
     this.rebuildMarkers();
   }

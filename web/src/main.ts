@@ -27,6 +27,7 @@ import { boardLinkQuery, parseBoardLink } from "./link";
 import { GameSession } from "./session";
 import { shareBoard } from "./share";
 import { attachControls, blockBrowserZoom } from "./input/controls";
+import { clampHoldMs } from "./input/hold";
 import {
   BoardRenderer,
   initialOrientation,
@@ -165,8 +166,10 @@ class App {
       pick: (ndc) => this.renderer.pick(ndc),
       onTap: (cell) => this.onTap(cell),
       // A long press is only ever armed for a touch or a pen (see
-      // controls.ts), so this is the one flag the player cannot see land.
-      onLongPress: (cell) => this.flag(cell, true),
+      // controls.ts), so this is the one flag the player cannot see land — and
+      // the hold that placed it is how long its landing then takes.
+      onLongPress: (cell) => this.flag(cell, this.settings.holdToFlagMs),
+      holdMs: () => this.settings.holdToFlagMs,
       onSecondary: (cell) => this.flag(cell),
       onHover: (cell) => this.hover(cell),
       rotates: () => this.screen === "game" && (this.session?.is3d ?? false),
@@ -231,6 +234,9 @@ class App {
       get haptics() {
         return app.settings.haptics;
       },
+      get holdToFlagMs() {
+        return app.settings.holdToFlagMs;
+      },
       get backgrounds() {
         return app.settings.backgrounds;
       },
@@ -244,6 +250,7 @@ class App {
       setSound: (key) => this.setSound(key),
       setVolume: (level) => this.setVolume(level),
       setHaptics: (on) => this.setHaptics(on),
+      setHoldToFlag: (ms) => this.setHoldToFlag(ms),
       setBackgrounds: (on) => this.setBackgrounds(on),
       setAnalytics: (on) => this.setAnalytics(on),
     };
@@ -316,6 +323,14 @@ class App {
     this.settings = { ...this.settings, haptics: on };
     saveSettings(this.settings);
     setHapticsEnabled(on);
+  }
+
+  /** Set how long a press has to be held before it flags. Like the sound preset
+   * it needs no new board: `controls.ts` asks for the number at every press, so
+   * the next hold on the board already in play is the new length. */
+  private setHoldToFlag(ms: number): void {
+    this.settings = { ...this.settings, holdToFlagMs: clampHoldMs(ms) };
+    saveSettings(this.settings);
   }
 
   /** Turn the board's own tiling behind the page on or off. Like the sound
@@ -630,14 +645,20 @@ class App {
    * made there. */
   private onTap(cell: CellId): void {
     if (!this.session || this.screen !== "game") return;
-    if (this.flagMode) this.session.flag(cell);
-    else this.session.tap(cell);
+    if (this.flagMode) {
+      if (this.session.flag(cell)) this.hud.flashFlag();
+    } else this.session.tap(cell);
     this.afterMove();
   }
 
-  private flag(cell: CellId, held = false): void {
+  /** Plant or clear a flag: a right-click, or a press held for `heldMs` (see
+   * `input/hold.ts`, which is also how long its landing takes). One that *lands*
+   * blinks the header's flag red — the flag button is where flag state already
+   * lives, and a held flag is the one move the player cannot see land, since
+   * their own finger is over the cell. */
+  private flag(cell: CellId, heldMs?: number): void {
     if (!this.session || this.screen !== "game") return;
-    this.session.flag(cell, held);
+    if (this.session.flag(cell, heldMs)) this.hud.flashFlag();
     this.afterMove();
   }
 

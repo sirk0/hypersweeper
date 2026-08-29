@@ -635,7 +635,8 @@ untouched; `tests/unit/menu.test.ts` pins it.
 
 The menu's gear opens a **settings** page (best times, theme, colour
 scheme, sound and
-its volume, haptics where anything can buzz, animations toggle, build
+its volume, haptics where anything can buzz, **hold to flag** where anything
+can long-press, animations toggle, build
 version, update check) — one more
 `Menu` page rather than a modal, with the theme, colour-scheme, best-times
 and sound pages below it. Nothing on it links off the site. The **update
@@ -659,11 +660,27 @@ left — one button per side, so the two balance and the title
 phone. The **?** opens a how-to-play page (`src/ui/help.ts`) built the
 same way, its text in TS rather than in the pygame-shared `screens.json`.
 Theme, colour scheme, difficulty, the sound preset and its volume, haptics,
-custom
+the **hold-to-flag** duration, custom
 backgrounds and the animations override persist (`src/settings.ts`): one stable
 `localStorage` key holding a record that carries its own `version`, never
 a versioned key name — see "Settings and themes" in `web/README.md` before
-adding a field.
+adding a field. **Hold to flag** is how long a press has to be held before it
+plants one (`src/input/hold.ts`; 100–500 ms, 300 by default, down from the
+450 it was fixed at): `controls.ts` asks for it at every press rather than
+capturing it once, so a change reaches the board in play, and the row is
+hidden where nothing can long-press exactly as the haptics row is hidden where
+nothing can buzz. It is **also how long the flag then takes to land** — a drop
+that outlasts the press it answers reads as lag, so `GameSession.flag` passes
+the hold through to `dropFlag` and `CellAnimations.startDrop` takes the length
+as an argument rather than owning a constant, `DROP_HOLD` staying a *share* of
+it so every point on the slider gets the same shape of landing. When a flag is **planted** the header's flag button blinks
+**red** — the finger is on top of the very cell the flag lands on, so the board
+itself cannot confirm the one move that matters here. It marks the landing
+rather than the countdown (`GameSession.flag` returns whether one went down, so
+clearing a flag blinks nothing), it is a one-shot method on `Hud` rather than a
+`HudState` field (a moment, not a condition — and `setState` re-renders on every
+clock tick), and the red is an overlay rather than an animated `background`,
+which is what lets it compose with the button's two resting fills.
 
 The look is **two** settings on two independent axes. A **theme** is how the
 board's cells are cut and what the page behind them is made of; there are three

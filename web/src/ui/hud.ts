@@ -183,6 +183,25 @@ export class Hud {
     this.render();
   }
 
+  /** Blink the header's flag red: a flag has just been **planted**. It answers
+   * the one move a player can miss — a flag planted by *holding* a cell lands
+   * under their own fingertip — and it is a state the header is the natural
+   * place for, since the flag button is where flag state already lives.
+   *
+   * A one-shot rather than a `HudState` field, because it marks a moment rather
+   * than a condition: `setState` re-renders on every clock tick, and a moment
+   * kept in that record would either be re-fired by a tick or need clearing by
+   * one. The class comes off when the animation ends, and is taken off and put
+   * back (with a reflow between) so two flags in quick succession blink twice
+   * rather than the second being swallowed by the first still running. */
+  flashFlag(): void {
+    const btn = this.flagBtn;
+    if (!btn) return;
+    btn.classList.remove("flag-flash");
+    void btn.offsetWidth; // restart the animation rather than continue it
+    btn.classList.add("flag-flash");
+  }
+
   private cluster(cls: string, slots: HudSlot[]): HTMLElement {
     const el = document.createElement("div");
     el.className = `hud-cluster ${cls}`;
@@ -221,7 +240,12 @@ export class Hud {
       btn.textContent = slot.label ?? slot.slot;
     }
     if (slot.action) btn.addEventListener("click", () => this.onAction(slot.action!));
-    if (slot.slot === "flag-mode") this.flagBtn = btn;
+    if (slot.slot === "flag-mode") {
+      this.flagBtn = btn;
+      // The blink is one shot (`flashFlag`): take the class off once it has
+      // played, so the next flag planted can put it back on.
+      btn.addEventListener("animationend", () => btn.classList.remove("flag-flash"));
+    }
     if (slot.visibleWhen) btn.dataset.visibleWhen = slot.visibleWhen;
     return btn;
   }

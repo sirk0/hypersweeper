@@ -220,12 +220,18 @@ export class GameSession {
     this.checkStop(gameCell, changed);
   }
 
-  /** Toggle the flag on a cell. `held` says the flag came from a touch held on
-   * that cell — the one input that hides what it is doing behind a fingertip,
-   * and so the only one that gets the flag drop. A mouse (right-click) and a
-   * tap in flag mode both leave the cell in plain sight; animating those would
-   * be decoration, not feedback. */
-  flag(cell: CellId, held = false): void {
+  /** Toggle the flag on a cell. `heldMs` is the length of the press that placed
+   * it, and saying so at all is what marks this as a *held* flag — the one input
+   * that hides what it is doing behind a fingertip, and so the only one that
+   * gets the flag drop. A mouse (right-click) and a tap in flag mode both leave
+   * the cell in plain sight; animating those would be decoration, not feedback.
+   * The number is the drop's own length too, so the landing takes exactly as
+   * long as the press did (see `input/hold.ts`).
+   *
+   * Returns whether a flag was **planted** — the toggle's other half clears one,
+   * and the header's flash (main.ts) is a confirmation that one went down, so it
+   * has to tell the two apart. */
+  flag(cell: CellId, heldMs?: number): boolean {
     this.startTimer();
     const gameCell = this.gameFor(cell);
     const wasFlagged = this.game.cellState(gameCell) === "flagged";
@@ -233,8 +239,8 @@ export class GameSession {
     const isFlagged = this.game.cellState(gameCell) === "flagged";
     // Only a flag that lands drops one in; clearing one still buzzes, because
     // the finger that held the cell is covering the change either way.
-    if (held && isFlagged && !wasFlagged) {
-      this.mesh.dropFlag(this.geomFor(gameCell));
+    if (heldMs !== undefined && isFlagged && !wasFlagged) {
+      this.mesh.dropFlag(this.geomFor(gameCell), heldMs);
     }
     if (isFlagged && !wasFlagged) this.flagsPlanted++;
     if (isFlagged !== wasFlagged) {
@@ -248,6 +254,7 @@ export class GameSession {
         });
       }
     }
+    return isFlagged && !wasFlagged;
   }
 
   chord(cell: CellId): void {

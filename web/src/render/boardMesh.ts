@@ -167,8 +167,9 @@ export interface BoardMesh extends Group {
   /** Land a flag placed by holding the cell: an oversized flag shrinks into
    * it. The finger doing the holding is covering that cell, so the flag has to
    * start outside the fingertip to be seen at all. Only that gesture calls
-   * this — see `GameSession.flag`. */
-  dropFlag(cell: CellId): void;
+   * this — see `GameSession.flag` — and `ms` is that gesture's own length (the
+   * hold that placed the flag), so the landing never outlasts the press. */
+  dropFlag(cell: CellId, ms?: number): void;
   /** Jitter the whole board and settle it (a detonated mine). */
   shake(): void;
   /** Celebrate a cleared board: a gold wave sweeping out from the winning cell

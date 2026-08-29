@@ -451,17 +451,56 @@ body {
   line-height: 1;
 }
 
-/* Icon-only header buttons (e.g. the flag-mode toggle). */
+/* Icon-only header buttons (e.g. the flag-mode toggle). Positioned so the flag
+   flash below can lay its red over the button; the icon is positioned in turn
+   so it paints on top of that layer, a pseudo-element coming after its siblings
+   in paint order. */
 .hud-icon-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  position: relative;
 }
 
 .hud-icon-btn svg {
   display: block;
   width: var(--hud-icon);
   height: var(--hud-icon);
+  position: relative;
+  z-index: 1;
+}
+
+/* A flag has just been planted: the header's flag button blinks red
+   (`Hud.flashFlag`). The move it answers is the *held* one — a flag placed by
+   holding a cell lands under the player's own fingertip, so the board itself
+   cannot confirm it — and the flag button is where flag state already lives.
+
+   The red is laid over the button as its own layer rather than animated onto
+   `background`, because the button's resting background is one of two things
+   (`--panel`, or `--selected` in flag mode) and a keyframe can only name one:
+   ending on the wrong one snaps at the last frame. An overlay composes with
+   either, and with `:active` too. `--danger` is the palette's own red, so this
+   follows the theme like every other colour here. */
+@keyframes hud-flag-flash {
+  0%,
+  45% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.hud-btn.flag-flash::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--danger);
+  pointer-events: none;
+  /* `forwards` so the last painted frame is the transparent one: the class is
+     taken off on `animationend`, a frame or two later. */
+  animation: hud-flag-flash 420ms ease-out forwards;
 }
 
 /* LED display: red digits on a dark rounded panel, flanking the smiley. The
@@ -1044,6 +1083,28 @@ body {
   justify-content: space-between;
   gap: 16px;
   cursor: default;
+}
+
+/* The same row shape carrying a three-word label instead of "Volume": left to
+   itself the label column gives way to the slider's minimum and the title wraps
+   mid-phrase ("Hold to / flag"), which reads as a squeezed row rather than a
+   deliberate one. The label holds its line and the slider gives up the width
+   instead — it still has room to drag on the narrowest phone. */
+.settings-hold .menu-entry-label,
+.settings-hold .menu-entry-hint {
+  white-space: nowrap;
+}
+
+/* ...and the text column has to stop shrinking for that to mean anything: the
+   shared rule gives it `min-width: 0` so a long hint can wrap, which with
+   `nowrap` on instead lets the label run out under the slider. */
+.settings-hold .menu-entry-text {
+  flex: 0 1 auto;
+  min-width: max-content;
+}
+
+.settings-hold .settings-range {
+  min-width: 72px;
 }
 
 .settings-range {

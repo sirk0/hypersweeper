@@ -8,6 +8,14 @@ import {
 import { previewSound, setSoundPreset, setSoundVolume } from "../audio/sound";
 import { screens } from "../config/screens";
 import { hapticsSupported } from "../haptics";
+import {
+  clampHoldMs,
+  holdLabel,
+  HOLD_MS_MAX,
+  HOLD_MS_MIN,
+  HOLD_MS_STEP,
+  longPressSupported,
+} from "../input/hold";
 import { allBestTimes } from "../leaderboard";
 import { animationsEnabled } from "../settings";
 import { checkForUpdate, loadDeployedBuild } from "../update";
@@ -80,6 +88,8 @@ export interface SettingsHost {
   volume: number;
   /** Whether the game buzzes on a flag, a win and a mine. */
   haptics: boolean;
+  /** How long a press has to be held before it flags, in ms. */
+  holdToFlagMs: number;
   /** Whether the page behind the board follows that board's own tiling. */
   backgrounds: boolean;
   /** Whether anonymous play counts are reported. */
@@ -93,6 +103,10 @@ export interface SettingsHost {
    * the page: it is called from a slider the player is still holding. */
   setVolume(level: number): void;
   setHaptics(on: boolean): void;
+  /** Persist the hold-to-flag duration. Like `setVolume` and unlike the rest,
+   * this must **not** re-render the page: it comes from a slider under the
+   * player's finger. */
+  setHoldToFlag(ms: number): void;
   setBackgrounds(on: boolean): void;
   setAnalytics(on: boolean): void;
 }
@@ -436,6 +450,46 @@ function volumeRow(host: SettingsHost): HTMLElement {
   return li;
 }
 
+/** The hold-to-flag row: a slider setting how long a press has to be held on a
+ * touch screen before it plants a flag.
+ *
+ * Shaped like the volume row and for the same reason — it is a level rather
+ * than a choice, so a list of named speeds would be a list of guesses about the
+ * player's hand — and it does not re-render its page either: the value is being
+ * dragged. Unlike the volume there is nothing to preview, so the label updated
+ * in place *is* the feedback while dragging, and the change is felt on the next
+ * held press (`controls.ts` asks at every press).
+ *
+ * The row is inline on the settings page rather than behind a page of its own:
+ * it is one control, and the sound row has a page because there are four
+ * presets and a level under it. */
+function holdRow(host: SettingsHost): HTMLElement {
+  const li = document.createElement("li");
+  const box = document.createElement("div");
+  box.className = "menu-entry settings-static settings-volume settings-hold";
+  const text = textBlock("Hold to flag", holdLabel(host.holdToFlagMs));
+  const hint = text.querySelector(".menu-entry-hint");
+
+  const slider = document.createElement("input");
+  slider.type = "range";
+  slider.className = "settings-range";
+  slider.min = String(HOLD_MS_MIN);
+  slider.max = String(HOLD_MS_MAX);
+  slider.step = String(HOLD_MS_STEP);
+  slider.value = String(clampHoldMs(host.holdToFlagMs));
+  slider.dataset["setting"] = "hold-to-flag";
+  slider.setAttribute("aria-label", "Hold to flag");
+  const ms = (): number => clampHoldMs(Number(slider.value));
+  slider.addEventListener("input", () => {
+    if (hint) hint.textContent = holdLabel(ms());
+  });
+  slider.addEventListener("change", () => host.setHoldToFlag(ms()));
+
+  box.append(text, slider);
+  li.append(box);
+  return li;
+}
+
 /** The pages this one opens. An object rather than a run of positional
  * callbacks: there are five of them now, and at the call site five bare arrows
  * in a row say nothing about which is which. */
@@ -593,6 +647,13 @@ export function renderSettings(host: SettingsHost, pages: SettingsPages): Docume
   );
   soundBtn.dataset["settingsGroup"] = "sound";
   behaviour.append(soundLi);
+
+  // Conditional on the same principle as the haptics row below: `controls.ts`
+  // arms the hold for a touch or a pen and never for a mouse, which flags by
+  // right-click instead, so on a machine with no touch screen the setting has
+  // nothing behind it and gets no row rather than a slider that changes
+  // nothing.
+  if (longPressSupported()) behaviour.append(holdRow(host));
 
   // Only where there is something to feel. On the iOS app this is the Taptic
   // Engine; in a browser, the Vibration API (or iOS Safari's one fixed tick).

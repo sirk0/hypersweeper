@@ -66,19 +66,33 @@ describe("CellAnimations flag drop", () => {
     const a = new CellAnimations();
     expect(a.dropIndex()).toBeNull();
     expect(a.dropProgress(0)).toBeNull(); // nothing dropping -> nothing to draw
-    a.startDrop(7, 0);
+    a.startDrop(7, 0, 400);
     expect(a.dropIndex()).toBe(7);
     expect(a.dropProgress(0)).toBe(0); // at its largest...
     expect(a.dropProgress(140)).toBe(0); // ...and held there long enough to read
     const mid = a.dropProgress(280)!;
     expect(mid).toBeGreaterThan(0); // then under way
     expect(mid).toBeLessThan(1);
-    expect(a.dropProgress(420)).toBeNull(); // home; the settled glyph takes over
+    expect(a.dropProgress(400)).toBeNull(); // home; the settled glyph takes over
     expect(a.pending()).toBe(true); // until the step that prunes it
-    const done = a.step(420);
+    const done = a.step(400);
     expect(done.glyphsDirty).toBe(true); // one last rebuild, without the drop
     expect(a.pending()).toBe(false);
     expect(a.dropIndex()).toBeNull();
+  });
+
+  it("takes as long as the press that placed it", () => {
+    // The drop's length is the hold-to-flag setting (src/input/hold.ts), so a
+    // hair-trigger press lands a hair-trigger flag rather than spending most of
+    // its time waiting out a fixed animation — every point on that slider gets
+    // the same shape of landing, held at full size for the same *share* of it.
+    for (const ms of [100, 300, 500]) {
+      const a = new CellAnimations();
+      a.startDrop(0, 0, ms);
+      expect(a.dropProgress(ms * 0.34), `${ms}ms: still held`).toBe(0);
+      expect(a.dropProgress(ms * 0.7)!, `${ms}ms: under way`).toBeGreaterThan(0);
+      expect(a.dropProgress(ms), `${ms}ms: home`).toBeNull();
+    }
   });
 
   it("keeps only the newest drop — one finger, one flag", () => {

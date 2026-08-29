@@ -10,14 +10,24 @@ import type { CellId, SymmetryId } from "../boards/core";
 // and otherwise just cancels the tap. Right-click is a secondary (flag).
 // A second finger starts a pinch: it zooms the board about the midpoint and
 // pans with it, and it can never fire a tap.
+//
+// How long that hold has to last is the player's (Settings › Hold to flag, see
+// input/hold.ts). It is asked for at press time rather than captured when the
+// controls are attached — they are attached once, for the life of the app — so
+// a change on the settings page applies to the board already in play. The flag
+// it plants is the one move the player cannot see land (their own finger is on
+// top of the cell), which is what the header's flag flash answers — see
+// `Hud.flashFlag`.
 
 const MOVE_THRESHOLD = 8; // px
-const LONG_PRESS_MS = 450;
 
 export interface ControlHandlers {
   pick(ndc: Vector2): CellId | null;
   onTap(cell: CellId): void;
   onLongPress(cell: CellId): void;
+  /** How long a press must be held before `onLongPress` fires, in ms. Asked at
+   * every press, so the setting applies to the board already in play. */
+  holdMs(): number;
   onSecondary(cell: CellId): void;
   onHover(cell: CellId | null): void;
   /** Whether drags should rotate the current board (a 3D screen). */
@@ -154,9 +164,10 @@ export function attachControls(
     if (downCell != null && e.pointerType !== "mouse") {
       const cell = downCell;
       longTimer = window.setTimeout(() => {
+        longTimer = 0;
         longFired = true;
         handlers.onLongPress(cell);
-      }, LONG_PRESS_MS);
+      }, handlers.holdMs());
     }
   };
 

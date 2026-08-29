@@ -6,6 +6,9 @@ import { expect, test } from "@playwright/test";
 // reveal ripple / flag pop / lose shake / win wave are purely cosmetic:
 // gameplay reaches the same terminal state and the board settles without
 // hanging the loop.
+/** The hold-to-flag duration the drop test pins for itself (see there). */
+const HELD_FLAG_HOLD_MS = 400;
+
 test.describe("M6 animations", () => {
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize({ width: 900, height: 700 });
@@ -60,6 +63,19 @@ test.describe("M6 animations", () => {
     // the finger nor the hand behind it reaches. Sample a patch two cells up
     // from the flagged one: untouched by the settled board, painted over while
     // the flag is coming down.
+    //
+    // How long the press has to be held is the player's now (Settings › Hold to
+    // flag), so pin it rather than sampling at a fixed time past whatever the
+    // default happens to be — this test has to land *inside* the drop, and a
+    // default that moves would slide the sample along it.
+    await page.addInitScript((ms) => {
+      window.localStorage.setItem(
+        "ms:settings",
+        JSON.stringify({ version: 4, holdToFlagMs: ms }),
+      );
+    }, HELD_FLAG_HOLD_MS);
+    await page.reload();
+    await expect(page.locator("body[data-ready]")).toBeVisible();
     await page.evaluate(() => {
       const ms = window.__ms!;
       ms.animations(true);
@@ -97,7 +113,9 @@ test.describe("M6 animations", () => {
         type: "touchStart",
         touchPoints: [{ x: at.x, y: at.y }],
       });
-      await page.waitForTimeout(550); // just past the 450 ms long-press threshold
+      // Just past the hold pinned above, which puts the sample in the drop's
+      // opening hold, where the flag is at its largest.
+      await page.waitForTimeout(HELD_FLAG_HOLD_MS + 100);
       caught = !(await page.screenshot({ clip })).equals(before);
       await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
       await page.waitForTimeout(600); // outlast the drop
