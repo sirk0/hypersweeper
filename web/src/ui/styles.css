@@ -1409,11 +1409,30 @@ body {
   color: var(--muted);
 }
 
+/* The way to the whole list. A row of the same list rather than a fifth
+   button: `.dialog-actions` lays itself out by how many buttons it has (2, 3
+   or 4), and a fifth would break that. */
+.dialog-unlock-link {
+  display: flex;
+}
+
 .dialog-unlock-more {
-  padding: 2px 12px;
+  width: 100%;
+  padding: 6px 12px;
   text-align: left;
+  font: inherit;
   font-size: 12px;
-  color: var(--muted);
+  font-weight: 600;
+  color: var(--accent);
+  background: none;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.dialog-unlock-more:active {
+  background: var(--selected);
 }
 
 /* Three buttons do not fit side by side on a phone — "Play again" breaks across

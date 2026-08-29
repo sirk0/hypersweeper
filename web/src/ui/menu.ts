@@ -428,7 +428,7 @@ export class Menu {
         openSchemes: () => this.showSchemePicker(),
         openBestTimes: () => this.showBestTimes(),
         openSounds: () => this.showSoundPicker(),
-        openAchievements: () => this.showAchievements(),
+        openAchievements: () => this.openAchievements(),
       }),
     );
   }
@@ -463,8 +463,13 @@ export class Menu {
     );
   }
 
-  /** The achievements page — a page below settings, like the best-times one. */
-  private showAchievements(): void {
+  /** The achievements page — a page below settings, like the best-times one.
+   *
+   * Public, unlike its neighbours: the win card links straight to it, so
+   * something outside the menu has to be able to name this page. `go` remembers
+   * it the same way, so coming back from wherever the player goes next lands
+   * here again. */
+  openAchievements(): void {
     this.go(() => this.renderAchievementsPage());
   }
 

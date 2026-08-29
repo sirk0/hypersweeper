@@ -60,6 +60,7 @@ describe("the preset table", () => {
       expect(preset.degrees.length, key).toBeGreaterThanOrEqual(11);
       expect(preset.cascade.maxVoices, key).toBeGreaterThan(1);
       expect(preset.win.notes, key).toBeGreaterThan(1);
+      expect(preset.unlock.notes, key).toBeGreaterThan(1);
     });
   });
 
@@ -299,6 +300,66 @@ describe("flags, mines and wins", () => {
   });
 });
 
+describe("an achievement's figure", () => {
+  it("is as long as the moment was big, up to the preset's ceiling", () => {
+    eachPreset((preset, key) => {
+      // One note per achievement unlocked, and never fewer than two — a lift
+      // needs somewhere to lift from.
+      expect(voicesFor({ kind: "unlock", count: 1 }, preset), key).toHaveLength(2);
+      expect(voicesFor({ kind: "unlock", count: 3 }, preset), key).toHaveLength(4);
+      expect(voicesFor({ kind: "unlock", count: 99 }, preset), key).toHaveLength(
+        preset.unlock.notes,
+      );
+    });
+  });
+
+  it("rises, in order, from the centre of the field", () => {
+    eachPreset((preset, key) => {
+      const voices = voicesFor({ kind: "unlock", count: 3 }, preset);
+      const freqs = voices.map((v) => v.freq);
+      expect(freqs, key).toEqual([...freqs].sort((a, b) => a - b));
+      const delays = voices.map((v) => v.delay);
+      expect(delays, key).toEqual([...delays].sort((a, b) => a - b));
+      // Not on the board, so nowhere in particular across it.
+      for (const v of voices) expect(v.pan, key).toBe(0);
+    });
+  });
+
+  it("is a compact lift where the win is a long sweep", () => {
+    // The two can sound together (under reduced motion the card opens at
+    // once), and they are not told apart by register — the win flourish covers
+    // a wider range than this one. It is the gesture that differs: this starts
+    // at the root and stays in the middle of the field, where the win runs
+    // wider and sweeps across it.
+    eachPreset((preset, key) => {
+      const unlock = voicesFor({ kind: "unlock", count: 99 }, preset);
+      const win = voicesFor({ kind: "win", pan: 0 }, preset);
+      expect(unlock[0]!.freq, key).toBeCloseTo(preset.rootHz, 6);
+      const span = (vs: typeof win): number =>
+        Math.max(...vs.map((v) => v.freq)) / Math.min(...vs.map((v) => v.freq));
+      expect(span(unlock), key).toBeLessThan(span(win));
+      const width = (vs: typeof win): number =>
+        Math.max(...vs.map((v) => v.pan)) - Math.min(...vs.map((v) => v.pan));
+      expect(width(unlock), key).toBe(0);
+      expect(width(win), key).toBeGreaterThan(0.5);
+    });
+  });
+
+  it("plays only members of the preset's own collection", () => {
+    // The one-collection rule: an unlock can land on top of a cascade, a win,
+    // or both, so its pitches have to be grid members like everything else.
+    eachPreset((preset, key) => {
+      for (const v of voicesFor({ kind: "unlock", count: 99 }, preset)) {
+        const semis = Math.log2(v.freq / preset.rootHz) * 12;
+        expect(semis, key).toBeCloseTo(Math.round(semis), 6);
+        const cls = ((Math.round(semis) % 12) + 12) % 12;
+        const members = new Set(preset.grid.map((g) => ((g % 12) + 12) % 12));
+        expect(members.has(cls), `${key} ${v.freq}`).toBe(true);
+      }
+    });
+  });
+});
+
 describe("the two Klein scroll directions are opposites", () => {
   function mirror(v: Voice): Voice {
     return { ...v, freq: v.endFreq!, endFreq: v.freq, pan: v.endPan!, endPan: v.pan };
@@ -337,6 +398,7 @@ describe("every grain is playable", () => {
     { kind: "flag", on: true, sides: 5, pan: 0 },
     { kind: "lose", pan: 0 },
     { kind: "win", pan: 0.4 },
+    { kind: "unlock", count: 6 },
     { kind: "scroll", direction: -1 },
     { kind: "preview" },
   ] as const;

@@ -568,7 +568,7 @@ does not any more.
 
 A win also files with `src/achievements.ts`, which is the record of **where in
 the catalogue a player has been** — and the window is no longer only about
-records, because that is where an unlock is said. There are 51 achievements and
+records, because that is where an unlock is said. There are 50 achievements and
 none of them is typed out: the seven tiling families come from `familyRows` over
 every surface, the five surfaces from `SURFACE_SPECS`, the four solid groups
 from `SOLID_GROUPS`, each with a "win one of these" and a "win all of these", so
@@ -590,9 +590,12 @@ rather than being unreachable. On a device with no record it seeds itself from
 share the record window rather than opening a third modal (the app has two on
 purpose), which is why `rank` there is now `number | null`: a win that beats no
 record but unlocks something still gets a card, where it used to get silence.
-The list lives at Settings › Achievements — see "Achievements" in
-`web/README.md`, including the auto-flagging trap that `GameSession.flagless`
-exists for.
+The card's last row is the link to the whole list, which lives at Settings ›
+Achievements; an unlock also gets a **medium impact** haptic and a voice of its
+own, one note per achievement unlocked, played when the card arrives. See
+"Achievements" in `web/README.md`, including the auto-flagging trap that
+`GameSession.flagless` exists for, and why the unlock figure is told apart from
+the win flourish by its gesture rather than by its register.
 
 The game screen instead names the board **behind** it — its own fixed layer
 inserted before the transparent canvas (`src/ui/boardInfo.ts`), so the name

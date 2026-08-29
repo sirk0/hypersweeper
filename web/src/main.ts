@@ -12,6 +12,7 @@ import {
 } from "./achievements";
 import { setAnalyticsEnabled, trackGame } from "./analytics";
 import {
+  playSound,
   setSoundPreset,
   setSoundVolume,
   soundChoice,
@@ -21,7 +22,7 @@ import {
 import { isBoard3D, type CellId, type SymmetryId } from "./boards/core";
 import { fairnessOf } from "./boards/fairness";
 import { randomMode } from "./boards/randomBoard";
-import { setHapticsEnabled } from "./haptics";
+import { haptic, setHapticsEnabled } from "./haptics";
 import { boardLinkQuery, parseBoardLink } from "./link";
 import { GameSession } from "./session";
 import { shareBoard } from "./share";
@@ -465,6 +466,12 @@ class App {
     this.onResize();
   }
 
+  /** Home, then straight to the achievements page — the win card's link. */
+  private showAchievements(): void {
+    this.showMenu();
+    this.menu.openAchievements();
+  }
+
   /** Lay the app out in the viewport the user can actually see. iOS Safari's
    * `100vh` is the *large* viewport — the toolbars retracted — so a full-height
    * fixed layer extends underneath the bottom toolbar: the canvas is taller
@@ -803,6 +810,15 @@ class App {
     entries: ScoreEntry[],
   ): void {
     this.dismissDialogs();
+    // Said as the card arrives rather than when the win is counted: at the
+    // moment of counting, the win's own sound and buzz are playing, and this is
+    // the card's voice. With animations on, the win figure has finished by the
+    // time the card opens; with them off the two land together, which the
+    // collection they share makes consonant (audio/sound.ts).
+    if (this.unlocked.length > 0) {
+      haptic("unlock");
+      playSound({ kind: "unlock", count: this.unlocked.length });
+    }
     this.scoreDialog = openScoreDialog(this.ui, {
       mode: session.mode,
       difficulty: session.difficulty,
@@ -815,6 +831,10 @@ class App {
       // board is finished rather than from the row over one being played.
       onNewBoard: () => this.startRandomBoard(),
       onMenu: () => this.showMenu(),
+      // The card is where a player is thinking about achievements, so it is
+      // where the way to the whole list belongs. Leaving the board is the same
+      // move Menu makes — the card is about a board that is finished.
+      onShowAll: () => this.showAchievements(),
       // The win's time goes with the link — the card is about the time, so the
       // message someone receives should say it too. A board with no seed (the
       // test seam) has no link, and gets no button.

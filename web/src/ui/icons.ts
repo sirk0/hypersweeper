@@ -928,9 +928,9 @@ const ICON_TONES: Record<string, ShapeTone> = {
 /** A symbol on the icon set's plain disc, so a badge with no tiling in it still
  * fills the same box a tiling patch does. */
 function badge(path: string): string[] {
-  // even-odd: every one of these symbols has a hole in it somewhere -- the
-  // timer's face, the warning triangle's bar and dot -- and a hole is a
-  // subpath, not a second colour.
+  // even-odd: these symbols have holes in them -- the warning triangle's bar
+  // and dot, the trophy's handles -- and a hole is a subpath, not a second
+  // colour.
   return [
     circle(C, C, D * 0.42, null, 0, LIGHT),
     `<path d="${path}" fill="${PLAIN.dark}" fill-rule="evenodd"/>`,
@@ -1002,20 +1002,6 @@ function flagPath(d: number): string {
   );
 }
 
-function timerPath(d: number): string {
-  // A clock face with a hand: the ring is drawn as two arcs so one path can
-  // carry both it and the hand.
-  const r = d * 0.22;
-  return (
-    `M ${n(C)} ${n(C - r)} a ${n(r)} ${n(r)} 0 1 1 ${n(-0.01)} 0 Z ` +
-    `M ${n(C)} ${n(C - r * 0.78)} a ${n(r * 0.78)} ${n(r * 0.78)} 0 1 0 ${n(0.01)} 0 Z ` +
-    `M ${n(C - d * 0.02)} ${n(C - r * 0.6)} h ${n(d * 0.04)} v ${n(r * 0.62)} ` +
-    `h ${n(r * 0.5)} v ${n(d * 0.04)} h ${n(-r * 0.5 - d * 0.04)} Z ` +
-    `M ${n(C - d * 0.08)} ${n(d * 0.2)} h ${n(d * 0.16)} v ${n(d * 0.05)} ` +
-    `h ${n(-d * 0.16)} Z`
-  );
-}
-
 function warningPath(d: number): string {
   // A triangle with a bar and a dot -- the same sign the menu marks a graded
   // board's row with.
@@ -1061,7 +1047,6 @@ function draw(rawKey: string): string[] {
   if (key === "star") return badge(starPath(d));
   if (key === "trophy") return badge(trophyPath(d));
   if (key === "flag") return badge(flagPath(d));
-  if (key === "timer") return badge(timerPath(d));
   if (key === "warning") return badge(warningPath(d));
 
   // Every uniform and dual-uniform tiling draws a real patch of itself, and so

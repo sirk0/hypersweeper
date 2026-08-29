@@ -226,13 +226,6 @@ describe("folding a win in", () => {
     expect([...wonModes(progress)]).toEqual(["square"]);
   });
 
-  it("keeps only the fastest time at each difficulty", () => {
-    let progress = applyWin(emptyProgress(), win("square", { ms: 40_000 }));
-    progress = applyWin(progress, win("square", { ms: 12_000 }));
-    progress = applyWin(progress, win("square", { ms: 90_000 }));
-    expect(progress.fastest["easy"]).toBe(12_000);
-  });
-
   it("never un-earns an achievement as more wins come in", () => {
     let progress = emptyProgress();
     let held = new Set<string>();
@@ -250,10 +243,6 @@ describe("folding a win in", () => {
   it("earns the milestones off the record alone", () => {
     const flagless = applyWin(emptyProgress(), win("square", { flagless: true }));
     expect(earned(flagless)).toContain("flagless");
-    const quick = applyWin(emptyProgress(), win("square", { difficulty: "hard", ms: 60_000 }));
-    expect(earned(quick)).toContain("speed");
-    const slow = applyWin(emptyProgress(), win("square", { difficulty: "hard", ms: 200_000 }));
-    expect(earned(slow)).not.toContain("speed");
     // rhombille is `warn` at easy in data/difficulty.json.
     const graded = applyWin(emptyProgress(), win("rhombille", { difficulty: "easy" }));
     expect(earned(graded)).toContain("unfair");
@@ -326,7 +315,6 @@ describe("the stored record", () => {
     // Those wins did happen, so the feature does not meet an old player at zero.
     const progress = loadProgress();
     expect([...wonModes(progress)].sort()).toEqual(["hex", "square"]);
-    expect(progress.fastest["easy"]).toBe(9_000);
     // It cannot know about flags or shapes, and claims neither.
     expect(progress.flagless).toBe(0);
     expect(progress.shapes).toEqual([]);

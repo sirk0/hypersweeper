@@ -2170,7 +2170,7 @@ A win used to leave no trace unless the clock beat a record. The catalogue is
 and nothing in the game said so. `src/achievements.ts` is the record of where a
 player has been, and the list of where they have not.
 
-- **The list is derived.** 51 achievements, and none of them typed out: the
+- **The list is derived.** 50 achievements, and none of them typed out: the
   families come from `familyRows` over every surface, the surfaces from
   `SURFACE_SPECS`, the solid groups from `SOLID_GROUPS`, the difficulties from
   `data/ui/screens.json`. A tiling added tomorrow joins its family's two
@@ -2207,6 +2207,10 @@ player has been, and the list of where they have not.
   at record creation. It cannot recover flags or shapes and claims neither.
 - **A win counts a board at any one difficulty.** The completion sets are 174
   boards; asking for all three each would make that 522.
+- **No speed milestone.** There was one — a hard board inside two minutes — and
+  it was the only number in the feature somebody picked rather than derived.
+  Best times already record speed properly, per board and per difficulty, so it
+  was dropped rather than rationalised, and `Progress.fastest` went with it.
 - **One trap in the win payload.** `Game.reveal` auto-flags every remaining mine
   on a win, so the flags on the board at the moment the achievements are counted
   say nothing about how the game was played. `GameSession.flagless` counts the
@@ -2223,11 +2227,53 @@ something was unlocked, and `rank` is `number | null`: with no rank the title
 becomes "Achievement unlocked" and the list of times is left out. The
 `data-buttons` layout contract is untouched — no button was added.
 
-At most `MAX_UNLOCKS_SHOWN` (4) are listed, with "and N more" under them. A
-first win earns six at once — first board, first difficulty, its shape, its
-family, its surface, and the flagless one, because a first click that floods the
-field plants no flag — and six rows push "Play again" off a phone's screen. The
-card scrolls, but a primary action that has scrolled away is not an answer.
+At most `MAX_UNLOCKS_SHOWN` (4) are listed. A first win earns six at once —
+first board, first difficulty, its shape, its family, its surface, and the
+flagless one, because a first click that floods the field plants no flag — and
+six rows push "Play again" off a phone's screen. The card scrolls, but a primary
+action that has scrolled away is not an answer.
+
+The list's **last row is always a link to the whole page**, saying "and N more"
+when it truncated and "All achievements" when it did not. Always, because most
+wins unlock one or two things and a link that only appeared past four would
+almost never be there — and the card is where a player is thinking about
+achievements, where Settings is somewhere they have to decide to go. It is a row
+of the list rather than a fifth button: `.dialog-actions` lays itself out by how
+many buttons it has, and a fifth would break that contract. It goes through
+`Menu.openAchievements` (public for exactly this) and `App.showAchievements`,
+and it is in the modal's `focusRing` so Tab reaches it.
+
+### An unlock buzzes and speaks
+
+Both channels, because the card alone is the easiest thing in the app to miss on
+a phone.
+
+The **haptic** is a new `HapticKind`: a *medium impact* natively — one firmer
+tap, where a flag is a light one — and a short rising triple on the web. Not a
+second `Success` notification, because it lands beside the win's own and the two
+have to be distinguishable through a fingertip. `nativeHaptic`'s ternary chain
+became a small table when the fourth kind arrived.
+
+The **sound** is a new `SoundEvent`, and a preset block of exactly the same
+shape as `win`, so `voicesFor`'s new case is the win flourish's code path with
+different knobs rather than a second engine. Two things about it:
+
+- **It is derived from the move, like everything else here.** The figure is one
+  note per achievement unlocked, `clamp(count + 1, 2, preset.unlock.notes)`, so
+  a single unlock is a two-note lift and a first win's six runs to the ceiling.
+- **What separates it from the win flourish is the gesture, not the register.**
+  The win is long and sweeps the whole stereo field, climbing from an octave
+  below the root to a third above it; this is a short lift from the root,
+  centred, with no sweep. (An earlier draft claimed the two sat in different
+  registers. They do not — the win's range is the wider of the two.) They can
+  sound *together*: with animations on the win figure has finished by the time
+  the card opens, but under reduced motion the card opens at once. What makes
+  that safe is the one-collection rule — both are grid degrees, so they are
+  consonant however they land.
+
+It is played from `App.showScoreDialog`, when the card arrives, not from
+`countWin`: at the moment of counting, the win's own sound and buzz are playing,
+and this is the card's voice.
 
 The list itself lives at **Settings › Achievements** (`src/ui/achievements.ts`),
 one more `Menu` page built like the best-times one, ordered by `ACHIEVEMENTS`
@@ -2243,11 +2289,12 @@ is about, drawn by `shape(ngon(...))` and so painted by the board palette's own
 rule for that side count — the hexagon badge is the green a hexagonal board is
 drawn in, and the two match with no table between them. A family, surface or
 solid-group badge reuses that group's own menu icon key, which already draws a
-patch of the real tiling or a mesh of the real immersion. What is left is four
+patch of the real tiling or a mesh of the real immersion. What is left is the
 hand-drawn symbols on the icon set's plain disc (`badge()` in `src/ui/icons.ts`:
-star, trophy, flag, timer, warning, and a three-bar difficulty ladder) — there
-is no geometry in "win ten boards". They are drawn `fill-rule="evenodd"`,
-because every one of them has a hole in it somewhere.
+star, trophy, flag, warning, and a three-bar difficulty ladder that fills one
+bar per rung, drawing all three so a lone bar is not left saying nothing) —
+there is no geometry in "win ten boards". They are drawn `fill-rule="evenodd"`,
+because they have holes in them.
 
 
 ## Analytics

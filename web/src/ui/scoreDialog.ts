@@ -43,6 +43,10 @@ export interface ScoreDialogOptions {
   entries: ScoreEntry[];
   /** What this win just unlocked, in list order. May be empty. */
   unlocked?: readonly Achievement[] | undefined;
+  /** Go to the full achievements list. The unlock list's last row is this,
+   * which is the only way to that page from a finished board — Settings is a
+   * long way round from the card that just said you unlocked something. */
+  onShowAll?: (() => void) | undefined;
   /** Whether the open transition runs (the app's animations preference). */
   animate: boolean;
   onPlayAgain(): void;
@@ -114,8 +118,17 @@ function scoreList(entries: ScoreEntry[], rank: number): HTMLElement {
 const MAX_UNLOCKS_SHOWN = 4;
 
 /** What the win just unlocked: one row each, icon, name and the line saying
- * what it was for. */
-function unlockList(unlocked: readonly Achievement[]): HTMLElement {
+ * what it was for, and then the way to the rest.
+ *
+ * That last row is there whether or not the list was truncated. Most wins
+ * unlock one or two things, so a link that only appeared past four would
+ * almost never be there — and the point of it is that the card is where a
+ * player is thinking about achievements, not the settings page. It says the
+ * count when there is one to say and names the page otherwise. */
+function unlockList(
+  unlocked: readonly Achievement[],
+  onShowAll?: (() => void) | undefined,
+): { list: HTMLElement; link: HTMLButtonElement | null } {
   const list = el("ul", "dialog-unlocks");
   for (const achievement of unlocked.slice(0, MAX_UNLOCKS_SHOWN)) {
     const row = el("li", "dialog-unlock");
@@ -131,12 +144,21 @@ function unlockList(unlocked: readonly Achievement[]): HTMLElement {
     list.append(row);
   }
   const rest = unlocked.length - MAX_UNLOCKS_SHOWN;
-  if (rest > 0) {
-    const more = el("li", "dialog-unlock-more", `and ${rest} more`);
-    more.dataset["more"] = String(rest);
-    list.append(more);
+  // Without somewhere to send them, a truncated list still has to say it left
+  // something out — it just says it as text rather than as a way there.
+  if (!onShowAll) {
+    if (rest > 0) list.append(el("li", "dialog-unlock-more", `and ${rest} more`));
+    return { list, link: null };
   }
-  return list;
+  const row = el("li", "dialog-unlock-link");
+  const label = rest > 0 ? `and ${rest} more` : "All achievements";
+  const link = el("button", "dialog-unlock-more", label);
+  link.dataset["action"] = "show-achievements";
+  if (rest > 0) link.dataset["more"] = String(rest);
+  link.addEventListener("click", onShowAll);
+  row.append(link);
+  list.append(row);
+  return { list, link };
 }
 
 /** Build the dialog and add it to `host`. The caller keeps the handle and
@@ -243,11 +265,14 @@ export function openScoreDialog(
     el("p", "dialog-subtitle", `${label} · ${difficultyLabel}`),
   );
   if (opts.rank !== null) dialog.append(scoreList(opts.entries, opts.rank));
+  let showAll: HTMLButtonElement | null = null;
   if (unlocked.length > 0) {
     // Under the times when there are both: the card is opened by the record,
     // and the unlock is the thing the player did not know was coming.
     if (opts.rank !== null) dialog.append(el("p", "dialog-unlocks-heading", "Unlocked"));
-    dialog.append(unlockList(unlocked));
+    const built = unlockList(unlocked, opts.onShowAll);
+    showAll = built.link;
+    dialog.append(built.list);
   }
   dialog.append(actions);
 
@@ -255,7 +280,9 @@ export function openScoreDialog(
     name: "score",
     labelledBy: title.id,
     animate: opts.animate,
-    focusRing: () => [dismiss, ...buttons],
+    // The link into the achievements page is a control like any other, so Tab
+    // has to reach it; it sits above the actions, which is where it is drawn.
+    focusRing: () => (showAll ? [dismiss, showAll, ...buttons] : [dismiss, ...buttons]),
     initialFocus: () => again,
     onClose: opts.onClose,
   });

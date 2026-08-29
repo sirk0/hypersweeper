@@ -78,8 +78,8 @@ test.describe("achievements", () => {
       await expect(page.locator(`.dialog-unlock[data-achievement="${id}"]`)).toBeVisible();
     }
     // ...and the rest are counted rather than listed, so "Play again" stays on
-    // a phone's screen.
-    await expect(page.locator(".dialog-unlock-more")).toHaveText("and 2 more");
+    // a phone's screen. That count is the link to the whole list.
+    await expect(page.locator('[data-action="show-achievements"]')).toHaveText("and 2 more");
     for (const id of ["tiling:regular", "surface:flat"]) {
       await expect(page.locator(`.dialog-unlock[data-achievement="${id}"]`)).toHaveCount(0);
       // Unlocked all the same — the card is a summary, not the record.
@@ -130,6 +130,30 @@ test.describe("achievements", () => {
     await winFixtureBoard(page);
 
     await expect(dialog(page)).toHaveCount(0);
+  });
+
+  test("the card's last row is the way to the whole list", async ({ page }) => {
+    // Reached from the card rather than from Settings: the card is where a
+    // player is thinking about achievements. Seeded so the win unlocks exactly
+    // one thing, which is the case where the row names the page instead of
+    // counting what it left out.
+    // A hexagonal board already won: that is the plane, the Regular family, an
+    // easy win, a flagless one and six-sided tiles. All of it is stamped when
+    // the record is read, so the square board below unlocks exactly one thing —
+    // its four-sided tiles — and the row names the page rather than a count.
+    await seedAchievements(page, { wins: { hex: { easy: 1 } }, shapes: [6], flagless: 1 });
+    await page.goto("/");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    await winFixtureBoard(page);
+
+    const link = page.locator('[data-action="show-achievements"]');
+    await expect(link).toHaveText("All achievements");
+    await link.click();
+
+    // The card is gone, the board is gone, and the page is the one it named.
+    await expect(dialog(page)).toHaveCount(0);
+    expect(await page.evaluate(() => window.__ms?.state().screen)).toBe("menu");
+    await expect(page.locator('.achievement-row[data-achievement="first-win"]')).toBeVisible();
   });
 
   test("the page lists what is unlocked and what is left", async ({ page }) => {

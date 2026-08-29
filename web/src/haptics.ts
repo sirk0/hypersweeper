@@ -31,16 +31,28 @@ import { Haptics, ImpactStyle, NotificationType } from "@capacitor/haptics";
 // native branch never fetches it.
 //
 // This is the single seam for haptics, as `sound.ts` is for the game's voice:
-// the call sites (session.ts) name events, never patterns.
+// the call sites (session.ts for the moves, main.ts for an achievement) name
+// events, never patterns.
 
-export type HapticKind = "flag" | "lose" | "win";
+export type HapticKind = "flag" | "lose" | "win" | "unlock";
 
 // Vibration patterns (ms). A single short pulse for a flag; a heavier
-// buzz-buzz-BUZZ for a loss; a lighter, rising flourish for a win.
+// buzz-buzz-BUZZ for a loss; a lighter, rising flourish for a win; and a short
+// rising triple for an achievement, which lands *beside* the win's flourish and
+// has to be distinguishable from it rather than merely different.
 const PATTERNS: Record<HapticKind, number | number[]> = {
   flag: 15,
   lose: [40, 30, 40, 30, 80],
   win: [20, 40, 20, 40, 60],
+  unlock: [15, 30, 45],
+};
+
+/** The kinds the Taptic Engine answers with a single tap rather than one of its
+ * notification patterns, and how firm each is. Everything not here is a
+ * notification (see `nativeHaptic`). */
+const IMPACTS: Partial<Record<HapticKind, ImpactStyle>> = {
+  flag: ImpactStyle.Light,
+  unlock: ImpactStyle.Medium,
 };
 
 /** Whether the player wants any of this (Settings › Haptics). Read on every
@@ -101,16 +113,21 @@ export function hapticsSupported(): boolean {
   return isNative() || (canVibrate() && isMobileBrowser());
 }
 
-/** The Taptic Engine, through the native bridge. A flag is a light impact; the
- * two endings are the system's own notification patterns — `Error` is the sharp
- * double buzz iOS plays to say *that went wrong*, which is what stepping on a
- * mine is. Fire and forget: feedback that fails (Low Power Mode, an older
- * device, a simulator with no engine at all) must never break the move that
- * asked for it. */
+/** The Taptic Engine, through the native bridge. The two *impacts* are single
+ * taps — a flag light, an unlock firmer, since an unlock is the bigger of the
+ * two events and arrives alongside the win's own buzz. The two endings are the
+ * system's own notification patterns: `Error` is the sharp double buzz iOS
+ * plays to say *that went wrong*, which is what stepping on a mine is.
+ *
+ * A table rather than a chain of ternaries — with four kinds and two APIs the
+ * chain stopped saying which was which. Fire and forget: feedback that fails
+ * (Low Power Mode, an older device, a simulator with no engine at all) must
+ * never break the move that asked for it. */
 function nativeHaptic(kind: HapticKind): void {
+  const style = IMPACTS[kind];
   const call =
-    kind === "flag"
-      ? Haptics.impact({ style: ImpactStyle.Light })
+    style !== undefined
+      ? Haptics.impact({ style })
       : Haptics.notification({
           type: kind === "lose" ? NotificationType.Error : NotificationType.Success,
         });

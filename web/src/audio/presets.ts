@@ -143,6 +143,21 @@ export interface SoundPreset {
    * against a stagger of `step` ms) and so sound as a chord — stacking a
    * constant interval instead spelled an augmented triad. */
   win: Envelope & { notes: number; step: number; interval: number };
+  /** An achievement unlocked: the same shape as `win`, and the same code path
+   * with different knobs.
+   *
+   * What tells the two apart is the *gesture*, not the pitch. The win flourish
+   * is long and sweeps the whole stereo field, climbing from an octave below
+   * the root to a third above it; this is a short lift from the root, centred,
+   * with no sweep at all — an unlock belongs to the card, not to a place on the
+   * board. Their ranges do overlap, and under reduced motion (where the card
+   * opens at once rather than after the win animation) so do their times; what
+   * makes that safe is the one-collection rule, since both are grid degrees.
+   *
+   * `notes` is a ceiling rather than a count: the figure is one note per
+   * achievement unlocked, so a single one is a two-note lift and a first win's
+   * six is the full run. */
+  unlock: Envelope & { notes: number; step: number; interval: number };
   /** One step of the Klein bottle's ring scroll: a glide, mirrored between the
    * two directions (see `voicesFor`). */
   scroll: Envelope & {
@@ -218,6 +233,7 @@ const CHIME: SoundPreset = {
     drop: { attack: 0.006, duration: 0.85, gain: 0.45, fromHz: 220, toHz: 55 },
   },
   win: { attack: 0.006, duration: 0.5, gain: 0.4, notes: 5, step: 110, interval: 2 },
+  unlock: { attack: 0.004, duration: 0.62, gain: 0.34, notes: 4, step: 95, interval: 2 },
   scroll: {
     attack: 0.005,
     duration: 0.26,
@@ -252,6 +268,7 @@ const ARCADE: SoundPreset = {
     drop: { attack: 0.002, duration: 0.6, gain: 0.34, fromHz: 300, toHz: 45 },
   },
   win: { attack: 0.002, duration: 0.22, gain: 0.32, notes: 6, step: 80, interval: 2 },
+  unlock: { attack: 0.001, duration: 0.16, gain: 0.3, notes: 4, step: 55, interval: 2 },
   scroll: {
     attack: 0.002,
     duration: 0.2,
@@ -287,6 +304,7 @@ const BLOCKS: SoundPreset = {
     drop: { attack: 0.004, duration: 0.7, gain: 0.4, fromHz: 150, toHz: 40 },
   },
   win: { attack: 0.003, duration: 0.18, gain: 0.42, notes: 5, step: 95, interval: 2 },
+  unlock: { attack: 0.002, duration: 0.24, gain: 0.38, notes: 4, step: 80, interval: 2 },
   scroll: {
     attack: 0.002,
     duration: 0.22,

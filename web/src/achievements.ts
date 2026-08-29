@@ -54,14 +54,6 @@ export const SCHEMA_VERSION = 1;
 /** Total wins at which each milestone tier lands. */
 const WIN_TIERS = [10, 50, 250];
 
-/** A hard board inside two minutes. The threshold is a choice rather than a
- * measurement, but a comparable one across the catalogue: every board's hard
- * size tracks the classic 30x16 board to within 15% (see "Size and mine-count
- * convention" in CLAUDE.md), so two minutes means about the same thing on a
- * donut as on a grid. */
-const SPEED_MS = 120_000;
-const SPEED_DIFFICULTY = "hard";
-
 /** The distinct tile side counts anywhere in the catalogue.
  *
  * Declared rather than derived: answering it honestly means building all 179
@@ -76,8 +68,6 @@ export interface Progress {
   wins: Record<string, Record<string, number>>;
   /** Wins in which the player never placed a flag. */
   flagless: number;
-  /** The fastest win at each difficulty, in ms. */
-  fastest: Record<string, number>;
   /** Distinct tile side counts of boards won on. Stored rather than derived:
    * recovering it from `wins` means building those boards. */
   shapes: number[];
@@ -96,7 +86,7 @@ export interface Win {
 }
 
 export function emptyProgress(): Progress {
-  return { wins: {}, flagless: 0, fastest: {}, shapes: [] };
+  return { wins: {}, flagless: 0, shapes: [] };
 }
 
 // -- the catalogue of achievements -----------------------------------------
@@ -294,17 +284,6 @@ function milestones(): Achievement[] {
       measure: (p) => yesNo(p.flagless > 0),
     },
     {
-      id: "speed",
-      label: "Two minutes flat",
-      hint: `Win a ${SPEED_DIFFICULTY} board in under ${SPEED_MS / 60_000} minutes`,
-      icon: "timer",
-      group: "milestone",
-      measure: (p) => {
-        const best = p.fastest[SPEED_DIFFICULTY];
-        return yesNo(best !== undefined && best < SPEED_MS);
-      },
-    },
-    {
       id: "unfair",
       label: "Against the odds",
       hint: "Win a board marked as harder than its difficulty promises",
@@ -401,20 +380,12 @@ export function applyWin(p: Progress, win: Win): Progress {
   const byDifficulty = { ...(p.wins[win.mode] ?? {}) };
   byDifficulty[win.difficulty] = (byDifficulty[win.difficulty] ?? 0) + 1;
 
-  const fastest = { ...p.fastest };
-  const ms = Math.floor(win.ms);
-  if (Number.isFinite(ms) && ms >= 0) {
-    const best = fastest[win.difficulty];
-    if (best === undefined || ms < best) fastest[win.difficulty] = ms;
-  }
-
   const shapes = new Set(p.shapes);
   for (const sides of win.sides) if (Number.isInteger(sides) && sides >= 3) shapes.add(sides);
 
   return {
     wins: { ...p.wins, [win.mode]: byDifficulty },
     flagless: p.flagless + (win.flagless ? 1 : 0),
-    fastest,
     shapes: [...shapes].sort((a, b) => a - b),
   };
 }
@@ -486,7 +457,6 @@ function readStored(): Stored | null {
       flagless: typeof count === "number" && Number.isFinite(count) && count > 0
         ? Math.floor(count)
         : 0,
-      fastest: parseCounts(rec["fastest"]),
       shapes: parseNumbers(rec["shapes"]),
     },
     unlocked: parseCounts(rec["unlocked"]),
