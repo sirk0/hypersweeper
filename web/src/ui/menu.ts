@@ -17,7 +17,9 @@ import {
 } from "../boards/fairness";
 import { randomMode, randomPool, type RandomKind } from "../boards/randomBoard";
 import { hasMode } from "../boards/presets";
+import { clearAchievements } from "../achievements";
 import { clearBestTimes } from "../leaderboard";
+import { renderAchievements } from "./achievements";
 import { renderBestTimes } from "./bestTimes";
 import { HELP_ICON, renderHelp } from "./help";
 import { menuIcon } from "./icons";
@@ -421,13 +423,13 @@ export class Menu {
     this.root.classList.add("settings-open");
     this.body.replaceChildren(
       this.backRow("Settings", () => this.showRoot()),
-      renderSettings(
-        host,
-        () => this.showThemePicker(),
-        () => this.showSchemePicker(),
-        () => this.showBestTimes(),
-        () => this.showSoundPicker(),
-      ),
+      renderSettings(host, {
+        openThemes: () => this.showThemePicker(),
+        openSchemes: () => this.showSchemePicker(),
+        openBestTimes: () => this.showBestTimes(),
+        openSounds: () => this.showSoundPicker(),
+        openAchievements: () => this.showAchievements(),
+      }),
     );
   }
 
@@ -457,6 +459,22 @@ export class Menu {
       renderBestTimes(() => {
         clearBestTimes();
         this.renderBestTimesPage(); // now the empty state
+      }),
+    );
+  }
+
+  /** The achievements page — a page below settings, like the best-times one. */
+  private showAchievements(): void {
+    this.go(() => this.renderAchievementsPage());
+  }
+
+  private renderAchievementsPage(): void {
+    this.root.classList.add("settings-open");
+    this.body.replaceChildren(
+      this.backRow("Achievements", () => this.showSettings()),
+      renderAchievements(() => {
+        clearAchievements();
+        this.renderAchievementsPage(); // now everything locked again
       }),
     );
   }

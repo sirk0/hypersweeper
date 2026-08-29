@@ -919,12 +919,150 @@ const ICON_TONES: Record<string, ShapeTone> = {
   truncicosidodeca: { sides: 4, regularity: 1 }, // squares are the majority face
 };
 
+// -- achievement badges ----------------------------------------------------
+//
+// Four symbols, in the icon set's plain indigo rather than a shape colour:
+// they stand for a milestone rather than for a tile, and painting them in a
+// tile hue would claim a shape they are not about.
+
+/** A symbol on the icon set's plain disc, so a badge with no tiling in it still
+ * fills the same box a tiling patch does. */
+function badge(path: string): string[] {
+  // even-odd: every one of these symbols has a hole in it somewhere -- the
+  // timer's face, the warning triangle's bar and dot -- and a hole is a
+  // subpath, not a second colour.
+  return [
+    circle(C, C, D * 0.42, null, 0, LIGHT),
+    `<path d="${path}" fill="${PLAIN.dark}" fill-rule="evenodd"/>`,
+  ];
+}
+
+function starPath(d: number): string {
+  // A five-pointed star: alternate points on two circles.
+  const outer = d * 0.28;
+  const inner = outer * 0.42;
+  const pts: string[] = [];
+  for (let i = 0; i < 10; i++) {
+    const r = i % 2 === 0 ? outer : inner;
+    const a = (-90 + i * 36) * (Math.PI / 180);
+    pts.push(`${n(C + r * Math.cos(a))} ${n(C + r * Math.sin(a))}`);
+  }
+  return `M ${pts.join(" L ")} Z`;
+}
+
+/** The difficulty ladder: three bars rising left to right, `filled` of them
+ * solid. All three are always drawn — one lonely bar says nothing about which
+ * rung of what, where a filled bar against two empty ones does. */
+function barsRects(d: number, filled: number, total: number): string[] {
+  const width = d * 0.14;
+  const gap = d * 0.06;
+  const left = C - (total * width + (total - 1) * gap) / 2;
+  const foot = d * 0.72;
+  const rects: string[] = [];
+  for (let i = 0; i < total; i++) {
+    const h = d * 0.18 + i * d * 0.13;
+    const x = left + i * (width + gap);
+    const on = i < filled;
+    rects.push(
+      `<rect x="${n(x)}" y="${n(foot - h)}" width="${n(width)}" height="${n(h)}" rx="${n(
+        d * 0.02,
+      )}" fill="${on ? PLAIN.dark : "none"}" stroke="${PLAIN.dark}" stroke-width="${n(
+        sw(3),
+      )}" stroke-opacity="${on ? 1 : 0.45}"/>`,
+    );
+  }
+  return rects;
+}
+
+function trophyPath(d: number): string {
+  // A cup with two handles, a stem and a foot.
+  const l = d * 0.36;
+  const r = d * 0.64;
+  return (
+    `M ${n(l)} ${n(d * 0.28)} H ${n(r)} V ${n(d * 0.42)} ` +
+    `A ${n(d * 0.14)} ${n(d * 0.14)} 0 0 1 ${n(l)} ${n(d * 0.42)} Z ` +
+    `M ${n(d * 0.47)} ${n(d * 0.55)} h ${n(d * 0.06)} v ${n(d * 0.11)} h ${n(d * 0.09)} ` +
+    `v ${n(d * 0.06)} h ${n(-d * 0.24)} v ${n(-d * 0.06)} h ${n(d * 0.09)} Z ` +
+    `M ${n(l)} ${n(d * 0.29)} h ${n(-d * 0.09)} v ${n(d * 0.1)} ` +
+    `a ${n(d * 0.09)} ${n(d * 0.09)} 0 0 0 ${n(d * 0.09)} ${n(d * 0.09)} z ` +
+    `M ${n(r)} ${n(d * 0.29)} h ${n(d * 0.09)} v ${n(d * 0.1)} ` +
+    `a ${n(d * 0.09)} ${n(d * 0.09)} 0 0 1 ${n(-d * 0.09)} ${n(d * 0.09)} z`
+  );
+}
+
+function flagPath(d: number): string {
+  // The board's own flag: a pennant on a pole over a foot.
+  return (
+    `M ${n(d * 0.42)} ${n(d * 0.26)} v ${n(d * 0.48)} h ${n(d * 0.05)} ` +
+    `v ${n(-d * 0.48)} Z ` +
+    `M ${n(d * 0.47)} ${n(d * 0.27)} L ${n(d * 0.71)} ${n(d * 0.38)} ` +
+    `L ${n(d * 0.47)} ${n(d * 0.49)} Z ` +
+    `M ${n(d * 0.33)} ${n(d * 0.72)} h ${n(d * 0.24)} v ${n(d * 0.05)} ` +
+    `h ${n(-d * 0.24)} Z`
+  );
+}
+
+function timerPath(d: number): string {
+  // A clock face with a hand: the ring is drawn as two arcs so one path can
+  // carry both it and the hand.
+  const r = d * 0.22;
+  return (
+    `M ${n(C)} ${n(C - r)} a ${n(r)} ${n(r)} 0 1 1 ${n(-0.01)} 0 Z ` +
+    `M ${n(C)} ${n(C - r * 0.78)} a ${n(r * 0.78)} ${n(r * 0.78)} 0 1 0 ${n(0.01)} 0 Z ` +
+    `M ${n(C - d * 0.02)} ${n(C - r * 0.6)} h ${n(d * 0.04)} v ${n(r * 0.62)} ` +
+    `h ${n(r * 0.5)} v ${n(d * 0.04)} h ${n(-r * 0.5 - d * 0.04)} Z ` +
+    `M ${n(C - d * 0.08)} ${n(d * 0.2)} h ${n(d * 0.16)} v ${n(d * 0.05)} ` +
+    `h ${n(-d * 0.16)} Z`
+  );
+}
+
+function warningPath(d: number): string {
+  // A triangle with a bar and a dot -- the same sign the menu marks a graded
+  // board's row with.
+  return (
+    `M ${n(C)} ${n(d * 0.24)} L ${n(d * 0.78)} ${n(d * 0.72)} ` +
+    `H ${n(d * 0.22)} Z ` +
+    `M ${n(C - d * 0.035)} ${n(d * 0.4)} h ${n(d * 0.07)} v ${n(d * 0.16)} ` +
+    `h ${n(-d * 0.07)} Z ` +
+    `M ${n(C - d * 0.035)} ${n(d * 0.6)} h ${n(d * 0.07)} v ${n(d * 0.07)} ` +
+    `h ${n(-d * 0.07)} Z`
+  );
+}
+
 function draw(rawKey: string): string[] {
   const key = ALIASES[rawKey] ?? rawKey;
   const d = D;
   const parts: string[] = [];
   // The cell shape this icon stands for, where its art does not draw one.
   const cell: ShapeTone | undefined = ICON_TONES[key];
+
+  // The achievement badges (ui/achievements.ts). A shape badge is the regular
+  // polygon it is about, painted by the board palette's own rule for that side
+  // count -- so the hexagon badge is the green a hexagonal board is drawn in,
+  // and the badge and the board it stands for match without a table. The rest
+  // are symbols: there is no geometry in "win ten boards".
+  if (key.startsWith("ngon:")) {
+    const sides = Number(key.slice(5));
+    if (Number.isInteger(sides) && sides >= 3) {
+      // Point-up for a triangle, flat-bottomed for everything else -- a
+      // pentagon standing on a vertex reads as a fallen kite at icon size.
+      const rotation = sides === 3 ? -90 : sides % 2 === 0 ? 180 / sides : -90;
+      // `shape` measures the polygon it is given, so a regular n-gon picks up
+      // the palette's hue for n with nothing passed in.
+      return [shape(ngon(C, C, d * 0.4, sides, rotation))];
+    }
+  }
+  if (key.startsWith("bars:")) {
+    const filled = Number(key.slice(5));
+    if (Number.isInteger(filled) && filled >= 1) {
+      return [circle(C, C, D * 0.42, null, 0, LIGHT), ...barsRects(d, filled, 3)];
+    }
+  }
+  if (key === "star") return badge(starPath(d));
+  if (key === "trophy") return badge(trophyPath(d));
+  if (key === "flag") return badge(flagPath(d));
+  if (key === "timer") return badge(timerPath(d));
+  if (key === "warning") return badge(warningPath(d));
 
   // Every uniform and dual-uniform tiling draws a real patch of itself, and so
   // do the two family rows: a 3.4.6.4 rosette (a triangle, a square and a

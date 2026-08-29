@@ -72,6 +72,15 @@ export interface MsHook {
   /** The stored best times for a board, fastest first — so a test can assert
    * what a win filed without reaching into the storage record's shape. */
   bestTimes(mode: string, difficulty: string): { ms: number; at: number }[];
+  /** Every achievement and where it stands — the same role `bestTimes` plays,
+   * so a test can assert what a win unlocked without reaching into the storage
+   * record's shape. `unlockedAt` is `null` while it is still locked. */
+  achievements(): {
+    id: string;
+    unlockedAt: number | null;
+    have: number;
+    need: number;
+  }[];
 }
 
 declare global {

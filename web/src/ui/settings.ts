@@ -1,3 +1,4 @@
+import { ACHIEVEMENTS, earned as earnedIds, loadProgress } from "../achievements";
 import {
   SOUND_CHOICES,
   SOUND_OFF,
@@ -107,6 +108,12 @@ function boardsWithTimes(): number {
   const modes = new Set<string>();
   for (const key of allBestTimes().keys()) modes.add(key.slice(0, key.indexOf("|")));
   return modes.size;
+}
+
+/** How many achievements are unlocked — the Achievements row's subtitle. Off
+ * the stored record alone; nothing here builds a board. */
+function earnedAchievements(): number {
+  return earnedIds(loadProgress()).length;
 }
 
 function heading(text: string): HTMLElement {
@@ -427,16 +434,21 @@ function volumeRow(host: SettingsHost): HTMLElement {
   return li;
 }
 
+/** The pages this one opens. An object rather than a run of positional
+ * callbacks: there are five of them now, and at the call site five bare arrows
+ * in a row say nothing about which is which. */
+export interface SettingsPages {
+  openThemes(): void;
+  openSchemes(): void;
+  openBestTimes(): void;
+  openSounds(): void;
+  openAchievements(): void;
+}
+
 /** Build the settings page body. The caller (Menu) supplies the back row and
- * puts this into `.menu-body`; `openThemes`, `openBestTimes` and `openSounds`
- * open the pages below it. */
-export function renderSettings(
-  host: SettingsHost,
-  openThemes: () => void,
-  openSchemes: () => void,
-  openBestTimes: () => void,
-  openSounds: () => void,
-): DocumentFragment {
+ * puts this into `.menu-body`; `pages` opens the pages below it. */
+export function renderSettings(host: SettingsHost, pages: SettingsPages): DocumentFragment {
+  const { openThemes, openSchemes, openBestTimes, openSounds, openAchievements } = pages;
   const frag = document.createDocumentFragment();
 
   // -- Records ---------------------------------------------------------------
@@ -461,7 +473,29 @@ export function renderSettings(
     "menu-submenu",
   );
   bestBtn.dataset["settingsGroup"] = "best-times";
-  records.append(bestLi);
+
+  // Above the times, because it is the wider record: the times say how fast one
+  // board went, this says how much of the catalogue has been played at all.
+  const achievementsChevron = document.createElement("span");
+  achievementsChevron.className = "menu-entry-chevron";
+  achievementsChevron.textContent = "›";
+  const earned = earnedAchievements();
+  const { li: achLi, btn: achBtn } = buttonRow(
+    [
+      textBlock(
+        "Achievements",
+        earned === 0
+          ? `None yet · ${ACHIEVEMENTS.length} to unlock`
+          : `${earned} of ${ACHIEVEMENTS.length} unlocked`,
+      ),
+      achievementsChevron,
+    ],
+    openAchievements,
+    "menu-submenu",
+  );
+  achBtn.dataset["settingsGroup"] = "achievements";
+
+  records.append(achLi, bestLi);
   frag.append(records);
 
   // -- Appearance ------------------------------------------------------------

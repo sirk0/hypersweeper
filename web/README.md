@@ -2163,6 +2163,93 @@ Clearing arms on the first tap and fires on the second, rather than calling
 `window.confirm`, which an installed iOS web app renders as a URL-badged alert
 that reads like a browser warning.
 
+## Achievements
+
+A win used to leave no trace unless the clock beat a record. The catalogue is
+179 boards across seven tiling families, five surfaces and four solid groups,
+and nothing in the game said so. `src/achievements.ts` is the record of where a
+player has been, and the list of where they have not.
+
+- **The list is derived.** 51 achievements, and none of them typed out: the
+  families come from `familyRows` over every surface, the surfaces from
+  `SURFACE_SPECS`, the solid groups from `SOLID_GROUPS`, the difficulties from
+  `data/ui/screens.json`. A tiling added tomorrow joins its family's two
+  achievements the way it joins the menu, the info window and the background
+  pattern — with no edit here at all. Group membership is computed once at
+  module load, from strings; **nothing in this feature builds a board**, which
+  is what keeps the page instant.
+- **One declared table, pinned by measurement.** `SHAPE_SIDES` — the side counts
+  a board's tiles can have, `[3, 4, 5, 6, 8, 10, 12, 13]` — is the exception,
+  because deriving it means building all 179 boards and running
+  `classifyShapes`, about a second. `tests/unit/achievements.test.ts` does
+  exactly that and fails if the list drifts, so a tiling with heptagonal tiles
+  cannot ship without a badge (the `soundHarmony.test.ts` pattern).
+- **Blocked boards are left out of every completion target.** The five triakis
+  boards cannot be played at all — their menu row opens `blockedExplanation`
+  instead of a game (see "fairness" in `src/boards/fairness.ts`) — so a set
+  containing one could never be finished. `blockedModes()` is the filter, the
+  totals run to 174 rather than 179, and the page says so in a line rather than
+  leaving a silent gap.
+- **The stored record is history; unlocking is a pure function of it.** Its own
+  key `ms:achievements`, shaped like `leaderboard.ts` (version inside the
+  record, total reads, a re-read before the write, unknown fields carried
+  through). What is stored is what was won, plus the three facts about a win a
+  mode string cannot carry: whether a flag was ever planted, the fastest time at
+  each difficulty, and the side counts seen. Which achievements that earns is
+  recomputed by `earned()` every time, so **an achievement added by a later
+  build unlocks retroactively** from history already on the device. The stored
+  `unlocked` map only remembers *when* — and `loadStored` stamps anything the
+  record already earns on read, so the page can never show something as unlocked
+  that a card is still going to announce.
+- **It seeds itself from the best times.** `allBestTimes()` is already a
+  complete list of every board and difficulty this device has won, so a player
+  who has cleared eighty boards does not meet this feature at 0 / 174. Run once,
+  at record creation. It cannot recover flags or shapes and claims neither.
+- **A win counts a board at any one difficulty.** The completion sets are 174
+  boards; asking for all three each would make that 522.
+- **One trap in the win payload.** `Game.reveal` auto-flags every remaining mine
+  on a win, so the flags on the board at the moment the achievements are counted
+  say nothing about how the game was played. `GameSession.flagless` counts the
+  player's own placements instead.
+
+### Where an unlock is said
+
+In the **record window**, which is why that window is no longer only about
+records. The app has exactly two modals on purpose (`src/ui/modal.ts`), and an
+unlock wants saying at the same instant a record does — a third overlay would
+either stack on this one or queue behind it, and both read as the app talking
+over itself. So `App.checkRecord` opens the card when the time placed **or**
+something was unlocked, and `rank` is `number | null`: with no rank the title
+becomes "Achievement unlocked" and the list of times is left out. The
+`data-buttons` layout contract is untouched — no button was added.
+
+At most `MAX_UNLOCKS_SHOWN` (4) are listed, with "and N more" under them. A
+first win earns six at once — first board, first difficulty, its shape, its
+family, its surface, and the flagless one, because a first click that floods the
+field plants no flag — and six rows push "Play again" off a phone's screen. The
+card scrolls, but a primary action that has scrolled away is not an answer.
+
+The list itself lives at **Settings › Achievements** (`src/ui/achievements.ts`),
+one more `Menu` page built like the best-times one, ordered by `ACHIEVEMENTS`
+rather than by the storage record. Unlocked rows carry their date, locked ones
+carry `have / need` where there is something to count — "0 / 1" on a yes/no
+would be noise dressed up as progress. There is no empty state: a locked list is
+the point of the page.
+
+### The badges
+
+Generated, like every other icon here. A shape badge is the regular polygon it
+is about, drawn by `shape(ngon(...))` and so painted by the board palette's own
+rule for that side count — the hexagon badge is the green a hexagonal board is
+drawn in, and the two match with no table between them. A family, surface or
+solid-group badge reuses that group's own menu icon key, which already draws a
+patch of the real tiling or a mesh of the real immersion. What is left is four
+hand-drawn symbols on the icon set's plain disc (`badge()` in `src/ui/icons.ts`:
+star, trophy, flag, timer, warning, and a three-bar difficulty ladder) — there
+is no geometry in "win ten boards". They are drawn `fill-rule="evenodd"`,
+because every one of them has a hole in it somewhere.
+
+
 ## Analytics
 
 The deployed game counts **which boards get opened and how often they get won**
