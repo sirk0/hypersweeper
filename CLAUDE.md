@@ -650,7 +650,7 @@ backgrounds and the animations override persist (`src/settings.ts`): one stable
 `localStorage` key holding a record that carries its own `version`, never
 a versioned key name — see "Settings and themes" in `web/README.md` before
 adding a field. **Hold to flag** is how long a press has to be held before it
-plants one (`src/input/hold.ts`; 50–500 ms, 300 by default, down from the
+plants one (`src/input/hold.ts`; 100–500 ms, 300 by default, down from the
 450 it was fixed at): `controls.ts` asks for it at every press rather than
 capturing it once, so a change reaches the board in play, and the row is
 hidden where nothing can long-press exactly as the haptics row is hidden where

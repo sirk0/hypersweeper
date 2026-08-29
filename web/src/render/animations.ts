@@ -49,7 +49,7 @@ const POP_MS = 240;
  * A share rather than a duration because the drop's *length* is the player's:
  * it is the hold that placed the flag (Settings › Hold to flag, passed in by
  * `startDrop`), so the landing takes as long as the press did rather than a
- * fixed 420 ms that a 50 ms hair-trigger would spend most of waiting for. */
+ * fixed 420 ms that a 100 ms hair-trigger would spend most of waiting for. */
 const DROP_HOLD = 0.35;
 /** What a drop lasts when no one says — the flat board's own default, and what
  * every caller that is not a held flag would get. */

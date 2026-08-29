@@ -23,10 +23,11 @@
 // (no window, no navigator) is safe, as in `haptics.ts`.
 
 /** The fastest hold the slider offers — a hair-trigger, and deliberately
- * reachable: a tap on a phone routinely lasts 100 ms or more, so down here an
- * ordinary tap flags rather than opens, which is exactly what a player who
- * flags far more than they open may want. */
-export const HOLD_MS_MIN = 50;
+ * reachable: a deliberate tap on a phone runs to about this long, so down here
+ * the two gestures very nearly meet and an unhurried tap flags rather than
+ * opens, which is exactly what a player who flags far more than they open may
+ * want. */
+export const HOLD_MS_MIN = 100;
 /** The slowest. Past half a second the gesture stops reading as a press and
  * starts reading as one that did not work. */
 export const HOLD_MS_MAX = 500;

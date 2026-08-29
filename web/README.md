@@ -2045,15 +2045,16 @@ reports both ("Chime · 60%").
 
 **Hold to flag.** How long a press has to be held on a touch screen before it
 plants a flag — a slider under Behaviour, `src/input/hold.ts` for the range
-(50–500 ms, step 50) and the default. It **is** a setting because the right
+(100–500 ms, step 50) and the default. It **is** a setting because the right
 number is a fact about the hand rather than about the game: a player who flags a
 lot wants the flag the moment they commit, and one who drags and rotates a lot
 wants room to start a gesture before the press turns into something else. The
 shipped default is 300 ms, down from the 450 ms it was fixed at — the time is
 *held*, so it is dead time, and it is spent on every flag of every board. The
-bottom of the range is a hair-trigger on purpose: a tap on a phone routinely
-lasts 100 ms or more, so at 50 ms an ordinary tap flags rather than opens, which
-is a real way to play a board you are mostly flagging.
+bottom of the range is a hair-trigger on purpose: a deliberate tap on a phone
+runs to about that long, so at 100 ms the two gestures very nearly meet and an
+unhurried tap flags rather than opens — a real way to play a board you are
+mostly flagging.
 
 Four things about it:
 

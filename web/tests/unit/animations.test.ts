@@ -86,7 +86,7 @@ describe("CellAnimations flag drop", () => {
     // hair-trigger press lands a hair-trigger flag rather than spending most of
     // its time waiting out a fixed animation — every point on that slider gets
     // the same shape of landing, held at full size for the same *share* of it.
-    for (const ms of [50, 300, 500]) {
+    for (const ms of [100, 300, 500]) {
       const a = new CellAnimations();
       a.startDrop(0, 0, ms);
       expect(a.dropProgress(ms * 0.34), `${ms}ms: still held`).toBe(0);
