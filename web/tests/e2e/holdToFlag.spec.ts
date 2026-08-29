@@ -1,13 +1,12 @@
 import { expect, test, type Page } from "@playwright/test";
 
 // Press and hold to flag: how long the hold lasts (Settings › Hold to flag) and
-// what the player is shown while it is being counted.
+// what the player is shown when it lands.
 //
-// The gesture has a blind spot by construction — the finger doing the holding
-// is on top of the very cell the flag will land on — so the only feedback it
-// can have is somewhere else on screen. That is the header's own flag, blinking
-// from the moment the press is armed until the flag lands or the gesture turns
-// into a drag, a pinch or a plain tap.
+// The gesture has a blind spot by construction — the finger doing the holding is
+// on top of the very cell the flag will land on — so the confirmation has to be
+// somewhere else on screen. That is the header's own flag, blinking red the
+// moment a flag is *planted*.
 //
 // The presses below are synthetic `PointerEvent`s with `pointerType: "touch"`,
 // which is what `controls.ts` arms the hold for; a mouse never long-presses,
@@ -73,65 +72,78 @@ async function openBoard(page: Page, holdToFlagMs?: number): Promise<void> {
   );
 }
 
+/** Watch the flag button for the blink. The class comes off again when the
+ * animation ends (~420 ms), so polling for it is a race under load; a mutation
+ * observer armed before the move catches it however briefly it is on. */
+async function watchFlash(page: Page): Promise<void> {
+  await page.evaluate((sel) => {
+    const w = window as unknown as { __flash?: boolean };
+    w.__flash = false;
+    const btn = document.querySelector(sel)!;
+    new MutationObserver(() => {
+      if (btn.classList.contains("flag-flash")) w.__flash = true;
+    }).observe(btn, { attributes: true, attributeFilter: ["class"] });
+  }, FLAG_BTN);
+}
+
+/** Whether the blink has run since `watchFlash`. */
+async function flashed(page: Page): Promise<boolean> {
+  return page.evaluate(
+    () => (window as unknown as { __flash?: boolean }).__flash === true,
+  );
+}
+
 test.describe("holding to flag", () => {
-  test("the header's flag blinks while the press is counted, then the flag lands", async ({
+  test("the flag lands after the hold, and the header's flag blinks red", async ({
     page,
   }) => {
     await openBoard(page, 400);
-    const flag = page.locator(FLAG_BTN);
-    await expect(flag).not.toHaveClass(/holding/);
-
     const { cell, x, y } = await cellPoint(page);
+    await watchFlash(page);
     await pointer(page, "pointerdown", x, y);
 
-    // Armed: the icon is blinking, at this hold's own beat, and nothing has
-    // been flagged yet.
-    await expect(flag).toHaveClass(/holding/);
-    expect(
-      await flag.evaluate((el) => getComputedStyle(el).getPropertyValue("--hold-duration").trim()),
-    ).toBe("400ms");
+    // Nothing yet — the press is still being counted, and the header says
+    // nothing about a flag that has not been planted.
+    await page.waitForTimeout(150);
     expect(await page.evaluate((c) => window.__ms!.cellState(c), cell)).toBe("hidden");
+    expect(await flashed(page)).toBe(false);
+    await expect(page.locator(FLAG_BTN)).not.toHaveClass(/flag-flash/);
 
-    // ...and when it fires, the flag is down and the blinking stops with it —
-    // the icon settles on the move it was counting down to rather than carrying
-    // on until the finger lifts.
+    // ...and when the hold is up, the flag is down and the header blinks.
     await expect(async () => {
       expect(await page.evaluate((c) => window.__ms!.cellState(c), cell)).toBe("flagged");
     }).toPass({ timeout: 3000 });
-    await expect(flag).not.toHaveClass(/holding/);
-
+    expect(await flashed(page)).toBe(true);
     await pointer(page, "pointerup", x, y);
+
+    // One shot: the class comes off when the animation ends, so the next flag
+    // can blink again rather than being swallowed by this one.
+    await expect(page.locator(FLAG_BTN)).not.toHaveClass(/flag-flash/);
   });
 
-  test("a press let go of early taps instead, and stops the blinking", async ({ page }) => {
-    // The far end of the same gesture: under the hold it is a reveal, and the
-    // header must not be left blinking at a press that is over.
+  test("a press let go of early taps instead, and nothing blinks", async ({ page }) => {
     await openBoard(page, 1000);
-    const flag = page.locator(FLAG_BTN);
     const { cell, x, y } = await cellPoint(page);
+    await watchFlash(page);
 
     await pointer(page, "pointerdown", x, y);
-    await expect(flag).toHaveClass(/holding/);
     await pointer(page, "pointerup", x, y);
 
-    await expect(flag).not.toHaveClass(/holding/);
     expect(await page.evaluate((c) => window.__ms!.cellState(c), cell)).toBe("revealed");
+    expect(await flashed(page)).toBe(false);
   });
 
-  test("a press that turns into a drag flags nothing and stops the blinking", async ({
-    page,
-  }) => {
+  test("a press that turns into a drag flags nothing", async ({ page }) => {
     await openBoard(page, 1000);
-    const flag = page.locator(FLAG_BTN);
     const { cell, x, y } = await cellPoint(page);
+    await watchFlash(page);
 
     await pointer(page, "pointerdown", x, y);
-    await expect(flag).toHaveClass(/holding/);
     await pointer(page, "pointermove", x + 60, y + 60);
-    await expect(flag).not.toHaveClass(/holding/);
-
     await pointer(page, "pointerup", x + 60, y + 60);
+
     expect(await page.evaluate((c) => window.__ms!.cellState(c), cell)).toBe("hidden");
+    expect(await flashed(page)).toBe(false);
   });
 
   test("the stored duration is the one the press waits for", async ({ page }) => {
@@ -142,39 +154,58 @@ test.describe("holding to flag", () => {
     await pointer(page, "pointerdown", x, y);
     await page.waitForTimeout(600);
     expect(await page.evaluate((c) => window.__ms!.cellState(c), cell)).toBe("hidden");
-    await expect(page.locator(FLAG_BTN)).toHaveClass(/holding/);
     await pointer(page, "pointerup", x, y);
   });
 });
 
-// The rest of the suite runs under `prefers-reduced-motion: reduce` (see
-// playwright.config.ts), where the blink is deliberately a steady dim instead —
-// so the animation itself has to be asserted with motion allowed.
-test.describe("the blink itself", () => {
-  test.use({ contextOptions: { reducedMotion: "no-preference" } });
+test.describe("the flag blink", () => {
+  test("is red, covers the button, and leaves its icon on top", async ({ page }) => {
+    // The class is under test elsewhere; what is under test *here* is what it
+    // paints, so put it on directly rather than racing a 420 ms animation with
+    // a screenshot round trip.
+    await openBoard(page);
+    const paint = await page.evaluate((sel) => {
+      const btn = document.querySelector<HTMLElement>(sel)!;
+      btn.classList.add("flag-flash");
+      const layer = getComputedStyle(btn, "::after");
+      return {
+        animation: layer.animationName,
+        background: layer.backgroundColor,
+        position: layer.position,
+        icon: getComputedStyle(btn.querySelector("svg")!).zIndex,
+      };
+    }, FLAG_BTN);
 
-  test("runs at half the hold, so two blinks and the flag lands", async ({ page }) => {
-    await openBoard(page, 400);
-    const { x, y } = await cellPoint(page);
-    await pointer(page, "pointerdown", x, y);
-
-    const icon = page.locator(`${FLAG_BTN} svg`);
-    expect(await icon.evaluate((el) => getComputedStyle(el).animationName)).toBe(
-      "hud-flag-blink",
-    );
-    expect(await icon.evaluate((el) => getComputedStyle(el).animationDuration)).toBe("0.2s");
-    await pointer(page, "pointerup", x, y);
-    // ...and it is only ever on while the press is being counted.
-    expect(await icon.evaluate((el) => getComputedStyle(el).animationName)).toBe("none");
+    expect(paint.animation).toBe("hud-flag-flash");
+    // A layer over the button, in the palette's own red — so the blink is a
+    // background change and follows the theme.
+    expect(paint.position).toBe("absolute");
+    const [r, g, b] = /rgba?\((\d+), (\d+), (\d+)/.exec(paint.background)!.slice(1).map(Number) as [
+      number,
+      number,
+      number,
+    ];
+    expect(r, paint.background).toBeGreaterThan(150);
+    expect(r - g, paint.background).toBeGreaterThan(60);
+    expect(r - b, paint.background).toBeGreaterThan(60);
+    // ...and the flag icon stays legible on top of it.
+    expect(paint.icon).toBe("1");
   });
 
-  test("floors the beat, so the fastest hold does not strobe", async ({ page }) => {
-    await openBoard(page, 200);
-    const { x, y } = await cellPoint(page);
-    await pointer(page, "pointerdown", x, y);
-    const icon = page.locator(`${FLAG_BTN} svg`);
-    expect(await icon.evaluate((el) => getComputedStyle(el).animationDuration)).toBe("0.14s");
-    await pointer(page, "pointerup", x, y);
+  test("blinks for a right-click too, but never for a flag taken off", async ({
+    page,
+  }) => {
+    // The blink says "a flag went down", not "a hold finished": every way of
+    // planting one gets it, and clearing one gets none.
+    await openBoard(page);
+    await watchFlash(page);
+    await page.evaluate(() => window.__ms!.flag("4,4"));
+    expect(await flashed(page)).toBe(true);
+
+    await watchFlash(page);
+    await page.evaluate(() => window.__ms!.flag("4,4")); // the same cell, cleared
+    expect(await page.evaluate(() => window.__ms!.cellState("4,4"))).toBe("hidden");
+    expect(await flashed(page)).toBe(false);
   });
 });
 
@@ -202,7 +233,7 @@ test.describe("the hold-to-flag setting", () => {
     await expect(page.locator("body[data-ready]")).toBeVisible();
     await page.locator('.menu-header-btn[data-action="settings"]').click();
 
-    const row = page.locator(".settings-volume", { has: page.locator("input[data-setting='hold-to-flag']") });
+    const row = page.locator(".settings-hold");
     await expect(row).toContainText("Hold to flag");
     await expect(row).toContainText("300 ms"); // the shipped default
 

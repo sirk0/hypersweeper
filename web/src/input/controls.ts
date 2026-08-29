@@ -14,7 +14,10 @@ import type { CellId, SymmetryId } from "../boards/core";
 // How long that hold has to last is the player's (Settings › Hold to flag, see
 // input/hold.ts). It is asked for at press time rather than captured when the
 // controls are attached — they are attached once, for the life of the app — so
-// a change on the settings page applies to the board already in play.
+// a change on the settings page applies to the board already in play. The flag
+// it plants is the one move the player cannot see land (their own finger is on
+// top of the cell), which is what the header's flag flash answers — see
+// `Hud.flashFlag`.
 
 const MOVE_THRESHOLD = 8; // px
 
@@ -25,14 +28,6 @@ export interface ControlHandlers {
   /** How long a press must be held before `onLongPress` fires, in ms. Asked at
    * every press, so the setting applies to the board already in play. */
   holdMs(): number;
-  /** A press that could become a flag has started on `cell`, and ended — the
-   * hold is now being counted, and is no longer. Every way out of a hold goes
-   * through the end: the flag landing, the finger lifting, the press turning
-   * into a drag or a pinch, the browser cancelling the pointer. The app blinks
-   * the header's flag between the two, which is the only feedback the gesture
-   * can have: the finger doing the holding is covering the cell it will flag. */
-  onHoldStart(cell: CellId): void;
-  onHoldEnd(): void;
   onSecondary(cell: CellId): void;
   onHover(cell: CellId | null): void;
   /** Whether drags should rotate the current board (a 3D screen). */
@@ -77,9 +72,6 @@ export function attachControls(
   let panning = false;
   let longTimer = 0;
   let longFired = false;
-  // Whether `onHoldStart` has been reported without its `onHoldEnd` yet — the
-  // window the header's flag blinks in.
-  let holding = false;
   // Live touch/pen/mouse points, so a second finger can be spotted. Pinch
   // state is the two-finger span and midpoint from the previous move.
   const points = new Map<number, { x: number; y: number }>();
@@ -119,19 +111,9 @@ export function attachControls(
       ? { x: pointerX, y: pointerY }
       : { x: e.clientX, y: e.clientY };
 
-  /** End the hold the header is blinking for, if one is running. Idempotent:
-   * every path out of a press calls `clearLong`, and several of them run one
-   * after another (a move cancels the timer, then the release clears again). */
-  const endHold = () => {
-    if (!holding) return;
-    holding = false;
-    handlers.onHoldEnd();
-  };
-
   const clearLong = () => {
     if (longTimer) window.clearTimeout(longTimer);
     longTimer = 0;
-    endHold();
   };
 
   /** The span and midpoint (canvas CSS px) of the first two live points. */
@@ -181,15 +163,9 @@ export function attachControls(
     }
     if (downCell != null && e.pointerType !== "mouse") {
       const cell = downCell;
-      holding = true;
-      handlers.onHoldStart(cell);
       longTimer = window.setTimeout(() => {
         longTimer = 0;
         longFired = true;
-        // Stop the blinking before the flag lands, not after: the two are one
-        // gesture, and the icon should settle on the move it was counting down
-        // to rather than carry on past it until the finger lifts.
-        endHold();
         handlers.onLongPress(cell);
       }, handlers.holdMs());
     }

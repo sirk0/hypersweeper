@@ -451,52 +451,56 @@ body {
   line-height: 1;
 }
 
-/* Icon-only header buttons (e.g. the flag-mode toggle). */
+/* Icon-only header buttons (e.g. the flag-mode toggle). Positioned so the flag
+   flash below can lay its red over the button; the icon is positioned in turn
+   so it paints on top of that layer, a pseudo-element coming after its siblings
+   in paint order. */
 .hud-icon-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  position: relative;
 }
 
 .hud-icon-btn svg {
   display: block;
   width: var(--hud-icon);
   height: var(--hud-icon);
+  position: relative;
+  z-index: 1;
 }
 
-/* Holding a cell to flag it. The finger is on top of the very cell the flag
-   will land on, so the board can say nothing about the press being counted —
-   the header's flag is where it is said instead, blinking from the moment the
-   press is armed until the flag lands or the gesture turns into something else.
+/* A flag has just been planted: the header's flag button blinks red
+   (`Hud.flashFlag`). The move it answers is the *held* one — a flag placed by
+   holding a cell lands under the player's own fingertip, so the board itself
+   cannot confirm it — and the flag button is where flag state already lives.
 
-   The beat is the hold's own: `--hold-duration` is written by the HUD from the
-   player's setting (Settings › Hold to flag), and half of it per blink means
-   two blinks and the flag is down, whatever the setting. The floor is what
-   keeps the fastest holds from strobing. Only the icon blinks, so the button's
-   own chrome — and its pressed and flag-mode states — read as they always do. */
-@keyframes hud-flag-blink {
+   The red is laid over the button as its own layer rather than animated onto
+   `background`, because the button's resting background is one of two things
+   (`--panel`, or `--selected` in flag mode) and a keyframe can only name one:
+   ending on the wrong one snaps at the last frame. An overlay composes with
+   either, and with `:active` too. `--danger` is the palette's own red, so this
+   follows the theme like every other colour here. */
+@keyframes hud-flag-flash {
   0%,
-  100% {
+  45% {
     opacity: 1;
   }
-  50% {
-    opacity: 0.18;
+  100% {
+    opacity: 0;
   }
 }
 
-.hud-btn.holding svg {
-  animation: hud-flag-blink max(140ms, calc(var(--hold-duration, 300ms) / 2))
-    ease-in-out infinite;
-}
-
-/* A blink is a motion, and a small one repeating fast is exactly what reduced
-   motion is asked for. The feedback itself is not optional, though — without it
-   a held press says nothing at all — so it becomes a steady dim instead. */
-@media (prefers-reduced-motion: reduce) {
-  .hud-btn.holding svg {
-    animation: none;
-    opacity: 0.45;
-  }
+.hud-btn.flag-flash::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--danger);
+  pointer-events: none;
+  /* `forwards` so the last painted frame is the transparent one: the class is
+     taken off on `animationend`, a frame or two later. */
+  animation: hud-flag-flash 420ms ease-out forwards;
 }
 
 /* LED display: red digits on a dark rounded panel, flanking the smiley. The

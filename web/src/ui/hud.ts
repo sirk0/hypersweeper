@@ -1,6 +1,5 @@
 import type { BoardSymmetry } from "../boards/core";
 import { screens, type HudSlot } from "../config/screens";
-import { DEFAULT_HOLD_MS } from "../input/hold";
 
 // The game header, rendered from the shared UI-screen config
 // (`data/ui/screens.json`) rather than hand-laid-out, so the pygame and TS
@@ -126,13 +125,6 @@ export interface HudState {
   elapsedSeconds: number;
   status: "playing" | "won" | "lost";
   flagMode: boolean;
-  /** Whether a press on the board is being counted towards a flag. The header's
-   * flag blinks while it is — the finger doing the holding is covering the very
-   * cell it will flag, so this is the only place the countdown can be shown. */
-  holding: boolean;
-  /** How long that hold lasts (Settings › Hold to flag), which is the beat the
-   * blink runs at: two blinks and the flag lands. */
-  holdMs: number;
   /** Which of the config's `visibleWhen` conditions this board meets — see
    * `boardConditions`. */
   conditions: ReadonlySet<string>;
@@ -168,8 +160,6 @@ export class Hud {
     elapsedSeconds: 0,
     status: "playing",
     flagMode: false,
-    holding: false,
-    holdMs: DEFAULT_HOLD_MS,
     conditions: new Set<string>(),
   };
   private readonly counters = new Map<string, HTMLElement>();
@@ -191,6 +181,25 @@ export class Hud {
   setState(next: Partial<HudState>): void {
     this.state = { ...this.state, ...next };
     this.render();
+  }
+
+  /** Blink the header's flag red: a flag has just been **planted**. It answers
+   * the one move a player can miss — a flag planted by *holding* a cell lands
+   * under their own fingertip — and it is a state the header is the natural
+   * place for, since the flag button is where flag state already lives.
+   *
+   * A one-shot rather than a `HudState` field, because it marks a moment rather
+   * than a condition: `setState` re-renders on every clock tick, and a moment
+   * kept in that record would either be re-fired by a tick or need clearing by
+   * one. The class comes off when the animation ends, and is taken off and put
+   * back (with a reflow between) so two flags in quick succession blink twice
+   * rather than the second being swallowed by the first still running. */
+  flashFlag(): void {
+    const btn = this.flagBtn;
+    if (!btn) return;
+    btn.classList.remove("flag-flash");
+    void btn.offsetWidth; // restart the animation rather than continue it
+    btn.classList.add("flag-flash");
   }
 
   private cluster(cls: string, slots: HudSlot[]): HTMLElement {
@@ -231,7 +240,12 @@ export class Hud {
       btn.textContent = slot.label ?? slot.slot;
     }
     if (slot.action) btn.addEventListener("click", () => this.onAction(slot.action!));
-    if (slot.slot === "flag-mode") this.flagBtn = btn;
+    if (slot.slot === "flag-mode") {
+      this.flagBtn = btn;
+      // The blink is one shot (`flashFlag`): take the class off once it has
+      // played, so the next flag planted can put it back on.
+      btn.addEventListener("animationend", () => btn.classList.remove("flag-flash"));
+    }
     if (slot.visibleWhen) btn.dataset.visibleWhen = slot.visibleWhen;
     return btn;
   }
@@ -247,15 +261,7 @@ export class Hud {
       el.textContent = pad(value, digits);
     }
     if (this.smiley) this.smiley.textContent = screens.smiley[this.state.status];
-    if (this.flagBtn) {
-      this.flagBtn.classList.toggle("active", this.state.flagMode);
-      // The blink itself is CSS (`.hud-btn.holding`); what is set here is the
-      // beat, so the icon pulses at the hold the player has chosen rather than
-      // at one fixed rate that would say the same thing at 200 ms and at a
-      // second.
-      this.flagBtn.classList.toggle("holding", this.state.holding);
-      this.flagBtn.style.setProperty("--hold-duration", `${this.state.holdMs}ms`);
-    }
+    if (this.flagBtn) this.flagBtn.classList.toggle("active", this.state.flagMode);
     // Toggle config-driven conditional visibility (the board-symmetry controls;
     // no header slot carries one today, but a slot reads the same either way).
     for (const btn of this.root.querySelectorAll<HTMLElement>("[data-visible-when]")) {

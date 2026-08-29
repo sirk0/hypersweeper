@@ -169,10 +169,6 @@ class App {
       // controls.ts), so this is the one flag the player cannot see land.
       onLongPress: (cell) => this.flag(cell, true),
       holdMs: () => this.settings.holdToFlagMs,
-      // The finger is over the cell, so the countdown is shown where nothing
-      // covers it: the header's own flag, blinking at the hold's beat.
-      onHoldStart: () => this.setHolding(true),
-      onHoldEnd: () => this.setHolding(false),
       onSecondary: (cell) => this.flag(cell),
       onHover: (cell) => this.hover(cell),
       rotates: () => this.screen === "game" && (this.session?.is3d ?? false),
@@ -463,10 +459,6 @@ class App {
     }
     this.hovered = null;
     this.flagMode = false;
-    // A press the board changed under (the smiley, the die) gets no
-    // `onHoldEnd`, and the state outlives the session — clear it here rather
-    // than leaving the new board's flag blinking at nothing.
-    this.hud.setState({ holding: false });
     this.syncHud();
     this.onResize();
     // Last, so a mode `buildBoard` rejects throws before it is counted as a
@@ -652,29 +644,20 @@ class App {
    * made there. */
   private onTap(cell: CellId): void {
     if (!this.session || this.screen !== "game") return;
-    if (this.flagMode) this.session.flag(cell);
-    else this.session.tap(cell);
+    if (this.flagMode) {
+      if (this.session.flag(cell)) this.hud.flashFlag();
+    } else this.session.tap(cell);
     this.afterMove();
   }
 
+  /** Plant or clear a flag: a right-click, or a press held long enough (see
+   * `input/hold.ts`). One that *lands* blinks the header's flag red — the flag
+   * button is where flag state already lives, and a held flag is the one move
+   * the player cannot see land, since their own finger is over the cell. */
   private flag(cell: CellId, held = false): void {
     if (!this.session || this.screen !== "game") return;
-    this.session.flag(cell, held);
+    if (this.session.flag(cell, held)) this.hud.flashFlag();
     this.afterMove();
-  }
-
-  /** Say whether a press is being counted towards a flag. The header's flag
-   * blinks while it is, at the beat of the hold the player has set — the finger
-   * is on top of the cell, so the header is the one place the countdown can be
-   * seen at all. The duration goes with it so the blink is that hold's own
-   * rather than a fixed rate that would say the same thing at 200 ms and at a
-   * second. */
-  private setHolding(holding: boolean): void {
-    // Starting one off the game screen would be a blink with no board behind
-    // it; ending one always lands, so a press interrupted by a walk back to the
-    // menu cannot leave the next board's flag blinking.
-    if (holding && this.screen !== "game") return;
-    this.hud.setState({ holding, holdMs: this.settings.holdToFlagMs });
   }
 
   private hover(cell: CellId | null): void {

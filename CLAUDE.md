@@ -654,10 +654,14 @@ plants one (`src/input/hold.ts`; 200–1000 ms, 300 by default, down from the
 450 it was fixed at): `controls.ts` asks for it at every press rather than
 capturing it once, so a change reaches the board in play, and the row is
 hidden where nothing can long-press exactly as the haptics row is hidden where
-nothing can buzz. While the press is counted the **header's flag blinks** — the
-finger is on top of the very cell the flag will land on, so that is the only
-place the countdown can be shown — at half the hold, so two blinks and the flag
-lands whatever the setting, and a steady dim instead under reduced motion.
+nothing can buzz. When a flag is **planted** the header's flag button blinks
+**red** — the finger is on top of the very cell the flag lands on, so the board
+itself cannot confirm the one move that matters here. It marks the landing
+rather than the countdown (`GameSession.flag` returns whether one went down, so
+clearing a flag blinks nothing), it is a one-shot method on `Hud` rather than a
+`HudState` field (a moment, not a condition — and `setState` re-renders on every
+clock tick), and the red is an overlay rather than an animated `background`,
+which is what lets it compose with the button's two resting fills.
 
 The look is **two** settings on two independent axes. A **theme** is how the
 board's cells are cut and what the page behind them is made of; there are three

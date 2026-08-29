@@ -2069,20 +2069,31 @@ Three things about it:
   right-click, so `longPressSupported()` (a touch point, or a coarse pointer)
   hides the slider on a machine that could never use it.
 
-**The header's flag blinks while the press is counted.** The gesture has a blind
+**The header's flag blinks red when a flag is planted.** The gesture has a blind
 spot by construction — the finger doing the holding is on top of the very cell
-the flag will land on — so the feedback has to be somewhere else on screen, and
-the header's own flag is where the player is already looking for flag state.
-`controls.ts` reports `onHoldStart`/`onHoldEnd` around the armed window (every
-way out goes through the end: the flag landing, the finger lifting, the press
-becoming a drag or a pinch, the browser cancelling the pointer), `Hud` turns that
-into `.hud-btn.holding` plus a `--hold-duration` custom property, and the blink
-itself is CSS. The beat is **half the hold**, so two blinks and the flag lands
-whatever the setting, floored at 140 ms so the fastest hold does not strobe.
-Under `prefers-reduced-motion` it becomes a steady dim instead — the motion is
-optional, the feedback is not. `tests/e2e/holdToFlag.spec.ts` pins both, and has
-to `use({ contextOptions: { reducedMotion: "no-preference" } })` for the blink,
-since the suite runs reduced by default.
+the flag will land on — so the confirmation has to be somewhere else on screen,
+and the header's own flag is where the player is already looking for flag state.
+
+- **It marks the landing, not the countdown.** `GameSession.flag` returns whether
+  a flag was *planted* (the toggle's other half clears one), and `App` blinks on
+  that — so every way of planting one blinks, clearing one never does, and the
+  win's own auto-flagging does not either, since it does not go through a player
+  move.
+- **`Hud.flashFlag()` is a one-shot, not a `HudState` field.** It marks a moment
+  rather than a condition, and `setState` re-renders on every clock tick, so a
+  moment kept in that record would be re-fired by a tick or need clearing by one.
+  The class is removed on `animationend`, and taken off and put back with a
+  reflow between, so two flags in quick succession blink twice.
+- **The red is a layer, not an animated `background`.** The button's resting
+  background is one of two things (`--panel`, or `--selected` in flag mode) and a
+  keyframe can only name one, so ending on the wrong one snaps at the last frame.
+  `.hud-btn.flag-flash::after` fades a `--danger` overlay out instead, which
+  composes with either — and with `:active`. The icon carries a `z-index` so it
+  stays on top of it: a pseudo-element paints after its siblings.
+
+`tests/e2e/holdToFlag.spec.ts` pins all of it. Note the pattern for catching the
+class: it comes off again after ~420 ms, so the spec arms a `MutationObserver`
+before the move rather than polling for it.
 
 **Haptics.** A plain boolean, and the one row that is **conditional**:
 `hapticsSupported()` (`src/haptics.ts`) offers it only where something can

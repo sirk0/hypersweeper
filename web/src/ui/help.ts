@@ -49,12 +49,12 @@ const SECTIONS: Section[] = [
       ["Open a cell", "Click it, or tap it on a touch screen."],
       [
         "Flag a mine",
-        "Right-click, or press and hold on a touch screen — the flag at the left " +
-          "of the header blinks while the press is being counted, and how long " +
-          "that takes is yours to set (Settings › Hold to flag). You can also " +
-          "turn on flag mode — that same flag button — and then every tap plants " +
-          "a flag instead. The counter at the top shows how many mines are left " +
-          "once your flags are subtracted.",
+        "Right-click, or press and hold on a touch screen — how long you have to " +
+          "hold is yours to set (Settings › Hold to flag), and the flag at the " +
+          "left of the header blinks red as one goes down, since your own finger " +
+          "is covering the cell. You can also turn on flag mode — that same flag " +
+          "button — and then every tap plants a flag instead. The counter at the " +
+          "top shows how many mines are left once your flags are subtracted.",
       ],
       [
         "Open the rest around a number",
