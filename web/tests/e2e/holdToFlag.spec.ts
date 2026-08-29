@@ -16,6 +16,9 @@ import { expect, test, type Page } from "@playwright/test";
 // something being there to buzz.
 
 const FLAG_BTN = '.hud-btn[data-slot="flag-mode"]';
+/** The slowest hold the slider offers, for the tests that need room to look at
+ * a press still being counted. */
+const HOLD_SLOW = 500;
 
 /** Where a cell of the board on screen is. */
 async function cellPoint(page: Page): Promise<{ cell: string; x: number; y: number }> {
@@ -122,7 +125,7 @@ test.describe("holding to flag", () => {
   });
 
   test("a press let go of early taps instead, and nothing blinks", async ({ page }) => {
-    await openBoard(page, 1000);
+    await openBoard(page, HOLD_SLOW);
     const { cell, x, y } = await cellPoint(page);
     await watchFlash(page);
 
@@ -134,7 +137,7 @@ test.describe("holding to flag", () => {
   });
 
   test("a press that turns into a drag flags nothing", async ({ page }) => {
-    await openBoard(page, 1000);
+    await openBoard(page, HOLD_SLOW);
     const { cell, x, y } = await cellPoint(page);
     await watchFlash(page);
 
@@ -149,11 +152,15 @@ test.describe("holding to flag", () => {
   test("the stored duration is the one the press waits for", async ({ page }) => {
     // A slow hold must still be counting well past the default, or the setting
     // is not reaching `controls.ts` at all.
-    await openBoard(page, 1000);
+    await openBoard(page, HOLD_SLOW);
     const { cell, x, y } = await cellPoint(page);
     await pointer(page, "pointerdown", x, y);
-    await page.waitForTimeout(600);
+    // Past the 300 ms default, which would have flagged by now.
+    await page.waitForTimeout(360);
     expect(await page.evaluate((c) => window.__ms!.cellState(c), cell)).toBe("hidden");
+    await expect(async () => {
+      expect(await page.evaluate((c) => window.__ms!.cellState(c), cell)).toBe("flagged");
+    }).toPass({ timeout: 3000 });
     await pointer(page, "pointerup", x, y);
   });
 });
@@ -238,11 +245,11 @@ test.describe("the hold-to-flag setting", () => {
     await expect(row).toContainText("300 ms"); // the shipped default
 
     const slider = page.locator('input[data-setting="hold-to-flag"]');
-    await slider.fill("600");
+    await slider.fill("450");
     await slider.dispatchEvent("change");
     // The label follows the drag, and the value is written to the one settings
     // record — the page is deliberately *not* re-rendered under the finger.
-    await expect(row).toContainText("600 ms");
+    await expect(row).toContainText("450 ms");
     expect(
       await page.evaluate(
         () =>
@@ -250,7 +257,7 @@ test.describe("the hold-to-flag setting", () => {
             holdToFlagMs?: number;
           }).holdToFlagMs,
       ),
-    ).toBe(600);
+    ).toBe(450);
 
     await context.close();
   });

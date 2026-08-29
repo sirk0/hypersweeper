@@ -40,13 +40,20 @@ const PULSE_FALL = 260; // ms
 export const RIPPLE_PER_CELL = 28; // ms
 /** Flag-pop duration. */
 const POP_MS = 240;
-/** Flag-drop duration, and the share of it the flag spends held at full size
- * before it starts moving. The hold is the whole point: an eased shrink alone
- * is nearest its settled size for most of its life, so the big flag — the only
- * part of this a covered cell can show — would be gone before the eye caught
- * it. Hold first, then travel. */
-const DROP_MS = 420;
+/** The share of a flag drop the flag spends held at full size before it starts
+ * moving. The hold is the whole point: an eased shrink alone is nearest its
+ * settled size for most of its life, so the big flag — the only part of this a
+ * covered cell can show — would be gone before the eye caught it. Hold first,
+ * then travel.
+ *
+ * A share rather than a duration because the drop's *length* is the player's:
+ * it is the hold that placed the flag (Settings › Hold to flag, passed in by
+ * `startDrop`), so the landing takes as long as the press did rather than a
+ * fixed 420 ms that a 50 ms hair-trigger would spend most of waiting for. */
 const DROP_HOLD = 0.35;
+/** What a drop lasts when no one says — the flat board's own default, and what
+ * every caller that is not a held flag would get. */
+const DROP_MS = 300;
 /** Lose-shake duration and oscillation frequency. */
 const SHAKE_MS = 440;
 const SHAKE_HZ = 11;
@@ -88,7 +95,7 @@ export class CellAnimations {
   private readonly pops = new Map<number, number>(); // cell index -> start time
   // At most one drop is ever in flight: it answers a single deliberate
   // gesture, so a second flag simply takes over the animation.
-  private drop: { index: number; start: number } | null = null;
+  private drop: { index: number; start: number; ms: number } | null = null;
   private shakeStart: number | null = null;
   private shakeAmp = 0;
 
@@ -111,10 +118,11 @@ export class CellAnimations {
     this.pops.set(index, now + delay);
   }
 
-  /** Begin the landing of a flag the player just placed. */
-  startDrop(index: number, now: number): void {
+  /** Begin the landing of a flag the player just placed, over `ms` — the hold
+   * that placed it, so the landing is as quick as the press was. */
+  startDrop(index: number, now: number, ms = DROP_MS): void {
     if (!this.enabled) return;
-    this.drop = { index, start: now };
+    this.drop = { index, start: now, ms: Math.max(1, ms) };
   }
 
   /** Begin a lose-shake of the given amplitude (in board world units). */
@@ -201,7 +209,7 @@ export class CellAnimations {
    * interpolation and this class owns only the clock. */
   dropProgress(now: number): number | null {
     if (!this.drop) return null;
-    const p = (now - this.drop.start) / DROP_MS;
+    const p = (now - this.drop.start) / this.drop.ms;
     if (p <= DROP_HOLD) return 0;
     if (p >= 1) return null;
     const q = (p - DROP_HOLD) / (1 - DROP_HOLD);
@@ -226,7 +234,7 @@ export class CellAnimations {
     for (const [index, start] of this.pops) {
       if (now - start >= POP_MS) this.pops.delete(index);
     }
-    if (this.drop && now - this.drop.start >= DROP_MS) this.drop = null;
+    if (this.drop && now - this.drop.start >= this.drop.ms) this.drop = null;
 
     const offset = this.shakeOffset(now);
 

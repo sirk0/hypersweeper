@@ -650,11 +650,15 @@ backgrounds and the animations override persist (`src/settings.ts`): one stable
 `localStorage` key holding a record that carries its own `version`, never
 a versioned key name — see "Settings and themes" in `web/README.md` before
 adding a field. **Hold to flag** is how long a press has to be held before it
-plants one (`src/input/hold.ts`; 200–1000 ms, 300 by default, down from the
+plants one (`src/input/hold.ts`; 50–500 ms, 300 by default, down from the
 450 it was fixed at): `controls.ts` asks for it at every press rather than
 capturing it once, so a change reaches the board in play, and the row is
 hidden where nothing can long-press exactly as the haptics row is hidden where
-nothing can buzz. When a flag is **planted** the header's flag button blinks
+nothing can buzz. It is **also how long the flag then takes to land** — a drop
+that outlasts the press it answers reads as lag, so `GameSession.flag` passes
+the hold through to `dropFlag` and `CellAnimations.startDrop` takes the length
+as an argument rather than owning a constant, `DROP_HOLD` staying a *share* of
+it so every point on the slider gets the same shape of landing. When a flag is **planted** the header's flag button blinks
 **red** — the finger is on top of the very cell the flag lands on, so the board
 itself cannot confirm the one move that matters here. It marks the landing
 rather than the countdown (`GameSession.flag` returns whether one went down, so

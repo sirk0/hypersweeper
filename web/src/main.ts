@@ -166,8 +166,9 @@ class App {
       pick: (ndc) => this.renderer.pick(ndc),
       onTap: (cell) => this.onTap(cell),
       // A long press is only ever armed for a touch or a pen (see
-      // controls.ts), so this is the one flag the player cannot see land.
-      onLongPress: (cell) => this.flag(cell, true),
+      // controls.ts), so this is the one flag the player cannot see land — and
+      // the hold that placed it is how long its landing then takes.
+      onLongPress: (cell) => this.flag(cell, this.settings.holdToFlagMs),
       holdMs: () => this.settings.holdToFlagMs,
       onSecondary: (cell) => this.flag(cell),
       onHover: (cell) => this.hover(cell),
@@ -650,13 +651,14 @@ class App {
     this.afterMove();
   }
 
-  /** Plant or clear a flag: a right-click, or a press held long enough (see
-   * `input/hold.ts`). One that *lands* blinks the header's flag red — the flag
-   * button is where flag state already lives, and a held flag is the one move
-   * the player cannot see land, since their own finger is over the cell. */
-  private flag(cell: CellId, held = false): void {
+  /** Plant or clear a flag: a right-click, or a press held for `heldMs` (see
+   * `input/hold.ts`, which is also how long its landing takes). One that *lands*
+   * blinks the header's flag red — the flag button is where flag state already
+   * lives, and a held flag is the one move the player cannot see land, since
+   * their own finger is over the cell. */
+  private flag(cell: CellId, heldMs?: number): void {
     if (!this.session || this.screen !== "game") return;
-    if (this.session.flag(cell, held)) this.hud.flashFlag();
+    if (this.session.flag(cell, heldMs)) this.hud.flashFlag();
     this.afterMove();
   }
 

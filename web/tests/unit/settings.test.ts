@@ -183,9 +183,9 @@ describe("settings validation", () => {
 
   it("snaps a stored hold-to-flag duration onto the slider's grid", () => {
     for (const [raw, ms] of [
-      [500, 500],
+      [200, 200],
       [430, 450], // off the step, snapped rather than dropped
-      [50, HOLD_MS_MIN], // a hold that would fire inside a tap
+      [10, HOLD_MS_MIN], // faster than the slider's hair-trigger
       [5000, HOLD_MS_MAX],
       [0, HOLD_MS_MIN],
       ["slow", DEFAULT_HOLD_MS],

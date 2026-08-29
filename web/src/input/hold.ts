@@ -9,6 +9,12 @@
 // the gesture is *held*, so the time is dead time and it is felt on every flag
 // of every board.
 //
+// The number is also how long the flag then takes to *land*: a flag placed by
+// holding is the one the player cannot see (their finger is over the cell), so
+// it drops in from outside the fingertip (`render/animations.ts`), and a drop
+// that outlasts the press it answers reads as lag. So the whole gesture — press,
+// hold, flag — is over in twice the setting, at every point on the slider.
+//
 // The rules live here rather than in `controls.ts` so that `settings.ts` (which
 // validates the stored value) and `ui/settings.ts` (which draws the slider) can
 // read them without importing the pointer machinery, which pulls in three.
@@ -16,13 +22,14 @@
 // Global access is guarded so importing this under the node unit environment
 // (no window, no navigator) is safe, as in `haptics.ts`.
 
-/** The fastest hold the slider offers. Below this a press is hard to tell from
- * a tap: a deliberate tap on a phone routinely lasts 100 ms or more, and a hold
- * that fires inside that flags cells the player meant to open. */
-export const HOLD_MS_MIN = 200;
-/** The slowest. Past a second the gesture stops reading as a press and starts
- * reading as one that did not work. */
-export const HOLD_MS_MAX = 1000;
+/** The fastest hold the slider offers — a hair-trigger, and deliberately
+ * reachable: a tap on a phone routinely lasts 100 ms or more, so down here an
+ * ordinary tap flags rather than opens, which is exactly what a player who
+ * flags far more than they open may want. */
+export const HOLD_MS_MIN = 50;
+/** The slowest. Past half a second the gesture stops reading as a press and
+ * starts reading as one that did not work. */
+export const HOLD_MS_MAX = 500;
 /** The slider's step, and the granularity a stored value is snapped to. */
 export const HOLD_MS_STEP = 50;
 /** What a player who has never touched the setting gets. */

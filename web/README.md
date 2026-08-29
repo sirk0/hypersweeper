@@ -2045,14 +2045,17 @@ reports both ("Chime · 60%").
 
 **Hold to flag.** How long a press has to be held on a touch screen before it
 plants a flag — a slider under Behaviour, `src/input/hold.ts` for the range
-(200–1000 ms, step 50) and the default. It **is** a setting because the right
+(50–500 ms, step 50) and the default. It **is** a setting because the right
 number is a fact about the hand rather than about the game: a player who flags a
 lot wants the flag the moment they commit, and one who drags and rotates a lot
 wants room to start a gesture before the press turns into something else. The
 shipped default is 300 ms, down from the 450 ms it was fixed at — the time is
-*held*, so it is dead time, and it is spent on every flag of every board.
+*held*, so it is dead time, and it is spent on every flag of every board. The
+bottom of the range is a hair-trigger on purpose: a tap on a phone routinely
+lasts 100 ms or more, so at 50 ms an ordinary tap flags rather than opens, which
+is a real way to play a board you are mostly flagging.
 
-Three things about it:
+Four things about it:
 
 - **It is read at every press**, not captured when the controls are attached
   (which happens once, for the life of the app): `ControlHandlers.holdMs()` is a
@@ -2068,6 +2071,13 @@ Three things about it:
   arms the hold for a touch or a pen and never for a mouse, which flags by
   right-click, so `longPressSupported()` (a touch point, or a coarse pointer)
   hides the slider on a machine that could never use it.
+- **It is also how long the flag takes to land.** A held flag is the one the
+  player cannot see (their finger is over the cell), so it drops in from outside
+  the fingertip — and a drop that outlasts the press it answers reads as lag, so
+  `GameSession.flag` passes the hold straight through to `dropFlag`, and
+  `CellAnimations.startDrop` takes the length as an argument rather than owning a
+  constant. `DROP_HOLD` stays a *share* of it, so every point on the slider gets
+  the same shape of landing; the whole gesture is over in twice the setting.
 
 **The header's flag blinks red when a flag is planted.** The gesture has a blind
 spot by construction — the finger doing the holding is on top of the very cell
