@@ -112,7 +112,13 @@ Pick a surface, then a tiling:
 
 Every board is a **link** — `?mode=…&difficulty=…`, plus a `seed` to share
 the exact layout. Winning files the time: the fastest three per board and
-difficulty live under Settings › Best times. Settings also holds the
+difficulty live under Settings › Best times. It also files an **achievement**
+where there is one to file — fifty of them, and none written by hand: they are
+the catalogue's own structure, one per kind of tile a board can be made of
+(triangles through 13-gons), one for playing a tiling family and one for
+finishing it, the same pair for each surface and each group of solids, and one
+for the lot. The card that goes up on a win says what it just unlocked and links
+to the rest, under Settings › Achievements. Settings also holds the
 three themes (the page behind the board and how its cells are cut) over
 three colour schemes (auto, following the device, plus light and dark),
 three sound presets (synthesised from the move that caused them — a tile's

@@ -1,7 +1,18 @@
 import { Vector2, Vector3 } from "three";
 import "./ui/styles.css";
+import {
+  ACHIEVEMENTS,
+  ACHIEVEMENTS_BY_ID,
+  loadProgress,
+  measureOf,
+  recordWin,
+  unlockedAt,
+  wonModes,
+  type Achievement,
+} from "./achievements";
 import { setAnalyticsEnabled, trackGame } from "./analytics";
 import {
+  playSound,
   setSoundPreset,
   setSoundVolume,
   soundChoice,
@@ -11,7 +22,7 @@ import {
 import { isBoard3D, type CellId, type SymmetryId } from "./boards/core";
 import { fairnessOf } from "./boards/fairness";
 import { randomMode } from "./boards/randomBoard";
-import { setHapticsEnabled } from "./haptics";
+import { haptic, setHapticsEnabled } from "./haptics";
 import { boardLinkQuery, parseBoardLink } from "./link";
 import { GameSession } from "./session";
 import { shareBoard } from "./share";
@@ -80,6 +91,13 @@ class App {
    * guard rather than `scored`: that one is the leaderboard's and a *loss*
    * must not consume it — a loss is reported here and files no record. */
   private tracked = false;
+  /** Whether this game's win has been through the achievements record. Its own
+   * guard for the same reason `tracked` is: one game earns its unlocks once,
+   * whatever else clicks or ticks afterwards. */
+  private counted = false;
+  /** What the win that is being reported just unlocked, for the card
+   * `checkRecord` puts up a moment later. */
+  private unlocked: Achievement[] = [];
   /** Stored preferences (theme, difficulty, animations, cell style) — the
    * app's only persisted state. */
   private settings: Settings = loadSettings();
@@ -383,6 +401,8 @@ class App {
     this.dismissDialogs();
     this.scored = false;
     this.tracked = false;
+    this.counted = false;
+    this.unlocked = [];
     // Every ordinary game is dealt from a seed, generated here when the caller
     // has none, so that the board is a thing you can hand to someone else: the
     // address bar and the share button both name *this* layout rather than
@@ -444,6 +464,12 @@ class App {
     this.renderer.clearBoard();
     this.menu.show();
     this.onResize();
+  }
+
+  /** Home, then straight to the achievements page — the win card's link. */
+  private showAchievements(): void {
+    this.showMenu();
+    this.menu.openAchievements();
   }
 
   /** Lay the app out in the viewport the user can actually see. iOS Safari's
@@ -701,7 +727,31 @@ class App {
     // synchronously (animations off), and nothing here should depend on
     // whether it did.
     this.trackFinish();
+    // Before `checkRecord`, which is what puts the card up: the unlocks are
+    // half of what the card says, and on a win that sets no record they are the
+    // whole reason it opens at all.
+    this.countWin();
     this.checkRecord();
+  }
+
+  /** File a win with the achievements record, and keep what it unlocked for the
+   * card. Like `checkRecord` this runs from `afterMove`, the funnel every move
+   * goes through, and its own guard makes one game one entry. A loss counts
+   * nothing — there is no achievement for losing. */
+  private countWin(): void {
+    const session = this.session;
+    if (!session || this.counted || session.status !== "won") return;
+    this.counted = true;
+    const ids = recordWin({
+      mode: session.mode,
+      difficulty: session.difficulty,
+      ms: session.elapsedMs(),
+      flagless: session.flagless,
+      sides: session.sideCounts(),
+    });
+    this.unlocked = ids
+      .map((id) => ACHIEVEMENTS_BY_ID.get(id))
+      .filter((a): a is Achievement => a !== undefined);
   }
 
   /** Report how a game ended, once. Every move funnels through `afterMove`, so
@@ -727,21 +777,25 @@ class App {
 
   // -- best times ------------------------------------------------------------
 
-  /** File a win with the leaderboard, and put the record window up when it
-   * made the board's top three. Every move funnels through `afterMove`, so
-   * this is the one place a finished game is noticed — however it finished
-   * (tap, chord, right-click, the test seam). A loss records nothing. */
+  /** File a win with the leaderboard, and put the win card up when it made the
+   * board's top three *or* unlocked an achievement. Every move funnels through
+   * `afterMove`, so this is the one place a finished game is noticed — however
+   * it finished (tap, chord, right-click, the test seam). A loss records
+   * nothing. */
   private checkRecord(): void {
     const session = this.session;
     if (!session || this.scored || session.status !== "won") return;
     this.scored = true;
     const placed = recordTime(session.mode, session.difficulty, session.elapsedMs());
-    if (!placed) return;
+    // A time that did not place used to end the win in silence. It still does
+    // when nothing was unlocked; when something was, that is worth a card of
+    // its own — see the note at the top of ui/scoreDialog.ts.
+    if (!placed && this.unlocked.length === 0) return;
     const open = (): void => {
       this.scoreDialogTimer = 0;
       // The board can have been left or restarted during the delay.
       if (this.screen !== "game" || this.session !== session) return;
-      this.showScoreDialog(session, placed.rank, placed.entries);
+      this.showScoreDialog(session, placed?.rank ?? null, placed?.entries ?? []);
     };
     if (this.animationsEnabled) {
       this.scoreDialogTimer = window.setTimeout(open, RECORD_DIALOG_DELAY_MS);
@@ -752,21 +806,35 @@ class App {
 
   private showScoreDialog(
     session: GameSession,
-    rank: number,
+    rank: number | null,
     entries: ScoreEntry[],
   ): void {
     this.dismissDialogs();
+    // Said as the card arrives rather than when the win is counted: at the
+    // moment of counting, the win's own sound and buzz are playing, and this is
+    // the card's voice. With animations on, the win figure has finished by the
+    // time the card opens; with them off the two land together, which the
+    // collection they share makes consonant (audio/sound.ts).
+    if (this.unlocked.length > 0) {
+      haptic("unlock");
+      playSound({ kind: "unlock", count: this.unlocked.length });
+    }
     this.scoreDialog = openScoreDialog(this.ui, {
       mode: session.mode,
       difficulty: session.difficulty,
       rank,
       entries,
+      unlocked: this.unlocked,
       animate: this.animationsEnabled,
       onPlayAgain: () => this.startGame(session.mode, session.difficulty),
       // The same move the header's die makes, from the card that is up when a
       // board is finished rather than from the row over one being played.
       onNewBoard: () => this.startRandomBoard(),
       onMenu: () => this.showMenu(),
+      // The card is where a player is thinking about achievements, so it is
+      // where the way to the whole list belongs. Leaving the board is the same
+      // move Menu makes — the card is about a board that is finished.
+      onShowAll: () => this.showAchievements(),
       // The win's time goes with the link — the card is about the time, so the
       // message someone receives should say it too. A board with no seed (the
       // test seam) has no link, and gets no button.
@@ -888,6 +956,16 @@ class App {
         this.session?.mesh.setAnimationsEnabled(enabled);
       },
       bestTimes: (mode, difficulty) => bestTimes(mode, difficulty),
+      achievements: () => {
+        const progress = loadProgress();
+        const won = wonModes(progress);
+        const stamps = unlockedAt();
+        return ACHIEVEMENTS.map((a) => ({
+          id: a.id,
+          unlockedAt: stamps[a.id] ?? null,
+          ...measureOf(a, progress, won),
+        }));
+      },
       state: () => {
         const s = this.session;
         return {

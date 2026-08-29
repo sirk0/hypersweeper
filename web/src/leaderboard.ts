@@ -49,7 +49,10 @@ export function boardKey(mode: string, difficulty: string): string {
   return `${mode}|${difficulty}`;
 }
 
-function splitKey(key: string): { mode: string; difficulty: string } | null {
+/** The mode and difficulty a `boardKey` was built from, or `null` when the key
+ * is not one. Exported for `achievements.ts`, which seeds itself from the
+ * best-times list — a complete record of every board this device has won. */
+export function splitBoardKey(key: string): { mode: string; difficulty: string } | null {
   const i = key.indexOf("|");
   if (i <= 0 || i === key.length - 1) return null;
   return { mode: key.slice(0, i), difficulty: key.slice(i + 1) };
@@ -99,7 +102,7 @@ export function bestTimes(mode: string, difficulty: string): ScoreEntry[] {
 export function allBestTimes(): Map<string, ScoreEntry[]> {
   const out = new Map<string, ScoreEntry[]>();
   for (const [key, raw] of Object.entries(readBoards())) {
-    if (!splitKey(key)) continue;
+    if (!splitBoardKey(key)) continue;
     const entries = parseEntries(raw);
     if (entries.length > 0) out.set(key, entries);
   }

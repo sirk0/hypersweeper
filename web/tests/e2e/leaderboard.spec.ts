@@ -21,6 +21,31 @@ async function seedTimes(page: Page, key: string, entries: { ms: number; at: num
   );
 }
 
+/** Boot with the fixture board's achievements already unlocked, so a win on it
+ * has nothing to announce. The record it writes also stops `achievements.ts`
+ * seeding itself from the best times this file plants. */
+async function seedNoAchievementsLeft(page: Page): Promise<void> {
+  await page.addInitScript(() =>
+    localStorage.setItem(
+      "ms:achievements",
+      JSON.stringify({
+        version: 1,
+        wins: { square: { easy: 1 } },
+        shapes: [4],
+        flagless: 1,
+        unlocked: {
+          "first-win": 1,
+          "difficulty:easy": 1,
+          flagless: 1,
+          "shape:4": 1,
+          "tiling:regular": 1,
+          "surface:flat": 1,
+        },
+      }),
+    ),
+  );
+}
+
 /** The fixture win from play.spec.ts: one mine in the corner, so revealing the
  * far corner floods the rest of the board and wins. */
 async function winFixtureBoard(page: Page): Promise<void> {
@@ -123,6 +148,11 @@ test.describe("record window", () => {
       { ms: 0, at: 2 },
       { ms: 0, at: 3 },
     ]);
+    // The card also opens for an achievement, which this win would otherwise
+    // earn six of (see achievements.spec.ts, which pins that half). This test
+    // is about the leaderboard's own rule, so the achievements are settled
+    // first: with nothing left to unlock, a non-placing time is silent.
+    await seedNoAchievementsLeft(page);
     await page.goto("/");
     await expect(page.locator("body[data-ready]")).toBeVisible();
     await winFixtureBoard(page);

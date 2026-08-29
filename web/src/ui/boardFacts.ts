@@ -100,7 +100,10 @@ const NOUNS: Record<number, string> = {
   12: "dodecagon",
 };
 
-const noun = (sides: number): string => NOUNS[sides] ?? `${sides}-gon`;
+/** What a polygon with this many sides is called. Exported for
+ * `achievements.ts`, whose shape badges are named by side count alone. */
+export const sideNoun = (sides: number): string => NOUNS[sides] ?? `${sides}-gon`;
+const noun = sideNoun;
 
 /** The name a tile of this kind goes by. The shapes English has a word for —
  * the rectangle, the rhombus, the kite, the isosceles triangle — are named by

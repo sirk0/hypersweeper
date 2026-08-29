@@ -47,6 +47,8 @@ export type SoundEvent =
   | { kind: "lose"; pan: number }
   /** The board was cleared, from a winning click at `pan`. */
   | { kind: "win"; pan: number }
+  /** `count` achievements unlocked by the win just played. */
+  | { kind: "unlock"; count: number }
   /** One step of the Klein bottle's ring scroll. */
   | { kind: "scroll"; direction: number }
   /** The figure the settings picker plays when a preset is chosen. */
@@ -302,6 +304,33 @@ export function voicesFor(event: SoundEvent, preset: SoundPreset): Voice[] {
         duration: preset.win.duration,
         attack: preset.win.attack,
         gain: preset.win.gain,
+        partials: Math.min(preset.timbre.partialCap, 4),
+        noise: 0,
+      }));
+    }
+
+    case "unlock": {
+      const { notes, step, interval } = preset.unlock;
+      // One note per achievement, so the figure is as big as the moment was:
+      // a single unlock is a two-note lift, and a first win's six runs to the
+      // preset's ceiling. The same rule the rest of this module follows — the
+      // sound is derived from what happened, not chosen for it.
+      const n = Math.max(2, Math.min(notes, Math.floor(event.count) + 1));
+      return Array.from({ length: n }, (_, i) => ({
+        delay: (i * step) / 1000,
+        // Up from the root. The win flourish covers a wider range than this
+        // (an octave below the root to a third above), so what separates the
+        // two is the gesture rather than the register: that one is long and
+        // sweeps the field, this one is short and stays put. Under reduced
+        // motion they sound together, and what makes that safe is that both
+        // are grid degrees — the one-collection rule.
+        freq: semitones(preset.rootHz, gridNote(preset, -i * interval)),
+        // Centred: this is about a card, not about a cell, so it has no place
+        // in the stereo field the way an opening does.
+        pan: 0,
+        duration: preset.unlock.duration,
+        attack: preset.unlock.attack,
+        gain: preset.unlock.gain,
         partials: Math.min(preset.timbre.partialCap, 4),
         noise: 0,
       }));

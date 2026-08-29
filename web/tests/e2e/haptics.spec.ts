@@ -138,6 +138,28 @@ test.describe("iOS haptics through the Capacitor bridge", () => {
     });
   });
 
+  test("an achievement asks for its own tap, beside the win's buzz", async ({ page }) => {
+    // A first win unlocks several things at once, so the same board that posts
+    // the success notification posts the unlock impact too — two calls for one
+    // move, which is the whole reason the unlock is an *impact* rather than a
+    // second notification: they have to be told apart through a fingertip.
+    await page.evaluate(() => window.__ms?.startBoard("square", "easy", { mines: ["0,0"] }));
+    const xy = await page.evaluate(() => window.__ms?.cellScreenXY("8,8"));
+    await page.mouse.click(xy!.x, xy!.y);
+    expect(await page.evaluate(() => window.__ms?.state().status)).toBe("won");
+    const calls = await taptic(page);
+    expect(calls).toContainEqual({
+      pluginId: "Haptics",
+      methodName: "notification",
+      options: { type: "SUCCESS" },
+    });
+    expect(calls).toContainEqual({
+      pluginId: "Haptics",
+      methodName: "impact",
+      options: { style: "MEDIUM" },
+    });
+  });
+
   test("planting a flag ticks, and only ticks", async ({ page }) => {
     await page.evaluate(() => window.__ms?.startBoard("square", "easy", { mines: ["4,4"] }));
     await page.evaluate(() => window.__ms?.flag("4,4"));

@@ -44,6 +44,13 @@ export class GameSession {
   private exploded: CellId | null = null;
   private startedAt: number | null = null;
   private stoppedAt: number | null = null;
+  /** How many flags the *player* has planted this game.
+   *
+   * Not "how many flags are on the board": winning auto-flags every mine still
+   * hidden (`Game.reveal`), so at the moment the achievements are counted the
+   * board is always fully flagged however the game was played. This is the only
+   * record of what the player actually did. */
+  private flagsPlanted = 0;
 
   // View-layer motion along the board's own symmetries (see boards/core.ts
   // BoardSymmetry): each is a graph automorphism, and applying one walks a
@@ -229,6 +236,7 @@ export class GameSession {
     if (held && isFlagged && !wasFlagged) {
       this.mesh.dropFlag(this.geomFor(gameCell));
     }
+    if (isFlagged && !wasFlagged) this.flagsPlanted++;
     if (isFlagged !== wasFlagged) {
       haptic("flag");
       if (soundEnabled()) {
@@ -354,6 +362,11 @@ export class GameSession {
    * T-vertices dropped), so a tile that looks like a pentagon sounds like
    * one. */
   private sidesOf(cell: CellId): number {
+    return this.sidesMap().get(cell) ?? 4;
+  }
+
+  /** The whole board measured, built once. */
+  private sidesMap(): Map<CellId, number> {
     if (!this.sides) {
       this.sides = new Map();
       const masks = isBoard3D(this.board) ? this.board.cornerMask : null;
@@ -361,7 +374,21 @@ export class GameSession {
         this.sides.set(id, shapeMetrics(polygon, masks?.get(id)).sides);
       }
     }
-    return this.sides.get(cell) ?? 4;
+    return this.sides;
+  }
+
+  /** Whether the player has planted no flag at all this game. */
+  get flagless(): boolean {
+    return this.flagsPlanted === 0;
+  }
+
+  /** The distinct side counts of this board's tiles, ascending.
+   *
+   * Reuses the map `sidesOf` already builds for the sound engine, so a board
+   * whose voices have been measured costs nothing and one played in silence
+   * costs a single `shapeMetrics` pass. */
+  sideCounts(): number[] {
+    return [...new Set(this.sidesMap().values())].sort((a, b) => a - b);
   }
 
   /** Where a cell is across the stereo field, -1 (left) .. +1 (right). The

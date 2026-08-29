@@ -566,6 +566,37 @@ page's own pools and fairness weighting), the board's **share** link, and the
 menu — and it is where sharing lives: the game header carried a share button and
 does not any more.
 
+A win also files with `src/achievements.ts`, which is the record of **where in
+the catalogue a player has been** — and the window is no longer only about
+records, because that is where an unlock is said. There are 50 achievements and
+none of them is typed out: the seven tiling families come from `familyRows` over
+every surface, the five surfaces from `SURFACE_SPECS`, the four solid groups
+from `SOLID_GROUPS`, each with a "win one of these" and a "win all of these", so
+a tiling added tomorrow joins its family's pair the way it joins the menu — with
+no edit. The one declared table is `SHAPE_SIDES`, the side counts a tile can
+have (3, 4, 5, 6, 8, 10, 12, 13), because deriving it means building all 179
+boards; `tests/unit/achievements.test.ts` builds them and fails if it drifts.
+**Nothing in the feature builds a board**, which is what keeps the page instant.
+The five **triakis** boards are left out of every completion target — they
+cannot be played at all, their menu row opening `blockedExplanation` instead of
+a game, so a set holding one could never be finished, and the totals run to 174
+rather than 179. Its own key `ms:achievements`, shaped like the leaderboard's,
+holds *history* — what was won, plus the three facts a mode string cannot carry
+(whether a flag was ever planted, the fastest time per difficulty, the side
+counts seen) — and which achievements that earns is recomputed from scratch
+every time, so an achievement added by a later build unlocks **retroactively**
+rather than being unreachable. On a device with no record it seeds itself from
+`allBestTimes()`, which is already a complete list of every board won. Unlocks
+share the record window rather than opening a third modal (the app has two on
+purpose), which is why `rank` there is now `number | null`: a win that beats no
+record but unlocks something still gets a card, where it used to get silence.
+The card's last row is the link to the whole list, which lives at Settings ›
+Achievements; an unlock also gets a **medium impact** haptic and a voice of its
+own, one note per achievement unlocked, played when the card arrives. See
+"Achievements" in `web/README.md`, including the auto-flagging trap that
+`GameSession.flagless` exists for, and why the unlock figure is told apart from
+the win flourish by its gesture rather than by its register.
+
 The game screen instead names the board **behind** it — its own fixed layer
 inserted before the transparent canvas (`src/ui/boardInfo.ts`), so the name
 costs the board no height and a board zoomed over it covers it — and its header
