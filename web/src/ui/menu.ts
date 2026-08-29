@@ -374,6 +374,7 @@ export class Menu {
       sound: this.settings.sound,
       volume: this.settings.volume,
       haptics: this.settings.haptics,
+      holdToFlagMs: this.settings.holdToFlagMs,
       backgrounds: this.settings.backgrounds,
       analytics: this.settings.analytics,
       setTheme: (key) => {
@@ -400,10 +401,13 @@ export class Menu {
         this.settings.setSound(key);
         page();
       },
-      // No re-render: this arrives from a slider the player is still holding,
+      // No re-render: these arrive from a slider the player is still holding,
       // and rebuilding the page would pull it out from under them.
       setVolume: (level) => {
         this.settings.setVolume(level);
+      },
+      setHoldToFlag: (ms) => {
+        this.settings.setHoldToFlag(ms);
       },
       setHaptics: (on) => {
         this.settings.setHaptics(on);

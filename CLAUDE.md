@@ -635,7 +635,8 @@ untouched; `tests/unit/menu.test.ts` pins it.
 
 The menu's gear opens a **settings** page (best times, theme, colour
 scheme, sound and
-its volume, haptics where anything can buzz, animations toggle, build
+its volume, haptics where anything can buzz, **hold to flag** where anything
+can long-press, animations toggle, build
 version, update check) — one more
 `Menu` page rather than a modal, with the theme, colour-scheme, best-times
 and sound pages below it. Nothing on it links off the site. The header carries the gear at its right edge and a **?** at its
@@ -644,11 +645,19 @@ left — one button per side, so the two balance and the title
 phone. The **?** opens a how-to-play page (`src/ui/help.ts`) built the
 same way, its text in TS rather than in the pygame-shared `screens.json`.
 Theme, colour scheme, difficulty, the sound preset and its volume, haptics,
-custom
+the **hold-to-flag** duration, custom
 backgrounds and the animations override persist (`src/settings.ts`): one stable
 `localStorage` key holding a record that carries its own `version`, never
 a versioned key name — see "Settings and themes" in `web/README.md` before
-adding a field.
+adding a field. **Hold to flag** is how long a press has to be held before it
+plants one (`src/input/hold.ts`; 200–1000 ms, 300 by default, down from the
+450 it was fixed at): `controls.ts` asks for it at every press rather than
+capturing it once, so a change reaches the board in play, and the row is
+hidden where nothing can long-press exactly as the haptics row is hidden where
+nothing can buzz. While the press is counted the **header's flag blinks** — the
+finger is on top of the very cell the flag will land on, so that is the only
+place the countdown can be shown — at half the hold, so two blinks and the flag
+lands whatever the setting, and a steady dim instead under reduced motion.
 
 The look is **two** settings on two independent axes. A **theme** is how the
 board's cells are cut and what the page behind them is made of; there are three

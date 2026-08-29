@@ -2043,6 +2043,47 @@ in the *same* list as the presets — `.menu-body` is a gapless flex column, so 
 second `<ul>` would butt straight against the first. The settings row above
 reports both ("Chime · 60%").
 
+**Hold to flag.** How long a press has to be held on a touch screen before it
+plants a flag — a slider under Behaviour, `src/input/hold.ts` for the range
+(200–1000 ms, step 50) and the default. It **is** a setting because the right
+number is a fact about the hand rather than about the game: a player who flags a
+lot wants the flag the moment they commit, and one who drags and rotates a lot
+wants room to start a gesture before the press turns into something else. The
+shipped default is 300 ms, down from the 450 ms it was fixed at — the time is
+*held*, so it is dead time, and it is spent on every flag of every board.
+
+Three things about it:
+
+- **It is read at every press**, not captured when the controls are attached
+  (which happens once, for the life of the app): `ControlHandlers.holdMs()` is a
+  live query like `rotates()` and `pans()`, so a change on the settings page
+  reaches the board already in play, exactly as the sound preset does.
+- **It is the second `.settings-volume` row**, and for the same reason the first
+  one is a slider: it is a level rather than a choice, so a list of named speeds
+  would be a list of guesses about the player's hand. Like the volume it does
+  **not** re-render its page — the value is being dragged — so the label updated
+  in place is the whole feedback, and `Menu.settingsPageHost` leaves `page()` off
+  both setters.
+- **The row is conditional**, on the same principle as Haptics: `controls.ts`
+  arms the hold for a touch or a pen and never for a mouse, which flags by
+  right-click, so `longPressSupported()` (a touch point, or a coarse pointer)
+  hides the slider on a machine that could never use it.
+
+**The header's flag blinks while the press is counted.** The gesture has a blind
+spot by construction — the finger doing the holding is on top of the very cell
+the flag will land on — so the feedback has to be somewhere else on screen, and
+the header's own flag is where the player is already looking for flag state.
+`controls.ts` reports `onHoldStart`/`onHoldEnd` around the armed window (every
+way out goes through the end: the flag landing, the finger lifting, the press
+becoming a drag or a pinch, the browser cancelling the pointer), `Hud` turns that
+into `.hud-btn.holding` plus a `--hold-duration` custom property, and the blink
+itself is CSS. The beat is **half the hold**, so two blinks and the flag lands
+whatever the setting, floored at 140 ms so the fastest hold does not strobe.
+Under `prefers-reduced-motion` it becomes a steady dim instead — the motion is
+optional, the feedback is not. `tests/e2e/holdToFlag.spec.ts` pins both, and has
+to `use({ contextOptions: { reducedMotion: "no-preference" } })` for the blink,
+since the suite runs reduced by default.
+
 **Haptics.** A plain boolean, and the one row that is **conditional**:
 `hapticsSupported()` (`src/haptics.ts`) offers it only where something can
 actually buzz — the native iOS shell, or a *mobile* browser with
@@ -2066,9 +2107,9 @@ principle as the Haptics row needing a device that can buzz, and the "Check for
 updates" row needing a deployed build to check against.
 
 **Persistence.** `src/settings.ts` is the app's only stored state: theme, colour
-scheme, difficulty, the animations override, haptics, the analytics flag, and the
-sound preset with its volume. Flag mode, zoom, the menu page you are on and the board
-in progress stay in memory as before.
+scheme, difficulty, the animations override, haptics, the hold-to-flag duration,
+the analytics flag, and the sound preset with its volume. Flag mode, zoom, the
+menu page you are on and the board in progress stay in memory as before.
 
 The layout is **one stable `localStorage` key holding a record that carries its
 own `version`** — deliberately not a versioned key name (`…:v1`, `…:v2`), which

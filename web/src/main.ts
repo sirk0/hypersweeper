@@ -27,6 +27,7 @@ import { boardLinkQuery, parseBoardLink } from "./link";
 import { GameSession } from "./session";
 import { shareBoard } from "./share";
 import { attachControls, blockBrowserZoom } from "./input/controls";
+import { clampHoldMs } from "./input/hold";
 import {
   BoardRenderer,
   initialOrientation,
@@ -167,6 +168,11 @@ class App {
       // A long press is only ever armed for a touch or a pen (see
       // controls.ts), so this is the one flag the player cannot see land.
       onLongPress: (cell) => this.flag(cell, true),
+      holdMs: () => this.settings.holdToFlagMs,
+      // The finger is over the cell, so the countdown is shown where nothing
+      // covers it: the header's own flag, blinking at the hold's beat.
+      onHoldStart: () => this.setHolding(true),
+      onHoldEnd: () => this.setHolding(false),
       onSecondary: (cell) => this.flag(cell),
       onHover: (cell) => this.hover(cell),
       rotates: () => this.screen === "game" && (this.session?.is3d ?? false),
@@ -231,6 +237,9 @@ class App {
       get haptics() {
         return app.settings.haptics;
       },
+      get holdToFlagMs() {
+        return app.settings.holdToFlagMs;
+      },
       get backgrounds() {
         return app.settings.backgrounds;
       },
@@ -244,6 +253,7 @@ class App {
       setSound: (key) => this.setSound(key),
       setVolume: (level) => this.setVolume(level),
       setHaptics: (on) => this.setHaptics(on),
+      setHoldToFlag: (ms) => this.setHoldToFlag(ms),
       setBackgrounds: (on) => this.setBackgrounds(on),
       setAnalytics: (on) => this.setAnalytics(on),
     };
@@ -316,6 +326,14 @@ class App {
     this.settings = { ...this.settings, haptics: on };
     saveSettings(this.settings);
     setHapticsEnabled(on);
+  }
+
+  /** Set how long a press has to be held before it flags. Like the sound preset
+   * it needs no new board: `controls.ts` asks for the number at every press, so
+   * the next hold on the board already in play is the new length. */
+  private setHoldToFlag(ms: number): void {
+    this.settings = { ...this.settings, holdToFlagMs: clampHoldMs(ms) };
+    saveSettings(this.settings);
   }
 
   /** Turn the board's own tiling behind the page on or off. Like the sound
@@ -445,6 +463,10 @@ class App {
     }
     this.hovered = null;
     this.flagMode = false;
+    // A press the board changed under (the smiley, the die) gets no
+    // `onHoldEnd`, and the state outlives the session — clear it here rather
+    // than leaving the new board's flag blinking at nothing.
+    this.hud.setState({ holding: false });
     this.syncHud();
     this.onResize();
     // Last, so a mode `buildBoard` rejects throws before it is counted as a
@@ -639,6 +661,20 @@ class App {
     if (!this.session || this.screen !== "game") return;
     this.session.flag(cell, held);
     this.afterMove();
+  }
+
+  /** Say whether a press is being counted towards a flag. The header's flag
+   * blinks while it is, at the beat of the hold the player has set — the finger
+   * is on top of the cell, so the header is the one place the countdown can be
+   * seen at all. The duration goes with it so the blink is that hold's own
+   * rather than a fixed rate that would say the same thing at 200 ms and at a
+   * second. */
+  private setHolding(holding: boolean): void {
+    // Starting one off the game screen would be a blink with no board behind
+    // it; ending one always lands, so a press interrupted by a walk back to the
+    // menu cannot leave the next board's flag blinking.
+    if (holding && this.screen !== "game") return;
+    this.hud.setState({ holding, holdMs: this.settings.holdToFlagMs });
   }
 
   private hover(cell: CellId | null): void {

@@ -1,5 +1,6 @@
 import type { BoardSymmetry } from "../boards/core";
 import { screens, type HudSlot } from "../config/screens";
+import { DEFAULT_HOLD_MS } from "../input/hold";
 
 // The game header, rendered from the shared UI-screen config
 // (`data/ui/screens.json`) rather than hand-laid-out, so the pygame and TS
@@ -125,6 +126,13 @@ export interface HudState {
   elapsedSeconds: number;
   status: "playing" | "won" | "lost";
   flagMode: boolean;
+  /** Whether a press on the board is being counted towards a flag. The header's
+   * flag blinks while it is — the finger doing the holding is covering the very
+   * cell it will flag, so this is the only place the countdown can be shown. */
+  holding: boolean;
+  /** How long that hold lasts (Settings › Hold to flag), which is the beat the
+   * blink runs at: two blinks and the flag lands. */
+  holdMs: number;
   /** Which of the config's `visibleWhen` conditions this board meets — see
    * `boardConditions`. */
   conditions: ReadonlySet<string>;
@@ -160,6 +168,8 @@ export class Hud {
     elapsedSeconds: 0,
     status: "playing",
     flagMode: false,
+    holding: false,
+    holdMs: DEFAULT_HOLD_MS,
     conditions: new Set<string>(),
   };
   private readonly counters = new Map<string, HTMLElement>();
@@ -237,7 +247,15 @@ export class Hud {
       el.textContent = pad(value, digits);
     }
     if (this.smiley) this.smiley.textContent = screens.smiley[this.state.status];
-    if (this.flagBtn) this.flagBtn.classList.toggle("active", this.state.flagMode);
+    if (this.flagBtn) {
+      this.flagBtn.classList.toggle("active", this.state.flagMode);
+      // The blink itself is CSS (`.hud-btn.holding`); what is set here is the
+      // beat, so the icon pulses at the hold the player has chosen rather than
+      // at one fixed rate that would say the same thing at 200 ms and at a
+      // second.
+      this.flagBtn.classList.toggle("holding", this.state.holding);
+      this.flagBtn.style.setProperty("--hold-duration", `${this.state.holdMs}ms`);
+    }
     // Toggle config-driven conditional visibility (the board-symmetry controls;
     // no header slot carries one today, but a slot reads the same either way).
     for (const btn of this.root.querySelectorAll<HTMLElement>("[data-visible-when]")) {

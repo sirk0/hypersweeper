@@ -464,6 +464,41 @@ body {
   height: var(--hud-icon);
 }
 
+/* Holding a cell to flag it. The finger is on top of the very cell the flag
+   will land on, so the board can say nothing about the press being counted —
+   the header's flag is where it is said instead, blinking from the moment the
+   press is armed until the flag lands or the gesture turns into something else.
+
+   The beat is the hold's own: `--hold-duration` is written by the HUD from the
+   player's setting (Settings › Hold to flag), and half of it per blink means
+   two blinks and the flag is down, whatever the setting. The floor is what
+   keeps the fastest holds from strobing. Only the icon blinks, so the button's
+   own chrome — and its pressed and flag-mode states — read as they always do. */
+@keyframes hud-flag-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.18;
+  }
+}
+
+.hud-btn.holding svg {
+  animation: hud-flag-blink max(140ms, calc(var(--hold-duration, 300ms) / 2))
+    ease-in-out infinite;
+}
+
+/* A blink is a motion, and a small one repeating fast is exactly what reduced
+   motion is asked for. The feedback itself is not optional, though — without it
+   a held press says nothing at all — so it becomes a steady dim instead. */
+@media (prefers-reduced-motion: reduce) {
+  .hud-btn.holding svg {
+    animation: none;
+    opacity: 0.45;
+  }
+}
+
 /* LED display: red digits on a dark rounded panel, flanking the smiley. The
    panel is exactly as tall as the buttons either side of it (pygame draws its
    counter box on the same header midline at the same height), so the row is
@@ -1044,6 +1079,28 @@ body {
   justify-content: space-between;
   gap: 16px;
   cursor: default;
+}
+
+/* The same row shape carrying a three-word label instead of "Volume": left to
+   itself the label column gives way to the slider's minimum and the title wraps
+   mid-phrase ("Hold to / flag"), which reads as a squeezed row rather than a
+   deliberate one. The label holds its line and the slider gives up the width
+   instead — it still has room to drag on the narrowest phone. */
+.settings-hold .menu-entry-label,
+.settings-hold .menu-entry-hint {
+  white-space: nowrap;
+}
+
+/* ...and the text column has to stop shrinking for that to mean anything: the
+   shared rule gives it `min-width: 0` so a long hint can wrap, which with
+   `nowrap` on instead lets the label run out under the slider. */
+.settings-hold .menu-entry-text {
+  flex: 0 1 auto;
+  min-width: max-content;
+}
+
+.settings-hold .settings-range {
+  min-width: 72px;
 }
 
 .settings-range {

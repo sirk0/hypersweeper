@@ -9,6 +9,7 @@ import {
   type Settings,
 } from "../../src/settings";
 import { DEFAULT_SOUND } from "../../src/audio/presets";
+import { DEFAULT_HOLD_MS, HOLD_MS_MAX, HOLD_MS_MIN } from "../../src/input/hold";
 import { DEFAULT_THEME } from "../../src/ui/theme";
 
 // The unit environment is node, with no `window` and no `localStorage` — the
@@ -50,6 +51,7 @@ const SETTINGS: Settings = {
   sound: "arcade",
   volume: 0.5,
   haptics: false,
+  holdToFlagMs: 500,
   backgrounds: true,
   analytics: false,
   seenHint: true,
@@ -145,6 +147,7 @@ describe("settings validation", () => {
       sound: DEFAULT_SETTINGS.sound,
       volume: DEFAULT_SETTINGS.volume,
       haptics: DEFAULT_SETTINGS.haptics,
+      holdToFlagMs: DEFAULT_SETTINGS.holdToFlagMs,
       backgrounds: DEFAULT_SETTINGS.backgrounds,
       analytics: DEFAULT_SETTINGS.analytics,
       seenHint: DEFAULT_SETTINGS.seenHint,
@@ -176,6 +179,29 @@ describe("settings validation", () => {
       withStorage(fakeStorage({ [KEY]: JSON.stringify({ volume: raw }) }));
       expect(loadSettings().volume, String(raw)).toBe(level);
     }
+  });
+
+  it("snaps a stored hold-to-flag duration onto the slider's grid", () => {
+    for (const [raw, ms] of [
+      [500, 500],
+      [430, 450], // off the step, snapped rather than dropped
+      [50, HOLD_MS_MIN], // a hold that would fire inside a tap
+      [5000, HOLD_MS_MAX],
+      [0, HOLD_MS_MIN],
+      ["slow", DEFAULT_HOLD_MS],
+      [null, DEFAULT_HOLD_MS],
+    ] as const) {
+      withStorage(fakeStorage({ [KEY]: JSON.stringify({ holdToFlagMs: raw }) }));
+      expect(loadSettings().holdToFlagMs, String(raw)).toBe(ms);
+    }
+  });
+
+  it("gives a record written before the setting today's brisker hold", () => {
+    // The hold was fixed at 450 ms before it was a setting, so a record from
+    // such a build must pick up the new default rather than the old constant.
+    withStorage(fakeStorage({ [KEY]: JSON.stringify({ version: 4, theme: "classic" }) }));
+    expect(loadSettings().holdToFlagMs).toBe(DEFAULT_HOLD_MS);
+    expect(DEFAULT_HOLD_MS).toBeLessThan(450);
   });
 
   it("drops a sound preset this build does not have, but keeps Off", () => {
@@ -220,6 +246,7 @@ describe("settings upgrades", () => {
       sound: DEFAULT_SETTINGS.sound,
       volume: DEFAULT_SETTINGS.volume,
       haptics: DEFAULT_SETTINGS.haptics,
+      holdToFlagMs: DEFAULT_SETTINGS.holdToFlagMs,
       backgrounds: DEFAULT_SETTINGS.backgrounds,
       analytics: DEFAULT_SETTINGS.analytics,
       seenHint: DEFAULT_SETTINGS.seenHint,
@@ -325,6 +352,7 @@ describe("settings upgrades", () => {
       sound: DEFAULT_SETTINGS.sound,
       volume: DEFAULT_SETTINGS.volume,
       haptics: DEFAULT_SETTINGS.haptics,
+      holdToFlagMs: DEFAULT_SETTINGS.holdToFlagMs,
       backgrounds: DEFAULT_SETTINGS.backgrounds,
       analytics: DEFAULT_SETTINGS.analytics,
       seenHint: DEFAULT_SETTINGS.seenHint,
@@ -380,6 +408,7 @@ describe("cross-tab sync", () => {
           sound: DEFAULT_SETTINGS.sound,
         volume: DEFAULT_SETTINGS.volume,
         haptics: DEFAULT_SETTINGS.haptics,
+      holdToFlagMs: DEFAULT_SETTINGS.holdToFlagMs,
       backgrounds: DEFAULT_SETTINGS.backgrounds,
         analytics: DEFAULT_SETTINGS.analytics,
         seenHint: DEFAULT_SETTINGS.seenHint,

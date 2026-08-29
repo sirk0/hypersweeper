@@ -1,5 +1,6 @@
 import { clampVolume, DEFAULT_SOUND, DEFAULT_VOLUME, resolveSound } from "./audio/presets";
 import { hasDifficulty, screens } from "./config/screens";
+import { clampHoldMs, DEFAULT_HOLD_MS } from "./input/hold";
 import { readObject, storage } from "./storage";
 import {
   DEFAULT_SCHEME,
@@ -72,6 +73,10 @@ export interface Settings {
   /** Whether the game buzzes: the Taptic Engine in the iOS app, the Vibration
    * API elsewhere. Read on every event, like `sound`. */
   haptics: boolean;
+  /** How long a press has to be held on a touch screen before it plants a flag,
+   * in milliseconds (`input/hold.ts` holds the range and the default). Read at
+   * every press, like `sound`, so a change applies to the board in play. */
+  holdToFlagMs: number;
   /** Whether the page behind the board is patterned with that board's own
    * tiling (Settings › Appearance, and only the Realistic theme has one at
    * all — see ui/backgroundPattern.ts). Off by default: it is a flourish, and
@@ -98,6 +103,7 @@ export const DEFAULT_SETTINGS: Settings = {
   sound: DEFAULT_SOUND,
   volume: DEFAULT_VOLUME,
   haptics: true,
+  holdToFlagMs: DEFAULT_HOLD_MS,
   backgrounds: false,
   analytics: true,
   seenHint: false,
@@ -227,6 +233,15 @@ export function loadSettings(): Settings {
     // out of the box.
     haptics:
       typeof rec["haptics"] === "boolean" ? rec["haptics"] : DEFAULT_SETTINGS.haptics,
+    // Additive, and a duration rather than a key: a record from a build that
+    // had the hold fixed at 450 ms lacks it and picks up today's brisker
+    // default, and anything off the slider's grid (or not a number at all) is
+    // snapped or dropped by `clampHoldMs` rather than arming a timer that
+    // fires instantly or never.
+    holdToFlagMs:
+      typeof rec["holdToFlagMs"] === "number"
+        ? clampHoldMs(rec["holdToFlagMs"])
+        : DEFAULT_SETTINGS.holdToFlagMs,
     // Additive, and defaulting *off*: a record from a build before the page
     // could be patterned lacks the key, and should look the way it did.
     backgrounds:
