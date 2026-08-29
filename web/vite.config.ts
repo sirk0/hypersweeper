@@ -1,6 +1,6 @@
 import { createRequire } from "node:module";
 import { fileURLToPath, URL } from "node:url";
-import { defineConfig, type Connect } from "vite";
+import { defineConfig, type Connect, type Plugin } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 
 // The settings screen reports which build is running. The version comes from
@@ -132,6 +132,50 @@ function stubTally(
   res.end();
 }
 
+// The build's own name — the same version and commit `define` puts in the
+// bundle below — written where the *server* can be asked for it.
+// `src/update.ts` fetches this file to find out which build is deployed, which
+// is the only way to answer that question truthfully: the service worker
+// updates itself quietly on launch, so its own state says nothing about whether
+// the page you are looking at is the newest build. Version *and* commit,
+// because a PR preview publishes many builds under one version number.
+//
+// Emitted rather than kept in `public/`, since it has to carry the version this
+// build was made with; served by middleware as well, so a dev server and
+// `vite preview` answer the check the way the deployed host does. Not part of
+// any packaged bundle — those drop the update row entirely, and
+// scripts/check-offline-assets.mjs asserts the fetch is compiled out with it.
+const STAMP_FILE = "version.json";
+
+const stamp = JSON.stringify({
+  version: pkg.version,
+  commit: (process.env.GITHUB_SHA ?? "").slice(0, 7),
+});
+
+const versionStamp: Plugin = {
+  name: "hypersweeper:version-stamp",
+  generateBundle() {
+    this.emitFile({ type: "asset", fileName: "version.json", source: stamp });
+  },
+  configureServer: (server) => void server.middlewares.use(serveStamp),
+  configurePreviewServer: (server) => void server.middlewares.use(serveStamp),
+};
+
+function serveStamp(
+  req: { url?: string | undefined },
+  res: { statusCode: number; setHeader(name: string, value: string): void; end(body?: string): void },
+  next: () => void,
+): void {
+  if (!(req.url ?? "").split("?")[0]?.endsWith(`/${STAMP_FILE}`)) {
+    next();
+    return;
+  }
+  res.statusCode = 200;
+  res.setHeader("Content-Type", "application/json");
+  res.setHeader("Cache-Control", "no-store");
+  res.end(stamp);
+}
+
 export default defineConfig({
   base,
   define: {
@@ -154,6 +198,7 @@ export default defineConfig({
   plugins: packaged ? [] : [
     socialMeta,
     tallyStub,
+    versionStamp,
     // Dropped, and the web manifest with it, when VITE_NO_SW=1 — see the flag
     // above. The other two plugins stay: a preview build is the deployed build
     // minus the worker, not the packaged one.
@@ -182,6 +227,15 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,svg,png,woff2,json}"],
+        // The one file the worker must not hold a copy of: it names the build
+        // the *server* is on, and a stamp served out of the precache could only
+        // ever name the build that installed the worker — the update check
+        // would then confirm this build to itself for ever. (The check's
+        // cache-busting query misses the precache route anyway; this makes it a
+        // property of the worker rather than of the URL the caller happens to
+        // build.) Keeping workbox's own default beside it, which naming this
+        // option would otherwise drop.
+        globIgnores: ["**/node_modules/**/*", "version.json"],
         // The Pages Function under /api/ is the one path that is not part of
         // the app shell. A POST is not a navigation request, so today's config
         // already leaves it alone; this says so, and keeps it true if the

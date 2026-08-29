@@ -638,7 +638,22 @@ scheme, sound and
 its volume, haptics where anything can buzz, animations toggle, build
 version, update check) — one more
 `Menu` page rather than a modal, with the theme, colour-scheme, best-times
-and sound pages below it. Nothing on it links off the site. The header carries the gear at its right edge and a **?** at its
+and sound pages below it. Nothing on it links off the site. The **update
+check** (`src/update.ts`) is the one row that asks the world a question, and
+it asks the *server*, never the service worker: every non-packaged build
+emits a `version.json` naming itself (version and short commit), the check
+fetches it past both caches (`no-store`, plus a `?t=` query the precache
+cannot match) and compares it with `__APP_VERSION__`/`__APP_COMMIT__`. Asking
+the worker was the bug — `registerType: "autoUpdate"` means it skips waiting
+and claims clients, and it updates itself on **every** launch, so
+"nothing is installing" is the *normal* state of a page still running the
+previous build, and the row said "You are on the latest build" to a player
+who then saw the new version on closing and reopening the app. The worker is
+now only machinery for getting the build the answer named: `update()`, wait
+for the incoming worker to reach `activated` (no incoming worker means it
+already did, quietly, and a reload is enough), then reload — and a failed
+fetch is "could not check", never "up to date". See "Check for updates" in
+`web/README.md`. The header carries the gear at its right edge and a **?** at its
 left — one button per side, so the two balance and the title
 "Hypersweeper", a single unbreakable word, stays on one line on a narrow
 phone. The **?** opens a how-to-play page (`src/ui/help.ts`) built the

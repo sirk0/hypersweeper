@@ -10,6 +10,7 @@ import { screens } from "../config/screens";
 import { hapticsSupported } from "../haptics";
 import { allBestTimes } from "../leaderboard";
 import { animationsEnabled } from "../settings";
+import { checkForUpdate, loadDeployedBuild } from "../update";
 import {
   activeScheme,
   SCHEME_KEYS,
@@ -226,30 +227,31 @@ function buttonRow(
   return { li, btn };
 }
 
-/** Ask the service worker for a fresh build. In dev (and any browser without
- * one) there is nothing registered, which is reported rather than hidden. */
+/** Ask the *server* which build it is serving, and get onto it if it is not
+ * this one (`src/update.ts`, where the whole rule and the reason for it live).
+ *
+ * The state of the service worker is deliberately not part of the answer: it
+ * updates itself silently on launch, so "nothing is installing" says nothing
+ * about whether this page is the newest build — which is how the check came to
+ * report "up to date" on a phone that showed a new version the moment the app
+ * was closed and reopened. */
 async function checkForUpdates(status: HTMLElement): Promise<void> {
   status.textContent = "Checking…";
-  const sw = navigator.serviceWorker;
-  if (!sw) {
-    status.textContent = "Updates are not available in this browser.";
+  const found = await checkForUpdate();
+  if (found.state === "unreachable") {
+    status.textContent = "Could not check for updates.";
     return;
   }
-  try {
-    const reg = await sw.getRegistration();
-    if (!reg) {
-      status.textContent = "No installed build to update (running from source).";
-      return;
-    }
-    await reg.update();
-    if (reg.installing ?? reg.waiting) {
-      status.textContent = "A new build is downloading — reloading…";
-      window.setTimeout(() => window.location.reload(), 800);
-    } else {
-      status.textContent = "You are on the latest build.";
-    }
-  } catch {
-    status.textContent = "Could not check for updates.";
+  if (found.state === "current") {
+    status.textContent = "You are on the latest build.";
+    return;
+  }
+  status.textContent = `Version ${found.build.version} found — updating…`;
+  // Resolves by reloading, so anything after it is the case where the download
+  // is still running: the next launch will finish it, which is worth saying
+  // rather than leaving the row on "updating…" for good.
+  if (!(await loadDeployedBuild())) {
+    status.textContent = "The new build is still downloading — reopen the app to finish.";
   }
 }
 
@@ -691,10 +693,18 @@ export function renderSettings(host: SettingsHost, pages: SettingsPages): Docume
   // no service worker and nothing to fetch, so the row is left out entirely
   // rather than sitting there to report that updates are unavailable.
   if (!__APP_PACKAGED__) {
+    // The status goes *under* the label, in the row's own text block, rather
+    // than opposite it as a value: some of what it has to say is a sentence
+    // ("the new build is still downloading — reopen the app to finish"), and at
+    // the right-hand edge of a phone-width row that squeezed "Check for
+    // updates" onto three lines and ran straight over them. A hint line is the
+    // page's own idiom for a row that explains itself, and it wraps.
     const status = document.createElement("span");
     status.className = "menu-entry-hint settings-status";
+    const label = textBlock("Check for updates");
+    label.append(status);
     const { li: updLi, btn: updBtn } = buttonRow(
-      [textBlock("Check for updates"), status],
+      [label],
       () => void checkForUpdates(status),
       "settings-update",
     );

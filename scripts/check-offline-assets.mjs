@@ -36,8 +36,13 @@ const ALLOWED = [
  * — which `VITE_PACKAGED=1` vetoes outright, so the transport and this string
  * with it are supposed to be gone from the macOS and iOS bundles. This pass is
  * what proves that, and it is the whole reason the app can promise those builds
- * talk to nothing. */
-const FORBIDDEN = ["api/tally"];
+ * talk to nothing.
+ *
+ * `version.json` is the second: `web/src/update.ts` fetches it to ask the
+ * server which build is deployed, and a packaged app has no server and no
+ * update row (`__APP_PACKAGED__` again), so the fetch has to be compiled out
+ * along with the row that calls it. */
+const FORBIDDEN = ["api/tally", "version.json"];
 
 /** Files whose contents can carry a load. Fonts/images are binary and are
  * checked only by being present. */
