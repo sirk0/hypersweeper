@@ -10,6 +10,7 @@ import {
 } from "./audio/sound";
 import { isBoard3D, type CellId, type SymmetryId } from "./boards/core";
 import { fairnessOf } from "./boards/fairness";
+import { randomMode } from "./boards/randomBoard";
 import { setHapticsEnabled } from "./haptics";
 import { boardLinkQuery, parseBoardLink } from "./link";
 import { GameSession } from "./session";
@@ -21,12 +22,16 @@ import {
   KEY_ROTATE_STEP,
 } from "./render/renderer";
 import { bestTimes, recordTime, type ScoreEntry } from "./leaderboard";
+import { boardFacts } from "./ui/boardFacts";
 import { BoardInfo } from "./ui/boardInfo";
+import { openInfoDialog } from "./ui/infoDialog";
 import { symmetryPictures } from "./ui/symmetryIcon";
 import { boardConditions, Hud } from "./ui/hud";
 import { Menu } from "./ui/menu";
-import { openScoreDialog, type ScoreDialogHandle } from "./ui/scoreDialog";
+import type { ModalHandle } from "./ui/modal";
+import { openScoreDialog } from "./ui/scoreDialog";
 import type { SettingsHost } from "./ui/settings";
+import { cellStyle } from "./render/cellStyle";
 import { applyTheme, onSchemeChange, themeCellStyle, type SchemePref } from "./ui/theme";
 import {
   animationsEnabled,
@@ -60,7 +65,9 @@ class App {
   private flagMode = false;
   private hovered: CellId | null = null;
   /** The record window, while it is up. */
-  private scoreDialog: ScoreDialogHandle | null = null;
+  private scoreDialog: ModalHandle | null = null;
+  /** The info window (what this board is), while it is up. */
+  private infoDialog: ModalHandle | null = null;
   /** Its pending open (the delay that lets the win animation play), so a
    * restart or a walk back to the menu during that window cancels it rather
    * than popping a card over the next board. */
@@ -123,6 +130,11 @@ class App {
     // header block, and the board is framed below both); the hint is positioned
     // over the board, so its place in the column does not matter.
     ui.append(this.hud.root, this.boardInfo.caption, this.menu.root, this.boardInfo.hint);
+    // The board's name goes *behind* the canvas rather than in the `#ui`
+    // column: both are fixed layers with no z-index, so tree order decides, and
+    // the canvas is transparent. That is the whole mechanism — a board zoomed
+    // over the name simply covers it, and the name costs the board no height.
+    canvas.before(this.boardInfo.nameLayer);
     this.hud.root.hidden = true;
 
     window.addEventListener("resize", () => this.onResize());
@@ -368,7 +380,7 @@ class App {
     difficulty: string,
     opts: { seed?: number; mines?: CellId[] } = {},
   ): void {
-    this.dismissScoreDialog();
+    this.dismissDialogs();
     this.scored = false;
     this.tracked = false;
     // Every ordinary game is dealt from a seed, generated here when the caller
@@ -421,42 +433,8 @@ class App {
     trackGame({ kind: "start", mode, difficulty });
   }
 
-  /** The how-to-play page, over a live board.
-   *
-   * The game is not torn down — the canvas is only hidden, so the mesh, the
-   * mine layout and the clock all survive — and the back row returns to it.
-   * This is the one menu page a game can reach: "how do I flag?" is a question
-   * asked *while* playing, and the back button beside it would have cost the
-   * board. `visibility` rather than `display` keeps the canvas's layout box, so
-   * the WebGL context is never resized out from under the scene, and it stops
-   * the hidden board from taking taps meant for the page. */
-  private showHelp(): void {
-    if (this.screen !== "game") return;
-    this.dismissScoreDialog();
-    this.hud.root.hidden = true;
-    this.boardInfo.hide();
-    this.canvas.style.visibility = "hidden";
-    this.menu.showHelpOverGame(() => {
-      this.menu.hide();
-      this.canvas.style.visibility = "";
-      this.hud.root.hidden = false;
-      if (this.session) {
-        this.boardInfo.setBoard(
-          this.session.mode,
-          this.session.difficulty,
-          boardConditions(this.session.symmetries),
-          this.symmetryPictures(),
-        );
-      }
-      this.onResize();
-    });
-  }
-
   private showMenu(): void {
-    this.dismissScoreDialog();
-    // A game left from the help page put the canvas away; leaving for the menu
-    // has to bring it back, or the next board is drawn on a hidden canvas.
-    this.canvas.style.visibility = "";
+    this.dismissDialogs();
     this.syncLocation(""); // the menu is not a board; drop the board's link
     this.screen = "menu";
     this.session = null;
@@ -526,9 +504,11 @@ class App {
    * height at the top so the board sits below it (0 in the menu). */
   private onResize(): void {
     this.syncViewport();
-    // The header *and* the caption under it: both sit in the `#ui` column above
-    // the board, so the board is framed below the pair. Measured off the
-    // caption's bottom rather than summed, so the column's own spacing counts.
+    // The header *and* the caption of board controls under it: both sit in the
+    // `#ui` column above the board, so the board is framed below the pair.
+    // Measured off the caption's bottom rather than summed, so the column's own
+    // spacing counts. The board's *name* is not in that column at all — it is
+    // drawn behind the board, and reserves nothing.
     const header =
       this.screen === "game" && !this.hud.root.hidden ? this.hud.root : null;
     const inset = !header
@@ -537,6 +517,10 @@ class App {
         ? header.getBoundingClientRect().height
         : this.boardInfo.caption.getBoundingClientRect().bottom;
     this.renderer.setTopInset(inset);
+    // The name sits on the line the board is framed from — the top of the play
+    // field, so a board that fills it covers the name and a smaller one leaves
+    // it showing above. It is not in the column, so nothing else measures it.
+    document.documentElement.style.setProperty("--board-name-top", `${Math.round(inset)}px`);
     this.renderer.resize();
     // A landscape flat board turns a quarter on a portrait viewport, and the
     // mirror line a control draws turns with it (see ui/symmetryIcon.ts).
@@ -565,29 +549,52 @@ class App {
       // symmetries; see data/ui/screens.json boardBar.
       const [, id, direction] = action.split(":");
       this.move(id as SymmetryId, Number(direction));
-    } else if (action === "share") {
-      void this.shareCurrentBoard();
-    } else if (action === "help") {
-      this.showHelp();
+    } else if (action === "info") {
+      this.showBoardInfo();
+    } else if (action === "random") {
+      this.startRandomBoard();
     }
   }
 
-  /** Hand the board on screen to someone else. The header button gives no
-   * feedback of its own on a clipboard write, so it borrows the flag button's
-   * `active` styling for a moment — a share sheet is its own feedback. */
-  private async shareCurrentBoard(): Promise<void> {
+  /** Deal another board at random, from the half of the catalogue the one on
+   * screen came from — flat deals flat, anything off the plane deals another
+   * manifold, sphere or polyhedron — at the difficulty being played. The record
+   * window's "New board" is the same move (boards/randomBoard.ts, the home
+   * page's own pools and fairness weighting); this is it without having to win
+   * first, which is what makes the catalogue something to wander through. Like
+   * the smiley, it abandons the board in progress without asking. */
+  private startRandomBoard(): void {
     const session = this.session;
-    if (!session) return;
-    const result = await shareBoard({
-      mode: session.mode,
-      difficulty: session.difficulty,
-      seed: session.seed,
+    if (!session || this.screen !== "game") return;
+    const mode = randomMode(session.is3d ? "3d" : "flat");
+    if (mode) this.startGame(mode, session.difficulty);
+  }
+
+  /** What the board on screen is: its family, its surface, its size and what
+   * its tiles are (ui/boardFacts.ts). The board stays live behind it — this is
+   * a window over the game, not a page instead of it, so a player can open it
+   * mid-game and go straight back to the move they were on. */
+  private showBoardInfo(): void {
+    const session = this.session;
+    if (!session || this.screen !== "game") return;
+    if (this.infoDialog) {
+      this.infoDialog.close();
+      return;
+    }
+    this.infoDialog = openInfoDialog(this.ui, {
+      facts: boardFacts(
+        session.mode,
+        session.difficulty,
+        session.board,
+        session.game.mineCount,
+      ),
+      // A Classic board is gray whatever its tiles are, so it gets no swatches.
+      coloured: !cellStyle(session.cellStyle).monochrome,
+      animate: this.animationsEnabled,
+      onClose: () => {
+        this.infoDialog = null;
+      },
     });
-    if (result === "shared") return;
-    const btn = this.hud.root.querySelector<HTMLElement>('[data-slot="share"]');
-    if (!btn) return;
-    btn.dataset["state"] = result;
-    window.setTimeout(() => delete btn.dataset["state"], 1600);
   }
 
   // -- gameplay --------------------------------------------------------------
@@ -748,7 +755,7 @@ class App {
     rank: number,
     entries: ScoreEntry[],
   ): void {
-    this.dismissScoreDialog();
+    this.dismissDialogs();
     this.scoreDialog = openScoreDialog(this.ui, {
       mode: session.mode,
       difficulty: session.difficulty,
@@ -756,6 +763,9 @@ class App {
       entries,
       animate: this.animationsEnabled,
       onPlayAgain: () => this.startGame(session.mode, session.difficulty),
+      // The same move the header's die makes, from the card that is up when a
+      // board is finished rather than from the row over one being played.
+      onNewBoard: () => this.startRandomBoard(),
       onMenu: () => this.showMenu(),
       // The win's time goes with the link — the card is about the time, so the
       // message someone receives should say it too. A board with no seed (the
@@ -777,16 +787,18 @@ class App {
     });
   }
 
-  /** Take the record window down, and cancel one that is waiting on the win
-   * animation. Called on restart and on the way back to the menu, so the card
-   * never outlives the board it is about. */
-  private dismissScoreDialog(): void {
+  /** Take both windows down, and cancel a record window still waiting on the
+   * win animation. Called on restart and on the way back to the menu, so
+   * neither card outlives the board it is about. */
+  private dismissDialogs(): void {
     if (this.scoreDialogTimer) {
       window.clearTimeout(this.scoreDialogTimer);
       this.scoreDialogTimer = 0;
     }
     this.scoreDialog?.close();
     this.scoreDialog = null;
+    this.infoDialog?.close();
+    this.infoDialog = null;
   }
 
   private tickTimer(): void {

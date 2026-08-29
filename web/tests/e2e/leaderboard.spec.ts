@@ -99,6 +99,22 @@ test.describe("record window", () => {
     expect(state?.screen).toBe("menu");
   });
 
+  test("New board deals another board of the same kind", async ({ page }) => {
+    // A win is where a player decides what to play next, and the window can now
+    // answer that without a trip back to the menu. Flat board in, flat board
+    // out — the home page's Flat pool, dealt on the same fairness weighting.
+    await page.goto("/");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    await winFixtureBoard(page);
+
+    await page.locator('.dialog-btn[data-action="new-board"]').click();
+    await expect(dialog(page)).toHaveCount(0);
+    const state = await page.evaluate(() => window.__ms?.state());
+    expect(state?.screen).toBe("game");
+    expect(state?.status).toBe("playing");
+    expect(state?.is3d).toBe(false);
+  });
+
   test("a time that does not place is not announced", async ({ page }) => {
     // Three unbeatable records: a win can only tie them, and a tie does not
     // take a place.

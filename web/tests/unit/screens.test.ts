@@ -217,13 +217,19 @@ describe("UI screen config", () => {
   });
 
   it("every HUD slot declares a slot name", () => {
+    // Every cluster the two rows are built from: the header's three, and the
+    // board's own controls on the row below.
     const slots = [
       ...screens.hud.left,
       ...screens.hud.center,
       ...screens.hud.right,
+      ...screens.hud.boardBar,
     ];
     expect(slots.length).toBeGreaterThan(0);
     for (const s of slots) expect(s.slot).toBeTruthy();
+    // Slot names are what the app and its tests address a control by, so no two
+    // controls may share one wherever they are drawn.
+    expect(new Set(slots.map((s) => s.slot)).size).toBe(slots.length);
   });
 
   it("menu root keys are unique and typed", () => {

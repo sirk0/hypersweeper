@@ -2,19 +2,17 @@ import { difficulty as difficultySpec } from "../config/screens";
 import { fullModeLabel } from "../boards/catalog";
 import { formatTime, TOP_N, type ScoreEntry } from "../leaderboard";
 import type { ShareResult } from "../share";
+import { closeButton, openModal, type ModalHandle } from "./modal";
 
 // The window a win puts up when the time makes the board's top three.
 //
-// This is the one modal in the app — everything else that looks like a page is
-// a page (the settings screen is a `Menu` view for exactly that reason). A
-// record is different: it is a moment, it belongs on top of the board that was
-// just cleared, and it has to be dismissible back to that board. So it is a
-// real overlay, with the modal obligations that come with it: Escape and a
-// backdrop click close it, focus moves in on open and back to the element that
-// had it on close, and the buttons are reachable in tab order.
+// A record is a moment: it belongs on top of the board that was just cleared,
+// and it has to be dismissible back to it. So it is a real overlay rather than
+// a page, and the modal obligations that come with that — Escape, the backdrop
+// click, the focus ring — are ui/modal.ts's, shared with the info window.
 //
 // Everything it paints comes from theme custom properties, so it follows the
-// seven palettes (including the web-only dark one) with no per-theme code. The
+// eight palettes (including the web-only dark ones) with no per-theme code. The
 // board itself is never themed — that invariant is untouched here; this is
 // chrome sitting on top of it.
 
@@ -33,6 +31,10 @@ export interface ScoreDialogOptions {
   /** Whether the open transition runs (the app's animations preference). */
   animate: boolean;
   onPlayAgain(): void;
+  /** Deal another board at random, from the half of the catalogue this one came
+   * from (see boards/randomBoard.ts). Optional so a layout from the test seam
+   * can leave it out; the app always passes one. */
+  onNewBoard?: (() => void) | undefined;
   onMenu(): void;
   onClose(): void;
   /** Offer this board's link. Resolves with how it went, so the button can say
@@ -41,13 +43,7 @@ export interface ScoreDialogOptions {
   onShare?: (() => Promise<ShareResult>) | undefined;
 }
 
-export interface ScoreDialogHandle {
-  readonly root: HTMLElement;
-  /** Remove the dialog and restore focus. Safe to call twice — the app closes
-   * it on restart and on the way back to the menu as well as from its own
-   * buttons. */
-  close(): void;
-}
+export type ScoreDialogHandle = ModalHandle;
 
 function el<K extends keyof HTMLElementTagNameMap>(
   tag: K,
@@ -100,14 +96,7 @@ export function openScoreDialog(
   host: HTMLElement,
   opts: ScoreDialogOptions,
 ): ScoreDialogHandle {
-  const previousFocus = document.activeElement as HTMLElement | null;
-
-  const backdrop = el("div", "dialog-backdrop");
-  backdrop.dataset["dialog"] = "score";
   const dialog = el("div", "dialog");
-  dialog.setAttribute("role", "dialog");
-  dialog.setAttribute("aria-modal", "true");
-  dialog.setAttribute("aria-labelledby", "score-dialog-title");
   dialog.dataset["rank"] = String(opts.rank);
 
   const title = el("h2", "dialog-title", RANK_TITLES[opts.rank - 1] ?? "Top time");
@@ -124,26 +113,37 @@ export function openScoreDialog(
   const close = (): void => handle.close();
 
   const actions = el("div", "dialog-actions");
+  const buttons: HTMLElement[] = [];
   const again = el("button", "dialog-btn dialog-primary", "Play again");
   again.dataset["action"] = "play-again";
   again.addEventListener("click", () => {
     close();
     opts.onPlayAgain();
   });
-  const menu = el("button", "dialog-btn", "Menu");
-  menu.dataset["action"] = "menu";
-  menu.addEventListener("click", () => {
-    close();
-    opts.onMenu();
-  });
-  actions.append(again, menu);
+  buttons.push(again);
+
+  // The same board again, then a different one: a win is the moment a player
+  // decides what to play next, and until now the only way to another board was
+  // back out to the menu and pick one. This is the home page's Flat/3D deal,
+  // aimed at the half of the catalogue the board that was just won came from.
+  if (opts.onNewBoard) {
+    const fresh = el("button", "dialog-btn", "New board");
+    fresh.dataset["action"] = "new-board";
+    fresh.addEventListener("click", () => {
+      close();
+      opts.onNewBoard!();
+    });
+    buttons.push(fresh);
+  }
 
   // Sharing is the one action here that does *not* dismiss the card: the player
   // is looking at the time they just set, and the share sheet (or the clipboard
-  // toast) belongs on top of it, not instead of it.
-  const share = el("button", "dialog-btn dialog-share", "Share");
-  share.dataset["action"] = "share";
+  // toast) belongs on top of it, not instead of it. It is also the only place
+  // the app offers a board's link — the game header used to carry a share
+  // button too, and it is the info button now.
   if (opts.onShare) {
+    const share = el("button", "dialog-btn dialog-share", "Share");
+    share.dataset["action"] = "share";
     let resetLabel = 0;
     share.addEventListener("click", () => {
       window.clearTimeout(resetLabel);
@@ -159,15 +159,23 @@ export function openScoreDialog(
         }, SHARE_LABEL_MS);
       });
     });
-    actions.append(share);
-    // Three buttons: the stylesheet gives the primary a row of its own.
-    actions.classList.add("has-share");
+    buttons.push(share);
   }
 
-  const dismiss = el("button", "dialog-close", "×");
-  dismiss.dataset["action"] = "close";
-  dismiss.setAttribute("aria-label", "Close");
-  dismiss.addEventListener("click", close);
+  const menu = el("button", "dialog-btn", "Menu");
+  menu.dataset["action"] = "menu";
+  menu.addEventListener("click", () => {
+    close();
+    opts.onMenu();
+  });
+  buttons.push(menu);
+  actions.append(...buttons);
+  // The stylesheet lays two buttons out side by side, four as a square, and
+  // three with the primary on a row of its own — an odd one out below a pair
+  // reads as a mistake where a full-width one reads as the first choice.
+  actions.dataset["buttons"] = String(buttons.length);
+
+  const dismiss = closeButton(close);
 
   dialog.append(
     dismiss,
@@ -177,61 +185,14 @@ export function openScoreDialog(
     scoreList(opts.entries, opts.rank),
     actions,
   );
-  backdrop.append(dialog);
 
-  // A click on the field around the card dismisses; one inside it must not.
-  backdrop.addEventListener("click", (e) => {
-    if (e.target === backdrop) close();
+  const handle = openModal(host, dialog, {
+    name: "score",
+    labelledBy: title.id,
+    animate: opts.animate,
+    focusRing: () => [dismiss, ...buttons],
+    initialFocus: () => again,
+    onClose: opts.onClose,
   });
-
-  const onKey = (e: KeyboardEvent): void => {
-    if (e.key === "Escape") {
-      e.preventDefault();
-      close();
-      return;
-    }
-    // Keep tabbing inside the dialog while it is up: without this the focus
-    // ring walks off into the HUD behind the backdrop, where clicks do not land.
-    if (e.key !== "Tab") return;
-    // Share is in the ring only when it is on the card — a board with no link
-    // does not get the button, and an unattached one must not swallow a tab.
-    const focusable = opts.onShare ? [dismiss, again, menu, share] : [dismiss, again, menu];
-    const first = focusable[0]!;
-    const last = focusable[focusable.length - 1]!;
-    const active = document.activeElement;
-    if (e.shiftKey && (active === first || !dialog.contains(active))) {
-      e.preventDefault();
-      last.focus();
-    } else if (!e.shiftKey && active === last) {
-      e.preventDefault();
-      first.focus();
-    }
-  };
-  // Capture, so the app's own window-level key handling (zoom, rotation) does
-  // not act on keys aimed at the dialog.
-  window.addEventListener("keydown", onKey, true);
-
-  let closed = false;
-  const handle: ScoreDialogHandle = {
-    root: backdrop,
-    close() {
-      if (closed) return;
-      closed = true;
-      window.removeEventListener("keydown", onKey, true);
-      backdrop.remove();
-      previousFocus?.focus?.();
-      opts.onClose();
-    },
-  };
-
-  host.append(backdrop);
-  if (opts.animate) {
-    // Two frames: one for the element to exist at its start state, one for the
-    // class change to be a transition rather than the initial paint.
-    requestAnimationFrame(() => requestAnimationFrame(() => backdrop.classList.add("open")));
-  } else {
-    backdrop.classList.add("open");
-  }
-  again.focus();
   return handle;
 }
