@@ -20,8 +20,42 @@ function post(body: unknown, headers: Record<string, string> = {}): Request {
   });
 }
 
-const START = { v: 1, e: "start", m: "square", d: "easy" };
-const END = { v: 1, e: "end", m: "hexhex", d: "hard", o: "won", s: 41 };
+const START = {
+  v: 2,
+  e: "start",
+  m: "square",
+  d: "easy",
+  t: "menu",
+  f: "",
+  dv: "desktop",
+  sh: "browser",
+  vr: "0.2.83",
+  c: 81,
+  n: 10,
+};
+const END = {
+  v: 2,
+  e: "end",
+  m: "hexhex",
+  d: "hard",
+  o: "won",
+  s: 41,
+  t: "again",
+  f: "lost",
+  dv: "phone",
+  sh: "standalone",
+  vr: "0.2.83",
+  c: 271,
+  n: 60,
+  op: 211,
+  fr: 58,
+  fw: 2,
+  rv: 40,
+  ch: 12,
+  fl: 61,
+  fm: 2100,
+  vm: 1,
+};
 
 describe("the collector", () => {
   it("writes a start to the agreed columns", async () => {
@@ -29,10 +63,26 @@ describe("the collector", () => {
     const res = await handleTally(post(START), db);
     expect(res.status).toBe(204);
     expect(await res.text()).toBe("");
+    // The whole point of this assertion is the *order*. Every dashboard and
+    // scripts/metrics.mjs address these by number, and nothing else in the
+    // repo would notice a column moving. Append only.
     expect(db.writeDataPoint).toHaveBeenCalledWith({
       indexes: ["square"],
-      blobs: ["start", "easy", ""],
-      doubles: [0],
+      blobs: [
+        "start",
+        "easy",
+        "",
+        "Squares",
+        "square",
+        "flat",
+        "regular",
+        "menu",
+        "",
+        "desktop",
+        "browser",
+        "0.2.83",
+      ],
+      doubles: [0, 81, 10, 0, 0, 0, 0, 0, 0, 0, 0],
     });
   });
 
@@ -41,8 +91,47 @@ describe("the collector", () => {
     await handleTally(post(END), db);
     expect(db.writeDataPoint).toHaveBeenCalledWith({
       indexes: ["hexhex"],
-      blobs: ["end", "hard", "won"],
-      doubles: [41],
+      blobs: [
+        "end",
+        "hard",
+        "won",
+        "Hexagons - hexagonal board",
+        "hex",
+        "flat",
+        "regular",
+        "again",
+        "lost",
+        "phone",
+        "standalone",
+        "0.2.83",
+      ],
+      doubles: [41, 271, 60, 211, 58, 2, 40, 12, 61, 2100, 1],
+    });
+  });
+
+  it("still writes a v1 body, filling what it can and zeroing the rest", async () => {
+    // An older build, still alive in a player's service-worker cache. Its board
+    // columns come from the mode it does carry; the fields it predates are
+    // empty rather than guessed at.
+    const db = dataset();
+    await handleTally(post({ v: 1, e: "start", m: "torushex", d: "hard" }), db);
+    expect(db.writeDataPoint).toHaveBeenCalledWith({
+      indexes: ["torushex"],
+      blobs: [
+        "start",
+        "hard",
+        "",
+        "Hexagons · Torus",
+        "hex",
+        "torus",
+        "regular",
+        "",
+        "",
+        "",
+        "",
+        "",
+      ],
+      doubles: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     });
   });
 
@@ -85,7 +174,7 @@ describe("the collector", () => {
 
     // A body that lies about its length is caught after reading, not before.
     const measured = dataset();
-    await handleTally(post({ ...START, pad: "x".repeat(600) }), measured);
+    await handleTally(post({ ...START, pad: "x".repeat(1200) }), measured);
     expect(measured.writeDataPoint).not.toHaveBeenCalled();
   });
 
@@ -95,7 +184,7 @@ describe("the collector", () => {
       "null",
       '"a string"',
       "[]",
-      JSON.stringify({ ...START, v: 2 }),
+      JSON.stringify({ ...START, v: 3 }),
       JSON.stringify({ ...START, m: "vaporwave" }),
       JSON.stringify({ ...START, m: "constructor" }),
       JSON.stringify({ ...START, d: "nightmare" }),

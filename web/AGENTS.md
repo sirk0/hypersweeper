@@ -40,7 +40,8 @@ the repo root); see [`docs/deploy.md`](docs/deploy.md).
 | Cell styles, picking, zoom, shape colours, 3D markers, the Klein clip | [`docs/render.md`](docs/render.md) |
 | Board symmetries and the controls that drive them | [`docs/boards.md`](docs/boards.md) |
 | Sound | [`docs/audio.md`](docs/audio.md) |
-| Sharing, analytics, deploy, PR previews, the macOS/iOS bundles | [`docs/deploy.md`](docs/deploy.md) |
+| Sharing, deploy, PR previews, the macOS/iOS bundles | [`docs/deploy.md`](docs/deploy.md) |
+| Metrics — the events, the dataset schema, the dashboards | [`../docs/agents/metrics.md`](../docs/agents/metrics.md) |
 | Board geometry — tilings, surfaces, solids, adjacency | [`../docs/agents/geometry.md`](../docs/agents/geometry.md) |
 | Adding a board | [`../docs/agents/board-recipes.md`](../docs/agents/board-recipes.md) |
 | The `data/*.json` both front-ends read | [`../docs/agents/shared-data.md`](../docs/agents/shared-data.md) |

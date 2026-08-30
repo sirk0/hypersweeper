@@ -135,6 +135,1082 @@
     "hexhex": "Hexagons - hexagonal board",
     "hextriangle": "Hexagons - triangular board"
   },
+  "modeInfo": {
+    "basketweave": {
+      "label": "Basket weave",
+      "tiling": "basketweave",
+      "surface": "flat",
+      "family": "rectangle"
+    },
+    "basketweave3": {
+      "label": "Basket weave 3x3",
+      "tiling": "basketweave3",
+      "surface": "flat",
+      "family": "rectangle"
+    },
+    "brickrings": {
+      "label": "Brick rings",
+      "tiling": "",
+      "surface": "flat",
+      "family": "aperiodic"
+    },
+    "c180": {
+      "label": "Goldberg GP(3,0)",
+      "tiling": "",
+      "surface": "solid",
+      "family": "sphere"
+    },
+    "c80": {
+      "label": "Chamfered dodecahedron",
+      "tiling": "",
+      "surface": "solid",
+      "family": "sphere"
+    },
+    "cairo": {
+      "label": "Cairo pentagonal",
+      "tiling": "cairo",
+      "surface": "flat",
+      "family": "dual"
+    },
+    "carpet": {
+      "label": "Sierpiński carpet",
+      "tiling": "",
+      "surface": "flat",
+      "family": "fractal"
+    },
+    "chair": {
+      "label": "Chair",
+      "tiling": "",
+      "surface": "flat",
+      "family": "fractal"
+    },
+    "cube": {
+      "label": "Cube",
+      "tiling": "",
+      "surface": "solid",
+      "family": "platonic"
+    },
+    "cubebasketweave": {
+      "label": "Basket weave cube",
+      "tiling": "",
+      "surface": "solid",
+      "family": "polyhedra"
+    },
+    "cubebasketweave3": {
+      "label": "Basket weave 3x3 cube",
+      "tiling": "",
+      "surface": "solid",
+      "family": "polyhedra"
+    },
+    "cubeframe": {
+      "label": "Cube frame",
+      "tiling": "",
+      "surface": "solid",
+      "family": "polyhedra"
+    },
+    "cubestackedbond": {
+      "label": "Stacked bond cube",
+      "tiling": "",
+      "surface": "solid",
+      "family": "polyhedra"
+    },
+    "cylbasketweave": {
+      "label": "Basket weave · Cylinder",
+      "tiling": "basketweave",
+      "surface": "cylinder",
+      "family": "rectangle"
+    },
+    "cylbasketweave3": {
+      "label": "Basket weave 3x3 · Cylinder",
+      "tiling": "basketweave3",
+      "surface": "cylinder",
+      "family": "rectangle"
+    },
+    "cylcairo": {
+      "label": "Cairo pentagonal · Cylinder",
+      "tiling": "cairo",
+      "surface": "cylinder",
+      "family": "dual"
+    },
+    "cyldeltoidal": {
+      "label": "Deltoidal trihexagonal · Cylinder",
+      "tiling": "deltoidal",
+      "surface": "cylinder",
+      "family": "dual"
+    },
+    "cylelongated": {
+      "label": "Elongated triangular · Cylinder",
+      "tiling": "elongated",
+      "surface": "cylinder",
+      "family": "uniform"
+    },
+    "cylfloret": {
+      "label": "Floret pentagonal · Cylinder",
+      "tiling": "floret",
+      "surface": "cylinder",
+      "family": "dual"
+    },
+    "cylherringbone": {
+      "label": "Herringbone · Cylinder",
+      "tiling": "herringbone",
+      "surface": "cylinder",
+      "family": "rectangle"
+    },
+    "cylhex": {
+      "label": "Hexagons · Cylinder",
+      "tiling": "hex",
+      "surface": "cylinder",
+      "family": "regular"
+    },
+    "cylinder": {
+      "label": "Squares · Cylinder",
+      "tiling": "square",
+      "surface": "cylinder",
+      "family": "regular"
+    },
+    "cylkisrhombille": {
+      "label": "Kisrhombille · Cylinder",
+      "tiling": "kisrhombille",
+      "surface": "cylinder",
+      "family": "dual"
+    },
+    "cyloffsetsquare": {
+      "label": "Offset square · Cylinder",
+      "tiling": "offsetsquare",
+      "surface": "cylinder",
+      "family": "isogonal"
+    },
+    "cylprismaticpent": {
+      "label": "Prismatic pentagonal · Cylinder",
+      "tiling": "prismaticpent",
+      "surface": "cylinder",
+      "family": "dual"
+    },
+    "cylpythagorean": {
+      "label": "Pythagorean · Cylinder",
+      "tiling": "pythagorean",
+      "surface": "cylinder",
+      "family": "isogonal"
+    },
+    "cylrhombille": {
+      "label": "Rhombille · Cylinder",
+      "tiling": "rhombille",
+      "surface": "cylinder",
+      "family": "dual"
+    },
+    "cylrhombitrihex": {
+      "label": "Rhombitrihexagonal · Cylinder",
+      "tiling": "rhombitrihex",
+      "surface": "cylinder",
+      "family": "uniform"
+    },
+    "cylrotatedhex": {
+      "label": "Rotated hexagonal · Cylinder",
+      "tiling": "rotatedhex",
+      "surface": "cylinder",
+      "family": "isogonal"
+    },
+    "cylrotatedtri": {
+      "label": "Rotated triangular · Cylinder",
+      "tiling": "rotatedtri",
+      "surface": "cylinder",
+      "family": "isogonal"
+    },
+    "cylrunningbond": {
+      "label": "Running bond · Cylinder",
+      "tiling": "runningbond",
+      "surface": "cylinder",
+      "family": "rectangle"
+    },
+    "cylsnubhex": {
+      "label": "Snub hexagonal · Cylinder",
+      "tiling": "snubhex",
+      "surface": "cylinder",
+      "family": "uniform"
+    },
+    "cylsnubsquare": {
+      "label": "Snub square · Cylinder",
+      "tiling": "snubsquare",
+      "surface": "cylinder",
+      "family": "uniform"
+    },
+    "cylstackedbond": {
+      "label": "Stacked bond · Cylinder",
+      "tiling": "stackedbond",
+      "surface": "cylinder",
+      "family": "rectangle"
+    },
+    "cylstaggeredtri": {
+      "label": "Staggered triangular · Cylinder",
+      "tiling": "staggeredtri",
+      "surface": "cylinder",
+      "family": "isogonal"
+    },
+    "cyltetrakis": {
+      "label": "Tetrakis square · Cylinder",
+      "tiling": "tetrakis",
+      "surface": "cylinder",
+      "family": "dual"
+    },
+    "cyltri": {
+      "label": "Triangles · Cylinder",
+      "tiling": "tri",
+      "surface": "cylinder",
+      "family": "regular"
+    },
+    "cyltriakis": {
+      "label": "Triakis triangular · Cylinder",
+      "tiling": "triakis",
+      "surface": "cylinder",
+      "family": "dual"
+    },
+    "cyltrihex": {
+      "label": "Trihexagonal · Cylinder",
+      "tiling": "trihex",
+      "surface": "cylinder",
+      "family": "uniform"
+    },
+    "cyltrunchex": {
+      "label": "Truncated hexagonal · Cylinder",
+      "tiling": "trunchex",
+      "surface": "cylinder",
+      "family": "uniform"
+    },
+    "cyltruncsquare": {
+      "label": "Truncated square · Cylinder",
+      "tiling": "truncsquare",
+      "surface": "cylinder",
+      "family": "uniform"
+    },
+    "cyltrunctrihex": {
+      "label": "Truncated trihexagonal · Cylinder",
+      "tiling": "trunctrihex",
+      "surface": "cylinder",
+      "family": "uniform"
+    },
+    "deltoidal": {
+      "label": "Deltoidal trihexagonal",
+      "tiling": "deltoidal",
+      "surface": "flat",
+      "family": "dual"
+    },
+    "deltoidalhexeconta": {
+      "label": "Deltoidal hexecontahedron",
+      "tiling": "",
+      "surface": "solid",
+      "family": "catalan"
+    },
+    "deltoidalicositetra": {
+      "label": "Deltoidal icositetrahedron",
+      "tiling": "",
+      "surface": "solid",
+      "family": "catalan"
+    },
+    "disdyakisdodeca": {
+      "label": "Disdyakis dodecahedron",
+      "tiling": "",
+      "surface": "solid",
+      "family": "catalan"
+    },
+    "disdyakistriaconta": {
+      "label": "Disdyakis triacontahedron",
+      "tiling": "",
+      "surface": "solid",
+      "family": "catalan"
+    },
+    "dodecahedron": {
+      "label": "Dodecahedron",
+      "tiling": "",
+      "surface": "solid",
+      "family": "platonic"
+    },
+    "elongated": {
+      "label": "Elongated triangular",
+      "tiling": "elongated",
+      "surface": "flat",
+      "family": "uniform"
+    },
+    "floret": {
+      "label": "Floret pentagonal",
+      "tiling": "floret",
+      "surface": "flat",
+      "family": "dual"
+    },
+    "gosper": {
+      "label": "Gosper island",
+      "tiling": "",
+      "surface": "flat",
+      "family": "fractal"
+    },
+    "herringbone": {
+      "label": "Herringbone",
+      "tiling": "herringbone",
+      "surface": "flat",
+      "family": "rectangle"
+    },
+    "hex": {
+      "label": "Hexagons",
+      "tiling": "hex",
+      "surface": "flat",
+      "family": "regular"
+    },
+    "hexhex": {
+      "label": "Hexagons - hexagonal board",
+      "tiling": "hex",
+      "surface": "flat",
+      "family": "regular"
+    },
+    "hextri": {
+      "label": "Triangles - hexagonal board",
+      "tiling": "tri",
+      "surface": "flat",
+      "family": "regular"
+    },
+    "hextriangle": {
+      "label": "Hexagons - triangular board",
+      "tiling": "hex",
+      "surface": "flat",
+      "family": "regular"
+    },
+    "icosahedron": {
+      "label": "Icosahedron",
+      "tiling": "",
+      "surface": "solid",
+      "family": "platonic"
+    },
+    "kisrhombille": {
+      "label": "Kisrhombille",
+      "tiling": "kisrhombille",
+      "surface": "flat",
+      "family": "dual"
+    },
+    "klein": {
+      "label": "Squares · Klein bottle",
+      "tiling": "square",
+      "surface": "klein",
+      "family": "regular"
+    },
+    "kleinbasketweave": {
+      "label": "Basket weave · Klein bottle",
+      "tiling": "basketweave",
+      "surface": "klein",
+      "family": "rectangle"
+    },
+    "kleinbasketweave3": {
+      "label": "Basket weave 3x3 · Klein bottle",
+      "tiling": "basketweave3",
+      "surface": "klein",
+      "family": "rectangle"
+    },
+    "kleincairo": {
+      "label": "Cairo pentagonal · Klein bottle",
+      "tiling": "cairo",
+      "surface": "klein",
+      "family": "dual"
+    },
+    "kleindeltoidal": {
+      "label": "Deltoidal trihexagonal · Klein bottle",
+      "tiling": "deltoidal",
+      "surface": "klein",
+      "family": "dual"
+    },
+    "kleinelongated": {
+      "label": "Elongated triangular · Klein bottle",
+      "tiling": "elongated",
+      "surface": "klein",
+      "family": "uniform"
+    },
+    "kleinhex": {
+      "label": "Hexagons · Klein bottle",
+      "tiling": "hex",
+      "surface": "klein",
+      "family": "regular"
+    },
+    "kleinkisrhombille": {
+      "label": "Kisrhombille · Klein bottle",
+      "tiling": "kisrhombille",
+      "surface": "klein",
+      "family": "dual"
+    },
+    "kleinoffsetsquare": {
+      "label": "Offset square · Klein bottle",
+      "tiling": "offsetsquare",
+      "surface": "klein",
+      "family": "isogonal"
+    },
+    "kleinprismaticpent": {
+      "label": "Prismatic pentagonal · Klein bottle",
+      "tiling": "prismaticpent",
+      "surface": "klein",
+      "family": "dual"
+    },
+    "kleinrhombille": {
+      "label": "Rhombille · Klein bottle",
+      "tiling": "rhombille",
+      "surface": "klein",
+      "family": "dual"
+    },
+    "kleinrhombitrihex": {
+      "label": "Rhombitrihexagonal · Klein bottle",
+      "tiling": "rhombitrihex",
+      "surface": "klein",
+      "family": "uniform"
+    },
+    "kleinrunningbond": {
+      "label": "Running bond · Klein bottle",
+      "tiling": "runningbond",
+      "surface": "klein",
+      "family": "rectangle"
+    },
+    "kleinsnubsquare": {
+      "label": "Snub square · Klein bottle",
+      "tiling": "snubsquare",
+      "surface": "klein",
+      "family": "uniform"
+    },
+    "kleinstackedbond": {
+      "label": "Stacked bond · Klein bottle",
+      "tiling": "stackedbond",
+      "surface": "klein",
+      "family": "rectangle"
+    },
+    "kleinstaggeredtri": {
+      "label": "Staggered triangular · Klein bottle",
+      "tiling": "staggeredtri",
+      "surface": "klein",
+      "family": "isogonal"
+    },
+    "kleintetrakis": {
+      "label": "Tetrakis square · Klein bottle",
+      "tiling": "tetrakis",
+      "surface": "klein",
+      "family": "dual"
+    },
+    "kleintri": {
+      "label": "Triangles · Klein bottle",
+      "tiling": "tri",
+      "surface": "klein",
+      "family": "regular"
+    },
+    "kleintriakis": {
+      "label": "Triakis triangular · Klein bottle",
+      "tiling": "triakis",
+      "surface": "klein",
+      "family": "dual"
+    },
+    "kleintrihex": {
+      "label": "Trihexagonal · Klein bottle",
+      "tiling": "trihex",
+      "surface": "klein",
+      "family": "uniform"
+    },
+    "kleintrunchex": {
+      "label": "Truncated hexagonal · Klein bottle",
+      "tiling": "trunchex",
+      "surface": "klein",
+      "family": "uniform"
+    },
+    "kleintruncsquare": {
+      "label": "Truncated square · Klein bottle",
+      "tiling": "truncsquare",
+      "surface": "klein",
+      "family": "uniform"
+    },
+    "kleintrunctrihex": {
+      "label": "Truncated trihexagonal · Klein bottle",
+      "tiling": "trunctrihex",
+      "surface": "klein",
+      "family": "uniform"
+    },
+    "mobius": {
+      "label": "Squares · Möbius strip",
+      "tiling": "square",
+      "surface": "mobius",
+      "family": "regular"
+    },
+    "mobiusbasketweave": {
+      "label": "Basket weave · Möbius strip",
+      "tiling": "basketweave",
+      "surface": "mobius",
+      "family": "rectangle"
+    },
+    "mobiusbasketweave3": {
+      "label": "Basket weave 3x3 · Möbius strip",
+      "tiling": "basketweave3",
+      "surface": "mobius",
+      "family": "rectangle"
+    },
+    "mobiuscairo": {
+      "label": "Cairo pentagonal · Möbius strip",
+      "tiling": "cairo",
+      "surface": "mobius",
+      "family": "dual"
+    },
+    "mobiusdeltoidal": {
+      "label": "Deltoidal trihexagonal · Möbius strip",
+      "tiling": "deltoidal",
+      "surface": "mobius",
+      "family": "dual"
+    },
+    "mobiuselongated": {
+      "label": "Elongated triangular · Möbius strip",
+      "tiling": "elongated",
+      "surface": "mobius",
+      "family": "uniform"
+    },
+    "mobiushex": {
+      "label": "Hexagons · Möbius strip",
+      "tiling": "hex",
+      "surface": "mobius",
+      "family": "regular"
+    },
+    "mobiuskisrhombille": {
+      "label": "Kisrhombille · Möbius strip",
+      "tiling": "kisrhombille",
+      "surface": "mobius",
+      "family": "dual"
+    },
+    "mobiusoffsetsquare": {
+      "label": "Offset square · Möbius strip",
+      "tiling": "offsetsquare",
+      "surface": "mobius",
+      "family": "isogonal"
+    },
+    "mobiusprismaticpent": {
+      "label": "Prismatic pentagonal · Möbius strip",
+      "tiling": "prismaticpent",
+      "surface": "mobius",
+      "family": "dual"
+    },
+    "mobiusrhombille": {
+      "label": "Rhombille · Möbius strip",
+      "tiling": "rhombille",
+      "surface": "mobius",
+      "family": "dual"
+    },
+    "mobiusrhombitrihex": {
+      "label": "Rhombitrihexagonal · Möbius strip",
+      "tiling": "rhombitrihex",
+      "surface": "mobius",
+      "family": "uniform"
+    },
+    "mobiusrunningbond": {
+      "label": "Running bond · Möbius strip",
+      "tiling": "runningbond",
+      "surface": "mobius",
+      "family": "rectangle"
+    },
+    "mobiussnubsquare": {
+      "label": "Snub square · Möbius strip",
+      "tiling": "snubsquare",
+      "surface": "mobius",
+      "family": "uniform"
+    },
+    "mobiusstackedbond": {
+      "label": "Stacked bond · Möbius strip",
+      "tiling": "stackedbond",
+      "surface": "mobius",
+      "family": "rectangle"
+    },
+    "mobiusstaggeredtri": {
+      "label": "Staggered triangular · Möbius strip",
+      "tiling": "staggeredtri",
+      "surface": "mobius",
+      "family": "isogonal"
+    },
+    "mobiustetrakis": {
+      "label": "Tetrakis square · Möbius strip",
+      "tiling": "tetrakis",
+      "surface": "mobius",
+      "family": "dual"
+    },
+    "mobiustri": {
+      "label": "Triangles · Möbius strip",
+      "tiling": "tri",
+      "surface": "mobius",
+      "family": "regular"
+    },
+    "mobiustriakis": {
+      "label": "Triakis triangular · Möbius strip",
+      "tiling": "triakis",
+      "surface": "mobius",
+      "family": "dual"
+    },
+    "mobiustrihex": {
+      "label": "Trihexagonal · Möbius strip",
+      "tiling": "trihex",
+      "surface": "mobius",
+      "family": "uniform"
+    },
+    "mobiustrunchex": {
+      "label": "Truncated hexagonal · Möbius strip",
+      "tiling": "trunchex",
+      "surface": "mobius",
+      "family": "uniform"
+    },
+    "mobiustruncsquare": {
+      "label": "Truncated square · Möbius strip",
+      "tiling": "truncsquare",
+      "surface": "mobius",
+      "family": "uniform"
+    },
+    "mobiustrunctrihex": {
+      "label": "Truncated trihexagonal · Möbius strip",
+      "tiling": "trunctrihex",
+      "surface": "mobius",
+      "family": "uniform"
+    },
+    "octahedron": {
+      "label": "Octahedron",
+      "tiling": "",
+      "surface": "solid",
+      "family": "platonic"
+    },
+    "offsetsquare": {
+      "label": "Offset square",
+      "tiling": "offsetsquare",
+      "surface": "flat",
+      "family": "isogonal"
+    },
+    "penrose": {
+      "label": "Penrose rhombi",
+      "tiling": "",
+      "surface": "flat",
+      "family": "aperiodic"
+    },
+    "pentaflake": {
+      "label": "Pentaflake",
+      "tiling": "",
+      "surface": "flat",
+      "family": "fractal"
+    },
+    "pentagonalicositetra": {
+      "label": "Pentagonal icositetrahedron",
+      "tiling": "",
+      "surface": "solid",
+      "family": "catalan"
+    },
+    "pentakisdodeca": {
+      "label": "Pentakis dodecahedron",
+      "tiling": "",
+      "surface": "solid",
+      "family": "catalan"
+    },
+    "phyllotaxis": {
+      "label": "Phyllotactic spiral",
+      "tiling": "",
+      "surface": "flat",
+      "family": "aperiodic"
+    },
+    "prismaticpent": {
+      "label": "Prismatic pentagonal",
+      "tiling": "prismaticpent",
+      "surface": "flat",
+      "family": "dual"
+    },
+    "pythagorean": {
+      "label": "Pythagorean",
+      "tiling": "pythagorean",
+      "surface": "flat",
+      "family": "isogonal"
+    },
+    "rhombicdodeca": {
+      "label": "Rhombic dodecahedron",
+      "tiling": "",
+      "surface": "solid",
+      "family": "catalan"
+    },
+    "rhombicosidodeca": {
+      "label": "Rhombicosidodecahedron",
+      "tiling": "",
+      "surface": "solid",
+      "family": "sphere"
+    },
+    "rhombictriaconta": {
+      "label": "Rhombic triacontahedron",
+      "tiling": "",
+      "surface": "solid",
+      "family": "catalan"
+    },
+    "rhombille": {
+      "label": "Rhombille",
+      "tiling": "rhombille",
+      "surface": "flat",
+      "family": "dual"
+    },
+    "rhombitrihex": {
+      "label": "Rhombitrihexagonal",
+      "tiling": "rhombitrihex",
+      "surface": "flat",
+      "family": "uniform"
+    },
+    "rotatedhex": {
+      "label": "Rotated hexagonal",
+      "tiling": "rotatedhex",
+      "surface": "flat",
+      "family": "isogonal"
+    },
+    "rotatedtri": {
+      "label": "Rotated triangular",
+      "tiling": "rotatedtri",
+      "surface": "flat",
+      "family": "isogonal"
+    },
+    "runningbond": {
+      "label": "Running bond",
+      "tiling": "runningbond",
+      "surface": "flat",
+      "family": "rectangle"
+    },
+    "snubdodec": {
+      "label": "Snub dodecahedron",
+      "tiling": "",
+      "surface": "solid",
+      "family": "sphere"
+    },
+    "snubhex": {
+      "label": "Snub hexagonal",
+      "tiling": "snubhex",
+      "surface": "flat",
+      "family": "uniform"
+    },
+    "snubsquare": {
+      "label": "Snub square",
+      "tiling": "snubsquare",
+      "surface": "flat",
+      "family": "uniform"
+    },
+    "spectre": {
+      "label": "The Spectre",
+      "tiling": "",
+      "surface": "flat",
+      "family": "aperiodic"
+    },
+    "sphere": {
+      "label": "Pentagonal hexecontahedron",
+      "tiling": "",
+      "surface": "solid",
+      "family": "catalan"
+    },
+    "spheretri": {
+      "label": "Geodesic icosahedron",
+      "tiling": "",
+      "surface": "solid",
+      "family": "sphere"
+    },
+    "sphinx": {
+      "label": "Sphinx",
+      "tiling": "",
+      "surface": "flat",
+      "family": "fractal"
+    },
+    "square": {
+      "label": "Squares",
+      "tiling": "square",
+      "surface": "flat",
+      "family": "regular"
+    },
+    "stackedbond": {
+      "label": "Stacked bond",
+      "tiling": "stackedbond",
+      "surface": "flat",
+      "family": "rectangle"
+    },
+    "staggeredtri": {
+      "label": "Staggered triangular",
+      "tiling": "staggeredtri",
+      "surface": "flat",
+      "family": "isogonal"
+    },
+    "steppedbipyramid": {
+      "label": "Stepped bipyramid",
+      "tiling": "",
+      "surface": "solid",
+      "family": "polyhedra"
+    },
+    "steppedpyramid": {
+      "label": "Stepped pyramid",
+      "tiling": "",
+      "surface": "solid",
+      "family": "polyhedra"
+    },
+    "tetraframe": {
+      "label": "Tetrahedron frame",
+      "tiling": "",
+      "surface": "solid",
+      "family": "polyhedra"
+    },
+    "tetrahedron": {
+      "label": "Tetrahedron",
+      "tiling": "",
+      "surface": "solid",
+      "family": "platonic"
+    },
+    "tetrakis": {
+      "label": "Tetrakis square",
+      "tiling": "tetrakis",
+      "surface": "flat",
+      "family": "dual"
+    },
+    "tetrakishexa": {
+      "label": "Tetrakis hexahedron",
+      "tiling": "",
+      "surface": "solid",
+      "family": "catalan"
+    },
+    "threescaletri": {
+      "label": "Three-scale triangular",
+      "tiling": "threescaletri",
+      "surface": "flat",
+      "family": "isogonal"
+    },
+    "torus": {
+      "label": "Squares · Torus",
+      "tiling": "square",
+      "surface": "torus",
+      "family": "regular"
+    },
+    "torusbasketweave": {
+      "label": "Basket weave · Torus",
+      "tiling": "basketweave",
+      "surface": "torus",
+      "family": "rectangle"
+    },
+    "torusbasketweave3": {
+      "label": "Basket weave 3x3 · Torus",
+      "tiling": "basketweave3",
+      "surface": "torus",
+      "family": "rectangle"
+    },
+    "toruscairo": {
+      "label": "Cairo pentagonal · Torus",
+      "tiling": "cairo",
+      "surface": "torus",
+      "family": "dual"
+    },
+    "torusdeltoidal": {
+      "label": "Deltoidal trihexagonal · Torus",
+      "tiling": "deltoidal",
+      "surface": "torus",
+      "family": "dual"
+    },
+    "toruselongated": {
+      "label": "Elongated triangular · Torus",
+      "tiling": "elongated",
+      "surface": "torus",
+      "family": "uniform"
+    },
+    "torusfloret": {
+      "label": "Floret pentagonal · Torus",
+      "tiling": "floret",
+      "surface": "torus",
+      "family": "dual"
+    },
+    "torusherringbone": {
+      "label": "Herringbone · Torus",
+      "tiling": "herringbone",
+      "surface": "torus",
+      "family": "rectangle"
+    },
+    "torushex": {
+      "label": "Hexagons · Torus",
+      "tiling": "hex",
+      "surface": "torus",
+      "family": "regular"
+    },
+    "toruskisrhombille": {
+      "label": "Kisrhombille · Torus",
+      "tiling": "kisrhombille",
+      "surface": "torus",
+      "family": "dual"
+    },
+    "torusoffsetsquare": {
+      "label": "Offset square · Torus",
+      "tiling": "offsetsquare",
+      "surface": "torus",
+      "family": "isogonal"
+    },
+    "torusprismaticpent": {
+      "label": "Prismatic pentagonal · Torus",
+      "tiling": "prismaticpent",
+      "surface": "torus",
+      "family": "dual"
+    },
+    "toruspythagorean": {
+      "label": "Pythagorean · Torus",
+      "tiling": "pythagorean",
+      "surface": "torus",
+      "family": "isogonal"
+    },
+    "torusrhombille": {
+      "label": "Rhombille · Torus",
+      "tiling": "rhombille",
+      "surface": "torus",
+      "family": "dual"
+    },
+    "torusrhombitrihex": {
+      "label": "Rhombitrihexagonal · Torus",
+      "tiling": "rhombitrihex",
+      "surface": "torus",
+      "family": "uniform"
+    },
+    "torusrotatedhex": {
+      "label": "Rotated hexagonal · Torus",
+      "tiling": "rotatedhex",
+      "surface": "torus",
+      "family": "isogonal"
+    },
+    "torusrotatedtri": {
+      "label": "Rotated triangular · Torus",
+      "tiling": "rotatedtri",
+      "surface": "torus",
+      "family": "isogonal"
+    },
+    "torusrunningbond": {
+      "label": "Running bond · Torus",
+      "tiling": "runningbond",
+      "surface": "torus",
+      "family": "rectangle"
+    },
+    "torussnubhex": {
+      "label": "Snub hexagonal · Torus",
+      "tiling": "snubhex",
+      "surface": "torus",
+      "family": "uniform"
+    },
+    "torussnubsquare": {
+      "label": "Snub square · Torus",
+      "tiling": "snubsquare",
+      "surface": "torus",
+      "family": "uniform"
+    },
+    "torusstackedbond": {
+      "label": "Stacked bond · Torus",
+      "tiling": "stackedbond",
+      "surface": "torus",
+      "family": "rectangle"
+    },
+    "torusstaggeredtri": {
+      "label": "Staggered triangular · Torus",
+      "tiling": "staggeredtri",
+      "surface": "torus",
+      "family": "isogonal"
+    },
+    "torustetrakis": {
+      "label": "Tetrakis square · Torus",
+      "tiling": "tetrakis",
+      "surface": "torus",
+      "family": "dual"
+    },
+    "torusthreescaletri": {
+      "label": "Three-scale triangular · Torus",
+      "tiling": "threescaletri",
+      "surface": "torus",
+      "family": "isogonal"
+    },
+    "torustri": {
+      "label": "Triangles · Torus",
+      "tiling": "tri",
+      "surface": "torus",
+      "family": "regular"
+    },
+    "torustriakis": {
+      "label": "Triakis triangular · Torus",
+      "tiling": "triakis",
+      "surface": "torus",
+      "family": "dual"
+    },
+    "torustrihex": {
+      "label": "Trihexagonal · Torus",
+      "tiling": "trihex",
+      "surface": "torus",
+      "family": "uniform"
+    },
+    "torustrunchex": {
+      "label": "Truncated hexagonal · Torus",
+      "tiling": "trunchex",
+      "surface": "torus",
+      "family": "uniform"
+    },
+    "torustruncsquare": {
+      "label": "Truncated square · Torus",
+      "tiling": "truncsquare",
+      "surface": "torus",
+      "family": "uniform"
+    },
+    "torustrunctrihex": {
+      "label": "Truncated trihexagonal · Torus",
+      "tiling": "trunctrihex",
+      "surface": "torus",
+      "family": "uniform"
+    },
+    "triakis": {
+      "label": "Triakis triangular",
+      "tiling": "triakis",
+      "surface": "flat",
+      "family": "dual"
+    },
+    "triakisicosa": {
+      "label": "Triakis icosahedron",
+      "tiling": "",
+      "surface": "solid",
+      "family": "catalan"
+    },
+    "triakisocta": {
+      "label": "Triakis octahedron",
+      "tiling": "",
+      "surface": "solid",
+      "family": "catalan"
+    },
+    "triakistetra": {
+      "label": "Triakis tetrahedron",
+      "tiling": "",
+      "surface": "solid",
+      "family": "catalan"
+    },
+    "triangle": {
+      "label": "Triangles - triangular board",
+      "tiling": "tri",
+      "surface": "flat",
+      "family": "regular"
+    },
+    "trigrid": {
+      "label": "Triangle grid",
+      "tiling": "tri",
+      "surface": "flat",
+      "family": "regular"
+    },
+    "trihex": {
+      "label": "Trihexagonal",
+      "tiling": "trihex",
+      "surface": "flat",
+      "family": "uniform"
+    },
+    "trunchex": {
+      "label": "Truncated hexagonal",
+      "tiling": "trunchex",
+      "surface": "flat",
+      "family": "uniform"
+    },
+    "truncicosidodeca": {
+      "label": "Truncated icosidodecahedron",
+      "tiling": "",
+      "surface": "solid",
+      "family": "sphere"
+    },
+    "truncsquare": {
+      "label": "Truncated square",
+      "tiling": "truncsquare",
+      "surface": "flat",
+      "family": "uniform"
+    },
+    "trunctrihex": {
+      "label": "Truncated trihexagonal",
+      "tiling": "trunctrihex",
+      "surface": "flat",
+      "family": "uniform"
+    }
+  },
   "menu": {
     "root": [
       "classic",

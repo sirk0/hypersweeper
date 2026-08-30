@@ -11,6 +11,7 @@ import {
   type Achievement,
 } from "./achievements";
 import { setAnalyticsEnabled, trackGame } from "./analytics";
+import type { PreviousState, StartTrigger } from "./analyticsEvent";
 import {
   playSound,
   setSoundPreset,
@@ -99,6 +100,11 @@ class App {
   /** What the win that is being reported just unlocked, for the card
    * `checkRecord` puts up a moment later. */
   private unlocked: Achievement[] = [];
+  /** How the board on screen was dealt, and what the board before it was doing
+   * at the time — set by `startGame` and repeated on the `end` event, so a win
+   * rate can be read per start reason. */
+  private trigger: StartTrigger = "menu";
+  private from: PreviousState = "";
   /** Stored preferences (theme, difficulty, animations, cell style) — the
    * app's only persisted state. */
   private settings: Settings = loadSettings();
@@ -141,7 +147,10 @@ class App {
     this.renderer = new BoardRenderer(canvas);
     this.hud = new Hud((action) => this.onAction(action));
     this.menu = new Menu(
-      (sel) => this.startGame(sel.mode, sel.difficulty),
+      (sel) =>
+        this.startGame(sel.mode, sel.difficulty, {
+          trigger: sel.random ? "random" : "menu",
+        }),
       this.settingsHost(),
     );
     this.boardInfo = new BoardInfo((action) => this.onAction(action));
@@ -392,6 +401,7 @@ class App {
     if (fairnessOf(link.mode, this.settings.difficulty) === "blocked") return false;
     this.startGame(link.mode, this.settings.difficulty, {
       ...(link.seed !== null ? { seed: link.seed } : {}),
+      trigger: "link",
     });
     return true;
   }
@@ -411,13 +421,20 @@ class App {
   private startGame(
     mode: string,
     difficulty: string,
-    opts: { seed?: number; mines?: CellId[] } = {},
+    opts: { seed?: number; mines?: CellId[]; trigger?: StartTrigger } = {},
   ): void {
     this.dismissDialogs();
     this.scored = false;
     this.tracked = false;
     this.counted = false;
     this.unlocked = [];
+    // How this board came to be dealt, and what the board before it was doing
+    // when it was replaced. Read here, before the old session is dropped,
+    // because it is the only moment both are known — and kept on `App` because
+    // the `end` event repeats them, so a win rate can be read per start reason.
+    // See docs/agents/metrics.md.
+    this.trigger = opts.trigger ?? "menu";
+    this.from = this.session?.status ?? "";
     // Every ordinary game is dealt from a seed, generated here when the caller
     // has none, so that the board is a thing you can hand to someone else: the
     // address bar and the share button both name *this* layout rather than
@@ -465,7 +482,15 @@ class App {
     // Last, so a mode `buildBoard` rejects throws before it is counted as a
     // play. A HUD restart comes back through here, so it counts as a new one —
     // "boards opened" is the measure, not "distinct players".
-    trackGame({ kind: "start", mode, difficulty });
+    trackGame({
+      kind: "start",
+      mode,
+      difficulty,
+      trigger: this.trigger,
+      from: this.from,
+      cells: this.session.cellCount,
+      mines: this.session.mineCount,
+    });
   }
 
   private showMenu(): void {
@@ -584,7 +609,9 @@ class App {
       this.flagMode = !this.flagMode;
       this.hud.setState({ flagMode: this.flagMode });
     } else if (action === "restart" && this.session) {
-      this.startGame(this.session.mode, this.session.difficulty);
+      this.startGame(this.session.mode, this.session.difficulty, {
+        trigger: "again",
+      });
     } else if (action.startsWith("symmetry:")) {
       // `symmetry:<id>:<direction>` — one step along one of the board's own
       // symmetries; see data/ui/screens.json boardBar.
@@ -608,7 +635,7 @@ class App {
     const session = this.session;
     if (!session || this.screen !== "game") return;
     const mode = randomMode(session.is3d ? "3d" : "flat");
-    if (mode) this.startGame(mode, session.difficulty);
+    if (mode) this.startGame(mode, session.difficulty, { trigger: "random" });
   }
 
   /** What the board on screen is: its family, its surface, its size and what
@@ -672,6 +699,11 @@ class App {
 
   private rotate(dxPx: number, dyPx: number): void {
     if (!this.session?.is3d || this.screen !== "game") return;
+    // One bit for the metrics: on a 3D board, whether the controls were found
+    // at all. Recorded here rather than in `controls.ts` because this is where
+    // a gesture becomes a view change — a drag the guard above rejects is not
+    // one (docs/agents/metrics.md).
+    this.session.markViewMoved();
     this.renderer.rotateBy(dxPx, dyPx);
   }
 
@@ -679,6 +711,7 @@ class App {
    * the mouse under the wheel). Bounded by the renderer's zoom clamp. */
   private zoom(factor: number, x?: number, y?: number): void {
     if (this.screen !== "game") return;
+    this.session?.markViewMoved();
     this.renderer.zoomBy(factor, x, y);
   }
 
@@ -793,6 +826,11 @@ class App {
       difficulty: session.difficulty,
       outcome: status,
       ms: session.elapsedMs(),
+      trigger: this.trigger,
+      from: this.from,
+      cells: session.cellCount,
+      mines: session.mineCount,
+      stats: session.stats(),
     });
   }
 
@@ -847,7 +885,8 @@ class App {
       entries,
       unlocked: this.unlocked,
       animate: this.animationsEnabled,
-      onPlayAgain: () => this.startGame(session.mode, session.difficulty),
+      onPlayAgain: () =>
+        this.startGame(session.mode, session.difficulty, { trigger: "again" }),
       // The same move the header's die makes, from the card that is up when a
       // board is finished rather than from the row over one being played.
       onNewBoard: () => this.startRandomBoard(),

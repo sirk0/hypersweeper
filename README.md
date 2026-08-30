@@ -125,12 +125,14 @@ three sound presets (synthesised from the move that caused them — a tile's
 side count is its voice) with a volume slider, an animations toggle, and —
 on a phone that can buzz — a haptics switch.
 
-The hosted game counts, anonymously, which boards get opened and how often
-they get won — the board's name, the difficulty, whether it was won and how
-long it took, and nothing else. No account, no cookie, no identifier; the
-switch is Settings › Privacy › Analytics. The macOS and iPhone apps send
-nothing at all: they are built without the collector, not merely with it
-switched off.
+The hosted game counts, anonymously, which boards get opened and how they go
+— the board and difficulty, whether it was won and how long it took, how far
+the board got and how the flags fell, how the game was started, and whether
+this is a phone, tablet or desktop. No account, no cookie, no identifier, and
+nothing about the request itself (no IP, no country, no user agent), so there
+is no way to link two games. The switch is Settings › Privacy › Analytics. The
+macOS and iPhone apps send nothing at all: they are built without the
+collector, not merely with it switched off.
 
 ## Development
 

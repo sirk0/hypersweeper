@@ -49,6 +49,10 @@ import {
 export interface MenuSelection {
   mode: string;
   difficulty: string;
+  /** How the row that produced this reached a board: a named one the player
+   * picked, or one of the home page's random entries. Only the metrics care —
+   * `App.startGame` turns it into the event's start trigger. */
+  random?: boolean;
 }
 
 const ROOT_LABELS = MENU.rootLabels as Record<string, string>;
@@ -806,7 +810,9 @@ export class Menu {
       // as often as on a board that can actually be solved
       // (boards/randomBoard.ts, shared with the record window's New board).
       const mode = randomMode(key);
-      if (mode) this.onSelect({ mode, difficulty: this.settings.difficulty });
+      if (mode) {
+        this.onSelect({ mode, difficulty: this.settings.difficulty, random: true });
+      }
     });
     li.append(btn);
     return li;
