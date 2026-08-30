@@ -9,19 +9,19 @@ Actions; installable, and it works offline once loaded)
 
 <table>
   <tr>
-    <td align="center"><img src="docs/screenshots/c180.png" width="380"><br>Goldberg GP(3,0) on a sphere <sub>· Light</sub></td>
-    <td align="center"><img src="docs/screenshots/mobiushex.png" width="380"><br>Hexagons on a Möbius strip <sub>· Dark</sub></td>
+    <td align="center"><img src="docs/screenshots/c180.png" width="380"><br>Goldberg GP(3,0) on a sphere <sub>· Realistic, light</sub></td>
+    <td align="center"><img src="docs/screenshots/mobiushex.png" width="380"><br>Hexagons on a Möbius strip <sub>· Realistic, dark</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/screenshots/penrose.png" width="380"><br>Penrose rhombi <sub>· Realistic</sub></td>
-    <td align="center"><img src="docs/screenshots/torussnubsquare-lost.png" width="380"><br>Snub square on a donut, boom <sub>· Classic</sub></td>
+    <td align="center"><img src="docs/screenshots/penrose.png" width="380"><br>Penrose rhombi <sub>· Realistic, light</sub></td>
+    <td align="center"><img src="docs/screenshots/torussnubsquare-lost.png" width="380"><br>Snub square on a donut, boom <sub>· Realistic, dark</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/screenshots/gosper.png" width="380"><br>Hexagons in a Gosper island <sub>· Realistic</sub></td>
-    <td align="center"><img src="docs/screenshots/hexhex.png" width="380"><br>A hexagon of hexagons <sub>· Light</sub></td>
+    <td align="center"><img src="docs/screenshots/gosper.png" width="380"><br>Hexagons in a Gosper island <sub>· Flat, dark</sub></td>
+    <td align="center"><img src="docs/screenshots/hexhex.png" width="380"><br>A hexagon of hexagons <sub>· Classic, light</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/screenshots/menu.png" width="380"><br>The menu <sub>· Dark</sub></td>
+    <td align="center"><img src="docs/screenshots/menu.png" width="380"><br>The menu <sub>· Realistic, dark</sub></td>
     <td align="center"><img src="docs/screenshots/themes.png" width="380"><br>Three themes — the page and how a cell is cut — over three colour schemes</td>
   </tr>
 </table>
