@@ -6,10 +6,16 @@ fonts, the icons, the shared `data/*.json` — is compiled into the app, and
 the app asks the network for nothing at all.
 
 ```sh
-make mac-app       # build build/desktop/mac*/Hypersweeper.app
-make mac-app-dmg   # …and a drag-to-Applications .dmg
+make desktop-install  # install the shell's build tools (first time)
+make desktop-run      # build the bundle, stage it, run the shell — any OS
+make mac-app          # build build/desktop/mac*/Hypersweeper.app
+make mac-app-dmg      # …and a drag-to-Applications .dmg
 open build/desktop/mac-arm64/Hypersweeper.app
 ```
+
+`make desktop-run` is the one to develop against: it runs `make desktop-build`
+(build `web/` with `VITE_PACKAGED=1`, check the bundle is self-contained, copy
+it to `desktop/app/`) and then `npm start` in the shell. It needs no Mac.
 
 `make mac-app` must run **on a Mac** — the `.app` is signed and (for a `.dmg`)
 imaged with tools only macOS has. Everything up to packaging works anywhere,

@@ -7,6 +7,30 @@ Cloudflare Pages at the site root on every push to `master`. The pygame build in
 **When a request does not say which front-end it means, it means this one.**
 See "Which version to change" in the root [`AGENTS.md`](../AGENTS.md).
 
+## Build and run
+
+```sh
+cd web
+npm install         # first time, and after a dependency change
+npm run dev         # dev server at http://localhost:5173 — iterate here
+npm run test        # vitest unit tests
+npm run typecheck   # tsc --noEmit (strict), app then functions/
+npm run build       # typecheck + production bundle into dist/
+npm run preview     # serve that bundle at http://localhost:4173
+npm run e2e         # Playwright e2e + visual regression
+```
+
+`npm run dev` serves the sources with HMR; `build` + `preview` serves the real
+bundle from disk, which is what the screenshot recipe and Playwright drive and
+the only way to exercise the PWA, the service worker or `VITE_PACKAGED`.
+`vite preview` does not rebuild — re-run `npm run build` after every edit.
+
+To *look at* a change without a browser of your own — ad-hoc screenshots, the
+`window.__ms` seam, the menu-icon contact sheet — see
+[`docs/testing.md`](docs/testing.md). The same bundle also runs inside the
+macOS and iPhone apps (`make desktop-run`, `make mac-app`, `make ios-app` from
+the repo root); see [`docs/deploy.md`](docs/deploy.md).
+
 ## Where to read next
 
 | Working on | Read |

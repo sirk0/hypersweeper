@@ -8,14 +8,27 @@ ones, not just by the test suite passing.
 
 ```sh
 cd web
-npm install
-npm run dev         # Vite dev server
+npm install         # first time, and after a dependency change
+npm run dev         # dev server at http://localhost:5173, HMR
 npm run typecheck   # tsc --noEmit (strict), twice: the app, then functions/
 npm run test        # vitest unit tests
-npm run build       # typecheck + vite build (production bundle + PWA)
+npm run test:watch  # …the same, re-running on change
+npm run build       # typecheck + vite build (production bundle + PWA) into dist/
+npm run preview     # serve dist/ at http://localhost:4173
 npm run e2e         # Playwright e2e + visual regression
 npm run e2e:update  # refresh visual baselines
+npm run screenshots # regenerate the README gallery (SHOTS=menu.png for one)
+npm run icons       # regenerate the app icons from the vector source
+npm run og          # regenerate the social card, public/og.png
 ```
+
+**Two ways to run it, and they are not interchangeable.** `npm run dev` is the
+one to iterate in — Vite serves the sources with HMR. `npm run build && npm run
+preview` serves the *real* bundle from `dist/`, which is what the screenshot
+recipe and Playwright drive, and the only way to exercise anything the
+production build changes (the PWA, the service worker, `__APP_VERSION__`,
+`VITE_PACKAGED`). `vite preview` reads `dist/` from disk and does not rebuild,
+so re-run `npm run build` after every edit or you are looking at the last one.
 
 `typecheck` runs `tsc` twice because the Pages Function in `functions/` is a
 Worker, not a page: no DOM, and the Cloudflare globals instead. It gets its own
@@ -27,8 +40,8 @@ deployed app (see "Analytics" in [`deploy.md`](deploy.md)); it needs `CF_ACCOUNT
 `CF_API_TOKEN`.
 
 Cloud sessions: `@playwright/test` is **pinned** (not caret-ranged) to the
-version whose bundled Chromium build matches the one preinstalled in the Claude
-cloud image (`/opt/pw-browsers/chromium-<build>`), so `npm run e2e` resolves the
+version whose bundled Chromium build matches the one preinstalled in the cloud
+session image (`/opt/pw-browsers/chromium-<build>`), so `npm run e2e` resolves the
 preinstalled browser and runs directly — no download, no env var. Keep the pin
 in step with the image when bumping Playwright: a caret range silently floats to
 a newer build than the image ships, and e2e then fails with "Executable doesn't
@@ -43,7 +56,7 @@ self-consistent regardless of the image.
 Practical knowledge for verifying changes by actually running the app
 (screenshots are the primary review artifact in this repo):
 
-- **Ad-hoc screenshots**: `npm run build`, `npx vite preview --port 4173`
+- **Ad-hoc screenshots**: `npm run build`, `npm run preview`
   in the background, then a small Playwright script against
   `http://localhost:4173/?mode=X&difficulty=Y&seed=N`. Launch Chromium with
   `executablePath` set to the preinstalled browser and the SwiftShader args

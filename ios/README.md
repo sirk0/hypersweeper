@@ -5,6 +5,7 @@ phone, plays with no internet connection, and **buzzes through the Taptic
 Engine** — the one thing no web API on iOS can do.
 
 ```sh
+make ios-install   # install the Capacitor tooling (it lives in web/)
 make ios-app       # build the game, sync it in, open Xcode  (macOS)
 make ios-run       # …or build straight onto a connected iPhone
 make ios-prepare   # build + sync only; works on any OS (what CI checks)

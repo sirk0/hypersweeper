@@ -31,29 +31,55 @@ carries over.
 | The offline macOS app | [`desktop/README.md`](desktop/README.md) |
 | The iPhone app, and haptics | [`ios/README.md`](ios/README.md) |
 
-## Commands
+## Build and run
 
-The Makefile wraps the common ones (`make help`); CI runs `make test` and
-`make lint`.
+`make help` lists every target. CI runs `make test`, `make lint`, the
+`data-sync` exporters and the `web` job (typecheck, unit tests, build, e2e).
+
+**The TypeScript app — the deployed game, and what most changes touch.**
+
+```sh
+cd web
+npm install                            # first time, and after a dependency change
+npm run dev                            # dev server at http://localhost:5173
+npm run typecheck                      # tsc --noEmit (strict), app then functions/
+npm run test                           # vitest unit tests
+npm run build                          # typecheck + production bundle into web/dist
+npm run preview                        # serve that bundle at http://localhost:4173
+npm run e2e                            # Playwright e2e + visual regression
+```
+
+`npm run dev` is the one to reach for while iterating; `build` + `preview` is
+what the screenshot and e2e recipes drive, because it serves the real bundle
+from disk. To *look at* a change without a browser of your own, see
+[`web/docs/testing.md`](web/docs/testing.md).
+
+**The pygame game — the reference implementation.**
 
 ```sh
 make venv                              # (re)create .venv — Python 3.13, per .python-version
 make test                              # pytest, sub-second
 make lint                              # ruff (E/F/W/I; long geometry/table lines allowed)
-.venv/bin/python -m minesweeper        # the pygame game (menu)
-
-cd web
-npm install
-npm run dev                            # Vite dev server
-npm run typecheck                      # tsc --noEmit (strict), app then functions/
-npm run test                           # vitest unit tests
-npm run build                          # typecheck + production bundle
-npm run e2e                            # Playwright e2e + visual regression
+make run                               # the game (menu)
+.venv/bin/python -m minesweeper --mode hexhex   # …or skip the menu
+make web-run                           # the pygbag browser build, http://localhost:8000
 ```
 
-The venv already has everything. Dependency groups in `pyproject.toml`: `web`
-(pygbag), `test` (pytest, ruff), `all` (both); locked to
-`requirements[-web|-test|-all].txt` by `make lock` (uv).
+The venv already has everything; `make install` refreshes it in place without
+recreating it. Dependency groups in `pyproject.toml`: `web` (pygbag), `test`
+(pytest, ruff), `all` (both); locked to `requirements[-web|-test|-all].txt` by
+`make lock` (uv).
+
+**The packaged builds**, both wrapping the same `web/` bundle:
+
+```sh
+make desktop-run                       # the Electron shell, on any OS
+make mac-app                           # a signed Hypersweeper.app  (macOS only)
+make ios-app                           # build and open the iPhone project in Xcode (macOS)
+```
+
+See [`desktop/README.md`](desktop/README.md) and
+[`ios/README.md`](ios/README.md). `make clean` removes every build artifact.
 
 ## Rules that apply to every change
 
@@ -72,5 +98,5 @@ The venv already has everything. Dependency groups in `pyproject.toml`: `web`
   TypeScript app, `docs/agents/pygame.md` for the pygame one.
 - Do not commit PR screenshots to `docs/screenshots/` (that folder holds only
   the curated README shots: the gallery, rendered from the TypeScript app by
-  `cd web && npm run screenshots`, and the one pygame shot under
+  `make web-screenshots`, and the one pygame shot under
   `docs/screenshots/pygame/` from `make screenshots`).
