@@ -212,6 +212,62 @@ describe("win", () => {
   });
 });
 
+describe("the end-of-game flag tally", () => {
+  // What the metrics event reports as flags right and wrong (blob-side:
+  // double5/double6 — see docs/agents/metrics.md). It has to be a snapshot
+  // taken as the game ends, and this is why.
+  it("is null while the game is still being played", () => {
+    const game = makeGame([[0, 0], [2, 2]]);
+    expect(game.endFlags).toBeNull();
+    game.toggleFlag(C(0, 0));
+    expect(game.endFlags).toBeNull();
+  });
+
+  it("counts the player's flags on a win, not the ones the win planted", () => {
+    // The trap this exists for: winning auto-flags every mine still hidden, so
+    // a count taken *after* the state flips says every win was flagged
+    // perfectly, whatever the player actually did.
+    const mines = new Set([C(0, 0), C(2, 2)]);
+    const game = makeGame([[0, 0], [2, 2]]);
+    game.toggleFlag(C(0, 0)); // one of the two, correctly
+    for (const cell of game.cells) if (!mines.has(cell)) game.reveal(cell);
+    expect(game.state).toBe("won");
+    expect(game.endFlags).toEqual({ right: 1, wrong: 0 });
+    // …while the board itself now shows both mines flagged.
+    expect(game.flagsRemaining).toBe(0);
+  });
+
+  it("separates a right flag from a wrong one on a loss", () => {
+    const game = makeGame([[0, 0], [2, 2]]);
+    game.toggleFlag(C(0, 0));
+    game.toggleFlag(C(1, 1));
+    game.toggleFlag(C(3, 3));
+    game.reveal(C(2, 2)); // step on the other mine
+    expect(game.state).toBe("lost");
+    expect(game.endFlags).toEqual({ right: 1, wrong: 2 });
+  });
+
+  it("forgets a flag the player took back", () => {
+    const game = makeGame([[0, 0], [2, 2]]);
+    game.toggleFlag(C(1, 1));
+    game.toggleFlag(C(1, 1));
+    game.reveal(C(0, 0));
+    expect(game.endFlags).toEqual({ right: 0, wrong: 0 });
+  });
+
+  it("does not count the mine a loss stepped on as opened", () => {
+    // `revealed` is the opened-cells metric, and it stays the count of *safe*
+    // cells — which is the honest measure of how far a lost game got.
+    const game = makeGame([[0, 0], [2, 2]]);
+    game.reveal(C(3, 0));
+    const opened = game.revealed;
+    game.reveal(C(2, 2));
+    expect(game.state).toBe("lost");
+    expect(game.revealed).toBe(opened);
+    expect(game.cellCount).toBe(16);
+  });
+});
+
 describe("chord", () => {
   it("reveals unflagged neighbors", () => {
     const game = makeGame([[0, 0]]);

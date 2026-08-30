@@ -51,8 +51,9 @@ export interface MenuSelection {
   difficulty: string;
   /** Whether the board was *dealt* rather than picked — the home page's Flat
    * and 3D rows, which resolve to a mode at click time. Every other row names
-   * its board, so it is left off. The win window highlights a different action
-   * for a dealt board (ui/scoreDialog.ts). */
+   * its board, so it is left off. Two things read it: the win window highlights
+   * a different action for a dealt board (ui/scoreDialog.ts), and the metrics
+   * event records it as the start trigger (docs/agents/metrics.md). */
   random?: boolean;
 }
 

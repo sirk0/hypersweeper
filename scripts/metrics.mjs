@@ -22,7 +22,15 @@
 // The numbers are estimates for two more reasons, both of them one-directional:
 // content blockers eat some posts, and players can switch reporting off. Read
 // every count as a floor.
+//
+// This report reads blob1..3 and double1 only. The dataset has grown past that
+// — the whole column map, the traps and the queries for the rest are in
+// docs/agents/metrics.md, and `--schema` prints the map from it. The report
+// stays as it is because the append-only rule means those four columns still
+// mean what they meant, and Grafana is where the rest is read.
 import { createRequire } from "node:module";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 const DATASET = "hypersweeper_game_events";
 const API = "https://api.cloudflare.com/client/v4/accounts";
@@ -39,6 +47,7 @@ function usage(message) {
   console.error(
     `${message}\n\n` +
       "usage: CF_ACCOUNT_ID=... CF_API_TOKEN=... node scripts/metrics.mjs [options]\n\n" +
+      "  --schema     print the dataset's column map and exit\n" +
       "  --days=N     how far back to look (default 30; retention is ~90)\n" +
       "  --mode=TEXT  only boards whose name contains TEXT\n" +
       "  --min=N      dim rows with fewer than N finished games (default 5)\n" +
@@ -52,6 +61,36 @@ function usage(message) {
 function flag(name, fallback) {
   const hit = process.argv.find((a) => a.startsWith(`--${name}=`));
   return hit === undefined ? fallback : hit.slice(name.length + 3);
+}
+
+/** The dataset's column map, read out of the doc that is its source of truth.
+ * Not duplicated here: a second copy of a positional schema is exactly the
+ * thing that goes stale. tests/unit/analyticsSchema.test.ts ties that table to
+ * the code that writes it. */
+function printSchema() {
+  const doc = fileURLToPath(
+    new URL("../docs/agents/metrics.md", import.meta.url),
+  );
+  const rows = [];
+  for (const line of readFileSync(doc, "utf8").split("\n")) {
+    const hit = /^\|\s*`(index1|blob\d+|double\d+)`\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|/.exec(line);
+    if (hit) rows.push([hit[1], hit[2], hit[3]]);
+  }
+  if (rows.length === 0) {
+    console.error("no schema table found in docs/agents/metrics.md");
+    process.exit(1);
+  }
+  const width = [0, 1].map((i) => Math.max(...rows.map((r) => r[i].length)));
+  console.log(`dataset ${DATASET}\n`);
+  for (const [column, name, note] of rows) {
+    console.log(`${column.padEnd(width[0])}  ${name.padEnd(width[1])}  ${note}`);
+  }
+  console.log("\nappend only, never renumber — see docs/agents/metrics.md");
+}
+
+if (process.argv.includes("--schema")) {
+  printSchema();
+  process.exit(0);
 }
 
 const days = Number(flag("days", "30"));

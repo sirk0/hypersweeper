@@ -29,8 +29,24 @@ interface Posted {
   e: "start" | "end";
   m: string;
   d: string;
+  /** How the board was dealt, and what the board before it was doing. */
+  t: string;
+  f: string;
+  dv: string;
+  sh: string;
+  vr: string;
+  c: number;
+  n: number;
   o?: "won" | "lost";
   s?: number;
+  op?: number;
+  fr?: number;
+  fw?: number;
+  rv?: number;
+  ch?: number;
+  fl?: number;
+  fm?: number;
+  vm?: 0 | 1;
 }
 
 /** Take the beacon away, so the transport falls through to fetch and the test
@@ -100,7 +116,37 @@ test.describe("play counts", () => {
 
     await openSquares(page, "4,4");
     await expect.poll(() => posted.length).toBe(1);
-    expect(bodies(posted)[0]).toEqual({ v: 1, e: "start", m: "square", d: "easy" });
+    const start = bodies(posted)[0];
+    expect(start).toMatchObject({
+      v: 2,
+      e: "start",
+      m: "square",
+      d: "easy",
+      t: "menu",
+      f: "", // the first board of the visit replaced nothing
+      // A desktop headless Chromium: no touch points, a fine pointer.
+      dv: "desktop",
+      sh: "browser",
+      c: 81,
+      n: 1, // the fixture board's single mine
+    });
+    // "and nothing else": the exact key set, so a field added without a
+    // thought about the privacy copy shows up here.
+    expect(Object.keys(start ?? {}).sort()).toEqual([
+      "c",
+      "d",
+      "dv",
+      "e",
+      "f",
+      "m",
+      "n",
+      "sh",
+      "t",
+      "v",
+      "vr",
+    ]);
+    // No board name on the wire — the collector derives it (analyticsEvent.ts).
+    expect(Object.values(start ?? {})).not.toContain("Squares");
   });
 
   test("stepping on a mine reports the loss", async ({ page }) => {
@@ -114,8 +160,12 @@ test.describe("play counts", () => {
 
     await expect.poll(() => posted.length).toBe(2);
     const end = bodies(posted)[1];
-    expect(end).toMatchObject({ v: 1, e: "end", m: "square", d: "easy", o: "lost" });
+    expect(end).toMatchObject({ v: 2, e: "end", m: "square", d: "easy", o: "lost" });
     expect(typeof end?.s).toBe("number");
+    // How far it got: one click, straight onto the mine — which is revealed
+    // but is not an *opened* cell, so nothing was opened at all.
+    expect(end).toMatchObject({ c: 81, n: 1, op: 0, fr: 0, fw: 0, rv: 1, ch: 0, fl: 0 });
+    expect(typeof end?.fm).toBe("number");
   });
 
   test("clearing the board reports the win", async ({ page }) => {
@@ -124,11 +174,21 @@ test.describe("play counts", () => {
     const posted = collect(page);
 
     await openSquares(page, "0,0");
+    await page.evaluate(() => window.__ms?.flag("0,0")); // the mine, correctly
     await click(page, "8,8");
     expect(await page.evaluate(() => window.__ms?.state().status)).toBe("won");
 
     await expect.poll(() => posted.length).toBe(2);
-    expect(bodies(posted)[1]).toMatchObject({ e: "end", o: "won" });
+    // The whole board bar the mine, and the one flag the *player* planted —
+    // not the auto-flag the win itself lays down (game.ts).
+    expect(bodies(posted)[1]).toMatchObject({
+      e: "end",
+      o: "won",
+      op: 80,
+      fr: 1,
+      fw: 0,
+      fl: 1,
+    });
   });
 
   test("a finished board is reported once, however much it is clicked", async ({
@@ -162,6 +222,33 @@ test.describe("play counts", () => {
     await page.locator(".hud-smiley").click(); // the smiley restarts the board
 
     await expect.poll(() => bodies(posted).filter((p) => p.e === "start").length).toBe(2);
+    // …and says so: the same board again, after a loss.
+    const restart = bodies(posted).filter((p) => p.e === "start")[1];
+    expect(restart).toMatchObject({ m: "square", t: "again", f: "lost" });
+  });
+
+  test("a mid-game re-roll says it abandoned a board in play", async ({ page }) => {
+    // The other half of the start-reason pair: the HUD die deals a different
+    // board, and the game it replaced was still going. `trigger` x `from` is
+    // what makes these tellable apart in the dataset.
+    await withoutBeacon(page);
+    await ready(page);
+    const posted = collect(page);
+
+    await openSquares(page, "4,4");
+    // A flag, not a reveal: the fixture board has one mine, so opening any
+    // safe cell floods the whole board and wins it — and the win card would
+    // then be over the die.
+    await page.evaluate(() => window.__ms?.flag("0,0"));
+    await expect.poll(() => posted.length).toBe(1);
+    await page.locator('.hud-btn[data-slot="random"]').click();
+
+    await expect.poll(() => bodies(posted).filter((p) => p.e === "start").length).toBe(2);
+    const rerolled = bodies(posted).filter((p) => p.e === "start")[1];
+    expect(rerolled).toMatchObject({ t: "random", f: "playing" });
+    // The board it abandoned files no end event — an abandon is `starts - ends`
+    // (docs/agents/metrics.md), which is why there is no third event here.
+    expect(bodies(posted).filter((p) => p.e === "end")).toHaveLength(0);
   });
 
   test("the Analytics switch stops every post, and the choice sticks", async ({

@@ -733,9 +733,13 @@ export function renderSettings(host: SettingsHost, pages: SettingsPages): Docume
 
     const note = document.createElement("p");
     note.className = "settings-note";
+    // Kept accurate rather than kept short: this is the claim the feature is
+    // judged on. If a field is ever added to the event, this sentence changes
+    // in the same commit — see docs/agents/metrics.md.
     note.textContent =
-      "No account, no cookie, no identifier — only the board's name, the " +
-      "difficulty, whether it was won and how long it took.";
+      "No account, no cookie, no identifier — only the board, how the game " +
+      "went (won or lost, how long, how far you got, how you flagged), how it " +
+      "was started, and whether this is a phone, tablet or desktop.";
     frag.append(note);
   }
 

@@ -350,18 +350,34 @@ function measuredKind(
   return kind ?? anyShape(sides);
 }
 
-/** Which family a mode belongs to, by label: an `ARCH_TILINGS` family for a
+/** Which family a mode belongs to, by **key**: an `ARCH_TILINGS` family for a
  * periodic tiling, the flat-only families for the one-off boards, and the solid
- * group for a polyhedron. */
-function familyOf(mode: string): string | null {
+ * group for a polyhedron.
+ *
+ * The key rather than the label, because this is also the metrics dataset's
+ * `family` column — a label rewording must not break a dashboard. It is
+ * exported so `tests/unit/analyticsSchema.test.ts` can check the generated
+ * `modeInfo` in `data/catalog.json` against it; see docs/agents/metrics.md. */
+export function familyKeyOf(mode: string): string | null {
   const tilingKey = tilingOf(mode) ?? shapedTiling(mode);
   if (tilingKey) {
-    const family = ARCH_TILINGS.find((t) => t.key === tilingKey)?.family ?? "regular";
-    return FAMILY_LABELS[family] ?? null;
+    return ARCH_TILINGS.find((t) => t.key === tilingKey)?.family ?? "regular";
   }
-  if (APERIODIC_MODES.includes(mode)) return FAMILY_LABELS["aperiodic"] ?? null;
-  if (FRACTAL_MODES.includes(mode)) return FAMILY_LABELS["fractal"] ?? null;
-  return SOLID_GROUPS.find((g) => g.modes.includes(mode))?.label ?? null;
+  if (APERIODIC_MODES.includes(mode)) return "aperiodic";
+  if (FRACTAL_MODES.includes(mode)) return "fractal";
+  return SOLID_GROUPS.find((g) => g.modes.includes(mode))?.key ?? null;
+}
+
+/** The same family, as the info window says it. A solid group's label is its
+ * own; every other family's comes from the shared `familyLabels` table. */
+function familyOf(mode: string): string | null {
+  const key = familyKeyOf(mode);
+  if (key === null) return null;
+  return (
+    FAMILY_LABELS[key] ??
+    SOLID_GROUPS.find((g) => g.key === key)?.label ??
+    null
+  );
 }
 
 /** The regular tiling a shaped flat board (the triangle, the hex-hex) is cut

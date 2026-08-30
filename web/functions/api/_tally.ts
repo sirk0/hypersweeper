@@ -1,4 +1,8 @@
-import { parseEvent } from "../../src/analyticsEvent";
+import {
+  DATASET_BLOBS,
+  DATASET_DOUBLES,
+  parseEvent,
+} from "../../src/analyticsEvent";
 
 // The collector's actual logic, in standard web types only — a `Request` in, a
 // `Response` out, and one hand-written interface for the Analytics Engine
@@ -22,13 +26,14 @@ import { parseEvent } from "../../src/analyticsEvent";
 //     Access-Control-Allow-Origin would not stop a cross-site POST anyway —
 //     the Sec-Fetch-Site check below is what declines one.)
 //
-// Dataset schema. The blob positions are the whole contract with
-// scripts/metrics.mjs, which reads them by number: never renumber, only append.
+// Dataset schema. It is not written here: `DATASET_BLOBS` and
+// `DATASET_DOUBLES` in src/analyticsEvent.ts are the column layout, and the
+// write below maps over them, so a column's position and its meaning cannot
+// drift apart. The table, the rules and the queries are in
+// docs/agents/metrics.md.
 //
-//   index1   board mode ("hexhex")        double1  seconds on the clock
-//   blob1    "start" | "end"                       (0 on a start)
-//   blob2    difficulty ("easy")
-//   blob3    "won" | "lost" | ""  (empty on a start)
+// The one rule worth repeating where the write happens: **append only, never
+// renumber.** Every dashboard and scripts/metrics.mjs read these by number.
 
 /** The one method used off Cloudflare's `AnalyticsEngineDataset`. Written out
  * here so this file needs no Worker types, and so the shape the collector
@@ -41,8 +46,9 @@ export interface AnalyticsDataset {
   }): void;
 }
 
-/** Longest body worth reading. A valid event is about 70 bytes. */
-const MAX_BODY = 512;
+/** Longest body worth reading. The widest real `end` event is about 210
+ * bytes; the headroom is for the next field, not for a body worth parsing. */
+const MAX_BODY = 1024;
 
 const NO_CONTENT: ResponseInit = {
   status: 204,
@@ -83,12 +89,12 @@ export async function handleTally(
 
   try {
     dataset?.writeDataPoint({
-      // At most one index, 96 bytes. The mode: 160 possible values, and
+      // At most one index, 96 bytes. The mode: 179 possible values, and
       // indexing on it means Analytics Engine samples per board, so a board
       // nobody plays keeps its fidelity while a popular one is being sampled.
       indexes: [event.mode],
-      blobs: [event.kind, event.difficulty, event.outcome ?? ""],
-      doubles: [event.seconds],
+      blobs: DATASET_BLOBS.map((column) => column.get(event)),
+      doubles: DATASET_DOUBLES.map((column) => column.get(event)),
     });
   } catch {
     // A missing or misbehaving binding must not become a 500 in the player's

@@ -1,3 +1,4 @@
+import type { GameStats } from "./analyticsEvent";
 import { playSound, soundEnabled, type CellSound } from "./audio/sound";
 import { buildBoard } from "./boards/presets";
 import {
@@ -44,6 +45,14 @@ export class GameSession {
   private exploded: CellId | null = null;
   private startedAt: number | null = null;
   private stoppedAt: number | null = null;
+  /** When the board went up. The clock (`startedAt`) does not start until the
+   * first move, so the gap between the two is how long the player looked at the
+   * board before touching it. */
+  private readonly openedAt = performance.now();
+  private reveals = 0;
+  private chords = 0;
+  private flagMoves = 0;
+  private viewMoved = false;
   /** How many flags the *player* has planted this game.
    *
    * Not "how many flags are on the board": winning auto-flags every mine still
@@ -211,6 +220,7 @@ export class GameSession {
   reveal(cell: CellId): void {
     if (this.status !== "playing") return;
     this.startTimer();
+    this.reveals++;
     const gameCell = this.gameFor(cell);
     const changed = this.game.reveal(gameCell);
     if (this.game.state === "lost") this.exploded = gameCell;
@@ -243,6 +253,7 @@ export class GameSession {
       this.mesh.dropFlag(this.geomFor(gameCell), heldMs);
     }
     if (isFlagged && !wasFlagged) this.flagsPlanted++;
+    if (isFlagged !== wasFlagged) this.flagMoves++;
     if (isFlagged !== wasFlagged) {
       haptic("flag");
       if (soundEnabled()) {
@@ -260,6 +271,7 @@ export class GameSession {
   chord(cell: CellId): void {
     if (this.status !== "playing") return;
     this.startTimer();
+    this.chords++;
     const chorded = this.gameFor(cell);
     const changed = this.game.chord(chorded);
     if (this.game.state === "lost") {
@@ -387,6 +399,41 @@ export class GameSession {
   /** Whether the player has planted no flag at all this game. */
   get flagless(): boolean {
     return this.flagsPlanted === 0;
+  }
+
+  /** The view was rotated or zoomed. One bit, reported at the end of the game:
+   * on a 3D board it is the only evidence that the controls were found at all.
+   * Set by `App`, which owns both gestures (main.ts). */
+  markViewMoved(): void {
+    this.viewMoved = true;
+  }
+
+  /** How far this game got, for the metrics event. Only meaningful once the
+   * game has ended — `Game.endFlags` is null until then, and the counts are
+   * still moving. See docs/agents/metrics.md. */
+  stats(): GameStats {
+    const flags = this.game.endFlags;
+    return {
+      opened: this.game.revealed,
+      flagsRight: flags?.right ?? 0,
+      flagsWrong: flags?.wrong ?? 0,
+      reveals: this.reveals,
+      chords: this.chords,
+      flagMoves: this.flagMoves,
+      firstMoveMs:
+        this.startedAt == null ? 0 : Math.max(0, this.startedAt - this.openedAt),
+      viewMoved: this.viewMoved,
+    };
+  }
+
+  /** Total cells on this board — the denominator for `stats().opened`. */
+  get cellCount(): number {
+    return this.game.cellCount;
+  }
+
+  /** Mines on this board. */
+  get mineCount(): number {
+    return this.game.mineCount;
   }
 
   /** The distinct side counts of this board's tiles, ascending.

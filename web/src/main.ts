@@ -11,6 +11,7 @@ import {
   type Achievement,
 } from "./achievements";
 import { setAnalyticsEnabled, trackGame } from "./analytics";
+import type { PreviousState, StartTrigger } from "./analyticsEvent";
 import {
   playSound,
   setSoundPreset,
@@ -107,6 +108,16 @@ class App {
    * again or the smiley does not turn it into a chosen one — the highlight
    * would otherwise move between two wins on the same board. */
   private dealtAtRandom = false;
+  /** How the board on screen was dealt, and what the board before it was doing
+   * at the time — set by `startGame` and repeated on the `end` event, so a win
+   * rate can be read per start reason (docs/agents/metrics.md).
+   *
+   * Deliberately *not* `dealtAtRandom`, which answers a different question and
+   * would give the wrong answer to this one: that flag sticks to the board so
+   * the win card highlights consistently, where this records the move actually
+   * made — replaying a dealt board is `again`, not `random`. */
+  private trigger: StartTrigger = "menu";
+  private from: PreviousState = "";
   /** Stored preferences (theme, difficulty, animations, cell style) — the
    * app's only persisted state. */
   private settings: Settings = loadSettings();
@@ -150,7 +161,11 @@ class App {
     this.hud = new Hud((action) => this.onAction(action));
     this.menu = new Menu(
       // Flat and 3D deal a board; every other row names one.
-      (sel) => this.startGame(sel.mode, sel.difficulty, sel.random ? { dealtAtRandom: true } : {}),
+      (sel) =>
+        this.startGame(sel.mode, sel.difficulty, {
+          trigger: sel.random ? "random" : "menu",
+          ...(sel.random ? { dealtAtRandom: true } : {}),
+        }),
       this.settingsHost(),
     );
     this.boardInfo = new BoardInfo((action) => this.onAction(action));
@@ -401,6 +416,7 @@ class App {
     if (fairnessOf(link.mode, this.settings.difficulty) === "blocked") return false;
     this.startGame(link.mode, this.settings.difficulty, {
       ...(link.seed !== null ? { seed: link.seed } : {}),
+      trigger: "link",
     });
     return true;
   }
@@ -420,7 +436,12 @@ class App {
   private startGame(
     mode: string,
     difficulty: string,
-    opts: { seed?: number; mines?: CellId[]; dealtAtRandom?: boolean } = {},
+    opts: {
+      seed?: number;
+      mines?: CellId[];
+      dealtAtRandom?: boolean;
+      trigger?: StartTrigger;
+    } = {},
   ): void {
     this.dismissDialogs();
     this.scored = false;
@@ -428,6 +449,13 @@ class App {
     this.counted = false;
     this.unlocked = [];
     this.dealtAtRandom = opts.dealtAtRandom ?? false;
+    // How this board came to be dealt, and what the board before it was doing
+    // when it was replaced. Read here, before the old session is dropped,
+    // because it is the only moment both are known — and kept on `App` because
+    // the `end` event repeats them, so a win rate can be read per start reason.
+    // See docs/agents/metrics.md.
+    this.trigger = opts.trigger ?? "menu";
+    this.from = this.session?.status ?? "";
     // Every ordinary game is dealt from a seed, generated here when the caller
     // has none, so that the board is a thing you can hand to someone else: the
     // address bar and the share button both name *this* layout rather than
@@ -475,7 +503,15 @@ class App {
     // Last, so a mode `buildBoard` rejects throws before it is counted as a
     // play. A HUD restart comes back through here, so it counts as a new one —
     // "boards opened" is the measure, not "distinct players".
-    trackGame({ kind: "start", mode, difficulty });
+    trackGame({
+      kind: "start",
+      mode,
+      difficulty,
+      trigger: this.trigger,
+      from: this.from,
+      cells: this.session.cellCount,
+      mines: this.session.mineCount,
+    });
   }
 
   private showMenu(): void {
@@ -598,6 +634,7 @@ class App {
       // came from goes.
       this.startGame(this.session.mode, this.session.difficulty, {
         dealtAtRandom: this.dealtAtRandom,
+        trigger: "again",
       });
     } else if (action.startsWith("symmetry:")) {
       // `symmetry:<id>:<direction>` — one step along one of the board's own
@@ -622,7 +659,12 @@ class App {
     const session = this.session;
     if (!session || this.screen !== "game") return;
     const mode = randomMode(session.is3d ? "3d" : "flat");
-    if (mode) this.startGame(mode, session.difficulty, { dealtAtRandom: true });
+    if (mode) {
+      this.startGame(mode, session.difficulty, {
+        dealtAtRandom: true,
+        trigger: "random",
+      });
+    }
   }
 
   /** What the board on screen is: its family, its surface, its size and what
@@ -686,6 +728,11 @@ class App {
 
   private rotate(dxPx: number, dyPx: number): void {
     if (!this.session?.is3d || this.screen !== "game") return;
+    // One bit for the metrics: on a 3D board, whether the controls were found
+    // at all. Recorded here rather than in `controls.ts` because this is where
+    // a gesture becomes a view change — a drag the guard above rejects is not
+    // one (docs/agents/metrics.md).
+    this.session.markViewMoved();
     this.renderer.rotateBy(dxPx, dyPx);
   }
 
@@ -693,6 +740,7 @@ class App {
    * the mouse under the wheel). Bounded by the renderer's zoom clamp. */
   private zoom(factor: number, x?: number, y?: number): void {
     if (this.screen !== "game") return;
+    this.session?.markViewMoved();
     this.renderer.zoomBy(factor, x, y);
   }
 
@@ -807,6 +855,11 @@ class App {
       difficulty: session.difficulty,
       outcome: status,
       ms: session.elapsedMs(),
+      trigger: this.trigger,
+      from: this.from,
+      cells: session.cellCount,
+      mines: session.mineCount,
+      stats: session.stats(),
     });
   }
 
@@ -867,6 +920,7 @@ class App {
       onPlayAgain: () =>
         this.startGame(session.mode, session.difficulty, {
           dealtAtRandom: this.dealtAtRandom,
+          trigger: "again",
         }),
       // The same move the header's die makes, from the card that is up when a
       // board is finished rather than from the row over one being played.

@@ -6,6 +6,14 @@ import { mulberry32, sample, type Rng } from "./rng";
 export type CellState = "hidden" | "revealed" | "flagged";
 export type GameState = "playing" | "won" | "lost";
 
+/** How the player's flags stood when the game ended. */
+export interface FlagTally {
+  /** Flags on mines. */
+  right: number;
+  /** Flags on safe cells. */
+  wrong: number;
+}
+
 export interface GameOptions {
   mineCount?: number;
   minePositions?: Iterable<CellId>;
@@ -22,6 +30,7 @@ export class Game {
   private minesPlaced: boolean;
   private readonly cellStates = new Map<CellId, CellState>();
   private revealedCount = 0;
+  private endTally: FlagTally | null = null;
 
   constructor(
     adjacency: Map<CellId, Iterable<CellId>>,
@@ -102,6 +111,20 @@ export class Game {
     return this.revealedCount;
   }
 
+  get cellCount(): number {
+    return this.adjacency.size;
+  }
+
+  /** The player's flags as they stood the moment the game ended, or `null`
+   * while it is still being played.
+   *
+   * This has to be a snapshot rather than a count taken afterwards, because a
+   * win auto-flags every mine the player never got to (see `reveal`). Read
+   * after the fact, *every* win looks like a perfect flagging run. */
+  get endFlags(): FlagTally | null {
+    return this.endTally;
+  }
+
   // -- moves -----------------------------------------------------------------
 
   /** Reveal a cell; changed cells are returned for ranged rendering updates. */
@@ -113,13 +136,19 @@ export class Game {
 
     if (this.mines.has(cell)) {
       this.cellStates.set(cell, "revealed");
+      // Deliberately not counted as opened: `revealedCount` stays the number of
+      // *safe* cells uncovered, which is the honest measure of how far a lost
+      // game got.
       this.state = "lost";
+      this.endTally = this.tallyFlags();
       return [cell];
     }
 
     const changed = this.floodReveal(cell);
     if (this.revealedCount === this.adjacency.size - this.mineCount) {
       this.state = "won";
+      // Before the auto-flag below, and it has to stay before it.
+      this.endTally = this.tallyFlags();
       for (const mine of this.mines) {
         if (this.cellStates.get(mine) === "hidden") {
           this.cellStates.set(mine, "flagged");
@@ -185,6 +214,21 @@ export class Game {
     }
     this.mines = new Set(sample(candidates, this.mineCount, this.rng));
     this.minesPlaced = true;
+  }
+
+  /** One walk of the board, counting the flags that are down. A running pair
+   * of counters in `toggleFlag` would be cheaper and wrong: mines are not
+   * placed until the first reveal, so a flag planted before it has nothing to
+   * be right or wrong about yet. */
+  private tallyFlags(): FlagTally {
+    let right = 0;
+    let wrong = 0;
+    for (const [cell, state] of this.cellStates) {
+      if (state !== "flagged") continue;
+      if (this.mines.has(cell)) right++;
+      else wrong++;
+    }
+    return { right, wrong };
   }
 
   private floodReveal(cell: CellId): CellId[] {

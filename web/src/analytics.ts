@@ -1,4 +1,9 @@
-import { payloadFor, type GameEvent } from "./analyticsEvent";
+import {
+  payloadFor,
+  type DeviceClass,
+  type GameFacts,
+} from "./analyticsEvent";
+import { deviceClass, shellKind } from "./device";
 
 // Anonymous play counts: which boards get opened, and how often they get won.
 // The whole feature is two events per game (a `start` when a board opens, an
@@ -43,6 +48,11 @@ const COLLECTING = __APP_ANALYTICS__;
 
 let enabled = true;
 
+/** The device class, worked out once. It cannot change under a running tab —
+ * a rotation does not turn a phone into a tablet, because `deviceClass` reads
+ * the screen's shorter edge rather than the viewport's. */
+let device: DeviceClass | null = null;
+
 /** Turn reporting on or off (Settings › Privacy). Validated by the caller —
  * this is a plain boolean preference, like the haptics flag. */
 export function setAnalyticsEnabled(on: boolean): void {
@@ -55,10 +65,23 @@ export function analyticsEnabled(): boolean {
 }
 
 /** Report a game event. Fire and forget: returns immediately, never throws,
- * never retries. */
-export function trackGame(event: GameEvent): void {
+ * never retries.
+ *
+ * The caller names the game; the three client facts are added here, because
+ * they need `navigator`, `window` and a build-time define, none of which the
+ * pure half is allowed to touch. */
+export function trackGame(facts: GameFacts): void {
   if (!COLLECTING || !enabled) return;
-  const payload = payloadFor(event);
+  device ??= deviceClass();
+  const payload = payloadFor({
+    ...facts,
+    device,
+    // Read per event rather than cached: iOS settles `display-mode` late
+    // enough on a cold standalone start that a value taken at import time can
+    // be wrong.
+    shell: shellKind(),
+    version: __APP_VERSION__,
+  });
   if (!payload) return;
   post(JSON.stringify(payload));
 }
