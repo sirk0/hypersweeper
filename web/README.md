@@ -8,6 +8,80 @@ as the reference implementation and is not deployed.
 newest first. For the rules and reference an agent needs while working here, see
 [`AGENTS.md`](AGENTS.md) and the topic files in [`docs/`](docs/) it routes to.
 
+**M20 — A volume board: the cube of cubes.** Every board up to here is a
+*surface* — a tiling of the plane, of a polyhedron, or of an immersed manifold —
+and two cells are neighbours when their polygons share a vertex. `cube3d` is the
+first **volume**, and it keeps that rule by lifting it one dimension: the cells
+are the unit *cubes* of an `n**3` block, and two are neighbours when their cubes
+share a corner. That is the 3x3x3 block around a cell minus itself — **26**
+neighbours, against 21 for the densest surface in the zoo — and it is exact
+integer arithmetic, so nothing is rounded together to make a neighbour.
+
+The design problem is that **a solid cube shows only its shell**: 98 of 512
+cells at `n = 8`, and none of the inside. Three ways out, and only one of them
+is a game:
+
+- *Draw the cube and cut into it* — a slice you step with the header chevrons,
+  everything in front of it hidden. Faithful, and unplayable: a number counts
+  mines across slices `k-1`, `k` and `k+1`, so reading one means flipping back
+  and forth and holding two hidden layers in your head.
+- *Lay the slices out flat* — every 3D-minesweeper that works does this. It is
+  readable, and it is a 2D board with an unusual adjacency; nothing about it is
+  3D but the arithmetic.
+- **Take the cube apart and leave it in space**, which is what shipped. Each
+  slice is its own sheet of tiles; the sheets are laid out on a
+  `ceil(sqrt(n))`-column grid and each is stepped back in depth by its slice
+  index. Nothing is hidden and nothing occludes anything, so all three slices a
+  number spans are readable at once — and the depth ramp is the only thing that
+  says which sheet is which, so it is tuned to be plain at the board's starting
+  orientation without perspective shrinking the far sheets past legibility.
+
+It is still a `Board3D`, so the perspective camera, the trackball, silhouette
+framing and the 3D pins arrive as they are. Two details of the layout are
+load-bearing. **A grid of sheets, not a row**: eight sheets in a row is a 9-to-1
+board, and `frameSolid` fits one of those into a sliver of a phone screen; on a
+grid it comes out 8x8, 18x12 and 26x26 cells at the three sizes. And the board
+is **two-sided**, because open sheets have rims and front-face culling would
+make the whole thing vanish the moment it was turned past ninety degrees — which
+costs it the raised-button relief (a two-sided board draws flat tiles, see "Cell
+styles" in [`docs/render.md`](docs/render.md)) and leaves the closed/opened read
+to the palette step, which carries it.
+
+Three things had to be built rather than inherited:
+
+- **Symmetries measured off the cells, not off the drawing.**
+  `solidSymmetries` works because a solid is drawn as the thing it is, so every
+  symmetry of the polyhedron is a symmetry of the picture. Pulling the slices
+  apart leaves none of the cube's forty-eight in the picture. They all survive
+  in the *cells* — any signed permutation of `(i, j, k)` carries
+  Chebyshev-distance-1 pairs to Chebyshev-distance-1 pairs — so `boards/volume.ts`
+  offers them as candidates and `keepSymmetries` checks them against the
+  adjacency, the route `surfaces.ts` already takes and with the same guarantee
+  that nothing is asserted from the algebra. `ring`, `tube` and `mirror-ring`
+  stand after the redundancy pass, and they are the only way to move this
+  board's contents at all: dragging turns the drawing, and the drawing is the
+  cube taken apart rather than the cube.
+- **Digits past 12.** `glyphFor` clamped at `Math.min(mines, 12)`, so a 13 would
+  have drawn as a **12** — the wrong number, not a missing one. The atlas bakes
+  1..`MAX_DIGIT_GLYPH` now, and `tests/unit/conformance.test.ts` measures every
+  board in the catalogue against it, so no future board can out-count it
+  unnoticed.
+- **A calibration that could see the board.** The reference solver abandons a
+  game whose frontier DP exceeds its node budget, and the games it cannot finish
+  are the *tangled* ones — so where abandonment is common the surviving sample
+  is biased toward the untangled layouts and the search settles on too few
+  mines. At 26 neighbours that is not a rounding error: medium reported 0.875
+  over *two* finished games at the default 4,000 nodes. `calibrate.py --budget`
+  is the fix, a flag rather than a new default because raising the default would
+  silently re-grade every row already in the checkpoint. See "Measuring the size
+  and the mine count" in
+  [`../docs/agents/difficulty.md`](../docs/agents/difficulty.md).
+
+Sizes are measured as everywhere else, and `resize` picks 4/6/8 (64/216/512) on
+its own. Easy and medium land 21% and 16% under the 81/256 targets because the
+only knob is the side of the cube; the mode joins `COARSE_GEOMETRY` beside the
+fractals, which quantise the same way by whole substitution steps.
+
 **M19 — Theme and colour scheme, apart.** M18 folded appearance into one theme,
 and folded one setting too many in with it: Light and Dark were the *same* look
 (both cut with the `flat` style, neither textured) on two palettes, while Classic
