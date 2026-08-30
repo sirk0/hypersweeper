@@ -217,6 +217,35 @@ test.describe("record window", () => {
     await expect(dialog(page)).toBeVisible();
   });
 
+  test("a share that goes through clears what the last one said", async ({ page }) => {
+    // A *cancelled* share sheet falls through to the clipboard, so the icon can
+    // be showing "Link copied" when the next press opens the sheet again — and
+    // a sheet is its own feedback, so that press says nothing itself. It has to
+    // clear the tick on the way in, or the note it leaves standing is a lie
+    // about a share that did go through.
+    await page.context().grantPermissions(["clipboard-write"]);
+    await page.addInitScript(() => {
+      let calls = 0;
+      Object.defineProperty(navigator, "share", {
+        configurable: true,
+        // First press: the player dismisses the sheet (share.ts falls through
+        // to the clipboard). Second: they go through with it.
+        value: () => (++calls === 1 ? Promise.reject(new Error("cancelled")) : Promise.resolve()),
+      });
+    });
+    await page.goto("/");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    await winSeededBoard(page, 99);
+
+    const share = page.locator(".dialog-share");
+    await share.click();
+    await expect(share).toHaveAttribute("data-state", "copied");
+
+    await share.click();
+    await expect(share).not.toHaveAttribute("data-state", /.*/);
+    await expect(page.locator(".dialog-share-note")).toHaveText("");
+  });
+
   test("a board with no link offers no share icon", async ({ page }) => {
     // The fixture board is built from an explicit mine layout, so it has no
     // seed and cannot be handed to anyone.

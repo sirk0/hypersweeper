@@ -216,19 +216,27 @@ function shareButton(onShare: () => Promise<ShareResult>): HTMLButtonElement {
   const note = el("span", "dialog-share-note");
   btn.append(glyph, note);
   let reset = 0;
-  btn.addEventListener("click", () => {
+  /** Back to the plain glyph and no note — the icon saying nothing. */
+  const clear = (): void => {
     window.clearTimeout(reset);
+    glyph.innerHTML = SHARE_GLYPHS.share;
+    note.textContent = "";
+    delete btn.dataset["state"];
+  };
+  btn.addEventListener("click", () => {
+    // Whatever the last click said is spent, and this one may say nothing at
+    // all: a *cancelled* share sheet falls through to the clipboard, so a
+    // second press that the player goes through with resolves "shared" and
+    // returns below without touching the glyph. Clearing the timer without
+    // clearing what it was going to undo left that tick up for good.
+    clear();
     void onShare().then((result) => {
       if (result === "shared") return;
       const copied = result === "copied";
       glyph.innerHTML = copied ? SHARE_GLYPHS.copied : SHARE_GLYPHS.failed;
       note.textContent = copied ? "Link copied" : "Could not share";
       btn.dataset["state"] = result;
-      reset = window.setTimeout(() => {
-        glyph.innerHTML = SHARE_GLYPHS.share;
-        note.textContent = "";
-        delete btn.dataset["state"];
-      }, SHARE_LABEL_MS);
+      reset = window.setTimeout(clear, SHARE_LABEL_MS);
     });
   });
   return btn;
