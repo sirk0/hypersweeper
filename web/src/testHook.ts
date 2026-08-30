@@ -14,6 +14,11 @@ export interface MsState {
   revealed: number;
   cellCount: number;
   is3d: boolean;
+  /** Whether the board on screen was dealt rather than chosen (the home page's
+   * Flat and 3D rows, the header's die, the win window's New board). The win
+   * window highlights on it, and it leaves no other trace to assert from
+   * outside — a dealt board is an ordinary board once it is up. */
+  dealtAtRandom: boolean;
   /** The cell style the board on screen was *built* with — not the stored
    * preference, which a board opened before the change does not follow. The one
    * way to assert from outside that picking a style reached the mesh. */
@@ -48,7 +53,11 @@ export interface MsHook {
   startBoard(
     mode: string,
     difficulty: string,
-    opts?: { seed?: number; mines?: CellId[] },
+    /** `dealtAtRandom` marks the board as one the game dealt. The real paths
+     * that deal one pick the mode themselves, so they cannot be combined with a
+     * fixture mine layout — and a test that has to *win* a board needs to know
+     * what is under it. */
+    opts?: { seed?: number; mines?: CellId[]; dealtAtRandom?: boolean },
   ): void;
   reveal(cell: CellId): void;
   flag(cell: CellId): void;

@@ -35,8 +35,8 @@ through to the clipboard rather than reporting failure, since dismissing one is
 a normal outcome. The trap fixed there: `nav.clipboard?.writeText(…)` on a
 platform with no clipboard evaluates to `undefined`, which awaits happily — so
 the button would have said "Link copied" having copied nothing. It is offered in
-**one** place, the record window, and passes the session's seed and the winning
-time. The game header carried one too and does not any more: a link is worth
+**one** place, the record window — as the icon in its top-left corner, see "Best
+times" in [`ui.md`](ui.md) — and passes the session's seed and the winning time. The game header carried one too and does not any more: a link is worth
 sending when it comes with a time, and the header's two right-hand slots are all
 that fits at 320px. They hold the **die** (another board at random, see below)
 and the **ⓘ** (what this board is).

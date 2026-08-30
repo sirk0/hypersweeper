@@ -100,9 +100,22 @@ class App {
   /** What the win that is being reported just unlocked, for the card
    * `checkRecord` puts up a moment later. */
   private unlocked: Achievement[] = [];
+  /** Whether the board on screen was *dealt* rather than chosen — the home
+   * page's Flat and 3D rows, the header's die, the win window's New board. It
+   * is what that window highlights on (ui/scoreDialog.ts): a board the player
+   * picked is one they came for, a dealt one is a step in a wander through the
+   * catalogue. It sticks to the board, so replaying a dealt board with Play
+   * again or the smiley does not turn it into a chosen one — the highlight
+   * would otherwise move between two wins on the same board. */
+  private dealtAtRandom = false;
   /** How the board on screen was dealt, and what the board before it was doing
    * at the time — set by `startGame` and repeated on the `end` event, so a win
-   * rate can be read per start reason. */
+   * rate can be read per start reason (docs/agents/metrics.md).
+   *
+   * Deliberately *not* `dealtAtRandom`, which answers a different question and
+   * would give the wrong answer to this one: that flag sticks to the board so
+   * the win card highlights consistently, where this records the move actually
+   * made — replaying a dealt board is `again`, not `random`. */
   private trigger: StartTrigger = "menu";
   private from: PreviousState = "";
   /** Stored preferences (theme, difficulty, animations, cell style) — the
@@ -147,9 +160,11 @@ class App {
     this.renderer = new BoardRenderer(canvas);
     this.hud = new Hud((action) => this.onAction(action));
     this.menu = new Menu(
+      // Flat and 3D deal a board; every other row names one.
       (sel) =>
         this.startGame(sel.mode, sel.difficulty, {
           trigger: sel.random ? "random" : "menu",
+          ...(sel.random ? { dealtAtRandom: true } : {}),
         }),
       this.settingsHost(),
     );
@@ -421,13 +436,19 @@ class App {
   private startGame(
     mode: string,
     difficulty: string,
-    opts: { seed?: number; mines?: CellId[]; trigger?: StartTrigger } = {},
+    opts: {
+      seed?: number;
+      mines?: CellId[];
+      dealtAtRandom?: boolean;
+      trigger?: StartTrigger;
+    } = {},
   ): void {
     this.dismissDialogs();
     this.scored = false;
     this.tracked = false;
     this.counted = false;
     this.unlocked = [];
+    this.dealtAtRandom = opts.dealtAtRandom ?? false;
     // How this board came to be dealt, and what the board before it was doing
     // when it was replaced. Read here, before the old session is dropped,
     // because it is the only moment both are known — and kept on `App` because
@@ -609,7 +630,10 @@ class App {
       this.flagMode = !this.flagMode;
       this.hud.setState({ flagMode: this.flagMode });
     } else if (action === "restart" && this.session) {
+      // A re-deal of the same board, so it is the same board as far as where it
+      // came from goes.
       this.startGame(this.session.mode, this.session.difficulty, {
+        dealtAtRandom: this.dealtAtRandom,
         trigger: "again",
       });
     } else if (action.startsWith("symmetry:")) {
@@ -635,7 +659,12 @@ class App {
     const session = this.session;
     if (!session || this.screen !== "game") return;
     const mode = randomMode(session.is3d ? "3d" : "flat");
-    if (mode) this.startGame(mode, session.difficulty, { trigger: "random" });
+    if (mode) {
+      this.startGame(mode, session.difficulty, {
+        dealtAtRandom: true,
+        trigger: "random",
+      });
+    }
   }
 
   /** What the board on screen is: its family, its surface, its size and what
@@ -885,12 +914,17 @@ class App {
       entries,
       unlocked: this.unlocked,
       animate: this.animationsEnabled,
+      // A board the player chose highlights playing it again; one the game
+      // dealt them highlights the next one.
+      primary: this.dealtAtRandom ? "new-board" : "play-again",
       onPlayAgain: () =>
-        this.startGame(session.mode, session.difficulty, { trigger: "again" }),
+        this.startGame(session.mode, session.difficulty, {
+          dealtAtRandom: this.dealtAtRandom,
+          trigger: "again",
+        }),
       // The same move the header's die makes, from the card that is up when a
       // board is finished rather than from the row over one being played.
       onNewBoard: () => this.startRandomBoard(),
-      onMenu: () => this.showMenu(),
       // The card is where a player is thinking about achievements, so it is
       // where the way to the whole list belongs. Leaving the board is the same
       // move Menu makes — the card is about a board that is finished.
@@ -1037,6 +1071,7 @@ class App {
           revealed: s ? s.game.revealed : 0,
           cellCount: s ? s.game.cells.length : 0,
           is3d: s?.is3d ?? false,
+          dealtAtRandom: s ? this.dealtAtRandom : false,
           cellStyle: s?.cellStyle ?? themeCellStyle(this.settings.theme),
           sound: soundChoice(),
           volume: soundVolume(),
