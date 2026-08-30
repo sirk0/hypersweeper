@@ -45,6 +45,10 @@ interface Shot {
   /** `"light"` or `"dark"`. Never `"auto"`: a screenshot must not depend on the
    * machine it is rendered on. */
   scheme: "light" | "dark";
+  /** Pattern the page behind the board with that board's own tiling
+   * (ui/backgroundPattern.ts). Realistic only: the other two themes have no
+   * patterned page, so this says nothing on them. */
+  backgrounds?: true;
   /** Board shots: the mode to open. Omitted for a chrome shot. */
   mode?: string;
   difficulty?: string;
@@ -69,13 +73,46 @@ const BOARD_VIEW = { width: 520, height: 600 };
 // aperiodic tiling, a torus mid-explosion, a fractal patch, a flat regular
 // board, and the two chrome screens — with the three themes and both schemes
 // distributed over them.
+//
+// One of those choices is not free: **every board you can turn is Realistic**,
+// because that is where a 3D marker comes from. A pin standing on a flagged
+// cell and a spiked bomb on a revealed mine are `CellStyle.solidMarkers`
+// (render/markers3d.ts), and Realistic is the only style that asks for them —
+// on Flat or Classic the same cells carry the atlas billboards, which are
+// pictures that do not turn with the board and are exactly what a photograph of
+// a solid should not show. So the spread runs the other way round: the three
+// solids take Realistic, and the flat boards carry Flat and Classic between
+// them. (A flat board never gets a model whatever the style says, so nothing is
+// lost there.)
+//
+// The four Realistic shots also switch `backgrounds` on, which is the only
+// place it shows: the page behind the board is patterned with that board's own
+// tiling. On `penrose` it shows *through* the board as well, Realistic being
+// the one style with translucent opened cells.
 const SHOTS: Shot[] = [
-  { file: "c180.png", theme: "flat", scheme: "light", mode: "c180", seed: 7, reveal: 0.34, flags: 5 },
+  {
+    file: "c180.png",
+    theme: "realistic",
+    scheme: "light",
+    backgrounds: true,
+    mode: "c180",
+    seed: 7,
+    reveal: 0.34,
+    flags: 5,
+  },
   {
     file: "mobiushex.png",
-    theme: "flat",
+    theme: "realistic",
     scheme: "dark",
+    backgrounds: true,
     mode: "mobiushex",
+    // The one shot that is not on `medium`. A medium Möbius strip is 28x9
+    // hexagons, and a pin is sized off its cell's inradius — at that density
+    // the pins come out four pixels across in the README and the shot shows
+    // nothing the flat billboards did not. Easy is 16x5, which is still
+    // unmistakably a strip that comes back joined to its own other side, with
+    // markers big enough to read as objects standing on it.
+    difficulty: "easy",
     seed: 3,
     reveal: 0.34,
     flags: 4,
@@ -87,6 +124,7 @@ const SHOTS: Shot[] = [
     file: "penrose.png",
     theme: "realistic",
     scheme: "light",
+    backgrounds: true,
     mode: "penrose",
     seed: 11,
     reveal: 0.36,
@@ -94,8 +132,9 @@ const SHOTS: Shot[] = [
   },
   {
     file: "torussnubsquare-lost.png",
-    theme: "classic",
-    scheme: "light",
+    theme: "realistic",
+    scheme: "dark",
+    backgrounds: true,
     mode: "torussnubsquare",
     seed: 5,
     reveal: 0.34,
@@ -104,7 +143,7 @@ const SHOTS: Shot[] = [
   },
   {
     file: "gosper.png",
-    theme: "realistic",
+    theme: "flat",
     scheme: "dark",
     mode: "gosper",
     seed: 2,
@@ -114,7 +153,7 @@ const SHOTS: Shot[] = [
   {
     file: "hexhex.png",
     theme: "classic",
-    scheme: "dark",
+    scheme: "light",
     mode: "hexhex",
     seed: 9,
     reveal: 0.36,
@@ -193,6 +232,7 @@ async function shoot(browser: Browser, shot: Shot, outDir: string): Promise<void
     scheme: shot.scheme,
     animations: false,
     sound: "off",
+    backgrounds: shot.backgrounds ?? false,
   });
   await context.addInitScript(
     ([key, value]) => window.localStorage.setItem(key!, value!),

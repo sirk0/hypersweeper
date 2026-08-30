@@ -236,7 +236,14 @@ export default defineConfig({
         // property of the worker rather than of the URL the caller happens to
         // build.) Keeping workbox's own default beside it, which naming this
         // option would otherwise drop.
-        globIgnores: ["**/node_modules/**/*", "version.json"],
+        //
+        // And the link-preview card, which is not part of the app shell at all:
+        // `og.png` is named only in the `og:image` meta tag, so the one thing
+        // that ever fetches it is a crawler on the open network. A copy in the
+        // precache is bytes every visitor downloads and no visitor uses — and
+        // since the card is rendered from the Realistic theme, whose page is
+        // full-frame turbulence, it is very nearly a megabyte of them.
+        globIgnores: ["**/node_modules/**/*", "version.json", "og.png"],
         // The Pages Function under /api/ is the one path that is not part of
         // the app shell. A POST is not a navigation request, so today's config
         // already leaves it alone; this says so, and keeps it true if the

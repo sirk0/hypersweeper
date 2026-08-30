@@ -145,11 +145,26 @@ async function main(): Promise<void> {
       deviceScaleFactor: 1,
       reducedMotion: "reduce",
     });
-    // Light theme, no sound: a screenshot must not build an audio graph, and
-    // the card should look like the app's default.
+    // The app's default look, on the light scheme, with no sound: a screenshot
+    // must not build an audio graph. Realistic is not just the default — the
+    // card is a sphere, and Realistic is the style that stands a pin on a
+    // flagged cell instead of lying a picture of one in the face
+    // (`CellStyle.solidMarkers`), which is the whole reason to photograph a
+    // board you can turn. `backgrounds` patterns the page behind it with the
+    // board's own tiling, as the README gallery's shots do.
     await context.addInitScript(
       ([key, value]) => window.localStorage.setItem(key!, value!),
-      ["ms:settings", JSON.stringify({ version: 3, theme: "light", animations: false, sound: "off" })],
+      [
+        "ms:settings",
+        JSON.stringify({
+          version: 4,
+          theme: "realistic",
+          scheme: "light",
+          animations: false,
+          sound: "off",
+          backgrounds: true,
+        }),
+      ],
     );
     const page = await context.newPage();
     await page.goto(`${BASE}?mode=${MODE}&difficulty=${DIFFICULTY}`);
