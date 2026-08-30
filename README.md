@@ -174,8 +174,9 @@ when you step on a mine, its success buzz when the board falls. No web API
 on iOS can ask for that. Building it needs a Mac with Xcode; a free Apple
 ID signs it for 7 days at a time. See [`ios/README.md`](ios/README.md).
 
-`web/README.md` is the guide to the code — the renderer, the board
-builders, themes, sound, and how to drive the app headless.
+[`web/AGENTS.md`](web/AGENTS.md) is the guide to the code — the renderer,
+the board builders, themes, sound, and how to drive the app headless;
+[`web/README.md`](web/README.md) is its milestone history.
 [`data/*.json`](data) is shared configuration (the board catalog, presets,
 UI screens) that both implementations read, plus a conformance oracle
 exported from the Python game and replayed by the TypeScript tests, so the

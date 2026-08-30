@@ -6,7 +6,7 @@ SURFACE_SPECS and TILING_SPECS rather than hand-listed. Adding a periodic
 tiling means adding one
 ArchTiling row (in tilings.py) and one ARCH_PRESETS row (in presets.py);
 adding a surface means adding one SurfaceSpec here plus a builder. See
-AGENTS.md. A mode string is always ``surface.prefix + tiling.key`` unless
+docs/agents/shared-data.md. A mode string is always ``surface.prefix + tiling.key`` unless
 the tiling overrides it (a few legacy names do).
 """
 

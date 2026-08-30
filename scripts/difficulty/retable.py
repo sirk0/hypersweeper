@@ -3,7 +3,7 @@
 ``TestWrappedArchimedean.test_cell_counts`` in ``tests/test_boards.py`` is a
 hand-written mode -> (easy, medium, hard) cell-count table -- deliberately, so
 that a window change has to be looked at rather than silently absorbed
-(AGENTS.md calls it out). Rewriting 101 rows by hand after a resize is not
+(docs/agents/difficulty.md calls it out). Rewriting 101 rows by hand after a resize is not
 looking at it, though, so this regenerates the literal and the diff is what
 gets reviewed.
 

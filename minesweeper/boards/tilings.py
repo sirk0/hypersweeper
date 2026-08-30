@@ -153,7 +153,8 @@ def hextriangle_board(size: int, mine_count: int, scale: float = 20) -> Board:
 # vertex configuration, number of distinct edge directions, template
 # factory), from which _ARCH_CONFIGS and _ARCH_TEMPLATES are derived. To
 # add an Archimedean tiling, write a _<name>_template() below and add one
-# ARCH_TILINGS row -- see AGENTS.md. Six of the eight have two tile
+# ARCH_TILINGS row -- see docs/agents/board-recipes.md. Six of the eight
+# have two tile
 # shapes; the last two (3.4.6.4 and 4.6.12) have three.
 #
 # Every flat and 3D Archimedean board is assembled from one rectangular
@@ -831,7 +832,8 @@ def _trunctrihex_template() -> _ArchTemplate:
 #
 # Each Laves tiling is the dual of one Archimedean tiling: a vertex at every
 # tile centre, joined across every shared edge. _dual_template builds it
-# mechanically from the primal _ArchTemplate (AGENTS.md), so each factory
+# mechanically from the primal _ArchTemplate
+# (docs/agents/board-recipes.md), so each factory
 # below is a one-liner. The dual shares the primal's translation lattice
 # (same width/height) and wallpaper group, so its mirror/glide come straight
 # from the primal; its single tile shape sits around each primal vertex, and
@@ -1269,7 +1271,8 @@ class ArchTiling:
     ``uniform`` (Archimedean) tilings, their ``dual`` (Laves/Catalan)
     partners, the ``isogonal`` tilings that are not edge to edge, and the
     ``rectangle`` bonds tiled by one congruent rectangle -- see
-    AGENTS.md. The menu catalog, mode strings, presets and tests all derive
+    docs/agents/board-recipes.md. The menu catalog, mode strings, presets
+    and tests all derive
     from this list."""
     key: str                       # "trihex"
     label: str                     # menu label, "Trihexagonal"

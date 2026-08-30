@@ -1,7 +1,8 @@
 """Board geometry: flat tilings and 3D surfaces.
 
 This package was split out of a single module; it re-exports the
-full public surface. See AGENTS.md for how to add tilings/surfaces.
+full public surface. See docs/agents/board-recipes.md for how to add
+tilings/surfaces.
 """
 
 from __future__ import annotations

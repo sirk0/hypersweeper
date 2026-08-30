@@ -185,7 +185,8 @@ export default defineConfig({
     __APP_ANALYTICS__: JSON.stringify(analytics),
   },
   // Allow importing the repo-root `data/` directory (shared JSON that both
-  // the Python and TypeScript apps read — see docs/plans). `@data` resolves
+  // the Python and TypeScript apps read — see docs/agents/shared-data.md).
+  // `@data` resolves
   // there so imports read `@data/ui/screens.json`.
   resolve: {
     alias: {
