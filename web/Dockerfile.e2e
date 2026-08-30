@@ -1,0 +1,46 @@
+# syntax=docker/dockerfile:1
+
+# The Linux box the visual suite needs, for developers who are not on one. The
+# 41 baselines in tests/e2e/gallery.spec.ts-snapshots are `-chromium-linux`
+# pixels; a Mac has none to compare against (gallery.spec.ts skips itself there)
+# and this is where it gets them. See "Running the visual suite off Linux" in
+# docs/testing.md.
+#
+# The tag is the @playwright/test pin, and that is the whole guarantee:
+# SwiftShader draws every pixel in those baselines and lives *inside* Chromium,
+# not in the OS, so this container and CI rasterise with the same binary rather
+# than with two builds that happen to agree. tests/unit/dockerE2e.test.ts fails
+# if the tag and the pin ever drift apart.
+#
+# linux/amd64 is pinned rather than inherited from the host: on an Apple Silicon
+# Mac the native resolution is arm64, whose Chromium is a different build with a
+# different SwiftShader, and the baselines are not its. Docker Desktop runs this
+# through Rosetta.
+FROM --platform=linux/amd64 mcr.microsoft.com/playwright:v1.56.1-noble
+
+# The dependencies live in the image, at a path no bind mount reaches, because a
+# Mac developer's own node_modules is built for their Mac: @esbuild/* and
+# @rollup/rollup-* are per-platform native binaries, and a Linux Vite cannot load
+# the darwin ones. scripts/e2e-docker-entrypoint.sh seeds these into the mounted
+# tree at run time. Installing here rather than straight into
+# /app/web/node_modules is what leaves the runtime volume genuinely empty, so
+# Docker's seed-only-when-empty rule never gets a say.
+WORKDIR /opt/web-deps
+COPY web/package.json web/package-lock.json ./
+RUN npm ci
+
+# Asserted here rather than discovered as a red suite an hour later: the pin
+# resolves to a Chromium that is actually in this image, which it only is
+# because the tag and the pin are the same version. Bump one without the other
+# and the build stops on this line. The node version is printed, not asserted —
+# it cannot move a pixel, and a hard check would make the build brittle for
+# nothing.
+RUN node -e "const e = require('playwright-core').chromium.executablePath(); \
+  require('fs').accessSync(e); \
+  console.log('node ' + process.versions.node + ' / ' + e)"
+
+# What the entrypoint compares the mounted node_modules against, so a lockfile
+# change re-seeds instead of leaving last week's modules in place.
+RUN sha256sum package-lock.json | cut -d' ' -f1 > /opt/web-deps/.lockfile-sha
+
+WORKDIR /app/web

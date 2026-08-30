@@ -18,7 +18,12 @@ npm run typecheck   # tsc --noEmit (strict), app then functions/
 npm run build       # typecheck + production bundle into dist/
 npm run preview     # serve that bundle at http://localhost:4173
 npm run e2e         # Playwright e2e + visual regression
+npm run e2e:docker  # …the whole suite on Linux, in a container
 ```
+
+The visual baselines are Linux pixels, so `gallery.spec.ts` skips itself
+elsewhere and `npm run e2e:docker` is how the gallery runs off Linux — see
+"Running the visual suite off Linux" in [`docs/testing.md`](docs/testing.md).
 
 `npm run dev` serves the sources with HMR; `build` + `preview` serves the real
 bundle from disk, which is what the screenshot recipe and Playwright drive and

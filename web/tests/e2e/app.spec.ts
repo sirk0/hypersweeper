@@ -68,20 +68,6 @@ test.describe("M1 app", () => {
     await expect(page).toHaveURL(new RegExp(`\\?mode=${state?.mode}&difficulty=easy&seed=\\d+$`));
   });
 
-  // The app was deployed under /next/ while the pygame build held the site
-  // root; that page (web/public/next/index.html) is now a redirect, and a
-  // shared link from back then must still open its board.
-  test("the legacy /next/ path redirects to the app, parameters and all", async ({
-    page,
-  }) => {
-    await page.goto("/next/?mode=hex&difficulty=easy&seed=7");
-    await expect(page.locator("body[data-ready]")).toBeVisible();
-    expect(new URL(page.url()).pathname).toBe("/");
-    const state = await page.evaluate(() => window.__ms?.state());
-    expect(state?.mode).toBe("hex");
-    expect(state?.difficulty).toBe("easy");
-  });
-
   test("deep link starts a specific board", async ({ page }) => {
     await page.goto("/?mode=hex&difficulty=easy&seed=7");
     await expect(page.locator("body[data-ready]")).toBeVisible();
@@ -119,5 +105,32 @@ test.describe("M1 app", () => {
     await page.goto("/?mode=triakis&difficulty=easy&seed=1");
     await expect(page.locator("body[data-ready]")).toBeVisible();
     expect((await page.evaluate(() => window.__ms?.state()))?.screen).toBe("menu");
+  });
+});
+
+// Deliberately outside the describe above, which is what makes this test
+// deterministic: its beforeEach loads the app at "/", and that registers the
+// root-scoped service worker, whose navigation fallback then answers *every*
+// navigation — /next/ included — from the precache with index.html. The app
+// would boot at the /next/ URL and the redirect under test would never run.
+// Which of the two happens is a race between the worker installing and the
+// test navigating, so it passes on a fast machine and fails on a slow one
+// (it is how `npm run e2e:docker` fails, where emulation slows the first
+// render far more than it slows precaching over loopback). A fresh context has
+// no worker at all, which is also the visitor this test is about.
+test.describe("M1 legacy paths", () => {
+  // The app was deployed under /next/ while the pygame build held the site
+  // root; that page (web/public/next/index.html) is now a redirect, and a
+  // shared link from back then must still open its board.
+  test("the legacy /next/ path redirects to the app, parameters and all", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 900, height: 700 });
+    await page.goto("/next/?mode=hex&difficulty=easy&seed=7");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    expect(new URL(page.url()).pathname).toBe("/");
+    const state = await page.evaluate(() => window.__ms?.state());
+    expect(state?.mode).toBe("hex");
+    expect(state?.difficulty).toBe("easy");
   });
 });

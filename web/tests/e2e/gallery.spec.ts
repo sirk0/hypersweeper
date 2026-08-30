@@ -1,10 +1,26 @@
 import { expect, test } from "@playwright/test";
 
+// Linux only. Every baseline in gallery.spec.ts-snapshots is a
+// `-chromium-linux.png`, shot under SwiftShader on x86-64; on a Mac
+// Playwright looks for a `-chromium-darwin.png`, finds none, and writes 41
+// new ones on its way to failing. Those pixels are legitimately different —
+// Skia rasterises text through CoreText there — so there is nothing to fix by
+// regenerating them, and a second committed set could only ever be refreshed
+// on a Mac, by hand, and never checked by CI. The other nineteen specs are
+// platform independent and still run, which is what makes `npm run e2e` worth
+// typing on a Mac at all. The visual half is what the Linux container is for:
+// `npm run e2e:docker`, and "Running the visual suite off Linux" in
+// ../../docs/testing.md.
+test.skip(
+  process.platform !== "linux",
+  "visual baselines are x86-64 Linux — run `npm run e2e:docker`",
+);
+
 // Visual-regression gallery: one screenshot per distinct renderer path — the
 // flat tiling shapes, then the M2 solids (curved pentagons, a Goldberg
 // hex/pentagon mix, the cube's flat grid, and the two non-convex frame
 // paths), each at its fixed per-mode starting rotation. Deterministic under
-// software WebGL; only authoritative in the pinned CI environment.
+// software WebGL; only authoritative under the pinned Chromium build.
 const MODES = [
   "square",
   "trigrid",

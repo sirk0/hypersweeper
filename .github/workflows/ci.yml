@@ -67,7 +67,9 @@ jobs:
     # TypeScript app (web/): typecheck, unit tests, production build, and the
     # Playwright e2e + visual-regression suite under deterministic software
     # WebGL (see web/playwright.config.ts). Visual baselines are only
-    # authoritative in this pinned CI environment.
+    # authoritative under the pinned Chromium build this job installs — the same
+    # one web/Dockerfile.e2e carries, which is how a developer off Linux runs
+    # the gallery (it skips itself on every non-Linux platform).
     runs-on: ubuntu-latest
     defaults:
       run:

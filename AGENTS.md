@@ -48,11 +48,14 @@ npm run test                           # vitest unit tests
 npm run build                          # typecheck + production bundle into web/dist
 npm run preview                        # serve that bundle at http://localhost:4173
 npm run e2e                            # Playwright e2e + visual regression
+npm run e2e:docker                     # …the whole suite on Linux, in a container
 ```
 
 `npm run dev` is the one to reach for while iterating; `build` + `preview` is
 what the screenshot and e2e recipes drive, because it serves the real bundle
-from disk. To *look at* a change without a browser of your own, see
+from disk. The visual baselines are Linux pixels, so `gallery.spec.ts` skips
+itself elsewhere and `e2e:docker` (or `make web-e2e-docker`) is how the gallery
+runs off Linux. To *look at* a change without a browser of your own, see
 [`web/docs/testing.md`](web/docs/testing.md).
 
 **The pygame game — the reference implementation.**

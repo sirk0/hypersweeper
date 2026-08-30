@@ -1,0 +1,68 @@
+# The full Playwright suite — the 41 visual baselines included — on Linux, for
+# developers who are not on Linux. `npm run e2e:docker` from web/, or
+# `make web-e2e-docker` from the repo root. See "Running the visual suite off
+# Linux" in docs/testing.md.
+#
+# Everything typed after the service name reaches `playwright test` unchanged,
+# because `docker compose run` replaces a service's `command` and never its
+# `entrypoint`:
+#
+#   docker compose -f docker-compose.e2e.yml run --rm --build e2e
+#   docker compose -f docker-compose.e2e.yml run --rm --build e2e --update-snapshots
+#   docker compose -f docker-compose.e2e.yml run --rm --build e2e gallery.spec.ts -g sphere
+services:
+  e2e:
+    build:
+      # The repo root, not web/: vite.config.ts aliases @data to ../data and
+      # src/analyticsEvent.ts imports ../../data/*.json, so a build that can only
+      # see web/ does not even typecheck. It costs nothing — the root
+      # .dockerignore keeps the context to the two files the image copies.
+      context: ..
+      # Resolved against the context above, not against this file.
+      dockerfile: web/Dockerfile.e2e
+    # Also pinned in the Dockerfile's FROM. Repeated because `docker compose`
+    # would otherwise resolve the host-native image on an Apple Silicon Mac, and
+    # the baselines are x86-64 pixels.
+    platform: linux/amd64
+    # Playwright already passes --disable-dev-shm-usage, so Chromium is not
+    # leaning on the 64 MB a container gets by default. This is what upstream's
+    # Docker guide asks for anyway, and it is free.
+    ipc: host
+    # A Ctrl-C reaches Chromium rather than orphaning it.
+    init: true
+    # Root — the image's default, and the only uid that can write through the
+    # bind mount on every host. The entrypoint hands the files back on the way
+    # out. Read from the mount, so editing it needs no rebuild.
+    entrypoint: /app/scripts/e2e-docker-entrypoint.sh
+    working_dir: /app/web
+    volumes:
+      # The working tree itself, so `--update-snapshots` rewrites the committed
+      # baselines rather than a copy that dies with the container, and so an edit
+      # is picked up without rebuilding anything.
+      - ..:/app
+      # …with the developer's own node_modules masked off (see the Dockerfile).
+      # Named rather than anonymous so the install is copied once instead of once
+      # per run; `docker compose run --rm` recreates and re-seeds an anonymous
+      # volume every time. The staleness a named volume normally invites is
+      # closed by the lockfile stamp the entrypoint checks.
+      - web-node-modules:/app/web/node_modules
+    environment:
+      # Deliberately *not* CI=1: that would turn on retries and forbidOnly and
+      # swap the reporters. This container is `npm run e2e` on a Linux box, not
+      # a second CI.
+      #
+      # x86-64 under Rosetta is roughly twice the wall clock of a native runner,
+      # and the Realistic gallery shots are the slowest thing in the suite. These
+      # are the three budgets in playwright.config.ts, raised.
+      PLAYWRIGHT_EXPECT_TIMEOUT_MS: "30000"
+      PLAYWRIGHT_TEST_TIMEOUT_MS: "120000"
+      # `npm run build` — tsc twice, then Vite with a cold cache — runs inside
+      # the webServer budget.
+      PLAYWRIGHT_WEBSERVER_TIMEOUT_MS: "480000"
+      # Four SwiftShader Chromiums on an emulated CPU contend rather than
+      # parallelise. Playwright reads no env var for this, so the entrypoint
+      # passes it as --workers; a trailing --workers=N still wins.
+      E2E_WORKERS: "2"
+
+volumes:
+  web-node-modules:

@@ -239,8 +239,9 @@ static, it publishes on a change to itself rather than on every push.
 During the rewrite this app mounted under `/next/` instead, so
 `public/next/index.html` redirects that path to the root, carrying the board
 link's query and hash over and unregistering the service worker that was scoped
-there; `app.spec.ts` pins it. Visual baselines are only authoritative in the
-pinned CI environment (software WebGL / SwiftShader).
+there; `app.spec.ts` pins it. Visual baselines are only authoritative under the pinned
+Chromium build (software WebGL / SwiftShader): CI, a cloud session, or the Linux
+container in `docker-compose.e2e.yml`.
 
 ### The packaged builds (macOS, iOS)
 

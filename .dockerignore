@@ -1,0 +1,8 @@
+# Build context for web/Dockerfile.e2e. The context is the repo root because
+# web/vite.config.ts reaches ../data — but the *image* copies only the two files
+# below; everything else arrives at run time through the bind mount in
+# web/docker-compose.e2e.yml. So the context can be almost empty, which matters:
+# .git and web/node_modules are hundreds of megabytes between them.
+*
+!web/package.json
+!web/package-lock.json
