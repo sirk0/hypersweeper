@@ -559,12 +559,25 @@ Winning files the time with `src/leaderboard.ts`, which keeps the **fastest
 three per board per difficulty** under its own `ms:scores` key (game history,
 not a preference — see "Best times" in `web/README.md`); a time that places
 raises the record window (`src/ui/scoreDialog.ts`), and the full list
-lives under Settings › Best times. That window offers up to four things — the
-same board again, a **new board** dealt at random from the half of the catalogue
-this one came from (flat wins deal flat, `src/boards/randomBoard.ts`, the home
-page's own pools and fairness weighting), the board's **share** link, and the
-menu — and it is where sharing lives: the game header carried a share button and
-does not any more.
+lives under Settings › Best times. That window asks **one question** — this board
+again, or another — so its foot is two buttons: the same board again, or a **new
+board** dealt at random from the half of the catalogue this one came from (flat
+wins deal flat, `src/boards/randomBoard.ts`, the home page's own pools and
+fairness weighting). It held four. **Menu** left (the × and Escape go back to the
+cleared board, the header's back button goes home) and the **share** link became
+an icon in the card's top-*left* corner, the mirror of the ×, because neither was
+an answer to the question the row asks; sharing still lives here and nowhere else
+(the game header carried a share button and does not any more), still does not
+dismiss the card, and — having lost its label — says what a clipboard write
+cannot say for itself by swapping its glyph for a tick or a cross with a note
+under it. **Which of the two is highlighted is a fact about the board**, not a
+preference: `App.dealtAtRandom`, threaded through `startGame`. A board the player
+picked out of the catalogue highlights Play again; one the game *dealt* them (the
+home page's Flat and 3D rows, the header's die, this window's own New board)
+highlights New board, because that board is a step in a wander through the
+catalogue and the next step is another board. It sticks to the board — Play again
+and the smiley pass it through — so the highlight never moves between two wins on
+the same board.
 
 A win also files with `src/achievements.ts`, which is the record of **where in
 the catalogue a player has been** — and the window is no longer only about

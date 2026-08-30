@@ -478,8 +478,8 @@ through to the clipboard rather than reporting failure, since dismissing one is
 a normal outcome. The trap fixed there: `nav.clipboard?.writeText(…)` on a
 platform with no clipboard evaluates to `undefined`, which awaits happily — so
 the button would have said "Link copied" having copied nothing. It is offered in
-**one** place, the record window, and passes the session's seed and the winning
-time. The game header carried one too and does not any more: a link is worth
+**one** place, the record window — as the icon in its top-left corner, see
+"Best times" below — and passes the session's seed and the winning time. The game header carried one too and does not any more: a link is worth
 sending when it comes with a time, and the header's two right-hand slots are all
 that fits at 320px. They hold the **die** (another board at random, see below)
 and the **ⓘ** (what this board is).
@@ -2270,19 +2270,47 @@ its colours are all theme custom properties. It waits
 animations are off — which is also why e2e (run under emulated reduced motion)
 sees it immediately. Leaving or restarting inside that gap cancels it.
 
-It offers up to four things, and the stylesheet lays them out by how many there
-are (`data-buttons`): two side by side, four as a square, three with the primary
-on a row of its own. **Play again** re-deals the same board. **New board** deals
-a random one from the half of the catalogue this board came from — flat if it
-was flat, otherwise a manifold, sphere or polyhedron — through
+It asks **one question** — this board again, or another — and its foot is that
+question and nothing else. **Play again** re-deals the same board. **New board**
+deals a random one from the half of the catalogue this board came from — flat if
+it was flat, otherwise a manifold, sphere or polyhedron — through
 `src/boards/randomBoard.ts`, which is the home page's Flat and 3D pools and
 their fairness weighting, shared rather than re-derived. It is the same call as
 the header's die (`App.startRandomBoard`), which is that move without having to
 win first; both abandon the board in progress the way the smiley does, without
-asking. **Share** hands out the board's link (and is the only place the app
-offers one — the game header's share button is gone). **Menu** goes home. A
-board built from an explicit mine layout (the test seam) has no seed, so it gets
-no Share.
+asking.
+
+It offered four things, and two of them were not answers to that question.
+**Menu** left outright: the × and Escape already go back to the cleared board,
+and the header's back button goes home. **Share** became an icon in the card's
+top-*left* corner, the mirror of the ×, which is what it is — chrome over the
+card rather than a third choice in the row (`shareButton` in
+`src/ui/scoreDialog.ts`). It is still the only place the app offers a board's
+link, it still does not dismiss the card (the player is looking at the time they
+just set), and a board built from an explicit mine layout (the test seam) has no
+seed, so it gets no icon. What it lost by shedding its label is the one thing a
+clipboard write cannot say for itself, so the glyph swaps for a tick or a cross
+and `.dialog-share-note` — hung under the icon, out of the card's flow so
+nothing shifts — spells it out for `SHARE_LABEL_MS`. A share *sheet* is its own
+feedback and gets neither.
+
+**Which button is highlighted is a fact about the board**, not a preference:
+`App.dealtAtRandom`, set by `startGame` and passed to the card as `primary`. A
+board the player picked out of the catalogue is one they came for, so playing it
+again is the obvious next move; a board the game *dealt* them — the home page's
+Flat and 3D rows, the header's die, this window's own New board — is a step in a
+wander, and the next step is another board. Focus lands on whichever it is, so
+Enter takes the card's own answer. The flag **sticks to the board**: Play again
+and the smiley pass it through, so replaying a dealt board does not turn it into
+a chosen one — the highlight would otherwise move between two wins on the same
+board. It reaches e2e through `MsState.dealtAtRandom`, since a dealt board is an
+ordinary board once it is up and leaves no other trace; `startBoard` takes it
+too, because the paths that really deal one pick the mode themselves and a test
+that has to *win* a board needs to know what is under it.
+
+The stylesheet still lays the row out by how many buttons there are
+(`data-buttons`), but the count is now at most two: two side by side, and one
+(the info window's Done, or a card with no New board to offer) full width.
 
 The list lives under **Settings › Best times** (`src/ui/bestTimes.ts`), one more
 `Menu` page like the theme picker, ordered by the catalog rather than by the
@@ -2355,12 +2383,13 @@ either stack on this one or queue behind it, and both read as the app talking
 over itself. So `App.checkRecord` opens the card when the time placed **or**
 something was unlocked, and `rank` is `number | null`: with no rank the title
 becomes "Achievement unlocked" and the list of times is left out. The
-`data-buttons` layout contract is untouched — no button was added.
+`data-buttons` layout contract is untouched — no button was added (and the row
+is down to two since, so there is less of it to break).
 
 At most `MAX_UNLOCKS_SHOWN` (4) are listed. A first win earns six at once —
 first board, first difficulty, its shape, its family, its surface, and the
 flagless one, because a first click that floods the field plants no flag — and
-six rows push "Play again" off a phone's screen. The card scrolls, but a primary
+six rows push the buttons off a phone's screen. The card scrolls, but a primary
 action that has scrolled away is not an answer.
 
 The list's **last row is always a link to the whole page**, saying "and N more"
@@ -2368,8 +2397,9 @@ when it truncated and "All achievements" when it did not. Always, because most
 wins unlock one or two things and a link that only appeared past four would
 almost never be there — and the card is where a player is thinking about
 achievements, where Settings is somewhere they have to decide to go. It is a row
-of the list rather than a fifth button: `.dialog-actions` lays itself out by how
-many buttons it has, and a fifth would break that contract. It goes through
+of the list rather than a button of its own: the row at the foot of the card is
+two real choices about what to play next, and a way into a settings page is not
+a third answer to that. It goes through
 `Menu.openAchievements` (public for exactly this) and `App.showAchievements`,
 and it is in the modal's `focusRing` so Tab reaches it.
 

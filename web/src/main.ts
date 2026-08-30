@@ -99,6 +99,14 @@ class App {
   /** What the win that is being reported just unlocked, for the card
    * `checkRecord` puts up a moment later. */
   private unlocked: Achievement[] = [];
+  /** Whether the board on screen was *dealt* rather than chosen — the home
+   * page's Flat and 3D rows, the header's die, the win window's New board. It
+   * is what that window highlights on (ui/scoreDialog.ts): a board the player
+   * picked is one they came for, a dealt one is a step in a wander through the
+   * catalogue. It sticks to the board, so replaying a dealt board with Play
+   * again or the smiley does not turn it into a chosen one — the highlight
+   * would otherwise move between two wins on the same board. */
+  private dealtAtRandom = false;
   /** Stored preferences (theme, difficulty, animations, cell style) — the
    * app's only persisted state. */
   private settings: Settings = loadSettings();
@@ -141,7 +149,8 @@ class App {
     this.renderer = new BoardRenderer(canvas);
     this.hud = new Hud((action) => this.onAction(action));
     this.menu = new Menu(
-      (sel) => this.startGame(sel.mode, sel.difficulty),
+      // Flat and 3D deal a board; every other row names one.
+      (sel) => this.startGame(sel.mode, sel.difficulty, sel.random ? { dealtAtRandom: true } : {}),
       this.settingsHost(),
     );
     this.boardInfo = new BoardInfo((action) => this.onAction(action));
@@ -411,13 +420,14 @@ class App {
   private startGame(
     mode: string,
     difficulty: string,
-    opts: { seed?: number; mines?: CellId[] } = {},
+    opts: { seed?: number; mines?: CellId[]; dealtAtRandom?: boolean } = {},
   ): void {
     this.dismissDialogs();
     this.scored = false;
     this.tracked = false;
     this.counted = false;
     this.unlocked = [];
+    this.dealtAtRandom = opts.dealtAtRandom ?? false;
     // Every ordinary game is dealt from a seed, generated here when the caller
     // has none, so that the board is a thing you can hand to someone else: the
     // address bar and the share button both name *this* layout rather than
@@ -584,7 +594,11 @@ class App {
       this.flagMode = !this.flagMode;
       this.hud.setState({ flagMode: this.flagMode });
     } else if (action === "restart" && this.session) {
-      this.startGame(this.session.mode, this.session.difficulty);
+      // A re-deal of the same board, so it is the same board as far as where it
+      // came from goes.
+      this.startGame(this.session.mode, this.session.difficulty, {
+        dealtAtRandom: this.dealtAtRandom,
+      });
     } else if (action.startsWith("symmetry:")) {
       // `symmetry:<id>:<direction>` — one step along one of the board's own
       // symmetries; see data/ui/screens.json boardBar.
@@ -608,7 +622,7 @@ class App {
     const session = this.session;
     if (!session || this.screen !== "game") return;
     const mode = randomMode(session.is3d ? "3d" : "flat");
-    if (mode) this.startGame(mode, session.difficulty);
+    if (mode) this.startGame(mode, session.difficulty, { dealtAtRandom: true });
   }
 
   /** What the board on screen is: its family, its surface, its size and what
@@ -847,11 +861,16 @@ class App {
       entries,
       unlocked: this.unlocked,
       animate: this.animationsEnabled,
-      onPlayAgain: () => this.startGame(session.mode, session.difficulty),
+      // A board the player chose highlights playing it again; one the game
+      // dealt them highlights the next one.
+      primary: this.dealtAtRandom ? "new-board" : "play-again",
+      onPlayAgain: () =>
+        this.startGame(session.mode, session.difficulty, {
+          dealtAtRandom: this.dealtAtRandom,
+        }),
       // The same move the header's die makes, from the card that is up when a
       // board is finished rather than from the row over one being played.
       onNewBoard: () => this.startRandomBoard(),
-      onMenu: () => this.showMenu(),
       // The card is where a player is thinking about achievements, so it is
       // where the way to the whole list belongs. Leaving the board is the same
       // move Menu makes — the card is about a board that is finished.
@@ -998,6 +1017,7 @@ class App {
           revealed: s ? s.game.revealed : 0,
           cellCount: s ? s.game.cells.length : 0,
           is3d: s?.is3d ?? false,
+          dealtAtRandom: s ? this.dealtAtRandom : false,
           cellStyle: s?.cellStyle ?? themeCellStyle(this.settings.theme),
           sound: soundChoice(),
           volume: soundVolume(),
