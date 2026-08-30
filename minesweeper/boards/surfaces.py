@@ -10,7 +10,8 @@ choice.
 
 To add a surface write one immersion point function and a wrap builder
 next to arch_torus_board / arch_mobius_board, then register a SurfaceSpec
-in catalog.py and presets in presets.py. See AGENTS.md.
+in catalog.py and presets in presets.py. See
+docs/agents/board-recipes.md.
 """
 
 from __future__ import annotations

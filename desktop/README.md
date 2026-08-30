@@ -15,6 +15,12 @@ open build/desktop/mac-arm64/Hypersweeper.app
 imaged with tools only macOS has. Everything up to packaging works anywhere,
 which is what `make desktop-smoke` and CI use.
 
+`scripts/build-mac-app.sh` drives the whole thing: build `web/` with
+`VITE_PACKAGED=1`, assert the bundle is self-contained
+(`scripts/check-offline-assets.mjs`), stage it into `desktop/app/`, package,
+ad-hoc sign, then launch the built `.app` to check it. `serve.mjs` is
+unit-tested in `desktop/test/`.
+
 ## How it works
 
 The shell is deliberately small — three files and no runtime dependencies:

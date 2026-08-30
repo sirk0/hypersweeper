@@ -5,7 +5,7 @@ build from data/presets.json (the shared source both front-ends read).
 The Archimedean presets are authored in the compact ARCH_PRESETS table
 below (tiling -> surface -> difficulty -> builder args); adding an
 Archimedean tiling is one ARCH_PRESETS row, expanded into presets.json
-by scripts/export_data.py. See AGENTS.md.
+by scripts/export_data.py. See docs/agents/board-recipes.md.
 """
 
 from __future__ import annotations

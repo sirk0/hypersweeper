@@ -111,7 +111,7 @@ MAX_DENSITY = 0.45
 # each mine landing alone in a pair forces a coin flip, so the win rate is
 # 0.5**mines whatever the density. Those boards are given a plain density and
 # recorded as uncalibrated rather than being chased to a target they cannot
-# reach. See the triakis note in AGENTS.md.
+# reach. See the triakis note in docs/agents/difficulty.md.
 
 UNCALIBRATABLE_SHARE = 0.5
 FALLBACK_DENSITY = {"easy": 0.13, "medium": 0.16, "hard": 0.20}
