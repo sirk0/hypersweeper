@@ -1470,9 +1470,9 @@ body {
   color: var(--muted);
 }
 
-/* The way to the whole list. A row of the same list rather than a fifth
-   button: `.dialog-actions` lays itself out by how many buttons it has (2, 3
-   or 4), and a fifth would break that. */
+/* The way to the whole list. A row of the same list rather than a third
+   button: the actions row is two real choices — play this board again, or take
+   another — and a link into a settings page is not a third answer to that. */
 .dialog-unlock-link {
   display: flex;
 }
@@ -1496,9 +1496,11 @@ body {
   background: var(--selected);
 }
 
-/* Three buttons do not fit side by side on a phone — "Play again" breaks across
-   two lines and the row reads as a squeeze. So the primary takes a row of its
-   own and the two secondary actions share the one below it. */
+/* The card's decision row: at most two buttons, side by side. It held four —
+   Share and Menu among them — and three of anything does not fit across a
+   phone: "Play again" breaks over two lines and the row reads as a squeeze.
+   Share is the corner icon now and Menu is gone, so the row is the question
+   ("this board again, or another?") and nothing else. */
 .dialog-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1506,11 +1508,9 @@ body {
   margin-top: 18px;
 }
 
-/* Two buttons sit side by side and four make a square; three would leave an odd
-   one out below a pair, which reads as a mistake, so the primary takes a row of
-   its own. One (the info window's Done) does the same. */
-.dialog-actions[data-buttons="1"] .dialog-btn,
-.dialog-actions[data-buttons="3"] .dialog-primary {
+/* One button takes the whole width rather than half of it: the info window's
+   Done, and a board with no New board to offer (the test seam). */
+.dialog-actions[data-buttons="1"] .dialog-btn {
   grid-column: 1 / -1;
 }
 
@@ -1554,6 +1554,64 @@ body {
 .dialog-close:hover,
 .dialog-close:active {
   color: var(--text);
+}
+
+/* The board's link (ui/scoreDialog.ts): the mirror of the × in the card's other
+   top corner. Chrome, not one of the actions — the row at the foot of the card
+   asks what to play next, and a link is no answer to that. */
+.dialog-share {
+  position: absolute;
+  top: 6px;
+  left: 8px;
+  touch-action: manipulation;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.dialog-share:hover,
+.dialog-share:active {
+  color: var(--text);
+}
+
+/* A copy landed; a failure stays muted rather than shouting in red, since the
+   note under it already says so. */
+.dialog-share[data-state="copied"] {
+  color: var(--accent);
+}
+
+.dialog-share-icon {
+  display: block;
+  width: 20px;
+  height: 20px;
+}
+
+.dialog-share-icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* What a clipboard write cannot say for itself. Hung under the icon and out of
+   the card's flow, so the layout does not shift when it appears; empty until
+   there is something to say, which draws nothing. */
+.dialog-share-note {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  pointer-events: none;
 }
 
 /* --- Info window --- */

@@ -49,6 +49,11 @@ import {
 export interface MenuSelection {
   mode: string;
   difficulty: string;
+  /** Whether the board was *dealt* rather than picked — the home page's Flat
+   * and 3D rows, which resolve to a mode at click time. Every other row names
+   * its board, so it is left off. The win window highlights a different action
+   * for a dealt board (ui/scoreDialog.ts). */
+  random?: boolean;
 }
 
 const ROOT_LABELS = MENU.rootLabels as Record<string, string>;
@@ -806,7 +811,7 @@ export class Menu {
       // as often as on a board that can actually be solved
       // (boards/randomBoard.ts, shared with the record window's New board).
       const mode = randomMode(key);
-      if (mode) this.onSelect({ mode, difficulty: this.settings.difficulty });
+      if (mode) this.onSelect({ mode, difficulty: this.settings.difficulty, random: true });
     });
     li.append(btn);
     return li;
