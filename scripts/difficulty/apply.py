@@ -1,6 +1,6 @@
 """Write the measured geometry and mine counts back into the source tables.
 
-Two authoring surfaces, as ``AGENTS.md`` describes: the 39 one-off modes live
+Two authoring surfaces, as ``docs/agents/board-recipes.md`` describes: the 39 one-off modes live
 directly in ``data/presets.json``, and the 121 Archimedean/Laves modes are
 expanded by ``scripts/export_data.py`` out of the compact ``ARCH_PRESETS``
 table in ``minesweeper/boards/presets.py``. Both are edited here.

@@ -3,7 +3,7 @@
 The pygame and TypeScript apps read the same geometry configuration so it is
 never written twice. These files are the single source of truth; ``catalog.py``
 and ``presets.py`` load them here. See ``scripts/export_data.py`` and
-``docs/plans/typescript-rewrite-same-repo.md``.
+``docs/agents/shared-data.md``.
 
 The data directory sits at the repo root next to ``minesweeper/``. That holds in
 both the dev checkout and the pygbag web stage (``make web-prepare`` copies

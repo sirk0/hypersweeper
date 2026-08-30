@@ -5,6 +5,7 @@ phone, plays with no internet connection, and **buzzes through the Taptic
 Engine** — the one thing no web API on iOS can do.
 
 ```sh
+make ios-install   # install the Capacitor tooling (it lives in web/)
 make ios-app       # build the game, sync it in, open Xcode  (macOS)
 make ios-run       # …or build straight onto a connected iPhone
 make ios-prepare   # build + sync only; works on any OS (what CI checks)
@@ -13,6 +14,10 @@ make ios-prepare   # build + sync only; works on any OS (what CI checks)
 `make ios-app` must run **on a Mac**: signing and installing an iOS app is
 Xcode's job and Xcode runs nowhere else. Everything up to that — the web build,
 the offline check, the sync — works anywhere.
+
+`scripts/build-ios-app.sh` drives it: build `web/` with `VITE_PACKAGED=1`,
+assert the bundle is self-contained (`scripts/check-offline-assets.mjs`), then
+`npx cap sync ios`.
 
 ## Putting it on your phone
 
@@ -77,7 +82,10 @@ hidden `<input type="checkbox" switch>` tick that once stood in for it does not
 actually buzz, so it is gone. Only this app and a mobile browser with a working
 `navigator.vibrate` — Android — have a mechanism at all; everywhere else
 `hapticsSupported()` is false, `haptic()` does nothing and Settings ›
-**Haptics** shows no row. Where it does show, it switches all of it off.
+**Haptics** shows no row. Where it does show, it switches all of it off
+(stored like the sound preset, read on every event) — and because `haptic()`
+is gated on the same check, a stored `haptics: true` carried over from a
+phone is inert everywhere else.
 
 The plugin is reached through Capacitor's normal bridge, so it needs three
 things to line up: the JS package (`@capacitor/haptics` in `web/package.json`),
