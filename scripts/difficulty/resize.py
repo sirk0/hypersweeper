@@ -102,6 +102,14 @@ SPEC: dict[str, dict] = {
     # 192 against a target of 81.
     "brick_cube_board": dict(size=(1,), mine=2, shape=None, rigid=True),
     "cube_frame_board": dict(size=(0, 1), mine=2, shape=None, grid="cubeframe"),
+    # The one volume board. ``rigid`` for the same reason the brick cubes and
+    # the Catalan solids are: every cell is a flat unit square at every n, so
+    # the knob cannot distort one and the shape term -- which measures
+    # roundness -- has nothing to say. Size then decides alone, and because the
+    # only knob is the side of the cube it steps 64, 125, 216, 343, 512: coarse,
+    # like a fractal's substitution levels, which is why ``cube3d`` is in
+    # ``COARSE_GEOMETRY`` in tests/test_presets.py.
+    "solid_cube_board": dict(size=(0,), mine=1, shape=None, rigid=True),
     "tetrahedron_board": dict(size=(1,), mine=0, shape=None),
     "tetrahedron_frame_board": dict(size=(1,), mine=0, shape=None),
     "octahedron_board": dict(size=(1,), mine=0, shape=None),

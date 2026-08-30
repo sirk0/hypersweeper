@@ -217,3 +217,6 @@ from minesweeper.boards.tilings import (  # noqa: F401
     triangle_board,
     triangle_grid_board,
 )
+from minesweeper.boards.volume import (  # noqa: F401
+    solid_cube_board,
+)

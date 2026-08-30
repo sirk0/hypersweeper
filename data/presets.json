@@ -1124,6 +1124,23 @@
         ]
       }
     },
+    "cube3d": {
+      "builder": "solid_cube_board",
+      "args": {
+        "easy": [
+          4,
+          10
+        ],
+        "medium": [
+          6,
+          34
+        ],
+        "hard": [
+          8,
+          80
+        ]
+      }
+    },
     "elongated": {
       "builder": "archimedean_board",
       "args": {

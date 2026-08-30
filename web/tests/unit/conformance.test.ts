@@ -10,6 +10,7 @@ import {
   type AnyBoard,
 } from "../../src/boards/core";
 import { buildBoard, MODES } from "../../src/boards/presets";
+import { MAX_DIGIT_GLYPH } from "../../src/render/glyphAtlas";
 
 // The board conformance oracle: every ported mode × difficulty must reproduce
 // the statistics the Python implementation exported into data/conformance.json,
@@ -36,6 +37,10 @@ function checkInvariants(board: AnyBoard): void {
       expect(cells.has(n)).toBe(true); // neighbours are on the board
       expect(board.adjacency.get(n)).toContain(cell); // symmetric
     }
+    // A cell can be asked to draw its whole neighbourhood, so no board may
+    // out-count the glyph atlas. `glyphFor` clamps rather than blanks, so a
+    // board that did would draw the *wrong* number and nothing would say so.
+    expect(neighbors.length).toBeLessThanOrEqual(MAX_DIGIT_GLYPH);
   }
 }
 

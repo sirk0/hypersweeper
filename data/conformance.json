@@ -1712,6 +1712,35 @@
         "hasCellCycle": false
       }
     },
+    "cube3d": {
+      "easy": {
+        "cellCount": 64,
+        "mineCount": 10,
+        "euler": 4,
+        "boundaryComponents": 4,
+        "edgeCount": 160,
+        "vertexCount": 100,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 216,
+        "mineCount": 34,
+        "euler": 6,
+        "boundaryComponents": 6,
+        "edgeCount": 504,
+        "vertexCount": 294,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 512,
+        "mineCount": 80,
+        "euler": 8,
+        "boundaryComponents": 8,
+        "edgeCount": 1152,
+        "vertexCount": 648,
+        "hasCellCycle": false
+      }
+    },
     "elongated": {
       "easy": {
         "cellCount": 85,

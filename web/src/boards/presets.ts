@@ -50,6 +50,7 @@ import {
   tetrahedronFrameBoard,
   truncatedIcosidodecahedronBoard,
 } from "./solids";
+import { solidCubeBoard } from "./volume";
 import {
   archimedeanBoard,
   hexBoard,
@@ -101,6 +102,8 @@ const BUILDERS: Record<string, Builder> = {
   truncated_icosidodecahedron_board: truncatedIcosidodecahedronBoard,
   cube_board: cubeBoard,
   cube_frame_board: cubeFrameBoard,
+  // the one volume board: a solid cube of cells, 26 neighbours
+  solid_cube_board: solidCubeBoard,
   // the three brick bonds that lay on a square face, one cube each
   brick_cube_board: brickCubeBoard,
   tetrahedron_board: tetrahedronBoard,

@@ -1,6 +1,6 @@
 import { Color, type Group, type Quaternion, type Vector3 } from "three";
 import type { CellId, Vec3 } from "../boards/core";
-import type { Glyph } from "./glyphAtlas";
+import { MAX_DIGIT_GLYPH, type Glyph } from "./glyphAtlas";
 import type { GlowCell } from "./markerGlow";
 import type { CellPalette } from "./shapePalette";
 
@@ -80,7 +80,7 @@ export function glyphFor(visual: CellVisual): Glyph | null {
   if (visual.kind === "wrongFlag") return "wrongFlag";
   if (visual.kind === "mine" || visual.kind === "exploded") return "mine";
   if (visual.kind === "revealed" && visual.mines > 0) {
-    return Math.min(visual.mines, 12) as Glyph;
+    return Math.min(visual.mines, MAX_DIGIT_GLYPH) as Glyph;
   }
   return null;
 }

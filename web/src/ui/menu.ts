@@ -110,6 +110,7 @@ const SOLID_GROUP_HINTS: Record<string, string> = {
   platonic: "The five regular solids",
   catalan: "The thirteen duals of the Archimedean solids",
   polyhedra: "Hollow frames, terraced pyramids and cubes laid in brick",
+  volume: "A solid cube of cells — 26 neighbours, laid out slice by slice",
 };
 
 /** Rows of a picker, dropping the modes this build has not got. */
@@ -553,7 +554,7 @@ export class Menu {
     const threeD = randomPool("3d");
     if (threeD.length > 0) {
       list.append(
-        this.randomRow("3d", "3D", "A random manifold, sphere or polyhedron.", "3d"),
+        this.randomRow("3d", "3D", "A random manifold, sphere, polyhedron or volume.", "3d"),
       );
     }
     if (this.groups.length > 0) {

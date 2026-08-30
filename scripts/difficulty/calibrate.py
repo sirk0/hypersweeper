@@ -32,9 +32,13 @@ from pathlib import Path
 from minesweeper.boards import presets as P
 from scripts.difficulty.metrics import indistinguishable_cells, mean_degree
 from scripts.difficulty.solver import (
+    DEFAULT_BUDGET,
+    to_neighbor_lists,
+    win_rate,
+)
+from scripts.difficulty.solver import (
     opening_win_rate as solver_opening,
 )
-from scripts.difficulty.solver import to_neighbor_lists, win_rate
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent.parent
@@ -66,6 +70,17 @@ ROW_SECONDS = 60.0
 # over just the rows that missed can afford several times the samples, because
 # there are thirty of them and not four hundred. See ``--redo`` in ``main``.
 EFFORT = 1.0
+
+# The solver's node budget, per evaluation. A game the DP cannot finish inside
+# it is *abandoned*, and the games it cannot finish are the tangled ones -- so
+# on a board where abandonment is common the surviving sample is biased toward
+# the easy layouts and the search settles on too few mines. The default is
+# ample for the surface boards, whose frontiers are a handful of cells wide;
+# `cube3d`, whose cells have 26 neighbours, abandons nearly every game at
+# medium and hard and needs one orders of magnitude bigger to measure at all.
+# It is a knob rather than a new default because raising the default would
+# silently re-grade every row already in the checkpoint.
+BUDGET = DEFAULT_BUDGET
 
 
 def _scaled(value: float) -> float:
@@ -195,7 +210,7 @@ def calibrate_row(args: tuple) -> dict:
         # would only let sampling noise walk it off 10/40/99.
         mines = PINNED_MINES[mode][difficulty]
         rate, _, _ = win_rate(neighbors, mines, _games(FINAL_GAMES), seed,
-                              seconds=_scaled(FINAL_SECONDS))
+                              budget=BUDGET, seconds=_scaled(FINAL_SECONDS))
         row.update(
             mines=mines,
             density=round(mines / n, 4),
@@ -210,7 +225,7 @@ def calibrate_row(args: tuple) -> dict:
     if twins > UNCALIBRATABLE_SHARE * n:
         mines = max(1, round(FALLBACK_DENSITY[difficulty] * n))
         rate, _, _ = win_rate(neighbors, mines, _games(SEARCH_GAMES), seed,
-                              seconds=_scaled(SEARCH_SECONDS))
+                              budget=BUDGET, seconds=_scaled(SEARCH_SECONDS))
         row.update(
             mines=mines,
             density=round(mines / n, 4),
@@ -241,7 +256,7 @@ def calibrate_row(args: tuple) -> dict:
         # counts and the measured curve stays monotone enough to bracket
         cap = _scaled(SEARCH_SECONDS if games <= SEARCH_GAMES else FINAL_SECONDS)
         value, abandoned, played = win_rate(
-            neighbors, mines, _games(games), seed, seconds=cap)
+            neighbors, mines, _games(games), seed, budget=BUDGET, seconds=cap)
         if abandoned:
             row["abandoned"] = row.get("abandoned", 0) + abandoned
         row["leastGames"] = min(row.get("leastGames", _games(games)), played)
@@ -375,14 +390,20 @@ def main() -> int:
              "use with --redo",
     )
     parser.add_argument(
+        "--budget", type=int, default=DEFAULT_BUDGET,
+        help="solver node budget per game; raise it (with --redo) for a "
+             "high-degree board whose games are mostly abandoned",
+    )
+    parser.add_argument(
         "--redo", action="store_true",
         help="drop the rows that missed tolerance from the checkpoint and "
              "measure them again (the rows that landed are kept as they are)",
     )
     options = parser.parse_args()
 
-    global EFFORT
+    global BUDGET, EFFORT
     EFFORT = options.effort
+    BUDGET = options.budget
 
     geometry = json.loads(Path(options.geometry).read_text())
     reference = targets()

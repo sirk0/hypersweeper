@@ -50,6 +50,7 @@ import {
   tetrahedronFrameBoard,
   truncatedIcosidodecahedronBoard,
 } from "../boards/solids";
+import { solidCubeBoard } from "../boards/volume";
 import { newellNormal, type Board3D, type Vec3 } from "../boards/core";
 
 const D = 100;
@@ -536,6 +537,9 @@ const SOLID_BUILDERS: Record<string, () => Board3D> = {
   dodecahedron: () => dodecahedronBoard(0, 1),
   steppedbipyramid: () => steppedBipyramidBoard(7, 4, 0),
   steppedpyramid: () => steppedPyramidBoard(5, 3, 0),
+  // the cube of cubes at its easy size: four sheets of sixteen, which is the
+  // board itself and about the density of a brick cube's icon
+  cube3d: () => solidCubeBoard(4, 0),
   // the three brick cubes, at their own easy block counts
   cubestackedbond: () => brickCubeBoard("stackedbond", 3, 0),
   cubebasketweave: () => brickCubeBoard("basketweave", 3, 0),
@@ -594,6 +598,9 @@ const SOLID_VIEW: Record<string, [number, number] | [number, number, number]> = 
   // everything above it or the apex hiding everything below.
   steppedpyramid: [-70, 0, 28],
   tetraframe: [-50, 18, 45],
+  // Nearly face on: the sheets are what there is to read, and the small pitch
+  // and yaw are only enough to show that they step back from one another.
+  cube3d: [-12, 16],
   // The brick cubes, turned so three faces show and the courses read running a
   // different way on each. Just shallow enough that the top face clears the
   // `facing > 0.8` line (cos 24 * cos 28 = 0.807) and so takes the light tone:
@@ -866,6 +873,7 @@ const ALIASES: Record<string, string> = {
   platonic: "tetrahedron",
   catalan: "rhombictriaconta",
   polyhedra: "steppedbipyramid",
+  volume: "cube3d", // the Volumes row: its only board
   classic: "square", // the "Classic" home entry: flat squares
   manifolds: "torus", // the "Flat manifolds" entry under Custom
   "3d": "sphere", // the "3D" home entry: a random board off the plane
@@ -1352,6 +1360,7 @@ function draw(rawKey: string): string[] {
     key === "cubebasketweave" ||
     key === "cubebasketweave3" ||
     key === "tetraframe" ||
+    key === "cube3d" ||
     key === "octahedron" ||
     key === "icosahedron" ||
     key === "dodecahedron" ||

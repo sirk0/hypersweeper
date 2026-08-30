@@ -44,7 +44,13 @@ FIXED_GEOMETRY = {
     "spheretri", "c80", "c180", "snubdodec",
     "rhombicosidodeca", "truncicosidodeca",
 }
-COARSE_GEOMETRY = {"sphinx", "chair", "carpet", "pentaflake", "gosper"}
+# The fractals move by whole substitution steps; `cube3d` moves by whole
+# *layers*, which is the same thing said about a volume: its only knob is
+# the side of the cube, so it offers 64 then 125 around an 81 target and 216
+# then 343 around 256. Hard (512 against 480) lands in the band on its own;
+# the mode is exempted whole because the reason is the geometry, not the row.
+COARSE_GEOMETRY = {"sphinx", "chair", "carpet", "pentaflake", "gosper",
+                   "cube3d"}
 EXEMPT = FIXED_GEOMETRY | COARSE_GEOMETRY
 
 # Single rows where the size band loses to a bar that matters more. Keyed by

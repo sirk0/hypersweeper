@@ -88,6 +88,15 @@ Pick a surface, then a tiling:
   square and so fills a square face. A brick cannot run round a corner, so
   the courses break at some of the twelve edges; the bricks either side still
   meet as neighbours
+- **Volumes (3D)** — a cube *filled* with cubes rather than a surface of
+  them: an n×n×n block where a cell's neighbours are the 26 cubes that share a
+  corner with it, against 21 for the densest surface here. A solid shows only
+  its shell, so the cube is played taken apart — each slice is its own sheet of
+  tiles, laid out side by side and stepped back in depth, so every cell is
+  readable at once (a number spans three slices, and you need all three). The
+  header's controls turn the solid itself, which is the one move dragging
+  cannot make: dragging turns the drawing, and the drawing is the cube pulled
+  apart rather than the cube
 - **Torus (3D)** — the grid wraps in both directions, so there are no
   border cells; pure hexagons are possible here, because the torus has
   Euler characteristic 0
@@ -113,8 +122,8 @@ Pick a surface, then a tiling:
 Every board is a **link** — `?mode=…&difficulty=…`, plus a `seed` to share
 the exact layout. Winning files the time: the fastest three per board and
 difficulty live under Settings › Best times. It also files an **achievement**
-where there is one to file — fifty of them, and none written by hand: they are
-the catalogue's own structure, one per kind of tile a board can be made of
+where there is one to file — fifty-two of them, and none written by hand: they
+are the catalogue's own structure, one per kind of tile a board can be made of
 (triangles through 13-gons), one for playing a tiling family and one for
 finishing it, the same pair for each surface and each group of solids, and one
 for the lot. The card that goes up on a win says what it just unlocked and links

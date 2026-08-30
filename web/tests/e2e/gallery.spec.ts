@@ -51,6 +51,11 @@ const MODES = [
   // T-vertex geometry and the size-lightness axis it needs.
   "pythagorean",
   "threescaletri",
+  // and the volume board, which is its own renderer path: a solid drawn as
+  // several open, two-sided sheets rather than one closed surface, so it is
+  // the only board where the camera frames a hull that has holes in it and
+  // nothing is culled at any angle.
+  "cube3d",
 ];
 
 /** The look every shot below is taken in unless it is a shot *of* a look.

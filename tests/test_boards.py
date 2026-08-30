@@ -71,6 +71,7 @@ from minesweeper.boards import (
     place_point,
     rhombicosidodecahedron_board,
     snub_dodecahedron_board,
+    solid_cube_board,
     spectre_board,
     sphere_board,
     sphere_triangle_board,
@@ -2827,6 +2828,79 @@ class TestBrickCubes:
                 }
                 kept += turned == tiles
         assert kept == 24
+
+
+class TestSolidCube:
+    """The one volume board: an ``n**3`` block of cells whose neighbours are
+    the cubes sharing a corner with them, drawn as ``n`` separate sheets."""
+
+    @pytest.mark.parametrize("n", [3, 4, 6])
+    def test_cell_count_is_the_cube(self, n):
+        board = solid_cube_board(n, 5)
+        assert len(board.adjacency) == n ** 3
+        assert all(len(p) == 4 for p in board.polygons.values())
+
+    @pytest.mark.parametrize("n", [3, 4, 5, 8])
+    def test_adjacency_is_exactly_the_26_neighbourhood(self, n):
+        board = solid_cube_board(n, 5)
+        for (i, j, k), neighbors in board.adjacency.items():
+            expected = {
+                (i + di, j + dj, k + dk)
+                for di in (-1, 0, 1) for dj in (-1, 0, 1) for dk in (-1, 0, 1)
+                if (di, dj, dk) != (0, 0, 0)
+                and 0 <= i + di < n and 0 <= j + dj < n and 0 <= k + dk < n
+            }
+            assert set(neighbors) == expected
+
+    @pytest.mark.parametrize("n", [3, 4, 6, 8])
+    def test_degrees_are_the_four_kinds_of_position(self, n):
+        # a corner touches a 2x2x2 block (7 others), an edge a 2x2x3 (11), a
+        # face a 2x3x3 (17) and an interior cell the full 3x3x3 (26)
+        board = solid_cube_board(n, 5)
+        histogram = Counter(len(v) for v in board.adjacency.values())
+        inner = n - 2
+        assert histogram == Counter({
+            7: 8,
+            11: 12 * inner,
+            17: 6 * inner ** 2,
+            26: inner ** 3,
+        })
+
+    @pytest.mark.parametrize("n", [3, 4, 6])
+    def test_each_slice_is_its_own_sheet(self, n):
+        # n disjoint square grids: chi = n and n boundary circles, which is
+        # also what `two_sided` is telling the renderer and the suite
+        board = solid_cube_board(n, 5)
+        assert board.two_sided is True
+        assert _euler_characteristic(board) == n
+        assert _boundary_components(board) == n
+        assert len(_corner_fans(board)) == n * (n + 1) ** 2
+
+    @pytest.mark.parametrize("n", [3, 4, 6])
+    def test_sheets_do_not_overlap_on_screen(self, n):
+        # the whole point of taking the cube apart: seen down the board's own
+        # z axis no two cells cover each other, or a slice would hide a slice
+        board = solid_cube_board(n, 5)
+        seen = set()
+        for polygon in board.polygons.values():
+            middle = tuple(round(sum(v[axis] for v in polygon) / 4, 6)
+                           for axis in (0, 1))
+            assert middle not in seen
+            seen.add(middle)
+
+    @pytest.mark.parametrize("n", [3, 4, 5])
+    def test_no_two_cells_share_a_closed_neighbourhood(self, n):
+        # a pair that does can never be told apart by any sequence of numbers,
+        # so a mine landing alone in one forces a coin flip. Depth 2 is exactly
+        # that board, which is why the builder refuses it.
+        board = solid_cube_board(n, 5)
+        closed = [frozenset(neighbors) | {cell}
+                  for cell, neighbors in board.adjacency.items()]
+        assert len(set(closed)) == len(closed)
+
+    def test_a_two_deep_block_is_refused(self):
+        with pytest.raises(ValueError):
+            solid_cube_board(2, 3)
 
 
 class TestPresets:

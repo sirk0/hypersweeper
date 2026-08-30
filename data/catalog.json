@@ -133,7 +133,8 @@
     "triangle": "Triangles - triangular board",
     "hextri": "Triangles - hexagonal board",
     "hexhex": "Hexagons - hexagonal board",
-    "hextriangle": "Hexagons - triangular board"
+    "hextriangle": "Hexagons - triangular board",
+    "cube3d": "Cube of cubes"
   },
   "modeInfo": {
     "basketweave": {
@@ -189,6 +190,12 @@
       "tiling": "",
       "surface": "solid",
       "family": "platonic"
+    },
+    "cube3d": {
+      "label": "Cube of cubes",
+      "tiling": "",
+      "surface": "solid",
+      "family": "volume"
     },
     "cubebasketweave": {
       "label": "Basket weave cube",
@@ -1219,7 +1226,8 @@
       "sphere",
       "platonic",
       "catalan",
-      "polyhedra"
+      "polyhedra",
+      "volume"
     ],
     "rootLabels": {
       "classic": "Classic",
@@ -1319,6 +1327,13 @@
           "cubestackedbond",
           "cubebasketweave",
           "cubebasketweave3"
+        ]
+      },
+      {
+        "key": "volume",
+        "label": "Volumes",
+        "modes": [
+          "cube3d"
         ]
       }
     ],

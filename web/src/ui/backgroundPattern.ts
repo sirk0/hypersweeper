@@ -514,7 +514,9 @@ const MODE_PATTERN = new Map<string, string>();
     "icosahedron",
     "dodecahedron",
   ]);
-  for (const key of ["platonic", "polyhedra"]) {
+  // The volume boards join them: a slice of the cube of cubes *is* a square
+  // grid, so the page behind it is the same paper the board is drawn on.
+  for (const key of ["platonic", "polyhedra", "volume"]) {
     for (const mode of solidGroup(key)) {
       MODE_PATTERN.set(mode, TRIANGLE_FACED.has(mode) ? "tri" : "square");
     }
