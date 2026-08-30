@@ -17,6 +17,7 @@ npm run build       # typecheck + vite build (production bundle + PWA) into dist
 npm run preview     # serve dist/ at http://localhost:4173
 npm run e2e         # Playwright e2e + visual regression
 npm run e2e:update  # refresh visual baselines
+npm run e2e:docker  # …the whole suite on Linux, in a container (see below)
 npm run screenshots # regenerate the README gallery (SHOTS=menu.png for one)
 npm run icons       # regenerate the app icons from the vector source
 npm run og          # regenerate the social card, public/og.png
@@ -49,7 +50,58 @@ exist". As a fallback for a mismatched image, point Playwright at whatever build
 is present with
 `PLAYWRIGHT_CHROMIUM_EXECUTABLE=/opt/pw-browsers/chromium-<build>/chrome-linux/chrome npm run e2e`
 (the config honours it). CI installs the pinned build itself, so it is
-self-consistent regardless of the image.
+self-consistent regardless of the image. `.claude/hooks/session-start.sh` warns
+at session start if the image and the pin have drifted apart, naming both.
+
+## Running the visual suite off Linux
+
+Every baseline in `tests/e2e/gallery.spec.ts-snapshots/` is a
+`-chromium-linux.png`, so **`gallery.spec.ts` skips itself on anything but
+Linux**. That is deliberate: on a Mac, Skia rasterises text through CoreText, so
+those pixels are legitimately different — a committed darwin set could only ever
+be refreshed by hand on a Mac and never checked by CI, and a comparison across
+platforms would need a tolerance loose enough to hide the regressions the shots
+exist to catch. So `npm run e2e` on a Mac runs the other nineteen specs, which
+are platform independent, and reports the gallery as skipped.
+
+The visual half runs in a container instead:
+
+```sh
+npm run e2e:docker                              # the whole suite, gallery included
+npm run e2e:docker -- --update-snapshots        # …refreshing the baselines
+npm run e2e:docker -- gallery.spec.ts -g sphere # …or one slice of it
+make web-e2e-docker ARGS="--update-snapshots"   # the same, from the repo root
+```
+
+Everything after `--` reaches `playwright test` unchanged. `web/` is
+bind-mounted, so a refreshed baseline lands in the working tree ready to commit,
+and an edit is picked up without rebuilding anything.
+
+What makes the pixels match is that
+[`Dockerfile.e2e`](../Dockerfile.e2e)'s image tag **is** the `@playwright/test`
+pin: SwiftShader draws every baseline pixel and lives inside Chromium, not in the
+OS, so the container and CI rasterise with the same binary. `tests/unit/dockerE2e.test.ts`
+fails if the two ever drift apart, and the image build fails if the tag ships a
+Chromium the pin does not resolve to. Keep them in step when bumping Playwright.
+
+Four things worth knowing before the first run:
+
+- **It needs Docker Compose v2** (`docker compose`, not `docker-compose`).
+  Compose v1 would eat `--update-snapshots` as its own flag.
+- **The image is pinned to `linux/amd64`**, and on an Apple Silicon Mac that
+  means emulation. Arm64 Chromium is a different build with a different
+  SwiftShader, and the baselines are not its pixels. Docker Desktop uses Rosetta
+  by default, which is the fast path; if the gallery fails wholesale on
+  low-level noise, Rosetta's missing AVX2/FMA is the first suspect — turn it off
+  under Settings → General → "Use Rosetta for x86_64/amd64 emulation" and Docker
+  falls back to QEMU, which emulates AVX2 correctly and is several times slower.
+  The timeouts in `docker-compose.e2e.yml` are already sized for that.
+- **`dist/` is shared with the host.** The container's `webServer` runs
+  `npm run build`, into the same `dist/` a host `npm run preview` serves, and
+  both want port 4173. Run one at a time.
+- **The first run installs the image's dependencies into a named volume**, which
+  takes a moment; later runs reuse it, and it re-seeds itself whenever
+  `package-lock.json` moves.
 
 ## Agent notes: driving the app headless
 
@@ -105,9 +157,11 @@ Practical knowledge for verifying changes by actually running the app
   visual change (e.g. header tweaks), delete the affected
   `tests/e2e/gallery.spec.ts-snapshots/*.png` and regenerate, or the
   committed baselines silently keep the old pixels. Baselines are only
-  authoritative under the pinned software-WebGL environment (CI, or a
-  cloud session with the same launch args); regenerate them there, then
-  re-run the spec to confirm determinism.
+  authoritative under the pinned Chromium build and its software-WebGL
+  launch args — CI, a cloud session, or `npm run e2e:docker` (see
+  "Running the visual suite off Linux" above, which is also the only way
+  to regenerate them from a Mac); regenerate them there, then re-run the
+  spec to confirm determinism.
 - **Playwright's `webServer` reuses a running port-4173 server** outside
   CI. `vite preview` serves `dist/` from disk, so an `npm run build` is
   enough to refresh it — but stale servers are a classic source of

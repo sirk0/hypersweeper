@@ -34,4 +34,23 @@ if [ -f web/package-lock.json ] && command -v npm >/dev/null 2>&1; then
   (cd web && npm ci) || echo "session-start: web npm ci failed (non-fatal)" >&2
 fi
 
+# That pin is only useful here if the image's preinstalled Chromium really is the
+# build it resolves to. Ask Playwright for the executable it would launch and
+# check it is there, so a mismatched image is a line at session start rather than
+# a red e2e run an hour later reading "Executable doesn't exist" — which names
+# neither revision. Non-fatal: everything but the browser still works.
+if [ -d web/node_modules/playwright-core ]; then
+  (cd web && node -e '
+    const fs = require("fs");
+    const exe = require("playwright-core").chromium.executablePath();
+    if (fs.existsSync(exe)) process.exit(0);
+    const root = process.env.PLAYWRIGHT_BROWSERS_PATH || "the default browser path";
+    console.error(
+      `session-start: @playwright/test wants ${exe}, which is not installed. ` +
+        `${root} has: ${(fs.existsSync(root) ? fs.readdirSync(root) : []).join(" ") || "nothing"}` +
+        ` — see "Cloud sessions" in web/docs/testing.md`,
+    );
+  ') || true
+fi
+
 echo "session-start: environment ready ($($VENV/bin/python --version))" >&2
