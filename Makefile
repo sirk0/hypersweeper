@@ -5,7 +5,7 @@ WEB_STAGE = build/hypersweeper
 WEB_OUT = $(WEB_STAGE)/build/web
 
 .PHONY: help venv install lock test lint run screenshots web-screenshots web-e2e-docker \
-        metrics web-prepare web-package web-run clean \
+        metrics dashboards-check web-prepare web-package web-run clean \
         mac-app mac-app-dmg desktop-install desktop-build desktop-run \
         desktop-test desktop-smoke desktop-icon \
         ios-app ios-run ios-prepare ios-install ios-icon
@@ -54,6 +54,14 @@ web-e2e-docker:  ## run the whole Playwright suite, visual baselines included, o
 # Pass flags through as ARGS="--days=7 --mode=klein".
 metrics:         ## play counts and win rates from the deployed app
 	node scripts/metrics.mjs $(ARGS)
+
+# Runs every panel in grafana/*.json against the Analytics Engine SQL API and
+# says which came back — the dialect is a narrow ClickHouse subset, and a panel
+# naming a function it does not have renders as an empty box rather than an
+# error. Needs the same read-only token as `metrics`; pass --print instead to
+# dump the interpolated SQL without credentials.
+dashboards-check: ## check every Grafana panel's SQL against the real dataset
+	node scripts/check_dashboards.mjs $(ARGS)
 
 web-prepare:     ## stage the browser app files into $(WEB_STAGE)
 	rm -rf $(WEB_STAGE)

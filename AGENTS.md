@@ -27,7 +27,7 @@ carries over.
 | Adding a tiling, a surface, a solid or a fractal board | [`docs/agents/board-recipes.md`](docs/agents/board-recipes.md) |
 | Picking a board's size and mine count | [`docs/agents/difficulty.md`](docs/agents/difficulty.md) |
 | The `data/*.json` both front-ends read, and the conformance oracle | [`docs/agents/shared-data.md`](docs/agents/shared-data.md) |
-| What the deployed game reports, the dataset schema, and the dashboards | [`docs/agents/metrics.md`](docs/agents/metrics.md) |
+| What the deployed game reports, the dataset schema, and the dashboards | [`docs/agents/metrics.md`](docs/agents/metrics.md), then [`grafana/`](grafana) for the dashboards themselves |
 | The pygame front-end, and the pygbag web build | [`docs/agents/pygame.md`](docs/agents/pygame.md) |
 | The offline macOS app | [`desktop/README.md`](desktop/README.md) |
 | The iPhone app, and haptics | [`ios/README.md`](ios/README.md) |

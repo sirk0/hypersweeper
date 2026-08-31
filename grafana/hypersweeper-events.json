@@ -1,0 +1,973 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "Every column the deployed game reports, one row per event. The explorer — start here when a number on another dashboard looks wrong. Schema: docs/agents/metrics.md.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [],
+  "panels": [
+    {
+      "type": "stat",
+      "id": 2,
+      "title": "Events in range",
+      "description": "Counts are SUM(_sample_interval), never COUNT(*) — Analytics Engine stores a sample and each stored row stands for _sample_interval real events. 'Stored rows' is the unweighted row count, shown only so the sampling ratio is visible. Every number is a floor.",
+      "gridPos": {
+        "h": 4,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "datasource": {
+        "type": "vertamedia-clickhouse-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "vertamedia-clickhouse-datasource",
+            "uid": "${ds}"
+          },
+          "format": "table",
+          "editorMode": "sql",
+          "query": "SELECT\n  sum(if(blob1 = 'start', _sample_interval, 0)) AS started,\n  sum(if(blob1 = 'end',   _sample_interval, 0)) AS finished,\n  sum(_sample_interval)                         AS events,\n  count()                                       AS stored_rows\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\n  AND ('$kind'    = 'all' OR blob1  = '$kind')\n  AND ('$outcome' = 'all' OR blob3  = '$outcome')\n  AND ('$mode'    = ''    OR index1 = '$mode')\n  AND ('$version' = ''    OR blob12 = '$version')",
+          "database": "",
+          "table": "",
+          "dateTimeType": "DATETIME",
+          "dateColDataType": "",
+          "dateTimeColDataType": "timestamp",
+          "extrapolate": false,
+          "skip_comments": true,
+          "add_metadata": false,
+          "round": "0s",
+          "intervalFactor": 1,
+          "interval": "",
+          "adHocFilters": []
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short",
+          "decimals": 0
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "started"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Games started"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "finished"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Games finished"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "events"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Events (weighted)"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "stored_rows"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Stored rows (unweighted)"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "text"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "colorMode": "none",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "textMode": "auto",
+        "wideLayout": true,
+        "percentChangeColorMode": "standard",
+        "showPercentChange": false
+      },
+      "transformations": [
+        {
+          "id": "convertFieldType",
+          "options": {
+            "conversions": [
+              {
+                "targetField": "started",
+                "destinationType": "number"
+              },
+              {
+                "targetField": "finished",
+                "destinationType": "number"
+              },
+              {
+                "targetField": "events",
+                "destinationType": "number"
+              },
+              {
+                "targetField": "stored_rows",
+                "destinationType": "number"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "id": 3,
+      "title": "Every event, every column",
+      "description": "One row per reported event — a `start` when a board opens, an `end` on the move that finishes it. This is the raw dataset: index1, blob1..12, double1..11 and _sample_interval, under the names in docs/agents/metrics.md. Newest first, capped by the Rows variable.",
+      "gridPos": {
+        "h": 24,
+        "w": 24,
+        "x": 0,
+        "y": 4
+      },
+      "datasource": {
+        "type": "vertamedia-clickhouse-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "vertamedia-clickhouse-datasource",
+            "uid": "${ds}"
+          },
+          "format": "table",
+          "editorMode": "sql",
+          "query": "SELECT\n  toUInt32(timestamp) * 1000 AS t,\n  index1   AS mode,\n  blob1    AS kind,\n  blob2    AS difficulty,\n  blob3    AS outcome,\n  blob4    AS board,\n  blob5    AS tiling,\n  blob6    AS surface,\n  blob7    AS family,\n  blob8    AS trigger,\n  blob9    AS from_state,\n  blob10   AS device,\n  blob11   AS shell,\n  blob12   AS version,\n  double1  AS seconds,\n  double2  AS cells,\n  double3  AS mines,\n  double4  AS opened,\n  double5  AS flags_right,\n  double6  AS flags_wrong,\n  double7  AS reveals,\n  double8  AS chords,\n  double9  AS flag_moves,\n  double10 AS first_move_ms,\n  double11 AS view_moved,\n  _sample_interval AS sample_interval\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\n  AND ('$kind'    = 'all' OR blob1  = '$kind')\n  AND ('$outcome' = 'all' OR blob3  = '$outcome')\n  AND ('$mode'    = ''    OR index1 = '$mode')\n  AND ('$version' = ''    OR blob12 = '$version')\nORDER BY t DESC\nLIMIT $limit",
+          "database": "",
+          "table": "",
+          "dateTimeType": "DATETIME",
+          "dateColDataType": "",
+          "dateTimeColDataType": "timestamp",
+          "extrapolate": false,
+          "skip_comments": true,
+          "add_metadata": false,
+          "round": "0s",
+          "intervalFactor": 1,
+          "interval": "",
+          "adHocFilters": []
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short",
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false,
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "t"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 180
+              },
+              {
+                "id": "displayName",
+                "value": "Time (UTC)"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "outcome"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "": {
+                        "text": "—",
+                        "index": 0
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "from_state"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "from"
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "": {
+                        "text": "—",
+                        "index": 0
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "tiling"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "": {
+                        "text": "(one-off board)",
+                        "index": 0
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "device"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "": {
+                        "text": "(pre-0.2.83 build)",
+                        "index": 0
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "shell"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "": {
+                        "text": "(pre-0.2.83 build)",
+                        "index": 0
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "version"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "": {
+                        "text": "(pre-0.2.83 build)",
+                        "index": 0
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "seconds"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "first_move_ms"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "ms"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "view_moved"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "0": {
+                        "text": "no",
+                        "index": 0
+                      },
+                      "1": {
+                        "text": "yes",
+                        "index": 1
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "sample_interval"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "sample_interval"
+              },
+              {
+                "id": "description",
+                "value": "How many real events this stored row stands for."
+              },
+              {
+                "id": "custom.width",
+                "value": 130
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false,
+          "reducer": [
+            "sum"
+          ],
+          "countRows": false,
+          "fields": ""
+        }
+      },
+      "transformations": [
+        {
+          "id": "convertFieldType",
+          "options": {
+            "conversions": [
+              {
+                "targetField": "t",
+                "destinationType": "number"
+              },
+              {
+                "targetField": "t",
+                "destinationType": "time"
+              },
+              {
+                "targetField": "seconds",
+                "destinationType": "number"
+              },
+              {
+                "targetField": "cells",
+                "destinationType": "number"
+              },
+              {
+                "targetField": "mines",
+                "destinationType": "number"
+              },
+              {
+                "targetField": "opened",
+                "destinationType": "number"
+              },
+              {
+                "targetField": "flags_right",
+                "destinationType": "number"
+              },
+              {
+                "targetField": "flags_wrong",
+                "destinationType": "number"
+              },
+              {
+                "targetField": "reveals",
+                "destinationType": "number"
+              },
+              {
+                "targetField": "chords",
+                "destinationType": "number"
+              },
+              {
+                "targetField": "flag_moves",
+                "destinationType": "number"
+              },
+              {
+                "targetField": "first_move_ms",
+                "destinationType": "number"
+              },
+              {
+                "targetField": "view_moved",
+                "destinationType": "number"
+              },
+              {
+                "targetField": "sample_interval",
+                "destinationType": "number"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "preload": false,
+  "refresh": "",
+  "schemaVersion": 42,
+  "tags": [
+    "hypersweeper",
+    "analytics-engine"
+  ],
+  "templating": {
+    "list": [
+      {
+        "type": "datasource",
+        "name": "ds",
+        "label": "Data source",
+        "description": "The ClickHouse datasource pointed at the Analytics Engine SQL API.",
+        "query": "vertamedia-clickhouse-datasource",
+        "current": {},
+        "options": [],
+        "regex": "",
+        "refresh": 1,
+        "multi": false,
+        "includeAll": false,
+        "hide": 0,
+        "skipUrlSync": false
+      },
+      {
+        "type": "custom",
+        "name": "kind",
+        "label": "Kind",
+        "description": "start = a board opened; end = the move that finished it.",
+        "query": "all,start,end",
+        "current": {
+          "selected": true,
+          "text": "all",
+          "value": "all"
+        },
+        "options": [
+          {
+            "selected": true,
+            "text": "all",
+            "value": "all"
+          },
+          {
+            "selected": false,
+            "text": "start",
+            "value": "start"
+          },
+          {
+            "selected": false,
+            "text": "end",
+            "value": "end"
+          }
+        ],
+        "multi": false,
+        "includeAll": false,
+        "hide": 0,
+        "skipUrlSync": false
+      },
+      {
+        "type": "custom",
+        "name": "outcome",
+        "label": "Outcome",
+        "description": "Empty on a start — filter by Kind for those.",
+        "query": "all,won,lost",
+        "current": {
+          "selected": true,
+          "text": "all",
+          "value": "all"
+        },
+        "options": [
+          {
+            "selected": true,
+            "text": "all",
+            "value": "all"
+          },
+          {
+            "selected": false,
+            "text": "won",
+            "value": "won"
+          },
+          {
+            "selected": false,
+            "text": "lost",
+            "value": "lost"
+          }
+        ],
+        "multi": false,
+        "includeAll": false,
+        "hide": 0,
+        "skipUrlSync": false
+      },
+      {
+        "type": "custom",
+        "name": "difficulty",
+        "label": "Difficulty",
+        "description": "",
+        "query": "all,easy,medium,hard",
+        "current": {
+          "selected": true,
+          "text": "all",
+          "value": "all"
+        },
+        "options": [
+          {
+            "selected": true,
+            "text": "all",
+            "value": "all"
+          },
+          {
+            "selected": false,
+            "text": "easy",
+            "value": "easy"
+          },
+          {
+            "selected": false,
+            "text": "medium",
+            "value": "medium"
+          },
+          {
+            "selected": false,
+            "text": "hard",
+            "value": "hard"
+          }
+        ],
+        "multi": false,
+        "includeAll": false,
+        "hide": 0,
+        "skipUrlSync": false
+      },
+      {
+        "type": "custom",
+        "name": "surface",
+        "label": "Surface",
+        "description": "",
+        "query": "all,flat,cylinder,mobius,torus,klein,solid",
+        "current": {
+          "selected": true,
+          "text": "all",
+          "value": "all"
+        },
+        "options": [
+          {
+            "selected": true,
+            "text": "all",
+            "value": "all"
+          },
+          {
+            "selected": false,
+            "text": "flat",
+            "value": "flat"
+          },
+          {
+            "selected": false,
+            "text": "cylinder",
+            "value": "cylinder"
+          },
+          {
+            "selected": false,
+            "text": "mobius",
+            "value": "mobius"
+          },
+          {
+            "selected": false,
+            "text": "torus",
+            "value": "torus"
+          },
+          {
+            "selected": false,
+            "text": "klein",
+            "value": "klein"
+          },
+          {
+            "selected": false,
+            "text": "solid",
+            "value": "solid"
+          }
+        ],
+        "multi": false,
+        "includeAll": false,
+        "hide": 0,
+        "skipUrlSync": false
+      },
+      {
+        "type": "custom",
+        "name": "family",
+        "label": "Family",
+        "description": "",
+        "query": "all,regular,uniform,dual,isogonal,rectangle,aperiodic,fractal,sphere,platonic,catalan,polyhedra",
+        "current": {
+          "selected": true,
+          "text": "all",
+          "value": "all"
+        },
+        "options": [
+          {
+            "selected": true,
+            "text": "all",
+            "value": "all"
+          },
+          {
+            "selected": false,
+            "text": "regular",
+            "value": "regular"
+          },
+          {
+            "selected": false,
+            "text": "uniform",
+            "value": "uniform"
+          },
+          {
+            "selected": false,
+            "text": "dual",
+            "value": "dual"
+          },
+          {
+            "selected": false,
+            "text": "isogonal",
+            "value": "isogonal"
+          },
+          {
+            "selected": false,
+            "text": "rectangle",
+            "value": "rectangle"
+          },
+          {
+            "selected": false,
+            "text": "aperiodic",
+            "value": "aperiodic"
+          },
+          {
+            "selected": false,
+            "text": "fractal",
+            "value": "fractal"
+          },
+          {
+            "selected": false,
+            "text": "sphere",
+            "value": "sphere"
+          },
+          {
+            "selected": false,
+            "text": "platonic",
+            "value": "platonic"
+          },
+          {
+            "selected": false,
+            "text": "catalan",
+            "value": "catalan"
+          },
+          {
+            "selected": false,
+            "text": "polyhedra",
+            "value": "polyhedra"
+          }
+        ],
+        "multi": false,
+        "includeAll": false,
+        "hide": 0,
+        "skipUrlSync": false
+      },
+      {
+        "type": "custom",
+        "name": "device",
+        "label": "Device",
+        "description": "",
+        "query": "all,phone,tablet,desktop,unknown",
+        "current": {
+          "selected": true,
+          "text": "all",
+          "value": "all"
+        },
+        "options": [
+          {
+            "selected": true,
+            "text": "all",
+            "value": "all"
+          },
+          {
+            "selected": false,
+            "text": "phone",
+            "value": "phone"
+          },
+          {
+            "selected": false,
+            "text": "tablet",
+            "value": "tablet"
+          },
+          {
+            "selected": false,
+            "text": "desktop",
+            "value": "desktop"
+          },
+          {
+            "selected": false,
+            "text": "unknown",
+            "value": "unknown"
+          }
+        ],
+        "multi": false,
+        "includeAll": false,
+        "hide": 0,
+        "skipUrlSync": false
+      },
+      {
+        "type": "custom",
+        "name": "shell",
+        "label": "Shell",
+        "description": "",
+        "query": "all,browser,standalone",
+        "current": {
+          "selected": true,
+          "text": "all",
+          "value": "all"
+        },
+        "options": [
+          {
+            "selected": true,
+            "text": "all",
+            "value": "all"
+          },
+          {
+            "selected": false,
+            "text": "browser",
+            "value": "browser"
+          },
+          {
+            "selected": false,
+            "text": "standalone",
+            "value": "standalone"
+          }
+        ],
+        "multi": false,
+        "includeAll": false,
+        "hide": 0,
+        "skipUrlSync": false
+      },
+      {
+        "type": "textbox",
+        "name": "mode",
+        "label": "Mode id",
+        "description": "Exact mode id, e.g. torushexhex. Empty means every mode.",
+        "query": "",
+        "current": {
+          "selected": false,
+          "text": "",
+          "value": ""
+        },
+        "options": [],
+        "hide": 0,
+        "skipUrlSync": false
+      },
+      {
+        "type": "textbox",
+        "name": "version",
+        "label": "Version",
+        "description": "Exact build, e.g. 0.2.86. Empty means every build.",
+        "query": "",
+        "current": {
+          "selected": false,
+          "text": "",
+          "value": ""
+        },
+        "options": [],
+        "hide": 0,
+        "skipUrlSync": false
+      },
+      {
+        "type": "custom",
+        "name": "limit",
+        "label": "Rows",
+        "description": "Row cap on the table below. The stat row above is not capped.",
+        "query": "500,100,1000,5000",
+        "current": {
+          "selected": true,
+          "text": "500",
+          "value": "500"
+        },
+        "options": [
+          {
+            "selected": true,
+            "text": "500",
+            "value": "500"
+          },
+          {
+            "selected": false,
+            "text": "100",
+            "value": "100"
+          },
+          {
+            "selected": false,
+            "text": "1000",
+            "value": "1000"
+          },
+          {
+            "selected": false,
+            "text": "5000",
+            "value": "5000"
+          }
+        ],
+        "multi": false,
+        "includeAll": false,
+        "hide": 0,
+        "skipUrlSync": false
+      }
+    ]
+  },
+  "timezone": "utc",
+  "time": {
+    "from": "now-30d",
+    "to": "now"
+  },
+  "timepicker": {},
+  "title": "Hypersweeper · Raw events",
+  "uid": "hypersweeper-events",
+  "version": 1,
+  "weekStart": ""
+}
