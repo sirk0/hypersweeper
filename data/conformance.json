@@ -1733,7 +1733,7 @@
       },
       "hard": {
         "cellCount": 512,
-        "mineCount": 115,
+        "mineCount": 116,
         "euler": 8,
         "boundaryComponents": 8,
         "edgeCount": 1152,
