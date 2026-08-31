@@ -121,6 +121,19 @@ read better, but `if()` and `sum()` have been there all along. Using them keeps
 each pivot in one query — no join, no `calculateField` chain — while resting
 only on the part of the dialect that is certain.
 
+**`if()` is strict about types**, and the error is worth recognising:
+
+> the 2nd and 3rd arguments to IF function must have the same type but instead
+> had Double and Integer
+
+Both branches must be one type. A `blob`/`_sample_interval` count takes the
+integer zero; anything multiplied by a `double` column takes `0.0`:
+
+```sql
+sum(if(blob1 = 'end', _sample_interval, 0))             -- Integer, Integer
+sum(if(blob1 = 'end', double1 * _sample_interval, 0.0)) -- Double,  Double
+```
+
 Also avoided, deliberately: `JOIN` and `UNION` (Analytics Engine has neither —
 a query runs against one table), `$table` (it emits a backtick-quoted
 `db.table`; there are no databases here), and `$rate`/`$perSecond`/`$columns`
