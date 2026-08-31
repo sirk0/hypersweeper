@@ -100,6 +100,12 @@ def _games(count: int) -> int:
 # could tell apart, which is the thing the number is for.
 TOLERANCE = 0.04
 
+# Below this many finished games a measurement cannot tell one mine count from
+# the next -- the standard error of a rate near a half is already 11 points at
+# twenty games -- so a row that missed tolerance with a sample this thin has not
+# shown that no count fits, only that the solver could not see the board.
+THIN_SAMPLE = 20
+
 # The floor, and the one place win-rate parity is deliberately given up.
 #
 # Some tilings force coin flips in the endgame no matter how well you play --
@@ -372,7 +378,18 @@ def calibrate_row(args: tuple) -> dict:
         seconds=round(time.time() - started, 1),
     )
     if not row["calibrated"]:
+        # Two different failures, and they are not the same news. The search
+        # only *established* that no count fits if it could tell one count from
+        # the next; where the solver abandoned most of its games the rate at
+        # every probe is noise, and the honest verdict is that this board is
+        # past the solver's reach at this budget rather than that the crossing
+        # falls between two integers.
+        thin = row.get("leastGames", FINAL_GAMES) < THIN_SAMPLE
         row["reason"] = (
+            "the solver abandoned most of its games, so no probe had the "
+            "sample to tell one mine count from the next; this is the closest "
+            "measured, and a bigger --budget is what would settle it"
+            if thin else
             "no integer mine count lands within tolerance; this is the closest"
         )
     return row
@@ -409,6 +426,8 @@ def main() -> int:
     reference = targets()
     (HERE / "targets.json").write_text(json.dumps(reference, indent=2) + "\n")
 
+    wanted = set(options.only.split(",")) if options.only else None
+
     done: set[tuple[str, str]] = set()
     out_path = Path(options.out)
     if out_path.exists():
@@ -421,7 +440,13 @@ def main() -> int:
             # a bigger budget; one that *cannot* reach its target however long
             # it runs (the tiling forces coin flips) is not, and neither is one
             # that already landed.
-            if options.redo and not row.get("calibrated") and row.get("fair", True):
+            # ...and only where this run will actually re-measure it. Dropped
+            # outside `--only`, a row is simply *gone*: nothing re-runs it, so
+            # the next `apply` finds no calibration for it and the board keeps
+            # whatever mine count it happened to have, with the audit trail no
+            # longer saying where that number came from.
+            redo = options.redo and (wanted is None or row["mode"] in wanted)
+            if redo and not row.get("calibrated") and row.get("fair", True):
                 continue
             kept.append(line)
             done.add((row["mode"], row["difficulty"]))
@@ -429,7 +454,6 @@ def main() -> int:
             out_path.write_text("".join(f"{line}\n" for line in kept))
         print(f"resuming: {len(done)} rows already done")
 
-    wanted = set(options.only.split(",")) if options.only else None
     jobs = []
     for mode, spec in sorted(geometry.items()):
         if wanted and mode not in wanted:

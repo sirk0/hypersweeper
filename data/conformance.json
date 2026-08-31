@@ -1715,7 +1715,7 @@
     "cube3d": {
       "easy": {
         "cellCount": 64,
-        "mineCount": 10,
+        "mineCount": 11,
         "euler": 4,
         "boundaryComponents": 4,
         "edgeCount": 160,
@@ -1724,7 +1724,7 @@
       },
       "medium": {
         "cellCount": 216,
-        "mineCount": 34,
+        "mineCount": 43,
         "euler": 6,
         "boundaryComponents": 6,
         "edgeCount": 504,
@@ -1733,7 +1733,7 @@
       },
       "hard": {
         "cellCount": 512,
-        "mineCount": 80,
+        "mineCount": 115,
         "euler": 8,
         "boundaryComponents": 8,
         "edgeCount": 1152,
