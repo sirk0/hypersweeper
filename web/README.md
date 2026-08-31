@@ -8,14 +8,30 @@ as the reference implementation and is not deployed.
 newest first. For the rules and reference an agent needs while working here, see
 [`AGENTS.md`](AGENTS.md) and the topic files in [`docs/`](docs/) it routes to.
 
-**M20 — A volume board: the cube of cubes.** Every board up to here is a
-*surface* — a tiling of the plane, of a polyhedron, or of an immersed manifold —
-and two cells are neighbours when their polygons share a vertex. `cube3d` is the
-first **volume**, and it keeps that rule by lifting it one dimension: the cells
-are the unit *cubes* of an `n**3` block, and two are neighbours when their cubes
-share a corner. That is the 3x3x3 block around a cell minus itself — **26**
-neighbours, against 21 for the densest surface in the zoo — and it is exact
-integer arithmetic, so nothing is rounded together to make a neighbour.
+**M20 — Volumetric: a board that is a solid, not a surface.** Every board up
+to here is a *surface* — a tiling of the plane, of a polyhedron, or of an
+immersed manifold — and two cells are neighbours when their polygons share a
+vertex. `cube3d` is the first **volume**, and it keeps that rule by lifting it
+one dimension: the cells are the unit *cubes* of an `n**3` block, and two are
+neighbours when their cubes share a corner. That is the 3x3x3 block around a
+cell minus itself — **26** neighbours, against 21 for the densest surface in
+the zoo — and it is exact integer arithmetic, so nothing is rounded together to
+make a neighbour.
+
+It sits on the **home page**, second, under **Volumetric** — the game's fifth
+front-page row and its second one-tap launcher, beside Classic. Three notes on
+that. The name: *Solid* was the obvious word and is unusable, because "solid"
+already means *polyhedron* everywhere in this codebase (`SOLID_MODES`,
+`solidBoard`, Platonic and Catalan solids), and a sixth meaning for it would
+cost more than it bought; *Volumetric* is unambiguous, and it pairs with the
+**Flat** row two lines below, which is exactly the distinction the board
+introduces. The Custom group keeps its plural, **Volumes**, because every group
+is a category noun holding differently-named boards — the alternative reads
+*Volumetric › Volumetric*, and misnames the group the day a second volume board
+arrives. And the row's label is read from `MODE_LABELS` rather than written out,
+unlike Classic's: Classic's row and its board are honestly different names
+("Classic", "Squares"), this one's are the same word, and reading it once is
+what stops them drifting.
 
 The design problem is that **a solid cube shows only its shell**: 98 of 512
 cells at `n = 8`, and none of the inside. Three ways out, and only one of them

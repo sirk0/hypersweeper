@@ -126,6 +126,7 @@ describe("menu reachability", () => {
       if (hasMode(mode)) reachable.add(mode);
     };
     add("square"); // Classic
+    add("cube3d"); // Volumetric — the second row that launches a board outright
     for (const mode of flatMenuModes()) add(mode); // the Flat pool, and Custom › Flat
     for (const mode of threeDMenuModes()) add(mode); // the 3D pool, and the rest of Custom
 

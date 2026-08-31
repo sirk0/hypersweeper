@@ -88,7 +88,7 @@ Pick a surface, then a tiling:
   square and so fills a square face. A brick cannot run round a corner, so
   the courses break at some of the twelve edges; the bricks either side still
   meet as neighbours
-- **Volumes (3D)** — a cube *filled* with cubes rather than a surface of
+- **Volumetric (3D)** — a cube *filled* with cubes rather than a surface of
   them: an n×n×n block where a cell's neighbours are the 26 cubes that share a
   corner with it, against 21 for the densest surface here. A solid shows only
   its shell, so the cube is played taken apart — each slice is its own sheet of

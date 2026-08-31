@@ -134,7 +134,7 @@
     "hextri": "Triangles - hexagonal board",
     "hexhex": "Hexagons - hexagonal board",
     "hextriangle": "Hexagons - triangular board",
-    "cube3d": "Cube of cubes"
+    "cube3d": "Volumetric"
   },
   "modeInfo": {
     "basketweave": {
@@ -192,7 +192,7 @@
       "family": "platonic"
     },
     "cube3d": {
-      "label": "Cube of cubes",
+      "label": "Volumetric",
       "tiling": "",
       "surface": "solid",
       "family": "volume"

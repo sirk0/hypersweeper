@@ -45,7 +45,23 @@ test.describe("M1 app", () => {
     expect(state?.cellCount).toBeLessThan(105);
   });
 
-  // The home page's two one-tap entries. Which board they deal is random, so
+  // The home page's two *launch* rows open one particular board with no
+  // drilling. Classic is covered by the flat-board test above, which reaches
+  // `square` the long way through Custom; this pins the short way, and that
+  // the board it opens is the volume one rather than the Volumes group page.
+  test("the home Volumetric row opens the cube of cubes outright", async ({ page }) => {
+    await page.locator('.difficulty-btn[data-key="easy"]').click();
+    await page.locator('.menu-entry[data-mode="cube3d"]').click();
+    const state = await page.evaluate(() => window.__ms?.state());
+    expect(state?.screen).toBe("game");
+    expect(state?.mode).toBe("cube3d");
+    expect(state?.difficulty).toBe("easy");
+    expect(state?.is3d).toBe(true);
+    expect(state?.cellCount).toBe(64); // 4x4x4 easy
+    await expect(page.locator(".hud-smiley")).toBeVisible();
+  });
+
+  // ...and the two *random* ones. Which board they deal is random, so
   // what is pinned is that a board opens and that it came from the right half
   // of the catalogue: the Flat pool builds flat boards, the 3D pool solids.
   test("the home Flat row deals a random flat board", async ({ page }) => {
