@@ -137,7 +137,9 @@ in two renderers. Four things to know before adding or retuning one:
   vertices of a detailed profile are for. Two loops next to Classic is still not
   a style: on the plane it differs only in the width of one bevel band.
 - **A two-sided surface measures its gradient instead of ramping it.** The
-  cylinder, Möbius strip and Klein bottle draw flat tiles with no loop stack, and
+  cylinder, Möbius strip and Klein bottle — and `cube3d`, whose slices are open
+  sheets and so would vanish under front-face culling the moment the board was
+  turned past ninety degrees — draw flat tiles with no loop stack, and
   the Klein clip can leave a vertex anywhere in one, so there is no ring order to
   ramp over. `radialFalloff` (solidBoard.ts) measures the distance from the
   cell's centre at build time — 1 at the centroid, 0 at the tile's edge, a cut

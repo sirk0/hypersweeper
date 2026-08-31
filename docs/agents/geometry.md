@@ -14,6 +14,21 @@ minesweeper over that abstract adjacency graph (`Game(adjacency, mine_count)`)
 and knows nothing about geometry or UI. Never introduce a vertex id that relies
 on rounding two nearby-but-distinct points to the same key.
 
+**The one board where "shares a vertex" is not read off the polygons is
+`cube3d`** (`volume.py`), and it is the same rule one dimension up. Its cells
+are the unit **cubes** of a solid block, and two are neighbours when their
+cubes share a corner — the 3x3x3 block around a cell minus itself, so **26**
+neighbours where the densest surface board reaches 21. Still exact, still
+integer arithmetic, and still nothing rounded together; but a solid cube shows
+only its shell, so the board is *drawn* as its slices laid out side by side,
+and the polygons are those sheets rather than the cubes. The adjacency is
+therefore built from the lattice directly, and it is the one place in the zoo
+where the drawing does not carry the neighbour rule. Everything downstream that
+reads adjacency — the game, the solver, the conformance oracle's structural
+checks — is unaffected; the two things that do read the polygons are told
+separately (`two_sided` for the open sheets, and the symmetry controls, which
+`volume.ts` offers from the lattice because the layout has none to measure).
+
 `web/src/boards/` is a port of the same model, checked against it by the
 conformance oracle — see [`shared-data.md`](shared-data.md).
 
@@ -30,6 +45,7 @@ Import order is a strict DAG; a module only imports from the ones above it.
 | `solids.py` | Closed/convex and polycube 3D boards (spherical gyro pentagons, Goldberg polyhedra, geodesic icosahedron, rhombicosidodecahedron, truncated icosidodecahedron, cube, tetrahedron, frames, bipyramid), plus the shared `_wythoff_point` every uniform solid here and every Catalan solid next door is generated from. |
 | `catalan.py` | The thirteen Catalan solids, the duals of the Archimedean solids. One recipe for all of them: a Platonic base and one flag, the Wythoff generating point of its Schwarz triangle (`solids._wythoff_point` for the five non-chiral Conway operations, `_snub_point` for the chiral one), a Catalan vertex at `n / <w, n>` on each face axis — polar duality — and the base's flags grouped into faces by the operation. Faces are then subdivided (`solids._geodesic` for triangles, `_quad_grid` for quadrilaterals, a five-way fan first for pentagons), which is these boards' only size knob. |
 | `surfaces.py` | Wrapping tilings onto surfaces: the three immersion points (`_torus_point`, `_cylinder_point`, `_mobius_point`), the shared `_assemble` tail, the nine simple `*_board` wrappers, and the Archimedean `arch_torus_board` / `arch_cylinder_board` / `arch_mobius_board`. |
+| `volume.py` | The volume boards — a solid block of cells rather than a surface of them. One so far: `solid_cube_board`, the `n**3` cube of cubes, whose 26-neighbour adjacency comes off the lattice and whose drawing is the `n` slices laid out on a grid and stepped back in depth. |
 | `catalog.py` | The menu, **derived**: `SURFACE_SPECS` and `TILING_SPECS` (leaf data loaded from `data/catalog.json`) produce `MODE_LABELS`, `TILINGS`, `SURFACE_LABELS`, the geometry-first menu tables (`MENU_ROOT`/`MANIFOLD_*`/`FAMILY_*`/`SOLID_GROUP_*`/`SOLID_MODES`/`SHAPED_MODES`) and the picker helpers (`family_rows`, `picker_families`, `picker_modes`), `MODES_3D`, `mode_for`, `surface_of`, `view_hint`. |
 | `presets.py` | Difficulty presets and `build_board`. Flat regular, solid, Archimedean/Laves and aperiodic (penrose/spectre/phyllotaxis) presets all load from `data/presets.json` (shared with the web port). The Archimedean rows are authored in the compact **`ARCH_PRESETS`** table (tiling → surface → difficulty → args) that `scripts/export_data.py` expands into `data/presets.json`. |
 

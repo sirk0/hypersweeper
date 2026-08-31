@@ -32,9 +32,13 @@ from pathlib import Path
 from minesweeper.boards import presets as P
 from scripts.difficulty.metrics import indistinguishable_cells, mean_degree
 from scripts.difficulty.solver import (
+    DEFAULT_BUDGET,
+    to_neighbor_lists,
+    win_rate,
+)
+from scripts.difficulty.solver import (
     opening_win_rate as solver_opening,
 )
-from scripts.difficulty.solver import to_neighbor_lists, win_rate
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent.parent
@@ -67,6 +71,17 @@ ROW_SECONDS = 60.0
 # there are thirty of them and not four hundred. See ``--redo`` in ``main``.
 EFFORT = 1.0
 
+# The solver's node budget, per evaluation. A game the DP cannot finish inside
+# it is *abandoned*, and the games it cannot finish are the tangled ones -- so
+# on a board where abandonment is common the surviving sample is biased toward
+# the easy layouts and the search settles on too few mines. The default is
+# ample for the surface boards, whose frontiers are a handful of cells wide;
+# `cube3d`, whose cells have 26 neighbours, abandons nearly every game at
+# medium and hard and needs one orders of magnitude bigger to measure at all.
+# It is a knob rather than a new default because raising the default would
+# silently re-grade every row already in the checkpoint.
+BUDGET = DEFAULT_BUDGET
+
 
 def _scaled(value: float) -> float:
     return value * EFFORT
@@ -84,6 +99,12 @@ def _games(count: int) -> int:
 # noise -- and four points of win probability is still far below what a player
 # could tell apart, which is the thing the number is for.
 TOLERANCE = 0.04
+
+# Below this many finished games a measurement cannot tell one mine count from
+# the next -- the standard error of a rate near a half is already 11 points at
+# twenty games -- so a row that missed tolerance with a sample this thin has not
+# shown that no count fits, only that the solver could not see the board.
+THIN_SAMPLE = 20
 
 # The floor, and the one place win-rate parity is deliberately given up.
 #
@@ -195,7 +216,7 @@ def calibrate_row(args: tuple) -> dict:
         # would only let sampling noise walk it off 10/40/99.
         mines = PINNED_MINES[mode][difficulty]
         rate, _, _ = win_rate(neighbors, mines, _games(FINAL_GAMES), seed,
-                              seconds=_scaled(FINAL_SECONDS))
+                              budget=BUDGET, seconds=_scaled(FINAL_SECONDS))
         row.update(
             mines=mines,
             density=round(mines / n, 4),
@@ -210,7 +231,7 @@ def calibrate_row(args: tuple) -> dict:
     if twins > UNCALIBRATABLE_SHARE * n:
         mines = max(1, round(FALLBACK_DENSITY[difficulty] * n))
         rate, _, _ = win_rate(neighbors, mines, _games(SEARCH_GAMES), seed,
-                              seconds=_scaled(SEARCH_SECONDS))
+                              budget=BUDGET, seconds=_scaled(SEARCH_SECONDS))
         row.update(
             mines=mines,
             density=round(mines / n, 4),
@@ -241,7 +262,7 @@ def calibrate_row(args: tuple) -> dict:
         # counts and the measured curve stays monotone enough to bracket
         cap = _scaled(SEARCH_SECONDS if games <= SEARCH_GAMES else FINAL_SECONDS)
         value, abandoned, played = win_rate(
-            neighbors, mines, _games(games), seed, seconds=cap)
+            neighbors, mines, _games(games), seed, budget=BUDGET, seconds=cap)
         if abandoned:
             row["abandoned"] = row.get("abandoned", 0) + abandoned
         row["leastGames"] = min(row.get("leastGames", _games(games)), played)
@@ -357,7 +378,18 @@ def calibrate_row(args: tuple) -> dict:
         seconds=round(time.time() - started, 1),
     )
     if not row["calibrated"]:
+        # Two different failures, and they are not the same news. The search
+        # only *established* that no count fits if it could tell one count from
+        # the next; where the solver abandoned most of its games the rate at
+        # every probe is noise, and the honest verdict is that this board is
+        # past the solver's reach at this budget rather than that the crossing
+        # falls between two integers.
+        thin = row.get("leastGames", FINAL_GAMES) < THIN_SAMPLE
         row["reason"] = (
+            "the solver abandoned most of its games, so no probe had the "
+            "sample to tell one mine count from the next; this is the closest "
+            "measured, and a bigger --budget is what would settle it"
+            if thin else
             "no integer mine count lands within tolerance; this is the closest"
         )
     return row
@@ -375,18 +407,26 @@ def main() -> int:
              "use with --redo",
     )
     parser.add_argument(
+        "--budget", type=int, default=DEFAULT_BUDGET,
+        help="solver node budget per game; raise it (with --redo) for a "
+             "high-degree board whose games are mostly abandoned",
+    )
+    parser.add_argument(
         "--redo", action="store_true",
         help="drop the rows that missed tolerance from the checkpoint and "
              "measure them again (the rows that landed are kept as they are)",
     )
     options = parser.parse_args()
 
-    global EFFORT
+    global BUDGET, EFFORT
     EFFORT = options.effort
+    BUDGET = options.budget
 
     geometry = json.loads(Path(options.geometry).read_text())
     reference = targets()
     (HERE / "targets.json").write_text(json.dumps(reference, indent=2) + "\n")
+
+    wanted = set(options.only.split(",")) if options.only else None
 
     done: set[tuple[str, str]] = set()
     out_path = Path(options.out)
@@ -400,7 +440,13 @@ def main() -> int:
             # a bigger budget; one that *cannot* reach its target however long
             # it runs (the tiling forces coin flips) is not, and neither is one
             # that already landed.
-            if options.redo and not row.get("calibrated") and row.get("fair", True):
+            # ...and only where this run will actually re-measure it. Dropped
+            # outside `--only`, a row is simply *gone*: nothing re-runs it, so
+            # the next `apply` finds no calibration for it and the board keeps
+            # whatever mine count it happened to have, with the audit trail no
+            # longer saying where that number came from.
+            redo = options.redo and (wanted is None or row["mode"] in wanted)
+            if redo and not row.get("calibrated") and row.get("fair", True):
                 continue
             kept.append(line)
             done.add((row["mode"], row["difficulty"]))
@@ -408,7 +454,6 @@ def main() -> int:
             out_path.write_text("".join(f"{line}\n" for line in kept))
         print(f"resuming: {len(done)} rows already done")
 
-    wanted = set(options.only.split(",")) if options.only else None
     jobs = []
     for mode, spec in sorted(geometry.items()):
         if wanted and mode not in wanted:

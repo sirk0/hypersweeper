@@ -177,8 +177,24 @@ hand-picked density is the one thing this game cannot get right by eye.
    one new mode: `PYTHONPATH=. python -m scripts.difficulty.calibrate
    --only <mode>`, then `python -m scripts.difficulty.apply`.
 
-Why not a density: adjacency is shared-vertex, so degree runs from 4 to 21
-across the zoo, and a number spread over 21 cells says far less than the same
+   **Check what the run abandoned before believing it.** A game whose frontier
+   DP exceeds the solver's node budget is abandoned rather than guessed at, and
+   the games it cannot finish are the *tangled* ones — so where abandonment is
+   common the surviving sample is biased toward the untangled layouts and the
+   search settles on too few mines. `calibrate.py --budget` (with `--redo`)
+   raises the budget for the rows being re-run without touching what is already
+   in the checkpoint, which is the only reason it is a flag rather than a new
+   default. Degree is what drives it: the surface boards, whose frontiers are a
+   handful of cells wide, abandon almost nothing at the default 4,000, while
+   `cube3d` at 26 neighbours abandons nearly every game at medium and hard —
+   its medium reported 0.875 over *two* finished games where a 300,000-node run
+   measures it far lower. The row records `abandoned` and `leastGames`, and
+   `report.py` lists the worst offenders; a row measured over a handful of
+   games is a number to distrust however close to target it looks.
+
+Why not a density: adjacency is shared-vertex, so degree runs from 4 to 26
+across the zoo (26 on `cube3d`, whose cells are cubes rather than polygons; 21
+is the densest *surface*), and a number spread over 21 cells says far less than the same
 number over 6. At one density a hexagonal board plays much easier than a
 triangular one, and a seamless torus easier than the flat board it wraps
 (a corner constrains less than an interior cell). The calibrated densities

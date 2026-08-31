@@ -13,7 +13,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from scripts.difficulty.calibrate import FINAL_GAMES, TOLERANCE
+from scripts.difficulty.calibrate import FINAL_GAMES, THIN_SAMPLE, TOLERANCE
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent.parent
@@ -74,10 +74,23 @@ def main() -> int:
     if uncalibrated:
         out.append(f"- {len(uncalibrated)} could not be brought on target:")
         for row in sorted(uncalibrated, key=lambda r: r["mode"]):
+            # A row whose thinnest measurement was a handful of games did not
+            # establish that no mine count fits -- it never had the sample to
+            # tell one count from the next. Say which of the two it is, because
+            # the difference is what a reader would do about it: re-measure at
+            # a bigger ``--budget``, or accept the board as it is.
+            note = row.get("reason", "unknown")
+            least = row.get("leastGames")
+            if least is not None and least < THIN_SAMPLE:
+                note = (
+                    f"the search could not resolve it -- its thinnest "
+                    f"measurement finished {least} game(s), so the rate here "
+                    f"is noise rather than a crossing the search walked to. "
+                    f"Re-measure at a bigger `--budget`"
+                )
             out.append(
                 f"  - `{row['mode']}`/{row['difficulty']}: "
-                f"{row['winRate']:.1%} vs {row['target']:.1%} "
-                f"— {row.get('reason', 'unknown')}"
+                f"{row['winRate']:.1%} vs {row['target']:.1%} — {note}"
             )
     abandoned = [r for r in rows if r.get("abandoned")]
     if abandoned:

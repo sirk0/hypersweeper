@@ -534,6 +534,11 @@ export function initialOrientation(mode: string): Quaternion {
   // a tetrahedron viewed down a 2-fold axis looks like a flat square; turn
   // to a vertex-first 3/4 view so the frame's gaps read clearly
   if (mode === "tetraframe") return qx(-0.62).multiply(qy(0.45));
+  // the cube of cubes is read off its slices, so it starts nearly face on --
+  // just enough pitch and yaw to show that the sheets step back from one
+  // another, which is the only cue that says which slice is which. Any more and
+  // the far sheets shrink under perspective and their numbers go with them.
+  if (mode === "cube3d") return qx(-0.14).multiply(qy(0.2));
   // the Klein bottle reads best from a 3/4 turn: the neck diving through the
   // body (the self-intersection) is then plainly visible
   if (surfaceOf(mode)?.key === "klein") return qx(-0.4).multiply(qy(0.6));

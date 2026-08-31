@@ -414,6 +414,60 @@ These are one-offs, not tiling×surface products.
    covers it. (A Python-only one-off can still go in `_PRESETS` as an
    explicit lambda, but the JSON path is preferred.)
 
+## Recipe: add a volume board
+
+A **volume** is a solid block of cells rather than a surface of them, and it
+lives in `volume.py` / `web/src/boards/volume.ts`. One ships — `cube3d`, the
+`n**3` cube of cubes — and the three things that make it different from a solid
+are all forced by the same fact: **you cannot see inside a solid.**
+
+1. **Adjacency comes off the lattice, not off the polygons.** Two cells are
+   neighbours when their unit *cubes* share a corner, which is the shared-vertex
+   rule one dimension up and is exact integer arithmetic — but the drawn
+   polygons are not the cubes, so `_shared_vertex_adjacency` cannot find it.
+   Build it directly. This is the one exemption in the zoo, and it should stay
+   that way: on a surface, "share a vertex" is what makes the numbers mean what
+   the player sees.
+2. **The board is drawn taken apart.** Each slice is its own sheet of squares,
+   laid out on a `ceil(sqrt(n))`-column grid and stepped back in depth by slice
+   index. Every cell is visible at once, which is what a 26-cell neighbourhood
+   needs — a number spans three slices, so all three have to be readable
+   together — and the depth ramp is what says which sheet is which. A row of
+   sheets rather than a grid is a 9-to-1 board that `frameSolid` fits into a
+   sliver of a phone; the layout constants live in both ports and the
+   conformance oracle counts vertices off them, so change one and change both.
+3. **It is `two_sided`.** Open sheets have rims, so front-face culling would
+   make the board vanish as soon as it was turned past ninety degrees.
+   `two_sided` also tells `TestInvariants` not to demand a closed surface: `n`
+   sheets is `n` boundary circles and an Euler characteristic of `n`. The cost
+   is the cell style — a two-sided board draws flat tiles rather than the
+   raised button (see "Cell styles" in `web/docs/render.md`) — which the
+   closed/opened palette step carries on its own.
+
+Two more things a volume needs that a solid does not:
+
+* **Symmetry controls from the lattice.** `core.solidBoard` measures a solid's
+  point group off its polygons, and pulling the slices apart leaves none of the
+  cube's 48 motions in the drawing. So `volume.ts` offers signed coordinate
+  permutations as `SymmetryCandidate`s and lets `keepSymmetries` check them
+  against the adjacency, exactly as `surfaces.ts` offers lattice motions —
+  which leaves `ring`, `tube` and `mirror-ring` standing. That is the one move
+  dragging cannot give: dragging turns the drawing, and the drawing is the cube
+  taken apart rather than the cube.
+* **Digits past 12.** A cell can be asked to draw its whole neighbourhood, so
+  `render/glyphAtlas.ts` bakes 1..`MAX_DIGIT_GLYPH` and
+  `tests/unit/conformance.test.ts` measures the catalogue against it. A board
+  that out-counted the atlas would draw the *wrong* number, not none.
+
+Sizes and mine counts are measured as everywhere else, with one wrinkle worth
+knowing before believing a number: the reference solver **abandons** games
+whose frontier DP exceeds its node budget, and a 26-neighbour board abandons
+nearly all of them at the default. The surviving sample is then biased toward
+the untangled layouts and the search settles on too few mines. `calibrate.py
+--budget` is the knob (see "Measuring the size and the mine count" in
+[`difficulty.md`](difficulty.md)); a default-budget run on `cube3d` medium
+reported 0.875 over two finished games where a big-budget one measures 0.76.
+
 ## Recipe: add a surface (worked example — the Klein bottle)
 
 A surface is a new column in the uniform/dual tiling×surface grid. The

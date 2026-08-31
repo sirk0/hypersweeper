@@ -7912,5 +7912,43 @@
         "indistinguishable": 0
       }
     }
+  },
+  "cube3d": {
+    "builder": "solid_cube_board",
+    "args": {
+      "easy": {
+        "args": [
+          4,
+          10
+        ],
+        "cells": 64,
+        "score": 10.7067,
+        "distortionMean": 1.0,
+        "distortionP90": 1.0,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          8,
+          80
+        ],
+        "cells": 512,
+        "score": 0.0645,
+        "distortionMean": 1.0,
+        "distortionP90": 1.0,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          6,
+          34
+        ],
+        "cells": 216,
+        "score": 10.5097,
+        "distortionMean": 1.0,
+        "distortionP90": 1.0,
+        "indistinguishable": 0
+      }
+    }
   }
 }

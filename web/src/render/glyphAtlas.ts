@@ -5,20 +5,27 @@ import { CanvasTexture, LinearFilter, SRGBColorSpace, Texture } from "three";
 // couple of draw calls. Rebake (`makeGlyphAtlas`) when the device pixel ratio
 // changes so glyphs stay crisp.
 
-// A digit 1..12 (shared-vertex adjacency on triangles/hexagons can exceed 8),
-// a flag, a mine, a crossed-out flag (a misplaced flag revealed on loss), or
-// that cross on its own — which is what a misplaced flag needs on a board whose
-// style stands a real 3D pin on the cell, since the pin is already the flag and
-// only the "you were wrong" mark is missing. 0 means empty.
+// A digit 1..26, a flag, a mine, a crossed-out flag (a misplaced flag revealed
+// on loss), or that cross on its own — which is what a misplaced flag needs on a
+// board whose style stands a real 3D pin on the cell, since the pin is already
+// the flag and only the "you were wrong" mark is missing. 0 means empty.
 export type Glyph = number | "flag" | "mine" | "wrongFlag" | "cross";
+
+/** The largest number a cell can be asked to draw, which is the largest degree
+ * in the catalogue: 26, on the volume board, where a cell's neighbours are the
+ * 3x3x3 block of cubes around it minus itself. (Shared-vertex adjacency on the
+ * surfaces reaches 21, and on triangles and hexagons 12.) A board that could
+ * out-count this would draw the *wrong* number rather than none, so
+ * `tests/unit/conformance.test.ts` measures the whole catalogue against it. */
+export const MAX_DIGIT_GLYPH = 26;
 
 // Slot order in the atlas grid. Index 0 (empty) is intentionally blank.
 const SLOTS: Glyph[] = [
-  0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, "flag", "mine", "wrongFlag",
-  "cross",
+  ...Array.from({ length: MAX_DIGIT_GLYPH + 1 }, (_, n) => n as Glyph),
+  "flag", "mine", "wrongFlag", "cross",
 ];
-const COLS = 4;
-const ROWS = 5; // 4x5 = 20 slots; the last three are spare
+const COLS = 6;
+const ROWS = 6; // 6x6 = 36 slots; the last five are spare
 
 // Classic minesweeper digit colours; 9+ reuse a neutral dark tone.
 const DIGIT_COLORS: Record<number, string> = {

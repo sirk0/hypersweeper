@@ -110,6 +110,7 @@ const SOLID_GROUP_HINTS: Record<string, string> = {
   platonic: "The five regular solids",
   catalan: "The thirteen duals of the Archimedean solids",
   polyhedra: "Hollow frames, terraced pyramids and cubes laid in brick",
+  volume: "A solid cube of cells — 26 neighbours, laid out slice by slice",
 };
 
 /** Rows of a picker, dropping the modes this build has not got. */
@@ -522,8 +523,9 @@ export class Menu {
     );
   }
 
-  /** The home page: Classic, one random board from each half of the
-   * catalogue, and Custom for the whole tree. */
+  /** The home page: the two boards that open straight away (Classic and
+   * Volumetric), one random board from each half of the catalogue, and Custom
+   * for the whole tree. */
   private renderRoot(): void {
     const list = document.createElement("ul");
     list.className = "menu-list";
@@ -535,6 +537,22 @@ export class Menu {
           ROOT_LABELS["classic"] ?? "Classic",
           "Flat squares — the original.",
           "classic",
+        ),
+      );
+    }
+    // Volumetric — the cube of cubes, launched straight away like Classic:
+    // the two rows that open one particular board sit together, above the two
+    // that deal a random one. Its label comes from the shared MODE_LABELS
+    // rather than a string here, because unlike Classic (whose row says
+    // "Classic" and whose board is captioned "Squares") the row and the board
+    // are the same word, and reading it once is what keeps them so.
+    if (hasMode("cube3d")) {
+      list.append(
+        this.launchRow(
+          "cube3d",
+          MODE_LABELS["cube3d"] ?? "Volumetric",
+          "A cube filled with cubes — 26 neighbours.",
+          "cube3d",
         ),
       );
     }
@@ -553,7 +571,7 @@ export class Menu {
     const threeD = randomPool("3d");
     if (threeD.length > 0) {
       list.append(
-        this.randomRow("3d", "3D", "A random manifold, sphere or polyhedron.", "3d"),
+        this.randomRow("3d", "3D", "A random manifold, sphere, polyhedron or volume.", "3d"),
       );
     }
     if (this.groups.length > 0) {

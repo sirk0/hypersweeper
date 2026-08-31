@@ -7,13 +7,17 @@ The app's pages, windows and stored state. For how cells are *drawn* see
 ## The menu
 
 The menu is play-first, and deliberately **not** the pygame one: the home page
-is Classic, Flat, 3D and Custom (`src/ui/menu.ts`). Flat and 3D each launch a
-*random* board — the flat picker's pool, and every flat manifold plus the
-spheres and polyhedra — so no picker carries a Random row; Custom holds the old
-root (Flat, Flat manifolds, Sphere, Platonic solids, Catalan solids,
-Polyhedra). In every tiling picker the three regular tilings are promoted to
-rows of their own, leaving the Regular family holding the shaped boards alone
-under the label **Non-square boards** (plane only). That shape is *derived* from
+is Classic, Volumetric, Flat, 3D and Custom (`src/ui/menu.ts`). The first two
+open one particular board straight away — the original square grid, and the
+cube of cubes — and sit together above the two that deal a *random* one: the
+flat picker's pool, and every flat manifold plus the spheres, polyhedra and
+volumes. So no picker carries a Random row; Custom holds the old root (Flat,
+Flat manifolds, Sphere, Platonic solids, Catalan solids, Polyhedra, Volumes).
+A board reachable from the home page is still reachable through Custom — the
+home row is a shortcut, not a move, which is how `square` has always worked.
+In every tiling picker the three regular tilings are promoted to rows of their
+own, leaving the Regular family holding the shaped boards alone under the label
+**Non-square boards** (plane only). That shape is *derived* from
 the shared port in the "web menu" section of `src/boards/catalog.ts`, so
 `data/catalog.json` and the pygame menu are untouched;
 `tests/unit/menu.test.ts` pins it.
