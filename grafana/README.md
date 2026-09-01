@@ -99,9 +99,8 @@ row read `blob1`, `blob2`, `blob3` and `double1` only, which have always been
 written and still mean what they meant. `blob2` in particular is never empty —
 the collector rejects any event whose difficulty is not one of the catalogue's
 tiers — so the difficulty split is the one breakdown that runs on the full
-history rather than the 0.2.83+ slice. The per-tier panel on *Boards &
-engagement* is scoped, because first-move delay needs `double10`; the two
-covering different spans is expected, and each panel says so.
+history rather than the 0.2.83+ slice, and *Overview & trends* is the only place
+it is broken out.
 Throwing that history away so two panels agree would be the worse error. The
 consequence is that the device pies do not add up to the trend totals, and the
 **Schema coverage** panel on *Overview & trends* is there to show exactly how

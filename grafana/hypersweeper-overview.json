@@ -968,7 +968,7 @@
       "type": "table",
       "id": 18,
       "title": "Difficulty — plays, finishes and win rate",
-      "description": "How each tier goes, over the whole range. 'Abandoned' is plays minus finished. Three tiers should give three clearly different win rates — board size and mine count are measured by scripts/difficulty/, and this is where that measurement meets what people actually do. For the first-move delay per tier see Boards & engagement, which needs the 0.2.83 columns and so covers a shorter history than this.",
+      "description": "How each tier goes, over the whole range. 'Abandoned' is plays minus finished. Three tiers should give three clearly different win rates — board size and mine count are measured by scripts/difficulty/, and this is where that measurement meets what people actually do.",
       "gridPos": {
         "h": 8,
         "w": 24,

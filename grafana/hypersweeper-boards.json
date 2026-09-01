@@ -15,7 +15,7 @@
       }
     ]
   },
-  "description": "Which boards get played, how they go, and whether the controls are being found. Every panel here counts only events from 0.2.83 onward — the build that started reporting the board columns. Schema: docs/agents/metrics.md.",
+  "description": "Which boards get played, how they go, and whether the controls are being found. Every panel here counts only events from 0.2.83 onward — the build that started reporting the board columns; for the difficulty split, which runs on the whole history, see Overview & trends. Schema: docs/agents/metrics.md.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -948,7 +948,7 @@
       "description": "Chording on any board, rotation on a 3D one. A surface whose rotated fraction is low is one where the view controls are not being discovered — finished games only, weighted by _sample_interval.",
       "gridPos": {
         "h": 8,
-        "w": 12,
+        "w": 24,
         "x": 0,
         "y": 45
       },
@@ -1145,182 +1145,6 @@
               },
               {
                 "targetField": "games",
-                "destinationType": "number"
-              }
-            ]
-          }
-        }
-      ]
-    },
-    {
-      "type": "table",
-      "id": 11,
-      "title": "Difficulty — is each tier what it claims to be?",
-      "description": "Board size and mine count are measured by scripts/difficulty/, never chosen by eye. This is the check that the measurement still holds in the wild: three tiers should give three clearly different win rates. First move is why this one needs the 0.2.83 columns, so it covers a shorter history than Overview & trends → Difficulty, which counts every game ever recorded and is the panel to read for the tier split.",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 45
-      },
-      "datasource": {
-        "type": "vertamedia-clickhouse-datasource",
-        "uid": "${ds}"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "vertamedia-clickhouse-datasource",
-            "uid": "${ds}"
-          },
-          "format": "table",
-          "editorMode": "sql",
-          "query": "SELECT\n  blob2 AS difficulty,\n  sum(if(blob1 = 'start', _sample_interval, 0)) AS plays,\n  sum(if(blob1 = 'end' AND blob3 = 'won', _sample_interval, 0)) / sum(if(blob1 = 'end', _sample_interval, 0)) AS win_rate,\n  sum(if(blob1 = 'end', double1 * _sample_interval, 0.0)) / sum(if(blob1 = 'end', _sample_interval, 0))  AS mean_seconds,\n  sum(if(blob1 = 'end', double10 * _sample_interval, 0.0)) / sum(if(blob1 = 'end', _sample_interval, 0)) AS mean_first_move_ms,\n  sum(if(blob1 = 'end', _sample_interval, 0)) AS finished\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND blob4 != ''\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\nGROUP BY difficulty\nHAVING sum(if(blob1 = 'end', _sample_interval, 0)) > 0\nORDER BY plays DESC",
-          "database": "",
-          "table": "",
-          "dateTimeType": "DATETIME",
-          "dateColDataType": "",
-          "dateTimeColDataType": "timestamp",
-          "extrapolate": false,
-          "skip_comments": true,
-          "add_metadata": false,
-          "round": "0s",
-          "intervalFactor": 1,
-          "interval": "",
-          "adHocFilters": []
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "text",
-                "value": null
-              }
-            ]
-          },
-          "unit": "short",
-          "decimals": 0,
-          "custom": {
-            "align": "auto",
-            "cellOptions": {
-              "type": "auto"
-            },
-            "inspect": false,
-            "filterable": true
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "win_rate"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "win rate"
-              },
-              {
-                "id": "unit",
-                "value": "percentunit"
-              },
-              {
-                "id": "decimals",
-                "value": 1
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "mean_seconds"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "mean game"
-              },
-              {
-                "id": "unit",
-                "value": "s"
-              },
-              {
-                "id": "decimals",
-                "value": 0
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "mean_first_move_ms"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "first move"
-              },
-              {
-                "id": "unit",
-                "value": "ms"
-              },
-              {
-                "id": "decimals",
-                "value": 0
-              }
-            ]
-          }
-        ]
-      },
-      "options": {
-        "showHeader": true,
-        "cellHeight": "sm",
-        "footer": {
-          "show": false,
-          "reducer": [
-            "sum"
-          ],
-          "countRows": false,
-          "fields": ""
-        },
-        "sortBy": [
-          {
-            "displayName": "plays",
-            "desc": true
-          }
-        ]
-      },
-      "transformations": [
-        {
-          "id": "convertFieldType",
-          "options": {
-            "conversions": [
-              {
-                "targetField": "plays",
-                "destinationType": "number"
-              },
-              {
-                "targetField": "win_rate",
-                "destinationType": "number"
-              },
-              {
-                "targetField": "mean_seconds",
-                "destinationType": "number"
-              },
-              {
-                "targetField": "mean_first_move_ms",
-                "destinationType": "number"
-              },
-              {
-                "targetField": "finished",
                 "destinationType": "number"
               }
             ]
