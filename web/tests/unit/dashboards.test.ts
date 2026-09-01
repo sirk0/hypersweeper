@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath, URL } from "node:url";
 import { describe, expect, it } from "vitest";
+import catalog from "@data/catalog.json";
 import { DATASET_BLOBS, DATASET_DOUBLES } from "../../src/analyticsEvent";
 
 // The dashboards in grafana/ are the third description of the same positional
@@ -29,7 +30,7 @@ type Dashboard = {
   title: string;
   schemaVersion: number;
   panels: Panel[];
-  templating: { list: { name: string; type: string }[] };
+  templating: { list: { name: string; type: string; options?: { value: string }[] }[] };
 };
 
 const files = readdirSync(DIR).filter((name) => name.endsWith(".json")).sort();
@@ -167,6 +168,34 @@ describe.each(dashboards)("$file", ({ doc }) => {
       for (const [, name] of withoutGlobals.matchAll(/\$([a-zA-Z_][a-zA-Z0-9_]*)/g)) {
         expect(declared, `${where} references $${name}`).toContain(name);
       }
+    }
+  });
+
+  // The difficulty panels pivot on the tier *values*, not on a column number —
+  // the one place a dashboard hard-codes a vocabulary. `parseEvent` rejects any
+  // difficulty outside `catalog.difficulties`, so a tier added there and not
+  // here would simply stop being counted: the stacked trend would quietly not
+  // add up to the total beside it. Same idea as the blob table in
+  // analyticsSchema.test.ts, one level down.
+  it("names exactly the difficulty tiers the catalogue defines", () => {
+    const tiers = new Set<string>(catalog.difficulties);
+    const seen = new Set<string>();
+    for (const { where, sql } of queriesOf(doc)) {
+      for (const match of sql.matchAll(/blob2\s*=\s*'([^']*)'/g)) {
+        const tier = match[1] ?? "";
+        // `blob2 = '$difficulty'` is the filter variable, not a literal tier.
+        if (tier.startsWith("$")) continue;
+        expect(tiers, `${where} names difficulty '${tier}'`).toContain(tier);
+        seen.add(tier);
+      }
+    }
+    // Whichever dashboard pivots on the tiers must name all of them.
+    if (seen.size > 0) expect([...seen].sort()).toEqual([...tiers].sort());
+
+    const variable = doc.templating.list.find((v) => v.name === "difficulty");
+    if (variable) {
+      const offered = (variable.options ?? []).map((o) => o.value).filter((v) => v !== "all");
+      expect(offered.sort()).toEqual([...tiers].sort());
     }
   });
 

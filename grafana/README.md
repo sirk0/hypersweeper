@@ -7,7 +7,7 @@ source of truth** — Grafana is where they are looked at, not where they live.
 | File | Dashboard | Answers |
 |---|---|---|
 | `hypersweeper-events.json` | Raw events | Every column, one row per event. The explorer — start here when a number on another dashboard looks wrong. |
-| `hypersweeper-overview.json` | Overview & trends | Games per day and the trend, starts vs finishes, wins and losses, win rate, device and shell mix, how a deploy rolls out. |
+| `hypersweeper-overview.json` | Overview & trends | Games per day and the trend, starts vs finishes, wins and losses, win rate, the easy/medium/hard split and its trend, device and shell mix, how a deploy rolls out. |
 | `hypersweeper-boards.json` | Boards & engagement | Which boards get played, win rate and mean game per board, how games get started, how far a loss gets, whether the controls are being found. |
 
 The column map they are all built from is
@@ -71,6 +71,40 @@ explained at length in [`docs/agents/metrics.md`](../docs/agents/metrics.md).
 - **Abandonment is `started − finished`**, not a column. There is no abandon
   event; a restart counts as a new play, and "boards opened" is the measure
   rather than distinct players.
+
+### Two populations, one dataset
+
+`blob4..blob12` and `double2..double11` arrived in **0.2.83**. Every event older
+than that deploy is still in the dataset with those columns empty, so a
+`GROUP BY blob4` collects the whole pre-0.2.83 history into one nameless bucket
+that buries everything real — which, while the deploy is young, is most of what
+a 30-day range contains.
+
+So the panels that group by or average one of those columns are scoped with:
+
+```sql
+AND blob4 != ''
+```
+
+`blob4` is the marker because `parseEvent` writes `board?.label ?? mode` and
+`mode` is validated non-empty — it is set on every event a current build sends,
+including one naming a board the catalogue has never heard of. The obvious
+alternatives are not equivalent: `blob5` (tiling) is legitimately empty for a
+one-off board, and `blob12` (version) is empty when a build posts a version that
+fails the shape check.
+
+Deliberately **not** scoped: the trend panels on *Overview & trends* (games per
+bucket, wins and losses, win rate, *This range*) and the whole **Difficulty**
+row read `blob1`, `blob2`, `blob3` and `double1` only, which have always been
+written and still mean what they meant. `blob2` in particular is never empty —
+the collector rejects any event whose difficulty is not one of the catalogue's
+tiers — so the difficulty split is the one breakdown that runs on the full
+history rather than the 0.2.83+ slice, and *Overview & trends* is the only place
+it is broken out.
+Throwing that history away so two panels agree would be the worse error. The
+consequence is that the device pies do not add up to the trend totals, and the
+**Schema coverage** panel on *Overview & trends* is there to show exactly how
+big that gap is. It closes on its own as 0.2.83+ traffic accumulates.
 
 Retention is about 90 days, so the time picker can be moved back that far and
 no further. All three dashboards are set to the **UTC** timezone: the dataset
