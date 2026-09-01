@@ -15,7 +15,7 @@
       }
     ]
   },
-  "description": "Which boards get played, how they go, and whether the controls are being found. Schema: docs/agents/metrics.md.",
+  "description": "Which boards get played, how they go, and whether the controls are being found. Every panel here counts only events from 0.2.83 onward — the build that started reporting the board columns. Schema: docs/agents/metrics.md.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -38,10 +38,10 @@
       "type": "barchart",
       "id": 2,
       "title": "Most-played boards",
-      "description": "Boards opened, by the board's full name. Opened, not finished — this is what people choose, before it turns out how hard it was.",
+      "description": "Boards opened, by the board's full name. Opened, not finished — this is what people choose, before it turns out how hard it was. Counts only 0.2.83 and later: the builds before it did not report which board was played, and they are the bulk of the dataset until this deploy ages in.",
       "gridPos": {
-        "h": 14,
-        "w": 12,
+        "h": 13,
+        "w": 24,
         "x": 0,
         "y": 1
       },
@@ -58,7 +58,7 @@
           },
           "format": "table",
           "editorMode": "sql",
-          "query": "SELECT\n  blob4 AS board,\n  sum(if(blob1 = 'start', _sample_interval, 0)) AS plays\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\nGROUP BY board\nHAVING sum(if(blob1 = 'start', _sample_interval, 0)) > 0\nORDER BY plays DESC\nLIMIT $top",
+          "query": "SELECT\n  blob4 AS board,\n  sum(if(blob1 = 'start', _sample_interval, 0)) AS plays\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND blob4 != ''\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\nGROUP BY board\nHAVING sum(if(blob1 = 'start', _sample_interval, 0)) > 0\nORDER BY plays DESC\nLIMIT $top",
           "database": "",
           "table": "",
           "dateTimeType": "DATETIME",
@@ -164,12 +164,12 @@
       "type": "table",
       "id": 3,
       "title": "Plays, wins and win rate per board",
-      "description": "The report `make metrics` prints, as a panel. 'Abandoned' is plays − finished. Boards with fewer finished games than the Min finished variable are dropped, because a win rate over three games is noise.",
+      "description": "The report `make metrics` prints, as a panel. 'Abandoned' is plays − finished. Boards with fewer finished games than the Min finished variable are dropped, because a win rate over three games is noise. 0.2.83 and later only — see Overview & trends → Schema coverage for how much of the range that leaves out.",
       "gridPos": {
-        "h": 14,
-        "w": 12,
-        "x": 12,
-        "y": 1
+        "h": 13,
+        "w": 24,
+        "x": 0,
+        "y": 14
       },
       "datasource": {
         "type": "vertamedia-clickhouse-datasource",
@@ -184,7 +184,7 @@
           },
           "format": "table",
           "editorMode": "sql",
-          "query": "SELECT\n  blob4 AS board,\n  sum(if(blob1 = 'start', _sample_interval, 0)) AS plays,\n  sum(if(blob1 = 'end', _sample_interval, 0))   AS finished,\n  sum(if(blob1 = 'start', _sample_interval, 0)) - sum(if(blob1 = 'end', _sample_interval, 0)) AS abandoned,\n  sum(if(blob1 = 'end' AND blob3 = 'won', _sample_interval, 0))   AS won,\n  sum(if(blob1 = 'end' AND blob3 = 'lost', _sample_interval, 0))  AS lost,\n  sum(if(blob1 = 'end' AND blob3 = 'won', _sample_interval, 0)) / sum(if(blob1 = 'end', _sample_interval, 0)) AS win_rate,\n  sum(if(blob1 = 'end', double1 * _sample_interval, 0.0)) / sum(if(blob1 = 'end', _sample_interval, 0)) AS mean_seconds\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\nGROUP BY board\nHAVING sum(if(blob1 = 'end', _sample_interval, 0)) >= $min\nORDER BY plays DESC",
+          "query": "SELECT\n  blob4 AS board,\n  sum(if(blob1 = 'start', _sample_interval, 0)) AS plays,\n  sum(if(blob1 = 'end', _sample_interval, 0))   AS finished,\n  sum(if(blob1 = 'start', _sample_interval, 0)) - sum(if(blob1 = 'end', _sample_interval, 0)) AS abandoned,\n  sum(if(blob1 = 'end' AND blob3 = 'won', _sample_interval, 0))   AS won,\n  sum(if(blob1 = 'end' AND blob3 = 'lost', _sample_interval, 0))  AS lost,\n  sum(if(blob1 = 'end' AND blob3 = 'won', _sample_interval, 0)) / sum(if(blob1 = 'end', _sample_interval, 0)) AS win_rate,\n  sum(if(blob1 = 'end', double1 * _sample_interval, 0.0)) / sum(if(blob1 = 'end', _sample_interval, 0)) AS mean_seconds\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND blob4 != ''\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\nGROUP BY board\nHAVING sum(if(blob1 = 'end', _sample_interval, 0)) >= $min\nORDER BY plays DESC",
           "database": "",
           "table": "",
           "dateTimeType": "DATETIME",
@@ -348,7 +348,7 @@
         "h": 9,
         "w": 8,
         "x": 0,
-        "y": 15
+        "y": 27
       },
       "datasource": {
         "type": "vertamedia-clickhouse-datasource",
@@ -363,7 +363,7 @@
           },
           "format": "table",
           "editorMode": "sql",
-          "query": "SELECT blob6 AS surface, sum(if(blob1 = 'start', _sample_interval, 0)) AS plays\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\nGROUP BY surface\nHAVING sum(if(blob1 = 'start', _sample_interval, 0)) > 0\nORDER BY plays DESC",
+          "query": "SELECT blob6 AS surface, sum(if(blob1 = 'start', _sample_interval, 0)) AS plays\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND blob4 != ''\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\nGROUP BY surface\nHAVING sum(if(blob1 = 'start', _sample_interval, 0)) > 0\nORDER BY plays DESC",
           "database": "",
           "table": "",
           "dateTimeType": "DATETIME",
@@ -444,7 +444,7 @@
         "h": 9,
         "w": 8,
         "x": 8,
-        "y": 15
+        "y": 27
       },
       "datasource": {
         "type": "vertamedia-clickhouse-datasource",
@@ -459,7 +459,7 @@
           },
           "format": "table",
           "editorMode": "sql",
-          "query": "SELECT blob7 AS family, sum(if(blob1 = 'start', _sample_interval, 0)) AS plays\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\nGROUP BY family\nHAVING sum(if(blob1 = 'start', _sample_interval, 0)) > 0\nORDER BY plays DESC",
+          "query": "SELECT blob7 AS family, sum(if(blob1 = 'start', _sample_interval, 0)) AS plays\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND blob4 != ''\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\nGROUP BY family\nHAVING sum(if(blob1 = 'start', _sample_interval, 0)) > 0\nORDER BY plays DESC",
           "database": "",
           "table": "",
           "dateTimeType": "DATETIME",
@@ -540,7 +540,7 @@
         "h": 9,
         "w": 8,
         "x": 16,
-        "y": 15
+        "y": 27
       },
       "datasource": {
         "type": "vertamedia-clickhouse-datasource",
@@ -555,7 +555,7 @@
           },
           "format": "table",
           "editorMode": "sql",
-          "query": "SELECT blob5 AS tiling, sum(if(blob1 = 'start', _sample_interval, 0)) AS plays\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\nGROUP BY tiling\nHAVING sum(if(blob1 = 'start', _sample_interval, 0)) > 0\nORDER BY plays DESC",
+          "query": "SELECT blob5 AS tiling, sum(if(blob1 = 'start', _sample_interval, 0)) AS plays\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND blob4 != ''\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\nGROUP BY tiling\nHAVING sum(if(blob1 = 'start', _sample_interval, 0)) > 0\nORDER BY plays DESC",
           "database": "",
           "table": "",
           "dateTimeType": "DATETIME",
@@ -677,7 +677,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 24
+        "y": 36
       }
     },
     {
@@ -689,7 +689,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 25
+        "y": 37
       },
       "datasource": {
         "type": "vertamedia-clickhouse-datasource",
@@ -704,7 +704,7 @@
           },
           "format": "table",
           "editorMode": "sql",
-          "query": "SELECT\n  blob8 AS trigger,\n  blob9 AS from_state,\n  sum(_sample_interval) AS starts\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND blob1 = 'start'\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\nGROUP BY trigger, from_state\nORDER BY starts DESC",
+          "query": "SELECT\n  blob8 AS trigger,\n  blob9 AS from_state,\n  sum(_sample_interval) AS starts\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND blob1 = 'start'\n  AND blob4 != ''\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\nGROUP BY trigger, from_state\nORDER BY starts DESC",
           "database": "",
           "table": "",
           "dateTimeType": "DATETIME",
@@ -837,7 +837,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 25
+        "y": 37
       },
       "datasource": {
         "type": "vertamedia-clickhouse-datasource",
@@ -852,7 +852,7 @@
           },
           "format": "table",
           "editorMode": "sql",
-          "query": "SELECT\n  blob6 AS surface,\n  sum(double4 * _sample_interval) / sum(double2 * _sample_interval) AS opened_fraction,\n  sum(_sample_interval) AS losses\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND blob1 = 'end' AND blob3 = 'lost'\n  AND double2 > 0\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\nGROUP BY surface\nORDER BY opened_fraction DESC",
+          "query": "SELECT\n  blob6 AS surface,\n  sum(double4 * _sample_interval) / sum(double2 * _sample_interval) AS opened_fraction,\n  sum(_sample_interval) AS losses\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND blob1 = 'end' AND blob3 = 'lost'\n  AND double2 > 0\n  AND blob4 != ''\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\nGROUP BY surface\nORDER BY opened_fraction DESC",
           "database": "",
           "table": "",
           "dateTimeType": "DATETIME",
@@ -950,7 +950,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 33
+        "y": 45
       },
       "datasource": {
         "type": "vertamedia-clickhouse-datasource",
@@ -965,7 +965,7 @@
           },
           "format": "table",
           "editorMode": "sql",
-          "query": "SELECT\n  blob6 AS surface,\n  sum(double8 * _sample_interval)  / sum(_sample_interval) AS chords_per_game,\n  sum(double9 * _sample_interval)  / sum(_sample_interval) AS flag_moves_per_game,\n  sum(double11 * _sample_interval) / sum(_sample_interval) AS rotated_fraction,\n  sum(double10 * _sample_interval) / sum(_sample_interval) AS mean_first_move_ms,\n  sum(_sample_interval) AS games\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND blob1 = 'end'\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\nGROUP BY surface\nORDER BY games DESC",
+          "query": "SELECT\n  blob6 AS surface,\n  sum(double8 * _sample_interval)  / sum(_sample_interval) AS chords_per_game,\n  sum(double9 * _sample_interval)  / sum(_sample_interval) AS flag_moves_per_game,\n  sum(double11 * _sample_interval) / sum(_sample_interval) AS rotated_fraction,\n  sum(double10 * _sample_interval) / sum(_sample_interval) AS mean_first_move_ms,\n  sum(_sample_interval) AS games\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND blob1 = 'end'\n  AND blob4 != ''\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\nGROUP BY surface\nORDER BY games DESC",
           "database": "",
           "table": "",
           "dateTimeType": "DATETIME",
@@ -1161,7 +1161,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 33
+        "y": 45
       },
       "datasource": {
         "type": "vertamedia-clickhouse-datasource",
@@ -1176,7 +1176,7 @@
           },
           "format": "table",
           "editorMode": "sql",
-          "query": "SELECT\n  blob2 AS difficulty,\n  sum(if(blob1 = 'start', _sample_interval, 0)) AS plays,\n  sum(if(blob1 = 'end' AND blob3 = 'won', _sample_interval, 0)) / sum(if(blob1 = 'end', _sample_interval, 0)) AS win_rate,\n  sum(if(blob1 = 'end', double1 * _sample_interval, 0.0)) / sum(if(blob1 = 'end', _sample_interval, 0))  AS mean_seconds,\n  sum(if(blob1 = 'end', double10 * _sample_interval, 0.0)) / sum(if(blob1 = 'end', _sample_interval, 0)) AS mean_first_move_ms,\n  sum(if(blob1 = 'end', _sample_interval, 0)) AS finished\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\nGROUP BY difficulty\nHAVING sum(if(blob1 = 'end', _sample_interval, 0)) > 0\nORDER BY plays DESC",
+          "query": "SELECT\n  blob2 AS difficulty,\n  sum(if(blob1 = 'start', _sample_interval, 0)) AS plays,\n  sum(if(blob1 = 'end' AND blob3 = 'won', _sample_interval, 0)) / sum(if(blob1 = 'end', _sample_interval, 0)) AS win_rate,\n  sum(if(blob1 = 'end', double1 * _sample_interval, 0.0)) / sum(if(blob1 = 'end', _sample_interval, 0))  AS mean_seconds,\n  sum(if(blob1 = 'end', double10 * _sample_interval, 0.0)) / sum(if(blob1 = 'end', _sample_interval, 0)) AS mean_first_move_ms,\n  sum(if(blob1 = 'end', _sample_interval, 0)) AS finished\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND blob4 != ''\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\nGROUP BY difficulty\nHAVING sum(if(blob1 = 'end', _sample_interval, 0)) > 0\nORDER BY plays DESC",
           "database": "",
           "table": "",
           "dateTimeType": "DATETIME",
@@ -1641,22 +1641,22 @@
         "name": "min",
         "label": "Min finished",
         "description": "Boards with fewer finished games than this are left out of the table — a win rate over three games is noise.",
-        "query": "5,0,20,50",
+        "query": "0,5,20,50",
         "current": {
           "selected": true,
-          "text": "5",
-          "value": "5"
+          "text": "0",
+          "value": "0"
         },
         "options": [
           {
             "selected": true,
-            "text": "5",
-            "value": "5"
+            "text": "0",
+            "value": "0"
           },
           {
             "selected": false,
-            "text": "0",
-            "value": "0"
+            "text": "5",
+            "value": "5"
           },
           {
             "selected": false,

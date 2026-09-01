@@ -106,7 +106,11 @@ Four of those read wrong if taken at face value.
   `v: 1` event — an older build, still alive in a player's service-worker cache,
   from before the field existed. `unknown` means a current build looked and
   could not tell. They are different populations and the difference matters
-  while a deploy rolls out.
+  while a deploy rolls out. A dashboard separating them should test **`blob4`**:
+  `parseEvent` writes `board?.label ?? mode` and `mode` is validated non-empty,
+  so `blob4 != ''` is exactly "this event carries the wide schema". `blob5` is
+  legitimately empty for a one-off board and `blob12` is empty for a malformed
+  version, so neither is a substitute.
 
 The board columns (`blob4..7`) are **derived at the collector** from the mode,
 not sent. Two reasons: the wire stays small, and the collector keeps the

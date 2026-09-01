@@ -673,13 +673,13 @@
       }
     },
     {
-      "type": "piechart",
-      "id": 8,
-      "title": "Games by device",
-      "description": "Device class is decided from pointer coarseness and the screen's shorter edge, never by parsing a user agent — so a touchscreen laptop lands on 'tablet'. Blank means an older build that predates the column.",
+      "type": "stat",
+      "id": 14,
+      "title": "Schema coverage",
+      "description": "blob4..blob12 arrived in 0.2.83; every event older than that deploy is still here with those columns empty. The three panels below, and all of Boards & engagement, count only the left-hand number — so they will not add up to the trend panels above, which read columns that have always been written. This is the size of that gap, and it closes on its own.",
       "gridPos": {
-        "h": 9,
-        "w": 8,
+        "h": 4,
+        "w": 24,
         "x": 0,
         "y": 26
       },
@@ -696,7 +696,140 @@
           },
           "format": "table",
           "editorMode": "sql",
-          "query": "SELECT blob10 AS device, sum(_sample_interval) AS games\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND blob1 = 'end'\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\nGROUP BY device\nORDER BY games DESC",
+          "query": "SELECT\n  sum(if(blob4 != '', _sample_interval, 0)) AS with_columns,\n  sum(if(blob4 = '', _sample_interval, 0))  AS before_0_2_83\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')",
+          "database": "",
+          "table": "",
+          "dateTimeType": "DATETIME",
+          "dateColDataType": "",
+          "dateTimeColDataType": "timestamp",
+          "extrapolate": false,
+          "skip_comments": true,
+          "add_metadata": false,
+          "round": "0s",
+          "intervalFactor": 1,
+          "interval": "",
+          "adHocFilters": []
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short",
+          "decimals": 0
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "with_columns"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Carries the board and device columns"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "before_0_2_83"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Older than 0.2.83"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "text"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "textMode": "auto",
+        "wideLayout": true,
+        "percentChangeColorMode": "standard",
+        "showPercentChange": false
+      },
+      "transformations": [
+        {
+          "id": "convertFieldType",
+          "options": {
+            "conversions": [
+              {
+                "targetField": "with_columns",
+                "destinationType": "number"
+              },
+              {
+                "targetField": "before_0_2_83",
+                "destinationType": "number"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "piechart",
+      "id": 8,
+      "title": "Games by device",
+      "description": "Device class is decided from pointer coarseness and the screen's shorter edge, never by parsing a user agent — so a touchscreen laptop lands on 'tablet'. Blank means an older build that predates the column.",
+      "gridPos": {
+        "h": 9,
+        "w": 8,
+        "x": 0,
+        "y": 30
+      },
+      "datasource": {
+        "type": "vertamedia-clickhouse-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "vertamedia-clickhouse-datasource",
+            "uid": "${ds}"
+          },
+          "format": "table",
+          "editorMode": "sql",
+          "query": "SELECT blob10 AS device, sum(_sample_interval) AS games\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND blob1 = 'end'\n  AND blob4 != ''\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\nGROUP BY device\nORDER BY games DESC",
           "database": "",
           "table": "",
           "dateTimeType": "DATETIME",
@@ -800,7 +933,7 @@
         "h": 9,
         "w": 8,
         "x": 8,
-        "y": 26
+        "y": 30
       },
       "datasource": {
         "type": "vertamedia-clickhouse-datasource",
@@ -815,7 +948,7 @@
           },
           "format": "table",
           "editorMode": "sql",
-          "query": "SELECT blob11 AS shell, sum(_sample_interval) AS games\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND blob1 = 'end'\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\nGROUP BY shell\nORDER BY games DESC",
+          "query": "SELECT blob11 AS shell, sum(_sample_interval) AS games\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND blob1 = 'end'\n  AND blob4 != ''\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\nGROUP BY shell\nORDER BY games DESC",
           "database": "",
           "table": "",
           "dateTimeType": "DATETIME",
@@ -919,7 +1052,7 @@
         "h": 9,
         "w": 8,
         "x": 16,
-        "y": 26
+        "y": 30
       },
       "datasource": {
         "type": "vertamedia-clickhouse-datasource",
@@ -934,7 +1067,7 @@
           },
           "format": "table",
           "editorMode": "sql",
-          "query": "SELECT\n  blob10 AS device,\n  blob11 AS shell,\n  sum(if(blob1 = 'end' AND blob3 = 'won', _sample_interval, 0))  AS won,\n  sum(if(blob1 = 'end' AND blob3 = 'lost', _sample_interval, 0)) AS lost,\n  sum(if(blob1 = 'end' AND blob3 = 'won', _sample_interval, 0)) / sum(if(blob1 = 'end', _sample_interval, 0)) AS win_rate,\n  sum(if(blob1 = 'end', _sample_interval, 0))  AS games\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND blob1 = 'end'\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\nGROUP BY device, shell\nORDER BY games DESC",
+          "query": "SELECT\n  blob10 AS device,\n  blob11 AS shell,\n  sum(if(blob1 = 'end' AND blob3 = 'won', _sample_interval, 0))  AS won,\n  sum(if(blob1 = 'end' AND blob3 = 'lost', _sample_interval, 0)) AS lost,\n  sum(if(blob1 = 'end' AND blob3 = 'won', _sample_interval, 0)) / sum(if(blob1 = 'end', _sample_interval, 0)) AS win_rate,\n  sum(if(blob1 = 'end', _sample_interval, 0))  AS games\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND blob1 = 'end'\n  AND blob4 != ''\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\nGROUP BY device, shell\nORDER BY games DESC",
           "database": "",
           "table": "",
           "dateTimeType": "DATETIME",
@@ -1096,7 +1229,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 35
+        "y": 39
       }
     },
     {
@@ -1108,7 +1241,7 @@
         "h": 9,
         "w": 14,
         "x": 0,
-        "y": 36
+        "y": 40
       },
       "datasource": {
         "type": "vertamedia-clickhouse-datasource",
@@ -1244,7 +1377,7 @@
         "h": 9,
         "w": 10,
         "x": 14,
-        "y": 36
+        "y": 40
       },
       "datasource": {
         "type": "vertamedia-clickhouse-datasource",

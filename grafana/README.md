@@ -72,6 +72,35 @@ explained at length in [`docs/agents/metrics.md`](../docs/agents/metrics.md).
   event; a restart counts as a new play, and "boards opened" is the measure
   rather than distinct players.
 
+### Two populations, one dataset
+
+`blob4..blob12` and `double2..double11` arrived in **0.2.83**. Every event older
+than that deploy is still in the dataset with those columns empty, so a
+`GROUP BY blob4` collects the whole pre-0.2.83 history into one nameless bucket
+that buries everything real — which, while the deploy is young, is most of what
+a 30-day range contains.
+
+So the panels that group by or average one of those columns are scoped with:
+
+```sql
+AND blob4 != ''
+```
+
+`blob4` is the marker because `parseEvent` writes `board?.label ?? mode` and
+`mode` is validated non-empty — it is set on every event a current build sends,
+including one naming a board the catalogue has never heard of. The obvious
+alternatives are not equivalent: `blob5` (tiling) is legitimately empty for a
+one-off board, and `blob12` (version) is empty when a build posts a version that
+fails the shape check.
+
+Deliberately **not** scoped: the trend panels on *Overview & trends* (games per
+bucket, wins and losses, win rate, *This range*) read `blob1`, `blob3` and
+`double1` only, which have always been written and still mean what they meant.
+Throwing that history away so two panels agree would be the worse error. The
+consequence is that the device pies do not add up to the trend totals, and the
+**Schema coverage** panel on *Overview & trends* is there to show exactly how
+big that gap is. It closes on its own as 0.2.83+ traffic accumulates.
+
 Retention is about 90 days, so the time picker can be moved back that far and
 no further. All three dashboards are set to the **UTC** timezone: the dataset
 buckets in UTC, and rendering those buckets in browser-local time slices every
