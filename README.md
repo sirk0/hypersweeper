@@ -229,3 +229,18 @@ in 3D — and two cells are neighbors when they share a vertex); the
 sphere is built with the Conway gyro operation on an icosahedron;
 `minesweeper/gui.py` is the pygame interface, including the rotatable
 orthographic 3D view. Tests run headless via SDL's dummy video driver.
+
+## License
+
+[MIT](LICENSE) — copy it, fork it, build something else on top of it,
+commercially or not; the one condition is that the copyright notice comes
+along. The game itself is free.
+
+Most of it was written with AI assistance.
+
+The two bundled fonts are not covered by that license. Rubik (© 2015 The Rubik
+Project Authors) and DSEG7 Classic (© 2017 keshikan) are both under the SIL
+Open Font License 1.1, and their license texts ship next to the font files in
+[`minesweeper/assets/fonts/`](minesweeper/assets/fonts) — mirrored into
+[`web/public/fonts/`](web/public/fonts) so the browser app is self-contained
+offline.

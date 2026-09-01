@@ -2,6 +2,8 @@
 name = "minesweeper"
 version = "0.2.89"
 description = "A minesweeper clone with square, triangle and hexagon boards"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.13"
 dependencies = ["pygame-ce>=2.5"]
 
@@ -14,7 +16,7 @@ all = ["minesweeper[web]", "minesweeper[test]"]
 minesweeper = "minesweeper.gui:main"
 
 [build-system]
-requires = ["setuptools>=61"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
