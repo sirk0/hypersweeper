@@ -234,7 +234,7 @@ orthographic 3D view. Tests run headless via SDL's dummy video driver.
 
 [MIT](LICENSE) — copy it, fork it, build something else on top of it,
 commercially or not; the one condition is that the copyright notice comes
-along. The game itself is and will stay free.
+along. The game itself is free.
 
 Most of it was written with AI assistance.
 
