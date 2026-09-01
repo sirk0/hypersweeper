@@ -128,8 +128,11 @@ boards worth reading. Every mean is weighted the same way:
 `SUM(value * _sample_interval) / SUM(_sample_interval)`.
 
 **The dialect is a narrow ClickHouse subset.** A plain `GROUP BY` is the part of
-it that is certain. Conditional aggregates are not worth betting a panel on —
-pivot in the dashboard, or select the buckets as separate rows.
+it that is certain. There is no `JOIN` and no `UNION` — a query runs against one
+table — and the function list is short enough to read in a sitting. `sumIf` and
+`countIf` were added to it in late 2025, but `if()` and `sum()` have been there
+all along, so the committed dashboards pivot with `sum(if(cond, x, 0))`: same
+result, one query instead of a join, and it rests only on the certain part.
 
 **Read every count as a floor.** It is sampled; content blockers eat some posts;
 players can switch it off in Settings › Privacy; and the packaged macOS and
@@ -137,18 +140,49 @@ iPhone apps report nothing at all. All four err the same way.
 
 ### From Grafana
 
-There is no first-party Analytics Engine datasource. The working arrangement is
-the **Infinity** datasource pointed at the SQL API:
+There is no first-party Analytics Engine datasource. What is in use is the
+**Altinity ClickHouse** datasource (`vertamedia-clickhouse-datasource`) pointed
+at the SQL API, which speaks the same plain-text-POST shape:
 
 - URL `https://api.cloudflare.com/client/v4/accounts/<account>/analytics_engine/sql`
-- method POST, body type `text/plain`, the SQL as the raw body
+- method POST, the SQL as the raw body — not a JSON envelope
 - header `Authorization: Bearer <token>` — a **read-only** token carrying
   *Account → Account Analytics: Read*, and not the deploy token
-- parser JSON, rows at `data`
 
-Two things to know about the results: 64-bit integers come back as **strings**,
-so cast or set the field type in the panel; and the API takes plain SQL as the
-body, not a JSON envelope.
+The plugin appends `FORMAT JSON` itself, so no query should write it. The
+**Infinity** datasource works too (body type `text/plain`, parser JSON, rows at
+`data`) and is the fallback if the ClickHouse plugin is unavailable.
+
+One thing to know about the results either way: 64-bit integers come back as
+**strings**, so cast or set the field type in the panel.
+
+### The dashboards
+
+They live in [`grafana/`](../../grafana), as classic v1 JSON, and **those files
+are the source of truth** — Grafana is where they are looked at, not where they
+live. Three of them: raw events (every column), overview and trends (games per
+day, device mix, deploy rollout), and boards and engagement (what gets played
+and how it goes). [`grafana/README.md`](../../grafana/README.md) has the
+datasource setup, the upload/download loop, and why the SQL is shaped the way it
+is.
+
+Two guards, because a dashboard is the one place in this repo that addresses
+these columns by number and cannot notice one that moved:
+
+- `web/tests/unit/dashboards.test.ts` — offline, runs in CI. The raw-events
+  panel still selects every `blob`/`double` this schema defines; every query
+  still filters on the time range; nothing counts with `COUNT(*)`.
+- `make dashboards-check` — needs the read-only token, and asks Analytics Engine
+  whether each panel's SQL is actually accepted. `--print` dumps the
+  interpolated statements without credentials.
+
+The time filter every panel uses is core Grafana interpolation rather than a
+plugin macro, so it depends on nothing being configured right:
+
+```sql
+WHERE timestamp >= toDateTime(${__from:date:seconds})
+  AND timestamp <= toDateTime(${__to:date:seconds})
+```
 
 ### Queries worth having
 
@@ -249,10 +283,15 @@ In this order, because each step is checked by the next:
    `GameSession.stats()`.
 4. **`docs/agents/metrics.md`** — this file: a row in the schema table, and a
    note under it if the value can be read wrong.
-5. **Tests** — `tests/unit/analytics.test.ts` for the round trip and the
+5. **`grafana/hypersweeper-events.json`** — add the column to the raw-events
+   query. `tests/unit/dashboards.test.ts` fails until you do, naming the blob
+   nobody added; the other two dashboards only need touching if the new column
+   is worth a panel of its own.
+6. **Tests** — `tests/unit/analytics.test.ts` for the round trip and the
    validation, `tests/unit/tally.test.ts` for the exact column vector,
-   `tests/unit/analyticsSchema.test.ts` for the doc.
-6. **The privacy copy**, if it is anything about the client: `README.md` and the
+   `tests/unit/analyticsSchema.test.ts` for the doc, and
+   `tests/unit/dashboards.test.ts` for the dashboards.
+7. **The privacy copy**, if it is anything about the client: `README.md` and the
    Privacy note in `web/src/ui/settings.ts` both say what is sent, and they must
    stay true.
 
