@@ -3,7 +3,7 @@
 # needs is inside it, so the packaged app never asks the network for anything.
 appId: com.sirk0.hypersweeper
 productName: Hypersweeper
-copyright: Copyright © Hypersweeper contributors
+copyright: Copyright © 2026 Sergiy Tsymbal
 
 directories:
   # Build artefacts land outside the source tree, in the repo's gitignored
@@ -45,7 +45,7 @@ mac:
     # No document types, no URL schemes, no network entitlements: the app opens
     # nothing and serves nobody.
     LSMultipleInstancesProhibited: true
-    NSHumanReadableCopyright: Copyright © Hypersweeper contributors
+    NSHumanReadableCopyright: Copyright © 2026 Sergiy Tsymbal
 
 dmg:
   title: Hypersweeper
