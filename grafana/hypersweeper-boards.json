@@ -1156,7 +1156,7 @@
       "type": "table",
       "id": 11,
       "title": "Difficulty — is each tier what it claims to be?",
-      "description": "Board size and mine count are measured by scripts/difficulty/, never chosen by eye. This is the check that the measurement still holds in the wild: three tiers should give three clearly different win rates.",
+      "description": "Board size and mine count are measured by scripts/difficulty/, never chosen by eye. This is the check that the measurement still holds in the wild: three tiers should give three clearly different win rates. First move is why this one needs the 0.2.83 columns, so it covers a shorter history than Overview & trends → Difficulty, which counts every game ever recorded and is the panel to read for the tier split.",
       "gridPos": {
         "h": 8,
         "w": 12,

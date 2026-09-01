@@ -15,7 +15,7 @@
       }
     ]
   },
-  "description": "Games per day and where they are played: starts vs finishes, wins and losses, device and shell mix, and how a deploy rolls out. Schema: docs/agents/metrics.md.",
+  "description": "Games per day and where they are played: starts vs finishes, wins and losses, the difficulty mix, device and shell, and how a deploy rolls out. Schema: docs/agents/metrics.md.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -661,6 +661,490 @@
     },
     {
       "type": "row",
+      "title": "Difficulty",
+      "id": 15,
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 25
+      }
+    },
+    {
+      "type": "piechart",
+      "id": 16,
+      "title": "Boards opened, by difficulty",
+      "description": "The share of boards opened at each tier — what people choose, before it turns out how it went. Unlike the board and device panels, this runs on the whole range: difficulty is one of the original columns, so a game from before 0.2.83 counts here too.",
+      "gridPos": {
+        "h": 9,
+        "w": 8,
+        "x": 0,
+        "y": 26
+      },
+      "datasource": {
+        "type": "vertamedia-clickhouse-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "vertamedia-clickhouse-datasource",
+            "uid": "${ds}"
+          },
+          "format": "table",
+          "editorMode": "sql",
+          "query": "SELECT\n  blob2 AS difficulty,\n  sum(if(blob1 = 'start', _sample_interval, 0)) AS plays\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\nGROUP BY difficulty\nHAVING sum(if(blob1 = 'start', _sample_interval, 0)) > 0\nORDER BY plays DESC",
+          "database": "",
+          "table": "",
+          "dateTimeType": "DATETIME",
+          "dateColDataType": "",
+          "dateTimeColDataType": "timestamp",
+          "extrapolate": false,
+          "skip_comments": true,
+          "add_metadata": false,
+          "round": "0s",
+          "intervalFactor": 1,
+          "interval": "",
+          "adHocFilters": []
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short",
+          "decimals": 0
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "easy"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "medium"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#EAB839"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "hard"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [],
+          "fields": "plays",
+          "values": true
+        },
+        "pieType": "donut",
+        "displayLabels": [
+          "percent"
+        ],
+        "legend": {
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true,
+          "values": [
+            "value"
+          ]
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "transformations": [
+        {
+          "id": "convertFieldType",
+          "options": {
+            "conversions": [
+              {
+                "targetField": "plays",
+                "destinationType": "number"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "id": 17,
+      "title": "Boards opened per bucket, by difficulty",
+      "description": "Whether the mix is shifting. Stacked, so the height is every board opened in the bucket and each band is one tier.",
+      "gridPos": {
+        "h": 9,
+        "w": 16,
+        "x": 8,
+        "y": 26
+      },
+      "datasource": {
+        "type": "vertamedia-clickhouse-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "vertamedia-clickhouse-datasource",
+            "uid": "${ds}"
+          },
+          "format": "time_series",
+          "editorMode": "sql",
+          "query": "SELECT\n  intDiv(toUInt32(timestamp), $bucket) * $bucket * 1000 AS t,\n  sum(if(blob1 = 'start' AND blob2 = 'easy', _sample_interval, 0)) AS easy,\n  sum(if(blob1 = 'start' AND blob2 = 'medium', _sample_interval, 0)) AS medium,\n  sum(if(blob1 = 'start' AND blob2 = 'hard', _sample_interval, 0)) AS hard\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\nGROUP BY t\nORDER BY t",
+          "database": "",
+          "table": "",
+          "dateTimeType": "DATETIME",
+          "dateColDataType": "",
+          "dateTimeColDataType": "timestamp",
+          "extrapolate": false,
+          "skip_comments": true,
+          "add_metadata": false,
+          "round": "0s",
+          "intervalFactor": 1,
+          "interval": "",
+          "adHocFilters": []
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short",
+          "decimals": 0,
+          "custom": {
+            "drawStyle": "bars",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 80,
+            "showPoints": "auto",
+            "pointSize": 5,
+            "spanNulls": false,
+            "axisPlacement": "auto",
+            "axisLabel": "",
+            "axisBorderShow": false,
+            "axisColorMode": "text",
+            "barAlignment": 0,
+            "gradientMode": "none",
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            },
+            "insertNulls": false
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "easy"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "medium"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#EAB839"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "hard"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "transformations": []
+    },
+    {
+      "type": "table",
+      "id": 18,
+      "title": "Difficulty — plays, finishes and win rate",
+      "description": "How each tier goes, over the whole range. 'Abandoned' is plays minus finished. Three tiers should give three clearly different win rates — board size and mine count are measured by scripts/difficulty/, and this is where that measurement meets what people actually do. For the first-move delay per tier see Boards & engagement, which needs the 0.2.83 columns and so covers a shorter history than this.",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 35
+      },
+      "datasource": {
+        "type": "vertamedia-clickhouse-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "vertamedia-clickhouse-datasource",
+            "uid": "${ds}"
+          },
+          "format": "table",
+          "editorMode": "sql",
+          "query": "SELECT\n  blob2 AS difficulty,\n  sum(if(blob1 = 'start', _sample_interval, 0)) AS plays,\n  sum(if(blob1 = 'end', _sample_interval, 0))   AS finished,\n  sum(if(blob1 = 'start', _sample_interval, 0)) - sum(if(blob1 = 'end', _sample_interval, 0)) AS abandoned,\n  sum(if(blob1 = 'end' AND blob3 = 'won', _sample_interval, 0))   AS won,\n  sum(if(blob1 = 'end' AND blob3 = 'lost', _sample_interval, 0))  AS lost,\n  sum(if(blob1 = 'end' AND blob3 = 'won', _sample_interval, 0)) / sum(if(blob1 = 'end', _sample_interval, 0)) AS win_rate,\n  sum(if(blob1 = 'end', double1 * _sample_interval, 0.0)) / sum(if(blob1 = 'end', _sample_interval, 0)) AS mean_seconds\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\nGROUP BY difficulty\nHAVING sum(if(blob1 = 'end', _sample_interval, 0)) > 0\nORDER BY plays DESC",
+          "database": "",
+          "table": "",
+          "dateTimeType": "DATETIME",
+          "dateColDataType": "",
+          "dateTimeColDataType": "timestamp",
+          "extrapolate": false,
+          "skip_comments": true,
+          "add_metadata": false,
+          "round": "0s",
+          "intervalFactor": 1,
+          "interval": "",
+          "adHocFilters": []
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short",
+          "decimals": 0,
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false,
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "win_rate"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "win rate"
+              },
+              {
+                "id": "unit",
+                "value": "percentunit"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "mode": "gradient"
+                }
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "mean_seconds"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "mean game"
+              },
+              {
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false,
+          "reducer": [
+            "sum"
+          ],
+          "countRows": false,
+          "fields": ""
+        },
+        "sortBy": [
+          {
+            "displayName": "plays",
+            "desc": true
+          }
+        ]
+      },
+      "transformations": [
+        {
+          "id": "convertFieldType",
+          "options": {
+            "conversions": [
+              {
+                "targetField": "plays",
+                "destinationType": "number"
+              },
+              {
+                "targetField": "finished",
+                "destinationType": "number"
+              },
+              {
+                "targetField": "abandoned",
+                "destinationType": "number"
+              },
+              {
+                "targetField": "won",
+                "destinationType": "number"
+              },
+              {
+                "targetField": "lost",
+                "destinationType": "number"
+              },
+              {
+                "targetField": "win_rate",
+                "destinationType": "number"
+              },
+              {
+                "targetField": "mean_seconds",
+                "destinationType": "number"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "row",
       "title": "Where it is played",
       "id": 7,
       "collapsed": false,
@@ -669,7 +1153,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 25
+        "y": 43
       }
     },
     {
@@ -681,7 +1165,7 @@
         "h": 4,
         "w": 24,
         "x": 0,
-        "y": 26
+        "y": 44
       },
       "datasource": {
         "type": "vertamedia-clickhouse-datasource",
@@ -814,7 +1298,7 @@
         "h": 9,
         "w": 8,
         "x": 0,
-        "y": 30
+        "y": 48
       },
       "datasource": {
         "type": "vertamedia-clickhouse-datasource",
@@ -933,7 +1417,7 @@
         "h": 9,
         "w": 8,
         "x": 8,
-        "y": 30
+        "y": 48
       },
       "datasource": {
         "type": "vertamedia-clickhouse-datasource",
@@ -1052,7 +1536,7 @@
         "h": 9,
         "w": 8,
         "x": 16,
-        "y": 30
+        "y": 48
       },
       "datasource": {
         "type": "vertamedia-clickhouse-datasource",
@@ -1229,7 +1713,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 39
+        "y": 57
       }
     },
     {
@@ -1241,7 +1725,7 @@
         "h": 9,
         "w": 14,
         "x": 0,
-        "y": 40
+        "y": 58
       },
       "datasource": {
         "type": "vertamedia-clickhouse-datasource",
@@ -1377,7 +1861,7 @@
         "h": 9,
         "w": 10,
         "x": 14,
-        "y": 40
+        "y": 58
       },
       "datasource": {
         "type": "vertamedia-clickhouse-datasource",

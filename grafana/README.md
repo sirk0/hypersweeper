@@ -7,7 +7,7 @@ source of truth** — Grafana is where they are looked at, not where they live.
 | File | Dashboard | Answers |
 |---|---|---|
 | `hypersweeper-events.json` | Raw events | Every column, one row per event. The explorer — start here when a number on another dashboard looks wrong. |
-| `hypersweeper-overview.json` | Overview & trends | Games per day and the trend, starts vs finishes, wins and losses, win rate, device and shell mix, how a deploy rolls out. |
+| `hypersweeper-overview.json` | Overview & trends | Games per day and the trend, starts vs finishes, wins and losses, win rate, the easy/medium/hard split and its trend, device and shell mix, how a deploy rolls out. |
 | `hypersweeper-boards.json` | Boards & engagement | Which boards get played, win rate and mean game per board, how games get started, how far a loss gets, whether the controls are being found. |
 
 The column map they are all built from is
@@ -94,8 +94,14 @@ one-off board, and `blob12` (version) is empty when a build posts a version that
 fails the shape check.
 
 Deliberately **not** scoped: the trend panels on *Overview & trends* (games per
-bucket, wins and losses, win rate, *This range*) read `blob1`, `blob3` and
-`double1` only, which have always been written and still mean what they meant.
+bucket, wins and losses, win rate, *This range*) and the whole **Difficulty**
+row read `blob1`, `blob2`, `blob3` and `double1` only, which have always been
+written and still mean what they meant. `blob2` in particular is never empty —
+the collector rejects any event whose difficulty is not one of the catalogue's
+tiers — so the difficulty split is the one breakdown that runs on the full
+history rather than the 0.2.83+ slice. The per-tier panel on *Boards &
+engagement* is scoped, because first-move delay needs `double10`; the two
+covering different spans is expected, and each panel says so.
 Throwing that history away so two panels agree would be the worse error. The
 consequence is that the device pies do not add up to the trend totals, and the
 **Schema coverage** panel on *Overview & trends* is there to show exactly how
