@@ -5,7 +5,7 @@
 // per board and difficulty. No dependencies; Node's global fetch is all it is.
 //
 //   CF_ACCOUNT_ID=... CF_API_TOKEN=... node scripts/metrics.mjs
-//   node scripts/metrics.mjs --days=7 --mode=klein --min=20
+//   node scripts/metrics.mjs --days=30 --mode=klein --min=20
 //   node scripts/metrics.mjs --json | jq .
 //
 // The token is a *second*, read-only one — Account -> Account Analytics: Read.
@@ -48,7 +48,7 @@ function usage(message) {
     `${message}\n\n` +
       "usage: CF_ACCOUNT_ID=... CF_API_TOKEN=... node scripts/metrics.mjs [options]\n\n" +
       "  --schema     print the dataset's column map and exit\n" +
-      "  --days=N     how far back to look (default 30; retention is ~90)\n" +
+      "  --days=N     how far back to look (default 7; retention is ~14)\n" +
       "  --mode=TEXT  only boards whose name contains TEXT\n" +
       "  --min=N      dim rows with fewer than N finished games (default 5)\n" +
       "  --json       print the rows as JSON instead of a table\n\n" +
@@ -93,7 +93,7 @@ if (process.argv.includes("--schema")) {
   process.exit(0);
 }
 
-const days = Number(flag("days", "30"));
+const days = Number(flag("days", "7"));
 const modeFilter = flag("mode", "");
 const minGames = Number(flag("min", "5"));
 const asJson = process.argv.includes("--json");

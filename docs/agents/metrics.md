@@ -71,7 +71,7 @@ them. Change one, change all three.
 | `blob4` | board | the full name, `Hexagons · Torus` |
 | `blob5` | tiling | tiling key; empty for a one-off board |
 | `blob6` | surface | `flat`, `cylinder`, `mobius`, `klein`, `torus`, `solid` |
-| `blob7` | family | `regular`, `uniform`, `dual`, `isogonal`, `rectangle`, `aperiodic`, `fractal`, `sphere`, `platonic`, `catalan`, `polyhedra` |
+| `blob7` | family | `regular`, `uniform`, `dual`, `isogonal`, `rectangle`, `aperiodic`, `fractal`, `sphere`, `platonic`, `catalan`, `polyhedra`, `volume` |
 | `blob8` | trigger | how it was dealt: `menu`, `random`, `again`, `link` |
 | `blob9` | from | what the *previous* board was doing: empty, `playing`, `won`, `lost` |
 | `blob10` | device | `phone`, `tablet`, `desktop`, `unknown` |
@@ -121,7 +121,9 @@ a poster chooses reaches a dashboard. The lookup is `modeInfo` in
 
 ## Reading it
 
-Retention is about 90 days. Two traps, in order of how much damage they do.
+Retention is about **14 days** in practice on the current plan, which is why
+every dashboard opens on a week and every query below asks for one. Two traps,
+in order of how much damage they do.
 
 **Every count is `SUM(_sample_interval)`, never `COUNT(*)`.** Analytics Engine
 stores a *sample* of rows under load and gives each stored row a
@@ -174,11 +176,22 @@ Two guards, because a dashboard is the one place in this repo that addresses
 these columns by number and cannot notice one that moved:
 
 - `web/tests/unit/dashboards.test.ts` — offline, runs in CI. The raw-events
-  panel still selects every `blob`/`double` this schema defines; every query
-  still filters on the time range; nothing counts with `COUNT(*)`.
+  panel still selects every `blob`/`double` this schema defines and still gives
+  its timestamp a date unit; every query still filters on the time range;
+  nothing counts with `COUNT(*)`; every taxonomy filter offers exactly the
+  difficulties, surfaces and families `data/catalog.json` defines; and all three
+  dashboards open on the same window.
 - `make dashboards-check` — needs the read-only token, and asks Analytics Engine
   whether each panel's SQL is actually accepted. `--print` dumps the
   interpolated statements without credentials.
+
+**Exporting the raw-events table.** *Inspect → Data → Download CSV* writes what
+the panel *displays*, so `seconds` comes out `5 mins`, `first_move_ms` `2 s`, and
+an empty `device` `(pre-0.2.83 build)`. Switch *Formatted data* off in that pane
+for the underlying numbers and the empty strings. The `t` column carries an
+explicit `dateTimeAsIso` unit for this reason: without one it inherits the
+table's `short` and every timestamp exports as `1.79 Tri`, which the panel's own
+time rendering hides on screen.
 
 The time filter every panel uses is core Grafana interpolation rather than a
 plugin macro, so it depends on nothing being configured right:
@@ -196,7 +209,7 @@ Plays, wins and win rate per board — the original question:
 SELECT blob4 AS board, blob2 AS difficulty, blob1 AS kind, blob3 AS outcome,
        SUM(_sample_interval) AS events
 FROM hypersweeper_game_events
-WHERE timestamp > NOW() - INTERVAL '30' DAY
+WHERE timestamp > NOW() - INTERVAL '7' DAY
 GROUP BY board, difficulty, kind, outcome
 ```
 
@@ -206,7 +219,7 @@ Where the game is played, and how it goes there:
 SELECT blob10 AS device, blob11 AS shell, blob3 AS outcome,
        SUM(_sample_interval) AS games
 FROM hypersweeper_game_events
-WHERE blob1 = 'end' AND timestamp > NOW() - INTERVAL '30' DAY
+WHERE blob1 = 'end' AND timestamp > NOW() - INTERVAL '7' DAY
 GROUP BY device, shell, outcome
 ```
 
@@ -217,7 +230,7 @@ a mid-board re-roll is `random`/`playing`, a menu pick is `menu`/``:
 ```sql
 SELECT blob8 AS trigger, blob9 AS from_state, SUM(_sample_interval) AS starts
 FROM hypersweeper_game_events
-WHERE blob1 = 'start' AND timestamp > NOW() - INTERVAL '30' DAY
+WHERE blob1 = 'start' AND timestamp > NOW() - INTERVAL '7' DAY
 GROUP BY trigger, from_state
 ```
 
@@ -230,7 +243,7 @@ SELECT blob6 AS surface,
        SUM(_sample_interval) AS losses
 FROM hypersweeper_game_events
 WHERE blob1 = 'end' AND blob3 = 'lost' AND double2 > 0
-  AND timestamp > NOW() - INTERVAL '30' DAY
+  AND timestamp > NOW() - INTERVAL '7' DAY
 GROUP BY surface
 ```
 
@@ -243,11 +256,13 @@ SELECT blob6 AS surface,
        SUM(double11 * _sample_interval) / SUM(_sample_interval) AS rotated_fraction,
        SUM(_sample_interval) AS games
 FROM hypersweeper_game_events
-WHERE blob1 = 'end' AND timestamp > NOW() - INTERVAL '30' DAY
+WHERE blob1 = 'end' AND timestamp > NOW() - INTERVAL '7' DAY
 GROUP BY surface
 ```
 
-Version over version, for the deploy that changed something:
+Version over version, for the deploy that changed something — the one query
+here that reaches past a week, because a rollout is only legible against the
+build it replaced:
 
 ```sql
 SELECT blob12 AS version, blob3 AS outcome,

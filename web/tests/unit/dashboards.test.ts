@@ -16,6 +16,11 @@ import { DATASET_BLOBS, DATASET_DOUBLES } from "../../src/analyticsEvent";
 
 const DIR = fileURLToPath(new URL("../../../grafana", import.meta.url));
 
+type Override = {
+  matcher: { id: string; options?: string };
+  properties: { id: string; value?: unknown }[];
+};
+
 type Panel = {
   id: number;
   type: string;
@@ -23,15 +28,32 @@ type Panel = {
   panels?: Panel[];
   targets?: { refId: string; query?: string; datasource?: { uid?: string } }[];
   datasource?: { uid?: string };
+  fieldConfig?: { overrides?: Override[] };
 };
 
 type Dashboard = {
   uid: string;
   title: string;
   schemaVersion: number;
+  time?: { from?: string; to?: string };
   panels: Panel[];
-  templating: { list: { name: string; type: string; options?: { value: string }[] }[] };
+  templating: {
+    list: { name: string; type: string; query?: string; options?: { value: string }[] }[];
+  };
 };
+
+/** The board taxonomy the collector actually writes into `blob6`/`blob7`:
+ * `boardInfo(mode)`, which is this table. `catalog.surfaces` is a different
+ * (and smaller) list — it has no `solid`, because a polyhedron is not one of
+ * the flat manifolds — so `modeInfo` is the only honest oracle for the values a
+ * filter has to offer. */
+const modeInfo = catalog.modeInfo as Record<string, { surface: string; family: string }>;
+
+const TAXONOMIES: readonly (readonly [string, ReadonlySet<string>])[] = [
+  ["difficulty", new Set<string>(catalog.difficulties)],
+  ["surface", new Set(Object.values(modeInfo).map((board) => board.surface))],
+  ["family", new Set(Object.values(modeInfo).map((board) => board.family))],
+];
 
 const files = readdirSync(DIR).filter((name) => name.endsWith(".json")).sort();
 
@@ -71,6 +93,17 @@ it("has dashboards to check", () => {
   expect(files.length).toBeGreaterThan(0);
 });
 
+// Retention is about a fortnight in practice, so a picker opening on a month
+// spends most of its rows on history that predates the wide schema — which is
+// what an export of the raw-events table looked like before this. The three
+// dashboards are read side by side, so they open on the same window.
+it("opens on one window, short enough that retention covers it", () => {
+  for (const { file, doc } of dashboards) {
+    expect(doc.time?.from, `${file} default range`).toBe("now-7d");
+    expect(doc.time?.to, `${file} default range`).toBe("now");
+  }
+});
+
 describe("the raw-events dashboard reads the whole schema", () => {
   const raw = dashboards.find((d) => d.file === "hypersweeper-events.json");
   const sql = raw ? queriesOf(raw.doc).map((q) => q.sql).join("\n") : "";
@@ -99,6 +132,25 @@ describe("the raw-events dashboard reads the whole schema", () => {
     expect(sql).toMatch(/\bindex1\s+AS\s+mode\b/);
     expect(sql).toMatch(/\btimestamp\b/);
     expect(sql).toMatch(/\b_sample_interval\s+AS\s+sample_interval\b/);
+  });
+
+  // `t` is epoch milliseconds and the table sets `unit: short` for every field
+  // it does not override, so without a date unit of its own the timestamp
+  // *exports* as `1.79 Tri` — while the table's own time rendering shows it
+  // correctly on screen. A bug that is only visible in the CSV is exactly the
+  // kind that has to be pinned rather than watched for.
+  it("gives the timestamp column a date unit, so it survives a CSV export", () => {
+    const panels = flatten(raw?.doc.panels ?? []).filter((panel) =>
+      (panel.targets ?? []).some((target) => /\bAS\s+t\b/.test(target.query ?? "")),
+    );
+    expect(panels.length, "no panel selects a timestamp").toBeGreaterThan(0);
+    for (const panel of panels) {
+      const unit = (panel.fieldConfig?.overrides ?? [])
+        .filter((o) => o.matcher.id === "byName" && o.matcher.options === "t")
+        .flatMap((o) => o.properties)
+        .find((property) => property.id === "unit")?.value;
+      expect(unit, `panel ${panel.id} has no date unit on t`).toMatch(/^(dateTime|time:)/);
+    }
   });
 
   // blob13 today is nothing; the day it is something, the regexes above are
@@ -191,12 +243,24 @@ describe.each(dashboards)("$file", ({ doc }) => {
     }
     // Whichever dashboard pivots on the tiers must name all of them.
     if (seen.size > 0) expect([...seen].sort()).toEqual([...tiers].sort());
+  });
 
-    const variable = doc.templating.list.find((v) => v.name === "difficulty");
-    if (variable) {
-      const offered = (variable.options ?? []).map((o) => o.value).filter((v) => v !== "all");
-      expect(offered.sort()).toEqual([...tiers].sort());
-    }
+  // The filter dropdowns are hard-coded `custom` variables — the other place a
+  // dashboard restates a vocabulary the catalogue owns, one level up from the
+  // blob numbers. A value missing from one is invisible on the dashboard and in
+  // the JSON alike: the filter cannot reach those rows, and *every other*
+  // selection silently excludes them. `volume` (cube3d, "Volumetric") was
+  // missing from all three Family filters until this test.
+  it.each(TAXONOMIES)("offers exactly the %s values the catalogue defines", (name, values) => {
+    const variable = doc.templating.list.find((v) => v.name === name);
+    expect(variable, `no $${name} variable`).toBeDefined();
+    const expected = [...values].sort();
+    const offered = (variable?.options ?? []).map((o) => o.value).filter((v) => v !== "all");
+    expect(offered.slice().sort(), `$${name} options`).toEqual(expected);
+    // `query` is what Grafana re-expands the options from on import, so the two
+    // halves of a custom variable have to say the same thing.
+    const declared = (variable?.query ?? "").split(",").filter((v) => v !== "all");
+    expect(declared.sort(), `$${name} query`).toEqual(expected);
   });
 
   it("is importable: v1 schema, a uid, a title and unique panel ids", () => {

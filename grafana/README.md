@@ -77,8 +77,8 @@ explained at length in [`docs/agents/metrics.md`](../docs/agents/metrics.md).
 `blob4..blob12` and `double2..double11` arrived in **0.2.83**. Every event older
 than that deploy is still in the dataset with those columns empty, so a
 `GROUP BY blob4` collects the whole pre-0.2.83 history into one nameless bucket
-that buries everything real — which, while the deploy is young, is most of what
-a 30-day range contains.
+that buries everything real — which, while the deploy is young, is a good part
+of what even a week's range contains.
 
 So the panels that group by or average one of those columns are scoped with:
 
@@ -106,10 +106,17 @@ consequence is that the device pies do not add up to the trend totals, and the
 **Schema coverage** panel on *Overview & trends* is there to show exactly how
 big that gap is. It closes on its own as 0.2.83+ traffic accumulates.
 
-Retention is about 90 days, so the time picker can be moved back that far and
-no further. All three dashboards are set to the **UTC** timezone: the dataset
-buckets in UTC, and rendering those buckets in browser-local time slices every
-day across two bars.
+Retention is about 14 days in practice on the current plan, so all three
+dashboards open on **Last 7 days** and the picker has little room past that.
+They are also all set to the **UTC** timezone: the dataset buckets in UTC, and
+rendering those buckets in browser-local time slices every day across two bars.
+
+*Raw events* exports what it displays — *Inspect → Data → Download CSV* turns
+`seconds` into `5 mins` and an empty `device` into `(pre-0.2.83 build)`; switch
+*Formatted data* off there for the raw values. Its `t` column carries an
+explicit `dateTimeAsIso` unit so the timestamp survives that trip: without one
+it inherits the table's `short` and exports as `1.79 Tri`, which the panel's own
+time rendering hides on screen.
 
 ## The SQL, and why it looks the way it does
 
