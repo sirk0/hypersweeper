@@ -143,6 +143,53 @@ Function, `npm run build && npx wrangler pages dev` from `web/` — but note
 Analytics Engine writes are a no-op in local dev, so verifying a write end to
 end takes a real deploy.
 
+### Response headers
+
+`web/public/_headers` is the policy the site is served with: a
+Content-Security-Policy, HSTS, `Permissions-Policy`, COOP and
+`frame-ancestors 'none'`. Vite copies `public/` into `dist/` verbatim, and
+Cloudflare reads the file from the root of the build output — that is the whole
+mechanism.
+
+Two properties of the format are worth knowing before editing it, because both
+fail silently and both cost a deploy to learn:
+
+- **Rules with different patterns are merged**, and a header named by two of
+  them is sent twice. A browser enforces every CSP it is sent, so two policies
+  *intersect*: a looser rule for a subpath cannot widen the site-wide one. The
+  format has no negation either, so a path cannot be carved out of `/*`. A page
+  that needs something the policy withholds therefore cannot be given an
+  exception — it has to stop needing it, which is why the `/next/` shim's
+  redirect is `public/next/redirect.js` and not an inline `<script>`.
+- **Two rules with the same pattern do not merge**: the later replaces the
+  earlier wholesale. This is why the PR preview edits the `/*` block instead of
+  appending one, and why it greps for its own edit afterwards.
+
+The file declares a single `/*` rule, and `tests/unit/headers.test.ts` asserts
+it stays that way — adding a second means reasoning about the intersection.
+
+Cloudflare applies it only at the edge, so neither `vite dev` nor
+`vite preview` would serve it on their own. The `securityHeaders` plugin in
+`vite.config.ts` parses *this same file* and applies it to both, which is what
+lets `tests/e2e/headers.spec.ts` assert that the app loads and plays with no
+violation. The one gap: a PR preview builds with `VITE_NO_SW=1`, so the policy
+meets the service worker locally and in production but never on a preview.
+
+`public/404.html` belongs to the same story. Without it Pages falls back to
+`index.html` and answers *every* unknown path 200 — a scanner probing for
+`/wp-login.php` got the whole app and a success code. It is kept out of the
+precache (`globIgnores`), because the worker's navigation fallback means an
+installed visitor never reaches it and the callers it is for have no worker.
+Expect the 4xx figures in the Cloudflare dashboard to *rise* once it ships:
+that traffic was always there, miscounted as success.
+
+**Not configured in this repo:** `/api/tally` takes unauthenticated writes and
+nothing throttles them. `parseEvent` caps every field, so no single forged row
+can drag an average, but volume is unbounded and the dashboards are what it
+would spoil. A rate-limiting rule on the path (Cloudflare dashboard → Security →
+WAF → Rate limiting rules; ~20 requests/minute per IP is far above real play) is
+the mitigation, and it lives in the dashboard rather than here.
+
 ### PR previews
 
 Every pull request gets its own live build, at a URL that does not change as the
@@ -174,10 +221,13 @@ with it, which is the offline-app build, not this. A preview still emits its
 `version.json`, so Settings › Check for updates answers there too — commit
 against commit, which is the only comparison that says anything on a URL that
 serves many builds under one version number — and with no worker registered the
-reload it then performs is the whole update. The job also writes a
-`dist/_headers` carrying `X-Robots-Tag: noindex` (into `dist/`, never `public/`, so production
-stays indexable) and passes the preview's own origin as `VITE_SITE_URL`, or
-every preview's `og:url` and `<link rel="canonical">` would point at production.
+reload it then performs is the whole update. The job also adds
+`X-Robots-Tag: noindex` to the `/*` block of `dist/_headers` — *into* the block
+the build copied from `public/_headers`, not as a rule of its own, for the
+reason given under "Response headers" above — so a preview stays out of search
+results while production stays indexable. It passes the preview's own origin as
+`VITE_SITE_URL` too, or every preview's `og:url` and `<link rel="canonical">`
+would point at production.
 
 Closing or merging the PR deletes every deployment made under `pr-<number>`,
 which is what takes the alias with it. wrangler has no
