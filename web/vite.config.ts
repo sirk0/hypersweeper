@@ -199,9 +199,14 @@ interface HeaderRule {
 }
 
 /** Cloudflare's format: an unindented URL pattern, then its headers indented
- * under it, `#` comments and blank lines ignored. Every rule that matches is
- * applied in order, so a later one overrides an earlier one header by header —
- * which is how /next/ keeps the site-wide HSTS while replacing only the CSP. */
+ * under it, `#` comments and blank lines ignored.
+ *
+ * Cloudflare merges every rule whose pattern matches, sending a header named by
+ * two of them twice; this applies them in order and lets the last win instead.
+ * The difference is unobservable while _headers holds a single `/*` rule, which
+ * is the arrangement that file documents and deliberately keeps — a second
+ * matching rule could only ever intersect the policy, never widen it. If one is
+ * ever added, this is the line to revisit before trusting a test that passes. */
 function parseHeadersFile(text: string): HeaderRule[] {
   const rules: HeaderRule[] = [];
   let current: { matches: (path: string) => boolean; headers: [string, string][] } | null = null;

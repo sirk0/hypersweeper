@@ -89,17 +89,37 @@ test.describe("security headers", () => {
     expect(await violations(page)).toEqual([]);
   });
 
-  test("the legacy /next/ shim keeps its own rule", async ({ page }) => {
-    // Fetched rather than navigated: the page redirects itself to the app, and
-    // this is about the headers it is served with. The redirect itself is
-    // covered in app.spec.ts.
+  test("the legacy /next/ shim needs no exception from the policy", async ({ page }) => {
+    // This page used to carry an inline <script>, and the file used to carry a
+    // looser rule for it. That rule never worked: Cloudflare merges every rule
+    // matching a path and the browser enforces both policies, so the loose one
+    // was intersected with the strict one and the script stayed blocked. The
+    // page has an external script now and takes the site-wide rule like
+    // everything else — which is what this asserts, so that a reintroduced
+    // inline script fails here rather than on the deployed site.
     const response = await page.request.get("/next/");
     expect(response.status()).toBe(200);
-    const csp = response.headers()["content-security-policy"];
-    // It is a hand-written page with an inline <script>, so it gets the one
-    // policy in the file that allows one — and must still be pinned down.
-    expect(csp).toContain("script-src 'unsafe-inline'");
-    expect(csp).toContain("frame-ancestors 'none'");
-    expect(csp).toContain("object-src 'none'");
+    const headers = response.headers();
+    // The site-wide rule, verbatim — not a variant of it. `'unsafe-inline'`
+    // survives in style-src, which is why this names the script directive
+    // rather than searching the whole policy for the string.
+    expect(headers["content-security-policy"]).toContain("script-src 'self'");
+    expect(headers["content-security-policy"]).not.toContain("script-src 'unsafe-inline'");
+    expect(headers["strict-transport-security"]).toContain("max-age=");
+
+    expect(await response.text()).not.toMatch(/<script(?![^>]*\bsrc=)/);
+  });
+
+  test("the /next/ redirect still runs under the policy", async ({ page }) => {
+    await collectViolations(page);
+    // The redirect is covered in app.spec.ts; this is about it surviving a
+    // `script-src 'self'` that would silently do nothing but leave the visitor
+    // on a dead page.
+    await page.goto("/next/?mode=square&difficulty=easy");
+    await page.waitForURL((url) => !url.pathname.startsWith("/next/"));
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    // The shared board link has to survive the hop, policy or no policy.
+    expect(new URL(page.url()).searchParams.get("mode")).toBe("square");
+    expect(await violations(page)).toEqual([]);
   });
 });

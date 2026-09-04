@@ -10,10 +10,25 @@
 # reading the shipped file rather than a copy of it is the point: a policy
 # restated in TypeScript would drift from the one Cloudflare serves.
 #
-# The PR preview appends an `X-Robots-Tag: noindex` block to this file at deploy
-# time (.github/workflows/pr-preview.yml), which is why that write appends
-# rather than truncates. A preview is consequently the only place the *edge*
-# behaviour can be checked before it reaches production.
+# The PR preview inserts `X-Robots-Tag: noindex` into the `/*` block below at
+# deploy time (.github/workflows/pr-preview.yml). A preview is the only place
+# the *edge* behaviour of this file can be checked before it reaches
+# production — `vite preview` applies the policy, but Cloudflare is the only
+# thing that applies these rules the way Cloudflare applies them.
+#
+# Two things about the format, both learned from a preview deployment rather
+# than from reading the docs, and both silent when you get them wrong:
+#
+#   - Rules with *different* patterns that match the same path are merged, and a
+#     header named by both is sent twice. Browsers enforce every CSP they are
+#     sent, so two policies intersect: a *looser* rule for a subpath cannot
+#     widen the site-wide one, only narrow it further. There is no negation in
+#     this format either, so there is no way to carve a path out of `/*`. A page
+#     that needs something the policy withholds has to stop needing it — which
+#     is why public/next/redirect.js is a file and not an inline <script>.
+#   - Two rules with the *same* pattern do not merge: the later one replaces the
+#     earlier wholesale. The PR preview therefore edits the `/*` block below
+#     rather than adding a second one, which would drop every header here.
 #
 # This file has no extension, which keeps it out of two things that would
 # otherwise object: scripts/check-offline-assets.mjs scans only known text
@@ -28,16 +43,3 @@
   X-Frame-Options: DENY
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
-
-# The legacy /next/ redirect shim is a hand-written page with an inline <style>
-# and an inline <script> (public/next/index.html), neither of which survives the
-# `script-src 'self'` above — and the redirect is pinned by an e2e test. It is a
-# static page that fetches nothing, so it gets a policy of its own rather than a
-# hash that would have to be recomputed every time the page is touched. Two
-# patterns because the request path is `/next/`, with nothing after the slash
-# for `*` to match against.
-/next/
-  Content-Security-Policy: default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'none'; object-src 'none'
-
-/next/*
-  Content-Security-Policy: default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'none'; object-src 'none'
