@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Not found — Hypersweeper</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="robots" content="noindex" />
+    <!--
+      Cloudflare Pages serves this page, with a 404 status, for any path that is
+      not a file in the build. Without it Pages falls back to index.html and
+      answers *everything* 200 — every scanner probe for /wp-login.php or /.env
+      got the whole ~1 MB app and a success code, which is bandwidth spent on
+      nothing and makes the 4xx figures in the dashboard meaningless.
+
+      Safe to add because the app has no client-side path routing: a shared
+      board is a query string on the root (src/link.ts), and main.ts keeps it
+      there with replaceState, so no real URL depends on the fallback.
+
+      Deliberately plain: no script, no web font, no absolute URL. Two of those
+      are enforced — scripts/check-offline-assets.mjs scans .html files and
+      fails the build over any remote reference, since this file also ships
+      inside the offline macOS and iPhone bundles (dead weight there, but it
+      has to stay self-contained). The service worker does not precache it
+      either; see globIgnores in vite.config.ts.
+    -->
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #f2f2f7;
+        --fg: #1c1c1e;
+        --muted: #6c6c70;
+        --accent: #0a84ff;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #1c1c1e;
+          --fg: #f2f2f7;
+          --muted: #98989d;
+        }
+      }
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+      }
+      body {
+        display: grid;
+        place-items: center;
+        padding: 2rem;
+        box-sizing: border-box;
+        background: var(--bg);
+        color: var(--fg);
+        font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+        text-align: center;
+      }
+      h1 {
+        margin: 0 0 0.25rem;
+        font-size: 4rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+      p {
+        margin: 0 0 1.5rem;
+        color: var(--muted);
+      }
+      a {
+        display: inline-block;
+        padding: 0.6rem 1.4rem;
+        border-radius: 999px;
+        background: var(--accent);
+        color: #fff;
+        font-weight: 600;
+        text-decoration: none;
+      }
+      a:focus-visible {
+        outline: 2px solid var(--fg);
+        outline-offset: 3px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>404</h1>
+      <p>There is no board at this address.</p>
+      <a href="/">Play Hypersweeper</a>
+    </main>
+  </body>
+</html>

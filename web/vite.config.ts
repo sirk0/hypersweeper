@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { fileURLToPath, URL } from "node:url";
 import { defineConfig, type Connect, type Plugin } from "vite";
@@ -176,6 +177,82 @@ function serveStamp(
   res.end(stamp);
 }
 
+// The response headers the deployed game is served with, applied to the dev
+// server and to `vite preview` as well.
+//
+// public/_headers is a Cloudflare Pages file: it is read at the edge and by
+// nothing else, so without this plugin the Content-Security-Policy in it would
+// be live on production and absent from every place it could be tested — the
+// one arrangement in which a policy is discovered to be wrong by players. The
+// e2e suite runs against `vite preview`, so applying it there is what lets a
+// spec assert the app loads with no violation.
+//
+// It parses the shipped file rather than restating the policy in TypeScript.
+// A second copy would be a second thing to keep in step, and the copy under
+// test would be the one that is not deployed.
+//
+// Read once, at config load, like the version stamp above: editing _headers
+// takes a server restart, which is the same deal as editing this file.
+interface HeaderRule {
+  readonly matches: (path: string) => boolean;
+  readonly headers: readonly (readonly [string, string])[];
+}
+
+/** Cloudflare's format: an unindented URL pattern, then its headers indented
+ * under it, `#` comments and blank lines ignored. Every rule that matches is
+ * applied in order, so a later one overrides an earlier one header by header —
+ * which is how /next/ keeps the site-wide HSTS while replacing only the CSP. */
+function parseHeadersFile(text: string): HeaderRule[] {
+  const rules: HeaderRule[] = [];
+  let current: { matches: (path: string) => boolean; headers: [string, string][] } | null = null;
+  for (const line of text.split("\n")) {
+    if (!line.trim() || line.trimStart().startsWith("#")) continue;
+    if (!/^\s/.test(line)) {
+      current = { matches: patternMatcher(line.trim()), headers: [] };
+      rules.push(current);
+      continue;
+    }
+    // The first colon separates name from value; the value holds plenty more
+    // of them (`https://`, and every scheme in the CSP).
+    const colon = line.indexOf(":");
+    if (colon < 0 || !current) continue;
+    current.headers.push([line.slice(0, colon).trim(), line.slice(colon + 1).trim()]);
+  }
+  return rules;
+}
+
+function patternMatcher(pattern: string): (path: string) => boolean {
+  const source = pattern
+    .split("*")
+    .map((part) => part.replace(/[.+?^${}()|[\]\\]/g, "\\$&"))
+    .join(".*");
+  const re = new RegExp(`^${source}$`);
+  return (path) => re.test(path);
+}
+
+const headerRules = parseHeadersFile(
+  readFileSync(fileURLToPath(new URL("./public/_headers", import.meta.url)), "utf8"),
+);
+
+const securityHeaders: Plugin = {
+  name: "hypersweeper:security-headers",
+  configureServer: (server) => void server.middlewares.use(applyHeaders),
+  configurePreviewServer: (server) => void server.middlewares.use(applyHeaders),
+};
+
+function applyHeaders(
+  req: { url?: string | undefined },
+  res: { setHeader(name: string, value: string): void },
+  next: () => void,
+): void {
+  const path = (req.url ?? "/").split("?")[0] ?? "/";
+  for (const rule of headerRules) {
+    if (!rule.matches(path)) continue;
+    for (const [name, value] of rule.headers) res.setHeader(name, value);
+  }
+  next();
+}
+
 export default defineConfig({
   base,
   define: {
@@ -200,6 +277,7 @@ export default defineConfig({
     socialMeta,
     tallyStub,
     versionStamp,
+    securityHeaders,
     // Dropped, and the web manifest with it, when VITE_NO_SW=1 — see the flag
     // above. The other two plugins stay: a preview build is the deployed build
     // minus the worker, not the packaged one.
@@ -243,7 +321,14 @@ export default defineConfig({
         // precache is bytes every visitor downloads and no visitor uses — and
         // since the card is rendered from the Realistic theme, whose page is
         // full-frame turbulence, it is very nearly a megabyte of them.
-        globIgnores: ["**/node_modules/**/*", "version.json", "og.png"],
+        //
+        // And the 404 page, for a subtler reason: the worker's navigation
+        // fallback answers every navigation from the precache with index.html,
+        // so an installed visitor never reaches Cloudflare's 404 handling at
+        // all. The page is there for the callers that have no worker — crawlers,
+        // scanners, first visits — which are exactly the ones that never read
+        // the precache. Caching it would serve nobody.
+        globIgnores: ["**/node_modules/**/*", "version.json", "og.png", "404.html"],
         // The Pages Function under /api/ is the one path that is not part of
         // the app shell. A POST is not a navigation request, so today's config
         // already leaves it alone; this says so, and keeps it true if the

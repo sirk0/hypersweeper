@@ -1,0 +1,43 @@
+# Response headers for the deployed game. Cloudflare Pages reads this file from
+# the root of the build output; Vite copies public/ into dist/ verbatim, so
+# committing it here is what ships it.
+#
+# It is applied ONLY by Cloudflare at the edge. Neither `vite dev` nor
+# `vite preview` serves these headers on their own, which would leave the policy
+# untestable anywhere but production — so vite.config.ts carries a
+# `securityHeaders` plugin that parses *this file* and applies it to both local
+# servers. The e2e suite therefore runs against the real policy, and the parser
+# reading the shipped file rather than a copy of it is the point: a policy
+# restated in TypeScript would drift from the one Cloudflare serves.
+#
+# The PR preview appends an `X-Robots-Tag: noindex` block to this file at deploy
+# time (.github/workflows/pr-preview.yml), which is why that write appends
+# rather than truncates. A preview is consequently the only place the *edge*
+# behaviour can be checked before it reaches production.
+#
+# This file has no extension, which keeps it out of two things that would
+# otherwise object: scripts/check-offline-assets.mjs scans only known text
+# extensions, so the `https://` origins below do not trip the "reference nothing
+# remote" rule; and the service worker's precache glob does not match it.
+
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://cloudflareinsights.com; worker-src 'self'; manifest-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'; object-src 'none'
+  Strict-Transport-Security: max-age=31536000
+  Permissions-Policy: geolocation=(), camera=(), microphone=(), payment=(), usb=()
+  Cross-Origin-Opener-Policy: same-origin
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+
+# The legacy /next/ redirect shim is a hand-written page with an inline <style>
+# and an inline <script> (public/next/index.html), neither of which survives the
+# `script-src 'self'` above — and the redirect is pinned by an e2e test. It is a
+# static page that fetches nothing, so it gets a policy of its own rather than a
+# hash that would have to be recomputed every time the page is touched. Two
+# patterns because the request path is `/next/`, with nothing after the slash
+# for `*` to match against.
+/next/
+  Content-Security-Policy: default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'none'; object-src 'none'
+
+/next/*
+  Content-Security-Policy: default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'none'; object-src 'none'

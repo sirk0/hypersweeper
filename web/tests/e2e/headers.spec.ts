@@ -1,0 +1,105 @@
+import { expect, test } from "@playwright/test";
+
+// The deployed response headers, and the app's behaviour under them.
+//
+// public/_headers is a Cloudflare Pages file, so on the real site it is applied
+// at the edge and nowhere else. The `securityHeaders` plugin in vite.config.ts
+// parses that same file and applies it to `vite preview`, which is what this
+// suite runs against — so these tests are about the policy that ships, not a
+// restatement of it. A directive that would break the app shows up here as a
+// blocked resource rather than as a bug report from a player.
+//
+// What this file deliberately does NOT cover: the 404 page. Cloudflare answers
+// an unknown path with 404.html and a 404 status, but `vite preview` has its
+// own SPA fallback and serves index.html with a 200, so the behaviour cannot be
+// asserted here. It is checked against the PR preview deployment instead — see
+// web/docs/deploy.md.
+//
+// The one thing this covers that a preview deployment cannot: a preview builds
+// with VITE_NO_SW=1, so only here does the policy meet the service worker.
+
+/** CSP violations are reported to the document, not the console, so they have
+ * to be collected in the page. Installed before any navigation. */
+async function collectViolations(page: import("@playwright/test").Page): Promise<void> {
+  await page.addInitScript(() => {
+    const seen: string[] = [];
+    (window as unknown as { __csp: string[] }).__csp = seen;
+    document.addEventListener("securitypolicyviolation", (e) => {
+      seen.push(`${e.violatedDirective} blocked ${e.blockedURI || "(inline)"}`);
+    });
+  });
+}
+
+const violations = (page: import("@playwright/test").Page): Promise<string[]> =>
+  page.evaluate(() => (window as unknown as { __csp?: string[] }).__csp ?? []);
+
+test.describe("security headers", () => {
+  test("the site-wide rule is served, and the app loads clean under it", async ({ page }) => {
+    await collectViolations(page);
+    const errors: string[] = [];
+    page.on("pageerror", (e) => errors.push(String(e)));
+    page.on("console", (m) => {
+      if (m.type() === "error") errors.push(m.text());
+    });
+
+    await page.setViewportSize({ width: 900, height: 700 });
+    const response = await page.goto("/");
+    const headers = response!.headers();
+
+    const csp = headers["content-security-policy"];
+    expect(csp).toBeDefined();
+    // The directives worth pinning: the ones that would silently stop mattering
+    // if someone widened the policy to make an unrelated problem go away.
+    expect(csp).toContain("default-src 'self'");
+    expect(csp).toContain("frame-ancestors 'none'");
+    expect(csp).toContain("object-src 'none'");
+    expect(csp).toContain("base-uri 'none'");
+    // The app must never need these; see AGENTS.md's "reference nothing remote".
+    expect(csp).not.toContain("'unsafe-eval'");
+    expect(csp).not.toContain("script-src 'unsafe-inline'");
+
+    expect(headers["strict-transport-security"]).toContain("max-age=");
+    expect(headers["x-frame-options"]).toBe("DENY");
+    expect(headers["x-content-type-options"]).toBe("nosniff");
+    expect(headers["permissions-policy"]).toContain("geolocation=()");
+    expect(headers["cross-origin-opener-policy"]).toBe("same-origin");
+
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    expect(await violations(page)).toEqual([]);
+    expect(errors).toEqual([]);
+  });
+
+  test("a played board raises no violation", async ({ page }) => {
+    await collectViolations(page);
+    await page.setViewportSize({ width: 900, height: 700 });
+    await page.goto("/");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+
+    // The same one-mine-in-a-corner board sound.spec.ts uses: one click opens a
+    // single cell, the far corner floods the rest and wins. That exercises the
+    // renderer, the themes' data: URI backgrounds and the win flourish — the
+    // three things most likely to want a source the policy does not allow.
+    await page.evaluate(() => window.__ms?.startBoard("square", "easy", { mines: ["0,0"] }));
+    const single = await page.evaluate(() => window.__ms?.cellScreenXY("1,1"));
+    await page.mouse.click(single!.x, single!.y);
+    const flood = await page.evaluate(() => window.__ms?.cellScreenXY("8,8"));
+    await page.mouse.click(flood!.x, flood!.y);
+    expect(await page.evaluate(() => window.__ms?.state().status)).toBe("won");
+
+    expect(await violations(page)).toEqual([]);
+  });
+
+  test("the legacy /next/ shim keeps its own rule", async ({ page }) => {
+    // Fetched rather than navigated: the page redirects itself to the app, and
+    // this is about the headers it is served with. The redirect itself is
+    // covered in app.spec.ts.
+    const response = await page.request.get("/next/");
+    expect(response.status()).toBe(200);
+    const csp = response.headers()["content-security-policy"];
+    // It is a hand-written page with an inline <script>, so it gets the one
+    // policy in the file that allows one — and must still be pinned down.
+    expect(csp).toContain("script-src 'unsafe-inline'");
+    expect(csp).toContain("frame-ancestors 'none'");
+    expect(csp).toContain("object-src 'none'");
+  });
+});
