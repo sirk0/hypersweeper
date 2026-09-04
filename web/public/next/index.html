@@ -56,43 +56,6 @@
       <p>Hypersweeper now lives at the site root.</p>
       <p class="muted"><a href="../">Continue to the game</a></p>
     </main>
-    <script>
-      (function () {
-        // Keep the shared board link (?mode=…&difficulty=…&seed=…) and any
-        // hash: a /next/ link with parameters must open the same board here.
-        var target = "../" + window.location.search + window.location.hash;
-        function go() {
-          window.location.replace(target);
-        }
-        var sw = navigator.serviceWorker;
-        if (!sw || !sw.getRegistrations) {
-          go();
-          return;
-        }
-        // Redirect regardless of how the cleanup goes, and never hang on it.
-        var done = false;
-        function once() {
-          if (!done) {
-            done = true;
-            go();
-          }
-        }
-        setTimeout(once, 1500);
-        var here = new URL(".", window.location.href).href;
-        sw.getRegistrations()
-          .then(function (regs) {
-            return Promise.all(
-              regs
-                .filter(function (r) {
-                  return r.scope.indexOf(here) === 0;
-                })
-                .map(function (r) {
-                  return r.unregister();
-                }),
-            );
-          })
-          .then(once, once);
-      })();
-    </script>
+    <script src="redirect.js"></script>
   </body>
 </html>

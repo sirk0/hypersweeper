@@ -73,7 +73,12 @@ design rather than the rule itself.
   it.
 - **The app must reference nothing remote** — no CDN, no web font, no remote
   image. `scripts/check-offline-assets.mjs` fails the build over any URL it does
-  not recognise.
+  not recognise, and the deployed site's Content-Security-Policy
+  (`public/_headers`) now says the same thing to the browser: a remote
+  reference that slipped past the check would be blocked rather than loaded.
+  The policy also rules out inline `<script>` anywhere on the origin — see
+  "Response headers" in [`docs/deploy.md`](docs/deploy.md) before adding one,
+  because it cannot be excepted per page.
 - **Board data is shared.** Anything under `data/*.json` is generated from the
   Python side; re-run the exporters rather than hand-editing, or CI's
   `data-sync` job fails.

@@ -100,9 +100,19 @@ jobs:
           npm ci
           npm run build
           # A preview is a real, reachable page on a real domain; keep it from
-          # competing with the site in search results. Written into dist/ rather
-          # than committed to public/, so production stays indexable.
-          printf '/*\n  X-Robots-Tag: noindex\n' > dist/_headers
+          # competing with the site in search results.
+          #
+          # Inserted *into* the `/*` block that `npm run build` has just copied
+          # from public/_headers, not written as a rule of its own. Neither
+          # obvious alternative works: `>` would throw the security headers
+          # away, and appending a second `/*` block replaces the first one
+          # wholesale rather than adding to it — Cloudflare merges rules with
+          # different patterns, but for one repeated pattern the last rule wins.
+          # (Both failure modes are silent, and the second one shipped a preview
+          # carrying nothing but this line. Hence the grep.)
+          sed -i 's#^/\*$#/*\n  X-Robots-Tag: noindex#' dist/_headers
+          grep -q '^  X-Robots-Tag: noindex$' dist/_headers \
+            || { echo "::error::noindex not inserted into dist/_headers"; exit 1; }
       - name: Publish preview to Cloudflare Pages
         id: deploy
         uses: cloudflare/wrangler-action@v4
