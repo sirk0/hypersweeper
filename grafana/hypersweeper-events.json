@@ -257,6 +257,10 @@
               {
                 "id": "displayName",
                 "value": "Time (UTC)"
+              },
+              {
+                "id": "unit",
+                "value": "dateTimeAsIso"
               }
             ]
           },
@@ -741,7 +745,7 @@
         "name": "family",
         "label": "Family",
         "description": "",
-        "query": "all,regular,uniform,dual,isogonal,rectangle,aperiodic,fractal,sphere,platonic,catalan,polyhedra",
+        "query": "all,regular,uniform,dual,isogonal,rectangle,aperiodic,fractal,sphere,platonic,catalan,polyhedra,volume",
         "current": {
           "selected": true,
           "text": "all",
@@ -807,6 +811,11 @@
             "selected": false,
             "text": "polyhedra",
             "value": "polyhedra"
+          },
+          {
+            "selected": false,
+            "text": "volume",
+            "value": "volume"
           }
         ],
         "multi": false,
@@ -962,7 +971,7 @@
   },
   "timezone": "utc",
   "time": {
-    "from": "now-30d",
+    "from": "now-7d",
     "to": "now"
   },
   "timepicker": {},
