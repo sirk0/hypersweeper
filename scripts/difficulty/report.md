@@ -12,7 +12,7 @@ Every board's mine count, chosen so its win probability under the reference solv
 
 ## Coverage
 
-- 540 rows, 508 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
+- 543 rows, 511 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
 - 32 could not be brought on target:
   - `cube3d`/hard: 33.3% vs 50.9% — the search could not resolve it -- its thinnest measurement finished 0 game(s), so the rate here is noise rather than a crossing the search walked to. Re-measure at a bigger `--budget`
   - `cylinder`/easy: 89.1% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (7, 9%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
@@ -196,6 +196,7 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `spheretri` | 11.2 | 80c 20m (25%) 98% | 80c 23m (29%) 90% | 80c 29m (36%) 52% |
 | `sphinx` | 7.3 | 64c 7m (11%) 97% | 256c 35m (14%) 88% | 256c 51m (20%) 49% |
 | `square` | 7.4 | 81c 10m (12%) 98% | 256c 40m (16%) 90% | 480c 99m (21%) 50% |
+| `squarediamond` | 7.3 | 85c 13m (15%) 97% | 265c 49m (18%) 89% | 481c 111m (23%) 55% |
 | `stackedbond` | 7.4 | 91c 11m (12%) 98% | 253c 42m (17%) 84% | 465c 99m (21%) 48% |
 | `staggeredtri` | 7.5 | 71c 10m (14%) 98% | 263c 50m (19%) 85% | 479c 110m (23%) 52% |
 | `steppedbipyramid` | 8.1 | 102c 21m (21%) 95% | 198c 46m (23%) 90% | 486c 128m (26%) 52% |

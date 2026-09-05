@@ -483,8 +483,8 @@ const MODE_PATTERN = new Map<string, string>();
     const tiling = tilingOf(mode);
     if (tiling) MODE_PATTERN.set(mode, tiling);
   }
-  // The shaped flat boards are the regular tilings cut to a triangular or
-  // hexagonal outline, and SHAPED_MODES is already keyed by which.
+  // The shaped flat boards are the regular tilings cut to a triangular,
+  // hexagonal or diamond outline, and SHAPED_MODES is already keyed by which.
   for (const [tiling, modes] of Object.entries(SHAPED_MODES)) {
     for (const mode of modes) MODE_PATTERN.set(mode, tiling);
   }

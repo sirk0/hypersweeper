@@ -121,6 +121,7 @@ describe("catalog families", () => {
       "triangle",
       "hextri",
       "square",
+      "squarediamond",
       "hex",
       "hexhex",
       "hextriangle",
@@ -196,7 +197,7 @@ describe("mode -> tiling", () => {
     // The solids, the aperiodic and fractal patches and the shaped flats are
     // not products of the catalogue, so they answer null — as they do for
     // `surfaceOf`.
-    for (const mode of [...SOLID_MODES, "penrose", "sphinx", "hexhex"]) {
+    for (const mode of [...SOLID_MODES, "penrose", "sphinx", "hexhex", "squarediamond"]) {
       expect(tilingOf(mode)).toBe(null);
     }
     expect(tilingOf("nosuchboard")).toBe(null);

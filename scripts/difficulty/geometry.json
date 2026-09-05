@@ -7950,5 +7950,46 @@
         "indistinguishable": 0
       }
     }
+  },
+  "squarediamond": {
+    "builder": "square_diamond_board",
+    "args": {
+      "easy": {
+        "args": [
+          6,
+          13,
+          48.487
+        ],
+        "cells": 85,
+        "score": 0.0482,
+        "distortionMean": 1.0,
+        "distortionP90": 1.0,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          11,
+          49,
+          32.173
+        ],
+        "cells": 265,
+        "score": 0.0346,
+        "distortionMean": 1.0,
+        "distortionP90": 1.0,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          15,
+          111,
+          26.163
+        ],
+        "cells": 481,
+        "score": 0.0021,
+        "distortionMean": 1.0,
+        "distortionP90": 1.0,
+        "indistinguishable": 0
+      }
+    }
   }
 }

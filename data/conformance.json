@@ -30,6 +30,35 @@
         "hasCellCycle": false
       }
     },
+    "squarediamond": {
+      "easy": {
+        "cellCount": 85,
+        "mineCount": 13,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 196,
+        "vertexCount": 112,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 265,
+        "mineCount": 49,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 576,
+        "vertexCount": 312,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 481,
+        "mineCount": 111,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 1024,
+        "vertexCount": 544,
+        "hasCellCycle": false
+      }
+    },
     "triangle": {
       "easy": {
         "cellCount": 81,

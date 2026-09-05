@@ -132,6 +132,7 @@
     "steppedbipyramid": "Stepped bipyramid",
     "triangle": "Triangles - triangular board",
     "hextri": "Triangles - hexagonal board",
+    "squarediamond": "Squares - diamond board",
     "hexhex": "Hexagons - hexagonal board",
     "hextriangle": "Hexagons - triangular board",
     "cube3d": "Volumetric"
@@ -917,6 +918,12 @@
       "surface": "flat",
       "family": "regular"
     },
+    "squarediamond": {
+      "label": "Squares - diamond board",
+      "tiling": "square",
+      "surface": "flat",
+      "family": "regular"
+    },
     "stackedbond": {
       "label": "Stacked bond",
       "tiling": "stackedbond",
@@ -1341,6 +1348,9 @@
       "tri": [
         "triangle",
         "hextri"
+      ],
+      "square": [
+        "squarediamond"
       ],
       "hex": [
         "hexhex",

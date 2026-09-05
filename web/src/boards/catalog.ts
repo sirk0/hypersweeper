@@ -231,7 +231,7 @@ export function familyRows(family: string, surfaceKey: string): FamilyRow[] {
     if (!tiling || !tilingAllows(tiling, surface)) continue;
     rows.push({ mode: modeFor(key, surfaceKey), label: tiling.label, icon: key });
     if (family === "regular" && surfaceKey === "flat") {
-      // the same tiling on a triangular / hexagonal outline
+      // the same tiling on a triangular / hexagonal / diamond outline
       for (const mode of SHAPED_MODES[key] ?? []) {
         rows.push({ mode, label: MODE_LABELS[mode] ?? mode, icon: mode });
       }
@@ -258,8 +258,9 @@ export function pickerFamilies(surfaceKey: string): string[] {
 // this is filtered by what is actually built -- callers pass their own
 // `hasMode`, as the menu already does for family rows.
 
-/** The modes that are a regular tiling cut to a triangular or hexagonal
- * outline rather than the default rectangle. They exist on the plane only. */
+/** The modes that are a regular tiling cut to a triangular, hexagonal or
+ * diamond outline rather than the default rectangle. They exist on the plane
+ * only. */
 const SHAPED_MODE_SET = new Set(Object.values(SHAPED_MODES).flat());
 
 export function isShapedMode(mode: string): boolean {
@@ -296,10 +297,15 @@ export function menuFamilies(surfaceKey: string): string[] {
 
 /** The web menu's family labels: `regular` no longer names the regular
  * tilings (they are promoted) but the shaped boards left behind. The shared
- * FAMILY_LABELS still says "Regular" -- that is the pygame menu's page. */
+ * FAMILY_LABELS still says "Regular" -- that is the pygame menu's page.
+ *
+ * It read "Non-square boards" while every member was a triangle or a hexagon
+ * board; `squarediamond` is the square tiling on a square outline, so the name
+ * had to say what the family actually is -- the same tilings cut to a
+ * different shape. */
 export const MENU_FAMILY_LABELS: Record<string, string> = {
   ...FAMILY_LABELS,
-  regular: "Non-square boards",
+  regular: "Shaped boards",
 };
 
 /** One line under each family row, saying what the name means.
@@ -311,7 +317,7 @@ export const MENU_FAMILY_LABELS: Record<string, string> = {
  * and phrased by what the *board* looks like rather than by the classification
  * it comes from. */
 export const MENU_FAMILY_HINTS: Record<string, string> = {
-  regular: "Triangles and hexagons, cut to shape",
+  regular: "Triangles, squares and hexagons, cut to shape",
   uniform: "Two or three shapes, same at every corner",
   // Keyed `dual`; "Laves" is only its label (see `menu.familyLabels`).
   dual: "Their duals — one shape throughout",

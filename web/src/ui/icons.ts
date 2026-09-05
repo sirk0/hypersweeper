@@ -1128,6 +1128,27 @@ function draw(rawKey: string): string[] {
     for (let k = 0; k < 6; k++) {
       parts.push(shape([h[k]!, h[(k + 1) % 6]!, [C, C]], k % 2 ? BASE : LIGHT));
     }
+  } else if (key === "squarediamond") {
+    // the square tiling turned 45 degrees, on the radius-2 board: thirteen
+    // diamonds whose centres are (u, v) with max(|u|, |v|) <= 2 and the two
+    // the same parity -- a square outline with the sawtooth edge that is what
+    // the board is for. The lattice unit is a half-diagonal, so the patch
+    // spans 6 of them corner to corner.
+    const r = (d * 0.92) / 6;
+    for (let v = -2; v <= 2; v++) {
+      for (let u = -2; u <= 2; u++) {
+        if ((u + v) % 2 !== 0) continue;
+        const [cx, cy] = [C + u * r, C + v * r];
+        parts.push(
+          shape([
+            [cx, cy - r],
+            [cx + r, cy],
+            [cx, cy + r],
+            [cx - r, cy],
+          ]),
+        );
+      }
+    }
   } else if (key === "hexhex") {
     const r = d * 0.155;
     const centers: P[] = [[C, C]];

@@ -68,6 +68,7 @@ SPEC: dict[str, dict] = {
     "hexhex_board": dict(size=(0,), mine=1, shape=2, kind="scale"),
     "hextri_board": dict(size=(0,), mine=1, shape=2, kind="scale"),
     "hextriangle_board": dict(size=(0,), mine=1, shape=2, kind="scale"),
+    "square_diamond_board": dict(size=(0,), mine=1, shape=2, kind="scale"),
     "torus_board": dict(size=(0, 1), mine=2, shape=3, kind="tube"),
     "torus_triangle_board": dict(size=(0, 1), mine=2, shape=3, kind="tube"),
     "torus_hex_board": dict(size=(0, 1), mine=2, shape=3, kind="tube"),
@@ -551,7 +552,7 @@ def _symmetric_enough(mode: str, board, is_flat: bool) -> bool:
     except Exception:
         return True  # tooling should not fail because the suite moved
     # Only the Archimedean windows are held to this. The named shaped boards --
-    # triangle, hexhex, hextri, hextriangle -- are deliberately *not*
+    # triangle, hexhex, hextri, hextriangle, squarediamond -- are deliberately *not*
     # rectangles but polygons of their tiling's own symmetry, and a triangle
     # has three-fold symmetry, not the two-fold the measure looks for. Applied
     # to them it rejects every real board and leaves the degenerate one-cell

@@ -556,7 +556,8 @@ class TestMenu:
         self.click_item(menu, "regular")
         # each regular tiling, followed by the shaped boards cut from it
         assert [key for _, key, _, _ in menu.layout()["items"]] == [
-            "tri", "triangle", "hextri", "square", "hex", "hexhex", "hextriangle"
+            "tri", "triangle", "hextri", "square", "squarediamond",
+            "hex", "hexhex", "hextriangle"
         ]
         assert self.click_item(menu, "hex") == ("start", "hex")
 

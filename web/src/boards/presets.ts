@@ -58,6 +58,7 @@ import {
   hextriangleBoard,
   hextriBoard,
   squareBoard,
+  squareDiamondBoard,
   triangleBoard,
   triangleGridBoard,
 } from "./tilings";
@@ -94,6 +95,7 @@ const BUILDERS: Record<string, Builder> = {
   hexhex_board: hexhexBoard,
   hextri_board: hextriBoard,
   hextriangle_board: hextriangleBoard,
+  square_diamond_board: squareDiamondBoard,
   c80_board: c80Board,
   c180_board: c180Board,
   sphere_triangle_board: sphereTriangleBoard,

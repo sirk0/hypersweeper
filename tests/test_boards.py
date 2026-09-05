@@ -77,6 +77,7 @@ from minesweeper.boards import (
     sphere_triangle_board,
     sphinx_board,
     square_board,
+    square_diamond_board,
     stepped_bipyramid_board,
     substitution_placements,
     surface_of,
@@ -256,6 +257,12 @@ class TestCellCounts:
 
     def test_sphere_has_sixty_pentagons(self):
         assert len(sphere_board(7).adjacency) == 60
+
+    def test_square_diamond_is_a_centered_square_number(self):
+        # 2R^2 + 2R + 1 cells: the (R+1)^2 + R^2 lattice points of the two
+        # parities inside |u|, |v| <= R
+        assert len(square_diamond_board(3, 5).adjacency) == 25
+        assert len(square_diamond_board(6, 10).adjacency) == 85
 
     def test_hexhex_is_a_centered_hexagonal_number(self):
         # 3R^2 + 3R + 1 cells
@@ -1552,6 +1559,20 @@ class TestNeighborCounts:
     def test_torus_wraps_around(self):
         board = torus_board(12, 6, 9)
         assert (0, 0) in board.adjacency[(11, 5)]
+
+    def test_square_diamond_neighbor_counts(self):
+        # the sawtooth edge, which is the whole point of the board: the plain
+        # square grid's boundary has only 5s and four 3s, this one has five
+        # distinct degrees
+        board = square_diamond_board(4, 5)
+        assert len(board.adjacency[(0, 0)]) == 8  # interior, as any square
+        assert len(board.adjacency[(4, 4)]) == 3  # a corner of the window
+        assert len(board.adjacency[(2, 4)]) == 5  # a tip of the sawtooth
+        assert len(board.adjacency[(1, 3)]) == 7  # a notch behind one
+        assert len(board.adjacency[(3, 3)]) == 6  # beside a corner
+        assert Counter(len(n) for n in board.adjacency.values()) == Counter(
+            {8: 13, 7: 8, 5: 12, 6: 4, 3: 4}  # 41 cells
+        )
 
     def test_hexhex_neighbor_counts(self):
         board = hexhex_board(3, 5)

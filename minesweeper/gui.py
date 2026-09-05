@@ -1127,6 +1127,21 @@ def _render_icon(key: str) -> pygame.Surface:
             _icon_shape(s, [h[k], h[(k + 1) % 6], (c, c)],
                         fill=ICON_BLUE if k % 2 else ICON_BLUE_LIGHT, width=4)
         _icon_gloss(s, pygame.Rect(d * 0.06, d * 0.12, d * 0.88, d * 0.76))
+    elif key == "squarediamond":
+        # the square tiling turned 45 degrees, on the radius-2 board: thirteen
+        # diamonds whose centres are (u, v) with max(|u|, |v|) <= 2 and the two
+        # the same parity -- a square outline with the sawtooth edge that is
+        # what the board is for. The lattice unit is a half-diagonal, so the
+        # patch spans 6 of them corner to corner.
+        r = d * 0.92 / 6
+        for v in range(-2, 3):
+            for u in range(-2, 3):
+                if (u + v) % 2:
+                    continue
+                cx, cy = c + u * r, c + v * r
+                _icon_shape(s, [(cx, cy - r), (cx + r, cy),
+                                (cx, cy + r), (cx - r, cy)])
+        _icon_gloss(s, pygame.Rect(d * 0.08, d * 0.08, d * 0.84, d * 0.84))
     elif key == "hexhex":
         r = d * 0.155
         centers = [(c, c)] + [
