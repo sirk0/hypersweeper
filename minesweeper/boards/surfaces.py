@@ -197,78 +197,106 @@ def torus_hex_board(
 
 # -- the double donut (genus 2) ----------------------------------------------
 #
-# Two donuts, side by side in the z = 0 plane, joined at their outer rims:
-# the connected sum of two tori, Euler characteristic -2, and the figure of
-# eight the shape reads as. Everything about it is `torus_board` twice over
-# except the join, and the join is one cell:
+# Two donuts side by side in the z = 0 plane, overlapping, and cut apart along
+# the plane between them: the connected sum of two tori, Euler characteristic
+# -2, and the figure of eight the shape reads as.
 #
-#   * The two rings touch at their OUTER equators. Tangent at the *inner*
-#     rims instead and the two annuli overlap -- two rings of core radius 1
-#     whose centres are 2(1 - tube_radius) apart interpenetrate above and
-#     below the contact point -- so the donuts sit 2(1 + tube_radius) + 2*gap
-#     apart along x and meet at phi = 0.
+#   * They are placed so that a point of one donut's OUTER equator lies on the
+#     other's INNER equator. That fixes the centres 2 * ``separation`` apart
+#     with separation = 1, whatever the tube radius -- (1 + r) + (1 - r) = 2 --
+#     and it is the whole difference between a merge and a kiss: at 1 the two
+#     ring circles are tangent at the origin, so the tubes round them share a
+#     lens of real volume. Push the donuts out to 1 + tube_radius and that lens
+#     shrinks to the single point the rims touch at.
 #   * Donut B is donut A mirrored in x, key for key. So a vertex of A and the
-#     vertex of B it is glued to already agree in y and z, and differ only in
-#     the sign of x: the shared vertex goes at x = 0, halfway, and the cells
-#     round the hole stretch across the gap into a short waist.
-#   * One cell is removed from each donut at the contact point (`hole` cells
-#     a side, 1 by default) and the boundary vertices of the two holes are
-#     identified. Every other cell is the square-tiled donut's, and the only
-#     irregular vertices are the four corners of the seam -- four whatever the
-#     hole's size -- where three quads of each donut meet instead of four.
+#     vertex of B it is glued to already agree in y and z and differ only in
+#     the sign of x, and the shared vertex goes at x = 0 -- exactly, with
+#     nothing rounded together.
+#   * What is removed is then not a patch anyone chose but everything each
+#     donut puts on the other's side: every cell of A with a vertex at x > 0.
+#     So A keeps the half of itself in x <= 0 and B the half in x >= 0, the two
+#     meet only on the plane, and the board is embedded by construction however
+#     deep the donuts overlap. The seam is the ring of vertices between the two
+#     halves, pulled the last fraction onto x = 0.
 #
-# chi = -2 for any hole size: the arithmetic is in TestDoubleTorus.
+# The removed region is a disc -- cos(theta) > separation / (1 + r cos(phi))
+# is an interval in theta whose width falls away monotonically with |phi|, and
+# for separation >= 1 it reaches neither the far side of the ring nor of the
+# tube -- so the board is a torus-minus-disc glued to a torus-minus-disc:
+# chi = -1 - 1 = -2. TestDoubleTorus measures that over a sweep of windows.
+
+# How far past zero a vertex has to sit to count as the far side. The cut is a
+# strict inequality on a float, and a vertex can land on the plane exactly (the
+# tube's own quarter points do, at separation 1) -- where the two ports' cos
+# can disagree in the last bit and the boards would come out different shapes.
+# Anything within this of the plane counts as on it, which both ports agree on.
+_CUT_EPS = 1e-9
 
 
-def _double_torus_layout(ring: int, tube: int, hole: int):
-    """The index bookkeeping shared by the builder and its tests: the block
-    of removed cells, the seam vertices round it, and the half-step offset
-    that centres both on the contact point.
+def _double_torus_cut(ring: int, tube: int, tube_radius: float,
+                      separation: float):
+    """Which cells the plane x = 0 takes out of donut A, and the ring of
+    vertices left between the two halves.
 
-    The tiling's cell (i, j) spans vertices i..i+1, so an odd-sided block is
-    centred on a cell *centre* and an even-sided one on a vertex; ``offset``
-    is the half step that puts either at theta = phi = 0."""
-    if hole < 1:
-        raise ValueError("hole must be at least one cell")
-    if ring < hole + 2 or tube < hole + 2:
-        raise ValueError("ring and tube must leave a whole course round the hole")
-    low = -(hole // 2)
-    span = range(low, low + hole)
-    removed = {(i % ring, j % tube) for i in span for j in span}
-    # the vertices bounding that block: its own grid, minus the interior
-    seam = {
-        (i % ring, j % tube)
-        for i in range(low, low + hole + 1)
-        for j in range(low, low + hole + 1)
-        if i in (low, low + hole) or j in (low, low + hole)
-    }
-    return removed, seam, (hole % 2) / 2
+    Both are index sets on the (ring, tube) grid, and both are what donut B
+    gives up too -- B is A mirrored, so the cut lands on the same indices."""
+    if separation < 1.0:
+        raise ValueError("separation below 1 pulls the ring circles through "
+                         "each other")
+
+    def cut_depth(i: int, j: int) -> float:
+        """How far vertex (i, j) of donut A sticks out past the plane."""
+        radial = 1.0 + tube_radius * math.cos(2 * math.pi * j / tube)
+        return radial * math.cos(2 * math.pi * i / ring) - separation
+
+    def corners(i: int, j: int):
+        return ((i, j), (i + 1, j), (i + 1, j + 1), (i, j + 1))
+
+    grid = [(i, j) for i in range(ring) for j in range(tube)]
+    removed = {(i, j) for i, j in grid
+               if any(cut_depth(a, b) > _CUT_EPS for a, b in corners(i, j))}
+    if not removed:
+        raise ValueError("the donuts do not reach each other: nothing to merge")
+
+    on_removed, on_kept = set(), set()
+    for i, j in grid:
+        touched = on_removed if (i, j) in removed else on_kept
+        touched.update((a % ring, b % tube) for a, b in corners(i, j))
+    seam = on_removed & on_kept
+
+    # A kept cell with every corner on the seam carries no vertex of its own,
+    # so donut B's copy of it is the same four ids -- two cells glued to each
+    # other along all four edges, which is a pinch rather than a surface. It
+    # means the cut left the far side of the tube (or of the ring) one cell
+    # thick, and the window is simply too small for this overlap.
+    if any((i, j) not in removed
+           and all((a % ring, b % tube) in seam for a, b in corners(i, j))
+           for i, j in grid):
+        raise ValueError("the cut leaves a cell with every vertex on the seam: "
+                         "too few cells round the tube for this separation")
+    return removed, seam
 
 
 def double_torus_board(
     ring: int, tube: int, mine_count: int, tube_radius: float = 0.38,
-    gap: float = 0.2, hole: int = 1,
+    separation: float = 1.0,
 ) -> Board3D:
     """Two square-tiled donuts merged into one genus-2 board: ``ring`` cells
-    round each ring and ``tube`` round each tube, less the ``hole`` x ``hole``
-    block each gives up at the join. ``gap`` is how far the two rims stand
-    apart before the seam pulls them together, so it is the length of the
-    waist."""
-    removed, seam, offset = _double_torus_layout(ring, tube, hole)
-    centre = 1.0 + tube_radius + gap   # |x| of each donut's centre
-
-    def angles(i: int, j: int) -> tuple[float, float]:
-        return (2 * math.pi * (i - offset) / ring,
-                2 * math.pi * (j - offset) / tube)
+    round each ring and ``tube`` round each tube, less the cells each gives up
+    where it overlaps the other. ``separation`` is half the distance between
+    the two centres; at 1 a point of each donut's outer equator lies on the
+    other's inner equator, which is as merged as they get before the ring
+    circles cross, and at ``1 + tube_radius`` they only touch."""
+    removed, seam = _double_torus_cut(ring, tube, tube_radius, separation)
 
     def point(key):
         side, i, j = key
-        theta, phi = angles(i, j)
+        theta, phi = 2 * math.pi * i / ring, 2 * math.pi * j / tube
         radial = 1.0 + tube_radius * math.cos(phi)
         y, z = radial * math.sin(theta), tube_radius * math.sin(phi)
         if side == "s":
-            return (0.0, y, z)          # the seam: halfway between the rims
-        x = radial * math.cos(theta) - centre
+            return (0.0, y, z)          # the seam: the plane the two halves cut
+        x = radial * math.cos(theta) - separation
         return (x if side == 0 else -x, y, z)
 
     def vertex(side: int, i: int, j: int):
@@ -288,9 +316,10 @@ def double_torus_board(
 
     def orient(cell, polygon):
         """Wind a face outward from *its own* donut's ring circle. Which of
-        the two that is comes off the cell, not off the geometry: at the
-        waist the two circles are equidistant and a measured answer ties."""
-        cx = -centre if cell[0] == 0 else centre
+        the two that is comes off the cell, not off the geometry: the two
+        circles are tangent at the origin, so at the waist a measured answer
+        ties."""
+        cx = -separation if cell[0] == 0 else separation
         cen = tuple(sum(c) / len(polygon) for c in zip(*polygon))
         scale = math.hypot(cen[0] - cx, cen[1]) or 1.0
         ring_point = (cx + (cen[0] - cx) / scale, cen[1] / scale, 0.0)

@@ -1772,30 +1772,30 @@
     },
     "doubletorus": {
       "easy": {
-        "cellCount": 126,
-        "mineCount": 18,
+        "cellCount": 112,
+        "mineCount": 20,
         "euler": -2,
         "boundaryComponents": 0,
-        "edgeCount": 252,
-        "vertexCount": 124,
+        "edgeCount": 224,
+        "vertexCount": 110,
         "hasCellCycle": false
       },
       "medium": {
-        "cellCount": 254,
-        "mineCount": 52,
+        "cellCount": 256,
+        "mineCount": 58,
         "euler": -2,
         "boundaryComponents": 0,
-        "edgeCount": 508,
-        "vertexCount": 252,
+        "edgeCount": 512,
+        "vertexCount": 254,
         "hasCellCycle": false
       },
       "hard": {
-        "cellCount": 484,
-        "mineCount": 101,
+        "cellCount": 504,
+        "mineCount": 129,
         "euler": -2,
         "boundaryComponents": 0,
-        "edgeCount": 968,
-        "vertexCount": 482,
+        "edgeCount": 1008,
+        "vertexCount": 502,
         "hasCellCycle": false
       }
     },

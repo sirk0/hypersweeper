@@ -614,7 +614,26 @@ picked — and four things do not:
    argument. The check that your rule is consistent is combinatorial and worth
    writing: on an orientable closed surface every edge is traversed once in
    each direction.
-4. **Expect the size band to lose.** A joined board buys twice the cells per
+4. **Cut geometrically and the topology stops being obvious.** The double
+   torus does not remove a block someone chose but everything each donut puts
+   on the other's side of the plane between them, which makes it embedded
+   whatever the arguments -- and makes the shape of the removed region move
+   with all of them. Two things follow. Prove the region is a disc rather than
+   assuming it (there the theta interval narrows monotonically with `|phi|` and
+   never reaches round the ring or the tube, so chi = -1 - 1) and pin it with a
+   *sweep* of windows rather than the shipped three. And refuse the windows
+   where the cut degenerates: a cell with every vertex on the seam has no
+   vertex of its own, so the other piece's copy of it is the same four ids and
+   the two are glued along every edge -- a pinch, not a surface. The size
+   search skips a window that will not build, so a `ValueError` is the whole
+   handling.
+5. **A geometric cut can straighten a corner.** Pulling a run of vertices onto
+   the join plane can leave three corners of a cell collinear, and the shape
+   palette's geometric fallback then measures that square as a triangle and
+   paints it a different hue. Carry a `cornerMask` — the authoritative "which
+   polygon vertices are real corners", which for a board of squares is all of
+   them.
+6. **Expect the size band to lose.** A joined board buys twice the cells per
    step of its window, so the floors that keep one piece reading as a surface
    (`resize.MIN_WRAP_CELLS` for a closed square lattice) can put the smallest
    legal board well past the classic easy size. That is an `EXEMPT_ROWS` entry

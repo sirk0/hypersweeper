@@ -148,12 +148,12 @@ EXEMPT_ROWS = {
     # direction of a closed square lattice (`resize.MIN_WRAP_CELLS`, which on
     # a builder whose knobs count cells is also what keeps a tube from being a
     # square prism -- there is no domain count for `MAX_TILE_TURN` to read),
-    # and 8x8 twice over, less the cell each donut gives up at the join, is
-    # 126 against an easy target of 81. Nothing smaller is legal and nothing
-    # between 126 and 81 exists, so the surface outranks the size band here as
-    # it does for the coarse-domain tilings above. Medium and hard land in the
-    # ordinary band on their own.
-    ("doubletorus", "easy"),             # 126, and 8x8 is the smallest legal
+    # and 9x8 twice over, less the block each donut gives up where it overlaps
+    # the other, is 112 against an easy target of 81. Nothing much smaller is
+    # legal, so the surface outranks the size band here as it does for the
+    # coarse-domain tilings above. Medium and hard land in the ordinary band on
+    # their own -- medium on the nose.
+    ("doubletorus", "easy"),             # 112, and 8 cells each way is the floor
 }
 
 # Everything else is held to two bars rather than one. A single +-15% rule

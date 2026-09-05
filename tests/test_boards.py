@@ -2235,9 +2235,9 @@ class TestKleinBottle:
 
 
 class TestDoubleTorus:
-    """Two square-tiled donuts merged at their outer rims: the connected sum
-    of two tori, and the one board in the zoo that is not a sphere, a disc or
-    a chi = 0 surface."""
+    """Two square-tiled donuts overlapping and cut apart along the plane
+    between them: the connected sum of two tori, and the one board in the zoo
+    that is not a sphere, a disc or a chi = 0 surface."""
 
     @pytest.mark.parametrize("difficulty", DIFFICULTIES)
     def test_is_a_closed_orientable_genus_two_surface(self, difficulty):
@@ -2252,44 +2252,84 @@ class TestDoubleTorus:
         surface = surface_of("doubletorus")
         assert (surface.euler, surface.boundary_components) == (-2, 0)
 
-    @pytest.mark.parametrize("hole", [1, 2, 3])
-    def test_chi_is_minus_two_whatever_the_hole(self, hole):
-        """Removing a p x p block from each donut and gluing the two hole
-        boundaries costs (p-1)**2 vertices and 2p**2 - 2p edges a side, and
-        identifying 4p of each: V - E + F comes out -2 for every p."""
-        ring, tube = hole + 6, hole + 6
-        board = double_torus_board(ring, tube, 8, hole=hole)
-        assert len(board.adjacency) == 2 * (ring * tube - hole**2)
+    def test_the_outer_equator_of_one_lies_on_the_inner_equator_of_the_other(self):
+        """What puts the two donuts far enough into each other to merge.
+
+        The outer equator of a donut of tube radius r stands 1 + r from its
+        centre and the inner one 1 - r, so the two meet when the centres are
+        (1 + r) + (1 - r) = 2 apart -- separation 1, whatever r is. Both points
+        are then at x = r, and the ring circles are tangent at the origin, so
+        the tubes round them share a lens of real volume rather than a point.
+        """
+        for tube_radius in (0.28, 0.38, 0.52):
+            outer = (1.0 + tube_radius) - 1.0        # donut A's outer equator
+            inner = 1.0 - (1.0 - tube_radius)        # donut B's inner equator
+            assert outer == pytest.approx(inner) == pytest.approx(tube_radius)
+
+    @pytest.mark.parametrize("tube_radius", [0.28, 0.38, 0.52])
+    def test_how_deep_the_donuts_reach_into_each_other(self, tube_radius):
+        """...and the same thing measured on the board: at separation 1 the
+        deepest point of one donut stands a whole tube radius past the plane,
+        which is what the cut takes off. Pushed out to 1 + tube_radius they
+        only touch, and there is nothing left to merge."""
+        deepest = max(
+            (1.0 + tube_radius * math.cos(2 * math.pi * j / 12))
+            * math.cos(2 * math.pi * i / 24) - 1.0
+            for i in range(24) for j in range(12)
+        )
+        assert deepest == pytest.approx(tube_radius)
+        with pytest.raises(ValueError, match="do not reach each other"):
+            double_torus_board(24, 12, 20, tube_radius, 1.0 + tube_radius)
+
+    @pytest.mark.parametrize("ring", [9, 14, 19, 24])
+    @pytest.mark.parametrize("tube", [8, 10, 12])
+    @pytest.mark.parametrize("tube_radius,separation", [(0.28, 1.0), (0.38, 1.0),
+                                                        (0.52, 1.0), (0.38, 1.15)])
+    def test_chi_is_minus_two_over_the_whole_window_range(
+        self, ring, tube, tube_radius, separation
+    ):
+        """The cut is geometric, not a block someone chose, so the shape of
+        the removed region moves with every argument. It stays a disc: the
+        cells it takes are an interval in theta whose width falls away
+        monotonically with |phi|, and for separation >= 1 it reaches neither
+        the far side of the ring nor of the tube. A torus-minus-disc glued to
+        a torus-minus-disc is chi = -1 - 1."""
+        board = double_torus_board(ring, tube, 20, tube_radius, separation)
         assert _euler_characteristic(board) == -2
         assert _boundary_components(board) == 0
 
     @pytest.mark.parametrize("difficulty", DIFFICULTIES)
-    def test_only_the_seam_corners_are_irregular(self, difficulty):
-        """The whole point of the construction: away from the join every
-        vertex is the square grid's, four quads round it. At the four corners
-        of the seam three quads of each donut meet, and there are exactly four
-        of those however big the board is."""
+    def test_each_donut_keeps_its_own_side_of_the_plane(self, difficulty):
+        """What makes the board embedded however deep the donuts overlap: the
+        cut takes every cell that puts a vertex on the other side, so one
+        donut lies wholly in x <= 0 and the other wholly in x >= 0 and the two
+        meet only on the plane itself."""
         board = build_board("doubletorus", difficulty)
-        fans = Counter(len(fan) for fan in _corner_fans(board).values())
-        assert fans[6] == 4
-        assert set(fans) == {4, 6}
-
-    @pytest.mark.parametrize("difficulty", DIFFICULTIES)
-    def test_the_two_donuts_do_not_touch_anywhere_but_the_seam(self, difficulty):
-        """The rims are pulled together at x = 0 and nothing else reaches it,
-        so the surface is embedded rather than self-intersecting -- which is
-        also what keeps every vertex a distinct point (a merge would drop chi
-        silently, since the topology invariants key on coordinates)."""
-        gap = 0.2   # the builder's default, the slab the waist bridges
-        board = build_board("doubletorus", difficulty)
-        xs = [round(p[0], 9) for poly in board.polygons.values() for p in poly]
-        # every vertex is on one donut or the other -- clear of the slab
-        # between their rims -- or exactly on the seam plane halfway across
-        assert all(x == 0.0 or abs(x) >= gap for x in xs)
-        assert min(xs) < 0 < max(xs) and 0.0 in xs
+        seen = {-1: False, 1: False}
+        for cell, polygon in board.polygons.items():
+            side = -1 if cell[0] == 0 else 1
+            for x, _, _ in polygon:
+                assert side * round(x, 9) >= 0, (cell, x)
+                if round(x, 9) != 0:
+                    seen[side] = True
+        assert all(seen.values())          # both donuts are really there
+        # ...and no two vertices were rounded into one, which would drop chi
+        # silently (the topology invariants key on coordinates)
         points = {tuple(round(c, 6) for c in p)
                   for poly in board.polygons.values() for p in poly}
         assert len(points) == len(_corner_fans(board))
+
+    @pytest.mark.parametrize("difficulty", DIFFICULTIES)
+    def test_every_cell_is_a_quad_and_only_the_seam_is_irregular(self, difficulty):
+        """Away from the join every vertex is the square grid's, four quads
+        round it. The seam is where the two donuts' grids meet out of step, so
+        its vertices carry more -- but never fewer, and never a cell that is
+        not a quadrilateral."""
+        board = build_board("doubletorus", difficulty)
+        assert {len(p) for p in board.polygons.values()} == {4}
+        fans = Counter(len(fan) for fan in _corner_fans(board).values())
+        assert set(fans) <= {4, 6}
+        assert fans[4] > 10 * fans[6]      # the seam is a small part of it
 
     @pytest.mark.parametrize("difficulty", DIFFICULTIES)
     def test_faces_wind_outward_consistently(self, difficulty):
@@ -2304,8 +2344,7 @@ class TestDoubleTorus:
                 directed[(a, b)] += 1
         assert set(directed.values()) == {1}
         # ...and outward rather than inward: by the divergence theorem an
-        # outward-wound closed surface encloses a positive volume, and this
-        # one is two tori less the pinch at the waist
+        # outward-wound closed surface encloses a positive volume
         volume = 0.0
         for polygon in board.polygons.values():
             o = polygon[0]
@@ -2315,11 +2354,18 @@ class TestDoubleTorus:
                 volume += sum(o[k] * _cross(u, v)[k] for k in range(3)) / 6
         assert volume > 0
 
-    def test_the_hole_must_leave_a_whole_course_round_it(self):
-        with pytest.raises(ValueError):
-            double_torus_board(3, 8, 8, hole=2)
-        with pytest.raises(ValueError):
-            double_torus_board(8, 3, 8, hole=2)
+    def test_the_ring_circles_may_not_be_pulled_through_each_other(self):
+        with pytest.raises(ValueError, match="separation below 1"):
+            double_torus_board(16, 8, 20, 0.38, 0.9)
+
+    def test_a_tube_too_thin_for_the_cut_is_refused(self):
+        """A cut that leaves the far side of the tube one cell thick gives
+        that cell four seam vertices and no vertex of its own -- so the other
+        donut's copy of it is the same four ids, and the two are glued to each
+        other along every edge. That is a pinch, not a surface, and it is what
+        the builder refuses rather than quietly building."""
+        with pytest.raises(ValueError, match="every vertex on the seam"):
+            double_torus_board(8, 5, 20, 0.28, 1.0)
 
 
 class TestKleinTilings:

@@ -7997,41 +7997,41 @@
     "args": {
       "medium": {
         "args": [
-          16,
+          19,
           8,
           52,
           0.45
         ],
-        "cells": 254,
-        "score": 0.0728,
-        "distortionMean": 1.0381,
-        "distortionP90": 1.0568,
+        "cells": 256,
+        "score": 0.1299,
+        "distortionMean": 1.0711,
+        "distortionP90": 1.1303,
         "indistinguishable": 0
       },
       "hard": {
         "args": [
-          27,
-          9,
+          24,
+          12,
           101,
-          0.33
+          0.38
         ],
-        "cells": 484,
-        "score": 0.04,
-        "distortionMean": 1.0191,
-        "distortionP90": 1.026,
+        "cells": 504,
+        "score": 0.14,
+        "distortionMean": 1.0498,
+        "distortionP90": 1.0891,
         "indistinguishable": 0
       },
       "easy": {
         "args": [
-          8,
+          9,
           8,
           18,
           0.52
         ],
-        "cells": 126,
-        "score": 0.7323,
-        "distortionMean": 1.1729,
-        "distortionP90": 1.2996,
+        "cells": 112,
+        "score": 0.8027,
+        "distortionMean": 1.2539,
+        "distortionP90": 1.6567,
         "indistinguishable": 0
       }
     }

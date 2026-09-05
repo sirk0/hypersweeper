@@ -46,7 +46,7 @@ Every board's mine count, chosen so its win probability under the reference solv
   - `triakis`/medium: 0.0% vs 87.1% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `triakis`/easy: 1.8% vs 96.5% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `truncicosidodeca`/hard: 45.9% vs 50.9% — no integer mine count lands within tolerance; this is the closest
-- 131 rows had games the solver abandoned (its frontier DP hit its node budget); their rates are measured over the games that finished:
+- 132 rows had games the solver abandoned (its frontier DP hit its node budget); their rates are measured over the games that finished:
   - `cube3d`/hard: 466 abandoned
   - `torustrunchex`/hard: 168 abandoned
   - `torusrotatedhex`/hard: 144 abandoned
@@ -115,7 +115,7 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `disdyakisdodeca` | 12.0 | 48c 6m (12%) 97% | 192c 50m (26%) 85% | 432c 125m (29%) 54% |
 | `disdyakistriaconta` | 12.5 | 120c 8m (7%) 99% | 480c 113m (24%) 86% | 480c 135m (28%) 48% |
 | `dodecahedron` | 11.0 | 60c 16m (27%) 95% | 240c 64m (27%) 88% | 540c 160m (30%) 48% |
-| `doubletorus` | 8.4 | 126c 18m (14%) 99% | 254c 52m (20%) 85% | 484c 101m (21%) 49% |
+| `doubletorus` | 8.4 | 112c 20m (18%) 96% | 256c 58m (23%) 84% | 504c 129m (26%) 49% |
 | `elongated` | 9.0 | 85c 5m (6%) 98% | 219c 26m (12%) 90% | 543c 92m (17%) 55% |
 | `floret` | 7.4 | 72c 7m (10%) 97% | 288c 37m (13%) 86% | 480c 81m (17%) 52% |
 | `gosper` | 5.5 | 49c 7m (14%) 99% | 343c 54m (16%) 86% | 343c 71m (21%) 49% |

@@ -771,69 +771,114 @@ export function torusHexBoard(
 // -- the double donut (genus 2) ----------------------------------------------
 //
 // Port of surfaces.py `double_torus_board`. Two donuts side by side in the
-// z = 0 plane, joined at their outer rims: the connected sum of two tori,
-// Euler characteristic -2, and the figure of eight the shape reads as. It is
-// `torusBoard` twice over except at the join, and the join is one cell:
+// z = 0 plane, overlapping, and cut apart along the plane between them: the
+// connected sum of two tori, Euler characteristic -2, and the figure of eight
+// the shape reads as.
 //
-//   * The two rings touch at their OUTER equators. Tangent at the *inner* rims
-//     instead and the two annuli overlap -- two rings of core radius 1 whose
-//     centres are 2(1 - tubeRadius) apart interpenetrate above and below the
-//     contact point -- so the donuts sit 2(1 + tubeRadius) + 2*gap apart along
-//     x and meet at phi = 0.
+//   * They are placed so that a point of one donut's OUTER equator lies on the
+//     other's INNER equator. That fixes the centres 2 * `separation` apart with
+//     separation = 1, whatever the tube radius -- (1 + r) + (1 - r) = 2 -- and
+//     it is the whole difference between a merge and a kiss: at 1 the two ring
+//     circles are tangent at the origin, so the tubes round them share a lens
+//     of real volume. Push the donuts out to 1 + tubeRadius and that lens
+//     shrinks to the single point the rims touch at.
 //   * Donut B is donut A mirrored in x, key for key. So a vertex of A and the
 //     vertex of B it is glued to already agree in y and z and differ only in
-//     the sign of x: the shared vertex goes at x = 0, halfway, and the cells
-//     round the hole stretch across the gap into a short waist.
-//   * One cell is removed from each donut at the contact point (`hole` cells a
-//     side, 1 by default) and the boundary vertices of the two holes are
-//     identified. Every other cell is the square-tiled donut's, and the only
-//     irregular vertices are the four corners of the seam -- four whatever the
-//     hole's size -- where three quads of each donut meet instead of four.
+//     the sign of x, and the shared vertex goes at x = 0 -- exactly, with
+//     nothing rounded together.
+//   * What is removed is then not a patch anyone chose but everything each
+//     donut puts on the other's side: every cell of A with a vertex at x > 0.
+//     So A keeps the half of itself in x <= 0 and B the half in x >= 0, the two
+//     meet only on the plane, and the board is embedded by construction however
+//     deep the donuts overlap. The seam is the ring of vertices between the two
+//     halves, pulled the last fraction onto x = 0.
 
-/** The index bookkeeping shared by the builder and its symmetries: the block
- * of removed cells, the seam vertices round it, and the half-step offset that
- * centres both on the contact point. A cell (i, j) spans vertices i..i+1, so an
- * odd-sided block is centred on a cell centre and an even-sided one on a
- * vertex; `offset` is the half step that puts either at theta = phi = 0. */
-function doubleTorusLayout(
+/** How far past zero a vertex has to sit to count as the far side. The cut is
+ * a strict inequality on a float, and a vertex can land on the plane exactly
+ * (the tube's own quarter points do, at separation 1) -- where the two ports'
+ * cos can disagree in the last bit and the boards would come out different
+ * shapes. Anything within this of the plane counts as on it. */
+const CUT_EPS = 1e-9;
+
+/** Which cells the plane x = 0 takes out of donut A, and the ring of vertices
+ * left between the two halves. Both are index sets on the (ring, tube) grid,
+ * and both are what donut B gives up too -- B is A mirrored, so the cut lands
+ * on the same indices. */
+function doubleTorusCut(
   ring: number,
   tube: number,
-  hole: number,
-): { removed: Set<string>; seam: Set<string>; offset: number } {
-  if (hole < 1) throw new Error("hole must be at least one cell");
-  if (ring < hole + 2 || tube < hole + 2) {
-    throw new Error("ring and tube must leave a whole course round the hole");
+  tubeRadius: number,
+  separation: number,
+): { removed: Set<string>; seam: Set<string> } {
+  if (separation < 1) {
+    throw new Error("separation below 1 pulls the ring circles through each other");
   }
-  const low = -Math.floor(hole / 2);
+  /** How far vertex (i, j) of donut A sticks out past the plane. */
+  const cutDepth = (i: number, j: number): number =>
+    (1 + tubeRadius * Math.cos((TWO_PI * j) / tube)) * Math.cos((TWO_PI * i) / ring) -
+    separation;
+  const corners = (i: number, j: number): [number, number][] => [
+    [i, j],
+    [i + 1, j],
+    [i + 1, j + 1],
+    [i, j + 1],
+  ];
+
   const removed = new Set<string>();
-  for (let i = low; i < low + hole; i++) {
-    for (let j = low; j < low + hole; j++) removed.add(`${mod(i, ring)},${mod(j, tube)}`);
-  }
-  const seam = new Set<string>();
-  for (let i = low; i <= low + hole; i++) {
-    for (let j = low; j <= low + hole; j++) {
-      if (i === low || i === low + hole || j === low || j === low + hole) {
-        seam.add(`${mod(i, ring)},${mod(j, tube)}`);
+  for (let i = 0; i < ring; i++) {
+    for (let j = 0; j < tube; j++) {
+      if (corners(i, j).some(([a, b]) => cutDepth(a, b) > CUT_EPS)) {
+        removed.add(`${i},${j}`);
       }
     }
   }
-  return { removed, seam, offset: (hole % 2) / 2 };
+  if (removed.size === 0) {
+    throw new Error("the donuts do not reach each other: nothing to merge");
+  }
+
+  const onRemoved = new Set<string>();
+  const onKept = new Set<string>();
+  for (let i = 0; i < ring; i++) {
+    for (let j = 0; j < tube; j++) {
+      const touched = removed.has(`${i},${j}`) ? onRemoved : onKept;
+      for (const [a, b] of corners(i, j)) touched.add(`${mod(a, ring)},${mod(b, tube)}`);
+    }
+  }
+  const seam = new Set([...onRemoved].filter((k) => onKept.has(k)));
+
+  // A kept cell with every corner on the seam carries no vertex of its own, so
+  // donut B's copy of it is the same four ids -- two cells glued to each other
+  // along all four edges, which is a pinch rather than a surface. It means the
+  // cut left the far side of the tube (or of the ring) one cell thick, and the
+  // window is simply too small for this overlap.
+  for (let i = 0; i < ring; i++) {
+    for (let j = 0; j < tube; j++) {
+      if (removed.has(`${i},${j}`)) continue;
+      if (corners(i, j).every(([a, b]) => seam.has(`${mod(a, ring)},${mod(b, tube)}`))) {
+        throw new Error(
+          "the cut leaves a cell with every vertex on the seam: too few cells " +
+            "round the tube for this separation",
+        );
+      }
+    }
+  }
+  return { removed, seam };
 }
 
 /** Two square-tiled donuts merged into one genus-2 board: `ring` cells round
- * each ring and `tube` round each tube, less the `hole` x `hole` block each
- * gives up at the join. `gap` is how far the two rims stand apart before the
- * seam pulls them together, so it is the length of the waist. */
+ * each ring and `tube` round each tube, less the cells each gives up where it
+ * overlaps the other. `separation` is half the distance between the two
+ * centres; at 1 a point of each donut's outer equator lies on the other's
+ * inner equator, which is as merged as they get before the ring circles cross,
+ * and at `1 + tubeRadius` they only touch. */
 export function doubleTorusBoard(
   ring: number,
   tube: number,
   mineCount: number,
   tubeRadius = 0.38,
-  gap = 0.2,
-  hole = 1,
+  separation = 1,
 ): Board3D {
-  const { removed, seam, offset } = doubleTorusLayout(ring, tube, hole);
-  const centre = 1 + tubeRadius + gap; // |x| of each donut's centre
+  const { removed, seam } = doubleTorusCut(ring, tube, tubeRadius, separation);
 
   const cells: Cells = new Map();
   const positions: Positions = new Map();
@@ -843,13 +888,13 @@ export function doubleTorusBoard(
     const onSeam = seam.has(`${i},${j}`);
     const k = onSeam ? `s,${i},${j}` : `${side},${i},${j}`;
     if (!positions.has(k)) {
-      const theta = (TWO_PI * (i - offset)) / ring;
-      const phi = (TWO_PI * (j - offset)) / tube;
+      const theta = (TWO_PI * i) / ring;
+      const phi = (TWO_PI * j) / tube;
       const radial = 1 + tubeRadius * Math.cos(phi);
       const y = radial * Math.sin(theta);
       const z = tubeRadius * Math.sin(phi);
-      const x = radial * Math.cos(theta) - centre;
-      // the seam goes halfway between the two rims, which by the mirror is x = 0
+      const x = radial * Math.cos(theta) - separation;
+      // the seam sits on the plane the two halves were cut along
       positions.set(k, onSeam ? [0, y, z] : [side === 0 ? x : -x, y, z]);
     }
     return k;
@@ -870,10 +915,10 @@ export function doubleTorusBoard(
   }
 
   /** Wind a face outward from *its own* donut's ring circle. Which of the two
-   * that is comes off the cell, not off the geometry: at the waist the two
-   * circles are equidistant and a measured answer ties. */
+   * that is comes off the cell, not off the geometry: the two circles are
+   * tangent at the origin, so at the waist a measured answer ties. */
   const orient = (cell: CellId, polygon: Vec3[]): Vec3[] => {
-    const cx = cell.startsWith("0,") ? -centre : centre;
+    const cx = cell.startsWith("0,") ? -separation : separation;
     const c = centroidOf(polygon);
     const scale = Math.hypot(c[0] - cx, c[1]) || 1;
     const ringPoint: Vec3 = [cx + (c[0] - cx) / scale, c[1] / scale, 0];
@@ -884,12 +929,11 @@ export function doubleTorusBoard(
     ]);
   };
 
-  // The hole spends every translation of the square lattice, so what is left
-  // is the shape's own point group: the half turn about z that swaps the two
+  // The cut spends every translation of the square lattice, so what is left is
+  // the shape's own point group: the half turn about z that swaps the two
   // donuts, and the two mirrors that fix each of them (the plane z = 0 across
   // the tubes, the plane y = 0 across the rings). Mirroring in x alone -- the
   // plain donut swap -- is the product of the first two, so it is not offered.
-  const flip = 2 * offset; // i -> flip - i fixes the contact point
   const vertexMove = (
     move: (side: number, i: number, j: number) => [number, number, number],
   ): SymmetryCandidate["build"] => () =>
@@ -902,16 +946,28 @@ export function doubleTorusBoard(
       return seam.has(`${ci},${cj}`) ? `s,${ci},${cj}` : `${side},${ci},${cj}`;
     });
   const symmetries: SymmetryCandidate[] = [
-    { id: "turn", build: vertexMove((s, i, j) => [1 - s, flip - i, j]) },
-    { id: "mirror-ring", build: vertexMove((s, i, j) => [s, flip - i, j]) },
-    { id: "mirror-tube", build: vertexMove((s, i, j) => [s, i, flip - j]) },
+    { id: "turn", build: vertexMove((s, i, j) => [1 - s, -i, j]) },
+    { id: "mirror-ring", build: vertexMove((s, i, j) => [s, -i, j]) },
+    { id: "mirror-tube", build: vertexMove((s, i, j) => [s, i, -j]) },
   ];
+
+  // Every cell is a quad of the square tiling and every one of its four
+  // vertices a real corner -- but the seam pulls a run of them onto the plane,
+  // and where two tube rows share a z (rows either side of the tube's top, on
+  // an even tube) three corners of a cell can come out exactly collinear. The
+  // geometric fallback in `corners` then measures that cell as a triangle and
+  // the shape palette paints it red, on a board of nothing but squares. The
+  // mask is the authoritative answer for exactly this case.
+  const cornerMask = new Map<CellId, boolean[]>(
+    [...cells.keys()].map((cell) => [cell, [true, true, true, true]]),
+  );
 
   return assemble("doubletorus", cells, positions, mineCount, {
     twoSided: false,
     radius: maxRadius,
     orient,
     symmetries,
+    cornerMask,
   });
 }
 

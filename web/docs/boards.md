@@ -69,8 +69,9 @@ about the tiling:
   and the plain step would land the tiling off its own lattice, the half step
   carries a glide along the ring with it.
 - A **double torus** keeps *no* translation. It is not glued from a rectangle:
-  it is two donuts merged at their outer rims, and the cell each gives up at
-  the join pins the lattice both ways, so there is nothing to scroll. What is
+  it is two overlapping donuts cut apart along the plane between them, and the
+  block each gives up there pins the lattice both ways, so there is nothing to
+  scroll. What is
   left is the figure of eight's own point group — the half turn about z that
   swaps the two donuts (`turn`), and the two mirrors that fix each of them, one
   across the tubes and one across the rings. The plain donut-swap mirror is the

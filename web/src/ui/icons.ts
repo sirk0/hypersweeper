@@ -745,15 +745,17 @@ const TORUS: SurfacePoint = (u, v) => {
   return [radial * Math.cos(u), radial * Math.sin(u), r * Math.sin(v)];
 };
 
-/** The two donuts of the genus-2 board (surfaces.py `double_torus_board`),
- * as a pair of surfaces meshed into one frame. They touch at their outer
- * rims, which is what makes the silhouette a figure of eight; the board pulls
- * a cell out of each there and glues the rims, which at icon size is a detail
- * below the mesh. */
+/** The two donuts of the genus-2 board (surfaces.py `double_torus_board`), as
+ * a pair of surfaces meshed into one frame. Their centres sit 2 apart, as the
+ * board's do — a point of each one's outer equator on the other's inner one —
+ * so they overlap in a lens rather than touching, which is what makes the
+ * silhouette a figure of eight with a merged waist. The board cuts the overlap
+ * away along the plane between them and sews the edges; the icon just lets the
+ * two meshes cross, which at this size draws the same shape. */
 const DOUBLE_TORUS: SurfacePoint[] = [-1, 1].map((side) => (u, v) => {
   const r = 0.42;
   const radial = 1 + r * Math.cos(v);
-  return [side * (1 + r) + radial * Math.cos(u), radial * Math.sin(u), r * Math.sin(v)];
+  return [side + radial * Math.cos(u), radial * Math.sin(u), r * Math.sin(v)];
 });
 
 /** u round the loop, v across the half-twisting band. */
