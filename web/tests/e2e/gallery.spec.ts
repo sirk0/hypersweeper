@@ -39,6 +39,10 @@ const MODES = [
   "cylinder",
   "mobius",
   "klein",
+  // ...and the one closed surface that is not a wrapped rectangle: two donuts
+  // merged at their outer rims. Its own renderer path is the donut's, but the
+  // shape of the join is geometry nothing else in the suite can see.
+  "doubletorus",
   // M5 aperiodic flat tilings: Penrose rhombi (thick/thin), trimmed to a
   // square patch, and the Spectre (a non-convex 13-gon, the chiral monotile
   // -- no tile in its patch is ever mirrored).

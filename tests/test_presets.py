@@ -143,6 +143,29 @@ EXEMPT_ROWS = {
     ("pentagonalicositetra", "medium"),  # 120 or 480
     ("sphere", "easy"),                  # 60 or 300
     ("sphere", "hard"),                  # 300 or 1200
+    # The double torus pays for its genus twice over: it is two donuts, so its
+    # window buys twice the cells a donut's does, and the merge has to stay
+    # narrower than the donuts it merges (`resize.MAX_WAIST`) or the board
+    # reads as one blob with two holes rather than two rings. Every easy row
+    # here is one of those two costs, and both are the geometry rather than a
+    # preset left untuned.
+    #
+    # Squares: eight cells is the floor on either direction of a closed square
+    # lattice (`resize.MIN_WRAP_CELLS` -- measured on this board: 8x6 is 80
+    # cells, bang on the target, with a join only 71% wide, and tops out at
+    # 92.0% against a target win rate of 96.5%), and 8x8 twice over less the
+    # block each donut gives up is 104.
+    ("doubletorus", "easy"),             # 104, and 8 cells each way is the floor
+    # Triangles and hexagons: no floor applies to either, and both have plenty
+    # of windows in the easy band -- but every one of them has a join the full
+    # width of a donut, because there are too few cells round the ring for the
+    # cut to land anywhere but wide. The narrowest join a triangular merge can
+    # have is at 24x6, which is 256 cells; a hexagonal one at 6x19, which is
+    # 196. Reading as the surface outranks the size band, as it does for the
+    # coarse-domain tilings above, and here the alternative is precisely the
+    # blob MAX_WAIST exists to forbid.
+    ("doubletorustri", "easy"),          # 256; nothing smaller keeps its waist
+    ("doubletorushex", "easy"),          # 196; likewise
 }
 
 # Everything else is held to two bars rather than one. A single +-15% rule
@@ -382,6 +405,40 @@ class TestWrappedWindowsDoNotFold:
             f"{difficulty} windows whose deepest tile chord sits more than "
             f"{MAX_FACET_STEP:.0%} of the radius inside the shallowest: "
             f"{stepped}"
+        )
+
+
+class TestMergedWindowsKeepTheirJoinAJoin:
+    """No shipped merged board may draw a join as wide as the pieces it joins.
+
+    A genus-2 board is two donuts merged, and nothing else in the suite can see
+    how *much* of them the merge ate: the topology is genus 2 either way, and
+    cell distortion scores each tile's own shape and finds a broad flat waist
+    perfectly well-proportioned. Left to itself the search spent the tube radius
+    on rounder cells and `doubletorus` easy shipped with a join the full width
+    of a donut -- one blob with two holes in it rather than two rings.
+
+    The bar lives with the search that has to apply it (`resize.MAX_WAIST`);
+    this is the same rule read back off the shipped presets, so a hand-edited
+    window cannot put the blob back.
+    """
+
+    @pytest.mark.parametrize("difficulty", DIFFICULTIES)
+    def test_no_join_is_as_wide_as_the_boards_it_joins(self, difficulty):
+        from minesweeper.boards.presets import build_board
+        from scripts.difficulty.resize import MAX_WAIST, SPEC, waist_ratio
+
+        presets = json.loads((DATA / "presets.json").read_text())["presets"]
+        wide = {}
+        for mode, spec in presets.items():
+            if not SPEC.get(spec["builder"], {}).get("waist"):
+                continue
+            ratio = waist_ratio(build_board(mode, difficulty))
+            if ratio > MAX_WAIST:
+                wide[mode] = round(ratio, 3)
+        assert wide == {}, (
+            f"{difficulty} merged boards whose join is more than "
+            f"{MAX_WAIST:.0%} of the width of one piece: {wide}"
         )
 
 

@@ -132,14 +132,36 @@ describe("board symmetries", () => {
     }
   });
 
-  it("every wrapped board turns about its own axis", () => {
-    // the ring translation is the one motion every one of the four surfaces
-    // keeps: it is what the Klein bottle shipped with, and the other three glue
-    // their ring seam the same way
+  it("every seam-glued board turns about its own axis", () => {
+    // the ring translation is the one motion every surface glued from a
+    // rectangle keeps: it is what the Klein bottle shipped with, and the
+    // cylinder, the Möbius strip and the donut glue their ring seam the same
+    // way. The double torus is not one of those (see below)
     for (const mode of WRAPPED) {
+      if (surfaceKey(mode) === "doubletorus") continue;
       const board = buildBoard(mode, "easy");
       const ids = isBoard3D(board) ? board.symmetries.map((s) => s.id) : [];
       expect(ids, `${mode} has no ring step`).toContain("ring");
+    }
+  });
+
+  it("the double torus has the figure of eight's point group and no step", () => {
+    // It is a connected sum rather than a glued rectangle: the hole each donut
+    // gives up at the join pins the lattice, so neither translation survives
+    // and there is nothing to scroll. What is left is the shape's own
+    // symmetry -- the half turn about z that swaps the two donuts, and the two
+    // mirrors that fix each of them.
+    const board = buildBoard("doubletorus", "easy");
+    expect(isBoard3D(board)).toBe(true);
+    if (!isBoard3D(board)) return;
+    const ids = board.symmetries.map((s) => s.id);
+    expect(ids).toEqual(["turn", "mirror-ring", "mirror-tube"]);
+    for (const symmetry of board.symmetries) {
+      expect(symmetry.involution, `${symmetry.id} is not an involution`).toBe(true);
+      expect(
+        isAutomorphism(board.adjacency, symmetry.cycle),
+        `${symmetry.id} is not an automorphism`,
+      ).toBe(true);
     }
   });
 

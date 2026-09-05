@@ -745,6 +745,19 @@ const TORUS: SurfacePoint = (u, v) => {
   return [radial * Math.cos(u), radial * Math.sin(u), r * Math.sin(v)];
 };
 
+/** The two donuts of the genus-2 board (surfaces.py `double_torus_board`), as
+ * a pair of surfaces meshed into one frame. Their centres sit 2 apart, as the
+ * board's do — a point of each one's outer equator on the other's inner one —
+ * so they overlap in a lens rather than touching, which is what makes the
+ * silhouette a figure of eight with a merged waist. The board cuts the overlap
+ * away along the plane between them and sews the edges; the icon just lets the
+ * two meshes cross, which at this size draws the same shape. */
+const DOUBLE_TORUS: SurfacePoint[] = [-1, 1].map((side) => (u, v) => {
+  const r = 0.42;
+  const radial = 1 + r * Math.cos(v);
+  return [side + radial * Math.cos(u), radial * Math.sin(u), r * Math.sin(v)];
+});
+
 /** u round the loop, v across the half-twisting band. */
 const MOBIUS: SurfacePoint = (u, v) => {
   const radial = 1 + v * Math.cos(u / 2);
@@ -778,8 +791,14 @@ interface MeshOptions {
 
 /** Flat-shaded quads of a parametric surface, far ones first. Adjacent quads
  * share an edge, so each is stroked in its own fill: without that the
- * antialiased seams show the page through the surface. */
-function surfaceMesh(point: SurfacePoint, opts: MeshOptions): string[] {
+ * antialiased seams show the page through the surface.
+ *
+ * Several surfaces may be passed together, and then they are meshed into one
+ * frame -- one set of bounds, one scale, one depth sort -- rather than side by
+ * side. Two calls cannot do it: each scales its own grid to fill the icon, so
+ * two donuts drawn separately come out the same size as one and overlapping.
+ * The double torus is two of them. */
+function surfaceMesh(point: SurfacePoint | SurfacePoint[], opts: MeshOptions): string[] {
   const {
     view: [rxDeg, ryDeg],
     vFrom = 0,
@@ -789,17 +808,20 @@ function surfaceMesh(point: SurfacePoint, opts: MeshOptions): string[] {
     twoSided = false,
   } = opts;
   const [rx, ry] = [rxDeg * (Math.PI / 180), ryDeg * (Math.PI / 180)];
-  const grid: V3[][] = [];
-  for (let i = 0; i <= uSteps; i++) {
-    const row: V3[] = [];
-    for (let j = 0; j <= vSteps; j++) {
-      row.push(
-        rotate(point((2 * Math.PI * i) / uSteps, vFrom + ((vTo - vFrom) * j) / vSteps), rx, ry),
-      );
+  const grids: V3[][][] = (Array.isArray(point) ? point : [point]).map((piece) => {
+    const grid: V3[][] = [];
+    for (let i = 0; i <= uSteps; i++) {
+      const row: V3[] = [];
+      for (let j = 0; j <= vSteps; j++) {
+        row.push(
+          rotate(piece((2 * Math.PI * i) / uSteps, vFrom + ((vTo - vFrom) * j) / vSteps), rx, ry),
+        );
+      }
+      grid.push(row);
     }
-    grid.push(row);
-  }
-  const flat = grid.flat();
+    return grid;
+  });
+  const flat = grids.flat(2);
   const bounds = (k: 0 | 1): [number, number] => [
     Math.min(...flat.map((p) => p[k])),
     Math.max(...flat.map((p) => p[k])),
@@ -813,34 +835,36 @@ function surfaceMesh(point: SurfacePoint, opts: MeshOptions): string[] {
 
   const light = [-0.35, 0.5, 0.79] as const;
   const faces: { pts: P[]; depth: number; fill: string }[] = [];
-  for (let i = 0; i < uSteps; i++) {
-    for (let j = 0; j < vSteps; j++) {
-      const corners: V3[] = [
-        grid[i]![j]!,
-        grid[i + 1]![j]!,
-        grid[i + 1]![j + 1]!,
-        grid[i]![j + 1]!,
-      ];
-      const [a, b, c] = [corners[0]!, corners[1]!, corners[3]!];
-      const e1 = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
-      const e2 = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
-      const nx = e1[1]! * e2[2]! - e1[2]! * e2[1]!;
-      const ny = e1[2]! * e2[0]! - e1[0]! * e2[2]!;
-      const nz = e1[0]! * e2[1]! - e1[1]! * e2[0]!;
-      const len = Math.hypot(nx, ny, nz) || 1;
-      const facing = nz / len;
-      if (!twoSided && facing <= 0) continue;
-      const lambert = Math.abs((nx * light[0] + ny * light[1] + nz * light[2]) / len);
-      faces.push({
-        pts: corners.map(at),
-        depth: corners.reduce((s, p) => s + p[2], 0) / 4,
-        // the inside of an open surface reads a shade cooler than the outside
-        fill: mixHex(
-          facing < 0 ? PLAIN.dark : PLAIN.base,
-          facing < 0 ? PLAIN.base : PLAIN.light,
-          0.15 + 0.85 * lambert,
-        ),
-      });
+  for (const grid of grids) {
+    for (let i = 0; i < uSteps; i++) {
+      for (let j = 0; j < vSteps; j++) {
+        const corners: V3[] = [
+          grid[i]![j]!,
+          grid[i + 1]![j]!,
+          grid[i + 1]![j + 1]!,
+          grid[i]![j + 1]!,
+        ];
+        const [a, b, c] = [corners[0]!, corners[1]!, corners[3]!];
+        const e1 = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+        const e2 = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
+        const nx = e1[1]! * e2[2]! - e1[2]! * e2[1]!;
+        const ny = e1[2]! * e2[0]! - e1[0]! * e2[2]!;
+        const nz = e1[0]! * e2[1]! - e1[1]! * e2[0]!;
+        const len = Math.hypot(nx, ny, nz) || 1;
+        const facing = nz / len;
+        if (!twoSided && facing <= 0) continue;
+        const lambert = Math.abs((nx * light[0] + ny * light[1] + nz * light[2]) / len);
+        faces.push({
+          pts: corners.map(at),
+          depth: corners.reduce((s, p) => s + p[2], 0) / 4,
+          // the inside of an open surface reads a shade cooler than the outside
+          fill: mixHex(
+            facing < 0 ? PLAIN.dark : PLAIN.base,
+            facing < 0 ? PLAIN.base : PLAIN.light,
+            0.15 + 0.85 * lambert,
+          ),
+        });
+      }
     }
   }
   faces.sort((f, g) => f.depth - g.depth);
@@ -1432,6 +1456,10 @@ function draw(rawKey: string): string[] {
         twoSided: true,
       }),
     );
+  } else if (key === "doubletorus") {
+    // flatter than the single donut's view: the eight is what identifies it,
+    // and at -62 degrees the two rings overlap into one blob
+    parts.push(...surfaceMesh(DOUBLE_TORUS, { view: [-48, 0], uSteps: 30, vSteps: 10 }));
   } else if (key === "klein") {
     parts.push(...surfaceMesh(KLEIN, { view: [180, -18], uSteps: 48, vSteps: 14 }));
   } else {

@@ -1,7 +1,7 @@
 # Hypersweeper — agent guide
 
 A minesweeper clone with flat and 3D boards (spherical polyhedra, cube,
-tetrahedron, donut, Möbius strip, cylinder, Klein bottle), in two
+tetrahedron, donut, double donut, Möbius strip, cylinder, Klein bottle), in two
 implementations that share their configuration.
 
 This file is the map. It is written for AI agents first: every extension point

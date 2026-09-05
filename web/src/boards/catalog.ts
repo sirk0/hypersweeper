@@ -12,6 +12,9 @@ export interface SurfaceSpec {
   needsMirror: boolean;
   needsFlip: boolean;
   boundaryComponents: number | null;
+  /** Euler characteristic: 0 for every surface a plane wraps onto in one
+   * piece, -2 for the double torus (genus 2), null for the plane. */
+  euler: number | null;
   tilt: number | null;
   tilings: string[] | null;
 }

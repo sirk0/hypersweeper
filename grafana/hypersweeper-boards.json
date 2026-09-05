@@ -1220,7 +1220,7 @@
         "name": "surface",
         "label": "Surface",
         "description": "",
-        "query": "all,flat,cylinder,mobius,torus,klein,solid",
+        "query": "all,flat,cylinder,mobius,torus,klein,doubletorus,solid",
         "current": {
           "selected": true,
           "text": "all",
@@ -1256,6 +1256,11 @@
             "selected": false,
             "text": "klein",
             "value": "klein"
+          },
+          {
+            "selected": false,
+            "text": "doubletorus",
+            "value": "doubletorus"
           },
           {
             "selected": false,

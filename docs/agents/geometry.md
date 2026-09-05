@@ -44,7 +44,7 @@ Import order is a strict DAG; a module only imports from the ones above it.
 | `aperiodic.py` | Penrose (P3), the Spectre (Tile(1,1), the chiral monotile) and the phyllotactic spiral, each with exact-arithmetic vertex ids — ℤ[ζ5] for Penrose and the spiral, ℤ[ζ12] for the Spectre. The Spectre's ring is *dense* in the plane, so unlike Penrose's discrete lattice there is no lattice to snap a float vertex back to: its placements are carried as exact `(rotation, mirror, translation)` triples and no floating point enters the substitution at all. The spiral is the odd one out — no substitution, just ten 36° wedges of the tile's own translation lattice, the odd ones offset a step; nonperiodic because its five-fold centre forbids any translation. The **brick rings** are nonperiodic the same way — by symmetry rather than by a substitution — and are the plainest board here: 2x1 bricks on the integer square lattice in concentric square rings about a 2x2 core, ring k being the boundary of the 2k x 2k square with horizontal bricks along its rows and vertical ones up its sides. Every run is even, so every tile is a whole brick and only an even-sided square is tileable at all. A brick's corner lands in the middle of a neighbour's long side, so `_brick_outline` splits each edge at the lattice points that are genuinely some tile's corner — the 2D twin of `solids._split_at_lattice_points`, and *conditional*, unlike the fractal outlines, which carry a vertex at every step. |
 | `solids.py` | Closed/convex and polycube 3D boards (spherical gyro pentagons, Goldberg polyhedra, geodesic icosahedron, rhombicosidodecahedron, truncated icosidodecahedron, cube, tetrahedron, frames, bipyramid), plus the shared `_wythoff_point` every uniform solid here and every Catalan solid next door is generated from. |
 | `catalan.py` | The thirteen Catalan solids, the duals of the Archimedean solids. One recipe for all of them: a Platonic base and one flag, the Wythoff generating point of its Schwarz triangle (`solids._wythoff_point` for the five non-chiral Conway operations, `_snub_point` for the chiral one), a Catalan vertex at `n / <w, n>` on each face axis — polar duality — and the base's flags grouped into faces by the operation. Faces are then subdivided (`solids._geodesic` for triangles, `_quad_grid` for quadrilaterals, a five-way fan first for pentagons), which is these boards' only size knob. |
-| `surfaces.py` | Wrapping tilings onto surfaces: the three immersion points (`_torus_point`, `_cylinder_point`, `_mobius_point`), the shared `_assemble` tail, the nine simple `*_board` wrappers, and the Archimedean `arch_torus_board` / `arch_cylinder_board` / `arch_mobius_board`. |
+| `surfaces.py` | Wrapping tilings onto surfaces: the three immersion points (`_torus_point`, `_cylinder_point`, `_mobius_point`), the shared `_assemble` tail, the nine simple `*_board` wrappers, and the Archimedean `arch_torus_board` / `arch_cylinder_board` / `arch_mobius_board`. Also `double_torus_board`, the one board here that is *not* wrapped from a rectangle: two overlapping square-tiled donuts cut apart along the plane between them and sewn back together, a connected sum rather than a seam gluing. |
 | `volume.py` | The volume boards — a solid block of cells rather than a surface of them. One so far: `solid_cube_board`, the `n**3` cube of cubes, whose 26-neighbour adjacency comes off the lattice and whose drawing is the `n` slices laid out on a grid and stepped back in depth. |
 | `catalog.py` | The menu, **derived**: `SURFACE_SPECS` and `TILING_SPECS` (leaf data loaded from `data/catalog.json`) produce `MODE_LABELS`, `TILINGS`, `SURFACE_LABELS`, the geometry-first menu tables (`MENU_ROOT`/`MANIFOLD_*`/`FAMILY_*`/`SOLID_GROUP_*`/`SOLID_MODES`/`SHAPED_MODES`) and the picker helpers (`family_rows`, `picker_families`, `picker_modes`), `MODES_3D`, `mode_for`, `surface_of`, `view_hint`. |
 | `presets.py` | Difficulty presets and `build_board`. Flat regular, solid, Archimedean/Laves and aperiodic (penrose/spectre/phyllotaxis) presets all load from `data/presets.json` (shared with the web port). The Archimedean rows are authored in the compact **`ARCH_PRESETS`** table (tiling → surface → difficulty → args) that `scripts/export_data.py` expands into `data/presets.json`. |
@@ -177,7 +177,102 @@ one `ARCH_TILINGS` + one `ARCH_PRESETS` row (its family submenu follows
 from the `family` field, no menu edit needed), a
 surface is one `SurfaceSpec` + an immersion + a wrap builder; the menu,
 mode strings, `MODES_3D`, and chirality gating all derive from those
-registries.
+registries. A fifth surface, the **double torus**, is not a wrap of a
+rectangle at all -- see the next section.
+
+## The double torus
+
+One board in the zoo is not a rectangle glued along its seams, and it is the
+only one whose Euler characteristic is neither 2 (a solid), 1 (a disc) nor 0
+(the four flat manifolds): `doubletorus` and its two siblings are the
+**connected sum** of two donuts, genus 2, chi = -2 -- two donuts merged into a
+figure of eight. All three regular tilings wrap it (`doubletorus`,
+`doubletorustri`, `doubletorushex`), because none of what follows is about the
+tiling: a tiling hands over its own lattice and the cut does the rest.
+
+Three decisions make the shape:
+
+* **Where the donuts sit.** A point of one donut's *outer* equator lies on the
+  other's *inner* equator, which puts their centres 2 apart whatever the tube
+  radius, since (1 + r) + (1 - r) = 2 -- `separation` 1, and the whole
+  difference between a merge and a kiss. At 1 the two ring circles are tangent
+  at the origin, so the tubes round them share a lens of **real volume**; push
+  the donuts out to 1 + `tube_radius` and that lens shrinks to the single point
+  the outer rims touch at, which is where the board started and is a pinch
+  rather than a merge. Tangent at the *inner* rims instead -- centres
+  2(1 - `tube_radius`) apart -- and the two annuli overlap above and below the
+  contact point as well, which is a different shape entirely and the sign error
+  worth not making twice.
+* **Donut B is donut A mirrored in x, key for key.** That is what makes the
+  join exact rather than fitted: a vertex of A and the vertex of B it glues to
+  already agree in y and z and differ only in the sign of x, so the shared
+  vertex goes at x = 0 and nothing is rounded together.
+* **What is removed is not a patch anyone chose.** Every cell of A with a
+  vertex on B's side of the plane goes, so A keeps the half of itself in
+  x <= 0 and B the half in x >= 0. The board is then **embedded by
+  construction**, however deep the two overlap: the halves can only meet on the
+  plane, and there they are the same vertices. The seam is the ring of vertices
+  between the two halves, pulled the last fraction onto x = 0.
+
+`_CUT_EPS` decides what "on the other side" means, and both halves of it earn
+their place. A vertex really can land on the plane **exactly** -- at separation
+1 the tube's own quarter points do -- and a vertex on the plane is counted as
+past it, because left on the kept side it is not a seam vertex (no removed cell
+need touch it) and the two donuts' copies of it then sit at one point in space
+under two ids. That is a surface touching itself, and since the topology
+invariants key on rounded coordinates it reads as chi = 0 where the mesh is
+genuinely -2. The tolerance is 1e-6 rather than something smaller so that a
+*kept* vertex's two copies still round to distinct keys at the six decimal
+places `corner_fans` counts by -- and so that the exactly-zero case is settled
+the same way in both ports, whose `cos` may differ in the last bit.
+
+**The cut has to have taken a disc, and on a coarse tiling it need not.** A
+window with few cells round the ring can lose a whole course of them and leave
+a cylinder, and two cylinders glued rim to rim are a donut again rather than a
+double one. So it is measured rather than argued: what is left of one donut
+must be a torus minus one disc -- chi = -1 with a single boundary circle --
+which is exactly the condition under which gluing the two halves gives chi = -2
+and no boundary at all. A window that fails it is refused, and the size search
+skips it like any other that will not build. `TestDoubleTorus` measures the
+result over a sweep of windows on all three tilings rather than on the shipped
+nine, because the cut moves with every argument.
+
+Four consequences worth knowing before touching it:
+
+* **Orientation is read off the cell, not measured.** `_assemble` winds a
+  closed surface's faces outward from *the* ring circle; here there are two and
+  they are tangent at the origin, so at the waist a face is equidistant from
+  both and a measured answer ties. The builder passes an `orient` of its own
+  that reads the donut off the cell id. That the two rules agree across the
+  seam is measured rather than assumed -- every edge of the board is traversed
+  once in each direction, which is orientability.
+* **The join has to stay narrower than the donuts it joins.** Nothing else in
+  the difficulty search can see how much of them the merge ate: the topology is
+  genus 2 either way, and cell distortion scores each tile's own shape and
+  finds a broad flat waist perfectly well-proportioned. Left to itself the
+  search spent the tube radius on rounder cells and the square easy board
+  shipped with a join the full width of a donut -- one blob with two holes.
+  `resize.MAX_WAIST` is that bar, three quarters, and unlike the facet step it
+  does **not** give way to the size band: below the sizes where a merge is
+  possible at all the best join available is 100% wide, so a bar that yields
+  hands back the blob it exists to forbid. What it costs is three exempt easy
+  rows, listed with their arithmetic in `tests/test_presets.py`.
+* **The seam can straighten a corner, and the shape palette has to be told.**
+  Pulling a run of vertices onto the plane can leave three corners of a cell
+  exactly collinear -- where two tube rows share a z, which is the rows either
+  side of the tube's top on an even tube. `corners`' geometric fallback then
+  measures that square as a triangle and paints it red on a board of nothing
+  but squares, so the builder carries a `cornerMask` saying what is true of
+  every cell: every vertex a real corner.
+* **It has no translation at all**, and it pays for its genus in cells. The cut
+  pins the lattice, so neither the ring step nor the tube step survives and
+  there is nothing to scroll; what is left is the figure of eight's own point
+  group, the half turn about z that swaps the two donuts and the two mirrors
+  that fix each -- and which of those survive is measured per tiling, so the
+  hexagonal board keeps fewer than the other two. And on the square lattice a
+  closed board needs eight cells each way (`resize.MIN_WRAP_CELLS`, measured on
+  this board: 8x6 is 80 cells, bang on the easy target, with a join only 71%
+  wide, and tops out at a 92.0% win rate against a target of 96.5%).
 
 ## The aperiodic boards
 

@@ -14,6 +14,7 @@
       "needsMirror": false,
       "needsFlip": false,
       "boundaryComponents": null,
+      "euler": null,
       "tilt": null,
       "tilings": null
     },
@@ -25,6 +26,7 @@
       "needsMirror": true,
       "needsFlip": false,
       "boundaryComponents": 1,
+      "euler": 0,
       "tilt": -0.8,
       "tilings": null
     },
@@ -36,6 +38,7 @@
       "needsMirror": false,
       "needsFlip": true,
       "boundaryComponents": 2,
+      "euler": 0,
       "tilt": -0.35,
       "tilings": null
     },
@@ -47,6 +50,7 @@
       "needsMirror": false,
       "needsFlip": false,
       "boundaryComponents": 0,
+      "euler": 0,
       "tilt": -1.0,
       "tilings": null
     },
@@ -58,8 +62,25 @@
       "needsMirror": true,
       "needsFlip": false,
       "boundaryComponents": 0,
+      "euler": 0,
       "tilt": -0.4,
       "tilings": null
+    },
+    {
+      "key": "doubletorus",
+      "label": "Double torus",
+      "prefix": "doubletorus",
+      "is3d": true,
+      "needsMirror": false,
+      "needsFlip": false,
+      "boundaryComponents": 0,
+      "euler": -2,
+      "tilt": -1.0,
+      "tilings": [
+        "hex",
+        "square",
+        "tri"
+      ]
     }
   ],
   "regularTilings": [
@@ -79,7 +100,8 @@
         "torus": "torus",
         "cylinder": "cylinder",
         "mobius": "mobius",
-        "klein": "klein"
+        "klein": "klein",
+        "doubletorus": "doubletorus"
       }
     },
     {
@@ -431,6 +453,24 @@
       "tiling": "",
       "surface": "solid",
       "family": "platonic"
+    },
+    "doubletorus": {
+      "label": "Squares · Double torus",
+      "tiling": "square",
+      "surface": "doubletorus",
+      "family": "regular"
+    },
+    "doubletorushex": {
+      "label": "Hexagons · Double torus",
+      "tiling": "hex",
+      "surface": "doubletorus",
+      "family": "regular"
+    },
+    "doubletorustri": {
+      "label": "Triangles · Double torus",
+      "tiling": "tri",
+      "surface": "doubletorus",
+      "family": "regular"
     },
     "elongated": {
       "label": "Elongated triangular",
@@ -1245,13 +1285,15 @@
       "mobius",
       "cylinder",
       "torus",
-      "klein"
+      "klein",
+      "doubletorus"
     ],
     "manifoldLabels": {
       "cylinder": "Cylinder",
       "mobius": "Möbius strip",
       "klein": "Klein bottle",
-      "torus": "Torus"
+      "torus": "Torus",
+      "doubletorus": "Double torus"
     },
     "pickerRegular": [
       "tri",
