@@ -1447,9 +1447,146 @@ function herringboneTemplate(): ArchTemplate {
   return template([4], 2, 2, cells, { mirrored: false, cut: 0.125 });
 }
 
+// -- the rep-tiles, and the Dürer tiling -------------------------------------
+//
+// Three tilings whose tile the fractal boards already build a self-similar
+// patch out of (boards/fractal.ts): the sphinx, the chair and the pentaflake's
+// pentagon. Inflating one of those tiles is a fractal; laying the same tile
+// down periodically is an ordinary wallpaper pattern, and that is what these
+// templates are. They ship on the plane only for now — no cut is chosen and no
+// surface builder wraps them (FLAT_ONLY_ARCH_FAMILIES in catalog.ts).
+
+/** The sphinx, laid down periodically (p2).
+ *
+ * The sphinx is the pentagonal hexiamond — six unit triangles, sides 3, 1, 1,
+ * 1, 2 — and two of them, one half-turned, fill the parallelogram spanned by
+ * (3, 0) and (1, √3). That lattice is not rectangular, but it contains
+ * (0, 3√3), so three parallelograms stacked up the diagonal make a 3 x 3√3
+ * rectangle holding six sphinxes.
+ *
+ * Every tile is a translate or a half turn of every other (the sphinx has no
+ * mirror symmetry of its own, and no reflected copy appears here), so the
+ * pattern is p2: half turns and nothing else. The window is pinned to the
+ * origin because of that — a sphinx centroid is no kind of symmetry centre,
+ * but the corner where six of them meet is one of the four half-turn centres
+ * per lattice cell. */
+function sphinxpairsTemplate(): ArchTemplate {
+  const outline: Vertex[] = [
+    [0, 0],
+    [1, 0],
+    [2, 0],
+    [3, 0],
+    [2.5, ROOT3 / 2],
+    [1.5, ROOT3 / 2],
+    [1, ROOT3],
+    [0.5, ROOT3 / 2],
+  ];
+  // half turn about (2, √3/2)
+  const turned = outline.map(([x, y]): Vertex => [4 - x, ROOT3 - y]);
+  const cells = periodicDomain([3, 0], [1, ROOT3], 3, 3 * ROOT3, [
+    ["sphinx", outline],
+    ["turned", turned],
+  ]);
+  return template([5], 3, 3 * ROOT3, cells, { mirrored: false, centre: [0, 0] });
+}
+
+/** The chair — the L-tromino — laid down periodically (p2).
+ *
+ * Three unit squares in an L, and two of them (one half-turned) fill a 3 x 2
+ * rectangle that tiles the plane by translation. Like the sphinx pattern this
+ * is p2, with no mirror: reflecting the L pair leaves the two halves swapped
+ * the wrong way round, whichever axis it is reflected in. A tile centroid is
+ * not a half-turn centre, so the window is pinned to the origin instead: the
+ * lattice corner where four L's meet.
+ *
+ * Not edge to edge: an L's long side is two units against its neighbours' one,
+ * so a neighbour's corner lands in the middle of it and carries a T-vertex
+ * (insertTVertices adds it). */
+function trominoTemplate(): ArchTemplate {
+  const outline: Vertex[] = [
+    [0, 0],
+    [2, 0],
+    [2, 1],
+    [1, 1],
+    [1, 2],
+    [0, 2],
+  ];
+  // half turn about (1.5, 1)
+  const turned = outline.map(([x, y]): Vertex => [3 - x, 2 - y]);
+  return template([6], 3, 2, [
+    ["chair", outline],
+    ["turned", turned],
+  ], { mirrored: false, centre: [0, 0] });
+}
+
+/** Dürer's pentagon tiling (pm): regular pentagons and thin rhombs.
+ *
+ * Regular pentagons cannot tile the plane — three of them round a vertex leave
+ * a 36° gap — and the pentaflake board leaves those gaps open as its fractal's
+ * holes. Fill each one with the 36° rhomb of the same edge and the pattern
+ * closes up periodically instead; Dürer drew it in the *Underweysung der
+ * Messung* (1525).
+ *
+ * Two pentagons and one rhomb sit on the lattice spanned by `v1`/`v2` below
+ * (the smallest there is: its cell is exactly their combined area). That
+ * lattice is not rectangular either, but it contains a 2:1 sublattice that is —
+ * `b` = -`v1`, of length φ, and `a` = -`v1` - 2`v2`, perpendicular to it — so
+ * the domain is |a| x φ and holds six tiles. Everything here has unit edges at
+ * multiples of 36°, i.e. it lives in Z[ζ10], the pentaflake's own ring
+ * (boards/fractal.ts).
+ *
+ * The 54° turn brings `a` onto the x axis and `b` onto the y axis, which is
+ * also what puts the pattern's mirror lines *horizontal*: pm's mirrors run
+ * along the rows of pentagons, at y = 0 and y = height/2, and a template's
+ * mirror is the one that reverses y. There is no half turn anywhere in pm
+ * (hence `halfTurn: false` on the registry row): a pentagon is not centrally
+ * symmetric, and a half turn about a rhomb centre or an edge midpoint carries
+ * the pentagons off the tiling. */
+function durerTemplate(): ArchTemplate {
+  const unit: Vertex[] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((k) => polar(36 * k));
+  /** The closed unit-edge walk through the given ζ10 directions. */
+  const walk = (directions: number[]): Vertex[] => {
+    const points: Vertex[] = [];
+    let [x, y] = [0, 0];
+    for (const d of directions) {
+      points.push([x, y]);
+      x += unit[d]![0];
+      y += unit[d]![1];
+    }
+    return points;
+  };
+  const place = (tile: Vertex[], rot: number, at: Vertex): Vertex[] => {
+    const [cos, sin] = unit[rot]!;
+    return tile.map(([x, y]): Vertex => [x * cos - y * sin + at[0], x * sin + y * cos + at[1]]);
+  };
+  const phi = (1 + Math.sqrt(5)) / 2;
+  const pentagon = walk([0, 2, 4, 6, 8]);
+  const rhomb = walk([0, 1, 5, 6]);
+  const apex = pentagon[3]!;
+  const shoulder = pentagon[2]!;
+  const polygons: [string, Vertex[]][] = [
+    ["pent", pentagon],
+    // the second pentagon of the pair, turned 108° onto the first's far
+    // corner, and the rhomb in the gap their edges leave
+    ["pair", place(pentagon, 3, apex)],
+    ["rhomb", place(rhomb, 8, [apex[0] - phi, apex[1]])],
+  ];
+  const v1: Vertex = [-shoulder[0], -shoulder[1]];
+  const v2: Vertex = [phi * phi - apex[0], -apex[1]];
+  const width = Math.hypot(v1[0] + 2 * v2[0], v1[1] + 2 * v2[1]);
+  const cells = periodicDomain(v1, v2, width, phi, polygons, 54);
+  return template([5, 4], width, phi, cells, { mirrored: true });
+}
+
 // -- registry ----------------------------------------------------------------
 
-export type ArchFamily = "uniform" | "dual" | "isogonal" | "rectangle";
+export type ArchFamily =
+  | "uniform"
+  | "dual"
+  | "isogonal"
+  | "rectangle"
+  | "reptile"
+  | "durer";
 
 export interface ArchTiling {
   key: string;
@@ -1457,10 +1594,12 @@ export interface ArchTiling {
   config: number[];
   edgeDirections: number;
   template: () => ArchTemplate;
-  /** "uniform" (Archimedean), "dual" (Laves), "isogonal" (not edge to edge) or
-   * "rectangle" (a bond of congruent rectangles, not edge to edge either). The
-   * uniform and isogonal families are vertex-transitive; the duals and the
-   * bonds are face-transitive instead. */
+  /** "uniform" (Archimedean), "dual" (Laves), "isogonal" (not edge to edge),
+   * "rectangle" (a bond of congruent rectangles, not edge to edge either),
+   * "reptile" (one congruent polyform, in half-turned pairs, not edge to edge)
+   * or "durer" (a pentagon *and* a rhomb, edge to edge). The uniform and
+   * isogonal families are vertex-transitive; the duals, the bonds and the
+   * rep-tiles are face-transitive instead, and Dürer's tiling is neither. */
   family: ArchFamily;
   /** The tiling maps onto itself under some 180° rotation — true of every
    * wallpaper group here except p3 (three-scale triangular). */
@@ -1509,6 +1648,13 @@ export const ARCH_TILINGS: ArchTiling[] = [
   { key: "basketweave", label: "Basket weave", config: [4], edgeDirections: 2, template: basketweaveTemplate, family: "rectangle", halfTurn: true },
   { key: "basketweave3", label: "Basket weave 3x3", config: [4], edgeDirections: 2, template: () => basketweaveTemplate(3), family: "rectangle", halfTurn: true },
   { key: "herringbone", label: "Herringbone", config: [4], edgeDirections: 2, template: herringboneTemplate, family: "rectangle", halfTurn: true },
+  // the rep-tiles: one congruent polyform, laid down in half-turned pairs
+  // rather than inflated (the fractal boards do the inflating). config is the
+  // tile, as it is for a bond: one pentagon, one hexagon.
+  { key: "sphinxpairs", label: "Sphinx pairs", config: [5], edgeDirections: 3, template: sphinxpairsTemplate, family: "reptile", halfTurn: true },
+  { key: "tromino", label: "L-tromino", config: [6], edgeDirections: 2, template: trominoTemplate, family: "reptile", halfTurn: true },
+  // Dürer's pentagon tiling: two tile shapes, so config lists both.
+  { key: "durer", label: "Dürer pentagonal", config: [5, 4], edgeDirections: 5, template: durerTemplate, family: "durer", halfTurn: false },
 ];
 
 const ARCH_BY_KEY = new Map(ARCH_TILINGS.map((t) => [t.key, t]));

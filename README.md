@@ -49,7 +49,10 @@ Pick a surface, then a tiling:
   The menu groups these as **Regular**, **Uniform**, **Laves**, **Isogonal**
   (six tilings by regular polygons that are *not* edge to edge — a tile's
   corner in the middle of its neighbour's edge), **Congruent rectangles**,
-  **Aperiodic** and **Fractals**; every periodic family also wraps the
+  **Rep-tiles** (the sphinx and the L-tromino, laid down in half-turned pairs
+  rather than inflated), **Dürer pentagonal** (regular pentagons with rhombs
+  in the gaps they leave, as Dürer drew it in 1525), **Aperiodic** and
+  **Fractals**; every periodic family bar the last four also wraps the
   cylinder and the torus below, and — unless the tiling is chiral — the
   Möbius strip and the Klein bottle too
 - **Sphere (3D)** — a chamfered dodecahedron (12 pentagons + 30 hexagons),

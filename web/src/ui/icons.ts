@@ -485,6 +485,12 @@ const PATCH_STYLE: Record<string, PatchStyle> = {
   ...Object.fromEntries(
     ARCH_TILINGS.filter((t) => t.family === "rectangle").map((t) => [t.key, "domain" as const]),
   ),
+  // The sphinx pattern is its half-turned *pair*: two sphinxes locking into a
+  // parallelogram, which is a figure. A ring of them is a huddle of
+  // same-coloured tiles with no figure in it, so this one is drawn as its
+  // domain. The L-tromino keeps the ring, where the notch of each L against
+  // the next is what shows; its domain reads as a plain course of bricks.
+  sphinxpairs: "domain",
 };
 
 function styleFor(key: string): PatchStyle {
@@ -1074,6 +1080,11 @@ function draw(rawKey: string): string[] {
   // staggered rectangles read as a pattern even at icon size (a stacked or
   // running bond patch is a handful of plain bars)
   if (key === "rectangle") return tilingPatch("herringbone");
+  // the Rep-tiles family row: the sphinx, the family's namesake and the one
+  // whose interlock reads at icon size (a patch of L-trominoes is a plain
+  // rectangle grid until you find the cut). The Dürer family row needs no
+  // case: its key is its one tiling's key, so ARCH_KEYS catches it above.
+  if (key === "reptile") return tilingPatch("sphinxpairs");
   if (key === "regular") {
     // the Regular family row: one tile of each of the three regular tilings
     return [

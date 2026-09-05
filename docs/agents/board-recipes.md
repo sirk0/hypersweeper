@@ -212,10 +212,75 @@ automatically: regular tiles, one vertex species, and a domain whose tiles'
 areas sum to its own (no gaps, no overlaps). `TestWrappedArchimedean` covers
 the wrapped surfaces the same way it does for the uniform/dual families.
 
-A brand new *family* with no wrap builders yet can still stay flat-only by
-adding its name to `catalog.FLAT_ONLY_FAMILIES` (the aperiodic and fractal
-boards, which have no periodic domain to glue a seam with — every family that
-*is* a tiling registry wraps); that flag is per family, not per tiling.
+A brand new *family* with no wrap builders yet can stay flat-only two ways,
+and which one it takes depends on what its members are. A family of **one-off
+boards** — the aperiodic and fractal ones, which have no periodic domain to
+glue a seam with — goes in `catalog.FLAT_ONLY_FAMILIES`, whose members are
+modes rather than tiling keys and which is only offered on the plane. A family
+of **tilings** that has not been wrapped yet goes in `_FLAT_ONLY_FAMILIES`
+instead: that sets `TilingSpec.flat_only` on every member, so `allows()`
+refuses every surface but the plane and `picker_families` drops the family from
+the manifold pickers because it has no enabled row left. See "Recipe: add a
+flat-only tiling family" below. Both flags are per family, not per tiling.
+
+## Recipe: add a flat-only tiling family
+
+The last two families in `ARCH_TILINGS` are the fractal boards' own tiles laid
+down **periodically** instead of inflated, and they ship on the plane alone:
+`family="reptile"` (the sphinx as `sphinxpairs`, the chair as `tromino`) and
+`family="durer"` (Dürer's pentagon tiling). Everything about them is an
+ordinary `_ArchTemplate` — they simply have no wrap builder or preset window
+yet, and the flat-only flag is what says so rather than a missing row somewhere.
+The mode strings are `sphinxpairs`, `tromino`, `durer`; the fractal boards keep
+`sphinx`, `chair` and `pentaflake`, which is why the tilings could not reuse
+those keys.
+
+Adding one, or adding a tiling to one:
+
+1. **Template** — as for any periodic tiling, but say what the pattern really
+   is. Both rep-tiles are **p2**: no mirror at all (`mirrored=False`), and a
+   tile centroid is not a symmetry centre, so `centre` is pinned to a corner
+   where the tiles meet — `(0, 0)` for both. Dürer's tiling is **pm**: a
+   horizontal mirror (`mirrored=True`, which is why the template turns the
+   pattern 54° — the mirror a template records is the one reversing y) and no
+   half turn anywhere, hence `half_turn=False` on its registry row.
+   `_periodic_domain` builds the domain from the pattern's own lattice where it
+   is not rectangular (the sphinx's parallelogram, Dürer's ζ10 lattice).
+2. **Traits** — one `_FAMILY_TRAITS` row: `(vertex-transitive, edge to edge,
+   monohedral)`. The rep-tiles are `(False, False, True)`, like the bonds.
+   Dürer's is `(False, True, False)`: two tile shapes, so it is the one family
+   the congruence invariant does not apply to, and `monohedral` is what keeps
+   `test_tiles_are_congruent` off it.
+3. **Flat-only** — add the family key to `_FLAT_ONLY_FAMILIES` in `catalog.py`
+   and to `FLAT_ONLY_ARCH_FAMILIES` in `web/src/boards/catalog.ts`, and put it
+   in `PICKER_FAMILIES` (both sides) where it should sit in the menu. Nothing
+   else gates it: `picker_families` drops a family with no enabled row.
+4. **Labels and hints** — `menu.familyLabels` in `data/catalog.json` (the
+   authored leaf; re-run `scripts/export_data.py`) and `MENU_FAMILY_HINTS` in
+   `web/src/boards/catalog.ts`. A family whose key is also a tiling key (as
+   `durer` is) already has an icon; otherwise add a case to `menuIcon` in
+   `web/src/ui/icons.ts` picking the member that reads at icon size.
+5. **Presets** — a `"foo"` block in `ARCH_PRESETS` with a `flat` row only, then
+   the measured pipeline: `resize.py --only`, `calibrate.py --only`, `apply.py`
+   ([`difficulty.md`](difficulty.md)), then `scripts/export_data.py` and
+   `export_conformance.py`.
+6. **Port it to `web/src/boards/tilings.ts`** — the same template verbatim; the
+   conformance oracle compares the two boards cell for cell.
+
+`TestRepTilePatterns` and `TestDurer` in `tests/test_boards.py` cover the two
+families (the tile's own shape, a domain covered exactly, edge-to-edge or not),
+and `TestArchimedean.test_flat_board_is_symmetric` covers the window — except
+for a `half_turn=False` tiling, which it returns early on, so Dürer's board
+symmetry is asserted in `TestDurer` instead.
+
+**Wrapping one later** is the rest of the Archimedean recipe and nothing new:
+choose the `cut` (neither family has one yet — Dürer's pentagon rows sit at
+y = 0 and y = height/2, so its cut cannot be either), drop the family from the
+two flat-only lists, and add the `torus`/`cylinder`/`mobius`/`klein` preset
+rows the surfaces its mirror and `flips` allow. The tests that only ask
+questions of the tilings that wrap — `test_no_tile_centre_sits_on_the_cut` and
+the rest of `TestWrappedArchimedean` — pick it up the moment it has a torus
+preset.
 
 ## Recipe: add a congruent-rectangle bond
 

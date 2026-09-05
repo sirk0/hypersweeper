@@ -387,6 +387,17 @@ ARCH_PRESETS = {
         "torus": {"easy": (5, 2, 17, 0.38), "medium": (8, 4, 60, 0.45), "hard": (12, 5, 122, 0.38)},
         "cylinder": {"easy": (6, 1 + 7 / 8, 14), "medium": (10, 3 + 1 / 8, 42), "hard": (14, 4 + 3 / 8, 105)},
     },
+    # The rep-tiles and Durer's tiling are flat-only for now
+    # (_FLAT_ONLY_FAMILIES in catalog.py), so they carry a "flat" row alone.
+    "sphinxpairs": {
+        "flat": {"easy": (5, 3, 13, 26.667), "medium": (8, 5, 37, 18.462), "hard": (12, 7, 117, 12.632)},
+    },
+    "tromino": {
+        "flat": {"easy": (5, 8, 8, 30.0), "medium": (9, 14, 32, 17.143), "hard": (13, 19, 95, 12.0)},
+    },
+    "durer": {
+        "flat": {"easy": (2, 6, 12, 41.745), "medium": (4, 11, 45, 22.369), "hard": (5, 15, 99, 18.156)},
+    },
 }
 
 # Load the shared presets (data/presets.json) into _PRESETS. Each row is

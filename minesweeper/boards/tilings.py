@@ -1299,14 +1299,131 @@ def _herringbone_template() -> _ArchTemplate:
     return _template((4,), 2.0, 2.0, cells, mirrored=False, cut=0.125)
 
 
+# -- the rep-tiles, and the Durer tiling ------------------------------------
+#
+# Three tilings whose tile the fractal boards already build a self-similar
+# patch out of (boards/fractal.py): the sphinx, the chair and the pentaflake's
+# pentagon. Inflating one of those tiles is a fractal; laying the same tile
+# down periodically is an ordinary wallpaper pattern, and that is what these
+# templates are. They ship on the plane only for now -- no cut is chosen and
+# no surface builder wraps them (_FLAT_ONLY_FAMILIES in catalog.py).
+
+
+def _sphinxpairs_template() -> _ArchTemplate:
+    """The sphinx, laid down periodically (p2).
+
+    The sphinx is the pentagonal hexiamond -- six unit triangles, sides 3, 1,
+    1, 1, 2 -- and two of them, one half-turned, fill the parallelogram spanned
+    by (3, 0) and (1, sqrt3). That lattice is not rectangular, but it contains
+    (0, 3*sqrt3), so three parallelograms stacked up the diagonal make a
+    3 x 3*sqrt3 rectangle holding six sphinxes.
+
+    Every tile is a translate or a half turn of every other (the sphinx has no
+    mirror symmetry of its own, and no reflected copy appears here), so the
+    pattern is p2: half turns and nothing else. The window is pinned to the
+    origin because of that -- a sphinx centroid is no kind of symmetry centre,
+    but the corner where six of them meet is one of the four half-turn centres
+    per lattice cell.
+    """
+    outline = [(0.0, 0.0), (1.0, 0.0), (2.0, 0.0), (3.0, 0.0),
+               (2.5, ROOT3 / 2), (1.5, ROOT3 / 2), (1.0, ROOT3), (0.5, ROOT3 / 2)]
+    turned = [(4.0 - x, ROOT3 - y) for x, y in outline]  # half turn about (2, sqrt3/2)
+    return _template((5,), 3.0, 3 * ROOT3,
+                     _periodic_domain((3.0, 0.0), (1.0, ROOT3), 3.0, 3 * ROOT3,
+                                      [("sphinx", outline), ("turned", turned)]),
+                     mirrored=False, centre=(0.0, 0.0))
+
+
+def _tromino_template() -> _ArchTemplate:
+    """The chair -- the L-tromino -- laid down periodically (p2).
+
+    Three unit squares in an L, and two of them (one half-turned) fill a
+    3 x 2 rectangle that tiles the plane by translation. Like the sphinx
+    pattern this is p2, with no mirror: reflecting the L pair leaves the two
+    halves swapped the wrong way round, whichever axis it is reflected in.
+    A tile centroid is not a half-turn centre, so the window is pinned to the
+    origin instead: the lattice corner where four L's meet.
+
+    Not edge to edge: an L's long side is two units against its neighbours'
+    one, so a neighbour's corner lands in the middle of it and carries a
+    T-vertex (_insert_t_vertices adds it).
+    """
+    outline = [(0.0, 0.0), (2.0, 0.0), (2.0, 1.0), (1.0, 1.0), (1.0, 2.0), (0.0, 2.0)]
+    turned = [(3.0 - x, 2.0 - y) for x, y in outline]  # half turn about (1.5, 1)
+    return _template((6,), 3.0, 2.0,
+                     [("chair", outline), ("turned", turned)],
+                     mirrored=False, centre=(0.0, 0.0))
+
+
+def _durer_template() -> _ArchTemplate:
+    """Durer's pentagon tiling (pm): regular pentagons and thin rhombs.
+
+    Regular pentagons cannot tile the plane -- three of them round a vertex
+    leave a 36-degree gap -- and the pentaflake board leaves those gaps open
+    as its fractal's holes. Fill each one with the 36-degree rhomb of the same
+    edge and the pattern closes up periodically instead; Durer drew it in the
+    *Underweysung der Messung* (1525).
+
+    Two pentagons and one rhomb sit on the lattice spanned by ``v1``/``v2``
+    below (the smallest there is: its cell is exactly their combined area).
+    That lattice is not rectangular either, but it contains a 2:1 sublattice
+    that is -- ``b`` = -``v1``, of length phi, and ``a`` = -``v1`` - 2*``v2``,
+    perpendicular to it -- so the domain is |a| x phi and holds six tiles.
+    Everything here has unit edges at multiples of 36 degrees, i.e. it lives
+    in Z[zeta10], the pentaflake's own ring (boards/fractal.py).
+
+    The 54-degree turn brings ``a`` onto the x axis and ``b`` onto the y axis,
+    which is also what puts the pattern's mirror lines *horizontal*: pm's
+    mirrors run along the rows of pentagons, at y = 0 and y = height/2, and a
+    template's mirror is the one that reverses y. There is no half turn
+    anywhere in pm (hence ``half_turn=False`` on the registry row): a pentagon
+    is not centrally symmetric, and a half turn about a rhomb centre or an
+    edge midpoint carries the pentagons off the tiling.
+    """
+    unit = [(math.cos(math.radians(36 * k)), math.sin(math.radians(36 * k)))
+            for k in range(10)]
+
+    def walk(directions):
+        """The closed unit-edge walk through the given zeta10 directions."""
+        points, x, y = [], 0.0, 0.0
+        for d in directions:
+            points.append((x, y))
+            x, y = x + unit[d][0], y + unit[d][1]
+        return points
+
+    def place(tile, rot, at):
+        cos, sin = unit[rot]
+        return [(x * cos - y * sin + at[0], x * sin + y * cos + at[1])
+                for x, y in tile]
+
+    phi = (1 + math.sqrt(5)) / 2
+    pentagon, rhomb = walk((0, 2, 4, 6, 8)), walk((0, 1, 5, 6))
+    apex, shoulder = pentagon[3], pentagon[2]
+    polygons = [
+        ("pent", pentagon),
+        # the second pentagon of the pair, turned 108 degrees onto the first's
+        # far corner, and the rhomb in the gap their edges leave
+        ("pair", place(pentagon, 3, apex)),
+        ("rhomb", place(rhomb, 8, (apex[0] - phi, apex[1]))),
+    ]
+    v1 = (-shoulder[0], -shoulder[1])
+    v2 = (phi * phi - apex[0], -apex[1])
+    width = math.hypot(v1[0] + 2 * v2[0], v1[1] + 2 * v2[1])
+    return _template((5, 4), width, phi,
+                     _periodic_domain(v1, v2, width, phi, polygons, turn=54.0),
+                     mirrored=True)
+
+
 @dataclass(frozen=True)
 class ArchTiling:
-    """One template-based periodic tiling, in one of four families: the
+    """One template-based periodic tiling, in one of six families: the
     ``uniform`` (Archimedean) tilings, their ``dual`` (Laves/Catalan)
-    partners, the ``isogonal`` tilings that are not edge to edge, and the
-    ``rectangle`` bonds tiled by one congruent rectangle -- see
-    docs/agents/board-recipes.md. The menu catalog, mode strings, presets
-    and tests all derive
+    partners, the ``isogonal`` tilings that are not edge to edge, the
+    ``rectangle`` bonds tiled by one congruent rectangle, the ``reptile``
+    patterns tiled by one congruent polyform, and ``durer``, whose two tile
+    shapes make it the one family that is neither vertex- nor
+    tile-transitive -- see docs/agents/board-recipes.md. The menu catalog,
+    mode strings, presets and tests all derive
     from this list."""
     key: str                       # "trihex"
     label: str                     # menu label, "Trihexagonal"
@@ -1338,15 +1455,26 @@ class ArchTiling:
         inside its family, being a stretched square tiling."""
         return _FAMILY_TRAITS[self.family][1]
 
+    @property
+    def monohedral(self) -> bool:
+        """One congruent tile, in however many orientations. True of every
+        family here bar ``durer``, which takes a pentagon *and* a rhomb: the
+        congruence invariant is the wrong question to ask of it, and
+        TestDurer checks its two shapes instead."""
+        return _FAMILY_TRAITS[self.family][2]
 
-# family -> (vertex-transitive, edge to edge). A family states what holds of it
-# as a family; a member may be better behaved (the stacked bond is both), which
-# is a matter for that tiling's own tests, not for the invariants derived here.
+
+# family -> (vertex-transitive, edge to edge, monohedral). A family states what
+# holds of it as a family; a member may be better behaved (the stacked bond is
+# both vertex-transitive and edge to edge), which is a matter for that tiling's
+# own tests, not for the invariants derived here.
 _FAMILY_TRAITS = {
-    "uniform": (True, True),      # Archimedean: every vertex alike
-    "dual": (False, True),        # Laves: every tile congruent
-    "isogonal": (True, False),    # every vertex alike, T-vertices and all
-    "rectangle": (False, False),  # one congruent rectangle, staggered
+    "uniform": (True, True, False),      # Archimedean: every vertex alike
+    "dual": (False, True, True),         # Laves: every tile congruent
+    "isogonal": (True, False, False),    # every vertex alike, T-vertices and all
+    "rectangle": (False, False, True),   # one congruent rectangle, staggered
+    "reptile": (False, False, True),     # one congruent polyform, in pairs
+    "durer": (False, True, False),       # a pentagon and a rhomb, edge to edge
 }
 
 
@@ -1420,6 +1548,16 @@ ARCH_TILINGS = (
                _basketweave3_template, family="rectangle"),
     ArchTiling("herringbone", "Herringbone", (4,), 2,
                _herringbone_template, family="rectangle"),
+    # the rep-tiles: one congruent polyform, laid down in half-turned pairs
+    # rather than inflated (the fractal boards do the inflating). config is
+    # the tile, as it is for a bond: one pentagon, one hexagon.
+    ArchTiling("sphinxpairs", "Sphinx pairs", (5,), 3,
+               _sphinxpairs_template, family="reptile"),
+    ArchTiling("tromino", "L-tromino", (6,), 2,
+               _tromino_template, family="reptile"),
+    # Durer's pentagon tiling: two tile shapes, so config lists both.
+    ArchTiling("durer", "Dürer pentagonal", (5, 4), 5,
+               _durer_template, family="durer", half_turn=False),
 )
 
 # Backward-compatible views derived from the single registry above.
