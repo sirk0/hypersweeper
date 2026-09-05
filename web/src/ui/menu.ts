@@ -701,7 +701,12 @@ export class Menu {
     for (const key of MANIFOLD_ORDER) {
       const surface = SURFACES.get(key);
       if (!surface) continue;
-      if (pickerFor(key).families.length > 0) {
+      const picker = pickerFor(key);
+      // ...anything at all on its page: a family submenu, or one of the
+      // regular tilings promoted to a row of its own. The double torus is the
+      // first surface with only the latter -- squares are the one tiling
+      // wrapped onto it so far -- and a families-only test hid it.
+      if (picker.tilings.length > 0 || picker.families.length > 0) {
         entries.push({ key, label: MANIFOLD_LABELS[key] ?? surface.label });
       }
     }

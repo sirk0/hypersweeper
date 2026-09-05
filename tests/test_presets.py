@@ -143,6 +143,17 @@ EXEMPT_ROWS = {
     ("pentagonalicositetra", "medium"),  # 120 or 480
     ("sphere", "easy"),                  # 60 or 300
     ("sphere", "hard"),                  # 300 or 1200
+    # The double torus pays for its genus: it is two donuts, so its window
+    # buys twice the cells a donut's does. Eight cells is the floor on either
+    # direction of a closed square lattice (`resize.MIN_WRAP_CELLS`, which on
+    # a builder whose knobs count cells is also what keeps a tube from being a
+    # square prism -- there is no domain count for `MAX_TILE_TURN` to read),
+    # and 8x8 twice over, less the cell each donut gives up at the join, is
+    # 126 against an easy target of 81. Nothing smaller is legal and nothing
+    # between 126 and 81 exists, so the surface outranks the size band here as
+    # it does for the coarse-domain tilings above. Medium and hard land in the
+    # ordinary band on their own.
+    ("doubletorus", "easy"),             # 126, and 8x8 is the smallest legal
 }
 
 # Everything else is held to two bars rather than one. A single +-15% rule

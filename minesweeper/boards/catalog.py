@@ -37,6 +37,10 @@ class SurfaceSpec:
     #                                   excludes a tiling that never reverses
     #                                   y at all (three-scale triangular)
     boundary_components: int | None   # topological invariant; None for flat
+    euler: int | None                 # ...and the other one: 0 for every
+    #                                   surface a plane wraps onto in one
+    #                                   piece, -2 for the double torus (genus
+    #                                   2), None for the plane itself
     tilt: float | None = None         # GameScreen3D initial x-rotation
     tilings: frozenset[str] | None = None  # restrict to these tiling keys;
     #                                        None means every tiling (default)
@@ -61,6 +65,7 @@ def _surface_from_json(row: dict) -> SurfaceSpec:
         needs_mirror=row["needsMirror"],
         needs_flip=row["needsFlip"],
         boundary_components=row["boundaryComponents"],
+        euler=row["euler"],
         tilt=row["tilt"],
         tilings=frozenset(tilings) if tilings is not None else None,
     )
@@ -300,14 +305,19 @@ def family_rows(family: str,
 def picker_families(surface_key: str) -> tuple[str, ...]:
     """The family rows a surface's picker offers, in order.
 
-    Every family on every surface, bar the two that exist on the plane alone.
-    What a surface drops it drops row by row in ``family_rows``, on the one
-    thing that can stop a tiling wrapping at all -- a chiral tiling has no
-    mirror to close a Mobius or Klein seam with.
+    Every family on every surface, bar the two that exist on the plane alone
+    and any whose rows a surface disables to the last one. What a surface
+    drops it drops row by row in ``family_rows``, on the one thing that can
+    stop a tiling wrapping at all -- a chiral tiling has no mirror to close a
+    Mobius or Klein seam with -- and a surface still restricted to an
+    allow-list of tilings (the double torus, square only for now) disables
+    whole families that way. A family with nothing left on it is a page of
+    greyed-out rows, so it is not offered at all.
     """
-    if surface_key == "flat":
-        return PICKER_FAMILIES + FLAT_ONLY_FAMILIES
-    return PICKER_FAMILIES
+    families = (PICKER_FAMILIES + FLAT_ONLY_FAMILIES if surface_key == "flat"
+                else PICKER_FAMILIES)
+    return tuple(f for f in families
+                 if any(enabled for *_, enabled in family_rows(f, surface_key)))
 
 
 def picker_modes(surface_key: str) -> tuple[str, ...]:

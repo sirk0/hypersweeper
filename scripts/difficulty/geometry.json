@@ -7991,5 +7991,49 @@
         "indistinguishable": 0
       }
     }
+  },
+  "doubletorus": {
+    "builder": "double_torus_board",
+    "args": {
+      "medium": {
+        "args": [
+          16,
+          8,
+          52,
+          0.45
+        ],
+        "cells": 254,
+        "score": 0.0728,
+        "distortionMean": 1.0381,
+        "distortionP90": 1.0568,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          27,
+          9,
+          101,
+          0.33
+        ],
+        "cells": 484,
+        "score": 0.04,
+        "distortionMean": 1.0191,
+        "distortionP90": 1.026,
+        "indistinguishable": 0
+      },
+      "easy": {
+        "args": [
+          8,
+          8,
+          18,
+          0.52
+        ],
+        "cells": 126,
+        "score": 0.7323,
+        "distortionMean": 1.1729,
+        "distortionP90": 1.2996,
+        "indistinguishable": 0
+      }
+    }
   }
 }

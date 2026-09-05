@@ -178,6 +178,7 @@ from minesweeper.boards.surfaces import (  # noqa: F401
     cylinder_board,
     cylinder_hex_board,
     cylinder_triangle_board,
+    double_torus_board,
     klein_board,
     klein_hex_board,
     klein_triangle_board,

@@ -577,3 +577,58 @@ invariant suite (`TestWrappedArchimedean` / `TestKleinTilings`) so
 χ = 0 / 0 boundary circles are checked automatically; if you add the spec
 but forget a preset, `TestPresets.test_all_presets_build` fails loudly.
 
+
+## Recipe: add a surface that is not a wrapped rectangle
+
+The Klein bottle above is the pattern for a surface the plane *wraps onto*: an
+immersion, a seam gluing, and the same rectangular window every tiling already
+has. The **double torus** (`doubletorus`, `surfaces.double_torus_board`) is the
+second worked example, and it is the pattern for a surface that is built by
+**joining boards** instead — a connected sum. Read
+[`geometry.md`](geometry.md#the-double-torus) for what it is; this is what
+adding another one of its kind costs.
+
+Most of the Klein recipe still applies — one `SurfaceSpec`, one builder, one
+`MANIFOLD_ORDER` / `MANIFOLD_LABELS` entry, presets measured rather than
+picked — and four things do not:
+
+1. **Declare the topology, do not assume it.** `SurfaceSpec` carries `euler`
+   beside `boundary_components`, and it is not decoration: `resize._topology_ok`
+   rejects a candidate window whose surface came out the wrong genus, and read
+   as "closed means χ = 0" it rejects *every* window of a genus-2 board and the
+   size search reports "no window builds at this size". Set it, in
+   `data/catalog.json`, alongside the other five surfaces.
+2. **Restrict the surface to the tilings it has builders for**, with the
+   `tilings` allow-list on the `SurfaceSpec` (`["square"]` here). Everything
+   derived follows: the picker page offers that tiling alone, and
+   `picker_families` drops the families the allow-list empties rather than
+   showing pages of greyed-out rows. On the web the surface's row survives on
+   the Flat manifolds page because `menu.ts` counts its promoted tiling rows as
+   well as its family submenus — a families-only test hid the first surface to
+   have only the former.
+3. **Say how a face knows which way is out.** `_assemble` winds a closed
+   surface outward from *the* ring circle through the origin, which a joined
+   board has more than one of; pass an `orient` of your own that reads the
+   piece off the cell id rather than measuring, because at the join the pieces
+   are equidistant and a measured answer ties. Both ports take the same
+   argument. The check that your rule is consistent is combinatorial and worth
+   writing: on an orientable closed surface every edge is traversed once in
+   each direction.
+4. **Expect the size band to lose.** A joined board buys twice the cells per
+   step of its window, so the floors that keep one piece reading as a surface
+   (`resize.MIN_WRAP_CELLS` for a closed square lattice) can put the smallest
+   legal board well past the classic easy size. That is an `EXEMPT_ROWS` entry
+   in `tests/test_presets.py` with the arithmetic written down, not a preset to
+   tune. Two things in the search need care first: seed the preset with a window
+   you actually believe in, since the cell-shape bar is measured at 1.02× the
+   *current* preset's and a bad seed sets a bad bar; and note that the fallback
+   candidate net is sorted by closeness to the target, so a floor that rejects
+   everything near it starves the net (hence `WIDE_CANDIDATE_LIMIT`, much
+   looser than `CANDIDATE_LIMIT`).
+
+Its two icons are hand-written like every other surface's: `DOUBLE_TORUS` in
+`web/src/ui/icons.ts` (a pair of `SurfacePoint`s — `surfaceMesh` takes several
+and meshes them into **one** frame, since two calls each scale their own grid
+to fill the icon and come out overlapping) and a `doubletorus` branch in
+`gui.py`'s `_render_icon`. `tests/test_gui.py` requires one for every
+`MANIFOLD_ORDER` key, so a missing icon fails rather than draws blank.

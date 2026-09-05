@@ -289,6 +289,11 @@ interface AssembleOpts {
    * candidate mirror axes, a translation and the glide that stands in for it
    * when the plain one misses the lattice) — the first that survives wins. */
   symmetries?: SymmetryCandidate[];
+  /** Overrides the winding rule for a closed surface whose ring circle is not
+   * the one through the origin. The double donut has two of them, and which a
+   * face belongs to is read off the cell rather than measured, because at the
+   * waist the two are equidistant and a measured answer ties. */
+  orient?: ((cell: CellId, polygon: Vec3[]) => Vec3[]) | null;
   clip?: SurfaceClip | null;
   // Per-cell "is this polygon vertex a real corner" mask, in polygon order —
   // see Board3D.cornerMask. Only the Archimedean/Laves wraps (surfaces built
@@ -305,14 +310,22 @@ function assemble(
   cells: Cells,
   positions: Positions,
   mineCount: number,
-  { twoSided, radius, symmetries = [], clip = null, cornerMask = null }: AssembleOpts,
+  {
+    twoSided,
+    radius,
+    symmetries = [],
+    clip = null,
+    cornerMask = null,
+    orient = null,
+  }: AssembleOpts,
 ): Board3D {
   const adjacency = sharedVertexAdjacency(cells);
   const polygons = new Map<CellId, Vec3[]>();
   const masks = cornerMask ? new Map<CellId, boolean[]>() : null;
+  const wind = orient ?? ((_cell: CellId, poly: Vec3[]) => orientFromRing(poly));
   for (const [cell, keys] of cells) {
     const poly = keys.map((k) => positions.get(k)!);
-    const oriented = twoSided ? poly : orientFromRing(poly);
+    const oriented = twoSided ? poly : wind(cell, poly);
     polygons.set(cell, oriented);
     if (masks) {
       const mask = cornerMask!.get(cell);
@@ -751,6 +764,153 @@ export function torusHexBoard(
   return assemble("torushex", cells, positions, mineCount, {
     twoSided: false,
     radius: 1 + tubeRadius,
+    symmetries,
+  });
+}
+
+// -- the double donut (genus 2) ----------------------------------------------
+//
+// Port of surfaces.py `double_torus_board`. Two donuts side by side in the
+// z = 0 plane, joined at their outer rims: the connected sum of two tori,
+// Euler characteristic -2, and the figure of eight the shape reads as. It is
+// `torusBoard` twice over except at the join, and the join is one cell:
+//
+//   * The two rings touch at their OUTER equators. Tangent at the *inner* rims
+//     instead and the two annuli overlap -- two rings of core radius 1 whose
+//     centres are 2(1 - tubeRadius) apart interpenetrate above and below the
+//     contact point -- so the donuts sit 2(1 + tubeRadius) + 2*gap apart along
+//     x and meet at phi = 0.
+//   * Donut B is donut A mirrored in x, key for key. So a vertex of A and the
+//     vertex of B it is glued to already agree in y and z and differ only in
+//     the sign of x: the shared vertex goes at x = 0, halfway, and the cells
+//     round the hole stretch across the gap into a short waist.
+//   * One cell is removed from each donut at the contact point (`hole` cells a
+//     side, 1 by default) and the boundary vertices of the two holes are
+//     identified. Every other cell is the square-tiled donut's, and the only
+//     irregular vertices are the four corners of the seam -- four whatever the
+//     hole's size -- where three quads of each donut meet instead of four.
+
+/** The index bookkeeping shared by the builder and its symmetries: the block
+ * of removed cells, the seam vertices round it, and the half-step offset that
+ * centres both on the contact point. A cell (i, j) spans vertices i..i+1, so an
+ * odd-sided block is centred on a cell centre and an even-sided one on a
+ * vertex; `offset` is the half step that puts either at theta = phi = 0. */
+function doubleTorusLayout(
+  ring: number,
+  tube: number,
+  hole: number,
+): { removed: Set<string>; seam: Set<string>; offset: number } {
+  if (hole < 1) throw new Error("hole must be at least one cell");
+  if (ring < hole + 2 || tube < hole + 2) {
+    throw new Error("ring and tube must leave a whole course round the hole");
+  }
+  const low = -Math.floor(hole / 2);
+  const removed = new Set<string>();
+  for (let i = low; i < low + hole; i++) {
+    for (let j = low; j < low + hole; j++) removed.add(`${mod(i, ring)},${mod(j, tube)}`);
+  }
+  const seam = new Set<string>();
+  for (let i = low; i <= low + hole; i++) {
+    for (let j = low; j <= low + hole; j++) {
+      if (i === low || i === low + hole || j === low || j === low + hole) {
+        seam.add(`${mod(i, ring)},${mod(j, tube)}`);
+      }
+    }
+  }
+  return { removed, seam, offset: (hole % 2) / 2 };
+}
+
+/** Two square-tiled donuts merged into one genus-2 board: `ring` cells round
+ * each ring and `tube` round each tube, less the `hole` x `hole` block each
+ * gives up at the join. `gap` is how far the two rims stand apart before the
+ * seam pulls them together, so it is the length of the waist. */
+export function doubleTorusBoard(
+  ring: number,
+  tube: number,
+  mineCount: number,
+  tubeRadius = 0.38,
+  gap = 0.2,
+  hole = 1,
+): Board3D {
+  const { removed, seam, offset } = doubleTorusLayout(ring, tube, hole);
+  const centre = 1 + tubeRadius + gap; // |x| of each donut's centre
+
+  const cells: Cells = new Map();
+  const positions: Positions = new Map();
+  const put = (side: number, rawI: number, rawJ: number): string => {
+    const i = mod(rawI, ring);
+    const j = mod(rawJ, tube);
+    const onSeam = seam.has(`${i},${j}`);
+    const k = onSeam ? `s,${i},${j}` : `${side},${i},${j}`;
+    if (!positions.has(k)) {
+      const theta = (TWO_PI * (i - offset)) / ring;
+      const phi = (TWO_PI * (j - offset)) / tube;
+      const radial = 1 + tubeRadius * Math.cos(phi);
+      const y = radial * Math.sin(theta);
+      const z = tubeRadius * Math.sin(phi);
+      const x = radial * Math.cos(theta) - centre;
+      // the seam goes halfway between the two rims, which by the mirror is x = 0
+      positions.set(k, onSeam ? [0, y, z] : [side === 0 ? x : -x, y, z]);
+    }
+    return k;
+  };
+
+  for (const side of [0, 1]) {
+    for (let i = 0; i < ring; i++) {
+      for (let j = 0; j < tube; j++) {
+        if (removed.has(`${i},${j}`)) continue;
+        cells.set(cid(side, i, j), [
+          put(side, i, j),
+          put(side, i + 1, j),
+          put(side, i + 1, j + 1),
+          put(side, i, j + 1),
+        ]);
+      }
+    }
+  }
+
+  /** Wind a face outward from *its own* donut's ring circle. Which of the two
+   * that is comes off the cell, not off the geometry: at the waist the two
+   * circles are equidistant and a measured answer ties. */
+  const orient = (cell: CellId, polygon: Vec3[]): Vec3[] => {
+    const cx = cell.startsWith("0,") ? -centre : centre;
+    const c = centroidOf(polygon);
+    const scale = Math.hypot(c[0] - cx, c[1]) || 1;
+    const ringPoint: Vec3 = [cx + (c[0] - cx) / scale, c[1] / scale, 0];
+    return orientOutward(polygon, [
+      c[0] - ringPoint[0],
+      c[1] - ringPoint[1],
+      c[2] - ringPoint[2],
+    ]);
+  };
+
+  // The hole spends every translation of the square lattice, so what is left
+  // is the shape's own point group: the half turn about z that swaps the two
+  // donuts, and the two mirrors that fix each of them (the plane z = 0 across
+  // the tubes, the plane y = 0 across the rings). Mirroring in x alone -- the
+  // plain donut swap -- is the product of the first two, so it is not offered.
+  const flip = 2 * offset; // i -> flip - i fixes the contact point
+  const vertexMove = (
+    move: (side: number, i: number, j: number) => [number, number, number],
+  ): SymmetryCandidate["build"] => () =>
+    cellsUnderVertexMap(cells, (key) => {
+      const [tag, a, b] = key.split(",");
+      // All three motions carry the seam onto itself, so the side a seam key
+      // is moved *as* never survives the lookup below -- hence the 0.
+      const [side, i, j] = move(tag === "s" ? 0 : Number(tag), Number(a), Number(b));
+      const [ci, cj] = [mod(i, ring), mod(j, tube)];
+      return seam.has(`${ci},${cj}`) ? `s,${ci},${cj}` : `${side},${ci},${cj}`;
+    });
+  const symmetries: SymmetryCandidate[] = [
+    { id: "turn", build: vertexMove((s, i, j) => [1 - s, flip - i, j]) },
+    { id: "mirror-ring", build: vertexMove((s, i, j) => [s, flip - i, j]) },
+    { id: "mirror-tube", build: vertexMove((s, i, j) => [s, i, flip - j]) },
+  ];
+
+  return assemble("doubletorus", cells, positions, mineCount, {
+    twoSided: false,
+    radius: maxRadius,
+    orient,
     symmetries,
   });
 }

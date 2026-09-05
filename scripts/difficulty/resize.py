@@ -72,6 +72,12 @@ SPEC: dict[str, dict] = {
     "torus_board": dict(size=(0, 1), mine=2, shape=3, kind="tube"),
     "torus_triangle_board": dict(size=(0, 1), mine=2, shape=3, kind="tube"),
     "torus_hex_board": dict(size=(0, 1), mine=2, shape=3, kind="tube"),
+    # The genus-2 board: the same two knobs as a donut, counting cells round
+    # one of its two rings and one of its two tubes, and the same tube radius
+    # for the shape term. Both directions close, so `_closed_tube` catches it
+    # on the name -- and it is a square lattice, hence `SQUARE_LATTICE_CLOSED`
+    # below.
+    "double_torus_board": dict(size=(0, 1), mine=2, shape=3, kind="tube"),
     "mobius_board": dict(size=(0, 1), mine=2, shape=None),
     "mobius_triangle_board": dict(size=(0, 1), mine=2, shape=None),
     "mobius_hex_board": dict(size=(0, 1), mine=2, shape=None),
@@ -352,7 +358,15 @@ FOLD_WEIGHT = 3.0
 # a ring -- a hexagon has six neighbours and its rings interlock -- so the bar
 # is written where it was measured rather than assumed everywhere.
 MIN_WRAP_CELLS = 8
-SQUARE_LATTICE_CLOSED = {"torus_board", "klein_board"}
+# ...and the double donut, which is the same square lattice closing both
+# ways, twice. It needs the floor for the second reason as well as the
+# first: its knobs count cells, so nothing else here can see that four
+# cells round a tube is a square prism -- MIN_WRAP_CELLS *is* MAX_TILE_TURN
+# for the builders that do not count domains. At two donuts to a board the
+# smallest window it allows is 8x8, which is 126 cells against an easy
+# target of 81; reading as the surface outranks the size band there, as it
+# does for the coarse-domain tilings (see EXEMPT_ROWS in tests/test_presets).
+SQUARE_LATTICE_CLOSED = {"torus_board", "klein_board", "double_torus_board"}
 ROLLED_ASPECT_WEIGHT = 1.2
 
 
@@ -411,6 +425,15 @@ def _closed_tube(builder: str) -> bool:
 # how many windows to actually build per row; the rest are further from the
 # target count than these and would lose on size anyway
 CANDIDATE_LIMIT = 70
+# ...and a much looser cap on the fallback net below. That net exists for the
+# rows where a bar rejects every window near the target, and it is sorted by
+# closeness to the target, so cutting it at seventy reproduces exactly the
+# starvation it was added to relieve: the double donut's smallest legal easy
+# window (8x8 per donut, 126 cells) sits 178 candidates down a list whose
+# first 177 the knob floor throws out. Only the fallback passes build it, and
+# only for a row nothing else could size, so the cost is a few hundred boards
+# on the handful of rows that get there.
+WIDE_CANDIDATE_LIMIT = 600
 
 # how lopsided an unrolled window may be before it reads as a hoop, not a board
 MAX_WINDOW_ASPECT = 15.0
@@ -461,7 +484,10 @@ def _topology_ok(mode: str, board) -> bool:
     try:
         if boundary_components(board) != want:
             return False
-        if want == 0 and euler_characteristic(board) != 0:
+        # ...and, on a closed surface, the genus with it: a window that glues
+        # its seam wrong is still closed. Read off the SurfaceSpec rather than
+        # assumed zero -- the double torus is -2.
+        if want == 0 and euler_characteristic(board) != surface.euler:
             return False
     except Exception:
         return False
@@ -1146,7 +1172,7 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
         # half again too big beats a twisted lozenge, but only the wide net
         # can see it.
         wider = [g for g in near
-                 if 0.25 * want <= g[0] * g[1] <= 4.0 * want][:CANDIDATE_LIMIT]
+                 if 0.25 * want <= g[0] * g[1] <= 4.0 * want][:WIDE_CANDIDATE_LIMIT]
 
     lo, hi = target * (1 - BAND), target * (1 + BAND)
     # the tilings that are not edge to edge need their T-vertices dropped

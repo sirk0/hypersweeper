@@ -44,7 +44,7 @@ Import order is a strict DAG; a module only imports from the ones above it.
 | `aperiodic.py` | Penrose (P3), the Spectre (Tile(1,1), the chiral monotile) and the phyllotactic spiral, each with exact-arithmetic vertex ids — ℤ[ζ5] for Penrose and the spiral, ℤ[ζ12] for the Spectre. The Spectre's ring is *dense* in the plane, so unlike Penrose's discrete lattice there is no lattice to snap a float vertex back to: its placements are carried as exact `(rotation, mirror, translation)` triples and no floating point enters the substitution at all. The spiral is the odd one out — no substitution, just ten 36° wedges of the tile's own translation lattice, the odd ones offset a step; nonperiodic because its five-fold centre forbids any translation. The **brick rings** are nonperiodic the same way — by symmetry rather than by a substitution — and are the plainest board here: 2x1 bricks on the integer square lattice in concentric square rings about a 2x2 core, ring k being the boundary of the 2k x 2k square with horizontal bricks along its rows and vertical ones up its sides. Every run is even, so every tile is a whole brick and only an even-sided square is tileable at all. A brick's corner lands in the middle of a neighbour's long side, so `_brick_outline` splits each edge at the lattice points that are genuinely some tile's corner — the 2D twin of `solids._split_at_lattice_points`, and *conditional*, unlike the fractal outlines, which carry a vertex at every step. |
 | `solids.py` | Closed/convex and polycube 3D boards (spherical gyro pentagons, Goldberg polyhedra, geodesic icosahedron, rhombicosidodecahedron, truncated icosidodecahedron, cube, tetrahedron, frames, bipyramid), plus the shared `_wythoff_point` every uniform solid here and every Catalan solid next door is generated from. |
 | `catalan.py` | The thirteen Catalan solids, the duals of the Archimedean solids. One recipe for all of them: a Platonic base and one flag, the Wythoff generating point of its Schwarz triangle (`solids._wythoff_point` for the five non-chiral Conway operations, `_snub_point` for the chiral one), a Catalan vertex at `n / <w, n>` on each face axis — polar duality — and the base's flags grouped into faces by the operation. Faces are then subdivided (`solids._geodesic` for triangles, `_quad_grid` for quadrilaterals, a five-way fan first for pentagons), which is these boards' only size knob. |
-| `surfaces.py` | Wrapping tilings onto surfaces: the three immersion points (`_torus_point`, `_cylinder_point`, `_mobius_point`), the shared `_assemble` tail, the nine simple `*_board` wrappers, and the Archimedean `arch_torus_board` / `arch_cylinder_board` / `arch_mobius_board`. |
+| `surfaces.py` | Wrapping tilings onto surfaces: the three immersion points (`_torus_point`, `_cylinder_point`, `_mobius_point`), the shared `_assemble` tail, the nine simple `*_board` wrappers, and the Archimedean `arch_torus_board` / `arch_cylinder_board` / `arch_mobius_board`. Also `double_torus_board`, the one board here that is *not* wrapped from a rectangle: two square-tiled donuts merged at their outer rims, a connected sum rather than a seam gluing. |
 | `volume.py` | The volume boards — a solid block of cells rather than a surface of them. One so far: `solid_cube_board`, the `n**3` cube of cubes, whose 26-neighbour adjacency comes off the lattice and whose drawing is the `n` slices laid out on a grid and stepped back in depth. |
 | `catalog.py` | The menu, **derived**: `SURFACE_SPECS` and `TILING_SPECS` (leaf data loaded from `data/catalog.json`) produce `MODE_LABELS`, `TILINGS`, `SURFACE_LABELS`, the geometry-first menu tables (`MENU_ROOT`/`MANIFOLD_*`/`FAMILY_*`/`SOLID_GROUP_*`/`SOLID_MODES`/`SHAPED_MODES`) and the picker helpers (`family_rows`, `picker_families`, `picker_modes`), `MODES_3D`, `mode_for`, `surface_of`, `view_hint`. |
 | `presets.py` | Difficulty presets and `build_board`. Flat regular, solid, Archimedean/Laves and aperiodic (penrose/spectre/phyllotaxis) presets all load from `data/presets.json` (shared with the web port). The Archimedean rows are authored in the compact **`ARCH_PRESETS`** table (tiling → surface → difficulty → args) that `scripts/export_data.py` expands into `data/presets.json`. |
@@ -177,7 +177,64 @@ one `ARCH_TILINGS` + one `ARCH_PRESETS` row (its family submenu follows
 from the `family` field, no menu edit needed), a
 surface is one `SurfaceSpec` + an immersion + a wrap builder; the menu,
 mode strings, `MODES_3D`, and chirality gating all derive from those
-registries.
+registries. A fifth surface, the **double torus**, is not a wrap of a
+rectangle at all -- see the next section.
+
+## The double torus
+
+One board in the zoo is not a rectangle glued along its seams, and it is the
+only one whose Euler characteristic is neither 2 (a solid), 1 (a disc) nor 0
+(the four flat manifolds): `doubletorus` is the **connected sum** of two
+square-tiled donuts, genus 2, chi = -2. What the request "two donuts merged"
+asks for is a figure of eight, and the construction is the shortest thing that
+is one:
+
+* The two donuts touch at their **outer** equators, so their centres sit
+  2(1 + `tube_radius`) + 2·`gap` apart along x. Tangent at the *inner* rims
+  instead and the two solids interpenetrate -- two rings of core radius 1 whose
+  centres are only 2(1 - `tube_radius`) apart overlap above and below the
+  contact point -- which is the sign error worth not making twice.
+* Donut B **is** donut A mirrored in x, key for key. That is what makes the
+  join exact rather than fitted: a vertex of A and the vertex of B it glues to
+  already agree in y and z and differ only in the sign of x, so the shared
+  vertex goes at x = 0 and nothing is rounded together.
+* Each donut gives up **one cell** at the contact point and the four boundary
+  vertices of the two holes are identified. The cells round the holes then
+  stretch across the gap into a short waist. `gap` is the only knob that is
+  purely cosmetic, and it earns its default: at 0.1 the two rims meet in a
+  crease that photographs as a notch, at 0.2 they flow into each other.
+* chi = -2 for a hole of any size (`TestDoubleTorus` does the arithmetic), and
+  the only irregular vertices are the **four corners of the seam**, where three
+  quads of each donut meet instead of four. Everything else is the square-tiled
+  donut's own vertex, which is the point: the board is `torus` twice over
+  except where the two are joined.
+
+Three consequences worth knowing before touching it:
+
+* **Orientation is read off the cell, not measured.** `_assemble` winds a
+  closed surface's faces outward from *the* ring circle; here there are two, and
+  at the waist a face is equidistant from both, so the builder passes an
+  `orient` of its own that reads the donut off the cell id. That the two rules
+  agree across the seam is measured rather than assumed -- every edge of the
+  board is traversed once in each direction, which is orientability.
+* **It has no translation at all.** The hole pins the lattice, so neither the
+  ring step nor the tube step survives and there is nothing to scroll. What is
+  left is the figure of eight's own point group: the half turn about z that
+  swaps the two donuts, and the two mirrors that fix each of them. That is why
+  the symmetry suite's "every seam-glued board turns about its own axis" says
+  seam-glued rather than wrapped.
+* **It pays for its genus in cells, and easy cannot hit the classic size.** A
+  closed square lattice needs eight cells each way (`resize.MIN_WRAP_CELLS`,
+  which on a builder whose knobs count cells is also what stops a tube being a
+  square prism), and 8x8 twice over is 126 against a target of 81. Nothing
+  smaller is legal and nothing in between exists, so that row is an
+  `EXEMPT_ROWS` entry; medium and hard land in the ordinary band.
+
+Only the square tiling is wrapped onto it so far. That is one field --
+`SurfaceSpec.tilings`, the allow-list -- and the menu, mode strings, `MODES_3D`
+and the picker all follow from it: the surface's picker page offers Squares
+alone, and `picker_families` drops the families it leaves empty rather than
+showing four pages of greyed-out rows.
 
 ## The aperiodic boards
 

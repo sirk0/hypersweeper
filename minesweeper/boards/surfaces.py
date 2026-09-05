@@ -88,17 +88,24 @@ def _orient_from_ring(polygon: list[Vec3]) -> list[Vec3]:
 
 
 def _assemble(mode, cells, point, mine_count, *, two_sided, radius,
-              cell_cycle=None) -> Board3D:
+              cell_cycle=None, orient=None) -> Board3D:
     """Position every vertex key with ``point(key)``, build adjacency and
     polygons, and wrap it in a Board3D. Closed surfaces (``two_sided``
     False) orient each face outward from the ring; open or non-orientable
     ones keep both sides. ``radius`` is a value or a callable of the
     positions dict. ``cell_cycle`` is an optional one-step scroll
-    permutation carried through to the Board3D."""
+    permutation carried through to the Board3D. ``orient`` overrides the
+    winding rule for a closed surface whose ring circle is not the one
+    through the origin -- the double donut has two of them, and which one a
+    face belongs to is read off the cell rather than measured, so the two
+    cannot tie at the waist where they are equidistant."""
     positions = {key: point(key) for keys in cells.values() for key in keys}
     adjacency = _shared_vertex_adjacency(cells)
     if two_sided:
         polygons = {cell: [positions[k] for k in keys]
+                    for cell, keys in cells.items()}
+    elif orient is not None:
+        polygons = {cell: orient(cell, [positions[k] for k in keys])
                     for cell, keys in cells.items()}
     else:
         polygons = {cell: _orient_from_ring([positions[k] for k in keys])
@@ -186,6 +193,112 @@ def torus_hex_board(
                              for ox, oy in _HEX_VERTEX_OFFSETS]
     return _assemble("torushex", cells, point, mine_count,
                      two_sided=False, radius=1.0 + tube_radius)
+
+
+# -- the double donut (genus 2) ----------------------------------------------
+#
+# Two donuts, side by side in the z = 0 plane, joined at their outer rims:
+# the connected sum of two tori, Euler characteristic -2, and the figure of
+# eight the shape reads as. Everything about it is `torus_board` twice over
+# except the join, and the join is one cell:
+#
+#   * The two rings touch at their OUTER equators. Tangent at the *inner*
+#     rims instead and the two annuli overlap -- two rings of core radius 1
+#     whose centres are 2(1 - tube_radius) apart interpenetrate above and
+#     below the contact point -- so the donuts sit 2(1 + tube_radius) + 2*gap
+#     apart along x and meet at phi = 0.
+#   * Donut B is donut A mirrored in x, key for key. So a vertex of A and the
+#     vertex of B it is glued to already agree in y and z, and differ only in
+#     the sign of x: the shared vertex goes at x = 0, halfway, and the cells
+#     round the hole stretch across the gap into a short waist.
+#   * One cell is removed from each donut at the contact point (`hole` cells
+#     a side, 1 by default) and the boundary vertices of the two holes are
+#     identified. Every other cell is the square-tiled donut's, and the only
+#     irregular vertices are the four corners of the seam -- four whatever the
+#     hole's size -- where three quads of each donut meet instead of four.
+#
+# chi = -2 for any hole size: the arithmetic is in TestDoubleTorus.
+
+
+def _double_torus_layout(ring: int, tube: int, hole: int):
+    """The index bookkeeping shared by the builder and its tests: the block
+    of removed cells, the seam vertices round it, and the half-step offset
+    that centres both on the contact point.
+
+    The tiling's cell (i, j) spans vertices i..i+1, so an odd-sided block is
+    centred on a cell *centre* and an even-sided one on a vertex; ``offset``
+    is the half step that puts either at theta = phi = 0."""
+    if hole < 1:
+        raise ValueError("hole must be at least one cell")
+    if ring < hole + 2 or tube < hole + 2:
+        raise ValueError("ring and tube must leave a whole course round the hole")
+    low = -(hole // 2)
+    span = range(low, low + hole)
+    removed = {(i % ring, j % tube) for i in span for j in span}
+    # the vertices bounding that block: its own grid, minus the interior
+    seam = {
+        (i % ring, j % tube)
+        for i in range(low, low + hole + 1)
+        for j in range(low, low + hole + 1)
+        if i in (low, low + hole) or j in (low, low + hole)
+    }
+    return removed, seam, (hole % 2) / 2
+
+
+def double_torus_board(
+    ring: int, tube: int, mine_count: int, tube_radius: float = 0.38,
+    gap: float = 0.2, hole: int = 1,
+) -> Board3D:
+    """Two square-tiled donuts merged into one genus-2 board: ``ring`` cells
+    round each ring and ``tube`` round each tube, less the ``hole`` x ``hole``
+    block each gives up at the join. ``gap`` is how far the two rims stand
+    apart before the seam pulls them together, so it is the length of the
+    waist."""
+    removed, seam, offset = _double_torus_layout(ring, tube, hole)
+    centre = 1.0 + tube_radius + gap   # |x| of each donut's centre
+
+    def angles(i: int, j: int) -> tuple[float, float]:
+        return (2 * math.pi * (i - offset) / ring,
+                2 * math.pi * (j - offset) / tube)
+
+    def point(key):
+        side, i, j = key
+        theta, phi = angles(i, j)
+        radial = 1.0 + tube_radius * math.cos(phi)
+        y, z = radial * math.sin(theta), tube_radius * math.sin(phi)
+        if side == "s":
+            return (0.0, y, z)          # the seam: halfway between the rims
+        x = radial * math.cos(theta) - centre
+        return (x if side == 0 else -x, y, z)
+
+    def vertex(side: int, i: int, j: int):
+        i, j = i % ring, j % tube
+        return ("s", i, j) if (i, j) in seam else (side, i, j)
+
+    cells = {}
+    for side in (0, 1):
+        for i in range(ring):
+            for j in range(tube):
+                if (i, j) in removed:
+                    continue
+                cells[(side, i, j)] = [
+                    vertex(side, i, j), vertex(side, i + 1, j),
+                    vertex(side, i + 1, j + 1), vertex(side, i, j + 1),
+                ]
+
+    def orient(cell, polygon):
+        """Wind a face outward from *its own* donut's ring circle. Which of
+        the two that is comes off the cell, not off the geometry: at the
+        waist the two circles are equidistant and a measured answer ties."""
+        cx = -centre if cell[0] == 0 else centre
+        cen = tuple(sum(c) / len(polygon) for c in zip(*polygon))
+        scale = math.hypot(cen[0] - cx, cen[1]) or 1.0
+        ring_point = (cx + (cen[0] - cx) / scale, cen[1] / scale, 0.0)
+        return _orient_outward(polygon, tuple(c - p for c, p
+                                              in zip(cen, ring_point)))
+
+    return _assemble("doubletorus", cells, point, mine_count,
+                     two_sided=False, radius=_max_radius, orient=orient)
 
 
 # -- the Möbius strip --------------------------------------------------------

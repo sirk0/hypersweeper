@@ -54,6 +54,7 @@ from minesweeper.boards import (
     cylinder_board,
     cylinder_hex_board,
     cylinder_triangle_board,
+    double_torus_board,
     gosper_board,
     hex_board,
     hexhex_board,
@@ -116,6 +117,7 @@ from minesweeper.boards.catalan import (
 from minesweeper.boards.catalan import (
     sphere_board as catalan_sphere_board,
 )
+from minesweeper.boards.core import _cross
 from minesweeper.boards.core import newell_normal as _newell_normal
 from minesweeper.boards.presets import ARCH_PRESETS
 
@@ -2230,6 +2232,94 @@ class TestKleinBottle:
         # tube is even
         with pytest.raises(ValueError):
             klein_board(12, 5, 9)
+
+
+class TestDoubleTorus:
+    """Two square-tiled donuts merged at their outer rims: the connected sum
+    of two tori, and the one board in the zoo that is not a sphere, a disc or
+    a chi = 0 surface."""
+
+    @pytest.mark.parametrize("difficulty", DIFFICULTIES)
+    def test_is_a_closed_orientable_genus_two_surface(self, difficulty):
+        board = build_board("doubletorus", difficulty)
+        assert _euler_characteristic(board) == -2      # genus 2
+        assert _boundary_components(board) == 0        # closed
+        assert board.two_sided is False                # orientable
+
+    def test_the_euler_characteristic_is_the_one_the_surface_declares(self):
+        """...and it is declared once, on the SurfaceSpec, which is what the
+        size search reads to tell a genus-2 window from a mis-glued one."""
+        surface = surface_of("doubletorus")
+        assert (surface.euler, surface.boundary_components) == (-2, 0)
+
+    @pytest.mark.parametrize("hole", [1, 2, 3])
+    def test_chi_is_minus_two_whatever_the_hole(self, hole):
+        """Removing a p x p block from each donut and gluing the two hole
+        boundaries costs (p-1)**2 vertices and 2p**2 - 2p edges a side, and
+        identifying 4p of each: V - E + F comes out -2 for every p."""
+        ring, tube = hole + 6, hole + 6
+        board = double_torus_board(ring, tube, 8, hole=hole)
+        assert len(board.adjacency) == 2 * (ring * tube - hole**2)
+        assert _euler_characteristic(board) == -2
+        assert _boundary_components(board) == 0
+
+    @pytest.mark.parametrize("difficulty", DIFFICULTIES)
+    def test_only_the_seam_corners_are_irregular(self, difficulty):
+        """The whole point of the construction: away from the join every
+        vertex is the square grid's, four quads round it. At the four corners
+        of the seam three quads of each donut meet, and there are exactly four
+        of those however big the board is."""
+        board = build_board("doubletorus", difficulty)
+        fans = Counter(len(fan) for fan in _corner_fans(board).values())
+        assert fans[6] == 4
+        assert set(fans) == {4, 6}
+
+    @pytest.mark.parametrize("difficulty", DIFFICULTIES)
+    def test_the_two_donuts_do_not_touch_anywhere_but_the_seam(self, difficulty):
+        """The rims are pulled together at x = 0 and nothing else reaches it,
+        so the surface is embedded rather than self-intersecting -- which is
+        also what keeps every vertex a distinct point (a merge would drop chi
+        silently, since the topology invariants key on coordinates)."""
+        gap = 0.2   # the builder's default, the slab the waist bridges
+        board = build_board("doubletorus", difficulty)
+        xs = [round(p[0], 9) for poly in board.polygons.values() for p in poly]
+        # every vertex is on one donut or the other -- clear of the slab
+        # between their rims -- or exactly on the seam plane halfway across
+        assert all(x == 0.0 or abs(x) >= gap for x in xs)
+        assert min(xs) < 0 < max(xs) and 0.0 in xs
+        points = {tuple(round(c, 6) for c in p)
+                  for poly in board.polygons.values() for p in poly}
+        assert len(points) == len(_corner_fans(board))
+
+    @pytest.mark.parametrize("difficulty", DIFFICULTIES)
+    def test_faces_wind_outward_consistently(self, difficulty):
+        """Each face is wound outward from *its own* donut's ring circle, and
+        the test that the two rules agree across the seam is that every edge
+        is traversed once each way -- which is orientability, measured."""
+        board = build_board("doubletorus", difficulty)
+        directed = Counter()
+        for polygon in board.polygons.values():
+            points = [tuple(round(c, 7) for c in p) for p in polygon]
+            for a, b in zip(points, points[1:] + points[:1]):
+                directed[(a, b)] += 1
+        assert set(directed.values()) == {1}
+        # ...and outward rather than inward: by the divergence theorem an
+        # outward-wound closed surface encloses a positive volume, and this
+        # one is two tori less the pinch at the waist
+        volume = 0.0
+        for polygon in board.polygons.values():
+            o = polygon[0]
+            for a, b in zip(polygon[1:], polygon[2:]):
+                u = [a[k] - o[k] for k in range(3)]
+                v = [b[k] - o[k] for k in range(3)]
+                volume += sum(o[k] * _cross(u, v)[k] for k in range(3)) / 6
+        assert volume > 0
+
+    def test_the_hole_must_leave_a_whole_course_round_it(self):
+        with pytest.raises(ValueError):
+            double_torus_board(3, 8, 8, hole=2)
+        with pytest.raises(ValueError):
+            double_torus_board(8, 3, 8, hole=2)
 
 
 class TestKleinTilings:

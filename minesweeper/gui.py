@@ -1615,6 +1615,22 @@ def _render_icon(key: str) -> pygame.Surface:
         pygame.draw.ellipse(s, (0, 0, 0, 0), hole)
         pygame.draw.ellipse(s, ICON_BLUE_DARK, hole, 4)
         _icon_gloss(s, pygame.Rect(d * 0.1, d * 0.24, d * 0.8, d * 0.34), 80)
+    elif key == "doubletorus":
+        # the same donut twice, side by side and touching at their outer rims:
+        # the figure of eight the genus-2 board reads as
+        for cx in (d * 0.26, d * 0.74):
+            band = pygame.Rect(0, 0, d * 0.5, d * 0.34)
+            band.center = (int(cx), int(c))
+            pygame.draw.ellipse(s, ICON_BLUE, band)
+            pygame.draw.ellipse(s, ICON_BLUE_DARK, band, 4)
+        # ...both bands first: they overlap where the two rims meet, so a hole
+        # punched before its neighbour is drawn would be painted back over
+        for cx in (d * 0.26, d * 0.74):
+            hole = pygame.Rect(0, 0, d * 0.18, d * 0.1)
+            hole.center = (int(cx), int(c))
+            pygame.draw.ellipse(s, (0, 0, 0, 0), hole)
+            pygame.draw.ellipse(s, ICON_BLUE_DARK, hole, 4)
+        _icon_gloss(s, pygame.Rect(d * 0.06, d * 0.36, d * 0.88, d * 0.2), 80)
     elif key == "mobius":
         band = pygame.Rect(d * 0.05, d * 0.16, d * 0.9, d * 0.68)
         pygame.draw.ellipse(s, ICON_BLUE, band)

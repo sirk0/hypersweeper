@@ -100,6 +100,10 @@ Pick a surface, then a tiling:
 - **Torus (3D)** — the grid wraps in both directions, so there are no
   border cells; pure hexagons are possible here, because the torus has
   Euler characteristic 0
+- **Double torus (3D)** — two donuts merged at their outer rims into a
+  figure of eight. Each gives up one cell at the join and the two holes are
+  sewn together, so away from the waist every cell is the donut's own and the
+  only irregular vertices are the four corners of the seam
 - **Möbius strip (3D)** — a one-sided surface: the strip glues to itself
   with a flip, so a chiral tiling cannot wrap it at all
 - **Klein bottle (3D)** — the donut glued with that same flip, one-sided

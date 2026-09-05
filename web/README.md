@@ -8,6 +8,36 @@ as the reference implementation and is not deployed.
 newest first. For the rules and reference an agent needs while working here, see
 [`AGENTS.md`](AGENTS.md) and the topic files in [`docs/`](docs/) it routes to.
 
+**M21 — Genus 2: a surface built by joining boards.** Every surface so far is
+a rectangle glued along its own seams, so all four have Euler characteristic 0.
+`doubletorus` is the first that is not: two square-tiled donuts merged at their
+outer rims — the **connected sum** of two tori, chi = -2, the figure of eight
+the shape reads as. Each donut gives up one cell at the contact point and the
+four boundary vertices of the two holes are identified, so away from the waist
+every cell is the donut's own and the only irregular vertices are the four
+corners of the seam, where three quads of each donut meet instead of four.
+
+Two things make the join exact rather than fitted. The donuts touch at their
+**outer** equators (tangent at the inner rims, two rings of core radius 1 sit
+close enough to interpenetrate); and donut B *is* donut A mirrored in x, key
+for key, so a vertex of A and the vertex of B it glues to already agree in y
+and z and differ only in the sign of x — the shared vertex goes at x = 0 and
+nothing is rounded together. That the two donuts' outward-winding rules agree
+across the seam is measured rather than assumed: every edge of the board is
+traversed once in each direction, which is orientability.
+
+Three consequences. `SurfaceSpec` now carries `euler` beside
+`boundaryComponents`, because the size search rejects a window whose surface came
+out the wrong genus and "closed means chi = 0" rejected every window this board
+has. The hole spends both translations, so this is the one wrapped board with
+nothing to scroll — its controls are the figure of eight's own point group, the
+half turn that swaps the donuts and the two mirrors that fix each. And it pays
+for its genus in cells: eight cells each way is the floor for a closed square
+lattice, and 8x8 twice over is 126 against an easy target of 81, so that row is
+an exemption with the arithmetic written down rather than a preset to tune.
+Squares only for now — the `SurfaceSpec.tilings` allow-list is what keeps the
+other tilings' rows off a surface with no builder for them. 1 new mode.
+
 **M20 — Volumetric: a board that is a solid, not a surface.** Every board up
 to here is a *surface* — a tiling of the plane, of a polyhedron, or of an
 immersed manifold — and two cells are neighbours when their polygons share a

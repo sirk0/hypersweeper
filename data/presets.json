@@ -1161,6 +1161,29 @@
         ]
       }
     },
+    "doubletorus": {
+      "builder": "double_torus_board",
+      "args": {
+        "easy": [
+          8,
+          8,
+          18,
+          0.52
+        ],
+        "medium": [
+          16,
+          8,
+          52,
+          0.45
+        ],
+        "hard": [
+          27,
+          9,
+          101,
+          0.33
+        ]
+      }
+    },
     "elongated": {
       "builder": "archimedean_board",
       "args": {
