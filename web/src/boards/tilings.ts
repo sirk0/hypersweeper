@@ -11,6 +11,7 @@ import {
 } from "./core";
 
 const ROOT3 = Math.sqrt(3);
+const ROOT2 = Math.sqrt(2);
 const DEG = Math.PI / 180;
 
 const HEX_VERTEX_OFFSETS: Vertex[] = [
@@ -165,6 +166,33 @@ export function hextriangleBoard(size: number, mineCount: number, scale = 20): B
     }
   }
   return buildLattice("hextriangle", cells, [(scale * ROOT3) / 2, scale / 2], mineCount);
+}
+
+export function squareDiamondBoard(radius: number, mineCount: number, scale = 32): Board {
+  // The square tiling turned 45 degrees, on a square window: the diamonds
+  // whose centres are the lattice points (u, v) with max(|u|, |v|) <= radius
+  // and u == v (mod 2), 2r^2 + 2r + 1 of them. The same tiling as squareBoard,
+  // cut to a different outline the way hexhexBoard cuts the hexagons -- in the
+  // unrotated frame the window is the taxicab ball |row| + |col| <= radius (an
+  // Aztec diamond), which turned 45 degrees reads as a square board with a
+  // sawtooth edge. Working in the turned frame keeps the vertex ids exact
+  // integers, the lattice unit being a half-diagonal: scale / sqrt(2).
+  const cells = new Map<CellId, Vertex[]>();
+  for (let v = -radius; v <= radius; v++) {
+    for (let u = -radius; u <= radius; u++) {
+      if ((u + v) % 2 !== 0) continue; // the two parities are two lattices
+      const kx = u + radius + 1;
+      const ky = v + radius + 1;
+      cells.set(cid(u, v), [
+        [kx, ky - 1],
+        [kx + 1, ky],
+        [kx, ky + 1],
+        [kx - 1, ky],
+      ]);
+    }
+  }
+  const unit = scale / ROOT2;
+  return buildLattice("squarediamond", cells, [unit, unit], mineCount);
 }
 
 // -- Archimedean (semiregular) tilings + Laves duals -------------------------

@@ -251,9 +251,9 @@ SOLID_MODES = tuple(m for g in SOLID_GROUP_ORDER for m in SOLID_GROUP_MEMBERS[g]
 MENU_ROOT_LABELS = {**dict(_MENU["rootLabels"]), **SOLID_GROUP_LABELS}
 
 # The shaped flat boards, by the regular tiling they are made of: the same
-# tiling as the plain rectangular board, cut to a triangular or hexagonal
-# outline instead. They live on the plane only, so the Regular page carries
-# them under their tiling on the flat picker and nowhere else.
+# tiling as the plain rectangular board, cut to a triangular, hexagonal or
+# diamond outline instead. They live on the plane only, so the Regular page
+# carries them under their tiling on the flat picker and nowhere else.
 SHAPED_MODES = {k: tuple(v) for k, v in _MENU["shapedModes"].items()}
 
 # Labels for the non-periodic (one-off) modes (aperiodic, fractal, solid,
@@ -291,7 +291,7 @@ def family_rows(family: str,
         rows.append((key, spec.label, spec.mode(surface) if allowed else "",
                      allowed))
         if family == "regular" and surface_key == "flat":
-            # the same tiling on a triangular / hexagonal outline
+            # the same tiling on a triangular / hexagonal / diamond outline
             rows += [(m, MODE_LABELS[m], m, True)
                      for m in SHAPED_MODES.get(key, ())]
     return tuple(rows)

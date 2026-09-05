@@ -186,7 +186,7 @@ declared by one `menu.solidGroups` table in `data/catalog.json`), and inside
 every tiling picker the three regular tilings are
 **promoted** to rows of their own, so a surface page reads Triangles · Squares ·
 Hexagons · Uniform · Laves · … . On the plane that leaves the Regular family
-holding the shaped boards alone, relabelled **Non-square boards**. The header
+holding the shaped boards alone, relabelled **Shaped boards**. The header
 gains a **?** beside the gear, opening a How-to-play page (`src/ui/help.ts`)
 built like the settings pages. All of this is web-only: it is derived in the
 "web menu" section of `src/boards/catalog.ts` (`menuTilingRows`,

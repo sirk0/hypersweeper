@@ -17,7 +17,7 @@ A board reachable from the home page is still reachable through Custom — the
 home row is a shortcut, not a move, which is how `square` has always worked.
 In every tiling picker the three regular tilings are promoted to rows of their
 own, leaving the Regular family holding the shaped boards alone under the label
-**Non-square boards** (plane only). That shape is *derived* from
+**Shaped boards** (plane only). That shape is *derived* from
 the shared port in the "web menu" section of `src/boards/catalog.ts`, so
 `data/catalog.json` and the pygame menu are untouched;
 `tests/unit/menu.test.ts` pins it.

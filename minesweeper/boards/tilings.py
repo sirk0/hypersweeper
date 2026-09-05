@@ -25,7 +25,9 @@ from minesweeper.boards.core import (
 #     itself under the tiling's point group (mirror for the reflective
 #     tilings, pinwheel rotation for the chiral ones). archimedean_board
 #     does this from the _ArchTemplate domains; square/hex/triangle boards
-#     are naturally rectangular.
+#     are naturally rectangular, and the named shaped boards
+#     (triangle, hexhex, hextri, hextriangle, squarediamond) are polygons of
+#     their own tiling's symmetry, exactly filled.
 #   * Aperiodic tilings (Penrose, Spectre) have no period to repeat, so grow
 #     a generous patch and trim to the ``keep`` centremost cells by
 #     Chebyshev distance ``max(|dx|, |dy|)`` from the centroid, which
@@ -144,6 +146,38 @@ def hextriangle_board(size: int, mine_count: int, scale: float = 20) -> Board:
             ky = 3 * (size - r) + 2
             cells[(q, r)] = [(kx + ox, ky + oy) for ox, oy in _HEX_VERTEX_OFFSETS]
     return _build("hextriangle", cells, (scale * ROOT3 / 2, scale / 2), mine_count)
+
+
+def square_diamond_board(radius: int, mine_count: int, scale: float = 32) -> Board:
+    """The square tiling turned 45 degrees, on a square window: diamond cells
+    whose centres are the lattice points (u, v) with max(|u|, |v|) <= radius
+    and u == v (mod 2), 2r^2 + 2r + 1 of them.
+
+    The same tiling as square_board -- a diamond is a square, and shared-vertex
+    adjacency still gives eight neighbours -- cut to a different outline, the
+    way hexhex_board cuts the hexagons. In the unrotated frame the window is
+    the taxicab ball |row| + |col| <= radius (an Aztec diamond), because
+    |a - b| + |a + b| = 2 * max(|a|, |b|); turned 45 degrees that reads as a
+    *square* board whose four edges are a sawtooth of diamond tips rather than
+    a flat line, and it is the edge that makes the board play differently.
+    A straight edge gives its cells 5 neighbours and its 4 corners 3; the
+    sawtooth gives five distinct degrees -- 7 in the notches, 5 on the tips,
+    6 beside the corners, 3 at them -- over the same 8-neighbour interior.
+
+    Working in the turned frame keeps the vertex ids exact integers: a cell
+    centred on (u, v) has vertices (u, v-1), (u+1, v), (u, v+1), (u-1, v), so
+    the lattice unit is a half-diagonal, ``scale / sqrt(2)`` on both axes for a
+    cell of side ``scale``. Full D4 symmetry, centred on the middle cell.
+    """
+    cells = {}
+    for v in range(-radius, radius + 1):
+        for u in range(-radius, radius + 1):
+            if (u + v) % 2:  # the two parities are two interleaved lattices
+                continue
+            kx, ky = u + radius + 1, v + radius + 1
+            cells[(u, v)] = [(kx, ky - 1), (kx + 1, ky), (kx, ky + 1), (kx - 1, ky)]
+    unit = scale / math.sqrt(2)
+    return _build("squarediamond", cells, (unit, unit), mine_count)
 
 
 # -- Archimedean (semiregular) tilings ---------------------------------------

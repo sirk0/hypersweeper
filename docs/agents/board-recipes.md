@@ -396,7 +396,7 @@ These are one-offs, not tiling×surface products.
    `solidGroups`, so nothing else needs to know how many solid pages there
    are); the exporter round-trip test keeps the two sides honest. Both menus
    follow from that table: on the web a `shapedModes` entry lands under
-   **Custom › Flat › Non-square boards** (the regular tilings themselves are
+   **Custom › Flat › Shaped boards** (the regular tilings themselves are
    rows of the picker there), each solid group is a home-page row leading
    straight to a flat list of its boards, and everything else joins the home
    page's Flat or 3D random pool along with its group.

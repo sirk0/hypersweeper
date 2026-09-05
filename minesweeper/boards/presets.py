@@ -83,6 +83,7 @@ from minesweeper.boards.tilings import (
     hextri_board,
     hextriangle_board,
     square_board,
+    square_diamond_board,
     triangle_board,
     triangle_grid_board,
 )
@@ -100,6 +101,7 @@ _JSON_BUILDERS = {
     "hexhex_board": hexhex_board,
     "hextri_board": hextri_board,
     "hextriangle_board": hextriangle_board,
+    "square_diamond_board": square_diamond_board,
     "c80_board": c80_board,
     "c180_board": c180_board,
     "sphere_triangle_board": sphere_triangle_board,

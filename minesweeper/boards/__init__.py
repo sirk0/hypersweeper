@@ -214,6 +214,7 @@ from minesweeper.boards.tilings import (  # noqa: F401
     hextri_board,
     hextriangle_board,
     square_board,
+    square_diamond_board,
     triangle_board,
     triangle_grid_board,
 )

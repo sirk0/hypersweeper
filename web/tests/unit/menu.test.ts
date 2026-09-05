@@ -41,10 +41,11 @@ describe("picker pages", () => {
     expect(menuFamilyRows("regular", "flat").map((r) => r.mode)).toEqual([
       "triangle",
       "hextri",
+      "squarediamond",
       "hexhex",
       "hextriangle",
     ]);
-    expect(MENU_FAMILY_LABELS["regular"]).toBe("Non-square boards");
+    expect(MENU_FAMILY_LABELS["regular"]).toBe("Shaped boards");
     for (const surface of MANIFOLD_ORDER) {
       expect(menuFamilyRows("regular", surface)).toEqual([]);
     }

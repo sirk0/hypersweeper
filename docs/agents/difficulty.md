@@ -17,7 +17,8 @@ guessing.
 
 Applies to all future flat boards: a finite flat board should read as a roughly *square* rectangle, not a round
 disc, and a symmetric tiling should give a symmetric board. (The named
-shaped boards — `triangle`, `hexhex`, `hextri`, `hextriangle` — are the
+shaped boards — `triangle`, `hexhex`, `hextri`, `hextriangle`,
+`squarediamond` — are the
 deliberate exception: each is a polygon of the tiling's own symmetry,
 exactly filled, never a trimmed disc.) For periodic
 tilings take a rectangular window of whole periods centred on a rotation

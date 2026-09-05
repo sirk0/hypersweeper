@@ -248,6 +248,7 @@ describe("board symmetries", () => {
       ["square", "easy", 8], // D4 — the classic 9x9 grid
       ["square", "hard", 4], // 30x16 is a rectangle: a half turn and a mirror
       ["hexhex", "easy", 12], // D6
+      ["squarediamond", "easy", 8], // D4 — the turned grid on a square window
       ["gosper", "easy", 6], // C6: the flowsnake is chiral
     ];
     for (const [mode, difficulty, order] of orders) {

@@ -208,7 +208,7 @@ export class Menu {
       // The four solid pages -- Sphere, Platonic solids, Catalan solids and
       // Polyhedra -- are one flat board list each, so they all come off the
       // shared table rather than being spelled out here. (The shaped flat
-      // boards live under Flat › Non-square boards.)
+      // boards live under Flat › Shaped boards.)
       ...SOLID_GROUPS.map((g): Group => ({
         key: g.key,
         label: g.label,
@@ -651,7 +651,7 @@ export class Menu {
 
   /** The shared tiling picker for a surface (the plane or a flat manifold):
    * the three regular tilings as rows of their own, then the Uniform / Laves /
-   * Isogonal / Congruent-rectangles (and, on the plane, Non-square boards,
+   * Isogonal / Congruent-rectangles (and, on the plane, Shaped boards,
    * Aperiodic and Fractals) families as submenus. */
   private showPicker(label: string, surfaceKey: string, onBack: () => void): void {
     this.go(() => this.renderPicker(label, surfaceKey, onBack));
