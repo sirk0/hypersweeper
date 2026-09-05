@@ -184,7 +184,11 @@ class App {
     window.addEventListener("orientationchange", () => this.onResize());
     // A mobile browser grows and shrinks its own chrome without ever resizing
     // the window; the visual viewport is what reports it (see syncViewport).
+    // Both of its events matter: `resize` is the chrome changing size, `scroll`
+    // is the visible viewport moving *within* the layout one — which is what
+    // the toolbars sliding in and out does, and what `--app-top` tracks.
     window.visualViewport?.addEventListener("resize", () => this.onResize());
+    window.visualViewport?.addEventListener("scroll", () => this.onResize());
     window.addEventListener("keydown", (e) => this.onKey(e));
     attachControls(canvas, {
       pick: (ndc) => this.renderer.pick(ndc),
@@ -533,13 +537,29 @@ class App {
     this.menu.openAchievements();
   }
 
-  /** Lay the app out in the viewport the user can actually see. iOS Safari's
-   * `100vh` is the *large* viewport — the toolbars retracted — so a full-height
-   * fixed layer extends underneath the bottom toolbar: the canvas is taller
-   * than the visible window and a board centred in it is pushed down, cramped
-   * against the toolbar with all the slack above it. `visualViewport.height`
-   * is the on-screen height (what the pygame web presenter reads for the same
-   * reason); CSS falls back to `100dvh` before this first runs. */
+  /** Lay the app out in the viewport the user can actually see — both how tall
+   * it is and *where it is*.
+   *
+   * Height: iOS Safari's `100vh` is the *large* viewport — the toolbars
+   * retracted — so a full-height fixed layer extends underneath the bottom
+   * toolbar: the canvas is taller than the visible window and a board centred
+   * in it is pushed down, cramped against the toolbar with all the slack above
+   * it. `visualViewport.height` is the on-screen height (what the pygame web
+   * presenter reads for the same reason); CSS falls back to `100dvh` before
+   * this first runs.
+   *
+   * Position: a `fixed` layer's `top: 0` is the top of the *layout* viewport,
+   * and `viewport-fit=cover` (index.html) spans that across the whole screen —
+   * the browser's toolbars are drawn *over* it rather than shortening it. With
+   * the toolbars out, which is how every page starts, the layout viewport
+   * therefore begins behind the top chrome and the app was laid out from up
+   * there: on an iPhone 16 Pro with the address bar at the top, the menu's
+   * title sat under 112pt of Safari and the app stopped 112pt short of the
+   * bottom of the screen, showing a band of bare page under it. That gap is
+   * exactly `visualViewport.offsetTop` — where the visible viewport sits
+   * inside the layout one — so every fixed layer starts there (`--app-top`)
+   * instead of at 0. It is 0 on a desktop browser and in a home-screen launch,
+   * where the two viewports are the same box. */
   private syncViewport(): void {
     const vv = window.visualViewport;
     // While the page is pinch-zoomed (scale > 1) the visual viewport is a
@@ -550,10 +570,13 @@ class App {
     // blocks browser zoom (controls.ts, styles.css) — but a stray zoom (iOS
     // accessibility, a desktop ctrl-+) must not scramble the board.
     const h = vv ? vv.height * (vv.scale || 1) : window.innerHeight;
-    document.documentElement.style.setProperty(
-      "--app-h",
-      `${Math.round(this.resolveHeight(h))}px`,
-    );
+    const style = document.documentElement.style;
+    style.setProperty("--app-h", `${Math.round(this.resolveHeight(h))}px`);
+    // The offsets are already in the layout viewport's own CSS pixels, so they
+    // need no scale correction — they are where to put the box, not how big it
+    // is. `offsetLeft` is 0 except when a zoom has panned the page sideways.
+    style.setProperty("--app-top", `${Math.round(vv?.offsetTop ?? 0)}px`);
+    style.setProperty("--app-left", `${Math.round(vv?.offsetLeft ?? 0)}px`);
   }
 
   /** The measured viewport height `h`, corrected for the iOS standalone
@@ -598,11 +621,16 @@ class App {
     // drawn behind the board, and reserves nothing.
     const header =
       this.screen === "game" && !this.hud.root.hidden ? this.hud.root : null;
+    // Measured from the top of the canvas, not of the layout viewport: with the
+    // browser's chrome out the two are `--app-top` apart (see syncViewport), and
+    // what the board is framed below is the header's distance down *its own*
+    // layer. Both sit in the same offset box, so one subtraction covers it.
+    const top = this.canvas.getBoundingClientRect().top;
     const inset = !header
       ? 0
       : this.boardInfo.caption.hidden
         ? header.getBoundingClientRect().height
-        : this.boardInfo.caption.getBoundingClientRect().bottom;
+        : this.boardInfo.caption.getBoundingClientRect().bottom - top;
     this.renderer.setTopInset(inset);
     // The name sits on the line the board is framed from — the top of the play
     // field, so a board that fills it covers the name and a smaller one leaves

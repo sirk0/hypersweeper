@@ -92,6 +92,17 @@
      tracks the toolbars, and main.ts overwrites this with the exact
      `visualViewport` height (the signal the pygame web presenter uses too). */
   --app-h: 100vh;
+  /* Where that box goes: the top-left of the *visible* viewport inside the
+     layout one, which is what a fixed layer's `top: 0` actually means.
+     `viewport-fit=cover` (index.html) spans the layout viewport across the
+     whole screen and a mobile browser draws its toolbars over it rather than
+     shortening it — so with the toolbars out, `top: 0` is up behind the
+     address bar and the app sat that far above the screen it was meant to
+     fill. main.ts keeps these on `visualViewport.offsetTop`/`offsetLeft`; both
+     are 0 wherever the two viewports are the same box (a desktop browser, a
+     home-screen launch, a phone with its toolbars retracted). */
+  --app-top: 0px;
+  --app-left: 0px;
   /* The status-bar / notch strip at the top of the screen, which
      `viewport-fit=cover` (index.html) hands the page rather than reserving.
      The header and the menu clear it with `env(safe-area-inset-top)` directly;
@@ -180,7 +191,7 @@ body {
      its toolbars at the end of a scroll, so the page settles in exactly that
      state instead of springing back. Sized to `--app-h` there is no slack to
      scroll, and the layout viewport and the visible one stay the same box. */
-  height: var(--app-h);
+  height: calc(var(--app-top) + var(--app-h));
   /* The page field: the theme's colour gradient (flat for every theme whose
      two stops are equal), with the theme's texture layers over it and, on a
      board, that board's own tiling over those. The board canvas is
@@ -211,8 +222,8 @@ body {
 
 #board {
   position: fixed;
-  top: 0;
-  left: 0;
+  top: var(--app-top);
+  left: var(--app-left);
   /* Both axes stated explicitly: a canvas is a *replaced* element, so an auto
      width/height resolves to the drawing buffer's size rather than to the
      left/right (top/bottom) offsets. */
@@ -228,9 +239,9 @@ body {
 #ui {
   touch-action: manipulation;
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
+  top: var(--app-top);
+  left: var(--app-left);
+  width: 100%;
   height: var(--app-h);
   pointer-events: none;
   display: flex;
@@ -252,7 +263,7 @@ body {
   position: fixed;
   left: 0;
   right: 0;
-  top: var(--board-name-top, 0px);
+  top: calc(var(--app-top) + var(--board-name-top, 0px));
   padding: 2px 16px 0;
   text-align: center;
   /* Behind the board, and never a target: a tap here is a tap on the cell that
@@ -1325,9 +1336,9 @@ body {
    they follow all eight palettes. */
 .dialog-backdrop {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
+  top: var(--app-top);
+  left: var(--app-left);
+  width: 100%;
   /* The visible viewport, like every other layer — not `inset: 0`, which is
      the layout viewport and on a phone runs on under the bottom toolbar: the
      scrim covered ground the player could not see, and the dialog centred in

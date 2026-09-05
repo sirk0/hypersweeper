@@ -149,6 +149,22 @@ design rather than the rule itself.
   (headless Chromium has no toolbar). One trap: the canvas is a *replaced*
   element, so state both its width and height — an auto one resolves to the
   drawing buffer's size, not to the offsets.
+- **`--app-top` is where that box *starts*, and it is not always 0.** A fixed
+  layer's `top: 0` is the top of the **layout** viewport, and
+  `viewport-fit=cover` (index.html) spans that across the whole screen — a
+  mobile browser draws its toolbars *over* it rather than shortening it. So
+  with the toolbars out, which is how every page opens, `top: 0` is up behind
+  the address bar: on the reported iPhone 16 Pro (address bar at the top) the
+  app was the right size and 112px too high, its menu title under Safari's
+  chrome and a band of bare page below its bottom edge. `App.syncViewport`
+  keeps `--app-top` / `--app-left` on `visualViewport.offsetTop` / `offsetLeft`
+  — the visible viewport's place inside the layout one — and **every fixed
+  layer starts there**: the canvas, `#ui`, the board-name layer, the dialog
+  scrim. Two things to remember with it: the visual viewport's **`scroll`**
+  event is what fires when that offset changes (its `resize` only covers the
+  chrome changing size, so listen to both), and every `getBoundingClientRect`
+  is in *layout* viewport coordinates — subtract the canvas's own `top` before
+  handing a number to the renderer, as `onResize` does for the header inset.
 - **`--app-h` is the whole document, and every layer is measured off it.** That
   includes `html` and `body` themselves: `height: 100%` is the *large* viewport
   on iOS Safari just as `100vh` is, so with the toolbars out — which is how
@@ -159,8 +175,11 @@ design rather than the rule itself.
   re-expands its toolbars at the end of a scroll, left the page sitting there —
   the first open, and only the first open, broken. Same rule for anything that
   wants the bottom of the screen: a `position: fixed` layer's `bottom` is the
-  layout viewport's, so give it `height: var(--app-h)` (the dialog scrim) or
-  position it inside `#ui`, which already has it (the first-run hint).
+  layout viewport's, so give it `top: var(--app-top)` with
+  `height: var(--app-h)` (the dialog scrim) or position it inside `#ui`, which
+  already has both (the first-run hint). `html`/`body` are
+  `calc(var(--app-top) + var(--app-h))`, so the field is painted across
+  everything the player can see and the document still ends there.
 - **One measurement is not to be trusted: an iOS home-screen launch.** The app
   runs `apple-mobile-web-app-status-bar-style: black-translucent`, so the page
   is drawn from the very top of the screen, under the status bar — but WebKit

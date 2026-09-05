@@ -19,18 +19,23 @@ const TOOLBARS = [45, 90];
 async function stubToolbar(
   page: import("@playwright/test").Page,
   height: number,
+  top = 0,
 ): Promise<void> {
-  await page.addInitScript((toolbar: number) => {
+  await page.addInitScript(({ toolbar, top }: { toolbar: number; top: number }) => {
     const real = window.visualViewport;
     const fake = {
       get width() {
         return window.innerWidth;
       },
       get height() {
-        return window.innerHeight - toolbar;
+        return window.innerHeight - toolbar - top;
       },
       offsetLeft: 0,
-      offsetTop: 0,
+      // Chrome the browser draws over the *top* of the layout viewport: the
+      // visible viewport starts that far down it, which is what an address bar
+      // at the top of an iPhone does (`viewport-fit=cover` spans the layout
+      // viewport across the whole screen and Safari covers it).
+      offsetTop: top,
       scale: 1,
       addEventListener: (...args: unknown[]) =>
         (real as unknown as HTMLElement | null)?.addEventListener?.(
@@ -45,7 +50,7 @@ async function stubToolbar(
       configurable: true,
       get: () => fake,
     });
-  }, height);
+  }, { toolbar: height, top });
 }
 
 /** Reproduce an iOS home-screen launch under the `black-translucent` status
@@ -101,10 +106,18 @@ async function boardBand(
 async function chrome(page: import("@playwright/test").Page) {
   return page.evaluate(() => {
     const canvas = document.getElementById("board")!.getBoundingClientRect();
+    const vv = window.visualViewport;
     return {
       canvasLeft: canvas.left,
+      canvasTop: canvas.top,
       canvasWidth: canvas.width,
       canvasHeight: canvas.height,
+      uiTop: document.getElementById("ui")!.getBoundingClientRect().top,
+      uiHeight: document.getElementById("ui")!.getBoundingClientRect().height,
+      // Where the visible viewport sits inside the layout one, and where it
+      // ends — the two lines the whole app has to land between.
+      visibleTop: vv?.offsetTop ?? 0,
+      visibleBottom: (vv?.offsetTop ?? 0) + (vv?.height ?? window.innerHeight),
       // The whole header block the board is framed below: the header row *and*
       // the caption under it naming the board (`App.onResize` reserves both).
       headerBottom: (
@@ -279,6 +292,65 @@ test.describe("viewport layout", () => {
     expect(box.scrimBottom).toBeCloseTo(box.visible, 0);
     // Centred in what the player can see, not in the window behind the toolbar.
     expect(box.cardCenter).toBeCloseTo(box.visible / 2, 0);
+  });
+
+  // The reported iPhone 16 Pro, address bar at the top: 402x874 CSS px of
+  // screen, 112 of Safari over the top of it and 78 over the bottom. The app
+  // was the right *size* — `visualViewport.height`, 684 — and in the wrong
+  // *place*: `viewport-fit=cover` spans the layout viewport across the whole
+  // screen and Safari draws its chrome over that, so a layer at `top: 0` began
+  // behind the address bar. The menu's title sat under it and the app stopped
+  // 112px short of the bottom of the screen, showing a band of bare page.
+  const IPHONE = { width: 402, height: 874, top: 112, bottom: 78 };
+
+  test("the app starts where the visible viewport does, not where the layout one does", async ({
+    page,
+  }) => {
+    await stubToolbar(page, IPHONE.bottom, IPHONE.top);
+    await page.setViewportSize({ width: IPHONE.width, height: IPHONE.height });
+    await page.goto("/");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+
+    const c = await chrome(page);
+    expect(c.visibleTop).toBe(IPHONE.top);
+    expect(c.visibleBottom).toBe(IPHONE.height - IPHONE.bottom);
+    // Both fixed layers — the canvas and the chrome column — fill exactly the
+    // box between the two, top edge included.
+    expect(c.canvasTop).toBeCloseTo(c.visibleTop, 0);
+    expect(c.canvasTop + c.canvasHeight).toBeCloseTo(c.visibleBottom, 0);
+    expect(c.uiTop).toBeCloseTo(c.visibleTop, 0);
+    expect(c.uiTop + c.uiHeight).toBeCloseTo(c.visibleBottom, 0);
+
+    // …so the menu reads whole: its title below the address bar, its difficulty
+    // row above the toolbar.
+    const title = await page
+      .locator(".menu-title")
+      .evaluate((el) => el.getBoundingClientRect().top);
+    expect(title).toBeGreaterThanOrEqual(c.visibleTop);
+    const rowBottom = await page
+      .locator(".menu-difficulty")
+      .evaluate((el) => el.getBoundingClientRect().bottom);
+    expect(rowBottom).toBeLessThanOrEqual(c.visibleBottom);
+  });
+
+  test("a board is framed in the visible viewport when the chrome overlays the top", async ({
+    page,
+  }) => {
+    await stubToolbar(page, IPHONE.bottom, IPHONE.top);
+    await page.setViewportSize({ width: IPHONE.width, height: IPHONE.height });
+    await page.goto("/?mode=square&difficulty=hard&seed=1");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+
+    const c = await chrome(page);
+    expect(c.canvasTop).toBeCloseTo(c.visibleTop, 0);
+    // The header is on screen, and the board centres between it and the bottom
+    // of what the user can see — the top inset the board is framed below is
+    // measured down the canvas, so the offset must not count twice.
+    expect(c.headerBottom).toBeGreaterThan(c.visibleTop);
+    const band = await boardBand(page);
+    expect(band.center).toBeCloseTo((c.headerBottom + c.visibleBottom) / 2, 0);
+    expect(band.top).toBeGreaterThanOrEqual(c.headerBottom);
+    expect(band.bottom).toBeLessThanOrEqual(c.visibleBottom);
   });
 
   test("the menu keeps its difficulty row above the browser chrome", async ({
