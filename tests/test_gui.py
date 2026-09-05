@@ -698,11 +698,9 @@ class TestMenu:
         # the tiling picker on the plane and on every flat manifold. The
         # families are whatever the catalog offers that surface -- the
         # aperiodic and fractal ones exist on the plane only.
-        for surface_path, surface in ((["flat"], "flat"),
-                                      (["manifolds", "cylinder"], "cylinder"),
-                                      (["manifolds", "mobius"], "mobius"),
-                                      (["manifolds", "klein"], "klein"),
-                                      (["manifolds", "torus"], "torus")):
+        paths = [(["flat"], "flat")]
+        paths += [(["manifolds", key], key) for key in MANIFOLD_ORDER]
+        for surface_path, surface in paths:
             for family in picker_families(surface):
                 menu = MenuScreen()
                 for key in surface_path + [family]:

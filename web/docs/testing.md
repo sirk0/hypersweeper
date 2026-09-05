@@ -165,7 +165,13 @@ Practical knowledge for verifying changes by actually running the app
 - **Playwright's `webServer` reuses a running port-4173 server** outside
   CI. `vite preview` serves `dist/` from disk, so an `npm run build` is
   enough to refresh it — but stale servers are a classic source of
-  "my change has no effect".
+  "my change has no effect". It bites hardest on **`--update-snapshots`**,
+  where it does not merely hide a change but *bakes the stale one into a
+  committed baseline*: the run passes, the PNG looks plausible, and the
+  next full suite — which found no server and built one — fails against it.
+  Regenerating a baseline is the one time to make sure nothing is on 4173
+  first (`ss -ltn | grep 4173`), or to let the suite own the server for the
+  whole session.
 - **Animations are off in the e2e suite** (`contextOptions.reducedMotion:
   "reduce"` in `playwright.config.ts`), so screenshots catch the settled
   frame. To eyeball an animation in an ad-hoc capture, launch Chromium

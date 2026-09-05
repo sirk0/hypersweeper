@@ -78,6 +78,9 @@ import {
   mobiusTriangleBoard,
   torusBoard,
   torusHexBoard,
+  doubleTorusBoard,
+  doubleTorusHexBoard,
+  doubleTorusTriangleBoard,
   torusTriangleBoard,
 } from "./surfaces";
 
@@ -133,6 +136,10 @@ const BUILDERS: Record<string, Builder> = {
   torus_board: torusBoard,
   torus_triangle_board: torusTriangleBoard,
   torus_hex_board: torusHexBoard,
+  // the genus-2 board: two square-tiled donuts merged at their outer rims
+  double_torus_board: doubleTorusBoard,
+  double_torus_triangle_board: doubleTorusTriangleBoard,
+  double_torus_hex_board: doubleTorusHexBoard,
   mobius_board: mobiusBoard,
   mobius_triangle_board: mobiusTriangleBoard,
   mobius_hex_board: mobiusHexBoard,

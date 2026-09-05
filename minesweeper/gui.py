@@ -1615,6 +1615,29 @@ def _render_icon(key: str) -> pygame.Surface:
         pygame.draw.ellipse(s, (0, 0, 0, 0), hole)
         pygame.draw.ellipse(s, ICON_BLUE_DARK, hole, 4)
         _icon_gloss(s, pygame.Rect(d * 0.1, d * 0.24, d * 0.8, d * 0.34), 80)
+    elif key == "doubletorus":
+        # the same donut twice, overlapping rather than touching -- a point of
+        # each one's outer rim on the other's inner rim, which is what merges
+        # them into the figure of eight the genus-2 board reads as
+        for cx in (d * 0.31, d * 0.69):
+            band = pygame.Rect(0, 0, d * 0.56, d * 0.4)
+            band.center = (int(cx), int(c))
+            pygame.draw.ellipse(s, ICON_BLUE, band)
+            pygame.draw.ellipse(s, ICON_BLUE_DARK, band, 4)
+        # ...both bands first: they overlap at the waist, so a hole punched
+        # before its neighbour is drawn would be painted back over. Redrawing
+        # the fills over the outlines then clears the two arcs that cross the
+        # merged middle, which the board has cut away.
+        for cx in (d * 0.31, d * 0.69):
+            band = pygame.Rect(0, 0, d * 0.56, d * 0.4)
+            band.center = (int(cx), int(c))
+            pygame.draw.ellipse(s, ICON_BLUE, band.inflate(-4, -4))
+        for cx in (d * 0.31, d * 0.69):
+            hole = pygame.Rect(0, 0, d * 0.2, d * 0.12)
+            hole.center = (int(cx), int(c))
+            pygame.draw.ellipse(s, (0, 0, 0, 0), hole)
+            pygame.draw.ellipse(s, ICON_BLUE_DARK, hole, 4)
+        _icon_gloss(s, pygame.Rect(d * 0.1, d * 0.34, d * 0.8, d * 0.22), 80)
     elif key == "mobius":
         band = pygame.Rect(d * 0.05, d * 0.16, d * 0.9, d * 0.68)
         pygame.draw.ellipse(s, ICON_BLUE, band)

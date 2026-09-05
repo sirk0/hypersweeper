@@ -3,6 +3,7 @@ import { Color, SRGBColorSpace } from "three";
 import presets from "@data/presets.json";
 import { isBoard3D } from "../../src/boards/core";
 import { buildBoard } from "../../src/boards/presets";
+import { doubleTorusBoard } from "../../src/boards/surfaces";
 import { COLORS } from "../../src/render/boardMesh";
 import {
   cellPalette,
@@ -207,6 +208,34 @@ describe("per-board shape classing", () => {
       );
       expect(sides).toEqual(new Set([3, 6]));
     }
+  });
+
+  it("keeps the double torus a board of squares across its seam", () => {
+    // The seam pulls a run of vertices onto the plane the two donuts were cut
+    // along, and where two tube rows share a z (the rows either side of the
+    // tube's top, on an even tube) three corners of a cell come out exactly
+    // collinear. The geometric fallback then measures those cells as triangles
+    // and paints them red on a board of nothing but squares, so the builder
+    // carries a mask saying what is true of every one of them: four corners,
+    // all real.
+    for (const difficulty of ["easy", "medium", "hard"]) {
+      const board = buildBoard("doubletorus", difficulty);
+      if (!isBoard3D(board)) throw new Error("expected a Board3D");
+      expect(board.cornerMask).not.toBeNull();
+      const masked = [...classifyShapes(board.polygons, board.cornerMask).values()];
+      expect(new Set(masked.map((t) => t.sides))).toEqual(new Set([4]));
+    }
+    // ...and the mask is not decoration. No window that ships straightens a
+    // corner today, but the size search picks those windows and 22 x 10 -- one
+    // it considered -- really does: rows 2 and 3 of a ten-row tube sit either
+    // side of the top and share a z, so with both on the seam at one theta,
+    // three corners of a cell land on one line. Unmasked that cell measures as
+    // a triangle and paints red on a board of squares.
+    const straightened = doubleTorusBoard(22, 10, 20);
+    const bare = [...classifyShapes(straightened.polygons).values()];
+    expect(bare.some((t) => t.sides === 3)).toBe(true);
+    const masked = [...classifyShapes(straightened.polygons, straightened.cornerMask).values()];
+    expect(new Set(masked.map((t) => t.sides))).toEqual(new Set([4]));
   });
 
   it("measures the Spectre as the 13-gon it is drawn as", () => {

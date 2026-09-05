@@ -12,6 +12,9 @@ export interface SurfaceSpec {
   needsMirror: boolean;
   needsFlip: boolean;
   boundaryComponents: number | null;
+  /** Euler characteristic: 0 for every surface a plane wraps onto in one
+   * piece, -2 for the double torus (genus 2), null for the plane. */
+  euler: number | null;
   tilt: number | null;
   tilings: string[] | null;
 }
@@ -256,11 +259,12 @@ export function familyRows(family: string, surfaceKey: string): FamilyRow[] {
 }
 
 /** The family rows a surface's picker offers, in order. What a surface drops
- * is decided row by row in `familyRows`, by the two things that can stop a
- * tiling wrapping at all — a chiral tiling has no mirror to close a Möbius or
- * Klein seam with, and a flat-only tiling has no wrap builder yet — and a
- * family left with no row at all is dropped with them rather than shown
- * empty. */
+ * is decided row by row in `familyRows`, by the three things that can stop a
+ * tiling reaching it — a chiral tiling has no mirror to close a Möbius or
+ * Klein seam with, a flat-only tiling (the rep-tiles, Dürer's) has no wrap
+ * builder yet, and a surface restricted to an allow-list of tilings (the
+ * double torus) refuses the rest — and a family left with no row at all is
+ * dropped with them rather than shown as a page of greyed-out rows. */
 export function pickerFamilies(surfaceKey: string): string[] {
   const families =
     surfaceKey === "flat" ? [...PICKER_FAMILIES, ...FLAT_ONLY_FAMILIES] : [...PICKER_FAMILIES];

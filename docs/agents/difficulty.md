@@ -72,6 +72,36 @@ hand-picked density is the one thing this game cannot get right by eye.
    on the easy row against a target of 81. With nothing for shape to say, size
    decides alone.
 
+   **A board built by joining boards needs a bar on the join** (`MAX_WAIST`).
+   Nothing else here can see how much of the pieces a merge ate: the topology
+   is the same either way, and cell distortion scores each tile's own shape and
+   finds a broad flat waist perfectly well-proportioned. Left to itself the
+   search spent the double torus's tube radius on rounder cells and its easy
+   board came out a single blob with two holes -- a join the full width of a
+   donut. Three quarters is where the two readings part. Unlike the fold bars
+   this one does not give way to the size band (below the sizes where a merge
+   is possible the only joins available are wide ones, so a bar that yields
+   hands back the blob), and it is judged at the *thinnest* tube the shape
+   sweep offers rather than at the current row's, because the window search
+   holds that knob fixed.
+
+   **A bar that rejects every window near the target starves the search**
+   unless the fallback net is much wider than the main one. Candidates are
+   sorted by closeness to the target cell count and cut at `CANDIDATE_LIMIT`
+   (70) for the ordinary passes; the fallback passes cut at
+   `WIDE_CANDIDATE_LIMIT` (600) instead, because a floor that throws out
+   everything in the band throws out the whole of a 70-long list sorted that
+   way. The double torus is the case: it is two donuts, so `MIN_WRAP_CELLS`
+   puts its smallest legal easy window (8x8 per donut, 126 cells) 178
+   candidates down, and at the narrow cap the search reported "no window builds
+   at this size" and left the row where it found it.
+
+   **And a new builder's cell-shape bar is seeded from its own preset.** The
+   bar is 1.02x the *current* row's edge ratio, so for a board that has never
+   shipped it is whatever window you seeded `data/presets.json` with: seed a
+   distorted one and the search will defend it. Seed the window you actually
+   believe in, then let the search move it.
+
    **A knob's floor is not always 1** (`floor` in `SPEC`). The two chiral
    Catalan solids take `frequency=0`, meaning "do not fan the pentagons at
    all", and that is their whole small end: fanned once, a pentagonal
