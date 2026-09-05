@@ -390,10 +390,10 @@ ARCH_PRESETS = {
     # The rep-tiles and Durer's tiling are flat-only for now
     # (_FLAT_ONLY_FAMILIES in catalog.py), so they carry a "flat" row alone.
     "sphinxpairs": {
-        "flat": {"easy": (5, 3, 13, 26.667), "medium": (8, 5, 37, 18.462), "hard": (12, 7, 117, 12.632)},
+        "flat": {"easy": (4, 3, 5, 34.286), "medium": (8, 5, 38, 18.462), "hard": (12, 7, 115, 12.632)},
     },
     "tromino": {
-        "flat": {"easy": (5, 8, 8, 30.0), "medium": (9, 14, 32, 17.143), "hard": (13, 19, 95, 12.0)},
+        "flat": {"easy": (6, 6, 10, 30.0), "medium": (9, 13, 47, 17.143), "hard": (12, 18, 92, 14.0)},
     },
     "durer": {
         "flat": {"easy": (2, 6, 12, 41.745), "medium": (4, 11, 45, 22.369), "hard": (5, 15, 99, 18.156)},

@@ -246,6 +246,15 @@ Adding one, or adding a tiling to one:
    half turn anywhere, hence `half_turn=False` on its registry row.
    `_periodic_domain` builds the domain from the pattern's own lattice where it
    is not rectangular (the sphinx's parallelogram, Dürer's ζ10 lattice).
+   Declare a **`grain`** if the tiling has one — the spacing of straight lines
+   no tile crosses, along x and y, measured from the window centre and dividing
+   the domain. `archimedean_board` ends its window on them, which is the
+   difference between a straight board edge and a row of tiles kept by half:
+   the sphinx has one horizontally (√3, one course per tile) and none
+   vertically, the L-tromino has both (3 and 2, its own domain). Most tilings
+   have none — a hexagon straddles every horizontal line there is — and leaving
+   it at `(0, 0)` keeps the old behaviour exactly. `TestFlatGrain` checks the
+   claim against the domain and the shipped boards.
 2. **Traits** — one `_FAMILY_TRAITS` row: `(vertex-transitive, edge to edge,
    monohedral)`. The rep-tiles are `(False, False, True)`, like the bonds.
    Dürer's is `(False, True, False)`: two tile shapes, so it is the one family

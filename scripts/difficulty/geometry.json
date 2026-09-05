@@ -8045,13 +8045,13 @@
       "easy": {
         "args": [
           "sphinxpairs",
-          5,
+          4,
           3,
           13,
-          26.667
+          34.286
         ],
-        "cells": 90,
-        "score": 0.1823,
+        "cells": 80,
+        "score": 0.4381,
         "distortionMean": 1.8585,
         "distortionP90": 1.8585,
         "indistinguishable": 0
@@ -8064,8 +8064,8 @@
           37,
           18.462
         ],
-        "cells": 240,
-        "score": 0.1921,
+        "cells": 256,
+        "score": 0.1276,
         "distortionMean": 1.8585,
         "distortionP90": 1.8585,
         "indistinguishable": 0
@@ -8078,8 +8078,8 @@
           117,
           12.632
         ],
-        "cells": 504,
-        "score": 0.0543,
+        "cells": 528,
+        "score": 0.1008,
         "distortionMean": 1.8585,
         "distortionP90": 1.8585,
         "indistinguishable": 0
@@ -8092,13 +8092,13 @@
       "easy": {
         "args": [
           "tromino",
-          5,
-          8,
+          6,
+          6,
           8,
           30.0
         ],
-        "cells": 80,
-        "score": 0.0124,
+        "cells": 72,
+        "score": 0.9287,
         "distortionMean": 1.5821,
         "distortionP90": 1.5821,
         "indistinguishable": 0
@@ -8107,12 +8107,12 @@
         "args": [
           "tromino",
           9,
-          14,
+          13,
           32,
           17.143
         ],
-        "cells": 252,
-        "score": 0.0157,
+        "cells": 280,
+        "score": 0.2276,
         "distortionMean": 1.5821,
         "distortionP90": 1.5821,
         "indistinguishable": 0
@@ -8120,13 +8120,13 @@
       "hard": {
         "args": [
           "tromino",
-          13,
-          19,
+          12,
+          18,
           95,
-          12.0
+          14.0
         ],
-        "cells": 494,
-        "score": 0.0287,
+        "cells": 432,
+        "score": 0.1054,
         "distortionMean": 1.5821,
         "distortionP90": 1.5821,
         "indistinguishable": 0

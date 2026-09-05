@@ -134,7 +134,16 @@ tiles laid down periodically rather than inflated. `family="reptile"` holds
 the two **rep-tile patterns** — the sphinx (`sphinxpairs`) and the chair
 (`tromino`, the L-tromino) — each one congruent polyform in half-turned
 pairs: p2, face-transitive, and not edge to edge (a rep-tile's long side
-spans several of its neighbours' short ones). `family="durer"` holds
+spans several of its neighbours' short ones). These two are also the only
+tilings here with a **grain**: straight lines no tile of them crosses (every
+sphinx lies inside a horizontal band √3 tall; the L pair fills its 3 × 2
+rectangle and overhangs nothing). `_ArchTemplate.grain` declares the spacing
+and `archimedean_board` snaps its window onto it, so their boards end on a
+straight edge instead of a row of tiles kept by half — the L-tromino's on all
+four sides, the sphinx's top and bottom, its sides being a staircase because
+its courses step a unit sideways as they stack. `TestFlatGrain` measures both
+halves of that: that no tile crosses a declared line, and that the board's
+outline meets the line it ends on in *one* run rather than a row of teeth. `family="durer"` holds
 **Dürer's pentagon tiling** (`durer`), regular pentagons with 36° rhombs
 filling the gaps three of them leave round a vertex — pm, edge to edge, and
 the one tiling here that is neither vertex- nor tile-transitive, which is

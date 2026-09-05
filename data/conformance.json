@@ -5252,59 +5252,59 @@
     },
     "sphinxpairs": {
       "easy": {
-        "cellCount": 90,
-        "mineCount": 13,
+        "cellCount": 80,
+        "mineCount": 5,
         "euler": 1,
         "boundaryComponents": 1,
-        "edgeCount": 416,
-        "vertexCount": 327,
+        "edgeCount": 356,
+        "vertexCount": 277,
         "hasCellCycle": false
       },
       "medium": {
-        "cellCount": 240,
-        "mineCount": 37,
+        "cellCount": 256,
+        "mineCount": 38,
         "euler": 1,
         "boundaryComponents": 1,
-        "edgeCount": 1032,
-        "vertexCount": 793,
+        "edgeCount": 1086,
+        "vertexCount": 831,
         "hasCellCycle": false
       },
       "hard": {
-        "cellCount": 504,
-        "mineCount": 117,
+        "cellCount": 528,
+        "mineCount": 115,
         "euler": 1,
         "boundaryComponents": 1,
-        "edgeCount": 2122,
-        "vertexCount": 1619,
+        "edgeCount": 2200,
+        "vertexCount": 1673,
         "hasCellCycle": false
       }
     },
     "tromino": {
       "easy": {
-        "cellCount": 80,
-        "mineCount": 8,
+        "cellCount": 72,
+        "mineCount": 10,
         "euler": 1,
         "boundaryComponents": 1,
-        "edgeCount": 326,
-        "vertexCount": 247,
+        "edgeCount": 276,
+        "vertexCount": 205,
         "hasCellCycle": false
       },
       "medium": {
-        "cellCount": 252,
-        "mineCount": 32,
+        "cellCount": 280,
+        "mineCount": 47,
         "euler": 1,
         "boundaryComponents": 1,
-        "edgeCount": 964,
-        "vertexCount": 713,
+        "edgeCount": 1024,
+        "vertexCount": 745,
         "hasCellCycle": false
       },
       "hard": {
-        "cellCount": 494,
-        "mineCount": 95,
+        "cellCount": 432,
+        "mineCount": 92,
         "euler": 1,
         "boundaryComponents": 1,
-        "edgeCount": 1880,
-        "vertexCount": 1387,
+        "edgeCount": 1566,
+        "vertexCount": 1135,
         "hasCellCycle": false
       }
     },

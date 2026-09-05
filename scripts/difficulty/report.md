@@ -46,7 +46,7 @@ Every board's mine count, chosen so its win probability under the reference solv
   - `triakis`/medium: 0.0% vs 87.1% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `triakis`/easy: 1.8% vs 96.5% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `truncicosidodeca`/hard: 45.9% vs 50.9% — no integer mine count lands within tolerance; this is the closest
-- 132 rows had games the solver abandoned (its frontier DP hit its node budget); their rates are measured over the games that finished:
+- 131 rows had games the solver abandoned (its frontier DP hit its node budget); their rates are measured over the games that finished:
   - `cube3d`/hard: 466 abandoned
   - `torustrunchex`/hard: 168 abandoned
   - `torusrotatedhex`/hard: 144 abandoned
@@ -196,7 +196,7 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `sphere` | 7.0 | 60c 10m (17%) 99% | 300c 65m (22%) 87% | 300c 76m (25%) 55% |
 | `spheretri` | 11.2 | 80c 20m (25%) 98% | 80c 23m (29%) 90% | 80c 29m (36%) 52% |
 | `sphinx` | 7.3 | 64c 7m (11%) 97% | 256c 35m (14%) 88% | 256c 51m (20%) 49% |
-| `sphinxpairs` | 9.7 | 90c 13m (14%) 96% | 240c 37m (15%) 90% | 504c 117m (23%) 51% |
+| `sphinxpairs` | 10.6 | 80c 5m (6%) 97% | 256c 38m (15%) 86% | 528c 115m (22%) 53% |
 | `square` | 7.4 | 81c 10m (12%) 98% | 256c 40m (16%) 90% | 480c 99m (21%) 50% |
 | `squarediamond` | 7.3 | 85c 13m (15%) 97% | 265c 49m (18%) 89% | 481c 111m (23%) 55% |
 | `stackedbond` | 7.4 | 91c 11m (12%) 98% | 253c 42m (17%) 84% | 465c 99m (21%) 48% |
@@ -245,7 +245,7 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `triangle` | 10.9 | 81c 5m (6%) 98% | 256c 37m (14%) 87% | 484c 104m (21%) 49% |
 | `trigrid` | 11.0 | 77c 8m (10%) 97% | 252c 37m (15%) 88% | 476c 108m (23%) 52% |
 | `trihex` | 7.6 | 85c 9m (11%) 99% | 263c 44m (17%) 87% | 537c 111m (21%) 50% |
-| `tromino` | 6.5 | 80c 8m (10%) 95% | 252c 32m (13%) 87% | 494c 95m (19%) 49% |
+| `tromino` | 6.4 | 72c 10m (14%) 95% | 280c 47m (17%) 85% | 432c 92m (21%) 49% |
 | `trunchex` | 5.6 | 85c 4m (5%) 95% | 263c 13m (5%) 88% | 537c 38m (7%) 52% |
 | `truncicosidodeca` | 5.8 | 62c 11m (18%) 95% | 62c 13m (21%) 85% | 62c 17m (27%) 46% ⚠ |
 | `truncsquare` | 5.5 | 85c 7m (8%) 98% | 265c 24m (9%) 85% | 481c 64m (13%) 49% |
