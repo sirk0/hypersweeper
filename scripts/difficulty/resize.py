@@ -77,7 +77,15 @@ SPEC: dict[str, dict] = {
     # for the shape term. Both directions close, so `_closed_tube` catches it
     # on the name -- and it is a square lattice, hence `SQUARE_LATTICE_CLOSED`
     # below.
-    "double_torus_board": dict(size=(0, 1), mine=2, shape=3, kind="tube"),
+    # ...and `waist`, which is this board's alone: the join has to stay a join
+    # rather than becoming a third lobe, and no other measure here can see it
+    # (see MAX_WAIST).
+    "double_torus_board": dict(size=(0, 1), mine=2, shape=3, kind="tube",
+                               waist=True),
+    "double_torus_triangle_board": dict(size=(0, 1), mine=2, shape=3,
+                                        kind="tube", waist=True),
+    "double_torus_hex_board": dict(size=(0, 1), mine=2, shape=3, kind="tube",
+                                   waist=True),
     "mobius_board": dict(size=(0, 1), mine=2, shape=None),
     "mobius_triangle_board": dict(size=(0, 1), mine=2, shape=None),
     "mobius_hex_board": dict(size=(0, 1), mine=2, shape=None),
@@ -341,6 +349,61 @@ MAX_FACET_STEP = 0.20
 # a single brick would take a whole half turn.
 FOLD_WEIGHT = 3.0
 
+# How wide the join of a *merged* board may be, over the width of one of the
+# pieces it joins (`waist_ratio`). Only the double torus has one, and it is the
+# one thing about that board no other measure here can see: cell distortion
+# scores each tile's own shape and finds a broad flat waist perfectly
+# well-proportioned, while the topology is a genus-2 surface either way.
+#
+# Measured on the shipped windows: a join two thirds the width of a donut reads
+# as two rings merged, and one the full width reads as a single blob with two
+# holes in it -- which is what `doubletorus` easy shipped as, at 98%, because
+# the search had no reason not to spend the tube radius on rounder cells. Three
+# quarters is where the two readings part, and it costs nothing: at the same
+# 112 cells the easy board drops from 98% to 71%, and medium and hard land on
+# the classic size exactly rather than near it.
+#
+# Two things push it up. A fat tube widens the join outright -- the true
+# half-width is sqrt((1 + r)**2 - separation**2), so it grows with r much
+# faster than the donut does -- and a coarse ring quantises the cut outward,
+# since a cell goes if *any* of its corners is past the plane: easy at 9 cells
+# round the ring over-removed by 1.31x where hard at 24 over-removes by 1.03x.
+# So the bar is really a bar on both, and the search trades them off itself.
+MAX_WAIST = 0.75
+
+
+def waist_ratio(board) -> float:
+    """How wide a merged board's join is, over the width of one of the pieces
+    it joins: 0 for a board with no join at all.
+
+    The join is the ring of vertices the two pieces share, which the double
+    torus puts on the plane x = 0; the piece is a donut, whose width across
+    that plane's own axis is the full span of the board. Both are read off the
+    polygons, so nothing here needs to know the builder's arguments.
+    """
+    span = 0.0
+    seam = 0.0
+    for polygon in board.polygons.values():
+        for x, y, *_ in polygon:
+            span = max(span, abs(y))
+            if abs(x) < 1e-9:
+                seam = max(seam, abs(y))
+    return seam / span if span else 0.0
+
+
+def _best_waist(builder: str, spec: dict, trial: list) -> float:
+    """``waist_ratio`` at the thinnest tube the shape sweep offers, which by
+    monotonicity is the narrowest join this window can be given."""
+    cand = list(trial)
+    sweep = SHAPE_SWEEP.get(spec.get("kind", ""))
+    if sweep and spec.get("shape") is not None:
+        cand = _pad(builder, cand, spec["shape"])
+        cand[spec["shape"]] = min(sweep)
+    try:
+        return waist_ratio(_build(builder, cand))
+    except Exception:
+        return float("inf")
+
 # And a *playability* bar, on the square-lattice donut and bottle only.
 #
 # A wrap direction six cells long is a ring the mines can slide around: with
@@ -358,14 +421,19 @@ FOLD_WEIGHT = 3.0
 # a ring -- a hexagon has six neighbours and its rings interlock -- so the bar
 # is written where it was measured rather than assumed everywhere.
 MIN_WRAP_CELLS = 8
-# ...and the double donut, which is the same square lattice closing both
-# ways, twice. It needs the floor for the second reason as well as the
-# first: its knobs count cells, so nothing else here can see that four
-# cells round a tube is a square prism -- MIN_WRAP_CELLS *is* MAX_TILE_TURN
-# for the builders that do not count domains. At two donuts to a board the
-# smallest window it allows is 8x8, which is 126 cells against an easy
-# target of 81; reading as the surface outranks the size band there, as it
-# does for the coarse-domain tilings (see EXEMPT_ROWS in tests/test_presets).
+# ...and the double donut, which is the same square lattice closing both ways,
+# twice -- and measured on it directly rather than inherited: 8x6 tops out at
+# 92.0% against an easy target of 96.5% however its mines are counted, and 8x8
+# reaches 100%. Which matters, because 8x6 is otherwise the best easy board the
+# builder has (80 cells, bang on the target, and a join only 71% wide) and
+# nothing else here would have refused it. The floor also stands in for
+# MAX_TILE_TURN, as it does for the other two: these knobs count cells, so
+# nothing else can see that four round a tube is a square prism.
+#
+# The tri and hex double donuts are deliberately *not* here. The ceiling is a
+# property of the square lattice's eight neighbours, and this bar is written
+# where it was measured rather than assumed everywhere -- the same reason
+# `torushex` at six around is not covered.
 SQUARE_LATTICE_CLOSED = {"torus_board", "klein_board", "double_torus_board"}
 ROLLED_ASPECT_WEIGHT = 1.2
 
@@ -433,7 +501,7 @@ CANDIDATE_LIMIT = 70
 # first 177 the knob floor throws out. Only the fallback passes build it, and
 # only for a row nothing else could size, so the cost is a few hundred boards
 # on the handful of rows that get there.
-WIDE_CANDIDATE_LIMIT = 600
+WIDE_CANDIDATE_LIMIT = 1500
 
 # how lopsided an unrolled window may be before it reads as a hoop, not a board
 MAX_WINDOW_ASPECT = 15.0
@@ -1267,6 +1335,25 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
                                 > MAX_FACET_STEP + TILE_TURN_SLACK
                                 for axis in axes):
                     continue
+            # ...and, on a board that is two boards merged, a join that stays
+            # a join (see MAX_WAIST). Judged at the *thinnest* tube the sweep
+            # below will offer rather than at this trial's: the window search
+            # holds the shape knob at whatever the row currently ships, and a
+            # window whose join is too wide at a fat tube is often the best
+            # one at a thin one -- which is exactly the trade the sweep is
+            # there to make. The ratio rises with the tube radius (measured:
+            # a fatter tube widens the true join and quantises the cut wider
+            # too), so the thinnest is the whole test.
+            #
+            # Unlike the facet step this one does *not* give way to the size
+            # band, and that is the point of it: below the sizes where a merge
+            # is possible at all the best join available is 100% wide, so a bar
+            # that yields simply hands back the blob it exists to forbid. What
+            # it costs is two exempt easy rows (see EXEMPT_ROWS in
+            # tests/test_presets.py) -- a triangular or hexagonal double donut
+            # small enough for the easy band cannot be one.
+            if spec.get("waist") and _best_waist(builder, spec, trial) > MAX_WAIST:
+                continue
             # ...and a band no wider than the immersion will actually draw
             if _mobius_band_clamped(builder, spec, trial):
                 continue
@@ -1367,22 +1454,37 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
     # tune the surface's own proportions against the best few windows: the
     # window and the tube radius together are what set cell distortion
     if spec.get("kind") in SHAPE_SWEEP and spec["shape"] is not None:
-        refined = []
-        for score, trial, n in scored[:3]:
-            for radius in SHAPE_SWEEP[spec["kind"]]:
-                cand = _pad(builder, trial, spec["shape"])
-                cand[spec["shape"]] = radius
-                try:
-                    board = _build(builder, cand)
-                except Exception:
-                    continue
-                # the radius reshapes the cells too, so it faces the same bar
-                # the window did -- otherwise a fatter tube buys a better
-                # isoperimetric score by stretching every tile
-                if _off_planar(edge_ratio(board, corners), base_edge) > shape_bar:
-                    continue
-                refined.append((_score(mode, board, TARGETS[difficulty], False,
+        def sweep(keep_shape: bool) -> list:
+            out = []
+            for _, trial, n in scored[:3]:
+                for radius in SHAPE_SWEEP[spec["kind"]]:
+                    cand = _pad(builder, trial, spec["shape"])
+                    cand[spec["shape"]] = radius
+                    try:
+                        board = _build(builder, cand)
+                    except Exception:
+                        continue
+                    # the radius reshapes the cells too, so it faces the same
+                    # bars the window did -- otherwise a fatter tube buys a
+                    # better isoperimetric score by stretching every tile, and
+                    # on a merged board it widens the join straight back past
+                    # MAX_WAIST
+                    if keep_shape and _off_planar(
+                            edge_ratio(board, corners), base_edge) > shape_bar:
+                        continue
+                    if spec.get("waist") and waist_ratio(board) > MAX_WAIST:
+                        continue
+                    out.append((_score(mode, board, TARGETS[difficulty], False,
                                        builder, spec, cand), cand, n))
+            return out
+
+        # ...and where the two bars leave no radius at all, the *shape* one
+        # gives way, not the join. It is a no-regression bar measured against
+        # whatever the row currently ships, so a bad seed can shut the sweep
+        # down entirely; the join bar is absolute, and a window kept at the
+        # seed's radius because the sweep came back empty is how a 100%-wide
+        # join survived the bar that exists to forbid it.
+        refined = sweep(keep_shape=True) or sweep(keep_shape=False)
         if refined:
             refined.sort(key=lambda row: row[0])
             scored = refined

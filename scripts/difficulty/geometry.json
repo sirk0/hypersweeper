@@ -7997,41 +7997,129 @@
     "args": {
       "medium": {
         "args": [
-          19,
-          8,
-          52,
+          15,
+          10,
+          56,
           0.45
         ],
-        "cells": 256,
-        "score": 0.1299,
-        "distortionMean": 1.0711,
-        "distortionP90": 1.1303,
+        "cells": 252,
+        "score": 0.196,
+        "distortionMean": 1.0967,
+        "distortionP90": 1.1925,
         "indistinguishable": 0
       },
       "hard": {
         "args": [
-          24,
-          12,
-          101,
-          0.38
+          25,
+          11,
+          123,
+          0.33
         ],
-        "cells": 504,
-        "score": 0.14,
-        "distortionMean": 1.0498,
-        "distortionP90": 1.0891,
+        "cells": 486,
+        "score": 0.0971,
+        "distortionMean": 1.0461,
+        "distortionP90": 1.0823,
         "indistinguishable": 0
       },
       "easy": {
         "args": [
-          9,
           8,
-          18,
-          0.52
+          8,
+          20,
+          0.38
         ],
-        "cells": 112,
-        "score": 0.8027,
-        "distortionMean": 1.2539,
-        "distortionP90": 1.6567,
+        "cells": 104,
+        "score": 0.8076,
+        "distortionMean": 1.3736,
+        "distortionP90": 1.6167,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "doubletorushex": {
+    "builder": "double_torus_hex_board",
+    "args": {
+      "medium": {
+        "args": [
+          6,
+          26,
+          58,
+          0.28
+        ],
+        "cells": 264,
+        "score": 0.2771,
+        "distortionMean": 1.1539,
+        "distortionP90": 1.2292,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          10,
+          27,
+          120,
+          0.28
+        ],
+        "cells": 474,
+        "score": 0.0928,
+        "distortionMean": 1.0512,
+        "distortionP90": 1.0623,
+        "indistinguishable": 0
+      },
+      "easy": {
+        "args": [
+          6,
+          19,
+          20,
+          0.28
+        ],
+        "cells": 196,
+        "score": 1.0509,
+        "distortionMean": 1.093,
+        "distortionP90": 1.1695,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "doubletorustri": {
+    "builder": "double_torus_triangle_board",
+    "args": {
+      "easy": {
+        "args": [
+          24,
+          6,
+          20,
+          0.28
+        ],
+        "cells": 256,
+        "score": 1.3741,
+        "distortionMean": 1.1129,
+        "distortionP90": 1.2623,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          24,
+          6,
+          58,
+          0.28
+        ],
+        "cells": 256,
+        "score": 0.2234,
+        "distortionMean": 1.1129,
+        "distortionP90": 1.2623,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          46,
+          6,
+          120,
+          0.28
+        ],
+        "cells": 488,
+        "score": 0.1064,
+        "distortionMean": 1.0447,
+        "distortionP90": 1.0968,
         "indistinguishable": 0
       }
     }

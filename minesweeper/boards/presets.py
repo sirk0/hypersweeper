@@ -67,6 +67,8 @@ from minesweeper.boards.surfaces import (
     cylinder_hex_board,
     cylinder_triangle_board,
     double_torus_board,
+    double_torus_hex_board,
+    double_torus_triangle_board,
     klein_board,
     klein_hex_board,
     klein_triangle_board,
@@ -142,6 +144,8 @@ _JSON_BUILDERS = {
     "torus_hex_board": torus_hex_board,
     # the genus-2 board: two square-tiled donuts merged at their outer rims
     "double_torus_board": double_torus_board,
+    "double_torus_triangle_board": double_torus_triangle_board,
+    "double_torus_hex_board": double_torus_hex_board,
     "mobius_board": mobius_board,
     "mobius_triangle_board": mobius_triangle_board,
     "mobius_hex_board": mobius_hex_board,

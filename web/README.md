@@ -10,8 +10,10 @@ newest first. For the rules and reference an agent needs while working here, see
 
 **M21 — Genus 2: a surface built by joining boards.** Every surface so far is
 a rectangle glued along its own seams, so all four have Euler characteristic 0.
-`doubletorus` is the first that is not: two square-tiled donuts merged into a
-figure of eight — the **connected sum** of two tori, chi = -2.
+The double torus is the first that is not: two donuts merged into a figure of
+eight — the **connected sum** of two tori, chi = -2 — and all three regular
+tilings wrap it (`doubletorus`, `doubletorustri`, `doubletorushex`), because
+none of the construction is about the tiling.
 
 They are set so that a point of each donut's *outer* equator lies on the
 other's *inner* equator, which puts their centres 2 apart whatever the tube
@@ -27,23 +29,28 @@ key for key, so a vertex of A and the vertex of B it glues to already agree in
 y and z and differ only in the sign of x, and the shared vertex goes at x = 0
 with nothing rounded together.
 
-Five things beyond the builder and its port. `SurfaceSpec` gains `euler`
-beside `boundaryComponents` — not decoration: the size search rejects a window
-whose surface came out the wrong genus, and read as "closed means chi = 0" it
-rejected every window this board has. `assemble` takes an optional `orient`,
-because it winds a closed surface outward from *the* ring circle and this board
-has two, tangent at the origin, so at the waist a face is equidistant from both
-and a measured answer ties; that the two rules agree across the seam is
-measured, every edge traversed once in each direction. The board carries a
+A geometric cut moves with every argument, so the topology is measured rather
+than argued: what is left of one donut has to be a torus minus one disc, and a
+window that leaves a cylinder instead — or a cell with every vertex on the
+seam, which the other donut's copy would be glued to along every edge — is
+refused. So is a vertex landing *on* the plane, which at separation 1 the
+tube's quarter points do exactly: counted as kept it is not shared, and the two
+donuts' copies of it sit at one point under two ids.
+
+Beyond the builders and their ports. `SurfaceSpec` gains `euler` beside
+`boundaryComponents`, because the size search rejects a window whose surface
+came out the wrong genus and "closed means chi = 0" rejected every window this
+board has. `assemble` takes an optional `orient`, since it winds a closed
+surface outward from *the* ring circle and this board has two, tangent at the
+origin, so a measured answer ties at the waist. The board carries a
 `cornerMask` of all-real corners, because pulling a run of vertices onto the
 join plane can leave three corners of a cell collinear and the palette would
 otherwise paint that square as a triangle. The cut spends both translations, so
 this is the one wrapped board with nothing to scroll — its controls are the
-figure of eight's own point group. And it pays for its genus in cells: eight
-each way is the floor for a closed square lattice, and twice over that is 112
-against an easy target of 81, so that row is an exemption with the arithmetic
-written down. Squares only for now — the `SurfaceSpec.tilings` allow-list keeps
-the other tilings' rows off a surface with no builder for them. 1 new mode.
+figure of eight's own point group. And the difficulty search needed a bar on
+the *join*: nothing else it measures can see how much of the donuts the merge
+ate, and the square easy board first shipped as a single blob with two holes in
+it. 9 new modes over the three tilings' three difficulties, 3 new menu rows.
 
 **M20 — Volumetric: a board that is a solid, not a surface.** Every board up
 to here is a *surface* — a tiling of the plane, of a polyhedron, or of an

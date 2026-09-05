@@ -104,7 +104,8 @@ Pick a surface, then a tiling:
   that a point of each one's outer rim lies on the other's inner rim: they
   overlap in a lens of real volume rather than touching. Each gives up
   everything it puts on the other's side and the two are sewn together along
-  the plane between them, so away from the waist every cell is the donut's own
+  the plane between them, so away from the waist every cell is the donut's own.
+  Squares, triangles or hexagons
 - **Möbius strip (3D)** — a one-sided surface: the strip glues to itself
   with a flip, so a chiral tiling cannot wrap it at all
 - **Klein bottle (3D)** — the donut glued with that same flip, one-sided

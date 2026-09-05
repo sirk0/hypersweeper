@@ -1165,22 +1165,68 @@
       "builder": "double_torus_board",
       "args": {
         "easy": [
-          9,
           8,
-          20,
-          0.52
+          8,
+          21,
+          0.38
         ],
         "medium": [
-          19,
-          8,
-          58,
+          15,
+          10,
+          56,
           0.45
         ],
         "hard": [
+          25,
+          11,
+          127,
+          0.33
+        ]
+      }
+    },
+    "doubletorustri": {
+      "builder": "double_torus_triangle_board",
+      "args": {
+        "easy": [
           24,
-          12,
-          129,
-          0.38
+          6,
+          60,
+          0.28
+        ],
+        "medium": [
+          24,
+          6,
+          63,
+          0.28
+        ],
+        "hard": [
+          46,
+          6,
+          126,
+          0.28
+        ]
+      }
+    },
+    "doubletorushex": {
+      "builder": "double_torus_hex_board",
+      "args": {
+        "easy": [
+          6,
+          19,
+          36,
+          0.28
+        ],
+        "medium": [
+          6,
+          26,
+          47,
+          0.28
+        ],
+        "hard": [
+          10,
+          27,
+          115,
+          0.28
         ]
       }
     },

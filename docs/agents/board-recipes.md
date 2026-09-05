@@ -599,8 +599,10 @@ picked — and four things do not:
    size search reports "no window builds at this size". Set it, in
    `data/catalog.json`, alongside the other five surfaces.
 2. **Restrict the surface to the tilings it has builders for**, with the
-   `tilings` allow-list on the `SurfaceSpec` (`["square"]` here). Everything
-   derived follows: the picker page offers that tiling alone, and
+   `tilings` allow-list on the `SurfaceSpec` (the double torus started at
+   `["square"]` and grew to all three regular tilings by adding two builders
+   and one entry). Everything derived follows: the picker page offers those
+   tilings alone, and
    `picker_families` drops the families the allow-list empties rather than
    showing pages of greyed-out rows. On the web the surface's row survives on
    the Flat manifolds page because `menu.ts` counts its promoted tiling rows as
@@ -618,22 +620,33 @@ picked — and four things do not:
    torus does not remove a block someone chose but everything each donut puts
    on the other's side of the plane between them, which makes it embedded
    whatever the arguments -- and makes the shape of the removed region move
-   with all of them. Two things follow. Prove the region is a disc rather than
-   assuming it (there the theta interval narrows monotonically with `|phi|` and
-   never reaches round the ring or the tube, so chi = -1 - 1) and pin it with a
-   *sweep* of windows rather than the shipped three. And refuse the windows
-   where the cut degenerates: a cell with every vertex on the seam has no
-   vertex of its own, so the other piece's copy of it is the same four ids and
-   the two are glued along every edge -- a pinch, not a surface. The size
-   search skips a window that will not build, so a `ValueError` is the whole
-   handling.
-5. **A geometric cut can straighten a corner.** Pulling a run of vertices onto
+   with all of them, and with the tiling. So **measure** the result rather than
+   arguing it: what is left of one piece has to be a torus minus one disc
+   (chi = -1, one boundary circle), which is exactly when gluing two of them
+   gives chi = -2, and that check is cheap, exact, and catches every way a
+   coarse window can go wrong. Two of them do: a cut that takes a whole course
+   round the tube leaves a cylinder, and two cylinders glued rim to rim are a
+   donut rather than a double one; and a cell with every vertex on the seam has
+   no vertex of its own, so the other piece's copy is the same ids and the two
+   are glued along every edge. Refuse both -- the size search skips a window
+   that will not build, so a `ValueError` is the whole handling -- and pin the
+   result with a *sweep* of windows rather than the shipped rows.
+5. **A vertex exactly on the join plane is the trap.** It is not shared (no
+   removed cell need touch it), so the two pieces' copies of it land at one
+   point under two ids: a surface touching itself, and -- because the topology
+   invariants key on rounded coordinates -- a chi that reads as a lower genus
+   than the mesh has. Count "on the plane" as past it, with a tolerance wide
+   enough that a *kept* vertex's two copies still round apart at the six
+   decimal places `corner_fans` counts by (1e-6, not 1e-9). The double torus
+   hits this at separation 1, where the tube's own quarter points sit on the
+   plane to the bit.
+6. **A geometric cut can straighten a corner.** Pulling a run of vertices onto
    the join plane can leave three corners of a cell collinear, and the shape
    palette's geometric fallback then measures that square as a triangle and
    paints it a different hue. Carry a `cornerMask` — the authoritative "which
    polygon vertices are real corners", which for a board of squares is all of
    them.
-6. **Expect the size band to lose.** A joined board buys twice the cells per
+7. **Expect the size band to lose.** A joined board buys twice the cells per
    step of its window, so the floors that keep one piece reading as a surface
    (`resize.MIN_WRAP_CELLS` for a closed square lattice) can put the smallest
    legal board well past the classic easy size. That is an `EXEMPT_ROWS` entry
@@ -644,6 +657,18 @@ picked — and four things do not:
    candidate net is sorted by closeness to the target, so a floor that rejects
    everything near it starves the net (hence `WIDE_CANDIDATE_LIMIT`, much
    looser than `CANDIDATE_LIMIT`).
+8. **Give the search a measure of the join, or it will spend everything else on
+   cell shape.** How *much* of the pieces the merge ate is invisible to every
+   other bar -- the topology is the same either way, and a broad flat waist
+   scores as perfectly well-proportioned -- so the double torus shipped with a
+   join the full width of a donut until `resize.MAX_WAIST` existed. Three
+   things about that bar are worth copying. It must not give way to the size
+   band, because below the sizes where a merge is possible at all the only
+   joins available are the wide ones. It has to be judged against the best
+   value of the shape knob rather than the seed's, since the window search
+   holds that knob fixed and a window whose join is too wide at a fat tube is
+   often the best one at a thin tube. And the same bar belongs *inside* the
+   radius sweep, or the sweep hands the width straight back.
 
 Its two icons are hand-written like every other surface's: `DOUBLE_TORUS` in
 `web/src/ui/icons.ts` (a pair of `SurfacePoint`s — `surfaceMesh` takes several

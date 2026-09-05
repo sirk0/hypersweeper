@@ -69,6 +69,19 @@ hand-picked density is the one thing this game cannot get right by eye.
    on the easy row against a target of 81. With nothing for shape to say, size
    decides alone.
 
+   **A board built by joining boards needs a bar on the join** (`MAX_WAIST`).
+   Nothing else here can see how much of the pieces a merge ate: the topology
+   is the same either way, and cell distortion scores each tile's own shape and
+   finds a broad flat waist perfectly well-proportioned. Left to itself the
+   search spent the double torus's tube radius on rounder cells and its easy
+   board came out a single blob with two holes -- a join the full width of a
+   donut. Three quarters is where the two readings part. Unlike the fold bars
+   this one does not give way to the size band (below the sizes where a merge
+   is possible the only joins available are wide ones, so a bar that yields
+   hands back the blob), and it is judged at the *thinnest* tube the shape
+   sweep offers rather than at the current row's, because the window search
+   holds that knob fixed.
+
    **A bar that rejects every window near the target starves the search**
    unless the fallback net is much wider than the main one. Candidates are
    sorted by closeness to the target cell count and cut at `CANDIDATE_LIMIT`

@@ -77,7 +77,9 @@
       "euler": -2,
       "tilt": -1.0,
       "tilings": [
-        "square"
+        "hex",
+        "square",
+        "tri"
       ]
     }
   ],
@@ -455,6 +457,18 @@
     "doubletorus": {
       "label": "Squares · Double torus",
       "tiling": "square",
+      "surface": "doubletorus",
+      "family": "regular"
+    },
+    "doubletorushex": {
+      "label": "Hexagons · Double torus",
+      "tiling": "hex",
+      "surface": "doubletorus",
+      "family": "regular"
+    },
+    "doubletorustri": {
+      "label": "Triangles · Double torus",
+      "tiling": "tri",
       "surface": "doubletorus",
       "family": "regular"
     },

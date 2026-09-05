@@ -190,7 +190,7 @@ describe("mode -> tiling", () => {
         pairs++;
       }
     }
-    expect(pairs).toBe(136);
+    expect(pairs).toBe(138);
   });
 
   it("has no tiling for the one-off boards", () => {

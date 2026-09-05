@@ -184,9 +184,13 @@ rectangle at all -- see the next section.
 
 One board in the zoo is not a rectangle glued along its seams, and it is the
 only one whose Euler characteristic is neither 2 (a solid), 1 (a disc) nor 0
-(the four flat manifolds): `doubletorus` is the **connected sum** of two
-square-tiled donuts, genus 2, chi = -2 -- two donuts merged into a figure of
-eight. Three decisions make it:
+(the four flat manifolds): `doubletorus` and its two siblings are the
+**connected sum** of two donuts, genus 2, chi = -2 -- two donuts merged into a
+figure of eight. All three regular tilings wrap it (`doubletorus`,
+`doubletorustri`, `doubletorushex`), because none of what follows is about the
+tiling: a tiling hands over its own lattice and the cut does the rest.
+
+Three decisions make the shape:
 
 * **Where the donuts sit.** A point of one donut's *outer* equator lies on the
   other's *inner* equator, which puts their centres 2 apart whatever the tube
@@ -210,12 +214,28 @@ eight. Three decisions make it:
   plane, and there they are the same vertices. The seam is the ring of vertices
   between the two halves, pulled the last fraction onto x = 0.
 
-The removed region is a disc -- `cos(theta) > separation / (1 + r cos(phi))` is
-an interval in theta whose width falls away monotonically with `|phi|`, and for
-`separation >= 1` it reaches neither the far side of the ring nor of the tube
--- so the board is a torus-minus-disc glued to a torus-minus-disc:
-chi = -1 - 1 = -2. `TestDoubleTorus` measures that over a sweep of windows
-rather than on the shipped three, because the cut moves with every argument.
+`_CUT_EPS` decides what "on the other side" means, and both halves of it earn
+their place. A vertex really can land on the plane **exactly** -- at separation
+1 the tube's own quarter points do -- and a vertex on the plane is counted as
+past it, because left on the kept side it is not a seam vertex (no removed cell
+need touch it) and the two donuts' copies of it then sit at one point in space
+under two ids. That is a surface touching itself, and since the topology
+invariants key on rounded coordinates it reads as chi = 0 where the mesh is
+genuinely -2. The tolerance is 1e-6 rather than something smaller so that a
+*kept* vertex's two copies still round to distinct keys at the six decimal
+places `corner_fans` counts by -- and so that the exactly-zero case is settled
+the same way in both ports, whose `cos` may differ in the last bit.
+
+**The cut has to have taken a disc, and on a coarse tiling it need not.** A
+window with few cells round the ring can lose a whole course of them and leave
+a cylinder, and two cylinders glued rim to rim are a donut again rather than a
+double one. So it is measured rather than argued: what is left of one donut
+must be a torus minus one disc -- chi = -1 with a single boundary circle --
+which is exactly the condition under which gluing the two halves gives chi = -2
+and no boundary at all. A window that fails it is refused, and the size search
+skips it like any other that will not build. `TestDoubleTorus` measures the
+result over a sweep of windows on all three tilings rather than on the shipped
+nine, because the cut moves with every argument.
 
 Four consequences worth knowing before touching it:
 
@@ -226,34 +246,33 @@ Four consequences worth knowing before touching it:
   that reads the donut off the cell id. That the two rules agree across the
   seam is measured rather than assumed -- every edge of the board is traversed
   once in each direction, which is orientability.
-* **A window can be too small for its own cut.** If the cut leaves the far side
-  of the tube one cell thick, that cell's four vertices are all on the seam --
-  so it has no vertex of its own, the other donut's copy of it is the same four
-  ids, and the two are glued to each other along every edge. That is a pinch,
-  not a surface, and the builder refuses it rather than building it; the size
-  search skips those windows like any other that will not build.
+* **The join has to stay narrower than the donuts it joins.** Nothing else in
+  the difficulty search can see how much of them the merge ate: the topology is
+  genus 2 either way, and cell distortion scores each tile's own shape and
+  finds a broad flat waist perfectly well-proportioned. Left to itself the
+  search spent the tube radius on rounder cells and the square easy board
+  shipped with a join the full width of a donut -- one blob with two holes.
+  `resize.MAX_WAIST` is that bar, three quarters, and unlike the facet step it
+  does **not** give way to the size band: below the sizes where a merge is
+  possible at all the best join available is 100% wide, so a bar that yields
+  hands back the blob it exists to forbid. What it costs is three exempt easy
+  rows, listed with their arithmetic in `tests/test_presets.py`.
 * **The seam can straighten a corner, and the shape palette has to be told.**
   Pulling a run of vertices onto the plane can leave three corners of a cell
   exactly collinear -- where two tube rows share a z, which is the rows either
   side of the tube's top on an even tube. `corners`' geometric fallback then
   measures that square as a triangle and paints it red on a board of nothing
   but squares, so the builder carries a `cornerMask` saying what is true of
-  every cell: four corners, all real.
+  every cell: every vertex a real corner.
 * **It has no translation at all**, and it pays for its genus in cells. The cut
   pins the lattice, so neither the ring step nor the tube step survives and
   there is nothing to scroll; what is left is the figure of eight's own point
   group, the half turn about z that swaps the two donuts and the two mirrors
-  that fix each. And a closed square lattice needs eight cells each way
-  (`resize.MIN_WRAP_CELLS`, which on a builder whose knobs count cells is also
-  what stops a tube being a square prism), which two donuts over is 112 cells
-  against an easy target of 81 -- an `EXEMPT_ROWS` entry. Medium and hard land
-  in the ordinary band, medium on the nose.
-
-Only the square tiling is wrapped onto it so far. That is one field --
-`SurfaceSpec.tilings`, the allow-list -- and the menu, mode strings, `MODES_3D`
-and the picker all follow from it: the surface's picker page offers Squares
-alone, and `picker_families` drops the families it leaves empty rather than
-showing four pages of greyed-out rows.
+  that fix each -- and which of those survive is measured per tiling, so the
+  hexagonal board keeps fewer than the other two. And on the square lattice a
+  closed board needs eight cells each way (`resize.MIN_WRAP_CELLS`, measured on
+  this board: 8x6 is 80 cells, bang on the easy target, with a join only 71%
+  wide, and tops out at a 92.0% win rate against a target of 96.5%).
 
 ## The aperiodic boards
 

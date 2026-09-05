@@ -17,6 +17,7 @@
 import {
   cid,
   keepSymmetries,
+  q,
   orientOutward,
   sharedVertexAdjacency,
   type Board3D,
@@ -770,7 +771,7 @@ export function torusHexBoard(
 
 // -- the double donut (genus 2) ----------------------------------------------
 //
-// Port of surfaces.py `double_torus_board`. Two donuts side by side in the
+// Port of surfaces.py's double-donut section. Two donuts side by side in the
 // z = 0 plane, overlapping, and cut apart along the plane between them: the
 // connected sum of two tori, Euler characteristic -2, and the figure of eight
 // the shape reads as.
@@ -781,56 +782,60 @@ export function torusHexBoard(
 //     it is the whole difference between a merge and a kiss: at 1 the two ring
 //     circles are tangent at the origin, so the tubes round them share a lens
 //     of real volume. Push the donuts out to 1 + tubeRadius and that lens
-//     shrinks to the single point the rims touch at.
+//     shrinks to the single point the outer rims touch at.
 //   * Donut B is donut A mirrored in x, key for key. So a vertex of A and the
 //     vertex of B it is glued to already agree in y and z and differ only in
 //     the sign of x, and the shared vertex goes at x = 0 -- exactly, with
 //     nothing rounded together.
-//   * What is removed is then not a patch anyone chose but everything each
-//     donut puts on the other's side: every cell of A with a vertex at x > 0.
-//     So A keeps the half of itself in x <= 0 and B the half in x >= 0, the two
-//     meet only on the plane, and the board is embedded by construction however
-//     deep the donuts overlap. The seam is the ring of vertices between the two
+//   * What is removed is not a patch anyone chose but everything each donut
+//     puts on the other's side: every cell of A with a vertex at x >= 0. So A
+//     keeps the half of itself in x <= 0 and B the half in x >= 0, the two meet
+//     only on the plane, and the board is embedded by construction however deep
+//     the donuts overlap. The seam is the ring of vertices between the two
 //     halves, pulled the last fraction onto x = 0.
+//
+// None of that is about the tiling, so all three regular tilings share it: a
+// tiling hands over its own lattice and the cut does the rest.
 
-/** How far past zero a vertex has to sit to count as the far side. The cut is
- * a strict inequality on a float, and a vertex can land on the plane exactly
- * (the tube's own quarter points do, at separation 1) -- where the two ports'
- * cos can disagree in the last bit and the boards would come out different
- * shapes. Anything within this of the plane counts as on it. */
-const CUT_EPS = 1e-9;
+/** A vertex within this of the plane counts as *on* it, and a vertex on the
+ * plane counts as past it -- so the cut takes every cell with a vertex at
+ * x >= 0 and what is kept is strictly one side. See surfaces.py `_CUT_EPS`:
+ * a vertex really can land on the plane exactly (the tube's quarter points do,
+ * at separation 1), and left on the kept side its two copies would sit at one
+ * point under two ids. The tolerance is 1e-6 so a kept vertex's two copies
+ * still round to distinct keys at six decimal places. */
+const CUT_EPS = 1e-6;
 
-/** Which cells the plane x = 0 takes out of donut A, and the ring of vertices
- * left between the two halves. Both are index sets on the (ring, tube) grid,
- * and both are what donut B gives up too -- B is A mirrored, so the cut lands
- * on the same indices. */
+/** One donut's cells, keyed by cell, holding lattice vertex keys already
+ * reduced mod the two periods. */
+type LatticeCells = Map<CellId, [number, number][]>;
+
+/** A motion of the merged board's vertex keys: `(side, kx, ky)`, where side 0
+ * and 1 are the two donuts. */
+type MergedMotion = (side: number, kx: number, ky: number) => [number, number, number];
+
+/** Which of one donut's cells the plane x = 0 takes out, and the ring of
+ * vertices left between the two halves. Both are what donut B gives up too:
+ * B is A mirrored, so the cut lands on the same keys. */
 function doubleTorusCut(
-  ring: number,
-  tube: number,
+  cells: LatticeCells,
+  kxPeriod: number,
+  kyPeriod: number,
   tubeRadius: number,
   separation: number,
-): { removed: Set<string>; seam: Set<string> } {
+): { removed: Set<CellId>; seam: Set<string> } {
   if (separation < 1) {
     throw new Error("separation below 1 pulls the ring circles through each other");
   }
-  /** How far vertex (i, j) of donut A sticks out past the plane. */
-  const cutDepth = (i: number, j: number): number =>
-    (1 + tubeRadius * Math.cos((TWO_PI * j) / tube)) * Math.cos((TWO_PI * i) / ring) -
+  /** How far vertex (kx, ky) of donut A sticks out past the plane. */
+  const cutDepth = (kx: number, ky: number): number =>
+    (1 + tubeRadius * Math.cos((TWO_PI * ky) / kyPeriod)) *
+      Math.cos((TWO_PI * kx) / kxPeriod) -
     separation;
-  const corners = (i: number, j: number): [number, number][] => [
-    [i, j],
-    [i + 1, j],
-    [i + 1, j + 1],
-    [i, j + 1],
-  ];
 
-  const removed = new Set<string>();
-  for (let i = 0; i < ring; i++) {
-    for (let j = 0; j < tube; j++) {
-      if (corners(i, j).some(([a, b]) => cutDepth(a, b) > CUT_EPS)) {
-        removed.add(`${i},${j}`);
-      }
-    }
+  const removed = new Set<CellId>();
+  for (const [cell, keys] of cells) {
+    if (keys.some(([kx, ky]) => cutDepth(kx, ky) > -CUT_EPS)) removed.add(cell);
   }
   if (removed.size === 0) {
     throw new Error("the donuts do not reach each other: nothing to merge");
@@ -838,80 +843,140 @@ function doubleTorusCut(
 
   const onRemoved = new Set<string>();
   const onKept = new Set<string>();
-  for (let i = 0; i < ring; i++) {
-    for (let j = 0; j < tube; j++) {
-      const touched = removed.has(`${i},${j}`) ? onRemoved : onKept;
-      for (const [a, b] of corners(i, j)) touched.add(`${mod(a, ring)},${mod(b, tube)}`);
-    }
+  for (const [cell, keys] of cells) {
+    const touched = removed.has(cell) ? onRemoved : onKept;
+    for (const [kx, ky] of keys) touched.add(`${kx},${ky}`);
   }
   const seam = new Set([...onRemoved].filter((k) => onKept.has(k)));
 
   // A kept cell with every corner on the seam carries no vertex of its own, so
-  // donut B's copy of it is the same four ids -- two cells glued to each other
-  // along all four edges, which is a pinch rather than a surface. It means the
-  // cut left the far side of the tube (or of the ring) one cell thick, and the
-  // window is simply too small for this overlap.
-  for (let i = 0; i < ring; i++) {
-    for (let j = 0; j < tube; j++) {
-      if (removed.has(`${i},${j}`)) continue;
-      if (corners(i, j).every(([a, b]) => seam.has(`${mod(a, ring)},${mod(b, tube)}`))) {
-        throw new Error(
-          "the cut leaves a cell with every vertex on the seam: too few cells " +
-            "round the tube for this separation",
-        );
+  // donut B's copy of it is the same ids -- two cells glued to each other along
+  // all their edges, which is a pinch rather than a surface.
+  for (const [cell, keys] of cells) {
+    if (removed.has(cell)) continue;
+    if (keys.every(([kx, ky]) => seam.has(`${kx},${ky}`))) {
+      throw new Error(
+        "the cut leaves a cell with every vertex on the seam: too few cells " +
+          "round the tube for this separation",
+      );
+    }
+  }
+
+  // ...and the cut has to have taken a *disc*, which on a coarse tiling it need
+  // not: a window with few cells round the ring can lose a whole course of them
+  // and leave a cylinder, and two cylinders glued rim to rim are a donut again
+  // rather than a double one. What is left of one donut must be a torus minus
+  // one disc -- chi = -1 with a single boundary circle -- which is exactly when
+  // gluing the two halves gives chi = -2 and no boundary at all.
+  const edges = new Map<string, number>();
+  const vertices = new Set<string>();
+  let faces = 0;
+  for (const [cell, keys] of cells) {
+    if (removed.has(cell)) continue;
+    faces++;
+    for (let i = 0; i < keys.length; i++) {
+      const a = `${keys[i]![0]},${keys[i]![1]}`;
+      const next = keys[(i + 1) % keys.length]!;
+      const b = `${next[0]},${next[1]}`;
+      vertices.add(a);
+      const edge = a < b ? `${a}|${b}` : `${b}|${a}`;
+      edges.set(edge, (edges.get(edge) ?? 0) + 1);
+    }
+  }
+  const rim = new Map<string, Set<string>>();
+  for (const [edge, used] of edges) {
+    if (used !== 1) continue;
+    const [a, b] = edge.split("|") as [string, string];
+    if (!rim.has(a)) rim.set(a, new Set());
+    if (!rim.has(b)) rim.set(b, new Set());
+    rim.get(a)!.add(b);
+    rim.get(b)!.add(a);
+  }
+  let circles = 0;
+  const unvisited = new Set(rim.keys());
+  while (unvisited.size) {
+    circles++;
+    const stack = [[...unvisited][0]!];
+    unvisited.delete(stack[0]!);
+    while (stack.length) {
+      for (const neighbour of rim.get(stack.pop()!)!) {
+        if (unvisited.delete(neighbour)) stack.push(neighbour);
       }
     }
+  }
+  const chi = vertices.size - edges.size + faces;
+  if (chi !== -1 || circles !== 1) {
+    throw new Error(
+      `the cut leaves a donut with chi ${chi} and ${circles} boundary circles, ` +
+        "not the torus-minus-a-disc a merge needs: too few cells round the ring " +
+        "for this overlap",
+    );
   }
   return { removed, seam };
 }
 
-/** Two square-tiled donuts merged into one genus-2 board: `ring` cells round
- * each ring and `tube` round each tube, less the cells each gives up where it
- * overlaps the other. `separation` is half the distance between the two
- * centres; at 1 a point of each donut's outer equator lies on the other's
- * inner equator, which is as merged as they get before the ring circles cross,
- * and at `1 + tubeRadius` they only touch. */
-export function doubleTorusBoard(
-  ring: number,
-  tube: number,
+/** Merge two copies of one donut's tiling into a genus-2 board. Shared by all
+ * three regular tilings -- the cut is a statement about the immersion, not
+ * about the tiling. */
+function doubleTorus(
+  mode: string,
+  cells: LatticeCells,
+  kxPeriod: number,
+  kyPeriod: number,
   mineCount: number,
-  tubeRadius = 0.38,
-  separation = 1,
+  tubeRadius: number,
+  separation: number,
+  motions: readonly (readonly [SymmetryId, MergedMotion])[],
 ): Board3D {
-  const { removed, seam } = doubleTorusCut(ring, tube, tubeRadius, separation);
+  const { removed, seam } = doubleTorusCut(cells, kxPeriod, kyPeriod, tubeRadius, separation);
 
-  const cells: Cells = new Map();
-  const positions: Positions = new Map();
-  const put = (side: number, rawI: number, rawJ: number): string => {
-    const i = mod(rawI, ring);
-    const j = mod(rawJ, tube);
-    const onSeam = seam.has(`${i},${j}`);
-    const k = onSeam ? `s,${i},${j}` : `${side},${i},${j}`;
-    if (!positions.has(k)) {
-      const theta = (TWO_PI * i) / ring;
-      const phi = (TWO_PI * j) / tube;
-      const radial = 1 + tubeRadius * Math.cos(phi);
-      const y = radial * Math.sin(theta);
-      const z = tubeRadius * Math.sin(phi);
-      const x = radial * Math.cos(theta) - separation;
-      // the seam sits on the plane the two halves were cut along
-      positions.set(k, onSeam ? [0, y, z] : [side === 0 ? x : -x, y, z]);
-    }
-    return k;
+  const place = (side: number, kx: number, ky: number): Vec3 => {
+    const theta = (TWO_PI * kx) / kxPeriod;
+    const phi = (TWO_PI * ky) / kyPeriod;
+    const radial = 1 + tubeRadius * Math.cos(phi);
+    const y = radial * Math.sin(theta);
+    const z = tubeRadius * Math.sin(phi);
+    if (side < 0) return [0, y, z]; // the seam: the plane the two halves cut
+    const x = radial * Math.cos(theta) - separation;
+    return [side === 0 ? x : -x, y, z];
   };
+  /** The canonical vertex id for one donut's lattice key: shared where the two
+   * halves meet, the donut's own everywhere else. */
+  const vertexKey = (side: number, kx: number, ky: number): string =>
+    seam.has(`${kx},${ky}`) ? `s,${kx},${ky}` : `${side},${kx},${ky}`;
 
+  const merged: Cells = new Map();
+  const positions: Positions = new Map();
   for (const side of [0, 1]) {
-    for (let i = 0; i < ring; i++) {
-      for (let j = 0; j < tube; j++) {
-        if (removed.has(`${i},${j}`)) continue;
-        cells.set(cid(side, i, j), [
-          put(side, i, j),
-          put(side, i + 1, j),
-          put(side, i + 1, j + 1),
-          put(side, i, j + 1),
-        ]);
-      }
+    for (const [cell, keys] of cells) {
+      if (removed.has(cell)) continue;
+      merged.set(
+        cid(side, cell),
+        keys.map(([kx, ky]) => {
+          const key = vertexKey(side, kx, ky);
+          if (!positions.has(key)) {
+            positions.set(key, place(seam.has(`${kx},${ky}`) ? -1 : side, kx, ky));
+          }
+          return key;
+        }),
+      );
     }
+  }
+
+  // Never two ids at one point: shared-vertex adjacency keys on the ids, but
+  // the topology invariants the conformance oracle records key on the
+  // coordinates, so a coincidence reads as a lower genus than the mesh has.
+  const placed = new Map<string, string>();
+  for (const [key, p] of positions) {
+    const at = `${q(p[0])},${q(p[1])},${q(p[2])}`;
+    const other = placed.get(at);
+    if (other !== undefined) {
+      throw new Error(
+        `vertices ${other} and ${key} land on the same point: this window ` +
+          "merges two of its own corners",
+      );
+    }
+    placed.set(at, key);
   }
 
   /** Wind a face outward from *its own* donut's ring circle. Which of the two
@@ -929,46 +994,153 @@ export function doubleTorusBoard(
     ]);
   };
 
-  // The cut spends every translation of the square lattice, so what is left is
-  // the shape's own point group: the half turn about z that swaps the two
-  // donuts, and the two mirrors that fix each of them (the plane z = 0 across
-  // the tubes, the plane y = 0 across the rings). Mirroring in x alone -- the
-  // plain donut swap -- is the product of the first two, so it is not offered.
-  const vertexMove = (
-    move: (side: number, i: number, j: number) => [number, number, number],
-  ): SymmetryCandidate["build"] => () =>
-    cellsUnderVertexMap(cells, (key) => {
-      const [tag, a, b] = key.split(",");
-      // All three motions carry the seam onto itself, so the side a seam key
-      // is moved *as* never survives the lookup below -- hence the 0.
-      const [side, i, j] = move(tag === "s" ? 0 : Number(tag), Number(a), Number(b));
-      const [ci, cj] = [mod(i, ring), mod(j, tube)];
-      return seam.has(`${ci},${cj}`) ? `s,${ci},${cj}` : `${side},${ci},${cj}`;
-    });
-  const symmetries: SymmetryCandidate[] = [
-    { id: "turn", build: vertexMove((s, i, j) => [1 - s, -i, j]) },
-    { id: "mirror-ring", build: vertexMove((s, i, j) => [s, -i, j]) },
-    { id: "mirror-tube", build: vertexMove((s, i, j) => [s, i, -j]) },
-  ];
+  // The cut spends every translation of the lattice, so what is left is the
+  // shape's own point group: the half turn about z that swaps the two donuts,
+  // and the two mirrors that fix each of them (the plane z = 0 across the
+  // tubes, the plane y = 0 across the rings). Mirroring in x alone -- the plain
+  // donut swap -- is the product of the first two, so it is not offered. Which
+  // of them survive is measured, as always: on a tiling whose cells alternate
+  // (the triangles) a motion can land on the wrong parity, so a builder offers
+  // the variants and `keepSymmetries` keeps whichever is an automorphism.
+  const symmetries: SymmetryCandidate[] = motions.map(([id, motion]) => ({
+    id,
+    build: () =>
+      cellsUnderVertexMap(merged, (key) => {
+        const [tag, a, b] = key.split(",");
+        // All three motions carry the seam onto itself, so the side a seam key
+        // is moved *as* never survives the lookup below -- hence the 0.
+        const [side, kx, ky] = motion(tag === "s" ? 0 : Number(tag), Number(a), Number(b));
+        return vertexKey(side, mod(kx, kxPeriod), mod(ky, kyPeriod));
+      }),
+  }));
 
-  // Every cell is a quad of the square tiling and every one of its four
-  // vertices a real corner -- but the seam pulls a run of them onto the plane,
-  // and where two tube rows share a z (rows either side of the tube's top, on
-  // an even tube) three corners of a cell can come out exactly collinear. The
-  // geometric fallback in `corners` then measures that cell as a triangle and
-  // the shape palette paints it red, on a board of nothing but squares. The
-  // mask is the authoritative answer for exactly this case.
+  // Every cell is a tile of a regular tiling and every one of its vertices a
+  // real corner -- but the seam pulls a run of them onto the plane, and three
+  // corners of a cell can come out exactly collinear. The geometric fallback in
+  // `corners` would then measure that tile as one with a side fewer and the
+  // shape palette would paint it another colour, on a board of one shape.
   const cornerMask = new Map<CellId, boolean[]>(
-    [...cells.keys()].map((cell) => [cell, [true, true, true, true]]),
+    [...merged].map(([cell, keys]) => [cell, keys.map(() => true)]),
   );
 
-  return assemble("doubletorus", cells, positions, mineCount, {
+  return assemble(mode, merged, positions, mineCount, {
     twoSided: false,
     radius: maxRadius,
     orient,
     symmetries,
     cornerMask,
   });
+}
+
+/** The three motions every merged donut offers, plus a builder's own variants
+ * where its cells alternate and a plain negation lands on the wrong one. */
+function mergedMotions(
+  variants: readonly (readonly [SymmetryId, MergedMotion])[] = [],
+): readonly (readonly [SymmetryId, MergedMotion])[] {
+  return [
+    ["turn", (s, kx, ky) => [1 - s, -kx, ky]],
+    ["mirror-ring", (s, kx, ky) => [s, -kx, ky]],
+    ["mirror-tube", (s, kx, ky) => [s, kx, -ky]],
+    ...variants,
+  ];
+}
+
+/** Two square-tiled donuts merged into one genus-2 board: `ring` cells round
+ * each ring and `tube` round each tube, less the cells each gives up where it
+ * overlaps the other. `separation` is half the distance between the two
+ * centres; at 1 a point of each donut's outer equator lies on the other's
+ * inner equator, which is as merged as they get before the ring circles cross,
+ * and at `1 + tubeRadius` they only touch. */
+export function doubleTorusBoard(
+  ring: number,
+  tube: number,
+  mineCount: number,
+  tubeRadius = 0.38,
+  separation = 1,
+): Board3D {
+  const cells: LatticeCells = new Map();
+  for (let i = 0; i < ring; i++) {
+    for (let j = 0; j < tube; j++) {
+      cells.set(cid(i, j), [
+        [i, j],
+        [mod(i + 1, ring), j],
+        [mod(i + 1, ring), mod(j + 1, tube)],
+        [i, mod(j + 1, tube)],
+      ]);
+    }
+  }
+  return doubleTorus("doubletorus", cells, ring, tube, mineCount, tubeRadius,
+                     separation, mergedMotions());
+}
+
+/** The same merge on the regular triangular tiling, laid exactly as the
+ * donut's is: `ring` triangles around the ring in every row (even, so up/down
+ * triangles alternate across the seam) and `tube` rows around the tube (even,
+ * so the offset rows meet cleanly where the tube closes). */
+export function doubleTorusTriangleBoard(
+  ring: number,
+  tube: number,
+  mineCount: number,
+  tubeRadius = 0.38,
+  separation = 1,
+): Board3D {
+  if (ring % 2) throw new Error("ring must be even for the triangle strip to wrap");
+  if (tube % 2) throw new Error("tube must be even so the offset rows wrap");
+  const cells: LatticeCells = new Map();
+  for (let r = 0; r < tube; r++) {
+    for (let i = 0; i < ring; i++) {
+      cells.set(
+        cid(r, i),
+        triangleVertices(i, r, (r + i) % 2 === 0).map(
+          ([kx, ky]) => [mod(kx, ring), mod(ky, tube)] as [number, number],
+        ),
+      );
+    }
+  }
+  // up and down triangles alternate along a row and up the rows alike, so a
+  // plain negation can land on the other kind -- offer the half-step variants
+  return doubleTorus("doubletorustri", cells, ring, tube, mineCount, tubeRadius,
+                     separation, mergedMotions([
+                       ["turn", (s, kx, ky) => [1 - s, 1 - kx, ky]],
+                       ["mirror-ring", (s, kx, ky) => [s, 1 - kx, ky]],
+                       ["mirror-tube", (s, kx, ky) => [s, kx, 1 - ky]],
+                     ]));
+}
+
+/** The same merge on the hexagonal tiling. The hex lattice wraps around the
+ * tube (`rows`, even, so the offset lattice closes) and around the ring
+ * (`cols`); away from the join every cell has exactly 6 neighbours. */
+export function doubleTorusHexBoard(
+  rows: number,
+  cols: number,
+  mineCount: number,
+  tubeRadius = 0.38,
+  separation = 1,
+): Board3D {
+  if (rows % 2) throw new Error("rows must be even so the offset lattice wraps");
+  const kxPeriod = 2 * cols;
+  const kyPeriod = 3 * rows;
+  const cells: LatticeCells = new Map();
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const kx = 2 * c + (r % 2) + 1;
+      const ky = 3 * r + 2;
+      cells.set(
+        cid(r, c),
+        HEX_VERTEX_OFFSETS.map(
+          ([ox, oy]) => [mod(kx + ox, kxPeriod), mod(ky + oy, kyPeriod)] as [number, number],
+        ),
+      );
+    }
+  }
+  // the hex lattice's own mirror axis runs through a row of cell centres at
+  // ky = 2, not through ky = 0 (as on the donut)
+  return doubleTorus("doubletorushex", cells, kxPeriod, kyPeriod, mineCount,
+                     tubeRadius, separation, mergedMotions([
+                       ["turn", (s, kx, ky) => [1 - s, -kx, 4 - ky]],
+                       ["turn", (s, kx, ky) => [1 - s, 1 - kx, 4 - ky]],
+                       ["mirror-tube", (s, kx, ky) => [s, kx, 4 - ky]],
+                     ]));
 }
 
 // -- the Möbius strip --------------------------------------------------------
