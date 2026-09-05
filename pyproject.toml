@@ -1,6 +1,6 @@
 [project]
 name = "minesweeper"
-version = "0.2.93"
+version = "0.2.94"
 description = "A minesweeper clone with square, triangle and hexagon boards"
 license = "MIT"
 license-files = ["LICENSE"]
