@@ -26,8 +26,11 @@
 // tiles the plane periodically all by itself, which is what makes a seamless
 // repeat possible at all.
 //
-//  * The 27 `ARCH_TILINGS` come from `archTemplate`: a rectangular fundamental
-//    domain, which is exactly a seamless repeat tile.
+//  * The 30 `ARCH_TILINGS` come from `archTemplate`: a rectangular fundamental
+//    domain, which is exactly a seamless repeat tile. Three of them are the
+//    fractal boards' own tiles laid down periodically — `sphinxpairs`,
+//    `tromino` and `durer` — so those three pages are the same figure as the
+//    hand-written fractal domains below, arrived at from the other end.
 //  * The three regular tilings have no template — they are direct lattice
 //    builders in boards/tilings.ts — so their domains are written out below, in
 //    the units and the orientation those builders use.

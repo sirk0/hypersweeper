@@ -71,7 +71,7 @@ them. Change one, change all three.
 | `blob4` | board | the full name, `Hexagons · Torus` |
 | `blob5` | tiling | tiling key; empty for a one-off board |
 | `blob6` | surface | `flat`, `cylinder`, `mobius`, `klein`, `torus`, `solid` |
-| `blob7` | family | `regular`, `uniform`, `dual`, `isogonal`, `rectangle`, `aperiodic`, `fractal`, `sphere`, `platonic`, `catalan`, `polyhedra`, `volume` |
+| `blob7` | family | `regular`, `uniform`, `dual`, `isogonal`, `rectangle`, `reptile`, `durer`, `aperiodic`, `fractal`, `sphere`, `platonic`, `catalan`, `polyhedra`, `volume` |
 | `blob8` | trigger | how it was dealt: `menu`, `random`, `again`, `link` |
 | `blob9` | from | what the *previous* board was doing: empty, `playing`, `won`, `lost` |
 | `blob10` | device | `phone`, `tablet`, `desktop`, `unknown` |

@@ -39,7 +39,7 @@ Import order is a strict DAG; a module only imports from the ones above it.
 | Module | Responsibility |
 |--------|----------------|
 | `core.py` | `Board` / `Board3D`, the `_shared_vertex_adjacency` neighbour rule, `_build` (lattice→pixels) and `_finalize_flat` (float→pixels), 3D vector helpers, and the topology invariants `euler_characteristic` / `boundary_components` / `corner_fans`. |
-| `tilings.py` | Regular flat builders (square/triangle/trigrid/hex/hexhex/hextri/hextriangle/squarediamond), the `_ArchTemplate` system, the eight Archimedean `_*_template()` factories plus their eight Laves duals (built by `_dual_template`), the six isogonal (non-edge-to-edge) ones and the five congruent-rectangle bonds, and the **`ARCH_TILINGS`** registry (the one place any of them is declared, with `_FAMILY_TRAITS` saying what each family is). |
+| `tilings.py` | Regular flat builders (square/triangle/trigrid/hex/hexhex/hextri/hextriangle/squarediamond), the `_ArchTemplate` system, the eight Archimedean `_*_template()` factories plus their eight Laves duals (built by `_dual_template`), the six isogonal (non-edge-to-edge) ones, the five congruent-rectangle bonds, the two rep-tile patterns and Dürer's pentagon tiling, and the **`ARCH_TILINGS`** registry (the one place any of them is declared, with `_FAMILY_TRAITS` saying what each family is). |
 | `fractal.py` | The self-similar (fractal) boards: the sphinx, the chair, the Sierpinski carpet, the pentaflake and the Gosper island. One `_Substitution` record per tile — unit outline, the tiles filling the inflated copy, the inflation factor, lattice ops — and the shared inflation (`substitution_placements`) all five `*_board` builders run. The first two are rep-tiles (their children fill the tile); the carpet's and the pentaflake's leave holes, which is what makes them fractals with holes rather than shapes; the Gosper island's fill it with no hole at all and put the fractal in the *outline* instead. Four lattices are integer; the pentaflake's is ℤ[ζ10], since five-fold symmetry needs rank 4. The Gosper island's inflation is the one that is not a pure scaling: multiplication by 2 + ζ, a spiral similarity of √7 at 19.106°. |
 | `aperiodic.py` | Penrose (P3), the Spectre (Tile(1,1), the chiral monotile) and the phyllotactic spiral, each with exact-arithmetic vertex ids — ℤ[ζ5] for Penrose and the spiral, ℤ[ζ12] for the Spectre. The Spectre's ring is *dense* in the plane, so unlike Penrose's discrete lattice there is no lattice to snap a float vertex back to: its placements are carried as exact `(rotation, mirror, translation)` triples and no floating point enters the substitution at all. The spiral is the odd one out — no substitution, just ten 36° wedges of the tile's own translation lattice, the odd ones offset a step; nonperiodic because its five-fold centre forbids any translation. The **brick rings** are nonperiodic the same way — by symmetry rather than by a substitution — and are the plainest board here: 2x1 bricks on the integer square lattice in concentric square rings about a 2x2 core, ring k being the boundary of the 2k x 2k square with horizontal bricks along its rows and vertical ones up its sides. Every run is even, so every tile is a whole brick and only an even-sided square is tileable at all. A brick's corner lands in the middle of a neighbour's long side, so `_brick_outline` splits each edge at the lattice points that are genuinely some tile's corner — the 2D twin of `solids._split_at_lattice_points`, and *conditional*, unlike the fractal outlines, which carry a vertex at every step. |
 | `solids.py` | Closed/convex and polycube 3D boards (spherical gyro pentagons, Goldberg polyhedra, geodesic icosahedron, rhombicosidodecahedron, truncated icosidodecahedron, cube, tetrahedron, frames, bipyramid), plus the shared `_wythoff_point` every uniform solid here and every Catalan solid next door is generated from. |
@@ -124,20 +124,48 @@ rectangle (stacked bond, running bond, basket weave, its three-brick
 version, herringbone). These are face-transitive rather than
 vertex-transitive, and — bar the stacked bond, which is a stretched square
 tiling — not edge to edge either; `_FAMILY_TRAITS` in `tilings.py` declares
-those two traits per family and the test lists derive from it. Like the
+those traits per family and the test lists derive from it. Like the
 isogonal family, all five wrap the torus and cylinder, and the four with a
 template mirror (all but herringbone) also wrap the Möbius strip and Klein
-bottle. The menu's shared
+bottle.
+
+The last two families are **flat-only**, and are the fractal boards' own
+tiles laid down periodically rather than inflated. `family="reptile"` holds
+the two **rep-tile patterns** — the sphinx (`sphinxpairs`) and the chair
+(`tromino`, the L-tromino) — each one congruent polyform in half-turned
+pairs: p2, face-transitive, and not edge to edge (a rep-tile's long side
+spans several of its neighbours' short ones). These two are also the only
+tilings here with a **grain**: straight lines no tile of them crosses (every
+sphinx lies inside a horizontal band √3 tall; the L pair fills its 3 × 2
+rectangle and overhangs nothing). `_ArchTemplate.grain` declares the spacing
+and `archimedean_board` snaps its window onto it, so their boards end on a
+straight edge instead of a row of tiles kept by half — the L-tromino's on all
+four sides, the sphinx's top and bottom, its sides being a staircase because
+its courses step a unit sideways as they stack. `TestFlatGrain` measures both
+halves of that: that no tile crosses a declared line, and that the board's
+outline meets the line it ends on in *one* run rather than a row of teeth. `family="durer"` holds
+**Dürer's pentagon tiling** (`durer`), regular pentagons with 36° rhombs
+filling the gaps three of them leave round a vertex — pm, edge to edge, and
+the one tiling here that is neither vertex- nor tile-transitive, which is
+what the third `_FAMILY_TRAITS` trait (`monohedral`) is for: it keeps
+`test_tiles_are_congruent` off a tiling with two tile shapes, and
+`TestDurer` checks the pentagon and the rhomb instead. Both families are
+listed in `_FLAT_ONLY_FAMILIES` (`catalog.py`, mirrored by
+`FLAT_ONLY_ARCH_FAMILIES` in `catalog.ts`), which sets `TilingSpec.flat_only`
+on their members: no wrap builder glues them yet, and neither has chosen the
+`cut` a rim or a seam would need. Wrapping them is one `cut` and one preset
+row each. The menu's shared
 tiling picker is a list of family
 submenus: **Regular** (the three regular tilings, plus on the plane the
 shaped boards cut from them), **Uniform** (the eight non-regular uniform
 tilings, `family="uniform"` in `ARCH_TILINGS`), **Laves** (their
 eight duals), **Isogonal**, **Congruent rectangles** and, on the plane
-only, **Aperiodic** and **Fractals**. Every family is offered on every
-surface its members' chirality allows, with no exceptions left:
+only, **Rep-tiles**, **Dürer pentagonal**, **Aperiodic** and **Fractals**.
+Every family is offered on every surface its members allow:
 `picker_families` in `catalog.py` (and its mirror in
-`web/src/boards/catalog.ts`) now only drops the two flat-only families,
-and everything else a surface refuses it refuses one row at a time, in
+`web/src/boards/catalog.ts`) drops a family a surface has no enabled row of
+— the two one-off flat-only families, and the two flat-only tiling families
+— and everything else a surface refuses it refuses one row at a time, in
 `family_rows`, on chirality. **Congruent rectangles** was the last gap,
 off the torus/Möbius/Klein bottle because the wrap squashed its bricks;
 what was really wrong was the measure that picked the windows, which

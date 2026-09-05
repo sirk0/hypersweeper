@@ -16,7 +16,7 @@ described in [`../../web/docs/ui.md`](../../web/docs/ui.md). Classic
 launches flat squares; Flat (the plane) and each flat manifold (cylinder,
 Möbius, Klein, torus) open a shared tiling picker — the Regular / Uniform
 / Laves family submenus, Isogonal and Congruent rectangles on every
-surface, Aperiodic and
+surface, Rep-tiles, Dürer pentagonal, Aperiodic and
 Fractals on the plane only, and a random option
 — parameterised by the surface it was reached through. The last four are
 **solid groups**: a flat list of finished boards, one click from the home

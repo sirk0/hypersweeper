@@ -24,7 +24,10 @@ exactly filled, never a trimmed disc.) For periodic
 tilings take a rectangular window of whole periods centred on a rotation
 centre (`archimedean_board` keeps an `nx`×`ny` domain block of the
 `_ArchTemplate` centred on the tiling's biggest tile, so the window maps
-onto itself under the tiling's point group); for the aperiodic ones built by
+onto itself under the tiling's point group; where the tiling declares a
+**grain**, the window is snapped onto it first, so those knobs move the
+board a whole course at a time and the size search sees the count it
+actually gets); for the aperiodic ones built by
 substitution or by wedge (`penrose_board`, `spectre_board`,
 `phyllotaxis_board`) grow generously and trim
 to the `keep` centremost cells by Chebyshev distance (`max(|dx|, |dy|)`)

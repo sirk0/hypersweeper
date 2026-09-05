@@ -4211,6 +4211,84 @@
           105
         ]
       }
+    },
+    "sphinxpairs": {
+      "builder": "archimedean_board",
+      "args": {
+        "easy": [
+          "sphinxpairs",
+          4,
+          3,
+          5,
+          34.286
+        ],
+        "medium": [
+          "sphinxpairs",
+          8,
+          5,
+          38,
+          18.462
+        ],
+        "hard": [
+          "sphinxpairs",
+          12,
+          7,
+          115,
+          12.632
+        ]
+      }
+    },
+    "tromino": {
+      "builder": "archimedean_board",
+      "args": {
+        "easy": [
+          "tromino",
+          6,
+          6,
+          10,
+          30.0
+        ],
+        "medium": [
+          "tromino",
+          9,
+          13,
+          47,
+          17.143
+        ],
+        "hard": [
+          "tromino",
+          12,
+          18,
+          92,
+          14.0
+        ]
+      }
+    },
+    "durer": {
+      "builder": "archimedean_board",
+      "args": {
+        "easy": [
+          "durer",
+          2,
+          6,
+          12,
+          41.745
+        ],
+        "medium": [
+          "durer",
+          4,
+          11,
+          45,
+          22.369
+        ],
+        "hard": [
+          "durer",
+          5,
+          15,
+          99,
+          18.156
+        ]
+      }
     }
   }
 }

@@ -139,8 +139,15 @@ _UNIFORM = [t.key for t in ARCH_TILINGS if t.family == "uniform"]
 _WRAPPED_TILINGS = [t.key for t in ARCH_TILINGS if "torus" in TILINGS[t.key][1]]
 _ISOGONAL = [t.key for t in ARCH_TILINGS if t.family == "isogonal"]
 _RECTANGLE = [t.key for t in ARCH_TILINGS if t.family == "rectangle"]
+_REPTILE = [t.key for t in ARCH_TILINGS if t.family == "reptile"]
+# the tilings that declare a grain -- straight lines no tile of them crosses,
+# which archimedean_board ends its window on. See TestFlatGrain.
+_GRAINED = [t.key for t in ARCH_TILINGS if any(t.template().grain)]
 _VERTEX_TRANSITIVE = [t.key for t in ARCH_TILINGS if t.vertex_transitive]
-_FACE_TRANSITIVE = [t.key for t in ARCH_TILINGS if not t.vertex_transitive]
+# built from one congruent tile (and so face-transitive). Durer's tiling is
+# the one row that is neither vertex- nor tile-transitive -- a pentagon and a
+# rhomb -- so the congruence invariant is not its; TestDurer covers it.
+_MONOHEDRAL = [t.key for t in ARCH_TILINGS if t.monohedral]
 _EDGE_TO_EDGE = [t.key for t in ARCH_TILINGS if t.edge_to_edge]
 _NO_HALF_TURN = {t.key for t in ARCH_TILINGS if not t.half_turn}
 _REFLECTIVE = {
@@ -1716,10 +1723,10 @@ class TestArchimedean:
                 assert sorted(s for s, _ in entries) == sorted(config)
         assert interior > 10  # the check actually saw interior vertices
 
-    @pytest.mark.parametrize("mode", sorted(_FACE_TRANSITIVE))
+    @pytest.mark.parametrize("mode", sorted(_MONOHEDRAL))
     def test_tiles_are_congruent(self, mode):
-        """A face-transitive tiling (a Laves dual, a rectangle bond) is built
-        from one congruent tile: every polygon has the same sorted edge
+        """A monohedral tiling (a Laves dual, a rectangle bond, a rep-tile) is
+        built from one congruent tile: every polygon has the same sorted edge
         lengths and interior angles (up to rotation/reflection). Measured over
         the tiles' real corners, so a bond's brick is congruent to its
         neighbours however many of their corners split its edges (a no-op for
@@ -2019,6 +2026,261 @@ class TestRectangles:
         interior = [n for n in board.adjacency.values() if len(n) == 8]
         assert len(interior) > len(board.adjacency) / 2
         assert max(len(n) for n in board.adjacency.values()) == 8
+
+
+class TestRepTilePatterns:
+    """The two rep-tile patterns: the sphinx and the chair (the L-tromino),
+    laid down periodically rather than inflated.
+
+    Each is one congruent polyform in half-turned pairs -- face-transitive
+    like the bonds (test_tiles_are_congruent above covers the congruence),
+    and like the staggered bonds not edge to edge. The fractal boards built
+    from the same two tiles are TestRepTiles, further up: same tile, a
+    substitution instead of a lattice.
+    """
+
+    # tile -> its real corners' edge lengths, sorted. The sphinx is the
+    # pentagonal hexiamond (sides 1, 1, 1, 2, 3) and the chair is three unit
+    # squares in an L (1, 1, 1, 1, 2, 2).
+    TILES = {"sphinxpairs": [1.0, 1.0, 1.0, 2.0, 3.0],
+             "tromino": [1.0, 1.0, 1.0, 1.0, 2.0, 2.0]}
+
+    @pytest.mark.parametrize("mode", sorted(_REPTILE))
+    def test_every_tile_is_the_polyform(self, mode):
+        """Once the T-vertices are dropped, every tile is the rep-tile itself
+        -- the same edge lengths in the same proportion, at whatever scale the
+        preset draws it."""
+        board = archimedean_board(mode, 3, 3, 5)
+        for polygon in board.polygons.values():
+            corners = [c for c, _ in _corners(polygon)]
+            assert len(corners) == len(self.TILES[mode])
+            sides = sorted(math.dist(corners[i], corners[(i + 1) % len(corners)])
+                           for i in range(len(corners)))
+            unit = sides[0]
+            assert [round(s / unit, 3) for s in sides] == self.TILES[mode]
+
+    @pytest.mark.parametrize("mode", sorted(_REPTILE))
+    def test_tiles_the_plane_without_gaps(self, mode):
+        """One domain's tiles cover the domain exactly: six sphinxes in
+        3 x 3*sqrt3, two chairs in 3 x 2. Neither a gap nor an overlap."""
+        template = _arch_template(mode)
+        total = 0.0
+        for _, refs in template.cells:
+            points = [(dm * template.width + tag[0], dn * template.height + tag[1])
+                      for tag, dm, dn in refs]
+            n = len(points)
+            total += abs(sum(points[i][0] * points[(i + 1) % n][1]
+                             - points[(i + 1) % n][0] * points[i][1]
+                             for i in range(n))) / 2
+        assert abs(total - template.width * template.height) < 1e-9
+
+    @pytest.mark.parametrize("mode", sorted(_REPTILE))
+    def test_is_not_edge_to_edge(self, mode):
+        """A rep-tile's long side spans several of its neighbours' short ones,
+        so their corners land inside it -- the T-vertices _insert_t_vertices
+        records, and what keeps these out of the edge-to-edge families."""
+        board = archimedean_board(mode, 3, 3, 5)
+        assert any(len(_corners(p)) < len(p) for p in board.polygons.values())
+
+    @pytest.mark.parametrize("mode", sorted(_REPTILE))
+    def test_the_pair_is_a_half_turn_of_one_tile(self, mode):
+        """p2 and nothing else: the second tile of each pair is the first
+        upside down, so the domain's tiles come in centroid pairs symmetric
+        about the template's window centre."""
+        template = _arch_template(mode)
+        assert template.mirror is None       # no reflection anywhere in p2
+        assert template.centre == (0.0, 0.0)  # a half-turn centre, not a tile
+
+
+class TestFlatGrain:
+    """The grain: the straight lines a tiling never crosses, and the flat
+    window ending on one.
+
+    Most tilings have none -- pick any horizontal line through a hexagonal
+    tiling and hexagons straddle it -- so a flat board's edge is a row of
+    tiles kept by centroid, half in and half out, and that is simply what the
+    board looks like. Two do have one: every sphinx lies inside a horizontal
+    band sqrt3 tall, and the L-tromino pair fills its 3 x 2 rectangle with
+    nothing overhanging. ``_snap_to_grain`` rounds the window onto those
+    lines, and the edge comes out straight.
+    """
+
+    @staticmethod
+    def _extent(polygon, axis):
+        values = [point[axis] for point in polygon]
+        return min(values), max(values)
+
+    @pytest.mark.parametrize("tiling", sorted(_GRAINED))
+    def test_no_tile_crosses_the_grain(self, tiling):
+        """What makes a line grain: every tile of the domain lies wholly
+        between two of them. (Were one to straddle a line, snapping the window
+        there would cut it in half rather than end the board on it.)"""
+        template = _arch_template(tiling)
+        for axis, period in enumerate(template.grain):
+            if not period:
+                continue
+            size = (template.width, template.height)[axis]
+            for name, refs in template.cells:
+                values = [(dm * template.width + tag[0]) if axis == 0
+                          else (dn * template.height + tag[1])
+                          for tag, dm, dn in refs]
+                low, high = min(values), max(values)
+                # vertex tags are rounded to 1e-6, so a tile sitting exactly on
+                # a line misses it by about that much
+                band = math.floor(low / period + 1e-5)
+                assert high <= (band + 1) * period + 1e-5, (
+                    f"{tiling}: {name} crosses a grain line on axis {axis}")
+            assert abs(size / period - round(size / period)) < 1e-9, (
+                f"{tiling}: the grain must divide the domain, or the window's "
+                f"centre copy would not sit on a line")
+
+    @pytest.mark.parametrize("mode", sorted(_GRAINED))
+    @pytest.mark.parametrize("difficulty", DIFFICULTIES)
+    def test_the_board_is_whole_courses(self, mode, difficulty):
+        """A board that ends on the grain is a whole number of courses tall
+        (or wide): what the snapping buys, measured on the shipped preset."""
+        board = build_board(mode, difficulty)
+        template = _arch_template(mode)
+        for axis, period in enumerate(template.grain):
+            if not period:
+                continue
+            values = [point[axis] for p in board.polygons.values() for point in p]
+            # the board is drawn at some pixel scale; recover it from the tile
+            # edge the template and the board share
+            span = period * _unit_scale(board, template)
+            courses = (max(values) - min(values)) / span
+            assert abs(courses - round(courses)) < 1e-6, (
+                f"{mode}/{difficulty} is {courses:.3f} courses on axis {axis}")
+
+    @pytest.mark.parametrize("mode", sorted(_GRAINED))
+    @pytest.mark.parametrize("difficulty", DIFFICULTIES)
+    def test_the_edge_is_one_straight_run(self, mode, difficulty):
+        """The edge itself, and the difference a grain makes: the board's
+        outline touches the line it ends on along **one** stretch, not several.
+
+        A window ending mid-course keeps every other tile of it, so the outline
+        meets the extreme in a row of teeth -- many short runs with notches
+        between them. Ending on the grain leaves a single straight edge, and
+        what falls short of it is only the two corners, where the courses
+        themselves step sideways (the sphinx's do, a unit per course, so its
+        left and right edges are a staircase and its top and bottom are not).
+        """
+        board = build_board(mode, difficulty)
+        template = _arch_template(mode)
+        polygons = list(board.polygons.values())
+        for axis, period in enumerate(template.grain):
+            if not period:
+                continue
+            other = 1 - axis
+            values = [point[other] for p in polygons for point in p]
+            low, high = min(values), max(values)
+            for side in (max, min):
+                edge = side(point[axis] for p in polygons for point in p)
+                on = [abs(_outline_at(polygons, axis, other, low + (high - low)
+                                      * (i + 0.5) / 400, side) - edge) < 1e-6
+                      for i in range(400)]
+                # linear, not circular: an edge that is *all* line is one run
+                runs = sum(1 for i, here in enumerate(on)
+                           if here and (i == 0 or not on[i - 1]))
+                assert runs == 1, (
+                    f"{mode}/{difficulty}: the {'far' if side is max else 'near'} "
+                    f"edge on axis {axis} meets the line in {runs} runs, not one")
+                assert sum(on) > len(on) / 2, (
+                    f"{mode}/{difficulty}: that run covers only "
+                    f"{sum(on) / len(on):.0%} of the edge")
+
+    def test_the_tromino_board_is_a_plain_rectangle(self):
+        """Grained both ways, so its board is the one in the zoo with four
+        straight sides: the union of its tiles is exactly its bounding box."""
+        board = build_board("tromino", "medium")
+        polygons = list(board.polygons.values())
+        area = sum(abs(sum(p[i][0] * p[(i + 1) % len(p)][1]
+                           - p[(i + 1) % len(p)][0] * p[i][1]
+                           for i in range(len(p)))) / 2 for p in polygons)
+        xs = [x for p in polygons for x, _ in p]
+        ys = [y for p in polygons for _, y in p]
+        box = (max(xs) - min(xs)) * (max(ys) - min(ys))
+        assert abs(area - box) < 1e-6 * box
+
+
+def _unit_scale(board, template):
+    """Pixels per template unit: the shortest tile edge on the board against
+    the shortest in the template's domain."""
+    def shortest(polygons):
+        return min(math.dist(p[i], p[(i + 1) % len(p)])
+                   for p in polygons for i in range(len(p))
+                   if math.dist(p[i], p[(i + 1) % len(p)]) > 1e-9)
+
+    domain = [[(dm * template.width + tag[0], dn * template.height + tag[1])
+               for tag, dm, dn in refs] for _, refs in template.cells]
+    return shortest(board.polygons.values()) / shortest(domain)
+
+
+def _outline_at(polygons, axis, other, s, side):
+    """The board's outline along ``axis`` at position ``s`` on the other axis:
+    the extreme edge crossing of the union there."""
+    best = None
+    for polygon in polygons:
+        n = len(polygon)
+        for i in range(n):
+            a, b = polygon[i], polygon[(i + 1) % n]
+            if (a[other] - s) * (b[other] - s) > 0 or a[other] == b[other]:
+                continue
+            t = (s - a[other]) / (b[other] - a[other])
+            value = a[axis] + t * (b[axis] - a[axis])
+            best = value if best is None else side(best, value)
+    return best
+
+
+class TestDurer:
+    """Durer's pentagon tiling: regular pentagons and 36-degree rhombs.
+
+    The one tiling here that is neither vertex- nor tile-transitive, so
+    neither the uniform families' vertex-configuration invariants nor
+    test_tiles_are_congruent apply to it; its two shapes are checked instead.
+    """
+
+    def test_two_tile_shapes_a_regular_pentagon_and_a_thin_rhomb(self):
+        board = archimedean_board("durer", 2, 6, 5)
+        shapes = {}
+        for polygon in board.polygons.values():
+            corners = [c for c, _ in _corners(polygon)]
+            angles = [round(math.degrees(a)) for _, a in _corners(polygon)]
+            sides = [math.dist(corners[i], corners[(i + 1) % len(corners)])
+                     for i in range(len(corners))]
+            shapes.setdefault((len(corners), tuple(sorted(angles))), []).append(sides)
+        assert sorted(shapes) == [(4, (36, 36, 144, 144)), (5, (108,) * 5)]
+        # every edge in the tiling is the same length -- both tiles are
+        # equilateral, which is what lets the rhomb fill the pentagons' gap
+        unit = min(min(s) for s in sum(shapes.values(), []))
+        assert all(abs(side / unit - 1) < 1e-6
+                   for sides in sum(shapes.values(), []) for side in sides)
+
+    def test_two_pentagons_to_a_rhomb(self):
+        """The domain's proportions, and so the whole tiling's: the rhombs
+        fill exactly the gaps three pentagons round a vertex leave open."""
+        template = _arch_template("durer")
+        counts = Counter(len(refs) for _, refs in template.cells)
+        assert counts == {5: 4, 4: 2}
+
+    def test_is_edge_to_edge(self):
+        """Unlike the rep-tiles, every edge here runs corner to corner: the
+        tiles all have unit edges, so no corner can land inside one."""
+        board = archimedean_board("durer", 2, 6, 5)
+        assert all(len(_corners(p)) == len(p) for p in board.polygons.values())
+        assert _arch_template("durer").straight == {}
+
+    @pytest.mark.parametrize("difficulty", DIFFICULTIES)
+    def test_flat_board_is_mirror_symmetric(self, difficulty):
+        """pm has mirrors but no half turn at all, so this is the one flat
+        board TestArchimedean.test_flat_board_is_symmetric cannot check (it
+        returns early for _NO_HALF_TURN). The mirrors run along the rows of
+        pentagons, and the window is centred on one of those rows, so the
+        board reads symmetric top to bottom."""
+        board = build_board("durer", difficulty)
+        top_bottom = TestArchimedean._symmetry(
+            board, lambda cx, cy, x, y: (x, 2 * cy - y))
+        assert top_bottom == 1.0
 
 
 class TestCubeFrame:
@@ -2806,13 +3068,18 @@ class TestWrappedArchimedean:
         else:
             assert spread > 1e-3  # a zigzag; nothing better is available
 
-    @pytest.mark.parametrize("tiling", sorted(_ARCH_CONFIGS))
+    @pytest.mark.parametrize("tiling", sorted(_WRAPPED_TILINGS))
     def test_no_tile_centre_sits_on_the_cut(self, tiling):
         """The cut may not fall on a row of tile *centres*, on either
         surface. A centroid exactly there is kept at the bottom of the strip
         and its image at the top is not, so the strip carries one row more
         than its own reflection -- lopsided on the Mobius strip, mismatched
-        rims on the cylinder."""
+        rims on the cylinder.
+
+        Asked of the tilings that wrap: a flat-only one (the rep-tiles,
+        Durer's tiling) has no rim or seam to fall anywhere, and so leaves
+        its cut at the default rather than choosing one. Wrapping one is what
+        would make it choose, and this test then covers it automatically."""
         template = _arch_template(tiling)
         height = template.height
         for _, refs in template.cells:
