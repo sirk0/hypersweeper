@@ -197,6 +197,90 @@ test.describe("viewport layout", () => {
     expect(c.canvasHeight).toBeCloseTo(812, 0);
   });
 
+  // Nothing in this app is in flow — the board canvas and the `#ui` column are
+  // both fixed layers — so the page has no business scrolling. It used to all
+  // the same: `html { height: 100% }` is the *large* viewport on iOS Safari
+  // (the toolbars retracted), so with the toolbars out, as they are on the
+  // first open, the document stood one toolbar taller than the visible
+  // viewport. A flick then dragged every fixed layer up — the menu title off
+  // the top of the screen, the app's bottom edge clear of the toolbar with a
+  // band of bare white web view under it — and Safari, which re-expands its
+  // toolbars at the end of a scroll, left the page sitting there.
+  for (const toolbar of TOOLBARS) {
+    for (const [where, url] of [
+      ["menu", "/"],
+      ["game", "/?mode=square&difficulty=hard&seed=1"],
+    ] as const) {
+      test(`the ${where} has nothing to scroll under ${toolbar}px of browser chrome`, async ({
+        page,
+      }) => {
+        await stubToolbar(page, toolbar);
+        await page.setViewportSize({ width: 390, height: 844 });
+        await page.goto(url);
+        await expect(page.locator("body[data-ready]")).toBeVisible();
+
+        // The document itself, not `scrollHeight`: headless Chromium's layout
+        // viewport really is the whole window (the stub only lies about the
+        // visual one), and `scrollHeight` never reports less than that. What
+        // iOS measures its scroll slack against is the visible viewport, so
+        // the invariant is that the root box — and everything in flow inside
+        // it — stops there.
+        const doc = await page.evaluate(() => ({
+          rootHeight: document.documentElement.getBoundingClientRect().height,
+          bodyBottom: document.body.getBoundingClientRect().bottom,
+          visible: window.visualViewport!.height,
+        }));
+        expect(doc.rootHeight).toBeCloseTo(doc.visible, 0);
+        expect(doc.bodyBottom).toBeLessThanOrEqual(Math.ceil(doc.visible));
+      });
+    }
+  }
+
+  // Every layer is `--app-h` tall or lives inside one that is. Two used to be
+  // measured off the window instead: the first-run hint, fixed to the bottom of
+  // the layout viewport, sat behind the browser's own toolbar — the one thing a
+  // first-time player is meant to read — and the dialog scrim, `inset: 0`,
+  // covered ground the player could not see with its dialog centred half a
+  // toolbar low.
+  test("the first-run hint and the dialogs stay inside the visible viewport", async ({
+    page,
+  }) => {
+    const toolbar = TOOLBARS.at(-1)!;
+    await stubToolbar(page, toolbar);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    await page.locator('.menu-entry[data-mode="square"]').click();
+
+    const hint = page.locator(".board-hint");
+    await expect(hint).toBeVisible();
+    const seen = await hint.evaluate((el) => ({
+      bottom: el.getBoundingClientRect().bottom,
+      // …and the pill is not a target: the taps it is telling the player about
+      // land on the board underneath it. `#ui > *` makes the chrome tappable,
+      // so this only holds if the hint's own rule outranks that id.
+      pointerEvents: getComputedStyle(el).pointerEvents,
+      visible: window.visualViewport!.height,
+    }));
+    expect(seen.bottom).toBeLessThanOrEqual(Math.ceil(seen.visible));
+    expect(seen.pointerEvents).toBe("none");
+
+    await page.locator('.hud-btn[data-slot="info"]').click();
+    const dialog = page.locator('.dialog-backdrop[data-dialog="info"]');
+    await expect(dialog).toBeVisible();
+    const box = await dialog.evaluate((el) => {
+      const card = el.querySelector(".dialog")!.getBoundingClientRect();
+      return {
+        scrimBottom: el.getBoundingClientRect().bottom,
+        cardCenter: (card.top + card.bottom) / 2,
+        visible: window.visualViewport!.height,
+      };
+    });
+    expect(box.scrimBottom).toBeCloseTo(box.visible, 0);
+    // Centred in what the player can see, not in the window behind the toolbar.
+    expect(box.cardCenter).toBeCloseTo(box.visible / 2, 0);
+  });
+
   test("the menu keeps its difficulty row above the browser chrome", async ({
     page,
   }) => {

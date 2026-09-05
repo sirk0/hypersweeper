@@ -149,6 +149,18 @@ design rather than the rule itself.
   (headless Chromium has no toolbar). One trap: the canvas is a *replaced*
   element, so state both its width and height — an auto one resolves to the
   drawing buffer's size, not to the offsets.
+- **`--app-h` is the whole document, and every layer is measured off it.** That
+  includes `html` and `body` themselves: `height: 100%` is the *large* viewport
+  on iOS Safari just as `100vh` is, so with the toolbars out — which is how
+  every page starts — the document stood one toolbar taller than the visible
+  viewport and the page scrolled, though the app is nothing but fixed layers.
+  One flick then dragged the lot up: the menu title off the top of the screen,
+  a band of bare white web view under the bottom edge, and Safari, which
+  re-expands its toolbars at the end of a scroll, left the page sitting there —
+  the first open, and only the first open, broken. Same rule for anything that
+  wants the bottom of the screen: a `position: fixed` layer's `bottom` is the
+  layout viewport's, so give it `height: var(--app-h)` (the dialog scrim) or
+  position it inside `#ui`, which already has it (the first-run hint).
 - **One measurement is not to be trusted: an iOS home-screen launch.** The app
   runs `apple-mobile-web-app-status-bar-style: black-translucent`, so the page
   is drawn from the very top of the screen, under the status bar — but WebKit

@@ -166,16 +166,36 @@
 html,
 body {
   margin: 0;
-  height: 100%;
+  /* The visible viewport, the same box the app lays out in — NOT `100%`. On
+     iOS Safari `100%` resolves against the initial containing block, which
+     like `100vh` is the *large* viewport (the toolbars retracted). With the
+     toolbars out — which is how every page starts, so this is what the first
+     open looks like — the document then stands one toolbar taller than what
+     the user can actually see, and the page scrolls, even though the app is
+     nothing but fixed layers with nothing in flow to scroll. One flick drags
+     the whole app up by that strip: the menu title goes off the top of the
+     screen and the app's bottom edge lifts clear of the toolbar, leaving a
+     band of bare web view under it (white in every theme — the WebGL canvas
+     is transparent, so there is nothing else down there). Safari re-expands
+     its toolbars at the end of a scroll, so the page settles in exactly that
+     state instead of springing back. Sized to `--app-h` there is no slack to
+     scroll, and the layout viewport and the visible one stay the same box. */
+  height: var(--app-h);
   /* The page field: the theme's colour gradient (flat for every theme whose
      two stops are equal), with the theme's texture layers over it and, on a
      board, that board's own tiling over those. The board canvas is
      transparent, so this shows around the board — and, on a theme whose opened
-     cells are translucent, *through* them. */
+     cells are translucent, *through* them.
+
+     The trailing colour is what the browser paints *outside* the root box: the
+     root's background propagates to the canvas, but only its colour reaches
+     past the box — an overscroll bounce, or the strip a standalone launch
+     leaves below the document (see the `display-mode: standalone` rule above).
+     `--bg2` is the gradient's far end, so the seam does not show. */
   background:
     var(--bg-pattern),
     var(--bg-texture),
-    linear-gradient(160deg, var(--bg), var(--bg2));
+    linear-gradient(160deg, var(--bg), var(--bg2)) var(--bg2);
   color: var(--text);
   font-family: "Rubik", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   overscroll-behavior: none;
@@ -314,9 +334,13 @@ body {
 }
 
 /* Shown once ever, over the board. Absolutely positioned rather than in the
-   column, so the board does not jump when it goes. */
+   column, so the board does not jump when it goes — and inside `#ui`, whose
+   box *is* the visible viewport, rather than fixed to the window: a `fixed`
+   element's bottom is the layout viewport's, which on a phone is the large
+   viewport, so the one thing a first-time player is meant to read sat behind
+   the browser's bottom toolbar. */
 .board-hint {
-  position: fixed;
+  position: absolute;
   left: 50%;
   bottom: max(28px, env(safe-area-inset-bottom));
   transform: translate(-50%, 8px);
@@ -334,7 +358,13 @@ body {
   text-align: center;
   opacity: 0;
   transition: opacity 220ms ease, transform 220ms ease;
-  /* A tap aimed at the board must not be eaten by the hint sitting over it. */
+}
+
+/* A tap aimed at the board must not be eaten by the hint sitting over it — and
+   the hint is a child of `#ui`, so this has to outrank the `#ui > *` rule that
+   makes the chrome tappable. A bare `.board-hint` here loses to that id and the
+   pill quietly swallowed the first taps of the one player who ever sees it. */
+#ui > .board-hint {
   pointer-events: none;
 }
 
@@ -1295,7 +1325,15 @@ body {
    they follow all eight palettes. */
 .dialog-backdrop {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  /* The visible viewport, like every other layer — not `inset: 0`, which is
+     the layout viewport and on a phone runs on under the bottom toolbar: the
+     scrim covered ground the player could not see, and the dialog centred in
+     it sat half a toolbar low, with a tall one's last row cut off by the
+     chrome rather than scrolling inside the box. */
+  height: var(--app-h);
   z-index: 10;
   display: flex;
   align-items: center;
