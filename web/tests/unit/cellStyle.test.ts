@@ -32,14 +32,13 @@ describe("cell styles", () => {
     expect(cellStyle(DEFAULT_CELL_STYLE).key).toBe("flat");
   });
 
-  it("holds exactly the styles the themes name, one each", () => {
+  it("holds exactly the styles the themes name, none orphaned", () => {
     // The table is no longer a picker of its own: every entry must be reachable
-    // through a theme, and every theme must name an entry that exists. It is a
-    // *bijection* now that the colour scheme is its own setting — Light and Dark
-    // were the two themes that shared a style, and they are one theme (Flat).
+    // through a theme, and every theme must name an entry that exists. No longer
+    // a strict bijection — Sand shares Flat's cell style on purpose (a chrome-only
+    // recolour), so themes can now outnumber styles.
     const named = THEME_KEYS.map((k) => themeCellStyle(k));
     expect(new Set(named)).toEqual(new Set(CELL_STYLE_KEYS));
-    expect(named).toHaveLength(CELL_STYLE_KEYS.length);
   });
 
   it("falls back for a style this build does not have", () => {

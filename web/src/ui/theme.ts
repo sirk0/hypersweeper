@@ -134,6 +134,13 @@ const THEMES: Theme[] = [
     cellStyle: "classic",
     palette: { light: "classic", dark: "classicDark" },
   },
+  {
+    key: "sand",
+    label: "Sand",
+    hint: "Warm terracotta chrome on a cream ground",
+    cellStyle: "flat",
+    palette: { light: "sand", dark: "sandDark" },
+  },
 ];
 
 const BY_KEY = new Map(THEMES.map((t) => [t.key, t]));
