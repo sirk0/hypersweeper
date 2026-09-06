@@ -45,7 +45,8 @@ import type { ModalHandle } from "./ui/modal";
 import { openScoreDialog } from "./ui/scoreDialog";
 import type { SettingsHost } from "./ui/settings";
 import { cellStyle } from "./render/cellStyle";
-import { applyTheme, onSchemeChange, themeCellStyle, type SchemePref } from "./ui/theme";
+import { applyTheme, onSchemeChange, theme, themeCellStyle, type SchemePref } from "./ui/theme";
+import { setIconPalette } from "./ui/icons";
 import {
   animationsEnabled,
   loadSettings,
@@ -162,6 +163,10 @@ class App {
     // The flag the header flies is the theme's (see `Hud.setTheme`). Set here
     // rather than in `paintTheme`, which runs once before this exists.
     this.hud.setTheme(this.settings.theme);
+    // ...and so are the menu glyphs. Before `new Menu` below, because an icon is
+    // a string of SVG with its colours baked in and the menu asks for them as it
+    // renders.
+    setIconPalette(theme(this.settings.theme).icons);
     this.menu = new Menu(
       // Flat and 3D deal a board; every other row names one.
       (sel) =>
@@ -314,6 +319,11 @@ class App {
     // is only reachable from the menu.
     this.paintTheme();
     this.hud.setTheme(key);
+    // The menu glyphs are baked strings, so they need repainting and the menu
+    // needs re-rendering — the theme picker is itself a menu page, so the rows
+    // behind it are on screen while this happens.
+    setIconPalette(theme(key).icons);
+    this.menu.refresh();
   }
 
   /** Unlike a theme this lands whole and at once: a scheme is the chrome

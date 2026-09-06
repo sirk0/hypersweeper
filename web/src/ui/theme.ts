@@ -1,6 +1,7 @@
 import { hasTheme as hasPalette, themeSpec as paletteSpec, type ThemeSpec } from "../config/screens";
 import { cellStyle } from "../render/cellStyle";
 import { patternLayer } from "./backgroundPattern";
+import type { IconPalette } from "./icons";
 
 // The app's look is **two** settings, on two axes that have nothing to say to
 // each other:
@@ -78,6 +79,11 @@ export interface Theme {
    * field they were designed as, and only Realistic has translucent opened
    * cells for the pattern to show through. */
   patterned?: boolean;
+  /** How this theme paints the menu glyphs (`ui/icons.ts`), if not in the set's
+   * own vivid indigo-referenced register. A theme-level setting rather than a
+   * cell-style one because a menu icon is chrome: it is on screen when no board
+   * is, and it sits among the cards and labels the palette above dresses. */
+  icons?: IconPalette;
 }
 
 /** The Realistic theme's grain: a fine woven texture so the board's translucent
@@ -126,6 +132,40 @@ const SAND_PAGE: Record<Scheme, string> = {
   dark: `${woven(0.12)}, radial-gradient(120% 90% at 50% 0%, #3a332a 0%, #3a332a00 55%), radial-gradient(140% 110% at 50% 100%, #00000088 0%, #00000000 60%)`,
 };
 
+/** Sand's menu glyphs: the same drawings, in the design system's register
+ * rather than the icon set's own.
+ *
+ * The default set is drawn *vivid* — each hue near the lightness where it is
+ * most colourful, at 85% of the chroma available there — because it was made to
+ * carry on a white card. On this page that reads as poster colour stuck onto a
+ * warm ground, and it is the one thing left that still shouts after the board
+ * was turned down.
+ *
+ * So: one lightness for every hue (0.68 — the tone the bound design system's
+ * ramps sit their base step at, and the level its own marks were drawn at), and
+ * about 60% of the chroma to hand. Two things follow from holding the lightness
+ * flat. A red row and a green row carry the same weight in a list, which the
+ * per-hue cusp lightness cannot promise; and the numbers land where the study's
+ * marks did — a triangle at this lightness comes out within a hair of the
+ * terracotta the design drew, without the hue ever being overridden, because
+ * the shape's own hue was already nearly that colour.
+ *
+ * The hue is deliberately *not* touched: that is the thread tying a menu row to
+ * the board it opens (a triangle is red in both), and the study's two-accent
+ * marks were a mockup's shorthand, not a system that could name the hundred-odd
+ * glyphs this set actually holds.
+ *
+ * `plain` is the other half. The non-tile art — the question mark, the surface
+ * tubes, the frames and hairlines — falls back to gui.py's indigo, which on a
+ * cream page is simply a foreign colour. Sage is the design system's second
+ * voice and what its own non-tile mark (the Sphere row's dodecagon) was drawn
+ * in, so the four variants are its ramp: 400 light, 500 base, 600 outline,
+ * 700 dark. */
+const SAND_ICONS: IconPalette = {
+  tint: { lightness: 0.68, chroma: 0.6 },
+  plain: { base: "#8fa073", light: "#aebf92", dark: "#56633f", outline: "#728157" },
+};
+
 const THEMES: Theme[] = [
   {
     key: "realistic",
@@ -157,6 +197,7 @@ const THEMES: Theme[] = [
     cellStyle: "sand",
     palette: { light: "sand", dark: "sandDark" },
     texture: SAND_PAGE,
+    icons: SAND_ICONS,
     // No `patterned`, though the translucent opened cells would carry one: the
     // page this theme was drawn against is grain and light and nothing else, and
     // a tiling hairline under a board already turned down this far would be one

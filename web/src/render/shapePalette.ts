@@ -92,6 +92,30 @@ export interface BoardTint {
 /** The four shades an icon paints one shape in. */
 export type IconVariant = "base" | "light" | "dark" | "outline";
 
+/** A theme's own adjustment to the menu icons' saturation register — the same
+ * idea as `BoardTint` one surface over.
+ *
+ * What it does *not* touch is the hue: a menu icon takes its hue from the side
+ * count exactly as the board does, so a triangle stays the same red in both
+ * places (see `SHAPE_PALETTE.icon`). All a theme may say is how vivid the set is
+ * drawn and at what lightness — which is what separates an icon set that reads
+ * as part of a warm, quiet page from one that reads as poster colour on top of
+ * it. */
+export interface IconTint {
+  /** The OkLCh lightness *every* hue is drawn at, replacing the per-hue
+   * cusp blend outright.
+   *
+   * The default deliberately puts each hue near its own most colourful
+   * lightness, because the set is chasing vividness and sRGB has no vivid
+   * orange where it has vivid indigo. A theme that is not chasing vividness
+   * wants the opposite: one lightness for the whole set, so a red icon and a
+   * green one carry the same weight in a list of rows. */
+  lightness?: number;
+  /** Fraction of the chroma available at that lightness, replacing
+   * `SHAPE_PALETTE.icon.chroma`. */
+  chroma?: number;
+}
+
 export const SHAPE_PALETTE = {
   /** [sides, OkLCh hue°]; linear in between, clamped outside. Monotone, so the
    * ramp walks one way round the wheel and 3-4-5-6 change gradually. The
@@ -819,11 +843,12 @@ const iconBase = hexToLch(SHAPE_PALETTE.icon.base);
 
 /** The hex a menu icon paints this shape in — same hue and regularity as the
  * board, at the icon set's own saturation. */
-export function iconHex(tone: ShapeTone, variant: IconVariant): string {
+export function iconHex(tone: ShapeTone, variant: IconVariant, tint?: IconTint): string {
   const { lightnessBlend, chroma, lightness, chromaScale } = SHAPE_PALETTE.icon;
   const hue = hueForTone(tone);
   const cusp = cuspLightness(hue);
-  const l = cusp + (iconBase.l - cusp) * lightnessBlend + lightness[variant];
-  const available = maxChroma(l, hue) * chroma * chromaScale[variant];
+  const level = tint?.lightness ?? cusp + (iconBase.l - cusp) * lightnessBlend;
+  const l = level + lightness[variant];
+  const available = maxChroma(l, hue) * (tint?.chroma ?? chroma) * chromaScale[variant];
   return lchToHex(toneLch(tone, l, available));
 }
