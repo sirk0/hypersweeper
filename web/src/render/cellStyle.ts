@@ -5,8 +5,9 @@ import type { BoardTint } from "./shapePalette";
 //
 // A style is no longer a setting of its own: the **theme** names one (see
 // ui/theme.ts), so picking "Classic" or "Realistic" changes the chrome and the
-// board together rather than leaving the player to pair two lists by hand.
-// There is one table entry per theme, and the keys match the theme keys.
+// board together rather than leaving the player to pair two lists by hand. A
+// theme *composes* a style with a pair of palettes, so the two lists are not
+// one to one: Flat and Flat Sand are the same cut on different chrome.
 //
 // A cell is a stack of concentric loops of its own polygon: loop 0 is the
 // tile's outline on the board surface, each further loop is pulled in toward
@@ -380,10 +381,10 @@ const SAND: CellStyle = {
   digitFont: '"Space Grotesk", "Rubik", sans-serif',
 };
 
-/** The styles, one per theme (`ui/theme.ts` names them by these keys). Two
- * themes share `flat` — Light and Dark differ in chrome, not in how a tile is
- * cut — which is why this is still a table of its own rather than a field
- * inlined into each theme. */
+/** The styles (`ui/theme.ts` names them by these keys). Fewer than there are
+ * themes: Flat and Flat Sand share `flat`, differing in chrome rather than in
+ * how a tile is cut, which is why this is still a table of its own rather than
+ * a field inlined into each theme. */
 export const CELL_STYLES: Record<string, CellStyle> = {
   flat: FLAT,
   classic: CLASSIC,

@@ -34,14 +34,18 @@ describe("cell styles", () => {
     expect(cellStyle(DEFAULT_CELL_STYLE).key).toBe("flat");
   });
 
-  it("holds exactly the styles the themes name, one each", () => {
+  it("holds exactly the styles the themes name, and no orphans", () => {
     // The table is no longer a picker of its own: every entry must be reachable
-    // through a theme, and every theme must name an entry that exists. It is a
-    // *bijection* now that the colour scheme is its own setting — Light and Dark
-    // were the two themes that shared a style, and they are one theme (Flat).
+    // through a theme, and every theme must name an entry that exists. Not a
+    // *bijection*, though it was one while every theme cut its cells its own
+    // way: Flat and Flat Sand name the same style and differ in chrome, so a
+    // style may be named twice. What must not happen is either half going
+    // unmatched — a theme naming a style this table has not got (which would
+    // silently fall back to Flat) or an entry no picker row can reach. Compared
+    // as sets for exactly that reason: it is the two directions that matter,
+    // and a count would only re-assert the bijection this stopped being.
     const named = THEME_KEYS.map((k) => themeCellStyle(k));
     expect(new Set(named)).toEqual(new Set(CELL_STYLE_KEYS));
-    expect(named).toHaveLength(CELL_STYLE_KEYS.length);
   });
 
   it("falls back for a style this build does not have", () => {

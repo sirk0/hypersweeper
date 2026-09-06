@@ -114,11 +114,12 @@ test.describe("settings", () => {
     await expect(page.locator(".menu-entry[data-theme]")).toHaveCount(0);
 
     await row.click();
-    // The themes this build ships: Realistic, Flat, Classic, Sand. A literal
-    // rather than THEME_KEYS.length — importing ui/theme here drags in the
-    // screens JSON, which Playwright's loader will not take — so adding a theme
-    // means updating this, which is the point: a new one should be looked at.
-    await expect(page.locator(".menu-entry[data-theme]")).toHaveCount(4);
+    // The themes this build ships: Realistic, Flat, Classic, Sand, Flat Sand. A
+    // literal rather than THEME_KEYS.length — importing ui/theme here drags in
+    // the screens JSON, which Playwright's loader will not take — so adding a
+    // theme means updating this, which is the point: a new one should be looked
+    // at.
+    await expect(page.locator(".menu-entry[data-theme]")).toHaveCount(5);
     await expect(page.locator('.menu-entry[data-action="back"]')).toContainText("Theme");
 
     // Back lands on settings, not the root menu, and the row has followed.
@@ -244,7 +245,7 @@ test.describe("settings", () => {
       const keys = await page
         .locator(".menu-entry[data-theme]")
         .evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset["theme"] ?? ""));
-      expect(keys.length).toBe(4); // see the theme-picker test above
+      expect(keys.length).toBe(5); // see the theme-picker test above
       for (const key of keys) {
         await page.locator(`.menu-entry[data-theme="${key}"]`).click();
         for (const name of ["--bg", "--panel", "--text", "--accent", "--counter-bg"]) {
