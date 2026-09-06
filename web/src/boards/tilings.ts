@@ -228,6 +228,25 @@ export interface ArchTemplate {
   straight: Map<string, { t: number; a: Ref; b: Ref }>; // tag -> the chord it
   // belongs on: a fraction `t` of the way from `a` to `b`. Empty for every
   // edge-to-edge template. See straightVertices and straightenPositions.
+  anchors?: Map<string, Vertex>; // GLYPH ANCHORS, per domain cell, in domain
+  // coordinates: where to centre the number/flag/mine on a tile whose corner
+  // mean is a poor spot for it. `polygonBoard` sizes a glyph by the distance
+  // from its centre to the nearest edge, so on a concave or lopsided tile the
+  // mean can leave no room at all — the L-tromino's sits *on* its reflex
+  // corner (a glyph of size zero, invisible) and the sphinx's is squeezed
+  // against the notch, a third of the circle the tile can hold. The same
+  // mechanism as `Substitution.glyphAnchor` in boards/fractal.ts, which the
+  // chair board has always used; unset for a tile whose mean already fits.
+  grain: [number, number]; // THE GRAIN: the spacing of the straight lines the
+  // tiling never crosses, along x and y, measured from the window centre; 0
+  // where it has none. `archimedeanBoard` snaps its flat window onto them, so
+  // the board ends on one of those lines and its edge comes out straight
+  // instead of a row of tiles kept by half. Most tilings have no grain at all
+  // (a hexagon straddles every horizontal line there is, whichever one you
+  // pick), which is why this is declared per template rather than derived from
+  // the domain: what makes a line grain is that no *tile* crosses it, not that
+  // the pattern repeats there. A period must divide the domain's, or the
+  // centre copy the window is built around would not sit on a line.
 }
 
 // THE CUT. Two surfaces end the tiling on a horizontal line: the cylinder,
@@ -276,6 +295,8 @@ function template(
     glide = false,
     centre = null as Vertex | null,
     cut = 0,
+    grain = [0, 0] as [number, number],
+    anchors = undefined as Map<string, Vertex> | undefined,
   } = {},
 ): ArchTemplate {
   const reduce = (value: number, size: number): [number, number] => {
@@ -292,6 +313,7 @@ function template(
 
   const verts = new Map<string, Vertex>();
   const cells: { name: string; refs: Ref[] }[] = [];
+  const placed = new Map<string, Vertex>();
   for (const [name, polygon] of polygons) {
     let refs: Ref[] = [];
     for (const [x, y] of polygon) {
@@ -314,6 +336,11 @@ function template(
     const nshift = Math.floor(cy / height + 1e-9);
     refs = refs.map((r) => ({ tag: r.tag, dm: r.dm - mshift, dn: r.dn - nshift }));
     cells.push({ name, refs });
+    // a glyph anchor rides with its cell, so it takes the same shift
+    const anchor = anchors?.get(name);
+    if (anchor) {
+      placed.set(name, [anchor[0] - mshift * width, anchor[1] - nshift * height]);
+    }
   }
 
   const wrapGap = (delta: number, size: number): number => {
@@ -362,6 +389,8 @@ function template(
     cut,
     straight: straightVertices(verts, split, width, height),
     flips: flipLevels(width, height, polygons),
+    grain,
+    ...(placed.size ? { anchors: placed } : {}),
   };
 }
 
@@ -1447,9 +1476,224 @@ function herringboneTemplate(): ArchTemplate {
   return template([4], 2, 2, cells, { mirrored: false, cut: 0.125 });
 }
 
+/** Place one glyph anchor per domain cell, for a domain whose tiles are all
+ * translates of a couple of base shapes.
+ *
+ * `periodicDomain` lays the same tile down at many lattice points and names the
+ * copies as it goes, so the anchor a tile carries has to be moved with it. A
+ * copy is matched to its base by *shape*: same vertex count, and every vertex
+ * the same distance from the first, which for a set of translates is exact and
+ * needs no bookkeeping from the caller. Called before `template`, on the raw
+ * polygons — after it, cells carry T-vertices and no longer match one for one.
+ */
+function translatedAnchors(
+  cells: readonly (readonly [string, Vertex[]])[],
+  bases: readonly { polygon: Vertex[]; anchor: Vertex }[],
+): Map<string, Vertex> {
+  const anchors = new Map<string, Vertex>();
+  for (const [name, points] of cells) {
+    const base = bases.find(
+      (b) =>
+        b.polygon.length === points.length &&
+        points.every(
+          (p, i) =>
+            Math.abs(p[0] - points[0]![0] - (b.polygon[i]![0] - b.polygon[0]![0])) < 1e-9 &&
+            Math.abs(p[1] - points[0]![1] - (b.polygon[i]![1] - b.polygon[0]![1])) < 1e-9,
+        ),
+    );
+    if (!base) throw new Error(`no base tile for ${name}`);
+    anchors.set(name, [
+      base.anchor[0] + points[0]![0] - base.polygon[0]![0],
+      base.anchor[1] + points[0]![1] - base.polygon[0]![1],
+    ]);
+  }
+  return anchors;
+}
+
+// -- the "Other" family: the rep-tiles, and Dürer's tiling -------------------
+//
+// Three tilings whose tile the fractal boards already build a self-similar
+// patch out of (boards/fractal.ts): the sphinx, the chair and the pentaflake's
+// pentagon. Inflating one of those tiles is a fractal; laying the same tile
+// down periodically is an ordinary wallpaper pattern, and that is what these
+// templates are. They ship on the plane only for now — no cut is chosen and no
+// surface builder wraps them (FLAT_ONLY_ARCH_FAMILIES in catalog.ts).
+
+/** The sphinx, laid down periodically (p2).
+ *
+ * The sphinx is the pentagonal hexiamond — six unit triangles, sides 3, 1, 1,
+ * 1, 2 — and two of them, one half-turned, fill the parallelogram spanned by
+ * (3, 0) and (1, √3). That lattice is not rectangular, but it contains
+ * (0, 3√3), so three parallelograms stacked up the diagonal make a 3 x 3√3
+ * rectangle holding six sphinxes.
+ *
+ * Every tile is a translate or a half turn of every other (the sphinx has no
+ * mirror symmetry of its own, and no reflected copy appears here), so the
+ * pattern is p2: half turns and nothing else. The window is pinned to the
+ * origin because of that — a sphinx centroid is no kind of symmetry centre,
+ * but the corner where six of them meet is one of the four half-turn centres
+ * per lattice cell.
+ *
+ * Its **grain** runs horizontally, every √3: each sphinx lies inside one such
+ * band (a flat side along the bottom, an apex at the top, and the half-turned
+ * one the other way up beside it), so no tile crosses those lines and a window
+ * ending on one ends on a straight edge. There is no vertical grain to match:
+ * the bands step a unit sideways as they stack, so every vertical line runs
+ * through some sphinx, and the board's left and right edges are a staircase
+ * whatever the window does. */
+function sphinxpairsTemplate(): ArchTemplate {
+  const outline: Vertex[] = [
+    [0, 0],
+    [1, 0],
+    [2, 0],
+    [3, 0],
+    [2.5, ROOT3 / 2],
+    [1.5, ROOT3 / 2],
+    [1, ROOT3],
+    [0.5, ROOT3 / 2],
+  ];
+  // half turn about (2, √3/2)
+  const turned = outline.map(([x, y]): Vertex => [4 - x, ROOT3 - y]);
+  const cells = periodicDomain([3, 0], [1, ROOT3], 3, 3 * ROOT3, [
+    ["sphinx", outline],
+    ["turned", turned],
+  ]);
+  // The glyph goes where the tile holds its biggest circle, not on the corner
+  // mean: the mean sits under the notch and leaves a third of the room. This
+  // point — a third of the way along the tile, √3/3 up — is where the circle
+  // touching the long side, the left side and the notch's corner is centred,
+  // and it is SPHINX's anchor in boards/fractal.ts too, so the sphinx's two
+  // boards number their tiles alike.
+  const anchor: Vertex = [1, ROOT3 / 3];
+  return template([5], 3, 3 * ROOT3, cells, {
+    mirrored: false,
+    centre: [0, 0],
+    grain: [0, ROOT3],
+    anchors: translatedAnchors(cells, [
+      { polygon: outline, anchor },
+      { polygon: turned, anchor: [4 - anchor[0], ROOT3 - anchor[1]] },
+    ]),
+  });
+}
+
+/** The chair — the L-tromino — laid down periodically (p2).
+ *
+ * Three unit squares in an L, and two of them (one half-turned) fill a 3 x 2
+ * rectangle that tiles the plane by translation. Like the sphinx pattern this
+ * is p2, with no mirror: reflecting the L pair leaves the two halves swapped
+ * the wrong way round, whichever axis it is reflected in. A tile centroid is
+ * not a half-turn centre, so the window is pinned to the origin instead: the
+ * lattice corner where four L's meet.
+ *
+ * Not edge to edge: an L's long side is two units against its neighbours' one,
+ * so a neighbour's corner lands in the middle of it and carries a T-vertex
+ * (insertTVertices adds it).
+ *
+ * The **grain** runs both ways here, and is the domain itself: the pair fills
+ * its 3 x 2 rectangle and nothing overhangs it, so a window ending on any
+ * multiple of 3 across or 2 up ends on a straight edge — this is the one
+ * tiling in the zoo whose flat board is a clean rectangle on all four
+ * sides. */
+function trominoTemplate(): ArchTemplate {
+  const outline: Vertex[] = [
+    [0, 0],
+    [2, 0],
+    [2, 1],
+    [1, 1],
+    [1, 2],
+    [0, 2],
+  ];
+  // half turn about (1.5, 1)
+  const turned = outline.map(([x, y]): Vertex => [3 - x, 2 - y]);
+  // The glyph goes in the middle of the elbow square — the one touching both
+  // of the tile's other two — exactly as CHAIR does in boards/fractal.ts, so
+  // the chair's two boards number their tiles alike. The corner mean is no
+  // use here at all: it lands *on* the reflex corner, outside the tile, and a
+  // glyph sized by its distance to the nearest edge comes out at zero.
+  const anchor: Vertex = [0.5, 0.5];
+  return template([6], 3, 2, [
+    ["chair", outline],
+    ["turned", turned],
+  ], {
+    mirrored: false,
+    centre: [0, 0],
+    grain: [3, 2],
+    anchors: new Map<string, Vertex>([
+      ["chair", anchor],
+      ["turned", [3 - anchor[0], 2 - anchor[1]]],
+    ]),
+  });
+}
+
+/** Dürer's pentagon tiling (cmm): regular pentagons and thin rhombs.
+ *
+ * Regular pentagons cannot tile the plane — three of them round a vertex leave
+ * a 36° gap — and the pentaflake board leaves those gaps open as its fractal's
+ * holes. Fill each one with the 36° rhomb of the same edge and the pattern
+ * closes up periodically instead; Dürer drew it in the *Underweysung der
+ * Messung* (1525).
+ *
+ * The pentagons lie in rows, point up, one φ apart, so that each touches its
+ * neighbour at the shoulder; a row of point-down pentagons sits under them on
+ * the same lattice. Between two neighbours in a row that leaves a golden
+ * gnomon (sides 1, 1, 1/φ) above the row line and its mirror image below, and
+ * the two together are the rhomb. Rows stack on the lattice `v1`/`v2` below,
+ * each band's pentagons dropping into the notches the band under it leaves.
+ *
+ * Laid out this way the pattern is **cmm**: a mirror along every row line
+ * (y = 0 and y = height/2, which is the pair `template` records), a mirror
+ * through every pentagon's own axis and through every rhomb (x = 1/2 and
+ * x = 1/2 + φ/2), and a half turn where those cross. A window centred on one
+ * of those crossings is symmetric left to right *and* top to bottom, which is
+ * why `centre` is pinned to the rhomb's middle rather than left to the
+ * biggest-tile rule — a pentagon has no central symmetry to offer. (The other
+ * pentagon-and-rhomb arrangement, two pentagons joined by a 108° turn, is only
+ * pm: one mirror direction, so one symmetric axis. Same tiles, same density, a
+ * less symmetric board.)
+ *
+ * Everything here has unit edges at multiples of 36°, i.e. it lives in Z[ζ10],
+ * the pentaflake's own ring (boards/fractal.ts). */
+function durerTemplate(): ArchTemplate {
+  const cos72 = Math.cos(72 * DEG);
+  const sin72 = Math.sin(72 * DEG);
+  const apex = sin72 + Math.sin(36 * DEG); // the pentagon's height
+  const phi = 1 + 2 * cos72;
+  // the point-up pentagon on the row line, the point-down one under it, and
+  // the rhomb the two gnomons between neighbours make
+  const up: Vertex[] = [
+    [0, 0],
+    [1, 0],
+    [1 + cos72, sin72],
+    [0.5, apex],
+    [-cos72, sin72],
+  ];
+  const down: Vertex[] = up.map(([x, y]): Vertex => [x, -y]);
+  const rhomb: Vertex[] = [
+    [1 + cos72, sin72],
+    [1, 0],
+    [1 + cos72, -sin72],
+    [1 + 2 * cos72, 0],
+  ];
+  // a row repeats every φ; the next band up sits a shoulder above an apex.
+  // Twice that, less one row step, is (0, 2(sin72 + apex)) — so the domain is
+  // φ wide and two bands tall, and holds six tiles.
+  const v1: Vertex = [phi, 0];
+  const v2: Vertex = [0.5 + cos72, sin72 + apex];
+  const height = 2 * v2[1];
+  const cells = periodicDomain(v1, v2, phi, height, [
+    ["up", up],
+    ["down", down],
+    ["rhomb", rhomb],
+  ]);
+  return template([5, 4], phi, height, cells, {
+    mirrored: true,
+    centre: [1 + cos72, 0],
+  });
+}
+
 // -- registry ----------------------------------------------------------------
 
-export type ArchFamily = "uniform" | "dual" | "isogonal" | "rectangle";
+export type ArchFamily = "uniform" | "dual" | "isogonal" | "rectangle" | "other";
 
 export interface ArchTiling {
   key: string;
@@ -1457,10 +1701,13 @@ export interface ArchTiling {
   config: number[];
   edgeDirections: number;
   template: () => ArchTemplate;
-  /** "uniform" (Archimedean), "dual" (Laves), "isogonal" (not edge to edge) or
-   * "rectangle" (a bond of congruent rectangles, not edge to edge either). The
-   * uniform and isogonal families are vertex-transitive; the duals and the
-   * bonds are face-transitive instead. */
+  /** "uniform" (Archimedean), "dual" (Laves), "isogonal" (not edge to edge),
+   * "rectangle" (a bond of congruent rectangles, not edge to edge either), or
+   * "other" — the tilings that answer to none of those, and so claim nothing
+   * as a family: two rep-tile patterns (one congruent polyform in half-turned
+   * pairs, not edge to edge) and Dürer's (a pentagon *and* a rhomb, edge to
+   * edge). The uniform and isogonal families are vertex-transitive, the duals
+   * and the bonds face-transitive. */
   family: ArchFamily;
   /** The tiling maps onto itself under some 180° rotation — true of every
    * wallpaper group here except p3 (three-scale triangular). */
@@ -1509,6 +1756,14 @@ export const ARCH_TILINGS: ArchTiling[] = [
   { key: "basketweave", label: "Basket weave", config: [4], edgeDirections: 2, template: basketweaveTemplate, family: "rectangle", halfTurn: true },
   { key: "basketweave3", label: "Basket weave 3x3", config: [4], edgeDirections: 2, template: () => basketweaveTemplate(3), family: "rectangle", halfTurn: true },
   { key: "herringbone", label: "Herringbone", config: [4], edgeDirections: 2, template: herringboneTemplate, family: "rectangle", halfTurn: true },
+  // "Other": the tilings that are none of the four families above. Two are
+  // rep-tiles — one congruent polyform laid down in half-turned pairs rather
+  // than inflated (the fractal boards do the inflating) — and their config is
+  // the tile, as it is for a bond: one pentagon, one hexagon. Dürer's has two
+  // tile shapes, so its config lists both.
+  { key: "sphinxpairs", label: "Sphinx pairs", config: [5], edgeDirections: 3, template: sphinxpairsTemplate, family: "other", halfTurn: true },
+  { key: "tromino", label: "L-tromino", config: [6], edgeDirections: 2, template: trominoTemplate, family: "other", halfTurn: true },
+  { key: "durer", label: "Dürer pentagonal", config: [5, 4], edgeDirections: 5, template: durerTemplate, family: "other", halfTurn: true },
 ];
 
 const ARCH_BY_KEY = new Map(ARCH_TILINGS.map((t) => [t.key, t]));
@@ -1549,6 +1804,20 @@ export function templateCells(
  * built from the tiling's periodic domain (the same template that wraps the
  * donut/cylinder/Möbius/Klein). The window is centred on the larger tile
  * nearest the middle so the patch is symmetric under the tiling's point group. */
+/** Round a window's half-extent to a whole number of grain lines.
+ *
+ * A window that ends between two of them ends inside a course of tiles, and the
+ * centroid rule then keeps some of that course and drops the rest — the row of
+ * half-kept tiles that leaves a board's edge looking chewed. Rounding to the
+ * nearest line costs at most half a course of cells (the size search measures
+ * what it actually gets) and buys a straight edge. Never rounds down to
+ * nothing: one course is the smallest board there is. Must match
+ * `_snap_to_grain` in `minesweeper/boards/tilings.py` exactly. */
+function snapToGrain(half: number, period: number): number {
+  if (!period) return half;
+  return Math.max(1, Math.floor(half / period + 0.5)) * period;
+}
+
 export function archimedeanBoard(
   tiling: string,
   nx: number,
@@ -1569,6 +1838,11 @@ export function archimedeanBoard(
     verts: { m: number; n: number; tag: string }[];
     centroid: Vertex;
     size: number;
+    /** Which domain cell this is, and which copy of the domain — what a glyph
+     * anchor (stated once per domain cell) has to be moved by. */
+    m: number;
+    n: number;
+    name: string;
   }
   const grown = new Map<CellId, Grown>();
   for (let m = 0; m < nx + 2; m++) {
@@ -1586,6 +1860,9 @@ export function archimedeanBoard(
           verts,
           centroid: [cx / verts.length, cy / verts.length],
           size: verts.length,
+          m,
+          n,
+          name,
         });
       }
     }
@@ -1624,8 +1901,8 @@ export function archimedeanBoard(
     }
   }
 
-  const halfW = (nx * W) / 2;
-  const halfH = (ny * H) / 2;
+  const halfW = snapToGrain((nx * W) / 2, t.grain[0]);
+  const halfH = snapToGrain((ny * H) / 2, t.grain[1]);
   // The window is closed at both ends, so a row of centroids landing exactly
   // on it is kept on *both* sides and the patch stays symmetric about the
   // centre. That makes the tolerance load-bearing rather than cosmetic: a
@@ -1638,6 +1915,7 @@ export function archimedeanBoard(
   const slack = 1e-6 * Math.max(1, W, H);
   const cells = new Map<CellId, string[]>();
   const positions = new Map<string, Vertex>();
+  const kept: [CellId, Grown][] = [];
   for (const [cell, g] of grown) {
     if (
       Math.abs(g.centroid[0] - cx0) <= halfW + slack &&
@@ -1649,7 +1927,30 @@ export function archimedeanBoard(
         return ks;
       });
       cells.set(cell, keys);
+      kept.push([cell, g]);
     }
   }
-  return finalizeFlat(tiling, cells, positions, mineCount, scale);
+  const board = finalizeFlat(tiling, cells, positions, mineCount, scale);
+  if (!t.anchors) return board;
+  // Match finalizeFlat's own shift-then-scale exactly, off the same
+  // `positions` it read — an anchor is not one of the cell's vertices, so it
+  // is not already in there. (The same two steps as `withGlyphAnchors` in
+  // boards/fractal.ts, for the same reason.)
+  let minX = Infinity;
+  let minY = Infinity;
+  for (const p of positions.values()) {
+    if (p[0] < minX) minX = p[0];
+    if (p[1] < minY) minY = p[1];
+  }
+  const glyphAnchor = new Map<CellId, Vertex>();
+  for (const [cell, g] of kept) {
+    const anchor = t.anchors.get(g.name);
+    if (anchor) {
+      glyphAnchor.set(cell, [
+        (anchor[0] + g.m * W - minX) * scale,
+        (anchor[1] + g.n * H - minY) * scale,
+      ]);
+    }
+  }
+  return { ...board, glyphAnchor };
 }

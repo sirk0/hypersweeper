@@ -4,9 +4,12 @@ import { writeFileSync } from "node:fs";
 import { menuIcon } from "../src/ui/icons";
 import {
   DUAL_ARCH,
+  FLAT_ONLY_FAMILIES,
   ISOGONAL_ARCH,
   MENU,
   MODE_LABELS,
+  PICKER_FAMILIES,
+  OTHER_ARCH,
   RECTANGLE_ARCH,
   SHAPED_MODES,
   SOLID_GROUPS,
@@ -21,15 +24,13 @@ const groups: [string, string[]][] = [
   ["Home page", [...(MENU.root as string[])]],
   ["Surfaces", ["flat", "cylinder", "mobius", "klein", "torus"]],
   ["Regular tilings", MENU.pickerRegular as string[]],
-  [
-    "Families / random",
-    ["regular", "uniform", "dual", "isogonal", "rectangle", "aperiodic",
-     "fractal", "random"],
-  ],
+  // derived, so a new family row cannot go stale here either
+  ["Families / random", [...PICKER_FAMILIES, ...FLAT_ONLY_FAMILIES, "random"]],
   ["Uniform tilings", UNIFORM_ARCH],
   ["Dual-uniform tilings", DUAL_ARCH],
   ["Isogonal tilings", ISOGONAL_ARCH],
   ["Congruent rectangles", RECTANGLE_ARCH],
+  ["Other", OTHER_ARCH],
   ["Aperiodic", MENU.aperiodic as string[]],
   ["Fractal", MENU.fractal as string[]],
   ...SOLID_GROUPS.map((group) => [group.label, [...group.modes]] as [string, string[]]),

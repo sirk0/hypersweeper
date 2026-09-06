@@ -2126,7 +2126,7 @@
         "name": "family",
         "label": "Family",
         "description": "",
-        "query": "all,regular,uniform,dual,isogonal,rectangle,aperiodic,fractal,sphere,platonic,catalan,polyhedra,volume",
+        "query": "all,regular,uniform,dual,isogonal,rectangle,other,aperiodic,fractal,sphere,platonic,catalan,polyhedra,volume",
         "current": {
           "selected": true,
           "text": "all",
@@ -2162,6 +2162,11 @@
             "selected": false,
             "text": "rectangle",
             "value": "rectangle"
+          },
+          {
+            "selected": false,
+            "text": "other",
+            "value": "other"
           },
           {
             "selected": false,

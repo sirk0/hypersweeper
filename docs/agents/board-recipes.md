@@ -212,10 +212,104 @@ automatically: regular tiles, one vertex species, and a domain whose tiles'
 areas sum to its own (no gaps, no overlaps). `TestWrappedArchimedean` covers
 the wrapped surfaces the same way it does for the uniform/dual families.
 
-A brand new *family* with no wrap builders yet can still stay flat-only by
-adding its name to `catalog.FLAT_ONLY_FAMILIES` (the aperiodic and fractal
-boards, which have no periodic domain to glue a seam with — every family that
-*is* a tiling registry wraps); that flag is per family, not per tiling.
+A brand new *family* with no wrap builders yet can stay flat-only two ways,
+and which one it takes depends on what its members are. A family of **one-off
+boards** — the aperiodic and fractal ones, which have no periodic domain to
+glue a seam with — goes in `catalog.FLAT_ONLY_FAMILIES`, whose members are
+modes rather than tiling keys and which is only offered on the plane. A family
+of **tilings** that has not been wrapped yet goes in `_FLAT_ONLY_FAMILIES`
+instead: that sets `TilingSpec.flat_only` on every member, so `allows()`
+refuses every surface but the plane and `picker_families` drops the family from
+the manifold pickers because it has no enabled row left. See "Recipe: add a
+flat-only tiling family" below. Both flags are per family, not per tiling.
+
+## Recipe: add a flat-only tiling family
+
+The last family in `ARCH_TILINGS`, `family="other"`, is the tilings that
+answer to none of the four above — today the fractal boards' own tiles laid
+down **periodically** instead of inflated, and they ship on the plane alone:
+the sphinx as `sphinxpairs`, the chair as `tromino`, and Dürer's pentagon
+tiling as `durer`. Everything about them is an ordinary `_ArchTemplate` — they
+simply have no wrap builder or preset window yet, and the flat-only flag is
+what says so rather than a missing row somewhere. Being a grab-bag, the family
+claims nothing in `_FAMILY_TRAITS`; each member's own test class asserts what
+holds of it.
+The mode strings are `sphinxpairs`, `tromino`, `durer`; the fractal boards keep
+`sphinx`, `chair` and `pentaflake`, which is why the tilings could not reuse
+those keys.
+
+Adding one, or adding a tiling to one:
+
+1. **Template** — as for any periodic tiling, but say what the pattern really
+   is. Both rep-tiles are **p2**: no mirror at all (`mirrored=False`), and a
+   tile centroid is not a symmetry centre, so `centre` is pinned to a corner
+   where the tiles meet — `(0, 0)` for both. Dürer's tiling is **cmm**: mirrors
+   both ways and half turns where they cross, so its `centre` is pinned to the
+   crossing that is a *tile* centre — the rhomb's, a pentagon having none —
+   and its window comes out symmetric on both axes. (Which arrangement you
+   pick matters: the same pentagons and rhombs also tile as **pm**, one mirror
+   direction and one symmetric axis. Same tiles, same density, a lopsided
+   board.) `_periodic_domain` builds the domain from the pattern's own lattice
+   where it is not rectangular (the sphinx's parallelogram, Dürer's rows).
+   Declare a **`grain`** if the tiling has one — the spacing of straight lines
+   no tile crosses, along x and y, measured from the window centre and dividing
+   the domain. A tiling with mirrors both ways (Dürer's) wants none: a window
+   centred where they cross is already symmetric, which is the better answer.
+   Declare **glyph anchors** too if a tile's corner mean is a poor place for
+   its number — see the note below. `archimedean_board` ends its window on them, which is the
+   difference between a straight board edge and a row of tiles kept by half:
+   the sphinx has one horizontally (√3, one course per tile) and none
+   vertically, the L-tromino has both (3 and 2, its own domain). Most tilings
+   have none — a hexagon straddles every horizontal line there is — and leaving
+   it at `(0, 0)` keeps the old behaviour exactly. `TestFlatGrain` checks the
+   claim against the domain and the shipped boards.
+2. **Traits** — one `_FAMILY_TRAITS` row: `(vertex-transitive, edge to edge,
+   monohedral)`. "Other" is `(False, False, False)`: its rep-tiles are
+   monohedral and Dürer's is edge to edge, but neither holds of the family, so
+   it claims nothing and `monohedral` keeps `test_tiles_are_congruent` off a
+   family with two tile shapes in it.
+3. **Flat-only** — add the family key to `_FLAT_ONLY_FAMILIES` in `catalog.py`
+   and to `FLAT_ONLY_ARCH_FAMILIES` in `web/src/boards/catalog.ts`, and put it
+   in `PICKER_FAMILIES` (both sides) where it should sit in the menu. Nothing
+   else gates it: `picker_families` drops a family with no enabled row.
+4. **Labels and hints** — `menu.familyLabels` in `data/catalog.json` (the
+   authored leaf; re-run `scripts/export_data.py`) and `MENU_FAMILY_HINTS` in
+   `web/src/boards/catalog.ts`. A family whose key is also a tiling key (as
+   `durer` is) already has an icon; otherwise add a case to `menuIcon` in
+   `web/src/ui/icons.ts` picking the member that reads at icon size.
+5. **Presets** — a `"foo"` block in `ARCH_PRESETS` with a `flat` row only, then
+   the measured pipeline: `resize.py --only`, `calibrate.py --only`, `apply.py`
+   ([`difficulty.md`](difficulty.md)), then `scripts/export_data.py` and
+   `export_conformance.py`.
+6. **Port it to `web/src/boards/tilings.ts`** — the same template verbatim; the
+   conformance oracle compares the two boards cell for cell.
+
+`TestRepTilePatterns` and `TestDurer` in `tests/test_boards.py` cover the
+family's members (each tile's own shape and congruence, a domain covered
+exactly, edge-to-edge or not), and `TestArchimedean.test_flat_board_is_symmetric`
+covers the window.
+
+**Glyph anchors.** A cell's number is centred on the cell's corner mean and
+sized by the distance from there to the nearest edge, which on a lopsided or
+concave tile can leave no room: the L-tromino's mean lands *on* its reflex
+corner (a glyph of size zero — invisible), and the sphinx's is squeezed under
+its notch (a third of the circle the tile can hold). Both declare an
+`anchors` map on the template instead — per domain cell, in domain
+coordinates, `translatedAnchors` moving the base tile's point with each copy
+`periodicDomain` lays down — and `archimedeanBoard` turns it into the board's
+`glyphAnchor`. This is a TypeScript-side refinement, as
+`Substitution.glyphAnchor` in `web/src/boards/fractal.ts` already was: the two
+rep-tile templates anchor the same points their fractal counterparts do, so
+the sphinx's two boards, and the chair's, number their tiles alike.
+
+**Wrapping one later** is the rest of the Archimedean recipe and nothing new:
+choose the `cut` (neither family has one yet — Dürer's pentagon rows sit at
+y = 0 and y = height/2, so its cut cannot be either), drop the family from the
+two flat-only lists, and add the `torus`/`cylinder`/`mobius`/`klein` preset
+rows the surfaces its mirror and `flips` allow. The tests that only ask
+questions of the tilings that wrap — `test_no_tile_centre_sits_on_the_cut` and
+the rest of `TestWrappedArchimedean` — pick it up the moment it has a torus
+preset.
 
 ## Recipe: add a congruent-rectangle bond
 
