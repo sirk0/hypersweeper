@@ -1864,3 +1864,31 @@ body {
   text-transform: uppercase;
   opacity: 1;
 }
+
+/* Sand's corner hierarchy. One `--radius` cannot say what this theme wants: at
+   20px it is the card rounding the menu entries and the dialog are drawn for,
+   but a header button is 42px square, and 20px on a 42px box is half its width
+   — a circle. The design draws these as chips with corners still visible, and
+   reserves the fuller round for the big surfaces, so the small controls state a
+   radius of their own here and the cards keep the palette's.
+
+   The corner is a fraction of `--hud-btn` rather than a length, because that
+   is what the rest of this row already is: the box, the glyph and the gaps all
+   ride the same fluid scale, and a fixed radius that reads as a chip at 46px
+   closes back into a circle at the 31px floor. The fractions are the design's
+   own measurements taken at the size it drew: 16px on a 42px button, 12px on
+   the counters and on the board bar's smaller chevrons (whose 10px in
+   `.hud-counter` is a flat constant, not a themed one). Bar buttons and
+   counters share the tighter corner, so the secondary row reads as one step in
+   from the header. The `.board-bar-btn` rule follows `.hud-btn` because those
+   buttons carry both classes and the two selectors weigh the same — order is
+   what settles it. */
+[data-theme="sand"] .hud-btn,
+[data-theme="sand"] .hud-smiley {
+  border-radius: calc(var(--hud-btn) * 0.38);
+}
+
+[data-theme="sand"] .board-bar-btn,
+[data-theme="sand"] .hud-counter {
+  border-radius: calc(var(--hud-btn) * 0.28);
+}
