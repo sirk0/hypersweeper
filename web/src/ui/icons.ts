@@ -1104,11 +1104,9 @@ function draw(rawKey: string): string[] {
   // staggered rectangles read as a pattern even at icon size (a stacked or
   // running bond patch is a handful of plain bars)
   if (key === "rectangle") return tilingPatch("herringbone");
-  // the Rep-tiles family row: the sphinx, the family's namesake and the one
-  // whose interlock reads at icon size (a patch of L-trominoes is a plain
-  // rectangle grid until you find the cut). The Dürer family row needs no
-  // case: its key is its one tiling's key, so ARCH_KEYS catches it above.
-  if (key === "reptile") return tilingPatch("sphinxpairs");
+  // the Other family row: Dürer's pentagons, the one of its three that reads
+  // in two colours at icon size (a rep-tile patch is a huddle of one tone)
+  if (key === "other") return tilingPatch("durer");
   if (key === "regular") {
     // the Regular family row: one tile of each of the three regular tilings
     return [

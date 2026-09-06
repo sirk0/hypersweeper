@@ -126,7 +126,7 @@ REGULAR_TILINGS = tuple(
 # the same (a rectangular domain a surface could be glued from), unlike the
 # one-off boards of FLAT_ONLY_FAMILIES below -- so they are gated here, by
 # TilingSpec.flat_only, rather than by being kept out of the picker.
-_FLAT_ONLY_FAMILIES: frozenset[str] = frozenset({"reptile", "durer"})
+_FLAT_ONLY_FAMILIES: frozenset[str] = frozenset({"other"})
 
 TILING_SPECS = REGULAR_TILINGS + tuple(
     TilingSpec(t.key, t.label, chiral=t.template().mirror is None,
@@ -226,8 +226,7 @@ UNIFORM_ARCH = tuple(t.key for t in ARCH_TILINGS if t.family == "uniform")
 DUAL_ARCH = tuple(t.key for t in ARCH_TILINGS if t.family == "dual")
 ISOGONAL_ARCH = tuple(t.key for t in ARCH_TILINGS if t.family == "isogonal")
 RECTANGLE_ARCH = tuple(t.key for t in ARCH_TILINGS if t.family == "rectangle")
-REPTILE_ARCH = tuple(t.key for t in ARCH_TILINGS if t.family == "reptile")
-DURER_ARCH = tuple(t.key for t in ARCH_TILINGS if t.family == "durer")
+OTHER_ARCH = tuple(t.key for t in ARCH_TILINGS if t.family == "other")
 APERIODIC_MODES = tuple(_MENU["aperiodic"])
 # The fractal family: the rep-tile boards (sphinx, chair), each a patch whose
 # outline is the tile itself, scaled. Like the aperiodic ones they are one-off
@@ -240,17 +239,16 @@ FAMILY_MEMBERS = {
     "dual": DUAL_ARCH,
     "isogonal": ISOGONAL_ARCH,
     "rectangle": RECTANGLE_ARCH,
-    "reptile": REPTILE_ARCH,
-    "durer": DURER_ARCH,
+    "other": OTHER_ARCH,
     "aperiodic": APERIODIC_MODES,
     "fractal": FRACTAL_MODES,
 }
 # the picker's family rows, in order; the flat-only families (whose members are
-# one-off modes, not tilings) are added on the plane alone. The rep-tiles and
-# Durer's tiling are in the ordinary list: they are tilings, and picker_families
-# drops a family a surface has no row of rather than naming it in two places.
+# one-off modes, not tilings) are added on the plane alone. "Other" is in the
+# ordinary list: its members are tilings, and picker_families drops a family a
+# surface has no row of rather than naming it in two places.
 PICKER_FAMILIES = ("regular", "uniform", "dual", "isogonal", "rectangle",
-                   "reptile", "durer")
+                   "other")
 FLAT_ONLY_FAMILIES = ("aperiodic", "fractal")
 
 # The solid pages: Sphere, Platonic solids, Catalan solids and Polyhedra, each
@@ -319,8 +317,8 @@ def picker_families(surface_key: str) -> tuple[str, ...]:
     and any whose rows a surface disables to the last one. What a surface
     drops it drops row by row in ``family_rows``, on the three things that can
     stop a tiling reaching it -- a chiral tiling has no mirror to close a
-    Mobius or Klein seam with, a flat-only tiling (the rep-tiles, Durer's) has
-    no wrap builder yet, and a surface restricted to an allow-list of tilings
+    Mobius or Klein seam with, a flat-only tiling ("Other", for now) has no
+    wrap builder yet, and a surface restricted to an allow-list of tilings
     (the double torus, square only for now) refuses the rest. A family with
     nothing left on it is a page of greyed-out rows, so it is not offered at
     all.

@@ -8224,42 +8224,42 @@
       "easy": {
         "args": [
           "durer",
-          2,
           6,
+          2,
           12,
-          41.745
+          50.0
         ],
         "cells": 85,
-        "score": 0.0784,
-        "distortionMean": 1.2145,
-        "distortionP90": 1.7013,
-        "indistinguishable": 0
-      },
-      "hard": {
-        "args": [
-          "durer",
-          5,
-          15,
-          99,
-          18.156
-        ],
-        "cells": 481,
-        "score": 0.0441,
-        "distortionMean": 1.226,
+        "score": 0.1406,
+        "distortionMean": 1.2723,
         "distortionP90": 1.7013,
         "indistinguishable": 0
       },
       "medium": {
         "args": [
           "durer",
-          4,
           11,
+          4,
           45,
-          22.369
+          27.0
         ],
         "cells": 287,
-        "score": 0.3143,
-        "distortionMean": 1.2248,
+        "score": 0.3478,
+        "distortionMean": 1.2517,
+        "distortionP90": 1.7013,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          "durer",
+          15,
+          5,
+          99,
+          19.688
+        ],
+        "cells": 481,
+        "score": 0.0714,
+        "distortionMean": 1.2493,
         "distortionP90": 1.7013,
         "indistinguishable": 0
       }

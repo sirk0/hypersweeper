@@ -77,8 +77,7 @@ describe("picker pages", () => {
       "dual",
       "isogonal",
       "rectangle",
-      "reptile",
-      "durer",
+      "other",
       "aperiodic",
       "fractal",
     ]);

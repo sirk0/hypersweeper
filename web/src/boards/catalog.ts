@@ -30,7 +30,7 @@ export interface TilingSpec {
   reversesY?: boolean;
   modeOverrides: Record<string, string>;
   /** The plane only: no wrap builders or preset windows for this tiling
-   * (the rep-tiles and Dürer's tiling — see FLAT_ONLY_ARCH_FAMILIES). */
+   * (the "Other" family — see FLAT_ONLY_ARCH_FAMILIES). */
   flatOnly?: boolean;
 }
 
@@ -53,7 +53,7 @@ export const MENU = catalog.menu;
 // the same (a rectangular domain a surface could be glued from), unlike the
 // one-off boards of FLAT_ONLY_FAMILIES below — so they are gated here, by
 // TilingSpec.flatOnly, rather than by being kept out of the picker.
-const FLAT_ONLY_ARCH_FAMILIES = new Set<string>(["reptile", "durer"]);
+const FLAT_ONLY_ARCH_FAMILIES = new Set<string>(["other"]);
 
 export const ARCH_TILING_SPECS: TilingSpec[] = ARCH_TILINGS.map((t) => ({
   key: t.key,
@@ -79,8 +79,7 @@ export const UNIFORM_ARCH = familyKeys("uniform");
 export const DUAL_ARCH = familyKeys("dual");
 export const ISOGONAL_ARCH = familyKeys("isogonal");
 export const RECTANGLE_ARCH = familyKeys("rectangle");
-export const REPTILE_ARCH = familyKeys("reptile");
-export const DURER_ARCH = familyKeys("durer");
+export const OTHER_ARCH = familyKeys("other");
 export const FAMILY_LABELS = MENU.familyLabels as Record<string, string>;
 
 /** The mode string for a (tiling, surface) pair — the one naming convention. */
@@ -199,8 +198,7 @@ export const PICKER_FAMILIES = [
   "dual",
   "isogonal",
   "rectangle",
-  "reptile",
-  "durer",
+  "other",
 ];
 export const FLAT_ONLY_FAMILIES = ["aperiodic", "fractal"];
 export const APERIODIC_MODES = MENU.aperiodic as string[];
@@ -214,8 +212,7 @@ const FAMILY_MEMBERS: Record<string, string[]> = {
   dual: DUAL_ARCH,
   isogonal: ISOGONAL_ARCH,
   rectangle: RECTANGLE_ARCH,
-  reptile: REPTILE_ARCH,
-  durer: DURER_ARCH,
+  other: OTHER_ARCH,
   aperiodic: APERIODIC_MODES,
   fractal: FRACTAL_MODES,
 };
@@ -261,8 +258,8 @@ export function familyRows(family: string, surfaceKey: string): FamilyRow[] {
 /** The family rows a surface's picker offers, in order. What a surface drops
  * is decided row by row in `familyRows`, by the three things that can stop a
  * tiling reaching it — a chiral tiling has no mirror to close a Möbius or
- * Klein seam with, a flat-only tiling (the rep-tiles, Dürer's) has no wrap
- * builder yet, and a surface restricted to an allow-list of tilings (the
+ * Klein seam with, a flat-only tiling ("Other", for now) has no wrap builder
+ * yet, and a surface restricted to an allow-list of tilings (the
  * double torus) refuses the rest — and a family left with no row at all is
  * dropped with them rather than shown as a page of greyed-out rows. */
 export function pickerFamilies(surfaceKey: string): string[] {
@@ -346,9 +343,9 @@ export const MENU_FAMILY_HINTS: Record<string, string> = {
   dual: "Their duals — one shape throughout",
   isogonal: "A corner meets the middle of an edge",
   rectangle: "Brick bonds, one rectangle throughout",
-  reptile: "One tile, in half-turned pairs",
-  // Keyed `durer`, the family; its one tiling so far is keyed `durer` too.
-  durer: "Regular pentagons, with rhombs in the gaps",
+  // A grab-bag rather than a symmetry class, so the hint names its members
+  // instead of a property they share.
+  other: "Two rep-tiles, and Dürer's pentagons",
   aperiodic: "Never repeats: Penrose, the Spectre, a spiral, brick rings",
   fractal: "One tile, grown into itself",
 };

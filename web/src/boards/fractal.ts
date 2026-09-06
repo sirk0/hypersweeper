@@ -147,8 +147,9 @@ export interface Substitution {
   order: number;
   /** Where to centre the cell's number/flag/mine glyph, in the tile's own
    * unrotated lattice coordinates — for a concave tile whose true centroid
-   * sits right at the reflex corner (a poor, cramped glyph spot). Unset for
-   * a tile whose centroid already fits a decent circle (the sphinx). */
+   * sits right at the reflex corner (a poor, cramped glyph spot), or simply
+   * off to one side of the room the tile has (the sphinx's, under its notch).
+   * Unset for a tile whose centroid already fits a decent circle. */
   glyphAnchor?: LatticePoint;
   rotate(p: LatticePoint): LatticePoint;
   mirror(p: LatticePoint): LatticePoint;
@@ -187,6 +188,13 @@ export const SPHINX: Substitution = {
   children: SPHINX_CHILDREN,
   factor: 2,
   order: 6,
+  // Two thirds along each lattice axis — (1, √3/3) in the plane, the centre of
+  // the biggest circle the sphinx holds, touching its long side, its left side
+  // and the corner of its notch. The corner mean is no good here: it sits just
+  // under the notch and leaves a circle a third the size. `sphinxpairsTemplate`
+  // in boards/tilings.ts anchors the same point, so the sphinx's two boards —
+  // this one inflated, that one laid down periodically — number alike.
+  glyphAnchor: [2 / 3, 2 / 3],
   rotate: triRotate,
   mirror: triMirror,
   scale: times(2),

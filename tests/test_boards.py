@@ -139,7 +139,11 @@ _UNIFORM = [t.key for t in ARCH_TILINGS if t.family == "uniform"]
 _WRAPPED_TILINGS = [t.key for t in ARCH_TILINGS if "torus" in TILINGS[t.key][1]]
 _ISOGONAL = [t.key for t in ARCH_TILINGS if t.family == "isogonal"]
 _RECTANGLE = [t.key for t in ARCH_TILINGS if t.family == "rectangle"]
-_REPTILE = [t.key for t in ARCH_TILINGS if t.family == "reptile"]
+# the two rep-tile patterns. They share the "other" family with Durer's
+# tiling, which is a grab-bag rather than a symmetry class, so this list is
+# named rather than derived from it -- what these two have in common (one
+# congruent polyform, in half-turned pairs) is not what the family says.
+_REPTILE = ["sphinxpairs", "tromino"]
 # the tilings that declare a grain -- straight lines no tile of them crosses,
 # which archimedean_board ends its window on. See TestFlatGrain.
 _GRAINED = [t.key for t in ARCH_TILINGS if any(t.template().grain)]
@@ -1757,10 +1761,15 @@ class TestArchimedean:
     @staticmethod
     def _symmetry(board, reflect):
         """The largest fraction of tiles that map onto another tile when
-        the board is reflected/rotated about a centre. A symmetry centre
-        sits at a largest-tile centroid (vertex-transitive tilings) or at
-        a vertex (some face-transitive Laves tilings), so scan both sets of
-        candidates and take the best."""
+        the board is reflected/rotated about a centre.
+
+        A symmetry centre sits at a largest-tile centroid (vertex-transitive
+        tilings), at a vertex (some face-transitive Laves tilings), at the
+        centre of a smaller tile that is centrally symmetric (Durer's rhomb,
+        where its two mirrors cross -- a pentagon has no centre to offer) or
+        at an edge midpoint (the rep-tile pairs). Scan all four sets of
+        candidates and take the best: a centre the scan does not offer scores
+        as an asymmetry that is not there."""
         polygons = list(board.polygons.values())
         centroids = [(sum(x for x, _ in p) / len(p),
                       sum(y for _, y in p) / len(p)) for p in polygons]
@@ -1781,12 +1790,22 @@ class TestArchimedean:
         board_cy = sum(y for _, y in centroids) / len(centroids)
         vertices = {(round(x, 6), round(y, 6))
                     for p in polygons for x, y in p}
-        # candidate centres near the middle: biggest-tile centroids and
-        # vertices (a rotation centre lies on one of them)
+        # candidate centres near the middle: biggest-tile centroids, and the
+        # nearest dozen of every vertex, every other tile's centroid and every
+        # edge midpoint (a symmetry centre lies on one of them)
+        def nearest(points):
+            return sorted(points, key=lambda v: (v[0] - board_cx) ** 2
+                          + (v[1] - board_cy) ** 2)[:12]
+
+        midpoints = {(round((p[i][0] + p[(i + 1) % len(p)][0]) / 2, 6),
+                      round((p[i][1] + p[(i + 1) % len(p)][1]) / 2, 6))
+                     for p in polygons for i in range(len(p))}
         candidates = [c for p, c in zip(polygons, centroids)
                       if len(p) == biggest]
-        candidates += sorted(vertices, key=lambda v: (v[0] - board_cx) ** 2
-                             + (v[1] - board_cy) ** 2)[:12]
+        candidates += nearest(vertices)
+        candidates += nearest(c for p, c in zip(polygons, centroids)
+                              if len(p) != biggest)
+        candidates += nearest(midpoints)
         best = 0.0
         for cx, cy in candidates:
             hits = sum(1 for x, y in centroids if present(*reflect(cx, cy, x, y)))
@@ -2033,9 +2052,10 @@ class TestRepTilePatterns:
     laid down periodically rather than inflated.
 
     Each is one congruent polyform in half-turned pairs -- face-transitive
-    like the bonds (test_tiles_are_congruent above covers the congruence),
-    and like the staggered bonds not edge to edge. The fractal boards built
-    from the same two tiles are TestRepTiles, further up: same tile, a
+    like the bonds, and like the staggered bonds not edge to edge. Their
+    family ("Other") claims neither, so the congruence the bonds get from
+    test_tiles_are_congruent is asserted here instead. The fractal boards
+    built from the same two tiles are TestRepTiles, further up: same tile, a
     substitution instead of a lattice.
     """
 
@@ -2044,6 +2064,16 @@ class TestRepTilePatterns:
     # squares in an L (1, 1, 1, 1, 2, 2).
     TILES = {"sphinxpairs": [1.0, 1.0, 1.0, 2.0, 3.0],
              "tromino": [1.0, 1.0, 1.0, 1.0, 2.0, 2.0]}
+
+    @pytest.mark.parametrize("mode", sorted(_REPTILE))
+    def test_tiles_are_congruent(self, mode):
+        """One congruent tile, in however many orientations -- the invariant
+        the monohedral families get from TestArchimedean, which "Other" is
+        too mixed a family to claim."""
+        board = archimedean_board(mode, 3, 3, 5)
+        signatures = {_tile_signature([c for c, _ in _corners(p)])
+                      for p in board.polygons.values()}
+        assert len(signatures) == 1, f"{mode} has non-congruent tiles"
 
     @pytest.mark.parametrize("mode", sorted(_REPTILE))
     def test_every_tile_is_the_polyform(self, mode):

@@ -129,27 +129,33 @@ isogonal family, all five wrap the torus and cylinder, and the four with a
 template mirror (all but herringbone) also wrap the Möbius strip and Klein
 bottle.
 
-The last two families are **flat-only**, and are the fractal boards' own
-tiles laid down periodically rather than inflated. `family="reptile"` holds
-the two **rep-tile patterns** — the sphinx (`sphinxpairs`) and the chair
-(`tromino`, the L-tromino) — each one congruent polyform in half-turned
-pairs: p2, face-transitive, and not edge to edge (a rep-tile's long side
-spans several of its neighbours' short ones). These two are also the only
-tilings here with a **grain**: straight lines no tile of them crosses (every
-sphinx lies inside a horizontal band √3 tall; the L pair fills its 3 × 2
-rectangle and overhangs nothing). `_ArchTemplate.grain` declares the spacing
-and `archimedean_board` snaps its window onto it, so their boards end on a
-straight edge instead of a row of tiles kept by half — the L-tromino's on all
-four sides, the sphinx's top and bottom, its sides being a staircase because
-its courses step a unit sideways as they stack. `TestFlatGrain` measures both
-halves of that: that no tile crosses a declared line, and that the board's
-outline meets the line it ends on in *one* run rather than a row of teeth. `family="durer"` holds
-**Dürer's pentagon tiling** (`durer`), regular pentagons with 36° rhombs
-filling the gaps three of them leave round a vertex — pm, edge to edge, and
-the one tiling here that is neither vertex- nor tile-transitive, which is
-what the third `_FAMILY_TRAITS` trait (`monohedral`) is for: it keeps
-`test_tiles_are_congruent` off a tiling with two tile shapes, and
-`TestDurer` checks the pentagon and the rhomb instead. Both families are
+The fifth family, `family="other"`, is **flat-only** and is a grab-bag
+rather than a symmetry class — the tilings that answer to none of the four
+above, all of them the fractal boards' own tiles laid down periodically
+rather than inflated. Two are **rep-tile patterns** — the sphinx
+(`sphinxpairs`) and the chair (`tromino`, the L-tromino) — each one congruent
+polyform in half-turned pairs: p2, face-transitive, and not edge to edge (a
+rep-tile's long side spans several of its neighbours' short ones). The third
+is **Dürer's pentagon tiling** (`durer`), regular pentagons in rows with the
+36° rhombs that fill the gnomons between them: cmm, edge to edge, and neither
+vertex- nor tile-transitive. Because the family claims nothing, its
+`_FAMILY_TRAITS` row is all False and each member's own test class
+(`TestRepTilePatterns`, `TestDurer`) asserts what actually holds of it.
+
+The two rep-tiles are also the only tilings here with a **grain**: straight
+lines no tile of them crosses (every sphinx lies inside a horizontal band √3
+tall; the L pair fills its 3 × 2 rectangle and overhangs nothing).
+`_ArchTemplate.grain` declares the spacing and `archimedean_board` snaps its
+window onto it, so their boards end on a straight edge instead of a row of
+tiles kept by half — the L-tromino's on all four sides, the sphinx's top and
+bottom, its sides being a staircase because its courses step a unit sideways
+as they stack. `TestFlatGrain` measures both halves of that: that no tile
+crosses a declared line, and that the board's outline meets the line it ends
+on in *one* run rather than a row of teeth. Dürer's needs no grain: its two
+mirror directions put a symmetric window inside it instead, which is why its
+`centre` is pinned to a rhomb (the one tile it has with a centre at all). The third `_FAMILY_TRAITS` trait, `monohedral`, is what keeps
+`test_tiles_are_congruent` off a family holding a tiling with two tile
+shapes. The family is
 listed in `_FLAT_ONLY_FAMILIES` (`catalog.py`, mirrored by
 `FLAT_ONLY_ARCH_FAMILIES` in `catalog.ts`), which sets `TilingSpec.flat_only`
 on their members: no wrap builder glues them yet, and neither has chosen the
@@ -160,7 +166,7 @@ submenus: **Regular** (the three regular tilings, plus on the plane the
 shaped boards cut from them), **Uniform** (the eight non-regular uniform
 tilings, `family="uniform"` in `ARCH_TILINGS`), **Laves** (their
 eight duals), **Isogonal**, **Congruent rectangles** and, on the plane
-only, **Rep-tiles**, **Dürer pentagonal**, **Aperiodic** and **Fractals**.
+only, **Other**, **Aperiodic** and **Fractals**.
 Every family is offered on every surface its members allow:
 `picker_families` in `catalog.py` (and its mirror in
 `web/src/boards/catalog.ts`) drops a family a surface has no enabled row of

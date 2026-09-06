@@ -5398,29 +5398,29 @@
     "durer": {
       "easy": {
         "cellCount": 85,
-        "mineCount": 12,
+        "mineCount": 9,
         "euler": 1,
         "boundaryComponents": 1,
-        "edgeCount": 229,
-        "vertexCount": 145,
+        "edgeCount": 228,
+        "vertexCount": 144,
         "hasCellCycle": false
       },
       "medium": {
         "cellCount": 287,
-        "mineCount": 45,
+        "mineCount": 41,
         "euler": 1,
         "boundaryComponents": 1,
-        "edgeCount": 723,
-        "vertexCount": 437,
+        "edgeCount": 724,
+        "vertexCount": 438,
         "hasCellCycle": false
       },
       "hard": {
         "cellCount": 481,
-        "mineCount": 99,
+        "mineCount": 92,
         "euler": 1,
         "boundaryComponents": 1,
-        "edgeCount": 1195,
-        "vertexCount": 715,
+        "edgeCount": 1194,
+        "vertexCount": 714,
         "hasCellCycle": false
       }
     }

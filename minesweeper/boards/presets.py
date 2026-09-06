@@ -394,8 +394,8 @@ ARCH_PRESETS = {
         "torus": {"easy": (5, 2, 17, 0.38), "medium": (8, 4, 60, 0.45), "hard": (12, 5, 122, 0.38)},
         "cylinder": {"easy": (6, 1 + 7 / 8, 14), "medium": (10, 3 + 1 / 8, 42), "hard": (14, 4 + 3 / 8, 105)},
     },
-    # The rep-tiles and Durer's tiling are flat-only for now
-    # (_FLAT_ONLY_FAMILIES in catalog.py), so they carry a "flat" row alone.
+    # The "Other" family is flat-only for now (_FLAT_ONLY_FAMILIES in
+    # catalog.py), so its three carry a "flat" row alone.
     "sphinxpairs": {
         "flat": {"easy": (4, 3, 5, 34.286), "medium": (8, 5, 38, 18.462), "hard": (12, 7, 115, 12.632)},
     },
@@ -403,7 +403,7 @@ ARCH_PRESETS = {
         "flat": {"easy": (6, 6, 10, 30.0), "medium": (9, 13, 47, 17.143), "hard": (12, 18, 92, 14.0)},
     },
     "durer": {
-        "flat": {"easy": (2, 6, 12, 41.745), "medium": (4, 11, 45, 22.369), "hard": (5, 15, 99, 18.156)},
+        "flat": {"easy": (6, 2, 9, 50.0), "medium": (11, 4, 41, 27.0), "hard": (15, 5, 92, 19.688)},
     },
 }
 

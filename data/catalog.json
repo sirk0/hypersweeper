@@ -476,7 +476,7 @@
       "label": "Dürer pentagonal",
       "tiling": "durer",
       "surface": "flat",
-      "family": "durer"
+      "family": "other"
     },
     "elongated": {
       "label": "Elongated triangular",
@@ -962,7 +962,7 @@
       "label": "Sphinx pairs",
       "tiling": "sphinxpairs",
       "surface": "flat",
-      "family": "reptile"
+      "family": "other"
     },
     "square": {
       "label": "Squares",
@@ -1256,7 +1256,7 @@
       "label": "L-tromino",
       "tiling": "tromino",
       "surface": "flat",
-      "family": "reptile"
+      "family": "other"
     },
     "trunchex": {
       "label": "Truncated hexagonal",
@@ -1337,8 +1337,7 @@
       "dual": "Laves",
       "isogonal": "Isogonal",
       "rectangle": "Congruent rectangles",
-      "reptile": "Rep-tiles",
-      "durer": "Dürer pentagonal",
+      "other": "Other",
       "aperiodic": "Aperiodic",
       "fractal": "Fractals"
     },
