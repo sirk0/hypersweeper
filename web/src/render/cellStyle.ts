@@ -5,9 +5,8 @@ import type { BoardTint } from "./shapePalette";
 //
 // A style is no longer a setting of its own: the **theme** names one (see
 // ui/theme.ts), so picking "Classic" or "Realistic" changes the chrome and the
-// board together rather than leaving the player to pair two lists by hand. A
-// theme *composes* a style with a pair of palettes, so the two lists are not
-// one to one: Flat and Flat Sand are the same cut on different chrome.
+// board together rather than leaving the player to pair two lists by hand.
+// There is one table entry per theme, and the keys match the theme keys.
 //
 // A cell is a stack of concentric loops of its own polygon: loop 0 is the
 // tile's outline on the board surface, each further loop is pulled in toward
@@ -355,6 +354,18 @@ const REALISTIC: CellStyle = {
  *
  * No `solidMarkers`: the modelled pin belongs to the modelled flag, and this
  * style flies the flat one (see `flatFlag`). */
+/** Sand's board tint, shared with Flat Sand — the two boards are the same
+ * colours at two levels of detail, so the numbers are stated once. */
+const SAND_TINT: BoardTint = {
+  hiddenLightness: -0.02,
+  chroma: { hidden: 0.04, revealed: 0.014 },
+  // Off, so every hue sits at the same lightness — see `BoardTint.cuspBlend`.
+  cuspBlend: 0,
+};
+
+/** ...and the face their digits are baked in, likewise shared. */
+const SAND_DIGITS = '"Space Grotesk", "Rubik", sans-serif';
+
 const SAND: CellStyle = {
   key: "sand",
   label: "Sand",
@@ -371,25 +382,61 @@ const SAND: CellStyle = {
   winGlow: 0.12,
   albedo: 1.5,
   openAlpha: 0.72,
-  boardTint: {
-    hiddenLightness: -0.02,
-    chroma: { hidden: 0.04, revealed: 0.014 },
-    // Off, so every hue sits at the same lightness — see `BoardTint.cuspBlend`.
-    cuspBlend: 0,
-  },
+  boardTint: SAND_TINT,
   flatFlag: true,
-  digitFont: '"Space Grotesk", "Rubik", sans-serif',
+  digitFont: SAND_DIGITS,
 };
 
-/** The styles (`ui/theme.ts` names them by these keys). Fewer than there are
- * themes: Flat and Flat Sand share `flat`, differing in chrome rather than in
- * how a tile is cut, which is why this is still a table of its own rather than
- * a field inlined into each theme. */
+/** Flat Sand: Sand's board, cut flat.
+ *
+ * Every tone here is Sand's — the same quarter-chroma `boardTint` at the same
+ * closed lightness, so a tile of this board and the same tile of Sand's are the
+ * *same colour*, and a hex board still reads greener than a square one at the
+ * same whisper. What is dropped is the detail Sand paints that colour onto: the
+ * five-loop dome, the centre-lit falloff across each tile and the translucency
+ * of an opened one all go, and Flat's plates take their place — no relief, no
+ * gradient, opaque, with the wide gap letting the warm page between them.
+ *
+ * That leaves the palette's own hidden/opened step doing the whole job of
+ * telling closed from opened, which is exactly what Flat already asks of it.
+ * The step survives the tint intact: `boardTint` replaces the *chroma* and
+ * nudges the closed lightness, while the wide lightness anchors it runs between
+ * (`SHAPE_PALETTE.board.flat`) are untouched.
+ *
+ * Sand's two non-relief marks come too, because neither is a detail of the cut
+ * and both are the same argument at this chroma. `flatFlag`: a modelled
+ * miniature is clutter on a board turned down this far, where two strokes and a
+ * triangle read as a mark. `digitFont`: Space Grotesk is the face the chrome
+ * around this board is already set in (the `[data-theme]` block in styles.css
+ * names both Sand themes), and on a quiet board the numbers are the design. */
+const FLAT_SAND: CellStyle = {
+  key: "flatSand",
+  label: "Flat Sand",
+  hint: "Sand's quiet tiles, cut flat",
+  // The cut, entire: the hair of relief that keeps the two states off each
+  // other where a board wraps, and the solid's wide grout.
+  flat: FLAT.flat,
+  solid: FLAT.solid,
+  material: { roughness: 0.7, metalness: 0 },
+  unlit: true,
+  winGlow: 0.12,
+  albedo: 1.5,
+  // ...and the colour, entire — the same constant Sand names, so the two boards
+  // cannot drift apart on a retune of either.
+  boardTint: SAND_TINT,
+  flatFlag: true,
+  digitFont: SAND_DIGITS,
+};
+
+/** The styles, one per theme (`ui/theme.ts` names them by these keys), which is
+ * why this is still a table of its own rather than a field inlined into each
+ * theme. */
 export const CELL_STYLES: Record<string, CellStyle> = {
   flat: FLAT,
   classic: CLASSIC,
   realistic: REALISTIC,
   sand: SAND,
+  flatSand: FLAT_SAND,
 };
 
 export const CELL_STYLE_KEYS: readonly string[] = Object.keys(CELL_STYLES);

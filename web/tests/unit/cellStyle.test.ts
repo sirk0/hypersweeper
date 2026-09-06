@@ -34,18 +34,17 @@ describe("cell styles", () => {
     expect(cellStyle(DEFAULT_CELL_STYLE).key).toBe("flat");
   });
 
-  it("holds exactly the styles the themes name, and no orphans", () => {
+  it("holds exactly the styles the themes name, one each", () => {
     // The table is no longer a picker of its own: every entry must be reachable
-    // through a theme, and every theme must name an entry that exists. Not a
-    // *bijection*, though it was one while every theme cut its cells its own
-    // way: Flat and Flat Sand name the same style and differ in chrome, so a
-    // style may be named twice. What must not happen is either half going
-    // unmatched — a theme naming a style this table has not got (which would
-    // silently fall back to Flat) or an entry no picker row can reach. Compared
-    // as sets for exactly that reason: it is the two directions that matter,
-    // and a count would only re-assert the bijection this stopped being.
+    // through a theme, and every theme must name an entry that exists. It is a
+    // *bijection* now that the colour scheme is its own setting — Light and Dark
+    // were the two themes that shared a style, and they are one theme (Flat).
+    // Flat Sand is not the exception it looks like: it is Sand's colours on
+    // Flat's cut, which is a style of its own (`flatSand`), because a board's
+    // tint is a cell style's to state.
     const named = THEME_KEYS.map((k) => themeCellStyle(k));
     expect(new Set(named)).toEqual(new Set(CELL_STYLE_KEYS));
+    expect(named).toHaveLength(CELL_STYLE_KEYS.length);
   });
 
   it("falls back for a style this build does not have", () => {
@@ -159,28 +158,38 @@ describe("cell styles", () => {
 // sits at one lightness (a red triangle beside a green hexagon is the case that
 // shows it; with the blend on, the triangle comes out a step darker).
 describe("the Sand board tint", () => {
-  const srgb = (tone: { sides: number; regularity: number }, state: "hidden" | "revealed") =>
-    `#${cellPalette(tone, "flat", false, cellStyle("sand").boardTint)[state].getHexString(
+  const srgb = (
+    style: string,
+    tone: { sides: number; regularity: number },
+    state: "hidden" | "revealed",
+  ) =>
+    `#${cellPalette(tone, "flat", false, cellStyle(style).boardTint)[state].getHexString(
       SRGBColorSpace,
     )}`;
 
-  it("lands on the study's own tones, shape by shape", () => {
-    for (const [sides, closed, opened] of [
-      [3, "#c6a5a1", "#f6e9e7"],
-      [4, "#c0a994", "#f3eae3"],
-      [6, "#9eb5a0", "#e6efe7"],
-    ] as const) {
-      const tone = { sides, regularity: 1 };
-      expect(srgb(tone, "hidden"), `${sides}-gon closed`).toBe(closed);
-      expect(srgb(tone, "revealed"), `${sides}-gon opened`).toBe(opened);
-    }
-  });
+  // Both styles that wear it, because Flat Sand is *Sand's colours* with the
+  // relief taken off — a tile of one board and the same tile of the other are
+  // the same colour, and only what is drawn on top of it differs. They share the
+  // constant, so this fails the moment one is retuned alone.
+  for (const style of ["sand", "flatSand"]) {
+    it(`lands on the study's own tones, shape by shape (${style})`, () => {
+      for (const [sides, closed, opened] of [
+        [3, "#c6a5a1", "#f6e9e7"],
+        [4, "#c0a994", "#f3eae3"],
+        [6, "#9eb5a0", "#e6efe7"],
+      ] as const) {
+        const tone = { sides, regularity: 1 };
+        expect(srgb(style, tone, "hidden"), `${sides}-gon closed`).toBe(closed);
+        expect(srgb(style, tone, "revealed"), `${sides}-gon opened`).toBe(opened);
+      }
+    });
+  }
 
   it("leaves every other style's board exactly where it was", () => {
     // The tint is a per-style override, not a retune of SHAPE_PALETTE: a style
     // that names none must come out of the same call unchanged.
     for (const key of CELL_STYLE_KEYS) {
-      if (key === "sand") continue;
+      if (key === "sand" || key === "flatSand") continue;
       const tone = { sides: 6, regularity: 1 };
       const withStyle = cellPalette(tone, "flat", false, cellStyle(key).boardTint);
       const plain = cellPalette(tone, "flat", false);

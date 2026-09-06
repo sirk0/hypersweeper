@@ -8,8 +8,7 @@ import type { IconPalette } from "./icons";
 //
 //   * a **theme** — how the board's cells are cut (render/cellStyle.ts) and what
 //     the page behind them is made of. Realistic, Flat, Classic, Sand, Flat
-//     Sand — more themes than there are cell styles, since a theme *composes* a
-//     style with a pair of palettes and two of them may name the same cut.
+//     Sand — the last two the same colours at two levels of detail.
 //   * a **colour scheme** — which palette the chrome paints with. Auto (the
 //     device's own `prefers-color-scheme`), Light, Dark.
 //
@@ -208,28 +207,25 @@ const THEMES: Theme[] = [
   {
     key: "flatSand",
     label: "Flat Sand",
-    hint: "Flat colour tiles on Sand's warm page",
-    cellStyle: "flat",
+    hint: "Sand's colours with flat, plain tiles",
+    cellStyle: "flatSand",
     palette: { light: "sand", dark: "sandDark" },
     texture: SAND_PAGE,
     icons: SAND_ICONS,
-    // Sand's chrome exactly — the same two palettes, the same warm page, the
-    // same quieted glyphs, and the same faces and corners (the `[data-theme]`
-    // block at the end of styles.css names this key beside `sand`) — over
-    // Flat's board. That composition is the whole entry: a theme names a cell
-    // style and a pair of palettes, so neither half had to be written twice,
-    // and it is why themes and cell styles are no longer one to one.
+    // Sand's theme entry with one word changed. The chrome is the same in every
+    // respect — the same two palettes, the same warm page, the same quieted
+    // glyphs, and the same faces and corners, since the `[data-theme]` block at
+    // the end of styles.css names this key beside `sand` — and so are the
+    // board's *colours*: the `flatSand` cell style takes Sand's tint whole and
+    // drops only the relief it was painted on (see cellStyle.ts).
     //
-    // The one asymmetry worth stating, since it is the thing that makes this a
-    // different theme rather than a duplicate: Sand's own style whispers the
-    // shape colour code (`boardTint`) and opens its cells translucent, and Flat
-    // does neither — full-strength unlit plates, opaque, with the wide gap
-    // letting the warm page between them. So this is a *loud* board on the
-    // quiet page, which is the point of having both.
+    // So the two are one look at two levels of detail, which is what makes this
+    // a theme rather than a setting: a cell style fixes the mesh's vertex
+    // layout, so the choice has to be made before a board is built.
     //
-    // No `patterned`, and here the reason is stronger than Sand's: Flat's
-    // opened cells have no `openAlpha`, so a tiling drawn behind the board
-    // would only ever show in the grout.
+    // No `patterned`, and here the reason is stronger than Sand's: this style
+    // has no `openAlpha`, so a tiling drawn behind the board would only ever
+    // show in the grout.
   },
 ];
 

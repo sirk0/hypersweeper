@@ -86,14 +86,24 @@ to click.
 How a cell is **cut**. Not a setting of its own: the **theme** names one (see
 "Settings and themes"), so the table has one entry per theme and the keys match
 the theme keys — one each, a bijection since the colour scheme became its own
-setting and Light and Dark stopped being two themes sharing `flat`. Three:
+setting and Light and Dark stopped being two themes sharing `flat`. Five:
 **classic** (the beveled button that sinks when
 opened, and the one style that is *also* gray — see `monochrome` below),
-**flat** (unlit plates in flat colour with wide gaps) and **realistic** (a
+**flat** (unlit plates in flat colour with wide gaps), **realistic** (a
 five-loop glass bead; on the plane a gradient and translucent opened cells, on a
 solid a specular sheen that sweeps across the faces as the board is dragged
-around). Otherwise it is only the relief and the finish — the *colour* of a cell
-is the shape palette's, so the two can be retuned apart.
+around), **sand** (Realistic's cut with the shape colour whispered — see
+`boardTint` below — the flat pennant and its own digit face) and **flatSand**
+(the same tones on Flat's plates: no relief, no gradient, opaque).
+
+Otherwise it is the relief and the finish — the *hues* are the shape palette's,
+so the two can be retuned apart. The one exception is **`boardTint`**, and it is
+a volume knob rather than a colour: a style may say how far down the shape code
+is turned on its board (the chroma, and a nudge to the closed lightness), never
+which hue a side count gets. `sand` and `flatSand` name the same tint constant,
+which is what makes them one board at two levels of detail; every style that
+names none comes out of `cellPalette` pixel-identical, and a unit test pins
+both halves of that.
 
 A cell is a stack of concentric **loops** of its own polygon: loop 0 is the
 tile's outline, each further one is pulled in toward the centroid and lifted (or
