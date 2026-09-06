@@ -82,7 +82,15 @@ function slotIndex(glyph: Glyph): number {
 // Half again the old 128: a cell on a big board (a pentagon of the 60-pentagon
 // sphere fills ~70 CSS px, so ~140 device px on a retina screen) draws the flag
 // and the mine near enough 1:1, and their detail survives.
-export function makeGlyphAtlas(cellPx = 192): GlyphAtlas {
+/** What a cell style asks of the atlas: which flag to bake and which face the
+ * digits are set in. A subset of `CellStyle` rather than the thing itself, so
+ * this module keeps knowing nothing about relief. */
+export interface GlyphOptions {
+  flatFlag?: true;
+  digitFont?: string;
+}
+
+export function makeGlyphAtlas(cellPx = 192, options: GlyphOptions = {}): GlyphAtlas {
   const canvas = document.createElement("canvas");
   canvas.width = COLS * cellPx;
   canvas.height = ROWS * cellPx;
@@ -91,6 +99,7 @@ export function makeGlyphAtlas(cellPx = 192): GlyphAtlas {
 
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
+  const flag = options.flatFlag ? drawFlatFlag : drawFlag;
 
   SLOTS.forEach((glyph, i) => {
     if (glyph === 0) return;
@@ -99,13 +108,15 @@ export function makeGlyphAtlas(cellPx = 192): GlyphAtlas {
     if (typeof glyph === "number") {
       ctx.fillStyle = DIGIT_COLORS[glyph] ?? "#202020";
       const scale = glyph >= 10 ? 0.5 : 0.7; // two digits fit narrower
-      // Rubik (the pygame board font); falls back to sans-serif until loaded.
-      ctx.font = `bold ${Math.round(cellPx * scale)}px "Rubik", sans-serif`;
+      // Rubik (the pygame board font) unless the style names another; falls back
+      // to sans-serif until the face has loaded.
+      const face = options.digitFont ?? '"Rubik", sans-serif';
+      ctx.font = `bold ${Math.round(cellPx * scale)}px ${face}`;
       ctx.fillText(String(glyph), cx, cy + cellPx * 0.03);
     } else if (glyph === "flag") {
-      drawFlag(ctx, cx, cy, cellPx);
+      flag(ctx, cx, cy, cellPx);
     } else if (glyph === "wrongFlag") {
-      drawFlag(ctx, cx, cy, cellPx);
+      flag(ctx, cx, cy, cellPx);
       drawCross(ctx, cx, cy, cellPx);
     } else if (glyph === "cross") {
       drawCross(ctx, cx, cy, cellPx);
@@ -248,6 +259,55 @@ function drawFlag(
   ctx.closePath();
   ctx.fill();
   ctx.restore();
+}
+
+/**
+ * The same flag with everything modelled taken out of it: one pole, one base
+ * bar, one solid triangle, all in the two colours the drawn flag is lit and
+ * folded in. What a style asks for with `CellStyle.flatFlag`.
+ *
+ * It exists because the detail above is *relief* — a tapered mast, a splayed
+ * stand, cloth shaded across its width — and relief is what a quiet board is
+ * deliberately not doing. At the size a triangle of a mixed tiling gives a
+ * glyph, that detail collapses into a smudge anyway; two strokes and a triangle
+ * survive the same box. The geometry is quoted from the design study's own
+ * 24-unit icon so the header button and the board glyph are one drawing, and the
+ * colours are `FLAG_COLORS`, so this is recognisably the same flag as the
+ * modelled one rather than a second flag.
+ */
+function drawFlatFlag(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  s: number,
+): void {
+  // The icon is drawn on a 24-unit grid; 0.92 sizes it to sit in the slot about
+  // as tall as the modelled flag, so the two swap without the glyph jumping.
+  const u = (s * 0.92) / 24;
+  const at = (x: number, y: number): [number, number] => [cx + (x - 12) * u, cy + (y - 12) * u];
+
+  ctx.strokeStyle = FLAG_COLORS.mast;
+  ctx.lineCap = "round";
+  // the pole
+  ctx.lineWidth = 2.3 * u;
+  ctx.beginPath();
+  ctx.moveTo(...at(7.4, 2.9));
+  ctx.lineTo(...at(7.4, 20.6));
+  ctx.stroke();
+  // the base it stands on
+  ctx.lineWidth = 2.4 * u;
+  ctx.beginPath();
+  ctx.moveTo(...at(4.2, 20.9));
+  ctx.lineTo(...at(12.4, 20.9));
+  ctx.stroke();
+  // the pennant
+  ctx.fillStyle = FLAG_COLORS.cloth;
+  ctx.beginPath();
+  ctx.moveTo(...at(8.8, 3.5));
+  ctx.lineTo(...at(20.2, 8.3));
+  ctx.lineTo(...at(8.8, 13.1));
+  ctx.closePath();
+  ctx.fill();
 }
 
 /** A dark X across the cell — drawn over a flag to mark it as misplaced when

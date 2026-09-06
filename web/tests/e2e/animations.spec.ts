@@ -33,7 +33,7 @@ test.describe("M6 animations", () => {
     expect(state.status).toBe("won");
     expect(state.revealed).toBe(80);
     expect(state.minesRemaining).toBe(0); // the last mine was auto-flagged
-    await expect(page.locator(".hud-smiley")).toHaveText("😎");
+    await expect(page.locator(".hud-smiley")).toHaveAttribute("data-face", "won");
   });
 
   test("a solid board celebrates a win and settles", async ({ page }) => {
@@ -54,7 +54,7 @@ test.describe("M6 animations", () => {
     const state = await page.evaluate(() => window.__ms!.state());
     expect(state.status).toBe("won");
     expect(state.is3d).toBe(true);
-    await expect(page.locator(".hud-smiley")).toHaveText("😎");
+    await expect(page.locator(".hud-smiley")).toHaveAttribute("data-face", "won");
   });
 
   test("a held cell drops its flag outside the fingertip", async ({ page }) => {
@@ -277,6 +277,6 @@ test.describe("M6 animations", () => {
     await page.waitForTimeout(600); // outlast the shake
     const state = await page.evaluate(() => window.__ms!.state());
     expect(state.status).toBe("lost");
-    await expect(page.locator(".hud-smiley")).toHaveText("😵");
+    await expect(page.locator(".hud-smiley")).toHaveAttribute("data-face", "lost");
   });
 });

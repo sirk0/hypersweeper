@@ -159,6 +159,9 @@ class App {
     this.syncViewport(); // size the layout box before anything measures it
     this.renderer = new BoardRenderer(canvas);
     this.hud = new Hud((action) => this.onAction(action));
+    // The flag the header flies is the theme's (see `Hud.setTheme`). Set here
+    // rather than in `paintTheme`, which runs once before this exists.
+    this.hud.setTheme(this.settings.theme);
     this.menu = new Menu(
       // Flat and 3D deal a board; every other row names one.
       (sel) =>
@@ -310,6 +313,7 @@ class App {
     // the next board — which is every board from here, since the theme picker
     // is only reachable from the menu.
     this.paintTheme();
+    this.hud.setTheme(key);
   }
 
   /** Unlike a theme this lands whole and at once: a scheme is the chrome
@@ -1113,10 +1117,14 @@ class App {
 const canvas = document.getElementById("board") as HTMLCanvasElement;
 const ui = document.getElementById("ui") as HTMLElement;
 
-// Preload the bundled fonts (Rubik for UI + board digits, DSEG7 for counters)
-// before constructing the app, so the glyph atlas bakes with Rubik ready
-// instead of silently falling back to sans-serif. Bounded so a slow/failed
-// font load never blocks boot.
+// Preload the bundled fonts (Rubik for UI + board digits, DSEG7 for counters,
+// Space Grotesk and Caprasimo for the Sand theme) before constructing the app,
+// so the glyph atlas bakes with its face ready instead of silently falling back
+// to sans-serif. Space Grotesk is in this list for exactly that reason: it is
+// the Sand board's digit face (`CellStyle.digitFont`), and an atlas is baked in
+// a canvas at board-build time, where an unloaded family fails silently rather
+// than swapping in later the way CSS text does. Bounded so a slow/failed font
+// load never blocks boot.
 async function boot(): Promise<void> {
   if (document.fonts?.load) {
     try {
@@ -1124,6 +1132,8 @@ async function boot(): Promise<void> {
         Promise.all([
           document.fonts.load('700 16px "Rubik"'),
           document.fonts.load('700 16px "DSEG7 Classic"'),
+          document.fonts.load('700 16px "Space Grotesk"'),
+          document.fonts.load('400 16px "Caprasimo"'),
         ]),
         new Promise((resolve) => setTimeout(resolve, 1500)),
       ]);

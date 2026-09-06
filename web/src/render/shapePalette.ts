@@ -49,6 +49,46 @@ export interface ShapeTone {
 /** Which lightness/chroma profile a colour is drawn at. */
 export type BoardSurface = "flat" | "solid";
 
+/** A cell style's own adjustment to the board tones below — how *loud* the shape
+ * colour code is drawn on that style's board, and nothing else.
+ *
+ * The shape code itself (which hue a side count gets, how regularity and size
+ * move it) is global and stays that way: a triangle is the same red on every
+ * theme, in the menu icons and in the sound. What a style may say is how far
+ * down that colour is turned, because the answer depends on what else the board
+ * is carrying. Sand takes the chroma to roughly a quarter and drops the closed
+ * tone slightly, so a hex board still reads greener than a square one side by
+ * side rather than at a glance, and the numbers stop competing with the tiles
+ * they sit on.
+ *
+ * Absent on every other style, which is the point: this is a per-style override,
+ * not a retune of `SHAPE_PALETTE.board`, so adding one leaves every board that
+ * does not name it pixel-identical. */
+export interface BoardTint {
+  /** Added to the closed tone's OkLCh lightness. Negative sits the hidden tiles
+   * a little deeper, which is what buys back the contrast the lost chroma was
+   * carrying. The opened tone is left alone: it is already near white, and it is
+   * the one the numbers are read against. */
+  hiddenLightness?: number;
+  /** Replaces `SHAPE_PALETTE.board[surface].chroma` outright, rather than
+   * scaling it, so a style states the chroma it wants in the same units the
+   * table above uses and a reader can compare the two directly. */
+  chroma?: { hidden: number; revealed: number };
+  /** Overrides `SHAPE_PALETTE.board.cuspBlend` for this style.
+   *
+   * A quiet board wants it at 0, and that is not a matter of taste. The blend
+   * buys *saturation*: sRGB holds very little vivid red at the board gray's
+   * lightness, so a hue whose gamut cusp sits below the gray is drawn part of
+   * the way down toward it to find chroma there. At a quarter chroma there is
+   * nothing to find — 0.04 is available at the gray's own lightness for every
+   * hue on the wheel — so the drop pays lightness for chroma it was going to
+   * get anyway. What it costs is visible: only the hues whose cusp is low (red,
+   * violet) move, so the triangles come out a step darker than the hexagons and
+   * read as a different, heavier material rather than as the same tile in
+   * another hue. */
+  cuspBlend?: number;
+}
+
 /** The four shades an icon paints one shape in. */
 export type IconVariant = "base" | "light" | "dark" | "outline";
 
@@ -697,10 +737,10 @@ function toneLch(tone: ShapeTone, baseLightness: number, chroma: number): Lch {
 
 /** How far a hue's board tones are pulled down toward the lightness where it is
  * most colourful. Never positive: see `cuspBlend`. */
-function boardLightnessShift(tone: ShapeTone): number {
+function boardLightnessShift(tone: ShapeTone, blend?: number): number {
   const reference = boardGrays.flat.hidden.l;
   const drop = Math.min(0, cuspLightness(hueForTone(tone)) - reference);
-  return drop * SHAPE_PALETTE.board.cuspBlend;
+  return drop * (blend ?? SHAPE_PALETTE.board.cuspBlend);
 }
 
 export interface CellPalette {
@@ -751,18 +791,23 @@ export function cellPalette(
   tone: ShapeTone,
   surface: BoardSurface,
   monochrome = false,
+  tint?: BoardTint,
 ): CellPalette {
   if (monochrome) return grayPalette(surface);
-  const key = `${surface}|${tone.sides}|${tone.regularity.toFixed(3)}|${tone.variant ?? 0}/${
-    tone.variantCount ?? 1
-  }|${tone.size ?? 0}/${tone.sizeCount ?? 1}`;
+  const chroma = tint?.chroma ?? SHAPE_PALETTE.board[surface].chroma;
+  const hiddenLift = tint?.hiddenLightness ?? 0;
+  const blend = tint?.cuspBlend;
+  // The tint is part of the key, or two styles on one board would share the
+  // first one's cached tones — the cache is module-level and outlives a board.
+  const key = `${surface}|${chroma.hidden}/${chroma.revealed}+${hiddenLift}@${blend ?? "d"}|${tone.sides}|${tone.regularity.toFixed(3)}|${
+    tone.variant ?? 0
+  }/${tone.variantCount ?? 1}|${tone.size ?? 0}/${tone.sizeCount ?? 1}`;
   let palette = paletteCache.get(key);
   if (!palette) {
     const gray = boardGrays[surface];
-    const { chroma } = SHAPE_PALETTE.board[surface];
-    const shift = boardLightnessShift(tone);
+    const shift = boardLightnessShift(tone, blend);
     palette = {
-      hidden: lchToColor(toneLch(tone, gray.hidden.l + shift, chroma.hidden)),
+      hidden: lchToColor(toneLch(tone, gray.hidden.l + shift + hiddenLift, chroma.hidden)),
       revealed: lchToColor(toneLch(tone, gray.revealed.l + shift, chroma.revealed)),
     };
     paletteCache.set(key, palette);

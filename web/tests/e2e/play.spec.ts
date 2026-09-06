@@ -19,7 +19,7 @@ test.describe("M1 play", () => {
     const state = await page.evaluate(() => window.__ms?.state());
     expect(state?.status).toBe("won");
     expect(state?.minesRemaining).toBe(0);
-    await expect(page.locator(".hud-smiley")).toHaveText("😎");
+    await expect(page.locator(".hud-smiley")).toHaveAttribute("data-face", "won");
   });
 
   test("lose: revealing a mine loses and shows the dead smiley", async ({ page }) => {
@@ -31,7 +31,7 @@ test.describe("M1 play", () => {
     await page.mouse.click(xy!.x, xy!.y);
     const state = await page.evaluate(() => window.__ms?.state());
     expect(state?.status).toBe("lost");
-    await expect(page.locator(".hud-smiley")).toHaveText("😵");
+    await expect(page.locator(".hud-smiley")).toHaveAttribute("data-face", "lost");
   });
 
   test("lose: a flag on a safe cell is crossed out (renders without error)", async ({ page }) => {
@@ -45,7 +45,7 @@ test.describe("M1 play", () => {
     await page.mouse.click(xy!.x, xy!.y); // reveal the mine -> lost
     const state = await page.evaluate(() => window.__ms?.state());
     expect(state?.status).toBe("lost");
-    await expect(page.locator(".hud-smiley")).toHaveText("😵");
+    await expect(page.locator(".hud-smiley")).toHaveAttribute("data-face", "lost");
   });
 
   test("flag counter and restart", async ({ page }) => {

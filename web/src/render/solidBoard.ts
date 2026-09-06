@@ -492,7 +492,7 @@ export class SolidBoard extends Group implements BoardMesh {
     this.shade = style.shade;
     this.openShade = style.openShade ?? style.shade;
     this.loops = cellStyleLoops(this.profile);
-    this.atlas = makeGlyphAtlas();
+    this.atlas = makeGlyphAtlas(undefined, style);
     this.order = [...board.polygons.keys()];
     this.states = this.order.map(() => ({ kind: "hidden" }));
     this.order.forEach((c, i) => this.cellIndex.set(c, i));
@@ -587,7 +587,7 @@ export class SolidBoard extends Group implements BoardMesh {
         radius,
         fit,
         center: tile ? (triangleCentroid(tile) ?? centroid) : centroid,
-        palette: cellPalette(tones.get(cell)!, "solid", style.monochrome),
+        palette: cellPalette(tones.get(cell)!, "solid", style.monochrome, style.boardTint),
         tileFalloff: tile && style.shade ? radialFalloff(tile, centroid, radius) : null,
         tile,
       });

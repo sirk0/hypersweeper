@@ -110,6 +110,22 @@ const REALISTIC_PAGE: Record<Scheme, string> = {
   dark: `${woven(0.16)}, radial-gradient(120% 90% at 50% 0%, #2a2f3d 0%, #2a2f3d00 55%), radial-gradient(140% 110% at 50% 100%, #00000088 0%, #00000000 60%)`,
 };
 
+/** The Sand page: the same construction as Realistic's — vignette under, grain
+ * over — thrown warm. The light is a cream coming in from the top and the floor
+ * is the sand neutral rather than a cool gray, which is what keeps the page and
+ * the board the same material; and the grain is lighter than Realistic's,
+ * because a warm mid-tone ground shows the same noise more than a near-white one
+ * does.
+ *
+ * The dark half is the one thing here the design study never drew (it stopped at
+ * the light scheme), so it is derived rather than quoted: the same two gradients
+ * with the light inverted the way `REALISTIC_PAGE.dark` inverts its own — a warm
+ * lift where the light would be, deepening toward the bottom. */
+const SAND_PAGE: Record<Scheme, string> = {
+  light: `${woven(0.3)}, radial-gradient(120% 90% at 50% 0%, #fffaf0 0%, #fffaf000 55%), radial-gradient(140% 110% at 50% 100%, #a1978644 0%, #a1978600 60%)`,
+  dark: `${woven(0.12)}, radial-gradient(120% 90% at 50% 0%, #3a332a 0%, #3a332a00 55%), radial-gradient(140% 110% at 50% 100%, #00000088 0%, #00000000 60%)`,
+};
+
 const THEMES: Theme[] = [
   {
     key: "realistic",
@@ -137,9 +153,14 @@ const THEMES: Theme[] = [
   {
     key: "sand",
     label: "Sand",
-    hint: "Warm terracotta chrome on a cream ground",
-    cellStyle: "flat",
+    hint: "Quiet tiles and terracotta chrome on a warm page",
+    cellStyle: "sand",
     palette: { light: "sand", dark: "sandDark" },
+    texture: SAND_PAGE,
+    // No `patterned`, though the translucent opened cells would carry one: the
+    // page this theme was drawn against is grain and light and nothing else, and
+    // a tiling hairline under a board already turned down this far would be one
+    // more quiet thing competing with the numbers.
   },
 ];
 

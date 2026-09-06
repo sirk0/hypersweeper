@@ -1,3 +1,5 @@
+import type { BoardTint } from "./shapePalette";
+
 // How a cell is *cut* — the relief a tile is drawn with, and (for the one style
 // that asks for it) whether it is coloured by shape at all.
 //
@@ -133,6 +135,27 @@ export interface CellStyle {
    * numbers sit on and the board goes chalky. Vertex colours are not clamped, so
    * a value above 1 is fine — the shading is what brings it back down. */
   albedo?: number;
+  /** How loudly the shape colour code is painted on this style's board, if not
+   * at `SHAPE_PALETTE.board`'s own strength. A per-style override, so a style
+   * that wants a quieter board does not retune every other one — see
+   * `BoardTint` in shapePalette.ts. */
+  boardTint?: BoardTint;
+  /** Draw the flag glyph as a **flat pennant** — a pole, a base bar and one
+   * solid triangle — rather than the modelled flag `glyphAtlas.drawFlag` bakes
+   * by default (a tapered mast on a splayed stand, flying shaded cloth).
+   *
+   * Per style rather than global because the two are answers to different
+   * boards. The modelled flag belongs with `solidMarkers`: on Realistic a
+   * flagged cell of a board you can turn stands a real 3D pin, and the flat
+   * board's billboard is meant to be that same object seen head-on. A style with
+   * no pin has nothing to match, and on a quiet, low-chroma board a drawn-in
+   * miniature reads as clutter where two strokes and a triangle read as a mark.
+   * Same two colours either way (`FLAG_COLORS`), so the game's flag is still
+   * recognisably one flag across the themes. */
+  flatFlag?: true;
+  /** The face this style's board digits are baked in, if not the bundled Rubik.
+   * A CSS font stack, since it is handed straight to a canvas `ctx.font`. */
+  digitFont?: string;
   /** **3D boards only**: stand real models on the cells carrying a flag or a
    * mine — a pin and a spiked bomb, `render/markers3d.ts` — instead of the
    * atlas's flat billboards. Absent means the billboards, as it always was.
@@ -308,6 +331,55 @@ const REALISTIC: CellStyle = {
   solidMarkers: true,
 };
 
+/** Sand: Realistic's cut, turned down until the numbers are the loudest thing
+ * on the board.
+ *
+ * The relief is Realistic's exactly — the same five-loop dome closed, the same
+ * flat pan opened, the same centre-lit falloff — because that profile is what
+ * makes a head-on board read as tiles at all, and it was never the part that was
+ * shouting. What changes is everything painted *on* it:
+ *
+ *   * `boardTint` takes the shape colour to about a quarter chroma and sits the
+ *     closed tone slightly deeper. The shape code still runs, so a hexagon board
+ *     is still greener than a square one — but at a strength you notice when you
+ *     compare two boards rather than one that competes with the digit on top of
+ *     it. On a mixed tiling (the rhombitrihexagonal 3.4.6.4 this was drawn
+ *     against puts triangles, squares and hexagons on one board) full-strength
+ *     hue is three colours at once and the numbers lose.
+ *   * `openAlpha` is a hair lower than Realistic's, because what shows through is
+ *     a warm textured page rather than a cool one, and the grain reads stronger
+ *     through the same opacity.
+ *   * `flatFlag` and `digitFont`: two strokes and a triangle for the flag, and
+ *     Space Grotesk for the digits, which on a board this quiet are the design.
+ *
+ * No `solidMarkers`: the modelled pin belongs to the modelled flag, and this
+ * style flies the flat one (see `flatFlag`). */
+const SAND: CellStyle = {
+  key: "sand",
+  label: "Sand",
+  hint: "Quiet tiles on a warm page, numbers doing the talking",
+  flat: REALISTIC.flat,
+  solid: REALISTIC.solid,
+  material: { roughness: 0.16, metalness: 0.1 },
+  unlit: true,
+  // Matching Realistic's dome, with the rim a touch less deep: the tint below
+  // has already taken lightness out of the closed tone, and stacking the full
+  // falloff on top of that closes the tiles up.
+  shade: { center: 1.06, rim: 0.72 },
+  openShade: { center: 0.99, rim: 0.92 },
+  winGlow: 0.12,
+  albedo: 1.5,
+  openAlpha: 0.72,
+  boardTint: {
+    hiddenLightness: -0.02,
+    chroma: { hidden: 0.04, revealed: 0.014 },
+    // Off, so every hue sits at the same lightness — see `BoardTint.cuspBlend`.
+    cuspBlend: 0,
+  },
+  flatFlag: true,
+  digitFont: '"Space Grotesk", "Rubik", sans-serif',
+};
+
 /** The styles, one per theme (`ui/theme.ts` names them by these keys). Two
  * themes share `flat` — Light and Dark differ in chrome, not in how a tile is
  * cut — which is why this is still a table of its own rather than a field
@@ -316,6 +388,7 @@ export const CELL_STYLES: Record<string, CellStyle> = {
   flat: FLAT,
   classic: CLASSIC,
   realistic: REALISTIC,
+  sand: SAND,
 };
 
 export const CELL_STYLE_KEYS: readonly string[] = Object.keys(CELL_STYLES);

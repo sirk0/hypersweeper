@@ -156,7 +156,7 @@ test.describe("M2 solids", () => {
     const state = await page.evaluate(() => window.__ms!.state());
     expect(state.status).toBe("won");
     expect(state.minesRemaining).toBe(0);
-    await expect(page.locator(".hud-smiley")).toHaveText("😎");
+    await expect(page.locator(".hud-smiley")).toHaveAttribute("data-face", "won");
   });
 
   for (const mode of [

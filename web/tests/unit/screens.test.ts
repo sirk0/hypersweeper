@@ -85,9 +85,7 @@ describe("UI screen config", () => {
       const light = luma(themePalette(key, "light").background);
       const dark = luma(themePalette(key, "dark").background);
       expect(light, `${key} light page`).toBeGreaterThan(0.5);
-      // Sand Dark's warm neutral (#2e2b25) sits at ~0.17 — lighter than the
-      // near-black other dark palettes use, so the ceiling is looser than 0.1.
-      expect(dark, `${key} dark page`).toBeLessThan(0.2);
+      expect(dark, `${key} dark page`).toBeLessThan(0.1);
     }
   });
 
