@@ -1,5 +1,7 @@
 import type { BoardSymmetry } from "../boards/core";
 import { screens, type HudSlot } from "../config/screens";
+import { cellStyle } from "../render/cellStyle";
+import { themeCellStyle } from "./theme";
 
 // The game header, rendered from the shared UI-screen config
 // (`data/ui/screens.json`) rather than hand-laid-out, so the pygame and TS
@@ -24,6 +26,16 @@ export const ICONS: Record<string, string> = {
     <path d="M9 4.2 C12.2 2.8 15.4 4.2 19 5.5
              C16 7.6 12.6 8 9.5 10.9 Z" fill="#e5534b"/>
     <path d="M19 5.5 L9.5 10.9 C12.6 8 16 7.6 19 5.5 Z" fill="#b93731"/>
+  </svg>`,
+  // The same flag with the modelling taken out — a pole, a base and one solid
+  // triangle. Worn by the themes whose board flies the flat pennant
+  // (`CellStyle.flatFlag`, baked by glyphAtlas `drawFlatFlag`), and this is the
+  // drawing both are quoted from; the two keep the same fixed colours as the
+  // modelled flag above, so it stays one flag across the themes.
+  "flag-flat": `<svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M7.4 2.9 V20.6" stroke="#2b2f3a" stroke-width="2.3" stroke-linecap="round"/>
+    <path d="M4.2 20.9 H12.4" stroke="#2b2f3a" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M8.8 3.5 L20.2 8.3 L8.8 13.1 Z" fill="#e5534b"/>
   </svg>`,
   // Back to the menu.
   "arrow-left": `<svg viewBox="0 0 24 24" aria-hidden="true">
@@ -120,6 +132,61 @@ export const ICONS: Record<string, string> = {
   </svg>`,
 };
 
+/** The reset button's face, one drawing per game state.
+ *
+ * Drawn rather than set as an emoji, which is what this button carried before.
+ * An emoji is a different picture on every platform — Apple's 🙂 is a yellow
+ * ball, Android's is another, and the headless browser the visual baselines are
+ * shot in has none at all — so the one control that is meant to *be* the game's
+ * face was the one thing in the app that could not be designed. These are in the
+ * icon set's own line weight, on `currentColor` like every other header glyph,
+ * so the face follows the theme's text colour instead of sitting on it as a
+ * foreign yellow.
+ *
+ * The pygame front-end has always drawn its own (`_draw_smiley_raw` in gui.py);
+ * this brings the web into line with it. `data/ui/screens.json` keeps the emoji
+ * faces — they are the shared config's description of the *states*, and pygame
+ * still reads it. */
+export const FACES: Record<"playing" | "won" | "lost", string> = {
+  playing: `<svg viewBox="0 0 24 24" aria-hidden="true">
+    <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8" fill="none"/>
+    <circle cx="9" cy="10" r="1.2" fill="currentColor"/>
+    <circle cx="15" cy="10" r="1.2" fill="currentColor"/>
+    <path d="M8.4 14.6 A4.4 4.4 0 0 0 15.6 14.6" stroke="currentColor"
+      stroke-width="1.8" fill="none" stroke-linecap="round"/>
+  </svg>`,
+  // Won: the same face behind shades — the cool smiley the emoji set spells
+  // 😎, drawn as a pair of lenses on a bridge so it reads at 26px.
+  won: `<svg viewBox="0 0 24 24" aria-hidden="true">
+    <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8" fill="none"/>
+    <rect x="6.1" y="8.1" width="4.9" height="3.7" rx="1.4" fill="currentColor"/>
+    <rect x="13" y="8.1" width="4.9" height="3.7" rx="1.4" fill="currentColor"/>
+    <path d="M11 9.3 H13" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+    <path d="M8.4 14.9 A4.4 4.4 0 0 0 15.6 14.9" stroke="currentColor"
+      stroke-width="1.8" fill="none" stroke-linecap="round"/>
+  </svg>`,
+  // Lost: crossed eyes and the smile turned over — 😵's reading, in the same
+  // strokes. The cross is the board's own "you were wrong" mark (drawCross in
+  // glyphAtlas.ts), which is what the player is looking at on the cells too.
+  lost: `<svg viewBox="0 0 24 24" aria-hidden="true">
+    <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8" fill="none"/>
+    <path d="M7.7 8.7 L10.3 11.3 M10.3 8.7 L7.7 11.3" stroke="currentColor"
+      stroke-width="1.7" fill="none" stroke-linecap="round"/>
+    <path d="M13.7 8.7 L16.3 11.3 M16.3 8.7 L13.7 11.3" stroke="currentColor"
+      stroke-width="1.7" fill="none" stroke-linecap="round"/>
+    <path d="M8.4 16.6 A4.4 4.4 0 0 1 15.6 16.6" stroke="currentColor"
+      stroke-width="1.8" fill="none" stroke-linecap="round"/>
+  </svg>`,
+};
+
+/** What the reset button announces itself as. It restarts in every state, so the
+ * label says that first and the state second. */
+const SMILEY_LABELS: Record<"playing" | "won" | "lost", string> = {
+  playing: "Restart",
+  won: "Restart — you won",
+  lost: "Restart — you lost",
+};
+
 export interface HudState {
   minesRemaining: number;
   elapsedSeconds: number;
@@ -183,6 +250,17 @@ export class Hud {
     this.render();
   }
 
+  /** Fly the flag this theme's board flies. The header button and the glyph on
+   * a flagged cell are meant to be one drawing, and which drawing that is comes
+   * from the cell style (`CellStyle.flatFlag`) — so this is called from
+   * `App.paintTheme`, the one place a theme change funnels through, rather than
+   * read off the settings here. */
+  setTheme(key: string): void {
+    if (!this.flagBtn) return;
+    const flat = cellStyle(themeCellStyle(key)).flatFlag === true;
+    this.flagBtn.innerHTML = flat ? ICONS["flag-flat"]! : ICONS["flag"]!;
+  }
+
   /** Blink the header's flag red: a flag has just been **planted**. It answers
    * the one move a player can miss — a flag planted by *holding* a cell lands
    * under their own fingertip — and it is a state the header is the natural
@@ -222,7 +300,7 @@ export class Hud {
       const btn = document.createElement("button");
       btn.className = "hud-smiley";
       btn.dataset.slot = slot.slot;
-      btn.setAttribute("aria-label", "Restart");
+      btn.setAttribute("aria-label", SMILEY_LABELS.playing);
       btn.addEventListener("click", () => this.onAction(slot.action ?? "restart"));
       this.smiley = btn;
       return btn;
@@ -260,7 +338,13 @@ export class Hud {
       const value = source === "minesRemaining" ? this.state.minesRemaining : this.state.elapsedSeconds;
       el.textContent = pad(value, digits);
     }
-    if (this.smiley) this.smiley.textContent = screens.smiley[this.state.status];
+    if (this.smiley) {
+      this.smiley.innerHTML = FACES[this.state.status];
+      // What the state *is*, for anything reading the button rather than
+      // looking at it — the e2e suite, and a screen reader through the label.
+      this.smiley.dataset["face"] = this.state.status;
+      this.smiley.setAttribute("aria-label", SMILEY_LABELS[this.state.status]);
+    }
     if (this.flagBtn) this.flagBtn.classList.toggle("active", this.state.flagMode);
     // Toggle config-driven conditional visibility (the board-symmetry controls;
     // no header slot carries one today, but a slot reads the same either way).

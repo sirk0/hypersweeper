@@ -125,6 +125,36 @@
       "counterBg": "#000000",
       "radius": 0,
       "shadow": "none"
+    },
+    "sand": {
+      "label": "Sand",
+      "background": "#f5ead8",
+      "panel": "#f9f4ed",
+      "text": "#2e2b25",
+      "muted": "#82796a",
+      "accent": "#c67139",
+      "onAccent": "#ffffff",
+      "selected": "#ffe1d0",
+      "border": "#dcd3c4",
+      "danger": "#ff5c5c",
+      "counterBg": "#2e2b25",
+      "radius": 20,
+      "shadow": "0 2px 10px rgba(64, 35, 16, 0.16)"
+    },
+    "sandDark": {
+      "label": "Sand Dark",
+      "background": "#191712",
+      "panel": "#2e2b25",
+      "text": "#f9f4ed",
+      "muted": "#a19786",
+      "accent": "#f6a06b",
+      "onAccent": "#2e2b25",
+      "selected": "#8c491a55",
+      "border": "#474238",
+      "danger": "#ff5c5c",
+      "counterBg": "#000000",
+      "radius": 20,
+      "shadow": "0 2px 10px rgba(0, 0, 0, 0.45)"
     }
   },
   "difficulties": [

@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { SRGBColorSpace } from "three";
+import { cellPalette } from "../../src/render/shapePalette";
 import {
   CELL_STYLES,
   CELL_STYLE_KEYS,
@@ -141,6 +143,44 @@ describe("cell styles", () => {
           previous = loop.inset;
         }
       }
+    }
+  });
+});
+
+// Sand's board is a quotation: the "shape hue, whispered" study the theme was
+// designed from (option 1c of the palette exploration) computed its tiles with
+// this repo's own OkLCh code, so the numbers below are what that study drew and
+// what the theme has to keep landing on. They pin the two halves that make it
+// that board — the quarter chroma, and the cusp blend being off so every hue
+// sits at one lightness (a red triangle beside a green hexagon is the case that
+// shows it; with the blend on, the triangle comes out a step darker).
+describe("the Sand board tint", () => {
+  const srgb = (tone: { sides: number; regularity: number }, state: "hidden" | "revealed") =>
+    `#${cellPalette(tone, "flat", false, cellStyle("sand").boardTint)[state].getHexString(
+      SRGBColorSpace,
+    )}`;
+
+  it("lands on the study's own tones, shape by shape", () => {
+    for (const [sides, closed, opened] of [
+      [3, "#c6a5a1", "#f6e9e7"],
+      [4, "#c0a994", "#f3eae3"],
+      [6, "#9eb5a0", "#e6efe7"],
+    ] as const) {
+      const tone = { sides, regularity: 1 };
+      expect(srgb(tone, "hidden"), `${sides}-gon closed`).toBe(closed);
+      expect(srgb(tone, "revealed"), `${sides}-gon opened`).toBe(opened);
+    }
+  });
+
+  it("leaves every other style's board exactly where it was", () => {
+    // The tint is a per-style override, not a retune of SHAPE_PALETTE: a style
+    // that names none must come out of the same call unchanged.
+    for (const key of CELL_STYLE_KEYS) {
+      if (key === "sand") continue;
+      const tone = { sides: 6, regularity: 1 };
+      const withStyle = cellPalette(tone, "flat", false, cellStyle(key).boardTint);
+      const plain = cellPalette(tone, "flat", false);
+      expect(withStyle.hidden.getHex(), key).toBe(plain.hidden.getHex());
     }
   });
 });

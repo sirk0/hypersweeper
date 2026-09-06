@@ -14,6 +14,7 @@
 import {
   iconHex,
   shapeMetrics,
+  type IconTint,
   type IconVariant,
   type ShapeTone,
 } from "../render/shapePalette";
@@ -73,13 +74,47 @@ const PLAIN: Record<IconVariant, string> = {
   outline: "#4f52c2",
 };
 
+/** What a theme may say about the icon set: how vivid the shape-derived colours
+ * are drawn (`tint`, see `IconTint`), and what the non-tile chrome is painted in
+ * instead of the indigo above (`plain`). Both optional — a theme naming neither
+ * gets the set exactly as it always was. */
+export interface IconPalette {
+  tint?: IconTint;
+  plain?: Record<IconVariant, string>;
+}
+
+/** The palette the icons are currently drawn in.
+ *
+ * Module state rather than an argument threaded through: an icon is assembled by
+ * several dozen small drawing helpers, and every one of them would otherwise
+ * have to carry a palette it does not care about. What makes that safe is that
+ * there is exactly one writer — `setIconPalette`, called by App when the theme
+ * changes — and that it clears the cache below, so no icon can outlive the
+ * colours it was drawn in. */
+let iconPalette: IconPalette = {};
+
+/** Repaint the icon set for a theme.
+ *
+ * The cache has to go with it: `menuIcon` memoises a *string of SVG* with its
+ * colours already baked in, so an entry drawn under the old theme would keep
+ * those colours for the life of the page. Call this before the menu renders. */
+export function setIconPalette(next: IconPalette | undefined): void {
+  iconPalette = next ?? {};
+  cache.clear();
+}
+
 const BASE: IconVariant = "base";
 const LIGHT: IconVariant = "light";
 const DARK: IconVariant = "dark";
 
+/** The non-tile chrome's colour for a variant — the theme's, or the indigo. */
+function plain(variant: IconVariant): string {
+  return (iconPalette.plain ?? PLAIN)[variant];
+}
+
 /** The colour a variant paints `tone` in; `null` is the non-tile chrome. */
 function tint(variant: IconVariant, tone: ShapeTone | null): string {
-  return tone ? iconHex(tone, variant) : PLAIN[variant];
+  return tone ? iconHex(tone, variant, iconPalette.tint) : plain(variant);
 }
 
 /** A tone argument left off means "read it off the polygon being drawn"; an
@@ -865,8 +900,8 @@ function surfaceMesh(point: SurfacePoint | SurfacePoint[], opts: MeshOptions): s
           depth: corners.reduce((s, p) => s + p[2], 0) / 4,
           // the inside of an open surface reads a shade cooler than the outside
           fill: mixHex(
-            facing < 0 ? PLAIN.dark : PLAIN.base,
-            facing < 0 ? PLAIN.base : PLAIN.light,
+            facing < 0 ? plain("dark") : plain("base"),
+            facing < 0 ? plain("base") : plain("light"),
             0.15 + 0.85 * lambert,
           ),
         });
@@ -971,7 +1006,7 @@ function badge(path: string): string[] {
   // colour.
   return [
     circle(C, C, D * 0.42, null, 0, LIGHT),
-    `<path d="${path}" fill="${PLAIN.dark}" fill-rule="evenodd"/>`,
+    `<path d="${path}" fill="${plain("dark")}" fill-rule="evenodd"/>`,
   ];
 }
 
@@ -1004,7 +1039,7 @@ function barsRects(d: number, filled: number, total: number): string[] {
     rects.push(
       `<rect x="${n(x)}" y="${n(foot - h)}" width="${n(width)}" height="${n(h)}" rx="${n(
         d * 0.02,
-      )}" fill="${on ? PLAIN.dark : "none"}" stroke="${PLAIN.dark}" stroke-width="${n(
+      )}" fill="${on ? plain("dark") : "none"}" stroke="${plain("dark")}" stroke-width="${n(
         sw(3),
       )}" stroke-opacity="${on ? 1 : 0.45}"/>`,
     );
@@ -1121,7 +1156,7 @@ function draw(rawKey: string): string[] {
     parts.push(
       `<text x="${n(C)}" y="${n(d * 0.5)}" text-anchor="middle" ` +
         `dominant-baseline="central" font-family="Rubik, system-ui, sans-serif" ` +
-        `font-weight="700" font-size="${n(d * 0.92)}" fill="${PLAIN.base}">?</text>`,
+        `font-weight="700" font-size="${n(d * 0.92)}" fill="${plain("base")}">?</text>`,
     );
   } else if (key === "flat" || key === "square" || key === "torus_tile") {
     // one square, the way the hexagon icon is one hexagon

@@ -17,6 +17,30 @@
   font-style: normal;
   font-display: swap;
 }
+/* The Sand theme's two faces, bundled for the same reason as the pair above —
+   nothing here may reach a CDN (scripts/check-offline-assets.mjs). Space Grotesk
+   carries that theme's interface labels and its board digits: tighter apertures
+   and a flat-sided 2 and 3 read as instrument type, which is what a board that
+   is a geometry exercise wants. It ships as one variable file rather than three
+   static weights, so 500/600/700 all come out of 137 KB.
+
+   Caprasimo is the display voice, and it is used in exactly one place — the menu
+   title. A single 30px word is the whole budget for a face this heavy; spending
+   it anywhere else would make the theme shouty rather than warm. */
+@font-face {
+  font-family: "Space Grotesk";
+  src: url("/fonts/SpaceGrotesk-Variable.ttf") format("truetype-variations");
+  font-weight: 300 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Caprasimo";
+  src: url("/fonts/Caprasimo-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
 
 :root {
   /* The app's default look: the Realistic theme on the light colour scheme —
@@ -33,6 +57,9 @@
      `color-scheme` is here for the same reason: it is what the browser paints
      the scrollbar and the flash between documents with. */
   color-scheme: light;
+  /* The interface face. A theme may override it (see the Sand block at the end
+     of this file); everything else inherits it from `body`. */
+  --ui-font: "Rubik", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --bg: #f2f2f7;
   --bg2: #f2f2f7; /* second gradient stop; equal = a flat field */
   /* Background layers drawn *over* that field — the Realistic theme's grain
@@ -208,7 +235,11 @@ body {
     var(--bg-texture),
     linear-gradient(160deg, var(--bg), var(--bg2)) var(--bg2);
   color: var(--text);
-  font-family: "Rubik", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* Through a variable for the same reason the colours are: a theme may carry a
+     face of its own (Sand does), and every control below takes its font with
+     `font: inherit`, so swapping it here reaches all of them at once. The
+     default is the Rubik stack this always had. */
+  font-family: var(--ui-font);
   overscroll-behavior: none;
   /* No browser zoom anywhere in the app. iOS ignores `user-scalable=no`, so
      the viewport meta alone leaves double-tap-to-zoom live: two quick taps
@@ -1794,3 +1825,42 @@ body {
    control sizes at the top shrink it to fit instead, down to a 320px viewport
    (the narrowest iPhone) with room to spare. tests/e2e/hud.spec.ts pins the
    fit and the centring across the iPhone widths. */
+
+/* --- The Sand theme's typography --- */
+/* Sand is the one theme that carries faces of its own. Everything else about it
+   — the warm ground, the terracotta accent, the 20px radii, the card fills — is
+   in its palette (`sand` / `sandDark` in data/ui/screens.json) and arrives
+   through the custom properties above, so this block is only what a palette
+   cannot say.
+
+   Space Grotesk carries the interface: tighter apertures and a flat-sided 2 and
+   3 read as instrument type rather than as something friendly, which is the
+   register a board that is a geometry exercise wants. It reaches every control
+   through `--ui-font` and the `font: inherit` on each of them, and it is the
+   same face the theme's board digits are baked in (`CellStyle.digitFont`), so
+   the numbers on the tiles and the labels around them are one voice. */
+[data-theme="sand"] {
+  --ui-font: "Space Grotesk", "Rubik", system-ui, -apple-system, sans-serif;
+}
+
+/* Caprasimo gets exactly one word. It is a display face — heavy, warm, and
+   wrong for anything at interface size — so it is spent on the menu title and
+   nowhere else, which is what makes it read as the game's name rather than as
+   the theme shouting. Weight is stated because the face ships one (400) and the
+   title's own rule does not set it. */
+[data-theme="sand"] .menu-title {
+  font-family: "Caprasimo", var(--ui-font);
+  font-weight: 400;
+}
+
+/* The board's name becomes a spaced-out label under the header rather than a
+   caption over the page: at this size and weight, uppercase with the letters
+   opened up is what stops a line of small type from reading as a leftover.
+   `--muted` is already this palette's warm neutral, so the opacity the other
+   themes use to push it back is not needed here — it would only muddy it. */
+[data-theme="sand"] .board-name {
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 1;
+}

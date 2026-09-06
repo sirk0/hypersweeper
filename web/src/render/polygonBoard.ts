@@ -125,7 +125,7 @@ export class PolygonBoard extends Group implements BoardMesh {
       ...this.profile.closed.map((l) => l.height),
       ...this.profile.open.map((l) => l.height),
     );
-    this.atlas = makeGlyphAtlas();
+    this.atlas = makeGlyphAtlas(undefined, style);
     this.order = [...board.polygons.keys()];
     this.states = this.order.map(() => ({ kind: "hidden" }));
     this.order.forEach((c, i) => this.cellIndex.set(c, i));
@@ -180,7 +180,7 @@ export class PolygonBoard extends Group implements BoardMesh {
         radius,
         glyphCenter,
         glyphInradius: polygonInradius(shape, glyphCenter),
-        palette: cellPalette(tones.get(cell)!, "flat", style.monochrome),
+        palette: cellPalette(tones.get(cell)!, "flat", style.monochrome, style.boardTint),
       });
       vertexCount += count;
     });
