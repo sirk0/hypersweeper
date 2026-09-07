@@ -67,6 +67,13 @@ export const MINE_COLORS = {
   /** ...and where it falls away, at the terminator. */
   casingShade: "#141720",
   spike: "#4b5261",
+  /** The one ink `drawFlatMine` draws the whole glyph in — the modelled
+   * casing's own tone taken to a single flat value, a step darker than
+   * `casing` so a solid disc of it holds against a light opened tile. */
+  flatCasing: "#1f232b",
+  /** ...and its one square of light. Warm rather than pure white, so it sits
+   * with the Sand page; on Classic's grays it reads as the plain glint it is. */
+  glint: "#f4f1e8",
 } as const;
 
 export interface GlyphAtlas {
@@ -87,6 +94,7 @@ function slotIndex(glyph: Glyph): number {
  * this module keeps knowing nothing about relief. */
 export interface GlyphOptions {
   flatFlag?: true;
+  flatMine?: true;
   digitFont?: string;
 }
 
@@ -100,6 +108,7 @@ export function makeGlyphAtlas(cellPx = 192, options: GlyphOptions = {}): GlyphA
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   const flag = options.flatFlag ? drawFlatFlag : drawFlag;
+  const mine = options.flatMine ? drawFlatMine : drawMine;
 
   SLOTS.forEach((glyph, i) => {
     if (glyph === 0) return;
@@ -121,7 +130,7 @@ export function makeGlyphAtlas(cellPx = 192, options: GlyphOptions = {}): GlyphA
     } else if (glyph === "cross") {
       drawCross(ctx, cx, cy, cellPx);
     } else {
-      drawMine(ctx, cx, cy, cellPx);
+      mine(ctx, cx, cy, cellPx);
     }
   });
 
@@ -308,6 +317,55 @@ function drawFlatFlag(
   ctx.lineTo(...at(8.8, 13.1));
   ctx.closePath();
   ctx.fill();
+}
+
+/**
+ * The mine with everything modelled taken out of it: one filled disc, eight
+ * straight spikes, one square of light. What a style asks for with
+ * `CellStyle.flatMine`.
+ *
+ * It exists for the reason `drawFlatFlag` does. `drawMine` below is *relief* —
+ * a radial-gradient casing, a reflected rim light, a specular highlight — and
+ * relief is what a flat style is deliberately not doing; a quiet board turns a
+ * shaded iron sphere into the loudest object on it. At the size a triangle of a
+ * mixed tiling gives a glyph the shading collapses into a smudge anyway, while
+ * a disc and eight spikes survive the same box, which is the other half of it.
+ *
+ * The spikes are butt-capped and start inside the casing, so disc and spikes
+ * fuse into one silhouette with no seam to alias at small sizes, and there are
+ * exactly two colours in the whole glyph.
+ */
+function drawFlatMine(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  s: number,
+): void {
+  // Sized as `drawMine` is, and for the same reason: the spikes have to stay
+  // inside the slot, since the atlas samples with a linear filter and anything
+  // over the edge bleeds into the neighbouring glyph.
+  const r = s * 0.25;
+
+  ctx.strokeStyle = MINE_COLORS.flatCasing;
+  ctx.lineWidth = r * 0.2;
+  ctx.lineCap = "butt";
+  for (let k = 0; k < 8; k++) {
+    const a = (k * Math.PI) / 4;
+    const [ca, sa] = [Math.cos(a), Math.sin(a)];
+    ctx.beginPath();
+    ctx.moveTo(cx + ca * r * 0.6, cy + sa * r * 0.6);
+    ctx.lineTo(cx + ca * r * 1.42, cy + sa * r * 1.42);
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = MINE_COLORS.flatCasing;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+
+  // One square glint, up and left, where the modelled casing's specular sits.
+  ctx.fillStyle = MINE_COLORS.glint;
+  ctx.fillRect(cx - r * 0.52, cy - r * 0.52, r * 0.3, r * 0.3);
 }
 
 /** A dark X across the cell — drawn over a flag to mark it as misplaced when
