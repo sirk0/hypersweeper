@@ -153,6 +153,18 @@ export interface CellStyle {
    * Same two colours either way (`FLAG_COLORS`), so the game's flag is still
    * recognisably one flag across the themes. */
   flatFlag?: true;
+  /** Draw the mine glyph **flat** — a filled disc, eight straight spikes and
+   * one square glint (`glyphAtlas.drawFlatMine`) — rather than the modelled sea
+   * mine `drawMine` bakes by default.
+   *
+   * The pairing with `flatFlag` is not accidental, but it is not implied either:
+   * a style says both when its board wants marks rather than miniatures. What
+   * keeps them separate fields is `solidMarkers` — a style standing a real 3D
+   * bomb on a turnable board wants the modelled billboard on its flat one to
+   * match it, exactly as the pin and the modelled flag match. Colours come from
+   * `MINE_COLORS` either way, so the game's mine is still one mine across the
+   * themes. */
+  flatMine?: true;
   /** The face this style's board digits are baked in, if not the bundled Rubik.
    * A CSS font stack, since it is handed straight to a canvas `ctx.font`. */
   digitFont?: string;
@@ -186,6 +198,7 @@ const CLASSIC: CellStyle = {
   label: "Classic",
   hint: "Gray beveled buttons that sink when opened",
   monochrome: true,
+  flatMine: true,
   flat: {
     gap: 0.04,
     closed: [{ inset: 0, height: 0 }, { inset: 0.16, height: 0.24 }],
@@ -425,6 +438,7 @@ const FLAT_SAND: CellStyle = {
   // cannot drift apart on a retune of either.
   boardTint: SAND_TINT,
   flatFlag: true,
+  flatMine: true,
   digitFont: SAND_DIGITS,
 };
 
