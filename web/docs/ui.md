@@ -193,8 +193,14 @@ have nothing to say to each other:
 
 - a **theme** — how the board's cells are cut, what the page behind them is made
   of, and (on Realistic) whether a flag and a mine are billboards or real models
-  (see "3D markers" in [`render.md`](render.md)). Three of them: **Realistic** (the default), **Flat**,
-  **Classic**, one per entry in `render/cellStyle.ts`.
+  (see "3D markers" in [`render.md`](render.md)). Five of them: **Realistic**
+  (the default), **Flat**, **Classic**, **Sand** and **Flat Sand**, one per
+  entry in `render/cellStyle.ts`. The last two are the same look at two levels
+  of detail: identical chrome (the same palettes, page, glyphs, faces and
+  corners — the `[data-theme]` block at the end of `styles.css` names both keys)
+  and identical board *colours* (both cell styles name the same tint constant),
+  differing only in the cut. Flat Sand drops Sand's dome, its across-the-tile
+  gradient and its translucent opened cells for plain opaque plates.
 - a **colour scheme** — which palette the chrome paints with. **Auto** (the
   default; the device's own `prefers-color-scheme`), **Light**, **Dark**.
 

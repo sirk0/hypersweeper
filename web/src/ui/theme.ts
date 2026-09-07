@@ -7,7 +7,8 @@ import type { IconPalette } from "./icons";
 // each other:
 //
 //   * a **theme** — how the board's cells are cut (render/cellStyle.ts) and what
-//     the page behind them is made of. Realistic, Flat, Classic.
+//     the page behind them is made of. Realistic, Flat, Classic, Sand, Flat
+//     Sand — the last two the same colours at two levels of detail.
 //   * a **colour scheme** — which palette the chrome paints with. Auto (the
 //     device's own `prefers-color-scheme`), Light, Dark.
 //
@@ -202,6 +203,29 @@ const THEMES: Theme[] = [
     // page this theme was drawn against is grain and light and nothing else, and
     // a tiling hairline under a board already turned down this far would be one
     // more quiet thing competing with the numbers.
+  },
+  {
+    key: "flatSand",
+    label: "Flat Sand",
+    hint: "Sand's colours with flat, plain tiles",
+    cellStyle: "flatSand",
+    palette: { light: "sand", dark: "sandDark" },
+    texture: SAND_PAGE,
+    icons: SAND_ICONS,
+    // Sand's theme entry with one word changed. The chrome is the same in every
+    // respect — the same two palettes, the same warm page, the same quieted
+    // glyphs, and the same faces and corners, since the `[data-theme]` block at
+    // the end of styles.css names this key beside `sand` — and so are the
+    // board's *colours*: the `flatSand` cell style takes Sand's tint whole and
+    // drops only the relief it was painted on (see cellStyle.ts).
+    //
+    // So the two are one look at two levels of detail, which is what makes this
+    // a theme rather than a setting: a cell style fixes the mesh's vertex
+    // layout, so the choice has to be made before a board is built.
+    //
+    // No `patterned`, and here the reason is stronger than Sand's: this style
+    // has no `openAlpha`, so a tiling drawn behind the board would only ever
+    // show in the grout.
   },
 ];
 

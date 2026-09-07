@@ -61,4 +61,15 @@ describe("themeable menu icons", () => {
       expect(menuIcon("hexagon"), key).toBe(before);
     }
   });
+
+  it("gives Flat Sand the same set as Sand", () => {
+    // The two share their whole chrome and differ only in how a cell is cut, so
+    // the glyphs are one palette named twice rather than two that happen to
+    // agree today. Compared as drawings, not as object identity: this is the
+    // claim a reader of the menu could check.
+    setIconPalette(theme("sand").icons);
+    const sand = menuIcon("square");
+    setIconPalette(theme("flatSand").icons);
+    expect(menuIcon("square")).toBe(sand);
+  });
 });

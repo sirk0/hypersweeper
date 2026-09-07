@@ -1020,6 +1020,27 @@ body {
   background: rgba(246, 231, 216, 0.74);
 }
 
+/* Flat Sand: Sand's tones cut like Flat's. It needs a rule of its own because
+   the two Sand rows would otherwise be one picture twice — Sand falls through
+   to the base swatch above, and a picker row whose swatch cannot be told from
+   the row under it is not saying what the two differ by. Flat's geometry (the
+   wide gap and the square plate, no bead and no translucency) over the real
+   board's square tones under `SAND_TINT` — the same two values
+   tests/unit/cellStyle.test.ts pins the board itself to. */
+.cell-swatch[data-cell-style="flatSand"] {
+  gap: 3px;
+  padding: 2px;
+  background: var(--panel);
+}
+
+.cell-swatch[data-cell-style="flatSand"] .cell-swatch-tile {
+  background: #c0a994;
+}
+
+.cell-swatch[data-cell-style="flatSand"] .cell-swatch-tile.open {
+  background: #f3eae3;
+}
+
 /* A sound preset's voice in miniature: one bar per harmonic partial, as tall
    as that partial is loud. The heights are written inline from the preset's own
    timbre numbers (ui/settings.ts soundSwatch), so the swatch is the spectrum
@@ -1826,20 +1847,23 @@ body {
    (the narrowest iPhone) with room to spare. tests/e2e/hud.spec.ts pins the
    fit and the centring across the iPhone widths. */
 
-/* --- The Sand theme's typography --- */
-/* Sand is the one theme that carries faces of its own. Everything else about it
-   — the warm ground, the terracotta accent, the 20px radii, the card fills — is
-   in its palette (`sand` / `sandDark` in data/ui/screens.json) and arrives
-   through the custom properties above, so this block is only what a palette
-   cannot say.
+/* --- The Sand themes' typography --- */
+/* The Sand themes are the ones that carry faces of their own, and both wear the
+   whole block: Sand and Flat Sand share a palette, a page and a set of glyphs,
+   and differ only in how their cells are cut, so a rule that dresses the chrome
+   names both keys. Everything else about them — the warm ground, the terracotta
+   accent, the 20px radii, the card fills — is in that palette (`sand` /
+   `sandDark` in data/ui/screens.json) and arrives through the custom properties
+   above, so this block is only what a palette cannot say.
 
    Space Grotesk carries the interface: tighter apertures and a flat-sided 2 and
    3 read as instrument type rather than as something friendly, which is the
    register a board that is a geometry exercise wants. It reaches every control
    through `--ui-font` and the `font: inherit` on each of them, and it is the
-   same face the theme's board digits are baked in (`CellStyle.digitFont`), so
+   same face both themes' board digits are baked in (`CellStyle.digitFont`), so
    the numbers on the tiles and the labels around them are one voice. */
-[data-theme="sand"] {
+[data-theme="sand"],
+[data-theme="flatSand"] {
   --ui-font: "Space Grotesk", "Rubik", system-ui, -apple-system, sans-serif;
 }
 
@@ -1848,7 +1872,8 @@ body {
    nowhere else, which is what makes it read as the game's name rather than as
    the theme shouting. Weight is stated because the face ships one (400) and the
    title's own rule does not set it. */
-[data-theme="sand"] .menu-title {
+[data-theme="sand"] .menu-title,
+[data-theme="flatSand"] .menu-title {
   font-family: "Caprasimo", var(--ui-font);
   font-weight: 400;
 }
@@ -1858,7 +1883,8 @@ body {
    opened up is what stops a line of small type from reading as a leftover.
    `--muted` is already this palette's warm neutral, so the opacity the other
    themes use to push it back is not needed here — it would only muddy it. */
-[data-theme="sand"] .board-name {
+[data-theme="sand"] .board-name,
+[data-theme="flatSand"] .board-name {
   font-weight: 500;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -1884,11 +1910,15 @@ body {
    buttons carry both classes and the two selectors weigh the same — order is
    what settles it. */
 [data-theme="sand"] .hud-btn,
-[data-theme="sand"] .hud-smiley {
+[data-theme="sand"] .hud-smiley,
+[data-theme="flatSand"] .hud-btn,
+[data-theme="flatSand"] .hud-smiley {
   border-radius: calc(var(--hud-btn) * 0.38);
 }
 
 [data-theme="sand"] .board-bar-btn,
-[data-theme="sand"] .hud-counter {
+[data-theme="sand"] .hud-counter,
+[data-theme="flatSand"] .board-bar-btn,
+[data-theme="flatSand"] .hud-counter {
   border-radius: calc(var(--hud-btn) * 0.28);
 }
