@@ -117,6 +117,30 @@ const REALISTIC_PAGE: Record<Scheme, string> = {
   dark: `${woven(0.16)}, radial-gradient(120% 90% at 50% 0%, #2a2f3d 0%, #2a2f3d00 55%), radial-gradient(140% 110% at 50% 100%, #00000088 0%, #00000000 60%)`,
 };
 
+/** The Classic page: the same construction as Realistic's — vignette under,
+ * grain over — thrown cool and turned up, because this page is now *lighter*
+ * than the board on it. The light comes in from the top and the floor is a cool
+ * gray, so the board reads as an object set into a lit surface rather than a
+ * panel cut out of it. Grain at 0.16: on a near-white field a heavier tooth
+ * starts to read as noise rather than as material. */
+const CLASSIC_PAGE: Record<Scheme, string> = {
+  light: `${woven(0.16)}, radial-gradient(120% 90% at 50% 0%, #ffffff 0%, #ffffff00 55%), radial-gradient(140% 110% at 50% 100%, #94a0aa55 0%, #94a0aa00 60%)`,
+  dark: `${woven(0.12)}, radial-gradient(120% 90% at 50% 0%, #2b3038 0%, #2b303800 55%), radial-gradient(140% 110% at 50% 100%, #00000088 0%, #00000000 60%)`,
+};
+
+/** Classic's menu glyphs: the set drawn nearly gray.
+ *
+ * The board this theme opens has no colour on it but the numbers, and a row of
+ * vivid glyphs above a gray board is the one thing left announcing that the
+ * chrome and the board were designed separately. One lightness for every hue,
+ * and a quarter of the chroma to hand — enough that a triangle row is still
+ * faintly warmer than a hexagon row when you compare them, not enough to read
+ * as colour. `plain` is the classic ink rather than the set's indigo. */
+const CLASSIC_ICONS: IconPalette = {
+  tint: { lightness: 0.62, chroma: 0.25 },
+  plain: { base: "#4b545c", light: "#6f787f", dark: "#2a3036", outline: "#3f474d" },
+};
+
 /** The Sand page: the same construction as Realistic's — vignette under, grain
  * over — thrown warm. The light is a cream coming in from the top and the floor
  * is the sand neutral rather than a cool gray, which is what keeps the page and
@@ -189,7 +213,17 @@ const THEMES: Theme[] = [
     label: "Classic",
     hint: "The 1990s board: gray beveled buttons",
     cellStyle: "classic",
-    palette: { light: "classic", dark: "classicDark" },
+    // `classicWeb`, not `classic`: the light half diverges from the pygame
+    // preset on purpose (a lighter, cooler page — see its own comment in
+    // data/ui/screens.json), so it is a web-only palette rather than a change
+    // the sync test would have to carry over to the desktop build. The dark
+    // half is still the ported `classicDark` — see CLASSIC_PAGE's own note on
+    // why only the light scheme moved.
+    palette: { light: "classicWeb", dark: "classicDark" },
+    texture: CLASSIC_PAGE,
+    icons: CLASSIC_ICONS,
+    // No `patterned`: the classic style has no `openAlpha`, so a tiling behind
+    // the board would only ever show in the grout.
   },
   {
     key: "sand",

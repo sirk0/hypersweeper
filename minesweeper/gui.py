@@ -101,10 +101,15 @@ WEB_MAX_FB = 2048
 # sit above it, so they still fill the window top to bottom.
 WEB_MIN_ASPECT = 0.42
 
-# classic minesweeper grays
+# classic minesweeper grays. HIDDEN_FACE/REVEALED_FACE split wider and cooler
+# than the original (189, 189, 189) / (205, 205, 205): the web build's classic
+# board reads against a light page now, so the hidden/opened step has to carry
+# state on its own rather than share the job with the bevel. Quoted back by
+# `tests/test_theme_sync.py` against `SHAPE_PALETTE.board.mono` in
+# web/src/render/shapePalette.ts, so the two move together.
 BG = (192, 192, 192)
-HIDDEN_FACE = (189, 189, 189)
-REVEALED_FACE = (205, 205, 205)
+HIDDEN_FACE = (139, 148, 156)
+REVEALED_FACE = (223, 228, 232)
 EXPLODED_FACE = (252, 84, 72)
 BEVEL_LIGHT = (250, 250, 250)
 BEVEL_DARK = (122, 122, 122)

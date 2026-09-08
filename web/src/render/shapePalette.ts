@@ -227,10 +227,18 @@ export const SHAPE_PALETTE = {
      * board drawn at them has a hidden/opened step far wider than the classic
      * board ever had. These are a quotation instead, of `HIDDEN_FACE` and
      * `REVEALED_FACE` in the pygame build (minesweeper/gui.py), which is this
-     * game's own classic board. The step between them is small on purpose: the
-     * beveled relief is what tells closed from opened here, which is the whole
-     * classic idiom. */
-    mono: { hidden: "#bdbdbd", revealed: "#cdcdcd" },
+     * game's own classic board.
+     *
+     * Revised from the original quotation in one respect: the step between the
+     * two is wide. The relief still does its half — the bevel inverts when a
+     * cell opens — but on a light page the board has to read as an object *and*
+     * an opened cell has to read as opened at a glance, and a 16-value step
+     * could not carry the second. Cool rather than neutral, so the board sits
+     * with the page above it rather than yellowing against it. The lit bevel
+     * edge still clips to near-white under `CLASSIC.albedo`, which is what the
+     * classic bevel always was. `tests/test_theme_sync.py` quotes these back
+     * against `HIDDEN_FACE`/`REVEALED_FACE`, so both moved together. */
+    mono: { hidden: "#8b949c", revealed: "#dfe4e8" },
   },
 
   /** Menu icons. They share the board's hue and regularity — a triangle is red
