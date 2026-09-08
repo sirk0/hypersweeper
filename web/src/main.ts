@@ -160,10 +160,7 @@ class App {
     this.syncViewport(); // size the layout box before anything measures it
     this.renderer = new BoardRenderer(canvas);
     this.hud = new Hud((action) => this.onAction(action));
-    // The flag the header flies is the theme's (see `Hud.setTheme`). Set here
-    // rather than in `paintTheme`, which runs once before this exists.
-    this.hud.setTheme(this.settings.theme);
-    // ...and so are the menu glyphs. Before `new Menu` below, because an icon is
+    // The menu glyphs are baked strings. Before `new Menu` below, because an icon is
     // a string of SVG with its colours baked in and the menu asks for them as it
     // renders.
     setIconPalette(theme(this.settings.theme).icons);
@@ -318,7 +315,6 @@ class App {
     // the next board — which is every board from here, since the theme picker
     // is only reachable from the menu.
     this.paintTheme();
-    this.hud.setTheme(key);
     // The menu glyphs are baked strings, so they need repainting and the menu
     // needs re-rendering — the theme picker is itself a menu page, so the rows
     // behind it are on screen while this happens.
