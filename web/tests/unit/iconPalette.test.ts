@@ -56,10 +56,37 @@ describe("themeable menu icons", () => {
 
   it("leaves every other theme's icons exactly as they were", () => {
     const before = menuIcon("hexagon");
-    for (const key of ["realistic", "flat", "classic"]) {
+    for (const key of ["realistic", "flat"]) {
       setIconPalette(theme(key).icons);
       expect(menuIcon("hexagon"), key).toBe(before);
     }
+  });
+
+  it("draws Classic's set nearly gray, at one lightness", () => {
+    // Same claim as Sand's, harder: Classic's board carries no colour at all,
+    // so its menu row has to be the quietest of the themed sets rather than
+    // merely quieter than the default.
+    const vivid = fills(menuIcon("square"));
+    setIconPalette(theme("classic").icons);
+    const quiet = fills(menuIcon("square"));
+    expect(quiet.length).toBe(vivid.length);
+    expect(quiet).not.toEqual(vivid);
+    const chroma = (hex: string): number => {
+      const v = parseInt(hex.slice(1), 16);
+      const [r, g, b] = [(v >> 16) & 255, (v >> 8) & 255, v & 255];
+      return (Math.max(r, g, b) - Math.min(r, g, b)) / 255;
+    };
+    const worst = Math.max(...quiet.map(chroma));
+    const best = Math.min(...vivid.map(chroma));
+    expect(worst).toBeLessThan(best);
+  });
+
+  it("paints Classic's non-tile chrome in its own ink, not the indigo", () => {
+    expect(menuIcon("help").toLowerCase()).toContain("#6366f1");
+    setIconPalette(theme("classic").icons);
+    const classic = menuIcon("help").toLowerCase();
+    expect(classic).not.toContain("#6366f1");
+    expect(classic).toContain("#4b545c");
   });
 
   it("gives Flat Sand the same set as Sand", () => {
