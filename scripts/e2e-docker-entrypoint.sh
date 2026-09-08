@@ -34,11 +34,10 @@ handback() {
 trap handback EXIT INT TERM
 
 cd "$WEB"
-# Not exec: the trap above has to run. Playwright's CLI takes the last occurrence
-# of a flag, so a caller's own --workers/--timeout overrides these.
+# Not exec: the trap above has to run. E2E_WORKERS and the PLAYWRIGHT_*_MS
+# budgets that docker-compose.e2e.yml sets are read by playwright.config.ts
+# itself, so nothing has to be translated into flags here — which leaves
+# everything after the service name reaching `playwright test` untouched.
 status=0
-npx playwright test \
-  --workers="${E2E_WORKERS:-2}" \
-  --timeout="${PLAYWRIGHT_TEST_TIMEOUT_MS:-120000}" \
-  "$@" || status=$?
+npx playwright test "$@" || status=$?
 exit $status

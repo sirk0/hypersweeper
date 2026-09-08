@@ -35,7 +35,9 @@ carries over.
 ## Build and run
 
 `make help` lists every target. CI runs `make test`, `make lint`, the
-`data-sync` exporters and the `web` job (typecheck, unit tests, build, e2e).
+`data-sync` exporters, `web-checks` (typecheck, unit tests, the packaged-bundle
+and iOS-sync guards) and `web-e2e`, which shards the Playwright suite across
+four runners. The two web jobs are independent and run at the same time.
 
 **The TypeScript app — the deployed game, and what most changes touch.**
 

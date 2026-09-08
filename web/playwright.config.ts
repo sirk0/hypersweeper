@@ -22,17 +22,38 @@ const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE || undefined;
 const budget = (name: string, fallback: number) =>
   Number(process.env[name]) || fallback;
 
+/** How many browsers to run at once, or 0 to leave Playwright its default of
+ * half the logical cores.
+ *
+ * Playwright has no env var of its own for this, and two callers need to set
+ * it without editing this file: CI, which shards the suite across runners and
+ * wants every core on each one, and `docker-compose.e2e.yml`, which wants
+ * *fewer* than the default because four SwiftShader Chromiums on an emulated
+ * CPU contend rather than parallelise. A `--workers=N` on the command line
+ * still wins over whatever this resolves to. */
+const workers = Number(process.env.E2E_WORKERS) || 0;
+
 export default defineConfig({
   testDir: "tests/e2e",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   timeout: budget("PLAYWRIGHT_TEST_TIMEOUT_MS", 30_000),
-  // On CI: inline annotations on the run, plus the HTML report the workflow
-  // uploads as an artifact. Without the html reporter nothing writes
-  // `playwright-report/`, and the upload step warned "No files were found with
-  // the provided path" on every green run — so a failure had no report either.
-  reporter: process.env.CI ? [["github"], ["html", { open: "never" }]] : "list",
+  // Spread rather than assigned: under exactOptionalPropertyTypes an explicit
+  // `undefined` is not the same as absent, and absent is what asks for the default.
+  ...(workers ? { workers } : {}),
+  // On CI: inline annotations on the run, plus a report the workflow uploads as
+  // an artifact. Without a report reporter nothing writes `playwright-report/`,
+  // and the upload step warned "No files were found with the provided path" on
+  // every green run — so a failure had no report either.
+  //
+  // Sharded runs write `blob` instead: an HTML report from one shard describes
+  // only that quarter of the suite, so ci.yml collects a blob per shard and
+  // merges them into one HTML report (`playwright merge-reports`) if any shard
+  // fails. Unsharded runs — a container, a laptop with CI=1 — keep the HTML.
+  reporter: process.env.CI
+    ? [["github"], process.env.PLAYWRIGHT_BLOB_REPORT ? ["blob"] : ["html", { open: "never" }]]
+    : "list",
   expect: {
     // The whole assertion's budget: `toHaveScreenshot` has no timeout of its
     // own, and this is what it captures, settles and compares inside.
@@ -66,7 +87,12 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "npm run build && npm run preview -- --port " + PORT + " --strictPort",
+    // `vite build` rather than `npm run build`, which is `npm run typecheck &&
+    // vite build`: CI typechecks in its own job (and a shard would otherwise
+    // pay for two `tsc --noEmit` passes it does not use), so the types are
+    // already covered by the time this runs. `npm run typecheck` is the command
+    // to type when iterating locally — this one only needs the bundle.
+    command: "npx vite build && npx vite preview -- --port " + PORT + " --strictPort",
     // The anonymous play counter is opt-in per build (see vite.config.ts), and
     // analytics.spec.ts is the suite that drives it. `vite preview` serves no
     // Pages Function, so those posts really 404 — which is deliberate: it is

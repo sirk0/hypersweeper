@@ -16,6 +16,13 @@ import { MAX_DIGIT_GLYPH } from "../../src/render/glyphAtlas";
 // the statistics the Python implementation exported into data/conformance.json,
 // so the two implementations cannot drift. Also checks structural invariants
 // the oracle does not encode (adjacency symmetry, no self-loops, closure).
+//
+// The cases live here rather than in a single `conformance.test.ts` because
+// Vitest parallelises across *files*: 187 modes × 3 difficulties in one file
+// held one worker for 48 s of a 60 s suite while the others sat idle. One thin
+// `conformance.<difficulty>.test.ts` per difficulty runs the same cases three
+// ways at once. Adding a difficulty means adding a file — which is what
+// `describeConformance` asserts below, so it cannot be forgotten silently.
 const MODE_STATS = conformance.modes as Record<
   string,
   Record<string, {
@@ -28,6 +35,12 @@ const MODE_STATS = conformance.modes as Record<
     hasCellCycle: boolean;
   }>
 >;
+
+/** The difficulties that have a file of their own. Kept beside the files rather
+ * than derived from DIFFICULTIES: a difficulty added to data/catalog.json needs
+ * a new file here to be checked at all, and the assertion below is what says so
+ * rather than letting it go quietly unchecked. */
+const SPLIT_ACROSS_FILES = ["easy", "medium", "hard"];
 
 function checkInvariants(board: AnyBoard): void {
   const cells = new Set(board.adjacency.keys());
@@ -44,13 +57,21 @@ function checkInvariants(board: AnyBoard): void {
   }
 }
 
-describe("board conformance oracle", () => {
-  it("ported modes match the exported set", () => {
-    expect(new Set(MODES)).toEqual(new Set(Object.keys(MODE_STATS)));
-  });
+/** Every mode at one difficulty, as its own `describe` block. */
+export function describeConformance(difficulty: string): void {
+  describe(`board conformance oracle (${difficulty})`, () => {
+    it("is one of the difficulties a file covers, and the set is complete", () => {
+      expect(SPLIT_ACROSS_FILES).toContain(difficulty);
+      // A new difficulty in data/catalog.json needs its own
+      // conformance.<name>.test.ts, or it would never reach the oracle.
+      expect([...DIFFICULTIES].sort()).toEqual([...SPLIT_ACROSS_FILES].sort());
+    });
 
-  for (const mode of Object.keys(MODE_STATS)) {
-    for (const difficulty of DIFFICULTIES) {
+    it("ported modes match the exported set", () => {
+      expect(new Set(MODES)).toEqual(new Set(Object.keys(MODE_STATS)));
+    });
+
+    for (const mode of Object.keys(MODE_STATS)) {
       it(`${mode}/${difficulty} matches the oracle`, () => {
         const board = buildBoard(mode, difficulty);
         const want = MODE_STATS[mode]![difficulty]!;
@@ -71,5 +92,5 @@ describe("board conformance oracle", () => {
         checkInvariants(board);
       });
     }
-  }
-});
+  });
+}
