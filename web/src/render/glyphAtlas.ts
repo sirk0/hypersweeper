@@ -39,13 +39,14 @@ const DIGIT_COLORS: Record<number, string> = {
   8: "#6b6b6b",
 };
 
-/** The flag's own colours. Named here because `drawFlag` below is where they
- * were first chosen, and `render/markers3d.ts` — the 3D pin that stands on a
- * flagged cell instead of this billboard on some themes — has to land on the
- * same family or the two looks would be two different flags. Deliberately fixed
- * rather than themed: the flag is the game's own glyph, not a control (see
- * README, "Settings and themes"). `ui/hud.ts` still spells its copy out by hand,
- * since that one is an inline SVG string. */
+/** The flag's own colours: `mast` and `cloth` are what the 2D glyph below
+ * actually draws. `stand`, `slab`, `clothLit` and `clothShade` are no longer
+ * read here; they live on for `render/markers3d.ts` — the 3D pin that stands
+ * on a flagged cell instead of this billboard on some themes, and has to land
+ * on the same family or the two looks would be two different flags.
+ * Deliberately fixed rather than themed: the flag is the game's own glyph, not
+ * a control (see README, "Settings and themes"). `ui/hud.ts` still spells its
+ * copy out by hand, since that one is an inline SVG string. */
 export const FLAG_COLORS = {
   mast: "#2b2f3a",
   stand: "#3a3f4b",
@@ -93,7 +94,6 @@ function slotIndex(glyph: Glyph): number {
  * digits are set in. A subset of `CellStyle` rather than the thing itself, so
  * this module keeps knowing nothing about relief. */
 export interface GlyphOptions {
-  flatFlag?: true;
   flatMine?: true;
   digitFont?: string;
 }
@@ -107,7 +107,6 @@ export function makeGlyphAtlas(cellPx = 192, options: GlyphOptions = {}): GlyphA
 
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  const flag = options.flatFlag ? drawFlatFlag : drawFlag;
   const mine = options.flatMine ? drawFlatMine : drawMine;
 
   SLOTS.forEach((glyph, i) => {
@@ -123,9 +122,9 @@ export function makeGlyphAtlas(cellPx = 192, options: GlyphOptions = {}): GlyphA
       ctx.font = `bold ${Math.round(cellPx * scale)}px ${face}`;
       ctx.fillText(String(glyph), cx, cy + cellPx * 0.03);
     } else if (glyph === "flag") {
-      flag(ctx, cx, cy, cellPx);
+      drawFlag(ctx, cx, cy, cellPx);
     } else if (glyph === "wrongFlag") {
-      flag(ctx, cx, cy, cellPx);
+      drawFlag(ctx, cx, cy, cellPx);
       drawCross(ctx, cx, cy, cellPx);
     } else if (glyph === "cross") {
       drawCross(ctx, cx, cy, cellPx);
@@ -158,10 +157,11 @@ export function makeGlyphAtlas(cellPx = 192, options: GlyphOptions = {}): GlyphA
 }
 
 /**
- * A flag with the detail a big cell deserves: a tapered mast, knobbed on top,
- * planted in a splayed stand on a ground slab — mast, stand and slab all on one
- * centre line — flying a pennant whose edges curve as cloth does, lit across
- * its width, folded darker where it falls away and creased at the hoist.
+ * The game's one flag glyph: a mast hoisting a deep pennant flush against its
+ * right side, a knobbed masthead and a splayed foot planting it — rather than
+ * standing it on a T. One drawing, sized to survive every cell from a 140px
+ * sphere pentagon down to a 28px triangle on a mixed tiling; there is no
+ * second, simpler version for a small one.
  *
  * Drawn rather than set as an emoji: the app ships two fonts (Rubik for the
  * board, DSEG7 for the counters) and neither carries 🚩, so an emoji flag would
@@ -175,146 +175,41 @@ function drawFlag(
   cy: number,
   s: number,
 ): void {
-  // The mast, its stand and the ground slab all share one centre line — a flag
-  // whose pole meets its base off-centre reads as a mistake at any size.
-  const poleX = cx - s * 0.1;
-  const top = cy - s * 0.36;
-  const stand = cy + s * 0.24; // where the mast disappears into the stand
-  const ground = cy + s * 0.33;
-
-  // mast, tapering upward, ending in a knob; drawn first so the stand's
-  // splayed foot closes over its base
-  ctx.fillStyle = FLAG_COLORS.mast;
-  ctx.beginPath();
-  ctx.moveTo(poleX - s * 0.019, top);
-  ctx.lineTo(poleX + s * 0.019, top);
-  ctx.lineTo(poleX + s * 0.03, ground);
-  ctx.lineTo(poleX - s * 0.03, ground);
-  ctx.closePath();
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(poleX, top, s * 0.036, 0, Math.PI * 2);
-  ctx.fill();
-
-  // stand: a foot splaying out from the mast, on a ground slab
-  ctx.fillStyle = FLAG_COLORS.stand;
-  ctx.beginPath();
-  ctx.moveTo(poleX - s * 0.055, stand);
-  ctx.lineTo(poleX + s * 0.055, stand);
-  ctx.lineTo(poleX + s * 0.16, ground);
-  ctx.lineTo(poleX - s * 0.16, ground);
-  ctx.closePath();
-  ctx.fill();
-  ctx.fillStyle = FLAG_COLORS.slab;
-  ctx.beginPath();
-  ctx.moveTo(poleX - s * 0.19, ground);
-  ctx.lineTo(poleX + s * 0.19, ground);
-  ctx.lineTo(poleX + s * 0.19, ground + s * 0.05);
-  ctx.lineTo(poleX - s * 0.19, ground + s * 0.05);
-  ctx.closePath();
-  ctx.fill();
-
-  // the cloth: top edge lifting away from the mast, fly falling back
-  const cloth = new Path2D();
-  cloth.moveTo(poleX, top + s * 0.015);
-  cloth.bezierCurveTo(
-    poleX + s * 0.16,
-    top - s * 0.04,
-    poleX + s * 0.3,
-    top + s * 0.02,
-    poleX + s * 0.42,
-    top + s * 0.07,
-  );
-  cloth.bezierCurveTo(
-    poleX + s * 0.3,
-    top + s * 0.15,
-    poleX + s * 0.16,
-    top + s * 0.16,
-    poleX + s * 0.02,
-    top + s * 0.27,
-  );
-  cloth.closePath();
-  const lit = ctx.createLinearGradient(poleX, top, poleX + s * 0.42, top + s * 0.2);
-  lit.addColorStop(0, FLAG_COLORS.clothLit);
-  lit.addColorStop(0.55, FLAG_COLORS.cloth);
-  lit.addColorStop(1, FLAG_COLORS.clothShade);
-  ctx.fillStyle = lit;
-  ctx.fill(cloth);
-
-  // the fold along the lower edge, and the crease at the hoist
-  ctx.save();
-  ctx.clip(cloth);
-  ctx.fillStyle = "rgba(120, 26, 24, 0.45)";
-  ctx.beginPath();
-  ctx.moveTo(poleX + s * 0.02, top + s * 0.27);
-  ctx.bezierCurveTo(
-    poleX + s * 0.18,
-    top + s * 0.14,
-    poleX + s * 0.32,
-    top + s * 0.13,
-    poleX + s * 0.42,
-    top + s * 0.07,
-  );
-  ctx.lineTo(poleX + s * 0.42, top + s * 0.2);
-  ctx.lineTo(poleX + s * 0.02, top + s * 0.32);
-  ctx.closePath();
-  ctx.fill();
-  ctx.fillStyle = "rgba(255, 255, 255, 0.16)";
-  ctx.beginPath();
-  ctx.moveTo(poleX, top);
-  ctx.lineTo(poleX + s * 0.09, top + s * 0.01);
-  ctx.lineTo(poleX + s * 0.05, top + s * 0.3);
-  ctx.lineTo(poleX, top + s * 0.3);
-  ctx.closePath();
-  ctx.fill();
-  ctx.restore();
-}
-
-/**
- * The same flag with everything modelled taken out of it: one pole, one base
- * bar, one solid triangle, all in the two colours the drawn flag is lit and
- * folded in. What a style asks for with `CellStyle.flatFlag`.
- *
- * It exists because the detail above is *relief* — a tapered mast, a splayed
- * stand, cloth shaded across its width — and relief is what a quiet board is
- * deliberately not doing. At the size a triangle of a mixed tiling gives a
- * glyph, that detail collapses into a smudge anyway; two strokes and a triangle
- * survive the same box. The geometry is quoted from the design study's own
- * 24-unit icon so the header button and the board glyph are one drawing, and the
- * colours are `FLAG_COLORS`, so this is recognisably the same flag as the
- * modelled one rather than a second flag.
- */
-function drawFlatFlag(
-  ctx: CanvasRenderingContext2D,
-  cx: number,
-  cy: number,
-  s: number,
-): void {
-  // The icon is drawn on a 24-unit grid; 0.92 sizes it to sit in the slot about
-  // as tall as the modelled flag, so the two swap without the glyph jumping.
-  const u = (s * 0.92) / 24;
+  // A 24-unit grid at u = s * 0.96 / 24 — the same grid the old flat flag used,
+  // grown ~4% (the glyph's extremes are x 20.4 / y 20.6, 0.34*s from centre,
+  // well inside the 0.5*s slot the linear-filtered atlas needs).
+  const u = (s * 0.96) / 24;
   const at = (x: number, y: number): [number, number] => [cx + (x - 12) * u, cy + (y - 12) * u];
 
-  ctx.strokeStyle = FLAG_COLORS.mast;
-  ctx.lineCap = "round";
-  // the pole
-  ctx.lineWidth = 2.3 * u;
+  ctx.fillStyle = FLAG_COLORS.mast;
+  // the mast: a plain bar, its right side flush with the cloth's hoist edge
   ctx.beginPath();
-  ctx.moveTo(...at(7.4, 2.9));
-  ctx.lineTo(...at(7.4, 20.6));
-  ctx.stroke();
-  // the base it stands on
-  ctx.lineWidth = 2.4 * u;
+  ctx.moveTo(...at(6.7, 4.0));
+  ctx.lineTo(...at(8.0, 4.0));
+  ctx.lineTo(...at(8.0, 19.4));
+  ctx.lineTo(...at(6.7, 19.4));
+  ctx.closePath();
+  ctx.fill();
+  // the masthead knob, its lower right touching the cloth's top corner and no further
   ctx.beginPath();
-  ctx.moveTo(...at(4.2, 20.9));
-  ctx.lineTo(...at(12.4, 20.9));
-  ctx.stroke();
-  // the pennant
+  ctx.arc(...at(7.35, 3.55), 0.95 * u, 0, Math.PI * 2);
+  ctx.fill();
+  // the foot: a splayed wedge, wider than the mast and lower than a bar, so
+  // the flag reads as planted rather than as a T
+  ctx.beginPath();
+  ctx.moveTo(...at(5.9, 18.4));
+  ctx.lineTo(...at(8.8, 18.4));
+  ctx.lineTo(...at(11.4, 20.6));
+  ctx.lineTo(...at(3.3, 20.6));
+  ctx.closePath();
+  ctx.fill();
+
+  // the cloth: hoisted flush on the mast, deep enough that no bare stick shows
   ctx.fillStyle = FLAG_COLORS.cloth;
   ctx.beginPath();
-  ctx.moveTo(...at(8.8, 3.5));
-  ctx.lineTo(...at(20.2, 8.3));
-  ctx.lineTo(...at(8.8, 13.1));
+  ctx.moveTo(...at(8.0, 4.2));
+  ctx.lineTo(...at(20.4, 8.4));
+  ctx.lineTo(...at(8.0, 13.6));
   ctx.closePath();
   ctx.fill();
 }
@@ -324,7 +219,8 @@ function drawFlatFlag(
  * straight spikes, one square of light. What a style asks for with
  * `CellStyle.flatMine`.
  *
- * It exists for the reason `drawFlatFlag` does. `drawMine` below is *relief* —
+ * It exists for the reason the flag glyph used to have a flat counterpart:
+ * `drawMine` below is *relief* —
  * a radial-gradient casing, a reflected rim light, a specular highlight — and
  * relief is what a flat style is deliberately not doing; a quiet board turns a
  * shaded iron sphere into the loudest object on it. At the size a triangle of a

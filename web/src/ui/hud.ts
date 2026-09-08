@@ -1,7 +1,5 @@
 import type { BoardSymmetry } from "../boards/core";
 import { screens, type HudSlot } from "../config/screens";
-import { cellStyle } from "../render/cellStyle";
-import { themeCellStyle } from "./theme";
 
 // The game header, rendered from the shared UI-screen config
 // (`data/ui/screens.json`) rather than hand-laid-out, so the pygame and TS
@@ -19,23 +17,10 @@ import { themeCellStyle } from "./theme";
 // touch size on phones.
 export const ICONS: Record<string, string> = {
   flag: `<svg viewBox="0 0 24 24" aria-hidden="true">
-    <path d="M6.4 18.1 H11.6 L13.6 20.4 H4.4 Z" fill="#3a3f4b"/>
-    <rect x="3.6" y="20.4" width="10.8" height="1.5" fill="#22252d"/>
-    <path d="M8.5 3.8 H9.5 L9.9 18.1 H8.1 Z" fill="#2b2f3a"/>
-    <circle cx="9" cy="3.8" r="0.9" fill="#2b2f3a"/>
-    <path d="M9 4.2 C12.2 2.8 15.4 4.2 19 5.5
-             C16 7.6 12.6 8 9.5 10.9 Z" fill="#e5534b"/>
-    <path d="M19 5.5 L9.5 10.9 C12.6 8 16 7.6 19 5.5 Z" fill="#b93731"/>
-  </svg>`,
-  // The same flag with the modelling taken out — a pole, a base and one solid
-  // triangle. Worn by the themes whose board flies the flat pennant
-  // (`CellStyle.flatFlag`, baked by glyphAtlas `drawFlatFlag`), and this is the
-  // drawing both are quoted from; the two keep the same fixed colours as the
-  // modelled flag above, so it stays one flag across the themes.
-  "flag-flat": `<svg viewBox="0 0 24 24" aria-hidden="true">
-    <path d="M7.4 2.9 V20.6" stroke="#2b2f3a" stroke-width="2.3" stroke-linecap="round"/>
-    <path d="M4.2 20.9 H12.4" stroke="#2b2f3a" stroke-width="2.4" stroke-linecap="round"/>
-    <path d="M8.8 3.5 L20.2 8.3 L8.8 13.1 Z" fill="#e5534b"/>
+    <path d="M3.3 20.6 L5.9 18.4 H8.8 L11.4 20.6 Z" fill="#2b2f3a"/>
+    <rect x="6.7" y="4" width="1.3" height="15.4" fill="#2b2f3a"/>
+    <circle cx="7.35" cy="3.55" r="0.95" fill="#2b2f3a"/>
+    <path d="M8 4.2 L20.4 8.4 L8 13.6 Z" fill="#e5534b"/>
   </svg>`,
   // Back to the menu.
   "arrow-left": `<svg viewBox="0 0 24 24" aria-hidden="true">
@@ -248,17 +233,6 @@ export class Hud {
   setState(next: Partial<HudState>): void {
     this.state = { ...this.state, ...next };
     this.render();
-  }
-
-  /** Fly the flag this theme's board flies. The header button and the glyph on
-   * a flagged cell are meant to be one drawing, and which drawing that is comes
-   * from the cell style (`CellStyle.flatFlag`) — so this is called from
-   * `App.paintTheme`, the one place a theme change funnels through, rather than
-   * read off the settings here. */
-  setTheme(key: string): void {
-    if (!this.flagBtn) return;
-    const flat = cellStyle(themeCellStyle(key)).flatFlag === true;
-    this.flagBtn.innerHTML = flat ? ICONS["flag-flat"]! : ICONS["flag"]!;
   }
 
   /** Blink the header's flag red: a flag has just been **planted**. It answers

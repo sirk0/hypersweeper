@@ -140,30 +140,15 @@ export interface CellStyle {
    * that wants a quieter board does not retune every other one — see
    * `BoardTint` in shapePalette.ts. */
   boardTint?: BoardTint;
-  /** Draw the flag glyph as a **flat pennant** — a pole, a base bar and one
-   * solid triangle — rather than the modelled flag `glyphAtlas.drawFlag` bakes
-   * by default (a tapered mast on a splayed stand, flying shaded cloth).
-   *
-   * Per style rather than global because the two are answers to different
-   * boards. The modelled flag belongs with `solidMarkers`: on Realistic a
-   * flagged cell of a board you can turn stands a real 3D pin, and the flat
-   * board's billboard is meant to be that same object seen head-on. A style with
-   * no pin has nothing to match, and on a quiet, low-chroma board a drawn-in
-   * miniature reads as clutter where two strokes and a triangle read as a mark.
-   * Same two colours either way (`FLAG_COLORS`), so the game's flag is still
-   * recognisably one flag across the themes. */
-  flatFlag?: true;
   /** Draw the mine glyph **flat** — a filled disc, eight straight spikes and
    * one square glint (`glyphAtlas.drawFlatMine`) — rather than the modelled sea
    * mine `drawMine` bakes by default.
    *
-   * The pairing with `flatFlag` is not accidental, but it is not implied either:
-   * a style says both when its board wants marks rather than miniatures. What
-   * keeps them separate fields is `solidMarkers` — a style standing a real 3D
-   * bomb on a turnable board wants the modelled billboard on its flat one to
-   * match it, exactly as the pin and the modelled flag match. Colours come from
-   * `MINE_COLORS` either way, so the game's mine is still one mine across the
-   * themes. */
+   * What keeps a style from getting this for free is `solidMarkers` — a style
+   * standing a real 3D bomb on a turnable board wants the modelled billboard on
+   * its flat one to match it, exactly as the pin matches the flag. Colours come
+   * from `MINE_COLORS` either way, so the game's mine is still one mine across
+   * the themes. */
   flatMine?: true;
   /** The face this style's board digits are baked in, if not the bundled Rubik.
    * A CSS font stack, since it is handed straight to a canvas `ctx.font`. */
@@ -362,11 +347,11 @@ const REALISTIC: CellStyle = {
  *   * `openAlpha` is a hair lower than Realistic's, because what shows through is
  *     a warm textured page rather than a cool one, and the grain reads stronger
  *     through the same opacity.
- *   * `flatFlag` and `digitFont`: two strokes and a triangle for the flag, and
- *     Space Grotesk for the digits, which on a board this quiet are the design.
+ *   * `digitFont`: Space Grotesk for the digits, which on a board this quiet are
+ *     the design.
  *
- * No `solidMarkers`: the modelled pin belongs to the modelled flag, and this
- * style flies the flat one (see `flatFlag`). */
+ * No `solidMarkers`: the flag is the one drawing every style flies now, pin or
+ * no pin. */
 /** Sand's board tint, shared with Flat Sand — the two boards are the same
  * colours at two levels of detail, so the numbers are stated once. */
 const SAND_TINT: BoardTint = {
@@ -396,7 +381,6 @@ const SAND: CellStyle = {
   albedo: 1.5,
   openAlpha: 0.72,
   boardTint: SAND_TINT,
-  flatFlag: true,
   digitFont: SAND_DIGITS,
 };
 
@@ -416,12 +400,15 @@ const SAND: CellStyle = {
  * nudges the closed lightness, while the wide lightness anchors it runs between
  * (`SHAPE_PALETTE.board.flat`) are untouched.
  *
- * Sand's two non-relief marks come too, because neither is a detail of the cut
- * and both are the same argument at this chroma. `flatFlag`: a modelled
- * miniature is clutter on a board turned down this far, where two strokes and a
- * triangle read as a mark. `digitFont`: Space Grotesk is the face the chrome
- * around this board is already set in (the `[data-theme]` block in styles.css
- * names both Sand themes), and on a quiet board the numbers are the design. */
+ * Sand's one non-relief mark comes too, because it is not a detail of the cut
+ * and is the same argument at this chroma: `flatMine` — a filled disc and eight
+ * spikes rather than the modelled sea mine, since a modelled miniature is
+ * clutter on a board turned down this far, where a disc and spikes read as a
+ * mark. (The flag has no such pairing any more: `glyphAtlas.drawFlag` bakes the
+ * same drawing for every style.) `digitFont`: Space Grotesk is the face the
+ * chrome around this board is already set in (the `[data-theme]` block in
+ * styles.css names both Sand themes), and on a quiet board the numbers are the
+ * design. */
 const FLAT_SAND: CellStyle = {
   key: "flatSand",
   label: "Flat Sand",
@@ -437,7 +424,6 @@ const FLAT_SAND: CellStyle = {
   // ...and the colour, entire — the same constant Sand names, so the two boards
   // cannot drift apart on a retune of either.
   boardTint: SAND_TINT,
-  flatFlag: true,
   flatMine: true,
   digitFont: SAND_DIGITS,
 };
