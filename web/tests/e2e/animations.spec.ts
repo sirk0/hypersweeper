@@ -184,10 +184,18 @@ test.describe("M6 animations", () => {
       // Sample across the wave rather than at one instant: the render loop
       // stalls for hundreds of milliseconds under SwiftShader while a flood
       // recolours, so any single moment can miss the crest.
+      //
+      // Bounded by a frame count as well as by the clock. CI shards this suite
+      // three browsers to a runner, and a starved rAF can deliver only a
+      // handful of frames inside a wall-clock window — few enough that they all
+      // land past the crest. Sampling on past the deadline never lowers a peak,
+      // and `after` below still reads a finished animation.
       const t0 = performance.now();
       let peak = 0;
-      while (performance.now() - t0 < 700) {
+      let frames = 0;
+      while (performance.now() - t0 < 700 || frames < 40) {
         await frame();
+        frames++;
         peak = Math.max(peak, ms.state().glow!.amount);
       }
       return { rest, peak, after: ms.state().glow! };
@@ -213,10 +221,13 @@ test.describe("M6 animations", () => {
       await frame();
       const rest = ms.state().glow!;
       ms.reveal(cell);
+      // Frame-bounded as well as clock-bounded; see the flood's loop above.
       const t0 = performance.now();
       let peak = 0;
-      while (performance.now() - t0 < 1400) {
+      let frames = 0;
+      while (performance.now() - t0 < 1400 || frames < 80) {
         await frame();
+        frames++;
         peak = Math.max(peak, ms.state().glow!.blast);
       }
       return { rest, peak, after: ms.state().glow!, status: ms.state().status };

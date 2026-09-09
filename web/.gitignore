@@ -7,6 +7,8 @@ dev-dist/
 /test-results/
 /playwright-report/
 /blob-report/
+# ...and where ci.yml's merge job downloads every shard's blob-report to.
+/all-blob-reports/
 /.playwright/
 /.vite/
 

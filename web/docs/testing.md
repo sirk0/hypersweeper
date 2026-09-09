@@ -53,6 +53,29 @@ is present with
 self-consistent regardless of the image. `.claude/hooks/session-start.sh` warns
 at session start if the image and the pin have drifted apart, naming both.
 
+## How CI runs this suite
+
+`ci.yml`'s `web-e2e` job **shards the suite across four runners**
+(`playwright test --shard=N/4`), three workers each. Two things follow that are
+worth knowing before changing either number:
+
+- **Three workers, not four, on a four-vCPU runner.** A SwiftShader Chromium is
+  CPU-bound enough that one browser per core starves the lot. Measured: four
+  workers took the slowest shard to 114 s with three tests timing out in a
+  `beforeEach` and passing on retry; three ran the same shard in 78 s clean.
+  The knob is `E2E_WORKERS`, read by `playwright.config.ts` — the same variable
+  `docker-compose.e2e.yml` uses to go the *other* way, down to 2 under emulation.
+- **A test that measures an animation must sample by frame, not by clock.**
+  Sharing a runner starves `requestAnimationFrame`, so a wall-clock window can
+  deliver too few frames to catch a crest. The sampling loops in
+  `animations.spec.ts` are bounded by both.
+
+Each shard writes a `blob` report rather than HTML, since one shard's HTML
+describes a quarter of the suite. They are stitched back together by the
+`web-e2e-report` job — which runs **only when a shard fails**, so a green push
+does not pay for a report nobody opens. To read a failure, download the
+`playwright-report` artifact from that job as before.
+
 ## Running the visual suite off Linux
 
 Every baseline in `tests/e2e/gallery.spec.ts-snapshots/` is a
@@ -162,8 +185,13 @@ Practical knowledge for verifying changes by actually running the app
   "Running the visual suite off Linux" above, which is also the only way
   to regenerate them from a Mac); regenerate them there, then re-run the
   spec to confirm determinism.
+- **`npm run e2e` does not typecheck.** Its `webServer` runs `vite build`
+  rather than `npm run build` (which is typecheck + build): CI typechecks in
+  `web-checks`, a separate job from the e2e shards, and a shard paying for two
+  `tsc --noEmit` passes it does not use is four wasted copies of them. Run
+  `npm run typecheck` yourself while iterating.
 - **Playwright's `webServer` reuses a running port-4173 server** outside
-  CI. `vite preview` serves `dist/` from disk, so an `npm run build` is
+  CI. `vite preview` serves `dist/` from disk, so a `vite build` is
   enough to refresh it — but stale servers are a classic source of
   "my change has no effect". It bites hardest on **`--update-snapshots`**,
   where it does not merely hide a change but *bakes the stale one into a

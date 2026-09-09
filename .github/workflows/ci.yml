@@ -18,6 +18,7 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -32,11 +33,13 @@ jobs:
 
   lint:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version-file: .python-version
+          cache: pip
       - name: Install dependencies
         run: pip install -r requirements-test.txt
       - name: Lint
@@ -48,6 +51,7 @@ jobs:
     # is committed (run scripts/export_data.py + export_conformance.py locally
     # and commit the result to fix).
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -63,14 +67,13 @@ jobs:
       - name: Check for drift
         run: git diff --exit-code data/
 
-  web:
-    # TypeScript app (web/): typecheck, unit tests, production build, and the
-    # Playwright e2e + visual-regression suite under deterministic software
-    # WebGL (see web/playwright.config.ts). Visual baselines are only
-    # authoritative under the pinned Chromium build this job installs — the same
-    # one web/Dockerfile.e2e carries, which is how a developer off Linux runs
-    # the gallery (it skips itself on every non-Linux platform).
+  web-checks:
+    # TypeScript app (web/), everything that is not Playwright: typecheck, unit
+    # tests, and the two packaged-shell guards. Runs alongside web-e2e rather
+    # than before it — neither is an input to the other, and the e2e shards
+    # build the bundle they serve themselves.
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: web
@@ -87,27 +90,15 @@ jobs:
         run: npm run typecheck
       - name: Unit tests
         run: npm run test
-      - name: Build
-        run: npm run build
-      - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
-      - name: E2E + visual tests
-        run: npm run e2e
-      - name: Upload Playwright report
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-report
-          path: web/playwright-report/
-          retention-days: 7
-      # The packaged apps (desktop/ for macOS, ios/ for the iPhone) ship this
-      # same bundle inside themselves, so the two properties that make them work
+      # The packaged apps (desktop/ for macOS, ios/ for the iPhone) ship the
+      # web bundle inside themselves, so the two properties that make them work
       # offline are guarded here rather than only on whoever's Mac runs
       # `make mac-app` / `make ios-app`: the packaged build must reference
       # nothing remote, and the app:// path resolver must not let the renderer
       # read outside it. Electron itself is not installed — that would be a
-      # 300 MB download for a check these two steps already make. It runs last
-      # because it overwrites dist/ with the packaged variant.
+      # 300 MB download for a check these two steps already make. This is also
+      # the only `vite build` in this job, so it doubles as the proof that the
+      # bundle builds at all.
       - name: Packaged bundle is self-contained
         run: |
           VITE_PACKAGED=1 npm run build
@@ -123,3 +114,97 @@ jobs:
         run: |
           npx cap sync ios
           test -f ../ios/App/App/public/index.html
+
+  web-e2e:
+    # The Playwright e2e + visual-regression suite under deterministic software
+    # WebGL (see web/playwright.config.ts). Visual baselines are only
+    # authoritative under the pinned Chromium build this job installs — the same
+    # one web/Dockerfile.e2e carries, which is how a developer off Linux runs
+    # the gallery (it skips itself on every non-Linux platform).
+    #
+    # Sharded because this is the whole critical path: ~228 tests, 43 of them
+    # full-frame SwiftShader screenshot comparisons, took 6m27s on one runner at
+    # Playwright's default of half the cores (2 on a 4-vCPU runner). Four shards
+    # at four workers each is 8x the browsers. `fail-fast: false` because one
+    # red shard must not cancel the other three and hide the rest of the picture.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: E2E + visual tests (shard ${{ matrix.shard }}/4)
+        run: npx playwright test --shard=${{ matrix.shard }}/4
+        env:
+          # Three, not four, on the runner's four vCPUs. A SwiftShader Chromium
+          # is CPU-bound enough that one browser per core starves the lot:
+          # measured on a 4-core box, four workers took the slowest shard to
+          # 114 s with three tests timing out in `beforeEach` and passing on
+          # retry, while three workers ran the same shard in 78 s clean. Leave
+          # a core for the OS and the dev server.
+          E2E_WORKERS: 3
+          # The two budgets contention reaches first, raised. A page load
+          # sharing a runner can miss the 30 s test timeout in a `beforeEach`
+          # (that is what the four-worker flakes above were), and the expect
+          # budget is what `toHaveScreenshot` captures, settles and compares a
+          # 700 KB shot inside. Neither costs anything when the test passes.
+          PLAYWRIGHT_TEST_TIMEOUT_MS: 60000
+          PLAYWRIGHT_EXPECT_TIMEOUT_MS: 15000
+          # One HTML report per shard would describe a quarter of the suite
+          # each; blobs merge into a single report in web-e2e-report below.
+          PLAYWRIGHT_BLOB_REPORT: 1
+      - name: Upload blob report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: blob-report-${{ matrix.shard }}
+          path: web/blob-report/
+          retention-days: 1
+
+  web-e2e-report:
+    # The shards' blobs stitched back into the one browsable HTML report. Only
+    # on failure: merging costs a runner and half a minute on every push, and a
+    # green suite's report has never been opened.
+    needs: web-e2e
+    if: ${{ failure() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          path: web/all-blob-reports
+          pattern: blob-report-*
+          merge-multiple: true
+      - name: Merge into one HTML report
+        run: npx playwright merge-reports --reporter html ./all-blob-reports
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: web/playwright-report/
+          retention-days: 7

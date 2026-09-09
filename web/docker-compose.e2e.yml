@@ -56,12 +56,12 @@ services:
       # are the three budgets in playwright.config.ts, raised.
       PLAYWRIGHT_EXPECT_TIMEOUT_MS: "30000"
       PLAYWRIGHT_TEST_TIMEOUT_MS: "120000"
-      # `npm run build` — tsc twice, then Vite with a cold cache — runs inside
-      # the webServer budget.
+      # `vite build` with a cold cache runs inside the webServer budget.
       PLAYWRIGHT_WEBSERVER_TIMEOUT_MS: "480000"
       # Four SwiftShader Chromiums on an emulated CPU contend rather than
-      # parallelise. Playwright reads no env var for this, so the entrypoint
-      # passes it as --workers; a trailing --workers=N still wins.
+      # parallelise, so this is deliberately *below* Playwright's default here —
+      # unlike CI, which shards across runners and raises it. Read by
+      # playwright.config.ts; a trailing --workers=N on the command line wins.
       E2E_WORKERS: "2"
 
 volumes:
