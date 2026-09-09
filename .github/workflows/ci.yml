@@ -118,9 +118,10 @@ jobs:
   web-e2e:
     # The Playwright e2e + visual-regression suite under deterministic software
     # WebGL (see web/playwright.config.ts). Visual baselines are only
-    # authoritative under the pinned Chromium build this job installs — the same
-    # one web/Dockerfile.e2e carries, which is how a developer off Linux runs
-    # the gallery (it skips itself on every non-Linux platform).
+    # authoritative under the pinned Chromium headless shell this job installs —
+    # the same build web/Dockerfile.e2e's image carries and resolves the same
+    # way, which is how a developer off Linux runs the gallery (it skips itself
+    # on every non-Linux platform).
     #
     # Sharded because this is the whole critical path: ~228 tests, 43 of them
     # full-frame SwiftShader screenshot comparisons, took 6m27s on one runner at
@@ -145,8 +146,42 @@ jobs:
           cache-dependency-path: web/package-lock.json
       - name: Install dependencies
         run: npm ci
-      - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
+      # `--only-shell`, and no `--with-deps`, because measuring what the default
+      # `install --with-deps chromium` bought showed 16 of its 20.5 s were
+      # waste (run 34322570140):
+      #
+      #   5.4 s  apt-get update
+      #   6.0 s  the only packages it then installs: nine *font* packages
+      #          (Japanese, Chinese, Thai, Cyrillic, Unifont, FreeFont). Every
+      #          library Chromium actually links is already on the runner image
+      #          — the log says "is already the newest version" for all of them.
+      #          The fonts are dead weight too, and that was checked rather
+      #          than assumed: with those nine packages' files moved off a
+      #          Linux box and fontconfig rebuilt, the whole suite still passed,
+      #          all 42 gallery baselines included. Which figures — nothing here
+      #          renders CJK or Cyrillic, and the four faces the app draws with
+      #          (Rubik, DSEG7, Space Grotesk, Caprasimo) are bundled TTFs under
+      #          web/public/fonts, reached before any system fallback.
+      #   4.5 s  the full 174 MiB Chromium, which is then never launched: no
+      #          project sets `channel: "chromium"` and nothing runs headed, so
+      #          Playwright resolves headless to the headless shell instead
+      #          (confirmed with DEBUG=pw:browser — it execs
+      #          chromium_headless_shell-<build>/chrome-linux/headless_shell).
+      #   2.5 s  the 104 MiB headless shell — the binary that draws every pixel
+      #          in tests/e2e/gallery.spec.ts-snapshots.
+      #
+      # So: install the shell, skip the browser nothing opens, and take the
+      # system libraries from the runner image. Both ways this can rot are
+      # loud, not silent-wrong — give a project a `channel` or a headed run and
+      # Playwright stops with "Executable doesn't exist"; let GitHub trim the
+      # image and Chromium fails to launch. Neither can quietly move a pixel.
+      #
+      # Not cached. What is left is a 0.6 s download and a 1.9 s unzip, and an
+      # actions/cache restore of the same ~120 MiB costs about that much — four
+      # times per run, against one save. Playwright's own CI guide declines to
+      # recommend browser caching for exactly this reason.
+      - name: Install Playwright Chromium headless shell
+        run: npx playwright install --only-shell chromium
       - name: E2E + visual tests (shard ${{ matrix.shard }}/4)
         run: npx playwright test --shard=${{ matrix.shard }}/4
         env:
