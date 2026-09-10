@@ -1,7 +1,8 @@
 """Render the app icons for the web build and wire them into index.html.
 
 Writes the browser tab favicon plus an iOS "Add to Home Screen" icon (the
-same flat teal mine-in-hexagon plate as the macOS dock) and adds the
+same flat mine on a terracotta pentagon cell, on Sand's cream plate, as the
+macOS dock) and adds the
 `apple-touch-icon` <link> pygbag's template omits, so an iPhone
 home-screen shortcut shows the app icon instead of a screenshot of the
 page.

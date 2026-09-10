@@ -135,12 +135,21 @@ ICON_BLUE_LIGHT = (159, 166, 252)  # light face / accent shapes
 ICON_BLUE_DARK = (67, 56, 202)     # dark face on the 3D solids + detail lines
 ICON_OUTLINE = (79, 82, 194)       # soft same-hue hairline round the shapes
 
-# flat teal used by the app / web icon (favicon, iOS home-screen, macOS dock):
-# a top-to-bottom gradient plate behind a white hexagon and a dark mine.
-ICON_TEAL_TOP = (20, 199, 150)
-ICON_TEAL_BOTTOM = (5, 140, 110)
-ICON_HEX = (255, 255, 255)
-ICON_MINE = (11, 60, 47)  # dark teal, reads on the white hexagon
+# The app / web icon (favicon, iOS home-screen, macOS dock): Sand's cream
+# ground under a terracotta pentagon cell and the flat mine. Kept in step with
+# web/scripts/make-icons.mjs, which draws the same icon for the TS build.
+ICON_GROUND = (245, 234, 216)   # #f5ead8
+ICON_ACCENT = (198, 113, 57)    # #c67139
+ICON_FACETS = (                 # the chamfer, in edge order from the top
+    (216, 155, 112),  # upper right
+    (129, 71, 33),    # right
+    (134, 74, 35),    # bottom
+    (220, 165, 125),  # lower left
+    (242, 217, 193),  # upper left, the lit one
+)
+ICON_FACE = (204, 126, 75)      # the top face
+ICON_MINE = (31, 35, 43)        # #1f232b, MINE_COLORS.flatCasing
+ICON_GLINT = (244, 241, 232)    # #f4f1e8
 
 NUMBER_COLORS = {
     1: (28, 60, 220),
@@ -647,10 +656,10 @@ def smiley_sprite(radius: int, state: GameState) -> pygame.Surface:
 
 
 def make_icon(size: int = 512, *, bleed: bool = False) -> pygame.Surface:
-    """App icon: a mine in a hexagon on a flat teal rounded square.
+    """App icon: the flat mine on a terracotta pentagon cell, on Sand's cream plate.
 
-    A vibrant teal-to-green gradient plate carries a clean white hexagon
-    and a flat dark mine -- flat and modern, no bevels or gloss.
+    A flat cream plate carries a chamfered terracotta pentagon -- five facets
+    shaded by where each faces the light -- and the flat mine at its centre.
 
     With ``bleed`` the plate fills the whole canvas with square corners,
     for the iOS home-screen icon: iOS paints any transparency black and
@@ -662,53 +671,42 @@ def make_icon(size: int = 512, *, bleed: bool = False) -> pygame.Surface:
     plate = pygame.Rect(margin, margin, size - 2 * margin, size - 2 * margin)
     corner = 0 if bleed else int(size * 0.225)
 
-    # teal gradient plate, clipped to the rounded rectangle
+    # flat cream plate, clipped to the rounded rectangle
     grad = pygame.Surface(icon.get_size(), pygame.SRCALPHA)
-    for y in range(plate.height):
-        t = y / max(1, plate.height - 1)
-        color = tuple(
-            int(a + (b - a) * t) for a, b in zip(ICON_TEAL_TOP, ICON_TEAL_BOTTOM)
-        )
-        pygame.draw.line(
-            grad, (*color, 255),
-            (plate.left, plate.top + y), (plate.right, plate.top + y),
-        )
-    # a very light top sheen that fades out (no hard edge) keeps the flat
-    # plate from looking dead; built on its own overlay so the blit blends
-    sheen = pygame.Surface(icon.get_size(), pygame.SRCALPHA)
-    sheen_h = int(plate.height * 0.55)
-    for y in range(sheen_h):
-        alpha = int(30 * (1 - y / sheen_h))
-        if alpha <= 0:
-            continue
-        pygame.draw.line(
-            sheen, (255, 255, 255, alpha),
-            (plate.left, plate.top + y), (plate.right, plate.top + y),
-        )
-    grad.blit(sheen, (0, 0))
+    pygame.draw.rect(grad, (*ICON_GROUND, 255), plate)
     mask = pygame.Surface(icon.get_size(), pygame.SRCALPHA)
     pygame.draw.rect(mask, (255, 255, 255, 255), plate, border_radius=corner)
     grad.blit(mask, (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
     icon.blit(grad, (0, 0))
 
-    # flat white hexagon (pointy-top)
-    cx = cy = size // 2
-    r = size * 0.35
-    hexagon = [
-        (cx + r * math.cos(math.radians(60 * k - 90)),
-         cy + r * math.sin(math.radians(60 * k - 90)))
-        for k in range(6)
-    ]
-    fill_polygon(icon, hexagon, ICON_HEX)
+    # terracotta pentagon cell, chamfered: five facets round a flat top face
+    cx = cy = size / 2
+    r = size * 0.44
+    center_y = cy + r * 0.048  # bbox-centre the point-up pentagon
+    outer = _ngon_points(cx, center_y, r, 5, -90)
+    inner = _ngon_points(cx, center_y - r * 0.0136, r * 0.859, 5, -90)
+    fill_polygon(icon, outer, ICON_ACCENT)
+    for k in range(5):
+        fill_polygon(icon, [outer[k], outer[(k + 1) % 5],
+                            inner[(k + 1) % 5], inner[k]], ICON_FACETS[k])
+    fill_polygon(icon, inner, ICON_FACE)
 
-    # flat mine
-    body = int(size * 0.115)
-    spike = size * 0.185
-    for dx, dy in ((1, 0), (0, 1), (0.7, 0.7), (0.7, -0.7)):
-        start = (cx - dx * spike, cy - dy * spike)
-        end = (cx + dx * spike, cy + dy * spike)
-        pygame.draw.line(icon, ICON_MINE, start, end, max(3, size // 30))
-    fill_circle(icon, cx, cy, body, ICON_MINE)
+    # the flat mine: disc, eight butt-capped spikes, one square glint
+    body = r * 0.307
+    width = max(3, int(body * 0.2))
+    for k in range(8):
+        a = math.radians(45 * k)
+        ca, sa = math.cos(a), math.sin(a)
+        my = center_y + r * 0.0545
+        pygame.draw.line(
+            icon, ICON_MINE,
+            (cx + ca * body * 0.6, my + sa * body * 0.6),
+            (cx + ca * body * 1.42, my + sa * body * 1.42), width,
+        )
+    fill_circle(icon, int(cx), int(center_y + r * 0.0545), int(body), ICON_MINE)
+    g = body * 0.3
+    pygame.draw.rect(icon, ICON_GLINT, pygame.Rect(
+        cx - body * 0.52, center_y + r * 0.0545 - body * 0.52, g, g))
     return icon
 
 

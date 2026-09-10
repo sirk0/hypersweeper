@@ -1,55 +1,38 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
-    <linearGradient id="plate" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#39406b"/><stop offset="1" stop-color="#151a2e"/>
-    </linearGradient>
-    <linearGradient id="pent" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#d9d15c"/>
-      <stop offset="0.5" stop-color="#c4bb41"/>
-      <stop offset="1" stop-color="#a49b31"/>
-    </linearGradient>
-    <radialGradient id="shell" gradientUnits="userSpaceOnUse"
-                    cx="256" cy="262.01" r="115"
-                    fx="221" fy="222.01"
-                    fr="10">
-      <stop offset="0" stop-color="#5a616f"/>
-      <stop offset="0.5" stop-color="#2c303a"/>
-      <stop offset="1" stop-color="#141720"/>
-    </radialGradient>
     <filter id="drop" x="-15%" y="-15%" width="130%" height="130%">
       <feDropShadow dx="0" dy="7" stdDeviation="9"
-                    flood-color="#05060d" flood-opacity="0.5"/>
+                    flood-color="#402310" flood-opacity="0.28"/>
     </filter>
   </defs>
   
   <rect x="26" y="26" width="460" height="460" rx="112"
-        fill="url(#plate)"/>
+        fill="#f5ead8"/>
   <rect x="28" y="28" width="456" height="456"
-        rx="110" fill="none" stroke="#ffffff" stroke-opacity="0.13"
+        rx="110" fill="none" stroke="#2e2b25" stroke-opacity="0.12"
         stroke-width="3"/>
   
-  <g filter="url(#drop)">
-    <polygon points="256,57.01 465.23,209.02 385.31,454.99 126.69,454.99 46.77,209.02" fill="#6f691c"
-             stroke="#6f691c" stroke-width="6" stroke-linejoin="round"/>
-    <polygon points="256,69.11 453.72,212.76 378.2,445.2 133.8,445.2 58.28,212.76" fill="url(#pent)"
-             stroke-linejoin="round"/>
+  <g>
+    
+    <polygon points="256,57.01 465.23,209.02 385.31,454.99 126.69,454.99 46.77,209.02" fill="#c67139" filter="url(#drop)"/>
+    <polygon points="256,57.01 465.23,209.02 435.73,215.62 256,85.04"
+             fill="#d89b70"/>
+    <polygon points="465.23,209.02 385.31,454.99 367.08,426.9 435.73,215.62"
+             fill="#814721"/>
+    <polygon points="385.31,454.99 126.69,454.99 144.92,426.9 367.08,426.9"
+             fill="#864a23"/>
+    <polygon points="126.69,454.99 46.77,209.02 76.27,215.62 144.92,426.9"
+             fill="#dca57d"/>
+    <polygon points="46.77,209.02 256,57.01 256,85.04 76.27,215.62"
+             fill="#f2d9c1"/>
+    <polygon points="256,85.04 435.73,215.62 367.08,426.9 144.92,426.9 76.27,215.62" fill="#cc7e4b"/>
   </g>
   
   <g>
-    <path d="M339.15 296.45L379.8 313.29 M290.44 345.16L307.28 385.81 M221.56 345.16L204.72 385.81 M172.85 296.45L132.2 313.29 M172.85 227.57L132.2 210.73 M221.56 178.86L204.72 138.21 M290.44 178.86L307.28 138.21 M339.15 227.57L379.8 210.73" fill="none" stroke="#4b5261"
-          stroke-width="28" stroke-linecap="round"/>
-    <path d="M256 352.01L256 382.01"
-          fill="none" stroke="#3a3f4b" stroke-width="16"/>
-    <circle cx="256" cy="404.01" r="24"
-            fill="none" stroke="#3a3f4b" stroke-width="13"/>
-    <circle cx="256" cy="262.01" r="100" fill="url(#shell)"/>
-    <path d="M354.8 275.89A99 30 0 0 1 157.2 275.89" fill="none" stroke="#0c0e14" stroke-opacity="0.55"
-          stroke-width="8"/>
-    <path d="M332.86 317.85A95 95 0 0 1 200.16 338.86" fill="none" stroke="#96a0b4" stroke-opacity="0.3"
-          stroke-width="5"/>
-    <ellipse cx="218" cy="226.01"
-             rx="22" ry="15" fill="#ffffff"
-             fill-opacity="0.85"
-             transform="rotate(-40.1 218 226.01)"/>
+    <path d="M296.8 289L352.56 289 M284.85 317.85L324.28 357.28 M256 329.8L256 385.56 M227.15 317.85L187.72 357.28 M215.2 289L159.44 289 M227.15 260.15L187.72 220.72 M256 248.2L256 192.44 M284.85 260.15L324.28 220.72" fill="none" stroke="#1f232b"
+          stroke-width="13.6" stroke-linecap="butt"/>
+    <circle cx="256" cy="289" r="68" fill="#1f232b"/>
+    <rect x="220.64" y="253.64"
+          width="20.4" height="20.4" fill="#f4f1e8"/>
   </g>
 </svg>
