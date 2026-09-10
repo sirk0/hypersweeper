@@ -126,7 +126,7 @@ the bottom and centres the mode list between them. The desktop leaves the
 height at each screen's natural size, so its layout is unchanged. pygbag
 also regenerates its default favicon and `index.html` on every build, so
 `make web-package` runs scripts/make_web_icons.py afterwards: it
-overwrites the favicon with the in-game mine-in-hexagon icon, writes an
+overwrites the favicon with the in-game pentagon-cell mine icon, writes an
 `apple-touch-icon.png` (the same icon rendered full-bleed so iOS's own
 rounded-square mask makes the iPhone home-screen icon match the macOS
 dock), and injects the `apple-touch-icon` <link> that pygbag's template
