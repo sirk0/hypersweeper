@@ -67,19 +67,232 @@ interface PenroseCell {
   verts: ZPoint[];
 }
 
+// -- windowing an aperiodic patch --------------------------------------------
+//
+// Port of the same section in minesweeper/boards/aperiodic.py; see that file
+// for the fuller commentary. What makes a tiling aperiodic is that it repeats
+// nowhere, and both boards here grow far more of one than they keep — the
+// Penrose wheel is 430 rhombi where the easy board is 81, the Spectre cluster
+// 4401 tiles where the hard board is 480. The centred trim is one window onto
+// that patch; every other window is a board of the same size made of tiles that
+// have never sat together before, which is what a `variant` is: not a
+// re-generated tiling, but somewhere else to look at the one the substitution
+// already built.
+//
+// The other nonperiodic boards in this file take no variant, deliberately: the
+// phyllotactic spiral and the brick rings are nonperiodic by *symmetry* rather
+// than by substitution, so each has one distinguished centre (the five-fold
+// rosette, the 2×2 core) and a window elsewhere is a crop of a structured
+// picture rather than another board.
+//
+// A window is *picked*, not sampled: `variant` indexes a pool of candidate
+// centre tiles built the same way in both languages, so the same integer names
+// the same board in each — pinned by data/conformance.json — and no random
+// stream has to be shared across two implementations. Index 0 of that pool is
+// the centred trim itself, so the classic patch stays one of the boards dealt.
+//
+// Not every window in that pool is a board a *difficulty* may deal, though: the
+// mine count is fitted to the centred window and does not carry across by
+// itself (on the 81-cell Penrose board the solver's win rate runs from 0.76 to
+// 0.98 across windows, and on the 480-cell one from 0.25 to 0.66 against a 0.51
+// target). scripts/difficulty/windows.py measures them and keeps
+// the ones that play like the calibrated board, and `windowFor` in presets.ts
+// is what turns a game seed into one of those. This file is the geometry; that
+// list is the difficulty.
+
+/** How far in from the rim a window's centre has to sit, as a multiple of the
+ * window's own half-width in tiles. Under 1 because the window is a square and
+ * the depth is measured to the *nearest* rim. Must match `_WINDOW_MARGIN` in
+ * minesweeper/boards/aperiodic.py. */
+const WINDOW_MARGIN = 0.75;
+
+/** Consecutive variants step this far through the candidate pool, so variant 1
+ * and variant 2 are different boards rather than the same window moved one
+ * tile. Must match `_WINDOW_STRIDE` in minesweeper/boards/aperiodic.py. */
+const WINDOW_STRIDE = 65537;
+
+const edgeKey = (a: string, b: string): string => (a < b ? `${a}|${b}` : `${b}|${a}`);
+
+/** Shared-vertex adjacency over an untrimmed patch, by row index — the same
+ * relation `finalizeFlat` gives the finished board, but on rows and over the
+ * whole patch, which is what the rim walk and the disc test need before any of
+ * it has been trimmed into a board. */
+function patchAdjacency(cells: readonly string[][]): number[][] {
+  const byVertex = new Map<string, number[]>();
+  cells.forEach((ids, i) => {
+    for (const vertex of ids) {
+      const at = byVertex.get(vertex);
+      if (at) at.push(i);
+      else byVertex.set(vertex, [i]);
+    }
+  });
+  const touching = cells.map(() => new Set<number>());
+  for (const group of byVertex.values()) {
+    for (const i of group) for (const j of group) touching[i]!.add(j);
+  }
+  return touching.map((others, i) => {
+    others.delete(i);
+    return [...others].sort((a, b) => a - b);
+  });
+}
+
+/** Each cell's distance in tiles from the rim of the patch: the rim is every
+ * cell carrying an edge no other cell shares, and the depth is the
+ * breadth-first distance inward from it. Exact — both tilings' vertex ids are
+ * integer tuples, so an edge is shared or it is not, with nothing to round. */
+function rimDepth(cells: readonly string[][], adjacency: readonly number[][]): number[] {
+  const shared = new Map<string, number>();
+  for (const ids of cells) {
+    for (let i = 0; i < ids.length; i++) {
+      const key = edgeKey(ids[i]!, ids[(i + 1) % ids.length]!);
+      shared.set(key, (shared.get(key) ?? 0) + 1);
+    }
+  }
+  const depth = cells.map(() => -1);
+  const queue: number[] = [];
+  cells.forEach((ids, i) => {
+    for (let j = 0; j < ids.length; j++) {
+      if (shared.get(edgeKey(ids[j]!, ids[(j + 1) % ids.length]!)) === 1) {
+        depth[i] = 0;
+        queue.push(i);
+        return;
+      }
+    }
+  });
+  for (let head = 0; head < queue.length; head++) {
+    const i = queue[head]!;
+    for (const neighbor of adjacency[i]!) {
+      if (depth[neighbor]! < 0) {
+        depth[neighbor] = depth[i]! + 1;
+        queue.push(neighbor);
+      }
+    }
+  }
+  return depth;
+}
+
+/** Whether these cells make a board: one piece, and no hole in it. A window
+ * that slides off the ragged rim of the Spectre's cluster comes back as two or
+ * three islands — a board with a chunk of it floating unreachable, which is not
+ * a board. Connected with Euler characteristic 1 is exactly a disc: an annulus
+ * (a hole) has 0, two islands 2. */
+function isDisc(
+  cells: readonly string[][],
+  adjacency: readonly number[][],
+  kept: readonly number[],
+): boolean {
+  const chosen = new Set(kept);
+  const seen = new Set([kept[0]!]);
+  const queue = [kept[0]!];
+  for (let head = 0; head < queue.length; head++) {
+    for (const neighbor of adjacency[queue[head]!]!) {
+      if (chosen.has(neighbor) && !seen.has(neighbor)) {
+        seen.add(neighbor);
+        queue.push(neighbor);
+      }
+    }
+  }
+  if (seen.size !== chosen.size) return false;
+  const vertices = new Set<string>();
+  const edges = new Set<string>();
+  for (const i of kept) {
+    const ids = cells[i]!;
+    for (let j = 0; j < ids.length; j++) {
+      vertices.add(ids[j]!);
+      edges.add(edgeKey(ids[j]!, ids[(j + 1) % ids.length]!));
+    }
+  }
+  return vertices.size - edges.size + kept.length === 1;
+}
+
+/**
+ * The rows of one aperiodic patch that make up board `variant`: `keep` rows
+ * nearest a centre by Chebyshev distance — a square block, which packs more
+ * tiles onto the screen than the round patch does — in rank order, so the board
+ * a caller assembles from them is ordered exactly as the centred trim used to
+ * order it. `variant` 0 is that centred trim, unchanged; any other integer
+ * picks a window elsewhere in the patch.
+ *
+ * The distance is quantised, as it always was: these patches are ten-fold
+ * symmetric (Penrose) or grown from one cluster (the Spectre), so tiles come in
+ * sets at the *same* distance, and a tie at the cut rank compared as a raw
+ * float breaks the other way in the Python build, whose last cosine bit need
+ * not agree with V8's. Same cells kept, different edge count — which is what
+ * the conformance suites catch.
+ */
+function windowRows(
+  cells: readonly string[][],
+  centroids: readonly Vertex[],
+  tiebreak: (a: number, b: number) => number,
+  keep: number | null,
+  variant: number,
+): number[] {
+  const n = cells.length;
+  const rows = (): number[] => Array.from({ length: n }, (_, i) => i);
+  if (keep === null || keep >= n) return rows();
+
+  const windowAt = (cx: number, cy: number): number[] => {
+    const rank = centroids.map(([x, y]) =>
+      Math.floor(Math.max(Math.abs(x - cx), Math.abs(y - cy)) * 1e6 + 0.5),
+    );
+    return rows()
+      .sort((a, b) => rank[a]! - rank[b]! || tiebreak(a, b))
+      .slice(0, keep);
+  };
+
+  let gx = 0;
+  let gy = 0;
+  for (const [x, y] of centroids) {
+    gx += x;
+    gy += y;
+  }
+  gx /= n;
+  gy /= n;
+  const centred = windowAt(gx, gy);
+  if (!variant) return centred;
+
+  // A window's centre has to sit far enough inside the patch that the window is
+  // filled by it; the pool is every tile that does, in the order the
+  // substitution laid them — the one order both languages agree on without
+  // sorting anything.
+  const adjacency = patchAdjacency(cells);
+  const depth = rimDepth(cells, adjacency);
+  const margin = (Math.sqrt(keep) / 2) * WINDOW_MARGIN;
+  const pool: number[] = [];
+  for (let i = 0; i < n; i++) if (depth[i]! >= margin) pool.push(i);
+  const size = pool.length + 1;
+  // Positive remainder, as Python's `%` is: the variant is a uint32 in the app,
+  // but the builders are callable with anything.
+  const index = (((variant * WINDOW_STRIDE) % size) + size) % size;
+  for (let step = 0; step < size; step++) {
+    const at = (index + step) % size;
+    if (at === 0) return centred; // the centred trim is index 0
+    const centre = centroids[pool[at - 1]!]!;
+    const kept = windowAt(centre[0], centre[1]);
+    if (isDisc(cells, adjacency, kept)) return kept;
+  }
+  return centred; // unreachable: index 0 is always a board
+}
+
 /**
  * An aperiodic Penrose tiling (P3): thick and thin rhombi. Starts from a wheel
  * of ten half-rhombus Robinson triangles, deflates `subdivisions` times, then
  * merges mirror-image triangle halves into rhombi (unpaired rim halves are
- * dropped). `scale` is the wheel radius in pixels; `keep` trims to the `keep`
- * centremost rhombi by Chebyshev distance (a roughly square block); `null`
- * keeps the whole decagonal patch.
+ * dropped). `scale` is the wheel radius in pixels; `keep` trims to `keep`
+ * rhombi by Chebyshev distance (a roughly square block); `null` keeps the whole
+ * decagonal patch.
+ *
+ * `variant` picks *which* `keep` rhombi: 0 is the centremost block, the patch's
+ * ten-fold sun in the middle of it, and any other integer a window somewhere
+ * else in the same tiling — a different board of the same size, which is the
+ * point of an aperiodic one. See `windowRows`.
  */
 export function penroseBoard(
   subdivisions: number,
   mineCount: number,
   scale = 300,
   keep: number | null = null,
+  variant = 0,
 ): Board {
   const zero: ZPoint = [0, 0, 0, 0];
   const powers: ZPoint[] = [[1, 0, 0, 0]];
@@ -136,53 +349,36 @@ export function penroseBoard(
     }
   }
 
-  let kept = cells;
-  if (keep !== null && keep < cells.length) {
-    const centroid = new Map<PenroseCell, Vertex>();
-    for (const cell of cells) {
-      let cx = 0;
-      let cy = 0;
-      for (const v of cell.verts) {
-        const [x, y] = zToXy(v);
-        cx += x;
-        cy += y;
-      }
-      centroid.set(cell, [cx / 4, cy / 4]);
+  const vertexIds = cells.map((cell) => cell.verts.map(zKey));
+  const centroids: Vertex[] = cells.map((cell) => {
+    let cx = 0;
+    let cy = 0;
+    for (const v of cell.verts) {
+      const [x, y] = zToXy(v);
+      cx += x;
+      cy += y;
     }
-    let gx = 0;
-    let gy = 0;
-    for (const c of centroid.values()) {
-      gx += c[0];
-      gy += c[1];
-    }
-    gx /= cells.length;
-    gy /= cells.length;
-    // Quantised, like the spiral's trim: the patch is ten-fold symmetric, so
-    // tiles come in sets at the *same* distance, and the raw float is a cosine
-    // whose last bit need not agree with Python's. Compared exactly, a tie at
-    // the cut rank is broken the other way in one of the two builds and they
-    // keep different tiles -- same cell count, different edge count. Must
-    // match `penrose_board` in `minesweeper/boards/aperiodic.py`.
-    const cheb = (cell: PenroseCell): number => {
-      const c = centroid.get(cell)!;
-      const distance = Math.max(Math.abs(c[0] - gx), Math.abs(c[1] - gy));
-      return Math.floor(distance * 1e6 + 0.5);
-    };
-    kept = [...cells].sort(
-      (m, n) => cheb(m) - cheb(n) || m.color - n.color || m.index - n.index,
-    );
-    kept = kept.slice(0, keep);
-  }
+    return [cx / 4, cy / 4];
+  });
+  // The tie-break at the cut rank is the cell id, as it always was: a rhombus's
+  // colour, then the order the merge made it.
+  const kept = windowRows(
+    vertexIds,
+    centroids,
+    (a, b) => cells[a]!.color - cells[b]!.color || cells[a]!.index - cells[b]!.index,
+    keep,
+    variant,
+  );
 
   const cellMap = new Map<CellId, string[]>();
   const positions = new Map<string, Vertex>();
-  for (const cell of kept) {
-    const keys = cell.verts.map((v) => {
-      const k = zKey(v);
+  for (const i of kept) {
+    const cell = cells[i]!;
+    cell.verts.forEach((v, j) => {
+      const k = vertexIds[i]![j]!;
       if (!positions.has(k)) positions.set(k, zToXy(v));
-      return k;
     });
-    cellMap.set(cid(cell.color, cell.index), keys);
+    cellMap.set(cid(cell.color, cell.index), vertexIds[i]!);
   }
   return finalizeFlat("penrose", cellMap, positions, mineCount, scale);
 }
@@ -579,16 +775,20 @@ function cmpSortedZ12(A: Z12Point[], B: Z12Point[]): number {
 /**
  * The Spectre (Tile(1,1)), the chiral aperiodic monotile, grown by `levels` of
  * the paper's reflection-free substitution from a single Spectre (Delta)
- * cluster: 1, 9, 71, 559, 4401 tiles. `keep` trims the patch to its `keep`
- * centremost tiles by Chebyshev distance (a roughly square board with an exact
- * cell count); `null` keeps the whole (ragged) cluster. No tile is ever
- * mirrored.
+ * cluster: 1, 9, 71, 559, 4401 tiles. `keep` trims the patch to `keep` tiles by
+ * Chebyshev distance (a roughly square board with an exact cell count); `null`
+ * keeps the whole (ragged) cluster. No tile is ever mirrored.
+ *
+ * `variant` picks which `keep` tiles: 0 is the centremost block and any other
+ * integer a window elsewhere in the same cluster, which is a different board of
+ * the same size. See `windowRows`.
  */
 export function spectreBoard(
   levels: number,
   mineCount: number,
   keep: number | null = null,
   scale = 21,
+  variant = 0,
 ): Board {
   const rows: SpectreRow[] = [];
   const seen = new Set<string>();
@@ -620,34 +820,27 @@ export function spectreBoard(
     }
   }
 
-  let kept = rows;
-  if (keep !== null && keep < rows.length) {
-    let gx = 0;
-    let gy = 0;
-    for (const r of rows) {
-      gx += r.cx;
-      gy += r.cy;
-    }
-    gx /= rows.length;
-    gy /= rows.length;
-    // Quantised for the same reason as the Penrose trim above: a tie at the
-    // cut rank has to break the same way in both builds.
-    const cheb = (r: SpectreRow): number =>
-      Math.floor(Math.max(Math.abs(r.cx - gx), Math.abs(r.cy - gy)) * 1e6 + 0.5);
-    kept = [...rows]
-      .sort((r1, r2) => cheb(r1) - cheb(r2) || cmpSortedZ12(r1.sortedIds, r2.sortedIds))
-      .slice(0, keep);
-  }
+  // Chebyshev distance from the window's centre, as `penroseBoard` does. The
+  // tie-break at the cut rank is the tile's own sorted vertex ids — cell ids do
+  // not exist yet here, the trim being what puts the tiles in the order they
+  // are numbered in.
+  const vertexIds = rows.map((row) => row.ids.map(z12Key));
+  const kept = windowRows(
+    vertexIds,
+    rows.map((row): Vertex => [row.cx, row.cy]),
+    (a, b) => cmpSortedZ12(rows[a]!.sortedIds, rows[b]!.sortedIds),
+    keep,
+    variant,
+  );
 
   const cellMap = new Map<CellId, string[]>();
   const positions = new Map<string, Vertex>();
   kept.forEach((row, i) => {
-    const keys = row.ids.map((v) => {
-      const k = z12Key(v);
+    rows[row]!.ids.forEach((v, j) => {
+      const k = vertexIds[row]![j]!;
       if (!positions.has(k)) positions.set(k, z12ToXy(v));
-      return k;
     });
-    cellMap.set(cid(row.label, i), keys);
+    cellMap.set(cid(rows[row]!.label, i), vertexIds[row]!);
   });
   return finalizeFlat("spectre", cellMap, positions, mineCount, scale);
 }

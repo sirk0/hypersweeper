@@ -37,6 +37,24 @@ rings need neither: the rings build the whole board, so their count is
 both the size knob and the window. See
 the `AGENT NOTE` in `boards/tilings.py`.
 
+The two substitution boards trim to that `keep` from a **variable** centre —
+one preset is a family of boards, one per window onto the grown patch (see
+"The aperiodic boards" in [`geometry.md`](geometry.md)) — and **the mine count
+does not carry from one window to the next by itself**. A patch of an aperiodic
+tiling is not statistically interchangeable with another patch of it at 81
+cells: measured over 800 games a window, the Penrose easy board runs from a 0.76
+win rate to a 0.98 against the centred window's 0.93, and Penrose hard from 0.25
+to 0.66 against a target of 0.51. That is a different difficulty, not just a
+different board. So the windows are screened the way the mine counts are, by
+`scripts/difficulty/windows.py`: play each candidate with the reference solver
+at the preset's own mine count, keep those within `TOLERANCE` of the centred
+window's rate, and write the kept list to `data/windows.json`, which both
+front-ends deal from (`presets.window_for`). Between a third and four-fifths of
+each board's candidates land — 28 to 77 of the 96 measured — which leaves dozens
+of measured boards per mode × difficulty. Re-run it after `calibrate`/`apply` whenever an
+aperiodic preset changes shape — and note that `calibrate` itself measures the
+centred window throughout, which is what `build_board`'s default seed gives it.
+
 ## Measuring the size and the mine count
 
 **Do not invent either.** Both are measured, by `scripts/difficulty/`, and a

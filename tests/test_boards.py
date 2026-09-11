@@ -121,7 +121,7 @@ from minesweeper.boards.catalan import (
 )
 from minesweeper.boards.core import _cross
 from minesweeper.boards.core import newell_normal as _newell_normal
-from minesweeper.boards.presets import ARCH_PRESETS
+from minesweeper.boards.presets import _WINDOWS, ARCH_PRESETS, window_for
 
 # Template tilings split by symmetry type. Archimedean (uniform) tilings are
 # vertex-transitive (every vertex has the same configuration) and edge to
@@ -182,6 +182,20 @@ def _tile_signature(polygon):
 # any tiling or surface the moment it is added to the catalog. A few
 # extra-small hand-built boards exercise seam edge cases the easy presets
 # are too large to reach.
+def _connected(board) -> bool:
+    """Whether every cell of a board is reachable from any other -- what a
+    window that slid off its patch would break, leaving part of the board
+    unplayable."""
+    start = next(iter(board.adjacency))
+    seen, queue = {start}, [start]
+    while queue:
+        for neighbor in board.adjacency[queue.pop()]:
+            if neighbor not in seen:
+                seen.add(neighbor)
+                queue.append(neighbor)
+    return len(seen) == len(board.adjacency)
+
+
 ALL_BOARDS = [build_board(mode, "easy") for mode in sorted(MODE_LABELS)] + [
     square_board(5, 5, 3),
     torus_board(12, 6, 9),
@@ -574,6 +588,119 @@ class TestSpectre:
         scale = math.dist(*list(board.polygons.values())[0][:2])
         assert shoelace(loop) == pytest.approx(
             tile_area * scale**2 * len(board.polygons), rel=1e-9)
+
+
+class TestAperiodicVariants:
+    """The two substitution boards are a *family* per preset.
+
+    An aperiodic tiling repeats nowhere, and both of these grow far more
+    of one than a board keeps -- so ``variant`` picks which window onto
+    the patch the board is, and a game followed by another is played
+    somewhere else in the same tiling. These tests say every window is a
+    board (the promised size, one piece, no hole) and that different
+    variants are different boards; data/conformance.json is what says a
+    given variant is the same board in the TypeScript port too.
+
+    The preset arguments are used rather than round numbers, so what is
+    checked is the boards the game actually deals.
+    """
+
+    CASES = [
+        ("penrose easy", penrose_board, (5, 6, 437.727, 81), 81),
+        ("penrose medium", penrose_board, (6, 17, 500.0, 256), 256),
+        ("penrose hard", penrose_board, (7, 48, 769.119, 480), 480),
+        ("spectre easy", spectre_board, (3, 11, 81, 14.361), 81),
+        ("spectre medium", spectre_board, (4, 37, 256, 9.437), 256),
+        ("spectre hard", spectre_board, (4, 89, 480, 8.512), 480),
+    ]
+
+    @pytest.mark.parametrize("name,builder,args,keep", CASES)
+    def test_every_variant_is_a_board(self, name, builder, args, keep):
+        seen = set()
+        for variant in range(8):
+            board = builder(*args, variant)
+            assert len(board.polygons) == keep
+            # a disc: an island would be 2, a hole 0
+            assert _euler_characteristic(board) == 1
+            assert _boundary_components(board) == 1
+            assert _connected(board)
+            seen.add(frozenset(board.polygons))
+        assert len(seen) == 8  # ...and eight boards, not one board eight times
+
+    @pytest.mark.parametrize("name,builder,args,keep", CASES)
+    def test_a_variant_is_the_same_board_every_time(self, name, builder, args, keep):
+        assert builder(*args, 3).polygons.keys() == builder(*args, 3).polygons.keys()
+
+    def test_variant_zero_is_the_centred_patch(self):
+        # The default argument and an explicit 0 are the same board, so a
+        # caller that knows nothing about variants (the exporters, the
+        # menu icons) keeps the patch this game shipped with.
+        assert penrose_board(5, 6, 437.727, 81).polygons.keys() == \
+            penrose_board(5, 6, 437.727, 81, 0).polygons.keys()
+        assert spectre_board(3, 11, 81, 14.361).polygons.keys() == \
+            spectre_board(3, 11, 81, 14.361, 0).polygons.keys()
+
+    @pytest.mark.parametrize("variant", [2**32 - 1, 2**31, -7])
+    def test_any_integer_wraps_into_the_pool(self, variant):
+        # The front-ends hand a 32-bit seed straight through rather than a
+        # small index, so the argument has to wrap rather than run off the
+        # end of the pool of windows.
+        board = penrose_board(5, 6, 437.727, 81, variant)
+        assert len(board.polygons) == 81
+        assert _euler_characteristic(board) == 1
+
+    def test_the_window_sits_inside_the_patch(self):
+        # Not merely a disc: a window that ran off the rim would be a
+        # crescent rather than the square block the trim promises.
+        for variant in range(6):
+            board = spectre_board(4, 89, 480, 8.512, variant)
+            assert 0.7 < board.width / board.height < 1.4
+
+    @pytest.mark.parametrize("mode", ["phyllotaxis", "brickrings", "square", "sphinx"])
+    def test_every_other_board_ignores_the_seed(self, mode):
+        # Only the substitution tilings vary. The spiral and the brick
+        # rings are nonperiodic by symmetry -- one distinguished centre,
+        # no second window onto it -- and the rest are periodic.
+        assert build_board(mode, "easy", 12345).polygons.keys() == \
+            build_board(mode, "easy").polygons.keys()
+
+    def test_build_board_deals_a_different_window_per_seed(self):
+        # The seam both front-ends use: the game's seed picks the window,
+        # so a re-deal is a new patch rather than new mines on the old one.
+        patches = {
+            frozenset(build_board("spectre", "easy", seed).polygons)
+            for seed in range(1, 6)
+        }
+        assert len(patches) == 5
+
+    @pytest.mark.parametrize("mode", ["penrose", "spectre"])
+    @pytest.mark.parametrize("difficulty", list(DIFFICULTIES))
+    def test_only_measured_windows_are_dealt(self, mode, difficulty):
+        # A window is a board of its own, so which ones a difficulty may
+        # deal is measured (scripts/difficulty/windows.py) rather than
+        # taken from the whole pool. Every seed has to land in that list,
+        # and the centred window -- the one the mine count was fitted on
+        # -- has to be the first of them.
+        windows = _WINDOWS[mode][difficulty]["windows"]
+        assert windows[0] == 0
+        assert len(windows) == len(set(windows))
+        assert len(windows) >= 8  # enough that a player does not exhaust them
+        dealt = {window_for(mode, difficulty, seed) for seed in range(500)}
+        assert dealt <= set(windows)
+        assert dealt == set(windows)  # ...and every one of them is reachable
+
+    @pytest.mark.parametrize("mode", ["penrose", "spectre"])
+    def test_every_measured_window_is_a_board(self, mode):
+        # The list is data, and data can go stale against a preset that
+        # changed shape under it -- so each window it names still has to
+        # build the board the difficulty promises. Seed i deals window i,
+        # so the seeds below walk the whole list.
+        for difficulty in DIFFICULTIES:
+            cells = len(build_board(mode, difficulty).polygons)
+            for seed in range(len(_WINDOWS[mode][difficulty]["windows"])):
+                board = build_board(mode, difficulty, seed)
+                assert len(board.polygons) == cells
+                assert _euler_characteristic(board) == 1
 
 
 class TestPhyllotaxis:

@@ -1740,7 +1740,11 @@ class BaseGameScreen:
     def new_game(self, difficulty: str | None = None) -> None:
         if difficulty is not None:
             self.difficulty = difficulty
-        self.board = build_board(self.mode, self.difficulty)
+        # A fresh patch as well as a fresh layout: the two aperiodic
+        # substitution boards keep only a window onto the tiling they grow, so
+        # every game of one is played somewhere else in it (boards/aperiodic.py
+        # ``_window``). Every other mode builds the same board regardless.
+        self.board = build_board(self.mode, self.difficulty, random.getrandbits(32))
         self.game = Game(self.board.adjacency, self.board.mine_count)
         self.exploded = None
         self.started_at: float | None = None

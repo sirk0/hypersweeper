@@ -20,10 +20,21 @@ twice.
   compact `ARCH_PRESETS` table by `scripts/export_data.py`, so that table
   is their authoring source.
 - `data/conformance.json` — board statistics (cell/mine/euler/boundary/…)
-  per ported mode × difficulty, the TypeScript conformance oracle.
+  per ported mode × difficulty, the TypeScript conformance oracle. Its
+  `seeds` block repeats the two aperiodic substitution modes (penrose,
+  spectre) at fixed game seeds, where one preset is a family of boards
+  rather than a single one — see "The aperiodic boards" in
+  [`geometry.md`](geometry.md).
+- `data/windows.json` — which windows onto those two aperiodic patches a
+  board may be dealt from, measured with the reference solver so that every
+  one of them plays like the window the mine count was fitted on. Read by
+  `presets.window_for` / `windowFor`. Like `data/difficulty.json` it is
+  **measured**, not exported: `scripts/difficulty/windows.py` writes it, it
+  costs solver time no CI job should spend, and `data-sync` therefore does
+  not regenerate it.
 
 `scripts/export_data.py` and `scripts/export_conformance.py` regenerate
-these from the Python side; the CI `data-sync` job re-runs them and fails
+the rest from the Python side; the CI `data-sync` job re-runs them and fails
 on any diff. `make web-prepare` copies `data/` into the pygbag stage so
 the Python web build finds it at runtime.
 

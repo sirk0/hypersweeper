@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from collections import Counter, defaultdict, deque
 
 from minesweeper.boards.core import Board, Cell, _finalize_flat
 
@@ -60,8 +61,191 @@ def _z_to_xy(p: ZPoint) -> tuple[float, float]:
     )
 
 
+# -- windowing an aperiodic patch --------------------------------------------
+#
+# What makes a tiling aperiodic is that it repeats nowhere, and both boards
+# below grow far more of one than they keep: the Penrose wheel is 430 rhombi
+# where the easy board is 81, and the Spectre cluster 4401 tiles where the hard
+# board is 480. The centred trim is one window onto that patch. Every other
+# window onto it is a board of the same size made of tiles that have never sat
+# together before -- which is what a Penrose or a Spectre board's ``variant``
+# is: not a re-generated tiling, but somewhere else to look at the one the
+# substitution already built.
+#
+# The two boards below this file's other nonperiodic ones do not take a
+# variant, and deliberately: the phyllotactic spiral and the brick rings are
+# nonperiodic by *symmetry* rather than by substitution, so each has one
+# distinguished centre (the five-fold rosette, the 2x2 core) and a window
+# anywhere else is a crop of a structured picture rather than another board.
+#
+# A window is *picked*, not sampled: ``variant`` indexes a pool of candidate
+# centre tiles built the same way here and in the TypeScript port, so the same
+# integer names the same board in both builds -- pinned by data/conformance.json
+# -- and no random stream has to be shared across two languages. Index 0 of
+# that pool is the centred trim itself, so the classic patch (the Penrose sun,
+# the middle of the Delta cluster) stays one of the boards dealt.
+#
+# Not every window in that pool is a board a *difficulty* may deal, though:
+# the mine count is fitted to the centred window and does not carry across by
+# itself (on the 81-cell Penrose board the solver's win rate runs from 0.76 to
+# 0.98 across windows, and on the 480-cell one from 0.25 to 0.66 against a 0.51
+# target). ``scripts/difficulty/windows.py`` measures them and
+# keeps the ones that play like the calibrated board, and ``presets.window_for``
+# is what turns a game seed into one of those. This function is the geometry;
+# that list is the difficulty.
+
+#: How far in from the rim a window's centre has to sit, as a multiple of the
+#: window's own half-width in tiles. Under 1 because the window is a square and
+#: the depth is measured to the *nearest* rim: measured over both tilings at
+#: every difficulty, 0.75 leaves a pool of dozens of centres per board and not
+#: one window that ``_is_disc`` had to reject.
+_WINDOW_MARGIN = 0.75
+
+#: Consecutive variants step this far through the candidate pool, so variant 1
+#: and variant 2 are different boards rather than the same window moved one
+#: tile. Prime and larger than any pool a board here builds, so stepping cannot
+#: revisit a centre before the pool is exhausted.
+_WINDOW_STRIDE = 65537
+
+
+def _patch_adjacency(cells: list[list]) -> list[list[int]]:
+    """Shared-vertex adjacency over an untrimmed patch, by row index.
+
+    The same relation ``core._shared_vertex_adjacency`` gives the finished
+    board, but on rows rather than cell ids and over the whole patch, which
+    is what the rim walk and the connectivity test below need before any of
+    it has been trimmed into a board.
+    """
+    by_vertex: dict = defaultdict(list)
+    for i, ids in enumerate(cells):
+        for vertex in ids:
+            by_vertex[vertex].append(i)
+    touching: list[set[int]] = [set() for _ in cells]
+    for group in by_vertex.values():
+        for i in group:
+            touching[i].update(group)
+    return [sorted(others - {i}) for i, others in enumerate(touching)]
+
+
+def _rim_depth(cells: list[list], adjacency: list[list[int]]) -> list[int]:
+    """Each cell's distance in tiles from the rim of the patch.
+
+    The rim is every cell carrying an edge no other cell shares, and the
+    depth is the breadth-first distance inward from it. Exact: the vertex
+    ids are integer tuples in both tilings' cyclotomic rings, so an edge is
+    shared or it is not, with nothing to round.
+    """
+    shared: Counter = Counter()
+    for ids in cells:
+        for edge in zip(ids, ids[1:] + ids[:1]):
+            shared[frozenset(edge)] += 1
+    depth = [-1] * len(cells)
+    queue: deque[int] = deque()
+    for i, ids in enumerate(cells):
+        if any(shared[frozenset(e)] == 1 for e in zip(ids, ids[1:] + ids[:1])):
+            depth[i] = 0
+            queue.append(i)
+    while queue:
+        i = queue.popleft()
+        for neighbor in adjacency[i]:
+            if depth[neighbor] < 0:
+                depth[neighbor] = depth[i] + 1
+                queue.append(neighbor)
+    return depth
+
+
+def _is_disc(cells: list[list], adjacency: list[list[int]], kept: list[int]) -> bool:
+    """Whether these cells make a board: one piece, and no hole in it.
+
+    A window that slides off the ragged rim of the Spectre's cluster comes
+    back as two or three islands -- a board with a chunk of it floating
+    unreachable, which is not a board. Connected with Euler characteristic 1
+    is exactly a disc: an annulus (a hole) has 0, two islands 2.
+    """
+    chosen = set(kept)
+    seen = {kept[0]}
+    queue = deque([kept[0]])
+    while queue:
+        i = queue.popleft()
+        for neighbor in adjacency[i]:
+            if neighbor in chosen and neighbor not in seen:
+                seen.add(neighbor)
+                queue.append(neighbor)
+    if len(seen) != len(chosen):
+        return False
+    vertices, edges = set(), set()
+    for i in kept:
+        ids = cells[i]
+        vertices.update(ids)
+        edges.update(frozenset(e) for e in zip(ids, ids[1:] + ids[:1]))
+    return len(vertices) - len(edges) + len(kept) == 1
+
+
+def _window(
+    cells: list[list],
+    centroids: list[tuple[float, float]],
+    tiebreaks: list,
+    keep: int | None,
+    variant: int,
+) -> list[int]:
+    """The rows of one aperiodic patch that make up board ``variant``.
+
+    ``keep`` rows nearest a centre by Chebyshev distance -- a square block,
+    which packs more tiles onto the screen than the round patch does -- in
+    rank order, so the board a caller assembles from them is ordered exactly
+    as the centred trim used to order it. ``variant`` 0 is that centred trim,
+    unchanged and identical to what this file built before variants existed;
+    any other integer picks a window elsewhere in the patch.
+
+    The distance is quantised, as it always was: these patches are
+    ten-fold symmetric (Penrose) or grown from one cluster (the Spectre), so
+    tiles come in sets at the *same* distance, and a tie at the cut rank
+    compared as a raw float breaks the other way in the TypeScript port,
+    whose last cosine bit need not agree with CPython's. Same cells kept,
+    different edge count -- which is what conformance.test.ts catches.
+    """
+    n = len(cells)
+    if keep is None or keep >= n:
+        return list(range(n))
+
+    def window_at(cx: float, cy: float) -> list[int]:
+        def rank(i: int):
+            distance = max(abs(centroids[i][0] - cx), abs(centroids[i][1] - cy))
+            return (math.floor(distance * 1e6 + 0.5), tiebreaks[i])
+
+        return sorted(range(n), key=rank)[:keep]
+
+    gx = sum(x for x, _ in centroids) / n
+    gy = sum(y for _, y in centroids) / n
+    centred = window_at(gx, gy)
+    if not variant:
+        return centred
+
+    # A window's centre has to sit far enough inside the patch that the
+    # window is filled by it; the pool is every tile that does, in the order
+    # the substitution laid them, which is the one order both languages
+    # agree on without sorting anything.
+    adjacency = _patch_adjacency(cells)
+    depth = _rim_depth(cells, adjacency)
+    margin = math.sqrt(keep) / 2 * _WINDOW_MARGIN
+    pool = [i for i in range(n) if depth[i] >= margin]
+    index = variant * _WINDOW_STRIDE % (len(pool) + 1)
+    for step in range(len(pool) + 1):
+        at = (index + step) % (len(pool) + 1)
+        if at == 0:  # the centred trim is index 0, so it stays in the deal
+            return centred
+        kept = window_at(*centroids[pool[at - 1]])
+        if _is_disc(cells, adjacency, kept):
+            return kept
+    return centred  # unreachable: index 0 is always a board
+
+
 def penrose_board(
-    subdivisions: int, mine_count: int, scale: float = 300, keep: int | None = None
+    subdivisions: int,
+    mine_count: int,
+    scale: float = 300,
+    keep: int | None = None,
+    variant: int = 0,
 ) -> Board:
     """An aperiodic Penrose tiling (P3): thick and thin rhombi.
 
@@ -69,9 +253,14 @@ def penrose_board(
     deflates ``subdivisions`` times; mirror-image triangle halves are
     then merged into rhombi (unpaired halves on the outer rim are
     dropped). ``scale`` is the wheel radius in pixels. ``keep`` trims the
-    tiling to its ``keep`` centremost rhombi by Chebyshev distance (a
-    roughly square block, denser on screen than the full round wheel);
-    ``None`` keeps the whole decagonal patch.
+    tiling to ``keep`` rhombi by Chebyshev distance (a roughly square
+    block, denser on screen than the full round wheel); ``None`` keeps
+    the whole decagonal patch.
+
+    ``variant`` picks *which* ``keep`` rhombi: 0 is the centremost block,
+    the patch's ten-fold sun in the middle of it, and any other integer is
+    a window somewhere else in the same tiling -- a different board of the
+    same size, which is the point of an aperiodic one. See ``_window``.
     """
     zero = (0, 0, 0, 0)
     powers = [(1, 0, 0, 0)]
@@ -110,28 +299,18 @@ def penrose_board(
         else:
             waiting[key] = a
 
-    if keep is not None and keep < len(cells):
-        centroid = {
-            cell: (sum(_z_to_xy(k)[0] for k in quad) / 4,
-                   sum(_z_to_xy(k)[1] for k in quad) / 4)
-            for cell, quad in cells.items()
-        }
-        gx = sum(c[0] for c in centroid.values()) / len(centroid)
-        gy = sum(c[1] for c in centroid.values()) / len(centroid)
-
-        def near(cell) -> int:
-            # Quantised, like the spiral's trim (``phyllotaxis_board``): the
-            # patch is ten-fold symmetric, so tiles come in sets at the *same*
-            # distance, and the raw float is a cosine whose last bit need not
-            # agree with the TypeScript port's. Compared exactly, a tie at the
-            # cut rank is then broken the other way there and the two builds
-            # keep different tiles -- same cell count, different edge count,
-            # which is what `conformance.test.ts` catches.
-            distance = max(abs(centroid[cell][0] - gx), abs(centroid[cell][1] - gy))
-            return math.floor(distance * 1e6 + 0.5)
-
-        kept = sorted(cells, key=lambda cell: (near(cell), cell))
-        cells = {cell: cells[cell] for cell in kept[:keep]}
+    rows = list(cells.items())
+    centroids = [(sum(_z_to_xy(k)[0] for k in quad) / 4,
+                  sum(_z_to_xy(k)[1] for k in quad) / 4)
+                 for _, quad in rows]
+    # The tie-break at the cut rank is the cell id, as it always was: a
+    # rhombus's colour then the order the merge made it.
+    kept = _window(cells=[quad for _, quad in rows],
+                   centroids=centroids,
+                   tiebreaks=[cell for cell, _ in rows],
+                   keep=keep,
+                   variant=variant)
+    cells = {rows[i][0]: rows[i][1] for i in kept}
 
     return _finalize_flat("penrose", cells, _z_to_xy, mine_count, scale)
 
@@ -485,14 +664,22 @@ def _spectre_leaves(levels: int) -> list[tuple[str, _Placement]]:
 
 
 def spectre_board(
-    levels: int, mine_count: int, keep: int | None = None, scale: float = 21
+    levels: int,
+    mine_count: int,
+    keep: int | None = None,
+    scale: float = 21,
+    variant: int = 0,
 ) -> Board:
     """The Spectre (Tile(1,1)), the chiral aperiodic monotile, grown by
     ``levels`` of the paper's reflection-free substitution from a single
     Spectre (Delta) cluster: 1, 9, 71, 559, 4401 tiles. ``keep`` trims the
-    patch to its ``keep`` centremost tiles by Chebyshev distance (a roughly
-    square board with an exact cell count); ``None`` keeps the whole
-    (ragged) cluster. No tile is ever mirrored.
+    patch to ``keep`` tiles by Chebyshev distance (a roughly square board
+    with an exact cell count); ``None`` keeps the whole (ragged) cluster.
+    No tile is ever mirrored.
+
+    ``variant`` picks which ``keep`` tiles: 0 is the centremost block and
+    any other integer a window elsewhere in the same cluster, which is a
+    different board of the same size. See ``_window``.
     """
     rows = []  # (label, ids, cx, cy)
     seen = set()
@@ -507,18 +694,17 @@ def spectre_board(
                      sum(x for x, _ in xy) / len(xy),
                      sum(y for _, y in xy) / len(xy)))
 
-    if keep is not None and keep < len(rows):
-        # Chebyshev distance from the patch centre, as penrose_board does:
-        # it trims to a square block rather than a disc, so the board reads
-        # square and packs more tiles onto the screen. Quantised for the same
-        # reason as there -- a tie at the cut rank must break the same way in
-        # the TypeScript port, whose last cosine bit need not agree.
-        gx = sum(r[2] for r in rows) / len(rows)
-        gy = sum(r[3] for r in rows) / len(rows)
-        rows.sort(key=lambda r: (
-            math.floor(max(abs(r[2] - gx), abs(r[3] - gy)) * 1e6 + 0.5),
-            tuple(sorted(r[1]))))
-        rows = rows[:keep]
+    # Chebyshev distance from the window's centre, as penrose_board does: it
+    # trims to a square block rather than a disc, so the board reads square
+    # and packs more tiles onto the screen. The tie-break at the cut rank is
+    # the tile's own sorted vertex ids -- cell ids do not exist yet here, the
+    # trim being what puts the tiles in the order they are numbered in.
+    kept = _window(cells=[r[1] for r in rows],
+                   centroids=[(r[2], r[3]) for r in rows],
+                   tiebreaks=[tuple(sorted(r[1])) for r in rows],
+                   keep=keep,
+                   variant=variant)
+    rows = [rows[i] for i in kept]
 
     cells: dict[Cell, list] = {
         (label, i): ids for i, (label, ids, _, _) in enumerate(rows)

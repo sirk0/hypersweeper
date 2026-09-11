@@ -310,6 +310,48 @@ Four consequences worth knowing before touching it:
 
 ## The aperiodic boards
 
+**Two of them are a family of boards rather than one board.** Penrose and the
+Spectre are built by *substitution*, so the tiling repeats nowhere and each
+builder grows far more of a patch than a board keeps — the Penrose wheel is 430
+rhombi where the easy board is 81, the Spectre cluster 4401 tiles where the hard
+board is 480. The `variant` argument (`aperiodic._window`, ported to
+`windowRows` in `web/src/boards/aperiodic.ts`) picks *which* window onto that
+patch the board is: 0 is the centred trim this game shipped with, and any other
+integer a block of the same size somewhere else in the same tiling, so a
+finished game followed by another is played on tiles that have never sat
+together before. Both front-ends pass the game's own seed, which means a re-deal
+is a new patch and a share link — the seed is in it — reopens the one it names.
+
+**Which windows a difficulty may deal is measured, not taken.** The mine count
+is fitted to the centred window and does not carry across by itself: measured
+over 800 games a window, the 81-cell Penrose board runs from a 0.76 win rate to
+0.98 across windows (its centred one is 0.93) and the 480-cell one from 0.25 to
+0.66 against a 0.51 target. `scripts/difficulty/windows.py` plays every
+candidate at the preset's own mine count and keeps those within the
+calibration's tolerance of the centred window's rate — 28 to 77 of 96 per board
+— and the kept list is `data/windows.json`. `presets.window_for` (ported to
+`windowFor` in `web/src/boards/presets.ts`) is what turns a game seed into one
+of them, and the centred window is always first in the list. See
+[`difficulty.md`](difficulty.md).
+
+The window is *picked*, not sampled, and that is what keeps the two
+implementations identical: `variant` indexes a pool of candidate centre tiles,
+built the same way in both languages, rather than driving a random stream
+neither can share. A centre must sit at least `√keep / 2 · 0.75` tiles in from
+the patch rim (breadth-first distance from every cell carrying an unshared
+edge), and the window it produces is accepted only if it is a **disc** —
+connected, Euler characteristic 1 — because a window sliding off the ragged rim
+of the Spectre's cluster comes back as two or three islands. `data/conformance.json`
+pins a few *seeds* per mode × difficulty on top of the usual centred rows — the
+whole path a deal takes, the shared window list included — so a window landing
+on a different tile in one language fails CI rather than quietly dealing a
+different board.
+
+The other two take no variant, deliberately: the phyllotactic spiral and the
+brick rings are nonperiodic by *symmetry*, so each has one distinguished centre
+(the five-fold rosette, the 2×2 core) and a window anywhere else would be a crop
+of a structured picture rather than another board.
+
 Three of the five aperiodic boards keep exact vertex ids in a cyclotomic ring:
 ℤ[ζ5] (Penrose and the spiral) and ℤ[ζ12] (Spectre). Only Penrose's is discrete — ℤ[ζ12]
 is dense in the plane, so `spectre_board` cannot snap a float vertex back
