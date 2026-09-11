@@ -23,7 +23,7 @@ measured. The centred window is always first in the list, so the patch this
 game shipped with stays one of the boards dealt.
 
 Sizing: ``CANDIDATES`` windows are measured per board, and between a third and
-four-fifths of them land (28 to 77 of 96, measured) -- dozens of boards per mode
+four-fifths of them land (28 to 79 of 96, measured) -- dozens of boards per mode
 x difficulty, far more than a player will exhaust, and cheap enough to re-run
 when a preset changes: the whole sweep is about 25 minutes on four cores. Rows
 are appended to a JSONL as they land, so a re-run reuses what is already

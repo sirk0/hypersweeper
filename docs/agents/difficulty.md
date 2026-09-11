@@ -50,7 +50,7 @@ different board. So the windows are screened the way the mine counts are, by
 at the preset's own mine count, keep those within `TOLERANCE` of the centred
 window's rate, and write the kept list to `data/windows.json`, which both
 front-ends deal from (`presets.window_for`). Between a third and four-fifths of
-each board's candidates land — 28 to 77 of the 96 measured — which leaves dozens
+each board's candidates land — 28 to 79 of the 96 measured — which leaves dozens
 of measured boards per mode × difficulty. Re-run it after `calibrate`/`apply` whenever an
 aperiodic preset changes shape — and note that `calibrate` itself measures the
 centred window throughout, which is what `build_board`'s default seed gives it.

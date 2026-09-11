@@ -107,6 +107,22 @@ _WINDOW_MARGIN = 0.75
 #: revisit a centre before the pool is exhausted.
 _WINDOW_STRIDE = 65537
 
+#: How far the patch's own edge may cut into a window, in tiles.
+#:
+#: A window is the ``keep`` tiles nearest its centre, so where its square runs
+#: off the end of the patch it cannot be filled: the board comes out square
+#: with a chunk bitten out of one side. How deep the bite is, is how far inside
+#: the window's square the patch's rim reaches, and that is what this bounds.
+#: Calibrated by eye against a contact sheet of Spectre windows ordered by it:
+#: up to about 1.5 tiles is the ordinary raggedness of a monotile rim; past 2
+#: there is a notch you look at rather than through. The Penrose patch is a
+#: convex decagon and barely ever trips this -- the Spectre's ragged cluster is
+#: what it is for. The centred window never faces it, being the board the game
+#: shipped and the one the mine count was fitted to: the Spectre's hard board
+#: measures 2.0 tiles by this and stays as it is, which makes the bound a
+#: standard the *other* windows are held below rather than to.
+_WINDOW_NOTCH = 1.5
+
 
 def _patch_adjacency(cells: list[list]) -> list[list[int]]:
     """Shared-vertex adjacency over an untrimmed patch, by row index.
@@ -181,6 +197,36 @@ def _is_disc(cells: list[list], adjacency: list[list[int]], kept: list[int]) -> 
     return len(vertices) - len(edges) + len(kept) == 1
 
 
+def _notch(
+    centroids: list[tuple[float, float]],
+    rim: list[int],
+    kept: list[int],
+    keep: int,
+) -> bool:
+    """Whether the patch's edge stays out of this window (``_WINDOW_NOTCH``).
+
+    The window is the square its kept tiles fill; where the patch ends inside
+    that square there is nothing to fill it with, and the board is drawn with a
+    bite out of one side. So: measure how far in from the square's boundary the
+    nearest rim tile of the patch sits, in tiles -- the tile pitch being the
+    square's own side over the square root of the cell count, since a square
+    block of ``keep`` tiles is sqrt(keep) of them across.
+
+    Quantised before it is compared, like every other distance in this file, so
+    that a window at the threshold is kept or dropped the same way in the
+    TypeScript port.
+    """
+    cx = (min(centroids[i][0] for i in kept) + max(centroids[i][0] for i in kept)) / 2
+    cy = (min(centroids[i][1] for i in kept) + max(centroids[i][1] for i in kept)) / 2
+    half = max(max(abs(centroids[i][0] - cx), abs(centroids[i][1] - cy)) for i in kept)
+    deepest = max(
+        (half - max(abs(centroids[i][0] - cx), abs(centroids[i][1] - cy)) for i in rim),
+        default=0.0,
+    )
+    allowed = 2 * half / math.sqrt(keep) * _WINDOW_NOTCH
+    return math.floor(deepest * 1e6 + 0.5) <= math.floor(allowed * 1e6 + 0.5)
+
+
 def _window(
     cells: list[list],
     centroids: list[tuple[float, float]],
@@ -203,17 +249,21 @@ def _window(
     compared as a raw float breaks the other way in the TypeScript port,
     whose last cosine bit need not agree with CPython's. Same cells kept,
     different edge count -- which is what conformance.test.ts catches.
+
+    A window is kept only if it is a board to look at as well as to play: a
+    disc (``_is_disc``), and not bitten into by the end of the patch by more
+    than ``_WINDOW_NOTCH`` tiles (``_notch``).
     """
     n = len(cells)
     if keep is None or keep >= n:
         return list(range(n))
 
     def window_at(cx: float, cy: float) -> list[int]:
-        def rank(i: int):
+        def near(i: int) -> int:
             distance = max(abs(centroids[i][0] - cx), abs(centroids[i][1] - cy))
-            return (math.floor(distance * 1e6 + 0.5), tiebreaks[i])
+            return math.floor(distance * 1e6 + 0.5)
 
-        return sorted(range(n), key=rank)[:keep]
+        return sorted(range(n), key=lambda i: (near(i), tiebreaks[i]))[:keep]
 
     gx = sum(x for x, _ in centroids) / n
     gy = sum(y for _, y in centroids) / n
@@ -229,13 +279,14 @@ def _window(
     depth = _rim_depth(cells, adjacency)
     margin = math.sqrt(keep) / 2 * _WINDOW_MARGIN
     pool = [i for i in range(n) if depth[i] >= margin]
+    rim = [i for i in range(n) if depth[i] == 0]
     index = variant * _WINDOW_STRIDE % (len(pool) + 1)
     for step in range(len(pool) + 1):
         at = (index + step) % (len(pool) + 1)
         if at == 0:  # the centred trim is index 0, so it stays in the deal
             return centred
         kept = window_at(*centroids[pool[at - 1]])
-        if _is_disc(cells, adjacency, kept):
+        if _notch(centroids, rim, kept, keep) and _is_disc(cells, adjacency, kept):
             return kept
     return centred  # unreachable: index 0 is always a board
 

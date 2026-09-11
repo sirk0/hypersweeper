@@ -106,6 +106,15 @@ interface PenroseCell {
  * minesweeper/boards/aperiodic.py. */
 const WINDOW_MARGIN = 0.75;
 
+/** How far the patch's own edge may cut into a window, in tiles. A window is
+ * the `keep` tiles nearest its centre, so where its square runs off the end of
+ * the patch it cannot be filled and the board is drawn square with a chunk
+ * bitten out of one side. The centred window never faces it — it is the board
+ * the game shipped and the one the mine count was fitted to. Must match
+ * `_WINDOW_NOTCH` in minesweeper/boards/aperiodic.py, where the calibration is
+ * written up. */
+const WINDOW_NOTCH = 1.5;
+
 /** Consecutive variants step this far through the candidate pool, so variant 1
  * and variant 2 are different boards rather than the same window moved one
  * tile. Must match `_WINDOW_STRIDE` in minesweeper/boards/aperiodic.py. */
@@ -206,12 +215,59 @@ function isDisc(
 }
 
 /**
+ * Whether the patch's edge stays out of this window (`WINDOW_NOTCH`).
+ *
+ * The window is the square its kept tiles fill; where the patch ends inside
+ * that square there is nothing to fill it with, and the board is drawn with a
+ * bite out of one side. So: measure how far in from the square's boundary the
+ * nearest rim tile of the patch sits, in tiles — the tile pitch being the
+ * square's own side over the square root of the cell count, since a square
+ * block of `keep` tiles is √keep of them across. Quantised before it is
+ * compared, like every other distance here, so a window at the threshold is
+ * kept or dropped the same way in the Python build.
+ */
+function notchOk(
+  centroids: readonly Vertex[],
+  rim: readonly number[],
+  kept: readonly number[],
+  keep: number,
+): boolean {
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minY = Infinity;
+  let maxY = -Infinity;
+  for (const i of kept) {
+    const [x, y] = centroids[i]!;
+    if (x < minX) minX = x;
+    if (x > maxX) maxX = x;
+    if (y < minY) minY = y;
+    if (y > maxY) maxY = y;
+  }
+  const cx = (minX + maxX) / 2;
+  const cy = (minY + maxY) / 2;
+  let half = 0;
+  for (const i of kept) {
+    const [x, y] = centroids[i]!;
+    half = Math.max(half, Math.abs(x - cx), Math.abs(y - cy));
+  }
+  let deepest = 0;
+  for (const i of rim) {
+    const [x, y] = centroids[i]!;
+    deepest = Math.max(deepest, half - Math.max(Math.abs(x - cx), Math.abs(y - cy)));
+  }
+  const allowed = ((2 * half) / Math.sqrt(keep)) * WINDOW_NOTCH;
+  return Math.floor(deepest * 1e6 + 0.5) <= Math.floor(allowed * 1e6 + 0.5);
+}
+
+/**
  * The rows of one aperiodic patch that make up board `variant`: `keep` rows
  * nearest a centre by Chebyshev distance — a square block, which packs more
  * tiles onto the screen than the round patch does — in rank order, so the board
  * a caller assembles from them is ordered exactly as the centred trim used to
  * order it. `variant` 0 is that centred trim, unchanged; any other integer
- * picks a window elsewhere in the patch.
+ * picks a window elsewhere in the patch, and is kept only if it is a board to
+ * look at as well as to play: a disc (`isDisc`), and not bitten into by the end
+ * of the patch (`notchOk`).
  *
  * The distance is quantised, as it always was: these patches are ten-fold
  * symmetric (Penrose) or grown from one cluster (the Spectre), so tiles come in
@@ -263,13 +319,15 @@ function windowRows(
   const size = pool.length + 1;
   // Positive remainder, as Python's `%` is: the variant is a uint32 in the app,
   // but the builders are callable with anything.
+  const rim: number[] = [];
+  for (let i = 0; i < n; i++) if (depth[i] === 0) rim.push(i);
   const index = (((variant * WINDOW_STRIDE) % size) + size) % size;
   for (let step = 0; step < size; step++) {
     const at = (index + step) % size;
     if (at === 0) return centred; // the centred trim is index 0
     const centre = centroids[pool[at - 1]!]!;
     const kept = windowAt(centre[0], centre[1]);
-    if (isDisc(cells, adjacency, kept)) return kept;
+    if (notchOk(centroids, rim, kept, keep) && isDisc(cells, adjacency, kept)) return kept;
   }
   return centred; // unreachable: index 0 is always a board
 }

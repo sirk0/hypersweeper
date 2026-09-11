@@ -5536,8 +5536,8 @@
           "mineCount": 48,
           "euler": 1,
           "boundaryComponents": 1,
-          "edgeCount": 1009,
-          "vertexCount": 530,
+          "edgeCount": 1021,
+          "vertexCount": 542,
           "hasCellCycle": false
         }
       }
@@ -5614,8 +5614,8 @@
           "mineCount": 37,
           "euler": 1,
           "boundaryComponents": 1,
-          "edgeCount": 1935,
-          "vertexCount": 1680,
+          "edgeCount": 1937,
+          "vertexCount": 1682,
           "hasCellCycle": false
         }
       },
@@ -5634,8 +5634,8 @@
           "mineCount": 89,
           "euler": 1,
           "boundaryComponents": 1,
-          "edgeCount": 3562,
-          "vertexCount": 3083,
+          "edgeCount": 3565,
+          "vertexCount": 3086,
           "hasCellCycle": false
         },
         "2": {
@@ -5643,8 +5643,8 @@
           "mineCount": 89,
           "euler": 1,
           "boundaryComponents": 1,
-          "edgeCount": 3560,
-          "vertexCount": 3081,
+          "edgeCount": 3571,
+          "vertexCount": 3092,
           "hasCellCycle": false
         },
         "3407": {
@@ -5652,8 +5652,8 @@
           "mineCount": 89,
           "euler": 1,
           "boundaryComponents": 1,
-          "edgeCount": 3571,
-          "vertexCount": 3092,
+          "edgeCount": 3567,
+          "vertexCount": 3088,
           "hasCellCycle": false
         }
       }

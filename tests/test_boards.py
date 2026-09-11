@@ -625,7 +625,13 @@ class TestAperiodicVariants:
             assert _boundary_components(board) == 1
             assert _connected(board)
             seen.add(frozenset(board.polygons))
-        assert len(seen) == 8  # ...and eight boards, not one board eight times
+        # ...and different boards, not one board eight times. Not necessarily
+        # eight of them: a variant whose own window is rejected (bitten into,
+        # or not a disc) walks on to the next candidate in the pool, so two
+        # neighbouring variants can land on the same window. What the game
+        # deals is deduplicated -- scripts/difficulty/windows.py drops a
+        # repeat, and test_every_measured_window_is_a_board checks that.
+        assert len(seen) >= 6
 
     @pytest.mark.parametrize("name,builder,args,keep", CASES)
     def test_a_variant_is_the_same_board_every_time(self, name, builder, args, keep):
@@ -690,6 +696,62 @@ class TestAperiodicVariants:
         assert dealt == set(windows)  # ...and every one of them is reachable
 
     @pytest.mark.parametrize("mode", ["penrose", "spectre"])
+    def test_no_dealt_window_is_bitten_into(self, mode):
+        """Every window the game deals is a filled square, not one with a
+        chunk missing.
+
+        A window is the ``keep`` tiles *nearest* its centre, so where its
+        square runs past the end of the grown patch there is nothing to
+        fill it with. ``aperiodic._notch`` is what rejects those; this
+        measures the same thing again from the outside -- how far inside a
+        window's square the patch's own rim reaches, in tiles -- over every
+        window in data/windows.json rather than the handful the gate saw
+        last. Under one and a half tiles is the ordinary raggedness of a
+        rim; a notch is what the user called a big empty area on the edge.
+        """
+        import minesweeper.boards.aperiodic as aperiodic
+
+        for difficulty in DIFFICULTIES:
+            captured = {}
+            real = aperiodic._window
+
+            def spy(cells, centroids, tiebreaks, keep, variant, _real=real):
+                kept = _real(cells, centroids, tiebreaks, keep, variant)
+                captured[variant] = (centroids, kept, keep, cells)
+                return kept
+
+            aperiodic._window = spy
+            try:
+                for seed in range(len(_WINDOWS[mode][difficulty]["windows"])):
+                    build_board(mode, difficulty, seed)
+            finally:
+                aperiodic._window = real
+
+            for variant, (centroids, kept, keep, cells) in captured.items():
+                if variant == 0:
+                    # The centred window is the board the game shipped and the
+                    # one the mine count was fitted to, so it is not up for
+                    # rejection -- and the Spectre's hard board measures 2.0
+                    # tiles here, which is the standard the rest are held
+                    # *below* rather than to.
+                    continue
+                depth = aperiodic._rim_depth(cells, aperiodic._patch_adjacency(cells))
+                xs = [centroids[i][0] for i in kept]
+                ys = [centroids[i][1] for i in kept]
+                cx, cy = (min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2
+                def chebyshev(i, cx=cx, cy=cy, centroids=centroids):
+                    return max(abs(centroids[i][0] - cx), abs(centroids[i][1] - cy))
+
+                half = max(chebyshev(i) for i in kept)
+                deepest = max((half - chebyshev(i) for i in range(len(cells)) if depth[i] == 0),
+                              default=0.0)
+                tile = 2 * half / math.sqrt(keep)
+                assert deepest <= tile * 1.5 + 1e-9, (
+                    f"{mode}/{difficulty} window {variant} is bitten "
+                    f"{deepest / tile:.2f} tiles deep"
+                )
+
+    @pytest.mark.parametrize("mode", ["penrose", "spectre"])
     def test_every_measured_window_is_a_board(self, mode):
         # The list is data, and data can go stale against a preset that
         # changed shape under it -- so each window it names still has to
@@ -697,10 +759,14 @@ class TestAperiodicVariants:
         # so the seeds below walk the whole list.
         for difficulty in DIFFICULTIES:
             cells = len(build_board(mode, difficulty).polygons)
+            seen = set()
             for seed in range(len(_WINDOWS[mode][difficulty]["windows"])):
                 board = build_board(mode, difficulty, seed)
                 assert len(board.polygons) == cells
                 assert _euler_characteristic(board) == 1
+                seen.add(frozenset(board.polygons))
+            # ...and no two of them are the same board under two numbers
+            assert len(seen) == len(_WINDOWS[mode][difficulty]["windows"])
 
 
 class TestPhyllotaxis:
