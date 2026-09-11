@@ -95,7 +95,12 @@ export class GameSession {
   ) {
     this.mode = mode;
     this.difficulty = difficulty;
-    this.board = buildBoard(mode, difficulty);
+    // The seed picks the *window* as well as the mines: on the two aperiodic
+    // substitution boards a re-deal is played somewhere else in the tiling —
+    // one of the windows measured to play like the calibrated board
+    // (boards/presets.ts `windowFor`) — and a share link, which carries the
+    // seed, reopens the one it names. Every other mode ignores it.
+    this.board = buildBoard(mode, difficulty, opts.seed ?? 0);
     // The cell style is baked into the mesh: a profile's loop count fixes the
     // vertex count per cell, so it is chosen here, once, and a change takes
     // effect on the next board (it can only be changed from the menu, where no

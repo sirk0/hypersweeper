@@ -23,18 +23,17 @@ import { MAX_DIGIT_GLYPH } from "../../src/render/glyphAtlas";
 // `conformance.<difficulty>.test.ts` per difficulty runs the same cases three
 // ways at once. Adding a difficulty means adding a file — which is what
 // `describeConformance` asserts below, so it cannot be forgotten silently.
-const MODE_STATS = conformance.modes as Record<
-  string,
-  Record<string, {
-    cellCount: number;
-    mineCount: number;
-    euler: number;
-    boundaryComponents: number;
-    edgeCount: number;
-    vertexCount: number;
-    hasCellCycle: boolean;
-  }>
->;
+interface BoardStats {
+  cellCount: number;
+  mineCount: number;
+  euler: number;
+  boundaryComponents: number;
+  edgeCount: number;
+  vertexCount: number;
+  hasCellCycle: boolean;
+}
+
+const MODE_STATS = conformance.modes as Record<string, Record<string, BoardStats>>;
 
 /** The difficulties that have a file of their own. Kept beside the files rather
  * than derived from DIFFICULTIES: a difficulty added to data/catalog.json needs
@@ -56,6 +55,17 @@ function checkInvariants(board: AnyBoard): void {
     expect(neighbors.length).toBeLessThanOrEqual(MAX_DIGIT_GLYPH);
   }
 }
+
+/** The aperiodic modes at fixed game seeds. One preset is a family of boards
+ * there — the seed picks which measured window onto the grown patch is dealt —
+ * and a window that lands on a different tile in one language is a silently
+ * different board, which the `modes` rows above (all seed 0) would never see.
+ * Pinning seeds rather than raw variants covers the shared window list in
+ * data/windows.json as well as the builders' own arithmetic. */
+const SEED_STATS = conformance.seeds as Record<
+  string,
+  Record<string, Record<string, BoardStats>>
+>;
 
 /** Every mode at one difficulty, as its own `describe` block. */
 export function describeConformance(difficulty: string): void {
@@ -90,6 +100,27 @@ export function describeConformance(difficulty: string): void {
         // step here are pinned in tests/unit/surfaces.test.ts instead.
         if (want.hasCellCycle) expect(symmetryOf(board, "ring")).not.toBeNull();
         checkInvariants(board);
+      });
+    }
+
+    for (const [mode, byDifficulty] of Object.entries(SEED_STATS)) {
+      const wanted = byDifficulty[difficulty]!;
+      it(`${mode}/${difficulty} matches the oracle at every pinned seed`, () => {
+        const seen = new Set<string>();
+        for (const [seed, want] of Object.entries(wanted)) {
+          const board = buildBoard(mode, difficulty, Number(seed));
+          expect(board.polygons.size).toBe(want.cellCount);
+          expect(board.mineCount).toBe(want.mineCount);
+          expect(eulerCharacteristic(board)).toBe(want.euler);
+          expect(boundaryComponents(board)).toBe(want.boundaryComponents);
+          expect(edgeCount(board)).toBe(want.edgeCount);
+          expect(vertexCount(board)).toBe(want.vertexCount);
+          checkInvariants(board);
+          // …and every seed deals a board of its own rather than the same
+          // window under another number, which the counts alone could not say.
+          seen.add([...board.polygons.keys()].sort().join(" "));
+        }
+        expect(seen.size).toBe(Object.keys(wanted).length);
       });
     }
   });

@@ -2,6 +2,7 @@
 // data/presets.json. A builder-name → function dispatch mirrors Python's
 // _JSON_BUILDERS. M1 ported the flat regular modes; M2 adds the solids.
 import presetsData from "@data/presets.json";
+import windowsData from "@data/windows.json";
 import {
   brickRingsBoard,
   penroseBoard,
@@ -165,6 +166,16 @@ const BUILDERS: Record<string, Builder> = {
   gosper_board: gosperBoard,
 };
 
+/** The two builders that take a `variant` after their preset args: the
+ * substitution tilings, which grow far more of a patch than a board keeps, so
+ * one preset is a whole family of boards rather than a single one (see
+ * `windowRows` in boards/aperiodic.ts). Every other builder ignores the
+ * variant, and the nonperiodic-by-symmetry boards — the spiral, the brick rings
+ * — are left out on purpose: each has one distinguished centre and no second
+ * window onto it. Must match `_VARIANT_BUILDERS` in
+ * minesweeper/boards/presets.py. */
+const VARIANT_BUILDERS = new Set(["penrose_board", "spectre_board"]);
+
 interface PresetSpec {
   builder: string;
   args: Record<string, Arg[]>;
@@ -181,7 +192,44 @@ export function hasMode(mode: string): boolean {
   return Object.hasOwn(PRESETS, mode);
 }
 
-export function buildBoard(mode: string, difficulty: string): AnyBoard {
+/** Which windows onto an aperiodic patch a board may be dealt from
+ * (data/windows.json, measured by scripts/difficulty/windows.py). A window is a
+ * board of its own — a patch of an aperiodic tiling is not interchangeable with
+ * another patch of it at 81 cells — so the list is the ones whose measured win
+ * rate lands within the calibration's tolerance of the centred window's, the
+ * window the mine count was fitted on. Index 0 is that centred window, so the
+ * patch this game shipped with stays in the deal. */
+const WINDOWS = windowsData.modes as Record<
+  string,
+  Record<string, { baseline: number; measured: number; windows: number[] }>
+>;
+
+/**
+ * Which window of a board's patch a game seed is played on. A mode with no
+ * measured list is one board however it is seeded, and the seed passes through
+ * to a builder that ignores it. Must match `window_for` in
+ * minesweeper/boards/presets.py.
+ */
+export function windowFor(mode: string, difficulty: string, seed: number): number {
+  const rows = Object.hasOwn(WINDOWS, mode) ? WINDOWS[mode] : undefined;
+  if (!rows) return seed;
+  const windows = rows[difficulty]!.windows;
+  // Positive remainder, as Python's `%` is: a seed is a uint32 in the app, but
+  // this is callable with anything.
+  return windows[((seed % windows.length) + windows.length) % windows.length]!;
+}
+
+/**
+ * The board a mode and difficulty name, as dealt for one game `seed`.
+ *
+ * The seed only ever means more than one board for the two aperiodic
+ * substitution tilings, where it picks which measured window onto the grown
+ * patch the game is played on (`windowFor`, then `windowRows` in
+ * boards/aperiodic.ts); every other mode builds the same board whatever it is
+ * passed, so a caller can hand the seed along blindly. A re-deal is a new
+ * window, and a share link — which carries the seed — reopens the one it names.
+ */
+export function buildBoard(mode: string, difficulty: string, seed = 0): AnyBoard {
   const spec = PRESETS[mode];
   if (!spec) throw new Error(`unknown mode ${mode}`);
   if (!DIFFICULTIES.includes(difficulty)) {
@@ -190,5 +238,7 @@ export function buildBoard(mode: string, difficulty: string): AnyBoard {
   const builder = BUILDERS[spec.builder];
   const args = spec.args[difficulty];
   if (!builder || !args) throw new Error(`no preset for ${mode}/${difficulty}`);
-  return builder(...args);
+  return VARIANT_BUILDERS.has(spec.builder)
+    ? builder(...args, windowFor(mode, difficulty, seed))
+    : builder(...args);
 }

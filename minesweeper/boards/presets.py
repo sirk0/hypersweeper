@@ -407,6 +407,14 @@ ARCH_PRESETS = {
     },
 }
 
+#: The two builders that take a ``variant`` after their preset args: the
+#: substitution tilings, which grow far more of a patch than a board keeps, so
+#: one preset is a whole family of boards rather than a single one (see
+#: ``aperiodic._window``). Every other builder ignores the variant, and the
+#: nonperiodic-by-symmetry boards -- the spiral, the brick rings -- are left out
+#: on purpose: each has one distinguished centre and no second window onto it.
+_VARIANT_BUILDERS = frozenset({"penrose_board", "spectre_board"})
+
 # Load the shared presets (data/presets.json) into _PRESETS. Each row is
 # {builder, args: {difficulty: [positional args]}}. The Archimedean/Laves
 # modes live here too now (their args begin with the tiling key); the
@@ -414,15 +422,48 @@ ARCH_PRESETS = {
 # scripts/export_data.py expands into data/presets.json.
 for _mode, _spec in load("presets")["presets"].items():
     _fn = _JSON_BUILDERS[_spec["builder"]]
+    _varies = _spec["builder"] in _VARIANT_BUILDERS
     _PRESETS[_mode] = {
-        _difficulty: (lambda fn=_fn, a=_args: fn(*a))
+        _difficulty: (lambda variant=0, fn=_fn, a=_args, varies=_varies:
+                      fn(*a, variant) if varies else fn(*a))
         for _difficulty, _args in _spec["args"].items()
     }
 
 
-def build_board(mode: str, difficulty: str) -> Board | Board3D:
+#: Which windows onto an aperiodic patch a board may be dealt from
+#: (data/windows.json, measured by scripts/difficulty/windows.py). A window is
+#: a board of its own -- a patch of an aperiodic tiling is not interchangeable
+#: with another patch of it at 81 cells -- so the list is the ones whose
+#: measured win rate lands within the calibration's tolerance of the centred
+#: window's, the window the mine count was fitted on. Index 0 is that centred
+#: window, so the patch this game shipped with stays in the deal.
+_WINDOWS = load("windows")["modes"]
+
+
+def window_for(mode: str, difficulty: str, seed: int) -> int:
+    """Which window of a board's patch a game seed is played on.
+
+    A mode with no measured list is one board however it is seeded, and the
+    seed passes through to a builder that ignores it.
+    """
+    rows = _WINDOWS.get(mode)
+    if rows is None:
+        return seed
+    windows = rows[difficulty]["windows"]
+    return windows[seed % len(windows)]
+
+
+def build_board(mode: str, difficulty: str, seed: int = 0) -> Board | Board3D:
+    """The board a mode and difficulty name, as dealt for one game ``seed``.
+
+    The seed only ever means more than one board for the two aperiodic
+    substitution tilings, where it picks which measured window onto the grown
+    patch the game is played on (``window_for``, then ``aperiodic._window``);
+    every other mode builds the same board whatever it is passed, so a caller
+    can hand the seed along blindly.
+    """
     if mode not in _PRESETS:
         raise ValueError(f"unknown mode {mode!r}")
     if difficulty not in DIFFICULTIES:
         raise ValueError(f"unknown difficulty {difficulty!r}")
-    return _PRESETS[mode][difficulty]()
+    return _PRESETS[mode][difficulty](window_for(mode, difficulty, seed))
