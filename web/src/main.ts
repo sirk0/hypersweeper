@@ -273,6 +273,15 @@ class App {
       get backgrounds() {
         return app.settings.backgrounds;
       },
+      get gloss() {
+        return app.settings.gloss;
+      },
+      get pins() {
+        return app.settings.pins;
+      },
+      get extraControls() {
+        return app.settings.extraControls;
+      },
       get analytics() {
         return app.settings.analytics;
       },
@@ -285,6 +294,9 @@ class App {
       setHaptics: (on) => this.setHaptics(on),
       setHoldToFlag: (ms) => this.setHoldToFlag(ms),
       setBackgrounds: (on) => this.setBackgrounds(on),
+      setGloss: (on) => this.setGloss(on),
+      setPins: (on) => this.setPins(on),
+      setExtraControls: (on) => this.setExtraControls(on),
       setAnalytics: (on) => this.setAnalytics(on),
     };
   }
@@ -380,6 +392,29 @@ class App {
     this.paintTheme();
   }
 
+  /** Turn the board's polished finish on or off, and the same for its 3D
+   * markers. Unlike the page pattern above, and like the cell style they are
+   * part of, these are cut into the mesh — so there is nothing to repaint and
+   * they land on the next board (the settings page says so). */
+  private setGloss(on: boolean): void {
+    this.settings = { ...this.settings, gloss: on };
+    saveSettings(this.settings);
+  }
+
+  private setPins(on: boolean): void {
+    this.settings = { ...this.settings, pins: on };
+    saveSettings(this.settings);
+  }
+
+  /** Show every symmetry control a board has, or only the two the Klein bottle
+   * cannot be played without. The board bar is HTML, so like the page pattern
+   * it re-renders at once over the game in progress. */
+  private setExtraControls(on: boolean): void {
+    this.settings = { ...this.settings, extraControls: on };
+    saveSettings(this.settings);
+    this.showBoardControls();
+  }
+
   /** Turn anonymous play counts on or off. Read on every event like the two
    * above, so switching it off mid-board suppresses that board's ending too. */
   private setAnalytics(on: boolean): void {
@@ -389,9 +424,10 @@ class App {
   }
 
   /** Adopt settings written by another tab. The theme's chrome is applied at
-   * once; its board half (the tile relief) and the difficulty are picked up by
-   * the next board. A game already in progress keeps the difficulty and the
-   * tile relief it was started with. */
+   * once; its board half (the tile relief, and the finish settings that ride on
+   * it) and the difficulty are picked up by the next board. A game already in
+   * progress keeps the difficulty and the tile relief it was started with. The
+   * board's own row is HTML, so that one does land on the game in progress. */
   private adoptSettings(settings: Settings): void {
     this.settings = settings;
     this.paintTheme();
@@ -401,6 +437,7 @@ class App {
     setAnalyticsEnabled(settings.analytics);
     this.animationsEnabled = animationsEnabled(settings.animations);
     this.session?.mesh.setAnimationsEnabled(this.animationsEnabled);
+    this.showBoardControls();
     this.menu.refresh();
   }
 
@@ -481,6 +518,10 @@ class App {
       ...(seed !== undefined ? { seed } : {}),
       ...(opts.mines ? { minePositions: opts.mines } : {}),
       cellStyle: themeCellStyle(this.settings.theme),
+      // ...and the two halves of that style the *player* owns rather than the
+      // theme (render/cellStyle.ts `finishStyle`). Read here, with the style,
+      // because both are cut into the mesh.
+      finish: { gloss: this.settings.gloss, pins: this.settings.pins },
       // Sound is panned by where a cell is *on screen*, which only the
       // renderer knows (it holds the camera, the zoom and the board's
       // rotation).
@@ -496,12 +537,7 @@ class App {
     this.paintTheme(); // the page picks up this board's tiling
     this.menu.hide();
     this.hud.root.hidden = false;
-    this.boardInfo.setBoard(
-      mode,
-      difficulty,
-      boardConditions(this.session.symmetries),
-      symmetryPictures(this.session.board, mode, this.renderer.quarterTurned),
-    );
+    this.showBoardControls();
     // The first board this browser ever opens gets the gesture hint, once. It
     // is stored before it is shown, so a reload mid-hint does not re-earn it.
     this.boardInfo.dismissHint();
@@ -650,6 +686,20 @@ class App {
     // A landscape flat board turns a quarter on a portrait viewport, and the
     // mirror line a control draws turns with it (see ui/symmetryIcon.ts).
     if (this.screen === "game") this.boardInfo.drawIcons(this.symmetryPictures());
+  }
+
+  /** Hand the caption row this board's name and its controls. Also the one
+   * thing `setExtraControls` has to re-run: which controls are shown is a
+   * setting as well as a property of the board. */
+  private showBoardControls(): void {
+    if (!this.session) return;
+    this.boardInfo.setBoard(
+      this.session.mode,
+      this.session.difficulty,
+      boardConditions(this.session.symmetries, this.session.mode),
+      this.symmetryPictures(),
+      this.settings.extraControls,
+    );
   }
 
   /** What each of this board's controls does, as the view has it. */

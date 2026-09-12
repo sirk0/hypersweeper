@@ -421,6 +421,90 @@ test.describe("settings", () => {
     expect(await cssVar(page, "--bg-pattern")).toContain("data:image/svg+xml");
   });
 
+  test("the finish switches ride over whatever the theme names", async ({ page }) => {
+    // Two halves of the Realistic look that used to be welded to it. They are
+    // cut into the mesh, so each is read when a board is built — which is what
+    // `state().cellStyle` cannot show, since the finish adds no style of its
+    // own. Asserted through the seam's own reading of the mesh instead: the
+    // pins are the thing a board either has standing on it or has not.
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
+    await expect(page.locator('.menu-entry[data-setting="gloss"]')).toHaveAttribute(
+      "aria-checked",
+      "false",
+    );
+    await expect(page.locator('.menu-entry[data-setting="pins"]')).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+
+    // Pins are on out of the box, and now on every theme rather than Realistic
+    // alone: a board you can turn is exactly the case a billboard fails at.
+    await page.locator('.menu-entry[data-settings-group="theme"]').click();
+    await page.locator('.menu-entry[data-theme="flat"]').click();
+    await page.locator('.menu-entry[data-action="back"]').click();
+    await page.locator('.menu-entry[data-action="back"]').click();
+    await page.evaluate(() => window.__ms!.startBoard("cube", "easy"));
+    expect(await page.evaluate(() => window.__ms!.state().glow)).not.toBeNull();
+
+    // ...and off, they are billboards again, which is what the glow rig is
+    // there for and so what it answers for.
+    await page.locator('.hud-btn[data-slot="back"]').click();
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
+    await page.locator('.menu-entry[data-setting="pins"]').click();
+    await expect(page.locator('.menu-entry[data-setting="pins"]')).toHaveAttribute(
+      "aria-checked",
+      "false",
+    );
+    await page.locator('.menu-entry[data-action="back"]').click();
+    await page.evaluate(() => window.__ms!.startBoard("cube", "easy"));
+    expect(await page.evaluate(() => window.__ms!.state().glow)).toBeNull();
+
+    // Both survive a reload: they are stored settings, not a session's mood.
+    // Back to the menu first — a board writes its own link, so reloading on one
+    // reopens the board rather than the page the gear is on.
+    await page.locator('.hud-btn[data-slot="back"]').click();
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
+    await page.locator('.menu-entry[data-setting="gloss"]').click();
+    await page.reload();
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
+    await expect(page.locator('.menu-entry[data-setting="gloss"]')).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    await expect(page.locator('.menu-entry[data-setting="pins"]')).toHaveAttribute(
+      "aria-checked",
+      "false",
+    );
+  });
+
+  test("the extra board controls are a setting, and start off", async ({ page }) => {
+    // What the row holds is pinned in tests/e2e/surfaces.spec.ts; what this one
+    // pins is the switch — that it is off out of the box and that turning it on
+    // reaches the board.
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
+    const toggle = page.locator('.menu-entry[data-setting="extraControls"]');
+    await expect(toggle).toHaveAttribute("aria-checked", "false");
+    await page.locator('.menu-entry[data-action="back"]').click();
+
+    const shown = () =>
+      page.$$eval(".board-caption-controls .board-bar-btn", (nodes) =>
+        nodes.filter((n) => !(n as HTMLElement).hidden).length,
+      );
+    await page.evaluate(() => window.__ms!.startBoard("torus", "easy"));
+    expect(await shown()).toBe(0);
+
+    await page.locator('.hud-btn[data-slot="back"]').click();
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
+    await page.locator('.menu-entry[data-setting="extraControls"]').click();
+    await expect(
+      page.locator('.menu-entry[data-setting="extraControls"]'),
+    ).toHaveAttribute("aria-checked", "true");
+    await page.locator('.menu-entry[data-action="back"]').click();
+    await page.evaluate(() => window.__ms!.startBoard("torus", "easy"));
+    expect(await shown()).toBeGreaterThan(0);
+  });
+
   test("the Realistic page follows the board's tiling", async ({ page }) => {
     await page.locator('.menu-header-btn[data-action="settings"]').click();
     await page.locator('.menu-entry[data-settings-group="theme"]').click();

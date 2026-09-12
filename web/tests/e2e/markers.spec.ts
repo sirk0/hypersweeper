@@ -1,7 +1,9 @@
 import { expect, test } from "@playwright/test";
 
-// The Realistic theme stands real models — pins and bombs — on a 3D board's
-// flagged and mined cells, and those are the most expensive thing the app
+// Real models — pins and bombs — stand on a 3D board's flagged and mined cells
+// whenever the player has them switched on (settings.ts `pins`, which is the
+// default and which every theme now honours; this file drives Realistic, the
+// theme they started out welded to). They are the most expensive thing the app
 // builds. They are rebuilt for the whole board at once, so the rule is that a
 // batch of cell changes costs **one** rebuild, not one each.
 //
@@ -42,9 +44,12 @@ test.describe("3D markers stay cheap in bulk", () => {
     await expect(page.locator("body[data-ready]")).toBeVisible();
   });
 
-  test("the theme under test is the one that builds models", async ({ page }) => {
+  test("the board under test is one that builds models", async ({ page }) => {
     await page.evaluate(() => window.__ms!.startBoard("klein", "easy"));
     expect(await page.evaluate(() => window.__ms!.state().cellStyle)).toBe("realistic");
+    // The models themselves are the `pins` setting's, and it is left at its
+    // default here — so this is the shipped configuration, not a special one.
+    expect(await page.evaluate(() => window.__ms!.state().glow)).not.toBeNull();
   });
 
   test("planting a hundred pins does not get slower as they pile up", async ({ page }) => {

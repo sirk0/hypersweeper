@@ -53,6 +53,9 @@ const SETTINGS: Settings = {
   haptics: false,
   holdToFlagMs: 500,
   backgrounds: true,
+  gloss: true,
+  pins: false,
+  extraControls: true,
   analytics: false,
   seenHint: true,
 };
@@ -114,6 +117,41 @@ describe("custom backgrounds", () => {
   });
 });
 
+describe("the board's finish, and the extra controls", () => {
+  it("default the way the look shipped, and take a stored choice", () => {
+    // Three purely additive fields, so a record from a build that predates them
+    // simply lacks them. The defaults are what every board looked and behaved
+    // like before they were settings — no gloss unless a theme asked for it,
+    // and a quiet control row — except for the pins, which are on because a
+    // board you can turn is exactly the case a billboard fails at.
+    expect(DEFAULT_SETTINGS.gloss).toBe(false);
+    expect(DEFAULT_SETTINGS.pins).toBe(true);
+    expect(DEFAULT_SETTINGS.extraControls).toBe(false);
+    const store = withStorage(fakeStorage());
+    store.setItem(KEY, JSON.stringify({ version: 4, theme: "realistic" }));
+    expect(loadSettings().gloss).toBe(false);
+    expect(loadSettings().pins).toBe(true);
+    expect(loadSettings().extraControls).toBe(false);
+
+    store.setItem(
+      KEY,
+      JSON.stringify({ version: 4, gloss: true, pins: false, extraControls: true }),
+    );
+    expect(loadSettings().gloss).toBe(true);
+    expect(loadSettings().pins).toBe(false);
+    expect(loadSettings().extraControls).toBe(true);
+
+    // ...and anything that is not a boolean is not a choice.
+    store.setItem(
+      KEY,
+      JSON.stringify({ version: 4, gloss: "yes", pins: 0, extraControls: null }),
+    );
+    expect(loadSettings().gloss).toBe(false);
+    expect(loadSettings().pins).toBe(true);
+    expect(loadSettings().extraControls).toBe(false);
+  });
+});
+
 describe("settings validation", () => {
   it("drops a theme that no longer exists", () => {
     withStorage(
@@ -149,6 +187,9 @@ describe("settings validation", () => {
       haptics: DEFAULT_SETTINGS.haptics,
       holdToFlagMs: DEFAULT_SETTINGS.holdToFlagMs,
       backgrounds: DEFAULT_SETTINGS.backgrounds,
+      gloss: DEFAULT_SETTINGS.gloss,
+      pins: DEFAULT_SETTINGS.pins,
+      extraControls: DEFAULT_SETTINGS.extraControls,
       analytics: DEFAULT_SETTINGS.analytics,
       seenHint: DEFAULT_SETTINGS.seenHint,
     });
@@ -248,6 +289,9 @@ describe("settings upgrades", () => {
       haptics: DEFAULT_SETTINGS.haptics,
       holdToFlagMs: DEFAULT_SETTINGS.holdToFlagMs,
       backgrounds: DEFAULT_SETTINGS.backgrounds,
+      gloss: DEFAULT_SETTINGS.gloss,
+      pins: DEFAULT_SETTINGS.pins,
+      extraControls: DEFAULT_SETTINGS.extraControls,
       analytics: DEFAULT_SETTINGS.analytics,
       seenHint: DEFAULT_SETTINGS.seenHint,
     });
@@ -354,6 +398,9 @@ describe("settings upgrades", () => {
       haptics: DEFAULT_SETTINGS.haptics,
       holdToFlagMs: DEFAULT_SETTINGS.holdToFlagMs,
       backgrounds: DEFAULT_SETTINGS.backgrounds,
+      gloss: DEFAULT_SETTINGS.gloss,
+      pins: DEFAULT_SETTINGS.pins,
+      extraControls: DEFAULT_SETTINGS.extraControls,
       analytics: DEFAULT_SETTINGS.analytics,
       seenHint: DEFAULT_SETTINGS.seenHint,
     });
@@ -410,6 +457,9 @@ describe("cross-tab sync", () => {
         haptics: DEFAULT_SETTINGS.haptics,
       holdToFlagMs: DEFAULT_SETTINGS.holdToFlagMs,
       backgrounds: DEFAULT_SETTINGS.backgrounds,
+      gloss: DEFAULT_SETTINGS.gloss,
+      pins: DEFAULT_SETTINGS.pins,
+      extraControls: DEFAULT_SETTINGS.extraControls,
         analytics: DEFAULT_SETTINGS.analytics,
         seenHint: DEFAULT_SETTINGS.seenHint,
       },

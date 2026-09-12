@@ -130,6 +130,15 @@ test.describe("game header", () => {
     page,
   }) => {
     await page.setViewportSize({ width: 320, height: 568 });
+    // Every control this board has, which is what the row has to hold at its
+    // worst — out of the box it shows the Klein bottle's two alone
+    // (settings.ts `extraControls`, pinned in tests/e2e/surfaces.spec.ts).
+    await page.addInitScript(() => {
+      localStorage.setItem(
+        "ms:settings",
+        JSON.stringify({ version: 4, extraControls: true, seenHint: true }),
+      );
+    });
     await page.goto("/?mode=klein&difficulty=easy&seed=1");
     await expect(page.locator("body[data-ready]")).toBeVisible();
 

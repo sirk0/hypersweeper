@@ -383,6 +383,9 @@ export class Menu {
       haptics: this.settings.haptics,
       holdToFlagMs: this.settings.holdToFlagMs,
       backgrounds: this.settings.backgrounds,
+      gloss: this.settings.gloss,
+      pins: this.settings.pins,
+      extraControls: this.settings.extraControls,
       analytics: this.settings.analytics,
       setTheme: (key) => {
         this.settings.setTheme(key);
@@ -402,6 +405,18 @@ export class Menu {
       },
       setBackgrounds: (on) => {
         this.settings.setBackgrounds(on);
+        page();
+      },
+      setGloss: (on) => {
+        this.settings.setGloss(on);
+        page();
+      },
+      setPins: (on) => {
+        this.settings.setPins(on);
+        page();
+      },
+      setExtraControls: (on) => {
+        this.settings.setExtraControls(on);
         page();
       },
       setSound: (key) => {
