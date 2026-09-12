@@ -87,6 +87,14 @@
   --selected: #ddeaff;
   --border: #dfe0e5;
   --counter-bg: #1c1c1e;
+  /* The reset button's face. Not part of a palette: it is the palette's own
+     yellow anchor (render/shapePalette.ts `smileyHex`, a pentagon's hue) and it
+     is the same under every theme and both schemes, so the dark block below
+     does not restate it. `themeVars` writes all three on the root at paint
+     time; these are the boot values. */
+  --smiley: #f0e342;
+  --smiley-rim: #b5ac2f;
+  --smiley-ink: #2b2f3a;
   --radius: 14px;
   --shadow: 0 2px 6px rgba(60, 62, 74, 0.14);
   /* Header control sizing, all on one fluid scale — the CSS counterpart of the

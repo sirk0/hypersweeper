@@ -1,3 +1,4 @@
+import { surfaceOf } from "../boards/catalog";
 import type { BoardSymmetry } from "../boards/core";
 import { screens, type HudSlot } from "../config/screens";
 
@@ -123,10 +124,17 @@ export const ICONS: Record<string, string> = {
  * An emoji is a different picture on every platform — Apple's 🙂 is a yellow
  * ball, Android's is another, and the headless browser the visual baselines are
  * shot in has none at all — so the one control that is meant to *be* the game's
- * face was the one thing in the app that could not be designed. These are in the
- * icon set's own line weight, on `currentColor` like every other header glyph,
- * so the face follows the theme's text colour instead of sitting on it as a
- * foreign yellow.
+ * face was the one thing in the app that could not be designed.
+ *
+ * It is **yellow**, and that is the one place this file departs from the header's
+ * own vocabulary. Every other glyph up here strokes in `currentColor` so it
+ * follows the theme; the face does not, for the same reason `ICONS.flag` does
+ * not (see the note above it) — it is the game's own mark rather than a control,
+ * and a minesweeper's face is yellow in the way its flag is red. The three
+ * colours come from `--smiley` / `--smiley-rim` / `--smiley-ink`, which
+ * `themeVars` writes from the shape palette's own yellow anchor: the head is
+ * filled and rimmed in it, and the features are drawn in a fixed dark ink,
+ * because `currentColor` on a yellow disc is near-white on the dark scheme.
  *
  * The pygame front-end has always drawn its own (`_draw_smiley_raw` in gui.py);
  * this brings the web into line with it. `data/ui/screens.json` keeps the emoji
@@ -134,32 +142,36 @@ export const ICONS: Record<string, string> = {
  * still reads it. */
 export const FACES: Record<"playing" | "won" | "lost", string> = {
   playing: `<svg viewBox="0 0 24 24" aria-hidden="true">
-    <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8" fill="none"/>
-    <circle cx="9" cy="10" r="1.2" fill="currentColor"/>
-    <circle cx="15" cy="10" r="1.2" fill="currentColor"/>
-    <path d="M8.4 14.6 A4.4 4.4 0 0 0 15.6 14.6" stroke="currentColor"
+    <circle cx="12" cy="12" r="9" fill="var(--smiley)" stroke="var(--smiley-rim)"
+      stroke-width="1.2"/>
+    <circle cx="9" cy="10" r="1.2" fill="var(--smiley-ink)"/>
+    <circle cx="15" cy="10" r="1.2" fill="var(--smiley-ink)"/>
+    <path d="M8.4 14.6 A4.4 4.4 0 0 0 15.6 14.6" stroke="var(--smiley-ink)"
       stroke-width="1.8" fill="none" stroke-linecap="round"/>
   </svg>`,
   // Won: the same face behind shades — the cool smiley the emoji set spells
   // 😎, drawn as a pair of lenses on a bridge so it reads at 26px.
   won: `<svg viewBox="0 0 24 24" aria-hidden="true">
-    <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8" fill="none"/>
-    <rect x="6.1" y="8.1" width="4.9" height="3.7" rx="1.4" fill="currentColor"/>
-    <rect x="13" y="8.1" width="4.9" height="3.7" rx="1.4" fill="currentColor"/>
-    <path d="M11 9.3 H13" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-    <path d="M8.4 14.9 A4.4 4.4 0 0 0 15.6 14.9" stroke="currentColor"
+    <circle cx="12" cy="12" r="9" fill="var(--smiley)" stroke="var(--smiley-rim)"
+      stroke-width="1.2"/>
+    <rect x="6.1" y="8.1" width="4.9" height="3.7" rx="1.4" fill="var(--smiley-ink)"/>
+    <rect x="13" y="8.1" width="4.9" height="3.7" rx="1.4" fill="var(--smiley-ink)"/>
+    <path d="M11 9.3 H13" stroke="var(--smiley-ink)" stroke-width="1.3"
+      stroke-linecap="round"/>
+    <path d="M8.4 14.9 A4.4 4.4 0 0 0 15.6 14.9" stroke="var(--smiley-ink)"
       stroke-width="1.8" fill="none" stroke-linecap="round"/>
   </svg>`,
   // Lost: crossed eyes and the smile turned over — 😵's reading, in the same
   // strokes. The cross is the board's own "you were wrong" mark (drawCross in
   // glyphAtlas.ts), which is what the player is looking at on the cells too.
   lost: `<svg viewBox="0 0 24 24" aria-hidden="true">
-    <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8" fill="none"/>
-    <path d="M7.7 8.7 L10.3 11.3 M10.3 8.7 L7.7 11.3" stroke="currentColor"
+    <circle cx="12" cy="12" r="9" fill="var(--smiley)" stroke="var(--smiley-rim)"
+      stroke-width="1.2"/>
+    <path d="M7.7 8.7 L10.3 11.3 M10.3 8.7 L7.7 11.3" stroke="var(--smiley-ink)"
       stroke-width="1.7" fill="none" stroke-linecap="round"/>
-    <path d="M13.7 8.7 L16.3 11.3 M16.3 8.7 L13.7 11.3" stroke="currentColor"
+    <path d="M13.7 8.7 L16.3 11.3 M16.3 8.7 L13.7 11.3" stroke="var(--smiley-ink)"
       stroke-width="1.7" fill="none" stroke-linecap="round"/>
-    <path d="M8.4 16.6 A4.4 4.4 0 0 1 15.6 16.6" stroke="currentColor"
+    <path d="M8.4 16.6 A4.4 4.4 0 0 1 15.6 16.6" stroke="var(--smiley-ink)"
       stroke-width="1.8" fill="none" stroke-linecap="round"/>
   </svg>`,
 };
@@ -186,13 +198,20 @@ export interface HudState {
  * `data/ui/screens.json`): `symmetry:<id>` for every symmetry it carries, and
  * `symmetry-pair:<id>` for the ones that are not their own inverse. A
  * reflection is, and so is a Klein bottle's half-tube step, so those get one
- * button where a translation gets a back/forward pair. */
-export function boardConditions(symmetries: readonly BoardSymmetry[]): Set<string> {
+ * button where a translation gets a back/forward pair. A wrapped board also
+ * declares `surface:<key>` for the surface it is glued into, which is what a
+ * slot's `keepWhen` is matched against. */
+export function boardConditions(
+  symmetries: readonly BoardSymmetry[],
+  mode?: string,
+): Set<string> {
   const conditions = new Set<string>();
   for (const symmetry of symmetries) {
     conditions.add(`symmetry:${symmetry.id}`);
     if (!symmetry.involution) conditions.add(`symmetry-pair:${symmetry.id}`);
   }
+  const surface = mode === undefined ? null : surfaceOf(mode);
+  if (surface) conditions.add(`surface:${surface.key}`);
   return conditions;
 }
 
@@ -203,6 +222,23 @@ export function slotVisible(
   conditions: ReadonlySet<string>,
 ): boolean {
   return condition === undefined || conditions.has(condition);
+}
+
+/** Whether a slot survives the extra-controls setting being *off* — its
+ * `keepWhen` (`data/ui/screens.json`), and the board meeting it.
+ *
+ * The opposite default from `slotVisible`, deliberately: a slot with no
+ * `visibleWhen` always shows, and one with no `keepWhen` never does. That is
+ * what makes the setting a whitelist rather than a blacklist — only the Klein
+ * bottle's two ring chevrons name one, because they are the only controls a
+ * board cannot be played without (see "Board symmetries" in docs/boards.md:
+ * every other control looks at the same puzzle from another angle, while the
+ * bottle's neck really does hide cells from the camera). */
+export function slotKept(
+  keepWhen: string | undefined,
+  conditions: ReadonlySet<string>,
+): boolean {
+  return keepWhen !== undefined && conditions.has(keepWhen);
 }
 
 export class Hud {

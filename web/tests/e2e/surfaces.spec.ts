@@ -7,6 +7,16 @@ import { expect, test } from "@playwright/test";
 test.describe("M3 surfaces", () => {
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize({ width: 900, height: 700 });
+    // The board's row is down to the Klein bottle's two chevrons out of the
+    // box (settings.ts `extraControls`), and what most of this file is about is
+    // the controls a board *has*. So every test here opens with them all shown;
+    // the off state is pinned on its own below.
+    await page.addInitScript(() => {
+      localStorage.setItem(
+        "ms:settings",
+        JSON.stringify({ version: 4, extraControls: true, seenHint: true }),
+      );
+    });
   });
 
   test("Flat manifolds menu drills surface → tiling and launches a wrap", async ({ page }) => {
@@ -165,6 +175,54 @@ test.describe("M3 surfaces", () => {
     await page.goto("/?mode=penrose&difficulty=easy&seed=1");
     await expect(page.locator("body[data-ready]")).toBeVisible();
     expect(await shown()).toEqual([]);
+  });
+
+  test("with the extras off, only the Klein bottle keeps a control", async ({ page }) => {
+    // The shipped state. A board's row is a lot of chrome for a feature most
+    // players never reach for, so it is opt-in — except on the one board whose
+    // own neck hides cells from the camera, where the ring pair is how those
+    // cells are reached at all.
+    const shown = async () =>
+      page.$$eval(".board-caption-controls .board-bar-btn", (nodes) =>
+        nodes
+          .filter((n) => !(n as HTMLElement).hidden)
+          .map((n) => (n as HTMLElement).dataset["slot"]),
+      );
+    await page.addInitScript(() => {
+      localStorage.setItem("ms:settings", JSON.stringify({ version: 4, seenHint: true }));
+    });
+
+    await page.goto("/?mode=klein&difficulty=easy&seed=1");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    expect(await shown()).toEqual(["symmetry-ring-back", "symmetry-ring-fwd"]);
+
+    // A donut hides cells behind its own inner wall too, but they can be seen
+    // through the hole — so it is a second look rather than the only look, and
+    // its row goes with everything else's. The strip goes with it.
+    await page.goto("/?mode=torus&difficulty=easy&seed=1");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    expect(await shown()).toEqual([]);
+    await expect(page.locator(".board-caption")).toBeHidden();
+
+    // ...and the keyboard still drives the motion the button is not there for:
+    // the setting hides chrome, it does not take a move away. Tracked on a cell
+    // that is actually facing the camera, since one round the back has no
+    // screen position to compare.
+    const front = await page.evaluate(() => {
+      const ms = window.__ms!;
+      for (const cell of ms.cells()) {
+        const xy = ms.cellScreenXY(cell);
+        if (xy) return { cell, xy };
+      }
+      return null;
+    });
+    expect(front, "no front-facing cell").not.toBeNull();
+    await page.keyboard.press("]");
+    const after = await page.evaluate((c) => window.__ms!.cellScreenXY(c), front!.cell);
+    const moved =
+      after == null ||
+      Math.hypot(after.x - front!.xy.x, after.y - front!.xy.y) > 3;
+    expect(moved, "the ring key did not move the contents").toBe(true);
   });
 
   test("a control's icon says what its motion is", async ({ page }) => {

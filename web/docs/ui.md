@@ -269,6 +269,19 @@ must the `prefers-color-scheme: dark` block beside it. Things worth knowing:
   stroke is the classic dark-theme bug (the header icons in `hud.ts` stroke in
   `currentColor` for this reason; the flag keeps fixed colours because it is the
   game's own glyph, not a control).
+- **The reset button's face is the other glyph, and it is yellow.** Same
+  argument as the flag's: a minesweeper's face is yellow the way its flag is
+  red, so it does not follow the chrome. It is still a `var(--…)` —
+  `--smiley` / `--smiley-rim` / `--smiley-ink`, written by `themeVars` from
+  `smileyHex` in `render/shapePalette.ts` — so the colour is the palette's own
+  yellow anchor (a pentagon's hue) rather than one invented for this control,
+  and `:root` in `styles.css` carries the boot values as it does for the rest.
+  What it does *not* take is the menu icons' register, which pulls every hue
+  part-way back toward the old indigo's lightness and has no yellow down there
+  at all — 105° comes out olive. The head is drawn at the lightness that hue is
+  most colourful at and comes out the same under every theme and both schemes;
+  the features are a fixed dark ink, because `currentColor` on a yellow disc is
+  near-white on the dark scheme.
 
 `tests/test_theme_sync.py` (Python) fails if a pygame palette is retuned without
 the JSON following.
@@ -388,6 +401,18 @@ menu is in anyway.
 - **The pentaflake is a compromise.** Regular pentagons do not tile the plane —
   that is exactly why that board is a fractal with gnomon-shaped holes — so its
   page is the Cairo pentagonal tiling, the pentagon tiling that does.
+- **A theme may quiet the menu icons, and two do.** `Theme.icons` carries an
+  `IconTint` (how vivid the shape-derived colours are drawn, and at what
+  lightness) and a `plain` ramp for the non-tile art. Classic and Sand share one
+  register, `QUIET_ICON_TINT` — one lightness for every hue so a red row and a
+  green row weigh the same in a list, at about 60% of the chroma to hand. Classic
+  was drawn nearly gray, at a *quarter* of the chroma, on the argument that its
+  board carries no colour either; in the hand that read as the icons having been
+  switched off rather than turned down, and the menu is where a player tells one
+  board from another. The two still differ in `plain`: Sand's sage against
+  Classic's ink, since that ramp is hairlines and frames rather than anything a
+  board is picked by. The hue is never touched by either — that is the thread
+  tying a menu row to the board it opens.
 - **Only Realistic is patterned** (`Theme.patterned`). The settings swatches
   call `themeVars` with the texture and no pattern, so they show the theme
   rather than whatever board was last open; keep it that way.
@@ -414,6 +439,66 @@ vocabulary of the version it upgrades *to*. And that is why the v2 branch falls
 back to a written-out `V3_DEFAULT = "light"` rather than to `DEFAULT_THEME` —
 letting it drift with the current default would silently re-aim every v2 record,
 sending a `glass` player to Realistic instead of through Light to Flat.
+
+**The board's finish: glossy tiles and 3D pins.** Two switches under Appearance,
+beside Custom backgrounds, and the same kind of thing — what the board is made
+of rather than what the game does.
+
+Both were the **Realistic theme's alone** and welded to its cell style: the
+glass finish could not be had without Realistic's page, and its pins could not
+be had on any other theme at all. They are one number and one flag deep in
+`render/cellStyle.ts`, neither changes a cell's vertex layout, and the argument
+for each is independent of the argument for a textured page — so each is now a
+setting that overrides whatever style the theme names, either way.
+
+- **Glossy tiles** is off by default, so the board ships matte. What it covers
+  is the polished *reading*, both halves of it: the specular finish a solid
+  catches a sweeping highlight with, and the bright-centre-to-dark-rim gradient
+  that is the only thing saying "polished" on a flat board lit head-on. Turning
+  it off mattes the material and falls the closed cells back to the style's own
+  `openShade` — which is not an invented number but the matte reading that style
+  already declares ("glass beads closed, matte pans opened"), so the tile keeps
+  its relief and its edges and loses only the hotspot. Turning it *on* lends
+  Realistic's finish to a style that declares no gradient (Classic, Flat) and
+  leaves alone one that does: Sand's is tuned a hair off Realistic's on purpose,
+  and answering a switch is not an excuse to retune a theme.
+- **3D flag pins** is on by default, and now applies to every theme rather than
+  Realistic alone — a board you can turn is exactly the case a billboard fails
+  at (see "3D markers" in [`render.md`](render.md)), and that argument never had
+  anything to do with which page the board sits on. A flat board still never
+  takes them, whatever the switch says.
+
+`finishStyle(style, finish)` in `cellStyle.ts` is the whole of it, and what it
+deliberately does **not** touch is the style's colour — `openAlpha`, `unlit`,
+`albedo`, `boardTint`, `monochrome` — because that half is the theme's. Turning
+the gloss off is not meant to make Realistic opaque or Classic coloured. Like a
+cell style and unlike the sound preset, both are cut into the mesh
+(`GameSession` takes a `finish` beside the style), so both land on the next
+board and the rows say so.
+
+**Extra board controls.** Whether the row under the header carries every
+symmetry a board has, or only the two the Klein bottle cannot be played without.
+Under Behaviour, and **off** by default.
+
+A board with everything shows eight buttons, and for most players that is a row
+of chrome on every screen for a feature they never reach for. What makes the
+setting safe is that the controls are the only way to reach a hidden cell on
+exactly one board: the Klein bottle's neck passes through its own belly, and no
+amount of turning the board brings those cells out. Everywhere else a control is
+a second look at a puzzle already fully on screen — a donut's inner wall is
+glimpsed through the hole, a flat board's quarter turn shows the same patch
+sideways.
+
+So the exception is declared rather than coded: the two ring slots in
+`data/ui/screens.json` carry **`keepWhen: "surface:klein"`**, `boardConditions`
+adds a `surface:<key>` condition beside the symmetry ones, and `slotKept` (the
+mirror of `slotVisible`, with the opposite default — no condition means *not*
+kept) is what `BoardInfo.setBoard` ands in when the setting is off. A whitelist,
+so a control added later is quiet until someone says otherwise.
+
+Two things it is **not**. It never adds a control — a board still has to have
+the symmetry — and it takes no motion away: the wheel, `[` / `]`, `,` / `.` and
+`;` / `'` drive the same permutations either way. It is chrome.
 
 **Sound.** What the game sounds like — a preset key or `"off"` — under the
 Behaviour heading, with its own picker page (see [`audio.md`](audio.md)). Unlike a theme's
@@ -513,6 +598,7 @@ updates" row needing a deployed build to check against.
 
 **Persistence.** `src/settings.ts` is the app's only stored state: theme, colour
 scheme, difficulty, the animations override, haptics, the hold-to-flag duration,
+the page pattern, the board's two finish switches, the extra-controls switch,
 the analytics flag, and the sound preset with its volume. Flag mode, zoom, the
 menu page you are on and the board in progress stay in memory as before.
 

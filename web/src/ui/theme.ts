@@ -1,5 +1,6 @@
 import { hasTheme as hasPalette, themeSpec as paletteSpec, type ThemeSpec } from "../config/screens";
 import { cellStyle } from "../render/cellStyle";
+import { SMILEY_INK, smileyHex } from "../render/shapePalette";
 import { patternLayer } from "./backgroundPattern";
 import type { IconPalette } from "./icons";
 
@@ -128,16 +129,32 @@ const CLASSIC_PAGE: Record<Scheme, string> = {
   dark: `${woven(0.12)}, radial-gradient(120% 90% at 50% 0%, #2b3038 0%, #2b303800 55%), radial-gradient(140% 110% at 50% 100%, #00000088 0%, #00000000 60%)`,
 };
 
-/** Classic's menu glyphs: the set drawn nearly gray.
+/** The saturation register the quieted themes draw their menu glyphs at: one
+ * lightness for every hue, at about 60% of the chroma available there.
  *
- * The board this theme opens has no colour on it but the numbers, and a row of
- * vivid glyphs above a gray board is the one thing left announcing that the
- * chrome and the board were designed separately. One lightness for every hue,
- * and a quarter of the chroma to hand — enough that a triangle row is still
- * faintly warmer than a hexagon row when you compare them, not enough to read
- * as colour. `plain` is the classic ink rather than the set's indigo. */
+ * Named here rather than written twice because Classic and Sand deliberately
+ * carry the *same* colours — see `SAND_ICONS` for what the two numbers are and
+ * why the hue is never touched. Holding the lightness flat is what makes a red
+ * row and a green row weigh the same in a list, which the default set's per-hue
+ * cusp lightness cannot promise. */
+const QUIET_ICON_TINT = { lightness: 0.68, chroma: 0.6 };
+
+/** Classic's menu glyphs: Sand's colours on Classic's grey page.
+ *
+ * They were drawn nearly gray — one lightness and a *quarter* of the chroma —
+ * on the argument that a row of vivid glyphs above a gray board announced that
+ * the chrome and the board had been designed separately. In the hand that reads
+ * as the icons having been turned off rather than turned down: the menu is
+ * where a player tells one board from another, and the shape hue is the thread
+ * that ties a row to the board it opens. So the set takes the same register
+ * Sand does.
+ *
+ * `plain` stays the classic ink. That ramp is the non-tile chrome — the
+ * question mark, the surface tubes, the frames and the hairlines — rather than
+ * the colour of anything a player picks a board by, and Sand's sage on a grey
+ * page would be a second change with no argument behind it. */
 const CLASSIC_ICONS: IconPalette = {
-  tint: { lightness: 0.62, chroma: 0.25 },
+  tint: QUIET_ICON_TINT,
   plain: { base: "#4b545c", light: "#6f787f", dark: "#2a3036", outline: "#3f474d" },
 };
 
@@ -187,7 +204,7 @@ const SAND_PAGE: Record<Scheme, string> = {
  * in, so the four variants are its ramp: 400 light, 500 base, 600 outline,
  * 700 dark. */
 const SAND_ICONS: IconPalette = {
-  tint: { lightness: 0.68, chroma: 0.6 },
+  tint: QUIET_ICON_TINT,
   plain: { base: "#8fa073", light: "#aebf92", dark: "#56633f", outline: "#728157" },
 };
 
@@ -405,6 +422,13 @@ export function themeVars(
     "--border": spec.border,
     "--danger": spec.danger,
     "--counter-bg": spec.counterBg,
+    // The reset button's face (render/shapePalette.ts `smileyHex`). One yellow
+    // under every theme: it is the game's own glyph, like the flag, rather than
+    // a control that follows the chrome — which is why it is emitted here from
+    // the shape palette rather than named per palette in screens.json.
+    "--smiley": smileyHex("base"),
+    "--smiley-rim": smileyHex("dark"),
+    "--smiley-ink": SMILEY_INK,
     "--radius": `${spec.radius}px`,
     "--shadow": spec.shadow,
   };

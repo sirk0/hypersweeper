@@ -860,3 +860,29 @@ export function iconHex(tone: ShapeTone, variant: IconVariant, tint?: IconTint):
   const available = maxChroma(l, hue) * (tint?.chroma ?? chroma) * chromaScale[variant];
   return lchToHex(toneLch(tone, l, available));
 }
+
+/** The reset button's face (ui/hud.ts `FACES`), in the palette's own yellow.
+ *
+ * The hue is the yellow anchor — a pentagon's, `hueAnchors` [5, 105] — so the
+ * face is the same yellow the board paints a pentagon, rather than a colour
+ * invented for one control. What it does *not* take is the menu icons' register:
+ * that pulls every hue part-way back toward the old indigo's lightness, and
+ * there is no yellow down there (105° comes out olive, which is exactly the
+ * warning in `SHAPE_PALETTE.icon`'s own note). A face has to read as yellow at
+ * 26 pixels with nothing around it to compare against, so it is drawn at the
+ * lightness where that hue is most colourful and stays one yellow under every
+ * theme — like the flag, it is the game's own glyph rather than a control that
+ * has to follow the chrome.
+ *
+ * `ink` is the features: eyes, mouths, shades and crosses. Fixed, and the same
+ * `#2b2f3a` the flag's mast is drawn in (`glyphAtlas.ts` FLAG_COLORS), because
+ * `currentColor` here would put the theme's text colour on a yellow disc — near
+ * white on the dark scheme, which is no face at all. */
+export const SMILEY_TINT: IconTint = { lightness: 0.9, chroma: 0.9 };
+
+export function smileyHex(variant: IconVariant): string {
+  return iconHex({ sides: 5, regularity: 1 }, variant, SMILEY_TINT);
+}
+
+/** The one colour of the face that is not derived: see `SMILEY_TINT`. */
+export const SMILEY_INK = "#2b2f3a";

@@ -456,6 +456,82 @@ export function cellStyle(key: string | null | undefined): CellStyle {
   return CELL_STYLES[resolveCellStyle(key)]!;
 }
 
+/** The two halves of a style's finish the *player* gets to choose, rather than
+ * the theme (settings.ts `gloss` and `pins`; ui/settings.ts draws the rows).
+ *
+ * They were Realistic's alone, welded to its cell style, which meant the glass
+ * finish could not be had without its page and its pins could not be had at
+ * all on any other theme. Both are one flag or one number deep in the table
+ * above, and neither changes the vertex layout, so both can simply be spread
+ * over whichever style the theme names. */
+export interface Finish {
+  /** The polished reading: the specular finish a solid catches a moving
+   * highlight with, and the bright-centre gradient that is the *only* thing
+   * saying "polished" on a flat board lit head-on (see `shade`). */
+  gloss: boolean;
+  /** Real models for a flag and a mine on a board you can turn
+   * (`solidMarkers`; flat boards never take them whatever this says). */
+  pins: boolean;
+}
+
+/** What the finish is when nobody has said — the shipped defaults, matching
+ * `DEFAULT_SETTINGS`. Gloss is off because it is a flourish; pins are on
+ * because a board you can turn should carry objects rather than pictures. */
+export const DEFAULT_FINISH: Finish = { gloss: false, pins: true };
+
+/** The glossy half, lifted out of `REALISTIC` so a style with no polish of its
+ * own can borrow one. A style that *has* one keeps it: Sand's gradient is tuned
+ * a hair off Realistic's on purpose, and taking that away would be retuning a
+ * theme rather than answering a setting. */
+const GLOSSY = {
+  material: { roughness: 0.16, metalness: 0.1 },
+  shade: { center: 1.06, rim: 0.7 },
+  openShade: { center: 0.99, rim: 0.92 },
+} as const;
+
+/** What a matte board's material is — Flat's own, the dullest in the table. */
+const MATTE = { roughness: 0.7, metalness: 0 } as const;
+
+/** `style` as the player's finish settings ask for it.
+ *
+ * Three rules, and what is deliberately *not* touched:
+ *
+ *   * **Gloss off** mattes the material and replaces the closed gradient with
+ *     the style's own `openShade`. That is not an invented number: a style that
+ *     has both already calls the second one its matte reading (Realistic's
+ *     "glass beads closed, matte pans opened"), so the board keeps its relief
+ *     and its edges and loses only the hotspot. A style with no gradient at all
+ *     (Classic, Flat) changes only its material.
+ *   * **Gloss on** lends `GLOSSY` to a style that declares no `shade`, and
+ *     leaves one that does alone.
+ *   * **Pins** set or clear `solidMarkers`.
+ *
+ * The profiles, `openAlpha`, `unlit`, `albedo`, `boardTint` and `monochrome`
+ * are untouched. The profiles because a style's two states must keep the same
+ * loop count (`cellStyleLoops`) and a board is re-cut in place from it; the
+ * rest because they are the style's *colour*, which is the theme's business and
+ * not the finish's — turning the gloss off is not meant to make Realistic
+ * opaque or Classic coloured. */
+export function finishStyle(style: CellStyle, finish: Finish): CellStyle {
+  const next: CellStyle = { ...style };
+  if (finish.gloss) {
+    if (!style.shade) {
+      next.material = { ...GLOSSY.material };
+      next.shade = { ...GLOSSY.shade };
+      next.openShade = { ...GLOSSY.openShade };
+    }
+  } else {
+    next.material = { ...MATTE };
+    // `openShade` defaults to `shade` when a style names only one, so this
+    // reads the same as the renderers do.
+    const matte = style.openShade ?? style.shade;
+    if (matte) next.shade = { ...matte };
+  }
+  if (finish.pins) next.solidMarkers = true;
+  else delete next.solidMarkers;
+  return next;
+}
+
 /** How many loops a profile has — the number both states must agree on, since
  * the two are written into the same slice of the vertex buffer. A style whose
  * `open` and `closed` disagree is a bug in the table above, so it is caught

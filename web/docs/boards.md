@@ -266,6 +266,29 @@ the mirror line turns with it. And the buttons carry `data-motion`,
 `data-turns` and `data-mirror`, which is what the tests assert against: 26
 pixels of glyph are no evidence.
 
+**The row is opt-in, and the Klein bottle is the exception.** Settings ›
+Behaviour › *Extra board controls* is off by default, and with it off a board
+keeps only the slots whose `keepWhen` it meets — `surface:klein`, on the two ring
+chevrons, and nothing else in the catalogue. That is the one board whose own
+surface hides cells from the camera; everywhere else a control is a second look
+at a puzzle already fully on screen, which is a lot of chrome to carry on every
+screen for a feature most players never reach for. The setting is chrome only:
+the wheel and the keys below drive the same permutations either way, and it can
+never *add* a control a board does not have.
+
+**The Klein bottle's ring is taken the other way round.** Its ring runs up the
+body, over the top and down through the neck (`kleinPoint`), and the board opens
+turned three-quarters round so the self-intersection shows — so the forward
+lattice step, forward in every sense the geometry has, sends the contents
+backwards across the screen and the chevrons read inverted — measured over the
+cells actually facing the camera at the opening view, the contents drifted a
+few pixels *left* under ›› and now drift right. `symmetryMoves` in
+`session.ts` stores that one pair the other way round: one place, so the
+buttons, the keys, the wheel and the test seam agree, and it covers all four
+Klein builders rather than being repeated in each. The scroll sound still
+follows the *button* — the two directions are meant to sound like each other
+reversed, not to name a lattice vector.
+
 The controls are declared in `data/ui/screens.json` under `hud.boardBar` and
 drawn by `ui/boardInfo.ts`: `symmetry:<id>` shows a control on a board with that
 symmetry, `symmetry-pair:<id>` shows the second of a pair only where the

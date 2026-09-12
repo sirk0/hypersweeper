@@ -238,21 +238,23 @@
       }
     ],
     "_boardBarComment": "Controls that belong to the board rather than to the game: they sit on the caption row under the header, beside the board's name, not in the header row itself. The header holds two slots a side and the centred status block, which is all that fits on one row on a phone; these are shown only on a board that has them, so putting them there would wrap that row on exactly the boards that have the most to fit.",
-    "_symmetryComment": "One control per symmetry the board carries (boards/symmetry.ts BoardSymmetry). The ids are named for a wrapped surface, whose two directions are round the ring and round the tube, and carry over to the other two kinds: a flat board is the window such a surface is cut from, so its x is the ring and its y the tube, and on a solid `ring` and `tube` are rotations about the board's principal axis and one across it. The labels say what the control does to the board rather than naming a seam, because one label has to serve all three. `symmetry:<id>` shows a control on a board that has that symmetry at all; `symmetry-pair:<id>` shows the second of a pair only where the symmetry is not its own inverse. A reflection always is one -- `keepSymmetries` drops a candidate mirror that is not -- and so is a Klein bottle's half-tube step, so those get a single button where a translation gets two.",
+    "_symmetryComment": "One control per symmetry the board carries (boards/symmetry.ts BoardSymmetry). The ids are named for a wrapped surface, whose two directions are round the ring and round the tube, and carry over to the other two kinds: a flat board is the window such a surface is cut from, so its x is the ring and its y the tube, and on a solid `ring` and `tube` are rotations about the board's principal axis and one across it. The labels say what the control does to the board rather than naming a seam, because one label has to serve all three. `symmetry:<id>` shows a control on a board that has that symmetry at all; `symmetry-pair:<id>` shows the second of a pair only where the symmetry is not its own inverse. A reflection always is one -- `keepSymmetries` drops a candidate mirror that is not -- and so is a Klein bottle's half-tube step, so those get a single button where a translation gets two. `keepWhen` is what survives the player turning the extra controls off (web only -- web/src/settings.ts `extraControls`): a board meeting that condition keeps the control and everything else goes. Only the Klein bottle's ring pair names one, because every other control shows the same puzzle from another angle while the bottle's neck really does hide cells from the camera.",
     "boardBar": [
       {
         "slot": "symmetry-ring-back",
         "label": "Spin the board back",
         "icon": "chevrons-left",
         "action": "symmetry:ring:-1",
-        "visibleWhen": "symmetry-pair:ring"
+        "visibleWhen": "symmetry-pair:ring",
+        "keepWhen": "surface:klein"
       },
       {
         "slot": "symmetry-ring-fwd",
         "label": "Spin the board",
         "icon": "chevrons-right",
         "action": "symmetry:ring:1",
-        "visibleWhen": "symmetry:ring"
+        "visibleWhen": "symmetry:ring",
+        "keepWhen": "surface:klein"
       },
       {
         "slot": "symmetry-tube-back",

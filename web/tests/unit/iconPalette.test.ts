@@ -62,23 +62,23 @@ describe("themeable menu icons", () => {
     }
   });
 
-  it("draws Classic's set nearly gray, at one lightness", () => {
-    // Same claim as Sand's, harder: Classic's board carries no colour at all,
-    // so its menu row has to be the quietest of the themed sets rather than
-    // merely quieter than the default.
+  it("paints Classic's tiles in the same colours as Sand's", () => {
+    // Classic's set was drawn nearly gray — a quarter of the chroma — on the
+    // argument that its board carries no colour either. In the hand that read
+    // as the icons having been switched off rather than turned down, so the two
+    // quieted themes now share one register (`QUIET_ICON_TINT`). A tile glyph
+    // is all tint and no `plain`, so the drawings come out identical; the ink
+    // the two use for the non-tile art still differs, which the two tests
+    // either side of this one pin.
     const vivid = fills(menuIcon("square"));
+    setIconPalette(theme("sand").icons);
+    const sand = menuIcon("square");
     setIconPalette(theme("classic").icons);
-    const quiet = fills(menuIcon("square"));
-    expect(quiet.length).toBe(vivid.length);
-    expect(quiet).not.toEqual(vivid);
-    const chroma = (hex: string): number => {
-      const v = parseInt(hex.slice(1), 16);
-      const [r, g, b] = [(v >> 16) & 255, (v >> 8) & 255, v & 255];
-      return (Math.max(r, g, b) - Math.min(r, g, b)) / 255;
-    };
-    const worst = Math.max(...quiet.map(chroma));
-    const best = Math.min(...vivid.map(chroma));
-    expect(worst).toBeLessThan(best);
+    const classic = menuIcon("square");
+    expect(classic).toBe(sand);
+    // ...and still turned down from the default set, which is the half of the
+    // old claim that survives.
+    expect(fills(classic)).not.toEqual(vivid);
   });
 
   it("paints Classic's non-tile chrome in its own ink, not the indigo", () => {

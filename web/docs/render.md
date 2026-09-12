@@ -96,6 +96,18 @@ around), **sand** (Realistic's cut with the shape colour whispered — see
 `boardTint` below — the flat pennant and its own digit face) and **flatSand**
 (the same tones on Flat's plates: no relief, no gradient, opaque).
 
+**Two of a style's fields are the player's rather than the theme's.** The
+polished finish (`material`, and the centre-hotspot `shade` / `openShade`) and
+the 3D markers (`solidMarkers`) are settings — Settings › Appearance › *Glossy
+tiles* and *3D flag pins*, off and on by default respectively — applied over
+whichever style the theme names by `finishStyle` at board-build time. Both were
+Realistic's alone and welded to it, and neither argument had anything to do with
+which page the board sits on. What `finishStyle` may **not** touch is the
+style's colour (`openAlpha`, `unlit`, `albedo`, `boardTint`, `monochrome`) or
+its profiles — the first because that half is the theme's, the second because a
+board is cut from the profile and re-cut in place from the same slice of the
+buffer. See "The board's finish" in [`ui.md`](ui.md) for the product half.
+
 Otherwise it is the relief and the finish — the *hues* are the shape palette's,
 so the two can be retuned apart. The one exception is **`boardTint`**, and it is
 a volume knob rather than a colour: a style may say how far down the shape code
@@ -286,9 +298,11 @@ two answers together.
 
 A flag and a mine are normally atlas billboards (`glyphAtlas.ts`), and on a board
 you can **turn** that is a picture of a flag rather than a flag: drag a sphere
-around and they never turn with it, because they are not objects. A cell style
-can ask for real models instead — `solidMarkers` in `cellStyle.ts`, which
-Realistic sets — and then a flagged cell carries a **pin** (a stem under a round
+around and they never turn with it, because they are not objects. Real models
+can be asked for instead — `solidMarkers` in `cellStyle.ts`, which Realistic set
+and which is now the **`pins` setting**, on by default and honoured by every
+theme (see `finishStyle`) — and then a flagged cell carries a **pin** (a stem
+under a round
 head) and a mined one, once a loss reveals it, a **bomb** (a casing half sunk
 into the tile, studded with stubby horns — proportioned off `drawMine` so the 2D
 and 3D mines are one object seen two ways).

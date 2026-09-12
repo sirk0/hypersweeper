@@ -1,7 +1,7 @@
 import { fullModeLabel } from "../boards/catalog";
 import { fairnessHint, fairnessOf } from "../boards/fairness";
 import { screens, type HudSlot } from "../config/screens";
-import { ICONS, slotVisible } from "./hud";
+import { ICONS, slotKept, slotVisible } from "./hud";
 import { planeLie, symmetryIcon, type SymmetryPicture } from "./symmetryIcon";
 
 // Three small things drawn around a board, all about telling the player what
@@ -54,6 +54,7 @@ function button(slot: HudSlot, onAction: (action: string) => void): HTMLButtonEl
   btn.setAttribute("aria-label", slot.label ?? slot.slot);
   btn.title = slot.label ?? slot.slot;
   if (slot.visibleWhen) btn.dataset.visibleWhen = slot.visibleWhen;
+  if (slot.keepWhen) btn.dataset.keepWhen = slot.keepWhen;
   if (slot.action) btn.addEventListener("click", () => onAction(slot.action!));
   return btn;
 }
@@ -118,15 +119,21 @@ export class BoardInfo {
   }
 
   /** Name the board on screen, and show the controls it has. `conditions` is
-   * what the board's symmetries make true (see `boardConditions`); a slot with
-   * no `visibleWhen` is always shown. `pictures` says what each control's
-   * motion looks like, which is what its icon is drawn from — see
-   * ui/symmetryIcon.ts. */
+   * what the board's symmetries and its surface make true (see
+   * `boardConditions`); a slot with no `visibleWhen` is always shown.
+   * `pictures` says what each control's motion looks like, which is what its
+   * icon is drawn from — see ui/symmetryIcon.ts.
+   *
+   * `extraControls` is the player's setting. With it off the row keeps only the
+   * slots whose `keepWhen` this board meets — the Klein bottle's ring pair, and
+   * nothing else in the catalogue — so most boards show no row at all. It never
+   * *adds* a control: a board still has to have the symmetry. */
   setBoard(
     mode: string,
     difficulty: string,
     conditions: ReadonlySet<string> = new Set(),
     pictures: ReadonlyMap<string, SymmetryPicture> = new Map(),
+    extraControls = true,
   ): void {
     // The caption is also where a graded board says so. The menu row carries
     // the mark too, but the Flat and 3D entries deal a board at random and
@@ -139,7 +146,9 @@ export class BoardInfo {
       warning === undefined ? fullModeLabel(mode) : `${fullModeLabel(mode)} ⚠`;
     this.nameEl.title = warning ?? "";
     for (const btn of this.barButtons) {
-      btn.hidden = !slotVisible(btn.dataset["visibleWhen"], conditions);
+      btn.hidden =
+        !slotVisible(btn.dataset["visibleWhen"], conditions) ||
+        !(extraControls || slotKept(btn.dataset["keepWhen"], conditions));
     }
     this.drawIcons(pictures);
     // A board with no controls hides the strip outright rather than reserving

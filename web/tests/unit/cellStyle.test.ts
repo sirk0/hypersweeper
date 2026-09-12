@@ -8,6 +8,9 @@ import {
   cellStyleLoops,
   cellVertexCount,
   DEFAULT_CELL_STYLE,
+  DEFAULT_FINISH,
+  finishStyle,
+  type Finish,
   resolveCellStyle,
   type CellProfile,
 } from "../../src/render/cellStyle";
@@ -194,6 +197,91 @@ describe("the Sand board tint", () => {
       const withStyle = cellPalette(tone, "flat", false, cellStyle(key).boardTint);
       const plain = cellPalette(tone, "flat", false);
       expect(withStyle.hidden.getHex(), key).toBe(plain.hidden.getHex());
+    }
+  });
+});
+
+// The two halves of a style's finish the player owns rather than the theme
+// (`finishStyle`). What matters here is that the override changes only what it
+// is meant to: it may retune a material and a gradient, and it may never touch
+// the geometry, because a board is cut from the profile and re-cut in place
+// from the same slice of the buffer.
+describe("the player's finish", () => {
+  const FINISHES: Finish[] = [
+    { gloss: false, pins: false },
+    { gloss: false, pins: true },
+    { gloss: true, pins: false },
+    { gloss: true, pins: true },
+  ];
+
+  it("ships matte, with pins", () => {
+    expect(DEFAULT_FINISH).toEqual({ gloss: false, pins: true });
+  });
+
+  it("never touches the geometry, whatever it is set to", () => {
+    for (const key of CELL_STYLE_KEYS) {
+      const style = cellStyle(key);
+      for (const finish of FINISHES) {
+        const cut = finishStyle(style, finish);
+        expect(cut.flat, key).toEqual(style.flat);
+        expect(cut.solid, key).toEqual(style.solid);
+        expect(cellStyleLoops(cut.flat), key).toBe(cellStyleLoops(style.flat));
+        expect(cellStyleLoops(cut.solid), key).toBe(cellStyleLoops(style.solid));
+      }
+    }
+  });
+
+  it("leaves the style's colour alone — that half is the theme's", () => {
+    // Turning the gloss off must not make Realistic opaque or Classic
+    // coloured: what the finish owns is the polish, not the palette.
+    for (const key of CELL_STYLE_KEYS) {
+      const style = cellStyle(key);
+      for (const finish of FINISHES) {
+        const cut = finishStyle(style, finish);
+        expect(cut.openAlpha, key).toBe(style.openAlpha);
+        expect(cut.boardTint, key).toBe(style.boardTint);
+        expect(cut.monochrome, key).toBe(style.monochrome);
+        expect(cut.unlit, key).toBe(style.unlit);
+        expect(cut.albedo, key).toBe(style.albedo);
+        expect(cut.key, key).toBe(style.key);
+      }
+    }
+  });
+
+  it("mattes the material and flattens the hotspot with the gloss off", () => {
+    // A style that has two gradients calls the second one its matte reading, so
+    // that is what the closed cells fall back to: the tile keeps its relief and
+    // its edges and loses only the polish.
+    const realistic = cellStyle("realistic");
+    const matte = finishStyle(realistic, { gloss: false, pins: true });
+    expect(matte.material.roughness).toBeGreaterThan(realistic.material.roughness);
+    expect(matte.material.metalness).toBe(0);
+    expect(matte.shade).toEqual(realistic.openShade);
+    expect(matte.openShade).toEqual(realistic.openShade);
+    // A style with no gradient at all has nothing to flatten.
+    const flat = cellStyle("flat");
+    expect(finishStyle(flat, { gloss: false, pins: true }).shade).toBeUndefined();
+  });
+
+  it("lends the glass finish to a style that has none, and keeps one that has", () => {
+    const classic = cellStyle("classic");
+    const glossy = finishStyle(classic, { gloss: true, pins: false });
+    expect(glossy.material.roughness).toBeLessThan(classic.material.roughness);
+    expect(glossy.shade).toBeDefined();
+    expect(glossy.shade!.center).toBeGreaterThan(glossy.shade!.rim);
+    // Sand's gradient is tuned a hair off Realistic's on purpose; answering the
+    // setting must not quietly retune the theme.
+    const sand = cellStyle("sand");
+    const kept = finishStyle(sand, { gloss: true, pins: false });
+    expect(kept.shade).toEqual(sand.shade);
+    expect(kept.material).toEqual(sand.material);
+  });
+
+  it("puts real markers on any style, and takes Realistic's away", () => {
+    for (const key of CELL_STYLE_KEYS) {
+      const style = cellStyle(key);
+      expect(finishStyle(style, { gloss: false, pins: true }).solidMarkers, key).toBe(true);
+      expect(finishStyle(style, { gloss: false, pins: false }).solidMarkers, key).toBeUndefined();
     }
   });
 });

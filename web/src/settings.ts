@@ -83,6 +83,28 @@ export interface Settings {
    * a flourish is something to turn on rather than something to discover
    * already running. */
   backgrounds: boolean;
+  /** Whether the board's tiles carry a polished finish — the specular sheen a
+   * solid catches a moving highlight with, and the bright-centre gradient that
+   * is the only thing saying "polished" on a flat board (Settings ›
+   * Appearance). Was Realistic's alone, and is now a setting that overrides
+   * whatever the theme's cell style says, either way. Off by default: like the
+   * page pattern it is a flourish, and a flourish is something to turn on.
+   * Baked into the mesh (render/cellStyle.ts `finishStyle`), so it lands on the
+   * next board. */
+  gloss: boolean;
+  /** Whether a flag and a mine are real models on a board you can turn — a pin
+   * standing on a flagged cell, a bomb sitting on a mined one — rather than
+   * atlas billboards (Settings › Appearance; render/markers3d.ts). Also
+   * Realistic's alone before, and also baked into the mesh. On by default: a
+   * board you can turn is the case billboards fail at, since they never turn
+   * with it. A flat board never takes them whatever this says. */
+  pins: boolean;
+  /** Whether the board's own row carries every symmetry control it has, rather
+   * than the two the Klein bottle cannot be played without (Settings ›
+   * Behaviour; ui/boardInfo.ts). Off by default: a row of up to eight buttons
+   * is a lot of chrome for a feature most players never reach for, and the
+   * keyboard and the wheel drive the same motions either way. */
+  extraControls: boolean;
   /** Whether anonymous play counts are reported (Settings › Privacy). Read on
    * every event too, so turning it off silences the game already in progress.
    * Meaningless in the packaged builds, which carry no collector at all. */
@@ -105,6 +127,9 @@ export const DEFAULT_SETTINGS: Settings = {
   haptics: true,
   holdToFlagMs: DEFAULT_HOLD_MS,
   backgrounds: false,
+  gloss: false,
+  pins: true,
+  extraControls: false,
   analytics: true,
   seenHint: false,
 };
@@ -248,6 +273,19 @@ export function loadSettings(): Settings {
       typeof rec["backgrounds"] === "boolean"
         ? rec["backgrounds"]
         : DEFAULT_SETTINGS.backgrounds,
+    // Additive, and defaulting the way the look shipped before it was a
+    // setting: no board was glossy unless its theme said so, and none carried
+    // pins unless its theme said so either — but pins are what a turnable board
+    // wants, so that one starts on.
+    gloss: typeof rec["gloss"] === "boolean" ? rec["gloss"] : DEFAULT_SETTINGS.gloss,
+    pins: typeof rec["pins"] === "boolean" ? rec["pins"] : DEFAULT_SETTINGS.pins,
+    // Additive, and defaulting *off*: a record from a build where every control
+    // was always shown lacks the key, and the point of the setting is that the
+    // row is quiet until asked for.
+    extraControls:
+      typeof rec["extraControls"] === "boolean"
+        ? rec["extraControls"]
+        : DEFAULT_SETTINGS.extraControls,
     // Additive in the same way: a record from a build before the collector
     // existed lacks the key and takes the default (on), which is what the
     // hosted game does out of the box and what the Privacy row then shows.

@@ -11,7 +11,8 @@ import {
 } from "../../src/boards/core";
 import { buildBoard, MODES } from "../../src/boards/presets";
 import { screens } from "../../src/config/screens";
-import { boardConditions, ICONS, slotVisible } from "../../src/ui/hud";
+import { symmetryMoves } from "../../src/session";
+import { boardConditions, ICONS, slotKept, slotVisible } from "../../src/ui/hud";
 
 // The board symmetries, over the whole catalogue rather than one board at a
 // time (tests/unit/surfaces.test.ts does that). Two things are being pinned:
@@ -438,6 +439,50 @@ describe("the board bar's symmetry controls", () => {
       "symmetry-mirror-tube-fwd",
     ]);
     expect(shown(boardConditions([]))).toEqual([]);
+  });
+
+  it("keeps only the Klein bottle's ring pair when the extras are off", () => {
+    // The setting is a whitelist: a slot with no `keepWhen` goes, whatever the
+    // board has. Only the Klein bottle names one, because it is the only board
+    // whose own surface hides cells from the camera — everything else is a
+    // second look at a puzzle already fully on screen.
+    const kept = (mode: string) => {
+      const board = buildBoard(mode, "easy");
+      const symmetries = isBoard3D(board) ? board.symmetries : [];
+      const conditions = boardConditions(symmetries, mode);
+      return slots
+        .filter((s) => slotVisible(s.visibleWhen, conditions) && slotKept(s.keepWhen, conditions))
+        .map((s) => s.slot);
+    };
+    for (const mode of MODES.filter((m) => surfaceKey(m) === "klein")) {
+      expect(kept(mode), mode).toEqual(["symmetry-ring-back", "symmetry-ring-fwd"]);
+    }
+    // ...and nothing else in the catalogue keeps a control, wrapped or not.
+    for (const mode of [...WRAPPED, "square", "cube", "penrose"]) {
+      if (surfaceKey(mode) === "klein") continue;
+      expect(kept(mode), mode).toEqual([]);
+    }
+  });
+
+  it("takes the Klein bottle's ring step the other way round", () => {
+    // Its ring runs up the body, over the top and down through the neck, and
+    // the board opens turned three-quarters round — so the lattice's forward
+    // step sends the contents backwards across the screen and the chevrons read
+    // inverted. `symmetryMoves` is where that is put right; every other surface
+    // takes its ring exactly as the builder offers it.
+    for (const mode of WRAPPED) {
+      const board = buildBoard(mode, "easy");
+      if (!isBoard3D(board)) continue;
+      const ring = board.symmetries.find((s) => s.id === "ring");
+      if (!ring) continue;
+      const [forward] = symmetryMoves(board.symmetries, mode).get("ring")!;
+      const flipped = surfaceKey(mode) === "klein";
+      const same = [...ring.cycle].every(([from, to]) => forward.get(from) === to);
+      expect(same, `${mode} ring forward`).toBe(!flipped);
+      // Flipped or not, pressing both buttons is still a no-op...
+      const [fwd, back] = symmetryMoves(board.symmetries, mode).get("ring")!;
+      for (const [from, to] of fwd) expect(back.get(to)).toBe(from);
+    }
   });
 
   it("the Klein bottle shows its ring pair and one tube button", () => {

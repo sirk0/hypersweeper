@@ -1,5 +1,6 @@
 import type { GameStats } from "./analyticsEvent";
 import { playSound, soundEnabled, type CellSound } from "./audio/sound";
+import { surfaceOf } from "./boards/catalog";
 import { buildBoard } from "./boards/presets";
 import {
   invertCycle,
@@ -13,7 +14,7 @@ import { Game } from "./game";
 import { haptic } from "./haptics";
 import { mulberry32, type Rng } from "./rng";
 import type { BoardMesh, CellVisual } from "./render/boardMesh";
-import { cellStyle } from "./render/cellStyle";
+import { cellStyle, DEFAULT_FINISH, finishStyle, type Finish } from "./render/cellStyle";
 import { PolygonBoard } from "./render/polygonBoard";
 import { shapeMetrics } from "./render/shapePalette";
 import { SolidBoard } from "./render/solidBoard";
@@ -26,6 +27,54 @@ export interface HudSnapshot {
   minesRemaining: number;
   elapsedSeconds: number;
   status: "playing" | "won" | "lost";
+}
+
+/** One symmetry as a permutation of the board's cells. */
+type CellCycle = Map<CellId, CellId>;
+
+/** Whether this board's ring step has to be taken the other way round for the
+ * ›› button to move the board the way a player expects it to.
+ *
+ * Only the Klein bottle. Its ring runs *up the body, over the top, down and
+ * through the neck* (`kleinPoint` in boards/surfaces.ts), and the board opens
+ * turned three-quarters round so the self-intersection is visible — so the
+ * forward lattice step, which is forward in every sense the geometry has, sends
+ * the contents backwards across the screen. Nothing else in the catalogue has
+ * that problem: a donut's ring and a cylinder's both come round the near side
+ * the way the arrow points.
+ *
+ * Done here, where the ring's forward and backward permutations are paired up,
+ * rather than by inverting the candidate in each of the four Klein builders:
+ * this is a fact about which way the *button* should read, it belongs with the
+ * thing that reads the button, and one place covers the chevrons, the `[` / `]`
+ * keys, the wheel and the test seam together. The scroll sound still follows
+ * the button, which is what it is for — the two directions are meant to sound
+ * like each other reversed, not to name a lattice vector. */
+function reversedRing(mode: string): boolean {
+  return surfaceOf(mode)?.key === "klein";
+}
+
+/** What each of a board's controls does, both ways round: the permutation the
+ * forward button applies and the one the back button does.
+ *
+ * Its own function so the one board that does not take its ring the way the
+ * lattice offers it can be checked without building a mesh — see
+ * `reversedRing` for which that is and why. */
+export function symmetryMoves(
+  symmetries: readonly BoardSymmetry[],
+  mode: string,
+): Map<SymmetryId, [CellCycle, CellCycle]> {
+  const flip = reversedRing(mode);
+  const moves = new Map<SymmetryId, [CellCycle, CellCycle]>();
+  for (const symmetry of symmetries) {
+    const forward = symmetry.cycle;
+    const back = invertCycle(forward);
+    moves.set(
+      symmetry.id,
+      flip && symmetry.id === "ring" ? [back, forward] : [forward, back],
+    );
+  }
+  return moves;
 }
 
 export class GameSession {
@@ -68,7 +117,7 @@ export class GameSession {
   // come into view without the geometry moving and without the game noticing.
   // `remap` sends each geometric face -> the game cell shown on it (identity
   // until the board is moved); `remapInv` is its inverse.
-  private readonly moves = new Map<SymmetryId, [Map<CellId, CellId>, Map<CellId, CellId>]>();
+  private readonly moves: Map<SymmetryId, [CellCycle, CellCycle]>;
   private remap = new Map<CellId, CellId>();
   private remapInv = new Map<CellId, CellId>();
 
@@ -90,6 +139,7 @@ export class GameSession {
       seed?: number;
       minePositions?: CellId[];
       cellStyle?: string;
+      finish?: Finish;
       panOf?: (geomCell: CellId) => number | null;
     } = {},
   ) {
@@ -104,8 +154,13 @@ export class GameSession {
     // The cell style is baked into the mesh: a profile's loop count fixes the
     // vertex count per cell, so it is chosen here, once, and a change takes
     // effect on the next board (it can only be changed from the menu, where no
-    // game is in progress).
-    const style = cellStyle(opts.cellStyle);
+    // game is in progress). The player's finish settings are spread over the
+    // theme's style here for the same reason — they change the material and the
+    // gradient, both of which are written into the buffer as it is cut.
+    const style = finishStyle(cellStyle(opts.cellStyle), opts.finish ?? DEFAULT_FINISH);
+    // The *style's* key, not the finish: what this records is which of the
+    // table's entries the board was cut from (main.ts reads `monochrome` back
+    // off it), and the finish adds no new entry.
     this.cellStyle = style.key;
     this.mesh = isBoard3D(this.board)
       ? new SolidBoard(this.board, style)
@@ -121,9 +176,7 @@ export class GameSession {
       ...(rng ? { rng } : {}),
     });
     this.panOf = opts.panOf ?? null;
-    for (const symmetry of this.board.symmetries) {
-      this.moves.set(symmetry.id, [symmetry.cycle, invertCycle(symmetry.cycle)]);
-    }
+    this.moves = symmetryMoves(this.board.symmetries, mode);
     for (const cell of this.board.polygons.keys()) {
       this.remap.set(cell, cell);
       this.remapInv.set(cell, cell);
@@ -181,8 +234,10 @@ export class GameSession {
 
   /** Move the cell contents one step along one of the board's symmetries:
    * `direction` > 0 forward, < 0 backward (the inverse permutation — the same
-   * step for a reflection, which is its own inverse). No-op when the board does
-   * not have that symmetry. Returns whether it moved. */
+   * step for a reflection, which is its own inverse). Which permutation
+   * "forward" *is* was settled when the pair was stored — see `reversedRing`.
+   * No-op when the board does not have that symmetry. Returns whether it
+   * moved. */
   move(id: SymmetryId, direction: number): boolean {
     const pair = this.moves.get(id);
     if (!pair) return false;

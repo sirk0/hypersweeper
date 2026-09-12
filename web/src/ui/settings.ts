@@ -92,6 +92,12 @@ export interface SettingsHost {
   holdToFlagMs: number;
   /** Whether the page behind the board follows that board's own tiling. */
   backgrounds: boolean;
+  /** Whether the board's tiles carry a polished finish. */
+  gloss: boolean;
+  /** Whether a flag and a mine are real models on a board you can turn. */
+  pins: boolean;
+  /** Whether the board's row carries every symmetry control it has. */
+  extraControls: boolean;
   /** Whether anonymous play counts are reported. */
   analytics: boolean;
   setTheme(key: string): void;
@@ -108,6 +114,9 @@ export interface SettingsHost {
    * player's finger. */
   setHoldToFlag(ms: number): void;
   setBackgrounds(on: boolean): void;
+  setGloss(on: boolean): void;
+  setPins(on: boolean): void;
+  setExtraControls(on: boolean): void;
   setAnalytics(on: boolean): void;
 }
 
@@ -224,6 +233,30 @@ function row(children: HTMLElement[], cls = ""): HTMLElement {
   el.className = `menu-entry settings-static ${cls}`.trim();
   el.append(...children);
   li.append(el);
+  return li;
+}
+
+/** A switch row: a label, a hint under it, and an iOS-style knob at the right.
+ *
+ * Every boolean setting is drawn this way, so the ARIA (it is a `switch`, and
+ * `aria-checked` is what a screen reader reads the state off) and the
+ * `data-setting` hook the e2e specs address the row by are stated once. The
+ * caller decides whether the row is shown at all — three of them are
+ * conditional on the device or the build. */
+function toggleRow(
+  setting: string,
+  label: string,
+  hint: string,
+  on: boolean,
+  onToggle: () => void,
+): HTMLElement {
+  const knob = document.createElement("span");
+  knob.className = "settings-switch";
+  const { li, btn } = buttonRow([textBlock(label, hint), knob], onToggle, "settings-toggle");
+  btn.dataset["setting"] = setting;
+  btn.setAttribute("role", "switch");
+  btn.setAttribute("aria-checked", String(on));
+  btn.classList.toggle("on", on);
   return li;
 }
 
@@ -604,27 +637,49 @@ export function renderSettings(host: SettingsHost, pages: SettingsPages): Docume
   // unlike the conditional rows below — the setting is real either way, and
   // only its *effect* waits for a theme that has a pattern to draw. Saying so
   // in the hint beats a row that appears and disappears with the theme.
-  const bgKnob = document.createElement("span");
-  bgKnob.className = "settings-switch";
-  const { li: bgLi, btn: bgBtn } = buttonRow(
-    [
-      textBlock(
-        "Custom backgrounds",
-        themeDef(host.theme).patterned
-          ? "The page behind the board follows its own tiling"
-          : "The page follows the board's tiling, on the Realistic theme",
-      ),
-      bgKnob,
-    ],
-    () => host.setBackgrounds(!host.backgrounds),
-    "settings-toggle",
+  appearance.append(
+    toggleRow(
+      "backgrounds",
+      "Custom backgrounds",
+      themeDef(host.theme).patterned
+        ? "The page behind the board follows its own tiling"
+        : "The page follows the board's tiling, on the Realistic theme",
+      host.backgrounds,
+      () => host.setBackgrounds(!host.backgrounds),
+    ),
   );
-  bgBtn.dataset["setting"] = "backgrounds";
-  bgBtn.setAttribute("role", "switch");
-  bgBtn.setAttribute("aria-checked", String(host.backgrounds));
-  bgBtn.classList.toggle("on", host.backgrounds);
-  appearance.append(bgLi);
+
+  // The two halves of the board's finish that used to belong to the Realistic
+  // theme alone (render/cellStyle.ts `finishStyle`). Here rather than under
+  // Behaviour for the same reason the row above is: this is what the board is
+  // made of, not what the game does. Both are cut into the mesh, so both say
+  // so — the theme picker's own footer makes the same promise.
+  appearance.append(
+    toggleRow(
+      "gloss",
+      "Glossy tiles",
+      "A polished finish, and a highlight that sweeps as you turn the board",
+      host.gloss,
+      () => host.setGloss(!host.gloss),
+    ),
+    toggleRow(
+      "pins",
+      "3D flag pins",
+      "Flags and mines stand up as models on a board you can turn",
+      host.pins,
+      () => host.setPins(!host.pins),
+    ),
+  );
   frag.append(appearance);
+
+  // The same promise the theme picker's footer makes, and for the same reason:
+  // both switches are cut into the mesh when a board is built, so neither can
+  // reach the board already on screen. A note under the list rather than a word
+  // in each hint, which would push both rows to three lines to say one thing.
+  const finishNote = document.createElement("p");
+  finishNote.className = "settings-note";
+  finishNote.textContent = "Glossy tiles and 3D pins apply to the next board you open.";
+  frag.append(finishNote);
 
   // -- Behaviour -------------------------------------------------------------
   frag.append(heading("Behaviour"));
@@ -660,45 +715,43 @@ export function renderSettings(host: SettingsHost, pages: SettingsPages): Docume
   // A desktop browser with neither gets no row rather than a switch that
   // promises a buzz nothing can deliver.
   if (hapticsSupported()) {
-    const buzzKnob = document.createElement("span");
-    buzzKnob.className = "settings-switch";
-    const { li: hapticLi, btn: hapticBtn } = buttonRow(
-      [
-        textBlock("Haptics", "Buzzes on a flag, a win and a mine"),
-        buzzKnob,
-      ],
-      () => host.setHaptics(!host.haptics),
-      "settings-toggle",
+    behaviour.append(
+      toggleRow(
+        "haptics",
+        "Haptics",
+        "Buzzes on a flag, a win and a mine",
+        host.haptics,
+        () => host.setHaptics(!host.haptics),
+      ),
     );
-    hapticBtn.dataset["setting"] = "haptics";
-    hapticBtn.setAttribute("role", "switch");
-    hapticBtn.setAttribute("aria-checked", String(host.haptics));
-    hapticBtn.classList.toggle("on", host.haptics);
-    behaviour.append(hapticLi);
   }
 
   const on = animationsEnabled(host.animations);
-  const knob = document.createElement("span");
-  knob.className = "settings-switch";
-  const { li: animLi, btn: animBtn } = buttonRow(
-    [
-      textBlock(
-        "Animations",
-        host.animations === null
-          ? `Following your system setting (${on ? "on" : "off"})`
-          : "Reveals and explosions animate",
-      ),
-      knob,
-    ],
-    // Flipping the switch is an explicit choice, so it stops following the OS.
-    () => host.setAnimations(!on),
-    "settings-toggle",
+  behaviour.append(
+    toggleRow(
+      "animations",
+      "Animations",
+      host.animations === null
+        ? `Following your system setting (${on ? "on" : "off"})`
+        : "Reveals and explosions animate",
+      on,
+      // Flipping the switch is an explicit choice, so it stops following the OS.
+      () => host.setAnimations(!on),
+    ),
   );
-  animBtn.dataset["setting"] = "animations";
-  animBtn.setAttribute("role", "switch");
-  animBtn.setAttribute("aria-checked", String(on));
-  animBtn.classList.toggle("on", on);
-  behaviour.append(animLi);
+
+  // What the board's own row carries. Behaviour rather than Appearance: it is
+  // not how the controls look but how many of the board's motions are within
+  // reach of a thumb — the keyboard and the wheel drive them all either way.
+  behaviour.append(
+    toggleRow(
+      "extraControls",
+      "Extra board controls",
+      "Every symmetry a board has, not just the Klein bottle's two",
+      host.extraControls,
+      () => host.setExtraControls(!host.extraControls),
+    ),
+  );
   frag.append(behaviour);
 
   // -- Privacy ---------------------------------------------------------------
@@ -714,21 +767,15 @@ export function renderSettings(host: SettingsHost, pages: SettingsPages): Docume
     frag.append(heading("Privacy"));
     const privacy = document.createElement("ul");
     privacy.className = "menu-list";
-    const statsKnob = document.createElement("span");
-    statsKnob.className = "settings-switch";
-    const { li: statsLi, btn: statsBtn } = buttonRow(
-      [
-        textBlock("Analytics", "Anonymous counts of which boards are played and won"),
-        statsKnob,
-      ],
-      () => host.setAnalytics(!host.analytics),
-      "settings-toggle",
+    privacy.append(
+      toggleRow(
+        "analytics",
+        "Analytics",
+        "Anonymous counts of which boards are played and won",
+        host.analytics,
+        () => host.setAnalytics(!host.analytics),
+      ),
     );
-    statsBtn.dataset["setting"] = "analytics";
-    statsBtn.setAttribute("role", "switch");
-    statsBtn.setAttribute("aria-checked", String(host.analytics));
-    statsBtn.classList.toggle("on", host.analytics);
-    privacy.append(statsLi);
     frag.append(privacy);
 
     const note = document.createElement("p");
