@@ -85,10 +85,8 @@ test.describe("settings", () => {
       "Boards in space",
       "Choosing a board",
     ]);
-    // Static text: no launchable row in the pane (the sidebar's quick-play
-    // rows stay put on desktop, so this is scoped past them), and no
-    // difficulty row either.
-    await expect(page.locator(".menu-body .menu-entry[data-mode]")).toHaveCount(0);
+    // Static text: no launchable row, and no difficulty row either.
+    await expect(page.locator(".menu-entry[data-mode]")).toHaveCount(0);
     await expect(page.locator(".menu-difficulty")).toBeHidden();
 
     await page.locator('.menu-entry[data-action="back"]').click();
@@ -269,9 +267,7 @@ test.describe("settings", () => {
     await page.locator('.menu-entry[data-theme="classic"]').click();
     await page.locator('.menu-entry[data-action="back"]').click(); // to settings
     await page.locator('.menu-entry[data-action="back"]').click(); // to the root
-    // Scoped to the sidebar: the default pane's own "square" card would also
-    // match, and both are on screen at once on desktop.
-    await page.locator('.menu-sidebar .menu-entry[data-mode="square"]').click(); // Classic
+    await page.locator('.menu-entry[data-mode="square"]').click(); // Classic
 
     // The board reports the style its mesh was actually cut with, so this is
     // the assertion that the theme reached the renderer rather than only the
@@ -588,9 +584,7 @@ test.describe("settings", () => {
     await page.locator('.menu-entry[data-theme="classic"]').click();
     await page.locator('.menu-entry[data-action="back"]').click(); // to settings
     await page.locator('.menu-entry[data-action="back"]').click(); // to the root
-    // Scoped to the sidebar: the default pane's own "square" card would also
-    // match, and both are on screen at once on desktop.
-    await page.locator('.menu-sidebar .menu-entry[data-mode="square"]').click();
+    await page.locator('.menu-entry[data-mode="square"]').click();
 
     const state = await page.evaluate(() => window.__ms?.state());
     expect(state?.screen).toBe("game");
@@ -611,9 +605,7 @@ test.describe("difficulty persistence", () => {
     await expect(page.locator('.difficulty-btn[data-key="hard"]')).toHaveClass(/active/);
     await expect(page.locator('.difficulty-btn[data-key="medium"]')).not.toHaveClass(/active/);
 
-    // Scoped to the sidebar: the default pane's own "square" card would also
-    // match, and both are on screen at once on desktop.
-    await page.locator('.menu-sidebar .menu-entry[data-mode="square"]').click();
+    await page.locator('.menu-entry[data-mode="square"]').click();
     const state = await page.evaluate(() => window.__ms?.state());
     expect(state?.difficulty).toBe("hard");
   });

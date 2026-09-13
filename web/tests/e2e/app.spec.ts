@@ -24,10 +24,8 @@ test.describe("M1 app", () => {
   test("menu launches a flat board at the chosen difficulty", async ({ page }) => {
     await page.locator('.difficulty-btn[data-key="easy"]').click();
     await page.locator('.menu-entry[data-group="flat"]').click();
-    // the regular tilings sit at the top of the picker, not in a submenu.
-    // Scoped to the pane: the sidebar's own Classic shortcut also carries
-    // `data-mode="square"`, and both are on screen at once on desktop.
-    await page.locator('.menu-body .menu-entry[data-mode="square"]').click();
+    // the regular tilings sit at the top of the picker, not in a submenu
+    await page.locator('.menu-entry[data-mode="square"]').click();
     const state = await page.evaluate(() => window.__ms?.state());
     expect(state?.screen).toBe("game");
     expect(state?.mode).toBe("square");

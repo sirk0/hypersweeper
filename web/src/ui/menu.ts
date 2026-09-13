@@ -23,7 +23,7 @@ import { clearBestTimes } from "../leaderboard";
 import { renderAchievements } from "./achievements";
 import { renderBestTimes } from "./bestTimes";
 import { HELP_ICON, renderHelp } from "./help";
-import { menuIcon } from "./icons";
+import { menuIcon, previewIcon } from "./icons";
 import {
   GEAR_ICON,
   renderSchemePicker,
@@ -158,6 +158,21 @@ interface ModeGroup {
 
 type Group = PickerGroup | ManifoldGroup | ModeGroup;
 
+/** One of the four quick-play entries. `mode` opens that board; `random`
+ * deals one from that half of the catalogue at click time, so it is a
+ * different board every time (see `randomRow`). */
+interface QuickEntry {
+  kind: "mode" | "random";
+  key: string;
+  label: string;
+  hint: string;
+  icon: string;
+}
+
+/** The sidebar key of the Quick start page — the desktop menu's own page, with
+ * no phone equivalent (the phone lists these four as its home rows). */
+const QUICK_START = "quickstart";
+
 /** A menu row's icon (the same glyph the pygame menu draws for that key). */
 function iconEl(key: string): HTMLElement {
   const el = document.createElement("span");
@@ -205,15 +220,6 @@ export class Menu {
   private headerActionsEl!: HTMLElement;
   private sidebarEl!: HTMLElement;
   private sidebarFooterEl!: HTMLElement;
-  /** The sidebar's quick-play `<ul>` — empty until `placeQuickPlayRows` moves
-   * `quickPlayEls` into it. */
-  private sidebarQuickPlayEl!: HTMLElement;
-  /** Classic, Volumetric and the two random rows: built once and moved (never
-   * cloned) between the sidebar and the phone's `renderRoot` list, so
-   * `data-mode="square"` etc. resolve to one element at any width — a CSS
-   * `display: none` on the (unhidden) sidebar element they'd otherwise sit in
-   * still leaves them matchable, which a second copy would not survive. */
-  private quickPlayEls!: HTMLElement[];
   /** The sidebar key of the page on screen at desktop width, so its row can
    * be painted active and restored — derived, not persisted. */
   private selectedPage: string | null = null;
@@ -261,25 +267,14 @@ export class Menu {
     this.body = document.createElement("div");
     this.body.className = "menu-body";
 
-    this.quickPlayEls = this.quickPlayRows();
     this.sidebarEl = this.buildSidebar();
     this.root.append(this.header(), this.sidebarEl, this.body, this.difficultyRow());
     this.placeHeaderButtons();
-    this.placeQuickPlayRows();
     this.wideQuery.addEventListener("change", () => {
       this.placeHeaderButtons();
-      this.placeQuickPlayRows();
       this.render();
     });
     this.showRoot();
-  }
-
-  /** Moves (never clones) the quick-play rows into the sidebar once the
-   * desktop breakpoint is active. Below it they are left alone here —
-   * `renderRoot`, the only phone page that uses them, pulls them into its own
-   * list itself each time it runs. */
-  private placeQuickPlayRows(): void {
-    if (this.isWide()) this.sidebarQuickPlayEl.append(...this.quickPlayEls);
   }
 
   /** The title row: the how-to-play ? at the left edge, the title, the settings
@@ -398,14 +393,33 @@ export class Menu {
   }
 
   private showRoot(): void {
-    // On desktop the sidebar replaces the root list; land on its first
-    // geometry group rather than an empty pane. With no groups built there is
-    // nothing to browse either way, so fall through to the phone home page.
-    if (this.isWide() && this.groups.length > 0) {
-      this.selectPage(this.groups[0]!);
+    // On desktop the sidebar replaces the root list, and Quick start is what
+    // the phone's home rows become: the page the menu opens on.
+    if (this.isWide()) {
+      this.showQuickStart();
       return;
     }
     this.go(() => this.renderRoot());
+  }
+
+  /** The desktop landing page: the four quick-play entries as cards. */
+  private showQuickStart(): void {
+    this.selectedPage = QUICK_START;
+    this.go(() => this.renderQuickStart());
+    this.syncSidebarActive();
+  }
+
+  private renderQuickStart(): void {
+    const list = document.createElement("ul");
+    list.className = "menu-list menu-card-grid";
+    list.append(...this.quickPlayCards());
+    this.body.replaceChildren(
+      this.paneHeader(
+        "Quick start",
+        "Straight into a board, or a surprise from half the catalogue.",
+      ),
+      list,
+    );
   }
 
   /** The settings page — one more menu page rather than a modal, so it reuses
@@ -630,57 +644,95 @@ export class Menu {
     );
   }
 
-  /** Classic and Volumetric (launched straight away), and one random board
-   * from each half of the catalogue — the phone home page's own rows, also
-   * reused as the desktop sidebar's "quick play" group. */
-  private quickPlayRows(): HTMLElement[] {
-    const rows: HTMLElement[] = [];
+  /** Classic and Volumetric (which open one particular board straight away)
+   * and one random board from each half of the catalogue — the four entries
+   * the phone home page lists as rows and the desktop shows as the Quick start
+   * page's cards. Stated once here so the two cannot drift apart.
+   *
+   * The two launch entries come first: the rows that open a named board sit
+   * above the ones that deal a surprise. Volumetric's label comes from the
+   * shared MODE_LABELS rather than a string here, because unlike Classic
+   * (whose entry says "Classic" and whose board is captioned "Squares") the
+   * entry and the board are the same word, and reading it once is what keeps
+   * them so. */
+  private quickPlayEntries(): QuickEntry[] {
+    const entries: QuickEntry[] = [];
     // Classic — flat squares, launched straight away (gui.py MenuScreen).
     if (hasMode("square")) {
-      rows.push(
-        this.launchRow(
-          "square",
-          ROOT_LABELS["classic"] ?? "Classic",
-          "Flat squares — the original.",
-          "classic",
-        ),
-      );
+      entries.push({
+        kind: "mode",
+        key: "square",
+        label: ROOT_LABELS["classic"] ?? "Classic",
+        hint: "Flat squares — the original.",
+        icon: "classic",
+      });
     }
-    // Volumetric — the cube of cubes, launched straight away like Classic:
-    // the two rows that open one particular board sit together, above the two
-    // that deal a random one. Its label comes from the shared MODE_LABELS
-    // rather than a string here, because unlike Classic (whose row says
-    // "Classic" and whose board is captioned "Squares") the row and the board
-    // are the same word, and reading it once is what keeps them so.
     if (hasMode("cube3d")) {
-      rows.push(
-        this.launchRow(
-          "cube3d",
-          MODE_LABELS["cube3d"] ?? "Volumetric",
-          "A cube filled with cubes — 26 neighbours.",
-          "cube3d",
-        ),
-      );
+      entries.push({
+        kind: "mode",
+        key: "cube3d",
+        label: MODE_LABELS["cube3d"] ?? "Volumetric",
+        hint: "A cube filled with cubes — 26 neighbours.",
+        icon: "cube3d",
+      });
     }
-    const flat = randomPool("flat");
-    if (flat.length > 0) {
-      rows.push(
-        this.randomRow(
-          "flat",
-          ROOT_LABELS["flat"] ?? "Flat",
-          "A random flat tiling.",
-          // the same hexagon the old Flat entry showed
-          "hex",
-        ),
-      );
+    if (randomPool("flat").length > 0) {
+      entries.push({
+        kind: "random",
+        key: "flat",
+        label: ROOT_LABELS["flat"] ?? "Flat",
+        hint: "A random flat tiling.",
+        // the same hexagon the old Flat entry showed
+        icon: "hex",
+      });
     }
-    const threeD = randomPool("3d");
-    if (threeD.length > 0) {
-      rows.push(
-        this.randomRow("3d", "3D", "A random manifold, sphere, polyhedron or volume.", "3d"),
-      );
+    if (randomPool("3d").length > 0) {
+      entries.push({
+        kind: "random",
+        key: "3d",
+        label: "3D",
+        hint: "A random manifold, sphere, polyhedron or volume.",
+        icon: "3d",
+      });
     }
-    return rows;
+    return entries;
+  }
+
+  /** The phone home page's four quick-play rows. */
+  private quickPlayRows(): HTMLElement[] {
+    return this.quickPlayEntries().map((e) =>
+      e.kind === "mode"
+        ? this.launchRow(e.key, e.label, e.hint, e.icon)
+        : this.randomRow(e.key as RandomKind, e.label, e.hint, e.icon),
+    );
+  }
+
+  /** The desktop Quick start page: the same four entries as cards.
+   *
+   * The hint rides along as a caption line rather than being dropped as it is
+   * on a sidebar row — on the two random entries it is the only thing saying
+   * that the card deals a board rather than opening a named one. */
+  private quickPlayCards(): HTMLElement[] {
+    return this.quickPlayEntries().map((e) => {
+      const li = document.createElement("li");
+      const btn = document.createElement("button");
+      btn.className = "menu-entry menu-board-card";
+      if (e.kind === "mode") {
+        btn.dataset.mode = e.key;
+        btn.addEventListener("click", () =>
+          this.onSelect({ mode: e.key, difficulty: this.settings.difficulty }),
+        );
+      } else {
+        btn.dataset.random = e.key;
+        btn.addEventListener("click", () => {
+          const mode = randomMode(e.key as RandomKind);
+          if (mode) this.onSelect({ mode, difficulty: this.settings.difficulty, random: true });
+        });
+      }
+      btn.append(this.previewEl(e.icon), this.cardCaption(e.label, { hint: e.hint }));
+      li.append(btn);
+      return li;
+    });
   }
 
   /** The icon a group's own row shows: the "Flat" entry (which opens the
@@ -702,7 +754,7 @@ export class Menu {
     }
     const list = document.createElement("ul");
     list.className = "menu-list";
-    list.append(...this.quickPlayEls);
+    list.append(...this.quickPlayRows());
     if (this.groups.length > 0) {
       const li = document.createElement("li");
       const btn = document.createElement("button");
@@ -881,9 +933,14 @@ export class Menu {
     return entries;
   }
 
-  /** The desktop sidebar: quick play, then every geometry group, then the
+  /** The desktop sidebar: Quick start, then every geometry group, then the
    * how-to-play / settings footer. Built once in the constructor — it does
-   * not change between pages, only the pane content and the active row do. */
+   * not change between pages, only the pane content and the active row do.
+   *
+   * The four quick-play entries are a *page* here rather than four rows of
+   * their own: as rows they competed with the geometry list for the same
+   * glance, and they are what a player opening the menu wants first, which is
+   * what a landing page is for. */
   private buildSidebar(): HTMLElement {
     const sidebar = document.createElement("div");
     sidebar.className = "menu-sidebar";
@@ -893,9 +950,12 @@ export class Menu {
     title.textContent = screens.menu.title;
     sidebar.append(title);
 
-    this.sidebarQuickPlayEl = document.createElement("ul");
-    this.sidebarQuickPlayEl.className = "menu-list";
-    sidebar.append(this.sidebarQuickPlayEl);
+    const quick = document.createElement("ul");
+    quick.className = "menu-list";
+    quick.append(
+      this.sidebarRow(QUICK_START, "Quick start", "start", () => this.showQuickStart()),
+    );
+    sidebar.append(quick);
 
     if (this.groups.length > 0) {
       const section = document.createElement("p");
@@ -919,12 +979,25 @@ export class Menu {
    * as a nav row instead of a card (see `.menu-sidebar .menu-entry` in
    * styles.css) and always visible rather than reached through a back stack. */
   private sidebarGroupRow(group: Group): HTMLElement {
+    return this.sidebarRow(group.key, group.label, this.groupIcon(group), () =>
+      this.selectPage(group),
+    );
+  }
+
+  /** One sidebar nav row. `key` is its `data-group` — the handle both
+   * `syncSidebarActive` and the e2e suite know it by. */
+  private sidebarRow(
+    key: string,
+    label: string,
+    icon: string,
+    onClick: () => void,
+  ): HTMLElement {
     const li = document.createElement("li");
     const btn = document.createElement("button");
     btn.className = "menu-entry";
-    btn.dataset.group = group.key;
-    btn.append(iconEl(this.groupIcon(group)), textBlock(group.label));
-    btn.addEventListener("click", () => this.selectPage(group));
+    btn.dataset.group = key;
+    btn.append(iconEl(icon), textBlock(label));
+    btn.addEventListener("click", onClick);
     li.append(btn);
     return li;
   }
@@ -993,7 +1066,7 @@ export class Menu {
     const iconKey = FAMILY_ICONS[key] ?? key;
     if (this.isWide()) {
       btn.className = "menu-entry menu-submenu menu-board-card";
-      btn.append(this.previewEl(iconKey), this.cardCaption(label, this.chevronEl()));
+      btn.append(this.previewEl(iconKey), this.cardCaption(label, { trailing: this.chevronEl() }));
     } else {
       // menu-submenu lays the label and the › chevron out on one row.
       btn.className = "menu-entry menu-submenu";
@@ -1022,8 +1095,10 @@ export class Menu {
     if (level !== "ok") btn.dataset.fairness = level;
     if (this.isWide()) {
       btn.className = "menu-entry menu-board-card";
-      const trailing = level !== "ok" ? this.fairnessPill(level, hint) : undefined;
-      btn.append(this.previewEl(icon), this.cardCaption(label, trailing));
+      btn.append(
+        this.previewEl(icon),
+        this.cardCaption(label, level !== "ok" ? { trailing: this.fairnessPill(level, hint) } : {}),
+      );
     } else {
       btn.className = "menu-entry";
       btn.append(iconEl(icon), textBlock(label, hint));
@@ -1050,25 +1125,31 @@ export class Menu {
   }
 
   /** The large board preview a desktop card shows instead of the phone's 38px
-   * glyph — `menuIcon`'s existing SVG (icons.ts), which has no intrinsic size
-   * and so scales to whatever box it is dropped into. */
+   * glyph (icons.ts `previewIcon`): a tiling wallpapered to the card's edges,
+   * or — for a solid, a surface or a shaped board, where the silhouette is the
+   * picture — a centred figure with air around it, which `is-tiled` tells the
+   * card's padding apart. */
   private previewEl(key: string): HTMLElement {
     const el = document.createElement("div");
-    el.className = "menu-board-card-preview";
-    el.innerHTML = menuIcon(key);
+    const preview = previewIcon(key);
+    el.className = preview.tiled
+      ? "menu-board-card-preview is-tiled"
+      : "menu-board-card-preview";
+    el.innerHTML = preview.svg;
     return el;
   }
 
-  /** A desktop card's caption: the board/family name, plus an optional
-   * trailing element (a fairness pill, or a family's chevron). */
-  private cardCaption(label: string, trailing?: HTMLElement): HTMLElement {
+  /** A desktop card's caption: the board/family name, an optional hint line
+   * under it, and an optional trailing element (a fairness pill, or a family's
+   * chevron). */
+  private cardCaption(
+    label: string,
+    opts: { hint?: string; trailing?: HTMLElement } = {},
+  ): HTMLElement {
     const caption = document.createElement("span");
     caption.className = "menu-board-card-caption";
-    const nameEl = document.createElement("span");
-    nameEl.className = "menu-entry-label";
-    nameEl.textContent = label;
-    caption.append(nameEl);
-    if (trailing) caption.append(trailing);
+    caption.append(textBlock(label, opts.hint));
+    if (opts.trailing) caption.append(opts.trailing);
     return caption;
   }
 

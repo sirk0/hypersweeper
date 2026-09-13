@@ -12,6 +12,7 @@
 // cube, the cube frame and the tetrahedron.
 
 import {
+  classifyShapes,
   iconHex,
   shapeMetrics,
   type IconTint,
@@ -40,6 +41,8 @@ import {
   brickCubeBoard,
   c80Board,
   c180Board,
+  cubeBoard,
+  cubeFrameBoard,
   dodecahedronBoard,
   icosahedronBoard,
   octahedronBoard,
@@ -48,10 +51,12 @@ import {
   sphereTriangleBoard,
   steppedBipyramidBoard,
   steppedPyramidBoard,
+  tetrahedronBoard,
   tetrahedronFrameBoard,
   truncatedIcosidodecahedronBoard,
 } from "../boards/solids";
 import { solidCubeBoard } from "../boards/volume";
+import { DOMAINS } from "./backgroundPattern";
 import { newellNormal, type Board3D, type Vec3 } from "../boards/core";
 
 const D = 100;
@@ -101,6 +106,7 @@ let iconPalette: IconPalette = {};
 export function setIconPalette(next: IconPalette | undefined): void {
   iconPalette = next ?? {};
   cache.clear();
+  previewCache.clear();
 }
 
 const BASE: IconVariant = "base";
@@ -573,7 +579,15 @@ const SOLID_BUILDERS: Record<string, () => Board3D> = {
   rhombicosidodeca: () => rhombicosidodecahedronBoard(0),
   truncicosidodeca: () => truncatedIcosidodecahedronBoard(0),
   tetraframe: () => tetrahedronFrameBoard(0, 2),
+  // The three solids the small icon draws as a symbol rather than a board — a
+  // fanned triangle and two isometric boxes, which is what fits in 38px. A card
+  // has room for the real thing, so they are built here for `previewIcon`;
+  // `draw` still routes them to their hand-drawn branches.
+  tetrahedron: () => tetrahedronBoard(0, 5),
+  cube: () => cubeBoard(4, 0),
+  cubeframe: () => cubeFrameBoard(3, 1, 0),
   octahedron: () => octahedronBoard(0, 3),
+
   icosahedron: () => icosahedronBoard(0, 2),
   dodecahedron: () => dodecahedronBoard(0, 1),
   steppedbipyramid: () => steppedBipyramidBoard(7, 4, 0),
@@ -650,6 +664,11 @@ const SOLID_VIEW: Record<string, [number, number] | [number, number, number]> = 
   cubestackedbond: [-24, 28],
   cubebasketweave: [-24, 28],
   cubebasketweave3: [-24, 28],
+  // The two boxes and the tetrahedron, turned like the brick cubes: a three
+  // quarter view, shallow enough that the top face still takes the light.
+  cube: [-24, 28],
+  cubeframe: [-24, 28],
+  tetrahedron: [-20, 24],
   // Down a 4-fold vertex axis and tipped, so three of the eight faces show.
   octahedron: [-24, 24],
   // Down a 5-fold vertex axis and tipped, echoing the snub dodecahedron's view.
@@ -670,6 +689,17 @@ const SOLID_VIEW: Record<string, [number, number] | [number, number, number]> = 
   pentakisdodeca: [-20, 20],
   deltoidalhexeconta: [-16, 18],
   disdyakistriaconta: [-16, 20],
+};
+
+/** Where a card turns a solid further than its 38px icon does. Two boards read
+ * as themselves only once there is room for the turn: a tetrahedron stood on
+ * its base, where the icon's shallower tip reads as a wedge, and the cube of
+ * cubes seen from a corner, where the icon's nearly-face-on view — the sheets
+ * being what there is to read at that size — spreads into four loose squares.
+ * Kept apart from `SOLID_VIEW` so the small icons stay exactly as they are. */
+const PREVIEW_VIEW: Record<string, [number, number] | [number, number, number]> = {
+  tetrahedron: [-30, 15, 45],
+  cube3d: [-24, 28],
 };
 
 const solidCache = new Map<string, Board3D>();
@@ -709,14 +739,20 @@ function rotate(p: V3, rx: number, ry: number, rz = 0): V3 {
  * wind outward for the renderer's back-face culling, and are painted back to
  * front so a near tile covers the far one behind it.
  */
-function solidFaces(key: string, kind: "round" | "blocky" = "round"): string[] {
+function solidFaces(key: string, kind: "round" | "blocky" = "round", lit = false): string[] {
   const board = solidBoard(key);
-  const [rxDeg, ryDeg, rzDeg = 0] = SOLID_VIEW[key] ?? [-18, 15];
+  const [rxDeg, ryDeg, rzDeg = 0] = (lit ? PREVIEW_VIEW[key] : undefined) ??
+    SOLID_VIEW[key] ?? [-18, 15];
   const rad = Math.PI / 180;
   const [rx, ry, rz] = [rxDeg * rad, ryDeg * rad, rzDeg * rad];
-  const faces: { pts: P[]; depth: number; facing: number; tone: ShapeTone }[] = [];
+  // A card has room for the board's own colours: `classifyShapes` normalises
+  // regularity across the whole board and reads the corner mask, exactly as
+  // render/solidBoard.ts does, where the small icon measures each polygon on
+  // its own. The difference shows on the boards with T-vertices.
+  const tones = lit ? classifyShapes(board.polygons, board.cornerMask) : null;
+  const faces: { pts: P[]; depth: number; facing: number; lambert: number; tone: ShapeTone }[] = [];
   const box: number[][] = [];
-  for (const poly of board.polygons.values()) {
+  for (const [cell, poly] of board.polygons) {
     const spun = poly.map((v) => rotate(v as V3, rx, ry, rz));
     const mid: V3 = [
       spun.reduce((s, v) => s + v[0], 0) / spun.length,
@@ -742,13 +778,16 @@ function solidFaces(key: string, kind: "round" | "blocky" = "round"): string[] {
     }
     if (facing <= 0.06) continue; // back-facing, and the rim it would alias with
     // Blocky boards have far more, far smaller cells than a sphere's, so their
-    // seams are cut thinner or the tiles dissolve into speckle.
-    const inset = kind === "round" ? 0.9 : 0.94;
+    // seams are cut thinner or the tiles dissolve into speckle. A card's seams
+    // are cut thinner again: at four times the size the icon's 6-10% gap reads
+    // as a gap rather than as the board's grout.
+    const inset = lit ? (kind === "round" ? 0.96 : 0.975) : kind === "round" ? 0.9 : 0.94;
     faces.push({
       pts: spun.map((v) => [mid[0] + (v[0] - mid[0]) * inset, mid[1] + (v[1] - mid[1]) * inset]),
       depth: mid[2],
       facing,
-      tone: shapeMetrics(poly),
+      lambert: lit ? lambertOf(spun as Vec3[], facing) : 0,
+      tone: tones?.get(cell) ?? shapeMetrics(poly),
     });
   }
   // Fit the silhouette rather than the bounding sphere, so a solid that is not
@@ -757,15 +796,34 @@ function solidFaces(key: string, kind: "round" | "blocky" = "round"): string[] {
     Math.max(...box.map((p) => p[k]!)) - Math.min(...box.map((p) => p[k]!));
   const scale = (D * 0.92) / Math.max(span(0), span(1));
   faces.sort((f, g) => f.depth - g.depth);
-  return faces.map((f) =>
-    shape(
-      f.pts.map(([x, y]) => [C + x * scale, C - y * scale] as P),
-      f.facing > 0.8 ? LIGHT : f.facing > 0.45 ? BASE : DARK,
-      0,
-      f.tone,
-      D * 0.008,
-    ),
-  );
+  return faces.map((f) => {
+    const pts = f.pts.map(([x, y]) => [C + x * scale, C - y * scale] as P);
+    // Lit: a continuous ramp between the tone's three variants, the way the
+    // surfaces are shaded (see surfaceMesh). The icon's three buckets are what
+    // a 38px solid needs to read as solid at all; on a card they band.
+    if (!lit) {
+      const variant = f.facing > 0.8 ? LIGHT : f.facing > 0.45 ? BASE : DARK;
+      return shape(pts, variant, 0, f.tone, D * 0.008);
+    }
+    const base = tint(BASE, f.tone);
+    const l = f.lambert;
+    const fill =
+      l > 0.5
+        ? mixHex(base, tint(LIGHT, f.tone), (l - 0.5) * 2)
+        : mixHex(tint(DARK, f.tone), base, l * 2);
+    return poly(pts, fill, D * 0.006);
+  });
+}
+
+/** How squarely a face meets the light, in 0..1 — the shading a card's solids
+ * take. Falls back to how squarely the face meets the viewer when the polygon
+ * is too degenerate to have a normal (see the Newell note above). */
+function lambertOf(spun: Vec3[], facing: number): number {
+  const light = [-0.35, 0.5, 0.79] as const;
+  const nrm = newellNormal(spun);
+  const len = Math.hypot(nrm[0], nrm[1], nrm[2]);
+  if (len < 1e-9) return facing;
+  return Math.abs((nrm[0] * light[0] + nrm[1] * light[1] + nrm[2] * light[2]) / len);
 }
 
 // -- the four surfaces -------------------------------------------------------
@@ -1525,4 +1583,182 @@ export function menuIcon(key: string): string {
     cache.set(key, svg);
   }
   return svg;
+}
+
+// -- card previews -----------------------------------------------------------
+//
+// The desktop menu draws a board as a card about 240x168, where the 38px glyph
+// blown up reads as a blown-up glyph: one shape adrift in the middle of an
+// empty box. A card shows the board instead — a flat board as its tiling
+// running off all four edges, a solid as the real solid lit rather than sorted
+// into three shades. Both come off the geometry the small icon already uses
+// (the same `ArchTemplate`, the same easy-preset board), so a card and its
+// sidebar row are one picture at two sizes rather than two drawings.
+
+/** The preview's own box: wider than tall, and *covered* rather than fitted
+ * (`slice` below), so one drawing fills a card of any width. */
+const PREVIEW_W = 100;
+const PREVIEW_H = 70;
+
+/** Roughly how many tiles a wallpaper shows. Tiles are scaled to this count
+ * rather than fitted to the patch the way `fitTiles` does, so a card of
+ * hexagons and a card of triakis triangles show tiles of about the same size
+ * instead of one filling the box with three shapes and the next with ninety. */
+const PREVIEW_TILES = 20;
+
+/** Boards whose picture is their outline, not their tiling. The shaped boards
+ * *are* the regular tilings, cut to a triangle or a hexagon, and the Sierpinski
+ * carpet is squares with squares missing — wallpapered, each would be
+ * indistinguishable from the plain tiling it is cut from, which is the one
+ * thing its picture has to say. */
+const NO_WALLPAPER = new Set([
+  "triangle",
+  "hextri",
+  "squarediamond",
+  "hexhex",
+  "hextriangle",
+  "carpet",
+]);
+
+/** Where a mode's repeat domain is filed under another name. */
+const DOMAIN_KEY: Record<string, string> = { trigrid: "tri" };
+
+export interface Preview {
+  svg: string;
+  /** Whether the drawing runs to the edges (a tiling) or is a centred figure
+   * with air around it (a solid, a surface, a shaped board's outline) — the
+   * card drops its padding for the first and keeps it for the second. */
+  tiled: boolean;
+}
+
+const previewCache = new Map<string, Preview>();
+
+/** The large drawing a menu card shows for an icon key. Falls back to the row
+ * icon for anything with neither a lattice nor a solid behind it. */
+export function previewIcon(key: string): Preview {
+  let preview = previewCache.get(key);
+  if (preview === undefined) previewCache.set(key, (preview = buildPreview(key)));
+  return preview;
+}
+
+function buildPreview(rawKey: string): Preview {
+  const key = ALIASES[rawKey] ?? rawKey;
+  const tiles = wallpaper(key);
+  if (tiles) {
+    // `slice` rather than the default `meet`: the card is wider than this box
+    // on a roomy pane and narrower on a tight one, and a tiling should fill it
+    // either way. Anything outside the viewBox is clipped by the root element.
+    return {
+      svg:
+        `<svg viewBox="0 0 ${PREVIEW_W} ${PREVIEW_H}" preserveAspectRatio="xMidYMid slice"` +
+        ` aria-hidden="true" focusable="false">${tiles.join("")}</svg>`,
+      tiled: true,
+    };
+  }
+  if (SOLID_BUILDERS[key]) {
+    const faces = solidFaces(key, SPHERES.includes(key) ? "round" : "blocky", true);
+    return {
+      svg:
+        `<svg viewBox="0 0 ${D} ${D}" aria-hidden="true" focusable="false">` +
+        `${faces.join("")}</svg>`,
+      tiled: false,
+    };
+  }
+  return { svg: menuIcon(rawKey), tiled: false };
+}
+
+/** A periodic tiling as a lattice: one domain's tiles, and the translations
+ * that repeat them. Two sources, both already in the build — the templates the
+ * boards are cut from, and the handful of domains `backgroundPattern` states
+ * for the boards that are built by hand rather than from a template. */
+interface Lattice {
+  width: number;
+  height: number;
+  cells: (m: number, n: number) => Tile[];
+  /** mean tile area in the tiling's own units, for the scale above */
+  area: number;
+}
+
+function latticeFor(key: string): Lattice | null {
+  if (NO_WALLPAPER.has(key)) return null;
+  if (ARCH_KEYS.has(key)) {
+    const t = archTemplate(key);
+    return {
+      width: t.width,
+      height: t.height,
+      cells: (m, n) => copyTiles(t, m, n),
+      area: meanTileArea(copyTiles(t, 0, 0)),
+    };
+  }
+  const build = DOMAINS[DOMAIN_KEY[key] ?? key];
+  if (!build) return null;
+  const domain = build();
+  const cells = (m: number, n: number): Tile[] =>
+    domain.cells.map((cell, i) => {
+      const pts = cell.map(([x, y]): P => [x + m * domain.width, y + n * domain.height]);
+      return { kind: `cell${i}`, pts, centre: centroid(pts) };
+    });
+  return { width: domain.width, height: domain.height, cells, area: meanTileArea(cells(0, 0)) };
+}
+
+/** Mean tile area, from the shoelace sum. `backgroundPattern` sizes the page's
+ * pattern against the same measure, for the same reason: it is what makes one
+ * tiling's tiles come out the size of another's. */
+function meanTileArea(tiles: Tile[]): number {
+  const area = (pts: P[]): number => {
+    let sum = 0;
+    for (let i = 0; i < pts.length; i++) {
+      const a = pts[i]!;
+      const b = pts[(i + 1) % pts.length]!;
+      sum += a[0] * b[1] - b[0] * a[1];
+    }
+    return Math.abs(sum) / 2;
+  };
+  return tiles.reduce((sum, t) => sum + area(t.pts), 0) / tiles.length;
+}
+
+function wallpaper(key: string): string[] | null {
+  const lattice = latticeFor(key);
+  if (!lattice) return null;
+  const scale = Math.sqrt((PREVIEW_W * PREVIEW_H) / PREVIEW_TILES / lattice.area);
+  // Copies enough to reach either edge from the middle, plus one: a cell's
+  // vertices can point into the neighbouring domain copy (`Ref.dm/dn`), so the
+  // outermost ring is what keeps a corner from showing the card through.
+  const cols = Math.ceil(PREVIEW_W / 2 / (lattice.width * scale)) + 1;
+  const rows = Math.ceil(PREVIEW_H / 2 / (lattice.height * scale)) + 1;
+  // y flipped: tilings are y-up, SVG is y-down.
+  const place = (p: P): P => [PREVIEW_W / 2 + p[0] * scale, PREVIEW_H / 2 - p[1] * scale];
+  const tiles: Tile[] = [];
+  for (let m = -cols; m <= cols; m++) {
+    for (let n = -rows; n <= rows; n++) {
+      for (const tile of lattice.cells(m, n)) {
+        const pts = tile.pts.map(place);
+        if (offBox(pts)) continue;
+        tiles.push({ ...tile, pts, centre: place(tile.centre) });
+      }
+    }
+  }
+  // Corners rounded against the tiles, not the box, as the small patches are.
+  const span = Math.min(
+    ...tiles.map((t) => {
+      const xs = t.pts.map((p) => p[0]);
+      const ys = t.pts.map((p) => p[1]);
+      return Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys));
+    }),
+  );
+  const radius = Math.min(CORNER, span * 0.12);
+  // Every tile on its own tone, like the board: same shape, same colour, told
+  // apart by the seam between them. The small patch alternates shades instead,
+  // which reads as a figure at six tiles and as banding at sixty.
+  return tiles.map((t) => shape(t.pts, BASE, 4, undefined, radius));
+}
+
+/** Whether a placed tile falls entirely off one side of the preview box. */
+function offBox(pts: P[]): boolean {
+  return (
+    pts.every((p) => p[0] < 0) ||
+    pts.every((p) => p[0] > PREVIEW_W) ||
+    pts.every((p) => p[1] < 0) ||
+    pts.every((p) => p[1] > PREVIEW_H)
+  );
 }

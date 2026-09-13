@@ -1102,6 +1102,17 @@ body {
     gap: 18px;
   }
 
+  /* The grid stretches the row to its tallest card, but the button inside is
+     what draws the card — without this a two-line caption leaves its
+     neighbours' bottom edges hanging short of the row. */
+  .menu-card-grid > li {
+    display: flex;
+  }
+
+  .menu-card-grid > li > .menu-board-card {
+    height: 100%;
+  }
+
   /* `.menu-entry.menu-submenu` (styles.css, phone rows) lays its content out
      as a single row and outranks a bare `.menu-board-card` on specificity —
      matched here so the family card's column layout actually wins. */
@@ -1131,6 +1142,13 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+
+  /* A tiling is the board's own paper, so it runs to the card's edges and is
+     cropped there, rather than sitting in the frame a solid or a shaped board
+     needs to show its silhouette (icons.ts `previewIcon`). */
+  .menu-board-card-preview.is-tiled {
+    padding: 0;
   }
 
   .menu-board-card-preview svg {

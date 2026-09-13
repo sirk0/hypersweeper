@@ -281,10 +281,7 @@ test.describe("record window", () => {
 
     await page.goto("/");
     await expect(page.locator("body[data-ready]")).toBeVisible();
-    // Scoped to the sidebar's Classic shortcut: the default pane (Flat
-    // tilings) also has a "square" card, and both are on screen at once on
-    // desktop — either would do here, since picking one names it either way.
-    await page.locator('.menu-sidebar .menu-entry[data-mode="square"]').click();
+    await page.locator('.menu-entry[data-mode="square"]').click();
     expect((await page.evaluate(() => window.__ms?.state()))?.dealtAtRandom).toBe(false);
 
     await page.locator('.hud-btn[data-slot="random"]').click();
