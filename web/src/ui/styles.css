@@ -720,6 +720,13 @@ body {
   height: 60%;
 }
 
+/* Hidden at phone width, where the header shows the icon alone; revealed by
+   `.menu-sidebar-footer .menu-header-btn-label` once this button is moved
+   into the desktop sidebar footer, which needs a visible label. */
+.menu-header-btn-label {
+  display: none;
+}
+
 .menu-header-btn:hover,
 .menu-header-btn:active {
   color: var(--accent);
@@ -871,6 +878,298 @@ body {
   background: var(--selected);
   color: var(--accent);
   font-weight: 700;
+}
+
+/* --- Desktop menu: two-pane board browser --- */
+/* Below 900px none of this applies — the phone column above is untouched.
+   From 900px the sidebar (the whole top level of the tree) replaces the back
+   stack, and the content pane shows the current page as a grid of board
+   cards instead of a list of rows. See
+   project/design_handoff_desktop_menu/README.md in the design export for the
+   full spec this implements ("option 8b"). */
+.menu-sidebar {
+  display: none;
+}
+
+@media (min-width: 900px) {
+  .menu {
+    width: min(1280px, 100%);
+    display: grid;
+    grid-template-columns: 276px minmax(0, 1fr);
+    align-items: stretch;
+    gap: 0;
+    padding: 0;
+  }
+
+  /* The phone header (title + icon buttons) and the bottom difficulty block
+     are both superseded — the sidebar carries the title and footer buttons,
+     and the difficulty pills move into the pane header (`paneHeader` in
+     menu.ts reparents the same element there; it is never cloned). */
+  .menu-header,
+  .menu > .menu-difficulty-block {
+    display: none;
+  }
+
+  .menu-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: max(28px, env(safe-area-inset-top)) 20px 28px;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .menu-sidebar-title {
+    margin: 0 0 0 10px;
+    font-size: 27px;
+    line-height: 1.05;
+    text-align: left;
+  }
+
+  .menu-sidebar .menu-list {
+    gap: 3px;
+  }
+
+  .menu-nav-section {
+    margin: 0 0 4px 12px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.17em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* Sidebar rows are nav rows, not the phone's cards: no border, shadow or
+     panel background of their own — they sit directly on the sidebar. */
+  .menu-sidebar .menu-entry {
+    background: none;
+    backdrop-filter: none;
+    border: none;
+    box-shadow: none;
+    border-radius: var(--radius);
+    padding: 11px 12px;
+    gap: 12px;
+    font-weight: 500;
+    font-size: 15px;
+    line-height: 1.1;
+  }
+
+  .menu-sidebar .menu-entry:active {
+    border-color: transparent;
+  }
+
+  .menu-sidebar .menu-entry:hover,
+  .menu-sidebar .menu-entry:active {
+    background: var(--selected);
+  }
+
+  .menu-sidebar .menu-entry:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .menu-sidebar .menu-entry.active {
+    background: var(--selected);
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .menu-sidebar .menu-entry-icon {
+    width: 26px;
+    height: 26px;
+  }
+
+  /* Sidebar rows show no hint line (the pane header explains the page once
+     it is open) — only `.menu-entry-label` is ever populated here. */
+  .menu-sidebar .menu-entry-hint {
+    display: none;
+  }
+
+  .menu-sidebar-footer {
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  /* The how-to-play / settings buttons, reparented here from the (now
+     hidden) phone header — full labelled rows instead of a bare icon. */
+  .menu-sidebar-footer .menu-header-btn {
+    width: 100%;
+    height: auto;
+    justify-content: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: var(--radius);
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.1;
+  }
+
+  .menu-sidebar-footer .menu-header-btn svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .menu-sidebar-footer .menu-header-btn-label {
+    display: inline;
+  }
+
+  .menu-body {
+    grid-column: 2;
+    min-height: 0;
+    padding: 30px 34px max(34px, env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    align-items: stretch;
+  }
+
+  .menu-body > .menu-list {
+    margin-block: 0;
+  }
+
+  .menu-body > .menu-back {
+    margin-bottom: 0;
+  }
+
+  .menu-pane-header {
+    display: flex;
+    align-items: flex-end;
+    gap: 24px;
+  }
+
+  .menu-pane-heading {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .menu-pane-title {
+    margin: 0;
+    text-align: left;
+    font-size: 30px;
+    line-height: 1.05;
+  }
+
+  .menu-pane-hint {
+    margin: 7px 0 0;
+    font-size: 14px;
+    line-height: 1.45;
+    color: var(--muted);
+  }
+
+  /* The difficulty pills, reparented into the pane header: a segmented
+     control instead of the phone's row of separate pills. */
+  .menu-pane-header .menu-difficulty-block {
+    flex: none;
+  }
+
+  .menu-pane-header .menu-difficulty-heading {
+    display: none;
+  }
+
+  .menu-pane-header .menu-difficulty {
+    justify-content: flex-start;
+    gap: 6px;
+    padding: 5px;
+    background: var(--bg);
+    border-radius: 999px;
+  }
+
+  .menu-pane-header .difficulty-btn {
+    flex: none;
+    padding: 9px 20px;
+    border: 0;
+    box-shadow: none;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  .menu-pane-header .difficulty-btn.active {
+    background: var(--accent);
+    color: var(--on-accent);
+    font-weight: 700;
+  }
+
+  /* The card grid: fluid columns rather than a fixed count, so an ultrawide
+     pane gains more columns instead of stretching each card. */
+  .menu-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 18px;
+  }
+
+  /* `.menu-entry.menu-submenu` (styles.css, phone rows) lays its content out
+     as a single row and outranks a bare `.menu-board-card` on specificity —
+     matched here so the family card's column layout actually wins. */
+  .menu-entry.menu-board-card {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    padding: 0;
+    gap: 0;
+    overflow: hidden;
+    border-radius: 20px;
+  }
+
+  .menu-board-card:hover {
+    border-color: var(--accent);
+  }
+
+  .menu-board-card:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .menu-board-card-preview {
+    height: 168px;
+    padding: 18px;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .menu-board-card-preview svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .menu-board-card-caption {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 15px 18px 17px;
+    border-top: 1px solid var(--border);
+  }
+
+  .menu-board-card-caption .menu-entry-label {
+    flex: 1;
+    min-width: 0;
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .menu-board-card-caption .menu-entry-chevron {
+    font-size: 20px;
+  }
+
+  .menu-fairness-pill {
+    flex: none;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: var(--selected);
+    color: var(--danger);
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    line-height: 1.3;
+  }
 }
 
 /* --- Settings page --- */

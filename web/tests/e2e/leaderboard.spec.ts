@@ -281,7 +281,10 @@ test.describe("record window", () => {
 
     await page.goto("/");
     await expect(page.locator("body[data-ready]")).toBeVisible();
-    await page.locator('.menu-entry[data-mode="square"]').click();
+    // Scoped to the sidebar's Classic shortcut: the default pane (Flat
+    // tilings) also has a "square" card, and both are on screen at once on
+    // desktop — either would do here, since picking one names it either way.
+    await page.locator('.menu-sidebar .menu-entry[data-mode="square"]').click();
     expect((await page.evaluate(() => window.__ms?.state()))?.dealtAtRandom).toBe(false);
 
     await page.locator('.hud-btn[data-slot="random"]').click();
@@ -362,7 +365,7 @@ test.describe("record window", () => {
     await expect(dialog(page)).toHaveCount(0); // still waiting
 
     await page.locator('.hud-btn[data-slot="back"]').click();
-    await expect(page.locator('.menu-entry[data-group="custom"]')).toBeVisible();
+    await expect(page.locator('.menu-sidebar')).toBeVisible();
     await page.waitForTimeout(1500); // past the delay the window would have used
     await expect(dialog(page)).toHaveCount(0);
     // The time was still filed — only the announcement was dropped.

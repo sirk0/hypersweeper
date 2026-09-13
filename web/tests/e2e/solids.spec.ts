@@ -35,13 +35,11 @@ test.describe("M2 solids", () => {
     await page.goto("/");
     await expect(page.locator("body[data-ready]")).toBeVisible();
     await page.locator('.difficulty-btn[data-key="easy"]').click();
-    await page.locator('.menu-entry[data-group="custom"]').click();
     for (const group of ["sphere", "platonic", "catalan", "polyhedra"]) {
       await expect(page.locator(`.menu-entry[data-group="${group}"]`)).toBeVisible();
     }
-    // Drill in, back out, drill in again — then launch.
+    // Drill in, back out, drill in again — the sidebar row works both ways.
     await page.locator('.menu-entry[data-group="catalan"]').click();
-    await page.locator('.menu-entry[data-action="back"]').click();
     await page.locator('.menu-entry[data-group="catalan"]').click();
     await page.locator('.menu-entry[data-mode="sphere"]').click();
     const state = await page.evaluate(() => window.__ms!.state());
@@ -55,7 +53,6 @@ test.describe("M2 solids", () => {
     await page.goto("/");
     await expect(page.locator("body[data-ready]")).toBeVisible();
     await page.locator('.difficulty-btn[data-key="easy"]').click();
-    await page.locator('.menu-entry[data-group="custom"]').click();
     await page.locator('.menu-entry[data-group="platonic"]').click();
     // straight to the boards: the Platonic solids used to sit behind a
     // "Polyhedra -> choose a group" page, and no longer do
@@ -73,7 +70,6 @@ test.describe("M2 solids", () => {
     await page.goto("/");
     await expect(page.locator("body[data-ready]")).toBeVisible();
     await page.locator('.difficulty-btn[data-key="easy"]').click();
-    await page.locator('.menu-entry[data-group="custom"]').click();
     await page.locator('.menu-entry[data-group="catalan"]').click();
     await page.locator('.menu-entry[data-mode="rhombictriaconta"]').click();
     const state = await page.evaluate(() => window.__ms!.state());

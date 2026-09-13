@@ -51,7 +51,10 @@ test.describe("settings", () => {
   });
 
   test("the gear opens settings and back returns to the menu", async ({ page }) => {
-    await expect(page.locator('.menu-entry[data-group="custom"]')).toBeVisible();
+    // `.menu-card-grid` (the desktop pane's board/group listing) stands in for
+    // "on the menu, not settings" — it is absent from both the settings page
+    // and the how-to-play page, which are static content in the same pane.
+    await expect(page.locator(".menu-card-grid")).toBeVisible();
     await page.locator('.menu-header-btn[data-action="settings"]').click();
 
     await expect(page.locator(".settings-heading")).toHaveText([
@@ -66,10 +69,10 @@ test.describe("settings", () => {
     ]);
     // The difficulty row is meaningless on this page.
     await expect(page.locator(".menu-difficulty")).toBeHidden();
-    await expect(page.locator('.menu-entry[data-group="custom"]')).toHaveCount(0);
+    await expect(page.locator(".menu-card-grid")).toHaveCount(0);
 
     await page.locator('.menu-entry[data-action="back"]').click();
-    await expect(page.locator('.menu-entry[data-group="custom"]')).toBeVisible();
+    await expect(page.locator(".menu-card-grid")).toBeVisible();
     await expect(page.locator(".menu-difficulty")).toBeVisible();
   });
 
@@ -82,12 +85,14 @@ test.describe("settings", () => {
       "Boards in space",
       "Choosing a board",
     ]);
-    // Static text: no launchable row, and no difficulty row either.
-    await expect(page.locator(".menu-entry[data-mode]")).toHaveCount(0);
+    // Static text: no launchable row in the pane (the sidebar's quick-play
+    // rows stay put on desktop, so this is scoped past them), and no
+    // difficulty row either.
+    await expect(page.locator(".menu-body .menu-entry[data-mode]")).toHaveCount(0);
     await expect(page.locator(".menu-difficulty")).toBeHidden();
 
     await page.locator('.menu-entry[data-action="back"]').click();
-    await expect(page.locator('.menu-entry[data-group="custom"]')).toBeVisible();
+    await expect(page.locator(".menu-card-grid")).toBeVisible();
     await expect(page.locator(".menu-difficulty")).toBeVisible();
   });
 
@@ -264,7 +269,9 @@ test.describe("settings", () => {
     await page.locator('.menu-entry[data-theme="classic"]').click();
     await page.locator('.menu-entry[data-action="back"]').click(); // to settings
     await page.locator('.menu-entry[data-action="back"]').click(); // to the root
-    await page.locator('.menu-entry[data-mode="square"]').click(); // Classic
+    // Scoped to the sidebar: the default pane's own "square" card would also
+    // match, and both are on screen at once on desktop.
+    await page.locator('.menu-sidebar .menu-entry[data-mode="square"]').click(); // Classic
 
     // The board reports the style its mesh was actually cut with, so this is
     // the assertion that the theme reached the renderer rather than only the
@@ -581,7 +588,9 @@ test.describe("settings", () => {
     await page.locator('.menu-entry[data-theme="classic"]').click();
     await page.locator('.menu-entry[data-action="back"]').click(); // to settings
     await page.locator('.menu-entry[data-action="back"]').click(); // to the root
-    await page.locator('.menu-entry[data-mode="square"]').click();
+    // Scoped to the sidebar: the default pane's own "square" card would also
+    // match, and both are on screen at once on desktop.
+    await page.locator('.menu-sidebar .menu-entry[data-mode="square"]').click();
 
     const state = await page.evaluate(() => window.__ms?.state());
     expect(state?.screen).toBe("game");
@@ -602,7 +611,9 @@ test.describe("difficulty persistence", () => {
     await expect(page.locator('.difficulty-btn[data-key="hard"]')).toHaveClass(/active/);
     await expect(page.locator('.difficulty-btn[data-key="medium"]')).not.toHaveClass(/active/);
 
-    await page.locator('.menu-entry[data-mode="square"]').click();
+    // Scoped to the sidebar: the default pane's own "square" card would also
+    // match, and both are on screen at once on desktop.
+    await page.locator('.menu-sidebar .menu-entry[data-mode="square"]').click();
     const state = await page.evaluate(() => window.__ms?.state());
     expect(state?.difficulty).toBe("hard");
   });
@@ -635,7 +646,6 @@ test.describe("shareable board links", () => {
 
     // Klein bottle → the tiling picker → a wrapped tiling, the sort of board a
     // link is worth sharing for.
-    await page.locator('.menu-entry[data-group="custom"]').click();
     await page.locator('.menu-entry[data-group="manifolds"]').click();
     await page.locator('.menu-entry[data-surface="klein"]').click();
     await page.locator('.menu-entry[data-submenu="dual"]').click();

@@ -322,9 +322,10 @@ test.describe("viewport layout", () => {
     expect(c.uiTop + c.uiHeight).toBeCloseTo(c.visibleBottom, 0);
 
     // …so the menu reads whole: its title below the address bar, its difficulty
-    // row above the toolbar.
+    // row above the toolbar. Scoped to the phone header specifically — the
+    // desktop sidebar carries its own (offscreen at this width) `.menu-title`.
     const title = await page
-      .locator(".menu-title")
+      .locator(".menu-header .menu-title")
       .evaluate((el) => el.getBoundingClientRect().top);
     expect(title).toBeGreaterThanOrEqual(c.visibleTop);
     const rowBottom = await page
