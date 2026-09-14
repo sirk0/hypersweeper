@@ -811,7 +811,11 @@ function solidFaces(key: string, kind: "round" | "blocky" = "round", lit = false
       l > 0.5
         ? mixHex(base, tint(LIGHT, f.tone), (l - 0.5) * 2)
         : mixHex(tint(DARK, f.tone), base, l * 2);
-    return poly(pts, fill, D * 0.006);
+    // Fill alone. `poly` strokes a face in its own colour to seal the
+    // antialiased seam against its neighbour, which is right where the seam
+    // should not show — but the inset above is deliberate grout, and a stroke
+    // over it only smears the edge the card is big enough to show cleanly.
+    return `<path d="${roundedPath(pts, D * 0.006)}" fill="${fill}"/>`;
   });
 }
 
@@ -1637,8 +1641,41 @@ const previewCache = new Map<string, Preview>();
  * icon for anything with neither a lattice nor a solid behind it. */
 export function previewIcon(key: string): Preview {
   let preview = previewCache.get(key);
-  if (preview === undefined) previewCache.set(key, (preview = buildPreview(key)));
+  if (preview === undefined) previewCache.set(key, (preview = muted(() => buildPreview(key))));
   return preview;
+}
+
+/** How much of the icon set's chroma a card keeps.
+ *
+ * The set is tuned for a 38px glyph, where a colour has a moment to carry
+ * before the eye moves on; the same value over a 168px field shouts, most of
+ * all on Sand, whose board runs at a fraction of it. Every preview is drawn
+ * through this, not just the solids — a wallpapered tiling and a centred
+ * glyph are the same large field, and muting one and not the other would put
+ * two weights of the same palette side by side on one page. */
+const PREVIEW_CHROMA = 0.5;
+
+/** Draw under the icon palette turned down for a card.
+ *
+ * The drawing helpers all read the module-level palette rather than being
+ * handed one (see `iconPalette`), so a card's colours are a scoped swap of it.
+ * Nothing can observe the swap: `draw` is synchronous throughout, and the
+ * palette is restored before this returns either way. */
+function muted<T>(paint: () => T): T {
+  const saved = iconPalette;
+  const tint = saved.tint;
+  iconPalette = {
+    ...saved,
+    tint: {
+      ...(tint?.lightness === undefined ? {} : { lightness: tint.lightness }),
+      chroma: (tint?.chroma ?? 0.85) * PREVIEW_CHROMA,
+    },
+  };
+  try {
+    return paint();
+  } finally {
+    iconPalette = saved;
+  }
 }
 
 function buildPreview(rawKey: string): Preview {
@@ -1655,16 +1692,18 @@ function buildPreview(rawKey: string): Preview {
       tiled: true,
     };
   }
-  if (SOLID_BUILDERS[key]) {
-    const faces = solidFaces(key, SPHERES.includes(key) ? "round" : "blocky", true);
-    return {
-      svg:
-        `<svg viewBox="0 0 ${D} ${D}" aria-hidden="true" focusable="false">` +
-        `${faces.join("")}</svg>`,
-      tiled: false,
-    };
-  }
-  return { svg: menuIcon(rawKey), tiled: false };
+  const parts = SOLID_BUILDERS[key]
+    ? solidFaces(key, SPHERES.includes(key) ? "round" : "blocky", true)
+    : // Neither a lattice nor a solid: a family rosette, a surface, a shaped
+      // board's outline. `draw` rather than `menuIcon`, which would fill the
+      // row icons' cache with a card's muted colours.
+      draw(rawKey);
+  return {
+    svg:
+      `<svg viewBox="0 0 ${D} ${D}" aria-hidden="true" focusable="false">` +
+      `${parts.join("")}</svg>`,
+    tiled: false,
+  };
 }
 
 /** A periodic tiling as a lattice: one domain's tiles, and the translations
@@ -1748,9 +1787,29 @@ function wallpaper(key: string): string[] | null {
   );
   const radius = Math.min(CORNER, span * 0.12);
   // Every tile on its own tone, like the board: same shape, same colour, told
-  // apart by the seam between them. The small patch alternates shades instead,
-  // which reads as a figure at six tiles and as banding at sixty.
-  return tiles.map((t) => shape(t.pts, BASE, 4, undefined, radius));
+  // apart by the grout between them. The small patch alternates shades
+  // instead, which reads as a figure at six tiles and as banding at sixty.
+  //
+  // Grout, not an outline: a stroke sits centred on a shared edge, so each
+  // seam is painted twice — once by each neighbour — in a colour a hair off
+  // the fill, which at card size is a smear rather than a line. The board
+  // draws no outline at all; it pulls each cell in from its edges and lets
+  // the page show through (`CellProfile.gap`, render/cellStyle.ts).
+  return tiles.map((t) => shape(inset(t.pts, t.centre, GROUT), BASE, 0, undefined, radius));
+}
+
+/** How far a preview's tiles are pulled in from their shared edges, as a
+ * fraction of the way to the centre. The board's own grout — `CellProfile.gap`
+ * is 0.1 on the Flat and Sand cell styles, 0.04 on Classic. */
+const GROUT = 0.08;
+
+/** A polygon shrunk toward a point — the board's grout, and the seams between
+ * a solid's faces (see `solidFaces`). */
+function inset(pts: P[], towards: P, gap: number): P[] {
+  return pts.map(([x, y]): P => [
+    towards[0] + (x - towards[0]) * (1 - gap),
+    towards[1] + (y - towards[1]) * (1 - gap),
+  ]);
 }
 
 /** Whether a placed tile falls entirely off one side of the preview box. */

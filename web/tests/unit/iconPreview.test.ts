@@ -53,15 +53,37 @@ describe("card previews", () => {
     }
   });
 
-  it("leaves a figure alone when it has no lattice and no solid", () => {
+  it("keeps the row's figure when there is no lattice and no solid", () => {
     // A family row, a surface and a shaped board: the first two have no tiling
     // of their own, and the shaped boards *are* a tiling — cut to an outline,
-    // which is the one thing a wallpaper of them could not show.
+    // which is the one thing a wallpaper of them could not show. Each is the
+    // row's own drawing, repainted (see below), so the shape count matches
+    // while the colours do not.
     for (const key of ["uniform", "torus", "hexhex", "spectre"]) {
       const preview = previewIcon(key);
       expect(preview.tiled, key).toBe(false);
-      expect(preview.svg, key).toBe(menuIcon(key));
+      expect(paths(preview.svg), key).toBe(paths(menuIcon(key)));
     }
+  });
+
+  it("turns the palette down for a card, without touching the rows", () => {
+    // A colour tuned for a 38px glyph shouts over a card, so previews are
+    // drawn through a damped tint. The row icons must come out of it
+    // untouched — same module-level palette, same cache.
+    const row = menuIcon("square");
+    const chroma = (svg: string): number => {
+      const hexes = [...svg.matchAll(/(?:fill|stroke)="(#[0-9a-f]{6})"/g)].map((m) => m[1]!);
+      return Math.max(
+        ...hexes.map((hex) => {
+          const v = parseInt(hex.slice(1), 16);
+          const [r, g, b] = [(v >> 16) & 255, (v >> 8) & 255, v & 255];
+          return (Math.max(r, g, b) - Math.min(r, g, b)) / 255;
+        }),
+      );
+    };
+    expect(chroma(previewIcon("square").svg)).toBeLessThan(chroma(row));
+    // ...and asking for the preview first did not repaint the row.
+    expect(menuIcon("square")).toBe(row);
   });
 
   it("repaints a cached preview when the palette changes", () => {

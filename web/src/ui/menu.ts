@@ -952,8 +952,11 @@ export class Menu {
 
     const quick = document.createElement("ul");
     quick.className = "menu-list";
+    // A star, not the `start` glyph the random rows use: that one is a question
+    // mark, and the sidebar already ends in a question mark — the How to play
+    // button — so the two read as the same row at a glance.
     quick.append(
-      this.sidebarRow(QUICK_START, "Quick start", "start", () => this.showQuickStart()),
+      this.sidebarRow(QUICK_START, "Quick start", "star", () => this.showQuickStart()),
     );
     sidebar.append(quick);
 

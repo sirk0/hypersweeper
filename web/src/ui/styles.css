@@ -921,11 +921,28 @@ body {
     overflow-y: auto;
   }
 
-  .menu-sidebar-title {
-    margin: 0 0 0 10px;
-    font-size: 27px;
+  /* The app's title in the sidebar and the page's title in the pane are the
+     two headings on screen at once, so they are one size and one face rather
+     than two that nearly match — 28px is where the phone's own `.menu-title`
+     clamp tops out, so this is not a third title size in the app.
+
+     `flex: none` is load-bearing: `.menu-title` grows to take the middle of
+     the phone's header *row*, and left alone in the sidebar's *column* the
+     same rule makes the title swallow the free space — which pushes the nav
+     rows down the panel and leaves the footer's `margin-top: auto` with
+     nothing to claim. */
+  .menu-sidebar-title,
+  .menu-pane-title {
+    flex: none;
+    margin: 0;
+    font-size: 28px;
     line-height: 1.05;
     text-align: left;
+  }
+
+  /* ...aligned with the labels of the nav rows underneath it. */
+  .menu-sidebar-title {
+    margin-left: 10px;
   }
 
   .menu-sidebar .menu-list {
@@ -1044,13 +1061,6 @@ body {
   .menu-pane-heading {
     flex: 1;
     min-width: 0;
-  }
-
-  .menu-pane-title {
-    margin: 0;
-    text-align: left;
-    font-size: 30px;
-    line-height: 1.05;
   }
 
   .menu-pane-hint {
