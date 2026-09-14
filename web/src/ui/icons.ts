@@ -20,8 +20,23 @@ import {
   type ShapeTone,
 } from "../render/shapePalette";
 import { ARCH_TILINGS, type ArchTemplate, archTemplate, templateCells } from "../boards/tilings";
-import { placePoint, substitutionPlacements, SUBSTITUTIONS } from "../boards/fractal";
-import { brickRingsTiles } from "../boards/aperiodic";
+import {
+  carpetBoard,
+  chairBoard,
+  gosperBoard,
+  pentaflakeBoard,
+  placePoint,
+  sphinxBoard,
+  substitutionPlacements,
+  SUBSTITUTIONS,
+} from "../boards/fractal";
+import {
+  brickRingsBoard,
+  brickRingsTiles,
+  penroseBoard,
+  phyllotaxisBoard,
+  spectreBoard,
+} from "../boards/aperiodic";
 import {
   deltoidalHexecontahedronBoard,
   deltoidalIcositetrahedronBoard,
@@ -57,7 +72,7 @@ import {
 } from "../boards/solids";
 import { solidCubeBoard } from "../boards/volume";
 import { DOMAINS } from "./backgroundPattern";
-import { newellNormal, type Board3D, type Vec3 } from "../boards/core";
+import { newellNormal, type Board, type Board3D, type Vec3 } from "../boards/core";
 
 const D = 100;
 const C = D / 2;
@@ -164,6 +179,12 @@ function lerp(a: P, b: P, t: number): P {
  * (gui.py _round_corners), as an SVG path. */
 function roundedPath(points: P[], radius = CORNER): string {
   const len = points.length;
+  // Square corners are a straight walk. Left to the arc code below, a radius
+  // of zero comes out as a quadratic through each corner from the corner to
+  // itself — the same shape, in three times the markup.
+  if (radius <= 0) {
+    return `${points.map((p, i) => `${i ? "L" : "M"}${n(p[0])} ${n(p[1])}`).join("")}Z`;
+  }
   const parts: string[] = [];
   for (let i = 0; i < len; i++) {
     const prev = points[(i - 1 + len) % len]!;
@@ -287,6 +308,10 @@ interface Tile {
   kind: string;
   pts: P[];
   centre: P;
+  /** The tone measured across the whole board, where a preview has a real
+   * board to measure (`classifyShapes`). Left off, `shape` reads the polygon
+   * on its own, which is what the small patches do. */
+  tone?: ShapeTone;
 }
 
 function centroid(pts: P[]): P {
@@ -1610,19 +1635,60 @@ const PREVIEW_H = 70;
  * instead of one filling the box with three shapes and the next with ninety. */
 const PREVIEW_TILES = 20;
 
-/** Boards whose picture is their outline, not their tiling. The shaped boards
- * *are* the regular tilings, cut to a triangle or a hexagon, and the Sierpinski
- * carpet is squares with squares missing — wallpapered, each would be
- * indistinguishable from the plain tiling it is cut from, which is the one
- * thing its picture has to say. */
+/** Boards whose picture is their outline, not their tiling: the shaped boards
+ * *are* the regular tilings, cut to a triangle or a hexagon, so wallpapered
+ * each would be indistinguishable from the plain tiling it is cut from, which
+ * is the one thing its picture has to say. */
 const NO_WALLPAPER = new Set([
   "triangle",
   "hextri",
   "squarediamond",
   "hexhex",
   "hextriangle",
-  "carpet",
 ]);
+
+/** The boards that do not repeat, and the patch of each to draw.
+ *
+ * These must never reach the lattice below. `DOMAINS` has an entry for most of
+ * them — but it exists to give the *page* a background CSS can tile, and says
+ * so: its penrose is "the plainest periodic tiling the two of them make", its
+ * phyllotaxis has "no spiral, since a spiral is not periodic". Repeating a
+ * stand-in like that on a card claims the board repeats, which for an
+ * aperiodic tiling or a substitution is the one thing that is not true of it.
+ *
+ * So each is the real thing instead, from the generator the board itself is
+ * built by. `keep: null` asks for the whole patch the deflation already
+ * computed rather than the board-sized window the preset trims it to — free,
+ * and bigger than a card needs. Depths are the preset's, raised where a crop
+ * would otherwise run past the patch's own boundary.
+ *
+ * `whole` is where the board's identity is its overall shape rather than the
+ * arrangement underfoot: a spiral, an island's ragged outline, rings. Cropped
+ * close, those three are a hex grid and a course of bricks — true of the
+ * neighbourhood, and the wrong thing said. They get the whole patch, fitted
+ * with air around it, the way the shaped boards keep their silhouette. The
+ * rest say what they are locally: Penrose's two rhombi never settling into a
+ * repeat, the substitutions' tiles inside their own inflation, the pentaflake
+ * and the carpet with the holes that are what they are made of. */
+interface PatchBoard {
+  build: () => Board;
+  whole?: true;
+}
+
+const PATCH_BOARDS: Record<string, PatchBoard> = {
+  penrose: { build: () => penroseBoard(5, 0, 437.727, null) },
+  spectre: { build: () => spectreBoard(3, 0, null, 14.361) },
+  phyllotaxis: { build: () => phyllotaxisBoard(5, 0, null, 22.907), whole: true },
+  // Cropped, not whole: the rings are a course of bricks turning a quarter at
+  // each remove from the middle, which is what the crop catches — a whole ring
+  // block shrunk into the card is just a brick wall.
+  brickrings: { build: () => brickRingsBoard(8, 0, 27) },
+  sphinx: { build: () => sphinxBoard(4, 0, 16.5) },
+  chair: { build: () => chairBoard(4, 0, 22) },
+  gosper: { build: () => gosperBoard(3, 0, 25), whole: true },
+  pentaflake: { build: () => pentaflakeBoard(3, 0, 18) },
+  carpet: { build: () => carpetBoard(3, 0, 32) },
+};
 
 /** Where a mode's repeat domain is filed under another name. */
 const DOMAIN_KEY: Record<string, string> = { trigrid: "tri" };
@@ -1680,24 +1746,37 @@ function muted<T>(paint: () => T): T {
 
 function buildPreview(rawKey: string): Preview {
   const key = ALIASES[rawKey] ?? rawKey;
+  // The patch source first: most of these keys have a `DOMAINS` entry too, and
+  // it is the one that would lie about them (see PATCH_BOARDS).
+  const board = patch(key);
+  if (board) return board;
   const tiles = wallpaper(key);
-  if (tiles) {
-    // `slice` rather than the default `meet`: the card is wider than this box
-    // on a roomy pane and narrower on a tight one, and a tiling should fill it
-    // either way. Anything outside the viewBox is clipped by the root element.
-    return {
-      svg:
-        `<svg viewBox="0 0 ${PREVIEW_W} ${PREVIEW_H}" preserveAspectRatio="xMidYMid slice"` +
-        ` aria-hidden="true" focusable="false">${tiles.join("")}</svg>`,
-      tiled: true,
-    };
-  }
-  const parts = SOLID_BUILDERS[key]
-    ? solidFaces(key, SPHERES.includes(key) ? "round" : "blocky", true)
-    : // Neither a lattice nor a solid: a family rosette, a surface, a shaped
-      // board's outline. `draw` rather than `menuIcon`, which would fill the
-      // row icons' cache with a card's muted colours.
-      draw(rawKey);
+  if (tiles) return tiledSvg(tiles);
+  return figureSvg(
+    SOLID_BUILDERS[key]
+      ? solidFaces(key, SPHERES.includes(key) ? "round" : "blocky", true)
+      : // Neither a patch, a lattice nor a solid: a family rosette, a surface,
+        // a shaped board's outline. `draw` rather than `menuIcon`, which would
+        // fill the row icons' cache with a card's muted colours.
+        draw(rawKey),
+  );
+}
+
+/** A drawing that runs to the card's edges. `slice` rather than the default
+ * `meet`: the card is wider than this box on a roomy pane and narrower on a
+ * tight one, and a tiling should fill it either way. Anything outside the
+ * viewBox is clipped by the root element. */
+function tiledSvg(parts: string[]): Preview {
+  return {
+    svg:
+      `<svg viewBox="0 0 ${PREVIEW_W} ${PREVIEW_H}" preserveAspectRatio="xMidYMid slice"` +
+      ` aria-hidden="true" focusable="false">${parts.join("")}</svg>`,
+    tiled: true,
+  };
+}
+
+/** A drawing that sits in the card with air around it. */
+function figureSvg(parts: string[]): Preview {
   return {
     svg:
       `<svg viewBox="0 0 ${D} ${D}" aria-hidden="true" focusable="false">` +
@@ -1743,7 +1822,7 @@ function latticeFor(key: string): Lattice | null {
 /** Mean tile area, from the shoelace sum. `backgroundPattern` sizes the page's
  * pattern against the same measure, for the same reason: it is what makes one
  * tiling's tiles come out the size of another's. */
-function meanTileArea(tiles: Tile[]): number {
+function meanTileArea(tiles: { pts: P[] }[]): number {
   const area = (pts: P[]): number => {
     let sum = 0;
     for (let i = 0; i < pts.length; i++) {
@@ -1777,25 +1856,88 @@ function wallpaper(key: string): string[] | null {
       }
     }
   }
-  // Corners rounded against the tiles, not the box, as the small patches are.
-  const span = Math.min(
-    ...tiles.map((t) => {
-      const xs = t.pts.map((p) => p[0]);
-      const ys = t.pts.map((p) => p[1]);
-      return Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys));
-    }),
+  return tileSvg(tiles);
+}
+
+/** Placed tiles, drawn the way the board draws its cells.
+ *
+ * Every tile on its own tone — same shape, same colour, told apart by the
+ * grout between them; the small patch alternates shades instead, which reads
+ * as a figure at six tiles and as banding at sixty.
+ *
+ * Grout rather than an outline: a stroke sits centred on a shared edge, so
+ * each seam is painted twice, once by each neighbour, in a colour a hair off
+ * the fill — at card size a smear rather than a line. The board strokes
+ * nothing; it pulls each cell in from its edges and lets the page show
+ * through (`CellProfile.gap`, render/cellStyle.ts).
+ *
+ * And square corners, on every theme: `CellProfile` carries that gap and no
+ * rounding at all, so every board's cells are as sharp as their polygons. The
+ * icon set rounds by `CORNER` — the pygame menu's convention, about a pixel on
+ * a 38px glyph, but five on a card, where it reads as a bevel the board does
+ * not have. */
+function tileSvg(tiles: Tile[]): string[] {
+  return tiles.map((t) => shape(inset(t.pts, t.centre, GROUT), BASE, 0, t.tone, 0));
+}
+
+const patchCache = new Map<string, Board>();
+
+/** A board that does not repeat, drawn from the board itself (see
+ * PATCH_BOARDS) — so what a card shows is the tiling, rather than a repeat of
+ * a sample of it. Cropped at a wallpaper's tile size, or fitted whole where
+ * the board's shape is the thing to see. */
+function patch(key: string): Preview | null {
+  const source = PATCH_BOARDS[key];
+  if (!source) return null;
+  let board = patchCache.get(key);
+  if (!board) patchCache.set(key, (board = source.build()));
+  // Tones measured across the whole board, as the played board measures them
+  // (render/solidBoard.ts) — it is what separates Penrose's thick rhombus from
+  // its thin one, the pair being the same four-sided shape.
+  const tones = classifyShapes(board.polygons);
+  const cells = [...board.polygons].map(([id, poly]) => ({
+    pts: poly as P[],
+    tone: tones.get(id)!,
+  }));
+  const mids = cells.map((c) => centroid(c.pts));
+
+  if (source.whole) {
+    const xs = cells.flatMap((c) => c.pts.map((p) => p[0]));
+    const ys = cells.flatMap((c) => c.pts.map((p) => p[1]));
+    const [minX, maxX] = [Math.min(...xs), Math.max(...xs)];
+    const [minY, maxY] = [Math.min(...ys), Math.max(...ys)];
+    const scale = (D * 0.94) / Math.max(maxX - minX, maxY - minY);
+    const place = (p: P): P => [
+      C + (p[0] - (minX + maxX) / 2) * scale,
+      C + (p[1] - (minY + maxY) / 2) * scale,
+    ];
+    return figureSvg(
+      tileSvg(
+        cells.map((c, i) => ({
+          kind: "cell",
+          pts: c.pts.map(place),
+          centre: place(mids[i]!),
+          tone: c.tone,
+        })),
+      ),
+    );
+  }
+
+  const scale = Math.sqrt(
+    (PREVIEW_W * PREVIEW_H) / PREVIEW_TILES / meanTileArea(cells.map((c) => ({ pts: c.pts }))),
   );
-  const radius = Math.min(CORNER, span * 0.12);
-  // Every tile on its own tone, like the board: same shape, same colour, told
-  // apart by the grout between them. The small patch alternates shades
-  // instead, which reads as a figure at six tiles and as banding at sixty.
-  //
-  // Grout, not an outline: a stroke sits centred on a shared edge, so each
-  // seam is painted twice — once by each neighbour — in a colour a hair off
-  // the fill, which at card size is a smear rather than a line. The board
-  // draws no outline at all; it pulls each cell in from its edges and lets
-  // the page show through (`CellProfile.gap`, render/cellStyle.ts).
-  return tiles.map((t) => shape(inset(t.pts, t.centre, GROUT), BASE, 0, undefined, radius));
+  const [cx, cy] = densest(mids, PREVIEW_W / 2 / scale, PREVIEW_H / 2 / scale);
+  const place = (p: P): P => [
+    PREVIEW_W / 2 + (p[0] - cx) * scale,
+    PREVIEW_H / 2 + (p[1] - cy) * scale,
+  ];
+  const tiles: Tile[] = [];
+  for (const cell of cells) {
+    const pts = cell.pts.map(place);
+    if (offBox(pts)) continue;
+    tiles.push({ kind: "cell", pts, centre: centroid(pts), tone: cell.tone });
+  }
+  return tiles.length > 0 ? tiledSvg(tileSvg(tiles)) : null;
 }
 
 /** How far a preview's tiles are pulled in from their shared edges, as a
@@ -1810,6 +1952,32 @@ function inset(pts: P[], towards: P, gap: number): P[] {
     towards[0] + (x - towards[0]) * (1 - gap),
     towards[1] + (y - towards[1]) * (1 - gap),
   ]);
+}
+
+/** Where to sit a crop of half-extents `hx` by `hy` over a patch: on the tile
+ * whose window holds the most of them.
+ *
+ * Not the patch's middle. A substitution leaves holes at every scale and the
+ * biggest of them is usually dead centre — the Sierpinski carpet's central
+ * ninth is wide enough at this depth to swallow the whole crop and leave
+ * nothing to draw at all, and the pentaflake's gnomon gaps are nearly as
+ * greedy. Holes belong in the picture; a card of nothing but hole does not. */
+function densest(mids: P[], hx: number, hy: number): P {
+  // Every tile is a candidate, but a patch runs to hundreds of them and the
+  // answer does not need that resolution — a coarse sweep finds the same
+  // neighbourhood for a fraction of the comparisons.
+  const step = Math.max(1, Math.floor(mids.length / 64));
+  let best = mids[0] ?? [0, 0];
+  let most = -1;
+  for (let i = 0; i < mids.length; i += step) {
+    const c = mids[i]!;
+    let held = 0;
+    for (const m of mids) {
+      if (Math.abs(m[0] - c[0]) <= hx && Math.abs(m[1] - c[1]) <= hy) held++;
+    }
+    if (held > most) [most, best] = [held, c];
+  }
+  return best;
 }
 
 /** Whether a placed tile falls entirely off one side of the preview box. */

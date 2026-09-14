@@ -1133,7 +1133,9 @@ body {
     padding: 0;
     gap: 0;
     overflow: hidden;
-    border-radius: 20px;
+    /* The theme's own corner, as the phone's rows take it — Classic states 0
+       and means it, and a card is the one place that was rounded anyway. */
+    border-radius: var(--radius);
   }
 
   .menu-board-card:hover {

@@ -53,13 +53,40 @@ describe("card previews", () => {
     }
   });
 
+  it("draws the boards that do not repeat from the board itself", () => {
+    // These have a `DOMAINS` entry — the periodic stand-in the *page* pattern
+    // uses — and must not take it: repeating a sample of an aperiodic tiling
+    // or a substitution claims the one thing that is not true of it. Cropped
+    // from the real patch, they fill the card like any other tiling.
+    for (const key of ["penrose", "spectre", "sphinx", "chair", "pentaflake", "carpet"]) {
+      const preview = previewIcon(key);
+      expect(preview.tiled, key).toBe(true);
+      expect(paths(preview.svg), key).toBeGreaterThan(10);
+    }
+    // ...and the two family rows resolve onto their board's drawing.
+    expect(previewIcon("aperiodic").svg).toBe(previewIcon("penrose").svg);
+    expect(previewIcon("fractal").svg).toBe(previewIcon("sphinx").svg);
+  });
+
+  it("fits the whole patch where the board's shape is the point", () => {
+    // A spiral and an island outline are global: cropped close they are a hex
+    // grid, which is true of the neighbourhood and the wrong thing to say. So
+    // they are fitted whole, and are still the board rather than the row's
+    // hand-drawn glyph.
+    for (const key of ["phyllotaxis", "gosper"]) {
+      const preview = previewIcon(key);
+      expect(preview.tiled, key).toBe(false);
+      expect(paths(preview.svg), key).toBeGreaterThan(paths(menuIcon(key)));
+    }
+  });
+
   it("keeps the row's figure when there is no lattice and no solid", () => {
     // A family row, a surface and a shaped board: the first two have no tiling
     // of their own, and the shaped boards *are* a tiling — cut to an outline,
     // which is the one thing a wallpaper of them could not show. Each is the
     // row's own drawing, repainted (see below), so the shape count matches
     // while the colours do not.
-    for (const key of ["uniform", "torus", "hexhex", "spectre"]) {
+    for (const key of ["uniform", "torus", "hexhex"]) {
       const preview = previewIcon(key);
       expect(preview.tiled, key).toBe(false);
       expect(paths(preview.svg), key).toBe(paths(menuIcon(key)));
