@@ -51,7 +51,10 @@ test.describe("settings", () => {
   });
 
   test("the gear opens settings and back returns to the menu", async ({ page }) => {
-    await expect(page.locator('.menu-entry[data-group="custom"]')).toBeVisible();
+    // `.menu-card-grid` (the desktop pane's board/group listing) stands in for
+    // "on the menu, not settings" — it is absent from both the settings page
+    // and the how-to-play page, which are static content in the same pane.
+    await expect(page.locator(".menu-card-grid")).toBeVisible();
     await page.locator('.menu-header-btn[data-action="settings"]').click();
 
     await expect(page.locator(".settings-heading")).toHaveText([
@@ -66,10 +69,10 @@ test.describe("settings", () => {
     ]);
     // The difficulty row is meaningless on this page.
     await expect(page.locator(".menu-difficulty")).toBeHidden();
-    await expect(page.locator('.menu-entry[data-group="custom"]')).toHaveCount(0);
+    await expect(page.locator(".menu-card-grid")).toHaveCount(0);
 
     await page.locator('.menu-entry[data-action="back"]').click();
-    await expect(page.locator('.menu-entry[data-group="custom"]')).toBeVisible();
+    await expect(page.locator(".menu-card-grid")).toBeVisible();
     await expect(page.locator(".menu-difficulty")).toBeVisible();
   });
 
@@ -87,7 +90,7 @@ test.describe("settings", () => {
     await expect(page.locator(".menu-difficulty")).toBeHidden();
 
     await page.locator('.menu-entry[data-action="back"]').click();
-    await expect(page.locator('.menu-entry[data-group="custom"]')).toBeVisible();
+    await expect(page.locator(".menu-card-grid")).toBeVisible();
     await expect(page.locator(".menu-difficulty")).toBeVisible();
   });
 
@@ -635,7 +638,6 @@ test.describe("shareable board links", () => {
 
     // Klein bottle → the tiling picker → a wrapped tiling, the sort of board a
     // link is worth sharing for.
-    await page.locator('.menu-entry[data-group="custom"]').click();
     await page.locator('.menu-entry[data-group="manifolds"]').click();
     await page.locator('.menu-entry[data-surface="klein"]').click();
     await page.locator('.menu-entry[data-submenu="dual"]').click();

@@ -14,6 +14,7 @@ import {
   blockedExplanation,
   fairnessHint,
   modeFairness,
+  type Fairness,
 } from "../boards/fairness";
 import { randomMode, randomPool, type RandomKind } from "../boards/randomBoard";
 import { hasMode } from "../boards/presets";
@@ -22,7 +23,7 @@ import { clearBestTimes } from "../leaderboard";
 import { renderAchievements } from "./achievements";
 import { renderBestTimes } from "./bestTimes";
 import { HELP_ICON, renderHelp } from "./help";
-import { menuIcon } from "./icons";
+import { menuIcon, previewIcon } from "./icons";
 import {
   GEAR_ICON,
   renderSchemePicker,
@@ -157,6 +158,21 @@ interface ModeGroup {
 
 type Group = PickerGroup | ManifoldGroup | ModeGroup;
 
+/** One of the four quick-play entries. `mode` opens that board; `random`
+ * deals one from that half of the catalogue at click time, so it is a
+ * different board every time (see `randomRow`). */
+interface QuickEntry {
+  kind: "mode" | "random";
+  key: string;
+  label: string;
+  hint: string;
+  icon: string;
+}
+
+/** The sidebar key of the Quick start page — the desktop menu's own page, with
+ * no phone equivalent (the phone lists these four as its home rows). */
+const QUICK_START = "quickstart";
+
 /** A menu row's icon (the same glyph the pygame menu draws for that key). */
 function iconEl(key: string): HTMLElement {
   const el = document.createElement("span");
@@ -189,6 +205,28 @@ export class Menu {
   /** The difficulty pill row, kept so a change from elsewhere (the store, or
    * another tab) can repaint it without rebuilding the menu. */
   private difficultyRowEl: HTMLElement | null = null;
+  /** The `.menu-difficulty-block` itself — a phone-width sibling of `.menu`,
+   * or reparented into the current page's pane header on desktop (see
+   * `paneHeader`). One element, moved rather than cloned, so every
+   * `.difficulty-btn` selector in the e2e suite still finds exactly one. */
+  private difficultyWrapperEl!: HTMLElement;
+  /** The sidebar's own How to play / Settings buttons are the *same* elements
+   * `header()` builds for the phone title row, moved between the two homes by
+   * `placeHeaderButtons` rather than duplicated — so `data-action="help"` /
+   * `"settings"` still resolves to one button at any width. */
+  private helpBtn!: HTMLElement;
+  private settingsBtn!: HTMLElement;
+  private headerLeadEl!: HTMLElement;
+  private headerActionsEl!: HTMLElement;
+  private sidebarEl!: HTMLElement;
+  private sidebarFooterEl!: HTMLElement;
+  /** The sidebar key of the page on screen at desktop width, so its row can
+   * be painted active and restored — derived, not persisted. */
+  private selectedPage: string | null = null;
+  /** The desktop two-pane branch (see `design_handoff_desktop_menu/README.md`):
+   * a sidebar replaces the back stack and the content pane shows a card grid.
+   * Below this width the phone column is untouched. */
+  private readonly wideQuery = matchMedia("(min-width: 900px)");
   /** The page currently on screen, re-runnable so returning from a board
    * restores it (see `show`). */
   private view: () => void = () => this.renderRoot();
@@ -229,7 +267,13 @@ export class Menu {
     this.body = document.createElement("div");
     this.body.className = "menu-body";
 
-    this.root.append(this.header(), this.body, this.difficultyRow());
+    this.sidebarEl = this.buildSidebar();
+    this.root.append(this.header(), this.sidebarEl, this.body, this.difficultyRow());
+    this.placeHeaderButtons();
+    this.wideQuery.addEventListener("change", () => {
+      this.placeHeaderButtons();
+      this.render();
+    });
     this.showRoot();
   }
 
@@ -247,18 +291,32 @@ export class Menu {
     title.className = "menu-title";
     title.textContent = screens.menu.title;
 
-    const lead = document.createElement("div");
-    lead.className = "menu-header-actions menu-header-lead";
-    lead.append(this.headerButton("help", "How to play", HELP_ICON, () => this.showHelp()));
-
-    const actions = document.createElement("div");
-    actions.className = "menu-header-actions";
-    actions.append(
-      this.headerButton("settings", "Settings", GEAR_ICON, () => this.showSettings()),
+    this.helpBtn = this.headerButton("help", "How to play", HELP_ICON, () => this.showHelp());
+    this.settingsBtn = this.headerButton("settings", "Settings", GEAR_ICON, () =>
+      this.showSettings(),
     );
 
-    header.append(lead, title, actions);
+    this.headerLeadEl = document.createElement("div");
+    this.headerLeadEl.className = "menu-header-actions menu-header-lead";
+
+    this.headerActionsEl = document.createElement("div");
+    this.headerActionsEl.className = "menu-header-actions";
+
+    header.append(this.headerLeadEl, title, this.headerActionsEl);
     return header;
+  }
+
+  /** Moves (never clones) the how-to-play / settings buttons between the
+   * phone header and the desktop sidebar footer, so `data-action="help"` /
+   * `"settings"` always resolves to exactly one element. Called once at
+   * construction and again whenever the desktop breakpoint is crossed. */
+  private placeHeaderButtons(): void {
+    if (this.wideQuery.matches) {
+      this.sidebarFooterEl.append(this.helpBtn, this.settingsBtn);
+    } else {
+      this.headerLeadEl.append(this.helpBtn);
+      this.headerActionsEl.append(this.settingsBtn);
+    }
   }
 
   private headerButton(
@@ -272,6 +330,13 @@ export class Menu {
     btn.dataset["action"] = action;
     btn.setAttribute("aria-label", label);
     btn.innerHTML = icon;
+    // Hidden at phone width (the header shows the icon alone); revealed by
+    // `.menu-sidebar-footer .menu-header-btn-label` once this button is
+    // moved into the desktop sidebar footer, which needs a visible label.
+    const labelEl = document.createElement("span");
+    labelEl.className = "menu-header-btn-label";
+    labelEl.textContent = label;
+    btn.append(labelEl);
     btn.addEventListener("click", onClick);
     return btn;
   }
@@ -309,6 +374,11 @@ export class Menu {
   private render(): void {
     this.root.classList.remove("settings-open");
     this.view();
+    // On the phone width no page reparents the difficulty block into itself
+    // (that only happens inside `paneHeader`, on desktop), so it can drift
+    // off `.menu` if the window was ever wide since the last narrow render —
+    // put it back rather than leaving it detached.
+    if (!this.isWide()) this.root.append(this.difficultyWrapperEl);
   }
 
   /** Render `view` and remember it as the page to restore on `show()`. */
@@ -317,18 +387,54 @@ export class Menu {
     this.render();
   }
 
+  /** Whether the desktop two-pane branch is active. */
+  private isWide(): boolean {
+    return this.wideQuery.matches;
+  }
+
   private showRoot(): void {
+    // On desktop the sidebar replaces the root list, and Quick start is what
+    // the phone's home rows become: the page the menu opens on.
+    if (this.isWide()) {
+      this.showQuickStart();
+      return;
+    }
     this.go(() => this.renderRoot());
   }
 
+  /** The desktop landing page: the four quick-play entries as cards. */
+  private showQuickStart(): void {
+    this.selectedPage = QUICK_START;
+    this.go(() => this.renderQuickStart());
+    this.syncSidebarActive();
+  }
+
+  private renderQuickStart(): void {
+    const list = document.createElement("ul");
+    list.className = "menu-list menu-card-grid";
+    list.append(...this.quickPlayCards());
+    this.body.replaceChildren(
+      this.paneHeader(
+        "Quick start",
+        "Straight into a board, or a surprise from half the catalogue.",
+      ),
+      list,
+    );
+  }
+
   /** The settings page — one more menu page rather than a modal, so it reuses
-   * the back row, the card rows and the scrolling body. */
+   * the back row, the card rows and the scrolling body. Clears the sidebar's
+   * active row on desktop: settings is not one of the geometry pages. */
   private showSettings(): void {
+    this.selectedPage = null;
+    this.syncSidebarActive();
     this.go(() => this.renderSettingsPage());
   }
 
   /** The how-to-play page — a page off the home row, built like settings. */
   private showHelp(): void {
+    this.selectedPage = null;
+    this.syncSidebarActive();
     this.go(() => this.renderHelpPage());
   }
 
@@ -538,57 +644,117 @@ export class Menu {
     );
   }
 
-  /** The home page: the two boards that open straight away (Classic and
-   * Volumetric), one random board from each half of the catalogue, and Custom
-   * for the whole tree. */
-  private renderRoot(): void {
-    const list = document.createElement("ul");
-    list.className = "menu-list";
+  /** Classic and Volumetric (which open one particular board straight away)
+   * and one random board from each half of the catalogue — the four entries
+   * the phone home page lists as rows and the desktop shows as the Quick start
+   * page's cards. Stated once here so the two cannot drift apart.
+   *
+   * The two launch entries come first: the rows that open a named board sit
+   * above the ones that deal a surprise. Volumetric's label comes from the
+   * shared MODE_LABELS rather than a string here, because unlike Classic
+   * (whose entry says "Classic" and whose board is captioned "Squares") the
+   * entry and the board are the same word, and reading it once is what keeps
+   * them so. */
+  private quickPlayEntries(): QuickEntry[] {
+    const entries: QuickEntry[] = [];
     // Classic — flat squares, launched straight away (gui.py MenuScreen).
     if (hasMode("square")) {
-      list.append(
-        this.launchRow(
-          "square",
-          ROOT_LABELS["classic"] ?? "Classic",
-          "Flat squares — the original.",
-          "classic",
-        ),
-      );
+      entries.push({
+        kind: "mode",
+        key: "square",
+        label: ROOT_LABELS["classic"] ?? "Classic",
+        hint: "Flat squares — the original.",
+        icon: "classic",
+      });
     }
-    // Volumetric — the cube of cubes, launched straight away like Classic:
-    // the two rows that open one particular board sit together, above the two
-    // that deal a random one. Its label comes from the shared MODE_LABELS
-    // rather than a string here, because unlike Classic (whose row says
-    // "Classic" and whose board is captioned "Squares") the row and the board
-    // are the same word, and reading it once is what keeps them so.
     if (hasMode("cube3d")) {
-      list.append(
-        this.launchRow(
-          "cube3d",
-          MODE_LABELS["cube3d"] ?? "Volumetric",
-          "A cube filled with cubes — 26 neighbours.",
-          "cube3d",
-        ),
-      );
+      entries.push({
+        kind: "mode",
+        key: "cube3d",
+        label: MODE_LABELS["cube3d"] ?? "Volumetric",
+        hint: "A cube filled with cubes — 26 neighbours.",
+        icon: "cube3d",
+      });
     }
-    const flat = randomPool("flat");
-    if (flat.length > 0) {
-      list.append(
-        this.randomRow(
-          "flat",
-          ROOT_LABELS["flat"] ?? "Flat",
-          "A random flat tiling.",
-          // the same hexagon the old Flat entry showed
-          "hex",
-        ),
-      );
+    if (randomPool("flat").length > 0) {
+      entries.push({
+        kind: "random",
+        key: "flat",
+        label: ROOT_LABELS["flat"] ?? "Flat",
+        hint: "A random flat tiling.",
+        // the same hexagon the old Flat entry showed
+        icon: "hex",
+      });
     }
-    const threeD = randomPool("3d");
-    if (threeD.length > 0) {
-      list.append(
-        this.randomRow("3d", "3D", "A random manifold, sphere, polyhedron or volume.", "3d"),
-      );
+    if (randomPool("3d").length > 0) {
+      entries.push({
+        kind: "random",
+        key: "3d",
+        label: "3D",
+        hint: "A random manifold, sphere, polyhedron or volume.",
+        icon: "3d",
+      });
     }
+    return entries;
+  }
+
+  /** The phone home page's four quick-play rows. */
+  private quickPlayRows(): HTMLElement[] {
+    return this.quickPlayEntries().map((e) =>
+      e.kind === "mode"
+        ? this.launchRow(e.key, e.label, e.hint, e.icon)
+        : this.randomRow(e.key as RandomKind, e.label, e.hint, e.icon),
+    );
+  }
+
+  /** The desktop Quick start page: the same four entries as cards.
+   *
+   * The hint rides along as a caption line rather than being dropped as it is
+   * on a sidebar row — on the two random entries it is the only thing saying
+   * that the card deals a board rather than opening a named one. */
+  private quickPlayCards(): HTMLElement[] {
+    return this.quickPlayEntries().map((e) => {
+      const li = document.createElement("li");
+      const btn = document.createElement("button");
+      btn.className = "menu-entry menu-board-card";
+      if (e.kind === "mode") {
+        btn.dataset.mode = e.key;
+        btn.addEventListener("click", () =>
+          this.onSelect({ mode: e.key, difficulty: this.settings.difficulty }),
+        );
+      } else {
+        btn.dataset.random = e.key;
+        btn.addEventListener("click", () => {
+          const mode = randomMode(e.key as RandomKind);
+          if (mode) this.onSelect({ mode, difficulty: this.settings.difficulty, random: true });
+        });
+      }
+      btn.append(this.previewEl(e.icon), this.cardCaption(e.label, { hint: e.hint }));
+      li.append(btn);
+      return li;
+    });
+  }
+
+  /** The icon a group's own row shows: the "Flat" entry (which opens the
+   * tiling picker) shows a hexagon, since the flat-plane surface keeps its
+   * square icon in the manifolds list. */
+  private groupIcon(group: Group): string {
+    return group.key === "flat" ? "hex" : group.key;
+  }
+
+  /** The home page: the two boards that open straight away (Classic and
+   * Volumetric), one random board from each half of the catalogue, and Custom
+   * for the whole tree. On desktop the sidebar covers this ground instead —
+   * see `showRoot`, which only reaches here below the breakpoint (or once
+   * the breakpoint is crossed while this page happens to be on screen). */
+  private renderRoot(): void {
+    if (this.isWide()) {
+      this.showRoot();
+      return;
+    }
+    const list = document.createElement("ul");
+    list.className = "menu-list";
+    list.append(...this.quickPlayRows());
     if (this.groups.length > 0) {
       const li = document.createElement("li");
       const btn = document.createElement("button");
@@ -610,8 +776,16 @@ export class Menu {
   }
 
   /** The Custom page: pick a geometry — the plane, a flat manifold, the
-   * sphere or a polyhedron — and drill down from there. */
+   * sphere or a polyhedron — and drill down from there. On desktop the
+   * sidebar's geometry group lists every page directly (see `buildSidebar`),
+   * so this page has no desktop equivalent — reached only below the
+   * breakpoint, or transiently if the breakpoint is crossed while it is on
+   * screen. */
   private renderCustom(): void {
+    if (this.isWide()) {
+      this.showRoot();
+      return;
+    }
     const list = document.createElement("ul");
     list.className = "menu-list";
     for (const group of this.groups) {
@@ -619,12 +793,7 @@ export class Menu {
       const btn = document.createElement("button");
       btn.className = "menu-entry";
       btn.dataset.group = group.key;
-      // The "Flat" entry (which opens the tiling picker) shows a hexagon; the
-      // flat-plane surface keeps its square icon in the manifolds list.
-      btn.append(
-        iconEl(group.key === "flat" ? "hex" : group.key),
-        textBlock(group.label, this.groupHint(group)),
-      );
+      btn.append(iconEl(this.groupIcon(group)), textBlock(group.label, this.groupHint(group)));
       btn.addEventListener("click", () => this.showGroup(group));
       li.append(btn);
       list.append(li);
@@ -648,20 +817,40 @@ export class Menu {
     this.go(() => this.renderGroup(group));
   }
 
+  /** Selects a sidebar geometry row on desktop: paints its page in the pane
+   * and marks the row active. The phone reaches the same pages through
+   * `showGroup`/`showCustom` instead — this is `showGroup` plus the sidebar
+   * bookkeeping `showCustom`'s back stack does not need. */
+  private selectPage(group: Group): void {
+    this.selectedPage = group.key;
+    this.showGroup(group);
+    this.syncSidebarActive();
+  }
+
+  private syncSidebarActive(): void {
+    for (const row of this.sidebarEl.querySelectorAll<HTMLElement>(".menu-entry[data-group]")) {
+      row.classList.toggle("active", row.dataset["group"] === this.selectedPage);
+    }
+  }
+
   private renderGroup(group: Group): void {
     if (group.kind === "picker") {
       this.showPicker(group.label, group.surfaceKey, () => this.showCustom());
       return;
     }
-    const back = this.backRow(group.label, () => this.showCustom());
     const list = document.createElement("ul");
-    list.className = "menu-list";
     if (group.kind === "modes") {
       for (const mode of group.modes) list.append(this.entryRow(mode, MODE_LABELS[mode] ?? mode));
     } else {
       for (const surface of group.surfaces) list.append(this.surfaceRow(group, surface));
     }
-    this.body.replaceChildren(back, list);
+    if (this.isWide()) {
+      list.className = "menu-list menu-card-grid";
+      this.body.replaceChildren(this.paneHeader(group.label, this.groupHint(group)), list);
+    } else {
+      list.className = "menu-list";
+      this.body.replaceChildren(this.backRow(group.label, () => this.showCustom()), list);
+    }
   }
 
   /** The shared tiling picker for a surface (the plane or a flat manifold):
@@ -674,9 +863,7 @@ export class Menu {
 
   private renderPicker(label: string, surfaceKey: string, onBack: () => void): void {
     const picker = pickerFor(surfaceKey);
-    const back = this.backRow(label, onBack);
     const list = document.createElement("ul");
-    list.className = "menu-list";
     for (const tiling of picker.tilings) {
       list.append(this.entryRow(tiling.mode, tiling.label, tiling.icon));
     }
@@ -687,7 +874,13 @@ export class Menu {
         ),
       );
     }
-    this.body.replaceChildren(back, list);
+    if (this.isWide()) {
+      list.className = "menu-list menu-card-grid";
+      this.body.replaceChildren(this.paneHeader(label, pickerHint(surfaceKey)), list);
+    } else {
+      list.className = "menu-list";
+      this.body.replaceChildren(this.backRow(label, onBack), list);
+    }
   }
 
   private showFamily(family: Family, onBack: () => void): void {
@@ -695,13 +888,25 @@ export class Menu {
   }
 
   private renderFamily(family: Family, onBack: () => void): void {
-    const back = this.backRow(family.label, onBack);
     const list = document.createElement("ul");
-    list.className = "menu-list";
     for (const entry of family.modes) {
       list.append(this.entryRow(entry.mode, entry.label, entry.icon));
     }
-    this.body.replaceChildren(back, list);
+    const back = this.backRow(family.label, onBack);
+    if (this.isWide()) {
+      list.className = "menu-list menu-card-grid";
+      // The family's boards still get a back row — clicking a family card
+      // does not touch the sidebar — plus the pane header, so the difficulty
+      // pills stay reachable one level down from the group page.
+      this.body.replaceChildren(
+        back,
+        this.paneHeader(family.label, MENU_FAMILY_HINTS[family.key] ?? ""),
+        list,
+      );
+    } else {
+      list.className = "menu-list";
+      this.body.replaceChildren(back, list);
+    }
   }
 
   private showSurface(group: ManifoldGroup, surface: SurfaceEntry): void {
@@ -728,6 +933,100 @@ export class Menu {
     return entries;
   }
 
+  /** The desktop sidebar: Quick start, then every geometry group, then the
+   * how-to-play / settings footer. Built once in the constructor — it does
+   * not change between pages, only the pane content and the active row do.
+   *
+   * The four quick-play entries are a *page* here rather than four rows of
+   * their own: as rows they competed with the geometry list for the same
+   * glance, and they are what a player opening the menu wants first, which is
+   * what a landing page is for. */
+  private buildSidebar(): HTMLElement {
+    const sidebar = document.createElement("div");
+    sidebar.className = "menu-sidebar";
+
+    const title = document.createElement("h1");
+    title.className = "menu-title menu-sidebar-title";
+    title.textContent = screens.menu.title;
+    sidebar.append(title);
+
+    const quick = document.createElement("ul");
+    quick.className = "menu-list";
+    // A star, not the `start` glyph the random rows use: that one is a question
+    // mark, and the sidebar already ends in a question mark — the How to play
+    // button — so the two read as the same row at a glance.
+    quick.append(
+      this.sidebarRow(QUICK_START, "Quick start", "star", () => this.showQuickStart()),
+    );
+    sidebar.append(quick);
+
+    if (this.groups.length > 0) {
+      const section = document.createElement("p");
+      section.className = "menu-nav-section";
+      section.textContent = "Geometry";
+      const list = document.createElement("ul");
+      list.className = "menu-list";
+      for (const group of this.groups) list.append(this.sidebarGroupRow(group));
+      sidebar.append(section, list);
+    }
+
+    this.sidebarFooterEl = document.createElement("div");
+    this.sidebarFooterEl.className = "menu-sidebar-footer";
+    sidebar.append(this.sidebarFooterEl);
+
+    return sidebar;
+  }
+
+  /** A sidebar row for one of `this.groups` — the same `data-group` and click
+   * target as the phone Custom page's rows (`renderCustom`), styled compactly
+   * as a nav row instead of a card (see `.menu-sidebar .menu-entry` in
+   * styles.css) and always visible rather than reached through a back stack. */
+  private sidebarGroupRow(group: Group): HTMLElement {
+    return this.sidebarRow(group.key, group.label, this.groupIcon(group), () =>
+      this.selectPage(group),
+    );
+  }
+
+  /** One sidebar nav row. `key` is its `data-group` — the handle both
+   * `syncSidebarActive` and the e2e suite know it by. */
+  private sidebarRow(
+    key: string,
+    label: string,
+    icon: string,
+    onClick: () => void,
+  ): HTMLElement {
+    const li = document.createElement("li");
+    const btn = document.createElement("button");
+    btn.className = "menu-entry";
+    btn.dataset.group = key;
+    btn.append(iconEl(icon), textBlock(label));
+    btn.addEventListener("click", onClick);
+    li.append(btn);
+    return li;
+  }
+
+  /** The content pane's header on desktop: the page title, its hint (the
+   * same one the phone's back row would imply — `groupHint`/`pickerHint`/
+   * `MENU_FAMILY_HINTS`), and the difficulty pills, reparented here from
+   * wherever they last were (see `difficultyWrapperEl`). */
+  private paneHeader(title: string, hint: string): HTMLElement {
+    const header = document.createElement("div");
+    header.className = "menu-pane-header";
+
+    const heading = document.createElement("div");
+    heading.className = "menu-pane-heading";
+    const titleEl = document.createElement("h1");
+    titleEl.className = "menu-title menu-pane-title";
+    titleEl.textContent = title;
+    const hintEl = document.createElement("p");
+    hintEl.className = "menu-pane-hint";
+    hintEl.textContent = hint;
+    heading.append(titleEl, hintEl);
+
+    header.append(heading, this.difficultyWrapperEl);
+    return header;
+  }
+
   private backRow(label: string, onClick: () => void): HTMLElement {
     const back = document.createElement("button");
     back.className = "menu-entry menu-back";
@@ -743,9 +1042,14 @@ export class Menu {
   private surfaceRow(group: ManifoldGroup, surface: SurfaceEntry): HTMLElement {
     const li = document.createElement("li");
     const btn = document.createElement("button");
-    btn.className = "menu-entry";
     btn.dataset.surface = surface.key;
-    btn.append(iconEl(surface.key), textBlock(surface.label, pickerHint(surface.key)));
+    if (this.isWide()) {
+      btn.className = "menu-entry menu-board-card";
+      btn.append(this.previewEl(surface.key), this.cardCaption(surface.label));
+    } else {
+      btn.className = "menu-entry";
+      btn.append(iconEl(surface.key), textBlock(surface.label, pickerHint(surface.key)));
+    }
     btn.addEventListener("click", () => this.showSurface(group, surface));
     li.append(btn);
     return li;
@@ -761,17 +1065,20 @@ export class Menu {
   ): HTMLElement {
     const li = document.createElement("li");
     const btn = document.createElement("button");
-    // menu-submenu lays the label and the › chevron out on one row.
-    btn.className = "menu-entry menu-submenu";
     btn.dataset.submenu = key;
-    const chevron = document.createElement("span");
-    chevron.className = "menu-entry-chevron";
-    chevron.textContent = "›";
-    // "Laves" and "Isogonal" name a classification, not a look — the hint is
-    // what tells a player choosing a board what they would be playing on.
-    // Defaults to the tiling-family hint by key; the Polyhedra groups pass
-    // their own (`MENU_FAMILY_HINTS` knows nothing about them).
-    btn.append(iconEl(FAMILY_ICONS[key] ?? key), textBlock(label, hint), chevron);
+    const iconKey = FAMILY_ICONS[key] ?? key;
+    if (this.isWide()) {
+      btn.className = "menu-entry menu-submenu menu-board-card";
+      btn.append(this.previewEl(iconKey), this.cardCaption(label, { trailing: this.chevronEl() }));
+    } else {
+      // menu-submenu lays the label and the › chevron out on one row.
+      btn.className = "menu-entry menu-submenu";
+      // "Laves" and "Isogonal" name a classification, not a look — the hint is
+      // what tells a player choosing a board what they would be playing on.
+      // Defaults to the tiling-family hint by key; the Polyhedra groups pass
+      // their own (`MENU_FAMILY_HINTS` knows nothing about them).
+      btn.append(iconEl(iconKey), textBlock(label, hint), this.chevronEl());
+    }
     btn.addEventListener("click", onClick);
     li.append(btn);
     return li;
@@ -780,25 +1087,31 @@ export class Menu {
   private entryRow(mode: string, label: string, icon = mode): HTMLElement {
     const li = document.createElement("li");
     const btn = document.createElement("button");
-    btn.className = "menu-entry";
     btn.dataset.mode = mode;
     // A board the tiling is against is graded here rather than left to feel
-    // like bad luck at the table. The mark goes on the row because the
-    // difficulty pills are at the foot of the page: by the time one is chosen
-    // the board is already picked. A blocked board keeps its row -- the tiling
+    // like bad luck at the table. A blocked board keeps its row -- the tiling
     // is still worth looking at, and hiding it would only make the catalogue
     // lie about what it holds -- but the row opens the explanation instead of
     // a game.
     const level = modeFairness(mode);
     const hint = fairnessHint(level);
-    btn.append(iconEl(icon), textBlock(label, hint));
-    if (level !== "ok") {
-      btn.dataset.fairness = level;
-      const warn = document.createElement("span");
-      warn.className = "menu-entry-warning";
-      warn.textContent = level === "blocked" ? "⛔" : "⚠";
-      warn.setAttribute("aria-label", hint ?? "");
-      btn.append(warn);
+    if (level !== "ok") btn.dataset.fairness = level;
+    if (this.isWide()) {
+      btn.className = "menu-entry menu-board-card";
+      btn.append(
+        this.previewEl(icon),
+        this.cardCaption(label, level !== "ok" ? { trailing: this.fairnessPill(level, hint) } : {}),
+      );
+    } else {
+      btn.className = "menu-entry";
+      btn.append(iconEl(icon), textBlock(label, hint));
+      if (level !== "ok") {
+        const warn = document.createElement("span");
+        warn.className = "menu-entry-warning";
+        warn.textContent = level === "blocked" ? "⛔" : "⚠";
+        warn.setAttribute("aria-label", hint ?? "");
+        btn.append(warn);
+      }
     }
     if (level === "blocked") {
       // Deliberately *not* `aria-disabled`: the row is a working control that
@@ -812,6 +1125,52 @@ export class Menu {
     }
     li.append(btn);
     return li;
+  }
+
+  /** The large board preview a desktop card shows instead of the phone's 38px
+   * glyph (icons.ts `previewIcon`): a tiling wallpapered to the card's edges,
+   * or — for a solid, a surface or a shaped board, where the silhouette is the
+   * picture — a centred figure with air around it, which `is-tiled` tells the
+   * card's padding apart. */
+  private previewEl(key: string): HTMLElement {
+    const el = document.createElement("div");
+    const preview = previewIcon(key);
+    el.className = preview.tiled
+      ? "menu-board-card-preview is-tiled"
+      : "menu-board-card-preview";
+    el.innerHTML = preview.svg;
+    return el;
+  }
+
+  /** A desktop card's caption: the board/family name, an optional hint line
+   * under it, and an optional trailing element (a fairness pill, or a family's
+   * chevron). */
+  private cardCaption(
+    label: string,
+    opts: { hint?: string; trailing?: HTMLElement } = {},
+  ): HTMLElement {
+    const caption = document.createElement("span");
+    caption.className = "menu-board-card-caption";
+    caption.append(textBlock(label, opts.hint));
+    if (opts.trailing) caption.append(opts.trailing);
+    return caption;
+  }
+
+  private chevronEl(): HTMLElement {
+    const chevron = document.createElement("span");
+    chevron.className = "menu-entry-chevron";
+    chevron.textContent = "›";
+    return chevron;
+  }
+
+  /** The desktop card's fairness mark: the phone's corner glyph becomes a
+   * labelled pill, since a card has room to say *why* rather than just that. */
+  private fairnessPill(level: Fairness, hint: string | undefined): HTMLElement {
+    const pill = document.createElement("span");
+    pill.className = "menu-fairness-pill";
+    pill.textContent = level === "blocked" ? "Blocked" : "Guesses";
+    if (hint) pill.setAttribute("aria-label", hint);
+    return pill;
   }
 
   /** A root launch entry with a hint (e.g. Classic) — launches its mode on
@@ -893,6 +1252,7 @@ export class Menu {
     this.difficultyRowEl = row;
     this.syncDifficultyRow();
     wrap.append(heading, row);
+    this.difficultyWrapperEl = wrap;
     return wrap;
   }
 

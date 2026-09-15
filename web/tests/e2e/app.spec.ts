@@ -9,7 +9,13 @@ test.describe("M1 app", () => {
   });
 
   test("starts on the menu with the HUD hidden", async ({ page }) => {
-    await expect(page.locator(".menu-title")).toBeVisible();
+    // Matched by text as well as `:visible`: on desktop the sidebar and the
+    // pane each have their own `.menu-title`, and the phone header's (hidden
+    // at this width) is still in the DOM — only the app title, visible, is
+    // meant to be pinned here.
+    await expect(
+      page.locator(".menu-title:visible", { hasText: "Hypersweeper" }),
+    ).toBeVisible();
     await expect(page.locator(".hud")).toBeHidden();
     const state = await page.evaluate(() => window.__ms?.state());
     expect(state?.screen).toBe("menu");
@@ -17,7 +23,6 @@ test.describe("M1 app", () => {
 
   test("menu launches a flat board at the chosen difficulty", async ({ page }) => {
     await page.locator('.difficulty-btn[data-key="easy"]').click();
-    await page.locator('.menu-entry[data-group="custom"]').click();
     await page.locator('.menu-entry[data-group="flat"]').click();
     // the regular tilings sit at the top of the picker, not in a submenu
     await page.locator('.menu-entry[data-mode="square"]').click();
@@ -31,7 +36,6 @@ test.describe("M1 app", () => {
 
   test("menu drills into the aperiodic family to launch Penrose", async ({ page }) => {
     await page.locator('.difficulty-btn[data-key="easy"]').click();
-    await page.locator('.menu-entry[data-group="custom"]').click();
     await page.locator('.menu-entry[data-group="flat"]').click();
     await page.locator('.menu-entry[data-submenu="aperiodic"]').click();
     await page.locator('.menu-entry[data-mode="penrose"]').click();
@@ -103,7 +107,6 @@ test.describe("M1 app", () => {
     // every difficulty. Their rows stay in the menu -- the catalogue should not
     // lie about which tilings are built -- but they are marked, dimmed, and say
     // why instead of dealing a board (src/boards/fairness.ts).
-    await page.locator('.menu-entry[data-group="custom"]').click();
     await page.locator('.menu-entry[data-group="flat"]').click();
     await page.locator('.menu-entry[data-submenu="dual"]').click();
     const row = page.locator('.menu-entry[data-mode="triakis"]');

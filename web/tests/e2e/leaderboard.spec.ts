@@ -362,7 +362,7 @@ test.describe("record window", () => {
     await expect(dialog(page)).toHaveCount(0); // still waiting
 
     await page.locator('.hud-btn[data-slot="back"]').click();
-    await expect(page.locator('.menu-entry[data-group="custom"]')).toBeVisible();
+    await expect(page.locator('.menu-sidebar')).toBeVisible();
     await page.waitForTimeout(1500); // past the delay the window would have used
     await expect(dialog(page)).toHaveCount(0);
     // The time was still filed — only the announcement was dropped.

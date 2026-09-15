@@ -246,8 +246,10 @@ const halfTurn = (cell: Vertex[], cx: number, cy: number): Vertex[] =>
   cell.map(([x, y]): Vertex => [2 * cx - x, 2 * cy - y]);
 
 /** The domains this module states itself, because the boards they belong to are
- * built by hand rather than from an `ArchTemplate`. */
-const DOMAINS: Record<string, () => Domain> = {
+ * built by hand rather than from an `ArchTemplate`. Exported for the menu's
+ * card previews (ui/icons.ts `previewIcon`), which wallpaper the same boards
+ * off the same repeats, so a card and the page behind that board agree. */
+export const DOMAINS: Record<string, () => Domain> = {
   // squareBoard: unit squares, axis aligned.
   square: () => ({ width: 1, height: 1, cells: [unitSquare(0, 0)] }),
 
