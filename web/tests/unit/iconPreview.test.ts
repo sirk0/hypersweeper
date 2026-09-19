@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { menuIcon, previewIcon, setIconPalette } from "../../src/ui/icons";
+import { SOLID_MODES } from "../../src/boards/catalog";
 import { theme } from "../../src/ui/theme";
 
 // The desktop menu's card previews (icons.ts `previewIcon`). A card is four
@@ -111,6 +112,26 @@ describe("card previews", () => {
     expect(chroma(previewIcon("square").svg)).toBeLessThan(chroma(row));
     // ...and asking for the preview first did not repaint the row.
     expect(menuIcon("square")).toBe(row);
+  });
+
+  it("keeps every solid inside its box", () => {
+    // The drawing is fitted to the silhouette's *span* and then placed by its
+    // *centre* (icons.ts `solidFaces`). Placing it by the board's origin
+    // instead is not the same thing for a solid whose projection is lopsided:
+    // a tetrahedron runs from its apex at +R to the opposite face plane at
+    // -R/3, and the apex hung over the top of the viewBox, where the SVG root
+    // clipped it off — on the Tetrahedron and Tetrahedron frame cards, on the
+    // Platonic family card (which aliases onto the tetrahedron), and on the
+    // 38px row glyph of the frame.
+    const outside = (svg: string): number[] =>
+      [...svg.matchAll(/ d="([^"]*)"/g)]
+        .flatMap((m) => m[1]!.match(/-?\d+(?:\.\d+)?/g) ?? [])
+        .map(Number)
+        .filter((v) => v < -0.01 || v > 100.01);
+    for (const key of [...SOLID_MODES, "platonic"]) {
+      expect(outside(previewIcon(key).svg), `${key} card`).toEqual([]);
+      expect(outside(menuIcon(key)), `${key} row`).toEqual([]);
+    }
   });
 
   it("repaints a cached preview when the palette changes", () => {

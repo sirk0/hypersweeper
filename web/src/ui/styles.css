@@ -1058,6 +1058,31 @@ body {
     gap: 24px;
   }
 
+  /* A board-browsing page (`paneHeader` in menu.ts sets `paned`) scrolls its
+     card grid, not the pane: the page's title, its breadcrumb and the
+     difficulty pills stay on screen however far down the catalogue the player
+     is — and so does the back row, on a family page, where it is the only way
+     up. Sticky would do it too, but the header would then need a fill of its
+     own over the page's textured gradient (`--bg-texture`), and a flat one
+     seams against it. Moving the scroll down one level needs no fill at all.
+
+     Scoped to `paned` because the settings, help and best-times pages are a
+     stack of sections with no single list to hand the scrolling to — those
+     still scroll whole, as `.menu-body` does everywhere else. */
+  .menu-body.paned {
+    overflow: hidden;
+    /* the grid carries the bottom inset now, below its last row */
+    padding-bottom: 0;
+  }
+
+  .menu-body.paned > .menu-list {
+    /* A flex item's min-content floor would refuse to shrink, and the grid
+       would push its overflow out of the pane instead of scrolling. */
+    min-height: 0;
+    overflow-y: auto;
+    padding-bottom: max(34px, env(safe-area-inset-bottom));
+  }
+
   .menu-pane-heading {
     flex: 1;
     min-width: 0;

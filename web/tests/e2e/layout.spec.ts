@@ -369,3 +369,63 @@ test.describe("viewport layout", () => {
     expect(bottom).toBeLessThanOrEqual(visibleHeight);
   });
 });
+
+// The 900px breakpoint between the phone column and the two-pane desktop menu
+// (styles.css `@media (min-width: 900px)`, `Menu.wideQuery`). Every other menu
+// spec sits at exactly 900x700, i.e. on the desktop side of it; these two are
+// about the narrow side, and about crossing the line with a page open — a
+// rotate on a big phone is enough (a Pro Max is 932pt in landscape and 430 in
+// portrait), as is a split view or a dragged window.
+test.describe("the desktop menu breakpoint", () => {
+  test("narrowing off the desktop lands on the phone's home page", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1000, height: 800 });
+    await page.goto("/");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    // The desktop landing page: the sidebar, and Quick start in the pane.
+    await expect(page.locator(".menu-sidebar")).toBeVisible();
+    await expect(page.locator(".menu-pane-title")).toHaveText("Quick start");
+
+    await page.setViewportSize({ width: 402, height: 874 });
+
+    // Quick start is a page the phone has no way to navigate to and no way out
+    // of: the sidebar is `display: none` and the page carries no back row. It
+    // used to be left on screen all the same, stranding the player on the four
+    // quick-play cards with the whole geometry tree unreachable.
+    await expect(page.locator(".menu-sidebar")).toBeHidden();
+    await expect(page.locator('.menu-entry[data-group="custom"]')).toBeVisible();
+    await expect(page.locator(".menu-pane-header")).toHaveCount(0);
+    // ...and the phone's own header and difficulty row are back around it.
+    await expect(page.locator(".menu-header .menu-title")).toBeVisible();
+    await expect(page.locator(".menu-difficulty .difficulty-btn.active")).toBeVisible();
+  });
+
+  test("a pane page keeps its header while the cards scroll", async ({ page }) => {
+    // Short enough that the Flat page's card grid overflows several rows.
+    await page.setViewportSize({ width: 1000, height: 560 });
+    await page.goto("/");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    await page.locator('.menu-sidebar .menu-entry[data-group="flat"]').click();
+    await expect(page.locator(".menu-pane-title")).toHaveText("Flat");
+
+    const grid = page.locator(".menu-body > .menu-list");
+    const scrolled = await grid.evaluate((el) => {
+      el.scrollTop = el.scrollHeight;
+      return { top: el.scrollTop, max: el.scrollHeight - el.clientHeight };
+    });
+    // The grid is what scrolls — the pane itself has nothing to give.
+    expect(scrolled.max).toBeGreaterThan(0);
+    expect(scrolled.top).toBe(scrolled.max);
+    expect(await page.locator(".menu-body").evaluate((el) => el.scrollTop)).toBe(0);
+
+    // So the page's own chrome — its title, its breadcrumb and the difficulty
+    // pills — is still whole on screen at the bottom of the catalogue. The
+    // title used to be clipped off the top of the pane on the first scroll.
+    for (const sel of [".menu-pane-title", ".menu-pane-hint", ".difficulty-btn.active"]) {
+      const box = (await page.locator(sel).boundingBox())!;
+      expect(box.y, sel).toBeGreaterThanOrEqual(0);
+      expect(box.y + box.height, sel).toBeLessThanOrEqual(560);
+    }
+  });
+});

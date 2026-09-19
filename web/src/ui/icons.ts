@@ -816,13 +816,21 @@ function solidFaces(key: string, kind: "round" | "blocky" = "round", lit = false
     });
   }
   // Fit the silhouette rather than the bounding sphere, so a solid that is not
-  // round (a bipyramid, a frame) still fills the icon box.
-  const span = (k: 0 | 1): number =>
-    Math.max(...box.map((p) => p[k]!)) - Math.min(...box.map((p) => p[k]!));
-  const scale = (D * 0.92) / Math.max(span(0), span(1));
+  // round (a bipyramid, a frame) still fills the icon box — and place it by the
+  // *silhouette's* centre, not the board's origin. The two are not the same
+  // thing: a tetrahedron is centred on its centroid, but its projection runs
+  // from the apex at +R to the opposite face plane at -R/3, so scaling the span
+  // and then drawing about the origin hung 8% of the drawing over the top of
+  // the box, where the SVG root clipped it, while a quarter of the box sat
+  // empty below. Same recentring as `fitTiles`, `surfaceMesh` and the
+  // whole-patch branch below.
+  const lo = (k: 0 | 1): number => Math.min(...box.map((p) => p[k]!));
+  const hi = (k: 0 | 1): number => Math.max(...box.map((p) => p[k]!));
+  const scale = (D * 0.92) / Math.max(hi(0) - lo(0), hi(1) - lo(1));
+  const [mx, my] = [(lo(0) + hi(0)) / 2, (lo(1) + hi(1)) / 2];
   faces.sort((f, g) => f.depth - g.depth);
   return faces.map((f) => {
-    const pts = f.pts.map(([x, y]) => [C + x * scale, C - y * scale] as P);
+    const pts = f.pts.map(([x, y]) => [C + (x - mx) * scale, C - (y - my) * scale] as P);
     // Lit: a continuous ramp between the tone's three variants, the way the
     // surfaces are shaded (see surfaceMesh). The icon's three buckets are what
     // a 38px solid needs to read as solid at all; on a card they band.
