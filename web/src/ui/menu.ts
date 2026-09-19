@@ -373,6 +373,10 @@ export class Menu {
    * the next `show()` then painted the home page with no difficulty row. */
   private render(): void {
     this.root.classList.remove("settings-open");
+    // Same rule as `settings-open`, one level down: cleared on every render and
+    // re-added by `paneHeader`, so the pane's own scroll layout is derived from
+    // the page actually on screen rather than left over from the last one.
+    this.body.classList.remove("paned");
     this.view();
     // On the phone width no page reparents the difficulty block into itself
     // (that only happens inside `paneHeader`, on desktop), so it can drift
@@ -409,7 +413,18 @@ export class Menu {
     this.syncSidebarActive();
   }
 
+  /** The phone has no sidebar, so Quick start is a page it can never navigate
+   * to — but it can be *left on* one, by a rotate or a resize that crosses the
+   * breakpoint while it is open. Without this the player is stranded: the four
+   * quick-play cards, no Custom row, no back row, and the whole geometry tree
+   * behind a sidebar that is `display: none`. The mirror of the guards
+   * `renderRoot` and `renderCustom` carry for the other direction. */
   private renderQuickStart(): void {
+    if (!this.isWide()) {
+      this.selectedPage = null;
+      this.showRoot();
+      return;
+    }
     const list = document.createElement("ul");
     list.className = "menu-list menu-card-grid";
     list.append(...this.quickPlayCards());
@@ -1024,6 +1039,10 @@ export class Menu {
     heading.append(titleEl, hintEl);
 
     header.append(heading, this.difficultyWrapperEl);
+    // The pane header is the page's own chrome — its title, its breadcrumb and
+    // the difficulty pills — so it must not scroll away under the cards. This
+    // hands the scrolling to the card grid instead (styles.css, `.menu-body.paned`).
+    this.body.classList.add("paned");
     return header;
   }
 

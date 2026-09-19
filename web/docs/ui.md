@@ -26,6 +26,38 @@ The header's two buttons — the **?** at the left edge, the gear at the right �
 open the how-to-play page and the settings page; see "Settings and themes"
 below.
 
+### Two layouts, one DOM
+
+From **900px** (`Menu.wideQuery`, the `@media (min-width: 900px)` block in
+`styles.css`) the same menu lays out as two panes: a sidebar holding the whole
+top level of the tree, and a content pane showing the current page as a grid of
+board cards under a **pane header** — the page's title, its breadcrumb hint and
+the difficulty pills. Below that width it is the phone column, with the back
+stack in place of the sidebar. Nothing is duplicated: the how-to-play/gear
+buttons and the difficulty block are the *same* elements, moved between the two
+homes (`placeHeaderButtons`, `paneHeader`), so every `data-action` and
+`.difficulty-btn` selector still resolves to one element at any width.
+
+Two rules keep the two layouts honest, and both were learned the hard way:
+
+- **Every page must render at either width.** `this.view` is a closure that
+  outlives a resize — a rotate on a big phone crosses 900px on its own — so a
+  page that only one layout can draw needs a guard that re-routes when the
+  breakpoint moves under it. `renderRoot` and `renderCustom` bounce to the
+  sidebar's Quick start when they go wide; `renderQuickStart` bounces to the
+  phone's home page when it goes narrow. Without that last one the phone was
+  left on the desktop's Quick start page — no Custom row, no back row and the
+  sidebar `display: none`, so the whole geometry tree was unreachable until a
+  reload. `tests/e2e/layout.spec.ts` pins the crossing.
+- **The pane header does not scroll.** It carries the only difficulty control
+  on screen and, on a family page, the only way back up, so a page marked
+  `paned` (set by `paneHeader`, cleared by `render` the way `settings-open` is)
+  hands its scrolling to the card grid and keeps `.menu-body` itself still.
+  Sticky would want a fill of its own over the page's textured gradient, and a
+  flat one seams against it. The settings/help pages are not `paned` — they are
+  a stack of sections with no single list to scroll — so they still scroll
+  whole.
+
 ## Telling the player where they are
 
 `src/ui/boardInfo.ts` owns the board's name and the row of controls under the
