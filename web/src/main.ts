@@ -628,9 +628,11 @@ class App {
   /** The measured viewport height `h`, corrected for the iOS standalone
    * status-bar shortfall.
    *
-   * A home-screen launch runs `black-translucent` (index.html), so the page is
-   * drawn from the very top of the screen, under the status bar — but WebKit
-   * sizes the viewport as if the page started *below* it. `visualViewport`,
+   * A home-screen launch made while the app still shipped `black-translucent`
+   * draws the page from the very top of the screen, under the status bar — and
+   * iOS caches that tag with the icon, so those installs keep doing it however
+   * the app is served now (index.html). WebKit then sizes the viewport as if
+   * the page started *below* the status bar. `visualViewport`,
    * `innerHeight` and `100dvh` alike then come back short by exactly the top
    * safe-area inset (62px of an iPhone 16 Pro's 874), the app stops that far
    * above the bottom of the screen, and WebKit fills the strip below it with
@@ -641,7 +643,9 @@ class App {
    * screen height; leave every other case on the measured height, since a
    * shortfall generally means something really is covering that strip (a
    * browser toolbar, an iPad PWA sharing the screen in Split View).
-   * styles.css grows `html` by the same inset so the strip gets painted. */
+   * styles.css grows `html` by the same inset so the strip gets painted. A
+   * fresh install sits below an opaque status bar, so its inset is 0 and the
+   * first test here returns `h` untouched. */
   private resolveHeight(h: number): number {
     if (!this.standalone) return h;
     const inset = this.insetProbe.getBoundingClientRect().height;

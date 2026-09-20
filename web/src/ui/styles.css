@@ -187,18 +187,23 @@
   }
 }
 
-/* iOS home-screen launch, `apple-mobile-web-app-status-bar-style:
-   black-translucent`: the page is drawn from the very top of the screen, under
-   the status bar, but WebKit sizes the viewport as if it started *below* it —
-   so the document ends one status bar short of the bottom of the screen and
-   WebKit fills the leftover strip with the web view's own white, which no theme
-   touches (the WebGL canvas is transparent, so there is nothing else down
-   there). Growing the root by that same inset takes the page background all the
-   way down; main.ts lays the app itself out into it, see `resolveHeight`.
+/* An iOS home-screen launch that draws under the status bar — every install
+   made while the app still shipped `apple-mobile-web-app-status-bar-style:
+   black-translucent`, since iOS caches that tag with the icon and only re-reads
+   it when the icon is added again (index.html). There the page starts at the
+   very top of the screen, under the status bar, but WebKit sizes the viewport
+   as if it started *below* it — so the document ends one status bar short of
+   the bottom of the screen and WebKit fills the leftover strip with the web
+   view's own white, which no theme touches (the WebGL canvas is transparent, so
+   there is nothing else down there). Growing the root by that same inset takes
+   the page background all the way down; main.ts lays the app itself out into
+   it, see `resolveHeight`.
    Deliberately only `min-height`: clipping the growth back off with an
    `overflow: hidden` here risks taking the paint with it, and the few px of
    page this leaves scrollable move nothing on screen — the app is fixed layers
-   over a field that is flat but for the Realistic theme's vignette. */
+   over a field that is flat but for the Realistic theme's vignette. A fresh
+   install is inset below an opaque status bar, so its inset is 0 and this rule
+   grows nothing. */
 @media (display-mode: standalone) {
   html {
     min-height: calc(100% + var(--safe-top));

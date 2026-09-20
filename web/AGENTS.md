@@ -180,12 +180,25 @@ design rather than the rule itself.
   already has both (the first-run hint). `html`/`body` are
   `calc(var(--app-top) + var(--app-h))`, so the field is painted across
   everything the player can see and the document still ends there.
-- **One measurement is not to be trusted: an iOS home-screen launch.** The app
-  runs `apple-mobile-web-app-status-bar-style: black-translucent`, so the page
-  is drawn from the very top of the screen, under the status bar — but WebKit
-  sizes the viewport as if the page started *below* it. `visualViewport`,
-  `innerHeight` **and `100dvh` alike** come back short by exactly the top
-  safe-area inset (62px of an iPhone 16 Pro's 874), the app stops that far above
+- **The iOS status bar is opaque on purpose.** `index.html` ships
+  `apple-mobile-web-app-status-bar-style: default`, not `black-translucent`.
+  Translucent puts the page's own pixels in the status-bar inset, and from
+  iOS 26 the system fills that inset with the Liquid Glass *scroll edge effect*
+  wherever it cannot sample a flat colour at the page's top edge — which this
+  app never offers, its field being a texture over a radial gradient. The blur
+  band bleeds a row or two below the status bar and washed the menu header
+  out. Nothing turns the effect off (no CSS property, no meta switch, and
+  `env(safe-area-inset-*)` does not grow to account for it), so the only lever
+  is not putting content up there. `viewport-fit=cover` stays — the notch and
+  the home indicator still need clearing — and the opaque bar is tinted from
+  `theme-color`, which `ui/theme.ts` rewrites on every theme change.
+- **One measurement is not to be trusted: an iOS home-screen launch that draws
+  under the status bar.** iOS reads that tag once, when the icon is added to
+  the Home Screen, so every install made under the old `black-translucent`
+  keeps drawing the page from the very top of the screen until it is deleted
+  and re-added. There WebKit sizes the viewport as if the page started *below*
+  the status bar: `visualViewport`, `innerHeight` **and `100dvh` alike** come
+  back short by exactly the top safe-area inset (62px of an iPhone 16 Pro's 874), the app stops that far above
   the bottom of the screen, and WebKit fills the strip below it with the web
   view's own white — a band no theme touches, since the WebGL canvas is
   transparent. Two halves to the fix, and it needs both: `App.resolveHeight`
