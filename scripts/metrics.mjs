@@ -31,6 +31,7 @@
 import { createRequire } from "node:module";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { TOKEN_HINT, isAuthError } from "./cf_token.mjs";
 
 const DATASET = "hypersweeper_game_events";
 const API = "https://api.cloudflare.com/client/v4/accounts";
@@ -116,6 +117,15 @@ async function query(sql) {
     // The dataset does not exist until its first write, which reads as an
     // unknown table rather than as an empty result.
     if (/UNKNOWN_TABLE|doesn't exist|Unknown table/i.test(text)) return null;
+    // A rejected *credential* is not a stack trace's worth of surprise — it is
+    // the routine failure of this script, and Cloudflare reports it with the
+    // status it feels like rather than a 401. Say so and stop.
+    if (isAuthError(text)) {
+      console.error(
+        `Analytics Engine API ${res.status}: ${text.slice(0, 300).replace(/\s+/g, " ")}\n\n${TOKEN_HINT}`,
+      );
+      process.exit(2);
+    }
     throw new Error(`Analytics Engine API ${res.status}: ${text.slice(0, 400)}`);
   }
   return JSON.parse(text).data ?? [];

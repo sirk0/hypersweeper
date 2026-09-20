@@ -22,8 +22,11 @@ plain-text-POST shape:
 
 - **URL** `https://api.cloudflare.com/client/v4/accounts/<account>/analytics_engine/sql`
 - **HTTP method** POST, **Access** Server (default)
-- **Header** `Authorization: Bearer <token>` — a **read-only** token carrying
-  *Account → Account Analytics: Read*. Not the deploy token.
+- **Custom HTTP header**, name `Authorization`, value `Bearer <token>` — the
+  literal word `Bearer`, a space, then a **read-only** token carrying
+  *Account → Account Analytics: Read*. Not the deploy token. **Pasting the
+  token on its own is the mistake to expect**: Grafana saves it happily and
+  every panel then fails exactly like an expired token does.
 - Leave *Default database* empty, and leave HTTP compression and the CORS
   header off; the plugin adds query-string parameters for those and the SQL API
   wants none.
@@ -34,6 +37,104 @@ writes it.
 Every panel reads its datasource from a `ds` dashboard variable rather than a
 hard-coded uid, so importing onto a stack whose datasource has a different uid
 is a dropdown, not an edit.
+
+### The read-only token
+
+That `Authorization` header is the whole of the credentials, and it is the most
+likely thing to be wrong when the dashboards look broken. A Cloudflare API
+token can carry a **TTL**, and when that date passes nothing changes except
+that every query starts failing: the header is still sent, the panels still
+render, and they all say *No data*. There is no warning beforehand and no
+notice in Grafana afterwards — a dead token and an empty week look the same on
+screen.
+
+**Making one.** In the Cloudflare dashboard, *My Profile → API Tokens →
+Create Token → Custom token → Get started*:
+
+| Field | Value |
+|---|---|
+| Name | anything; `hypersweeper grafana read` says what it is |
+| Permissions | **Account** → **Account Analytics** → **Read** — that row, and nothing else |
+| Account Resources | *Include* → the account that owns the Pages project |
+| Client IP Address Filtering | leave empty — Grafana queries from its own servers, not from the browser |
+| TTL | the expiry. Leave it blank for a token that does not expire, or set a date *and* a reminder |
+
+*Continue to summary → Create Token*. The value is shown **once**; copy it then.
+
+It is deliberately not the deploy token (`CLOUDFLARE_API_TOKEN` in the repo
+secrets, *Cloudflare Pages: Edit*). That one can publish the game; this one can
+only count what was played, which is the right power for a credential that
+lives in a datasource config and in a shell profile.
+
+**Rolling** an existing token is the shorter path and the one to reach for when
+this one has expired: on the *API Tokens* list, the token's **⋯ → Roll** issues
+a new value for the same token, keeping its name and permissions; **Edit** on
+the same menu is where a TTL is extended or cleared. Rolling invalidates the old
+value immediately, so have the Grafana datasource page open first.
+
+**Where a new value has to be pasted.** Two places, and CI is not one of them —
+the workflows only ever use the deploy token, so nothing in GitHub needs
+touching:
+
+1. **Grafana** → *Connections → Data sources* → the ClickHouse datasource → the
+   `Authorization` custom HTTP header. Grafana stores header values as secure
+   settings, so the field reads *configured* and ignores typing: click **Reset**
+   beside it first, then paste
+
+   ```
+   Bearer <the value Cloudflare showed you>
+   ```
+
+   — **the word `Bearer`, a space, then the token**, not the token by itself.
+   That prefix is the HTTP scheme, and it is the single easiest thing to get
+   wrong here, because Cloudflare rejects a header without it in exactly the
+   way it rejects an expired one. Then *Save & test*.
+2. **Wherever `CF_API_TOKEN` is set locally** for `make metrics` and
+   `make dashboards-check` — a shell profile, a sourced `.env`, a password
+   manager. Here it is the **bare token, with no `Bearer `**: the scripts build
+   the header themselves. Same secret, two shapes, and that is exactly why a
+   token that passes `make dashboards-check` can still fail in Grafana. Nothing
+   in this repo reads a `.env`, and no token belongs in one.
+
+**Check it before believing it**, from the repo, against the same endpoint the
+datasource posts to:
+
+```sh
+CF_ACCOUNT_ID=... CF_API_TOKEN=... make dashboards-check
+```
+
+A token that passes that is a token Grafana can use. `make metrics` is the
+one-query version of the same check.
+
+## When the dashboards go blank
+
+Every panel reading *No data*, with `Query error: 400` behind the warning
+triangle, is the shape this failure takes — and a 400 rather than a 401 is why
+it does not announce itself as a credential problem. Cloudflare returns its
+authentication errors on this endpoint in the response *body*, and the
+ClickHouse plugin surfaces only the status code, so the screen says nothing
+useful.
+
+Get the body. `make dashboards-check` posts the same SQL with the same header
+and prints what comes back:
+
+| What the body says | What it is |
+|---|---|
+| `Authentication error`, `Invalid API Token`, code `10000` | the token is expired, rolled or deleted — **or the header value is the bare token, missing its `Bearer ` prefix**. Check the prefix first; it costs nothing and is the commoner mistake right after a rotation |
+| `Unauthorized to access requested resource`, code `9109` | the token is alive but is missing *Account Analytics: Read*, or is scoped to a different account |
+| a message naming a function, a column or a type | the dialect, not the token — see [The SQL, and why it looks the way it does](#the-sql-and-why-it-looks-the-way-it-does) |
+
+The scripts name the first two cases themselves and stop, rather than reporting
+forty panels as dialect failures; `scripts/cf_token.mjs` holds the signatures.
+
+Two things that are *not* the token, and both look like it:
+
+- **One panel blank while the rest are fine.** A credential fails all of them
+  identically. A single blank panel is that panel's SQL, or a filter with no
+  matching rows.
+- **Everything blank with no error at all.** Retention is about 14 days, so a
+  range older than that is legitimately empty, as is any range with a filter
+  combination nobody played. Check on *Raw events* with the filters at *all*.
 
 ## Uploading and downloading
 
