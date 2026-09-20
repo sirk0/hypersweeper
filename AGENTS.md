@@ -28,6 +28,7 @@ carries over.
 | Picking a board's size and mine count | [`docs/agents/difficulty.md`](docs/agents/difficulty.md) |
 | The `data/*.json` both front-ends read, and the conformance oracle | [`docs/agents/shared-data.md`](docs/agents/shared-data.md) |
 | What the deployed game reports, the dataset schema, and the dashboards | [`docs/agents/metrics.md`](docs/agents/metrics.md), then [`grafana/`](grafana) for the dashboards themselves |
+| Grafana showing *No data*, or a panel answering `400` | [`grafana/README.md`](grafana/README.md) — the read-only token expires, and that is almost always it |
 | The pygame front-end, and the pygbag web build | [`docs/agents/pygame.md`](docs/agents/pygame.md) |
 | The offline macOS app | [`desktop/README.md`](desktop/README.md) |
 | The iPhone app, and haptics | [`ios/README.md`](ios/README.md) |

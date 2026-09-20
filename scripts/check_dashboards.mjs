@@ -20,6 +20,7 @@
 // where that is pinned, offline and in CI.
 import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { TOKEN_HINT, isAuthError } from "./cf_token.mjs";
 
 const API = "https://api.cloudflare.com/client/v4/accounts";
 const DIR = fileURLToPath(new URL("../grafana", import.meta.url));
@@ -94,7 +95,10 @@ async function query(sql, account, token) {
     body: `${sql.replace(/\r\n|\r|\n/g, " ")} FORMAT JSON`,
   });
   const text = await res.text();
-  if (!res.ok) return { ok: false, error: text.slice(0, 300).replace(/\s+/g, " ") };
+  if (!res.ok) {
+    const error = text.slice(0, 300).replace(/\s+/g, " ");
+    return { ok: false, auth: isAuthError(text), error };
+  }
   return { ok: true, rows: JSON.parse(text).rows ?? 0 };
 }
 
@@ -136,6 +140,14 @@ for (const file of files) {
       }
       checked += 1;
       const result = await query(sql, account, token);
+      // A dead token fails every panel identically, and the summary line below
+      // would blame the dialect for all of them. Stop at the first one and say
+      // what it actually is.
+      if (result.auth) {
+        console.log(`  FAIL ${label}\n       ${result.error}`);
+        console.error(`\n${TOKEN_HINT}`);
+        process.exit(2);
+      }
       if (result.ok) {
         console.log(`  ok   ${label} — ${result.rows} row(s)`);
       } else {

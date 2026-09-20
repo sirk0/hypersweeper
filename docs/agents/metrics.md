@@ -155,6 +155,16 @@ at the SQL API, which speaks the same plain-text-POST shape:
 - header `Authorization: Bearer <token>` — a **read-only** token carrying
   *Account → Account Analytics: Read*, and not the deploy token
 
+**That token is the thing that breaks**, and it breaks silently: a Cloudflare
+API token created with a TTL stops working on its expiry date, and every panel
+goes to *No data* behind a `Query error: 400` — a 400, not a 401, because
+Cloudflare puts the authentication error in the body and the plugin shows only
+the status. Making a new one, rolling the existing one, where the value has to
+be pasted, and how to tell an expired token from a rejected query are all in
+[`grafana/README.md`](../../grafana/README.md) — *The read-only token*, then
+*When the dashboards go blank*. `make dashboards-check` prints the body the
+dashboard hides and names that case rather than blaming the SQL.
+
 The plugin appends `FORMAT JSON` itself, so no query should write it. The
 **Infinity** datasource works too (body type `text/plain`, parser JSON, rows at
 `data`) and is the fallback if the ClickHouse plugin is unavailable.
