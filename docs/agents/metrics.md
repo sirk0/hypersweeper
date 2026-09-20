@@ -152,8 +152,10 @@ at the SQL API, which speaks the same plain-text-POST shape:
 
 - URL `https://api.cloudflare.com/client/v4/accounts/<account>/analytics_engine/sql`
 - method POST, the SQL as the raw body — not a JSON envelope
-- header `Authorization: Bearer <token>` — a **read-only** token carrying
-  *Account → Account Analytics: Read*, and not the deploy token
+- header name `Authorization`, value `Bearer <token>` — the word `Bearer`, a
+  space, then a **read-only** token carrying *Account → Account Analytics:
+  Read*, and not the deploy token. The token pasted on its own, without that
+  prefix, fails identically to an expired one
 
 **That token is the thing that breaks**, and it breaks silently: a Cloudflare
 API token created with a TTL stops working on its expiry date, and every panel

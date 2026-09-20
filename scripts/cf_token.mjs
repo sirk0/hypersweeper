@@ -27,9 +27,17 @@ export function isAuthError(body) {
   return AUTH.test(String(body ?? ""));
 }
 
-/** What to do about it. Printed verbatim by both scripts. */
+/** What to do about it. Printed verbatim by both scripts. The two halves of the
+ * Bearer prefix are worth spelling out because the same value is pasted in two
+ * places with two different shapes: these scripts add `Bearer ` themselves, so
+ * CF_API_TOKEN is the bare token, while Grafana's header field is the whole
+ * value and needs the prefix typed in. A token that works here and still fails
+ * there is almost always that. */
 export const TOKEN_HINT =
   "That is the token, not the SQL: CF_API_TOKEN is expired, rolled, deleted, or\n" +
   "missing 'Account -> Account Analytics: Read' for this account.\n" +
-  "Roll or recreate it, then paste it into the Grafana datasource too — the\n" +
-  "steps are in grafana/README.md, 'The read-only token'.";
+  "CF_API_TOKEN is the bare token — this script adds 'Bearer ' itself.\n" +
+  "Grafana's Authorization header is the other shape: the word 'Bearer', a\n" +
+  "space, then the token. Pasting the token alone there fails the same way.\n" +
+  "Roll or recreate it, then update the Grafana datasource too — the steps are\n" +
+  "in grafana/README.md, 'The read-only token'.";

@@ -22,8 +22,11 @@ plain-text-POST shape:
 
 - **URL** `https://api.cloudflare.com/client/v4/accounts/<account>/analytics_engine/sql`
 - **HTTP method** POST, **Access** Server (default)
-- **Header** `Authorization: Bearer <token>` — a **read-only** token carrying
-  *Account → Account Analytics: Read*. Not the deploy token.
+- **Custom HTTP header**, name `Authorization`, value `Bearer <token>` — the
+  literal word `Bearer`, a space, then a **read-only** token carrying
+  *Account → Account Analytics: Read*. Not the deploy token. **Pasting the
+  token on its own is the mistake to expect**: Grafana saves it happily and
+  every panel then fails exactly like an expired token does.
 - Leave *Default database* empty, and leave HTTP compression and the CORS
   header off; the plugin adds query-string parameters for those and the SQL API
   wants none.
@@ -76,10 +79,22 @@ touching:
 1. **Grafana** → *Connections → Data sources* → the ClickHouse datasource → the
    `Authorization` custom HTTP header. Grafana stores header values as secure
    settings, so the field reads *configured* and ignores typing: click **Reset**
-   beside it first, paste `Bearer <token>`, then *Save & test*.
+   beside it first, then paste
+
+   ```
+   Bearer <the value Cloudflare showed you>
+   ```
+
+   — **the word `Bearer`, a space, then the token**, not the token by itself.
+   That prefix is the HTTP scheme, and it is the single easiest thing to get
+   wrong here, because Cloudflare rejects a header without it in exactly the
+   way it rejects an expired one. Then *Save & test*.
 2. **Wherever `CF_API_TOKEN` is set locally** for `make metrics` and
    `make dashboards-check` — a shell profile, a sourced `.env`, a password
-   manager. Nothing in this repo reads a `.env`, and no token belongs in it.
+   manager. Here it is the **bare token, with no `Bearer `**: the scripts build
+   the header themselves. Same secret, two shapes, and that is exactly why a
+   token that passes `make dashboards-check` can still fail in Grafana. Nothing
+   in this repo reads a `.env`, and no token belongs in one.
 
 **Check it before believing it**, from the repo, against the same endpoint the
 datasource posts to:
@@ -105,7 +120,7 @@ and prints what comes back:
 
 | What the body says | What it is |
 |---|---|
-| `Authentication error`, `Invalid API Token`, code `10000` | the token is expired, rolled, or deleted → make a new one, above |
+| `Authentication error`, `Invalid API Token`, code `10000` | the token is expired, rolled or deleted — **or the header value is the bare token, missing its `Bearer ` prefix**. Check the prefix first; it costs nothing and is the commoner mistake right after a rotation |
 | `Unauthorized to access requested resource`, code `9109` | the token is alive but is missing *Account Analytics: Read*, or is scoped to a different account |
 | a message naming a function, a column or a type | the dialect, not the token — see [The SQL, and why it looks the way it does](#the-sql-and-why-it-looks-the-way-it-does) |
 
