@@ -53,11 +53,13 @@ async function stubToolbar(
   }, { toolbar: height, top });
 }
 
-/** Reproduce an iOS home-screen launch under the `black-translucent` status
- * bar: `navigator.standalone` is set, the top safe-area inset is `inset` CSS px
- * (stubbed through `--safe-top`, which is why main.ts reads the inset from
- * there), and the screen is `screenHeight` tall while the window — what every
- * viewport API reports — is the Playwright viewport. WebKit's bug is the case
+/** Reproduce an iOS home-screen launch that draws under the status bar — an
+ * install made while the app still shipped `black-translucent`, whose cached
+ * launch config outlives the change: `navigator.standalone` is set, the top
+ * safe-area inset is `inset` CSS px (stubbed through `--safe-top`, which is why
+ * main.ts reads the inset from there), and the screen is `screenHeight` tall
+ * while the window — what every viewport API reports — is the Playwright
+ * viewport. WebKit's bug is the case
  * where the window is short of the screen by exactly the inset. */
 async function stubStandalone(
   page: import("@playwright/test").Page,
@@ -174,8 +176,9 @@ test.describe("viewport layout", () => {
     expect(band.center).toBeCloseTo((c.headerBottom + c.innerHeight) / 2, 0);
   });
 
-  // A home-screen launch draws under the status bar (`black-translucent`), but
-  // WebKit measures the viewport as if it started below it: every height API
+  // A home-screen launch whose cached config still draws under the status bar
+  // (`black-translucent`, dropped in index.html but kept by every install made
+  // before) is measured by WebKit as if it started below it: every height API
   // comes back short by exactly the top safe-area inset, so the app used to
   // stop that far above the bottom of the screen and WebKit painted the strip
   // below it white — in every theme, since the WebGL canvas is transparent.

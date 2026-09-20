@@ -11,10 +11,27 @@
     <meta name="theme-color" content="#f2f2f7" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta
-      name="apple-mobile-web-app-status-bar-style"
-      content="black-translucent"
-    />
+    <!-- `default`, deliberately, and NOT `black-translucent`. Translucent puts
+         the page's own pixels in the status-bar inset, and from iOS 26 the
+         system fills that inset with the Liquid Glass "scroll edge effect"
+         wherever it cannot sample a flat colour at the page's top edge — which
+         this app never offers, since the field is a texture over a radial
+         gradient. The blur band bleeds a row or two below the status bar and
+         washed out the menu header: the title, the ? and the gear all came up
+         smeared. There is no CSS or meta switch to turn the effect off and
+         `env(safe-area-inset-*)` does not grow to account for it, so the only
+         lever is not putting content up there. `default` insets the web view
+         below an opaque status bar, and iOS tints that bar from the
+         `theme-color` above — which ui/theme.ts rewrites on every theme change,
+         so it follows the palette instead of freezing on the boot value.
+         `viewport-fit=cover` stays: the notch still eats into a landscape
+         launch and the home indicator into every one, and the layout clears
+         both with `env(safe-area-inset-*)`.
+         iOS reads this tag once, when the icon is added to the Home Screen, so
+         an install that predates this change keeps drawing under the status bar
+         until it is deleted and re-added — which is why `App.resolveHeight` and
+         the `display-mode: standalone` rule in styles.css stay. -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Hypersweeper" />
     <title>Hypersweeper</title>
   </head>
