@@ -71,7 +71,7 @@ test.describe("M6 animations", () => {
     await page.addInitScript((ms) => {
       window.localStorage.setItem(
         "ms:settings",
-        JSON.stringify({ version: 4, holdToFlagMs: ms }),
+        JSON.stringify({ version: 5, holdToFlagMs: ms }),
       );
     }, HELD_FLAG_HOLD_MS);
     await page.reload();
@@ -155,7 +155,7 @@ test.describe("M6 animations", () => {
     await page.addInitScript(() => {
       localStorage.setItem(
         "ms:settings",
-        JSON.stringify({ version: 4, theme: "realistic", sound: "off", seenHint: true }),
+        JSON.stringify({ version: 5, theme: "bright", shape: "realistic", sound: "off", seenHint: true }),
       );
     });
     await page.goto("/");

@@ -464,11 +464,12 @@ function buildModel(kind: Marker): MarkerModel {
     const [lit, mid, shade] = hot
       ? [HOT_LIT, HOT, HOT_SHADE]
       : [CASING_LIT, CASING, CASING_SHADE];
-    // The casing is centred **on** the surface rather than resting on it: a mine
-    // is a thing half buried where it was laid, not a marker someone planted. It
-    // is also what makes one bomb enough on a two-sided surface — a sphere
-    // straddling the tile pokes out equally on both faces, so unlike the pin it
-    // needs no second copy for the far side (see `SolidBoard.rebuildMarkers`).
+    // The casing is centred **on** the cell's top face rather than resting on
+    // it: a mine is a thing half buried where it was laid, not a marker someone
+    // planted. It used to be what made one bomb enough on a two-sided surface,
+    // a sphere straddling a flat tile poking out equally either way; those
+    // cells are lenses with a face of their own on each side now, so the bomb
+    // takes a copy per face like the pin (see `SolidBoard.rebuildMarkers`).
     f.glow = hot ? GLOW_HOT_CASING : GLOW_CASING;
     sphere(f, 0, BOMB_R, 1, lit, mid, shade);
     f.glow = hot ? GLOW_HOT_SPIKE : GLOW_SPIKE;
@@ -507,8 +508,8 @@ export function markerVertexCount(kind: Marker): number {
  * direction it stands in — the cell's normal, so a marker leans with its tile as
  * the solid turns, which is most of what says it is standing on the board rather
  * than painted on it. On a two-sided surface, whose cells have no consistent
- * outward direction at all, the caller writes the marker twice with `up` negated
- * the second time, so there is one on each face.
+ * outward direction at all, the caller writes the marker twice — once off each
+ * face's own crown, with `up` negated the second time.
  *
  * `scale` is the cell's inradius (times the flag-pop animation's scale, when one
  * is running), and every constant above is a fraction of it.

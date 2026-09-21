@@ -27,6 +27,7 @@ import { menuIcon, previewIcon } from "./icons";
 import {
   GEAR_ICON,
   renderSchemePicker,
+  renderShapePicker,
   renderSettings,
   renderSoundPicker,
   renderThemePicker,
@@ -496,6 +497,7 @@ export class Menu {
   private settingsPageHost(page: () => void): SettingsHost {
     return {
       theme: this.settings.theme,
+      shape: this.settings.shape,
       scheme: this.settings.scheme,
       difficulty: this.settings.difficulty,
       animations: this.settings.animations,
@@ -510,6 +512,10 @@ export class Menu {
       analytics: this.settings.analytics,
       setTheme: (key) => {
         this.settings.setTheme(key);
+        page();
+      },
+      setShape: (key) => {
+        this.settings.setShape(key);
         page();
       },
       setScheme: (pref) => {
@@ -572,6 +578,7 @@ export class Menu {
       this.backRow("Settings", () => this.showRoot()),
       renderSettings(host, {
         openThemes: () => this.showThemePicker(),
+        openShapes: () => this.showShapePicker(),
         openSchemes: () => this.showSchemePicker(),
         openBestTimes: () => this.showBestTimes(),
         openSounds: () => this.showSoundPicker(),
@@ -641,6 +648,21 @@ export class Menu {
     this.body.replaceChildren(
       this.backRow("Theme", () => this.showSettings()),
       renderThemePicker(host),
+    );
+  }
+
+  /** The board shape page — the theme picker's twin, one level below settings
+   * in the same way. */
+  private showShapePicker(): void {
+    this.go(() => this.renderShapePage());
+  }
+
+  private renderShapePage(): void {
+    const host = this.settingsPageHost(() => this.renderShapePage());
+    this.root.classList.add("settings-open");
+    this.body.replaceChildren(
+      this.backRow("Board shape", () => this.showSettings()),
+      renderShapePicker(host),
     );
   }
 

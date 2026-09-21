@@ -8,6 +8,66 @@ as the reference implementation and is not deployed.
 newest first. For the rules and reference an agent needs while working here, see
 [`AGENTS.md`](AGENTS.md) and the topic files in [`docs/`](docs/) it routes to.
 
+**M22 — The board's shape, apart from its theme.** M19 pulled the colour scheme
+out of the theme; this pulls out the other axis that was still tangled with it.
+The five themes it left were never five looks: Realistic and Flat were one
+palette (`ios`/`dark`) at two cuts, Sand and Flat Sand another palette at the
+same two cuts, and Classic a third palette welded to a third cut. So a grey
+board could only be a beveled one, a beveled board could only be grey, and six
+of the nine looks could not be had at all.
+
+Appearance is three settings now, on three axes that have nothing to say to each
+other: a **board shape** (Classic, Realistic, Flat — `BOARD_SHAPES` in
+`render/cellStyle.ts`), a **theme** (Bright, Classic, Sand — the palette pair,
+the page, and what the board itself is coloured in, `BOARD_LOOKS` keyed by theme
+key), and the **colour scheme**. `CELL_STYLES` is their product, built at module
+load and keyed `"<shape>/<theme>"`, so everything downstream — `GameSession`,
+both meshes, `finishStyle`, the `window.__ms` seam — still takes one string key
+and one `CellStyle`.
+
+The line between the two halves is the one `finishStyle` already drew for the
+player's own switches: relief, material, gradients and the marks the game draws
+on a tile are the shape's, and `monochrome`, `boardTint` and `digitFont` are the
+theme's. A theme may only ever *override* what a cut declares — it cannot give a
+flat plate a dome gradient or a translucent floor — which is what keeps the two
+from leaking into each other. The one field that genuinely belongs to both is
+`albedo`: the classic bevel is the only cut that is *lit* on a flat board and so
+the only one that has to pay back what the shading takes, and the Classic
+theme's grays are a third darker than the colour tones and were chosen against
+the same payback, so the theme overrides it at every cut. Between them the five
+old looks land exactly where they did, which the v4 → v5 migration pins key by
+key.
+
+Three smaller things the same pass settled:
+
+- **Light is the default scheme**, not Auto. All three themes were drawn as
+  light pages and their dark halves are derivations of them. A stored `scheme`
+  is deliberately left alone by the migration: every v4 record carries one, so
+  there is no telling "chose auto" from "never chose", and moving a player on a
+  dark device to a light page is the worse mistake.
+- **The two-sided surfaces get real buttons.** The cylinder, the Möbius strip,
+  the Klein bottle and `cube3d` have no consistent outward side, so they drew
+  flat tiles whatever the style — the one family of boards where the cut meant
+  nothing, and the only one that read as a decal rather than as an object. They
+  now mirror the profile on **both** faces (see "Cell styles" in
+  [`docs/render.md`](docs/render.md)), which makes a cell a closed lens with a
+  button on each side. The handful of cells the Klein clip cuts stay flat,
+  because a cut leaves a variable number of triangles and a raised profile cuts
+  differently from a sunken one — and a merged geometry needs a cell's vertex
+  count to be state-independent.
+- **Classic's menu glyphs go fully grey** (`GREY_ICON_TINT`, zero chroma). That
+  theme's board carries no colour at any cut, and a row of coloured glyphs above
+  it announced that the chrome and the board had been designed separately. A row
+  is read by its drawing — a patch of the real tiling — rather than by its hue.
+
+The visual gallery changed shape with it. Every theme carries a grain now, since
+the one untextured palette was folded into Bright, and full-frame turbulence is
+what a PNG cannot compress: pointing the board set at it took a baseline from
+30 KB to 650 KB, 21 MB over the gallery. So `gallery.spec.ts` flattens
+`--bg-texture` on every shot and the page's own layers are asserted where they
+cost nothing (`settings.spec.ts` reads them per theme). The whole snapshot set
+is 1.9 MB, down from 6.1 MB.
+
 **M21 — Genus 2: a surface built by joining boards.** Every surface so far is
 a rectangle glued along its own seams, so all four have Euler characteristic 0.
 The double torus is the first that is not: two donuts merged into a figure of

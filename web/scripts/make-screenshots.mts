@@ -7,12 +7,12 @@
 // the `window.__ms` seam: start the board with an explicit mine layout (so the
 // script knows where the mines are and nothing has to be guessed), open a
 // central patch, flag a few mines, optionally detonate one, and screenshot.
-// Each shot picks a theme and a colour scheme, written into the settings record
-// before the app boots. A theme is the page behind the board and how the board's
-// cells are cut, and a scheme is the palette that paints the chrome
-// (ui/theme.ts), so the combinations are spread over these shots to show both
-// axes — the shape colours themselves are not themed and stay the same in every
-// one.
+// Each shot picks a theme, a board shape and a colour scheme, written into the
+// settings record before the app boots. A theme is the page behind the board
+// and what the board is coloured in, a shape is how its cells are cut, and a
+// scheme is which half of the theme's palette pair paints the chrome
+// (ui/theme.ts, render/cellStyle.ts) — so the combinations are spread over these
+// shots to show all three axes.
 //
 // Software WebGL (the same SwiftShader flags the e2e suite uses) keeps the
 // output identical on a machine with no GPU, e.g. CI or a cloud session.
@@ -40,13 +40,17 @@ const BASE = `http://localhost:${PORT}/`;
 interface Shot {
   /** File name written into the output directory. */
   file: string;
-  /** A key in `THEME_KEYS` (web/src/ui/theme.ts). */
+  /** A key in `THEME_KEYS` (web/src/ui/theme.ts) — the palette, the page and
+   * the board's colours. */
   theme: string;
+  /** A key in `SHAPE_KEYS` (web/src/render/cellStyle.ts) — how the cells are
+   * cut. Omitted takes the shipped default (the classic bevel). */
+  shape?: string;
   /** `"light"` or `"dark"`. Never `"auto"`: a screenshot must not depend on the
    * machine it is rendered on. */
   scheme: "light" | "dark";
   /** Pattern the page behind the board with that board's own tiling
-   * (ui/backgroundPattern.ts). Realistic only: the other two themes have no
+   * (ui/backgroundPattern.ts). Bright only: the other two themes have no
    * patterned page, so this says nothing on them. */
   backgrounds?: true;
   /** Board shots: the mode to open. Omitted for a chrome shot. */
@@ -85,14 +89,15 @@ const BOARD_VIEW = { width: 520, height: 600 };
 // them. (A flat board never gets a model whatever the style says, so nothing is
 // lost there.)
 //
-// The four Realistic shots also switch `backgrounds` on, which is the only
-// place it shows: the page behind the board is patterned with that board's own
-// tiling. On `penrose` it shows *through* the board as well, Realistic being
-// the one style with translucent opened cells.
+// The four Bright shots also switch `backgrounds` on, which is the only place
+// it shows: the page behind the board is patterned with that board's own
+// tiling. On `penrose` it shows *through* the board as well, the domed cut
+// being the one with translucent opened cells.
 const SHOTS: Shot[] = [
   {
     file: "c180.png",
-    theme: "realistic",
+    theme: "bright",
+    shape: "realistic",
     scheme: "light",
     backgrounds: true,
     mode: "c180",
@@ -102,7 +107,8 @@ const SHOTS: Shot[] = [
   },
   {
     file: "mobiushex.png",
-    theme: "realistic",
+    theme: "bright",
+    shape: "realistic",
     scheme: "dark",
     backgrounds: true,
     mode: "mobiushex",
@@ -122,7 +128,8 @@ const SHOTS: Shot[] = [
   },
   {
     file: "penrose.png",
-    theme: "realistic",
+    theme: "bright",
+    shape: "realistic",
     scheme: "light",
     backgrounds: true,
     mode: "penrose",
@@ -132,7 +139,8 @@ const SHOTS: Shot[] = [
   },
   {
     file: "torussnubsquare-lost.png",
-    theme: "realistic",
+    theme: "bright",
+    shape: "realistic",
     scheme: "dark",
     backgrounds: true,
     mode: "torussnubsquare",
@@ -143,7 +151,8 @@ const SHOTS: Shot[] = [
   },
   {
     file: "gosper.png",
-    theme: "flat",
+    theme: "bright",
+    shape: "flat",
     scheme: "dark",
     mode: "gosper",
     seed: 2,
@@ -153,16 +162,18 @@ const SHOTS: Shot[] = [
   {
     file: "hexhex.png",
     theme: "classic",
+    shape: "classic",
     scheme: "light",
     mode: "hexhex",
     seed: 9,
     reveal: 0.36,
     flags: 4,
   },
-  { file: "menu.png", theme: "realistic", scheme: "dark" },
+  { file: "menu.png", theme: "bright", shape: "realistic", scheme: "dark" },
   {
     file: "themes.png",
-    theme: "realistic",
+    theme: "bright",
+    shape: "realistic",
     scheme: "light",
     clicks: [
       '.menu-header-btn[data-action="settings"]',
@@ -227,8 +238,9 @@ async function shoot(browser: Browser, shot: Shot, outDir: string): Promise<void
   // reads it at boot. Sound is off: a screenshot run must not build an audio
   // graph, and the preset is irrelevant to the picture.
   const settings = JSON.stringify({
-    version: 4,
+    version: 5,
     theme: shot.theme,
+    ...(shot.shape ? { shape: shot.shape } : {}),
     scheme: shot.scheme,
     animations: false,
     sound: "off",

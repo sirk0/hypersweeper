@@ -25,12 +25,16 @@ describe("UI screen config", () => {
   it("loads with a version and a default palette", () => {
     expect(screens.version).toBeGreaterThan(0);
     expect(hasTheme(screens.defaultTheme)).toBe(true);
-    // The app's default *theme* is no longer this file's `defaultTheme`: a
-    // theme carries a cell style and a palette per colour scheme, so the web's
-    // theme list lives in ui/theme.ts and only borrows the palettes from here.
-    // It must still boot into the palette this file (and pygame) call the
-    // default — on the light scheme, the only one pygame has.
-    expect(themePalette(DEFAULT_THEME, "light")).toEqual(themeSpec(screens.defaultTheme));
+    // The app's default *theme* is not this file's `defaultTheme`, and no
+    // longer even shares its palette: a theme here carries a palette per colour
+    // scheme and the board's own colours, so the web's theme list lives in
+    // ui/theme.ts and only borrows the palettes from here. This file's default
+    // is pygame's, and it is Bright that wears it — on the light scheme, the
+    // only one pygame has.
+    expect(themePalette("bright", "light")).toEqual(themeSpec(screens.defaultTheme));
+    // ...and whatever the web *does* boot into is still one of this file's
+    // palettes: `themePalette` throws on a theme naming one that is not here.
+    expect(() => themePalette(DEFAULT_THEME, "light")).not.toThrow();
   });
 
   it("uses the modern iOS palette by default (not the classic gray)", () => {
@@ -141,10 +145,14 @@ describe("UI screen config", () => {
 
   it("resolveTheme falls back to the default on an unknown key", () => {
     expect(resolveTheme("classic")).toBe("classic");
-    // The two v3 themes that were a look *and* a scheme: both cut their cells
-    // with the flat style, so both alias to Flat rather than to the default.
-    expect(resolveTheme("light")).toBe("flat");
-    expect(resolveTheme("dark")).toBe("flat");
+    // The themes this build has folded away alias to the *palette* they wore,
+    // rather than to the default: Realistic and Flat were one palette at two
+    // cuts, and so were the v3 Light and Dark before them.
+    expect(resolveTheme("realistic")).toBe("bright");
+    expect(resolveTheme("flat")).toBe("bright");
+    expect(resolveTheme("light")).toBe("bright");
+    expect(resolveTheme("dark")).toBe("bright");
+    expect(resolveTheme("flatSand")).toBe("sand");
     expect(resolveTheme("no-such-theme")).toBe(DEFAULT_THEME);
     expect(resolveTheme(null)).toBe(DEFAULT_THEME);
     // Never walk the prototype chain: the key comes out of a stored record.

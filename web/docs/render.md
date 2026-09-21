@@ -1,4 +1,4 @@
-# Rendering: cell styles, picking, colour and 3D markers
+# Rendering: cell shapes, picking, colour and 3D markers
 
 The Three.js pipeline — how a cell is cut, lit, coloured, picked and marked.
 The board geometry it draws comes from [`boards.md`](boards.md); the settings
@@ -83,25 +83,39 @@ to click.
 
 ## Cell styles (`src/render/cellStyle.ts`)
 
-How a cell is **cut**. Not a setting of its own: the **theme** names one (see
-"Settings and themes"), so the table has one entry per theme and the keys match
-the theme keys — one each, a bijection since the colour scheme became its own
-setting and Light and Dark stopped being two themes sharing `flat`. Five:
-**classic** (the beveled button that sinks when
-opened, and the one style that is *also* gray — see `monochrome` below),
-**flat** (unlit plates in flat colour with wide gaps), **realistic** (a
-five-loop glass bead; on the plane a gradient and translucent opened cells, on a
-solid a specular sheen that sweeps across the faces as the board is dragged
-around), **sand** (Realistic's cut with the shape colour whispered — see
-`boardTint` below — the flat pennant and its own digit face) and **flatSand**
-(the same tones on Flat's plates: no relief, no gradient, opaque).
+A `CellStyle` is **composed**, from two settings that have nothing to say to
+each other (see "Settings and themes" in [`ui.md`](ui.md)):
 
-**Two of a style's fields are the player's rather than the theme's.** The
+- a **board shape** (`BOARD_SHAPES`) — how a cell is *cut*, and what it is made
+  of. Three: **classic** (the beveled button that sinks when opened, and the one
+  cut that is *lit* on a flat board, so the key light inverts its highlight and
+  shadow), **realistic** (a five-loop glass bead; on the plane a gradient and
+  translucent opened cells, on a solid a specular sheen that sweeps across the
+  faces as the board is dragged around) and **flat** (unlit plates in flat
+  colour with wide gaps).
+- a **theme's `BoardLook`** (`BOARD_LOOKS`, keyed by theme) — what it is
+  *painted* in. Three: **bright** (nothing to say — the shape colours at full
+  strength), **classic** (`monochrome`, the shape colour code switched off, plus
+  the albedo those grays need and opaque opened cells) and **sand** (the shape
+  colour whispered — see `boardTint` below — its own digit face, and a hair less
+  translucency and falloff than the dome declares).
+
+`CELL_STYLES` is the product, one entry per pair keyed `"<shape>/<theme>"` and
+built at module load, so everything downstream still takes one string key and
+one `CellStyle`. It was one table of five entries until v5, and those five were
+the two axes tangled: six of the nine looks could not be had at all.
+
+A look may only ever **override what the cut already declares** — a theme cannot
+give a flat plate a dome gradient or a translucent floor — which is what keeps
+the two halves from leaking into each other; `tests/unit/cellStyle.test.ts` pins
+that in both directions.
+
+**Two of a style's fields are the player's rather than either setting's.** The
 polished finish (`material`, and the centre-hotspot `shade` / `openShade`) and
 the 3D markers (`solidMarkers`) are settings — Settings › Appearance › *Glossy
-tiles* and *3D flag pins*, off and on by default respectively — applied over
-whichever style the theme names by `finishStyle` at board-build time. Both were
-Realistic's alone and welded to it, and neither argument had anything to do with
+tiles* and *3D flag pins*, off and on by default respectively — applied over the
+composed style by `finishStyle` at board-build time. Both were the old Realistic
+theme's alone and welded to it, and neither argument had anything to do with
 which page the board sits on. What `finishStyle` may **not** touch is the
 style's colour (`openAlpha`, `unlit`, `albedo`, `boardTint`, `monochrome`) or
 its profiles — the first because that half is the theme's, the second because a
@@ -158,19 +172,34 @@ in two renderers. Four things to know before adding or retuning one:
   three-loop one. Ramped, extra loops buy a smoother dome, which is what the
   vertices of a detailed profile are for. Two loops next to Classic is still not
   a style: on the plane it differs only in the width of one bevel band.
-- **A two-sided surface measures its gradient instead of ramping it.** The
-  cylinder, Möbius strip and Klein bottle — and `cube3d`, whose slices are open
-  sheets and so would vanish under front-face culling the moment the board was
-  turned past ninety degrees — draw flat tiles with no loop stack, and
-  the Klein clip can leave a vertex anywhere in one, so there is no ring order to
-  ramp over. `radialFalloff` (solidBoard.ts) measures the distance from the
-  cell's centre at build time — 1 at the centroid, 0 at the tile's edge, a cut
-  vertex wherever it truly falls — and the gradient rides on *that* at write
-  time, so the same tile can go from polished to matte when it opens. Same bead,
-  and those surfaces need it most: a flat tile with no relief has nothing else
-  to shade it.
-- **`monochrome` is the one thing here that is not relief.** The classic style
-  draws the board in its plain grays, shape colour code and all switched off:
+- **A two-sided surface mirrors the profile on both faces, and the ramp with
+  it.** The cylinder, Möbius strip and Klein bottle — and `cube3d`, whose slices
+  are open sheets and so would vanish under front-face culling the moment the
+  board was turned past ninety degrees — have no consistent outward side, so
+  `writeGeometry` writes the loop stack twice, once along +normal and once along
+  -normal, meeting at loop 0 on the surface. Each face then carries the same
+  raised button, where a flat tile there read as a button from one side and as
+  nothing (or, if it were raised on one side only, as a *recess*) from the other.
+  The mirrored half is wound the other way by swapping two vertices that sit on
+  the **same loop** of each triangle, so it emits the identical loop-level
+  sequence — which is what lets `writeColor` shade it with `v % half` instead of
+  a second ramp. Every style's `solid` profile starts at `{ inset: 0, height: 0
+  }` and never goes negative, which is what makes the two halves meet cleanly and
+  the cell a closed lens.
+- **...except the cells the Klein clip cuts, which stay flat.** A cut leaves a
+  variable number of triangles and a raised profile cuts differently from a
+  sunken one, so such a cell's vertex count would stop being state-independent —
+  which is exactly what one merged geometry (`geom[i].start/count`, `faceCell`)
+  requires. Those keep the old flat tile, and `CellGeom.tile` being non-null is
+  the flag the rest of `solidBoard.ts` branches on. It is 1 to 28 cells on a
+  Klein board, all of them at the neck where the surface is being cut away.
+  Their gradient has no ring order to ramp over, so `radialFalloff` measures the
+  distance from the cell's centre at build time — 1 at the centroid, 0 at the
+  tile's edge, a cut vertex wherever it truly falls — and the gradient rides on
+  *that* at write time, so the same tile can still go from polished to matte
+  when it opens.
+- **`monochrome` is the theme's, not the cut's.** The Classic theme draws the
+  board in its plain grays at every cut, shape colour code and all switched off:
   a gray minesweeper board is what "Classic" means, and a shape-coloured one is a
   different game to look at however the tiles are cut. `shapePalette.ts` still
   *measures* the shapes (the menu icons and the sound are keyed off the same
@@ -186,18 +215,20 @@ in two renderers. Four things to know before adding or retuning one:
 - **`unlit` is a flat board's business.** On a solid the shading is what shows
   the shape — an unlit sphere is a flat disc of tiles — so a 3D board keeps its
   lit material whatever the style, and only the relief, the gap, the finish and
-  the albedo follow. Each style therefore carries a `flat` and a `solid` profile,
+  the albedo follow. Each shape therefore carries a `flat` and a `solid` profile,
   the latter at the lower relief a curved surface needs (cells there tilt against
   each other, and a tall plateau shingles over its neighbours at the silhouette)
-  and never below the grout. A two-sided surface (cylinder, Möbius, Klein) draws
-  flat tiles whatever the style, so only the gap reaches it.
+  and never below the grout. A two-sided surface wears that same `solid` profile
+  on both of its faces (see above).
 - **Classic's two grays are a quotation.** They are the pygame board's own
   `HIDDEN_FACE` / `REVEALED_FACE` from `minesweeper/gui.py`, guarded by
   `tests/test_theme_sync.py`, so the 1990s board reads the same in both
   front-ends. A lit style's `albedo` pays back what diffuse shading takes —
   the head-on top face returns about 0.32, so `1/0.32 ≈ 3.1` pays it back
-  exactly, which is what lands `classic` on those grays rather than on the
-  third of them a lit board would otherwise show.
+  exactly, which is what lands the Classic theme on those grays rather than on
+  the third of them a lit board would otherwise show. That payback rides with
+  the *colours*, not the cut: the theme overrides `albedo` at every shape,
+  because it is the mono tones that were chosen against it.
 - **`albedo` is applied last, and comes out of the win glow.** Last, because
   everything else in `writeColor` (the hover lift, the reveal ripple) works in
   0..1 — `offsetHSL` on an already-boosted colour reads a lightness past 1 and
@@ -322,16 +353,20 @@ The rest of what to know before changing one:
 - **Flat boards never get a model**, whatever the style says: a plane is seen
   from one angle, so a model there is a picture of one at several hundred more
   vertices. Every board you can turn does, including the two-sided flat manifolds.
-- **A two-sided cell gets one *pin* on each face, and one bomb.** The cylinder,
-  Möbius strip and Klein bottle have no consistent outward normal — `assemble` in
-  `boards/surfaces.ts` deliberately skips `orientFromRing` for them, and the last
-  two cannot have one at all — and they are drawn from both faces. A pin stands
-  *off* a face, so a single one is missing from one side and buried under the
-  surface from the other; a second copy the other way costs nothing, since the
-  far one is occluded. A bomb needs no such thing: its casing is centred **on**
-  the tile rather than resting on it, so the one model straddles the surface and
-  pokes out equally both ways — which is also why a mine reads as half buried
-  where it was laid rather than as something someone put there.
+- **A two-sided cell gets a marker on each face, standing on that face's own
+  crown.** The cylinder, Möbius strip and Klein bottle have no consistent outward
+  normal — `assemble` in `boards/surfaces.ts` deliberately skips `orientFromRing`
+  for them, and the last two cannot have one at all — and they are drawn from
+  both faces. A pin stands *off* a face, so a single one is missing from one side
+  and buried under the surface from the other; a second copy the other way costs
+  nothing, since the far one is occluded. The **bomb** used to be exempt, on the
+  argument that its casing is centred on the tile rather than resting on it, so
+  one model straddled a flat tile and poked out equally both ways. Those cells
+  are lenses now, and on a sliver cell (`fit/radius` under 0.09, which the
+  immersions produce freely) a crown is taller than the whole bomb — so it takes
+  a copy per face too, each straddling its own crown, which is what keeps a mine
+  reading as half buried where it was laid rather than as something someone put
+  there.
 - **No visible edges** comes from *normals*, not from triangle count. Every
   sphere writes **radial** per-vertex normals and the marker material has
   `flatShading` off; turning it on throws them away and the pins come back

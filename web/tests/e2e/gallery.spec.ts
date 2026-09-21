@@ -80,24 +80,60 @@ const MODES = [
 
 /** The look every shot below is taken in unless it is a shot *of* a look.
  *
- * Deliberately **not** the app's default, which is Realistic: that page is
- * full-frame turbulence, which no PNG can compress, and it took a board
- * baseline from 30 KB to 650 KB — 21 MB over the gallery, in a repo whose whole
- * history is 17 MB. These shots are of the *boards*, so the cheapest, quietest
- * page is also the one a geometry regression shows up against most clearly.
- * Flat on light is that page. */
-const BASE_LOOK = { theme: "flat", scheme: "light" };
+ * Deliberately **not** the app's default: these shots are of the *boards*, so
+ * the quietest board is the one a geometry regression shows up against most
+ * clearly. Bright's full-strength shape colours (so a tiling's classes are
+ * legible) cut flat (plain plates — no relief, no gradient, no translucency
+ * between the board and the page), on light. */
+const BASE_LOOK = { theme: "bright", shape: "flat", scheme: "light" };
 
-/** Every other finished look: the three themes crossed with the two colour
- * schemes, less `BASE_LOOK`, which is already shot as `square-revealed.png`
- * and the `board-*.png` set. A second baseline of the same pixels under a
- * second name is one that can drift apart from its twin. */
-const LOOKS: [string, string][] = [
-  ["realistic", "light"],
-  ["realistic", "dark"],
-  ["flat", "dark"],
-  ["classic", "light"],
-  ["classic", "dark"],
+/** ...and **every** shot here is taken on a flat field, whatever its theme's
+ * page is really made of.
+ *
+ * Every theme carries a grain now — the axis split (v5) left no untextured
+ * palette, since the one theme that had a plain field was folded into Bright —
+ * and full-frame turbulence is the one thing a PNG cannot compress: measured, it
+ * takes a board baseline from 30 KB to 650 KB, which is 21 MB over this gallery
+ * in a repo whose whole history is 17 MB. So the page's own layers are turned
+ * off here and asserted where they cost nothing:
+ * `tests/e2e/settings.spec.ts` reads `--bg-texture` per theme, and
+ * `tests/unit/backgroundPattern.test.ts` pins the tiling drawn over it.
+ *
+ * `!important` in an author stylesheet beats the *inline* property `applyTheme`
+ * writes on the document element, which is the only way to reach it from
+ * outside the app. `--bg` and `--bg2` are left alone, so the field is still the
+ * theme's own colour — what goes is the noise. */
+const FLAT_PAGE = ":root { --bg-texture: none !important; --bg-pattern: none !important; }";
+
+/** Finished looks: one shot per theme per colour scheme, at the *default* cut,
+ * plus the two other cuts on the default theme. The full product is
+ * three-by-three-by-two and most of it would be a picture of a picture — a cut
+ * is the same cut whichever palette paints it, and a palette the same palette
+ * whichever cut wears it — so this is the cross rather than the cube. A second
+ * baseline of the same pixels under a second name is one that can drift apart
+ * from its twin, which is why `BASE_LOOK` is not repeated here. */
+const LOOKS: [string, string, string][] = [
+  ["bright", "classic", "light"],
+  ["bright", "classic", "dark"],
+  ["classic", "classic", "light"],
+  ["classic", "classic", "dark"],
+  ["sand", "classic", "light"],
+  ["sand", "classic", "dark"],
+  ["sand", "realistic", "light"],
+  ["sand", "flat", "light"],
+];
+
+/** The looks worth a second baseline on a **solid**, where a cut shows what a
+ * head-on plane cannot: its specular sheen, and what `albedo` pays back under
+ * real shading. So: every cut on the default theme, and the two other themes at
+ * the cut whose sheen is the loudest — in particular Classic, whose `albedo` is
+ * the theme's rather than the cut's and only reads on a curved surface. */
+const SOLID_LOOKS: [string, string, string][] = [
+  ["sand", "classic", "light"],
+  ["sand", "realistic", "light"],
+  ["sand", "flat", "light"],
+  ["classic", "realistic", "light"],
+  ["bright", "realistic", "dark"],
 ];
 
 test.describe("board gallery", () => {
@@ -113,10 +149,19 @@ test.describe("board gallery", () => {
       if (!localStorage.getItem("ms:settings")) {
         localStorage.setItem(
           "ms:settings",
-          JSON.stringify({ version: 4, ...look, seenHint: true }),
+          JSON.stringify({ version: 5, ...look, seenHint: true }),
         );
       }
     }, BASE_LOOK);
+    await page.addInitScript((css: string) => {
+      // At `DOMContentLoaded`, so `<head>` exists — an init script runs before
+      // the document does.
+      document.addEventListener("DOMContentLoaded", () => {
+        const style = document.createElement("style");
+        style.textContent = css;
+        document.head.append(style);
+      });
+    }, FLAT_PAGE);
   });
 
   for (const mode of MODES) {
@@ -148,21 +193,24 @@ test.describe("board gallery", () => {
   });
 
   // The same fixture in each look, so they are directly comparable with
-  // `square-revealed.png` above (which is `BASE_LOOK`, Flat on the light
-  // scheme) — and so a change to one shows up as exactly one changed baseline.
-  //
-  // A look is two settings now, so this is a *product*: every theme on the light
-  // scheme, and every theme on dark. A theme's cell style is read when a board's
-  // mesh is built, so both are stored *before* the app boots rather than
-  // switched afterwards.
-  for (const [style, scheme] of LOOKS) {
-    test(`revealed square in the ${style} theme, ${scheme}`, async ({ page }) => {
+  // `square-revealed.png` above (which is `BASE_LOOK`) — and so a change to one
+  // shows up as exactly one changed baseline. A cut and a theme's board colours
+  // are both read when a board's mesh is built, so the whole record is stored
+  // *before* the app boots rather than switched afterwards.
+  for (const [theme, shape, scheme] of LOOKS) {
+    test(`revealed square: ${theme} theme, ${shape} cells, ${scheme}`, async ({ page }) => {
       await page.addInitScript((look: string[]) => {
         localStorage.setItem(
           "ms:settings",
-          JSON.stringify({ version: 4, theme: look[0], scheme: look[1], seenHint: true }),
+          JSON.stringify({
+            version: 5,
+            theme: look[0],
+            shape: look[1],
+            scheme: look[2],
+            seenHint: true,
+          }),
         );
-      }, [style, scheme]);
+      }, [theme, shape, scheme]);
       await page.goto("/");
       await expect(page.locator("body[data-ready]")).toBeVisible();
       await page.evaluate(() => {
@@ -174,25 +222,33 @@ test.describe("board gallery", () => {
         ms.reveal("4,2");
       });
       await page.waitForTimeout(150);
-      await expect(page).toHaveScreenshot(`square-revealed-${style}-${scheme}.png`);
+      await expect(page).toHaveScreenshot(`square-revealed-${theme}-${shape}-${scheme}.png`);
     });
   }
 
-  // ...and on a solid, where a theme's cells show something else entirely: the
-  // plane is lit head-on, so a 3D board is the only place the finish
-  // (Realistic's specular sheen) and the paid-back albedo actually read.
-  for (const [style, scheme] of LOOKS) {
-    test(`sphere in the ${style} theme, ${scheme}`, async ({ page }) => {
+  // ...and on a solid, where the same cells show something else entirely: the
+  // plane is lit head-on, so a 3D board is the only place the finish (the domed
+  // cut's specular sheen) and the paid-back albedo actually read. That argument
+  // is about the *cut* and about `albedo`, not about the palette — so this is
+  // `SOLID_LOOKS` rather than the whole cross again.
+  for (const [theme, shape, scheme] of SOLID_LOOKS) {
+    test(`sphere: ${theme} theme, ${shape} cells, ${scheme}`, async ({ page }) => {
       await page.addInitScript((look: string[]) => {
         localStorage.setItem(
           "ms:settings",
-          JSON.stringify({ version: 4, theme: look[0], scheme: look[1], seenHint: true }),
+          JSON.stringify({
+            version: 5,
+            theme: look[0],
+            shape: look[1],
+            scheme: look[2],
+            seenHint: true,
+          }),
         );
-      }, [style, scheme]);
+      }, [theme, shape, scheme]);
       await page.goto("/?mode=sphere&difficulty=easy&seed=1");
       await expect(page.locator("body[data-ready]")).toBeVisible();
       await page.waitForTimeout(150);
-      await expect(page).toHaveScreenshot(`sphere-${style}-${scheme}.png`);
+      await expect(page).toHaveScreenshot(`sphere-${theme}-${shape}-${scheme}.png`);
     });
   }
 
@@ -240,7 +296,7 @@ test.describe("board gallery", () => {
     await expect(page).toHaveScreenshot("klein-scrolled.png", { mask: [timer] });
   });
 
-  test("a Realistic sphere's pins carry their resting ember", async ({ page }) => {
+  test("a domed sphere's pins carry their resting ember", async ({ page }) => {
     // The markers' own baseline: the standing pins, lit by nothing but the
     // glow's resting level. That ember is a *look* rather than a motion, so
     // unlike the wave it survives this suite's reduced-motion setting and is
@@ -251,7 +307,13 @@ test.describe("board gallery", () => {
     await page.addInitScript(() => {
       localStorage.setItem(
         "ms:settings",
-        JSON.stringify({ version: 4, theme: "realistic", scheme: "light", seenHint: true }),
+        JSON.stringify({
+          version: 5,
+          theme: "bright",
+          shape: "realistic",
+          scheme: "light",
+          seenHint: true,
+        }),
       );
     });
     await page.goto("/");
@@ -270,7 +332,7 @@ test.describe("board gallery", () => {
       for (const c of mines) ms.flag(c);
     });
     await page.waitForTimeout(150);
-    await expect(page).toHaveScreenshot("sphere-realistic-pins.png");
+    await expect(page).toHaveScreenshot("sphere-domed-pins.png");
   });
 
   test("sphere glyphs stay on the visible hemisphere", async ({ page }) => {

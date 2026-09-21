@@ -1,6 +1,7 @@
 import { clampVolume, DEFAULT_SOUND, DEFAULT_VOLUME, resolveSound } from "./audio/presets";
 import { hasDifficulty, screens } from "./config/screens";
 import { clampHoldMs, DEFAULT_HOLD_MS } from "./input/hold";
+import { DEFAULT_SHAPE, resolveShape } from "./render/cellStyle";
 import { readObject, storage } from "./storage";
 import {
   DEFAULT_SCHEME,
@@ -43,14 +44,20 @@ const LEGACY_KEYS = ["ms:settings:v1"];
 /** Bump when a field changes *meaning* (a rename, a different unit). Purely
  * additive fields need no bump: an old record simply lacks them and picks up
  * the default. `migrate` must handle every version below this one. */
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 
 export interface Settings {
-  /** A key in `THEME_KEYS` — how the board's cells are cut and what the page is
-   * made of (see ui/theme.ts). Until v3 this was a chrome palette alone, with a
-   * separate `cellStyle` beside it; until v4 it was that *and* the colour
-   * scheme, which is now `scheme` below. */
+  /** A key in `THEME_KEYS` — which palette the chrome paints with, what the
+   * page is made of, and what the board itself is coloured in (see
+   * ui/theme.ts). Until v3 this was a chrome palette alone, with a separate
+   * `cellStyle` beside it; until v4 it was that *and* the colour scheme, which
+   * is `scheme` below; until v5 it was that *and* the cut, which is `shape`. */
   theme: string;
+  /** A key in `SHAPE_KEYS` — how the board's cells are cut
+   * (render/cellStyle.ts `BOARD_SHAPES`). The two are composed into one
+   * `CellStyle` when a board's mesh is built, so this lands on the next board
+   * rather than on the one in play. */
+  shape: string;
   /** `"auto"`, `"light"` or `"dark"` — which palette the theme paints its
    * chrome with. `auto` follows the device's `prefers-color-scheme`, resolved
    * at paint time by `activeScheme`, the same way `animations: null` defers to
@@ -119,6 +126,7 @@ export interface Settings {
 
 export const DEFAULT_SETTINGS: Settings = {
   theme: DEFAULT_THEME,
+  shape: DEFAULT_SHAPE,
   scheme: DEFAULT_SCHEME,
   difficulty: screens.defaultDifficulty,
   animations: null,
@@ -169,6 +177,26 @@ const V3_THEMES: Record<string, string> = {
   realistic: "realistic",
 };
 
+/** The v4 default, written out for the same reason `V3_DEFAULT` is: the v3 ->
+ * v4 branch may only speak v4, and letting its fallback drift with the current
+ * default would re-aim every record that passes through it. */
+const V4_DEFAULT = "realistic";
+
+/** What a v4 `theme` (a palette *and* a cut) becomes now that the cut is its own
+ * setting: `[theme, shape]`.
+ *
+ * Realistic and Flat were one palette at two cuts and both become Bright; Sand
+ * and Flat Sand were another palette at the same two cuts and both become Sand;
+ * Classic was the third palette welded to the bevel, and keeps both. So nobody's
+ * board changes: every v4 look is still exactly one of the nine. */
+const V4_THEMES: Record<string, [string, string]> = {
+  realistic: ["bright", "realistic"],
+  flat: ["bright", "flat"],
+  classic: ["classic", "classic"],
+  sand: ["sand", "realistic"],
+  flatSand: ["sand", "flat"],
+};
+
 /** Bring a record written by an older build up to the current shape.
  *
  * v1 (theme + animations) -> v2 (adds difficulty) was purely additive, so there
@@ -186,9 +214,17 @@ const V3_THEMES: Record<string, string> = {
  * v3 -> v4 splits that theme in two: `theme` keeps the look and the new `scheme`
  * takes the colour. Light and Dark were one look on two palettes, so both become
  * Flat. The scheme itself is *not* carried over — the key is simply absent, and
- * an absent key is `auto`, so everyone comes out following their device. That is
- * a deliberate product call rather than a limitation: `auto` is the new default
- * and it is the setting most people would have picked had it existed.
+ * an absent key was `auto` then, so everyone came out following their device.
+ *
+ * v4 -> v5 splits it again, along the other seam: `theme` keeps the palette and
+ * the new `shape` takes the cut (`V4_THEMES`). Here the pair *is* carried over,
+ * unlike the scheme in v4, because every v4 look is still reachable and nobody's
+ * board should change under them. Note what is **not** done: a stored `scheme`
+ * is left exactly as it is, though the default has moved to `light`. Every v4
+ * record carries one (it is in `DEFAULT_SETTINGS`, so `saveSettings` always
+ * wrote it), so there is no telling "chose auto" from "never chose" — and
+ * switching a player on a dark device to a light page is the worse of the two
+ * mistakes. The new default reaches new records only.
  *
  * The branches run in **series**, not as alternatives: a v1 record passes
  * through both, so each may only speak the vocabulary of the version it is
@@ -206,7 +242,14 @@ function migrate(rec: Record<string, unknown>, from: number): Record<string, unk
   }
   if (from < 4) {
     const look = typeof rec["theme"] === "string" ? rec["theme"] : "";
-    rec = { ...rec, theme: Object.hasOwn(V3_THEMES, look) ? V3_THEMES[look]! : DEFAULT_THEME };
+    rec = { ...rec, theme: Object.hasOwn(V3_THEMES, look) ? V3_THEMES[look]! : V4_DEFAULT };
+  }
+  if (from < 5) {
+    const look = typeof rec["theme"] === "string" ? rec["theme"] : "";
+    const pair = Object.hasOwn(V4_THEMES, look) ? V4_THEMES[look]! : null;
+    rec = pair
+      ? { ...rec, theme: pair[0], shape: pair[1] }
+      : { ...rec, theme: DEFAULT_THEME, shape: DEFAULT_SHAPE };
   }
   return rec;
 }
@@ -234,6 +277,9 @@ export function loadSettings(): Settings {
     // A theme or difficulty that has since been removed (or was never valid)
     // falls back rather than propagating an unknown key into the UI.
     theme: resolveTheme(typeof rec["theme"] === "string" ? rec["theme"] : null),
+    // Same treatment again, and it doubles as the additive-field reader: a
+    // record from before the split has no `shape` and takes the default.
+    shape: resolveShape(typeof rec["shape"] === "string" ? rec["shape"] : null),
     // Same treatment, and it doubles as the additive-field reader: a record
     // from before the split has no `scheme` at all and lands on `auto`.
     scheme: resolveScheme(typeof rec["scheme"] === "string" ? rec["scheme"] : null),

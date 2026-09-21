@@ -1,12 +1,24 @@
 import type { BoardTint } from "./shapePalette";
 
-// How a cell is *cut* — the relief a tile is drawn with, and (for the one style
-// that asks for it) whether it is coloured by shape at all.
+// How a cell is *cut*, and what it is painted in — the two halves of a board's
+// look, and now two settings rather than one.
 //
-// A style is no longer a setting of its own: the **theme** names one (see
-// ui/theme.ts), so picking "Classic" or "Realistic" changes the chrome and the
-// board together rather than leaving the player to pair two lists by hand.
-// There is one table entry per theme, and the keys match the theme keys.
+//   * a **board shape** (`BOARD_SHAPES`) is the relief a tile is drawn with and
+//     the material it is made of: Classic's beveled button, Realistic's glass
+//     dome, Flat's plain plate. It is the player's `shape` setting.
+//   * a **theme** contributes a `BoardLook` (`BOARD_LOOKS`, keyed by the theme
+//     keys in ui/theme.ts) — whether the board is coloured by its shapes at all,
+//     how loudly, and the face its digits are set in. It is the player's `theme`
+//     setting, whose other half is the chrome palette and the page.
+//
+// They were one list of five entries until now, and that list was the two axes
+// tangled: Realistic and Flat were one palette at two cuts, Sand and Flat Sand
+// another palette at the same two cuts, and Classic a third palette welded to a
+// third cut. Six of the nine looks were unreachable. `CELL_STYLES` is now their
+// **product**, one entry per (shape, theme) pair keyed `"<shape>/<theme>"` and
+// built once at module load — so everything downstream still takes one string
+// key and one `CellStyle`, and the meshes, the session and the test seam did
+// not have to learn about the split.
 //
 // A cell is a stack of concentric loops of its own polygon: loop 0 is the
 // tile's outline on the board surface, each further loop is pulled in toward
@@ -14,7 +26,7 @@ import type { BoardTint } from "./shapePalette";
 // one is filled as the top face. Two loops is the classic beveled button; three
 // gives a shoulder the flat lighting reads as a rounded tile. Both board meshes
 // (flat PolygonBoard, 3D SolidBoard) build their geometry from these numbers,
-// so a style is one table entry rather than a change in two renderers.
+// so a shape is one table entry rather than a change in two renderers.
 //
 // The vertex count of a cell follows from the loop count — n * (3 + 6 * rings)
 // for an n-gon — so it is fixed when the mesh is built: `closed` and `open`
@@ -23,7 +35,7 @@ import type { BoardTint } from "./shapePalette";
 // asserts it, and a unit test sweeps every style.
 //
 // The active style is read once per board, when its mesh is built. Nothing
-// re-cuts a board in flight: the setting is only reachable from the settings
+// re-cuts a board in flight: both settings are only reachable from the settings
 // page, which lives in the menu, and the menu is only up when no game is.
 
 /** One loop of a cell's profile. `inset` is how much further in the loop sits
@@ -47,16 +59,21 @@ export interface CellProfile {
 }
 
 export interface CellStyle {
+  /** `"<shape>/<theme>"` — the pair this style was composed from, and the key
+   * `CELL_STYLES` holds it under. It is what a `GameSession` is handed and what
+   * `window.__ms.state().cellStyle` reports. */
   key: string;
-  label: string;
-  /** The settings row's one-line description. */
-  hint: string;
+  /** The two halves, kept beside the key so a mesh (or a test) can ask which
+   * cut and which colours it is drawing without parsing the key. */
+  shape: string;
+  theme: string;
   /** Flat boards: lit head-on, so relief has to be generous to read at all. */
   flat: CellProfile;
   /** 3D boards: lower relief, because the cells of a curved surface tilt
    * against each other and a tall plateau shingles over its neighbours at the
-   * silhouette. Two-sided surfaces (cylinder, Möbius, Klein) draw flat tiles
-   * whatever the style, so only `gap` reaches them. */
+   * silhouette. Two-sided surfaces (cylinder, Möbius, Klein) mirror this same
+   * profile on **both** faces, so a button reads as a button from either side
+   * (see `SolidBoard.writeGeometry`). */
   solid: CellProfile;
   /** Surface finish of the cell material — a low roughness reads as glossy
    * plastic under the fixed key light, a high one as matte. */
@@ -80,12 +97,11 @@ export interface CellStyle {
    * almost nothing to say.
    *
    * How the falloff is laid down depends on the cell. A cell with relief ramps
-   * it over the profile's loops (`vertexShade` below); the flat tiles of a
-   * two-sided surface (cylinder, Möbius, Klein) have no loops and are cut by
-   * the Klein clip besides, so theirs is measured off the geometry instead
-   * (`radialFalloff` in solidBoard.ts). Either way it is the same bead, which is
-   * what those surfaces need most — a flat tile with no relief has nothing else
-   * to shade it. */
+   * it over the profile's loops (`vertexShade` below), and a two-sided cell
+   * does the same on each of its two mirrored halves. The one exception is a
+   * cell the Klein clip cuts: it keeps a flat tile with no loops for the ramp to
+   * hang on, so its gradient is measured off the geometry instead
+   * (`radialFalloff` in solidBoard.ts). */
   shade?: { center: number; rim: number };
   /** The same gradient for an **opened** cell, when the two states should not be
    * made of the same material. Defaults to `shade`.
@@ -162,8 +178,49 @@ export interface CellStyle {
    * several hundred more vertices. Every board you can *turn* does, the
    * two-sided surfaces (cylinder, Möbius strip, Klein bottle) included — those
    * have no consistent outward normal, so `SolidBoard` stands one marker on each
-   * face rather than picking a side. */
+   * of their two faces rather than picking a side. */
   solidMarkers?: true;
+}
+
+/** One **board shape**: everything in a `CellStyle` that is about the cut and
+ * the material rather than the colour, plus what the picker calls it.
+ *
+ * The line between the two halves is the one `finishStyle` already draws for
+ * the player's own two switches: relief, material, gradients and the marks the
+ * game draws on a tile are the shape's; `monochrome`, `boardTint` and
+ * `digitFont` are the theme's. `albedo` sits on this side because it pays back
+ * what the *lighting* takes, which is a fact about how a cut is shaded — but a
+ * theme may override it, and one does (see `BOARD_LOOKS.classic`). */
+export interface BoardShape
+  extends Omit<CellStyle, "key" | "shape" | "theme" | "monochrome" | "boardTint" | "digitFont"> {
+  key: string;
+  label: string;
+  /** The picker row's one-line description. */
+  hint: string;
+}
+
+/** The colour half a **theme** lends the board, keyed by theme in
+ * `BOARD_LOOKS`. Everything here is a *colour* decision, so turning it into its
+ * own axis is what makes the grey classic board reachable at any cut and the
+ * sand tint reachable at any cut.
+ *
+ * The three overrides at the end exist because two of the five looks this
+ * replaces were tuned as wholes rather than as a cut plus a palette, and a
+ * split that quietly retuned them would not be a split. They only ever adjust a
+ * value the shape already declares — a theme cannot *give* a flat plate a dome
+ * gradient or a translucent floor. */
+export interface BoardLook {
+  monochrome?: true;
+  boardTint?: BoardTint;
+  digitFont?: string;
+  /** Replaces the shape's `albedo`, on every board this theme paints. */
+  albedo?: number;
+  /** Replaces the shape's `openAlpha`, where it has one. `null` makes the
+   * opened cells opaque instead. */
+  openAlpha?: number | null;
+  /** Replaces the shape's across-the-tile gradients, where it has them. */
+  shade?: { center: number; rim: number };
+  openShade?: { center: number; rim: number };
 }
 
 /** The classic tile: a raised beveled button while closed, re-cut as a recess
@@ -172,17 +229,16 @@ export interface CellStyle {
  * makes open and closed cells tell apart at a glance on a flat board, where
  * every top face shades identically and colour alone would have to carry it.
  *
- * And it is **gray**: the classic theme is the 1990s board, which never had a
- * colour on it but the numbers. That is what `monochrome` is for — the shape
- * colour code is switched off for this style, so a board of hexagons and one of
- * squares are the same gray, exactly as the original was. Nothing is lost by
- * it: the relief is doing the whole job of telling closed from opened here, and
- * that is the classic board's own idiom. */
-const CLASSIC: CellStyle = {
+ * What it is **not** any more is grey: that is the classic *theme*
+ * (`BOARD_LOOKS.classic`), and the two used to be one entry. The 1990s board is
+ * the bevel and the grey together, and it still is — but the bevel was the only
+ * thing here that was ever about the cut, and welding the grey to it meant no
+ * other palette could have a beveled board and this one could have no other
+ * cut. */
+const CLASSIC_SHAPE: BoardShape = {
   key: "classic",
   label: "Classic",
-  hint: "Gray beveled buttons that sink when opened",
-  monochrome: true,
+  hint: "Beveled buttons that sink when opened",
   flatMine: true,
   flat: {
     gap: 0.04,
@@ -219,10 +275,15 @@ const CLASSIC: CellStyle = {
  * read as laid on the page rather than cut into a panel. Closed and opened
  * cells are then told apart by colour alone — which is exactly what the wide
  * hidden/opened step in the palette is for. */
-const FLAT: CellStyle = {
+const FLAT_SHAPE: BoardShape = {
   key: "flat",
   label: "Flat",
   hint: "Unlit plates in flat colour, wide gaps",
+  // A drawn mark rather than the modelled sea mine, on the same argument
+  // Classic makes: a miniature bomb standing on a plain plate is a piece of
+  // another vocabulary. `flatMine` follows the *cut* and nothing else, so the
+  // two flat-looking shapes draw it and the dome keeps the model.
+  flatMine: true,
   flat: {
     gap: 0.1,
     // A hair of relief, not for the look but so the two states are never
@@ -269,10 +330,10 @@ const FLAT: CellStyle = {
  * what ties the board to the theme's texture instead of leaving it floating on
  * top; kept high enough that the number on it stays the most contrasted thing
  * in the cell. */
-const REALISTIC: CellStyle = {
+const REALISTIC_SHAPE: BoardShape = {
   key: "realistic",
   label: "Realistic",
-  hint: "Glass beads over a textured page",
+  hint: "Glass beads, domed and translucent when opened",
   flat: {
     gap: 0.05,
     closed: [
@@ -329,31 +390,40 @@ const REALISTIC: CellStyle = {
   solidMarkers: true,
 };
 
-/** Sand: Realistic's cut, turned down until the numbers are the loudest thing
- * on the board.
+/** The three cuts, in the order the shape picker lists them. */
+export const BOARD_SHAPES: Record<string, BoardShape> = {
+  classic: CLASSIC_SHAPE,
+  realistic: REALISTIC_SHAPE,
+  flat: FLAT_SHAPE,
+};
+
+export const SHAPE_KEYS: readonly string[] = Object.keys(BOARD_SHAPES);
+
+/** The cut the app boots into. The beveled button is the one every player
+ * already knows a minesweeper by, and it is the only cut whose two states are
+ * told apart by *relief* rather than by colour alone — so it is the shape that
+ * reads on any of the three palettes. */
+export const DEFAULT_SHAPE = "classic";
+
+/** The shape key to actually use for `key` — `Object.hasOwn`, never `in`, since
+ * it arrives from a stored record and `"toString"` is not a board shape. */
+export function resolveShape(key: string | null | undefined): string {
+  return key != null && Object.hasOwn(BOARD_SHAPES, key) ? key : DEFAULT_SHAPE;
+}
+
+export function boardShape(key: string | null | undefined): BoardShape {
+  return BOARD_SHAPES[resolveShape(key)]!;
+}
+
+/** Sand's board tint, and the face its digits are baked in.
  *
- * The relief is Realistic's exactly — the same five-loop dome closed, the same
- * flat pan opened, the same centre-lit falloff — because that profile is what
- * makes a head-on board read as tiles at all, and it was never the part that was
- * shouting. What changes is everything painted *on* it:
- *
- *   * `boardTint` takes the shape colour to about a quarter chroma and sits the
- *     closed tone slightly deeper. The shape code still runs, so a hexagon board
- *     is still greener than a square one — but at a strength you notice when you
- *     compare two boards rather than one that competes with the digit on top of
- *     it. On a mixed tiling (the rhombitrihexagonal 3.4.6.4 this was drawn
- *     against puts triangles, squares and hexagons on one board) full-strength
- *     hue is three colours at once and the numbers lose.
- *   * `openAlpha` is a hair lower than Realistic's, because what shows through is
- *     a warm textured page rather than a cool one, and the grain reads stronger
- *     through the same opacity.
- *   * `digitFont`: Space Grotesk for the digits, which on a board this quiet are
- *     the design.
- *
- * No `solidMarkers`: the flag is the one drawing every style flies now, pin or
- * no pin. */
-/** Sand's board tint, shared with Flat Sand — the two boards are the same
- * colours at two levels of detail, so the numbers are stated once. */
+ * `boardTint` takes the shape colour to about a quarter chroma and sits the
+ * closed tone slightly deeper. The shape code still runs, so a hexagon board is
+ * still greener than a square one — but at a strength you notice when you
+ * compare two boards rather than one that competes with the digit on top of it.
+ * On a mixed tiling (the rhombitrihexagonal 3.4.6.4 this was drawn against puts
+ * triangles, squares and hexagons on one board) full-strength hue is three
+ * colours at once and the numbers lose. */
 const SAND_TINT: BoardTint = {
   hiddenLightness: -0.02,
   chroma: { hidden: 0.04, revealed: 0.014 },
@@ -361,93 +431,109 @@ const SAND_TINT: BoardTint = {
   cuspBlend: 0,
 };
 
-/** ...and the face their digits are baked in, likewise shared. */
 const SAND_DIGITS = '"Space Grotesk", "Rubik", sans-serif';
 
-const SAND: CellStyle = {
-  key: "sand",
-  label: "Sand",
-  hint: "Quiet tiles on a warm page, numbers doing the talking",
-  flat: REALISTIC.flat,
-  solid: REALISTIC.solid,
-  material: { roughness: 0.16, metalness: 0.1 },
-  unlit: true,
-  // Matching Realistic's dome, with the rim a touch less deep: the tint below
-  // has already taken lightness out of the closed tone, and stacking the full
-  // falloff on top of that closes the tiles up.
-  shade: { center: 1.06, rim: 0.72 },
-  openShade: { center: 0.99, rim: 0.92 },
-  winGlow: 0.12,
-  albedo: 1.5,
-  openAlpha: 0.72,
-  boardTint: SAND_TINT,
-  digitFont: SAND_DIGITS,
+/** What each theme paints the board in, keyed by the theme keys in
+ * `ui/theme.ts`. Colour only: the cut is the player's other setting.
+ *
+ * This is the half of the old five-entry table that was never about relief, and
+ * pulling it out is what makes the nine looks reachable — a grey beveled board
+ * was the only grey board there was, and a sand-tinted one could only be had at
+ * two of the three cuts. */
+export const BOARD_LOOKS: Record<string, BoardLook> = {
+  // The board's own shape colours at full strength, and nothing else to say.
+  bright: {},
+  // The 1990s board: no colour on it but the numbers. `monochrome` switches the
+  // shape colour code off, so a board of hexagons and one of squares are the
+  // same grey, exactly as the original was — and the relief (whichever cut is
+  // chosen) does the whole job of telling closed from opened, which is that
+  // board's own idiom.
+  classic: {
+    monochrome: true,
+    // The mono tones (`SHAPE_PALETTE.board.mono`) are a third darker than the
+    // colour ones and were chosen against a fully paid-back shading, so the
+    // payback travels with them rather than with the cut: at a coloured board's
+    // 1.5 this grey arrives as charcoal on every lit board. `1 / 0.3246`,
+    // measured on a flat board's head-on top face — see `CellStyle.albedo`.
+    albedo: 3.08,
+    // ...and opaque, whichever cut is chosen. A translucent grey tile showing a
+    // grain through it is a different board from the one this is quoting, and
+    // the classic page is not a texture the board was ever meant to sit *in*.
+    openAlpha: null,
+  },
+  // Sand: the board turned down until the numbers are the loudest thing on it.
+  sand: {
+    boardTint: SAND_TINT,
+    // Space Grotesk for the digits, which on a board this quiet are the design,
+    // and the face the chrome around it is already set in (the `[data-theme]`
+    // block in styles.css).
+    digitFont: SAND_DIGITS,
+    // A hair lower than the dome's own, because what shows through is a warm
+    // textured page rather than a cool one, and the grain reads stronger
+    // through the same opacity.
+    openAlpha: 0.72,
+    // ...and the rim a touch less deep, because the tint above has already
+    // taken lightness out of the closed tone and stacking the full falloff on
+    // top of that closes the tiles up.
+    shade: { center: 1.06, rim: 0.72 },
+    openShade: { center: 0.99, rim: 0.92 },
+  },
 };
 
-/** Flat Sand: Sand's board, cut flat.
- *
- * Every tone here is Sand's — the same quarter-chroma `boardTint` at the same
- * closed lightness, so a tile of this board and the same tile of Sand's are the
- * *same colour*, and a hex board still reads greener than a square one at the
- * same whisper. What is dropped is the detail Sand paints that colour onto: the
- * five-loop dome, the centre-lit falloff across each tile and the translucency
- * of an opened one all go, and Flat's plates take their place — no relief, no
- * gradient, opaque, with the wide gap letting the warm page between them.
- *
- * That leaves the palette's own hidden/opened step doing the whole job of
- * telling closed from opened, which is exactly what Flat already asks of it.
- * The step survives the tint intact: `boardTint` replaces the *chroma* and
- * nudges the closed lightness, while the wide lightness anchors it runs between
- * (`SHAPE_PALETTE.board.flat`) are untouched.
- *
- * Sand's one non-relief mark comes too, because it is not a detail of the cut
- * and is the same argument at this chroma: `flatMine` — a filled disc and eight
- * spikes rather than the modelled sea mine, since a modelled miniature is
- * clutter on a board turned down this far, where a disc and spikes read as a
- * mark. (The flag has no such pairing any more: `glyphAtlas.drawFlag` bakes the
- * same drawing for every style.) `digitFont`: Space Grotesk is the face the
- * chrome around this board is already set in (the `[data-theme]` block in
- * styles.css names both Sand themes), and on a quiet board the numbers are the
- * design. */
-const FLAT_SAND: CellStyle = {
-  key: "flatSand",
-  label: "Flat Sand",
-  hint: "Sand's quiet tiles, cut flat",
-  // The cut, entire: the hair of relief that keeps the two states off each
-  // other where a board wraps, and the solid's wide grout.
-  flat: FLAT.flat,
-  solid: FLAT.solid,
-  material: { roughness: 0.7, metalness: 0 },
-  unlit: true,
-  winGlow: 0.12,
-  albedo: 1.5,
-  // ...and the colour, entire — the same constant Sand names, so the two boards
-  // cannot drift apart on a retune of either.
-  boardTint: SAND_TINT,
-  flatMine: true,
-  digitFont: SAND_DIGITS,
-};
+/** The key `CELL_STYLES` holds the (shape, theme) pair under. Both halves are
+ * resolved, so a key built from a stored record is always one the table has. */
+export function boardStyleKey(
+  shape: string | null | undefined,
+  theme: string | null | undefined,
+): string {
+  return `${resolveShape(shape)}/${theme != null && Object.hasOwn(BOARD_LOOKS, theme) ? theme : DEFAULT_LOOK}`;
+}
 
-/** The styles, one per theme (`ui/theme.ts` names them by these keys), which is
- * why this is still a table of its own rather than a field inlined into each
- * theme. */
-export const CELL_STYLES: Record<string, CellStyle> = {
-  flat: FLAT,
-  classic: CLASSIC,
-  realistic: REALISTIC,
-  sand: SAND,
-  flatSand: FLAT_SAND,
-};
+/** The theme whose look is used when a key names none. Written out rather than
+ * imported from ui/theme.ts, which imports *this* module — and it is the same
+ * constant either way, pinned by a unit test. */
+const DEFAULT_LOOK = "sand";
+
+/** One cut painted in one theme's colours. The overrides only ever adjust what
+ * the shape already declares: a theme cannot give a flat plate a dome gradient
+ * or a translucent floor, so `sand` on the flat cut is simply the tint and the
+ * digits. */
+function composeStyle(shape: BoardShape, theme: string, look: BoardLook): CellStyle {
+  const { key, label: _label, hint: _hint, ...cut } = shape;
+  const style: CellStyle = { ...cut, key: `${key}/${theme}`, shape: key, theme };
+  if (look.monochrome) style.monochrome = true;
+  if (look.boardTint) style.boardTint = look.boardTint;
+  if (look.digitFont !== undefined) style.digitFont = look.digitFont;
+  if (look.albedo !== undefined) style.albedo = look.albedo;
+  if (look.shade && style.shade) style.shade = { ...look.shade };
+  if (look.openShade && style.openShade) style.openShade = { ...look.openShade };
+  if (look.openAlpha === null) delete style.openAlpha;
+  else if (look.openAlpha !== undefined && style.openAlpha !== undefined) {
+    style.openAlpha = look.openAlpha;
+  }
+  return style;
+}
+
+/** Every (shape, theme) pair, built once. A board is cut from one of these, and
+ * `key` is what a `GameSession` carries and the test seam reports. */
+export const CELL_STYLES: Record<string, CellStyle> = Object.fromEntries(
+  SHAPE_KEYS.flatMap((s) =>
+    Object.entries(BOARD_LOOKS).map(([t, look]) => {
+      const style = composeStyle(BOARD_SHAPES[s]!, t, look);
+      return [style.key, style] as const;
+    }),
+  ),
+);
 
 export const CELL_STYLE_KEYS: readonly string[] = Object.keys(CELL_STYLES);
 
-/** The style a board is drawn in when nothing says otherwise — the one the
- * default (Light) theme names. */
-export const DEFAULT_CELL_STYLE = "flat";
+/** The style a board is drawn in when nothing says otherwise — the pair the
+ * shipped defaults name (`DEFAULT_SHAPE`, and Sand in ui/theme.ts). */
+export const DEFAULT_CELL_STYLE = boardStyleKey(DEFAULT_SHAPE, DEFAULT_LOOK);
 
 /** The named style, or the default for anything this build does not know —
- * `Object.hasOwn`, never `in`, since the key can arrive from a theme record
- * written by another build (and `"toString"` is not a cell style). */
+ * `Object.hasOwn`, never `in`, since the key can arrive from a record written
+ * by another build (and `"toString"` is not a cell style). */
 export function resolveCellStyle(key: string | null | undefined): string {
   return key != null && Object.hasOwn(CELL_STYLES, key) ? key : DEFAULT_CELL_STYLE;
 }
