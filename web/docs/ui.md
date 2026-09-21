@@ -213,38 +213,48 @@ twice that width, and "Hypersweeper" is a single unbreakable word that then does
 not fit on one line on a narrow phone. A third button means picking a side and
 adjusting the shared `--menu-header-actions` width, which is what the empty side
 is sized from. Both look settings are pages below settings in the same way
-(`Menu.showThemePicker`, `Menu.showSchemePicker`): settings shows a Theme row and
-a Colour scheme row naming the current values, and the pickers live one level
-down, which keeps the settings page short enough to read at a glance. Two pages
-rather than one list of every combination — the axes are independent, so a single
-picker would be nine rows that all have to be read to find the two facts they
-encode.
+(`Menu.showThemePicker`, `Menu.showShapePicker`, `Menu.showSchemePicker`):
+settings shows a Theme row, a Board shape row and a Colour scheme row naming the
+current values, and the pickers live one level down, which keeps the settings
+page short enough to read at a glance. Three pages rather than one list of every
+combination — the axes are independent, so a single picker would be twenty-seven
+rows that all have to be read to find the three facts they encode.
 
-**Themes and the colour scheme.** The look is **two** settings, on two axes that
-have nothing to say to each other:
+**Themes, shapes and the colour scheme.** The look is **three** settings, on
+three axes that have nothing to say to each other:
 
-- a **theme** — how the board's cells are cut, what the page behind them is made
-  of, and (on Realistic) whether a flag and a mine are billboards or real models
-  (see "3D markers" in [`render.md`](render.md)). Five of them: **Realistic**
-  (the default), **Flat**, **Classic**, **Sand** and **Flat Sand**, one per
-  entry in `render/cellStyle.ts`. The last two are the same look at two levels
-  of detail: identical chrome (the same palettes, page, glyphs, faces and
-  corners — the `[data-theme]` block at the end of `styles.css` names both keys)
-  and identical board *colours* (both cell styles name the same tint constant),
-  differing only in the cut. Flat Sand drops Sand's dome, its across-the-tile
-  gradient and its translucent opened cells for plain opaque plates.
-- a **colour scheme** — which palette the chrome paints with. **Auto** (the
-  default; the device's own `prefers-color-scheme`), **Light**, **Dark**.
+- a **board shape** — how a cell is cut, and what it is made of. Three of them,
+  one per entry in `BOARD_SHAPES` (`render/cellStyle.ts`): **Classic** (the
+  1990s beveled button, the one cut that is *lit* on a flat board, so its
+  highlight and shadow invert when a cell opens), **Realistic** (a five-loop
+  glass dome, a centre-lit gradient, translucent opened cells, and real models
+  rather than billboards for a flag and a mine — see "3D markers" in
+  [`render.md`](render.md)) and **Flat** (unlit plates with a wide gap and no
+  relief). The shipped default is Classic.
+- a **theme** — what the page behind the board is made of, which palette the
+  chrome paints with, and what the board itself is coloured in (`BOARD_LOOKS`,
+  keyed by the theme key). Three of them: **Bright** (the shape colours at full
+  strength, on the woven, vignetted page — the only theme with a tiling pattern
+  to draw), **Classic** (grey at every cut, opaque, on a cool grey page) and
+  **Sand** (the shape colours at about a quarter chroma, Space Grotesk digits,
+  on a warm page). The shipped default is Sand.
+- a **colour scheme** — which half of the theme's palette pair the chrome paints
+  with. **Light** (the default), **Dark**, **Auto** (the device's own
+  `prefers-color-scheme`).
 
-They were one setting until v4, and the four themes it offered — Light, Dark,
-Classic, Realistic — were the two axes tangled. Light and Dark were the *same*
-look (both cut with the `flat` style, neither textured) on two palettes, while
-Classic and Realistic were two looks with no dark form at all; so the glass tiles
-on a dark page were unreachable, and nothing in the app knew what the device
-preferred. Split, every combination exists.
+The first two were one setting of five entries until v5, and that list was the
+two axes tangled: Realistic and Flat were one palette at two cuts, Sand and Flat
+Sand another palette at the same two cuts, and Classic a third palette welded to
+a third cut. So six of the nine looks were unreachable — a grey board could only
+be a beveled one, and a beveled board could only be grey. The colour scheme came
+out of the same tangle at v4, when Light and Dark turned out to be one look on
+two palettes. Split three ways, every combination exists, and
+`render/cellStyle.ts` composes the pair into the one `CellStyle` a mesh is built
+from (keyed `"<shape>/<theme>"`).
 
-Both lists are declared in `src/ui/theme.ts`, not in `data/ui/screens.json`. The
-distinction matters:
+The theme and scheme lists are declared in `src/ui/theme.ts` and the shape list
+in `src/render/cellStyle.ts`, not in `data/ui/screens.json`. The distinction
+matters:
 
 - The eight **palettes** are still shared config (`data/ui/screens.json` under
   `themes`; six ported from the pygame `THEMES` registry in `minesweeper/gui.py`,
@@ -253,14 +263,16 @@ distinction matters:
   at a time — `Theme.palette` is a `{light, dark}` pair — and never adds a colour
   to one. The two web-only entries are exactly the dark halves the pygame presets
   could never supply: `ios`/`dark` and `classic`/`classicDark`.
-- The **lists** are web-only because pygame has neither cell styles, page
+- The **lists** are web-only because pygame has neither cell shapes, page
   textures nor a dark mode, so its six presets could never be these axes. That is
   the same split the menu already has (`catalog.ts`'s web-menu section).
 
 `applyTheme(theme, schemePref, mode?)` writes the whole set of CSS custom
 properties onto `document.documentElement` — the `:root` block in `styles.css` is
-only the *boot* default (Realistic on light) and must stay in step with it, as
-must the `prefers-color-scheme: dark` block beside it. Things worth knowing:
+only the *boot* default (Sand on light — including its `--ui-font`, since that
+theme names a face of its own) and must stay in step with it, as must the
+`prefers-color-scheme: dark` block beside it, which now covers the player who
+has *chosen* auto or dark rather than the default. Things worth knowing:
 
 - **`auto` is resolved at paint time, and it is live.** `activeScheme` reads
   `matchMedia("(prefers-color-scheme: dark)")` exactly as `animationsEnabled`
@@ -273,26 +285,41 @@ must the `prefers-color-scheme: dark` block beside it. Things worth knowing:
   already shipped, a light-toned board on a dark page — so `shapePalette.ts`,
   `glyphAtlas.ts` and the renderer's lighting take no scheme argument at all.
   Classic dark is a black page with the same gray beveled board on it.
-- **The board is themed only as far as a cell style says.** The shape colour code
-  (`shapePalette.ts`) still owns the hues, and exactly one style switches it off:
-  `classic`, whose `monochrome` flag draws the board in its plain grays. No theme
-  reaches into `shapePalette.ts` or `glyphAtlas.ts` for a colour.
-- **The gallery is shot in Flat on light, not in the default.** Realistic's page
-  is full-frame turbulence, which no PNG compresses: pointing the `board-*.png`
-  set at the default took the baselines from 30 KB each to 650 KB, 21 MB over the
-  gallery, in a repo whose whole history is 17 MB. `BASE_LOOK` in
-  `gallery.spec.ts` pins the quiet page instead — which is also the one a
-  *geometry* regression, what those shots are for, shows up against most
-  clearly — and the five `LOOKS` shots cover the rest of the product.
-- **A theme's board half lands on the next board; a scheme lands whole.** A cell
-  style fixes the mesh's vertex layout, so nothing is re-cut in flight and the
-  theme picker's footer says so. A scheme needs no new mesh, so it applies to the
-  board already in play — which is why the scheme page carries no footer.
-- **An unknown theme key falls back to Realistic** through `resolveTheme`, which
-  uses `Object.hasOwn` for the same reason `link.ts` does; `light` and `dark`
-  are *aliases* onto Flat rather than strangers, since both cut their cells that
-  way. `resolveScheme` is the same shape and falls back to `auto`. Those are also
-  the safety net under the v3→v4 migration below.
+- **The board is themed only as far as a `BoardLook` says.** The shape colour
+  code (`shapePalette.ts`) still owns the hues, and exactly one theme switches it
+  off: Classic, whose `monochrome` flag draws the board in its plain grays at
+  every cut. No theme reaches into `shapePalette.ts` or `glyphAtlas.ts` for a
+  colour of its own.
+- **A look's `albedo` travels with the *colours*, not the cut.** The classic
+  bevel is the one cut that is lit on a flat board, so it pays back what the
+  shading takes (`1 / 0.3246 ≈ 3.08`, measured); and the Classic theme's mono
+  tones are a third darker than the colour ones and were chosen against the same
+  payback, so that theme overrides the albedo at *every* cut. Between them, the
+  five looks this replaces land exactly where they did.
+- **The gallery flattens the page, on every shot.** Every theme carries a grain
+  now — the axis split left no untextured palette, since the one theme that had
+  a plain field was folded into Bright — and full-frame turbulence is the one
+  thing a PNG cannot compress: measured, it takes a board baseline from 30 KB to
+  650 KB, which is 21 MB over the gallery in a repo whose whole history is
+  17 MB. So `gallery.spec.ts` injects `--bg-texture: none !important` (an author
+  `!important` is the only thing that beats the property `applyTheme` writes
+  inline) and the page's own layers are asserted where they cost nothing:
+  `settings.spec.ts` reads `--bg-texture` per theme, and
+  `tests/unit/backgroundPattern.test.ts` pins the tiling drawn over it.
+  `BASE_LOOK` is then the quietest *board* — Bright's full-strength shape
+  colours cut flat, which is what a geometry regression shows up against most
+  clearly — and `LOOKS` / `SOLID_LOOKS` cover the rest of the product.
+- **The theme's board half and the shape both land on the next board; a scheme
+  lands whole.** A cut fixes the mesh's vertex layout and a board's colours are
+  written into its buffers, so nothing is re-cut or repainted in flight and both
+  pickers' footers say so. A scheme needs no new mesh, so it applies to the board
+  already in play — which is why the scheme page carries no footer.
+- **An unknown theme key falls back to Sand** through `resolveTheme`, which uses
+  `Object.hasOwn` for the same reason `link.ts` does. The folded-away keys are
+  *aliases* onto the palette they wore rather than strangers: `realistic`,
+  `flat`, `light` and `dark` onto Bright, `flatSand` onto Sand. `resolveShape`
+  and `resolveScheme` are the same shape. Those are also the safety net under the
+  migrations below.
 - **The WebGL canvas is transparent** (`alpha: true`, clear alpha 0), so the
   field around the board is the *page* background. That is what makes the glass
   theme's gradient show and means a theme needs no renderer call at all. Do not
@@ -320,17 +347,17 @@ the JSON following.
 
 ### The page follows the board's tiling
 
-Realistic's page is not one texture: behind the grain it carries **the board's
-own tiling**, drawn very small and very faint (`src/ui/backgroundPattern.ts`).
-Open `torustrihex` and the paper behind it is trihexagonal; open `kleincairo`
-and it is Cairo pentagons. On Realistic the opened cells are translucent, so
-that page is what shows *through* the board as well as around it.
+Bright's page is not one texture: behind the grain it carries **the board's own
+tiling**, drawn very small and very faint (`src/ui/backgroundPattern.ts`). Open
+`torustrihex` and the paper behind it is trihexagonal; open `kleincairo` and it
+is Cairo pentagons. Cut with the domed shape the opened cells are translucent,
+so that page is what shows *through* the board as well as around it.
 
 It is **opt-in**: Settings › Appearance › **Custom backgrounds**, off by
 default. The row sits beside Theme rather than under Behaviour (this is what the
 page is made of, not what the game does) and is shown whatever theme is active,
-with the hint saying that only Realistic has a pattern to draw — better than a
-row that appears and disappears with the theme.
+with the hint saying that only Bright has a pattern to draw — better than a row
+that appears and disappears with the theme.
 
 `patternLayer(mode)` returns one CSS `background-image` layer — an inline SVG
 data URI, because the packaged builds assert the bundle fetches nothing. It goes
@@ -414,7 +441,7 @@ menu is in anyway.
   a plain square grid.
 - **Screenshots cannot see it.** A 7%-alpha hairline moves a pixel by about
   0.05, under Playwright's default per-pixel `threshold` of 0.2, so every
-  Realistic baseline keeps passing whether the pattern renders or not — and
+  Bright baseline keeps passing whether the pattern renders or not — and
   `--update-snapshots` will not rewrite a baseline that passes. The e2e
   assertions read `--bg-pattern` instead; `tests/unit/backgroundPattern.test.ts`
   pins the geometry (every mode classified, tiles seamless under a one-tile
@@ -433,23 +460,27 @@ menu is in anyway.
 - **The pentaflake is a compromise.** Regular pentagons do not tile the plane —
   that is exactly why that board is a fractal with gnomon-shaped holes — so its
   page is the Cairo pentagonal tiling, the pentagon tiling that does.
-- **A theme may quiet the menu icons, and two do.** `Theme.icons` carries an
+- **A theme may repaint the menu icons, and two do.** `Theme.icons` carries an
   `IconTint` (how vivid the shape-derived colours are drawn, and at what
-  lightness) and a `plain` ramp for the non-tile art. Classic and Sand share one
-  register, `QUIET_ICON_TINT` — one lightness for every hue so a red row and a
-  green row weigh the same in a list, at about 60% of the chroma to hand. Classic
-  was drawn nearly gray, at a *quarter* of the chroma, on the argument that its
-  board carries no colour either; in the hand that read as the icons having been
-  switched off rather than turned down, and the menu is where a player tells one
-  board from another. The two still differ in `plain`: Sand's sage against
-  Classic's ink, since that ramp is hairlines and frames rather than anything a
-  board is picked by. The hue is never touched by either — that is the thread
-  tying a menu row to the board it opens.
-- **Only Realistic is patterned** (`Theme.patterned`). The settings swatches
-  call `themeVars` with the texture and no pattern, so they show the theme
-  rather than whatever board was last open; keep it that way.
+  lightness) and a `plain` ramp for the non-tile art. Sand takes
+  `QUIET_ICON_TINT` — one lightness for every hue so a red row and a green row
+  weigh the same in a list, at about 60% of the chroma to hand. Classic takes
+  `GREY_ICON_TINT`, which is the same lightness at **no chroma at all**: its
+  board is grey at every cut, so a row of coloured glyphs above it announces that
+  the chrome and the board were designed separately, and a row is read by its
+  drawing (a patch of the real tiling) rather than by its hue. The two also
+  differ in `plain`: Sand's sage against Classic's ink, since that ramp is
+  hairlines and frames rather than anything a board is picked by. The *hue* is
+  never overridden by either — Sand's rows keep the thread tying them to the
+  board they open, and Classic's have no hue left to keep.
+- **Only Bright is patterned** (`Theme.patterned`). The settings swatches call
+  `themeVars` with the texture and no pattern, so they show the theme rather
+  than whatever board was last open; keep it that way. Their *tiles* are the
+  other half: the `--tile-*` custom properties a theme's `[data-theme]` block in
+  `styles.css` declares, worn by whichever `[data-shape]` rule the swatch
+  carries — the same two-halves composition the real board gets, done in CSS.
 
-**The v2 → v3 → v4 migrations.** Until v3, `theme` named a chrome palette and
+**The v2 → v3 → v4 → v5 migrations.** Until v3, `theme` named a chrome palette and
 `cellStyle` sat beside it as a second setting. `migrate` in `settings.ts` reads
 the **pair** — not each field on its own — because only the pair says what look a
 player had chosen: a palette a v3 theme is named after (`classic`, `dark`) wins
@@ -461,50 +492,59 @@ should find its setting intact.
 
 v4 splits that theme in two: `theme` keeps the look and the new `scheme` takes
 the colour. Light and Dark were one look on two palettes, so both become Flat.
-The scheme is deliberately **not** carried over — the key is simply absent, and an
-absent key is `auto` — so everyone comes out following their device, which is the
-new default and what most people would have chosen had it existed.
+The scheme is deliberately **not** carried over — the key is simply absent, so a
+v3 record takes whatever the current default is.
 
-Two things about the pair of branches. They run in **series**, not as
-alternatives: a v1 record passes through both, so each may only speak the
-vocabulary of the version it upgrades *to*. And that is why the v2 branch falls
-back to a written-out `V3_DEFAULT = "light"` rather than to `DEFAULT_THEME` —
-letting it drift with the current default would silently re-aim every v2 record,
-sending a `glass` player to Realistic instead of through Light to Flat.
+v5 splits it again along the other seam: `theme` keeps the palette and the board's
+colours, and the new `shape` takes the cut (`V4_THEMES`, one `[theme, shape]`
+pair per v4 key). Here the pair **is** carried over, because every v4 look is
+still reachable and nobody's board should change under them. What v5 does *not*
+touch is a stored `scheme`, though the default has moved to `light`: every v4
+record carries one, so there is no telling "chose auto" from "never chose", and
+switching a player on a dark device to a light page is the worse mistake. The new
+default reaches new records only.
+
+Two things about the run of branches. They run in **series**, not as
+alternatives: a v1 record passes through all of them, so each may only speak the
+vocabulary of the version it upgrades *to*. And that is why v2 falls back to a
+written-out `V3_DEFAULT = "light"` and v3 to `V4_DEFAULT = "realistic"` rather
+than to `DEFAULT_THEME` — letting either drift with the current default would
+silently re-aim every record that passes through it.
 
 **The board's finish: glossy tiles and 3D pins.** Two switches under Appearance,
 beside Custom backgrounds, and the same kind of thing — what the board is made
 of rather than what the game does.
 
-Both were the **Realistic theme's alone** and welded to its cell style: the
-glass finish could not be had without Realistic's page, and its pins could not
-be had on any other theme at all. They are one number and one flag deep in
-`render/cellStyle.ts`, neither changes a cell's vertex layout, and the argument
-for each is independent of the argument for a textured page — so each is now a
-setting that overrides whatever style the theme names, either way.
+Both were the **Realistic theme's alone** and welded to its cell style, back
+when a theme was a cut as well as a palette: the glass finish could not be had
+without that theme's page, and its pins could not be had on any other theme at
+all. They are one number and one flag deep in `render/cellStyle.ts`, neither
+changes a cell's vertex layout, and the argument for each is independent of the
+argument for a textured page — so each is a setting that overrides whatever the
+composed style says, either way.
 
 - **Glossy tiles** is off by default, so the board ships matte. What it covers
   is the polished *reading*, both halves of it: the specular finish a solid
   catches a sweeping highlight with, and the bright-centre-to-dark-rim gradient
   that is the only thing saying "polished" on a flat board lit head-on. Turning
   it off mattes the material and falls the closed cells back to the style's own
-  `openShade` — which is not an invented number but the matte reading that style
+  `openShade` — which is not an invented number but the matte reading that cut
   already declares ("glass beads closed, matte pans opened"), so the tile keeps
-  its relief and its edges and loses only the hotspot. Turning it *on* lends
-  Realistic's finish to a style that declares no gradient (Classic, Flat) and
-  leaves alone one that does: Sand's is tuned a hair off Realistic's on purpose,
-  and answering a switch is not an excuse to retune a theme.
-- **3D flag pins** is on by default, and now applies to every theme rather than
-  Realistic alone — a board you can turn is exactly the case a billboard fails
-  at (see "3D markers" in [`render.md`](render.md)), and that argument never had
+  its relief and its edges and loses only the hotspot. Turning it *on* lends the
+  dome's finish to a cut that declares no gradient (Classic, Flat) and leaves
+  alone one that does: Sand's is tuned a hair off Bright's on purpose, and
+  answering a switch is not an excuse to retune a theme.
+- **3D flag pins** is on by default, and applies to every look rather than to the
+  domed cut alone — a board you can turn is exactly the case a billboard fails at
+  (see "3D markers" in [`render.md`](render.md)), and that argument never had
   anything to do with which page the board sits on. A flat board still never
   takes them, whatever the switch says.
 
 `finishStyle(style, finish)` in `cellStyle.ts` is the whole of it, and what it
 deliberately does **not** touch is the style's colour — `openAlpha`, `unlit`,
 `albedo`, `boardTint`, `monochrome` — because that half is the theme's. Turning
-the gloss off is not meant to make Realistic opaque or Classic coloured. Like a
-cell style and unlike the sound preset, both are cut into the mesh
+the gloss off is not meant to make a glass board opaque or the Classic theme's
+coloured. Like a cell style and unlike the sound preset, both are cut into the mesh
 (`GameSession` takes a `finish` beside the style), so both land on the next
 board and the rows say so.
 
@@ -628,8 +668,8 @@ heading. Present only in a build that carries the counter at all — the same
 principle as the Haptics row needing a device that can buzz, and the "Check for
 updates" row needing a deployed build to check against.
 
-**Persistence.** `src/settings.ts` is the app's only stored state: theme, colour
-scheme, difficulty, the animations override, haptics, the hold-to-flag duration,
+**Persistence.** `src/settings.ts` is the app's only stored state: theme, board
+shape, colour scheme, difficulty, the animations override, haptics, the hold-to-flag duration,
 the page pattern, the board's two finish switches, the extra-controls switch,
 the analytics flag, and the sound preset with its volume. Flag mode, zoom, the
 menu page you are on and the board in progress stay in memory as before.

@@ -45,6 +45,7 @@ function stored(store: Storage, key = KEY): Record<string, unknown> {
 
 const SETTINGS: Settings = {
   theme: "classic",
+  shape: "realistic",
   scheme: "dark",
   difficulty: "hard",
   animations: false,
@@ -179,6 +180,7 @@ describe("settings validation", () => {
     );
     expect(loadSettings()).toEqual({
       theme: "classic",
+      shape: DEFAULT_SETTINGS.shape,
       scheme: DEFAULT_SETTINGS.scheme,
       difficulty: DEFAULT_SETTINGS.difficulty,
       animations: null,
@@ -274,13 +276,15 @@ describe("settings upgrades", () => {
   it("reads a v1 record from the legacy key and keeps its values", () => {
     // v1 had no `difficulty`; the missing field takes the default and the rest
     // must survive the move. `paper` was a chrome palette, and v3 had no theme
-    // named after it, so it migrates through the v3 default (Light) and comes
-    // out of v4 as Flat — the two migrations run in series (see below).
+    // named after it, so it migrates through the v3 default (Light), out of v4
+    // as Flat, and out of v5 as Bright cut flat — the migrations run in series
+    // (see below).
     const store = withStorage(
       fakeStorage({ [LEGACY]: JSON.stringify({ theme: "paper", animations: true }) }),
     );
     expect(loadSettings()).toEqual({
-      theme: "flat",
+      theme: "bright",
+      shape: "flat",
       scheme: DEFAULT_SETTINGS.scheme,
       difficulty: DEFAULT_SETTINGS.difficulty,
       animations: true,
@@ -300,53 +304,86 @@ describe("settings upgrades", () => {
     expect(store.getItem(LEGACY)).not.toBeNull();
     saveSettings(loadSettings());
     expect(store.getItem(LEGACY)).toBeNull();
-    expect(stored(store)["theme"]).toBe("flat");
+    expect(stored(store)["theme"]).toBe("bright");
+    expect(stored(store)["shape"]).toBe("flat");
   });
 
   // v2 kept a chrome palette in `theme` and a separate `cellStyle` beside it;
   // v3 merged the two into one theme. The pair is read together, so a player's
   // old *look* is carried over rather than each field being reset on its own.
   //
-  // The two migrations run in **series**, so these expectations are what a v2
-  // record comes out as after v3 -> v4 as well: the v3 answer, put through
-  // V3_THEMES. `light` and `dark` were one look on two palettes, so both are
-  // Flat now — which is why a v2 `glass` player must still pass through `light`
-  // rather than landing on the current default.
+  // All three migrations run in **series**, so these expectations are what a v2
+  // record comes out as at the far end: the v3 answer through V3_THEMES and then
+  // through V4_THEMES, as a (theme, shape) pair. Which is why a v2 `glass`
+  // player must still pass through `light` rather than landing on the current
+  // default — the chain is what carries a player's old look, not each branch's
+  // idea of a sensible default.
   it.each([
     // A palette whose name a v3 theme kept means what it always did.
-    [{ theme: "classic", cellStyle: "flat" }, "classic"],
-    [{ theme: "dark", cellStyle: "classic" }, "flat"],
+    [{ theme: "classic", cellStyle: "flat" }, ["classic", "classic"]],
+    [{ theme: "dark", cellStyle: "classic" }, ["bright", "flat"]],
     // Otherwise the cell style is the better evidence of what was wanted.
-    [{ theme: "ios", cellStyle: "gloss" }, "realistic"],
-    [{ theme: "paper", cellStyle: "gloss" }, "realistic"],
+    [{ theme: "ios", cellStyle: "gloss" }, ["bright", "realistic"]],
+    [{ theme: "paper", cellStyle: "gloss" }, ["bright", "realistic"]],
     // ...and a palette with no theme of its own and no glossy cells lands on
     // Flat by way of the v3 default, as does a record naming nothing this build
     // knows.
-    [{ theme: "neumorph", cellStyle: "soft" }, "flat"],
-    [{ theme: "glass" }, "flat"],
-    [{ cellStyle: "classic" }, "flat"],
+    [{ theme: "neumorph", cellStyle: "soft" }, ["bright", "flat"]],
+    [{ theme: "glass" }, ["bright", "flat"]],
+    [{ cellStyle: "classic" }, ["bright", "flat"]],
   ])("migrates the v2 palette/cell-style pair %o to %s", (rec, expected) => {
     withStorage(fakeStorage({ [KEY]: JSON.stringify({ ...rec, version: 2 }) }));
-    expect(loadSettings().theme).toBe(expected);
+    const loaded = loadSettings();
+    expect([loaded.theme, loaded.shape]).toEqual(expected);
   });
 
   // v3 kept the colour scheme inside the theme: Light and Dark were the same
   // look (the `flat` cell style) on two palettes. v4 splits them, so the look
-  // survives and the scheme does not — everyone comes out on `auto`, which is
-  // the new default and what most people would have chosen had it existed.
+  // survives and the scheme does not — a v3 record simply has no `scheme` key
+  // and takes whatever the current default is.
   it.each([
-    [{ theme: "light" }, "flat"],
-    [{ theme: "dark" }, "flat"],
-    [{ theme: "classic" }, "classic"],
-    [{ theme: "realistic" }, "realistic"],
-    // A theme this build has never had, and a record with no theme at all.
-    [{ theme: "vaporwave" }, DEFAULT_THEME],
-    [{}, DEFAULT_THEME],
-  ])("migrates the v3 theme %o to %s on auto", (rec, expected) => {
+    [{ theme: "light" }, ["bright", "flat"]],
+    [{ theme: "dark" }, ["bright", "flat"]],
+    [{ theme: "classic" }, ["classic", "classic"]],
+    [{ theme: "realistic" }, ["bright", "realistic"]],
+    // A theme this build has never had, and a record with no theme at all: both
+    // go through the *v4* default, which is written out in settings.ts so it
+    // cannot drift with today's.
+    [{ theme: "vaporwave" }, ["bright", "realistic"]],
+    [{}, ["bright", "realistic"]],
+  ])("migrates the v3 theme %o to %s", (rec, expected) => {
     withStorage(fakeStorage({ [KEY]: JSON.stringify({ ...rec, version: 3 }) }));
     const loaded = loadSettings();
-    expect(loaded.theme).toBe(expected);
-    expect(loaded.scheme).toBe("auto");
+    expect([loaded.theme, loaded.shape]).toEqual(expected);
+    expect(loaded.scheme).toBe(DEFAULT_SETTINGS.scheme);
+  });
+
+  // v4 -> v5 splits the theme the other way: the palette stays in `theme` and
+  // the cut becomes `shape`. Every v4 look is still reachable, so nobody's board
+  // changes — which is the claim this pins, key by key.
+  it.each([
+    [{ theme: "realistic" }, ["bright", "realistic"]],
+    [{ theme: "flat" }, ["bright", "flat"]],
+    [{ theme: "classic" }, ["classic", "classic"]],
+    [{ theme: "sand" }, ["sand", "realistic"]],
+    [{ theme: "flatSand" }, ["sand", "flat"]],
+    // A theme this build has never had, and a record with no theme at all.
+    [{ theme: "vaporwave" }, [DEFAULT_THEME, DEFAULT_SETTINGS.shape]],
+    [{}, [DEFAULT_THEME, DEFAULT_SETTINGS.shape]],
+  ])("migrates the v4 theme %o to the pair %s", (rec, expected) => {
+    withStorage(fakeStorage({ [KEY]: JSON.stringify({ ...rec, version: 4 }) }));
+    const loaded = loadSettings();
+    expect([loaded.theme, loaded.shape]).toEqual(expected);
+  });
+
+  it("leaves a v4 record's scheme alone, though the default has moved", () => {
+    // Every v4 record carries a `scheme` (it was in DEFAULT_SETTINGS, so
+    // saveSettings always wrote one), so there is no telling "chose auto" from
+    // "never chose" — and switching a player on a dark device to a light page is
+    // the worse of the two mistakes. The new default reaches new records only.
+    withStorage(fakeStorage({ [KEY]: JSON.stringify({ scheme: "auto", version: 4 }) }));
+    expect(loadSettings().scheme).toBe("auto");
+    expect(DEFAULT_SETTINGS.scheme).toBe("light");
   });
 
   it("keeps a v4 record's scheme, and defaults an unreadable one", () => {
@@ -363,7 +400,8 @@ describe("settings upgrades", () => {
       fakeStorage({ [KEY]: JSON.stringify({ theme: "ios", cellStyle: "gloss", version: 2 }) }),
     );
     saveSettings(loadSettings());
-    expect(stored(store)["theme"]).toBe("realistic");
+    expect(stored(store)["theme"]).toBe("bright");
+    expect(stored(store)["shape"]).toBe("realistic");
     expect(stored(store)["cellStyle"]).toBe("gloss");
   });
 
@@ -390,6 +428,7 @@ describe("settings upgrades", () => {
     );
     expect(loadSettings()).toEqual({
       theme: "classic",
+      shape: DEFAULT_SETTINGS.shape,
       scheme: DEFAULT_SETTINGS.scheme,
       difficulty: "easy",
       animations: null,
@@ -449,6 +488,7 @@ describe("cross-tab sync", () => {
     expect(seen).toEqual([
       {
         theme: "classic",
+        shape: DEFAULT_SETTINGS.shape,
         scheme: DEFAULT_SETTINGS.scheme,
         difficulty: "easy",
         animations: null,

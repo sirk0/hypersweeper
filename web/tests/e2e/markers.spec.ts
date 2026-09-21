@@ -2,9 +2,9 @@ import { expect, test } from "@playwright/test";
 
 // Real models — pins and bombs — stand on a 3D board's flagged and mined cells
 // whenever the player has them switched on (settings.ts `pins`, which is the
-// default and which every theme now honours; this file drives Realistic, the
-// theme they started out welded to). They are the most expensive thing the app
-// builds. They are rebuilt for the whole board at once, so the rule is that a
+// default and which every look now honours; this file drives the domed cut on
+// the bright palette, the theme they started out welded to). They are the most
+// expensive thing the app builds. They are rebuilt for the whole board at once, so the rule is that a
 // batch of cell changes costs **one** rebuild, not one each.
 //
 // It used to cost one each, and every path that changes many cells at once went
@@ -37,7 +37,13 @@ test.describe("3D markers stay cheap in bulk", () => {
     await page.addInitScript(() => {
       localStorage.setItem(
         "ms:settings",
-        JSON.stringify({ version: 4, theme: "realistic", animations: false, sound: "off" }),
+        JSON.stringify({
+          version: 5,
+          theme: "bright",
+          shape: "realistic",
+          animations: false,
+          sound: "off",
+        }),
       );
     });
     await page.goto("/");
@@ -46,7 +52,9 @@ test.describe("3D markers stay cheap in bulk", () => {
 
   test("the board under test is one that builds models", async ({ page }) => {
     await page.evaluate(() => window.__ms!.startBoard("klein", "easy"));
-    expect(await page.evaluate(() => window.__ms!.state().cellStyle)).toBe("realistic");
+    expect(await page.evaluate(() => window.__ms!.state().cellStyle)).toBe(
+      "realistic/bright",
+    );
     // The models themselves are the `pins` setting's, and it is left at its
     // default here — so this is the shipped configuration, not a special one.
     expect(await page.evaluate(() => window.__ms!.state().glow)).not.toBeNull();

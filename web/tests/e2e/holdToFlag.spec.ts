@@ -61,7 +61,7 @@ async function openBoard(page: Page, holdToFlagMs?: number): Promise<void> {
     await page.addInitScript((ms) => {
       window.localStorage.setItem(
         "ms:settings",
-        JSON.stringify({ version: 4, holdToFlagMs: ms }),
+        JSON.stringify({ version: 5, holdToFlagMs: ms }),
       );
     }, holdToFlagMs);
   }

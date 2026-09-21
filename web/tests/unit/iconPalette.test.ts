@@ -54,31 +54,36 @@ describe("themeable menu icons", () => {
     expect(sand).toContain("#8fa073");
   });
 
-  it("leaves every other theme's icons exactly as they were", () => {
+  it("leaves the Bright theme's icons exactly as they were", () => {
     const before = menuIcon("hexagon");
-    for (const key of ["realistic", "flat"]) {
+    for (const key of ["bright", "realistic", "flat"]) {
       setIconPalette(theme(key).icons);
       expect(menuIcon("hexagon"), key).toBe(before);
     }
   });
 
-  it("paints Classic's tiles in the same colours as Sand's", () => {
-    // Classic's set was drawn nearly gray — a quarter of the chroma — on the
-    // argument that its board carries no colour either. In the hand that read
-    // as the icons having been switched off rather than turned down, so the two
-    // quieted themes now share one register (`QUIET_ICON_TINT`). A tile glyph
-    // is all tint and no `plain`, so the drawings come out identical; the ink
-    // the two use for the non-tile art still differs, which the two tests
-    // either side of this one pin.
-    const vivid = fills(menuIcon("square"));
-    setIconPalette(theme("sand").icons);
-    const sand = menuIcon("square");
+  it("paints Classic's tiles grey, the way its board is grey", () => {
+    // The whole claim: this theme's board carries no colour at any cut
+    // (`BOARD_LOOKS.classic` is monochrome), so neither do the rows that open
+    // one. Measured rather than trusted to the parameter — `iconHex` scales the
+    // chroma available at a lightness, so a zero there has to come out with
+    // equal channels, not merely a low one.
     setIconPalette(theme("classic").icons);
+    for (const key of ["square", "hexagon", "triangle"]) {
+      for (const hex of fills(menuIcon(key))) {
+        const v = parseInt(hex.slice(1), 16);
+        const [r, g, b] = [(v >> 16) & 255, (v >> 8) & 255, v & 255];
+        // The `plain` ramp is this theme's own slate and is deliberately not
+        // neutral; a tile glyph never reaches it (see the test below).
+        if (["#4b545c", "#6f787f", "#2a3036", "#3f474d"].includes(hex)) continue;
+        expect(Math.max(r, g, b) - Math.min(r, g, b), `${key} ${hex}`).toBeLessThanOrEqual(1);
+      }
+    }
+    // ...and Sand's are *not* grey: the two quieted themes no longer share a
+    // register, which is what this replaces.
     const classic = menuIcon("square");
-    expect(classic).toBe(sand);
-    // ...and still turned down from the default set, which is the half of the
-    // old claim that survives.
-    expect(fills(classic)).not.toEqual(vivid);
+    setIconPalette(theme("sand").icons);
+    expect(menuIcon("square")).not.toBe(classic);
   });
 
   it("paints Classic's non-tile chrome in its own ink, not the indigo", () => {
@@ -89,11 +94,11 @@ describe("themeable menu icons", () => {
     expect(classic).toContain("#4b545c");
   });
 
-  it("gives Flat Sand the same set as Sand", () => {
-    // The two share their whole chrome and differ only in how a cell is cut, so
-    // the glyphs are one palette named twice rather than two that happen to
-    // agree today. Compared as drawings, not as object identity: this is the
-    // claim a reader of the menu could check.
+  it("gives a folded-away theme key the set of the theme it became", () => {
+    // `flatSand` was Sand's palette at another cut, so a record naming it
+    // resolves to Sand — and must therefore draw Sand's glyphs, not the vivid
+    // default. Compared as drawings, not as object identity: this is the claim
+    // a reader of the menu could check.
     setIconPalette(theme("sand").icons);
     const sand = menuIcon("square");
     setIconPalette(theme("flatSand").icons);

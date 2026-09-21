@@ -44,8 +44,8 @@ import { Menu } from "./ui/menu";
 import type { ModalHandle } from "./ui/modal";
 import { openScoreDialog } from "./ui/scoreDialog";
 import type { SettingsHost } from "./ui/settings";
-import { cellStyle } from "./render/cellStyle";
-import { applyTheme, onSchemeChange, theme, themeCellStyle, type SchemePref } from "./ui/theme";
+import { boardStyleKey, cellStyle } from "./render/cellStyle";
+import { applyTheme, onSchemeChange, theme, type SchemePref } from "./ui/theme";
 import { setIconPalette } from "./ui/icons";
 import {
   animationsEnabled,
@@ -249,6 +249,9 @@ class App {
       get theme() {
         return app.settings.theme;
       },
+      get shape() {
+        return app.settings.shape;
+      },
       get scheme() {
         return app.settings.scheme;
       },
@@ -286,6 +289,7 @@ class App {
         return app.settings.analytics;
       },
       setTheme: (key) => this.setTheme(key),
+      setShape: (key) => this.setShape(key),
       setScheme: (pref) => this.setScheme(pref),
       setDifficulty: (key) => this.setDifficulty(key),
       setAnimations: (pref) => this.setAnimations(pref),
@@ -323,15 +327,24 @@ class App {
     this.settings = { ...this.settings, theme: key };
     saveSettings(this.settings);
     // The canvas is transparent, so CSS repaints the field too. The board half
-    // of a theme (its cell style) is baked into a mesh, so it takes effect on
-    // the next board — which is every board from here, since the theme picker
-    // is only reachable from the menu.
+    // of a theme (what its cells are *coloured* in) is baked into a mesh, so
+    // that half takes effect on the next board — which is every board from
+    // here, since the theme picker is only reachable from the menu.
     this.paintTheme();
     // The menu glyphs are baked strings, so they need repainting and the menu
     // needs re-rendering — the theme picker is itself a menu page, so the rows
     // behind it are on screen while this happens.
     setIconPalette(theme(key).icons);
     this.menu.refresh();
+  }
+
+  /** Pick how the board's cells are cut. Nothing on screen has to change: the
+   * page and the chrome are the theme's, and a cut is baked into a mesh, so
+   * this lands on the next board exactly as a theme's board colours do (the
+   * picker page says so). */
+  private setShape(key: string): void {
+    this.settings = { ...this.settings, shape: key };
+    saveSettings(this.settings);
   }
 
   /** Unlike a theme this lands whole and at once: a scheme is the chrome
@@ -517,7 +530,7 @@ class App {
     this.session = new GameSession(mode, difficulty, {
       ...(seed !== undefined ? { seed } : {}),
       ...(opts.mines ? { minePositions: opts.mines } : {}),
-      cellStyle: themeCellStyle(this.settings.theme),
+      cellStyle: boardStyleKey(this.settings.shape, this.settings.theme),
       // ...and the two halves of that style the *player* owns rather than the
       // theme (render/cellStyle.ts `finishStyle`). Read here, with the style,
       // because both are cut into the mesh.
@@ -1164,7 +1177,8 @@ class App {
           cellCount: s ? s.game.cells.length : 0,
           is3d: s?.is3d ?? false,
           dealtAtRandom: s ? this.dealtAtRandom : false,
-          cellStyle: s?.cellStyle ?? themeCellStyle(this.settings.theme),
+          cellStyle:
+            s?.cellStyle ?? boardStyleKey(this.settings.shape, this.settings.theme),
           sound: soundChoice(),
           volume: soundVolume(),
           glow: s?.mesh.markerGlowLevel?.() ?? null,

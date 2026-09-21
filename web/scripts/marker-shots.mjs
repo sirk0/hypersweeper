@@ -37,17 +37,20 @@ const browser = await chromium.launch({
 });
 
 /** A page with `theme` already stored, on `mode`. A cell style is baked into the
- * mesh when the board is built, so the theme has to be there before the page
+ * mesh when the board is built, so the look has to be there before the page
  * boots — picking it afterwards would only land on the *next* board. */
-async function open(mode, theme = "realistic") {
+async function open(mode, shape = "realistic") {
   const ctx = await browser.newContext({
     viewport: { width: 900, height: 900 },
     deviceScaleFactor: 1,
     reducedMotion: "reduce",
   });
-  await ctx.addInitScript((t) => {
-    localStorage.setItem("ms:settings", JSON.stringify({ version: 3, theme: t }));
-  }, theme);
+  await ctx.addInitScript((sh) => {
+    localStorage.setItem(
+      "ms:settings",
+      JSON.stringify({ version: 5, theme: "bright", shape: sh }),
+    );
+  }, shape);
   const page = await ctx.newPage();
   await page.goto(`${BASE}/?mode=${mode}&difficulty=easy&seed=7`);
   await page.waitForSelector("body[data-ready]");
@@ -149,7 +152,7 @@ for (const mode of ["sphere", "mobius", "torusrhombille"]) {
   await ctx.addInitScript(() => {
     localStorage.setItem(
       "ms:settings",
-      JSON.stringify({ version: 3, theme: "realistic", animations: true }),
+      JSON.stringify({ version: 5, theme: "bright", shape: "realistic", animations: true }),
     );
   });
   const page = await ctx.newPage();

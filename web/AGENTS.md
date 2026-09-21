@@ -42,7 +42,7 @@ the repo root); see [`docs/deploy.md`](docs/deploy.md).
 |---|---|
 | Building, testing, screenshots, driving the app headless | [`docs/testing.md`](docs/testing.md) |
 | Menu, settings, themes, dialogs, best times, achievements, share links | [`docs/ui.md`](docs/ui.md) |
-| Cell styles, picking, zoom, shape colours, 3D markers, the Klein clip | [`docs/render.md`](docs/render.md) |
+| Cell shapes, picking, zoom, shape colours, 3D markers, the Klein clip | [`docs/render.md`](docs/render.md) |
 | Board symmetries and the controls that drive them | [`docs/boards.md`](docs/boards.md) |
 | Sound | [`docs/audio.md`](docs/audio.md) |
 | Sharing, deploy, PR previews, the macOS/iOS bundles | [`docs/deploy.md`](docs/deploy.md) |
@@ -102,11 +102,14 @@ design rather than the rule itself.
   `boardMesh.ts` (shared cell-visual vocabulary — the neutral palette, glyph
   map, and `isOpened`, the raised/sunken predicate both meshes cut their
   geometry from), `shapePalette.ts` (the shape colour code — see [`docs/render.md`](docs/render.md)),
+  `cellStyle.ts` (the **board shape** × **theme** product a cell is cut and
+  painted from — two settings, one `CellStyle`),
   `polygonBoard.ts` / `solidBoard.ts` (merged beveled cell geometry —
   flat plane vs. solid surface — per-cell colours, hover, glyph quads; a
   closed cell is a raised button, an opened one is re-cut in place as a
   recess, which is what makes the two tell apart on a flat board lit
-  head-on, where colour alone shades every face identically), `glyphAtlas.ts`
+  head-on, where colour alone shades every face identically; a two-sided
+  surface carries that button on *both* faces), `glyphAtlas.ts`
   (canvas-baked digit/flag/mine texture), `clip.ts` (the renderer's face of
   the `SurfaceClip` — how the Klein bottle drops the sheet its own neck
   encloses, so looking into the hole shows the tube instead of a cap; the

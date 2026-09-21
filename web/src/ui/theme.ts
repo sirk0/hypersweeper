@@ -1,26 +1,28 @@
 import { hasTheme as hasPalette, themeSpec as paletteSpec, type ThemeSpec } from "../config/screens";
-import { cellStyle } from "../render/cellStyle";
 import { SMILEY_INK, smileyHex } from "../render/shapePalette";
 import { patternLayer } from "./backgroundPattern";
 import type { IconPalette } from "./icons";
 
-// The app's look is **two** settings, on two axes that have nothing to say to
-// each other:
+// The app's look is **three** settings, on three axes that have nothing to say
+// to each other:
 //
-//   * a **theme** — how the board's cells are cut (render/cellStyle.ts) and what
-//     the page behind them is made of. Realistic, Flat, Classic, Sand, Flat
-//     Sand — the last two the same colours at two levels of detail.
-//   * a **colour scheme** — which palette the chrome paints with. Auto (the
-//     device's own `prefers-color-scheme`), Light, Dark.
+//   * a **board shape** — how the board's cells are cut (render/cellStyle.ts
+//     `BOARD_SHAPES`). Classic's beveled button, Realistic's glass dome, Flat's
+//     plain plate.
+//   * a **theme** — what the page behind the board is made of, which palette
+//     the chrome paints with, and what the board itself is coloured in
+//     (`BOARD_LOOKS`, keyed by the theme keys below). Bright, Classic, Sand.
+//   * a **colour scheme** — which half of the theme's palette pair is used.
+//     Auto (the device's own `prefers-color-scheme`), Light, Dark.
 //
-// They were one setting until now, and the four themes it offered — Light,
-// Dark, Classic, Realistic — were the two axes tangled: Light and Dark were the
-// *same* look (both cut with the `flat` style, neither textured) on two
-// palettes, while Classic and Realistic were two looks with no dark form at
-// all. So the glass tiles on a dark page were unreachable, and nothing in the
-// app knew what the device preferred. Split, every combination exists: a theme
-// names one palette per scheme, and `activeScheme` resolves `auto` at paint
-// time.
+// The first two were one setting of five entries until now, and that list was
+// the two axes tangled: Realistic and Flat were one palette at two cuts, Sand
+// and Flat Sand another palette at the same two cuts, and Classic a third
+// palette welded to a third cut. So a grey beveled board was the only grey
+// board there was, six of the nine looks could not be had at all, and the list
+// was read as five looks rather than as the three-by-three it really was. Split
+// (as the colour scheme itself was split out before it), every combination
+// exists, and `cellStyle.ts` composes the pair.
 //
 // Runtime theming for the chrome works as it always did: every colour the UI
 // paints with is a CSS custom property declared on `:root` in styles.css;
@@ -28,26 +30,23 @@ import type { IconPalette } from "./icons";
 // either setting re-skins the menu, the header and the page background in one
 // go — the CSS counterpart of pygame's `set_theme`, which reassigns the palette
 // globals every draw site reads. The styles.css `:root` block still carries the
-// default (Realistic, light) values so the very first paint, before this runs,
-// looks right — with a `prefers-color-scheme` block beside it for the boot
-// frame of an `auto` player on a dark device.
+// default (Sand, light) values so the very first paint, before this runs, looks
+// right — with a `prefers-color-scheme` block beside it for the boot frame of a
+// player who has *chosen* `auto` on a dark device.
 //
 // The **palettes** are still the shared, pygame-ported ones in
 // `data/ui/screens.json` (guarded by tests/test_theme_sync.py), and this file
-// does not add colours to them — it *composes* them, now two at a time. Two of
-// the eight are web-only, and they are exactly the dark halves the pygame
-// presets could never supply (`dark` beside `ios`, `classicDark` beside
-// `classic`). That is what keeps the sync test meaningful while the web's list
-// stops being the pygame one: pygame has no cell styles, no textures and no
-// dark mode, so its six presets could never be these axes.
+// does not add colours to them — it *composes* them, two at a time. Two of the
+// eight are web-only, and they are exactly the dark halves the pygame presets
+// could never supply (`dark` beside `ios`, `classicDark` beside `classic`).
+// That is what keeps the sync test meaningful while the web's list stops being
+// the pygame one: pygame has no cell shapes, no textures and no dark mode, so
+// its six presets could never be these axes.
 //
-// The board is themed, but only as far as the theme's cell style says — the
-// shape colour code (`shapePalette.ts`) still owns the actual hues, and only the
-// Classic style switches it off (`CellStyle.monochrome`) for the gray board that
-// name means. No theme reaches into `shapePalette` or `glyphAtlas`. **The scheme
-// reaches the board not at all**: the tiles are lit head-on by a fixed rig and
-// read the same either way, which is what the old Dark theme already shipped —
-// a light-toned board on a dark page. Only the chrome and the page follow it.
+// **The scheme reaches the board not at all**: the tiles are lit head-on by a
+// fixed rig and read the same either way, which is what the old Dark theme
+// already shipped — a light-toned board on a dark page. Only the chrome and the
+// page follow it.
 
 /** A resolved colour scheme: what the chrome actually paints as. */
 export type Scheme = "light" | "dark";
@@ -63,10 +62,9 @@ export interface Theme {
   label: string;
   /** The picker row's one-line description. */
   hint: string;
-  /** Which `CELL_STYLES` entry the board's cells are cut with. Independent of
-   * the scheme: a cell style is relief and finish, and the board does not go
-   * dark (see the header). */
-  cellStyle: string;
+  /** How this theme colours the board itself lives in `BOARD_LOOKS`
+   * (render/cellStyle.ts), keyed by this same `key`: the cut is the player's
+   * other setting, and the two are composed into a `CellStyle` per board. */
   /** Which `data/ui/screens.json` palette paints the chrome, per scheme. */
   palette: Record<Scheme, string>;
   /** Extra CSS background layers drawn over the palette's page colour — a
@@ -129,32 +127,33 @@ const CLASSIC_PAGE: Record<Scheme, string> = {
   dark: `${woven(0.12)}, radial-gradient(120% 90% at 50% 0%, #2b3038 0%, #2b303800 55%), radial-gradient(140% 110% at 50% 100%, #00000088 0%, #00000000 60%)`,
 };
 
-/** The saturation register the quieted themes draw their menu glyphs at: one
- * lightness for every hue, at about 60% of the chroma available there.
- *
- * Named here rather than written twice because Classic and Sand deliberately
- * carry the *same* colours — see `SAND_ICONS` for what the two numbers are and
- * why the hue is never touched. Holding the lightness flat is what makes a red
- * row and a green row weigh the same in a list, which the default set's per-hue
- * cusp lightness cannot promise. */
+/** The saturation register Sand draws its menu glyphs at: one lightness for
+ * every hue, at about 60% of the chroma available there. See `SAND_ICONS` for
+ * what the two numbers are and why the hue is never touched. Holding the
+ * lightness flat is what makes a red row and a green row weigh the same in a
+ * list, which the default set's per-hue cusp lightness cannot promise. */
 const QUIET_ICON_TINT = { lightness: 0.68, chroma: 0.6 };
 
-/** Classic's menu glyphs: Sand's colours on Classic's grey page.
+/** The register Classic draws its menu glyphs at: **no chroma at all**, one
+ * lightness for every hue, so every tile glyph comes out a neutral grey.
  *
- * They were drawn nearly gray — one lightness and a *quarter* of the chroma —
- * on the argument that a row of vivid glyphs above a gray board announced that
- * the chrome and the board had been designed separately. In the hand that reads
- * as the icons having been turned off rather than turned down: the menu is
- * where a player tells one board from another, and the shape hue is the thread
- * that ties a row to the board it opens. So the set takes the same register
- * Sand does.
+ * `iconHex` multiplies the chroma available at a lightness by this number, so
+ * zero is a true grey rather than a very faint hue — which is the point. This
+ * theme's board is grey at every cut (`BOARD_LOOKS.classic` switches the shape
+ * colour code off), and a row of coloured glyphs above it announces that the
+ * chrome and the board were designed separately. The rows are still told apart
+ * by the thing a row is actually read by: the drawing, which is a patch of the
+ * real tiling. */
+const GREY_ICON_TINT = { lightness: 0.68, chroma: 0 };
+
+/** Classic's menu glyphs: grey tiles, and the classic ink for everything else.
  *
- * `plain` stays the classic ink. That ramp is the non-tile chrome — the
- * question mark, the surface tubes, the frames and the hairlines — rather than
- * the colour of anything a player picks a board by, and Sand's sage on a grey
- * page would be a second change with no argument behind it. */
+ * `plain` is the non-tile chrome — the question mark, the surface tubes, the
+ * frames and the hairlines — rather than the colour of anything a player picks a
+ * board by, so it keeps its own dark slate rather than going grey with the
+ * tiles. */
 const CLASSIC_ICONS: IconPalette = {
-  tint: QUIET_ICON_TINT,
+  tint: GREY_ICON_TINT,
   plain: { base: "#4b545c", light: "#6f787f", dark: "#2a3036", outline: "#3f474d" },
 };
 
@@ -210,26 +209,25 @@ const SAND_ICONS: IconPalette = {
 
 const THEMES: Theme[] = [
   {
-    key: "realistic",
-    label: "Realistic",
-    hint: "Glass tiles, and real flags on a board you can turn",
-    cellStyle: "realistic",
+    key: "bright",
+    label: "Bright",
+    hint: "The board's own colours on a textured page",
     palette: { light: "ios", dark: "dark" },
     texture: REALISTIC_PAGE,
     patterned: true,
-  },
-  {
-    key: "flat",
-    label: "Flat",
-    hint: "Clean and simple, flat colour tiles",
-    cellStyle: "flat",
-    palette: { light: "ios", dark: "dark" },
+    // No `icons`: the menu glyphs stay in the set's own vivid indigo-referenced
+    // register, which is what they were drawn for.
+    //
+    // This is the two old themes Realistic and Flat, which were one palette at
+    // two cuts. The page is the textured one, because it is the one this
+    // palette was designed against and the only page in the app a tiling
+    // pattern can be drawn on (see `patterned`); the cut those two differed by
+    // is the board-shape setting now.
   },
   {
     key: "classic",
     label: "Classic",
-    hint: "The 1990s board: gray beveled buttons",
-    cellStyle: "classic",
+    hint: "The 1990s board: gray tiles on a gray page",
     // `classicWeb`, not `classic`: the light half diverges from the pygame
     // preset on purpose (a lighter, cooler page — see its own comment in
     // data/ui/screens.json), so it is a web-only palette rather than a change
@@ -239,44 +237,21 @@ const THEMES: Theme[] = [
     palette: { light: "classicWeb", dark: "classicDark" },
     texture: CLASSIC_PAGE,
     icons: CLASSIC_ICONS,
-    // No `patterned`: the classic style has no `openAlpha`, so a tiling behind
-    // the board would only ever show in the grout.
+    // No `patterned`: this theme's board is opaque at every cut
+    // (`BOARD_LOOKS.classic` clears `openAlpha`), so a tiling drawn behind it
+    // would only ever show in the grout.
   },
   {
     key: "sand",
     label: "Sand",
     hint: "Quiet tiles and terracotta chrome on a warm page",
-    cellStyle: "sand",
     palette: { light: "sand", dark: "sandDark" },
     texture: SAND_PAGE,
     icons: SAND_ICONS,
-    // No `patterned`, though the translucent opened cells would carry one: the
-    // page this theme was drawn against is grain and light and nothing else, and
-    // a tiling hairline under a board already turned down this far would be one
-    // more quiet thing competing with the numbers.
-  },
-  {
-    key: "flatSand",
-    label: "Flat Sand",
-    hint: "Sand's colours with flat, plain tiles",
-    cellStyle: "flatSand",
-    palette: { light: "sand", dark: "sandDark" },
-    texture: SAND_PAGE,
-    icons: SAND_ICONS,
-    // Sand's theme entry with one word changed. The chrome is the same in every
-    // respect — the same two palettes, the same warm page, the same quieted
-    // glyphs, and the same faces and corners, since the `[data-theme]` block at
-    // the end of styles.css names this key beside `sand` — and so are the
-    // board's *colours*: the `flatSand` cell style takes Sand's tint whole and
-    // drops only the relief it was painted on (see cellStyle.ts).
-    //
-    // So the two are one look at two levels of detail, which is what makes this
-    // a theme rather than a setting: a cell style fixes the mesh's vertex
-    // layout, so the choice has to be made before a board is built.
-    //
-    // No `patterned`, and here the reason is stronger than Sand's: this style
-    // has no `openAlpha`, so a tiling drawn behind the board would only ever
-    // show in the grout.
+    // No `patterned`, though the translucent opened cells of the domed cut
+    // would carry one: the page this theme was drawn against is grain and light
+    // and nothing else, and a tiling hairline under a board already turned down
+    // this far would be one more quiet thing competing with the numbers.
   },
 ];
 
@@ -285,8 +260,10 @@ const BY_KEY = new Map(THEMES.map((t) => [t.key, t]));
 /** Theme keys in the order the settings picker lists them. */
 export const THEME_KEYS: readonly string[] = THEMES.map((t) => t.key);
 
-/** The look the app boots into. */
-export const DEFAULT_THEME = "realistic";
+/** The palette the app boots into. Sand: the quietest of the three, and the one
+ * the app's own icon was drawn from (scripts/make-icons.mjs quotes its ground
+ * and its accent). */
+export const DEFAULT_THEME = "sand";
 
 /** Scheme choices in the order the settings picker lists them. */
 export const SCHEME_KEYS: readonly SchemePref[] = ["auto", "light", "dark"];
@@ -298,23 +275,34 @@ export const SCHEME_LABELS: Record<SchemePref, string> = {
   dark: "Dark",
 };
 
-/** Follow the device unless told otherwise. */
-export const DEFAULT_SCHEME: SchemePref = "auto";
+/** Light unless told otherwise. `auto` is still a choice — and still resolved
+ * live, so a player on it follows their device from one repaint to the next —
+ * but it is no longer the one the app opens on: the three themes are all drawn
+ * as light pages first, and their dark halves are derivations of them. */
+export const DEFAULT_SCHEME: SchemePref = "light";
 
 /** Keys that named a theme this build has folded away, and what they became.
  *
- * `light` and `dark` were themes when a theme was also the colour scheme; both
- * cut their cells with the `flat` style, so that is where a record naming one
- * belongs — the scheme half is a separate setting now, and a reader that gets
- * here (rather than through settings.ts's v3 -> v4 migration) has none to
- * recover. `realistic1/2/3` were the three flag markers offered side by side
- * while the shape was being chosen; the pin won and Realistic *is* it now. */
+ * `realistic`, `flat` and `flatSand` were themes when a theme carried the cut
+ * as well as the palette: the first two are one palette (Bright) at two cuts
+ * and the third is Sand's at another, so the *palette* is what a record naming
+ * one recovers here. The cut half is recovered by settings.ts's v4 -> v5
+ * migration, which reads the same key and writes a `shape` beside it; a reader
+ * that arrives here instead (a hand-edited record, a link from another build)
+ * simply keeps its own shape.
+ *
+ * `light` and `dark` were themes when a theme was also the colour scheme, and
+ * both wore this palette. `realistic1/2/3` were the three flag markers offered
+ * side by side while the shape of the pin was being chosen. */
 const ALIASES: Record<string, string> = {
-  light: "flat",
-  dark: "flat",
-  realistic1: "realistic",
-  realistic2: "realistic",
-  realistic3: "realistic",
+  light: "bright",
+  dark: "bright",
+  flat: "bright",
+  realistic: "bright",
+  realistic1: "bright",
+  realistic2: "bright",
+  realistic3: "bright",
+  flatSand: "sand",
 };
 
 /** The theme key to actually use for `key` — the default when it names one that
@@ -378,11 +366,6 @@ export function themePalette(key: string | null | undefined, scheme: Scheme): Th
     throw new Error(`theme ${spec.key} names unknown ${scheme} palette ${name}`);
   }
   return paletteSpec(name);
-}
-
-/** The cell style a theme cuts the board with. */
-export function themeCellStyle(key: string | null | undefined): string {
-  return cellStyle(theme(key).cellStyle).key;
 }
 
 /** The CSS custom properties a theme writes, as a plain map. Kept separate from

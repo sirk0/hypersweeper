@@ -283,9 +283,9 @@ describe("the geometry", () => {
   });
 });
 
-describe("only Realistic is patterned", () => {
+describe("only Bright is patterned", () => {
   it("marks one theme, and gives the rest a flat page", () => {
-    expect(THEME_KEYS.filter((k) => theme(k).patterned)).toEqual(["realistic"]);
+    expect(THEME_KEYS.filter((k) => theme(k).patterned)).toEqual(["bright"]);
   });
 
   it("leaves --bg-pattern off unless it is given one", () => {

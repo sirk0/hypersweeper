@@ -78,14 +78,30 @@ import {
 // against each other and a tall plateau shingles over its neighbours at the
 // silhouette); revealed cells drop their plateau to a sunken face (the classic
 // minesweeper raised/flat distinction — colour alone is ambiguous under 3D
-// lighting), and back faces are culled. On an open or non-orientable surface (M3's cylinder /
-// Möbius strip / Klein bottle) each cell is instead a flat DoubleSide tile on
-// the surface, lit and coloured identically from both faces, so it reads and
-// plays the same from inside or out; grout under the tile gaps keeps them from
-// becoming holes. Glyphs are billboards rebuilt from the current board rotation
-// (`orient`) so numbers stay screen-upright like the pygame renderer, and are
-// depth-tested so geometry in front of a cell hides its number (a nearer wall,
-// a nearer frame bar) instead of letting it bleed through.
+// lighting), and back faces are culled.
+//
+// An open or non-orientable surface (the cylinder, the Möbius strip, the Klein
+// bottle — and the volume boards' slices) has no consistent outward side, so it
+// gets the **same profile mirrored on both faces**: two copies of the loop
+// stack, one lifted along +normal and one along -normal, meeting at loop 0 on
+// the surface. The cell is then a closed lens, and a raised button reads as a
+// raised button from either side rather than as a button from one and a recess
+// from the other — which is what a flat tile there used to read as, and why it
+// was flat. Every style's `solid` profile starts at `{ inset: 0, height: 0 }`
+// and never goes negative, which is what makes the two halves meet cleanly.
+// Grout under the tile gaps keeps them from becoming holes from either face.
+//
+// The exception is the handful of cells the Klein bottle's self-intersection
+// clip cuts (`SurfaceClip`): a cut is a variable number of triangles and a
+// raised profile cuts differently from a sunken one, so those cells could not
+// keep the state-independent vertex count one merged geometry needs. They stay
+// flat tiles, which is what `CellGeom.tile` now means — 1 to 28 cells on a
+// Klein board, all of them at the neck, where the surface is being cut away.
+//
+// Glyphs are billboards rebuilt from the current board rotation (`orient`) so
+// numbers stay screen-upright like the pygame renderer, and are depth-tested so
+// geometry in front of a cell hides its number (a nearer wall, a nearer frame
+// bar) instead of letting it bleed through.
 
 // The two triangles of a billboard quad, in billboard-plane units.
 const QUAD_CORNERS: readonly (readonly [number, number])[] = [
@@ -326,32 +342,32 @@ interface CellGeom {
   fit: number;
   center: Vec3; // centre of the (currently raised or sunken) top face
   palette: CellPalette; // hidden/opened tones for this cell's shape
-  // Two-sided boards only: the flat tile's triangles, built once (they never
-  // re-extrude) and already cut against the surface clip.
+  // Non-null on exactly the cells that stayed **flat**: a two-sided cell the
+  // surface clip cuts (see the module header). Its triangles are built once —
+  // they never re-extrude — and already cut. Null everywhere else, which is
+  // also the flag the rest of this file branches on.
   tile: Tri[] | null;
   // ...and, on a style with a gradient, how far each of that tile's vertices
   // sits from the cell's centre, 1 at the centroid and 0 out at the edge. A
-  // two-sided cell has no loop stack for `vertexShade` to ramp over, so its
-  // gradient is measured off the geometry instead — see `radialFalloff`. The
-  // *falloff* is stored rather than the finished factor because which gradient
-  // it is applied to depends on the cell's state, which changes in play.
+  // flat tile has no loop stack for `vertexShade` to ramp over, so its gradient
+  // is measured off the geometry instead — see `radialFalloff`. The *falloff*
+  // is stored rather than the finished factor because which gradient it is
+  // applied to depends on the cell's state, which changes in play.
   tileFalloff: Float32Array | null;
 }
 
-/** Where each vertex of a **two-sided** cell's (already clipped) triangles sits
- * across the tile: 1 at the centroid, 0 out at its edge. That is the axis a
- * style's gradient is applied along, and it is measured once here because the
- * geometry never moves — only which gradient rides on it changes, when the cell
- * opens.
+/** Where each vertex of a **clipped, flat** cell's triangles sits across the
+ * tile: 1 at the centroid, 0 out at its edge. That is the axis a style's
+ * gradient is applied along, and it is measured once here because the geometry
+ * never moves — only which gradient rides on it changes, when the cell opens.
  *
  * Every other cell gets its gradient from the profile: those vertices arrive in
  * a known order, ring by ring, so `vertexShade` can ramp `rim` to `center` over
- * the loops without looking at a coordinate. A two-sided cell has no loops at
- * all — it is a flat tile on the surface, fan-triangulated and then cut by the
- * Klein clip, which can leave any number of vertices anywhere in it — so the
- * same ramp has nothing to hang on, and the tiles used to come out flat colour
- * whatever the style asked for. Distance from the centre gives the same bead and
- * survives the clip: a cut vertex lands wherever it truly is. */
+ * the loops without looking at a coordinate. A clipped cell has no loops at all
+ * — it is a flat tile on the surface, fan-triangulated and then cut, which can
+ * leave any number of vertices anywhere in it — so the same ramp has nothing to
+ * hang on. Distance from the centre gives the same bead and survives the clip:
+ * a cut vertex lands wherever it truly is. */
 function radialFalloff(tile: Tri[], centroid: Vec3, radius: number): Float32Array {
   const out = new Float32Array(tile.length * 3);
   let i = 0;
@@ -366,10 +382,10 @@ function radialFalloff(tile: Tri[], centroid: Vec3, radius: number): Float32Arra
 
 export class SolidBoard extends Group implements BoardMesh {
   readonly view: BoardView;
-  // Open / non-orientable surfaces (cylinder, Möbius strip, Klein bottle) are
-  // drawn identically from both sides: flat tiles at the surface (no raised
-  // bevel, which would read as a recess from the inside), grout showing in the
-  // gaps from either face, and glyphs on whichever side faces the camera.
+  // Open / non-orientable surfaces (cylinder, Möbius strip, Klein bottle, and
+  // the volume boards) are drawn identically from both sides: the cell style's
+  // profile mirrored on each face, grout showing in the gaps from either one,
+  // and glyphs on whichever side faces the camera.
   readonly twoSided: boolean;
   private readonly order: CellId[];
   private readonly cellIndex = new Map<CellId, number>();
@@ -462,9 +478,14 @@ export class SolidBoard extends Group implements BoardMesh {
   private viewUp: Vec3 = [0, 1, 0];
   private cameraLocal: Vec3 = [0, 0, 1];
   /** The relief every cell is cut with (the player's cell style, at its 3D
-   * profile). A two-sided board draws flat tiles whatever the style, so only
-   * `gap` reaches those. */
+   * profile). A two-sided board mirrors it on both faces; only a clipped cell
+   * takes just the `gap`. */
   private readonly profile: CellProfile;
+  /** How far a crown stands off the surface, as a fraction of the cell radius —
+   * the taller of the two states, since a two-sided cell has to be cleared in
+   * either. What has to clear it: the glyph billboard, which sits on the
+   * surface between two crowns rather than on top of one. */
+  private readonly crownLift: number;
   /** How far the win wave's crest is overdriven past the gold tint (see
    * CellStyle.winGlow). A 3D board is always lit — `CellStyle.unlit` is a flat
    * board's business — so an unlit style's reduced glow does not apply here:
@@ -492,6 +513,11 @@ export class SolidBoard extends Group implements BoardMesh {
     this.shade = style.shade;
     this.openShade = style.openShade ?? style.shade;
     this.loops = cellStyleLoops(this.profile);
+    this.crownLift = Math.max(
+      0,
+      this.profile.closed[this.profile.closed.length - 1]!.height,
+      this.profile.open[this.profile.open.length - 1]!.height,
+    );
     this.atlas = makeGlyphAtlas(undefined, style);
     this.order = [...board.polygons.keys()];
     this.states = this.order.map(() => ({ kind: "hidden" }));
@@ -563,20 +589,26 @@ export class SolidBoard extends Group implements BoardMesh {
       );
       // The cut, if this cell is one of the few the clip reaches.
       const cut = clip && clip.cells.has(cell) ? clip.solid : null;
-      // A closed cell is a raised button: an n-triangle top fan plus a ring of
-      // n quads under it per loop gap in the profile. A two-sided cell is a
-      // flat tile whose triangles are fixed at build time, so a cut one keeps
-      // only what survives the clip.
-      const tile = this.twoSided
-        ? clipTriangles(
-            fanTriangles(
-              poly.map((p) => lerp3(p, centroid, this.profile.gap)),
-              centroid,
-            ),
-            cut,
-          )
-        : null;
-      const count = tile ? 3 * tile.length : cellVertexCount(n, this.profile);
+      // A cell is a raised button: an n-triangle top fan plus a ring of n quads
+      // under it per loop gap in the profile, mirrored onto the far face where
+      // the surface has two. The exception is a **clipped** cell of such a
+      // surface: a cut leaves a variable number of triangles, and a raised
+      // profile cuts differently from a sunken one, so its vertex count would
+      // not be the state-independent number this one merged geometry needs. It
+      // keeps a flat tile instead, fixed at build time (see the module header).
+      const tile =
+        this.twoSided && cut
+          ? clipTriangles(
+              fanTriangles(
+                poly.map((p) => lerp3(p, centroid, this.profile.gap)),
+                centroid,
+              ),
+              cut,
+            )
+          : null;
+      const count = tile
+        ? 3 * tile.length
+        : cellVertexCount(n, this.profile) * (this.twoSided ? 2 : 1);
       this.geom.push({
         start: vertexCount,
         count,
@@ -592,20 +624,23 @@ export class SolidBoard extends Group implements BoardMesh {
         tile,
       });
       vertexCount += count;
-      // How far this cell's drawn geometry reaches: a two-sided tile lies on
-      // the surface, a closed one is raised by the top loop of its profile.
+      // How far this cell's drawn geometry reaches: a crown stands proud of the
+      // board's own vertex radius, on both faces where the surface has two. A
+      // clipped cell is still a flat tile and adds nothing.
       for (const p of poly) hull.push(p[0], p[1], p[2]);
-      if (!this.twoSided) {
-        const crown = this.profile.closed[this.profile.closed.length - 1]!;
-        const lift = radius * crown.height;
-        for (const p of poly) {
-          const top = add3(lerp3(p, centroid, this.profile.gap + crown.inset), [
-            normal[0] * lift,
-            normal[1] * lift,
-            normal[2] * lift,
-          ]);
-          hull.push(top[0], top[1], top[2]);
-          outerRadius = Math.max(outerRadius, Math.hypot(top[0], top[1], top[2]));
+      const crown = this.profile.closed[this.profile.closed.length - 1]!;
+      const crownHeight = tile ? 0 : radius * crown.height;
+      if (!tile) {
+        for (const s of this.twoSided ? [1, -1] : [1]) {
+          for (const p of poly) {
+            const top = add3(lerp3(p, centroid, this.profile.gap + crown.inset), [
+              normal[0] * crownHeight * s,
+              normal[1] * crownHeight * s,
+              normal[2] * crownHeight * s,
+            ]);
+            hull.push(top[0], top[1], top[2]);
+            outerRadius = Math.max(outerRadius, Math.hypot(top[0], top[1], top[2]));
+          }
         }
       }
       // A style that stands models on its cells has to be framed with room for
@@ -617,7 +652,9 @@ export class SolidBoard extends Group implements BoardMesh {
       // (and why only they pay it). On a two-sided board the marker stands both
       // ways, so both tips go in.
       if (this.solidMarkers) {
-        const reach = fit * MARKER_REACH;
+        // ...measured from the crown the model now stands on, not from the
+        // surface (see `rebuildMarkers`).
+        const reach = crownHeight + fit * MARKER_REACH;
         for (const s of this.twoSided ? [1, -1] : [1]) {
           const tip = add3(centroid, [
             normal[0] * reach * s,
@@ -663,20 +700,23 @@ export class SolidBoard extends Group implements BoardMesh {
     const material = new MeshStandardMaterial({
       vertexColors: true,
       ...style.material,
-      // Closed surfaces rely on back-face culling (winding is outward);
-      // open/non-orientable ones draw both faces of their flat tiles, lit and
-      // coloured identically (MeshStandardMaterial flips the normal for the
-      // back face), so a cell looks and plays the same from either side.
+      // Closed surfaces rely on back-face culling (winding is outward). A
+      // mirrored cell is a closed lens and is wound outward on both halves, so
+      // it would cull correctly too — but the clipped cells in the same merged
+      // mesh are still single flat sheets, and culling would take them out from
+      // one side. So those surfaces keep DoubleSide, which costs the lenses
+      // nothing but a depth-rejected fragment.
       side: this.twoSided ? DoubleSide : FrontSide,
     });
     const cells = new Mesh(geometry, material);
     cells.name = "cells";
     this.add(cells);
 
-    // Grout under the tile gaps on every board. On closed surfaces it sits
-    // below the raised cells; on two-sided surfaces the tiles are flat and
-    // coplanar with it, so the grout is pushed back in depth (polygonOffset)
-    // and shown from both faces — the gaps read as grout lines, never holes.
+    // Grout under the tile gaps on every board, so the gaps read as grout lines
+    // rather than as holes. It sits below the raised cells, and on a two-sided
+    // surface it is shown from both faces and pushed back in depth
+    // (polygonOffset) — the lenses only touch its plane along their loop-0 rim,
+    // but a clipped cell is still a flat tile lying in it.
     const baseGeometry = new BufferGeometry();
     baseGeometry.setAttribute(
       "position",
@@ -837,9 +877,10 @@ export class SolidBoard extends Group implements BoardMesh {
     const previous = this.states[i]!;
     const wasOpen = isOpened(previous);
     this.states[i] = visual;
-    // Two-sided tiles are flat and static (state shows in colour only); closed
-    // cells rise when hidden and sink when revealed, so re-extrude on that flip.
-    if (!this.twoSided && isOpened(visual) !== wasOpen) this.writeGeometry(i);
+    // A cell rises when hidden and sinks when revealed, so re-extrude on that
+    // flip — on both faces of a two-sided one. Only a clipped cell is flat and
+    // static, its state showing in colour alone.
+    if (!this.geom[i]!.tile && isOpened(visual) !== wasOpen) this.writeGeometry(i);
     this.writeColor(i);
     this.glyphsDirty = true;
     // A marker is a function of `markerFor(state)` and nothing else the caller
@@ -888,27 +929,29 @@ export class SolidBoard extends Group implements BoardMesh {
     this.rebuildGlyphs();
   }
 
-  /** (Re)write one cell's geometry: a flat tile at the surface for two-sided
-   * boards, else the cell style's profile for its state — the loops of the
-   * polygon pulled in and raised along the outward normal, innermost one filled
-   * as the top face. Raised for hidden/flagged cells, sunk nearly to the base
-   * layer once revealed. */
+  /** (Re)write one cell's geometry: the cell style's profile for its state —
+   * the loops of the polygon pulled in and raised along the outward normal,
+   * innermost one filled as the top face. Raised for hidden/flagged cells, sunk
+   * nearly to the base layer once revealed.
+   *
+   * On a two-sided surface the same stack is written **twice**, once along
+   * +normal and once along -normal, so the cell is a closed lens with a button
+   * on each face. The mirrored half is wound the other way (mirroring reverses
+   * orientation, so simply repeating the order would leave it inside-out), and
+   * the flip is done by swapping two vertices that sit on the *same* loop —
+   * every triangle in the layout has such a pair, the fan being
+   * (centroid, crown, crown) and the wall triangles (low, low, high) and
+   * (low, high, high). That is what lets the second half emit exactly the same
+   * loop-level sequence as the first, which is what lets `writeColor` shade it
+   * with `v % half` instead of a second ramp.
+   *
+   * A clipped cell is flat and static, and goes to `writeFlatTile`. */
   private writeGeometry(i: number): void {
-    if (this.twoSided) return this.writeFlatTile(i);
     const g = this.geom[i]!;
+    if (g.tile) return this.writeFlatTile(i);
     const { poly, centroid, normal } = g;
     const n = poly.length;
     const loops = isOpened(this.states[i]!) ? this.profile.open : this.profile.closed;
-    const rings = loops.map((loop) => {
-      const height = g.radius * loop.height;
-      const lift: Vec3 = [normal[0] * height, normal[1] * height, normal[2] * height];
-      return {
-        points: poly.map((p) => add3(lerp3(p, centroid, this.profile.gap + loop.inset), lift)),
-        center: add3(centroid, lift),
-      };
-    });
-    const top = rings[rings.length - 1]!;
-    g.center = top.center;
 
     let v = g.start;
     const put = (p: Vec3, nrm: Vec3) => {
@@ -916,40 +959,94 @@ export class SolidBoard extends Group implements BoardMesh {
       this.normalAttr.setXYZ(v, nrm[0], nrm[1], nrm[2]);
       v++;
     };
-    // top face: fan from the raised centroid (outward winding preserved —
-    // the board's polygons are counterclockwise seen from outside). The
-    // whole fan carries the cell normal, so a cell on a curved surface
-    // (whose polygon is not planar — e.g. the sphere's pentagons) still
-    // shades as one clean facet instead of a pinwheel of fan triangles.
-    for (let e = 0; e < n; e++) {
-      put(top.center, normal);
-      put(top.points[e]!, normal);
-      put(top.points[(e + 1) % n]!, normal);
-    }
-    // one ring of walls per loop gap, from the outer edge up to the top edge.
-    // One normal per quad keeps its two (slightly non-coplanar) triangles
-    // from showing a diagonal shading crease.
-    for (let r = 1; r < rings.length; r++) {
-      const low = rings[r - 1]!.points;
-      const high = rings[r]!.points;
+
+    /** One half of the cell, lifted along `s * normal`. Returns the centre of
+     * its top face. */
+    const writeHalf = (s: 1 | -1): Vec3 => {
+      const rings = loops.map((loop) => {
+        const height = g.radius * loop.height * s;
+        const lift: Vec3 = [normal[0] * height, normal[1] * height, normal[2] * height];
+        return {
+          points: poly.map((p) => add3(lerp3(p, centroid, this.profile.gap + loop.inset), lift)),
+          center: add3(centroid, lift),
+        };
+      });
+      const top = rings[rings.length - 1]!;
+      const faceNormal: Vec3 = s > 0 ? normal : [-normal[0], -normal[1], -normal[2]];
+      // top face: fan from the raised centroid (outward winding preserved —
+      // the board's polygons are counterclockwise seen from outside). The
+      // whole fan carries the cell normal, so a cell on a curved surface
+      // (whose polygon is not planar — e.g. the sphere's pentagons) still
+      // shades as one clean facet instead of a pinwheel of fan triangles.
       for (let e = 0; e < n; e++) {
-        const a = e;
-        const b = (e + 1) % n;
-        const quadNormal = normalize(newellNormal([low[a]!, low[b]!, high[b]!, high[a]!]));
-        put(low[a]!, quadNormal);
-        put(low[b]!, quadNormal);
-        put(high[b]!, quadNormal);
-        put(low[a]!, quadNormal);
-        put(high[b]!, quadNormal);
-        put(high[a]!, quadNormal);
+        const a = top.points[e]!;
+        const b = top.points[(e + 1) % n]!;
+        put(top.center, faceNormal);
+        put(s > 0 ? a : b, faceNormal);
+        put(s > 0 ? b : a, faceNormal);
       }
+      // one ring of walls per loop gap, from the outer edge up to the top edge.
+      // One normal per quad keeps its two (slightly non-coplanar) triangles
+      // from showing a diagonal shading crease.
+      for (let r = 1; r < rings.length; r++) {
+        const low = rings[r - 1]!.points;
+        const high = rings[r]!.points;
+        for (let e = 0; e < n; e++) {
+          const a = e;
+          const b = (e + 1) % n;
+          // Taking the Newell normal off the *drawn* vertex order is what makes
+          // the mirrored half's walls face outward too: reversing the order
+          // negates it, which is exactly what the mirroring asks for.
+          const quadNormal = normalize(
+            newellNormal(
+              s > 0
+                ? [low[a]!, low[b]!, high[b]!, high[a]!]
+                : [low[b]!, low[a]!, high[a]!, high[b]!],
+            ),
+          );
+          if (s > 0) {
+            put(low[a]!, quadNormal);
+            put(low[b]!, quadNormal);
+            put(high[b]!, quadNormal);
+            put(low[a]!, quadNormal);
+            put(high[b]!, quadNormal);
+            put(high[a]!, quadNormal);
+          } else {
+            // The same two triangles with one pair swapped each: (la,lb,hb) ->
+            // (lb,la,hb) and (la,hb,ha) -> (la,ha,hb). Both swaps are between
+            // vertices of one loop, so the low/high pattern `vertexShade` reads
+            // is untouched.
+            put(low[b]!, quadNormal);
+            put(low[a]!, quadNormal);
+            put(high[b]!, quadNormal);
+            put(low[a]!, quadNormal);
+            put(high[a]!, quadNormal);
+            put(high[b]!, quadNormal);
+          }
+        }
+      }
+      return top.center;
+    };
+
+    const front = writeHalf(1);
+    if (this.twoSided) {
+      writeHalf(-1);
+      // A two-sided cell's centre stays *on* the surface: both faces are drawn,
+      // so neither crown is "the" top, and everything that reads `center` —
+      // the glyph billboard, the stereo pan, the ripple distances, the test
+      // seam's `cellScreenXY` — wants the cell itself rather than one of its
+      // two faces. The two things that stand *on* a face (the pin and the
+      // falling pin) add the crown themselves, in `rebuildMarkers`.
+    } else {
+      g.center = front;
     }
     this.positionAttr.needsUpdate = true;
     this.normalAttr.needsUpdate = true;
   }
 
   /** A flat, slightly-shrunk tile fanned from the cell centroid, sitting on the
-   * surface (no raise). It carries the single cell normal and is drawn
+   * surface (no raise) — what a cell of a two-sided surface gets when the
+   * surface clip cuts it. It carries the single cell normal and is drawn
    * two-sided, so it reads the same from inside or outside; the grout base
    * behind it shows in the shrink gap as a border line. The triangles were
    * built (and clipped) once in the constructor — a flat tile never moves. */
@@ -985,17 +1082,17 @@ export class SolidBoard extends Group implements BoardMesh {
     // Which of the style's two gradients this cell is wearing — an opened cell
     // may be a different material from a closed one (see CellStyle.openShade).
     const shade = isOpened(this.states[i]!) ? this.openShade : this.shade;
+    // A two-sided cell is two mirrored copies of the same profile written back
+    // to back, in the same loop order (see `writeGeometry`), so the second half
+    // reads the first half's ramp: `v % half`. A clipped cell has no loops at
+    // all and rides a falloff measured off its geometry (`radialFalloff`).
+    const half = this.twoSided && !g.tile ? g.count / 2 : 0;
     for (let v = 0; v < g.count; v++) {
-      // A two-sided cell rides its gradient along a falloff measured off the
-      // geometry at build time (`radialFalloff`), since it has no loops; every
-      // other cell ramps over its profile's loops.
       const f = !shade
         ? 1
         : g.tileFalloff
           ? shade.rim + (shade.center - shade.rim) * g.tileFalloff[v]!
-          : this.twoSided
-            ? 1
-            : vertexShade(shade, this.loops, v, g.poly.length);
+          : vertexShade(shade, this.loops, half ? v % half : v, g.poly.length);
       this.colorAttr.setXYZ(g.start + v, col.r * f, col.g * f, col.b * f);
     }
     this.colorAttr.needsUpdate = true;
@@ -1079,8 +1176,20 @@ export class SolidBoard extends Group implements BoardMesh {
       // middle of the mark and leaves four arms reading as spikes. Lift it past
       // the tallest thing a marker style can put there instead, so the X is
       // drawn across the pin the way a cancellation should be.
+      //
+      // A two-sided cell has one more thing to clear: its centre is *on* the
+      // surface with a crown standing off each face, so the billboard has to
+      // get past the near crown as well as the tilted face. `settled * 1.3` on
+      // its own does not — the immersions bend cells into slivers whose
+      // inradius is under a tenth of their radius (see docs/render.md), which
+      // is the crown's own height, and seen edge-on the projected size goes to
+      // nothing while the crown does not. So the crown is a floor under the
+      // lift there.
+      const clear = this.twoSided && !g.tile ? g.radius * this.crownLift * 1.35 : 0;
       const lift =
-        glyph === "cross" ? g.fit * MARKER_REACH * 1.1 : settled * 1.3;
+        glyph === "cross"
+          ? g.fit * MARKER_REACH * 1.1
+          : Math.max(settled * 1.3, clear);
       const cx = c[0] + toCam[0] * lift;
       const cy = c[1] + toCam[1] * lift;
       const cz = c[2] + toCam[2] * lift;
@@ -1141,6 +1250,28 @@ export class SolidBoard extends Group implements BoardMesh {
    * marked cell; rewriting all of them sixty times a second to produce the
    * identical buffer would be the most expensive thing on the board. Cell state
    * is the only input, so cell state is the only trigger. */
+  /** How far cell `i`'s top face stands off the surface, in board units — 0 on
+   * every one-sided cell (whose `center` is already the top face) and on a
+   * clipped flat one. Read per cell and per state, because a model stands on
+   * the crown the cell is wearing *now*. */
+  private crownOf(i: number): number {
+    const g = this.geom[i]!;
+    if (!this.twoSided || g.tile) return 0;
+    const loops = isOpened(this.states[i]!) ? this.profile.open : this.profile.closed;
+    return g.radius * loops[this.loops - 1]!.height;
+  }
+
+  /** Where a model stands on cell `g`: its centre, pushed out to the crown of
+   * the face `s` points at. */
+  private markerBase(g: CellGeom, crown: number, s: 1 | -1): Vec3 {
+    if (!crown) return g.center;
+    return [
+      g.center[0] + g.normal[0] * crown * s,
+      g.center[1] + g.normal[1] * crown * s,
+      g.center[2] + g.normal[2] * crown * s,
+    ];
+  }
+
   private rebuildMarkers(): void {
     this.markersDirty = false;
     if (!this.solidMarkers) return;
@@ -1156,11 +1287,9 @@ export class SolidBoard extends Group implements BoardMesh {
       if (marker === null || this.geom[i]!.count === 0) continue;
       if (i === dropIndex && dropAt != null) continue; // the drop's own buffer
       need += markerVertexCount(marker);
-      // A pin gets a second copy on the far face of a two-sided surface; a bomb
-      // straddles the tile and does not (see below).
-      if (this.twoSided && marker !== "bomb" && marker !== "bombHot") {
-        need += markerVertexCount(marker);
-      }
+      // Every marker gets a second copy on the far face of a two-sided cell
+      // (see below) — but not on a clipped one, which is still a flat tile.
+      if (this.twoSided && !this.geom[i]!.tile) need += markerVertexCount(marker);
     }
     this.markerGeometry.reserve(need);
     this.markerDropGeometry.reserve(markerVertexCount("pin"));
@@ -1201,10 +1330,11 @@ export class SolidBoard extends Group implements BoardMesh {
         // along it would approach from behind the fingertip and never be seen.
         // The hand covers the cell and everything below it, so above is where
         // there is room.
+        const base = this.markerBase(g, this.crownOf(i), 1);
         const from: Vec3 = [
-          g.center[0] + this.viewUp[0] * rise,
-          g.center[1] + this.viewUp[1] * rise,
-          g.center[2] + this.viewUp[2] * rise,
+          base[0] + this.viewUp[0] * rise,
+          base[1] + this.viewUp[1] * rise,
+          base[2] + this.viewUp[2] * rise,
         ];
         // ...and it stands upright on screen while it is up there, tipping into
         // the cell's own normal as it lands — a pin held over the board, then
@@ -1228,18 +1358,24 @@ export class SolidBoard extends Group implements BoardMesh {
       // stretched immersion those are two very different numbers (see
       // CellGeom.fit). This is the same measure the billboards use.
       const scale = g.fit * this.anim.popScale(i, now);
-      writeMarker(marker, g.center, g.normal, scale, sink);
+      const crown = this.crownOf(i);
+      writeMarker(marker, this.markerBase(g, crown, 1), g.normal, scale, sink);
       // A two-sided cell has no consistent outward direction to stand on — the
       // Möbius strip and the Klein bottle cannot have one at all, and nothing
-      // orients the cylinder — and it is drawn from both faces. A **pin** stands
-      // off one of them, so it needs a second copy the other way or it is
-      // missing from one side and buried under the surface from the other. A
-      // **bomb** does not: its casing is centred on the tile and straddles it,
-      // so the one model already pokes out both ways.
-      if (this.twoSided && marker !== "bomb" && marker !== "bombHot") {
+      // orients the cylinder — and it is drawn from both faces, so a marker
+      // needs a copy on each or it is missing from one side and buried under
+      // the surface from the other.
+      //
+      // The **bomb** used to be exempt, on the argument that its casing is
+      // centred on the tile and straddles it. That stopped being true when the
+      // tile became a lens: on a sliver cell (inradius under a tenth of the
+      // radius, which the immersions produce freely) a crown is taller than the
+      // whole bomb, so one model centred on the surface disappears inside it.
+      // It gets a copy per face too, each straddling its own crown.
+      if (this.twoSided && !g.tile) {
         writeMarker(
           marker,
-          g.center,
+          this.markerBase(g, crown, -1),
           [-g.normal[0], -g.normal[1], -g.normal[2]],
           scale,
           sink,

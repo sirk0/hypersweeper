@@ -40,7 +40,13 @@ async function open(mode) {
   await ctx.addInitScript(() => {
     localStorage.setItem(
       "ms:settings",
-      JSON.stringify({ version: 3, theme: "realistic", sound: "off", seenHint: true }),
+      JSON.stringify({
+        version: 5,
+        theme: "bright",
+        shape: "realistic",
+        sound: "off",
+        seenHint: true,
+      }),
     );
   });
   const page = await ctx.newPage();

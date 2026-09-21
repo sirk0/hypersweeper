@@ -2,6 +2,10 @@ import { describe, expect, it } from "vitest";
 import { SRGBColorSpace } from "three";
 import { cellPalette } from "../../src/render/shapePalette";
 import {
+  BOARD_LOOKS,
+  BOARD_SHAPES,
+  boardShape,
+  boardStyleKey,
   CELL_STYLES,
   CELL_STYLE_KEYS,
   cellStyle,
@@ -11,16 +15,20 @@ import {
   DEFAULT_FINISH,
   finishStyle,
   type Finish,
+  DEFAULT_SHAPE,
   resolveCellStyle,
+  resolveShape,
+  SHAPE_KEYS,
   type CellProfile,
 } from "../../src/render/cellStyle";
-import { THEME_KEYS, themeCellStyle } from "../../src/ui/theme";
+import { DEFAULT_THEME, THEME_KEYS } from "../../src/ui/theme";
 
-// The cell-relief table. The invariants here are the ones a bad profile would
-// otherwise break *in the vertex buffer* — a cell writing more vertices than it
-// was allocated overruns into its neighbour's slice — plus the two the styles
-// exist for: a closed cell must stand above an opened one, and a 3D board's
-// relief has to stay lower than a flat board's.
+// The cell tables. A style is composed from a **shape** (the cut) and a theme's
+// **look** (the colours), and `CELL_STYLES` is the product, so the invariants
+// here are of two kinds: the ones a bad profile would break *in the vertex
+// buffer* — a cell writing more vertices than it was allocated overruns into
+// its neighbour's slice — plus the ones that say the composition keeps the two
+// halves apart.
 
 const profiles = (): [string, string, CellProfile][] =>
   CELL_STYLE_KEYS.flatMap((key) => [
@@ -32,22 +40,31 @@ const crown = (p: CellProfile, state: "closed" | "open"): number =>
   p[state][p[state].length - 1]!.height;
 
 describe("cell styles", () => {
-  it("has the flat style as the default — the one the Flat theme names", () => {
-    expect(CELL_STYLE_KEYS[0]).toBe(DEFAULT_CELL_STYLE);
-    expect(cellStyle(DEFAULT_CELL_STYLE).key).toBe("flat");
+  it("defaults to the pair the two settings ship at", () => {
+    expect(DEFAULT_CELL_STYLE).toBe(boardStyleKey(DEFAULT_SHAPE, DEFAULT_THEME));
+    expect(cellStyle(DEFAULT_CELL_STYLE).shape).toBe("classic");
+    expect(cellStyle(DEFAULT_CELL_STYLE).theme).toBe("sand");
+    // cellStyle.ts writes the default theme out rather than importing it from
+    // ui/theme.ts, which imports *this* module. This is what keeps the two in
+    // step.
+    expect(Object.hasOwn(BOARD_LOOKS, DEFAULT_THEME)).toBe(true);
+    expect(cellStyle(DEFAULT_CELL_STYLE).theme).toBe(DEFAULT_THEME);
+    expect(resolveShape(null)).toBe(DEFAULT_SHAPE);
   });
 
-  it("holds exactly the styles the themes name, one each", () => {
-    // The table is no longer a picker of its own: every entry must be reachable
-    // through a theme, and every theme must name an entry that exists. It is a
-    // *bijection* now that the colour scheme is its own setting — Light and Dark
-    // were the two themes that shared a style, and they are one theme (Flat).
-    // Flat Sand is not the exception it looks like: it is Sand's colours on
-    // Flat's cut, which is a style of its own (`flatSand`), because a board's
-    // tint is a cell style's to state.
-    const named = THEME_KEYS.map((k) => themeCellStyle(k));
-    expect(new Set(named)).toEqual(new Set(CELL_STYLE_KEYS));
-    expect(named).toHaveLength(CELL_STYLE_KEYS.length);
+  it("holds every shape crossed with every theme, once each", () => {
+    // The table is the *product* of the two settings: every pair a player can
+    // choose must be in it, and nothing else, or a look is unreachable (which
+    // is exactly what the five-entry table this replaces did to six of the
+    // nine).
+    expect(Object.keys(BOARD_LOOKS).sort()).toEqual([...THEME_KEYS].sort());
+    const pairs = SHAPE_KEYS.flatMap((s) => THEME_KEYS.map((t) => boardStyleKey(s, t)));
+    expect(new Set(pairs)).toEqual(new Set(CELL_STYLE_KEYS));
+    expect(pairs).toHaveLength(CELL_STYLE_KEYS.length);
+    for (const key of CELL_STYLE_KEYS) {
+      const style = CELL_STYLES[key]!;
+      expect(key).toBe(`${style.shape}/${style.theme}`);
+    }
   });
 
   it("falls back for a style this build does not have", () => {
@@ -58,24 +75,77 @@ describe("cell styles", () => {
     expect(resolveCellStyle("toString")).toBe(DEFAULT_CELL_STYLE);
     expect(resolveCellStyle(null)).toBe(DEFAULT_CELL_STYLE);
     expect(resolveCellStyle("gloss")).toBe(DEFAULT_CELL_STYLE);
-    expect(resolveCellStyle("realistic")).toBe("realistic");
+    // ...including the five keys that *were* whole styles before the split.
+    for (const old of ["flat", "classic", "realistic", "sand", "flatSand"]) {
+      expect(resolveCellStyle(old), old).toBe(DEFAULT_CELL_STYLE);
+    }
+    expect(resolveCellStyle("realistic/bright")).toBe("realistic/bright");
+    // A shape key is read the same way, since it arrives from a record too.
+    expect(resolveShape("hologram")).toBe(DEFAULT_SHAPE);
+    expect(resolveShape("toString")).toBe(DEFAULT_SHAPE);
   });
 
-  it("draws the classic board in gray and every other board in shape colours", () => {
-    // "Classic cells are always gray" is the one place a style reaches past
-    // relief into colour, so pin which style does it.
-    expect(cellStyle("classic").monochrome).toBe(true);
-    for (const key of CELL_STYLE_KEYS.filter((k) => k !== "classic")) {
-      expect(CELL_STYLES[key]!.monochrome, key).toBeUndefined();
+  it("draws the classic theme's board in gray, at every cut", () => {
+    // Monochrome is the *theme's*, not the cut's — which is the whole point of
+    // the split: a grey board used to be available only as a beveled one.
+    for (const shape of SHAPE_KEYS) {
+      expect(cellStyle(boardStyleKey(shape, "classic")).monochrome, shape).toBe(true);
+      for (const t of ["bright", "sand"]) {
+        expect(cellStyle(boardStyleKey(shape, t)).monochrome, `${shape}/${t}`).toBeUndefined();
+      }
     }
   });
 
-  it("keys every style by its own key, and labels it", () => {
+  it("keeps the cut out of the colours and the colours out of the cut", () => {
+    // One shape at three themes is three boards with identical geometry; one
+    // theme at three shapes is three cuts with identical tints.
+    for (const shape of SHAPE_KEYS) {
+      const cut = boardShape(shape);
+      for (const t of THEME_KEYS) {
+        const style = cellStyle(boardStyleKey(shape, t));
+        expect(style.flat, `${shape}/${t}`).toEqual(cut.flat);
+        expect(style.solid, `${shape}/${t}`).toEqual(cut.solid);
+        expect(style.unlit, `${shape}/${t}`).toBe(cut.unlit);
+        expect(style.flatMine, `${shape}/${t}`).toBe(cut.flatMine);
+      }
+    }
+    for (const t of THEME_KEYS) {
+      const look = BOARD_LOOKS[t]!;
+      for (const shape of SHAPE_KEYS) {
+        const style = cellStyle(boardStyleKey(shape, t));
+        expect(style.boardTint, `${shape}/${t}`).toBe(look.boardTint);
+        expect(style.digitFont, `${shape}/${t}`).toBe(look.digitFont);
+      }
+    }
+  });
+
+  it("labels every shape, and names the shape and theme on every style", () => {
+    for (const key of SHAPE_KEYS) {
+      const shape = BOARD_SHAPES[key]!;
+      expect(shape.key).toBe(key);
+      expect(shape.label.length).toBeGreaterThan(0);
+      expect(shape.hint.length).toBeGreaterThan(0);
+    }
     for (const key of CELL_STYLE_KEYS) {
       const style = CELL_STYLES[key]!;
       expect(style.key).toBe(key);
-      expect(style.label.length).toBeGreaterThan(0);
-      expect(style.hint.length).toBeGreaterThan(0);
+      expect(SHAPE_KEYS).toContain(style.shape);
+      expect(THEME_KEYS).toContain(style.theme);
+    }
+  });
+
+  it("only ever overrides what the cut already declares", () => {
+    // A theme may quieten a dome's gradient or its translucency; it may not
+    // *give* a flat plate either, or the cut would stop being the cut.
+    for (const shape of SHAPE_KEYS) {
+      const cut = boardShape(shape);
+      for (const t of THEME_KEYS) {
+        const style = cellStyle(boardStyleKey(shape, t));
+        if (cut.shade === undefined) expect(style.shade, `${shape}/${t}`).toBeUndefined();
+        if (cut.openAlpha === undefined) {
+          expect(style.openAlpha, `${shape}/${t}`).toBeUndefined();
+        }
+      }
     }
   });
 
@@ -170,11 +240,10 @@ describe("the Sand board tint", () => {
       SRGBColorSpace,
     )}`;
 
-  // Both styles that wear it, because Flat Sand is *Sand's colours* with the
-  // relief taken off — a tile of one board and the same tile of the other are
-  // the same colour, and only what is drawn on top of it differs. They share the
-  // constant, so this fails the moment one is retuned alone.
-  for (const style of ["sand", "flatSand"]) {
+  // Every cut, because the tint is the theme's: a tile of the domed board and
+  // the same tile of the flat one are the *same colour*, and only what is drawn
+  // on top of it differs.
+  for (const style of SHAPE_KEYS.map((s) => boardStyleKey(s, "sand"))) {
     it(`lands on the study's own tones, shape by shape (${style})`, () => {
       for (const [sides, closed, opened] of [
         [3, "#c6a5a1", "#f6e9e7"],
@@ -192,7 +261,7 @@ describe("the Sand board tint", () => {
     // The tint is a per-style override, not a retune of SHAPE_PALETTE: a style
     // that names none must come out of the same call unchanged.
     for (const key of CELL_STYLE_KEYS) {
-      if (key === "sand" || key === "flatSand") continue;
+      if (cellStyle(key).theme === "sand") continue;
       const tone = { sides: 6, regularity: 1 };
       const withStyle = cellPalette(tone, "flat", false, cellStyle(key).boardTint);
       const plain = cellPalette(tone, "flat", false);
@@ -252,26 +321,26 @@ describe("the player's finish", () => {
     // A style that has two gradients calls the second one its matte reading, so
     // that is what the closed cells fall back to: the tile keeps its relief and
     // its edges and loses only the polish.
-    const realistic = cellStyle("realistic");
+    const realistic = cellStyle(boardStyleKey("realistic", "bright"));
     const matte = finishStyle(realistic, { gloss: false, pins: true });
     expect(matte.material.roughness).toBeGreaterThan(realistic.material.roughness);
     expect(matte.material.metalness).toBe(0);
     expect(matte.shade).toEqual(realistic.openShade);
     expect(matte.openShade).toEqual(realistic.openShade);
     // A style with no gradient at all has nothing to flatten.
-    const flat = cellStyle("flat");
+    const flat = cellStyle(boardStyleKey("flat", "bright"));
     expect(finishStyle(flat, { gloss: false, pins: true }).shade).toBeUndefined();
   });
 
   it("lends the glass finish to a style that has none, and keeps one that has", () => {
-    const classic = cellStyle("classic");
+    const classic = cellStyle(boardStyleKey("classic", "classic"));
     const glossy = finishStyle(classic, { gloss: true, pins: false });
     expect(glossy.material.roughness).toBeLessThan(classic.material.roughness);
     expect(glossy.shade).toBeDefined();
     expect(glossy.shade!.center).toBeGreaterThan(glossy.shade!.rim);
-    // Sand's gradient is tuned a hair off Realistic's on purpose; answering the
-    // setting must not quietly retune the theme.
-    const sand = cellStyle("sand");
+    // Sand's gradient is tuned a hair off the bright one's on purpose;
+    // answering the setting must not quietly retune the theme.
+    const sand = cellStyle(boardStyleKey("realistic", "sand"));
     const kept = finishStyle(sand, { gloss: true, pins: false });
     expect(kept.shade).toEqual(sand.shade);
     expect(kept.material).toEqual(sand.material);

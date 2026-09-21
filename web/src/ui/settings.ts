@@ -19,6 +19,7 @@ import {
 import { allBestTimes } from "../leaderboard";
 import { animationsEnabled } from "../settings";
 import { checkForUpdate, loadDeployedBuild } from "../update";
+import { boardShape, SHAPE_KEYS } from "../render/cellStyle";
 import {
   activeScheme,
   SCHEME_KEYS,
@@ -36,15 +37,16 @@ import {
 // it, built from the same `.menu-entry` cards as every other row. That keeps
 // the phone layout, the scrolling body and the back-row idiom for free.
 //
-// Five sections: the best times (a page below, like the theme picker), the two
-// appearance settings — the theme (the board's cell style and the page it sits
-// on) and the colour scheme (which palette the chrome paints with), each a page
-// below — the sound / haptics / animations behaviour rows, the Privacy switch,
-// and an About block naming the build.
+// Five sections: the best times (a page below, like the theme picker), the
+// three appearance settings — the theme (the palette, the page, and what the
+// board is coloured in), the board shape (how its cells are cut) and the colour
+// scheme (which half of the theme's palette pair is used), each a page below —
+// the sound / haptics / animations behaviour rows, the Privacy switch, and an
+// About block naming the build.
 //
-// Two pages rather than one list of every combination: the two axes are
-// independent, so a single picker would be nine rows that all have to be read to
-// find the two facts they encode.
+// Three pages rather than one list of every combination: the three axes are
+// independent, so a single picker would be twenty-seven rows that all have to be
+// read to find the three facts they encode.
 //
 // Two of those are conditional, on the same principle: a row is only offered
 // where the thing behind it exists. Haptics needs a device that can buzz
@@ -74,8 +76,10 @@ export function buildVersion(): string {
 /** The live view of the stored preferences that the menu reads and writes.
  * Implemented by `App` over `settings.ts`. */
 export interface SettingsHost {
-  /** The active theme key. */
+  /** The active theme key — the palette, the page, and the board's colours. */
   theme: string;
+  /** The active board-shape key — how the cells are cut. */
+  shape: string;
   /** The stored colour-scheme preference; `"auto"` follows the device. */
   scheme: SchemePref;
   /** The difficulty the menu launches boards at. */
@@ -101,6 +105,7 @@ export interface SettingsHost {
   /** Whether anonymous play counts are reported. */
   analytics: boolean;
   setTheme(key: string): void;
+  setShape(key: string): void;
   setScheme(pref: SchemePref): void;
   setDifficulty(key: string): void;
   setAnimations(pref: boolean | null): void;
@@ -147,10 +152,12 @@ function heading(text: string): HTMLElement {
   return el;
 }
 
-/** A theme in miniature: its page field (texture and all), a chrome card on it,
- * a strip of board tiles cut the way that theme cuts them — one of the four
- * "opened" — and an accent dot. Both halves of what a theme now means, so the
- * picker shows the difference rather than naming it.
+/** A look in miniature: a theme's page field (texture and all), a chrome card on
+ * it, a strip of board tiles cut to a shape — one of the four "opened" — and an
+ * accent dot. Every picker draws with it, and each varies the one axis it is
+ * about: the theme page draws every theme at the shape in force, the shape page
+ * every shape under the theme in force, and the scheme page the current pair
+ * under each scheme. So a row always shows exactly what picking it changes.
  *
  * It is not a picture of the theme, it *is* the theme: every custom property
  * `applyTheme` writes to the document is written to this 38px box instead, so
@@ -159,13 +166,18 @@ function heading(text: string): HTMLElement {
  * WebGL preview — the point is to tell a few rows apart in a list, and a canvas
  * per row would cost a renderer each.
  *
- * Both pickers draw with it, which is why `scheme` is a parameter rather than
- * something read off the host: the theme page shows every theme under the scheme
- * in force, and the scheme page shows the theme in force under every scheme. */
-function themeSwatch(key: string, scheme: Scheme): HTMLElement {
+ * Which is why all three axes are parameters rather than read off the host. The
+ * tile colours come from the theme (the `--tile-*` properties its `[data-theme]`
+ * block declares) and the cut from `data-shape`, so the two halves compose in
+ * CSS the way `composeStyle` composes them for the real board. */
+function themeSwatch(key: string, shape: string, scheme: Scheme): HTMLElement {
   const spec = themeDef(key);
   const el = document.createElement("span");
   el.className = "theme-swatch";
+  // The palette reaches the tiles through CSS rather than through `themeVars`:
+  // the `--tile-*` properties are the swatch's own, not the chrome's, so they
+  // are declared per theme in styles.css beside the shape rules that use them.
+  el.dataset["theme"] = key;
   for (const [name, value] of Object.entries(
     themeVars(themePalette(key, scheme), spec.texture?.[scheme]),
   )) {
@@ -175,7 +187,7 @@ function themeSwatch(key: string, scheme: Scheme): HTMLElement {
   card.className = "theme-swatch-card";
   const cells = document.createElement("span");
   cells.className = "cell-swatch";
-  cells.dataset["cellStyle"] = spec.cellStyle;
+  cells.dataset["shape"] = shape;
   for (let i = 0; i < 4; i++) {
     const tile = document.createElement("span");
     tile.className = i === 3 ? "cell-swatch-tile open" : "cell-swatch-tile";
@@ -308,9 +320,9 @@ async function checkForUpdates(status: HTMLElement): Promise<void> {
  * reports which one is on. Picking stays on the page, so the choice is visible
  * immediately in the chrome around it.
  *
- * A theme changes the **board** too now (its cell style), and a style fixes the
- * mesh's vertex layout, so a board in play is never re-cut — hence the footer.
- * The chrome half of the change is instant either way. */
+ * A theme carries the board's own colours too (`BOARD_LOOKS`), and those are
+ * baked into a mesh when it is built, so a board in play never changes colour —
+ * hence the footer. The chrome half of the change is instant either way. */
 export function renderThemePicker(host: SettingsHost): DocumentFragment {
   const frag = document.createDocumentFragment();
   const list = document.createElement("ul");
@@ -321,13 +333,56 @@ export function renderThemePicker(host: SettingsHost): DocumentFragment {
     check.className = "settings-check";
     check.textContent = key === host.theme ? "✓" : "";
     const { li, btn } = buttonRow(
-      [themeSwatch(key, activeScheme(host.scheme)), textBlock(spec.label, spec.hint), check],
+      [
+        themeSwatch(key, host.shape, activeScheme(host.scheme)),
+        textBlock(spec.label, spec.hint),
+        check,
+      ],
       () => host.setTheme(key),
       "settings-theme",
     );
     btn.dataset["theme"] = key;
     btn.setAttribute("aria-pressed", String(key === host.theme));
     if (key === host.theme) btn.classList.add("active");
+    list.append(li);
+  }
+  frag.append(list);
+  const note = document.createElement("p");
+  note.className = "settings-footer";
+  note.textContent = "The board's tiles change on the next board you open.";
+  frag.append(note);
+  return frag;
+}
+
+/** The board shape page: Classic, Realistic, Flat. The theme picker's twin, and
+ * a page for the same reasons — a row carries a preview, and the settings row
+ * above already reports which cut is on.
+ *
+ * Each row wears the *current theme*, so the list is three cuts of the board the
+ * player already has rather than three unrelated pictures. It carries the same
+ * footer as the theme page and for a stronger reason: a cut fixes the mesh's
+ * vertex layout (`cellStyleLoops`), so nothing is ever re-cut in flight. */
+export function renderShapePicker(host: SettingsHost): DocumentFragment {
+  const frag = document.createDocumentFragment();
+  const list = document.createElement("ul");
+  list.className = "menu-list";
+  for (const key of SHAPE_KEYS) {
+    const spec = boardShape(key);
+    const check = document.createElement("span");
+    check.className = "settings-check";
+    check.textContent = key === host.shape ? "✓" : "";
+    const { li, btn } = buttonRow(
+      [
+        themeSwatch(host.theme, key, activeScheme(host.scheme)),
+        textBlock(spec.label, spec.hint),
+        check,
+      ],
+      () => host.setShape(key),
+      "settings-theme",
+    );
+    btn.dataset["shape"] = key;
+    btn.setAttribute("aria-pressed", String(key === host.shape));
+    if (key === host.shape) btn.classList.add("active");
     list.append(li);
   }
   frag.append(list);
@@ -370,7 +425,7 @@ export function renderSchemePicker(host: SettingsHost): DocumentFragment {
           : "Always the dark palette";
     const { li, btn } = buttonRow(
       [
-        themeSwatch(host.theme, key === "auto" ? following : key),
+        themeSwatch(host.theme, host.shape, key === "auto" ? following : key),
         textBlock(SCHEME_LABELS[key], hint),
         check,
       ],
@@ -524,10 +579,11 @@ function holdRow(host: SettingsHost): HTMLElement {
 }
 
 /** The pages this one opens. An object rather than a run of positional
- * callbacks: there are five of them now, and at the call site five bare arrows
+ * callbacks: there are six of them now, and at the call site six bare arrows
  * in a row say nothing about which is which. */
 export interface SettingsPages {
   openThemes(): void;
+  openShapes(): void;
   openSchemes(): void;
   openBestTimes(): void;
   openSounds(): void;
@@ -537,7 +593,8 @@ export interface SettingsPages {
 /** Build the settings page body. The caller (Menu) supplies the back row and
  * puts this into `.menu-body`; `pages` opens the pages below it. */
 export function renderSettings(host: SettingsHost, pages: SettingsPages): DocumentFragment {
-  const { openThemes, openSchemes, openBestTimes, openSounds, openAchievements } = pages;
+  const { openThemes, openShapes, openSchemes, openBestTimes, openSounds, openAchievements } =
+    pages;
   const frag = document.createDocumentFragment();
 
   // -- Records ---------------------------------------------------------------
@@ -597,7 +654,7 @@ export function renderSettings(host: SettingsHost, pages: SettingsPages): Docume
   const scheme = activeScheme(host.scheme);
   const { li: themeLi, btn: themeBtn } = buttonRow(
     [
-      themeSwatch(host.theme, scheme),
+      themeSwatch(host.theme, host.shape, scheme),
       textBlock("Theme", themeDef(host.theme).label),
       chevron,
     ],
@@ -607,7 +664,25 @@ export function renderSettings(host: SettingsHost, pages: SettingsPages): Docume
   themeBtn.dataset["settingsGroup"] = "theme";
   appearance.append(themeLi);
 
-  // The second half of what used to be one setting. It reports the *choice*
+  // The cut, directly under the palette that paints it: the two compose into
+  // one board, and a player who has just picked a theme is looking at exactly
+  // the row that says what shape it is cut in.
+  const shapeChevron = document.createElement("span");
+  shapeChevron.className = "menu-entry-chevron";
+  shapeChevron.textContent = "›";
+  const { li: shapeLi, btn: shapeBtn } = buttonRow(
+    [
+      themeSwatch(host.theme, host.shape, scheme),
+      textBlock("Board shape", boardShape(host.shape).label),
+      shapeChevron,
+    ],
+    openShapes,
+    "menu-submenu",
+  );
+  shapeBtn.dataset["settingsGroup"] = "shape";
+  appearance.append(shapeLi);
+
+  // The third axis. It reports the *choice*
   // rather than what the choice resolves to, with the resolution in brackets —
   // "Auto" alone would leave a player who wanted dark unable to tell whether
   // their device had been asked and answered light, or the setting had not
@@ -617,7 +692,7 @@ export function renderSettings(host: SettingsHost, pages: SettingsPages): Docume
   schemeChevron.textContent = "›";
   const { li: schemeLi, btn: schemeBtn } = buttonRow(
     [
-      themeSwatch(host.theme, scheme),
+      themeSwatch(host.theme, host.shape, scheme),
       textBlock(
         "Colour scheme",
         host.scheme === "auto"
@@ -643,7 +718,7 @@ export function renderSettings(host: SettingsHost, pages: SettingsPages): Docume
       "Custom backgrounds",
       themeDef(host.theme).patterned
         ? "The page behind the board follows its own tiling"
-        : "The page follows the board's tiling, on the Realistic theme",
+        : "The page follows the board's tiling, on the Bright theme",
       host.backgrounds,
       () => host.setBackgrounds(!host.backgrounds),
     ),

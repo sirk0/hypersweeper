@@ -43,10 +43,9 @@
 }
 
 :root {
-  /* The app's default look: the Realistic theme on the light colour scheme —
-     the "Minimal iOS" palette (airy light background, white cards, system blue
-     accent, soft drop shadows; the pygame `ios` theme, so the two front-ends
-     match) under Realistic's woven page.
+  /* The app's default look: the Sand theme on the light colour scheme — the
+     warm `sand` palette (cream ground, terracotta accent, 20px corners) under
+     its own grain-and-light page, and Space Grotesk for the interface.
 
      These are the *boot* values only. The set is a theme and a scheme together
      (the pygame palettes, ported into data/ui/screens.json), and ui/theme.ts
@@ -57,36 +56,39 @@
      `color-scheme` is here for the same reason: it is what the browser paints
      the scrollbar and the flash between documents with. */
   color-scheme: light;
-  /* The interface face. A theme may override it (see the Sand block at the end
-     of this file); everything else inherits it from `body`. */
-  --ui-font: "Rubik", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --bg: #f2f2f7;
-  --bg2: #f2f2f7; /* second gradient stop; equal = a flat field */
-  /* Background layers drawn *over* that field — the Realistic theme's grain
-     and vignette, which is `REALISTIC_PAGE.light` in ui/theme.ts written out.
-     `none` (not empty) on the themes without one: this is consumed by a
-     `background-image` list, where an empty value would invalidate the whole
-     declaration. */
+  /* The interface face, and the one place the boot default is load-bearing
+     beyond the first frame: this value is what a theme that does not name a
+     face of its own inherits. The default theme (Sand) *does* name one, so the
+     boot value is Sand's — a boot value of Rubik would flash the wrong face on
+     every launch — and the two themes that want Rubik say so below, beside
+     Sand's own block. */
+  --ui-font: "Space Grotesk", "Rubik", system-ui, -apple-system, sans-serif;
+  --bg: #f5ead8;
+  --bg2: #f5ead8; /* second gradient stop; equal = a flat field */
+  /* Background layers drawn *over* that field — the Sand theme's grain and
+     light, which is `SAND_PAGE.light` in ui/theme.ts written out. `none` (not
+     empty) on a theme without one: this is consumed by a `background-image`
+     list, where an empty value would invalidate the whole declaration. */
   --bg-texture:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.42'/%3E%3C/svg%3E"),
-    radial-gradient(120% 90% at 50% 0%, #ffffff 0%, #ffffff00 55%),
-    radial-gradient(140% 110% at 50% 100%, #b9bfcf55 0%, #b9bfcf00 60%);
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.3'/%3E%3C/svg%3E"),
+    radial-gradient(120% 90% at 50% 0%, #fffaf0 0%, #fffaf000 55%),
+    radial-gradient(140% 110% at 50% 100%, #a1978644 0%, #a1978600 60%);
   /* The board's own tiling, drawn very faintly over the texture — set by
      `applyTheme` from the mode on screen (ui/backgroundPattern.ts), and `none`
-     on the menu and on the two themes that want a flat field. Over rather
-     than under: the grain is 0.42-opacity turbulence, and a hairline beneath it
-     reads as more noise. */
+     on the menu and on the two themes that want a flat field (this one
+     included, so the boot value is the value). Over rather than under: the
+     grain is turbulence, and a hairline beneath it reads as more noise. */
   --bg-pattern: none;
-  --panel: #ffffff;
+  --panel: #f9f4ed;
   --panel-blur: none; /* frosted cards, for the glass theme */
-  --text: #1c1c1e;
-  --muted: #8e8e93;
-  --accent: #0a84ff;
+  --text: #2e2b25;
+  --muted: #82796a;
+  --accent: #c67139;
   --on-accent: #ffffff;
   --danger: #ff5c5c;
-  --selected: #ddeaff;
-  --border: #dfe0e5;
-  --counter-bg: #1c1c1e;
+  --selected: #ffe1d0;
+  --border: #dcd3c4;
+  --counter-bg: #2e2b25;
   /* The reset button's face. Not part of a palette: it is the palette's own
      yellow anchor (render/shapePalette.ts `smileyHex`, a pentagon's hue) and it
      is the same under every theme and both schemes, so the dark block below
@@ -95,8 +97,8 @@
   --smiley: #f0e342;
   --smiley-rim: #b5ac2f;
   --smiley-ink: #2b2f3a;
-  --radius: 14px;
-  --shadow: 0 2px 6px rgba(60, 62, 74, 0.14);
+  --radius: 20px;
+  --shadow: 0 2px 10px rgba(64, 35, 16, 0.16);
   /* Header control sizing, all on one fluid scale — the CSS counterpart of the
      pygame header's `_header_scale`. The square button box, the glyph inside
      it, the gaps and the LED counter text shrink together on a narrow phone so
@@ -148,9 +150,9 @@
 }
 
 /* The boot frame for a device that prefers dark. The default colour scheme is
-   `auto`, so most players on a dark phone want the dark palette — and until
-   main.ts has read localStorage and called `applyTheme`, the block above is
-   what paints, which would be one white flash on every launch.
+   `light` now, so this covers the player who has *chosen* `auto` (or dark) on a
+   dark device: until main.ts has read localStorage and called `applyTheme`, the
+   block above is what paints, which would be one bright flash on every launch.
 
    This can never fight an explicit choice: `applyTheme` writes these as *inline*
    properties on the document element, and an inline declaration beats any
@@ -162,22 +164,22 @@
 @media (prefers-color-scheme: dark) {
   :root {
     color-scheme: dark;
-    --bg: #101014;
-    --bg2: #101014;
+    --bg: #191712;
+    --bg2: #191712;
     --bg-texture:
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.16'/%3E%3C/svg%3E"),
-      radial-gradient(120% 90% at 50% 0%, #2a2f3d 0%, #2a2f3d00 55%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.12'/%3E%3C/svg%3E"),
+      radial-gradient(120% 90% at 50% 0%, #3a332a 0%, #3a332a00 55%),
       radial-gradient(140% 110% at 50% 100%, #00000088 0%, #00000000 60%);
-    --panel: #1c1c22;
-    --text: #f2f2f7;
-    --muted: #8e8e96;
-    --accent: #0a84ff;
-    --on-accent: #ffffff;
+    --panel: #2e2b25;
+    --text: #f9f4ed;
+    --muted: #a19786;
+    --accent: #f6a06b;
+    --on-accent: #2e2b25;
     --danger: #ff5c5c;
-    --selected: #16324f;
-    --border: #2c2c34;
+    --selected: #8c491a55;
+    --border: #474238;
     --counter-bg: #000000;
-    --shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+    --shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
   }
 }
 
@@ -201,7 +203,7 @@
    Deliberately only `min-height`: clipping the growth back off with an
    `overflow: hidden` here risks taking the paint with it, and the few px of
    page this leaves scrollable move nothing on screen — the app is fixed layers
-   over a field that is flat but for the Realistic theme's vignette. A fresh
+   over a field that is flat but for a theme's grain and vignette. A fresh
    install is inset below an opaque status bar, so its inset is 0 and this rule
    grows nothing. */
 @media (display-mode: standalone) {
@@ -1305,13 +1307,17 @@ body {
   justify-content: space-between;
 }
 
-/* The board half of a theme swatch: four tiles cut the way that theme's cell
-   style cuts them, one of them opened. Nested inside `.theme-swatch`, which
+/* The board half of a look swatch: four tiles cut to a shape and painted in a
+   theme's colours, one of them opened. Nested inside `.theme-swatch`, which
    sets every theme custom property on itself — so `var(--panel)` below is the
-   *row's* panel colour, not the page's. The relief is faked with gradients
+   *row's* panel colour, not the page's.
+
+   The two halves are split the way the real board's are (render/cellStyle.ts):
+   the `[data-theme]` blocks name the tile colours, the `[data-shape]` blocks the
+   cut, and a swatch composes one of each. The relief is faked with gradients
    rather than rendered — the point is to tell a few rows apart in a list, and
-   the real geometry lives in render/cellStyle.ts, so keep the two in step by
-   eye when retuning a profile. */
+   the real geometry lives in cellStyle.ts, so keep the two in step by eye when
+   retuning a profile. */
 .cell-swatch {
   position: absolute;
   left: 5px;
@@ -1322,90 +1328,90 @@ body {
   height: 18px;
   border-radius: 4px;
   overflow: hidden;
-  background: #b7b2ab; /* what shows in the tile gaps */
+  /* Bright's board, and the fallback: the shape palette's own orange at the
+     hidden/opened step a square tile is drawn at. */
+  --tile: #ef9f3d;
+  --tile-open: #fbe3ca;
+  --tile-hi: #ffb552;
+  --tile-lo: #b06f1c;
+  --tile-grout: #b7b2ab;
+  background: var(--tile-grout);
 }
 
 .cell-swatch-tile {
-  background: #96703c;
+  background: var(--tile);
 }
 
 .cell-swatch-tile.open {
-  background: #b3aba1;
+  background: var(--tile-open);
 }
 
-/* Classic: a hard bevel, inverted on the opened tile — and gray, because that
-   is what the Classic theme's cells are (CellStyle.monochrome). The two fills
-   are SHAPE_PALETTE.board.mono, i.e. the pygame board's own faces. */
-.cell-swatch[data-cell-style="classic"] {
+/* Classic: `SHAPE_PALETTE.board.mono`, i.e. the pygame board's own faces, since
+   this theme switches the shape colour code off at every cut. */
+.theme-swatch[data-theme="classic"] .cell-swatch {
+  --tile: #bdbdbd;
+  --tile-open: #cdcdcd;
+  --tile-hi: #e6e6e6;
+  --tile-lo: #8b8b8b;
+  --tile-grout: #9a9a9a;
+}
+
+/* Sand: the real board's square tones under `SAND_TINT` — the same two values
+   tests/unit/cellStyle.test.ts pins the board itself to. */
+.theme-swatch[data-theme="sand"] .cell-swatch {
+  --tile: #c0a994;
+  --tile-open: #f3eae3;
+  --tile-hi: #d4c0ad;
+  --tile-lo: #96826f;
+  --tile-grout: #b7b2ab;
+}
+
+/* Classic: a hard bevel, inverted on the opened tile. */
+.cell-swatch[data-shape="classic"] {
   gap: 1px;
-  background: #9a9a9a;
 }
 
-.cell-swatch[data-cell-style="classic"] .cell-swatch-tile {
-  background: #bdbdbd;
+.cell-swatch[data-shape="classic"] .cell-swatch-tile {
   border: 1.5px solid;
-  border-color: #e6e6e6 #8b8b8b #8b8b8b #e6e6e6;
+  border-color: var(--tile-hi) var(--tile-lo) var(--tile-lo) var(--tile-hi);
 }
 
-.cell-swatch[data-cell-style="classic"] .cell-swatch-tile.open {
-  background: #cdcdcd;
+.cell-swatch[data-shape="classic"] .cell-swatch-tile.open {
   border-width: 1px;
-  border-color: #8b8b8b #eeeeee #eeeeee #8b8b8b;
+  border-color: var(--tile-lo) var(--tile-hi) var(--tile-hi) var(--tile-lo);
 }
 
-/* Flat: unlit plate colour, wide gaps, no relief at all. */
-.cell-swatch[data-cell-style="flat"] {
+/* Flat: unlit plate colour, wide gaps, no relief at all. The panel shows
+   between the tiles rather than the grout, as the page does on the real board. */
+.cell-swatch[data-shape="flat"] {
   gap: 3px;
   padding: 2px;
   background: var(--panel);
 }
 
-.cell-swatch[data-cell-style="flat"] .cell-swatch-tile {
-  background: #ef9f3d;
-}
-
-.cell-swatch[data-cell-style="flat"] .cell-swatch-tile.open {
-  background: #fbe3ca;
-}
-
-/* Realistic: glass beads, each lit from its own middle — and an opened tile
-   that is deliberately *not* one: flat matte colour at the `openAlpha` the real
-   board draws it at, so the page shows through. That contrast of materials is
-   what the theme's two states look like (see CellStyle.openShade). */
-.cell-swatch[data-cell-style="realistic"] {
+/* Realistic: glass beads, each lit from its own middle — and an opened tile that
+   is deliberately *not* one: flat matte colour at the `openAlpha` the real board
+   draws it at, so the page shows through. That contrast of materials is what
+   this cut's two states look like (see CellStyle.openShade). Classic is the one
+   theme whose board stays opaque at every cut (`BOARD_LOOKS.classic` clears
+   `openAlpha`), so it takes that back below. */
+.cell-swatch[data-shape="realistic"] {
   gap: 1px;
   padding: 1px;
   background: transparent;
 }
 
-.cell-swatch[data-cell-style="realistic"] .cell-swatch-tile {
+.cell-swatch[data-shape="realistic"] .cell-swatch-tile {
   border-radius: 3px;
-  background: radial-gradient(circle at 50% 50%, #ffb552 0 12%, #b06f1c 92%);
+  background: radial-gradient(circle at 50% 50%, var(--tile-hi) 0 12%, var(--tile-lo) 92%);
 }
 
-.cell-swatch[data-cell-style="realistic"] .cell-swatch-tile.open {
-  background: rgba(246, 231, 216, 0.74);
+.cell-swatch[data-shape="realistic"] .cell-swatch-tile.open {
+  opacity: 0.74;
 }
 
-/* Flat Sand: Sand's tones cut like Flat's. It needs a rule of its own because
-   the two Sand rows would otherwise be one picture twice — Sand falls through
-   to the base swatch above, and a picker row whose swatch cannot be told from
-   the row under it is not saying what the two differ by. Flat's geometry (the
-   wide gap and the square plate, no bead and no translucency) over the real
-   board's square tones under `SAND_TINT` — the same two values
-   tests/unit/cellStyle.test.ts pins the board itself to. */
-.cell-swatch[data-cell-style="flatSand"] {
-  gap: 3px;
-  padding: 2px;
-  background: var(--panel);
-}
-
-.cell-swatch[data-cell-style="flatSand"] .cell-swatch-tile {
-  background: #c0a994;
-}
-
-.cell-swatch[data-cell-style="flatSand"] .cell-swatch-tile.open {
-  background: #f3eae3;
+.theme-swatch[data-theme="classic"] .cell-swatch[data-shape="realistic"] .cell-swatch-tile.open {
+  opacity: 1;
 }
 
 /* A sound preset's voice in miniature: one bar per harmonic partial, as tall
@@ -2214,23 +2220,32 @@ body {
    (the narrowest iPhone) with room to spare. tests/e2e/hud.spec.ts pins the
    fit and the centring across the iPhone widths. */
 
-/* --- The Sand themes' typography --- */
-/* The Sand themes are the ones that carry faces of their own, and both wear the
-   whole block: Sand and Flat Sand share a palette, a page and a set of glyphs,
-   and differ only in how their cells are cut, so a rule that dresses the chrome
-   names both keys. Everything else about them — the warm ground, the terracotta
-   accent, the 20px radii, the card fills — is in that palette (`sand` /
-   `sandDark` in data/ui/screens.json) and arrives through the custom properties
-   above, so this block is only what a palette cannot say.
+/* --- Typography, per theme --- */
+/* Rubik for the two themes that are not Sand. It is the pygame board's own face
+   and what this app was set in throughout until Sand arrived; it is stated here
+   rather than on `:root` because `:root` is the *boot* frame and has to carry
+   the default theme's face (see the top of this file), and the default theme is
+   the one with a face of its own. */
+[data-theme="bright"],
+[data-theme="classic"] {
+  --ui-font: "Rubik", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+
+/* Sand is the one theme that carries faces of its own. Everything else about it
+   — the warm ground, the terracotta accent, the 20px radii, the card fills — is
+   in its palette (`sand` / `sandDark` in data/ui/screens.json) and arrives
+   through the custom properties above, so this block is only what a palette
+   cannot say. It is keyed on the theme alone, whichever shape the board is cut
+   in: the chrome is the theme's business.
 
    Space Grotesk carries the interface: tighter apertures and a flat-sided 2 and
    3 read as instrument type rather than as something friendly, which is the
    register a board that is a geometry exercise wants. It reaches every control
    through `--ui-font` and the `font: inherit` on each of them, and it is the
-   same face both themes' board digits are baked in (`CellStyle.digitFont`), so
-   the numbers on the tiles and the labels around them are one voice. */
-[data-theme="sand"],
-[data-theme="flatSand"] {
+   same face this theme's board digits are baked in (`BOARD_LOOKS.sand`), so the
+   numbers on the tiles and the labels around them are one voice. */
+[data-theme="sand"] {
   --ui-font: "Space Grotesk", "Rubik", system-ui, -apple-system, sans-serif;
 }
 
@@ -2239,8 +2254,7 @@ body {
    nowhere else, which is what makes it read as the game's name rather than as
    the theme shouting. Weight is stated because the face ships one (400) and the
    title's own rule does not set it. */
-[data-theme="sand"] .menu-title,
-[data-theme="flatSand"] .menu-title {
+[data-theme="sand"] .menu-title {
   font-family: "Caprasimo", var(--ui-font);
   font-weight: 400;
 }
@@ -2250,8 +2264,7 @@ body {
    opened up is what stops a line of small type from reading as a leftover.
    `--muted` is already this palette's warm neutral, so the opacity the other
    themes use to push it back is not needed here — it would only muddy it. */
-[data-theme="sand"] .board-name,
-[data-theme="flatSand"] .board-name {
+[data-theme="sand"] .board-name {
   font-weight: 500;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -2277,15 +2290,11 @@ body {
    buttons carry both classes and the two selectors weigh the same — order is
    what settles it. */
 [data-theme="sand"] .hud-btn,
-[data-theme="sand"] .hud-smiley,
-[data-theme="flatSand"] .hud-btn,
-[data-theme="flatSand"] .hud-smiley {
+[data-theme="sand"] .hud-smiley {
   border-radius: calc(var(--hud-btn) * 0.38);
 }
 
 [data-theme="sand"] .board-bar-btn,
-[data-theme="sand"] .hud-counter,
-[data-theme="flatSand"] .board-bar-btn,
-[data-theme="flatSand"] .hud-counter {
+[data-theme="sand"] .hud-counter {
   border-radius: calc(var(--hud-btn) * 0.28);
 }

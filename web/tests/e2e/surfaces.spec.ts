@@ -14,7 +14,7 @@ test.describe("M3 surfaces", () => {
     await page.addInitScript(() => {
       localStorage.setItem(
         "ms:settings",
-        JSON.stringify({ version: 4, extraControls: true, seenHint: true }),
+        JSON.stringify({ version: 5, extraControls: true, seenHint: true }),
       );
     });
   });
@@ -188,7 +188,7 @@ test.describe("M3 surfaces", () => {
           .map((n) => (n as HTMLElement).dataset["slot"]),
       );
     await page.addInitScript(() => {
-      localStorage.setItem("ms:settings", JSON.stringify({ version: 4, seenHint: true }));
+      localStorage.setItem("ms:settings", JSON.stringify({ version: 5, seenHint: true }));
     });
 
     await page.goto("/?mode=klein&difficulty=easy&seed=1");

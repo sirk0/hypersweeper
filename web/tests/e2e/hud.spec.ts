@@ -136,7 +136,7 @@ test.describe("game header", () => {
     await page.addInitScript(() => {
       localStorage.setItem(
         "ms:settings",
-        JSON.stringify({ version: 4, extraControls: true, seenHint: true }),
+        JSON.stringify({ version: 5, extraControls: true, seenHint: true }),
       );
     });
     await page.goto("/?mode=klein&difficulty=easy&seed=1");
