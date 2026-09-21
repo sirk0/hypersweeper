@@ -538,6 +538,24 @@ body {
   line-height: 1;
 }
 
+/* The face is sized like every other header glyph rather than left to the
+   default `width: 100%` an inline SVG takes — at the button's full content
+   width it painted 1.7x the flag and the die beside it, which read as a
+   heavier drawing rather than a bigger one. `.hud-icon-btn` does this for the
+   icon buttons; the reset slot carries no icon class (Hud.buildSlot), so it
+   states it here. */
+.hud-smiley {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hud-smiley svg {
+  display: block;
+  width: var(--hud-icon);
+  height: var(--hud-icon);
+}
+
 /* Icon-only header buttons (e.g. the flag-mode toggle). Positioned so the flag
    flash below can lay its red over the button; the icon is positioned in turn
    so it paints on top of that layer, a pseudo-element coming after its siblings
