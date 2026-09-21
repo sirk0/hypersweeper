@@ -708,17 +708,14 @@ export function renderSettings(host: SettingsHost, pages: SettingsPages): Docume
   appearance.append(schemeLi);
 
   // Beside the theme rather than under Behaviour: this is what the page is
-  // made of, not what the game does. It is shown whatever theme is active,
-  // unlike the conditional rows below — the setting is real either way, and
-  // only its *effect* waits for a theme that has a pattern to draw. Saying so
-  // in the hint beats a row that appears and disappears with the theme.
+  // made of, not what the game does. It is the player's setting rather than a
+  // property of one theme, so it draws on all three — a switch that silently
+  // did nothing on two of them was read as broken.
   appearance.append(
     toggleRow(
       "backgrounds",
       "Custom backgrounds",
-      themeDef(host.theme).patterned
-        ? "The page behind the board follows its own tiling"
-        : "The page follows the board's tiling, on the Bright theme",
+      "The page behind the board follows its own tiling",
       host.backgrounds,
       () => host.setBackgrounds(!host.backgrounds),
     ),

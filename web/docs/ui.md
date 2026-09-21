@@ -38,7 +38,8 @@ buttons and the difficulty block are the *same* elements, moved between the two
 homes (`placeHeaderButtons`, `paneHeader`), so every `data-action` and
 `.difficulty-btn` selector still resolves to one element at any width.
 
-Two rules keep the two layouts honest, and both were learned the hard way:
+Three rules keep the two layouts honest, and all three were learned the hard
+way:
 
 - **Every page must render at either width.** `this.view` is a closure that
   outlives a resize — a rotate on a big phone crosses 900px on its own — so a
@@ -49,6 +50,17 @@ Two rules keep the two layouts honest, and both were learned the hard way:
   left on the desktop's Quick start page — no Custom row, no back row and the
   sidebar `display: none`, so the whole geometry tree was unreachable until a
   reload. `tests/e2e/layout.spec.ts` pins the crossing.
+- **The sidebar is built once, so it is the one thing a render does not
+  repaint.** Only the pane content and the active row change between pages —
+  but its rows carry menu glyphs, and a glyph is a *string of SVG* with its
+  colours already baked in (`ui/icons.ts`), so a theme switch left the whole
+  geometry list in the old theme's ink: Classic's grey tiles still grey under
+  Sand's cards. `Menu.refresh` therefore rebuilds it (`rebuildSidebar`), and
+  puts back the two things that live in it rather than being rebuilt with it —
+  the How to play / Settings buttons, which are *moved* into its footer rather
+  than cloned, and which row is active. Anything else cached across a render
+  has to answer the same question. `tests/e2e/settings.spec.ts` pins it against
+  what a fresh load of the same theme draws.
 - **The pane header does not scroll.** It carries the only difficulty control
   on screen and, on a family page, the only way back up, so a page marked
   `paned` (set by `paneHeader`, cleared by `render` the way `settings-open` is)
@@ -347,17 +359,20 @@ the JSON following.
 
 ### The page follows the board's tiling
 
-Bright's page is not one texture: behind the grain it carries **the board's own
-tiling**, drawn very small and very faint (`src/ui/backgroundPattern.ts`). Open
-`torustrihex` and the paper behind it is trihexagonal; open `kleincairo` and it
-is Cairo pentagons. Cut with the domed shape the opened cells are translucent,
-so that page is what shows *through* the board as well as around it.
+Behind the grain, a theme's page carries **the board's own tiling**, drawn very
+small and very faint (`src/ui/backgroundPattern.ts`). Open `torustrihex` and the
+paper behind it is trihexagonal; open `kleincairo` and it is Cairo pentagons.
+Cut with the domed shape the opened cells are translucent, so that page is what
+shows *through* the board as well as around it; cut opaque, it is the field
+around it, which is a page either way.
 
 It is **opt-in**: Settings › Appearance › **Custom backgrounds**, off by
 default. The row sits beside Theme rather than under Behaviour (this is what the
-page is made of, not what the game does) and is shown whatever theme is active,
-with the hint saying that only Bright has a pattern to draw — better than a row
-that appears and disappears with the theme.
+page is made of, not what the game does). It draws under **all three** themes:
+it is the player's setting rather than one theme's flourish, and a switch that
+silently did nothing on two of them read as a broken switch rather than as a
+design. What decides whether a pattern is on the page is the switch and whether
+a board is open — nothing about the theme.
 
 `patternLayer(mode)` returns one CSS `background-image` layer — an inline SVG
 data URI, because the packaged builds assert the bundle fetches nothing. It goes
@@ -441,7 +456,7 @@ menu is in anyway.
   a plain square grid.
 - **Screenshots cannot see it.** A 7%-alpha hairline moves a pixel by about
   0.05, under Playwright's default per-pixel `threshold` of 0.2, so every
-  Bright baseline keeps passing whether the pattern renders or not — and
+  gallery baseline keeps passing whether the pattern renders or not — and
   `--update-snapshots` will not rewrite a baseline that passes. The e2e
   assertions read `--bg-pattern` instead; `tests/unit/backgroundPattern.test.ts`
   pins the geometry (every mode classified, tiles seamless under a one-tile
@@ -473,7 +488,8 @@ menu is in anyway.
   hairlines and frames rather than anything a board is picked by. The *hue* is
   never overridden by either — Sand's rows keep the thread tying them to the
   board they open, and Classic's have no hue left to keep.
-- **Only Bright is patterned** (`Theme.patterned`). The settings swatches call
+- **Every theme is patterned**, so a theme has nothing to say about it — see
+  "The page follows the board's tiling" above. The settings swatches call
   `themeVars` with the texture and no pattern, so they show the theme rather
   than whatever board was last open; keep it that way. Their *tiles* are the
   other half: the `--tile-*` custom properties a theme's `[data-theme]` block in

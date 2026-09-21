@@ -306,7 +306,7 @@ class App {
   }
 
   /** Paint the theme for what is on screen. The chrome half is the theme alone;
-   * the page half also depends on the board, since on Realistic the page
+   * the page half also depends on the board, since under every theme the page
    * follows that board's own tiling (ui/backgroundPattern.ts). Everything that
    * repaints the theme goes through here so the mode is never forgotten — a
    * theme switch or a change synced from another tab has to keep the pattern of
@@ -451,6 +451,10 @@ class App {
     this.animationsEnabled = animationsEnabled(settings.animations);
     this.session?.mesh.setAnimationsEnabled(this.animationsEnabled);
     this.showBoardControls();
+    // The menu glyphs are baked strings, so a theme arriving from another tab
+    // has to repaint them exactly as `setTheme` does — `refresh` below draws
+    // them, and would draw them in the palette this tab last used.
+    setIconPalette(theme(settings.theme).icons);
     this.menu.refresh();
   }
 

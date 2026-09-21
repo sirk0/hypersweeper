@@ -434,7 +434,7 @@ test.describe("settings", () => {
     await expect(page.locator(".settings-status")).toHaveText("Could not check for updates.");
   });
 
-  // The Bright page follows the board's own tiling (ui/backgroundPattern.ts).
+  // The page follows the board's own tiling (ui/backgroundPattern.ts).
   // Asserted through --bg-pattern rather than by screenshot on purpose: the
   // pattern is a 7%-alpha hairline, which moves a pixel by about 0.05 — well
   // under Playwright's default per-pixel `threshold` of 0.2 — so a screenshot
@@ -553,7 +553,7 @@ test.describe("settings", () => {
     expect(await shown()).toBeGreaterThan(0);
   });
 
-  test("the Bright page follows the board's tiling", async ({ page }) => {
+  test("the page follows the board's tiling", async ({ page }) => {
     await page.locator('.menu-header-btn[data-action="settings"]').click();
     await page.locator('.menu-entry[data-settings-group="theme"]').click();
     await page.locator('.menu-entry[data-theme="bright"]').click();
@@ -582,20 +582,53 @@ test.describe("settings", () => {
     expect(await cssVar(page, "--bg-pattern")).toBe("none");
   });
 
-  test("only the Bright theme patterns the page", async ({ page }) => {
+  // The switch is the player's, not one theme's flourish: it used to draw on
+  // Bright alone and silently do nothing on the other two, which reads as a
+  // broken switch rather than as a design.
+  test("every theme patterns the page", async ({ page }) => {
     await page.locator('.menu-header-btn[data-action="settings"]').click();
     await page.locator('.menu-entry[data-setting="backgrounds"]').click(); // opt in
     await page.locator('.menu-entry[data-action="back"]').click();
-    for (const key of ["classic", "sand"]) {
+    for (const key of ["classic", "sand", "bright"]) {
       await page.locator('.menu-header-btn[data-action="settings"]').click();
       await page.locator('.menu-entry[data-settings-group="theme"]').click();
       await page.locator(`.menu-entry[data-theme="${key}"]`).click();
       await page.locator('.menu-entry[data-action="back"]').click();
       await page.locator('.menu-entry[data-action="back"]').click();
       await page.evaluate(() => window.__ms!.startBoard("torustrihex", "easy"));
-      expect(await cssVar(page, "--bg-pattern"), key).toBe("none");
+      expect(await cssVar(page, "--bg-pattern"), key).toContain("data:image/svg+xml");
       await page.locator('.hud-btn[data-slot="back"]').click();
     }
+  });
+
+  // The sidebar is built once and outlives every page, so a theme switch used
+  // to leave its glyphs in the palette they were baked in — Classic's grey
+  // geometry list still grey under Sand's cards. The reference is what a
+  // *fresh* load of the same theme draws, since that is the sidebar the theme
+  // should have.
+  test("the sidebar's glyphs follow the theme", async ({ page }) => {
+    const icon = (): Promise<string> =>
+      page.locator('.menu-sidebar .menu-entry[data-group="flat"] svg').innerHTML();
+    const pick = async (key: string): Promise<void> => {
+      await page.locator('.menu-header-btn[data-action="settings"]').click();
+      await page.locator('.menu-entry[data-settings-group="theme"]').click();
+      await page.locator(`.menu-entry[data-theme="${key}"]`).click();
+      await page.locator('.menu-entry[data-action="back"]').click(); // to settings
+      await page.locator('.menu-entry[data-action="back"]').click(); // to the root
+    };
+
+    await pick("sand");
+    await page.reload();
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    const sand = await icon();
+
+    // Classic draws every tile glyph grey (`GREY_ICON_TINT`), so the two
+    // drawings are the same figure in two palettes.
+    await pick("classic");
+    expect(await icon()).not.toBe(sand);
+
+    await pick("sand");
+    expect(await icon()).toBe(sand);
   });
 
   // The whole point of the ink being per scheme: on the dark page the light

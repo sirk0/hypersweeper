@@ -1,12 +1,15 @@
 // The page behind a board, patterned with that board's own tiling.
 //
-// Realistic is the one theme with a textured page (ui/theme.ts), and on
-// Realistic the opened cells are translucent — so the page is not just the
-// field around the board, it is what shows *through* it. This module makes that
-// page follow the tiling: open `torustrihex` and the paper behind it is
-// trihexagonal; open `kleincairo` and it is Cairo pentagons. Very small and
-// very faint, on purpose: the detail is meant to be something a player notices
-// after a while, not decoration competing with the board.
+// Open `torustrihex` and the paper behind the board is trihexagonal; open
+// `kleincairo` and it is Cairo pentagons. Very small and very faint, on
+// purpose: the detail is meant to be something a player notices after a while,
+// not decoration competing with the board.
+//
+// It is the player's own setting (Settings › Appearance › Custom backgrounds),
+// so it draws under **every** theme — a switch that did nothing on two of the
+// three read as a broken switch. Where the theme's cut leaves the opened cells
+// translucent the page is also what shows *through* the board; where it does
+// not, it is the field around it, which is a page either way.
 //
 // The ink follows the **colour scheme**, and it has to be baked into the tile
 // rather than inherited: a `background-image` data URI is its own document, so

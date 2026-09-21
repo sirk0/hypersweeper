@@ -74,11 +74,6 @@ export interface Theme {
    * vignette over a darkening grain, which on a near-black page would blow a
    * bright dome across the top. Absent on the themes that want a plain field. */
   texture?: Record<Scheme, string>;
-  /** The page behind a board follows that board's own tiling
-   * (ui/backgroundPattern.ts). Only Realistic: the other two want the flat
-   * field they were designed as, and only Realistic has translucent opened
-   * cells for the pattern to show through. */
-  patterned?: boolean;
   /** How this theme paints the menu glyphs (`ui/icons.ts`), if not in the set's
    * own vivid indigo-referenced register. A theme-level setting rather than a
    * cell-style one because a menu icon is chrome: it is on screen when no board
@@ -214,7 +209,6 @@ const THEMES: Theme[] = [
     hint: "The board's own colours on a textured page",
     palette: { light: "ios", dark: "dark" },
     texture: REALISTIC_PAGE,
-    patterned: true,
     // No `icons`: the menu glyphs stay in the set's own vivid indigo-referenced
     // register, which is what they were drawn for.
     //
@@ -237,9 +231,6 @@ const THEMES: Theme[] = [
     palette: { light: "classicWeb", dark: "classicDark" },
     texture: CLASSIC_PAGE,
     icons: CLASSIC_ICONS,
-    // No `patterned`: this theme's board is opaque at every cut
-    // (`BOARD_LOOKS.classic` clears `openAlpha`), so a tiling drawn behind it
-    // would only ever show in the grout.
   },
   {
     key: "sand",
@@ -248,10 +239,6 @@ const THEMES: Theme[] = [
     palette: { light: "sand", dark: "sandDark" },
     texture: SAND_PAGE,
     icons: SAND_ICONS,
-    // No `patterned`, though the translucent opened cells of the domed cut
-    // would carry one: the page this theme was drawn against is grain and light
-    // and nothing else, and a tiling hairline under a board already turned down
-    // this far would be one more quiet thing competing with the numbers.
   },
 ];
 
@@ -421,9 +408,11 @@ export function themeVars(
  * open. Safe to call under the node unit environment (where there is no
  * `document`), like haptics.ts.
  *
- * `mode` is what makes the page follow the board. Pass null on the menu; every
- * caller goes through `App.paintTheme` (main.ts), which reads it off the
- * session so a change mid-board keeps that board's pattern. */
+ * `mode` is what makes the page follow the board — on **every** theme, since
+ * the pattern is the player's own setting rather than one theme's flourish
+ * (`App.paintTheme` withholds the mode when the setting is off). Pass null on
+ * the menu; every caller goes through `App.paintTheme` (main.ts), which reads
+ * it off the session so a change mid-board keeps that board's pattern. */
 export function applyTheme(key: string, pref: SchemePref, mode?: string | null): void {
   if (typeof document === "undefined") return;
   const resolved = resolveTheme(key);
@@ -432,7 +421,7 @@ export function applyTheme(key: string, pref: SchemePref, mode?: string | null):
   const palette = themePalette(resolved, scheme);
   // The ink follows the scheme too, or the hairline is dark on a dark page and
   // may as well not be drawn (ui/backgroundPattern.ts).
-  const pattern = spec.patterned ? (patternLayer(mode, scheme) ?? undefined) : undefined;
+  const pattern = patternLayer(mode, scheme) ?? undefined;
   const root = document.documentElement;
   for (const [name, value] of Object.entries(
     themeVars(palette, spec.texture?.[scheme], pattern),
