@@ -283,9 +283,22 @@ describe("the geometry", () => {
   });
 });
 
-describe("only Bright is patterned", () => {
-  it("marks one theme, and gives the rest a flat page", () => {
-    expect(THEME_KEYS.filter((k) => theme(k).patterned)).toEqual(["bright"]);
+describe("every theme is patterned", () => {
+  it("draws the board's tiling whichever theme is on", () => {
+    // The pattern is the player's setting rather than one theme's flourish, so
+    // no theme opts out of it: what decides is whether a board is open and
+    // whether the switch is on (main.ts `paintTheme` withholds the mode).
+    for (const key of THEME_KEYS) {
+      for (const scheme of ["light", "dark"] as const) {
+        const spec = theme(key);
+        const vars = themeVars(
+          themeSpec(spec.palette[scheme]),
+          spec.texture?.[scheme],
+          patternLayer("trihex", scheme)!,
+        );
+        expect(vars["--bg-pattern"], `${key}/${scheme}`).toContain("data:image/svg+xml");
+      }
+    }
   });
 
   it("leaves --bg-pattern off unless it is given one", () => {

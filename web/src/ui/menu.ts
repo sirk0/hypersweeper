@@ -358,10 +358,33 @@ export class Menu {
   }
 
   /** Repaint the current page from the store — used when the settings change
-   * from outside the menu (another tab writing them). */
+   * from outside the menu (another tab writing them), and by `App.setTheme`,
+   * which is what makes a theme switch repaint the rows behind the picker. */
   refresh(): void {
+    this.rebuildSidebar();
     this.syncDifficultyRow();
     if (!this.root.hidden) this.render();
+  }
+
+  /** Rebuild the desktop sidebar in the icon palette now in force.
+   *
+   * It is the one part of the menu a re-render does not repaint: it is built
+   * once and outlives every page, since only the pane content and the active
+   * row change between them. But its rows carry menu glyphs, and a glyph is a
+   * *string of SVG* with its colours already baked in (`ui/icons.ts`) — so
+   * switching Classic to Sand left the whole geometry list in Classic's grey
+   * while the cards beside it repainted.
+   *
+   * Two things live in the sidebar rather than being rebuilt with it, and both
+   * are put back: the How to play / Settings buttons, which are *moved* into
+   * its footer rather than cloned (`placeHeaderButtons`), and which row is
+   * active (`syncSidebarActive`, off `selectedPage`). */
+  private rebuildSidebar(): void {
+    const next = this.buildSidebar();
+    this.sidebarEl.replaceWith(next);
+    this.sidebarEl = next;
+    this.placeHeaderButtons();
+    this.syncSidebarActive();
   }
 
   /** Paint the current page.
@@ -971,8 +994,10 @@ export class Menu {
   }
 
   /** The desktop sidebar: Quick start, then every geometry group, then the
-   * how-to-play / settings footer. Built once in the constructor — it does
-   * not change between pages, only the pane content and the active row do.
+   * how-to-play / settings footer. Built in the constructor and again on
+   * `refresh` — it does not change between pages, only the pane content and
+   * the active row do, but its glyphs are baked in the theme's icon palette
+   * (see `rebuildSidebar`).
    *
    * The four quick-play entries are a *page* here rather than four rows of
    * their own: as rows they competed with the geometry list for the same
