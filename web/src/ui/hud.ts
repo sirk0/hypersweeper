@@ -142,36 +142,36 @@ export const ICONS: Record<string, string> = {
  * still reads it. */
 export const FACES: Record<"playing" | "won" | "lost", string> = {
   playing: `<svg viewBox="0 0 24 24" aria-hidden="true">
-    <circle cx="12" cy="12" r="8.6" fill="var(--smiley)" stroke="var(--smiley-rim)"
+    <circle cx="12" cy="12" r="9.45" fill="var(--smiley)" stroke="var(--smiley-rim)"
       stroke-width="0.9"/>
-    <circle cx="9.4" cy="10.2" r="1.05" fill="var(--smiley-ink)"/>
-    <circle cx="14.6" cy="10.2" r="1.05" fill="var(--smiley-ink)"/>
-    <path d="M8.7 14.5 A4.2 4.2 0 0 0 15.3 14.5" stroke="var(--smiley-ink)"
+    <circle cx="9.14" cy="10.02" r="1.15" fill="var(--smiley-ink)"/>
+    <circle cx="14.86" cy="10.02" r="1.15" fill="var(--smiley-ink)"/>
+    <path d="M8.37 14.75 A4.62 4.62 0 0 0 15.63 14.75" stroke="var(--smiley-ink)"
       stroke-width="1.5" fill="none" stroke-linecap="round"/>
   </svg>`,
   // Won: the same face behind shades — the cool smiley the emoji set spells
   // 😎, drawn as a pair of lenses on a bridge so it reads at 26px.
   won: `<svg viewBox="0 0 24 24" aria-hidden="true">
-    <circle cx="12" cy="12" r="8.6" fill="var(--smiley)" stroke="var(--smiley-rim)"
+    <circle cx="12" cy="12" r="9.45" fill="var(--smiley)" stroke="var(--smiley-rim)"
       stroke-width="0.9"/>
-    <rect x="6.5" y="8.4" width="4.6" height="3.4" rx="1.3" fill="var(--smiley-ink)"/>
-    <rect x="12.9" y="8.4" width="4.6" height="3.4" rx="1.3" fill="var(--smiley-ink)"/>
-    <path d="M11.1 9.4 H12.9" stroke="var(--smiley-ink)" stroke-width="1.2"
+    <rect x="5.96" y="8.04" width="5.05" height="3.74" rx="1.43" fill="var(--smiley-ink)"/>
+    <rect x="12.99" y="8.04" width="5.05" height="3.74" rx="1.43" fill="var(--smiley-ink)"/>
+    <path d="M11.01 9.14 H12.99" stroke="var(--smiley-ink)" stroke-width="1.2"
       stroke-linecap="round"/>
-    <path d="M8.7 14.8 A4.2 4.2 0 0 0 15.3 14.8" stroke="var(--smiley-ink)"
+    <path d="M8.37 15.08 A4.62 4.62 0 0 0 15.63 15.08" stroke="var(--smiley-ink)"
       stroke-width="1.5" fill="none" stroke-linecap="round"/>
   </svg>`,
   // Lost: crossed eyes and the smile turned over — 😵's reading, in the same
   // strokes. The cross is the board's own "you were wrong" mark (drawCross in
   // glyphAtlas.ts), which is what the player is looking at on the cells too.
   lost: `<svg viewBox="0 0 24 24" aria-hidden="true">
-    <circle cx="12" cy="12" r="8.6" fill="var(--smiley)" stroke="var(--smiley-rim)"
+    <circle cx="12" cy="12" r="9.45" fill="var(--smiley)" stroke="var(--smiley-rim)"
       stroke-width="0.9"/>
-    <path d="M8.1 9 L10.5 11.4 M10.5 9 L8.1 11.4" stroke="var(--smiley-ink)"
+    <path d="M7.71 8.7 L10.35 11.34 M10.35 8.7 L7.71 11.34" stroke="var(--smiley-ink)"
       stroke-width="1.45" fill="none" stroke-linecap="round"/>
-    <path d="M13.5 9 L15.9 11.4 M15.9 9 L13.5 11.4" stroke="var(--smiley-ink)"
+    <path d="M13.65 8.7 L16.29 11.34 M16.29 8.7 L13.65 11.34" stroke="var(--smiley-ink)"
       stroke-width="1.45" fill="none" stroke-linecap="round"/>
-    <path d="M8.7 16.2 A4.2 4.2 0 0 1 15.3 16.2" stroke="var(--smiley-ink)"
+    <path d="M8.37 16.62 A4.62 4.62 0 0 1 15.63 16.62" stroke="var(--smiley-ink)"
       stroke-width="1.5" fill="none" stroke-linecap="round"/>
   </svg>`,
 };
