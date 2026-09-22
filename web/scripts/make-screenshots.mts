@@ -253,7 +253,17 @@ async function shoot(browser: Browser, shot: Shot, outDir: string): Promise<void
   const page = await context.newPage();
 
   const difficulty = shot.difficulty ?? "medium";
-  const query = shot.mode ? `?mode=${shot.mode}&difficulty=${difficulty}` : "";
+  // `&seed=0`, because `stageBoard` reads this board's cells and then rebuilds
+  // it with a mine layout of its own. On the aperiodic boards the seed picks
+  // the *window* as well as the mines (session.ts), and a board built from an
+  // explicit layout claims no seed, so it is always cut from window 0 — while
+  // an address with no seed opens a random one. Left to differ, the mines are
+  // picked on one patch and applied to another, and `startBoard` rejects the
+  // ids it is handed ("mine position not on the board"). Every other mode
+  // ignores the seed, so this only pins the one that does not.
+  const query = shot.mode
+    ? `?mode=${shot.mode}&difficulty=${difficulty}&seed=0`
+    : "";
   await page.goto(BASE + query);
   await page.waitForSelector("body[data-ready]");
   await settle(page);
