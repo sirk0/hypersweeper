@@ -30,6 +30,7 @@ const START = {
   dv: "desktop",
   sh: "browser",
   vr: "0.2.83",
+  so: "site",
   c: 81,
   n: 10,
 };
@@ -45,6 +46,7 @@ const END = {
   dv: "phone",
   sh: "standalone",
   vr: "0.2.83",
+  so: "site",
   c: 271,
   n: 60,
   op: 211,
@@ -56,6 +58,8 @@ const END = {
   fm: 2100,
   vm: 1,
 };
+
+const START_ITCH = { ...START, so: "itch" };
 
 describe("the collector", () => {
   it("writes a start to the agreed columns", async () => {
@@ -81,6 +85,7 @@ describe("the collector", () => {
         "desktop",
         "browser",
         "0.2.83",
+        "site",
       ],
       doubles: [0, 81, 10, 0, 0, 0, 0, 0, 0, 0, 0],
     });
@@ -104,6 +109,7 @@ describe("the collector", () => {
         "phone",
         "standalone",
         "0.2.83",
+        "site",
       ],
       doubles: [41, 271, 60, 211, 58, 2, 40, 12, 61, 2100, 1],
     });
@@ -125,6 +131,7 @@ describe("the collector", () => {
         "hex",
         "torus",
         "regular",
+        "",
         "",
         "",
         "",
@@ -165,6 +172,44 @@ describe("the collector", () => {
     const bare = dataset();
     await handleTally(post(START), bare);
     expect(bare.writeDataPoint).toHaveBeenCalledTimes(1);
+  });
+
+  it("takes a cross-site post from itch.io, and only an itch.io event", async () => {
+    const ITCH = START_ITCH;
+    for (const origin of [
+      "https://html-classic.itch.zone",
+      "https://v6p9d9t4.ssl.hwcdn.net",
+    ]) {
+      const db = dataset();
+      const headers = { "sec-fetch-site": "cross-site", origin, "content-type": "text/plain" };
+      await handleTally(post(ITCH, headers), db);
+      expect(db.writeDataPoint, origin).toHaveBeenCalledTimes(1);
+      const blobs = (db.writeDataPoint.mock.calls[0]?.[0] as { blobs: string[] }).blobs;
+      expect(blobs[12], origin).toBe("itch");
+
+      // …but not one claiming to be the site.
+      const posing = dataset();
+      await handleTally(post(START, headers), posing);
+      expect(posing.writeDataPoint, origin).not.toHaveBeenCalled();
+    }
+
+    // Look-alikes and plain http are someone else.
+    for (const origin of [
+      "https://itch.zone.evil.example",
+      "https://evilitch.zone.example",
+      "http://html-classic.itch.zone",
+      "null",
+    ]) {
+      const db = dataset();
+      await handleTally(post(ITCH, { "sec-fetch-site": "cross-site", origin }), db);
+      expect(db.writeDataPoint, origin).not.toHaveBeenCalled();
+    }
+
+    // And an itch.io event from anywhere but itch.io is dropped too, so the
+    // site cannot inflate itch's numbers or the reverse.
+    const sameOrigin = dataset();
+    await handleTally(post(ITCH, { "sec-fetch-site": "same-origin" }), sameOrigin);
+    expect(sameOrigin.writeDataPoint).not.toHaveBeenCalled();
   });
 
   it("drops an oversize body, by its claim and by its measurement", async () => {

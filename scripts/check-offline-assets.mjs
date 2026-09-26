@@ -13,6 +13,14 @@
 // automated proof that the collector really was compiled out of this build.
 //
 //   node scripts/check-offline-assets.mjs web/dist
+//
+// The itch.io zip (`make itch-zip`) is checked too, with one difference: it
+// carries a collector on purpose, posting to the Cloudflare site's absolute
+// URL, so `--collector=<url>` allows exactly that one URL and lifts the
+// FORBIDDEN pass. Every other remote reference still fails the build — itch's
+// players get the same "nothing from a CDN" bundle as everyone else.
+//
+//   node scripts/check-offline-assets.mjs build/itch/dist --collector=https://…/api/tally
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { extname, join, relative } from "node:path";
 
@@ -58,7 +66,9 @@ function* walk(dir) {
   }
 }
 
-const root = process.argv[2];
+const args = process.argv.slice(2);
+const collector = args.find((a) => a.startsWith("--collector="))?.slice("--collector=".length);
+const root = args.find((a) => !a.startsWith("--"));
 if (!root) {
   console.error("usage: node scripts/check-offline-assets.mjs <dist dir>");
   process.exit(2);
@@ -75,9 +85,10 @@ for (const file of walk(root)) {
   const text = readFileSync(file, "utf8");
   for (const match of text.match(URL_RE) ?? []) {
     if (ALLOWED.some((re) => re.test(match))) continue;
+    if (collector && match === collector) continue;
     problems.push(`${relative(root, file)}: ${match}`);
   }
-  for (const path of FORBIDDEN) {
+  for (const path of collector ? [] : FORBIDDEN) {
     if (text.includes(path)) {
       problems.push(`${relative(root, file)}: same-origin request to ${path}`);
     }

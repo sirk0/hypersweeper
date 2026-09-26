@@ -145,8 +145,9 @@ on a phone that can buzz — a haptics switch.
 
 The hosted game counts, anonymously, which boards get opened and how they go
 — the board and difficulty, whether it was won and how long it took, how far
-the board got and how the flags fell, how the game was started, and whether
-this is a phone, tablet or desktop. No account, no cookie, no identifier, and
+the board got and how the flags fell, how the game was started, whether
+this is a phone, tablet or desktop, and which site it is played on (the
+Cloudflare site or itch.io). No account, no cookie, no identifier, and
 nothing about the request itself (no IP, no country, no user agent), so there
 is no way to link two games. The switch is Settings › Privacy › Analytics. The
 macOS and iPhone apps send nothing at all: they are built without the

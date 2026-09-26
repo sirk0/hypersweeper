@@ -15,6 +15,11 @@ export default defineConfig({
     // deployed stamp. Any pair will do — the tests supply the other side.
     __APP_VERSION__: '"0.0.0-test"',
     __APP_COMMIT__: '"testing"',
+    // The Cloudflare site's build: same-origin collector, `source = "site"`.
+    // The itch.io build's cross-origin post is checked against the built zip
+    // instead (see "itch.io" in docs/deploy.md).
+    __APP_SOURCE__: '"site"',
+    __APP_TALLY_URL__: '""',
   },
   resolve: {
     alias: {
