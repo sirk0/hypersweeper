@@ -128,6 +128,100 @@ export function polygonInradius(
   return best;
 }
 
+type Pt = readonly [number, number];
+
+const signedArea = (points: readonly Pt[]): number => {
+  let twice = 0;
+  for (let i = 0; i < points.length; i++) {
+    const [ax, ay] = points[i]!;
+    const [bx, by] = points[(i + 1) % points.length]!;
+    twice += ax * by - bx * ay;
+  }
+  return twice / 2;
+};
+
+/** Whether every edge of `points` faces `center` — the polygon is star-shaped
+ * about it, so a fan from `center` covers it exactly and pulling each corner
+ * toward `center` keeps every inset loop inside. True of every convex cell and
+ * of every concave tile this game drew before Klaassen's heptagon, whose bent
+ * strip has no such point at all. */
+export function starShapedAbout(points: readonly Pt[], center: Pt): boolean {
+  const sign = Math.sign(signedArea(points));
+  const eps = 1e-9 * Math.max(1, Math.abs(signedArea(points)));
+  for (let i = 0; i < points.length; i++) {
+    const [ax, ay] = points[i]!;
+    const [bx, by] = points[(i + 1) % points.length]!;
+    const cross = (bx - ax) * (center[1] - ay) - (by - ay) * (center[0] - ax);
+    if (cross * sign < -eps) return false;
+  }
+  return true;
+}
+
+function insidePolygon(points: readonly Pt[], [x, y]: Pt): boolean {
+  let inside = false;
+  for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+    const [xi, yi] = points[i]!;
+    const [xj, yj] = points[j]!;
+    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+
+/** The interior point farthest from the polygon's boundary (its pole of
+ * inaccessibility), found by a grid search refined three times — the centre of
+ * the biggest circle the cell holds, and so where a glyph fits best when the
+ * vertex mean is not even inside the cell. Deterministic. */
+export function labelPoint(points: readonly Pt[]): [number, number] {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const [x, y] of points) {
+    minX = Math.min(minX, x);
+    minY = Math.min(minY, y);
+    maxX = Math.max(maxX, x);
+    maxY = Math.max(maxY, y);
+  }
+  const STEPS = 24;
+  let best: [number, number] = [(minX + maxX) / 2, (minY + maxY) / 2];
+  let bestDist = -Infinity;
+  let [x0, y0, w, h] = [minX, minY, maxX - minX, maxY - minY];
+  for (let round = 0; round < 4; round++) {
+    for (let i = 0; i <= STEPS; i++) {
+      for (let j = 0; j <= STEPS; j++) {
+        const p: [number, number] = [x0 + (w * i) / STEPS, y0 + (h * j) / STEPS];
+        if (!insidePolygon(points, p)) continue;
+        const d = polygonInradius(points, p);
+        if (d > bestDist) [best, bestDist] = [p, d];
+      }
+    }
+    [w, h] = [(w * 4) / STEPS, (h * 4) / STEPS];
+    [x0, y0] = [best[0] - w / 2, best[1] - h / 2];
+  }
+  return best;
+}
+
+/** Per corner, the vector that moves it inward by one unit off *both* of its
+ * edges — the mitre of an inset loop. `corner + mitre[i] * d` is the polygon
+ * offset inward by `d`, which, unlike pulling every corner toward one centre,
+ * stays inside a polygon that is not star-shaped. */
+export function insetMitres(points: readonly Pt[]): [number, number][] {
+  const n = points.length;
+  const sign = Math.sign(signedArea(points));
+  const normal = (a: Pt, b: Pt): [number, number] => {
+    const [dx, dy] = [b[0] - a[0], b[1] - a[1]];
+    const len = Math.hypot(dx, dy) || 1;
+    // the inward side: left of the edge on a counter-clockwise polygon
+    return [(-dy / len) * sign, (dx / len) * sign];
+  };
+  return points.map((p, i) => {
+    const n1 = normal(points[(i + n - 1) % n]!, p);
+    const n2 = normal(p, points[(i + 1) % n]!);
+    const k = 1 + n1[0] * n2[0] + n1[1] * n2[1];
+    return k < 1e-9 ? n1 : [(n1[0] + n2[0]) / k, (n1[1] + n2[1]) / k];
+  });
+}
+
 /** The named meshes a pick ray is cast against, nearest hit wins (see
  * `Renderer.pick`). `"cells"` is the drawn tiles; `"base"` is the grout a solid
  * lays under them, over the *whole* of every cell polygon. The grout has to be

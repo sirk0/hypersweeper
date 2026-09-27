@@ -576,6 +576,188 @@ export function phyllotaxisBoard(
   return finalizeFlat("phyllotaxis", cellMap, positions, mineCount, scale);
 }
 
+// -- Klaassen's spiral monotile -----------------------------------------------
+//
+// Bernhard Klaassen's spiral tiling ("Forcing nonperiodic tilings with one tile
+// using a seed", 2022): one equilateral heptagon whose seven edges run along the
+// seven 7th roots of unity, each once, in the order ζ⁰, ζ¹, ζ², ζ⁶, ζ⁵, ζ⁴, ζ³
+// (ζ = exp(2πi/7)) — a mirror-symmetric bent chevron with angles π/7, 9π/7,
+// 9π/7, π/7, 5π/7, 5π/7, 5π/7. The tiling is one spiral arm around a seed, so
+// like the phyllotactic spiral it is nonperiodic by symmetry and takes no
+// variant. Tips meet at hubs chained by unit steps e(d_k); hub i fans
+// d_i − d_(i−1) + 2 tiles outward, and those fans' outer tips are the chain's
+// next winding (the turn substitution t → 1ᵗ0). Line-for-line port of
+// minesweeper/boards/aperiodic.py; see that file for the fuller commentary.
+//
+// In exact ℤ[ζ7]: 6 integer coefficients over (1, ζ, …, ζ⁵), reduced by
+// ζ⁶ = −(1 + ζ + … + ζ⁵); e(2m) = ζᵐ and e(2m+1) = −ζ^(m+4). Every vertex is a
+// sum of unit directions, so no multiplication is needed and ids are exact.
+
+type Z7Point = readonly [number, number, number, number, number, number];
+
+const Z7_ZERO: Z7Point = [0, 0, 0, 0, 0, 0];
+
+function z7Power(m: number): Z7Point {
+  const k = ((m % 7) + 7) % 7;
+  if (k === 6) return [-1, -1, -1, -1, -1, -1];
+  return [0, 1, 2, 3, 4, 5].map((i) => (i === k ? 1 : 0)) as unknown as Z7Point;
+}
+
+function z7Add(p: Z7Point, q: Z7Point): Z7Point {
+  return p.map((x, i) => x + q[i]!) as unknown as Z7Point;
+}
+
+/** The unit vector e(n) = exp(i·n·π/7), n in fourteenths of a turn. */
+function z7Dir(n: number): Z7Point {
+  const k = ((n % 14) + 14) % 14;
+  if (k % 2 === 0) return z7Power(k / 2);
+  return z7Power((k - 1) / 2 + 4).map((c) => -c) as unknown as Z7Point;
+}
+
+const ZETA7_BASIS: Vertex[] = [0, 1, 2, 3, 4, 5].map((k) => [
+  Math.cos((2 * Math.PI * k) / 7),
+  Math.sin((2 * Math.PI * k) / 7),
+]);
+
+export function z7ToXy(p: Z7Point): Vertex {
+  let x = 0;
+  let y = 0;
+  for (let i = 0; i < 6; i++) {
+    x += p[i]! * ZETA7_BASIS[i]![0];
+    y += p[i]! * ZETA7_BASIS[i]![1];
+  }
+  return [x, y];
+}
+
+const z7Key = (p: Z7Point): string => p.join(",");
+
+/** The tile's edges, in fourteenths of a turn from its first tip. */
+const KLAASSEN_EDGES = [0, 2, 4, 12, 10, 8];
+
+/** The seed: the chain's first twelve steps. */
+const KLAASSEN_SEED = [8, 10, 12, 14, 15, 16, 17, 18, 19, 20, 21, 22];
+
+interface KlaassenTile {
+  hub: number;
+  k: number;
+  ids: Z7Point[];
+}
+
+/** The spiral grown `turns` windings out, in hub order. */
+export function klaassenTiles(turns: number): KlaassenTile[] {
+  const steps = [...KLAASSEN_SEED];
+  const fans: [number, number, number][] = [[0, 11, 19]];
+  let source = 1;
+  let hub = 1;
+  for (;;) {
+    while (steps.length <= hub) {
+      for (let d = steps[source - 1]!; d <= steps[source]!; d++) steps.push(d + 14);
+      source++;
+    }
+    if (steps[hub]! >= 8 + 14 * turns) break;
+    fans.push([hub, steps[hub - 1]! - 4, steps[hub]! - 3]);
+    hub++;
+  }
+
+  const at: Z7Point[] = [Z7_ZERO];
+  for (let i = 0; i < hub; i++) at.push(z7Add(at[i]!, z7Dir(steps[i]!)));
+
+  const tiles: KlaassenTile[] = [];
+  for (const [h, first, last] of fans) {
+    for (let phi = first; phi <= last; phi++) {
+      let vertex = at[h]!;
+      const ids = [vertex];
+      for (const edge of KLAASSEN_EDGES) {
+        vertex = z7Add(vertex, z7Dir(phi - 2 + edge));
+        ids.push(vertex);
+      }
+      tiles.push({ hub: h, k: phi - first, ids });
+    }
+  }
+  return tiles;
+}
+
+/**
+ * Klaassen's spiral monotile: one equilateral heptagon tiling the plane in a
+ * single spiral arm around a seed. Grows the spiral `turns` windings out, then
+ * keeps `keep` tiles grown out from the seed: taken in order of Chebyshev
+ * distance from it, as `phyllotaxisBoard` trims, but each joining only once it
+ * shares two edges with the tiles already kept (one, when none shares two), so
+ * the rim follows the spiral's windings instead of leaving chevrons hanging off
+ * it by one edge. `null` keeps the whole patch; `scale` is pixels per edge.
+ */
+export function klaassenBoard(
+  turns: number,
+  mineCount: number,
+  keep: number | null = null,
+  scale = 30,
+): Board {
+  const rows = klaassenTiles(turns).map((tile) => {
+    let cx = 0;
+    let cy = 0;
+    for (const v of tile.ids) {
+      const [x, y] = z7ToXy(v);
+      cx += x;
+      cy += y;
+    }
+    cx /= tile.ids.length;
+    cy /= tile.ids.length;
+    // Quantised exactly as in Python, so the two sort identically.
+    const near = Math.floor(Math.max(Math.abs(cx), Math.abs(cy)) * 1e6 + 0.5);
+    return { ...tile, near };
+  });
+  rows.sort((r1, r2) => r1.near - r2.near || r1.hub - r2.hub || r1.k - r2.k);
+  const kept = keep !== null && keep < rows.length ? klaassenGrow(rows, keep) : rows;
+
+  const cellMap = new Map<CellId, string[]>();
+  const positions = new Map<string, Vertex>();
+  for (const row of kept) {
+    const keys = row.ids.map((v) => {
+      const key = z7Key(v);
+      if (!positions.has(key)) positions.set(key, z7ToXy(v));
+      return key;
+    });
+    cellMap.set(cid(row.hub, row.k), keys);
+  }
+  return finalizeFlat("klaassen", cellMap, positions, mineCount, scale);
+}
+
+/** The first `keep` of `rows` (in order) that can join edge to edge: each step
+ * takes the earliest row sharing at least two edges with those already taken,
+ * else the earliest sharing one, else (the first step) the earliest of all. */
+function klaassenGrow<T extends KlaassenTile>(rows: T[], keep: number): T[] {
+  const edge = (ids: Z7Point[], k: number): string => {
+    const [a, b] = [z7Key(ids[k]!), z7Key(ids[(k + 1) % ids.length]!)];
+    return a < b ? `${a}|${b}` : `${b}|${a}`;
+  };
+  const byEdge = new Map<string, number[]>();
+  rows.forEach((row, i) => {
+    for (let k = 0; k < row.ids.length; k++) {
+      const e = edge(row.ids, k);
+      const list = byEdge.get(e);
+      if (list) list.push(i);
+      else byEdge.set(e, [i]);
+    }
+  });
+  const shared = new Array<number>(rows.length).fill(0);
+  const taken = new Array<boolean>(rows.length).fill(false);
+  const kept: T[] = [];
+  while (kept.length < keep) {
+    let pick = -1;
+    for (const need of [2, 1, 0]) {
+      pick = rows.findIndex((_, i) => !taken[i] && shared[i]! >= need);
+      if (pick >= 0) break;
+    }
+    taken[pick] = true;
+    const row = rows[pick]!;
+    kept.push(row);
+    for (let k = 0; k < row.ids.length; k++) {
+      for (const j of byEdge.get(edge(row.ids, k))!) shared[j]!++;
+    }
+  }
+  return kept;
+}
+
 // -- The Spectre: a chiral aperiodic monotile --------------------------------
 //
 // Tile(1,1) (Smith–Myers–Kaplan–Goodman-Strauss, 2023): a 13-gon that is also an

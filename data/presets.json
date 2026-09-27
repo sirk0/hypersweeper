@@ -1024,6 +1024,29 @@
         ]
       }
     },
+    "klaassen": {
+      "builder": "klaassen_board",
+      "args": {
+        "easy": [
+          4,
+          9,
+          81,
+          29.521
+        ],
+        "medium": [
+          7,
+          39,
+          256,
+          23.659
+        ],
+        "hard": [
+          10,
+          100,
+          480,
+          21.814
+        ]
+      }
+    },
     "brickrings": {
       "builder": "brick_rings_board",
       "args": {

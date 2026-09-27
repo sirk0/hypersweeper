@@ -7,6 +7,7 @@ import {
   brickRingsBoard,
   penroseBoard,
   spectreBoard,
+  klaassenBoard,
   phyllotaxisBoard,
 } from "./aperiodic";
 import {
@@ -158,6 +159,7 @@ const BUILDERS: Record<string, Builder> = {
   penrose_board: penroseBoard,
   spectre_board: spectreBoard,
   phyllotaxis_board: phyllotaxisBoard,
+  klaassen_board: klaassenBoard,
   brick_rings_board: brickRingsBoard,
   sphinx_board: sphinxBoard,
   chair_board: chairBoard,

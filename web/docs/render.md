@@ -242,6 +242,28 @@ renderer, with no pygame counterpart for the shared config to keep in step. The
 themes that name them are not there either, for the same reason — see
 "Settings and themes" in [`ui.md`](ui.md).
 
+### A cell with no centre (`starShapedAbout`, `insetMitres`)
+
+Every loop of a flat cell's profile is its polygon **pulled toward its vertex
+mean**, and its top face is a **fan from that same point**. Both are exact only
+when every edge of the cell faces the point, that is when the cell is
+star-shaped about it. That holds for every convex cell and every concave tile
+the game drew before Klaassen's spiral monotile. Its tile is a bent chevron
+whose vertex mean is not even inside it, and **no** interior point sees all of
+it. Fanned from the mean, its top face folded out over its neighbours.
+
+So `PolygonBoard` tests each cell (`starShapedAbout`). One that fails is cut
+another way, and every other cell keeps its old path to the pixel:
+- It centres on its **pole of inaccessibility** (`labelPoint`, the middle of the
+  biggest circle it holds), which is where its glyph goes too.
+- Its loops are **mitred insets** (`insetMitres`): each edge moves in by the
+  same fraction of that circle's radius that the pull moves a regular polygon's
+  apothem, so a loop stays inside a cell of any shape.
+- Its top face is the polygon's **own triangulation** (`ShapeUtils`), padded with
+  two degenerate triangles to fill the same slice of the buffer a fan would.
+
+The pygame game's `centroid` falls back to the same pole for the same cells.
+
 ## The Klein bottle's self-intersection (`src/boards/clipSolid.ts`)
 
 The Klein bottle cannot be embedded in three dimensions, so its immersion passes

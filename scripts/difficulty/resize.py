@@ -166,6 +166,7 @@ SPEC: dict[str, dict] = {
     "penrose_board": dict(size=(3,), mine=1, shape=2, kind="scale", grow=0),
     "spectre_board": dict(size=(2,), mine=1, shape=3, kind="scale", grow=0),
     "phyllotaxis_board": dict(size=(2,), mine=1, shape=3, kind="scale", grow=0),
+    "klaassen_board": dict(size=(2,), mine=1, shape=3, kind="scale", grow=0),
     # the brick rings: one knob, the number of concentric rings, and the cell
     # count is 2 * rings**2 -- a fine enough ladder to hit every target
     # without a patch to trim, so neither ``grow`` nor ``coarse`` applies.
