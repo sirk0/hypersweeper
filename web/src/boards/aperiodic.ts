@@ -1192,3 +1192,185 @@ export function brickRingsTiles(rings: number): Brick[] {
 export function brickRingsBoard(rings: number, mineCount: number, scale = 30): Board {
   return brickBoard("brickrings", brickRingsTiles(rings), mineCount, scale);
 }
+
+// -- Klaassen's pentagonal spirals ---------------------------------------------
+//
+// Nonperiodic monohedral tilings by one convex pentagon with n-fold rotational
+// symmetry, n = 5, 6, 7 (Klaassen, "Rotationally symmetric tilings with convex
+// pentagons and hexagons", Elem. Math. 71, 2016): angles A = C = 180 − 180/n,
+// B = 360/n and D + E = 180, sides b = c = 3, a = 1, d = 2. Two copies glued
+// along e make the phyllotactic spiral's hexagon at n-fold, scaled by 3, so the
+// tiling is that construction — 2n wedges of 180/n°, the odd ones pushed out
+// one side along u1 — with every hexagon cut the same way. Vertex ids live in
+// ℤ[ζ10], ℤ[ζ12] and ℤ[ζ7] (as ℤ[ζ14]) for n = 5, 6, 7; every vertex is a sum
+// of unit directions, so one componentwise add serves all three. Not edge to
+// edge: each run of unit steps is split at the points on it that are some
+// tile's corner, as `brickOutline` does. Line-for-line port of
+// minesweeper/boards/aperiodic.py; see that file for the fuller commentary.
+
+type PentaPoint = readonly number[];
+
+/** Per fold, the unit vector at k·180/n° and the map to the plane. */
+const PENTA_RINGS: Record<number, [(k: number) => PentaPoint, (p: PentaPoint) => Vertex]> = {
+  5: [(k) => Z_POWERS[((k % 10) + 10) % 10]!, (p) => zToXy(p as ZPoint)],
+  6: [(k) => Z12_POWERS[((k % 12) + 12) % 12]!, (p) => z12ToXy(p as Z12Point)],
+  7: [(k) => z7Dir(k), (p) => z7ToXy(p as Z7Point)],
+};
+
+const vecAdd = (p: PentaPoint, q: PentaPoint): PentaPoint => p.map((x, i) => x + q[i]!);
+const vecScale = (p: PentaPoint, k: number): PentaPoint => p.map((x) => x * k);
+const pentaKey = (p: PentaPoint): string => p.join(",");
+
+/** One corner of a pentagon and the edge that leaves it: `count` unit steps
+ * along u_k (backwards when count < 0), or count 0 for the cut e. */
+type PentaCorner = readonly [PentaPoint, number, number];
+
+export interface PentaSpiralTile {
+  wedge: number;
+  m: number;
+  n: number;
+  half: number;
+  corners: PentaCorner[];
+}
+
+/** The 2·`fold` wedges grown `rings` hexagons each way, in wedge order. Half 0
+ * is the pentagon with the hexagon's 360/n corner, half 1 its partner. */
+export function pentaSpiralTiles(fold: number, rings: number): PentaSpiralTile[] {
+  const ring = PENTA_RINGS[fold];
+  if (!ring) throw new Error(`no pentagonal spiral with ${fold}-fold symmetry`);
+  const [unit] = ring;
+  const tiles: PentaSpiralTile[] = [];
+  for (let wedge = 0; wedge < 2 * fold; wedge++) {
+    const [w0, w1, w2] = [wedge, wedge + 1, wedge + 2];
+    const u0 = vecScale(unit(w0), 3);
+    const u1 = vecScale(unit(w1), 3);
+    const u2 = vecScale(unit(w2), 3);
+    const a = vecAdd(u0, u1);
+    const b = vecAdd(u1, u2);
+    const base = wedge % 2 ? u1 : vecScale(u0, 0);
+    for (let m = 0; m < rings; m++) {
+      for (let n = 0; n < rings; n++) {
+        const v0 = vecAdd(base, vecAdd(vecScale(a, m), vecScale(b, n)));
+        const v1 = vecAdd(v0, u0);
+        const v2 = vecAdd(v1, u1);
+        const v3 = vecAdd(v2, u2);
+        const v4 = vecAdd(v0, b);
+        const v5 = vecAdd(v0, u2);
+        const near = vecAdd(v1, unit(w1)); // the cut, 1 along v1–v2
+        const far = vecAdd(v4, vecScale(unit(w1), -1)); // …to 1 short of v4
+        tiles.push({
+          wedge, m, n, half: 0,
+          corners: [[v0, w0, 3], [v1, w1, 1], [near, 0, 0], [far, w1, -2], [v5, w2, -3]],
+        });
+        tiles.push({
+          wedge, m, n, half: 1,
+          corners: [[near, w1, 2], [v2, w2, 3], [v3, w0, -3], [v4, w1, -1], [far, 0, 0]],
+        });
+      }
+    }
+  }
+  return tiles;
+}
+
+/** The pentagon's vertices, split at every point inside one of its runs that
+ * is a corner in `taken` — a T-vertex. */
+function pentaOutline(
+  fold: number,
+  corners: readonly PentaCorner[],
+  taken: ReadonlySet<string>,
+): PentaPoint[] {
+  const [unit] = PENTA_RINGS[fold]!;
+  const ring: PentaPoint[] = [];
+  for (const [corner, k, count] of corners) {
+    ring.push(corner);
+    const step = vecScale(unit(k), count > 0 ? 1 : -1);
+    let point = corner;
+    for (let s = 1; s < Math.abs(count); s++) {
+      point = vecAdd(point, step);
+      if (taken.has(pentaKey(point))) ring.push(point);
+    }
+  }
+  return ring;
+}
+
+/**
+ * Klaassen's pentagonal spiral with `fold`-fold symmetry (5, 6 or 7). Grows the
+ * 2n wedges out to `rings` hexagons each way, for 4n·rings² pentagons, then
+ * trims to the `keep` centremost by Chebyshev distance exactly as
+ * `phyllotaxisBoard` does. `null` keeps the whole patch; `scale` is pixels per
+ * unit step (a third of the long side).
+ */
+export function pentaSpiralBoard(
+  fold: number,
+  rings: number,
+  mineCount: number,
+  keep: number | null = null,
+  scale = 18,
+): Board {
+  const ring = PENTA_RINGS[fold];
+  if (!ring) throw new Error(`no pentagonal spiral with ${fold}-fold symmetry`);
+  const [, toXy] = ring;
+  const rows = pentaSpiralTiles(fold, rings).map((tile) => {
+    let cx = 0;
+    let cy = 0;
+    for (const [p] of tile.corners) {
+      const [x, y] = toXy(p);
+      cx += x;
+      cy += y;
+    }
+    cx /= tile.corners.length;
+    cy /= tile.corners.length;
+    // Quantised, as for the phyllotactic spiral, so the sort matches Python's.
+    const near = Math.floor(Math.max(Math.abs(cx), Math.abs(cy)) * 1e6 + 0.5);
+    return { ...tile, near };
+  });
+
+  let kept = rows;
+  if (keep !== null && keep < rows.length) {
+    kept = [...rows]
+      .sort(
+        (r1, r2) =>
+          r1.near - r2.near ||
+          r1.wedge - r2.wedge ||
+          r1.m - r2.m ||
+          r1.n - r2.n ||
+          r1.half - r2.half,
+      )
+      .slice(0, keep);
+  }
+
+  const taken = new Set<string>();
+  for (const row of kept) for (const [p] of row.corners) taken.add(pentaKey(p));
+  const cellMap = new Map<CellId, string[]>();
+  const positions = new Map<string, Vertex>();
+  for (const row of kept) {
+    const keys = pentaOutline(fold, row.corners, taken).map((p) => {
+      const k = pentaKey(p);
+      if (!positions.has(k)) positions.set(k, toXy(p));
+      return k;
+    });
+    cellMap.set(cid(row.wedge, row.m, row.n, row.half), keys);
+  }
+  return finalizeFlat(`pentaspiral${fold}`, cellMap, positions, mineCount, scale);
+}
+
+export const pentaSpiral5Board = (
+  rings: number,
+  mineCount: number,
+  keep: number | null = null,
+  scale = 18,
+): Board => pentaSpiralBoard(5, rings, mineCount, keep, scale);
+
+export const pentaSpiral6Board = (
+  rings: number,
+  mineCount: number,
+  keep: number | null = null,
+  scale = 18,
+): Board => pentaSpiralBoard(6, rings, mineCount, keep, scale);
+
+export const pentaSpiral7Board = (
+  rings: number,
+  mineCount: number,
+  keep: number | null = null,
+  scale = 18,
+): Board => pentaSpiralBoard(7, rings, mineCount, keep, scale);

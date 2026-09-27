@@ -243,6 +243,45 @@ const PHYLLO_TILE: Vertex[] = [
   PHYLLO_U[2]!,
 ];
 
+/** Klaassen's pentagon at `fold`-fold, as the pair that makes the phyllotactic
+ * spiral's hexagon at that fold (the zonogon on three unit directions 180/n°
+ * apart), on that hexagon's own translation lattice. Like the phyllotactic
+ * spiral, the board's spiral is in how its wedges meet, not in the tile: the
+ * hexagon is a parallelohexagon and the pair tiles by translation alone. The
+ * cut runs from a third of the way along the u1 side to the point opposite. */
+function pentaSpiralDomain(fold: number): Domain {
+  const u: Vertex[] = [0, 1, 2].map((k): Vertex => [
+    Math.cos((k * Math.PI) / fold),
+    Math.sin((k * Math.PI) / fold),
+  ]);
+  const at = (a: number, b: number, c: number): Vertex => [
+    a * u[0]![0] + b * u[1]![0] + c * u[2]![0],
+    a * u[0]![1] + b * u[1]![1] + c * u[2]![1],
+  ];
+  // A vertex at every third of every hexagon side, as the hand-written tiles
+  // carry one at every lattice step: the neighbour across a side splits it at
+  // the same two points, so the shared line is drawn once.
+  const [t1, t2] = [1 / 3, 2 / 3];
+  return latticeDomain(
+    [
+      [
+        ...[0, t1, t2, 1].map((a) => at(a, 0, 0)),
+        at(1, t1, 0), // the cut...
+        ...[t2, t1, 0].map((b) => at(0, b, 1)), // ...to the far side
+        ...[t2, t1].map((c) => at(0, 0, c)),
+      ],
+      [
+        ...[t1, t2, 1].map((b) => at(1, b, 0)),
+        ...[t1, t2, 1].map((c) => at(1, 1, c)),
+        ...[t2, t1, 0].map((a) => at(a, 1, 1)),
+        at(0, t2, 1),
+      ],
+    ],
+    at(1, 1, 0),
+    at(0, 1, 1),
+  );
+}
+
 /** A tile turned a half turn about `(cx, cy)`. Both rep-tiles tile the plane in
  * pairs, and the second of each pair is the first upside down. */
 const halfTurn = (cell: Vertex[], cx: number, cy: number): Vertex[] =>
@@ -330,6 +369,10 @@ export const DOMAINS: Record<string, () => Domain> = {
       [PHYLLO_U[0]![0] + PHYLLO_U[1]![0], PHYLLO_U[0]![1] + PHYLLO_U[1]![1]],
       [PHYLLO_U[1]![0] + PHYLLO_U[2]![0], PHYLLO_U[1]![1] + PHYLLO_U[2]![1]],
     ),
+
+  pentaspiral5: () => pentaSpiralDomain(5),
+  pentaspiral6: () => pentaSpiralDomain(6),
+  pentaspiral7: () => pentaSpiralDomain(7),
 
   // Klaassen's heptagon where its spiral runs straight: far out, the chain of
   // hubs goes whole windings without turning, and a hub that does not turn

@@ -41,7 +41,7 @@ Import order is a strict DAG; a module only imports from the ones above it.
 | `core.py` | `Board` / `Board3D`, the `_shared_vertex_adjacency` neighbour rule, `_build` (lattice→pixels) and `_finalize_flat` (float→pixels), 3D vector helpers, and the topology invariants `euler_characteristic` / `boundary_components` / `corner_fans`. |
 | `tilings.py` | Regular flat builders (square/triangle/trigrid/hex/hexhex/hextri/hextriangle/squarediamond), the `_ArchTemplate` system, the eight Archimedean `_*_template()` factories plus their eight Laves duals (built by `_dual_template`), the six isogonal (non-edge-to-edge) ones, the five congruent-rectangle bonds, the two rep-tile patterns and Dürer's pentagon tiling, and the **`ARCH_TILINGS`** registry (the one place any of them is declared, with `_FAMILY_TRAITS` saying what each family is). |
 | `fractal.py` | The self-similar (fractal) boards: the sphinx, the chair, the Sierpinski carpet, the pentaflake and the Gosper island. One `_Substitution` record per tile — unit outline, the tiles filling the inflated copy, the inflation factor, lattice ops — and the shared inflation (`substitution_placements`) all five `*_board` builders run. The first two are rep-tiles (their children fill the tile); the carpet's and the pentaflake's leave holes, which is what makes them fractals with holes rather than shapes; the Gosper island's fill it with no hole at all and put the fractal in the *outline* instead. Four lattices are integer; the pentaflake's is ℤ[ζ10], since five-fold symmetry needs rank 4. The Gosper island's inflation is the one that is not a pure scaling: multiplication by 2 + ζ, a spiral similarity of √7 at 19.106°. |
-| `aperiodic.py` | Penrose (P3), the Spectre (Tile(1,1), the chiral monotile) and the phyllotactic spiral, each with exact-arithmetic vertex ids — ℤ[ζ5] for Penrose and the spiral, ℤ[ζ12] for the Spectre. The Spectre's ring is *dense* in the plane, so unlike Penrose's discrete lattice there is no lattice to snap a float vertex back to: its placements are carried as exact `(rotation, mirror, translation)` triples and no floating point enters the substitution at all. The spiral is the odd one out — no substitution, just ten 36° wedges of the tile's own translation lattice, the odd ones offset a step; nonperiodic because its five-fold centre forbids any translation. The **brick rings** are nonperiodic the same way — by symmetry rather than by a substitution — and are the plainest board here: 2x1 bricks on the integer square lattice in concentric square rings about a 2x2 core, ring k being the boundary of the 2k x 2k square with horizontal bricks along its rows and vertical ones up its sides. Every run is even, so every tile is a whole brick and only an even-sided square is tileable at all. A brick's corner lands in the middle of a neighbour's long side, so `_brick_outline` splits each edge at the lattice points that are genuinely some tile's corner — the 2D twin of `solids._split_at_lattice_points`, and *conditional*, unlike the fractal outlines, which carry a vertex at every step. |
+| `aperiodic.py` | Penrose (P3), the Spectre (Tile(1,1), the chiral monotile), the phyllotactic spiral, Klaassen's spiral monotile and his three pentagonal spirals (5-, 6- and 7-fold, one convex pentagon each), each with exact-arithmetic vertex ids — ℤ[ζ5] for Penrose and the spiral, ℤ[ζ12] for the Spectre. The Spectre's ring is *dense* in the plane, so unlike Penrose's discrete lattice there is no lattice to snap a float vertex back to: its placements are carried as exact `(rotation, mirror, translation)` triples and no floating point enters the substitution at all. The spiral is the odd one out — no substitution, just ten 36° wedges of the tile's own translation lattice, the odd ones offset a step; nonperiodic because its five-fold centre forbids any translation. The **brick rings** are nonperiodic the same way — by symmetry rather than by a substitution — and are the plainest board here: 2x1 bricks on the integer square lattice in concentric square rings about a 2x2 core, ring k being the boundary of the 2k x 2k square with horizontal bricks along its rows and vertical ones up its sides. Every run is even, so every tile is a whole brick and only an even-sided square is tileable at all. A brick's corner lands in the middle of a neighbour's long side, so `_brick_outline` splits each edge at the lattice points that are genuinely some tile's corner — the 2D twin of `solids._split_at_lattice_points`, and *conditional*, unlike the fractal outlines, which carry a vertex at every step. |
 | `solids.py` | Closed/convex and polycube 3D boards (spherical gyro pentagons, Goldberg polyhedra, geodesic icosahedron, rhombicosidodecahedron, truncated icosidodecahedron, cube, tetrahedron, frames, bipyramid), plus the shared `_wythoff_point` every uniform solid here and every Catalan solid next door is generated from. |
 | `catalan.py` | The thirteen Catalan solids, the duals of the Archimedean solids. One recipe for all of them: a Platonic base and one flag, the Wythoff generating point of its Schwarz triangle (`solids._wythoff_point` for the five non-chiral Conway operations, `_snub_point` for the chiral one), a Catalan vertex at `n / <w, n>` on each face axis — polar duality — and the base's flags grouped into faces by the operation. Faces are then subdivided (`solids._geodesic` for triangles, `_quad_grid` for quadrilaterals, a five-way fan first for pentagons), which is these boards' only size knob. |
 | `surfaces.py` | Wrapping tilings onto surfaces: the three immersion points (`_torus_point`, `_cylinder_point`, `_mobius_point`), the shared `_assemble` tail, the nine simple `*_board` wrappers, and the Archimedean `arch_torus_board` / `arch_cylinder_board` / `arch_mobius_board`. Also `double_torus_board`, the one board here that is *not* wrapped from a rectangle: two overlapping square-tiled donuts cut apart along the plane between them and sewn back together, a connected sum rather than a seam gluing. |
@@ -362,9 +362,9 @@ whole path a deal takes, the shared window list included — so a window landing
 on a different tile in one language fails CI rather than quietly dealing a
 different board.
 
-The other three take no variant, deliberately: the phyllotactic spiral,
-Klaassen's spiral and the brick rings are nonperiodic by *symmetry*, so each has
-one distinguished centre (the five-fold rosette, the seed, the 2×2 core) and a
+The others take no variant, deliberately: the phyllotactic spiral,
+Klaassen's two spirals and the brick rings are nonperiodic by *symmetry*, so each has
+one distinguished centre (the rosette, the seed, the 2×2 core) and a
 window anywhere else would be a crop of a structured picture rather than another
 board.
 
@@ -414,6 +414,30 @@ comes out as the spiral's own round disc rather than a square. Its tile is the
 one cell in the game with **no point that sees all of it** (not star-shaped), so
 the renderer cuts it differently from every other cell — see
 [`web/docs/render.md`](../../web/docs/render.md).
+
+`pentaspiral_board` is the zoo's **monohedral pentagonal** tiling, in three
+boards: `pentaspiral5`, `pentaspiral6` and `pentaspiral7`, one convex pentagon
+tiling the plane with n-fold rotational symmetry (Klaassen, "Rotationally
+symmetric tilings with convex pentagons and hexagons", *Elem. Math.* 71, 2016).
+His pentagons have |b| = |c| = |a| + |d| and D + E = 180°, and B = 360°/n gives
+an n-fold tiling. The member built is the one Wikimedia's 5-fold figure draws,
+matched against all 120 of its tiles, taken to every n alike: A = C = 180° −
+180°/n, sides b = c = 3, a = 1, d = 2. Two copies glued along e by a half turn
+make the phyllotactic spiral's hexagon at n-fold (the zonogon on three unit
+directions 180°/n apart), scaled by 3. So the construction is the phyllotactic
+spiral's run at n-fold: 2n wedges, the odd ones pushed out a side, and every
+hexagon cut the same way, from a third of the way along its u1 side to the point
+opposite. Cutting alternate wedges the other way also tiles, but it is not that
+picture, and `TestPentaSpiral` pins the choice. The ids reuse three rings the
+module already has: ℤ[ζ10] for n = 5, ℤ[ζ12] for n = 6 and ℤ[ζ7] (as ℤ[ζ14]) for
+n = 7. Every vertex is a sum of unit directions, which is componentwise in all
+three, so one pair of helpers serves them all. The tiling is **not edge to
+edge**: a cut ends a third of the way along a neighbour's edge, so each run of
+unit steps is split conditionally at the points that are some tile's corner, as
+the brick rings' are. It takes the same quantised Chebyshev trim as the
+phyllotactic spiral. A corner of that square window can leave a rim pentagon
+touching the board along one edge only: the 6-fold easy board has two such
+cells, which is why its test asks for a disc rather than a minimum degree.
 
 The last, `brick_rings_board`, is nonperiodic by symmetry as well, and is
 the plainest board in the game: 2×1 **bricks** on the integer square lattice

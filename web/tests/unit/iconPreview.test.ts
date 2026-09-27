@@ -74,7 +74,7 @@ describe("card previews", () => {
     // grid, which is true of the neighbourhood and the wrong thing to say. So
     // they are fitted whole, and are still the board rather than the row's
     // hand-drawn glyph.
-    for (const key of ["phyllotaxis", "gosper"]) {
+    for (const key of ["phyllotaxis", "pentaspiral5", "pentaspiral7", "gosper"]) {
       const preview = previewIcon(key);
       expect(preview.tiled, key).toBe(false);
       expect(paths(preview.svg), key).toBeGreaterThan(paths(menuIcon(key)));

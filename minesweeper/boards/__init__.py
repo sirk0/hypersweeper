@@ -8,6 +8,7 @@ tilings/surfaces.
 from __future__ import annotations
 
 from minesweeper.boards.aperiodic import (  # noqa: F401
+    _PENTA_RINGS,
     _PHYLLO_A,
     _PHYLLO_B,
     _PHYLLO_HEX,
@@ -27,6 +28,7 @@ from minesweeper.boards.aperiodic import (  # noqa: F401
     ZPoint,
     _brick_rings_tiles,
     _klaassen_tiles,
+    _pentaspiral_tiles,
     _phyllotaxis_tiles,
     _place_compose,
     _place_point,
@@ -50,6 +52,10 @@ from minesweeper.boards.aperiodic import (  # noqa: F401
     brick_rings_board,
     klaassen_board,
     penrose_board,
+    pentaspiral5_board,
+    pentaspiral6_board,
+    pentaspiral7_board,
+    pentaspiral_board,
     phyllotaxis_board,
     spectre_board,
 )

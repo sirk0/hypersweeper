@@ -55,6 +55,13 @@ const MODES = [
   // arm about a seed. The only tile with no point that sees all of it, so the
   // only shot of the renderer's mitred, triangulated path for such a cell.
   "klaassen",
+  // and Klaassen's pentagonal spirals: one convex pentagon in n arms, n = 5,
+  // 6, 7 -- the pairs of it are the phyllotactic hexagon at n-fold, cut a third
+  // of the way along a side, so the only flat boards whose cells carry a
+  // T-vertex on a pentagon.
+  "pentaspiral5",
+  "pentaspiral6",
+  "pentaspiral7",
   // and the brick rings, nonperiodic by symmetry rather than by substitution:
   // 2x1 bricks in concentric square rings about a 2x2 core. It is the flat
   // board whose tiles are rectangles rather than regular polygons.

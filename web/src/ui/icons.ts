@@ -36,6 +36,7 @@ import {
   klaassenBoard,
   klaassenTiles,
   penroseBoard,
+  pentaSpiralBoard,
   phyllotaxisBoard,
   spectreBoard,
   z7ToXy,
@@ -1469,6 +1470,28 @@ function draw(rawKey: string): string[] {
         ),
       );
     });
+  } else if (key.startsWith("pentaspiral")) {
+    // the innermost ring of hexagons, each drawn as its two pentagons: the n
+    // that meet at the centre and the n of the odd wedges offset one side out,
+    // the half with the 360/n corner lighter
+    const board = pentaSpiralBoard(Number(key.slice("pentaspiral".length)), 1, 0, null, 1);
+    const cells = [...board.polygons];
+    const xs = cells.flatMap(([, poly]) => poly.map((p) => p[0]));
+    const ys = cells.flatMap(([, poly]) => poly.map((p) => p[1]));
+    const [minX, maxX] = [Math.min(...xs), Math.max(...xs)];
+    const [minY, maxY] = [Math.min(...ys), Math.max(...ys)];
+    const sc = (d * 0.9) / Math.max(maxX - minX, maxY - minY);
+    const ox = (d - (maxX - minX) * sc) / 2;
+    const oy = (d - (maxY - minY) * sc) / 2;
+    for (const [cell, poly] of cells) {
+      parts.push(
+        shape(
+          poly.map(([x, y]): P => [ox + (x - minX) * sc, oy + (y - minY) * sc]),
+          cell.endsWith(",0") ? LIGHT : BASE,
+          2,
+        ),
+      );
+    }
   } else if (key === "brickrings") {
     // the two-ring board, eight bricks in a 4×4 square: the smallest patch that
     // already shows a ring closing round the core. The core's own two bricks
@@ -1713,6 +1736,9 @@ const PATCH_BOARDS: Record<string, PatchBoard> = {
   spectre: { build: () => spectreBoard(3, 0, null, 14.361) },
   phyllotaxis: { build: () => phyllotaxisBoard(5, 0, null, 22.907), whole: true },
   klaassen: { build: () => klaassenBoard(3, 0, null, 29.521), whole: true },
+  pentaspiral5: { build: () => pentaSpiralBoard(5, 4, 0, null, 10.85), whole: true },
+  pentaspiral6: { build: () => pentaSpiralBoard(6, 4, 0, null, 11.389), whole: true },
+  pentaspiral7: { build: () => pentaSpiralBoard(7, 3, 0, null, 12.097), whole: true },
   // Cropped, not whole: the rings are a course of bricks turning a quarter at
   // each remove from the middle, which is what the crop catches — a whole ring
   // block shrunk into the card is just a brick wall.

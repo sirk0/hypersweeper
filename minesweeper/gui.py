@@ -29,6 +29,7 @@ import time
 import pygame
 
 from minesweeper.boards import (
+    _PENTA_RINGS,
     DIFFICULTIES,
     FAMILY_LABELS,
     FAMILY_MEMBERS,
@@ -44,6 +45,7 @@ from minesweeper.boards import (
     SUBSTITUTIONS,
     _brick_rings_tiles,
     _klaassen_tiles,
+    _pentaspiral_tiles,
     _z7_to_xy,
     build_board,
     family_rows,
@@ -1259,6 +1261,24 @@ def _render_icon(key: str) -> pygame.Surface:
             _icon_shape(s, [(ox + (x - min(xs)) * sc, oy + (max(ys) - y) * sc)
                             for x, y in pts],
                         fill=ICON_BLUE_LIGHT if hub == 0 else ICON_BLUE, width=2)
+        _icon_gloss(s, pygame.Rect(d * 0.06, d * 0.06, d * 0.88, d * 0.6))
+    elif key.startswith("pentaspiral"):
+        # the innermost ring of hexagons, each drawn as its two pentagons: the
+        # n that meet at the centre and the n of the odd wedges offset one
+        # side out, the half with the 360/n corner lighter
+        fold = int(key[len("pentaspiral"):])
+        _, to_xy = _PENTA_RINGS[fold]
+        tiles = [(key_[3], [to_xy(p) for p, _, _ in corners])
+                 for key_, corners in _pentaspiral_tiles(fold, 1)]
+        xs = [x for _, pts in tiles for x, _ in pts]
+        ys = [y for _, pts in tiles for _, y in pts]
+        sc = d * 0.9 / max(max(xs) - min(xs), max(ys) - min(ys))
+        ox = (d - (max(xs) - min(xs)) * sc) / 2
+        oy = (d - (max(ys) - min(ys)) * sc) / 2
+        for half, pts in tiles:
+            _icon_shape(s, [(ox + (x - min(xs)) * sc, oy + (max(ys) - y) * sc)
+                            for x, y in pts],
+                        fill=ICON_BLUE if half else ICON_BLUE_LIGHT, width=2)
         _icon_gloss(s, pygame.Rect(d * 0.06, d * 0.06, d * 0.88, d * 0.6))
     elif key == "brickrings":
         # the two-ring board, eight bricks in a 4x4 square: the smallest patch
