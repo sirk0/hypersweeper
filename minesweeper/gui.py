@@ -43,6 +43,8 @@ from minesweeper.boards import (
     SOLID_GROUP_MEMBERS,
     SUBSTITUTIONS,
     _brick_rings_tiles,
+    _klaassen_tiles,
+    _z7_to_xy,
     build_board,
     family_rows,
     newell_normal,
@@ -397,8 +399,39 @@ def _set_mouse_scale(
 
 
 def centroid(vertices: list[tuple[float, float]]) -> tuple[float, float]:
+    """The cell's centre: its vertex mean, or -- for a tile bent enough that
+    the mean falls outside it, which only Klaassen's heptagon is -- the middle
+    of the biggest circle it holds (``label_point``)."""
     n = len(vertices)
-    return (sum(x for x, _ in vertices) / n, sum(y for _, y in vertices) / n)
+    mean = (sum(x for x, _ in vertices) / n, sum(y for _, y in vertices) / n)
+    if n > 3 and not point_in_polygon(mean, vertices):
+        return label_point(vertices)
+    return mean
+
+
+def label_point(vertices: list[tuple[float, float]]) -> tuple[float, float]:
+    """The interior point farthest from the boundary (the pole of
+    inaccessibility), by a grid search refined three times -- the same search
+    as ``labelPoint`` in web/src/render/boardMesh.ts."""
+    xs = [x for x, _ in vertices]
+    ys = [y for _, y in vertices]
+    steps = 24
+    x0, y0, w, h = min(xs), min(ys), max(xs) - min(xs), max(ys) - min(ys)
+    best, best_dist = ((x0 + w / 2), (y0 + h / 2)), -math.inf
+    n = len(vertices)
+    for _ in range(4):
+        for i in range(steps + 1):
+            for j in range(steps + 1):
+                p = (x0 + w * i / steps, y0 + h * j / steps)
+                if not point_in_polygon(p, vertices):
+                    continue
+                d = min(_dist_point_segment(p, vertices[k], vertices[(k + 1) % n])
+                        for k in range(n))
+                if d > best_dist:
+                    best, best_dist = p, d
+        w, h = w * 4 / steps, h * 4 / steps
+        x0, y0 = best[0] - w / 2, best[1] - h / 2
+    return best
 
 
 def shrink_polygon(vertices, factor: float):
@@ -1210,6 +1243,22 @@ def _render_icon(key: str) -> pygame.Surface:
                              c + r * ((x + offset[0]) * sin_a + (y + offset[1]) * cos_a))
                             for x, y in hexagon],
                         fill=ICON_BLUE if k % 2 else ICON_BLUE_LIGHT, width=3)
+        _icon_gloss(s, pygame.Rect(d * 0.06, d * 0.06, d * 0.88, d * 0.6))
+    elif key == "klaassen":
+        # the seed and the first three hubs of the chain it starts: the
+        # nine-tile fan where the chain turns back on itself (lighter), and
+        # the three fans of four that already curl it into the spiral's arm
+        tiles = [(key_, [_z7_to_xy(v) for v in ids])
+                 for key_, ids in _klaassen_tiles(1) if key_[0] <= 3]
+        xs = [x for _, pts in tiles for x, _ in pts]
+        ys = [y for _, pts in tiles for _, y in pts]
+        sc = d * 0.9 / max(max(xs) - min(xs), max(ys) - min(ys))
+        ox = (d - (max(xs) - min(xs)) * sc) / 2
+        oy = (d - (max(ys) - min(ys)) * sc) / 2
+        for (hub, _), pts in tiles:
+            _icon_shape(s, [(ox + (x - min(xs)) * sc, oy + (max(ys) - y) * sc)
+                            for x, y in pts],
+                        fill=ICON_BLUE_LIGHT if hub == 0 else ICON_BLUE, width=2)
         _icon_gloss(s, pygame.Rect(d * 0.06, d * 0.06, d * 0.88, d * 0.6))
     elif key == "brickrings":
         # the two-ring board, eight bricks in a 4x4 square: the smallest patch

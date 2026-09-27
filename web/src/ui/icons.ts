@@ -33,9 +33,12 @@ import {
 import {
   brickRingsBoard,
   brickRingsTiles,
+  klaassenBoard,
+  klaassenTiles,
   penroseBoard,
   phyllotaxisBoard,
   spectreBoard,
+  z7ToXy,
 } from "../boards/aperiodic";
 import {
   deltoidalHexecontahedronBoard,
@@ -1444,6 +1447,28 @@ function draw(rawKey: string): string[] {
         ),
       );
     }
+  } else if (key === "klaassen") {
+    // the seed and the first three hubs of the chain it starts: the nine-tile
+    // fan where the chain turns back on itself (lighter), and the three fans of
+    // four that already curl it into the spiral's one arm
+    const tiles = klaassenTiles(1).filter((t) => t.hub <= 3);
+    const pts = tiles.map((t) => t.ids.map(z7ToXy));
+    const xs = pts.flat().map((p) => p[0]);
+    const ys = pts.flat().map((p) => p[1]);
+    const [minX, maxX] = [Math.min(...xs), Math.max(...xs)];
+    const [minY, maxY] = [Math.min(...ys), Math.max(...ys)];
+    const sc = (d * 0.9) / Math.max(maxX - minX, maxY - minY);
+    const ox = (d - (maxX - minX) * sc) / 2;
+    const oy = (d - (maxY - minY) * sc) / 2;
+    tiles.forEach((t, i) => {
+      parts.push(
+        shape(
+          pts[i]!.map(([x, y]): P => [ox + (x - minX) * sc, oy + (maxY - y) * sc]),
+          t.hub === 0 ? LIGHT : BASE,
+          2,
+        ),
+      );
+    });
   } else if (key === "brickrings") {
     // the two-ring board, eight bricks in a 4×4 square: the smallest patch that
     // already shows a ring closing round the core. The core's own two bricks
@@ -1687,6 +1712,7 @@ const PATCH_BOARDS: Record<string, PatchBoard> = {
   penrose: { build: () => penroseBoard(5, 0, 437.727, null) },
   spectre: { build: () => spectreBoard(3, 0, null, 14.361) },
   phyllotaxis: { build: () => phyllotaxisBoard(5, 0, null, 22.907), whole: true },
+  klaassen: { build: () => klaassenBoard(3, 0, null, 29.521), whole: true },
   // Cropped, not whole: the rings are a course of bricks turning a quarter at
   // each remove from the middle, which is what the crop catches — a whole ring
   // block shrunk into the card is just a brick wall.

@@ -61,7 +61,7 @@ const WIN_TIERS = [10, 50, 250];
  * in a test, not on a settings page. `tests/unit/achievements.test.ts` does
  * exactly that and fails if this list is wrong, so a tiling with heptagons
  * cannot slip in without a badge. */
-export const SHAPE_SIDES = [3, 4, 5, 6, 8, 10, 12, 13];
+export const SHAPE_SIDES = [3, 4, 5, 6, 7, 8, 10, 12, 13];
 
 export interface Progress {
   /** mode -> difficulty -> wins. The history everything else is derived from. */

@@ -13,6 +13,7 @@ from __future__ import annotations
 from minesweeper.boards._data import load
 from minesweeper.boards.aperiodic import (
     brick_rings_board,
+    klaassen_board,
     penrose_board,
     phyllotaxis_board,
     spectre_board,
@@ -168,6 +169,9 @@ _JSON_BUILDERS = {
     "penrose_board": penrose_board,
     "spectre_board": spectre_board,
     "phyllotaxis_board": phyllotaxis_board,
+    # klaassen_board(turns, mine_count, keep, scale): ``turns`` only has to
+    # grow the spiral well past ``keep``, as ``rings`` does for phyllotaxis.
+    "klaassen_board": klaassen_board,
     # The brick rings fill their square exactly, so the only size knob is
     # the ring count: brick_rings_board(rings, mine_count, scale).
     "brick_rings_board": brick_rings_board,

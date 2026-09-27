@@ -331,6 +331,19 @@ export const DOMAINS: Record<string, () => Domain> = {
       [PHYLLO_U[1]![0] + PHYLLO_U[2]![0], PHYLLO_U[1]![1] + PHYLLO_U[2]![1]],
     ),
 
+  // Klaassen's heptagon where its spiral runs straight: far out, the chain of
+  // hubs goes whole windings without turning, and a hub that does not turn
+  // fans out two tiles, both tips one winding on. That limit is periodic -- the
+  // lattice is one step along the chain, e(0), and one tile's tip-to-tip span,
+  // (1 + 2cos 2pi/7) e(-4) -- with the same tile and the same seventh-turn
+  // angles, but no spiral, since a spiral is not periodic.
+  klaassen: () => {
+    const chevron = (rot: number): Vertex[] =>
+      walk([0, 2, 4, 12, 10, 8, 6].map((e) => (((rot + e) % 14) + 14) % 14), 14);
+    const tip = chevron(-6)[3]!;
+    return latticeDomain([chevron(-6), chevron(-5)], [1, 0], tip);
+  },
+
   // Two regular pentagons and one thin rhomb, on the lattice a torus
   // exact-cover search turns up for them — the smallest cell there is, and the
   // one the corner count in the note below predicts.

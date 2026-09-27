@@ -475,6 +475,181 @@ def phyllotaxis_board(
     return _finalize_flat("phyllotaxis", cells, _z_to_xy, mine_count, scale)
 
 
+# -- Klaassen's spiral monotile ------------------------------------------------
+#
+# Bernhard Klaassen's spiral tiling ("Forcing nonperiodic tilings with one tile
+# using a seed", Eur. J. Combin. 2022): one equilateral **heptagon** whose seven
+# edges run along the seven 7th roots of unity, each exactly once, in the order
+# zeta^0, zeta^1, zeta^2, zeta^6, zeta^5, zeta^4, zeta^3 (zeta = exp(2*pi*i/7)).
+# Its angles are pi/7, 9pi/7, 9pi/7, pi/7, 5pi/7, 5pi/7, 5pi/7: a bent chevron
+# with two needle tips, mirror-symmetric (so a reflected copy is just a rotated
+# one), and it lies between two concentric regular-heptagon arcs -- three edges
+# of one on its concave side, four of the other on its convex side.
+#
+# Nonperiodic by *symmetry-breaking seed* rather than by substitution, like the
+# phyllotactic spiral: the whole tiling is one spiral arm around a single seed
+# vertex, so there is no translation and one distinguished centre -- which is
+# why this board takes no ``variant`` either.
+#
+# The construction. Tips meet at *hubs*, four to a hub, and the hubs form one
+# chain h0, h1, ... of unit steps h(k+1) = h(k) + e(d_k), e(n) = exp(i*n*pi/7).
+# Hub i (i >= 1) sends a fan of ``d_i - d_(i-1) + 2`` tiles outward, the tile
+# at direction phi having its tip at h_i and its other tip at
+# h_i + (1 + 2cos(2pi/7)) e(phi), for phi = d_(i-1) - 4 .. d_i - 3. Consecutive
+# tips of a fan are exactly one unit apart, and a fan's last tip is the next
+# fan's first -- so the fans' outer tips *are* the chain's next winding, and
+# fan i lays the steps d_(i-1) .. d_i + 14 of it (directions unwrapped, one
+# winding = 14). On the turns, t_i = d_i - d_(i-1) in {0, 1, 2}, that is the
+# substitution t -> 1^t 0, and every winding is 14 steps longer than the last:
+# an Archimedean spiral. The seed is hub 0, where the chain turns back on
+# itself (d_(-1) = 1 to d_0 = 8, a half turn) and so fans out nine tiles; its
+# first eleven steps (8, 10, 12, 14, then 15 .. 22) are the seed's own.
+# Recovered from the published figure and checked against every tile of it.
+#
+# In exact Z[zeta7]: a point is 6 integer coefficients over (1, zeta, ...,
+# zeta^5), reduced by zeta^6 = -(1 + zeta + ... + zeta^5). The fourteen
+# directions are e(2m) = zeta^m and e(2m+1) = -zeta^(m+4). No multiplication
+# is ever needed -- every vertex is a sum of unit directions -- so vertex ids
+# are exact integer tuples and the shared-vertex adjacency needs no tolerance.
+# The tiling is edge to edge (no tip lands inside a neighbour's edge).
+
+Z7Point = tuple[int, int, int, int, int, int]
+
+_Z7_ZERO: Z7Point = (0, 0, 0, 0, 0, 0)
+
+
+def _z7_power(m: int) -> Z7Point:
+    """zeta^m for zeta = exp(2*pi*i/7)."""
+    m %= 7
+    if m == 6:
+        return (-1, -1, -1, -1, -1, -1)
+    return tuple(1 if k == m else 0 for k in range(6))
+
+
+def _z7_add(p: Z7Point, q: Z7Point) -> Z7Point:
+    return tuple(x + y for x, y in zip(p, q))
+
+
+def _z7_dir(n: int) -> Z7Point:
+    """The unit vector e(n) = exp(i*n*pi/7), n in fourteenths of a turn."""
+    n %= 14
+    if n % 2 == 0:
+        return _z7_power(n // 2)
+    return tuple(-c for c in _z7_power(n // 2 + 4))
+
+
+_ZETA7_BASIS = [
+    (math.cos(2 * math.pi * k / 7), math.sin(2 * math.pi * k / 7)) for k in range(6)
+]
+
+
+def _z7_to_xy(p: Z7Point) -> tuple[float, float]:
+    return (
+        sum(c * bx for c, (bx, _) in zip(p, _ZETA7_BASIS)),
+        sum(c * by for c, (_, by) in zip(p, _ZETA7_BASIS)),
+    )
+
+
+#: The tile's edges, in fourteenths of a turn from its first tip: the roots
+#: of unity zeta^0, zeta^1, zeta^2, zeta^6, zeta^5, zeta^4 (and zeta^3 closes).
+_KLAASSEN_EDGES = (0, 2, 4, 12, 10, 8)
+
+#: The seed: the chain's first twelve steps.
+_KLAASSEN_SEED = (8, 10, 12, 14, 15, 16, 17, 18, 19, 20, 21, 22)
+
+
+def _klaassen_tiles(turns: int) -> list[tuple[tuple[int, int], list[Z7Point]]]:
+    """The spiral grown ``turns`` windings out, as ((hub, k), exact vertex ids)
+    in hub order: hub ``hub``'s ``k``-th tile counting from its fan's first."""
+    steps = list(_KLAASSEN_SEED)
+    fans = [(0, 11, 19)]  # (hub, first phi, last phi); hub 0 is the seed's
+    source = 1  # the next hub whose fan lays more of the chain
+    hub = 1
+    while True:
+        while len(steps) <= hub:
+            steps.extend(d + 14 for d in range(steps[source - 1], steps[source] + 1))
+            source += 1
+        if steps[hub] >= 8 + 14 * turns:
+            break
+        fans.append((hub, steps[hub - 1] - 4, steps[hub] - 3))
+        hub += 1
+
+    at = [_Z7_ZERO]
+    for d in steps[:hub]:
+        at.append(_z7_add(at[-1], _z7_dir(d)))
+
+    tiles = []
+    for h, first, last in fans:
+        for k, phi in enumerate(range(first, last + 1)):
+            vertex = at[h]
+            ids = [vertex]
+            for edge in _KLAASSEN_EDGES:
+                vertex = _z7_add(vertex, _z7_dir(phi - 2 + edge))
+                ids.append(vertex)
+            tiles.append(((h, k), ids))
+    return tiles
+
+
+def klaassen_board(
+    turns: int, mine_count: int, keep: int | None = None, scale: float = 30
+) -> Board:
+    """Klaassen's spiral monotile: one equilateral heptagon tiling the plane
+    in a single spiral arm around a seed.
+
+    Grows the spiral ``turns`` windings out, then keeps ``keep`` tiles grown
+    out from the seed: tiles are taken in order of Chebyshev distance from
+    it, as ``phyllotaxis_board`` trims, but a tile joins only once it shares
+    two edges with the tiles already kept (one, when no tile shares two).
+    A plain distance trim of this tile leaves chevrons hanging off the rim by
+    a single edge, as hooks; grown this way the rim follows the spiral's own
+    windings. ``None`` keeps the whole patch. ``scale`` is pixels per edge.
+    """
+    rows = []  # (chebyshev key, cell key, vertex ids)
+    for key, ids in _klaassen_tiles(turns):
+        xy = [_z7_to_xy(v) for v in ids]
+        cx = sum(x for x, _ in xy) / len(xy)
+        cy = sum(y for _, y in xy) / len(xy)
+        # Quantised, as for the phyllotactic spiral, so the TypeScript port
+        # sorts identically although the last bit of a cosine may differ.
+        near = math.floor(max(abs(cx), abs(cy)) * 1e6 + 0.5)
+        rows.append((near, key, ids))
+    rows.sort(key=lambda row: row[:2])
+
+    if keep is not None and keep < len(rows):
+        rows = _klaassen_grow(rows, keep)
+
+    cells: dict[Cell, list[Z7Point]] = {key: ids for _, key, ids in rows}
+    return _finalize_flat("klaassen", cells, _z7_to_xy, mine_count, scale)
+
+
+def _klaassen_grow(rows: list, keep: int) -> list:
+    """The first ``keep`` of ``rows`` (in order) that can join edge to edge:
+    each step takes the earliest row sharing at least two edges with those
+    already taken, else the earliest sharing one, else (the first step) the
+    earliest of all."""
+    by_edge: dict = defaultdict(list)
+    for i, (_, _, ids) in enumerate(rows):
+        for k in range(len(ids)):
+            by_edge[frozenset((ids[k], ids[(k + 1) % len(ids)]))].append(i)
+    shared = [0] * len(rows)
+    taken = [False] * len(rows)
+    kept = []
+    while len(kept) < keep:
+        pick = None
+        for need in (2, 1, 0):
+            pick = next((i for i in range(len(rows))
+                         if not taken[i] and shared[i] >= need), None)
+            if pick is not None:
+                break
+        taken[pick] = True
+        kept.append(rows[pick])
+        ids = rows[pick][2]
+        for k in range(len(ids)):
+            for j in by_edge[frozenset((ids[k], ids[(k + 1) % len(ids)]))]:
+                shared[j] += 1
+    return kept
+
+
 # -- The Spectre: a chiral aperiodic monotile --------------------------------
 #
 # Tile(1,1) (Smith-Myers-Kaplan-Goodman-Strauss, 2023) is the equilateral

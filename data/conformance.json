@@ -1567,6 +1567,35 @@
         "hasCellCycle": false
       }
     },
+    "klaassen": {
+      "easy": {
+        "cellCount": 81,
+        "mineCount": 9,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 302,
+        "vertexCount": 222,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 256,
+        "mineCount": 39,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 927,
+        "vertexCount": 672,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 480,
+        "mineCount": 100,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 1722,
+        "vertexCount": 1243,
+        "hasCellCycle": false
+      }
+    },
     "brickrings": {
       "easy": {
         "cellCount": 72,

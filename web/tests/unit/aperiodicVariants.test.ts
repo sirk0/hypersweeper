@@ -118,7 +118,7 @@ describe("aperiodic patch variants", () => {
     // Only the two substitution tilings vary. The spiral and the brick rings
     // are nonperiodic by symmetry — one distinguished centre, no second window
     // — and everything else is periodic, so a variant must change nothing.
-    for (const mode of ["phyllotaxis", "brickrings", "square", "hexhex", "sphinx"]) {
+    for (const mode of ["phyllotaxis", "klaassen", "brickrings", "square", "hexhex", "sphinx"]) {
       expect(cells(buildBoard(mode, "easy", 12345) as Board)).toBe(
         cells(buildBoard(mode, "easy") as Board),
       );

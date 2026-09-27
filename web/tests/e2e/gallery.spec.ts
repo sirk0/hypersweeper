@@ -51,6 +51,10 @@ const MODES = [
   // and the phyllotactic spiral: one equilateral hexagon in five arms, whose
   // five-fold rotational symmetry is what forbids a translation.
   "phyllotaxis",
+  // and Klaassen's spiral: one equilateral heptagon, a bent chevron in a single
+  // arm about a seed. The only tile with no point that sees all of it, so the
+  // only shot of the renderer's mitred, triangulated path for such a cell.
+  "klaassen",
   // and the brick rings, nonperiodic by symmetry rather than by substitution:
   // 2x1 bricks in concentric square rings about a 2x2 core. It is the flat
   // board whose tiles are rectangles rather than regular polygons.

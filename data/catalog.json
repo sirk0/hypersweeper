@@ -115,6 +115,7 @@
     "penrose": "Penrose rhombi",
     "spectre": "The Spectre",
     "phyllotaxis": "Phyllotactic spiral",
+    "klaassen": "Klaassen spiral",
     "brickrings": "Brick rings",
     "sphinx": "Sphinx",
     "chair": "Chair",
@@ -537,6 +538,12 @@
       "tiling": "kisrhombille",
       "surface": "flat",
       "family": "dual"
+    },
+    "klaassen": {
+      "label": "Klaassen spiral",
+      "tiling": "",
+      "surface": "flat",
+      "family": "aperiodic"
     },
     "klein": {
       "label": "Squares · Klein bottle",
@@ -1322,6 +1329,7 @@
       "penrose",
       "spectre",
       "phyllotaxis",
+      "klaassen",
       "brickrings"
     ],
     "fractal": [

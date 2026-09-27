@@ -8264,5 +8264,52 @@
         "indistinguishable": 0
       }
     }
+  },
+  "klaassen": {
+    "builder": "klaassen_board",
+    "args": {
+      "easy": {
+        "args": [
+          4,
+          4,
+          81,
+          29.521
+        ],
+        "cells": 81,
+        "score": 0.0,
+        "distortionMean": 3.3177,
+        "distortionP90": 3.3177,
+        "indistinguishable": 0,
+        "patch": 318
+      },
+      "medium": {
+        "args": [
+          7,
+          42,
+          256,
+          23.659
+        ],
+        "cells": 256,
+        "score": 0.0,
+        "distortionMean": 3.3177,
+        "distortionP90": 3.3177,
+        "indistinguishable": 0,
+        "patch": 846
+      },
+      "hard": {
+        "args": [
+          10,
+          96,
+          480,
+          21.814
+        ],
+        "cells": 480,
+        "score": 0.0,
+        "distortionMean": 3.3177,
+        "distortionP90": 3.3177,
+        "indistinguishable": 0,
+        "patch": 1626
+      }
+    }
   }
 }

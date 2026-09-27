@@ -362,13 +362,15 @@ whole path a deal takes, the shared window list included — so a window landing
 on a different tile in one language fails CI rather than quietly dealing a
 different board.
 
-The other two take no variant, deliberately: the phyllotactic spiral and the
-brick rings are nonperiodic by *symmetry*, so each has one distinguished centre
-(the five-fold rosette, the 2×2 core) and a window anywhere else would be a crop
-of a structured picture rather than another board.
+The other three take no variant, deliberately: the phyllotactic spiral,
+Klaassen's spiral and the brick rings are nonperiodic by *symmetry*, so each has
+one distinguished centre (the five-fold rosette, the seed, the 2×2 core) and a
+window anywhere else would be a crop of a structured picture rather than another
+board.
 
-Three of the five aperiodic boards keep exact vertex ids in a cyclotomic ring:
-ℤ[ζ5] (Penrose and the spiral) and ℤ[ζ12] (Spectre). Only Penrose's is discrete — ℤ[ζ12]
+Four of the aperiodic boards keep exact vertex ids in a cyclotomic ring:
+ℤ[ζ5] (Penrose and the phyllotactic spiral), ℤ[ζ7] (Klaassen's spiral) and
+ℤ[ζ12] (Spectre). Only Penrose's is discrete — ℤ[ζ12]
 is dense in the plane, so `spectre_board` cannot snap a float vertex back
 to a lattice the way the game's original third aperiodic board, The Hat
 (since removed as a menu entry), did — and instead carries every
@@ -388,6 +390,31 @@ translation at all. It needs no deflation — the hexagon is a
 parallelohexagon, so each of ten 36° wedges is a plain block of its own
 translation lattice, and the odd wedges being pushed one edge out along
 `u1` is the entire spiral.
+`klaassen_board` is Bernhard Klaassen's **spiral monotile** ("Forcing
+nonperiodic tilings with one tile using a seed", 2022), recovered from the
+published figure and checked against every tile of it. The tile is an
+equilateral **heptagon** whose seven edges run along the seven 7th roots of
+unity, each exactly once, in the order ζ⁰ ζ¹ ζ² ζ⁶ ζ⁵ ζ⁴ ζ³: a mirror-symmetric
+bent chevron with angles π/7, 9π/7, 9π/7, π/7, 5π/7, 5π/7, 5π/7. (The white
+lines in the figure are each tile's internal segment from its second reflex
+corner to the middle 5π/7 corner, splitting it into a pentagon and a triangle;
+they are not cell edges.) The whole tiling is **one spiral arm**. Tiles' needle
+tips meet four to a *hub*, and the hubs form a single chain of unit steps
+`e(d_k)` (`e(n)` = exp(i·n·π/7)); a hub where the chain turns by `t` ∈ {0, 1, 2}
+fans `t + 2` tiles outward, and those tiles' outer tips *are* the chain's next
+winding — so the turns obey the substitution `t → 1ᵗ0`, every winding is 14
+steps longer than the last, and the spiral is Archimedean. The seed is the hub
+where the chain turns back on itself (a half turn), which fans out nine tiles.
+Every vertex is a sum of unit directions, so the ids are exact 6-tuples over
+(1, ζ, …, ζ⁵) with no multiplication at all, and the tiling is edge to edge.
+Its trim differs from the other `keep` boards: a plain Chebyshev cut leaves
+chevrons hanging off the rim by one edge, so tiles are taken in Chebyshev order
+but join only once they share two edges with those already kept, and the board
+comes out as the spiral's own round disc rather than a square. Its tile is the
+one cell in the game with **no point that sees all of it** (not star-shaped), so
+the renderer cuts it differently from every other cell — see
+[`web/docs/render.md`](../../web/docs/render.md).
+
 The last, `brick_rings_board`, is nonperiodic by symmetry as well, and is
 the plainest board in the game: 2×1 **bricks** on the integer square lattice
 in concentric square **rings** about a 2×2 core. Ring `k` is the boundary of

@@ -30,9 +30,13 @@ from minesweeper.boards import (
     _arch_template,
     _brick_rings_tiles,
     _finalize_flat,
+    _klaassen_tiles,
     _phyllotaxis_tiles,
     _shared_vertex_adjacency,
     _spectre_leaves,
+    _z7_add,
+    _z7_dir,
+    _z7_to_xy,
     _z12_to_xy,
     _z_add,
     _z_rot,
@@ -61,6 +65,7 @@ from minesweeper.boards import (
     hex_board,
     hexhex_board,
     hextriangle_board,
+    klaassen_board,
     klein_board,
     klein_hex_board,
     klein_triangle_board,
@@ -662,7 +667,8 @@ class TestAperiodicVariants:
             board = spectre_board(4, 89, 480, 8.512, variant)
             assert 0.7 < board.width / board.height < 1.4
 
-    @pytest.mark.parametrize("mode", ["phyllotaxis", "brickrings", "square", "sphinx"])
+    @pytest.mark.parametrize(
+        "mode", ["phyllotaxis", "klaassen", "brickrings", "square", "sphinx"])
     def test_every_other_board_ignores_the_seed(self, mode):
         # Only the substitution tilings vary. The spiral and the brick
         # rings are nonperiodic by symmetry -- one distinguished centre,
@@ -921,6 +927,105 @@ class TestPhyllotaxis:
             assert frozenset(options[0]) in patch
             for v, sectors in self._slots(options[0]).items():
                 occupied.setdefault(v, set()).update(sectors)
+
+
+class TestKlaassen:
+    """Klaassen's spiral monotile: one equilateral heptagon, one spiral arm."""
+
+    @staticmethod
+    def _interior_angles(points):
+        n = len(points)
+        area = sum(a[0] * b[1] - b[0] * a[1]
+                   for a, b in zip(points, points[1:] + points[:1]))
+        angles = []
+        for i in range(n):
+            a, b, c = points[i - 1], points[i], points[(i + 1) % n]
+            turn = math.atan2(
+                (b[0] - a[0]) * (c[1] - b[1]) - (b[1] - a[1]) * (c[0] - b[0]),
+                (b[0] - a[0]) * (c[0] - b[0]) + (b[1] - a[1]) * (c[1] - b[1]))
+            angles.append(math.pi - turn * math.copysign(1, area))
+        return angles
+
+    def test_the_tile_is_the_equilateral_seventh_turn_heptagon(self):
+        # every tile: seven equal edges along the seven 7th roots of unity,
+        # angles pi/7, 9pi/7, 9pi/7, pi/7, 5pi/7, 5pi/7, 5pi/7 from a tip
+        for _, ids in _klaassen_tiles(3):
+            points = [_z7_to_xy(v) for v in ids]
+            edges = [math.dist(points[i], points[(i + 1) % 7]) for i in range(7)]
+            assert edges == pytest.approx([1.0] * 7, abs=1e-9)
+            sevenths = [round(a / (math.pi / 7), 6)
+                        for a in self._interior_angles(points)]
+            assert sevenths == [1, 9, 9, 1, 5, 5, 5]
+
+    def test_tiles_cover_the_patch_exactly(self):
+        # edge to edge, with neither an overlap nor a gap: every edge is used
+        # once each way or lies on the rim, the rim is one cycle, and the
+        # tiles' areas add up to the area it encloses
+        board = klaassen_board(5, 20)
+
+        def shoelace(points):
+            return abs(sum(a[0] * b[1] - b[0] * a[1] for a, b
+                           in zip(points, points[1:] + points[:1]))) / 2
+
+        directed = Counter()
+        for polygon in board.polygons.values():
+            for i in range(7):
+                directed[(polygon[i], polygon[(i + 1) % 7])] += 1
+        assert set(directed.values()) == {1}
+        step = {a: b for a, b in directed if (b, a) not in directed}
+        start = next(iter(step))
+        loop, at = [start], step[start]
+        while at != start:
+            loop.append(at)
+            at = step[at]
+        assert len(loop) == len(step)
+        assert shoelace(loop) == pytest.approx(
+            sum(shoelace(p) for p in board.polygons.values()), rel=1e-9)
+
+    def test_four_tips_meet_at_every_hub_but_the_seed(self):
+        # a tile's two needle tips (its pi/7 corners) land on the chain of
+        # hubs, four to a hub -- except the seed, where the chain turns back
+        # on itself and nine tiles fan out of one vertex
+        tips = Counter()
+        tiles = _klaassen_tiles(6)
+        for _, ids in tiles:
+            tips[ids[0]] += 1
+            tips[ids[3]] += 1
+        seed = _klaassen_tiles(6)[0][1][0]
+        assert tips[seed] == 9
+        inner = {ids[0] for (hub, _), ids in tiles if hub < len(tiles) // 4}
+        assert {tips[h] for h in inner - {seed}} == {4}
+
+    def test_the_seed_chain(self):
+        # the first hubs, one unit step apart in the directions the figure
+        # shows: back on itself at the seed, then round the first winding a
+        # fourteenth of a turn per step
+        steps = (8, 10, 12, 14, 15, 16, 17, 18, 19, 20, 21, 22, 22, 23, 24, 24)
+        at, chain = (0,) * 6, []
+        for d in steps:
+            chain.append(at)
+            at = _z7_add(at, _z7_dir(d))
+        hubs = {ids[0] for _, ids in _klaassen_tiles(3)}
+        assert set(chain) <= hubs
+        assert sum(1 for (hub, _), _ids in _klaassen_tiles(3) if hub == 0) == 9
+
+    def test_no_translation_maps_the_patch_onto_itself(self):
+        # nonperiodic: no vector taking the seed's tile to another tile
+        # carries the whole seed fan with it
+        tiles = {frozenset(ids) for _, ids in _klaassen_tiles(4)}
+        seed = [ids for (hub, _), ids in _klaassen_tiles(4) if hub == 0]
+        origin = seed[0]
+        for target in tiles:
+            shift = tuple(a - b for a, b in zip(min(target), min(origin)))
+            if not any(shift):
+                continue
+            assert any(frozenset(tuple(a + b for a, b in zip(v, shift)) for v in ids)
+                       not in tiles for ids in seed)
+
+    @pytest.mark.parametrize("difficulty", list(DIFFICULTIES))
+    def test_every_board_is_a_disc(self, difficulty):
+        board = build_board("klaassen", difficulty)
+        assert _euler_characteristic(board) == 1
 
 
 class TestBrickRings:

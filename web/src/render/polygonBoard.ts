@@ -6,13 +6,18 @@ import {
   Mesh,
   MeshBasicMaterial,
   MeshStandardMaterial,
+  ShapeUtils,
+  Vector2,
 } from "three";
 import type { Board, CellId, Vertex } from "../boards/core";
 import {
   baseColorFor,
   glyphFor,
   isOpened,
+  insetMitres,
+  labelPoint,
   polygonInradius,
+  starShapedAbout,
   WIN_GLOW,
   WIN_TINT,
   type BoardMesh,
@@ -60,6 +65,11 @@ interface CellGeom {
   //   spot), else the same as `center`
   glyphInradius: number; // distance glyphCenter -> nearest edge (glyph sizing)
   palette: CellPalette; // hidden/opened tones for this cell's shape
+  // Set only for a cell that is not star-shaped about its centroid (Klaassen's
+  // bent heptagon): its loops are mitred insets rather than pulls toward one
+  // centre, by `inset` times these vectors, and its top face is the polygon's
+  // own triangulation rather than a fan. Null for every other board.
+  bent: { mitres: Vertex[]; inset: number; triangles: number[] } | null;
 }
 
 export class PolygonBoard extends Group implements BoardMesh {
@@ -166,8 +176,23 @@ export class PolygonBoard extends Group implements BoardMesh {
       const radius =
         shape.reduce((s, p) => s + Math.hypot(p[0] - centroid[0], p[1] - centroid[1]), 0) /
         shape.length;
+      // A cell with no point that sees all of it -- none before Klaassen's
+      // heptagon, whose vertex mean is not even inside it -- centres on the
+      // middle of the biggest circle it holds and is cut differently below.
+      const star = starShapedAbout(shape, centroid);
+      const center: Vertex = star ? centroid : labelPoint(shape);
       const anchor = board.glyphAnchor?.get(cell);
-      const glyphCenter: Vertex = anchor ? [anchor[0] - cx, cy - anchor[1]] : centroid;
+      const glyphCenter: Vertex = anchor ? [anchor[0] - cx, cy - anchor[1]] : center;
+      const bent = star
+        ? null
+        : {
+            mitres: insetMitres(poly),
+            inset: polygonInradius(shape, center),
+            triangles: ShapeUtils.triangulateShape(
+              poly.map(([x, y]) => new Vector2(x, y)),
+              [],
+            ).flat(),
+          };
       const n = poly.length;
       // n fan triangles for the top face, 2n for each ring of walls under it
       const count = cellVertexCount(n, this.profile);
@@ -176,11 +201,12 @@ export class PolygonBoard extends Group implements BoardMesh {
         start: vertexCount,
         count,
         poly,
-        center: centroid,
+        center,
         radius,
         glyphCenter,
         glyphInradius: polygonInradius(shape, glyphCenter),
         palette: cellPalette(tones.get(cell)!, "flat", style.monochrome, style.boardTint),
+        bent,
       });
       vertexCount += count;
     });
@@ -319,19 +345,35 @@ export class PolygonBoard extends Group implements BoardMesh {
     const g = this.geom[i]!;
     const loops = isOpened(this.states[i]!) ? this.profile.open : this.profile.closed;
     const n = g.poly.length;
-    const rings = loops.map((loop) => ({
-      points: g.poly.map((p) => lerp(p, g.center, this.profile.gap + loop.inset)),
-      z: g.radius * loop.height,
-    }));
+    const bent = g.bent;
+    const rings = loops.map((loop) => {
+      const t = this.profile.gap + loop.inset;
+      return {
+        points: bent
+          ? g.poly.map((p, k): Vertex => [
+              p[0] + bent.mitres[k]![0] * t * bent.inset,
+              p[1] + bent.mitres[k]![1] * t * bent.inset,
+            ])
+          : g.poly.map((p) => lerp(p, g.center, t)),
+        z: g.radius * loop.height,
+      };
+    });
 
     let v = g.start;
     const put = (p: Vertex, z: number) => this.positionAttr.setXYZ(v++, p[0], p[1], z);
-    // top face: fan from the centroid over the innermost loop
     const top = rings[rings.length - 1]!;
-    for (let e = 0; e < n; e++) {
-      put(g.center, top.z);
-      put(top.points[e]!, top.z);
-      put(top.points[(e + 1) % n]!, top.z);
+    if (bent) {
+      // top face: the polygon's own n - 2 triangles, then two degenerate ones
+      // so the cell fills the same n-triangle slice a fan would have
+      for (const k of bent.triangles) put(top.points[k]!, top.z);
+      for (let k = bent.triangles.length; k < 3 * n; k++) put(top.points[0]!, top.z);
+    } else {
+      // top face: fan from the centroid over the innermost loop
+      for (let e = 0; e < n; e++) {
+        put(g.center, top.z);
+        put(top.points[e]!, top.z);
+        put(top.points[(e + 1) % n]!, top.z);
+      }
     }
     // one ring of walls per gap between consecutive loops — sloping up and out
     // on a closed cell, down and in on an opened one, which is what inverts the
