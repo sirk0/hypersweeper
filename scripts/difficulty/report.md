@@ -12,7 +12,7 @@ Every board's mine count, chosen so its win probability under the reference solv
 
 ## Coverage
 
-- 564 rows, 532 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
+- 573 rows, 541 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
 - 32 could not be brought on target:
   - `cube3d`/hard: 33.3% vs 50.9% — the search could not resolve it -- its thinnest measurement finished 0 game(s), so the rate here is noise rather than a crossing the search walked to. Re-measure at a bigger `--budget`
   - `cylinder`/easy: 89.1% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (7, 9%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
@@ -58,7 +58,7 @@ Every board's mine count, chosen so its win probability under the reference solv
   - `torussnubhex`/hard: 39 abandoned
   - `triakisocta`/hard: 38 abandoned
 
-Densities run from 2.8% to 36.2% (median 18.0%) — the spread the old flat 14/16/19 per cent could not express.
+Densities run from 2.8% to 36.2% (median 17.9%) — the spread the old flat 14/16/19 per cent could not express.
 
 The only floor under the search is the **opening**: the fewest mines at which the first click alone stops finishing the board (`calibrate.opening_floor`). As a density that runs 1.2% to 16.7% across the zoo — which is why it is measured per board rather than set as a percentage.
 
@@ -182,6 +182,9 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `pentaflake` | 4.4 | 216c 11m (5%) 95% | 216c 15m (7%) 88% | 216c 27m (12%) 52% |
 | `pentagonalicositetra` | 8.1 | 120c 23m (19%) 97% | 480c 109m (23%) 85% | 480c 126m (26%) 49% |
 | `pentakisdodeca` | 11.9 | 60c 14m (23%) 98% | 240c 64m (27%) 86% | 540c 159m (29%) 49% |
+| `pentaspiral5` | 5.7 | 81c 8m (10%) 99% | 256c 37m (14%) 91% | 480c 99m (21%) 51% |
+| `pentaspiral6` | 5.6 | 81c 9m (11%) 97% | 256c 41m (16%) 89% | 480c 96m (20%) 50% |
+| `pentaspiral7` | 5.6 | 81c 11m (14%) 93% | 256c 39m (15%) 87% | 480c 94m (20%) 54% |
 | `phyllotaxis` | 5.6 | 81c 11m (14%) 97% | 256c 41m (16%) 88% | 480c 96m (20%) 53% |
 | `prismaticpent` | 6.5 | 76c 10m (13%) 97% | 232c 40m (17%) 84% | 516c 105m (20%) 53% |
 | `pythagorean` | 5.5 | 87c 6m (7%) 99% | 261c 30m (11%) 86% | 505c 77m (15%) 51% |

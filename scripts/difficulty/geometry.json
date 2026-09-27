@@ -8311,5 +8311,146 @@
         "patch": 1626
       }
     }
+  },
+  "pentaspiral5": {
+    "builder": "pentaspiral5_board",
+    "args": {
+      "easy": {
+        "args": [
+          4,
+          10,
+          81,
+          10.85
+        ],
+        "cells": 81,
+        "score": 0.0,
+        "distortionMean": 1.1986,
+        "distortionP90": 1.2432,
+        "indistinguishable": 0,
+        "patch": 320
+      },
+      "medium": {
+        "args": [
+          7,
+          40,
+          256,
+          8.328
+        ],
+        "cells": 256,
+        "score": 0.0,
+        "distortionMean": 1.2039,
+        "distortionP90": 1.2432,
+        "indistinguishable": 0,
+        "patch": 980
+      },
+      "hard": {
+        "args": [
+          9,
+          96,
+          480,
+          7.642
+        ],
+        "cells": 480,
+        "score": 0.0,
+        "distortionMean": 1.2053,
+        "distortionP90": 1.2432,
+        "indistinguishable": 0,
+        "patch": 1620
+      }
+    }
+  },
+  "pentaspiral6": {
+    "builder": "pentaspiral6_board",
+    "args": {
+      "easy": {
+        "args": [
+          4,
+          10,
+          81,
+          11.389
+        ],
+        "cells": 81,
+        "score": 0.0,
+        "distortionMean": 1.2567,
+        "distortionP90": 1.3064,
+        "indistinguishable": 0,
+        "patch": 384
+      },
+      "medium": {
+        "args": [
+          6,
+          40,
+          256,
+          8.925
+        ],
+        "cells": 256,
+        "score": 0.0,
+        "distortionMean": 1.2648,
+        "distortionP90": 1.3064,
+        "indistinguishable": 0,
+        "patch": 864
+      },
+      "hard": {
+        "args": [
+          8,
+          96,
+          480,
+          8.145
+        ],
+        "cells": 480,
+        "score": 0.0,
+        "distortionMean": 1.2665,
+        "distortionP90": 1.3064,
+        "indistinguishable": 0,
+        "patch": 1536
+      }
+    }
+  },
+  "pentaspiral7": {
+    "builder": "pentaspiral7_board",
+    "args": {
+      "easy": {
+        "args": [
+          3,
+          10,
+          81,
+          12.097
+        ],
+        "cells": 81,
+        "score": 0.0,
+        "distortionMean": 1.3365,
+        "distortionP90": 1.3884,
+        "indistinguishable": 0,
+        "patch": 252
+      },
+      "medium": {
+        "args": [
+          6,
+          40,
+          256,
+          9.315
+        ],
+        "cells": 256,
+        "score": 0.0,
+        "distortionMean": 1.3435,
+        "distortionP90": 1.3884,
+        "indistinguishable": 0,
+        "patch": 1008
+      },
+      "hard": {
+        "args": [
+          8,
+          96,
+          480,
+          8.643
+        ],
+        "cells": 480,
+        "score": 0.0,
+        "distortionMean": 1.3456,
+        "distortionP90": 1.3884,
+        "indistinguishable": 0,
+        "patch": 1792
+      }
+    }
   }
 }

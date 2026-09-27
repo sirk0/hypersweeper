@@ -39,10 +39,11 @@ Pick a surface, then a tiling:
   Then, tiled by one congruent rectangle rather than by regular polygons,
   the five brick bonds — stacked bond, running bond, basket weave, the same
   weave three bricks at a time, and herringbone — where all the interest is
-  in how the courses are staggered. Three tilings have no translation at
+  in how the courses are staggered. Several tilings have no translation at
   all: a Penrose mosaic (P3 rhombi), "the spectre" (Tile(1,1)), the *chiral*
-  monotile whose tiling uses rotations only and never mirrors a tile, and a
-  phyllotactic spiral of one equilateral hexagon in five arms. Five more are
+  monotile whose tiling uses rotations only and never mirrors a tile, a
+  phyllotactic spiral of one equilateral hexagon in five arms, and Klaassen's
+  spirals of one convex pentagon, in five, six and seven arms. Five more are
   self-similar — one tile inflated into a patch shaped like itself: the
   sphinx, the chair, the Sierpiński carpet, the pentaflake, and hexagons
   filling a Gosper island.

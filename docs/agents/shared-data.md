@@ -12,7 +12,7 @@ twice.
 - `data/presets.json` — the difficulty presets for the **ported** modes
   (the flat regular ones — square/triangle/trigrid/hex/hexhex/hextriangle —
   the solids, the regular-tiling surface wraps, every Archimedean/Laves
-  tiling × surface, and the aperiodic tilings — penrose/spectre/phyllotaxis/klaassen/brickrings), as
+  tiling × surface, and the aperiodic tilings — penrose/spectre/phyllotaxis/klaassen/pentaspiral5/6/7/brickrings), as
   `{mode: {builder, args}}`. The Archimedean/Laves rows carry the tiling
   key as their first arg. `presets.py` loads every row into `_PRESETS`
   via `_JSON_BUILDERS`; `_PRESETS` starts empty and holds only any

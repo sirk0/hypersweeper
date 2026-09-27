@@ -1253,6 +1253,75 @@
         ]
       }
     },
+    "pentaspiral5": {
+      "builder": "pentaspiral5_board",
+      "args": {
+        "easy": [
+          4,
+          8,
+          81,
+          10.85
+        ],
+        "medium": [
+          7,
+          37,
+          256,
+          8.328
+        ],
+        "hard": [
+          9,
+          99,
+          480,
+          7.642
+        ]
+      }
+    },
+    "pentaspiral6": {
+      "builder": "pentaspiral6_board",
+      "args": {
+        "easy": [
+          4,
+          9,
+          81,
+          11.389
+        ],
+        "medium": [
+          6,
+          41,
+          256,
+          8.925
+        ],
+        "hard": [
+          8,
+          96,
+          480,
+          8.145
+        ]
+      }
+    },
+    "pentaspiral7": {
+      "builder": "pentaspiral7_board",
+      "args": {
+        "easy": [
+          3,
+          11,
+          81,
+          12.097
+        ],
+        "medium": [
+          6,
+          39,
+          256,
+          9.315
+        ],
+        "hard": [
+          8,
+          94,
+          480,
+          8.643
+        ]
+      }
+    },
     "elongated": {
       "builder": "archimedean_board",
       "args": {

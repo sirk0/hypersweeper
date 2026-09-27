@@ -1049,3 +1049,174 @@ def brick_rings_board(rings: int, mine_count: int, scale: float = 30) -> Board:
     filling the 2``rings`` x 2``rings`` square. Every tile is a whole brick.
     """
     return _brick_board("brickrings", _brick_rings_tiles(rings), mine_count, scale)
+
+
+# -- Klaassen's pentagonal spirals --------------------------------------------
+#
+# Nonperiodic monohedral tilings by one *convex pentagon*, with n-fold
+# rotational symmetry for n = 5, 6 and 7: Bernhard Klaassen, "Rotationally
+# symmetric tilings with convex pentagons and hexagons", Elemente der
+# Mathematik 71 (2016). His pentagons have angles A B C D E and sides a b c d e
+# (side a ending at corner A) with |b| = |c| = |a| + |d| and D + E = 180
+# degrees, and B = 360/n gives an n-fold tiling. The member built here is the
+# one Wikimedia's 5-fold figure draws -- checked against all 120 tiles of it --
+# taken to every n alike: A = C = 180 - 180/n, b = c = 3, a = 1, d = 2.
+#
+# Two copies glued along e by a half turn make an equilateral hexagon, and
+# that hexagon is the phyllotactic spiral's tile again (the zonogon on three
+# unit directions u0, u1, u2, now 180/n degrees apart), scaled by 3. So the
+# tiling is the phyllotactic spiral's construction run at n-fold -- 2n wedges
+# of 180/n degrees, each a quadrant of the hexagon's own lattice, the odd ones
+# pushed out one side along u1 -- with every hexagon cut the same way, by the
+# chord through its centre from one unit along its u1 side to the point
+# opposite. Nonperiodic by symmetry, as the phyllotactic spiral is: a five-
+# or seven-fold centre forbids any translation outright, and at n = 6 (which a
+# periodic tiling may have) the 2n seams between the wedges all run out from
+# the one centre, so a translation would carry them off it.
+#
+# Every direction is a multiple of 180/n degrees, so the vertex ids live in a
+# ring this module already has: Z[zeta10] for n = 5 (as Penrose's and the
+# phyllotactic spiral's do), Z[zeta12] for n = 6 (as the Spectre's), and
+# Z[zeta14] = Z[zeta7] for n = 7 (as Klaassen's spiral monotile's). Every
+# vertex is a sum of unit directions, and a sum is componentwise in all three,
+# so one set of helpers serves them all and nothing is ever rounded.
+#
+# The tiling is *not* edge to edge: a cut's endpoint sits a third of the way
+# along a hexagon side, in the middle of the neighbouring pentagon's edge.
+# Each run of unit steps is therefore split at the points on it that really
+# are some tile's corner -- the conditional split ``_brick_outline`` does,
+# for the reason its docstring gives.
+
+PentaPoint = tuple[int, ...]
+
+#: Per fold, the unit vector at k * 180/n degrees and the map to the plane.
+_PENTA_RINGS = {
+    5: (lambda k: _Z_POWERS[k % 10], _z_to_xy),
+    6: (lambda k: _Z12_POWERS[k % 12], _z12_to_xy),
+    7: (_z7_dir, _z7_to_xy),
+}
+
+def _vec_add(p: PentaPoint, q: PentaPoint) -> PentaPoint:
+    return tuple(x + y for x, y in zip(p, q))
+
+
+def _vec_scale(p: PentaPoint, k: int) -> PentaPoint:
+    return tuple(x * k for x in p)
+
+
+#: One corner of a pentagon and the edge that leaves it: a run of ``count``
+#: unit steps along direction ``k`` (u_k, backwards when count < 0), or
+#: count 0 for the cut e, the one edge that is not a run.
+PentaCorner = tuple[PentaPoint, int, int]
+
+
+def _pentaspiral_tiles(
+    fold: int, rings: int
+) -> list[tuple[tuple[int, int, int, int], list[PentaCorner]]]:
+    """The 2*``fold`` wedges grown ``rings`` hexagons each way, as
+    ((wedge, m, n, half), outline) in wedge order, each outline the
+    pentagon's five corners walked counterclockwise.
+
+    Wedge w is wedge 0 turned by w * 180/n degrees, which in these rings is
+    just adding w to every direction. Half 0 is the pentagon with the
+    hexagon's 360/n corner -- the one that meets the centre -- and half 1 its
+    partner across the cut.
+    """
+    if fold not in _PENTA_RINGS:
+        raise ValueError(f"no pentagonal spiral with {fold}-fold symmetry")
+    unit, _ = _PENTA_RINGS[fold]
+    tiles = []
+    for wedge in range(2 * fold):
+        w0, w1, w2 = wedge, wedge + 1, wedge + 2
+        u0, u1, u2 = (_vec_scale(unit(k), 3) for k in (w0, w1, w2))
+        a, b = _vec_add(u0, u1), _vec_add(u1, u2)
+        base = u1 if wedge % 2 else _vec_scale(u0, 0)
+        for m in range(rings):
+            for n in range(rings):
+                v0 = _vec_add(base, _vec_add(_vec_scale(a, m), _vec_scale(b, n)))
+                v1 = _vec_add(v0, u0)
+                v2 = _vec_add(v1, u1)
+                v3 = _vec_add(v2, u2)
+                v4 = _vec_add(v0, b)
+                v5 = _vec_add(v0, u2)
+                near = _vec_add(v1, unit(w1))            # the cut, 1 along v1-v2
+                far = _vec_add(v4, _vec_scale(unit(w1), -1))  # ...to 1 short of v4
+                tiles.append(((wedge, m, n, 0), [
+                    (v0, w0, 3), (v1, w1, 1), (near, 0, 0), (far, w1, -2), (v5, w2, -3)]))
+                tiles.append(((wedge, m, n, 1), [
+                    (near, w1, 2), (v2, w2, 3), (v3, w0, -3), (v4, w1, -1), (far, 0, 0)]))
+    return tiles
+
+
+def _penta_outline(
+    fold: int, corners: list[PentaCorner], taken: set[PentaPoint]
+) -> list[PentaPoint]:
+    """The pentagon's vertex ids, split at every point inside one of its runs
+    that is a corner in ``taken`` -- a T-vertex, as ``_brick_outline`` splits
+    a brick's edges."""
+    unit, _ = _PENTA_RINGS[fold]
+    ring: list[PentaPoint] = []
+    for corner, k, count in corners:
+        ring.append(corner)
+        step = _vec_scale(unit(k), 1 if count > 0 else -1)
+        point = corner
+        for _ in range(abs(count) - 1):
+            point = _vec_add(point, step)
+            if point in taken:
+                ring.append(point)
+    return ring
+
+
+def pentaspiral_board(
+    fold: int, rings: int, mine_count: int, keep: int | None = None, scale: float = 18
+) -> Board:
+    """Klaassen's pentagonal spiral with ``fold``-fold symmetry (5, 6 or 7):
+    one convex pentagon, angles 180 - 180/n, 360/n, 180 - 180/n and a D and E
+    making 180, tiling the plane in n spiral arms.
+
+    Grows the 2n wedges out to ``rings`` hexagons each way, for 4n*rings^2
+    pentagons, then trims to the ``keep`` centremost by Chebyshev distance
+    from the centre exactly as ``phyllotaxis_board`` does. ``None`` keeps the
+    whole patch. ``scale`` is pixels per unit step (a third of the long side).
+    """
+    _, to_xy = _PENTA_RINGS.get(fold, (None, None))
+    rows = []  # (chebyshev key, cell key, corners)
+    for key, corners in _pentaspiral_tiles(fold, rings):
+        xy = [to_xy(p) for p, _, _ in corners]
+        cx = sum(x for x, _ in xy) / len(xy)
+        cy = sum(y for _, y in xy) / len(xy)
+        # Quantised, as for the phyllotactic spiral, so the TypeScript port
+        # sorts identically although the last bit of a cosine may differ.
+        near = math.floor(max(abs(cx), abs(cy)) * 1e6 + 0.5)
+        rows.append((near, key, corners))
+
+    if keep is not None and keep < len(rows):
+        rows.sort(key=lambda row: row[:2])
+        rows = rows[:keep]
+
+    taken = {p for _, _, corners in rows for p, _, _ in corners}
+    cells: dict[Cell, list[PentaPoint]] = {
+        key: _penta_outline(fold, corners, taken) for _, key, corners in rows
+    }
+    return _finalize_flat(f"pentaspiral{fold}", cells, to_xy, mine_count, scale)
+
+
+def pentaspiral5_board(
+    rings: int, mine_count: int, keep: int | None = None, scale: float = 18
+) -> Board:
+    """The five-fold pentagonal spiral; see ``pentaspiral_board``."""
+    return pentaspiral_board(5, rings, mine_count, keep, scale)
+
+
+def pentaspiral6_board(
+    rings: int, mine_count: int, keep: int | None = None, scale: float = 18
+) -> Board:
+    """The six-fold pentagonal spiral; see ``pentaspiral_board``."""
+    return pentaspiral_board(6, rings, mine_count, keep, scale)
+
+
+def pentaspiral7_board(
+    rings: int, mine_count: int, keep: int | None = None, scale: float = 18
+) -> Board:
+    """The seven-fold pentagonal spiral; see ``pentaspiral_board``."""
+    return pentaspiral_board(7, rings, mine_count, keep, scale)

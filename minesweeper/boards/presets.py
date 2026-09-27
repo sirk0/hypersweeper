@@ -15,6 +15,9 @@ from minesweeper.boards.aperiodic import (
     brick_rings_board,
     klaassen_board,
     penrose_board,
+    pentaspiral5_board,
+    pentaspiral6_board,
+    pentaspiral7_board,
     phyllotaxis_board,
     spectre_board,
 )
@@ -172,6 +175,11 @@ _JSON_BUILDERS = {
     # klaassen_board(turns, mine_count, keep, scale): ``turns`` only has to
     # grow the spiral well past ``keep``, as ``rings`` does for phyllotaxis.
     "klaassen_board": klaassen_board,
+    # The pentagonal spirals, one builder per fold, each
+    # pentaspiralN_board(rings, mine_count, keep, scale) as phyllotaxis.
+    "pentaspiral5_board": pentaspiral5_board,
+    "pentaspiral6_board": pentaspiral6_board,
+    "pentaspiral7_board": pentaspiral7_board,
     # The brick rings fill their square exactly, so the only size knob is
     # the ring count: brick_rings_board(rings, mine_count, scale).
     "brick_rings_board": brick_rings_board,

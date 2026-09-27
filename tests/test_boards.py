@@ -31,6 +31,7 @@ from minesweeper.boards import (
     _brick_rings_tiles,
     _finalize_flat,
     _klaassen_tiles,
+    _pentaspiral_tiles,
     _phyllotaxis_tiles,
     _shared_vertex_adjacency,
     _spectre_leaves,
@@ -75,6 +76,7 @@ from minesweeper.boards import (
     newell_normal,
     penrose_board,
     pentaflake_board,
+    pentaspiral_board,
     phyllotaxis_board,
     place_point,
     rhombicosidodecahedron_board,
@@ -107,6 +109,7 @@ from minesweeper.boards import (
 from minesweeper.boards import (
     euler_characteristic as _euler_characteristic,
 )
+from minesweeper.boards.aperiodic import _PENTA_RINGS
 from minesweeper.boards.catalan import (
     deltoidal_hexecontahedron_board,
     deltoidal_icositetrahedron_board,
@@ -668,7 +671,8 @@ class TestAperiodicVariants:
             assert 0.7 < board.width / board.height < 1.4
 
     @pytest.mark.parametrize(
-        "mode", ["phyllotaxis", "klaassen", "brickrings", "square", "sphinx"])
+        "mode", ["phyllotaxis", "klaassen", "pentaspiral5", "pentaspiral6",
+                 "pentaspiral7", "brickrings", "square", "sphinx"])
     def test_every_other_board_ignores_the_seed(self, mode):
         # Only the substitution tilings vary. The spiral and the brick
         # rings are nonperiodic by symmetry -- one distinguished centre,
@@ -1026,6 +1030,136 @@ class TestKlaassen:
     def test_every_board_is_a_disc(self, difficulty):
         board = build_board("klaassen", difficulty)
         assert _euler_characteristic(board) == 1
+
+
+class TestPentaSpiral:
+    """Klaassen's pentagonal spirals: one convex pentagon, n-fold symmetric."""
+
+    FOLDS = (5, 6, 7)
+
+    @staticmethod
+    def _corners(fold, corners):
+        _, to_xy = _PENTA_RINGS[fold]
+        return [to_xy(p) for p, _, _ in corners]
+
+    @pytest.mark.parametrize("fold", FOLDS)
+    def test_cell_counts(self, fold):
+        # 2n wedges, each a rings x rings block of hexagons, two pentagons each
+        assert len(pentaspiral_board(fold, 1, 2).adjacency) == 4 * fold
+        assert len(pentaspiral_board(fold, 3, 9).adjacency) == 36 * fold
+        assert len(pentaspiral_board(fold, 6, 40, keep=160).adjacency) == 160
+
+    @pytest.mark.parametrize("fold", FOLDS)
+    def test_the_tile_is_klaassen_s_pentagon(self, fold):
+        # angles A B C D E = 180 - 180/n, 360/n, 180 - 180/n, D, 180 - D, and
+        # sides b = c = 3, a = 1, d = 2 (a ends at A, b at B...), on every tile
+        # alike -- congruent, and never mirrored.
+        shapes = set()
+        for _, corners in _pentaspiral_tiles(fold, 3):
+            points = self._corners(fold, corners)
+            angles = TestKlaassen._interior_angles(points)
+            sides = [math.dist(points[i], points[(i + 1) % 5]) for i in range(5)]
+            # rotate the walk so it starts at B, the 360/n corner
+            b = min(range(5), key=lambda i: angles[i])
+            angles = angles[b:] + angles[:b]
+            sides = sides[b:] + sides[:b]
+            assert math.degrees(angles[0]) == pytest.approx(360 / fold)
+            assert math.degrees(angles[1]) == pytest.approx(180 - 180 / fold)
+            assert math.degrees(angles[4]) == pytest.approx(180 - 180 / fold)
+            assert math.degrees(angles[2] + angles[3]) == pytest.approx(180)
+            assert sides[0] == pytest.approx(3) and sides[4] == pytest.approx(3)
+            assert sides[1] == pytest.approx(1) and sides[3] == pytest.approx(2)
+            shapes.add(tuple(round(x, 6) for x in angles + sides))
+        assert len(shapes) == 1
+
+    @pytest.mark.parametrize("fold", FOLDS)
+    def test_two_halves_make_the_spiral_s_hexagon(self, fold):
+        # glued along the cut, the pair is the equilateral hexagon with angles
+        # 360/n, 180 - 180/n, 180 - 180/n: the phyllotactic spiral's tile at
+        # n-fold, which is what the wedge construction lays down.
+        tiles = dict(_pentaspiral_tiles(fold, 2))
+        for (wedge, m, n, half), corners in tiles.items():
+            if half:
+                continue
+            first = [p for p, _, _ in corners]
+            second = [p for p, _, _ in tiles[(wedge, m, n, 1)]]
+            assert set(first) & set(second) == {first[2], first[3]}
+
+    @pytest.mark.parametrize("fold", FOLDS)
+    def test_tiles_cover_the_patch_exactly(self, fold):
+        # every edge (with its T-vertices) is used once each way or is on the
+        # rim, the rim is one loop, and the tile areas sum to the area inside it
+        board = pentaspiral_board(fold, 4, 20)
+
+        def shoelace(points):
+            return abs(sum(a[0] * b[1] - b[0] * a[1] for a, b
+                           in zip(points, points[1:] + points[:1]))) / 2
+
+        directed = Counter()
+        for polygon in board.polygons.values():
+            for i in range(len(polygon)):
+                directed[(polygon[i], polygon[(i + 1) % len(polygon)])] += 1
+        assert set(directed.values()) == {1}
+        step = {a: b for a, b in directed if (b, a) not in directed}
+        start = next(iter(step))
+        loop, at = [start], step[start]
+        while at != start:
+            loop.append(at)
+            at = step[at]
+        assert len(loop) == len(step)
+        assert shoelace(loop) == pytest.approx(
+            sum(shoelace(p) for p in board.polygons.values()), rel=1e-9)
+        assert _euler_characteristic(board) == 1
+        assert _boundary_components(board) == 1
+
+    @pytest.mark.parametrize("fold", FOLDS)
+    def test_the_cuts_are_t_vertices(self, fold):
+        # not edge to edge: a cut ends a third of the way along a hexagon side,
+        # so some tile carries a collinear vertex there -- and without it the
+        # neighbour across would not be one.
+        board = pentaspiral_board(fold, 3, 9)
+        assert any(len(p) > 5 for p in board.polygons.values())
+        tiles = _pentaspiral_tiles(fold, 3)
+        corners = {p for _, cs in tiles for p, _, _ in cs}
+        assert len(corners) < sum(len(cs) for _, cs in tiles)
+
+    @pytest.mark.parametrize("fold", FOLDS)
+    def test_the_patch_has_n_fold_symmetry_and_no_more(self, fold):
+        # turning by 360/n is wedge w -> w + 2, which keeps the odd wedges'
+        # offset; turning by 180/n (w -> w + 1) swaps the parities and fails,
+        # which is what curls the arms. And no mirror: the tile is chiral here.
+        board = pentaspiral_board(fold, 4, 20)
+
+        def turned(cell, by):
+            wedge, m, n, half = cell
+            return ((wedge + by) % (2 * fold), m, n, half)
+
+        for cell, neighbors in board.adjacency.items():
+            assert set(board.adjacency[turned(cell, 2)]) == {
+                turned(c, 2) for c in neighbors}
+        assert any(set(board.adjacency[turned(cell, 1)]) != {
+            turned(c, 1) for c in neighbors}
+            for cell, neighbors in board.adjacency.items())
+
+    def test_the_five_fold_board_is_wikimedia_s(self):
+        # The figure on Wikipedia's "Pentagonal tiling" (File:Pentagonal tiling
+        # with 5-fold rotational symmetry.svg) was matched tile for tile when
+        # this board was built; pin the one fact that match turned on, the cut
+        # a third of the way along the u1 side on *every* hexagon -- a mirrored
+        # cut on alternate wedges tiles too, but is not that picture.
+        cuts = {corners[1][2] for key, corners in _pentaspiral_tiles(5, 2)
+                if key[3] == 0}
+        assert cuts == {1}
+
+    @pytest.mark.parametrize("fold", FOLDS)
+    @pytest.mark.parametrize("difficulty", list(DIFFICULTIES))
+    def test_every_board_is_a_disc(self, fold, difficulty):
+        # one piece with no hole: a corner of the square window can leave a
+        # rim tile touching the board along one edge only, as the
+        # phyllotactic spiral's corners touch it along two
+        board = build_board(f"pentaspiral{fold}", difficulty)
+        assert _euler_characteristic(board) == 1
+        assert _boundary_components(board) == 1
 
 
 class TestBrickRings:

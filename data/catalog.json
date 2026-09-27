@@ -116,6 +116,9 @@
     "spectre": "The Spectre",
     "phyllotaxis": "Phyllotactic spiral",
     "klaassen": "Klaassen spiral",
+    "pentaspiral5": "Pentagonal spiral (5-fold)",
+    "pentaspiral6": "Pentagonal spiral (6-fold)",
+    "pentaspiral7": "Pentagonal spiral (7-fold)",
     "brickrings": "Brick rings",
     "sphinx": "Sphinx",
     "chair": "Chair",
@@ -857,6 +860,24 @@
       "surface": "solid",
       "family": "catalan"
     },
+    "pentaspiral5": {
+      "label": "Pentagonal spiral (5-fold)",
+      "tiling": "",
+      "surface": "flat",
+      "family": "aperiodic"
+    },
+    "pentaspiral6": {
+      "label": "Pentagonal spiral (6-fold)",
+      "tiling": "",
+      "surface": "flat",
+      "family": "aperiodic"
+    },
+    "pentaspiral7": {
+      "label": "Pentagonal spiral (7-fold)",
+      "tiling": "",
+      "surface": "flat",
+      "family": "aperiodic"
+    },
     "phyllotaxis": {
       "label": "Phyllotactic spiral",
       "tiling": "",
@@ -1330,6 +1351,9 @@
       "spectre",
       "phyllotaxis",
       "klaassen",
+      "pentaspiral5",
+      "pentaspiral6",
+      "pentaspiral7",
       "brickrings"
     ],
     "fractal": [
