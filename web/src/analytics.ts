@@ -7,7 +7,8 @@ import { deviceClass, shellKind } from "./device";
 
 // Anonymous play counts: which boards get opened, and how often they get won.
 // The whole feature is two events per game (a `start` when a board opens, an
-// `end` when it finishes) posted to a Pages Function on this app's own origin,
+// `end` when it finishes) posted to a Pages Function on this app's own origin
+// (or, from the itch.io build, on the Cloudflare site's — see ENDPOINT),
 // which writes one row per event to Cloudflare Workers Analytics Engine. There
 // is no third-party script, no cookie, no identifier of any kind, and nothing
 // here ever reads a response.
@@ -37,8 +38,16 @@ import { deviceClass, shellKind } from "./device";
 /** Same-origin and base-aware — the Pages Function is served from the same
  * origin as the app, whatever path that app is mounted at. The path is
  * deliberately not called "event", "track" or "collect": those are the words
- * filter lists match on, and a blocked request is a lost count. */
-const ENDPOINT = `${import.meta.env.BASE_URL}api/tally`;
+ * filter lists match on, and a blocked request is a lost count.
+ *
+ * The one exception is a build hosted somewhere with no Function of its own —
+ * the itch.io zip — which `vite.config.ts` gives the collector's absolute URL
+ * (`__APP_TALLY_URL__`). That post is cross-origin, so it is sent as a
+ * CORS-safelisted `text/plain` body: no preflight, and no response to read,
+ * which this code never does anyway. `_tally.ts` accepts it only from itch's
+ * origins. */
+const ENDPOINT = __APP_TALLY_URL__ || `${import.meta.env.BASE_URL}api/tally`;
+const CROSS_ORIGIN = __APP_TALLY_URL__ !== "";
 
 /** Whether this *build* carries a collector at all: `VITE_ANALYTICS=1`, and
  * never in a packaged app. A `define` constant, so when it is false everything
@@ -81,6 +90,7 @@ export function trackGame(facts: GameFacts): void {
     // be wrong.
     shell: shellKind(),
     version: __APP_VERSION__,
+    source: __APP_SOURCE__,
   });
   if (!payload) return;
   post(JSON.stringify(payload));
@@ -93,7 +103,8 @@ function post(body: string): void {
     // the move that also closes the tab still lands. It answers false when its
     // queue is full, which falls through to fetch rather than dropping the
     // event.
-    if (nav?.sendBeacon?.(ENDPOINT, new Blob([body], { type: "application/json" }))) {
+    const type = CROSS_ORIGIN ? "text/plain" : "application/json";
+    if (nav?.sendBeacon?.(ENDPOINT, new Blob([body], { type }))) {
       return;
     }
     if (typeof fetch !== "function") return;
@@ -105,9 +116,9 @@ function post(body: string): void {
       body,
       keepalive: true,
       credentials: "omit",
-      mode: "same-origin",
+      mode: CROSS_ORIGIN ? "no-cors" : "same-origin",
       cache: "no-store",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": type },
     }).catch(() => {});
   } catch {
     /* no navigator, no fetch, a CSP, an extension that replaced either */

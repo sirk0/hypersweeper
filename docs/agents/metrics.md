@@ -77,6 +77,7 @@ them. Change one, change all three.
 | `blob10` | device | `phone`, `tablet`, `desktop`, `unknown` |
 | `blob11` | shell | `browser`, `standalone` |
 | `blob12` | version | the build, `0.2.83` |
+| `blob13` | source | where the build is hosted: `site` (Cloudflare), `itch` (itch.io) |
 | `double1` | seconds | on the clock; 0 on a start |
 | `double2` | cells | total cells on the board |
 | `double3` | mines | mines on the board |
@@ -89,7 +90,7 @@ them. Change one, change all three.
 | `double10` | firstMoveMs | board open to first move, in ms |
 | `double11` | viewMoved | 1 if the view was ever rotated or zoomed |
 
-Four of those read wrong if taken at face value.
+Five of those read wrong if taken at face value.
 
 - **`opened` does not count the mine a loss stepped on.** `Game.reveal` marks it
   revealed without counting it, so this stays *safe cells opened* — which is the
@@ -111,6 +112,12 @@ Four of those read wrong if taken at face value.
   so `blob4 != ''` is exactly "this event carries the wide schema". `blob5` is
   legitimately empty for a one-off board and `blob12` is empty for a malformed
   version, so neither is a substitute.
+
+- **An empty `source` is the site.** It is a build-time fact (`VITE_SOURCE`)
+  added after the other columns, so a build from before it posts nothing; the
+  only host that reported then was the Cloudflare site. A panel splitting by
+  host should read `if(blob13 = 'itch', 'itch', 'site')`, as the committed ones
+  do.
 
 The board columns (`blob4..7`) are **derived at the collector** from the mode,
 not sent. Two reasons: the wire stays small, and the collector keeps the
@@ -334,7 +341,12 @@ bytes.
 ## What must never be sent
 
 The collector stores **nothing about the request**: no IP, no country, no colo,
-no user agent, no referrer, nothing from `request.cf`. A rare board plus a
+no user agent, no referrer, nothing from `request.cf`. The one header it *reads*
+beyond `Sec-Fetch-Site` is `Origin`, and only to let the itch.io build's
+cross-site post through (`ITCH_ORIGIN` in `_tally.ts`); it is matched, never
+written. `source` comes from the build, and the collector drops an event whose
+`source` disagrees with where it came from, so neither host can be filed under
+the other. A rare board plus a
 country is an identifier, and not being one is the entire promise of this
 feature. The client facts it does carry are deliberately coarse — four device
 values, two shell values, a build number — and none is a measurement: no screen

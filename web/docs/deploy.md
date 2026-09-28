@@ -293,6 +293,39 @@ there; `app.spec.ts` pins it. Visual baselines are only authoritative under the 
 Chromium build (software WebGL / SwiftShader): CI, a cloud session, or the Linux
 container in `docker-compose.e2e.yml`.
 
+### itch.io
+
+`make itch-zip` (from the repo root) writes
+`build/itch/hypersweeper-itch.zip` — the upload for an itch.io HTML5 game page,
+`index.html` at the root of the archive. It is this app built with
+**`VITE_SOURCE=itch`**, which `vite.config.ts` turns into three differences
+from the Cloudflare build, all forced by where itch serves a game from — a path
+of its own (`/html/<upload id>/`) inside an iframe on its CDN
+(`html-classic.itch.zone`):
+
+- **`base: "./"`**, so every asset is addressed relative to `index.html`.
+- **No service worker** and no web manifest (the `VITE_NO_SW` path): a worker
+  scoped to one upload's path would only pin a stale copy of it. No link-preview
+  tags either — the itch.io page is what gets shared.
+- **The play counter posts cross-origin**, to the Cloudflare site's collector
+  (`__APP_TALLY_URL__`, `https://hypersweeper.pages.dev/api/tally` unless
+  `ITCH_TALLY` overrides it), as a `text/plain` beacon so no CORS preflight is
+  needed. Every event carries `source = "itch"` (`blob13`); `_tally.ts`
+  accepts a cross-site post only from an itch.io origin (`ITCH_ORIGIN`) and
+  only with that source, so the dashboards' **Source** filter and *Games by
+  source* panel split the two hosts. See
+  [`../../docs/agents/metrics.md`](../../docs/agents/metrics.md).
+
+The target also drops what only Cloudflare reads (`_headers`, `404.html`,
+`og.png`, the `/next/` shim) and runs `scripts/check-offline-assets.mjs` with
+`--collector=<url>`, which allows that one URL and nothing else remote.
+
+On the itch.io *Edit game* page: **Kind of project** → *HTML*; upload the zip
+and tick *This file will be played in the browser*; **Embed options** →
+viewport about 960 × 640, *Mobile friendly* on, *Fullscreen button* on.
+The counter needs the collector deployed with `ITCH_ORIGIN`, i.e. this change
+live on `master`, before itch.io games start showing up.
+
 ### The packaged builds (macOS, iOS)
 
 This same bundle ships inside the macOS app (`make mac-app`, see

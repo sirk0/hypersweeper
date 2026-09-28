@@ -58,7 +58,7 @@
           },
           "format": "table",
           "editorMode": "sql",
-          "query": "SELECT\n  blob4 AS board,\n  sum(if(blob1 = 'start', _sample_interval, 0)) AS plays\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND blob4 != ''\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\nGROUP BY board\nHAVING sum(if(blob1 = 'start', _sample_interval, 0)) > 0\nORDER BY plays DESC\nLIMIT $top",
+          "query": "SELECT\n  blob4 AS board,\n  sum(if(blob1 = 'start', _sample_interval, 0)) AS plays\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND blob4 != ''\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\n  AND ('$source'     = 'all' OR if(blob13 = 'itch', 'itch', 'site') = '$source')\nGROUP BY board\nHAVING sum(if(blob1 = 'start', _sample_interval, 0)) > 0\nORDER BY plays DESC\nLIMIT $top",
           "database": "",
           "table": "",
           "dateTimeType": "DATETIME",
@@ -184,7 +184,7 @@
           },
           "format": "table",
           "editorMode": "sql",
-          "query": "SELECT\n  blob4 AS board,\n  sum(if(blob1 = 'start', _sample_interval, 0)) AS plays,\n  sum(if(blob1 = 'end', _sample_interval, 0))   AS finished,\n  sum(if(blob1 = 'start', _sample_interval, 0)) - sum(if(blob1 = 'end', _sample_interval, 0)) AS abandoned,\n  sum(if(blob1 = 'end' AND blob3 = 'won', _sample_interval, 0))   AS won,\n  sum(if(blob1 = 'end' AND blob3 = 'lost', _sample_interval, 0))  AS lost,\n  sum(if(blob1 = 'end' AND blob3 = 'won', _sample_interval, 0)) / sum(if(blob1 = 'end', _sample_interval, 0)) AS win_rate,\n  sum(if(blob1 = 'end', double1 * _sample_interval, 0.0)) / sum(if(blob1 = 'end', _sample_interval, 0)) AS mean_seconds\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND blob4 != ''\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\nGROUP BY board\nHAVING sum(if(blob1 = 'end', _sample_interval, 0)) >= $min\nORDER BY plays DESC",
+          "query": "SELECT\n  blob4 AS board,\n  sum(if(blob1 = 'start', _sample_interval, 0)) AS plays,\n  sum(if(blob1 = 'end', _sample_interval, 0))   AS finished,\n  sum(if(blob1 = 'start', _sample_interval, 0)) - sum(if(blob1 = 'end', _sample_interval, 0)) AS abandoned,\n  sum(if(blob1 = 'end' AND blob3 = 'won', _sample_interval, 0))   AS won,\n  sum(if(blob1 = 'end' AND blob3 = 'lost', _sample_interval, 0))  AS lost,\n  sum(if(blob1 = 'end' AND blob3 = 'won', _sample_interval, 0)) / sum(if(blob1 = 'end', _sample_interval, 0)) AS win_rate,\n  sum(if(blob1 = 'end', double1 * _sample_interval, 0.0)) / sum(if(blob1 = 'end', _sample_interval, 0)) AS mean_seconds\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND blob4 != ''\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\n  AND ('$source'     = 'all' OR if(blob13 = 'itch', 'itch', 'site') = '$source')\nGROUP BY board\nHAVING sum(if(blob1 = 'end', _sample_interval, 0)) >= $min\nORDER BY plays DESC",
           "database": "",
           "table": "",
           "dateTimeType": "DATETIME",
@@ -363,7 +363,7 @@
           },
           "format": "table",
           "editorMode": "sql",
-          "query": "SELECT blob6 AS surface, sum(if(blob1 = 'start', _sample_interval, 0)) AS plays\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND blob4 != ''\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\nGROUP BY surface\nHAVING sum(if(blob1 = 'start', _sample_interval, 0)) > 0\nORDER BY plays DESC",
+          "query": "SELECT blob6 AS surface, sum(if(blob1 = 'start', _sample_interval, 0)) AS plays\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND blob4 != ''\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\n  AND ('$source'     = 'all' OR if(blob13 = 'itch', 'itch', 'site') = '$source')\nGROUP BY surface\nHAVING sum(if(blob1 = 'start', _sample_interval, 0)) > 0\nORDER BY plays DESC",
           "database": "",
           "table": "",
           "dateTimeType": "DATETIME",
@@ -459,7 +459,7 @@
           },
           "format": "table",
           "editorMode": "sql",
-          "query": "SELECT blob7 AS family, sum(if(blob1 = 'start', _sample_interval, 0)) AS plays\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND blob4 != ''\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\nGROUP BY family\nHAVING sum(if(blob1 = 'start', _sample_interval, 0)) > 0\nORDER BY plays DESC",
+          "query": "SELECT blob7 AS family, sum(if(blob1 = 'start', _sample_interval, 0)) AS plays\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND blob4 != ''\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\n  AND ('$source'     = 'all' OR if(blob13 = 'itch', 'itch', 'site') = '$source')\nGROUP BY family\nHAVING sum(if(blob1 = 'start', _sample_interval, 0)) > 0\nORDER BY plays DESC",
           "database": "",
           "table": "",
           "dateTimeType": "DATETIME",
@@ -555,7 +555,7 @@
           },
           "format": "table",
           "editorMode": "sql",
-          "query": "SELECT blob5 AS tiling, sum(if(blob1 = 'start', _sample_interval, 0)) AS plays\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND blob4 != ''\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\nGROUP BY tiling\nHAVING sum(if(blob1 = 'start', _sample_interval, 0)) > 0\nORDER BY plays DESC",
+          "query": "SELECT blob5 AS tiling, sum(if(blob1 = 'start', _sample_interval, 0)) AS plays\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND blob4 != ''\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\n  AND ('$source'     = 'all' OR if(blob13 = 'itch', 'itch', 'site') = '$source')\nGROUP BY tiling\nHAVING sum(if(blob1 = 'start', _sample_interval, 0)) > 0\nORDER BY plays DESC",
           "database": "",
           "table": "",
           "dateTimeType": "DATETIME",
@@ -704,7 +704,7 @@
           },
           "format": "table",
           "editorMode": "sql",
-          "query": "SELECT\n  blob8 AS trigger,\n  blob9 AS from_state,\n  sum(_sample_interval) AS starts\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND blob1 = 'start'\n  AND blob4 != ''\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\nGROUP BY trigger, from_state\nORDER BY starts DESC",
+          "query": "SELECT\n  blob8 AS trigger,\n  blob9 AS from_state,\n  sum(_sample_interval) AS starts\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND blob1 = 'start'\n  AND blob4 != ''\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\n  AND ('$source'     = 'all' OR if(blob13 = 'itch', 'itch', 'site') = '$source')\nGROUP BY trigger, from_state\nORDER BY starts DESC",
           "database": "",
           "table": "",
           "dateTimeType": "DATETIME",
@@ -852,7 +852,7 @@
           },
           "format": "table",
           "editorMode": "sql",
-          "query": "SELECT\n  blob6 AS surface,\n  sum(double4 * _sample_interval) / sum(double2 * _sample_interval) AS opened_fraction,\n  sum(_sample_interval) AS losses\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND blob1 = 'end' AND blob3 = 'lost'\n  AND double2 > 0\n  AND blob4 != ''\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\nGROUP BY surface\nORDER BY opened_fraction DESC",
+          "query": "SELECT\n  blob6 AS surface,\n  sum(double4 * _sample_interval) / sum(double2 * _sample_interval) AS opened_fraction,\n  sum(_sample_interval) AS losses\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND blob1 = 'end' AND blob3 = 'lost'\n  AND double2 > 0\n  AND blob4 != ''\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\n  AND ('$source'     = 'all' OR if(blob13 = 'itch', 'itch', 'site') = '$source')\nGROUP BY surface\nORDER BY opened_fraction DESC",
           "database": "",
           "table": "",
           "dateTimeType": "DATETIME",
@@ -965,7 +965,7 @@
           },
           "format": "table",
           "editorMode": "sql",
-          "query": "SELECT\n  blob6 AS surface,\n  sum(double8 * _sample_interval)  / sum(_sample_interval) AS chords_per_game,\n  sum(double9 * _sample_interval)  / sum(_sample_interval) AS flag_moves_per_game,\n  sum(double11 * _sample_interval) / sum(_sample_interval) AS rotated_fraction,\n  sum(double10 * _sample_interval) / sum(_sample_interval) AS mean_first_move_ms,\n  sum(_sample_interval) AS games\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND blob1 = 'end'\n  AND blob4 != ''\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\nGROUP BY surface\nORDER BY games DESC",
+          "query": "SELECT\n  blob6 AS surface,\n  sum(double8 * _sample_interval)  / sum(_sample_interval) AS chords_per_game,\n  sum(double9 * _sample_interval)  / sum(_sample_interval) AS flag_moves_per_game,\n  sum(double11 * _sample_interval) / sum(_sample_interval) AS rotated_fraction,\n  sum(double10 * _sample_interval) / sum(_sample_interval) AS mean_first_move_ms,\n  sum(_sample_interval) AS games\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND blob1 = 'end'\n  AND blob4 != ''\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\n  AND ('$source'     = 'all' OR if(blob13 = 'itch', 'itch', 'site') = '$source')\nGROUP BY surface\nORDER BY games DESC",
           "database": "",
           "table": "",
           "dateTimeType": "DATETIME",
@@ -1430,6 +1430,39 @@
             "selected": false,
             "text": "standalone",
             "value": "standalone"
+          }
+        ],
+        "multi": false,
+        "includeAll": false,
+        "hide": 0,
+        "skipUrlSync": false
+      },
+      {
+        "type": "custom",
+        "name": "source",
+        "label": "Source",
+        "description": "Where the build is hosted: site = the Cloudflare deploy, itch = the itch.io upload. Events from builds older than the field count as site.",
+        "query": "all,site,itch",
+        "current": {
+          "selected": true,
+          "text": "all",
+          "value": "all"
+        },
+        "options": [
+          {
+            "selected": true,
+            "text": "all",
+            "value": "all"
+          },
+          {
+            "selected": false,
+            "text": "site",
+            "value": "site"
+          },
+          {
+            "selected": false,
+            "text": "itch",
+            "value": "itch"
           }
         ],
         "multi": false,

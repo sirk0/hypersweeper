@@ -16,7 +16,19 @@ const pkg = createRequire(import.meta.url)("./package.json") as { version: strin
 // and the service worker scope from it, and a subdirectory host would need it
 // again. (During the rewrite the build mounted under "/next/";
 // public/next/index.html redirects that path here.)
-const base = process.env.VITE_BASE ?? "/";
+//
+// VITE_SOURCE=itch is the build uploaded to itch.io as a zip (`make itch-zip`).
+// itch serves an HTML5 game from a path of its own inside an iframe on its own
+// CDN, so everything that build names has to be relative: its base is "./".
+// It carries no service worker (a worker scoped to one upload's path on
+// itch's host would only pin a stale copy), no link-preview tags (itch.io's
+// page is what gets shared), and it posts its play counts cross-origin to the
+// Cloudflare site's collector, since itch has no Pages Function to post to.
+// `source` goes out with every event, which is how the dashboards tell the two
+// hosts apart.
+const source = process.env.VITE_SOURCE === "itch" ? "itch" : "site";
+const itch = source === "itch";
+const base = process.env.VITE_BASE ?? (itch ? "./" : "/");
 
 // VITE_PACKAGED=1 builds the bundle that ships *inside* an app rather than on
 // a server: the macOS shell (desktop/, served from `app://`) and the iOS app
@@ -39,7 +51,7 @@ const packaged = process.env.VITE_PACKAGED === "1";
 // `npm run dev` (your own clicks are not data), and off for the packaged apps
 // twice over — `packaged` vetoes it outright, so no build script can turn it on
 // there by accident.
-const analytics = !packaged && process.env.VITE_ANALYTICS === "1";
+const analytics = !packaged && (itch || process.env.VITE_ANALYTICS === "1");
 
 // VITE_NO_SW=1 keeps the service worker out of an otherwise ordinary web build.
 // The PR-preview deploy (.github/workflows/pr-preview.yml) sets it: every push
@@ -52,7 +64,7 @@ const analytics = !packaged && process.env.VITE_ANALYTICS === "1";
 // worker rather than the offline-app build. With nothing registered, the
 // settings page's update row reports "running from source" — the branch
 // `checkForUpdates` was written for.
-const noServiceWorker = process.env.VITE_NO_SW === "1";
+const noServiceWorker = itch || process.env.VITE_NO_SW === "1";
 
 // Where this build will be served from, origin *and* base path, with a trailing
 // slash — the one thing a bundle cannot work out for itself and a link preview
@@ -66,6 +78,13 @@ const siteUrl = (process.env.VITE_SITE_URL ?? "https://hypersweeper.pages.dev/")
   /\/*$/,
   "/",
 );
+
+// The collector a build posts to when it is not served by the host that runs
+// the Pages Function — only the itch.io build. Empty means "same origin", the
+// ordinary case. VITE_TALLY_URL overrides it (a custom domain, a staging site).
+const tallyUrl = itch
+  ? (process.env.VITE_TALLY_URL ?? `${siteUrl}api/tally`)
+  : "";
 
 const SOCIAL_DESCRIPTION =
   "Minesweeper over exotic boards — flat tilings and 3D surfaces.";
@@ -265,6 +284,8 @@ export default defineConfig({
     __APP_COMMIT__: JSON.stringify((process.env.GITHUB_SHA ?? "").slice(0, 7)),
     __APP_PACKAGED__: JSON.stringify(packaged),
     __APP_ANALYTICS__: JSON.stringify(analytics),
+    __APP_SOURCE__: JSON.stringify(source),
+    __APP_TALLY_URL__: JSON.stringify(analytics ? tallyUrl : ""),
   },
   // Allow importing the repo-root `data/` directory (shared JSON that both
   // the Python and TypeScript apps read — see docs/agents/shared-data.md).
@@ -279,7 +300,7 @@ export default defineConfig({
     fs: { allow: [".", fileURLToPath(new URL("../data", import.meta.url))] },
   },
   plugins: packaged ? [] : [
-    socialMeta,
+    ...(itch ? [] : [socialMeta]),
     tallyStub,
     versionStamp,
     securityHeaders,

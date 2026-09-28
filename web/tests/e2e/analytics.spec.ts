@@ -127,6 +127,7 @@ test.describe("play counts", () => {
       // A desktop headless Chromium: no touch points, a fine pointer.
       dv: "desktop",
       sh: "browser",
+      so: "site", // the Cloudflare build; the itch.io zip says "itch"
       c: 81,
       n: 1, // the fixture board's single mine
     });
@@ -141,6 +142,7 @@ test.describe("play counts", () => {
       "m",
       "n",
       "sh",
+      "so",
       "t",
       "v",
       "vr",

@@ -110,6 +110,14 @@ const DEVICES: ReadonlySet<string> = new Set<DeviceClass>([
 ]);
 const SHELLS: ReadonlySet<string> = new Set<ShellKind>(["browser", "standalone"]);
 
+/** Where the build that sent the event is hosted: `site` is the Cloudflare
+ * deploy, `itch` the zip uploaded to itch.io. A build-time fact
+ * (`VITE_SOURCE`), not something read off the request — the collector stores
+ * nothing about the request, the Origin included. */
+export type SourceKind = "site" | "itch";
+
+const SOURCES: ReadonlySet<string> = new Set<SourceKind>(["site", "itch"]);
+
 /** How far a game got. Only an `end` carries these. */
 export interface GameStats {
   /** Safe cells opened. The mine a loss stepped on is *not* one of them — see
@@ -139,6 +147,7 @@ export interface GameEvent {
   device: DeviceClass;
   shell: ShellKind;
   version: string;
+  source: SourceKind;
   cells: number;
   mines: number;
   /** How an `end` finished. Ignored on a `start`. */
@@ -151,9 +160,9 @@ export interface GameEvent {
 }
 
 /** What a call site in the app names: the game's own facts. The client
- * context — device, shell, build version — is filled in by `analytics.ts`,
+ * context — device, shell, build version, source — is filled in by `analytics.ts`,
  * which is where the globals live; this file stays pure. */
-export type GameFacts = Omit<GameEvent, "device" | "shell" | "version">;
+export type GameFacts = Omit<GameEvent, "device" | "shell" | "version" | "source">;
 
 /** The JSON that goes over the wire. Short keys because this is sent on every
  * game and read by nobody; `v` so a future shape can be told from this one
@@ -168,6 +177,7 @@ export interface EventPayload {
   dv: DeviceClass;
   sh: ShellKind;
   vr: string;
+  so: SourceKind;
   c: number;
   n: number;
   o?: Outcome;
@@ -207,6 +217,9 @@ export interface ParsedEvent {
   device: DeviceClass | "";
   shell: ShellKind | "";
   version: string;
+  /** `""` on an event from a build that predates the field — every one of
+   * which was the Cloudflare site, since no other host reported then. */
+  source: SourceKind | "";
   cells: number;
   mines: number;
   opened: number;
@@ -262,6 +275,7 @@ export function payloadFor(event: GameEvent): EventPayload | null {
     dv: event.device,
     sh: event.shell,
     vr: VERSION_SHAPE.test(event.version) ? event.version : "",
+    so: event.source,
     c: count(event.cells, MAX_CELLS),
     n: count(event.mines, MAX_CELLS),
   };
@@ -331,6 +345,7 @@ export function parseEvent(body: unknown): ParsedEvent | null {
       VERSION_SHAPE.test(appVersion)
         ? appVersion
         : "",
+    source: oneOf<SourceKind>(body["so"], SOURCES),
     cells: count(body["c"], MAX_CELLS),
     mines: count(body["n"], MAX_CELLS),
   };
@@ -397,6 +412,7 @@ export const DATASET_BLOBS: readonly DatasetColumn<string>[] = [
   { name: "device", note: '"phone" | "tablet" | "desktop" | "unknown"', get: (e) => e.device },
   { name: "shell", note: '"browser" | "standalone"', get: (e) => e.shell },
   { name: "version", note: 'build version ("0.2.83")', get: (e) => e.version },
+  { name: "source", note: 'where it is hosted: "site" | "itch"', get: (e) => e.source },
 ];
 
 /** `double1…` in order. Append only, exactly as above. */

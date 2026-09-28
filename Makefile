@@ -8,7 +8,7 @@ WEB_OUT = $(WEB_STAGE)/build/web
         metrics dashboards-check web-prepare web-package web-run clean \
         mac-app mac-app-dmg desktop-install desktop-build desktop-run \
         desktop-test desktop-smoke desktop-icon \
-        ios-app ios-run ios-prepare ios-install ios-icon
+        ios-app ios-run ios-prepare ios-install ios-icon itch-zip
 
 help:            ## list available targets
 	@grep -E '^[a-z0-9-]+:.*##' $(MAKEFILE_LIST) | sed 's/:.*##/ -/' | sort
@@ -133,6 +133,24 @@ ios-install:     ## install the Capacitor tooling (it lives in web/)
 
 ios-icon:        ## regenerate the app icon and launch image from the vector source
 	cd web && node scripts/make-icons.mjs
+
+# --- itch.io -----------------------------------------------------------------
+# The TypeScript app as an itch.io HTML5 upload: a zip with index.html at its
+# root, relative asset paths, no service worker, and a play counter that posts
+# to the Cloudflare site's collector tagged `source = itch`. Upload the zip on
+# the game's itch.io page; see "itch.io" in web/docs/deploy.md.
+
+ITCH_DIR = build/itch
+ITCH_TALLY ?= https://hypersweeper.pages.dev/api/tally
+
+itch-zip:        ## build the itch.io upload into build/itch/hypersweeper-itch.zip
+	rm -rf $(ITCH_DIR)
+	cd web && npm run typecheck && VITE_SOURCE=itch VITE_TALLY_URL=$(ITCH_TALLY) npx vite build --outDir ../$(ITCH_DIR)/dist --emptyOutDir
+	rm -f $(ITCH_DIR)/dist/_headers $(ITCH_DIR)/dist/404.html $(ITCH_DIR)/dist/og.png
+	rm -rf $(ITCH_DIR)/dist/next
+	node scripts/check-offline-assets.mjs $(ITCH_DIR)/dist --collector=$(ITCH_TALLY)
+	cd $(ITCH_DIR)/dist && zip -qr ../hypersweeper-itch.zip .
+	@echo "itch.io upload: $(ITCH_DIR)/hypersweeper-itch.zip"
 
 clean:           ## remove build artifacts
 	rm -rf build desktop/app ios/App/App/public
