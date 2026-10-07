@@ -110,12 +110,17 @@ design rather than the rule itself.
   recess, which is what makes the two tell apart on a flat board lit
   head-on, where colour alone shades every face identically; a two-sided
   surface carries that button on *both* faces), `glyphAtlas.ts`
-  (canvas-baked digit/flag/mine texture), `clip.ts` (the renderer's face of
+  (canvas-baked digit/flag/mine texture, mipmapped), `clip.ts` (the renderer's face of
   the `SurfaceClip` — how the Klein bottle drops the sheet its own neck
   encloses, so looking into the hole shows the tube instead of a cap; the
   surface outside the neck is untouched, so the self-intersection still reads
   from every other angle), `animations.ts` (the shared
-  reveal-ripple / flag-drop / flag-pop / lose-shake / win-wave clock).
+  reveal-ripple / flag-drop / flag-pop / lose-shake / win-wave colour clock),
+  `cellMotion.ts` + `motionShader.ts` (the tiles *moving* — sinking, pressing,
+  hopping, assembling — evaluated on the CPU into a per-cell float texture the
+  vertex shader applies), `particles.ts` (puffs, blast sparks, confetti) and
+  `quality.ts` (whether those look-only effects run on this device). See
+  "Motion and effects" in [`docs/render.md`](docs/render.md).
 - `src/session.ts` — `GameSession`: Game ↔ mesh ↔ HUD.
 - `src/input/controls.ts` — pointer/touch state machine (tap, long-press,
   right-click, drag-rotate on 3D boards, pinch-zoom and drag-pan on every

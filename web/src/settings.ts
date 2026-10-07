@@ -2,6 +2,7 @@ import { clampVolume, DEFAULT_SOUND, DEFAULT_VOLUME, resolveSound } from "./audi
 import { hasDifficulty, screens } from "./config/screens";
 import { clampHoldMs, DEFAULT_HOLD_MS } from "./input/hold";
 import { DEFAULT_SHAPE, resolveShape } from "./render/cellStyle";
+import { resolveQuality, type QualityPref } from "./render/quality";
 import { readObject, storage } from "./storage";
 import {
   DEFAULT_SCHEME,
@@ -122,6 +123,11 @@ export interface Settings {
    * page offers — it is a fact about this browser, kept here because this is
    * the record that already survives a reload. */
   seenHint: boolean;
+  /** How much the renderer may spend on effects that are only looks —
+   * particles, a solid's shadow, reflections (render/quality.ts). `auto` turns
+   * them off on a software renderer or a two-core device. Read on every
+   * repaint, like `scheme`. */
+  quality: QualityPref;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -140,6 +146,7 @@ export const DEFAULT_SETTINGS: Settings = {
   extraControls: false,
   analytics: true,
   seenHint: false,
+  quality: "auto",
 };
 
 /** What a pre-v3 `theme` (a chrome palette) becomes once a theme carries the
@@ -341,6 +348,9 @@ export function loadSettings(): Settings {
     // build simply lacks it and the player gets the hint once, which is right.
     seenHint:
       typeof rec["seenHint"] === "boolean" ? rec["seenHint"] : DEFAULT_SETTINGS.seenHint,
+    // Additive: a record from before the effects existed lacks the key and
+    // takes `auto`, as does anything this build does not know.
+    quality: resolveQuality(rec["quality"]),
   };
 }
 

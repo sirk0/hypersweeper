@@ -124,12 +124,13 @@ const FLAT_PAGE = ":root { --bg-texture: none !important; --bg-pattern: none !im
  * baseline of the same pixels under a second name is one that can drift apart
  * from its twin, which is why `BASE_LOOK` is not repeated here. */
 const LOOKS: [string, string, string][] = [
-  ["bright", "classic", "light"],
-  ["bright", "classic", "dark"],
-  ["classic", "classic", "light"],
-  ["classic", "classic", "dark"],
+  ["bright", "soft", "light"],
+  ["bright", "soft", "dark"],
+  ["classic", "soft", "light"],
+  ["classic", "soft", "dark"],
+  ["sand", "soft", "light"],
+  ["sand", "soft", "dark"],
   ["sand", "classic", "light"],
-  ["sand", "classic", "dark"],
   ["sand", "realistic", "light"],
   ["sand", "flat", "light"],
 ];
@@ -140,6 +141,7 @@ const LOOKS: [string, string, string][] = [
  * the cut whose sheen is the loudest — in particular Classic, whose `albedo` is
  * the theme's rather than the cut's and only reads on a curved surface. */
 const SOLID_LOOKS: [string, string, string][] = [
+  ["sand", "soft", "light"],
   ["sand", "classic", "light"],
   ["sand", "realistic", "light"],
   ["sand", "flat", "light"],

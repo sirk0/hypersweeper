@@ -78,6 +78,9 @@ export interface MsHook {
   /** Enable or disable board animations (reveal ripple, flag pop, lose shake).
    * e2e tests disable them so a screenshot captures the settled frame. */
   animations(enabled: boolean): void;
+  /** Force the look-only effects (particles, a solid's shadow, reflections) on
+   * or off, whatever the device would choose — see render/quality.ts. */
+  effects(on: boolean): void;
   /** The stored best times for a board, fastest first — so a test can assert
    * what a win filed without reaching into the storage record's shape. */
   bestTimes(mode: string, difficulty: string): { ms: number; at: number }[];

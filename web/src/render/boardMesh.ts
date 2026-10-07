@@ -1,4 +1,4 @@
-import { Color, type Group, type Quaternion, type Vector3 } from "three";
+import { Color, type Group, type Quaternion, type Texture, type Vector3 } from "three";
 import type { CellId, Vec3 } from "../boards/core";
 import { MAX_DIGIT_GLYPH, type Glyph } from "./glyphAtlas";
 import type { GlowCell } from "./markerGlow";
@@ -222,6 +222,50 @@ export function insetMitres(points: readonly Pt[]): [number, number][] {
   });
 }
 
+/** `points` with every corner rounded off: each corner is replaced by three
+ * points on a quadratic curve from a little way back along its incoming edge,
+ * through near the corner, to the same distance along its outgoing one. Works
+ * on 2D and 3D polygons alike (a solid's cells are not quite planar, and a
+ * curve through three points of the polygon stays on it). `radius` is how far
+ * back along each edge the curve starts, capped at under half of either edge
+ * so two corners never cross. A straight "corner" (a T-vertex) comes out as
+ * three points on the straight edge, which is harmless. The count is always
+ * `3 * points.length`, so a cell's vertex count stays a function of its side
+ * count — which is what lets a cell be re-cut in place (see cellStyle.ts). */
+export function roundCorners<P extends readonly number[]>(
+  points: readonly P[],
+  radius: number,
+): P[] {
+  const n = points.length;
+  const out: P[] = [];
+  const dim = points[0]?.length ?? 2;
+  const at = (a: P, b: P, t: number): P =>
+    Array.from({ length: dim }, (_, k) => a[k]! + (b[k]! - a[k]!) * t) as unknown as P;
+  const len = (a: P, b: P): number => {
+    let s = 0;
+    for (let k = 0; k < dim; k++) s += (b[k]! - a[k]!) ** 2;
+    return Math.sqrt(s);
+  };
+  for (let i = 0; i < n; i++) {
+    const prev = points[(i + n - 1) % n]!;
+    const cur = points[i]!;
+    const next = points[(i + 1) % n]!;
+    const lp = len(cur, prev);
+    const ln = len(cur, next);
+    const u0 = lp > 0 ? Math.min(radius / lp, 0.45) : 0;
+    const u1 = ln > 0 ? Math.min(radius / ln, 0.45) : 0;
+    const a = at(cur, prev, u0);
+    const b = at(cur, next, u1);
+    // The curve's midpoint: (a + 2 cur + b) / 4.
+    const mid = Array.from(
+      { length: dim },
+      (_, k) => (a[k]! + 2 * cur[k]! + b[k]!) / 4,
+    ) as unknown as P;
+    out.push(a, mid, b);
+  }
+  return out;
+}
+
 /** The named meshes a pick ray is cast against, nearest hit wins (see
  * `Renderer.pick`). `"cells"` is the drawn tiles; `"base"` is the grout a solid
  * lays under them, over the *whole* of every cell polygon. The grout has to be
@@ -273,6 +317,27 @@ export interface BoardMesh extends Group {
   /** Advance animations to `now`; returns whether another frame is needed. The
    * renderer calls this every frame and keeps rendering while it is true. */
   tickAnimations(now: number): boolean;
+
+  // -- tile motion (see render/cellMotion.ts) --------------------------------
+  /** A closed cell is being pressed (null: nothing is). It sinks a little
+   * until the press ends, so the input answers before the finger lifts. */
+  press(cell: CellId | null): void;
+  /** A flag went in or came out: the tile is pushed and springs back. */
+  bounce(cell: CellId): void;
+  /** A chord on `cell` reached `reach`: they dip in turn, or — when the chord
+   * could not open anything — shake. */
+  chordFeedback(cell: CellId, reach: CellId[], ok: boolean): void;
+  /** A mine went off on `cell`: the blast front, the other mines popping in by
+   * distance, and the board fading to grey around the one that went off. */
+  detonate(cell: CellId | null, mines: CellId[]): void;
+  /** A new board assembles from its middle out. */
+  assemble(): void;
+  /** The board's mean cell radius, in mesh-local units — the scale an effect
+   * drawn over the board (a burst, confetti) is sized by. */
+  readonly cellRadius: number;
+  /** Turn the look-only effects on (with the scene's reflection map) or off
+   * (null) — see render/quality.ts. */
+  setEffects(env: Texture | null): void;
 
   // -- the Realistic marker glow (see render/markerGlow.ts) -------------------
   // Only a board that stands real pins and bombs has anything to light, so all

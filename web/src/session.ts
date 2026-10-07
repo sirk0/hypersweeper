@@ -23,6 +23,14 @@ import { SolidBoard } from "./render/solidBoard";
 // PolygonBoard or 3D SolidBoard), and the HUD. Each move syncs only the
 // changed cells into the mesh and reports HUD state.
 
+/** What a game's moments set off beyond the board mesh itself (the renderer's
+ * particle bursts and the 3D victory turn). Geometric cell ids throughout. */
+export interface SessionFx {
+  flag(cell: CellId, on: boolean): void;
+  blast(cell: CellId): void;
+  win(origin: CellId): void;
+}
+
 export interface HudSnapshot {
   minesRemaining: number;
   elapsedSeconds: number;
@@ -127,6 +135,9 @@ export class GameSession {
    * position in the mesh, which is the same answer for an unrotated flat
    * board. */
   private readonly panOf: ((geomCell: CellId) => number | null) | null;
+  /** The effects drawn *over* the board rather than in it — particles, the
+   * victory turn — which live in the renderer's scene, not in the mesh. */
+  private readonly fx: SessionFx | null;
   /** Side count per cell, for the shape a sound is pitched by. Built on the
    * first sound this board plays and never at all when sound is off — it is a
    * pass over every cell's polygon, and a silenced game must not pay for it. */
@@ -141,6 +152,7 @@ export class GameSession {
       cellStyle?: string;
       finish?: Finish;
       panOf?: (geomCell: CellId) => number | null;
+      fx?: SessionFx;
     } = {},
   ) {
     this.mode = mode;
@@ -176,6 +188,7 @@ export class GameSession {
       ...(rng ? { rng } : {}),
     });
     this.panOf = opts.panOf ?? null;
+    this.fx = opts.fx ?? null;
     this.moves = symmetryMoves(this.board.symmetries, mode);
     for (const cell of this.board.polygons.keys()) {
       this.remap.set(cell, cell);
@@ -315,6 +328,11 @@ export class GameSession {
     if (isFlagged && !wasFlagged) this.flagsPlanted++;
     if (isFlagged !== wasFlagged) this.flagMoves++;
     if (isFlagged !== wasFlagged) {
+      // The tile takes the flag going in (or coming out) with a push — except
+      // under a held finger, which covers the tile; the drop is that flag's
+      // landing instead.
+      if (heldMs === undefined) this.mesh.bounce(this.geomFor(gameCell));
+      this.fx?.flag(this.geomFor(gameCell), isFlagged);
       haptic("flag");
       if (soundEnabled()) {
         playSound({
@@ -333,7 +351,20 @@ export class GameSession {
     this.startTimer();
     this.chords++;
     const chorded = this.gameFor(cell);
+    // What the chord reaches, read before it moves: the closed, unflagged
+    // neighbours it would open. They dip as it opens them, or the chorded cell
+    // and they shake when it cannot (the flags around it do not add up).
+    const reach = this.game
+      .neighbors(chorded)
+      .filter((n) => this.game.cellState(n) === "hidden");
     const changed = this.game.chord(chorded);
+    if (reach.length > 0) {
+      this.mesh.chordFeedback(
+        this.geomFor(chorded),
+        reach.map((c) => this.geomFor(c)),
+        changed.length > 0,
+      );
+    }
     if (this.game.state === "lost") {
       // the mine that ended the chord is whichever revealed mine exists
       for (const c of changed) if (this.game.isMine(c)) this.exploded = c;
@@ -524,6 +555,12 @@ export class GameSession {
     this.mesh.setHover(cell);
   }
 
+  /** A press is down on `cell` (null: released). Only a cell that can still be
+   * opened sinks under it, and only while the game is on. */
+  press(cell: CellId | null): void {
+    this.mesh.press(this.status === "playing" ? cell : null);
+  }
+
   private startTimer(): void {
     if (this.startedAt == null) this.startedAt = performance.now();
   }
@@ -538,6 +575,15 @@ export class GameSession {
       if (this.game.state === "lost") {
         this.revealEndState();
         this.mesh.shake();
+        // The blast, the mines popping in by distance, the board going grey
+        // round the one that went off.
+        this.mesh.detonate(
+          this.geomFor(this.exploded ?? origin),
+          this.game.cells
+            .filter((c) => this.game.isMine(c) && this.game.cellState(c) !== "flagged")
+            .map((c) => this.geomFor(c)),
+        );
+        this.fx?.blast(this.geomFor(this.exploded ?? origin));
         // At the mine, not at the click, for the same reason the blast is heard
         // there: a chord detonates a neighbour, and the light belongs where it
         // went off.
@@ -556,6 +602,7 @@ export class GameSession {
           this.geomFor(origin),
           autoFlagged.map((c) => this.geomFor(c)),
         );
+        this.fx?.win(this.geomFor(origin));
         haptic("win");
         if (soundEnabled()) playSound({ kind: "win", pan: this.panFor(origin) });
       }

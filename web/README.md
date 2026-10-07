@@ -17,7 +17,7 @@ board could only be a beveled one, a beveled board could only be grey, and six
 of the nine looks could not be had at all.
 
 Appearance is three settings now, on three axes that have nothing to say to each
-other: a **board shape** (Classic, Realistic, Flat — `BOARD_SHAPES` in
+other: a **board shape** (Soft, Classic, Realistic, Flat — `BOARD_SHAPES` in
 `render/cellStyle.ts`), a **theme** (Bright, Classic, Sand — the palette pair,
 the page, and what the board itself is coloured in, `BOARD_LOOKS` keyed by theme
 key), and the **colour scheme**. `CELL_STYLES` is their product, built at module
@@ -360,6 +360,24 @@ There is **no bundle-size budget**: the app is a one-time download that a
 service worker then caches, and looking right is worth more here than shaving
 kilobytes off first load, so nothing in CI fails on size (see "Bundle size"
 below). **All 112 modes, polished.**
+
+**M16 — A modern look.** The board moves and the cut is new. A fourth cut,
+**Soft**, is the default: rounded tiles with a pillow profile, a soft shadow
+under each closed tile on a flat board and lighter grout on a solid. The tiles
+themselves now move — an opened cell drops into its recess as a flood ripples
+out, a press sinks the cell before the finger lifts, a flag pushes its tile in,
+a chord dips the cells it reaches (or shakes them when it cannot open
+anything), a loss sends a shockwave out from the mine and pops the other mines
+in by distance while the board fades to grey, a win lifts every tile in the
+gold wave, and a new board assembles from its middle — all from one per-cell
+float texture the vertex shader reads (`cellMotion.ts`, `motionShader.ts`). Over
+the board: dust when a flag goes in, sparks and smoke when a mine goes off,
+confetti on a win, a coasting throw and a victory turn on a solid, and on a
+capable device reflections, a rim light and a shadow under a solid (Settings ›
+Visual effects). The glyph atlas is mipmapped at 256 px a slot, and the chrome
+moves with the game (pressing buttons, a menu page rising in, the header
+answering a flag, a win and a loss). See "Motion and effects" in
+[`docs/render.md`](docs/render.md).
 
 **M15 — The Gosper island.** A fifth board in the **Fractals** family, and the
 first whose *boundary* is the fractal rather than its interior: plain regular

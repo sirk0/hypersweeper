@@ -1,4 +1,10 @@
-import { CanvasTexture, LinearFilter, SRGBColorSpace, Texture } from "three";
+import {
+  CanvasTexture,
+  LinearFilter,
+  LinearMipmapLinearFilter,
+  SRGBColorSpace,
+  Texture,
+} from "three";
 
 // A canvas-baked texture atlas of the cell glyphs (digits 1-8, flag, mine).
 // One texture, sampled by UV quads over each cell, keeps the whole board to a
@@ -87,9 +93,9 @@ function slotIndex(glyph: Glyph): number {
   return SLOTS.indexOf(glyph);
 }
 
-// Half again the old 128: a cell on a big board (a pentagon of the 60-pentagon
+// Twice the old 128: a cell on a big board (a pentagon of the 60-pentagon
 // sphere fills ~70 CSS px, so ~140 device px on a retina screen) draws the flag
-// and the mine near enough 1:1, and their detail survives.
+// and the mine below 1:1, and a cell zoomed in on still has detail to show.
 /** What a cell style asks of the atlas: which flag to bake and which face the
  * digits are set in. A subset of `CellStyle` rather than the thing itself, so
  * this module keeps knowing nothing about relief. */
@@ -98,7 +104,7 @@ export interface GlyphOptions {
   digitFont?: string;
 }
 
-export function makeGlyphAtlas(cellPx = 192, options: GlyphOptions = {}): GlyphAtlas {
+export function makeGlyphAtlas(cellPx = 256, options: GlyphOptions = {}): GlyphAtlas {
   const canvas = document.createElement("canvas");
   canvas.width = COLS * cellPx;
   canvas.height = ROWS * cellPx;
@@ -136,7 +142,14 @@ export function makeGlyphAtlas(cellPx = 192, options: GlyphOptions = {}): GlyphA
   const texture = new CanvasTexture(canvas);
   texture.colorSpace = SRGBColorSpace;
   texture.magFilter = LinearFilter;
-  texture.minFilter = LinearFilter;
+  // Mipmapped: on a dense board a glyph is drawn at a tenth of its slot or
+  // less, and sampling the full-size bake that far down shimmers and drops
+  // strokes. The slots carry a wide margin round every glyph, so the lower
+  // levels do not bleed one into the next. 256 px a slot (up from 192) is for
+  // the other end — a cell zoomed in on a retina screen.
+  texture.minFilter = LinearMipmapLinearFilter;
+  texture.generateMipmaps = true;
+  texture.anisotropy = 4;
   texture.needsUpdate = true;
 
   return {

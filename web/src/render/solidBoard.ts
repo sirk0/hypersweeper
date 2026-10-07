@@ -12,6 +12,7 @@ import {
   Quaternion,
   Sphere,
   Vector3,
+  type Texture,
 } from "three";
 import {
   cross,
@@ -26,6 +27,7 @@ import {
   glyphFor,
   isOpened,
   polygonInradius,
+  roundCorners,
   WIN_GLOW,
   WIN_TINT,
   type BoardMesh,
@@ -35,6 +37,7 @@ import {
   type PickLayer,
 } from "./boardMesh";
 import { clipTriangles, fanTriangles, triangleCentroid, type Tri } from "./clip";
+import { BoardMotion, cellAttribute, patchMotion } from "./motionShader";
 import { makeGlyphAtlas, type Glyph, type GlyphAtlas } from "./glyphAtlas";
 import {
   markerDrop,
@@ -109,6 +112,14 @@ const QUAD_CORNERS: readonly (readonly [number, number])[] = [
   [-1, -1], [1, 1], [-1, 1],
 ];
 const BASE_COLOR = "#8e8e8e"; // grout surface showing through the tile gaps
+
+/** How strongly a capable device's reflection map shows on the tiles and the
+ * markers, and how bright the rim light is (`setEffects`). */
+const TILE_ENV = 0.5;
+const MARKER_ENV = 0.5;
+const RIM_LIGHT = 0.35;
+/** A solid sees a lift as parallax, so only a little growth on top. */
+const SOLID_LIFT_SCALE = 0.12;
 
 // How far past its own polygon a cell's grout is laid, as a fraction of the way
 // out from the cell's centre. Two neighbours' grout meets exactly on the edge
@@ -321,6 +332,10 @@ interface CellGeom {
   start: number; // first vertex index in the position/normal/color buffers
   count: number; // vertex count for this cell (3 per triangle)
   poly: Vec3[]; // the cell's surface polygon, outward wound
+  // ...and the outline its tile is *drawn* with: `poly` itself, or `poly` with
+  // its corners rounded off on a cut that rounds them. Only the tile reads it —
+  // the grout, the picking and every measurement stay on `poly`.
+  drawn: Vec3[];
   // ...and the same polygon with its T-vertices dropped: the corners it is
   // actually *shaped* by. Everything that measures the cell — its centre, its
   // radius, its inradius, the glyph that has to fit inside it — reads this,
@@ -401,6 +416,8 @@ export class SolidBoard extends Group implements BoardMesh {
   private readonly glyphGeometry = new DynGeometry([
     ["position", 3],
     ["uv", 2],
+    // Which cell each quad belongs to, so it moves with its tile.
+    ["aCell", 1],
   ]);
   // The dropping flag is a mesh of its own rather than one more quad in the
   // glyph buffer: it is drawn many times cell-size, so depth-testing it
@@ -426,6 +443,8 @@ export class SolidBoard extends Group implements BoardMesh {
     // with the model and never touched again — the *amount* of light is a
     // uniform, which is what keeps a glowing board off the rebuild path.
     ["glow", 1],
+    // ...and which cell it stands on, so it moves with its tile.
+    ["aCell", 1],
   ]);
   // ...and the one pin currently being planted by a held cell, which is a mesh
   // of its own for the same reason the 2D drop is: it is drawn many times
@@ -469,6 +488,11 @@ export class SolidBoard extends Group implements BoardMesh {
   private readonly states: CellVisual[];
   private hovered = -1;
   private readonly anim = new CellAnimations();
+  /** The tiles' own motion (render/cellMotion.ts), applied in the vertex
+   * shader of the tiles, the glyphs and the markers alike. */
+  private readonly motion: BoardMotion;
+  private openDrop = 0;
+  private pressed = -1;
   private meanRadius = 1;
   // Billboard basis in board-local coordinates: screen-right and screen-up,
   // updated from the current rotation. `cameraLocal` is the camera position
@@ -501,11 +525,13 @@ export class SolidBoard extends Group implements BoardMesh {
    * pays back what the shading takes does so on every board here (see
    * CellStyle.albedo). */
   private readonly albedo: number;
+  private readonly roughness: number;
 
   constructor(board: Board3D, style: CellStyle = cellStyle(null)) {
     super();
     this.profile = style.solid;
     this.albedo = style.albedo ?? 1;
+    this.roughness = style.material.roughness;
     // A 3D board is always lit, so an unlit style's reduced overdrive does not
     // apply here; the albedo boost does come out of it, so the win crest peaks
     // where it always did rather than clipping to white (see PolygonBoard).
@@ -547,7 +573,6 @@ export class SolidBoard extends Group implements BoardMesh {
 
     this.order.forEach((cell, ci) => {
       const poly = board.polygons.get(cell)!;
-      const n = poly.length;
       // Measure the cell off its **real corners**, not off every vertex it is
       // drawn with. A tiling that is not edge to edge carries T-vertices —
       // extra points sitting flat in the middle of an edge — and an unweighted
@@ -606,13 +631,15 @@ export class SolidBoard extends Group implements BoardMesh {
               cut,
             )
           : null;
+      const drawn = style.round && !tile ? roundCorners(poly, style.round * radius) : poly;
       const count = tile
         ? 3 * tile.length
-        : cellVertexCount(n, this.profile) * (this.twoSided ? 2 : 1);
+        : cellVertexCount(drawn.length, this.profile) * (this.twoSided ? 2 : 1);
       this.geom.push({
         start: vertexCount,
         count,
         poly,
+        drawn,
         shape,
         centroid,
         normal,
@@ -696,6 +723,9 @@ export class SolidBoard extends Group implements BoardMesh {
     geometry.setAttribute("position", this.positionAttr);
     geometry.setAttribute("normal", this.normalAttr);
     geometry.setAttribute("color", this.colorAttr);
+    this.motion = new BoardMotion(this.order.length, this.twoSided, SOLID_LIFT_SCALE);
+    cellAttribute(geometry, vertexCount, this.geom);
+    this.geom.forEach((g, i) => this.motion.setCell(i, g.centroid, g.normal, g.radius));
 
     const material = new MeshStandardMaterial({
       vertexColors: true,
@@ -708,6 +738,7 @@ export class SolidBoard extends Group implements BoardMesh {
       // nothing but a depth-rejected fragment.
       side: this.twoSided ? DoubleSide : FrontSide,
     });
+    patchMotion(material, this.motion.uniforms, "tile", true);
     const cells = new Mesh(geometry, material);
     cells.name = "cells";
     this.add(cells);
@@ -726,7 +757,7 @@ export class SolidBoard extends Group implements BoardMesh {
     const base = new Mesh(
       baseGeometry,
       new MeshStandardMaterial({
-        color: BASE_COLOR,
+        color: style.grout ?? BASE_COLOR,
         roughness: 0.8,
         metalness: 0,
         flatShading: true,
@@ -739,23 +770,22 @@ export class SolidBoard extends Group implements BoardMesh {
     base.name = "base";
     this.add(base);
 
-    const glyphMesh = new Mesh(
-      this.glyphGeometry.geometry,
-      new MeshBasicMaterial({
-        map: this.atlas.texture,
-        transparent: true,
-        alphaTest: 0.4,
-        // Billboards drawn over the board, depth-tested so geometry in front of
-        // a cell (a nearer wall of a two-sided surface, a nearer bar of a
-        // frame) hides its number instead of letting it bleed through; a slight
-        // polygon offset keeps a glyph from z-fighting its own tile.
-        depthWrite: false,
-        depthTest: true,
-        polygonOffset: true,
-        polygonOffsetFactor: -1,
-        polygonOffsetUnits: -4,
-      }),
-    );
+    const glyphMaterial = new MeshBasicMaterial({
+      map: this.atlas.texture,
+      transparent: true,
+      alphaTest: 0.4,
+      // Billboards drawn over the board, depth-tested so geometry in front of
+      // a cell (a nearer wall of a two-sided surface, a nearer bar of a
+      // frame) hides its number instead of letting it bleed through; a slight
+      // polygon offset keeps a glyph from z-fighting its own tile.
+      depthWrite: false,
+      depthTest: true,
+      polygonOffset: true,
+      polygonOffsetFactor: -1,
+      polygonOffsetUnits: -4,
+    });
+    patchMotion(glyphMaterial, this.motion.uniforms, "glyph", false);
+    const glyphMesh = new Mesh(this.glyphGeometry.geometry, glyphMaterial);
     glyphMesh.name = "glyphs";
     glyphMesh.renderOrder = 1;
     this.add(glyphMesh);
@@ -816,6 +846,7 @@ export class SolidBoard extends Group implements BoardMesh {
         side: DoubleSide,
       });
       patchGlow(markerMaterial, uniforms);
+      patchMotion(markerMaterial, this.motion.uniforms, "glyph", true);
       const markerMesh = new Mesh(this.markerGeometry.geometry, markerMaterial);
       markerMesh.name = "markers";
       this.add(markerMesh);
@@ -850,6 +881,10 @@ export class SolidBoard extends Group implements BoardMesh {
     }
     this.meanRadius =
       this.geom.reduce((s, g) => s + g.radius, 0) / (this.geom.length || 1);
+    this.motion.setUnit(this.meanRadius);
+    this.openDrop =
+      this.profile.closed[this.profile.closed.length - 1]!.height -
+      this.profile.open[this.profile.open.length - 1]!.height;
     geometry.computeBoundingSphere();
     this.rebuildGlyphs();
     this.rebuildMarkers();
@@ -882,6 +917,8 @@ export class SolidBoard extends Group implements BoardMesh {
     // static, its state showing in colour alone.
     if (!this.geom[i]!.tile && isOpened(visual) !== wasOpen) this.writeGeometry(i);
     this.writeColor(i);
+    if (visual.kind !== "hidden") this.motion.motion.setHover(i, false);
+    if (isOpened(visual)) this.motion.motion.setPress(i, false);
     this.glyphsDirty = true;
     // A marker is a function of `markerFor(state)` and nothing else the caller
     // can change here, so a state change that leaves that alone leaves the
@@ -910,6 +947,77 @@ export class SolidBoard extends Group implements BoardMesh {
     this.hovered = i;
     if (prev >= 0) this.writeColor(prev);
     if (i >= 0) this.writeColor(i);
+    if (prev >= 0) this.motion.motion.setHover(prev, false);
+    if (i >= 0 && this.states[i]!.kind === "hidden") this.motion.motion.setHover(i, true);
+  }
+
+  get cellRadius(): number {
+    return this.meanRadius;
+  }
+
+  press(cell: CellId | null): void {
+    const i = cell == null ? -1 : (this.cellIndex.get(cell) ?? -1);
+    if (i === this.pressed) return;
+    if (this.pressed >= 0) this.motion.motion.setPress(this.pressed, false);
+    this.pressed = i;
+    if (i >= 0 && !isOpened(this.states[i]!)) this.motion.motion.setPress(i, true);
+  }
+
+  bounce(cell: CellId): void {
+    const i = this.cellIndex.get(cell);
+    if (i != null) this.motion.bounce(i, performance.now());
+  }
+
+  chordFeedback(cell: CellId, reach: CellId[], ok: boolean): void {
+    const i = this.cellIndex.get(cell);
+    if (i == null) return;
+    this.motion.chord(i, this.indicesOf(reach), ok, performance.now());
+  }
+
+  detonate(cell: CellId | null, mines: CellId[]): void {
+    const i = cell != null ? (this.cellIndex.get(cell) ?? null) : null;
+    this.motion.detonate(i, this.indicesOf(mines), performance.now());
+  }
+
+  assemble(): void {
+    this.motion.assemble(performance.now());
+  }
+
+  /** Reflections and the rim light, on a capable device. The reflection map is
+   * kept faint: the tile colours are calibrated against the fixed key light
+   * (see CellStyle.albedo), and a strong environment would add its own diffuse
+   * light on top and wash them out. What it is for is the *specular* half — a
+   * glossy tile catching a window of light as the board turns. */
+  setEffects(env: Texture | null): void {
+    const tiles = (this.getObjectByName("cells") as Mesh | undefined)?.material as
+      | MeshStandardMaterial
+      | undefined;
+    const markers = (this.getObjectByName("markers") as Mesh | undefined)?.material as
+      | MeshStandardMaterial
+      | undefined;
+    // A matte tile would take the map almost wholly as *diffuse* light, which is
+    // a wash over colours already paid back for the key light (the albedo), so
+    // the map is weighted by how glossy the tile is and divided by that payback.
+    const gloss = Math.max(0, Math.min(1, (0.7 - this.roughness) / 0.55));
+    for (const [m, k] of [
+      [tiles, (TILE_ENV * gloss) / this.albedo],
+      [markers, MARKER_ENV],
+    ] as const) {
+      if (!m) continue;
+      if ((m.envMap !== null) !== (env !== null)) m.needsUpdate = true;
+      m.envMap = env;
+      m.envMapIntensity = k;
+    }
+    this.motion.uniforms.uRim.value = env ? RIM_LIGHT : 0;
+  }
+
+  private indicesOf(cells: readonly CellId[]): number[] {
+    const out: number[] = [];
+    for (const c of cells) {
+      const i = this.cellIndex.get(c);
+      if (i != null) out.push(i);
+    }
+    return out;
   }
 
   /** Update the billboard basis (screen-upright glyphs) from the board's
@@ -949,7 +1057,7 @@ export class SolidBoard extends Group implements BoardMesh {
   private writeGeometry(i: number): void {
     const g = this.geom[i]!;
     if (g.tile) return this.writeFlatTile(i);
-    const { poly, centroid, normal } = g;
+    const { drawn: poly, centroid, normal } = g;
     const n = poly.length;
     const loops = isOpened(this.states[i]!) ? this.profile.open : this.profile.closed;
 
@@ -1092,7 +1200,7 @@ export class SolidBoard extends Group implements BoardMesh {
         ? 1
         : g.tileFalloff
           ? shade.rim + (shade.center - shade.rim) * g.tileFalloff[v]!
-          : vertexShade(shade, this.loops, half ? v % half : v, g.poly.length);
+          : vertexShade(shade, this.loops, half ? v % half : v, g.drawn.length);
       this.colorAttr.setXYZ(g.start + v, col.r * f, col.g * f, col.b * f);
     }
     this.colorAttr.needsUpdate = true;
@@ -1105,7 +1213,11 @@ export class SolidBoard extends Group implements BoardMesh {
     // into rather than pushed onto and copied out.
     this.glyphGeometry.reserve(this.order.length * 6);
     this.dropGeometry.reserve(6);
-    const [pos, uvs] = this.glyphGeometry.arrays as [Float32Array, Float32Array];
+    const [pos, uvs, owners] = this.glyphGeometry.arrays as [
+      Float32Array,
+      Float32Array,
+      Float32Array,
+    ];
     const [dropPos, dropUvs] = this.dropGeometry.arrays as [Float32Array, Float32Array];
     let nv = 0; // vertices written to the glyph buffer
     let dv = 0; // ...and to the drop buffer
@@ -1232,6 +1344,7 @@ export class SolidBoard extends Group implements BoardMesh {
         dv += 6;
       } else if (s > 0) {
         quad(pos, uvs, nv, s);
+        owners.fill(i, nv, nv + 6);
         nv += 6;
       }
     }
@@ -1293,7 +1406,8 @@ export class SolidBoard extends Group implements BoardMesh {
     }
     this.markerGeometry.reserve(need);
     this.markerDropGeometry.reserve(markerVertexCount("pin"));
-    const [mp, mn, mc, mg] = this.markerGeometry.arrays as [
+    const [mp, mn, mc, mg, mcell] = this.markerGeometry.arrays as [
+      Float32Array,
       Float32Array,
       Float32Array,
       Float32Array,
@@ -1359,6 +1473,7 @@ export class SolidBoard extends Group implements BoardMesh {
       // CellGeom.fit). This is the same measure the billboards use.
       const scale = g.fit * this.anim.popScale(i, now);
       const crown = this.crownOf(i);
+      const first = sink.count;
       writeMarker(marker, this.markerBase(g, crown, 1), g.normal, scale, sink);
       // A two-sided cell has no consistent outward direction to stand on — the
       // Möbius strip and the Klein bottle cannot have one at all, and nothing
@@ -1381,6 +1496,7 @@ export class SolidBoard extends Group implements BoardMesh {
           sink,
         );
       }
+      mcell.fill(i, first, sink.count);
     }
     this.markerGeometry.commit(sink.count);
     this.markerDropGeometry.commit(dropSink.count);
@@ -1393,6 +1509,7 @@ export class SolidBoard extends Group implements BoardMesh {
 
   setAnimationsEnabled(on: boolean): void {
     this.anim.enabled = on;
+    this.motion.enabled = on;
     // The marker glow's *wave* is motion and goes with the rest of them; its
     // resting ember is a look, not a motion, and stays (`MarkerGlow.enabled`).
     this.glow.enabled = on;
@@ -1456,7 +1573,14 @@ export class SolidBoard extends Group implements BoardMesh {
       const i = this.cellIndex.get(cell);
       if (i != null) list.push({ index: i, center: this.geom[i]!.center });
     }
-    this.anim.startReveals(rippleEntries(list, oc, this.meanRadius), performance.now());
+    const now = performance.now();
+    this.anim.startReveals(rippleEntries(list, oc, this.meanRadius), now);
+    this.motion.opened(
+      list.map((e) => e.index),
+      oi ?? null,
+      this.openDrop,
+      now,
+    );
   }
 
   dropFlag(cell: CellId, ms?: number): void {
@@ -1488,6 +1612,7 @@ export class SolidBoard extends Group implements BoardMesh {
     );
     const now = performance.now();
     this.anim.startWin(entries, now);
+    this.motion.hop(oi ?? null, now);
     // The mines the win auto-flagged pop in on the same stagger, so the flags
     // appear in the wake of the wave rather than all at once.
     for (const cell of flagged) {
@@ -1506,7 +1631,8 @@ export class SolidBoard extends Group implements BoardMesh {
     // runs while `CellAnimations` has nothing pending (a lone opened cell casts
     // no ripple worth the name but still lights the pins).
     const glowing = this.updateGlow(now);
-    if (!this.anim.pending()) return flushed || glowing;
+    const moving = this.motion.step(now);
+    if (!this.anim.pending()) return flushed || glowing || moving;
     const step = this.anim.step(now);
     for (const i of step.recolor) this.writeColor(i);
     if (step.glyphsDirty) {
@@ -1514,7 +1640,8 @@ export class SolidBoard extends Group implements BoardMesh {
       this.rebuildMarkers();
     }
     this.position.set(step.offset[0], step.offset[1], 0);
-    return step.active || glowing;
+    // The frame a flash or a pop settles on has to be drawn too.
+    return step.active || glowing || moving || step.recolor.length > 0 || step.glyphsDirty;
   }
 
   /** Write this frame's light into the marker shader's uniforms, and say

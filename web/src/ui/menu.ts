@@ -413,6 +413,20 @@ export class Menu {
   private go(view: () => void): void {
     this.view = view;
     this.render();
+    this.riseIn();
+  }
+
+  /** Let a page the player just navigated to rise into place, row by row (the
+   * `.menu-enter` rule in styles.css). Only on navigation: a page repainted for
+   * a toggle on it stays put. Each row is told its place in the stagger. */
+  private riseIn(): void {
+    this.body.classList.remove("menu-enter");
+    const rows = this.body.querySelectorAll<HTMLElement>(
+      ".menu-list > li",
+    );
+    rows.forEach((row, i) => row.style.setProperty("--i", String(Math.min(i, 14))));
+    void this.body.offsetWidth;
+    this.body.classList.add("menu-enter");
   }
 
   /** Whether the desktop two-pane branch is active. */
@@ -533,6 +547,8 @@ export class Menu {
       pins: this.settings.pins,
       extraControls: this.settings.extraControls,
       analytics: this.settings.analytics,
+      quality: this.settings.quality,
+      qualityAuto: this.settings.qualityAuto,
       setTheme: (key) => {
         this.settings.setTheme(key);
         page();
@@ -583,6 +599,10 @@ export class Menu {
       },
       setHaptics: (on) => {
         this.settings.setHaptics(on);
+        page();
+      },
+      setQuality: (pref) => {
+        this.settings.setQuality(pref);
         page();
       },
       setAnalytics: (on) => {

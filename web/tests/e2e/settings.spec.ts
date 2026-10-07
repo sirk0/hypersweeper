@@ -137,13 +137,13 @@ test.describe("settings", () => {
     await page.locator('.menu-header-btn[data-action="settings"]').click();
     const row = page.locator('.menu-entry[data-settings-group="shape"]');
     await expect(row).toContainText("Board shape");
-    await expect(row).toContainText("Classic"); // the current one, as a subtitle
+    await expect(row).toContainText("Soft"); // the current one, as a subtitle
     await expect(page.locator(".menu-entry[data-shape]")).toHaveCount(0);
 
     await row.click();
-    // Classic, Realistic, Flat — the three cuts, a literal for the same reason
-    // the theme count above is one.
-    await expect(page.locator(".menu-entry[data-shape]")).toHaveCount(3);
+    // Soft, Classic, Realistic, Flat — the four cuts, a literal for the same
+    // reason the theme count above is one.
+    await expect(page.locator(".menu-entry[data-shape]")).toHaveCount(4);
     await expect(page.locator('.menu-entry[data-action="back"]')).toContainText(
       "Board shape",
     );
@@ -258,13 +258,14 @@ test.describe("settings", () => {
     expect(await cssVar(page, "--bg")).toBe("#000000");
     expect(await cssVar(page, "--radius")).toBe("0px"); // still the square 1990s chrome
 
-    // The board does not go dark with the page — the classic cells are gray in
-    // both schemes, which is what "Classic" means.
+    // The board does not go dark with the page — the classic theme's cells are
+    // gray in both schemes, which is what "Classic" means. (The cut is the
+    // player's other setting, still at its default.)
     const state = await page.evaluate(() => {
       window.__ms!.startBoard("square", "easy");
       return window.__ms!.state();
     });
-    expect(state.cellStyle).toBe("classic/classic");
+    expect(state.cellStyle).toBe("soft/classic");
   });
 
   test("every theme applies a complete palette, on both schemes", async ({ page }) => {

@@ -87,9 +87,10 @@ A `CellStyle` is **composed**, from two settings that have nothing to say to
 each other (see "Settings and themes" in [`ui.md`](ui.md)):
 
 - a **board shape** (`BOARD_SHAPES`) — how a cell is *cut*, and what it is made
-  of. Three: **classic** (the beveled button that sinks when opened, and the one
-  cut that is *lit* on a flat board, so the key light inverts its highlight and
-  shadow), **realistic** (a five-loop glass bead; on the plane a gradient and
+  of. Four: **soft**, the default (rounded, pillowy tiles that sink into a
+  shallow dish when opened; see "The Soft cut" below), **classic** (the beveled
+  button that sinks when opened, and the first cut that is *lit* on a flat
+  board, so the key light inverts its highlight and shadow), **realistic** (a five-loop glass bead; on the plane a gradient and
   translucent opened cells, on a solid a specular sheen that sweeps across the
   faces as the board is dragged around) and **flat** (unlit plates in flat
   colour with wide gaps).
@@ -263,6 +264,99 @@ another way, and every other cell keeps its old path to the pixel:
   two degenerate triangles to fill the same slice of the buffer a fan would.
 
 The pygame game's `centroid` falls back to the same pole for the same cells.
+
+### The Soft cut (`round`, `shadow`, `grout`)
+
+Soft is the default cut, and the three style fields it introduced are what
+carry it — none of them is a colour:
+
+- **`round`** rounds every corner off (`roundCorners` in `boardMesh.ts`): each
+  corner becomes three points on a quadratic curve, a fixed `3n` for an n-gon,
+  so a cell's vertex count is still a function of its side count and the
+  in-place re-cut still holds. Only the tile is drawn round — the grout, the
+  picking and every measurement (`shape`, `fit`, the glyph inradius) stay on the
+  true polygon, which on a solid is why `CellGeom` carries `drawn` beside
+  `poly`. A cell with no centre it can see all of (Klaassen's heptagon) and a
+  cell the Klein clip cuts keep their corners. The cost is three times the
+  vertices per loop, which is why it is a cut's choice.
+- **`shadow`** (flat boards) lays a soft shadow under every *closed* tile: a fan
+  of the outline at full strength ringed by the outline pushed outward and
+  faded to nothing, offset down the **screen** (so `setQuarterTurn` rewrites
+  it), drawn after the tiles and depth tested — a raised tile hides its own, a
+  sunken neighbour catches it. An opened tile casts none.
+- **`grout`** (solids) lightens the lines between the tiles, which at the
+  default mid grey read as heavy outlines once the corners are round.
+
+## Motion and effects
+
+Two things move a board beyond recolouring it, and they are deliberately split
+by what decides whether they run.
+
+### Tile motion (`src/render/cellMotion.ts`, `src/render/motionShader.ts`)
+
+The tiles themselves move: an opened cell drops from where its button stood
+into its recess (staggered at the ripple's pace, so a flood is a wave), the
+number springs up after it, a cell pressed with a mouse or pen sinks before the
+release (not under a finger, which covers it — the reason a held flag drops in
+from above), a hovered one rises a hair, a flag pushes its tile in (again not a
+held one, whose drop is its landing), a chord dips the cells it
+reaches — or shakes them when it cannot open anything — a detonation's front
+knocks the tiles up as it passes while the other mines pop in by distance and
+the board fades to grey round the one that went off, the win wave lifts each
+tile as it passes, and a new board assembles from its middle out.
+
+Both meshes are one merged buffer re-cut in place, so moving a tile on the CPU
+would mean rewriting hundreds of vertices per cell per frame. Instead every
+vertex carries `aCell`, and the vertex shader (`patchMotion`) moves it by that
+cell's entry in a float texture — four channels per cell, **lift** (cell radii
+along the outward axis), **scale**, **glyph** (on top of scale, for the number,
+the flag and the standing markers) and **twist** — beside a static texture of
+each cell's pivot, axis and radius. `CellMotion` evaluates the curves (pure,
+unit-tested) and rewrites only the texture, only while something moves. Four
+things to know:
+
+- **A lift is invisible on a flat board.** The plane is seen head-on through an
+  orthographic camera, where moving toward the viewer changes nothing on
+  screen, so `uLiftScale` turns a lift into growth (a lot on the plane, a little
+  on a solid, which sees most of it as parallax).
+- **A two-sided surface lifts each face outward on its own side** (`uLens`):
+  the lens thickens or flattens, rather than the whole lens moving one way and
+  reading backwards from the far side.
+- **The frame a motion settles on must be drawn.** `BoardMotion.step` reports
+  "draw this frame" whenever the texture changed, not only while something is
+  still pending; reporting the latter left the board on its second-to-last
+  frame until something else redrew it. The colour clock follows the same rule.
+- **`patchMotion` chains** after any patch a material already carries (the
+  marker glow) and keys the program cache on its role, so two differently
+  patched materials never share a program.
+
+It runs under the player's motion setting, exactly like `CellAnimations`: with
+motion off nothing starts and the board is drawn at rest, which is what the e2e
+suite and every visual baseline see.
+
+### Effects over the board (`src/render/particles.ts`, `src/render/quality.ts`)
+
+What is drawn *over* the board lives in the renderer's scene, not the mesh: the
+dust a flag kicks up, the flash, sparks and smoke of a mine going off, the
+confetti of a win (`ParticleField`, one `Points` mesh simulated on the CPU,
+normal-blended because an additive glow over a light page is white on white),
+the soft shadow a solid stands on (`ground`, laid under its silhouette on every
+re-frame), a faint reflection map (`RoomEnvironment` through PMREM — generated,
+so nothing remote) weighted by how glossy the tile is and divided by its
+albedo payback so a matte board is not washed out, and a rim light at a solid's
+silhouette. A thrown 3D board coasts (`flingBy`) and a won one makes one slow
+revolution (`victorySpin`); both answer to the motion setting.
+
+These are **looks**, not motion, so a second setting governs them: Settings ›
+Appearance › *Visual effects*, `auto` / `high` / `low` (`settings.quality`).
+`auto` is off on a software renderer (SwiftShader, llvmpipe) and a two-core
+device — which is also why CI, drawing with SwiftShader, never sees a particle
+in a baseline. `window.__ms.effects(on)` forces them for a test or a shot.
+
+There is no post-processing pass: the canvas is transparent (see the rules in
+`AGENTS.md`), and a bloom pass would have to carry alpha through. Tone mapping
+is off too, on purpose — the palettes are calibrated against the untone-mapped
+key light (`albedo`), and a global curve would move every one of them.
 
 ## The Klein bottle's self-intersection (`src/boards/clipSolid.ts`)
 
