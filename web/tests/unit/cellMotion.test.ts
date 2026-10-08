@@ -159,7 +159,7 @@ describe("roundCorners", () => {
   ];
 
   it("replaces every corner with three points, inside the polygon", () => {
-    const r = roundCorners(square, 2);
+    const r = roundCorners(square, 0.2);
     expect(r).toHaveLength(12);
     for (const [x, y] of r) {
       expect(x).toBeGreaterThanOrEqual(0);
@@ -174,15 +174,27 @@ describe("roundCorners", () => {
   });
 
   it("never lets two corners cross on a short edge", () => {
-    const r = roundCorners(square, 100);
+    const r = roundCorners(square, 0.9);
     // capped at 45% of the edge either side
     expect(r[0]).toEqual([0, 4.5]);
+  });
+
+  it("takes the same share of every edge, whatever the shape", () => {
+    const tri: [number, number][] = [
+      [0, 0],
+      [30, 0],
+      [0, 40],
+    ];
+    const r = roundCorners(tri, 0.1);
+    // corner (0,0): 10% back along the 40-long edge, 10% along the 30-long one
+    expect(r[0]![1]).toBeCloseTo(4);
+    expect(r[2]![0]).toBeCloseTo(3);
   });
 
   it("works in 3D", () => {
     const r = roundCorners(
       square.map(([x, y]) => [x, y, 1] as [number, number, number]),
-      2,
+      0.2,
     );
     expect(r).toHaveLength(12);
     expect(r.every((p) => p[2] === 1)).toBe(true);

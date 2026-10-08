@@ -224,18 +224,27 @@ export function insetMitres(points: readonly Pt[]): [number, number][] {
 
 /** `points` with every corner rounded off: each corner is replaced by three
  * points on a quadratic curve from a little way back along its incoming edge,
- * through near the corner, to the same distance along its outgoing one. Works
- * on 2D and 3D polygons alike (a solid's cells are not quite planar, and a
- * curve through three points of the polygon stays on it). `radius` is how far
- * back along each edge the curve starts, capped at under half of either edge
- * so two corners never cross. A straight "corner" (a T-vertex) comes out as
- * three points on the straight edge, which is harmless. The count is always
- * `3 * points.length`, so a cell's vertex count stays a function of its side
- * count — which is what lets a cell be re-cut in place (see cellStyle.ts). */
+ * through near the corner, to the same share of its outgoing one. Works on 2D
+ * and 3D polygons alike (a solid's cells are not quite planar, and a curve
+ * through three points of the polygon stays on it).
+ *
+ * `edgeFrac` is that share — how much of **each edge** the curve takes at
+ * either end — capped under half so two corners never cross. A share of the
+ * edge rather than a distance, so every shape keeps the same proportion of its
+ * edges straight: a distance measured off the cell's size takes 30% of a
+ * hexagon's edge where it takes 17% of a triangle's, and the hexagons of a
+ * mixed tiling went round long before its triangles did. This is a geometry
+ * game; the shapes have to stay legible.
+ *
+ * A straight "corner" (a T-vertex) comes out as three points on the straight
+ * edge, which is harmless. The count is always `3 * points.length`, so a
+ * cell's vertex count stays a function of its side count — which is what lets
+ * a cell be re-cut in place (see cellStyle.ts). */
 export function roundCorners<P extends readonly number[]>(
   points: readonly P[],
-  radius: number,
+  edgeFrac: number,
 ): P[] {
+  const frac = Math.max(0, Math.min(edgeFrac, 0.45));
   const n = points.length;
   const out: P[] = [];
   const dim = points[0]?.length ?? 2;
@@ -250,10 +259,8 @@ export function roundCorners<P extends readonly number[]>(
     const prev = points[(i + n - 1) % n]!;
     const cur = points[i]!;
     const next = points[(i + 1) % n]!;
-    const lp = len(cur, prev);
-    const ln = len(cur, next);
-    const u0 = lp > 0 ? Math.min(radius / lp, 0.45) : 0;
-    const u1 = ln > 0 ? Math.min(radius / ln, 0.45) : 0;
+    const u0 = len(cur, prev) > 0 ? frac : 0;
+    const u1 = len(cur, next) > 0 ? frac : 0;
     const a = at(cur, prev, u0);
     const b = at(cur, next, u1);
     // The curve's midpoint: (a + 2 cur + b) / 4.

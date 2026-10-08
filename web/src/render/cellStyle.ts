@@ -180,8 +180,10 @@ export interface CellStyle {
    * have no consistent outward normal, so `SolidBoard` stands one marker on each
    * of their two faces rather than picking a side. */
   solidMarkers?: true;
-  /** Round every tile's corners off, by this fraction of the cell's radius
-   * (`roundCorners` in boardMesh.ts). Costs three times the vertices per loop,
+  /** Round every tile's corners off: the curve at each corner takes this
+   * share of each of its two edges (`roundCorners` in boardMesh.ts), so every
+   * shape keeps the same proportion of its edges straight and a hexagon stays
+   * as legible as a triangle. Costs three times the vertices per loop,
    * so it is a cut's choice, not a default. A cell with no centre it can see
    * all of (Klaassen's bent heptagon) keeps its corners. */
   round?: number;
@@ -424,7 +426,9 @@ const SOFT_SHAPE: BoardShape = {
   label: "Soft",
   hint: "Rounded tiles that float on the page",
   flatMine: true,
-  round: 0.3,
+  // 12% of each edge at either end: three-quarters of every edge is still
+  // straight, on a hexagon as on a thin Penrose rhombus.
+  round: 0.12,
   flat: {
     gap: 0.075,
     closed: [

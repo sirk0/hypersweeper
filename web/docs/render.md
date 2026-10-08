@@ -271,7 +271,13 @@ Soft is the default cut, and the three style fields it introduced are what
 carry it — none of them is a colour:
 
 - **`round`** rounds every corner off (`roundCorners` in `boardMesh.ts`): each
-  corner becomes three points on a quadratic curve, a fixed `3n` for an n-gon,
+  corner becomes three points on a quadratic curve taking a fixed **share of
+  each edge** (12% at either end on Soft, so 76% of every edge stays straight).
+  A share rather than a distance off the cell's size, because the latter rounds
+  short-edged shapes far more than long-edged ones — at 0.3 of the cell radius
+  a hexagon kept 40% of its edges and read as a circle while a triangle kept
+  65% — and this is a game about telling shapes apart. Three points a corner is
+  a fixed `3n` for an n-gon,
   so a cell's vertex count is still a function of its side count and the
   in-place re-cut still holds. Only the tile is drawn round — the grout, the
   picking and every measurement (`shape`, `fit`, the glyph inradius) stay on the

@@ -212,7 +212,7 @@ export class PolygonBoard extends Group implements BoardMesh {
       // A cut with rounded corners draws the rounded outline; everything that
       // *measures* the cell above still read its true corners.
       const drawn =
-        style.round && !bent ? roundCorners(poly, style.round * radius) : poly;
+        style.round && !bent ? roundCorners(poly, style.round) : poly;
       const n = drawn.length;
       // n fan triangles for the top face, 2n for each ring of walls under it
       const count = cellVertexCount(n, this.profile);

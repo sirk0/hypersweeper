@@ -239,6 +239,25 @@ test.describe("board gallery", () => {
     });
   }
 
+  // The Soft cut rounds corners off, and this is a geometry game: the shapes
+  // must stay legible. A square board shows little of that, so the hexagon
+  // board and a mixed tiling (triangles, squares and hexagons at once) are shot
+  // in it too — the boards a too-generous rounding turned into circles.
+  for (const mode of ["hexhex", "rhombitrihex"]) {
+    test(`${mode} board in soft cells`, async ({ page }) => {
+      await page.addInitScript(() => {
+        localStorage.setItem(
+          "ms:settings",
+          JSON.stringify({ version: 5, theme: "bright", shape: "soft", scheme: "light", seenHint: true }),
+        );
+      });
+      await page.goto(`/?mode=${mode}&difficulty=easy&seed=1`);
+      await expect(page.locator("body[data-ready]")).toBeVisible();
+      await page.waitForTimeout(150);
+      await expect(page).toHaveScreenshot(`board-${mode}-soft.png`);
+    });
+  }
+
   // ...and on a solid, where the same cells show something else entirely: the
   // plane is lit head-on, so a 3D board is the only place the finish (the domed
   // cut's specular sheen) and the paid-back albedo actually read. That argument

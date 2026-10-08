@@ -631,7 +631,7 @@ export class SolidBoard extends Group implements BoardMesh {
               cut,
             )
           : null;
-      const drawn = style.round && !tile ? roundCorners(poly, style.round * radius) : poly;
+      const drawn = style.round && !tile ? roundCorners(poly, style.round) : poly;
       const count = tile
         ? 3 * tile.length
         : cellVertexCount(drawn.length, this.profile) * (this.twoSided ? 2 : 1);
