@@ -225,8 +225,14 @@ design rather than the rule itself.
   fit to the board's hull points (`BoardView.hull`, collected by
   `solidBoard.ts`) under the *current* rotation — aimed at the centre of that
   rotated hull, since an immersed surface does not sit centred on the board's
-  origin — and re-fit on every drag, so the board stays framed edge to edge as
-  it turns instead of being cropped by a tighter-than-worst-case zoom. The fit
-  is clamped between the old sphere fit (never smaller than before) and
-  `MAX_SOLID_ZOOM` times closer (no fisheye on a board seen edge-on, and a
-  bound on how much the framing can change mid-drag).
+  origin — and re-fit as it turns, so the board stays framed edge to edge
+  instead of being cropped by a tighter-than-worst-case zoom. The fit is
+  clamped between the old sphere fit (never smaller than before) and
+  `MAX_SOLID_ZOOM` times closer (no fisheye on a board seen edge-on). **The
+  framing does not breathe under the player's finger:** during a rotation drag
+  (`beginDrag`/`endDrag`, from `controls.ts`) the aim and the distance are held
+  — the camera only backs off, never comes in, and only if the board would
+  otherwise be cropped — and on release it glides to the fresh fit
+  (`stepFrame`, `FRAME_TAU`). A turn the board makes on its own (a coast, the
+  victory spin, an arrow key) follows its fit the same gliding way. With motion
+  off every re-fit snaps, as it always did, which is what the e2e suite sees.

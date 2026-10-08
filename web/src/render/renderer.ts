@@ -68,6 +68,23 @@ const PAN_POINT = new Vector3();
  * the speed (CSS px per ms of drag) below which it simply stops. */
 const FLING_TAU = 420;
 const FLING_STOP = 0.02;
+/** The shadow under a solid: just below its unit bounding sphere, and its
+ * size there (world units — the board is scaled to that sphere). */
+const GROUND_Y = -1.06;
+const GROUND_W = 1.5;
+const GROUND_H = 0.3;
+
+/** How quickly the camera glides to a solid's new framing, ms. */
+const FRAME_TAU = 160;
+
+/** Where the perspective camera is aimed (x, y in the board's plane) and how
+ * far back it stands, before the player's own zoom and pan. */
+interface SolidFrame {
+  cx: number;
+  cy: number;
+  dist: number;
+}
+
 /** The victory turn: one full revolution, eased in and out. */
 const SPIN_MS = 1700;
 /** Confetti colours: festive, and none of them the board's own. */
@@ -115,6 +132,15 @@ export class BoardRenderer {
   private fling: { vx: number; vy: number } | null = null;
   private spin: { start: number; done: number } | null = null;
   private lastFrame = 0;
+  /** The framing a solid is shown at, and the one its current pose asks for.
+   * They differ only while the camera is gliding to a new fit (`stepFrame`);
+   * mid-drag the target is held (`beginDrag`). */
+  private shownFrame: SolidFrame | null = null;
+  private targetFrame: SolidFrame | null = null;
+  private dragging = false;
+  /** The bottom edge of the visible board region in the board's plane, from
+   * the last framing (see `placeGround`). */
+  private viewBottom = -Infinity;
   /** Whether `auto` quality should mean high here (render/quality.ts). */
   readonly capable: boolean;
   constructor(private readonly canvas: HTMLCanvasElement) {
@@ -195,7 +221,7 @@ export class BoardRenderer {
       pmrem.dispose();
     }
     this.board?.setEffects(this.effects ? this.env : null);
-    this.ground.visible = this.effects && this.board?.view.kind === "solid";
+    this.placeGround();
     this.dirty = true;
   }
 
@@ -216,6 +242,9 @@ export class BoardRenderer {
     this.scene.add(board);
     this.fling = null;
     this.spin = null;
+    this.dragging = false;
+    this.shownFrame = null;
+    this.targetFrame = null;
     this.particles.reset();
     this.applyEffects();
     this.resetView(); // a new board starts framed, not where the last was left
@@ -264,7 +293,22 @@ export class BoardRenderer {
         new Quaternion().setFromAxisAngle(Y_AXIS, dxPx * ROTATE_SPEED),
       );
     this.board.quaternion.premultiply(turn);
-    this.frameSolid(); // the silhouette changed as it turned, so re-fit
+    // The silhouette changed as it turned, so re-fit — but follow the new fit
+    // rather than jump to it (see `SolidFrame`), and not at all mid-drag.
+    this.frameSolid("follow");
+    this.dirty = true;
+  }
+
+  /** A rotation drag has started: hold the framing still until it ends. */
+  beginDrag(): void {
+    this.dragging = true;
+  }
+
+  /** ...and has ended: settle on the fit for where the board was left. */
+  endDrag(): void {
+    if (!this.dragging) return;
+    this.dragging = false;
+    this.frameSolid("follow");
     this.dirty = true;
   }
 
@@ -419,10 +463,10 @@ export class BoardRenderer {
    * real silhouette (its hull points under the current rotation) and only
    * falls back to the sphere fit as it turns edge-on. Re-fitting on every
    * rotation is what keeps that safe: the board is framed, never cropped. */
-  private frameSolid(): void {
+  private frameSolid(mode: "snap" | "follow" = "snap"): void {
     const view = this.board?.view;
     if (!this.board || view?.kind !== "solid") return;
-    const { w, h, top, usableH } = this.viewport();
+    const { w, h, usableH } = this.viewport();
 
     const aspect = w / h;
     this.perspCamera.aspect = aspect;
@@ -437,11 +481,37 @@ export class BoardRenderer {
     const sphereDist =
       SOLID_MARGIN /
       Math.sin(Math.min(Math.atan(tanX), Math.atan(tanUsableY)));
-    const fit = this.fitSolid(view.hull, view.radius, tanX, tanUsableY);
-    const dist = Math.max(
-      sphereDist / MAX_SOLID_ZOOM,
-      Math.min(sphereDist, fit.dist),
-    );
+    const clampDist = (d: number): number =>
+      Math.max(sphereDist / MAX_SOLID_ZOOM, Math.min(sphereDist, d));
+    const shown = this.shownFrame;
+    let target: SolidFrame;
+    if (this.dragging && shown) {
+      // Mid-drag the framing holds still: same aim, same distance — unless the
+      // board has turned into a pose that would no longer fit, in which case
+      // the camera backs off just enough (and never comes in until the drag
+      // ends). That is what keeps the picture, and the shadow under it, from
+      // breathing in and out under the player's finger.
+      const fit = this.fitSolid(view.hull, view.radius, tanX, tanUsableY, shown);
+      target = { cx: shown.cx, cy: shown.cy, dist: Math.max(shown.dist, clampDist(fit.dist)) };
+      this.shownFrame = target;
+    } else {
+      const fit = this.fitSolid(view.hull, view.radius, tanX, tanUsableY);
+      target = { cx: fit.cx, cy: fit.cy, dist: clampDist(fit.dist) };
+      // Snap where the view itself changed (a new board, a resize, a zoom, a
+      // pan); follow where only the board turned, so a coast, a victory turn or
+      // the settle after a drag glides to its new framing (`stepFrame`).
+      if (mode === "snap" || !this.motion || !shown) this.shownFrame = target;
+    }
+    this.targetFrame = target;
+    this.applyFrame(this.shownFrame!);
+  }
+
+  /** Point the perspective camera at `frame`, with the zoom and pan on top. */
+  private applyFrame(frame: SolidFrame): void {
+    if (!this.board) return;
+    const { w, h, top, usableH } = this.viewport();
+    const tanY = Math.tan((SOLID_FOV * Math.PI) / 360);
+    const dist = frame.dist;
 
     // Zoom magnifies the fit through the camera's own zoom rather than by
     // dollying in, so the perspective (and the near/far shell around the
@@ -459,20 +529,23 @@ export class BoardRenderer {
       (worldPerPx * usableH) / 2,
     );
     this.cacheViewMetrics(worldPerPx, w, top, usableH);
+    // The bottom of the region below the header, in the board's plane — the
+    // lowest the shadow may sit and still be seen.
+    this.viewBottom = frame.cy + this.panY - (usableH / 2) * worldPerPx;
+    this.placeGround();
     // Aim at the silhouette's centre (an immersed surface — the Möbius strip,
     // the Klein bottle — does not sit centred on the board's origin), and
     // raise the camera so the board centres in the region below the header
     // too: the object drops by half the header height on screen.
     this.perspCamera.position.set(
-      fit.cx + this.panX,
-      fit.cy + (top / 2) * worldPerPx + this.panY,
+      frame.cx + this.panX,
+      frame.cy + (top / 2) * worldPerPx + this.panY,
       dist,
     );
     this.perspCamera.lookAt(this.perspCamera.position.x, this.perspCamera.position.y, 0);
     this.perspCamera.near = Math.max(0.05, dist - 2);
     this.perspCamera.far = dist + 2;
     this.perspCamera.updateProjectionMatrix();
-    this.placeGround(fit);
     // The camera distance sets the perspective horizon, so re-cull glyphs.
     this.board.orient?.(this.board.quaternion, this.perspCamera.position);
   }
@@ -487,7 +560,8 @@ export class BoardRenderer {
     radius: number,
     tanX: number,
     tanUsableY: number,
-  ): { dist: number; cx: number; cy: number; minY: number; width: number } {
+    about?: { cx: number; cy: number },
+  ): { dist: number; cx: number; cy: number } {
     const invR = 1 / radius;
     const { x: qx, y: qy, z: qz, w: qw } = this.board!.quaternion;
     // v = q * p * q⁻¹, inlined (Three's Vector3.applyQuaternion) — the hull is
@@ -517,9 +591,11 @@ export class BoardRenderer {
       if (p[1] < minY) minY = p[1];
       if (p[1] > maxY) maxY = p[1];
     }
-    if (minX > maxX) return { dist: 0, cx: 0, cy: 0, minY: 0, width: 0 }; // no geometry
-    const cx = (minX + maxX) / 2;
-    const cy = (minY + maxY) / 2;
+    if (minX > maxX) return { dist: 0, cx: 0, cy: 0 }; // no geometry
+    // Aimed at the hull box's centre — or, mid-drag, wherever the camera is
+    // already aimed, which only asks how far back it has to be from there.
+    const cx = about?.cx ?? (minX + maxX) / 2;
+    const cy = about?.cy ?? (minY + maxY) / 2;
 
     let dist = 0;
     for (let i = 0; i < hull.length; i += 3) {
@@ -530,20 +606,54 @@ export class BoardRenderer {
       );
       if (need + p[2] > dist) dist = need + p[2];
     }
-    return { dist, cx, cy, minY, width: maxX - minX };
+    return { dist, cx, cy };
   }
 
-  /** Lay the solid's shadow just under its silhouette as it now stands: a soft
-   * ellipse a little narrower than the board, flat on the screen. */
-  private placeGround(fit: { cx: number; minY: number; width: number }): void {
+  /** Lay the solid's shadow under its **bounding sphere**, not under its
+   * silhouette. The board is scaled to the unit sphere about its own origin,
+   * and that sphere does not change as the board turns, so neither does the
+   * shadow: it sits at a fixed place in the world and moves on screen only
+   * when the camera does. Tracking the silhouette's lowest point instead made
+   * it jump every time a different corner or edge came round to the bottom.
+   * The price is a little air under a board that does not fill its sphere — a
+   * torus seen face on — which reads as the board floating, not as a fault. */
+  private placeGround(): void {
     if (!this.effects || this.board?.view.kind !== "solid") {
       this.ground.visible = false;
       return;
     }
-    const w = Math.max(0.2, fit.width * 0.9);
     this.ground.visible = true;
-    this.ground.position.set(fit.cx, fit.minY - w * 0.02, -0.6);
-    this.ground.scale.set(w, w * 0.2, 1);
+    // ...but never below the bottom of the view: a board framed tight (a
+    // torus edge on) would otherwise push it off screen. The framing only
+    // changes when a drag ends or the board turns by itself, and then it
+    // glides (`stepFrame`), so this clamp never makes the shadow jump.
+    const y = Math.max(GROUND_Y, this.viewBottom + GROUND_H * 0.55);
+    this.ground.position.set(0, y, 0);
+    this.ground.scale.set(GROUND_W, GROUND_H, 1);
+  }
+
+  /** Ease the framing the camera shows toward the one the board's pose now
+   * asks for. Returns whether it is still on its way. */
+  private stepFrame(dt: number): boolean {
+    const shown = this.shownFrame;
+    const target = this.targetFrame;
+    if (!shown || !target || this.board?.view.kind !== "solid") return false;
+    const d = Math.abs(shown.dist - target.dist) + Math.abs(shown.cx - target.cx) +
+      Math.abs(shown.cy - target.cy);
+    if (d === 0) return false;
+    if (d < 1e-4) {
+      this.shownFrame = { ...target };
+    } else {
+      const k = 1 - Math.exp(-dt / FRAME_TAU);
+      this.shownFrame = {
+        cx: shown.cx + (target.cx - shown.cx) * k,
+        cy: shown.cy + (target.cy - shown.cy) * k,
+        dist: shown.dist + (target.dist - shown.dist) * k,
+      };
+    }
+    this.applyFrame(this.shownFrame);
+    this.dirty = true;
+    return this.shownFrame !== null && d >= 1e-4;
   }
 
   // -- effects over the board -------------------------------------------------
@@ -654,6 +764,7 @@ export class BoardRenderer {
       if (p >= 1) this.spin = null;
       else busy = true;
     }
+    if (this.stepFrame(dt)) busy = true;
     if (this.particles.active) {
       const down = new Vector3(0, -1, 0);
       busy = this.particles.step(now, down) || busy;

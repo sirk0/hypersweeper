@@ -346,8 +346,12 @@ What is drawn *over* the board lives in the renderer's scene, not the mesh: the
 dust a flag kicks up, the flash, sparks and smoke of a mine going off, the
 confetti of a win (`ParticleField`, one `Points` mesh simulated on the CPU,
 normal-blended because an additive glow over a light page is white on white),
-the soft shadow a solid stands on (`ground`, laid under its silhouette on every
-re-frame), a faint reflection map (`RoomEnvironment` through PMREM — generated,
+the soft shadow a solid stands on (`ground`, laid under the board's **bounding
+sphere** rather than its silhouette — the silhouette's lowest point jumps from
+corner to edge to face as a board turns, and the shadow jumped with it — and
+raised only as far as the bottom of the view, so a board framed tight still
+shows it; with the framing held still through a drag, see `beginDrag` in
+`web/AGENTS.md`, it does not move at all until the drag ends), a faint reflection map (`RoomEnvironment` through PMREM — generated,
 so nothing remote) weighted by how glossy the tile is and divided by its
 albedo payback so a matte board is not washed out, and a rim light at a solid's
 silhouette. A thrown 3D board coasts (`flingBy`) and a won one makes one slow

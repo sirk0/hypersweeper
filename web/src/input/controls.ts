@@ -55,6 +55,10 @@ export interface ControlHandlers {
   /** A rotation drag let go while still moving, at (vx, vy) CSS px per ms —
    * the board coasts on from there. Optional. */
   onFling?(vx: number, vy: number): void;
+  /** A rotation drag has begun / ended (lifted, cancelled, or turned into a
+   * pinch). The renderer holds its framing still in between. Optional. */
+  onRotateStart?(): void;
+  onRotateEnd?(): void;
 }
 
 // Wheel/trackpad delta accumulated per ring step (a notch is ~100px).
@@ -142,6 +146,7 @@ export function attachControls(
     // finger had started, and leave `moved` set so the release stays silent.
     clearLong();
     handlers.onPress?.(null);
+    if (rotating) handlers.onRotateEnd?.();
     moved = true;
     rotating = false;
     panning = false;
@@ -221,7 +226,10 @@ export function attachControls(
         moved = true;
         clearLong();
         handlers.onPress?.(null);
-        if (handlers.rotates()) rotating = true;
+        if (handlers.rotates()) {
+          rotating = true;
+          handlers.onRotateStart?.();
+        }
         else if (handlers.pans()) panning = true;
       }
       if (rotating) {
@@ -266,6 +274,7 @@ export function attachControls(
     const wasRotating = rotating;
     const wasPanning = panning;
     // A throw only counts if the finger was still moving when it lifted.
+    if (wasRotating) handlers.onRotateEnd?.();
     if (wasRotating && e.timeStamp - lastT < 80) handlers.onFling?.(velX, velY);
     pressed = false;
     rotating = false;
@@ -295,6 +304,7 @@ export function attachControls(
     clearLong();
     handlers.onPress?.(null);
     if (points.size === 0) {
+      if (rotating) handlers.onRotateEnd?.();
       pressed = false;
       rotating = false;
       panning = false;

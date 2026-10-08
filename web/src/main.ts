@@ -226,6 +226,8 @@ class App {
         this.session?.press(cell);
         this.renderer.markDirty();
       },
+      onRotateStart: () => this.renderer.beginDrag(),
+      onRotateEnd: () => this.renderer.endDrag(),
       onFling: (vx, vy) => {
         if (this.screen === "game" && this.session?.is3d) this.renderer.flingBy(vx, vy);
       },
