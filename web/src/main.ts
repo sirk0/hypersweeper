@@ -28,6 +28,7 @@ import { boardLinkQuery, parseBoardLink } from "./link";
 import { GameSession } from "./session";
 import { shareBoard } from "./share";
 import { attachControls, blockBrowserZoom } from "./input/controls";
+import { effectsOn, type QualityPref } from "./render/quality";
 import { clampHoldMs } from "./input/hold";
 import {
   BoardRenderer,
@@ -159,6 +160,7 @@ class App {
     document.body.append(this.insetProbe);
     this.syncViewport(); // size the layout box before anything measures it
     this.renderer = new BoardRenderer(canvas);
+    this.syncMotion(); // before the menu's first page rises in
     this.hud = new Hud((action) => this.onAction(action));
     // The menu glyphs are baked strings. Before `new Menu` below, because an icon is
     // a string of SVG with its colours baked in and the menu asks for them as it
@@ -219,6 +221,16 @@ class App {
       // the boards that have one.
       scrolls: (id) => this.screen === "game" && (this.session?.has(id) ?? false),
       onScroll: (id, direction) => this.move(id, direction),
+      onPress: (cell) => {
+        if (this.screen !== "game" || this.flagMode) cell = null;
+        this.session?.press(cell);
+        this.renderer.markDirty();
+      },
+      onRotateStart: () => this.renderer.beginDrag(),
+      onRotateEnd: () => this.renderer.endDrag(),
+      onFling: (vx, vy) => {
+        if (this.screen === "game" && this.session?.is3d) this.renderer.flingBy(vx, vy);
+      },
     });
     // The board has its own bounded zoom, so the browser's page zoom is only
     // ever a trap here (see blockBrowserZoom).
@@ -230,6 +242,8 @@ class App {
     onSchemeChange(() => {
       if (this.settings.scheme === "auto") this.paintTheme();
     });
+    this.syncMotion();
+    this.renderer.setEffects(effectsOn(this.settings.quality, this.renderer.capable));
     this.renderer.start();
     window.setInterval(() => this.tickTimer(), 250);
 
@@ -288,6 +302,12 @@ class App {
       get analytics() {
         return app.settings.analytics;
       },
+      get quality() {
+        return app.settings.quality;
+      },
+      get qualityAuto() {
+        return app.renderer.capable;
+      },
       setTheme: (key) => this.setTheme(key),
       setShape: (key) => this.setShape(key),
       setScheme: (pref) => this.setScheme(pref),
@@ -302,6 +322,7 @@ class App {
       setPins: (on) => this.setPins(on),
       setExtraControls: (on) => this.setExtraControls(on),
       setAnalytics: (on) => this.setAnalytics(on),
+      setQuality: (pref) => this.setQuality(pref),
     };
   }
 
@@ -414,6 +435,14 @@ class App {
     saveSettings(this.settings);
   }
 
+  /** Visual effects: unlike the finish, nothing here is cut into the mesh, so
+   * it reaches the board already on screen. */
+  private setQuality(pref: QualityPref): void {
+    this.settings = { ...this.settings, quality: pref };
+    saveSettings(this.settings);
+    this.renderer.setEffects(effectsOn(pref, this.renderer.capable));
+  }
+
   private setPins(on: boolean): void {
     this.settings = { ...this.settings, pins: on };
     saveSettings(this.settings);
@@ -450,6 +479,8 @@ class App {
     setAnalyticsEnabled(settings.analytics);
     this.animationsEnabled = animationsEnabled(settings.animations);
     this.session?.mesh.setAnimationsEnabled(this.animationsEnabled);
+    this.syncMotion();
+    this.renderer.setEffects(effectsOn(settings.quality, this.renderer.capable));
     this.showBoardControls();
     // The menu glyphs are baked strings, so a theme arriving from another tab
     // has to repaint them exactly as `setTheme` does — `refresh` below draws
@@ -458,11 +489,19 @@ class App {
     this.menu.refresh();
   }
 
+  /** Tell the renderer (the coast and the victory turn) and the stylesheet
+   * (`<html data-motion>`, the chrome's motion) whether things may move. */
+  private syncMotion(): void {
+    this.renderer.motion = this.animationsEnabled;
+    document.documentElement.dataset["motion"] = this.animationsEnabled ? "on" : "off";
+  }
+
   private setAnimations(pref: boolean | null): void {
     this.settings = { ...this.settings, animations: pref };
     saveSettings(this.settings);
     this.animationsEnabled = animationsEnabled(pref);
     this.session?.mesh.setAnimationsEnabled(this.animationsEnabled);
+    this.syncMotion();
   }
 
   // -- navigation ------------------------------------------------------------
@@ -543,12 +582,20 @@ class App {
       // renderer knows (it holds the camera, the zoom and the board's
       // rotation).
       panOf: (cell) => this.renderer.panFor(cell),
+      // ...and so are the effects drawn over the board rather than in it.
+      fx: {
+        flag: (cell, on) => this.renderer.puff(cell, on),
+        blast: (cell) => this.renderer.blast(cell),
+        win: (origin) => this.renderer.celebrate(origin),
+      },
     });
     // A board built from an explicit mine layout (the test seam) is not
     // reproducible from a link, so it does not claim one.
     if (!opts.mines) this.syncLocation(boardLinkQuery(mode, difficulty, seed));
     this.renderer.setBoard(this.session.mesh);
     this.session.mesh.setAnimationsEnabled(this.animationsEnabled);
+    // A new board assembles from its middle out (a no-op with motion off).
+    this.session.mesh.assemble();
     if (this.session.is3d) this.renderer.setOrientation(initialOrientation(mode));
     this.screen = "game";
     this.paintTheme(); // the page picks up this board's tiling
@@ -1157,7 +1204,9 @@ class App {
       animations: (enabled) => {
         this.animationsEnabled = enabled;
         this.session?.mesh.setAnimationsEnabled(enabled);
+        this.syncMotion();
       },
+      effects: (on) => this.renderer.setEffects(on),
       bestTimes: (mode, difficulty) => bestTimes(mode, difficulty),
       achievements: () => {
         const progress = loadProgress();

@@ -71,7 +71,10 @@ test.describe("M6 animations", () => {
     await page.addInitScript((ms) => {
       window.localStorage.setItem(
         "ms:settings",
-        JSON.stringify({ version: 5, holdToFlagMs: ms }),
+        // Classic, the lightest cut to draw: under SwiftShader every frame of
+        // the drop is paid for on the CPU, and the catch below has to land a
+        // screenshot inside it. The drop is the same on every cut.
+        JSON.stringify({ version: 5, holdToFlagMs: ms, shape: "classic" }),
       );
     }, HELD_FLAG_HOLD_MS);
     await page.reload();
@@ -81,6 +84,9 @@ test.describe("M6 animations", () => {
       ms.animations(true);
       ms.startBoard("square", "easy", { mines: ["0,0"] });
     });
+    // A new board assembles from its middle out; let it land before the
+    // settled baseline is shot.
+    await page.waitForTimeout(800);
     await page.evaluate(
       () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
     );
@@ -170,6 +176,11 @@ test.describe("M6 animations", () => {
       ms.startBoard("sphere", "easy", { mines: cells.slice(0, 2) });
       for (const c of cells.slice(2, 8)) ms.flag(c);
       return { opener: cells[cells.length - 1]!, mine: cells[0]! };
+    }).then(async (cells) => {
+      // Let the board finish assembling, so its frames are not what a glow
+      // measurement is racing.
+      await page.waitForTimeout(800);
+      return cells;
     });
   }
 

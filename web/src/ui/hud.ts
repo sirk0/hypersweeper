@@ -338,6 +338,18 @@ export class Hud {
     return btn;
   }
 
+  /** Play a one-shot CSS animation class on `el`, restarting it if it is
+   * already running (see `flashFlag`). The class comes off on `animationend`. */
+  private pulse(el: HTMLElement, cls: string): void {
+    el.classList.remove(cls);
+    void el.offsetWidth;
+    el.classList.add(cls);
+    el.addEventListener("animationend", () => el.classList.remove(cls), { once: true });
+  }
+
+  /** What the last render showed, so the next can tell what *changed*. */
+  private shown: { mines: number; status: HudState["status"] } | null = null;
+
   private render(): void {
     const pad = (n: number, d: number) =>
       Math.max(0, Math.min(10 ** d - 1, Math.floor(n)))
@@ -356,6 +368,25 @@ export class Hud {
       this.smiley.setAttribute("aria-label", SMILEY_LABELS[this.state.status]);
     }
     if (this.flagBtn) this.flagBtn.classList.toggle("active", this.state.flagMode);
+    // The header answers a move: the mine counter ticks when a flag changes it,
+    // the face reacts when the game ends, and a win lights both counters once.
+    // All one-shot CSS animations, so the motion setting governs them there.
+    const shown = this.shown;
+    if (shown) {
+      if (shown.mines !== this.state.minesRemaining) {
+        const mines = this.counters.get("minesRemaining");
+        if (mines) this.pulse(mines, "tick");
+      }
+      if (shown.status !== this.state.status && this.smiley) {
+        if (this.state.status === "won") {
+          this.pulse(this.smiley, "face-won");
+          for (const el of this.counters.values()) this.pulse(el, "win-glow");
+        } else if (this.state.status === "lost") {
+          this.pulse(this.smiley, "face-lost");
+        }
+      }
+    }
+    this.shown = { mines: this.state.minesRemaining, status: this.state.status };
     // Toggle config-driven conditional visibility (the board-symmetry controls;
     // no header slot carries one today, but a slot reads the same either way).
     for (const btn of this.root.querySelectorAll<HTMLElement>("[data-visible-when]")) {

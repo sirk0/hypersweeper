@@ -8,6 +8,7 @@ import {
   MeshStandardMaterial,
   ShapeUtils,
   Vector2,
+  type Texture,
 } from "three";
 import type { Board, CellId, Vertex } from "../boards/core";
 import {
@@ -17,6 +18,7 @@ import {
   insetMitres,
   labelPoint,
   polygonInradius,
+  roundCorners,
   starShapedAbout,
   WIN_GLOW,
   WIN_TINT,
@@ -35,6 +37,7 @@ import {
   WIN_PER_CELL,
 } from "./animations";
 import { cellPalette, classifyShapes, type CellPalette, corners } from "./shapePalette";
+import { BoardMotion, cellAttribute, patchMotion } from "./motionShader";
 import {
   cellStyle,
   cellStyleLoops,
@@ -53,6 +56,9 @@ import {
 // cell are ranged updates into the shared buffers; a single glyph-atlas mesh
 // batches the number/flag/mine quads. The 3D SolidBoard lays the same
 // construction out on a solid's surface.
+
+/** A lift shows on the plane as growth (see `MotionUniforms.uLiftScale`). */
+const FLAT_LIFT_SCALE = 0.4;
 
 interface CellGeom {
   start: number; // first vertex index in the position/color buffers
@@ -94,7 +100,12 @@ export class PolygonBoard extends Group implements BoardMesh {
   // viewport; the digits/flags are counter-rotated so they stay upright.
   private quarterTurn = false;
   private readonly anim = new CellAnimations();
+  /** The tiles' own motion — sinking, dipping, hopping (render/cellMotion.ts),
+   * applied in the vertex shader from a per-cell texture. */
+  private readonly motion: BoardMotion;
   private meanRadius = 1;
+  private openDrop = 0;
+  private pressed = -1;
   /** The relief every cell is cut with (the player's cell style), and the
    * highest point of it — where a glyph is floated so it clears the top face of
    * a closed *and* an opened cell. */
@@ -118,6 +129,11 @@ export class PolygonBoard extends Group implements BoardMesh {
    * translucency — which is also what decides whether the colour buffer carries
    * an alpha channel at all (see the constructor). */
   private readonly openAlpha: number | null;
+  /** The cut's tile shadow, and the buffers it is drawn from (flat boards). */
+  private readonly shadow: CellStyle["shadow"] | null;
+  private shadowPos: BufferAttribute | null = null;
+  private shadowColor: BufferAttribute | null = null;
+  private shadowStart: number[] = [];
 
   constructor(board: Board, style: CellStyle = cellStyle(null)) {
     super();
@@ -193,14 +209,18 @@ export class PolygonBoard extends Group implements BoardMesh {
               [],
             ).flat(),
           };
-      const n = poly.length;
+      // A cut with rounded corners draws the rounded outline; everything that
+      // *measures* the cell above still read its true corners.
+      const drawn =
+        style.round && !bent ? roundCorners(poly, style.round) : poly;
+      const n = drawn.length;
       // n fan triangles for the top face, 2n for each ring of walls under it
       const count = cellVertexCount(n, this.profile);
       for (let t = 0; t < count / 3; t++) faceCell.push(ci);
       this.geom.push({
         start: vertexCount,
         count,
-        poly,
+        poly: drawn,
         center,
         radius,
         glyphCenter,
@@ -215,6 +235,9 @@ export class PolygonBoard extends Group implements BoardMesh {
     const geometry = new BufferGeometry();
     this.positionAttr = new BufferAttribute(new Float32Array(vertexCount * 3), 3);
     geometry.setAttribute("position", this.positionAttr);
+    this.motion = new BoardMotion(this.order.length, false, FLAT_LIFT_SCALE);
+    cellAttribute(geometry, vertexCount, this.geom);
+    this.geom.forEach((g, i) => this.motion.setCell(i, [g.center[0], g.center[1], 0], [0, 0, 1], g.radius));
     // RGB, or RGBA on a style whose opened cells let the page through: three.js
     // reads a per-vertex alpha only from a 4-component colour attribute, so the
     // channel is added exactly where it is used and every other style keeps the
@@ -231,34 +254,69 @@ export class PolygonBoard extends Group implements BoardMesh {
     // it, and keeping the depth write is what stops a cell's own walls from
     // showing through its top face.
     const translucent = this.openAlpha === null ? {} : { transparent: true };
-    const cells = new Mesh(
-      geometry,
-      // Cell polygons come from the board builders with per-board winding, so
-      // some top faces point away from the camera. DoubleSide keeps them lit
-      // and, crucially, raycast-pickable regardless of winding.
-      style.unlit
-        ? new MeshBasicMaterial({ vertexColors: true, side: DoubleSide, ...translucent })
-        : new MeshStandardMaterial({
-            vertexColors: true,
-            ...style.material,
-            flatShading: true,
-            side: DoubleSide,
-            ...translucent,
-          }),
-    );
+    // Cell polygons come from the board builders with per-board winding, so
+    // some top faces point away from the camera. DoubleSide keeps them lit
+    // and, crucially, raycast-pickable regardless of winding.
+    const cellMaterial = style.unlit
+      ? new MeshBasicMaterial({ vertexColors: true, side: DoubleSide, ...translucent })
+      : new MeshStandardMaterial({
+          vertexColors: true,
+          ...style.material,
+          flatShading: true,
+          side: DoubleSide,
+          ...translucent,
+        });
+    patchMotion(cellMaterial, this.motion.uniforms, "tile", !style.unlit);
+    const cells = new Mesh(geometry, cellMaterial);
     cells.name = "cells";
     this.add(cells);
 
-    const glyphMesh = new Mesh(
-      this.glyphGeometry,
-      new MeshBasicMaterial({
-        map: this.atlas.texture,
+    // The soft shadow under each closed tile, on a cut that casts one: a fan
+    // of the tile's outline at full shadow strength, ringed by the same outline
+    // pushed outward and faded to nothing. Drawn after the tiles and depth
+    // tested, so a raised tile hides the shadow under itself and a sunken
+    // neighbour catches it.
+    this.shadow = style.shadow ?? null;
+    if (this.shadow) {
+      const shadowVerts = this.geom.reduce((sum, g) => sum + 9 * g.poly.length, 0);
+      this.shadowPos = new BufferAttribute(new Float32Array(shadowVerts * 3), 3);
+      this.shadowColor = new BufferAttribute(new Float32Array(shadowVerts * 4), 4);
+      const sg = new BufferGeometry();
+      sg.setAttribute("position", this.shadowPos);
+      sg.setAttribute("color", this.shadowColor);
+      let at = 0;
+      this.shadowStart = this.geom.map((g) => {
+        const start = at;
+        at += 9 * g.poly.length;
+        return start;
+      });
+      cellAttribute(
+        sg,
+        shadowVerts,
+        this.geom.map((g, i) => ({ start: this.shadowStart[i]!, count: 9 * g.poly.length })),
+      );
+      const shadowMaterial = new MeshBasicMaterial({
+        vertexColors: true,
         transparent: true,
-        alphaTest: 0.4,
-        side: DoubleSide,
         depthWrite: false,
-      }),
-    );
+        side: DoubleSide,
+      });
+      patchMotion(shadowMaterial, this.motion.uniforms, "tile", false);
+      const shadowMesh = new Mesh(sg, shadowMaterial);
+      shadowMesh.name = "shadows";
+      shadowMesh.renderOrder = 0.5;
+      this.add(shadowMesh);
+    }
+
+    const glyphMaterial = new MeshBasicMaterial({
+      map: this.atlas.texture,
+      transparent: true,
+      alphaTest: 0.4,
+      side: DoubleSide,
+      depthWrite: false,
+    });
+    patchMotion(glyphMaterial, this.motion.uniforms, "glyph", false);
+    const glyphMesh = new Mesh(this.glyphGeometry, glyphMaterial);
     glyphMesh.name = "glyphs";
     glyphMesh.renderOrder = 1;
     this.add(glyphMesh);
@@ -282,10 +340,17 @@ export class PolygonBoard extends Group implements BoardMesh {
 
     this.meanRadius =
       this.geom.reduce((s, g) => s + g.radius, 0) / (this.geom.length || 1);
+    this.motion.setUnit(this.meanRadius);
+    // How far an opened cell starts above its recess: the closed crown's height
+    // over the open floor's, so it drops from where its button stood.
+    this.openDrop =
+      this.profile.closed[this.profile.closed.length - 1]!.height -
+      this.profile.open[this.profile.open.length - 1]!.height;
 
     for (let i = 0; i < this.order.length; i++) {
       this.writeGeometry(i);
       this.writeColor(i);
+      this.writeShadow(i);
     }
     // Cells are re-cut in place afterwards, so pad the (raised-state) bounds by
     // the full relief the style can take rather than recomputing per update.
@@ -322,8 +387,13 @@ export class PolygonBoard extends Group implements BoardMesh {
     if (i == null) return;
     const wasOpen = isOpened(this.states[i]!);
     this.states[i] = visual;
-    if (isOpened(visual) !== wasOpen) this.writeGeometry(i);
+    if (isOpened(visual) !== wasOpen) {
+      this.writeGeometry(i);
+      this.writeShadowAlpha(i);
+    }
     this.writeColor(i);
+    if (visual.kind !== "hidden") this.motion.motion.setHover(i, false);
+    if (isOpened(visual)) this.motion.motion.setPress(i, false);
     this.rebuildGlyphs();
   }
 
@@ -334,6 +404,54 @@ export class PolygonBoard extends Group implements BoardMesh {
     this.hovered = i;
     if (prev >= 0) this.writeColor(prev);
     if (i >= 0) this.writeColor(i);
+    if (prev >= 0) this.motion.motion.setHover(prev, false);
+    if (i >= 0 && this.states[i]!.kind === "hidden") this.motion.motion.setHover(i, true);
+  }
+
+  get cellRadius(): number {
+    return this.meanRadius;
+  }
+
+  press(cell: CellId | null): void {
+    const i = cell == null ? -1 : (this.cellIndex.get(cell) ?? -1);
+    if (i === this.pressed) return;
+    if (this.pressed >= 0) this.motion.motion.setPress(this.pressed, false);
+    this.pressed = i;
+    if (i >= 0 && !isOpened(this.states[i]!)) this.motion.motion.setPress(i, true);
+  }
+
+  bounce(cell: CellId): void {
+    const i = this.cellIndex.get(cell);
+    if (i != null) this.motion.bounce(i, performance.now());
+  }
+
+  chordFeedback(cell: CellId, reach: CellId[], ok: boolean): void {
+    const i = this.cellIndex.get(cell);
+    if (i == null) return;
+    this.motion.chord(i, this.indicesOf(reach), ok, performance.now());
+  }
+
+  detonate(cell: CellId | null, mines: CellId[]): void {
+    const i = cell != null ? (this.cellIndex.get(cell) ?? null) : null;
+    this.motion.detonate(i, this.indicesOf(mines), performance.now());
+  }
+
+  assemble(): void {
+    this.motion.assemble(performance.now());
+  }
+
+  /** Nothing to do on the plane: it is lit head-on, so a reflection map has no
+   * angle to show at and would only wash the calibrated colours out, and it
+   * has no silhouette for a rim light. */
+  setEffects(_env: Texture | null): void {}
+
+  private indicesOf(cells: readonly CellId[]): number[] {
+    const out: number[] = [];
+    for (const c of cells) {
+      const i = this.cellIndex.get(c);
+      if (i != null) out.push(i);
+    }
+    return out;
   }
 
   /** (Re)cut one cell into the shared position buffer, at the current cell
@@ -425,16 +543,73 @@ export class PolygonBoard extends Group implements BoardMesh {
     this.colorAttr.needsUpdate = true;
   }
 
+  /** Lay cell `i`'s shadow: offset down the *screen* (which on a board shown
+   * turned a quarter is +x in the board's own frame), at the shadow plane just
+   * under the tiles. */
+  private writeShadow(i: number): void {
+    const pos = this.shadowPos;
+    const sh = this.shadow;
+    if (!pos || !sh) return;
+    const g = this.geom[i]!;
+    const n = g.poly.length;
+    const off = g.radius * sh.offset;
+    const [dx, dy] = this.quarterTurn ? [off, 0] : [0, -off];
+    const z = -0.02 * g.radius;
+    const c: Vertex = [g.center[0] + dx, g.center[1] + dy];
+    const inner = g.poly.map((p) => lerp(p, g.center, this.profile.gap + sh.spread * 0.4));
+    const outer = g.poly.map((p) => lerp(p, g.center, this.profile.gap - sh.spread));
+    let v = this.shadowStart[i]!;
+    const put = (p: Vertex) => pos.setXYZ(v++, p[0] + dx, p[1] + dy, z);
+    for (let e = 0; e < n; e++) {
+      const b = (e + 1) % n;
+      pos.setXYZ(v++, c[0], c[1], z);
+      put(inner[e]!);
+      put(inner[b]!);
+    }
+    for (let e = 0; e < n; e++) {
+      const b = (e + 1) % n;
+      put(inner[e]!);
+      put(outer[e]!);
+      put(outer[b]!);
+      put(inner[e]!);
+      put(outer[b]!);
+      put(inner[b]!);
+    }
+    pos.needsUpdate = true;
+    this.writeShadowAlpha(i);
+  }
+
+  /** A closed tile casts its shadow; an opened one, sunk into the board, none. */
+  private writeShadowAlpha(i: number): void {
+    const col = this.shadowColor;
+    const sh = this.shadow;
+    if (!col || !sh) return;
+    const g = this.geom[i]!;
+    const n = g.poly.length;
+    const a = isOpened(this.states[i]!) ? 0 : sh.opacity;
+    let v = this.shadowStart[i]!;
+    for (let k = 0; k < 3 * n; k++) col.setXYZW(v++, 0, 0, 0, a);
+    for (let e = 0; e < n; e++) {
+      // inner, outer, outer, inner, outer, inner
+      for (const inner of [true, false, false, true, false, true]) {
+        col.setXYZW(v++, 0, 0, 0, inner ? a : 0);
+      }
+    }
+    col.needsUpdate = true;
+  }
+
   /** Draw the glyphs counter-rotated (the board is being shown turned). */
   setQuarterTurn(on: boolean): void {
     if (on === this.quarterTurn) return;
     this.quarterTurn = on;
     this.rebuildGlyphs();
+    for (let i = 0; i < this.order.length; i++) this.writeShadow(i);
   }
 
   private rebuildGlyphs(): void {
     const pos: number[] = [];
     const uvs: number[] = [];
+    const owners: number[] = [];
     const dropPos: number[] = [];
     const dropUvs: number[] = [];
     const now = performance.now();
@@ -487,10 +662,12 @@ export class PolygonBoard extends Group implements BoardMesh {
         quad(dropPos, dropUvs, half, z + 0.02, dropRise(settled, half));
       } else {
         quad(pos, uvs, s, z);
+        owners.push(i, i, i, i, i, i);
       }
     }
     this.glyphGeometry.setAttribute("position", new BufferAttribute(new Float32Array(pos), 3));
     this.glyphGeometry.setAttribute("uv", new BufferAttribute(new Float32Array(uvs), 2));
+    this.glyphGeometry.setAttribute("aCell", new BufferAttribute(Float32Array.from(owners), 1));
     this.glyphGeometry.computeBoundingSphere();
     this.dropGeometry.setAttribute("position", new BufferAttribute(new Float32Array(dropPos), 3));
     this.dropGeometry.setAttribute("uv", new BufferAttribute(new Float32Array(dropUvs), 2));
@@ -502,6 +679,7 @@ export class PolygonBoard extends Group implements BoardMesh {
 
   setAnimationsEnabled(on: boolean): void {
     this.anim.enabled = on;
+    this.motion.enabled = on;
     if (!on) {
       this.anim.reset();
       this.position.set(0, 0, 0);
@@ -519,7 +697,14 @@ export class PolygonBoard extends Group implements BoardMesh {
       const i = this.cellIndex.get(cell);
       if (i != null) list.push({ index: i, center: this.geom[i]!.center });
     }
-    this.anim.startReveals(rippleEntries(list, oc, this.meanRadius), performance.now());
+    const now = performance.now();
+    this.anim.startReveals(rippleEntries(list, oc, this.meanRadius), now);
+    this.motion.opened(
+      list.map((e) => e.index),
+      oi ?? null,
+      this.openDrop,
+      now,
+    );
   }
 
   dropFlag(cell: CellId, ms?: number): void {
@@ -547,6 +732,7 @@ export class PolygonBoard extends Group implements BoardMesh {
     );
     const now = performance.now();
     this.anim.startWin(entries, now);
+    this.motion.hop(oi ?? null, now);
     // The mines the win auto-flagged pop in on the same stagger, so the flags
     // appear in the wake of the wave rather than all at once.
     for (const cell of flagged) {
@@ -556,12 +742,14 @@ export class PolygonBoard extends Group implements BoardMesh {
   }
 
   tickAnimations(now: number): boolean {
-    if (!this.anim.pending()) return false;
+    const moving = this.motion.step(now);
+    if (!this.anim.pending()) return moving;
     const step = this.anim.step(now);
     for (const i of step.recolor) this.writeColor(i);
     if (step.glyphsDirty) this.rebuildGlyphs();
     this.position.set(step.offset[0], step.offset[1], 0);
-    return step.active;
+    // The frame a flash or a pop settles on has to be drawn too.
+    return step.active || moving || step.recolor.length > 0 || step.glyphsDirty;
   }
 }
 

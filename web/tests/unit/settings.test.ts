@@ -59,6 +59,7 @@ const SETTINGS: Settings = {
   extraControls: true,
   analytics: false,
   seenHint: true,
+  quality: "low",
 };
 
 afterEach(() => {
@@ -194,6 +195,7 @@ describe("settings validation", () => {
       extraControls: DEFAULT_SETTINGS.extraControls,
       analytics: DEFAULT_SETTINGS.analytics,
       seenHint: DEFAULT_SETTINGS.seenHint,
+      quality: DEFAULT_SETTINGS.quality,
     });
   });
 
@@ -298,6 +300,7 @@ describe("settings upgrades", () => {
       extraControls: DEFAULT_SETTINGS.extraControls,
       analytics: DEFAULT_SETTINGS.analytics,
       seenHint: DEFAULT_SETTINGS.seenHint,
+      quality: DEFAULT_SETTINGS.quality,
     });
     // Migration completes on the next write, and only then is the old key
     // dropped — an interrupted migration must not lose the record.
@@ -442,6 +445,7 @@ describe("settings upgrades", () => {
       extraControls: DEFAULT_SETTINGS.extraControls,
       analytics: DEFAULT_SETTINGS.analytics,
       seenHint: DEFAULT_SETTINGS.seenHint,
+      quality: DEFAULT_SETTINGS.quality,
     });
   });
 
@@ -502,6 +506,7 @@ describe("cross-tab sync", () => {
       extraControls: DEFAULT_SETTINGS.extraControls,
         analytics: DEFAULT_SETTINGS.analytics,
         seenHint: DEFAULT_SETTINGS.seenHint,
+        quality: DEFAULT_SETTINGS.quality,
       },
     ]);
   });

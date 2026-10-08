@@ -877,6 +877,13 @@ body {
   flex: none;
 }
 
+/* A row that steps through a few values shows the current one at the right. */
+.menu-entry-value {
+  color: var(--muted);
+  font-weight: 600;
+  flex: none;
+}
+
 .menu-difficulty {
   display: flex;
   gap: 8px;
@@ -1382,6 +1389,26 @@ body {
   --tile-hi: #d4c0ad;
   --tile-lo: #96826f;
   --tile-grout: #b7b2ab;
+}
+
+/* Soft: rounded pillows with a lit top edge, lifted off the panel by a soft
+   shadow; an opened tile is a shallow dish that casts none. */
+.cell-swatch[data-shape="soft"] {
+  gap: 3px;
+  padding: 2px;
+  background: transparent;
+}
+
+.cell-swatch[data-shape="soft"] .cell-swatch-tile {
+  border-radius: 4px;
+  box-shadow:
+    inset 0 1px 0 var(--tile-hi),
+    inset 0 -1px 0 var(--tile-lo),
+    0 1.5px 2px color-mix(in srgb, var(--tile-lo) 70%, transparent);
+}
+
+.cell-swatch[data-shape="soft"] .cell-swatch-tile.open {
+  box-shadow: inset 0 1px 1px color-mix(in srgb, var(--tile-lo) 45%, transparent);
 }
 
 /* Classic: a hard bevel, inverted on the opened tile. */
@@ -2315,4 +2342,129 @@ body {
 [data-theme="sand"] .board-bar-btn,
 [data-theme="sand"] .hud-counter {
   border-radius: calc(var(--hud-btn) * 0.28);
+}
+
+/* ---------------------------------------------------------------------------
+   Motion in the chrome. Everything here answers to the player's motion
+   setting, which `App` mirrors onto `<html data-motion>` (the OS
+   `prefers-reduced-motion` unless Settings › Animations says otherwise), so
+   it is all written under `:root:not([data-motion="off"])`.
+
+   * Buttons give under the finger: a quick scale-down while pressed.
+   * A page of the menu rises into place row by row when it is navigated to
+     (`Menu.go` sets `.menu-enter` and each row's `--i`), never when the same
+     page repaints for a toggle.
+   * The header answers the game: the mine counter ticks when it changes, the
+     smiley bounces on a win and shakes its head on a loss, and both counters
+     glow once in the accent on a win.
+   --------------------------------------------------------------------------- */
+:root:not([data-motion="off"]) :is(.hud-btn, .hud-smiley, .menu-entry, .difficulty-btn, .menu-header-btn, .dialog-close, .dialog-share) {
+  transition: transform 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+:root:not([data-motion="off"]) :is(.hud-btn, .hud-smiley, .difficulty-btn, .menu-header-btn, .dialog-close, .dialog-share):active {
+  transform: scale(0.92);
+}
+
+:root:not([data-motion="off"]) .menu-entry:active {
+  transform: scale(0.985);
+}
+
+@media (hover: hover) {
+  :root:not([data-motion="off"]) .menu-board-card:hover {
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes menu-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+:root:not([data-motion="off"]) .menu-body.menu-enter [style*="--i"] {
+  animation: menu-rise 340ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation-delay: calc(var(--i) * 26ms);
+}
+
+@keyframes hud-tick {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes hud-face-won {
+  0% {
+    transform: scale(1) rotate(0);
+  }
+  30% {
+    transform: scale(1.28) rotate(-10deg);
+  }
+  55% {
+    transform: scale(0.94) rotate(6deg);
+  }
+  78% {
+    transform: scale(1.06) rotate(-2deg);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+@keyframes hud-face-lost {
+  0%,
+  100% {
+    transform: none;
+  }
+  18% {
+    transform: translateX(-4px) rotate(-8deg);
+  }
+  38% {
+    transform: translateX(4px) rotate(7deg);
+  }
+  58% {
+    transform: translateX(-3px) rotate(-4deg);
+  }
+  78% {
+    transform: translateX(2px) rotate(2deg);
+  }
+}
+
+@keyframes hud-win-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+  35% {
+    box-shadow:
+      0 0 0 3px color-mix(in srgb, var(--accent) 55%, transparent),
+      0 0 22px 6px color-mix(in srgb, var(--accent) 40%, transparent);
+  }
+}
+
+:root:not([data-motion="off"]) .hud-counter.tick {
+  animation: hud-tick 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+:root:not([data-motion="off"]) .hud-smiley.face-won {
+  animation: hud-face-won 720ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+:root:not([data-motion="off"]) .hud-smiley.face-lost {
+  animation: hud-face-lost 520ms ease-out;
+}
+
+:root:not([data-motion="off"]) .hud-counter.win-glow {
+  animation: hud-win-glow 1400ms ease-out;
 }

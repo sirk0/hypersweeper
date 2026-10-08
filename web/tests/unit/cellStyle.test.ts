@@ -42,7 +42,7 @@ const crown = (p: CellProfile, state: "closed" | "open"): number =>
 describe("cell styles", () => {
   it("defaults to the pair the two settings ship at", () => {
     expect(DEFAULT_CELL_STYLE).toBe(boardStyleKey(DEFAULT_SHAPE, DEFAULT_THEME));
-    expect(cellStyle(DEFAULT_CELL_STYLE).shape).toBe("classic");
+    expect(cellStyle(DEFAULT_CELL_STYLE).shape).toBe("soft");
     expect(cellStyle(DEFAULT_CELL_STYLE).theme).toBe("sand");
     // cellStyle.ts writes the default theme out rather than importing it from
     // ui/theme.ts, which imports *this* module. This is what keeps the two in

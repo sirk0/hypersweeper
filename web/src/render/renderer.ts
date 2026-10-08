@@ -1,20 +1,29 @@
 import {
+  CanvasTexture,
   Color,
   DirectionalLight,
   HemisphereLight,
+  Mesh,
+  MeshBasicMaterial,
   OrthographicCamera,
   PerspectiveCamera,
+  PlaneGeometry,
+  PMREMGenerator,
   Quaternion,
   Raycaster,
   Scene,
   Vector2,
   Vector3,
   WebGLRenderer,
+  type Texture,
 } from "three";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import type { CellId } from "../boards/core";
 import { SOLID_GROUPS, surfaceOf, viewHint } from "../boards/catalog";
 import { PICK_LAYERS, type BoardMesh, type PickLayer } from "./boardMesh";
 import { anchoredPan, clampPan, clampZoom, MIN_ZOOM } from "./zoom";
+import { ParticleField } from "./particles";
+import { capableDevice, rendererName } from "./quality";
 
 // One rendering pipeline for both board families. Flat boards use the
 // orthographic camera fit to the board extent; solids are scaled to the unit
@@ -55,6 +64,36 @@ const Y_AXIS = new Vector3(0, 1, 0);
 /** Scratch for `panFor`, which runs once per sounding cell of a flood fill. */
 const PAN_POINT = new Vector3();
 
+/** How a thrown 3D board coasts: the time constant its spin decays with, and
+ * the speed (CSS px per ms of drag) below which it simply stops. */
+const FLING_TAU = 420;
+const FLING_STOP = 0.02;
+/** The shadow under a solid: just below its unit bounding sphere, and its
+ * size there (world units — the board is scaled to that sphere). */
+const GROUND_Y = -1.06;
+const GROUND_W = 1.5;
+const GROUND_H = 0.3;
+
+/** How quickly the camera glides to a solid's new framing, ms. */
+const FRAME_TAU = 160;
+
+/** Where the perspective camera is aimed (x, y in the board's plane) and how
+ * far back it stands, before the player's own zoom and pan. */
+interface SolidFrame {
+  cx: number;
+  cy: number;
+  dist: number;
+}
+
+/** The victory turn: one full revolution, eased in and out. */
+const SPIN_MS = 1700;
+/** Confetti colours: festive, and none of them the board's own. */
+const CONFETTI = ["#ff5d73", "#ffc233", "#3ddc97", "#4cc9f0", "#9b7bff", "#ff8c42"].map(
+  (c) => new Color(c),
+);
+const PUFF_ON = new Color("#e8584f");
+const PUFF_OFF = new Color("#9a9a9a");
+
 export class BoardRenderer {
   readonly renderer: WebGLRenderer;
   readonly scene: Scene;
@@ -80,7 +119,30 @@ export class BoardRenderer {
   private wpp = 1;
   private centerX = 0;
   private centerY = 0;
-
+  /** Particles over the board (render/particles.ts). */
+  private readonly particles = new ParticleField();
+  /** The soft shadow a solid stands on, when effects are on. */
+  private readonly ground: Mesh;
+  /** Look-only effects (render/quality.ts), and the reflection map they use,
+   * made the first time they are wanted. */
+  private effects = false;
+  private env: Texture | null = null;
+  /** Whether the player's motion setting allows the board to coast and spin. */
+  motion = true;
+  private fling: { vx: number; vy: number } | null = null;
+  private spin: { start: number; done: number } | null = null;
+  private lastFrame = 0;
+  /** The framing a solid is shown at, and the one its current pose asks for.
+   * They differ only while the camera is gliding to a new fit (`stepFrame`);
+   * mid-drag the target is held (`beginDrag`). */
+  private shownFrame: SolidFrame | null = null;
+  private targetFrame: SolidFrame | null = null;
+  private dragging = false;
+  /** The bottom edge of the visible board region in the board's plane, from
+   * the last framing (see `placeGround`). */
+  private viewBottom = -Infinity;
+  /** Whether `auto` quality should mean high here (render/quality.ts). */
+  readonly capable: boolean;
   constructor(private readonly canvas: HTMLCanvasElement) {
     this.renderer = new WebGLRenderer({
       canvas,
@@ -118,6 +180,49 @@ export class BoardRenderer {
     const key = new DirectionalLight(0xffffff, 0.55);
     key.position.set(-4, 6, 8);
     this.scene.add(key);
+
+    this.scene.add(this.particles);
+    this.ground = new Mesh(
+      new PlaneGeometry(1, 1),
+      new MeshBasicMaterial({
+        map: groundTexture(),
+        transparent: true,
+        depthWrite: false,
+        opacity: 0.3,
+      }),
+    );
+    this.ground.renderOrder = -1;
+    this.ground.visible = false;
+    this.ground.name = "ground";
+    this.scene.add(this.ground);
+    this.capable = capableDevice(
+      rendererName(this.renderer.getContext()),
+      navigator.hardwareConcurrency,
+    );
+  }
+
+  /** Turn the look-only effects on or off (render/quality.ts). */
+  setEffects(on: boolean): void {
+    if (on === this.effects) return;
+    this.effects = on;
+    if (!on) this.particles.reset();
+    this.applyEffects();
+    this.frame();
+  }
+
+  get effectsOn(): boolean {
+    return this.effects;
+  }
+
+  private applyEffects(): void {
+    if (this.effects && !this.env) {
+      const pmrem = new PMREMGenerator(this.renderer);
+      this.env = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+      pmrem.dispose();
+    }
+    this.board?.setEffects(this.effects ? this.env : null);
+    this.placeGround();
+    this.dirty = true;
   }
 
   /** The camera matching the current board's view kind. */
@@ -135,6 +240,13 @@ export class BoardRenderer {
       board.scale.setScalar(1 / board.view.radius);
     }
     this.scene.add(board);
+    this.fling = null;
+    this.spin = null;
+    this.dragging = false;
+    this.shownFrame = null;
+    this.targetFrame = null;
+    this.particles.reset();
+    this.applyEffects();
     this.resetView(); // a new board starts framed, not where the last was left
     this.resize(); // frames the camera, then re-orients the board (below)
     this.dirty = true;
@@ -146,6 +258,10 @@ export class BoardRenderer {
   clearBoard(): void {
     if (this.board) this.scene.remove(this.board);
     this.board = null;
+    this.fling = null;
+    this.spin = null;
+    this.particles.reset();
+    this.ground.visible = false;
     this.dirty = true;
   }
 
@@ -162,6 +278,14 @@ export class BoardRenderer {
    * the board turns under the cursor regardless of its current orientation.
    * Dragging down tilts the top toward the viewer. */
   rotateBy(dxPx: number, dyPx: number): void {
+    // The player has the board now: whatever it was coasting or spinning on
+    // stops under their hand.
+    this.fling = null;
+    this.spin = null;
+    this.turn(dxPx, dyPx);
+  }
+
+  private turn(dxPx: number, dyPx: number): void {
     if (!this.board || this.board.view.kind !== "solid") return;
     const turn = new Quaternion()
       .setFromAxisAngle(X_AXIS, dyPx * ROTATE_SPEED)
@@ -169,7 +293,22 @@ export class BoardRenderer {
         new Quaternion().setFromAxisAngle(Y_AXIS, dxPx * ROTATE_SPEED),
       );
     this.board.quaternion.premultiply(turn);
-    this.frameSolid(); // the silhouette changed as it turned, so re-fit
+    // The silhouette changed as it turned, so re-fit — but follow the new fit
+    // rather than jump to it (see `SolidFrame`), and not at all mid-drag.
+    this.frameSolid("follow");
+    this.dirty = true;
+  }
+
+  /** A rotation drag has started: hold the framing still until it ends. */
+  beginDrag(): void {
+    this.dragging = true;
+  }
+
+  /** ...and has ended: settle on the fit for where the board was left. */
+  endDrag(): void {
+    if (!this.dragging) return;
+    this.dragging = false;
+    this.frameSolid("follow");
     this.dirty = true;
   }
 
@@ -190,6 +329,7 @@ export class BoardRenderer {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     this.renderer.setPixelRatio(dpr);
     this.renderer.setSize(w, h, false);
+    this.particles.bufferHeight = h * dpr;
     this.frame();
   }
 
@@ -323,10 +463,10 @@ export class BoardRenderer {
    * real silhouette (its hull points under the current rotation) and only
    * falls back to the sphere fit as it turns edge-on. Re-fitting on every
    * rotation is what keeps that safe: the board is framed, never cropped. */
-  private frameSolid(): void {
+  private frameSolid(mode: "snap" | "follow" = "snap"): void {
     const view = this.board?.view;
     if (!this.board || view?.kind !== "solid") return;
-    const { w, h, top, usableH } = this.viewport();
+    const { w, h, usableH } = this.viewport();
 
     const aspect = w / h;
     this.perspCamera.aspect = aspect;
@@ -341,11 +481,37 @@ export class BoardRenderer {
     const sphereDist =
       SOLID_MARGIN /
       Math.sin(Math.min(Math.atan(tanX), Math.atan(tanUsableY)));
-    const fit = this.fitSolid(view.hull, view.radius, tanX, tanUsableY);
-    const dist = Math.max(
-      sphereDist / MAX_SOLID_ZOOM,
-      Math.min(sphereDist, fit.dist),
-    );
+    const clampDist = (d: number): number =>
+      Math.max(sphereDist / MAX_SOLID_ZOOM, Math.min(sphereDist, d));
+    const shown = this.shownFrame;
+    let target: SolidFrame;
+    if (this.dragging && shown) {
+      // Mid-drag the framing holds still: same aim, same distance — unless the
+      // board has turned into a pose that would no longer fit, in which case
+      // the camera backs off just enough (and never comes in until the drag
+      // ends). That is what keeps the picture, and the shadow under it, from
+      // breathing in and out under the player's finger.
+      const fit = this.fitSolid(view.hull, view.radius, tanX, tanUsableY, shown);
+      target = { cx: shown.cx, cy: shown.cy, dist: Math.max(shown.dist, clampDist(fit.dist)) };
+      this.shownFrame = target;
+    } else {
+      const fit = this.fitSolid(view.hull, view.radius, tanX, tanUsableY);
+      target = { cx: fit.cx, cy: fit.cy, dist: clampDist(fit.dist) };
+      // Snap where the view itself changed (a new board, a resize, a zoom, a
+      // pan); follow where only the board turned, so a coast, a victory turn or
+      // the settle after a drag glides to its new framing (`stepFrame`).
+      if (mode === "snap" || !this.motion || !shown) this.shownFrame = target;
+    }
+    this.targetFrame = target;
+    this.applyFrame(this.shownFrame!);
+  }
+
+  /** Point the perspective camera at `frame`, with the zoom and pan on top. */
+  private applyFrame(frame: SolidFrame): void {
+    if (!this.board) return;
+    const { w, h, top, usableH } = this.viewport();
+    const tanY = Math.tan((SOLID_FOV * Math.PI) / 360);
+    const dist = frame.dist;
 
     // Zoom magnifies the fit through the camera's own zoom rather than by
     // dollying in, so the perspective (and the near/far shell around the
@@ -363,13 +529,17 @@ export class BoardRenderer {
       (worldPerPx * usableH) / 2,
     );
     this.cacheViewMetrics(worldPerPx, w, top, usableH);
+    // The bottom of the region below the header, in the board's plane — the
+    // lowest the shadow may sit and still be seen.
+    this.viewBottom = frame.cy + this.panY - (usableH / 2) * worldPerPx;
+    this.placeGround();
     // Aim at the silhouette's centre (an immersed surface — the Möbius strip,
     // the Klein bottle — does not sit centred on the board's origin), and
     // raise the camera so the board centres in the region below the header
     // too: the object drops by half the header height on screen.
     this.perspCamera.position.set(
-      fit.cx + this.panX,
-      fit.cy + (top / 2) * worldPerPx + this.panY,
+      frame.cx + this.panX,
+      frame.cy + (top / 2) * worldPerPx + this.panY,
       dist,
     );
     this.perspCamera.lookAt(this.perspCamera.position.x, this.perspCamera.position.y, 0);
@@ -390,6 +560,7 @@ export class BoardRenderer {
     radius: number,
     tanX: number,
     tanUsableY: number,
+    about?: { cx: number; cy: number },
   ): { dist: number; cx: number; cy: number } {
     const invR = 1 / radius;
     const { x: qx, y: qy, z: qz, w: qw } = this.board!.quaternion;
@@ -421,8 +592,10 @@ export class BoardRenderer {
       if (p[1] > maxY) maxY = p[1];
     }
     if (minX > maxX) return { dist: 0, cx: 0, cy: 0 }; // no geometry
-    const cx = (minX + maxX) / 2;
-    const cy = (minY + maxY) / 2;
+    // Aimed at the hull box's centre — or, mid-drag, wherever the camera is
+    // already aimed, which only asks how far back it has to be from there.
+    const cx = about?.cx ?? (minX + maxX) / 2;
+    const cy = about?.cy ?? (minY + maxY) / 2;
 
     let dist = 0;
     for (let i = 0; i < hull.length; i += 3) {
@@ -434,6 +607,171 @@ export class BoardRenderer {
       if (need + p[2] > dist) dist = need + p[2];
     }
     return { dist, cx, cy };
+  }
+
+  /** Lay the solid's shadow under its **bounding sphere**, not under its
+   * silhouette. The board is scaled to the unit sphere about its own origin,
+   * and that sphere does not change as the board turns, so neither does the
+   * shadow: it sits at a fixed place in the world and moves on screen only
+   * when the camera does. Tracking the silhouette's lowest point instead made
+   * it jump every time a different corner or edge came round to the bottom.
+   * The price is a little air under a board that does not fill its sphere — a
+   * torus seen face on — which reads as the board floating, not as a fault. */
+  private placeGround(): void {
+    if (!this.effects || this.board?.view.kind !== "solid") {
+      this.ground.visible = false;
+      return;
+    }
+    this.ground.visible = true;
+    // ...but never below the bottom of the view: a board framed tight (a
+    // torus edge on) would otherwise push it off screen. The framing only
+    // changes when a drag ends or the board turns by itself, and then it
+    // glides (`stepFrame`), so this clamp never makes the shadow jump.
+    const y = Math.max(GROUND_Y, this.viewBottom + GROUND_H * 0.55);
+    this.ground.position.set(0, y, 0);
+    this.ground.scale.set(GROUND_W, GROUND_H, 1);
+  }
+
+  /** Ease the framing the camera shows toward the one the board's pose now
+   * asks for. Returns whether it is still on its way. */
+  private stepFrame(dt: number): boolean {
+    const shown = this.shownFrame;
+    const target = this.targetFrame;
+    if (!shown || !target || this.board?.view.kind !== "solid") return false;
+    const d = Math.abs(shown.dist - target.dist) + Math.abs(shown.cx - target.cx) +
+      Math.abs(shown.cy - target.cy);
+    if (d === 0) return false;
+    if (d < 1e-4) {
+      this.shownFrame = { ...target };
+    } else {
+      const k = 1 - Math.exp(-dt / FRAME_TAU);
+      this.shownFrame = {
+        cx: shown.cx + (target.cx - shown.cx) * k,
+        cy: shown.cy + (target.cy - shown.cy) * k,
+        dist: shown.dist + (target.dist - shown.dist) * k,
+      };
+    }
+    this.applyFrame(this.shownFrame);
+    this.dirty = true;
+    return this.shownFrame !== null && d >= 1e-4;
+  }
+
+  // -- effects over the board -------------------------------------------------
+
+  /** Coast a 3D board on from a throw of (vx, vy) CSS px per ms. */
+  flingBy(vx: number, vy: number): void {
+    if (!this.motion || this.board?.view.kind !== "solid") return;
+    if (Math.hypot(vx, vy) < FLING_STOP * 2) return;
+    this.fling = { vx, vy };
+    this.dirty = true;
+  }
+
+  /** The victory turn: a solid makes one slow revolution. */
+  victorySpin(): void {
+    if (!this.motion || this.board?.view.kind !== "solid") return;
+    const now = performance.now();
+    this.fling = null;
+    this.spin = { start: now + 250, done: 0 };
+    this.dirty = true;
+  }
+
+  /** Where a cell is in world space, the board's cell radius there, and the
+   * screen's own axes in world space — what every burst is laid out in. */
+  private cellWorld(cell: CellId): {
+    at: Vector3;
+    unit: number;
+    up: Vector3;
+    right: Vector3;
+    out: Vector3;
+  } | null {
+    const board = this.board;
+    if (!board) return null;
+    const anchor = board.cellAnchor(cell);
+    if (!anchor) return null;
+    board.updateWorldMatrix(true, false);
+    const at = new Vector3(...anchor.center).applyMatrix4(board.matrixWorld);
+    const unit = board.cellRadius * board.scale.x;
+    const cam = this.camera;
+    cam.updateMatrixWorld();
+    const e = cam.matrixWorld.elements;
+    const right = new Vector3(e[0], e[1], e[2]).normalize();
+    const up = new Vector3(e[4], e[5], e[6]).normalize();
+    const out = new Vector3(e[8], e[9], e[10]).normalize();
+    return { at, unit, up, right, out };
+  }
+
+  /** A flag went in (`on`) or came out on a cell: a little ring of dust. */
+  puff(cell: CellId, on: boolean): void {
+    if (!this.effects || !this.motion) return;
+    const w = this.cellWorld(cell);
+    if (!w) return;
+    this.particles.puff(w.at, w.unit, on ? PUFF_ON : PUFF_OFF, w.up, w.right);
+    this.dirty = true;
+  }
+
+  /** A mine went off on a cell. */
+  blast(cell: CellId): void {
+    if (!this.effects || !this.motion) return;
+    const w = this.cellWorld(cell);
+    if (!w) return;
+    this.particles.blast(w.at, w.unit, w.up, w.right, w.out);
+    this.dirty = true;
+  }
+
+  /** The board was cleared, last opened at `origin`. */
+  celebrate(origin: CellId): void {
+    this.victorySpin();
+    if (!this.effects || !this.motion) return;
+    const w = this.cellWorld(origin);
+    if (!w) return;
+    const { w: cw } = this.viewport();
+    const width = this.wpp * cw * 0.9;
+    // The middle of the region below the header, in world space at the
+    // board's depth.
+    const center =
+      this.camera instanceof OrthographicCamera
+        ? new Vector3(
+            this.orthoCamera.left + this.centerX * this.wpp,
+            this.orthoCamera.top - this.centerY * this.wpp,
+            0,
+          )
+        : new Vector3(this.perspCamera.position.x, this.perspCamera.position.y, 0);
+    this.particles.confetti(w.at, center, width, w.unit, CONFETTI, w.up, w.right);
+    this.dirty = true;
+  }
+
+  /** Advance the coast, the victory turn and the particles; whether any of
+   * them wants another frame. */
+  private stepEffects(now: number): boolean {
+    const dt = this.lastFrame ? Math.min(50, now - this.lastFrame) : 16;
+    this.lastFrame = now;
+    let busy = false;
+    if (this.fling) {
+      const k = Math.exp(-dt / FLING_TAU);
+      this.turn(this.fling.vx * dt, this.fling.vy * dt);
+      this.fling.vx *= k;
+      this.fling.vy *= k;
+      if (Math.hypot(this.fling.vx, this.fling.vy) < FLING_STOP) this.fling = null;
+      else busy = true;
+    }
+    if (this.spin) {
+      const p = Math.max(0, Math.min(1, (now - this.spin.start) / SPIN_MS));
+      const eased = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+      const angle = eased * Math.PI * 2;
+      const step = angle - this.spin.done;
+      this.spin.done = angle;
+      if (step !== 0) this.turn(step / ROTATE_SPEED, 0);
+      if (p >= 1) this.spin = null;
+      else busy = true;
+    }
+    if (this.stepFrame(dt)) busy = true;
+    if (this.particles.active) {
+      const down = new Vector3(0, -1, 0);
+      busy = this.particles.step(now, down) || busy;
+      this.dirty = true;
+    }
+    if (!busy) this.lastFrame = 0;
+    return busy;
   }
 
   /** Where a cell sits across the stereo field: its projected NDC x, clamped to
@@ -479,10 +817,12 @@ export class BoardRenderer {
     // Advance any in-flight board animation (reveal ripple, flag pop, lose
     // shake); while one is running keep the loop dirty so it renders every
     // frame, then fall idle again when it settles.
-    const animating = this.board?.tickAnimations(performance.now()) ?? false;
-    if (this.dirty || animating) {
+    const now = performance.now();
+    const animating = this.board?.tickAnimations(now) ?? false;
+    const effects = this.stepEffects(now);
+    if (this.dirty || animating || effects) {
       this.renderer.render(this.scene, this.camera);
-      this.dirty = animating;
+      this.dirty = animating || effects;
     }
     this.frameHandle = requestAnimationFrame(this.renderOnce);
   };
@@ -546,4 +886,23 @@ export function initialOrientation(mode: string): Quaternion {
   // everything else faces straight on
   const tilt = viewHint(mode);
   return tilt != null ? qx(tilt) : new Quaternion();
+}
+
+/** The soft shadow under a solid: a radial falloff baked once into a small
+ * canvas — dark in the middle, nothing at the rim. */
+function groundTexture(): CanvasTexture | null {
+  if (typeof document === "undefined") return null;
+  const size = 128;
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    const g = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+    g.addColorStop(0, "rgba(0,0,0,0.85)");
+    g.addColorStop(0.45, "rgba(0,0,0,0.45)");
+    g.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, size, size);
+  }
+  return new CanvasTexture(canvas);
 }

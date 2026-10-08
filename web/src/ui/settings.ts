@@ -1,3 +1,4 @@
+import { QUALITY_PREFS, type QualityPref } from "../render/quality";
 import { ACHIEVEMENTS, earned as earnedIds, loadProgress } from "../achievements";
 import {
   SOUND_CHOICES,
@@ -104,6 +105,10 @@ export interface SettingsHost {
   extraControls: boolean;
   /** Whether anonymous play counts are reported. */
   analytics: boolean;
+  /** How much the renderer may spend on look-only effects (render/quality.ts),
+   * and what `auto` comes to on this device. */
+  quality: QualityPref;
+  qualityAuto: boolean;
   setTheme(key: string): void;
   setShape(key: string): void;
   setScheme(pref: SchemePref): void;
@@ -123,6 +128,35 @@ export interface SettingsHost {
   setPins(on: boolean): void;
   setExtraControls(on: boolean): void;
   setAnalytics(on: boolean): void;
+  setQuality(pref: QualityPref): void;
+}
+
+const QUALITY_LABELS: Record<QualityPref, string> = {
+  auto: "Auto",
+  high: "High",
+  low: "Low",
+};
+
+/** Visual effects: a row that steps Auto → High → Low. Applies at once — none
+ * of it is cut into the mesh. */
+function qualityRow(host: SettingsHost): HTMLElement {
+  const value = document.createElement("span");
+  value.className = "menu-entry-value";
+  value.textContent = QUALITY_LABELS[host.quality];
+  const hint =
+    host.quality === "auto"
+      ? `Particles, shadows and reflections · ${host.qualityAuto ? "on" : "off"} on this device`
+      : host.quality === "high"
+        ? "Particles, shadows and reflections · always on"
+        : "Particles, shadows and reflections · off";
+  const next = QUALITY_PREFS[(QUALITY_PREFS.indexOf(host.quality) + 1) % QUALITY_PREFS.length]!;
+  const { li, btn } = buttonRow(
+    [textBlock("Visual effects", hint), value],
+    () => host.setQuality(next),
+    "menu-submenu",
+  );
+  btn.dataset["setting"] = "quality";
+  return li;
 }
 
 /** A 0..1 level as the percentage the slider row reports. */
@@ -354,12 +388,12 @@ export function renderThemePicker(host: SettingsHost): DocumentFragment {
   return frag;
 }
 
-/** The board shape page: Classic, Realistic, Flat. The theme picker's twin, and
+/** The board shape page: Soft, Classic, Realistic, Flat. The theme picker's twin, and
  * a page for the same reasons — a row carries a preview, and the settings row
  * above already reports which cut is on.
  *
- * Each row wears the *current theme*, so the list is three cuts of the board the
- * player already has rather than three unrelated pictures. It carries the same
+ * Each row wears the *current theme*, so the list is four cuts of the board the
+ * player already has rather than four unrelated pictures. It carries the same
  * footer as the theme page and for a stronger reason: a cut fixes the mesh's
  * vertex layout (`cellStyleLoops`), so nothing is ever re-cut in flight. */
 export function renderShapePicker(host: SettingsHost): DocumentFragment {
@@ -741,6 +775,7 @@ export function renderSettings(host: SettingsHost, pages: SettingsPages): Docume
       host.pins,
       () => host.setPins(!host.pins),
     ),
+    qualityRow(host),
   );
   frag.append(appearance);
 

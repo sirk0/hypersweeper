@@ -48,6 +48,17 @@ export interface ControlHandlers {
    * by the mouse wheel / two-finger trackpad scroll; a no-op off a board that
    * has it. */
   onScroll(id: SymmetryId, direction: number): void;
+  /** A press went down on `cell`, or (null) whatever was pressed is no longer
+   * going to be a tap on it — lifted, dragged off, turned into a pinch or a
+   * long-press flag. Drives the tile's press-down; optional. */
+  onPress?(cell: CellId | null): void;
+  /** A rotation drag let go while still moving, at (vx, vy) CSS px per ms —
+   * the board coasts on from there. Optional. */
+  onFling?(vx: number, vy: number): void;
+  /** A rotation drag has begun / ended (lifted, cancelled, or turned into a
+   * pinch). The renderer holds its framing still in between. Optional. */
+  onRotateStart?(): void;
+  onRotateEnd?(): void;
 }
 
 // Wheel/trackpad delta accumulated per ring step (a notch is ~100px).
@@ -72,6 +83,10 @@ export function attachControls(
   let panning = false;
   let longTimer = 0;
   let longFired = false;
+  // The drag's recent velocity, smoothed, for the fling at release.
+  let velX = 0;
+  let velY = 0;
+  let lastT = 0;
   // Live touch/pen/mouse points, so a second finger can be spotted. Pinch
   // state is the two-finger span and midpoint from the previous move.
   const points = new Map<number, { x: number; y: number }>();
@@ -130,6 +145,8 @@ export function attachControls(
     // A pinch is never a tap and never a rotation: cancel whatever the first
     // finger had started, and leave `moved` set so the release stays silent.
     clearLong();
+    handlers.onPress?.(null);
+    if (rotating) handlers.onRotateEnd?.();
     moved = true;
     rotating = false;
     panning = false;
@@ -155,6 +172,13 @@ export function attachControls(
     panning = false;
     longFired = false;
     downCell = handlers.pick(ndc(e.clientX, e.clientY));
+    velX = 0;
+    velY = 0;
+    lastT = e.timeStamp;
+    // A pressed tile sinks — but not under a finger, which covers the very
+    // tile it would show on (the reason a held flag drops in from above
+    // instead). There it would be frames spent on nothing anyone can see.
+    if (downCell != null && e.pointerType !== "touch") handlers.onPress?.(downCell);
     // keep receiving moves when a rotation drag leaves the canvas
     try {
       canvas.setPointerCapture?.(e.pointerId);
@@ -166,6 +190,7 @@ export function attachControls(
       longTimer = window.setTimeout(() => {
         longTimer = 0;
         longFired = true;
+        handlers.onPress?.(null);
         handlers.onLongPress(cell);
       }, handlers.holdMs());
     }
@@ -200,10 +225,21 @@ export function attachControls(
       ) {
         moved = true;
         clearLong();
-        if (handlers.rotates()) rotating = true;
+        handlers.onPress?.(null);
+        if (handlers.rotates()) {
+          rotating = true;
+          handlers.onRotateStart?.();
+        }
         else if (handlers.pans()) panning = true;
       }
-      if (rotating) handlers.onRotate(e.clientX - lastX, e.clientY - lastY);
+      if (rotating) {
+        handlers.onRotate(e.clientX - lastX, e.clientY - lastY);
+        const dt = Math.max(1, e.timeStamp - lastT);
+        // Exponentially smoothed so one jittery event does not decide the throw.
+        velX = velX * 0.6 + ((e.clientX - lastX) / dt) * 0.4;
+        velY = velY * 0.6 + ((e.clientY - lastY) / dt) * 0.4;
+        lastT = e.timeStamp;
+      }
       else if (panning) handlers.onPan(e.clientX - lastX, e.clientY - lastY);
     }
     lastX = e.clientX;
@@ -234,8 +270,12 @@ export function attachControls(
       return;
     }
     clearLong();
+    handlers.onPress?.(null);
     const wasRotating = rotating;
     const wasPanning = panning;
+    // A throw only counts if the finger was still moving when it lifted.
+    if (wasRotating) handlers.onRotateEnd?.();
+    if (wasRotating && e.timeStamp - lastT < 80) handlers.onFling?.(velX, velY);
     pressed = false;
     rotating = false;
     panning = false;
@@ -262,7 +302,9 @@ export function attachControls(
   const onCancel = (e: PointerEvent) => {
     points.delete(e.pointerId);
     clearLong();
+    handlers.onPress?.(null);
     if (points.size === 0) {
+      if (rotating) handlers.onRotateEnd?.();
       pressed = false;
       rotating = false;
       panning = false;

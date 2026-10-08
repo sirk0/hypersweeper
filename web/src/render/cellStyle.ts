@@ -180,6 +180,21 @@ export interface CellStyle {
    * have no consistent outward normal, so `SolidBoard` stands one marker on each
    * of their two faces rather than picking a side. */
   solidMarkers?: true;
+  /** Round every tile's corners off: the curve at each corner takes this
+   * share of each of its two edges (`roundCorners` in boardMesh.ts), so every
+   * shape keeps the same proportion of its edges straight and a hexagon stays
+   * as legible as a triangle. Costs three times the vertices per loop,
+   * so it is a cut's choice, not a default. A cell with no centre it can see
+   * all of (Klaassen's bent heptagon) keeps its corners. */
+  round?: number;
+  /** **Flat boards only**: a soft shadow under every closed tile, cast down
+   * the screen — what makes a tile read as a card lying on the page rather
+   * than as a patch painted on it. `offset` and `spread` are fractions of the
+   * cell's radius; an opened tile casts none. */
+  shadow?: { offset: number; spread: number; opacity: number };
+  /** **3D boards only**: the colour of the grout between the tiles, if not
+   * the default mid grey. */
+  grout?: string;
 }
 
 /** One **board shape**: everything in a `CellStyle` that is about the cut and
@@ -390,8 +405,71 @@ const REALISTIC_SHAPE: BoardShape = {
   solidMarkers: true,
 };
 
-/** The three cuts, in the order the shape picker lists them. */
+/** Soft: rounded, pillowy tiles that float on the page.
+ *
+ * The modern cut. Three things carry it, and none of them is a colour:
+ *
+ *   * **rounded corners** (`round`), which on every tiling — triangles and
+ *     rhombi included — turn a hard mosaic into a set of pieces;
+ *   * a **pillow profile** — four loops that rise quickly off the grout and
+ *     ease into a broad, nearly flat crown, so the bevel reads as a soft
+ *     shoulder under the key light rather than a chamfer; opened cells settle
+ *     into a shallow dish rather than a deep well;
+ *   * on a flat board, a **soft shadow** under each closed tile (`shadow`), so
+ *     the tiles sit *on* the page. On a solid the same job is done by the
+ *     lighter grout and the shadow the renderer lays under the whole board.
+ *
+ * Lit like Classic, with a little less payback: a quarter of the light falls
+ * on the shoulders, which carry the highlight and the shadow that say "soft". */
+const SOFT_SHAPE: BoardShape = {
+  key: "soft",
+  label: "Soft",
+  hint: "Rounded tiles that float on the page",
+  flatMine: true,
+  // 12% of each edge at either end: three-quarters of every edge is still
+  // straight, on a hexagon as on a thin Penrose rhombus.
+  round: 0.12,
+  flat: {
+    gap: 0.075,
+    closed: [
+      { inset: 0, height: 0 },
+      { inset: 0.06, height: 0.12 },
+      { inset: 0.15, height: 0.19 },
+      { inset: 0.3, height: 0.22 },
+    ],
+    open: [
+      { inset: 0, height: 0 },
+      { inset: 0.05, height: -0.045 },
+      { inset: 0.12, height: -0.06 },
+      { inset: 0.3, height: -0.065 },
+    ],
+  },
+  solid: {
+    gap: 0.065,
+    closed: [
+      { inset: 0, height: 0 },
+      { inset: 0.06, height: 0.05 },
+      { inset: 0.14, height: 0.08 },
+      { inset: 0.28, height: 0.095 },
+    ],
+    open: [
+      { inset: 0, height: 0 },
+      { inset: 0.05, height: 0.016 },
+      { inset: 0.12, height: 0.02 },
+      { inset: 0.28, height: 0.022 },
+    ],
+  },
+  material: { roughness: 0.5, metalness: 0 },
+  shade: { center: 1.05, rim: 0.84 },
+  openShade: { center: 1.0, rim: 0.95 },
+  albedo: 2.7,
+  shadow: { offset: 0.16, spread: 0.24, opacity: 0.2 },
+  grout: "#bdb9b3",
+};
+
+/** The four cuts, in the order the shape picker lists them. */
 export const BOARD_SHAPES: Record<string, BoardShape> = {
+  soft: SOFT_SHAPE,
   classic: CLASSIC_SHAPE,
   realistic: REALISTIC_SHAPE,
   flat: FLAT_SHAPE,
@@ -399,11 +477,13 @@ export const BOARD_SHAPES: Record<string, BoardShape> = {
 
 export const SHAPE_KEYS: readonly string[] = Object.keys(BOARD_SHAPES);
 
-/** The cut the app boots into. The beveled button is the one every player
- * already knows a minesweeper by, and it is the only cut whose two states are
- * told apart by *relief* rather than by colour alone — so it is the shape that
- * reads on any of the three palettes. */
-export const DEFAULT_SHAPE = "classic";
+/** The cut the app boots into: Soft. Like Classic it tells its two states
+ * apart by *relief* rather than by colour alone (a raised pillow against a
+ * shallow dish), so it reads on any of the three palettes — and its rounded
+ * corners and floating shadows are what make the board look like this decade
+ * rather than the 1990s. Classic is a tap away for anyone who wants that one;
+ * a player who already chose it keeps it, since the setting is stored. */
+export const DEFAULT_SHAPE = "soft";
 
 /** The shape key to actually use for `key` — `Object.hasOwn`, never `in`, since
  * it arrives from a stored record and `"toString"` is not a board shape. */

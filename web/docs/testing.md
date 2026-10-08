@@ -202,7 +202,12 @@ Practical knowledge for verifying changes by actually running the app
   whole session.
 - **Animations are off in the e2e suite** (`contextOptions.reducedMotion:
   "reduce"` in `playwright.config.ts`), so screenshots catch the settled
-  frame. To eyeball an animation in an ad-hoc capture, launch Chromium
+  frame. A test that turns them back on gets the **board build-in** too: a new
+  board assembles from its middle out over ~0.8 s, so wait that out before
+  shooting a "settled" baseline or racing a measurement against it. The
+  look-only effects (particles, a solid's shadow, reflections) are off under
+  SwiftShader whatever the motion setting (`quality: "auto"`); force them with
+  `window.__ms.effects(true)` to look at them. To eyeball an animation in an ad-hoc capture, launch Chromium
   *without* reduced-motion, call `window.__ms.animations(true)`, drive a
   move, then screenshot on a short `waitForTimeout` mid-flight — the reveal
   ripple/flag drop/flag pop/lose shake all settle back to the static baseline

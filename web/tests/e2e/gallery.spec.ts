@@ -124,12 +124,13 @@ const FLAT_PAGE = ":root { --bg-texture: none !important; --bg-pattern: none !im
  * baseline of the same pixels under a second name is one that can drift apart
  * from its twin, which is why `BASE_LOOK` is not repeated here. */
 const LOOKS: [string, string, string][] = [
-  ["bright", "classic", "light"],
-  ["bright", "classic", "dark"],
-  ["classic", "classic", "light"],
-  ["classic", "classic", "dark"],
+  ["bright", "soft", "light"],
+  ["bright", "soft", "dark"],
+  ["classic", "soft", "light"],
+  ["classic", "soft", "dark"],
+  ["sand", "soft", "light"],
+  ["sand", "soft", "dark"],
   ["sand", "classic", "light"],
-  ["sand", "classic", "dark"],
   ["sand", "realistic", "light"],
   ["sand", "flat", "light"],
 ];
@@ -140,6 +141,7 @@ const LOOKS: [string, string, string][] = [
  * the cut whose sheen is the loudest — in particular Classic, whose `albedo` is
  * the theme's rather than the cut's and only reads on a curved surface. */
 const SOLID_LOOKS: [string, string, string][] = [
+  ["sand", "soft", "light"],
   ["sand", "classic", "light"],
   ["sand", "realistic", "light"],
   ["sand", "flat", "light"],
@@ -234,6 +236,25 @@ test.describe("board gallery", () => {
       });
       await page.waitForTimeout(150);
       await expect(page).toHaveScreenshot(`square-revealed-${theme}-${shape}-${scheme}.png`);
+    });
+  }
+
+  // The Soft cut rounds corners off, and this is a geometry game: the shapes
+  // must stay legible. A square board shows little of that, so the hexagon
+  // board and a mixed tiling (triangles, squares and hexagons at once) are shot
+  // in it too — the boards a too-generous rounding turned into circles.
+  for (const mode of ["hexhex", "rhombitrihex"]) {
+    test(`${mode} board in soft cells`, async ({ page }) => {
+      await page.addInitScript(() => {
+        localStorage.setItem(
+          "ms:settings",
+          JSON.stringify({ version: 5, theme: "bright", shape: "soft", scheme: "light", seenHint: true }),
+        );
+      });
+      await page.goto(`/?mode=${mode}&difficulty=easy&seed=1`);
+      await expect(page.locator("body[data-ready]")).toBeVisible();
+      await page.waitForTimeout(150);
+      await expect(page).toHaveScreenshot(`board-${mode}-soft.png`);
     });
   }
 

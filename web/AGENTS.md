@@ -110,12 +110,17 @@ design rather than the rule itself.
   recess, which is what makes the two tell apart on a flat board lit
   head-on, where colour alone shades every face identically; a two-sided
   surface carries that button on *both* faces), `glyphAtlas.ts`
-  (canvas-baked digit/flag/mine texture), `clip.ts` (the renderer's face of
+  (canvas-baked digit/flag/mine texture, mipmapped), `clip.ts` (the renderer's face of
   the `SurfaceClip` — how the Klein bottle drops the sheet its own neck
   encloses, so looking into the hole shows the tube instead of a cap; the
   surface outside the neck is untouched, so the self-intersection still reads
   from every other angle), `animations.ts` (the shared
-  reveal-ripple / flag-drop / flag-pop / lose-shake / win-wave clock).
+  reveal-ripple / flag-drop / flag-pop / lose-shake / win-wave colour clock),
+  `cellMotion.ts` + `motionShader.ts` (the tiles *moving* — sinking, pressing,
+  hopping, assembling — evaluated on the CPU into a per-cell float texture the
+  vertex shader applies), `particles.ts` (puffs, blast sparks, confetti) and
+  `quality.ts` (whether those look-only effects run on this device). See
+  "Motion and effects" in [`docs/render.md`](docs/render.md).
 - `src/session.ts` — `GameSession`: Game ↔ mesh ↔ HUD.
 - `src/input/controls.ts` — pointer/touch state machine (tap, long-press,
   right-click, drag-rotate on 3D boards, pinch-zoom and drag-pan on every
@@ -220,8 +225,14 @@ design rather than the rule itself.
   fit to the board's hull points (`BoardView.hull`, collected by
   `solidBoard.ts`) under the *current* rotation — aimed at the centre of that
   rotated hull, since an immersed surface does not sit centred on the board's
-  origin — and re-fit on every drag, so the board stays framed edge to edge as
-  it turns instead of being cropped by a tighter-than-worst-case zoom. The fit
-  is clamped between the old sphere fit (never smaller than before) and
-  `MAX_SOLID_ZOOM` times closer (no fisheye on a board seen edge-on, and a
-  bound on how much the framing can change mid-drag).
+  origin — and re-fit as it turns, so the board stays framed edge to edge
+  instead of being cropped by a tighter-than-worst-case zoom. The fit is
+  clamped between the old sphere fit (never smaller than before) and
+  `MAX_SOLID_ZOOM` times closer (no fisheye on a board seen edge-on). **The
+  framing does not breathe under the player's finger:** during a rotation drag
+  (`beginDrag`/`endDrag`, from `controls.ts`) the aim and the distance are held
+  — the camera only backs off, never comes in, and only if the board would
+  otherwise be cropped — and on release it glides to the fresh fit
+  (`stepFrame`, `FRAME_TAU`). A turn the board makes on its own (a coast, the
+  victory spin, an arrow key) follows its fit the same gliding way. With motion
+  off every re-fit snaps, as it always did, which is what the e2e suite sees.

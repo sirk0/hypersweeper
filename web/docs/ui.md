@@ -357,6 +357,23 @@ has *chosen* auto or dark rather than the default. Things worth knowing:
 `tests/test_theme_sync.py` (Python) fails if a pygame palette is retuned without
 the JSON following.
 
+### Visual effects, and motion in the chrome
+
+Settings › Appearance › **Visual effects** steps Auto → High → Low
+(`settings.quality`, render/quality.ts): the particles, the shadow a solid
+stands on, reflections and the rim light. Auto is off on a software renderer
+and a two-core device, and the row says which way Auto came out. Nothing in it
+is cut into the mesh, so it lands on the board already on screen.
+
+The chrome moves too, all of it under the player's *motion* setting, which
+`App.syncMotion` mirrors onto `<html data-motion="on|off">` so the stylesheet
+can obey the Animations override as well as the OS preference: buttons give
+under the finger, a menu page rises in row by row when it is **navigated to**
+(`Menu.go` → `riseIn`; a page repainted for a toggle on it stays put), the mine
+counter ticks when it changes, and the smiley bounces on a win (both counters
+glow once in the accent) or shakes its head on a loss. The e2e suite runs with
+reduced motion, so none of it reaches a baseline.
+
 ### The page follows the board's tiling
 
 Behind the grain, a theme's page carries **the board's own tiling**, drawn very
