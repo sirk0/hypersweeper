@@ -55,6 +55,16 @@ of measured boards per mode × difficulty. Re-run it after `calibrate`/`apply` w
 aperiodic preset changes shape — and note that `calibrate` itself measures the
 centred window throughout, which is what `build_board`'s default seed gives it.
 
+That makes the centred window the yardstick, so **it has to be a typical
+window**, and nothing in the size search can see whether it is. Run `windows.py`
+on a new substitution board and read the kept counts: a handful kept out of 96
+means the centred window is an outlier, not that the board is. The
+kite-and-dart hard board was one — at 480 tiles the solver won 0.55 of its
+centred games against a median window's 0.42, and 3 windows of 96 played like
+it. Measured across the size band, its centred window is typical at 450 (0.41
+against 0.43), so that row is held there by `PINNED_ROWS` in
+`scripts/difficulty/resize.py`, with the reason, and deals 40 windows.
+
 ## Measuring the size and the mine count
 
 **Do not invent either.** Both are measured, by `scripts/difficulty/`, and a

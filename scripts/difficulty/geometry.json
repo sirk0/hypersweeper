@@ -8473,21 +8473,18 @@
       "hard": {
         "args": [
           6,
-          48,
+          77,
           769.119,
-          480
+          450
         ],
-        "cells": 480,
-        "score": 0.0,
-        "distortionMean": 1.373,
-        "distortionP90": 1.8017,
-        "indistinguishable": 0,
-        "patch": 1855
+        "cells": 450,
+        "fixed": true,
+        "reason": "the centred window plays like a typical one at 450"
       },
       "medium": {
         "args": [
           6,
-          17,
+          29,
           500.0,
           256
         ],

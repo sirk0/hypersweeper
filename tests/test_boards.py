@@ -620,7 +620,7 @@ class TestAperiodicVariants:
         ("penrose hard", penrose_board, (7, 48, 769.119, 480), 480),
         ("kitedart easy", kitedart_board, (4, 6, 270.53, 81), 81),
         ("kitedart medium", kitedart_board, (6, 29, 500.0, 256), 256),
-        ("kitedart hard", kitedart_board, (6, 82, 769.119, 480), 480),
+        ("kitedart hard", kitedart_board, (6, 73, 769.119, 450), 450),
         ("spectre easy", spectre_board, (3, 11, 81, 14.361), 81),
         ("spectre medium", spectre_board, (4, 37, 256, 9.437), 256),
         ("spectre hard", spectre_board, (4, 89, 480, 8.512), 480),
