@@ -47,6 +47,10 @@ const MODES = [
   // square patch, and the Spectre (a non-convex 13-gon, the chiral monotile
   // -- no tile in its patch is ever mirrored).
   "penrose",
+  // and Penrose's other pair, kites and darts: the same Robinson triangles
+  // paired along a leg, so the one aperiodic board with a concave tile whose
+  // number is not centred on its vertex mean (see the revealed shot below).
+  "kitedart",
   "spectre",
   // and the phyllotactic spiral: one equilateral hexagon in five arms, whose
   // five-fold rotational symmetry is what forbids a translation.
@@ -203,6 +207,33 @@ test.describe("board gallery", () => {
     // The game ends in a loss, which freezes the timer at 0s (reads 000), so
     // the shot is deterministic without masking.
     await expect(page).toHaveScreenshot("square-revealed.png");
+  });
+
+  // A dart's vertex mean sits a hair from its reflex corner, so a number centred
+  // there came out a quarter of the size the tile holds. The board anchors each
+  // glyph in the biggest circle the tile holds instead (`kiteDartGlyphAnchor`),
+  // and this pins it: 17 darts carry a number here, in the default Soft cut,
+  // and every one has to sit inside its arrowhead at a readable size. Mines
+  // picked so the flood from the centre stops on darts; the last reveal
+  // detonates one, which freezes the timer at 000.
+  test("revealed kite-and-dart: the numbers fit inside the darts", async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem(
+        "ms:settings",
+        JSON.stringify({ version: 5, theme: "bright", shape: "soft", scheme: "light", seenHint: true }),
+      );
+    });
+    await page.goto("/");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    await page.evaluate(() => {
+      const ms = window.__ms!;
+      const mines = ["0,26", "0,36", "0,50", "0,54", "0,129", "0,182", "0,209", "0,223", "1,222"];
+      ms.startBoard("kitedart", "easy", { mines });
+      ms.reveal("0,130"); // the centre: floods out to the numbered rim
+      ms.reveal("0,26");
+    });
+    await page.waitForTimeout(150);
+    await expect(page).toHaveScreenshot("kitedart-revealed.png");
   });
 
   // The same fixture in each look, so they are directly comparable with

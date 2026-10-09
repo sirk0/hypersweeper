@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 from collections import Counter, defaultdict, deque
+from dataclasses import replace
 
 from minesweeper.boards.core import Board, Cell, _finalize_flat
 
@@ -63,20 +64,20 @@ def _z_to_xy(p: ZPoint) -> tuple[float, float]:
 
 # -- windowing an aperiodic patch --------------------------------------------
 #
-# What makes a tiling aperiodic is that it repeats nowhere, and both boards
-# below grow far more of one than they keep: the Penrose wheel is 430 rhombi
-# where the easy board is 81, and the Spectre cluster 4401 tiles where the hard
-# board is 480. The centred trim is one window onto that patch. Every other
-# window onto it is a board of the same size made of tiles that have never sat
-# together before -- which is what a Penrose or a Spectre board's ``variant``
-# is: not a re-generated tiling, but somewhere else to look at the one the
-# substitution already built.
+# What makes a tiling aperiodic is that it repeats nowhere, and the three
+# substitution boards below grow far more of one than they keep: the Penrose
+# wheel is 430 rhombi where the easy board is 81, and the Spectre cluster 4401
+# tiles where the hard board is 480. The centred trim is one window onto that
+# patch. Every other window onto it is a board of the same size made of tiles
+# that have never sat together before -- which is what a Penrose or a Spectre
+# board's ``variant`` is: not a re-generated tiling, but somewhere else to look
+# at the one the substitution already built.
 #
-# The two boards below this file's other nonperiodic ones do not take a
-# variant, and deliberately: the phyllotactic spiral and the brick rings are
-# nonperiodic by *symmetry* rather than by substitution, so each has one
-# distinguished centre (the five-fold rosette, the 2x2 core) and a window
-# anywhere else is a crop of a structured picture rather than another board.
+# This file's other nonperiodic boards do not take a variant, and
+# deliberately: the phyllotactic spiral and the brick rings are nonperiodic by
+# *symmetry* rather than by substitution, so each has one distinguished centre
+# (the five-fold rosette, the 2x2 core) and a window anywhere else is a crop of
+# a structured picture rather than another board.
 #
 # A window is *picked*, not sampled: ``variant`` indexes a pool of candidate
 # centre tiles built the same way here and in the TypeScript port, so the same
@@ -364,6 +365,149 @@ def penrose_board(
     cells = {rows[i][0]: rows[i][1] for i in kept}
 
     return _finalize_flat("penrose", cells, _z_to_xy, mine_count, scale)
+
+
+# -- Penrose kites and darts (P2) --------------------------------------------
+#
+# The same Robinson triangles as the rhombi above, in the same ring, and the
+# same two shapes of them -- the acute 36-72-72 and the obtuse 108-36-36 --
+# but paired along a *leg* instead of the base. Two acute halves glued along
+# a leg are a kite (72, 72, 72, 144); two obtuse halves glued along a leg are
+# a dart (72, 36, 216, 36). Every triangle carries which leg that is, as
+# (color, apex, side, axis): the half-tile's two legs run from ``apex`` to
+# ``side`` and from ``apex`` to ``axis``, and its mirror partner shares the
+# second. For a half-kite the apex is the kite's 72-degree tip and the axis
+# ends at its 144-degree tail; for a half-dart the apex is the dart's reflex
+# corner and the axis ends at its tip.
+#
+# The substitution is not the rhombi's. Deflating by phi, a half-kite becomes
+# one whole kite (two half-kites tip to the old side corner) and one
+# half-dart lying along its long edge; a half-dart becomes one half-kite and
+# one half-dart. The two half-darts a whole kite contributes straddle its long
+# edges, and pair with the neighbours' across them. Pairing the rhombi's own
+# triangles along a leg instead looks almost right and is not: the darts come
+# out phi times the size of the kites, and the kites the rarer tile, which no
+# kite-and-dart tiling is (kites outnumber darts by phi). TestKiteDart pins
+# both the shapes and the ratio.
+#
+# The new points sit at 1/phi and 1/phi**2 of the way along an edge, so the
+# arithmetic is still only addition, subtraction and division by phi, and
+# the vertex ids stay exact.
+
+
+def _kitedart_triangles(subdivisions: int) -> list[tuple[int, ZPoint, ZPoint, ZPoint]]:
+    """The Robinson half-tiles of the kite-and-dart sun, deflated.
+
+    The seed is the *sun*: five kites with their tips at the origin, ten
+    half-kites of a unit wheel, alternate ones mirrored so that neighbours
+    share the leg between them. Color 0 is a half-kite, 1 a half-dart.
+    """
+    zero = (0, 0, 0, 0)
+    powers = [(1, 0, 0, 0)]
+    for _ in range(10):
+        powers.append(_zeta_mul(powers[-1]))
+
+    triangles = []
+    for i in range(10):
+        side, axis = powers[i], powers[i + 1]
+        if i % 2:
+            side, axis = powers[i + 1], powers[i]
+        triangles.append((0, zero, side, axis))
+
+    def toward(p: ZPoint, q: ZPoint, steps: int) -> ZPoint:
+        """The point 1/phi**steps of the way from p to q."""
+        d = _z_sub(q, p)
+        for _ in range(steps):
+            d = _z_div_phi(d)
+        return _z_add(p, d)
+
+    for _ in range(subdivisions):
+        deflated = []
+        for color, a, b, c in triangles:
+            if color == 0:  # half-kite: tip a, side corner b, tail c
+                d = toward(a, b, 2)
+                x = toward(a, c, 1)
+                deflated += [(1, d, x, a), (0, b, d, x), (0, b, c, x)]
+            else:  # half-dart: reflex corner a, side corner b, tip c
+                y = toward(b, c, 2)
+                deflated += [(1, y, a, b), (0, c, y, a)]
+        triangles = deflated
+    return triangles
+
+
+def kitedart_board(
+    subdivisions: int,
+    mine_count: int,
+    scale: float = 300,
+    keep: int | None = None,
+    variant: int = 0,
+) -> Board:
+    """An aperiodic Penrose tiling (P2): kites and darts.
+
+    Starts from the five-kite sun and deflates ``subdivisions`` times; each
+    half-tile is then merged with its mirror image across their shared leg
+    (unpaired halves on the outer rim are dropped). ``scale`` is the sun's
+    radius in pixels. ``keep`` and ``variant`` trim the patch to a board
+    exactly as they do for ``penrose_board``: ``keep`` tiles nearest a
+    centre, variant 0 being the centred block with the sun in the middle of
+    it. See ``_window``.
+    """
+    waiting: dict = {}
+    cells: dict[Cell, list[ZPoint]] = {}
+    for color, apex, side, axis in _kitedart_triangles(subdivisions):
+        key = (color, *sorted((apex, axis)))
+        if key in waiting:
+            # apex, side, axis-end, mirrored side: the tile's outline in order
+            cells[(color, len(cells))] = [apex, side, axis, waiting.pop(key)]
+        else:
+            waiting[key] = side
+
+    rows = list(cells.items())
+    centroids = [(sum(_z_to_xy(k)[0] for k in quad) / 4,
+                  sum(_z_to_xy(k)[1] for k in quad) / 4)
+                 for _, quad in rows]
+    kept = _window(cells=[quad for _, quad in rows],
+                   centroids=centroids,
+                   tiebreaks=[cell for cell, _ in rows],
+                   keep=keep,
+                   variant=variant)
+    cells = {rows[i][0]: rows[i][1] for i in kept}
+
+    board = _finalize_flat("kitedart", cells, _z_to_xy, mine_count, scale)
+    return replace(board, glyph_anchors={
+        cell: _kitedart_glyph_anchor(cell[0], polygon)
+        for cell, polygon in board.polygons.items()
+    })
+
+
+def _kitedart_glyph_anchor(
+    color: int, polygon: list[tuple[float, float]]
+) -> tuple[float, float]:
+    """The centre of the biggest circle a kite or a dart holds.
+
+    A dart's vertex mean sits a hair from its reflex corner -- under a tenth
+    of the way down its axis from it -- so a number centred there is drawn a
+    quarter of the size the tile has room for, pinched between the two short
+    edges. Both tiles are symmetric about their axis, and the biggest circle
+    is centred on it, a fraction ``t`` of the way down the axis from the tip:
+
+    * a kite is tangential: its incircle touches all four edges, at
+      ``t = 1/phi`` (x sin 36 = (phi - x) sin 72 with the axis phi long) --
+      only a nudge tailwards of its mean;
+    * a dart's circle touches its two long edges and the reflex corner itself
+      (the short edges' nearest points to the axis lie past that corner, off
+      the edges), so x sin 36 = 1 - x with the axis 1 long, and
+      ``t = 1 / (1 + sin 36)`` -- the middle of the arrowhead.
+
+    The polygon is (apex, side, axis end, side): the tip is the apex of a kite
+    and the axis end of a dart. A float, not a vertex id: nothing is ever
+    keyed by it.
+    """
+    if color == 0:
+        tip, end, t = polygon[0], polygon[2], 2 / (1 + math.sqrt(5))
+    else:
+        tip, end, t = polygon[2], polygon[0], 1 / (1 + math.sin(math.pi / 5))
+    return (tip[0] + (end[0] - tip[0]) * t, tip[1] + (end[1] - tip[1]) * t)
 
 
 # -- Phyllotactic spiral -----------------------------------------------------

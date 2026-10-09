@@ -481,7 +481,12 @@ These are one-offs, not tiling×surface products.
    `core._finalize_flat`; lattice builders through `core._build`; 3D
    builders assemble `cells` + `positions` and pick an orientation
    helper (`solids._convex_board3d` for convex solids, the polycube
-   assemblers, or `surfaces._assemble`).
+   assemblers, or `surfaces._assemble`). A flat tile whose vertex mean
+   crowds a reflex corner (the Penrose dart's sits a tenth of the way down
+   its axis from it) should say where its number goes instead: return the
+   board with `glyph_anchors` (Python) / `glyphAnchor` (TypeScript), in the
+   board's own pixel space, as `kitedart_board` does — both front-ends
+   centre and size the glyph there.
 2. Add the mode to the right menu table in `data/catalog.json` — one
    `menu.solidGroups[*].modes` (Sphere, Platonic solids, Catalan solids or
    Polyhedra), `menu.aperiodic`, or `menu.shapedModes` (keyed by the regular

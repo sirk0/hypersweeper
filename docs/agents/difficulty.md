@@ -28,7 +28,7 @@ onto itself under the tiling's point group; where the tiling declares a
 **grain**, the window is snapped onto it first, so those knobs move the
 board a whole course at a time and the size search sees the count it
 actually gets); for the aperiodic ones built by
-substitution or by wedge (`penrose_board`, `spectre_board`,
+substitution or by wedge (`penrose_board`, `kitedart_board`, `spectre_board`,
 `phyllotaxis_board`) grow generously and trim
 to the `keep` centremost cells by Chebyshev distance (`max(|dx|, |dy|)`)
 — generously enough that `keep` is a small fraction of the patch, or the
@@ -37,7 +37,7 @@ rings need neither: the rings build the whole board, so their count is
 both the size knob and the window. See
 the `AGENT NOTE` in `boards/tilings.py`.
 
-The two substitution boards trim to that `keep` from a **variable** centre —
+The three substitution boards trim to that `keep` from a **variable** centre —
 one preset is a family of boards, one per window onto the grown patch (see
 "The aperiodic boards" in [`geometry.md`](geometry.md)) — and **the mine count
 does not carry from one window to the next by itself**. A patch of an aperiodic
@@ -54,6 +54,16 @@ each board's candidates land — 28 to 79 of the 96 measured — which leaves do
 of measured boards per mode × difficulty. Re-run it after `calibrate`/`apply` whenever an
 aperiodic preset changes shape — and note that `calibrate` itself measures the
 centred window throughout, which is what `build_board`'s default seed gives it.
+
+That makes the centred window the yardstick, so **it has to be a typical
+window**, and nothing in the size search can see whether it is. Run `windows.py`
+on a new substitution board and read the kept counts: a handful kept out of 96
+means the centred window is an outlier, not that the board is. The
+kite-and-dart hard board was one — at 480 tiles the solver won 0.55 of its
+centred games against a median window's 0.42, and 3 windows of 96 played like
+it. Measured across the size band, its centred window is typical at 450 (0.41
+against 0.43), so that row is held there by `PINNED_ROWS` in
+`scripts/difficulty/resize.py`, with the reason, and deals 40 windows.
 
 ## Measuring the size and the mine count
 

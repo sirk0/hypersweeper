@@ -164,6 +164,7 @@ SPEC: dict[str, dict] = {
     "disdyakis_triacontahedron_board": dict(size=(1,), mine=0, shape=None, rigid=True),
     # aperiodic: ``keep`` is exact, the growth arg only has to be generous
     "penrose_board": dict(size=(3,), mine=1, shape=2, kind="scale", grow=0),
+    "kitedart_board": dict(size=(3,), mine=1, shape=2, kind="scale", grow=0),
     "spectre_board": dict(size=(2,), mine=1, shape=3, kind="scale", grow=0),
     "phyllotaxis_board": dict(size=(2,), mine=1, shape=3, kind="scale", grow=0),
     "klaassen_board": dict(size=(2,), mine=1, shape=3, kind="scale", grow=0),
@@ -514,6 +515,20 @@ MAX_WINDOW_ASPECT = 15.0
 # so it is never reshaped. It is also the one flat board that is deliberately
 # not square -- 30x16 is what Minesweeper's expert board has always been.
 PINNED = {"square"}
+
+# Single rows whose size is decided by something this search cannot see, with
+# the reason -- kept as they ship, like PINNED, but for one difficulty only.
+#
+# A substitution board deals many windows onto its patch, and only those that
+# play like the centred one (scripts/difficulty/windows.py) -- so the centred
+# window has to be a *typical* one, and nothing here measures that. On the
+# kite-and-dart hard board at 480 tiles it is not: the solver wins 0.55 of its
+# games where the median window gives 0.42 (2.6 standard deviations out), and
+# 3 windows of 96 played like it. Measured across the band, the centred window
+# is typical at 450 tiles (0.41 against a median of 0.43), so that is the size.
+PINNED_ROWS = {
+    ("kitedart", "hard"): "the centred window plays like a typical one at 450",
+}
 
 
 def _defaults(builder: str) -> list:
@@ -1136,6 +1151,9 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
     if mode in PINNED:
         return dict(args=list(args), cells=len(probe.adjacency), fixed=True,
                     reason="the reference board")
+    if (mode, difficulty) in PINNED_ROWS:
+        return dict(args=list(args), cells=len(probe.adjacency), fixed=True,
+                    reason=PINNED_ROWS[mode, difficulty])
 
     if not spec["size"]:
         return dict(args=list(args), cells=len(probe.adjacency), fixed=True,

@@ -62,7 +62,9 @@ export interface BoardFacts {
  * equal sides — and keeping them apart is what lets a brick bond say "rectangles"
  * rather than the useless "quadrilaterals". `isosceles` and `kite` are the two
  * further shapes the catalogue is full of and English has a word for: half the
- * Laves triangles are isosceles, and a deltoidal solid is made of kites.
+ * Laves triangles are isosceles, and a deltoidal solid is made of kites. A kite
+ * bent in on itself — one reflex corner — is a `dart`, which is what Penrose
+ * called the second of his two tiles.
  *
  * Angles are measured unsigned (as `shapeMetrics` measures them), so a reflex
  * corner reads as its complement — which is why nothing here claims a polygon
@@ -77,6 +79,8 @@ interface ShapeKind {
   isosceles: boolean;
   /** Two pairs of *adjacent* equal sides — a kite, and not a rhombus. */
   kite: boolean;
+  /** A kite with a reflex corner: an arrowhead. */
+  dart: boolean;
 }
 
 /** How far from equal two sides (relatively) or two angles (in radians) may be
@@ -121,7 +125,7 @@ export function shapeName(kind: ShapeKind, plural: boolean): string {
     if (regular) base = "square";
     else if (equalAngles) base = "rectangle";
     else if (equalSides) base = "rhombus";
-    else if (kite) base = "kite";
+    else if (kite) base = kind.dart ? "dart" : "kite";
     else base = "quadrilateral";
   } else {
     const qualifier = regular ? "regular" : equalSides ? "equilateral" : "irregular";
@@ -144,11 +148,12 @@ const distance = (a: readonly number[], b: readonly number[]): number =>
 function kindOf(polygon: readonly (readonly number[])[], mask?: readonly boolean[]): ShapeKind {
   const poly = corners(polygon, mask);
   const n = poly.length;
-  const plain = { equalSides: true, equalAngles: true, isosceles: false, kite: false };
+  const plain = { equalSides: true, equalAngles: true, isosceles: false, kite: false, dart: false };
   if (n < 3) return { sides: n, ...plain };
   const lengths: number[] = [];
   let minAngle = Infinity;
   let maxAngle = 0;
+  let angleSum = 0;
   for (let i = 0; i < n; i++) {
     const prev = poly[(i + n - 1) % n]!;
     const cur = poly[i]!;
@@ -162,10 +167,16 @@ function kindOf(polygon: readonly (readonly number[])[], mask?: readonly boolean
     const angle = Math.acos(Math.min(1, Math.max(-1, dot / (back * side))));
     minAngle = Math.min(minAngle, angle);
     maxAngle = Math.max(maxAngle, angle);
+    angleSum += angle;
   }
   const longest = Math.max(...lengths);
   const same = (a: number, b: number): boolean => Math.abs(a - b) <= EQUAL_SIDES * longest;
   const equalSides = longest - Math.min(...lengths) <= EQUAL_SIDES * longest;
+  const kite =
+    n === 4 &&
+    !equalSides &&
+    ((same(lengths[0]!, lengths[1]!) && same(lengths[2]!, lengths[3]!)) ||
+      (same(lengths[1]!, lengths[2]!) && same(lengths[3]!, lengths[0]!)));
   return {
     sides: n,
     equalSides,
@@ -178,11 +189,11 @@ function kindOf(polygon: readonly (readonly number[])[], mask?: readonly boolean
         same(lengths[2]!, lengths[0]!)),
     // A kite's equal sides are adjacent, which is what separates it from a
     // parallelogram's two pairs of opposite ones.
-    kite:
-      n === 4 &&
-      !equalSides &&
-      ((same(lengths[0]!, lengths[1]!) && same(lengths[2]!, lengths[3]!)) ||
-        (same(lengths[1]!, lengths[2]!) && same(lengths[3]!, lengths[0]!))),
+    kite,
+    // The angles are unsigned, so a reflex corner reads as its complement and
+    // a concave quadrilateral's come to less than the 360° a convex one's do
+    // (a Penrose dart's: 72 + 36 + 144 + 36 = 288).
+    dart: kite && angleSum < 2 * Math.PI - EQUAL_ANGLES,
   };
 }
 
@@ -234,14 +245,15 @@ function sameKind(a: ShapeKind | null | undefined, b: ShapeKind): boolean {
     a.equalSides === b.equalSides &&
     a.equalAngles === b.equalAngles &&
     a.isosceles === b.isosceles &&
-    a.kite === b.kite
+    a.kite === b.kite &&
+    a.dart === b.dart
   );
 }
 
 /** The fallback when a class's tiles do not agree on what they are: the shape
  * claims nothing beyond its side count. */
 function anyShape(sides: number): ShapeKind {
-  return { sides, equalSides: false, equalAngles: false, isosceles: false, kite: false };
+  return { sides, equalSides: false, equalAngles: false, isosceles: false, kite: false, dart: false };
 }
 
 /** A regular tiling's tile is the regular polygon it is named for. */
@@ -305,7 +317,14 @@ export function shapeFacts(mode: string, board: AnyBoard): ShapeFact[] {
   const kindOfGroup = (group: ShapeGroup): ShapeKind => {
     const sides = group.tone.sides;
     if (regular) {
-      return { sides, equalSides: true, equalAngles: true, isosceles: false, kite: false };
+      return {
+        sides,
+        equalSides: true,
+        equalAngles: true,
+        isosceles: false,
+        kite: false,
+        dart: false,
+      };
     }
     if (kinds) return kinds.get(sides) ?? anyShape(sides);
     return measuredKind(group, board, masks);

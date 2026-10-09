@@ -440,6 +440,29 @@ export const DOMAINS: Record<string, () => Domain> = {
     }
     return { width: 1, height: y, cells };
   },
+
+  // A kite and a dart glued along both short edges make Penrose's fat rhomb
+  // (72°): the kite's tip in one acute corner, the dart's in the other, the
+  // kite's tail in the dart's reflex corner, 1/φ of the way down the long
+  // diagonal. That is the one pairing the matching rules exist to forbid, and
+  // so the plainest periodic tiling the two make — courses of those rhombs,
+  // leaning alternately 72° and 108°, so each pair of courses comes back
+  // exactly over itself.
+  kitedart: () => {
+    const PHI = (1 + Math.sqrt(5)) / 2;
+    const rise = Math.sin((72 * Math.PI) / 180);
+    const cells: Vertex[][] = [];
+    [72, 108].forEach((deg, row) => {
+      const [dx, dy] = [Math.cos((deg * Math.PI) / 180), Math.sin((deg * Math.PI) / 180)];
+      const a: Vertex = [row ? Math.cos((72 * Math.PI) / 180) : 0, row * rise];
+      const b: Vertex = [a[0] + 1, a[1]];
+      const c: Vertex = [a[0] + 1 + dx, a[1] + dy];
+      const d: Vertex = [a[0] + dx, a[1] + dy];
+      const tail: Vertex = [a[0] + (1 + dx) / PHI, a[1] + dy / PHI];
+      cells.push([a, b, tail, d], [b, c, d, tail]);
+    });
+    return { width: 1, height: 2 * rise, cells };
+  },
 };
 
 /** The Spectre's page: the tiling its own tile is a *shape of*.
