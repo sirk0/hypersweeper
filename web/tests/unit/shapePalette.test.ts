@@ -127,9 +127,10 @@ describe("per-board shape classing", () => {
     }
   });
 
-  it("only ever gives one side count two colours on Penrose", () => {
-    // Penrose is the one board in the catalog whose tiles genuinely share a
-    // side count. Anywhere else, two colours for one side count means the
+  it("only ever gives one side count two colours on Penrose and Ammann–Beenker", () => {
+    // Penrose (thick and thin rhombi) and Ammann–Beenker (squares and 45°
+    // rhombi) are the boards in the catalog whose tiles genuinely share a side
+    // count. Anywhere else, two colours for one side count means the
     // classer has mistaken a surface's distortion for a second tile shape —
     // which is what a torus of triangles, and 20 other wraps, used to do.
     const offenders: string[] = [];
@@ -144,7 +145,7 @@ describe("per-board shape classing", () => {
         if (seen.size > 1) offenders.push(`${mode} ${sides}gon x${seen.size}`);
       }
     }
-    expect(offenders).toEqual(["penrose 4gon x2"]);
+    expect(offenders).toEqual(["ammannbeenker 4gon x2", "penrose 4gon x2"]);
   });
 
   it("does not split a tiling the projection stretched into two shapes", () => {

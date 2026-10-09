@@ -1205,6 +1205,23 @@ def _render_icon(key: str) -> pygame.Surface:
             ]
             _icon_shape(s, points, width=4)
         _icon_gloss(s, pygame.Rect(d * 0.08, d * 0.06, d * 0.84, d * 0.6))
+    elif key == "ammannbeenker":
+        # the tiling's eight-fold centre: the star of eight 45-degree rhombi,
+        # and the eight squares its 90-degree notches hold
+        side = d * 0.46 / (1 + math.sqrt(2))
+        u = [(math.cos(math.radians(45 * k - 90)), math.sin(math.radians(45 * k - 90)))
+             for k in range(10)]
+
+        def at(*steps):
+            return (c + side * sum(u[k][0] for k in steps),
+                    c + side * sum(u[k][1] for k in steps))
+
+        for k in range(8):
+            _icon_shape(s, [at(), at(k), at(k, k + 1), at(k + 1)],
+                        fill=ICON_BLUE_LIGHT, width=3)
+            _icon_shape(s, [at(k + 1), at(k, k + 1), at(k, k + 1, k + 2), at(k + 1, k + 2)],
+                        fill=ICON_BLUE, width=3)
+        _icon_gloss(s, pygame.Rect(d * 0.06, d * 0.06, d * 0.88, d * 0.6))
     elif key == "spectre":
         # the Spectre's menu icon keeps the nicer silhouette of its removed
         # sibling "The Hat" (the two aperiodic monotiles share a family
@@ -1809,7 +1826,7 @@ class BaseGameScreen:
     def new_game(self, difficulty: str | None = None) -> None:
         if difficulty is not None:
             self.difficulty = difficulty
-        # A fresh patch as well as a fresh layout: the two aperiodic
+        # A fresh patch as well as a fresh layout: the aperiodic
         # substitution boards keep only a window onto the tiling they grow, so
         # every game of one is played somewhere else in it (boards/aperiodic.py
         # ``_window``). Every other mode builds the same board regardless.

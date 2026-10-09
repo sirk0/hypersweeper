@@ -730,8 +730,9 @@ Three things that are easy to get wrong when touching this:
   congruent to itself and different from the next, so the measurement cannot
   carry that decision there — a torus of triangles reads as several triangle
   shapes when it has one. No 3D board in the catalog has two tiles with the
-  same number of sides; the one board that does is flat Penrose, and a unit
-  test sweeps the whole catalog to keep it the only one. The size axis is
+  same number of sides; the boards that do are flat Penrose (thick and thin
+  rhombi) and Ammann–Beenker (squares and 45° rhombi), and a unit test sweeps
+  the whole catalog to keep them the only ones. The size axis is
   gated the same way, and for the same reason.
 - **A collinear vertex is not a corner.** A tile of a non-edge-to-edge tiling
   carries the corners of the neighbours whose edge it splits, so a running-bond

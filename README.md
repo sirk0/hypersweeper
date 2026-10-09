@@ -40,7 +40,8 @@ Pick a surface, then a tiling:
   the five brick bonds — stacked bond, running bond, basket weave, the same
   weave three bricks at a time, and herringbone — where all the interest is
   in how the courses are staggered. Several tilings have no translation at
-  all: a Penrose mosaic (P3 rhombi), "the spectre" (Tile(1,1)), the *chiral*
+  all: a Penrose mosaic (P3 rhombi), the eight-fold Ammann–Beenker tiling
+  of squares and 45° rhombi, "the spectre" (Tile(1,1)), the *chiral*
   monotile whose tiling uses rotations only and never mirrors a tile, a
   phyllotactic spiral of one equilateral hexagon in five arms, and Klaassen's
   spirals of one convex pentagon, in five, six and seven arms. Five more are

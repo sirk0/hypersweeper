@@ -4,6 +4,7 @@
 import presetsData from "@data/presets.json";
 import windowsData from "@data/windows.json";
 import {
+  ammannBeenkerBoard,
   brickRingsBoard,
   penroseBoard,
   spectreBoard,
@@ -160,6 +161,7 @@ const BUILDERS: Record<string, Builder> = {
   arch_mobius_board: archMobiusBoard,
   arch_klein_board: archKleinBoard,
   penrose_board: penroseBoard,
+  ammann_beenker_board: ammannBeenkerBoard,
   spectre_board: spectreBoard,
   phyllotaxis_board: phyllotaxisBoard,
   klaassen_board: klaassenBoard,
@@ -174,7 +176,7 @@ const BUILDERS: Record<string, Builder> = {
   gosper_board: gosperBoard,
 };
 
-/** The two builders that take a `variant` after their preset args: the
+/** The builders that take a `variant` after their preset args: the
  * substitution tilings, which grow far more of a patch than a board keeps, so
  * one preset is a whole family of boards rather than a single one (see
  * `windowRows` in boards/aperiodic.ts). Every other builder ignores the
@@ -182,7 +184,7 @@ const BUILDERS: Record<string, Builder> = {
  * — are left out on purpose: each has one distinguished centre and no second
  * window onto it. Must match `_VARIANT_BUILDERS` in
  * minesweeper/boards/presets.py. */
-const VARIANT_BUILDERS = new Set(["penrose_board", "spectre_board"]);
+const VARIANT_BUILDERS = new Set(["penrose_board", "ammann_beenker_board", "spectre_board"]);
 
 interface PresetSpec {
   builder: string;
@@ -230,7 +232,7 @@ export function windowFor(mode: string, difficulty: string, seed: number): numbe
 /**
  * The board a mode and difficulty name, as dealt for one game `seed`.
  *
- * The seed only ever means more than one board for the two aperiodic
+ * The seed only ever means more than one board for the aperiodic
  * substitution tilings, where it picks which measured window onto the grown
  * patch the game is played on (`windowFor`, then `windowRows` in
  * boards/aperiodic.ts); every other mode builds the same board whatever it is

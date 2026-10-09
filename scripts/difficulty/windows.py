@@ -1,7 +1,7 @@
 """Keep the windows onto an aperiodic patch that play like the calibrated board.
 
-The two substitution boards -- Penrose and the Spectre -- are a family rather
-than one board: ``variant`` picks which window onto the grown patch a game is
+The substitution boards -- Penrose, Ammann-Beenker and the Spectre -- are a
+family rather than one board: ``variant`` picks which window onto the grown patch a game is
 played on (``minesweeper/boards/aperiodic.py`` ``_window``), so a finished game
 followed by another is played somewhere else in the same tiling.
 
@@ -22,9 +22,10 @@ and both front-ends deal from it, so every board a player sees has been
 measured. The centred window is always first in the list, so the patch this
 game shipped with stays one of the boards dealt.
 
-Sizing: ``CANDIDATES`` windows are measured per board, and between a third and
-four-fifths of them land (28 to 79 of 96, measured) -- dozens of boards per mode
-x difficulty, far more than a player will exhaust, and cheap enough to re-run
+Sizing: ``CANDIDATES`` windows are measured per board, and between an eighth
+and four-fifths of them land (13 to 79 of 96, measured; the low end is
+Ammann-Beenker hard) -- at least a dozen boards per mode x difficulty and
+usually dozens, more than a player will exhaust, and cheap enough to re-run
 when a preset changes: the whole sweep is about 25 minutes on four cores. Rows
 are appended to a JSONL as they land, so a re-run reuses what is already
 measured (``--redo`` drops it instead).

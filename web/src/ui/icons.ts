@@ -31,6 +31,7 @@ import {
   SUBSTITUTIONS,
 } from "../boards/fractal";
 import {
+  ammannBeenkerBoard,
   brickRingsBoard,
   brickRingsTiles,
   klaassenBoard,
@@ -1383,6 +1384,24 @@ function draw(rawKey: string): string[] {
         ]),
       );
     }
+  } else if (key === "ammannbeenker") {
+    // the tiling's eight-fold centre: the star of eight 45° rhombi, and the
+    // eight squares its 90° notches hold
+    const side = (d * 0.46) / (1 + Math.SQRT2);
+    const u: P[] = Array.from({ length: 10 }, (_, k) => [
+      Math.cos(((45 * k - 90) * Math.PI) / 180),
+      Math.sin(((45 * k - 90) * Math.PI) / 180),
+    ]);
+    const at = (...steps: number[]): P => [
+      C + side * steps.reduce((x, k) => x + u[k]![0], 0),
+      C + side * steps.reduce((y, k) => y + u[k]![1], 0),
+    ];
+    for (let k = 0; k < 8; k++) {
+      parts.push(shape([at(), at(k), at(k, k + 1), at(k + 1)], LIGHT, 3));
+      parts.push(
+        shape([at(k + 1), at(k, k + 1), at(k, k + 1, k + 2), at(k + 1, k + 2)], BASE, 3),
+      );
+    }
   } else if (key === "spectre") {
     // The Spectre's menu icon keeps the nicer silhouette of its removed
     // sibling "The Hat" (the two aperiodic monotiles share a family
@@ -1733,6 +1752,7 @@ interface PatchBoard {
 
 const PATCH_BOARDS: Record<string, PatchBoard> = {
   penrose: { build: () => penroseBoard(5, 0, 437.727, null) },
+  ammannbeenker: { build: () => ammannBeenkerBoard(3, 0, 35.891, null) },
   spectre: { build: () => spectreBoard(3, 0, null, 14.361) },
   phyllotaxis: { build: () => phyllotaxisBoard(5, 0, null, 22.907), whole: true },
   klaassen: { build: () => klaassenBoard(3, 0, null, 29.521), whole: true },

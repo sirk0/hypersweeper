@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from minesweeper.boards._data import load
 from minesweeper.boards.aperiodic import (
+    ammann_beenker_board,
     brick_rings_board,
     klaassen_board,
     penrose_board,
@@ -170,6 +171,8 @@ _JSON_BUILDERS = {
     # mine_count, scale, keep); spectre_board(levels, mine_count, keep, scale);
     # phyllotaxis_board(rings, mine_count, keep, scale).
     "penrose_board": penrose_board,
+    # ammann_beenker_board(levels, mine_count, scale, keep), Penrose's order.
+    "ammann_beenker_board": ammann_beenker_board,
     "spectre_board": spectre_board,
     "phyllotaxis_board": phyllotaxis_board,
     # klaassen_board(turns, mine_count, keep, scale): ``turns`` only has to
@@ -419,13 +422,13 @@ ARCH_PRESETS = {
     },
 }
 
-#: The two builders that take a ``variant`` after their preset args: the
+#: The builders that take a ``variant`` after their preset args: the
 #: substitution tilings, which grow far more of a patch than a board keeps, so
 #: one preset is a whole family of boards rather than a single one (see
 #: ``aperiodic._window``). Every other builder ignores the variant, and the
 #: nonperiodic-by-symmetry boards -- the spiral, the brick rings -- are left out
 #: on purpose: each has one distinguished centre and no second window onto it.
-_VARIANT_BUILDERS = frozenset({"penrose_board", "spectre_board"})
+_VARIANT_BUILDERS = frozenset({"penrose_board", "ammann_beenker_board", "spectre_board"})
 
 # Load the shared presets (data/presets.json) into _PRESETS. Each row is
 # {builder, args: {difficulty: [positional args]}}. The Archimedean/Laves
@@ -468,7 +471,7 @@ def window_for(mode: str, difficulty: str, seed: int) -> int:
 def build_board(mode: str, difficulty: str, seed: int = 0) -> Board | Board3D:
     """The board a mode and difficulty name, as dealt for one game ``seed``.
 
-    The seed only ever means more than one board for the two aperiodic
+    The seed only ever means more than one board for the aperiodic
     substitution tilings, where it picks which measured window onto the grown
     patch the game is played on (``window_for``, then ``aperiodic._window``);
     every other mode builds the same board whatever it is passed, so a caller

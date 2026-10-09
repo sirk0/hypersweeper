@@ -63,13 +63,14 @@ def _z_to_xy(p: ZPoint) -> tuple[float, float]:
 
 # -- windowing an aperiodic patch --------------------------------------------
 #
-# What makes a tiling aperiodic is that it repeats nowhere, and both boards
-# below grow far more of one than they keep: the Penrose wheel is 430 rhombi
-# where the easy board is 81, and the Spectre cluster 4401 tiles where the hard
-# board is 480. The centred trim is one window onto that patch. Every other
-# window onto it is a board of the same size made of tiles that have never sat
-# together before -- which is what a Penrose or a Spectre board's ``variant``
-# is: not a re-generated tiling, but somewhere else to look at the one the
+# What makes a tiling aperiodic is that it repeats nowhere, and the three
+# substitution boards below grow far more of one than they keep: the Penrose
+# wheel is 430 rhombi where the easy board is 81, and the Ammann-Beenker star
+# 7784 tiles and the Spectre cluster 4401 where the hard board is 480. The
+# centred trim is one window onto that patch. Every other window onto it is a
+# board of the same size made of tiles that have never sat together before --
+# which is what a Penrose, Ammann-Beenker or Spectre board's ``variant`` is:
+# not a re-generated tiling, but somewhere else to look at the one the
 # substitution already built.
 #
 # The two boards below this file's other nonperiodic ones do not take a
@@ -148,7 +149,7 @@ def _rim_depth(cells: list[list], adjacency: list[list[int]]) -> list[int]:
 
     The rim is every cell carrying an edge no other cell shares, and the
     depth is the breadth-first distance inward from it. Exact: the vertex
-    ids are integer tuples in both tilings' cyclotomic rings, so an edge is
+    ids are integer tuples in each tiling's cyclotomic ring, so an edge is
     shared or it is not, with nothing to round.
     """
     shared: Counter = Counter()
@@ -938,6 +939,232 @@ def spectre_board(
     return _finalize_flat("spectre", cells, _z12_to_xy, mine_count, scale)
 
 
+# -- Ammann-Beenker: squares and 45-degree rhombi -----------------------------
+#
+# The eight-fold aperiodic tiling, by unit squares and unit rhombi with a
+# 45-degree corner, and the substitution that inflates it by the silver ratio
+# delta = 1 + sqrt(2). Every edge runs along one of the eight unit directions
+# zeta^k (zeta = exp(i*pi/4)), so every vertex is a point of Z[zeta8] -- and
+# delta is in that ring too: sqrt(2) = zeta - zeta^3, so delta = 1 + zeta -
+# zeta^3. Inflating is then multiplying by a ring element, integer arithmetic
+# with no rounding anywhere, exactly as the Penrose and Spectre boards above
+# keep theirs.
+#
+# The substitution is not a tile-to-tiles one, which is what the half-squares
+# are for. Inflated by delta, a rhombus refills with three rhombi and a square
+# with one square and four rhombi -- but in both, each edge of length delta is
+# one unit edge and one square's diagonal (delta = 1 + sqrt(2)), so the squares
+# along the rim of a supertile are cut in half by it and the other half lies in
+# the neighbour. So the substitution runs on rhombi and *half-squares* (isosceles
+# right triangles), as Penrose's runs on Robinson triangles, and the halves are
+# paired back into squares at the end, the unpaired ones on the patch's rim
+# dropped:
+#
+#   rhombus     -> 3 rhombi + 4 half-squares      (area: delta^2 = 3 + 2*sqrt(2))
+#   half-square -> 2 rhombi + 3 half-squares
+#
+# A square is cut along the one diagonal its own inflation is mirror-symmetric
+# about, which makes its halves *marked*: a half-square is (O, P, Q) with the
+# right angle at O and P the end of the diagonal whose corner the inflation puts
+# two rhombi in. That marking is the whole of the tiling's decoration -- the
+# rhombus's rule is symmetric under all four of its own symmetries, so a rhombus
+# needs none -- and the two halves of a square are mirror images sharing P and Q.
+#
+# The rules were read off the cut-and-project tiling (lattice points of Z^4 = the
+# Z[zeta8] coefficient tuples whose image under zeta -> zeta^3 lies in a regular
+# octagon) rather than drawn: every rhombus and every half-square of a large
+# patch of it, inflated, refills the same way, and TestAmmannBeenker checks the
+# board this builds against that definition independently, vertex by vertex.
+#
+# The seed is the eight-rhombus star, the tiling's one vertex of eight-fold
+# symmetry, so the patch has the full D8 symmetry of the octagon about it -- the
+# centre the variant-0 window keeps, as Penrose's keeps its sun.
+
+# A point of Z[zeta8] as 4 integer coefficients over the basis (1, zeta,
+# zeta^2, zeta^3), reduced by zeta^4 = -1 (zeta's minimal polynomial is
+# x^4 + 1). As with Z12Point above, these tuples are the vertex ids.
+Z8Point = tuple[int, int, int, int]
+
+_Z8_ZERO: Z8Point = (0, 0, 0, 0)
+
+
+def _zeta8_mul(p: Z8Point) -> Z8Point:
+    """Multiply by zeta, i.e. rotate 45 degrees."""
+    a, b, c, d = p
+    return (-d, a, b, c)
+
+
+def _z8_add(p: Z8Point, q: Z8Point) -> Z8Point:
+    return (p[0] + q[0], p[1] + q[1], p[2] + q[2], p[3] + q[3])
+
+
+def _z8_sub(p: Z8Point, q: Z8Point) -> Z8Point:
+    return (p[0] - q[0], p[1] - q[1], p[2] - q[2], p[3] - q[3])
+
+
+def _z8_rot(p: Z8Point, k: int) -> Z8Point:
+    """Multiply by zeta^k, i.e. rotate k*45 degrees about the origin."""
+    for _ in range(k % 8):
+        p = _zeta8_mul(p)
+    return p
+
+
+def _z8_conj(p: Z8Point) -> Z8Point:
+    """Complex conjugation: zeta^-1 = -zeta^3, zeta^-2 = -zeta^2 and
+    zeta^-3 = -zeta, so it swaps and negates the odd coefficients."""
+    a, b, c, d = p
+    return (a, -d, -c, -b)
+
+
+def _z8_silver(p: Z8Point) -> Z8Point:
+    """Multiply by the silver ratio delta = 1 + sqrt(2), sqrt(2) being
+    zeta - zeta^3 -- the inflation, exact in the ring."""
+    return _z8_add(p, _z8_sub(_zeta8_mul(p), _z8_rot(p, 3)))
+
+
+_ZETA8_BASIS = [
+    (math.cos(math.pi * k / 4), math.sin(math.pi * k / 4)) for k in range(4)
+]
+
+
+def _z8_to_xy(p: Z8Point) -> tuple[float, float]:
+    return (
+        sum(c * bx for c, (bx, _) in zip(p, _ZETA8_BASIS)),
+        sum(c * by for c, (_, by) in zip(p, _ZETA8_BASIS)),
+    )
+
+
+#: The unit prototiles, counterclockwise: the rhombus on 1 and zeta, and the
+#: half-square (O, P, Q) with its right angle at O and its marked diagonal P->Q.
+_AB_RHOMB: tuple[Z8Point, ...] = ((0, 0, 0, 0), (1, 0, 0, 0), (1, 1, 0, 0), (0, 1, 0, 0))
+_AB_HALF: tuple[Z8Point, ...] = ((0, 0, 0, 0), (1, 0, 0, 0), (0, 0, 1, 0))
+
+# A placement is z -> zeta^rot * (conj z if mirrored else z) + trans, as the
+# Spectre's are, over Z[zeta8] (rotation index mod 8).
+_AB_Placement = tuple[int, int, Z8Point]
+
+
+def _ab_place(at: _AB_Placement, p: Z8Point) -> Z8Point:
+    rot, mirrored, trans = at
+    return _z8_add(_z8_rot(_z8_conj(p) if mirrored else p, rot), trans)
+
+
+def _ab_compose(a: _AB_Placement, b: _AB_Placement) -> _AB_Placement:
+    """``a`` after ``b``."""
+    a_rot, a_mirror, _ = a
+    b_rot, b_mirror, b_trans = b
+    return ((a_rot - b_rot if a_mirror else a_rot + b_rot) % 8,
+            a_mirror ^ b_mirror, _ab_place(a, b_trans))
+
+
+#: The substitution: each prototile inflated by delta, as the unit tiles that
+#: refill it -- ("R" rhombus | "H" half-square, placement) in the inflated
+#: tile's frame. Deeper in the recursion the translations are inflated again
+#: (``_ab_tiles``); the rotations and mirrors never change.
+_AB_RULES: dict[str, tuple[tuple[str, _AB_Placement], ...]] = {
+    "R": (
+        ("R", (0, 0, (0, 0, 0, 0))),    # at the acute corner A...
+        ("R", (0, 0, (1, 1, 1, -1))),   # ...and at C
+        ("R", (2, 0, (1, 1, 0, -1))),   # across the middle, B to D
+        ("H", (2, 0, (1, 1, 0, 0))),    # and a half-square on every edge
+        ("H", (3, 1, (1, 1, 1, -1))),
+        ("H", (6, 0, (1, 1, 1, -1))),
+        ("H", (7, 1, (1, 1, 0, 0))),
+    ),
+    "H": (
+        ("R", (0, 1, (0, 1, 0, 0))),    # a rhombus in the P corner
+        ("R", (1, 0, (0, 0, 0, 0))),    # and one in the right angle
+        ("H", (2, 1, (0, 1, 0, 0))),    # half the middle square, on P->Q
+        ("H", (3, 0, (0, 1, 1, 0))),    # and one on each leg
+        ("H", (5, 0, (0, 1, 0, 0))),
+    ),
+}
+
+
+def _ab_tiles(levels: int) -> list[tuple[str, _AB_Placement]]:
+    """The eight-rhombus star inflated ``levels`` times and refilled with
+    unit tiles, as (kind, placement) in the order the substitution lays them.
+
+    Inflating the seed and subdividing it are the same thing seen from the
+    two ends: a supertile ``n`` levels up has edge delta**n, so its children's
+    translations are the rule's, inflated ``n - 1`` times.
+    """
+    tiles: list[tuple[str, _AB_Placement]] = [("R", (k, 0, _Z8_ZERO)) for k in range(8)]
+    for depth in range(levels - 1, -1, -1):
+        rules = {}
+        for kind, children in _AB_RULES.items():
+            scaled = []
+            for child, (rot, mirrored, trans) in children:
+                for _ in range(depth):
+                    trans = _z8_silver(trans)
+                scaled.append((child, (rot, mirrored, trans)))
+            rules[kind] = scaled
+        tiles = [(child, _ab_compose(at, sub))
+                 for kind, at in tiles for child, sub in rules[kind]]
+    return tiles
+
+
+def _ab_cells(levels: int) -> list[tuple[Cell, list[Z8Point]]]:
+    """The patch's rhombi and squares, as (cell id, vertex ids counterclockwise).
+
+    Half-squares pair into squares across their marked diagonal: the two halves
+    of a square are mirror images sharing P and Q, so they meet on the directed
+    key (P, Q). One left waiting at the end is half of a square cut by the rim
+    of the patch, and is dropped -- as ``penrose_board`` drops an unpaired
+    Robinson triangle. A cell id is (0 for a rhombus or 1 for a square, the
+    order it was made in), Penrose's (colour, index).
+    """
+    cells: list[tuple[Cell, list[Z8Point]]] = []
+    waiting: dict = {}
+    for kind, at in _ab_tiles(levels):
+        mirrored = at[1]
+        if kind == "R":
+            ids = [_ab_place(at, p) for p in _AB_RHOMB]
+            if mirrored:  # a reflection walks the outline clockwise
+                ids = [ids[0], *reversed(ids[1:])]
+            cells.append(((0, len(cells)), ids))
+            continue
+        o, p, q = (_ab_place(at, v) for v in _AB_HALF)
+        partner = waiting.pop((p, q), None)
+        if partner is None:
+            waiting[(p, q)] = (o, mirrored)
+            continue
+        first, first_mirrored = partner
+        ids = [first, p, o, q]
+        if first_mirrored:
+            ids = [ids[0], *reversed(ids[1:])]
+        cells.append(((1, len(cells)), ids))
+    return cells
+
+
+def ammann_beenker_board(
+    levels: int,
+    mine_count: int,
+    scale: float = 30,
+    keep: int | None = None,
+    variant: int = 0,
+) -> Board:
+    """The Ammann-Beenker tiling: unit squares and 45-degree rhombi, eight-fold
+    and aperiodic, grown by ``levels`` silver-ratio substitutions of the
+    eight-rhombus star (216, 1312, 7784 tiles at levels 2, 3, 4).
+
+    ``keep`` trims to that many tiles by Chebyshev distance and ``variant``
+    picks which window, exactly as for ``penrose_board``: 0 is the centred
+    block around the eight-fold star, any other integer a window elsewhere in
+    the same patch. See ``_window``. ``scale`` is pixels per edge.
+    """
+    rows = _ab_cells(levels)
+    centroids = []
+    for _, ids in rows:
+        xy = [_z8_to_xy(v) for v in ids]
+        centroids.append((sum(x for x, _ in xy) / 4, sum(y for _, y in xy) / 4))
+    kept = _window(cells=[ids for _, ids in rows],
+                   centroids=centroids,
+                   tiebreaks=[cell for cell, _ in rows],
+                   keep=keep,
+                   variant=variant)
+    cells = {rows[i][0]: rows[i][1] for i in kept}
+    return _finalize_flat("ammannbeenker", cells, _z8_to_xy, mine_count, scale)
 
 
 # -- the brick rings ---------------------------------------------------------

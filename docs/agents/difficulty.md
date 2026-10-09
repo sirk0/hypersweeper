@@ -28,7 +28,8 @@ onto itself under the tiling's point group; where the tiling declares a
 **grain**, the window is snapped onto it first, so those knobs move the
 board a whole course at a time and the size search sees the count it
 actually gets); for the aperiodic ones built by
-substitution or by wedge (`penrose_board`, `spectre_board`,
+substitution or by wedge (`penrose_board`, `ammann_beenker_board`,
+`spectre_board`,
 `phyllotaxis_board`) grow generously and trim
 to the `keep` centremost cells by Chebyshev distance (`max(|dx|, |dy|)`)
 — generously enough that `keep` is a small fraction of the patch, or the
@@ -37,7 +38,7 @@ rings need neither: the rings build the whole board, so their count is
 both the size knob and the window. See
 the `AGENT NOTE` in `boards/tilings.py`.
 
-The two substitution boards trim to that `keep` from a **variable** centre —
+The three substitution boards trim to that `keep` from a **variable** centre —
 one preset is a family of boards, one per window onto the grown patch (see
 "The aperiodic boards" in [`geometry.md`](geometry.md)) — and **the mine count
 does not carry from one window to the next by itself**. A patch of an aperiodic
@@ -49,9 +50,10 @@ different board. So the windows are screened the way the mine counts are, by
 `scripts/difficulty/windows.py`: play each candidate with the reference solver
 at the preset's own mine count, keep those within `TOLERANCE` of the centred
 window's rate, and write the kept list to `data/windows.json`, which both
-front-ends deal from (`presets.window_for`). Between a third and four-fifths of
-each board's candidates land — 28 to 79 of the 96 measured — which leaves dozens
-of measured boards per mode × difficulty. Re-run it after `calibrate`/`apply` whenever an
+front-ends deal from (`presets.window_for`). Between an eighth and four-fifths of
+each board's candidates land — 13 to 79 of the 96 measured, the low end
+Ammann–Beenker's hard board — which leaves at least a dozen measured boards per
+mode × difficulty, and usually dozens. Re-run it after `calibrate`/`apply` whenever an
 aperiodic preset changes shape — and note that `calibrate` itself measures the
 centred window throughout, which is what `build_board`'s default seed gives it.
 
@@ -76,6 +78,17 @@ hand-picked density is the one thing this game cannot get right by eye.
    knob — the sphere family — and the fractals, which quantise by whole
    substitution steps, keep their geometry and are listed as exceptions in
    `tests/test_presets.py`.
+
+   **A trimmed aperiodic window is held to the fairness bar too.** The
+   substitution boards (`grow` in `SPEC`) keep exactly the target count, and a
+   trim can cut away exactly the neighbours that told two cells apart: the
+   256 Ammann–Beenker tiles nearest the centre leave ten rhombi at the square's
+   corners in identical-neighbourhood pairs, and no mine count calibrates that
+   board — at the opening floor it still lost one game in five to coin flips.
+   So when the exact count has twins, the trim steps outward from the target,
+   nearest first and inside the ±15% band, to the first count with none (280,
+   there). The window search below has always held this bar; the `grow` branch
+   now does as well.
 
    **A knob that cannot distort anything must say so** (`rigid` in `SPEC`).
    The shape half of this search measures *roundness*, which is only the same

@@ -157,7 +157,7 @@ export class GameSession {
   ) {
     this.mode = mode;
     this.difficulty = difficulty;
-    // The seed picks the *window* as well as the mines: on the two aperiodic
+    // The seed picks the *window* as well as the mines: on the aperiodic
     // substitution boards a re-deal is played somewhere else in the tiling —
     // one of the windows measured to play like the calibrated board
     // (boards/presets.ts `windowFor`) — and a share link, which carries the

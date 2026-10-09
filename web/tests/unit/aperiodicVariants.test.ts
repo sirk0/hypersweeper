@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { penroseBoard, spectreBoard } from "../../src/boards/aperiodic";
+import { ammannBeenkerBoard, penroseBoard, spectreBoard } from "../../src/boards/aperiodic";
 import {
   boundaryComponents,
   eulerCharacteristic,
@@ -9,7 +9,7 @@ import {
 import { buildBoard, windowFor } from "../../src/boards/presets";
 import windowsData from "@data/windows.json";
 
-// The two aperiodic substitution boards are a *family* per preset: `variant`
+// The aperiodic substitution boards are a *family* per preset: `variant`
 // picks which window onto the grown patch the board is, so a finished game
 // followed by another is played somewhere else in the tiling. What the
 // conformance oracle pins is that a given variant is the same board in both
@@ -23,6 +23,9 @@ const CASES: [string, (variant: number) => Board, number][] = [
   ["penrose easy", (v) => penroseBoard(5, 6, 437.727, 81, v), 81],
   ["penrose medium", (v) => penroseBoard(6, 17, 500.0, 256, v), 256],
   ["penrose hard", (v) => penroseBoard(7, 48, 769.119, 480, v), 480],
+  ["ammannbeenker easy", (v) => ammannBeenkerBoard(3, 9, 35.891, 81, v), 81],
+  ["ammannbeenker medium", (v) => ammannBeenkerBoard(3, 28, 25.905, 280, v), 280],
+  ["ammannbeenker hard", (v) => ammannBeenkerBoard(4, 82, 25.319, 480, v), 480],
   ["spectre easy", (v) => spectreBoard(3, 11, 81, 14.361, v), 81],
   ["spectre medium", (v) => spectreBoard(4, 37, 256, 9.437, v), 256],
   ["spectre hard", (v) => spectreBoard(4, 89, 480, 8.512, v), 480],
@@ -115,7 +118,7 @@ describe("aperiodic patch variants", () => {
   });
 
   it("leaves every other board alone", () => {
-    // Only the two substitution tilings vary. The spiral and the brick rings
+    // Only the substitution tilings vary. The spiral and the brick rings
     // are nonperiodic by symmetry — one distinguished centre, no second window
     // — and everything else is periodic, so a variant must change nothing.
     for (const mode of [

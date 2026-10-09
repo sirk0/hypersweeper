@@ -113,6 +113,7 @@
   ],
   "soloLabels": {
     "penrose": "Penrose rhombi",
+    "ammannbeenker": "Ammann–Beenker",
     "spectre": "The Spectre",
     "phyllotaxis": "Phyllotactic spiral",
     "klaassen": "Klaassen spiral",
@@ -164,6 +165,12 @@
     "cube3d": "Volumetric"
   },
   "modeInfo": {
+    "ammannbeenker": {
+      "label": "Ammann–Beenker",
+      "tiling": "",
+      "surface": "flat",
+      "family": "aperiodic"
+    },
     "basketweave": {
       "label": "Basket weave",
       "tiling": "basketweave",
@@ -1348,6 +1355,7 @@
     ],
     "aperiodic": [
       "penrose",
+      "ammannbeenker",
       "spectre",
       "phyllotaxis",
       "klaassen",

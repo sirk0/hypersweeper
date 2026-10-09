@@ -48,6 +48,8 @@ const MODES = [
   // -- no tile in its patch is ever mirrored).
   "penrose",
   "spectre",
+  // and Ammann–Beenker: unit squares and 45° rhombi, the eight-fold one.
+  "ammannbeenker",
   // and the phyllotactic spiral: one equilateral hexagon in five arms, whose
   // five-fold rotational symmetry is what forbids a translation.
   "phyllotaxis",
