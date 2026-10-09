@@ -57,6 +57,9 @@ describe("shape names", () => {
   it("tells two tiles of the same name apart", () => {
     // Penrose: two rhombi, alike in everything but their sharpest corner.
     expect(shapes("penrose")).toEqual(["Rhombi · 36° 31", "Rhombi · 72° 50"]);
+    // Penrose's other pair: both kites by their sides, told apart by the
+    // dart's reflex corner rather than by size or angle.
+    expect(shapes("kitedart")).toEqual(["Darts 26", "Kites 55"]);
     // The Pythagorean tiling: one square in two sizes.
     expect(shapes("pythagorean")).toEqual(["Squares · small 40", "Squares · large 47"]);
     expect(shapes("threescaletri")).toEqual([
@@ -101,6 +104,7 @@ describe("boardFacts", () => {
     expect(facts("herringbone").family).toBe("Congruent rectangles");
     expect(facts("hex").family).toBe("Regular");
     expect(facts("penrose").family).toBe("Aperiodic");
+    expect(facts("kitedart").family).toBe("Aperiodic");
     expect(facts("gosper").family).toBe("Fractals");
     // A solid belongs to no tiling family; the group it is listed under is
     // what says what it is.

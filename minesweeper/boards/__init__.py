@@ -50,6 +50,7 @@ from minesweeper.boards.aperiodic import (  # noqa: F401
     _zeta12_mul,
     _zeta_mul,
     brick_rings_board,
+    kitedart_board,
     klaassen_board,
     penrose_board,
     pentaspiral5_board,

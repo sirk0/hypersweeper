@@ -36,6 +36,7 @@ import {
   klaassenBoard,
   klaassenTiles,
   penroseBoard,
+  kiteDartBoard,
   pentaSpiralBoard,
   phyllotaxisBoard,
   spectreBoard,
@@ -1383,6 +1384,20 @@ function draw(rawKey: string): string[] {
         ]),
       );
     }
+  } else if (key === "kitedart") {
+    // the star: five darts, tips at the centre, and a kite in each notch, its
+    // 144° tail in the dart's reflex corner — both tiles at once, in the two
+    // shades the board's own palette tells them apart by
+    const r = (d * 0.485) / 1.618; // as far out as the rhombi's star reaches
+    const at = (deg: number, radius: number): P => [
+      C + radius * r * Math.cos((deg * Math.PI) / 180),
+      C + radius * r * Math.sin((deg * Math.PI) / 180),
+    ];
+    for (let k = 0; k < 5; k++) {
+      const a = 72 * k - 90;
+      parts.push(shape([at(a, 0), at(a - 36, 1), at(a, 0.618), at(a + 36, 1)]));
+      parts.push(shape([at(a, 0.618), at(a - 36, 1), at(a, 1.618), at(a + 36, 1)], LIGHT));
+    }
   } else if (key === "spectre") {
     // The Spectre's menu icon keeps the nicer silhouette of its removed
     // sibling "The Hat" (the two aperiodic monotiles share a family
@@ -1733,6 +1748,7 @@ interface PatchBoard {
 
 const PATCH_BOARDS: Record<string, PatchBoard> = {
   penrose: { build: () => penroseBoard(5, 0, 437.727, null) },
+  kitedart: { build: () => kiteDartBoard(5, 0, 437.727, null) },
   spectre: { build: () => spectreBoard(3, 0, null, 14.361) },
   phyllotaxis: { build: () => phyllotaxisBoard(5, 0, null, 22.907), whole: true },
   klaassen: { build: () => klaassenBoard(3, 0, null, 29.521), whole: true },

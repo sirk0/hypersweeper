@@ -28,7 +28,7 @@ onto itself under the tiling's point group; where the tiling declares a
 **grain**, the window is snapped onto it first, so those knobs move the
 board a whole course at a time and the size search sees the count it
 actually gets); for the aperiodic ones built by
-substitution or by wedge (`penrose_board`, `spectre_board`,
+substitution or by wedge (`penrose_board`, `kitedart_board`, `spectre_board`,
 `phyllotaxis_board`) grow generously and trim
 to the `keep` centremost cells by Chebyshev distance (`max(|dx|, |dy|)`)
 — generously enough that `keep` is a small fraction of the patch, or the
@@ -37,7 +37,7 @@ rings need neither: the rings build the whole board, so their count is
 both the size knob and the window. See
 the `AGENT NOTE` in `boards/tilings.py`.
 
-The two substitution boards trim to that `keep` from a **variable** centre —
+The three substitution boards trim to that `keep` from a **variable** centre —
 one preset is a family of boards, one per window onto the grown patch (see
 "The aperiodic boards" in [`geometry.md`](geometry.md)) — and **the mine count
 does not carry from one window to the next by itself**. A patch of an aperiodic

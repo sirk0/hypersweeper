@@ -164,6 +164,7 @@ SPEC: dict[str, dict] = {
     "disdyakis_triacontahedron_board": dict(size=(1,), mine=0, shape=None, rigid=True),
     # aperiodic: ``keep`` is exact, the growth arg only has to be generous
     "penrose_board": dict(size=(3,), mine=1, shape=2, kind="scale", grow=0),
+    "kitedart_board": dict(size=(3,), mine=1, shape=2, kind="scale", grow=0),
     "spectre_board": dict(size=(2,), mine=1, shape=3, kind="scale", grow=0),
     "phyllotaxis_board": dict(size=(2,), mine=1, shape=3, kind="scale", grow=0),
     "klaassen_board": dict(size=(2,), mine=1, shape=3, kind="scale", grow=0),

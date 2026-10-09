@@ -41,13 +41,13 @@ Import order is a strict DAG; a module only imports from the ones above it.
 | `core.py` | `Board` / `Board3D`, the `_shared_vertex_adjacency` neighbour rule, `_build` (lattice→pixels) and `_finalize_flat` (float→pixels), 3D vector helpers, and the topology invariants `euler_characteristic` / `boundary_components` / `corner_fans`. |
 | `tilings.py` | Regular flat builders (square/triangle/trigrid/hex/hexhex/hextri/hextriangle/squarediamond), the `_ArchTemplate` system, the eight Archimedean `_*_template()` factories plus their eight Laves duals (built by `_dual_template`), the six isogonal (non-edge-to-edge) ones, the five congruent-rectangle bonds, the two rep-tile patterns and Dürer's pentagon tiling, and the **`ARCH_TILINGS`** registry (the one place any of them is declared, with `_FAMILY_TRAITS` saying what each family is). |
 | `fractal.py` | The self-similar (fractal) boards: the sphinx, the chair, the Sierpinski carpet, the pentaflake and the Gosper island. One `_Substitution` record per tile — unit outline, the tiles filling the inflated copy, the inflation factor, lattice ops — and the shared inflation (`substitution_placements`) all five `*_board` builders run. The first two are rep-tiles (their children fill the tile); the carpet's and the pentaflake's leave holes, which is what makes them fractals with holes rather than shapes; the Gosper island's fill it with no hole at all and put the fractal in the *outline* instead. Four lattices are integer; the pentaflake's is ℤ[ζ10], since five-fold symmetry needs rank 4. The Gosper island's inflation is the one that is not a pure scaling: multiplication by 2 + ζ, a spiral similarity of √7 at 19.106°. |
-| `aperiodic.py` | Penrose (P3), the Spectre (Tile(1,1), the chiral monotile), the phyllotactic spiral, Klaassen's spiral monotile and his three pentagonal spirals (5-, 6- and 7-fold, one convex pentagon each), each with exact-arithmetic vertex ids — ℤ[ζ5] for Penrose and the spiral, ℤ[ζ12] for the Spectre. The Spectre's ring is *dense* in the plane, so unlike Penrose's discrete lattice there is no lattice to snap a float vertex back to: its placements are carried as exact `(rotation, mirror, translation)` triples and no floating point enters the substitution at all. The spiral is the odd one out — no substitution, just ten 36° wedges of the tile's own translation lattice, the odd ones offset a step; nonperiodic because its five-fold centre forbids any translation. The **brick rings** are nonperiodic the same way — by symmetry rather than by a substitution — and are the plainest board here: 2x1 bricks on the integer square lattice in concentric square rings about a 2x2 core, ring k being the boundary of the 2k x 2k square with horizontal bricks along its rows and vertical ones up its sides. Every run is even, so every tile is a whole brick and only an even-sided square is tileable at all. A brick's corner lands in the middle of a neighbour's long side, so `_brick_outline` splits each edge at the lattice points that are genuinely some tile's corner — the 2D twin of `solids._split_at_lattice_points`, and *conditional*, unlike the fractal outlines, which carry a vertex at every step. |
+| `aperiodic.py` | Penrose's rhombi (P3) and his kites and darts (P2), the Spectre (Tile(1,1), the chiral monotile), the phyllotactic spiral, Klaassen's spiral monotile and his three pentagonal spirals (5-, 6- and 7-fold, one convex pentagon each), each with exact-arithmetic vertex ids — ℤ[ζ5] for both Penrose boards and the spiral, ℤ[ζ12] for the Spectre. The Spectre's ring is *dense* in the plane, so unlike Penrose's discrete lattice there is no lattice to snap a float vertex back to: its placements are carried as exact `(rotation, mirror, translation)` triples and no floating point enters the substitution at all. The spiral is the odd one out — no substitution, just ten 36° wedges of the tile's own translation lattice, the odd ones offset a step; nonperiodic because its five-fold centre forbids any translation. The **brick rings** are nonperiodic the same way — by symmetry rather than by a substitution — and are the plainest board here: 2x1 bricks on the integer square lattice in concentric square rings about a 2x2 core, ring k being the boundary of the 2k x 2k square with horizontal bricks along its rows and vertical ones up its sides. Every run is even, so every tile is a whole brick and only an even-sided square is tileable at all. A brick's corner lands in the middle of a neighbour's long side, so `_brick_outline` splits each edge at the lattice points that are genuinely some tile's corner — the 2D twin of `solids._split_at_lattice_points`, and *conditional*, unlike the fractal outlines, which carry a vertex at every step. |
 | `solids.py` | Closed/convex and polycube 3D boards (spherical gyro pentagons, Goldberg polyhedra, geodesic icosahedron, rhombicosidodecahedron, truncated icosidodecahedron, cube, tetrahedron, frames, bipyramid), plus the shared `_wythoff_point` every uniform solid here and every Catalan solid next door is generated from. |
 | `catalan.py` | The thirteen Catalan solids, the duals of the Archimedean solids. One recipe for all of them: a Platonic base and one flag, the Wythoff generating point of its Schwarz triangle (`solids._wythoff_point` for the five non-chiral Conway operations, `_snub_point` for the chiral one), a Catalan vertex at `n / <w, n>` on each face axis — polar duality — and the base's flags grouped into faces by the operation. Faces are then subdivided (`solids._geodesic` for triangles, `_quad_grid` for quadrilaterals, a five-way fan first for pentagons), which is these boards' only size knob. |
 | `surfaces.py` | Wrapping tilings onto surfaces: the three immersion points (`_torus_point`, `_cylinder_point`, `_mobius_point`), the shared `_assemble` tail, the nine simple `*_board` wrappers, and the Archimedean `arch_torus_board` / `arch_cylinder_board` / `arch_mobius_board`. Also `double_torus_board`, the one board here that is *not* wrapped from a rectangle: two overlapping square-tiled donuts cut apart along the plane between them and sewn back together, a connected sum rather than a seam gluing. |
 | `volume.py` | The volume boards — a solid block of cells rather than a surface of them. One so far: `solid_cube_board`, the `n**3` cube of cubes, whose 26-neighbour adjacency comes off the lattice and whose drawing is the `n` slices laid out on a grid and stepped back in depth. |
 | `catalog.py` | The menu, **derived**: `SURFACE_SPECS` and `TILING_SPECS` (leaf data loaded from `data/catalog.json`) produce `MODE_LABELS`, `TILINGS`, `SURFACE_LABELS`, the geometry-first menu tables (`MENU_ROOT`/`MANIFOLD_*`/`FAMILY_*`/`SOLID_GROUP_*`/`SOLID_MODES`/`SHAPED_MODES`) and the picker helpers (`family_rows`, `picker_families`, `picker_modes`), `MODES_3D`, `mode_for`, `surface_of`, `view_hint`. |
-| `presets.py` | Difficulty presets and `build_board`. Flat regular, solid, Archimedean/Laves and aperiodic (penrose/spectre/phyllotaxis) presets all load from `data/presets.json` (shared with the web port). The Archimedean rows are authored in the compact **`ARCH_PRESETS`** table (tiling → surface → difficulty → args) that `scripts/export_data.py` expands into `data/presets.json`. |
+| `presets.py` | Difficulty presets and `build_board`. Flat regular, solid, Archimedean/Laves and aperiodic (penrose/kitedart/spectre/phyllotaxis) presets all load from `data/presets.json` (shared with the web port). The Archimedean rows are authored in the compact **`ARCH_PRESETS`** table (tiling → surface → difficulty → args) that `scripts/export_data.py` expands into `data/presets.json`. |
 
 `__init__.py` re-exports the whole public surface, so `from
 minesweeper.boards import ...` is unchanged by the split.
@@ -310,12 +310,12 @@ Four consequences worth knowing before touching it:
 
 ## The aperiodic boards
 
-**Two of them are a family of boards rather than one board.** Penrose and the
-Spectre are built by *substitution*, so the tiling repeats nowhere and each
+**Three of them are a family of boards rather than one board.** Both Penrose
+boards and the Spectre are built by *substitution*, so the tiling repeats nowhere and each
 builder grows far more of a patch than a board keeps — the Penrose wheel is 430
 rhombi where the easy board is 81, the Spectre cluster 4401 tiles where the hard
 board is 480. The `variant` argument (`aperiodic._window`, ported to
-`windowRows` in `web/src/boards/aperiodic.ts`) picks *which* window onto that
+`windowRows` in `web/src/boards/aperiodic.ts`, shared by all three) picks *which* window onto that
 patch the board is: 0 is the centred trim this game shipped with, and any other
 integer a block of the same size somewhere else in the same tiling, so a
 finished game followed by another is played on tiles that have never sat
@@ -368,9 +368,9 @@ one distinguished centre (the rosette, the seed, the 2×2 core) and a
 window anywhere else would be a crop of a structured picture rather than another
 board.
 
-Four of the aperiodic boards keep exact vertex ids in a cyclotomic ring:
-ℤ[ζ5] (Penrose and the phyllotactic spiral), ℤ[ζ7] (Klaassen's spiral) and
-ℤ[ζ12] (Spectre). Only Penrose's is discrete — ℤ[ζ12]
+Five of the aperiodic boards keep exact vertex ids in a cyclotomic ring:
+ℤ[ζ5] (both Penrose boards and the phyllotactic spiral), ℤ[ζ7] (Klaassen's spiral) and
+ℤ[ζ12] (Spectre). Only ℤ[ζ5] is discrete — ℤ[ζ12]
 is dense in the plane, so `spectre_board` cannot snap a float vertex back
 to a lattice the way the game's original third aperiodic board, The Hat
 (since removed as a menu entry), did — and instead carries every
@@ -380,6 +380,30 @@ Its tile is Tile(1,1) held as an equilateral **14-gon**: the 14th corner
 is the collinear one, kept so a neighbour's corner landing there is a
 shared vertex id, dropped again by `shapeMetrics`/`corners` so the tile
 measures as the 13-gon it is drawn as.
+`kitedart_board` is Penrose's **kites and darts** (P2), in the same ring and
+from the same two Robinson triangles as the rhombi — the acute 36-72-72 and
+the obtuse 108-36-36 — paired along a **leg** instead of the base: two acute
+halves make a kite (72, 72, 72, 144), two obtuse halves a dart (72, 36, 216,
+36). Each half carries which leg is its axis, as `(color, apex, side, axis)`.
+The substitution is its own, not the rhombi's: a half-kite becomes a whole kite
+and a half-dart lying along its long edge, a half-dart a half-kite and a
+half-dart, at points 1/φ and 1/φ² along an edge — still only addition and
+division by φ, so the ids stay exact. The seed is the five-kite **sun**; the
+centre alternates sun, star, sun under deflation, and every preset deflates an
+even number of times, so each centred board is laid round the sun. Pairing the
+rhombi's own triangles along a leg is the trap: it pairs up almost perfectly
+and is not this tiling (the darts come out φ times the size of the kites, and
+the rarer tile, where kites outnumber darts by φ). `TestKiteDart` pins the
+shapes, the ratio and the seven vertex figures — sun, star, ace, deuce, jack,
+queen and king, and no others — which is what fails first when a substitution
+is wrong. The dart is concave but star-shaped about its vertex mean, so it is
+cut by the ordinary path; its vertex mean is a poor place for a **number**,
+though, a tenth of the way down the axis from the reflex corner with a quarter
+of the room the tile has, so the builder declares **glyph anchors**
+(`glyph_anchors` on the Python `Board`, `glyphAnchor` on the TypeScript one):
+each tile's number sits in the biggest circle it holds, 1/φ down a kite's axis
+from its tip (its incircle) and 1/(1 + sin 36°) down a dart's (the circle that
+touches both long edges and the reflex corner).
 The third, `phyllotaxis_board`, is nonperiodic by **symmetry** rather than
 by substitution: one equilateral convex hexagon (angles 72°/144°) in a
 five-fold spiral — the sunflower-head look of a Voronoi tessellation of a

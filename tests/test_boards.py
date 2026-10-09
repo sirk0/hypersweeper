@@ -66,6 +66,7 @@ from minesweeper.boards import (
     hex_board,
     hexhex_board,
     hextriangle_board,
+    kitedart_board,
     klaassen_board,
     klein_board,
     klein_hex_board,
@@ -617,6 +618,9 @@ class TestAperiodicVariants:
         ("penrose easy", penrose_board, (5, 6, 437.727, 81), 81),
         ("penrose medium", penrose_board, (6, 17, 500.0, 256), 256),
         ("penrose hard", penrose_board, (7, 48, 769.119, 480), 480),
+        ("kitedart easy", kitedart_board, (4, 6, 270.53, 81), 81),
+        ("kitedart medium", kitedart_board, (6, 29, 500.0, 256), 256),
+        ("kitedart hard", kitedart_board, (6, 82, 769.119, 480), 480),
         ("spectre easy", spectre_board, (3, 11, 81, 14.361), 81),
         ("spectre medium", spectre_board, (4, 37, 256, 9.437), 256),
         ("spectre hard", spectre_board, (4, 89, 480, 8.512), 480),
@@ -653,6 +657,8 @@ class TestAperiodicVariants:
             penrose_board(5, 6, 437.727, 81, 0).polygons.keys()
         assert spectre_board(3, 11, 81, 14.361).polygons.keys() == \
             spectre_board(3, 11, 81, 14.361, 0).polygons.keys()
+        assert kitedart_board(4, 6, 270.53, 81).polygons.keys() == \
+            kitedart_board(4, 6, 270.53, 81, 0).polygons.keys()
 
     @pytest.mark.parametrize("variant", [2**32 - 1, 2**31, -7])
     def test_any_integer_wraps_into_the_pool(self, variant):
@@ -689,7 +695,7 @@ class TestAperiodicVariants:
         }
         assert len(patches) == 5
 
-    @pytest.mark.parametrize("mode", ["penrose", "spectre"])
+    @pytest.mark.parametrize("mode", ["penrose", "kitedart", "spectre"])
     @pytest.mark.parametrize("difficulty", list(DIFFICULTIES))
     def test_only_measured_windows_are_dealt(self, mode, difficulty):
         # A window is a board of its own, so which ones a difficulty may
@@ -705,7 +711,7 @@ class TestAperiodicVariants:
         assert dealt <= set(windows)
         assert dealt == set(windows)  # ...and every one of them is reachable
 
-    @pytest.mark.parametrize("mode", ["penrose", "spectre"])
+    @pytest.mark.parametrize("mode", ["penrose", "kitedart", "spectre"])
     def test_no_dealt_window_is_bitten_into(self, mode):
         """Every window the game deals is a filled square, not one with a
         chunk missing.
@@ -761,7 +767,7 @@ class TestAperiodicVariants:
                     f"{deepest / tile:.2f} tiles deep"
                 )
 
-    @pytest.mark.parametrize("mode", ["penrose", "spectre"])
+    @pytest.mark.parametrize("mode", ["penrose", "kitedart", "spectre"])
     def test_every_measured_window_is_a_board(self, mode):
         # The list is data, and data can go stale against a preset that
         # changed shape under it -- so each window it names still has to
@@ -777,6 +783,152 @@ class TestAperiodicVariants:
                 seen.add(frozenset(board.polygons))
             # ...and no two of them are the same board under two numbers
             assert len(seen) == len(_WINDOWS[mode][difficulty]["windows"])
+
+
+class TestKiteDart:
+    """Penrose's kites and darts (P2).
+
+    The same Robinson triangles and the same ring as the rhombi, paired along
+    a leg instead of the base, with a substitution of their own. What says the
+    construction is the tiling it claims to be: every cell is one of the two
+    tiles, kites outnumber darts by phi, the patch is a disc, and every
+    interior vertex is one of the seven vertex figures a kite-and-dart tiling
+    has -- the property that fails first when a substitution is wrong.
+    """
+
+    PHI = (1 + 5**0.5) / 2
+
+    # (color, corner index) -> the corner it is: a cell is (apex, side, axis
+    # end, side), the apex being a kite's tip and a dart's reflex corner
+    CORNERS = {(0, 0): "kite tip", (0, 1): "kite side", (0, 2): "kite tail",
+               (0, 3): "kite side", (1, 0): "dart reflex", (1, 1): "dart side",
+               (1, 2): "dart tip", (1, 3): "dart side"}
+
+    @staticmethod
+    def _angle(polygon, i):
+        """Interior angle at corner i, in degrees, reflex included."""
+        n = len(polygon)
+        (px, py), (cx, cy), (nx, ny) = polygon[i - 1], polygon[i], polygon[(i + 1) % n]
+        area = sum(polygon[k][0] * polygon[(k + 1) % n][1]
+                   - polygon[(k + 1) % n][0] * polygon[k][1] for k in range(n))
+        turn = math.atan2((cx - px) * (ny - cy) - (cy - py) * (nx - cx),
+                          (cx - px) * (nx - cx) + (cy - py) * (ny - cy))
+        return 180 - math.degrees(turn) * (1 if area > 0 else -1)
+
+    def test_cells_are_kites_and_darts(self):
+        board = kitedart_board(4, 0)
+        for cell, polygon in board.polygons.items():
+            angles = [round(self._angle(polygon, i)) for i in range(4)]
+            sides = [math.dist(polygon[i], polygon[(i + 1) % 4]) for i in range(4)]
+            if cell[0] == 0:
+                assert angles == [72, 72, 144, 72]
+            else:
+                assert angles == [216, 36, 72, 36]
+            # the two edges at the apex are equal, and so are the two at the
+            # axis end, and the tip's two are phi times the other two
+            assert math.isclose(sides[0], sides[3]) and math.isclose(sides[1], sides[2])
+            tip_edges, other = (sides[0], sides[1]) if cell[0] == 0 else (sides[1], sides[0])
+            assert math.isclose(tip_edges / other, self.PHI)
+        # one size of tile: a dart's long edge is a kite's long edge
+        long_edges = {round(max(math.dist(p[i], p[(i + 1) % 4]) for i in range(4)), 6)
+                      for p in board.polygons.values()}
+        assert len(long_edges) == 1
+
+    def test_kites_outnumber_darts_by_phi(self):
+        board = kitedart_board(7, 0)
+        kites = sum(1 for cell in board.adjacency if cell[0] == 0)
+        darts = len(board.adjacency) - kites
+        assert abs(kites / darts - self.PHI) < 0.02
+
+    def test_cell_counts(self):
+        # the sun deflated: 5 kites, then 15, 35, 95, 265, 705, 1855 tiles
+        counts = [len(kitedart_board(k, 0).adjacency) for k in range(7)]
+        assert counts == [5, 15, 35, 95, 265, 705, 1855]
+
+    def test_patch_is_a_disc(self):
+        board = kitedart_board(5, 0)
+        assert _euler_characteristic(board) == 1
+        assert _boundary_components(board) == 1
+        assert _connected(board)
+
+    def test_every_interior_vertex_is_one_of_the_seven(self):
+        board = kitedart_board(7, 0)
+        edges = Counter(frozenset(e) for p in board.polygons.values()
+                        for e in zip(p, p[1:] + p[:1]))
+        rim = {v for e, n in edges.items() if n == 1 for v in e}
+        figures = defaultdict(list)
+        for cell, polygon in board.polygons.items():
+            for i, vertex in enumerate(polygon):
+                figures[vertex].append(self.CORNERS[(cell[0], i)])
+        seen = Counter(tuple(sorted(f)) for v, f in figures.items() if v not in rim)
+        assert set(seen) == {
+            ("kite tip",) * 5,                                          # sun
+            ("dart tip",) * 5,                                          # star
+            ("dart reflex", "kite side", "kite side"),                  # ace
+            ("dart side", "dart side", "kite tail", "kite tail"),       # deuce
+            ("dart side", "dart side", "kite tail", "kite tip", "kite tip"),  # jack
+            ("dart tip", "kite side", "kite side", "kite side", "kite side"),  # queen
+            ("dart tip", "dart tip", "dart tip", "kite side", "kite side"),  # king
+        }
+
+    def test_vertices_are_exact(self):
+        # exact Z[zeta] keys: distinct keys must be geometrically far apart
+        board = kitedart_board(4, 0)
+        points = sorted({p for polygon in board.polygons.values() for p in polygon})
+        short = min(math.dist(p[i], p[(i + 1) % 4])
+                    for p in board.polygons.values() for i in range(4))
+        min_gap = min(math.dist(a, b) for i, a in enumerate(points)
+                      for b in points[i + 1:i + 30])
+        assert min_gap > short * 0.3
+
+    @pytest.mark.parametrize("difficulty", list(DIFFICULTIES))
+    def test_the_centred_board_has_the_sun_in_the_middle(self, difficulty):
+        # The seed's centre alternates under deflation -- five kite tips, then
+        # five dart tips, then a sun again -- and every preset deflates an even
+        # number of times, so each centred board is laid round the sun.
+        board = build_board("kitedart", difficulty)
+        middle = (board.width / 2, board.height / 2)
+        tips = Counter(polygon[0] for cell, polygon in board.polygons.items()
+                       if cell[0] == 0)
+        suns = [v for v, n in tips.items() if n == 5]
+        nearest = min(suns, key=lambda v: math.dist(v, middle))
+        assert math.dist(nearest, middle) < board.width * 0.05
+
+    @pytest.mark.parametrize("difficulty", list(DIFFICULTIES))
+    def test_glyph_sits_in_the_biggest_circle(self, difficulty):
+        """The numbers have room in the darts.
+
+        A dart's vertex mean sits a hair from its reflex corner, so a glyph
+        centred and sized there is a quarter of what the tile holds. The
+        anchor is the centre of the biggest circle each tile holds: for the
+        kite the incircle, touching all four edges; for the dart the circle
+        that touches both long edges and the reflex corner.
+        """
+        board = build_board("kitedart", difficulty)
+        assert board.glyph_anchors.keys() == board.polygons.keys()
+
+        def to_segment(p, a, b):
+            (ax, ay), (bx, by) = a, b
+            t = ((p[0] - ax) * (bx - ax) + (p[1] - ay) * (by - ay)) / math.dist(a, b) ** 2
+            t = min(1.0, max(0.0, t))
+            return math.dist(p, (ax + t * (bx - ax), ay + t * (by - ay)))
+
+        for cell, polygon in board.polygons.items():
+            anchor = board.glyph_anchors[cell]
+            reach = [to_segment(anchor, polygon[i], polygon[(i + 1) % 4]) for i in range(4)]
+            mean = (sum(x for x, _ in polygon) / 4, sum(y for _, y in polygon) / 4)
+            at_mean = min(to_segment(mean, polygon[i], polygon[(i + 1) % 4])
+                          for i in range(4))
+            if cell[0] == 0:
+                assert max(reach) - min(reach) < 1e-9 * max(reach)
+                assert min(reach) >= at_mean
+            else:
+                long_edges = (reach[1], reach[2])  # tip at index 2
+                corner = math.dist(anchor, polygon[0])
+                assert math.isclose(long_edges[0], long_edges[1])
+                assert math.isclose(long_edges[0], corner)
+                assert min(reach) == pytest.approx(corner)
+                assert min(reach) > 3.5 * at_mean
 
 
 class TestPhyllotaxis:

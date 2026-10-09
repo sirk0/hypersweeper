@@ -22,6 +22,10 @@ class Board:
     mine_count: int
     width: float
     height: float
+    # Where a cell's vertex mean is a poor glyph spot, the point to centre its
+    # number/flag/mine on instead, in the same pixel space as ``polygons``
+    # (``glyphAnchor`` in web/src/boards/core.ts). None for nearly every board.
+    glyph_anchors: dict[Cell, tuple[float, float]] | None = None
 
 
 @dataclass(frozen=True)

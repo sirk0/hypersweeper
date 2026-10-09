@@ -71,9 +71,9 @@ interface PenroseCell {
 //
 // Port of the same section in minesweeper/boards/aperiodic.py; see that file
 // for the fuller commentary. What makes a tiling aperiodic is that it repeats
-// nowhere, and both boards here grow far more of one than they keep — the
-// Penrose wheel is 430 rhombi where the easy board is 81, the Spectre cluster
-// 4401 tiles where the hard board is 480. The centred trim is one window onto
+// nowhere, and the three substitution boards here grow far more of one than
+// they keep — the Penrose wheel is 430 rhombi where the easy board is 81, the
+// Spectre cluster 4401 tiles where the hard board is 480. The centred trim is one window onto
 // that patch; every other window is a board of the same size made of tiles that
 // have never sat together before, which is what a `variant` is: not a
 // re-generated tiling, but somewhere else to look at the one the substitution
@@ -439,6 +439,158 @@ export function penroseBoard(
     cellMap.set(cid(cell.color, cell.index), vertexIds[i]!);
   }
   return finalizeFlat("penrose", cellMap, positions, mineCount, scale);
+}
+
+// -- Penrose kites and darts (P2) --------------------------------------------
+//
+// Line-for-line port of the same section in minesweeper/boards/aperiodic.py;
+// see that file for the fuller commentary. The same Robinson triangles as the
+// rhombi above, in the same ring, but paired along a *leg* rather than the
+// base: two acute halves make a kite, two obtuse halves a dart. Each triangle
+// is (color, apex, side, axis) — its legs run apex→side and apex→axis, and its
+// mirror partner shares the second. Color 0 is a half-kite (apex = the kite's
+// tip, axis ending at its 144° tail), 1 a half-dart (apex = the reflex corner,
+// axis ending at the tip). Deflating, a half-kite becomes a whole kite and a
+// half-dart along its long edge, a half-dart a half-kite and a half-dart; the
+// new points sit 1/φ and 1/φ² of the way along an edge, so ids stay exact.
+
+type KiteDartTriangle = [number, ZPoint, ZPoint, ZPoint];
+
+/** The Robinson half-tiles of the kite-and-dart sun, deflated `subdivisions`
+ * times. The seed is five kites with their tips at the origin. */
+export function kiteDartTriangles(subdivisions: number): KiteDartTriangle[] {
+  const zero: ZPoint = [0, 0, 0, 0];
+  const powers: ZPoint[] = [[1, 0, 0, 0]];
+  for (let i = 0; i < 10; i++) powers.push(zetaMul(powers[powers.length - 1]!));
+
+  let triangles: KiteDartTriangle[] = [];
+  for (let i = 0; i < 10; i++) {
+    const [side, axis] = i % 2 ? [powers[i + 1]!, powers[i]!] : [powers[i]!, powers[i + 1]!];
+    triangles.push([0, zero, side, axis]);
+  }
+
+  /** The point 1/φ^steps of the way from p to q. */
+  const toward = (p: ZPoint, q: ZPoint, steps: number): ZPoint => {
+    let d = zSub(q, p);
+    for (let s = 0; s < steps; s++) d = zDivPhi(d);
+    return zAdd(p, d);
+  };
+
+  for (let s = 0; s < subdivisions; s++) {
+    const deflated: KiteDartTriangle[] = [];
+    for (const [color, a, b, c] of triangles) {
+      if (color === 0) {
+        // half-kite: tip a, side corner b, tail c
+        const d = toward(a, b, 2);
+        const x = toward(a, c, 1);
+        deflated.push([1, d, x, a], [0, b, d, x], [0, b, c, x]);
+      } else {
+        // half-dart: reflex corner a, side corner b, tip c
+        const y = toward(b, c, 2);
+        deflated.push([1, y, a, b], [0, c, y, a]);
+      }
+    }
+    triangles = deflated;
+  }
+
+  if (import.meta.env.DEV) {
+    for (const [, a, b, c] of triangles) {
+      for (const p of [a, b, c]) {
+        for (const coeff of p) {
+          if (!Number.isSafeInteger(coeff)) {
+            throw new Error(`kite-and-dart ℤ[ζ5] coefficient overflow: ${coeff}`);
+          }
+        }
+      }
+    }
+  }
+  return triangles;
+}
+
+/**
+ * An aperiodic Penrose tiling (P2): kites and darts. Starts from the five-kite
+ * sun and deflates `subdivisions` times; each half-tile is merged with its
+ * mirror image across their shared leg (unpaired halves on the outer rim are
+ * dropped). `scale` is the sun's radius in pixels; `keep` and `variant` trim
+ * the patch exactly as they do for `penroseBoard` — variant 0 is the centred
+ * block with the sun in the middle of it. See `windowRows`.
+ */
+export function kiteDartBoard(
+  subdivisions: number,
+  mineCount: number,
+  scale = 300,
+  keep: number | null = null,
+  variant = 0,
+): Board {
+  const waiting = new Map<string, ZPoint>();
+  const cells: PenroseCell[] = [];
+  for (const [color, apex, side, axis] of kiteDartTriangles(subdivisions)) {
+    const edge =
+      zCmp(apex, axis) <= 0 ? `${zKey(apex)}|${zKey(axis)}` : `${zKey(axis)}|${zKey(apex)}`;
+    const key = `${color}|${edge}`;
+    const otherSide = waiting.get(key);
+    if (otherSide !== undefined) {
+      waiting.delete(key);
+      // apex, side, axis-end, mirrored side: the tile's outline in order
+      cells.push({ color, index: cells.length, verts: [apex, side, axis, otherSide] });
+    } else {
+      waiting.set(key, side);
+    }
+  }
+
+  const vertexIds = cells.map((cell) => cell.verts.map(zKey));
+  const centroids: Vertex[] = cells.map((cell) => {
+    let cx = 0;
+    let cy = 0;
+    for (const v of cell.verts) {
+      const [x, y] = zToXy(v);
+      cx += x;
+      cy += y;
+    }
+    return [cx / 4, cy / 4];
+  });
+  const kept = windowRows(
+    vertexIds,
+    centroids,
+    (a, b) => cells[a]!.color - cells[b]!.color || cells[a]!.index - cells[b]!.index,
+    keep,
+    variant,
+  );
+
+  const cellMap = new Map<CellId, string[]>();
+  const positions = new Map<string, Vertex>();
+  for (const i of kept) {
+    const cell = cells[i]!;
+    cell.verts.forEach((v, j) => {
+      const k = vertexIds[i]![j]!;
+      if (!positions.has(k)) positions.set(k, zToXy(v));
+    });
+    cellMap.set(cid(cell.color, cell.index), vertexIds[i]!);
+  }
+  const board = finalizeFlat("kitedart", cellMap, positions, mineCount, scale);
+  const glyphAnchor = new Map<CellId, Vertex>();
+  for (const [cell, polygon] of board.polygons) {
+    // a cell id is "color,index", as `cid` made it above
+    glyphAnchor.set(cell, kiteDartGlyphAnchor(Number(cell.split(",")[0]), polygon));
+  }
+  return { ...board, glyphAnchor };
+}
+
+/** The centre of the biggest circle a kite or a dart holds — port of
+ * `_kitedart_glyph_anchor` in minesweeper/boards/aperiodic.py, which has the
+ * derivation. A dart's vertex mean sits a hair from its reflex corner, so a
+ * number centred there would be drawn a quarter of the size the tile has room
+ * for. Both tiles are symmetric about their axis and the circle is centred on
+ * it, a fraction `t` down from the tip: 1/φ for the kite (its incircle), and
+ * 1/(1 + sin 36°) for the dart, whose circle touches the long edges and the
+ * reflex corner itself. The polygon is (apex, side, axis end, side): the tip is
+ * a kite's apex and a dart's axis end. */
+function kiteDartGlyphAnchor(color: number, polygon: readonly Vertex[]): Vertex {
+  const [tip, end, t] =
+    color === 0
+      ? [polygon[0]!, polygon[2]!, 2 / (1 + Math.sqrt(5))]
+      : [polygon[2]!, polygon[0]!, 1 / (1 + Math.sin(Math.PI / 5))];
+  return [tip[0] + (end[0] - tip[0]) * t, tip[1] + (end[1] - tip[1]) * t];
 }
 
 // -- Phyllotactic spiral -----------------------------------------------------

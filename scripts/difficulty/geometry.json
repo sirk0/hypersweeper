@@ -8452,5 +8452,52 @@
         "patch": 1792
       }
     }
+  },
+  "kitedart": {
+    "builder": "kitedart_board",
+    "args": {
+      "easy": {
+        "args": [
+          4,
+          6,
+          270.53,
+          81
+        ],
+        "cells": 81,
+        "score": 0.0,
+        "distortionMean": 1.3344,
+        "distortionP90": 1.8017,
+        "indistinguishable": 0,
+        "patch": 265
+      },
+      "hard": {
+        "args": [
+          6,
+          48,
+          769.119,
+          480
+        ],
+        "cells": 480,
+        "score": 0.0,
+        "distortionMean": 1.373,
+        "distortionP90": 1.8017,
+        "indistinguishable": 0,
+        "patch": 1855
+      },
+      "medium": {
+        "args": [
+          6,
+          17,
+          500.0,
+          256
+        ],
+        "cells": 256,
+        "score": 0.0,
+        "distortionMean": 1.3716,
+        "distortionP90": 1.8017,
+        "indistinguishable": 0,
+        "patch": 1855
+      }
+    }
   }
 }
