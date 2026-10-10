@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { kiteDartBoard, penroseBoard, spectreBoard } from "../../src/boards/aperiodic";
+import {
+  ammannBeenkerBoard,
+  kiteDartBoard,
+  penroseBoard,
+  spectreBoard,
+} from "../../src/boards/aperiodic";
 import {
   boundaryComponents,
   eulerCharacteristic,
@@ -26,6 +31,9 @@ const CASES: [string, (variant: number) => Board, number][] = [
   ["kitedart easy", (v) => kiteDartBoard(4, 6, 270.53, 81, v), 81],
   ["kitedart medium", (v) => kiteDartBoard(6, 29, 500.0, 256, v), 256],
   ["kitedart hard", (v) => kiteDartBoard(6, 73, 769.119, 450, v), 450],
+  ["ammannbeenker easy", (v) => ammannBeenkerBoard(3, 9, 35.891, 81, v), 81],
+  ["ammannbeenker medium", (v) => ammannBeenkerBoard(3, 28, 25.905, 280, v), 280],
+  ["ammannbeenker hard", (v) => ammannBeenkerBoard(4, 82, 25.319, 480, v), 480],
   ["spectre easy", (v) => spectreBoard(3, 11, 81, 14.361, v), 81],
   ["spectre medium", (v) => spectreBoard(4, 37, 256, 9.437, v), 256],
   ["spectre hard", (v) => spectreBoard(4, 89, 480, 8.512, v), 480],

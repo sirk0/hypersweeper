@@ -8497,6 +8497,53 @@
       }
     }
   },
+  "ammannbeenker": {
+    "builder": "ammann_beenker_board",
+    "args": {
+      "easy": {
+        "args": [
+          3,
+          10,
+          35.891,
+          81
+        ],
+        "cells": 81,
+        "score": 0.0,
+        "distortionMean": 1.2455,
+        "distortionP90": 1.4142,
+        "indistinguishable": 0,
+        "patch": 1312
+      },
+      "hard": {
+        "args": [
+          4,
+          90,
+          25.319,
+          480
+        ],
+        "cells": 480,
+        "score": 0.0,
+        "distortionMean": 1.2416,
+        "distortionP90": 1.4142,
+        "indistinguishable": 0,
+        "patch": 7784
+      },
+      "medium": {
+        "args": [
+          3,
+          40,
+          25.905,
+          280
+        ],
+        "cells": 280,
+        "score": 0.0,
+        "distortionMean": 1.2367,
+        "distortionP90": 1.4142,
+        "indistinguishable": 0,
+        "patch": 1312
+      }
+    }
+  },
   "hyperbolic45": {
     "builder": "hyperbolic_board",
     "args": {
