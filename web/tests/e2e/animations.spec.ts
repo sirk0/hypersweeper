@@ -184,6 +184,33 @@ test.describe("M6 animations", () => {
     });
   }
 
+  /** Whether a run of frames read `late` ms after a click could show an
+   * envelope `span` ms long at all, and if so whether one of them did.
+   *
+   * A frame's value is what the board wrote on that frame or the one before,
+   * so the first read after the click may still be the frame before it; from
+   * the second read on, a frame read inside the envelope was drawn inside it.
+   * Under SwiftShader with a shard's other browsers on the same cores, the
+   * renderer can go longer than the whole envelope without drawing anything
+   * -- and then there is nothing on screen to measure, whatever the board did.
+   * That run checks what can be seen (the settled state) and says it starved.
+   * Otherwise a lit frame has to be at least as bright as `floor` allows at
+   * the moment it was read. */
+  function litAsEnvelopeAllows(
+    seen: { late: number; value: number }[],
+    span: number,
+    floor: (late: number) => number,
+  ): boolean | "starved" {
+    if (seen.slice(1).filter((s) => s.late < span).length === 0) {
+      test.info().annotations.push({
+        type: "starved",
+        description: `no frame drawn inside the ${span} ms envelope`,
+      });
+      return "starved";
+    }
+    return seen.some((s) => s.value > 0 && s.value >= floor(s.late) - 1e-6);
+  }
+
   test("a flood lights the pins and lets them go out again", async ({ page }) => {
     const { opener } = await realisticSphere(page);
     const at = await page.evaluate(async (cell) => {
@@ -202,21 +229,30 @@ test.describe("M6 animations", () => {
       // land past the crest. Sampling on past the deadline never lowers a peak,
       // and `after` below still reads a finished animation.
       const t0 = performance.now();
-      let peak = 0;
-      let frames = 0;
-      while (performance.now() - t0 < 700 || frames < 40) {
+      const seen: { late: number; value: number }[] = [];
+      while (performance.now() - t0 < 700 || seen.length < 40) {
         await frame();
-        frames++;
-        peak = Math.max(peak, ms.state().glow!.amount);
+        seen.push({ late: performance.now() - t0, value: ms.state().glow!.amount });
       }
-      return { rest, peak, after: ms.state().glow! };
+      return { rest, seen, after: ms.state().glow! };
     }, opener);
 
     // At rest a pin carries only its ember — a look, not a light show.
     expect(at.rest.amount).toBe(0);
     expect(at.rest.base).toBeGreaterThan(0);
-    // The flood lights them...
-    expect(at.peak).toBeGreaterThan(0.2);
+    // The flood lights them, and as brightly as the swell's envelope says for
+    // the moment the frame was read -- measured against the envelope rather
+    // than a fixed bar for the reason the blast below is: under SwiftShader a
+    // frame can come long after the crest it should have shown. The weakest
+    // swell there is (src/render/markerGlow.ts: PEAK_MIN high, up over RISE,
+    // no hold, down over FALL) is the floor, which any flood clears; how high
+    // a given flood goes is tests/unit/markerGlow.test.ts's to pin.
+    const PEAK_MIN = 0.14;
+    const RISE = 80;
+    const FALL = 320;
+    const floor = (late: number) =>
+      PEAK_MIN * Math.max(0, 1 - Math.max(0, late - RISE) / FALL);
+    expect(litAsEnvelopeAllows(at.seen, RISE + FALL, floor)).not.toBe(false);
     // ...and once it has finished opening they are back to the ember. This is
     // the "glow goes back to very low after the click's cells are open" rule,
     // measured on a real board.
@@ -231,21 +267,33 @@ test.describe("M6 animations", () => {
       const frame = () => new Promise((r) => requestAnimationFrame(r));
       await frame();
       const rest = ms.state().glow!;
-      ms.reveal(cell);
-      // Frame-bounded as well as clock-bounded; see the flood's loop above.
       const t0 = performance.now();
-      let peak = 0;
-      let frames = 0;
-      while (performance.now() - t0 < 1400 || frames < 80) {
+      ms.reveal(cell);
+      // Every frame's flash, and how long after the click it was read. Frame-
+      // bounded as well as clock-bounded; see the flood's loop above.
+      const seen: { late: number; value: number }[] = [];
+      while (performance.now() - t0 < 1400 || seen.length < 80) {
         await frame();
-        frames++;
-        peak = Math.max(peak, ms.state().glow!.blast);
+        seen.push({ late: performance.now() - t0, value: ms.state().glow!.blast });
       }
-      return { rest, peak, after: ms.state().glow!, status: ms.state().status };
+      return { rest, seen, after: ms.state().glow!, status: ms.state().status };
     }, mine);
 
     expect(at.status).toBe("lost");
-    expect(at.peak).toBeGreaterThan(0.5); // a detonation is not a flood fill
+    // A detonation is not a flood fill: it goes up white in 40 ms and takes
+    // 700 to come down (BLAST_RISE and BLAST_FALL in src/render/markerGlow.ts).
+    // What a frame shows of it depends on *when* the frame came, and under
+    // SwiftShader the first one after a loss can come 400 ms late -- a bar of
+    // "over half" read 0.497 on CI, from a board whose blast was fine. So the
+    // bar is the envelope itself: a frame read `late` ms after the click was
+    // drawn at most that long after the blast began, and past the rise the
+    // flash only fades, so a lit frame is at least as bright as the envelope
+    // is at `late`. One lit frame meeting that says the blast reached the
+    // markers at full strength, whenever the renderer got round to drawing it.
+    const RISE = 40;
+    const FALL = 700;
+    const floor = (late: number) => Math.max(0, 1 - Math.max(0, late - RISE) / FALL);
+    expect(litAsEnvelopeAllows(at.seen, RISE + FALL, floor)).not.toBe(false);
     expect(at.after.blast).toBe(0);
     // The board is dark again, but warmer than it was: embers for the rest of
     // the loss screen.
