@@ -41,7 +41,7 @@ import {
 // Polyhedra. The plane and every flat manifold (cylinder, Möbius, Klein,
 // torus) open the same tiling picker: the three regular tilings promoted to
 // the top, then the Uniform, Laves, Isogonal, Congruent-rectangles and
-// (plane-only) Aperiodic and Fractals families as submenus. On the plane one
+// (plane-only) Aperiodic, Spirals and Fractals families as submenus. On the plane one
 // more submenu holds the shaped boards — the same regular tilings cut to a
 // triangular or hexagonal outline instead of the default rectangle. Sphere and
 // Polyhedra list their finished boards. Title, difficulty row and theme come
@@ -80,7 +80,8 @@ interface Family {
 
 /** The tiling picker for a surface: the regular tilings it carries, promoted
  * to rows of their own, then the families (uniform, dual and, on the plane,
- * the shaped boards, aperiodic and fractals) with any built modes on it. */
+ * the shaped boards, aperiodic, spirals and fractals) with any built modes on
+ * it. */
 interface Picker {
   tilings: ModeEntry[];
   families: Family[];
@@ -936,7 +937,7 @@ export class Menu {
   /** The shared tiling picker for a surface (the plane or a flat manifold):
    * the three regular tilings as rows of their own, then the Uniform / Laves /
    * Isogonal / Congruent-rectangles (and, on the plane, Shaped boards,
-   * Aperiodic and Fractals) families as submenus. */
+   * Aperiodic, Spirals and Fractals) families as submenus. */
   private showPicker(label: string, surfaceKey: string, onBack: () => void): void {
     this.go(() => this.renderPicker(label, surfaceKey, onBack));
   }

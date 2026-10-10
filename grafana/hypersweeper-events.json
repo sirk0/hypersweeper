@@ -755,7 +755,7 @@
         "name": "family",
         "label": "Family",
         "description": "",
-        "query": "all,regular,uniform,dual,isogonal,rectangle,other,aperiodic,fractal,hyperbolic,sphere,platonic,catalan,polyhedra,volume",
+        "query": "all,regular,uniform,dual,isogonal,rectangle,other,aperiodic,spiral,fractal,hyperbolic,sphere,platonic,catalan,polyhedra,volume",
         "current": {
           "selected": true,
           "text": "all",
@@ -801,6 +801,11 @@
             "selected": false,
             "text": "aperiodic",
             "value": "aperiodic"
+          },
+          {
+            "selected": false,
+            "text": "spiral",
+            "value": "spiral"
           },
           {
             "selected": false,

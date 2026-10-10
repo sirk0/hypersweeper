@@ -114,6 +114,7 @@ from minesweeper.boards.catalog import (  # noqa: F401
     SOLID_GROUP_MEMBERS,
     SOLID_GROUP_ORDER,
     SOLID_MODES,
+    SPIRAL_MODES,
     SURFACE_LABELS,
     SURFACE_SPECS,
     SURFACES,

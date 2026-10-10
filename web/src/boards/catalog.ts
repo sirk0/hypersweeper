@@ -200,8 +200,12 @@ export const PICKER_FAMILIES = [
   "rectangle",
   "other",
 ];
-export const FLAT_ONLY_FAMILIES = ["aperiodic", "fractal", "hyperbolic"];
+export const FLAT_ONLY_FAMILIES = ["aperiodic", "spiral", "fractal", "hyperbolic"];
 export const APERIODIC_MODES = MENU.aperiodic as string[];
+// The spiral family: boards wound round a centre (the phyllotactic and Klaassen
+// spirals, the pentagonal spirals, the brick rings). One-off, plane-only modes
+// like the aperiodic ones, which they used to be filed under.
+export const SPIRAL_MODES = MENU.spiral as string[];
 // The fractal family: the rep-tile boards (sphinx, chair), each a patch whose
 // outline is the tile itself, scaled. One-off modes like the aperiodic ones.
 export const FRACTAL_MODES = MENU.fractal as string[];
@@ -217,6 +221,7 @@ const FAMILY_MEMBERS: Record<string, string[]> = {
   rectangle: RECTANGLE_ARCH,
   other: OTHER_ARCH,
   aperiodic: APERIODIC_MODES,
+  spiral: SPIRAL_MODES,
   fractal: FRACTAL_MODES,
   hyperbolic: HYPERBOLIC_MODES,
 };
@@ -350,7 +355,8 @@ export const MENU_FAMILY_HINTS: Record<string, string> = {
   // A grab-bag rather than a symmetry class, so the hint names its members
   // instead of a property they share.
   other: "Two rep-tiles, and Dürer's pentagons",
-  aperiodic: "Never repeats: Penrose, the Spectre, a spiral, brick rings",
+  aperiodic: "Never repeats: Penrose, Ammann–Beenker, the Spectre",
+  spiral: "Wound round a centre: sunflower, pentagons, brick rings",
   fractal: "One tile, grown into itself",
   hyperbolic: "Curved space: 7, 10 or 12 neighbours a tile",
 };

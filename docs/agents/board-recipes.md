@@ -469,7 +469,7 @@ chiral.
 
 The family is flat only — an inflated patch is a shape, not a periodic window,
 so there is nothing to glue a seam with. That is one line: it is in
-`catalog.FLAT_ONLY_FAMILIES` (with `aperiodic`), which `family_rows`,
+`catalog.FLAT_ONLY_FAMILIES` (with `aperiodic` and `spiral`), which `family_rows`,
 `picker_families` and the TypeScript mirror all read.
 
 ## Recipe: add a hyperbolic {p,q} board
@@ -520,7 +520,8 @@ These are one-offs, not tiling×surface products.
    centre and size the glyph there.
 2. Add the mode to the right menu table in `data/catalog.json` — one
    `menu.solidGroups[*].modes` (Sphere, Platonic solids, Catalan solids or
-   Polyhedra), `menu.aperiodic`, or `menu.shapedModes` (keyed by the regular
+   Polyhedra), `menu.aperiodic` (the substitution tilings), `menu.spiral`
+   (the boards wound round a centre), or `menu.shapedModes` (keyed by the regular
    tiling the shaped board is cut from) — and its label to `soloLabels`.
    `catalog.py` loads them (`SOLID_MODES` is derived by flattening
    `solidGroups`, so nothing else needs to know how many solid pages there
