@@ -155,11 +155,12 @@ describe("boardFacts", () => {
       expect(f.family, mode).toBeTruthy();
       expect(f.name, mode).toBeTruthy();
       expect(f.shapes.length, mode).toBeGreaterThan(0);
-      // Every cell is counted exactly once.
+      // Every cell is counted exactly once — a cell, not a drawn face: the
+      // projective plane draws each of its cells twice.
       expect(
         f.shapes.reduce((sum, s) => sum + s.count, 0),
         mode,
-      ).toBe(board.polygons.size);
+      ).toBe(board.adjacency.size);
       // And no row hedges: a label always names a polygon.
       for (const shape of f.shapes) expect(shape.label, mode).toMatch(/\w/);
     }

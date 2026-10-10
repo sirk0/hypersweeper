@@ -1144,26 +1144,30 @@ class App {
     const mesh = this.session.mesh;
     // A game cell's contents are painted on its (possibly moved) geometric
     // face; anchor there so the reported position follows the symmetry
-    // controls.
-    const anchor = mesh.cellAnchor(this.session.geomFor(cell));
-    if (!anchor) return null;
-    mesh.updateWorldMatrix(true, false);
-    const world = new Vector3(...anchor.center).applyMatrix4(mesh.matrixWorld);
-    const camera = this.renderer.camera;
-    const board = this.session.board;
-    // A closed solid hides a cell that faces away; a two-sided surface shows
-    // its cells from both faces, so it is never culled here.
-    if (this.session.is3d && !(isBoard3D(board) && board.twoSided)) {
-      const normal = new Vector3(...anchor.normal).transformDirection(mesh.matrixWorld);
-      const toCamera = camera.position.clone().sub(world);
-      if (normal.dot(toCamera) <= 1e-6) return null; // back-facing
+    // controls. A cell painted on two faces (the projective plane's antipodal
+    // twins) is on screen wherever either of them faces the camera.
+    for (const face of this.session.facesFor(cell)) {
+      const anchor = mesh.cellAnchor(face);
+      if (!anchor) continue;
+      mesh.updateWorldMatrix(true, false);
+      const world = new Vector3(...anchor.center).applyMatrix4(mesh.matrixWorld);
+      const camera = this.renderer.camera;
+      const board = this.session.board;
+      // A closed solid hides a cell that faces away; a two-sided surface shows
+      // its cells from both faces, so it is never culled here.
+      if (this.session.is3d && !(isBoard3D(board) && board.twoSided)) {
+        const normal = new Vector3(...anchor.normal).transformDirection(mesh.matrixWorld);
+        const toCamera = camera.position.clone().sub(world);
+        if (normal.dot(toCamera) <= 1e-6) continue; // back-facing
+      }
+      const ndc = world.project(camera);
+      const r = this.canvas.getBoundingClientRect();
+      return {
+        x: r.left + ((ndc.x + 1) / 2) * r.width,
+        y: r.top + ((1 - ndc.y) / 2) * r.height,
+      };
     }
-    const ndc = world.project(camera);
-    const r = this.canvas.getBoundingClientRect();
-    return {
-      x: r.left + ((ndc.x + 1) / 2) * r.width,
-      y: r.top + ((1 - ndc.y) / 2) * r.height,
-    };
+    return null;
   }
 
   /** The game cell shown at a point in client coordinates: the same raycast a
