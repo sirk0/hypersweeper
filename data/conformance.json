@@ -2005,7 +2005,7 @@
     "hyperbolic73": {
       "easy": {
         "cellCount": 85,
-        "mineCount": 12,
+        "mineCount": 7,
         "euler": 1,
         "boundaryComponents": 1,
         "edgeCount": 1197,
@@ -2013,17 +2013,17 @@
         "hasCellCycle": false
       },
       "medium": {
-        "cellCount": 232,
-        "mineCount": 45,
+        "cellCount": 246,
+        "mineCount": 24,
         "euler": 1,
         "boundaryComponents": 1,
-        "edgeCount": 3234,
-        "vertexCount": 3003,
+        "edgeCount": 3444,
+        "vertexCount": 3199,
         "hasCellCycle": false
       },
       "hard": {
         "cellCount": 477,
-        "mineCount": 95,
+        "mineCount": 50,
         "euler": 1,
         "boundaryComponents": 1,
         "edgeCount": 6699,
@@ -2034,7 +2034,7 @@
     "hyperbolic54": {
       "easy": {
         "cellCount": 81,
-        "mineCount": 12,
+        "mineCount": 5,
         "euler": 1,
         "boundaryComponents": 1,
         "edgeCount": 855,
@@ -2043,7 +2043,7 @@
       },
       "medium": {
         "cellCount": 261,
-        "mineCount": 45,
+        "mineCount": 16,
         "euler": 1,
         "boundaryComponents": 1,
         "edgeCount": 2730,
@@ -2052,7 +2052,7 @@
       },
       "hard": {
         "cellCount": 471,
-        "mineCount": 95,
+        "mineCount": 48,
         "euler": 1,
         "boundaryComponents": 1,
         "edgeCount": 4890,
@@ -2063,7 +2063,7 @@
     "hyperbolic45": {
       "easy": {
         "cellCount": 81,
-        "mineCount": 12,
+        "mineCount": 5,
         "euler": 1,
         "boundaryComponents": 1,
         "edgeCount": 660,
@@ -2071,17 +2071,17 @@
         "hasCellCycle": false
       },
       "medium": {
-        "cellCount": 253,
-        "mineCount": 45,
+        "cellCount": 205,
+        "mineCount": 13,
         "euler": 1,
         "boundaryComponents": 1,
-        "edgeCount": 2028,
-        "vertexCount": 1776,
+        "edgeCount": 1632,
+        "vertexCount": 1428,
         "hasCellCycle": false
       },
       "hard": {
         "cellCount": 485,
-        "mineCount": 95,
+        "mineCount": 38,
         "euler": 1,
         "boundaryComponents": 1,
         "edgeCount": 3852,

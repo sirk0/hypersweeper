@@ -197,6 +197,12 @@ OUTER_BAND = 0.25
 # between, so the triakis octahedron, the tetrakis hexahedron and the deltoidal
 # icositetrahedron each land at 96. Their rows are inside the outer band, so
 # they are counted here rather than exempted (see EXEMPT_ROWS).
+#
+# So is `hyperbolic45` medium, at 205 cells (-20%): the {4,5} disc trimmed to
+# any of the four distance shells that land in the medium band (237, 253, 277
+# and 285 cells) leaves 8 rim cells with an indistinguishable twin each, which
+# no number can ever separate, and the nearest fair trim is 20 shells. Being a
+# puzzle outranks the size band, as reading as the surface does above.
 NEAR_MISS_ALLOWANCE = 0.12
 
 

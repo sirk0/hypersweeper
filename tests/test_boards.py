@@ -2280,6 +2280,22 @@ class TestHyperbolic:
         assert sum(xs) / len(xs) == pytest.approx(board.width / 2)
         assert sum(ys) / len(ys) == pytest.approx(board.height / 2)
 
+    def test_no_fair_trim_of_45_lands_in_the_medium_band(self):
+        # why `hyperbolic45` medium ships at 205 cells, outside +-15% of 256
+        # (see NEAR_MISS_ALLOWANCE in tests/test_presets.py): every trim in
+        # the band leaves rim cells with a twin, and 20 shells is the nearest
+        # one that does not
+        from scripts.difficulty.metrics import indistinguishable_cells
+        in_band = {}
+        for shells in range(18, 30):
+            board = hyperbolic_board(4, 5, shells, 1)
+            if 0.85 * 256 <= len(board.adjacency) <= 1.15 * 256:
+                in_band[shells] = indistinguishable_cells(board.adjacency)
+        assert in_band and all(twins > 0 for twins in in_band.values())
+        board = hyperbolic_board(4, 5, 20, 1)
+        assert len(board.adjacency) == 205
+        assert indistinguishable_cells(board.adjacency) == 0
+
     def test_a_euclidean_or_spherical_tiling_is_refused(self):
         for p, q in [(4, 4), (6, 3), (3, 6), (5, 3)]:
             with pytest.raises(ValueError):

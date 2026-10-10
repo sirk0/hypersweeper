@@ -183,6 +183,12 @@ SPEC: dict[str, dict] = {
     "carpet_board": dict(size=(0,), mine=1, shape=2, kind="scale", coarse=True),
     "pentaflake_board": dict(size=(0,), mine=1, shape=2, kind="scale", coarse=True),
     "gosper_board": dict(size=(0,), mine=1, shape=2, kind="scale", coarse=True),
+    # the hyperbolic discs: hyperbolic_board(p, q, shells, mines, scale). The
+    # knob is the number of distance shells kept, which steps 5 to 14 cells
+    # at a time -- fine enough to hit every target, so not ``coarse``. The
+    # board is a disc, so the flat shape term is log(1) = 0 for every
+    # candidate and the size penalty decides alone, as for the brick rings.
+    "hyperbolic_board": dict(size=(2,), mine=3, shape=4, kind="scale"),
     "archimedean_board": dict(size=(1, 2), mine=3, shape=4, kind="scale", lead=1),
     "arch_torus_board": dict(size=(1, 2), mine=3, shape=4, kind="tube", lead=1),
     "arch_cylinder_board": dict(size=(1, 2), mine=3, shape=4, kind="cut", lead=1),
