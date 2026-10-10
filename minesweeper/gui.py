@@ -1000,7 +1000,7 @@ _ICON_ALIASES = {
     "platonic": "tetrahedron",
     "catalan": "rhombictriaconta",
     "polyhedra": "steppedbipyramid",  # frames, stepped pyramids, brick cubes
-    "volume": "cube3d",     # the "Volumes" row: its only board
+    "volume": "cube3d",     # the "Volumes" row: its first board
     "classic": "square",    # the "Classic" home entry: flat squares
     "manifolds": "torus",   # the "Flat manifolds" home entry
     "random": "start",      # the "Random" picker entry
@@ -1624,10 +1624,12 @@ def _render_icon(key: str) -> pygame.Surface:
                 s, ICON_BLUE_DARK, True, [(int(x), int(y)) for x, y in hole], 3
             )
         _icon_gloss(s, pygame.Rect(d * 0.12, d * 0.1, d * 0.76, d * 0.4))
-    elif key == "cube3d":
-        # the cube of cubes, taken apart the way the board draws it: four
-        # square sheets in a 2x2, each one further back than the last and so
-        # a little smaller and a little higher up the icon
+    elif key in ("cube3d", "fcc3d", "hexprism3d"):
+        # a volume, taken apart the way the board draws it: four sheets in a
+        # 2x2, each one further back than the last and so a little smaller
+        # and a little higher up the icon -- squares for the cube of cubes,
+        # the diamond checkerboard of the rhombic honeycomb, a hexagon of
+        # hexagons for the prisms
         cols, per = 2, 3
         span = d * 0.36            # a sheet at the front
         gap = d * 0.09
@@ -1639,16 +1641,8 @@ def _render_icon(key: str) -> pygame.Surface:
             side = span * shrink
             ox = left + (k % cols) * block + (span - side) / 2
             oy = top + (k // cols) * block + (span - side) / 2 - d * 0.012 * k
-            step = side / per
-            for i in range(per):
-                for j in range(per):
-                    tile = [
-                        (ox + i * step, oy + j * step),
-                        (ox + (i + 1) * step, oy + j * step),
-                        (ox + (i + 1) * step, oy + (j + 1) * step),
-                        (ox + i * step, oy + (j + 1) * step),
-                    ]
-                    _icon_shape(s, tile, fill=ICON_BLUE, width=2)
+            for tile in _volume_icon_sheet(key, k, ox, oy, side, per):
+                _icon_shape(s, tile, fill=ICON_BLUE, width=2)
         _icon_gloss(s, pygame.Rect(d * 0.12, d * 0.1, d * 0.76, d * 0.4))
     elif key == "steppedbipyramid":
         # a terraced diamond: square slabs widest at the equator, tapering
@@ -1888,6 +1882,48 @@ def _render_icon(key: str) -> pygame.Surface:
         pygame.draw.circle(s, ICON_BLUE_DARK, (int(c), int(c)), int(d * 0.4), 2)
 
     return s  # supersampled; menu_icon scales it down
+
+
+def _volume_icon_sheet(key: str, k: int, ox: float, oy: float, side: float,
+                       per: int) -> list[list[tuple[float, float]]]:
+    """One sheet of a volume's menu icon: its tiles, in a ``side``-wide square
+    at ``(ox, oy)``. Slice ``k`` matters only to the rhombic honeycomb, whose
+    checkerboard changes colour from one sheet to the next."""
+    if key == "fcc3d":
+        # diamonds on the cells of a checkerboard whose colour alternates
+        # with the slice, corners overhanging the centres by one -- a row
+        # longer than the cube's, or a sheet is a lone X
+        per += 1
+        step = side / (per + 1)
+        return [
+            [(ox + (i + 1) * step, oy + j * step),
+             (ox + (i + 2) * step, oy + (j + 1) * step),
+             (ox + (i + 1) * step, oy + (j + 2) * step),
+             (ox + i * step, oy + (j + 1) * step)]
+            for i in range(per) for j in range(per) if (i + j + k) % 2 == 0
+        ]
+    if key == "hexprism3d":
+        # a centre hexagon and its ring of six, pointy-top
+        cx, cy = ox + side / 2, oy + side / 2
+        pitch = side / 3
+        r = pitch / math.sqrt(3)
+        centres = [(cx, cy)] + [
+            (cx + pitch * math.cos(math.radians(60 * a)),
+             cy + pitch * math.sin(math.radians(60 * a)))
+            for a in range(6)
+        ]
+        return [
+            [(x + r * math.cos(math.radians(30 + 60 * a)),
+              y + r * math.sin(math.radians(30 + 60 * a))) for a in range(6)]
+            for x, y in centres
+        ]
+    step = side / per
+    return [
+        [(ox + i * step, oy + j * step), (ox + (i + 1) * step, oy + j * step),
+         (ox + (i + 1) * step, oy + (j + 1) * step),
+         (ox + i * step, oy + (j + 1) * step)]
+        for i in range(per) for j in range(per)
+    ]
 
 
 def menu_icon(key: str, size: int = ICON_SIZE) -> pygame.Surface:
@@ -2358,11 +2394,11 @@ class GameScreen3D(BaseGameScreen):
         # turn to a vertex-first 3/4 view so the frame's gaps read clearly
         if self.mode == "tetraframe":
             return mat_mul(rot_x(-0.62), rot_y(0.45))
-        # the cube of cubes is read off its slices, so it starts nearly face
+        # the volumes are read off their slices, so they start nearly face
         # on -- just enough pitch and yaw to show that the sheets step back
         # from one another, which is the only cue that says which slice is
         # which. Any more and the far sheets shrink and their numbers with them
-        if self.mode == "cube3d":
+        if self.mode in SOLID_GROUP_MEMBERS["volume"]:
             return mat_mul(rot_x(-0.14), rot_y(0.2))
         # the triakis tetrahedron is the shallowest solid here -- its pyramids
         # rise about a fifth of the way to the next face -- so the shared 3/4

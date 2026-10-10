@@ -107,6 +107,17 @@ Pick a surface, then a tiling:
   header's controls turn the solid itself, which is the one move dragging
   cannot make: dragging turns the drawing, and the drawing is the cube pulled
   apart rather than the cube
+- **Rhombic honeycomb (3D)** — a block of rhombic dodecahedra, the cells that
+  pack space around the points of the face-centred cubic lattice. Each meets
+  12 others across a face and 6 more at a corner, 18 in all. Sliced along a
+  cube axis, every sheet is a checkerboard of diamonds whose edge- and
+  corner-touching pairs are exactly the face and corner neighbours — but the
+  corner neighbour along the axis is *two* slices away, so a number reads
+  across five sheets rather than three
+- **Hex prism honeycomb (3D)** — hexagonal prisms stacked in layers: the six
+  round a cell in its own layer and, in each layer above and below, the prism
+  straight through and its six — 20 neighbours, each layer drawn as its own
+  hexagon of hexagons
 - **Torus (3D)** — the grid wraps in both directions, so there are no
   border cells; pure hexagons are possible here, because the torus has
   Euler characteristic 0

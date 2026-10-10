@@ -1299,6 +1299,46 @@
         ]
       }
     },
+    "fcc3d": {
+      "builder": "fcc_block_board",
+      "args": {
+        "easy": [
+          5,
+          6,
+          12
+        ],
+        "medium": [
+          8,
+          8,
+          40
+        ],
+        "hard": [
+          10,
+          10,
+          80
+        ]
+      }
+    },
+    "hexprism3d": {
+      "builder": "hex_prism_board",
+      "args": {
+        "easy": [
+          2,
+          4,
+          12
+        ],
+        "medium": [
+          3,
+          7,
+          40
+        ],
+        "hard": [
+          4,
+          8,
+          80
+        ]
+      }
+    },
     "doubletorus": {
       "builder": "double_torus_board",
       "args": {

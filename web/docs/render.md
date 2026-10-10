@@ -174,7 +174,7 @@ in two renderers. Four things to know before adding or retuning one:
   vertices of a detailed profile are for. Two loops next to Classic is still not
   a style: on the plane it differs only in the width of one bevel band.
 - **A two-sided surface mirrors the profile on both faces, and the ramp with
-  it.** The cylinder, Möbius strip and Klein bottle — and `cube3d`, whose slices
+  it.** The cylinder, Möbius strip and Klein bottle — and the volumes, whose slices
   are open sheets and so would vanish under front-face culling the moment the
   board was turned past ninety degrees — have no consistent outward side, so
   `writeGeometry` writes the loop stack twice, once along +normal and once along

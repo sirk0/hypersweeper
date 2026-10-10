@@ -3,17 +3,19 @@
 //
 // Every other board in the zoo is a *surface*, and two cells are neighbours
 // when their polygons share a vertex. A volume board keeps that rule and lifts
-// it one dimension: the cells are the unit cubes of an n x n x n block, and two
-// are neighbours when their **cubes** share a corner — the 3x3x3 block around a
-// cell minus the cell itself, so **26** neighbours where the densest surface
-// board in the catalogue has 21. It is integer arithmetic, so the rule is
-// exact; nothing rounds two nearby points together to make a neighbour.
+// it one dimension: the cells are solids filling a block, and two are
+// neighbours when the **solids** share a corner. Three ship — the cube of cubes
+// (`cube3d`, **26** neighbours where the densest surface board has 21), the
+// rhombic dodecahedra round the face-centred cubic lattice (`fcc3d`, 18) and
+// stacked hexagonal prisms (`hexprism3d`, 20). It is integer arithmetic, so the
+// rule is exact; nothing rounds two nearby points together to make a neighbour.
 //
-// A solid cube shows only its shell, so it is drawn taken apart: each k-slice
-// is its own sheet of n x n squares, the sheets laid out on a grid and stepped
-// back in depth by slice index. Nothing is hidden and nothing occludes
-// anything, which is what the 26-cell neighbourhood needs — a number in slice k
-// counts mines across slices k-1, k and k+1, so all three must be on screen.
+// A solid shows only its shell, so a volume is drawn taken apart: each k-slice
+// is its own sheet, the sheets laid out on a grid and stepped back in depth by
+// slice index. Nothing is hidden and nothing occludes anything, which is what a
+// neighbourhood that deep needs — a number in slice k of the cube counts mines
+// across slices k-1, k and k+1, so all three must be on screen (on the rhombic
+// honeycomb, k-2 to k+2). Within a sheet each drawing is exact.
 //
 // The layout constants are part of the drawing and the conformance oracle
 // counts vertices and edges off the drawing, so they match the Python's
@@ -47,42 +49,281 @@ export const SPREAD = 1.5;
 export function solidCubeBoard(n: number, mineCount: number): Board3D {
   if (n < 3) throw new Error("a volume board needs at least 3 cells on a side");
 
-  // The sheets are laid on a grid, not in a row: eight sheets in a row is a
-  // 9-to-1 board, which `frameSolid` fits into a sliver of a phone screen. At
-  // ceil(sqrt(n)) columns the board comes out 8x8, 18x12 and 26x26 cells at the
-  // three sizes — square enough to fill the screen at any of them.
-  const cols = Math.ceil(Math.sqrt(n));
-  const pitch = n + GAP;
-
-  // Vertex ids are `(k, i, j)` integer corners *within* a slice: the quads of
-  // one sheet share their corners exactly, which is what makes each sheet a
-  // mesh (every edge used by two tiles, or once along its rim), while two
-  // sheets share nothing. The adjacency below does not read these at all — it
-  // is the cubes that touch, not the drawn squares.
-  const raw = new Map<string, Vec3>();
-  const cells = new Map<CellId, string[]>();
+  // Each slice is a sheet of unit squares, cornered on the integers.
+  const sheets: Sheet[] = [];
   for (let k = 0; k < n; k++) {
-    const ox = (k % cols) * pitch;
-    const oy = -Math.floor(k / cols) * pitch;
-    const oz = -k * SPREAD;
+    const sheet: Sheet = new Map();
     for (let i = 0; i < n; i++) {
       for (let j = 0; j < n; j++) {
-        const corners: string[] = [];
         // wound counterclockwise seen from +z
-        for (const [du, dv] of [
-          [0, 0],
-          [1, 0],
-          [1, 1],
-          [0, 1],
-        ] as const) {
-          const key = cid(k, i + du, j + dv);
-          if (!raw.has(key)) raw.set(key, [ox + i + du, oy + j + dv, oz]);
-          corners.push(key);
-        }
-        cells.set(cid(i, j, k), corners);
+        sheet.set(
+          cid(i, j, k),
+          (
+            [
+              [0, 0],
+              [1, 0],
+              [1, 1],
+              [0, 1],
+            ] as const
+          ).map(([du, dv]) => [cid(i + du, j + dv), [i + du, j + dv]] as const),
+        );
       }
     }
+    sheets.push(sheet);
   }
+  const { polygons, radius } = layOut(sheets, n, n);
+  const adjacency = mooreAdjacency(n);
+  let kept: BoardSymmetry[] | null = null;
+  return {
+    mode: "cube3d",
+    polygons,
+    adjacency,
+    mineCount,
+    radius,
+    // The sheets are open — they have rims — so with front-face culling the
+    // whole board would vanish the moment it was turned past ninety degrees.
+    twoSided: true,
+    clip: null,
+    cornerMask: null,
+    // Not `solidBoard`, which measures a solid's point group off the polygons:
+    // the fanned layout is a *display* of the cube rather than the cube, and
+    // pulling the slices apart leaves nothing of the cube's 48 motions in the
+    // drawing to find. They are all still there in the cells, though, so the
+    // board offers them from the lattice instead — the same trade `surfaces.ts`
+    // makes, and for the same reason. `keepSymmetries` still checks every one
+    // against the adjacency actually built, so nothing here is asserted.
+    get symmetries(): BoardSymmetry[] {
+      return (kept ??= keepSymmetries(adjacency, cubeCandidates(n)));
+    },
+  };
+}
+
+/** The 18 lattice steps between neighbouring rhombic dodecahedra: the 12 to
+ * the cells across a face, then the 6 to the cells across one of the 4-valent
+ * corners — two layers away when the step is along an axis. */
+export const FCC_STEPS: readonly (readonly [number, number, number])[] =
+  (() => {
+    const steps: [number, number, number][] = [];
+    for (let di = -2; di <= 2; di++) {
+      for (let dj = -2; dj <= 2; dj++) {
+        for (let dk = -2; dk <= 2; dk++) {
+          const kind = [di, dj, dk]
+            .map(Math.abs)
+            .sort((a, b) => a - b)
+            .join();
+          if (kind === "0,1,1" || kind === "0,0,2") steps.push([di, dj, dk]);
+        }
+      }
+    }
+    return steps;
+  })();
+
+/** A `side x side x depth` block of the face-centred cubic lattice, its cells
+ * the rhombic dodecahedra that tile space around those points.
+ *
+ * The cells sit on the integer points `(i, j, k)` of the box whose coordinates
+ * sum to an even number. Two share a rhombic **face** at a step like
+ * `(1, 1, 0)` — twelve of those — and only a **corner**, the 4-valent one six
+ * cells meet at, at a step like `(2, 0, 0)` — six more: 18 neighbours, all of
+ * them exact lattice steps.
+ *
+ * Sliced along `k`, the cut is an honest picture: the middle of a rhombic
+ * dodecahedron is a square standing on its corner, and a layer of them is a
+ * checkerboard of those diamonds. Within a sheet the drawing *is* the adjacency
+ * — diamonds sharing an edge share a face, diamonds touching at a point share
+ * that corner. Across sheets it is the board's twist: slice `k ± 1` holds the
+ * four diamonds centred on this one's corners, and slice `k ± 2` the one
+ * straight through, so a number counts mines over *five* sheets. */
+export function fccBlockBoard(
+  side: number,
+  depth: number,
+  mineCount: number,
+): Board3D {
+  if (side < 3 || depth < 3)
+    throw new Error("a volume board needs at least 3 cells on a side");
+
+  // One frame for every sheet, so a corner of slice k and the centre of a
+  // diamond in slice k + 1 land on the same spot of their two sheets. It runs
+  // from -1 to `side`: the diamonds' corners overhang the cell centres by one.
+  const sheets: Sheet[] = [];
+  for (let k = 0; k < depth; k++) {
+    const sheet: Sheet = new Map();
+    for (let i = 0; i < side; i++) {
+      for (let j = 0; j < side; j++) {
+        if ((i + j + k) % 2) continue;
+        // wound counterclockwise seen from +z: bottom, right, top, left
+        sheet.set(
+          cid(i, j, k),
+          (
+            [
+              [i, j - 1],
+              [i + 1, j],
+              [i, j + 1],
+              [i - 1, j],
+            ] as const
+          ).map(([x, y]) => [cid(x, y), [x + 1, y + 1]] as const),
+        );
+      }
+    }
+    sheets.push(sheet);
+  }
+  const { polygons, radius } = layOut(sheets, side + 1, side + 1);
+  const adjacency = latticeAdjacency(polygons, FCC_STEPS);
+  let kept: BoardSymmetry[] | null = null;
+  return {
+    mode: "fcc3d",
+    polygons,
+    adjacency,
+    mineCount,
+    radius,
+    twoSided: true,
+    clip: null,
+    cornerMask: null,
+    get symmetries(): BoardSymmetry[] {
+      return (kept ??= keepSymmetries(
+        adjacency,
+        fccCandidates(side, depth, polygons),
+      ));
+    },
+  };
+}
+
+/** A hexagon's six corners, in thirds of the axial lattice: the centroid of
+ * the cell and two neighbouring cell centres. Integer keys, so the corners two
+ * hexagons share are the same key exactly. Counterclockwise from 30 degrees. */
+const HEX_CORNERS = [
+  [1, 1],
+  [-1, 2],
+  [-2, 1],
+  [-1, -1],
+  [1, -2],
+  [2, -1],
+] as const;
+
+/** The 20 steps between neighbouring prisms, as `(q, s, k)`: the six cells
+ * round a hexagon in its own layer, then the cell straight through and its six
+ * in each layer above and below. */
+export const HEX_PRISM_STEPS: readonly (readonly [number, number, number])[] =
+  (() => {
+    const steps: [number, number, number][] = [];
+    for (const dk of [0, -1, 1]) {
+      for (const [dq, ds] of [
+        [0, 0],
+        [1, 0],
+        [0, 1],
+        [-1, 1],
+        [-1, 0],
+        [0, -1],
+        [1, -1],
+      ] as const) {
+        if (dq !== 0 || ds !== 0 || dk !== 0) steps.push([dq, ds, dk]);
+      }
+    }
+    return steps;
+  })();
+
+/** A block of hexagonal prisms: `depth` layers, each a hexagon of hexagons
+ * `radius` rings out from a centre cell. Cells are `(q, s, k)`, axial
+ * coordinates within the layer and the layer itself; prisms sharing a corner
+ * are the six round a cell in its own layer and, above and below, the cell
+ * straight through and its six — **20** neighbours, all within one layer.
+ *
+ * `depth` is at least 3 for the cube's reason: two layers deep, every prism
+ * shares its closed neighbourhood with the one behind it. */
+export function hexPrismBoard(
+  radius: number,
+  depth: number,
+  mineCount: number,
+): Board3D {
+  if (radius < 1)
+    throw new Error("a hexagonal prism block needs at least one ring");
+  if (depth < 3) throw new Error("a volume board needs at least 3 layers");
+
+  const root3 = Math.sqrt(3);
+  const hexagon: [number, number][] = [];
+  for (let q = -radius; q <= radius; q++) {
+    for (let s = -radius; s <= radius; s++) {
+      if (Math.abs(q + s) <= radius) hexagon.push([q, s]);
+    }
+  }
+  const sheets: Sheet[] = [];
+  for (let k = 0; k < depth; k++) {
+    const sheet: Sheet = new Map();
+    for (const [q, s] of hexagon) {
+      sheet.set(
+        cid(q, s, k),
+        HEX_CORNERS.map(([du, dv]) => {
+          const [u, v] = [3 * q + du, 3 * s + dv];
+          return [cid(u, v), [(u + v / 2) / 3, (v * root3) / 6]] as const;
+        }),
+      );
+    }
+    sheets.push(sheet);
+  }
+  const width = 2 * radius + 1;
+  const height = radius * root3 + 2 / root3;
+  const laid = layOut(sheets, width, height);
+  const adjacency = latticeAdjacency(laid.polygons, HEX_PRISM_STEPS);
+  let kept: BoardSymmetry[] | null = null;
+  return {
+    mode: "hexprism3d",
+    polygons: laid.polygons,
+    adjacency,
+    mineCount,
+    radius: laid.radius,
+    twoSided: true,
+    clip: null,
+    cornerMask: null,
+    get symmetries(): BoardSymmetry[] {
+      return (kept ??= keepSymmetries(
+        adjacency,
+        hexPrismCandidates(depth, laid.polygons),
+      ));
+    },
+  };
+}
+
+/** One slice of a volume: each cell's corners, as a vertex key within the
+ * slice and an `(x, y)` on the sheet. */
+type Sheet = Map<
+  CellId,
+  readonly (readonly [string, readonly [number, number]])[]
+>;
+
+/** Draw a volume's slices as sheets on a grid, stepped back in depth.
+ *
+ * Vertex ids become `k` plus the key within the slice: the polygons of one
+ * sheet share their corners exactly, which is what makes each sheet a mesh
+ * (every edge used by two tiles, or once along its rim), while two sheets
+ * share nothing. No volume reads these to find its neighbours — it is the
+ * solids that touch, not the drawn polygons.
+ *
+ * The sheets are laid on a grid, not in a row: eight sheets in a row is a
+ * 9-to-1 board, which `frameSolid` fits into a sliver of a phone screen. At
+ * ceil(sqrt(n)) columns the cube comes out 8x8, 18x12 and 26x26 cells at the
+ * three sizes — square enough to fill the screen at any of them. */
+function layOut(
+  sheets: readonly Sheet[],
+  width: number,
+  height: number,
+): { polygons: Map<CellId, Vec3[]>; radius: number } {
+  const cols = Math.ceil(Math.sqrt(sheets.length));
+  const raw = new Map<string, Vec3>();
+  const cells = new Map<CellId, string[]>();
+  sheets.forEach((sheet, k) => {
+    const ox = (k % cols) * (width + GAP);
+    const oy = -Math.floor(k / cols) * (height + GAP);
+    const oz = -k * SPREAD;
+    for (const [cell, corners] of sheet) {
+      const keys: string[] = [];
+      for (const [local, [x, y]] of corners) {
+        const key = `${k},${local}`;
+        if (!raw.has(key)) raw.set(key, [ox + x, oy + y, oz]);
+        keys.push(key);
+      }
+      cells.set(cell, keys);
+    }
+  });
 
   const lo: Vec3 = [Infinity, Infinity, Infinity];
   const hi: Vec3 = [-Infinity, -Infinity, -Infinity];
@@ -118,31 +359,102 @@ export function solidCubeBoard(n: number, mineCount: number): Board3D {
       keys.map((key) => positions.get(key)!),
     );
   }
+  return { polygons, radius };
+}
 
-  const adjacency = mooreAdjacency(n);
-  let kept: BoardSymmetry[] | null = null;
-  return {
-    mode: "cube3d",
-    polygons,
-    adjacency,
-    mineCount,
-    radius,
-    // The sheets are open — they have rims — so with front-face culling the
-    // whole board would vanish the moment it was turned past ninety degrees.
-    twoSided: true,
-    clip: null,
-    cornerMask: null,
-    // Not `solidBoard`, which measures a solid's point group off the polygons:
-    // the fanned layout is a *display* of the cube rather than the cube, and
-    // pulling the slices apart leaves nothing of the cube's 48 motions in the
-    // drawing to find. They are all still there in the cells, though, so the
-    // board offers them from the lattice instead — the same trade `surfaces.ts`
-    // makes, and for the same reason. `keepSymmetries` still checks every one
-    // against the adjacency actually built, so nothing here is asserted.
-    get symmetries(): BoardSymmetry[] {
-      return (kept ??= keepSymmetries(adjacency, cubeCandidates(n)));
-    },
-  };
+/** Each cell's neighbours: the cells of the block one of `steps` away. Exact
+ * integer arithmetic, so the shared-vertex rule needs no tolerance here any
+ * more than it does in 2D. */
+function latticeAdjacency(
+  cells: Map<CellId, unknown>,
+  steps: readonly (readonly [number, number, number])[],
+): Map<CellId, CellId[]> {
+  const adjacency = new Map<CellId, CellId[]>();
+  for (const cell of cells.keys()) {
+    const [i, j, k] = cell.split(",").map(Number) as [number, number, number];
+    const neighbors: CellId[] = [];
+    for (const [di, dj, dk] of steps) {
+      const other = cid(i + di, j + dj, k + dk);
+      if (cells.has(other)) neighbors.push(other);
+    }
+    adjacency.set(cell, neighbors.sort());
+  }
+  return adjacency;
+}
+
+/** Candidates from a coordinate map, built only where it carries every cell
+ * of the board onto another — a mirror across an even-sided box swaps the
+ * checkerboard's two colours, and the half of the lattice it lands on is not
+ * the board's. `keepSymmetries` drops a null. */
+function permutation(
+  cells: Map<CellId, unknown>,
+  map: (a: number, b: number, c: number) => [number, number, number],
+): Map<CellId, CellId> | null {
+  const cycle = new Map<CellId, CellId>();
+  for (const cell of cells.keys()) {
+    const [a, b, c] = cell.split(",").map(Number) as [number, number, number];
+    const image = cid(...map(a, b, c));
+    if (!cells.has(image)) return null;
+    cycle.set(cell, image);
+  }
+  return cycle;
+}
+
+/** The FCC block's motions, as signed permutations of `(i, j, k)` — every one
+ * an automorphism of the lattice wherever it keeps the even-sum sites even.
+ * Offered the way the cube's are, with a half turn behind each quarter turn
+ * for the boxes where the quarter turn is not there (the block is not a cube,
+ * or the turn changes the colour of the checkerboard), and `keepSymmetries`
+ * takes the first of each id that survives. */
+function fccCandidates(
+  side: number,
+  depth: number,
+  cells: Map<CellId, unknown>,
+): SymmetryCandidate[] {
+  const s = side - 1;
+  const d = depth - 1;
+  const of =
+    (map: (i: number, j: number, k: number) => [number, number, number]) =>
+    () =>
+      permutation(cells, map);
+  return [
+    { id: "turn", build: of((i, j, k) => [j, s - i, k]) },
+    { id: "turn", build: of((i, j, k) => [s - i, s - j, k]) },
+    ...(side === depth
+      ? [
+          { id: "ring" as const, build: of((i, j, k) => [k, j, s - i]) },
+          { id: "tube" as const, build: of((i, j, k) => [i, k, s - j]) },
+        ]
+      : []),
+    { id: "ring", build: of((i, j, k) => [s - i, j, d - k]) },
+    { id: "tube", build: of((i, j, k) => [i, s - j, d - k]) },
+    { id: "mirror-ring", build: of((i, j, k) => [s - i, j, k]) },
+    { id: "mirror-ring", build: of((i, j, k) => [j, i, k]) },
+    { id: "mirror-tube", build: of((i, j, k) => [i, j, d - k]) },
+    { id: "mirror-tube", build: of((i, j, k) => [i, s - j, k]) },
+  ];
+}
+
+/** The prism block's motions: the hexagon's own sixfold turn and mirror, and
+ * the flip end over end that carries each layer onto the one opposite. */
+function hexPrismCandidates(
+  depth: number,
+  cells: Map<CellId, unknown>,
+): SymmetryCandidate[] {
+  const d = depth - 1;
+  const of =
+    (map: (q: number, s: number, k: number) => [number, number, number]) =>
+    () =>
+      permutation(cells, map);
+  return [
+    // a sixth of a turn about the prisms' axis: every cell keeps its layer
+    { id: "turn", build: of((q, s, k) => [-s, q + s, k]) },
+    // a half turn about an axis across the layers: the stack comes over end
+    // to end, so the contents move from one sheet to another
+    { id: "ring", build: of((q, s, k) => [s, q, d - k]) },
+    { id: "mirror-ring", build: of((q, s, k) => [s, q, k]) },
+    { id: "mirror-tube", build: of((q, s, k) => [q, s, d - k]) },
+  ];
 }
 
 /** The cube's own motions, as permutations of `(i, j, k)`.

@@ -627,12 +627,16 @@ const MODE_PATTERN = new Map<string, string>();
     "dodecahedron",
   ]);
   // The volume boards join them: a slice of the cube of cubes *is* a square
-  // grid, so the page behind it is the same paper the board is drawn on.
+  // grid, and so is a slice of the rhombic honeycomb (its checkerboard of
+  // diamonds is the square grid turned an eighth), so the page behind it is
+  // the same paper the board is drawn on...
   for (const key of ["platonic", "polyhedra", "volume"]) {
     for (const mode of solidGroup(key)) {
       MODE_PATTERN.set(mode, TRIANGLE_FACED.has(mode) ? "tri" : "square");
     }
   }
+  // ...and a layer of hexagonal prisms is the hexagonal tiling.
+  MODE_PATTERN.set("hexprism3d", "hex");
   // ...except the three brick cubes, which are in that group and are made of
   // rectangles rather than squares. They are the one board whose page the
   // folded-grid rule would flatly contradict: a cube laid in a brick bond,

@@ -8930,5 +8930,87 @@
         "indistinguishable": 0
       }
     }
+  },
+  "fcc3d": {
+    "builder": "fcc_block_board",
+    "args": {
+      "medium": {
+        "args": [
+          8,
+          8,
+          40
+        ],
+        "cells": 256,
+        "score": 0.0,
+        "distortionMean": 1.0,
+        "distortionP90": 1.0,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          10,
+          10,
+          80
+        ],
+        "cells": 500,
+        "score": 0.0408,
+        "distortionMean": 1.0,
+        "distortionP90": 1.0,
+        "indistinguishable": 0
+      },
+      "easy": {
+        "args": [
+          5,
+          6,
+          12
+        ],
+        "cells": 75,
+        "score": 0.077,
+        "distortionMean": 1.0,
+        "distortionP90": 1.0,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "hexprism3d": {
+    "builder": "hex_prism_board",
+    "args": {
+      "medium": {
+        "args": [
+          3,
+          7,
+          40
+        ],
+        "cells": 259,
+        "score": 0.0117,
+        "distortionMean": 1.0,
+        "distortionP90": 1.0,
+        "indistinguishable": 0
+      },
+      "easy": {
+        "args": [
+          2,
+          4,
+          12
+        ],
+        "cells": 76,
+        "score": 0.0637,
+        "distortionMean": 1.0,
+        "distortionP90": 1.0,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          4,
+          8,
+          80
+        ],
+        "cells": 488,
+        "score": 0.0165,
+        "distortionMean": 1.0,
+        "distortionP90": 1.0,
+        "indistinguishable": 0
+      }
+    }
   }
 }

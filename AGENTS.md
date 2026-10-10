@@ -2,7 +2,8 @@
 
 A minesweeper clone with flat, hyperbolic and 3D boards (spherical polyhedra,
 cube, tetrahedron, donut, trefoil knot, double donut, Möbius strip, cylinder,
-Klein bottle, projective plane), in two implementations that share their
+Klein bottle, projective plane, and solid blocks of cubes, rhombic dodecahedra
+and hexagonal prisms), in two implementations that share their
 configuration.
 
 This file is the map. It is written for AI agents first: every extension point

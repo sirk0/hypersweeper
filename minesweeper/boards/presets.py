@@ -103,7 +103,11 @@ from minesweeper.boards.tilings import (
     triangle_board,
     triangle_grid_board,
 )
-from minesweeper.boards.volume import solid_cube_board
+from minesweeper.boards.volume import (
+    fcc_block_board,
+    hex_prism_board,
+    solid_cube_board,
+)
 
 # Presets for the ported modes (flat regular boards and the solids) live in
 # data/presets.json, the single source both front-ends read; they are loaded
@@ -126,8 +130,11 @@ _JSON_BUILDERS = {
     "truncated_icosidodecahedron_board": truncated_icosidodecahedron_board,
     "cube_board": cube_board,
     "cube_frame_board": cube_frame_board,
-    # the one volume board: a solid cube of cells, 26 neighbours
+    # the volume boards: a solid cube of cells (26 neighbours), a block of
+    # rhombic dodecahedra (18) and a block of hexagonal prisms (20)
     "solid_cube_board": solid_cube_board,
+    "fcc_block_board": fcc_block_board,
+    "hex_prism_board": hex_prism_board,
     # the three brick bonds that lay on a square face, one cube each
     "brick_cube_board": brick_cube_board,
     "tetrahedron_board": tetrahedron_board,

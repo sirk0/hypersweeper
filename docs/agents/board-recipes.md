@@ -548,25 +548,41 @@ These are one-offs, not tiling×surface products.
 ## Recipe: add a volume board
 
 A **volume** is a solid block of cells rather than a surface of them, and it
-lives in `volume.py` / `web/src/boards/volume.ts`. One ships — `cube3d`, the
-`n**3` cube of cubes — and the three things that make it different from a solid
-are all forced by the same fact: **you cannot see inside a solid.**
+lives in `volume.py` / `web/src/boards/volume.ts`. Three ship — `cube3d`, the
+`n**3` cube of cubes; `fcc3d`, the rhombic dodecahedra round the face-centred
+cubic lattice; `hexprism3d`, layers of hexagonal prisms — and the three things
+that make them different from a solid are all forced by the same fact: **you
+cannot see inside a solid.**
 
 1. **Adjacency comes off the lattice, not off the polygons.** Two cells are
    neighbours when their unit *cubes* share a corner, which is the shared-vertex
    rule one dimension up and is exact integer arithmetic — but the drawn
    polygons are not the cubes, so `_shared_vertex_adjacency` cannot find it.
-   Build it directly. This is the one exemption in the zoo, and it should stay
-   that way: on a surface, "share a vertex" is what makes the numbers mean what
-   the player sees.
+   Build it directly (`_lattice_adjacency`, from the list of steps). This is
+   the one exemption in the zoo, and it should stay that way: on a surface,
+   "share a vertex" is what makes the numbers mean what the player sees. What
+   a volume *can* keep is that rule within a sheet — slice it so each sheet's
+   drawn polygons touch exactly when their solids do. The FCC block is sliced
+   along a cube axis for that reason: the middle of a rhombic dodecahedron is
+   a diamond, a layer of them a checkerboard of diamonds, and edge-sharing and
+   corner-sharing diamonds are the face and corner neighbours exactly.
 2. **The board is drawn taken apart.** Each slice is its own sheet of squares,
    laid out on a `ceil(sqrt(n))`-column grid and stepped back in depth by slice
    index. Every cell is visible at once, which is what a 26-cell neighbourhood
    needs — a number spans three slices, so all three have to be readable
    together — and the depth ramp is what says which sheet is which. A row of
    sheets rather than a grid is a 9-to-1 board that `frameSolid` fits into a
-   sliver of a phone; the layout constants live in both ports and the
-   conformance oracle counts vertices off them, so change one and change both.
+   sliver of a phone; `_lay_out` / `layOut` does it for every volume, the
+   layout constants live in both ports and the conformance oracle counts
+   vertices off them, so change one and change both. **Give every sheet one
+   frame** even where the cells differ from sheet to sheet (the FCC
+   checkerboard changes colour with `k`): the player reads a cross-sheet
+   neighbour off by position, which only works if position means the same
+   thing on every sheet. And know how far a number reaches before choosing a
+   slicing — the cube's and the prisms' span three sheets, the FCC block's
+   five (its 4-valent corner along the axis is two layers away). Slicing the
+   FCC lattice along (111) instead keeps it to three, at the price of hexagon
+   sheets whose next-sheet neighbours are a lopsided 3 + 3.
 3. **It is `two_sided`.** Open sheets have rims, so front-face culling would
    make the board vanish as soon as it was turned past ninety degrees.
    `two_sided` also tells `TestInvariants` not to demand a closed surface: `n`
@@ -582,7 +598,12 @@ Two more things a volume needs that a solid does not:
   cube's 48 motions in the drawing. So `volume.ts` offers signed coordinate
   permutations as `SymmetryCandidate`s and lets `keepSymmetries` check them
   against the adjacency, exactly as `surfaces.ts` offers lattice motions —
-  which leaves `ring`, `tube` and `mirror-ring` standing. That is the one move
+  which leaves `ring`, `tube` and `mirror-ring` standing on the cube. A
+  candidate may return `null` where its map lands off the board (`permutation`
+  does), and several may share an id — the first that survives is kept — which
+  is how the FCC block offers a quarter turn with a half turn behind it: a
+  mirror or quarter turn of an even-sided box swaps the checkerboard's two
+  colours and lands on the half of the lattice the board is not. That is the one move
   dragging cannot give: dragging turns the drawing, and the drawing is the cube
   taken apart rather than the cube.
 * **Digits past 12.** A cell can be asked to draw its whole neighbourhood, so
@@ -598,6 +619,14 @@ the untangled layouts and the search settles on too few mines. `calibrate.py
 --budget` is the knob (see "Measuring the size and the mine count" in
 [`difficulty.md`](difficulty.md)); a default-budget run on `cube3d` medium
 reported 0.875 over two finished games where a big-budget one measures 0.76.
+The two later volumes were measured at `--budget 300000 --effort 20` from the
+start, for the same reason.
+
+Their sizes are searched over **enumerated** knobs (`grid` in `SPEC`:
+`_grid_fccblock`, `_grid_hexprism`) rather than a free two-knob sweep, for two
+reasons: cell count is not proportional to the product of the knobs (it goes
+as `side**2 * depth`), which the free sweep assumes, and a free grid finds the
+right count in a slab or a tower that does not read as a block.
 
 ## Recipe: add a surface (worked example — the Klein bottle)
 

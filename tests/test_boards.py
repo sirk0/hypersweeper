@@ -64,8 +64,10 @@ from minesweeper.boards import (
     double_torus_board,
     double_torus_hex_board,
     double_torus_triangle_board,
+    fcc_block_board,
     gosper_board,
     hex_board,
+    hex_prism_board,
     hexhex_board,
     hextriangle_board,
     kitedart_board,
@@ -4518,6 +4520,156 @@ class TestSolidCube:
         with pytest.raises(ValueError):
             solid_cube_board(2, 3)
 
+
+
+def _drawn_sheet_adjacency(board) -> dict:
+    """Shared-vertex adjacency of the *drawing*: cells whose drawn polygons
+    meet at a point. Read off rounded coordinates, which is fine in a test --
+    the board itself never keys a vertex that way."""
+    return _shared_vertex_adjacency({
+        cell: [tuple(round(c, 9) for c in v) for v in polygon]
+        for cell, polygon in board.polygons.items()
+    })
+
+
+class TestFccBlock:
+    """The rhombic honeycomb: the face-centred cubic lattice's even sites in a
+    ``side x side x depth`` box, each a rhombic dodecahedron, neighbours across
+    a face (12) or a 4-valent corner (6). Drawn one diamond sheet per k."""
+
+    @pytest.mark.parametrize("side,depth", [(3, 3), (5, 6), (8, 8)])
+    def test_cells_are_the_even_sites_of_the_box(self, side, depth):
+        board = fcc_block_board(side, depth, 5)
+        expected = {
+            (i, j, k) for i in range(side) for j in range(side)
+            for k in range(depth) if (i + j + k) % 2 == 0
+        }
+        assert set(board.adjacency) == expected
+        assert all(len(p) == 4 for p in board.polygons.values())
+
+    @pytest.mark.parametrize("side,depth", [(3, 3), (5, 6), (6, 6)])
+    def test_adjacency_is_exactly_the_18_neighbourhood(self, side, depth):
+        # twelve across a face, at distance sqrt(2); six across a corner, at
+        # distance 2 along an axis -- nothing else is within 2
+        board = fcc_block_board(side, depth, 5)
+        for (i, j, k), neighbors in board.adjacency.items():
+            expected = {
+                (a, b, c) for (a, b, c) in board.adjacency
+                if (a - i) ** 2 + (b - j) ** 2 + (c - k) ** 2 in (2, 4)
+            }
+            assert set(neighbors) == expected
+        # the 3x3x3 block's centre is an odd site, so nothing in it is interior
+        if side >= 5:
+            assert max(len(v) for v in board.adjacency.values()) == 18
+
+    def test_a_number_reaches_two_slices_away_only_straight_through(self):
+        board = fcc_block_board(6, 6, 5)
+        for (i, j, k), neighbors in board.adjacency.items():
+            for a, b, c in neighbors:
+                if abs(c - k) == 2:
+                    assert (a, b) == (i, j)
+
+    @pytest.mark.parametrize("side,depth", [(4, 4), (5, 6)])
+    def test_each_sheet_draws_its_own_adjacency(self, side, depth):
+        # within a slice the drawing is the board: diamonds sharing an edge
+        # share a face, diamonds touching at a point share a corner
+        board = fcc_block_board(side, depth, 5)
+        drawn = _drawn_sheet_adjacency(board)
+        for cell, neighbors in board.adjacency.items():
+            same_sheet = {n for n in neighbors if n[2] == cell[2]}
+            assert set(drawn[cell]) == same_sheet
+
+    @pytest.mark.parametrize("side,depth", [(3, 3), (5, 6), (8, 8)])
+    def test_each_slice_is_its_own_sheet(self, side, depth):
+        board = fcc_block_board(side, depth, 5)
+        assert board.two_sided is True
+        assert _euler_characteristic(board) == depth
+        assert _boundary_components(board) == depth
+
+    def test_sheets_do_not_overlap_on_screen(self):
+        board = fcc_block_board(5, 6, 5)
+        seen = set()
+        for polygon in board.polygons.values():
+            middle = tuple(round(sum(v[axis] for v in polygon) / 4, 6)
+                           for axis in (0, 1))
+            assert middle not in seen
+            seen.add(middle)
+
+    @pytest.mark.parametrize("side,depth", [(3, 3), (5, 6)])
+    def test_no_two_cells_share_a_closed_neighbourhood(self, side, depth):
+        board = fcc_block_board(side, depth, 5)
+        closed = [frozenset(neighbors) | {cell}
+                  for cell, neighbors in board.adjacency.items()]
+        assert len(set(closed)) == len(closed)
+
+    def test_a_thin_block_is_refused(self):
+        with pytest.raises(ValueError):
+            fcc_block_board(2, 5, 3)
+        with pytest.raises(ValueError):
+            fcc_block_board(5, 2, 3)
+
+
+class TestHexPrism:
+    """The block of hexagonal prisms: ``depth`` layers of a hexagon of
+    hexagons, neighbours the six round a cell and the seven through it in each
+    layer above and below (20). Drawn one hexagon sheet per layer."""
+
+    @pytest.mark.parametrize("radius,depth", [(1, 3), (2, 4), (3, 7)])
+    def test_cell_count_is_the_layers_of_the_hexagon(self, radius, depth):
+        board = hex_prism_board(radius, depth, 5)
+        assert len(board.adjacency) == (3 * radius * (radius + 1) + 1) * depth
+        assert all(len(p) == 6 for p in board.polygons.values())
+
+    @pytest.mark.parametrize("radius,depth", [(2, 4), (3, 5)])
+    def test_degrees_are_the_kinds_of_position(self, radius, depth):
+        # a layer cell has 6 round it in the plane, 3 or 4 on the hexagon's
+        # rim; through the stack it adds itself-plus-ring per layer touched
+        board = hex_prism_board(radius, depth, 5)
+        for (q, s, k), neighbors in board.adjacency.items():
+            ring = 6 if max(abs(q), abs(s), abs(q + s)) < radius else (
+                3 if (abs(q), abs(s), abs(q + s)).count(radius) == 2 else 4)
+            layers = 1 + (k > 0) + (k < depth - 1)
+            assert len(neighbors) == ring + (layers - 1) * (ring + 1)
+        assert max(len(v) for v in board.adjacency.values()) == 20
+
+    @pytest.mark.parametrize("radius,depth", [(2, 4), (3, 4)])
+    def test_each_sheet_draws_its_own_adjacency(self, radius, depth):
+        board = hex_prism_board(radius, depth, 5)
+        drawn = _drawn_sheet_adjacency(board)
+        for cell, neighbors in board.adjacency.items():
+            same_sheet = {n for n in neighbors if n[2] == cell[2]}
+            assert set(drawn[cell]) == same_sheet
+
+    @pytest.mark.parametrize("radius,depth", [(1, 3), (2, 4), (4, 8)])
+    def test_each_slice_is_its_own_sheet(self, radius, depth):
+        board = hex_prism_board(radius, depth, 5)
+        assert board.two_sided is True
+        assert _euler_characteristic(board) == depth
+        assert _boundary_components(board) == depth
+
+    def test_sheets_do_not_overlap_on_screen(self):
+        board = hex_prism_board(3, 7, 5)
+        seen = set()
+        for polygon in board.polygons.values():
+            middle = tuple(round(sum(v[axis] for v in polygon) / 6, 6)
+                           for axis in (0, 1))
+            assert middle not in seen
+            seen.add(middle)
+
+    @pytest.mark.parametrize("radius,depth", [(1, 3), (2, 4)])
+    def test_no_two_cells_share_a_closed_neighbourhood(self, radius, depth):
+        board = hex_prism_board(radius, depth, 5)
+        closed = [frozenset(neighbors) | {cell}
+                  for cell, neighbors in board.adjacency.items()]
+        assert len(set(closed)) == len(closed)
+
+    def test_a_two_deep_block_is_refused(self):
+        # two layers deep, every prism shares its closed neighbourhood with
+        # the one behind it
+        with pytest.raises(ValueError):
+            hex_prism_board(2, 2, 3)
+        with pytest.raises(ValueError):
+            hex_prism_board(0, 4, 3)
 
 class TestPresets:
     @pytest.mark.parametrize("mode", sorted(MODE_LABELS))

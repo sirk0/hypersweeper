@@ -195,10 +195,11 @@ has one axis and no second kind of mirror at all, and a **chiral** solid (the
 pentagonal hexecontahedron, which is the snub operation's dual) has no mirror
 anywhere. `tests/unit/symmetries.test.ts` pins those.
 
-**The one solid that is not measured off the drawing is `cube3d`**, and it is
-the exception that states the rule: "a solid is drawn as the thing it is" is
-what makes the measurement work, and the volume board is *not* — a solid cube
-would show only its shell, so it is drawn as its slices pulled apart. None of
+**The solids not measured off the drawing are the volumes** (`cube3d`,
+`fcc3d`, `hexprism3d`), and they are the exception that states the rule: "a
+solid is drawn as the thing it is" is what makes the measurement work, and a
+volume board is *not* — a solid block would show only its shell, so it is
+drawn as its slices pulled apart. None of
 the cube's forty-eight motions survives in that layout. They all survive in the
 **cells**, though, since any signed permutation of `(i, j, k)` carries
 Chebyshev-distance-1 pairs to Chebyshev-distance-1 pairs, so `boards/volume.ts`
@@ -207,7 +208,12 @@ offers them as candidates and `keepSymmetries` checks them against the adjacency
 guarantee that nothing is asserted from the algebra. `ring`, `tube` and
 `mirror-ring` are what stand after the redundancy pass. They are also the only
 way to move that board's contents at all: dragging turns the drawing, and the
-drawing is the cube taken apart rather than the cube.
+drawing is the cube taken apart rather than the cube. The other two volumes
+take the same route with their own lattices: the prisms offer the hexagon's
+sixth-turn and mirror and the end-over-end half turn (`turn`, `mirror-ring`,
+`ring`); the FCC block offers signed permutations that keep its even-sum
+sites even, a half turn standing behind each quarter turn for the boxes where
+the quarter turn would swap the checkerboard's colours (`fccCandidates`).
 
 Three things make it work:
 

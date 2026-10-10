@@ -151,6 +151,16 @@ SPEC: dict[str, dict] = {
     # like a fractal's substitution levels, which is why ``cube3d`` is in
     # ``COARSE_GEOMETRY`` in tests/test_presets.py.
     "solid_cube_board": dict(size=(0,), mine=1, shape=None, rigid=True),
+    # The other two volumes, ``rigid`` for the same reason: a rhombic
+    # dodecahedron's slice is the same diamond and a prism's the same hexagon
+    # at every size. Their two knobs are enumerated rather than swept (see
+    # ``_grid_fccblock``), because the cell count is not proportional to their
+    # product -- it goes as side**2 * depth -- and a free grid offers slabs
+    # and towers at the right count.
+    "fcc_block_board": dict(size=(0, 1), mine=2, shape=None, rigid=True,
+                            grid="fccblock"),
+    "hex_prism_board": dict(size=(0, 1), mine=2, shape=None, rigid=True,
+                            grid="hexprism"),
     "tetrahedron_board": dict(size=(1,), mine=0, shape=None),
     "tetrahedron_frame_board": dict(size=(1,), mine=0, shape=None),
     "octahedron_board": dict(size=(1,), mine=0, shape=None),
@@ -259,10 +269,30 @@ def _grid_steppedpyramid() -> list[list[int]]:
     return [[base, (base + 1) // 2] for base in range(3, 24, 2)]
 
 
+# The two non-cubic volumes, held to read as *blocks*. A free grid of their two
+# knobs lands on the right cell count with a slab two diamonds deep or a tower
+# of a dozen tiny hexagons, neither of which is the solid the board is.
+#
+#   * ``fcc_block_board(side, depth)``: a depth within one of the side, so the
+#     block is as near a cube as the count allows.
+#   * ``hex_prism_board(radius, depth)``: a depth between ``radius + 2`` and
+#     ``2 * radius + 2``, the hexagon's width give or take a layer.
+def _grid_fccblock() -> list[list[int]]:
+    return [[side, depth] for side in range(3, 17)
+            for depth in range(max(3, side - 1), side + 2)]
+
+
+def _grid_hexprism() -> list[list[int]]:
+    return [[radius, depth] for radius in range(1, 9)
+            for depth in range(max(3, radius + 2), 2 * radius + 3)]
+
+
 GRIDS = {
     "cubeframe": _grid_cubeframe,
     "bipyramid": _grid_bipyramid,
     "steppedpyramid": _grid_steppedpyramid,
+    "fccblock": _grid_fccblock,
+    "hexprism": _grid_hexprism,
 }
 
 # Fractal levels a difficulty may not use, and why. ``resize`` scores a coarse

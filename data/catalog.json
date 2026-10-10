@@ -198,6 +198,8 @@
     "hexhex": "Hexagons - hexagonal board",
     "hextriangle": "Hexagons - triangular board",
     "cube3d": "Volumetric",
+    "fcc3d": "Rhombic honeycomb",
+    "hexprism3d": "Hex prism honeycomb",
     "hyperbolic73": "Heptagons {7,3}",
     "hyperbolic54": "Pentagons {5,4}",
     "hyperbolic45": "Squares {4,5}"
@@ -533,6 +535,12 @@
       "surface": "flat",
       "family": "uniform"
     },
+    "fcc3d": {
+      "label": "Rhombic honeycomb",
+      "tiling": "",
+      "surface": "solid",
+      "family": "volume"
+    },
     "floret": {
       "label": "Floret pentagonal",
       "tiling": "floret",
@@ -562,6 +570,12 @@
       "tiling": "hex",
       "surface": "flat",
       "family": "regular"
+    },
+    "hexprism3d": {
+      "label": "Hex prism honeycomb",
+      "tiling": "",
+      "surface": "solid",
+      "family": "volume"
     },
     "hextri": {
       "label": "Triangles - hexagonal board",
@@ -1553,7 +1567,9 @@
         "key": "volume",
         "label": "Volumes",
         "modes": [
-          "cube3d"
+          "cube3d",
+          "fcc3d",
+          "hexprism3d"
         ]
       }
     ],

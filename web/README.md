@@ -8,6 +8,24 @@ as the reference implementation and is not deployed.
 newest first. For the rules and reference an agent needs while working here, see
 [`AGENTS.md`](AGENTS.md) and the topic files in [`docs/`](docs/) it routes to.
 
+**M25 — Two more volumes: the rhombic honeycomb and the hex prism block.**
+`fcc3d` is a block of rhombic dodecahedra on the face-centred cubic lattice —
+the even-sum integer points of a box, 12 neighbours across a face and 6 across
+a 4-valent corner, 18 in all — and `hexprism3d` layers of hexagonal prisms, 20.
+Both are drawn the way `cube3d` is, one sheet per slice on a grid
+(`layOut`/`_lay_out`, now shared by all three), and both slice so a sheet's
+drawing is exact: the FCC block along a cube axis, where the middle of a
+rhombic dodecahedron is a diamond and a layer is a checkerboard of them. The
+price is reach — its corner neighbour along the axis is two slices away, so a
+number reads across five sheets, which is why every sheet shares one frame and
+a neighbour is found by position. Sizes come from enumerated knobs that keep
+the blocks block-shaped (75/256/500 diamonds, 76/259/488 prisms), mine counts
+from a big-budget calibration, and the symmetry controls from the lattice:
+candidates may now return `null` (a mirror of an even-sided box swaps the
+checkerboard's colours) and share an id, the first survivor kept. The Volumes
+group is a three-board page; the home page's *Volumetric* entry still opens
+the cube.
+
 **M24 — The real projective plane: a surface drawn as its cover.** The only
 closed one-sided surface besides the Klein bottle, and the first board whose
 drawn faces outnumber its cells. `projective`, `projectivetri` and

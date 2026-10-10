@@ -103,11 +103,15 @@ const MODES = [
   // T-vertex geometry and the size-lightness axis it needs.
   "pythagorean",
   "threescaletri",
-  // and the volume board, which is its own renderer path: a solid drawn as
-  // several open, two-sided sheets rather than one closed surface, so it is
-  // the only board where the camera frames a hull that has holes in it and
-  // nothing is culled at any angle.
+  // and the volume boards, which are their own renderer path: a solid drawn
+  // as several open, two-sided sheets rather than one closed surface, so they
+  // are the only boards where the camera frames a hull that has holes in it
+  // and nothing is culled at any angle. The cube's sheets are squares, the
+  // rhombic honeycomb's a diamond checkerboard whose colour alternates from
+  // sheet to sheet, the prisms' a hexagon of hexagons.
   "cube3d",
+  "fcc3d",
+  "hexprism3d",
 ];
 
 /** The look every shot below is taken in unless it is a shot *of* a look.

@@ -1944,6 +1944,64 @@
         "hasCellCycle": false
       }
     },
+    "fcc3d": {
+      "easy": {
+        "cellCount": 75,
+        "mineCount": 12,
+        "euler": 6,
+        "boundaryComponents": 6,
+        "edgeCount": 204,
+        "vertexCount": 135,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 256,
+        "mineCount": 40,
+        "euler": 8,
+        "boundaryComponents": 8,
+        "edgeCount": 632,
+        "vertexCount": 384,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 500,
+        "mineCount": 80,
+        "euler": 10,
+        "boundaryComponents": 10,
+        "edgeCount": 1190,
+        "vertexCount": 700,
+        "hasCellCycle": false
+      }
+    },
+    "hexprism3d": {
+      "easy": {
+        "cellCount": 76,
+        "mineCount": 12,
+        "euler": 4,
+        "boundaryComponents": 4,
+        "edgeCount": 288,
+        "vertexCount": 216,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 259,
+        "mineCount": 40,
+        "euler": 7,
+        "boundaryComponents": 7,
+        "edgeCount": 924,
+        "vertexCount": 672,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 488,
+        "mineCount": 80,
+        "euler": 8,
+        "boundaryComponents": 8,
+        "edgeCount": 1680,
+        "vertexCount": 1200,
+        "hasCellCycle": false
+      }
+    },
     "doubletorus": {
       "easy": {
         "cellCount": 104,

@@ -113,7 +113,7 @@ const SOLID_GROUP_HINTS: Record<string, string> = {
   platonic: "The five regular solids",
   catalan: "The thirteen duals of the Archimedean solids",
   polyhedra: "Hollow frames, terraced pyramids and cubes laid in brick",
-  volume: "A solid cube of cells — 26 neighbours, laid out slice by slice",
+  volume: "Solid blocks of cubes, rhombic dodecahedra or hexagonal prisms, laid out slice by slice",
 };
 
 /** Rows of a picker, dropping the modes this build has not got. */

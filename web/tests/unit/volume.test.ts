@@ -3,11 +3,18 @@ import {
   boundaryComponents,
   eulerCharacteristic,
   isAutomorphism,
+  sharedVertexAdjacency,
   vertexCount,
+  type Board3D,
 } from "../../src/boards/core";
-import { solidCubeBoard } from "../../src/boards/volume";
+import {
+  fccBlockBoard,
+  hexPrismBoard,
+  solidCubeBoard,
+} from "../../src/boards/volume";
 
-// The port of tests/test_boards.py's TestSolidCube, plus the symmetry controls,
+// The port of tests/test_boards.py's TestSolidCube, TestFccBlock and
+// TestHexPrism, plus the symmetry controls,
 // which are a TypeScript-only feature and so have no Python counterpart. The
 // cell/edge/vertex counts themselves are pinned against the Python export by
 // tests/unit/conformance.test.ts; what is here is the structure behind them.
@@ -154,5 +161,251 @@ describe("the cube of cubes", () => {
       ([from, to]) => slice(from) !== slice(to),
     );
     expect(moved.length).toBeGreaterThan(0);
+  });
+});
+
+/** Shared-vertex adjacency of the *drawing*, read off rounded coordinates —
+ * fine in a test; the board itself never keys a vertex that way. */
+function drawnAdjacency(board: Board3D): Map<string, string[]> {
+  const cells = new Map<string, string[]>();
+  for (const [cell, poly] of board.polygons) {
+    cells.set(
+      cell,
+      poly.map((v) => v.map((c) => c.toFixed(9)).join(",")),
+    );
+  }
+  return sharedVertexAdjacency(cells);
+}
+
+const coords = (cell: string) =>
+  cell.split(",").map(Number) as [number, number, number];
+
+function expectSheetsDrawTheirOwnAdjacency(board: Board3D): void {
+  const drawn = drawnAdjacency(board);
+  for (const [cell, neighbors] of board.adjacency) {
+    const sheet = coords(cell)[2];
+    const sameSheet = neighbors.filter((n) => coords(n)[2] === sheet).sort();
+    expect([...drawn.get(cell)!].sort(), cell).toEqual(sameSheet);
+  }
+}
+
+function expectNoTwins(board: Board3D): void {
+  const closed = new Set<string>();
+  for (const [cell, neighbors] of board.adjacency) {
+    closed.add([cell, ...neighbors].sort().join("|"));
+  }
+  expect(closed.size).toBe(board.adjacency.size);
+}
+
+describe("the rhombic honeycomb", () => {
+  it.each([
+    [3, 3],
+    [5, 6],
+    [8, 8],
+  ])("is the even sites of the box (%i x %i)", (side, depth) => {
+    const board = fccBlockBoard(side, depth, 5);
+    let even = 0;
+    for (let i = 0; i < side; i++) {
+      for (let j = 0; j < side; j++) {
+        for (let k = 0; k < depth; k++) {
+          if ((i + j + k) % 2 === 0) {
+            even++;
+            expect(board.adjacency.has(`${i},${j},${k}`)).toBe(true);
+          }
+        }
+      }
+    }
+    expect(board.adjacency.size).toBe(even);
+    for (const poly of board.polygons.values()) expect(poly.length).toBe(4);
+  });
+
+  it.each([
+    [3, 3],
+    [5, 6],
+    [6, 6],
+  ])("is exactly the 18-neighbourhood (%i x %i)", (side, depth) => {
+    // twelve across a face, at distance sqrt(2); six across a corner, at
+    // distance 2 along an axis — nothing else is within 2
+    const board = fccBlockBoard(side, depth, 5);
+    for (const [cell, neighbors] of board.adjacency) {
+      const [i, j, k] = coords(cell);
+      const expected = [...board.adjacency.keys()].filter((other) => {
+        const [a, b, c] = coords(other);
+        const d2 = (a - i) ** 2 + (b - j) ** 2 + (c - k) ** 2;
+        return d2 === 2 || d2 === 4;
+      });
+      expect(new Set(neighbors)).toEqual(new Set(expected));
+    }
+  });
+
+  it("reaches two slices away only straight through", () => {
+    const board = fccBlockBoard(6, 6, 5);
+    for (const [cell, neighbors] of board.adjacency) {
+      const [i, j, k] = coords(cell);
+      for (const n of neighbors) {
+        const [a, b, c] = coords(n);
+        if (Math.abs(c - k) === 2) expect([a, b]).toEqual([i, j]);
+      }
+    }
+  });
+
+  it.each([
+    [4, 4],
+    [5, 6],
+  ])("draws each sheet's own adjacency (%i x %i)", (side, depth) => {
+    expectSheetsDrawTheirOwnAdjacency(fccBlockBoard(side, depth, 5));
+  });
+
+  it.each([
+    [3, 3],
+    [5, 6],
+    [8, 8],
+  ])("draws each slice as its own sheet (%i x %i)", (side, depth) => {
+    const board = fccBlockBoard(side, depth, 5);
+    expect(board.twoSided).toBe(true);
+    expect(eulerCharacteristic(board)).toBe(depth);
+    expect(boundaryComponents(board)).toBe(depth);
+  });
+
+  it("has no two cells with the same closed neighbourhood", () => {
+    expectNoTwins(fccBlockBoard(3, 3, 5));
+    expectNoTwins(fccBlockBoard(5, 6, 5));
+  });
+
+  it("refuses a thin block", () => {
+    expect(() => fccBlockBoard(2, 5, 3)).toThrow();
+    expect(() => fccBlockBoard(5, 2, 3)).toThrow();
+  });
+
+  it.each([
+    [5, 6],
+    [8, 8],
+    [10, 10],
+  ])(
+    "offers only motions that keep the checkerboard (%i x %i)",
+    (side, depth) => {
+      // a mirror across an even-sided box swaps the two colours of the
+      // checkerboard, so it lands on the half of the lattice the board is not
+      const board = fccBlockBoard(side, depth, 5);
+      expect(board.symmetries.length).toBeGreaterThan(0);
+      for (const symmetry of board.symmetries) {
+        expect(
+          isAutomorphism(board.adjacency, symmetry.cycle),
+          symmetry.id,
+        ).toBe(true);
+      }
+    },
+  );
+
+  it("turns the contents through the stack on a cubic block", () => {
+    const board = fccBlockBoard(8, 8, 5);
+    const ring = board.symmetries.find((s) => s.id === "ring")!;
+    const moved = [...ring.cycle].filter(
+      ([from, to]) => coords(from)[2] !== coords(to)[2],
+    );
+    expect(moved.length).toBeGreaterThan(0);
+  });
+});
+
+describe("the hexagonal prism block", () => {
+  it.each([
+    [1, 3],
+    [2, 4],
+    [3, 7],
+  ])("is depth layers of a hexagon (radius %i, depth %i)", (radius, depth) => {
+    const board = hexPrismBoard(radius, depth, 5);
+    expect(board.adjacency.size).toBe((3 * radius * (radius + 1) + 1) * depth);
+    for (const poly of board.polygons.values()) expect(poly.length).toBe(6);
+  });
+
+  it.each([
+    [2, 4],
+    [3, 5],
+  ])("is the 20-neighbourhood (radius %i, depth %i)", (radius, depth) => {
+    // the six round a cell in its layer, and the cell straight through and its
+    // six in each layer above and below
+    const board = hexPrismBoard(radius, depth, 5);
+    const inHexagon = (q: number, s: number) =>
+      Math.max(Math.abs(q), Math.abs(s), Math.abs(q + s)) <= radius;
+    const ring = [
+      [1, 0],
+      [0, 1],
+      [-1, 1],
+      [-1, 0],
+      [0, -1],
+      [1, -1],
+    ];
+    for (const [cell, neighbors] of board.adjacency) {
+      const [q, s, k] = coords(cell);
+      const expected = new Set<string>();
+      for (const dk of [-1, 0, 1]) {
+        if (k + dk < 0 || k + dk >= depth) continue;
+        for (const [dq, ds] of dk === 0 ? ring : [[0, 0], ...ring]) {
+          if (inHexagon(q + dq!, s + ds!)) {
+            expected.add(`${q + dq!},${s + ds!},${k + dk}`);
+          }
+        }
+      }
+      expect(new Set(neighbors)).toEqual(expected);
+    }
+    expect(
+      Math.max(...[...board.adjacency.values()].map((n) => n.length)),
+    ).toBe(20);
+  });
+
+  it.each([
+    [2, 4],
+    [3, 4],
+  ])(
+    "draws each sheet's own adjacency (radius %i, depth %i)",
+    (radius, depth) => {
+      expectSheetsDrawTheirOwnAdjacency(hexPrismBoard(radius, depth, 5));
+    },
+  );
+
+  it.each([
+    [1, 3],
+    [2, 4],
+    [4, 8],
+  ])(
+    "draws each layer as its own sheet (radius %i, depth %i)",
+    (radius, depth) => {
+      const board = hexPrismBoard(radius, depth, 5);
+      expect(board.twoSided).toBe(true);
+      expect(eulerCharacteristic(board)).toBe(depth);
+      expect(boundaryComponents(board)).toBe(depth);
+    },
+  );
+
+  it("has no two cells with the same closed neighbourhood", () => {
+    expectNoTwins(hexPrismBoard(1, 3, 5));
+    expectNoTwins(hexPrismBoard(2, 4, 5));
+  });
+
+  it("refuses a block two deep, or with no ring", () => {
+    expect(() => hexPrismBoard(2, 2, 3)).toThrow();
+    expect(() => hexPrismBoard(0, 4, 3)).toThrow();
+  });
+
+  it("turns about its axis and comes over end to end", () => {
+    // a sixth of a turn keeps every cell in its layer; the end-over-end half
+    // turn carries layer k onto layer depth-1-k
+    const board = hexPrismBoard(2, 4, 5);
+    expect(board.symmetries.map((s) => s.id).sort()).toEqual([
+      "mirror-ring",
+      "ring",
+      "turn",
+    ]);
+    for (const symmetry of board.symmetries) {
+      expect(isAutomorphism(board.adjacency, symmetry.cycle), symmetry.id).toBe(
+        true,
+      );
+    }
+    const turn = board.symmetries.find((s) => s.id === "turn")!;
+    for (const [from, to] of turn.cycle)
+      expect(coords(to)[2]).toBe(coords(from)[2]);
+    const ring = board.symmetries.find((s) => s.id === "ring")!;
+    for (const [from, to] of ring.cycle)
+      expect(coords(to)[2]).toBe(3 - coords(from)[2]);
   });
 });
