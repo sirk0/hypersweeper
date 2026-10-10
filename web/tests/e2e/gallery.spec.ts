@@ -52,6 +52,8 @@ const MODES = [
   // number is not centred on its vertex mean (see the revealed shot below).
   "kitedart",
   "spectre",
+  // and Ammann–Beenker: unit squares and 45° rhombi, the eight-fold one.
+  "ammannbeenker",
   // and the phyllotactic spiral: one equilateral hexagon in five arms, whose
   // five-fold rotational symmetry is what forbids a translation.
   "phyllotaxis",

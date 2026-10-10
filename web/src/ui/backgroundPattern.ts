@@ -463,6 +463,28 @@ export const DOMAINS: Record<string, () => Domain> = {
     });
     return { width: 1, height: 2 * rise, cells };
   },
+
+  // Ammann–Beenker's two tiles the same way Penrose's are drawn: a course of
+  // unit squares and a course of its 45° rhombi, the second rhombus course
+  // mirrored. A rhombus course shifts the vertices along its upper edge by
+  // cos 45° and its mirror by −cos 45°, so four courses bring the pattern back
+  // to a whole edge, and every interface is edge to edge.
+  ammannbeenker: () => {
+    const cells: Vertex[][] = [];
+    let [y, x] = [0, 0];
+    for (const deg of [90, 45, 90, 135]) {
+      const [dx, dy] = [Math.cos((deg * Math.PI) / 180), Math.sin((deg * Math.PI) / 180)];
+      cells.push([
+        [x, y],
+        [x + 1, y],
+        [x + 1 + dx, y + dy],
+        [x + dx, y + dy],
+      ]);
+      x += dx;
+      y += dy;
+    }
+    return { width: 1, height: y, cells };
+  },
 };
 
 /** The Spectre's page: the tiling its own tile is a *shape of*.

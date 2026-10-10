@@ -110,7 +110,19 @@ from minesweeper.boards import (
 from minesweeper.boards import (
     euler_characteristic as _euler_characteristic,
 )
-from minesweeper.boards.aperiodic import _PENTA_RINGS
+from minesweeper.boards.aperiodic import (
+    _AB_HALF,
+    _PENTA_RINGS,
+    _ab_cells,
+    _ab_place,
+    _ab_tiles,
+    _z8_conj,
+    _z8_rot,
+    _z8_silver,
+    _z8_sub,
+    _zeta8_mul,
+    ammann_beenker_board,
+)
 from minesweeper.boards.catalan import (
     deltoidal_hexecontahedron_board,
     deltoidal_icositetrahedron_board,
@@ -599,10 +611,149 @@ class TestSpectre:
             tile_area * scale**2 * len(board.polygons), rel=1e-9)
 
 
-class TestAperiodicVariants:
-    """The two substitution boards are a *family* per preset.
+class TestAmmannBeenker:
+    """The Ammann-Beenker tiling: squares and 45-degree rhombi, eight-fold.
 
-    An aperiodic tiling repeats nowhere, and both of these grow far more
+    The substitution in ``aperiodic.py`` is a table read off the tiling, so
+    these check it against the tiling's *other* definition, which owes it
+    nothing: cut and project. A vertex's Z[zeta8] coefficients are a point of
+    Z^4; the Galois map zeta -> zeta^3 sends it to "internal space", and the
+    Ammann-Beenker vertices are exactly the lattice points landing inside the
+    regular octagon there (the 4-cube's shadow, edge 1). Every vertex the
+    substitution lays has to land inside, and every lattice point that lands
+    inside has to be a vertex -- which is the whole tiling, not a resemblance.
+    The ring arithmetic is re-checked in plain ``cmath`` first.
+    """
+
+    _ZETA = cmath.exp(1j * math.pi / 4)
+    _SILVER = 1 + math.sqrt(2)
+
+    @classmethod
+    def _complex(cls, p, power=1):
+        return sum(c * cls._ZETA ** (power * k) for k, c in enumerate(p))
+
+    @classmethod
+    def _inside_window(cls, p):
+        """How far inside the octagon window ``p``'s internal image lies --
+        positive inside. The octagon's edges face the eight directions zeta^k
+        and sit (1 + sqrt(2)) / 2 from its centre."""
+        w = cls._complex(p, 3)
+        return min(cls._SILVER / 2 - (w * cls._ZETA ** -k).real for k in range(8))
+
+    def test_the_ring_arithmetic_is_complex_arithmetic(self):
+        points = list(itertools.product(range(-2, 3), repeat=4))[::37]
+        for p in points:
+            z = self._complex(p)
+            assert self._complex(_zeta8_mul(p)) == pytest.approx(z * self._ZETA)
+            assert self._complex(_z8_rot(p, 5)) == pytest.approx(z * self._ZETA ** 5)
+            assert self._complex(_z8_conj(p)) == pytest.approx(z.conjugate())
+            assert self._complex(_z8_silver(p)) == pytest.approx(z * self._SILVER)
+        # 1/delta = sqrt(2) - 1 is in the ring too, which is what makes the
+        # silver ratio a unit there and the inflation invertible
+        assert _z8_silver((-1, 1, 0, -1)) == (1, 0, 0, 0)
+
+    def test_the_substitution_counts(self):
+        # rhombus -> 3 rhombi + 4 half-squares, half-square -> 2 + 3: the
+        # matrix [[3, 2], [4, 3]], whose growth is delta**2 = 3 + 2*sqrt(2)
+        # per level and whose eigenvector puts sqrt(2) half-squares to the
+        # rhombus -- one square to every sqrt(2) rhombi, the tiling's ratio
+        rhombi, halves = 8, 0
+        for levels in range(5):
+            kinds = Counter(kind for kind, _ in _ab_tiles(levels))
+            assert kinds == Counter({"R": rhombi, "H": halves} if halves else {"R": rhombi})
+            rhombi, halves = 3 * rhombi + 2 * halves, 4 * rhombi + 3 * halves
+        assert [len(ammann_beenker_board(n, 1).adjacency) for n in range(5)] == \
+            [8, 32, 216, 1312, 7784]
+
+    def test_every_cell_is_a_unit_square_or_rhombus(self):
+        units = {_z8_rot((1, 0, 0, 0), k): k for k in range(8)}
+        for (kind, _), ids in _ab_cells(3):
+            assert len(ids) == len(set(ids)) == 4
+            steps = [units[_z8_sub(ids[(i + 1) % 4], ids[i])] for i in range(4)]
+            # counterclockwise: every turn is the same left turn, 90 degrees
+            # for a square and alternately 45/135 for a rhombus's exterior
+            turns = [(steps[(i + 1) % 4] - steps[i]) % 8 for i in range(4)]
+            assert turns == ([2, 2, 2, 2] if kind == 1 else turns[:2] * 2)
+            assert kind == 1 or sorted(turns[:2]) == [1, 3]
+
+    def test_the_patch_is_the_cut_and_project_tiling(self):
+        cells = _ab_cells(3)
+        vertices = {v for _, ids in cells for v in ids}
+        assert min(self._inside_window(v) for v in vertices) > 1e-9
+        # ...and nothing is missing: every lattice point inside the window and
+        # well inside the patch (the eight-rhombus star inflated three times,
+        # whose inner corners sit delta**3 out) is a vertex of it
+        reach = 0.6 * self._SILVER ** 3
+        span = range(-math.ceil(reach) - 1, math.ceil(reach) + 2)
+        missing = [p for p in itertools.product(span, repeat=4)
+                   if abs(self._complex(p)) < reach and self._inside_window(p) > 1e-9
+                   and p not in vertices]
+        assert missing == []
+
+    def test_halves_pair_into_squares_across_their_marked_diagonal(self):
+        # the two halves of a square are mirror images sharing P and Q, and a
+        # half left over is one the patch's rim cut: its diagonal lies on the
+        # outline of the eight-rhombus star the patch inflates
+        levels = 3
+        halves = defaultdict(list)
+        for kind, at in _ab_tiles(levels):
+            if kind == "H":
+                o, p, q = (_ab_place(at, v) for v in _AB_HALF)
+                halves[(p, q)].append((o, at[1]))
+        tip = self._SILVER ** levels
+        outline = [tip * self._ZETA ** k * (1 + self._ZETA) if j else tip * self._ZETA ** k
+                   for k in range(8) for j in (0, 1)]
+
+        def on_rim(z):
+            for a, b in zip(outline, outline[1:] + outline[:1]):
+                t = ((z - a) / (b - a))
+                if abs(t.imag) < 1e-9 and -1e-9 < t.real < 1 + 1e-9:
+                    return True
+            return False
+
+        for (p, q), group in halves.items():
+            if len(group) == 2:
+                (o1, m1), (o2, m2) = group
+                assert m1 != m2 and o1 != o2
+            else:
+                assert len(group) == 1
+                assert on_rim(self._complex(p)) and on_rim(self._complex(q))
+
+    def test_it_has_the_octagons_symmetry(self):
+        cells = {frozenset(ids) for _, ids in _ab_cells(3)}
+        assert {frozenset(_z8_rot(v, 1) for v in c) for c in cells} == cells
+        assert {frozenset(_z8_conj(v) for v in c) for c in cells} == cells
+
+    def test_every_vertex_is_one_of_the_six(self):
+        # Ammann-Beenker has exactly six vertex neighbourhoods, one for each
+        # count of tiles from three to eight, read off by their corner angles
+        legal = {(90, 135, 135), (45, 90, 90, 135), (45, 45, 90, 90, 90),
+                 (45, 45, 45, 45, 90, 90), (45,) * 6 + (90,), (45,) * 8}
+        corners = defaultdict(list)
+        for _, ids in _ab_cells(4):
+            for i, v in enumerate(ids):
+                a, b, c = (self._complex(ids[(i + j) % 4]) for j in (-1, 0, 1))
+                corners[v].append(round(math.degrees(abs(cmath.phase((c - b) / (a - b))))))
+        reach = 0.6 * self._SILVER ** 4
+        seen = {tuple(sorted(angles)) for v, angles in corners.items()
+                if abs(self._complex(v)) < reach}
+        assert seen == legal
+
+    def test_the_patch_is_a_disc(self):
+        board = ammann_beenker_board(3, 100)
+        assert _euler_characteristic(board) == 1
+        assert _boundary_components(board) == 1
+        shared = Counter()
+        for polygon in board.polygons.values():
+            for i in range(4):
+                shared[frozenset((polygon[i], polygon[(i + 1) % 4]))] += 1
+        assert max(shared.values()) == 2  # edge to edge
+
+
+class TestAperiodicVariants:
+    """The substitution boards are a *family* per preset.
+
+    An aperiodic tiling repeats nowhere, and each of these grows far more
     of one than a board keeps -- so ``variant`` picks which window onto
     the patch the board is, and a game followed by another is played
     somewhere else in the same tiling. These tests say every window is a
@@ -621,6 +772,9 @@ class TestAperiodicVariants:
         ("kitedart easy", kitedart_board, (4, 6, 270.53, 81), 81),
         ("kitedart medium", kitedart_board, (6, 29, 500.0, 256), 256),
         ("kitedart hard", kitedart_board, (6, 73, 769.119, 450), 450),
+        ("ammannbeenker easy", ammann_beenker_board, (3, 9, 35.891, 81), 81),
+        ("ammannbeenker medium", ammann_beenker_board, (3, 28, 25.905, 280), 280),
+        ("ammannbeenker hard", ammann_beenker_board, (4, 82, 25.319, 480), 480),
         ("spectre easy", spectre_board, (3, 11, 81, 14.361), 81),
         ("spectre medium", spectre_board, (4, 37, 256, 9.437), 256),
         ("spectre hard", spectre_board, (4, 89, 480, 8.512), 480),
@@ -695,7 +849,7 @@ class TestAperiodicVariants:
         }
         assert len(patches) == 5
 
-    @pytest.mark.parametrize("mode", ["penrose", "kitedart", "spectre"])
+    @pytest.mark.parametrize("mode", ["penrose", "kitedart", "ammannbeenker", "spectre"])
     @pytest.mark.parametrize("difficulty", list(DIFFICULTIES))
     def test_only_measured_windows_are_dealt(self, mode, difficulty):
         # A window is a board of its own, so which ones a difficulty may
@@ -711,7 +865,7 @@ class TestAperiodicVariants:
         assert dealt <= set(windows)
         assert dealt == set(windows)  # ...and every one of them is reachable
 
-    @pytest.mark.parametrize("mode", ["penrose", "kitedart", "spectre"])
+    @pytest.mark.parametrize("mode", ["penrose", "kitedart", "ammannbeenker", "spectre"])
     def test_no_dealt_window_is_bitten_into(self, mode):
         """Every window the game deals is a filled square, not one with a
         chunk missing.
@@ -751,7 +905,7 @@ class TestAperiodicVariants:
                     # tiles here, which is the standard the rest are held
                     # *below* rather than to.
                     continue
-                depth = aperiodic._rim_depth(cells, aperiodic._patch_adjacency(cells))
+                _, depth = aperiodic._patch_shape(cells)  # once per grown patch
                 xs = [centroids[i][0] for i in kept]
                 ys = [centroids[i][1] for i in kept]
                 cx, cy = (min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2
@@ -767,7 +921,7 @@ class TestAperiodicVariants:
                     f"{deepest / tile:.2f} tiles deep"
                 )
 
-    @pytest.mark.parametrize("mode", ["penrose", "kitedart", "spectre"])
+    @pytest.mark.parametrize("mode", ["penrose", "kitedart", "ammannbeenker", "spectre"])
     def test_every_measured_window_is_a_board(self, mode):
         # The list is data, and data can go stale against a preset that
         # changed shape under it -- so each window it names still has to

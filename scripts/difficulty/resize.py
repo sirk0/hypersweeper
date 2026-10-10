@@ -165,6 +165,7 @@ SPEC: dict[str, dict] = {
     # aperiodic: ``keep`` is exact, the growth arg only has to be generous
     "penrose_board": dict(size=(3,), mine=1, shape=2, kind="scale", grow=0),
     "kitedart_board": dict(size=(3,), mine=1, shape=2, kind="scale", grow=0),
+    "ammann_beenker_board": dict(size=(3,), mine=1, shape=2, kind="scale", grow=0),
     "spectre_board": dict(size=(2,), mine=1, shape=3, kind="scale", grow=0),
     "phyllotaxis_board": dict(size=(2,), mine=1, shape=3, kind="scale", grow=0),
     "klaassen_board": dict(size=(2,), mine=1, shape=3, kind="scale", grow=0),
@@ -1189,6 +1190,25 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
                 patch = len(board.adjacency)
             if patch < 3 * target and growth < 25:
                 continue
+            # The same absolute fairness bar the window search below holds: a
+            # trim can cut away exactly the neighbours that told two cells
+            # apart, and a pair of twins is a coin flip the player is dealt
+            # whatever they do. Measured, Ammann-Beenker's 256-cell trim leaves
+            # ten (rhombus pairs at the square's corners, their outer
+            # neighbours just past it), and no mine count calibrates that board
+            # to medium. So step the trim outward from the target, nearest
+            # first and inside the size band, to the first count with none --
+            # and keep the target if there is no such count.
+            if indistinguishable_cells(board.adjacency):
+                for n in sorted(range(math.ceil(target * (1 - BAND)),
+                                      math.floor(target * (1 + BAND)) + 1),
+                                key=lambda n: (abs(n - target), n)):
+                    fairer = list(trial)
+                    fairer[knobs[0]] = n
+                    candidate = _build(builder, fairer)
+                    if not indistinguishable_cells(candidate.adjacency):
+                        trial, board = fairer, candidate
+                        break
             trial = _rescale(builder, spec, trial, probe)
             board = _build(builder, trial)
             mean, p90 = distortion_summary(board.polygons)

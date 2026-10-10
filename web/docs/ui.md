@@ -426,7 +426,9 @@ menu is in anyway.
   in the tile), and Penrose's two rhombs make a plain periodic tiling as
   alternating courses of fat and thin diamonds — the interfaces line up because
   a fat course shifts by cos 72° and a mirrored thin one by −cos 36°, which sum
-  to exactly −½, so four courses come back a whole edge. The brick rings are
+  to exactly −½, so four courses come back a whole edge. Ammann–Beenker's
+  square and 45° rhomb are laid the same way, a course of squares between a
+  rhomb course and its mirror, whose shifts of ±cos 45° cancel outright. The brick rings are
   the easiest of the lot: their tile is a plain 2:1 brick, which tiles the plane
   as any wall does, so they take the **running bond** (`BRICK_PATTERN`) — a
   tiling this module already draws from `archTemplate`. What has no period on

@@ -955,6 +955,29 @@
         ]
       }
     },
+    "ammannbeenker": {
+      "builder": "ammann_beenker_board",
+      "args": {
+        "easy": [
+          3,
+          9,
+          35.891,
+          81
+        ],
+        "medium": [
+          3,
+          28,
+          25.905,
+          280
+        ],
+        "hard": [
+          4,
+          82,
+          25.319,
+          480
+        ]
+      }
+    },
     "penrose": {
       "builder": "penrose_board",
       "args": {
