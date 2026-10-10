@@ -740,13 +740,16 @@ function squareOnEdge(cx: number, cy: number, apothem: number, normalDeg: number
  * hexagon (or dodecagon) centres. `hexagonAt` is the central polygon around a
  * lattice point and `decorate` yields the polygons hung off it; everything is
  * deduplicated by rounded centroid and kept when its centroid lands in
- * [0, width) x [0, height). */
+ * [0, width) x [0, height). `reach` is the half-open range of lattice indices
+ * swept along both axes — wide enough for a one-cell domain by default; a
+ * domain several cells across passes a wider one. */
 function hexLatticePolygons(
   centreAt: (m: number, n: number) => Vertex,
   hexagonAt: (cx: number, cy: number) => Vertex[],
   decorate: (cx: number, cy: number) => [string, Vertex[]][],
   width: number,
   height: number,
+  reach: [number, number] = [-2, 4],
 ): [string, Vertex[]][] {
   const centroid = (polygon: Polygon): Vertex => {
     let x = 0;
@@ -758,8 +761,8 @@ function hexLatticePolygons(
     return [x / polygon.length, y / polygon.length];
   };
   const polygons = new Map<string, Vertex[]>();
-  for (let m = -2; m < 4; m++) {
-    for (let n = -2; n < 4; n++) {
+  for (let m = reach[0]; m < reach[1]; m++) {
+    for (let n = reach[0]; n < reach[1]; n++) {
       const [cx, cy] = centreAt(m, n);
       const entries: [string, Vertex[]][] = [["c", hexagonAt(cx, cy)], ...decorate(cx, cy)];
       for (const [name, polygon] of entries) {
@@ -945,6 +948,15 @@ function trunchexTemplate(): ArchTemplate {
   // Truncated hexagonal (3.12.12): dodecagons on a hexagonal lattice of pitch
   // 2 + sqrt(3), up/down triangles between them.
   const a = 2 + ROOT3;
+  // the triangles hang below every dodecagon course, so there is no horizontal
+  // line; the Mobius band is cut midway between the two courses.
+  return template([3, 12, 12], a, a * ROOT3, trunchexPolygons(), { cut: (a * ROOT3) / 4 });
+}
+
+/** 3.12.12's tiles over its a x a√3 rectangle, a = 2 + √3: two dodecagons
+ * (named `dod*`) and four triangles. */
+function trunchexPolygons(): [string, Vertex[]][] {
+  const a = 2 + ROOT3;
   const r = (Math.sqrt(6) + Math.SQRT2) / 2; // dodecagon circumradius, side 1
   const e = 0.5 + ROOT3 / 2;
   const around = (cx: number, cy: number, suffix: string): [string, Vertex[]][] => {
@@ -959,22 +971,69 @@ function trunchexTemplate(): ArchTemplate {
       ["down" + suffix, [[cx + a / 2, cy - 0.5], [cx + e, cy - e], [cx + a - e, cy - e]]],
     ];
   };
-  const polygons = [...around(0, 0, "0"), ...around(a / 2, (a * ROOT3) / 2, "1")];
-  // the triangles hang below every dodecagon course, so there is no horizontal
-  // line; the Mobius band is cut midway between the two courses.
-  return template([3, 12, 12], a, a * ROOT3, polygons, { cut: (a * ROOT3) / 4 });
+  return [...around(0, 0, "0"), ...around(a / 2, (a * ROOT3) / 2, "1")];
 }
 
 function rhombitrihexTemplate(): ArchTemplate {
   // Rhombitrihexagonal (3.4.6.4): hexagons on a triangular lattice of pitch
   // 1 + sqrt(3), a square across every hexagon edge and a triangle in each gap.
   const a = 1 + ROOT3;
+  const width = a;
+  const height = a * ROOT3;
+  // courses of hexagon+square, triangle, square, triangle, ... and no
+  // horizontal line; the Mobius band is cut midway between a triangle course
+  // and the hexagon course above it.
+  return template([3, 4, 6, 4], width, height, rhombitrihexPolygons(width, height), {
+    cut: (5 * height) / 12,
+  });
+}
+
+/** The six lattice neighbours of a hexagon centre, as (dm, dn) index steps,
+ * in the order of the edge normals 0°, 60°, …, 300°. */
+const HEX_NEIGHBOURS: [number, number][] = [
+  [1, 0],
+  [0, 1],
+  [-1, 1],
+  [-1, 0],
+  [0, -1],
+  [1, -1],
+];
+
+/** 3.4.6.4's tiles over a width x height rectangle (a whole number of its
+ * a x a√3 cells, a = 1 + √3): a hexagon at every lattice point (named `c*`),
+ * the squares across its edges and the triangles between.
+ *
+ * A lattice point `merged(m, n)` picks takes a dodecagon instead — the outline
+ * of its hexagon, six squares and six triangles, which is the patch 4.6.12 is
+ * 3.4.6.4 with merged — and the neighbours it borders leave those squares and
+ * triangles out. Merged points must not be neighbours, or two patches would
+ * claim one square. Port of `_rhombitrihex_polygons`. */
+function rhombitrihexPolygons(
+  width: number,
+  height: number,
+  merged: ((m: number, n: number) => boolean) | null = null,
+  reach: [number, number] = [-2, 4],
+): [string, Vertex[]][] {
+  const a = 1 + ROOT3;
+  const r12 = (Math.sqrt(6) + Math.SQRT2) / 2; // dodecagon circumradius, side 1
   const centreAt = (m: number, n: number): Vertex => [m * a + (n * a) / 2, (n * a * ROOT3) / 2];
-  const hexagonAt = (cx: number, cy: number): Vertex[] => regularPolygon(cx, cy, 6, 1, 30);
+  const indices = (cx: number, cy: number): [number, number] => {
+    const n = Math.round(cy / ((a * ROOT3) / 2));
+    return [Math.round((cx - (n * a) / 2) / a), n];
+  };
+  const isMerged = (m: number, n: number): boolean => merged !== null && merged(m, n);
+  const hexagonAt = (cx: number, cy: number): Vertex[] =>
+    isMerged(...indices(cx, cy))
+      ? regularPolygon(cx, cy, 12, r12, 15)
+      : regularPolygon(cx, cy, 6, 1, 30);
   const decorate = (cx: number, cy: number): [string, Vertex[]][] => {
+    const [m, n] = indices(cx, cy);
+    if (isMerged(m, n)) return [];
+    const swallowed = HEX_NEIGHBOURS.map(([dm, dn]) => isMerged(m + dm, n + dn));
     const out: [string, Vertex[]][] = [];
     for (let k = 0; k < 6; k++) {
-      out.push(["sq", squareOnEdge(cx, cy, ROOT3 / 2, 60 * k)]);
+      if (!swallowed[k]) out.push(["sq", squareOnEdge(cx, cy, ROOT3 / 2, 60 * k)]);
+      if (swallowed[k] || swallowed[(k + 1) % 6]) continue;
       const vx = cx + Math.cos((30 + 60 * k) * DEG);
       const vy = cy + Math.sin((30 + 60 * k) * DEG);
       const u1: Vertex = [Math.cos(60 * k * DEG), Math.sin(60 * k * DEG)];
@@ -983,14 +1042,7 @@ function rhombitrihexTemplate(): ArchTemplate {
     }
     return out;
   };
-  const width = a;
-  const height = a * ROOT3;
-  // courses of hexagon+square, triangle, square, triangle, ... and no
-  // horizontal line; the Mobius band is cut midway between a triangle course
-  // and the hexagon course above it.
-  return template([3, 4, 6, 4], width, height, hexLatticePolygons(centreAt, hexagonAt, decorate, width, height), {
-    cut: (5 * height) / 12,
-  });
+  return hexLatticePolygons(centreAt, hexagonAt, decorate, width, height, reach);
 }
 
 function trunctrihexTemplate(): ArchTemplate {
@@ -1691,9 +1743,117 @@ function durerTemplate(): ArchTemplate {
   });
 }
 
+// -- the 2-uniform tilings ----------------------------------------------------
+//
+// Edge-to-edge tilings by regular polygons whose vertices fall into exactly two
+// classes under the tiling's symmetries — one step past the uniform tilings,
+// which have one. Each of the three here is a uniform tiling with some of its
+// tiles cut up or merged, so each factory borrows that tiling's polygons:
+//
+//   3⁶; 3².4.3.4       3.4.6.4 with every hexagon cut into six triangles
+//   3².4.3.4; 3.4.6.4  3.12.12 with every dodecagon cut into the 3.4.6.4
+//                      patch — a hexagon ringed by squares and triangles
+//   3.4.6.4; 4.6.12    3.4.6.4 with one hexagon in four (every other one along
+//                      both lattice directions) merged with its ring of squares
+//                      and triangles into a dodecagon
+//
+// All three are p6m. They ship on the plane only for now — no cut is chosen and
+// no surface builder wraps them (FLAT_ONLY_ARCH_FAMILIES in catalog.ts). Ports
+// of the factories of the same names in boards/tilings.py.
+
+/** A regular polygon cut into triangles from its centre. */
+function fan(polygon: Vertex[]): Vertex[][] {
+  let cx = 0;
+  let cy = 0;
+  for (const [x, y] of polygon) {
+    cx += x;
+    cy += y;
+  }
+  cx /= polygon.length;
+  cy /= polygon.length;
+  return polygon.map((p, i) => [[cx, cy], p, polygon[(i + 1) % polygon.length]!]);
+}
+
+/** A side-1 dodecagon about (cx, cy) cut into the 3.4.6.4 patch: a hexagon, a
+ * square on each of its edges and a triangle in each gap between two. The
+ * squares sit on the dodecagon edges whose outward normals are `tilt + 60k`
+ * degrees, the triangles on the six edges between. */
+function dodecagonPatch(cx: number, cy: number, tilt: number): Vertex[][] {
+  const out: Vertex[][] = [regularPolygon(cx, cy, 6, 1, tilt + 30)];
+  for (let k = 0; k < 6; k++) {
+    out.push(squareOnEdge(cx, cy, ROOT3 / 2, tilt + 60 * k));
+    const vx = cx + Math.cos((tilt + 30 + 60 * k) * DEG);
+    const vy = cy + Math.sin((tilt + 30 + 60 * k) * DEG);
+    const u1 = (tilt + 60 * k) * DEG;
+    const u2 = (tilt + 60 * k + 60) * DEG;
+    out.push([
+      [vx, vy],
+      [vx + Math.cos(u1), vy + Math.sin(u1)],
+      [vx + Math.cos(u2), vy + Math.sin(u2)],
+    ]);
+  }
+  return out;
+}
+
+/** [3⁶; 3².4.3.4]: rhombitrihexagonal with every hexagon cut into six
+ * triangles. The window is pinned to a 3⁶ vertex, the six-fold centre; left to
+ * the biggest-tile rule it would land on a square, a two-fold one. */
+function trirhombitrihexTemplate(): ArchTemplate {
+  const a = 1 + ROOT3;
+  const width = a;
+  const height = a * ROOT3;
+  const polygons: [string, Vertex[]][] = [];
+  for (const [name, polygon] of rhombitrihexPolygons(width, height)) {
+    if (name.startsWith("c")) {
+      fan(polygon).forEach((t, k) => polygons.push([`${name}t${k}`, t]));
+    } else {
+      polygons.push([name, polygon]);
+    }
+  }
+  return template([3, 4], width, height, polygons, { centre: [0, 0] });
+}
+
+/** [3².4.3.4; 3.4.6.4]: truncated hexagonal with every dodecagon cut into a
+ * hexagon, six squares and six triangles — the squares on the edges a
+ * dodecagon shares with a triangle, so a 3.12.12 corner becomes 3².4.3.4. */
+function dissectedtrunchexTemplate(): ArchTemplate {
+  const a = 2 + ROOT3;
+  const polygons: [string, Vertex[]][] = [];
+  for (const [name, polygon] of trunchexPolygons()) {
+    if (name.startsWith("dod")) {
+      let cx = 0;
+      let cy = 0;
+      for (const [x, y] of polygon) {
+        cx += x;
+        cy += y;
+      }
+      // the edges facing triangles have normals 30 + 60k
+      dodecagonPatch(cx / polygon.length, cy / polygon.length, 30).forEach((piece, k) =>
+        polygons.push([`${name}p${k}`, piece]),
+      );
+    } else {
+      polygons.push([name, polygon]);
+    }
+  }
+  return template([3, 4, 6], a, a * ROOT3, polygons);
+}
+
+/** [3.4.6.4; 4.6.12]: rhombitrihexagonal with the hexagons at every other
+ * lattice point along both lattice directions — one in four — each merged with
+ * its six squares and six triangles into a dodecagon. The merged points are a
+ * lattice of twice the pitch, so the rectangle is twice 3.4.6.4's both ways. */
+function dodecarhombitrihexTemplate(): ArchTemplate {
+  const a = 1 + ROOT3;
+  const width = 2 * a;
+  const height = 2 * a * ROOT3;
+  const even = (v: number): boolean => ((v % 2) + 2) % 2 === 0;
+  const polygons = rhombitrihexPolygons(width, height, (m, n) => even(m) && even(n), [-5, 7]);
+  return template([3, 4, 6, 12], width, height, polygons);
+}
+
 // -- registry ----------------------------------------------------------------
 
-export type ArchFamily = "uniform" | "dual" | "isogonal" | "rectangle" | "other";
+export type ArchFamily = "uniform" | "dual" | "2-uniform" | "isogonal" | "rectangle" | "other";
 
 export interface ArchTiling {
   key: string;
@@ -1701,7 +1861,8 @@ export interface ArchTiling {
   config: number[];
   edgeDirections: number;
   template: () => ArchTemplate;
-  /** "uniform" (Archimedean), "dual" (Laves), "isogonal" (not edge to edge),
+  /** "uniform" (Archimedean), "dual" (Laves), "2-uniform" (regular polygons
+   * edge to edge, with two kinds of vertex), "isogonal" (not edge to edge),
    * "rectangle" (a bond of congruent rectangles, not edge to edge either), or
    * "other" — the tilings that answer to none of those, and so claim nothing
    * as a family: two rep-tile patterns (one congruent polyform in half-turned
@@ -1736,6 +1897,13 @@ export const ARCH_TILINGS: ArchTiling[] = [
   { key: "triakis", label: "Triakis triangular", config: [3, 12, 12], edgeDirections: 12, template: () => dualTemplate(trunchexTemplate), family: "dual", halfTurn: true },
   { key: "kisrhombille", label: "Kisrhombille", config: [4, 6, 12], edgeDirections: 12, template: () => dualTemplate(trunctrihexTemplate), family: "dual", halfTurn: true },
   { key: "tetrakis", label: "Tetrakis square", config: [4, 8, 8], edgeDirections: 8, template: () => dualTemplate(truncsquareTemplate), family: "dual", halfTurn: true },
+  // the 2-uniform tilings: regular polygons edge to edge, like the uniform
+  // ones, but with two kinds of vertex. They have no common names, so the
+  // label is the pair of vertex configurations, and config is just the tile
+  // side counts.
+  { key: "trirhombitrihex", label: "3⁶; 3².4.3.4", config: [3, 4], edgeDirections: 12, template: trirhombitrihexTemplate, family: "2-uniform", halfTurn: true },
+  { key: "dissectedtrunchex", label: "3².4.3.4; 3.4.6.4", config: [3, 4, 6], edgeDirections: 12, template: dissectedtrunchexTemplate, family: "2-uniform", halfTurn: true },
+  { key: "dodecarhombitrihex", label: "3.4.6.4; 4.6.12", config: [3, 4, 6, 12], edgeDirections: 12, template: dodecarhombitrihexTemplate, family: "2-uniform", halfTurn: true },
   // the isogonal tilings that are not edge to edge: vertex-transitive like the
   // uniform ones, but a tile's corner may land in the middle of its neighbour's
   // edge. config counts that neighbour, so it is the tiles meeting at a vertex
@@ -1756,7 +1924,7 @@ export const ARCH_TILINGS: ArchTiling[] = [
   { key: "basketweave", label: "Basket weave", config: [4], edgeDirections: 2, template: basketweaveTemplate, family: "rectangle", halfTurn: true },
   { key: "basketweave3", label: "Basket weave 3x3", config: [4], edgeDirections: 2, template: () => basketweaveTemplate(3), family: "rectangle", halfTurn: true },
   { key: "herringbone", label: "Herringbone", config: [4], edgeDirections: 2, template: herringboneTemplate, family: "rectangle", halfTurn: true },
-  // "Other": the tilings that are none of the four families above. Two are
+  // "Other": the tilings that are none of the five families above. Two are
   // rep-tiles — one congruent polyform laid down in half-turned pairs rather
   // than inflated (the fractal boards do the inflating) — and their config is
   // the tile, as it is for a bond: one pentagon, one hexagon. Dürer's has two

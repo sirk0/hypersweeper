@@ -13,6 +13,7 @@ import {
   RECTANGLE_ARCH,
   SHAPED_MODES,
   SOLID_GROUPS,
+  TWO_UNIFORM_ARCH,
   TILINGS_BY_KEY,
   UNIFORM_ARCH,
 } from "../src/boards/catalog";
@@ -29,6 +30,7 @@ const groups: [string, string[]][] = [
   ["Families / random", [...PICKER_FAMILIES, ...FLAT_ONLY_FAMILIES, "random"]],
   ["Uniform tilings", UNIFORM_ARCH],
   ["Dual-uniform tilings", DUAL_ARCH],
+  ["2-uniform tilings", TWO_UNIFORM_ARCH],
   ["Isogonal tilings", ISOGONAL_ARCH],
   ["Congruent rectangles", RECTANGLE_ARCH],
   ["Other", OTHER_ARCH],

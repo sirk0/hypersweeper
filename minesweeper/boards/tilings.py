@@ -742,6 +742,17 @@ def _trunchex_template() -> _ArchTemplate:
     pitch 2+sqrt(3), up/down triangles between them. The conventional
     rectangle holds two dodecagons and four triangles."""
     a = 2 + ROOT3
+    # the triangles hang half an edge below every dodecagon course, so there
+    # is no straight horizontal line; the cut goes midway between the two
+    # courses, which keeps a dodecagon centre off it.
+    return _template((3, 12, 12), a, a * ROOT3, _trunchex_polygons(),
+                     cut=a * ROOT3 / 4)
+
+
+def _trunchex_polygons():
+    """3.12.12's tiles over its a x a*sqrt(3) rectangle, a = 2+sqrt(3): two
+    dodecagons (named ``dod*``) and four triangles."""
+    a = 2 + ROOT3
     r = (6**0.5 + 2**0.5) / 2  # dodecagon circumradius, side 1
     e = 0.5 + ROOT3 / 2
 
@@ -758,28 +769,26 @@ def _trunchex_template() -> _ArchTemplate:
                                (cx + a - e, cy - e)]),
         ]
 
-    polygons = around(0, 0, "0") + around(a / 2, a * ROOT3 / 2, "1")
-    # the triangles hang half an edge below every dodecagon course, so there
-    # is no straight horizontal line; the cut goes midway between the two
-    # courses, which keeps a dodecagon centre off it.
-    return _template((3, 12, 12), a, a * ROOT3, polygons,
-                     cut=a * ROOT3 / 4)
+    return around(0, 0, "0") + around(a / 2, a * ROOT3 / 2, "1")
 
 
-def _hex_lattice_polygons(centre_at, hexagon_at, decorate, width, height):
+def _hex_lattice_polygons(centre_at, hexagon_at, decorate, width, height,
+                          reach=range(-2, 4)):
     """Assemble one rectangular domain of a tiling built on a triangular
     lattice of hexagon (or dodecagon) centres. ``hexagon_at(cx, cy)`` is
     the central polygon around a lattice point and ``decorate(cx, cy)``
     yields the polygons hung off it (shared with neighbours); everything
     is deduplicated by rounded centroid and kept when its centroid lands
-    in [0, width) x [0, height)."""
+    in [0, width) x [0, height). ``reach`` is the lattice indices swept
+    along both axes -- wide enough for a one-cell domain by default; a
+    domain several cells across passes a wider one."""
     def centroid(polygon):
         return (sum(x for x, _ in polygon) / len(polygon),
                 sum(y for _, y in polygon) / len(polygon))
 
     polygons = {}
-    for m in range(-2, 4):
-        for n in range(-2, 4):
+    for m in reach:
+        for n in reach:
             cx, cy = centre_at(m, n)
             for name, polygon in [("c", hexagon_at(cx, cy)), *decorate(cx, cy)]:
                 gx, gy = centroid(polygon)
@@ -813,17 +822,60 @@ def _rhombitrihex_template() -> _ArchTemplate:
     triangle in every gap between two squares. The rectangle holds two
     hexagons, six squares and four triangles."""
     a = 1 + ROOT3
+    width, height = a, a * ROOT3
+    # the courses run hexagon+square (y = 0), triangle, square, triangle,
+    # hexagon+square (y = height/2), ... with no horizontal line anywhere; the
+    # cut goes midway between a triangle course and the hexagon course
+    # above it, keeping the hexagon centres off it.
+    return _template((3, 4, 6, 4), width, height,
+                     _rhombitrihex_polygons(width, height),
+                     cut=5 * height / 12)
+
+
+# the six lattice neighbours of a hexagon centre, as (dm, dn) index steps, in
+# the order of the edge normals 0, 60, ..., 300 degrees
+_HEX_NEIGHBOURS = ((1, 0), (0, 1), (-1, 1), (-1, 0), (0, -1), (1, -1))
+
+
+def _rhombitrihex_polygons(width, height, merged=None, reach=range(-2, 4)):
+    """3.4.6.4's tiles over a width x height rectangle (a whole number of its
+    a x a*sqrt(3) cells, a = 1+sqrt(3)): a hexagon at every lattice point
+    (named ``c*``), the squares across its edges and the triangles between.
+
+    A lattice point ``merged(m, n)`` picks takes a dodecagon instead -- the
+    outline of its hexagon, six squares and six triangles, which is the patch
+    4.6.12 is 3.4.6.4 with merged -- and the neighbours it borders leave those
+    squares and triangles out. Merged points must not be neighbours, or two
+    patches would claim one square."""
+    a = 1 + ROOT3
+    r12 = (6**0.5 + 2**0.5) / 2  # dodecagon circumradius, side 1
 
     def centre_at(m, n):
         return (m * a + n * a / 2, n * a * ROOT3 / 2)
 
+    def indices(cx, cy):
+        n = round(cy / (a * ROOT3 / 2))
+        return round((cx - n * a / 2) / a), n
+
+    def is_merged(m, n):
+        return merged is not None and merged(m, n)
+
     def hexagon_at(cx, cy):
+        if is_merged(*indices(cx, cy)):
+            return _regular_polygon(cx, cy, 12, r12, 15)
         return _regular_polygon(cx, cy, 6, 1.0, 30)  # vertices at 30, 90, ...
 
     def decorate(cx, cy):
+        m, n = indices(cx, cy)
+        if is_merged(m, n):
+            return []
+        swallowed = [is_merged(m + dm, n + dn) for dm, dn in _HEX_NEIGHBOURS]
         out = []
         for k in range(6):
-            out.append(("sq", _square_on_edge(cx, cy, ROOT3 / 2, 60 * k)))
+            if not swallowed[k]:
+                out.append(("sq", _square_on_edge(cx, cy, ROOT3 / 2, 60 * k)))
+            if swallowed[k] or swallowed[(k + 1) % 6]:
+                continue
             vx = cx + math.cos(math.radians(30 + 60 * k))
             vy = cy + math.sin(math.radians(30 + 60 * k))
             u1 = (math.cos(math.radians(60 * k)), math.sin(math.radians(60 * k)))
@@ -832,14 +884,8 @@ def _rhombitrihex_template() -> _ArchTemplate:
                                 (vx + u2[0], vy + u2[1])]))
         return out
 
-    width, height = a, a * ROOT3
-    polygons = _hex_lattice_polygons(centre_at, hexagon_at, decorate, width, height)
-    # the courses run hexagon+square (y = 0), triangle, square, triangle,
-    # hexagon+square (y = height/2), ... with no horizontal line anywhere; the
-    # cut goes midway between a triangle course and the hexagon course
-    # above it, keeping the hexagon centres off it.
-    return _template((3, 4, 6, 4), width, height, polygons,
-                     cut=5 * height / 12)
+    return _hex_lattice_polygons(centre_at, hexagon_at, decorate, width, height,
+                                 reach)
 
 
 def _trunctrihex_template() -> _ArchTemplate:
@@ -1437,11 +1483,124 @@ def _durer_template() -> _ArchTemplate:
                      mirrored=True, centre=(1 + cos72, 0.0))
 
 
+# -- the 2-uniform tilings -----------------------------------------------------
+#
+# Edge-to-edge tilings by regular polygons whose vertices fall into exactly two
+# classes under the tiling's symmetries -- one step past the uniform tilings
+# above, which have one. There are twenty; the three here are each a uniform
+# tiling with some of its tiles cut up or merged, so each factory borrows that
+# tiling's polygons:
+#
+#   3^6; 3^2.4.3.4       3.4.6.4 with every hexagon cut into six triangles
+#   3^2.4.3.4; 3.4.6.4   3.12.12 with every dodecagon cut into the 3.4.6.4
+#                        patch -- a hexagon ringed by squares and triangles
+#   3.4.6.4; 4.6.12      3.4.6.4 with one hexagon in four (every other one
+#                        along both lattice directions) merged with its ring
+#                        of squares and triangles into a dodecagon
+#
+# All three are p6m, so their windows are symmetric every way a hexagon is.
+# They ship on the plane only for now -- no cut is chosen and no surface
+# builder wraps them (_FLAT_ONLY_FAMILIES in catalog.py).
+
+
+def _fan(polygon):
+    """A regular polygon cut into triangles from its centre."""
+    cx = sum(x for x, _ in polygon) / len(polygon)
+    cy = sum(y for _, y in polygon) / len(polygon)
+    return [[(cx, cy), polygon[i], polygon[(i + 1) % len(polygon)]]
+            for i in range(len(polygon))]
+
+
+def _dodecagon_patch(cx, cy, tilt):
+    """A side-1 dodecagon about (cx, cy) cut into the 3.4.6.4 patch: a hexagon,
+    a square on each of its edges and a triangle in each gap between two.
+    The squares sit on the dodecagon edges whose outward normals are
+    ``tilt + 60k`` degrees, the triangles on the six edges between."""
+    out = [_regular_polygon(cx, cy, 6, 1.0, tilt + 30)]
+    for k in range(6):
+        out.append(_square_on_edge(cx, cy, ROOT3 / 2, tilt + 60 * k))
+        vx = cx + math.cos(math.radians(tilt + 30 + 60 * k))
+        vy = cy + math.sin(math.radians(tilt + 30 + 60 * k))
+        u1, u2 = (math.radians(tilt + 60 * k), math.radians(tilt + 60 * k + 60))
+        out.append([(vx, vy), (vx + math.cos(u1), vy + math.sin(u1)),
+                    (vx + math.cos(u2), vy + math.sin(u2))])
+    return out
+
+
+def _trirhombitrihex_template() -> _ArchTemplate:
+    """[3^6; 3^2.4.3.4]: rhombitrihexagonal with every hexagon cut into six
+    triangles. A hexagon's centre becomes a 3^6 vertex; each of its corners,
+    3.4.6.4 before, has the hexagon's 120 degrees replaced by two triangles,
+    3.4.3.3.4 -- which read from the second triangle is 3^2.4.3.4.
+
+    The rectangle holds the twelve triangles of two hexagons, six squares and
+    four triangles. The window is pinned to a 3^6 vertex, the six-fold
+    centre; left to the biggest-tile rule it would land on a square, a
+    two-fold one."""
+    a = 1 + ROOT3
+    width, height = a, a * ROOT3
+    polygons = []
+    for name, polygon in _rhombitrihex_polygons(width, height):
+        if name.startswith("c"):  # a hexagon
+            polygons += [(f"{name}t{k}", t) for k, t in enumerate(_fan(polygon))]
+        else:
+            polygons.append((name, polygon))
+    return _template((3, 4), width, height, polygons, centre=(0.0, 0.0))
+
+
+def _dissectedtrunchex_template() -> _ArchTemplate:
+    """[3^2.4.3.4; 3.4.6.4]: truncated hexagonal with every dodecagon cut into
+    a hexagon, six squares and six triangles. The squares go on the edges a
+    dodecagon shares with a triangle, the new triangles on the edges it
+    shares with another dodecagon, so a 3.12.12 corner reads triangle, then
+    square and triangle from one dodecagon, triangle and square from the
+    other: 3.4.3.3.4, i.e. 3^2.4.3.4. The hexagons' corners are 3.4.6.4.
+    (Squares the other way round give a different 2-uniform tiling,
+    [3^3.4^2; 3.4.6.4].)
+
+    The rectangle holds two dissected dodecagons -- thirteen tiles each --
+    and 3.12.12's four triangles."""
+    a = 2 + ROOT3
+    polygons = []
+    for name, polygon in _trunchex_polygons():
+        if name.startswith("dod"):
+            cx = sum(x for x, _ in polygon) / len(polygon)
+            cy = sum(y for _, y in polygon) / len(polygon)
+            # the edges facing triangles have normals 30 + 60k
+            polygons += [(f"{name}p{k}", piece)
+                         for k, piece in enumerate(_dodecagon_patch(cx, cy, 30))]
+        else:
+            polygons.append((name, polygon))
+    return _template((3, 4, 6), a, a * ROOT3, polygons)
+
+
+def _dodecarhombitrihex_template() -> _ArchTemplate:
+    """[3.4.6.4; 4.6.12]: rhombitrihexagonal with the hexagons at every other
+    lattice point along both lattice directions -- one in four -- each merged
+    with its six squares and six triangles into a dodecagon.
+
+    Merging one hexagon in *three* this way gives plain 4.6.12, every corner
+    beside a dodecagon. One in four leaves each remaining hexagon with two
+    dodecagons across from each other: its four corners next to them become
+    4.6.12, and the two between, which touch no dodecagon, stay 3.4.6.4.
+
+    The merged points are a lattice of twice the pitch, so the rectangle is
+    twice 3.4.6.4's both ways and holds two dodecagons, six hexagons,
+    twelve squares and four triangles."""
+    a = 1 + ROOT3
+    width, height = 2 * a, 2 * a * ROOT3
+    polygons = _rhombitrihex_polygons(
+        width, height, merged=lambda m, n: m % 2 == 0 and n % 2 == 0,
+        reach=range(-5, 7))
+    return _template((3, 4, 6, 12), width, height, polygons)
+
+
 @dataclass(frozen=True)
 class ArchTiling:
-    """One template-based periodic tiling, in one of five families: the
+    """One template-based periodic tiling, in one of six families: the
     ``uniform`` (Archimedean) tilings, their ``dual`` (Laves/Catalan)
-    partners, the ``isogonal`` tilings that are not edge to edge, the
+    partners, the ``2-uniform`` tilings with two kinds of vertex, the
+    ``isogonal`` tilings that are not edge to edge, the
     ``rectangle`` bonds tiled by one congruent rectangle, and ``other``, the
     tilings that answer to none of those -- see
     docs/agents/board-recipes.md. The menu catalog, mode strings, presets and
@@ -1452,13 +1611,17 @@ class ArchTiling:
     #   vertex configuration (3, 6, 3, 6) -- for an isogonal one, counting
     #   the tile whose edge passes straight through the vertex; for a
     #   face-transitive (Laves) tiling, the configuration of its single
-    #   tile shape; for a rectangle bond, just that tile's side count.
+    #   tile shape; for a rectangle bond, just that tile's side count; for a
+    #   2-uniform tiling, its tiles' side counts (vertex_types has the rest).
     edge_directions: int           # distinct edge directions
     template: Callable[[], "_ArchTemplate"]
     family: str = "uniform"        # a key of _FAMILY_TRAITS below
     half_turn: bool = True         # the tiling maps onto itself under some
     #   180-degree rotation, so a window centred on one reads symmetric.
     #   True of every wallpaper group here except p3.
+    vertex_types: tuple[tuple[int, ...], ...] = ()  # a 2-uniform tiling's
+    #   two vertex configurations, ((3, 3, 3, 3, 3, 3), (3, 3, 4, 3, 4)) --
+    #   what TestTwoUniform holds every interior vertex to. Empty elsewhere.
 
     @property
     def vertex_transitive(self) -> bool:
@@ -1493,6 +1656,7 @@ class ArchTiling:
 _FAMILY_TRAITS = {
     "uniform": (True, True, False),      # Archimedean: every vertex alike
     "dual": (False, True, True),         # Laves: every tile congruent
+    "2-uniform": (False, True, False),   # two kinds of vertex, regular tiles
     "isogonal": (True, False, False),    # every vertex alike, T-vertices and all
     "rectangle": (False, False, True),   # one congruent rectangle, staggered
     # "Other" is a grab-bag rather than a symmetry class -- the two rep-tile
@@ -1542,6 +1706,20 @@ ARCH_TILINGS = (
                _kisrhombille_template, family="dual"),
     ArchTiling("tetrakis", "Tetrakis square", (4, 8, 8), 8,
                _tetrakis_template, family="dual"),
+    # the 2-uniform tilings: regular polygons edge to edge, like the uniform
+    # ones, but with two kinds of vertex. They have no common names, so the
+    # label is the pair of vertex configurations -- which is what they are
+    # called -- and config is just the tile side counts. Listed in the order
+    # of their first vertex configuration, as the uniform block is.
+    ArchTiling("trirhombitrihex", "3⁶; 3².4.3.4", (3, 4), 12,
+               _trirhombitrihex_template, family="2-uniform",
+               vertex_types=((3, 3, 3, 3, 3, 3), (3, 3, 4, 3, 4))),
+    ArchTiling("dissectedtrunchex", "3².4.3.4; 3.4.6.4", (3, 4, 6), 12,
+               _dissectedtrunchex_template, family="2-uniform",
+               vertex_types=((3, 3, 4, 3, 4), (3, 4, 6, 4))),
+    ArchTiling("dodecarhombitrihex", "3.4.6.4; 4.6.12", (3, 4, 6, 12), 12,
+               _dodecarhombitrihex_template, family="2-uniform",
+               vertex_types=((3, 4, 6, 4), (4, 6, 12))),
     # the isogonal tilings that are not edge to edge: vertex-transitive like
     # the uniform ones, but a tile's corner may land in the middle of its
     # neighbour's edge. config counts that neighbour, so it is the tiles
@@ -1573,7 +1751,7 @@ ARCH_TILINGS = (
                _basketweave3_template, family="rectangle"),
     ArchTiling("herringbone", "Herringbone", (4,), 2,
                _herringbone_template, family="rectangle"),
-    # "Other": the tilings that are none of the four families above. Two are
+    # "Other": the tilings that are none of the five families above. Two are
     # rep-tiles -- one congruent polyform laid down in half-turned pairs
     # rather than inflated (the fractal boards do the inflating) -- and their
     # config is the tile, as it is for a bond: one pentagon, one hexagon.
