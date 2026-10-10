@@ -192,8 +192,11 @@ of the polyhedron is a symmetry of the picture, and the group is measured off
 the drawing. Each board gets its own — a cube quarters about three axes, a
 tetrahedron thirds and never quarters, an icosahedron fifths, a square pyramid
 has one axis and no second kind of mirror at all, and a **chiral** solid (the
-pentagonal hexecontahedron, which is the snub operation's dual) has no mirror
-anywhere. `tests/unit/symmetries.test.ts` pins those.
+pentagonal hexecontahedron, which is the snub operation's dual, or the snub
+cube itself) has no mirror anywhere. What is measured is the *board's* group,
+not the polyhedron's: the truncated octahedron's hexagons are cut into three
+rhombi, which keeps only the pyritohedral 24 of its 48 symmetries, and that is
+the group its controls offer. `tests/unit/symmetries.test.ts` pins those.
 
 **The one solid that is not measured off the drawing is `cube3d`**, and it is
 the exception that states the rule: "a solid is drawn as the thing it is" is

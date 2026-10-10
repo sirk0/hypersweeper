@@ -131,7 +131,14 @@ from minesweeper.boards.aperiodic import (
     _zeta8_mul,
     ammann_beenker_board,
 )
+from minesweeper.boards.archimedean import (
+    _archimedean_faces,
+    cuboctahedron_board,
+    snub_cube_board,
+    truncated_octahedron_board,
+)
 from minesweeper.boards.catalan import (
+    _Base,
     deltoidal_hexecontahedron_board,
     deltoidal_icositetrahedron_board,
     disdyakis_dodecahedron_board,
@@ -4689,6 +4696,114 @@ class TestCatalanSolids:
         assert len(board.polygons) == 60
         assert {len(p) for p in board.polygons.values()} == {5}
         assert {len(n) for n in board.adjacency.values()} == {7}
+
+
+# (mode, builder, Conway operation on the cube, bare face mix, cells per
+# frequency**2 once the hexagons are cut into rhombi, measured point group as
+# (order, improper))
+_ARCHIMEDEAN_SOLIDS = [
+    ("cubocta", cuboctahedron_board, "join", {3: 8, 4: 6}, 14, (48, 24)),
+    ("truncocta", truncated_octahedron_board, "kis", {4: 6, 6: 8}, 30, (24, 12)),
+    ("snubcube", snub_cube_board, "gyro", {3: 32, 4: 6}, 38, (24, 0)),
+]
+_ARCHIMEDEAN_IDS = [c[0] for c in _ARCHIMEDEAN_SOLIDS]
+
+
+def _signed_permutations():
+    """The 48 symmetries of the cube, as (matrix rows, determinant)."""
+    for perm in itertools.permutations(range(3)):
+        inversions = sum(1 for i in range(3) for j in range(i) if perm[j] > perm[i])
+        for signs in itertools.product((1, -1), repeat=3):
+            rows = tuple(
+                tuple(signs[i] if k == perm[i] else 0 for k in range(3)) for i in range(3)
+            )
+            yield rows, (-1) ** inversions * signs[0] * signs[1] * signs[2]
+
+
+class TestArchimedeanSolids:
+    """The cube group's Archimedean solids, built as the polar duals of their
+    Catalan solids and cut into cells the Catalan way.
+
+    The dual is the whole construction, so the checks are on what it must give:
+    every face a **regular** polygon, all of one edge length, every vertex on
+    one sphere -- the definition of an Archimedean solid, which a merely
+    topologically right construction misses. Then that the subdivision keeps
+    the surface closed across edges where a triangle meets a square (two
+    different grids naming the same points), and the point group each board
+    really has.
+    """
+
+    @pytest.mark.parametrize("mode,builder,op,mix,per,group", _ARCHIMEDEAN_SOLIDS,
+                             ids=_ARCHIMEDEAN_IDS)
+    def test_the_dual_is_the_archimedean_solid(self, mode, builder, op, mix, per, group):
+        faces, positions = _archimedean_faces(_Base("cube"), op)
+        assert Counter(len(ring) for ring in faces.values()) == mix
+        edges = set()
+        for ring in faces.values():
+            points = [positions[k] for k in ring]
+            sides = [math.dist(points[i], points[(i + 1) % len(points)])
+                     for i in range(len(points))]
+            # regular: equal sides and every corner on one circle about the
+            # centre, which with equal sides rules out a non-convex equilateral
+            centre = [sum(c) / len(points) for c in zip(*points)]
+            spokes = [math.dist(p, centre) for p in points]
+            assert max(sides) - min(sides) < 1e-12
+            assert max(spokes) - min(spokes) < 1e-12
+            for i in range(len(ring)):
+                edges.add((frozenset((ring[i], ring[(i + 1) % len(ring)])),
+                           round(sides[i], 12)))
+        assert len({length for _, length in edges}) == 1, "one edge length throughout"
+        radii = [math.hypot(*p) for p in positions.values()]
+        assert max(abs(r - 1) for r in radii) < 1e-12
+        # V - E + F, off the exact vertex ids
+        assert len(positions) - len(edges) + len(faces) == 2
+
+    @pytest.mark.parametrize("mode,builder,op,mix,per,group", _ARCHIMEDEAN_SOLIDS,
+                             ids=_ARCHIMEDEAN_IDS)
+    def test_subdivision_keeps_the_surface_closed(self, mode, builder, op, mix, per, group):
+        """A point on an edge between a triangle and a square is named by two
+        different grids; if they disagreed the board would still draw and the
+        cells either side of that edge would quietly stop being neighbours.
+        Euler characteristic 2 with no boundary at every frequency rules it
+        out, and every cell has to lie flat in its face's plane."""
+        for frequency in (1, 2, 3, 4):
+            board = builder(0, frequency)
+            assert board.mode == mode
+            assert len(board.polygons) == per * frequency**2
+            assert _euler_characteristic(board) == 2
+            assert _boundary_components(board) == 0
+            for polygon in board.polygons.values():
+                normal = _face_normal(polygon)
+                off = max(abs(sum(n * (p - q) for n, p, q in zip(normal, point, polygon[0])))
+                          for point in polygon)
+                assert off < 1e-9
+
+    @pytest.mark.parametrize("mode,builder,op,mix,per,group", _ARCHIMEDEAN_SOLIDS,
+                             ids=_ARCHIMEDEAN_IDS)
+    def test_point_group(self, mode, builder, op, mix, per, group):
+        """The cuboctahedron keeps the cube's 48 symmetries and the snub cube its
+        24 rotations and no mirror, being chiral. The truncated octahedron loses
+        half: three rhombi in a hexagon keep only the mirrors through their
+        spokes, and those are not the cube's edge mirrors, so the cut keeps the
+        pyritohedral group -- 12 rotations, the inversion and its 11 more
+        improper ones -- rather than either 48 or the chiral 24."""
+        board = builder(0, 2)
+
+        def cell_set(transform):
+            return {
+                frozenset(tuple(round(c, 6) for c in transform(p)) for p in polygon)
+                for polygon in board.polygons.values()
+            }
+
+        cells = cell_set(lambda p: p)
+        kept = [
+            det for rows, det in _signed_permutations()
+            if cell_set(lambda p, rows=rows: tuple(
+                sum(r * c for r, c in zip(row, p)) for row in rows)) == cells
+        ]
+        assert (len(kept), kept.count(-1)) == group
+        inversion = cell_set(lambda p: tuple(-c for c in p)) == cells
+        assert inversion == (mode != "snubcube")
 
 
 class TestProjectivePlane:

@@ -188,6 +188,13 @@ SPEC: dict[str, dict] = {
     "deltoidal_hexecontahedron_board": dict(size=(1,), mine=0, shape=None, rigid=True),
     "sphere_board": dict(size=(1,), mine=0, shape=None, rigid=True, floor=0),
     "disdyakis_triacontahedron_board": dict(size=(1,), mine=0, shape=None, rigid=True),
+    # The cube group's Archimedean solids, cut the same way (boards/archimedean.py):
+    # (face count) * frequency**2 cells, the truncated octahedron's hexagons
+    # counting three rhombi each. ``rigid`` for the Catalan solids' reason --
+    # every cell lies flat on a face at every frequency.
+    "cuboctahedron_board": dict(size=(1,), mine=0, shape=None, rigid=True),
+    "truncated_octahedron_board": dict(size=(1,), mine=0, shape=None, rigid=True),
+    "snub_cube_board": dict(size=(1,), mine=0, shape=None, rigid=True),
     # aperiodic: ``keep`` is exact, the growth arg only has to be generous
     "penrose_board": dict(size=(3,), mine=1, shape=2, kind="scale", grow=0),
     "kitedart_board": dict(size=(3,), mine=1, shape=2, kind="scale", grow=0),

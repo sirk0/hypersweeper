@@ -75,6 +75,12 @@ from minesweeper.boards.aperiodic import (  # noqa: F401
     phyllotaxis_board,
     spectre_board,
 )
+from minesweeper.boards.archimedean import (  # noqa: F401
+    _archimedean_faces,
+    cuboctahedron_board,
+    snub_cube_board,
+    truncated_octahedron_board,
+)
 from minesweeper.boards.catalan import (  # noqa: F401
     _Base,
     _catalan_faces,

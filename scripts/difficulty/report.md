@@ -12,7 +12,7 @@ Every board's mine count, chosen so its win probability under the reference solv
 
 ## Coverage
 
-- 606 rows, 574 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
+- 615 rows, 583 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
 - 32 could not be brought on target:
   - `cube3d`/hard: 33.3% vs 50.9% — the search could not resolve it -- its thinnest measurement finished 0 game(s), so the rate here is noise rather than a crossing the search walked to. Re-measure at a bigger `--budget`
   - `cylinder`/easy: 89.1% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (7, 9%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
@@ -46,7 +46,7 @@ Every board's mine count, chosen so its win probability under the reference solv
   - `triakis`/medium: 0.0% vs 87.1% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `triakis`/easy: 1.8% vs 96.5% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `truncicosidodeca`/hard: 45.9% vs 50.9% — no integer mine count lands within tolerance; this is the closest
-- 146 rows had games the solver abandoned (its frontier DP hit its node budget); their rates are measured over the games that finished:
+- 150 rows had games the solver abandoned (its frontier DP hit its node budget); their rates are measured over the games that finished:
   - `cube3d`/hard: 466 abandoned
   - `torustrunchex`/hard: 168 abandoned
   - `torusrotatedhex`/hard: 144 abandoned
@@ -58,7 +58,7 @@ Every board's mine count, chosen so its win probability under the reference solv
   - `torussnubhex`/hard: 39 abandoned
   - `triakisocta`/hard: 38 abandoned
 
-Densities run from 2.8% to 36.2% (median 17.9%) — the spread the old flat 14/16/19 per cent could not express.
+Densities run from 2.8% to 36.2% (median 18.1%) — the spread the old flat 14/16/19 per cent could not express.
 
 The only floor under the search is the **opening**: the fewest mines at which the first click alone stops finishing the board (`calibrate.opening_floor`). As a density that runs 1.0% to 16.7% across the zoo — which is why it is measured per board rather than set as a percentage.
 
@@ -81,6 +81,7 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `cubebasketweave3` | 6.6 | 72c 12m (17%) 98% | 288c 60m (21%) 87% | 450c 110m (24%) 48% |
 | `cubeframe` | 8.4 | 72c 17m (24%) 99% | 264c 53m (20%) 86% | 480c 126m (26%) 50% |
 | `cubestackedbond` | 7.8 | 108c 21m (19%) 94% | 300c 63m (21%) 84% | 432c 109m (25%) 52% |
+| `cubocta` | 10.0 | 56c 11m (20%) 98% | 224c 55m (25%) 88% | 504c 135m (27%) 50% |
 | `cylbasketweave` | 6.6 | 80c 12m (15%) 99% | 240c 41m (17%) 85% | 504c 101m (20%) 53% |
 | `cylbasketweave3` | 6.2 | 90c 7m (8%) 93% | 240c 29m (12%) 84% | 462c 73m (16%) 54% |
 | `cylcairo` | 6.6 | 80c 9m (11%) 98% | 252c 32m (13%) 91% | 456c 84m (18%) 53% |
@@ -204,6 +205,7 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `rotatedhex` | 5.7 | 85c 4m (5%) 95% | 263c 14m (5%) 85% | 537c 40m (7%) 47% |
 | `rotatedtri` | 5.7 | 85c 13m (15%) 93% | 263c 45m (17%) 86% | 537c 112m (21%) 52% |
 | `runningbond` | 5.6 | 85c 12m (14%) 95% | 265c 45m (17%) 83% | 481c 100m (21%) 51% |
+| `snubcube` | 11.1 | 152c 31m (20%) 99% | 342c 85m (25%) 89% | 608c 170m (28%) 52% |
 | `snubdodec` | 9.8 | 92c 18m (20%) 97% | 92c 23m (25%) 86% | 92c 29m (32%) 49% |
 | `snubhex` | 9.4 | 81c 8m (10%) 97% | 285c 32m (11%) 91% | 523c 104m (20%) 48% |
 | `snubsquare` | 9.3 | 79c 9m (11%) 97% | 229c 35m (15%) 88% | 505c 107m (21%) 48% |
@@ -266,6 +268,7 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `tromino` | 6.4 | 72c 10m (14%) 95% | 280c 47m (17%) 85% | 432c 92m (21%) 49% |
 | `trunchex` | 5.6 | 85c 4m (5%) 95% | 263c 13m (5%) 88% | 537c 38m (7%) 52% |
 | `truncicosidodeca` | 5.8 | 62c 11m (18%) 95% | 62c 13m (21%) 85% | 62c 17m (27%) 46% ⚠ |
+| `truncocta` | 8.0 | 120c 28m (23%) 95% | 270c 61m (23%) 87% | 480c 127m (26%) 49% |
 | `truncsquare` | 5.5 | 85c 7m (8%) 98% | 265c 24m (9%) 85% | 481c 64m (13%) 49% |
 | `trunctrihex` | 5.7 | 87c 9m (10%) 97% | 241c 30m (12%) 86% | 517c 83m (16%) 48% |
 

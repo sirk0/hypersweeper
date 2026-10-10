@@ -519,8 +519,8 @@ These are one-offs, not tiling×surface products.
    board's own pixel space, as `kitedart_board` does — both front-ends
    centre and size the glyph there.
 2. Add the mode to the right menu table in `data/catalog.json` — one
-   `menu.solidGroups[*].modes` (Sphere, Platonic solids, Catalan solids or
-   Polyhedra), `menu.aperiodic` (the substitution tilings), `menu.spiral`
+   `menu.solidGroups[*].modes` (Sphere, Platonic solids, Archimedean solids,
+   Catalan solids or Polyhedra), `menu.aperiodic` (the substitution tilings), `menu.spiral`
    (the boards wound round a centre), or `menu.shapedModes` (keyed by the regular
    tiling the shaped board is cut from) — and its label to `soloLabels`.
    `catalog.py` loads them (`SOLID_MODES` is derived by flattening

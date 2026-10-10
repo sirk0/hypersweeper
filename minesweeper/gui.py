@@ -995,9 +995,10 @@ _ICON_ALIASES = {
     "spiral": "phyllotaxis",
     "fractal": "sphinx",
     "hyperbolic": "hyperbolic73",  # the family row: the game's namesake
-    # the four solid-group home rows borrow one of their own members' icons:
-    # there is no board named "platonic" or "catalan" to draw
+    # the solid-group home rows borrow one of their own members' icons:
+    # there is no board named "platonic", "archimedean" or "catalan" to draw
     "platonic": "tetrahedron",
+    "archimedean": "cubocta",
     "catalan": "rhombictriaconta",
     "polyhedra": "steppedbipyramid",  # frames, stepped pyramids, brick cubes
     "volume": "cube3d",     # the "Volumes" row: its only board
@@ -1013,10 +1014,15 @@ _ICON_ALIASES = {
 _HYPERBOLIC_ICON_SHELLS = {"hyperbolic73": 4, "hyperbolic54": 4, "hyperbolic45": 5}
 
 
-# How each Catalan solid is turned before projecting, in degrees about x then
-# y -- chosen so the face the solid is named for reads rather than pointing
-# straight at or away from the viewer.
-_CATALAN_VIEW = {
+# How each flat-faced solid drawn by `_icon_solid` -- the Catalan solids and
+# the cube group's Archimedean ones -- is turned before projecting, in degrees
+# about x then y, chosen so the face the solid is named for reads rather than
+# pointing straight at or away from the viewer.
+_ARCHIMEDEAN_FLAT = ("cubocta", "truncocta", "snubcube")
+_SOLID_VIEW = {
+    "cubocta": (-20, 22),
+    "truncocta": (-20, 22),
+    "snubcube": (-18, 20),
     "triakistetra": (-18, 20),
     "rhombicdodeca": (-20, 12),
     "triakisocta": (-22, 18),
@@ -1031,11 +1037,12 @@ _CATALAN_VIEW = {
     "sphere": (-18, 12),
     "disdyakistriaconta": (-16, 20),
 }
-assert set(_CATALAN_VIEW) == set(SOLID_GROUP_MEMBERS["catalan"])
+assert set(_SOLID_VIEW) == set(SOLID_GROUP_MEMBERS["catalan"]) | set(_ARCHIMEDEAN_FLAT)
 
 
 def _icon_solid(surface, mode: str, d: float) -> None:
-    """A Catalan solid's icon: the real board, seen head-on.
+    """A flat-faced solid's icon (a Catalan solid, or one of the cube group's
+    Archimedean solids): the real board, seen head-on.
 
     Unlike the rest of these icons -- which are hand-drawn figures -- there is
     no drawing of a disdyakis triacontahedron that a reader could tell from a
@@ -1044,7 +1051,7 @@ def _icon_solid(surface, mode: str, d: float) -> None:
     viewer. What the icon shows is the board a tap on that row opens.
     """
     board = build_board(mode, "easy")
-    pitch, yaw = (math.radians(a) for a in _CATALAN_VIEW[mode])
+    pitch, yaw = (math.radians(a) for a in _SOLID_VIEW[mode])
     cp, sp, cy, sy = math.cos(pitch), math.sin(pitch), math.cos(yaw), math.sin(yaw)
 
     def project(point):
@@ -1881,7 +1888,7 @@ def _render_icon(key: str) -> pygame.Surface:
         pygame.draw.ellipse(s, (0, 0, 0, 0), hole)
         pygame.draw.ellipse(s, ICON_BLUE_DARK, hole, 4)
         _icon_gloss(s, pygame.Rect(d * 0.5, d * 0.12, d * 0.36, d * 0.32), 70)
-    elif key in _CATALAN_VIEW:
+    elif key in _SOLID_VIEW:
         _icon_solid(s, key, d)
     else:
         fill_circle(s, int(c), int(c), int(d * 0.4), ICON_BLUE)
@@ -2348,11 +2355,13 @@ class GameScreen3D(BaseGameScreen):
     def _initial_rotation(self):
         # flat-faced solids show only one face head-on; a 3/4 turn reveals
         # three faces at once. Every Catalan solid is flat-faced too, so the
-        # group joins the list whole rather than a board at a time.
+        # group joins the list whole rather than a board at a time, and so are
+        # the cube group's Archimedean solids.
         if self.mode in ("cube", "tetrahedron", "cubeframe", "steppedbipyramid",
                         "octahedron", "icosahedron", "steppedpyramid",
                         "dodecahedron", "cubestackedbond", "cubebasketweave",
-                        "cubebasketweave3") or self.mode in SOLID_GROUP_MEMBERS["catalan"]:
+                        "cubebasketweave3") or self.mode in SOLID_GROUP_MEMBERS["catalan"] \
+                or self.mode in _ARCHIMEDEAN_FLAT:
             return mat_mul(rot_x(-0.5), rot_y(0.6))
         # a tetrahedron viewed down a 2-fold axis looks like a flat square;
         # turn to a vertex-first 3/4 view so the frame's gaps read clearly

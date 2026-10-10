@@ -31,6 +31,11 @@ import {
   triakisTetrahedronBoard,
 } from "./catalan";
 import {
+  cuboctahedronBoard,
+  snubCubeBoard,
+  truncatedOctahedronBoard,
+} from "./archimedean";
+import {
   carpetBoard,
   chairBoard,
   gosperBoard,
@@ -119,6 +124,11 @@ const BUILDERS: Record<string, Builder> = {
   snub_dodecahedron_board: snubDodecahedronBoard,
   rhombicosidodecahedron_board: rhombicosidodecahedronBoard,
   truncated_icosidodecahedron_board: truncatedIcosidodecahedronBoard,
+  // the three cube-group Archimedean solids (boards/archimedean.ts), duals of
+  // their Catalan solids; (mineCount, frequency) like those
+  cuboctahedron_board: cuboctahedronBoard,
+  truncated_octahedron_board: truncatedOctahedronBoard,
+  snub_cube_board: snubCubeBoard,
   cube_board: cubeBoard,
   cube_frame_board: cubeFrameBoard,
   // the one volume board: a solid cube of cells, 26 neighbours

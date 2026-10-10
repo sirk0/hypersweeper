@@ -10,7 +10,7 @@ carries over — see "Which version to change" in the root
 
 `minesweeper/gui.py` is the pygame UI. `MenuScreen` (a geometry-first home
 page — Classic / Flat / Flat manifolds / Sphere / Platonic solids /
-Catalan solids / Polyhedra; **the pygame
+Archimedean solids / Catalan solids / Polyhedra / Volumes; **the pygame
 menu only** — the web menu was restructured in `web/` alone and is
 described in [`../../web/docs/ui.md`](../../web/docs/ui.md). Classic
 launches flat squares; Flat (the plane) and each flat manifold (cylinder,

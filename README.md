@@ -63,10 +63,8 @@ Pick a surface, then a tiling:
   cylinder and the torus below, and — unless the tiling is chiral — the
   Möbius strip and the Klein bottle too
 - **Sphere (3D)** — a chamfered dodecahedron (12 pentagons + 30 hexagons),
-  the Goldberg polyhedron GP(3,0) (12 pentagons + 80 hexagons), a geodesic
-  icosahedron (80 triangles), a snub dodecahedron
-  (12 pentagons + 80 triangles), a rhombicosidodecahedron or a truncated
-  icosidodecahedron — each rounded onto the sphere itself.
+  the Goldberg polyhedron GP(3,0) (12 pentagons + 80 hexagons) or a geodesic
+  icosahedron (80 triangles) — each rounded onto the sphere itself.
   (A sphere cannot be tiled with hexagons alone — Euler's formula
   forces 12 pentagons in.)
 - **Platonic solids (3D)** — the five regular solids, each tiled with
@@ -74,6 +72,12 @@ Pick a surface, then a tiling:
   onto a sphere: a tetrahedron (4 faces), a cube (6, squares), an octahedron
   (8), a dodecahedron (12 pentagons, each fanned into 5 triangles from its
   own centre) and an icosahedron (20)
+- **Archimedean solids (3D)** — solids of regular polygons, every corner
+  alike: a cuboctahedron (8 triangles + 6 squares), a truncated octahedron
+  (6 squares + 8 hexagons, each cut into three rhombi) and a snub cube
+  (32 triangles + 6 squares), flat-faced and each face cut into a grid; and,
+  one cell per face, a rhombicosidodecahedron, a truncated
+  icosidodecahedron and a snub dodecahedron (12 pentagons + 80 triangles)
 - **Catalan solids (3D)** — all thirteen duals of the Archimedean solids,
   flat-faced, each face cut into smaller copies of itself to make a board:
   the triakis tetrahedron, rhombic dodecahedron, triakis octahedron,

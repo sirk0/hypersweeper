@@ -26,6 +26,13 @@ import {
   triakisOctahedronBoard,
   triakisTetrahedronBoard,
 } from "../../src/boards/catalan";
+import { Base, type Op } from "../../src/boards/catalan";
+import {
+  archimedeanFaces,
+  cuboctahedronBoard,
+  snubCubeBoard,
+  truncatedOctahedronBoard,
+} from "../../src/boards/archimedean";
 import {
   boundaryComponents,
   eulerCharacteristic,
@@ -224,4 +231,57 @@ describe("Catalan solids", () => {
     expect(new Set(sizes(board))).toEqual(new Set([5]));
     expect(new Set([...board.adjacency.values()].map((n) => n.length))).toEqual(new Set([7]));
   });
+});
+
+// The cube group's Archimedean solids: the mode, its builder, the Conway
+// operation on the cube whose Catalan solid it is the dual of, the bare face
+// mix, and the cells per frequency**2 once the hexagons are cut into rhombi.
+// Mirrors tests/test_boards.py::TestArchimedeanSolids.
+const ARCHIMEDEAN: [string, (m: number, f?: number) => Board3D, Op, Record<number, number>, number][] = [
+  ["cubocta", cuboctahedronBoard, "join", { 3: 8, 4: 6 }, 14],
+  ["truncocta", truncatedOctahedronBoard, "kis", { 4: 6, 6: 8 }, 30],
+  ["snubcube", snubCubeBoard, "gyro", { 3: 32, 4: 6 }, 38],
+];
+
+describe("Archimedean solids", () => {
+  for (const [mode, build, op, mix, perFace] of ARCHIMEDEAN) {
+    it(`${mode}: the Catalan dual is regular polygons of one edge on one sphere`, () => {
+      const { faces, positions } = archimedeanFaces(new Base("cube"), op);
+      const counts: Record<number, number> = {};
+      const lengths = new Set<number>();
+      for (const ring of faces.values()) {
+        counts[ring.length] = (counts[ring.length] ?? 0) + 1;
+        const points = ring.map((k) => positions.get(k)!);
+        const centre = [0, 1, 2].map(
+          (a) => points.reduce((s, p) => s + p[a]!, 0) / points.length,
+        );
+        const sides = points.map((p, i) => {
+          const q = points[(i + 1) % points.length]!;
+          return Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]);
+        });
+        const spokes = points.map((p) => Math.hypot(p[0] - centre[0]!, p[1] - centre[1]!, p[2] - centre[2]!));
+        expect(Math.max(...sides) - Math.min(...sides)).toBeLessThan(1e-12);
+        expect(Math.max(...spokes) - Math.min(...spokes)).toBeLessThan(1e-12);
+        for (const side of sides) lengths.add(Math.round(side * 1e12) / 1e12);
+      }
+      expect(counts).toEqual(mix);
+      expect(lengths.size, `${mode} edge lengths`).toBe(1);
+      for (const p of positions.values()) {
+        expect(Math.abs(Math.hypot(p[0], p[1], p[2]) - 1)).toBeLessThan(1e-12);
+      }
+    });
+
+    it(`${mode} stays closed at every subdivision`, () => {
+      // a point on an edge between a triangle and a square is named by two
+      // different grids; if they disagreed the cells either side would
+      // quietly stop being neighbours
+      for (const frequency of [1, 2, 3, 4]) {
+        const board = build(0, frequency);
+        expect(board.mode).toBe(mode);
+        expect(board.polygons.size).toBe(perFace * frequency ** 2);
+        expect(eulerCharacteristic(board)).toBe(2);
+        expect(boundaryComponents(board)).toBe(0);
+      }
+    });
+  }
 });

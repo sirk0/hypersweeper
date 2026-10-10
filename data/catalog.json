@@ -177,6 +177,9 @@
     "c80": "Chamfered dodecahedron",
     "c180": "Goldberg GP(3,0)",
     "spheretri": "Geodesic icosahedron",
+    "cubocta": "Cuboctahedron",
+    "truncocta": "Truncated octahedron",
+    "snubcube": "Snub cube",
     "snubdodec": "Snub dodecahedron",
     "rhombicosidodeca": "Rhombicosidodecahedron",
     "truncicosidodeca": "Truncated icosidodecahedron",
@@ -292,6 +295,12 @@
       "tiling": "",
       "surface": "solid",
       "family": "polyhedra"
+    },
+    "cubocta": {
+      "label": "Cuboctahedron",
+      "tiling": "",
+      "surface": "solid",
+      "family": "archimedean"
     },
     "cylbasketweave": {
       "label": "Basket weave · Cylinder",
@@ -993,7 +1002,7 @@
       "label": "Rhombicosidodecahedron",
       "tiling": "",
       "surface": "solid",
-      "family": "sphere"
+      "family": "archimedean"
     },
     "rhombictriaconta": {
       "label": "Rhombic triacontahedron",
@@ -1031,11 +1040,17 @@
       "surface": "flat",
       "family": "rectangle"
     },
+    "snubcube": {
+      "label": "Snub cube",
+      "tiling": "",
+      "surface": "solid",
+      "family": "archimedean"
+    },
     "snubdodec": {
       "label": "Snub dodecahedron",
       "tiling": "",
       "surface": "solid",
-      "family": "sphere"
+      "family": "archimedean"
     },
     "snubhex": {
       "label": "Snub hexagonal",
@@ -1401,7 +1416,13 @@
       "label": "Truncated icosidodecahedron",
       "tiling": "",
       "surface": "solid",
-      "family": "sphere"
+      "family": "archimedean"
+    },
+    "truncocta": {
+      "label": "Truncated octahedron",
+      "tiling": "",
+      "surface": "solid",
+      "family": "archimedean"
     },
     "truncsquare": {
       "label": "Truncated square",
@@ -1423,6 +1444,7 @@
       "manifolds",
       "sphere",
       "platonic",
+      "archimedean",
       "catalan",
       "polyhedra",
       "volume"
@@ -1500,10 +1522,7 @@
         "modes": [
           "c80",
           "c180",
-          "spheretri",
-          "snubdodec",
-          "rhombicosidodeca",
-          "truncicosidodeca"
+          "spheretri"
         ]
       },
       {
@@ -1515,6 +1534,18 @@
           "octahedron",
           "dodecahedron",
           "icosahedron"
+        ]
+      },
+      {
+        "key": "archimedean",
+        "label": "Archimedean solids",
+        "modes": [
+          "cubocta",
+          "truncocta",
+          "snubcube",
+          "rhombicosidodeca",
+          "truncicosidodeca",
+          "snubdodec"
         ]
       },
       {

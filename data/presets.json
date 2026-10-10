@@ -1566,6 +1566,57 @@
         ]
       }
     },
+    "cubocta": {
+      "builder": "cuboctahedron_board",
+      "args": {
+        "easy": [
+          11,
+          2
+        ],
+        "medium": [
+          55,
+          4
+        ],
+        "hard": [
+          135,
+          6
+        ]
+      }
+    },
+    "truncocta": {
+      "builder": "truncated_octahedron_board",
+      "args": {
+        "easy": [
+          28,
+          2
+        ],
+        "medium": [
+          61,
+          3
+        ],
+        "hard": [
+          127,
+          4
+        ]
+      }
+    },
+    "snubcube": {
+      "builder": "snub_cube_board",
+      "args": {
+        "easy": [
+          31,
+          2
+        ],
+        "medium": [
+          85,
+          3
+        ],
+        "hard": [
+          170,
+          4
+        ]
+      }
+    },
     "elongated": {
       "builder": "archimedean_board",
       "args": {
