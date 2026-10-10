@@ -7,6 +7,7 @@ import {
   fullModeLabel,
   SHAPED_MODES,
   SOLID_GROUPS,
+  SPIRAL_MODES,
   SURFACES,
   surfaceOf,
   TILINGS_BY_KEY,
@@ -306,7 +307,7 @@ export function shapeFacts(mode: string, board: AnyBoard): ShapeFact[] {
   const surface = surfaceOf(mode);
   const tilingKey = tilingOf(mode);
   // A wrapped board is named from the flat tiling it is cut from; everything
-  // else — a flat board, a solid, an aperiodic or fractal patch — is what it is
+  // else — a flat board, a solid, an aperiodic, spiral or fractal patch — is what it is
   // drawn as, and is measured directly.
   const wrapped = surface !== null && surface.key !== "flat";
   // A wrapped regular tiling needs no template: its tile is the regular polygon
@@ -384,6 +385,7 @@ export function familyKeyOf(mode: string): string | null {
     return ARCH_TILINGS.find((t) => t.key === tilingKey)?.family ?? "regular";
   }
   if (APERIODIC_MODES.includes(mode)) return "aperiodic";
+  if (SPIRAL_MODES.includes(mode)) return "spiral";
   if (FRACTAL_MODES.includes(mode)) return "fractal";
   if (HYPERBOLIC_MODES.includes(mode)) return "hyperbolic";
   return SOLID_GROUPS.find((g) => g.modes.includes(mode))?.key ?? null;
@@ -429,7 +431,7 @@ export function boardFacts(
     // row exists for the shaped boards, whose name ("Hexagonal hexagon") does
     // not say which tiling they are cut from.
     tiling: tilingOf(mode) === null ? tiling : null,
-    // A shaped, aperiodic or fractal board is a mode of its own with no
+    // A shaped, aperiodic, spiral or fractal board is a mode of its own with no
     // `SurfaceSpec` behind it, and it is still on the plane; a solid is not on
     // any of these surfaces at all, and its family row names what it is.
     surface: surface?.label ?? (isBoard3D(board) ? null : (SURFACES.get("flat")?.label ?? null)),

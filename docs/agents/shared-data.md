@@ -12,7 +12,8 @@ twice.
 - `data/presets.json` — the difficulty presets for the **ported** modes
   (the flat regular ones — square/triangle/trigrid/hex/hexhex/hextriangle —
   the solids, the regular-tiling surface wraps, every Archimedean/Laves
-  tiling × surface, and the aperiodic tilings — penrose/kitedart/ammannbeenker/spectre/phyllotaxis/klaassen/pentaspiral5/6/7/brickrings), as
+  tiling × surface, the aperiodic tilings — penrose/kitedart/ammannbeenker/spectre —
+  and the spirals — phyllotaxis/klaassen/pentaspiral5/6/7/brickrings), as
   `{mode: {builder, args}}`. The Archimedean/Laves rows carry the tiling
   key as their first arg. `presets.py` loads every row into `_PRESETS`
   via `_JSON_BUILDERS`; `_PRESETS` starts empty and holds only any
@@ -42,7 +43,7 @@ A **mode** is the string `build_board` takes. For a periodic tiling it is
 `surface.prefix + tiling.key` (e.g. `torustrihex`); `catalog.mode_for`
 is the only place that convention lives. Solids/aperiodic/shaped modes
 are one-offs listed directly in the `SOLID_GROUP_MEMBERS` /
-`APERIODIC_MODES` tuples (and `SHAPED_MODES`, which maps a regular tiling
+`APERIODIC_MODES` / `SPIRAL_MODES` tuples (and `SHAPED_MODES`, which maps a regular tiling
 key to the shaped flat boards cut from it) with labels in `SOLO_LABELS`.
 
 

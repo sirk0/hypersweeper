@@ -49,6 +49,16 @@ test.describe("M1 app", () => {
     expect(state?.cellCount).toBeLessThan(105);
   });
 
+  test("menu drills into the spiral family to launch the brick rings", async ({ page }) => {
+    await page.locator('.difficulty-btn[data-key="easy"]').click();
+    await page.locator('.menu-entry[data-group="flat"]').click();
+    await page.locator('.menu-entry[data-submenu="spiral"]').click();
+    await page.locator('.menu-entry[data-mode="brickrings"]').click();
+    const state = await page.evaluate(() => window.__ms?.state());
+    expect(state?.screen).toBe("game");
+    expect(state?.mode).toBe("brickrings");
+  });
+
   // The home page's two *launch* rows open one particular board with no
   // drilling. Classic is covered by the flat-board test above, which reaches
   // `square` the long way through Custom; this pins the short way, and that
