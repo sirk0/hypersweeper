@@ -157,6 +157,16 @@ describe("catalog families", () => {
       "gosper",
     ]);
   });
+
+  it("offers the hyperbolic family on the plane only", () => {
+    expect(pickerFamilies("flat")).toContain("hyperbolic");
+    expect(pickerFamilies("torus")).not.toContain("hyperbolic");
+    expect(familyRows("hyperbolic", "flat").map((r) => r.mode)).toEqual([
+      "hyperbolic73",
+      "hyperbolic54",
+      "hyperbolic45",
+    ]);
+  });
 });
 
 describe("menu reachability", () => {

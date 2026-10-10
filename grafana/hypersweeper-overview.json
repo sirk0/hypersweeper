@@ -2131,7 +2131,7 @@
         "name": "family",
         "label": "Family",
         "description": "",
-        "query": "all,regular,uniform,dual,isogonal,rectangle,other,aperiodic,fractal,sphere,platonic,catalan,polyhedra,volume",
+        "query": "all,regular,uniform,dual,isogonal,rectangle,other,aperiodic,fractal,hyperbolic,sphere,platonic,catalan,polyhedra,volume",
         "current": {
           "selected": true,
           "text": "all",
@@ -2182,6 +2182,11 @@
             "selected": false,
             "text": "fractal",
             "value": "fractal"
+          },
+          {
+            "selected": false,
+            "text": "hyperbolic",
+            "value": "hyperbolic"
           },
           {
             "selected": false,

@@ -47,6 +47,20 @@ export interface Board {
   // rides along with each cell's individual rotation/mirror on the board.
   // Unset for every other board, which keeps sizing off the true centroid.
   glyphAnchor?: Map<CellId, Vertex>;
+  // Which of a cell's polygon vertices are real corners, in polygon order,
+  // where the polygon carries points that are not and that a geometric test
+  // cannot drop: the hyperbolic boards draw every edge as a geodesic arc through
+  // extra points, which are not collinear. The flat twin of
+  // `Board3D.cornerMask`. Unset for every other flat board, whose only extra
+  // points are exactly collinear T-vertices that `corners` finds by itself.
+  cornerMask?: Map<CellId, boolean[]>;
+  // Drawn in a flat model of a curved plane (the hyperbolic boards, in the
+  // Poincaré disc): every tile is congruent to every other in the plane it
+  // lives in, and none of them is drawn congruent on the screen. Shape colouring
+  // then classes cells as it does on a curved surface — one class per side
+  // count — rather than splitting the shrinking rings into sizes. Unset for
+  // every other flat board.
+  curved?: boolean;
 }
 
 /** Where an immersion passes through itself, the sheet that ends up *inside*
@@ -223,7 +237,7 @@ export function finalizeFlat(
  * is put on screen, and the conformance suite builds every board in the
  * catalogue at every difficulty without ever looking. Cached on first read, so
  * a caller sees a plain property. */
-function flatBoard(board: Omit<Board, "symmetries">): Board {
+export function flatBoard(board: Omit<Board, "symmetries">): Board {
   let measured: BoardSymmetry[] | null = null;
   return {
     ...board,

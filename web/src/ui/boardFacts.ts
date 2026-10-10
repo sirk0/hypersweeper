@@ -3,6 +3,7 @@ import {
   APERIODIC_MODES,
   FAMILY_LABELS,
   FRACTAL_MODES,
+  HYPERBOLIC_MODES,
   fullModeLabel,
   SHAPED_MODES,
   SOLID_GROUPS,
@@ -269,8 +270,8 @@ interface ShapeGroup {
 }
 
 function groupCells(board: AnyBoard): ShapeGroup[] {
-  const masks = isBoard3D(board) ? board.cornerMask : null;
-  const tones = classifyShapes(board.polygons, masks);
+  const masks = board.cornerMask ?? null;
+  const tones = classifyShapes(board.polygons, masks, !isBoard3D(board) && board.curved);
   const groups = new Map<string, ShapeGroup>();
   for (const [cell] of board.polygons) {
     const tone = tones.get(cell);
@@ -301,7 +302,7 @@ function sizeWord(size: number, count: number): string {
 
 /** The board's tiles, counted and named. */
 export function shapeFacts(mode: string, board: AnyBoard): ShapeFact[] {
-  const masks = isBoard3D(board) ? board.cornerMask : null;
+  const masks = board.cornerMask ?? null;
   const surface = surfaceOf(mode);
   const tilingKey = tilingOf(mode);
   // A wrapped board is named from the flat tiling it is cut from; everything
@@ -384,6 +385,7 @@ export function familyKeyOf(mode: string): string | null {
   }
   if (APERIODIC_MODES.includes(mode)) return "aperiodic";
   if (FRACTAL_MODES.includes(mode)) return "fractal";
+  if (HYPERBOLIC_MODES.includes(mode)) return "hyperbolic";
   return SOLID_GROUPS.find((g) => g.modes.includes(mode))?.key ?? null;
 }
 

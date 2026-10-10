@@ -9,7 +9,7 @@ import {
   vertexCount,
   type AnyBoard,
 } from "../../src/boards/core";
-import { buildBoard, MODES } from "../../src/boards/presets";
+import { buildBoard, MODES, windowFor } from "../../src/boards/presets";
 import { MAX_DIGIT_GLYPH } from "../../src/render/glyphAtlas";
 
 // The board conformance oracle: every ported mode × difficulty must reproduce
@@ -116,11 +116,17 @@ export function describeConformance(difficulty: string): void {
           expect(edgeCount(board)).toBe(want.edgeCount);
           expect(vertexCount(board)).toBe(want.vertexCount);
           checkInvariants(board);
-          // …and every seed deals a board of its own rather than the same
-          // window under another number, which the counts alone could not say.
+          // …and every window the seeds deal is a board of its own rather than
+          // one window under two numbers, which the counts alone could not say.
+          // Two seeds can name the same window when the measured list is short
+          // (Ammann–Beenker hard keeps 13, and 3407 wraps onto 1), so what is
+          // counted is windows, not seeds.
           seen.add([...board.polygons.keys()].sort().join(" "));
         }
-        expect(seen.size).toBe(Object.keys(wanted).length);
+        const windows = new Set(
+          Object.keys(wanted).map((seed) => windowFor(mode, difficulty, Number(seed))),
+        );
+        expect(seen.size).toBe(windows.size);
       });
     }
   });

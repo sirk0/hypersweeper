@@ -1,5 +1,6 @@
-// Port of minesweeper/boards/aperiodic.py — the two aperiodic flat tilings,
-// Penrose (P3 rhombi) and the Spectre monotile. Penrose builds float vertex
+// Port of minesweeper/boards/aperiodic.py — the aperiodic flat tilings: Penrose
+// (P3 rhombi), Ammann–Beenker (squares and 45° rhombi), the Spectre monotile and
+// the nonperiodic spirals and rings below them. Penrose builds float vertex
 // positions but keeps *exact* integer vertex ids over ℤ[ζ5], so shared-vertex
 // adjacency needs no tolerance; the Spectre carries its placements exactly in
 // ℤ[ζ12] instead (see the section below). Cell ids and structure mirror the
@@ -71,10 +72,10 @@ interface PenroseCell {
 //
 // Port of the same section in minesweeper/boards/aperiodic.py; see that file
 // for the fuller commentary. What makes a tiling aperiodic is that it repeats
-// nowhere, and the three substitution boards here grow far more of one than
+// nowhere, and the four substitution boards here grow far more of one than
 // they keep — the Penrose wheel is 430 rhombi where the easy board is 81, the
-// Spectre cluster 4401 tiles where the hard board is 480. The centred trim is one window onto
-// that patch; every other window is a board of the same size made of tiles that
+// Ammann–Beenker star 7784 tiles and the Spectre cluster 4401 where the hard
+// board is 480. The centred trim is one window onto that patch; every other window is a board of the same size made of tiles that
 // have never sat together before, which is what a `variant` is: not a
 // re-generated tiling, but somewhere else to look at the one the substitution
 // already built.
@@ -147,7 +148,7 @@ function patchAdjacency(cells: readonly string[][]): number[][] {
 
 /** Each cell's distance in tiles from the rim of the patch: the rim is every
  * cell carrying an edge no other cell shares, and the depth is the
- * breadth-first distance inward from it. Exact — both tilings' vertex ids are
+ * breadth-first distance inward from it. Exact — every tiling's vertex ids are
  * integer tuples, so an edge is shared or it is not, with nothing to round. */
 function rimDepth(cells: readonly string[][], adjacency: readonly number[][]): number[] {
   const shared = new Map<string, number>();
@@ -1235,6 +1236,256 @@ export function spectreBoard(
     cellMap.set(cid(rows[row]!.label, i), vertexIds[row]!);
   });
   return finalizeFlat("spectre", cellMap, positions, mineCount, scale);
+}
+
+// -- Ammann–Beenker: squares and 45° rhombi -----------------------------------
+//
+// The eight-fold aperiodic tiling, by unit squares and unit rhombi with a 45°
+// corner, grown by the substitution that inflates it by the silver ratio
+// δ = 1 + √2. Every edge runs along one of the eight unit directions ζᵏ
+// (ζ = exp(iπ/4)), so every vertex is a point of ℤ[ζ8] — and δ is in that ring
+// too (√2 = ζ − ζ³), so inflating is integer arithmetic with nothing rounded.
+//
+// The substitution runs on rhombi and *half-squares*, as Penrose's runs on
+// Robinson triangles: inflated by δ, each edge is one unit edge and one square's
+// diagonal (δ = 1 + √2), so the squares along a supertile's rim are cut in half
+// by it. A rhombus refills with 3 rhombi + 4 half-squares, a half-square with
+// 2 + 3, and the halves are paired back into squares at the end, the unpaired
+// ones on the patch's rim dropped. A half-square is marked: (O, P, Q), right
+// angle at O and P the end of the diagonal its square's own inflation is
+// mirror-symmetric about. The rules were read off the cut-and-project tiling,
+// and the Python tests check the board against that definition vertex by
+// vertex. Line-for-line port of minesweeper/boards/aperiodic.py; see that file
+// for the fuller commentary.
+
+/** A point of ℤ[ζ8] as 4 integer coefficients over (1, ζ, ζ², ζ³), reduced by
+ * ζ⁴ = −1. Vertex ids are these tuples, so shared-vertex adjacency is exact. */
+type Z8Point = readonly [number, number, number, number];
+
+const Z8_ZERO: Z8Point = [0, 0, 0, 0];
+
+/** Multiply by ζ, i.e. rotate 45°. */
+function zeta8Mul(p: Z8Point): Z8Point {
+  const [a, b, c, d] = p;
+  return [-d, a, b, c];
+}
+
+function z8Add(p: Z8Point, q: Z8Point): Z8Point {
+  return [p[0] + q[0], p[1] + q[1], p[2] + q[2], p[3] + q[3]];
+}
+
+function z8Sub(p: Z8Point, q: Z8Point): Z8Point {
+  return [p[0] - q[0], p[1] - q[1], p[2] - q[2], p[3] - q[3]];
+}
+
+/** Multiply by ζᵏ, i.e. rotate k·45° about the origin. */
+function z8Rot(p: Z8Point, k: number): Z8Point {
+  let out = p;
+  for (let i = ((k % 8) + 8) % 8; i > 0; i--) out = zeta8Mul(out);
+  return out;
+}
+
+/** Complex conjugation: ζ⁻¹ = −ζ³, ζ⁻² = −ζ², ζ⁻³ = −ζ. */
+function z8Conj(p: Z8Point): Z8Point {
+  const [a, b, c, d] = p;
+  return [a, -d, -c, -b];
+}
+
+/** Multiply by the silver ratio δ = 1 + √2, √2 being ζ − ζ³. */
+function z8Silver(p: Z8Point): Z8Point {
+  return z8Add(p, z8Sub(zeta8Mul(p), z8Rot(p, 3)));
+}
+
+const ZETA8_BASIS: Vertex[] = [0, 1, 2, 3].map((k) => [
+  Math.cos((Math.PI * k) / 4),
+  Math.sin((Math.PI * k) / 4),
+]);
+
+function z8ToXy(p: Z8Point): Vertex {
+  let x = 0;
+  let y = 0;
+  for (let i = 0; i < 4; i++) {
+    x += p[i]! * ZETA8_BASIS[i]![0];
+    y += p[i]! * ZETA8_BASIS[i]![1];
+  }
+  return [x, y];
+}
+
+const z8Key = (p: Z8Point): string => p.join(",");
+
+/** The unit prototiles, counterclockwise: the rhombus on 1 and ζ, and the
+ * half-square (O, P, Q) with its right angle at O and its marked diagonal P→Q. */
+const AB_RHOMB: Z8Point[] = [[0, 0, 0, 0], [1, 0, 0, 0], [1, 1, 0, 0], [0, 1, 0, 0]];
+const AB_HALF: Z8Point[] = [[0, 0, 0, 0], [1, 0, 0, 0], [0, 0, 1, 0]];
+
+/** z ↦ ζ^rot·(mirrored ? conj z : z) + trans, as the Spectre's, over ℤ[ζ8]. */
+type AbPlacement = readonly [number, number, Z8Point];
+
+function abPlace(at: AbPlacement, p: Z8Point): Z8Point {
+  const [rot, mirrored, trans] = at;
+  return z8Add(z8Rot(mirrored ? z8Conj(p) : p, rot), trans);
+}
+
+/** `a` after `b`. */
+function abCompose(a: AbPlacement, b: AbPlacement): AbPlacement {
+  const [aRot, aMirror] = a;
+  const [bRot, bMirror, bTrans] = b;
+  return [
+    (((aMirror ? aRot - bRot : aRot + bRot) % 8) + 8) % 8,
+    aMirror ^ bMirror,
+    abPlace(a, bTrans),
+  ];
+}
+
+type AbKind = "R" | "H";
+
+/** The substitution: each prototile inflated by δ, as the unit tiles that refill
+ * it — [kind ("R" rhombus | "H" half-square), placement] in the inflated tile's
+ * frame. Must match `_AB_RULES` in minesweeper/boards/aperiodic.py. */
+const AB_RULES: Record<AbKind, [AbKind, AbPlacement][]> = {
+  R: [
+    ["R", [0, 0, [0, 0, 0, 0]]], // at the acute corner A…
+    ["R", [0, 0, [1, 1, 1, -1]]], // …and at C
+    ["R", [2, 0, [1, 1, 0, -1]]], // across the middle, B to D
+    ["H", [2, 0, [1, 1, 0, 0]]], // and a half-square on every edge
+    ["H", [3, 1, [1, 1, 1, -1]]],
+    ["H", [6, 0, [1, 1, 1, -1]]],
+    ["H", [7, 1, [1, 1, 0, 0]]],
+  ],
+  H: [
+    ["R", [0, 1, [0, 1, 0, 0]]], // a rhombus in the P corner
+    ["R", [1, 0, [0, 0, 0, 0]]], // and one in the right angle
+    ["H", [2, 1, [0, 1, 0, 0]]], // half the middle square, on P→Q
+    ["H", [3, 0, [0, 1, 1, 0]]], // and one on each leg
+    ["H", [5, 0, [0, 1, 0, 0]]],
+  ],
+};
+
+/** The eight-rhombus star inflated `levels` times and refilled with unit tiles,
+ * as [kind, placement] in the order the substitution lays them. A supertile `n`
+ * levels up has edge δⁿ, so its children's translations are the rule's,
+ * inflated `n − 1` times. */
+function abTiles(levels: number): [AbKind, AbPlacement][] {
+  let tiles: [AbKind, AbPlacement][] = [];
+  for (let k = 0; k < 8; k++) tiles.push(["R", [k, 0, Z8_ZERO]]);
+  for (let depth = levels - 1; depth >= 0; depth--) {
+    const rules = {} as Record<AbKind, [AbKind, AbPlacement][]>;
+    for (const kind of ["R", "H"] as const) {
+      rules[kind] = AB_RULES[kind].map(([child, [rot, mirrored, trans]]) => {
+        let t = trans;
+        for (let i = 0; i < depth; i++) t = z8Silver(t);
+        return [child, [rot, mirrored, t]];
+      });
+    }
+    const next: [AbKind, AbPlacement][] = [];
+    for (const [kind, at] of tiles) {
+      for (const [child, sub] of rules[kind]) next.push([child, abCompose(at, sub)]);
+    }
+    tiles = next;
+  }
+  return tiles;
+}
+
+interface AbCell {
+  kind: number; // 0 a rhombus, 1 a square
+  index: number;
+  verts: Z8Point[];
+}
+
+/** The patch's rhombi and squares, vertex ids counterclockwise. Half-squares
+ * pair into squares on their directed diagonal (P, Q): the two halves of a
+ * square are mirror images sharing it. One left waiting at the end is half a
+ * square the patch's rim cut, and is dropped, as Penrose drops an unpaired
+ * Robinson triangle. */
+function abCells(levels: number): AbCell[] {
+  const cells: AbCell[] = [];
+  const waiting = new Map<string, [Z8Point, number]>();
+  const ccw = (ids: Z8Point[], mirrored: number): Z8Point[] =>
+    mirrored ? [ids[0]!, ...ids.slice(1).reverse()] : ids;
+  for (const [kind, at] of abTiles(levels)) {
+    const mirrored = at[1];
+    if (kind === "R") {
+      const ids = AB_RHOMB.map((p) => abPlace(at, p));
+      cells.push({ kind: 0, index: cells.length, verts: ccw(ids, mirrored) });
+      continue;
+    }
+    const [o, p, q] = AB_HALF.map((v) => abPlace(at, v)) as [Z8Point, Z8Point, Z8Point];
+    const key = `${z8Key(p)}|${z8Key(q)}`;
+    const partner = waiting.get(key);
+    if (partner === undefined) {
+      waiting.set(key, [o, mirrored]);
+      continue;
+    }
+    waiting.delete(key);
+    const [first, firstMirrored] = partner;
+    cells.push({ kind: 1, index: cells.length, verts: ccw([first, p, o, q], firstMirrored) });
+  }
+  return cells;
+}
+
+/**
+ * The Ammann–Beenker tiling: unit squares and 45° rhombi, eight-fold and
+ * aperiodic, grown by `levels` silver-ratio substitutions of the eight-rhombus
+ * star (216, 1312, 7784 tiles at levels 2, 3, 4).
+ *
+ * `keep` trims to that many tiles by Chebyshev distance and `variant` picks
+ * which window, exactly as for `penroseBoard`: 0 is the centred block around
+ * the eight-fold star, any other integer a window elsewhere in the same patch.
+ * See `windowRows`. `scale` is pixels per edge.
+ */
+export function ammannBeenkerBoard(
+  levels: number,
+  mineCount: number,
+  scale = 30,
+  keep: number | null = null,
+  variant = 0,
+): Board {
+  const cells = abCells(levels);
+
+  if (import.meta.env.DEV) {
+    for (const cell of cells) {
+      for (const v of cell.verts) {
+        for (const coeff of v) {
+          if (!Number.isSafeInteger(coeff)) {
+            throw new Error(`Ammann–Beenker ℤ[ζ8] coefficient overflow: ${coeff}`);
+          }
+        }
+      }
+    }
+  }
+
+  const vertexIds = cells.map((cell) => cell.verts.map(z8Key));
+  const centroids: Vertex[] = cells.map((cell) => {
+    let cx = 0;
+    let cy = 0;
+    for (const v of cell.verts) {
+      const [x, y] = z8ToXy(v);
+      cx += x;
+      cy += y;
+    }
+    return [cx / 4, cy / 4];
+  });
+  // The tie-break at the cut rank is the cell id: rhombus or square, then the
+  // order the substitution made it.
+  const kept = windowRows(
+    vertexIds,
+    centroids,
+    (a, b) => cells[a]!.kind - cells[b]!.kind || cells[a]!.index - cells[b]!.index,
+    keep,
+    variant,
+  );
+
+  const cellMap = new Map<CellId, string[]>();
+  const positions = new Map<string, Vertex>();
+  for (const i of kept) {
+    const cell = cells[i]!;
+    cell.verts.forEach((v, j) => {
+      const k = vertexIds[i]![j]!;
+      if (!positions.has(k)) positions.set(k, z8ToXy(v));
+    });
+    cellMap.set(cid(cell.kind, cell.index), vertexIds[i]!);
+  }
+  return finalizeFlat("ammannbeenker", cellMap, positions, mineCount, scale);
 }
 
 // -- the brick rings ---------------------------------------------------------

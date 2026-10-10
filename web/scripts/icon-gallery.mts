@@ -34,6 +34,7 @@ const groups: [string, string[]][] = [
   ["Other", OTHER_ARCH],
   ["Aperiodic", MENU.aperiodic as string[]],
   ["Fractal", MENU.fractal as string[]],
+  ["Hyperbolic", MENU.hyperbolic as string[]],
   ...SOLID_GROUPS.map((group) => [group.label, [...group.modes]] as [string, string[]]),
   ["Shaped boards", Object.values(SHAPED_MODES).flat()],
 ];

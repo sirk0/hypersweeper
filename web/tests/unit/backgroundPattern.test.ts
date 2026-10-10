@@ -3,6 +3,7 @@ import { patternKey, patternLayer, patternSvg } from "../../src/ui/backgroundPat
 import {
   APERIODIC_MODES,
   FRACTAL_MODES,
+  HYPERBOLIC_MODES,
   SOLID_GROUPS,
   modeFor,
   tilingAllows,
@@ -60,7 +61,7 @@ describe("which pattern a mode gets", () => {
     // backgroundPattern.ts would leave that board on a blank page.
     const missing = MODES.filter((mode) => patternKey(mode) === null);
     expect(missing).toEqual([]);
-    expect(MODES.length).toBe(195);
+    expect(MODES.length).toBe(199);
   });
 
   it("follows the tiling, not the surface", () => {
@@ -95,6 +96,9 @@ describe("which pattern a mode gets", () => {
     const group = (key: string): string[] =>
       SOLID_GROUPS.find((g) => g.key === key)?.modes ?? [];
     for (const mode of group("sphere")) expect(patternKey(mode)).toBe("circles");
+    // ...and the hyperbolic boards, whose tiles close up only in the
+    // hyperbolic plane, so no flat repeat of them exists
+    for (const mode of HYPERBOLIC_MODES) expect(patternKey(mode)).toBe("circles");
     for (const key of ["platonic", "catalan", "polyhedra"]) {
       for (const mode of group(key)) expect(patternKey(mode)).not.toBe("circles");
     }
@@ -114,11 +118,13 @@ describe("which pattern a mode gets", () => {
     // draws is the *tile*: the phyllotactic hexagon is a parallelohexagon and
     // tiles by translation alone, and Penrose's two rhombs make a plain
     // periodic tiling as alternating courses, and a kite and a dart glued along
-    // their short edges are the fat one of those rhombs. The Spectre is the one board that
+    // their short edges are the fat one of those rhombs; Ammann–Beenker's square
+    // and 45° rhomb make the same kind of courses. The Spectre is the one board that
     // cannot draw its own tile at all — no cell it belongs to has a rectangular
     // lattice — so it takes the tiling the hat continuum is cut from.
     expect(patternKey("penrose")).toBe("penrose");
     expect(patternKey("kitedart")).toBe("kitedart");
+    expect(patternKey("ammannbeenker")).toBe("ammannbeenker");
     expect(patternKey("phyllotaxis")).toBe("phyllotaxis");
     expect(patternKey("spectre")).toBe("deltoidal");
     // The brick rings are the other way about: their tile is a plain 2:1

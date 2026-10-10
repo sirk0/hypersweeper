@@ -1567,6 +1567,35 @@
         "hasCellCycle": false
       }
     },
+    "ammannbeenker": {
+      "easy": {
+        "cellCount": 81,
+        "mineCount": 9,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 182,
+        "vertexCount": 102,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 280,
+        "mineCount": 28,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 596,
+        "vertexCount": 317,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 480,
+        "mineCount": 82,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 1008,
+        "vertexCount": 529,
+        "hasCellCycle": false
+      }
+    },
     "penrose": {
       "easy": {
         "cellCount": 81,
@@ -2086,6 +2115,93 @@
         "boundaryComponents": 1,
         "edgeCount": 1526,
         "vertexCount": 1047,
+        "hasCellCycle": false
+      }
+    },
+    "hyperbolic73": {
+      "easy": {
+        "cellCount": 85,
+        "mineCount": 7,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 1197,
+        "vertexCount": 1113,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 246,
+        "mineCount": 24,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 3444,
+        "vertexCount": 3199,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 477,
+        "mineCount": 50,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 6699,
+        "vertexCount": 6223,
+        "hasCellCycle": false
+      }
+    },
+    "hyperbolic54": {
+      "easy": {
+        "cellCount": 81,
+        "mineCount": 5,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 855,
+        "vertexCount": 775,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 261,
+        "mineCount": 16,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 2730,
+        "vertexCount": 2470,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 471,
+        "mineCount": 48,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 4890,
+        "vertexCount": 4420,
+        "hasCellCycle": false
+      }
+    },
+    "hyperbolic45": {
+      "easy": {
+        "cellCount": 81,
+        "mineCount": 5,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 660,
+        "vertexCount": 580,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 205,
+        "mineCount": 13,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 1632,
+        "vertexCount": 1428,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 485,
+        "mineCount": 38,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 3852,
+        "vertexCount": 3368,
         "hasCellCycle": false
       }
     },
@@ -5658,6 +5774,122 @@
     }
   },
   "seeds": {
+    "ammannbeenker": {
+      "easy": {
+        "0": {
+          "cellCount": 81,
+          "mineCount": 9,
+          "euler": 1,
+          "boundaryComponents": 1,
+          "edgeCount": 182,
+          "vertexCount": 102,
+          "hasCellCycle": false
+        },
+        "1": {
+          "cellCount": 81,
+          "mineCount": 9,
+          "euler": 1,
+          "boundaryComponents": 1,
+          "edgeCount": 189,
+          "vertexCount": 109,
+          "hasCellCycle": false
+        },
+        "2": {
+          "cellCount": 81,
+          "mineCount": 9,
+          "euler": 1,
+          "boundaryComponents": 1,
+          "edgeCount": 189,
+          "vertexCount": 109,
+          "hasCellCycle": false
+        },
+        "3407": {
+          "cellCount": 81,
+          "mineCount": 9,
+          "euler": 1,
+          "boundaryComponents": 1,
+          "edgeCount": 184,
+          "vertexCount": 104,
+          "hasCellCycle": false
+        }
+      },
+      "medium": {
+        "0": {
+          "cellCount": 280,
+          "mineCount": 28,
+          "euler": 1,
+          "boundaryComponents": 1,
+          "edgeCount": 596,
+          "vertexCount": 317,
+          "hasCellCycle": false
+        },
+        "1": {
+          "cellCount": 280,
+          "mineCount": 28,
+          "euler": 1,
+          "boundaryComponents": 1,
+          "edgeCount": 599,
+          "vertexCount": 320,
+          "hasCellCycle": false
+        },
+        "2": {
+          "cellCount": 280,
+          "mineCount": 28,
+          "euler": 1,
+          "boundaryComponents": 1,
+          "edgeCount": 596,
+          "vertexCount": 317,
+          "hasCellCycle": false
+        },
+        "3407": {
+          "cellCount": 280,
+          "mineCount": 28,
+          "euler": 1,
+          "boundaryComponents": 1,
+          "edgeCount": 599,
+          "vertexCount": 320,
+          "hasCellCycle": false
+        }
+      },
+      "hard": {
+        "0": {
+          "cellCount": 480,
+          "mineCount": 82,
+          "euler": 1,
+          "boundaryComponents": 1,
+          "edgeCount": 1008,
+          "vertexCount": 529,
+          "hasCellCycle": false
+        },
+        "1": {
+          "cellCount": 480,
+          "mineCount": 82,
+          "euler": 1,
+          "boundaryComponents": 1,
+          "edgeCount": 1014,
+          "vertexCount": 535,
+          "hasCellCycle": false
+        },
+        "2": {
+          "cellCount": 480,
+          "mineCount": 82,
+          "euler": 1,
+          "boundaryComponents": 1,
+          "edgeCount": 1022,
+          "vertexCount": 543,
+          "hasCellCycle": false
+        },
+        "3407": {
+          "cellCount": 480,
+          "mineCount": 82,
+          "euler": 1,
+          "boundaryComponents": 1,
+          "edgeCount": 1014,
+          "vertexCount": 535,
+          "hasCellCycle": false
+        }
+      }
+    },
     "penrose": {
       "easy": {
         "0": {

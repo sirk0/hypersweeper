@@ -52,7 +52,8 @@
 //  * The **Spectre** is the one board whose page is a relative rather than its
 //    own tile; see SPECTRE_PATTERN. Every page here repeats, with no tier that
 //    is a crop of a real board.
-//  * The spheres have no flat tiling at all, so they get circles.
+//  * The spheres have no flat tiling at all, so they get circles, and so do
+//    the hyperbolic boards, whose tiles close up only in the hyperbolic plane.
 //
 // Every one of those reduces to `{width, height, cells}` (or, for the spheres,
 // circle centres) in its own units, and one pipeline scales it, strokes it and
@@ -62,6 +63,7 @@
 import type { Vertex } from "../boards/core";
 import {
   APERIODIC_MODES,
+  HYPERBOLIC_MODES,
   SHAPED_MODES,
   SOLID_GROUPS,
   tilingOf,
@@ -463,6 +465,28 @@ export const DOMAINS: Record<string, () => Domain> = {
     });
     return { width: 1, height: 2 * rise, cells };
   },
+
+  // Ammann–Beenker's two tiles the same way Penrose's are drawn: a course of
+  // unit squares and a course of its 45° rhombi, the second rhombus course
+  // mirrored. A rhombus course shifts the vertices along its upper edge by
+  // cos 45° and its mirror by −cos 45°, so four courses bring the pattern back
+  // to a whole edge, and every interface is edge to edge.
+  ammannbeenker: () => {
+    const cells: Vertex[][] = [];
+    let [y, x] = [0, 0];
+    for (const deg of [90, 45, 90, 135]) {
+      const [dx, dy] = [Math.cos((deg * Math.PI) / 180), Math.sin((deg * Math.PI) / 180)];
+      cells.push([
+        [x, y],
+        [x + 1, y],
+        [x + 1 + dx, y + dy],
+        [x + dx, y + dy],
+      ]);
+      x += dx;
+      y += dy;
+    }
+    return { width: 1, height: y, cells };
+  },
 };
 
 /** The Spectre's page: the tiling its own tile is a *shape of*.
@@ -631,6 +655,11 @@ const MODE_PATTERN = new Map<string, string>();
   // geodesic's triangles only close up because the surface curves. Those get
   // circles, which have no tiling to be wrong about.
   for (const mode of solidGroup("sphere")) MODE_PATTERN.set(mode, "circles");
+  // The hyperbolic boards are the same story with the curvature the other way:
+  // q regular p-gons only close up round a corner because the plane is
+  // hyperbolic, so no flat repeat of their tile exists to draw. They take the
+  // circles too, which here are also what the board is drawn in: the disc.
+  for (const mode of HYPERBOLIC_MODES) MODE_PATTERN.set(mode, "circles");
 }
 
 /** The pattern key for `mode` — shared by every mode drawn with the same

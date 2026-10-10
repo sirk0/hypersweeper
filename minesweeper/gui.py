@@ -49,6 +49,7 @@ from minesweeper.boards import (
     _z7_to_xy,
     build_board,
     family_rows,
+    hyperbolic_board,
     newell_normal,
     picker_families,
     picker_modes,
@@ -992,6 +993,7 @@ _ICON_ALIASES = {
     "tri": "trigrid",
     "aperiodic": "penrose",
     "fractal": "sphinx",
+    "hyperbolic": "hyperbolic73",  # the family row: the game's namesake
     # the four solid-group home rows borrow one of their own members' icons:
     # there is no board named "platonic" or "catalan" to draw
     "platonic": "tetrahedron",
@@ -1002,6 +1004,12 @@ _ICON_ALIASES = {
     "manifolds": "torus",   # the "Flat manifolds" home entry
     "random": "start",      # the "Random" picker entry
 }
+
+
+# The hyperbolic boards' icons: how many distance shells to draw -- the central
+# polygon, its ring, and the next ring's nearest cells, which is as much as
+# reads at icon size.
+_HYPERBOLIC_ICON_SHELLS = {"hyperbolic73": 4, "hyperbolic54": 4, "hyperbolic45": 5}
 
 
 # How each Catalan solid is turned before projecting, in degrees about x then
@@ -1226,6 +1234,23 @@ def _render_icon(key: str) -> pygame.Surface:
             _icon_shape(s, [at(a, 0.618), at(a - 36, 1), at(a, 1.618), at(a + 36, 1)],
                         fill=ICON_BLUE_LIGHT, width=4)
         _icon_gloss(s, pygame.Rect(d * 0.08, d * 0.06, d * 0.84, d * 0.6))
+    elif key == "ammannbeenker":
+        # the tiling's eight-fold centre: the star of eight 45-degree rhombi,
+        # and the eight squares its 90-degree notches hold
+        side = d * 0.46 / (1 + math.sqrt(2))
+        u = [(math.cos(math.radians(45 * k - 90)), math.sin(math.radians(45 * k - 90)))
+             for k in range(10)]
+
+        def at(*steps):
+            return (c + side * sum(u[k][0] for k in steps),
+                    c + side * sum(u[k][1] for k in steps))
+
+        for k in range(8):
+            _icon_shape(s, [at(), at(k), at(k, k + 1), at(k + 1)],
+                        fill=ICON_BLUE_LIGHT, width=3)
+            _icon_shape(s, [at(k + 1), at(k, k + 1), at(k, k + 1, k + 2), at(k + 1, k + 2)],
+                        fill=ICON_BLUE, width=3)
+        _icon_gloss(s, pygame.Rect(d * 0.06, d * 0.06, d * 0.88, d * 0.6))
     elif key == "spectre":
         # the Spectre's menu icon keeps the nicer silhouette of its removed
         # sibling "The Hat" (the two aperiodic monotiles share a family
@@ -1336,6 +1361,21 @@ def _render_icon(key: str) -> pygame.Surface:
                             for x, y in polygon],
                         fill=ICON_BLUE if i % 2 else ICON_BLUE_LIGHT, width=3)
         _icon_gloss(s, pygame.Rect(d * 0.08, d * 0.06, d * 0.84, d * 0.55))
+    elif key in _HYPERBOLIC_ICON_SHELLS:
+        # the board itself, a ring and a half deep, in the disc whose rim it never
+        # reaches: drawn with its geodesic arcs and no corner rounding, since
+        # the arcs are what make it read as the Poincare disc
+        p, q = int(key[-2]), int(key[-1])
+        board = hyperbolic_board(p, q, _HYPERBOLIC_ICON_SHELLS[key], 1, scale=1)
+        r = d * 0.46
+        sc = 2 * r / board.width
+        pygame.draw.circle(s, ICON_OUTLINE, (int(c), int(c)), int(r), 4)
+        for cell, polygon in board.polygons.items():
+            pts = [(c - r + x * sc, c - r + y * sc) for x, y in polygon]
+            fill_polygon(s, pts, ICON_BLUE_LIGHT if cell == 0 else ICON_BLUE)
+            ipts = [(int(x), int(y)) for x, y in pts]
+            pygame.draw.lines(s, ICON_OUTLINE, True, ipts, 3)
+            outline_polygon(s, ipts, ICON_OUTLINE)
     elif key == "elongated":
         # a square row under a triangle row
         _icon_shape(s, [(d * 0.12, d * 0.5), (d * 0.5, d * 0.5),
@@ -1871,7 +1911,7 @@ class BaseGameScreen:
     def new_game(self, difficulty: str | None = None) -> None:
         if difficulty is not None:
             self.difficulty = difficulty
-        # A fresh patch as well as a fresh layout: the two aperiodic
+        # A fresh patch as well as a fresh layout: the aperiodic
         # substitution boards keep only a window onto the tiling they grow, so
         # every game of one is played somewhere else in it (boards/aperiodic.py
         # ``_window``). Every other mode builds the same board regardless.

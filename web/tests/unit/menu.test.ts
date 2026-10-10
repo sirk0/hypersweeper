@@ -80,6 +80,7 @@ describe("picker pages", () => {
       "other",
       "aperiodic",
       "fractal",
+      "hyperbolic",
     ]);
     // every manifold carries the same four families: only the plane has
     // shaped boards to fill a Regular page, and aperiodic/fractal boards

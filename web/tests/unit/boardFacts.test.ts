@@ -106,6 +106,7 @@ describe("boardFacts", () => {
     expect(facts("penrose").family).toBe("Aperiodic");
     expect(facts("kitedart").family).toBe("Aperiodic");
     expect(facts("gosper").family).toBe("Fractals");
+    expect(facts("hyperbolic73").family).toBe("Hyperbolic");
     // A solid belongs to no tiling family; the group it is listed under is
     // what says what it is.
     expect(facts("rhombictriaconta").family).toBe("Catalan solids");

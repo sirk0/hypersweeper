@@ -30,7 +30,9 @@ import {
   substitutionPlacements,
   SUBSTITUTIONS,
 } from "../boards/fractal";
+import { hyperbolicBoard } from "../boards/hyperbolic";
 import {
+  ammannBeenkerBoard,
   brickRingsBoard,
   brickRingsTiles,
   klaassenBoard,
@@ -1039,6 +1041,7 @@ const ALIASES: Record<string, string> = {
   tri: "trigrid",
   aperiodic: "penrose",
   fractal: "sphinx", // the Fractals family row
+  hyperbolic: "hyperbolic73", // the Hyperbolic family row: the game's namesake
   // the solid-group rows borrow one of their own members' icons: there is no
   // board named "platonic" or "catalan" to draw, and "polyhedra" now holds the
   // frames and the stacks rather than the cube
@@ -1405,6 +1408,24 @@ function draw(rawKey: string): string[] {
       parts.push(shape([at(a, 0), at(a - 36, 1), at(a, 0.618), at(a + 36, 1)]));
       parts.push(shape([at(a, 0.618), at(a - 36, 1), at(a, 1.618), at(a + 36, 1)], LIGHT));
     }
+  } else if (key === "ammannbeenker") {
+    // the tiling's eight-fold centre: the star of eight 45° rhombi, and the
+    // eight squares its 90° notches hold
+    const side = (d * 0.46) / (1 + Math.SQRT2);
+    const u: P[] = Array.from({ length: 10 }, (_, k) => [
+      Math.cos(((45 * k - 90) * Math.PI) / 180),
+      Math.sin(((45 * k - 90) * Math.PI) / 180),
+    ]);
+    const at = (...steps: number[]): P => [
+      C + side * steps.reduce((x, k) => x + u[k]![0], 0),
+      C + side * steps.reduce((y, k) => y + u[k]![1], 0),
+    ];
+    for (let k = 0; k < 8; k++) {
+      parts.push(shape([at(), at(k), at(k, k + 1), at(k + 1)], LIGHT, 3));
+      parts.push(
+        shape([at(k + 1), at(k, k + 1), at(k, k + 1, k + 2), at(k + 1, k + 2)], BASE, 3),
+      );
+    }
   } else if (key === "spectre") {
     // The Spectre's menu icon keeps the nicer silhouette of its removed
     // sibling "The Hat" (the two aperiodic monotiles share a family
@@ -1492,6 +1513,30 @@ function draw(rawKey: string): string[] {
         ),
       );
     });
+  } else if (key in HYPERBOLIC_ICON_SHELLS) {
+    // the board itself, a ring and a half deep, inside the rim of the disc it
+    // never reaches -- drawn with its geodesic arcs and square corners (a
+    // rounded corner on every arc point would blur the curve away), the
+    // central polygon lighter. Toned by the board's own corner mask, so the
+    // arc points do not make a heptagon read as a 21-gon.
+    const p = Number(key.at(-2));
+    const q = Number(key.at(-1));
+    const board = hyperbolicBoard(p, q, HYPERBOLIC_ICON_SHELLS[key]!, 1, 1);
+    const tones = classifyShapes(board.polygons, board.cornerMask, true);
+    const r = d * 0.46;
+    const sc = (2 * r) / board.width;
+    parts.push(circle(C, C, r, tones.get("0")!, 2, LIGHT));
+    for (const [cell, polygon] of board.polygons) {
+      parts.push(
+        shape(
+          polygon.map(([x, y]): P => [C - r + x * sc, C - r + y * sc]),
+          cell === "0" ? LIGHT : BASE,
+          4,
+          tones.get(cell)!,
+          0,
+        ),
+      );
+    }
   } else if (key.startsWith("pentaspiral")) {
     // the innermost ring of hexagons, each drawn as its two pentagons: the n
     // that meet at the centre and the n of the odd wedges offset one side out,
@@ -1761,6 +1806,7 @@ interface PatchBoard {
 const PATCH_BOARDS: Record<string, PatchBoard> = {
   penrose: { build: () => penroseBoard(5, 0, 437.727, null) },
   kitedart: { build: () => kiteDartBoard(5, 0, 437.727, null) },
+  ammannbeenker: { build: () => ammannBeenkerBoard(3, 0, 35.891, null) },
   spectre: { build: () => spectreBoard(3, 0, null, 14.361) },
   phyllotaxis: { build: () => phyllotaxisBoard(5, 0, null, 22.907), whole: true },
   klaassen: { build: () => klaassenBoard(3, 0, null, 29.521), whole: true },
@@ -1776,6 +1822,21 @@ const PATCH_BOARDS: Record<string, PatchBoard> = {
   gosper: { build: () => gosperBoard(3, 0, 25), whole: true },
   pentaflake: { build: () => pentaflakeBoard(3, 0, 18) },
   carpet: { build: () => carpetBoard(3, 0, 32) },
+  // Whole: the disc is the picture -- the tiles shrinking toward a rim they
+  // never reach is what a hyperbolic tiling looks like.
+  hyperbolic73: { build: () => hyperbolicBoard(7, 3, 16, 0, 100), whole: true },
+  hyperbolic54: { build: () => hyperbolicBoard(5, 4, 18, 0, 100), whole: true },
+  hyperbolic45: { build: () => hyperbolicBoard(4, 5, 21, 0, 100), whole: true },
+};
+
+/** The hyperbolic boards' row icons: how many distance shells to draw -- the
+ * central polygon, its ring, and the next ring's nearest cells, which is as
+ * much as reads at row-icon size. Must match
+ * `_HYPERBOLIC_ICON_SHELLS` in gui.py. */
+const HYPERBOLIC_ICON_SHELLS: Record<string, number> = {
+  hyperbolic73: 4,
+  hyperbolic54: 4,
+  hyperbolic45: 5,
 };
 
 /** Where a mode's repeat domain is filed under another name. */
@@ -1982,7 +2043,7 @@ function patch(key: string): Preview | null {
   // Tones measured across the whole board, as the played board measures them
   // (render/solidBoard.ts) — it is what separates Penrose's thick rhombus from
   // its thin one, the pair being the same four-sided shape.
-  const tones = classifyShapes(board.polygons);
+  const tones = classifyShapes(board.polygons, board.cornerMask, board.curved);
   const cells = [...board.polygons].map(([id, poly]) => ({
     pts: poly as P[],
     tone: tones.get(id)!,

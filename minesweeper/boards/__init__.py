@@ -8,6 +8,9 @@ tilings/surfaces.
 from __future__ import annotations
 
 from minesweeper.boards.aperiodic import (  # noqa: F401
+    _AB_HALF,
+    _AB_RHOMB,
+    _AB_RULES,
     _PENTA_RINGS,
     _PHYLLO_A,
     _PHYLLO_B,
@@ -24,8 +27,12 @@ from minesweeper.boards.aperiodic import (  # noqa: F401
     _ZETA12_BASIS,
     _ZETA_BASIS,
     Z7Point,
+    Z8Point,
     Z12Point,
     ZPoint,
+    _ab_cells,
+    _ab_place,
+    _ab_tiles,
     _brick_rings_tiles,
     _klaassen_tiles,
     _pentaspiral_tiles,
@@ -37,6 +44,12 @@ from minesweeper.boards.aperiodic import (  # noqa: F401
     _z7_add,
     _z7_dir,
     _z7_to_xy,
+    _z8_add,
+    _z8_conj,
+    _z8_rot,
+    _z8_silver,
+    _z8_sub,
+    _z8_to_xy,
     _z12_add,
     _z12_conj,
     _z12_rot,
@@ -47,8 +60,10 @@ from minesweeper.boards.aperiodic import (  # noqa: F401
     _z_rot,
     _z_sub,
     _z_to_xy,
+    _zeta8_mul,
     _zeta12_mul,
     _zeta_mul,
+    ammann_beenker_board,
     brick_rings_board,
     kitedart_board,
     klaassen_board,
@@ -85,6 +100,7 @@ from minesweeper.boards.catalog import (  # noqa: F401
     FLAT_MODES,
     FLAT_ONLY_FAMILIES,
     FRACTAL_MODES,
+    HYPERBOLIC_MODES,
     MANIFOLD_LABELS,
     MANIFOLD_ORDER,
     MENU_ROOT,
@@ -149,6 +165,11 @@ from minesweeper.boards.fractal import (  # noqa: F401
     place_point,
     sphinx_board,
     substitution_placements,
+)
+from minesweeper.boards.hyperbolic import (  # noqa: F401
+    hyperbolic_board,
+    hyperbolic_faces,
+    hyperbolic_positions,
 )
 from minesweeper.boards.presets import (  # noqa: F401
     _PRESETS,

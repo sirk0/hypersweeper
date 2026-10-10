@@ -472,6 +472,37 @@ so there is nothing to glue a seam with. That is one line: it is in
 `catalog.FLAT_ONLY_FAMILIES` (with `aperiodic`), which `family_rows`,
 `picker_families` and the TypeScript mirror all read.
 
+## Recipe: add a hyperbolic {p,q} board
+
+The **Hyperbolic** family (`hyperbolic.py`, `web/src/boards/hyperbolic.ts`) is
+one builder, `hyperbolic_board(p, q, shells, mine_count, scale)`, so a new
+{p,q} is data, not code -- provided the tiling is hyperbolic ((p - 2)(q - 2) >
+4) and its faces can span the boundary runs the ring walk hands them (`p >= 4`;
+a triangle tiling {3,q} would need the walk to close a face on one new vertex,
+which it refuses rather than gets wrong). Read
+[`geometry.md`](geometry.md#the-hyperbolic-boards) first.
+
+1. **Menu + presets** -- add `hyperbolic{p}{q}` to `menu.hyperbolic` and
+   `soloLabels` in `data/catalog.json`, and a `{builder: "hyperbolic_board",
+   args: {difficulty: [p, q, shells, mines, scale]}}` row to
+   `data/presets.json`, seeded with shell counts near the targets (list the
+   sizes with a loop over `shells`; they step 5-14 cells at a time). Then
+   `resize --only` and `calibrate --only` the new mode and `apply` (see
+   [`difficulty.md`](difficulty.md)): `SPEC["hyperbolic_board"]` already says
+   which arg is which. Re-run `scripts/export_data.py` and
+   `export_conformance.py`.
+2. **Watch for twins.** A shell can leave two rim cells with the same closed
+   neighbourhood -- the size search skips those windows, which is why {4,5}
+   medium ships out of band. If a difficulty has no fair trim in band, say so
+   where `tests/test_presets.py` counts its near-misses.
+3. **Icons** -- add the mode to `HYPERBOLIC_ICON_SHELLS` in
+   `web/src/ui/icons.ts` and `_HYPERBOLIC_ICON_SHELLS` in `gui.py` (about a
+   ring and a half: what still reads at row size), and to `PATCH_BOARDS` for
+   the menu card.
+4. **Tests** -- add the tiling to `_HYPERBOLIC` in `tests/test_boards.py` and
+   `TILINGS` in `web/tests/unit/hyperbolic.test.ts`, its ring counts to the
+   latter, and its point group (D_p) to `symmetries.test.ts`.
+
 ## Recipe: add an aperiodic / shaped / solid board
 
 These are one-offs, not tiling×surface products.
