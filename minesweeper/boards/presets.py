@@ -46,6 +46,7 @@ from minesweeper.boards.fractal import (
     pentaflake_board,
     sphinx_board,
 )
+from minesweeper.boards.hyperbolic import hyperbolic_board
 from minesweeper.boards.solids import (
     brick_cube_board,
     c80_board,
@@ -200,6 +201,10 @@ _JSON_BUILDERS = {
     "carpet_board": carpet_board,
     "pentaflake_board": pentaflake_board,
     "gosper_board": gosper_board,
+    # The hyperbolic boards: hyperbolic_board(p, q, shells, mine_count, scale),
+    # the {p,q} tiling in the Poincare disc trimmed to the faces at its
+    # ``shells`` smallest distances from the centre (boards/hyperbolic.py).
+    "hyperbolic_board": hyperbolic_board,
 }
 
 # Explicit presets for the one-off boards not yet in the shared data/presets.json.

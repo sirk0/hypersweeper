@@ -3,6 +3,7 @@ import { patternKey, patternLayer, patternSvg } from "../../src/ui/backgroundPat
 import {
   APERIODIC_MODES,
   FRACTAL_MODES,
+  HYPERBOLIC_MODES,
   SOLID_GROUPS,
   modeFor,
   tilingAllows,
@@ -60,7 +61,7 @@ describe("which pattern a mode gets", () => {
     // backgroundPattern.ts would leave that board on a blank page.
     const missing = MODES.filter((mode) => patternKey(mode) === null);
     expect(missing).toEqual([]);
-    expect(MODES.length).toBe(193);
+    expect(MODES.length).toBe(196);
   });
 
   it("follows the tiling, not the surface", () => {
@@ -95,6 +96,9 @@ describe("which pattern a mode gets", () => {
     const group = (key: string): string[] =>
       SOLID_GROUPS.find((g) => g.key === key)?.modes ?? [];
     for (const mode of group("sphere")) expect(patternKey(mode)).toBe("circles");
+    // ...and the hyperbolic boards, whose tiles close up only in the
+    // hyperbolic plane, so no flat repeat of them exists
+    for (const mode of HYPERBOLIC_MODES) expect(patternKey(mode)).toBe("circles");
     for (const key of ["platonic", "catalan", "polyhedra"]) {
       for (const mode of group(key)) expect(patternKey(mode)).not.toBe("circles");
     }

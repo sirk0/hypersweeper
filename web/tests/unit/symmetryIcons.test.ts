@@ -19,6 +19,7 @@ describe("what a control's icon is drawn from", () => {
       ["hexhex", "easy", "turn", 6], // a hexagonal board: a sixth
       ["triangle", "easy", "turn", 3], // a triangular one: a third
       ["gosper", "easy", "turn", 6], // the flowsnake keeps the hexagon's six
+      ["hyperbolic73", "easy", "turn", 7], // the {7,3} disc: a seventh
       ["cube", "easy", "ring", 4], // a cube quarters about its axes
       ["cube", "easy", "tube", 4],
       ["octahedron", "easy", "ring", 4],

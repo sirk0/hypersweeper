@@ -232,6 +232,10 @@ APERIODIC_MODES = tuple(_MENU["aperiodic"])
 # outline is the tile itself, scaled. Like the aperiodic ones they are one-off
 # modes rather than a tiling x surface product, so they live on the plane only.
 FRACTAL_MODES = tuple(_MENU["fractal"])
+# The hyperbolic family: regular {p,q} tilings of the hyperbolic plane, drawn
+# in the Poincare disc. One-off modes again, and a disc rather than a periodic
+# window, so on the plane only (boards/hyperbolic.py).
+HYPERBOLIC_MODES = tuple(_MENU["hyperbolic"])
 FAMILY_LABELS = dict(_MENU["familyLabels"])
 FAMILY_MEMBERS = {
     "regular": PICKER_REGULAR,
@@ -242,6 +246,7 @@ FAMILY_MEMBERS = {
     "other": OTHER_ARCH,
     "aperiodic": APERIODIC_MODES,
     "fractal": FRACTAL_MODES,
+    "hyperbolic": HYPERBOLIC_MODES,
 }
 # the picker's family rows, in order; the flat-only families (whose members are
 # one-off modes, not tilings) are added on the plane alone. "Other" is in the
@@ -249,7 +254,7 @@ FAMILY_MEMBERS = {
 # surface has no row of rather than naming it in two places.
 PICKER_FAMILIES = ("regular", "uniform", "dual", "isogonal", "rectangle",
                    "other")
-FLAT_ONLY_FAMILIES = ("aperiodic", "fractal")
+FLAT_ONLY_FAMILIES = ("aperiodic", "fractal", "hyperbolic")
 
 # The solid pages: Sphere, Platonic solids, Catalan solids and Polyhedra, each
 # a flat list of boards. Mirrors MANIFOLD_ORDER/MANIFOLD_LABELS -- one order

@@ -273,6 +273,10 @@ describe("board symmetries", () => {
       ["hexhex", "easy", 12], // D6
       ["squarediamond", "easy", 8], // D4 — the turned grid on a square window
       ["gosper", "easy", 6], // C6: the flowsnake is chiral
+      // the hyperbolic discs keep their central polygon's whole dihedral group
+      ["hyperbolic73", "easy", 14], // D7
+      ["hyperbolic54", "medium", 10], // D5
+      ["hyperbolic45", "hard", 8], // D4
     ];
     for (const [mode, difficulty, order] of orders) {
       const board = buildBoard(mode, difficulty);

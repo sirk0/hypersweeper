@@ -49,6 +49,7 @@ from minesweeper.boards import (
     _z7_to_xy,
     build_board,
     family_rows,
+    hyperbolic_board,
     newell_normal,
     picker_families,
     picker_modes,
@@ -991,6 +992,7 @@ _ICON_ALIASES = {
     "tri": "trigrid",
     "aperiodic": "penrose",
     "fractal": "sphinx",
+    "hyperbolic": "hyperbolic73",  # the family row: the game's namesake
     # the four solid-group home rows borrow one of their own members' icons:
     # there is no board named "platonic" or "catalan" to draw
     "platonic": "tetrahedron",
@@ -1001,6 +1003,12 @@ _ICON_ALIASES = {
     "manifolds": "torus",   # the "Flat manifolds" home entry
     "random": "start",      # the "Random" picker entry
 }
+
+
+# The hyperbolic boards' icons: how many distance shells to draw -- the central
+# polygon, its ring, and the next ring's nearest cells, which is as much as
+# reads at icon size.
+_HYPERBOLIC_ICON_SHELLS = {"hyperbolic73": 4, "hyperbolic54": 4, "hyperbolic45": 5}
 
 
 # How each Catalan solid is turned before projecting, in degrees about x then
@@ -1352,6 +1360,21 @@ def _render_icon(key: str) -> pygame.Surface:
                             for x, y in polygon],
                         fill=ICON_BLUE if i % 2 else ICON_BLUE_LIGHT, width=3)
         _icon_gloss(s, pygame.Rect(d * 0.08, d * 0.06, d * 0.84, d * 0.55))
+    elif key in _HYPERBOLIC_ICON_SHELLS:
+        # the board itself, a ring and a half deep, in the disc whose rim it never
+        # reaches: drawn with its geodesic arcs and no corner rounding, since
+        # the arcs are what make it read as the Poincare disc
+        p, q = int(key[-2]), int(key[-1])
+        board = hyperbolic_board(p, q, _HYPERBOLIC_ICON_SHELLS[key], 1, scale=1)
+        r = d * 0.46
+        sc = 2 * r / board.width
+        pygame.draw.circle(s, ICON_OUTLINE, (int(c), int(c)), int(r), 4)
+        for cell, polygon in board.polygons.items():
+            pts = [(c - r + x * sc, c - r + y * sc) for x, y in polygon]
+            fill_polygon(s, pts, ICON_BLUE_LIGHT if cell == 0 else ICON_BLUE)
+            ipts = [(int(x), int(y)) for x, y in pts]
+            pygame.draw.lines(s, ICON_OUTLINE, True, ipts, 3)
+            outline_polygon(s, ipts, ICON_OUTLINE)
     elif key == "elongated":
         # a square row under a triangle row
         _icon_shape(s, [(d * 0.12, d * 0.5), (d * 0.5, d * 0.5),

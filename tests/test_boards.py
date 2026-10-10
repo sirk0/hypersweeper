@@ -17,6 +17,7 @@ from minesweeper.boards import (
     DIFFICULTIES,
     FRACTAL_MODES,
     GOSPER,
+    HYPERBOLIC_MODES,
     MODE_LABELS,
     MODES_3D,
     PENTAFLAKE,
@@ -142,6 +143,14 @@ from minesweeper.boards.catalan import (
 )
 from minesweeper.boards.core import _cross
 from minesweeper.boards.core import newell_normal as _newell_normal
+from minesweeper.boards.hyperbolic import (
+    _central_polygon,
+    _isometry,
+    face_centre,
+    hyperbolic_board,
+    hyperbolic_faces,
+    hyperbolic_positions,
+)
 from minesweeper.boards.presets import _WINDOWS, ARCH_PRESETS, window_for
 
 # Template tilings split by symmetry type. Archimedean (uniform) tilings are
@@ -2250,6 +2259,203 @@ class TestGosperIsland:
         assert len(seen) == len(board.adjacency)
 
 
+
+_HYPERBOLIC = [(7, 3), (5, 4), (4, 5)]
+
+
+def _hyp_dist(a: complex, b: complex) -> float:
+    """Hyperbolic distance between two points of the Poincaré disc."""
+    return 2 * math.atanh(abs((a - b) / (1 - a.conjugate() * b)))
+
+
+def _float_rings(p: int, q: int, rings: int) -> list[int]:
+    """Face counts per ring, derived with nothing the builder uses: reflect the
+    central p-gon across its edges in the disc, over and over, merge faces by
+    rounded centre (fine here -- this is the *check*, not a board), and count
+    vertex-adjacency layers outward from the centre."""
+    big_r = math.acosh(1 / (math.tan(math.pi / p) * math.tan(math.pi / q)))
+    first = [cmath.rect(math.tanh(big_r / 2), 2 * math.pi * k / p) for k in range(p)]
+
+    def reflect(z, a, b):
+        # inversion in the circle through a and b orthogonal to the rim
+        a2 = 1 / a.conjugate()
+        w = (a2 - a) / (b - a)
+        if abs(w.imag) < 1e-12:  # a diameter: a straight mirror
+            d = (b - a) / abs(b - a)
+            return a + d * ((z - a) / d).conjugate()
+        c = (b - a) * (w - abs(w) ** 2) / (2j * w.imag) + a
+        return c + abs(a - c) ** 2 / (z - c).conjugate()
+
+    def key(z):
+        return (round(z.real, 7), round(z.imag, 7))
+
+    faces, seen, frontier = [first], {key(0j)}, [first]
+    limit = rings * 2 * big_r + 1e-6
+    while frontier:
+        grown = []
+        for face in frontier:
+            for i in range(p):
+                image = [reflect(z, face[i], face[(i + 1) % p]) for z in face]
+                centre = sum(image) / p
+                if 2 * math.atanh(min(abs(centre), 0.999999)) > limit or key(centre) in seen:
+                    continue
+                seen.add(key(centre))
+                grown.append(image)
+        faces += grown
+        frontier = grown
+    at = defaultdict(list)
+    for index, face in enumerate(faces):
+        for z in face:
+            at[key(z)].append(index)
+    layer, current, counts = {0: 0}, [0], [1]
+    for ring in range(1, rings + 1):
+        nxt = [j for i in current for z in faces[i] for j in at[key(z)] if j not in layer]
+        for j in nxt:
+            layer[j] = ring
+        current = sorted(set(nxt))
+        counts.append(len(current))
+    return counts
+
+
+class TestHyperbolic:
+    """The {p,q} boards in the Poincaré disc (boards/hyperbolic.py)."""
+
+    @pytest.mark.parametrize("p,q", _HYPERBOLIC)
+    def test_ring_counts_match_an_independent_construction(self, p, q):
+        _, ring_of = hyperbolic_faces(p, q, 3)
+        assert [ring_of.count(r) for r in range(4)] == _float_rings(p, q, 3)
+
+    @pytest.mark.parametrize("p,q", _HYPERBOLIC)
+    def test_every_inner_vertex_has_q_faces(self, p, q):
+        faces, ring_of = hyperbolic_faces(p, q, 4)
+        at = Counter(v for face in faces for v in face)
+        outer = {v for face, r in zip(faces, ring_of) if r == 4 for v in face}
+        inner = {v for face, r in zip(faces, ring_of) if r < 4 for v in face} - outer
+        assert inner and all(at[v] == q for v in inner)
+        assert max(at.values()) == q
+        assert all(len(set(face)) == p for face in faces)
+        edges = Counter(frozenset(e) for face in faces for e in zip(face, face[1:] + face[:1]))
+        assert set(edges.values()) <= {1, 2}
+
+    @pytest.mark.parametrize("p,q", _HYPERBOLIC)
+    def test_an_inner_cell_has_p_times_q_minus_2_neighbours(self, p, q):
+        board = hyperbolic_board(p, q, 12, 1)
+        degrees = [len(n) for n in board.adjacency.values()]
+        assert max(degrees) == p * (q - 2)
+        # the central p-gon and its first ring are all interior
+        _, ring_of = hyperbolic_faces(p, q, 1)
+        assert all(len(board.adjacency[f]) == p * (q - 2) for f in range(len(ring_of)))
+
+    @pytest.mark.parametrize("p,q", _HYPERBOLIC)
+    def test_faces_are_congruent_regular_polygons(self, p, q):
+        faces, _ = hyperbolic_faces(p, q, 3)
+        pos = hyperbolic_positions(p, q, faces)
+        side = _hyp_dist(pos[faces[0][0]], pos[faces[0][1]])
+        for face in faces:
+            centre = face_centre(p, q, face, pos)
+            corners = [pos[v] for v in face]
+            assert all(abs(z) < 1 for z in corners)
+            for a, b in zip(corners, corners[1:] + corners[:1]):
+                assert _hyp_dist(a, b) == pytest.approx(side, rel=1e-9)
+            radii = [_hyp_dist(centre, z) for z in corners]
+            assert radii == pytest.approx([radii[0]] * p, rel=1e-9)
+
+    @pytest.mark.parametrize("p,q", _HYPERBOLIC)
+    def test_q_faces_close_up_round_a_vertex(self, p, q):
+        # the angle sum at an inner vertex is exactly 2 pi, which is what puts
+        # the tiling in the hyperbolic plane; the disc is conformal, so the
+        # angle between two chords at a vertex tends to the true angle and
+        # the corner angles of q faces, measured on their tangent arcs, sum
+        # to 2 pi -- here checked through the arc points, which hug the arcs
+        board = hyperbolic_board(p, q, 6, 1, scale=1, arc=64)
+        polygon = board.polygons[0]
+        n = len(polygon)
+        angles = []
+        for i in range(0, n, 64):
+            a, b, c = polygon[i - 1], polygon[i], polygon[(i + 1) % n]
+            u = complex(a[0] - b[0], a[1] - b[1])
+            w = complex(c[0] - b[0], c[1] - b[1])
+            angles.append(abs(cmath.phase(w / u)))
+        assert angles == pytest.approx([2 * math.pi / q] * p, abs=0.02)
+
+    @pytest.mark.parametrize("p,q", _HYPERBOLIC)
+    def test_every_face_places_its_vertices_where_they_are(self, p, q):
+        # positions are first come, first served; re-derive every vertex from
+        # every face that has it and they must all agree
+        faces, _ = hyperbolic_faces(p, q, 4)
+        pos = hyperbolic_positions(p, q, faces)
+        centre = _central_polygon(p, q)
+        for face in faces:
+            m = _isometry(centre[0], centre[1], pos[face[0]], pos[face[1]])
+            for i, v in enumerate(face):
+                # relative to the size of the face, which shrinks toward the rim
+                size = 1 - abs(pos[v]) ** 2
+                assert abs(m(centre[i]) - pos[v]) < 1e-9 * size
+
+    @pytest.mark.parametrize("p,q", _HYPERBOLIC)
+    def test_distance_shells_are_far_apart(self, p, q):
+        # faces at one distance are grouped with a tolerance; distinct
+        # distances must sit far outside it or the grouping is a coin toss
+        faces, _ = hyperbolic_faces(p, q, 4)
+        pos = hyperbolic_positions(p, q, faces)
+        dists = sorted(2 * math.atanh(abs(face_centre(p, q, f, pos))) for f in faces)
+        gaps = [b - a for a, b in zip(dists, dists[1:])]
+        assert all(g < 1e-10 or g > 1e-5 for g in gaps)
+
+    @pytest.mark.parametrize("p,q", _HYPERBOLIC)
+    @pytest.mark.parametrize("shells", [3, 8, 15, 27])
+    def test_a_trim_keeps_the_dihedral_symmetry(self, p, q, shells):
+        board = hyperbolic_board(p, q, shells, 1, scale=1)
+        c = complex(board.width / 2, board.height / 2)
+
+        def points(transform):
+            return sorted((round(z.real, 6), round(z.imag, 6))
+                          for poly in board.polygons.values()
+                          for z in (transform(complex(*xy) - c) for xy in poly))
+
+        same = points(lambda z: z)
+        turn = cmath.exp(2j * math.pi / p)
+        assert points(lambda z: z * turn) == same
+        assert points(lambda z: -z.conjugate()) == same  # the vertical mirror
+
+    @pytest.mark.parametrize("p,q", _HYPERBOLIC)
+    def test_a_trim_is_a_disc_whose_cells_have_p_corners(self, p, q):
+        board = hyperbolic_board(p, q, 10, 1)
+        assert _euler_characteristic(board) == 1
+        assert _boundary_components(board) == 1
+        assert _connected(board)
+        assert all(sum(mask) == p for mask in board.corner_mask.values())
+        assert all(len(board.polygons[c]) == len(m) for c, m in board.corner_mask.items())
+
+    def test_the_central_polygon_sits_at_the_centre_of_the_board(self):
+        board = hyperbolic_board(7, 3, 9, 1)
+        xs = [x for x, _ in board.polygons[0]]
+        ys = [y for _, y in board.polygons[0]]
+        assert sum(xs) / len(xs) == pytest.approx(board.width / 2)
+        assert sum(ys) / len(ys) == pytest.approx(board.height / 2)
+
+    def test_no_fair_trim_of_45_lands_in_the_medium_band(self):
+        # why `hyperbolic45` medium ships at 205 cells, outside +-15% of 256
+        # (see NEAR_MISS_ALLOWANCE in tests/test_presets.py): every trim in
+        # the band leaves rim cells with a twin, and 20 shells is the nearest
+        # one that does not
+        from scripts.difficulty.metrics import indistinguishable_cells
+        in_band = {}
+        for shells in range(18, 30):
+            board = hyperbolic_board(4, 5, shells, 1)
+            if 0.85 * 256 <= len(board.adjacency) <= 1.15 * 256:
+                in_band[shells] = indistinguishable_cells(board.adjacency)
+        assert in_band and all(twins > 0 for twins in in_band.values())
+        board = hyperbolic_board(4, 5, 20, 1)
+        assert len(board.adjacency) == 205
+        assert indistinguishable_cells(board.adjacency) == 0
+
+    def test_a_euclidean_or_spherical_tiling_is_refused(self):
+        for p, q in [(4, 4), (6, 3), (3, 6), (5, 3)]:
+            with pytest.raises(ValueError):
+                hyperbolic_board(p, q, 3, 1)
+
+
 @pytest.mark.parametrize("mode", sorted(SUBSTITUTIONS))
 def test_a_substitutions_scale_is_its_factor(mode):
     # `factor` is the linear scale as a plain number and `scale` is that same
@@ -4148,7 +4354,7 @@ class TestPresets:
 
     def test_every_mode_appears_exactly_once_in_the_menu(self):
         # the one-off (non-periodic) modes, plus every periodic tiling x surface
-        modes = list(APERIODIC_MODES + FRACTAL_MODES + SOLID_MODES)
+        modes = list(APERIODIC_MODES + FRACTAL_MODES + HYPERBOLIC_MODES + SOLID_MODES)
         modes += [m for shaped in SHAPED_MODES.values() for m in shaped]
         modes += [m for _, surfaces in TILINGS.values() for m in surfaces.values()]
         assert sorted(modes) == sorted(MODE_LABELS)

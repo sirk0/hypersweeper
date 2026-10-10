@@ -163,7 +163,10 @@
     "squarediamond": "Squares - diamond board",
     "hexhex": "Hexagons - hexagonal board",
     "hextriangle": "Hexagons - triangular board",
-    "cube3d": "Volumetric"
+    "cube3d": "Volumetric",
+    "hyperbolic73": "Heptagons {7,3}",
+    "hyperbolic54": "Pentagons {5,4}",
+    "hyperbolic45": "Squares {4,5}"
   },
   "modeInfo": {
     "ammannbeenker": {
@@ -537,6 +540,24 @@
       "tiling": "hex",
       "surface": "flat",
       "family": "regular"
+    },
+    "hyperbolic45": {
+      "label": "Squares {4,5}",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
+    "hyperbolic54": {
+      "label": "Pentagons {5,4}",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
+    "hyperbolic73": {
+      "label": "Heptagons {7,3}",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
     },
     "icosahedron": {
       "label": "Icosahedron",
@@ -1379,6 +1400,11 @@
       "pentaflake",
       "gosper"
     ],
+    "hyperbolic": [
+      "hyperbolic73",
+      "hyperbolic54",
+      "hyperbolic45"
+    ],
     "familyLabels": {
       "regular": "Regular",
       "uniform": "Uniform",
@@ -1387,7 +1413,8 @@
       "rectangle": "Congruent rectangles",
       "other": "Other",
       "aperiodic": "Aperiodic",
-      "fractal": "Fractals"
+      "fractal": "Fractals",
+      "hyperbolic": "Hyperbolic"
     },
     "solidGroups": [
       {
