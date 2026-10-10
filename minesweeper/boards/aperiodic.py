@@ -3,6 +3,8 @@ from __future__ import annotations
 import math
 from collections import Counter, defaultdict, deque
 from dataclasses import replace
+from functools import lru_cache
+from typing import NamedTuple
 
 from minesweeper.boards.core import Board, Cell, _finalize_flat
 
@@ -229,6 +231,59 @@ def _notch(
     return math.floor(deepest * 1e6 + 0.5) <= math.floor(allowed * 1e6 + 0.5)
 
 
+class _Patch(NamedTuple):
+    """One grown substitution patch, ready to be windowed: per tile, its key
+    (a cell id, or the Spectre's label), its vertex ids, its centroid and the
+    tie-break ``_window`` sorts it by at the cut rank.
+
+    Growing a patch is most of what building a board costs, and it depends
+    on nothing but the substitution depth -- every window and every game on a
+    preset is cut from the same one. So each builder grows it once per depth
+    (``functools.lru_cache``) and hands out these immutable tuples, which is
+    what lets ``_patch_shape`` remember the patch's rim as well.
+    """
+
+    keys: tuple
+    cells: tuple
+    centroids: tuple
+    tiebreaks: tuple
+
+
+def _patch(keys, cells, to_xy, tiebreaks=None) -> _Patch:
+    """Freeze a grown patch: vertex ids as tuples, centroids from ``to_xy``,
+    and the keys themselves as the tie-break unless one is given."""
+    cells = tuple(tuple(ids) for ids in cells)
+    centroids = []
+    for ids in cells:
+        xy = [to_xy(v) for v in ids]
+        centroids.append((sum(x for x, _ in xy) / len(xy), sum(y for _, y in xy) / len(xy)))
+    keys = tuple(keys)
+    return _Patch(keys, cells, tuple(centroids),
+                  keys if tiebreaks is None else tuple(tiebreaks))
+
+
+#: The adjacency and rim depth of the cached patches, by identity. Only a
+#: patch held as a tuple is remembered -- the ``_Patch`` the builders cache,
+#: which outlives the call -- and the entry keeps a reference to it, so an id
+#: is never reused while its entry stands.
+_PATCH_SHAPES: dict[int, tuple] = {}
+
+
+def _patch_shape(cells) -> tuple[list[list[int]], list[int]]:
+    """``_patch_adjacency`` and ``_rim_depth`` of a patch, computed once per
+    cached patch rather than once per window cut from it."""
+    hit = _PATCH_SHAPES.get(id(cells))
+    if hit is not None and hit[0] is cells:
+        return hit[1], hit[2]
+    adjacency = _patch_adjacency(cells)
+    depth = _rim_depth(cells, adjacency)
+    if isinstance(cells, tuple):
+        if len(_PATCH_SHAPES) >= 16:
+            _PATCH_SHAPES.clear()
+        _PATCH_SHAPES[id(cells)] = (cells, adjacency, depth)
+    return adjacency, depth
+
+
 def _window(
     cells: list[list],
     centroids: list[tuple[float, float]],
@@ -277,8 +332,7 @@ def _window(
     # window is filled by it; the pool is every tile that does, in the order
     # the substitution laid them, which is the one order both languages
     # agree on without sorting anything.
-    adjacency = _patch_adjacency(cells)
-    depth = _rim_depth(cells, adjacency)
+    adjacency, depth = _patch_shape(cells)
     margin = math.sqrt(keep) / 2 * _WINDOW_MARGIN
     pool = [i for i in range(n) if depth[i] >= margin]
     rim = [i for i in range(n) if depth[i] == 0]
@@ -315,6 +369,18 @@ def penrose_board(
     a window somewhere else in the same tiling -- a different board of the
     same size, which is the point of an aperiodic one. See ``_window``.
     """
+    patch = _penrose_patch(subdivisions)
+    # The tie-break at the cut rank is the cell id, as it always was: a
+    # rhombus's colour then the order the merge made it.
+    kept = _window(patch.cells, patch.centroids, patch.tiebreaks, keep, variant)
+    cells = {patch.keys[i]: list(patch.cells[i]) for i in kept}
+    return _finalize_flat("penrose", cells, _z_to_xy, mine_count, scale)
+
+
+@lru_cache(maxsize=8)
+def _penrose_patch(subdivisions: int) -> _Patch:
+    """The wheel deflated ``subdivisions`` times and merged into rhombi,
+    keyed by cell id (colour, the order the merge made it)."""
     zero = (0, 0, 0, 0)
     powers = [(1, 0, 0, 0)]
     for _ in range(10):
@@ -351,21 +417,7 @@ def penrose_board(
             cells[(color, len(cells))] = [a, b, other_apex, c]
         else:
             waiting[key] = a
-
-    rows = list(cells.items())
-    centroids = [(sum(_z_to_xy(k)[0] for k in quad) / 4,
-                  sum(_z_to_xy(k)[1] for k in quad) / 4)
-                 for _, quad in rows]
-    # The tie-break at the cut rank is the cell id, as it always was: a
-    # rhombus's colour then the order the merge made it.
-    kept = _window(cells=[quad for _, quad in rows],
-                   centroids=centroids,
-                   tiebreaks=[cell for cell, _ in rows],
-                   keep=keep,
-                   variant=variant)
-    cells = {rows[i][0]: rows[i][1] for i in kept}
-
-    return _finalize_flat("penrose", cells, _z_to_xy, mine_count, scale)
+    return _patch(cells.keys(), cells.values(), _z_to_xy)
 
 
 # -- Penrose kites and darts (P2) --------------------------------------------
@@ -436,6 +488,22 @@ def _kitedart_triangles(subdivisions: int) -> list[tuple[int, ZPoint, ZPoint, ZP
     return triangles
 
 
+@lru_cache(maxsize=8)
+def _kitedart_patch(subdivisions: int) -> _Patch:
+    """The sun deflated ``subdivisions`` times, each half-tile merged with its
+    mirror across their shared leg; keyed by cell id."""
+    waiting: dict = {}
+    cells: dict[Cell, list[ZPoint]] = {}
+    for color, apex, side, axis in _kitedart_triangles(subdivisions):
+        key = (color, *sorted((apex, axis)))
+        if key in waiting:
+            # apex, side, axis-end, mirrored side: the tile's outline in order
+            cells[(color, len(cells))] = [apex, side, axis, waiting.pop(key)]
+        else:
+            waiting[key] = side
+    return _patch(cells.keys(), cells.values(), _z_to_xy)
+
+
 def kitedart_board(
     subdivisions: int,
     mine_count: int,
@@ -453,26 +521,9 @@ def kitedart_board(
     centre, variant 0 being the centred block with the sun in the middle of
     it. See ``_window``.
     """
-    waiting: dict = {}
-    cells: dict[Cell, list[ZPoint]] = {}
-    for color, apex, side, axis in _kitedart_triangles(subdivisions):
-        key = (color, *sorted((apex, axis)))
-        if key in waiting:
-            # apex, side, axis-end, mirrored side: the tile's outline in order
-            cells[(color, len(cells))] = [apex, side, axis, waiting.pop(key)]
-        else:
-            waiting[key] = side
-
-    rows = list(cells.items())
-    centroids = [(sum(_z_to_xy(k)[0] for k in quad) / 4,
-                  sum(_z_to_xy(k)[1] for k in quad) / 4)
-                 for _, quad in rows]
-    kept = _window(cells=[quad for _, quad in rows],
-                   centroids=centroids,
-                   tiebreaks=[cell for cell, _ in rows],
-                   keep=keep,
-                   variant=variant)
-    cells = {rows[i][0]: rows[i][1] for i in kept}
+    patch = _kitedart_patch(subdivisions)
+    kept = _window(patch.cells, patch.centroids, patch.tiebreaks, keep, variant)
+    cells = {patch.keys[i]: list(patch.cells[i]) for i in kept}
 
     board = _finalize_flat("kitedart", cells, _z_to_xy, mine_count, scale)
     return replace(board, glyph_anchors={
@@ -1034,6 +1085,24 @@ def _spectre_leaves(levels: int) -> list[tuple[str, _Placement]]:
     return tiles
 
 
+@lru_cache(maxsize=8)
+def _spectre_patch(levels: int) -> _Patch:
+    """Every tile of a level-``levels`` cluster, keyed by its label. The
+    tie-break at the cut rank is the tile's own sorted vertex ids -- cell ids
+    do not exist yet here, the trim being what puts the tiles in the order
+    they are numbered in."""
+    labels, cells, seen = [], [], set()
+    for label, at in _spectre_leaves(levels):
+        ids = [_place_point(at, p) for p in _SPECTRE_OUTLINE]
+        fs = frozenset(ids)
+        if fs in seen:  # defensive: a single cluster produces no duplicates
+            continue
+        seen.add(fs)
+        labels.append(label)
+        cells.append(ids)
+    return _patch(labels, cells, _z12_to_xy, [tuple(sorted(ids)) for ids in cells])
+
+
 def spectre_board(
     levels: int,
     mine_count: int,
@@ -1052,33 +1121,13 @@ def spectre_board(
     any other integer a window elsewhere in the same cluster, which is a
     different board of the same size. See ``_window``.
     """
-    rows = []  # (label, ids, cx, cy)
-    seen = set()
-    for label, at in _spectre_leaves(levels):
-        ids = [_place_point(at, p) for p in _SPECTRE_OUTLINE]
-        fs = frozenset(ids)
-        if fs in seen:  # defensive: a single cluster produces no duplicates
-            continue
-        seen.add(fs)
-        xy = [_z12_to_xy(v) for v in ids]
-        rows.append((label, ids,
-                     sum(x for x, _ in xy) / len(xy),
-                     sum(y for _, y in xy) / len(xy)))
-
     # Chebyshev distance from the window's centre, as penrose_board does: it
     # trims to a square block rather than a disc, so the board reads square
-    # and packs more tiles onto the screen. The tie-break at the cut rank is
-    # the tile's own sorted vertex ids -- cell ids do not exist yet here, the
-    # trim being what puts the tiles in the order they are numbered in.
-    kept = _window(cells=[r[1] for r in rows],
-                   centroids=[(r[2], r[3]) for r in rows],
-                   tiebreaks=[tuple(sorted(r[1])) for r in rows],
-                   keep=keep,
-                   variant=variant)
-    rows = [rows[i] for i in kept]
-
+    # and packs more tiles onto the screen.
+    patch = _spectre_patch(levels)
+    kept = _window(patch.cells, patch.centroids, patch.tiebreaks, keep, variant)
     cells: dict[Cell, list] = {
-        (label, i): ids for i, (label, ids, _, _) in enumerate(rows)
+        (patch.keys[row], i): list(patch.cells[row]) for i, row in enumerate(kept)
     }
     return _finalize_flat("spectre", cells, _z12_to_xy, mine_count, scale)
 
@@ -1281,6 +1330,13 @@ def _ab_cells(levels: int) -> list[tuple[Cell, list[Z8Point]]]:
     return cells
 
 
+@lru_cache(maxsize=8)
+def _ab_patch(levels: int) -> _Patch:
+    """``_ab_cells`` frozen for windowing, keyed (and tie-broken) by cell id."""
+    rows = _ab_cells(levels)
+    return _patch((cell for cell, _ in rows), (ids for _, ids in rows), _z8_to_xy)
+
+
 def ammann_beenker_board(
     levels: int,
     mine_count: int,
@@ -1297,17 +1353,9 @@ def ammann_beenker_board(
     block around the eight-fold star, any other integer a window elsewhere in
     the same patch. See ``_window``. ``scale`` is pixels per edge.
     """
-    rows = _ab_cells(levels)
-    centroids = []
-    for _, ids in rows:
-        xy = [_z8_to_xy(v) for v in ids]
-        centroids.append((sum(x for x, _ in xy) / 4, sum(y for _, y in xy) / 4))
-    kept = _window(cells=[ids for _, ids in rows],
-                   centroids=centroids,
-                   tiebreaks=[cell for cell, _ in rows],
-                   keep=keep,
-                   variant=variant)
-    cells = {rows[i][0]: rows[i][1] for i in kept}
+    patch = _ab_patch(levels)
+    kept = _window(patch.cells, patch.centroids, patch.tiebreaks, keep, variant)
+    cells = {patch.keys[i]: list(patch.cells[i]) for i in kept}
     return _finalize_flat("ammannbeenker", cells, _z8_to_xy, mine_count, scale)
 
 

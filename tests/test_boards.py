@@ -905,7 +905,7 @@ class TestAperiodicVariants:
                     # tiles here, which is the standard the rest are held
                     # *below* rather than to.
                     continue
-                depth = aperiodic._rim_depth(cells, aperiodic._patch_adjacency(cells))
+                _, depth = aperiodic._patch_shape(cells)  # once per grown patch
                 xs = [centroids[i][0] for i in kept]
                 ys = [centroids[i][1] for i in kept]
                 cx, cy = (min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2
