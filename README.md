@@ -53,13 +53,15 @@ Pick a surface, then a tiling:
   and squares five to a corner ({4,5}), which only fit in the *hyperbolic*
   plane, drawn in the Poincaré disc with tiles shrinking toward a rim they
   never reach. A tile there has 7, 10 or 12 neighbours.
-  The menu groups these as **Regular**, **Uniform**, **Laves**, **Isogonal**
+  The menu groups these as **Regular**, **Uniform**, **Laves**, **2-uniform**
+  (regular polygons edge to edge with *two* kinds of corner: 3⁶; 3².4.3.4,
+  3².4.3.4; 3.4.6.4 and 3.4.6.4; 4.6.12), **Isogonal**
   (six tilings by regular polygons that are *not* edge to edge — a tile's
   corner in the middle of its neighbour's edge), **Congruent rectangles**,
   **Other** (the sphinx and the L-tromino laid down in half-turned pairs
   rather than inflated, and regular pentagons with the rhombs that fill the
   gaps they leave, as Dürer drew it in 1525), **Aperiodic**, **Spirals**,
-  **Fractals** and **Hyperbolic**; every periodic family bar the last five also wraps the
+  **Fractals** and **Hyperbolic**; every periodic family bar 2-uniform and the last five also wraps the
   cylinder and the torus below, and — unless the tiling is chiral — the
   Möbius strip and the Klein bottle too
 - **Sphere (3D)** — a chamfered dodecahedron (12 pentagons + 30 hexagons),

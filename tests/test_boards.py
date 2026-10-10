@@ -183,6 +183,7 @@ _RECTANGLE = [t.key for t in ARCH_TILINGS if t.family == "rectangle"]
 # named rather than derived from it -- what these two have in common (one
 # congruent polyform, in half-turned pairs) is not what the family says.
 _REPTILE = ["sphinxpairs", "tromino"]
+_TWO_UNIFORM = [t.key for t in ARCH_TILINGS if t.family == "2-uniform"]
 # the tilings that declare a grain -- straight lines no tile of them crosses,
 # which archimedean_board ends its window on. See TestFlatGrain.
 _GRAINED = [t.key for t in ARCH_TILINGS if any(t.template().grain)]
@@ -3264,6 +3265,103 @@ class TestDurer:
         top_bottom = TestArchimedean._symmetry(
             board, lambda cx, cy, x, y: (x, 2 * cy - y))
         assert top_bottom == 1.0
+
+
+class TestTwoUniform:
+    """The 2-uniform tilings: regular polygons edge to edge, with exactly the
+    two vertex configurations the registry declares (vertex_types).
+
+    Neither TestArchimedean's single-configuration invariants nor the
+    congruence one apply, so the two halves of "2-uniform" are checked here:
+    every tile is a regular polygon of unit edge, and every interior vertex
+    is one of the two types -- read as a *cyclic* sequence, since 3^2.4.3.4
+    and 3^3.4^2 meet the same five tiles in a different order -- with both
+    types present."""
+
+    @staticmethod
+    def _cyclic(sequence):
+        """The least rotation of a sequence or of its reverse: one key for
+        every way round a vertex configuration can be read."""
+        sequence = list(sequence)
+        readings = []
+        for seq in (sequence, sequence[::-1]):
+            readings += [tuple(seq[i:] + seq[:i]) for i in range(len(seq))]
+        return min(readings)
+
+    @staticmethod
+    def _vertex_fans(board):
+        """Interior vertex -> the tile side counts round it, in angular
+        order. A vertex is interior when its corner angles close to 360."""
+        fans = defaultdict(list)
+        for polygon in board.polygons.values():
+            n = len(polygon)
+            cx = sum(x for x, _ in polygon) / n
+            cy = sum(y for _, y in polygon) / n
+            for i, point in enumerate(polygon):
+                before, after = polygon[i - 1], polygon[(i + 1) % n]
+                v1 = (before[0] - point[0], before[1] - point[1])
+                v2 = (after[0] - point[0], after[1] - point[1])
+                angle = abs(math.atan2(v1[0] * v2[1] - v1[1] * v2[0],
+                                       v1[0] * v2[0] + v1[1] * v2[1]))
+                bearing = math.atan2(cy - point[1], cx - point[0])
+                key = (round(point[0], 4), round(point[1], 4))
+                fans[key].append((bearing, n, angle))
+        return {key: [n for _, n, _ in sorted(fan)]
+                for key, fan in fans.items()
+                if abs(sum(a for _, _, a in fan) - 2 * math.pi) < 1e-6}
+
+    @pytest.mark.parametrize("mode", _TWO_UNIFORM)
+    def test_every_interior_vertex_is_one_of_the_two_types(self, mode):
+        tiling = next(t for t in ARCH_TILINGS if t.key == mode)
+        want = {self._cyclic(v) for v in tiling.vertex_types}
+        assert len(want) == 2
+        seen = Counter(self._cyclic(fan)
+                       for fan in self._vertex_fans(archimedean_board(mode, 5, 5, 5)).values())
+        assert set(seen) == want, dict(seen)
+        assert min(seen.values()) > 10  # both types, and plenty of each
+
+    @pytest.mark.parametrize("mode", _TWO_UNIFORM)
+    def test_tiles_are_regular_with_unit_edges(self, mode):
+        tiling = next(t for t in ARCH_TILINGS if t.key == mode)
+        sides = set()
+        polygons = list(archimedean_board(mode, 3, 3, 5).polygons.values())
+        unit = math.dist(polygons[0][0], polygons[0][1])  # the pixel scale
+        for polygon in polygons:
+            n = len(polygon)
+            sides.add(n)
+            assert all(abs(math.dist(polygon[i], polygon[(i + 1) % n]) / unit - 1) < 1e-6
+                       for i in range(n))
+            # equal sides and equal angles: every corner the same distance
+            # from the centroid
+            cx = sum(x for x, _ in polygon) / n
+            cy = sum(y for _, y in polygon) / n
+            radii = [math.dist(p, (cx, cy)) / unit for p in polygon]
+            assert max(radii) - min(radii) < 1e-6
+        assert sides == set(tiling.config)
+
+    @pytest.mark.parametrize("mode, tiles", [
+        # 3.4.6.4's two hexagons cut into twelve triangles, plus its six
+        # squares and four triangles
+        ("trirhombitrihex", {3: 16, 4: 6}),
+        # 3.12.12's two dodecagons cut into thirteen tiles each, plus its
+        # four triangles
+        ("dissectedtrunchex", {3: 16, 4: 12, 6: 2}),
+        # four cells of 3.4.6.4 with two of their eight hexagons merged into
+        # dodecagons, each swallowing six squares and six triangles
+        ("dodecarhombitrihex", {3: 4, 4: 12, 6: 6, 12: 2}),
+    ])
+    def test_domain_holds_the_expected_tiles(self, mode, tiles):
+        template = _arch_template(mode)
+        assert Counter(len(refs) for _, refs in template.cells) == tiles
+
+    def test_dissection_leaves_the_uniform_tiling_unchanged(self):
+        """trirhombitrihex is rhombitrihex with its hexagons cut up: the same
+        domain, and every tile but the hexagons carried over as it was."""
+        uniform = _arch_template("rhombitrihex")
+        cut = _arch_template("trirhombitrihex")
+        assert (uniform.width, uniform.height) == (cut.width, cut.height)
+        hexagons = sum(1 for _, refs in uniform.cells if len(refs) == 6)
+        assert len(cut.cells) == len(uniform.cells) - hexagons + 6 * hexagons
 
 
 class TestCubeFrame:
