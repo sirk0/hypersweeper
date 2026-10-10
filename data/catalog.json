@@ -55,6 +55,22 @@
       "tilings": null
     },
     {
+      "key": "trefoil",
+      "label": "Trefoil knot",
+      "prefix": "trefoil",
+      "is3d": true,
+      "needsMirror": false,
+      "needsFlip": false,
+      "boundaryComponents": 0,
+      "euler": 0,
+      "tilt": -0.3,
+      "tilings": [
+        "hex",
+        "square",
+        "tri"
+      ]
+    },
+    {
       "key": "klein",
       "label": "Klein bottle",
       "prefix": "klein",
@@ -101,7 +117,8 @@
         "cylinder": "cylinder",
         "mobius": "mobius",
         "klein": "klein",
-        "doubletorus": "doubletorus"
+        "doubletorus": "doubletorus",
+        "trefoil": "trefoil"
       }
     },
     {
@@ -1273,6 +1290,24 @@
       "surface": "torus",
       "family": "uniform"
     },
+    "trefoil": {
+      "label": "Squares · Trefoil knot",
+      "tiling": "square",
+      "surface": "trefoil",
+      "family": "regular"
+    },
+    "trefoilhex": {
+      "label": "Hexagons · Trefoil knot",
+      "tiling": "hex",
+      "surface": "trefoil",
+      "family": "regular"
+    },
+    "trefoiltri": {
+      "label": "Triangles · Trefoil knot",
+      "tiling": "tri",
+      "surface": "trefoil",
+      "family": "regular"
+    },
     "triakis": {
       "label": "Triakis triangular",
       "tiling": "triakis",
@@ -1366,6 +1401,7 @@
       "mobius",
       "cylinder",
       "torus",
+      "trefoil",
       "klein",
       "doubletorus"
     ],
@@ -1374,7 +1410,8 @@
       "mobius": "Möbius strip",
       "klein": "Klein bottle",
       "torus": "Torus",
-      "doubletorus": "Double torus"
+      "doubletorus": "Double torus",
+      "trefoil": "Trefoil knot"
     },
     "pickerRegular": [
       "tri",

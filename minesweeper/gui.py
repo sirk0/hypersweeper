@@ -58,6 +58,7 @@ from minesweeper.boards import (
     surface_of,
     view_hint,
 )
+from minesweeper.boards.surfaces import _trefoil_core
 from minesweeper.game import CellState, Game, GameState
 
 # pygame.gfxdraw gives antialiased primitives on the desktop but does not
@@ -1770,6 +1771,47 @@ def _render_icon(key: str) -> pygame.Surface:
             pygame.draw.ellipse(s, (0, 0, 0, 0), hole)
             pygame.draw.ellipse(s, ICON_BLUE_DARK, hole, 4)
         _icon_gloss(s, pygame.Rect(d * 0.1, d * 0.34, d * 0.8, d * 0.22), 80)
+    elif key == "trefoil":
+        # the knot's own centre line seen down its three-fold axis, drawn as a
+        # thick outlined tube -- the whole loop once, then the strands above
+        # the mid-plane again as unbroken runs, so each crossing shows which
+        # one passes over without a seam at every joint
+        n, width = 120, d * 0.13
+        core = [_trefoil_core(2 * math.pi * k / n)[0] for k in range(n)]
+        span = max(max(abs(x), abs(y)) for x, y, _ in core)
+        scale = (d * 0.5 - width * 0.75) / span
+        pts = [(c + x * scale, c - y * scale) for x, y, _ in core]
+
+        def tube(run, closed):
+            # an open run's outline stops a segment short of either end, and
+            # its fill is capped at every point: the run continues a strand
+            # already drawn, so its ends must melt into it rather than draw
+            # the line caps across it
+            m = len(run) - (0 if closed else 1)
+            for colour, w, ks in ((ICON_BLUE_DARK, width + 6,
+                                   range(m) if closed else range(1, m - 1)),
+                                  (ICON_BLUE, width, range(m))):
+                for k in ks:
+                    a, b = run[k], run[(k + 1) % len(run)]
+                    pygame.draw.line(s, colour, a, b, int(w))
+                    pygame.draw.circle(s, colour, b, w / 2)
+                    if not closed and colour == ICON_BLUE:
+                        pygame.draw.circle(s, colour, a, w / 2)
+
+        tube(pts, closed=True)
+        # every crossing is a strand at the top of the knot over one at the
+        # bottom (z = +-1/3 exactly), so the over-strands are the runs near
+        # the top -- trimmed short of the mid-plane, where nothing crosses
+        top = max(z for _, _, z in core)
+        start = next(k for k in range(n) if core[k][2] <= 0)
+        run = []
+        for k in range(start, start + n + 1):
+            if core[k % n][2] > 0.5 * top:
+                run.append(pts[k % n])
+            elif run:
+                tube(run, closed=False)
+                run = []
+        _icon_gloss(s, pygame.Rect(d * 0.14, d * 0.08, d * 0.72, d * 0.3), 80)
     elif key == "mobius":
         band = pygame.Rect(d * 0.05, d * 0.16, d * 0.9, d * 0.68)
         pygame.draw.ellipse(s, ICON_BLUE, band)

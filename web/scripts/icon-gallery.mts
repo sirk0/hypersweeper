@@ -22,7 +22,8 @@ import {
 // solids arrived after the two fixed lists this used to carry went stale.
 const groups: [string, string[]][] = [
   ["Home page", [...(MENU.root as string[])]],
-  ["Surfaces", ["flat", "cylinder", "mobius", "klein", "torus"]],
+  // derived too: a hand list here had already lost the double torus
+  ["Surfaces", ["flat", ...(MENU.manifoldOrder as string[])]],
   ["Regular tilings", MENU.pickerRegular as string[]],
   // derived, so a new family row cannot go stale here either
   ["Families / random", [...PICKER_FAMILIES, ...FLAT_ONLY_FAMILIES, "random"]],

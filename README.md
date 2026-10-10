@@ -110,6 +110,10 @@ Pick a surface, then a tiling:
 - **Torus (3D)** — the grid wraps in both directions, so there are no
   border cells; pure hexagons are possible here, because the torus has
   Euler characteristic 0
+- **Trefoil knot (3D)** — the donut's grid on a tube tied in a trefoil: the
+  same board as the torus neighbour for neighbour, drawn round a knot that
+  passes over and under itself three times. The tube is as fat as it can be
+  without its strands touching. Squares, triangles or hexagons
 - **Double torus (3D)** — two donuts merged into a figure of eight, set so
   that a point of each one's outer rim lies on the other's inner rim: they
   overlap in a lens of real volume rather than touching. Each gives up

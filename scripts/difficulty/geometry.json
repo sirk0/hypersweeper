@@ -8497,6 +8497,138 @@
       }
     }
   },
+  "trefoil": {
+    "builder": "trefoil_board",
+    "args": {
+      "medium": {
+        "args": [
+          32,
+          8,
+          42,
+          0.8
+        ],
+        "cells": 256,
+        "score": 0.4299,
+        "distortionMean": 1.3027,
+        "distortionP90": 1.3923,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          60,
+          8,
+          123,
+          0.6
+        ],
+        "cells": 480,
+        "score": 0.1766,
+        "distortionMean": 1.1079,
+        "distortionP90": 1.1598,
+        "indistinguishable": 0
+      },
+      "easy": {
+        "args": [
+          16,
+          8,
+          14,
+          0.5
+        ],
+        "cells": 128,
+        "score": 13.8944,
+        "distortionMean": 2.6225,
+        "distortionP90": 3.0495,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "trefoilhex": {
+    "builder": "trefoil_hex_board",
+    "args": {
+      "medium": {
+        "args": [
+          6,
+          43,
+          58,
+          0.6
+        ],
+        "cells": 258,
+        "score": 0.23,
+        "distortionMean": 1.1411,
+        "distortionP90": 1.1978,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          8,
+          60,
+          119,
+          0.6
+        ],
+        "cells": 480,
+        "score": 0.1775,
+        "distortionMean": 1.1057,
+        "distortionP90": 1.1667,
+        "indistinguishable": 0
+      },
+      "easy": {
+        "args": [
+          6,
+          16,
+          18,
+          0.5
+        ],
+        "cells": 96,
+        "score": 11.7086,
+        "distortionMean": 2.096,
+        "distortionP90": 2.5036,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "trefoiltri": {
+    "builder": "trefoil_triangle_board",
+    "args": {
+      "easy": {
+        "args": [
+          36,
+          4,
+          17,
+          0.6
+        ],
+        "cells": 144,
+        "score": 13.4795,
+        "distortionMean": 1.4303,
+        "distortionP90": 2.2056,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          64,
+          4,
+          69,
+          0.7
+        ],
+        "cells": 256,
+        "score": 0.124,
+        "distortionMean": 1.0643,
+        "distortionP90": 1.1314,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          80,
+          6,
+          138,
+          0.7
+        ],
+        "cells": 480,
+        "score": 0.1667,
+        "distortionMean": 1.0881,
+        "distortionP90": 1.179,
+        "indistinguishable": 0
+      }
+    }
+  },
   "ammannbeenker": {
     "builder": "ammann_beenker_board",
     "args": {

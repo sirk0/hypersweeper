@@ -68,6 +68,11 @@ about the tiling:
   the neck for the one outside it. Where half the tube is an odd number of rows
   and the plain step would land the tiling off its own lattice, the half step
   carries a glide along the ring with it.
+- A **trefoil knot** keeps exactly what the donut keeps, because it *is* the
+  donut's lattice glued the donut's way; only where the cells are drawn
+  changes. Its ring roll is the most useful of all of them: cells where the
+  knot passes under itself are hidden from every angle, and rolling the
+  contents along the knot brings them out.
 - A **double torus** keeps *no* translation. It is not glued from a rectangle:
   it is two overlapping donuts cut apart along the plane between them, and the
   block each gives up there pins the lattice both ways, so there is nothing to

@@ -1,13 +1,15 @@
 // Port of minesweeper/boards/surfaces.py — wrapping the regular flat tilings
-// (square / triangle / hexagon) onto 3D surfaces (torus, cylinder, Möbius
-// strip, Klein bottle). M3 ports the twelve regular-tiling wraps; the
-// Archimedean `arch_*` wraps land with the template engine in M4.
+// (square / triangle / hexagon) onto 3D surfaces (torus, trefoil knot,
+// cylinder, Möbius strip, Klein bottle, double torus). M3 ported the twelve
+// regular-tiling wraps; the Archimedean `arch_*` wraps landed with the template
+// engine in M4.
 //
 // Each wrapped board is built the same way: pick vertex keys on an integer
 // grid, glue them at the seam, map each key onto the surface with an immersion
-// (torusPoint / cylinderPoint / mobiusPoint / kleinPoint), then hand the cells
-// to `assemble`, which shares the adjacency / polygon / Board3D tail and the
-// outward-orientation (closed) vs two-sided (open/non-orientable) choice.
+// (torusPoint / trefoilPoint / cylinderPoint / mobiusPoint / kleinPoint), then
+// hand the cells to `assemble`, which shares the adjacency / polygon / Board3D
+// tail and the outward-orientation (closed) vs two-sided (open/non-orientable)
+// choice.
 //
 // Adjacency keys on the *symbolic* (integer) vertex ids, exactly as Python's
 // `_shared_vertex_adjacency` does, not on floating-point positions — two cells
@@ -111,6 +113,56 @@ function kleinPoint(u: number, v: number, tube = 1): Vec3 {
     y = 8 * su;
   }
   return [x, y, r * Math.sin(v)];
+}
+
+// The trefoil is the (2,3) torus knot: the curve winds twice round the z axis
+// while it winds three times round a core circle of radius 2 (tube 1), scaled
+// by 1/3 to fit the unit ball. See surfaces.py `TREFOIL_REACH` for how the
+// reach -- the thickest tube the knot carries before its strands meet -- was
+// measured; the builders take the tube as a fraction of it.
+const TREFOIL_REACH = 0.27721;
+
+/** The knot's centre line at `t` (once round the knot over 2π), and the frame
+ * vector `n` there: the normal of the torus the knot lies on, perpendicular to
+ * the knot's own tangent because that tangent lies in the torus. */
+function trefoilCore(t: number): [Vec3, Vec3] {
+  const c2 = Math.cos(2 * t);
+  const s2 = Math.sin(2 * t);
+  const c3 = Math.cos(3 * t);
+  const s3 = Math.sin(3 * t);
+  const radial = 2 + c3;
+  return [
+    [(radial * c2) / 3, (radial * s2) / 3, s3 / 3],
+    [c3 * c2, c3 * s2, s3],
+  ];
+}
+
+/** A point on the tube round the trefoil knot: `t` along the knot, `phi` round
+ * the tube, `tube` its radius as a fraction of `TREFOIL_REACH`. The frame (`n`,
+ * `b = T × n`) is closed-form and periodic in `t`, so the tube comes back to
+ * itself untwisted and the gluing is exactly the donut's. */
+export function trefoilPoint(t: number, phi: number, tube: number): Vec3 {
+  const [c, n] = trefoilCore(t);
+  const c2 = Math.cos(2 * t);
+  const s2 = Math.sin(2 * t);
+  const c3 = Math.cos(3 * t);
+  const s3 = Math.sin(3 * t);
+  let tx = -3 * s3 * c2 - 2 * (2 + c3) * s2;
+  let ty = -3 * s3 * s2 + 2 * (2 + c3) * c2;
+  let tz = 3 * c3;
+  const norm = Math.hypot(tx, ty, tz);
+  tx /= norm;
+  ty /= norm;
+  tz /= norm;
+  const b: Vec3 = [ty * n[2] - tz * n[1], tz * n[0] - tx * n[2], tx * n[1] - ty * n[0]];
+  const rho = tube * TREFOIL_REACH;
+  const cp = Math.cos(phi);
+  const sp = Math.sin(phi);
+  return [
+    c[0] + rho * (cp * n[0] + sp * b[0]),
+    c[1] + rho * (cp * n[1] + sp * b[1]),
+    c[2] + rho * (cp * n[2] + sp * b[2]),
+  ];
 }
 
 // -- assembly: shared tail for every wrapped board ---------------------------
@@ -611,6 +663,167 @@ function templateXMirrors(t: ArchTemplate): DomainMotion[] {
 
 // -- the donut ---------------------------------------------------------------
 
+/** One doubly periodic lattice, keyed by cell, holding vertex keys already
+ * reduced mod its two periods (`kxPeriod` round the ring, `kyPeriod` round the
+ * tube) -- the donut's gluing, whatever the donut is immersed as. */
+type LatticeCells = Map<CellId, [number, number][]>;
+
+interface Lattice {
+  cells: LatticeCells;
+  kxPeriod: number;
+  kyPeriod: number;
+  /** The tiling's own motions, as lattice maps; the wrap reduces them mod the
+   * periods and keeps the ones that survive as automorphisms. */
+  motions: readonly (readonly [SymmetryId, LatticeMotion])[];
+}
+
+/** The square lattice glued straight both ways (surfaces.py `_square_cells`).
+ * A donut keeps every motion of the square lattice that its two periods do:
+ * both translations, and the two mirrors in the axes through the seams. */
+function squareLattice(ring: number, tube: number): Lattice {
+  const cells: LatticeCells = new Map();
+  for (let i = 0; i < ring; i++) {
+    for (let j = 0; j < tube; j++) {
+      cells.set(cid(i, j), [
+        [i, j],
+        [mod(i + 1, ring), j],
+        [mod(i + 1, ring), mod(j + 1, tube)],
+        [i, mod(j + 1, tube)],
+      ]);
+    }
+  }
+  return {
+    cells,
+    kxPeriod: ring,
+    kyPeriod: tube,
+    motions: [
+      ["ring", (i, j) => [i + 1, j]],
+      ["tube", (i, j) => [i, j + 1]],
+      ["turn", (i, j) => [-i, -j]],
+      ["mirror-ring", (i, j) => [-i, j]],
+      ["mirror-tube", (i, j) => [i, -j]],
+    ],
+  };
+}
+
+/** The regular triangular lattice glued straight both ways
+ * (`_triangle_cells`): `ring` triangles in every row (even, so up/down
+ * triangles alternate across the seam) and `tube` rows (even, so the offset
+ * rows meet where they close). */
+function triangleLattice(ring: number, tube: number): Lattice {
+  if (ring % 2) throw new Error("ring must be even for the triangle strip to wrap");
+  if (tube % 2) throw new Error("tube must be even so the offset rows wrap");
+  const cells: LatticeCells = new Map();
+  for (let r = 0; r < tube; r++) {
+    for (let i = 0; i < ring; i++) {
+      cells.set(
+        cid(r, i),
+        triangleVertices(i, r, (r + i) % 2 === 0).map(
+          ([kx, ky]) => [mod(kx, ring), mod(ky, tube)] as [number, number],
+        ),
+      );
+    }
+  }
+  // Up and down triangles alternate along a row and up the rows alike, so the
+  // tiling's own translations are two lattice columns and two rows -- one of
+  // either takes an up triangle to a down one, which is no cell of the board.
+  return {
+    cells,
+    kxPeriod: ring,
+    kyPeriod: tube,
+    motions: [
+      ["ring", (kx, ky) => [kx + 2, ky]],
+      ["tube", (kx, ky) => [kx, ky + 2]],
+      // a half turn about the lattice origin, or about the point half a cell
+      // over: up and down triangles alternate, so which one lands on a cell
+      // depends on the parity of the row count
+      ["turn", (kx, ky) => [-kx, -ky]],
+      ["turn", (kx, ky) => [1 - kx, -ky]],
+      ["mirror-ring", (kx, ky) => [-kx, ky]],
+      ["mirror-tube", (kx, ky) => [kx, -ky]],
+    ],
+  };
+}
+
+/** The offset hex lattice glued straight both ways (`_hex_cells`): `rows`
+ * round the tube (even, so the offset lattice closes), `cols` round the ring. */
+function hexLattice(rows: number, cols: number): Lattice {
+  if (rows % 2) throw new Error("rows must be even so the offset lattice wraps");
+  const kxPeriod = 2 * cols;
+  const kyPeriod = 3 * rows;
+  const cells: LatticeCells = new Map();
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const kx = 2 * c + (r % 2) + 1;
+      const ky = 3 * r + 2;
+      cells.set(
+        cid(r, c),
+        HEX_VERTEX_OFFSETS.map(
+          ([ox, oy]) => [mod(kx + ox, kxPeriod), mod(ky + oy, kyPeriod)] as [number, number],
+        ),
+      );
+    }
+  }
+  // Alternate rows of hexagons are offset half a column, so the tube
+  // translation is two rows (ky += 6) and the tube mirror is the one whose axis
+  // runs through a row of cell centres (ky = 2), not through ky = 0.
+  return {
+    cells,
+    kxPeriod,
+    kyPeriod,
+    motions: [
+      ["ring", (kx, ky) => [kx + 2, ky]],
+      ["tube", (kx, ky) => [kx, ky + 6]],
+      ["turn", (kx, ky) => [-kx, 4 - ky]],
+      ["turn", (kx, ky) => [1 - kx, 4 - ky]],
+      ["mirror-ring", (kx, ky) => [-kx, ky]],
+      ["mirror-tube", (kx, ky) => [kx, 4 - ky]],
+    ],
+  };
+}
+
+/** Immerse a lattice with `point(t, phi)` -- `t` round the ring and `phi` round
+ * the tube, both in radians -- and assemble it, offering the lattice's motions
+ * as symmetries. They hold whatever the immersion: adjacency is the lattice's. */
+function wrapLattice(
+  mode: string,
+  { cells: lattice, kxPeriod, kyPeriod, motions }: Lattice,
+  point: (t: number, phi: number) => Vec3,
+  mineCount: number,
+  opts: {
+    radius: AssembleOpts["radius"];
+    /** Builds the winding rule once the string-keyed cells exist, for an
+     * immersion whose "outward" the ring circle cannot say (the trefoil). */
+    orient?: (cells: Cells) => AssembleOpts["orient"];
+  },
+): Board3D {
+  const cells: Cells = new Map();
+  const positions: Positions = new Map();
+  for (const [cell, keys] of lattice) {
+    cells.set(
+      cell,
+      keys.map(([kx, ky]) => {
+        const k = `${kx},${ky}`;
+        if (!positions.has(k)) {
+          positions.set(k, point((TWO_PI * kx) / kxPeriod, (TWO_PI * ky) / kyPeriod));
+        }
+        return k;
+      }),
+    );
+  }
+  const symmetries = latticeCandidates(
+    cells,
+    (kx, ky) => [mod(kx, kxPeriod), mod(ky, kyPeriod)],
+    motions,
+  );
+  return assemble(mode, cells, positions, mineCount, {
+    twoSided: false,
+    radius: opts.radius,
+    symmetries,
+    orient: opts.orient?.(cells) ?? null,
+  });
+}
+
 /** A donut tiled with `ring * tube` quadrilaterals, wrapping in both
  * directions, so every cell has exactly 8 neighbours. */
 export function torusBoard(
@@ -619,43 +832,9 @@ export function torusBoard(
   mineCount: number,
   tubeRadius = 0.45,
 ): Board3D {
-  const cells: Cells = new Map();
-  const positions: Positions = new Map();
-  const put = (i: number, j: number): string => {
-    const k = `${i},${j}`;
-    if (!positions.has(k)) {
-      positions.set(k, torusPoint(TWO_PI * i / ring, TWO_PI * j / tube, tubeRadius));
-    }
-    return k;
-  };
-  for (let i = 0; i < ring; i++) {
-    for (let j = 0; j < tube; j++) {
-      cells.set(cid(i, j), [
-        put(i, j),
-        put((i + 1) % ring, j),
-        put((i + 1) % ring, (j + 1) % tube),
-        put(i, (j + 1) % tube),
-      ]);
-    }
-  }
-  // A donut keeps every motion of the square lattice that its two periods do:
-  // both translations, and the two mirrors in the axes through the seams.
-  const symmetries = latticeCandidates(
-    cells,
-    (i, j) => [mod(i, ring), mod(j, tube)],
-    [
-      ["ring", (i, j) => [i + 1, j]],
-      ["tube", (i, j) => [i, j + 1]],
-      ["turn", (i, j) => [-i, -j]],
-      ["mirror-ring", (i, j) => [-i, j]],
-      ["mirror-tube", (i, j) => [i, -j]],
-    ],
-  );
-  return assemble("torus", cells, positions, mineCount, {
-    twoSided: false,
-    radius: 1 + tubeRadius,
-    symmetries,
-  });
+  return wrapLattice("torus", squareLattice(ring, tube),
+                     (t, phi) => torusPoint(t, phi, tubeRadius), mineCount,
+                     { radius: 1 + tubeRadius });
 }
 
 /** A donut tiled with the regular triangular tiling, exactly as the cylinder
@@ -668,50 +847,9 @@ export function torusTriangleBoard(
   mineCount: number,
   tubeRadius = 0.45,
 ): Board3D {
-  if (ring % 2) throw new Error("ring must be even for the triangle strip to wrap");
-  if (tube % 2) throw new Error("tube must be even so the offset rows wrap");
-  const cells: Cells = new Map();
-  const positions: Positions = new Map();
-  const put = (kx: number, ky: number): string => {
-    const i = mod(kx, ring);
-    const j = mod(ky, tube);
-    const k = `${i},${j}`;
-    if (!positions.has(k)) {
-      positions.set(k, torusPoint(TWO_PI * i / ring, TWO_PI * j / tube, tubeRadius));
-    }
-    return k;
-  };
-  for (let r = 0; r < tube; r++) {
-    for (let i = 0; i < ring; i++) {
-      cells.set(
-        cid(r, i),
-        triangleVertices(i, r, (r + i) % 2 === 0).map(([kx, ky]) => put(kx, ky)),
-      );
-    }
-  }
-  // Up and down triangles alternate along a row and up the rows alike, so the
-  // tiling's own translations are two lattice columns and two rows -- one of
-  // either takes an up triangle to a down one, which is no cell of the board.
-  const symmetries = latticeCandidates(
-    cells,
-    (kx, ky) => [mod(kx, ring), mod(ky, tube)],
-    [
-      ["ring", (kx, ky) => [kx + 2, ky]],
-      ["tube", (kx, ky) => [kx, ky + 2]],
-      // a half turn about the lattice origin, or about the point half a cell
-      // over: up and down triangles alternate, so which one lands on a cell
-      // depends on the parity of the row count
-      ["turn", (kx, ky) => [-kx, -ky]],
-      ["turn", (kx, ky) => [1 - kx, -ky]],
-      ["mirror-ring", (kx, ky) => [-kx, ky]],
-      ["mirror-tube", (kx, ky) => [kx, -ky]],
-    ],
-  );
-  return assemble("torustri", cells, positions, mineCount, {
-    twoSided: false,
-    radius: 1 + tubeRadius,
-    symmetries,
-  });
+  return wrapLattice("torustri", triangleLattice(ring, tube),
+                     (t, phi) => torusPoint(t, phi, tubeRadius), mineCount,
+                     { radius: 1 + tubeRadius });
 }
 
 /** A donut tiled entirely with hexagons (the torus has Euler characteristic
@@ -723,50 +861,84 @@ export function torusHexBoard(
   mineCount: number,
   tubeRadius = 0.45,
 ): Board3D {
-  if (rows % 2) throw new Error("rows must be even so the offset lattice wraps");
-  const kxPeriod = 2 * cols;
-  const kyPeriod = 3 * rows;
-  const cells: Cells = new Map();
-  const positions: Positions = new Map();
-  const put = (kx: number, ky: number): string => {
-    const k = `${kx},${ky}`;
-    if (!positions.has(k)) {
-      positions.set(k, torusPoint(TWO_PI * kx / kxPeriod, TWO_PI * ky / kyPeriod, tubeRadius));
-    }
-    return k;
-  };
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const kx = 2 * c + (r % 2) + 1;
-      const ky = 3 * r + 2;
-      cells.set(
-        cid(r, c),
-        HEX_VERTEX_OFFSETS.map(([ox, oy]) =>
-          put((kx + ox + kxPeriod) % kxPeriod, (ky + oy + kyPeriod) % kyPeriod),
-        ),
-      );
-    }
+  return wrapLattice("torushex", hexLattice(rows, cols),
+                     (t, phi) => torusPoint(t, phi, tubeRadius), mineCount,
+                     { radius: 1 + tubeRadius });
+}
+
+// -- the trefoil knot ---------------------------------------------------------
+//
+// Port of surfaces.py's trefoil section: the donut's lattices, glued exactly
+// as the donut glues them, on a tube round a trefoil knot. The adjacency -- and
+// so every symmetry the donut offers -- is the donut's key for key; only the
+// drawing moves. The ring roll is the useful one here: it slides the cells
+// hidden where the knot crosses itself out into view.
+
+/** Wind each face outward from the knot's centre line, measured at each
+ * vertex's own `t` -- the donut's rule reads "outward" off the ring circle
+ * through the origin, which the knot is not. */
+function trefoilOrient(kxPeriod: number) {
+  return (cells: Cells) =>
+    (cell: CellId, polygon: Vec3[]): Vec3[] => {
+      const out: Vec3 = [0, 0, 0];
+      cells.get(cell)!.forEach((key, i) => {
+        const [core] = trefoilCore((TWO_PI * Number(key.slice(0, key.indexOf(",")))) / kxPeriod);
+        const p = polygon[i]!;
+        out[0] += p[0] - core[0];
+        out[1] += p[1] - core[1];
+        out[2] += p[2] - core[2];
+      });
+      return orientOutward(polygon, out);
+    };
+}
+
+/** The tube is checked against the reach here as in Python; the other refusal
+ * there -- a window so coarse along the knot that its flat faces cut through
+ * another strand (`_trefoil_sag`) -- is the size search's, and is not ported:
+ * this app only builds shipped presets, every one of which passed it, and
+ * `TestTrefoil` checks each of them is embedded. */
+function trefoil(mode: string, lattice: Lattice, mineCount: number, tube: number): Board3D {
+  if (!(tube > 0 && tube < 1)) {
+    throw new Error(`tube ${tube} must be a fraction of the knot's reach in (0, 1)`);
   }
-  // Alternate rows of hexagons are offset half a column, so the tube
-  // translation is two rows (ky += 6) and the tube mirror is the one whose axis
-  // runs through a row of cell centres (ky = 2), not through ky = 0.
-  const symmetries = latticeCandidates(
-    cells,
-    (kx, ky) => [mod(kx, kxPeriod), mod(ky, kyPeriod)],
-    [
-      ["ring", (kx, ky) => [kx + 2, ky]],
-      ["tube", (kx, ky) => [kx, ky + 6]],
-      ["turn", (kx, ky) => [-kx, 4 - ky]],
-      ["turn", (kx, ky) => [1 - kx, 4 - ky]],
-      ["mirror-ring", (kx, ky) => [-kx, ky]],
-      ["mirror-tube", (kx, ky) => [kx, 4 - ky]],
-    ],
-  );
-  return assemble("torushex", cells, positions, mineCount, {
-    twoSided: false,
-    radius: 1 + tubeRadius,
-    symmetries,
+  return wrapLattice(mode, lattice, (t, phi) => trefoilPoint(t, phi, tube), mineCount, {
+    radius: maxRadius,
+    orient: trefoilOrient(lattice.kxPeriod),
   });
+}
+
+/** The trefoil knot tiled with `ring * tube` quadrilaterals: `ring` along the
+ * knot, `tube` round it -- the square donut's lattice, 8 neighbours a cell.
+ * `tubeFraction` is the tube's radius as a fraction of the knot's reach. */
+export function trefoilBoard(
+  ring: number,
+  tube: number,
+  mineCount: number,
+  tubeFraction = 0.8,
+): Board3D {
+  return trefoil("trefoil", squareLattice(ring, tube), mineCount, tubeFraction);
+}
+
+/** The trefoil knot tiled with triangles, laid as the donut's are: `ring`
+ * triangles along the knot in every row (even) and `tube` rows round it. */
+export function trefoilTriangleBoard(
+  ring: number,
+  tube: number,
+  mineCount: number,
+  tubeFraction = 0.8,
+): Board3D {
+  return trefoil("trefoiltri", triangleLattice(ring, tube), mineCount, tubeFraction);
+}
+
+/** The trefoil knot tiled with hexagons, laid as the donut's are: `rows` round
+ * the tube (even) and `cols` along the knot. */
+export function trefoilHexBoard(
+  rows: number,
+  cols: number,
+  mineCount: number,
+  tubeFraction = 0.8,
+): Board3D {
+  return trefoil("trefoilhex", hexLattice(rows, cols), mineCount, tubeFraction);
 }
 
 // -- the double donut (genus 2) ----------------------------------------------
@@ -806,9 +978,6 @@ export function torusHexBoard(
  * still round to distinct keys at six decimal places. */
 const CUT_EPS = 1e-6;
 
-/** One donut's cells, keyed by cell, holding lattice vertex keys already
- * reduced mod the two periods. */
-type LatticeCells = Map<CellId, [number, number][]>;
 
 /** A motion of the merged board's vertex keys: `(side, kx, ky)`, where side 0
  * and 1 are the two donuts. */
@@ -1058,17 +1227,7 @@ export function doubleTorusBoard(
   tubeRadius = 0.38,
   separation = 1,
 ): Board3D {
-  const cells: LatticeCells = new Map();
-  for (let i = 0; i < ring; i++) {
-    for (let j = 0; j < tube; j++) {
-      cells.set(cid(i, j), [
-        [i, j],
-        [mod(i + 1, ring), j],
-        [mod(i + 1, ring), mod(j + 1, tube)],
-        [i, mod(j + 1, tube)],
-      ]);
-    }
-  }
+  const { cells } = squareLattice(ring, tube);
   return doubleTorus("doubletorus", cells, ring, tube, mineCount, tubeRadius,
                      separation, mergedMotions());
 }
@@ -1084,19 +1243,7 @@ export function doubleTorusTriangleBoard(
   tubeRadius = 0.38,
   separation = 1,
 ): Board3D {
-  if (ring % 2) throw new Error("ring must be even for the triangle strip to wrap");
-  if (tube % 2) throw new Error("tube must be even so the offset rows wrap");
-  const cells: LatticeCells = new Map();
-  for (let r = 0; r < tube; r++) {
-    for (let i = 0; i < ring; i++) {
-      cells.set(
-        cid(r, i),
-        triangleVertices(i, r, (r + i) % 2 === 0).map(
-          ([kx, ky]) => [mod(kx, ring), mod(ky, tube)] as [number, number],
-        ),
-      );
-    }
-  }
+  const { cells } = triangleLattice(ring, tube);
   // up and down triangles alternate along a row and up the rows alike, so a
   // plain negation can land on the other kind -- offer the half-step variants
   return doubleTorus("doubletorustri", cells, ring, tube, mineCount, tubeRadius,
@@ -1117,22 +1264,7 @@ export function doubleTorusHexBoard(
   tubeRadius = 0.38,
   separation = 1,
 ): Board3D {
-  if (rows % 2) throw new Error("rows must be even so the offset lattice wraps");
-  const kxPeriod = 2 * cols;
-  const kyPeriod = 3 * rows;
-  const cells: LatticeCells = new Map();
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const kx = 2 * c + (r % 2) + 1;
-      const ky = 3 * r + 2;
-      cells.set(
-        cid(r, c),
-        HEX_VERTEX_OFFSETS.map(
-          ([ox, oy]) => [mod(kx + ox, kxPeriod), mod(ky + oy, kyPeriod)] as [number, number],
-        ),
-      );
-    }
-  }
+  const { cells, kxPeriod, kyPeriod } = hexLattice(rows, cols);
   // the hex lattice's own mirror axis runs through a row of cell centres at
   // ky = 2, not through ky = 0 (as on the donut)
   return doubleTorus("doubletorushex", cells, kxPeriod, kyPeriod, mineCount,

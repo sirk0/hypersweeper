@@ -86,6 +86,9 @@ import {
   mobiusTriangleBoard,
   torusBoard,
   torusHexBoard,
+  trefoilBoard,
+  trefoilHexBoard,
+  trefoilTriangleBoard,
   doubleTorusBoard,
   doubleTorusHexBoard,
   doubleTorusTriangleBoard,
@@ -144,6 +147,10 @@ const BUILDERS: Record<string, Builder> = {
   torus_board: torusBoard,
   torus_triangle_board: torusTriangleBoard,
   torus_hex_board: torusHexBoard,
+  // the donut's three lattices on a tube round a trefoil knot
+  trefoil_board: trefoilBoard,
+  trefoil_triangle_board: trefoilTriangleBoard,
+  trefoil_hex_board: trefoilHexBoard,
   // the genus-2 board: two square-tiled donuts merged at their outer rims
   double_torus_board: doubleTorusBoard,
   double_torus_triangle_board: doubleTorusTriangleBoard,
