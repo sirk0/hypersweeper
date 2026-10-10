@@ -85,6 +85,7 @@ from minesweeper.boards.catalog import (  # noqa: F401
     FLAT_MODES,
     FLAT_ONLY_FAMILIES,
     FRACTAL_MODES,
+    HYPERBOLIC_MODES,
     MANIFOLD_LABELS,
     MANIFOLD_ORDER,
     MENU_ROOT,
@@ -149,6 +150,11 @@ from minesweeper.boards.fractal import (  # noqa: F401
     place_point,
     sphinx_board,
     substitution_placements,
+)
+from minesweeper.boards.hyperbolic import (  # noqa: F401
+    hyperbolic_board,
+    hyperbolic_faces,
+    hyperbolic_positions,
 )
 from minesweeper.boards.presets import (  # noqa: F401
     _PRESETS,
