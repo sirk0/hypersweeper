@@ -106,6 +106,17 @@ on some sizes and not others, is expressed without a special case per board.
 `involution` is measured the same way, and is what draws a reflection one button
 rather than a back/forward pair.
 
+On a **flat** board the candidates are measured off the drawing
+(`planeSymmetries`): one rotation or reflection per cell the outermost cell
+could land on, each kept only if every cell's polygon lands on another's. Each
+image vertex is matched to the **nearest** free vertex of its target within a
+fifth of the closest two cell centres. The *first* free one in reach is not
+enough: the hyperbolic boards' rim cells are drawn through arc points closer
+together than that, and a mirror, which reverses a polygon's order, then
+paired a point with its neighbour's partner and left the last one unmatched.
+Every mirror of those boards was lost that way until the match took the nearest
+point.
+
 Two consequences worth knowing:
 
 - The **Archimedean wraps** find every motion the same way, off the template's

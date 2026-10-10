@@ -1,6 +1,6 @@
 # Hypersweeper — agent guide
 
-A minesweeper clone with flat and 3D boards (spherical polyhedra, cube,
+A minesweeper clone with flat, hyperbolic and 3D boards (spherical polyhedra, cube,
 tetrahedron, donut, double donut, Möbius strip, cylinder, Klein bottle), in two
 implementations that share their configuration.
 

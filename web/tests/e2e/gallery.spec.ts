@@ -81,6 +81,13 @@ const MODES = [
   "carpet",
   "pentaflake",
   "gosper",
+  // the hyperbolic discs: a flat board drawn in the Poincare disc, every edge
+  // a geodesic arc through extra points, and cells shrinking toward a rim they
+  // never reach -- the shots pin the arcs, the per-cell glyph room and the one
+  // shape colour a curved model takes
+  "hyperbolic73",
+  "hyperbolic54",
+  "hyperbolic45",
   // M7 isogonal tilings, which are not edge to edge: the two that put one
   // regular polygon on the board at several sizes, so the shots cover both the
   // T-vertex geometry and the size-lightness axis it needs.

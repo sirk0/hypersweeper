@@ -75,8 +75,9 @@ from minesweeper.boards.core import Board, Cell, _shared_vertex_adjacency
 ARC_SEGMENTS = 3
 
 #: Two face centres are at the *same* distance from the disc's centre when
-#: their distances differ by less than this. Distinct shells measured on the
-#: three shipped tilings are at least 1e-4 apart; float error is ~1e-12.
+#: their distances differ by less than this. Distinct shells on the three
+#: shipped tilings are more than 1e-5 apart (``TestHyperbolic`` measures it);
+#: float error is ~1e-12.
 _SHELL_TOL = 1e-7
 
 

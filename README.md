@@ -47,13 +47,18 @@ Pick a surface, then a tiling:
   self-similar — one tile inflated into a patch shaped like itself: the
   sphinx, the chair, the Sierpiński carpet, the pentaflake, and hexagons
   filling a Gosper island.
+  And three are not Euclidean at all — the game's namesake: regular
+  heptagons three to a corner ({7,3}), pentagons four to a corner ({5,4})
+  and squares five to a corner ({4,5}), which only fit in the *hyperbolic*
+  plane, drawn in the Poincaré disc with tiles shrinking toward a rim they
+  never reach. A tile there has 7, 10 or 12 neighbours.
   The menu groups these as **Regular**, **Uniform**, **Laves**, **Isogonal**
   (six tilings by regular polygons that are *not* edge to edge — a tile's
   corner in the middle of its neighbour's edge), **Congruent rectangles**,
   **Other** (the sphinx and the L-tromino laid down in half-turned pairs
   rather than inflated, and regular pentagons with the rhombs that fill the
-  gaps they leave, as Dürer drew it in 1525), **Aperiodic** and
-  **Fractals**; every periodic family bar the last three also wraps the
+  gaps they leave, as Dürer drew it in 1525), **Aperiodic**,
+  **Fractals** and **Hyperbolic**; every periodic family bar the last four also wraps the
   cylinder and the torus below, and — unless the tiling is chiral — the
   Möbius strip and the Klein bottle too
 - **Sphere (3D)** — a chamfered dodecahedron (12 pentagons + 30 hexagons),

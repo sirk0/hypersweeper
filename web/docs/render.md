@@ -265,6 +265,27 @@ another way, and every other cell keeps its old path to the pixel:
 
 The pygame game's `centroid` falls back to the same pole for the same cells.
 
+### A cell drawn through points that are not corners (the hyperbolic boards)
+
+The hyperbolic boards draw every edge as a geodesic arc through
+`ARC_SEGMENTS - 1` extra points (see "The hyperbolic boards" in
+[`geometry.md`](../../docs/agents/geometry.md)). Those points bend, so `corners`
+cannot drop them the way it drops a collinear T-vertex, and the board says which
+points are corners instead: `Board.cornerMask`, the flat twin of the wraps'
+`Board3D.cornerMask`. `PolygonBoard` measures the centre, the radius and the
+shape from the masked corners, and two things from the **drawn** outline: the
+cut itself (the bevel follows the arc) and the glyph's room. A central polygon's
+sides bow *inward*, so the chord polygon overstates how much space the number
+has; `glyphInradius` is taken off the arc points wherever a mask is set, and off
+the corners as before everywhere else, so no other board's pixels move.
+
+Glyphs are sized per cell already (`glyphInradius * 0.9`), so a rim cell a
+twentieth the size of the central one gets a number a twentieth the size. That
+is what makes the disc readable at easy and, on a phone, not at medium or hard:
+the outer cells end up a pixel or two across. The Euclidean zoom does not reach
+them; hyperbolic panning, which would move the disc rather than the camera, is
+the planned answer.
+
 ### The Soft cut (`round`, `shadow`, `grout`)
 
 Soft is the default cut, and the three style fields it introduced are what
@@ -675,6 +696,13 @@ tile's **size**. The maths runs in OkLCh, not HSL,
 because HSL lightness is not perceptual and that constant hidden/opened
 contrast across hues depends on it. Every knob lives in the one
 `SHAPE_PALETTE` block.
+
+**A flat drawing of a curved plane is classed as a curved surface.** The
+hyperbolic boards' tiles are all congruent in the hyperbolic plane and none of
+them is drawn congruent in the disc, so measured as flat they split into seven
+sizes and two regularities, a gradient where there is one tile. The board sets
+`Board.curved`, and `classifyShapes(polygons, masks, curved)` then gives it one
+class per side count, exactly as a board with a z coordinate gets.
 
 **Size is the fourth thing a tile can say**, and it gets the widest treatment of
 the three shape axes. The isogonal tilings put one regular polygon on the board
