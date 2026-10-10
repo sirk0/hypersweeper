@@ -1947,7 +1947,7 @@
     "fcc3d": {
       "easy": {
         "cellCount": 75,
-        "mineCount": 12,
+        "mineCount": 20,
         "euler": 6,
         "boundaryComponents": 6,
         "edgeCount": 204,
@@ -1956,7 +1956,7 @@
       },
       "medium": {
         "cellCount": 256,
-        "mineCount": 40,
+        "mineCount": 71,
         "euler": 8,
         "boundaryComponents": 8,
         "edgeCount": 632,
@@ -1965,7 +1965,7 @@
       },
       "hard": {
         "cellCount": 500,
-        "mineCount": 80,
+        "mineCount": 175,
         "euler": 10,
         "boundaryComponents": 10,
         "edgeCount": 1190,
@@ -1976,7 +1976,7 @@
     "hexprism3d": {
       "easy": {
         "cellCount": 76,
-        "mineCount": 12,
+        "mineCount": 15,
         "euler": 4,
         "boundaryComponents": 4,
         "edgeCount": 288,
@@ -1985,7 +1985,7 @@
       },
       "medium": {
         "cellCount": 259,
-        "mineCount": 40,
+        "mineCount": 69,
         "euler": 7,
         "boundaryComponents": 7,
         "edgeCount": 924,
@@ -1994,7 +1994,7 @@
       },
       "hard": {
         "cellCount": 488,
-        "mineCount": 80,
+        "mineCount": 118,
         "euler": 8,
         "boundaryComponents": 8,
         "edgeCount": 1680,

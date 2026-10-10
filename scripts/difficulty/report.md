@@ -12,7 +12,7 @@ Every board's mine count, chosen so its win probability under the reference solv
 
 ## Coverage
 
-- 606 rows, 574 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
+- 612 rows, 580 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
 - 32 could not be brought on target:
   - `cube3d`/hard: 33.3% vs 50.9% — the search could not resolve it -- its thinnest measurement finished 0 game(s), so the rate here is noise rather than a crossing the search walked to. Re-measure at a bigger `--budget`
   - `cylinder`/easy: 89.1% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (7, 9%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
@@ -46,19 +46,19 @@ Every board's mine count, chosen so its win probability under the reference solv
   - `triakis`/medium: 0.0% vs 87.1% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `triakis`/easy: 1.8% vs 96.5% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `truncicosidodeca`/hard: 45.9% vs 50.9% — no integer mine count lands within tolerance; this is the closest
-- 146 rows had games the solver abandoned (its frontier DP hit its node budget); their rates are measured over the games that finished:
+- 152 rows had games the solver abandoned (its frontier DP hit its node budget); their rates are measured over the games that finished:
   - `cube3d`/hard: 466 abandoned
   - `torustrunchex`/hard: 168 abandoned
   - `torusrotatedhex`/hard: 144 abandoned
   - `cube3d`/medium: 98 abandoned
+  - `hexprism3d`/hard: 98 abandoned
   - `kleintri`/hard: 75 abandoned
   - `kleintrunchex`/hard: 71 abandoned
+  - `hexprism3d`/medium: 69 abandoned
   - `toruselongated`/hard: 54 abandoned
-  - `doubletorustri`/hard: 41 abandoned
-  - `torussnubhex`/hard: 39 abandoned
-  - `triakisocta`/hard: 38 abandoned
+  - `fcc3d`/hard: 49 abandoned
 
-Densities run from 2.8% to 36.2% (median 17.9%) — the spread the old flat 14/16/19 per cent could not express.
+Densities run from 2.8% to 36.2% (median 18.0%) — the spread the old flat 14/16/19 per cent could not express.
 
 The only floor under the search is the **opening**: the fewest mines at which the first click alone stops finishing the board (`calibrate.opening_floor`). As a density that runs 1.0% to 16.7% across the zoo — which is why it is measured per board rather than set as a percentage.
 
@@ -121,11 +121,13 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `doubletorustri` | 12.4 | 256c 60m (23%) 93% | 256c 63m (25%) 85% | 488c 126m (26%) 49% |
 | `durer` | 6.1 | 85c 9m (11%) 98% | 287c 41m (14%) 87% | 481c 92m (19%) 53% |
 | `elongated` | 9.0 | 85c 5m (6%) 98% | 219c 26m (12%) 90% | 543c 92m (17%) 55% |
+| `fcc3d` | 14.5 | 75c 20m (27%) 96% | 256c 71m (28%) 86% | 500c 175m (35%) 55% |
 | `floret` | 7.4 | 72c 7m (10%) 97% | 288c 37m (13%) 86% | 480c 81m (17%) 52% |
 | `gosper` | 5.5 | 49c 7m (14%) 99% | 343c 54m (16%) 86% | 343c 71m (21%) 49% |
 | `herringbone` | 5.6 | 79c 11m (14%) 95% | 251c 42m (17%) 87% | 529c 108m (20%) 50% |
 | `hex` | 5.6 | 80c 11m (14%) 97% | 255c 43m (17%) 87% | 480c 100m (21%) 49% |
 | `hexhex` | 5.6 | 91c 14m (15%) 98% | 271c 51m (19%) 85% | 469c 102m (22%) 55% |
+| `hexprism3d` | 15.8 | 76c 15m (20%) 98% | 259c 69m (27%) 83% | 488c 118m (24%) 48% |
 | `hextri` | 11.1 | 96c 14m (15%) 97% | 294c 56m (19%) 86% | 486c 117m (24%) 49% |
 | `hextriangle` | 5.6 | 78c 9m (12%) 97% | 253c 38m (15%) 89% | 465c 97m (21%) 49% |
 | `hyperbolic45` | 6.9 | 81c 5m (6%) 96% | 205c 13m (6%) 85% | 485c 38m (8%) 50% |
