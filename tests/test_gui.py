@@ -20,6 +20,7 @@ from minesweeper.boards import (  # noqa: E402
     SOLID_GROUP_MEMBERS,
     SOLID_GROUP_ORDER,
     SOLID_MODES,
+    SPIRAL_MODES,
     TILINGS,
     picker_families,
     picker_modes,
@@ -547,7 +548,7 @@ class TestMenu:
         assert menu.path == ["flat"]
         assert self.items(menu) == {
             "regular", "uniform", "dual", "isogonal", "rectangle", "other",
-            "aperiodic", "fractal", "hyperbolic", "random",
+            "aperiodic", "spiral", "fractal", "hyperbolic", "random",
         }
 
     def test_flat_regular_family_lists_the_tilings_and_shaped_boards(self):
@@ -587,6 +588,13 @@ class TestMenu:
         self.click_item(menu, "aperiodic")
         assert self.items(menu) == set(APERIODIC_MODES)
         assert self.click_item(menu, "penrose") == ("start", "penrose")
+
+    def test_flat_spiral_family_launches_a_mode(self):
+        menu = MenuScreen()
+        self.click_item(menu, "flat")
+        self.click_item(menu, "spiral")
+        assert self.items(menu) == set(SPIRAL_MODES)
+        assert self.click_item(menu, "brickrings") == ("start", "brickrings")
 
     def test_flat_fractal_family_launches_a_mode(self):
         menu = MenuScreen()
@@ -780,7 +788,8 @@ class TestMenu:
     def test_all_pages_draw(self, fonts):
         menu = MenuScreen()
         for path in ([], ["flat"], ["flat", "regular"], ["flat", "uniform"],
-                     ["flat", "aperiodic"], ["flat", "fractal"],
+                     ["flat", "aperiodic"], ["flat", "spiral"],
+                     ["flat", "fractal"],
                      ["manifolds"], ["manifolds", "klein"],
                      ["manifolds", "klein", "regular"],
                      ["manifolds", "klein", "uniform"],
@@ -866,12 +875,14 @@ class TestIcon:
             set(MENU_ROOT)                       # home entries
             | {"random", "hex"}                  # random row + home Flat icon
             | set(MANIFOLD_ORDER)                # the flat-manifold surfaces
-            | {"regular", "uniform", "dual", "aperiodic", "fractal"}  # families
+            | {"regular", "uniform", "dual", "aperiodic", "spiral",  # families
+               "fractal"}
             | set(TILINGS)                       # every tiling row in the picker
             | set(SOLID_MODES)
             | set(SOLID_GROUP_ORDER)              # the four solid-group rows
             | {m for shaped in SHAPED_MODES.values() for m in shaped}
             | set(APERIODIC_MODES)
+            | set(SPIRAL_MODES)
             | set(FRACTAL_MODES)
         )
         for key in sorted(keys):

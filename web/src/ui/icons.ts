@@ -1040,6 +1040,7 @@ function surfaceMesh(point: SurfacePoint | SurfacePoint[], opts: MeshOptions): s
 const ALIASES: Record<string, string> = {
   tri: "trigrid",
   aperiodic: "penrose",
+  spiral: "phyllotaxis", // the Spirals family row: the sunflower
   fractal: "sphinx", // the Fractals family row
   hyperbolic: "hyperbolic73", // the Hyperbolic family row: the game's namesake
   // the solid-group rows borrow one of their own members' icons: there is no

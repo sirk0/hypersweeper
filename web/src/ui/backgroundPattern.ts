@@ -42,7 +42,7 @@
 //    tile the plane in pairs, and the Sierpinski carpet is built of unit
 //    squares. The pentaflake takes two tiles rather than one — regular
 //    pentagons do not tile the plane, but pentagons and 36° rhombs do.
-//  * All three **aperiodic** boards are the same story. The
+//  * The **aperiodic** and **spiral** boards are the same story. The
 //    phyllotactic spiral's hexagon is a *parallelohexagon*, so it tiles by
 //    translation alone — the spiral is in how the board's wedges are offset,
 //    not in the tile. Penrose's two rhombs make a plain periodic tiling as
@@ -66,6 +66,7 @@ import {
   HYPERBOLIC_MODES,
   SHAPED_MODES,
   SOLID_GROUPS,
+  SPIRAL_MODES,
   tilingOf,
 } from "../boards/catalog";
 import { MODES } from "../boards/presets";
@@ -610,7 +611,7 @@ const MODE_PATTERN = new Map<string, string>();
   MODE_PATTERN.set("carpet", "square");
   // Penrose and the phyllotactic spiral each draw their own tile; the Spectre
   // is the one that cannot (see SPECTRE_PATTERN).
-  for (const mode of APERIODIC_MODES) MODE_PATTERN.set(mode, mode);
+  for (const mode of [...APERIODIC_MODES, ...SPIRAL_MODES]) MODE_PATTERN.set(mode, mode);
   MODE_PATTERN.set("spectre", SPECTRE_PATTERN);
   // ...and so are the brick rings, for the opposite reason: their tile has a
   // period, its winding has not (see BRICK_PATTERN).

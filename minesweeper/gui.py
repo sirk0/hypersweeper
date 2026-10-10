@@ -992,6 +992,7 @@ def _icon_badge(s, cx, cy, r, shape: str) -> None:
 _ICON_ALIASES = {
     "tri": "trigrid",
     "aperiodic": "penrose",
+    "spiral": "phyllotaxis",
     "fractal": "sphinx",
     "hyperbolic": "hyperbolic73",  # the family row: the game's namesake
     # the four solid-group home rows borrow one of their own members' icons:

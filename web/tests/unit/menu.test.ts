@@ -79,11 +79,12 @@ describe("picker pages", () => {
       "rectangle",
       "other",
       "aperiodic",
+      "spiral",
       "fractal",
       "hyperbolic",
     ]);
     // every manifold carries the same four families: only the plane has
-    // shaped boards to fill a Regular page, and aperiodic/fractal boards
+    // shaped boards to fill a Regular page, and aperiodic/spiral/fractal boards
     for (const surface of ["cylinder", "torus", "mobius", "klein"]) {
       expect(menuFamilies(surface)).toEqual(["uniform", "dual", "isogonal", "rectangle"]);
     }

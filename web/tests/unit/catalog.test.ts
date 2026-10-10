@@ -138,6 +138,24 @@ describe("catalog families", () => {
     expect(pickerFamilies("klein")).not.toContain("aperiodic");
   });
 
+  it("splits the spirals out of the aperiodic family, on the plane only", () => {
+    expect(familyRows("spiral", "flat").map((r) => r.mode)).toEqual([
+      "phyllotaxis",
+      "klaassen",
+      "pentaspiral5",
+      "pentaspiral6",
+      "pentaspiral7",
+      "brickrings",
+    ]);
+    expect(familyRows("aperiodic", "flat").map((r) => r.mode)).toEqual([
+      "penrose",
+      "kitedart",
+      "ammannbeenker",
+      "spectre",
+    ]);
+    expect(pickerFamilies("klein")).not.toContain("spiral");
+  });
+
   it("offers the fractal family, with its self-similar boards, on the plane only", () => {
     expect(pickerFamilies("flat")).toContain("fractal");
     expect(pickerFamilies("torus")).not.toContain("fractal");

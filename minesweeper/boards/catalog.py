@@ -193,7 +193,8 @@ TILINGS = {
 # code at all.
 #
 # The picker is a list of family submenus -- Regular, Uniform, Laves,
-# Isogonal and Congruent rectangles, plus (flat only) Aperiodic and Fractals,
+# Isogonal and Congruent rectangles, plus (flat only) Aperiodic, Spirals and
+# Fractals,
 # and a random option. It is parameterised by the
 # surface it was reached through, so the same picker serves the plane and every
 # flat manifold; the plane is reached through the home page's Flat entry rather
@@ -228,6 +229,11 @@ ISOGONAL_ARCH = tuple(t.key for t in ARCH_TILINGS if t.family == "isogonal")
 RECTANGLE_ARCH = tuple(t.key for t in ARCH_TILINGS if t.family == "rectangle")
 OTHER_ARCH = tuple(t.key for t in ARCH_TILINGS if t.family == "other")
 APERIODIC_MODES = tuple(_MENU["aperiodic"])
+# The spiral family: boards wound round a centre (the phyllotactic and Klaassen
+# spirals, the pentagonal spirals, the brick rings). Split out of Aperiodic so
+# that family keeps the substitution tilings alone; one-off, plane-only modes
+# like them.
+SPIRAL_MODES = tuple(_MENU["spiral"])
 # The fractal family: the rep-tile boards (sphinx, chair), each a patch whose
 # outline is the tile itself, scaled. Like the aperiodic ones they are one-off
 # modes rather than a tiling x surface product, so they live on the plane only.
@@ -245,6 +251,7 @@ FAMILY_MEMBERS = {
     "rectangle": RECTANGLE_ARCH,
     "other": OTHER_ARCH,
     "aperiodic": APERIODIC_MODES,
+    "spiral": SPIRAL_MODES,
     "fractal": FRACTAL_MODES,
     "hyperbolic": HYPERBOLIC_MODES,
 }
@@ -254,7 +261,7 @@ FAMILY_MEMBERS = {
 # surface has no row of rather than naming it in two places.
 PICKER_FAMILIES = ("regular", "uniform", "dual", "isogonal", "rectangle",
                    "other")
-FLAT_ONLY_FAMILIES = ("aperiodic", "fractal", "hyperbolic")
+FLAT_ONLY_FAMILIES = ("aperiodic", "spiral", "fractal", "hyperbolic")
 
 # The solid pages: Sphere, Platonic solids, Catalan solids and Polyhedra, each
 # a flat list of boards. Mirrors MANIFOLD_ORDER/MANIFOLD_LABELS -- one order
@@ -274,7 +281,7 @@ MENU_ROOT_LABELS = {**dict(_MENU["rootLabels"]), **SOLID_GROUP_LABELS}
 # carries them under their tiling on the flat picker and nowhere else.
 SHAPED_MODES = {k: tuple(v) for k, v in _MENU["shapedModes"].items()}
 
-# Labels for the non-periodic (one-off) modes (aperiodic, fractal, solid,
+# Labels for the non-periodic (one-off) modes (aperiodic, spiral, fractal, solid,
 # shaped) listed in the menu tuples above.
 SOLO_LABELS = dict(_CATALOG["soloLabels"])
 
@@ -346,7 +353,7 @@ def picker_modes(surface_key: str) -> tuple[str, ...]:
 
 
 # The pool the random button draws from on the plane: every flat tiling board
-# (regular, shaped, uniform, dual, aperiodic and fractal) -- no wrapped
+# (regular, shaped, uniform, dual, aperiodic, spiral and fractal) -- no wrapped
 # surfaces or solids.
 FLAT_MODES = picker_modes("flat")
 

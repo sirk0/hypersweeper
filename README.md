@@ -58,8 +58,8 @@ Pick a surface, then a tiling:
   corner in the middle of its neighbour's edge), **Congruent rectangles**,
   **Other** (the sphinx and the L-tromino laid down in half-turned pairs
   rather than inflated, and regular pentagons with the rhombs that fill the
-  gaps they leave, as Dürer drew it in 1525), **Aperiodic**,
-  **Fractals** and **Hyperbolic**; every periodic family bar the last four also wraps the
+  gaps they leave, as Dürer drew it in 1525), **Aperiodic**, **Spirals**,
+  **Fractals** and **Hyperbolic**; every periodic family bar the last five also wraps the
   cylinder and the torus below, and — unless the tiling is chiral — the
   Möbius strip and the Klein bottle too
 - **Sphere (3D)** — a chamfered dodecahedron (12 pentagons + 30 hexagons),
