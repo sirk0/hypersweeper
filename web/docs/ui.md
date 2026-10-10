@@ -126,7 +126,7 @@ the canvas-hiding, `view`-preserving machinery they needed has no caller now.
 ### The info window (`src/ui/boardFacts.ts`, `src/ui/infoDialog.ts`)
 
 The header's ⓘ answers the question the name raises: *what is this?* The family
-the tiling comes from (Uniform, Laves, Isogonal, Congruent rectangles, Other,
+the tiling comes from (Uniform, Laves, 2-uniform, Isogonal, Congruent rectangles, Other,
 Aperiodic, Spirals, Fractals, Hyperbolic, or the solid group), the surface it is wrapped on, how many cells there
 are and how many mines, and then one row per kind of tile — its name, its count
 and the colour the board paints it in (`iconHex`, the menu icons' saturation;

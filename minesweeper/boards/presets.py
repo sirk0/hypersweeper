@@ -443,6 +443,17 @@ ARCH_PRESETS = {
         "torus": {"easy": (5, 2, 17, 0.38), "medium": (8, 4, 60, 0.45), "hard": (12, 5, 122, 0.38)},
         "cylinder": {"easy": (6, 1 + 7 / 8, 14), "medium": (10, 3 + 1 / 8, 42), "hard": (14, 4 + 3 / 8, 105)},
     },
+    # The 2-uniform family is flat-only for now (_FLAT_ONLY_FAMILIES in
+    # catalog.py), so its three carry a "flat" row alone.
+    "trirhombitrihex": {
+        "flat": {"easy": (3, 1, 8, 52.196), "medium": (4, 3, 45, 40.241), "hard": (6, 3, 86, 27.598)},
+    },
+    "dissectedtrunchex": {
+        "flat": {"easy": (2, 1, 6, 50.718), "medium": (4, 2, 30, 28.355), "hard": (5, 3, 74, 23.233)},
+    },
+    "dodecarhombitrihex": {
+        "flat": {"easy": (3, 1, 6, 23.852), "medium": (5, 2, 21, 15.458), "hard": (6, 3, 53, 13.145)},
+    },
     # The "Other" family is flat-only for now (_FLAT_ONLY_FAMILIES in
     # catalog.py), so its three carry a "flat" row alone.
     "sphinxpairs": {

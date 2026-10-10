@@ -30,7 +30,7 @@ export interface TilingSpec {
   reversesY?: boolean;
   modeOverrides: Record<string, string>;
   /** The plane only: no wrap builders or preset windows for this tiling
-   * (the "Other" family — see FLAT_ONLY_ARCH_FAMILIES). */
+   * (the 2-uniform and "Other" families — see FLAT_ONLY_ARCH_FAMILIES). */
   flatOnly?: boolean;
 }
 
@@ -53,7 +53,7 @@ export const MENU = catalog.menu;
 // the same (a rectangular domain a surface could be glued from), unlike the
 // one-off boards of FLAT_ONLY_FAMILIES below — so they are gated here, by
 // TilingSpec.flatOnly, rather than by being kept out of the picker.
-const FLAT_ONLY_ARCH_FAMILIES = new Set<string>(["other"]);
+const FLAT_ONLY_ARCH_FAMILIES = new Set<string>(["2-uniform", "other"]);
 
 export const ARCH_TILING_SPECS: TilingSpec[] = ARCH_TILINGS.map((t) => ({
   key: t.key,
@@ -77,6 +77,7 @@ const familyKeys = (family: string): string[] =>
   ARCH_TILINGS.filter((t) => t.family === family).map((t) => t.key);
 export const UNIFORM_ARCH = familyKeys("uniform");
 export const DUAL_ARCH = familyKeys("dual");
+export const TWO_UNIFORM_ARCH = familyKeys("2-uniform");
 export const ISOGONAL_ARCH = familyKeys("isogonal");
 export const RECTANGLE_ARCH = familyKeys("rectangle");
 export const OTHER_ARCH = familyKeys("other");
@@ -189,13 +190,15 @@ export const PICKER_REGULAR = MENU.pickerRegular as string[];
  * only — an aperiodic tiling has no periodic domain to glue a seam with, and a
  * fractal board is a self-similar shape rather than a window. Isogonal and
  * rectangle wrap every surface their member tilings' chirality allows, just
- * like uniform and dual. The rep-tiles and Dürer's tiling are in this list
- * too, being tilings: `pickerFamilies` drops a family a surface has no row of
- * rather than naming it in two places. */
+ * like uniform and dual. The 2-uniform tilings, the rep-tiles and Dürer's
+ * tiling are in this list too, flat-only as they are, being tilings:
+ * `pickerFamilies` drops a family a surface has no row of rather than naming
+ * it in two places. */
 export const PICKER_FAMILIES = [
   "regular",
   "uniform",
   "dual",
+  "2-uniform",
   "isogonal",
   "rectangle",
   "other",
@@ -217,6 +220,7 @@ const FAMILY_MEMBERS: Record<string, string[]> = {
   regular: PICKER_REGULAR,
   uniform: UNIFORM_ARCH,
   dual: DUAL_ARCH,
+  "2-uniform": TWO_UNIFORM_ARCH,
   isogonal: ISOGONAL_ARCH,
   rectangle: RECTANGLE_ARCH,
   other: OTHER_ARCH,
@@ -350,6 +354,7 @@ export const MENU_FAMILY_HINTS: Record<string, string> = {
   uniform: "Two or three shapes, same at every corner",
   // Keyed `dual`; "Laves" is only its label (see `menu.familyLabels`).
   dual: "Their duals — one shape throughout",
+  "2-uniform": "Regular shapes, two kinds of corner",
   isogonal: "A corner meets the middle of an edge",
   rectangle: "Brick bonds, one rectangle throughout",
   // A grab-bag rather than a symmetry class, so the hint names its members

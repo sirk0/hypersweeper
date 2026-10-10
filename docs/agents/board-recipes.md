@@ -226,7 +226,7 @@ flat-only tiling family" below. Both flags are per family, not per tiling.
 ## Recipe: add a flat-only tiling family
 
 The last family in `ARCH_TILINGS`, `family="other"`, is the tilings that
-answer to none of the four above — today the fractal boards' own tiles laid
+answer to none of the five above — today the fractal boards' own tiles laid
 down **periodically** instead of inflated, and they ship on the plane alone:
 the sphinx as `sphinxpairs`, the chair as `tromino`, and Dürer's pentagon
 tiling as `durer`. Everything about them is an ordinary `_ArchTemplate` — they
@@ -310,6 +310,65 @@ rows the surfaces its mirror and `flips` allow. The tests that only ask
 questions of the tilings that wrap — `test_no_tile_centre_sits_on_the_cut` and
 the rest of `TestWrappedArchimedean` — pick it up the moment it has a torus
 preset.
+
+## Recipe: add a 2-uniform tiling
+
+`family="2-uniform"`: edge-to-edge tilings by regular polygons whose vertices
+fall into exactly **two** classes under the tiling's symmetries — the next step
+past the uniform tilings, which have one. There are twenty; three ship, all
+p6m and all on the plane only (the family is in the two flat-only lists, as
+"Other" is — see the recipe above):
+
+| key | label (its vertex types) | built as |
+|---|---|---|
+| `trirhombitrihex` | 3⁶; 3².4.3.4 | 3.4.6.4 with every hexagon fanned into six triangles |
+| `dissectedtrunchex` | 3².4.3.4; 3.4.6.4 | 3.12.12 with every dodecagon cut into the 3.4.6.4 patch (hexagon, six squares, six triangles), squares on the edges facing triangles |
+| `dodecarhombitrihex` | 3.4.6.4; 4.6.12 | 3.4.6.4 with one hexagon in four (even lattice indices both ways) merged with its ring of squares and triangles into a dodecagon |
+
+Each is a uniform tiling cut up or merged, so the factories reuse its
+polygons: `_rhombitrihex_polygons` (with a `merged` predicate for the
+dodecagons, and a `reach` for a domain more than one lattice cell across) and
+`_trunchex_polygons`, plus the helpers `_fan` and `_dodecagon_patch`. The
+choices that are easy to get wrong:
+
+- **Which way round a dissection goes.** Cutting 3.12.12's dodecagons with the
+  squares on the edges a dodecagon shares with *another dodecagon* gives
+  [3³.4²; 3.4.6.4] instead — same five tiles at the corner, different order.
+- **How many to merge.** Merging one 3.4.6.4 hexagon in *three* gives plain
+  4.6.12; one in four is the 2-uniform one, and it needs a domain twice the
+  size both ways.
+- **The window centre.** A tiling with no big tile on its six-fold centre has
+  to pin `centre` to it: `trirhombitrihex`'s biggest tile is a square, a
+  two-fold centre, so it pins the 3⁶ vertex `(0, 0)`.
+
+Steps, for a new one `foo`:
+
+1. **Template** — `_foo_template()` in `tilings.py`, built from the uniform
+   tiling it comes from where it can be.
+2. **Registry** — one `ArchTiling("foo", "<vertex types>", <tile side counts>,
+   edge_directions, _foo_template, family="2-uniform", vertex_types=(...))`
+   row. The label is the pair of vertex configurations, which is what these
+   tilings are called; `config` is just the tile side counts, and
+   `vertex_types` the two configurations, each read round its vertex.
+3. **Presets** — a `flat` row in `ARCH_PRESETS`, then the measured pipeline
+   (`resize.py --only`, `calibrate.py --only`, `apply.py`, the exporters), as
+   for any flat-only tiling. The seed's pixel scale matters: `resize` holds a
+   flat board's *width* at whatever the seed gave, so seed a scale that makes
+   the board about as wide as its neighbours (~480 px).
+4. **Port it** to `web/src/boards/tilings.ts`; the conformance oracle compares
+   the boards cell for cell.
+
+`TestTwoUniform` then checks it: every tile a regular polygon of unit edge,
+and every interior vertex one of the two declared types — read as a cyclic
+sequence, which is what tells 3².4.3.4 from 3³.4² — with both present. Its
+menu icon is a `disc` patch (`discPatch` in `web/src/ui/icons.ts`) reaching
+past the first ring of tiles, since a ring round one tile or one vertex shows
+one vertex type and reads as the uniform tiling it was cut from; give it a
+`DISC_RADIUS`.
+
+**Wrapping them later** is the same as for "Other": choose a `cut`, drop the
+family from the two flat-only lists, and add the surface presets. All three
+have mirrors, so every surface is open to them.
 
 ## Recipe: add a congruent-rectangle bond
 
