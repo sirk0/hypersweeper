@@ -85,7 +85,7 @@ export function describeConformance(difficulty: string): void {
       it(`${mode}/${difficulty} matches the oracle`, () => {
         const board = buildBoard(mode, difficulty);
         const want = MODE_STATS[mode]![difficulty]!;
-        expect(board.polygons.size).toBe(want.cellCount);
+        expect(board.adjacency.size).toBe(want.cellCount);
         expect(board.mineCount).toBe(want.mineCount);
         expect(eulerCharacteristic(board)).toBe(want.euler);
         expect(boundaryComponents(board)).toBe(want.boundaryComponents);
@@ -109,7 +109,7 @@ export function describeConformance(difficulty: string): void {
         const seen = new Set<string>();
         for (const [seed, want] of Object.entries(wanted)) {
           const board = buildBoard(mode, difficulty, Number(seed));
-          expect(board.polygons.size).toBe(want.cellCount);
+          expect(board.adjacency.size).toBe(want.cellCount);
           expect(board.mineCount).toBe(want.mineCount);
           expect(eulerCharacteristic(board)).toBe(want.euler);
           expect(boundaryComponents(board)).toBe(want.boundaryComponents);

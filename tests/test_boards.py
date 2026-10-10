@@ -81,6 +81,8 @@ from minesweeper.boards import (
     pentaspiral_board,
     phyllotaxis_board,
     place_point,
+    projective_hex_board,
+    projective_triangle_board,
     rhombicosidodecahedron_board,
     snub_dodecahedron_board,
     solid_cube_board,
@@ -155,6 +157,7 @@ from minesweeper.boards.hyperbolic import (
     hyperbolic_positions,
 )
 from minesweeper.boards.presets import _WINDOWS, ARCH_PRESETS, window_for
+from minesweeper.boards.solids import _goldberg_board
 from minesweeper.boards.surfaces import TREFOIL_REACH, _trefoil_core
 
 # Template tilings split by symmetry type. Archimedean (uniform) tilings are
@@ -4683,3 +4686,96 @@ class TestCatalanSolids:
         assert len(board.polygons) == 60
         assert {len(p) for p in board.polygons.values()} == {5}
         assert {len(n) for n in board.adjacency.values()} == {7}
+
+
+class TestProjectivePlane:
+    """The real projective plane: a centrally symmetric sphere board with
+    every cell glued to its antipode, drawn as the whole sphere. Each test
+    runs on both tilings and on a sweep of frequencies, not just the shipped
+    three, since the gluing is the same arithmetic at every one."""
+
+    FREQUENCIES = range(2, 8)
+
+    @staticmethod
+    def _sphere(builder, frequency):
+        """The sphere the board is a quotient of, as its own board."""
+        if builder is projective_triangle_board:
+            return sphere_triangle_board(5, frequency)
+        return _goldberg_board("goldberg", frequency, 5)
+
+    @pytest.mark.parametrize("builder", [projective_triangle_board,
+                                         projective_hex_board])
+    @pytest.mark.parametrize("frequency", FREQUENCIES)
+    def test_every_cell_is_drawn_twice_antipodally(self, builder, frequency):
+        board = builder(frequency, 5)
+        faces = defaultdict(list)
+        for face, cell in board.faces.items():
+            faces[cell].append(face)
+        assert set(faces) == set(board.adjacency)
+        for cell, pair in faces.items():
+            assert len(pair) == 2 and cell in pair
+            a, b = (board.polygons[f] for f in pair)
+            ca = [sum(c) / len(a) for c in zip(*a)]
+            cb = [sum(c) / len(b) for c in zip(*b)]
+            assert max(abs(x + y) for x, y in zip(ca, cb)) < 1e-9
+
+    @pytest.mark.parametrize("builder", [projective_triangle_board,
+                                         projective_hex_board])
+    @pytest.mark.parametrize("frequency", FREQUENCIES)
+    def test_it_is_a_closed_surface_of_euler_characteristic_one(
+        self, builder, frequency
+    ):
+        # Measured twice: off the drawing (the sphere, halved), and off the
+        # exact vertex classes the adjacency was built from, with no float
+        # rounded anywhere.
+        board = builder(frequency, 5)
+        assert _euler_characteristic(board) == 1
+        assert _boundary_components(board) == 0
+        sphere = self._sphere(builder, frequency)
+        assert _euler_characteristic(sphere) == 2
+        assert len(sphere.adjacency) == 2 * len(board.adjacency)
+
+    @pytest.mark.parametrize("builder", [projective_triangle_board,
+                                         projective_hex_board])
+    @pytest.mark.parametrize("frequency", FREQUENCIES)
+    def test_the_gluing_changes_nothing_locally(self, builder, frequency):
+        # The antipodal map moves every point half the sphere away, so no
+        # cell meets its own twin and no two neighbours of a cell are each
+        # other's twins: every cell keeps exactly the neighbourhood it had on
+        # the sphere, one neighbour per sphere neighbour.
+        board = builder(frequency, 5)
+        sphere = self._sphere(builder, frequency)
+        by_corners = {
+            tuple(sorted(tuple(round(c, 9) for c in p) for p in poly)): cell
+            for cell, poly in sphere.polygons.items()
+        }
+        for face, cell in board.faces.items():
+            key = tuple(sorted(tuple(round(c, 9) for c in p)
+                               for p in board.polygons[face]))
+            on_sphere = sphere.adjacency[by_corners[key]]
+            assert len(board.adjacency[cell]) == len(on_sphere)
+
+    @pytest.mark.parametrize("frequency", FREQUENCIES)
+    def test_six_defects_not_twelve(self, frequency):
+        # A closed surface of hexagons needs 6 * chi pentagons; the sphere has
+        # 12 and its quotient keeps half.
+        board = projective_hex_board(frequency, 5)
+        sides = Counter(len(board.polygons[c]) for c in board.adjacency)
+        assert sides[5] == 6
+        assert sides[6] == 5 * frequency**2 + 1 - 6
+        assert len(projective_triangle_board(frequency, 5).adjacency) == (
+            10 * frequency**2
+        )
+
+    @pytest.mark.parametrize("builder", [projective_triangle_board,
+                                         projective_hex_board])
+    def test_the_gluing_reverses_orientation(self, builder):
+        # Non-orientable: the antipode sends a face wound counterclockwise
+        # from outside to one wound clockwise from outside. Negating every
+        # point leaves each cross product -- the winding's normal -- as it
+        # was, while the outward direction flips.
+        board = builder(3, 5)
+        for polygon in board.polygons.values():
+            twin = [tuple(-c for c in p) for p in polygon]
+            outward = [sum(c) for c in zip(*twin)]
+            assert sum(n * o for n, o in zip(newell_normal(twin), outward)) < 0

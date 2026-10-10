@@ -19,9 +19,12 @@
 import {
   cid,
   keepSymmetries,
+  normalize,
   q,
   orientOutward,
   sharedVertexAdjacency,
+  solidSymmetries,
+  tangentOrder,
   type Board3D,
   type BoardSymmetry,
   type CellId,
@@ -39,6 +42,7 @@ import {
   trianglesBelow,
   type Tri,
 } from "./clipSolid";
+import { geodesic, icosahedron } from "./solids";
 import { archTemplate, type ArchTemplate } from "./tilings";
 
 const mod = (a: number, b: number): number => ((a % b) + b) % b;
@@ -1273,6 +1277,180 @@ export function doubleTorusHexBoard(
                        ["turn", (s, kx, ky) => [1 - s, 1 - kx, 4 - ky]],
                        ["mirror-tube", (s, kx, ky) => [s, kx, 4 - ky]],
                      ]));
+}
+
+// -- the real projective plane -----------------------------------------------
+//
+// Port of surfaces.py's projective plane: the sphere with every point glued to
+// its antipode — closed, non-orientable, χ = 1. It has no embedding in 3-space
+// and no immersion worth drawing (Boy's surface), so it is drawn as the whole
+// sphere that double-covers it, every cell twice: `polygons` holds both faces
+// of a cell and `faces` says which cell each one shows, while `adjacency` (and
+// so the game) runs on the antipodal pairs. GameSession paints a cell's state
+// on both faces, so whatever happens on one happens on the face diametrically
+// opposite. The tilings are the geodesic icosahedron and its Goldberg dual,
+// whose six degree-5 vertices / six pentagons are what χ = 1 asks for (half the
+// sphere's twelve).
+
+/** Each icosahedron vertex's antipode, by index. Exact: the corners are
+ * (0, ±1, ±φ) and its cyclic shifts, and negating one is exact. */
+function icosahedronAntipodes(): number[] {
+  const { vertices } = icosahedron();
+  const key = (p: readonly number[]) => p.map((c) => String(c + 0)).join(",");
+  const where = new Map(vertices.map((v, i) => [key(v), i]));
+  return vertices.map((v) => where.get(key(v.map((c) => -c)))!);
+}
+
+/** The antipode of a geodesic vertex key (`v:w|v:w…`, see solids.ts
+ * `geodesic`) — the same barycentric weights over the opposite corners. */
+function flipGeodesicKey(key: string, antipode: readonly number[]): string {
+  return key
+    .split("|")
+    .map((item) => item.split(":").map(Number) as [number, number])
+    .map(([v, w]) => [antipode[v]!, w] as [number, number])
+    .sort((a, b) => a[0] - b[0] || a[1] - b[1])
+    .map(([v, w]) => `${v}:${w}`)
+    .join("|");
+}
+
+const lesser = (a: string, b: string): string => (a < b ? a : b);
+
+/** The quotient of a centrally symmetric sphere board by its antipodal map.
+ * `sphereCells` maps each face to its vertex keys and `flip` is the antipodal
+ * map on vertex keys — exact, so no two points are rounded together. A face's
+ * cell is the lesser of it and its twin, and cells are adjacent when any of
+ * their faces share a vertex: the shared-vertex rule run on vertex classes. */
+function projective(
+  mode: string,
+  sphereCells: Cells,
+  positions: Positions,
+  flip: (key: string) => string,
+  mineCount: number,
+): Board3D {
+  const corners = (keys: readonly string[]) => [...keys].sort().join(";");
+  const byCorners = new Map<string, CellId>();
+  for (const [face, keys] of sphereCells) byCorners.set(corners(keys), face);
+  const faces = new Map<CellId, CellId>();
+  for (const [face, keys] of sphereCells) {
+    const twin = byCorners.get(corners(keys.map(flip)));
+    if (twin === undefined || twin === face) {
+      throw new Error(`${mode}: face ${face} has no antipodal twin`);
+    }
+    faces.set(face, lesser(face, twin));
+  }
+  const cells: Cells = new Map();
+  for (const [face, keys] of sphereCells) {
+    if (faces.get(face) === face)
+      cells.set(
+        face,
+        keys.map((k) => lesser(k, flip(k))),
+      );
+  }
+  const adjacency = sharedVertexAdjacency(cells);
+  const polygons = new Map<CellId, Vec3[]>();
+  for (const [face, keys] of sphereCells) {
+    const polygon = keys.map((k) => positions.get(k)!);
+    polygons.set(face, orientOutward(polygon, centroidOf(polygon)));
+  }
+  let measured: BoardSymmetry[] | null = null;
+  return {
+    mode,
+    polygons,
+    adjacency,
+    mineCount,
+    radius: 1,
+    twoSided: false,
+    clip: null,
+    cornerMask: null,
+    faces,
+    // The sphere's own symmetries, measured off its drawing, carried down to
+    // the pairs. Every rotation and reflection about the centre commutes with
+    // the antipodal map, so a face's image's cell depends only on the face's
+    // cell; the central inversion itself comes down as the identity, and a
+    // mirror and the half turn about its normal as one motion, which
+    // `keepSymmetries` drops as useless or duplicate.
+    get symmetries(): BoardSymmetry[] {
+      if (measured) return measured;
+      const onSphere = solidSymmetries(
+        polygons,
+        sharedVertexAdjacency(sphereCells),
+      );
+      const candidates: SymmetryCandidate[] = onSphere.map(({ id, cycle }) => ({
+        id,
+        build: () => {
+          const down = new Map<CellId, CellId>();
+          for (const cell of adjacency.keys())
+            down.set(cell, faces.get(cycle.get(cell)!)!);
+          return down;
+        },
+      }));
+      return (measured = keepSymmetries(adjacency, candidates));
+    },
+  };
+}
+
+/** The real projective plane in triangles: a geodesic icosahedron of
+ * `20 * frequency**2` triangles with antipodes identified, so
+ * `10 * frequency**2` cells, drawn as the whole sphere. */
+export function projectiveTriangleBoard(
+  frequency: number,
+  mineCount: number,
+): Board3D {
+  const antipode = icosahedronAntipodes();
+  const { positions, triangles } = geodesic(frequency);
+  const sphereCells: Cells = new Map();
+  for (const triangle of triangles)
+    sphereCells.set([...triangle].sort().join(";"), [...triangle]);
+  return projective(
+    "projectivetri",
+    sphereCells,
+    positions,
+    (k) => flipGeodesicKey(k, antipode),
+    mineCount,
+  );
+}
+
+/** The real projective plane in hexagons: the Goldberg polyhedron
+ * GP(frequency, 0) — one cell per geodesic vertex, its corners the surrounding
+ * triangle centres — with antipodes identified, so `5 * frequency**2 + 1`
+ * cells, six of them pentagons. */
+export function projectiveHexBoard(
+  frequency: number,
+  mineCount: number,
+): Board3D {
+  const antipode = icosahedronAntipodes();
+  const { positions, triangles } = geodesic(frequency);
+  const centres: Positions = new Map();
+  const around = new Map<string, string[]>();
+  for (const triangle of triangles) {
+    const tid = [...triangle].sort().join(";");
+    centres.set(
+      tid,
+      normalize(centroidOf(triangle.map((k) => positions.get(k)!))),
+    );
+    for (const key of triangle) {
+      let ids = around.get(key);
+      if (!ids) around.set(key, (ids = []));
+      ids.push(tid);
+    }
+  }
+  const sphereCells: Cells = new Map();
+  for (const [key, tids] of around) {
+    sphereCells.set(
+      key,
+      tangentOrder(
+        positions.get(key)!,
+        tids.map((t) => [t, centres.get(t)!]),
+      ),
+    );
+  }
+  const flip = (tid: string) =>
+    tid
+      .split(";")
+      .map((k) => flipGeodesicKey(k, antipode))
+      .sort()
+      .join(";");
+  return projective("projectivehex", sphereCells, centres, flip, mineCount);
 }
 
 // -- the Möbius strip --------------------------------------------------------

@@ -125,6 +125,14 @@ Pick a surface, then a tiling:
 - **Klein bottle (3D)** — the donut glued with that same flip, one-sided
   and closed; the immersion hides cells behind its own neck, so the board
   scrolls to bring them round
+- **Projective plane (3D)** — a sphere with every point glued to the point
+  diametrically opposite: closed, one-sided, and the only such surface besides
+  the Klein bottle. It cannot be built in 3D without passing through itself, so
+  it is drawn as the whole sphere with every cell shown twice — reveal or flag
+  a cell and its antipodal twin round the back changes with it. A cell's
+  neighbours are its own and its twin's, so a number counts mines on both
+  sides of the ball. Triangles (a geodesic sphere) or hexagons (a Goldberg
+  sphere, with the six pentagons the surface forces)
 - **Cylinder (3D)** — an open tube, wrapping in one direction only
 
 ## Playing

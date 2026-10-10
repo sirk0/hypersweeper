@@ -8,6 +8,8 @@ import {
   kleinTriangleBoard,
   mobiusBoard,
   mobiusHexBoard,
+  projectiveHexBoard,
+  projectiveTriangleBoard,
   torusBoard,
   torusHexBoard,
   torusTriangleBoard,
@@ -16,6 +18,7 @@ import {
   trefoilTriangleBoard,
 } from "../../src/boards/surfaces";
 import { buildBoard } from "../../src/boards/presets";
+import { c180Board, sphereTriangleBoard } from "../../src/boards/solids";
 import {
   fanTriangles,
   insideOccluder,
@@ -25,6 +28,7 @@ import {
   type Tri,
 } from "../../src/boards/clipSolid";
 import {
+  eulerCharacteristic,
   isAutomorphism,
   symmetryOf,
   type Board3D,
@@ -424,3 +428,77 @@ function barycentricGrid(tri: Tri, steps: number): Vec3[] {
   }
   return out;
 }
+
+// The real projective plane: a geodesic sphere / Goldberg polyhedron with every
+// cell glued to its antipode, drawn as the whole sphere (see `projective` in
+// boards/surfaces.ts). Mirrors TestProjectivePlane in tests/test_boards.py.
+describe("the projective plane", () => {
+  const boards = (frequency: number) => [
+    projectiveTriangleBoard(frequency, 5),
+    projectiveHexBoard(frequency, 5),
+  ];
+
+  it("draws every cell twice, on antipodal faces", () => {
+    for (const frequency of [2, 3, 4, 7]) {
+      for (const board of boards(frequency)) {
+        const faces = board.faces!;
+        expect(faces.size).toBe(2 * board.adjacency.size);
+        const byCell = new Map<CellId, CellId[]>();
+        for (const [face, cell] of faces) byCell.set(cell, [...(byCell.get(cell) ?? []), face]);
+        expect(new Set(byCell.keys())).toEqual(new Set(board.adjacency.keys()));
+        for (const [cell, pair] of byCell) {
+          expect(pair.length).toBe(2);
+          expect(pair).toContain(cell); // a cell is named after one of its faces
+          const centre = (face: CellId): Vec3 => {
+            const poly = board.polygons.get(face)!;
+            return [0, 1, 2].map((i) => poly.reduce((t, p) => t + p[i]!, 0) / poly.length) as Vec3;
+          };
+          const [a, b] = [centre(pair[0]!), centre(pair[1]!)];
+          for (let i = 0; i < 3; i++) expect(a[i]! + b[i]!).toBeCloseTo(0, 9);
+        }
+      }
+    }
+  });
+
+  it("is a closed surface of Euler characteristic 1, with six defects", () => {
+    for (const frequency of [2, 3, 4, 7]) {
+      const [tri, hex] = boards(frequency);
+      expect(eulerCharacteristic(tri!)).toBe(1);
+      expect(eulerCharacteristic(hex!)).toBe(1);
+      expect(tri!.adjacency.size).toBe(10 * frequency ** 2);
+      expect(hex!.adjacency.size).toBe(5 * frequency ** 2 + 1);
+      const pentagons = [...hex!.adjacency.keys()].filter((c) => hex!.polygons.get(c)!.length === 5);
+      expect(pentagons.length).toBe(6); // half the sphere's twelve: 6 * chi
+    }
+  });
+
+  it("keeps every cell's sphere neighbourhood: one neighbour per neighbour", () => {
+    // The gluing moves every point half the sphere away, so no cell meets its
+    // twin and no two of a cell's neighbours are each other's twins.
+    const pairs: [Board3D, Board3D][] = [
+      [projectiveTriangleBoard(3, 5), sphereTriangleBoard(5, 3)],
+      [projectiveHexBoard(3, 5), c180Board(5)],
+    ];
+    for (const [board, sphere] of pairs) {
+      const key = (poly: Vec3[]) =>
+        poly
+          .map((p) => p.map((c) => c.toFixed(6)).join(","))
+          .sort()
+          .join("|");
+      const onSphere = new Map([...sphere.polygons].map(([cell, poly]) => [key(poly), cell]));
+      for (const [face, cell] of board.faces!) {
+        const sphereCell = onSphere.get(key(board.polygons.get(face)!))!;
+        expect(board.adjacency.get(cell)!.length).toBe(sphere.adjacency.get(sphereCell)!.length);
+        expect(board.adjacency.get(cell)).not.toContain(cell);
+      }
+    }
+  });
+
+  it("carries the sphere's rotations down to the pairs", () => {
+    for (const mode of ["projectivetri", "projectivehex"]) {
+      const board = buildBoard(mode, "easy") as Board3D;
+      expect(board.symmetries.length, mode).toBeGreaterThan(0);
+      for (const id of ids(board)) assertSymmetry(board, id);
+    }
+  });
+});

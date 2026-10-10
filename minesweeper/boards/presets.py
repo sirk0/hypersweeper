@@ -82,6 +82,8 @@ from minesweeper.boards.surfaces import (
     mobius_board,
     mobius_hex_board,
     mobius_triangle_board,
+    projective_hex_board,
+    projective_triangle_board,
     torus_board,
     torus_hex_board,
     torus_triangle_board,
@@ -156,6 +158,10 @@ _JSON_BUILDERS = {
     "trefoil_board": trefoil_board,
     "trefoil_triangle_board": trefoil_triangle_board,
     "trefoil_hex_board": trefoil_hex_board,
+    # the real projective plane: a geodesic sphere and its Goldberg dual with
+    # antipodes identified, drawn as the whole sphere
+    "projective_triangle_board": projective_triangle_board,
+    "projective_hex_board": projective_hex_board,
     # the genus-2 board: two square-tiled donuts merged at their outer rims
     "double_torus_board": double_torus_board,
     "double_torus_triangle_board": double_torus_triangle_board,

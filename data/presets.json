@@ -1368,6 +1368,40 @@
         ]
       }
     },
+    "projectivetri": {
+      "builder": "projective_triangle_board",
+      "args": {
+        "easy": [
+          3,
+          23
+        ],
+        "medium": [
+          5,
+          67
+        ],
+        "hard": [
+          7,
+          146
+        ]
+      }
+    },
+    "projectivehex": {
+      "builder": "projective_hex_board",
+      "args": {
+        "easy": [
+          4,
+          17
+        ],
+        "medium": [
+          7,
+          57
+        ],
+        "hard": [
+          10,
+          128
+        ]
+      }
+    },
     "pentaspiral5": {
       "builder": "pentaspiral5_board",
       "args": {

@@ -46,6 +46,11 @@ class Board3D:
     #   graph automorphism); when set, GameScreen3D lets the player scroll the
     #   cell contents along it, so cells hidden by a self-intersection can be
     #   rotated into view without moving the geometry. None = no scrolling.
+    faces: dict | None = None  # drawn face -> the cell it shows, for a board
+    #   drawn as a *cover* of itself: the real projective plane is drawn as
+    #   the whole sphere, every cell twice (it and its antipode). Then
+    #   `polygons` is keyed by face and `adjacency` by cell, and each face
+    #   paints its cell's state. None = every polygon is its own cell.
 
 
 def _shared_vertex_adjacency(cells: dict[Cell, list]) -> dict[Cell, tuple[Cell, ...]]:
@@ -125,16 +130,32 @@ def corner_fans(board) -> dict:
     return at_vertex
 
 
+def covering_sheets(board) -> int:
+    """How many times the drawing covers the board: 1 for every board but
+    one drawn through ``Board3D.faces`` (the projective plane, drawn as the
+    sphere that double-covers it, so 2)."""
+    if getattr(board, "faces", None) is None:
+        return 1
+    return len(board.polygons) // len(board.adjacency)
+
+
 def euler_characteristic(board) -> int:
     """V - E + F over the board's polygon mesh (2 for a sphere, 0 for a
-    torus/cylinder/Mobius/Klein bottle)."""
+    torus/cylinder/Mobius/Klein bottle), of the *board* rather than of its
+    drawing: a drawing that covers the board k times (``covering_sheets``)
+    has k times its Euler characteristic, so the projective plane, drawn as
+    the sphere, measures 2 / 2 = 1."""
     vertices = len(corner_fans(board))
     edges = set()
     for polygon in board.polygons.values():
         points = [tuple(round(c, 6) for c in p) for p in polygon]
         for a, b in zip(points, points[1:] + points[:1]):
             edges.add(frozenset((a, b)))
-    return vertices - len(edges) + len(board.polygons)
+    chi = vertices - len(edges) + len(board.polygons)
+    sheets = covering_sheets(board)
+    if chi % sheets:
+        raise ValueError(f"a {sheets}-sheeted drawing with chi {chi}")
+    return chi // sheets
 
 
 def boundary_components(board) -> int:

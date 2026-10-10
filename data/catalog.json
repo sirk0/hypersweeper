@@ -83,6 +83,21 @@
       "tilings": null
     },
     {
+      "key": "projective",
+      "label": "Projective plane",
+      "prefix": "projective",
+      "is3d": true,
+      "needsMirror": true,
+      "needsFlip": false,
+      "boundaryComponents": 0,
+      "euler": 1,
+      "tilt": -0.3,
+      "tilings": [
+        "hex",
+        "tri"
+      ]
+    },
+    {
       "key": "doubletorus",
       "label": "Double torus",
       "prefix": "doubletorus",
@@ -942,6 +957,18 @@
       "surface": "flat",
       "family": "dual"
     },
+    "projectivehex": {
+      "label": "Hexagons · Projective plane",
+      "tiling": "hex",
+      "surface": "projective",
+      "family": "regular"
+    },
+    "projectivetri": {
+      "label": "Triangles · Projective plane",
+      "tiling": "tri",
+      "surface": "projective",
+      "family": "regular"
+    },
     "pythagorean": {
       "label": "Pythagorean",
       "tiling": "pythagorean",
@@ -1403,6 +1430,7 @@
       "torus",
       "trefoil",
       "klein",
+      "projective",
       "doubletorus"
     ],
     "manifoldLabels": {
@@ -1411,7 +1439,8 @@
       "klein": "Klein bottle",
       "torus": "Torus",
       "doubletorus": "Double torus",
-      "trefoil": "Trefoil knot"
+      "trefoil": "Trefoil knot",
+      "projective": "Projective plane"
     },
     "pickerRegular": [
       "tri",

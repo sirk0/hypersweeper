@@ -2031,6 +2031,64 @@
         "hasCellCycle": false
       }
     },
+    "projectivetri": {
+      "easy": {
+        "cellCount": 90,
+        "mineCount": 23,
+        "euler": 1,
+        "boundaryComponents": 0,
+        "edgeCount": 135,
+        "vertexCount": 46,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 250,
+        "mineCount": 67,
+        "euler": 1,
+        "boundaryComponents": 0,
+        "edgeCount": 375,
+        "vertexCount": 126,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 490,
+        "mineCount": 146,
+        "euler": 1,
+        "boundaryComponents": 0,
+        "edgeCount": 735,
+        "vertexCount": 246,
+        "hasCellCycle": false
+      }
+    },
+    "projectivehex": {
+      "easy": {
+        "cellCount": 81,
+        "mineCount": 17,
+        "euler": 1,
+        "boundaryComponents": 0,
+        "edgeCount": 240,
+        "vertexCount": 160,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 246,
+        "mineCount": 57,
+        "euler": 1,
+        "boundaryComponents": 0,
+        "edgeCount": 735,
+        "vertexCount": 490,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 501,
+        "mineCount": 128,
+        "euler": 1,
+        "boundaryComponents": 0,
+        "edgeCount": 1500,
+        "vertexCount": 1000,
+        "hasCellCycle": false
+      }
+    },
     "pentaspiral5": {
       "easy": {
         "cellCount": 81,

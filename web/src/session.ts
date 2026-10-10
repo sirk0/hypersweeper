@@ -85,6 +85,17 @@ export function symmetryMoves(
   return moves;
 }
 
+/** The inverse of a face -> game cell map: every face showing each cell. */
+function facesShowing(remap: Map<CellId, CellId>): Map<CellId, CellId[]> {
+  const out = new Map<CellId, CellId[]>();
+  for (const [face, cell] of remap) {
+    const faces = out.get(cell);
+    if (faces) faces.push(face);
+    else out.set(cell, [face]);
+  }
+  return out;
+}
+
 export class GameSession {
   readonly board: AnyBoard;
   readonly mesh: BoardMesh;
@@ -124,10 +135,16 @@ export class GameSession {
   // cells hidden behind the Klein bottle's neck or down the inside of a donut
   // come into view without the geometry moving and without the game noticing.
   // `remap` sends each geometric face -> the game cell shown on it (identity
-  // until the board is moved); `remapInv` is its inverse.
+  // until the board is moved); `remapInv` is its inverse, every face showing a
+  // cell. That is one face apiece on every board but the projective plane,
+  // which is drawn as the sphere covering it twice (`Board3D.faces`): there a
+  // cell is painted on two antipodal faces, and both mirror its state.
   private readonly moves: Map<SymmetryId, [CellCycle, CellCycle]>;
   private remap = new Map<CellId, CellId>();
-  private remapInv = new Map<CellId, CellId>();
+  private remapInv = new Map<CellId, CellId[]>();
+  /** The face the player last acted on, which picks which copy of a cell an
+   * effect plays on when it has two (see `geomFor`). */
+  private touched: CellId | null = null;
 
   /** Where a cell is across the stereo field, supplied by the renderer (which
    * is the only thing that knows where the board currently *looks* like it is
@@ -190,10 +207,11 @@ export class GameSession {
     this.panOf = opts.panOf ?? null;
     this.fx = opts.fx ?? null;
     this.moves = symmetryMoves(this.board.symmetries, mode);
-    for (const cell of this.board.polygons.keys()) {
-      this.remap.set(cell, cell);
-      this.remapInv.set(cell, cell);
+    const faces = isBoard3D(this.board) ? this.board.faces : undefined;
+    for (const face of this.board.polygons.keys()) {
+      this.remap.set(face, faces?.get(face) ?? face);
     }
+    this.remapInv = facesShowing(this.remap);
   }
 
   get status() {
@@ -216,10 +234,36 @@ export class GameSession {
   }
 
   /** The geometric face a game cell's contents are currently painted on
-   * (identity until the board is scrolled). The test seam maps a cell's screen
-   * position through this. */
+   * (identity until the board is scrolled). Where a cell is painted on two —
+   * the projective plane's antipodal twins — the one on the player's side of
+   * the board: the copy nearest the face they last touched, which is where a
+   * flag drop, a blast or a reveal ripple belongs. */
   geomFor(gameCell: CellId): CellId {
-    return this.remapInv.get(gameCell) ?? gameCell;
+    const faces = this.remapInv.get(gameCell);
+    if (!faces || faces.length === 0) return gameCell;
+    if (faces.length === 1 || this.touched === null) return faces[0]!;
+    const near = this.mesh.cellAnchor(this.touched)?.center;
+    if (!near) return faces[0]!;
+    let best = faces[0]!;
+    let bestDistance = Infinity;
+    for (const face of faces) {
+      const at = this.mesh.cellAnchor(face)?.center;
+      if (!at) continue;
+      const d = at.reduce((sum, c, i) => sum + (c - near[i]!) ** 2, 0);
+      if (d < bestDistance) [best, bestDistance] = [face, d];
+    }
+    return best;
+  }
+
+  /** Every face a game cell is painted on: one, or a projective plane's two
+   * antipodal twins. Whatever changes a cell's look changes all of them. */
+  facesFor(gameCell: CellId): CellId[] {
+    return this.remapInv.get(gameCell) ?? [gameCell];
+  }
+
+  /** `facesFor` over several cells. */
+  private allFaces(gameCells: readonly CellId[]): CellId[] {
+    return gameCells.flatMap((c) => this.facesFor(c));
   }
 
   /** The game cell whose contents are currently painted on a geometric face —
@@ -258,7 +302,7 @@ export class GameSession {
     const next = new Map<CellId, CellId>();
     for (const [geom, game] of this.remap) next.set(geom, cyc.get(game) ?? game);
     this.remap = next;
-    this.remapInv = invertCycle(next);
+    this.remapInv = facesShowing(next);
     for (const geom of this.board.polygons.keys()) {
       this.mesh.setVisual(geom, this.visualFor(this.gameFor(geom)));
     }
@@ -294,6 +338,7 @@ export class GameSession {
     if (this.status !== "playing") return;
     this.startTimer();
     this.reveals++;
+    this.touched = cell;
     const gameCell = this.gameFor(cell);
     const changed = this.game.reveal(gameCell);
     if (this.game.state === "lost") this.exploded = gameCell;
@@ -316,6 +361,7 @@ export class GameSession {
    * has to tell the two apart. */
   flag(cell: CellId, heldMs?: number): boolean {
     this.startTimer();
+    this.touched = cell;
     const gameCell = this.gameFor(cell);
     const wasFlagged = this.game.cellState(gameCell) === "flagged";
     this.apply(this.game.toggleFlag(gameCell));
@@ -323,7 +369,8 @@ export class GameSession {
     // Only a flag that lands drops one in; clearing one still buzzes, because
     // the finger that held the cell is covering the change either way.
     if (heldMs !== undefined && isFlagged && !wasFlagged) {
-      this.mesh.dropFlag(this.geomFor(gameCell), heldMs);
+      for (const face of this.facesFor(gameCell))
+        this.mesh.dropFlag(face, heldMs);
     }
     if (isFlagged && !wasFlagged) this.flagsPlanted++;
     if (isFlagged !== wasFlagged) this.flagMoves++;
@@ -331,7 +378,9 @@ export class GameSession {
       // The tile takes the flag going in (or coming out) with a push — except
       // under a held finger, which covers the tile; the drop is that flag's
       // landing instead.
-      if (heldMs === undefined) this.mesh.bounce(this.geomFor(gameCell));
+      if (heldMs === undefined) {
+        for (const face of this.facesFor(gameCell)) this.mesh.bounce(face);
+      }
       this.fx?.flag(this.geomFor(gameCell), isFlagged);
       haptic("flag");
       if (soundEnabled()) {
@@ -350,6 +399,7 @@ export class GameSession {
     if (this.status !== "playing") return;
     this.startTimer();
     this.chords++;
+    this.touched = cell;
     const chorded = this.gameFor(cell);
     // What the chord reaches, read before it moves: the closed, unflagged
     // neighbours it would open. They dip as it opens them, or the chorded cell
@@ -361,7 +411,7 @@ export class GameSession {
     if (reach.length > 0) {
       this.mesh.chordFeedback(
         this.geomFor(chorded),
-        reach.map((c) => this.geomFor(c)),
+        this.allFaces(reach),
         changed.length > 0,
       );
     }
@@ -400,10 +450,7 @@ export class GameSession {
    * a cell through the camera, and only the stereo field needs that. */
   private reactToReveal(opened: CellId[], origin: CellId, chord: boolean): void {
     if (opened.length === 0) return;
-    this.mesh.pulseReveal(
-      opened.map((c) => this.geomFor(c)),
-      this.geomFor(origin),
-    );
+    this.mesh.pulseReveal(this.allFaces(opened), this.geomFor(origin));
     const glowing = this.mesh.wantsMarkerGlow === true;
     const sounding = soundEnabled();
     if (!glowing && !sounding) return;
@@ -579,9 +626,11 @@ export class GameSession {
         // round the one that went off.
         this.mesh.detonate(
           this.geomFor(this.exploded ?? origin),
-          this.game.cells
-            .filter((c) => this.game.isMine(c) && this.game.cellState(c) !== "flagged")
-            .map((c) => this.geomFor(c)),
+          this.allFaces(
+            this.game.cells.filter(
+              (c) => this.game.isMine(c) && this.game.cellState(c) !== "flagged",
+            ),
+          ),
         );
         this.fx?.blast(this.geomFor(this.exploded ?? origin));
         // At the mine, not at the click, for the same reason the blast is heard
@@ -600,7 +649,7 @@ export class GameSession {
         );
         this.mesh.celebrateWin(
           this.geomFor(origin),
-          autoFlagged.map((c) => this.geomFor(c)),
+          this.allFaces(autoFlagged),
         );
         this.fx?.win(this.geomFor(origin));
         haptic("win");
@@ -611,7 +660,8 @@ export class GameSession {
 
   private apply(changed: CellId[]): void {
     for (const cell of changed) {
-      this.mesh.setVisual(this.geomFor(cell), this.visualFor(cell));
+      const visual = this.visualFor(cell);
+      for (const face of this.facesFor(cell)) this.mesh.setVisual(face, visual);
     }
   }
 
@@ -622,7 +672,9 @@ export class GameSession {
       const flagged = this.game.cellState(cell) === "flagged";
       const mine = this.game.isMine(cell);
       if ((mine && !flagged) || (!mine && flagged)) {
-        this.mesh.setVisual(this.geomFor(cell), this.visualFor(cell));
+        const visual = this.visualFor(cell);
+        for (const face of this.facesFor(cell))
+          this.mesh.setVisual(face, visual);
       }
     }
   }

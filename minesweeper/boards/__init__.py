@@ -148,6 +148,7 @@ from minesweeper.boards.core import (  # noqa: F401
     _tangent_order,
     boundary_components,
     corner_fans,
+    covering_sheets,
     euler_characteristic,
     newell_normal,
 )
@@ -222,6 +223,8 @@ from minesweeper.boards.surfaces import (  # noqa: F401
     mobius_board,
     mobius_hex_board,
     mobius_triangle_board,
+    projective_hex_board,
+    projective_triangle_board,
     torus_board,
     torus_hex_board,
     torus_triangle_board,

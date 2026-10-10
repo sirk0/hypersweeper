@@ -927,6 +927,16 @@ const KLEIN: SurfacePoint = (u, v) => {
   return [x, y, r * Math.sin(v)];
 };
 
+/** The projective plane's textbook model: a hemisphere, its rim glued to
+ * itself across the middle (each rim point to the opposite one) — which is
+ * also how the board is played, a sphere with every cell glued to its
+ * antipode. A bowl: u round the rim, v from the rim down to the bottom. */
+const HEMISPHERE: SurfacePoint = (u, v) => [
+  Math.cos(v) * Math.cos(u),
+  -Math.sin(v),
+  Math.cos(v) * Math.sin(u),
+];
+
 interface MeshOptions {
   /** rotation about x then y, in degrees, before projecting */
   view: [number, number];
@@ -1586,6 +1596,19 @@ function draw(rawKey: string): string[] {
         ),
       );
     }
+  } else if (key === "projective") {
+    // tipped toward the viewer so the inside of the bowl shows, which is what
+    // makes it a hemisphere rather than a ball
+    parts.push(
+      ...surfaceMesh(HEMISPHERE, {
+        view: [38, 0],
+        vFrom: 0,
+        vTo: Math.PI / 2,
+        uSteps: 36,
+        vSteps: 9,
+        twoSided: true,
+      }),
+    );
   } else if (SPHERES.includes(key)) {
     // the real solid, projected: a dark disc behind it closes the silhouette
     // where the outermost faces fall away from the viewer

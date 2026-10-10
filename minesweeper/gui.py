@@ -1812,6 +1812,20 @@ def _render_icon(key: str) -> pygame.Surface:
                 tube(run, closed=False)
                 run = []
         _icon_gloss(s, pygame.Rect(d * 0.14, d * 0.08, d * 0.72, d * 0.3), 80)
+    elif key == "projective":
+        # a hemisphere tipped toward the viewer -- the projective plane's
+        # textbook model, its rim glued to itself across the middle: the
+        # bowl's lower half, then its open rim seen from above, the inside a
+        # shade darker than the outside
+        bowl = pygame.Rect(d * 0.06, d * 0.14, d * 0.88, d * 0.78)
+        pygame.draw.ellipse(s, ICON_BLUE, bowl)
+        pygame.draw.ellipse(s, ICON_BLUE_DARK, bowl, 4)
+        cover = pygame.Rect(0, 0, d, bowl.centery - 0)
+        pygame.draw.rect(s, (0, 0, 0, 0), cover)
+        rim = pygame.Rect(d * 0.06, bowl.centery - d * 0.17, d * 0.88, d * 0.34)
+        pygame.draw.ellipse(s, ICON_BLUE_DARK, rim)
+        pygame.draw.ellipse(s, ICON_BLUE_LIGHT, rim, 4)
+        _icon_gloss(s, pygame.Rect(d * 0.14, d * 0.6, d * 0.72, d * 0.16), 80)
     elif key == "mobius":
         band = pygame.Rect(d * 0.05, d * 0.16, d * 0.9, d * 0.68)
         pygame.draw.ellipse(s, ICON_BLUE, band)
@@ -2378,7 +2392,11 @@ class GameScreen3D(BaseGameScreen):
         self._cycle_inv = (
             {v: k for k, v in self._cycle.items()} if self._cycle else None
         )
-        self._remap = {c: c for c in self.board.polygons}
+        # A board drawn as a cover of itself (the projective plane, drawn as
+        # the sphere) starts each face on the cell it is a copy of, so a
+        # cell's two antipodal faces show one state.
+        faces = self.board.faces
+        self._remap = dict(faces) if faces else {c: c for c in self.board.polygons}
         self._scroll_accum = 0.0
 
     @property

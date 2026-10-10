@@ -101,6 +101,15 @@ SPEC: dict[str, dict] = {
                                    unit=(0.5, 3 ** 0.5 / 2)),
     "trefoil_hex_board": dict(size=(0, 1), mine=2, shape=3, kind="knot",
                               unit=(1.5, 3 ** 0.5)),
+    # The real projective plane: a geodesic sphere and its Goldberg dual with
+    # antipodes glued, so one knob, the frequency, and the cell count is
+    # 10 * f**2 triangles or 5 * f**2 + 1 hexagons. ``rigid`` as the Catalan
+    # solids are: the cells sit on the sphere at the same spacing whatever f
+    # is, and the shape term -- roundness -- would read "subdivide further"
+    # as "less distorted" (the geodesic triangles do even out a little with
+    # f) and pick the size for it. Size decides alone.
+    "projective_triangle_board": dict(size=(0,), mine=1, shape=None, rigid=True),
+    "projective_hex_board": dict(size=(0,), mine=1, shape=None, rigid=True),
     "mobius_board": dict(size=(0, 1), mine=2, shape=None),
     "mobius_triangle_board": dict(size=(0, 1), mine=2, shape=None),
     "mobius_hex_board": dict(size=(0, 1), mine=2, shape=None),

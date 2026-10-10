@@ -778,6 +778,39 @@ the board's own `trefoilPoint`), the surface in the three Grafana dashboards'
 `surface` variable, and a gallery baseline.
 
 
+## Recipe: draw a surface as a cover of itself (worked example — the projective plane)
+
+Some surfaces have no drawing worth making in 3-space: the real projective
+plane's immersions all pass through themselves. Draw a space that **covers** it
+instead -- the projective plane is the sphere with antipodes glued, so it is
+drawn as the sphere, every cell twice -- and let the game run on the quotient.
+Read [`geometry.md`](geometry.md#the-real-projective-plane) first. What it took:
+
+1. **A centrally symmetric board with exact keys for the covering map.** The
+   geodesic icosahedron and its Goldberg dual qualify: a vertex key is
+   barycentric weights over icosahedron corners, and `_antipodes` finds each
+   corner's antipode exactly. `surfaces._projective` (`projective` in
+   TypeScript) then does the rest for any such board: twins by flipped
+   corner sets, cells as the lesser twin, vertex classes as the lesser of a key
+   and its flip, shared-vertex adjacency over those, polygons for every face.
+   It refuses a face that is its own twin.
+2. **`Board3D.faces`** (face -> cell). That one field is the whole contract
+   with the front-ends: the session's face -> cell map starts from it (so state
+   paints on both faces), `facesFor` lists a cell's faces for every visual,
+   picking goes face -> cell, and the info panel and conformance count
+   `adjacency`, not `polygons`. A board without it is untouched.
+3. **Count the board, not the drawing.** `covering_sheets` divides V, E, F and
+   chi; the `SurfaceSpec` declares `euler: 1`.
+4. **Symmetries:** measure the cover's (`solidSymmetries` on the faces and
+   the sphere's own adjacency), push each down through `faces`, and let
+   `keepSymmetries` drop what becomes the identity or a duplicate.
+5. **The rest is the trefoil's checklist:** a `SurfaceSpec` with a `tilings`
+   allow-list (`["hex", "tri"]`), `MANIFOLD_ORDER` / `MANIFOLD_LABELS`, the
+   builders in `_JSON_BUILDERS` / `BUILDERS`, a `SPEC` row (`rigid`, one knob:
+   the frequency) and the measured pipeline, both icons (a hemisphere bowl --
+   the textbook model -- in `icons.ts` and `gui.py`), the surface in the three
+   Grafana dashboards' `surface` variable, and a gallery baseline.
+
 ## Recipe: add a surface that is not a wrapped rectangle
 
 The Klein bottle above is the pattern for a surface the plane *wraps onto*: an

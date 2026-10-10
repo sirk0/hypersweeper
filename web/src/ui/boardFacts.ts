@@ -273,7 +273,9 @@ function groupCells(board: AnyBoard): ShapeGroup[] {
   const masks = board.cornerMask ?? null;
   const tones = classifyShapes(board.polygons, masks, !isBoard3D(board) && board.curved);
   const groups = new Map<string, ShapeGroup>();
-  for (const [cell] of board.polygons) {
+  // Over the cells, not the drawn faces: the projective plane draws each of
+  // its cells twice, and a cell's id is the id of one of its faces.
+  for (const cell of board.adjacency.keys()) {
     const tone = tones.get(cell);
     if (!tone) continue;
     const key = `${tone.sides}|${tone.variant ?? 0}|${tone.size ?? 0}`;
@@ -433,7 +435,7 @@ export function boardFacts(
     // `SurfaceSpec` behind it, and it is still on the plane; a solid is not on
     // any of these surfaces at all, and its family row names what it is.
     surface: surface?.label ?? (isBoard3D(board) ? null : (SURFACES.get("flat")?.label ?? null)),
-    cells: board.polygons.size,
+    cells: board.adjacency.size,
     mines,
     shapes: shapeFacts(mode, board),
     warning: fairnessHint(fairnessOf(mode, difficulty)),

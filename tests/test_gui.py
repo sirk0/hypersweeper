@@ -392,7 +392,8 @@ class Test3DScreens:
         screen.handle_event(
             pygame.event.Event(pygame.MOUSEBUTTONUP, pos=pos, button=1)
         )
-        assert screen.game.cell_state(cell) is CellState.REVEALED
+        # the face's own cell: on the projective plane two faces show one
+        assert screen.game.cell_state(screen._game_cell(cell)) is CellState.REVEALED
         assert screen.game.state is not GameState.LOST  # first click safe
 
     @pytest.mark.parametrize("mode", sorted(MODES_3D))
@@ -437,7 +438,20 @@ class Test3DScreens:
         screen = GameScreen3D(mode, "easy")
         cell, pos = self.nearest_visible(screen)
         screen.handle_event(mouse_event(pos, button=3))
-        assert screen.game.cell_state(cell) is CellState.FLAGGED
+        assert screen.game.cell_state(screen._game_cell(cell)) is CellState.FLAGGED
+
+    def test_projective_twins_show_one_cell(self):
+        # The projective plane is drawn as the whole sphere: flag a face and
+        # the face diametrically opposite it -- the other copy of its cell --
+        # shows the flag too, though it is round the back.
+        screen = GameScreen3D("projectivehex", "easy")
+        cell, pos = self.nearest_visible(screen)
+        screen.handle_event(mouse_event(pos, button=3))
+        twins = [f for f, c in screen.board.faces.items()
+                 if c == screen._game_cell(cell)]
+        assert len(twins) == 2
+        for face in twins:
+            assert screen.game.cell_state(screen._game_cell(face)) is CellState.FLAGGED
 
     def test_backface_culled(self):
         screen = GameScreen3D("sphere", "easy")

@@ -12,7 +12,7 @@ Every board's mine count, chosen so its win probability under the reference solv
 
 ## Coverage
 
-- 597 rows, 565 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
+- 603 rows, 571 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
 - 32 could not be brought on target:
   - `cube3d`/hard: 33.3% vs 50.9% — the search could not resolve it -- its thinnest measurement finished 0 game(s), so the rate here is noise rather than a crossing the search walked to. Re-measure at a bigger `--budget`
   - `cylinder`/easy: 89.1% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (7, 9%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
@@ -46,7 +46,7 @@ Every board's mine count, chosen so its win probability under the reference solv
   - `triakis`/medium: 0.0% vs 87.1% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `triakis`/easy: 1.8% vs 96.5% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `truncicosidodeca`/hard: 45.9% vs 50.9% — no integer mine count lands within tolerance; this is the closest
-- 142 rows had games the solver abandoned (its frontier DP hit its node budget); their rates are measured over the games that finished:
+- 145 rows had games the solver abandoned (its frontier DP hit its node budget); their rates are measured over the games that finished:
   - `cube3d`/hard: 466 abandoned
   - `torustrunchex`/hard: 168 abandoned
   - `torusrotatedhex`/hard: 144 abandoned
@@ -58,7 +58,7 @@ Every board's mine count, chosen so its win probability under the reference solv
   - `torussnubhex`/hard: 39 abandoned
   - `triakisocta`/hard: 38 abandoned
 
-Densities run from 2.8% to 36.2% (median 17.7%) — the spread the old flat 14/16/19 per cent could not express.
+Densities run from 2.8% to 36.2% (median 17.8%) — the spread the old flat 14/16/19 per cent could not express.
 
 The only floor under the search is the **opening**: the fewest mines at which the first click alone stops finishing the board (`calibrate.opening_floor`). As a density that runs 1.0% to 16.7% across the zoo — which is why it is measured per board rather than set as a percentage.
 
@@ -192,6 +192,8 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `pentaspiral7` | 5.6 | 81c 11m (14%) 93% | 256c 39m (15%) 87% | 480c 94m (20%) 54% |
 | `phyllotaxis` | 5.6 | 81c 11m (14%) 97% | 256c 41m (16%) 88% | 480c 96m (20%) 53% |
 | `prismaticpent` | 6.5 | 76c 10m (13%) 97% | 232c 40m (17%) 84% | 516c 105m (20%) 53% |
+| `projectivehex` | 6.0 | 81c 17m (21%) 96% | 246c 57m (23%) 88% | 501c 128m (26%) 49% |
+| `projectivetri` | 11.7 | 90c 23m (26%) 97% | 250c 67m (27%) 86% | 490c 146m (30%) 53% |
 | `pythagorean` | 5.5 | 87c 6m (7%) 99% | 261c 30m (11%) 86% | 505c 77m (15%) 51% |
 | `rhombicdodeca` | 7.9 | 108c 19m (18%) 98% | 300c 72m (24%) 86% | 432c 116m (27%) 53% |
 | `rhombicosidodeca` | 7.7 | 62c 10m (16%) 97% | 62c 12m (19%) 87% | 62c 18m (29%) 46% ⚠ |

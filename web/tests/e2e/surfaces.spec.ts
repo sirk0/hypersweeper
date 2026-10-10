@@ -99,6 +99,43 @@ test.describe("M3 surfaces", () => {
     expect(moved, "wheel scroll did not move the cell").toBe(true);
   });
 
+  test("the projective plane shows every cell on both antipodal faces", async ({ page }) => {
+    // Drawn as the sphere that double-covers it, so a cell is on screen
+    // wherever either of its two faces is: from any one side nearly every cell
+    // shows, where a sphere shows under half. And a tap on either face is a tap
+    // on the cell — picking goes through the same face -> cell map the state
+    // is painted by.
+    await page.goto("/");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    await page.locator('.menu-entry[data-group="manifolds"]').click();
+    await page.locator('.menu-entry[data-surface="projective"]').click();
+    await page.locator('.menu-entry[data-mode="projectivehex"]').click();
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+    const seen = await page.evaluate(() => {
+      const ms = window.__ms!;
+      const cells = ms.cells();
+      const shown = cells.filter((c) => ms.cellScreenXY(c) != null);
+      const picked = shown.filter((c) => {
+        const xy = ms.cellScreenXY(c)!;
+        return ms.cellAtScreenXY(xy.x, xy.y) === c;
+      });
+      return { mode: ms.state().mode, cells: cells.length, shown: shown.length, picked: picked.length };
+    });
+    expect(seen.mode).toBe("projectivehex");
+    expect(seen.shown / seen.cells).toBeGreaterThan(0.7);
+    expect(seen.picked).toBe(seen.shown);
+
+    await page.goto("/?mode=c180&difficulty=easy&seed=1");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+    const sphere = await page.evaluate(() => {
+      const ms = window.__ms!;
+      const cells = ms.cells();
+      return cells.filter((c) => ms.cellScreenXY(c) != null).length / cells.length;
+    });
+    expect(sphere).toBeLessThan(0.5);
+  });
+
   test("each board shows the controls it has and no combination of them", async ({ page }) => {
     // A donut wraps both ways, so it steps round the ring and round the tube; a
     // cylinder is open across, so it has no tube step at all — but it can still

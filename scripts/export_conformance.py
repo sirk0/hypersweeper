@@ -31,6 +31,7 @@ from minesweeper.boards.core import (
     DIFFICULTIES,
     boundary_components,
     corner_fans,
+    covering_sheets,
     euler_characteristic,
 )
 from minesweeper.boards.presets import _VARIANT_BUILDERS, build_board
@@ -48,13 +49,17 @@ def _edge_count(board) -> int:
 
 
 def _stats(board) -> dict:
+    # Counted on the board, not on its drawing: the projective plane is drawn
+    # as the sphere that covers it twice, every cell, edge and vertex twice
+    # over (``covering_sheets``), and its cell count is the game's.
+    sheets = covering_sheets(board)
     return {
-        "cellCount": len(board.polygons),
+        "cellCount": len(board.adjacency),
         "mineCount": board.mine_count,
         "euler": euler_characteristic(board),
         "boundaryComponents": boundary_components(board),
-        "edgeCount": _edge_count(board),
-        "vertexCount": len(corner_fans(board)),
+        "edgeCount": _edge_count(board) // sheets,
+        "vertexCount": len(corner_fans(board)) // sheets,
         "hasCellCycle": getattr(board, "cell_cycle", None) is not None,
     }
 

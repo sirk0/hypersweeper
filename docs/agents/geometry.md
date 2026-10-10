@@ -45,7 +45,7 @@ Import order is a strict DAG; a module only imports from the ones above it.
 | `hyperbolic.py` | The regular {p,q} tilings of the hyperbolic plane, drawn in the Poincaré disc: {7,3} heptagons, {5,4} pentagons and {4,5} squares. Built combinatorially ring by ring with integer vertex ids, placed afterwards by disc isometries, edges drawn as geodesic arcs, trimmed by hyperbolic-distance shells. See "The hyperbolic boards" below. |
 | `solids.py` | Closed/convex and polycube 3D boards (spherical gyro pentagons, Goldberg polyhedra, geodesic icosahedron, rhombicosidodecahedron, truncated icosidodecahedron, cube, tetrahedron, frames, bipyramid), plus the shared `_wythoff_point` every uniform solid here and every Catalan solid next door is generated from. |
 | `catalan.py` | The thirteen Catalan solids, the duals of the Archimedean solids. One recipe for all of them: a Platonic base and one flag, the Wythoff generating point of its Schwarz triangle (`solids._wythoff_point` for the five non-chiral Conway operations, `_snub_point` for the chiral one), a Catalan vertex at `n / <w, n>` on each face axis — polar duality — and the base's flags grouped into faces by the operation. Faces are then subdivided (`solids._geodesic` for triangles, `_quad_grid` for quadrilaterals, a five-way fan first for pentagons), which is these boards' only size knob. |
-| `surfaces.py` | Wrapping tilings onto surfaces: the three immersion points (`_torus_point`, `_cylinder_point`, `_mobius_point`), the shared `_assemble` tail, the nine simple `*_board` wrappers, and the Archimedean `arch_torus_board` / `arch_cylinder_board` / `arch_mobius_board`. Also `double_torus_board`, the one board here that is *not* wrapped from a rectangle: two overlapping square-tiled donuts cut apart along the plane between them and sewn back together, a connected sum rather than a seam gluing. |
+| `surfaces.py` | Wrapping tilings onto surfaces: the three immersion points (`_torus_point`, `_cylinder_point`, `_mobius_point`), the shared `_assemble` tail, the nine simple `*_board` wrappers, and the Archimedean `arch_torus_board` / `arch_cylinder_board` / `arch_mobius_board`. Also `double_torus_board`, the one board here that is *not* wrapped from a rectangle: two overlapping square-tiled donuts cut apart along the plane between them and sewn back together, a connected sum rather than a seam gluing. And `projective_triangle_board` / `projective_hex_board`, the real projective plane: a geodesic sphere (or its Goldberg dual) with antipodes glued, drawn as the whole sphere through `Board3D.faces`. |
 | `volume.py` | The volume boards — a solid block of cells rather than a surface of them. One so far: `solid_cube_board`, the `n**3` cube of cubes, whose 26-neighbour adjacency comes off the lattice and whose drawing is the `n` slices laid out on a grid and stepped back in depth. |
 | `catalog.py` | The menu, **derived**: `SURFACE_SPECS` and `TILING_SPECS` (leaf data loaded from `data/catalog.json`) produce `MODE_LABELS`, `TILINGS`, `SURFACE_LABELS`, the geometry-first menu tables (`MENU_ROOT`/`MANIFOLD_*`/`FAMILY_*`/`SOLID_GROUP_*`/`SOLID_MODES`/`SHAPED_MODES`) and the picker helpers (`family_rows`, `picker_families`, `picker_modes`), `MODES_3D`, `mode_for`, `surface_of`, `view_hint`. |
 | `presets.py` | Difficulty presets and `build_board`. Flat regular, solid, Archimedean/Laves and aperiodic (penrose/kitedart/ammannbeenker/spectre/phyllotaxis/…) presets all load from `data/presets.json` (shared with the web port). The Archimedean rows are authored in the compact **`ARCH_PRESETS`** table (tiling → surface → difficulty → args) that `scripts/export_data.py` expands into `data/presets.json`. |
@@ -213,9 +213,10 @@ from the `family` field, no menu edit needed), a
 surface is one `SurfaceSpec` + an immersion + a wrap builder; the menu,
 mode strings, `MODES_3D`, and chirality gating all derive from those
 registries. A fifth surface, the **double torus**, is not a wrap of a
-rectangle at all -- see the next section -- and a sixth, the **trefoil knot**,
+rectangle at all -- see the next section -- a sixth, the **trefoil knot**,
 is not a new surface at all but the torus drawn a second way (see "The trefoil
-knot" below).
+knot" below), and a seventh, the **projective plane**, is not drawn as itself
+but as the sphere that covers it twice (see "The real projective plane").
 
 ## The double torus
 
@@ -357,6 +358,49 @@ donut's graph, so the donut's measured floor of eight cells (`MIN_WRAP_CELLS`)
 is the knot's own; along it the chords need sixteen slats even at the thinnest
 tube the size search offers. So easy is 128 squares (or 144 triangles), not 81,
 and both rows are listed with that arithmetic in `tests/test_presets.py`.
+
+## The real projective plane
+
+`projectivetri` and `projectivehex` are the sphere with every point glued to
+its antipode: closed, chi = 1, and non-orientable -- with the Klein bottle, the
+only closed one-sided surface in the zoo. It has no embedding in 3-space and its
+immersions (Boy's surface, the cross-cap) pass through themselves far worse
+than the bottle's neck, so it is not immersed at all. It is drawn as the
+**sphere that double-covers it**, every cell twice:
+
+* **`Board3D.faces`** maps each drawn face to the cell it shows. `polygons` is
+  keyed by face (the whole sphere, wound outward and back-face culled like any
+  solid) and `adjacency` by cell, so the game runs on the antipodal *pairs*.
+  A cell is named after the lesser of its two faces. Both front-ends start
+  their face -> cell map (`GameSession.remap`, pygame's `_remap`) from it, so
+  every visual change a cell takes lands on both faces -- what is opened or
+  flagged on one side shows on the other, diametrically opposite. Where an
+  effect wants one place (a blast, the reveal ripple's origin) the session picks
+  the twin nearest the face the player last touched.
+* **Adjacency is still shared-vertex, and still exact.** The antipodal map on
+  vertex keys is exact -- a geodesic vertex key is barycentric weights over
+  icosahedron corners, and a corner's antipode is found by negating (0, +-1,
+  +-phi), which floats do exactly -- so vertex *classes* are keys too, and two
+  cells neighbour when any of their faces share a vertex. Nothing is rounded.
+* **It changes nothing locally.** The antipode moves every point half the
+  sphere away, so no cell meets its own twin and no two of a cell's neighbours
+  are each other's twins: every cell keeps one neighbour per sphere neighbour
+  (`TestProjectivePlane` checks it on a sweep of frequencies, not just the
+  shipped three).
+* **Six defects, not twelve.** A closed surface of hexagons needs 6 * chi
+  pentagons, so the Goldberg sphere's twelve come down to six; likewise the
+  geodesic sphere's twelve degree-5 vertices. Cell counts are 10 f^2 triangles
+  and 5 f^2 + 1 hexagons -- f = 4 gives exactly 81.
+* **The topology helpers count the board, not the drawing**
+  (`covering_sheets` / `coveringSheets`): a k-sheeted drawing has k times the
+  board's V, E, F and chi, so they divide by it, and the conformance oracle's
+  cell count is the adjacency's. That is how the surface's `euler: 1` is
+  checked rather than the sphere's 2.
+* **Symmetries come from the sphere.** Every rotation and reflection about the
+  centre commutes with the antipodal map, so the solid's measured point group
+  carries down to the pairs (`projective` in `surfaces.ts`); the central
+  inversion itself becomes the identity, and a mirror and the half turn about
+  its normal become one motion, which `keepSymmetries` drops.
 
 ## The aperiodic boards
 
