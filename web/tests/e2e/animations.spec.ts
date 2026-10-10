@@ -9,6 +9,42 @@ import { expect, test } from "@playwright/test";
 /** The hold-to-flag duration the drop test pins for itself (see there). */
 const HELD_FLAG_HOLD_MS = 400;
 
+/** How many pixels of two same-sized screenshots differ by more than
+ * `tolerance` (of 255) in any channel. Decoded by the page itself, since
+ * Playwright hands back PNG bytes and the suite carries no PNG decoder. */
+async function changedPixels(
+  page: import("@playwright/test").Page,
+  a: Buffer,
+  b: Buffer,
+  tolerance = 16,
+): Promise<number> {
+  return page.evaluate(
+    async ({ a, b, tolerance }) => {
+      const pixels = async (base64: string) => {
+        const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+        const bitmap = await createImageBitmap(new Blob([bytes], { type: "image/png" }));
+        const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+        const ctx = canvas.getContext("2d")!;
+        ctx.drawImage(bitmap, 0, 0);
+        return ctx.getImageData(0, 0, bitmap.width, bitmap.height).data;
+      };
+      const [p, q] = await Promise.all([pixels(a), pixels(b)]);
+      if (p.length !== q.length) return Number.POSITIVE_INFINITY;
+      let changed = 0;
+      for (let i = 0; i < p.length; i += 4) {
+        for (let k = 0; k < 3; k++) {
+          if (Math.abs(p[i + k]! - q[i + k]!) > tolerance) {
+            changed++;
+            break;
+          }
+        }
+      }
+      return changed;
+    },
+    { a: a.toString("base64"), b: b.toString("base64"), tolerance },
+  );
+}
+
 test.describe("M6 animations", () => {
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize({ width: 900, height: 700 });
@@ -71,25 +107,34 @@ test.describe("M6 animations", () => {
     await page.addInitScript((ms) => {
       window.localStorage.setItem(
         "ms:settings",
-        // Classic, the lightest cut to draw: under SwiftShader every frame of
-        // the drop is paid for on the CPU, and the catch below has to land a
-        // screenshot inside it. The drop is the same on every cut.
+        // Classic, the lightest cut to draw: under SwiftShader every frame is
+        // paid for on the CPU. The drop is the same on every cut.
         JSON.stringify({ version: 5, holdToFlagMs: ms, shape: "classic" }),
       );
     }, HELD_FLAG_HOLD_MS);
+    // Before the page loads, so its timers and frames are Playwright's to step
+    // (see the drop below). It runs at the real rate until then.
+    await page.clock.install();
     await page.reload();
     await expect(page.locator("body[data-ready]")).toBeVisible();
+    // From here on the page's time moves only when the test steps it. Every
+    // check below compares frames: on the wall clock, a loaded runner shot the
+    // baseline with the outermost tiles still assembling, and raced the drop's
+    // opening hold, which a SwiftShader screenshot can take longer than. The
+    // hold's timer, the drop, the tile motion and the render loop all run on
+    // the clock Playwright fakes, so each frame is exactly the one asked for.
+    // (A second ahead, because the pause has to land in the page's future and
+    // a starved runner can spend a tenth of one getting the call there; no
+    // board is up yet, so nothing is skipped.)
+    await page.clock.pauseAt(await page.evaluate(() => Date.now() + 1000));
     await page.evaluate(() => {
       const ms = window.__ms!;
       ms.animations(true);
       ms.startBoard("square", "easy", { mines: ["0,0"] });
     });
-    // A new board assembles from its middle out; let it land before the
+    // A new board assembles from its middle out; let it land well before the
     // settled baseline is shot.
-    await page.waitForTimeout(800);
-    await page.evaluate(
-      () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
-    );
+    await page.clock.runFor(1500);
     const at = await page.evaluate(() => {
       const p = window.__ms!.cellScreenXY("4,4")!;
       const q = window.__ms!.cellScreenXY("6,4")!; // two cells away, either way
@@ -104,32 +149,33 @@ test.describe("M6 animations", () => {
       width: Math.round(6 * at.step),
       height: Math.round(2 * at.step),
     };
-    // Shot first, so the shader compilation the README warns about is paid
-    // before the ones that have to land inside the drop. It doubles as the
-    // settled baseline: nothing of the flag survives up here.
+    // The settled baseline: nothing of the flag survives up here.
     const before = await page.screenshot({ clip });
     // Only a held touch drops a flag, so synthesize one — Playwright has no
     // touch-hold API, hence CDP (as in solids.spec.ts).
     const client = await page.context().newCDPSession(page);
-    // The drop is over in well under a second, and a screenshot is not free,
-    // so give the catch a few tries rather than letting one slow frame decide.
-    let caught = false;
-    for (let attempt = 0; attempt < 3 && !caught; attempt++) {
-      await client.send("Input.dispatchTouchEvent", {
-        type: "touchStart",
-        touchPoints: [{ x: at.x, y: at.y }],
-      });
-      // Just past the hold pinned above, which puts the sample in the drop's
-      // opening hold, where the flag is at its largest.
-      await page.waitForTimeout(HELD_FLAG_HOLD_MS + 100);
-      caught = !(await page.screenshot({ clip })).equals(before);
-      await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
-      await page.waitForTimeout(600); // outlast the drop
-      const after = await page.screenshot({ clip });
-      expect(after.equals(before), "the drop left a mark behind").toBe(true);
-      if (!caught) await page.evaluate(() => window.__ms!.flag("4,4")); // clear
-    }
-    expect(caught, "the drop never painted clear of the flagged cell").toBe(true);
+    await client.send("Input.dispatchTouchEvent", {
+      type: "touchStart",
+      touchPoints: [{ x: at.x, y: at.y }],
+    });
+    // Through the hold — which places the flag and starts the drop — and a few
+    // frames into the drop's opening hold, where the flag is at its largest.
+    await page.clock.runFor(HELD_FLAG_HOLD_MS + 50);
+    expect(await page.evaluate(() => window.__ms!.cellState("4,4"))).toBe("flagged");
+    const during = await page.screenshot({ clip });
+    await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    // Past the end of the drop, and a few frames on so its last one is drawn.
+    await page.clock.runFor(HELD_FLAG_HOLD_MS + 100);
+    const after = await page.screenshot({ clip });
+    await page.clock.resume();
+    // Counted rather than compared byte for byte: SwiftShader can land a
+    // settled frame a level off in places (seen at a few hundred pixels, all
+    // within 1 of 255), and the flag's artwork is nothing like that subtle.
+    expect(
+      await changedPixels(page, before, during),
+      "the drop never painted clear of the flagged cell",
+    ).toBeGreaterThan(0);
+    expect(await changedPixels(page, before, after), "the drop left a mark behind").toBe(0);
     const state = await page.evaluate(() => window.__ms!.state());
     expect(state.minesRemaining).toBe(0); // and the flag itself landed (1 mine)
     expect(state.revealed).toBe(0); // the hold flagged rather than revealing
@@ -141,7 +187,7 @@ test.describe("M6 animations", () => {
     await page.waitForTimeout(100);
     await page.evaluate(() => window.__ms!.flag("4,4")); // place again, unheld
     const unheld = await page.screenshot({ clip });
-    expect(unheld.equals(before), "an unheld flag animated anyway").toBe(true);
+    expect(await changedPixels(page, before, unheld), "an unheld flag animated anyway").toBe(0);
   });
 
   // -- the Realistic marker glow ---------------------------------------------
