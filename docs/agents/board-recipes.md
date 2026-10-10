@@ -677,6 +677,76 @@ invariant suite (`TestWrappedArchimedean` / `TestKleinTilings`) so
 but forget a preset, `TestPresets.test_all_presets_build` fails loudly.
 
 
+## Recipe: draw a surface that already ships a new way (worked example — the trefoil knot)
+
+The cheapest surface of all is one whose topology already ships: a new
+**immersion** of it, with the gluing, and so the adjacency, untouched. The
+trefoil knot (`trefoil`, `surfaces.trefoil_board` and its two siblings) is the
+torus drawn as a tube round a knot -- read [`geometry.md`](geometry.md#the-trefoil-knot)
+for the shape. Everything the board *is* comes for free; what has to be done is
+everything about where it is *drawn*.
+
+1. **Reuse the lattices, not just the idea.** The donut's three lattices are
+   `_square_cells` / `_triangle_cells` / `_hex_cells` (`squareLattice` /
+   `triangleLattice` / `hexLattice` in TypeScript, which also carry the
+   lattice's motions), shared with the donut and the double donut. A new
+   immersion of the torus is one point function and a three-line builder per
+   tiling; the TypeScript `wrapLattice` immerses any of them and offers the
+   lattice's symmetries, which hold whatever the immersion. Write the test that
+   says so -- the board's adjacency equals the donut's with the same window --
+   in both ports.
+2. **Say which way is out.** `_assemble`'s default measures from the ring
+   circle through the origin. Pass an `orient` that measures each vertex from
+   the immersion's own core at that vertex's parameter (both ports take one),
+   and test the winding combinatorially: every edge traversed once each way.
+3. **Frame the board by what it is.** Pass `radius=_max_radius` (`maxRadius`):
+   a knot is not a ring of radius 1, and a hard-coded `1 + tube` frames it
+   wrong.
+4. **Find out how fat it can be, by measuring.** A tube round a curve touches
+   itself at the curve's *reach* -- the smaller of its tightest bend and half
+   its closest approach between distant points. Measure it, write it down as a
+   constant (`TREFOIL_REACH`) with a test that re-measures it, take the tube as
+   a fraction of it, and refuse 1 or more.
+5. **Then remember the faces are flat.** A thin enough *tube* is not enough: a
+   coarse window draws chords straight through the strands the tube winds round,
+   and cell shape cannot see it (each of those triangles is well shaped). Bound
+   it -- `_trefoil_sag` measures how far a face's hull strays from the curve,
+   and the builder refuses `radius + sag >= reach` -- and test the shipped
+   boards directly: every point of a face nearest its own stretch of curve.
+6. **Restrict the surface to the tilings it has builders for** with the
+   `SurfaceSpec`'s `tilings` allow-list, exactly as the double torus did. The
+   trefoil started at the three regular tilings; an `arch_trefoil_board` on
+   `_arch_cells` / `_wrapped_positions` with the torus's anchor is what opens
+   the rest.
+7. **Teach the size search the shape's proportions**, which on a new
+   immersion are the whole difficulty (`resize.py`, all scoped to the knot):
+   * a `kind` of its own in `SHAPE_SWEEP`, since its tube knob is a fraction of
+     the reach rather than a radius;
+   * its name in `_closed_tube`, and the square builder in
+     `SQUARE_LATTICE_CLOSED` -- same graph, so the donut's playability
+     measurement is its own;
+   * a `unit` per knob step, so the window's aspect is read in lengths: a knot
+     about seven tubes long has triangle windows whose *counts* break the
+     aspect cap (64 by 4) while their real proportions (32 sides by 3.5) sit
+     well inside it;
+   * a quarter-turn floor round the tube (`_knot_tube_turn`): on a donut the
+     curvature penalises a two-row tube, and on a knot the distortion score
+     rates its coincident plates as near-perfect rectangles;
+   * windows judged at the **thinnest** tube the sweep offers, and the seed's
+     cell-shape bar measured there too -- the chords' refusal depends on the
+     tube, so judged at the seed's tube the result depended on the seed and
+     every re-run grew the easy board a ring. (The same reason the double
+     torus judges its join at the thinnest tube.)
+   Re-run the search at least twice and check the rows do not move.
+8. **Expect the easy row to lose the size band**, and write the arithmetic
+   into `EXEMPT_ROWS` rather than tuning it away.
+
+The rest is the Klein recipe's: one `MANIFOLD_ORDER` / `MANIFOLD_LABELS` entry,
+the square tiling's `modeOverrides`, both icons (here the TypeScript one meshes
+the board's own `trefoilPoint`), the surface in the three Grafana dashboards'
+`surface` variable, and a gallery baseline.
+
+
 ## Recipe: add a surface that is not a wrapped rectangle
 
 The Klein bottle above is the pattern for a surface the plane *wraps onto*: an

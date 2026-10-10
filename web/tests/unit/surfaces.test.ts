@@ -10,7 +10,12 @@ import {
   mobiusHexBoard,
   torusBoard,
   torusHexBoard,
+  torusTriangleBoard,
+  trefoilBoard,
+  trefoilHexBoard,
+  trefoilTriangleBoard,
 } from "../../src/boards/surfaces";
+import { buildBoard } from "../../src/boards/presets";
 import {
   fanTriangles,
   insideOccluder,
@@ -310,6 +315,51 @@ describe("wrapped surfaces", () => {
     for (const id of ids(board)) assertSymmetry(board, id);
   });
 
+  it("the trefoil knot is the donut's graph, cell for cell", () => {
+    // the immersion moves where the cells are drawn and nothing else: the same
+    // window on the donut is the same board, neighbour for neighbour
+    const pairs: [Board3D, Board3D][] = [
+      [trefoilBoard(32, 8, 20), torusBoard(32, 8, 20)],
+      [trefoilTriangleBoard(64, 4, 20), torusTriangleBoard(64, 4, 20)],
+      [trefoilHexBoard(6, 43, 20), torusHexBoard(6, 43, 20)],
+    ];
+    for (const [knot, donut] of pairs) {
+      expect(knot.twoSided).toBe(false);
+      expect(new Map([...knot.adjacency].map(([c, n]) => [c, [...n].sort()]))).toEqual(
+        new Map([...donut.adjacency].map(([c, n]) => [c, [...n].sort()])),
+      );
+      // ...so it keeps the donut's symmetries, and the ring roll is the one
+      // that slides cells out from under the crossings
+      expect(ids(knot)).toEqual(ids(donut));
+      expect(ids(knot)).toContain("ring");
+      for (const id of ids(knot)) assertSymmetry(knot, id);
+    }
+  });
+
+  it("every trefoil face winds outward from the knot, not from the origin", () => {
+    // the donut's rule measures from the ring circle through the origin, which
+    // on the knot points every which way; the shipped boards must all face out
+    // the same way, so every edge is crossed once in each direction
+    for (const mode of ["trefoil", "trefoiltri", "trefoilhex"]) {
+      for (const difficulty of ["easy", "medium", "hard"] as const) {
+        const board = buildBoard(mode, difficulty) as Board3D;
+        const key = (p: Vec3): string => p.map((c) => c.toFixed(6)).join(",");
+        const edges = new Map<string, number>();
+        for (const polygon of board.polygons.values()) {
+          polygon.forEach((p, i) => {
+            const e = `${key(p)}>${key(polygon[(i + 1) % polygon.length]!)}`;
+            edges.set(e, (edges.get(e) ?? 0) + 1);
+          });
+        }
+        for (const [e, n] of edges) {
+          expect(n, `${mode}/${difficulty}`).toBe(1);
+          const [a, b] = e.split(">");
+          expect(edges.has(`${b}>${a}`), `${mode}/${difficulty}`).toBe(true);
+        }
+      }
+    }
+  });
+
   it("wrap builders validate their seam arguments", () => {
     expect(() => kleinBoard(12, 5, 9)).toThrow(); // tube must be even
     expect(() => kleinTriangleBoard(10, 5, 12)).toThrow(); // tube must be even
@@ -318,6 +368,8 @@ describe("wrapped surfaces", () => {
     expect(() => mobiusHexBoard(14, 4, 6)).toThrow(); // rows must be odd
     expect(() => cylinderTriangleBoard(15, 6, 11)).toThrow(); // ring must be even
     expect(() => cylinderHexBoard(12, 6, 9)).not.toThrow();
+    expect(() => trefoilBoard(32, 8, 9, 1)).toThrow(); // the strands would meet
+    expect(() => trefoilBoard(32, 8, 9, 0)).toThrow();
   });
 });
 

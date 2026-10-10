@@ -97,6 +97,9 @@ from minesweeper.boards import (
     torus_board,
     torus_hex_board,
     torus_triangle_board,
+    trefoil_board,
+    trefoil_hex_board,
+    trefoil_triangle_board,
     triangle_board,
     triangle_grid_board,
     truncated_icosidodecahedron_board,
@@ -131,6 +134,7 @@ from minesweeper.boards.catalan import (
 from minesweeper.boards.core import _cross
 from minesweeper.boards.core import newell_normal as _newell_normal
 from minesweeper.boards.presets import _WINDOWS, ARCH_PRESETS, window_for
+from minesweeper.boards.surfaces import TREFOIL_REACH, _trefoil_core
 
 # Template tilings split by symmetry type. Archimedean (uniform) tilings are
 # vertex-transitive (every vertex has the same configuration) and edge to
@@ -3275,6 +3279,182 @@ class TestDoubleTorus:
         it has to be a torus minus one disc."""
         with pytest.raises(ValueError, match="not the torus-minus-a-disc"):
             double_torus_triangle_board(10, 4, 20, 0.52, 1.0)
+
+
+class TestTrefoil:
+    """The donut's lattices on a tube round a trefoil knot. Nothing about the
+    surface changes -- it is a torus, glued as the donut is glued -- so the
+    tests that matter are that the graph really is the donut's, that the
+    immersion winds outward although the knot is no ring through the origin,
+    and that the tube never meets itself where the strands cross."""
+
+    MODES = ("trefoil", "trefoiltri", "trefoilhex")
+    TORUS = {"trefoil_board": torus_board,
+             "trefoil_triangle_board": torus_triangle_board,
+             "trefoil_hex_board": torus_hex_board}
+
+    @staticmethod
+    def _presets(mode):
+        from minesweeper.boards._data import load
+        spec = load("presets")["presets"][mode]
+        return spec["builder"], spec["args"]
+
+    @staticmethod
+    def _nearest_t(point, samples=240):
+        """The knot parameter nearest ``point``: the best of an even sample,
+        then refined by golden section either side of it."""
+        step = 2 * math.pi / samples
+        best = min(range(samples),
+                   key=lambda k: math.dist(point, _trefoil_core(k * step)[0]))
+        lo, hi = (best - 1) * step, (best + 1) * step
+        g = (5 ** 0.5 - 1) / 2
+        for _ in range(40):
+            a, b = hi - g * (hi - lo), lo + g * (hi - lo)
+            if (math.dist(point, _trefoil_core(a)[0])
+                    < math.dist(point, _trefoil_core(b)[0])):
+                hi = b
+            else:
+                lo = a
+        return (lo + hi) / 2 % (2 * math.pi)
+
+    @pytest.mark.parametrize("mode", MODES)
+    @pytest.mark.parametrize("difficulty", DIFFICULTIES)
+    def test_is_a_closed_orientable_torus(self, mode, difficulty):
+        board = build_board(mode, difficulty)
+        assert _euler_characteristic(board) == 0
+        assert _boundary_components(board) == 0
+        assert board.two_sided is False
+
+    @pytest.mark.parametrize("mode", MODES)
+    def test_the_surface_declares_the_torus_topology(self, mode):
+        surface = surface_of(mode)
+        assert surface.key == "trefoil"
+        assert (surface.euler, surface.boundary_components) == (0, 0)
+
+    @pytest.mark.parametrize("mode", MODES)
+    @pytest.mark.parametrize("difficulty", DIFFICULTIES)
+    def test_the_graph_is_the_donuts_cell_for_cell(self, mode, difficulty):
+        """The knot only moves where the cells are drawn: the same window on
+        the donut is the same board, neighbour for neighbour. (So the donut's
+        playability measurements -- `resize.MIN_WRAP_CELLS` -- are the knot's
+        own.)"""
+        builder, args = self._presets(mode)
+        ring, tube, mines, _fraction = args[difficulty]
+        knot = build_board(mode, difficulty)
+        donut = self.TORUS[builder](ring, tube, mines)
+        assert knot.adjacency == donut.adjacency
+
+    @pytest.mark.parametrize("mode", MODES)
+    @pytest.mark.parametrize("difficulty", DIFFICULTIES)
+    def test_every_face_winds_outward_from_the_knot(self, mode, difficulty):
+        """The donut's rule measures "outward" from the ring circle through
+        the origin, which on a knot points every which way; the builder
+        measures it from the knot's own centre line instead."""
+        board = build_board(mode, difficulty)
+        for polygon in board.polygons.values():
+            # summed over the corners, each against the knot point nearest
+            # *it*: a long slat on a tight bend is twisted enough that its
+            # centre's nearest knot point says almost nothing about which way
+            # the slat faces
+            outward = [0.0, 0.0, 0.0]
+            for corner in polygon:
+                core, _ = _trefoil_core(self._nearest_t(corner))
+                for i in range(3):
+                    outward[i] += corner[i] - core[i]
+            assert sum(a * b for a, b in zip(_newell_normal(polygon), outward)) > 0
+
+    @pytest.mark.parametrize("mode", MODES)
+    @pytest.mark.parametrize("difficulty", DIFFICULTIES)
+    def test_the_winding_is_consistent(self, mode, difficulty):
+        """On a closed orientable surface wound one way throughout, every edge
+        is traversed once in each direction -- the combinatorial check that
+        the outward rule never flips a face against its neighbours."""
+        board = build_board(mode, difficulty)
+        def key(p):
+            return tuple(round(c, 6) for c in p)
+        edges = Counter()
+        for polygon in board.polygons.values():
+            ring = [key(p) for p in polygon]
+            edges.update(zip(ring, ring[1:] + ring[:1]))
+        assert all(n == 1 for n in edges.values())
+        assert all((b, a) in edges for a, b in edges)
+
+    def test_the_reach_is_what_the_knot_measures(self):
+        """TREFOIL_REACH is measured, so measure it again: half the closest
+        approach of two points far apart along the knot (a doubly critical
+        pair), which here is tighter than the tightest bend."""
+        n = 600
+        ts = [2 * math.pi * k / n for k in range(n)]
+        pts = [_trefoil_core(t)[0] for t in ts]
+        best, pair = math.inf, None
+        for i in range(n):
+            for j in range(i + 1, n):
+                if min(j - i, n - j + i) * 2 * math.pi / n < 0.8:
+                    continue
+                d = math.dist(pts[i], pts[j])
+                if d < best:
+                    best, pair = d, (ts[i], ts[j])
+        s, t = pair
+        h = 1e-3
+        while h > 1e-10:
+            moved = False
+            for ds, dt in ((h, 0), (-h, 0), (0, h), (0, -h)):
+                d = math.dist(_trefoil_core(s + ds)[0], _trefoil_core(t + dt)[0])
+                if d < best:
+                    best, s, t, moved = d, s + ds, t + dt, True
+            if not moved:
+                h /= 2
+        assert best / 2 == pytest.approx(TREFOIL_REACH, abs=1e-5)
+        # ...and the bend is not the tighter limit: the radius of curvature
+        # never drops to the reach
+        def curvature(t, e=1e-4):
+            a, b, c = (_trefoil_core(t + k * e)[0] for k in (-1, 0, 1))
+            d1 = [(z - x) / (2 * e) for x, z in zip(a, c)]
+            d2 = [(x - 2 * y + z) / e / e for x, y, z in zip(a, b, c)]
+            return math.hypot(*_cross(d1, d2)) / math.hypot(*d1) ** 3
+        assert max(curvature(t) for t in ts) < 1 / TREFOIL_REACH
+
+    @pytest.mark.parametrize("mode", MODES)
+    @pytest.mark.parametrize("difficulty", DIFFICULTIES)
+    def test_no_face_reaches_another_strand(self, mode, difficulty):
+        """The board is embedded: every point of every face is nearest the
+        stretch of knot its own cell spans, so it is inside its own slab of
+        the tube and no other strand's face can reach it. Probed at each
+        face's corners, edge midpoints and centre."""
+        builder, args = self._presets(mode)
+        board = build_board(mode, difficulty)
+        steps = args[difficulty][0] if builder != "trefoil_hex_board" else 2 * args[difficulty][1]
+        margin = 2 * math.pi / steps
+        for polygon in board.polygons.values():
+            corner_ts = [self._nearest_t(p) for p in polygon]
+            # the cell's span along the knot, unwrapped about its first corner
+            first = corner_ts[0]
+            offsets = [(t - first + math.pi) % (2 * math.pi) - math.pi for t in corner_ts]
+            lo, hi = min(offsets) - margin, max(offsets) + margin
+            probes = [tuple((a + b) / 2 for a, b in zip(p, q))
+                      for p, q in zip(polygon, polygon[1:] + polygon[:1])]
+            probes.append(tuple(sum(c) / len(polygon) for c in zip(*polygon)))
+            for probe in probes:
+                t = (self._nearest_t(probe) - first + math.pi) % (2 * math.pi) - math.pi
+                assert lo <= t <= hi
+
+    def test_refuses_a_tube_that_meets_itself(self):
+        for tube in (0.0, 1.0, 1.2):
+            with pytest.raises(ValueError, match="fraction of TREFOIL_REACH"):
+                trefoil_board(60, 8, 10, tube)
+
+    @pytest.mark.parametrize("builder,window", [
+        (trefoil_board, (10, 8)),           # ten slats round a whole knot
+        (trefoil_triangle_board, (6, 14)),  # each triangle a third of it
+        (trefoil_hex_board, (4, 6)),
+    ])
+    def test_refuses_a_window_whose_chords_cut_through_the_knot(self, builder, window):
+        """A face is flat, so a window a handful of cells along the knot draws
+        chords straight through the strands it should wind round. Cell shape
+        cannot see it -- each triangle of the 6x14 window is well shaped --
+        and it was the size search's first answer for the easy board."""
+        with pytest.raises(ValueError, match="too coarse"):
+            builder(*window, 10, 0.5)
 
 
 class TestKleinTilings:

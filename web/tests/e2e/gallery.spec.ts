@@ -43,6 +43,10 @@ const MODES = [
   // merged at their outer rims. Its own renderer path is the donut's, but the
   // shape of the join is geometry nothing else in the suite can see.
   "doubletorus",
+  // ...and the donut's own lattice on a tube round a trefoil knot: the same
+  // renderer path, but the only board whose winding is measured from a curve
+  // rather than a circle, and whose strands pass over and under each other.
+  "trefoil",
   // M5 aperiodic flat tilings: Penrose rhombi (thick/thin), trimmed to a
   // square patch, and the Spectre (a non-convex 13-gon, the chiral monotile
   // -- no tile in its patch is ever mirrored).

@@ -166,6 +166,21 @@ EXEMPT_ROWS = {
     # blob MAX_WAIST exists to forbid.
     ("doubletorustri", "easy"),          # 256; nothing smaller keeps its waist
     ("doubletorushex", "easy"),          # 196; likewise
+    # The trefoil knot is a donut drawn round a knot, and the knot is long: at
+    # the fattest tube it can carry without its strands meeting
+    # (`surfaces.TREFOIL_REACH`) it is still ~6 tube circumferences round. Two
+    # floors then meet. Round the tube, the donut's own: a square board is the
+    # donut's graph cell for cell, so `resize.MIN_WRAP_CELLS` (8) is measured
+    # on it already, and a triangle may take no more than a quarter turn of
+    # the tube (`resize._knot_tube_turn`, 4 rows). Along the knot, the faces
+    # are flat chords and must not sag into another strand
+    # (`surfaces._trefoil_sag`): even at the thinnest tube the search offers,
+    # half the reach, that takes 16 slats or 32 triangles. So the smallest
+    # boards are 16x8 = 128 squares and 32x4 = 128 triangles; the search took
+    # 36x4 = 144 for the triangles, a slightly fatter tube buying much rounder
+    # cells. Hexagons fit: 6x16 = 96, inside the outer band.
+    ("trefoil", "easy"),                 # 128: 8 round the tube, 16 along
+    ("trefoiltri", "easy"),              # 144; 128 is the floor
 }
 
 # Everything else is held to two bars rather than one. A single +-15% rule

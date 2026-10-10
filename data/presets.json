@@ -193,6 +193,29 @@
         ]
       }
     },
+    "trefoil": {
+      "builder": "trefoil_board",
+      "args": {
+        "easy": [
+          16,
+          8,
+          28,
+          0.5
+        ],
+        "medium": [
+          32,
+          8,
+          54,
+          0.8
+        ],
+        "hard": [
+          60,
+          8,
+          110,
+          0.6
+        ]
+      }
+    },
     "torustri": {
       "builder": "torus_triangle_board",
       "args": {
@@ -216,6 +239,29 @@
         ]
       }
     },
+    "trefoiltri": {
+      "builder": "trefoil_triangle_board",
+      "args": {
+        "easy": [
+          36,
+          4,
+          26,
+          0.6
+        ],
+        "medium": [
+          64,
+          4,
+          47,
+          0.7
+        ],
+        "hard": [
+          80,
+          6,
+          119,
+          0.7
+        ]
+      }
+    },
     "torushex": {
       "builder": "torus_hex_board",
       "args": {
@@ -236,6 +282,29 @@
           34,
           119,
           0.33
+        ]
+      }
+    },
+    "trefoilhex": {
+      "builder": "trefoil_hex_board",
+      "args": {
+        "easy": [
+          6,
+          16,
+          16,
+          0.5
+        ],
+        "medium": [
+          6,
+          43,
+          43,
+          0.6
+        ],
+        "hard": [
+          8,
+          60,
+          103,
+          0.6
         ]
       }
     },

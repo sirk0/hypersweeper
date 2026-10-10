@@ -12,7 +12,7 @@ Every board's mine count, chosen so its win probability under the reference solv
 
 ## Coverage
 
-- 576 rows, 544 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
+- 585 rows, 553 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
 - 32 could not be brought on target:
   - `cube3d`/hard: 33.3% vs 50.9% — the search could not resolve it -- its thinnest measurement finished 0 game(s), so the rate here is noise rather than a crossing the search walked to. Re-measure at a bigger `--budget`
   - `cylinder`/easy: 89.1% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (7, 9%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
@@ -46,7 +46,7 @@ Every board's mine count, chosen so its win probability under the reference solv
   - `triakis`/medium: 0.0% vs 87.1% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `triakis`/easy: 1.8% vs 96.5% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `truncicosidodeca`/hard: 45.9% vs 50.9% — no integer mine count lands within tolerance; this is the closest
-- 137 rows had games the solver abandoned (its frontier DP hit its node budget); their rates are measured over the games that finished:
+- 139 rows had games the solver abandoned (its frontier DP hit its node budget); their rates are measured over the games that finished:
   - `cube3d`/hard: 466 abandoned
   - `torustrunchex`/hard: 168 abandoned
   - `torusrotatedhex`/hard: 144 abandoned
@@ -246,6 +246,9 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `torustrunchex` | 6.0 | 90c 6m (7%) 97% | 252c 16m (6%) 91% | 480c 40m (8%) 50% |
 | `torustruncsquare` | 6.0 | 80c 7m (9%) 94% | 252c 39m (15%) 88% | 480c 98m (20%) 52% |
 | `torustrunctrihex` | 6.0 | 96c 13m (14%) 98% | 288c 47m (16%) 87% | 468c 87m (19%) 52% |
+| `trefoil` | 8.0 | 128c 28m (22%) 97% | 256c 54m (21%) 88% | 480c 110m (23%) 50% |
+| `trefoilhex` | 6.0 | 96c 16m (17%) 99% | 258c 43m (17%) 90% | 480c 103m (21%) 48% |
+| `trefoiltri` | 12.0 | 144c 26m (18%) 98% | 256c 47m (18%) 89% | 480c 119m (25%) 50% |
 | `triakis` | 18.7 | 76c 10m (13%) 2% ⚠ | 248c 40m (16%) 0% ⚠ | 490c 98m (20%) 0% ⚠ |
 | `triakisicosa` | 12.6 | 240c 37m (15%) 96% | 240c 47m (20%) 90% | 540c 131m (24%) 52% |
 | `triakisocta` | 12.1 | 96c 20m (21%) 94% | 216c 47m (22%) 91% | 384c 108m (28%) 48% |

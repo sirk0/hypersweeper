@@ -75,6 +75,7 @@ import {
   tetrahedronFrameBoard,
   truncatedIcosidodecahedronBoard,
 } from "../boards/solids";
+import { trefoilPoint } from "../boards/surfaces";
 import { solidCubeBoard } from "../boards/volume";
 import { DOMAINS } from "./backgroundPattern";
 import { newellNormal, type Board, type Board3D, type Vec3 } from "../boards/core";
@@ -899,6 +900,12 @@ const DOUBLE_TORUS: SurfacePoint[] = [-1, 1].map((side) => (u, v) => {
   return [side + radial * Math.cos(u), radial * Math.sin(u), r * Math.sin(v)];
 });
 
+/** The trefoil knot's tube (surfaces.ts `trefoilPoint`, the board's own
+ * immersion): u along the knot, v round the tube. At a board's fattest tube the
+ * strands all but touch at icon size and the three holes close up, so it is
+ * drawn at a middling one -- the holes are what make it read as a knot. */
+const TREFOIL: SurfacePoint = (u, v) => trefoilPoint(u, v, 0.6);
+
 /** u round the loop, v across the half-twisting band. */
 const MOBIUS: SurfacePoint = (u, v) => {
   const radial = 1 + v * Math.cos(u / 2);
@@ -1662,6 +1669,11 @@ function draw(rawKey: string): string[] {
     // flatter than the single donut's view: the eight is what identifies it,
     // and at -62 degrees the two rings overlap into one blob
     parts.push(...surfaceMesh(DOUBLE_TORUS, { view: [-48, 0], uSteps: 30, vSteps: 10 }));
+  } else if (key === "trefoil") {
+    // nearly straight down the knot's three-fold axis, which is the view the
+    // trefoil is known by; the slight tilt keeps the crossings reading as
+    // over and under rather than as a flat ribbon
+    parts.push(...surfaceMesh(TREFOIL, { view: [-18, 0], uSteps: 96, vSteps: 8 }));
   } else if (key === "klein") {
     parts.push(...surfaceMesh(KLEIN, { view: [180, -18], uSteps: 48, vSteps: 14 }));
   } else {

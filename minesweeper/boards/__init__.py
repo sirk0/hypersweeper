@@ -184,6 +184,7 @@ from minesweeper.boards.surfaces import (  # noqa: F401
     _klein_point,
     _mobius_point,
     _torus_point,
+    _trefoil_point,
     arch_cylinder_board,
     arch_klein_board,
     arch_mobius_board,
@@ -203,6 +204,9 @@ from minesweeper.boards.surfaces import (  # noqa: F401
     torus_board,
     torus_hex_board,
     torus_triangle_board,
+    trefoil_board,
+    trefoil_hex_board,
+    trefoil_triangle_board,
 )
 from minesweeper.boards.tilings import (  # noqa: F401
     _ARCH_CONFIGS,

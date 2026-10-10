@@ -86,6 +86,21 @@ SPEC: dict[str, dict] = {
                                         kind="tube", waist=True),
     "double_torus_hex_board": dict(size=(0, 1), mine=2, shape=3, kind="tube",
                                    waist=True),
+    # The trefoil knot: the donut's lattices on a tube round a knot, so the
+    # donut's two knobs (along the knot, round the tube) and a tube that is a
+    # *fraction of the knot's reach* rather than a radius -- see `"knot"` in
+    # SHAPE_SWEEP. Both directions close (`_closed_tube`), and the square one
+    # is the donut's graph exactly, so it takes the donut's playability floor
+    # (`SQUARE_LATTICE_CLOSED`).
+    # ...and `unit`, the length of one step of each knob, so the window's
+    # aspect is read in lengths rather than counts (see `_window_aspect`): a
+    # triangle step is half a side and a row sqrt(3)/2 of one, a hex row 1.5
+    # and a hex column sqrt(3).
+    "trefoil_board": dict(size=(0, 1), mine=2, shape=3, kind="knot"),
+    "trefoil_triangle_board": dict(size=(0, 1), mine=2, shape=3, kind="knot",
+                                   unit=(0.5, 3 ** 0.5 / 2)),
+    "trefoil_hex_board": dict(size=(0, 1), mine=2, shape=3, kind="knot",
+                              unit=(1.5, 3 ** 0.5)),
     "mobius_board": dict(size=(0, 1), mine=2, shape=None),
     "mobius_triangle_board": dict(size=(0, 1), mine=2, shape=None),
     "mobius_hex_board": dict(size=(0, 1), mine=2, shape=None),
@@ -244,9 +259,20 @@ COARSE_MIN_LEVEL = {("pentaflake", "easy"): 3}
 # Klein builders take a tube *scale* around 1.0. Same role -- the surface's own
 # proportions, the other half of what sets cell distortion -- different units,
 # and sweeping one over the other's range squashes the bottle.
+#
+# The trefoil's tube is a fraction of the knot's *reach* (TREFOIL_REACH in
+# surfaces.py), the thickest tube it carries before its strands meet at the
+# crossings, and the builder refuses 1 or more. That cap is what sets the
+# board's proportions: the knot is about 7.6 tube circumferences long at 0.8,
+# where a donut's ring is about 2.2 at a radius of 0.45, so its cells are
+# rounder the fatter the tube and the search will lean on the top of the
+# range. The range stops at 0.9 rather than nearer 1: the faces are flat
+# chords, and at the closest crossing two tubes 0.95 of the reach apart leave
+# a gap of a few hundredths that a coarse face can sag across.
 SHAPE_SWEEP = {
     "tube": (0.28, 0.33, 0.38, 0.45, 0.52),
     "tubescale": (0.7, 0.85, 1.0, 1.15, 1.3),
+    "knot": (0.5, 0.6, 0.7, 0.8, 0.9),
 }
 
 # How hard squareness pushes. A flat board is judged on the board's own aspect
@@ -439,7 +465,10 @@ MIN_WRAP_CELLS = 8
 # property of the square lattice's eight neighbours, and this bar is written
 # where it was measured rather than assumed everywhere -- the same reason
 # `torushex` at six around is not covered.
-SQUARE_LATTICE_CLOSED = {"torus_board", "klein_board", "double_torus_board"}
+# The trefoil's square board is the donut's graph cell for cell -- the knot
+# only changes where it is drawn -- so the donut's measurement is its own.
+SQUARE_LATTICE_CLOSED = {"torus_board", "klein_board", "double_torus_board",
+                         "trefoil_board"}
 ROLLED_ASPECT_WEIGHT = 1.2
 
 
@@ -490,9 +519,10 @@ def _closed_tube(builder: str) -> bool:
     A cylinder and a Mobius strip have an open second direction -- a rim and
     an edge -- so only the seam needs enough tiles around it. A donut and a
     Klein bottle close both ways, and a window one or two domains tall gives
-    the tube a cross-section of three or four facets.
+    the tube a cross-section of three or four facets. So does the trefoil
+    knot, which is a donut drawn round a knot.
     """
-    return "torus" in builder or "klein" in builder
+    return "torus" in builder or "klein" in builder or "trefoil" in builder
 
 
 # how many windows to actually build per row; the rest are further from the
@@ -715,6 +745,15 @@ def _window_aspect(builder: str, spec: dict, trial: list) -> float:
     a, b = _wrap_copies(spec, trial, 0), trial[knobs[1]]
     if not a or not b:
         return float("inf")
+    if spec.get("unit"):
+        # Counts are not lengths on the triangle and hex lattices: a ring of 64
+        # triangles is 32 sides long, and four rows are 3.5 sides tall, so the
+        # knob ratio of 16 is a window of 9. Nothing else ever came near the
+        # cap for it to matter -- but the trefoil is a knot about seven tubes
+        # long, and read in counts the cap refused its best triangle windows.
+        # Declared per builder (only the trefoil's) so no row already shipped
+        # moves under it.
+        a, b = a * spec["unit"][0], b * spec["unit"][1]
     if spec.get("lead"):
         try:
             from minesweeper.boards.tilings import _arch_template
@@ -835,6 +874,26 @@ def _wrap_copies(spec: dict, trial: list, axis: int) -> float:
         except Exception:
             pass
     return copies
+
+
+def _knot_tube_turn(builder: str, trial: list) -> float:
+    """What fraction of the trefoil's tube one tile spans: ``MAX_TILE_TURN``
+    for the plain trefoil builders, whose knobs count cells.
+
+    On a donut the curvature does this job -- a tube two cells round is two
+    flat plates, and cell distortion sees them bent through the ring. On the
+    knot it does not: two rows round the tube put both faces of a cell pair on
+    the same four points, and the distortion score rates those coincident
+    plates as near-perfect rectangles (1.07, the best window it was offered).
+    So the quarter turn is counted directly. A square or a triangle spans one
+    row of ``tube``; a hexagon of the offset lattice spans 4 of the ``3 *
+    rows`` vertex steps round the tube, so it needs six rows.
+    """
+    if builder == "trefoil_hex_board":
+        return 4 / (3 * trial[0])
+    if builder in ("trefoil_board", "trefoil_triangle_board"):
+        return 1 / trial[1]
+    return 0.0
 
 
 def _tile_turn(spec: dict, trial: list, axis: int) -> float:
@@ -1282,8 +1341,17 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
     # reference of 1.0 -- every builder that is not Archimedean -- this is the
     # ratio it has always been.
     base_edge = _planar_reference(spec, args)[2]
+    # The trefoil's windows are judged at its thinnest tube (see `collect`),
+    # so the seed is measured there too: held at the seed's own tube, the bar
+    # was set by a fatter, rounder board than any window was then compared at,
+    # and the easy board grew a ring every time it was re-run.
+    reference = probe
+    if spec.get("kind") == "knot":
+        thin = _pad(builder, list(args), spec["shape"])
+        thin[spec["shape"]] = min(SHAPE_SWEEP["knot"])
+        reference = _build(builder, thin)
     shape_bar = (float("inf") if spec.get("rigid")
-                 else max(_off_planar(edge_ratio(probe, corners), base_edge) * 1.02,
+                 else max(_off_planar(edge_ratio(reference, corners), base_edge) * 1.02,
                           SHAPE_BAR_FLOOR))
     if _rolled_flat(builder) and "mobius" in builder:
         # A Mobius strip closes with a half twist, so a *wide* one is stretched
@@ -1294,6 +1362,23 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
         # term pick a squarer strip.
         shape_bar = max(shape_bar, MOBIUS_SHAPE_BAR)
 
+    def band_penalty(n: int) -> float:
+        # Two tiers, because the size bands are two bars rather than one:
+        # missing +-15% is what the search is trying not to do, and missing
+        # +-25% as well is what `test_no_board_is_far_from_the_classic_size`
+        # refuses outright. Without the second tier a size score of pure
+        # |log| picks 326 cells over 198 against a 256 target -- a hair
+        # closer in log terms, and the only one of the two the suite fails.
+        # Out of the band, size stops being one term among several and
+        # becomes the thing to minimise: the shape terms are tuned to
+        # choose between windows that are all about the right size, and
+        # left to compete on their own they will take a 288-cell cylinder
+        # over a 144-cell one against a target of 81 for a better aspect.
+        penalty = 10.0 + 2.0 * abs(math.log(n / target))
+        if not (target * (1 - OUTER_BAND) <= n <= target * (1 + OUTER_BAND)):
+            penalty += 1.0
+        return penalty
+
     def collect(in_band: bool, keep_shape: bool, fair: bool = True,
                 net: list | None = None, fold: bool = True) -> list:
         found = []
@@ -1301,6 +1386,17 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
             trial = list(args)
             for knob, value in zip(knobs, values):
                 trial[knob] = value
+            if spec.get("kind") == "knot":
+                # The trefoil refuses a window whose chords sag into another
+                # strand, and how much sag it can take shrinks as the tube
+                # fattens -- so judged at the seed's tube, which windows exist
+                # at all depended on the seed, and each re-run grew the easy
+                # board by a ring. Judged at the thinnest tube the sweep below
+                # offers, every window that can be built at some tube is in;
+                # the sweep then picks the tube, as `_best_waist` does for the
+                # double torus's join.
+                trial = _pad(builder, trial, spec["shape"])
+                trial[spec["shape"]] = min(SHAPE_SWEEP["knot"])
             try:
                 board = _build(builder, trial)
             except Exception:
@@ -1347,6 +1443,8 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
                 if any(_tile_turn(spec, trial, axis)
                        > MAX_TILE_TURN + TILE_TURN_SLACK for axis in axes):
                     continue
+                if _knot_tube_turn(builder, trial) > MAX_TILE_TURN + TILE_TURN_SLACK:
+                    continue
                 # ...and no tile cutting a chord its neighbours stand proud
                 # of, which is the same fold seen from the side (see
                 # MAX_FACET_STEP). Unlike the quarter above, this one gives
@@ -1390,20 +1488,7 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
             # already all twins, a relative bar permits itself.
             if fair and indistinguishable_cells(board.adjacency) > 0:
                 continue
-            # Two tiers, because the size bands are two bars rather than one:
-            # missing +-15% is what the search is trying not to do, and missing
-            # +-25% as well is what `test_no_board_is_far_from_the_classic_size`
-            # refuses outright. Without the second tier a size score of pure
-            # |log| picks 326 cells over 198 against a 256 target -- a hair
-            # closer in log terms, and the only one of the two the suite fails.
-            # Out of the band, size stops being one term among several and
-            # becomes the thing to minimise: the shape terms are tuned to
-            # choose between windows that are all about the right size, and
-            # left to compete on their own they will take a 288-cell cylinder
-            # over a 144-cell one against a target of 81 for a better aspect.
-            penalty = 0.0 if in_band else 10.0 + 2.0 * abs(math.log(n / target))
-            if not (target * (1 - OUTER_BAND) <= n <= target * (1 + OUTER_BAND)):
-                penalty += 1.0
+            penalty = 0.0 if in_band else band_penalty(n)
             found.append((
                 _score(mode, board, target, is_flat, builder, spec, trial) + penalty,
                 trial, n,
@@ -1496,8 +1581,23 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
                         continue
                     if spec.get("waist") and waist_ratio(board) > MAX_WAIST:
                         continue
+                    # ...and on the trefoil with the size band's penalty kept:
+                    # the windows came out of `collect` ranked with it, and
+                    # re-ranked without it an out-of-band row trades size back
+                    # for shape -- its easy board grew two rings a re-run, each
+                    # result raising the cell-shape bar the next was held to.
+                    # Scoped to the knot because every builder's sweep has the
+                    # same gap, and closing it everywhere re-measures 17
+                    # shipped rows (the double torus, and the coarse-domain
+                    # torus and Klein tilings) differently -- a change to
+                    # make on purpose, with their boards looked at, not as a
+                    # side effect of this one.
+                    knot_band = (spec.get("kind") == "knot"
+                                 and not lo <= n <= hi)
                     out.append((_score(mode, board, TARGETS[difficulty], False,
-                                       builder, spec, cand), cand, n))
+                                       builder, spec, cand)
+                                + (band_penalty(n) if knot_band else 0.0),
+                                cand, n))
             return out
 
         # ...and where the two bars leave no radius at all, the *shape* one

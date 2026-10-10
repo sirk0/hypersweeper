@@ -212,7 +212,9 @@ from the `family` field, no menu edit needed), a
 surface is one `SurfaceSpec` + an immersion + a wrap builder; the menu,
 mode strings, `MODES_3D`, and chirality gating all derive from those
 registries. A fifth surface, the **double torus**, is not a wrap of a
-rectangle at all -- see the next section.
+rectangle at all -- see the next section -- and a sixth, the **trefoil knot**,
+is not a new surface at all but the torus drawn a second way (see "The trefoil
+knot" below).
 
 ## The double torus
 
@@ -307,6 +309,53 @@ Four consequences worth knowing before touching it:
   closed board needs eight cells each way (`resize.MIN_WRAP_CELLS`, measured on
   this board: 8x6 is 80 cells, bang on the easy target, with a join only 71%
   wide, and tops out at a 92.0% win rate against a target of 96.5%).
+
+## The trefoil knot
+
+`trefoil`, `trefoiltri` and `trefoilhex` are the donut's three lattices, glued
+exactly as the donut glues them, on a tube round a trefoil -- the (2,3) torus
+knot, scaled into the unit ball. Topologically nothing is new: chi = 0, no
+boundary, and the adjacency is the donut's **cell for cell** (`TestTrefoil`
+asserts it against the torus builder with the same window), so every symmetry
+the donut offers survives, and the ring roll is the one that matters -- it
+slides the cells hidden where the knot crosses itself out into view. Only the
+immersion is new, and three things about it were worth deciding:
+
+* **The frame.** A tube round a curve needs a normal that comes back to itself
+  after one loop, or the seam glues with a twist. The knot lies on a torus, and
+  that torus's normal is perpendicular to the knot's tangent everywhere, so it
+  is the frame: closed-form, periodic, never degenerate. A rotation-minimising
+  frame would twist less but needs numerical integration and a holonomy fix
+  matched in both ports; the price here is that rows shear gently where the
+  inner strands turn, which reads fine.
+* **The reach.** `TREFOIL_REACH` (0.2772) is the thickest tube the knot carries
+  before it touches itself, measured: half the closest approach of two points
+  far apart along it (a doubly critical pair). The bend is not the binding
+  limit -- its radius never drops below 0.477 -- so the tube is capped where the
+  strands meet at the crossings. The builders take the tube as a *fraction* of
+  the reach and refuse 1 or more, and that cap is what sets the board's
+  proportions: even at the reach the knot is about six tube circumferences
+  long, where a donut's ring is two.
+* **The chords.** A face is flat, so it lies in the hull of its corners, and
+  every point of it is within `radius + sag` of the stretch of knot it spans
+  (`_trefoil_sag`). Two stretches far apart along the knot are never closer
+  than twice the reach, so while that sum stays under the reach no two faces of
+  distant cells can meet. The builder refuses any window that breaks it -- a
+  handful of triangles along the knot each span a third of it, and was the size
+  search's first answer for the easy board. `TestTrefoil` checks the shipped
+  boards directly: every probe of every face is nearest its own cell's stretch
+  of knot.
+
+The donut's rule for which way is out measures from the ring circle through the
+origin, which on a knot points every which way, so the builders pass an
+`orient` that measures each vertex against the knot at its *own* t -- a face
+across the seam is never averaged through the middle of the knot.
+
+What the knot costs is the easy board. Round the tube a square board is the
+donut's graph, so the donut's measured floor of eight cells (`MIN_WRAP_CELLS`)
+is the knot's own; along it the chords need sixteen slats even at the thinnest
+tube the size search offers. So easy is 128 squares (or 144 triangles), not 81,
+and both rows are listed with that arithmetic in `tests/test_presets.py`.
 
 ## The aperiodic boards
 

@@ -1,9 +1,10 @@
-"""Wrapping flat tilings onto 3D surfaces (donut, cylinder, Möbius strip,
-Klein bottle).
+"""Wrapping flat tilings onto 3D surfaces (donut, trefoil knot, cylinder,
+Möbius strip, Klein bottle, double donut).
 
 Every wrapped board is built the same way: pick vertex keys on an integer
 grid, glue them at the seam, map each key onto the surface with an
-*immersion* ( _torus_point / _cylinder_point / _mobius_point / _klein_point ),
+*immersion* ( _torus_point / _trefoil_point / _cylinder_point /
+_mobius_point / _klein_point ),
 then hand the cells to _assemble, which shares the adjacency / polygon /
 Board3D tail and the outward-orientation (closed) vs two-sided (open)
 choice.
@@ -74,6 +75,48 @@ def _klein_point(u: float, v: float, tube: float = 1.0) -> Vec3:
     return (x, y, r * math.sin(v))
 
 
+# The trefoil is the (2,3) torus knot: the curve winds twice round the z axis
+# while it winds three times round a core circle of radius 2 (tube 1), scaled
+# by 1/3 so the knot fits the unit ball like every other board.
+#
+# TREFOIL_REACH is the thickest tube the knot carries before it touches
+# itself, in those units -- measured, not derived. Two limits compete: the
+# tightest bend (radius of curvature 0.4768) and half the distance between the
+# two strands that pass closest (0.2772, at t = 3.0711 and 5.3065, a doubly
+# critical pair). The second wins, so a tube of TREFOIL_REACH is where the
+# strands meet at the crossings. tests/test_boards.py re-measures it.
+TREFOIL_REACH = 0.27721
+
+
+def _trefoil_core(t: float) -> tuple[Vec3, Vec3]:
+    """The knot's centre line at ``t`` (radians, once round the knot over
+    2*pi) and the frame vector ``n`` there: the normal of the torus the knot
+    lies on, which is perpendicular to the knot's own tangent because that
+    tangent lies in the torus."""
+    c2, s2, c3, s3 = math.cos(2 * t), math.sin(2 * t), math.cos(3 * t), math.sin(3 * t)
+    radial = 2.0 + c3
+    return ((radial * c2 / 3, radial * s2 / 3, s3 / 3), (c3 * c2, c3 * s2, s3))
+
+
+def _trefoil_point(t: float, phi: float, tube: float) -> Vec3:
+    """A point on the tube round the trefoil knot: ``t`` along the knot,
+    ``phi`` round the tube (radians), ``tube`` its radius as a fraction of
+    TREFOIL_REACH. The frame is the torus normal ``n`` and ``b = T x n``,
+    both closed-form and periodic in ``t``, so after one loop the tube comes
+    back to itself untwisted and the gluing is exactly the donut's."""
+    c, n = _trefoil_core(t)
+    c2, s2, c3, s3 = math.cos(2 * t), math.sin(2 * t), math.cos(3 * t), math.sin(3 * t)
+    tx = -3 * s3 * c2 - 2 * (2 + c3) * s2
+    ty = -3 * s3 * s2 + 2 * (2 + c3) * c2
+    tz = 3 * c3
+    norm = math.sqrt(tx * tx + ty * ty + tz * tz)
+    tx, ty, tz = tx / norm, ty / norm, tz / norm
+    b = (ty * n[2] - tz * n[1], tz * n[0] - tx * n[2], tx * n[1] - ty * n[0])
+    rho = tube * TREFOIL_REACH
+    cp, sp = math.cos(phi), math.sin(phi)
+    return tuple(ci + rho * (cp * ni + sp * bi) for ci, ni, bi in zip(c, n, b))
+
+
 # -- assembly: shared tail for every wrapped board ---------------------------
 
 
@@ -122,6 +165,52 @@ def _max_radius(positions) -> float:
 # -- the donut ---------------------------------------------------------------
 
 
+def _square_cells(ring: int, tube: int) -> dict:
+    """The square lattice glued straight both ways: ``ring`` cells round one
+    direction, ``tube`` round the other. Shared by every surface that is a
+    torus whatever it is immersed as -- the donut, the trefoil knot, and each
+    of the double donut's two pieces."""
+    return {
+        (i, j): [(i, j), ((i + 1) % ring, j),
+                 ((i + 1) % ring, (j + 1) % tube), (i, (j + 1) % tube)]
+        for i in range(ring)
+        for j in range(tube)
+    }
+
+
+def _triangle_cells(ring: int, tube: int) -> dict:
+    """The regular triangular lattice glued straight both ways: ``ring``
+    triangles in every row (even, so up/down triangles alternate across the
+    seam) and ``tube`` rows (even, so the offset rows meet where they close).
+    Vertex keys wrap with periods ``ring`` and ``tube``."""
+    if ring % 2:
+        raise ValueError("ring must be even for the triangle strip to wrap")
+    if tube % 2:
+        raise ValueError("tube must be even so the offset rows wrap")
+    return {
+        (r, i): [(kx % ring, ky % tube) for kx, ky
+                 in _triangle_vertices(i, r, up=(r + i) % 2 == 0)]
+        for r in range(tube)
+        for i in range(ring)
+    }
+
+
+def _hex_cells(rows: int, cols: int) -> tuple[dict, int, int]:
+    """The offset hex lattice glued straight both ways: ``rows`` round the
+    tube (even, so the offset lattice closes) and ``cols`` round the ring.
+    Returns the cells and the two vertex-key periods."""
+    if rows % 2:
+        raise ValueError("rows must be even so the offset lattice wraps")
+    kx_period, ky_period = 2 * cols, 3 * rows
+    cells = {}
+    for r in range(rows):
+        for c in range(cols):
+            kx, ky = 2 * c + (r % 2) + 1, 3 * r + 2
+            cells[(r, c)] = [((kx + ox) % kx_period, (ky + oy) % ky_period)
+                             for ox, oy in _HEX_VERTEX_OFFSETS]
+    return cells, kx_period, ky_period
+
+
 def torus_board(
     ring: int, tube: int, mine_count: int, tube_radius: float = 0.45
 ) -> Board3D:
@@ -132,13 +221,7 @@ def torus_board(
         return _torus_point(2 * math.pi * i / ring,
                             2 * math.pi * j / tube, tube_radius)
 
-    cells = {
-        (i, j): [(i, j), ((i + 1) % ring, j),
-                 ((i + 1) % ring, (j + 1) % tube), (i, (j + 1) % tube)]
-        for i in range(ring)
-        for j in range(tube)
-    }
-    return _assemble("torus", cells, point, mine_count,
+    return _assemble("torus", _square_cells(ring, tube), point, mine_count,
                      two_sided=False, radius=1.0 + tube_radius)
 
 
@@ -150,23 +233,13 @@ def torus_triangle_board(
     even, so up/down triangles alternate across the seam) and ``tube``
     rows around the tube (must be even, so the offset rows meet cleanly
     where the tube closes). Every cell has 12 neighbours."""
-    if ring % 2:
-        raise ValueError("ring must be even for the triangle strip to wrap")
-    if tube % 2:
-        raise ValueError("tube must be even so the offset rows wrap")
-
     def point(key):
         kx, ky = key
         return _torus_point(2 * math.pi * kx / ring,
                             2 * math.pi * ky / tube, tube_radius)
 
-    cells = {}
-    for r in range(tube):
-        for i in range(ring):
-            cells[(r, i)] = [(kx % ring, ky % tube) for kx, ky
-                             in _triangle_vertices(i, r, up=(r + i) % 2 == 0)]
-    return _assemble("torustri", cells, point, mine_count,
-                     two_sided=False, radius=1.0 + tube_radius)
+    return _assemble("torustri", _triangle_cells(ring, tube), point,
+                     mine_count, two_sided=False, radius=1.0 + tube_radius)
 
 
 def torus_hex_board(
@@ -176,23 +249,140 @@ def torus_hex_board(
     has Euler characteristic 0). The hex lattice wraps around the tube
     (``rows``, must be even) and around the ring (``cols``); every cell
     has exactly 6 neighbors."""
-    if rows % 2:
-        raise ValueError("rows must be even so the offset lattice wraps")
-    kx_period, ky_period = 2 * cols, 3 * rows
+    cells, kx_period, ky_period = _hex_cells(rows, cols)
 
     def point(key):
         kx, ky = key
         return _torus_point(2 * math.pi * kx / kx_period,
                             2 * math.pi * ky / ky_period, tube_radius)
 
-    cells = {}
-    for r in range(rows):
-        for c in range(cols):
-            kx, ky = 2 * c + (r % 2) + 1, 3 * r + 2
-            cells[(r, c)] = [((kx + ox) % kx_period, (ky + oy) % ky_period)
-                             for ox, oy in _HEX_VERTEX_OFFSETS]
     return _assemble("torushex", cells, point, mine_count,
                      two_sided=False, radius=1.0 + tube_radius)
+
+
+# -- the trefoil knot ---------------------------------------------------------
+#
+# A donut is a tube round a circle; this is the same tube round a trefoil
+# knot. Topologically nothing changes -- the cells, their gluing and so their
+# adjacency are the donut's key for key -- so these builders take the donut's
+# lattices and swap the immersion. What does change is the proportion: the
+# knot is ~1.7 times as long as the donut's ring and its tube is capped at
+# TREFOIL_REACH, so a board needs many more cells along the knot than round
+# the tube.
+
+
+def _trefoil_sag(columns: tuple[int, ...], period: int) -> float:
+    """How far the hull of the knot's centre points at these lattice
+    ``columns`` (of ``period`` round the knot) strays from the knot itself.
+
+    This is what keeps a coarse window from passing through itself. A face is
+    flat, so it lies in the hull of its corners, and each corner is the core
+    point at its own t pushed out by the tube radius -- so every point of the
+    face is within ``radius + sag`` of the stretch of knot the face spans. Two
+    stretches far apart along the knot are never closer than twice
+    TREFOIL_REACH (that is how the reach was measured), so while ``radius +
+    sag`` stays under the reach no two faces of distant cells can meet. A
+    window a handful of cells long fails it by a mile: six triangles along the
+    knot each span a third of it, and the chord cuts straight through the
+    strands it was meant to wind round.
+
+    Measured on a few points of the hull (its corners' midpoints and centroid)
+    against the knot sampled across the span, which is plenty at the sizes a
+    board takes; cached, since a lattice reuses the same few column sets."""
+    key = (columns, period)
+    if key in _SAG_CACHE:
+        return _SAG_CACHE[key]
+    # unwrap across the seam: a cell at the end of the ring holds the last
+    # column and column 0, which is one step on, not a whole loop back
+    first = columns[0]
+    steps = sorted((c - first) % period for c in columns)
+    if steps[-1] > period // 2:
+        steps = sorted((s + period // 2) % period - period // 2 for s in steps)
+    ts = [2 * math.pi * (first + s) / period for s in steps]
+    corners = [_trefoil_core(t)[0] for t in ts]
+    probes = [tuple((a + b) / 2 for a, b in zip(p, q))
+              for i, p in enumerate(corners) for q in corners[i + 1:]]
+    probes.append(tuple(sum(c) / len(corners) for c in zip(*corners)))
+    n = 32
+    knot = [_trefoil_core(ts[0] + (ts[-1] - ts[0]) * i / n)[0]
+            for i in range(n + 1)]
+    sag = max(min(math.dist(p, k) for k in knot) for p in probes)
+    _SAG_CACHE[key] = sag
+    return sag
+
+
+_SAG_CACHE: dict = {}
+
+
+def _trefoil(mode: str, cells, kx_period: int, ky_period: int,
+             mine_count: int, tube: float) -> Board3D:
+    """Immerse a doubly periodic lattice (vertex keys ``(kx, ky)`` with those
+    periods) as the tube round the trefoil: ``kx`` runs along the knot, ``ky``
+    round the tube. Refuses a tube that would meet itself."""
+    if not 0 < tube < 1:
+        raise ValueError(f"tube {tube} must be a fraction of TREFOIL_REACH "
+                         "in (0, 1), or the knot's strands meet")
+    sag = max(_trefoil_sag(tuple(sorted({kx for kx, _ in keys})), kx_period)
+              for keys in cells.values())
+    if tube * TREFOIL_REACH + sag >= TREFOIL_REACH:
+        raise ValueError(
+            f"{kx_period} steps along the knot is too coarse for a tube of "
+            f"{tube}: a face's chord sags {sag:.3f} off the knot, and with the "
+            "tube that could reach another strand")
+
+    def param(key):
+        kx, ky = key
+        return 2 * math.pi * kx / kx_period, 2 * math.pi * ky / ky_period
+
+    def point(key):
+        return _trefoil_point(*param(key), tube)
+
+    def orient(cell, polygon):
+        """Wind a face outward from the knot's centre line -- the donut's rule
+        reads "outward" off the ring circle through the origin, which the knot
+        is not. Each vertex is measured against the core at its *own* t, so a
+        face across the seam is not averaged through the knot."""
+        out = [0.0, 0.0, 0.0]
+        for key, at in zip(cells[cell], polygon):
+            core, _ = _trefoil_core(param(key)[0])
+            for i in range(3):
+                out[i] += at[i] - core[i]
+        return _orient_outward(polygon, tuple(out))
+
+    return _assemble(mode, cells, point, mine_count, two_sided=False,
+                     radius=_max_radius, orient=orient)
+
+
+def trefoil_board(
+    ring: int, tube: int, mine_count: int, tube_fraction: float = 0.8
+) -> Board3D:
+    """The trefoil knot tiled with ``ring * tube`` quadrilaterals: ``ring``
+    along the knot, ``tube`` round it -- the square donut's lattice, so every
+    cell has exactly 8 neighbours. ``tube_fraction`` is the tube's radius as a
+    fraction of TREFOIL_REACH."""
+    return _trefoil("trefoil", _square_cells(ring, tube), ring, tube,
+                    mine_count, tube_fraction)
+
+
+def trefoil_triangle_board(
+    ring: int, tube: int, mine_count: int, tube_fraction: float = 0.8
+) -> Board3D:
+    """The trefoil knot tiled with triangles, laid as the donut's are:
+    ``ring`` triangles along the knot in every row (even) and ``tube`` rows
+    round it (even). Every cell has 12 neighbours."""
+    return _trefoil("trefoiltri", _triangle_cells(ring, tube), ring, tube,
+                    mine_count, tube_fraction)
+
+
+def trefoil_hex_board(
+    rows: int, cols: int, mine_count: int, tube_fraction: float = 0.8
+) -> Board3D:
+    """The trefoil knot tiled with hexagons, laid as the donut's are:
+    ``rows`` round the tube (even) and ``cols`` along the knot. Every cell
+    has exactly 6 neighbours."""
+    cells, kx_period, ky_period = _hex_cells(rows, cols)
+    return _trefoil("trefoilhex", cells, kx_period, ky_period, mine_count,
+                    tube_fraction)
 
 
 # -- the double donut (genus 2) ----------------------------------------------
@@ -389,14 +579,8 @@ def double_torus_board(
     the two centres; at 1 a point of each donut's outer equator lies on the
     other's inner equator, which is as merged as they get before the ring
     circles cross, and at ``1 + tube_radius`` they only touch."""
-    cells = {
-        (i, j): [(i, j), ((i + 1) % ring, j),
-                 ((i + 1) % ring, (j + 1) % tube), (i, (j + 1) % tube)]
-        for i in range(ring)
-        for j in range(tube)
-    }
-    return _double_torus("doubletorus", cells, ring, tube, mine_count,
-                         tube_radius, separation)
+    return _double_torus("doubletorus", _square_cells(ring, tube), ring, tube,
+                         mine_count, tube_radius, separation)
 
 
 def double_torus_triangle_board(
@@ -407,18 +591,8 @@ def double_torus_triangle_board(
     donut's is: ``ring`` triangles around the ring in every row (even, so
     up/down triangles alternate across the seam) and ``tube`` rows around the
     tube (even, so the offset rows meet cleanly where the tube closes)."""
-    if ring % 2:
-        raise ValueError("ring must be even for the triangle strip to wrap")
-    if tube % 2:
-        raise ValueError("tube must be even so the offset rows wrap")
-    cells = {
-        (r, i): [(kx % ring, ky % tube) for kx, ky
-                 in _triangle_vertices(i, r, up=(r + i) % 2 == 0)]
-        for r in range(tube)
-        for i in range(ring)
-    }
-    return _double_torus("doubletorustri", cells, ring, tube, mine_count,
-                         tube_radius, separation)
+    return _double_torus("doubletorustri", _triangle_cells(ring, tube), ring,
+                         tube, mine_count, tube_radius, separation)
 
 
 def double_torus_hex_board(
@@ -429,15 +603,7 @@ def double_torus_hex_board(
     the tube (``rows``, even, so the offset lattice closes) and around the
     ring (``cols``); away from the join every cell has exactly 6 neighbours,
     as on the donut."""
-    if rows % 2:
-        raise ValueError("rows must be even so the offset lattice wraps")
-    kx_period, ky_period = 2 * cols, 3 * rows
-    cells = {}
-    for r in range(rows):
-        for c in range(cols):
-            kx, ky = 2 * c + (r % 2) + 1, 3 * r + 2
-            cells[(r, c)] = [((kx + ox) % kx_period, (ky + oy) % ky_period)
-                             for ox, oy in _HEX_VERTEX_OFFSETS]
+    cells, kx_period, ky_period = _hex_cells(rows, cols)
     return _double_torus("doubletorushex", cells, kx_period, ky_period,
                          mine_count, tube_radius, separation)
 

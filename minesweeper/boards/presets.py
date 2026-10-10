@@ -83,6 +83,9 @@ from minesweeper.boards.surfaces import (
     torus_board,
     torus_hex_board,
     torus_triangle_board,
+    trefoil_board,
+    trefoil_hex_board,
+    trefoil_triangle_board,
 )
 from minesweeper.boards.tilings import (
     archimedean_board,
@@ -147,6 +150,10 @@ _JSON_BUILDERS = {
     "torus_board": torus_board,
     "torus_triangle_board": torus_triangle_board,
     "torus_hex_board": torus_hex_board,
+    # the donut's three lattices on a tube round a trefoil knot
+    "trefoil_board": trefoil_board,
+    "trefoil_triangle_board": trefoil_triangle_board,
+    "trefoil_hex_board": trefoil_hex_board,
     # the genus-2 board: two square-tiled donuts merged at their outer rims
     "double_torus_board": double_torus_board,
     "double_torus_triangle_board": double_torus_triangle_board,

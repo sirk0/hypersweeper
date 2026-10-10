@@ -8,6 +8,25 @@ as the reference implementation and is not deployed.
 newest first. For the rules and reference an agent needs while working here, see
 [`AGENTS.md`](AGENTS.md) and the topic files in [`docs/`](docs/) it routes to.
 
+**M23 — The trefoil knot: the torus, drawn a second way.** The first surface
+that adds no topology. `trefoil`, `trefoiltri` and `trefoilhex` are the donut's
+three lattices on a tube round a trefoil knot, so their adjacency -- and every
+symmetry the donut offers -- is the donut's cell for cell; the ring roll is
+what brings out the cells hidden under the crossings. The torus builders were
+split into lattices (`squareLattice` / `triangleLattice` / `hexLattice`, which
+carry their motions) and one `wrapLattice` that immerses any of them, so the
+donut, the double donut and the knot share the gluing rather than copying it.
+
+What was new was all in the drawing. The tube's frame is the normal of the
+torus the knot lies on, closed-form and periodic, so the seam glues untwisted.
+Its thickness is capped by the knot's measured reach -- the strands meet at the
+crossings at 0.277 of the unit ball -- and since faces are flat chords, a
+window too coarse along the knot is refused as well, however thin the tube.
+Faces wind outward from the knot's centre line, measured per vertex. The cap
+makes the knot about six tube circumferences long even at its fattest, which is
+why the easy boards are 128 squares and 144 triangles rather than 81 (the
+arithmetic is in `tests/test_presets.py`).
+
 **M22 — The board's shape, apart from its theme.** M19 pulled the colour scheme
 out of the theme; this pulls out the other axis that was still tangled with it.
 The five themes it left were never five looks: Realistic and Flat were one
