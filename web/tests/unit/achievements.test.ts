@@ -19,7 +19,6 @@ import {
   type Win,
 } from "../../src/achievements";
 import { SOLID_MODES, flatMenuModes, threeDMenuModes } from "../../src/boards/catalog";
-import { isBoard3D } from "../../src/boards/core";
 import { blockedModes } from "../../src/boards/fairness";
 import { buildBoard, hasMode } from "../../src/boards/presets";
 import { classifyShapes } from "../../src/render/shapePalette";
@@ -99,7 +98,7 @@ describe("the declared shape list", () => {
     const sides = new Set<number>();
     for (const mode of everyBuiltMode()) {
       const board = buildBoard(mode, "easy");
-      const tones = classifyShapes(board.polygons, isBoard3D(board) ? board.cornerMask : null);
+      const tones = classifyShapes(board.polygons, board.cornerMask ?? null, "curved" in board && board.curved);
       for (const tone of tones.values()) sides.add(tone.sides);
     }
     expect([...sides].sort((a, b) => a - b)).toEqual(SHAPE_SIDES);

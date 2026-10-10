@@ -1005,9 +1005,10 @@ _ICON_ALIASES = {
 }
 
 
-# The hyperbolic boards' icons: how many distance shells to draw, which is
-# about two rings round the central polygon for each.
-_HYPERBOLIC_ICON_SHELLS = {"hyperbolic73": 4, "hyperbolic54": 7, "hyperbolic45": 9}
+# The hyperbolic boards' icons: how many distance shells to draw -- the central
+# polygon, its ring, and the next ring's nearest cells, which is as much as
+# reads at icon size.
+_HYPERBOLIC_ICON_SHELLS = {"hyperbolic73": 4, "hyperbolic54": 4, "hyperbolic45": 5}
 
 
 # How each Catalan solid is turned before projecting, in degrees about x then
@@ -1343,7 +1344,7 @@ def _render_icon(key: str) -> pygame.Surface:
                         fill=ICON_BLUE if i % 2 else ICON_BLUE_LIGHT, width=3)
         _icon_gloss(s, pygame.Rect(d * 0.08, d * 0.06, d * 0.84, d * 0.55))
     elif key in _HYPERBOLIC_ICON_SHELLS:
-        # the board itself, two rings deep, in the disc whose rim it never
+        # the board itself, a ring and a half deep, in the disc whose rim it never
         # reaches: drawn with its geodesic arcs and no corner rounding, since
         # the arcs are what make it read as the Poincare disc
         p, q = int(key[-2]), int(key[-1])

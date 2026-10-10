@@ -2002,6 +2002,93 @@
         "hasCellCycle": false
       }
     },
+    "hyperbolic73": {
+      "easy": {
+        "cellCount": 85,
+        "mineCount": 12,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 1197,
+        "vertexCount": 1113,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 232,
+        "mineCount": 45,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 3234,
+        "vertexCount": 3003,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 477,
+        "mineCount": 95,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 6699,
+        "vertexCount": 6223,
+        "hasCellCycle": false
+      }
+    },
+    "hyperbolic54": {
+      "easy": {
+        "cellCount": 81,
+        "mineCount": 12,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 855,
+        "vertexCount": 775,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 261,
+        "mineCount": 45,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 2730,
+        "vertexCount": 2470,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 471,
+        "mineCount": 95,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 4890,
+        "vertexCount": 4420,
+        "hasCellCycle": false
+      }
+    },
+    "hyperbolic45": {
+      "easy": {
+        "cellCount": 81,
+        "mineCount": 12,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 660,
+        "vertexCount": 580,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 253,
+        "mineCount": 45,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 2028,
+        "vertexCount": 1776,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 485,
+        "mineCount": 95,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 3852,
+        "vertexCount": 3368,
+        "hasCellCycle": false
+      }
+    },
     "elongated": {
       "easy": {
         "cellCount": 85,

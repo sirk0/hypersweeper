@@ -171,7 +171,7 @@ export class PolygonBoard extends Group implements BoardMesh {
     let vertexCount = 0;
     // Shape colour coding: classed over the whole board at once, so a tiling
     // the surface immersion has bent stays one colour instead of a gradient.
-    const tones = classifyShapes(board.polygons);
+    const tones = classifyShapes(board.polygons, board.cornerMask, board.curved);
 
     this.order.forEach((cell, ci) => {
       const poly = board.polygons.get(cell)!.map(([x, y]) => [x - cx, cy - y] as Vertex);
@@ -183,8 +183,11 @@ export class PolygonBoard extends Group implements BoardMesh {
       // off-centre. Most of the bonds are safe by accident, their T-vertices
       // being centrally symmetric; the three-brick basket weave is not, and had
       // been drawing the numbers on its two outer bricks at two thirds size.
-      // Identity for every board with no T-vertex.
-      const shape = corners(poly) as Vertex[];
+      // Identity for every board with no T-vertex. A board that says which
+      // points are corners (the hyperbolic boards' geodesic arcs, which bend
+      // and so are no T-vertex a geometric test could drop) is taken at its
+      // word, as solidBoard.ts takes a wrap's.
+      const shape = corners(poly, board.cornerMask?.get(cell)) as Vertex[];
       const centroid: Vertex = [
         shape.reduce((s, p) => s + p[0], 0) / shape.length,
         shape.reduce((s, p) => s + p[1], 0) / shape.length,
@@ -224,7 +227,10 @@ export class PolygonBoard extends Group implements BoardMesh {
         center,
         radius,
         glyphCenter,
-        glyphInradius: polygonInradius(shape, glyphCenter),
+        // A board with a corner mask draws its sides through extra points that
+        // bend (the hyperbolic boards' arcs bow inward), so its glyph room is
+        // measured on the drawn outline rather than on the corners' chords.
+        glyphInradius: polygonInradius(board.cornerMask ? poly : shape, glyphCenter),
         palette: cellPalette(tones.get(cell)!, "flat", style.monochrome, style.boardTint),
         bent,
       });

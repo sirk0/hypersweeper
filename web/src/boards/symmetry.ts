@@ -405,17 +405,27 @@ function permutationUnder<P extends Point>(
     if (hit === null || hit.distance > tolerance) return null;
     const target = polygons.get(hit.id)!;
     if (target.length !== polygon.length) return null;
+    // Each image takes the *nearest* free target vertex, not the first one in
+    // tolerance: the tolerance is a fifth of the closest two cell centres, and
+    // a cell drawn through extra points (the hyperbolic boards' arcs, at the
+    // rim of the disc) has points closer together than that. Taking the first
+    // one in reach there steals a neighbour's partner whenever the motion
+    // reverses the polygon's order, which is every mirror.
     const taken = new Array<boolean>(target.length).fill(false);
     for (const vertex of polygon) {
       const image = motion(vertex);
-      let found = false;
-      for (let i = 0; i < target.length && !found; i++) {
-        if (!taken[i] && distance(target[i]!, image) <= tolerance) {
-          taken[i] = true;
-          found = true;
+      let best = -1;
+      let bestDistance = tolerance;
+      for (let i = 0; i < target.length; i++) {
+        if (taken[i]) continue;
+        const d = distance(target[i]!, image);
+        if (d <= bestDistance) {
+          best = i;
+          bestDistance = d;
         }
       }
-      if (!found) return null;
+      if (best < 0) return null;
+      taken[best] = true;
     }
     moved.set(cell, hit.id);
   }

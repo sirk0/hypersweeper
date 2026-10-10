@@ -570,13 +570,16 @@ export function tileSpan(
 export function classifyShapes<K>(
   polygons: Iterable<[K, readonly (readonly number[])[]]>,
   cornerMasks?: Map<K, readonly boolean[]> | null,
+  curvedModel = false,
 ): Map<K, ShapeTone> {
   const raw = new Map<K, ShapeTone>();
   const spans = new Map<K, number>();
   const bySides = new Map<number, number[]>();
   const spansBySides = new Map<number, number[]>();
-  // Vertices with a z are a board laid on a surface — see above.
-  let curved = false;
+  // Vertices with a z are a board laid on a surface — see above. A flat board
+  // drawn in a model of a curved plane (`Board.curved`, the Poincaré disc) is
+  // the same case without the z, and says so.
+  let curved = curvedModel;
   for (const [key, poly] of polygons) {
     const mask = cornerMasks?.get(key);
     const tone = shapeMetrics(poly, mask);

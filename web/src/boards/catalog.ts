@@ -200,11 +200,14 @@ export const PICKER_FAMILIES = [
   "rectangle",
   "other",
 ];
-export const FLAT_ONLY_FAMILIES = ["aperiodic", "fractal"];
+export const FLAT_ONLY_FAMILIES = ["aperiodic", "fractal", "hyperbolic"];
 export const APERIODIC_MODES = MENU.aperiodic as string[];
 // The fractal family: the rep-tile boards (sphinx, chair), each a patch whose
 // outline is the tile itself, scaled. One-off modes like the aperiodic ones.
 export const FRACTAL_MODES = MENU.fractal as string[];
+// The hyperbolic family: regular {p,q} tilings of the hyperbolic plane in the
+// Poincaré disc (boards/hyperbolic.ts). One-off modes again, on the plane only.
+export const HYPERBOLIC_MODES = MENU.hyperbolic as string[];
 
 const FAMILY_MEMBERS: Record<string, string[]> = {
   regular: PICKER_REGULAR,
@@ -215,6 +218,7 @@ const FAMILY_MEMBERS: Record<string, string[]> = {
   other: OTHER_ARCH,
   aperiodic: APERIODIC_MODES,
   fractal: FRACTAL_MODES,
+  hyperbolic: HYPERBOLIC_MODES,
 };
 
 /** One row of a picker family: the mode it launches, its label, and the
@@ -348,6 +352,7 @@ export const MENU_FAMILY_HINTS: Record<string, string> = {
   other: "Two rep-tiles, and Dürer's pentagons",
   aperiodic: "Never repeats: Penrose, the Spectre, a spiral, brick rings",
   fractal: "One tile, grown into itself",
+  hyperbolic: "Curved space: 7, 10 or 12 neighbours a tile",
 };
 
 /** Every mode a surface's picker page can reach, promoted rows included. */
