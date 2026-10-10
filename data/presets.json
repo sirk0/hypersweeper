@@ -1001,6 +1001,29 @@
         ]
       }
     },
+    "kitedart": {
+      "builder": "kitedart_board",
+      "args": {
+        "easy": [
+          4,
+          6,
+          270.53,
+          81
+        ],
+        "medium": [
+          6,
+          29,
+          500.0,
+          256
+        ],
+        "hard": [
+          6,
+          73,
+          769.119,
+          450
+        ]
+      }
+    },
     "spectre": {
       "builder": "spectre_board",
       "args": {

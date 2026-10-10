@@ -7,6 +7,7 @@ import {
   ammannBeenkerBoard,
   brickRingsBoard,
   penroseBoard,
+  kiteDartBoard,
   spectreBoard,
   klaassenBoard,
   pentaSpiral5Board,
@@ -161,6 +162,7 @@ const BUILDERS: Record<string, Builder> = {
   arch_mobius_board: archMobiusBoard,
   arch_klein_board: archKleinBoard,
   penrose_board: penroseBoard,
+  kitedart_board: kiteDartBoard,
   ammann_beenker_board: ammannBeenkerBoard,
   spectre_board: spectreBoard,
   phyllotaxis_board: phyllotaxisBoard,
@@ -184,7 +186,12 @@ const BUILDERS: Record<string, Builder> = {
  * — are left out on purpose: each has one distinguished centre and no second
  * window onto it. Must match `_VARIANT_BUILDERS` in
  * minesweeper/boards/presets.py. */
-const VARIANT_BUILDERS = new Set(["penrose_board", "ammann_beenker_board", "spectre_board"]);
+const VARIANT_BUILDERS = new Set([
+  "penrose_board",
+  "kitedart_board",
+  "ammann_beenker_board",
+  "spectre_board",
+]);
 
 interface PresetSpec {
   builder: string;

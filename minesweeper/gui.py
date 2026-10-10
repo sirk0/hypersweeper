@@ -457,7 +457,11 @@ def _dist_point_segment(p, a, b) -> float:
 def inradius(vertices: list[tuple[float, float]]) -> float:
     """Distance from the centroid to the nearest edge — how big a glyph
     fits inside the cell."""
-    center = centroid(vertices)
+    return clearance(centroid(vertices), vertices)
+
+
+def clearance(center: tuple[float, float], vertices) -> float:
+    """Distance from a point to the nearest edge of a polygon."""
     n = len(vertices)
     return min(
         _dist_point_segment(center, vertices[i], vertices[(i + 1) % n])
@@ -1204,6 +1208,22 @@ def _render_icon(key: str) -> pygame.Surface:
                  c + side * math.sin(angle + math.radians(36))),
             ]
             _icon_shape(s, points, width=4)
+        _icon_gloss(s, pygame.Rect(d * 0.08, d * 0.06, d * 0.84, d * 0.6))
+    elif key == "kitedart":
+        # the star: five darts, tips at the centre, and a kite in each notch,
+        # its 144-degree tail in the dart's reflex corner
+        r = d * 0.485 / 1.618  # as far out as the rhombi's star reaches
+
+        def at(deg, radius):
+            return (c + radius * r * math.cos(math.radians(deg)),
+                    c + radius * r * math.sin(math.radians(deg)))
+
+        for k in range(5):
+            a = 72 * k - 90
+            _icon_shape(s, [at(a, 0), at(a - 36, 1), at(a, 0.618), at(a + 36, 1)],
+                        width=4)
+            _icon_shape(s, [at(a, 0.618), at(a - 36, 1), at(a, 1.618), at(a + 36, 1)],
+                        fill=ICON_BLUE_LIGHT, width=4)
         _icon_gloss(s, pygame.Rect(d * 0.08, d * 0.06, d * 0.84, d * 0.6))
     elif key == "ammannbeenker":
         # the tiling's eight-fold centre: the star of eight 45-degree rhombi,
@@ -2182,24 +2202,26 @@ class GameScreen(BaseGameScreen):
         offset_y = MARGIN + self._header_height + self.board_shift
         if self._rotated:  # quarter-turn: (x, y) -> (height - y, x)
             bh = self.board.height
-            self.polygons = {
-                cell: [
-                    ((bh - y) * S + offset_x, x * S + offset_y)
-                    for x, y in vertices
-                ]
-                for cell, vertices in self.board.polygons.items()
-            }
+
+            def place(x, y):
+                return ((bh - y) * S + offset_x, x * S + offset_y)
         else:
-            self.polygons = {
-                cell: [(x * S + offset_x, y * S + offset_y) for x, y in vertices]
-                for cell, vertices in self.board.polygons.items()
-            }
+            def place(x, y):
+                return (x * S + offset_x, y * S + offset_y)
+        self.polygons = {
+            cell: [place(x, y) for x, y in vertices]
+            for cell, vertices in self.board.polygons.items()
+        }
         self.centers = {
             cell: centroid(vertices) for cell, vertices in self.polygons.items()
         }
+        # a board that knows a better glyph spot than the mean (the darts of
+        # the kite-and-dart tiling) says so, in the board's own coordinates
+        for cell, anchor in (self.board.glyph_anchors or {}).items():
+            self.centers[cell] = place(*anchor)
         # per cell: tilings like Penrose mix cells of different sizes
         self.glyph_radius = {
-            cell: inradius(vertices) * 0.85
+            cell: clearance(self.centers[cell], vertices) * 0.85
             for cell, vertices in self.polygons.items()
         }
 

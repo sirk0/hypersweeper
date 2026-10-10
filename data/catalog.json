@@ -113,6 +113,7 @@
   ],
   "soloLabels": {
     "penrose": "Penrose rhombi",
+    "kitedart": "Penrose kites & darts",
     "ammannbeenker": "Ammann–Beenker",
     "spectre": "The Spectre",
     "phyllotaxis": "Phyllotactic spiral",
@@ -548,6 +549,12 @@
       "tiling": "kisrhombille",
       "surface": "flat",
       "family": "dual"
+    },
+    "kitedart": {
+      "label": "Penrose kites & darts",
+      "tiling": "",
+      "surface": "flat",
+      "family": "aperiodic"
     },
     "klaassen": {
       "label": "Klaassen spiral",
@@ -1355,6 +1362,7 @@
     ],
     "aperiodic": [
       "penrose",
+      "kitedart",
       "ammannbeenker",
       "spectre",
       "phyllotaxis",

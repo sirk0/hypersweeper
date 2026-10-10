@@ -14,6 +14,7 @@ from minesweeper.boards._data import load
 from minesweeper.boards.aperiodic import (
     ammann_beenker_board,
     brick_rings_board,
+    kitedart_board,
     klaassen_board,
     penrose_board,
     pentaspiral5_board,
@@ -171,6 +172,9 @@ _JSON_BUILDERS = {
     # mine_count, scale, keep); spectre_board(levels, mine_count, keep, scale);
     # phyllotaxis_board(rings, mine_count, keep, scale).
     "penrose_board": penrose_board,
+    # kitedart_board(subdivisions, mine_count, scale, keep): penrose's
+    # arguments, for the same reason -- it is the same substitution machinery.
+    "kitedart_board": kitedart_board,
     # ammann_beenker_board(levels, mine_count, scale, keep), Penrose's order.
     "ammann_beenker_board": ammann_beenker_board,
     "spectre_board": spectre_board,
@@ -428,7 +432,9 @@ ARCH_PRESETS = {
 #: ``aperiodic._window``). Every other builder ignores the variant, and the
 #: nonperiodic-by-symmetry boards -- the spiral, the brick rings -- are left out
 #: on purpose: each has one distinguished centre and no second window onto it.
-_VARIANT_BUILDERS = frozenset({"penrose_board", "ammann_beenker_board", "spectre_board"})
+_VARIANT_BUILDERS = frozenset({
+    "penrose_board", "kitedart_board", "ammann_beenker_board", "spectre_board",
+})
 
 # Load the shared presets (data/presets.json) into _PRESETS. Each row is
 # {builder, args: {difficulty: [positional args]}}. The Archimedean/Laves

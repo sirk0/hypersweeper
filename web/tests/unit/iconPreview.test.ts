@@ -61,6 +61,7 @@ describe("card previews", () => {
     // from the real patch, they fill the card like any other tiling.
     for (const key of [
       "penrose",
+      "kitedart",
       "ammannbeenker",
       "spectre",
       "sphinx",

@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { ammannBeenkerBoard, penroseBoard, spectreBoard } from "../../src/boards/aperiodic";
+import {
+  ammannBeenkerBoard,
+  kiteDartBoard,
+  penroseBoard,
+  spectreBoard,
+} from "../../src/boards/aperiodic";
 import {
   boundaryComponents,
   eulerCharacteristic,
@@ -23,6 +28,9 @@ const CASES: [string, (variant: number) => Board, number][] = [
   ["penrose easy", (v) => penroseBoard(5, 6, 437.727, 81, v), 81],
   ["penrose medium", (v) => penroseBoard(6, 17, 500.0, 256, v), 256],
   ["penrose hard", (v) => penroseBoard(7, 48, 769.119, 480, v), 480],
+  ["kitedart easy", (v) => kiteDartBoard(4, 6, 270.53, 81, v), 81],
+  ["kitedart medium", (v) => kiteDartBoard(6, 29, 500.0, 256, v), 256],
+  ["kitedart hard", (v) => kiteDartBoard(6, 73, 769.119, 450, v), 450],
   ["ammannbeenker easy", (v) => ammannBeenkerBoard(3, 9, 35.891, 81, v), 81],
   ["ammannbeenker medium", (v) => ammannBeenkerBoard(3, 28, 25.905, 280, v), 280],
   ["ammannbeenker hard", (v) => ammannBeenkerBoard(4, 82, 25.319, 480, v), 480],
@@ -82,6 +90,7 @@ describe("aperiodic patch variants", () => {
     // keeps the classic patch.
     expect(cells(penroseBoard(5, 6, 437.727, 81))).toBe(cells(penroseBoard(5, 6, 437.727, 81, 0)));
     expect(cells(spectreBoard(3, 11, 81, 14.361))).toBe(cells(spectreBoard(3, 11, 81, 14.361, 0)));
+    expect(cells(kiteDartBoard(4, 6, 270.53, 81))).toBe(cells(kiteDartBoard(4, 6, 270.53, 81, 0)));
   });
 
   it("takes any integer, wrapping into the pool of windows", () => {

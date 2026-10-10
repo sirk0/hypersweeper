@@ -1,8 +1,9 @@
 """Keep the windows onto an aperiodic patch that play like the calibrated board.
 
-The substitution boards -- Penrose, Ammann-Beenker and the Spectre -- are a
-family rather than one board: ``variant`` picks which window onto the grown patch a game is
-played on (``minesweeper/boards/aperiodic.py`` ``_window``), so a finished game
+The substitution boards -- both Penrose tilings, Ammann-Beenker and the
+Spectre -- are a family rather than one board: ``variant`` picks which window
+onto the grown patch a game is played on (``minesweeper/boards/aperiodic.py``
+``_window``), so a finished game
 followed by another is played somewhere else in the same tiling.
 
 The mine count, though, is measured once, by ``calibrate``, on the centred
