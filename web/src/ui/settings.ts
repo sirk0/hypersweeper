@@ -893,7 +893,8 @@ export function renderSettings(host: SettingsHost, pages: SettingsPages): Docume
     note.textContent =
       "No account, no cookie, no identifier — only the board, how the game " +
       "went (won or lost, how long, how far you got, how you flagged), how it " +
-      "was started, and whether this is a phone, tablet or desktop.";
+      "was started, whether this is a phone, tablet or desktop, and which site " +
+      "you are playing on.";
     frag.append(note);
   }
 

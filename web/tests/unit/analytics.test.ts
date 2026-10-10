@@ -25,7 +25,12 @@ import {
 
 /** The client facts `analytics.ts` adds; named here so the pure tests can shape
  * a whole event without a browser. */
-const CONTEXT = { device: "phone", shell: "browser", version: "1.2.3" } as const;
+const CONTEXT = {
+  device: "phone",
+  shell: "browser",
+  version: "1.2.3",
+  source: "site",
+} as const;
 
 const START_FACTS: GameFacts = {
   kind: "start",
@@ -77,6 +82,7 @@ describe("event shaping", () => {
       dv: "phone",
       sh: "browser",
       vr: "1.2.3",
+      so: "site",
       c: 81,
       n: 10,
     });
@@ -91,6 +97,7 @@ describe("event shaping", () => {
       "m",
       "n",
       "sh",
+      "so",
       "t",
       "v",
       "vr",
@@ -108,6 +115,7 @@ describe("event shaping", () => {
       dv: "phone",
       sh: "browser",
       vr: "1.2.3",
+      so: "site",
       c: 271,
       n: 60,
       o: "won",
@@ -184,6 +192,7 @@ describe("the client/server contract", () => {
         device: event.device,
         shell: event.shell,
         version: event.version,
+        source: event.source,
         cells: event.cells,
         mines: event.mines,
         opened: end ? STATS.opened : 0,
@@ -219,6 +228,7 @@ describe("event validation", () => {
     dv: "phone",
     sh: "browser",
     vr: "1.2.3",
+    so: "site",
     c: 81,
     n: 10,
   };
@@ -253,6 +263,7 @@ describe("event validation", () => {
       device: "",
       shell: "",
       version: "",
+      source: "",
       cells: 0,
       mines: 0,
       opened: 0,
@@ -264,6 +275,13 @@ describe("event validation", () => {
       firstMoveMs: 0,
       viewMoved: 0,
     });
+  });
+
+  it("carries the host the build was made for", () => {
+    expect(parseEvent({ ...valid, so: "itch" })?.source).toBe("itch");
+    // A build from before the field: every one of those was the site.
+    const { so: _so, ...older } = valid;
+    expect(parseEvent(older)?.source).toBe("");
   });
 
   it("tells a v1 silence apart from a v2 'unknown'", () => {
@@ -304,6 +322,7 @@ describe("event validation", () => {
     expect(parseEvent({ ...valid, f: "abandoned" })?.from).toBe("");
     expect(parseEvent({ ...valid, dv: "toaster" })?.device).toBe("");
     expect(parseEvent({ ...valid, sh: "kiosk" })?.shell).toBe("");
+    expect(parseEvent({ ...valid, so: "steam" })?.source).toBe("");
     expect(parseEvent({ ...valid, vr: "<script>" })?.version).toBe("");
     expect(parseEvent({ ...valid, vr: "1.2.3.4" })?.version).toBe("");
     expect(parseEvent({ ...valid, vr: `${"9".repeat(30)}.1.1` })?.version).toBe("");
@@ -375,6 +394,7 @@ describe("the transport", () => {
       m: "square",
       dv: "unknown",
       sh: "browser",
+      so: "site",
     });
   });
 

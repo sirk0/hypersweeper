@@ -83,6 +83,7 @@ recreating it. Dependency groups in `pyproject.toml`: `web` (pygbag), `test`
 make desktop-run                       # the Electron shell, on any OS
 make mac-app                           # a signed Hypersweeper.app  (macOS only)
 make ios-app                           # build and open the iPhone project in Xcode (macOS)
+make itch-zip                          # the itch.io HTML5 upload, build/itch/hypersweeper-itch.zip
 ```
 
 See [`desktop/README.md`](desktop/README.md) and

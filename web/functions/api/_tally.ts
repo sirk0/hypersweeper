@@ -22,9 +22,14 @@ import {
 //   - Anything that is not a well-formed event this build knows about is
 //     dropped. Junk and success both answer 204 with an empty body, so the
 //     endpoint is no oracle for what the validator accepts.
-//   - It has no CORS headers, because same-origin is all it is for. (A missing
-//     Access-Control-Allow-Origin would not stop a cross-site POST anyway —
-//     the Sec-Fetch-Site check below is what declines one.)
+//   - It has no CORS headers: nothing that posts here reads the answer. (A
+//     missing Access-Control-Allow-Origin would not stop a cross-site POST
+//     anyway — the Sec-Fetch-Site check below is what declines one.)
+//   - Cross-site posts are declined, with one exception: the itch.io build,
+//     which is served from itch's CDN and has no collector of its own. Its
+//     origin is *checked* against `ITCH_ORIGIN` and never stored, and an event
+//     arriving that way must say `source = "itch"`, so neither host can file
+//     games under the other.
 //
 // Dataset schema. It is not written here: `DATASET_BLOBS` and
 // `DATASET_DOUBLES` in src/analyticsEvent.ts are the column layout, and the
@@ -50,6 +55,10 @@ export interface AnalyticsDataset {
  * bytes; the headroom is for the next field, not for a body worth parsing. */
 const MAX_BODY = 1024;
 
+/** Where itch.io serves an HTML5 game from: `html-classic.itch.zone` (and
+ * its siblings) today, `*.hwcdn.net` for older uploads. HTTPS only. */
+export const ITCH_ORIGIN = /^https:\/\/([a-z0-9-]+\.)*(itch\.zone|hwcdn\.net)$/;
+
 const NO_CONTENT: ResponseInit = {
   status: 204,
   headers: { "cache-control": "no-store" },
@@ -69,9 +78,9 @@ export async function handleTally(
   // header get declined; ones that do not are let through rather than losing
   // their events, since the header is advisory either way.
   const site = request.headers.get("sec-fetch-site");
-  if (site && site !== "same-origin" && site !== "none") {
-    return new Response(null, NO_CONTENT);
-  }
+  const crossSite = !!site && site !== "same-origin" && site !== "none";
+  const fromItch = ITCH_ORIGIN.test(request.headers.get("origin") ?? "");
+  if (crossSite && !fromItch) return new Response(null, NO_CONTENT);
   if (Number(request.headers.get("content-length") ?? "0") > MAX_BODY) {
     return new Response(null, NO_CONTENT);
   }
@@ -86,6 +95,8 @@ export async function handleTally(
     return new Response(null, NO_CONTENT);
   }
   if (!event) return new Response(null, NO_CONTENT);
+  // An itch.io origin carries only itch.io games, and only it does.
+  if (fromItch !== (event.source === "itch")) return new Response(null, NO_CONTENT);
 
   try {
     dataset?.writeDataPoint({

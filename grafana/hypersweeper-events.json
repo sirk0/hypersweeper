@@ -45,7 +45,7 @@
           },
           "format": "table",
           "editorMode": "sql",
-          "query": "SELECT\n  sum(if(blob1 = 'start', _sample_interval, 0)) AS started,\n  sum(if(blob1 = 'end',   _sample_interval, 0)) AS finished,\n  sum(_sample_interval)                         AS events,\n  count()                                       AS stored_rows\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\n  AND ('$kind'    = 'all' OR blob1  = '$kind')\n  AND ('$outcome' = 'all' OR blob3  = '$outcome')\n  AND ('$mode'    = ''    OR index1 = '$mode')\n  AND ('$version' = ''    OR blob12 = '$version')",
+          "query": "SELECT\n  sum(if(blob1 = 'start', _sample_interval, 0)) AS started,\n  sum(if(blob1 = 'end',   _sample_interval, 0)) AS finished,\n  sum(_sample_interval)                         AS events,\n  count()                                       AS stored_rows\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\n  AND ('$source'     = 'all' OR if(blob13 = 'itch', 'itch', 'site') = '$source')\n  AND ('$kind'    = 'all' OR blob1  = '$kind')\n  AND ('$outcome' = 'all' OR blob3  = '$outcome')\n  AND ('$mode'    = ''    OR index1 = '$mode')\n  AND ('$version' = ''    OR blob12 = '$version')",
           "database": "",
           "table": "",
           "dateTimeType": "DATETIME",
@@ -203,7 +203,7 @@
           },
           "format": "table",
           "editorMode": "sql",
-          "query": "SELECT\n  toUInt32(timestamp) * 1000 AS t,\n  index1   AS mode,\n  blob1    AS kind,\n  blob2    AS difficulty,\n  blob3    AS outcome,\n  blob4    AS board,\n  blob5    AS tiling,\n  blob6    AS surface,\n  blob7    AS family,\n  blob8    AS trigger,\n  blob9    AS from_state,\n  blob10   AS device,\n  blob11   AS shell,\n  blob12   AS version,\n  double1  AS seconds,\n  double2  AS cells,\n  double3  AS mines,\n  double4  AS opened,\n  double5  AS flags_right,\n  double6  AS flags_wrong,\n  double7  AS reveals,\n  double8  AS chords,\n  double9  AS flag_moves,\n  double10 AS first_move_ms,\n  double11 AS view_moved,\n  _sample_interval AS sample_interval\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\n  AND ('$kind'    = 'all' OR blob1  = '$kind')\n  AND ('$outcome' = 'all' OR blob3  = '$outcome')\n  AND ('$mode'    = ''    OR index1 = '$mode')\n  AND ('$version' = ''    OR blob12 = '$version')\nORDER BY t DESC\nLIMIT $limit",
+          "query": "SELECT\n  toUInt32(timestamp) * 1000 AS t,\n  index1   AS mode,\n  blob1    AS kind,\n  blob2    AS difficulty,\n  blob3    AS outcome,\n  blob4    AS board,\n  blob5    AS tiling,\n  blob6    AS surface,\n  blob7    AS family,\n  blob8    AS trigger,\n  blob9    AS from_state,\n  blob10   AS device,\n  blob11   AS shell,\n  blob12   AS version,\n  blob13   AS source,\n  double1  AS seconds,\n  double2  AS cells,\n  double3  AS mines,\n  double4  AS opened,\n  double5  AS flags_right,\n  double6  AS flags_wrong,\n  double7  AS reveals,\n  double8  AS chords,\n  double9  AS flag_moves,\n  double10 AS first_move_ms,\n  double11 AS view_moved,\n  _sample_interval AS sample_interval\nFROM hypersweeper_game_events\nWHERE timestamp >= toDateTime(${__from:date:seconds})\n  AND timestamp <= toDateTime(${__to:date:seconds})\n  AND ('$difficulty' = 'all' OR blob2  = '$difficulty')\n  AND ('$surface'    = 'all' OR blob6  = '$surface')\n  AND ('$family'     = 'all' OR blob7  = '$family')\n  AND ('$device'     = 'all' OR blob10 = '$device')\n  AND ('$shell'      = 'all' OR blob11 = '$shell')\n  AND ('$source'     = 'all' OR if(blob13 = 'itch', 'itch', 'site') = '$source')\n  AND ('$kind'    = 'all' OR blob1  = '$kind')\n  AND ('$outcome' = 'all' OR blob3  = '$outcome')\n  AND ('$mode'    = ''    OR index1 = '$mode')\n  AND ('$version' = ''    OR blob12 = '$version')\nORDER BY t DESC\nLIMIT $limit",
           "database": "",
           "table": "",
           "dateTimeType": "DATETIME",
@@ -902,6 +902,39 @@
             "selected": false,
             "text": "standalone",
             "value": "standalone"
+          }
+        ],
+        "multi": false,
+        "includeAll": false,
+        "hide": 0,
+        "skipUrlSync": false
+      },
+      {
+        "type": "custom",
+        "name": "source",
+        "label": "Source",
+        "description": "Where the build is hosted: site = the Cloudflare deploy, itch = the itch.io upload. Events from builds older than the field count as site.",
+        "query": "all,site,itch",
+        "current": {
+          "selected": true,
+          "text": "all",
+          "value": "all"
+        },
+        "options": [
+          {
+            "selected": true,
+            "text": "all",
+            "value": "all"
+          },
+          {
+            "selected": false,
+            "text": "site",
+            "value": "site"
+          },
+          {
+            "selected": false,
+            "text": "itch",
+            "value": "itch"
           }
         ],
         "multi": false,
