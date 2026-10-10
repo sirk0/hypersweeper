@@ -8892,5 +8892,43 @@
         "indistinguishable": 0
       }
     }
+  },
+  "projective": {
+    "builder": "projective_board",
+    "args": {
+      "easy": {
+        "args": [
+          5,
+          12
+        ],
+        "cells": 75,
+        "score": 0.077,
+        "distortionMean": 1.0231,
+        "distortionP90": 1.0664,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          9,
+          50
+        ],
+        "cells": 243,
+        "score": 0.0521,
+        "distortionMean": 1.0231,
+        "distortionP90": 1.0605,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          13,
+          100
+        ],
+        "cells": 507,
+        "score": 0.0547,
+        "distortionMean": 1.0231,
+        "distortionP90": 1.059,
+        "indistinguishable": 0
+      }
+    }
   }
 }

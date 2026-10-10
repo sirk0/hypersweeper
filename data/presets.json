@@ -1368,6 +1368,23 @@
         ]
       }
     },
+    "projective": {
+      "builder": "projective_board",
+      "args": {
+        "easy": [
+          5,
+          15
+        ],
+        "medium": [
+          9,
+          57
+        ],
+        "hard": [
+          13,
+          138
+        ]
+      }
+    },
     "projectivetri": {
       "builder": "projective_triangle_board",
       "args": {

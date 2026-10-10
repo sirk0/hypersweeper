@@ -223,6 +223,7 @@ from minesweeper.boards.surfaces import (  # noqa: F401
     mobius_board,
     mobius_hex_board,
     mobius_triangle_board,
+    projective_board,
     projective_hex_board,
     projective_triangle_board,
     torus_board,

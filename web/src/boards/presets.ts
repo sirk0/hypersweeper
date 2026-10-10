@@ -89,6 +89,7 @@ import {
   trefoilBoard,
   trefoilHexBoard,
   trefoilTriangleBoard,
+  projectiveBoard,
   projectiveHexBoard,
   projectiveTriangleBoard,
   doubleTorusBoard,
@@ -153,8 +154,9 @@ const BUILDERS: Record<string, Builder> = {
   trefoil_board: trefoilBoard,
   trefoil_triangle_board: trefoilTriangleBoard,
   trefoil_hex_board: trefoilHexBoard,
-  // the real projective plane: a geodesic sphere and its Goldberg dual with
-  // antipodes identified, drawn as the whole sphere
+  // the real projective plane: a cubed sphere, a geodesic sphere and its
+  // Goldberg dual with antipodes identified, drawn as the whole sphere
+  projective_board: projectiveBoard,
   projective_triangle_board: projectiveTriangleBoard,
   projective_hex_board: projectiveHexBoard,
   // the genus-2 board: two square-tiled donuts merged at their outer rims

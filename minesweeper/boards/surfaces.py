@@ -624,13 +624,13 @@ def double_torus_hex_board(
 # twin's, and the two faces show one state -- so whatever happens on one
 # face happens on the one diametrically opposite.
 #
-# Any centrally symmetric tiling of the sphere will do, and the geodesic
-# icosahedron and its dual, the Goldberg polyhedron GP(n, 0), are the
-# regular tilings' nearest spherical cousins: triangles with six vertices of
-# degree five, hexagons with six pentagons. (Six of each, not twelve: the
-# quotient keeps half of the sphere's defects, which is what chi = 1 asks
-# for -- a closed surface of triangles, or of hexagons and pentagons, has
-# exactly 6 * chi of them.)
+# Any centrally symmetric tiling of the sphere will do, and the cubed sphere,
+# the geodesic icosahedron and its dual, the Goldberg polyhedron GP(n, 0),
+# are the regular tilings' nearest spherical cousins: squares with four
+# 3-valent corners, triangles with six vertices of degree five, hexagons with
+# six pentagons. (Half the sphere's defects each: the quotient keeps half,
+# which is what chi = 1 asks for -- a closed surface of squares has 4 * chi
+# such corners, of triangles or of hexagons and pentagons 6 * chi.)
 
 
 def _antipodes() -> list[int]:
@@ -671,6 +671,42 @@ def _projective(mode: str, sphere_cells: dict, positions: dict, flip,
         polygons[face] = _orient_outward(polygon, centroid)
     return Board3D(mode, polygons, adjacency, mine_count, radius=1.0,
                    faces=faces)
+
+
+def projective_board(n: int, mine_count: int) -> Board3D:
+    """The real projective plane in squares: a cube of ``n x n`` faces --
+    ``6 * n**2`` squares -- with antipodes identified, so ``3 * n**2``
+    cells, drawn as the whole sphere. Vertex keys are the cube's integer
+    lattice points on ``[-n, n]**3`` (as ``solids.cube_board``), so the
+    antipode is plain negation; each is placed by the *equiangular* cube
+    map (every face coordinate through ``tan(pi/4 * c)``, then onto the unit
+    sphere), which keeps the squares near the cube's corners from shrinking
+    the way a straight projection does. The cube's eight 3-valent corners
+    come down to four: what a closed surface of squares needs, 4 * chi."""
+    sphere_cells: dict = {}
+    for axis in range(3):
+        u_axis, v_axis = (a for a in range(3) if a != axis)
+        for sign in (-1, 1):
+            for i in range(n):
+                for j in range(n):
+                    keys = []
+                    for du, dv in ((0, 0), (1, 0), (1, 1), (0, 1)):
+                        coord = [0, 0, 0]
+                        coord[axis] = sign * n
+                        coord[u_axis] = -n + 2 * (i + du)
+                        coord[v_axis] = -n + 2 * (j + dv)
+                        keys.append(tuple(coord))
+                    sphere_cells[tuple(sorted(keys))] = keys
+
+    def place(key) -> Vec3:
+        return _normalize(tuple(math.tan(math.pi / 4 * c / n) for c in key))
+
+    positions = {k: place(k) for keys in sphere_cells.values() for k in keys}
+
+    def flip(key):
+        return tuple(-c for c in key)
+
+    return _projective("projective", sphere_cells, positions, flip, mine_count)
 
 
 def projective_triangle_board(frequency: int, mine_count: int) -> Board3D:

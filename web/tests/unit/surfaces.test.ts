@@ -8,6 +8,7 @@ import {
   kleinTriangleBoard,
   mobiusBoard,
   mobiusHexBoard,
+  projectiveBoard,
   projectiveHexBoard,
   projectiveTriangleBoard,
   torusBoard,
@@ -18,7 +19,7 @@ import {
   trefoilTriangleBoard,
 } from "../../src/boards/surfaces";
 import { buildBoard } from "../../src/boards/presets";
-import { c180Board, sphereTriangleBoard } from "../../src/boards/solids";
+import { c180Board, cubeBoard, sphereTriangleBoard } from "../../src/boards/solids";
 import {
   fanTriangles,
   insideOccluder,
@@ -436,6 +437,7 @@ describe("the projective plane", () => {
   const boards = (frequency: number) => [
     projectiveTriangleBoard(frequency, 5),
     projectiveHexBoard(frequency, 5),
+    projectiveBoard(frequency, 5),
   ];
 
   it("draws every cell twice, on antipodal faces", () => {
@@ -462,9 +464,15 @@ describe("the projective plane", () => {
 
   it("is a closed surface of Euler characteristic 1, with six defects", () => {
     for (const frequency of [2, 3, 4, 7]) {
-      const [tri, hex] = boards(frequency);
+      const [tri, hex, square] = boards(frequency);
       expect(eulerCharacteristic(tri!)).toBe(1);
       expect(eulerCharacteristic(hex!)).toBe(1);
+      expect(eulerCharacteristic(square!)).toBe(1);
+      expect(square!.adjacency.size).toBe(3 * frequency ** 2);
+      // a closed surface of squares needs 4 * chi corners where only three
+      // meet: twelve cells of seven neighbours round them, the rest eight
+      const sevens = [...square!.adjacency.values()].filter((n) => n.length === 7);
+      expect(sevens.length).toBe(12);
       expect(tri!.adjacency.size).toBe(10 * frequency ** 2);
       expect(hex!.adjacency.size).toBe(5 * frequency ** 2 + 1);
       const pentagons = [...hex!.adjacency.keys()].filter((c) => hex!.polygons.get(c)!.length === 5);
@@ -473,6 +481,12 @@ describe("the projective plane", () => {
   });
 
   it("keeps every cell's sphere neighbourhood: one neighbour per neighbour", () => {
+    // squares against the cube they are cut from, by shared lattice corners
+    const squares = projectiveBoard(4, 5);
+    const cube = cubeBoard(4, 5);
+    expect(cube.adjacency.size).toBe(2 * squares.adjacency.size);
+    const sevens = (b: Board3D) => [...b.adjacency.values()].filter((n) => n.length === 7).length;
+    expect(sevens(cube)).toBe(2 * sevens(squares));
     // The gluing moves every point half the sphere away, so no cell meets its
     // twin and no two of a cell's neighbours are each other's twins.
     const pairs: [Board3D, Board3D][] = [
@@ -495,7 +509,7 @@ describe("the projective plane", () => {
   });
 
   it("carries the sphere's rotations down to the pairs", () => {
-    for (const mode of ["projectivetri", "projectivehex"]) {
+    for (const mode of ["projective", "projectivetri", "projectivehex"]) {
       const board = buildBoard(mode, "easy") as Board3D;
       expect(board.symmetries.length, mode).toBeGreaterThan(0);
       for (const id of ids(board)) assertSymmetry(board, id);

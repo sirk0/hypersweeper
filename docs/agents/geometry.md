@@ -45,7 +45,7 @@ Import order is a strict DAG; a module only imports from the ones above it.
 | `hyperbolic.py` | The regular {p,q} tilings of the hyperbolic plane, drawn in the Poincaré disc: {7,3} heptagons, {5,4} pentagons and {4,5} squares. Built combinatorially ring by ring with integer vertex ids, placed afterwards by disc isometries, edges drawn as geodesic arcs, trimmed by hyperbolic-distance shells. See "The hyperbolic boards" below. |
 | `solids.py` | Closed/convex and polycube 3D boards (spherical gyro pentagons, Goldberg polyhedra, geodesic icosahedron, rhombicosidodecahedron, truncated icosidodecahedron, cube, tetrahedron, frames, bipyramid), plus the shared `_wythoff_point` every uniform solid here and every Catalan solid next door is generated from. |
 | `catalan.py` | The thirteen Catalan solids, the duals of the Archimedean solids. One recipe for all of them: a Platonic base and one flag, the Wythoff generating point of its Schwarz triangle (`solids._wythoff_point` for the five non-chiral Conway operations, `_snub_point` for the chiral one), a Catalan vertex at `n / <w, n>` on each face axis — polar duality — and the base's flags grouped into faces by the operation. Faces are then subdivided (`solids._geodesic` for triangles, `_quad_grid` for quadrilaterals, a five-way fan first for pentagons), which is these boards' only size knob. |
-| `surfaces.py` | Wrapping tilings onto surfaces: the three immersion points (`_torus_point`, `_cylinder_point`, `_mobius_point`), the shared `_assemble` tail, the nine simple `*_board` wrappers, and the Archimedean `arch_torus_board` / `arch_cylinder_board` / `arch_mobius_board`. Also `double_torus_board`, the one board here that is *not* wrapped from a rectangle: two overlapping square-tiled donuts cut apart along the plane between them and sewn back together, a connected sum rather than a seam gluing. And `projective_triangle_board` / `projective_hex_board`, the real projective plane: a geodesic sphere (or its Goldberg dual) with antipodes glued, drawn as the whole sphere through `Board3D.faces`. |
+| `surfaces.py` | Wrapping tilings onto surfaces: the three immersion points (`_torus_point`, `_cylinder_point`, `_mobius_point`), the shared `_assemble` tail, the nine simple `*_board` wrappers, and the Archimedean `arch_torus_board` / `arch_cylinder_board` / `arch_mobius_board`. Also `double_torus_board`, the one board here that is *not* wrapped from a rectangle: two overlapping square-tiled donuts cut apart along the plane between them and sewn back together, a connected sum rather than a seam gluing. And `projective_board` / `projective_triangle_board` / `projective_hex_board`, the real projective plane: a cubed sphere, a geodesic sphere or its Goldberg dual with antipodes glued, drawn as the whole sphere through `Board3D.faces`. |
 | `volume.py` | The volume boards — a solid block of cells rather than a surface of them. One so far: `solid_cube_board`, the `n**3` cube of cubes, whose 26-neighbour adjacency comes off the lattice and whose drawing is the `n` slices laid out on a grid and stepped back in depth. |
 | `catalog.py` | The menu, **derived**: `SURFACE_SPECS` and `TILING_SPECS` (leaf data loaded from `data/catalog.json`) produce `MODE_LABELS`, `TILINGS`, `SURFACE_LABELS`, the geometry-first menu tables (`MENU_ROOT`/`MANIFOLD_*`/`FAMILY_*`/`SOLID_GROUP_*`/`SOLID_MODES`/`SHAPED_MODES`) and the picker helpers (`family_rows`, `picker_families`, `picker_modes`), `MODES_3D`, `mode_for`, `surface_of`, `view_hint`. |
 | `presets.py` | Difficulty presets and `build_board`. Flat regular, solid, Archimedean/Laves and aperiodic (penrose/kitedart/ammannbeenker/spectre/phyllotaxis/…) presets all load from `data/presets.json` (shared with the web port). The Archimedean rows are authored in the compact **`ARCH_PRESETS`** table (tiling → surface → difficulty → args) that `scripts/export_data.py` expands into `data/presets.json`. |
@@ -361,7 +361,7 @@ and both rows are listed with that arithmetic in `tests/test_presets.py`.
 
 ## The real projective plane
 
-`projectivetri` and `projectivehex` are the sphere with every point glued to
+`projective`, `projectivetri` and `projectivehex` are the sphere with every point glued to
 its antipode: closed, chi = 1, and non-orientable -- with the Klein bottle, the
 only closed one-sided surface in the zoo. It has no embedding in 3-space and its
 immersions (Boy's surface, the cross-cap) pass through themselves far worse
@@ -387,10 +387,18 @@ than the bottle's neck, so it is not immersed at all. It is drawn as the
   are each other's twins: every cell keeps one neighbour per sphere neighbour
   (`TestProjectivePlane` checks it on a sweep of frequencies, not just the
   shipped three).
-* **Six defects, not twelve.** A closed surface of hexagons needs 6 * chi
+* **Half the sphere's defects.** A closed surface of hexagons needs 6 * chi
   pentagons, so the Goldberg sphere's twelve come down to six; likewise the
-  geodesic sphere's twelve degree-5 vertices. Cell counts are 10 f^2 triangles
-  and 5 f^2 + 1 hexagons -- f = 4 gives exactly 81.
+  geodesic sphere's twelve degree-5 vertices, and a surface of squares needs
+  4 * chi corners where only three meet, so the cube's eight come down to four.
+  Cell counts are 3 n^2 squares, 10 f^2 triangles and 5 f^2 + 1 hexagons --
+  f = 4 gives exactly 81.
+* **The squares are a cube drawn round.** Their keys are the cube's integer
+  lattice points (as `cube_board`'s), so the antipode is negation, and each is
+  placed by the equiangular cube map -- every coordinate through
+  tan(pi/4 * c) before it is put on the sphere -- which keeps the squares
+  near the cube's corners from shrinking the way a straight projection does,
+  so all three tilings are drawn as the same ball.
 * **The topology helpers count the board, not the drawing**
   (`covering_sheets` / `coveringSheets`): a k-sheeted drawing has k times the
   board's V, E, F and chi, so they divide by it, and the conformance oracle's

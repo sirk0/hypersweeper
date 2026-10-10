@@ -2031,6 +2031,35 @@
         "hasCellCycle": false
       }
     },
+    "projective": {
+      "easy": {
+        "cellCount": 75,
+        "mineCount": 15,
+        "euler": 1,
+        "boundaryComponents": 0,
+        "edgeCount": 150,
+        "vertexCount": 76,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 243,
+        "mineCount": 57,
+        "euler": 1,
+        "boundaryComponents": 0,
+        "edgeCount": 486,
+        "vertexCount": 244,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 507,
+        "mineCount": 138,
+        "euler": 1,
+        "boundaryComponents": 0,
+        "edgeCount": 1014,
+        "vertexCount": 508,
+        "hasCellCycle": false
+      }
+    },
     "projectivetri": {
       "easy": {
         "cellCount": 90,

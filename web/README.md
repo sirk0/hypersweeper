@@ -10,8 +10,9 @@ newest first. For the rules and reference an agent needs while working here, see
 
 **M24 — The real projective plane: a surface drawn as its cover.** The only
 closed one-sided surface besides the Klein bottle, and the first board whose
-drawn faces outnumber its cells. `projectivetri` and `projectivehex` are the
-geodesic sphere and its Goldberg dual with antipodes glued; since nothing
+drawn faces outnumber its cells. `projective`, `projectivetri` and
+`projectivehex` are a cubed sphere (a cube's grid through the equiangular map),
+the geodesic sphere and its Goldberg dual with antipodes glued; since nothing
 draws the projective plane well in 3-space, the board is the whole sphere and
 `Board3D.faces` says which cell each face shows. `GameSession`'s face -> cell
 map starts from it, its inverse became one-to-many (`facesFor`), and every
@@ -19,8 +20,8 @@ visual a cell takes is painted on both faces, so what happens on one side
 happens on the other, diametrically opposite; one-off effects play on the twin
 nearest where the player last touched. Adjacency is still exact shared-vertex,
 run on antipodal vertex classes; the topology counts divide by the covering
-sheets, so the board measures chi = 1, with the six pentagons (or degree-5
-vertices) that asks for.
+sheets, so the board measures chi = 1, with the six pentagons (six degree-5
+vertices, four 3-valent corners) that asks for.
 
 **M23 — The trefoil knot: the torus, drawn a second way.** The first surface
 that adds no topology. `trefoil`, `trefoiltri` and `trefoilhex` are the donut's

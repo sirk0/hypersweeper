@@ -1288,9 +1288,9 @@ export function doubleTorusHexBoard(
 // of a cell and `faces` says which cell each one shows, while `adjacency` (and
 // so the game) runs on the antipodal pairs. GameSession paints a cell's state
 // on both faces, so whatever happens on one happens on the face diametrically
-// opposite. The tilings are the geodesic icosahedron and its Goldberg dual,
-// whose six degree-5 vertices / six pentagons are what χ = 1 asks for (half the
-// sphere's twelve).
+// opposite. The tilings are the cubed sphere, the geodesic icosahedron and its
+// Goldberg dual, whose four 3-valent corners / six degree-5 vertices / six
+// pentagons are what χ = 1 asks for (half the sphere's).
 
 /** Each icosahedron vertex's antipode, by index. Exact: the corners are
  * (0, ±1, ±φ) and its cyclic shifts, and negating one is exact. */
@@ -1387,6 +1387,54 @@ function projective(
       return (measured = keepSymmetries(adjacency, candidates));
     },
   };
+}
+
+/** The real projective plane in squares: a cube of `n x n` faces —
+ * `6 * n**2` squares — with antipodes identified, so `3 * n**2` cells, drawn as
+ * the whole sphere. Vertex keys are the cube's integer lattice points on
+ * `[-n, n]**3` (as solids.ts `cubeBoard`), so the antipode is plain negation;
+ * each is placed by the *equiangular* cube map (every coordinate through
+ * `tan(π/4 · c)`, then onto the unit sphere), which keeps the squares near the
+ * cube's corners from shrinking the way a straight projection does. The cube's
+ * eight 3-valent corners come down to four: what a closed surface of squares
+ * needs, 4 · χ. */
+export function projectiveBoard(n: number, mineCount: number): Board3D {
+  const sphereCells: Cells = new Map();
+  const positions: Positions = new Map();
+  for (let axis = 0; axis < 3; axis++) {
+    const [uAxis, vAxis] = [0, 1, 2].filter((a) => a !== axis) as [number, number];
+    for (const sign of [-1, 1]) {
+      for (let i = 0; i < n; i++) {
+        for (let j = 0; j < n; j++) {
+          const keys: string[] = [];
+          for (const [du, dv] of [
+            [0, 0],
+            [1, 0],
+            [1, 1],
+            [0, 1],
+          ] as const) {
+            const coord: Vec3 = [0, 0, 0];
+            coord[axis] = sign * n;
+            coord[uAxis] = -n + 2 * (i + du);
+            coord[vAxis] = -n + 2 * (j + dv);
+            const key = cid(...coord);
+            keys.push(key);
+            if (!positions.has(key)) {
+              const square = coord.map((c) => Math.tan(((Math.PI / 4) * c) / n)) as Vec3;
+              positions.set(key, normalize(square));
+            }
+          }
+          sphereCells.set([...keys].sort().join(";"), keys);
+        }
+      }
+    }
+  }
+  const flip = (key: string) =>
+    key
+      .split(",")
+      .map((c) => String(-Number(c) + 0))
+      .join(",");
+  return projective("projective", sphereCells, positions, flip, mineCount);
 }
 
 /** The real projective plane in triangles: a geodesic icosahedron of

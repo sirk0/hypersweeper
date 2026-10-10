@@ -789,7 +789,8 @@ Read [`geometry.md`](geometry.md#the-real-projective-plane) first. What it took:
 1. **A centrally symmetric board with exact keys for the covering map.** The
    geodesic icosahedron and its Goldberg dual qualify: a vertex key is
    barycentric weights over icosahedron corners, and `_antipodes` finds each
-   corner's antipode exactly. `surfaces._projective` (`projective` in
+   corner's antipode exactly. So does the cube's square grid, whose keys are
+   integer lattice points and whose antipode is negation. `surfaces._projective` (`projective` in
    TypeScript) then does the rest for any such board: twins by flipped
    corner sets, cells as the lesser twin, vertex classes as the lesser of a key
    and its flip, shared-vertex adjacency over those, polygons for every face.
@@ -805,7 +806,9 @@ Read [`geometry.md`](geometry.md#the-real-projective-plane) first. What it took:
    the sphere's own adjacency), push each down through `faces`, and let
    `keepSymmetries` drop what becomes the identity or a duplicate.
 5. **The rest is the trefoil's checklist:** a `SurfaceSpec` with a `tilings`
-   allow-list (`["hex", "tri"]`), `MANIFOLD_ORDER` / `MANIFOLD_LABELS`, the
+   allow-list (`["hex", "square", "tri"]`, with the square tiling's
+   `modeOverrides` naming its board plain `projective`, as it does `torus`
+   and `klein`), `MANIFOLD_ORDER` / `MANIFOLD_LABELS`, the
    builders in `_JSON_BUILDERS` / `BUILDERS`, a `SPEC` row (`rigid`, one knob:
    the frequency) and the measured pipeline, both icons (a hemisphere bowl --
    the textbook model -- in `icons.ts` and `gui.py`), the surface in the three

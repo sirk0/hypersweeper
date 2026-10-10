@@ -131,8 +131,9 @@ Pick a surface, then a tiling:
   it is drawn as the whole sphere with every cell shown twice — reveal or flag
   a cell and its antipodal twin round the back changes with it. A cell's
   neighbours are its own and its twin's, so a number counts mines on both
-  sides of the ball. Triangles (a geodesic sphere) or hexagons (a Goldberg
-  sphere, with the six pentagons the surface forces)
+  sides of the ball. Squares (a cube's faces rounded onto the sphere),
+  triangles (a geodesic sphere) or hexagons (a Goldberg sphere, with the six
+  pentagons the surface forces)
 - **Cylinder (3D)** — an open tube, wrapping in one direction only
 
 ## Playing

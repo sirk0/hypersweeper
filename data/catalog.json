@@ -94,6 +94,7 @@
       "tilt": -0.3,
       "tilings": [
         "hex",
+        "square",
         "tri"
       ]
     },
@@ -133,7 +134,8 @@
         "mobius": "mobius",
         "klein": "klein",
         "doubletorus": "doubletorus",
-        "trefoil": "trefoil"
+        "trefoil": "trefoil",
+        "projective": "projective"
       }
     },
     {
@@ -956,6 +958,12 @@
       "tiling": "prismaticpent",
       "surface": "flat",
       "family": "dual"
+    },
+    "projective": {
+      "label": "Squares · Projective plane",
+      "tiling": "square",
+      "surface": "projective",
+      "family": "regular"
     },
     "projectivehex": {
       "label": "Hexagons · Projective plane",
