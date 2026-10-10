@@ -5,6 +5,7 @@ import {
   FRACTAL_MODES,
   HYPERBOLIC_MODES,
   SOLID_GROUPS,
+  SPIRAL_MODES,
   modeFor,
   tilingAllows,
   tilingOf,
@@ -131,7 +132,9 @@ describe("which pattern a mode gets", () => {
     // brick and tiles the plane as any wall does, so the page is that wall —
     // what does not repeat is the winding, which no page can draw.
     expect(patternKey("brickrings")).toBe("runningbond");
-    for (const mode of APERIODIC_MODES) expect(PERIODIC).toContain(patternKey(mode));
+    for (const mode of [...APERIODIC_MODES, ...SPIRAL_MODES]) {
+      expect(PERIODIC).toContain(patternKey(mode));
+    }
   });
 
   it("lays the fractal boards' own tiles down periodically", () => {

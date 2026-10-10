@@ -126,7 +126,7 @@ the canvas-hiding, `view`-preserving machinery they needed has no caller now.
 
 The header's ⓘ answers the question the name raises: *what is this?* The family
 the tiling comes from (Uniform, Laves, Isogonal, Congruent rectangles, Other,
-Aperiodic, Fractals, Hyperbolic, or the solid group), the surface it is wrapped on, how many cells there
+Aperiodic, Spirals, Fractals, Hyperbolic, or the solid group), the surface it is wrapped on, how many cells there
 are and how many mines, and then one row per kind of tile — its name, its count
 and the colour the board paints it in (`iconHex`, the menu icons' saturation;
 the board's own tint is faint by design and reads as off-white at 14px). A board
@@ -420,7 +420,7 @@ menu is in anyway.
   blunt one; counting corners over those two vertex figures fixes the ratio at
   two pentagons to one rhomb, and a torus exact-cover search finds that cell.
 
-  Three of the four **aperiodic** boards are the same story: the phyllotactic
+  Three of the **aperiodic** and **spiral** boards are the same story: the phyllotactic
   hexagon is a *parallelohexagon*, so it tiles
   by translation alone (the spiral is in how the board's wedges are offset, not
   in the tile), and Penrose's two rhombs make a plain periodic tiling as

@@ -75,6 +75,7 @@ describe("card previews", () => {
     }
     // ...and the two family rows resolve onto their board's drawing.
     expect(previewIcon("aperiodic").svg).toBe(previewIcon("penrose").svg);
+    expect(previewIcon("spiral").svg).toBe(previewIcon("phyllotaxis").svg);
     expect(previewIcon("fractal").svg).toBe(previewIcon("sphinx").svg);
   });
 

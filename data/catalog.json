@@ -225,7 +225,7 @@
       "label": "Brick rings",
       "tiling": "",
       "surface": "flat",
-      "family": "aperiodic"
+      "family": "spiral"
     },
     "c180": {
       "label": "Goldberg GP(3,0)",
@@ -615,7 +615,7 @@
       "label": "Klaassen spiral",
       "tiling": "",
       "surface": "flat",
-      "family": "aperiodic"
+      "family": "spiral"
     },
     "klein": {
       "label": "Squares · Klein bottle",
@@ -933,25 +933,25 @@
       "label": "Pentagonal spiral (5-fold)",
       "tiling": "",
       "surface": "flat",
-      "family": "aperiodic"
+      "family": "spiral"
     },
     "pentaspiral6": {
       "label": "Pentagonal spiral (6-fold)",
       "tiling": "",
       "surface": "flat",
-      "family": "aperiodic"
+      "family": "spiral"
     },
     "pentaspiral7": {
       "label": "Pentagonal spiral (7-fold)",
       "tiling": "",
       "surface": "flat",
-      "family": "aperiodic"
+      "family": "spiral"
     },
     "phyllotaxis": {
       "label": "Phyllotactic spiral",
       "tiling": "",
       "surface": "flat",
-      "family": "aperiodic"
+      "family": "spiral"
     },
     "prismaticpent": {
       "label": "Prismatic pentagonal",
@@ -1459,7 +1459,9 @@
       "penrose",
       "kitedart",
       "ammannbeenker",
-      "spectre",
+      "spectre"
+    ],
+    "spiral": [
       "phyllotaxis",
       "klaassen",
       "pentaspiral5",
@@ -1487,6 +1489,7 @@
       "rectangle": "Congruent rectangles",
       "other": "Other",
       "aperiodic": "Aperiodic",
+      "spiral": "Spirals",
       "fractal": "Fractals",
       "hyperbolic": "Hyperbolic"
     },

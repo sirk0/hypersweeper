@@ -439,7 +439,7 @@
       "type": "piechart",
       "id": 5,
       "title": "Boards opened, by family",
-      "description": "How the tiling is classified — regular, uniform, dual, aperiodic, fractal, and so on.",
+      "description": "How the tiling is classified — regular, uniform, dual, aperiodic, spiral, fractal, and so on.",
       "gridPos": {
         "h": 9,
         "w": 8,
@@ -1288,7 +1288,7 @@
         "name": "family",
         "label": "Family",
         "description": "",
-        "query": "all,regular,uniform,dual,isogonal,rectangle,other,aperiodic,fractal,hyperbolic,sphere,platonic,catalan,polyhedra,volume",
+        "query": "all,regular,uniform,dual,isogonal,rectangle,other,aperiodic,spiral,fractal,hyperbolic,sphere,platonic,catalan,polyhedra,volume",
         "current": {
           "selected": true,
           "text": "all",
@@ -1334,6 +1334,11 @@
             "selected": false,
             "text": "aperiodic",
             "value": "aperiodic"
+          },
+          {
+            "selected": false,
+            "text": "spiral",
+            "value": "spiral"
           },
           {
             "selected": false,
