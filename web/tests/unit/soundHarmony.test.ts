@@ -66,14 +66,17 @@ const SETS = shapeSets();
 describe("the shapes that share a board sound a chord", () => {
   it("finds the catalog's shape sets, and only ever a handful of them", () => {
     // A guard on the sweep itself: if this stops finding the mixed boards,
-    // the tests below are asserting nothing. Four shapes have never yet met
-    // on one board; if that changes, the spellings need re-measuring.
+    // the tests below are asserting nothing. Four shapes meet on one board in
+    // the 2-uniform 3.4.6.4; 4.6.12 — the triad test below holds all four
+    // a third or more apart under every preset, so it spells a seventh chord
+    // rather than a cluster. A fifth shape would need re-measuring.
     const keys = [...SETS.keys()].sort();
     expect(keys).toContain("3.4.6"); // rhombitrihexagonal — triangles, squares, hexagons
     expect(keys).toContain("4.8"); // truncated square
     expect(keys).toContain("5.6"); // the football spheres
     expect(keys).toContain("4.6.10"); // truncated icosidodecahedron
-    for (const sides of SETS.values()) expect(sides.length).toBeLessThanOrEqual(3);
+    expect(keys).toContain("3.4.6.12"); // 2-uniform 3.4.6.4; 4.6.12
+    for (const sides of SETS.values()) expect(sides.length).toBeLessThanOrEqual(4);
   });
 
   it("puts every pair of shapes on one board a consonant interval apart", () => {
@@ -92,8 +95,8 @@ describe("the shapes that share a board sound a chord", () => {
   });
 
   it("spells the three-shape boards as triads rather than as clusters", () => {
-    // Three distinct pitch classes with no two of them adjacent — the
-    // difference between a chord and a handful of notes at once.
+    // Three (or four) distinct pitch classes with no two of them adjacent —
+    // the difference between a chord and a handful of notes at once.
     for (const [key, preset] of Object.entries(SOUND_PRESETS)) {
       for (const [name, sides] of SETS) {
         if (sides.length < 3) continue;

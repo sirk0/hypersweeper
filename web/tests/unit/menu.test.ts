@@ -75,6 +75,7 @@ describe("picker pages", () => {
       "regular",
       "uniform",
       "dual",
+      "2-uniform",
       "isogonal",
       "rectangle",
       "other",

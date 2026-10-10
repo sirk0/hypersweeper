@@ -453,6 +453,33 @@ function domainPatch(key: string): Tile[] {
   return tiles;
 }
 
+/** How far out a "disc" patch reaches, in edge lengths, per tiling. */
+const DISC_RADIUS: Record<string, number> = {
+  // the hexagon cut into six triangles, ringed by squares and triangles: the
+  // 3⁶ vertex at the middle, a 3².4.3.4 one at each of its corners
+  trirhombitrihex: 2,
+  // the dissected dodecagon, plus the six triangles between it and its
+  // neighbours and the six of theirs that pair with its own into rhombi —
+  // the pairs are what tell it from plain 3.4.6.4
+  dissectedtrunchex: 2.3,
+  // the dodecagon with its ring of squares and hexagons, plus the triangle in
+  // each notch between two hexagons — where plain 4.6.12 has a square
+  dodecarhombitrihex: 3.3,
+};
+
+/** Every tile whose centre lies within `DISC_RADIUS` of the board's own window
+ * centre (`ArchTemplate.centre`, else its biggest tile — the hub `tileRing`
+ * takes). A 2-uniform tiling has two kinds of vertex, so a patch round one tile
+ * or one vertex shows only one of them, and reads as the uniform tiling it was
+ * cut from or merged out of; a disc reaching past the first ring holds both. */
+function discPatch(key: string): Tile[] {
+  const tiles = tilingTiles(key);
+  const t = archTemplate(key);
+  const hub: P = t.centre ? [t.centre[0], t.centre[1]] : tileRing(key)[0]!.centre;
+  const radius = DISC_RADIUS[key] ?? 2;
+  return tiles.filter((tile) => Math.hypot(tile.centre[0] - hub[0], tile.centre[1] - hub[1]) <= radius);
+}
+
 /** Scale a patch into the icon box (y flipped — tilings are y-up, SVG y-down). */
 function fitTiles(tiles: Tile[], box = D * 0.9): Tile[] {
   const xs = tiles.flatMap((t) => t.pts.map((p) => p[0]));
@@ -521,7 +548,7 @@ const PATCH_PICK: Record<string, (tiles: Tile[]) => Tile[]> = {
   },
 };
 
-type PatchStyle = "ring" | "rosette" | "domain";
+type PatchStyle = "ring" | "rosette" | "domain" | "disc";
 
 // The tilings drawn as a tile with the ring of tiles round it rather than as a
 // vertex rosette (see styleFor): everything but the face-transitive Laves
@@ -539,7 +566,9 @@ const ARCH_KEYS = new Set(ARCH_TILINGS.map((t) => t.key));
  * a square cut by its diagonals, three rhombi as a tumbling block, six florets
  * pinwheeling round a point.
  *
- * A *rectangle bond* is drawn as one fundamental domain — see domainPatch.
+ * A *rectangle bond* is drawn as one fundamental domain — see domainPatch — and
+ * a *2-uniform* tiling as a disc wide enough to hold both its kinds of vertex —
+ * see discPatch.
  *
  * The exception is elongated triangular, whose icon is picked out of the
  * rosette by hand (see PATCH_PICK). */
@@ -565,6 +594,10 @@ const PATCH_STYLE: Record<string, PatchStyle> = {
   // domain. The L-tromino keeps the ring, where the notch of each L against
   // the next is what shows; its domain reads as a plain course of bricks.
   sphinxpairs: "domain",
+  // The 2-uniform tilings show both of their kinds of vertex — see discPatch.
+  ...Object.fromEntries(
+    ARCH_TILINGS.filter((t) => t.family === "2-uniform").map((t) => [t.key, "disc" as const]),
+  ),
 };
 
 function styleFor(key: string): PatchStyle {
@@ -581,7 +614,9 @@ function tilingPatch(key: string, style: PatchStyle = styleFor(key)): string[] {
       ? tileRing(key)
       : style === "domain"
         ? domainPatch(key)
-        : rosette(key, ROSETTE_DEGREE[key]);
+        : style === "disc"
+          ? discPatch(key)
+          : rosette(key, ROSETTE_DEGREE[key]);
   const pick = PATCH_PICK[key];
   if (pick) picked = pick(picked);
   if (PATCH_FLIP.has(key)) {
@@ -1242,6 +1277,9 @@ function draw(rawKey: string): string[] {
   if (ARCH_KEYS.has(key)) return tilingPatch(key);
   if (key === "uniform") return tilingPatch("rhombitrihex", "rosette");
   if (key === "dual") return tilingPatch("deltoidal");
+  // the 2-uniform family row: 3.4.6.4; 4.6.12, a dodecagon ringed by squares
+  // and hexagons beside a 3.4.6.4 patch — the four shapes it is made of
+  if (key === "2-uniform") return tilingPatch("dodecarhombitrihex");
   // the Isogonal family row: rotated hexagonal, the clearest picture of what
   // the family is — tiles sliding along each other's edges rather than meeting
   // them, with the gaps that opens filled by a second shape

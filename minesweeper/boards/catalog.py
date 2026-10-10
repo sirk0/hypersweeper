@@ -126,7 +126,7 @@ REGULAR_TILINGS = tuple(
 # the same (a rectangular domain a surface could be glued from), unlike the
 # one-off boards of FLAT_ONLY_FAMILIES below -- so they are gated here, by
 # TilingSpec.flat_only, rather than by being kept out of the picker.
-_FLAT_ONLY_FAMILIES: frozenset[str] = frozenset({"other"})
+_FLAT_ONLY_FAMILIES: frozenset[str] = frozenset({"2-uniform", "other"})
 
 TILING_SPECS = REGULAR_TILINGS + tuple(
     TilingSpec(t.key, t.label, chiral=t.template().mirror is None,
@@ -225,6 +225,7 @@ MANIFOLD_LABELS = dict(_MENU["manifoldLabels"])
 PICKER_REGULAR = tuple(_MENU["pickerRegular"])
 UNIFORM_ARCH = tuple(t.key for t in ARCH_TILINGS if t.family == "uniform")
 DUAL_ARCH = tuple(t.key for t in ARCH_TILINGS if t.family == "dual")
+TWO_UNIFORM_ARCH = tuple(t.key for t in ARCH_TILINGS if t.family == "2-uniform")
 ISOGONAL_ARCH = tuple(t.key for t in ARCH_TILINGS if t.family == "isogonal")
 RECTANGLE_ARCH = tuple(t.key for t in ARCH_TILINGS if t.family == "rectangle")
 OTHER_ARCH = tuple(t.key for t in ARCH_TILINGS if t.family == "other")
@@ -247,6 +248,7 @@ FAMILY_MEMBERS = {
     "regular": PICKER_REGULAR,
     "uniform": UNIFORM_ARCH,
     "dual": DUAL_ARCH,
+    "2-uniform": TWO_UNIFORM_ARCH,
     "isogonal": ISOGONAL_ARCH,
     "rectangle": RECTANGLE_ARCH,
     "other": OTHER_ARCH,
@@ -256,11 +258,12 @@ FAMILY_MEMBERS = {
     "hyperbolic": HYPERBOLIC_MODES,
 }
 # the picker's family rows, in order; the flat-only families (whose members are
-# one-off modes, not tilings) are added on the plane alone. "Other" is in the
-# ordinary list: its members are tilings, and picker_families drops a family a
-# surface has no row of rather than naming it in two places.
-PICKER_FAMILIES = ("regular", "uniform", "dual", "isogonal", "rectangle",
-                   "other")
+# one-off modes, not tilings) are added on the plane alone. "2-uniform" and
+# "Other" are in the ordinary list although they are flat-only too: their
+# members are tilings, and picker_families drops a family a surface has no row
+# of rather than naming it in two places.
+PICKER_FAMILIES = ("regular", "uniform", "dual", "2-uniform", "isogonal",
+                   "rectangle", "other")
 FLAT_ONLY_FAMILIES = ("aperiodic", "spiral", "fractal", "hyperbolic")
 
 # The solid pages: Sphere, Platonic solids, Catalan solids and Polyhedra, each
@@ -329,11 +332,11 @@ def picker_families(surface_key: str) -> tuple[str, ...]:
     and any whose rows a surface disables to the last one. What a surface
     drops it drops row by row in ``family_rows``, on the three things that can
     stop a tiling reaching it -- a chiral tiling has no mirror to close a
-    Mobius or Klein seam with, a flat-only tiling ("Other", for now) has no
-    wrap builder yet, and a surface restricted to an allow-list of tilings
-    (the double torus, square only for now) refuses the rest. A family with
-    nothing left on it is a page of greyed-out rows, so it is not offered at
-    all.
+    Mobius or Klein seam with, a flat-only tiling ("2-uniform" and "Other",
+    for now) has no wrap builder yet, and a surface restricted to an
+    allow-list of tilings (the double torus, square only for now) refuses the
+    rest. A family with nothing left on it is a page of greyed-out rows, so it
+    is not offered at all.
     """
     families = (PICKER_FAMILIES + FLAT_ONLY_FAMILIES if surface_key == "flat"
                 else PICKER_FAMILIES)

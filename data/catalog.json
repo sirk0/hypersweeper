@@ -480,11 +480,23 @@
       "surface": "solid",
       "family": "catalan"
     },
+    "dissectedtrunchex": {
+      "label": "3².4.3.4; 3.4.6.4",
+      "tiling": "dissectedtrunchex",
+      "surface": "flat",
+      "family": "2-uniform"
+    },
     "dodecahedron": {
       "label": "Dodecahedron",
       "tiling": "",
       "surface": "solid",
       "family": "platonic"
+    },
+    "dodecarhombitrihex": {
+      "label": "3.4.6.4; 4.6.12",
+      "tiling": "dodecarhombitrihex",
+      "surface": "flat",
+      "family": "2-uniform"
     },
     "doubletorus": {
       "label": "Squares · Double torus",
@@ -1350,6 +1362,12 @@
       "surface": "flat",
       "family": "uniform"
     },
+    "trirhombitrihex": {
+      "label": "3⁶; 3².4.3.4",
+      "tiling": "trirhombitrihex",
+      "surface": "flat",
+      "family": "2-uniform"
+    },
     "tromino": {
       "label": "L-tromino",
       "tiling": "tromino",
@@ -1448,6 +1466,7 @@
       "regular": "Regular",
       "uniform": "Uniform",
       "dual": "Laves",
+      "2-uniform": "2-uniform",
       "isogonal": "Isogonal",
       "rectangle": "Congruent rectangles",
       "other": "Other",

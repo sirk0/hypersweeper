@@ -4497,6 +4497,84 @@
         ]
       }
     },
+    "trirhombitrihex": {
+      "builder": "archimedean_board",
+      "args": {
+        "easy": [
+          "trirhombitrihex",
+          3,
+          1,
+          8,
+          52.196
+        ],
+        "medium": [
+          "trirhombitrihex",
+          4,
+          3,
+          45,
+          40.241
+        ],
+        "hard": [
+          "trirhombitrihex",
+          6,
+          3,
+          86,
+          27.598
+        ]
+      }
+    },
+    "dissectedtrunchex": {
+      "builder": "archimedean_board",
+      "args": {
+        "easy": [
+          "dissectedtrunchex",
+          2,
+          1,
+          6,
+          50.718
+        ],
+        "medium": [
+          "dissectedtrunchex",
+          4,
+          2,
+          30,
+          28.355
+        ],
+        "hard": [
+          "dissectedtrunchex",
+          5,
+          3,
+          74,
+          23.233
+        ]
+      }
+    },
+    "dodecarhombitrihex": {
+      "builder": "archimedean_board",
+      "args": {
+        "easy": [
+          "dodecarhombitrihex",
+          3,
+          1,
+          6,
+          23.852
+        ],
+        "medium": [
+          "dodecarhombitrihex",
+          5,
+          2,
+          21,
+          15.458
+        ],
+        "hard": [
+          "dodecarhombitrihex",
+          6,
+          3,
+          53,
+          13.145
+        ]
+      }
+    },
     "sphinxpairs": {
       "builder": "archimedean_board",
       "args": {
