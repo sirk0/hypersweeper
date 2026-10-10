@@ -73,6 +73,12 @@ about the tiling:
   changes. Its ring roll is the most useful of all of them: cells where the
   knot passes under itself are hidden from every angle, and rolling the
   contents along the knot brings them out.
+- A **projective plane** keeps what the **sphere** under it keeps. It is drawn
+  as the whole sphere, each cell on two antipodal faces, and every rotation or
+  reflection about the centre commutes with the antipode, so the solid's own
+  measured point group is pushed down to the pairs — less the central
+  inversion, which is the identity there, and with each mirror merged into the
+  half turn about its normal.
 - A **double torus** keeps *no* translation. It is not glued from a rectangle:
   it is two overlapping donuts cut apart along the plane between them, and the
   block each gives up there pins the lattice both ways, so there is nothing to

@@ -118,6 +118,13 @@ export interface Board3D {
   // authoritative answer, known at build time from the flat template. Null
   // for boards with no T-vertices, where the geometric fallback is exact.
   cornerMask: Map<CellId, boolean[]> | null;
+  // Set on a board drawn as a *cover* of itself: drawn face -> the cell it
+  // shows. The real projective plane is drawn as the whole sphere, every cell
+  // twice (it and its antipode), so `polygons` is keyed by face while
+  // `adjacency` — and the game — is keyed by cell, and both faces of a cell
+  // paint its one state. Unset on every other board, where each polygon is
+  // its own cell.
+  faces?: Map<CellId, CellId>;
 }
 
 export type AnyBoard = Board | Board3D;
@@ -278,22 +285,32 @@ function edgesOf(board: AnyBoard): Map<string, number> {
   return count;
 }
 
+/** How many times the drawing covers the board: 1 for every board but one
+ * drawn through `Board3D.faces` (the projective plane, drawn as the sphere that
+ * double-covers it, so 2). The counts below are of the *board*, so they divide
+ * the drawing's by it. */
+export function coveringSheets(board: AnyBoard): number {
+  if (!isBoard3D(board) || !board.faces) return 1;
+  return board.polygons.size / board.adjacency.size;
+}
+
 /** Distinct polygon corners (V). */
 export function vertexCount(board: AnyBoard): number {
   const seen = new Set<string>();
   for (const poly of board.polygons.values()) {
     for (const p of poly) seen.add(vkey(p));
   }
-  return seen.size;
+  return seen.size / coveringSheets(board);
 }
 
-/** V - E + F over the polygon mesh (1 for a flat disc, 2 for a sphere). */
+/** V - E + F over the polygon mesh (1 for a flat disc, 2 for a sphere, and 1
+ * for the projective plane, whose drawing is the sphere covering it twice). */
 export function eulerCharacteristic(board: AnyBoard): number {
-  return vertexCount(board) - edgesOf(board).size + board.polygons.size;
+  return vertexCount(board) - edgeCount(board) + board.adjacency.size;
 }
 
 export function edgeCount(board: AnyBoard): number {
-  return edgesOf(board).size;
+  return edgesOf(board).size / coveringSheets(board);
 }
 
 /** Number of connected boundary circles (edges belonging to a single cell). */

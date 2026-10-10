@@ -1,5 +1,6 @@
 """Wrapping flat tilings onto 3D surfaces (donut, trefoil knot, cylinder,
-Möbius strip, Klein bottle, double donut).
+Möbius strip, Klein bottle, double donut), and the real projective plane --
+a geodesic sphere with antipodes glued, drawn as the sphere that covers it.
 
 Every wrapped board is built the same way: pick vertex keys on an integer
 grid, glue them at the seam, map each key onto the surface with an
@@ -24,9 +25,12 @@ from minesweeper.boards.core import (
     ROOT3,
     Board3D,
     Vec3,
+    _normalize,
     _orient_outward,
     _shared_vertex_adjacency,
+    _tangent_order,
 )
+from minesweeper.boards.solids import _geodesic, _icosahedron
 from minesweeper.boards.tilings import _arch_template, _triangle_vertices
 
 # -- immersions: one point of a surface from its parameters ------------------
@@ -606,6 +610,153 @@ def double_torus_hex_board(
     cells, kx_period, ky_period = _hex_cells(rows, cols)
     return _double_torus("doubletorushex", cells, kx_period, ky_period,
                          mine_count, tube_radius, separation)
+
+
+# -- the real projective plane -----------------------------------------------
+#
+# The sphere with every point glued to its antipode: closed, non-orientable,
+# chi = 1 -- the one closed surface besides the Klein bottle that has no
+# inside. It has no embedding in 3-space and no immersion this game could
+# draw without a self-intersection far worse than the bottle's (Boy's
+# surface), so it is drawn the other way round: as the whole sphere, which
+# double-covers it, every cell twice. The game is played on the antipodal
+# *pairs* -- a cell's neighbours are its own sphere neighbours and its
+# twin's, and the two faces show one state -- so whatever happens on one
+# face happens on the one diametrically opposite.
+#
+# Any centrally symmetric tiling of the sphere will do, and the cubed sphere,
+# the geodesic icosahedron and its dual, the Goldberg polyhedron GP(n, 0),
+# are the regular tilings' nearest spherical cousins: squares with four
+# 3-valent corners, triangles with six vertices of degree five, hexagons with
+# six pentagons. (Half the sphere's defects each: the quotient keeps half,
+# which is what chi = 1 asks for -- a closed surface of squares has 4 * chi
+# such corners, of triangles or of hexagons and pentagons 6 * chi.)
+
+
+def _antipodes() -> list[int]:
+    """Each icosahedron vertex's antipode, by index. Exact: the corners are
+    (0, +-1, +-phi) and its cyclic shifts, and negating one is exact."""
+    vertices, _ = _icosahedron()
+    where = {v: i for i, v in enumerate(vertices)}
+    return [where[(-x + 0.0, -y + 0.0, -z + 0.0)] for x, y, z in vertices]
+
+
+def _projective(mode: str, sphere_cells: dict, positions: dict, flip,
+                mine_count: int) -> Board3D:
+    """The quotient of a centrally symmetric sphere board by its antipodal
+    map. ``sphere_cells`` maps each face to its vertex keys, and ``flip`` is
+    the antipodal map on vertex keys -- exact, so no two points are ever
+    rounded together. A face's cell is the lesser of it and its twin (both
+    faces are keyed by their sorted vertex keys, so the twin is found by
+    flipping them), and cells are adjacent when any of their faces share a
+    vertex: the shared-vertex rule, run on vertex classes."""
+    by_keys = {tuple(sorted(keys)): face for face, keys in sphere_cells.items()}
+
+    def twin(face):
+        return by_keys[tuple(sorted(flip(k) for k in sphere_cells[face]))]
+
+    faces = {face: min(face, twin(face)) for face in sphere_cells}
+    if any(twin(face) == face for face in sphere_cells):
+        raise ValueError("a face is its own antipode")
+    cells = {
+        face: [min(k, flip(k)) for k in keys]
+        for face, keys in sphere_cells.items()
+        if faces[face] == face
+    }
+    adjacency = _shared_vertex_adjacency(cells)
+    polygons = {}
+    for face, keys in sphere_cells.items():
+        polygon = [positions[k] for k in keys]
+        centroid = tuple(sum(c) / len(polygon) for c in zip(*polygon))
+        polygons[face] = _orient_outward(polygon, centroid)
+    return Board3D(mode, polygons, adjacency, mine_count, radius=1.0,
+                   faces=faces)
+
+
+def projective_board(n: int, mine_count: int) -> Board3D:
+    """The real projective plane in squares: a cube of ``n x n`` faces --
+    ``6 * n**2`` squares -- with antipodes identified, so ``3 * n**2``
+    cells, drawn as the whole sphere. Vertex keys are the cube's integer
+    lattice points on ``[-n, n]**3`` (as ``solids.cube_board``), so the
+    antipode is plain negation; each is placed by the *equiangular* cube
+    map (every face coordinate through ``tan(pi/4 * c)``, then onto the unit
+    sphere), which keeps the squares near the cube's corners from shrinking
+    the way a straight projection does. The cube's eight 3-valent corners
+    come down to four: what a closed surface of squares needs, 4 * chi."""
+    sphere_cells: dict = {}
+    for axis in range(3):
+        u_axis, v_axis = (a for a in range(3) if a != axis)
+        for sign in (-1, 1):
+            for i in range(n):
+                for j in range(n):
+                    keys = []
+                    for du, dv in ((0, 0), (1, 0), (1, 1), (0, 1)):
+                        coord = [0, 0, 0]
+                        coord[axis] = sign * n
+                        coord[u_axis] = -n + 2 * (i + du)
+                        coord[v_axis] = -n + 2 * (j + dv)
+                        keys.append(tuple(coord))
+                    sphere_cells[tuple(sorted(keys))] = keys
+
+    def place(key) -> Vec3:
+        return _normalize(tuple(math.tan(math.pi / 4 * c / n) for c in key))
+
+    positions = {k: place(k) for keys in sphere_cells.values() for k in keys}
+
+    def flip(key):
+        return tuple(-c for c in key)
+
+    return _projective("projective", sphere_cells, positions, flip, mine_count)
+
+
+def projective_triangle_board(frequency: int, mine_count: int) -> Board3D:
+    """The real projective plane in triangles: a geodesic icosahedron of
+    ``20 * frequency**2`` triangles with antipodes identified, so
+    ``10 * frequency**2`` cells, drawn as the whole sphere."""
+    antipode = _antipodes()
+    positions, triangles = _geodesic(frequency)
+
+    def flip(key):
+        return tuple(sorted((antipode[v], w) for v, w in key))
+
+    sphere_cells = {tuple(sorted(t)): list(t) for t in triangles}
+    return _projective("projectivetri", sphere_cells, positions, flip,
+                       mine_count)
+
+
+def projective_hex_board(frequency: int, mine_count: int) -> Board3D:
+    """The real projective plane in hexagons: the Goldberg polyhedron
+    GP(frequency, 0) -- one cell per geodesic vertex, its corners the
+    surrounding triangle centres -- with antipodes identified, so
+    ``5 * frequency**2 + 1`` cells, six of them pentagons."""
+    antipode = _antipodes()
+    geodesic_positions, triangles = _geodesic(frequency)
+
+    def flip_vertex(key):
+        return tuple(sorted((antipode[v], w) for v, w in key))
+
+    def flip(triangle_id):
+        return tuple(sorted(flip_vertex(k) for k in triangle_id))
+
+    centres: dict = {}
+    around: dict = {}
+    for triangle in triangles:
+        tid = tuple(sorted(triangle))
+        centres[tid] = _normalize(tuple(
+            sum(geodesic_positions[k][axis] for k in triangle) / 3
+            for axis in range(3)
+        ))
+        for key in triangle:
+            around.setdefault(key, []).append(tid)
+    sphere_cells = {
+        key: _tangent_order(geodesic_positions[key],
+                            [(tid, centres[tid]) for tid in tids])
+        for key, tids in around.items()
+    }
+    # keyed by the geodesic vertex at its centre rather than its corners, so
+    # the twin lookup in `_projective` goes through the corners regardless
+    return _projective("projectivehex", sphere_cells, centres, flip,
+                       mine_count)
 
 
 # -- the Möbius strip --------------------------------------------------------
