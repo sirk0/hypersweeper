@@ -166,6 +166,12 @@ that tracks `package.json`, and a build number that grows.
   (`App.onCommand` in `web/src/main.ts`, pinned by `tests/e2e/commands.spec.ts`).
   Settings and How to Play are home-screen pages, so from a game they go home
   first, leaving the board as the header's back arrow does (without asking).
+- **The Mac app's name.** The Xcode target is `App` (Capacitor's template), and
+  `CFBundleName` follows the product name, which is what the Mac menu bar and
+  the `.app` file in `/Applications` show. `PRODUCT_NAME[sdk=macosx*] =
+  Hypersweeper` renames the Mac build only. The iOS product has to stay
+  `App.app`, because `npx cap run ios` (`make ios-run`) looks for it by the
+  scheme's name. An iPhone shows `CFBundleDisplayName` anyway.
 - `SceneDelegate` sets the **minimum window size** to 375×560: an iPhone SE's
   width and the shortest height the layout is tested at. This applies to a Mac
   window and a resizable iPad window.
