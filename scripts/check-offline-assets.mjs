@@ -22,12 +22,24 @@ import { extname, join, relative } from "node:path";
  *    player clicks it (and the desktop shell hands it to the system browser).
  *  - sourcemap/spec references in vendored comments, which ship no request;
  *  - the Capacitor license banner (`/*! Capacitor: https://capacitorjs.com/ …`),
- *    a comment the minifier keeps in the bridge the iOS app talks through. */
+ *    a comment the minifier keeps in the bridge the iOS app talks through;
+ *  - the published site's address (`__APP_SITE_URL__`), which a packaged app
+ *    puts in the board links it *shares* (web/src/share.ts) because its own
+ *    address opens nothing for anyone else. It is handed to other people and
+ *    never fetched. The match is exact, so a path under it (an image, an API)
+ *    still fails the build. Same default as web/vite.config.ts, and the same
+ *    VITE_SITE_URL override, so a custom domain stays in step. */
+const SITE_URL = (process.env.VITE_SITE_URL ?? "https://hypersweeper.pages.dev/").replace(
+  /\/*$/,
+  "/",
+);
+const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const ALLOWED = [
   /^https?:\/\/(www\.)?w3\.org\//,
   /^https?:\/\/github\.com\/sirk0\/hypersweeper/,
   /^https?:\/\/(www\.)?khronos\.org\//,
   /^https?:\/\/(www\.)?capacitorjs\.com\/$/,
+  new RegExp(`^${escapeRe(SITE_URL)}$`),
 ];
 
 /** Same-origin paths that must not survive into a packaged bundle even though

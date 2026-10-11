@@ -15,13 +15,27 @@ import Capacitor
 /// from its own two-finger touch points.
 class BridgeViewController: CAPBridgeViewController, UIGestureRecognizerDelegate {
     override func capacitorDidLoad() {
+        // Tell the page what it runs on before any of it runs. The user agent
+        // cannot: an iPad and the Mac app both report a Mac.
+        //   hypersweeperDevice: "phone", "pad" or "mac". Only a phone has a
+        //     Taptic Engine, so it decides whether Settings offers Haptics
+        //     (web/src/haptics.ts).
+        //   hypersweeperShell: "catalyst" on the Mac, where the plain wheel is a
+        //     two-finger trackpad swipe that pans a zoomed board instead of
+        //     zooming it (onWheel in controls.ts).
         #if targetEnvironment(macCatalyst)
-        // Tell the page which shell it is in before any of it runs: on a Mac
-        // trackpad the plain wheel is a two-finger scroll, which should pan a
-        // zoomed board rather than zoom it (see `onWheel` in controls.ts).
+        // Not the idiom: a Catalyst app scaled to match iPad reports `.pad`.
+        let device = "mac"
+        let flags = "window.hypersweeperShell = 'catalyst';"
+        #else
+        let device = UIDevice.current.userInterfaceIdiom == .phone ? "phone" : "pad"
+        let flags = ""
+        #endif
         webView?.configuration.userContentController.addUserScript(
-            WKUserScript(source: "window.hypersweeperShell = 'catalyst';",
+            WKUserScript(source: "window.hypersweeperDevice = '\(device)'; \(flags)",
                          injectionTime: .atDocumentStart, forMainFrameOnly: true))
+
+        #if targetEnvironment(macCatalyst)
         let pinch = UIPinchGestureRecognizer(target: self, action: #selector(onPinch(_:)))
         pinch.delegate = self
         pinch.cancelsTouchesInView = false

@@ -32,17 +32,33 @@ export interface ShareBoard {
  * second query builder, so the link a share hands out and the link the address
  * bar carries cannot drift apart.
  *
- * `base` is the page the app is served from — pass `window.location` at the
- * call site. Any existing query is dropped rather than appended to: the board's
+ * `base` is the page the link opens: `shareBaseFor` picks it. Any existing query is dropped rather than appended to: the board's
  * parameters are the whole link, and a stale `seed` from the current board
  * would otherwise ride along. */
-export function shareUrlFor(board: ShareBoard, base: { origin: string; pathname: string }): string {
+export function shareUrlFor(board: ShareBoard, base: Base): string {
   const query = boardLinkQuery(
     board.mode,
     board.difficulty,
     board.seed ?? undefined,
   );
   return `${base.origin}${base.pathname}${query}`;
+}
+
+type Base = { origin: string; pathname: string };
+
+/** The page a share link points at. In the browser that is wherever the app is
+ * being served from, preview deploys included. A packaged app (iOS, iPadOS,
+ * Mac, Electron) has no address anyone else can open: it is
+ * `capacitor://localhost/` or `app://local/`. So its links go to the published
+ * site, which is where a recipient without the app can play the board. */
+export function shareBaseFor(
+  packaged: boolean,
+  siteUrl: string,
+  location: Base,
+): Base {
+  if (!packaged) return location;
+  const site = new URL(siteUrl);
+  return { origin: site.origin, pathname: site.pathname };
 }
 
 /** Seconds, as the record window writes them — a bare count, since a board can
@@ -86,7 +102,7 @@ export type ShareResult = "shared" | "copied" | "failed";
 export async function shareBoard(
   board: ShareBoard,
   nav: Navigator = navigator,
-  base: { origin: string; pathname: string } = window.location,
+  base: Base = shareBaseFor(__APP_PACKAGED__, __APP_SITE_URL__, window.location),
 ): Promise<ShareResult> {
   const url = shareUrlFor(board, base);
   const text = shareTextFor(board);

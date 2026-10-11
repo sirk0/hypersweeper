@@ -16,3 +16,8 @@ declare const __APP_PACKAGED__: boolean;
 // rather than posting into a 404 the browser then logs. See "Analytics" in
 // web/README.md.
 declare const __APP_ANALYTICS__: boolean;
+// Where the game is published, origin *and* base path, ending in "/": the same
+// VITE_SITE_URL the build stamps into og:url and the canonical link (a PR
+// preview passes its own). A packaged app's share links point here, because its
+// own address (capacitor://localhost, app://local) opens nothing for anyone else.
+declare const __APP_SITE_URL__: string;

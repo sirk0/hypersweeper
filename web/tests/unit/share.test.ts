@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
-import { shareBoard, shareTextFor, shareUrlFor, type ShareBoard } from "../../src/share";
+import {
+  shareBaseFor,
+  shareBoard,
+  shareTextFor,
+  shareUrlFor,
+  type ShareBoard,
+} from "../../src/share";
 import { parseBoardLink } from "../../src/link";
 
 // The rules a share follows, pinned without a document, a clipboard permission
@@ -103,5 +109,30 @@ describe("shareBoard", () => {
 
   it("reports failure when the platform offers nothing at all", async () => {
     await expect(shareBoard(BOARD, {} as Navigator, BASE)).resolves.toBe("failed");
+  });
+});
+
+describe("shareBaseFor", () => {
+  const SITE = "https://hypersweeper.pages.dev/";
+
+  it("uses the page's own address in a browser, preview deploys included", () => {
+    const here = { origin: "https://pr-12.hypersweeper.pages.dev", pathname: "/" };
+    expect(shareBaseFor(false, SITE, here)).toBe(here);
+  });
+
+  it("points a packaged app's links at the published site", () => {
+    for (const origin of ["capacitor://localhost", "app://local"]) {
+      const base = shareBaseFor(true, SITE, { origin, pathname: "/" });
+      expect(base).toEqual({ origin: "https://hypersweeper.pages.dev", pathname: "/" });
+      expect(shareUrlFor(BOARD, base)).toMatch(/^https:\/\/hypersweeper\.pages\.dev\/\?/);
+    }
+  });
+
+  it("keeps a site's base path", () => {
+    const base = shareBaseFor(true, "https://example.org/games/hs/", {
+      origin: "capacitor://localhost",
+      pathname: "/",
+    });
+    expect(base).toEqual({ origin: "https://example.org", pathname: "/games/hs/" });
   });
 });

@@ -6,7 +6,9 @@ import { Haptics, ImpactStyle, NotificationType } from "@capacitor/haptics";
 // mechanism is chosen at call time by feature detection, because the platforms
 // disagree on what's available:
 //
-//   - The iOS app (`ios/`, a Capacitor WKWebView): the Taptic Engine through
+//   - The iOS app on an iPhone (`ios/`, a Capacitor WKWebView; the same app
+//     on an iPad or a Mac has no engine, see `hasTapticEngine`): the Taptic
+//     Engine through
 //     @capacitor/haptics — a real light impact for a flag, and the system's own
 //     error/success notification patterns for a loss and a win. This is the
 //     only branch that reaches Core Haptics, and it is the reason the native
@@ -101,16 +103,33 @@ function isMobileBrowser(): boolean {
   return /Android|Mobile|iPhone|iPad|iPod/i.test(navigator.userAgent ?? "");
 }
 
+/** Inside the native shell, whether this device has a Taptic Engine. Only an
+ * iPhone does: the same app runs on an iPad and, through Mac Catalyst, on a
+ * Mac, where the Haptics plugin resolves and nothing is felt. The page cannot
+ * tell them apart itself, because an iPad and the Mac app both report a Mac
+ * user agent. So the shell says which it is (`window.hypersweeperDevice`, set
+ * before any script runs, ios/App/App/BridgeViewController.swift). If the flag
+ * is missing, the shell predates it, and the old answer (every native device
+ * buzzes) stands. */
+function hasTapticEngine(): boolean {
+  const device =
+    typeof window === "undefined"
+      ? undefined
+      : (window as { hypersweeperDevice?: string }).hypersweeperDevice;
+  return device === undefined || device === "phone";
+}
+
 /** Whether this device has a haptic mechanism that actually buzzes — what
  * decides whether the settings page offers the row at all, since a switch for
  * feedback the hardware cannot give is a promise the app can't keep.
  *
- * Two things qualify: the native shell (the Taptic Engine), and a *mobile*
- * browser with the Vibration API, which in practice means Android. Everything
- * else gets no row — a desktop browser because its `navigator.vibrate` is a
- * no-op, and iOS Safari because the web platform offers it no haptic at all. */
+ * Two things qualify: the native shell on an iPhone (the Taptic Engine), and a
+ * *mobile* browser with the Vibration API, which in practice means Android.
+ * Everything else gets no row: the native app on an iPad or a Mac, which have
+ * no engine; a desktop browser, whose `navigator.vibrate` is a no-op; and iOS
+ * Safari, where the web platform offers no haptic at all. */
 export function hapticsSupported(): boolean {
-  return isNative() || (canVibrate() && isMobileBrowser());
+  return isNative() ? hasTapticEngine() : canVibrate() && isMobileBrowser();
 }
 
 /** The Taptic Engine, through the native bridge. The two *impacts* are single

@@ -77,8 +77,12 @@ worker and the settings page drops its "Check for updates" row.
 ### The haptics, which are the point
 
 `web/src/haptics.ts` is the single seam, and it picks its mechanism at call
-time. Inside this app `Capacitor.isNativePlatform()` is true and the three game
-events become real Taptic calls:
+time. Inside this app `Capacitor.isNativePlatform()` is true and, **on an
+iPhone**, the game events become real Taptic calls. The same app on an iPad or
+a Mac has no Taptic Engine. The page can't tell those apart from the user agent
+(both report a Mac), so `BridgeViewController.swift` sets
+`window.hypersweeperDevice` (`phone`, `pad` or `mac`) before any script runs.
+On a `pad` or `mac` there is no Haptics row and nothing is driven:
 
 | Event | Native | A mobile browser with `navigator.vibrate` |
 |-------|--------|-------------------------------------------|
@@ -91,8 +95,8 @@ which is exactly what stepping on a mine is, and what a browser on iOS cannot
 ask for at any weight. It cannot ask for one at *any* weight, in fact: Safari
 (including a home-screen PWA) does not implement the Vibration API, and the
 hidden `<input type="checkbox" switch>` tick that once stood in for it does not
-actually buzz, so it is gone. Only this app and a mobile browser with a working
-`navigator.vibrate` — Android — have a mechanism at all; everywhere else
+actually buzz, so it is gone. Only this app on an iPhone and a mobile browser
+with a working `navigator.vibrate` (Android) have a mechanism at all; everywhere else
 `hapticsSupported()` is false, `haptic()` does nothing and Settings ›
 **Haptics** shows no row. Where it does show, it switches all of it off
 (stored like the sound preset, read on every event) — and because `haptic()`

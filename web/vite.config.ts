@@ -265,6 +265,7 @@ export default defineConfig({
     __APP_COMMIT__: JSON.stringify((process.env.GITHUB_SHA ?? "").slice(0, 7)),
     __APP_PACKAGED__: JSON.stringify(packaged),
     __APP_ANALYTICS__: JSON.stringify(analytics),
+    __APP_SITE_URL__: JSON.stringify(siteUrl),
   },
   // Allow importing the repo-root `data/` directory (shared JSON that both
   // the Python and TypeScript apps read — see docs/agents/shared-data.md).
