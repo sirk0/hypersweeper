@@ -732,6 +732,20 @@
         ]
       }
     },
+    "gp21": {
+      "builder": "gp21_board",
+      "args": {
+        "easy": [
+          13
+        ],
+        "medium": [
+          18
+        ],
+        "hard": [
+          23
+        ]
+      }
+    },
     "c180": {
       "builder": "c180_board",
       "args": {

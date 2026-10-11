@@ -65,7 +65,9 @@ Pick a surface, then a tiling:
   cylinder and the torus below, and — unless the tiling is chiral — the
   Möbius strip and the Klein bottle too
 - **Sphere (3D)** — a chamfered dodecahedron (12 pentagons + 30 hexagons),
-  the Goldberg polyhedron GP(3,0) (12 pentagons + 80 hexagons), a geodesic
+  the chiral Goldberg polyhedron GP(2,1) (12 pentagons + 60 hexagons, its
+  hexagons twisted off the icosahedron's edges), the Goldberg polyhedron
+  GP(3,0) (12 pentagons + 80 hexagons), a geodesic
   icosahedron (80 triangles), a snub dodecahedron
   (12 pentagons + 80 triangles), a rhombicosidodecahedron or a truncated
   icosidodecahedron — each rounded onto the sphere itself.

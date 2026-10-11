@@ -189,6 +189,7 @@ from minesweeper.boards.presets import (  # noqa: F401
 from minesweeper.boards.solids import (  # noqa: F401
     _convex_board3d,
     _geodesic,
+    _geodesic_hk,
     _goldberg_board,
     _gyro_pentagons,
     _icosahedron,
@@ -201,6 +202,7 @@ from minesweeper.boards.solids import (  # noqa: F401
     c180_board,
     cube_board,
     cube_frame_board,
+    gp21_board,
     rhombicosidodecahedron_board,
     snub_dodecahedron_board,
     sphere_triangle_board,

@@ -9299,5 +9299,34 @@
         "indistinguishable": 0
       }
     }
+  },
+  "gp21": {
+    "builder": "gp21_board",
+    "args": {
+      "easy": {
+        "args": [
+          17
+        ],
+        "cells": 72,
+        "fixed": true,
+        "reason": "the cell count is the solid"
+      },
+      "hard": {
+        "args": [
+          23
+        ],
+        "cells": 72,
+        "fixed": true,
+        "reason": "the cell count is the solid"
+      },
+      "medium": {
+        "args": [
+          19
+        ],
+        "cells": 72,
+        "fixed": true,
+        "reason": "the cell count is the solid"
+      }
+    }
   }
 }

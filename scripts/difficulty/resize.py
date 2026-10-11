@@ -124,6 +124,7 @@ SPEC: dict[str, dict] = {
     # the named solids: the cell count *is* the solid, so only mines move
     "c80_board": dict(size=(), mine=0, shape=None),
     "c180_board": dict(size=(), mine=0, shape=None),
+    "gp21_board": dict(size=(), mine=0, shape=None),
     "sphere_triangle_board": dict(size=(), mine=0, shape=None),
     "snub_dodecahedron_board": dict(size=(), mine=0, shape=None),
     "rhombicosidodecahedron_board": dict(size=(), mine=0, shape=None),

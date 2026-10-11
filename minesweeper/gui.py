@@ -1519,7 +1519,7 @@ def _render_icon(key: str) -> pygame.Surface:
         for pt in list(h) + mids:
             pygame.draw.line(s, ICON_BLUE_DARK, (c, c), pt, 3)
         _icon_gloss(s, pygame.Rect(d * 0.1, d * 0.08, d * 0.8, d * 0.4))
-    elif key in ("sphere", "c80", "c180", "spheretri", "snubdodec",
+    elif key in ("sphere", "c80", "gp21", "c180", "spheretri", "snubdodec",
                  "rhombicosidodeca", "truncicosidodeca"):
         fill_circle(s, int(c), int(c), int(d * 0.44), ICON_BLUE)
         pygame.draw.circle(s, ICON_BLUE_DARK, (int(c), int(c)), int(d * 0.44), 4)
@@ -1534,9 +1534,10 @@ def _render_icon(key: str) -> pygame.Surface:
                 ty = c - d * 0.06 + d * 0.3 * math.sin(angle) * 1.05
                 _icon_badge(s, tx, ty, d * 0.08, "tri")
         else:
-            # pentagon center for the pentagonal solids, hexagon for C180,
+            # pentagon center for the pentagonal solids, hexagon for C180
+            # and GP(2,1),
             # square for the two square-majority solids
-            sides = 6 if key == "c180" else (
+            sides = 6 if key in ("gp21", "c180") else (
                 4 if key in ("rhombicosidodeca", "truncicosidodeca") else 5)
             inner = [
                 (c + d * 0.2 * math.cos(math.radians(360 / sides * k - 90)),
@@ -1544,7 +1545,7 @@ def _render_icon(key: str) -> pygame.Surface:
                 for k in range(sides)
             ]
             _icon_shape(s, inner, fill=ICON_BLUE_LIGHT, width=4)
-            if key in ("c80", "c180"):  # bond lines, fullerene style
+            if key in ("c80", "gp21", "c180"):  # bond lines, fullerene style
                 for k in range(sides):
                     angle = math.radians(360 / sides * k - 90)
                     x1 = c + d * 0.2 * math.cos(angle)
