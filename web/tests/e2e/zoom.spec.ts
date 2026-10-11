@@ -162,6 +162,123 @@ test.describe("board zoom", () => {
     expect(await page.evaluate(() => window.__ms!.zoom())).toBeCloseTo(1, 2);
   });
 
+  // WebKit (Safari, the Mac Catalyst app) delivers a trackpad pinch as
+  // gesture* events, not ctrl+wheel; there is no way to synthesise one in
+  // Chromium but to dispatch the same events by hand.
+  test("a WebKit trackpad pinch (gesture events) zooms the board", async ({
+    page,
+  }) => {
+    const prevented = await page.evaluate(() => {
+      const canvas = document.getElementById("board")!;
+      const fire = (type: string, scale: number) => {
+        const e = new Event(type, { bubbles: true, cancelable: true });
+        Object.assign(e, { scale, clientX: 210, clientY: 500 });
+        canvas.dispatchEvent(e);
+        return e.defaultPrevented;
+      };
+      return [
+        fire("gesturestart", 1),
+        fire("gesturechange", 1.5),
+        fire("gesturechange", 2),
+        fire("gestureend", 2),
+      ];
+    });
+    expect(prevented).toEqual([true, true, true, true]);
+    expect(await page.evaluate(() => window.__ms!.zoom())).toBeCloseTo(2, 1);
+    // Pinching back in restores the fit.
+    await page.evaluate(() => {
+      const canvas = document.getElementById("board")!;
+      const fire = (type: string, scale: number) => {
+        const e = new Event(type, { bubbles: true, cancelable: true });
+        Object.assign(e, { scale, clientX: 210, clientY: 500 });
+        canvas.dispatchEvent(e);
+      };
+      fire("gesturestart", 1);
+      fire("gesturechange", 0.25);
+      fire("gestureend", 0.25);
+    });
+    expect(await page.evaluate(() => window.__ms!.zoom())).toBeCloseTo(1, 2);
+  });
+
+  // The Mac Catalyst app's WebKit builds no gesture events for a trackpad, so
+  // the native shell forwards the pinch as a window event instead.
+  test("a native pinch event (the Catalyst shell) zooms the board", async ({
+    page,
+  }) => {
+    await page.evaluate(() => {
+      const send = (phase: string, scale: number) =>
+        window.dispatchEvent(
+          new CustomEvent("hypersweeper:pinch", {
+            detail: { phase, scale, x: 210, y: 500 },
+          }),
+        );
+      send("start", 1);
+      send("change", 1.5);
+      send("change", 2);
+      send("end", 2);
+    });
+    expect(await page.evaluate(() => window.__ms!.zoom())).toBeCloseTo(2, 1);
+  });
+
+  test("a pinch pans with its midpoint, and the Catalyst wheel pans a zoomed board", async ({
+    page,
+  }) => {
+    const at = () => page.evaluate(() => window.__ms!.cellScreenXY("0,0")!);
+    await page.evaluate(() => window.__ms!.zoomBy(3));
+    const start = await at();
+    // The pinch's midpoint travelling 40px right drags the board with it.
+    await page.evaluate(() => {
+      const send = (phase: string, scale: number, x: number) =>
+        window.dispatchEvent(
+          new CustomEvent("hypersweeper:pinch", {
+            detail: { phase, scale, x, y: 500 },
+          }),
+        );
+      send("start", 1, 210);
+      send("change", 1, 250);
+      send("end", 1, 250);
+    });
+    const dragged = await at();
+    expect(dragged.x - start.x).toBeGreaterThan(20);
+
+    // Off Catalyst the wheel still zooms...
+    await page.mouse.move(210, 500);
+    await page.mouse.wheel(0, -200);
+    expect(await page.evaluate(() => window.__ms!.zoom())).toBeGreaterThan(3);
+    await page.evaluate(() => window.__ms!.zoomBy(3 / window.__ms!.zoom()));
+    // ...and under the Catalyst shell it pans, leaving the zoom alone.
+    await page.evaluate(() => {
+      (window as { hypersweeperShell?: string }).hypersweeperShell = "catalyst";
+    });
+    const before = await at();
+    await page.mouse.wheel(0, 30);
+    const after = await at();
+    expect(await page.evaluate(() => window.__ms!.zoom())).toBeCloseTo(3, 1);
+    expect(Math.abs(after.y - before.y)).toBeGreaterThan(5);
+  });
+
+  test("a native two-finger swipe (hypersweeper:pan) pans a zoomed flat board", async ({
+    page,
+  }) => {
+    await page.evaluate(() => window.__ms!.zoomBy(3));
+    const at = () => page.evaluate(() => window.__ms!.cellScreenXY("0,0")!);
+    const start = await at();
+    await page.evaluate(() => {
+      const send = (phase: string, dx: number, dy: number) =>
+        window.dispatchEvent(
+          new CustomEvent("hypersweeper:pan", { detail: { phase, dx, dy } }),
+        );
+      send("start", 0, 0);
+      send("change", 15, 10);
+      send("change", 15, 10);
+      send("end", 0, 0);
+    });
+    const moved = await at();
+    expect(moved.x - start.x).toBeGreaterThan(15);
+    expect(moved.y - start.y).toBeGreaterThan(10);
+    expect(await page.evaluate(() => window.__ms!.zoom())).toBeCloseTo(3, 1);
+  });
+
   test("a new board starts framed", async ({ page }) => {
     await page.evaluate(() => window.__ms!.zoomBy(3));
     await page.evaluate(() => window.__ms!.startBoard("hexhex", "easy", { seed: 1 }));
