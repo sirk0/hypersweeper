@@ -10,3 +10,5 @@ build/
 .codex/
 .DS_Store
 .wrangler/
+# Local secrets.
+.env
