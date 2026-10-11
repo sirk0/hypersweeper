@@ -34,7 +34,13 @@ share sheet), else the clipboard; a share sheet the player *cancels* falls
 through to the clipboard rather than reporting failure, since dismissing one is
 a normal outcome. The trap fixed there: `nav.clipboard?.writeText(…)` on a
 platform with no clipboard evaluates to `undefined`, which awaits happily — so
-the button would have said "Link copied" having copied nothing. It is offered in
+the button would have said "Link copied" having copied nothing. **Where the link
+points** is `shareBaseFor`'s call: the page's own address in a browser, so a PR
+preview shares preview links, but `__APP_SITE_URL__` in a packaged build. That
+is the same `VITE_SITE_URL` the build stamps into `og:url`, because an app's own
+address (`capacitor://localhost/`, `app://local/`) opens nothing for anyone
+else. That one exact URL is on `check-offline-assets.mjs`'s allow list, since
+it is handed out, never fetched. A path under it still fails the build. It is offered in
 **one** place, the record window — as the icon in its top-left corner, see "Best
 times" in [`ui.md`](ui.md) — and passes the session's seed and the winning time. The game header carried one too and does not any more: a link is worth
 sending when it comes with a time, and the header's two right-hand slots are all
@@ -308,11 +314,15 @@ while working here:
   a second branch; if a shell needs different behaviour, the shell should
   provide it. (Runtime is a different matter: `haptics.ts` asks Capacitor at
   call time whether it is running natively, because the *same* bundle has to
-  work in a browser tab and on a phone.)
+  work in a browser tab and on a phone. What the page cannot detect, the shell
+  tells it: the iOS shell sets `window.hypersweeperDevice` and, on the Mac,
+  `window.hypersweeperShell` before any script runs; see
+  `ios/App/App/BridgeViewController.swift`.)
 - **The app must reference nothing remote.** No CDN, no web font, no remote
   image: `scripts/check-offline-assets.mjs` scans the built output and fails
-  the build (and the `web` CI job) over any URL that is not an XML namespace
-  or the settings page's source-code link. Anything the app draws goes in
+  the build (and the `web` CI job) over any URL that is not an XML namespace,
+  the settings page's source-code link, or the published site's exact address
+  that share links point at. Anything the app draws goes in
   `public/` or gets imported. A request need not name a host, though — the
   analytics collector is a *relative* path on whatever origin serves the app —
   so the script has a second pass over a `FORBIDDEN` list of same-origin paths.

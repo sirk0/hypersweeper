@@ -1,12 +1,13 @@
 require_relative '../../web/node_modules/@capacitor/ios/scripts/pods_helpers'
 
-platform :ios, '14.0'
+platform :ios, '18.0'
 use_frameworks!
 
-# workaround to avoid Xcode caching of Pods that requires
-# Product -> Clean Build Folder after new Cordova plugins installed
-# Requires CocoaPods 1.6 or newer
-install! 'cocoapods', :disable_input_output_paths => true
+# Let CocoaPods declare input/output file lists for its script phases, so
+# Xcode can skip "Embed Pods Frameworks" when nothing changed (the alternative
+# is a build warning on every run). `pod install` regenerates the lists
+# whenever a plugin is added.
+install! 'cocoapods', :disable_input_output_paths => false
 
 def capacitor_pods
   pod 'Capacitor', :path => '../../web/node_modules/@capacitor/ios'
@@ -21,4 +22,17 @@ end
 
 post_install do |installer|
   assertDeploymentTarget(installer)
+
+  # The pods' own podspecs ask for an older iOS than the app (Capacitor's
+  # floor is 15), and current Xcode SDKs no longer build for iOS 14. Match the
+  # app target.
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '18.0'
+      # The pods are Capacitor's code, not ours: its deprecation and
+      # concurrency warnings are not ours to fix, so keep them out of the log.
+      config.build_settings['GCC_WARN_INHIBIT_ALL_WARNINGS'] = 'YES'
+      config.build_settings['SWIFT_SUPPRESS_WARNINGS'] = 'YES'
+    end
+  end
 end

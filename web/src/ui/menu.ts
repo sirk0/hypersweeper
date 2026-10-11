@@ -477,6 +477,13 @@ export class Menu {
     );
   }
 
+  /** Open the settings or how-to-play page from outside the menu (the Mac
+   * menu bar, via main.ts). */
+  openPage(page: "settings" | "help"): void {
+    if (page === "settings") this.showSettings();
+    else this.showHelp();
+  }
+
   /** The settings page — one more menu page rather than a modal, so it reuses
    * the back row, the card rows and the scrolling body. Clears the sidebar's
    * active row on desktop: settings is not one of the geometry pages. */

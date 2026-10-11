@@ -10,8 +10,10 @@
 //   web/public/apple-touch-icon.png   (full-bleed, iOS masks it)
 //   desktop/resources/icon.png        (macOS app icon, 1024, inset by its own
 //                                      margin — macOS does not mask)
-//   ios/App/App/Assets.xcassets/…     (the iPhone app icon, 1024 full-bleed —
-//                                      iOS masks it — and the launch image)
+//   ios/App/App/Assets.xcassets/…     (the iPhone/iPad app icon, 1024
+//                                      full-bleed — iOS masks it — the Mac
+//                                      Catalyst ladder, drawn like the desktop
+//                                      icon, and the launch image)
 //
 // Two things here are quotations from the game rather than icon art, and should
 // stay that way:
@@ -232,6 +234,40 @@ await render(
   1024,
   `${IOS}/AppIcon.appiconset/AppIcon-512@2x.png`,
   false,
+);
+// Mac Catalyst reads the "mac" entries of the same icon set, at the macOS size
+// ladder, and draws them as given — no mask — so they are the desktop icon's
+// art (macSvg), not the iOS one. Contents.json is written here too, so the set
+// and its listing cannot drift apart.
+const MAC_SIZES = [16, 32, 128, 256, 512]; // points; each at @1x and @2x
+for (const px of new Set(MAC_SIZES.flatMap((pt) => [pt, pt * 2]))) {
+  await render(browser, macSvg, px, `${IOS}/AppIcon.appiconset/mac-${px}.png`, true);
+}
+writeFileSync(
+  `${IOS}/AppIcon.appiconset/Contents.json`,
+  JSON.stringify(
+    {
+      images: [
+        {
+          filename: "AppIcon-512@2x.png",
+          idiom: "universal",
+          platform: "ios",
+          size: "1024x1024",
+        },
+        ...MAC_SIZES.flatMap((pt) =>
+          [1, 2].map((scale) => ({
+            filename: `mac-${pt * scale}.png`,
+            idiom: "mac",
+            scale: `${scale}x`,
+            size: `${pt}x${pt}`,
+          })),
+        ),
+      ],
+      info: { author: "xcode", version: 1 },
+    },
+    null,
+    2,
+  ) + "\n",
 );
 for (const name of [
   "splash-2732x2732.png",

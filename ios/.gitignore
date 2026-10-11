@@ -11,3 +11,6 @@ capacitor-cordova-ios-plugins
 # Generated Config files
 App/App/capacitor.config.json
 App/App/config.xml
+
+# Written by scripts/build-ios-app.sh (the app version, from web/package.json)
+App/Version.generated.xcconfig

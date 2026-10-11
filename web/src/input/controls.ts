@@ -68,6 +68,22 @@ const WHEEL_STEP = 40;
 const CTRL_WHEEL_ZOOM = 0.01;
 const WHEEL_ZOOM = 0.0022;
 
+/** What the native shell sends for a Catalyst trackpad pinch; `x`/`y` are in
+ * web-view points, i.e. CSS pixels. */
+interface NativePinch {
+  phase: "start" | "change" | "end";
+  scale: number;
+  x: number;
+  y: number;
+}
+
+/** Safari's non-standard pinch event; not in lib.dom. */
+interface GestureEventLike extends Event {
+  scale: number;
+  clientX: number;
+  clientY: number;
+}
+
 export function attachControls(
   canvas: HTMLCanvasElement,
   handlers: ControlHandlers,
@@ -324,6 +340,22 @@ export function attachControls(
     // axis the event actually carries.
     const id: SymmetryId = e.shiftKey ? "tube" : "ring";
     const delta = e.deltaY || e.deltaX;
+    // In the Mac Catalyst app the plain wheel is a two-finger trackpad swipe
+    // (the native shell sets this flag), which means "move the board": pan a
+    // flat board with it instead of zooming. Zoom there is the pinch.
+    if (
+      !e.ctrlKey &&
+      (window as { hypersweeperShell?: string }).hypersweeperShell === "catalyst" &&
+      !handlers.scrolls(id) &&
+      !handlers.rotates()
+    ) {
+      if (performance.now() - nativePanAt < 150) return; // native pan has it
+      // (Not `pans()`: that is false until zoomed, and an unzoomed swipe must
+      // not fall through to zooming — it just has nothing to move.)
+      const k = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1;
+      handlers.onPan(-e.deltaX * k, -e.deltaY * k);
+      return;
+    }
     if (e.ctrlKey || !handlers.scrolls(id)) {
       const rate = e.ctrlKey ? CTRL_WHEEL_ZOOM : WHEEL_ZOOM;
       // deltaMode 1 counts lines, 2 pages; normalise both to pixels.
@@ -343,6 +375,77 @@ export function attachControls(
     }
   };
 
+  // A trackpad pinch reaches the page by two more routes besides ctrl+wheel
+  // (above). Both report `scale` cumulative since the gesture began, so zoom by
+  // the ratio between successive scales about the pinch point:
+  //   - Safari's own gesturestart/change/end, with the position as clientX/Y;
+  //   - the Mac Catalyst app, where WebKit builds no gesture events for a
+  //     trackpad at all: the native shell recognises the pinch and dispatches
+  //     `hypersweeper:pinch` on window (ios/App/App/BridgeViewController.swift).
+  // On a touchscreen WebKit fires gesture* *as well as* the pointer events the
+  // two-finger pinch above already handles, so ignore them while two touch
+  // points are down rather than zoom twice.
+  let gestureScale = 1;
+  let gestureX = Number.NaN;
+  let gestureY = Number.NaN;
+  const pinchTo = (scale: number, clientX: number, clientY: number) => {
+    const next = scale || 1;
+    const ratio = next / gestureScale;
+    gestureScale = next;
+    const dx = clientX - gestureX;
+    const dy = clientY - gestureY;
+    gestureX = clientX;
+    gestureY = clientY;
+    if (points.size >= 2 || !Number.isFinite(ratio) || ratio <= 0) return;
+    const p = local(clientX, clientY);
+    handlers.onZoom(ratio, p.x, p.y);
+    // Two fingers travelling together drag the board as they zoom it, as the
+    // touch pinch does.
+    if (Number.isFinite(dx) && Number.isFinite(dy) && (dx || dy)) {
+      handlers.onPan(dx, dy);
+    }
+  };
+  const onGestureStart = (e: Event) => {
+    e.preventDefault();
+    const g = e as GestureEventLike;
+    gestureScale = g.scale || 1;
+    gestureX = g.clientX;
+    gestureY = g.clientY;
+  };
+  const onGestureChange = (e: Event) => {
+    e.preventDefault();
+    const g = e as GestureEventLike;
+    pinchTo(g.scale, g.clientX, g.clientY);
+  };
+  const onGestureEnd = (e: Event) => {
+    e.preventDefault();
+    gestureScale = 1;
+  };
+  // The same shell also forwards a two-finger trackpad *swipe* natively
+  // (`hypersweeper:pan`, deltas in CSS px following the fingers), in case
+  // WebKit never turns it into a wheel event. Where the wheel is already spoken
+  // for — a 3D board zooms, a ring board walks it — leave it to onWheel.
+  // `nativePanAt` lets onWheel stand down while these arrive, so a build where
+  // both fire does not pan twice.
+  let nativePanAt = -Infinity;
+  const onNativePan = (e: Event) => {
+    const d = (e as CustomEvent<{ phase: string; dx: number; dy: number }>).detail;
+    if (!d || d.phase === "end") return;
+    if (handlers.rotates() || handlers.scrolls("ring")) return;
+    nativePanAt = performance.now();
+    if (Number.isFinite(d.dx) && Number.isFinite(d.dy)) handlers.onPan(d.dx, d.dy);
+  };
+  const onNativePinch = (e: Event) => {
+    const d = (e as CustomEvent<NativePinch>).detail;
+    if (!d) return;
+    if (d.phase === "start") {
+      gestureScale = d.scale || 1;
+      gestureX = d.x;
+      gestureY = d.y;
+    } else if (d.phase === "change") pinchTo(d.scale, d.x, d.y);
+    else gestureScale = 1;
+  };
+
   canvas.addEventListener("pointerdown", onPointerDown);
   canvas.addEventListener("pointermove", onPointerMove);
   canvas.addEventListener("pointerup", onPointerUp);
@@ -350,6 +453,11 @@ export function attachControls(
   canvas.addEventListener("pointerleave", onLeave);
   canvas.addEventListener("contextmenu", onContextMenu);
   canvas.addEventListener("wheel", onWheel, { passive: false });
+  canvas.addEventListener("gesturestart", onGestureStart);
+  canvas.addEventListener("gesturechange", onGestureChange);
+  canvas.addEventListener("gestureend", onGestureEnd);
+  window.addEventListener("hypersweeper:pinch", onNativePinch);
+  window.addEventListener("hypersweeper:pan", onNativePan);
 
   return () => {
     clearLong();
@@ -360,6 +468,11 @@ export function attachControls(
     canvas.removeEventListener("pointerleave", onLeave);
     canvas.removeEventListener("contextmenu", onContextMenu);
     canvas.removeEventListener("wheel", onWheel);
+    canvas.removeEventListener("gesturestart", onGestureStart);
+    canvas.removeEventListener("gesturechange", onGestureChange);
+    canvas.removeEventListener("gestureend", onGestureEnd);
+    window.removeEventListener("hypersweeper:pinch", onNativePinch);
+    window.removeEventListener("hypersweeper:pan", onNativePan);
   };
 }
 

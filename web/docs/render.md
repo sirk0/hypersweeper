@@ -17,6 +17,33 @@ the level and `zoomBy(factor, x, y)` drives it; `tests/e2e/zoom.spec.ts` pins
 the gestures with synthetic multi-touch pointer streams (Playwright has no
 multi-touch API).
 
+A trackpad pinch takes two routes. Chromium and Electron send it as `ctrl`+wheel
+(`onWheel`). WebKit — Safari, and the Mac Catalyst app's WKWebView — sends
+Safari's own `gesturestart` / `gesturechange` / `gestureend` instead, with a
+cumulative `scale`; `attachControls` zooms by the ratio of successive scales
+about `clientX/Y`. On a touchscreen WebKit fires those *and* the pointer
+events, so the gesture path stands down while two touch points are down.
+
+The **Mac Catalyst** app gets neither: its viewport is `user-scalable=no`, and
+WebKit builds `gesture*` only from touches, so a trackpad pinch never reaches
+the page. `ios/App/App/BridgeViewController.swift` recognises it natively (a
+`UIPinchGestureRecognizer`, Catalyst builds only) and dispatches a
+`hypersweeper:pinch` event on `window` with `{phase, scale, x, y}`, which
+`attachControls` zooms by exactly as it does `gesture*`.
+
+That native event also carries the pinch's midpoint, so fingers travelling
+together pan the board as they zoom it, as the touch pinch does. The shell also
+injects `window.hypersweeperShell = 'catalyst'` at document start; under it the
+plain wheel — a two-finger trackpad swipe — **pans** a flat board instead of
+zooming it (zoom there is the pinch). Everywhere else the wheel is unchanged.
+
+Because WebKit on Catalyst may not turn that swipe into a `wheel` event at all,
+the shell also recognises it natively (a touch-less `UIPanGestureRecognizer`,
+scroll types only, so a click-drag stays the page's own) and dispatches
+`hypersweeper:pan` with `{phase, dx, dy}` deltas. It pans flat, ring-less
+boards; 3D and ring boards keep the wheel. `onWheel` stands down for 150 ms
+after one so a build that delivers both does not pan twice.
+
 The browser's own zoom is blocked on purpose (`blockBrowserZoom`,
 `touch-action` in `styles.css`). iOS ignores `user-scalable=no`, so without
 that guard a double tap — two quick reveals, a double tap on the smiley —

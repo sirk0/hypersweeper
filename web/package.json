@@ -21,13 +21,13 @@
     "og": "vite-node scripts/make-og-image.mts"
   },
   "dependencies": {
-    "@capacitor/core": "^7.6.8",
-    "@capacitor/haptics": "^7.0.5",
+    "@capacitor/core": "^8.5.3",
+    "@capacitor/haptics": "^8.0.2",
     "three": "^0.171.0"
   },
   "devDependencies": {
-    "@capacitor/cli": "^7.6.8",
-    "@capacitor/ios": "^7.6.8",
+    "@capacitor/cli": "^8.5.3",
+    "@capacitor/ios": "^8.5.3",
     "@cloudflare/workers-types": "^5.20260804.1",
     "@playwright/test": "1.56.1",
     "@types/node": "^22.20.1",

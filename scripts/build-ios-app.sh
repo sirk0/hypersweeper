@@ -49,6 +49,12 @@ command -v npm >/dev/null || die "npm is required (it ships with node)"
 # the bundle. Only Xcode and CocoaPods are macOS-only, so the check is here
 # rather than at the top: a Linux run still produces a synced project.
 MAC=1
+# CocoaPods (Ruby) crashes with "Unicode Normalization not appropriate for
+# ASCII-8BIT" under the C locale, which is what a shell with no LANG gives it.
+case "${LC_ALL:-${LANG:-}}" in
+  *UTF-8*|*utf8*|*UTF8*|*utf-8*) ;;
+  *) export LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 ;;
+esac
 [ "$(uname -s)" = "Darwin" ] || MAC=0
 
 if [ "$MAC" = 0 ] && { [ "$OPEN" = 1 ] || [ "$RUN" = 1 ]; }; then
@@ -84,6 +90,24 @@ fi
 (cd web && npx cap sync ios)
 
 [ -f ios/App/App/public/index.html ] || die "the sync copied no web assets"
+
+# The app's version, from the one place it is kept: web/package.json's
+# "version" for the version the store shows, and the git commit count for the
+# build number, which must grow with every upload. Version.xcconfig includes
+# this file; see the comment there.
+step "Stamping the app version"
+VERSION="$(node -p 'require("./web/package.json").version')"
+BUILD="$(git rev-list --count HEAD 2>/dev/null || echo 1)"
+if [ "$(git rev-parse --is-shallow-repository 2>/dev/null)" = "true" ]; then
+  note "shallow clone — build number $BUILD is not the real commit count;
+      do not upload this build (git fetch --unshallow first)"
+fi
+cat > ios/App/Version.generated.xcconfig <<EOF
+// Written by scripts/build-ios-app.sh — do not edit, do not commit.
+MARKETING_VERSION = $VERSION
+CURRENT_PROJECT_VERSION = $BUILD
+EOF
+echo "version $VERSION, build $BUILD"
 
 if [ "$MAC" = 0 ]; then
   note "not macOS — the project is synced but no pods were installed and

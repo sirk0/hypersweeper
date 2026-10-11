@@ -157,6 +157,32 @@ describe("hapticsSupported()", () => {
     expect(hapticsSupported()).toBe(true);
   });
 
+  // The shell names the device (BridgeViewController.swift); only an iPhone
+  // has a Taptic Engine. A shell too old to say keeps the old answer.
+  it.each([
+    ["phone", true],
+    ["pad", false],
+    ["mac", false],
+    [undefined, true],
+  ])("in the native shell on device %s: %s", async (device, expected) => {
+    bridge.native = true;
+    vi.stubGlobal("navigator", {});
+    vi.stubGlobal("window", device === undefined ? {} : { hypersweeperDevice: device });
+    const { hapticsSupported } = await loadModule();
+    expect(hapticsSupported()).toBe(expected);
+  });
+
+  it("drives nothing on an iPad, even with the switch left on", async () => {
+    bridge.native = true;
+    vi.stubGlobal("navigator", {});
+    vi.stubGlobal("window", { hypersweeperDevice: "pad" });
+    const { haptic } = await loadModule();
+    haptic("lose");
+    await Promise.resolve();
+    expect(bridge.notification).not.toHaveBeenCalled();
+    expect(bridge.impact).not.toHaveBeenCalled();
+  });
+
   it("is true on a mobile browser with the Vibration API — an Android phone", async () => {
     vi.stubGlobal("navigator", androidNavigator(vi.fn()));
     const { hapticsSupported } = await loadModule();
