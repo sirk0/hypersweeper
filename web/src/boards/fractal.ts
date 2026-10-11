@@ -1,6 +1,7 @@
 // Port of minesweeper/boards/fractal.py — the five self-similar (fractal) flat
 // boards: the sphinx, the chair, the Sierpinski carpet, the pentaflake and the
-// Gosper island. Structure and cell ids mirror the Python source so the two stay
+// Gosper island — and the two space-filling curves, Hilbert's and Moore's, at
+// the end of the file. Structure and cell ids mirror the Python source so the two stay
 // diffable; see it for the fuller commentary.
 //
 // Each is one tile inflated `levels` times: the tile is scaled up by the
@@ -519,4 +520,151 @@ export function pentaflakeBoard(levels: number, mineCount: number, scale = 26): 
  * level. `scale` is pixels per unit hexagon circumradius. */
 export function gosperBoard(levels: number, mineCount: number, scale = 26): Board {
   return substitutionBoard(GOSPER, levels, mineCount, scale);
+}
+
+// -- the space-filling curves ------------------------------------------------
+//
+// The Hilbert and Moore curves are fractals of a different kind from the five
+// above: what is self-similar is a *path*, not a patch of tiles. Laid on the
+// 2ⁿ × 2ⁿ grid of points it visits, the curve is just a square — every point
+// is visited, so its outline says nothing. So these two boards draw the curve
+// itself, thick: every point it visits becomes a solid block of CORRIDOR ×
+// CORRIDOR unit squares, every step it takes a bridge of the same width across
+// the one-square gap to the next block, and every gap it does *not* step across
+// is left empty. A one-square gap leaves no shared corner, so shared-vertex
+// adjacency never reaches across a wall: the curve keeps its two sides apart.
+//
+// Three squares across is the narrowest corridor that plays: in a two-wide strip
+// the two cells across a straight run see exactly the same squares — a coin flip
+// no number can settle — and one wide is a single file of cells, a line rather
+// than a minefield. Three wide leaves no two cells with the same closed
+// neighbourhood on either curve. See fractal.py.
+
+const CORRIDOR = 3; // unit squares across the corridor
+const PITCH = CORRIDOR + 1; // from one visited point's block to the next's
+
+type GridPoint = [number, number];
+
+/** The level-`levels` Hilbert curve: the 4**levels points of the 2**levels grid
+ * in the order it visits them, from (0, 0) to (2**levels − 1, 0) — both ends on
+ * the bottom edge. Level n is four level-(n − 1) curves, one per quadrant: the
+ * lower-left transposed, the two upper ones as they are, the lower-right
+ * transposed across the other diagonal. */
+export function hilbertPath(levels: number): GridPoint[] {
+  if (levels < 0) throw new Error("levels must be >= 0");
+  let path: GridPoint[] = [[0, 0]];
+  for (let k = 0; k < levels; k++) {
+    const s = 2 ** k;
+    path = [
+      ...path.map(([x, y]): GridPoint => [y, x]),
+      ...path.map(([x, y]): GridPoint => [x, y + s]),
+      ...path.map(([x, y]): GridPoint => [x + s, y + s]),
+      ...path.map(([x, y]): GridPoint => [2 * s - 1 - y, s - 1 - x]),
+    ];
+  }
+  return path;
+}
+
+/** The level-`levels` Moore curve: the Hilbert curve closed into a loop — four
+ * level-(n − 1) Hilbert curves, each turned so both its ends face the vertical
+ * midline. It starts just left of the bottom middle and ends just right of it,
+ * one step from home. */
+export function moorePath(levels: number): GridPoint[] {
+  if (levels < 1) throw new Error("a Moore curve needs levels >= 1");
+  const s = 2 ** (levels - 1);
+  const h = hilbertPath(levels - 1);
+  return [
+    ...h.map(([x, y]): GridPoint => [s - 1 - y, x]),
+    ...h.map(([x, y]): GridPoint => [s - 1 - y, x + s]),
+    ...h.map(([x, y]): GridPoint => [s + y, 2 * s - 1 - x]),
+    ...h.map(([x, y]): GridPoint => [s + y, s - 1 - x]),
+  ];
+}
+
+/** The thick curve as rectangles [x, y, width, height] in unit squares: a block
+ * per visited point, a bridge per step (the closing step too, for a loop). The
+ * board's cells are these cut into unit squares; the menu icon draws them whole. */
+export function curveSquares(
+  path: GridPoint[],
+  closed: boolean,
+): [number, number, number, number][] {
+  const rects: [number, number, number, number][] = path.map(([x, y]) => [
+    x * PITCH,
+    y * PITCH,
+    CORRIDOR,
+    CORRIDOR,
+  ]);
+  const steps: [GridPoint, GridPoint][] = path
+    .slice(1)
+    .map((b, i): [GridPoint, GridPoint] => [path[i]!, b]);
+  if (closed) steps.push([path[path.length - 1]!, path[0]!]);
+  for (const [a, b] of steps) {
+    if (Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]) !== 1) {
+      throw new Error(`the curve jumps from ${a.join(",")} to ${b.join(",")}`);
+    }
+    const x = Math.min(a[0], b[0]);
+    const y = Math.min(a[1], b[1]);
+    // a horizontal step's bridge stands in the gap column, a vertical one's row
+    rects.push(
+      a[1] === b[1]
+        ? [x * PITCH + CORRIDOR, y * PITCH, 1, CORRIDOR]
+        : [x * PITCH, y * PITCH + CORRIDOR, CORRIDOR, 1],
+    );
+  }
+  return rects;
+}
+
+function curveBoard(
+  mode: string,
+  path: GridPoint[],
+  closed: boolean,
+  mineCount: number,
+  scale: number,
+): Board {
+  const cells = new Map<CellId, string[]>();
+  const positions = new Map<string, Vertex>();
+  const vertex = (x: number, y: number): string => {
+    const key = `${x},${y}`;
+    // negated y, as boardXy does for the substitutions: the board then reads
+    // the same way up as its menu icon
+    if (!positions.has(key)) positions.set(key, [x, -y]);
+    return key;
+  };
+  for (const [x0, y0, w, h] of curveSquares(path, closed)) {
+    for (let x = x0; x < x0 + w; x++) {
+      for (let y = y0; y < y0 + h; y++) {
+        // counterclockwise in the lattice; the y flip turns it clockwise on the
+        // board, exactly as it does every substitution tile's outline
+        const corners = [vertex(x, y), vertex(x + 1, y), vertex(x + 1, y + 1), vertex(x, y + 1)];
+        cells.set(cid(x, y), corners);
+      }
+    }
+  }
+  return finalizeFlat(mode, cells, positions, mineCount, scale);
+}
+
+/** The two curves the boards are drawn from: mode -> its path and whether it
+ * closes. */
+export const CURVES: Record<
+  string,
+  { path: (levels: number) => GridPoint[]; closed: boolean }
+> = {
+  hilbert: { path: hilbertPath, closed: false },
+  moore: { path: moorePath, closed: true },
+};
+
+/** The level-`levels` Hilbert curve drawn as a corridor three squares wide:
+ * 12·4**levels − 3 unit squares (45, 189, 765) in an open strip whose two ends
+ * both sit on the bottom edge — a disc, mirror-symmetric about its vertical
+ * midline. `scale` is pixels per unit square edge. */
+export function hilbertBoard(levels: number, mineCount: number, scale = 26): Board {
+  return curveBoard("hilbert", hilbertPath(levels), false, mineCount, scale);
+}
+
+/** The level-`levels` Moore curve drawn as a corridor three squares wide:
+ * 12·4**levels unit squares (48, 192, 768) in a closed loop — an annulus, since
+ * the loop fences off the walls inside it. `scale` is pixels per unit square
+ * edge. */
+export function mooreBoard(levels: number, mineCount: number, scale = 26): Board {
+  return curveBoard("moore", moorePath(levels), true, mineCount, scale);
 }

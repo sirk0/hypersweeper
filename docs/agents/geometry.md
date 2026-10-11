@@ -40,7 +40,7 @@ Import order is a strict DAG; a module only imports from the ones above it.
 |--------|----------------|
 | `core.py` | `Board` / `Board3D`, the `_shared_vertex_adjacency` neighbour rule, `_build` (lattice→pixels) and `_finalize_flat` (float→pixels), 3D vector helpers, and the topology invariants `euler_characteristic` / `boundary_components` / `corner_fans`. |
 | `tilings.py` | Regular flat builders (square/triangle/trigrid/hex/hexhex/hextri/hextriangle/squarediamond), the `_ArchTemplate` system, the eight Archimedean `_*_template()` factories plus their eight Laves duals (built by `_dual_template`), the six isogonal (non-edge-to-edge) ones, the five congruent-rectangle bonds, the two rep-tile patterns and Dürer's pentagon tiling, three 2-uniform tilings, and the **`ARCH_TILINGS`** registry (the one place any of them is declared, with `_FAMILY_TRAITS` saying what each family is). |
-| `fractal.py` | The self-similar (fractal) boards: the sphinx, the chair, the Sierpinski carpet, the pentaflake and the Gosper island. One `_Substitution` record per tile — unit outline, the tiles filling the inflated copy, the inflation factor, lattice ops — and the shared inflation (`substitution_placements`) all five `*_board` builders run. The first two are rep-tiles (their children fill the tile); the carpet's and the pentaflake's leave holes, which is what makes them fractals with holes rather than shapes; the Gosper island's fill it with no hole at all and put the fractal in the *outline* instead. Four lattices are integer; the pentaflake's is ℤ[ζ10], since five-fold symmetry needs rank 4. The Gosper island's inflation is the one that is not a pure scaling: multiplication by 2 + ζ, a spiral similarity of √7 at 19.106°. |
+| `fractal.py` | The self-similar (fractal) boards: the sphinx, the chair, the Sierpinski carpet, the pentaflake and the Gosper island. One `_Substitution` record per tile — unit outline, the tiles filling the inflated copy, the inflation factor, lattice ops — and the shared inflation (`substitution_placements`) all five `*_board` builders run. The first two are rep-tiles (their children fill the tile); the carpet's and the pentaflake's leave holes, which is what makes them fractals with holes rather than shapes; the Gosper island's fill it with no hole at all and put the fractal in the *outline* instead. Four lattices are integer; the pentaflake's is ℤ[ζ10], since five-fold symmetry needs rank 4. The Gosper island's inflation is the one that is not a pure scaling: multiplication by 2 + ζ, a spiral similarity of √7 at 19.106°. At the end of the module, the two space-filling curves (`hilbert_path`, `moore_path`) and the corridor boards drawn along them (`hilbert_board`, `moore_board`), which are not substitutions of a tile at all. |
 | `aperiodic.py` | Penrose's rhombi (P3) and his kites and darts (P2), Ammann–Beenker (squares and 45° rhombi, eight-fold), the Spectre (Tile(1,1), the chiral monotile), the phyllotactic spiral, Klaassen's spiral monotile and his three pentagonal spirals (5-, 6- and 7-fold, one convex pentagon each), each with exact-arithmetic vertex ids — ℤ[ζ5] for both Penrose boards and the spiral, ℤ[ζ8] for Ammann–Beenker, ℤ[ζ12] for the Spectre. The Spectre's ring is *dense* in the plane, so unlike Penrose's discrete lattice there is no lattice to snap a float vertex back to: its placements are carried as exact `(rotation, mirror, translation)` triples and no floating point enters the substitution at all. The spiral is the odd one out — no substitution, just ten 36° wedges of the tile's own translation lattice, the odd ones offset a step; nonperiodic because its five-fold centre forbids any translation. The **brick rings** are nonperiodic the same way — by symmetry rather than by a substitution — and are the plainest board here: 2x1 bricks on the integer square lattice in concentric square rings about a 2x2 core, ring k being the boundary of the 2k x 2k square with horizontal bricks along its rows and vertical ones up its sides. Every run is even, so every tile is a whole brick and only an even-sided square is tileable at all. A brick's corner lands in the middle of a neighbour's long side, so `_brick_outline` splits each edge at the lattice points that are genuinely some tile's corner — the 2D twin of `solids._split_at_lattice_points`, and *conditional*, unlike the fractal outlines, which carry a vertex at every step. |
 | `hyperbolic.py` | The regular {p,q} tilings of the hyperbolic plane, drawn in the Poincaré disc: {7,3} heptagons, {5,4} pentagons and {4,5} squares. Built combinatorially ring by ring with integer vertex ids, placed afterwards by disc isometries, edges drawn as geodesic arcs, trimmed by hyperbolic-distance shells. See "The hyperbolic boards" below. |
 | `solids.py` | Closed/convex and polycube 3D boards (spherical gyro pentagons, Goldberg polyhedra, geodesic icosahedron, rhombicosidodecahedron, truncated icosidodecahedron, cube, tetrahedron, frames, bipyramid), plus the shared `_wythoff_point` every uniform solid here and every Catalan solid next door is generated from. |
@@ -717,7 +717,7 @@ Four things worth knowing before touching them:
 
 ## The fractal boards
 
-The five **fractal** boards are each one tile inflated `levels` times --
+The **fractal** family's five substitution boards are each one tile inflated `levels` times --
 scaled up by the substitution's `factor` and refilled with copies of itself --
 into a patch whose outline converges on a self-similar shape (the tile again
 for the first four, the Gosper island for the fifth); that outline is the
@@ -775,6 +775,25 @@ distinct cells (49 easy, 343 medium, and hard reuses the level-3 patch at
 closed under multiplication by a unit, so the patch keeps the hexagon's
 six-fold rotation at every level, but never a mirror past level 1: the
 flowsnake is chiral.
+
+The **Hilbert** and **Moore** boards are fractal in a third way: what is
+self-similar is a *path*. The curve visits every point of the 2**n x 2**n
+grid, so its outline is just a square, and these boards draw the curve
+itself, thick -- a 3x3 block of unit squares per point visited, a 3x1 bridge
+per step across the one-square gap to the next block, and every gap the curve
+does not step across left empty. A one-square gap leaves no shared corner, so
+adjacency never crosses a wall: the corridor is the board. Three across is
+the narrowest that plays -- in a two-wide strip the two cells across a
+straight run share a closed neighbourhood (an unwinnable coin flip on about
+one cell in seven), and one wide is a line of cells with two neighbours each
+-- and three wide has no such pair on either curve, six neighbours on
+average. They are 12·4**n − 3 squares (Hilbert, open, a disc) and 12·4**n
+(Moore, a loop, so an annulus: χ = 0, two boundary circles), and both ship
+the level-2 board -- 189 and 192 cells -- at all three difficulties,
+separated by mines: level 1 is four blocks in a U or a ring, no fractal, and
+level 3 is 765 cells, past what reads (`COARSE_MIN_LEVEL` and
+`COARSE_MAX_LEVEL` in `scripts/difficulty/resize.py`). The Hilbert board keeps
+one mirror, the Moore board two, and neither a quarter turn.
 
 ## The Catalan solids
 

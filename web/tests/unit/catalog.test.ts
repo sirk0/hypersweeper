@@ -165,6 +165,8 @@ describe("catalog families", () => {
       "carpet",
       "pentaflake",
       "gosper",
+      "hilbert",
+      "moore",
     ]);
     // a one-off family's rows are modes, so each carries its own icon
     expect(familyRows("fractal", "flat").map((r) => r.icon)).toEqual([
@@ -173,6 +175,8 @@ describe("catalog families", () => {
       "carpet",
       "pentaflake",
       "gosper",
+      "hilbert",
+      "moore",
     ]);
   });
 

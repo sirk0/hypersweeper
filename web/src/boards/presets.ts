@@ -42,6 +42,8 @@ import {
   carpetBoard,
   chairBoard,
   gosperBoard,
+  hilbertBoard,
+  mooreBoard,
   pentaflakeBoard,
   sphinxBoard,
 } from "./fractal";
@@ -209,6 +211,8 @@ const BUILDERS: Record<string, Builder> = {
   carpet_board: carpetBoard,
   pentaflake_board: pentaflakeBoard,
   gosper_board: gosperBoard,
+  hilbert_board: hilbertBoard,
+  moore_board: mooreBoard,
   hyperbolic_board: hyperbolicBoard,
 };
 

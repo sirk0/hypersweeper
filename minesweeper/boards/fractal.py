@@ -1,5 +1,6 @@
 """Self-similar (fractal) flat boards: the sphinx, the chair, the
-Sierpinski carpet, the pentaflake and the Gosper island.
+Sierpinski carpet, the pentaflake and the Gosper island -- and the two
+space-filling curves, Hilbert's and Moore's, at the end of the module.
 
 Each is one tile inflated ``levels`` times: the tile is scaled up by the
 substitution's ``factor`` and refilled with copies of itself, so the patch
@@ -469,3 +470,128 @@ def gosper_board(levels: int, mine_count: int, scale: float = 26) -> Board:
     degrees further round with every level. ``scale`` is pixels per unit
     hexagon circumradius."""
     return _substitution_board(GOSPER, levels, mine_count, scale)
+
+
+# -- the space-filling curves ------------------------------------------------
+#
+# The Hilbert and Moore curves are fractals of a different kind from the five
+# above: what is self-similar is a *path*, not a patch of tiles. Laid on the
+# 2**n x 2**n grid of points it visits, the curve is just a square -- every
+# point is visited, so its outline says nothing. So these two boards draw the
+# curve itself, thick: every point it visits becomes a solid block of
+# ``_CORRIDOR`` x ``_CORRIDOR`` unit squares, every step it takes a bridge of
+# the same width across the one-square gap to the next block, and every gap
+# it does *not* step across is left empty. The board is the corridor -- a
+# winding strip of unit squares with a wall of nothing beside it -- and since a
+# one-square gap leaves no shared corner, shared-vertex adjacency never reaches
+# across a wall: the curve really does keep its two sides apart.
+#
+# Three squares across is the narrowest corridor that plays. In a two-wide
+# strip the two cells across a straight run see exactly the same squares (each
+# other, and the three-by-two block they sit in), and a pair like that is a
+# coin flip no number can settle -- about one cell in seven of a level-3
+# Hilbert board, measured. One wide is a single file of cells, mostly two
+# neighbours each: a line, not a minefield. Three wide leaves no two cells with
+# the same closed neighbourhood anywhere on either curve, and six neighbours
+# on average -- the carpet's and the Gosper island's company.
+
+_CORRIDOR = 3                # unit squares across the corridor
+_PITCH = _CORRIDOR + 1       # from one visited point's block to the next's
+
+
+def hilbert_path(levels: int) -> list[tuple[int, int]]:
+    """The level-``levels`` Hilbert curve: the ``4**levels`` points of the
+    ``2**levels`` grid in the order it visits them, from ``(0, 0)`` to
+    ``(2**levels - 1, 0)`` -- both ends on the bottom edge.
+
+    Level ``n`` is four level-``(n - 1)`` curves, one per quadrant: the
+    lower-left one transposed (so it leaves upward), the two upper ones as
+    they are, and the lower-right one transposed across the other diagonal
+    (so it comes back down to the bottom edge). Each copy ends one step from
+    where the next begins -- which is the whole trick, and what
+    ``TestSpaceFillingCurves`` checks against the classic bit-twiddling
+    definition."""
+    if levels < 0:
+        raise ValueError("levels must be >= 0")
+    path = [(0, 0)]
+    for k in range(levels):
+        s = 2 ** k
+        path = ([(y, x) for x, y in path]
+                + [(x, y + s) for x, y in path]
+                + [(x + s, y + s) for x, y in path]
+                + [(2 * s - 1 - y, s - 1 - x) for x, y in path])
+    return path
+
+
+def moore_path(levels: int) -> list[tuple[int, int]]:
+    """The level-``levels`` Moore curve: the Hilbert curve closed into a loop.
+
+    Four level-``(n - 1)`` Hilbert curves again, but each turned so that both
+    its ends face the vertical midline: the two on the left a quarter turn
+    counterclockwise, the two on the right a quarter turn clockwise. The walk
+    starts just left of the bottom middle, climbs the left half, comes down
+    the right and ends just right of where it began -- one step from home, so
+    the last step closes the loop."""
+    if levels < 1:
+        raise ValueError("a Moore curve needs levels >= 1")
+    s = 2 ** (levels - 1)
+    h = hilbert_path(levels - 1)
+    return ([(s - 1 - y, x) for x, y in h]
+            + [(s - 1 - y, x + s) for x, y in h]
+            + [(s + y, 2 * s - 1 - x) for x, y in h]
+            + [(s + y, s - 1 - x) for x, y in h])
+
+
+def curve_squares(path: list[tuple[int, int]], closed: bool) -> list[tuple[int, int, int, int]]:
+    """The thick curve as rectangles ``(x, y, width, height)`` in unit
+    squares: a block per visited point, a bridge per step (the closing step
+    too, for a loop). The board's cells are these cut into unit squares; the
+    menu icon draws them whole."""
+    rects = [(x * _PITCH, y * _PITCH, _CORRIDOR, _CORRIDOR) for x, y in path]
+    steps = list(zip(path, path[1:]))
+    if closed:
+        steps.append((path[-1], path[0]))
+    for a, b in steps:
+        if abs(a[0] - b[0]) + abs(a[1] - b[1]) != 1:
+            raise ValueError(f"the curve jumps from {a} to {b}")
+        x, y = min(a, b)
+        if a[1] == b[1]:   # a horizontal step: the bridge stands in the gap column
+            rects.append((x * _PITCH + _CORRIDOR, y * _PITCH, 1, _CORRIDOR))
+        else:
+            rects.append((x * _PITCH, y * _PITCH + _CORRIDOR, _CORRIDOR, 1))
+    return rects
+
+
+def _curve_board(mode: str, path: list[tuple[int, int]], closed: bool,
+                 mine_count: int, scale: float) -> Board:
+    cells: dict[Cell, list[Point]] = {}
+    for x0, y0, w, h in curve_squares(path, closed):
+        for x in range(x0, x0 + w):
+            for y in range(y0, y0 + h):
+                cells[(x, y)] = [(x, y), (x + 1, y), (x + 1, y + 1), (x, y + 1)]
+    return _finalize_flat(mode, cells, _square_to_xy, mine_count, scale)
+
+
+# The two curves the boards are drawn from: mode -> (path builder, closed).
+CURVES: dict[str, tuple[Callable[[int], list[tuple[int, int]]], bool]] = {
+    "hilbert": (hilbert_path, False),
+    "moore": (moore_path, True),
+}
+
+
+def hilbert_board(levels: int, mine_count: int, scale: float = 26) -> Board:
+    """The level-``levels`` Hilbert curve drawn as a corridor three squares
+    wide: ``12 * 4**levels - 3`` unit squares (45, 189, 765) in an open strip
+    whose two ends both sit on the bottom edge. The board is a disc -- the
+    curve never closes -- and mirror-symmetric about its vertical midline.
+    ``scale`` is pixels per unit square edge."""
+    return _curve_board("hilbert", hilbert_path(levels), False, mine_count, scale)
+
+
+def moore_board(levels: int, mine_count: int, scale: float = 26) -> Board:
+    """The level-``levels`` Moore curve drawn as a corridor three squares
+    wide: ``12 * 4**levels`` unit squares (48, 192, 768) in a closed loop. The
+    loop fences off the walls inside it, so unlike the Hilbert board this one
+    has a hole -- an annulus, Euler characteristic 0, two boundary circles.
+    ``scale`` is pixels per unit square edge."""
+    return _curve_board("moore", moore_path(levels), True, mine_count, scale)

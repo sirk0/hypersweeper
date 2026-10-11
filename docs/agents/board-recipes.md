@@ -465,7 +465,16 @@ per side, and the Gosper island, whose seven hexagons fill their flower with no
 gap but do not make a hexagon — so its patch outline is the Gosper island rather
 than the tile, and its inflation turns (√7 at 19.106°, multiplication by the
 Eisenstein integer 2 + ζ) because no pure scaling by √7 stays on the lattice.
-Adding a sixth is one ``_Substitution`` record plus its wiring:
+Two more sit beside them without being substitutions at all: the **Hilbert
+and Moore curves** (`hilbert_board`, `moore_board`), a space-filling *path*
+drawn as a corridor three squares wide, whose walls are the gaps it does not
+step across (see "The fractal boards" in [`geometry.md`](geometry.md)). They
+are their own builders, not ``SUBSTITUTIONS`` entries -- a child square's exit
+depends on its neighbours, not on its own placement -- and `CURVES` is what
+the menu icons read for them. `TestSpaceFillingCurves` checks the paths
+against the textbook `d2xy` and a Moore L-system turtle, and the corridor
+against what it is for: no adjacency across a wall, no twin cells.
+Adding another substitution is one ``_Substitution`` record plus its wiring:
 
 1. **The tile** — a `_Substitution(mode, outline, children, factor, order,
    rotate, mirror, scale, to_xy)` in `fractal.py`. `outline` walks the unit tile

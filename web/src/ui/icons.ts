@@ -23,7 +23,11 @@ import { ARCH_TILINGS, type ArchTemplate, archTemplate, templateCells } from "..
 import {
   carpetBoard,
   chairBoard,
+  CURVES,
+  curveSquares,
   gosperBoard,
+  hilbertBoard,
+  mooreBoard,
   pentaflakeBoard,
   placePoint,
   sphinxBoard,
@@ -1441,6 +1445,37 @@ function draw(rawKey: string): string[] {
     for (const [px, py] of raw) {
       parts.push(shape(hexagon(C + (px - midX) * r, C + (py - midY) * r, r)));
     }
+  } else if (CURVES[key]) {
+    // the level-2 curve, built the way the board builds it — a block per point
+    // and a bridge per step — but drawn whole, one outlined corridor rather
+    // than 189 squares: every rectangle grown by the hairline in the outline
+    // colour first, then filled over, so the seams between a block and its
+    // bridges vanish and only the corridor's own edge is drawn (gui.py does
+    // the same)
+    const curve = CURVES[key]!;
+    const rects = curveSquares(curve.path(2), curve.closed);
+    const span = Math.max(...rects.map(([x, y, w, h]) => Math.max(x + w, y + h)));
+    const sc = (d * 0.84) / span;
+    const o = (d - span * sc) / 2;
+    const tone = shapeMetrics([
+      [0, 0],
+      [1, 0],
+      [1, 1],
+      [0, 1],
+    ]);
+    const grow = sw(3);
+    for (const [colour, g] of [
+      [tint("outline", tone), grow],
+      [tint(LIGHT, tone), 0],
+    ] as const) {
+      for (const [x, y, w, h] of rects) {
+        parts.push(
+          `<rect x="${n(o + x * sc - g)}" y="${n(o + (span - y - h) * sc - g)}" width="${n(
+            w * sc + 2 * g,
+          )}" height="${n(h * sc + 2 * g)}" fill="${colour}"/>`,
+        );
+      }
+    }
   } else if (SUBSTITUTIONS[key]) {
     // the substitution itself: the once-smaller tiles that fill one tile
     // (four for the rep-tiles, eight around a hole for the carpet), drawn
@@ -1923,6 +1958,10 @@ const PATCH_BOARDS: Record<string, PatchBoard> = {
   gosper: { build: () => gosperBoard(3, 0, 25), whole: true },
   pentaflake: { build: () => pentaflakeBoard(3, 0, 18) },
   carpet: { build: () => carpetBoard(3, 0, 32) },
+  // Whole: the winding is the picture, and a crop of a corridor is a few
+  // squares and a slit.
+  hilbert: { build: () => hilbertBoard(2, 0, 26), whole: true },
+  moore: { build: () => mooreBoard(2, 0, 26), whole: true },
   // Whole: the disc is the picture -- the tiles shrinking toward a rim they
   // never reach is what a hyperbolic tiling looks like.
   hyperbolic73: { build: () => hyperbolicBoard(7, 3, 16, 0, 100), whole: true },

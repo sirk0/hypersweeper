@@ -2466,6 +2466,64 @@
         "hasCellCycle": false
       }
     },
+    "hilbert": {
+      "easy": {
+        "cellCount": 189,
+        "mineCount": 11,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 444,
+        "vertexCount": 256,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 189,
+        "mineCount": 16,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 444,
+        "vertexCount": 256,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 189,
+        "mineCount": 25,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 444,
+        "vertexCount": 256,
+        "hasCellCycle": false
+      }
+    },
+    "moore": {
+      "easy": {
+        "cellCount": 192,
+        "mineCount": 12,
+        "euler": 0,
+        "boundaryComponents": 2,
+        "edgeCount": 448,
+        "vertexCount": 256,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 192,
+        "mineCount": 19,
+        "euler": 0,
+        "boundaryComponents": 2,
+        "edgeCount": 448,
+        "vertexCount": 256,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 192,
+        "mineCount": 28,
+        "euler": 0,
+        "boundaryComponents": 2,
+        "edgeCount": 448,
+        "vertexCount": 256,
+        "hasCellCycle": false
+      }
+    },
     "elongated": {
       "easy": {
         "cellCount": 85,

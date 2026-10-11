@@ -222,6 +222,8 @@ SPEC: dict[str, dict] = {
     "carpet_board": dict(size=(0,), mine=1, shape=2, kind="scale", coarse=True),
     "pentaflake_board": dict(size=(0,), mine=1, shape=2, kind="scale", coarse=True),
     "gosper_board": dict(size=(0,), mine=1, shape=2, kind="scale", coarse=True),
+    "hilbert_board": dict(size=(0,), mine=1, shape=2, kind="scale", coarse=True),
+    "moore_board": dict(size=(0,), mine=1, shape=2, kind="scale", coarse=True),
     # the hyperbolic discs: hyperbolic_board(p, q, shells, mines, scale). The
     # knob is the number of distance shells kept, which steps 5 to 14 cells
     # at a time -- fine enough to hit every target, so not ``coarse``. The
@@ -283,7 +285,18 @@ GRIDS = {
 # the fewest mines that stop its opening click clearing the board outright
 # already drag its win rate to 83% against an easy target of 96.5%. The
 # level-3 patch calibrates cleanly at 10 mines. See `calibrate.opening_floor`.
-COARSE_MIN_LEVEL = {("pentaflake", "easy"): 3}
+#
+# The space-filling curves are held to their level-2 board at every
+# difficulty, from both sides. Level 1 is no fractal at all -- four blocks in
+# a U (Hilbert) or a ring (Moore), 45 and 48 cells -- so easy may not drop to
+# it, though it is nearer 81 by cell count. And level 3 is 765 and 768 cells,
+# a 31-square span of corridor: nearer 480 than 189 is, but well past the ~500
+# cells at which a fractal board's glyphs stop reading, so hard may not climb
+# to it. All three play the 189- and 192-cell boards and differ in mines, as
+# the pentaflake's three do on its 216.
+COARSE_MIN_LEVEL = {("pentaflake", "easy"): 3,
+                    ("hilbert", "easy"): 2, ("moore", "easy"): 2}
+COARSE_MAX_LEVEL = {("hilbert", "hard"): 2, ("moore", "hard"): 2}
 
 # The donut builders take a tube *radius* (a fraction of the ring radius); the
 # Klein builders take a tube *scale* around 1.0. Same role -- the surface's own
@@ -1321,10 +1334,11 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
         # and stop as soon as the board overshoots, or a range wide enough for
         # the two-knob builders would ask for a 150,000-cell cube.
         floor = COARSE_MIN_LEVEL.get((mode, difficulty), 0) if coarse else 0
+        ceiling = COARSE_MAX_LEVEL.get((mode, difficulty)) if coarse else None
         grids = []
         for value in _candidate_values(args[knobs[0]], coarse, domains,
                                        spec.get("floor", 1)):
-            if value < floor:
+            if value < floor or (ceiling is not None and value > ceiling):
                 continue
             trial = list(args)
             trial[knobs[0]] = value

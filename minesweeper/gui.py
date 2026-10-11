@@ -30,6 +30,7 @@ import pygame
 
 from minesweeper.boards import (
     _PENTA_RINGS,
+    CURVES,
     DIFFICULTIES,
     FAMILY_LABELS,
     FAMILY_MEMBERS,
@@ -48,6 +49,7 @@ from minesweeper.boards import (
     _pentaspiral_tiles,
     _z7_to_xy,
     build_board,
+    curve_squares,
     family_rows,
     hyperbolic_board,
     newell_normal,
@@ -1354,6 +1356,26 @@ def _render_icon(key: str) -> pygame.Surface:
             _icon_shape(s, [(left, top), (left + w * sc, top),
                             (left + w * sc, top + h * sc), (left, top + h * sc)],
                         fill=ICON_BLUE if core else ICON_BLUE_LIGHT, width=3)
+        _icon_gloss(s, pygame.Rect(d * 0.08, d * 0.06, d * 0.84, d * 0.55))
+    elif key in CURVES:
+        # the level-2 curve, built the way the board builds it -- a block per
+        # point and a bridge per step -- but drawn whole, one outlined
+        # corridor rather than 189 squares: every rectangle grown by the
+        # hairline in the outline colour first, then filled over, so the
+        # seams between a block and its bridges vanish and only the
+        # corridor's own edge is drawn
+        path_of, closed = CURVES[key]
+        rects = curve_squares(path_of(2), closed)
+        span = max(max(x + w, y + h) for x, y, w, h in rects)
+        sc = d * 0.84 / span
+        o = (d - span * sc) / 2
+        for colour, grow in ((ICON_OUTLINE, 3), (ICON_BLUE_LIGHT, 0)):
+            for x, y, w, h in rects:
+                left = math.floor(o + x * sc - grow)
+                top = math.floor(o + (span - y - h) * sc - grow)
+                right = math.ceil(o + (x + w) * sc + grow)
+                bottom = math.ceil(o + (span - y) * sc + grow)
+                pygame.draw.rect(s, colour, pygame.Rect(left, top, right - left, bottom - top))
         _icon_gloss(s, pygame.Rect(d * 0.08, d * 0.06, d * 0.84, d * 0.55))
     elif key in SUBSTITUTIONS:
         # the substitution itself: the once-smaller tiles that fill one tile

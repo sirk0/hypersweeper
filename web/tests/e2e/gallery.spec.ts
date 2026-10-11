@@ -85,12 +85,16 @@ const MODES = [
   // and the chair, the L-shaped one -- plus the two with holes in them, the
   // Sierpinski carpet and the pentaflake (whose lattice is the only
   // non-integer one here) -- and the Gosper island, whose fractal is its
-  // ragged outline rather than any hole. None is a rectangular window.
+  // ragged outline rather than any hole -- and the two space-filling curves,
+  // Hilbert's open corridor and Moore's closed one, whose walls are gaps a
+  // square wide. None is a rectangular window.
   "sphinx",
   "chair",
   "carpet",
   "pentaflake",
   "gosper",
+  "hilbert",
+  "moore",
   // the hyperbolic discs: a flat board drawn in the Poincare disc, every edge
   // a geodesic arc through extra points, and cells shrinking toward a rim they
   // never reach -- the shots pin the arcs, the per-cell glyph room and the one

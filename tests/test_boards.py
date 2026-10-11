@@ -161,6 +161,13 @@ from minesweeper.boards.catalan import (
 )
 from minesweeper.boards.core import _cross
 from minesweeper.boards.core import newell_normal as _newell_normal
+from minesweeper.boards.fractal import (
+    CURVES,
+    hilbert_board,
+    hilbert_path,
+    moore_board,
+    moore_path,
+)
 from minesweeper.boards.hyperbolic import (
     _central_polygon,
     _isometry,
@@ -2278,6 +2285,190 @@ class TestGosperIsland:
                 seen.add(cell)
                 stack.extend(board.adjacency[cell])
         assert len(seen) == len(board.adjacency)
+
+
+
+class TestSpaceFillingCurves:
+    """The Hilbert and Moore boards: the curve drawn as a corridor three
+    squares wide, a block per point it visits and a bridge per step.
+
+    The paths are checked against definitions that share nothing with the
+    builder -- the classic bit-twiddling ``d2xy`` for Hilbert's, a turtle
+    walking the Moore L-system for Moore's -- and the boards against what the
+    corridor is for: the walls hold (no two cells touch unless their blocks
+    are the same point or one step apart along the curve), no two cells are
+    twins, and the open curve is a disc where the closed one is an annulus.
+    """
+
+    PITCH = 4  # three squares of corridor and one of wall
+
+    @staticmethod
+    def _d2xy(n: int, d: int) -> tuple[int, int]:
+        # the textbook conversion from distance along the curve to a point
+        x = y = 0
+        s, t = 1, d
+        while s < n:
+            rx = 1 & (t // 2)
+            ry = 1 & (t ^ rx)
+            if ry == 0:
+                if rx == 1:
+                    x, y = s - 1 - x, s - 1 - y
+                x, y = y, x
+            x, y = x + s * rx, y + s * ry
+            t //= 4
+            s *= 2
+        return x, y
+
+    @staticmethod
+    def _moore_turtle(levels: int) -> list[tuple[int, int]]:
+        # axiom LFL+F+LFL, L -> -RF+LFL+FR-, R -> +LF-RFR-FL+, F a unit step
+        word = "LFL+F+LFL"
+        for _ in range(levels - 1):
+            word = "".join({"L": "-RF+LFL+FR-", "R": "+LF-RFR-FL+"}.get(c, c)
+                           for c in word)
+        x, y, dx, dy = 0, 0, 0, 1
+        points = [(0, 0)]
+        for c in word:
+            if c == "F":
+                x, y = x + dx, y + dy
+                points.append((x, y))
+            elif c == "+":
+                dx, dy = dy, -dx
+            elif c == "-":
+                dx, dy = -dy, dx
+        return points
+
+    @staticmethod
+    def _normalised(points):
+        min_x = min(x for x, _ in points)
+        min_y = min(y for _, y in points)
+        return [(x - min_x, y - min_y) for x, y in points]
+
+    @pytest.mark.parametrize("levels", [0, 1, 2, 3, 4])
+    def test_the_hilbert_path_is_the_textbook_one(self, levels):
+        n = 2 ** levels
+        assert hilbert_path(levels) == [self._d2xy(n, d) for d in range(n * n)]
+
+    @pytest.mark.parametrize("levels", [1, 2, 3, 4])
+    def test_the_moore_path_is_the_l_system_one(self, levels):
+        # the same loop up to where it is drawn and which way round: some
+        # symmetry of the square, and some starting point and direction of
+        # the cycle, takes the one onto the other
+        loop = moore_path(levels)
+        turtle = self._moore_turtle(levels)
+        assert len(turtle) == len(loop)  # the walk does not return to (0, 0)
+        target = self._normalised(loop)
+        maps = [lambda x, y: (x, y), lambda x, y: (-y, x),
+                lambda x, y: (-x, -y), lambda x, y: (y, -x)]
+        candidates = [self._normalised([f(x, y) for x, y in pts])
+                      for f in maps
+                      for pts in (turtle, [(x, -y) for x, y in turtle])]
+        n = len(loop)
+        found = any(
+            [walk[(start + sign * k) % n] for k in range(n)] == target
+            for walk in candidates
+            for start in range(n)
+            for sign in (1, -1)
+        )
+        assert found
+
+    @pytest.mark.parametrize("path, closed", [
+        (hilbert_path(3), False), (moore_path(3), True)])
+    def test_the_curve_visits_every_point_once_a_step_at_a_time(self, path, closed):
+        side = math.isqrt(len(path))
+        assert sorted(path) == [(x, y) for x in range(side) for y in range(side)]
+        steps = list(zip(path, path[1:])) + ([(path[-1], path[0])] if closed else [])
+        assert all(abs(a[0] - b[0]) + abs(a[1] - b[1]) == 1 for a, b in steps)
+        # and the open one really is open: its ends are not neighbours
+        if not closed:
+            first, last = path[0], path[-1]
+            assert abs(first[0] - last[0]) + abs(first[1] - last[1]) > 1
+
+    @pytest.mark.parametrize("levels", [0, 1, 2, 3])
+    def test_cell_counts(self, levels):
+        # nine squares a block, three a bridge: 4**n blocks and 4**n - 1
+        # bridges for the open curve, 4**n of each for the loop
+        assert len(hilbert_board(levels, 1).adjacency) == 12 * 4 ** levels - 3
+        if levels:
+            assert len(moore_board(levels, 1).adjacency) == 12 * 4 ** levels
+
+    @pytest.mark.parametrize("mode", ["hilbert", "moore"])
+    def test_the_walls_hold(self, mode):
+        # a cell belongs to the point whose block it is in, or to both ends
+        # of the step whose bridge it is in; two cells may touch only when
+        # they belong to the same point or to two points one step apart
+        path_of, closed = CURVES[mode]
+        path = path_of(3)
+        index = {p: i for i, p in enumerate(path)}
+        n = len(path)
+        board = (hilbert_board if mode == "hilbert" else moore_board)(3, 1)
+        p = self.PITCH
+
+        def owners(cell):
+            (u, v), (bx, by) = cell, (cell[0] // p, cell[1] // p)
+            if u % p == p - 1:
+                return {index[(bx, by)], index[(bx + 1, by)]}
+            if v % p == p - 1:
+                return {index[(bx, by)], index[(bx, by + 1)]}
+            return {index[(bx, by)]}
+
+        def near(i, j):
+            gap = abs(i - j)
+            return gap <= 1 or (closed and gap == n - 1)
+
+        for cell, neighbours in board.adjacency.items():
+            for other in neighbours:
+                assert any(near(i, j) for i in owners(cell) for j in owners(other))
+
+    @pytest.mark.parametrize("mode", ["hilbert", "moore"])
+    def test_no_two_cells_are_twins(self, mode):
+        # three across is what buys this: in a two-wide strip the two cells
+        # across a straight run share a closed neighbourhood, a coin flip
+        # no number can settle
+        board = (hilbert_board if mode == "hilbert" else moore_board)(2, 1)
+        groups = Counter(frozenset([cell, *ns]) for cell, ns in board.adjacency.items())
+        assert set(groups.values()) == {1}
+
+    @pytest.mark.parametrize("levels", [1, 2, 3])
+    def test_the_open_curve_is_a_disc_and_the_loop_an_annulus(self, levels):
+        hilbert = hilbert_board(levels, 1, scale=1)
+        assert _euler_characteristic(hilbert) == 1
+        assert _boundary_components(hilbert) == 1
+        moore = moore_board(levels, 1, scale=1)
+        assert _euler_characteristic(moore) == 0
+        assert _boundary_components(moore) == 2
+
+    @pytest.mark.parametrize("mode, mirrors", [("hilbert", {"left-right"}),
+                                               ("moore", {"left-right", "top-bottom"})])
+    def test_the_curves_symmetries(self, mode, mirrors):
+        # The Hilbert curve keeps one mirror, about the vertical midline its
+        # two ends sit either side of. The Moore loop keeps that one and the
+        # horizontal one too (each quarter is a Hilbert curve turned to face
+        # the vertical midline, symmetric about its own horizontal axis, and
+        # the two halves are stacked copies), so a half turn as well -- but
+        # never a quarter turn: its left half faces right and its right half
+        # left, where a quarter turn would need them facing up and down.
+        board = (hilbert_board if mode == "hilbert" else moore_board)(3, 1)
+        cells = set(board.adjacency)
+        side = max(u for u, _ in cells)
+        assert side == max(v for _, v in cells)  # a square
+        maps = {
+            "left-right": lambda u, v: (side - u, v),
+            "top-bottom": lambda u, v: (u, side - v),
+            "quarter-turn": lambda u, v: (side - v, u),
+        }
+        kept = {name for name, f in maps.items()
+                if {f(u, v) for u, v in cells} == cells}
+        assert kept == mirrors
+
+    @pytest.mark.parametrize("mode", ["hilbert", "moore"])
+    def test_every_cell_is_a_unit_square_with_three_to_eight_neighbours(self, mode):
+        board = (hilbert_board if mode == "hilbert" else moore_board)(2, 1, scale=1)
+        for polygon in board.polygons.values():
+            sides = [math.dist(a, b) for a, b in zip(polygon, polygon[1:] + polygon[:1])]
+            assert sides == pytest.approx([1] * 4)
+        degrees = {len(ns) for ns in board.adjacency.values()}
+        assert min(degrees) == 3 and max(degrees) == 8
 
 
 

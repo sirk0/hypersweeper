@@ -47,7 +47,9 @@ Pick a surface, then a tiling:
   spirals of one convex pentagon, in five, six and seven arms. Five more are
   self-similar — one tile inflated into a patch shaped like itself: the
   sphinx, the chair, the Sierpiński carpet, the pentaflake, and hexagons
-  filling a Gosper island.
+  filling a Gosper island — and two more draw a space-filling curve as a
+  corridor of squares three wide: Hilbert's, open at both ends, and Moore's,
+  closed into a loop.
   And three are not Euclidean at all — the game's namesake: regular
   heptagons three to a corner ({7,3}), pentagons four to a corner ({5,4})
   and squares five to a corner ({4,5}), which only fit in the *hyperbolic*

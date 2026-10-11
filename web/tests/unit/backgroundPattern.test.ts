@@ -62,7 +62,7 @@ describe("which pattern a mode gets", () => {
     // backgroundPattern.ts would leave that board on a blank page.
     const missing = MODES.filter((mode) => patternKey(mode) === null);
     expect(missing).toEqual([]);
-    expect(MODES.length).toBe(211);
+    expect(MODES.length).toBe(213);
   });
 
   it("follows the tiling, not the surface", () => {
@@ -149,11 +149,14 @@ describe("which pattern a mode gets", () => {
     // hexagons for the Gosper island, and the sphinx and the chair as
     // themselves. Regular pentagons famously do not tile the plane, which is
     // why the pentaflake has holes, but pentagons *and* 36° rhombs do — two of
-    // the first to one of the second. The Sierpinski carpet is unit squares.
+    // the first to one of the second. The Sierpinski carpet is unit squares,
+    // and so are the Hilbert and Moore curves' corridors.
     for (const mode of ["sphinx", "chair", "gosper", "pentaflake"]) {
       expect(patternKey(mode)).toBe(mode);
     }
     expect(patternKey("carpet")).toBe("square");
+    expect(patternKey("hilbert")).toBe("square");
+    expect(patternKey("moore")).toBe("square");
     for (const mode of FRACTAL_MODES) expect(PERIODIC).toContain(patternKey(mode));
   });
 

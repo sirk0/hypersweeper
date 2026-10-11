@@ -51,6 +51,8 @@ from minesweeper.boards.fractal import (
     carpet_board,
     chair_board,
     gosper_board,
+    hilbert_board,
+    moore_board,
     pentaflake_board,
     sphinx_board,
 )
@@ -233,6 +235,11 @@ _JSON_BUILDERS = {
     "carpet_board": carpet_board,
     "pentaflake_board": pentaflake_board,
     "gosper_board": gosper_board,
+    # The space-filling curves the same way: hilbert_board(levels,
+    # mine_count, scale), and moore_board likewise -- 12 * 4**levels squares
+    # of corridor (less three for the open Hilbert curve).
+    "hilbert_board": hilbert_board,
+    "moore_board": moore_board,
     # The hyperbolic boards: hyperbolic_board(p, q, shells, mine_count, scale),
     # the {p,q} tiling in the Poincare disc trimmed to the faces at its
     # ``shells`` smallest distances from the centre (boards/hyperbolic.py).

@@ -12,7 +12,7 @@ Every board's mine count, chosen so its win probability under the reference solv
 
 ## Coverage
 
-- 633 rows, 601 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
+- 639 rows, 607 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
 - 32 could not be brought on target:
   - `cube3d`/hard: 33.3% vs 50.9% — the search could not resolve it -- its thinnest measurement finished 0 game(s), so the rate here is noise rather than a crossing the search walked to. Re-measure at a bigger `--budget`
   - `cylinder`/easy: 89.1% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (7, 9%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
@@ -58,7 +58,7 @@ Every board's mine count, chosen so its win probability under the reference solv
   - `torussnubhex`/hard: 39 abandoned
   - `triakisocta`/hard: 38 abandoned
 
-Densities run from 2.8% to 36.2% (median 18.1%) — the spread the old flat 14/16/19 per cent could not express.
+Densities run from 2.8% to 36.2% (median 17.9%) — the spread the old flat 14/16/19 per cent could not express.
 
 The only floor under the search is the **opening**: the fewest mines at which the first click alone stops finishing the board (`calibrate.opening_floor`). As a density that runs 1.0% to 16.7% across the zoo — which is why it is measured per board rather than set as a percentage.
 
@@ -131,6 +131,7 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `hexhex` | 5.6 | 91c 14m (15%) 98% | 271c 51m (19%) 85% | 469c 102m (22%) 55% |
 | `hextri` | 11.1 | 96c 14m (15%) 97% | 294c 56m (19%) 86% | 486c 117m (24%) 49% |
 | `hextriangle` | 5.6 | 78c 9m (12%) 97% | 253c 38m (15%) 89% | 465c 97m (21%) 49% |
+| `hilbert` | 6.1 | 189c 11m (6%) 97% | 189c 16m (8%) 86% | 189c 25m (13%) 52% |
 | `hyperbolic45` | 6.9 | 81c 5m (6%) 96% | 205c 13m (6%) 85% | 485c 38m (8%) 50% |
 | `hyperbolic54` | 5.6 | 81c 5m (6%) 95% | 261c 16m (6%) 90% | 471c 48m (10%) 48% |
 | `hyperbolic73` | 4.6 | 85c 7m (8%) 99% | 246c 24m (10%) 86% | 477c 50m (10%) 55% |
@@ -184,6 +185,7 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `mobiustrunchex` | 5.1 | 81c 4m (5%) 94% | 225c 11m (5%) 88% | 420c 30m (7%) 52% |
 | `mobiustruncsquare` | 5.5 | 77c 4m (5%) 97% | 260c 29m (11%) 85% | 459c 68m (15%) 53% |
 | `mobiustrunctrihex` | 5.7 | 80c 5m (6%) 96% | 280c 27m (10%) 83% | 420c 54m (13%) 54% |
+| `moore` | 6.1 | 192c 12m (6%) 99% | 192c 19m (10%) 86% | 192c 28m (15%) 55% |
 | `octahedron` | 11.9 | 72c 17m (24%) 97% | 288c 73m (25%) 89% | 512c 150m (29%) 54% |
 | `offsetsquare` | 5.6 | 77c 12m (16%) 95% | 281c 46m (16%) 88% | 495c 102m (21%) 51% |
 | `penrose` | 8.8 | 81c 6m (7%) 92% ⚠ | 256c 17m (7%) 88% | 480c 48m (10%) 47% |

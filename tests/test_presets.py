@@ -49,8 +49,12 @@ FIXED_GEOMETRY = {
 # the side of the cube, so it offers 64 then 125 around an 81 target and 216
 # then 343 around 256. Hard (512 against 480) lands in the band on its own;
 # the mode is exempted whole because the reason is the geometry, not the row.
+# The two space-filling curves step 45, 189, 765 (Hilbert) and 48, 192, 768
+# (Moore), and ship their level-2 board at every difficulty -- level 1 is no
+# fractal and level 3 too many cells to read (`COARSE_MAX_LEVEL` in
+# scripts/difficulty/resize.py).
 COARSE_GEOMETRY = {"sphinx", "chair", "carpet", "pentaflake", "gosper",
-                   "cube3d"}
+                   "hilbert", "moore", "cube3d"}
 EXEMPT = FIXED_GEOMETRY | COARSE_GEOMETRY
 
 # Single rows where the size band loses to a bar that matters more. Keyed by

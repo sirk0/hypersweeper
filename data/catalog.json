@@ -161,6 +161,8 @@
     "carpet": "Sierpiński carpet",
     "pentaflake": "Pentaflake",
     "gosper": "Gosper island",
+    "hilbert": "Hilbert curve",
+    "moore": "Moore curve",
     "triakistetra": "Triakis tetrahedron",
     "rhombicdodeca": "Rhombic dodecahedron",
     "triakisocta": "Triakis octahedron",
@@ -599,6 +601,12 @@
       "surface": "flat",
       "family": "regular"
     },
+    "hilbert": {
+      "label": "Hilbert curve",
+      "tiling": "",
+      "surface": "flat",
+      "family": "fractal"
+    },
     "hyperbolic45": {
       "label": "Squares {4,5}",
       "tiling": "",
@@ -916,6 +924,12 @@
       "tiling": "trunctrihex",
       "surface": "mobius",
       "family": "uniform"
+    },
+    "moore": {
+      "label": "Moore curve",
+      "tiling": "",
+      "surface": "flat",
+      "family": "fractal"
     },
     "octahedron": {
       "label": "Octahedron",
@@ -1535,7 +1549,9 @@
       "chair",
       "carpet",
       "pentaflake",
-      "gosper"
+      "gosper",
+      "hilbert",
+      "moore"
     ],
     "hyperbolic": [
       "hyperbolic73",

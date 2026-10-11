@@ -37,10 +37,10 @@
 //  * The three regular tilings have no template — they are direct lattice
 //    builders in boards/tilings.ts — so their domains are written out below, in
 //    the units and the orientation those builders use.
-//  * The five **fractal** boards do not repeat, but their tiles do: the Gosper
+//  * The **fractal** boards do not repeat, but their tiles do: the Gosper
 //    island is plain hexagons, the sphinx and the chair are rep-tiles that also
 //    tile the plane in pairs, and the Sierpinski carpet is built of unit
-//    squares. The pentaflake takes two tiles rather than one — regular
+//    squares, as are the Hilbert and Moore curves' corridors. The pentaflake takes two tiles rather than one — regular
 //    pentagons do not tile the plane, but pentagons and 36° rhombs do.
 //  * The **aperiodic** and **spiral** boards are the same story. The
 //    phyllotactic spiral's hexagon is a *parallelohexagon*, so it tiles by
@@ -624,6 +624,10 @@ const MODE_PATTERN = new Map<string, string>();
   // drawn with outlines — the cells around it draw its boundary either way —
   // and washing them in was a second way of drawing, for one board.
   MODE_PATTERN.set("carpet", "square");
+  // So are the two space-filling curves: a corridor of unit squares, and the
+  // curve it winds along is the board's outline, which no page repeats.
+  MODE_PATTERN.set("hilbert", "square");
+  MODE_PATTERN.set("moore", "square");
   // Penrose and the phyllotactic spiral each draw their own tile; the Spectre
   // is the one that cannot (see SPECTRE_PATTERN).
   for (const mode of [...APERIODIC_MODES, ...SPIRAL_MODES]) MODE_PATTERN.set(mode, mode);
