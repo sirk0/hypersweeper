@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Mac Catalyst only (CODE_SIGN_ENTITLEMENTS[sdk=macosx*]).
+
+     app-sandbox: the Mac App Store requires it.
+
+     network.client: not because the game goes online. It does not: it is
+     bundled, and the analytics collector is compiled out of packaged builds.
+     It is here because WKWebView's helper processes need it inside the
+     sandbox. Without it the web content process crashes on launch and is
+     relaunched in a loop (~280 times in 10 s, WebKit's
+     processDidTerminateOrFailedToLaunch), so the game never appears. Measured
+     against a build with no entitlements and one with both; only the
+     sandbox-alone build loops. -->
+<plist version="1.0">
+<dict>
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+	<key>com.apple.security.network.client</key>
+	<true/>
+</dict>
+</plist>

@@ -91,6 +91,24 @@ fi
 
 [ -f ios/App/App/public/index.html ] || die "the sync copied no web assets"
 
+# The app's version, from the one place it is kept: web/package.json's
+# "version" for the version the store shows, and the git commit count for the
+# build number, which must grow with every upload. Version.xcconfig includes
+# this file; see the comment there.
+step "Stamping the app version"
+VERSION="$(node -p 'require("./web/package.json").version')"
+BUILD="$(git rev-list --count HEAD 2>/dev/null || echo 1)"
+if [ "$(git rev-parse --is-shallow-repository 2>/dev/null)" = "true" ]; then
+  note "shallow clone — build number $BUILD is not the real commit count;
+      do not upload this build (git fetch --unshallow first)"
+fi
+cat > ios/App/Version.generated.xcconfig <<EOF
+// Written by scripts/build-ios-app.sh — do not edit, do not commit.
+MARKETING_VERSION = $VERSION
+CURRENT_PROJECT_VERSION = $BUILD
+EOF
+echo "version $VERSION, build $BUILD"
+
 if [ "$MAC" = 0 ]; then
   note "not macOS — the project is synced but no pods were installed and
       nothing was built. Finish on a Mac with: make ios-app"
