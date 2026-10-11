@@ -55,6 +55,39 @@ class BridgeViewController: CAPBridgeViewController, UIGestureRecognizerDelegate
     }
 
     #if targetEnvironment(macCatalyst)
+    // Ctrl+. and ⌘. are AppKit's Cancel key. If one reaches the web view and
+    // the page leaves it unhandled, WebKit returns it to UIKit, UIKit hands it
+    // to AppKit's Cancel handling, and Catalyst's bridge throws rebuilding the
+    // event ("Non-Unicode event without Carbon EventRef"), which kills the app.
+    // UIKit matches key commands along the responder chain before it delivers a
+    // key to the focused view, so these two never reach WebKit. The game has no
+    // use for either key. Not in the menu bar: there is nothing to show.
+    // (A page-side preventDefault does not help: the crash comes after WebKit
+    // reports the key, and a real Ctrl+. still crashed with one in place.)
+    override var keyCommands: [UIKeyCommand]? {
+        let swallow = #selector(swallowCancelKey(_:))
+        return [UIKeyModifierFlags.control, .command].map { flags in
+            let command = UIKeyCommand(input: ".", modifierFlags: flags, action: swallow)
+            command.wantsPriorityOverSystemBehavior = true
+            return command
+        }
+    }
+
+    @objc private func swallowCancelKey(_ sender: UIKeyCommand) {}
+    #endif
+
+    // The menu bar's commands (AppDelegate.buildMenu), handed to the page as a
+    // `hypersweeper:command` event, which main.ts acts on.
+    @objc func newGame(_ sender: Any?) { sendCommand("new-game") }
+    @objc func openSettings(_ sender: Any?) { sendCommand("settings") }
+    @objc func openHelp(_ sender: Any?) { sendCommand("help") }
+
+    private func sendCommand(_ name: String) {
+        webView?.evaluateJavaScript(
+            "window.dispatchEvent(new CustomEvent('hypersweeper:command',{detail:'\(name)'}))")
+    }
+
+    #if targetEnvironment(macCatalyst)
     @objc private func onPinch(_ pinch: UIPinchGestureRecognizer) {
         guard let webView = webView else { return }
         let phase: String

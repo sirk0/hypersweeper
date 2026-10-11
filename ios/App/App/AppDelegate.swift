@@ -46,6 +46,38 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return ApplicationDelegateProxy.shared.application(application, continue: userActivity, restorationHandler: restorationHandler)
     }
 
+    /// The menu bar on the Mac, and the ⌘ shortcuts iPadOS shows for a hardware
+    /// keyboard. Each command goes to the page through `BridgeViewController`,
+    /// which sits in the responder chain. Menus that have nothing to act on in
+    /// a game drawn on a canvas (Format, the text-editing submenus) are removed,
+    /// so the bar doesn't offer items that do nothing.
+    override func buildMenu(with builder: UIMenuBuilder) {
+        super.buildMenu(with: builder)
+        guard builder.system == .main else { return }
+
+        for menu: UIMenu.Identifier in [.format, .toolbar, .newScene, .spelling,
+                                        .substitutions, .transformations, .speech] {
+            builder.remove(menu: menu)
+        }
+
+        let newGame = UIKeyCommand(title: "New Game", action: #selector(BridgeViewController.newGame(_:)),
+                                   input: "n", modifierFlags: .command)
+        builder.insertChild(UIMenu(options: .displayInline, children: [newGame]), atStartOfMenu: .file)
+
+        let settings = UIKeyCommand(title: "Settings…", action: #selector(BridgeViewController.openSettings(_:)),
+                                    input: ",", modifierFlags: .command)
+        let settingsMenu = UIMenu(options: .displayInline, children: [settings])
+        if builder.menu(for: .about) != nil {
+            builder.insertSibling(settingsMenu, afterMenu: .about)
+        } else {
+            builder.insertChild(settingsMenu, atStartOfMenu: .application)
+        }
+
+        // The default Help item only says that help isn't available.
+        let help = UICommand(title: "How to Play", action: #selector(BridgeViewController.openHelp(_:)))
+        builder.replaceChildren(ofMenu: .help) { _ in [help] }
+    }
+
     func application(_ application: UIApplication,
                      configurationForConnecting connectingSceneSession: UISceneSession,
                      options: UIScene.ConnectionOptions) -> UISceneConfiguration {

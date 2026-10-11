@@ -7,6 +7,11 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         guard let windowScene = scene as? UIWindowScene else { return }
 
+        // The smallest window the layout is tested at: an iPhone SE's width,
+        // and the height of the shortest landscape case (web/tests/e2e). This
+        // applies to Mac windows and resizable iPad windows; an iPhone has none.
+        windowScene.sizeRestrictions?.minimumSize = CGSize(width: 375, height: 560)
+
         window = UIWindow(windowScene: windowScene)
         window?.rootViewController = BridgeViewController()
         window?.makeKeyAndVisible()

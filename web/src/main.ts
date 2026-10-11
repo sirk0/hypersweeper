@@ -197,6 +197,9 @@ class App {
     window.visualViewport?.addEventListener("resize", () => this.onResize());
     window.visualViewport?.addEventListener("scroll", () => this.onResize());
     window.addEventListener("keydown", (e) => this.onKey(e));
+    window.addEventListener("hypersweeper:command", (e) =>
+      this.onCommand((e as CustomEvent<unknown>).detail),
+    );
     attachControls(canvas, {
       pick: (ndc) => this.renderer.pick(ndc),
       onTap: (cell) => this.onTap(cell),
@@ -801,6 +804,20 @@ class App {
       this.showBoardInfo();
     } else if (action === "random") {
       this.startRandomBoard();
+    }
+  }
+
+  /** A command from the native menu bar (the Mac app, and the ⌘ shortcuts an
+   * iPad shows; ios/App/App/AppDelegate.swift). New Game re-deals the board
+   * in play, as the smiley does. Settings and How to Play are pages of the
+   * home screen, so from a game they go home first, which leaves the board the
+   * way the header's back arrow does: without asking. */
+  private onCommand(name: unknown): void {
+    if (name === "new-game") {
+      if (this.screen === "game") this.onAction("restart");
+    } else if (name === "settings" || name === "help") {
+      if (this.screen === "game") this.showMenu();
+      this.menu.openPage(name);
     }
   }
 

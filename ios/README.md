@@ -156,5 +156,28 @@ store sell all three as one purchase. The project carries what an upload checks
 for: the sandbox, the privacy manifest, the category, Mac icon sizes, a version
 that tracks `package.json`, and a build number that grows.
 
+**The Mac and iPad specifics** live in three native files:
+
+- `AppDelegate.buildMenu` builds the menu bar, which iPadOS also uses for its
+  ⌘-key overlay. It adds **New Game ⌘N**, which re-deals the board in play like
+  the smiley; **Settings… ⌘,**; and **How to Play** under Help. It also removes
+  menus that would do nothing in a canvas game (Format and the text-editing
+  submenus). Each command reaches the page as a `hypersweeper:command` event
+  (`App.onCommand` in `web/src/main.ts`, pinned by `tests/e2e/commands.spec.ts`).
+  Settings and How to Play are home-screen pages, so from a game they go home
+  first, leaving the board as the header's back arrow does (without asking).
+- `SceneDelegate` sets the **minimum window size** to 375×560: an iPhone SE's
+  width and the shortest height the layout is tested at. This applies to a Mac
+  window and a resizable iPad window.
+- `BridgeViewController` handles the trackpad pinch and swipe, and tells the
+  page its device (see the haptics section above).
+- **Ctrl+. and ⌘. crash a Catalyst web view** if the page leaves them
+  unhandled. AppKit reads them as the Cancel key and hands them back through
+  Catalyst's bridge, which throws `Non-Unicode event without Carbon EventRef`.
+  `BridgeViewController` registers both as key commands that do nothing, and
+  UIKit matches key commands before it delivers a key to the web view. So the
+  page never sees the key, and WebKit never hands it back. A page-side
+  `preventDefault` does not help: the crash comes after WebKit reports the key.
+
 Not done here: the submission itself, TestFlight and CI. Signing and uploading
 need credentials that belong to a person, not a repository.
