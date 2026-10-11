@@ -63,6 +63,7 @@ import {
   brickCubeBoard,
   c80Board,
   c180Board,
+  gp21Board,
   cubeBoard,
   cubeFrameBoard,
   dodecahedronBoard,
@@ -650,6 +651,7 @@ const SOLID_BUILDERS: Record<string, () => Board3D> = {
   sphere: () => sphereBoard(0),
   snubdodec: () => snubDodecahedronBoard(0),
   c80: () => c80Board(0),
+  gp21: () => gp21Board(0),
   c180: () => c180Board(0),
   spheretri: () => sphereTriangleBoard(0),
   rhombicosidodeca: () => rhombicosidodecahedronBoard(0),
@@ -737,6 +739,7 @@ const SOLID_VIEW: Record<string, [number, number] | [number, number, number]> = 
   sphere: [-18, 12],
   snubdodec: [-14, 20],
   c80: [-20, 10],
+  gp21: [-20, 10],
   c180: [-20, 10],
   spheretri: [-10, 18],
   rhombicosidodeca: [-16, 15],
@@ -1142,6 +1145,7 @@ const ALIASES: Record<string, string> = {
 
 const SPHERES = [
   "c80",
+  "gp21",
   "c180",
   "spheretri",
   "snubdodec",
@@ -1181,6 +1185,7 @@ const ICON_TONES: Record<string, ShapeTone> = {
   snubdodec: { sides: 3, regularity: 1 },
   spheretri: { sides: 3, regularity: 1 },
   c80: { sides: 6, regularity: 0.95 },
+  gp21: { sides: 6, regularity: 0.95 },
   c180: { sides: 6, regularity: 0.95 },
   rhombicosidodeca: { sides: 4, regularity: 1 }, // squares are the majority face
   truncicosidodeca: { sides: 4, regularity: 1 }, // squares are the majority face

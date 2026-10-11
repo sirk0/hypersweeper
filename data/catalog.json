@@ -176,6 +176,7 @@
     "disdyakistriaconta": "Disdyakis triacontahedron",
     "c80": "Chamfered dodecahedron",
     "c180": "Goldberg GP(3,0)",
+    "gp21": "Goldberg GP(2,1)",
     "spheretri": "Geodesic icosahedron",
     "cubocta": "Cuboctahedron",
     "truncocta": "Truncated octahedron",
@@ -568,6 +569,12 @@
       "tiling": "",
       "surface": "flat",
       "family": "fractal"
+    },
+    "gp21": {
+      "label": "Goldberg GP(2,1)",
+      "tiling": "",
+      "surface": "solid",
+      "family": "sphere"
     },
     "herringbone": {
       "label": "Herringbone",
@@ -1561,6 +1568,7 @@
         "label": "Sphere",
         "modes": [
           "c80",
+          "gp21",
           "c180",
           "spheretri",
           "snubdodec",

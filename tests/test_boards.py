@@ -65,6 +65,7 @@ from minesweeper.boards import (
     double_torus_hex_board,
     double_torus_triangle_board,
     gosper_board,
+    gp21_board,
     hex_board,
     hexhex_board,
     hextriangle_board,
@@ -445,6 +446,40 @@ class TestCellCounts:
         sizes = sorted(len(p) for p in board.polygons.values())
         assert len(board.adjacency) == 92
         assert sizes.count(5) == 12 and sizes.count(6) == 80
+
+    def test_gp21_is_goldberg_gp21(self):
+        board = gp21_board(10)
+        sizes = sorted(len(p) for p in board.polygons.values())
+        assert len(board.adjacency) == 72
+        assert sizes.count(5) == 12 and sizes.count(6) == 60
+        # a fullerene: every corner is shared by exactly three cells, so
+        # shared-vertex adjacency is edge adjacency
+        corners = Counter(p for polygon in board.polygons.values() for p in polygon)
+        assert len(corners) == 140 and set(corners.values()) == {3}
+        # what sets it apart from GP(2,0) and GP(3,0): every hexagon touches
+        # exactly one pentagon, and no two pentagons touch
+        pentagons = {c for c, p in board.polygons.items() if len(p) == 5}
+        for cell, neighbours in board.adjacency.items():
+            touching = sum(n in pentagons for n in neighbours)
+            assert touching == (0 if cell in pentagons else 1)
+
+    def test_gp21_is_chiral(self):
+        # The icosahedron here is symmetric under x -> -x, so an achiral
+        # Goldberg sphere is too; GP(2,1) goes to its mirror image GP(1,2).
+        def corners(board):
+            return {
+                tuple(round(x, 9) for x in p)
+                for polygon in board.polygons.values() for p in polygon
+            }
+
+        def mirrored(points):
+            return {(-x, y, z) for x, y, z in points}
+
+        c180 = corners(c180_board(10))
+        assert mirrored(c180) == c180
+        gp21 = corners(gp21_board(10))
+        assert len(gp21) == 140  # no two corners round together
+        assert mirrored(gp21) != gp21
 
     def test_geodesic_sphere_has_80_triangles(self):
         board = sphere_triangle_board(10)
@@ -2619,6 +2654,7 @@ class TestNeighborCounts:
         for board in (
             sphere_board(7),
             c180_board(10),
+            gp21_board(10),
             sphere_triangle_board(10),
             cube_board(4, 12),
             tetrahedron_board(8, 4),
@@ -2629,7 +2665,7 @@ class TestNeighborCounts:
             for cell, polygon in board.polygons.items():
                 normal = newell_normal(polygon)
                 centroid = tuple(sum(c) / len(polygon) for c in zip(*polygon))
-                if board.mode in ("sphere", "c180", "spheretri", "cube", "tetrahedron"):
+                if board.mode in ("sphere", "c180", "gp21", "spheretri", "cube", "tetrahedron"):
                     outward = centroid
                 else:
                     import math

@@ -41,7 +41,7 @@ BAND = 0.15
 # Anything else outside the band is a bug in the preset, not a new exception:
 # add it here only after checking the builder genuinely cannot land closer.
 FIXED_GEOMETRY = {
-    "spheretri", "c80", "c180", "snubdodec",
+    "spheretri", "c80", "gp21", "c180", "snubdodec",
     "rhombicosidodeca", "truncicosidodeca",
 }
 # The fractals move by whole substitution steps; `cube3d` moves by whole

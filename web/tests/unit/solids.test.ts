@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   c80Board,
+  gp21Board,
   cubeBoard,
   cubeFrameBoard,
   rhombicosidodecahedronBoard,
@@ -68,6 +69,21 @@ describe("solids", () => {
     const s = sizes(c80Board(5));
     expect(count(s, 5)).toBe(12);
     expect(count(s, 6)).toBe(30);
+  });
+
+  it("gp21 is Goldberg GP(2,1): 12 pentagons + 60 hexagons, each hexagon on one pentagon", () => {
+    const board = gp21Board(5);
+    const s = sizes(board);
+    expect(board.adjacency.size).toBe(72);
+    expect(count(s, 5)).toBe(12);
+    expect(count(s, 6)).toBe(60);
+    const pentagons = new Set(
+      [...board.polygons].filter(([, p]) => p.length === 5).map(([c]) => c),
+    );
+    for (const [cell, neighbours] of board.adjacency) {
+      const touching = neighbours.filter((n) => pentagons.has(n)).length;
+      expect(touching).toBe(pentagons.has(cell) ? 0 : 1);
+    }
   });
 
   it("snub dodecahedron is 12 pentagons + 80 triangles", () => {

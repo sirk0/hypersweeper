@@ -1074,6 +1074,35 @@
         "hasCellCycle": false
       }
     },
+    "gp21": {
+      "easy": {
+        "cellCount": 72,
+        "mineCount": 13,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 210,
+        "vertexCount": 140,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 72,
+        "mineCount": 18,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 210,
+        "vertexCount": 140,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 72,
+        "mineCount": 23,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 210,
+        "vertexCount": 140,
+        "hasCellCycle": false
+      }
+    },
     "c180": {
       "easy": {
         "cellCount": 92,

@@ -250,11 +250,81 @@ def _geodesic(
     return positions, triangles
 
 
-def _goldberg_board(mode: str, frequency: int, mine_count: int) -> Board3D:
-    """The dual of a geodesic icosahedron: one cell per geodesic vertex,
-    made of the surrounding triangle centers. Always 12 pentagons plus
-    ``10 * frequency**2 - 10`` hexagons."""
-    positions, triangles = _geodesic(frequency)
+def _geodesic_hk(h: int, k: int) -> tuple[dict, list[tuple]]:
+    """A class III geodesic icosahedron {3,5+}_{h,k}: the triangular lattice
+    laid over each face so the face's corners sit ``h`` steps along it, a
+    60-degree left turn (seen from outside), then ``k`` more -- ``T = h*h +
+    h*k + k*k`` small triangles a face. ``_geodesic`` is the ``k = 0`` case,
+    where the lattice runs along the edges; with ``k > 0`` it runs across
+    them and the subdivision is chiral (``(k, h)`` is its mirror image).
+
+    Each face walks the lattice triangles whose centre lies strictly inside
+    it, so each triangle is taken exactly once (a centre can only land on an
+    edge when ``h % 3 == k % 3``, which the count assert below would catch). A point is named by integer
+    barycentric weights over the face's corners, summing to ``T``, gcd-
+    normalised as in ``_geodesic``. A triangle straddling an edge has one
+    corner beyond it, with one negative weight; that corner is renamed over
+    the neighbouring face across the edge, whose far corner D is A + B - C
+    in the unfolded net, so the weights stay integers and the key exact.
+    With ``gcd(h, k) == 1`` no lattice point but a corner lies on an edge,
+    so every other point belongs to one face's interior."""
+    assert k > 0 and math.gcd(h, k) == 1, (h, k)
+    vertices, faces = _icosahedron()
+    total = h * h + h * k + k * k
+    beyond: dict[tuple[int, int], int] = {}  # directed edge -> the face's third corner
+    for face in faces:
+        for i in range(3):
+            beyond[(face[i], face[(i + 1) % 3])] = face[(i + 2) % 3]
+    positions: dict[Hashable, Vec3] = {}
+
+    def key(face: tuple[int, int, int], weights: tuple[int, int, int]):
+        corners, weights = list(face), list(weights)
+        if min(weights) < 0:
+            assert sum(w < 0 for w in weights) == 1, weights
+            n = weights.index(min(weights))
+            # rotate the negative weight onto the third corner C
+            corners = corners[n + 1:] + corners[:n + 1]
+            weights = weights[n + 1:] + weights[:n + 1]
+            a, b, _ = corners
+            wa, wb, wc = weights
+            corners = [a, b, beyond[(b, a)]]
+            weights = [wa + wc, wb + wc, -wc]
+        items = [(v, w) for v, w in zip(corners, weights) if w > 0]
+        g = math.gcd(*(w for _, w in items))
+        vertex_key = tuple(sorted((v, w // g) for v, w in items))
+        if vertex_key not in positions:
+            point = tuple(
+                sum(w * vertices[v][axis] for v, w in zip(corners, weights)) / total
+                for axis in range(3)
+            )
+            positions[vertex_key] = _normalize(point)
+        return vertex_key
+
+    def weights(i: int, j: int) -> tuple[int, int, int]:
+        # lattice point i*e1 + j*e2 (e2 = e1 turned 60 degrees left) over the
+        # corners A = 0, B = (h, k), C = B turned 60 degrees = (-k, h + k)
+        b = i * (h + k) + j * k
+        c = j * h - i * k
+        return (total - b - c, b, c)
+
+    triangles: list[tuple] = []
+    reach = h + k
+    for face in faces:
+        for i in range(-reach, 2 * reach + 1):
+            for j in range(-reach, 2 * reach + 1):
+                for tri in (((i, j), (i + 1, j), (i, j + 1)),
+                            ((i + 1, j), (i + 1, j + 1), (i, j + 1))):
+                    corner_weights = [weights(*p) for p in tri]
+                    centre = [sum(w[n] for w in corner_weights) for n in range(3)]
+                    if min(centre) > 0:
+                        triangles.append(tuple(key(face, w) for w in corner_weights))
+    assert len(triangles) == 20 * total, len(triangles)
+    return positions, triangles
+
+
+def _goldberg_dual(mode: str, positions: dict, triangles: list[tuple], mine_count: int) -> Board3D:
+    """One cell per geodesic vertex, made of the surrounding triangle
+    centers."""
     centers: dict[tuple, Vec3] = {}
     around: dict[Hashable, list[tuple]] = defaultdict(list)
     for triangle in triangles:
@@ -274,6 +344,12 @@ def _goldberg_board(mode: str, frequency: int, mine_count: int) -> Board3D:
     return _convex_board3d(mode, cells, centers, mine_count)
 
 
+def _goldberg_board(mode: str, frequency: int, mine_count: int) -> Board3D:
+    """The dual of a geodesic icosahedron, Goldberg GP(frequency, 0):
+    always 12 pentagons plus ``10 * frequency**2 - 10`` hexagons."""
+    return _goldberg_dual(mode, *_geodesic(frequency), mine_count)
+
+
 def c80_board(mine_count: int) -> Board3D:
     """A C80 fullerene (chamfered dodecahedron): 12 pentagons and 30
     hexagons, projected onto the unit sphere."""
@@ -284,6 +360,15 @@ def c180_board(mine_count: int) -> Board3D:
     """A C180 fullerene (Goldberg GP(3,0)): 12 pentagons and 80
     hexagons, projected onto the unit sphere."""
     return _goldberg_board("c180", 3, mine_count)
+
+
+def gp21_board(mine_count: int) -> Board3D:
+    """The Goldberg polyhedron GP(2,1), the C140 fullerene: 12 pentagons and
+    60 hexagons, projected onto the unit sphere. The dual of the class III
+    geodesic icosahedron T = 7. Chiral -- GP(1,2) is its mirror image -- so
+    of the icosahedron's symmetries it keeps the 60 rotations only, and the
+    60 hexagons are a single orbit under them, each touching one pentagon."""
+    return _goldberg_dual("gp21", *_geodesic_hk(2, 1), mine_count)
 
 
 def sphere_triangle_board(mine_count: int, frequency: int = 2) -> Board3D:

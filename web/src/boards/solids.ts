@@ -360,15 +360,117 @@ export function geodesic(
   return { positions, triangles };
 }
 
-/** The dual of a geodesic icosahedron: one cell per geodesic vertex, made of
- * the surrounding triangle centers. Always 12 pentagons plus
- * `10 * frequency**2 - 10` hexagons. */
-function goldbergBoard(
+/** A class III geodesic icosahedron {3,5+}_{h,k}: the triangular lattice laid
+ * over each face so the face's corners sit `h` steps along it, a 60-degree
+ * left turn (seen from outside), then `k` more — `T = h*h + h*k + k*k` small
+ * triangles a face. `geodesic` is the `k = 0` case, where the lattice runs
+ * along the edges; with `k > 0` it runs across them and the subdivision is
+ * chiral (`(k, h)` is its mirror image).
+ *
+ * Each face walks the lattice triangles whose centre lies strictly inside it,
+ * so each triangle is taken exactly once (a centre can only land on an edge
+ * when `h % 3 === k % 3`, which the count check below would catch). A point is named by integer
+ * barycentric weights over the face's corners, summing to `T`, gcd-normalised
+ * as in `geodesic`. A triangle straddling an edge has one corner beyond it,
+ * with one negative weight; that corner is renamed over the neighbouring face
+ * across the edge, whose far corner D is A + B - C in the unfolded net, so the
+ * weights stay integers and the key exact. With `gcd(h, k) == 1` no lattice
+ * point but a corner lies on an edge, so every other point belongs to one
+ * face's interior. */
+export function geodesicHK(
+  h: number,
+  k: number,
+): { positions: Positions; triangles: string[][] } {
+  if (k <= 0 || gcdAll([h, k]) !== 1) throw new Error(`geodesicHK(${h}, ${k})`);
+  const { vertices, faces } = icosahedron();
+  const total = h * h + h * k + k * k;
+  // directed edge -> the face's third corner
+  const beyond = new Map<string, number>();
+  for (const face of faces) {
+    for (let i = 0; i < 3; i++) {
+      beyond.set(`${face[i]},${face[(i + 1) % 3]}`, face[(i + 2) % 3]!);
+    }
+  }
+  const positions: Positions = new Map();
+
+  const key = (face: readonly number[], weights: readonly number[]): string => {
+    let corners = [...face];
+    let w = [...weights];
+    const low = Math.min(...w);
+    if (low < 0) {
+      if (w.filter((x) => x < 0).length !== 1) throw new Error("two negative weights");
+      const n = w.indexOf(low);
+      // rotate the negative weight onto the third corner C
+      corners = [...corners.slice(n + 1), ...corners.slice(0, n + 1)];
+      w = [...w.slice(n + 1), ...w.slice(0, n + 1)];
+      const [a, b] = corners as [number, number, number];
+      const [wa, wb, wc] = w as [number, number, number];
+      corners = [a, b, beyond.get(`${b},${a}`)!];
+      w = [wa + wc, wb + wc, -wc];
+    }
+    const items: [number, number][] = [];
+    for (let n = 0; n < 3; n++) {
+      if (w[n]! > 0) items.push([corners[n]!, w[n]!]);
+    }
+    const g = gcdAll(items.map(([, x]) => x));
+    const vertexKey = items
+      .map(([v, x]) => [v, x / g] as [number, number])
+      .sort((p, q) => p[0] - q[0] || p[1] - q[1])
+      .map(([v, x]) => `${v}:${x}`)
+      .join("|");
+    if (!positions.has(vertexKey)) {
+      const point = [0, 1, 2].map(
+        (axis) =>
+          (w[0]! * vertices[corners[0]!]![axis]! +
+            w[1]! * vertices[corners[1]!]![axis]! +
+            w[2]! * vertices[corners[2]!]![axis]!) /
+          total,
+      ) as Vec3;
+      positions.set(vertexKey, normalize(point));
+    }
+    return vertexKey;
+  };
+
+  // lattice point i*e1 + j*e2 (e2 = e1 turned 60 degrees left) over the
+  // corners A = 0, B = (h, k), C = B turned 60 degrees = (-k, h + k)
+  const weightsAt = (i: number, j: number): [number, number, number] => {
+    const b = i * (h + k) + j * k;
+    const c = j * h - i * k;
+    return [total - b - c, b, c];
+  };
+
+  const triangles: string[][] = [];
+  const reach = h + k;
+  for (const face of faces) {
+    for (let i = -reach; i <= 2 * reach; i++) {
+      for (let j = -reach; j <= 2 * reach; j++) {
+        const pair: [number, number][][] = [
+          [[i, j], [i + 1, j], [i, j + 1]],
+          [[i + 1, j], [i + 1, j + 1], [i, j + 1]],
+        ];
+        for (const tri of pair) {
+          const cornerWeights = tri.map(([p, q]) => weightsAt(p, q));
+          const centre = [0, 1, 2].map((n) =>
+            cornerWeights.reduce((sum, cw) => sum + cw[n]!, 0),
+          );
+          if (Math.min(...centre) > 0) {
+            triangles.push(cornerWeights.map((cw) => key(face, cw)));
+          }
+        }
+      }
+    }
+  }
+  if (triangles.length !== 20 * total) throw new Error("geodesicHK triangle count");
+  return { positions, triangles };
+}
+
+/** One cell per geodesic vertex, made of the surrounding triangle centers. */
+function goldbergDual(
   mode: string,
-  frequency: number,
+  positions: Positions,
+  triangles: string[][],
   mineCount: number,
 ): Board3D {
-  const { positions, triangles } = geodesic(frequency);
   const centers: Positions = new Map();
   const around = new Map<string, string[]>();
   for (const triangle of triangles) {
@@ -394,6 +496,17 @@ function goldbergBoard(
   return convexBoard3d(mode, cells, centers, mineCount);
 }
 
+/** The dual of a geodesic icosahedron, Goldberg GP(frequency, 0): always 12
+ * pentagons plus `10 * frequency**2 - 10` hexagons. */
+function goldbergBoard(
+  mode: string,
+  frequency: number,
+  mineCount: number,
+): Board3D {
+  const { positions, triangles } = geodesic(frequency);
+  return goldbergDual(mode, positions, triangles, mineCount);
+}
+
 /** A C80 fullerene (chamfered dodecahedron): 12 pentagons and 30 hexagons,
  * projected onto the unit sphere. */
 export function c80Board(mineCount: number): Board3D {
@@ -404,6 +517,16 @@ export function c80Board(mineCount: number): Board3D {
  * projected onto the unit sphere. */
 export function c180Board(mineCount: number): Board3D {
   return goldbergBoard("c180", 3, mineCount);
+}
+
+/** The Goldberg polyhedron GP(2,1), the C140 fullerene: 12 pentagons and 60
+ * hexagons, projected onto the unit sphere. The dual of the class III geodesic
+ * icosahedron T = 7. Chiral — GP(1,2) is its mirror image — so of the
+ * icosahedron's symmetries it keeps the 60 rotations only, and the 60
+ * hexagons are a single orbit under them, each touching one pentagon. */
+export function gp21Board(mineCount: number): Board3D {
+  const { positions, triangles } = geodesicHK(2, 1);
+  return goldbergDual("gp21", positions, triangles, mineCount);
 }
 
 /** A sphere tiled with triangles: a geodesic icosahedron with

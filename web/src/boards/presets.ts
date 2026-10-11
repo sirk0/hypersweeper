@@ -51,6 +51,7 @@ import type { AnyBoard } from "./core";
 import {
   brickCubeBoard,
   c180Board,
+  gp21Board,
   c80Board,
   cubeBoard,
   cubeFrameBoard,
@@ -123,6 +124,7 @@ const BUILDERS: Record<string, Builder> = {
   square_diamond_board: squareDiamondBoard,
   c80_board: c80Board,
   c180_board: c180Board,
+  gp21_board: gp21Board,
   sphere_triangle_board: sphereTriangleBoard,
   snub_dodecahedron_board: snubDodecahedronBoard,
   rhombicosidodecahedron_board: rhombicosidodecahedronBoard,

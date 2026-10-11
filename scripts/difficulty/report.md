@@ -12,8 +12,8 @@ Every board's mine count, chosen so its win probability under the reference solv
 
 ## Coverage
 
-- 633 rows, 601 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
-- 32 could not be brought on target:
+- 636 rows, 603 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
+- 33 could not be brought on target:
   - `cube3d`/hard: 33.3% vs 50.9% — the search could not resolve it -- its thinnest measurement finished 0 game(s), so the rate here is noise rather than a crossing the search walked to. Re-measure at a bigger `--budget`
   - `cylinder`/easy: 89.1% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (7, 9%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
   - `cylkisrhombille`/easy: 88.3% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (5, 7%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
@@ -23,6 +23,7 @@ Every board's mine count, chosen so its win probability under the reference solv
   - `cyltriakis`/hard: 0.0% vs 50.9% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `cyltriakis`/medium: 0.0% vs 87.1% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `cyltriakis`/easy: 1.2% vs 96.5% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
+  - `gp21`/hard: 46.9% vs 50.9% — no integer mine count lands within tolerance; this is the closest
   - `kisrhombille`/easy: 91.4% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (5, 7%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
   - `kleinrhombille`/medium: 74.6% vs 87.1% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (9, 3%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
   - `kleinrhombille`/easy: 52.0% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (6, 7%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
@@ -126,6 +127,7 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `elongated` | 9.0 | 85c 5m (6%) 98% | 219c 26m (12%) 90% | 543c 92m (17%) 55% |
 | `floret` | 7.4 | 72c 7m (10%) 97% | 288c 37m (13%) 86% | 480c 81m (17%) 52% |
 | `gosper` | 5.5 | 49c 7m (14%) 99% | 343c 54m (16%) 86% | 343c 71m (21%) 49% |
+| `gp21` | 5.8 | 72c 13m (18%) 99% | 72c 18m (25%) 90% | 72c 23m (32%) 47% ⚠ |
 | `herringbone` | 5.6 | 79c 11m (14%) 95% | 251c 42m (17%) 87% | 529c 108m (20%) 50% |
 | `hex` | 5.6 | 80c 11m (14%) 97% | 255c 43m (17%) 87% | 480c 100m (21%) 49% |
 | `hexhex` | 5.6 | 91c 14m (15%) 98% | 271c 51m (19%) 85% | 469c 102m (22%) 55% |
