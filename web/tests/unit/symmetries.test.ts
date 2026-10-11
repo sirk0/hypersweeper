@@ -271,6 +271,9 @@ describe("board symmetries", () => {
       ["cubocta", "easy", 48], // Oh, the subdivision keeps all of it
       ["truncocta", "easy", 24], // Th: three rhombi a hexagon lose the edge mirrors
       ["snubcube", "easy", 24], // O: chiral, rotations only
+      ["rhombicosidodecasplit", "easy", 120], // Ih: the triangle fans keep every mirror
+      ["truncicosidodecasplit", "easy", 120],
+      ["snubdodecsplit", "easy", 60], // I: chiral
       ["square", "easy", 8], // D4 — the classic 9x9 grid
       ["square", "hard", 4], // 30x16 is a rectangle: a half turn and a mirror
       ["hexhex", "easy", 12], // D6
@@ -321,7 +324,7 @@ describe("board symmetries", () => {
     const pyramid = buildBoard("steppedpyramid", "easy");
     expect(pyramid.symmetries.map((s) => s.id)).toEqual(["ring", "mirror-ring"]);
     expect(spin("steppedpyramid")).toBe(4);
-    for (const chiral of ["sphere", "snubdodec", "pentagonalicositetra", "snubcube"]) {
+    for (const chiral of ["sphere", "snubdodec", "pentagonalicositetra", "snubcube", "snubdodecsplit"]) {
       const ids = buildBoard(chiral, "easy").symmetries.map((s) => s.id);
       expect(ids, `${chiral} should have no mirror`).not.toContain("mirror-ring");
       expect(ids, `${chiral} should have no mirror`).not.toContain("mirror-tube");

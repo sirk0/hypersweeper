@@ -30,7 +30,10 @@ import { Base, type Op } from "../../src/boards/catalan";
 import {
   archimedeanFaces,
   cuboctahedronBoard,
+  rhombicosidodecahedronSplitBoard,
   snubCubeBoard,
+  snubDodecahedronSplitBoard,
+  truncatedIcosidodecahedronSplitBoard,
   truncatedOctahedronBoard,
 } from "../../src/boards/archimedean";
 import {
@@ -233,20 +236,31 @@ describe("Catalan solids", () => {
   });
 });
 
-// The cube group's Archimedean solids: the mode, its builder, the Conway
-// operation on the cube whose Catalan solid it is the dual of, the bare face
-// mix, and the cells per frequency**2 once the hexagons are cut into rhombi.
-// Mirrors tests/test_boards.py::TestArchimedeanSolids.
-const ARCHIMEDEAN: [string, (m: number, f?: number) => Board3D, Op, Record<number, number>, number][] = [
-  ["cubocta", cuboctahedronBoard, "join", { 3: 8, 4: 6 }, 14],
-  ["truncocta", truncatedOctahedronBoard, "kis", { 4: 6, 6: 8 }, 30],
-  ["snubcube", snubCubeBoard, "gyro", { 3: 32, 4: 6 }, 38],
+// The Archimedean solids cut into boards: the mode, its builder, the base and
+// the Conway operation on it whose Catalan solid it is the dual of, the bare
+// face mix, and the cells per frequency**2 once the big faces are cut (the
+// truncated octahedron's hexagons into rhombi, the icosahedral ones' faces into
+// triangle fans). Mirrors tests/test_boards.py::TestArchimedeanSolids.
+const ARCHIMEDEAN: [
+  string,
+  (m: number, f?: number) => Board3D,
+  string,
+  Op,
+  Record<number, number>,
+  number,
+][] = [
+  ["cubocta", cuboctahedronBoard, "cube", "join", { 3: 8, 4: 6 }, 14],
+  ["truncocta", truncatedOctahedronBoard, "cube", "kis", { 4: 6, 6: 8 }, 30],
+  ["snubcube", snubCubeBoard, "cube", "gyro", { 3: 32, 4: 6 }, 38],
+  ["rhombicosidodecasplit", rhombicosidodecahedronSplitBoard, "icosa", "ortho", { 3: 20, 4: 30, 5: 12 }, 110],
+  ["truncicosidodecasplit", truncatedIcosidodecahedronSplitBoard, "icosa", "meta", { 4: 30, 6: 20, 10: 12 }, 270],
+  ["snubdodecsplit", snubDodecahedronSplitBoard, "icosa", "gyro", { 3: 80, 5: 12 }, 140],
 ];
 
 describe("Archimedean solids", () => {
-  for (const [mode, build, op, mix, perFace] of ARCHIMEDEAN) {
+  for (const [mode, build, base, op, mix, perFace] of ARCHIMEDEAN) {
     it(`${mode}: the Catalan dual is regular polygons of one edge on one sphere`, () => {
-      const { faces, positions } = archimedeanFaces(new Base("cube"), op);
+      const { faces, positions } = archimedeanFaces(new Base(base), op);
       const counts: Record<number, number> = {};
       const lengths = new Set<number>();
       for (const ring of faces.values()) {
@@ -275,7 +289,7 @@ describe("Archimedean solids", () => {
       // a point on an edge between a triangle and a square is named by two
       // different grids; if they disagreed the cells either side would
       // quietly stop being neighbours
-      for (const frequency of [1, 2, 3, 4]) {
+      for (const frequency of base === "icosa" ? [1, 2] : [1, 2, 3, 4]) {
         const board = build(0, frequency);
         expect(board.mode).toBe(mode);
         expect(board.polygons.size).toBe(perFace * frequency ** 2);

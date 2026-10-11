@@ -155,6 +155,17 @@ EXEMPT_ROWS = {
     ("snubcube", "easy"),                # 38 or 152
     ("snubcube", "medium"),              # 152 or 342
     ("snubcube", "hard"),                # 342 or 608
+    # The icosahedral three are cut the same way once their pentagons, hexagons
+    # and decagons are fanned into triangles, which makes their ladders steeper
+    # still -- 110, 440, 990; 270, 1080; 140, 560 -- so easy is the first rung
+    # wherever it lands, and a row between two rungs takes the nearer one. Their
+    # uncut solids, one cell per face, ship as the small boards under Sphere.
+    ("rhombicosidodecasplit", "easy"),   # 110; nothing smaller
+    ("rhombicosidodecasplit", "medium"),  # 110 or 440
+    ("truncicosidodecasplit", "easy"),   # 270; nothing smaller
+    ("truncicosidodecasplit", "hard"),   # 270 or 1080
+    ("snubdodecsplit", "easy"),          # 140; nothing smaller
+    ("snubdodecsplit", "medium"),        # 140 or 560
     # The double torus pays for its genus twice over: it is two donuts, so its
     # window buys twice the cells a donut's does, and the merge has to stay
     # narrower than the donuts it merges (`resize.MAX_WAIST`) or the board

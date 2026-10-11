@@ -62,7 +62,7 @@ describe("which pattern a mode gets", () => {
     // backgroundPattern.ts would leave that board on a blank page.
     const missing = MODES.filter((mode) => patternKey(mode) === null);
     expect(missing).toEqual([]);
-    expect(MODES.length).toBe(208);
+    expect(MODES.length).toBe(211);
   });
 
   it("follows the tiling, not the surface", () => {
@@ -118,7 +118,7 @@ describe("which pattern a mode gets", () => {
     expect(patternKey("cubocta")).toBe("trihex");
     expect(patternKey("truncocta")).toBe("truncsquare");
     expect(patternKey("snubcube")).toBe("snubsquare");
-    expect(patternKey("snubdodec")).toBe("snubhex");
+    expect(patternKey("snubdodecsplit")).toBe("snubhex");
   });
 
   it("lays the aperiodic boards' own tiles down periodically where it can", () => {

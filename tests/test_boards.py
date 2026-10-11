@@ -134,11 +134,15 @@ from minesweeper.boards.aperiodic import (
 from minesweeper.boards.archimedean import (
     _archimedean_faces,
     cuboctahedron_board,
+    rhombicosidodecahedron_split_board,
     snub_cube_board,
+    snub_dodecahedron_split_board,
+    truncated_icosidodecahedron_split_board,
     truncated_octahedron_board,
 )
 from minesweeper.boards.catalan import (
     _Base,
+    _rotate,
     deltoidal_hexecontahedron_board,
     deltoidal_icositetrahedron_board,
     disdyakis_dodecahedron_board,
@@ -4796,13 +4800,22 @@ class TestCatalanSolids:
         assert {len(n) for n in board.adjacency.values()} == {7}
 
 
-# (mode, builder, Conway operation on the cube, bare face mix, cells per
-# frequency**2 once the hexagons are cut into rhombi, measured point group as
-# (order, improper))
+# (mode, builder, base, Conway operation on it, bare face mix, cells per
+# frequency**2 once the big faces are cut -- the truncated octahedron's hexagons
+# into rhombi, the icosahedral solids' into triangle fans -- and the signed
+# permutations of the axes the board keeps, as (count, improper)). Those 48 are
+# the cube's whole group; on an icosahedral board they are its pyritohedral
+# subgroup, and `test_point_group` adds the fifth turn that generates the rest.
 _ARCHIMEDEAN_SOLIDS = [
-    ("cubocta", cuboctahedron_board, "join", {3: 8, 4: 6}, 14, (48, 24)),
-    ("truncocta", truncated_octahedron_board, "kis", {4: 6, 6: 8}, 30, (24, 12)),
-    ("snubcube", snub_cube_board, "gyro", {3: 32, 4: 6}, 38, (24, 0)),
+    ("cubocta", cuboctahedron_board, "cube", "join", {3: 8, 4: 6}, 14, (48, 24)),
+    ("truncocta", truncated_octahedron_board, "cube", "kis", {4: 6, 6: 8}, 30, (24, 12)),
+    ("snubcube", snub_cube_board, "cube", "gyro", {3: 32, 4: 6}, 38, (24, 0)),
+    ("rhombicosidodecasplit", rhombicosidodecahedron_split_board, "icosa", "ortho",
+     {3: 20, 4: 30, 5: 12}, 110, (24, 12)),
+    ("truncicosidodecasplit", truncated_icosidodecahedron_split_board, "icosa", "meta",
+     {4: 30, 6: 20, 10: 12}, 270, (24, 12)),
+    ("snubdodecsplit", snub_dodecahedron_split_board, "icosa", "gyro",
+     {3: 80, 5: 12}, 140, (12, 0)),
 ]
 _ARCHIMEDEAN_IDS = [c[0] for c in _ARCHIMEDEAN_SOLIDS]
 
@@ -4831,10 +4844,10 @@ class TestArchimedeanSolids:
     really has.
     """
 
-    @pytest.mark.parametrize("mode,builder,op,mix,per,group", _ARCHIMEDEAN_SOLIDS,
+    @pytest.mark.parametrize("mode,builder,base,op,mix,per,group", _ARCHIMEDEAN_SOLIDS,
                              ids=_ARCHIMEDEAN_IDS)
-    def test_the_dual_is_the_archimedean_solid(self, mode, builder, op, mix, per, group):
-        faces, positions = _archimedean_faces(_Base("cube"), op)
+    def test_the_dual_is_the_archimedean_solid(self, mode, builder, base, op, mix, per, group):
+        faces, positions = _archimedean_faces(_Base(base), op)
         assert Counter(len(ring) for ring in faces.values()) == mix
         edges = set()
         for ring in faces.values():
@@ -4856,15 +4869,15 @@ class TestArchimedeanSolids:
         # V - E + F, off the exact vertex ids
         assert len(positions) - len(edges) + len(faces) == 2
 
-    @pytest.mark.parametrize("mode,builder,op,mix,per,group", _ARCHIMEDEAN_SOLIDS,
+    @pytest.mark.parametrize("mode,builder,base,op,mix,per,group", _ARCHIMEDEAN_SOLIDS,
                              ids=_ARCHIMEDEAN_IDS)
-    def test_subdivision_keeps_the_surface_closed(self, mode, builder, op, mix, per, group):
+    def test_subdivision_keeps_the_surface_closed(self, mode, builder, base, op, mix, per, group):
         """A point on an edge between a triangle and a square is named by two
         different grids; if they disagreed the board would still draw and the
         cells either side of that edge would quietly stop being neighbours.
         Euler characteristic 2 with no boundary at every frequency rules it
         out, and every cell has to lie flat in its face's plane."""
-        for frequency in (1, 2, 3, 4):
+        for frequency in (1, 2, 3) if base == "icosa" else (1, 2, 3, 4):
             board = builder(0, frequency)
             assert board.mode == mode
             assert len(board.polygons) == per * frequency**2
@@ -4876,16 +4889,22 @@ class TestArchimedeanSolids:
                           for point in polygon)
                 assert off < 1e-9
 
-    @pytest.mark.parametrize("mode,builder,op,mix,per,group", _ARCHIMEDEAN_SOLIDS,
+    @pytest.mark.parametrize("mode,builder,base,op,mix,per,group", _ARCHIMEDEAN_SOLIDS,
                              ids=_ARCHIMEDEAN_IDS)
-    def test_point_group(self, mode, builder, op, mix, per, group):
+    def test_point_group(self, mode, builder, base, op, mix, per, group):
         """The cuboctahedron keeps the cube's 48 symmetries and the snub cube its
         24 rotations and no mirror, being chiral. The truncated octahedron loses
         half: three rhombi in a hexagon keep only the mirrors through their
         spokes, and those are not the cube's edge mirrors, so the cut keeps the
         pyritohedral group -- 12 rotations, the inversion and its 11 more
-        improper ones -- rather than either 48 or the chiral 24."""
-        board = builder(0, 2)
+        improper ones -- rather than either 48 or the chiral 24.
+
+        The icosahedral boards fan their big faces from the centre, which keeps
+        every mirror: they keep the pyritohedral subgroup the axes' signed
+        permutations can see (the chiral one its 12 rotations) *and* a fifth
+        turn about a vertex of the icosahedron, which together generate the full
+        120 (60 for the snub dodecahedron)."""
+        board = builder(0, 2 if base == "cube" else 1)
 
         def cell_set(transform):
             return {
@@ -4901,7 +4920,10 @@ class TestArchimedeanSolids:
         ]
         assert (len(kept), kept.count(-1)) == group
         inversion = cell_set(lambda p: tuple(-c for c in p)) == cells
-        assert inversion == (mode != "snubcube")
+        assert inversion == (op != "gyro")
+        axis = _Base(base).vertices[0]
+        fifth = cell_set(lambda p: _rotate(axis, 2 * math.pi / 5, p)) == cells
+        assert fifth == (base == "icosa")
 
 
 class TestProjectivePlane:

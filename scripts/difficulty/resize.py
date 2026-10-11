@@ -195,6 +195,11 @@ SPEC: dict[str, dict] = {
     "cuboctahedron_board": dict(size=(1,), mine=0, shape=None, rigid=True),
     "truncated_octahedron_board": dict(size=(1,), mine=0, shape=None, rigid=True),
     "snub_cube_board": dict(size=(1,), mine=0, shape=None, rigid=True),
+    # ...and the icosahedral three, their big faces fanned into triangles first
+    "rhombicosidodecahedron_split_board": dict(size=(1,), mine=0, shape=None, rigid=True),
+    "truncated_icosidodecahedron_split_board": dict(size=(1,), mine=0, shape=None,
+                                                    rigid=True),
+    "snub_dodecahedron_split_board": dict(size=(1,), mine=0, shape=None, rigid=True),
     # aperiodic: ``keep`` is exact, the growth arg only has to be generous
     "penrose_board": dict(size=(3,), mine=1, shape=2, kind="scale", grow=0),
     "kitedart_board": dict(size=(3,), mine=1, shape=2, kind="scale", grow=0),

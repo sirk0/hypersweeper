@@ -180,6 +180,9 @@
     "cubocta": "Cuboctahedron",
     "truncocta": "Truncated octahedron",
     "snubcube": "Snub cube",
+    "rhombicosidodecasplit": "Rhombicosidodecahedron, subdivided",
+    "truncicosidodecasplit": "Truncated icosidodecahedron, subdivided",
+    "snubdodecsplit": "Snub dodecahedron, subdivided",
     "snubdodec": "Snub dodecahedron",
     "rhombicosidodeca": "Rhombicosidodecahedron",
     "truncicosidodeca": "Truncated icosidodecahedron",
@@ -1014,6 +1017,12 @@
       "label": "Rhombicosidodecahedron",
       "tiling": "",
       "surface": "solid",
+      "family": "sphere"
+    },
+    "rhombicosidodecasplit": {
+      "label": "Rhombicosidodecahedron, subdivided",
+      "tiling": "",
+      "surface": "solid",
       "family": "archimedean"
     },
     "rhombictriaconta": {
@@ -1060,6 +1069,12 @@
     },
     "snubdodec": {
       "label": "Snub dodecahedron",
+      "tiling": "",
+      "surface": "solid",
+      "family": "sphere"
+    },
+    "snubdodecsplit": {
+      "label": "Snub dodecahedron, subdivided",
       "tiling": "",
       "surface": "solid",
       "family": "archimedean"
@@ -1434,6 +1449,12 @@
       "label": "Truncated icosidodecahedron",
       "tiling": "",
       "surface": "solid",
+      "family": "sphere"
+    },
+    "truncicosidodecasplit": {
+      "label": "Truncated icosidodecahedron, subdivided",
+      "tiling": "",
+      "surface": "solid",
       "family": "archimedean"
     },
     "truncocta": {
@@ -1541,7 +1562,10 @@
         "modes": [
           "c80",
           "c180",
-          "spheretri"
+          "spheretri",
+          "snubdodec",
+          "rhombicosidodeca",
+          "truncicosidodeca"
         ]
       },
       {
@@ -1562,9 +1586,9 @@
           "cubocta",
           "truncocta",
           "snubcube",
-          "rhombicosidodeca",
-          "truncicosidodeca",
-          "snubdodec"
+          "rhombicosidodecasplit",
+          "truncicosidodecasplit",
+          "snubdodecsplit"
         ]
       },
       {

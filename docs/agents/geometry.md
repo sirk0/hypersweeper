@@ -45,7 +45,7 @@ Import order is a strict DAG; a module only imports from the ones above it.
 | `hyperbolic.py` | The regular {p,q} tilings of the hyperbolic plane, drawn in the Poincaré disc: {7,3} heptagons, {5,4} pentagons and {4,5} squares. Built combinatorially ring by ring with integer vertex ids, placed afterwards by disc isometries, edges drawn as geodesic arcs, trimmed by hyperbolic-distance shells. See "The hyperbolic boards" below. |
 | `solids.py` | Closed/convex and polycube 3D boards (spherical gyro pentagons, Goldberg polyhedra, geodesic icosahedron, rhombicosidodecahedron, truncated icosidodecahedron, cube, tetrahedron, frames, bipyramid), plus the shared `_wythoff_point` every uniform solid here and every Catalan solid next door is generated from. |
 | `catalan.py` | The thirteen Catalan solids, the duals of the Archimedean solids. One recipe for all of them: a Platonic base and one flag, the Wythoff generating point of its Schwarz triangle (`solids._wythoff_point` for the five non-chiral Conway operations, `_snub_point` for the chiral one), a Catalan vertex at `n / <w, n>` on each face axis — polar duality — and the base's flags grouped into faces by the operation. Faces are then subdivided (`solids._geodesic` for triangles, `_quad_grid` for quadrilaterals, a five-way fan first for pentagons), which is these boards' only size knob. `_tri_grid` is `_quad_grid`'s triangle twin, for the solids next door whose triangles meet squares. |
-| `archimedean.py` | The cube group's Archimedean solids — cuboctahedron, truncated octahedron, snub cube — as the **polar duals of their Catalan solids**: `_archimedean_faces` turns `catalan._catalan_faces` inside out (each Catalan face's pole is a vertex, each Catalan vertex a face), so no Wythoff point is solved twice and every vertex id is a Catalan face key. Faces are cut by `catalan._tri_grid` and `_quad_grid`, which name a shared edge's points alike; the truncated octahedron's hexagons are first cut into three rhombi (`_split_hexagons`, by the pyritohedral `_th_spokes` rule). See "The Archimedean solids" below. |
+| `archimedean.py` | Archimedean solids cut into boards — the cube group's cuboctahedron, truncated octahedron and snub cube, and the icosahedral rhombicosidodecahedron, truncated icosidodecahedron and snub dodecahedron — as the **polar duals of their Catalan solids**: `_archimedean_faces` turns `catalan._catalan_faces` inside out (each Catalan face's pole is a vertex, each Catalan vertex a face), so no Wythoff point is solved twice and every vertex id is a Catalan face key. Faces are cut by `catalan._tri_grid` and `_quad_grid`, which name a shared edge's points alike; the truncated octahedron's hexagons are first cut into three rhombi (`_split_hexagons`, by the pyritohedral `_th_spokes` rule), the icosahedral solids' big faces fanned into triangles (`_fan_faces`). See "The Archimedean solids" below. |
 | `surfaces.py` | Wrapping tilings onto surfaces: the three immersion points (`_torus_point`, `_cylinder_point`, `_mobius_point`), the shared `_assemble` tail, the nine simple `*_board` wrappers, and the Archimedean `arch_torus_board` / `arch_cylinder_board` / `arch_mobius_board`. Also `double_torus_board`, the one board here that is *not* wrapped from a rectangle: two overlapping square-tiled donuts cut apart along the plane between them and sewn back together, a connected sum rather than a seam gluing. And `projective_board` / `projective_triangle_board` / `projective_hex_board`, the real projective plane: a cubed sphere, a geodesic sphere or its Goldberg dual with antipodes glued, drawn as the whole sphere through `Board3D.faces`. |
 | `volume.py` | The volume boards — a solid block of cells rather than a surface of them. One so far: `solid_cube_board`, the `n**3` cube of cubes, whose 26-neighbour adjacency comes off the lattice and whose drawing is the `n` slices laid out on a grid and stepped back in depth. |
 | `catalog.py` | The menu, **derived**: `SURFACE_SPECS` and `TILING_SPECS` (leaf data loaded from `data/catalog.json`) produce `MODE_LABELS`, `TILINGS`, `SURFACE_LABELS`, the geometry-first menu tables (`MENU_ROOT`/`MANIFOLD_*`/`FAMILY_*`/`SOLID_GROUP_*`/`SOLID_MODES`/`SHAPED_MODES`) and the picker helpers (`family_rows`, `picker_families`, `picker_modes`), `MODES_3D`, `mode_for`, `surface_of`, `view_hint`. |
@@ -820,10 +820,13 @@ lies in a plane `<x, w> = 1` for one image `w` of the generating point, so the
 plane's pole *is* that Archimedean vertex, on the unit sphere; every Catalan
 vertex becomes the face made of the poles around it. On the cube base that is
 `join` -> cuboctahedron (`cubocta`), `kis` -> truncated octahedron
-(`truncocta`) and `gyro` -> snub cube (`snubcube`); `TestArchimedeanSolids`
+(`truncocta`) and `gyro` -> snub cube (`snubcube`); on the icosahedron
+`ortho`, `meta` and `gyro` give the rhombicosidodecahedron, truncated
+icosidodecahedron and snub dodecahedron (`rhombicosidodecasplit`,
+`truncicosidodecasplit`, `snubdodecsplit`); `TestArchimedeanSolids`
 measures every face regular, one edge length throughout and every vertex at
 radius 1. An Archimedean vertex is *named* by its Catalan face's key -- a tuple
-of the cube's own incidences -- so nothing is rounded into an id.
+of the base's own incidences -- so nothing is rounded into an id.
 
 Fourteen or thirty-eight faces is not a board, so they are cut the Catalan way,
 `frequency` cuts along every edge. These solids mix side counts, which the
@@ -842,9 +845,20 @@ hexagon corner on a cube face normal to axis `a` and a cube edge along axis
 and a quarter turn reverses. The cuboctahedron keeps all 48, and the snub cube
 its 24 rotations, being chiral.
 
-The ladders are `F * frequency**2` -- 14, 30 (the hexagons count three) and 38
--- so several rows sit between rungs and are `EXEMPT_ROWS` in
-`tests/test_presets.py`, the snub cube's all three. The menu's **Archimedean
-solids** page also holds the three icosahedral ones that shipped first under
-Sphere (`snubdodec`, `rhombicosidodeca`, `truncicosidodeca`); they keep their
-own builders and their bare, unsubdivided faces.
+The icosahedral solids' pentagons, hexagons and decagons are **fanned into
+triangles** from their own planar centres instead (`_fan_faces`, the
+dodecahedron board's rule): a fan keeps the face's whole dihedral group, so
+these boards keep all 120 symmetries (the snub dodecahedron its 60 rotations).
+A decagon's ten golden triangles all meet at its centre, so on the truncated
+icosidodecahedron those cells see up to 16 neighbours.
+
+The ladders are `F * frequency**2`, `F` counting the cut faces -- 14, 30 and
+38 on the cube, 110, 270 and 140 on the icosahedron -- so several rows sit
+between rungs and are `EXEMPT_ROWS` in `tests/test_presets.py`. The three
+icosahedral solids also ship **uncut**, one cell per face, as the 62- and
+92-cell boards under **Sphere** (`rhombicosidodeca`, `truncicosidodeca`,
+`snubdodec`, built by `solids.py`). Those stay as they are -- a mode is a
+board's address in a share link and the best-times table, so the cut boards
+are new modes rather than new sizes of the old ones -- and they are the small
+end the cut boards cannot reach: the smallest cut is already 110 to 270
+cells.

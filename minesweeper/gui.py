@@ -1015,14 +1015,18 @@ _HYPERBOLIC_ICON_SHELLS = {"hyperbolic73": 4, "hyperbolic54": 4, "hyperbolic45":
 
 
 # How each flat-faced solid drawn by `_icon_solid` -- the Catalan solids and
-# the cube group's Archimedean ones -- is turned before projecting, in degrees
+# the Archimedean ones cut into boards -- is turned before projecting, in degrees
 # about x then y, chosen so the face the solid is named for reads rather than
 # pointing straight at or away from the viewer.
-_ARCHIMEDEAN_FLAT = ("cubocta", "truncocta", "snubcube")
+_ARCHIMEDEAN_FLAT = ("cubocta", "truncocta", "snubcube", "rhombicosidodecasplit",
+                     "truncicosidodecasplit", "snubdodecsplit")
 _SOLID_VIEW = {
     "cubocta": (-20, 22),
     "truncocta": (-20, 22),
     "snubcube": (-18, 20),
+    "rhombicosidodecasplit": (-16, 15),
+    "truncicosidodecasplit": (-16, 15),
+    "snubdodecsplit": (-14, 20),
     "triakistetra": (-18, 20),
     "rhombicdodeca": (-20, 12),
     "triakisocta": (-22, 18),
@@ -1041,8 +1045,8 @@ assert set(_SOLID_VIEW) == set(SOLID_GROUP_MEMBERS["catalan"]) | set(_ARCHIMEDEA
 
 
 def _icon_solid(surface, mode: str, d: float) -> None:
-    """A flat-faced solid's icon (a Catalan solid, or one of the cube group's
-    Archimedean solids): the real board, seen head-on.
+    """A flat-faced solid's icon (a Catalan solid, or an Archimedean solid cut
+    into a board): the real board, seen head-on.
 
     Unlike the rest of these icons -- which are hand-drawn figures -- there is
     no drawing of a disdyakis triacontahedron that a reader could tell from a
@@ -2356,7 +2360,7 @@ class GameScreen3D(BaseGameScreen):
         # flat-faced solids show only one face head-on; a 3/4 turn reveals
         # three faces at once. Every Catalan solid is flat-faced too, so the
         # group joins the list whole rather than a board at a time, and so are
-        # the cube group's Archimedean solids.
+        # the Archimedean solids cut into boards.
         if self.mode in ("cube", "tetrahedron", "cubeframe", "steppedbipyramid",
                         "octahedron", "icosahedron", "steppedpyramid",
                         "dodecahedron", "cubestackedbond", "cubebasketweave",

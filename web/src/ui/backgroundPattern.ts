@@ -596,9 +596,9 @@ const ARCHIMEDEAN_PATTERN: Record<string, string> = {
   cubocta: "trihex",
   truncocta: "truncsquare",
   snubcube: "snubsquare",
-  rhombicosidodeca: "rhombitrihex",
-  truncicosidodeca: "trunctrihex",
-  snubdodec: "snubhex",
+  rhombicosidodecasplit: "rhombitrihex",
+  truncicosidodecasplit: "trunctrihex",
+  snubdodecsplit: "snubhex",
 };
 
 /** The pattern key every mode of the same geometry shares — "trihex" for all

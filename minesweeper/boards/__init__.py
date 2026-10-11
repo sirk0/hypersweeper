@@ -78,7 +78,10 @@ from minesweeper.boards.aperiodic import (  # noqa: F401
 from minesweeper.boards.archimedean import (  # noqa: F401
     _archimedean_faces,
     cuboctahedron_board,
+    rhombicosidodecahedron_split_board,
     snub_cube_board,
+    snub_dodecahedron_split_board,
+    truncated_icosidodecahedron_split_board,
     truncated_octahedron_board,
 )
 from minesweeper.boards.catalan import (  # noqa: F401

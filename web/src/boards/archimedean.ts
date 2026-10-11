@@ -1,5 +1,6 @@
-// Port of minesweeper/boards/archimedean.py — the cuboctahedron, truncated
-// octahedron and snub cube. Structure and formulas are kept textually close to
+// Port of minesweeper/boards/archimedean.py — the Archimedean solids cut into
+// boards: the cuboctahedron, truncated octahedron and snub cube, and the
+// rhombicosidodecahedron, truncated icosidodecahedron and snub dodecahedron. Structure and formulas are kept textually close to
 // the Python so the two stay diffable; hashable tuple keys become canonical
 // strings. See the Python module for the full derivation.
 //
@@ -9,13 +10,18 @@
 // plane, on the unit sphere, since every Catalan face sits at distance 1) and
 // each Catalan vertex an Archimedean face (the poles of the faces around it).
 // On the cube base `join` gives the cuboctahedron, `kis` the truncated
-// octahedron and `gyro` the snub cube.
+// octahedron and `gyro` the snub cube; on the icosahedron `ortho`, `meta` and
+// `gyro` give the rhombicosidodecahedron, truncated icosidodecahedron and snub
+// dodecahedron.
 //
 // Faces are then subdivided, `frequency` cuts along each edge being the one
 // size knob: triangles through `triGrid`, squares through `quadGrid`, which name
 // a shared edge's points the same way whatever lies on either side of it. A
 // hexagon cannot be cut into hexagons, so the truncated octahedron's are cut
-// into three rhombi first (`splitHexagons`, `thSpokes`).
+// into three rhombi first (`splitHexagons`, `thSpokes`); the icosahedral
+// solids' pentagons, hexagons and decagons are fanned into triangles from their
+// centres instead (`fanFaces`), which keeps every symmetry. Those three also
+// ship uncut, one cell per face, as sphere boards in solids.ts.
 import { cid, cross, dot, tangentOrder, type Board3D, type Vec3 } from "./core";
 import { Base, catalanFaces, quadGrid, triGrid, type Op } from "./catalan";
 import { convexBoard3d, type Cells, type Positions } from "./solids";
@@ -117,6 +123,32 @@ function splitHexagons(
   return { faces: outCells, positions: outPos };
 }
 
+// -- the icosahedral solids' big faces ------------------------------------------
+
+/** Fan every face of more than four sides into triangles from its own planar
+ * centre; leave triangles and squares alone. The centre is the plain average of
+ * the corners, so the fan lies flat — the rule `solids.dodecahedron` fans a
+ * dodecahedron's pentagons by — and keeps the face's whole dihedral symmetry. */
+function fanFaces(faces: Cells, positions: Positions): { faces: Cells; positions: Positions } {
+  const outCells: Cells = new Map();
+  const outPos: Positions = new Map(positions);
+  for (const [cell, ring] of faces) {
+    if (ring.length <= 4) {
+      outCells.set(cell, ring);
+      continue;
+    }
+    const centre = ["c", cell].join("|");
+    const points = ring.map((k) => positions.get(k)!);
+    outPos.set(centre, [0, 1, 2].map(
+      (a) => points.reduce((sum, p) => sum + p[a]!, 0) / ring.length,
+    ) as Vec3);
+    ring.forEach((key, i) => {
+      outCells.set(cid(cell, i), [key, ring[(i + 1) % ring.length]!, centre]);
+    });
+  }
+  return { faces: outCells, positions: outPos };
+}
+
 // -- subdivision --------------------------------------------------------------
 
 /** Cut every triangle and quadrilateral `frequency` ways along each edge. The
@@ -153,13 +185,20 @@ function subdivideMixed(
   return { faces: cells, positions: outPos };
 }
 
-function archimedeanBoard(mode: string, op: Op, mineCount: number, frequency: number): Board3D {
+function archimedeanBoard(
+  mode: string,
+  op: Op,
+  mineCount: number,
+  frequency: number,
+  baseKind = "cube",
+): Board3D {
   if (frequency < 1) throw new Error("frequency must be at least 1");
-  const base = new Base("cube");
+  const base = new Base(baseKind);
   let { faces, positions } = archimedeanFaces(base, op);
-  if (op === "kis") {
+  if (baseKind === "cube" && op === "kis") {
     ({ faces, positions } = splitHexagons(faces, positions, (ring) => thSpokes(base, ring)));
   }
+  ({ faces, positions } = fanFaces(faces, positions));
   const sub = subdivideMixed(faces, positions, frequency);
   // the grids' keys nest a face key of whatever shape that face had; the cell
   // ids only have to be distinct
@@ -193,4 +232,28 @@ export function truncatedOctahedronBoard(mineCount: number, frequency = 3): Boar
  * mirror. Every face is cut `frequency**2` ways: `38 * frequency**2` cells. */
 export function snubCubeBoard(mineCount: number, frequency = 2): Board3D {
   return archimedeanBoard("snubcube", "gyro", mineCount, frequency);
+}
+
+/** A rhombicosidodecahedron cut into a board: 20 triangles, 30 squares and 12
+ * pentagons (3.4.5.4), each pentagon fanned into 5 triangles, then every face
+ * cut `frequency**2` ways — `110 * frequency**2` cells. The uncut solid, one
+ * cell per face, is `solids.rhombicosidodecahedronBoard`. */
+export function rhombicosidodecahedronSplitBoard(mineCount: number, frequency = 2): Board3D {
+  return archimedeanBoard("rhombicosidodecasplit", "ortho", mineCount, frequency, "icosa");
+}
+
+/** A truncated icosidodecahedron cut into a board: 30 squares, 20 hexagons and
+ * 12 decagons (4.6.10), the hexagons fanned into 6 triangles and the decagons
+ * into 10, then every face cut `frequency**2` ways — `270 * frequency**2`
+ * cells. The uncut solid is `solids.truncatedIcosidodecahedronBoard`. */
+export function truncatedIcosidodecahedronSplitBoard(mineCount: number, frequency = 1): Board3D {
+  return archimedeanBoard("truncicosidodecasplit", "meta", mineCount, frequency, "icosa");
+}
+
+/** A snub dodecahedron cut into a board: 80 triangles and 12 pentagons
+ * (3.3.3.3.5), each pentagon fanned into 5 triangles, then every face cut
+ * `frequency**2` ways — `140 * frequency**2` cells. Chiral, the icosahedral
+ * rotations alone. The uncut solid is `solids.snubDodecahedronBoard`. */
+export function snubDodecahedronSplitBoard(mineCount: number, frequency = 2): Board3D {
+  return archimedeanBoard("snubdodecsplit", "gyro", mineCount, frequency, "icosa");
 }

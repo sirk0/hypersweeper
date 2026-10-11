@@ -32,7 +32,10 @@ import {
 } from "./catalan";
 import {
   cuboctahedronBoard,
+  rhombicosidodecahedronSplitBoard,
   snubCubeBoard,
+  snubDodecahedronSplitBoard,
+  truncatedIcosidodecahedronSplitBoard,
   truncatedOctahedronBoard,
 } from "./archimedean";
 import {
@@ -124,11 +127,15 @@ const BUILDERS: Record<string, Builder> = {
   snub_dodecahedron_board: snubDodecahedronBoard,
   rhombicosidodecahedron_board: rhombicosidodecahedronBoard,
   truncated_icosidodecahedron_board: truncatedIcosidodecahedronBoard,
-  // the three cube-group Archimedean solids (boards/archimedean.ts), duals of
-  // their Catalan solids; (mineCount, frequency) like those
+  // the Archimedean solids cut into boards (boards/archimedean.ts), duals of
+  // their Catalan solids; (mineCount, frequency) like those. The three
+  // icosahedral ones also ship uncut, one cell per face, just above.
   cuboctahedron_board: cuboctahedronBoard,
   truncated_octahedron_board: truncatedOctahedronBoard,
   snub_cube_board: snubCubeBoard,
+  rhombicosidodecahedron_split_board: rhombicosidodecahedronSplitBoard,
+  truncated_icosidodecahedron_split_board: truncatedIcosidodecahedronSplitBoard,
+  snub_dodecahedron_split_board: snubDodecahedronSplitBoard,
   cube_board: cubeBoard,
   cube_frame_board: cubeFrameBoard,
   // the one volume board: a solid cube of cells, 26 neighbours

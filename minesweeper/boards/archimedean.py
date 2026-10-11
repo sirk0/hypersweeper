@@ -1,4 +1,6 @@
-"""Archimedean solids: the cuboctahedron, truncated octahedron and snub cube.
+"""Archimedean solids cut into boards: the cube group's cuboctahedron,
+truncated octahedron and snub cube, and the icosahedral group's
+rhombicosidodecahedron, truncated icosidodecahedron and snub dodecahedron.
 
 Every Archimedean solid is the **polar dual** of a Catalan solid, and
 `catalan._catalan_faces` already builds those -- from a Platonic base, one
@@ -14,7 +16,9 @@ nothing here solves for a point again; it turns a Catalan solid inside out:
   Catalan faces around it, in order.
 
 On the cube base that is ``join`` -> cuboctahedron, ``kis`` -> truncated
-octahedron and ``gyro`` -> snub cube. The ids stay exact for free: an
+octahedron and ``gyro`` -> snub cube; on the icosahedron, ``ortho`` ->
+rhombicosidodecahedron, ``meta`` -> truncated icosidodecahedron and ``gyro``
+-> snub dodecahedron. The ids stay exact for free: an
 Archimedean vertex is named by its Catalan face's key, which is itself a tuple
 of the base's own incidences.
 
@@ -25,7 +29,13 @@ through `catalan._quad_grid`, which name a shared edge's points the same way
 whatever lies on either side of it. A hexagon cannot be cut into hexagons, so
 the truncated octahedron's are cut into three rhombi first
 (`_split_hexagons`), and that cut costs the solid half its symmetry: see
-`_th_spokes`.
+`_th_spokes`. The icosahedral solids' pentagons, hexagons and decagons are
+instead **fanned into triangles** from their own centres (`_fan_faces`, the
+dodecahedron board's rule), which keeps every symmetry.
+
+The three icosahedral solids already ship uncut, one cell per face, under
+Sphere (`solids.snub_dodecahedron_board` and its neighbours); those keep their
+own modes, and the cut ones here are separate boards.
 """
 
 from __future__ import annotations
@@ -143,6 +153,34 @@ def _split_hexagons(
     return out_cells, out_pos
 
 
+# -- the icosahedral solids' big faces ------------------------------------------
+
+
+def _fan_faces(
+    faces: dict[Cell, list], positions: dict[Hashable, Vec3]
+) -> tuple[dict[Cell, list], dict[Hashable, Vec3]]:
+    """Fan every face of more than four sides into triangles from its own planar
+    centre; leave triangles and squares alone. The centre is the plain average
+    of the corners, so the fan lies flat in the face's plane -- the rule
+    `solids._dodecahedron` fans a dodecahedron's pentagons by. A fan keeps the
+    face's whole dihedral symmetry, so the solid keeps all of its own: a
+    pentagon becomes five 72-54-54 triangles, a hexagon six equilateral ones and
+    a decagon ten golden triangles."""
+    out_cells: dict[Cell, list] = {}
+    out_pos = dict(positions)
+    for cell, ring in faces.items():
+        if len(ring) <= 4:
+            out_cells[cell] = ring
+            continue
+        centre = ("c", cell)
+        out_pos[centre] = tuple(
+            sum(positions[k][a] for k in ring) / len(ring) for a in range(3)
+        )
+        for i, key in enumerate(ring):
+            out_cells[(cell, i)] = [key, ring[(i + 1) % len(ring)], centre]
+    return out_cells, out_pos
+
+
 # -- subdivision --------------------------------------------------------------
 
 
@@ -170,16 +208,17 @@ def _subdivide_mixed(
 
 
 def _archimedean_board(
-    mode: str, op: str, mine_count: int, frequency: int
+    mode: str, op: str, mine_count: int, frequency: int, base_kind: str = "cube"
 ) -> Board3D:
     if frequency < 1:
         raise ValueError("frequency must be at least 1")
-    base = _Base("cube")
+    base = _Base(base_kind)
     faces, positions = _archimedean_faces(base, op)
-    if op == "kis":
+    if base_kind == "cube" and op == "kis":
         faces, positions = _split_hexagons(
             faces, positions, lambda ring: _th_spokes(base, ring)
         )
+    faces, positions = _fan_faces(faces, positions)
     cells, positions = _subdivide_mixed(faces, positions, frequency)
     # the grids' keys nest a face key of whatever shape that face had, which
     # do not sort against one another; the cell ids only have to be distinct
@@ -213,3 +252,32 @@ def snub_cube_board(mine_count: int, frequency: int = 2) -> Board3D:
     cells."""
     return _archimedean_board("snubcube", "gyro", mine_count, frequency)
 
+
+def rhombicosidodecahedron_split_board(mine_count: int, frequency: int = 2) -> Board3D:
+    """A rhombicosidodecahedron cut into a board: 20 triangles, 30 squares and
+    12 pentagons (3.4.5.4), each pentagon fanned into 5 triangles, then every
+    face cut ``frequency**2`` ways -- ``110 * frequency**2`` cells. The uncut
+    solid, one cell per face, is `solids.rhombicosidodecahedron_board`."""
+    return _archimedean_board("rhombicosidodecasplit", "ortho", mine_count, frequency,
+                              "icosa")
+
+
+def truncated_icosidodecahedron_split_board(
+    mine_count: int, frequency: int = 1
+) -> Board3D:
+    """A truncated icosidodecahedron cut into a board: 30 squares, 20 hexagons
+    and 12 decagons (4.6.10), the hexagons fanned into 6 triangles and the
+    decagons into 10, then every face cut ``frequency**2`` ways --
+    ``270 * frequency**2`` cells. The uncut solid is
+    `solids.truncated_icosidodecahedron_board`."""
+    return _archimedean_board("truncicosidodecasplit", "meta", mine_count, frequency,
+                              "icosa")
+
+
+def snub_dodecahedron_split_board(mine_count: int, frequency: int = 2) -> Board3D:
+    """A snub dodecahedron cut into a board: 80 triangles and 12 pentagons
+    (3.3.3.3.5), each pentagon fanned into 5 triangles, then every face cut
+    ``frequency**2`` ways -- ``140 * frequency**2`` cells. Chiral, the
+    icosahedral rotations alone. The uncut solid is
+    `solids.snub_dodecahedron_board`."""
+    return _archimedean_board("snubdodecsplit", "gyro", mine_count, frequency, "icosa")

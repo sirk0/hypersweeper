@@ -25,7 +25,10 @@ from minesweeper.boards.aperiodic import (
 )
 from minesweeper.boards.archimedean import (
     cuboctahedron_board,
+    rhombicosidodecahedron_split_board,
     snub_cube_board,
+    snub_dodecahedron_split_board,
+    truncated_icosidodecahedron_split_board,
     truncated_octahedron_board,
 )
 from minesweeper.boards.catalan import (
@@ -129,11 +132,15 @@ _JSON_BUILDERS = {
     "snub_dodecahedron_board": snub_dodecahedron_board,
     "rhombicosidodecahedron_board": rhombicosidodecahedron_board,
     "truncated_icosidodecahedron_board": truncated_icosidodecahedron_board,
-    # the three cube-group Archimedean solids (boards/archimedean.py), duals
-    # of their Catalan solids; (mine_count, frequency) like those
+    # the Archimedean solids cut into boards (boards/archimedean.py), duals of
+    # their Catalan solids; (mine_count, frequency) like those. The three
+    # icosahedral ones also ship uncut, one cell per face, just above.
     "cuboctahedron_board": cuboctahedron_board,
     "truncated_octahedron_board": truncated_octahedron_board,
     "snub_cube_board": snub_cube_board,
+    "rhombicosidodecahedron_split_board": rhombicosidodecahedron_split_board,
+    "truncated_icosidodecahedron_split_board": truncated_icosidodecahedron_split_board,
+    "snub_dodecahedron_split_board": snub_dodecahedron_split_board,
     "cube_board": cube_board,
     "cube_frame_board": cube_frame_board,
     # the one volume board: a solid cube of cells, 26 neighbours

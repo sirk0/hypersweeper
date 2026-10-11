@@ -1617,6 +1617,57 @@
         ]
       }
     },
+    "rhombicosidodecasplit": {
+      "builder": "rhombicosidodecahedron_split_board",
+      "args": {
+        "easy": [
+          21,
+          1
+        ],
+        "medium": [
+          100,
+          2
+        ],
+        "hard": [
+          118,
+          2
+        ]
+      }
+    },
+    "truncicosidodecasplit": {
+      "builder": "truncated_icosidodecahedron_split_board",
+      "args": {
+        "easy": [
+          47,
+          1
+        ],
+        "medium": [
+          57,
+          1
+        ],
+        "hard": [
+          73,
+          1
+        ]
+      }
+    },
+    "snubdodecsplit": {
+      "builder": "snub_dodecahedron_split_board",
+      "args": {
+        "easy": [
+          37,
+          1
+        ],
+        "medium": [
+          40,
+          1
+        ],
+        "hard": [
+          165,
+          2
+        ]
+      }
+    },
     "elongated": {
       "builder": "archimedean_board",
       "args": {
