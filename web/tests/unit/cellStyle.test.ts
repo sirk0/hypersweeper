@@ -346,6 +346,22 @@ describe("the player's finish", () => {
     expect(kept.material).toEqual(sand.material);
   });
 
+  it("makes every style glossier with the gloss on, the default cut included", () => {
+    // Soft has a gradient of its own but a roughness of 0.5, and once was left
+    // untouched by the setting because a gradient was read as polish.
+    for (const key of CELL_STYLE_KEYS) {
+      const style = cellStyle(key);
+      const on = finishStyle(style, { gloss: true, pins: true });
+      const off = finishStyle(style, { gloss: false, pins: true });
+      expect(on.material.roughness, key).toBeLessThan(off.material.roughness);
+      expect(on.material.roughness, key).toBeLessThanOrEqual(style.material.roughness);
+    }
+    const soft = cellStyle(boardStyleKey("soft", "sand"));
+    const glossy = finishStyle(soft, { gloss: true, pins: true });
+    expect(glossy.material.roughness).toBeLessThan(soft.material.roughness);
+    expect(glossy.shade).toEqual(soft.shade);
+  });
+
   it("puts real markers on any style, and takes Realistic's away", () => {
     for (const key of CELL_STYLE_KEYS) {
       const style = cellStyle(key);

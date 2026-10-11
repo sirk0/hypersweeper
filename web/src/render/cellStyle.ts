@@ -646,9 +646,10 @@ export interface Finish {
 export const DEFAULT_FINISH: Finish = { gloss: false, pins: true };
 
 /** The glossy half, lifted out of `REALISTIC` so a style with no polish of its
- * own can borrow one. A style that *has* one keeps it: Sand's gradient is tuned
- * a hair off Realistic's on purpose, and taking that away would be retuning a
- * theme rather than answering a setting. */
+ * own can borrow one. The material always goes on — it is what the setting
+ * names — but a style that already has a *gradient* keeps it: Sand's is tuned
+ * a hair off Realistic's on purpose, and Soft's is its own, and taking either
+ * away would be retuning a theme rather than answering a setting. */
 const GLOSSY = {
   material: { roughness: 0.16, metalness: 0.1 },
   shade: { center: 1.06, rim: 0.7 },
@@ -668,8 +669,11 @@ const MATTE = { roughness: 0.7, metalness: 0 } as const;
  *     "glass beads closed, matte pans opened"), so the board keeps its relief
  *     and its edges and loses only the hotspot. A style with no gradient at all
  *     (Classic, Flat) changes only its material.
- *   * **Gloss on** lends `GLOSSY` to a style that declares no `shade`, and
- *     leaves one that does alone.
+ *   * **Gloss on** gives every style `GLOSSY`'s material, and lends its
+ *     gradients to a style that declares no `shade`. A gradient is not proof
+ *     of polish: Soft has one and a roughness of 0.5, so reading "has a
+ *     `shade`" as "already glossy" left the default cut untouched by the
+ *     setting.
  *   * **Pins** set or clear `solidMarkers`.
  *
  * The profiles, `openAlpha`, `unlit`, `albedo`, `boardTint` and `monochrome`
@@ -681,8 +685,8 @@ const MATTE = { roughness: 0.7, metalness: 0 } as const;
 export function finishStyle(style: CellStyle, finish: Finish): CellStyle {
   const next: CellStyle = { ...style };
   if (finish.gloss) {
+    next.material = { ...GLOSSY.material };
     if (!style.shade) {
-      next.material = { ...GLOSSY.material };
       next.shade = { ...GLOSSY.shade };
       next.openShade = { ...GLOSSY.openShade };
     }
