@@ -12,7 +12,8 @@ open one particular board straight away — the original square grid, and the
 cube of cubes — and sit together above the two that deal a *random* one: the
 flat picker's pool, and every flat manifold plus the spheres, polyhedra and
 volumes. So no picker carries a Random row; Custom holds the old root (Flat,
-Flat manifolds, Sphere, Platonic solids, Catalan solids, Polyhedra, Volumes).
+Flat manifolds, Sphere, Platonic solids, Archimedean solids, Catalan solids,
+Polyhedra, Volumes).
 A board reachable from the home page is still reachable through Custom — the
 home row is a shortcut, not a move, which is how `square` has always worked.
 In every tiling picker the three regular tilings are promoted to rows of their
@@ -459,7 +460,9 @@ menu is in anyway.
   rhombi and a disdyakis one on a barycentric subdivision (`join` → rhombille,
   `ortho` → deltoidal trihexagonal, `meta` → kisrhombille, `gyro` → the
   pentagonal Laves dual of the matching snub, `kis` → whichever of the plane's
-  two kis tilings raises its pyramids on the same kind of face). That leaves
+  two kis tilings raises its pyramids on the same kind of face), and each
+  **Archimedean** solid the uniform tiling dual to its Catalan partner's (the
+  cuboctahedron trihexagonal, the snub cube the snub square). That leaves
   circles for the sphere family alone, whose faces close up only because the
   surface curves.
 - **Traps.** Every placed point is snapped to a tenth of a pixel *before*

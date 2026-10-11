@@ -177,6 +177,12 @@
     "c80": "Chamfered dodecahedron",
     "c180": "Goldberg GP(3,0)",
     "spheretri": "Geodesic icosahedron",
+    "cubocta": "Cuboctahedron",
+    "truncocta": "Truncated octahedron",
+    "snubcube": "Snub cube",
+    "rhombicosidodecasplit": "Rhombicosidodecahedron, subdivided",
+    "truncicosidodecasplit": "Truncated icosidodecahedron, subdivided",
+    "snubdodecsplit": "Snub dodecahedron, subdivided",
     "snubdodec": "Snub dodecahedron",
     "rhombicosidodeca": "Rhombicosidodecahedron",
     "truncicosidodeca": "Truncated icosidodecahedron",
@@ -292,6 +298,12 @@
       "tiling": "",
       "surface": "solid",
       "family": "polyhedra"
+    },
+    "cubocta": {
+      "label": "Cuboctahedron",
+      "tiling": "",
+      "surface": "solid",
+      "family": "archimedean"
     },
     "cylbasketweave": {
       "label": "Basket weave · Cylinder",
@@ -1007,6 +1019,12 @@
       "surface": "solid",
       "family": "sphere"
     },
+    "rhombicosidodecasplit": {
+      "label": "Rhombicosidodecahedron, subdivided",
+      "tiling": "",
+      "surface": "solid",
+      "family": "archimedean"
+    },
     "rhombictriaconta": {
       "label": "Rhombic triacontahedron",
       "tiling": "",
@@ -1043,11 +1061,23 @@
       "surface": "flat",
       "family": "rectangle"
     },
+    "snubcube": {
+      "label": "Snub cube",
+      "tiling": "",
+      "surface": "solid",
+      "family": "archimedean"
+    },
     "snubdodec": {
       "label": "Snub dodecahedron",
       "tiling": "",
       "surface": "solid",
       "family": "sphere"
+    },
+    "snubdodecsplit": {
+      "label": "Snub dodecahedron, subdivided",
+      "tiling": "",
+      "surface": "solid",
+      "family": "archimedean"
     },
     "snubhex": {
       "label": "Snub hexagonal",
@@ -1421,6 +1451,18 @@
       "surface": "solid",
       "family": "sphere"
     },
+    "truncicosidodecasplit": {
+      "label": "Truncated icosidodecahedron, subdivided",
+      "tiling": "",
+      "surface": "solid",
+      "family": "archimedean"
+    },
+    "truncocta": {
+      "label": "Truncated octahedron",
+      "tiling": "",
+      "surface": "solid",
+      "family": "archimedean"
+    },
     "truncsquare": {
       "label": "Truncated square",
       "tiling": "truncsquare",
@@ -1441,6 +1483,7 @@
       "manifolds",
       "sphere",
       "platonic",
+      "archimedean",
       "catalan",
       "polyhedra",
       "volume"
@@ -1534,6 +1577,18 @@
           "octahedron",
           "dodecahedron",
           "icosahedron"
+        ]
+      },
+      {
+        "key": "archimedean",
+        "label": "Archimedean solids",
+        "modes": [
+          "cubocta",
+          "truncocta",
+          "snubcube",
+          "rhombicosidodecasplit",
+          "truncicosidodecasplit",
+          "snubdodecsplit"
         ]
       },
       {

@@ -178,17 +178,19 @@ TILINGS = {
 # geometry (or a group of them) and then, where it applies, to a shared tiling
 # picker.
 #
-#   Classic         -> flat squares, at once
-#   Flat            -> tiling picker on the plane
-#   Flat manifolds  -> cylinder / Mobius / Klein / torus -> tiling picker
-#   Sphere          -> the spherical tilings
-#   Platonic solids -> the five regular solids
-#   Catalan solids  -> the thirteen duals of the Archimedean solids
-#   Polyhedra       -> the frames, the stepped pyramids and the brick cubes
+#   Classic            -> flat squares, at once
+#   Flat               -> tiling picker on the plane
+#   Flat manifolds     -> cylinder / Mobius / Klein / torus -> tiling picker
+#   Sphere             -> the spherical tilings
+#   Platonic solids    -> the five regular solids
+#   Archimedean solids -> the cube group's three and the icosahedral three
+#   Catalan solids     -> the thirteen duals of the Archimedean solids
+#   Polyhedra          -> the frames, the stepped pyramids and the brick cubes
+#   Volumes            -> the cube of cubes
 #
-# The last four are all *solid groups*: a flat list of boards, each row
+# The last six are all *solid groups*: a flat list of boards, each row
 # launching at once. They differ only in which boards they hold, so one table
-# in data/catalog.json (menu.solidGroups) declares all four and both menus
+# in data/catalog.json (menu.solidGroups) declares them all and both menus
 # derive their pages from it -- adding a solid is one row there and no menu
 # code at all.
 #
@@ -266,8 +268,8 @@ PICKER_FAMILIES = ("regular", "uniform", "dual", "2-uniform", "isogonal",
                    "rectangle", "other")
 FLAT_ONLY_FAMILIES = ("aperiodic", "spiral", "fractal", "hyperbolic")
 
-# The solid pages: Sphere, Platonic solids, Catalan solids and Polyhedra, each
-# a flat list of boards. Mirrors MANIFOLD_ORDER/MANIFOLD_LABELS -- one order
+# The solid pages: Sphere, Platonic solids, Archimedean solids, Catalan solids,
+# Polyhedra and Volumes, each a flat list of boards. Mirrors MANIFOLD_ORDER/MANIFOLD_LABELS -- one order
 # tuple, one label dict, plus the members each group holds.
 SOLID_GROUP_ORDER = tuple(g["key"] for g in _MENU["solidGroups"])
 SOLID_GROUP_LABELS = {g["key"]: g["label"] for g in _MENU["solidGroups"]}

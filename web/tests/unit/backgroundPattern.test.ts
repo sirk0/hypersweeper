@@ -62,7 +62,7 @@ describe("which pattern a mode gets", () => {
     // backgroundPattern.ts would leave that board on a blank page.
     const missing = MODES.filter((mode) => patternKey(mode) === null);
     expect(missing).toEqual([]);
-    expect(MODES.length).toBe(205);
+    expect(MODES.length).toBe(211);
   });
 
   it("follows the tiling, not the surface", () => {
@@ -100,7 +100,7 @@ describe("which pattern a mode gets", () => {
     // ...and the hyperbolic boards, whose tiles close up only in the
     // hyperbolic plane, so no flat repeat of them exists
     for (const mode of HYPERBOLIC_MODES) expect(patternKey(mode)).toBe("circles");
-    for (const key of ["platonic", "catalan", "polyhedra"]) {
+    for (const key of ["platonic", "archimedean", "catalan", "polyhedra"]) {
       for (const mode of group(key)) expect(patternKey(mode)).not.toBe("circles");
     }
     // the Laves dual of each Conway operation: rhombille under a rhombic
@@ -112,6 +112,13 @@ describe("which pattern a mode gets", () => {
     expect(patternKey("disdyakisdodeca")).toBe("kisrhombille");
     expect(patternKey("pentagonalicositetra")).toBe("cairo");
     expect(patternKey("sphere")).toBe("floret");
+    // ...and under each Archimedean solid the uniform tiling dual to its
+    // Catalan partner's page: trihexagonal under the cuboctahedron (the
+    // rhombille's dual), the snub square under the snub cube (Cairo's)
+    expect(patternKey("cubocta")).toBe("trihex");
+    expect(patternKey("truncocta")).toBe("truncsquare");
+    expect(patternKey("snubcube")).toBe("snubsquare");
+    expect(patternKey("snubdodecsplit")).toBe("snubhex");
   });
 
   it("lays the aperiodic boards' own tiles down periodically where it can", () => {

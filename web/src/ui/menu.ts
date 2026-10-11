@@ -111,6 +111,7 @@ const FAMILY_ICONS: Record<string, string> = {
 const SOLID_GROUP_HINTS: Record<string, string> = {
   sphere: "Tilings of the sphere itself",
   platonic: "The five regular solids",
+  archimedean: "Regular polygons of two or three kinds, every corner alike",
   catalan: "The thirteen duals of the Archimedean solids",
   polyhedra: "Hollow frames, terraced pyramids and cubes laid in brick",
   volume: "A solid cube of cells — 26 neighbours, laid out slice by slice",

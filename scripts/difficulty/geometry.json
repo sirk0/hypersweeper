@@ -9071,5 +9071,233 @@
         "indistinguishable": 0
       }
     }
+  },
+  "cubocta": {
+    "builder": "cuboctahedron_board",
+    "args": {
+      "easy": {
+        "args": [
+          18,
+          2
+        ],
+        "cells": 56,
+        "score": 12.1073,
+        "distortionMean": 1.0,
+        "distortionP90": 1.0,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          40,
+          4
+        ],
+        "cells": 224,
+        "score": 0.1335,
+        "distortionMean": 1.0,
+        "distortionP90": 1.0,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          100,
+          6
+        ],
+        "cells": 504,
+        "score": 0.0488,
+        "distortionMean": 1.0,
+        "distortionP90": 1.0,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "snubcube": {
+    "builder": "snub_cube_board",
+    "args": {
+      "easy": {
+        "args": [
+          25,
+          2
+        ],
+        "cells": 152,
+        "score": 12.8883,
+        "distortionMean": 1.0,
+        "distortionP90": 1.0,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          65,
+          3
+        ],
+        "cells": 342,
+        "score": 11.8689,
+        "distortionMean": 1.0,
+        "distortionP90": 1.0,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          65,
+          4
+        ],
+        "cells": 608,
+        "score": 11.7092,
+        "distortionMean": 1.0,
+        "distortionP90": 1.0,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "truncocta": {
+    "builder": "truncated_octahedron_board",
+    "args": {
+      "easy": {
+        "args": [
+          18,
+          2
+        ],
+        "cells": 120,
+        "score": 12.1791,
+        "distortionMean": 1.1238,
+        "distortionP90": 1.1547,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          45,
+          3
+        ],
+        "cells": 270,
+        "score": 0.0532,
+        "distortionMean": 1.1238,
+        "distortionP90": 1.1547,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          95,
+          4
+        ],
+        "cells": 480,
+        "score": 0.0,
+        "distortionMean": 1.1238,
+        "distortionP90": 1.1547,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "rhombicosidodecasplit": {
+    "builder": "rhombicosidodecahedron_split_board",
+    "args": {
+      "easy": {
+        "args": [
+          25,
+          1
+        ],
+        "cells": 110,
+        "score": 11.9181,
+        "distortionMean": 1.0111,
+        "distortionP90": 1.0203,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          120,
+          2
+        ],
+        "cells": 440,
+        "score": 0.087,
+        "distortionMean": 1.0111,
+        "distortionP90": 1.0203,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          25,
+          2
+        ],
+        "cells": 440,
+        "score": 12.6248,
+        "distortionMean": 1.0111,
+        "distortionP90": 1.0203,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "snubdodecsplit": {
+    "builder": "snub_dodecahedron_split_board",
+    "args": {
+      "easy": {
+        "args": [
+          30,
+          1
+        ],
+        "cells": 140,
+        "score": 12.6416,
+        "distortionMean": 1.0087,
+        "distortionP90": 1.0203,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          30,
+          1
+        ],
+        "cells": 140,
+        "score": 12.8106,
+        "distortionMean": 1.0087,
+        "distortionP90": 1.0203,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          150,
+          2
+        ],
+        "cells": 560,
+        "score": 10.4625,
+        "distortionMean": 1.0087,
+        "distortionP90": 1.0203,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "truncicosidodecasplit": {
+    "builder": "truncated_icosidodecahedron_split_board",
+    "args": {
+      "easy": {
+        "args": [
+          60,
+          1
+        ],
+        "cells": 270,
+        "score": 14.6119,
+        "distortionMean": 1.0543,
+        "distortionP90": 1.1221,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          60,
+          1
+        ],
+        "cells": 270,
+        "score": 0.0532,
+        "distortionMean": 1.0543,
+        "distortionP90": 1.1221,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          60,
+          1
+        ],
+        "cells": 270,
+        "score": 12.7261,
+        "distortionMean": 1.0543,
+        "distortionP90": 1.1221,
+        "indistinguishable": 0
+      }
+    }
   }
 }

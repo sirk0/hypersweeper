@@ -77,6 +77,14 @@ import {
   tetrahedronFrameBoard,
   truncatedIcosidodecahedronBoard,
 } from "../boards/solids";
+import {
+  cuboctahedronBoard,
+  rhombicosidodecahedronSplitBoard,
+  snubCubeBoard,
+  snubDodecahedronSplitBoard,
+  truncatedIcosidodecahedronSplitBoard,
+  truncatedOctahedronBoard,
+} from "../boards/archimedean";
 import { trefoilPoint } from "../boards/surfaces";
 import { solidCubeBoard } from "../boards/volume";
 import { DOMAINS } from "./backgroundPattern";
@@ -682,6 +690,14 @@ const SOLID_BUILDERS: Record<string, () => Board3D> = {
   pentakisdodeca: () => pentakisDodecahedronBoard(0, 1),
   deltoidalhexeconta: () => deltoidalHexecontahedronBoard(0, 1),
   disdyakistriaconta: () => disdyakisTriacontahedronBoard(0, 1),
+  // The Archimedean solids cut into boards, flat-faced like the Catalan ones,
+  // at their own easy frequencies.
+  cubocta: () => cuboctahedronBoard(0, 2),
+  truncocta: () => truncatedOctahedronBoard(0, 2),
+  snubcube: () => snubCubeBoard(0, 2),
+  rhombicosidodecasplit: () => rhombicosidodecahedronSplitBoard(0, 1),
+  truncicosidodecasplit: () => truncatedIcosidodecahedronSplitBoard(0, 1),
+  snubdodecsplit: () => snubDodecahedronSplitBoard(0, 1),
 };
 
 /** The thirteen Catalan solids, drawn as the real board in projection like the
@@ -701,6 +717,18 @@ const CATALAN_ICONS = [
   "deltoidalhexeconta",
   "sphere",
   "disdyakistriaconta",
+];
+
+/** The Archimedean solids cut into boards, drawn the same way: flat faces cut
+ * into the cells they are played on. (The uncut icosahedral three, one cell a
+ * face, are sphere boards and keep the sphere icons.) */
+const ARCHIMEDEAN_FLAT_ICONS = [
+  "cubocta",
+  "truncocta",
+  "snubcube",
+  "rhombicosidodecasplit",
+  "truncicosidodecasplit",
+  "snubdodecsplit",
 ];
 
 /** How each solid is turned before projecting, in degrees about x then y —
@@ -757,6 +785,15 @@ const SOLID_VIEW: Record<string, [number, number] | [number, number, number]> = 
   pentakisdodeca: [-20, 20],
   deltoidalhexeconta: [-16, 18],
   disdyakistriaconta: [-16, 20],
+  // The cube-group Archimedean solids, tipped off a 3-fold axis so a square
+  // and the faces round it read, and the icosahedral ones as their uncut
+  // sphere boards are turned.
+  cubocta: [-20, 22],
+  truncocta: [-20, 22],
+  snubcube: [-18, 20],
+  rhombicosidodecasplit: [-16, 15],
+  truncicosidodecasplit: [-16, 15],
+  snubdodecsplit: [-14, 20],
 };
 
 /** Where a card turns a solid further than its 38px icon does. Two boards read
@@ -1089,9 +1126,10 @@ const ALIASES: Record<string, string> = {
   fractal: "sphinx", // the Fractals family row
   hyperbolic: "hyperbolic73", // the Hyperbolic family row: the game's namesake
   // the solid-group rows borrow one of their own members' icons: there is no
-  // board named "platonic" or "catalan" to draw, and "polyhedra" now holds the
-  // frames and the stacks rather than the cube
+  // board named "platonic", "archimedean" or "catalan" to draw, and
+  // "polyhedra" now holds the frames and the stacks rather than the cube
   platonic: "tetrahedron",
+  archimedean: "cubocta",
   catalan: "rhombictriaconta",
   polyhedra: "steppedbipyramid",
   volume: "cube3d", // the Volumes row: its only board
@@ -1725,7 +1763,8 @@ function draw(rawKey: string): string[] {
     key === "octahedron" ||
     key === "icosahedron" ||
     key === "dodecahedron" ||
-    CATALAN_ICONS.includes(key)
+    CATALAN_ICONS.includes(key) ||
+    ARCHIMEDEAN_FLAT_ICONS.includes(key)
   ) {
     // All are the real board projected — a bipyramid whose terraces really do
     // step 7-5-3-1 out from the equator, a single stepped pyramid (the same

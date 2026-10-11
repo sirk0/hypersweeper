@@ -586,6 +586,21 @@ const CATALAN_PATTERN: Record<string, string> = {
   disdyakistriaconta: "kisrhombille",
 };
 
+/** Each Archimedean solid's page: the dual of its Catalan solid's — the
+ * uniform tiling the same Conway operation makes of the plane, as each
+ * Catalan page is the Laves one. ambo -> trihexagonal (the rhombille's dual),
+ * truncate -> truncated square (the tetrakis square's), snub -> snub square or
+ * snub hexagonal (Cairo's, the floret's), expand -> rhombitrihexagonal,
+ * omnitruncate -> truncated trihexagonal. */
+const ARCHIMEDEAN_PATTERN: Record<string, string> = {
+  cubocta: "trihex",
+  truncocta: "truncsquare",
+  snubcube: "snubsquare",
+  rhombicosidodecasplit: "rhombitrihex",
+  truncicosidodecasplit: "trunctrihex",
+  snubdodecsplit: "snubhex",
+};
+
 /** The pattern key every mode of the same geometry shares — "trihex" for all
  * five surfaces of the trihexagonal tiling, so the cache holds one entry for
  * the lot. `null` for a mode this build has not got (a link from a newer one). */
@@ -650,6 +665,12 @@ const MODE_PATTERN = new Map<string, string>();
   // (or, closest available, pentagons), the triakis triangular where they sit
   // on triangles.
   for (const [mode, tiling] of Object.entries(CATALAN_PATTERN)) {
+    MODE_PATTERN.set(mode, tiling);
+  }
+  // An Archimedean solid takes the uniform tiling of the same operation: the
+  // page under a solid of regular polygons is a tiling of regular polygons,
+  // the dual of the one under its Catalan partner.
+  for (const [mode, tiling] of Object.entries(ARCHIMEDEAN_PATTERN)) {
     MODE_PATTERN.set(mode, tiling);
   }
   // The sphere family is the one group with no flat tiling behind it: a

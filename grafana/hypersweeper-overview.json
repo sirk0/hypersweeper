@@ -2136,7 +2136,7 @@
         "name": "family",
         "label": "Family",
         "description": "",
-        "query": "all,regular,uniform,dual,2-uniform,isogonal,rectangle,other,aperiodic,spiral,fractal,hyperbolic,sphere,platonic,catalan,polyhedra,volume",
+        "query": "all,regular,uniform,dual,2-uniform,isogonal,rectangle,other,aperiodic,spiral,fractal,hyperbolic,sphere,platonic,archimedean,catalan,polyhedra,volume",
         "current": {
           "selected": true,
           "text": "all",
@@ -2212,6 +2212,11 @@
             "selected": false,
             "text": "platonic",
             "value": "platonic"
+          },
+          {
+            "selected": false,
+            "text": "archimedean",
+            "value": "archimedean"
           },
           {
             "selected": false,

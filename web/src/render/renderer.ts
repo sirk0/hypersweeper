@@ -852,7 +852,8 @@ export function initialOrientation(mode: string): Quaternion {
   if (mode === "triakistetra") return qx(-0.95).multiply(qy(0.78));
   // flat-faced solids show only one face head-on; a 3/4 turn reveals three
   // faces at once. Every Catalan solid is flat-faced too, so the group joins
-  // the list whole rather than a board at a time.
+  // the list whole rather than a board at a time, and so are the Archimedean
+  // solids cut into boards.
   if (
     [
       "cube",
@@ -866,6 +867,12 @@ export function initialOrientation(mode: string): Quaternion {
       "cubestackedbond",
       "cubebasketweave",
       "cubebasketweave3",
+      "cubocta",
+      "truncocta",
+      "snubcube",
+      "rhombicosidodecasplit",
+      "truncicosidodecasplit",
+      "snubdodecsplit",
     ].includes(mode) ||
     CATALAN_MODES.has(mode)
   ) {

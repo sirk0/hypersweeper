@@ -76,6 +76,14 @@ Pick a surface, then a tiling:
   onto a sphere: a tetrahedron (4 faces), a cube (6, squares), an octahedron
   (8), a dodecahedron (12 pentagons, each fanned into 5 triangles from its
   own centre) and an icosahedron (20)
+- **Archimedean solids (3D)** — solids of regular polygons, every corner
+  alike, flat-faced and each face cut into a grid: a cuboctahedron
+  (8 triangles + 6 squares), a truncated octahedron (6 squares + 8 hexagons,
+  each cut into three rhombi), a snub cube (32 triangles + 6 squares), and
+  the three icosahedral solids above — the rhombicosidodecahedron, truncated
+  icosidodecahedron and snub dodecahedron — with their pentagons, hexagons and
+  decagons fanned into triangles, as bigger boards than the one-cell-a-face
+  ones under Sphere
 - **Catalan solids (3D)** — all thirteen duals of the Archimedean solids,
   flat-faced, each face cut into smaller copies of itself to make a board:
   the triakis tetrahedron, rhombic dodecahedron, triakis octahedron,

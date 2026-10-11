@@ -808,7 +808,8 @@ class TestMenu:
                      ["manifolds", "klein", "regular"],
                      ["manifolds", "klein", "uniform"],
                      ["manifolds", "mobius", "dual"],
-                     ["sphere"], ["platonic"], ["catalan"], ["polyhedra"]):
+                     ["sphere"], ["platonic"], ["archimedean"], ["catalan"],
+                     ["polyhedra"]):
             menu.path = list(path)
             surface = pygame.Surface(menu.size)
             menu.draw(surface, fonts)

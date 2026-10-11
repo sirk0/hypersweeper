@@ -31,11 +31,11 @@ test.describe("M2 solids", () => {
     await page.setViewportSize({ width: 900, height: 700 });
   });
 
-  test("Custom lists the four solid groups and launches a solid", async ({ page }) => {
+  test("Custom lists the solid groups and launches a solid", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator("body[data-ready]")).toBeVisible();
     await page.locator('.difficulty-btn[data-key="easy"]').click();
-    for (const group of ["sphere", "platonic", "catalan", "polyhedra"]) {
+    for (const group of ["sphere", "platonic", "archimedean", "catalan", "polyhedra"]) {
       await expect(page.locator(`.menu-entry[data-group="${group}"]`)).toBeVisible();
     }
     // Drill in, back out, drill in again — the sidebar row works both ways.

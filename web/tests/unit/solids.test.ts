@@ -26,6 +26,16 @@ import {
   triakisOctahedronBoard,
   triakisTetrahedronBoard,
 } from "../../src/boards/catalan";
+import { Base, type Op } from "../../src/boards/catalan";
+import {
+  archimedeanFaces,
+  cuboctahedronBoard,
+  rhombicosidodecahedronSplitBoard,
+  snubCubeBoard,
+  snubDodecahedronSplitBoard,
+  truncatedIcosidodecahedronSplitBoard,
+  truncatedOctahedronBoard,
+} from "../../src/boards/archimedean";
 import {
   boundaryComponents,
   eulerCharacteristic,
@@ -224,4 +234,68 @@ describe("Catalan solids", () => {
     expect(new Set(sizes(board))).toEqual(new Set([5]));
     expect(new Set([...board.adjacency.values()].map((n) => n.length))).toEqual(new Set([7]));
   });
+});
+
+// The Archimedean solids cut into boards: the mode, its builder, the base and
+// the Conway operation on it whose Catalan solid it is the dual of, the bare
+// face mix, and the cells per frequency**2 once the big faces are cut (the
+// truncated octahedron's hexagons into rhombi, the icosahedral ones' faces into
+// triangle fans). Mirrors tests/test_boards.py::TestArchimedeanSolids.
+const ARCHIMEDEAN: [
+  string,
+  (m: number, f?: number) => Board3D,
+  string,
+  Op,
+  Record<number, number>,
+  number,
+][] = [
+  ["cubocta", cuboctahedronBoard, "cube", "join", { 3: 8, 4: 6 }, 14],
+  ["truncocta", truncatedOctahedronBoard, "cube", "kis", { 4: 6, 6: 8 }, 30],
+  ["snubcube", snubCubeBoard, "cube", "gyro", { 3: 32, 4: 6 }, 38],
+  ["rhombicosidodecasplit", rhombicosidodecahedronSplitBoard, "icosa", "ortho", { 3: 20, 4: 30, 5: 12 }, 110],
+  ["truncicosidodecasplit", truncatedIcosidodecahedronSplitBoard, "icosa", "meta", { 4: 30, 6: 20, 10: 12 }, 270],
+  ["snubdodecsplit", snubDodecahedronSplitBoard, "icosa", "gyro", { 3: 80, 5: 12 }, 140],
+];
+
+describe("Archimedean solids", () => {
+  for (const [mode, build, base, op, mix, perFace] of ARCHIMEDEAN) {
+    it(`${mode}: the Catalan dual is regular polygons of one edge on one sphere`, () => {
+      const { faces, positions } = archimedeanFaces(new Base(base), op);
+      const counts: Record<number, number> = {};
+      const lengths = new Set<number>();
+      for (const ring of faces.values()) {
+        counts[ring.length] = (counts[ring.length] ?? 0) + 1;
+        const points = ring.map((k) => positions.get(k)!);
+        const centre = [0, 1, 2].map(
+          (a) => points.reduce((s, p) => s + p[a]!, 0) / points.length,
+        );
+        const sides = points.map((p, i) => {
+          const q = points[(i + 1) % points.length]!;
+          return Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]);
+        });
+        const spokes = points.map((p) => Math.hypot(p[0] - centre[0]!, p[1] - centre[1]!, p[2] - centre[2]!));
+        expect(Math.max(...sides) - Math.min(...sides)).toBeLessThan(1e-12);
+        expect(Math.max(...spokes) - Math.min(...spokes)).toBeLessThan(1e-12);
+        for (const side of sides) lengths.add(Math.round(side * 1e12) / 1e12);
+      }
+      expect(counts).toEqual(mix);
+      expect(lengths.size, `${mode} edge lengths`).toBe(1);
+      for (const p of positions.values()) {
+        expect(Math.abs(Math.hypot(p[0], p[1], p[2]) - 1)).toBeLessThan(1e-12);
+      }
+    });
+
+    it(`${mode} stays closed at every subdivision`, () => {
+      // a point on an edge between a triangle and a square is named by two
+      // different grids; if they disagreed the cells either side would
+      // quietly stop being neighbours
+      for (const frequency of base === "icosa" ? [1, 2] : [1, 2, 3, 4]) {
+        const board = build(0, frequency);
+        expect(board.mode).toBe(mode);
+        expect(board.polygons.size).toBe(perFace * frequency ** 2);
+        expect(eulerCharacteristic(board)).toBe(2);
+        expect(boundaryComponents(board)).toBe(0);
+      }
+    });
+  }
 });

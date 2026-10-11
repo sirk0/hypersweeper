@@ -143,6 +143,29 @@ EXEMPT_ROWS = {
     ("pentagonalicositetra", "medium"),  # 120 or 480
     ("sphere", "easy"),                  # 60 or 300
     ("sphere", "hard"),                  # 300 or 1200
+    # The cube group's Archimedean solids are cut the Catalan way, so their
+    # ladders are (face count) * frequency**2 too -- 14, 56, 126, 224, 504 for
+    # the cuboctahedron, 30, 120, 270, 480 for the truncated octahedron (each
+    # hexagon three rhombi), 38, 152, 342, 608 for the snub cube. Every easy
+    # row falls between two rungs, and the snub cube's 38-face step clears all
+    # three targets: 152 or 342 against 256, 342 or 608 against 480, each the
+    # nearer of the two and still beyond the outer band.
+    ("cubocta", "easy"),                 # 56 or 126
+    ("truncocta", "easy"),               # 30 or 120
+    ("snubcube", "easy"),                # 38 or 152
+    ("snubcube", "medium"),              # 152 or 342
+    ("snubcube", "hard"),                # 342 or 608
+    # The icosahedral three are cut the same way once their pentagons, hexagons
+    # and decagons are fanned into triangles, which makes their ladders steeper
+    # still -- 110, 440, 990; 270, 1080; 140, 560 -- so easy is the first rung
+    # wherever it lands, and a row between two rungs takes the nearer one. Their
+    # uncut solids, one cell per face, ship as the small boards under Sphere.
+    ("rhombicosidodecasplit", "easy"),   # 110; nothing smaller
+    ("rhombicosidodecasplit", "medium"),  # 110 or 440
+    ("truncicosidodecasplit", "easy"),   # 270; nothing smaller
+    ("truncicosidodecasplit", "hard"),   # 270 or 1080
+    ("snubdodecsplit", "easy"),          # 140; nothing smaller
+    ("snubdodecsplit", "medium"),        # 140 or 560
     # The double torus pays for its genus twice over: it is two donuts, so its
     # window buys twice the cells a donut's does, and the merge has to stay
     # narrower than the donuts it merges (`resize.MAX_WAIST`) or the board

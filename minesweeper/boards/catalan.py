@@ -510,6 +510,70 @@ def _quad_grid(
     return out_cells, out_pos
 
 
+def _edge_point(
+    ka: Hashable, kb: Hashable, pa: Vec3, pb: Vec3, step: int, total: int
+) -> tuple[Hashable, Vec3]:
+    """The point ``step / total`` of the way from corner ``ka`` to ``kb``, as
+    (id, position). Interpolated in the direction `_edge_key` canonicalises --
+    the same expression `_quad_grid` uses -- so any two faces meeting along
+    the edge, whatever their side counts, produce the same id *and* the same
+    coordinates; and an end of the edge is its corner, not a recomputation."""
+    key = _edge_key(ka, kb, step, total)
+    if key == ka:
+        return key, pa
+    if key == kb:
+        return key, pb
+    if repr(ka) < repr(kb):
+        return key, _lerp(pa, pb, step, total)
+    return key, _lerp(pb, pa, total - step, total)
+
+
+def _tri_grid(
+    faces: dict[Cell, list], positions: dict[Hashable, Vec3], frequency: int
+) -> tuple[dict[Cell, list], dict[Hashable, Vec3]]:
+    """Cut every triangle into ``frequency**2`` smaller ones.
+
+    The triangle twin of `_quad_grid`, for a solid whose triangles meet faces
+    of another side count: `solids._geodesic` names a point by barycentric
+    weights over one triangle's corners, which a square on the far side of the
+    edge has no way to agree with, so here an edge point is `_edge_point`'s
+    and only an interior one is the face's own.
+    """
+    out_cells: dict[Cell, list] = {}
+    out_pos: dict[Hashable, Vec3] = {}
+    n = frequency
+    for cell, ring in faces.items():
+        if len(ring) != 3:
+            raise ValueError("the triangle grid needs triangular faces")
+        k0, k1, k2 = ring
+        p0, p1, p2 = (positions[k] for k in ring)
+
+        def at(i: int, j: int):
+            if j == 0:
+                key, point = _edge_point(k0, k1, p0, p1, i, n)
+            elif i == 0:
+                key, point = _edge_point(k0, k2, p0, p2, j, n)
+            elif i + j == n:
+                key, point = _edge_point(k1, k2, p1, p2, j, n)
+            else:
+                key = ("q", cell, i, j)
+                point = tuple(
+                    p0[a] + (p1[a] - p0[a]) * i / n + (p2[a] - p0[a]) * j / n
+                    for a in range(3)
+                )
+            out_pos[key] = point
+            return key
+
+        for i in range(n):
+            for j in range(n - i):
+                out_cells[(cell, i, j, 0)] = [at(i, j), at(i + 1, j), at(i, j + 1)]
+                if i + j < n - 1:
+                    out_cells[(cell, i, j, 1)] = [
+                        at(i + 1, j), at(i + 1, j + 1), at(i, j + 1)
+                    ]
+    return out_cells, out_pos
+
+
 def _fan_pentagons(
     faces: dict[Cell, list], positions: dict[Hashable, Vec3]
 ) -> tuple[dict[Cell, list], dict[Hashable, Vec3]]:

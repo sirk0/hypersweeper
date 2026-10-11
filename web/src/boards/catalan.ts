@@ -88,7 +88,7 @@ const BASES: Record<string, () => Polyhedron> = {
  * Everything a Catalan face needs is an exact incidence of this solid — a
  * vertex index, an ordered edge pair, a face index — which is what keeps the
  * Catalan vertex ids exact. */
-class Base {
+export class Base {
   vertices: Vec3[];
   faces: number[][];
   faceDirs: Vec3[];
@@ -225,7 +225,7 @@ function snubPoint(vDir: Vec3, eDir: Vec3, fDir: Vec3, q: number, p: number): Ve
 // `zero`/`equal` are the Wythoff constraints placing the Archimedean vertex;
 // the operation's name is also the rule grouping the base's flags into faces.
 
-type Op = "join" | "kis" | "kisdual" | "ortho" | "meta" | "gyro";
+export type Op = "join" | "kis" | "kisdual" | "ortho" | "meta" | "gyro";
 
 const OPS: Record<Exclude<Op, "gyro">, { zero: Mirror[]; equal: Mirror[] }> = {
   // w = e, the rectification: its dual is the rhombic solid
@@ -244,7 +244,7 @@ const OPS: Record<Exclude<Op, "gyro">, { zero: Mirror[]; equal: Mirror[] }> = {
  * keys are the base's own exact incidences — `v,i` a base vertex, `e,u,v` a
  * base edge (u < v), `f,i` a base face, `g|…` a snub triangle — so two faces
  * share a vertex id exactly when they touch. */
-function catalanFaces(base: Base, op: Op): { faces: Cells; positions: Positions } {
+export function catalanFaces(base: Base, op: Op): { faces: Cells; positions: Positions } {
   if (op === "gyro") return gyroFaces(base);
   const [vDir, eDir, fDir] = base.flag;
   const { zero, equal } = OPS[op];
@@ -499,7 +499,7 @@ function lerp(a: Vec3, b: Vec3, step: number, total: number): Vec3 {
  * as a plain interpolation along the shared edge, in the direction `edgeKey`
  * canonicalises, so the two faces meeting there produce the same id *and* the
  * same coordinates. */
-function quadGrid(
+export function quadGrid(
   faces: Cells,
   positions: Positions,
   frequency: number,
@@ -544,6 +544,66 @@ function quadGrid(
     for (let i = 0; i < n; i++) {
       for (let j = 0; j < n; j++) {
         outCells.set(cid(cell, i, j), [at(i, j), at(i + 1, j), at(i + 1, j + 1), at(i, j + 1)]);
+      }
+    }
+  }
+  return { faces: outCells, positions: outPos };
+}
+
+/** The point `step / total` of the way from corner `ka` to `kb`, as
+ * [id, position]. Interpolated in the direction `edgeKey` canonicalises — the
+ * same expression `quadGrid` uses — so any two faces meeting along the edge,
+ * whatever their side counts, produce the same id *and* the same coordinates;
+ * and an end of the edge is its corner, not a recomputation. */
+function edgePoint(
+  ka: string, kb: string, pa: Vec3, pb: Vec3, step: number, total: number,
+): [string, Vec3] {
+  const key = edgeKey(ka, kb, step, total);
+  if (key === ka) return [key, pa];
+  if (key === kb) return [key, pb];
+  return [key, ka < kb ? lerp(pa, pb, step, total) : lerp(pb, pa, total - step, total)];
+}
+
+/** Cut every triangle into `frequency**2` smaller ones. The triangle twin of
+ * `quadGrid`, for a solid whose triangles meet faces of another side count:
+ * `geodesic` names a point by barycentric weights over one triangle's corners,
+ * which a square on the far side of the edge has no way to agree with, so here
+ * an edge point is `edgePoint`'s and only an interior one is the face's own. */
+export function triGrid(
+  faces: Cells,
+  positions: Positions,
+  frequency: number,
+): { faces: Cells; positions: Positions } {
+  const outCells: Cells = new Map();
+  const outPos: Positions = new Map();
+  const n = frequency;
+  for (const [cell, ring] of faces) {
+    if (ring.length !== 3) throw new Error("the triangle grid needs triangular faces");
+    const [k0, k1, k2] = ring as [string, string, string];
+    const [p0, p1, p2] = ring.map((k) => positions.get(k)!) as [Vec3, Vec3, Vec3];
+
+    const at = (i: number, j: number): string => {
+      let key: string;
+      let point: Vec3;
+      if (j === 0) [key, point] = edgePoint(k0, k1, p0, p1, i, n);
+      else if (i === 0) [key, point] = edgePoint(k0, k2, p0, p2, j, n);
+      else if (i + j === n) [key, point] = edgePoint(k1, k2, p1, p2, j, n);
+      else {
+        key = ["q", cell, i, j].join("|");
+        point = [0, 1, 2].map(
+          (a) => p0[a]! + ((p1[a]! - p0[a]!) * i) / n + ((p2[a]! - p0[a]!) * j) / n,
+        ) as Vec3;
+      }
+      outPos.set(key, point);
+      return key;
+    };
+
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < n - i; j++) {
+        outCells.set(cid(cell, i, j, 0), [at(i, j), at(i + 1, j), at(i, j + 1)]);
+        if (i + j < n - 1) {
+          outCells.set(cid(cell, i, j, 1), [at(i + 1, j), at(i + 1, j + 1), at(i, j + 1)]);
+        }
       }
     }
   }
