@@ -49,6 +49,12 @@ command -v npm >/dev/null || die "npm is required (it ships with node)"
 # the bundle. Only Xcode and CocoaPods are macOS-only, so the check is here
 # rather than at the top: a Linux run still produces a synced project.
 MAC=1
+# CocoaPods (Ruby) crashes with "Unicode Normalization not appropriate for
+# ASCII-8BIT" under the C locale, which is what a shell with no LANG gives it.
+case "${LC_ALL:-${LANG:-}}" in
+  *UTF-8*|*utf8*|*UTF8*|*utf-8*) ;;
+  *) export LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 ;;
+esac
 [ "$(uname -s)" = "Darwin" ] || MAC=0
 
 if [ "$MAC" = 0 ] && { [ "$OPEN" = 1 ] || [ "$RUN" = 1 ]; }; then
