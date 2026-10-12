@@ -22,6 +22,12 @@ import { animationsEnabled } from "../settings";
 import { checkForUpdate, loadDeployedBuild } from "../update";
 import { boardShape, SHAPE_KEYS } from "../render/cellStyle";
 import {
+  resolveTexture,
+  TILE_TEXTURE_HINTS,
+  TILE_TEXTURE_LABELS,
+  TILE_TEXTURES,
+} from "../render/tileTexture";
+import {
   activeScheme,
   SCHEME_KEYS,
   SCHEME_LABELS,
@@ -99,6 +105,8 @@ export interface SettingsHost {
   backgrounds: boolean;
   /** Whether the board's tiles carry a polished finish. */
   gloss: boolean;
+  /** What the tiles are made of — a key in `TILE_TEXTURES`. */
+  texture: string;
   /** Whether a flag and a mine are real models on a board you can turn. */
   pins: boolean;
   /** Whether the board's row carries every symmetry control it has. */
@@ -125,6 +133,7 @@ export interface SettingsHost {
   setHoldToFlag(ms: number): void;
   setBackgrounds(on: boolean): void;
   setGloss(on: boolean): void;
+  setTexture(key: string): void;
   setPins(on: boolean): void;
   setExtraControls(on: boolean): void;
   setAnalytics(on: boolean): void;
@@ -427,6 +436,39 @@ export function renderShapePicker(host: SettingsHost): DocumentFragment {
   return frag;
 }
 
+/** The tile texture page: None, then each material (render/tileTexture.ts).
+ * The shape picker's twin — a list with a tick — but without a swatch: the
+ * textures are shader noise, which a CSS swatch cannot draw, so each row says
+ * in a line what it looks like and the board shows the rest. It carries the
+ * same footer, for the same reason: a texture is compiled into the board's
+ * material when the board is built. */
+export function renderTexturePicker(host: SettingsHost): DocumentFragment {
+  const frag = document.createDocumentFragment();
+  const list = document.createElement("ul");
+  list.className = "menu-list";
+  const current = resolveTexture(host.texture);
+  for (const key of TILE_TEXTURES) {
+    const check = document.createElement("span");
+    check.className = "settings-check";
+    check.textContent = key === current ? "✓" : "";
+    const { li, btn } = buttonRow(
+      [textBlock(TILE_TEXTURE_LABELS[key], TILE_TEXTURE_HINTS[key]), check],
+      () => host.setTexture(key),
+      "settings-theme",
+    );
+    btn.dataset["texture"] = key;
+    btn.setAttribute("aria-pressed", String(key === current));
+    if (key === current) btn.classList.add("active");
+    list.append(li);
+  }
+  frag.append(list);
+  const note = document.createElement("p");
+  note.className = "settings-footer";
+  note.textContent = "The board's tiles change on the next board you open.";
+  frag.append(note);
+  return frag;
+}
+
 /** The colour scheme page: Auto, Light, Dark. A page of its own beside the
  * theme, and for the same reason the sound picker is one — it is a short list of
  * choices, and the settings row above already reports which is on.
@@ -618,6 +660,7 @@ function holdRow(host: SettingsHost): HTMLElement {
 export interface SettingsPages {
   openThemes(): void;
   openShapes(): void;
+  openTextures(): void;
   openSchemes(): void;
   openBestTimes(): void;
   openSounds(): void;
@@ -627,8 +670,15 @@ export interface SettingsPages {
 /** Build the settings page body. The caller (Menu) supplies the back row and
  * puts this into `.menu-body`; `pages` opens the pages below it. */
 export function renderSettings(host: SettingsHost, pages: SettingsPages): DocumentFragment {
-  const { openThemes, openShapes, openSchemes, openBestTimes, openSounds, openAchievements } =
-    pages;
+  const {
+    openThemes,
+    openShapes,
+    openTextures,
+    openSchemes,
+    openBestTimes,
+    openSounds,
+    openAchievements,
+  } = pages;
   const frag = document.createDocumentFragment();
 
   // -- Records ---------------------------------------------------------------
@@ -716,6 +766,21 @@ export function renderSettings(host: SettingsHost, pages: SettingsPages): Docume
   shapeBtn.dataset["settingsGroup"] = "shape";
   appearance.append(shapeLi);
 
+  // What the cut tiles are made of, under the cut itself.
+  const textureChevron = document.createElement("span");
+  textureChevron.className = "menu-entry-chevron";
+  textureChevron.textContent = "›";
+  const { li: textureLi, btn: textureBtn } = buttonRow(
+    [
+      textBlock("Tile texture", TILE_TEXTURE_LABELS[resolveTexture(host.texture)]),
+      textureChevron,
+    ],
+    openTextures,
+    "menu-submenu",
+  );
+  textureBtn.dataset["settingsGroup"] = "texture";
+  appearance.append(textureLi);
+
   // The third axis. It reports the *choice*
   // rather than what the choice resolves to, with the resolution in brackets —
   // "Auto" alone would leave a player who wanted dark unable to tell whether
@@ -785,7 +850,8 @@ export function renderSettings(host: SettingsHost, pages: SettingsPages): Docume
   // in each hint, which would push both rows to three lines to say one thing.
   const finishNote = document.createElement("p");
   finishNote.className = "settings-note";
-  finishNote.textContent = "Glossy tiles and 3D pins apply to the next board you open.";
+  finishNote.textContent =
+    "Tile texture, glossy tiles and 3D pins apply to the next board you open.";
   frag.append(finishNote);
 
   // -- Behaviour -------------------------------------------------------------

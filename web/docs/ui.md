@@ -586,6 +586,16 @@ coloured. Like a cell style and unlike the sound preset, both are cut into the m
 (`GameSession` takes a `finish` beside the style), so both land on the next
 board and the rows say so.
 
+**Tile texture.** A third finish row, directly under Board shape, opening a
+picker page of its own (`renderTexturePicker`): None, Wood, Marble, Linen,
+Terrazzo, Spun metal, Crackle glaze. **None** by default. It is the player's,
+like the gloss, and spread over the style by `finishStyle` (`Finish.texture`);
+it is compiled into the tile material when a board is built, so it too lands on
+the next board — the page's footer says so, and so does the note under
+Appearance. The rows carry no swatch: the textures are shader noise, which a CSS
+swatch cannot draw. What a texture does to the board is in "Tile textures" in
+[`render.md`](render.md).
+
 **Extra board controls.** Whether the row under the header carries every
 symmetry a board has, or only the two the Klein bottle cannot be played without.
 Under Behaviour, and **off** by default.

@@ -341,6 +341,46 @@ carry it — none of them is a colour:
 - **`grout`** (solids) lightens the lines between the tiles, which at the
   default mid grey read as heavy outlines once the corners are round.
 
+### Tile textures (`src/render/tileTexture.ts`)
+
+Settings › Appearance › *Tile texture* carves a material into the tiles: wood,
+marble, linen, terrazzo, spun metal or crackle glaze, or `none` (the default).
+It rides on the style as `CellStyle.texture`, set by `finishStyle` from the
+player's `Finish` — never by a shape or a theme — and `patchTexture` adds it to
+the tile material's shader when the board is built. Things to know:
+
+- **It is procedural.** Every texture is a few lines of GLSL noise (value noise,
+  fBm, a 3×3×3 Voronoi), so there is no image to ship, mipmap or fetch.
+- **It is a solid texture, so there are no UVs.** A vertex samples the pattern
+  at its own *rest* position, in the cell's own frame: centred on the cell,
+  divided by its radius (a fractal board's tiny tiles carry as much grain as the
+  square grid's), turned about the cell's axis and offset into the block by a
+  hash of the cell index, so no two neighbours are cut from the same spot. That
+  frame is read from `uCellGeo`, the per-cell texture `motionShader.ts` already
+  uploads — which is why **`patchTexture` must run before `patchMotion`**: it
+  is chained as motion's `prev`, so motion's declarations land in front of its
+  own. Sampling the rest position is what lets a hopping tile carry its grain.
+- **Only brightness, and on a lit material the normal and roughness.** The hue
+  stays the theme's, so the shape colour code reads through the grain. A lit
+  material also bends its normal by the screen-space gradient of the pattern's
+  height (`txPerturb`, three's `perturbNormalArb` renamed) — on a solid that is
+  real relief under the moving light; on a flat board lit head-on it mostly
+  darkens the grooves.
+- **An opened cell keeps a third of it** (`OPEN_STRENGTH`): its floor is where
+  the digit is read. The flag is a per-vertex `aTexOpen` attribute, present only
+  on a textured board and written from `writeColor`, which every state change
+  already passes through.
+- **Fine detail fades rather than shimmers.** `txKeep(freq)` measures how many
+  pixels a feature of that frequency spans (`fwidth`) and greys it out as it
+  nears the pixel grid, so a weave on a small tile becomes a flat tone.
+- **`none` touches nothing**: no attribute, no patch, the same program cache key
+  — the default board's shaders are byte-identical to an untextured build, which
+  is why the gallery baselines did not move. `tests/unit/tileTexture.test.ts`
+  pins that and the cache keys.
+
+`node scripts/texture-shots.mjs <outdir> [textures] [modes] [theme] [shape]
+[scheme]` (preview server up) photographs a half-open board per texture.
+
 ## Motion and effects
 
 Two things move a board beyond recolouring it, and they are deliberately split

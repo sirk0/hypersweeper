@@ -362,6 +362,20 @@ describe("the player's finish", () => {
     expect(glossy.shade).toEqual(soft.shade);
   });
 
+  it("carries the tile texture, and only a real one", () => {
+    // The texture is a shader patch, not geometry or colour: it rides on the
+    // style as a key and nothing else in the style moves for it.
+    for (const key of CELL_STYLE_KEYS) {
+      const style = cellStyle(key);
+      const plain = finishStyle(style, { gloss: false, pins: true });
+      const wood = finishStyle(style, { gloss: false, pins: true, texture: "wood" });
+      expect(plain.texture, key).toBeUndefined();
+      expect(finishStyle(style, { gloss: false, pins: true, texture: "none" }).texture).toBeUndefined();
+      expect(wood.texture, key).toBe("wood");
+      expect({ ...wood, texture: undefined }, key).toEqual({ ...plain, texture: undefined });
+    }
+  });
+
   it("puts real markers on any style, and takes Realistic's away", () => {
     for (const key of CELL_STYLE_KEYS) {
       const style = cellStyle(key);

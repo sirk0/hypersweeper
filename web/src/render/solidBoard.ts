@@ -38,6 +38,7 @@ import {
 } from "./boardMesh";
 import { clipTriangles, fanTriangles, triangleCentroid, type Tri } from "./clip";
 import { BoardMotion, cellAttribute, patchMotion } from "./motionShader";
+import { patchTexture, textureOpenFlags, type TextureOpenFlags } from "./tileTexture";
 import { makeGlyphAtlas, type Glyph, type GlyphAtlas } from "./glyphAtlas";
 import {
   markerDrop,
@@ -428,6 +429,8 @@ export class SolidBoard extends Group implements BoardMesh {
     ["uv", 2],
   ]);
   private readonly dropMaterial: MeshBasicMaterial;
+  /** Where the tile texture is turned down (opened cells); null untextured. */
+  private readonly texOpen: TextureOpenFlags | null;
   // A style that stands real models on its flagged and mined cells
   // (CellStyle.solidMarkers) builds them into this one merged buffer, the way
   // the glyph quads are built: the set of marked cells changes on nearly every
@@ -738,6 +741,9 @@ export class SolidBoard extends Group implements BoardMesh {
       // nothing but a depth-rejected fragment.
       side: this.twoSided ? DoubleSide : FrontSide,
     });
+    // Texture first: it reads the per-cell frame motion declares (tileTexture.ts).
+    patchTexture(material, style.texture, true);
+    this.texOpen = textureOpenFlags(style.texture, geometry, vertexCount);
     patchMotion(material, this.motion.uniforms, "tile", true);
     const cells = new Mesh(geometry, material);
     cells.name = "cells";
@@ -1174,6 +1180,10 @@ export class SolidBoard extends Group implements BoardMesh {
   }
 
   private writeColor(i: number): void {
+    if (this.texOpen) {
+      const g = this.geom[i]!;
+      this.texOpen.set(g.start, g.count, isOpened(this.states[i]!));
+    }
     const col = baseColorFor(this.states[i]!, this.geom[i]!.palette).clone();
     if (i === this.hovered && this.states[i]!.kind === "hidden") {
       col.offsetHSL(0, 0, 0.08);

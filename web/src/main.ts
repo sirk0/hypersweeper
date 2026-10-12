@@ -296,6 +296,9 @@ class App {
       get gloss() {
         return app.settings.gloss;
       },
+      get texture() {
+        return app.settings.texture;
+      },
       get pins() {
         return app.settings.pins;
       },
@@ -322,6 +325,7 @@ class App {
       setHoldToFlag: (ms) => this.setHoldToFlag(ms),
       setBackgrounds: (on) => this.setBackgrounds(on),
       setGloss: (on) => this.setGloss(on),
+      setTexture: (key) => this.setTexture(key),
       setPins: (on) => this.setPins(on),
       setExtraControls: (on) => this.setExtraControls(on),
       setAnalytics: (on) => this.setAnalytics(on),
@@ -435,6 +439,13 @@ class App {
    * they land on the next board (the settings page says so). */
   private setGloss(on: boolean): void {
     this.settings = { ...this.settings, gloss: on };
+    saveSettings(this.settings);
+  }
+
+  /** Pick what the tiles are made of. Cut into the mesh like the gloss, so it
+   * too lands on the next board. */
+  private setTexture(key: string): void {
+    this.settings = { ...this.settings, texture: key };
     saveSettings(this.settings);
   }
 
@@ -580,7 +591,11 @@ class App {
       // ...and the two halves of that style the *player* owns rather than the
       // theme (render/cellStyle.ts `finishStyle`). Read here, with the style,
       // because both are cut into the mesh.
-      finish: { gloss: this.settings.gloss, pins: this.settings.pins },
+      finish: {
+        gloss: this.settings.gloss,
+        pins: this.settings.pins,
+        texture: this.settings.texture,
+      },
       // Sound is panned by where a cell is *on screen*, which only the
       // renderer knows (it holds the camera, the zoom and the board's
       // rotation).

@@ -38,6 +38,7 @@ import {
 } from "./animations";
 import { cellPalette, classifyShapes, type CellPalette, corners } from "./shapePalette";
 import { BoardMotion, cellAttribute, patchMotion } from "./motionShader";
+import { patchTexture, textureOpenFlags, type TextureOpenFlags } from "./tileTexture";
 import {
   cellStyle,
   cellStyleLoops,
@@ -93,6 +94,8 @@ export class PolygonBoard extends Group implements BoardMesh {
   // being its own material is what lets it fade in as it shrinks.
   private readonly dropGeometry = new BufferGeometry();
   private readonly dropMaterial: MeshBasicMaterial;
+  /** Where the tile texture is turned down (opened cells); null untextured. */
+  private readonly texOpen: TextureOpenFlags | null;
   private readonly atlas: GlyphAtlas;
   private readonly states: CellVisual[];
   private hovered = -1;
@@ -272,6 +275,9 @@ export class PolygonBoard extends Group implements BoardMesh {
           side: DoubleSide,
           ...translucent,
         });
+    // Texture first: it reads the per-cell frame motion declares (tileTexture.ts).
+    patchTexture(cellMaterial, style.texture, !style.unlit);
+    this.texOpen = textureOpenFlags(style.texture, geometry, vertexCount);
     patchMotion(cellMaterial, this.motion.uniforms, "tile", !style.unlit);
     const cells = new Mesh(geometry, cellMaterial);
     cells.name = "cells";
@@ -520,6 +526,10 @@ export class PolygonBoard extends Group implements BoardMesh {
   }
 
   private writeColor(i: number): void {
+    if (this.texOpen) {
+      const g = this.geom[i]!;
+      this.texOpen.set(g.start, g.count, isOpened(this.states[i]!));
+    }
     const col = baseColorFor(this.states[i]!, this.geom[i]!.palette).clone();
     if (i === this.hovered && this.states[i]!.kind === "hidden") {
       col.offsetHSL(0, 0, 0.08);

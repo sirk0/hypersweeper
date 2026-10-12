@@ -27,9 +27,10 @@ import { menuIcon, previewIcon } from "./icons";
 import {
   GEAR_ICON,
   renderSchemePicker,
-  renderShapePicker,
   renderSettings,
+  renderShapePicker,
   renderSoundPicker,
+  renderTexturePicker,
   renderThemePicker,
   type SettingsHost,
 } from "./settings";
@@ -553,6 +554,7 @@ export class Menu {
       holdToFlagMs: this.settings.holdToFlagMs,
       backgrounds: this.settings.backgrounds,
       gloss: this.settings.gloss,
+      texture: this.settings.texture,
       pins: this.settings.pins,
       extraControls: this.settings.extraControls,
       analytics: this.settings.analytics,
@@ -584,6 +586,10 @@ export class Menu {
       },
       setGloss: (on) => {
         this.settings.setGloss(on);
+        page();
+      },
+      setTexture: (key) => {
+        this.settings.setTexture(key);
         page();
       },
       setPins: (on) => {
@@ -631,6 +637,7 @@ export class Menu {
       renderSettings(host, {
         openThemes: () => this.showThemePicker(),
         openShapes: () => this.showShapePicker(),
+        openTextures: () => this.showTexturePicker(),
         openSchemes: () => this.showSchemePicker(),
         openBestTimes: () => this.showBestTimes(),
         openSounds: () => this.showSoundPicker(),
@@ -715,6 +722,20 @@ export class Menu {
     this.body.replaceChildren(
       this.backRow("Board shape", () => this.showSettings()),
       renderShapePicker(host),
+    );
+  }
+
+  /** The tile texture page — the shape picker's twin. */
+  private showTexturePicker(): void {
+    this.go(() => this.renderTexturePage());
+  }
+
+  private renderTexturePage(): void {
+    const host = this.settingsPageHost(() => this.renderTexturePage());
+    this.root.classList.add("settings-open");
+    this.body.replaceChildren(
+      this.backRow("Tile texture", () => this.showSettings()),
+      renderTexturePicker(host),
     );
   }
 

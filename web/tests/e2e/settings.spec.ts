@@ -156,6 +156,52 @@ test.describe("settings", () => {
     );
   });
 
+  test("the tile texture is its own row and its own page", async ({ page }) => {
+    // A shader that fails to compile throws nothing — three logs it — so the
+    // console is what says the textured program built.
+    const errors: string[] = [];
+    page.on("pageerror", (e) => errors.push(String(e)));
+    page.on("console", (m) => {
+      if (m.type() === "error") errors.push(m.text());
+    });
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
+    const row = page.locator('.menu-entry[data-settings-group="texture"]');
+    await expect(row).toContainText("Tile texture");
+    await expect(row).toContainText("None"); // off by default
+    await expect(page.locator(".menu-entry[data-texture]")).toHaveCount(0);
+
+    await row.click();
+    // None and the six materials.
+    await expect(page.locator(".menu-entry[data-texture]")).toHaveCount(7);
+    await expect(page.locator('.menu-entry[data-texture="none"]')).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await page.locator('.menu-entry[data-texture="wood"]').click();
+    await expect(page.locator('.menu-entry[data-texture="wood"]')).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await page.locator('.menu-entry[data-action="back"]').click();
+    await expect(page.locator('.menu-entry[data-settings-group="texture"]')).toContainText(
+      "Wood",
+    );
+    const stored = await page.evaluate(
+      () => JSON.parse(localStorage.getItem("ms:settings") ?? "{}") as { texture?: string },
+    );
+    expect(stored.texture).toBe("wood");
+
+    // ...and a board built afterwards compiles it: flat and solid alike.
+    for (const mode of ["square", "sphere"]) {
+      await page.evaluate((m) => window.__ms!.startBoard(m, "easy", { seed: 1 }), mode);
+      await page.evaluate(
+        () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
+      );
+      expect(await page.evaluate(() => window.__ms!.state().screen)).toBe("game");
+    }
+    expect(errors).toEqual([]);
+  });
+
   test("the colour scheme is its own row and its own page", async ({ page }) => {
     await page.locator('.menu-header-btn[data-action="settings"]').click();
     const row = page.locator('.menu-entry[data-settings-group="scheme"]');

@@ -3,6 +3,7 @@ import { hasDifficulty, screens } from "./config/screens";
 import { clampHoldMs, DEFAULT_HOLD_MS } from "./input/hold";
 import { DEFAULT_SHAPE, resolveShape } from "./render/cellStyle";
 import { resolveQuality, type QualityPref } from "./render/quality";
+import { DEFAULT_TEXTURE, resolveTexture } from "./render/tileTexture";
 import { readObject, storage } from "./storage";
 import {
   DEFAULT_SCHEME,
@@ -100,6 +101,12 @@ export interface Settings {
    * Baked into the mesh (render/cellStyle.ts `finishStyle`), so it lands on the
    * next board. */
   gloss: boolean;
+  /** What the tiles are made of — a key in `TILE_TEXTURES`
+   * (render/tileTexture.ts): wood, marble, linen and the rest, or `none`
+   * (Settings › Appearance). A procedural pattern carved into the tile
+   * shader; like the gloss it is baked into the mesh, so it lands on the next
+   * board. Off by default. */
+  texture: string;
   /** Whether a flag and a mine are real models on a board you can turn — a pin
    * standing on a flagged cell, a bomb sitting on a mined one — rather than
    * atlas billboards (Settings › Appearance; render/markers3d.ts). Also
@@ -142,6 +149,7 @@ export const DEFAULT_SETTINGS: Settings = {
   holdToFlagMs: DEFAULT_HOLD_MS,
   backgrounds: false,
   gloss: false,
+  texture: DEFAULT_TEXTURE,
   pins: true,
   extraControls: false,
   analytics: true,
@@ -331,6 +339,7 @@ export function loadSettings(): Settings {
     // pins unless its theme said so either — but pins are what a turnable board
     // wants, so that one starts on.
     gloss: typeof rec["gloss"] === "boolean" ? rec["gloss"] : DEFAULT_SETTINGS.gloss,
+    texture: resolveTexture(typeof rec["texture"] === "string" ? rec["texture"] : null),
     pins: typeof rec["pins"] === "boolean" ? rec["pins"] : DEFAULT_SETTINGS.pins,
     // Additive, and defaulting *off*: a record from a build where every control
     // was always shown lacks the key, and the point of the setting is that the

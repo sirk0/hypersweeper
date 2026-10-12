@@ -55,6 +55,7 @@ const SETTINGS: Settings = {
   holdToFlagMs: 500,
   backgrounds: true,
   gloss: true,
+  texture: "wood",
   pins: false,
   extraControls: true,
   analytics: false,
@@ -154,6 +155,22 @@ describe("the board's finish, and the extra controls", () => {
   });
 });
 
+describe("the tile texture", () => {
+  it("ships plain, takes a known texture and drops an unknown one", () => {
+    // Additive: a record from before the setting simply lacks it.
+    expect(DEFAULT_SETTINGS.texture).toBe("none");
+    const store = withStorage(fakeStorage());
+    store.setItem(KEY, JSON.stringify({ version: 5, theme: "sand" }));
+    expect(loadSettings().texture).toBe("none");
+    store.setItem(KEY, JSON.stringify({ version: 5, texture: "marble" }));
+    expect(loadSettings().texture).toBe("marble");
+    store.setItem(KEY, JSON.stringify({ version: 5, texture: "velvet" }));
+    expect(loadSettings().texture).toBe("none");
+    store.setItem(KEY, JSON.stringify({ version: 5, texture: "toString" }));
+    expect(loadSettings().texture).toBe("none");
+  });
+});
+
 describe("settings validation", () => {
   it("drops a theme that no longer exists", () => {
     withStorage(
@@ -191,6 +208,7 @@ describe("settings validation", () => {
       holdToFlagMs: DEFAULT_SETTINGS.holdToFlagMs,
       backgrounds: DEFAULT_SETTINGS.backgrounds,
       gloss: DEFAULT_SETTINGS.gloss,
+      texture: DEFAULT_SETTINGS.texture,
       pins: DEFAULT_SETTINGS.pins,
       extraControls: DEFAULT_SETTINGS.extraControls,
       analytics: DEFAULT_SETTINGS.analytics,
@@ -296,6 +314,7 @@ describe("settings upgrades", () => {
       holdToFlagMs: DEFAULT_SETTINGS.holdToFlagMs,
       backgrounds: DEFAULT_SETTINGS.backgrounds,
       gloss: DEFAULT_SETTINGS.gloss,
+      texture: DEFAULT_SETTINGS.texture,
       pins: DEFAULT_SETTINGS.pins,
       extraControls: DEFAULT_SETTINGS.extraControls,
       analytics: DEFAULT_SETTINGS.analytics,
@@ -441,6 +460,7 @@ describe("settings upgrades", () => {
       holdToFlagMs: DEFAULT_SETTINGS.holdToFlagMs,
       backgrounds: DEFAULT_SETTINGS.backgrounds,
       gloss: DEFAULT_SETTINGS.gloss,
+      texture: DEFAULT_SETTINGS.texture,
       pins: DEFAULT_SETTINGS.pins,
       extraControls: DEFAULT_SETTINGS.extraControls,
       analytics: DEFAULT_SETTINGS.analytics,
@@ -502,6 +522,7 @@ describe("cross-tab sync", () => {
       holdToFlagMs: DEFAULT_SETTINGS.holdToFlagMs,
       backgrounds: DEFAULT_SETTINGS.backgrounds,
       gloss: DEFAULT_SETTINGS.gloss,
+      texture: DEFAULT_SETTINGS.texture,
       pins: DEFAULT_SETTINGS.pins,
       extraControls: DEFAULT_SETTINGS.extraControls,
         analytics: DEFAULT_SETTINGS.analytics,

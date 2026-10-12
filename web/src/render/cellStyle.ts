@@ -180,6 +180,10 @@ export interface CellStyle {
    * have no consistent outward normal, so `SolidBoard` stands one marker on each
    * of their two faces rather than picking a side. */
   solidMarkers?: true;
+  /** A procedural surface pattern carved into the tiles (render/tileTexture.ts)
+   * — the player's, set by `finishStyle` from Settings › Appearance, never by a
+   * shape or a theme. Absent means plain tiles. */
+  texture?: string;
   /** Round every tile's corners off: the curve at each corner takes this
    * share of each of its two edges (`roundCorners` in boardMesh.ts), so every
    * shape keeps the same proportion of its edges straight and a hexagon stays
@@ -638,6 +642,10 @@ export interface Finish {
   /** Real models for a flag and a mine on a board you can turn
    * (`solidMarkers`; flat boards never take them whatever this says). */
   pins: boolean;
+  /** What the tiles are made of — a key in `TILE_TEXTURES`
+   * (render/tileTexture.ts), carved into the tile material's shader. Optional
+   * so a caller with no say keeps the plain tiles. */
+  texture?: string;
 }
 
 /** What the finish is when nobody has said — the shipped defaults, matching
@@ -699,6 +707,8 @@ export function finishStyle(style: CellStyle, finish: Finish): CellStyle {
   }
   if (finish.pins) next.solidMarkers = true;
   else delete next.solidMarkers;
+  if (finish.texture && finish.texture !== "none") next.texture = finish.texture;
+  else delete next.texture;
   return next;
 }
 
