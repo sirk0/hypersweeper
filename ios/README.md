@@ -185,5 +185,73 @@ that tracks `package.json`, and a build number that grows.
   page never sees the key, and WebKit never hands it back. A page-side
   `preventDefault` does not help: the crash comes after WebKit reports the key.
 
-Not done here: the submission itself, TestFlight and CI. Signing and uploading
-need credentials that belong to a person, not a repository.
+**Privacy.** The privacy policy URL for App Store Connect (App Information →
+Privacy Policy URL) is <https://hypersweeper.pages.dev/privacy>, served from
+`web/public/privacy.html`. Under **App Privacy**, answer *No, we do not collect
+data from this app*, so the label reads **Data Not Collected**. That matches
+`PrivacyInfo.xcprivacy` and the policy page. All three rest on analytics being
+compiled out of packaged builds (`VITE_PACKAGED=1`), so if that ever changes,
+change all three together. The page also covers the website, which does count
+plays.
+
+## Releasing
+
+Builds reach App Store Connect through one workflow,
+`.github/workflows/app-store.yml` (**App Store upload**), which you start by
+hand. It never runs on a push or a pull request, and PR CI builds no iOS app.
+On a `macos-26` GitHub-hosted runner, with the newest stable Xcode, it:
+
+1. checks out `master` with full history (the build number is the commit
+   count, so a shallow clone is refused);
+2. runs `make ios-prepare` (`scripts/build-ios-app.sh --prepare-only`), which
+   builds the web bundle, checks it is offline-safe, syncs it into `ios/`
+   and stamps the version, then runs `pod install`;
+3. archives the `App` scheme for iOS, Mac Catalyst or both, and exports each
+   archive straight to App Store Connect with `ios/ExportOptions.plist`
+   (`app-store-connect`, `upload`, automatic signing). Signing is Xcode's
+   cloud signing with an App Store Connect API key, so no certificates or
+   profiles are stored anywhere. The team is read from the project's
+   `DEVELOPMENT_TEAM`.
+
+The job summary shows the version and build number. If the job fails, the
+xcodebuild logs and result bundles are attached as an artifact.
+
+### One-time setup
+
+1. **The API key.** In App Store Connect → Users and Access → Integrations →
+   App Store Connect API → **Team Keys**, generate a key with the **Admin**
+   role. Admin is what cloud signing needs to create distribution
+   certificates and profiles. Note the **Key ID** and the **Issuer ID** shown
+   above the list, and download the `.p8`. Apple lets you download it only once.
+2. **The environment.** In GitHub, go to Settings → Environments → New
+   environment, and name it `app-store`. Under *Deployment branches and tags*,
+   choose *Selected branches* and add `master`. Optionally add yourself as a
+   required reviewer, so every upload waits for a click.
+3. **The secrets**, in that environment (not as repository secrets):
+   - `ASC_KEY_ID`: the key ID;
+   - `ASC_ISSUER_ID`: the issuer ID;
+   - `ASC_KEY_P8`: the whole contents of the `.p8` file, including the
+     `BEGIN`/`END PRIVATE KEY` lines.
+
+   Environment secrets reach only a job that names the environment, and
+   GitHub never gives secrets to fork pull requests.
+
+### Uploading a build
+
+Go to Actions → **App Store upload** → *Run workflow*, keep the branch on
+`master`, and pick `both`, `ios` or `mac`. A run started from any other branch
+fails at its first step. Two runs never overlap: a second one waits for the
+first to finish.
+
+Every upload needs a **new build number**, and the build number is the commit
+count of `master`. Merging a PR to `master` provides one (and
+`bump-version.yml` then adds its own commit). Running the workflow again on
+the same commit uploads a build number App Store Connect already has, and
+the upload is rejected. To retry a failed upload, merge something first.
+The iOS and Mac builds of one run share a build number. That is allowed,
+because App Store Connect numbers each platform separately.
+
+The build appears in **App Store Connect → TestFlight** once Apple has
+processed it, which takes from a few minutes to an hour. Processing problems
+come by email. To release, open the app's iOS or macOS version page in App
+Store Connect, select the build, and **Add for Review**.

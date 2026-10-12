@@ -1,0 +1,306 @@
+name: App Store upload
+
+# Builds the native app (ios/, the web/ game inside Capacitor) and uploads it to
+# App Store Connect, where it appears in TestFlight. Submitting a build for
+# review is still done by hand in App Store Connect. See "Releasing" in
+# ios/README.md for the one-time setup and how to run this.
+#
+# Started by hand only (Actions → App Store upload → Run workflow), from master.
+# It never runs on a push or a pull request, and there is deliberately no iOS
+# build in PR CI.
+#
+# The credentials are an App Store Connect Team API key (Admin role) stored as
+# three secrets of the `app-store` environment. Environment secrets are only
+# handed to a job that names the environment, and GitHub withholds secrets from
+# fork pull requests anyway, so nothing here reaches a PR or a fork. Signing is
+# Xcode's automatic cloud signing (-allowProvisioningUpdates with that key):
+# there are no certificates or profiles in the secrets.
+#
+# The build number is the git commit count (scripts/build-ios-app.sh), so this
+# needs the full history, and every upload needs a commit that has not been
+# uploaded before. Merging to master provides one (bump-version.yml adds
+# another). Re-running on the same commit is rejected by App Store Connect as a
+# duplicate build.
+
+on:
+  workflow_dispatch:
+    inputs:
+      platforms:
+        description: Which builds to upload
+        type: choice
+        options: [both, ios, mac]
+        default: both
+
+permissions:
+  contents: read
+
+# One upload at a time: two runs on the same commit would race for the same
+# build number. Queued rather than cancelled, because a cancelled upload can be
+# half-processed on Apple's side.
+concurrency:
+  group: app-store
+  cancel-in-progress: false
+
+jobs:
+  upload:
+    name: Archive and upload (${{ inputs.platforms }})
+    runs-on: macos-26
+    environment: app-store
+    timeout-minutes: 90
+    env:
+      # CocoaPods (Ruby) crashes under a non-UTF-8 locale.
+      LANG: en_US.UTF-8
+      LC_ALL: en_US.UTF-8
+      WORKSPACE: ios/App/App.xcworkspace
+      SCHEME: App
+    steps:
+      - name: Only from master
+        if: github.ref != 'refs/heads/master'
+        run: |
+          echo "::error::App Store uploads run from master only, not ${GITHUB_REF}."
+          exit 1
+
+      - name: Set the working paths
+        # Here rather than in `env:` above, where the runner context is not
+        # available yet.
+        run: |
+          {
+            echo "BUILD_DIR=$RUNNER_TEMP/app-store"
+            echo "LOG_DIR=$RUNNER_TEMP/app-store/logs"
+          } >> "$GITHUB_ENV"
+
+      - name: Check the platforms input
+        id: platforms
+        env:
+          PLATFORMS: ${{ inputs.platforms }}
+        run: |
+          case "$PLATFORMS" in
+            both) list="ios mac" ;;
+            ios) list="ios" ;;
+            mac) list="mac" ;;
+            *) echo "::error::platforms must be both, ios or mac, not '$PLATFORMS'"; exit 1 ;;
+          esac
+          echo "list=$list" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        with:
+          # The build number is `git rev-list --count HEAD`. A shallow clone
+          # counts 1 and would upload a build number lower than the last one.
+          fetch-depth: 0
+
+      - name: Refuse a shallow clone
+        run: |
+          if [ "$(git rev-parse --is-shallow-repository)" != "false" ]; then
+            echo "::error::shallow clone, so the build number would be wrong"
+            exit 1
+          fi
+
+      - name: Select the newest stable Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Show the toolchain
+        run: |
+          xcodebuild -version
+          xcode-select -p
+          xcrun --sdk iphoneos --show-sdk-version
+          sw_vers
+
+      - uses: actions/setup-node@v4
+        with:
+          # The same Node as the deploy and CI jobs (no .nvmrc or engines field
+          # pins one).
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install the web dependencies
+        working-directory: web
+        run: npm ci
+
+      - name: Install CocoaPods if the image lacks it
+        run: |
+          if ! command -v pod >/dev/null; then
+            brew install cocoapods
+          fi
+          pod --version
+
+      - name: Build the game and sync it into ios/ (prepare only)
+        # --prepare-only: build web/ with VITE_PACKAGED=1, run the offline-assets
+        # check, `cap sync ios`, and stamp Version.generated.xcconfig. It does
+        # not open Xcode.
+        run: make ios-prepare
+
+      - name: Install the pods
+        working-directory: ios/App
+        run: pod install
+
+      - name: Read the version, build number and team
+        id: meta
+        run: |
+          gen=ios/App/Version.generated.xcconfig
+          version="$(sed -n 's/^MARKETING_VERSION = //p' "$gen")"
+          build="$(sed -n 's/^CURRENT_PROJECT_VERSION = //p' "$gen")"
+          # The team comes from the project's own DEVELOPMENT_TEAM, not from a
+          # secret or this file, so it is written down in one place only.
+          team="$(xcodebuild -project ios/App/App.xcodeproj -target App \
+            -configuration Release -showBuildSettings -json 2>/dev/null \
+            | jq -r '.[0].buildSettings.DEVELOPMENT_TEAM // empty')"
+          if [ -z "$version" ] || [ -z "$build" ]; then
+            echo "::error::$gen is missing the version or the build number"
+            exit 1
+          fi
+          if [ -z "$team" ]; then
+            echo "::error::the App target has no DEVELOPMENT_TEAM for Release"
+            exit 1
+          fi
+          {
+            echo "version=$version"
+            echo "build=$build"
+            echo "team=$team"
+          } >> "$GITHUB_OUTPUT"
+          echo "version $version, build $build"
+
+      - name: Write the App Store Connect key
+        id: key
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          if [ -z "$ASC_KEY_ID" ] || [ -z "$ASC_KEY_P8" ]; then
+            echo "::error::ASC_KEY_ID and ASC_KEY_P8 must be set in the app-store environment"
+            exit 1
+          fi
+          umask 077
+          dir="$(mktemp -d "$RUNNER_TEMP/asc.XXXXXX")"
+          path="$dir/AuthKey_${ASC_KEY_ID}.p8"
+          printf '%s\n' "$ASC_KEY_P8" > "$path"
+          chmod 600 "$path"
+          {
+            echo "path=$path"
+            echo "dir=$dir"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Archive and upload
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          KEY_PATH: ${{ steps.key.outputs.path }}
+          TEAM_ID: ${{ steps.meta.outputs.team }}
+          PLATFORMS: ${{ steps.platforms.outputs.list }}
+        run: |
+          mkdir -p "$BUILD_DIR" "$LOG_DIR"
+          auth=(
+            -allowProvisioningUpdates
+            -authenticationKeyPath "$KEY_PATH"
+            -authenticationKeyID "$ASC_KEY_ID"
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+          )
+
+          # The checked-in export options plus the team read from the project.
+          options="$BUILD_DIR/ExportOptions.plist"
+          cp ios/ExportOptions.plist "$options"
+          /usr/libexec/PlistBuddy -c "Add :teamID string $TEAM_ID" "$options"
+
+          # xcodebuild's output is thousands of lines; it goes to a log file
+          # (uploaded if the job fails) and only its tail is shown on failure.
+          run() {
+            local log="$1"; shift
+            if ! xcodebuild "$@" > "$log" 2>&1; then
+              echo "::group::last 200 lines of $(basename "$log")"
+              tail -n 200 "$log"
+              echo "::endgroup::"
+              grep -E "error:|\*\* .* FAILED \*\*" "$log" | head -n 50 || true
+              return 1
+            fi
+            grep -E "\*\* .* SUCCEEDED \*\*|Upload succeeded|Uploaded" "$log" || true
+          }
+
+          for platform in $PLATFORMS; do
+            case "$platform" in
+              ios) destination="generic/platform=iOS" ;;
+              mac) destination="generic/platform=macOS,variant=Mac Catalyst" ;;
+            esac
+            archive="$BUILD_DIR/$platform.xcarchive"
+
+            echo "::group::archive $platform"
+            run "$LOG_DIR/archive-$platform.log" archive \
+              -workspace "$WORKSPACE" -scheme "$SCHEME" -configuration Release \
+              -destination "$destination" \
+              -archivePath "$archive" \
+              -resultBundlePath "$LOG_DIR/archive-$platform.xcresult" \
+              "${auth[@]}"
+            echo "::endgroup::"
+
+            echo "::group::export and upload $platform"
+            run "$LOG_DIR/export-$platform.log" -exportArchive \
+              -archivePath "$archive" \
+              -exportOptionsPlist "$options" \
+              -exportPath "$BUILD_DIR/export-$platform" \
+              "${auth[@]}"
+            echo "::endgroup::"
+
+            echo "$platform" >> "$BUILD_DIR/uploaded"
+          done
+
+      - name: Remove the App Store Connect key
+        if: always()
+        env:
+          KEY_DIR: ${{ steps.key.outputs.dir }}
+        run: |
+          if [ -n "$KEY_DIR" ]; then rm -rf "$KEY_DIR"; fi
+
+      - name: Collect the distribution logs
+        if: failure() && env.LOG_DIR != ''
+        run: |
+          mkdir -p "$LOG_DIR"
+          # `-exportArchive` writes its own logs (IDEDistribution*.log) to a
+          # *.xcdistributionlogs bundle under the temp dir and prints its path.
+          find "${TMPDIR:-/tmp}" -maxdepth 2 -name '*.xcdistributionlogs' \
+            -exec cp -R {} "$LOG_DIR/" \; 2>/dev/null || true
+          for archive in "$BUILD_DIR"/*.xcarchive; do
+            [ -d "$archive" ] || continue
+            cp "$archive/Info.plist" "$LOG_DIR/$(basename "$archive" .xcarchive)-archive-Info.plist" || true
+          done
+
+      - name: Upload the logs
+        if: failure() && env.LOG_DIR != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-store-logs-${{ github.run_number }}
+          path: ${{ env.LOG_DIR }}
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Job summary
+        if: always()
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+          BUILD: ${{ steps.meta.outputs.build }}
+          PLATFORMS: ${{ steps.platforms.outputs.list }}
+          STATUS: ${{ job.status }}
+        run: |
+          uploaded="$(tr '\n' ' ' 2>/dev/null < "$BUILD_DIR/uploaded" || true)"
+          {
+            echo "## App Store upload"
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Version | \`${VERSION:-?}\` |"
+            echo "| Build | \`${BUILD:-?}\` |"
+            echo "| Commit | \`${GITHUB_SHA:0:7}\` |"
+            echo "| Xcode | $(xcodebuild -version | head -n 1) |"
+            echo "| Requested | ${PLATFORMS:-?} |"
+            echo "| Uploaded | ${uploaded:-none} |"
+            echo "| Result | $STATUS |"
+            echo
+            if [ "$STATUS" = "success" ]; then
+              echo "The build appears in App Store Connect → TestFlight once Apple has"
+              echo "processed it (usually a few minutes to an hour). Submit it for review"
+              echo "from the app's version page in App Store Connect."
+            else
+              echo "See the \`app-store-logs-${GITHUB_RUN_NUMBER}\` artifact for the"
+              echo "xcodebuild logs and result bundles."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

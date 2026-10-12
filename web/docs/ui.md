@@ -695,8 +695,12 @@ mechanism that does nothing.
 
 **No outward links.** The About block reports what the build *is* (its version,
 and whether a newer one is waiting) and nothing more — a settings page that
-sends the player to another site is not part of playing the game.
-`tests/e2e/settings.spec.ts` asserts the page holds no anchors at all.
+sends the player to another site is not part of playing the game. The page's
+one anchor is the same-origin **Privacy policy** link at the end of the Privacy
+note, which opens `/privacy` (`public/privacy.html`) in a new tab. It exists
+only in builds with the Privacy section, so packaged apps never hand a URL to
+the system browser. `tests/e2e/settings.spec.ts` asserts that this link is the
+only anchor on the page.
 
 **Analytics.** Whether anonymous play counts are reported — see "Analytics"
 above. Its own **Privacy** heading rather than a fourth Behaviour row: sound,

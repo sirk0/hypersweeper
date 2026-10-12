@@ -189,6 +189,30 @@ installed visitor never reaches it and the callers it is for have no worker.
 Expect the 4xx figures in the Cloudflare dashboard to *rise* once it ships:
 that traffic was always there, miscounted as success.
 
+### The privacy policy
+
+`public/privacy.html` is the policy App Store Connect links to, at
+`https://hypersweeper.pages.dev/privacy`. It is a static page with no script,
+styled with the Sand theme's palette and fonts in both colour schemes. It is
+a flat `privacy.html` rather than `privacy/index.html` because then every
+server this app meets resolves the bare `/privacy` to it, with no redirect and
+without the app answering instead. Cloudflare Pages serves `privacy.html` at
+`/privacy`. `vite preview` rewrites `/privacy` to `/privacy.html` before its
+SPA fallback. Workbox's `cleanURLs` matches the navigation to the precached
+file, and `navigateFallbackDenylist` keeps the path off the app shell in case
+that ever stops matching. `tests/e2e/privacy.spec.ts` checks the page with
+and without an installed worker, and under the site's CSP.
+
+Its content is a set of claims about the code: the event fields listed under
+"Anonymous play counts" are the schema in
+[`../../docs/agents/metrics.md`](../../docs/agents/metrics.md), and "the apps
+collect nothing" is `VITE_PACKAGED=1` vetoing analytics. Change the page in the
+same commit as either. The file also ships, unused, inside the packaged bundles,
+so `scripts/check-offline-assets.mjs` scans it. That is why the only absolute
+URL in it is the repository's issues page.
+Settings › Privacy links to it, in the web build only. The packaged apps have no
+Privacy section and no outward links.
+
 **Not configured in this repo:** `/api/tally` takes unauthenticated writes and
 nothing throttles them. `parseEvent` caps every field, so no single forged row
 can drag an average, but volume is unbounded and the dashboards are what it

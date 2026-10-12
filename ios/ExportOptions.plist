@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- How .github/workflows/app-store.yml exports an archive: straight to App
+     Store Connect (TestFlight), signed by Xcode's automatic cloud signing with
+     the App Store Connect API key the workflow passes. One file serves both the
+     iOS and the Mac Catalyst archive.
+
+     There is no teamID here on purpose. The workflow reads DEVELOPMENT_TEAM out
+     of the Xcode project and adds it to a temporary copy, so the project stays
+     the one place the team is named.
+
+     manageAppVersionAndBuildNumber is false so that what is uploaded is exactly
+     what scripts/build-ios-app.sh stamped: web/package.json's version, and the
+     git commit count as the build number. Left at Xcode's default, the export
+     may rewrite the build number to whatever App Store Connect expects next. -->
+<plist version="1.0">
+<dict>
+	<key>method</key>
+	<string>app-store-connect</string>
+	<key>destination</key>
+	<string>upload</string>
+	<key>signingStyle</key>
+	<string>automatic</string>
+	<key>manageAppVersionAndBuildNumber</key>
+	<false/>
+	<key>uploadSymbols</key>
+	<true/>
+	<key>testFlightInternalTestingOnly</key>
+	<false/>
+</dict>
+</plist>

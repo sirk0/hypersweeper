@@ -106,7 +106,12 @@ test.describe("settings", () => {
   test("the About block links out to nothing", async ({ page }) => {
     await page.locator('.menu-header-btn[data-action="settings"]').click();
     // The page reports what this build is; it does not send the player away.
-    await expect(page.locator(".menu-body a")).toHaveCount(0);
+    // The one link on it is the privacy policy under the Privacy note — this
+    // site's own page, present only in a build that carries the play counter
+    // (privacy.spec.ts follows it).
+    await expect(page.locator(".menu-body a")).toHaveCount(1);
+    await expect(page.locator(".menu-body a")).toHaveAttribute("href", "/privacy");
+    await expect(page.locator(".menu-body a")).toHaveAttribute("data-action", "privacy-policy");
   });
 
   test("the theme row reports the current theme and opens the picker", async ({ page }) => {

@@ -1312,6 +1312,11 @@ body {
   color: var(--muted);
 }
 
+.settings-note a {
+  color: var(--accent);
+  text-underline-offset: 2px;
+}
+
 /* Rows that only report something (the version) — a card, but not a control. */
 .settings-static {
   cursor: default;

@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Privacy policy — Hypersweeper</title>
+    <meta
+      name="description"
+      content="What Hypersweeper collects: nothing in the iPhone, iPad, Mac and desktop apps; anonymous play counts on the website, which you can switch off."
+    />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="theme-color" content="#f5ead8" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#191712" media="(prefers-color-scheme: dark)" />
+    <!--
+      The privacy policy App Store Connect links to: hypersweeper.pages.dev/privacy
+
+      A flat privacy.html rather than privacy/index.html, because then every
+      server this site meets resolves the bare /privacy to it without a
+      redirect and without the app's fallback answering instead:
+        - Cloudflare Pages serves /privacy from privacy.html (and redirects
+          /privacy.html to /privacy);
+        - `vite preview` rewrites /privacy to /privacy.html before its SPA
+          fallback runs;
+        - the service worker precaches this file, and Workbox's `cleanURLs`
+          matches a navigation to /privacy against /privacy.html, so an
+          installed visitor gets the page (offline too) rather than the game.
+          vite.config.ts also keeps /privacy off the navigation fallback.
+      tests/e2e/privacy.spec.ts pins all of that against `vite preview`.
+
+      Every claim below is checked against the code that makes it true. If any
+      of these change, this page changes in the same commit:
+        - the event schema in docs/agents/metrics.md (the list under
+          "What a play count holds");
+        - what web/functions/api/_tally.ts stores about a request (nothing);
+        - analytics being compiled out of packaged builds (VITE_PACKAGED=1 in
+          web/vite.config.ts), which is what ios/App/App/PrivacyInfo.xcprivacy
+          and the App Store "Data Not Collected" label rest on.
+
+      Deliberately plain, like 404.html: no script, no web font from anywhere
+      but this site, and no absolute URL except the repository's. This file
+      also ships inside the packaged macOS and iPhone bundles (unused there),
+      and scripts/check-offline-assets.mjs fails their build over any other
+      remote URL — which is why Cloudflare is named here but not linked.
+
+      The look is the game's default theme (Sand), from src/ui/styles.css: the
+      same palette in both colour schemes, Space Grotesk for text and Caprasimo
+      for the one word of the name.
+    -->
+    <style>
+      @font-face {
+        font-family: "Space Grotesk";
+        src: url("/fonts/SpaceGrotesk-Variable.ttf") format("truetype-variations");
+        font-weight: 300 700;
+        font-style: normal;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "Caprasimo";
+        src: url("/fonts/Caprasimo-Regular.ttf") format("truetype");
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
+      }
+      :root {
+        color-scheme: light;
+        --bg: #f5ead8;
+        --bg-texture:
+          url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.3'/%3E%3C/svg%3E"),
+          radial-gradient(120% 90% at 50% 0%, #fffaf0 0%, #fffaf000 55%);
+        --panel: #f9f4ed;
+        --text: #2e2b25;
+        --muted: #82796a;
+        --accent: #c67139;
+        --on-accent: #ffffff;
+        --selected: #ffe1d0;
+        --border: #dcd3c4;
+        --radius: 20px;
+        --shadow: 0 2px 10px rgba(64, 35, 16, 0.16);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          color-scheme: dark;
+          --bg: #191712;
+          --bg-texture:
+            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.12'/%3E%3C/svg%3E"),
+            radial-gradient(120% 90% at 50% 0%, #3a332a 0%, #3a332a00 55%);
+          --panel: #2e2b25;
+          --text: #f9f4ed;
+          --muted: #a19786;
+          --accent: #f6a06b;
+          --on-accent: #2e2b25;
+          --selected: #8c491a55;
+          --border: #474238;
+          --shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+        }
+      }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      html {
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background-color: var(--bg);
+        background-image: var(--bg-texture);
+        background-attachment: fixed;
+        color: var(--text);
+        font: 16px/1.55 "Space Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+      }
+      main {
+        max-width: 42rem;
+        margin: 0 auto;
+        padding: max(24px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+          max(40px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+      }
+      .wordmark {
+        display: inline-block;
+        margin-bottom: 8px;
+        color: var(--accent);
+        font-family: "Caprasimo", "Space Grotesk", system-ui, sans-serif;
+        font-size: 28px;
+        line-height: 1.2;
+        text-decoration: none;
+      }
+      h1 {
+        margin: 0;
+        font-size: clamp(30px, 8vw, 40px);
+        font-weight: 700;
+        line-height: 1.1;
+        letter-spacing: -0.02em;
+      }
+      .effective {
+        margin: 8px 0 24px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      section {
+        margin: 0 0 16px;
+        padding: 20px;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+      }
+      section.summary {
+        background: var(--selected);
+      }
+      h2 {
+        margin: 0 0 8px;
+        font-size: 20px;
+        font-weight: 700;
+        line-height: 1.25;
+      }
+      h3 {
+        margin: 20px 0 6px;
+        font-size: 16px;
+        font-weight: 700;
+      }
+      p,
+      ul {
+        margin: 0 0 12px;
+      }
+      section > :last-child {
+        margin-bottom: 0;
+      }
+      ul {
+        padding-left: 1.25em;
+      }
+      li + li {
+        margin-top: 4px;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      a {
+        color: var(--accent);
+        text-underline-offset: 2px;
+        overflow-wrap: anywhere;
+      }
+      a:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+        border-radius: 4px;
+      }
+      .play {
+        display: inline-block;
+        margin-top: 8px;
+        padding: 10px 22px;
+        border-radius: 999px;
+        background: var(--accent);
+        color: var(--on-accent);
+        font-weight: 600;
+        text-decoration: none;
+      }
+      .play:focus-visible {
+        outline-color: var(--text);
+      }
+      footer {
+        margin-top: 24px;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <a class="wordmark" href="/">Hypersweeper</a>
+      <h1>Privacy policy</h1>
+      <p class="effective">Effective 12 October 2026</p>
+
+      <section class="summary" aria-labelledby="short">
+        <h2 id="short">In short</h2>
+        <ul>
+          <li>
+            <strong>The App Store apps</strong> (iPhone, iPad and Mac) and
+            <strong>the desktop app</strong> collect nothing and make no network
+            requests.
+          </li>
+          <li>
+            <strong>The website</strong> counts plays anonymously: which boards are
+            played and how the games go. You can switch that off in Settings.
+          </li>
+          <li>
+            No accounts, no ads, and no tracking across other apps or websites.
+            The apps contain no third-party SDKs.
+          </li>
+        </ul>
+      </section>
+
+      <section aria-labelledby="apps">
+        <h2 id="apps">The apps: iPhone, iPad, Mac and desktop</h2>
+        <p>
+          The apps collect no data at all. They do not contact any server, ours or
+          anyone else's. The play counter described below is not switched off in
+          them; it is left out of them when they are built, so there is no code in
+          them that could send it. On the App Store this is labelled
+          <strong>Data Not Collected</strong>.
+        </p>
+        <p>
+          Your settings, best times and achievements are saved on your device, in
+          the app's own storage. They never leave the device.
+        </p>
+        <p>
+          When you share a board, the app makes a link that holds the board and,
+          after a win, your time. It hands that link to your device's share sheet
+          or clipboard. Where it goes from there is up to you; nothing is sent to
+          us.
+        </p>
+      </section>
+
+      <section aria-labelledby="web">
+        <h2 id="web">The website</h2>
+        <p>
+          This covers the game at hypersweeper.pages.dev, in a browser tab or
+          added to a home screen.
+        </p>
+
+        <h3 id="counts">Anonymous play counts</h3>
+        <p>
+          When a board opens, and again when the game on it ends, the game sends
+          one small event to this website's own server. The events tell us which
+          boards people play and which ones are too hard.
+        </p>
+        <p id="what-a-play-count-holds">An event holds only:</p>
+        <ul>
+          <li>
+            the board: its name, its tiling and surface, and its difficulty (easy,
+            medium or hard);
+          </li>
+          <li>whether the game is starting or has ended, and whether it was won or lost;</li>
+          <li>
+            how it went: seconds on the clock, how many cells and mines the board
+            has, how many safe cells were opened, how many flags were right and
+            wrong, how many reveal, chord and flag moves were made, how long the
+            first move took, and whether the view was rotated or zoomed;
+          </li>
+          <li>
+            how the board was started (from the menu, at random, by playing again,
+            or from a shared link) and whether the previous board was still being
+            played, won or lost;
+          </li>
+          <li>whether the device is a phone, tablet or desktop;</li>
+          <li>whether the game runs in a browser tab or as an installed app;</li>
+          <li>the game's version number.</li>
+        </ul>
+        <p>
+          Nothing else is stored with it: no IP address, no country, no browser or
+          device model, no referring page, no cookie, and no identifier of any
+          kind. The board's layout and your settings are not sent. No two events
+          can be linked to each other or to you.
+        </p>
+        <p>
+          <strong>To switch it off:</strong> Settings › Privacy › Analytics. It
+          takes effect at once, including for a game in progress, and the choice
+          is saved in your browser.
+        </p>
+        <p>
+          The events are stored by Cloudflare in Workers Analytics Engine, which
+          deletes them automatically after a short retention period of at most
+          three months. We use them only as counts and averages.
+        </p>
+
+        <h3 id="visits">Website visits</h3>
+        <p>
+          Cloudflare Web Analytics is turned on for this website. Cloudflare adds
+          its script to the site's pages, and it reports visits and page views,
+          the referring site, the browser and operating system, and the country.
+          We see only totals. This is separate from the play counts: the Settings
+          switch above does not affect it, and a content blocker may stop it.
+        </p>
+
+        <h3 id="hosting">Hosting</h3>
+        <p>
+          Cloudflare hosts the website. Like any web host, it receives your IP
+          address and browser details with each request, in order to deliver the
+          pages and protect the site. It handles them under its own privacy
+          policy. Our play counts do not include them.
+        </p>
+
+        <h3 id="device">On your device</h3>
+        <p>
+          Your settings, best times and achievements are kept in your browser's
+          local storage, and the game's files are cached so it works offline.
+          None of that is sent anywhere. Clearing the site's data in your browser
+          deletes it. Settings › Check for updates asks the website for its
+          current version number and sends nothing about you.
+        </p>
+      </section>
+
+      <section aria-labelledby="children">
+        <h2 id="children">Children</h2>
+        <p>
+          The game is for everyone. It asks for no personal information and
+          collects none, from children or anyone else: the apps collect nothing,
+          and the website's play counts identify no one.
+        </p>
+      </section>
+
+      <section aria-labelledby="changes">
+        <h2 id="changes">Changes and contact</h2>
+        <p>
+          If this policy changes, the new version will be posted on this page with
+          a new effective date. Hypersweeper is open source, so every change to
+          this page and to the code it describes is public.
+        </p>
+        <p>
+          Questions or requests:
+          <a href="https://github.com/sirk0/hypersweeper/issues"
+            >github.com/sirk0/hypersweeper/issues</a
+          >.
+        </p>
+      </section>
+
+      <footer>
+        <a class="play" href="/">Play Hypersweeper</a>
+      </footer>
+    </main>
+  </body>
+</html>
