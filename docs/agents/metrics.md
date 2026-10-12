@@ -322,9 +322,10 @@ In this order, because each step is checked by the next:
    validation, `tests/unit/tally.test.ts` for the exact column vector,
    `tests/unit/analyticsSchema.test.ts` for the doc, and
    `tests/unit/dashboards.test.ts` for the dashboards.
-7. **The privacy copy**, if it is anything about the client: `README.md` and the
-   Privacy note in `web/src/ui/settings.ts` both say what is sent, and they must
-   stay true.
+7. **The privacy copy**: `web/public/privacy.html` lists every field an event
+   holds, so any new field goes there. If the field is about the client,
+   `README.md` and the Privacy note in `web/src/ui/settings.ts` also say what is
+   sent. All three must stay true.
 
 `npm run typecheck` runs twice — the second pass compiles the contract with no
 DOM lib, and is what catches a browser-only import sneaking into the Worker

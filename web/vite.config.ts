@@ -339,7 +339,14 @@ export default defineConfig({
         // the app shell. A POST is not a navigation request, so today's config
         // already leaves it alone; this says so, and keeps it true if the
         // navigation fallback is ever widened.
-        navigateFallbackDenylist: [/^\/api\//],
+        //
+        // And the privacy policy (public/privacy.html), which App Store Connect
+        // links to and which must be the policy, never the game, for a visitor
+        // with the worker installed. The precache answers /privacy already
+        // (Workbox's `cleanURLs` tries /privacy.html), so this only matters if
+        // that ever stops matching: the request then goes to the network, which
+        // serves the page, rather than to the app shell.
+        navigateFallbackDenylist: [/^\/api\//, /^\/privacy(\.html)?$/],
       },
     })]),
   ],

@@ -893,7 +893,20 @@ export function renderSettings(host: SettingsHost, pages: SettingsPages): Docume
     note.textContent =
       "No account, no cookie, no identifier — only the board, how the game " +
       "went (won or lost, how long, how far you got, how you flagged), how it " +
-      "was started, and whether this is a phone, tablet or desktop.";
+      "was started, and whether this is a phone, tablet or desktop. ";
+    // The full policy (public/privacy.html), the page App Store Connect links
+    // to. Inside this branch only, so the one outward link on the settings
+    // page is same-origin and exists only where the counter it explains does:
+    // the packaged apps keep the About block's no-links rule below and never
+    // have to hand a URL to the system browser. A new tab, so the player
+    // reading it does not lose their place in the game.
+    const policy = document.createElement("a");
+    policy.href = `${import.meta.env.BASE_URL}privacy`;
+    policy.target = "_blank";
+    policy.rel = "noopener";
+    policy.dataset["action"] = "privacy-policy";
+    policy.textContent = "Privacy policy";
+    note.append(policy);
     frag.append(note);
   }
 

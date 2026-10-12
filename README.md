@@ -182,7 +182,8 @@ this is a phone, tablet or desktop. No account, no cookie, no identifier, and
 nothing about the request itself (no IP, no country, no user agent), so there
 is no way to link two games. The switch is Settings › Privacy › Analytics. The
 macOS and iPhone apps send nothing at all: they are built without the
-collector, not merely with it switched off.
+collector, not merely with it switched off. The full policy is at
+[hypersweeper.pages.dev/privacy](https://hypersweeper.pages.dev/privacy).
 
 ## Development
 

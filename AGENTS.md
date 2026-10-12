@@ -33,6 +33,8 @@ carries over.
 | The pygame front-end, and the pygbag web build | [`docs/agents/pygame.md`](docs/agents/pygame.md) |
 | The offline macOS app | [`desktop/README.md`](desktop/README.md) |
 | The iPhone app, and haptics | [`ios/README.md`](ios/README.md) |
+| Uploading to App Store Connect / TestFlight (`app-store.yml`, run by hand) | "Releasing" in [`ios/README.md`](ios/README.md) |
+| The public privacy policy (`/privacy`) | "The privacy policy" in [`web/docs/deploy.md`](web/docs/deploy.md) |
 
 ## Build and run
 
@@ -40,6 +42,8 @@ carries over.
 `data-sync` exporters, `web-checks` (typecheck, unit tests, the packaged-bundle
 and iOS-sync guards) and `web-e2e`, which shards the Playwright suite across
 four runners. The two web jobs are independent and run at the same time.
+No CI job builds the native app: `app-store.yml`, started by hand from
+`master`, archives it and uploads it to App Store Connect.
 
 **The TypeScript app — the deployed game, and what most changes touch.**
 
