@@ -269,6 +269,16 @@ The version page also asks for screenshots. `npm run store-screenshots` in
 | `iphone-duo` | iPhone Duo | 2007 × 2853 |
 | `ipad` | iPad 13" display | 2064 × 2752 |
 | `mac` | Mac | 2880 × 1800 |
+| `header` | iOS product page header | 5244 × 2950, 3840 × 1646 |
+| `search-results` | iOS search results | 5244 × 2950, 3840 × 2560, 1920 × 1280 |
+
+The last two are artwork, not device screenshots, and follow Apple's
+[asset best practices](https://developer.apple.com/app-store/asset-best-practices/):
+one clear idea, the focal point centred so no device crops it, and any text a
+short phrase. The header is a row of real boards with no words. The search
+card is three of the iPhone shots under one line, `SEARCH_HEADLINE` in the
+script. It is English, so it needs translating if the app is ever localised.
+Both are composed on the app's own Sand page with its chrome hidden.
 
 Every shot uses the look a new player first sees: the Sand theme, the light
 scheme, and no patterned page. The script builds the packaged bundle
