@@ -141,9 +141,10 @@ ICON_BLUE_LIGHT = (159, 166, 252)  # light face / accent shapes
 ICON_BLUE_DARK = (67, 56, 202)     # dark face on the 3D solids + detail lines
 ICON_OUTLINE = (79, 82, 194)       # soft same-hue hairline round the shapes
 
-# The app / web icon (favicon, iOS home-screen, macOS dock): Sand's cream
-# ground under a terracotta pentagon cell and the flat mine. Kept in step with
-# web/scripts/make-icons.mjs, which draws the same icon for the TS build.
+# The pygame window icon: Sand's cream ground under a terracotta pentagon cell
+# and the flat mine. The TS build's icons (web/scripts/make-icons.mts) have
+# since moved to Sand's per-shape colours — an olive pentagon — and to Icon
+# Composer; this one is the pygame game's own and was left as it was.
 ICON_GROUND = (245, 234, 216)   # #f5ead8
 ICON_ACCENT = (198, 113, 57)    # #c67139
 ICON_FACETS = (                 # the chamfer, in edge order from the top

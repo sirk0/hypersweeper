@@ -1606,6 +1606,17 @@ body {
   background: var(--accent);
 }
 
+/* An app icon in miniature (ui/settings.ts `appIconSwatch`): the Home Screen
+   PNG itself, cut to the rounded square iOS cuts it to. The hairline is the
+   theme's, so the cream icon still has an edge on the Sand page. */
+.app-icon-swatch {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+}
+
 .settings-check {
   flex: none;
   width: 18px;

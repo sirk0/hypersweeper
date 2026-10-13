@@ -26,6 +26,7 @@ import { HELP_ICON, renderHelp } from "./help";
 import { menuIcon, previewIcon } from "./icons";
 import {
   GEAR_ICON,
+  renderAppIconPicker,
   renderSchemePicker,
   renderShapePicker,
   renderSettings,
@@ -576,6 +577,8 @@ export class Menu {
       analytics: this.settings.analytics,
       quality: this.settings.quality,
       qualityAuto: this.settings.qualityAuto,
+      appIcon: this.settings.appIcon,
+      setAppIcon: (key) => this.settings.setAppIcon(key).then(page),
       setTheme: (key) => {
         this.settings.setTheme(key);
         page();
@@ -650,6 +653,7 @@ export class Menu {
         openThemes: () => this.showThemePicker(),
         openShapes: () => this.showShapePicker(),
         openSchemes: () => this.showSchemePicker(),
+        openAppIcons: () => this.showAppIconPicker(),
         openBestTimes: () => this.showBestTimes(),
         openSounds: () => this.showSoundPicker(),
         openAchievements: () => this.openAchievements(),
@@ -748,6 +752,20 @@ export class Menu {
     this.body.replaceChildren(
       this.backRow("Colour scheme", () => this.showSettings()),
       renderSchemePicker(host),
+    );
+  }
+
+  /** The app icon page — one level below settings, like the scheme picker. */
+  private showAppIconPicker(): void {
+    this.go(() => this.renderAppIconPage());
+  }
+
+  private renderAppIconPage(): void {
+    const host = this.settingsPageHost(() => this.renderAppIconPage());
+    this.root.classList.add("settings-open");
+    this.body.replaceChildren(
+      this.backRow("App icon", () => this.showSettings()),
+      renderAppIconPicker(host),
     );
   }
 

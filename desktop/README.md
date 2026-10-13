@@ -36,7 +36,7 @@ The shell is deliberately small — three files and no runtime dependencies:
 | `main.mjs` | The Electron main process: registers the `app://` scheme, opens one window on it, blocks navigation, builds the menu bar. Also implements the `--smoke` self-check. |
 | `serve.mjs` | `app://` URL → file in the packaged build. The one security-sensitive piece, so it is separate and unit-tested. |
 | `electron-builder.yml` | Packaging: what goes in the bundle, the icon, the macOS metadata. |
-| `resources/icon.png` | The app icon, 1024², generated from the same vector source as the web icons by `web/scripts/make-icons.mjs` (`make desktop-icon`). |
+| `resources/icon.png` | The app icon, 1024², exported from the same Icon Composer document as the iPhone and Mac Catalyst icon (`ios/App/App/AppIcon.icon`) by `web/scripts/make-icons.mts` (`make desktop-icon`), and placed on the macOS grid: the 824 rounded square on a 1024 canvas. Always the default pentagon — the App icon setting has no row in this app, since Finder would go on showing the pentagon whatever the dock did. |
 | `app/` | The built web app, staged here by the build script. Not committed. |
 
 ### Why `app://` and not `file://`

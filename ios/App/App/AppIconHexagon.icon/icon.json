@@ -1,0 +1,45 @@
+{
+  "fill": {
+    "solid": "srgb:0.96078,0.91765,0.84706,1.00000"
+  },
+  "groups": [
+    {
+      "layers": [
+        {
+          "image-name": "mine.svg",
+          "name": "mine"
+        }
+      ],
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.5
+      },
+      "translucency": {
+        "enabled": false,
+        "value": 0.5
+      }
+    },
+    {
+      "layers": [
+        {
+          "image-name": "cell.svg",
+          "name": "cell"
+        }
+      ],
+      "shadow": {
+        "kind": "layer-color",
+        "opacity": 0.5
+      },
+      "translucency": {
+        "enabled": false,
+        "value": 0.5
+      }
+    }
+  ],
+  "supported-platforms": {
+    "circles": [
+      "watchOS"
+    ],
+    "squares": "shared"
+  }
+}
