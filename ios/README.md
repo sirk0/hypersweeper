@@ -283,3 +283,35 @@ The build appears in **App Store Connect → TestFlight** once Apple has
 processed it, which takes from a few minutes to an hour. Processing problems
 come by email. To release, open the app's iOS or macOS version page in App
 Store Connect, select the build, and **Add for Review**.
+
+### Screenshots
+
+The version page also asks for screenshots. `npm run store-screenshots` in
+`web/` renders ten of them for each slot into `app-store-screenshots/<slot>/`
+(git-ignored), at sizes App Store Connect accepts:
+
+| Folder | Slot | Pixels |
+|---|---|---|
+| `iphone-6.9` | iPhone 6.9" display | 1320 × 2868 |
+| `iphone-6.3` | iPhone 6.1" / 6.3" display | 1206 × 2622 |
+| `iphone-duo` | iPhone Duo | 2007 × 2853 |
+| `ipad` | iPad 13" display | 2064 × 2752 |
+| `mac` | Mac | 2880 × 1800 |
+| `header` | iOS product page header | 5244 × 2950, 3840 × 1646 |
+| `search-results` | iOS search results | 5244 × 2950, 3840 × 2560, 1920 × 1280 |
+
+The last two are artwork, not device screenshots, and follow Apple's
+[asset best practices](https://developer.apple.com/app-store/asset-best-practices/):
+one clear idea, the focal point centred so no device crops it, and any text a
+short phrase. The header is a row of real boards with no words. The search
+card is three of the iPhone shots under one line, `SEARCH_HEADLINE` in the
+script. It is English, so it needs translating if the app is ever localised.
+Both are composed on the app's own Sand page with its chrome hidden.
+
+Every shot uses the look a new player first sees: the Sand theme, the light
+scheme, and no patterned page. The script builds the packaged bundle
+(`VITE_PACKAGED=1`) and stages each board through the `window.__ms` seam, as
+the README gallery does. Each device runs the layout it really gets, so the
+iPad and the Mac show the two-pane menu. The scenes are listed at the top of
+`web/scripts/make-store-screenshots.mts`. `DEVICES=iphone-6.3` or
+`SHOTS=01-sphere` renders a subset.
