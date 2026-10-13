@@ -1,16 +1,21 @@
 // Dev-only: render the App Store screenshots from the packaged app.
 //
 //   npm run store-screenshots -- [out-dir]
-//   (default out dir: ../app-store-screenshots; DEVICES=iphone,ipad,mac and
+//   (default out dir: ../app-store-screenshots; DEVICES=iphone-6.3,mac and
 //   SHOTS=01-sphere,… render a subset)
 //
 // Builds the bundle the native app ships (`VITE_PACKAGED=1`) into a scratch
 // directory, serves it with `vite preview`, and shoots each scene at the pixel
 // size App Store Connect asks for:
 //
-//   iphone  6.9" display  1320 x 2868  (440 x 956 pt @3x, portrait)
-//   ipad    13" display   2064 x 2752  (1032 x 1376 pt @2x, portrait)
-//   mac     16:10         2880 x 1800  (1440 x 900 pt @2x)
+//   iphone-6.9  6.9" display    1320 x 2868  (440 x 956 pt @3x, portrait)
+//   iphone-6.3  6.1"/6.3"       1206 x 2622  (402 x 874 pt @3x, portrait)
+//   iphone-duo  iPhone Duo      2007 x 2853  (669 x 951 pt @3x, portrait)
+//   ipad        13" display     2064 x 2752  (1032 x 1376 pt @2x, portrait)
+//   mac         16:10           2880 x 1800  (1440 x 900 pt @2x)
+//
+// Every shot is in the look a new player first sees: the Sand theme, the light
+// scheme, no patterned page. Only the cell shape varies from scene to scene.
 //
 // Boards are staged the way `make-screenshots.mts` stages the README gallery:
 // an explicit, seeded mine layout through the `window.__ms` seam, a central
@@ -49,17 +54,18 @@ interface Device {
 }
 
 const DEVICES: Device[] = [
-  { key: "iphone", viewport: { width: 440, height: 956 }, scale: 3, touch: true, native: "phone" },
+  { key: "iphone-6.9", viewport: { width: 440, height: 956 }, scale: 3, touch: true, native: "phone" },
+  { key: "iphone-6.3", viewport: { width: 402, height: 874 }, scale: 3, touch: true, native: "phone" },
+  { key: "iphone-duo", viewport: { width: 669, height: 951 }, scale: 3, touch: true, native: "phone" },
   { key: "ipad", viewport: { width: 1032, height: 1376 }, scale: 2, touch: true, native: "pad" },
   { key: "mac", viewport: { width: 1440, height: 900 }, scale: 2, touch: false, native: "mac" },
 ];
 
 interface Scene {
   name: string;
-  theme: string;
-  shape?: string;
-  scheme: "light" | "dark";
-  backgrounds?: boolean;
+  /** A key in `SHAPE_KEYS` (web/src/render/cellStyle.ts). Realistic on the
+   * solids, since it is the one shape that stands 3D pins and bombs on them. */
+  shape: string;
   mode?: string;
   difficulty?: string;
   seed?: number;
@@ -75,10 +81,7 @@ interface Scene {
 const SCENES: Scene[] = [
   {
     name: "01-sphere",
-    theme: "bright",
     shape: "realistic",
-    scheme: "light",
-    backgrounds: true,
     mode: "c180",
     seed: 7,
     reveal: 0.34,
@@ -86,10 +89,7 @@ const SCENES: Scene[] = [
   },
   {
     name: "02-mobius",
-    theme: "bright",
     shape: "realistic",
-    scheme: "dark",
-    backgrounds: true,
     mode: "mobiushex",
     difficulty: "easy",
     seed: 3,
@@ -99,10 +99,7 @@ const SCENES: Scene[] = [
   },
   {
     name: "03-trefoil",
-    theme: "bright",
     shape: "realistic",
-    scheme: "light",
-    backgrounds: true,
     mode: "trefoilhex",
     seed: 6,
     reveal: 0.4,
@@ -110,9 +107,7 @@ const SCENES: Scene[] = [
   },
   {
     name: "04-hyperbolic",
-    theme: "sand",
     shape: "soft",
-    scheme: "light",
     mode: "hyperbolic73",
     seed: 4,
     reveal: 0.4,
@@ -120,10 +115,7 @@ const SCENES: Scene[] = [
   },
   {
     name: "05-penrose",
-    theme: "bright",
     shape: "realistic",
-    scheme: "light",
-    backgrounds: true,
     mode: "penrose",
     seed: 11,
     reveal: 0.36,
@@ -131,10 +123,7 @@ const SCENES: Scene[] = [
   },
   {
     name: "06-volumetric",
-    theme: "bright",
     shape: "realistic",
-    scheme: "dark",
-    backgrounds: true,
     mode: "cube3d",
     difficulty: "easy",
     seed: 6,
@@ -143,10 +132,7 @@ const SCENES: Scene[] = [
   },
   {
     name: "07-torus-lost",
-    theme: "bright",
     shape: "realistic",
-    scheme: "dark",
-    backgrounds: true,
     mode: "torussnubsquare",
     seed: 5,
     reveal: 0.34,
@@ -155,20 +141,16 @@ const SCENES: Scene[] = [
   },
   {
     name: "08-classic-hex",
-    theme: "classic",
     shape: "classic",
-    scheme: "light",
     mode: "hexhex",
     seed: 9,
     reveal: 0.36,
     flags: 4,
   },
-  { name: "09-menu", theme: "bright", shape: "realistic", scheme: "dark" },
+  { name: "09-menu", shape: "realistic" },
   {
     name: "10-surfaces",
-    theme: "bright",
     shape: "realistic",
-    scheme: "light",
     clicks: ['.menu-entry[data-group="custom"]', '.menu-entry[data-group="manifolds"]'],
   },
 ];
@@ -225,12 +207,12 @@ async function shoot(browser: Browser, device: Device, scene: Scene, outDir: str
   });
   const settings = JSON.stringify({
     version: 5,
-    theme: scene.theme,
-    ...(scene.shape ? { shape: scene.shape } : {}),
-    scheme: scene.scheme,
+    theme: "sand",
+    shape: scene.shape,
+    scheme: "light",
     animations: false,
     sound: "off",
-    backgrounds: scene.backgrounds ?? false,
+    backgrounds: false,
   });
   await context.addInitScript(
     ([key, value, native]) => {

@@ -259,12 +259,21 @@ Store Connect, select the build, and **Add for Review**.
 ### Screenshots
 
 The version page also asks for screenshots. `npm run store-screenshots` in
-`web/` renders ten of them for each platform into `app-store-screenshots/`
-(git-ignored), at the sizes App Store Connect takes: iPhone 6.9"
-(1320 × 2868), iPad 13" (2064 × 2752) and Mac (2880 × 1800). App Store Connect
-scales those down for the smaller devices, so no other sizes are needed. The
-script builds the packaged bundle (`VITE_PACKAGED=1`) and stages each board
-through the `window.__ms` seam, as the README gallery does. Each device runs
-the layout it really gets, so the iPad and the Mac show the two-pane menu. The
-scenes are listed at the top of `web/scripts/make-store-screenshots.mts`.
-`DEVICES=iphone` or `SHOTS=01-sphere` renders a subset.
+`web/` renders ten of them for each slot into `app-store-screenshots/<slot>/`
+(git-ignored), at sizes App Store Connect accepts:
+
+| Folder | Slot | Pixels |
+|---|---|---|
+| `iphone-6.9` | iPhone 6.9" display | 1320 × 2868 |
+| `iphone-6.3` | iPhone 6.1" / 6.3" display | 1206 × 2622 |
+| `iphone-duo` | iPhone Duo | 2007 × 2853 |
+| `ipad` | iPad 13" display | 2064 × 2752 |
+| `mac` | Mac | 2880 × 1800 |
+
+Every shot uses the look a new player first sees: the Sand theme, the light
+scheme, and no patterned page. The script builds the packaged bundle
+(`VITE_PACKAGED=1`) and stages each board through the `window.__ms` seam, as
+the README gallery does. Each device runs the layout it really gets, so the
+iPad and the Mac show the two-pane menu. The scenes are listed at the top of
+`web/scripts/make-store-screenshots.mts`. `DEVICES=iphone-6.3` or
+`SHOTS=01-sphere` renders a subset.
