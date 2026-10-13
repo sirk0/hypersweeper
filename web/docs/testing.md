@@ -19,6 +19,7 @@ npm run e2e         # Playwright e2e + visual regression
 npm run e2e:update  # refresh visual baselines
 npm run e2e:docker  # …the whole suite on Linux, in a container (see below)
 npm run screenshots # regenerate the README gallery (SHOTS=menu.png for one)
+npm run store-screenshots # the App Store shots, iPhone/iPad/Mac (see ios/README.md)
 npm run icons       # regenerate the app icons from the vector source
 npm run og          # regenerate the social card, public/og.png
 ```

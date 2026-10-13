@@ -18,6 +18,7 @@
     "e2e:docker:update": "npm run e2e:docker -- --update-snapshots",
     "icons": "node scripts/make-icons.mjs",
     "screenshots": "vite-node scripts/make-screenshots.mts",
+    "store-screenshots": "vite-node scripts/make-store-screenshots.mts",
     "og": "vite-node scripts/make-og-image.mts"
   },
   "dependencies": {
