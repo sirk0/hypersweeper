@@ -374,12 +374,46 @@ test.describe("viewport layout", () => {
 });
 
 // The 900px breakpoint between the phone column and the two-pane desktop menu
-// (styles.css `@media (min-width: 900px)`, `Menu.wideQuery`). Every other menu
-// spec sits at exactly 900x700, i.e. on the desktop side of it; these two are
+// (styles.css `@media (min-width: 900px), …`, `Menu.wideQuery`). Every other
+// menu spec sits at exactly 900x700, i.e. on the desktop side of it; these are
 // about the narrow side, and about crossing the line with a page open — a
 // rotate on a big phone is enough (a Pro Max is 932pt in landscape and 430 in
 // portrait), as is a split view or a dragged window.
 test.describe("the desktop menu breakpoint", () => {
+  test("a tablet held upright gets the two panes, a phone on its side does not", async ({
+    page,
+  }) => {
+    // An iPad Air in portrait: under 900 wide, but the height of a desktop. It
+    // used to get the 520px phone column with a third of the screen empty on
+    // either side of it.
+    await page.setViewportSize({ width: 820, height: 1180 });
+    await page.goto("/");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    await expect(page.locator(".menu-sidebar")).toBeVisible();
+    await expect(page.locator(".menu-pane-title")).toHaveText("Quick start");
+    await expect(page.locator(".menu-header")).toBeHidden();
+
+    // Two card columns, not the one the desktop's 276px sidebar would leave.
+    await page.locator('.menu-sidebar .menu-entry[data-group="flat"]').click();
+    const lefts = await page
+      .locator(".menu-card-grid > li")
+      .evaluateAll((els) => new Set(els.map((el) => el.getBoundingClientRect().left)).size);
+    expect(lefts).toBe(2);
+    // The pane's title stays whole beside the narrower sidebar.
+    for (const sel of [".menu-sidebar-title", ".menu-pane-title"]) {
+      const lines = await page.locator(sel).evaluate((el) => {
+        const lh = parseFloat(getComputedStyle(el).lineHeight);
+        return Math.round(el.getBoundingClientRect().height / lh);
+      });
+      expect(lines, sel).toBe(1);
+    }
+
+    // A phone on its side is as wide but nowhere near as tall: phone column.
+    await page.setViewportSize({ width: 844, height: 390 });
+    await expect(page.locator(".menu-sidebar")).toBeHidden();
+    await expect(page.locator(".menu-header .menu-title")).toBeVisible();
+  });
+
   test("narrowing off the desktop lands on the phone's home page", async ({
     page,
   }) => {

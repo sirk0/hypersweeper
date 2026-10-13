@@ -34,7 +34,21 @@ From **900px** (`Menu.wideQuery`, the `@media (min-width: 900px)` block in
 top level of the tree, and a content pane showing the current page as a grid of
 board cards under a **pane header** — the page's title, its breadcrumb hint and
 the difficulty pills. Below that width it is the phone column, with the back
-stack in place of the sidebar. Nothing is duplicated: the how-to-play/gear
+stack in place of the sidebar.
+
+**A tablet held upright gets the two panes too**: the query's second clause,
+`(min-width: 720px) and (min-height: 800px)`, takes in an iPad in portrait
+(744–834 wide), which on the width rule alone was handed the 520px phone column
+with a third of the screen empty either side of it — while the same iPad turned
+on its side got the desktop. The height floor is what keeps a phone on *its*
+side (844×390 and the like) on the phone column. Between 720 and 899px a second
+block in `styles.css` fits the panes to the narrower screen: a 236px sidebar,
+a 200px card floor so the pane holds two columns, both titles at 25px (at 28px
+"Hypersweeper" breaks mid-word in that sidebar), and the difficulty pills on
+their own row under the page title rather than beside it. From 900px nothing
+of that applies, so the desktop and its gallery baselines are untouched. The
+query lives in two places — `Menu.wideQuery` and the `@media` rule — and they
+must match; `tests/e2e/layout.spec.ts` pins both sides of the height floor. Nothing is duplicated: the how-to-play/gear
 buttons and the difficulty block are the *same* elements, moved between the two
 homes (`placeHeaderButtons`, `paneHeader`), so every `data-action` and
 `.difficulty-btn` selector still resolves to one element at any width.
@@ -43,8 +57,8 @@ Three rules keep the two layouts honest, and all three were learned the hard
 way:
 
 - **Every page must render at either width.** `this.view` is a closure that
-  outlives a resize — a rotate on a big phone crosses 900px on its own — so a
-  page that only one layout can draw needs a guard that re-routes when the
+  outlives a resize — a rotate on a big phone crosses the breakpoint on its
+  own — so a page that only one layout can draw needs a guard that re-routes when the
   breakpoint moves under it. `renderRoot` and `renderCustom` bounce to the
   sidebar's Quick start when they go wide; `renderQuickStart` bounces to the
   phone's home page when it goes narrow. Without that last one the phone was

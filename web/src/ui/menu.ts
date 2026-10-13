@@ -228,8 +228,16 @@ export class Menu {
   private selectedPage: string | null = null;
   /** The desktop two-pane branch (see `design_handoff_desktop_menu/README.md`):
    * a sidebar replaces the back stack and the content pane shows a card grid.
-   * Below this width the phone column is untouched. */
-  private readonly wideQuery = matchMedia("(min-width: 900px)");
+   * Below this width the phone column is untouched.
+   *
+   * The second clause is a tablet held upright (an iPad in portrait is 744 to
+   * 834 wide): too narrow for the desktop rule, but with a screen's worth of
+   * height that the 520px phone column left empty on either side. The height
+   * floor keeps a phone on its side (844x390 and the like) on the phone column.
+   * Must stay in step with the two `@media` rules in styles.css. */
+  private readonly wideQuery = matchMedia(
+    "(min-width: 900px), (min-width: 720px) and (min-height: 800px)",
+  );
   /** The page currently on screen, re-runnable so returning from a board
    * restores it (see `show`). */
   private view: () => void = () => this.renderRoot();
