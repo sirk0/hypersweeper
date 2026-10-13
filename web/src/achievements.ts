@@ -91,6 +91,34 @@ export function emptyProgress(): Progress {
 
 // -- the catalogue of achievements -----------------------------------------
 
+/** Game Center points, by kind of achievement.
+ *
+ * A rule rather than a value per achievement, and a rule over *kinds*, never
+ * over how many boards a group has: Game Center fixes an achievement's points
+ * once players can see it, and a group grows whenever a tiling is added. So
+ * "Laves complete" is worth the same as "Fractals complete" — the price of
+ * points that cannot drift.
+ *
+ * Game Center allows 100 points per achievement and 1000 across the game, and
+ * achievements are only ever added. Today's 69 spend 770. Points run out
+ * first: eleven more group pairs (20 points each) reach 990 at 91
+ * achievements. `tests/unit/achievements.test.ts` checks both caps. */
+const POINTS = {
+  firstWin: 5,
+  /** Per rung of the difficulty ladder: easy 5, medium 10, hard 15. */
+  difficultyRung: 5,
+  /** The first win tier; each later tier doubles it: 10, 20, 40. */
+  winTier: 10,
+  flagless: 10,
+  unfair: 10,
+  shape: 5,
+  /** Win any one board of a group. */
+  groupAny: 5,
+  /** Win every board of a group. */
+  groupAll: 15,
+  everything: 100,
+} as const;
+
 /** How far along one achievement is. `need === 1` is a yes/no; anything more is
  * a count the page shows as `have / need`. */
 export interface Measure {
@@ -99,10 +127,22 @@ export interface Measure {
 }
 
 export interface Achievement {
-  /** Stable — it is what the stored `unlocked` map is keyed by. */
+  /** Stable — it is what the stored `unlocked` map is keyed by, and what
+   * `gameCenterId` turns into the permanent Game Center id. */
   id: string;
   label: string;
+  /** What the page says about it. May quote a board count, which changes as
+   * boards are added. */
   hint: string;
+  /** What Game Center says before it is earned: `hint` with no board count in
+   * it, because Game Center's text is registered once and not rebuilt with the
+   * catalogue. */
+  brief: string;
+  /** What Game Center says once it is earned. */
+  done: string;
+  /** Game Center points. Set by kind, never by a board count — see
+   * `POINTS`. */
+  points: number;
   /** A key `ui/icons.ts` `menuIcon` draws. */
   icon: string;
   group: AchievementGroup;
@@ -243,6 +283,9 @@ function milestones(): Achievement[] {
       id: "first-win",
       label: "First clear",
       hint: "Win your first board",
+      brief: "Win your first board",
+      done: "You won your first board",
+      points: POINTS.firstWin,
       icon: "star",
       group: "milestone",
       measure: (p) => yesNo(totalWins(p) > 0),
@@ -254,6 +297,9 @@ function milestones(): Achievement[] {
       id: `difficulty:${d.key}`,
       label: `${d.label} cleared`,
       hint: `Win any board on ${d.label.toLowerCase()}`,
+      brief: `Win any board on ${d.label.toLowerCase()}`,
+      done: `You won a board on ${d.label.toLowerCase()}`,
+      points: POINTS.difficultyRung * (i + 1),
       // One filled bar per step up the ladder, so the three rows are told apart
       // by their badges and not only by their names.
       icon: `bars:${i + 1}`,
@@ -263,22 +309,28 @@ function milestones(): Achievement[] {
     });
   });
 
-  for (const tier of WIN_TIERS) {
+  WIN_TIERS.forEach((tier, i) => {
     list.push({
       id: `wins:${tier}`,
       label: `${tier} boards cleared`,
       hint: `Win ${tier} games, on any boards`,
+      brief: `Win ${tier} games, on any boards`,
+      done: `You won ${tier} games`,
+      points: POINTS.winTier * 2 ** i,
       icon: "trophy",
       group: "milestone",
       measure: (p) => ({ have: Math.min(totalWins(p), tier), need: tier }),
     });
-  }
+  });
 
   list.push(
     {
       id: "flagless",
       label: "No flags",
       hint: "Win a board without ever planting a flag",
+      brief: "Win a board without ever planting a flag",
+      done: "You won a board without planting a single flag",
+      points: POINTS.flagless,
       icon: "flag",
       group: "milestone",
       measure: (p) => yesNo(p.flagless > 0),
@@ -287,6 +339,9 @@ function milestones(): Achievement[] {
       id: "unfair",
       label: "Against the odds",
       hint: "Win a board marked as harder than its difficulty promises",
+      brief: "Win a board marked as harder than its difficulty promises",
+      done: "You won a board that was harder than its difficulty promised",
+      points: POINTS.unfair,
       icon: "warning",
       group: "milestone",
       // Derived rather than stored: `wins` already says which board at which
@@ -309,11 +364,23 @@ function shapeAchievements(): Achievement[] {
     id: `shape:${sides}`,
     label: capitalise(plural(sideNoun(sides))),
     hint: `Win a board whose tiles have ${sides} sides`,
+    brief: `Win a board whose tiles have ${sides} sides`,
+    done: `You won a board whose tiles have ${sides} sides`,
+    points: POINTS.shape,
     icon: `ngon:${sides}`,
     group: "shape" as const,
     measure: (p: Progress) => yesNo(p.shapes.includes(sides)),
   }));
 }
+
+type PairKind = "tiling" | "surface" | "solid";
+
+/** How Game Center's text names a group's boards, by the kind of group. */
+const PAIR_WORDS: Record<PairKind, string> = {
+  tiling: "tiled this way",
+  surface: "on this surface",
+  solid: "in this group of solids",
+};
 
 /** The two achievements a group of boards earns: win one of them, and win all
  * of them.
@@ -323,14 +390,21 @@ function shapeAchievements(): Achievement[] {
  * "Laves" does not tell you it is 33 boards. It also sidesteps a grammar
  * problem the labels would otherwise force: the groups are named "Torus",
  * "Möbius strip", "The plane" and "Catalan solids", and no one preposition and
- * article fits all four. */
-function pairFor(group: Group, kind: AchievementGroup): Achievement[] {
+ * article fits all four.
+ *
+ * Game Center's text cannot carry the count (see `brief`), so it names what
+ * the boards share instead, in words that fit every group of that kind. */
+function pairFor(group: Group, kind: PairKind): Achievement[] {
   const n = group.modes.length;
+  const which = PAIR_WORDS[kind];
   return [
     {
       id: `${kind}:${group.key}`,
       label: group.label,
       hint: `Win any one of its ${n} boards`,
+      brief: `Win a board ${which}`,
+      done: `You won a board ${which}`,
+      points: POINTS.groupAny,
       icon: group.key,
       group: kind,
       measure: anyOf(group.modes),
@@ -339,6 +413,9 @@ function pairFor(group: Group, kind: AchievementGroup): Achievement[] {
       id: `${kind}-all:${group.key}`,
       label: `${group.label} complete`,
       hint: `Win all ${n} of them`,
+      brief: `Win every board ${which}`,
+      done: `You won every board ${which}`,
+      points: POINTS.groupAll,
       icon: group.key,
       group: kind,
       measure: allOf(group.modes),
@@ -360,6 +437,9 @@ export const ACHIEVEMENTS: Achievement[] = (() => {
       id: "all-boards",
       label: "The whole catalogue",
       hint: `Win every one of the ${every.length} playable boards`,
+      brief: "Win every playable board in the game",
+      done: "You won every playable board in the game",
+      points: POINTS.everything,
       icon: "custom",
       group: "grand",
       measure: allOf(every),
@@ -368,6 +448,60 @@ export const ACHIEVEMENTS: Achievement[] = (() => {
 })();
 
 export const ACHIEVEMENTS_BY_ID = new Map(ACHIEVEMENTS.map((a) => [a.id, a]));
+
+// -- Game Center -------------------------------------------------------------
+//
+// The App Store builds report these achievements to Game Center. Game Center
+// keeps its own list, registered in App Store Connect, and once an achievement
+// is live there its id and points are permanent and it cannot be deleted. So
+// everything below is a fixed function of the achievement's own stable id and
+// kind, never of the catalogue's current size.
+
+/** Game Center's own limits: points per achievement, points across the game,
+ * achievements per game, and characters in an id. */
+export const GAME_CENTER_LIMITS = {
+  pointsEach: 100,
+  pointsTotal: 1000,
+  achievements: 100,
+  idLength: 100,
+} as const;
+
+/** The Game Center id of an achievement: `hs.` and the app's id with `:` as
+ * `.` and `-` as `_`, because Game Center ids are letters, digits, `.` and `_`.
+ * `tiling-all:2-uniform` is `hs.tiling_all.2_uniform`.
+ *
+ * A pure rewrite of an id that is already stable, so it is stable too. It is
+ * one-to-one as long as app ids use only lowercase letters, digits, `:` and
+ * `-`, which the unit tests check. */
+export function gameCenterId(id: string): string {
+  return `hs.${id.replaceAll(":", ".").replaceAll("-", "_")}`;
+}
+
+/** One achievement as Game Center is told about it. */
+export interface GameCenterAchievement {
+  /** The app's own id, which the stored record and the page use. */
+  id: string;
+  gameCenterId: string;
+  points: number;
+  title: string;
+  /** Pre-earned description. */
+  brief: string;
+  /** Earned description. */
+  done: string;
+  /** The `ui/icons.ts` key its image is drawn from. */
+  icon: string;
+}
+
+/** Every achievement as Game Center sees it, in list order. */
+export const GAME_CENTER_ACHIEVEMENTS: GameCenterAchievement[] = ACHIEVEMENTS.map((a) => ({
+  id: a.id,
+  gameCenterId: gameCenterId(a.id),
+  points: a.points,
+  title: a.label,
+  brief: a.brief,
+  done: a.done,
+  icon: a.icon,
+}));
 
 /** The boards a completion target leaves out, for the line the page shows. */
 export const EXCLUDED_MODES: string[] = blockedModes().filter(hasMode);

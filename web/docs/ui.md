@@ -911,7 +911,7 @@ A win used to leave no trace unless the clock beat a record. The catalogue is
 and nothing in the game said so. `src/achievements.ts` is the record of where a
 player has been, and the list of where they have not.
 
-- **The list is derived.** 50 achievements, and none of them typed out: the
+- **The list is derived.** 69 achievements, and none of them typed out: the
   families come from `familyRows` over every surface, the surfaces from
   `SURFACE_SPECS`, the solid groups from `SOLID_GROUPS`, the difficulties from
   `data/ui/screens.json`. A tiling added tomorrow joins its family's two
@@ -956,6 +956,31 @@ player has been, and the list of where they have not.
   on a win, so the flags on the board at the moment the achievements are counted
   say nothing about how the game was played. `GameSession.flagless` counts the
   player's own placements instead.
+
+### What Game Center is told
+
+The App Store builds will report these achievements to Game Center, which keeps
+its own list, registered once in App Store Connect. Once an achievement is live
+there its id and points are permanent and it cannot be deleted, and the game is
+capped at 100 achievements and 1000 points (100 each). So each achievement
+carries three more fields, all fixed functions of its stable id and its kind,
+never of how many boards a group has today:
+
+- **`gameCenterId(id)`** rewrites the app id: `hs.` in front, `:` to `.`, `-`
+  to `_` (`tiling-all:2-uniform` is `hs.tiling_all.2_uniform`). The app id is
+  already stable, so this is too.
+- **`points`** come from `POINTS`, a table over kinds: first clear 5,
+  difficulty rungs 5 / 10 / 15, win tiers 10 / 20 / 40, no flags and against the
+  odds 10 each, a shape 5, any board of a group 5, every board of a group 15,
+  the whole catalogue 100. That is 770 today. A rule over group *size* would
+  have been fairer to "Laves complete" and wrong the day a tiling joined it.
+- **`brief` and `done`** are the pre-earned and earned descriptions. The page's
+  hints quote group sizes ("Win all 33 of them"); these cannot, so a group's
+  text names what its boards share ("Win every board tiled this way").
+
+`GAME_CENTER_ACHIEVEMENTS` is the list in that shape. The unit tests check the
+id characters, that the rewrite never merges two ids, both caps, that a group's
+points do not depend on its size, and that no group text has a number in it.
 
 ### Where an unlock is said
 
