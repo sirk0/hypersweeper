@@ -171,8 +171,8 @@ test.describe("settings", () => {
     await expect(page.locator(".menu-entry[data-texture]")).toHaveCount(0);
 
     await row.click();
-    // None and the six materials.
-    await expect(page.locator(".menu-entry[data-texture]")).toHaveCount(7);
+    // None and the eight materials.
+    await expect(page.locator(".menu-entry[data-texture]")).toHaveCount(9);
     await expect(page.locator('.menu-entry[data-texture="none"]')).toHaveAttribute(
       "aria-pressed",
       "true",

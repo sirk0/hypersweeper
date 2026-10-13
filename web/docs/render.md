@@ -343,8 +343,10 @@ carry it — none of them is a colour:
 
 ### Tile textures (`src/render/tileTexture.ts`)
 
-Settings › Appearance › *Tile texture* carves a material into the tiles: wood,
-marble, linen, terrazzo, spun metal or crackle glaze, or `none` (the default).
+Settings › Appearance › *Tile texture* carves a material into the tiles: toy
+studs, crystal facets, wood, marble, linen, terrazzo, spun metal or crackle
+glaze, or `none` (the default). The look aimed at is a casual mobile puzzle
+game's: a light pattern on toy plastic, in relief, lit from the top left.
 It rides on the style as `CellStyle.texture`, set by `finishStyle` from the
 player's `Finish` — never by a shape or a theme — and `patchTexture` adds it to
 the tile material's shader when the board is built. Things to know:
@@ -360,14 +362,24 @@ the tile material's shader when the board is built. Things to know:
   uploads — which is why **`patchTexture` must run before `patchMotion`**: it
   is chained as motion's `prev`, so motion's declarations land in front of its
   own. Sampling the rest position is what lets a hopping tile carry its grain.
-- **Only brightness, and on a lit material the normal and roughness.** The hue
-  stays the theme's, so the shape colour code reads through the grain. A lit
-  material also bends its normal by the screen-space gradient of the pattern's
-  height (`txPerturb`, three's `perturbNormalArb` renamed) — on a solid that is
-  real relief under the moving light; on a flat board lit head-on it mostly
-  darkens the grooves.
-- **An opened cell keeps a third of it** (`OPEN_STRENGTH`): its floor is where
-  the digit is read. The flag is a per-vertex `aTexOpen` attribute, present only
+- **Light patterns, carried by relief.** A sampler answers a brightness (kept
+  within a few percent, so the hue stays the theme's and the shape colour code
+  reads through), a **height**, and a roughness delta. `RELIEF_GLSL` lights the
+  height from the top left of the *screen*, like a desk lamp: it carries that
+  direction into texture space through the pattern's own screen derivatives
+  (`dFdx(vTexP)`, `dFdy(vTexP)` — linear across a face, so smooth, unlike a
+  derivative of the pattern itself, which is blocky per 2×2 pixel quad), probes
+  the height a short step toward the lamp for the **emboss** (lamp side bright,
+  far side dark) and a longer step for the **cast shadow** (a raised feature
+  darkens what lies down and to the right of it). `RELIEF` tunes both per
+  texture. A sampler drawn in the tile's flat 2D frame (`vTexL` — the studs,
+  the spun rings) is probed along the same direction carried into that frame.
+- **A lit tile also takes the lamp as a key** (`TILT`): faces tipped toward the
+  top left of the screen come up brighter, faces tipped away darker. On a flat
+  board, lit head-on, that is what gives the bevel a bright top edge and a dark
+  bottom one; on a solid it is a gentle extra key from the same corner.
+- **An opened cell keeps a third of it** (`OPEN_STRENGTH`; the studs keep
+  almost none, `RELIEF.studs.open`): its floor is where the digit is read. The flag is a per-vertex `aTexOpen` attribute, present only
   on a textured board and written from `writeColor`, which every state change
   already passes through.
 - **Fine detail fades rather than shimmers.** `txKeep(freq)` measures how many

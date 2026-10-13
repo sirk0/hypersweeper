@@ -587,8 +587,8 @@ coloured. Like a cell style and unlike the sound preset, both are cut into the m
 board and the rows say so.
 
 **Tile texture.** A third finish row, directly under Board shape, opening a
-picker page of its own (`renderTexturePicker`): None, Wood, Marble, Linen,
-Terrazzo, Spun metal, Crackle glaze. **None** by default. It is the player's,
+picker page of its own (`renderTexturePicker`): None, Studs, Crystal, Wood,
+Marble, Linen, Terrazzo, Spun metal, Crackle glaze. **None** by default. It is the player's,
 like the gloss, and spread over the style by `finishStyle` (`Finish.texture`);
 it is compiled into the tile material when a board is built, so it too lands on
 the next board — the page's footer says so, and so does the note under

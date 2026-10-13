@@ -6,9 +6,9 @@ import {
 } from "three";
 
 // What a tile is *made of*: a procedural surface pattern carved into the cells
-// — wood grain, marble veins, a linen weave, terrazzo chips, spun metal,
-// crackle glaze — so a board reads as a set of real pieces rather than as coloured
-// plastic. Settings › Appearance › Tile texture; `none` is the default and
+// — toy-brick studs, crystal facets, wood grain, marble veins, a linen weave,
+// terrazzo chips, spun metal, crackle glaze — light patterns in relief, lit
+// from the top left like toys under a desk lamp. Settings › Appearance › Tile texture; `none` is the default and
 // leaves the shaders exactly as they were.
 //
 // Three rules shape it:
@@ -21,8 +21,8 @@ import {
 //     own position, as if each tile had been cut from a block of the stuff —
 //     so it wraps a sphere, a Möbius strip and a hyperbolic arc alike.
 //   * **The hue stays the theme's.** A texture only modulates brightness (and,
-//     on a lit material, the surface normal and roughness), so the shape colour
-//     code reads exactly as before through the grain.
+//     on a lit material, roughness), so the shape colour code reads exactly as
+//     before through the pattern.
 //
 // Each cell samples the block in its own frame: centred on the cell, scaled by
 // its radius (so a tile of a fractal board carries as much grain as a tile of
@@ -37,6 +37,8 @@ import {
 /** The tile textures, in the order the picker lists them. `none` first. */
 export const TILE_TEXTURES = [
   "none",
+  "studs",
+  "crystal",
   "wood",
   "marble",
   "linen",
@@ -52,6 +54,8 @@ export const DEFAULT_TEXTURE: TileTexture = "none";
 /** Labels for the picker. */
 export const TILE_TEXTURE_LABELS: Record<TileTexture, string> = {
   none: "None",
+  studs: "Studs",
+  crystal: "Crystal",
   wood: "Wood",
   marble: "Marble",
   linen: "Linen",
@@ -63,6 +67,8 @@ export const TILE_TEXTURE_LABELS: Record<TileTexture, string> = {
 /** One line under each label on the picker page. */
 export const TILE_TEXTURE_HINTS: Record<TileTexture, string> = {
   none: "Plain tiles",
+  studs: "Toy-brick bumps that catch the light",
+  crystal: "Faint facets, like a cut gem",
   wood: "Grain and growth rings, every tile its own plank",
   marble: "Soft clouds crossed by veins",
   linen: "A fine canvas weave",
@@ -165,121 +171,166 @@ vec3 txCells(vec3 p) {
 /** One texture's sample, as `(brightness, height, roughness delta)`.
  * Brightness multiplies the colour (1 = unchanged), height drives the bump,
  * the roughness delta is added to the material's. */
+// Each sampler answers `(brightness, height, roughness delta)` at a point of
+// the block. Brightness is kept *light* — a few percent either way — because
+// most of what a texture says is said by its height, which `patchTexture`
+// lights from the top left like a toy under a desk lamp: the side of a raised
+// feature facing the lamp catches a highlight, the far side turns dark, and a
+// soft shadow falls down and to the right of it.
 const SAMPLERS: Record<Exclude<TileTexture, "none">, string> = {
-  // Growth rings seen along the plank: soft dark latewood lines across the
-  // tile, wandering on a low-frequency warp, over fibres drawn along the grain.
+  // Toy-brick studs: a two-by-two cluster of round bumps on every tile, each
+  // with a little dome on top, laid square to the board.
+  studs: /* glsl */ `
+vec3 txSample(vec3 p, vec2 l) {
+  vec2 q = abs(l) - vec2(0.27);
+  float d = length(q);
+  float r = 0.17;
+  float body = 1.0 - smoothstep(r - 0.025, r, d);
+  float dome = body * (1.0 - (d / r) * (d / r));
+  return vec3(1.0 + 0.1 * dome, body * 0.8 + dome * 0.35, -0.05 * body);
+}`,
+  // A cut gem: the face broken into flat facets, each tipped a little toward or
+  // away from the lamp, so it reads as faint triangular light and shade.
+  crystal: /* glsl */ `
+vec3 txSample(vec3 p, vec2 l) {
+  vec3 c = txCells(p * 1.1);
+  float tone = (c.z - 0.5) * 0.2;
+  return vec3(1.04 + tone, c.z * 0.6, -0.2);
+}`,
+  // Growth rings seen along the plank: soft latewood grooves across the tile,
+  // wandering on a low-frequency warp, over fibres drawn along the grain.
   wood: /* glsl */ `
-vec3 txSample(vec3 p) {
+vec3 txSample(vec3 p, vec2 l) {
   float warp = txFbm(p * vec3(0.5, 1.6, 1.6));
-  float g = (p.y * 0.8 + p.z * 0.5 + warp * 1.1) * 3.6;
+  float g = (p.y * 0.8 + p.z * 0.5 + warp * 1.1) * 3.0;
   float ring = pow(0.5 + 0.5 * cos(6.2831853 * g), 3.0);
   float fibre = mix(0.5, txNoise(p * vec3(1.0, 16.0, 16.0)), txKeep(16.0));
   float figure = txFbm(p * vec3(0.8, 4.0, 4.0));
-  float b = 1.08 - 0.3 * ring - 0.2 * (fibre - 0.5) - 0.16 * (figure - 0.5);
-  return vec3(b, -ring * 0.6 + fibre * 0.2, 0.06);
+  float b = 1.04 - 0.1 * ring - 0.06 * (fibre - 0.5) - 0.08 * (figure - 0.5);
+  return vec3(b, 0.5 - ring * 0.5 + fibre * 0.12, 0.06);
 }`,
-  // A cloudy light ground crossed by a soft main vein and a few fine ones.
+  // A cloudy light ground crossed by soft, slightly sunken veins.
   marble: /* glsl */ `
-vec3 txSample(vec3 p) {
+vec3 txSample(vec3 p, vec2 l) {
   float t = txFbm(p * 0.9);
   float v = abs(sin((p.x * 0.8 + p.y * 0.5) * 3.2 + t * 6.0));
   float vein = 1.0 - smoothstep(0.0, 0.5, v);
   vein *= vein;
-  float v2 = abs(sin((p.x - p.y * 0.7) * 3.5 + txFbm(p * 1.7 + 3.0) * 8.0));
-  float fine = (1.0 - smoothstep(0.0, 0.05, v2)) * txKeep(6.0);
   float cloud = txFbm(p * 1.8 + 7.0);
-  float b = 1.16 - 0.3 * vein - 0.06 * fine - 0.26 * (cloud - 0.5);
-  return vec3(b, -vein * 0.2, -0.25);
+  float b = 1.06 - 0.12 * vein - 0.12 * (cloud - 0.5);
+  return vec3(b, 0.4 - vein * 0.4 + cloud * 0.15, -0.25);
 }`,
-  // A canvas weave: two sets of rounded threads, each a little slubby, the
-  // pair seen as a grid of soft ridges. Only drawn where wide enough to see.
+  // A canvas weave: two sets of rounded threads, the pair seen as a grid of
+  // soft ridges. Only drawn where wide enough to see.
   linen: /* glsl */ `
-vec3 txSample(vec3 p) {
-  float n = 7.0;
+vec3 txSample(vec3 p, vec2 l) {
+  float n = 6.0;
   vec2 q = p.xy * n;
   float k = txKeep(n);
-  float sx = txNoise(vec3(floor(q.x) * 0.71, p.y * 2.0, 1.0));
-  float sy = txNoise(vec3(p.x * 2.0, floor(q.y) * 0.71, 4.0));
-  float warpT = pow(0.5 + 0.5 * cos(6.2831853 * q.x), 0.7) * (0.75 + 0.5 * sx);
-  float weftT = pow(0.5 + 0.5 * cos(6.2831853 * q.y), 0.7) * (0.75 + 0.5 * sy);
+  float warpT = 0.5 + 0.5 * cos(6.2831853 * q.x);
+  float weftT = 0.5 + 0.5 * cos(6.2831853 * q.y);
   float over = sin(3.1415927 * q.x) * sin(3.1415927 * q.y);
   float th = mix(weftT, warpT, 0.5 + 0.5 * over);
   float mott = txFbm(p * 1.4);
-  float b = 1.0 + k * 0.3 * (th - 0.5) - 0.08 * (mott - 0.5);
-  return vec3(b, k * th * 0.8, 0.15);
+  float b = 1.0 + k * 0.05 * (th - 0.5) - 0.05 * (mott - 0.5);
+  return vec3(b, k * th * 0.5, 0.15);
 }`,
-  // Chips of stone scattered through a plain binder: big ones and small ones,
-  // each its own tone, with a fine speckle over everything.
+  // Chips of stone set a hair proud of a plain binder, big ones and small.
   terrazzo: /* glsl */ `
 float txChips(vec3 q, float scale, float density, float keep, inout float tone) {
   vec3 c = txCells(q * scale);
   float r = 0.16 + 0.2 * fract(c.z * 7.3);
   float chip = (1.0 - smoothstep(r - 0.05, r, c.x)) * step(1.0 - density, c.z) * keep;
   float t = fract(c.z * 13.7);
-  float shade = t < 0.4 ? 0.58 : (t < 0.75 ? 0.82 : 1.22);
+  float shade = t < 0.4 ? 0.84 : (t < 0.75 ? 0.94 : 1.1);
   tone = mix(tone, shade, chip);
   return chip;
 }
-vec3 txSample(vec3 p) {
+vec3 txSample(vec3 p, vec2 l) {
   vec3 q = p + 0.12 * vec3(txNoise(p * 3.0), txNoise(p * 3.0 + 5.0), txNoise(p * 3.0 + 9.0));
-  float tone = 1.05;
-  float big = txChips(q, 2.0, 0.85, 1.0, tone);
-  float small = txChips(q + 11.0, 5.0, 0.7, txKeep(5.0), tone);
-  float speck = mix(0.5, txNoise(p * 30.0), txKeep(30.0));
-  float b = tone - 0.08 * (speck - 0.5);
-  return vec3(b, (big + small) * 0.4, -0.15 * (big + small));
+  float tone = 1.03;
+  float big = txChips(q, 2.0, 0.7, 1.0, tone);
+  float small = txChips(q + 11.0, 5.0, 0.6, txKeep(5.0), tone);
+  return vec3(tone, (big + small) * 0.6, -0.15 * (big + small));
 }`,
-  // Spun metal: fine concentric turning marks round the tile's middle, and
+  // Spun metal: fine concentric turning grooves round the tile's middle, and
   // the bow-tie of light a turned disc throws back, always the same way up.
   spun: /* glsl */ `
-vec3 txSample(vec3 p) {
-  float r = length(vTexL);
-  float a = atan(vTexL.y, vTexL.x);
-  float k = txKeep(14.0);
-  float turn = mix(0.5, txNoise(vec3(r * 14.0, r * 3.0, p.z)), k);
-  float groove = 0.5 + 0.5 * cos(r * 40.0 + txNoise(vec3(r * 4.0, 0.0, 2.0)) * 3.0);
-  groove = mix(0.5, groove, txKeep(7.0));
+vec3 txSample(vec3 p, vec2 l) {
+  float r = length(l);
+  float a = atan(l.y, l.x);
+  float groove = 0.5 + 0.5 * cos(r * 36.0 + txNoise(vec3(r * 4.0, 0.0, 2.0)) * 3.0);
+  groove = mix(0.5, groove, txKeep(6.0));
   float bow = pow(abs(cos(a - 0.6)), 6.0) * smoothstep(0.05, 0.4, r);
-  float b = 0.9 + 0.2 * (turn - 0.5) + 0.1 * (groove - 0.5) + 0.32 * bow;
-  return vec3(b, turn * 0.3 + groove * 0.2, -0.3);
+  float b = 0.97 + 0.03 * (groove - 0.5) + 0.12 * bow;
+  return vec3(b, groove * 0.25, -0.3);
 }`,
-  // A crackle glaze: a glossy ceramic ground crazed by a net of fine dark
+  // A crackle glaze: a glossy ceramic ground crazed by a net of fine sunken
   // lines, each plate of glaze a hair different in tone.
   crackle: /* glsl */ `
-vec3 txSample(vec3 p) {
+vec3 txSample(vec3 p, vec2 l) {
   float k = txKeep(4.5);
   vec3 c = txCells(p * 4.5 + 0.35 * txFbm(p * 2.0));
   float line = 1.0 - smoothstep(0.0, 0.06, c.y);
-  float plate = c.z - 0.5;
-  float mott = txFbm(p * 1.5);
-  float b = 1.04 - k * 0.22 * line + k * 0.06 * plate - 0.1 * (mott - 0.5);
-  return vec3(b, -k * line * 0.6, -0.3);
+  float b = 1.02 - k * 0.08 * line + k * 0.03 * (c.z - 0.5);
+  return vec3(b, 0.5 - k * line * 0.5, -0.3);
 }`,
 };
 
-/** How hard each texture's height bends the normal on a lit material. */
-const BUMP: Record<Exclude<TileTexture, "none">, number> = {
-  wood: 0.35,
-  marble: 0.15,
-  linen: 0.6,
-  terrazzo: 0.3,
-  spun: 0.3,
-  crackle: 0.4,
+/** How hard each texture's relief is lit: `emboss` scales the lamp-side
+ * highlight and far-side shade, `shadow` the shadow a raised feature casts, and `open` overrides how much of
+ * the whole an opened cell keeps (`OPEN_STRENGTH`). */
+const RELIEF: Record<
+  Exclude<TileTexture, "none">,
+  { emboss: number; shadow: number; open?: number }
+> = {
+  // An opened brick is a flat floor: the digit is the thing on it.
+  studs: { emboss: 1.2, shadow: 1.0, open: 0.12 },
+  crystal: { emboss: 1.0, shadow: 0.0 },
+  wood: { emboss: 0.6, shadow: 0.35 },
+  marble: { emboss: 0.5, shadow: 0.25 },
+  linen: { emboss: 0.45, shadow: 0.2 },
+  terrazzo: { emboss: 0.8, shadow: 0.6 },
+  spun: { emboss: 0.6, shadow: 0.0 },
+  crackle: { emboss: 0.5, shadow: 0.3 },
 };
 
-/** Bend `n` by the screen-space gradient of a height — three's
- * `perturbNormalArb`, renamed so it cannot collide with a bump map's. */
-const PERTURB = /* glsl */ `
-vec3 txPerturb(vec3 surf, vec3 n, vec2 dh, float face) {
-  vec3 sx = normalize(dFdx(surf));
-  vec3 sy = normalize(dFdy(surf));
-  vec3 r1 = cross(sy, n);
-  vec3 r2 = cross(n, sx);
-  float det = dot(sx, r1) * face;
-  vec3 grad = sign(det) * (dh.x * r1 + dh.y * r2);
-  return normalize(abs(det) * n - grad);
+/** Where the lamp is, in texture space: the screen's top left carried into the
+ * block by the pattern's own screen derivatives, so it stays top left however
+ * the tile was turned and however far the board is zoomed. `EMBOSS_STEP` and
+ * `SHADOW_STEP` are how far toward it the relief is probed, in tile radii. */
+const EMBOSS_STEP = 0.03;
+const SHADOW_STEP = 0.08;
+
+const RELIEF_GLSL = (r: { emboss: number; shadow: number }): string => /* glsl */ `
+vec3 txS;
+{
+  vec3 lamp = dFdx(vTexP) * -0.7071 + dFdy(vTexP) * 0.7071;
+  vec2 lamp2 = dFdx(vTexL) * -0.7071 + dFdy(vTexL) * 0.7071;
+  float ll = length(lamp);
+  float inv = ll > 1e-8 ? 1.0 / ll : 0.0;
+  lamp *= inv;
+  lamp2 *= inv;
+  txS = txSample(vTexP, vTexL);
+  float h1 = txSample(vTexP + lamp * ${EMBOSS_STEP.toFixed(3)}, vTexL + lamp2 * ${EMBOSS_STEP.toFixed(3)}).y;
+  float emb = clamp((txS.y - h1) * ${(r.emboss * 8).toFixed(3)}, -1.0, 1.0);
+  float sh = 0.0;
+  ${
+    r.shadow > 0
+      ? `float h2 = txSample(vTexP + lamp * ${SHADOW_STEP.toFixed(3)}, vTexL + lamp2 * ${SHADOW_STEP.toFixed(3)}).y;
+  sh = clamp((h2 - txS.y) * 2.0, 0.0, 1.0) * ${(0.35 * r.shadow).toFixed(3)};`
+      : ""
+  }
+  txS.x *= (1.0 + 0.3 * emb) * (1.0 - sh);
 }
 `;
+
+/** The toy-lamp key on a lit tile: faces tipped toward the top left of the
+ * screen come up bright, faces tipped away go dark. On a flat board that is
+ * the bevel — a highlight along the top and left edges, shade along the bottom
+ * and right — which a head-on rig cannot give it; on a solid it is a gentle
+ * extra key from the same corner. */
+const TILT = 0.4;
 
 /** How much of the pattern an **opened** cell keeps. Its floor is where the
  * digit is read, so the grain there is turned well down: the board still reads
@@ -315,8 +366,9 @@ export function textureOpenFlags(
   return resolveTexture(texture) === "none" ? null : new TextureOpenFlags(geometry, vertexCount);
 }
 
-/** Carve `texture` into a tile material. `lit` materials also take the bump
- * and the roughness change; an unlit one only the brightness. A no-op for
+/** Carve `texture` into a tile material. `lit` materials also take the
+ * roughness change and the lamp's key (`TILT`); an unlit one only the
+ * brightness and its relief. A no-op for
  * `none`, which is what keeps the default board's shaders byte-identical.
  *
  * Call it **before** `patchMotion` (see the header). */
@@ -331,11 +383,11 @@ export function patchTexture(material: Material, texture: string | undefined, li
       .replace("#include <common>", `#include <common>\n${VERT_HEAD}`)
       .replace("#include <begin_vertex>", `#include <begin_vertex>\n${VERT_BODY}`);
     let frag = shader.fragmentShader
-      .replace("#include <common>", `#include <common>\n${NOISE}\n${SAMPLERS[key]}\n${PERTURB}`)
+      .replace("#include <common>", `#include <common>\n${NOISE}\n${SAMPLERS[key]}`)
       .replace(
         "#include <color_fragment>",
-        `#include <color_fragment>\nvec3 txS = txSample(vTexP);\n` +
-          `float txK = mix(1.0, ${OPEN_STRENGTH.toFixed(3)}, vTexOpen);\n` +
+        `#include <color_fragment>\n${RELIEF_GLSL(RELIEF[key])}` +
+          `float txK = mix(1.0, ${(RELIEF[key].open ?? OPEN_STRENGTH).toFixed(3)}, vTexOpen);\n` +
           `txS = vec3(mix(1.0, txS.x, txK), txS.y * txK, txS.z * txK);\n` +
           `diffuseColor.rgb *= txS.x;`,
       );
@@ -347,7 +399,7 @@ export function patchTexture(material: Material, texture: string | undefined, li
         )
         .replace(
           "#include <normal_fragment_maps>",
-          `#include <normal_fragment_maps>\nnormal = txPerturb(-vViewPosition, normal, vec2(dFdx(txS.y), dFdy(txS.y)) * ${BUMP[key].toFixed(3)}, faceDirection);`,
+          `#include <normal_fragment_maps>\ndiffuseColor.rgb *= clamp(1.0 + ${TILT.toFixed(3)} * dot(normal.xy, vec2(-0.7071, 0.7071)), 0.55, 1.45);`,
         );
     }
     shader.fragmentShader = frag;
