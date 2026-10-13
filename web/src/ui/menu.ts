@@ -234,9 +234,15 @@ export class Menu {
    * 834 wide): too narrow for the desktop rule, but with a screen's worth of
    * height that the 520px phone column left empty on either side. The height
    * floor keeps a phone on its side (844x390 and the like) on the phone column.
+   *
+   * The first clause's height floor does the same for the widest phones: a Pro
+   * Max on its side is 932x430, wide enough for the desktop, but its cards are
+   * taller than half the screen. Every phone on its side gets the phone
+   * navigation instead, laid out as a rail beside the list (the
+   * `max-height: 500px` landscape block in styles.css).
    * Must stay in step with the two `@media` rules in styles.css. */
   private readonly wideQuery = matchMedia(
-    "(min-width: 900px), (min-width: 720px) and (min-height: 800px)",
+    "(min-width: 900px) and (min-height: 501px), (min-width: 720px) and (min-height: 800px)",
   );
   /** The page currently on screen, re-runnable so returning from a board
    * restores it (see `show`). */
@@ -423,6 +429,10 @@ export class Menu {
   private go(view: () => void): void {
     this.view = view;
     this.render();
+    // A new page opens at its top. The body is one element for every page, so
+    // its scroll otherwise carried over: on a phone on its side, a row tapped
+    // low on one page opened the next one already scrolled past its back row.
+    this.body.scrollTop = 0;
     this.riseIn();
   }
 

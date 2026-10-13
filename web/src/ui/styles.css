@@ -922,12 +922,13 @@ body {
    The second clause takes in a tablet held upright, which has the height for
    it and nothing to fill with a phone column — see `Menu.wideQuery`, which
    must match this query, and the tablet block below that fits the panes to
-   its narrower width. */
+   its narrower width. The first clause's height floor leaves a phone on its
+   side — even a 932px-wide one — to the landscape rail further down. */
 .menu-sidebar {
   display: none;
 }
 
-@media (min-width: 900px), (min-width: 720px) and (min-height: 800px) {
+@media (min-width: 900px) and (min-height: 501px), (min-width: 720px) and (min-height: 800px) {
   .menu {
     width: min(1280px, 100%);
     display: grid;
@@ -2326,6 +2327,81 @@ body {
   .menu-entry-icon {
     width: 30px;
     height: 30px;
+  }
+}
+
+/* --- A phone on its side --- */
+/* At 844x390 the phone column spends its top on the title and its bottom on
+   the difficulty row, and the list between them shows three and a half rows.
+   Landscape has width to spare and no height, so the chrome moves to a rail
+   at the left — the title row on top, the difficulty pills stacked at the
+   bottom, where a thumb holding the phone already is — and the list takes the
+   whole height to its right, in two columns where they fit. Still the phone's
+   navigation (back stack, rows): the desktop panes are excluded from this
+   height by `Menu.wideQuery`, since their cards are taller than half of it.
+   Grid placement only — the DOM is the phone column's, in the same order. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .menu {
+    width: 100%;
+    padding: max(14px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right))
+      max(14px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+    display: grid;
+    grid-template-columns: 248px minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 14px 24px;
+  }
+
+  .menu-header {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: start;
+    /* "Hypersweeper" on one line between the two buttons in a 248px rail. */
+    --menu-header-btn: 36px;
+  }
+
+  .menu-title {
+    font-size: 22px;
+  }
+
+  .menu-body {
+    grid-column: 2;
+    grid-row: 1 / -1;
+  }
+
+  /* Top-aligned, level with the title: centred, a page with a back row opened
+     a gap under it as wide as the list was short. */
+  .menu-body > .menu-list {
+    margin-block: 0 auto;
+  }
+
+  .menu-difficulty-block {
+    grid-column: 1;
+    grid-row: 2;
+    align-self: end;
+  }
+
+  .menu-difficulty {
+    flex-direction: column;
+  }
+
+  .difficulty-btn {
+    padding: 10px;
+  }
+
+  /* Board lists go two-up when the space beside the rail allows it. Not the
+     settings-style pages: their rows carry switches and sliders and read as
+     one column of sections. */
+  .menu:not(.settings-open) .menu-body > .menu-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  }
+
+  .menu:not(.settings-open) .menu-body > .menu-list > li {
+    display: flex;
+  }
+
+  .menu-entry-label {
+    font-size: 16px;
   }
 }
 

@@ -29,8 +29,8 @@ below.
 
 ### Two layouts, one DOM
 
-From **900px** (`Menu.wideQuery`, the `@media (min-width: 900px)` block in
-`styles.css`) the same menu lays out as two panes: a sidebar holding the whole
+From **900px** wide and 501px tall (`Menu.wideQuery`, the matching `@media`
+block in `styles.css`) the same menu lays out as two panes: a sidebar holding the whole
 top level of the tree, and a content pane showing the current page as a grid of
 board cards under a **pane header** — the page's title, its breadcrumb hint and
 the difficulty pills. Below that width it is the phone column, with the back
@@ -48,7 +48,24 @@ a 200px card floor so the pane holds two columns, both titles at 25px (at 28px
 their own row under the page title rather than beside it. From 900px nothing
 of that applies, so the desktop and its gallery baselines are untouched. The
 query lives in two places — `Menu.wideQuery` and the `@media` rule — and they
-must match; `tests/e2e/layout.spec.ts` pins both sides of the height floor. Nothing is duplicated: the how-to-play/gear
+must match; `tests/e2e/layout.spec.ts` pins both sides of the height floor.
+
+**A phone on its side gets a rail** (the `orientation: landscape` and
+`max-height: 500px` block in `styles.css`). In the phone column the title took
+the top of a 390px-tall screen and the difficulty row its bottom, and the list
+between them showed three and a half rows. Landscape has width to spare, so the
+chrome moves to a 248px rail at the left — the title row on top, the
+difficulty pills stacked at its foot — and the page takes the whole height to
+its right, its board lists two-up where they fit (not the settings-style pages,
+whose rows carry switches). It is still the phone's navigation, back stack and
+rows, placed by grid alone, so no page has a third layout to render. The widest
+phones are in it too: the first clause's `min-height: 501px` turns a 932×430
+Pro Max away from the desktop panes, whose cards are taller than half that
+screen. The menu body is shared by every page, so `go` puts its scroll back to
+the top on navigation — on a screen this short a row tapped low on one page
+otherwise opened the next one past its back row.
+
+Nothing is duplicated: the how-to-play/gear
 buttons and the difficulty block are the *same* elements, moved between the two
 homes (`placeHeaderButtons`, `paneHeader`), so every `data-action` and
 `.difficulty-btn` selector still resolves to one element at any width.

@@ -414,6 +414,55 @@ test.describe("the desktop menu breakpoint", () => {
     await expect(page.locator(".menu-header .menu-title")).toBeVisible();
   });
 
+  // A phone on its side — every one, a 932-wide Pro Max included, which the
+  // width alone would hand the desktop panes and their half-screen cards — gets
+  // the phone's navigation laid out as a rail: the title row and the
+  // difficulty pills at the left, the list taking the whole height beside them.
+  // In the phone column the two of them left 844x390 three and a half rows.
+  for (const size of [
+    { width: 844, height: 390 },
+    { width: 932, height: 430 },
+  ]) {
+    test(`a phone on its side puts the chrome in a rail (${size.width}x${size.height})`, async ({
+      page,
+    }) => {
+      await page.setViewportSize(size);
+      await page.goto("/");
+      await expect(page.locator("body[data-ready]")).toBeVisible();
+      await expect(page.locator(".menu-sidebar")).toBeHidden();
+      await expect(page.locator('.menu-entry[data-group="custom"]')).toBeVisible();
+
+      const box = async (sel: string) => (await page.locator(sel).boundingBox())!;
+      const title = await box(".menu-header .menu-title");
+      const difficulty = await box(".menu-difficulty-block");
+      const body = await box(".menu-body");
+      // Both in the rail, to the left of the list...
+      expect(title.x + title.width).toBeLessThanOrEqual(body.x);
+      expect(difficulty.x + difficulty.width).toBeLessThanOrEqual(body.x);
+      // ...which runs the full height beside them rather than between them.
+      expect(body.y).toBeLessThanOrEqual(title.y);
+      expect(body.y + body.height).toBeGreaterThanOrEqual(difficulty.y + difficulty.height);
+      // The title is one line in the rail (its line-height is `normal`, so
+      // measured against its font size: a second line would double it).
+      const ratio = await page.locator(".menu-header .menu-title").evaluate(
+        (el) => el.getBoundingClientRect().height / parseFloat(getComputedStyle(el).fontSize),
+      );
+      expect(ratio).toBeLessThan(1.8);
+
+      // A board list goes two-up, and a page opens at its top: the Custom row
+      // is the last on the home page, and the body used to keep the scroll it
+      // was tapped at, opening the next page past its own back row.
+      await page.locator(".menu-body").evaluate((el) => (el.scrollTop = el.scrollHeight));
+      await page.locator('.menu-entry[data-group="custom"]').click();
+      await expect(page.locator(".menu-back")).toHaveText("‹ Custom");
+      expect(await page.locator(".menu-body").evaluate((el) => el.scrollTop)).toBe(0);
+      const lefts = await page
+        .locator(".menu-body > .menu-list > li")
+        .evaluateAll((els) => new Set(els.map((el) => el.getBoundingClientRect().left)).size);
+      expect(lefts).toBe(2);
+    });
+  }
+
   test("narrowing off the desktop lands on the phone's home page", async ({
     page,
   }) => {
