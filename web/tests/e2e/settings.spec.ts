@@ -181,6 +181,34 @@ test.describe("settings", () => {
     );
   });
 
+  // In a browser tab the pick is what the page's icon links point at, and so
+  // what Add to Home Screen takes (src/appIcon.ts).
+  test("the app icon is its own page, and points the icon links at the pick", async ({
+    page,
+  }) => {
+    const links = () =>
+      page.evaluate(() => [
+        document.querySelector('link[rel="icon"]')?.getAttribute("href"),
+        document.querySelector('link[rel="apple-touch-icon"]')?.getAttribute("href"),
+      ]);
+    await page.locator('.menu-header-btn[data-action="settings"]').click();
+    const row = page.locator('.menu-entry[data-settings-group="app-icon"]');
+    await expect(row).toContainText("Pentagon");
+    expect(await links()).toEqual(["icons/favicon-pentagon.svg", "icons/apple-touch-pentagon.png"]);
+
+    await row.click();
+    await expect(page.locator(".menu-entry[data-app-icon]")).toHaveCount(3);
+    await page.locator('.menu-entry[data-app-icon="hexagon"]').click();
+    await expect(page.locator('.menu-entry[data-app-icon="hexagon"]')).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(await links()).toEqual(["icons/favicon-hexagon.svg", "icons/apple-touch-hexagon.png"]);
+
+    await page.reload();
+    expect(await links()).toEqual(["icons/favicon-hexagon.svg", "icons/apple-touch-hexagon.png"]);
+  });
+
   // Appearance is three settings now — the palette, the cut and the scheme —
   // and the cut is a picker page of its own rather than the old `cellStyle`
   // setting under a different name.

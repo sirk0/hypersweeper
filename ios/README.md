@@ -62,7 +62,9 @@ count is wrong; the script warns about this.
 | `web/capacitor.config.json` | The whole native configuration: app id, name, `webDir` (the Vite build), and `ios.path` pointing here. It lives in `web/` because that is the npm project Capacitor's CLI and pods resolve from — one `node_modules`, so the JS `@capacitor/haptics` and the pod that answers it can never drift apart. |
 | `ios/App/App.xcworkspace` | What Xcode opens: the app target plus the pods. |
 | `ios/App/App/public/` | The built game, copied in by `cap sync`. Not committed — it is a build artifact, like `desktop/app`. |
-| `ios/App/App/Assets.xcassets` | The app icon and launch image, generated from the same vector source as every other icon in the repo by `make ios-icon` (`web/scripts/make-icons.mjs`). |
+| `ios/App/App/AppIcon.icon`, `AppIconHexagon.icon`, `AppIconOctagon.icon` | The app icons, as Icon Composer documents: the primary (pentagon) and the two alternates the App icon setting switches to. One document serves iPhone, iPad and the Mac app alike. See "The app icons" below. |
+| `ios/App/App/AppIconPlugin.swift` | The native half of the App icon setting: `setAlternateIconName`, as the Capacitor plugin `AppIcon`. Registered by `BridgeViewController`, which also tells the page whether the device can switch icons and which one it wears. |
+| `ios/App/App/Assets.xcassets` | The launch image, exported from the primary icon by `make ios-icon` (`web/scripts/make-icons.mts`). |
 | `ios/App/App/App.entitlements` | **Mac only** (`CODE_SIGN_ENTITLEMENTS[sdk=macosx*]`). The App Sandbox, which the Mac App Store requires, plus `network.client`. The game makes no network requests; WKWebView's helper processes need that entitlement inside the sandbox anyway. Without it the web content process crash-loops and the game never appears. The file's comment has the measurement. |
 | `ios/App/App/PrivacyInfo.xcprivacy` | The app's privacy manifest: no tracking, no data collected. That holds because analytics is compiled out of packaged builds. Keep it in step with the App Store Connect privacy label ("Data Not Collected"). |
 | `ios/App/Version.xcconfig` | The project-level base configuration that carries the version numbers (above). |
@@ -119,14 +121,7 @@ so.
 
 - **The game changed** → `make ios-app` again (or `npx cap sync ios` from `web/`
   if the bundle is already built). Xcode does not need restarting.
-- **The icon or launch image** → edit the vector in `web/scripts/make-icons.mjs`,
-  run `make ios-icon`, and commit the regenerated PNGs. The iOS icon is written
-  without an alpha channel, which is what iOS wants. The Mac Catalyst icons
-  (`mac-*.png`, 16–1024) are the desktop icon's art: a rounded plate with
-  transparent corners, since macOS applies no mask. The script also writes the
-  set's `Contents.json`. The launch image is
-  deliberately transparent so the storyboard's `systemBackgroundColor` shows
-  through and it is correct in both light and dark mode.
+- **The icons or launch image** → see "The app icons" below.
 - **A new Capacitor plugin** → `npm install` it in `web/`, then `cap sync ios`
   (a Mac, so the pod installs). Nothing here is hand-maintained.
 - **Regenerating the project from scratch** → `rm -rf ios` and, from `web/`,
@@ -146,6 +141,39 @@ so.
   `Info.plist`, the `.pbxproj`), so diff them against the new template
   (`web/node_modules/@capacitor/cli/assets/ios-pods-template.tar.gz`) — that is
   how the scene setup arrived with Capacitor 8.
+
+## The app icons
+
+Three icons — a pentagon (the primary `AppIcon`), a hexagon and an octagon —
+so the App Store app and the web app on the same Home Screen can be told apart
+(Settings › Appearance › App icon). Each is an **Icon Composer document**
+(`.icon`, Xcode 26+), which Xcode compiles for every platform the target
+builds: there is no separate Mac Catalyst art any more, and the system draws
+the rounded square, the Liquid Glass edge and the dark, tinted and clear
+renditions itself. The list of icons lives in `web/src/appIcon.ts`;
+`tests/unit/appIcon.test.ts` holds the project to it.
+
+- **Redrawing the art** → `make ios-icon` (macOS, needs Xcode). The script
+  (`web/scripts/make-icons.mts`) writes each document's two layers,
+  `Assets/cell.svg` and `Assets/mine.svg`, then exports every non-Apple icon
+  (the web's PNGs, the Electron icon, the launch image) from the documents with
+  `ictool`, so all of them match. Commit what it writes.
+- **Tuning the look** — glass, translucency, shadows, a dark-mode fill — →
+  open the `.icon` in Icon Composer (Xcode › Open Developer Tool), save, and
+  re-run `make ios-icon` so the exported PNGs pick it up. The script writes a
+  document's `icon.json` only when it is missing, so a re-run keeps the
+  tuning; delete the file to get the seed back.
+- **Adding an icon** → a row in `APP_ICONS`, `make ios-icon`, then add the new
+  `.icon` to the App target (Resources) and its name to
+  `ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES` in both configurations. Xcode
+  writes the `CFBundleAlternateIcons` entries into the built `Info.plist`
+  itself; nothing goes in ours.
+- **Switching** is `UIApplication.setAlternateIconName`, and iOS confirms it
+  with an alert of its own that an app cannot suppress. Mac Catalyst does not
+  support alternate icons, so the Mac app offers no row.
+- **The launch image** is the primary icon on a transparent square, so the
+  storyboard's `systemBackgroundColor` shows through and it is correct in both
+  light and dark mode.
 
 ## The App Store
 
@@ -255,3 +283,35 @@ The build appears in **App Store Connect → TestFlight** once Apple has
 processed it, which takes from a few minutes to an hour. Processing problems
 come by email. To release, open the app's iOS or macOS version page in App
 Store Connect, select the build, and **Add for Review**.
+
+### Screenshots
+
+The version page also asks for screenshots. `npm run store-screenshots` in
+`web/` renders ten of them for each slot into `app-store-screenshots/<slot>/`
+(git-ignored), at sizes App Store Connect accepts:
+
+| Folder | Slot | Pixels |
+|---|---|---|
+| `iphone-6.9` | iPhone 6.9" display | 1320 × 2868 |
+| `iphone-6.3` | iPhone 6.1" / 6.3" display | 1206 × 2622 |
+| `iphone-duo` | iPhone Duo | 2007 × 2853 |
+| `ipad` | iPad 13" display | 2064 × 2752 |
+| `mac` | Mac | 2880 × 1800 |
+| `header` | iOS product page header | 5244 × 2950, 3840 × 1646 |
+| `search-results` | iOS search results | 5244 × 2950, 3840 × 2560, 1920 × 1280 |
+
+The last two are artwork, not device screenshots, and follow Apple's
+[asset best practices](https://developer.apple.com/app-store/asset-best-practices/):
+one clear idea, the focal point centred so no device crops it, and any text a
+short phrase. The header is a row of real boards with no words. The search
+card is three of the iPhone shots under one line, `SEARCH_HEADLINE` in the
+script. It is English, so it needs translating if the app is ever localised.
+Both are composed on the app's own Sand page with its chrome hidden.
+
+Every shot uses the look a new player first sees: the Sand theme, the light
+scheme, and no patterned page. The script builds the packaged bundle
+(`VITE_PACKAGED=1`) and stages each board through the `window.__ms` seam, as
+the README gallery does. Each device runs the layout it really gets, so the
+iPad and the Mac show the two-pane menu. The scenes are listed at the top of
+`web/scripts/make-store-screenshots.mts`. `DEVICES=iphone-6.3` or
+`SHOTS=01-sphere` renders a subset.

@@ -374,12 +374,95 @@ test.describe("viewport layout", () => {
 });
 
 // The 900px breakpoint between the phone column and the two-pane desktop menu
-// (styles.css `@media (min-width: 900px)`, `Menu.wideQuery`). Every other menu
-// spec sits at exactly 900x700, i.e. on the desktop side of it; these two are
+// (styles.css `@media (min-width: 900px), …`, `Menu.wideQuery`). Every other
+// menu spec sits at exactly 900x700, i.e. on the desktop side of it; these are
 // about the narrow side, and about crossing the line with a page open — a
 // rotate on a big phone is enough (a Pro Max is 932pt in landscape and 430 in
 // portrait), as is a split view or a dragged window.
 test.describe("the desktop menu breakpoint", () => {
+  test("a tablet held upright gets the two panes, a phone on its side does not", async ({
+    page,
+  }) => {
+    // An iPad Air in portrait: under 900 wide, but the height of a desktop. It
+    // used to get the 520px phone column with a third of the screen empty on
+    // either side of it.
+    await page.setViewportSize({ width: 820, height: 1180 });
+    await page.goto("/");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    await expect(page.locator(".menu-sidebar")).toBeVisible();
+    await expect(page.locator(".menu-pane-title")).toHaveText("Quick start");
+    await expect(page.locator(".menu-header")).toBeHidden();
+
+    // Two card columns, not the one the desktop's 276px sidebar would leave.
+    await page.locator('.menu-sidebar .menu-entry[data-group="flat"]').click();
+    const lefts = await page
+      .locator(".menu-card-grid > li")
+      .evaluateAll((els) => new Set(els.map((el) => el.getBoundingClientRect().left)).size);
+    expect(lefts).toBe(2);
+    // The pane's title stays whole beside the narrower sidebar.
+    for (const sel of [".menu-sidebar-title", ".menu-pane-title"]) {
+      const lines = await page.locator(sel).evaluate((el) => {
+        const lh = parseFloat(getComputedStyle(el).lineHeight);
+        return Math.round(el.getBoundingClientRect().height / lh);
+      });
+      expect(lines, sel).toBe(1);
+    }
+
+    // A phone on its side is as wide but nowhere near as tall: phone column.
+    await page.setViewportSize({ width: 844, height: 390 });
+    await expect(page.locator(".menu-sidebar")).toBeHidden();
+    await expect(page.locator(".menu-header .menu-title")).toBeVisible();
+  });
+
+  // A phone on its side — every one, a 932-wide Pro Max included, which the
+  // width alone would hand the desktop panes and their half-screen cards — gets
+  // the phone's navigation laid out as a rail: the title row and the
+  // difficulty pills at the left, the list taking the whole height beside them.
+  // In the phone column the two of them left 844x390 three and a half rows.
+  for (const size of [
+    { width: 844, height: 390 },
+    { width: 932, height: 430 },
+  ]) {
+    test(`a phone on its side puts the chrome in a rail (${size.width}x${size.height})`, async ({
+      page,
+    }) => {
+      await page.setViewportSize(size);
+      await page.goto("/");
+      await expect(page.locator("body[data-ready]")).toBeVisible();
+      await expect(page.locator(".menu-sidebar")).toBeHidden();
+      await expect(page.locator('.menu-entry[data-group="custom"]')).toBeVisible();
+
+      const box = async (sel: string) => (await page.locator(sel).boundingBox())!;
+      const title = await box(".menu-header .menu-title");
+      const difficulty = await box(".menu-difficulty-block");
+      const body = await box(".menu-body");
+      // Both in the rail, to the left of the list...
+      expect(title.x + title.width).toBeLessThanOrEqual(body.x);
+      expect(difficulty.x + difficulty.width).toBeLessThanOrEqual(body.x);
+      // ...which runs the full height beside them rather than between them.
+      expect(body.y).toBeLessThanOrEqual(title.y);
+      expect(body.y + body.height).toBeGreaterThanOrEqual(difficulty.y + difficulty.height);
+      // The title is one line in the rail (its line-height is `normal`, so
+      // measured against its font size: a second line would double it).
+      const ratio = await page.locator(".menu-header .menu-title").evaluate(
+        (el) => el.getBoundingClientRect().height / parseFloat(getComputedStyle(el).fontSize),
+      );
+      expect(ratio).toBeLessThan(1.8);
+
+      // A board list goes two-up, and a page opens at its top: the Custom row
+      // is the last on the home page, and the body used to keep the scroll it
+      // was tapped at, opening the next page past its own back row.
+      await page.locator(".menu-body").evaluate((el) => (el.scrollTop = el.scrollHeight));
+      await page.locator('.menu-entry[data-group="custom"]').click();
+      await expect(page.locator(".menu-back")).toHaveText("‹ Custom");
+      expect(await page.locator(".menu-body").evaluate((el) => el.scrollTop)).toBe(0);
+      const lefts = await page
+        .locator(".menu-body > .menu-list > li")
+        .evaluateAll((els) => new Set(els.map((el) => el.getBoundingClientRect().left)).size);
+      expect(lefts).toBe(2);
+    });
+  }
+
   test("narrowing off the desktop lands on the phone's home page", async ({
     page,
   }) => {

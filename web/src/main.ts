@@ -12,6 +12,7 @@ import {
 } from "./achievements";
 import { setAnalyticsEnabled, trackGame } from "./analytics";
 import type { PreviousState, StartTrigger } from "./analyticsEvent";
+import { applyWebAppIcon, nativeAppIcon, setAppIcon, type AppIconKey } from "./appIcon";
 import {
   playSound,
   setSoundPreset,
@@ -56,6 +57,15 @@ import {
   type Settings,
 } from "./settings";
 import { installTestHook } from "./testHook";
+
+/** The settings, with the icon the iOS app actually wears in place of the
+ * stored one: there the OS is the record of it, and a reinstall or a restored
+ * backup can leave the two apart. Everywhere else, the stored one is all there
+ * is. */
+function withShellIcon(settings: Settings): Settings {
+  const icon = nativeAppIcon();
+  return icon ? { ...settings, appIcon: icon } : settings;
+}
 
 /** Zoom step for one press of the +/- keys. */
 const ZOOM_KEY_STEP = 1.3;
@@ -122,7 +132,7 @@ class App {
   private from: PreviousState = "";
   /** Stored preferences (theme, difficulty, animations, cell style) — the
    * app's only persisted state. */
-  private settings: Settings = loadSettings();
+  private settings: Settings = withShellIcon(loadSettings());
   // Board animations honour the OS reduced-motion setting unless the settings
   // screen overrides it; the `window.__ms.animations(false)` test seam overrides
   // both for deterministic e2e.
@@ -144,6 +154,7 @@ class App {
     private readonly ui: HTMLElement,
   ) {
     this.paintTheme(); // before anything measures or paints
+    applyWebAppIcon(this.settings.appIcon);
     setSoundPreset(this.settings.sound);
     setSoundVolume(this.settings.volume);
     setHapticsEnabled(this.settings.haptics);
@@ -308,6 +319,9 @@ class App {
       get quality() {
         return app.settings.quality;
       },
+      get appIcon() {
+        return app.settings.appIcon;
+      },
       get qualityAuto() {
         return app.renderer.capable;
       },
@@ -326,6 +340,7 @@ class App {
       setExtraControls: (on) => this.setExtraControls(on),
       setAnalytics: (on) => this.setAnalytics(on),
       setQuality: (pref) => this.setQuality(pref),
+      setAppIcon: (key) => this.setAppIcon(key),
     };
   }
 
@@ -468,14 +483,24 @@ class App {
     setAnalyticsEnabled(on);
   }
 
+  /** Switch the app icon (src/appIcon.ts). Only stored once the switch has
+   * happened: the iOS app may be told "not now", and then the row should go on
+   * showing the icon the Home Screen actually has. */
+  private async setAppIcon(key: AppIconKey): Promise<void> {
+    if (!(await setAppIcon(key))) return;
+    this.settings = { ...this.settings, appIcon: key };
+    saveSettings(this.settings);
+  }
+
   /** Adopt settings written by another tab. The theme's chrome is applied at
    * once; its board half (the tile relief, and the finish settings that ride on
    * it) and the difficulty are picked up by the next board. A game already in
    * progress keeps the difficulty and the tile relief it was started with. The
    * board's own row is HTML, so that one does land on the game in progress. */
   private adoptSettings(settings: Settings): void {
-    this.settings = settings;
+    this.settings = withShellIcon(settings);
     this.paintTheme();
+    applyWebAppIcon(this.settings.appIcon);
     setSoundPreset(settings.sound);
     setSoundVolume(settings.volume);
     setHapticsEnabled(settings.haptics);

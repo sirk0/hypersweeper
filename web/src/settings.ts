@@ -1,3 +1,4 @@
+import { DEFAULT_APP_ICON, resolveAppIcon, type AppIconKey } from "./appIcon";
 import { clampVolume, DEFAULT_SOUND, DEFAULT_VOLUME, resolveSound } from "./audio/presets";
 import { hasDifficulty, screens } from "./config/screens";
 import { clampHoldMs, DEFAULT_HOLD_MS } from "./input/hold";
@@ -128,6 +129,10 @@ export interface Settings {
    * them off on a software renderer or a two-core device. Read on every
    * repaint, like `scheme`. */
   quality: QualityPref;
+  /** Which app icon this copy wears (src/appIcon.ts). In a browser it is the
+   * only record, and what the page's icon links point at; in the iOS app the
+   * OS holds the real answer and `App` takes that over this at startup. */
+  appIcon: AppIconKey;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -147,6 +152,7 @@ export const DEFAULT_SETTINGS: Settings = {
   analytics: true,
   seenHint: false,
   quality: "auto",
+  appIcon: DEFAULT_APP_ICON,
 };
 
 /** What a pre-v3 `theme` (a chrome palette) becomes once a theme carries the
@@ -351,6 +357,9 @@ export function loadSettings(): Settings {
     // Additive: a record from before the effects existed lacks the key and
     // takes `auto`, as does anything this build does not know.
     quality: resolveQuality(rec["quality"]),
+    // Additive: a record from before the icon could be picked lacks the key
+    // and wears the default, which is the icon it always had.
+    appIcon: resolveAppIcon(typeof rec["appIcon"] === "string" ? rec["appIcon"] : null),
   };
 }
 

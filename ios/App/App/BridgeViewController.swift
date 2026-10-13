@@ -23,6 +23,11 @@ class BridgeViewController: CAPBridgeViewController, UIGestureRecognizerDelegate
         //   hypersweeperShell: "catalyst" on the Mac, where the plain wheel is a
         //     two-finger trackpad swipe that pans a zoomed board instead of
         //     zooming it (onWheel in controls.ts).
+        //   hypersweeperAltIcons / hypersweeperAppIcon: whether this device can
+        //     switch the Home Screen icon, and the alternate one it wears now
+        //     (null for the primary) — what Settings' App icon row is drawn
+        //     from (web/src/appIcon.ts). The OS is the record of the icon, not
+        //     the page's storage.
         #if targetEnvironment(macCatalyst)
         // Not the idiom: a Catalyst app scaled to match iPad reports `.pad`.
         let device = "mac"
@@ -31,9 +36,14 @@ class BridgeViewController: CAPBridgeViewController, UIGestureRecognizerDelegate
         let device = UIDevice.current.userInterfaceIdiom == .phone ? "phone" : "pad"
         let flags = ""
         #endif
+        let app = UIApplication.shared
+        let icon = app.alternateIconName.map { "'\($0)'" } ?? "null"
+        let icons = "window.hypersweeperAltIcons = \(app.supportsAlternateIcons);"
+            + " window.hypersweeperAppIcon = \(icon);"
         webView?.configuration.userContentController.addUserScript(
-            WKUserScript(source: "window.hypersweeperDevice = '\(device)'; \(flags)",
+            WKUserScript(source: "window.hypersweeperDevice = '\(device)'; \(flags) \(icons)",
                          injectionTime: .atDocumentStart, forMainFrameOnly: true))
+        bridge?.registerPluginInstance(AppIconPlugin())
 
         #if targetEnvironment(macCatalyst)
         let pinch = UIPinchGestureRecognizer(target: self, action: #selector(onPinch(_:)))

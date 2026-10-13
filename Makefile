@@ -110,8 +110,8 @@ desktop-test:    ## unit-test the shell's app:// path resolution
 desktop-smoke:   ## launch the shell with the network cut, and screenshot it
 	scripts/desktop-smoke.sh
 
-desktop-icon:    ## regenerate the app icon from the shared vector source
-	cd web && node scripts/make-icons.mjs
+desktop-icon:    ## regenerate every app icon from the shared vector source (macOS + Xcode)
+	cd web && npm run icons
 
 # --- iOS app -----------------------------------------------------------------
 # The TypeScript app packaged as an iPhone app: the built bundle is synced into
@@ -131,8 +131,8 @@ ios-prepare:     ## build the bundle and sync it into ios/ (works anywhere)
 ios-install:     ## install the Capacitor tooling (it lives in web/)
 	cd web && npm install
 
-ios-icon:        ## regenerate the app icon and launch image from the vector source
-	cd web && node scripts/make-icons.mjs
+ios-icon:        ## regenerate the app icons and launch image from the vector source (macOS + Xcode)
+	cd web && npm run icons
 
 clean:           ## remove build artifacts
 	rm -rf build desktop/app ios/App/App/public
