@@ -1,38 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <defs>
-    <filter id="drop" x="-15%" y="-15%" width="130%" height="130%">
-      <feDropShadow dx="0" dy="7" stdDeviation="9"
-                    flood-color="#402310" flood-opacity="0.28"/>
-    </filter>
-  </defs>
-  
-  <rect x="26" y="26" width="460" height="460" rx="112"
-        fill="#f5ead8"/>
-  <rect x="28" y="28" width="456" height="456"
-        rx="110" fill="none" stroke="#2e2b25" stroke-opacity="0.12"
-        stroke-width="3"/>
-  
-  <g>
-    
-    <polygon points="256,57.01 465.23,209.02 385.31,454.99 126.69,454.99 46.77,209.02" fill="#c67139" filter="url(#drop)"/>
-    <polygon points="256,57.01 465.23,209.02 435.73,215.62 256,85.04"
-             fill="#d89b70"/>
-    <polygon points="465.23,209.02 385.31,454.99 367.08,426.9 435.73,215.62"
-             fill="#814721"/>
-    <polygon points="385.31,454.99 126.69,454.99 144.92,426.9 367.08,426.9"
-             fill="#864a23"/>
-    <polygon points="126.69,454.99 46.77,209.02 76.27,215.62 144.92,426.9"
-             fill="#dca57d"/>
-    <polygon points="46.77,209.02 256,57.01 256,85.04 76.27,215.62"
-             fill="#f2d9c1"/>
-    <polygon points="256,85.04 435.73,215.62 367.08,426.9 144.92,426.9 76.27,215.62" fill="#cc7e4b"/>
-  </g>
-  
-  <g>
-    <path d="M296.8 289L352.56 289 M284.85 317.85L324.28 357.28 M256 329.8L256 385.56 M227.15 317.85L187.72 357.28 M215.2 289L159.44 289 M227.15 260.15L187.72 220.72 M256 248.2L256 192.44 M284.85 260.15L324.28 220.72" fill="none" stroke="#1f232b"
-          stroke-width="13.6" stroke-linecap="butt"/>
-    <circle cx="256" cy="289" r="68" fill="#1f232b"/>
-    <rect x="220.64" y="253.64"
-          width="20.4" height="20.4" fill="#f4f1e8"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <rect x="52" y="52" width="920" height="920" rx="224" fill="#f5ead8"/>
+  <rect x="56" y="56" width="912" height="912"
+        rx="220" fill="none" stroke="#2e2b25" stroke-opacity="0.12" stroke-width="6"/>
+  <polygon points="512,193.61 846.77,436.84 718.9,830.39 305.1,830.39 177.23,436.84" fill="#a09c5a"/>
+  <polygon points="512,193.61 846.77,436.84 799.57,447.39 512,238.46" fill="#beb886"/>
+  <polygon points="846.77,436.84 718.9,830.39 689.73,785.45 799.57,447.39" fill="#605c38"/>
+  <polygon points="718.9,830.39 305.1,830.39 334.27,785.45 689.73,785.45" fill="#64613a"/>
+  <polygon points="305.1,830.39 177.23,436.84 224.43,447.39 334.27,785.45" fill="#c5bf91"/>
+  <polygon points="177.23,436.84 512,193.61 512,238.46 224.43,447.39" fill="#eae2c9"/>
+  <polygon points="512,238.46 799.57,447.39 689.73,785.45 334.27,785.45 224.43,447.39" fill="#aaa568"/>
+  <path d="M576.8 540.83L665.36 540.83 M557.82 586.65L620.44 649.27 M512 605.63L512 694.19 M466.18 586.65L403.56 649.27 M447.2 540.83L358.64 540.83 M466.18 495.01L403.56 432.38 M512 476.03L512 387.47 M557.82 495.01L620.44 432.38" fill="none" stroke="#1f232b"
+        stroke-width="21.6" stroke-linecap="butt"/>
+  <circle cx="512" cy="540.83" r="108" fill="#1f232b"/>
+  <rect x="455.84" y="484.67"
+        width="32.4" height="32.4" fill="#f4f1e8"/>
 </svg>

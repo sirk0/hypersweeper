@@ -60,6 +60,7 @@ const SETTINGS: Settings = {
   analytics: false,
   seenHint: true,
   quality: "low",
+  appIcon: "octagon",
 };
 
 afterEach(() => {
@@ -196,6 +197,7 @@ describe("settings validation", () => {
       analytics: DEFAULT_SETTINGS.analytics,
       seenHint: DEFAULT_SETTINGS.seenHint,
       quality: DEFAULT_SETTINGS.quality,
+      appIcon: DEFAULT_SETTINGS.appIcon,
     });
   });
 
@@ -257,6 +259,13 @@ describe("settings validation", () => {
     expect(loadSettings().sound).toBe("off");
   });
 
+  it("drops an app icon this build does not have, and keeps a known one", () => {
+    withStorage(fakeStorage({ [KEY]: JSON.stringify({ appIcon: "heptagon" }) }));
+    expect(loadSettings().appIcon).toBe(DEFAULT_SETTINGS.appIcon);
+    withStorage(fakeStorage({ [KEY]: JSON.stringify({ appIcon: "hexagon" }) }));
+    expect(loadSettings().appIcon).toBe("hexagon");
+  });
+
   it("falls back on corrupt, non-object or array JSON", () => {
     for (const raw of ["{not json", "42", '"a string"', "null", '["dark"]']) {
       withStorage(fakeStorage({ [KEY]: raw }));
@@ -301,6 +310,7 @@ describe("settings upgrades", () => {
       analytics: DEFAULT_SETTINGS.analytics,
       seenHint: DEFAULT_SETTINGS.seenHint,
       quality: DEFAULT_SETTINGS.quality,
+      appIcon: DEFAULT_SETTINGS.appIcon,
     });
     // Migration completes on the next write, and only then is the old key
     // dropped — an interrupted migration must not lose the record.
@@ -446,6 +456,7 @@ describe("settings upgrades", () => {
       analytics: DEFAULT_SETTINGS.analytics,
       seenHint: DEFAULT_SETTINGS.seenHint,
       quality: DEFAULT_SETTINGS.quality,
+      appIcon: DEFAULT_SETTINGS.appIcon,
     });
   });
 
@@ -507,6 +518,7 @@ describe("cross-tab sync", () => {
         analytics: DEFAULT_SETTINGS.analytics,
         seenHint: DEFAULT_SETTINGS.seenHint,
         quality: DEFAULT_SETTINGS.quality,
+        appIcon: DEFAULT_SETTINGS.appIcon,
       },
     ]);
   });

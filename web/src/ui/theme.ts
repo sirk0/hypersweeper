@@ -248,8 +248,8 @@ const BY_KEY = new Map(THEMES.map((t) => [t.key, t]));
 export const THEME_KEYS: readonly string[] = THEMES.map((t) => t.key);
 
 /** The palette the app boots into. Sand: the quietest of the three, and the one
- * the app's own icon was drawn from (scripts/make-icons.mjs quotes its ground
- * and its accent). */
+ * the app's own icons are drawn from (scripts/make-icons.mts quotes its ground,
+ * and its colour for each icon's shape). */
 export const DEFAULT_THEME = "sand";
 
 /** Scheme choices in the order the settings picker lists them. */
