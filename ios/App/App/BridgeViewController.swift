@@ -44,6 +44,13 @@ class BridgeViewController: CAPBridgeViewController, UIGestureRecognizerDelegate
             WKUserScript(source: "window.hypersweeperDevice = '\(device)'; \(flags) \(icons)",
                          injectionTime: .atDocumentStart, forMainFrameOnly: true))
         bridge?.registerPluginInstance(AppIconPlugin())
+        // Game Center reports achievements, and the App Clip earns none (its
+        // target sets APP_CLIP and leaves the plugin out), so only the app
+        // registers it. Its presence is what the page reads to hand the
+        // achievements to Game Center (web/src/gameCenter.ts).
+        #if !APP_CLIP
+        bridge?.registerPluginInstance(GameCenterPlugin())
+        #endif
 
         #if targetEnvironment(macCatalyst)
         let pinch = UIPinchGestureRecognizer(target: self, action: #selector(onPinch(_:)))

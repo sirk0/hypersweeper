@@ -72,11 +72,13 @@ count is wrong; the script warns about this.
 | `ios/App/App/AppDelegate.swift`, `ios/App/App/SceneDelegate.swift` | The UIScene lifecycle, which Capacitor 8 uses and recent iOS releases expect. `AppDelegate` hands each new scene the `SceneDelegate`; that creates the window with Capacitor's `CAPBridgeViewController`. The scene manifest (`UIApplicationSceneManifest`) in `Info.plist` names it. |
 | `ios/App/AppClip/` | The App Clip target: its own delegates, `ClipBridgeViewController`, `Info.plist` and entitlements. Everything else — the game, the icon, the launch screen, the privacy manifest, `BridgeViewController.swift` — it takes from `App/`. See "The App Clip" below. |
 | `ios/App/App/App-iOS.entitlements` | **iPhone and iPad only** (`CODE_SIGN_ENTITLEMENTS[sdk=iphone*]`): names the App Clip as this app's (`associated-appclip-app-identifiers`). |
+| `ios/App/App/GameCenterPlugin.swift` | The `GameCenter` plugin: sign-in, reporting achievements, opening Game Center. App target only; see "Game Center" below. |
 | `ios/GameCenter/` | The Game Center achievement list (`achievements.json`) and one badge image per achievement, written by `web/scripts/make-gamecenter.mts`. Not part of the Xcode project: it is what App Store Connect is told. See "Game Center" below. |
 | `ios/App/Stickers/` | The iMessage sticker pack: an app extension with no code, just `Info.plist` and `Stickers.xcassets` (the stickers and the drawer icon), all written by `web/scripts/make-stickers.mts`. See "The sticker pack" below. |
 
-Nothing in `web/` is written for iOS beyond the haptics branch below and one
-build flag, `VITE_PACKAGED=1`, which it shares with the macOS app: a bundle
+Nothing in `web/` is written for iOS beyond the haptics branch below, the
+native plugins it feature-detects (the app icon, Game Center), and one build
+flag, `VITE_PACKAGED=1`, which it shares with the macOS app: a bundle
 inside an app has no server to update from, so the build drops the service
 worker and the settings page drops its "Check for updates" row.
 
@@ -335,10 +337,51 @@ registers the new bundle ID at the first archive, as it did the clip's, and
 
 ## Game Center
 
-The achievements are on their way to Game Center. For now there is the list
-Game Center has to be told about; the app does not report anything yet.
+In the App Store app (iPhone, iPad and Mac) the achievements are Game
+Center's: its banners announce an unlock, Settings' **Game Center** row opens
+its achievements page, and the game's own Achievements page and the unlock
+list on the win card are not shown. The website, the PWA, Android and the
+Electron Mac app keep the game's own list. "Where an unlock is said" in
+`web/docs/ui.md` has the page's side.
 
-`ios/GameCenter/` holds it, and nothing in it is typed by hand:
+### How it works
+
+- **`GameCenterPlugin.swift`** is a local Capacitor plugin, like
+  `AppIconPlugin.swift`, with three calls: `authenticate` (sets
+  `GKLocalPlayer`'s handler and shows Apple's sign-in sheet when Game Center
+  asks for it), `report` (`GKAchievement.report`, with or without the
+  completion banner) and `showAchievements` (`GKAccessPoint`). Every later
+  sign-in or sign-out reaches the page as an `authChange` event.
+- **Only the app registers it.** `BridgeViewController.capacitorDidLoad` does,
+  under `#if !APP_CLIP`: the App Clip compiles `BridgeViewController.swift`
+  too, earns no achievements, and its target sets `APP_CLIP` and leaves the
+  plugin file out. The page tells the two apart by whether the plugin is there
+  (`Capacitor.isPluginAvailable("GameCenter")`), not by a build flag.
+- **The entitlement** `com.apple.developer.game-center` is in both
+  `App-iOS.entitlements` and the Mac `App.entitlements`. The App ID needs the
+  Game Center capability; Xcode's automatic signing adds it.
+- **The record stays the game's** (`web/src/gameCenter.ts`). Every win is filed
+  in the game's own record as before, and Game Center is told what that record
+  earns. At launch, and again whenever the player signs in, the whole record is
+  sent with no banners: that catches up wins from before this existed, or from
+  while offline or signed out, and Game Center keeps the highest percentage it
+  has been sent, so sending it again changes nothing. A win sends a banner for
+  each achievement it just unlocked, at the beat the win card used to list
+  them, with the unlock sound and buzz (banners are silent).
+- **Signed out**, nothing is sent; the next sign-in's catch-up carries it,
+  without banners.
+- **Testing without a device.** `web/tests/e2e/gameCenter.spec.ts` boots the page
+  over Capacitor's real `native-bridge.js` with the plugin's header read from
+  the Swift source, and checks what the page sends: the sign-in and quiet
+  catch-up at launch, banners on a win, the card without unlocks, the
+  `authChange` catch-up, and the Settings row. What happens past the bridge (the
+  sheet, the banners, Game Center itself) needs a device signed in to a sandbox
+  Game Center account, after the achievements are registered (below).
+
+### The achievement list
+
+`ios/GameCenter/` holds the list App Store Connect is told about, and nothing in
+it is typed by hand:
 
 - `achievements.json`: every achievement, in App Store Connect's own terms.
   `vendorIdentifier` is the Achievement ID; `referenceName` is the game's own

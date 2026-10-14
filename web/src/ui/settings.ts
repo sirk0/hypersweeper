@@ -15,6 +15,7 @@ import {
 } from "../audio/presets";
 import { previewSound, setSoundPreset, setSoundVolume } from "../audio/sound";
 import { screens } from "../config/screens";
+import { gameCenterSupported, showGameCenterAchievements } from "../gameCenter";
 import { hapticsSupported } from "../haptics";
 import {
   clampHoldMs,
@@ -730,24 +731,29 @@ export function renderSettings(host: SettingsHost, pages: SettingsPages): Docume
 
   // Above the times, because it is the wider record: the times say how fast one
   // board went, this says how much of the catalogue has been played at all.
+  //
+  // In the App Store builds the achievements are Game Center's (gameCenter.ts),
+  // so the row opens Game Center rather than the game's own page. The count is
+  // still the game's record, which is what Game Center is caught up from.
   const achievementsChevron = document.createElement("span");
   achievementsChevron.className = "menu-entry-chevron";
   achievementsChevron.textContent = "›";
   const earned = earnedAchievements();
+  const gameCenter = gameCenterSupported();
   const { li: achLi, btn: achBtn } = buttonRow(
     [
       textBlock(
-        "Achievements",
+        gameCenter ? "Game Center" : "Achievements",
         earned === 0
-          ? `None yet · ${ACHIEVEMENTS.length} to unlock`
-          : `${earned} of ${ACHIEVEMENTS.length} unlocked`,
+          ? `None yet · ${ACHIEVEMENTS.length} ${gameCenter ? "achievements " : ""}to unlock`
+          : `${earned} of ${ACHIEVEMENTS.length} ${gameCenter ? "achievements " : ""}unlocked`,
       ),
       achievementsChevron,
     ],
-    openAchievements,
+    gameCenter ? showGameCenterAchievements : openAchievements,
     "menu-submenu",
   );
-  achBtn.dataset["settingsGroup"] = "achievements";
+  achBtn.dataset["settingsGroup"] = gameCenter ? "game-center" : "achievements";
 
   records.append(achLi, bestLi);
   frag.append(records);

@@ -11,12 +11,18 @@
      relaunched in a loop (~280 times in 10 s, WebKit's
      processDidTerminateOrFailedToLaunch), so the game never appears. Measured
      against a build with no entitlements and one with both; only the
-     sandbox-alone build loops. -->
+     sandbox-alone build loops.
+
+     game-center: the achievements are reported to Game Center
+     (GameCenterPlugin.swift); the iPhone and iPad build carries the same key
+     in App-iOS.entitlements. -->
 <plist version="1.0">
 <dict>
 	<key>com.apple.security.app-sandbox</key>
 	<true/>
 	<key>com.apple.security.network.client</key>
+	<true/>
+	<key>com.apple.developer.game-center</key>
 	<true/>
 </dict>
 </plist>
