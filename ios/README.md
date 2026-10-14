@@ -72,6 +72,7 @@ count is wrong; the script warns about this.
 | `ios/App/App/AppDelegate.swift`, `ios/App/App/SceneDelegate.swift` | The UIScene lifecycle, which Capacitor 8 uses and recent iOS releases expect. `AppDelegate` hands each new scene the `SceneDelegate`; that creates the window with Capacitor's `CAPBridgeViewController`. The scene manifest (`UIApplicationSceneManifest`) in `Info.plist` names it. |
 | `ios/App/AppClip/` | The App Clip target: its own delegates, `ClipBridgeViewController`, `Info.plist` and entitlements. Everything else — the game, the icon, the launch screen, the privacy manifest, `BridgeViewController.swift` — it takes from `App/`. See "The App Clip" below. |
 | `ios/App/App/App-iOS.entitlements` | **iPhone and iPad only** (`CODE_SIGN_ENTITLEMENTS[sdk=iphone*]`): names the App Clip as this app's (`associated-appclip-app-identifiers`). |
+| `ios/GameCenter/` | The Game Center achievement list (`achievements.json`) and one badge image per achievement, written by `web/scripts/make-gamecenter.mts`. Not part of the Xcode project: it is what App Store Connect is told. See "Game Center" below. |
 | `ios/App/Stickers/` | The iMessage sticker pack: an app extension with no code, just `Info.plist` and `Stickers.xcassets` (the stickers and the drawer icon), all written by `web/scripts/make-stickers.mts`. See "The sticker pack" below. |
 
 Nothing in `web/` is written for iOS beyond the haptics branch below and one
@@ -331,6 +332,43 @@ To try the pack, build the `App` scheme onto a simulator, open Messages, start
 a conversation and pick Hypersweeper in the app drawer. Xcode's cloud signing
 registers the new bundle ID at the first archive, as it did the clip's, and
 `app-store.yml` fails an iOS archive that does not carry `Stickers.appex`.
+
+## Game Center
+
+The achievements are on their way to Game Center. For now there is the list
+Game Center has to be told about; the app does not report anything yet.
+
+`ios/GameCenter/` holds it, and nothing in it is typed by hand:
+
+- `achievements.json`: every achievement, in App Store Connect's own terms.
+  `vendorIdentifier` is the Achievement ID; `referenceName` is the game's own
+  id; then the points, and per locale the display name, the pre-earned and
+  earned descriptions, and the image. The ids, points and text come from
+  `GAME_CENTER_ACHIEVEMENTS` in `web/src/achievements.ts` (see "What Game
+  Center is told" in `web/docs/ui.md` for how they are chosen).
+- `images/<Achievement ID>.png`: 1024 px squares, RGB with no alpha, which is
+  what App Store Connect accepts. Each is the achievement's in-game badge in the
+  default theme, on the app icon's cream ground, kept inside the inscribed
+  circle so a round crop loses nothing.
+
+Regenerate both with `npm run gamecenter` in `web/` (headless Chromium draws
+the images; `MANIFEST_ONLY=1` writes just the list, with no browser). A unit
+test, `web/tests/unit/gameCenterManifest.test.ts`, regenerates the list and
+fails on any difference, and checks every image is there at the right size.
+So when the catalogue grows an achievement, CI says so, and the regenerated
+file is where it gets noticed.
+
+**What App Store Connect makes permanent.** Once an achievement is live in any
+app version, its Achievement ID and its points can never change and it cannot
+be deleted (only archived). So an id or points change to an achievement already registered is never a
+plain regeneration: register a new achievement instead. Game Center allows 100
+points per achievement and 1000 across the game; today's list spends 770.
+
+**Registering a new achievement.** In App Store Connect → the app → Services
+→ Game Center → Achievements, add one per new entry in `achievements.json`,
+copying its fields and uploading its image. Do it before the build that
+reports it ships: an achievement Game Center does not know is reported to
+nobody.
 
 ## Releasing
 

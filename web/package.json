@@ -20,6 +20,7 @@
     "screenshots": "vite-node scripts/make-screenshots.mts",
     "store-screenshots": "vite-node scripts/make-store-screenshots.mts",
     "stickers": "vite-node scripts/make-stickers.mts",
+    "gamecenter": "vite-node scripts/make-gamecenter.mts",
     "og": "vite-node scripts/make-og-image.mts"
   },
   "dependencies": {
