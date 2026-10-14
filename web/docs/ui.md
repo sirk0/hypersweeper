@@ -134,6 +134,43 @@ declared in `data/ui/screens.json` under `hud.boardBar`, beside the header's own
 clusters, and the caption row wraps rather than shrinking them below a touch
 size. `tests/e2e/hud.spec.ts` pins all of this.
 
+### The header's size
+
+The header's buttons are **Apple's standard 44pt touch target or bigger**, and
+go smaller only where the row would not fit. They used to be a fixed fraction
+of the viewport width (`9.6vw`, between 31 and 46px), tuned so the worst case
+fitted at 320px. That left every other phone short of 44pt (38px on a 16 Pro)
+with the unused width standing as gaps between the side clusters and the
+centre block, and stopped at 46px on the Duo and iPad.
+
+Now every part of the row is a fraction of `--hud-btn` (the glyph, the gaps,
+the counters' width and digits), so the row is a known number of buttons wide,
+8.52 of them. `--hud-fit` solves for the button that fills the line between
+the two side paddings (dividing by 8.6 for slack), and `--hud-btn` clamps that
+between 28px and `--hud-btn-max` (52px). That gives 36px at 320, about 43.5 at
+390, 45 at a 16 Pro's 402, 49 at the Pro Max, and 52 on the Duo, an iPad and a
+desktop. The App Clip's header is the same header with two slots held
+empty, so it sizes the same way, and `tests/e2e/appClip.spec.ts` checks it.
+
+**The ends of the row keep clear of the display's rounded corners.** A Face ID
+iPhone's portrait inset (59–62pt) already puts the header below the curve of
+the corner. A Touch ID screen has only a status bar up there, about 24pt (the
+iPhone Duo, an iPad), and the back and ⓘ buttons sat inside the curve. The
+header's side padding is therefore at least `--corner-clear`: `--corner-reach`
+(48px) less the top inset, and nothing at all when the top inset is 0, since
+then the page does not reach the top of the screen (Safari with its address bar
+above it, a desktop) or the phone is in landscape, where the side insets clear
+the corners. No web API reports a display's corner radius, so the reach is an
+estimate: one constant in `styles.css`.
+
+The insets reach that arithmetic through `--safe-top`, `--safe-left` and
+`--safe-right` rather than `env()` directly, because a desktop browser reports
+none. That is how the e2e suite and `scripts/make-store-screenshots.mts` stand
+a device's insets in. The store screenshots give each device its real top
+inset (62pt for the Dynamic Island iPhones, 24 for an iPad and, as an estimate,
+for the Duo), so the header sits where it does on the device instead of in the
+corners App Store Connect rounds every screenshot off at.
+
 See **Board symmetries** in [`boards.md`](boards.md) for what they do and which boards have which.
 
 The **first-run hint** is the app's only onboarding: one dismissible line over

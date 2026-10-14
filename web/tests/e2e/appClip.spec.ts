@@ -84,6 +84,18 @@ test("the header has no way home and no other board, and the smiley stays centre
   await expect(page.locator('.hud [data-slot="random"]')).toBeDisabled();
 });
 
+test("the header's buttons are the app's size, a standard touch target", async ({ page }) => {
+  // The clip is the same header with two slots held empty, so it sizes the
+  // same way (tests/e2e/hud.spec.ts): 44pt or more on a 16 Pro.
+  await page.setViewportSize({ width: 402, height: 874 });
+  await bootClip(page);
+  for (const slot of ["flag-mode", "smiley", "info"]) {
+    const box = (await page.locator(`.hud [data-slot="${slot}"]`).boundingBox())!;
+    expect(box.width).toBeGreaterThanOrEqual(44);
+    expect(box.height).toBeGreaterThanOrEqual(44);
+  }
+});
+
 test("menu-bar commands that lead home do nothing", async ({ page }) => {
   await bootClip(page);
   for (const name of ["settings", "help"]) {
