@@ -31,14 +31,7 @@ import { fileURLToPath } from "node:url";
 
 import { chromium, type Browser, type BrowserContext, type Page } from "@playwright/test";
 
-import type { CellId } from "../src/boards/core";
-import type { MsHook } from "../src/testHook";
-
-declare global {
-  interface Window {
-    __ms?: MsHook;
-  }
-}
+import { settle, stageBoard, waitForServer } from "./shots-lib";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WEB = path.resolve(HERE, "..");
@@ -169,49 +162,6 @@ const SCENES: Scene[] = [
   },
 ];
 
-/** The seeded RNG the game uses, so a shot's mine layout is reproducible. */
-function mulberry32(seed: number): () => number {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-function pickMines(cells: CellId[], count: number, seed: number): CellId[] {
-  const rng = mulberry32(seed);
-  const pool = [...cells];
-  for (let i = pool.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    [pool[i], pool[j]] = [pool[j]!, pool[i]!];
-  }
-  return pool.slice(0, count);
-}
-
-function settle(page: Page): Promise<void> {
-  return page.evaluate(
-    () =>
-      new Promise<void>((resolve) =>
-        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
-      ),
-  );
-}
-
-async function waitForServer(url: string): Promise<void> {
-  for (let i = 0; i < 60; i++) {
-    try {
-      const res = await fetch(url);
-      if (res.ok) return;
-    } catch {
-      /* not up yet */
-    }
-    await new Promise((r) => setTimeout(r, 500));
-  }
-  throw new Error(`preview server never answered at ${url}`);
-}
-
 /** Boot the app in the default look and stage a scene, ready to shoot. */
 async function openScene(
   browser: Browser,
@@ -279,58 +229,6 @@ async function shoot(browser: Browser, device: View, scene: Scene, file?: string
   if (file) console.log(`wrote ${file}`);
   await context.close();
   return png;
-}
-
-async function stageBoard(page: Page, scene: Scene, difficulty: string): Promise<void> {
-  const cells = await page.evaluate(() => window.__ms!.cells());
-  const mineCount = await page.evaluate(() => window.__ms!.state().minesRemaining);
-  const mines = pickMines(cells, mineCount, scene.seed ?? 1);
-
-  await page.evaluate(
-    ([mode, diff, layout]) =>
-      window.__ms!.startBoard(mode as string, diff as string, { mines: layout as CellId[] }),
-    [scene.mode!, difficulty, mines] as const,
-  );
-  if (scene.rotate) {
-    await page.evaluate(([dx, dy]) => window.__ms!.rotate(dx!, dy!), scene.rotate);
-  }
-  await settle(page);
-
-  const placed = await page.evaluate((ids) => {
-    const hook = window.__ms!;
-    return ids.map((c) => [c, hook.cellScreenXY(c)] as const);
-  }, cells);
-  const cx = page.viewportSize()!.width / 2;
-  const cy = page.viewportSize()!.height / 2;
-  const order = placed
-    .filter((entry): entry is readonly [CellId, { x: number; y: number }] => !!entry[1])
-    .sort((a, b) => Math.hypot(a[1].x - cx, a[1].y - cy) - Math.hypot(b[1].x - cx, b[1].y - cy))
-    .map(([cell]) => cell);
-
-  const mineSet = new Set(mines);
-  const safe = order.filter((c) => !mineSet.has(c));
-  const target = Math.floor((cells.length - mines.length) * (scene.reveal ?? 0.34));
-  await page.evaluate(
-    ([toOpen, want]) => {
-      const hook = window.__ms!;
-      for (const cell of toOpen as CellId[]) {
-        if (hook.state().revealed >= (want as number)) break;
-        if (hook.cellState(cell) === "hidden") hook.reveal(cell);
-      }
-    },
-    [safe, target] as const,
-  );
-
-  const central = order.filter((c) => mineSet.has(c));
-  const detonator = scene.explode ? central.shift() : undefined;
-  await page.evaluate(
-    ([toFlag, boom]) => {
-      const hook = window.__ms!;
-      for (const cell of toFlag as CellId[]) hook.flag(cell);
-      if (boom != null) hook.reveal(boom as CellId);
-    },
-    [central.slice(0, scene.flags ?? 4), detonator ?? null] as const,
-  );
 }
 
 // --- Product page art -------------------------------------------------------

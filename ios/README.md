@@ -72,6 +72,7 @@ count is wrong; the script warns about this.
 | `ios/App/App/AppDelegate.swift`, `ios/App/App/SceneDelegate.swift` | The UIScene lifecycle, which Capacitor 8 uses and recent iOS releases expect. `AppDelegate` hands each new scene the `SceneDelegate`; that creates the window with Capacitor's `CAPBridgeViewController`. The scene manifest (`UIApplicationSceneManifest`) in `Info.plist` names it. |
 | `ios/App/AppClip/` | The App Clip target: its own delegates, `ClipBridgeViewController`, `Info.plist` and entitlements. Everything else — the game, the icon, the launch screen, the privacy manifest, `BridgeViewController.swift` — it takes from `App/`. See "The App Clip" below. |
 | `ios/App/App/App-iOS.entitlements` | **iPhone and iPad only** (`CODE_SIGN_ENTITLEMENTS[sdk=iphone*]`): names the App Clip as this app's (`associated-appclip-app-identifiers`). |
+| `ios/App/Stickers/` | The iMessage sticker pack: an app extension with no code, just `Info.plist` and `Stickers.xcassets` (the stickers and the drawer icon), all written by `web/scripts/make-stickers.mts`. See "The sticker pack" below. |
 
 Nothing in `web/` is written for iOS beyond the haptics branch below and one
 build flag, `VITE_PACKAGED=1`, which it shares with the macOS app: a bundle
@@ -280,6 +281,56 @@ Clip link App Store Connect generates both open it. Opening shared board links
 experience — an `appclips:` associated domain and an
 `apple-app-site-association` file on the site — and the clip reading the board
 from the invocation URL; none of that exists yet.
+
+## The sticker pack
+
+The app carries an iMessage sticker pack: in Messages, the app drawer (or the
+emoji keyboard's sticker tab) offers the game's boards as stickers to send or
+peel onto a bubble. They show the Klein bottle, trefoil knot, Möbius strip,
+double torus, torus, projective plane, chamfered dodecahedron, cube,
+tetrahedron, hyperbolic disc, Penrose tiling, and a Klein bottle with a mine
+gone off.
+
+It is a third target, `Stickers` (product type
+`app-extension.messages-sticker-pack`, bundle ID
+`io.github.sirk0.hypersweeper.Stickers`, iPhone and iPad). It has **no code**:
+Messages' own `StickerBrowserViewController` shows whatever
+`Stickers/Stickers.xcassets` holds. The App target embeds it in
+`App.app/PlugIns` through an "Embed Foundation Extensions" phase and a target
+dependency, both filtered to iOS like the App Clip's, so the Mac build never
+carries it. It takes its version from the project-level `Version.xcconfig`, as
+App Store Connect requires an extension's version to match its app's.
+
+Everything in the catalog is rendered, not drawn:
+
+```sh
+make ios-stickers                  # cd web && npm run stickers
+SWIFTSHADER=1 make ios-stickers    # on a machine with no GPU (a cloud session)
+```
+
+`web/scripts/make-stickers.mts` boots the packaged bundle in Chromium, stages
+each board the way the App Store art is staged (`scripts/shots-lib.ts`: a
+seeded mine layout, a central patch opened, a few flags), and shoots it on a
+transparent page with the chrome hidden. Then it trims the board to its
+silhouette, adds a white die-cut edge and a soft shadow so it reads on a light
+or a dark bubble, and fits it to Apple's **Large** sticker size: 618 px square,
+two to a row. The script fails if a sticker goes over Apple's **500 KB** limit.
+It also writes every `Contents.json`, so **`STICKERS` in that script is the one
+place to add, drop or reorder a sticker**. Each sticker's VoiceOver label is
+its board's name in `data/catalog.json`. `SHOTS=klein,trefoil` re-renders a
+subset.
+
+The drawer icon (`iMessage App Icon.stickersiconset`, Messages' 4:3 sizes plus
+the 1024 × 768 and 1024 × 1024 store icons) is the app icon's art, drawn from
+the primary `AppIcon.icon` document's layers onto its own ground. It is written
+as opaque RGB because the App Store refuses an icon with an alpha channel.
+`ICON_ONLY=1 npm run stickers` redraws just the icon, for example after
+`make ios-icon` changes the art.
+
+To try the pack, build the `App` scheme onto a simulator, open Messages, start
+a conversation and pick Hypersweeper in the app drawer. Xcode's cloud signing
+registers the new bundle ID at the first archive, as it did the clip's, and
+`app-store.yml` fails an iOS archive that does not carry `Stickers.appex`.
 
 ## Releasing
 

@@ -19,6 +19,7 @@ name: App Store upload
 # The iOS build carries the App Clip (ios/App/AppClip): an App Clip is not
 # uploaded on its own, App Store Connect reads it out of its app's build. So
 # `ios` (and `both`) uploads the clip too, and the Mac build never has one.
+# The iMessage sticker pack (ios/App/Stickers) is carried the same way.
 #
 # The build number is the git commit count (scripts/build-ios-app.sh), so this
 # needs the full history, and every upload needs a commit that has not been
@@ -261,6 +262,13 @@ jobs:
             if [ "$platform" = ios ] && \
                [ ! -d "$archive/Products/Applications/App.app/AppClips/AppClip.app" ]; then
               echo "::error::the iOS archive has no App Clip in App.app/AppClips"
+              exit 1
+            fi
+            # The sticker pack rides the same way ("Embed Foundation Extensions",
+            # filtered to iOS), and would drop out of the version just as quietly.
+            if [ "$platform" = ios ] && \
+               [ ! -d "$archive/Products/Applications/App.app/PlugIns/Stickers.appex" ]; then
+              echo "::error::the iOS archive has no sticker pack in App.app/PlugIns"
               exit 1
             fi
 
