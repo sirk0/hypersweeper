@@ -17,16 +17,44 @@ import { expect, test } from "@playwright/test";
 // fit, which is what this file exists to prevent.
 
 // Widths worth pinning: the narrowest iPhone still in circulation (320, SE 1st
-// gen), the SE 2/3 and the 12/13/14 class, the Pro Max class, and a desktop
-// window. The Klein bottle is still the case to check — it is the board that
-// carries extra controls, now on the row below.
+// gen), the SE 2/3 and the 12/13/14 class, the 16 Pro, the Pro Max class, the
+// iPhone Duo's inner screen, and a desktop window. The Klein bottle is still
+// the case to check — it is the board that carries extra controls, now on the
+// row below.
 const VIEWPORTS = [
   { name: "iPhone SE (1st gen)", width: 320, height: 568 },
   { name: "iPhone SE (2nd/3rd gen)", width: 375, height: 667 },
   { name: "iPhone 14", width: 390, height: 844 },
+  { name: "iPhone 16 Pro", width: 402, height: 874 },
   { name: "iPhone 14 Pro Max", width: 430, height: 932 },
+  { name: "iPhone Duo", width: 669, height: 951 },
   { name: "desktop", width: 1280, height: 800 },
 ];
+
+/** Apple's standard touch target, in points. */
+const TOUCH = 44;
+/** `--hud-btn-max` in styles.css. */
+const MAX_BUTTON = 52;
+
+/** The header button side styles.css solves for at this width with no safe
+ * areas: the row is 8.6 buttons wide (`--hud-fit`) between two `--hud-pad`s,
+ * clamped to `--hud-btn-max`. */
+function expectedButton(width: number): number {
+  const pad = Math.min(14, Math.max(5, width * 0.02));
+  return Math.min(MAX_BUTTON, (width - 2 * pad) / 8.6);
+}
+
+/** Stand in a device's top safe-area inset, as the store-screenshot script
+ * does: through `--safe-top`, before the bundle runs. */
+async function stubSafeTop(page: import("@playwright/test").Page, inset: number): Promise<void> {
+  await page.addInitScript((px) => {
+    const apply = (): boolean => {
+      document.documentElement?.style.setProperty("--safe-top", `${px}px`);
+      return document.documentElement != null;
+    };
+    if (!apply()) document.addEventListener("readystatechange", apply);
+  }, inset);
+}
 
 interface Box {
   slot: string;
@@ -85,6 +113,13 @@ test.describe("game header", () => {
       // Counters are exactly as tall as the icon buttons and the smiley.
       for (const b of boxes) expect(b.height).toBeCloseTo(first!.height, 1);
 
+      // The buttons are as big as the row lets them be: the size that fills the
+      // line, up to the cap. That is Apple's 44pt from the 16 Pro's width up,
+      // and smaller only where seven controls would not otherwise fit.
+      const side = first!.right - first!.left;
+      expect(side).toBeCloseTo(expectedButton(vp.width), 0);
+      if (vp.width >= 400) expect(side).toBeGreaterThanOrEqual(TOUCH);
+
       // Nothing overlaps, nothing overflows the viewport.
       for (let i = 1; i < boxes.length; i++) {
         expect(boxes[i]!.left).toBeGreaterThanOrEqual(boxes[i - 1]!.right);
@@ -104,6 +139,38 @@ test.describe("game header", () => {
       );
     });
   }
+
+  test("a status bar with no sensor housing moves the end controls in from the corners", async ({
+    page,
+  }) => {
+    // The iPhone Duo (and an iPad): a 24pt status bar is all the top inset
+    // there is, which leaves the header up in the display's rounded corners.
+    await stubSafeTop(page, 24);
+    await page.setViewportSize({ width: 669, height: 951 });
+    await page.goto("/?mode=klein&difficulty=easy&seed=1");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    const boxes = await headerBoxes(page);
+    const by = (slot: string) => boxes.find((b) => b.slot === slot)!;
+    expect(by("back").top).toBeCloseTo(24, 0);
+    // `--corner-reach` (48px) less the 24px inset: each end sits 24px in.
+    expect(by("back").left).toBeCloseTo(24, 0);
+    expect(669 - by("info").right).toBeCloseTo(24, 0);
+    const smiley = by("smiley");
+    expect((smiley.left + smiley.right) / 2).toBeCloseTo(669 / 2, 1);
+  });
+
+  test("a Dynamic Island inset clears the corners by itself", async ({ page }) => {
+    // 62pt puts the header below the corner's curve, so the row keeps its
+    // ordinary side padding — and its size.
+    await stubSafeTop(page, 62);
+    await page.setViewportSize({ width: 402, height: 874 });
+    await page.goto("/?mode=klein&difficulty=easy&seed=1");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    const boxes = await headerBoxes(page);
+    expect(boxes[0]!.top).toBeCloseTo(62, 0);
+    expect(boxes[0]!.left).toBeCloseTo(402 * 0.02, 0);
+    expect(boxes[0]!.right - boxes[0]!.left).toBeGreaterThanOrEqual(TOUCH);
+  });
 
   test("a board without a cell cycle carries the same header", async ({ page }) => {
     // Every board gets the same seven controls — the two sides are equal, which

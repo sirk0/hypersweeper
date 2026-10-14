@@ -99,28 +99,38 @@
   --smiley-ink: #2b2f3a;
   --radius: 20px;
   --shadow: 0 2px 10px rgba(64, 35, 16, 0.16);
-  /* Header control sizing, all on one fluid scale — the CSS counterpart of the
-     pygame header's `_header_scale`. The square button box, the glyph inside
-     it, the gaps and the LED counter text shrink together on a narrow phone so
-     the whole row (back + flag, the centred counter / face / counter group,
-     help + info) stays on a single line down to a 320px viewport, while every
-     control keeps a comfortable touch size. The board's own symmetry controls
-     are drawn a size down on the caption row below (`.board-bar-btn`), on the
-     same scale. */
-  /* The header carries seven controls at once — back, flag, help, info and the
-     counter/smiley/counter block — and they all sit on one row, because the
-     smiley has to stay on the exact screen centre (see `.hud`). The floors
-     below are what that worst case needs at 320px: a side cluster is
-     `minmax(0, 1fr)`, so anything wider does not scroll, it *overlaps* the
-     centre and swallows a button whole. Raise a floor only after re-checking a
-     board that carries every symmetry control at 320px. */
-  --hud-btn: clamp(31px, 9.6vw, 46px);
-  --hud-icon: clamp(17px, 5.4vw, 26px);
-  --hud-gap: clamp(3px, 1.2vw, 10px);
+  /* Header control sizing, all on one scale — the CSS counterpart of the
+     pygame header's `_header_scale`. Everything in the row is a fraction of
+     `--hud-btn`: the glyph inside a button, the gaps, the LED counters' width
+     and digits. So the row is a fixed number of buttons wide, and the button
+     can be *solved* for rather than guessed from the viewport width.
+
+     The header carries seven controls at once — back, flag, random, info and
+     the counter/smiley/counter block — and they all sit on one row, because the
+     smiley has to stay on the exact screen centre (see `.hud`). Five square
+     buttons and two counters of 1.4 buttons each is 7.8 buttons; the six gaps
+     (two inside the side clusters, two inside the centre block, two between
+     the grid columns) at 0.12 each make it 8.52. `--hud-fit` divides the width
+     between the side paddings by 8.6 — that, with a little slack for borders
+     and rounding — so it is exactly the size at which the row fills the line.
+
+     The button is Apple's standard 44pt touch target or bigger wherever that
+     fits (from about a 390pt wide phone up), grows on to `--hud-btn-max` on a
+     wider screen (the iPhone Duo, an iPad, a desktop) and only goes below 44
+     where the row would not otherwise fit: a side column is `minmax(0, 1fr)`,
+     so a row wider than the line does not scroll, it *overlaps* the centre and
+     swallows a button whole. The board's own symmetry controls on the row
+     below (`.board-bar-btn`) ride the same scale. */
   --hud-pad: clamp(5px, 2vw, 14px);
-  --hud-counter-pad: clamp(3px, 1.2vw, 10px);
-  --hud-counter-font: clamp(12px, 4.2vw, 20px);
-  --hud-counter-min: clamp(33px, 10.5vw, 74px);
+  --hud-pad-left: max(var(--hud-pad), var(--safe-left), var(--corner-clear));
+  --hud-pad-right: max(var(--hud-pad), var(--safe-right), var(--corner-clear));
+  --hud-btn-max: 52px;
+  --hud-fit: calc((100vw - var(--hud-pad-left) - var(--hud-pad-right)) / 8.6);
+  --hud-btn: clamp(28px, var(--hud-fit), var(--hud-btn-max));
+  --hud-icon: calc(var(--hud-btn) * 0.565);
+  --hud-gap: calc(var(--hud-btn) * 0.12);
+  --hud-counter-width: calc(var(--hud-btn) * 1.4);
+  --hud-counter-font: calc(var(--hud-btn) * 0.42);
   /* Height of the visible viewport, the box the whole app lays out in. NOT
      `100vh`: on iOS Safari that is the *large* viewport (the one you get with
      the toolbars retracted), so a full-height fixed layer runs on underneath
@@ -147,6 +157,32 @@
      main.ts, which reads it back off a probe element (and which an e2e test can
      stub by setting this property). */
   --safe-top: env(safe-area-inset-top, 0px);
+  /* The side insets — the sensor housing and the corners in landscape — read
+     through a property for the same reason: the store-screenshot script and
+     the e2e suite stand a device's insets in through these three, since a
+     desktop browser reports none. */
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  /* How far in from the side a header control must sit to clear the display's
+     rounded corner, when the top inset alone does not. A Face ID iPhone's
+     portrait inset (59–62pt) already puts the header below the corner's curve;
+     a Touch ID screen's status bar (20–24pt — the iPhone Duo, an iPad) does
+     not, and the controls at the ends of the row sat inside the curve. So the
+     header's side padding is at least `--corner-reach` less the top inset, and
+     never anything for a top inset of 0: that is a page that does not reach
+     the top of the screen at all (Safari with its address bar above it, a
+     desktop browser), or a landscape phone, whose side insets clear the
+     corners themselves. The `* 100` is the switch: any inset of a pixel or
+     more takes the `min` to `--corner-reach`, and none keeps it at 0.
+
+     The reach is an estimate — no web API reports a display's corner radius —
+     sized so a 24pt status bar leaves a control 24px in from the edge, past the
+     curve App Store Connect draws round an iPhone Duo screenshot. */
+  --corner-reach: 48px;
+  --corner-clear: max(
+    0px,
+    min(calc(var(--safe-top) * 100), var(--corner-reach)) - var(--safe-top)
+  );
 }
 
 /* The boot frame for a device that prefers dark. The default colour scheme is
@@ -457,10 +493,11 @@ body {
   align-items: center;
   gap: var(--hud-gap);
   /* Clear the notch/status bar (top) and, in landscape, the rounded corners
-     and sensor housing on the sides (viewport-fit=cover exposes these). */
-  padding: max(var(--hud-pad), env(safe-area-inset-top))
-    max(var(--hud-pad), env(safe-area-inset-right)) var(--hud-pad)
-    max(var(--hud-pad), env(safe-area-inset-left));
+     and sensor housing on the sides (viewport-fit=cover exposes these). The
+     side paddings also clear a rounded corner the top inset leaves exposed
+     (`--corner-clear`), and are what `--hud-btn` is solved against. */
+  padding: max(var(--hud-pad), var(--safe-top)) var(--hud-pad-right) var(--hud-pad)
+    var(--hud-pad-left);
   background: transparent;
 }
 
@@ -623,13 +660,16 @@ body {
   font-family: "DSEG7 Classic", "Courier New", monospace;
   font-variant-numeric: tabular-nums;
   font-weight: 700;
-  letter-spacing: clamp(1px, 0.4vw, 2px);
+  letter-spacing: 0.08em;
   color: var(--danger);
   background: var(--counter-bg);
   border: 1px solid var(--counter-bg);
   border-radius: 10px;
-  padding-inline: var(--hud-counter-pad);
-  min-width: var(--hud-counter-min);
+  /* A width, not a minimum: `--hud-fit` counts each counter as exactly 1.4
+     buttons, and three digits at this size take about 1.2. */
+  padding: 0;
+  flex: none;
+  width: var(--hud-counter-width);
   height: var(--hud-btn);
   font-size: var(--hud-counter-font);
   display: flex;
@@ -2434,12 +2474,12 @@ body {
 }
 
 /* --- Narrow screens (phones) --- */
-/* The header carries back + flag, mine/smiley/timer, and — on a Klein bottle —
-   two scroll chevrons: five square controls and two counters, all on one row.
-   No phone-specific rule reshapes that row any more; the viewport-relative
-   control sizes at the top shrink it to fit instead, down to a 320px viewport
-   (the narrowest iPhone) with room to spare. tests/e2e/hud.spec.ts pins the
-   fit and the centring across the iPhone widths. */
+/* The header carries back + flag, mine/smiley/timer, and random + info: five
+   square controls and two counters, all on one row. No phone-specific rule
+   reshapes that row; `--hud-btn` at the top is solved for the size that fills
+   the line, so it shrinks to fit only below about a 390pt phone, down to a
+   320px viewport (the narrowest iPhone). tests/e2e/hud.spec.ts pins the size,
+   the fit and the centring across the iPhone widths. */
 
 /* --- Typography, per theme --- */
 /* Rubik for the two themes that are not Sand. It is the pygame board's own face
@@ -2501,8 +2541,8 @@ body {
 
    The corner is a fraction of `--hud-btn` rather than a length, because that
    is what the rest of this row already is: the box, the glyph and the gaps all
-   ride the same fluid scale, and a fixed radius that reads as a chip at 46px
-   closes back into a circle at the 31px floor. The fractions are the design's
+   ride the same scale, and a fixed radius that reads as a chip at 52px
+   closes back into a circle on a 320px phone's 36px button. The fractions are the design's
    own measurements taken at the size it drew: 16px on a 42px button, 12px on
    the counters and on the board bar's smaller chevrons (whose 10px in
    `.hud-counter` is a flat constant, not a themed one). Bar buttons and

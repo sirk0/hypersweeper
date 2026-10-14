@@ -51,17 +51,27 @@ interface View {
   touch: boolean;
   /** What `BridgeViewController.swift` tells the page it is running on. */
   native: "phone" | "pad" | "mac";
+  /** The device's top safe-area inset in portrait, in points: what
+   * `env(safe-area-inset-top)` is on the device, and 0 in this headless
+   * browser. Stood in through `--safe-top` (styles.css), so the header sits
+   * where it does on the device — under the status bar, and on a Touch ID
+   * screen in from the rounded corners (`--corner-clear`) — rather than in the
+   * corners App Store Connect rounds every screenshot off at. */
+  safeTop?: number;
 }
 
 interface Device extends View {
   key: string;
 }
 
+// The insets: 62pt is the Dynamic Island's (iPhone 16 Pro and Pro Max); 24pt
+// is a status bar with no sensor housing in it, which is an iPad's and, as an
+// estimate until one can be measured, the iPhone Duo's.
 const DEVICES: Device[] = [
-  { key: "iphone-6.9", viewport: { width: 440, height: 956 }, scale: 3, touch: true, native: "phone" },
-  { key: "iphone-6.3", viewport: { width: 402, height: 874 }, scale: 3, touch: true, native: "phone" },
-  { key: "iphone-duo", viewport: { width: 669, height: 951 }, scale: 3, touch: true, native: "phone" },
-  { key: "ipad", viewport: { width: 1032, height: 1376 }, scale: 2, touch: true, native: "pad" },
+  { key: "iphone-6.9", viewport: { width: 440, height: 956 }, scale: 3, touch: true, native: "phone", safeTop: 62 },
+  { key: "iphone-6.3", viewport: { width: 402, height: 874 }, scale: 3, touch: true, native: "phone", safeTop: 62 },
+  { key: "iphone-duo", viewport: { width: 669, height: 951 }, scale: 3, touch: true, native: "phone", safeTop: 24 },
+  { key: "ipad", viewport: { width: 1032, height: 1376 }, scale: 2, touch: true, native: "pad", safeTop: 24 },
   { key: "mac", viewport: { width: 1440, height: 900 }, scale: 2, touch: false, native: "mac" },
 ];
 
@@ -225,11 +235,19 @@ async function openScene(
     backgrounds: false,
   });
   await context.addInitScript(
-    ([key, value, native]) => {
+    ([key, value, native, safeTop]) => {
       window.localStorage.setItem(key!, value!);
       (window as { hypersweeperDevice?: string }).hypersweeperDevice = native;
+      if (safeTop === "0px") return;
+      // The document element may not exist this early; retry once parsing has
+      // built it, still before the module script runs.
+      const apply = (): boolean => {
+        document.documentElement?.style.setProperty("--safe-top", safeTop!);
+        return document.documentElement != null;
+      };
+      if (!apply()) document.addEventListener("readystatechange", apply);
     },
-    ["ms:settings", settings, device.native],
+    ["ms:settings", settings, device.native, `${device.safeTop ?? 0}px`],
   );
   const page = await context.newPage();
 

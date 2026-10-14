@@ -133,8 +133,10 @@ design rather than the rule itself.
 - `src/ui/` — HTML/CSS overlay chrome: `hud.ts` (header — laid out like the
   pygame one: back + flag at the left edge, the smiley on the exact screen
   centre with an equal-height LED counter either side of it, and the Klein
-  scroll chevrons at the right edge, all on a single row that shrinks on one
-  fluid scale to fit a phone; `tests/e2e/hud.spec.ts` pins that),
+  scroll chevrons at the right edge, all on a single row of 44pt-or-bigger
+  controls that shrinks only where the row would not otherwise fit, and that
+  keeps clear of a display's rounded corners — "The header's size" in
+  [`docs/ui.md`](docs/ui.md); `tests/e2e/hud.spec.ts` pins that),
   `menu.ts` (home) and
   `icons.ts` (the menu glyphs as inline SVG, keyed the way the pygame menu
   keys them: a tiling key, a family key, a mode name or a home-page group key,
