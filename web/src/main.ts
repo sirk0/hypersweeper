@@ -11,6 +11,7 @@ import {
   type Achievement,
 } from "./achievements";
 import { setAnalyticsEnabled, trackGame } from "./analytics";
+import { clipBoard, tellClip } from "./appClip";
 import type { PreviousState, StartTrigger } from "./analyticsEvent";
 import {
   playSound,
@@ -123,6 +124,10 @@ class App {
   /** Stored preferences (theme, difficulty, animations, cell style) — the
    * app's only persisted state. */
   private settings: Settings = loadSettings();
+  /** The one board an App Clip plays, or `null` in the app proper (appClip.ts).
+   * A clip has no menu, no way home and no other board: it opens this, and
+   * every route that would leave it is closed. */
+  private readonly clip: string | null = clipBoard();
   // Board animations honour the OS reduced-motion setting unless the settings
   // screen overrides it; the `window.__ms.animations(false)` test seam overrides
   // both for deterministic e2e.
@@ -161,7 +166,11 @@ class App {
     this.syncViewport(); // size the layout box before anything measures it
     this.renderer = new BoardRenderer(canvas);
     this.syncMotion(); // before the menu's first page rises in
-    this.hud = new Hud((action) => this.onAction(action));
+    this.hud = new Hud(
+      (action) => this.onAction(action),
+      // Neither leads anywhere in a clip; their slots are held open as space.
+      this.clip ? new Set(["back", "random"]) : undefined,
+    );
     // The menu glyphs are baked strings. Before `new Menu` below, because an icon is
     // a string of SVG with its colours baked in and the menu asks for them as it
     // renders.
@@ -196,6 +205,15 @@ class App {
     // the toolbars sliding in and out does, and what `--app-top` tracks.
     window.visualViewport?.addEventListener("resize", () => this.onResize());
     window.visualViewport?.addEventListener("scroll", () => this.onResize());
+    // The header can change height with no resize at all: in a WKWebView the
+    // safe-area inset it pads itself by (`env(safe-area-inset-top)`) arrives
+    // after the first layout, so a board opened at boot — the App Clip's —
+    // was framed, and its name placed, as if the header had no notch to clear.
+    // `onResize` touches neither the header nor the caption's size, so this
+    // cannot feed itself.
+    new ResizeObserver(() => {
+      if (this.screen === "game") this.onResize();
+    }).observe(this.hud.root);
     window.addEventListener("keydown", (e) => this.onKey(e));
     window.addEventListener("hypersweeper:command", (e) =>
       this.onCommand((e as CustomEvent<unknown>).detail),
@@ -251,7 +269,8 @@ class App {
     window.setInterval(() => this.tickTimer(), 250);
 
     this.installSeam();
-    if (!this.startFromDeepLink()) this.showMenu();
+    if (this.clip) this.startGame(this.clip, this.settings.difficulty, { trigger: "link" });
+    else if (!this.startFromDeepLink()) this.showMenu();
     requestAnimationFrame(() => document.body.setAttribute("data-ready", "1"));
   }
 
@@ -559,6 +578,8 @@ class App {
     this.counted = false;
     this.unlocked = [];
     this.dealtAtRandom = opts.dealtAtRandom ?? false;
+    // The full-game offer a win put up belongs to the board that was won.
+    if (this.clip) tellClip("started");
     // How this board came to be dealt, and what the board before it was doing
     // when it was replaced. Read here, before the old session is dropped,
     // because it is the only moment both are known — and kept on `App` because
@@ -784,6 +805,8 @@ class App {
   }
 
   private onAction(action: string): void {
+    // A clip's header draws neither, but the guard is what makes that a rule.
+    if (this.clip && (action === "menu" || action === "random")) return;
     if (action === "menu") this.showMenu();
     else if (action === "toggle-flag-mode") {
       this.flagMode = !this.flagMode;
@@ -815,7 +838,7 @@ class App {
   private onCommand(name: unknown): void {
     if (name === "new-game") {
       if (this.screen === "game") this.onAction("restart");
-    } else if (name === "settings" || name === "help") {
+    } else if ((name === "settings" || name === "help") && !this.clip) {
       if (this.screen === "game") this.showMenu();
       this.menu.openPage(name);
     }
@@ -998,6 +1021,9 @@ class App {
     const session = this.session;
     if (!session || this.counted || session.status !== "won") return;
     this.counted = true;
+    // A clip earns nothing: it is one board, and its record would be wiped
+    // with the clip anyway, never reaching the app it is a taste of.
+    if (this.clip) return;
     const ids = recordWin({
       mode: session.mode,
       difficulty: session.difficulty,
@@ -1051,7 +1077,9 @@ class App {
     // A time that did not place used to end the win in silence. It still does
     // when nothing was unlocked; when something was, that is worth a card of
     // its own — see the note at the top of ui/scoreDialog.ts.
-    if (!placed && this.unlocked.length === 0) return;
+    // A clip always says so: the card is its one way to play again, and the
+    // moment the native side offers the full game.
+    if (!placed && this.unlocked.length === 0 && !this.clip) return;
     const open = (): void => {
       this.scoreDialogTimer = 0;
       // The board can have been left or restarted during the delay.
@@ -1076,6 +1104,7 @@ class App {
     // the card's voice. With animations on, the win figure has finished by the
     // time the card opens; with them off the two land together, which the
     // collection they share makes consonant (audio/sound.ts).
+    if (this.clip) tellClip("won");
     if (this.unlocked.length > 0) {
       haptic("unlock");
       playSound({ kind: "unlock", count: this.unlocked.length });
@@ -1085,6 +1114,7 @@ class App {
       difficulty: session.difficulty,
       rank,
       entries,
+      ms: session.elapsedMs(),
       unlocked: this.unlocked,
       animate: this.animationsEnabled,
       // A board the player chose highlights playing it again; one the game
@@ -1097,11 +1127,12 @@ class App {
         }),
       // The same move the header's die makes, from the card that is up when a
       // board is finished rather than from the row over one being played.
-      onNewBoard: () => this.startRandomBoard(),
+      // A clip is one board, so its card asks nothing but whether to go again.
+      ...(this.clip ? {} : { onNewBoard: () => this.startRandomBoard() }),
       // The card is where a player is thinking about achievements, so it is
       // where the way to the whole list belongs. Leaving the board is the same
       // move Menu makes — the card is about a board that is finished.
-      onShowAll: () => this.showAchievements(),
+      ...(this.clip ? {} : { onShowAll: () => this.showAchievements() }),
       // The win's time goes with the link — the card is about the time, so the
       // message someone receives should say it too. A board with no seed (the
       // test seam) has no link, and gets no button.

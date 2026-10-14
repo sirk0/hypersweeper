@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- iPhone and iPad only (CODE_SIGN_ENTITLEMENTS[sdk=iphone*]); the Mac build
+     signs with App.entitlements. Names the App Clip that ships inside this
+     app (ios/App/AppClip), which names this app back. -->
+<plist version="1.0">
+<dict>
+	<key>com.apple.developer.associated-appclip-app-identifiers</key>
+	<array>
+		<string>$(AppIdentifierPrefix)io.github.sirk0.hypersweeper.Clip</string>
+	</array>
+</dict>
+</plist>

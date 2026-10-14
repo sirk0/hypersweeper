@@ -254,14 +254,23 @@ export class Hud {
   private smiley: HTMLButtonElement | null = null;
   private flagBtn: HTMLButtonElement | null = null;
 
-  constructor(private readonly onAction: (action: string) => void) {
+  /** `vacant` names header slots to keep as empty space rather than draw: the
+   * App Clip (appClip.ts) has no way home and no other board, so its back and
+   * random slots are held open invisibly — the two side clusters stay the same
+   * width, which is what keeps the smiley on the screen's centre. A vacant slot
+   * moves to its cluster's inner end, so what is left sits in the corners,
+   * mirroring each other (the flag at the left edge, the ⓘ at the right). */
+  constructor(
+    private readonly onAction: (action: string) => void,
+    private readonly vacant: ReadonlySet<string> = new Set(),
+  ) {
     this.root = document.createElement("header");
     this.root.className = "hud";
     const cfg = screens.hud;
     this.root.append(
-      this.cluster("hud-left", cfg.left),
+      this.cluster("hud-left", this.inward(cfg.left, "end")),
       this.cluster("hud-center", cfg.center),
-      this.cluster("hud-right", cfg.right),
+      this.cluster("hud-right", this.inward(cfg.right, "start")),
     );
     this.render();
   }
@@ -288,6 +297,14 @@ export class Hud {
     btn.classList.remove("flag-flash");
     void btn.offsetWidth; // restart the animation rather than continue it
     btn.classList.add("flag-flash");
+  }
+
+  /** `slots` with the vacant ones moved to `end` or `start` — whichever side
+   * of the cluster faces the centre — keeping each group's own order. */
+  private inward(slots: HudSlot[], side: "start" | "end"): HudSlot[] {
+    const vacant = slots.filter((s) => this.vacant.has(s.slot));
+    const shown = slots.filter((s) => !this.vacant.has(s.slot));
+    return side === "end" ? [...shown, ...vacant] : [...vacant, ...shown];
   }
 
   private cluster(cls: string, slots: HudSlot[]): HTMLElement {
@@ -335,6 +352,12 @@ export class Hud {
       btn.addEventListener("animationend", () => btn.classList.remove("flag-flash"));
     }
     if (slot.visibleWhen) btn.dataset.visibleWhen = slot.visibleWhen;
+    if (this.vacant.has(slot.slot)) {
+      btn.classList.add("hud-vacant");
+      btn.disabled = true;
+      btn.tabIndex = -1;
+      btn.setAttribute("aria-hidden", "true");
+    }
     return btn;
   }
 
