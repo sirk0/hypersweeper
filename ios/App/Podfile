@@ -20,6 +20,13 @@ target 'App' do
   # Add your Pods here
 end
 
+# The App Clip (AppClip/) runs the same game in the same Capacitor bridge, so
+# it links the same pods. `cap sync` rewrites only `capacitor_pods` above, so a
+# new plugin reaches both targets.
+target 'AppClip' do
+  capacitor_pods
+end
+
 post_install do |installer|
   assertDeploymentTarget(installer)
 

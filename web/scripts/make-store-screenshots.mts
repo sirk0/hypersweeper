@@ -2,8 +2,8 @@
 //
 //   npm run store-screenshots -- [out-dir]
 //   (default out dir: ../app-store-screenshots; DEVICES=iphone-6.3,mac and
-//   SHOTS=01-sphere,… render a subset — DEVICES also takes `header` and
-//   `search-results`, the product page art described further down)
+//   SHOTS=01-sphere,… render a subset — DEVICES also takes `header`,
+//   `search-results` and `app-clip`, the art described further down)
 //
 // Builds the bundle the native app ships (`VITE_PACKAGED=1`) into a scratch
 // directory, serves it with `vite preview`, and shoots each scene at the pixel
@@ -318,22 +318,27 @@ async function stageBoard(page: Page, scene: Scene, difficulty: string): Promise
 // --- Product page art -------------------------------------------------------
 //
 // Two more placements on the iOS product page, which take artwork rather than
-// a screenshot of one device:
+// a screenshot of one device, and the App Clip's card:
 //
 //   header          5244 x 2950, 3840 x 1646   the banner at the top of the page
 //   search-results  5244 x 2950, 3840 x 2560, 1920 x 1280   the Search tab card
+//   app-clip        1800 x 1200   the image on the App Clip card (App Store
+//                                 Connect → App Clip → default experience),
+//                                 a JPEG because the card takes no transparency
 //
 // Apple's guidance (developer.apple.com/app-store/asset-best-practices): one
 // clear idea, the focal point in the centre so no device crops it, any text a
 // short phrase, and for search "show firsthand experience" — the gameplay.
 // So the header is a row of real boards with no words, and the search card is
-// three of the iPhone shots under one line. Both are composed on the app's own
+// three of the iPhone shots under one line. The App Clip card is the clip's own
+// board in play, wordless too, since the card prints its title and subtitle
+// under it. All three are on the app's own
 // page — its Sand field, its font, its colours — with the app's chrome hidden,
 // rather than on an imitation of it.
 
 interface Art {
   /** Output folder, and the `DEVICES` key that selects it. */
-  key: "header" | "search-results";
+  key: "header" | "search-results" | "app-clip";
   file: string;
   /** CSS pixels; times `scale` is the asset's size. */
   viewport: { width: number; height: number };
@@ -346,6 +351,7 @@ const ART: Art[] = [
   { key: "search-results", file: "search-5244x2950.png", viewport: { width: 2622, height: 1475 }, scale: 2 },
   { key: "search-results", file: "search-3840x2560.png", viewport: { width: 1920, height: 1280 }, scale: 2 },
   { key: "search-results", file: "search-1920x1280.png", viewport: { width: 1920, height: 1280 }, scale: 1 },
+  { key: "app-clip", file: "app-clip-1800x1200.jpg", viewport: { width: 900, height: 600 }, scale: 2 },
 ];
 
 /** The header's boards, left to right, with their relative heights: the
@@ -357,6 +363,19 @@ const HEADER_BOARDS: { scene: Scene; weight: number }[] = [
   { scene: { name: "h-sphere", shape: "realistic", mode: "c180", seed: 7, reveal: 0.34, flags: 5 }, weight: 0.86 },
   { scene: { name: "h-torus", shape: "realistic", mode: "torussnubsquare", seed: 5, reveal: 0.34, flags: 4 }, weight: 0.72 },
 ];
+
+/** The App Clip card's board: the one the clip plays (`HypersweeperClipBoard`
+ * in ios/App/AppClip/Info.plist) at the difficulty it opens at, the default,
+ * part played as the header's boards are. */
+const CLIP_SCENE: Scene = {
+  name: "c-chamfered",
+  shape: "realistic",
+  mode: "c80",
+  difficulty: "easy",
+  seed: 5,
+  reveal: 0.4,
+  flags: 4,
+};
 
 /** The search card's three iPhone shots, by scene name; the middle one leads. */
 const SEARCH_SHOTS = ["02-mobius", "01-sphere", "03-trefoil"];
@@ -496,6 +515,23 @@ async function composeArt(browser: Browser, art: Art, file: string): Promise<voi
   await context.close();
 }
 
+/** The App Clip card: the clip's board in play at the card's size, with the
+ * app's chrome hidden. Shot whole rather than cut out, so the board keeps the
+ * shadow it casts on the page. */
+async function clipCard(browser: Browser, art: Art, file: string): Promise<void> {
+  const { page, context } = await openScene(
+    browser,
+    { viewport: art.viewport, scale: art.scale, touch: true, native: "phone" },
+    CLIP_SCENE,
+  );
+  await page.addStyleTag({ content: "#ui, .board-name-layer { display: none !important; }" });
+  await page.evaluate(() => window.dispatchEvent(new Event("resize")));
+  await settle(page);
+  await page.screenshot({ path: file, type: "jpeg", quality: 92 });
+  console.log(`wrote ${file}`);
+  await context.close();
+}
+
 async function main(): Promise<void> {
   const outRoot = path.resolve(process.cwd(), process.argv[2] ?? path.join(WEB, "../app-store-screenshots"));
   const distDir = process.env.STORE_DIST ?? path.join(WEB, "node_modules/.store-shots-dist");
@@ -539,7 +575,8 @@ async function main(): Promise<void> {
       if (onlyDevices && !onlyDevices.includes(art.key)) continue;
       const outDir = path.join(outRoot, art.key);
       mkdirSync(outDir, { recursive: true });
-      await composeArt(browser, art, path.join(outDir, art.file));
+      const file = path.join(outDir, art.file);
+      await (art.key === "app-clip" ? clipCard(browser, art, file) : composeArt(browser, art, file));
     }
     await browser.close();
   } finally {

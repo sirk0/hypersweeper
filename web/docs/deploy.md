@@ -341,7 +341,9 @@ while working here:
   work in a browser tab and on a phone. What the page cannot detect, the shell
   tells it: the iOS shell sets `window.hypersweeperDevice` and, on the Mac,
   `window.hypersweeperShell` before any script runs; see
-  `ios/App/App/BridgeViewController.swift`.)
+  `ios/App/App/BridgeViewController.swift`. The App Clip is the same move: its
+  shell sets `window.hypersweeperClip` — see "The App Clip" in
+  [`ui.md`](ui.md).)
 - **The app must reference nothing remote.** No CDN, no web font, no remote
   image: `scripts/check-offline-assets.mjs` scans the built output and fails
   the build (and the `web` CI job) over any URL that is not an XML namespace,

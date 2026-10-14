@@ -524,6 +524,13 @@ body {
   height: var(--hud-btn);
 }
 
+/* A slot the App Clip has no use for (back, random): kept as space so the
+   clusters either side of the smiley stay equal, but neither drawn nor
+   reachable (Hud's `vacant`). */
+.hud-btn.hud-vacant {
+  visibility: hidden;
+}
+
 /* Pressed / toggled-on: system-blue tinted fill, shadow tucked away. */
 .hud-btn.active,
 .hud-btn:active,
@@ -1950,6 +1957,16 @@ body {
   margin: 0;
   color: var(--muted);
   font-size: 14px;
+}
+
+/* The win's time, when there is no list of times to carry it (the App Clip's
+   plain win). */
+.dialog-time {
+  margin-top: 14px;
+  color: var(--text);
+  font-size: 28px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 .score-list {

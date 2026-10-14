@@ -1098,3 +1098,46 @@ star, trophy, flag, warning, and a three-bar difficulty ladder that fills one
 bar per rung, drawing all three so a lone bar is not left saying nothing) —
 there is no geometry in "win ten boards". They are drawn `fill-rule="evenodd"`,
 because they have holes in them.
+
+## The App Clip
+
+The iPhone app carries an App Clip (`ios/App/AppClip`, see
+[`../../ios/README.md`](../../ios/README.md)): a second native target running
+this same bundle, which plays one board — the chamfered dodecahedron, at the
+default difficulty — so someone can try the game from the App Store without
+installing it. The page learns it is a clip from its shell, never from the
+build: `ClipBridgeViewController` sets `window.hypersweeperClip` to the board's
+mode before any script runs, and `src/appClip.ts` reads it (`clipBoard`, which
+treats a mode this build does not have as no clip at all). `App.clip` is that
+mode, and everything a clip does differently hangs off it:
+
+- **It opens the board at boot**, in place of the menu and the share-link
+  parsing, and nothing leads away from it. The header's back and random slots
+  are built **vacant** (`Hud`'s `vacant` set, `.hud-vacant`): invisible,
+  disabled and out of the Tab order, but still taking their space, because the
+  two side clusters have to stay the same width for the smiley to sit on the
+  screen's centre. A vacant slot moves to its cluster's inner end, so the flag
+  and the ⓘ that are left sit in the two corners, mirroring each other. `onAction` refuses `menu` and `random` anyway, and the
+  native Settings and How to Play commands are ignored.
+- **It earns nothing.** `countWin` returns before `recordWin`, so a clip never
+  writes `ms:achievements`; a clip's storage is wiped with it and would never
+  reach the app it is a taste of. Best times still file, since they are about
+  this board.
+- **Every win puts the card up**, with **Play again** alone — no New board, no
+  unlock list. It is the clip's only way to go again besides the smiley, so a
+  time that did not place still gets one: titled "Board cleared", with the time
+  under the board's name (`ms`, `.dialog-time`).
+- **The win is when the full game is offered.** As the card opens,
+  `tellClip("won")` posts to the `hypersweeperClip` message handler and the
+  native side puts up Apple's App Clip `SKOverlay`; the next board
+  (`tellClip("started")` from `startGame`) takes it down.
+
+One fix it needed applies everywhere: a board opened at boot used to be framed
+before WKWebView had applied the header's safe-area padding, which fires no
+resize, so the board's name was drawn up in the header row. A `ResizeObserver`
+on the header now re-frames whenever its size changes.
+
+`tests/unit/appClip.test.ts` and `tests/e2e/appClip.spec.ts` pin the page's
+half, faking the native flag and message handler as `haptics.spec.ts` fakes the
+Capacitor bridge; the overlay itself is Apple's and needs the Simulator or a
+device to see.
