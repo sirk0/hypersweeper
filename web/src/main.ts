@@ -1104,18 +1104,23 @@ class App {
     const session = this.session;
     if (!session || this.scored || session.status !== "won") return;
     this.scored = true;
-    const placed = recordTime(session.mode, session.difficulty, session.elapsedMs());
+    // A clip files no time and puts up no card. Its storage goes with it, so
+    // a "best time" there is one that is never kept, and it earns nothing
+    // (`countWin`); the win is only the moment the native side offers the full
+    // game, at the beat the card would have opened on. The smiley plays again.
+    const placed = this.clip
+      ? null
+      : recordTime(session.mode, session.difficulty, session.elapsedMs());
     // A time that did not place used to end the win in silence. It still does
     // when nothing was unlocked; when something was, that is worth a card of
     // its own — see the note at the top of ui/scoreDialog.ts.
-    // A clip always says so: the card is its one way to play again, and the
-    // moment the native side offers the full game.
     if (!placed && this.unlocked.length === 0 && !this.clip) return;
     const open = (): void => {
       this.scoreDialogTimer = 0;
       // The board can have been left or restarted during the delay.
       if (this.screen !== "game" || this.session !== session) return;
-      this.showScoreDialog(session, placed?.rank ?? null, placed?.entries ?? []);
+      if (this.clip) tellClip("won");
+      else this.showScoreDialog(session, placed?.rank ?? null, placed?.entries ?? []);
     };
     if (this.animationsEnabled) {
       this.scoreDialogTimer = window.setTimeout(open, RECORD_DIALOG_DELAY_MS);
@@ -1135,7 +1140,6 @@ class App {
     // the card's voice. With animations on, the win figure has finished by the
     // time the card opens; with them off the two land together, which the
     // collection they share makes consonant (audio/sound.ts).
-    if (this.clip) tellClip("won");
     if (this.unlocked.length > 0) {
       haptic("unlock");
       playSound({ kind: "unlock", count: this.unlocked.length });
@@ -1145,7 +1149,6 @@ class App {
       difficulty: session.difficulty,
       rank,
       entries,
-      ms: session.elapsedMs(),
       unlocked: this.unlocked,
       animate: this.animationsEnabled,
       // A board the player chose highlights playing it again; one the game
@@ -1158,12 +1161,11 @@ class App {
         }),
       // The same move the header's die makes, from the card that is up when a
       // board is finished rather than from the row over one being played.
-      // A clip is one board, so its card asks nothing but whether to go again.
-      ...(this.clip ? {} : { onNewBoard: () => this.startRandomBoard() }),
+      onNewBoard: () => this.startRandomBoard(),
       // The card is where a player is thinking about achievements, so it is
       // where the way to the whole list belongs. Leaving the board is the same
       // move Menu makes — the card is about a board that is finished.
-      ...(this.clip ? {} : { onShowAll: () => this.showAchievements() }),
+      onShowAll: () => this.showAchievements(),
       // The win's time goes with the link — the card is about the time, so the
       // message someone receives should say it too. A board with no seed (the
       // test seam) has no link, and gets no button.

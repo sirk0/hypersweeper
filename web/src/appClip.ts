@@ -9,8 +9,8 @@ import { hasMode } from "./boards/presets";
 // difference, and one bundle serves the app and the clip.
 //
 // In a clip the game is that board and only it: no menu, no way home, no die
-// for another board, no achievements, and a win card whose one answer is to
-// play it again. Finishing is also the moment the clip offers the full game,
+// for another board, no achievements, no best times and no win card — the
+// smiley plays it again. Finishing is the moment the clip offers the full game,
 // which the native side does (an `SKOverlay`) when the page tells it a board
 // was won.
 

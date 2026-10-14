@@ -251,10 +251,10 @@ What makes the game a clip is the shell, not the build. `ClipBridgeViewControlle
 - sets `window.hypersweeperClip` to the board, read from `HypersweeperClipBoard`
   in `AppClip/Info.plist` — **that key is the one place to change the board**.
   The page then opens it at once, hides the header's back and random buttons,
-  earns no achievements, and ends every win on a card whose one answer is Play
-  again ("The App Clip" in [`web/docs/ui.md`](../web/docs/ui.md));
+  records no achievements or best times, and puts no card up on a win ("The
+  App Clip" in [`web/docs/ui.md`](../web/docs/ui.md));
 - offers the full game: the page posts `won` to the `hypersweeperClip` message
-  handler when the win card opens, and the clip shows Apple's App Clip
+  handler when a board is won, and the clip shows Apple's App Clip
   `SKOverlay`; the next board posts `started`, which dismisses it.
 
 `ClipAppDelegate` replaces the app's delegate, most of which is the Mac menu

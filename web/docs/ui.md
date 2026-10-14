@@ -1181,15 +1181,16 @@ mode, and everything a clip does differently hangs off it:
   screen's centre. A vacant slot moves to its cluster's inner end, so the flag
   and the ⓘ that are left sit in the two corners, mirroring each other. `onAction` refuses `menu` and `random` anyway, and the
   native Settings and How to Play commands are ignored.
-- **It earns nothing.** `countWin` returns before `recordWin`, so a clip never
-  writes `ms:achievements`; a clip's storage is wiped with it and would never
-  reach the app it is a taste of. Best times still file, since they are about
-  this board.
-- **Every win puts the card up**, with **Play again** alone — no New board, no
-  unlock list. It is the clip's only way to go again besides the smiley, so a
-  time that did not place still gets one: titled "Board cleared", with the time
-  under the board's name (`ms`, `.dialog-time`).
-- **The win is when the full game is offered.** As the card opens,
+- **It earns nothing and records nothing.** `countWin` returns before
+  `recordWin`, and `checkRecord` skips `recordTime`, so a clip writes neither
+  `ms:achievements` nor `ms:scores`; a clip's storage is wiped with it and would
+  never reach the app it is a taste of, so a "best time" it showed would be one
+  it never kept.
+- **A win puts no card up.** With nothing recorded there is nothing for the
+  card to say, so `checkRecord` never opens it in a clip; the smiley is the way
+  to go again.
+- **The win is when the full game is offered.** At the beat the card would
+  have opened on (`RECORD_DIALOG_DELAY_MS`, or at once with animations off),
   `tellClip("won")` posts to the `hypersweeperClip` message handler and the
   native side puts up Apple's App Clip `SKOverlay`; the next board
   (`tellClip("started")` from `startGame`) takes it down.

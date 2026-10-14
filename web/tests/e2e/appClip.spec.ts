@@ -107,39 +107,21 @@ test("menu-bar commands that lead home do nothing", async ({ page }) => {
   expect((await page.evaluate(() => window.__ms!.state())).screen).toBe("game");
 });
 
-test("a win offers Play again and nothing else, and unlocks nothing", async ({ page }) => {
+test("a win puts no card up, records nothing, and offers the full game", async ({ page }) => {
   await bootClip(page);
   await winClipBoard(page);
-  await expect(dialog(page)).toBeVisible();
-  await expect(page.locator(".dialog-actions button")).toHaveCount(1);
-  await expect(page.locator(".dialog-actions button")).toHaveText("Play again");
-  await expect(page.locator(".dialog-unlocks")).toHaveCount(0);
-  expect(await page.evaluate(() => localStorage.getItem("ms:achievements"))).toBeNull();
   // The win is what the native side offers the full game on.
-  expect(await posts(page)).toContain("won");
-
-  await page.locator(".dialog-actions button").click();
+  await expect.poll(() => posts(page)).toContain("won");
   await expect(dialog(page)).toHaveCount(0);
+  expect(await page.evaluate(() => localStorage.getItem("ms:achievements"))).toBeNull();
+  expect(await page.evaluate(() => localStorage.getItem("ms:scores"))).toBeNull();
+
+  // The smiley is the way to go again, and the next board takes the offer down.
+  await page.locator(".hud-smiley").click();
   const state = await page.evaluate(() => window.__ms!.state());
   expect(state.mode).toBe(BOARD);
   expect(state.status).toBe("playing");
   expect((await posts(page))!.at(-1)).toBe("started");
-});
-
-test("a win that sets no record still gets a card, with its time", async ({ page }) => {
-  await page.addInitScript((board) => {
-    const fast = [1, 2, 3].map((ms) => ({ ms, at: 1 }));
-    localStorage.setItem(
-      "ms:scores",
-      JSON.stringify({ version: 1, boards: { [`${board}|easy`]: fast } }),
-    );
-  }, BOARD);
-  await bootClip(page);
-  await winClipBoard(page);
-  await expect(dialog(page)).toBeVisible();
-  await expect(page.locator("#score-dialog-title")).toHaveText("Board cleared");
-  await expect(page.locator(".dialog-time")).toHaveText(/^\d+ s$/);
-  await expect(page.locator(".score-list")).toHaveCount(0);
 });
 
 test("a board this build does not have opens the menu instead", async ({ page }) => {

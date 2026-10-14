@@ -8,11 +8,11 @@ import StoreKit
 ///
 /// - It names the one board the clip plays, `window.hypersweeperClip`, before
 ///   any script runs. The page reads it in `web/src/appClip.ts`: it opens that
-///   board straight away, hides the header's back and random buttons, earns no
-///   achievements, and ends a win on a card whose only answer is Play again.
+///   board straight away, hides the header's back and random buttons, records
+///   no achievements or best times, and puts no card up on a win.
 ///   The board is `HypersweeperClipBoard` in the clip's Info.plist.
 /// - It offers the full game. The page posts `won` to the `hypersweeperClip`
-///   message handler when the win card opens, and this puts up the App Clip
+///   message handler when a board is won, and this puts up the App Clip
 ///   `SKOverlay`, Apple's banner for getting the full app; `started` (the next
 ///   board) takes it down again.
 class ClipBridgeViewController: BridgeViewController, WKScriptMessageHandler {
