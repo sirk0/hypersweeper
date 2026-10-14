@@ -48,12 +48,16 @@ describe("app icons", () => {
     const settings = (key: string): string[] =>
       [...PBXPROJ.matchAll(new RegExp(`${key} = "?([^";]*)"?;`, "g"))].map((m) => m[1]!);
     // Debug and Release of the app and of its App Clip (ios/App/AppClip), and
-    // all four must say the same: the clip wears the app's primary icon.
+    // all four must say the same: the clip wears the app's primary icon. The
+    // sticker pack's two (ios/App/Stickers) name its own iMessage icon set,
+    // drawn from that same primary document (scripts/make-stickers.mts).
     expect(settings("ASSETCATALOG_COMPILER_APPICON_NAME")).toEqual([
       primary,
       primary,
       primary,
       primary,
+      "iMessage App Icon",
+      "iMessage App Icon",
     ]);
     const alternates = APP_ICONS.filter((i) => i.key !== DEFAULT_APP_ICON)
       .map((i) => i.bundle)

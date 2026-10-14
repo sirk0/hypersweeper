@@ -34,6 +34,7 @@ carries over.
 | The offline macOS app | [`desktop/README.md`](desktop/README.md) |
 | The iPhone app, and haptics | [`ios/README.md`](ios/README.md) |
 | The App Clip (one board, from the App Store) | "The App Clip" in [`ios/README.md`](ios/README.md), and in [`web/docs/ui.md`](web/docs/ui.md) |
+| The iMessage sticker pack (the boards as stickers) | "The sticker pack" in [`ios/README.md`](ios/README.md); rendered by `web/scripts/make-stickers.mts` |
 | Uploading to App Store Connect / TestFlight (`app-store.yml`, run by hand) | "Releasing" in [`ios/README.md`](ios/README.md) |
 | The public privacy policy (`/privacy`) | "The privacy policy" in [`web/docs/deploy.md`](web/docs/deploy.md) |
 

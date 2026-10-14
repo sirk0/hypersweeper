@@ -8,7 +8,7 @@ WEB_OUT = $(WEB_STAGE)/build/web
         metrics dashboards-check web-prepare web-package web-run clean \
         mac-app mac-app-dmg desktop-install desktop-build desktop-run \
         desktop-test desktop-smoke desktop-icon \
-        ios-app ios-run ios-prepare ios-install ios-icon
+        ios-app ios-run ios-prepare ios-install ios-icon ios-stickers
 
 help:            ## list available targets
 	@grep -E '^[a-z0-9-]+:.*##' $(MAKEFILE_LIST) | sed 's/:.*##/ -/' | sort
@@ -133,6 +133,9 @@ ios-install:     ## install the Capacitor tooling (it lives in web/)
 
 ios-icon:        ## regenerate the app icons and launch image from the vector source (macOS + Xcode)
 	cd web && npm run icons
+
+ios-stickers:    ## render the iMessage sticker pack from the game's boards (SWIFTSHADER=1 with no GPU)
+	cd web && npm run stickers
 
 clean:           ## remove build artifacts
 	rm -rf build desktop/app ios/App/App/public

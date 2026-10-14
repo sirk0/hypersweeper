@@ -1,0 +1,47 @@
+{
+  "info": {
+    "author": "xcode",
+    "version": 1
+  },
+  "properties": {
+    "grid-size": "large"
+  },
+  "stickers": [
+    {
+      "filename": "klein.sticker"
+    },
+    {
+      "filename": "trefoil.sticker"
+    },
+    {
+      "filename": "mobius.sticker"
+    },
+    {
+      "filename": "double-torus.sticker"
+    },
+    {
+      "filename": "torus.sticker"
+    },
+    {
+      "filename": "projective-plane.sticker"
+    },
+    {
+      "filename": "chamfered-dodecahedron.sticker"
+    },
+    {
+      "filename": "cube.sticker"
+    },
+    {
+      "filename": "tetrahedron.sticker"
+    },
+    {
+      "filename": "hyperbolic.sticker"
+    },
+    {
+      "filename": "penrose.sticker"
+    },
+    {
+      "filename": "klein-boom.sticker"
+    }
+  ]
+}
