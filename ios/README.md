@@ -349,7 +349,11 @@ Game Center has to be told about; the app does not report anything yet.
 - `images/<Achievement ID>.png`: 1024 px squares, RGB with no alpha, which is
   what App Store Connect accepts. Each is the achievement's in-game badge in the
   default theme, on the app icon's cream ground, kept inside the inscribed
-  circle so a round crop loses nothing.
+  circle so a round crop loses nothing. In the game an achievement and its
+  "complete" partner share a badge; Game Center shows the images alone, so
+  every "win all of a group" image adds a sage ring (the theme's icon ink), and
+  the whole catalogue's ring is the theme's terracotta accent. The manifest's
+  `ring` field says which each one has.
 
 Regenerate both with `npm run gamecenter` in `web/` (headless Chromium draws
 the images; `MANIFEST_ONLY=1` writes just the list, with no browser). A unit

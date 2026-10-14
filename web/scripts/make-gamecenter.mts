@@ -15,6 +15,12 @@
 // PNG with no alpha channel at all. The badge is kept well inside the square's
 // inscribed circle, so a round crop loses none of it.
 //
+// A "win all of a group" achievement has the same badge as its "win any one"
+// partner, so its image adds a ring around the badge: the default theme's icon
+// ink, the sage its non-tile badges are drawn in. The whole catalogue's ring is
+// the theme's accent, so the top achievement stands apart from the twenty-five
+// group completions.
+//
 // Headless Chromium draws the SVG; PLAYWRIGHT_CHROMIUM_EXECUTABLE points it at
 // a browser of your own.
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -26,11 +32,27 @@ import { chromium } from "@playwright/test";
 
 import { DEFAULT_THEME, theme } from "../src/ui/theme";
 import { menuIcon, setIconPalette } from "../src/ui/icons";
-import { GAME_CENTER_DIR, IMAGE_PX, MANIFEST_PATH, buildManifest, imagePath, manifestJson } from "./gamecenter-lib";
+import {
+  GAME_CENTER_DIR,
+  IMAGE_PX,
+  MANIFEST_PATH,
+  buildManifest,
+  imagePath,
+  manifestJson,
+  type Ring,
+} from "./gamecenter-lib";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const screens = JSON.parse(readFileSync(path.resolve(HERE, "../../data/ui/screens.json"), "utf8"));
 const GROUND: string = screens.themes[DEFAULT_THEME].background;
+const RING_COLOURS: Record<Ring, string> = {
+  complete: theme(DEFAULT_THEME).icons?.plain?.dark ?? "#56633f",
+  catalogue: screens.themes[DEFAULT_THEME].accent,
+};
+/** The ring's centre line and stroke, in px. It sits between the badge's
+ * reach (437) and the circle a round crop keeps (512): 452 to 492. */
+const RING_RADIUS = 472;
+const RING_WIDTH = 40;
 
 /** How wide the badge's 100-unit box is drawn. A tile badge's corners reach
  * about 56 units from the centre (a square's), which this keeps at 437 px —
@@ -91,7 +113,7 @@ if (!process.env.MANIFEST_ONLY) {
     for (const a of manifest.achievements) {
       const svg = standalone(menuIcon(a.icon));
       const base64 = await page.evaluate(
-        async ({ svg, size, badge, ground }) => {
+        async ({ svg, size, badge, ground, ring }) => {
           const img = new Image();
           img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
           await img.decode();
@@ -102,6 +124,13 @@ if (!process.env.MANIFEST_ONLY) {
           ctx.fillRect(0, 0, size, size);
           const off = (size - badge) / 2;
           ctx.drawImage(img, off, off, badge, badge);
+          if (ring) {
+            ctx.strokeStyle = ring.colour;
+            ctx.lineWidth = ring.width;
+            ctx.beginPath();
+            ctx.arc(size / 2, size / 2, ring.radius, 0, Math.PI * 2);
+            ctx.stroke();
+          }
           const pixels = ctx.getImageData(0, 0, size, size).data;
           const url = await new Promise<string>((done) => {
             const reader = new FileReader();
@@ -110,7 +139,13 @@ if (!process.env.MANIFEST_ONLY) {
           });
           return url.slice(url.indexOf(",") + 1);
         },
-        { svg, size: IMAGE_PX, badge: BADGE_PX, ground: GROUND },
+        {
+          svg,
+          size: IMAGE_PX,
+          badge: BADGE_PX,
+          ground: GROUND,
+          ring: a.ring && { colour: RING_COLOURS[a.ring], radius: RING_RADIUS, width: RING_WIDTH },
+        },
       );
       const png = encodePng(Buffer.from(base64, "base64"), IMAGE_PX, IMAGE_PX);
       writeFileSync(path.join(GAME_CENTER_DIR, imagePath(a.vendorIdentifier)), png);

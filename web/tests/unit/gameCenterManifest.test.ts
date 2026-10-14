@@ -44,6 +44,18 @@ describe("the committed Game Center list", () => {
     expect(new Set(titles).size).toBe(titles.length);
   });
 
+  it("rings every group completion, and the whole catalogue apart", () => {
+    // A completion shares its badge with its "win any one" partner; the ring is
+    // what tells the two images apart.
+    const { achievements } = buildManifest();
+    const rings = new Map(achievements.map((a) => [a.referenceName, a.ring]));
+    for (const [id, ring] of rings) {
+      const expected = id === "all-boards" ? "catalogue" : /^[a-z]+-all:/.test(id) ? "complete" : null;
+      expect(ring, id).toBe(expected);
+    }
+    expect([...rings.values()].filter((r) => r === "complete")).toHaveLength(25);
+  });
+
   it("has a 1024 px RGB image for each achievement, and no others", () => {
     const { achievements } = buildManifest();
     const named = new Set<string>();

@@ -19,7 +19,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { GAME_CENTER_ACHIEVEMENTS } from "../src/achievements";
+import { ACHIEVEMENTS_BY_ID, GAME_CENTER_ACHIEVEMENTS } from "../src/achievements";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 
@@ -40,6 +40,20 @@ export interface ManifestLocalization {
   image: string;
 }
 
+/** A ring drawn around an image's badge. In the game an achievement and its
+ * "complete" partner share one badge, and the list beside it says which is
+ * which; Game Center shows the images on their own, where the pair would read
+ * as a duplicate. So every "win all of a group" achievement wears a ring, and
+ * the whole catalogue a ring of another colour. */
+export type Ring = "complete" | "catalogue";
+
+function ringOf(id: string): Ring | null {
+  const a = ACHIEVEMENTS_BY_ID.get(id);
+  if (!a) return null;
+  if (a.group === "grand") return "catalogue";
+  return id.startsWith(`${a.group}-all:`) ? "complete" : null;
+}
+
 export interface ManifestAchievement {
   /** The Achievement ID. Permanent once created. */
   vendorIdentifier: string;
@@ -54,6 +68,8 @@ export interface ManifestAchievement {
   localizations: Record<string, ManifestLocalization>;
   /** The `ui/icons.ts` key the image is drawn from. */
   icon: string;
+  /** The ring around it, if any. */
+  ring: Ring | null;
 }
 
 export interface Manifest {
@@ -84,6 +100,7 @@ export function buildManifest(): Manifest {
         },
       },
       icon: a.icon,
+      ring: ringOf(a.id),
     }),
   );
   return {
