@@ -39,7 +39,7 @@ test.describe("M3 surfaces", () => {
   // cell borders a mine, so nothing cascades and the game stays in progress),
   // and return a currently front-facing revealed cell with its screen position.
   async function revealedTarget(page: import("@playwright/test").Page) {
-    return page.evaluate(() => {
+    const revealed = await page.evaluate(() => {
       const ms = window.__ms!;
       ms.startBoard("klein", "easy"); // enumerate the cells first
       const cells = ms.cells();
@@ -50,12 +50,19 @@ test.describe("M3 surfaces", () => {
       ms.startBoard("klein", "easy", { mines });
       const revealed = safe.slice(0, 6);
       for (const c of revealed) ms.reveal(c);
-      const state = ms.state();
+      return revealed;
+    });
+    // Screen positions are only meaningful once the new board has drawn.
+    await page.evaluate(
+      () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
+    );
+    return page.evaluate((revealed) => {
+      const ms = window.__ms!;
       const front = revealed
         .map((c) => ({ cell: c, xy: ms.cellScreenXY(c) }))
         .find((x) => x.xy != null);
-      return { target: front ?? null, state };
-    });
+      return { target: front ?? null, state: ms.state() };
+    }, revealed);
   }
 
   test("Klein scroll walks a revealed cell to a new position, game state intact", async ({ page }) => {
@@ -104,9 +111,11 @@ test.describe("M3 surfaces", () => {
     // wherever either of its two faces is: from any one side nearly every cell
     // shows, where a sphere shows under half. And a tap on either face is a tap
     // on the cell — picking goes through the same face -> cell map the state
-    // is painted by.
+    // is painted by. On Easy, whose cells are the widest: there a face can sit
+    // all but edge-on on the rim, where its centre is no point to tap.
     await page.goto("/");
     await expect(page.locator("body[data-ready]")).toBeVisible();
+    await page.locator('.difficulty-btn[data-key="easy"]').click();
     await page.locator('.menu-entry[data-group="manifolds"]').click();
     await page.locator('.menu-entry[data-surface="projective"]').click();
     await page.locator('.menu-entry[data-mode="projectivehex"]').click();

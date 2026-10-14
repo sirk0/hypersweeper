@@ -21,9 +21,8 @@ interface Seen {
 }
 
 /** The cells whose own centre picks them back — the ones a player can see and
- * aim at. A two-sided surface culls nothing, so `cellScreenXY` reports
- * positions for cells hidden behind the immersion too, and this round trip is
- * what filters them out. */
+ * aim at. `cellScreenXY` already answers only those; the round trip keeps
+ * this helper from leaning on that. */
 async function visibleCells(page: Page, mode: string): Promise<Seen[]> {
   await page.evaluate((mode) => window.__ms!.startBoard(mode, "easy"), mode);
   // A board's world transform lands when it renders; measuring in the same

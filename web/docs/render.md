@@ -97,10 +97,15 @@ Two traps live here:
   keyboard, which no pointer event precedes, still uses its own coordinates.
   Nothing else picks from a MouseEvent — a tap picks at `pointerdown`, which is
   a PointerEvent and so already agrees with the highlight.
-- **`cellScreenXY` is not the inverse of `cellAtScreenXY`** on a two-sided
-  surface. Nothing is culled there, so it reports a position for a cell hidden
-  behind the immersion too; round-trip through `cellAtScreenXY` when a test
-  needs a cell that is genuinely on top (`tests/e2e/picking.spec.ts` does).
+- **`cellScreenXY` reports only a point a tap lands on.** Facing the camera is
+  not enough: a closed solid's anchor is the apex of the raised top's fan, so
+  a face seen near edge-on has it on the silhouette, where a ray grazes past
+  everything (the projective plane's rim on Easy, at 89.6° off the view; a
+  wide Easy torus cell, whose curved top tilts a fan triangle away, at 78°).
+  A knot, a torus or a frame can put a nearer part of itself in front, and a
+  two-sided surface culls nothing. So the seam raycasts its own anchor and
+  answers `null` unless it lands back on that face. The cell itself stays
+  tappable over the rest of its drawn strip: picking matches the drawing.
 
 What is *not* a bug: a pick on the far sheet where the near one does not cover
 it — the open ends of a cylinder show the inside of the far wall, and the Klein

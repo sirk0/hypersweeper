@@ -161,18 +161,19 @@ Practical knowledge for verifying changes by actually running the app
 - **The `window.__ms` seam** is the way in: `cells()`, `startBoard(mode,
   difficulty, {mines|seed})`, `reveal/flag/chord(cell)`, `rotate(dx, dy)`
   (drag-pixels), `state()`. On 3D boards `cellScreenXY(cell)` returns
-  `null` for cells facing away — filter for a visible cell instead of
-  indexing blindly. `cellAtScreenXY(x, y)` is its inverse (the same raycast
-  a tap runs), so a test can assert *which* cell a gesture landed on.
+  `null` for a cell no tap could reach from its centre — facing away, behind
+  a nearer part of the board, or seen so nearly edge-on that its centre is on
+  the rim — so filter for a visible cell instead of indexing blindly.
+  `cellAtScreenXY(x, y)` is its inverse (the same raycast a tap runs), so a
+  test can assert *which* cell a gesture landed on.
 - **Screen positions need a rendered frame**: the board's world transform is
   applied when it renders, so `cellScreenXY` / `cellAtScreenXY` called in the
   same `page.evaluate` as `startBoard` read stale matrices and answer with
   cells from all over the board. Split the setup and the measurement across
   two round-trips, with an `await page.evaluate(() => new Promise((r) =>
-  requestAnimationFrame(() => requestAnimationFrame(r))))` between them. A
-  two-sided surface never culls, so `cellScreenXY` also reports positions for
-  cells hidden behind the immersion — round-trip through `cellAtScreenXY` when
-  the test needs a cell that is genuinely on top.
+  requestAnimationFrame(() => requestAnimationFrame(r))))` between them.
+  Measured too early, `cellScreenXY` answers `null` for nearly every cell,
+  since it only reports a position its own raycast lands back on.
 - **Flood-fill eats sparse fixtures**: on a closed surface a reveal floods
   around the whole solid past a thin mine wall, instantly winning the game
   (auto-flagging every mine). To stage a mixed hidden/revealed screenshot,

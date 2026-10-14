@@ -1179,8 +1179,10 @@ class App {
 
   // -- test seam -------------------------------------------------------------
 
-  /** Screen coords of a cell's centre, or null when the cell currently faces
-   * away from the camera (3D boards) — tests pick a visible cell instead. */
+  /** Screen coords of a cell's centre, or null when a tap there would not land
+   * on the cell: it faces away from the camera, something nearer covers it, or
+   * it is seen so nearly edge-on that its centre is on the rim (3D boards) —
+   * tests pick a visible cell instead. */
   private cellScreenXY(cell: CellId): { x: number; y: number } | null {
     if (!this.session) return null;
     const mesh = this.session.mesh;
@@ -1191,18 +1193,32 @@ class App {
     for (const face of this.session.facesFor(cell)) {
       const anchor = mesh.cellAnchor(face);
       if (!anchor) continue;
-      mesh.updateWorldMatrix(true, false);
+      // Children too: the raycast below reads the tile and grout meshes' own
+      // matrices, which otherwise lag a rotation until the next frame.
+      mesh.updateWorldMatrix(true, true);
       const world = new Vector3(...anchor.center).applyMatrix4(mesh.matrixWorld);
       const camera = this.renderer.camera;
       const board = this.session.board;
-      // A closed solid hides a cell that faces away; a two-sided surface shows
-      // its cells from both faces, so it is never culled here.
+      // A closed solid hides a cell that faces away (a cheap test that spares
+      // the raycast below); a two-sided surface shows its cells from both
+      // faces, so only the raycast can tell.
       if (this.session.is3d && !(isBoard3D(board) && board.twoSided)) {
         const normal = new Vector3(...anchor.normal).transformDirection(mesh.matrixWorld);
         const toCamera = camera.position.clone().sub(world);
         if (normal.dot(toCamera) <= 1e-6) continue; // back-facing
       }
       const ndc = world.project(camera);
+      // Facing the camera is not enough. On a closed solid the anchor is the
+      // apex of the raised top's fan, so on a face seen near edge-on it sits on
+      // the silhouette and a ray through it grazes past everything: the
+      // projective plane's rim on Easy (89.6° off the view), or a wide Easy
+      // torus cell whose curved top tilts a fan triangle away (78° off). A
+      // knot, a torus or a frame can also put a nearer part of itself in
+      // front, and a two-sided surface culls nothing at all. The cell is still
+      // tappable over the rest of its drawn strip — picking agrees with the
+      // drawing — so the anchor counts only where the raycast a tap runs lands
+      // back on this very face.
+      if (this.renderer.pick(new Vector2(ndc.x, ndc.y)) !== face) continue;
       const r = this.canvas.getBoundingClientRect();
       return {
         x: r.left + ((ndc.x + 1) / 2) * r.width,
