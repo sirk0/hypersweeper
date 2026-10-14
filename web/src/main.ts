@@ -76,6 +76,11 @@ const ZOOM_KEY_STEP = 1.3;
  * them off. */
 const RECORD_DIALOG_DELAY_MS = 1100;
 
+/** The test seam's cut-off for a cell that faces the camera: the cosine
+ * between the face normal and the direction to the camera must be above
+ * this (about 0.3° from edge-on). See `cellScreenXY`. */
+const EDGE_ON_COS = 0.005;
+
 // App bootstrap: menu launches a ported board; deep links start one directly;
 // input drives reveal/flag/chord (and, on 3D boards, drag/arrow-key rotation)
 // through the GameSession; the HUD and menu render from the shared UI-screen
@@ -1196,11 +1201,15 @@ class App {
       const camera = this.renderer.camera;
       const board = this.session.board;
       // A closed solid hides a cell that faces away; a two-sided surface shows
-      // its cells from both faces, so it is never culled here.
+      // its cells from both faces, so it is never culled here. A face seen
+      // edge-on counts as facing away too: it covers no pixels to tap, and a
+      // ray aimed at its centre grazes the plane, so whether the pick finds it
+      // comes down to rounding. Edge-on faces on the silhouette sit at a
+      // cosine of 0.003 or less; a face with any visible area is at 0.009 or more.
       if (this.session.is3d && !(isBoard3D(board) && board.twoSided)) {
         const normal = new Vector3(...anchor.normal).transformDirection(mesh.matrixWorld);
-        const toCamera = camera.position.clone().sub(world);
-        if (normal.dot(toCamera) <= 1e-6) continue; // back-facing
+        const toCamera = camera.position.clone().sub(world).normalize();
+        if (normal.dot(toCamera) <= EDGE_ON_COS) continue; // back-facing or edge-on
       }
       const ndc = world.project(camera);
       const r = this.canvas.getBoundingClientRect();

@@ -161,8 +161,9 @@ Practical knowledge for verifying changes by actually running the app
 - **The `window.__ms` seam** is the way in: `cells()`, `startBoard(mode,
   difficulty, {mines|seed})`, `reveal/flag/chord(cell)`, `rotate(dx, dy)`
   (drag-pixels), `state()`. On 3D boards `cellScreenXY(cell)` returns
-  `null` for cells facing away — filter for a visible cell instead of
-  indexing blindly. `cellAtScreenXY(x, y)` is its inverse (the same raycast
+  `null` for cells facing away, and for cells seen edge-on on the
+  silhouette (`EDGE_ON_COS` in `main.ts`) — filter for a visible cell
+  instead of indexing blindly. `cellAtScreenXY(x, y)` is its inverse (the same raycast
   a tap runs), so a test can assert *which* cell a gesture landed on.
 - **Screen positions need a rendered frame**: the board's world transform is
   applied when it renders, so `cellScreenXY` / `cellAtScreenXY` called in the
