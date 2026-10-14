@@ -592,7 +592,7 @@ changes a cell's vertex layout, and the argument for each is independent of the
 argument for a textured page — so each is a setting that overrides whatever the
 composed style says, either way.
 
-- **Glossy tiles** is off by default, so the board ships matte. What it covers
+- **Glossy tiles** is on by default, so the board ships polished. What it covers
   is the polished *reading*, both halves of it: the specular finish a solid
   catches a sweeping highlight with, and the bright-centre-to-dark-rim gradient
   that is the only thing saying "polished" on a flat board lit head-on. Turning

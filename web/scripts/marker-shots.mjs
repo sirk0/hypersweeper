@@ -48,7 +48,7 @@ async function open(mode, shape = "realistic") {
   await ctx.addInitScript((sh) => {
     localStorage.setItem(
       "ms:settings",
-      JSON.stringify({ version: 5, theme: "bright", shape: sh }),
+      JSON.stringify({ version: 5, gloss: false, theme: "bright", shape: sh }),
     );
   }, shape);
   const page = await ctx.newPage();
@@ -152,7 +152,7 @@ for (const mode of ["sphere", "mobius", "torusrhombille"]) {
   await ctx.addInitScript(() => {
     localStorage.setItem(
       "ms:settings",
-      JSON.stringify({ version: 5, theme: "bright", shape: "realistic", animations: true }),
+      JSON.stringify({ version: 5, gloss: false, theme: "bright", shape: "realistic", animations: true }),
     );
   });
   const page = await ctx.newPage();

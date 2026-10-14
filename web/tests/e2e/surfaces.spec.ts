@@ -104,9 +104,12 @@ test.describe("M3 surfaces", () => {
     // wherever either of its two faces is: from any one side nearly every cell
     // shows, where a sphere shows under half. And a tap on either face is a tap
     // on the cell — picking goes through the same face -> cell map the state
-    // is painted by.
+    // is painted by. Medium, the board this was written against, rather than
+    // the default: on Easy at this viewport the centres of two rim cells miss
+    // the pick ray altogether.
     await page.goto("/");
     await expect(page.locator("body[data-ready]")).toBeVisible();
+    await page.locator('.difficulty-btn[data-key="medium"]').click();
     await page.locator('.menu-entry[data-group="manifolds"]').click();
     await page.locator('.menu-entry[data-surface="projective"]').click();
     await page.locator('.menu-entry[data-mode="projectivehex"]').click();

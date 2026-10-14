@@ -511,7 +511,7 @@ test.describe("settings", () => {
     await page.locator('.menu-header-btn[data-action="settings"]').click();
     await expect(page.locator('.menu-entry[data-setting="gloss"]')).toHaveAttribute(
       "aria-checked",
-      "false",
+      "true",
     );
     await expect(page.locator('.menu-entry[data-setting="pins"]')).toHaveAttribute(
       "aria-checked",
@@ -552,7 +552,7 @@ test.describe("settings", () => {
     await page.locator('.menu-header-btn[data-action="settings"]').click();
     await expect(page.locator('.menu-entry[data-setting="gloss"]')).toHaveAttribute(
       "aria-checked",
-      "true",
+      "false",
     );
     await expect(page.locator('.menu-entry[data-setting="pins"]')).toHaveAttribute(
       "aria-checked",
@@ -711,13 +711,13 @@ test.describe("difficulty persistence", () => {
   test("the chosen difficulty survives a reload and launches boards", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator("body[data-ready]")).toBeVisible();
-    await expect(page.locator('.difficulty-btn[data-key="medium"]')).toHaveClass(/active/);
+    await expect(page.locator('.difficulty-btn[data-key="easy"]')).toHaveClass(/active/);
 
     await page.locator('.difficulty-btn[data-key="hard"]').click();
     await page.reload();
     await expect(page.locator("body[data-ready]")).toBeVisible();
     await expect(page.locator('.difficulty-btn[data-key="hard"]')).toHaveClass(/active/);
-    await expect(page.locator('.difficulty-btn[data-key="medium"]')).not.toHaveClass(/active/);
+    await expect(page.locator('.difficulty-btn[data-key="easy"]')).not.toHaveClass(/active/);
 
     await page.locator('.menu-entry[data-mode="square"]').click();
     const state = await page.evaluate(() => window.__ms?.state());
@@ -727,20 +727,20 @@ test.describe("difficulty persistence", () => {
   test("a deep link with no difficulty uses the stored one", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator("body[data-ready]")).toBeVisible();
-    await page.locator('.difficulty-btn[data-key="easy"]').click();
+    await page.locator('.difficulty-btn[data-key="hard"]').click();
 
     await page.goto("/?mode=hex");
     await expect(page.locator("body[data-ready]")).toBeVisible();
-    expect((await page.evaluate(() => window.__ms?.state()))?.difficulty).toBe("easy");
+    expect((await page.evaluate(() => window.__ms?.state()))?.difficulty).toBe("hard");
 
     // An explicit one in the link still wins, and does not overwrite the stored
     // preference.
-    await page.goto("/?mode=hex&difficulty=hard");
+    await page.goto("/?mode=hex&difficulty=medium");
     await expect(page.locator("body[data-ready]")).toBeVisible();
-    expect((await page.evaluate(() => window.__ms?.state()))?.difficulty).toBe("hard");
+    expect((await page.evaluate(() => window.__ms?.state()))?.difficulty).toBe("medium");
     await page.goto("/");
     await expect(page.locator("body[data-ready]")).toBeVisible();
-    await expect(page.locator('.difficulty-btn[data-key="easy"]')).toHaveClass(/active/);
+    await expect(page.locator('.difficulty-btn[data-key="hard"]')).toHaveClass(/active/);
   });
 });
 
@@ -805,17 +805,17 @@ test.describe("shareable board links", () => {
 
   test("a link to a board this build does not have opens the menu", async ({ page }) => {
     // The floret pentagonal is chiral: it has no Klein bottle wrap.
-    await page.goto("/?mode=kleinfloret&difficulty=easy");
+    await page.goto("/?mode=kleinfloret&difficulty=hard");
     await expect(page.locator("body[data-ready]")).toBeVisible();
 
     const state = await page.evaluate(() => window.__ms?.state());
     expect(state?.screen).toBe("menu");
     // The difficulty it did name is still read.
-    await expect(page.locator('.difficulty-btn[data-key="easy"]')).toHaveClass(/active/);
+    await expect(page.locator('.difficulty-btn[data-key="hard"]')).toHaveClass(/active/);
     // ...and the unusable one was not persisted as a preference.
     await page.goto("/");
     await expect(page.locator("body[data-ready]")).toBeVisible();
-    await expect(page.locator('.difficulty-btn[data-key="medium"]')).toHaveClass(/active/);
+    await expect(page.locator('.difficulty-btn[data-key="easy"]')).toHaveClass(/active/);
   });
 
   test("a mode named after an Object property is not a board", async ({ page }) => {
@@ -829,7 +829,7 @@ test.describe("shareable board links", () => {
     await expect(page.locator("body[data-ready]")).toBeVisible();
     const state = await page.evaluate(() => window.__ms?.state());
     expect(state?.mode).toBe("hex");
-    expect(state?.difficulty).toBe("medium"); // the stored default
+    expect(state?.difficulty).toBe("easy"); // the stored default
   });
 
   test("a seeded link reproduces the same board", async ({ page }) => {
