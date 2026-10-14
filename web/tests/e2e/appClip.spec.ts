@@ -36,7 +36,7 @@ async function winClipBoard(page: Page): Promise<void> {
   await page.evaluate((board) => {
     const hook = window.__ms!;
     const cells = hook.cells();
-    hook.startBoard(board, "medium", { mines: [cells[0]!] });
+    hook.startBoard(board, "easy", { mines: [cells[0]!] });
     for (const cell of cells.slice(1)) {
       if (hook.cellState(cell) === "hidden") hook.reveal(cell);
       if (hook.state().status !== "playing") break;
@@ -60,7 +60,7 @@ test("opens its board straight away, at the default difficulty", async ({ page }
   const state = await page.evaluate(() => window.__ms!.state());
   expect(state.screen).toBe("game");
   expect(state.mode).toBe(BOARD);
-  expect(state.difficulty).toBe("medium");
+  expect(state.difficulty).toBe("easy");
   await expect(page.locator(".menu")).toBeHidden();
 });
 
@@ -119,7 +119,7 @@ test("a win that sets no record still gets a card, with its time", async ({ page
     const fast = [1, 2, 3].map((ms) => ({ ms, at: 1 }));
     localStorage.setItem(
       "ms:scores",
-      JSON.stringify({ version: 1, boards: { [`${board}|medium`]: fast } }),
+      JSON.stringify({ version: 1, boards: { [`${board}|easy`]: fast } }),
     );
   }, BOARD);
   await bootClip(page);

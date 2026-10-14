@@ -145,22 +145,25 @@ Practical knowledge for verifying changes by actually running the app
   review a change to `src/ui/icons.ts` without walking the menu. Most icons
   are generated from the real board geometry, so a change to a tiling,
   a solid or a surface immersion shows up here too.
-- **App icon**: `node scripts/make-icons.mjs` (or `make desktop-icon` from the
-  repo root) writes every icon the app ships — `public/favicon.svg`, the two
-  PWA PNGs, the maskable and apple-touch ones, and `desktop/resources/icon.png`
-  for the macOS build — from one vector source in that script. Two parts of it
-  are quotations from the game and should stay in step with it: the plate and
-  pentagon are the Sand theme's ground and accent (`data/ui/screens.json` →
-  `themes.sand`), and the mine is `drawFlatMine()` from `render/glyphAtlas.ts`
-  transcribed to SVG at the same proportions. Rasterising is Chromium, so pass
-  `PLAYWRIGHT_CHROMIUM_EXECUTABLE` where the browser is not on the default
-  path. Review the result at *icon* sizes (16 px through the dock's 128), not
+- **App icons**: `npm run icons` (or `make desktop-icon` from the repo root;
+  macOS with Xcode only) writes every icon the app ships, one per entry in
+  `src/appIcon.ts` — the Icon Composer documents in `ios/App/App/*.icon`, then,
+  exported from those with Xcode's `ictool`, the favicons, the PWA, maskable
+  and apple-touch PNGs, `desktop/resources/icon.png` and the iOS launch image.
+  Two parts of it are quotations from the game and should stay in step with
+  it: each cell's colour is the Sand theme's colour for that shape (`iconHex`
+  at Sand's icon tint) on Sand's ground, and the mine is `drawFlatMine()` from
+  `render/glyphAtlas.ts` transcribed to SVG at the same proportions. Compositing
+  is Chromium, so pass `PLAYWRIGHT_CHROMIUM_EXECUTABLE` where the browser is
+  not on the default path. `ictool <doc>.icon --export-image …` (its `--help`
+  lists the renditions) renders a document's dark or tinted look for review. Review the result at *icon* sizes (16 px through the dock's 128), not
   at 512 — that is where a design either survives or turns to mud.
 - **The `window.__ms` seam** is the way in: `cells()`, `startBoard(mode,
   difficulty, {mines|seed})`, `reveal/flag/chord(cell)`, `rotate(dx, dy)`
   (drag-pixels), `state()`. On 3D boards `cellScreenXY(cell)` returns
-  `null` for cells facing away — filter for a visible cell instead of
-  indexing blindly. `cellAtScreenXY(x, y)` is its inverse (the same raycast
+  `null` for cells facing away, and for cells seen edge-on on the
+  silhouette (`EDGE_ON_COS` in `main.ts`) — filter for a visible cell
+  instead of indexing blindly. `cellAtScreenXY(x, y)` is its inverse (the same raycast
   a tap runs), so a test can assert *which* cell a gesture landed on.
 - **Screen positions need a rendered frame**: the board's world transform is
   applied when it renders, so `cellScreenXY` / `cellAtScreenXY` called in the

@@ -24,11 +24,17 @@
 		66295513311F0F93429703C9 /* capacitor.config.json in Resources */ = {isa = PBXBuildFile; fileRef = 50379B222058CBB4000EE86E /* capacitor.config.json */; };
 		81383E404338C827C3E26F26 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = B1E0A0012FF0000000000001 /* PrivacyInfo.xcprivacy */; };
 		8BAD1BB3B0F8F27B27726657 /* ClipAppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53FC4B4814D9AB086692F64C /* ClipAppDelegate.swift */; };
+		8F87F8A3B680004A2D775EE7 /* AppIconPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2A1E0072FF1000000000001 /* AppIconPlugin.swift */; };
 		9582B6852FE996820072D4E8 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9582B6842FE996800072D4E8 /* SceneDelegate.swift */; };
 		A084ECDBA7D38E1E42DFC39D /* Pods_App.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AF277DCFFFF123FFC6DF26C7 /* Pods_App.framework */; };
 		A1B2C3D42FE996900072D4E8 /* BridgeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D32FE996900072D4E8 /* BridgeViewController.swift */; };
+		A77559AF6B7804ADBFE8E637 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = C2A1E0012FF1000000000001 /* AppIcon.icon */; };
 		B1E0A0022FF0000000000001 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = B1E0A0012FF0000000000001 /* PrivacyInfo.xcprivacy */; };
 		B87F71822BF4CC675BFA71ED /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 504EC30E1FED79650016851F /* Assets.xcassets */; };
+		C2A1E0022FF1000000000001 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = C2A1E0012FF1000000000001 /* AppIcon.icon */; };
+		C2A1E0042FF1000000000001 /* AppIconHexagon.icon in Resources */ = {isa = PBXBuildFile; fileRef = C2A1E0032FF1000000000001 /* AppIconHexagon.icon */; };
+		C2A1E0062FF1000000000001 /* AppIconOctagon.icon in Resources */ = {isa = PBXBuildFile; fileRef = C2A1E0052FF1000000000001 /* AppIconOctagon.icon */; };
+		C2A1E0082FF1000000000001 /* AppIconPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2A1E0072FF1000000000001 /* AppIconPlugin.swift */; };
 		FB104A266143ED91A4DAE59E /* Pods_AppClip.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E89CA311C3F8F3D572D9A30E /* Pods_AppClip.framework */; };
 /* End PBXBuildFile section */
 
@@ -80,6 +86,10 @@
 		B1E0A0012FF0000000000001 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		B1E0A0032FF0000000000001 /* App.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = App.entitlements; sourceTree = "<group>"; };
 		B1E0A0042FF0000000000001 /* Version.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Version.xcconfig; sourceTree = "<group>"; };
+		C2A1E0012FF1000000000001 /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AppIcon.icon; sourceTree = "<group>"; };
+		C2A1E0032FF1000000000001 /* AppIconHexagon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AppIconHexagon.icon; sourceTree = "<group>"; };
+		C2A1E0052FF1000000000001 /* AppIconOctagon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AppIconOctagon.icon; sourceTree = "<group>"; };
+		C2A1E0072FF1000000000001 /* AppIconPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIconPlugin.swift; sourceTree = "<group>"; };
 		E89CA311C3F8F3D572D9A30E /* Pods_AppClip.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_AppClip.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		F4814435CDD5547B7D5D39F8 /* AppClip.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = AppClip.entitlements; sourceTree = "<group>"; };
 		FC68EB0AF532CFC21C3344DD /* Pods-App.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-App.debug.xcconfig"; path = "Pods/Target Support Files/Pods-App/Pods-App.debug.xcconfig"; sourceTree = "<group>"; };
@@ -143,8 +153,12 @@
 				504EC3071FED79650016851F /* AppDelegate.swift */,
 				9582B6842FE996800072D4E8 /* SceneDelegate.swift */,
 				A1B2C3D32FE996900072D4E8 /* BridgeViewController.swift */,
+				C2A1E0072FF1000000000001 /* AppIconPlugin.swift */,
 				504EC30B1FED79650016851F /* Main.storyboard */,
 				504EC30E1FED79650016851F /* Assets.xcassets */,
+				C2A1E0012FF1000000000001 /* AppIcon.icon */,
+				C2A1E0032FF1000000000001 /* AppIconHexagon.icon */,
+				C2A1E0052FF1000000000001 /* AppIconOctagon.icon */,
 				504EC3101FED79650016851F /* LaunchScreen.storyboard */,
 				504EC3131FED79650016851F /* Info.plist */,
 				B1E0A0012FF0000000000001 /* PrivacyInfo.xcprivacy */,
@@ -270,6 +284,9 @@
 				504EC3121FED79650016851F /* LaunchScreen.storyboard in Resources */,
 				50B271D11FEDC1A000F3C39B /* public in Resources */,
 				504EC30F1FED79650016851F /* Assets.xcassets in Resources */,
+				C2A1E0022FF1000000000001 /* AppIcon.icon in Resources */,
+				C2A1E0042FF1000000000001 /* AppIconHexagon.icon in Resources */,
+				C2A1E0062FF1000000000001 /* AppIconOctagon.icon in Resources */,
 				50379B232058CBB4000EE86E /* capacitor.config.json in Resources */,
 				504EC30D1FED79650016851F /* Main.storyboard in Resources */,
 				2FAD9763203C412B000D30F8 /* config.xml in Resources */,
@@ -287,6 +304,7 @@
 				B87F71822BF4CC675BFA71ED /* Assets.xcassets in Resources */,
 				4CE61FE08708AEFC38B9A77C /* LaunchScreen.storyboard in Resources */,
 				81383E404338C827C3E26F26 /* PrivacyInfo.xcprivacy in Resources */,
+				A77559AF6B7804ADBFE8E637 /* AppIcon.icon in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -387,6 +405,7 @@
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
 				9582B6852FE996820072D4E8 /* SceneDelegate.swift in Sources */,
 				A1B2C3D42FE996900072D4E8 /* BridgeViewController.swift in Sources */,
+				C2A1E0082FF1000000000001 /* AppIconPlugin.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -398,6 +417,7 @@
 				27A15B280E3E0DD0B61CD00C /* ClipSceneDelegate.swift in Sources */,
 				092D28E8C66755BB300CBE4F /* ClipBridgeViewController.swift in Sources */,
 				5E68CA4462B7E60EF54347FE /* BridgeViewController.swift in Sources */,
+				8F87F8A3B680004A2D775EE7 /* AppIconPlugin.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -546,6 +566,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = FC68EB0AF532CFC21C3344DD /* Pods-App.debug.xcconfig */;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIconHexagon AppIconOctagon";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]" = "App/App-iOS.entitlements";
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]" = "App/App-iOS.entitlements";
@@ -574,6 +595,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = AF51FD2D460BCFE21FA515B2 /* Pods-App.release.xcconfig */;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIconHexagon AppIconOctagon";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]" = "App/App-iOS.entitlements";
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]" = "App/App-iOS.entitlements";

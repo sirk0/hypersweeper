@@ -216,6 +216,7 @@ async function openScene(
   });
   const settings = JSON.stringify({
     version: 5,
+    gloss: false,
     theme: "sand",
     shape: scene.shape,
     scheme: "light",
@@ -364,8 +365,17 @@ const HEADER_BOARDS: { scene: Scene; weight: number }[] = [
 ];
 
 /** The App Clip card's board: the one the clip plays (`HypersweeperClipBoard`
- * in ios/App/AppClip/Info.plist), part played, as the header's boards are. */
-const CLIP_SCENE: Scene = { name: "c-chamfered", shape: "realistic", mode: "c80", seed: 5, reveal: 0.4, flags: 4 };
+ * in ios/App/AppClip/Info.plist) at the difficulty it opens at, the default,
+ * part played as the header's boards are. */
+const CLIP_SCENE: Scene = {
+  name: "c-chamfered",
+  shape: "realistic",
+  mode: "c80",
+  difficulty: "easy",
+  seed: 5,
+  reveal: 0.4,
+  flags: 4,
+};
 
 /** The search card's three iPhone shots, by scene name; the middle one leads. */
 const SEARCH_SHOTS = ["02-mobius", "01-sphere", "03-trefoil"];

@@ -177,13 +177,14 @@ test.describe("board gallery", () => {
     // is a *first* board and carries the one-time gesture hint — chrome rather
     // than the render these shots are of, and worse, chrome on a seven-second
     // timer that a slow shot would race. The look is pinned rather than left at
-    // the app's default; see BASE_LOOK. The per-look tests below write their own
+    // the app's default; see BASE_LOOK. So is the finish: every record here
+    // turns gloss off, which the app defaults on. The per-look tests below write their own
     // settings record, so this only fills in where none is set.
     await page.addInitScript((look: { theme: string; scheme: string }) => {
       if (!localStorage.getItem("ms:settings")) {
         localStorage.setItem(
           "ms:settings",
-          JSON.stringify({ version: 5, ...look, seenHint: true }),
+          JSON.stringify({ version: 5, gloss: false, ...look, seenHint: true }),
         );
       }
     }, BASE_LOOK);
@@ -237,7 +238,7 @@ test.describe("board gallery", () => {
     await page.addInitScript(() => {
       localStorage.setItem(
         "ms:settings",
-        JSON.stringify({ version: 5, theme: "bright", shape: "soft", scheme: "light", seenHint: true }),
+        JSON.stringify({ version: 5, gloss: false, theme: "bright", shape: "soft", scheme: "light", seenHint: true }),
       );
     });
     await page.goto("/");
@@ -265,6 +266,7 @@ test.describe("board gallery", () => {
           "ms:settings",
           JSON.stringify({
             version: 5,
+            gloss: false,
             theme: look[0],
             shape: look[1],
             scheme: look[2],
@@ -296,7 +298,7 @@ test.describe("board gallery", () => {
       await page.addInitScript(() => {
         localStorage.setItem(
           "ms:settings",
-          JSON.stringify({ version: 5, theme: "bright", shape: "soft", scheme: "light", seenHint: true }),
+          JSON.stringify({ version: 5, gloss: false, theme: "bright", shape: "soft", scheme: "light", seenHint: true }),
         );
       });
       await page.goto(`/?mode=${mode}&difficulty=easy&seed=1`);
@@ -318,6 +320,7 @@ test.describe("board gallery", () => {
           "ms:settings",
           JSON.stringify({
             version: 5,
+            gloss: false,
             theme: look[0],
             shape: look[1],
             scheme: look[2],
@@ -389,6 +392,7 @@ test.describe("board gallery", () => {
         "ms:settings",
         JSON.stringify({
           version: 5,
+          gloss: false,
           theme: "bright",
           shape: "realistic",
           scheme: "light",

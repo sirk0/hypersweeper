@@ -60,6 +60,7 @@ const SETTINGS: Settings = {
   analytics: false,
   seenHint: true,
   quality: "low",
+  appIcon: "octagon",
 };
 
 afterEach(() => {
@@ -122,33 +123,32 @@ describe("custom backgrounds", () => {
 describe("the board's finish, and the extra controls", () => {
   it("default the way the look shipped, and take a stored choice", () => {
     // Three purely additive fields, so a record from a build that predates them
-    // simply lacks them. The defaults are what every board looked and behaved
-    // like before they were settings — no gloss unless a theme asked for it,
-    // and a quiet control row — except for the pins, which are on because a
-    // board you can turn is exactly the case a billboard fails at.
-    expect(DEFAULT_SETTINGS.gloss).toBe(false);
+    // simply lacks them. Gloss is on — the polished tiles are the look the game
+    // is meant to be met in — the control row is quiet, and the pins are on
+    // because a board you can turn is exactly the case a billboard fails at.
+    expect(DEFAULT_SETTINGS.gloss).toBe(true);
     expect(DEFAULT_SETTINGS.pins).toBe(true);
     expect(DEFAULT_SETTINGS.extraControls).toBe(false);
     const store = withStorage(fakeStorage());
     store.setItem(KEY, JSON.stringify({ version: 4, theme: "realistic" }));
-    expect(loadSettings().gloss).toBe(false);
+    expect(loadSettings().gloss).toBe(true);
     expect(loadSettings().pins).toBe(true);
     expect(loadSettings().extraControls).toBe(false);
 
     store.setItem(
       KEY,
-      JSON.stringify({ version: 4, gloss: true, pins: false, extraControls: true }),
+      JSON.stringify({ version: 4, gloss: false, pins: false, extraControls: true }),
     );
-    expect(loadSettings().gloss).toBe(true);
+    expect(loadSettings().gloss).toBe(false);
     expect(loadSettings().pins).toBe(false);
     expect(loadSettings().extraControls).toBe(true);
 
     // ...and anything that is not a boolean is not a choice.
     store.setItem(
       KEY,
-      JSON.stringify({ version: 4, gloss: "yes", pins: 0, extraControls: null }),
+      JSON.stringify({ version: 4, gloss: "no", pins: 0, extraControls: null }),
     );
-    expect(loadSettings().gloss).toBe(false);
+    expect(loadSettings().gloss).toBe(true);
     expect(loadSettings().pins).toBe(true);
     expect(loadSettings().extraControls).toBe(false);
   });
@@ -196,6 +196,7 @@ describe("settings validation", () => {
       analytics: DEFAULT_SETTINGS.analytics,
       seenHint: DEFAULT_SETTINGS.seenHint,
       quality: DEFAULT_SETTINGS.quality,
+      appIcon: DEFAULT_SETTINGS.appIcon,
     });
   });
 
@@ -257,6 +258,13 @@ describe("settings validation", () => {
     expect(loadSettings().sound).toBe("off");
   });
 
+  it("drops an app icon this build does not have, and keeps a known one", () => {
+    withStorage(fakeStorage({ [KEY]: JSON.stringify({ appIcon: "heptagon" }) }));
+    expect(loadSettings().appIcon).toBe(DEFAULT_SETTINGS.appIcon);
+    withStorage(fakeStorage({ [KEY]: JSON.stringify({ appIcon: "hexagon" }) }));
+    expect(loadSettings().appIcon).toBe("hexagon");
+  });
+
   it("falls back on corrupt, non-object or array JSON", () => {
     for (const raw of ["{not json", "42", '"a string"', "null", '["dark"]']) {
       withStorage(fakeStorage({ [KEY]: raw }));
@@ -301,6 +309,7 @@ describe("settings upgrades", () => {
       analytics: DEFAULT_SETTINGS.analytics,
       seenHint: DEFAULT_SETTINGS.seenHint,
       quality: DEFAULT_SETTINGS.quality,
+      appIcon: DEFAULT_SETTINGS.appIcon,
     });
     // Migration completes on the next write, and only then is the old key
     // dropped — an interrupted migration must not lose the record.
@@ -446,6 +455,7 @@ describe("settings upgrades", () => {
       analytics: DEFAULT_SETTINGS.analytics,
       seenHint: DEFAULT_SETTINGS.seenHint,
       quality: DEFAULT_SETTINGS.quality,
+      appIcon: DEFAULT_SETTINGS.appIcon,
     });
   });
 
@@ -507,6 +517,7 @@ describe("cross-tab sync", () => {
         analytics: DEFAULT_SETTINGS.analytics,
         seenHint: DEFAULT_SETTINGS.seenHint,
         quality: DEFAULT_SETTINGS.quality,
+        appIcon: DEFAULT_SETTINGS.appIcon,
       },
     ]);
   });

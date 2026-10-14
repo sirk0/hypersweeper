@@ -592,7 +592,7 @@ changes a cell's vertex layout, and the argument for each is independent of the
 argument for a textured page — so each is a setting that overrides whatever the
 composed style says, either way.
 
-- **Glossy tiles** is off by default, so the board ships matte. What it covers
+- **Glossy tiles** is on by default, so the board ships polished. What it covers
   is the polished *reading*, both halves of it: the specular finish a solid
   catches a sweeping highlight with, and the bright-centre-to-dark-rim gradient
   that is the only thing saying "polished" on a flat board lit head-on. Turning
@@ -774,6 +774,35 @@ fields need no bump, since an old record simply lacks them.
 (see `vite.config.ts`, declared in `src/vite-env.d.ts`). The version tracks
 `package.json`, which `bump-version.yml` keeps in lockstep with
 `pyproject.toml` on every push to master.
+
+### The app icon (`src/appIcon.ts`)
+
+Settings › Appearance › **App icon** picks which icon this copy of the game
+wears — a pentagon (the default), a hexagon or an octagon cell, each in the
+colour Sand paints that shape — so the App Store app and the web app on one
+Home Screen can be told apart. `APP_ICONS` is the one list: the picker page
+(`renderAppIconPicker`), the icon generator (`scripts/make-icons.mts`) and the
+iOS project's alternate icons all follow it, and `tests/unit/appIcon.test.ts`
+checks the last two against it.
+
+The row is conditional, like Haptics: it is offered only where a pick changes
+something (`appIconSupported`).
+
+- **The iOS app** switches the Home Screen icon with `setAlternateIconName`,
+  through `ios/App/App/AppIconPlugin.swift`, and iOS confirms the change with
+  its own alert. The OS, not the stored setting, is the record of which icon is
+  on: the shell reports it before the page runs (`window.hypersweeperAppIcon`),
+  and `App` takes that over the stored value. A switch the OS refuses leaves
+  the setting where it was. The Mac app has no row, since Catalyst cannot
+  switch icons.
+- **A browser tab** points `<link rel="icon">` and `<link
+  rel="apple-touch-icon">` at the chosen icon, at startup and on every change.
+  Safari's Add to Home Screen copies the touch icon when the icon is added, so
+  the choice is made *before* adding, and the page's footer says so. An
+  installed (standalone) web app has no row, because the icon it was added with
+  never changes.
+- **The Electron app** has no row: the dock icon could be swapped at runtime,
+  but Finder would go on showing the pentagon.
 
 ### Check for updates (`src/update.ts`)
 

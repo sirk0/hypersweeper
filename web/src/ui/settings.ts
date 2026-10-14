@@ -1,6 +1,13 @@
 import { QUALITY_PREFS, type QualityPref } from "../render/quality";
 import { ACHIEVEMENTS, earned as earnedIds, loadProgress } from "../achievements";
 import {
+  APP_ICONS,
+  appIcon,
+  appIconSupported,
+  appIconUrls,
+  type AppIconKey,
+} from "../appIcon";
+import {
   SOUND_CHOICES,
   SOUND_OFF,
   SOUND_PRESETS,
@@ -109,6 +116,8 @@ export interface SettingsHost {
    * and what `auto` comes to on this device. */
   quality: QualityPref;
   qualityAuto: boolean;
+  /** Which app icon this copy wears (src/appIcon.ts). */
+  appIcon: AppIconKey;
   setTheme(key: string): void;
   setShape(key: string): void;
   setScheme(pref: SchemePref): void;
@@ -129,6 +138,9 @@ export interface SettingsHost {
   setExtraControls(on: boolean): void;
   setAnalytics(on: boolean): void;
   setQuality(pref: QualityPref): void;
+  /** Switch the app icon. Asynchronous, unlike the rest: in the iOS app it
+   * waits on the OS, which may refuse. */
+  setAppIcon(key: AppIconKey): Promise<void>;
 }
 
 const QUALITY_LABELS: Record<QualityPref, string> = {
@@ -231,6 +243,17 @@ function themeSwatch(key: string, shape: string, scheme: Scheme): HTMLElement {
   dot.className = "theme-swatch-dot";
   el.append(card, cells, dot);
   return el;
+}
+
+/** An app icon in miniature: the very PNG the Home Screen gets, rounded the
+ * way iOS rounds it. */
+function appIconSwatch(key: string): HTMLElement {
+  const img = document.createElement("img");
+  img.className = "app-icon-swatch";
+  img.src = appIconUrls(key).touch;
+  img.alt = "";
+  img.dataset["appIcon"] = appIcon(key).key;
+  return img;
 }
 
 /** A preset's voice in miniature: a bar per partial, as tall as that partial is
@@ -475,6 +498,49 @@ export function renderSchemePicker(host: SettingsHost): DocumentFragment {
   return frag;
 }
 
+/** The app icon page: one row per icon, ticked at the one on. Its own page for
+ * the reasons the scheme picker is one — a short list of choices that each
+ * carry a picture, under a row that already says which is on.
+ *
+ * The footer is where the two places it works differ: the iOS app's switch is
+ * immediate (and iOS says so itself), while a browser can only change what the
+ * *next* Add to Home Screen takes. */
+export function renderAppIconPicker(host: SettingsHost): DocumentFragment {
+  const frag = document.createDocumentFragment();
+  const list = document.createElement("ul");
+  list.className = "menu-list";
+  for (const icon of APP_ICONS) {
+    const check = document.createElement("span");
+    check.className = "settings-check";
+    check.textContent = icon.key === host.appIcon ? "✓" : "";
+    const { li, btn } = buttonRow(
+      [appIconSwatch(icon.key), textBlock(icon.label, APP_ICON_HINTS[icon.key]), check],
+      () => void host.setAppIcon(icon.key),
+      "settings-theme",
+    );
+    btn.dataset["appIcon"] = icon.key;
+    btn.setAttribute("aria-pressed", String(icon.key === host.appIcon));
+    if (icon.key === host.appIcon) btn.classList.add("active");
+    list.append(li);
+  }
+  frag.append(list);
+  const note = document.createElement("p");
+  note.className = "settings-footer";
+  note.textContent = __APP_PACKAGED__
+    ? "Changes the icon on your Home Screen."
+    : "Pick before Add to Home Screen — an icon already there keeps its shape.";
+  frag.append(note);
+  return frag;
+}
+
+/** What each row says under its name — the cell's colour, which is Sand's own
+ * colour for that shape, and so the second thing that tells two icons apart. */
+const APP_ICON_HINTS: Record<AppIconKey, string> = {
+  pentagon: "Olive · the default",
+  hexagon: "Green",
+  octagon: "Teal",
+};
+
 /** The sound page: the three presets and Off. A page of its own like the theme
  * picker, and for the same reason — it is a list of choices,
  * and the row above it already reports which one is on.
@@ -619,6 +685,7 @@ export interface SettingsPages {
   openThemes(): void;
   openShapes(): void;
   openSchemes(): void;
+  openAppIcons(): void;
   openBestTimes(): void;
   openSounds(): void;
   openAchievements(): void;
@@ -627,8 +694,15 @@ export interface SettingsPages {
 /** Build the settings page body. The caller (Menu) supplies the back row and
  * puts this into `.menu-body`; `pages` opens the pages below it. */
 export function renderSettings(host: SettingsHost, pages: SettingsPages): DocumentFragment {
-  const { openThemes, openShapes, openSchemes, openBestTimes, openSounds, openAchievements } =
-    pages;
+  const {
+    openThemes,
+    openShapes,
+    openSchemes,
+    openAppIcons,
+    openBestTimes,
+    openSounds,
+    openAchievements,
+  } = pages;
   const frag = document.createDocumentFragment();
 
   // -- Records ---------------------------------------------------------------
@@ -740,6 +814,22 @@ export function renderSettings(host: SettingsHost, pages: SettingsPages): Docume
   );
   schemeBtn.dataset["settingsGroup"] = "scheme";
   appearance.append(schemeLi);
+
+  // Which icon this copy of the game wears, so two copies on one phone can be
+  // told apart. Only where picking one changes something (`appIconSupported`):
+  // not the Mac app, not Electron, not an installed web app.
+  if (appIconSupported()) {
+    const iconChevron = document.createElement("span");
+    iconChevron.className = "menu-entry-chevron";
+    iconChevron.textContent = "›";
+    const { li: iconLi, btn: iconBtn } = buttonRow(
+      [appIconSwatch(host.appIcon), textBlock("App icon", appIcon(host.appIcon).label), iconChevron],
+      openAppIcons,
+      "menu-submenu",
+    );
+    iconBtn.dataset["settingsGroup"] = "app-icon";
+    appearance.append(iconLi);
+  }
 
   // Beside the theme rather than under Behaviour: this is what the page is
   // made of, not what the game does. It is the player's setting rather than a
