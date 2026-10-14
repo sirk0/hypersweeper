@@ -3,12 +3,15 @@ import {
   ACHIEVEMENTS,
   ACHIEVEMENTS_BY_ID,
   EXCLUDED_MODES,
+  GAME_CENTER_ACHIEVEMENTS,
+  GAME_CENTER_LIMITS,
   SCHEMA_VERSION,
   SHAPE_SIDES,
   applyWin,
   clearAchievements,
   earned,
   emptyProgress,
+  gameCenterId,
   loadProgress,
   measureOf,
   recordWin,
@@ -124,6 +127,72 @@ describe("the list", () => {
 
   it("earns nothing at all from an empty record", () => {
     expect(earned(emptyProgress())).toEqual([]);
+  });
+});
+
+describe("Game Center", () => {
+  // Game Center's list is registered once in App Store Connect, and a live
+  // achievement's id and points can never change. These are the properties
+  // that keep a later build from breaking that promise or being refused.
+
+  it("rewrites an app id into a Game Center id", () => {
+    expect(gameCenterId("first-win")).toBe("hs.first_win");
+    expect(gameCenterId("tiling-all:2-uniform")).toBe("hs.tiling_all.2_uniform");
+    expect(gameCenterId("difficulty:easy")).toBe("hs.difficulty.easy");
+  });
+
+  it("only ever sees app ids the rewrite keeps apart", () => {
+    // `:` and `-` become `.` and `_`, so an app id that already had either of
+    // those could land on another achievement's Game Center id.
+    for (const a of ACHIEVEMENTS) expect(a.id, a.id).toMatch(/^[a-z0-9:-]+$/);
+  });
+
+  it("gives every achievement a distinct, valid Game Center id", () => {
+    const ids = GAME_CENTER_ACHIEVEMENTS.map((a) => a.gameCenterId);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const id of ids) {
+      expect(id).toMatch(/^[A-Za-z0-9._]+$/);
+      expect(id.length, id).toBeLessThanOrEqual(GAME_CENTER_LIMITS.idLength);
+    }
+  });
+
+  it("stays inside Game Center's caps", () => {
+    expect(GAME_CENTER_ACHIEVEMENTS.length).toBeLessThanOrEqual(GAME_CENTER_LIMITS.achievements);
+    let total = 0;
+    for (const a of GAME_CENTER_ACHIEVEMENTS) {
+      expect(Number.isInteger(a.points), a.id).toBe(true);
+      expect(a.points, a.id).toBeGreaterThan(0);
+      expect(a.points, a.id).toBeLessThanOrEqual(GAME_CENTER_LIMITS.pointsEach);
+      total += a.points;
+    }
+    expect(total).toBeLessThanOrEqual(GAME_CENTER_LIMITS.pointsTotal);
+  });
+
+  it("prices a group by its kind, not by how many boards it has", () => {
+    // Points are fixed once live and groups grow, so two groups of different
+    // sizes have to be worth the same.
+    for (const prefix of ["tiling:", "surface:", "solid:", "tiling-all:", "surface-all:", "solid-all:"]) {
+      const points = new Set(
+        ACHIEVEMENTS.filter((a) => a.id.startsWith(prefix)).map((a) => a.points),
+      );
+      expect(points.size, prefix).toBe(1);
+    }
+  });
+
+  it("writes text that no new board can make wrong", () => {
+    // The page's hints quote group sizes ("Win all 33 of them"); Game Center's
+    // text is registered once, so a number in it would go stale the day a
+    // board is added. The fixed numbers — sides, tiers — are in the other
+    // groups.
+    for (const a of ACHIEVEMENTS) {
+      expect(a.brief, a.id).not.toBe("");
+      expect(a.done, a.id).not.toBe("");
+      expect(a.done, a.id).not.toBe(a.brief);
+      if (["tiling", "surface", "solid", "grand"].includes(a.group)) {
+        expect(a.brief, a.id).not.toMatch(/\d/);
+        expect(a.done, a.id).not.toMatch(/\d/);
+      }
+    }
   });
 });
 
