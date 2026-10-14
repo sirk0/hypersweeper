@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- What makes this target an App Clip: it can be installed on demand, and it
+     names the app it is a part of. That app names it back
+     (App/App-iOS.entitlements). -->
+<plist version="1.0">
+<dict>
+	<key>com.apple.developer.on-demand-install-capable</key>
+	<true/>
+	<key>com.apple.developer.parent-application-identifiers</key>
+	<array>
+		<string>$(AppIdentifierPrefix)io.github.sirk0.hypersweeper</string>
+	</array>
+</dict>
+</plist>

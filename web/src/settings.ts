@@ -96,9 +96,8 @@ export interface Settings {
    * solid catches a moving highlight with, and the bright-centre gradient that
    * is the only thing saying "polished" on a flat board (Settings ›
    * Appearance). Was Realistic's alone, and is now a setting that overrides
-   * whatever the theme's cell style says, either way. Off by default: like the
-   * page pattern it is a flourish, and a flourish is something to turn on.
-   * Baked into the mesh (render/cellStyle.ts `finishStyle`), so it lands on the
+   * whatever the theme's cell style says, either way. On by default: the
+   * polished tiles are the look the game is meant to be met in. Baked into the mesh (render/cellStyle.ts `finishStyle`), so it lands on the
    * next board. */
   gloss: boolean;
   /** Whether a flag and a mine are real models on a board you can turn — a pin
@@ -146,7 +145,7 @@ export const DEFAULT_SETTINGS: Settings = {
   haptics: true,
   holdToFlagMs: DEFAULT_HOLD_MS,
   backgrounds: false,
-  gloss: false,
+  gloss: true,
   pins: true,
   extraControls: false,
   analytics: true,
@@ -332,10 +331,9 @@ export function loadSettings(): Settings {
       typeof rec["backgrounds"] === "boolean"
         ? rec["backgrounds"]
         : DEFAULT_SETTINGS.backgrounds,
-    // Additive, and defaulting the way the look shipped before it was a
-    // setting: no board was glossy unless its theme said so, and none carried
-    // pins unless its theme said so either — but pins are what a turnable board
-    // wants, so that one starts on.
+    // Additive, and defaulting *on* for both: a record from a build before they
+    // were settings lacks the keys and takes the polished tiles, and pins are
+    // what a turnable board wants.
     gloss: typeof rec["gloss"] === "boolean" ? rec["gloss"] : DEFAULT_SETTINGS.gloss,
     pins: typeof rec["pins"] === "boolean" ? rec["pins"] : DEFAULT_SETTINGS.pins,
     // Additive, and defaulting *off*: a record from a build where every control

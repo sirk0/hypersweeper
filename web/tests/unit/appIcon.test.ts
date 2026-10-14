@@ -47,8 +47,14 @@ describe("app icons", () => {
     const primary = APP_ICONS.find((i) => i.key === DEFAULT_APP_ICON)!.bundle;
     const settings = (key: string): string[] =>
       [...PBXPROJ.matchAll(new RegExp(`${key} = "?([^";]*)"?;`, "g"))].map((m) => m[1]!);
-    // Debug and Release, and both must say the same.
-    expect(settings("ASSETCATALOG_COMPILER_APPICON_NAME")).toEqual([primary, primary]);
+    // Debug and Release of the app and of its App Clip (ios/App/AppClip), and
+    // all four must say the same: the clip wears the app's primary icon.
+    expect(settings("ASSETCATALOG_COMPILER_APPICON_NAME")).toEqual([
+      primary,
+      primary,
+      primary,
+      primary,
+    ]);
     const alternates = APP_ICONS.filter((i) => i.key !== DEFAULT_APP_ICON)
       .map((i) => i.bundle)
       .join(" ");

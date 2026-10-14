@@ -158,6 +158,7 @@ async function main(): Promise<void> {
         "ms:settings",
         JSON.stringify({
           version: 5,
+          gloss: false,
           theme: "bright",
           shape: "realistic",
           scheme: "light",

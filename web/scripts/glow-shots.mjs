@@ -42,6 +42,7 @@ async function open(mode) {
       "ms:settings",
       JSON.stringify({
         version: 5,
+        gloss: false,
         theme: "bright",
         shape: "realistic",
         sound: "off",

@@ -239,6 +239,7 @@ async function shoot(browser: Browser, shot: Shot, outDir: string): Promise<void
   // graph, and the preset is irrelevant to the picture.
   const settings = JSON.stringify({
     version: 5,
+    gloss: false,
     theme: shot.theme,
     ...(shot.shape ? { shape: shot.shape } : {}),
     scheme: shot.scheme,

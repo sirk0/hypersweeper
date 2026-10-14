@@ -16,6 +16,10 @@ name: App Store upload
 # Xcode's automatic cloud signing (-allowProvisioningUpdates with that key):
 # there are no certificates or profiles in the secrets.
 #
+# The iOS build carries the App Clip (ios/App/AppClip): an App Clip is not
+# uploaded on its own, App Store Connect reads it out of its app's build. So
+# `ios` (and `both`) uploads the clip too, and the Mac build never has one.
+#
 # The build number is the git commit count (scripts/build-ios-app.sh), so this
 # needs the full history, and every upload needs a commit that has not been
 # uploaded before. Merging to master provides one (bump-version.yml adds
@@ -42,8 +46,26 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Only so the upload job's title can carry the version: a run's own title is
+  # fixed when it starts, before anything is checked out, and a job's name can
+  # read another job's outputs but not its own. A sparse checkout of one file
+  # on a Linux runner, a few seconds.
+  version:
+    name: Read the version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.read.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: web/package.json
+          sparse-checkout-cone-mode: false
+      - id: read
+        run: echo "version=$(jq -r .version web/package.json)" >> "$GITHUB_OUTPUT"
+
   upload:
-    name: Archive and upload (${{ inputs.platforms }})
+    needs: version
+    name: Upload ${{ needs.version.outputs.version }} (${{ inputs.platforms }})
     runs-on: macos-26
     environment: app-store
     timeout-minutes: 90
@@ -233,6 +255,15 @@ jobs:
               "${auth[@]}"
             echo "::endgroup::"
 
+            # The clip rides inside the iOS app (the App target's "Embed App
+            # Clips" phase, filtered to iOS). An archive without it would
+            # upload fine and quietly drop the clip from the version.
+            if [ "$platform" = ios ] && \
+               [ ! -d "$archive/Products/Applications/App.app/AppClips/AppClip.app" ]; then
+              echo "::error::the iOS archive has no App Clip in App.app/AppClips"
+              exit 1
+            fi
+
             echo "::group::export and upload $platform"
             run "$LOG_DIR/export-$platform.log" -exportArchive \
               -archivePath "$archive" \
@@ -241,7 +272,11 @@ jobs:
               "${auth[@]}"
             echo "::endgroup::"
 
-            echo "$platform" >> "$BUILD_DIR/uploaded"
+            if [ "$platform" = ios ]; then
+              echo "ios+clip" >> "$BUILD_DIR/uploaded"
+            else
+              echo "$platform" >> "$BUILD_DIR/uploaded"
+            fi
           done
 
       - name: Remove the App Store Connect key
@@ -283,7 +318,7 @@ jobs:
         run: |
           uploaded="$(tr '\n' ' ' 2>/dev/null < "$BUILD_DIR/uploaded" || true)"
           {
-            echo "## App Store upload"
+            echo "## App Store upload ${VERSION:-?} (build ${BUILD:-?})"
             echo
             echo "| | |"
             echo "|---|---|"
