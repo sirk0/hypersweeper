@@ -216,6 +216,7 @@ async function openScene(
   });
   const settings = JSON.stringify({
     version: 5,
+    gloss: false,
     theme: "sand",
     shape: scene.shape,
     scheme: "light",
