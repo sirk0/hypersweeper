@@ -64,7 +64,7 @@ export interface ScoreDialogOptions {
    * Empty when there is no rank. */
   entries: ScoreEntry[];
   /** How long the win took. Said under the title when there is no list of
-   * times to say it — a clip's win that neither placed nor unlocked anything. */
+   * times to say it — a clip's win, which neither places nor unlocks anything. */
   ms?: number | undefined;
   /** What this win just unlocked, in list order. May be empty. */
   unlocked?: readonly Achievement[] | undefined;

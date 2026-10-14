@@ -1104,7 +1104,11 @@ class App {
     const session = this.session;
     if (!session || this.scored || session.status !== "won") return;
     this.scored = true;
-    const placed = recordTime(session.mode, session.difficulty, session.elapsedMs());
+    // A clip files no time, for the reason it earns nothing (`countWin`): its
+    // storage goes with it, so a "best time" there is one that is never kept.
+    const placed = this.clip
+      ? null
+      : recordTime(session.mode, session.difficulty, session.elapsedMs());
     // A time that did not place used to end the win in silence. It still does
     // when nothing was unlocked; when something was, that is worth a card of
     // its own — see the note at the top of ui/scoreDialog.ts.

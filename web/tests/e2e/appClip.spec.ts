@@ -126,20 +126,15 @@ test("a win offers Play again and nothing else, and unlocks nothing", async ({ p
   expect((await posts(page))!.at(-1)).toBe("started");
 });
 
-test("a win that sets no record still gets a card, with its time", async ({ page }) => {
-  await page.addInitScript((board) => {
-    const fast = [1, 2, 3].map((ms) => ({ ms, at: 1 }));
-    localStorage.setItem(
-      "ms:scores",
-      JSON.stringify({ version: 1, boards: { [`${board}|easy`]: fast } }),
-    );
-  }, BOARD);
+test("a win records no best time and shows none, only its own time", async ({ page }) => {
+  // The first win on an empty leaderboard is the one that would place.
   await bootClip(page);
   await winClipBoard(page);
   await expect(dialog(page)).toBeVisible();
   await expect(page.locator("#score-dialog-title")).toHaveText("Board cleared");
   await expect(page.locator(".dialog-time")).toHaveText(/^\d+ s$/);
   await expect(page.locator(".score-list")).toHaveCount(0);
+  expect(await page.evaluate(() => localStorage.getItem("ms:scores"))).toBeNull();
 });
 
 test("a board this build does not have opens the menu instead", async ({ page }) => {
