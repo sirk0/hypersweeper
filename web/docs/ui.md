@@ -1186,11 +1186,11 @@ mode, and everything a clip does differently hangs off it:
   `ms:achievements` nor `ms:scores`; a clip's storage is wiped with it and would
   never reach the app it is a taste of, so a "best time" it showed would be one
   it never kept.
-- **Every win puts the card up**, with **Play again** alone — no New board, no
-  unlock list, no best times. It is the clip's only way to go again besides the
-  smiley: titled "Board cleared", with the time under the board's name (`ms`,
-  `.dialog-time`).
-- **The win is when the full game is offered.** As the card opens,
+- **A win puts no card up.** With nothing recorded there is nothing for the
+  card to say, so `checkRecord` never opens it in a clip; the smiley is the way
+  to go again.
+- **The win is when the full game is offered.** At the beat the card would
+  have opened on (`RECORD_DIALOG_DELAY_MS`, or at once with animations off),
   `tellClip("won")` posts to the `hypersweeperClip` message handler and the
   native side puts up Apple's App Clip `SKOverlay`; the next board
   (`tellClip("started")` from `startGame`) takes it down.

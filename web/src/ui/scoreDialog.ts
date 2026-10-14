@@ -7,8 +7,7 @@ import { menuIcon } from "./icons";
 import { closeButton, openModal, type ModalHandle } from "./modal";
 
 // The window a win puts up: when the time makes the board's top three, when it
-// unlocks an achievement, or both — and in the App Clip after every win, since
-// it is the clip's only way to play again (appClip.ts).
+// unlocks an achievement, or both. The App Clip never puts it up (appClip.ts).
 //
 // Achievements share this card rather than opening one of their own. The app
 // has exactly two modals on purpose (see ui/modal.ts), and an unlock wants
@@ -63,9 +62,6 @@ export interface ScoreDialogOptions {
   /** The board's new top list, fastest first — `rank - 1` is the new row.
    * Empty when there is no rank. */
   entries: ScoreEntry[];
-  /** How long the win took. Said under the title when there is no list of
-   * times to say it — a clip's win, which neither places nor unlocks anything. */
-  ms?: number | undefined;
   /** What this win just unlocked, in list order. May be empty. */
   unlocked?: readonly Achievement[] | undefined;
   /** Go to the full achievements list. The unlock list's last row is this,
@@ -259,15 +255,12 @@ export function openScoreDialog(
 
   // With no rank the card is about the unlock, so it says so; the medal and the
   // list of times both belong to a rank and are left out.
-  // With neither, it is the App Clip's card after a plain win.
   const heading =
     opts.rank !== null
       ? RANK_TITLES[opts.rank - 1] ?? "Top time"
       : unlocked.length > 1
         ? `${unlocked.length} achievements unlocked`
-        : unlocked.length === 1
-          ? "Achievement unlocked"
-          : "Board cleared";
+        : "Achievement unlocked";
   const title = el("h2", "dialog-title", heading);
   title.id = "score-dialog-title";
 
@@ -333,9 +326,6 @@ export function openScoreDialog(
     title,
     el("p", "dialog-subtitle", `${label} · ${difficultyLabel}`),
   );
-  if (opts.rank === null && unlocked.length === 0 && opts.ms !== undefined) {
-    dialog.append(el("p", "dialog-subtitle dialog-time", `${formatTime(opts.ms)} s`));
-  }
   if (opts.rank !== null) dialog.append(scoreList(opts.entries, opts.rank));
   let showAll: HTMLButtonElement | null = null;
   if (unlocked.length > 0) {
