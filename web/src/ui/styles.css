@@ -300,6 +300,17 @@ body {
      gesture; the board has its own bounded pinch zoom instead (controls.ts,
      which also blocks Safari's `gesture*` page pinch). */
   touch-action: manipulation;
+  /* No text selection anywhere in the app, and no iOS long-press callout. A
+     game is all taps and holds: on iOS a long press or a quick double tap on
+     the header, the board's name or a dialog selected the text under the
+     finger and raised the magnifier and the copy menu mid-game, which then
+     swallowed the next touches. The canvas has always opted out (`#board`
+     below); this takes the rest of the chrome with it. Inherited, so it
+     reaches every layer — and the app has no text field that would need it
+     back. Safari still wants the prefixed property. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 #board {
