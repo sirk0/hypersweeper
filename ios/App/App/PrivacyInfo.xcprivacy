@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!-- The app's privacy manifest. No tracking, no data collected: the packaged
-     game sends nothing anywhere (web/src/analytics.ts is compiled out when
-     VITE_PACKAGED=1, and scripts/check-offline-assets.mjs fails the build over
-     any remote URL). The app's own Swift code calls no required-reason API;
+     game sends nothing to us or anyone else (web/src/analytics.ts is compiled
+     out when VITE_PACKAGED=1, and scripts/check-offline-assets.mjs fails the
+     build over any remote URL). The one thing that leaves the device is Game
+     Center achievement progress, which GameKit sends to Apple once the player
+     is signed in. Apple collects that, not the app, and the app reads nothing
+     back but the sign-in state (see "Privacy" in ios/README.md). The app's own Swift code calls no required-reason API;
      Capacitor's pods ship their own manifests for theirs. Keep this in step
      with the App Store Connect privacy label ("Data Not Collected"). -->
 <plist version="1.0">

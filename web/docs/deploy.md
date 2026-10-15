@@ -206,8 +206,9 @@ and without an installed worker, and under the site's CSP.
 Its content is a set of claims about the code: the event fields listed under
 "Anonymous play counts" are the schema in
 [`../../docs/agents/metrics.md`](../../docs/agents/metrics.md), and "the apps
-collect nothing" is `VITE_PACKAGED=1` vetoing analytics. Change the page in the
-same commit as either. The file also ships, unused, inside the packaged bundles,
+collect nothing" is `VITE_PACKAGED=1` vetoing analytics, and its "Game Center"
+section is what `src/gameCenter.ts` sends and `GameCenterPlugin.swift` reads
+back. Change the page in the same commit as any of them. The file also ships, unused, inside the packaged bundles,
 so `scripts/check-offline-assets.mjs` scans it. That is why the only absolute
 URL in it is the repository's issues page.
 Settings › Privacy links to it, in the web build only. The packaged apps have no
