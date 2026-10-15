@@ -18,6 +18,18 @@ import type { CellId, SymmetryId } from "../boards/core";
 // it plants is the one move the player cannot see land (their own finger is on
 // top of the cell), which is what the header's flag flash answers — see
 // `Hud.flashFlag`.
+//
+// A finger counts as down from its `pointerdown` until its `pointerup` or
+// `pointercancel` — and WebKit on iOS does not always send either: a lift at
+// the end of a pinch, a system gesture, the app leaving the foreground can
+// swallow it. A finger lost that way stayed "down" for the life of the app, so
+// every real touch after it was its *second* finger: a one-finger drag zoomed
+// about a point nobody was touching, taps did nothing, and a new game did not
+// help, since the controls outlive it. So the record is never trusted on its
+// own. A finger is forgotten when the browser says nothing is down any more —
+// a press that is the only one (`isPrimary`), a touch list that has emptied —
+// and everything is forgotten when the page is hidden. See `forget` and
+// tests/e2e/stuckTouch.spec.ts.
 
 const MOVE_THRESHOLD = 8; // px
 
@@ -104,8 +116,13 @@ export function attachControls(
   let velY = 0;
   let lastT = 0;
   // Live touch/pen/mouse points, so a second finger can be spotted. Pinch
-  // state is the two-finger span and midpoint from the previous move.
-  const points = new Map<number, { x: number; y: number }>();
+  // state is the two-finger span and midpoint from the previous move. `stale`
+  // marks a touch the browser's touch list has since said is no longer down,
+  // whose own lift has not (yet) arrived.
+  const points = new Map<
+    number,
+    { x: number; y: number; type: string; stale?: boolean }
+  >();
   let pinchSpan = 0;
   let pinchX = 0;
   let pinchY = 0;
@@ -155,6 +172,27 @@ export function attachControls(
     return { span: Math.hypot(a.x - b.x, a.y - b.y), ...mid };
   };
 
+  /** Drop the points `which` picks out, as if each had been cancelled, and
+   * end whatever gesture they were part of once none is left. The recovery
+   * for a lift the browser never delivered (see the header). */
+  const forget = (which: (p: { type: string; stale?: boolean }) => boolean) => {
+    let dropped = false;
+    for (const [id, p] of points) {
+      if (which(p)) {
+        points.delete(id);
+        dropped = true;
+      }
+    }
+    if (!dropped || points.size > 0) return;
+    clearLong();
+    handlers.onPress?.(null);
+    if (rotating) handlers.onRotateEnd?.();
+    pressed = false;
+    rotating = false;
+    panning = false;
+    downCell = null;
+  };
+
   const startPinch = () => {
     const g = pinchGeometry();
     if (!g) return;
@@ -175,7 +213,15 @@ export function attachControls(
     pointerX = e.clientX;
     pointerY = e.clientY;
     if (e.button === 2) return; // handled on contextmenu
-    points.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    // Nothing else of this kind can still be down: a primary press is the only
+    // one of its type, and a touch the touch list has seen leave is gone.
+    // Whatever the record still holds is a lift that never arrived.
+    forget(
+      (p) =>
+        p.type === e.pointerType &&
+        (e.isPrimary || (p.type === "touch" && p.stale === true)),
+    );
+    points.set(e.pointerId, { x: e.clientX, y: e.clientY, type: e.pointerType });
     if (points.size >= 2) {
       startPinch();
       return;
@@ -215,8 +261,10 @@ export function attachControls(
   const onPointerMove = (e: PointerEvent) => {
     pointerX = e.clientX;
     pointerY = e.clientY;
-    if (points.has(e.pointerId)) {
-      points.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const point = points.get(e.pointerId);
+    if (point) {
+      point.x = e.clientX;
+      point.y = e.clientY;
     }
     if (points.size >= 2) {
       const g = pinchGeometry();
@@ -266,7 +314,9 @@ export function attachControls(
   };
 
   const onPointerUp = (e: PointerEvent) => {
-    points.delete(e.pointerId);
+    // Only a pointer this canvas saw go down (it listens on the window, so a
+    // lift WebKit hit-tests onto the chrome above still reaches it).
+    if (!points.delete(e.pointerId)) return;
     if (points.size >= 1) {
       // Lifting one finger of a pinch: re-seed from the fingers still down so
       // the board does not jump, and keep the gesture non-tapping.
@@ -316,7 +366,7 @@ export function attachControls(
   };
 
   const onCancel = (e: PointerEvent) => {
-    points.delete(e.pointerId);
+    if (!points.delete(e.pointerId)) return;
     clearLong();
     handlers.onPress?.(null);
     if (points.size === 0) {
@@ -329,6 +379,21 @@ export function attachControls(
   };
 
   const onLeave = () => handlers.onHover(null);
+
+  // The touch list is the platform's own count of the fingers on the glass.
+  // Once it is empty every touch is up, whether or not its pointerup came. The
+  // points are only *marked* here, and dropped at the next press: a browser
+  // that sent the touchend ahead of the pointerup would otherwise have the
+  // tap taken out from under it.
+  const onTouchEnd = (e: TouchEvent) => {
+    if (e.touches.length > 0) return;
+    for (const p of points.values()) if (p.type === "touch") p.stale = true;
+  };
+  // A hidden page hears no lifts at all; whatever was down is not when it
+  // comes back.
+  const onVisibility = () => {
+    if (document.visibilityState === "hidden") forget(() => true);
+  };
 
   let scrollAccum = 0;
   const onWheel = (e: WheelEvent) => {
@@ -448,8 +513,11 @@ export function attachControls(
 
   canvas.addEventListener("pointerdown", onPointerDown);
   canvas.addEventListener("pointermove", onPointerMove);
-  canvas.addEventListener("pointerup", onPointerUp);
-  canvas.addEventListener("pointercancel", onCancel);
+  window.addEventListener("pointerup", onPointerUp);
+  window.addEventListener("pointercancel", onCancel);
+  window.addEventListener("touchend", onTouchEnd, { passive: true });
+  window.addEventListener("touchcancel", onTouchEnd, { passive: true });
+  document.addEventListener("visibilitychange", onVisibility);
   canvas.addEventListener("pointerleave", onLeave);
   canvas.addEventListener("contextmenu", onContextMenu);
   canvas.addEventListener("wheel", onWheel, { passive: false });
@@ -463,8 +531,11 @@ export function attachControls(
     clearLong();
     canvas.removeEventListener("pointerdown", onPointerDown);
     canvas.removeEventListener("pointermove", onPointerMove);
-    canvas.removeEventListener("pointerup", onPointerUp);
-    canvas.removeEventListener("pointercancel", onCancel);
+    window.removeEventListener("pointerup", onPointerUp);
+    window.removeEventListener("pointercancel", onCancel);
+    window.removeEventListener("touchend", onTouchEnd);
+    window.removeEventListener("touchcancel", onTouchEnd);
+    document.removeEventListener("visibilitychange", onVisibility);
     canvas.removeEventListener("pointerleave", onLeave);
     canvas.removeEventListener("contextmenu", onContextMenu);
     canvas.removeEventListener("wheel", onWheel);

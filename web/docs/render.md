@@ -57,6 +57,21 @@ divides out `visualViewport.scale`, so a page zoom that arrives some other way
 (iOS accessibility, a desktop ctrl-+) cannot re-frame the board under the
 player's fingers.
 
+**A finger whose lift never arrives must not stay down.** `attachControls`
+tells a pinch from a drag by counting the pointers it has seen go down and not
+come up, and WebKit on iOS does not always send the `pointerup` or
+`pointercancel` (a lift at the end of a pinch, a system gesture, the app
+leaving the foreground). The finger it lost used to count as down for the life
+of the app: every real touch after it was its second finger, so a one-finger
+pan zoomed about a point nobody was touching, taps did nothing, and a new game
+did not help. So the record is checked against the browser: a press that is
+`isPrimary` drops every other pointer of its type, a touch list that has
+emptied (`touchend` with no `touches`) marks the touches left over and the next
+press drops them, a hidden page forgets everything, and lifts are heard on
+`window`, so one that is hit-tested onto the chrome still counts.
+`tests/e2e/stuckTouch.spec.ts` loses a lift on purpose and drives real touches
+(DevTools `Input.dispatchTouchEvent`) after it.
+
 ## Picking (`Renderer.pick`)
 
 A click is a ray, and the cell it lands on is the one **drawn** where it lands.
