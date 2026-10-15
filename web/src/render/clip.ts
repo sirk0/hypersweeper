@@ -1,5 +1,10 @@
 import type { Vec3 } from "../boards/core";
-import { subtractSolid, type ClipPiece, type Tri } from "../boards/clipSolid";
+import {
+  intersectSolid,
+  subtractSolid,
+  type ClipPiece,
+  type Tri,
+} from "../boards/clipSolid";
 
 // Cutting the drawn surface against a `SurfaceClip` (see boards/core): the
 // Klein bottle's immersion passes through itself, and the sheet that ends up
@@ -7,15 +12,23 @@ import { subtractSolid, type ClipPiece, type Tri } from "../boards/clipSolid";
 // *where* the cut is — as the enclosed region the other sheet's own drawn
 // triangles bound, so the two meet along the exact polyline they really share
 // — and `clipSolid.ts` performs it. This module is the renderer's face of
-// that: the fan its meshes triangulate a cell with, the cut, and where a cut
+// that: the fan its meshes triangulate a cell with, the cut, the collar band
+// painted round it (see "The collar" in docs/render.md), and where a cut
 // cell's number ends up.
 
-export { fanTriangles, type Tri } from "../boards/clipSolid";
+export { fanTriangles, trianglesArea, type Tri } from "../boards/clipSolid";
 
 /** Cut triangles down to the part of them outside the clip's enclosed region,
  * or pass them through untouched when there is no clip. */
 export function clipTriangles(tris: Tri[], solid: readonly ClipPiece[] | null): Tri[] {
   return subtractSolid(tris, solid);
+}
+
+/** The part of already-cut geometry that the collar takes as well — the band
+ * the renderer paints between the hole and where the tiles stop. Feed it
+ * triangles the hole has already been subtracted from. */
+export function collarTriangles(tris: Tri[], collar: readonly ClipPiece[]): Tri[] {
+  return intersectSolid(tris, collar);
 }
 
 /** Area-weighted centroid of a triangle set — where a cut cell's number sits,

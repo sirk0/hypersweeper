@@ -64,12 +64,15 @@ describe("surface clip", () => {
 
   it("takes a real Klein cell's enclosed patch off it, and only that", () => {
     const board = kleinBoard(16, 8, 20);
-    const { solid, cells, occluder } = board.clip!;
+    const { solid, collar, cells, occluder } = board.clip!;
     expect(cells.size).toBeGreaterThan(0);
+    let holed = 0;
     for (const cell of cells) {
       const poly = board.polygons.get(cell)!;
       const whole = fanTriangles(poly, centroid(poly));
-      const cut = clipTriangles(whole, solid);
+      if (area(clipTriangles(whole, solid)) < area(whole) * (1 - 1e-4)) holed++;
+      // A cut cell is drawn cut back to the collar, which contains the hole.
+      const cut = clipTriangles(whole, collar);
       expect(area(cut)).toBeGreaterThan(0); // a piece, never the whole cell
       expect(area(cut)).toBeLessThan(area(whole));
       // Nothing of substance is left standing inside the neck, and the cell's
@@ -80,6 +83,7 @@ describe("surface clip", () => {
       }
       expect(triangleCentroid(cut)).not.toBeNull();
     }
+    expect(holed).toBeGreaterThan(0);
     expect(torusBoard(12, 6, 9).clip).toBeNull();
   });
 });

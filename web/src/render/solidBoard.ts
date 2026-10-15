@@ -36,7 +36,14 @@ import {
   type CellVisual,
   type PickLayer,
 } from "./boardMesh";
-import { clipTriangles, fanTriangles, triangleCentroid, type Tri } from "./clip";
+import {
+  clipTriangles,
+  collarTriangles,
+  fanTriangles,
+  triangleCentroid,
+  trianglesArea,
+  type Tri,
+} from "./clip";
 import { BoardMotion, cellAttribute, patchMotion } from "./motionShader";
 import { makeGlyphAtlas, type Glyph, type GlyphAtlas } from "./glyphAtlas";
 import {
@@ -112,6 +119,32 @@ const QUAD_CORNERS: readonly (readonly [number, number])[] = [
   [-1, -1], [1, 1], [-1, 1],
 ];
 const BASE_COLOR = "#8e8e8e"; // grout surface showing through the tile gaps
+
+/** How much of its grout's lightness the collar keeps: a step deeper than the
+ * grout lines, so it reads as a different kind of edge, without the glare of
+ * black (picked against Sand, Bright and Classic). */
+const COLLAR_SHADE = 0.72;
+
+/** The collar's colour: the style's own grout, a shade deeper. */
+function collarColor(style: CellStyle): Color {
+  const hsl = { h: 0, s: 0, l: 0 };
+  new Color(style.grout ?? BASE_COLOR).getHSL(hsl);
+  return new Color().setHSL(hsl.h, hsl.s, hsl.l * COLLAR_SHADE);
+}
+
+/** How far a cut tile's number and marker shrink: by the square root of the
+ * share of the tile left, as a scale goes with area — but never below
+ * `MIN_KEPT_SCALE`, a number too small to read being worse than one that
+ * reaches a little past a sliver. A tile cut away entirely keeps its size:
+ * its number sits where it always did, inside the tube that hides it. */
+function keptScale(tile: readonly Tri[], plate: readonly Tri[]): number {
+  const whole = trianglesArea(plate);
+  const kept = trianglesArea(tile);
+  if (!(whole > 0) || !(kept > 0)) return 1;
+  return Math.max(MIN_KEPT_SCALE, Math.min(1, Math.sqrt(kept / whole)));
+}
+
+const MIN_KEPT_SCALE = 0.6;
 
 /** How strongly a capable device's reflection map shows on the tiles and the
  * markers, and how bright the rim light is (`setEffects`). */
@@ -355,6 +388,9 @@ interface CellGeom {
   // in the cell's own plane, so a model can use it without depending on where
   // the camera is.
   fit: number;
+  // How far a cut tile's number and marker are scaled down to fit what is left
+  // of it (`keptScale`); 1 on every whole cell. Already folded into `fit`.
+  trim: number;
   center: Vec3; // centre of the (currently raised or sunken) top face
   palette: CellPalette; // hidden/opened tones for this cell's shape
   // Non-null on exactly the cells that stayed **flat**: a two-sided cell the
@@ -561,6 +597,7 @@ export class SolidBoard extends Group implements BoardMesh {
     const basePositions: number[] = [];
     const faceCell: number[] = [];
     const baseFaceCell: number[] = [];
+    const collarPositions: number[] = [];
     let vertexCount = 0;
     // Where the immersion passes through itself, the enclosed sheet is cut
     // away so the hole can be looked into (Klein bottle; see SurfaceClip).
@@ -612,8 +649,9 @@ export class SolidBoard extends Group implements BoardMesh {
         }),
         [0, 0],
       );
-      // The cut, if this cell is one of the few the clip reaches.
-      const cut = clip && clip.cells.has(cell) ? clip.solid : null;
+      // The cut, if this cell is one of the few the clip reaches: the tile
+      // stops at the collar, the grout under it only at the hole itself.
+      const cut = clip && clip.cells.has(cell) ? clip : null;
       // A cell is a raised button: an n-triangle top fan plus a ring of n quads
       // under it per loop gap in the profile, mirrored onto the far face where
       // the surface has two. The exception is a **clipped** cell of such a
@@ -621,16 +659,15 @@ export class SolidBoard extends Group implements BoardMesh {
       // profile cuts differently from a sunken one, so its vertex count would
       // not be the state-independent number this one merged geometry needs. It
       // keeps a flat tile instead, fixed at build time (see the module header).
-      const tile =
+      const plate =
         this.twoSided && cut
-          ? clipTriangles(
-              fanTriangles(
-                poly.map((p) => lerp3(p, centroid, this.profile.gap)),
-                centroid,
-              ),
-              cut,
+          ? fanTriangles(
+              poly.map((p) => lerp3(p, centroid, this.profile.gap)),
+              centroid,
             )
           : null;
+      const tile = plate ? clipTriangles(plate, cut!.collar) : null;
+      const trim = plate && tile ? keptScale(tile, plate) : 1;
       const drawn = style.round && !tile ? roundCorners(poly, style.round) : poly;
       const count = tile
         ? 3 * tile.length
@@ -644,7 +681,10 @@ export class SolidBoard extends Group implements BoardMesh {
         centroid,
         normal,
         radius,
-        fit,
+        // A cut tile's number and marker have to fit on what is left of it,
+        // or they spill onto the collar beside it.
+        fit: fit * trim,
+        trim,
         center: tile ? (triangleCentroid(tile) ?? centroid) : centroid,
         palette: cellPalette(tones.get(cell)!, "solid", style.monochrome, style.boardTint),
         tileFalloff: tile && style.shade ? radialFalloff(tile, centroid, radius) : null,
@@ -696,15 +736,25 @@ export class SolidBoard extends Group implements BoardMesh {
 
       // Opaque base layer under the whole (unshrunk) polygon: the tile gaps
       // and the silhouette show this grout surface instead of seeing through
-      // the hollow interior. It is cut by the same clip — grout left behind
-      // would cap the hole just as the tiles did. Being the whole polygon, it
-      // is also what a click in a gap picks, so it is mapped back to its cell
-      // exactly as the tiles are — and laid a hair over its own edges, so that
-      // a pick ray cannot slip between two cells (see BASE_OVERLAP).
+      // the hollow interior. It is cut by the same clip's hole — grout left
+      // behind would cap the hole just as the tiles did. Being the whole
+      // polygon, it is also what a click in a gap picks, so it is mapped back
+      // to its cell exactly as the tiles are — and laid a hair over its own
+      // edges, so that a pick ray cannot slip between two cells (see
+      // BASE_OVERLAP).
       const skirt = poly.map((p) => lerp3(p, centroid, -BASE_OVERLAP));
-      for (const tri of clipTriangles(fanTriangles(skirt, centroid), cut)) {
+      const grout = clipTriangles(fanTriangles(skirt, centroid), cut?.solid ?? null);
+      for (const tri of grout) {
         for (const p of tri) basePositions.push(p[0], p[1], p[2]);
         baseFaceCell.push(ci);
+      }
+      // ...and the part of it between the hole and the collar, where the tile
+      // has been cut back, is painted again as the collar (see below). The
+      // grout stays under it, so a click there still picks this cell.
+      if (cut) {
+        for (const tri of collarTriangles(grout, cut.collar)) {
+          for (const p of tri) collarPositions.push(p[0], p[1], p[2]);
+        }
       }
     });
 
@@ -769,6 +819,37 @@ export class SolidBoard extends Group implements BoardMesh {
     );
     base.name = "base";
     this.add(base);
+
+    // The collar round a self-intersection (the Klein bottle's neck going
+    // through its belly): the band where the cut sheet's tiles stop short of
+    // the sheet crossing it, so the two do not read as neighbours meeting edge
+    // to edge. Grout, a shade deeper — it belongs to the theme like the grout
+    // lines do, and still stands apart from them. Coplanar with the base, so
+    // it is drawn a step nearer (less polygon offset) to win over it, and is
+    // never picked: the base under it is.
+    if (collarPositions.length) {
+      const collarGeometry = new BufferGeometry();
+      collarGeometry.setAttribute(
+        "position",
+        new BufferAttribute(new Float32Array(collarPositions), 3),
+      );
+      collarGeometry.computeVertexNormals();
+      const collar = new Mesh(
+        collarGeometry,
+        new MeshStandardMaterial({
+          color: collarColor(style),
+          roughness: 0.8,
+          metalness: 0,
+          flatShading: true,
+          side: DoubleSide,
+          polygonOffset: true,
+          polygonOffsetFactor: 0.5,
+          polygonOffsetUnits: 2,
+        }),
+      );
+      collar.name = "collar";
+      this.add(collar);
+    }
 
     const glyphMaterial = new MeshBasicMaterial({
       map: this.atlas.texture,
@@ -1269,7 +1350,7 @@ export class SolidBoard extends Group implements BoardMesh {
         projected.reduce((a, q) => a + q[0], 0) / projected.length;
       const py =
         projected.reduce((a, q) => a + q[1], 0) / projected.length;
-      const settled = polygonInradius(projected, [px, py]) * 0.9;
+      const settled = polygonInradius(projected, [px, py]) * 0.9 * g.trim;
       const s = settled * this.anim.popScale(i, now);
       if (!(settled > 0)) continue;
       // Lift the whole billboard toward the camera by its own half-size: a

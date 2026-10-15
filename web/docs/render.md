@@ -514,6 +514,47 @@ of it — `insideOccluder` is an independent parity test through the drawn
 cross-section, and `tests/unit/clipSolid.test.ts` and `surfaces.test.ts` pin the
 two answers together.
 
+### The collar
+
+Cutting the enclosed patch away exactly leaves the two sheets meeting **edge to
+edge** all round the crossing — and on a minesweeper board an edge reads as
+adjacency. A number on a belly cell beside the neck looked as if it counted the
+neck cell it touched, which it does not: the self-intersection joins nothing
+(beta feedback). So the belly is cut back a little further than the hole, and
+the band in between is painted as a **collar**, the way a pipe through a wall
+gets a seal round it rather than sharing the wall's tiles.
+
+- **Where.** `SurfaceClip.collar` is the drawn occluder grown outward in each of
+  its own horizontal cross-sections (`inflateTube`, `clipSolid.ts`) and
+  decomposed exactly as the hole is, so it follows the tessellation's own
+  crossing on every tiling and contains the hole by construction. The margin is
+  `COLLAR_WIDTH` (0.22) of the cut sheet's median edge, so it looks the same at
+  every size.
+- **Not at the fold.** The two sheets cross along one closed ring
+  (`kleinCrossingBottom`); further down they converge on one circle again at
+  the bottom of the bottle, and *that* is a real edge between neighbours. The
+  margin is full down to a unit below the ring and gone two units below it
+  (`COLLAR_TAPER`), which across every shipped tube scale is well clear of the
+  fold — `surfaces.test.ts` checks every Klein board in the catalog for it.
+- **How it is drawn.** A cut cell's flat tile stops at the collar; its grout
+  (the base layer) still stops only at the hole, so nothing new can be seen
+  through and a click on the band still picks the cell it belongs to. The band
+  itself (`collarTriangles`: the grout the hole left, inside the collar) is one
+  extra mesh, coplanar with the base and drawn a step nearer through a smaller
+  polygon offset. It is never picked.
+- **Colour.** The theme's own grout, a shade deeper (`COLLAR_SHADE`, 0.72 of its
+  lightness): part of the board like the grout lines, but plainly a different
+  kind of edge from them. Near-black was tried and is too loud; the plain grout
+  colour reads as one more grout line — which is to say, as adjacency again.
+- **Numbers.** The collar takes bigger bites than the hole did, so a cut cell's
+  number and marker shrink with the square root of the share of the tile left
+  (`keptScale`), but never below 0.6 — on a coarse triangle board a sliver's
+  number at 0.4 was too small to read, and legible matters more than tidy.
+- **Cost.** One more decomposition per Klein board. The cells it reaches are
+  found against the collar alone (it contains the hole) after a single box test
+  that settles the far side of the belly, which keeps the build within about a
+  quarter of what it was.
+
 ## 3D markers (`src/render/markers3d.ts`)
 
 A flag and a mine are normally atlas billboards (`glyphAtlas.ts`), and on a board

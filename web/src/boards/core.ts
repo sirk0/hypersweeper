@@ -67,12 +67,18 @@ export interface Board {
  * the other one caps the view down the hole. `solid` is the enclosed region as
  * the board is really drawn — see `clipSolid.ts`, which builds it out of the
  * occluding sheet's own triangles so the cut lands on the exact polyline where
- * the two drawn sheets meet — and `cells` lists the only cells it reaches, so
- * the renderer cuts those few and leaves the rest of the board alone.
+ * the two drawn sheets meet — and `cells` lists the only cells the renderer
+ * cuts, so it leaves the rest of the board alone.
  * Render-only: the cells, their adjacency and the game are untouched. */
 export interface SurfaceClip {
   cells: Set<CellId>;
+  /** The hole: what the occluding sheet encloses. Nothing is drawn in it. */
   solid: ClipPiece[];
+  /** The hole grown by a margin all round the crossing. The cut sheet's tiles
+   * stop at its edge, and the band between it and `solid` is painted as a
+   * collar, so the two sheets no longer *look* edge to edge where they are not
+   * neighbours (see "The collar" in docs/render.md). Contains `solid`. */
+  collar: ClipPiece[];
   /** The occluding sheet's own drawn triangles, which `solid` decomposes the
    * inside of — kept so a test can measure the cut against the geometry it is
    * meant to meet rather than against the derivation. */

@@ -275,6 +275,109 @@ export function reachesSolid(
   return false;
 }
 
+/** The part of `tris` *inside* `solid`, exactly — the complement of
+ * `subtractSolid`, so the two partition a sheet between them. The pieces tile
+ * the region with no overlap (see `buildClipSolid`), so the inside is each
+ * triangle clipped down to each piece in turn. The one thing that could still
+ * be counted twice is a polygon lying flat *in* a wall two pieces share — a
+ * horizontal sheet at exactly a slab's height is in the floor of one slab and
+ * the ceiling of the next — so a part lying in a wall is given to only one of
+ * the two: the piece the wall's normal points out of the canonical way. */
+export function intersectSolid(tris: readonly Tri[], solid: readonly ClipPiece[]): Tri[] {
+  const out: Tri[] = [];
+  for (const tri of tris) {
+    const keep = triangleArea(tri) * SLIVER;
+    for (const poly of insideParts(tri, solid)) {
+      if (!(polygonArea(poly) > keep)) continue;
+      for (let i = 1; i + 1 < poly.length; i++) out.push([poly[0]!, poly[i]!, poly[i + 1]!]);
+    }
+  }
+  return out;
+}
+
+/** The parts of one triangle inside each piece of the solid it reaches, as
+ * convex polygons (possibly degenerate — the caller weighs them). A part lying
+ * flat in one of a piece's walls is kept by only one of the two pieces that
+ * can share that wall (see `intersectSolid`). */
+function insideParts(tri: Tri, solid: readonly ClipPiece[]): Vec3[][] {
+  const out: Vec3[][] = [];
+  const lo = Math.min(tri[0][1], tri[1][1], tri[2][1]);
+  const hi = Math.max(tri[0][1], tri[1][1], tri[2][1]);
+  pieces: for (let i = firstPiece(solid, lo); i < solid.length && solid[i]!.min[1] <= hi; i++) {
+    const piece = solid[i]!;
+    let poly: Vec3[] = [tri[0], tri[1], tri[2]];
+    if (outsideBox(poly, piece)) continue;
+    const flat = IN_WALL * Math.max(1, ...piece.max.map((v, a) => v - piece.min[a]!));
+    for (const h of piece.planes) {
+      if (!leansCanonical(h.n) && poly.every((p) => Math.abs(dot(h.n, p) + h.d) <= flat)) {
+        continue pieces;
+      }
+      poly = clipHalf(poly, h, -1);
+      if (poly.length < 3) break;
+    }
+    if (poly.length >= 3) out.push(poly);
+  }
+  return out;
+}
+
+/** How close to a wall, relative to the piece's size, a polygon must lie to be
+ * lying *in* it: rounding, not geometry. */
+const IN_WALL = 1e-9;
+
+/** Whether a normal's first non-zero component, in y, x, z order, is positive.
+ * Two pieces sharing a wall see it with opposite normals, so exactly one of
+ * them has it canonical. */
+function leansCanonical(n: Vec3): boolean {
+  for (const a of [1, 0, 2]) {
+    if (n[a]! > 0) return true;
+    if (n[a]! < 0) return false;
+  }
+  return false;
+}
+
+/** A tube drawn as `tris`, grown outward by `margin(y)` at every height: each
+ * vertex moves away from the axis point `axisAt(y)` = [x, z] in its own
+ * horizontal plane. A vertex is moved by where it is and nothing else, so two
+ * triangles sharing a vertex still share it and the tube stays closed — and
+ * the cross-section stays a star about the same axis, which is all
+ * `buildClipSolid` needs. A vertex on the axis itself stays where it is. */
+export function inflateTube(
+  tris: readonly Tri[],
+  axisAt: (y: number) => [number, number],
+  margin: (y: number) => number,
+): Tri[] {
+  const grow = (p: Vec3): Vec3 => {
+    const m = margin(p[1]);
+    if (!(m > 0)) return p;
+    const [ax, az] = axisAt(p[1]);
+    const dx = p[0] - ax;
+    const dz = p[2] - az;
+    const r = Math.hypot(dx, dz);
+    if (!(r > 0)) return p;
+    return [p[0] + (dx * m) / r, p[1], p[2] + (dz * m) / r];
+  };
+  return tris.map((t) => [grow(t[0]), grow(t[1]), grow(t[2])]);
+}
+
+/** The box the whole region fits in, or null for an empty one. */
+export function solidBounds(solid: readonly ClipPiece[]): { min: Vec3; max: Vec3 } | null {
+  if (!solid.length) return null;
+  const min: Vec3 = [Infinity, Infinity, Infinity];
+  const max: Vec3 = [-Infinity, -Infinity, -Infinity];
+  for (const piece of solid) {
+    for (let a = 0; a < 3; a++) {
+      min[a] = Math.min(min[a]!, piece.min[a]!);
+      max[a] = Math.max(max[a]!, piece.max[a]!);
+    }
+  }
+  return { min, max };
+}
+
+/** Does the polygon reach into the box? Touching counts, as in `outsideBox`. */
+export function touchesBox(poly: readonly Vec3[], box: { min: Vec3; max: Vec3 }): boolean {
+  return !outsideBox(poly, box);
+}
+
 /** The pieces that can reach any of `polys`, in the same order — the rest of
  * the decomposition has nothing left to subtract from and need not be kept. */
 export function pruneSolid(
@@ -362,7 +465,7 @@ export function solidDepth(solid: readonly ClipPiece[], p: Vec3): number {
 /** Is the polygon clear of the piece's box? Touching does not count as clear:
  * a flat cell can lie in a slab's own floor, and that slab still has to cut
  * it — the bottom of the Klein bottle is exactly such a cell. */
-function outsideBox(poly: readonly Vec3[], piece: ClipPiece): boolean {
+function outsideBox(poly: readonly Vec3[], piece: { min: Vec3; max: Vec3 }): boolean {
   for (let a = 0; a < 3; a++) {
     let lo = Infinity;
     let hi = -Infinity;

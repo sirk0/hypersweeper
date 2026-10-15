@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   buildClipSolid,
   fanTriangles,
+  inflateTube,
   insideOccluder,
+  intersectSolid,
   pruneSolid,
   reachesSolid,
   solidDepth,
@@ -239,6 +241,77 @@ describe("the enclosed region of a drawn tube", () => {
       area(subtractSolid(fanTriangles(sheet, [0, 0.5, 0]), solid)),
       9,
     );
+  });
+
+  it("splits a sheet into its outside and its inside, with nothing lost", () => {
+    const occluder = drawnTube(6, 2, 2, () => 1);
+    const solid = buildClipSolid(occluder);
+    const whole = fanTriangles(
+      [
+        [-3, 0.75, -3],
+        [3, 0.75, -3],
+        [3, 0.75, 3],
+        [-3, 0.75, 3],
+      ],
+      [0, 0.75, 0],
+    );
+    const inside = intersectSolid(whole, solid);
+    const outside = subtractSolid(whole, solid);
+    // The two partition the sheet, and the inside is the drawn section itself.
+    expect(area(inside) + area(outside)).toBeCloseTo(area(whole), 9);
+    expect(area(inside)).toBeCloseTo(sectionArea(occluder, 0.75), 9);
+    for (const tri of inside) {
+      const c: Vec3 = [
+        (tri[0][0] + tri[1][0] + tri[2][0]) / 3,
+        (tri[0][1] + tri[1][1] + tri[2][1]) / 3,
+        (tri[0][2] + tri[1][2] + tri[2][2]) / 3,
+      ];
+      expect(solidDepth(solid, c)).toBeLessThan(1e-9);
+    }
+    // A sheet that misses the tube has no inside at all.
+    const away = fanTriangles([[4, 0.75, 4], [6, 0.75, 4], [6, 0.75, 6], [4, 0.75, 6]], [5, 0.75, 5]);
+    expect(intersectSolid(away, solid)).toEqual([]);
+  });
+
+  it("grows a tube by its margin, in each cross-section's own plane", () => {
+    const occluder = drawnTube(6, 2, 2, () => 1, () => [0.5, -0.25]);
+    const axis = (): [number, number] => [0.5, -0.25];
+    // Nothing to grow by: the very same geometry.
+    expect(inflateTube(occluder, axis, () => 0)).toEqual(occluder);
+    const margin = (y: number): number => 0.1 + 0.05 * y;
+    const grown = inflateTube(occluder, axis, margin);
+    expect(grown).toHaveLength(occluder.length);
+    for (let i = 0; i < occluder.length; i++) {
+      for (let k = 0; k < 3; k++) {
+        const p = occluder[i]![k]!;
+        const q = grown[i]![k]!;
+        // Heights are kept, so the slabs — and the star — survive...
+        expect(q[1]).toBe(p[1]);
+        // ...and every vertex moves straight out from the axis by the margin.
+        const before = Math.hypot(p[0] - 0.5, p[2] + 0.25);
+        const after = Math.hypot(q[0] - 0.5, q[2] + 0.25);
+        expect(after - before).toBeCloseTo(margin(p[1]), 12);
+        expect(Math.atan2(q[2] + 0.25, q[0] - 0.5)).toBeCloseTo(
+          Math.atan2(p[2] + 0.25, p[0] - 0.5),
+          12,
+        );
+      }
+    }
+    // Still a tube the decomposition reads — to within the slab-step drift of
+    // a tube that tapers, as above — and a strictly bigger one.
+    const solid = buildClipSolid(grown);
+    const sheet = fanTriangles(
+      [
+        [-3, 0.75, -3],
+        [3, 0.75, -3],
+        [3, 0.75, 3],
+        [-3, 0.75, 3],
+      ],
+      [0, 0.75, 0],
+    );
+    const want = sectionArea(grown, 0.75);
+    expect(Math.abs(area(intersectSolid(sheet, solid)) - want) / want).toBeLessThan(1e-3);
+    expect(sectionArea(grown, 0.75)).toBeGreaterThan(sectionArea(occluder, 0.75));
   });
 
   it("has nothing to say about geometry with no tube in it", () => {

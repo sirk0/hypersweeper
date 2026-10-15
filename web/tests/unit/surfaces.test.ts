@@ -4,6 +4,7 @@ import {
   cylinderHexBoard,
   cylinderTriangleBoard,
   kleinBoard,
+  kleinCrossingBottom,
   kleinHexBoard,
   kleinTriangleBoard,
   mobiusBoard,
@@ -18,7 +19,7 @@ import {
   trefoilHexBoard,
   trefoilTriangleBoard,
 } from "../../src/boards/surfaces";
-import { buildBoard } from "../../src/boards/presets";
+import { buildBoard, MODES } from "../../src/boards/presets";
 import { c180Board, cubeBoard, sphereTriangleBoard } from "../../src/boards/solids";
 import {
   fanTriangles,
@@ -26,6 +27,7 @@ import {
   solidDepth,
   subtractSolid,
   trianglesArea,
+  trianglesBelow,
   type Tri,
 } from "../../src/boards/clipSolid";
 import {
@@ -235,9 +237,15 @@ describe("wrapped surfaces", () => {
   it("the klein clip reaches only the cells the neck passes through", () => {
     // The fat sheet just past the belly is pierced by the thin end of the neck,
     // so a piece of a couple of big cells is enclosed and must not be drawn;
-    // everything else — the neck itself above all — is left whole.
-    expect([...kleinBoard(12, 6, 9).clip!.cells].sort()).toEqual(["6,2", "7,2"]);
-    expect([...kleinBoard(16, 8, 20).clip!.cells].sort()).toEqual(["8,3", "9,3"]);
+    // everything else — the neck itself above all — is left whole. The collar
+    // cuts a few more back round them, so `cells` holds those too.
+    const small = kleinBoard(12, 6, 9);
+    const mid = kleinBoard(16, 8, 20);
+    expect(holeCells(small)).toEqual(["6,2", "7,2"]);
+    expect(holeCells(mid)).toEqual(["8,3", "9,3"]);
+    for (const board of [small, mid]) {
+      for (const cell of holeCells(board)) expect(board.clip!.cells.has(cell)).toBe(true);
+    }
     for (const board of [kleinBoard(24, 10, 48), kleinTriangleBoard(18, 6, 13)]) {
       expect(board.clip!.cells.size).toBeLessThan(board.polygons.size / 10);
       for (const cell of board.clip!.cells) expect(board.polygons.has(cell)).toBe(true);
@@ -310,6 +318,89 @@ describe("wrapped surfaces", () => {
       }
       expect(tested).toBeGreaterThan(300);
       expect(disagreed / tested).toBeLessThan(0.02);
+    }
+  });
+
+  it("the collar contains the hole and widens it into a band round the crossing", () => {
+    // The collar is the hole grown by a fifth of an edge or so: it cuts all the
+    // hole cuts and a band beyond, and nothing further from the drawn tube's
+    // own cross-section than that margin.
+    for (const board of [
+      kleinBoard(10, 8, 14, 1.15),
+      kleinBoard(16, 8, 20),
+      kleinTriangleBoard(21, 4, 18),
+      kleinHexBoard(14, 6, 16, 1.15),
+    ]) {
+      const { cells, solid, collar, occluder } = board.clip!;
+      const band = 0.22 * longestEdge(board) * 1.05;
+      let holeCut = 0;
+      let collarCut = 0;
+      let sampled = 0;
+      for (const cell of cells) {
+        const poly = board.polygons.get(cell)!;
+        const whole = fanTriangles(poly, centroid(poly));
+        holeCut += trianglesArea(whole) - trianglesArea(subtractSolid(whole, solid));
+        collarCut += trianglesArea(whole) - trianglesArea(subtractSolid(whole, collar));
+        for (const tri of whole) {
+          for (const p of barycentricGrid(tri, 12)) {
+            const inHole = solidDepth(solid, p) < -1e-9;
+            const inCollar = solidDepth(collar, p) < 0;
+            if (inHole) expect(inCollar).toBe(true);
+            if (inCollar && !inHole) {
+              sampled++;
+              expect(sectionSegmentDistance(occluder, p)).toBeLessThan(band);
+            }
+          }
+        }
+      }
+      expect(collarCut).toBeGreaterThan(holeCut * 1.1);
+      expect(sampled).toBeGreaterThan(0);
+    }
+  });
+
+  it("the collar's crossing ring sits well clear of the fold, at every tube scale", () => {
+    // The collar runs out two units below the bottom of the crossing ring; the
+    // fold, where the two sheets really are joined, is at y = -8.
+    expect(kleinCrossingBottom(1)).toBeCloseTo(-4, 1);
+    for (const scale of [0.7, 0.85, 1, 1.15, 1.3]) {
+      const bottom = kleinCrossingBottom(scale);
+      expect(bottom).toBeLessThan(-2);
+      expect(bottom - 2).toBeGreaterThan(-7.5);
+    }
+  });
+
+  const kleinModes = MODES.filter((m) => m.startsWith("klein"));
+
+  it("the catalog's Klein boards are all here to check", () => {
+    expect(kleinModes.length).toBeGreaterThan(20);
+  });
+
+  it.each(kleinModes)("%s gets a collar at every size, and keeps its fold whole", (mode) => {
+    for (const difficulty of ["easy", "medium", "hard"]) {
+      const board = buildBoard(mode, difficulty) as Board3D;
+      const { cells, solid, collar } = board.clip!;
+      expect(collar.length, `${mode} ${difficulty}`).toBeGreaterThan(0);
+      const floor = lowestShare(board, 0.05);
+      let holeCut = 0;
+      let collarCut = 0;
+      for (const cell of cells) {
+        const poly = board.polygons.get(cell)!;
+        const whole = fanTriangles(poly, centroid(poly));
+        const area = trianglesArea(whole);
+        const gone = area - trianglesArea(subtractSolid(whole, collar));
+        holeCut += area - trianglesArea(subtractSolid(whole, solid));
+        collarCut += gone;
+        // Whatever of the cell lies down at the fold keeps its tiles. Measured
+        // on that part alone: a coarse board's cell can run from just under
+        // the crossing, where the collar rightly cuts, all the way down.
+        // The hole itself leaves a hairline down there (see the test above);
+        // the collar must add nothing to it.
+        const low = trianglesBelow(whole, floor);
+        const added =
+          trianglesArea(subtractSolid(low, solid)) - trianglesArea(subtractSolid(low, collar));
+        expect(added / area, `${mode} ${difficulty} ${cell}`).toBeLessThan(0.002);
+      }
+      expect(collarCut, `${mode} ${difficulty}`).toBeGreaterThan(holeCut);
     }
   });
 
@@ -391,6 +482,73 @@ function centroid(points: readonly Vec3[]): Vec3 {
 /** How far a point lies from the drawn tube, measured in its own horizontal
  * plane — zero on the tube's surface. The tube's cross-sections are horizontal,
  * so slicing it at the point's height gives the curve to measure against. */
+/** The longest edge of any cell — an upper bound on the edge the collar's
+ * width is measured off. */
+function longestEdge(board: Board3D): number {
+  let best = 0;
+  for (const poly of board.polygons.values()) {
+    for (let i = 0; i < poly.length; i++) {
+      const a = poly[i]!;
+      const b = poly[(i + 1) % poly.length]!;
+      best = Math.max(best, Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]));
+    }
+  }
+  return best;
+}
+
+/** The height below which the lowest `share` of the board's span lies. */
+function lowestShare(board: Board3D, share: number): number {
+  let lowest = Infinity;
+  let highest = -Infinity;
+  for (const poly of board.polygons.values()) {
+    for (const p of poly) {
+      lowest = Math.min(lowest, p[1]);
+      highest = Math.max(highest, p[1]);
+    }
+  }
+  return lowest + (highest - lowest) * share;
+}
+
+/** Horizontal distance from `p` to the occluder's drawn cross-section at its
+ * height — to the *segments* each triangle slices out of that plane, not just
+ * their ends. */
+function sectionSegmentDistance(occluder: readonly Tri[], p: Vec3): number {
+  let best = Infinity;
+  for (const t of occluder) {
+    const hits: [number, number][] = [];
+    for (let i = 0; i < 3; i++) {
+      const a = t[i]!;
+      const b = t[(i + 1) % 3]!;
+      const da = a[1] - p[1];
+      const db = b[1] - p[1];
+      if ((da > 0 && db > 0) || (da < 0 && db < 0) || da === db) continue;
+      const s = da / (da - db);
+      hits.push([a[0] + (b[0] - a[0]) * s, a[2] + (b[2] - a[2]) * s]);
+    }
+    if (hits.length < 2) continue;
+    const [a, b] = [hits[0]!, hits[hits.length - 1]!];
+    const ex = b[0] - a[0];
+    const ez = b[1] - a[1];
+    const len2 = ex * ex + ez * ez;
+    const s = len2 > 0 ? Math.max(0, Math.min(1, ((p[0] - a[0]) * ex + (p[2] - a[1]) * ez) / len2)) : 0;
+    best = Math.min(best, Math.hypot(a[0] + ex * s - p[0], a[1] + ez * s - p[2]));
+  }
+  return best;
+}
+
+/** The cells the *hole* takes area off (more than rounding), sorted — what
+ * `clip.cells` held before the collar widened it. */
+function holeCells(board: Board3D): CellId[] {
+  const out: CellId[] = [];
+  for (const cell of board.clip!.cells) {
+    const poly = board.polygons.get(cell)!;
+    const whole = fanTriangles(poly, centroid(poly));
+    const kept = trianglesArea(subtractSolid(whole, board.clip!.solid));
+    if (kept < trianglesArea(whole) * (1 - 1e-4)) out.push(cell);
+  }
+  return out.sort();
+}
+
 function sectionDistance(occluder: readonly Tri[], p: Vec3): number {
   let best = Infinity;
   for (const t of occluder) {
