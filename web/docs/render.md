@@ -536,12 +536,19 @@ gets a seal round it rather than sharing the wall's tiles.
   margin is full down to a unit below the ring and gone two units below it
   (`COLLAR_TAPER`), which across every shipped tube scale is well clear of the
   fold — `surfaces.test.ts` checks every Klein board in the catalog for it.
-- **How it is drawn.** A cut cell's flat tile stops at the collar; its grout
-  (the base layer) still stops only at the hole, so nothing new can be seen
-  through and a click on the band still picks the cell it belongs to. The band
-  itself (`collarTriangles`: the grout the hole left, inside the collar) is one
-  extra mesh, coplanar with the base and drawn a step nearer through a smaller
-  polygon offset. It is never picked.
+- **How it is drawn.** A cut cell's flat tile and its grout (the base layer)
+  both stop at the collar, and the band between the collar's edge and the hole
+  (`collarTriangles`: the grout the hole left, inside the collar) is one extra
+  mesh that takes the grout's place there — so nothing new can be seen through.
+- **It picks nothing.** The collar is a pick layer of its own (`PICK_LAYERS`)
+  that resolves to no cell, so hovering or tapping the seam does nothing, just
+  as on the page around the board. It used to lie *over* the cut cell's grout,
+  and the pick ray found that grout: the cell under the band lit up — on a
+  coarse board, as a few scraps of tile well away from the pointer, which read
+  as the wrong cell highlighting — and a tap on the seam opened it (beta
+  feedback). It has to be picked rather than left out of the ray: a ray that
+  passed through would carry on to a cell of the far sheet, the trap the grout
+  layer exists to stop.
 - **Colour.** The theme's own grout, a shade deeper (`COLLAR_SHADE`, 0.72 of its
   lightness): part of the board like the grout lines, but plainly a different
   kind of edge from them. Near-black was tried and is too loud; the plain grout

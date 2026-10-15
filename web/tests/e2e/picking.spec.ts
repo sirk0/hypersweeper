@@ -113,6 +113,56 @@ test.describe("picking a two-sided surface", () => {
     });
   }
 
+  // The collar a Klein board paints round its self-intersection is a seam, not
+  // a cell (docs/render.md, "The collar"). It used to lie over the cut cell's
+  // grout, so pointing at it lit that cell up — on a coarse board as a few
+  // scraps of tile away from the pointer, which read as the wrong cell
+  // highlighting — and a tap on it opened the cell. Now it picks nothing.
+  //
+  // A canvas has no DOM to find the band by, so it is found by what it is: a
+  // point that picks nothing, with cells picked a short step either side of it
+  // — a strip a few dozen pixels wide inside the board. The page beside the
+  // board's outline picks nothing too, but never has a cell on both sides.
+  test("klein: the collar round the neck picks nothing, and a click there opens nothing", async ({
+    page,
+  }) => {
+    await page.evaluate(() => {
+      const ms = window.__ms!;
+      ms.startBoard("klein", "easy");
+      ms.rotate(-200, 0);
+      ms.rotate(0, -60);
+      ms.zoomBy(2.2, 490, 500);
+    });
+    await page.evaluate(
+      () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
+    );
+    const band = await page.evaluate(() => {
+      const ms = window.__ms!;
+      const step = 14;
+      const out: { x: number; y: number }[] = [];
+      for (let y = 150; y < 700; y += 10) {
+        for (let x = 0; x < 900; x += 10) {
+          if (ms.cellAtScreenXY(x, y) !== null) continue;
+          const hit = (dx: number, dy: number) => ms.cellAtScreenXY(x + dx, y + dy) !== null;
+          if ((hit(-step, 0) && hit(step, 0)) || (hit(0, -step) && hit(0, step))) {
+            out.push({ x, y });
+          }
+        }
+      }
+      return out;
+    });
+    expect(band.length, "no point of the collar band picks nothing").toBeGreaterThan(5);
+
+    // Hovering it and clicking it leaves the board as it was.
+    for (const p of band.filter((_, i) => i % Math.ceil(band.length / 8) === 0)) {
+      await page.mouse.move(p.x, p.y);
+      await page.mouse.click(p.x, p.y);
+    }
+    const state = await page.evaluate(() => window.__ms!.state());
+    expect(state.revealed).toBe(0);
+    expect(state.status).toBe("playing");
+  });
+
   // The cylinder's cells are keyed `<around>,<along>`, so "the other side of the
   // board" is a ring index that jumps — and a step of one screen pixel can only
   // ever move to a neighbouring cell of the sheet being looked at.

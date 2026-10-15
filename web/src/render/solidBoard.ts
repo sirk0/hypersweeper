@@ -720,23 +720,27 @@ export class SolidBoard extends Group implements BoardMesh {
 
       // Opaque base layer under the whole (unshrunk) polygon: the tile gaps
       // and the silhouette show this grout surface instead of seeing through
-      // the hollow interior. It is cut by the same clip's hole — grout left
-      // behind would cap the hole just as the tiles did. Being the whole
-      // polygon, it is also what a click in a gap picks, so it is mapped back
-      // to its cell exactly as the tiles are — and laid a hair over its own
-      // edges, so that a pick ray cannot slip between two cells (see
-      // BASE_OVERLAP).
+      // the hollow interior. Being the whole polygon, it is also what a click
+      // in a gap picks, so it is mapped back to its cell exactly as the tiles
+      // are — and laid a hair over its own edges, so that a pick ray cannot
+      // slip between two cells (see BASE_OVERLAP).
       const skirt = poly.map((p) => lerp3(p, centroid, -BASE_OVERLAP));
-      const grout = clipTriangles(fanTriangles(skirt, centroid), cut?.solid ?? null);
+      const fan = fanTriangles(skirt, centroid);
+      // A cut cell's grout splits three ways. Inside the hole there is none —
+      // grout left behind would cap the hole just as the tiles did. Between
+      // the hole and the collar's edge is the collar band, drawn and picked
+      // as its own mesh (see below), so that pointing at it picks *nothing*:
+      // the band is the seam that says no cell is there, and as this cell's
+      // grout it lit up whatever scraps of the tile were left, away from the
+      // pointer, and a tap on it opened the cell. The rest is this cell's.
+      const holed = clipTriangles(fan, cut?.solid ?? null);
+      const grout = cut ? clipTriangles(holed, cut.collar) : holed;
       for (const tri of grout) {
         for (const p of tri) basePositions.push(p[0], p[1], p[2]);
         baseFaceCell.push(ci);
       }
-      // ...and the part of it between the hole and the collar, where the tile
-      // has been cut back, is painted again as the collar (see below). The
-      // grout stays under it, so a click there still picks this cell.
       if (cut) {
-        for (const tri of collarTriangles(grout, cut.collar)) {
+        for (const tri of collarTriangles(holed, cut.collar)) {
           for (const p of tri) collarPositions.push(p[0], p[1], p[2]);
         }
       }
@@ -808,9 +812,10 @@ export class SolidBoard extends Group implements BoardMesh {
     // through its belly): the band where the cut sheet's tiles stop short of
     // the sheet crossing it, so the two do not read as neighbours meeting edge
     // to edge. Grout, a shade deeper — it belongs to the theme like the grout
-    // lines do, and still stands apart from them. Coplanar with the base, so
-    // it is drawn a step nearer (less polygon offset) to win over it, and is
-    // never picked: the base under it is.
+    // lines do, and still stands apart from them. It takes the base layer's
+    // place in the band rather than lying over it, and is a pick layer of its
+    // own that resolves to no cell (`cellForFace`): a ray that lands on it
+    // stops there, rather than picking a cell or passing on to the far sheet.
     if (collarPositions.length) {
       const collarGeometry = new BufferGeometry();
       collarGeometry.setAttribute(
@@ -827,8 +832,8 @@ export class SolidBoard extends Group implements BoardMesh {
           flatShading: true,
           side: DoubleSide,
           polygonOffset: true,
-          polygonOffsetFactor: 0.5,
-          polygonOffsetUnits: 2,
+          polygonOffsetFactor: 1,
+          polygonOffsetUnits: 4,
         }),
       );
       collar.name = "collar";
@@ -960,6 +965,7 @@ export class SolidBoard extends Group implements BoardMesh {
   }
 
   cellForFace(faceIndex: number, layer: PickLayer = "cells"): CellId | null {
+    if (layer === "collar") return null; // the seam is no cell
     const ci = (layer === "base" ? this.baseFaceCell : this.faceCell)[faceIndex];
     return ci == null ? null : (this.order[ci] ?? null);
   }
