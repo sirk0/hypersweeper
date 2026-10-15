@@ -253,9 +253,9 @@ interface GlowUniforms {
 
 /** How far the swell pushes at the peak of a blast, and how far out it reaches,
  * both as fractions of a cell width. The reach covers the detonated cell and
- * just laps its neighbours; the swell is well inside the clearance the camera
- * fit already reserves for a pin (`MARKER_REACH`), so a bomb can bulge without
- * being cropped at the board's rim. */
+ * just laps its neighbours; the swell is a tenth of a cell, about the air
+ * `SOLID_MARGIN` leaves round the framed board, so a bomb on the rim bulges
+ * into that air rather than far off screen. */
 const BLAST_SWELL = 0.1;
 const BLAST_REACH = 1.1;
 
@@ -670,28 +670,12 @@ export class SolidBoard extends Group implements BoardMesh {
           }
         }
       }
-      // A style that stands models on its cells has to be framed with room for
-      // one: the camera fit walks this hull, and a marker outside it is a marker
-      // the board's rim crops in half. One point per cell, at the tip of the
-      // tallest model that cell could carry — so a board is framed as if every
-      // cell were flagged, and nothing pops out of frame when one is. It costs a
-      // permanent zoom-out on those styles, which is the price of never cropping
-      // (and why only they pay it). On a two-sided board the marker stands both
-      // ways, so both tips go in.
-      if (this.solidMarkers) {
-        // ...measured from the crown the model now stands on, not from the
-        // surface (see `rebuildMarkers`).
-        const reach = crownHeight + fit * MARKER_REACH;
-        for (const s of this.twoSided ? [1, -1] : [1]) {
-          const tip = add3(centroid, [
-            normal[0] * reach * s,
-            normal[1] * reach * s,
-            normal[2] * reach * s,
-          ]);
-          hull.push(tip[0], tip[1], tip[2]);
-          outerRadius = Math.max(outerRadius, Math.hypot(tip[0], tip[1], tip[2]));
-        }
-      }
+      // The 3D markers (pins, bombs) are deliberately *not* in the hull: the
+      // board is framed on its tiles alone, so it fills the screen the same
+      // with pins on or off. Reserving a pin's height over every cell shrank a
+      // sphere to under three quarters of a phone's width; a pin standing on
+      // the silhouette may now reach past the screen edge instead, and turning
+      // the board brings it back.
       for (let t = 0; t < count / 3; t++) faceCell.push(ci);
 
       // Opaque base layer under the whole (unshrunk) polygon: the tile gaps

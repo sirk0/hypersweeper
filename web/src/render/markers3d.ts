@@ -89,9 +89,9 @@ const SPHERE_RINGS = 12;
 
 /** How far the tallest model reaches above the cell it stands on, as a fraction
  * of the cell's inradius — the pin, whose head is the higher of the two. The
- * renderer frames a marker board with this much clearance over every cell (see
- * `SolidBoard`'s hull), because the camera fit is measured once at build time
- * and a marker outside it is one the board's rim crops in half. */
+ * camera fit does *not* reserve this (see `SolidBoard`'s hull): the board is
+ * framed on its tiles, so a pin on the silhouette can reach past the screen
+ * edge. */
 export const MARKER_REACH = STEM_H + HEAD_R * 1.62;
 
 /** A pin planted by *holding* a cell descends onto it: how big it starts, as a
