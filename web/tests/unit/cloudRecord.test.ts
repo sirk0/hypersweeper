@@ -241,3 +241,209 @@ describe("iCloud record", () => {
     expect(new Device("aa", cloud).sync()).toEqual({});
   });
 });
+
+// -- offline -----------------------------------------------------------------
+//
+// The tests above share one store between devices, as if every device were
+// always online. Here each device has its own cached copy of iCloud, which is
+// what the native store is: a sync made offline reads and writes that cache,
+// and the writes reach iCloud when the device is back online — where, per key,
+// the latest write wins, and every other device's cache picks up the result
+// (with a change event, which syncs again). A fresh install drops its writes
+// until its first download from iCloud has arrived, as iOS does.
+
+/** iCloud's side: per key, the value and when it was written. */
+class ICloud {
+  values = new Map<string, { value: string; t: number }>();
+  clock = 0;
+  readonly devices: OfflineDevice[] = [];
+
+  tick(): number {
+    return ++this.clock;
+  }
+}
+
+class OfflineDevice extends Device {
+  /** This device's cached copy of iCloud. */
+  readonly cache: Record<string, string> = {};
+  /** Keys written to the cache and not yet pushed, with when. */
+  private readonly dirty = new Map<string, { value: string; t: number }>();
+  online = true;
+  /** Whether the first download from iCloud has happened. */
+  downloaded: boolean;
+
+  constructor(
+    id: string,
+    readonly icloud: ICloud,
+    { fresh = false } = {},
+  ) {
+    super(id, {});
+    this.downloaded = !fresh;
+    icloud.devices.push(this);
+  }
+
+  override sync(): Record<string, string> {
+    const result = mergeRecords({
+      boards: this.boards,
+      record: this.record,
+      state: this.state ?? freshState(this.id, this.cache),
+      cloud: { ...this.cache },
+    });
+    this.boards = result.boards;
+    this.record = result.record;
+    this.state = result.state;
+    // Before the first download, iOS discards the write.
+    if (this.downloaded) {
+      for (const [key, value] of Object.entries(result.writes)) {
+        this.cache[key] = value;
+        this.dirty.set(key, { value, t: this.icloud.tick() });
+      }
+    }
+    if (this.online && this.dirty.size > 0) this.connect();
+    return result.writes;
+  }
+
+  /** Back online: push what was written, then every device downloads. */
+  connect(): void {
+    this.online = true;
+    for (const [key, write] of this.dirty) {
+      const have = this.icloud.values.get(key);
+      if (!have || write.t > have.t) this.icloud.values.set(key, write);
+    }
+    this.dirty.clear();
+    for (const device of this.icloud.devices) if (device.online) device.download();
+  }
+
+  /** Take iCloud's values into the cache; a change event if any differed. */
+  download(): void {
+    let changed = !this.downloaded && this.icloud.values.size > 0;
+    this.downloaded = true;
+    for (const [key, { value }] of this.icloud.values) {
+      if (this.dirty.has(key)) continue; // not pushed yet: the cache keeps it
+      if (this.cache[key] !== value) {
+        this.cache[key] = value;
+        changed = true;
+      }
+    }
+    if (changed) this.sync();
+  }
+}
+
+describe("iCloud record, offline", () => {
+  it("merges what an offline device won once it is back", () => {
+    const icloud = new ICloud();
+    const phone = new OfflineDevice("aa", icloud);
+    const mac = new OfflineDevice("bb", icloud);
+    phone.win("square", 30_000, 100);
+    phone.sync();
+    expect(mac.wins()).toBe(1);
+
+    // On a plane: the phone keeps playing and syncing against its own cache.
+    phone.online = false;
+    phone.win("square", 25_000, 200);
+    phone.sync();
+    phone.win("hexhex", 40_000, 300);
+    phone.sync();
+    // Meanwhile the Mac plays too.
+    mac.win("square", 20_000, 250);
+    mac.sync();
+    expect(mac.wins()).toBe(2); // it has not heard of the phone's
+    expect(phone.wins()).toBe(3); // nor the phone of the Mac's
+
+    phone.connect();
+    expect(phone.wins()).toBe(4);
+    expect(mac.wins()).toBe(4);
+    expect(phone.boards["square|easy"]?.map((e) => e.ms)).toEqual([20_000, 25_000, 30_000]);
+    expect(mac.boards).toEqual(phone.boards);
+    expect(mac.record.progress).toEqual(phone.record.progress);
+  });
+
+  it("loses no time when two offline devices wrote the shared list", () => {
+    const icloud = new ICloud();
+    const phone = new OfflineDevice("aa", icloud);
+    const pad = new OfflineDevice("bb", icloud);
+    phone.online = false;
+    pad.online = false;
+    phone.win("square", 30_000, 100);
+    phone.sync();
+    pad.win("square", 31_000, 110);
+    pad.sync();
+    // Both pushed `scores`; the pad's is later and wins in iCloud, without the
+    // phone's time. The phone hears of it, merges, and writes the union back.
+    phone.connect();
+    pad.connect();
+    expect(icloud.values.get("scores")?.value).toContain("30000");
+    expect(icloud.values.get("scores")?.value).toContain("31000");
+    expect(phone.boards).toEqual(pad.boards);
+    expect(phone.wins()).toBe(2);
+    expect(pad.wins()).toBe(2);
+  });
+
+  it("keeps what a fresh install won before its first download", () => {
+    const icloud = new ICloud();
+    const phone = new OfflineDevice("aa", icloud);
+    phone.win("square", 30_000, 100);
+    phone.win("cube", 40_000, 200);
+    phone.sync();
+
+    // Reinstalled, and opened offline: iCloud's record has not arrived, and
+    // what the install writes is dropped.
+    const again = new OfflineDevice("bb", icloud, { fresh: true });
+    again.online = false;
+    again.win("square", 35_000, 300);
+    expect(again.sync()).not.toEqual({}); // tried…
+    expect(again.cache).toEqual({}); // …and iOS dropped it
+    expect(again.wins()).toBe(1);
+    // Nothing it did reached iCloud, so the record there is whole.
+    expect(phone.wins()).toBe(2);
+
+    // Online: the download arrives, and the merge it sets off writes this
+    // install's win again, now that iOS lets it.
+    again.connect();
+    expect(again.wins()).toBe(3);
+    expect(phone.wins()).toBe(3);
+    expect(again.boards["square|easy"]?.map((e) => e.ms)).toEqual([30_000, 35_000]);
+    expect(phone.boards).toEqual(again.boards);
+  });
+
+  it("writes again after a download that changed nothing", () => {
+    // The very first install, offline: iCloud is empty, so its first download
+    // changes nothing and sends no change event. The next sync — the app
+    // coming back to the foreground — is what writes.
+    const icloud = new ICloud();
+    const phone = new OfflineDevice("aa", icloud, { fresh: true });
+    phone.online = false;
+    phone.win("square", 30_000, 100);
+    phone.sync();
+    phone.connect();
+    expect(icloud.values.size).toBe(0);
+    phone.sync(); // foreground
+    expect([...icloud.values.keys()].sort()).toEqual(["scores", "wins.aa"]);
+    const mac = new OfflineDevice("bb", icloud, { fresh: true });
+    mac.connect();
+    expect(mac.wins()).toBe(1);
+  });
+
+  it("clears what an offline device won once it hears of a clear", () => {
+    // A clear is a date. A device that was offline cannot tell which of its
+    // wins came before the clear and which after, so it clears all it counted;
+    // its *times* carry their own dates, and the ones after the clear stay.
+    const icloud = new ICloud();
+    const phone = new OfflineDevice("aa", icloud);
+    const mac = new OfflineDevice("bb", icloud);
+    phone.win("square", 30_000, 100);
+    phone.sync();
+    phone.online = false;
+    mac.clear("achievements", 400);
+    mac.clear("scores", 400);
+    mac.sync();
+    phone.win("hexhex", 40_000, 500);
+    phone.sync();
+
+    phone.connect();
+    expect(phone.wins()).toBe(0);
+    expect(mac.wins()).toBe(0);
+    expect(phone.boards).toEqual({ "hexhex|easy": [{ ms: 40_000, at: 500 }] });
+    expect(mac.boards).toEqual(phone.boards);
+  });
+});

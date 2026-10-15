@@ -47,6 +47,10 @@ public class CloudRecordPlugin: CAPPlugin, CAPBridgedPlugin {
     }
 
     @objc func read(_ call: CAPPluginCall) {
+        // The page reads at launch, after a win and on coming back to the
+        // foreground: each is a good moment to ask iCloud for anything newer.
+        // It does not wait for it — what arrives comes as a change event.
+        store.synchronize()
         var values: [String: String] = [:]
         for (key, value) in store.dictionaryRepresentation {
             if let text = value as? String { values[key] = text }

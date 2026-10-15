@@ -415,12 +415,24 @@ export function syncCloudRecord(): void {
   queue = queue.then(runSync).catch(() => {});
 }
 
-/** Sync now, and whenever iCloud brings another device's change. Called once,
- * at launch; a no-op outside the app. */
+/** Sync now, whenever iCloud brings another device's change, and whenever the
+ * app comes back to the foreground. Called once, at launch; a no-op outside
+ * the app.
+ *
+ * The foreground sync is for being offline. A sync made offline runs against
+ * the device's cached copy of iCloud and is pushed when the network returns,
+ * and a fresh install's writes are dropped until its first download arrives.
+ * Either way, a sync after that redoes whatever did not land — every write is
+ * worked out by comparing with what iCloud holds, never remembered as done.
+ * iCloud's change event is not certain to come (a download that changed
+ * nothing sends none), so coming back to the app is the other moment to look. */
 export function startCloudRecord(): void {
   if (started || !cloudRecordSupported()) return;
   started = true;
   void Native.addListener("change", () => syncCloudRecord()).catch(() => {});
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") syncCloudRecord();
+  });
   syncCloudRecord();
 }
 

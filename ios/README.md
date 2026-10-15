@@ -439,12 +439,15 @@ far inside (a few kilobytes per device, at most ~60 KB of best times).
   outright as `$(TeamIdentifierPrefix)io.github.sirk0.hypersweeper` so the two
   builds share it. The App ID needs the **iCloud** capability (key-value storage
   needs no container); Xcode's automatic signing adds it from the entitlement.
-- **Signed out of iCloud**, or iCloud off for the app, the store keeps working
-  on the device alone and syncs nothing. A fresh install's first writes are held
+- **Signed out of iCloud**, iCloud off for the app, or simply **offline**, the
+  store keeps working from its copy on the device; offline writes go up when
+  the network returns. The page also reads the store (and `read` calls
+  `synchronize`) whenever the app comes back to the foreground. A fresh install's first writes are held
   back by iOS until its first download from iCloud has arrived, so a new
   install can never overwrite the record with an empty one.
 - **Testing.** `web/tests/unit/cloudRecord.test.ts` plays several devices
-  against one simulated store (reinstall, two devices, crossed writes, clears);
+  against one simulated store (reinstall, two devices, crossed writes, clears,
+  and devices going offline);
   `web/tests/e2e/cloudRecord.spec.ts` checks the bridge round trip. iCloud
   itself needs real devices signed in to one Apple ID (simulators sync too, but
   slowly; *Debug → Trigger iCloud Sync* nudges one).

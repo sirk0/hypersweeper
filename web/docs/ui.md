@@ -1208,12 +1208,28 @@ Clip have no plugin, and nothing runs.
   achievements on one device records when, and from then on every device leaves
   out times set before it and device keys counting from before it. Clearing
   therefore clears everywhere.
+- **Offline is the normal case, not an error.** iCloud's store is a cache on
+  the device: offline, a sync reads and writes that cache, and the writes go up
+  when the network returns (then the latest write per key wins, and the other
+  devices merge it). A fresh install's writes are dropped by iOS until its
+  first download from iCloud arrives, so it cannot overwrite the record with an
+  empty one. Neither loses anything, because **no write is remembered as done**:
+  each sync works out what iCloud lacks by comparing with what it holds, so a
+  dropped or failed write is simply made again. iCloud's change event is not
+  certain to come (a download that changed nothing sends none), so the app also
+  syncs whenever it comes back to the foreground. One thing an offline device
+  cannot tell is which of its wins came before a clear made elsewhere, so on
+  hearing of one it clears every win it counted; its times carry their own
+  dates, and those set after the clear stay.
 - **Game Center hears about merged wins.** When a sync changes the achievement
   record, the whole record is sent to Game Center again, quietly
   (`catchUpGameCenter`).
 - The merge is pure (`mergeRecords`) and played out between simulated devices in
-  `tests/unit/cloudRecord.test.ts`; `tests/e2e/cloudRecord.spec.ts` checks the
-  round trip over Capacitor's real bridge. iCloud itself needs a device: two
+  `tests/unit/cloudRecord.test.ts`, which also models each device's own cached
+  copy of iCloud to play out being offline (catching up, crossed writes, a
+  fresh install's dropped writes, a clear heard of late);
+  `tests/e2e/cloudRecord.spec.ts` checks the round trip over Capacitor's real
+  bridge, and that the game plays on with iCloud failing every call. iCloud itself needs a device: two
   devices signed in to one Apple ID, or one app deleted and reinstalled.
 
 ## The App Clip

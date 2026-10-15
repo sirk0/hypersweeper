@@ -52,6 +52,8 @@ declare global {
   interface Window {
     __icloud?: Record<string, string>;
     __icloudCalls?: BridgeCall[];
+    /** iCloud unreachable: every call fails. */
+    __icloudDown?: boolean;
   }
 }
 
@@ -79,7 +81,17 @@ async function asNativeApp(page: Page, store: Record<string, string> = {}): Prom
                   data,
                 }),
               );
-            if (msg.methodName === "read") {
+            if (window.__icloudDown && msg.methodName !== "addListener") {
+              setTimeout(() =>
+                cap.fromNative({
+                  callbackId: msg.callbackId,
+                  pluginId: msg.pluginId,
+                  methodName: msg.methodName,
+                  success: false,
+                  error: { message: "iCloud unavailable" },
+                }),
+              );
+            } else if (msg.methodName === "read") {
               reply({ values: { ...window.__icloud } });
             } else if (msg.methodName === "write") {
               const values = msg.options["values"] as Record<string, string | null>;
@@ -112,6 +124,18 @@ function calls(page: Page, method: string): Promise<BridgeCall[]> {
     (name) => (window.__icloudCalls ?? []).filter((c) => c.methodName === name),
     method,
   );
+}
+
+async function winFixtureBoard(page: Page): Promise<void> {
+  await page.evaluate(() => window.__ms?.startBoard("square", "easy", { mines: ["0,0"] }));
+  const xy = await page.evaluate(() => window.__ms?.cellScreenXY("8,8"));
+  await page.mouse.click(xy!.x, xy!.y);
+  expect(await page.evaluate(() => window.__ms?.state().status)).toBe("won");
+}
+
+/** The app coming back to the foreground. */
+async function resume(page: Page): Promise<void> {
+  await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
 }
 
 const cloudKeys = (page: Page) => page.evaluate(() => Object.keys(window.__icloud ?? {}).sort());
@@ -164,10 +188,7 @@ test.describe("the iCloud record through the Capacitor bridge", () => {
     await asNativeApp(page);
     await boot(page);
     await expect.poll(async () => (await calls(page, "read")).length).toBe(1);
-    await page.evaluate(() => window.__ms?.startBoard("square", "easy", { mines: ["0,0"] }));
-    const xy = await page.evaluate(() => window.__ms?.cellScreenXY("8,8"));
-    await page.mouse.click(xy!.x, xy!.y);
-    expect(await page.evaluate(() => window.__ms?.state().status)).toBe("won");
+    await winFixtureBoard(page);
     await expect.poll(() => cloudKeys(page)).toEqual([
       "scores",
       expect.stringMatching(/^wins\.[0-9a-f]{16}$/),
@@ -201,6 +222,46 @@ test.describe("the iCloud record through the Capacitor bridge", () => {
         data: { keys: Object.keys(store) },
       });
     }, ANOTHER_DEVICE);
+    await expect.poll(() => localTimes(page, "square|easy")).toEqual([21_000, 34_000]);
+  });
+});
+
+test.describe("the iCloud record, with iCloud out of reach", () => {
+  test("the game plays and records as before, and syncs once iCloud is back", async ({
+    page,
+  }) => {
+    await asNativeApp(page);
+    await page.addInitScript(() => {
+      window.__icloudDown = true;
+    });
+    await boot(page);
+    await expect.poll(async () => (await calls(page, "read")).length).toBe(1);
+
+    // A win with iCloud failing every call: filed locally, card and all.
+    await winFixtureBoard(page);
+    await expect(page.locator('[data-dialog="score"]')).toBeVisible();
+    expect(await localTimes(page, "square|easy")).toHaveLength(1);
+    await expect.poll(async () => (await calls(page, "read")).length).toBe(2);
+    expect(await page.evaluate(() => window.__icloud)).toEqual({});
+
+    // Back online, and back to the app: the record goes up.
+    await page.evaluate(() => {
+      window.__icloudDown = false;
+    });
+    await resume(page);
+    await expect.poll(() => cloudKeys(page)).toEqual([
+      "scores",
+      expect.stringMatching(/^wins\.[0-9a-f]{16}$/),
+    ]);
+  });
+
+  test("coming back to the app picks up what arrived meanwhile", async ({ page }) => {
+    await asNativeApp(page);
+    await boot(page);
+    await expect.poll(async () => (await calls(page, "read")).length).toBe(1);
+    // iCloud's cache filled while the app was away, with no change event.
+    await page.evaluate((store) => Object.assign(window.__icloud!, store), ANOTHER_DEVICE);
+    await resume(page);
     await expect.poll(() => localTimes(page, "square|easy")).toEqual([21_000, 34_000]);
   });
 });
