@@ -6,6 +6,7 @@
 
      network.client: not because the game goes online. It does not: it is
      bundled, and the analytics collector is compiled out of packaged builds.
+     (Game Center's traffic is GameKit's own.)
      It is here because WKWebView's helper processes need it inside the
      sandbox. Without it the web content process crashes on launch and is
      relaunched in a loop (~280 times in 10 s, WebKit's
