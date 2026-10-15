@@ -607,11 +607,13 @@ The rest of what to know before changing one:
   computed over the live range by hand — `computeBoundingSphere` would measure
   that stale tail. This is a live cost even without markers, since
   `rebuildGlyphs` runs from `orient()` on every frame of a drag.
-- **A marker style is framed with room for one.** `SolidBoard` pushes a hull
-  point per cell at `MARKER_REACH` above it, so the camera fit sees a board where
-  every cell is flagged and nothing is cropped at the rim when one is. It costs a
-  permanent zoom-out on those styles; the alternative was markers sliced in half
-  at the silhouette, since the fit is measured once at build time.
+- **A board is framed on its tiles, not on its markers.** The camera fit's hull
+  (`SolidBoard`) holds the cells and their crowns only, so a board fills the
+  screen the same with pins on or off. It used to carry a point per cell at
+  `MARKER_REACH` above it — framing the board as if every cell were flagged —
+  and that shrank a sphere to under three quarters of a phone's width, with
+  nothing standing in most of the room it kept. The price is that a pin on the
+  silhouette can reach past the screen edge; turning the board brings it back.
 - **A wrong flag is a gray pin under the bare `cross` glyph** — a slot added to
   the atlas for it, since the ordinary `wrongFlag` glyph is a flag *with* a cross
   and the pin is already the flag. That one billboard is lifted past
