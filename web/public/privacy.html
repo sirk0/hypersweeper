@@ -34,7 +34,13 @@
         - what web/functions/api/_tally.ts stores about a request (nothing);
         - analytics being compiled out of packaged builds (VITE_PACKAGED=1 in
           web/vite.config.ts), which is what ios/App/App/PrivacyInfo.xcprivacy
-          and the App Store "Data Not Collected" label rest on.
+          and the App Store "Data Not Collected" label rest on;
+        - what the App Store apps send Game Center (web/src/gameCenter.ts:
+          achievement ids and percentages, and only once Game Center says the
+          player is signed in) and what they read back from it
+          (ios/App/App/GameCenterPlugin.swift: only whether the player is
+          signed in). Apple collects that, not us, which is why the label
+          stays "Data Not Collected".
 
       Deliberately plain, like 404.html: no script, no web font from anywhere
       but this site, and no absolute URL except the repository's. This file
@@ -210,15 +216,16 @@
     <main>
       <a class="wordmark" href="/">Hypersweeper</a>
       <h1>Privacy policy</h1>
-      <p class="effective">Effective 12 October 2026</p>
+      <p class="effective">Effective 15 October 2026</p>
 
       <section class="summary" aria-labelledby="short">
         <h2 id="short">In short</h2>
         <ul>
           <li>
             <strong>The App Store apps</strong> (iPhone, iPad and Mac) and
-            <strong>the desktop app</strong> collect nothing and make no network
-            requests.
+            <strong>the desktop app</strong> collect nothing. If you are signed in
+            to Game Center, the App Store apps report your achievements to it,
+            and Apple handles that; otherwise they make no network requests.
           </li>
           <li>
             <strong>The website</strong> counts plays anonymously: which boards are
@@ -234,21 +241,37 @@
       <section aria-labelledby="apps">
         <h2 id="apps">The apps: iPhone, iPad, Mac and desktop</h2>
         <p>
-          The apps collect no data at all. They do not contact any server, ours or
-          anyone else's. The play counter described below is not switched off in
-          them; it is left out of them when they are built, so there is no code in
-          them that could send it. On the App Store this is labelled
+          The apps collect no data at all. They do not contact any server of ours.
+          The play counter described below is not switched off in them; it is left
+          out of them when they are built, so there is no code in them that could
+          send it. On the App Store this is labelled
           <strong>Data Not Collected</strong>.
         </p>
         <p>
-          Your settings, best times and achievements are saved on your device, in
-          the app's own storage. They never leave the device.
+          Your settings, best times and the record of your wins are saved on your
+          device, in the app's own storage. They never leave the device.
         </p>
         <p>
           When you share a board, the app makes a link that holds the board and,
           after a win, your time. It hands that link to your device's share sheet
           or clipboard. Where it goes from there is up to you; nothing is sent to
           us.
+        </p>
+
+        <h3 id="game-center">Game Center</h3>
+        <p>
+          In the App Store apps, achievements are shown in Apple's Game Center. If
+          you are signed in to Game Center on your device, the app tells it which
+          achievements you have earned and how far along you are with the others.
+          That is all it sends. Game Center is Apple's service, and Apple handles
+          that information under its own privacy policy. None of it reaches us,
+          and the app reads nothing back from Game Center except whether you are
+          signed in.
+        </p>
+        <p>
+          If you are not signed in to Game Center, nothing is sent. You can sign
+          out of Game Center in your device's settings. The desktop app does not
+          use Game Center: its achievements stay on your device.
         </p>
       </section>
 
