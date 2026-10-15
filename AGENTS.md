@@ -35,6 +35,7 @@ carries over.
 | The iPhone app, and haptics | [`ios/README.md`](ios/README.md) |
 | The App Clip (one board, from the App Store) | "The App Clip" in [`ios/README.md`](ios/README.md), and in [`web/docs/ui.md`](web/docs/ui.md) |
 | The iMessage sticker pack (the boards as stickers) | "The sticker pack" in [`ios/README.md`](ios/README.md); rendered by `web/scripts/make-stickers.mts` |
+| Best times and achievements synced through iCloud | "iCloud" in [`ios/README.md`](ios/README.md), and "The record in iCloud" in [`web/docs/ui.md`](web/docs/ui.md) |
 | The Game Center achievement list and its images (`ios/GameCenter/`) | "Game Center" in [`ios/README.md`](ios/README.md); written by `web/scripts/make-gamecenter.mts` |
 | Uploading to App Store Connect / TestFlight (`app-store.yml`, run by hand) | "Releasing" in [`ios/README.md`](ios/README.md) |
 | The public privacy policy (`/privacy`) | "The privacy policy" in [`web/docs/deploy.md`](web/docs/deploy.md) |

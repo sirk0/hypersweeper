@@ -20,6 +20,7 @@ import { randomMode, randomPool, type RandomKind } from "../boards/randomBoard";
 import { hasMode } from "../boards/presets";
 import { clearAchievements } from "../achievements";
 import { clearBestTimes } from "../leaderboard";
+import { clearCloudRecord } from "../cloudRecord";
 import { renderAchievements } from "./achievements";
 import { renderBestTimes } from "./bestTimes";
 import { HELP_ICON, renderHelp } from "./help";
@@ -686,6 +687,7 @@ export class Menu {
       this.backRow("Best times", () => this.showSettings()),
       renderBestTimes(() => {
         clearBestTimes();
+        clearCloudRecord("scores"); // …on every device, where iCloud keeps them
         this.renderBestTimesPage(); // now the empty state
       }),
     );
@@ -708,6 +710,10 @@ export class Menu {
       renderAchievements(() => {
         clearAchievements();
         this.renderAchievementsPage(); // now everything locked again
+        // …on every device, where iCloud keeps the record. After the render,
+        // which re-seeds the record from the best times: that is what this
+        // device then counts as its own.
+        clearCloudRecord("achievements"); // now everything locked again
       }),
     );
   }

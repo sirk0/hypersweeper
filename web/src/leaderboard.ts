@@ -71,7 +71,7 @@ function readBoards(): Record<string, unknown> {
  * usable time, sort fastest first, and keep at most `TOP_N`. Sorting on read
  * rather than trusting the stored order means a hand-edited file, or a record
  * written by a build with a different `TOP_N`, still reads sensibly. */
-function parseEntries(raw: unknown): ScoreEntry[] {
+export function parseEntries(raw: unknown): ScoreEntry[] {
   if (!Array.isArray(raw)) return [];
   const entries: ScoreEntry[] = [];
   for (const item of raw) {
@@ -165,6 +165,25 @@ export function recordTime(
     }
   }
   return { rank, entries: updated };
+}
+
+/** The stored `boards` map as it stands, unvalidated — what `cloudRecord.ts`
+ * merges with the record iCloud holds. */
+export function storedBoards(): Record<string, unknown> {
+  return readBoards();
+}
+
+/** Replace the stored `boards` map with the iCloud merge's result. The rest of
+ * the record (its version, fields a later build adds) is carried through. */
+export function replaceBoards(boards: Record<string, ScoreEntry[]>): void {
+  const store = storage();
+  if (!store) return;
+  const rec = readObject(KEY) ?? {};
+  try {
+    store.setItem(KEY, JSON.stringify({ ...rec, version: SCHEMA_VERSION, boards }));
+  } catch {
+    /* quota exceeded, or storage disabled mid-session */
+  }
 }
 
 /** Forget every stored time (the settings page's clear action). Only this

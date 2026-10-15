@@ -121,6 +121,14 @@ export function reportUnlocks(unlocked: readonly string[]): void {
   );
 }
 
+/** Send Game Center the whole record again, quietly — after iCloud brought in
+ * wins from another device (`cloudRecord.ts`). Signed out, the next sign-in
+ * does it. */
+export function catchUpGameCenter(): void {
+  if (!signedIn || !gameCenterSupported()) return;
+  send(gameCenterProgress(), false);
+}
+
 /** Open Game Center on its achievements page — Settings' Game Center row. */
 export function showGameCenterAchievements(): void {
   void Native.showAchievements().catch(() => {});

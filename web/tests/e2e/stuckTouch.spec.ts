@@ -74,8 +74,38 @@ async function tap(cdp: CDPSession, x: number, y: number): Promise<void> {
   await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
 }
 
+/** Wait until the board stops moving: a drag can leave it coasting, and every
+ * frame of that is software WebGL on CI, slow enough to hold a tap's lift back
+ * past the hold-to-flag timer. */
+async function settle(page: Page): Promise<void> {
+  let last = "";
+  await expect
+    .poll(async () => {
+      const now = await page.evaluate(
+        () =>
+          new Promise<string>((done) =>
+            requestAnimationFrame(() =>
+              requestAnimationFrame(() => done(JSON.stringify(window.__ms!.cellScreenXY("4,5")))),
+            ),
+          ),
+      );
+      const still = now === last;
+      last = now;
+      return still;
+    })
+    .toBe(true);
+}
+
 test.describe("a lost touch lift", () => {
   test.beforeEach(async ({ page }) => {
+    // The slowest hold the slider offers. Every tap here is a CDP touchStart
+    // then touchEnd, and on a loaded CI runner the time between the two
+    // reaching the page has outrun the default 300 ms, turning a tap into a
+    // flag. This spec is about lost lifts, not about the hold, so give the
+    // tap all the room there is.
+    await page.addInitScript(() =>
+      localStorage.setItem("ms:settings", JSON.stringify({ version: 5, holdToFlagMs: 500 })),
+    );
     await page.setViewportSize({ width: 420, height: 780 }); // a phone
     await page.goto("/");
     await expect(page.locator("body[data-ready]")).toBeVisible();
@@ -93,6 +123,7 @@ test.describe("a lost touch lift", () => {
 
     const before = await page.evaluate(() => window.__ms!.cellScreenXY("4,5")!);
     await drag(cdp, 210, 500, 250, 540);
+    await settle(page);
     // A drag pans the zoomed board along with the finger; it does not zoom.
     // (By a little less than the finger's 40px: travel under the drag
     // threshold is not a drag yet.)

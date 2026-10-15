@@ -912,7 +912,8 @@ branch of the settle-then-reload path against a hand-driven fake worker;
 
 Winning a board files the time with `src/leaderboard.ts`, which keeps the
 **fastest three per board per difficulty** on the device; when the time places,
-a window says so.
+a window says so. The App Store app also keeps them in iCloud ("The record in
+iCloud" below).
 
 - **Its own key.** `ms:scores`, not the settings record. Best times are game
   history rather than a preference: they grow with every board played, while
@@ -1176,6 +1177,60 @@ star, trophy, flag, warning, and a three-bar difficulty ladder that fills one
 bar per rung, drawing all three so a lone bar is not left saying nothing) —
 there is no geometry in "win ten boards". They are drawn `fill-rule="evenodd"`,
 because they have holes in them.
+
+## The record in iCloud
+
+In the App Store app (iPhone, iPad and Mac) the best times and the achievement
+record are kept in step through iCloud, so a second device, or the same one
+after the app is deleted and installed again, starts with everything the player
+has won. `src/cloudRecord.ts` does it over a native plugin, `CloudRecord`
+(`ios/App/App/CloudRecordPlugin.swift`), which hands the page iCloud's
+key-value store; the website, the PWA, Android, the Electron Mac app and the App
+Clip have no plugin, and nothing runs.
+
+- **The local record stays the game's.** `leaderboard.ts` and `achievements.ts`
+  read and write `localStorage` as before. A sync merges iCloud into them and
+  them into iCloud: at launch, after every win, and whenever iCloud delivers
+  another device's write. A win offline, or signed out of iCloud, is merged the
+  next time.
+- **Best times are a union** (the `scores` key): the fastest three of every
+  device's times. Merging the same time twice changes nothing, so each device
+  writes the whole merged list, and when two writes cross the device whose
+  time was lost hears of the change, merges and writes it back.
+- **Win counts are a sum**, so each device has its own key (`wins.<device>`)
+  holding only what *it* won, and the record is the sum of all of them. A device
+  knows what it has won since the last sync as the local record minus `base`,
+  the total it last wrote (`ms:cloud` holds both, and the device id). A
+  reinstall is a new device; the old key stays and keeps counting. Unlock dates
+  merge to the earliest.
+- **A clear is a date** (the `reset` key). Every other device still holds what
+  was cleared and would merge it straight back, so clearing best times or
+  achievements on one device records when, and from then on every device leaves
+  out times set before it and device keys counting from before it. Clearing
+  therefore clears everywhere.
+- **Offline is the normal case, not an error.** iCloud's store is a cache on
+  the device: offline, a sync reads and writes that cache, and the writes go up
+  when the network returns (then the latest write per key wins, and the other
+  devices merge it). A fresh install's writes are dropped by iOS until its
+  first download from iCloud arrives, so it cannot overwrite the record with an
+  empty one. Neither loses anything, because **no write is remembered as done**:
+  each sync works out what iCloud lacks by comparing with what it holds, so a
+  dropped or failed write is simply made again. iCloud's change event is not
+  certain to come (a download that changed nothing sends none), so the app also
+  syncs whenever it comes back to the foreground. One thing an offline device
+  cannot tell is which of its wins came before a clear made elsewhere, so on
+  hearing of one it clears every win it counted; its times carry their own
+  dates, and those set after the clear stay.
+- **Game Center hears about merged wins.** When a sync changes the achievement
+  record, the whole record is sent to Game Center again, quietly
+  (`catchUpGameCenter`).
+- The merge is pure (`mergeRecords`) and played out between simulated devices in
+  `tests/unit/cloudRecord.test.ts`, which also models each device's own cached
+  copy of iCloud to play out being offline (catching up, crossed writes, a
+  fresh install's dropped writes, a clear heard of late);
+  `tests/e2e/cloudRecord.spec.ts` checks the round trip over Capacitor's real
+  bridge, and that the game plays on with iCloud failing every call. iCloud itself needs a device: two
+  devices signed in to one Apple ID, or one app deleted and reinstalled.
 
 ## The App Clip
 
