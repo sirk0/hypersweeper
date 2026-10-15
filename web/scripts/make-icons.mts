@@ -116,13 +116,15 @@ function accent(sides: number): string {
 // On the 1024 canvas Icon Composer works in, whose full square the system masks.
 // Every cell sits on a flat edge — a pentagon point up, a hexagon and an octagon
 // flat-topped — with its bounding box centred, and every cell has the same
-// *area*: the pentagon's circumradius is the one the old iOS icon used (0.8 of
-// 220 at 512), and the others are sized to cover as much of the icon as it
-// does, so no choice reads as a smaller icon than another. That keeps every
-// corner inside Android's maskable safe circle (0.4 of the side) too.
+// *area*: the pentagon spans about 80% of the icon's width (its circumradius
+// is 0.43 of the side), and the others are sized to cover as much of the icon
+// as it does, so no choice reads as a smaller icon than another. That is as big
+// as the cell gets with its corners still clear of the rounded-square mask; the
+// Android maskable PNG, whose safe zone is a smaller circle, is shrunk to fit
+// it at export (`MASKABLE`) rather than holding every other icon to it.
 const SIZE = 1024;
 const C = SIZE / 2;
-const R5 = 352;
+const R5 = 440;
 const AREA = (5 / 2) * R5 * R5 * Math.sin((2 * Math.PI) / 5);
 const MINE_R = Math.round(R5 * 0.307); // the same mine on every cell
 const LIGHT = [-0.64, -0.77]; // up and to the left
@@ -162,6 +164,14 @@ function cell(sides: number): Cell {
     radius,
   };
 }
+
+/** How much the maskable PNG is shrunk so the default cell's farthest corner
+ * lands on Android's safe circle (0.4 of the side) — never enlarged. */
+const DEFAULT_SIDES = APP_ICONS.find((i) => i.key === DEFAULT_APP_ICON)!.sides;
+const MASKABLE = Math.min(
+  1,
+  (0.4 * SIZE) / Math.max(...cell(DEFAULT_SIDES).outer.map(([x, y]) => Math.hypot(x - C, y - C))),
+);
 
 const points = (pts: Pt[]): string => pts.map(([x, y]) => `${n(x)},${n(y)}`).join(" ");
 
@@ -335,7 +345,17 @@ try {
     await place(browser, png, 180, 180, join(PUBLIC, "apple-touch-icon.png"), GROUND);
     await place(browser, png, 192, 192, join(PUBLIC, "icons/icon-192.png"), null);
     await place(browser, png, 512, 512, join(PUBLIC, "icons/icon-512.png"), null);
-    await place(browser, png, 512, 512, join(PUBLIC, "icons/maskable-512.png"), GROUND);
+    // Android masks it anywhere down to the safe circle, so the cell's
+    // corners are drawn inside that; the export's rounded corners, and the
+    // margin around it, are the ground.
+    await place(
+      browser,
+      png,
+      512,
+      Math.round(512 * MASKABLE),
+      join(PUBLIC, "icons/maskable-512.png"),
+      GROUND,
+    );
     // The macOS grid: an app icon's rounded square is 824 of a 1024 canvas.
     // electron-builder renders the .icns from this, so it wants the full 1024.
     await place(browser, png, 1024, 824, join(DESKTOP, "icon.png"), null);
