@@ -306,6 +306,22 @@ test.describe("browser zoom is blocked", () => {
     expect(await touchAction(".hud-smiley")).toBe("manipulation");
   });
 
+  // The other iPhone bug: a long press or double tap on the chrome selected its
+  // text mid-game, raising the copy menu over the board.
+  test("no text in the app is selectable", async ({ page }) => {
+    const userSelect = (sel: string) =>
+      page.locator(sel).first().evaluate((el) => getComputedStyle(el).userSelect);
+    expect(await userSelect("body")).toBe("none");
+    await page.evaluate(() => window.__ms?.startBoard("square", "easy", { seed: 1 }));
+    expect(await userSelect(".hud-smiley")).toBe("none");
+    expect(await userSelect("#board")).toBe("none");
+    const selected = await page.evaluate(() => {
+      document.getSelection()!.selectAllChildren(document.body);
+      return document.getSelection()!.toString().trim();
+    });
+    expect(selected).toBe("");
+  });
+
   test("page-zoom gestures are cancelled", async ({ page }) => {
     const prevented = await page.evaluate(() =>
       ["gesturestart", "gesturechange", "dblclick"].map((type) => {
