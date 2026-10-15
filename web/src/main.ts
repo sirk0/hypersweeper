@@ -24,6 +24,7 @@ import {
 } from "./audio/sound";
 import { isBoard3D, type CellId, type SymmetryId } from "./boards/core";
 import { fairnessOf } from "./boards/fairness";
+import { gameCenterSupported, reportUnlocks, startGameCenter } from "./gameCenter";
 import { randomMode } from "./boards/randomBoard";
 import { haptic, setHapticsEnabled } from "./haptics";
 import { boardLinkQuery, parseBoardLink } from "./link";
@@ -286,6 +287,9 @@ class App {
     window.setInterval(() => this.tickTimer(), 250);
 
     this.installSeam();
+    // Sign in to Game Center and catch it up with the record. Only the app
+    // proper carries the plugin, so this is a no-op everywhere else.
+    startGameCenter();
     if (this.clip) this.startGame(this.clip, this.settings.difficulty, { trigger: "link" });
     else if (!this.startFromDeepLink()) this.showMenu();
     requestAnimationFrame(() => document.body.setAttribute("data-ready", "1"));
@@ -1111,16 +1115,27 @@ class App {
     const placed = this.clip
       ? null
       : recordTime(session.mode, session.difficulty, session.elapsedMs());
+    // Where Game Center is (the App Store builds) the unlocks are its to say,
+    // with its own banners, and the card is about the time alone. Everywhere
+    // else they are half of what the card says.
+    const unlocked = this.unlocked;
+    const toGameCenter = gameCenterSupported() && unlocked.length > 0;
+    const onCard = gameCenterSupported() ? [] : unlocked;
     // A time that did not place used to end the win in silence. It still does
     // when nothing was unlocked; when something was, that is worth a card of
     // its own — see the note at the top of ui/scoreDialog.ts.
-    if (!placed && this.unlocked.length === 0 && !this.clip) return;
+    if (!placed && onCard.length === 0 && !toGameCenter && !this.clip) return;
     const open = (): void => {
       this.scoreDialogTimer = 0;
+      // Game Center hears about the unlocks even if the board was left during
+      // the delay: they were earned either way.
+      if (toGameCenter) this.announceUnlocks(unlocked);
       // The board can have been left or restarted during the delay.
       if (this.screen !== "game" || this.session !== session) return;
       if (this.clip) tellClip("won");
-      else this.showScoreDialog(session, placed?.rank ?? null, placed?.entries ?? []);
+      else if (placed || onCard.length > 0) {
+        this.showScoreDialog(session, placed?.rank ?? null, placed?.entries ?? [], onCard);
+      }
     };
     if (this.animationsEnabled) {
       this.scoreDialogTimer = window.setTimeout(open, RECORD_DIALOG_DELAY_MS);
@@ -1129,10 +1144,20 @@ class App {
     }
   }
 
+  /** Hand a win's unlocks to Game Center, which shows a banner for each, and
+   * give them the voice the card would have: banners are silent, and the
+   * sound and the buzz are what a player notices first. */
+  private announceUnlocks(unlocked: readonly Achievement[]): void {
+    haptic("unlock");
+    playSound({ kind: "unlock", count: unlocked.length });
+    reportUnlocks(unlocked.map((a) => a.id));
+  }
+
   private showScoreDialog(
     session: GameSession,
     rank: number | null,
     entries: ScoreEntry[],
+    unlocked: readonly Achievement[],
   ): void {
     this.dismissDialogs();
     // Said as the card arrives rather than when the win is counted: at the
@@ -1140,16 +1165,16 @@ class App {
     // the card's voice. With animations on, the win figure has finished by the
     // time the card opens; with them off the two land together, which the
     // collection they share makes consonant (audio/sound.ts).
-    if (this.unlocked.length > 0) {
+    if (unlocked.length > 0) {
       haptic("unlock");
-      playSound({ kind: "unlock", count: this.unlocked.length });
+      playSound({ kind: "unlock", count: unlocked.length });
     }
     this.scoreDialog = openScoreDialog(this.ui, {
       mode: session.mode,
       difficulty: session.difficulty,
       rank,
       entries,
-      unlocked: this.unlocked,
+      unlocked,
       animate: this.animationsEnabled,
       // A board the player chose highlights playing it again; one the game
       // dealt them highlights the next one.

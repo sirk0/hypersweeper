@@ -1086,6 +1086,17 @@ the code. See "Game Center" in [`../../ios/README.md`](../../ios/README.md).
 
 ### Where an unlock is said
 
+**In the App Store app, Game Center says it.** There the shell registers a
+native `GameCenter` plugin, and `gameCenterSupported()` (`src/gameCenter.ts`)
+is true. `App.checkRecord` then passes the card no unlocks and opens it only
+for a time that placed; at the beat the card would have opened, the unlocks
+go to Game Center, which shows a banner for each, with the unlock sound and
+buzz (`App.announceUnlocks`). Settings' Achievements row becomes a **Game
+Center** row that opens Game Center's achievements page, so the game's own
+page has no way in. How the record reaches Game Center is in "Game Center" in
+[`../../ios/README.md`](../../ios/README.md); everything below is every other
+build.
+
 In the **record window**, which is why that window is no longer only about
 records. The app has exactly two modals on purpose (`src/ui/modal.ts`), and an
 unlock wants saying at the same instant a record does — a third overlay would
