@@ -546,7 +546,7 @@ export function measureOf(a: Achievement, p: Progress, won = wonModes(p)): Measu
 // write so a game finished in another tab survives, and unknown keys carried
 // through untouched.
 
-interface Stored {
+export interface Stored {
   progress: Progress;
   unlocked: Record<string, number>;
 }
@@ -583,7 +583,13 @@ function parseNumbers(raw: unknown): number[] {
 
 function readStored(): Stored | null {
   const rec = readObject(KEY);
-  if (!rec) return null;
+  return rec ? parseStored(rec) : null;
+}
+
+/** A stored record, validated the way every read is. Exported for
+ * `cloudRecord.ts`, which reads the other devices' records out of iCloud in
+ * this same shape. */
+export function parseStored(rec: Record<string, unknown>): Stored {
   const count = rec["flagless"];
   return {
     progress: {
@@ -651,6 +657,17 @@ function seedFromBestTimes(): Progress {
     }
   }
   return progress;
+}
+
+/** The whole record, progress and unlock dates — what `cloudRecord.ts` merges
+ * with the other devices'. Seeds it, like every read, the first time. */
+export function loadRecord(): Stored {
+  return loadStored();
+}
+
+/** Replace the stored record with the iCloud merge's result. */
+export function replaceRecord(next: Stored): void {
+  write(next);
 }
 
 export function loadProgress(): Progress {

@@ -48,8 +48,13 @@ class BridgeViewController: CAPBridgeViewController, UIGestureRecognizerDelegate
         // target sets APP_CLIP and leaves the plugin out), so only the app
         // registers it. Its presence is what the page reads to hand the
         // achievements to Game Center (web/src/gameCenter.ts).
+        // iCloud keeps the best times and the achievement record in step
+        // across the player's devices and through a reinstall
+        // (web/src/cloudRecord.ts). The clip keeps no record, so it too is
+        // the app's alone.
         #if !APP_CLIP
         bridge?.registerPluginInstance(GameCenterPlugin())
+        bridge?.registerPluginInstance(CloudRecordPlugin())
         #endif
 
         #if targetEnvironment(macCatalyst)

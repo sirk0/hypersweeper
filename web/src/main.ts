@@ -12,6 +12,7 @@ import {
 } from "./achievements";
 import { setAnalyticsEnabled, trackGame } from "./analytics";
 import { clipBoard, tellClip } from "./appClip";
+import { startCloudRecord, syncCloudRecord } from "./cloudRecord";
 import type { PreviousState, StartTrigger } from "./analyticsEvent";
 import { applyWebAppIcon, nativeAppIcon, setAppIcon, type AppIconKey } from "./appIcon";
 import {
@@ -290,6 +291,9 @@ class App {
     // Sign in to Game Center and catch it up with the record. Only the app
     // proper carries the plugin, so this is a no-op everywhere else.
     startGameCenter();
+    // Merge the record with iCloud's, where the App Store builds keep it in
+    // step across devices and through a reinstall. Also the app's alone.
+    startCloudRecord();
     if (this.clip) this.startGame(this.clip, this.settings.difficulty, { trigger: "link" });
     else if (!this.startFromDeepLink()) this.showMenu();
     requestAnimationFrame(() => document.body.setAttribute("data-ready", "1"));
@@ -1115,6 +1119,9 @@ class App {
     const placed = this.clip
       ? null
       : recordTime(session.mode, session.difficulty, session.elapsedMs());
+    // The win is filed (here and in `countWin`, just before): hand it to
+    // iCloud. A no-op outside the app.
+    if (!this.clip) syncCloudRecord();
     // Where Game Center is (the App Store builds) the unlocks are its to say,
     // with its own banners, and the card is about the time alone. Everywhere
     // else they are half of what the card says.
