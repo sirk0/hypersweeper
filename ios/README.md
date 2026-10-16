@@ -320,10 +320,9 @@ from the invocation URL; none of that exists yet.
 
 The app carries an iMessage sticker pack: in Messages, the app drawer (or the
 emoji keyboard's sticker tab) offers the game's boards as stickers to send or
-peel onto a bubble. They show the Klein bottle, trefoil knot, Möbius strip,
-double torus, torus, projective plane, chamfered dodecahedron, cube,
-tetrahedron, hyperbolic disc, Penrose tiling, and a Klein bottle with a mine
-gone off.
+peel onto a bubble. They show the snub dodecahedron, the snub square torus,
+the hexagon trefoil knot, the Penrose rhombi and the heptagonal {7,3}
+hyperbolic disc.
 
 It is a third target, `Stickers` (product type
 `app-extension.messages-sticker-pack`, bundle ID
@@ -351,8 +350,9 @@ or a dark bubble, and fits it to Apple's **Large** sticker size: 618 px square,
 two to a row. The script fails if a sticker goes over Apple's **500 KB** limit.
 It also writes every `Contents.json`, so **`STICKERS` in that script is the one
 place to add, drop or reorder a sticker**. Each sticker's VoiceOver label is
-its board's name in `data/catalog.json`. `SHOTS=klein,trefoil` re-renders a
-subset.
+its board's name in `data/catalog.json` unless the entry gives its own.
+`SHOTS=trefoil,penrose` re-renders a subset (and, unlike a full run, leaves
+any folder no longer listed in place).
 
 The drawer icon (`iMessage App Icon.stickersiconset`, Messages' 4:3 sizes plus
 the 1024 × 768 and 1024 × 1024 store icons) is the app icon's art, drawn from
@@ -553,8 +553,10 @@ Store Connect, select the build, and **Add for Review**.
 ### Screenshots
 
 The version page also asks for screenshots. `npm run store-screenshots` in
-`web/` renders ten of them for each slot into `app-store-screenshots/<slot>/`
-(git-ignored), at sizes App Store Connect accepts:
+`web/` renders seven of them for each slot into `app-store-screenshots/<slot>/`
+(git-ignored), at sizes App Store Connect accepts. They are the snub
+dodecahedron, the snub square torus, the hexagon trefoil knot, the Penrose
+rhombi, the heptagonal {7,3} disc, the main menu and the Flat manifolds menu.
 
 | Folder | Slot | Pixels |
 |---|---|---|
@@ -564,13 +566,22 @@ The version page also asks for screenshots. `npm run store-screenshots` in
 | `ipad` | iPad 13" display | 2064 × 2752 |
 | `mac` | Mac | 2880 × 1800 |
 | `header` | iOS product page header | 5244 × 2950, 3840 × 1646 |
+| `header-penrose` | the header of the Penrose custom product page | 5244 × 2950, 3840 × 1646 |
 | `search-results` | iOS search results | 5244 × 2950, 3840 × 2560, 1920 × 1280 |
 | `app-clip` | App Clip card image | 1800 × 1200 (JPEG) |
+| `imessage-iphone` | iMessage app, iPhone 6.1" / 6.3" display | 1206 × 2622 |
+| `imessage-iphone-duo` | iMessage app, iPhone Duo | 2007 × 2853 |
+| `imessage-ipad` | iMessage app, iPad 13" display | 2064 × 2752 |
 
 The last two are artwork, not device screenshots, and follow Apple's
 [asset best practices](https://developer.apple.com/app-store/asset-best-practices/):
 one clear idea, the focal point centred so no device crops it, and any text a
-short phrase. The header is a row of real boards with no words. The search
+short phrase. The header is a row of real boards with no words. The App
+Store crops it: on an iPhone the sides go, the back and share buttons sit over
+its upper quarter, and the info card covers it from about 64% of its height
+down. So the boards stand in the band between (`HEADER_FOCUS` in the script),
+not centred on the banner. The Penrose header is the same art with one
+Penrose rhombi board, for a custom product page. The search
 card is three of the iPhone shots under one line, `SEARCH_HEADLINE` in the
 script. It is English, so it needs translating if the app is ever localised.
 Both are composed on the app's own Sand page with its chrome hidden. The App
@@ -578,10 +589,20 @@ Clip card is the clip's own board in play, on that page, with no words — the
 card prints its title and subtitle under the image — and is a JPEG because the
 card takes no transparency.
 
+The `imessage-*` slots are the iMessage app's own screenshots: a conversation
+drawn in the manner of Messages — bubbles, the compose bar, the sticker drawer —
+with the stickers peeled onto it and laid out in the drawer. It is plain HTML
+in the script, with no Apple marks. The stickers are read from the pack in
+`ios/App/Stickers`, in the pack's order, so run `make ios-stickers` first when
+the pack changes.
+
 Every shot uses the look a new player first sees: the Sand theme, the light
 scheme, and no patterned page. The script builds the packaged bundle
 (`VITE_PACKAGED=1`) and stages each board through the `window.__ms` seam, as
 the README gallery does. Each device runs the layout it really gets, so the
 iPad and the Mac show the two-pane menu. The scenes are listed at the top of
 `web/scripts/make-store-screenshots.mts`. `DEVICES=iphone-6.3` or
-`SHOTS=01-sphere` renders a subset.
+`SHOTS=01-snub-dodecahedron` renders a subset. A full run deletes any numbered
+shot that is no longer in the list. Under `SWIFTSHADER=1` a long run can time
+out loading a page. If one does, re-run the slots it did not reach with
+`SKIP_BUILD=1 DEVICES=…`.
