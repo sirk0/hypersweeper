@@ -260,6 +260,14 @@ it ("Game Center", under the apps). If the app ever reads data back from Game
 Center (the player's name, say, or their friends), that is collection by the
 app, and the label and the page have to change with it.
 
+iCloud does not change it either. The best times and the achievement record go
+to the player's own iCloud key-value store (see "iCloud" below), labelled with
+a random per-install id, and we have no way to read them. Apple counts data as
+collected only when the developer or a partner can access it, so this is not
+collection. The policy page says what is kept there ("iCloud", under the
+apps). If the record ever went anywhere the developer can read (CloudKit's
+public database, or a server of ours), the label would change.
+
 ## The App Clip
 
 An App Clip lets someone play from the App Store, or from an App Clip link,

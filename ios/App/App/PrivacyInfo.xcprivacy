@@ -3,10 +3,12 @@
 <!-- The app's privacy manifest. No tracking, no data collected: the packaged
      game sends nothing to us or anyone else (web/src/analytics.ts is compiled
      out when VITE_PACKAGED=1, and scripts/check-offline-assets.mjs fails the
-     build over any remote URL). The one thing that leaves the device is Game
-     Center achievement progress, which GameKit sends to Apple once the player
-     is signed in. Apple collects that, not the app, and the app reads nothing
-     back but the sign-in state (see "Privacy" in ios/README.md). The app's own Swift code calls no required-reason API;
+     build over any remote URL). Two things leave the device, both to Apple:
+     Game Center achievement progress, which GameKit sends once the player is
+     signed in (the app reads nothing back but the sign-in state), and the best
+     times and achievement record, kept in the player's own iCloud key-value
+     store, which we cannot read. Neither is collection by the app (see
+     "Privacy" in ios/README.md). The app's own Swift code calls no required-reason API;
      Capacitor's pods ship their own manifests for theirs. Keep this in step
      with the App Store Connect privacy label ("Data Not Collected"). -->
 <plist version="1.0">
