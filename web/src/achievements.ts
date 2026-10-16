@@ -15,7 +15,7 @@ import { allBestTimes, splitBoardKey } from "./leaderboard";
 
 // Achievements: what a player has seen of the catalogue, and what is left.
 //
-// The game has 179 boards across eleven tiling families, eight surfaces and six
+// The game has 200+ boards across eleven tiling families, eight surfaces and six
 // solid groups, and until now finishing one left no trace unless the clock beat
 // a record. This is the trace. It is also the only thing in the app that says
 // there is more to play than the board in front of you.
@@ -56,7 +56,7 @@ const WIN_TIERS = [10, 50, 250];
 
 /** The distinct tile side counts anywhere in the catalogue.
  *
- * Declared rather than derived: answering it honestly means building all 179
+ * Declared rather than derived: answering it honestly means building all 200+
  * boards and running `classifyShapes` over them, which is about a second — fine
  * in a test, not on a settings page. `tests/unit/achievements.test.ts` does
  * exactly that and fails if this list is wrong, so a tiling with heptagons
@@ -260,8 +260,8 @@ export function totalWins(p: Progress): number {
 }
 
 /** Every board won at least once, at any difficulty. One win ticks a board off
- * — the group-completion sets run to 174 boards, and asking for all three
- * difficulties on each would make that 522. */
+ * — the group-completion sets run to 200+ boards, and asking for all three
+ * difficulties on each would triple that. */
 export function wonModes(p: Progress): Set<string> {
   const out = new Set<string>();
   for (const [mode, byDifficulty] of Object.entries(p.wins)) {
@@ -613,7 +613,7 @@ function write(next: Stored): void {
  * Seeding is why this is not simply `emptyProgress()`: `allBestTimes()` is
  * already a complete list of every board and difficulty this device has ever
  * won, so a player who has cleared eighty boards should not meet this feature
- * at 0 / 174. It cannot recover `flagless` (never recorded) or `shapes` (that
+ * at 0 / 200-odd. It cannot recover `flagless` (never recorded) or `shapes` (that
  * needs the boards themselves — see `seedShapes`), so those start where the
  * history genuinely is: empty. */
 function loadStored(now: number = Date.now()): Stored {

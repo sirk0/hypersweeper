@@ -101,7 +101,7 @@ afterEach(() => {
 
 describe("the declared shape list", () => {
   // The one table in achievements.ts that is not derived, because deriving it
-  // means this: building all 179 boards, which is a second. A tiling added with
+  // means this: building all 200+ boards, which is a second. A tiling added with
   // heptagonal tiles has to fail here rather than quietly get no badge.
   it("is exactly the side counts the catalogue's boards have", () => {
     const sides = new Set<number>();

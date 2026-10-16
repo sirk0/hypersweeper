@@ -1005,7 +1005,7 @@ that reads like a browser warning.
 ## Achievements
 
 A win used to leave no trace unless the clock beat a record. The catalogue is
-179 boards across eleven tiling families, eight surfaces and six solid groups,
+200+ boards across eleven tiling families, eight surfaces and six solid groups,
 and nothing in the game said so. `src/achievements.ts` is the record of where a
 player has been, and the list of where they have not.
 
@@ -1032,7 +1032,7 @@ player has been, and the list of where they have not.
   count towards their surface and the whole catalogue.
 - **One declared table, pinned by measurement.** `SHAPE_SIDES` — the side counts
   a board's tiles can have, `[3, 4, 5, 6, 7, 8, 10, 12, 13]` — is the exception,
-  because deriving it means building all 179 boards and running
+  because deriving it means building all 200+ boards and running
   `classifyShapes`, about a second. `tests/unit/achievements.test.ts` does
   exactly that and fails if the list drifts, so a tiling with eleven-sided tiles
   cannot ship without a badge (the `soundHarmony.test.ts` pattern).
@@ -1040,7 +1040,7 @@ player has been, and the list of where they have not.
   boards cannot be played at all — their menu row opens `blockedExplanation`
   instead of a game (see "fairness" in `src/boards/fairness.ts`) — so a set
   containing one could never be finished. `blockedModes()` is the filter, the
-  totals run to 174 rather than 179, and the page says so in a line rather than
+  totals leave those five out, and the page says so in a line rather than
   leaving a silent gap.
 - **The stored record is history; unlocking is a pure function of it.** Its own
   key `ms:achievements`, shaped like `leaderboard.ts` (version inside the
@@ -1055,10 +1055,10 @@ player has been, and the list of where they have not.
   that a card is still going to announce.
 - **It seeds itself from the best times.** `allBestTimes()` is already a
   complete list of every board and difficulty this device has won, so a player
-  who has cleared eighty boards does not meet this feature at 0 / 174. Run once,
+  who has cleared eighty boards does not meet this feature at 0 / 200-odd. Run once,
   at record creation. It cannot recover flags or shapes and claims neither.
-- **A win counts a board at any one difficulty.** The completion sets are 174
-  boards; asking for all three each would make that 522.
+- **A win counts a board at any one difficulty.** The completion sets run to
+  200+ boards; asking for all three each would triple that.
 - **No speed milestone.** There was one — a hard board inside two minutes — and
   it was the only number in the feature somebody picked rather than derived.
   Best times already record speed properly, per board and per difficulty, so it
