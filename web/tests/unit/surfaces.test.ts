@@ -321,46 +321,49 @@ describe("wrapped surfaces", () => {
     }
   });
 
-  it("the collar contains the hole and widens it into a band round the crossing", () => {
-    // The collar is the hole grown by a fifth of an edge or so: it cuts all the
-    // hole cuts and a band beyond, and nothing further from the drawn tube's
-    // own cross-section than that margin.
+  it("the collar is a band hugging the crossing, never ballooning along the belly", () => {
+    // The collar is a band of fixed width round the line where the belly passes
+    // through the neck — so everything it takes beyond the hole lies near the
+    // neck's own drawn cross-section. It used to be the neck grown outward
+    // instead, which at the top and bottom of the crossing, where the two
+    // sheets meet almost tangentially, ran a long way along the belly and
+    // turned most of a cell grey (beta feedback).
     for (const board of [
       kleinBoard(10, 8, 14, 1.15),
       kleinBoard(16, 8, 20),
+      kleinBoard(26, 10, 55),
       kleinTriangleBoard(21, 4, 18),
       kleinHexBoard(14, 6, 16, 1.15),
     ]) {
       const { cells, solid, collar, occluder } = board.clip!;
-      const band = 0.22 * longestEdge(board) * 1.05;
-      let holeCut = 0;
-      let collarCut = 0;
+      // The widest it can be: COLLAR_WIDTH of an edge, out to a capsule's
+      // corner. The crossing lies on the neck's drawn triangles, so nothing in
+      // the band is further than that from them.
+      const reach = 0.3 * longestEdge(board) * 1.17;
+      let band = 0;
       let sampled = 0;
       for (const cell of cells) {
         const poly = board.polygons.get(cell)!;
         const whole = fanTriangles(poly, centroid(poly));
-        holeCut += trianglesArea(whole) - trianglesArea(subtractSolid(whole, solid));
-        collarCut += trianglesArea(whole) - trianglesArea(subtractSolid(whole, collar));
+        const holed = subtractSolid(whole, solid);
+        band += trianglesArea(holed) - trianglesArea(subtractSolid(holed, collar));
         for (const tri of whole) {
           for (const p of barycentricGrid(tri, 12)) {
-            const inHole = solidDepth(solid, p) < -1e-9;
-            const inCollar = solidDepth(collar, p) < 0;
-            if (inHole) expect(inCollar).toBe(true);
-            if (inCollar && !inHole) {
-              sampled++;
-              expect(sectionSegmentDistance(occluder, p)).toBeLessThan(band);
-            }
+            if (solidDepth(solid, p) < 0 || !(solidDepth(collar, p) < 0)) continue;
+            sampled++;
+            expect(surfaceDistance(occluder, p)).toBeLessThan(reach);
           }
         }
       }
-      expect(collarCut).toBeGreaterThan(holeCut * 1.1);
+      expect(band).toBeGreaterThan(0);
       expect(sampled).toBeGreaterThan(0);
     }
   });
 
   it("the collar's crossing ring sits well clear of the fold, at every tube scale", () => {
-    // The collar runs out two units below the bottom of the crossing ring; the
-    // fold, where the two sheets really are joined, is at y = -8.
+    // The collar ignores crossings more than a unit below the bottom of the
+    // crossing ring (two, here, for room); the fold, where the two sheets
+    // really are joined, is at y = -8.
     expect(kleinCrossingBottom(1)).toBeCloseTo(-4, 1);
     for (const scale of [0.7, 0.85, 1, 1.15, 1.3]) {
       const bottom = kleinCrossingBottom(scale);
@@ -375,32 +378,33 @@ describe("wrapped surfaces", () => {
     expect(kleinModes.length).toBeGreaterThan(20);
   });
 
-  it.each(kleinModes)("%s gets a collar at every size, and keeps its fold whole", (mode) => {
+  it.each(kleinModes)("%s gets a collar at every size, no cell mostly band, the fold whole", (mode) => {
     for (const difficulty of ["easy", "medium", "hard"]) {
       const board = buildBoard(mode, difficulty) as Board3D;
       const { cells, solid, collar } = board.clip!;
       expect(collar.length, `${mode} ${difficulty}`).toBeGreaterThan(0);
       const floor = lowestShare(board, 0.05);
-      let holeCut = 0;
-      let collarCut = 0;
+      let band = 0;
       for (const cell of cells) {
         const poly = board.polygons.get(cell)!;
         const whole = fanTriangles(poly, centroid(poly));
         const area = trianglesArea(whole);
-        const gone = area - trianglesArea(subtractSolid(whole, collar));
-        holeCut += area - trianglesArea(subtractSolid(whole, solid));
-        collarCut += gone;
+        const holed = subtractSolid(whole, solid);
+        const share = (trianglesArea(holed) - trianglesArea(subtractSolid(holed, collar))) / area;
+        band += share;
+        // No cell is turned mostly to band: a tile with a seam along it, not a
+        // grey patch with a scrap of tile in it (beta feedback).
+        expect(share, `${mode} ${difficulty} ${cell}`).toBeLessThanOrEqual(0.3 + 1e-6);
         // Whatever of the cell lies down at the fold keeps its tiles. Measured
         // on that part alone: a coarse board's cell can run from just under
         // the crossing, where the collar rightly cuts, all the way down.
         // The hole itself leaves a hairline down there (see the test above);
         // the collar must add nothing to it.
-        const low = trianglesBelow(whole, floor);
-        const added =
-          trianglesArea(subtractSolid(low, solid)) - trianglesArea(subtractSolid(low, collar));
+        const low = subtractSolid(trianglesBelow(whole, floor), solid);
+        const added = trianglesArea(low) - trianglesArea(subtractSolid(low, collar));
         expect(added / area, `${mode} ${difficulty} ${cell}`).toBeLessThan(0.002);
       }
-      expect(collarCut, `${mode} ${difficulty}`).toBeGreaterThan(holeCut);
+      expect(band, `${mode} ${difficulty}`).toBeGreaterThan(0);
     }
   });
 
@@ -509,29 +513,43 @@ function lowestShare(board: Board3D, share: number): number {
   return lowest + (highest - lowest) * share;
 }
 
-/** Horizontal distance from `p` to the occluder's drawn cross-section at its
- * height — to the *segments* each triangle slices out of that plane, not just
- * their ends. */
-function sectionSegmentDistance(occluder: readonly Tri[], p: Vec3): number {
+/** Distance from `p` to the nearest of `tris` (Ericson's closest point on a
+ * triangle). */
+function surfaceDistance(tris: readonly Tri[], p: Vec3): number {
   let best = Infinity;
-  for (const t of occluder) {
-    const hits: [number, number][] = [];
-    for (let i = 0; i < 3; i++) {
-      const a = t[i]!;
-      const b = t[(i + 1) % 3]!;
-      const da = a[1] - p[1];
-      const db = b[1] - p[1];
-      if ((da > 0 && db > 0) || (da < 0 && db < 0) || da === db) continue;
-      const s = da / (da - db);
-      hits.push([a[0] + (b[0] - a[0]) * s, a[2] + (b[2] - a[2]) * s]);
+  for (const [a, b, c] of tris) {
+    const sub = (u: Vec3, v: Vec3): Vec3 => [u[0] - v[0], u[1] - v[1], u[2] - v[2]];
+    const dot = (u: Vec3, v: Vec3) => u[0] * v[0] + u[1] * v[1] + u[2] * v[2];
+    const at = (o: Vec3, d: Vec3, k: number): Vec3 => [o[0] + d[0] * k, o[1] + d[1] * k, o[2] + d[2] * k];
+    const ab = sub(b, a);
+    const ac = sub(c, a);
+    const ap = sub(p, a);
+    const d1 = dot(ab, ap);
+    const d2 = dot(ac, ap);
+    let q: Vec3;
+    const bp = sub(p, b);
+    const d3 = dot(ab, bp);
+    const d4 = dot(ac, bp);
+    const cp = sub(p, c);
+    const d5 = dot(ab, cp);
+    const d6 = dot(ac, cp);
+    const vc = d1 * d4 - d3 * d2;
+    const vb = d5 * d2 - d1 * d6;
+    const va = d3 * d6 - d5 * d4;
+    if (d1 <= 0 && d2 <= 0) q = a;
+    else if (d3 >= 0 && d4 <= d3) q = b;
+    else if (vc <= 0 && d1 >= 0 && d3 <= 0) q = at(a, ab, d1 / (d1 - d3));
+    else if (d6 >= 0 && d5 <= d6) q = c;
+    else if (vb <= 0 && d2 >= 0 && d6 <= 0) q = at(a, ac, d2 / (d2 - d6));
+    else if (va <= 0 && d4 - d3 >= 0 && d5 - d6 >= 0) {
+      q = at(b, sub(c, b), (d4 - d3) / (d4 - d3 + (d5 - d6)));
+    } else {
+      const den = 1 / (va + vb + vc);
+      const v = vb * den;
+      const w = vc * den;
+      q = [a[0] + ab[0] * v + ac[0] * w, a[1] + ab[1] * v + ac[1] * w, a[2] + ab[2] * v + ac[2] * w];
     }
-    if (hits.length < 2) continue;
-    const [a, b] = [hits[0]!, hits[hits.length - 1]!];
-    const ex = b[0] - a[0];
-    const ez = b[1] - a[1];
-    const len2 = ex * ex + ez * ez;
-    const s = len2 > 0 ? Math.max(0, Math.min(1, ((p[0] - a[0]) * ex + (p[2] - a[1]) * ez) / len2)) : 0;
-    best = Math.min(best, Math.hypot(a[0] + ex * s - p[0], a[1] + ez * s - p[2]));
+    best = Math.min(best, Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]));
   }
   return best;
 }

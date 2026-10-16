@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   buildClipSolid,
+  capsulePiece,
+  crossingSegments,
   fanTriangles,
-  inflateTube,
   insideOccluder,
   intersectSolid,
   pruneSolid,
@@ -273,45 +274,74 @@ describe("the enclosed region of a drawn tube", () => {
     expect(intersectSolid(away, solid)).toEqual([]);
   });
 
-  it("grows a tube by its margin, in each cross-section's own plane", () => {
-    const occluder = drawnTube(6, 2, 2, () => 1, () => [0.5, -0.25]);
-    const axis = (): [number, number] => [0.5, -0.25];
-    // Nothing to grow by: the very same geometry.
-    expect(inflateTube(occluder, axis, () => 0)).toEqual(occluder);
-    const margin = (y: number): number => 0.1 + 0.05 * y;
-    const grown = inflateTube(occluder, axis, margin);
-    expect(grown).toHaveLength(occluder.length);
-    for (let i = 0; i < occluder.length; i++) {
-      for (let k = 0; k < 3; k++) {
-        const p = occluder[i]![k]!;
-        const q = grown[i]![k]!;
-        // Heights are kept, so the slabs — and the star — survive...
-        expect(q[1]).toBe(p[1]);
-        // ...and every vertex moves straight out from the axis by the margin.
-        const before = Math.hypot(p[0] - 0.5, p[2] + 0.25);
-        const after = Math.hypot(q[0] - 0.5, q[2] + 0.25);
-        expect(after - before).toBeCloseTo(margin(p[1]), 12);
-        expect(Math.atan2(q[2] + 0.25, q[0] - 0.5)).toBeCloseTo(
-          Math.atan2(p[2] + 0.25, p[0] - 0.5),
-          12,
-        );
+  it("finds where two drawn sheets cross, and not where they only meet", () => {
+    // A horizontal square and a vertical one through it: they cross along
+    // the x axis, the width of the narrower of the two.
+    const flat = fanTriangles([[-2, 0, -2], [2, 0, -2], [2, 0, 2], [-2, 0, 2]], [0, 0, 0]);
+    const wall = fanTriangles([[-1, -1, 0], [1, -1, 0], [1, 1, 0], [-1, 1, 0]], [0, 0, 0.0001]);
+    const segments = crossingSegments(flat, wall);
+    const length = segments.reduce((s, [a, b]) => s + Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]), 0);
+    expect(length).toBeCloseTo(2, 6);
+    for (const [a, b] of segments) {
+      for (const p of [a, b]) {
+        expect(p[1]).toBeCloseTo(0, 6);
+        expect(Math.abs(p[2])).toBeLessThan(1e-3);
       }
     }
-    // Still a tube the decomposition reads — to within the slab-step drift of
-    // a tube that tapers, as above — and a strictly bigger one.
-    const solid = buildClipSolid(grown);
-    const sheet = fanTriangles(
-      [
-        [-3, 0.75, -3],
-        [3, 0.75, -3],
-        [3, 0.75, 3],
-        [-3, 0.75, 3],
-      ],
-      [0, 0.75, 0],
+    // Two sheets that share an edge are joined there, not crossing.
+    const hinge = fanTriangles([[-2, 0, -2], [2, 0, -2], [2, 2, -4], [-2, 2, -4]], [0, 1, -3]);
+    const joined = crossingSegments(
+      [[[-2, 0, -2], [2, 0, -2], [0, 0, 0]]],
+      [[[-2, 0, -2], [2, 0, -2], [0, 2, -4]]],
     );
-    const want = sectionArea(grown, 0.75);
-    expect(Math.abs(area(intersectSolid(sheet, solid)) - want) / want).toBeLessThan(1e-3);
-    expect(sectionArea(grown, 0.75)).toBeGreaterThan(sectionArea(occluder, 0.75));
+    expect(joined).toEqual([]);
+    // ...and sheets that miss each other do not cross at all.
+    expect(crossingSegments(flat, hinge.map((t) => t.map((p) => [p[0], p[1] + 5, p[2]]) as Tri))).toEqual([]);
+  });
+
+  it("wraps a segment in a capsule of the given radius", () => {
+    const r = 0.25;
+    const piece = capsulePiece([0, 0, 0], [2, 1, 0], r);
+    const inside = (p: Vec3) => piece.planes.every((h) => h.n[0] * p[0] + h.n[1] * p[1] + h.n[2] * p[2] + h.d <= 1e-12);
+    const axis: Vec3 = [2 / Math.sqrt(5), 1 / Math.sqrt(5), 0];
+    const side: Vec3 = [-1 / Math.sqrt(5), 2 / Math.sqrt(5), 0];
+    const up: Vec3 = [0, 0, 1];
+    for (let k = 0; k <= 10; k++) {
+      const along = (k / 10) * Math.sqrt(5);
+      const base: Vec3 = [axis[0] * along, axis[1] * along, 0];
+      for (let a = 0; a < 16; a++) {
+        const th = (a * Math.PI) / 8;
+        const dir: Vec3 = [
+          Math.cos(th) * side[0] + Math.sin(th) * up[0],
+          Math.cos(th) * side[1] + Math.sin(th) * up[1],
+          Math.cos(th) * side[2] + Math.sin(th) * up[2],
+        ];
+        const at = (d: number): Vec3 => [base[0] + dir[0] * d, base[1] + dir[1] * d, base[2] + dir[2] * d];
+        // Everything within r of the segment is in it, and in its box...
+        const near = at(r * 0.999);
+        expect(inside(near)).toBe(true);
+        for (let i = 0; i < 3; i++) {
+          expect(near[i]!).toBeGreaterThanOrEqual(piece.min[i]!);
+          expect(near[i]!).toBeLessThanOrEqual(piece.max[i]!);
+        }
+        // ...and nothing past its corners.
+        expect(inside(at((1.01 * r) / Math.cos(Math.PI / 8) ** 2))).toBe(false);
+      }
+    }
+    // Rounded off past either end: everything within r of an end is in it,
+    // nothing much further.
+    for (let a = 0; a < 24; a++) {
+      const el = ((a % 6) * Math.PI) / 12; // 0 (straight on) to 75 degrees
+      const az = (Math.floor(a / 6) * Math.PI) / 2;
+      const dir: Vec3 = [
+        -axis[0] * Math.cos(el) + Math.sin(el) * (Math.cos(az) * side[0] + Math.sin(az) * up[0]),
+        -axis[1] * Math.cos(el) + Math.sin(el) * (Math.cos(az) * side[1] + Math.sin(az) * up[1]),
+        Math.sin(el) * (Math.cos(az) * side[2] + Math.sin(az) * up[2]),
+      ];
+      expect(inside([dir[0] * r * 0.999, dir[1] * r * 0.999, dir[2] * r * 0.999])).toBe(true);
+      const far = (1.01 * r) / Math.cos(Math.PI / 8) ** 2;
+      expect(inside([dir[0] * far, dir[1] * far, dir[2] * far])).toBe(false);
+    }
   });
 
   it("has nothing to say about geometry with no tube in it", () => {

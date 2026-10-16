@@ -229,18 +229,18 @@ in two renderers. Four things to know before adding or retuning one:
   a second ramp. Every style's `solid` profile starts at `{ inset: 0, height: 0
   }` and never goes negative, which is what makes the two halves meet cleanly and
   the cell a closed lens.
-- **...except the cells the Klein clip cuts, which stay flat.** A cut leaves a
-  variable number of triangles and a raised profile cuts differently from a
-  sunken one, so such a cell's vertex count would stop being state-independent —
-  which is exactly what one merged geometry (`geom[i].start/count`, `faceCell`)
-  requires. Those keep the old flat tile, and `CellGeom.tile` being non-null is
-  the flag the rest of `solidBoard.ts` branches on. It is 1 to 28 cells on a
-  Klein board, all of them at the neck where the surface is being cut away.
-  Their gradient has no ring order to ramp over, so `radialFalloff` measures the
-  distance from the cell's centre at build time — 1 at the centroid, 0 at the
-  tile's edge, a cut vertex wherever it truly falls — and the gradient rides on
-  *that* at write time, so the same tile can still go from polished to matte
-  when it opens.
+- **...and so do the cells the Klein clip cuts, cut.** A cut leaves a variable
+  number of triangles and a raised profile cuts differently from a sunken one,
+  so such a cell's vertex count would stop being state-independent — which is
+  exactly what one merged geometry (`geom[i].start/count`, `faceCell`) requires.
+  So both of its buttons, closed and opened, are built and cut once at build
+  time (`CellGeom.cut`, one source triangle at a time so each piece keeps its
+  normal), and the cell is given room for the larger, the smaller padded with
+  degenerate triangles. The cut scrambles the loop order `vertexShade` ramps
+  over, so each cut vertex carries its place on the ramp with it, interpolated
+  from the corners of the triangle it was cut from (`CutButton.ramp`). These
+  cells used to stay flat tiles, and read as a different, thinner kind of cell
+  right at the crossing (beta feedback).
 - **`monochrome` is the theme's, not the cut's.** The Classic theme draws the
   board in its plain grays at every cut, shape colour code and all switched off:
   a gray minesweeper board is what "Classic" means, and a shape-coloured one is a
@@ -524,22 +524,35 @@ neck cell it touched, which it does not: the self-intersection joins nothing
 the band in between is painted as a **collar**, the way a pipe through a wall
 gets a seal round it rather than sharing the wall's tiles.
 
-- **Where.** `SurfaceClip.collar` is the drawn occluder grown outward in each of
-  its own horizontal cross-sections (`inflateTube`, `clipSolid.ts`) and
-  decomposed exactly as the hole is, so it follows the tessellation's own
-  crossing on every tiling and contains the hole by construction. The margin is
-  `COLLAR_WIDTH` (0.22) of the cut sheet's median edge, so it looks the same at
-  every size.
+- **Where: a fixed distance from the crossing.** `SurfaceClip.collar` is
+  everything within a width of the line where the drawn belly passes through
+  the drawn neck. That line is found exactly, triangle against triangle
+  (`crossingSegments`), chained and simplified into a few polylines
+  (`crossingPolylines`), and each of their edges wrapped in a convex capsule
+  (`capsulePiece`: eight sides and a bevelled ring at each end, no corner past
+  1.17 of the width — square ends poked a tooth out at every bend). The first
+  version grew the neck outward instead, which is the same thing only where
+  the sheets meet square on: at the top and bottom of the ring they meet almost
+  tangentially, a step out from the neck there ran a long way along the belly,
+  and the band turned most of a cell grey (beta feedback).
+- **How wide.** `COLLAR_WIDTH` (0.3) of the cut sheet's median edge, unless that
+  would give some cell more than `MAX_BAND_SHARE` (0.3) of its area as band —
+  a coarse board's cell can hold the whole crossing ring, a thin triangle can
+  lie along it — and then it narrows for the whole board at once, so the seam
+  stays one width all round. A cell beside the crossing stays a tile with a
+  seam along it. `surfaces.test.ts` holds every catalog Klein board, at every
+  size, to that.
 - **Not at the fold.** The two sheets cross along one closed ring
   (`kleinCrossingBottom`); further down they converge on one circle again at
-  the bottom of the bottle, and *that* is a real edge between neighbours. The
-  margin is full down to a unit below the ring and gone two units below it
-  (`COLLAR_TAPER`), which across every shipped tube scale is well clear of the
-  fold — `surfaces.test.ts` checks every Klein board in the catalog for it.
-- **How it is drawn.** A cut cell's flat tile and its grout (the base layer)
-  both stop at the collar, and the band between the collar's edge and the hole
-  (`collarTriangles`: the grout the hole left, inside the collar) is one extra
-  mesh that takes the grout's place there — so nothing new can be seen through.
+  the bottom of the bottle, and *that* is a real edge between neighbours, where
+  their chords can graze. Crossings more than `COLLAR_FLOOR` (one unit) below
+  the ring get no collar, which across every shipped tube scale is well clear
+  of the fold — the same test checks every Klein board for it.
+- **How it is drawn.** A cut cell is a raised button like any other, cut by the
+  hole and the collar (see the cell profile notes above); its grout (the base
+  layer) is cut the same way, and the band — what of the cell's outline the
+  collar takes, outside the hole (`collarTriangles`) — is one extra mesh that
+  takes the grout's place there, so nothing new can be seen through.
 - **It is part of its cell.** The band is drawn cell by cell — each piece is
   the grout the hole left inside one cell's outline — and each piece is picked
   as that cell (`PICK_LAYERS`) and lights with it on hover
@@ -558,10 +571,17 @@ gets a seal round it rather than sharing the wall's tiles.
   number and marker shrink with the square root of the share of the tile left
   (`keptScale`), but never below 0.6 — on a coarse triangle board a sliver's
   number at 0.4 was too small to read, and legible matters more than tidy.
-- **Cost.** One more decomposition per Klein board. The cells it reaches are
-  found against the collar alone (it contains the hole) after a single box test
-  that settles the far side of the belly, which keeps the build within about a
-  quarter of what it was.
+- **Cost.** The band's width is settled by measuring what it takes of each cell
+  near it, which is the dear part: the hole is a stack of thin slabs, and a
+  polygon cut across its edge shatters along them. So the cell less the hole is
+  worked out once, near the collar only, and kept while the band narrows; the
+  share goes about as the width does, so one measurement says how far to
+  narrow and a second confirms it. The renderer cuts each cut cell's two
+  buttons against only the pieces near that cell, collar first — the collar
+  straddles the hole's edge, so what is left lies wholly inside or outside the
+  hole, which is cheap to cut. Measured headless, a hard Klein board builds in
+  55–80 ms and a medium square one starts in about 140 ms against 121 before
+  the collar.
 
 ## 3D markers (`src/render/markers3d.ts`)
 

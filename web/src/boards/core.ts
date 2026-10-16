@@ -74,10 +74,12 @@ export interface SurfaceClip {
   cells: Set<CellId>;
   /** The hole: what the occluding sheet encloses. Nothing is drawn in it. */
   solid: ClipPiece[];
-  /** The hole grown by a margin all round the crossing. The cut sheet's tiles
-   * stop at its edge, and the band between it and `solid` is painted as a
-   * collar, so the two sheets no longer *look* edge to edge where they are not
-   * neighbours (see "The collar" in docs/render.md). Contains `solid`. */
+  /** A band of fixed width round the crossing itself, as overlapping convex
+   * capsules. The cut sheet's tiles stop at its edge as well as the hole's, and
+   * what of the sheet lies in it (outside the hole) is painted as a collar, so
+   * the two sheets no longer *look* edge to edge where they are not neighbours
+   * (see "The collar" in docs/render.md). Sorted by floor height, as every
+   * region here is. */
   collar: ClipPiece[];
   /** The occluding sheet's own drawn triangles, which `solid` decomposes the
    * inside of — kept so a test can measure the cut against the geometry it is

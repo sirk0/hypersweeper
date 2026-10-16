@@ -1,6 +1,6 @@
 import type { Vec3 } from "../boards/core";
 import {
-  intersectSolid,
+  intersectUnion,
   subtractSolid,
   type ClipPiece,
   type Tri,
@@ -26,9 +26,10 @@ export function clipTriangles(tris: Tri[], solid: readonly ClipPiece[] | null): 
 
 /** The part of already-cut geometry that the collar takes as well — the band
  * the renderer paints between the hole and where the tiles stop. Feed it
- * triangles the hole has already been subtracted from. */
+ * triangles the hole has already been subtracted from. The collar's capsules
+ * overlap, so each takes only what the ones before it left. */
 export function collarTriangles(tris: Tri[], collar: readonly ClipPiece[]): Tri[] {
-  return intersectSolid(tris, collar);
+  return intersectUnion(tris, collar);
 }
 
 /** Area-weighted centroid of a triangle set — where a cut cell's number sits,

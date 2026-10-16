@@ -71,8 +71,8 @@ describe("surface clip", () => {
       const poly = board.polygons.get(cell)!;
       const whole = fanTriangles(poly, centroid(poly));
       if (area(clipTriangles(whole, solid)) < area(whole) * (1 - 1e-4)) holed++;
-      // A cut cell is drawn cut back to the collar, which contains the hole.
-      const cut = clipTriangles(whole, collar);
+      // A cut cell is drawn cut back to the hole and the collar both.
+      const cut = clipTriangles(clipTriangles(whole, solid), collar);
       expect(area(cut)).toBeGreaterThan(0); // a piece, never the whole cell
       expect(area(cut)).toBeLessThan(area(whole));
       // Nothing of substance is left standing inside the neck, and the cell's
