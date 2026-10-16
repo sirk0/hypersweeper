@@ -1,28 +1,26 @@
 import { screens } from "../config/screens";
-import {
-  MENU,
-  MENU_FAMILY_HINTS,
-  MENU_FAMILY_LABELS,
-  MODE_LABELS,
-  SOLID_GROUPS,
-  SURFACES,
-  menuFamilies,
-  menuFamilyRows,
-  menuTilingRows,
-} from "../boards/catalog";
+import { MENU_FAMILY_HINTS, MODE_LABELS } from "../boards/catalog";
 import {
   blockedExplanation,
   fairnessHint,
   modeFairness,
   type Fairness,
 } from "../boards/fairness";
-import { randomMode, randomPool, type RandomKind } from "../boards/randomBoard";
-import { hasMode } from "../boards/presets";
+import { randomMode, type RandomKind } from "../boards/randomBoard";
 import { clearAchievements } from "../achievements";
 import { clearBestTimes } from "../leaderboard";
 import { clearCloudRecord } from "../cloudRecord";
 import { renderAchievements } from "./achievements";
 import { renderBestTimes } from "./bestTimes";
+import {
+  boardGroups,
+  pickerFor,
+  quickPlayEntries,
+  type Family,
+  type Group,
+  type ManifoldGroup,
+  type SurfaceEntry,
+} from "./boardTree";
 import { HELP_ICON, renderHelp } from "./help";
 import { menuIcon, previewIcon } from "./icons";
 import {
@@ -61,34 +59,6 @@ export interface MenuSelection {
   random?: boolean;
 }
 
-const ROOT_LABELS = MENU.rootLabels as Record<string, string>;
-const MANIFOLD_ORDER = MENU.manifoldOrder as string[];
-const MANIFOLD_LABELS = MENU.manifoldLabels as Record<string, string>;
-
-interface ModeEntry {
-  mode: string;
-  label: string;
-  /** The menu-icon key for the row: the tiling key for a wrapped tiling (so
-   * e.g. hexagons look the same on every surface), the mode itself
-   * otherwise. Matches the icon keys the pygame menu draws. */
-  icon: string;
-}
-
-interface Family {
-  key: string;
-  label: string;
-  modes: ModeEntry[];
-}
-
-/** The tiling picker for a surface: the regular tilings it carries, promoted
- * to rows of their own, then the families (uniform, dual and, on the plane,
- * the shaped boards, aperiodic, spirals and fractals) with any built modes on
- * it. */
-interface Picker {
-  tilings: ModeEntry[];
-  families: Family[];
-}
-
 /** The one-line description of a surface's picker: what is on its page — the
  * promoted tilings and then the families — so the hint reflects everything
  * reachable through it. */
@@ -118,61 +88,6 @@ const SOLID_GROUP_HINTS: Record<string, string> = {
   polyhedra: "Hollow frames, terraced pyramids and cubes laid in brick",
   volume: "A solid cube of cells — 26 neighbours, laid out slice by slice",
 };
-
-/** Rows of a picker, dropping the modes this build has not got. */
-function builtRows(rows: readonly ModeEntry[]): ModeEntry[] {
-  return rows.filter((r) => hasMode(r.mode));
-}
-
-function pickerFor(surfaceKey: string): Picker {
-  const families: Family[] = [];
-  for (const key of menuFamilies(surfaceKey)) {
-    const modes = builtRows(menuFamilyRows(key, surfaceKey));
-    if (modes.length > 0) {
-      families.push({ key, label: MENU_FAMILY_LABELS[key] ?? key, modes });
-    }
-  }
-  return { tilings: builtRows(menuTilingRows(surfaceKey)), families };
-}
-
-interface SurfaceEntry {
-  key: string;
-  label: string;
-}
-
-interface PickerGroup {
-  key: string;
-  label: string;
-  kind: "picker";
-  surfaceKey: string;
-}
-
-interface ManifoldGroup {
-  key: string;
-  label: string;
-  kind: "manifolds";
-  surfaces: SurfaceEntry[];
-}
-
-interface ModeGroup {
-  key: string;
-  label: string;
-  kind: "modes";
-  modes: string[];
-}
-
-type Group = PickerGroup | ManifoldGroup | ModeGroup;
-
-/** One of the four quick-play entries. `mode` opens that board; `random`
- * deals one from that half of the catalogue at click time, so it is a
- * different board every time (see `randomRow`). */
-interface QuickEntry {
-  kind: "mode" | "random";
-  key: string;
-  label: string;
-  hint: string;
-  icon: string;
-}
 
 /** The sidebar key of the Quick start page — the desktop menu's own page, with
  * no phone equivalent (the phone lists these four as its home rows). */
@@ -254,31 +169,7 @@ export class Menu {
     private readonly onSelect: (sel: MenuSelection) => void,
     private readonly settings: SettingsHost,
   ) {
-    const groups: Group[] = [
-      { key: "flat", label: ROOT_LABELS["flat"] ?? "Flat", kind: "picker", surfaceKey: "flat" },
-      {
-        key: "manifolds",
-        label: ROOT_LABELS["manifolds"] ?? "Flat manifolds",
-        kind: "manifolds",
-        surfaces: this.manifoldSurfaces(),
-      },
-      // The four solid pages -- Sphere, Platonic solids, Catalan solids and
-      // Polyhedra -- are one flat board list each, so they all come off the
-      // shared table rather than being spelled out here. (The shaped flat
-      // boards live under Flat › Shaped boards.)
-      ...SOLID_GROUPS.map((g): Group => ({
-        key: g.key,
-        label: g.label,
-        kind: "modes",
-        modes: [...g.modes],
-      })),
-    ];
-    this.groups = groups.filter((g) => {
-      if (g.kind === "modes") return (g.modes = g.modes.filter(hasMode)).length > 0;
-      if (g.kind === "manifolds") return g.surfaces.length > 0;
-      const picker = pickerFor(g.surfaceKey);
-      return picker.tilings.length > 0 || picker.families.length > 0;
-    });
+    this.groups = boardGroups();
 
     this.root = document.createElement("section");
     this.root.className = "menu";
@@ -502,6 +393,18 @@ export class Menu {
   openPage(page: "settings" | "help"): void {
     if (page === "settings") this.showSettings();
     else this.showHelp();
+  }
+
+  /** A blocked board's explanation page, for a pick that did not come through
+   * its row (the native menu bar's board items, main.ts `onCommand`). */
+  openBlocked(mode: string): void {
+    this.showBlocked(mode, MODE_LABELS[mode] ?? mode);
+  }
+
+  /** Repaint the difficulty pills after a change made somewhere other than
+   * the pills themselves (the native menu bar's Easy / Medium / Hard). */
+  syncDifficulty(): void {
+    this.syncDifficultyRow();
   }
 
   /** The settings page — one more menu page rather than a modal, so it reuses
@@ -775,63 +678,9 @@ export class Menu {
     );
   }
 
-  /** Classic and Volumetric (which open one particular board straight away)
-   * and one random board from each half of the catalogue — the four entries
-   * the phone home page lists as rows and the desktop shows as the Quick start
-   * page's cards. Stated once here so the two cannot drift apart.
-   *
-   * The two launch entries come first: the rows that open a named board sit
-   * above the ones that deal a surprise. Volumetric's label comes from the
-   * shared MODE_LABELS rather than a string here, because unlike Classic
-   * (whose entry says "Classic" and whose board is captioned "Squares") the
-   * entry and the board are the same word, and reading it once is what keeps
-   * them so. */
-  private quickPlayEntries(): QuickEntry[] {
-    const entries: QuickEntry[] = [];
-    // Classic — flat squares, launched straight away (gui.py MenuScreen).
-    if (hasMode("square")) {
-      entries.push({
-        kind: "mode",
-        key: "square",
-        label: ROOT_LABELS["classic"] ?? "Classic",
-        hint: "Flat squares — the original.",
-        icon: "classic",
-      });
-    }
-    if (hasMode("cube3d")) {
-      entries.push({
-        kind: "mode",
-        key: "cube3d",
-        label: MODE_LABELS["cube3d"] ?? "Volumetric",
-        hint: "A cube filled with cubes — 26 neighbours.",
-        icon: "cube3d",
-      });
-    }
-    if (randomPool("flat").length > 0) {
-      entries.push({
-        kind: "random",
-        key: "flat",
-        label: ROOT_LABELS["flat"] ?? "Flat",
-        hint: "A random flat tiling.",
-        // the same hexagon the old Flat entry showed
-        icon: "hex",
-      });
-    }
-    if (randomPool("3d").length > 0) {
-      entries.push({
-        kind: "random",
-        key: "3d",
-        label: "3D",
-        hint: "A random manifold, sphere, polyhedron or volume.",
-        icon: "3d",
-      });
-    }
-    return entries;
-  }
-
   /** The phone home page's four quick-play rows. */
   private quickPlayRows(): HTMLElement[] {
-    return this.quickPlayEntries().map((e) =>
+    return quickPlayEntries().map((e) =>
       e.kind === "mode"
         ? this.launchRow(e.key, e.label, e.hint, e.icon)
         : this.randomRow(e.key as RandomKind, e.label, e.hint, e.icon),
@@ -844,7 +693,7 @@ export class Menu {
    * on a sidebar row — on the two random entries it is the only thing saying
    * that the card deals a board rather than opening a named one. */
   private quickPlayCards(): HTMLElement[] {
-    return this.quickPlayEntries().map((e) => {
+    return quickPlayEntries().map((e) => {
       const li = document.createElement("li");
       const btn = document.createElement("button");
       btn.className = "menu-entry menu-board-card";
@@ -1042,26 +891,6 @@ export class Menu {
 
   private showSurface(group: ManifoldGroup, surface: SurfaceEntry): void {
     this.showPicker(surface.label, surface.key, () => this.showGroup(group));
-  }
-
-  /** The surfaces that have any built tiling, in the shared manifold order
-   * (Python's MANIFOLD_ORDER — the wrapped surfaces only; the plane is the
-   * home page's Flat entry). */
-  private manifoldSurfaces(): SurfaceEntry[] {
-    const entries: SurfaceEntry[] = [];
-    for (const key of MANIFOLD_ORDER) {
-      const surface = SURFACES.get(key);
-      if (!surface) continue;
-      const picker = pickerFor(key);
-      // ...anything at all on its page: a family submenu, or one of the
-      // regular tilings promoted to a row of its own. The double torus is the
-      // first surface with only the latter -- squares are the one tiling
-      // wrapped onto it so far -- and a families-only test hid it.
-      if (picker.tilings.length > 0 || picker.families.length > 0) {
-        entries.push({ key, label: MANIFOLD_LABELS[key] ?? surface.label });
-      }
-    }
-    return entries;
   }
 
   /** The desktop sidebar: Quick start, then every geometry group, then the

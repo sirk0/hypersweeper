@@ -192,7 +192,7 @@ store sell all three as one purchase. The project carries what an upload checks
 for: the sandbox, the privacy manifest, the category, Mac icon sizes, a version
 that tracks `package.json`, and a build number that grows.
 
-**The Mac and iPad specifics** live in three native files:
+**The Mac and iPad specifics** live in a few native files:
 
 - `AppDelegate.buildMenu` builds the menu bar, which iPadOS also uses for its
   ⌘-key overlay. It adds **New Game ⌘N**, which re-deals the board in play like
@@ -202,6 +202,27 @@ that tracks `package.json`, and a build number that grows.
   (`App.onCommand` in `web/src/main.ts`, pinned by `tests/e2e/commands.spec.ts`).
   Settings and How to Play are home-screen pages, so from a game they go home
   first, leaving the board as the header's back arrow does (without asking).
+- **The File menu picks the difficulty and the board.** Under New Game come
+  Easy ⌘1 / Medium ⌘2 / Hard ⌘3, with a checkmark on the one in play, then the
+  quick-play entries (Classic ⇧⌘C, Volumetric ⇧⌘V, Random Flat Board ⇧⌘F,
+  Random 3D Board ⇧⌘D),
+  then a submenu for each group of the home menu: Flat, Flat manifolds (a
+  submenu per surface), Sphere, the solid pages and Volumes. Each one holds
+  the same tilings and families its home-menu page does. The page owns the
+  tree: `web/src/menuBar.ts` builds it from the home menu's own grouping
+  (`web/src/ui/boardTree.ts`) and hands it to `MenuBarPlugin.swift` at boot.
+  The plugin stores it and asks UIKit to rebuild the menu bar, so nothing
+  about the catalogue is written in Swift. Each item's command string comes
+  back through `BridgeViewController.menuCommand` as a `hypersweeper:command`
+  event. A board starts from anywhere and abandons the one in progress, as the
+  smiley does. A blocked board opens its explanation. A difficulty picked
+  mid-game re-deals the board on screen at that difficulty. The home page's
+  pills and the checkmark follow each other (`setMenuBarDifficulty`). UIKit
+  throws on two identical commands or shortcuts in a menu bar, so
+  `tests/unit/menuBar.test.ts` holds every command and shortcut to being
+  unique. The
+  plugin is in the app target only. `BridgeViewController` is shared with the
+  App Clip, so its menu code sits behind `#if !APP_CLIP`.
 - **The Mac app's name.** The Xcode target is `App` (Capacitor's template), and
   `CFBundleName` follows the product name, which is what the Mac menu bar and
   the `.app` file in `/Applications` show. `PRODUCT_NAME[sdk=macosx*] =

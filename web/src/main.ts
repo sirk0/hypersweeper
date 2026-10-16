@@ -24,11 +24,14 @@ import {
   unlockAudio,
 } from "./audio/sound";
 import { isBoard3D, type CellId, type SymmetryId } from "./boards/core";
-import { fairnessOf } from "./boards/fairness";
+import { fairnessOf, modeFairness } from "./boards/fairness";
 import { gameCenterSupported, reportUnlocks, startGameCenter } from "./gameCenter";
+import { hasMode } from "./boards/presets";
 import { randomMode } from "./boards/randomBoard";
+import { hasDifficulty } from "./config/screens";
 import { haptic, setHapticsEnabled } from "./haptics";
 import { boardLinkQuery, parseBoardLink } from "./link";
+import { setMenuBarDifficulty, startMenuBar } from "./menuBar";
 import { GameSession } from "./session";
 import { shareBoard } from "./share";
 import { attachControls, blockBrowserZoom } from "./input/controls";
@@ -294,6 +297,9 @@ class App {
     // Merge the record with iCloud's, where the App Store builds keep it in
     // step across devices and through a reinstall. Also the app's alone.
     startCloudRecord();
+    // The board and difficulty items of the Mac and iPad menu bar. The app's
+    // alone too: the clip opens one board and leads nowhere else.
+    if (!this.clip) startMenuBar(this.settings.difficulty);
     if (this.clip) this.startGame(this.clip, this.settings.difficulty, { trigger: "link" });
     else if (!this.startFromDeepLink()) this.showMenu();
     requestAnimationFrame(() => document.body.setAttribute("data-ready", "1"));
@@ -430,6 +436,7 @@ class App {
   private setDifficulty(key: string): void {
     this.settings = { ...this.settings, difficulty: key };
     saveSettings(this.settings);
+    setMenuBarDifficulty(key);
   }
 
   /** Pick what the game sounds like (a preset, or off). Unlike the cell style
@@ -873,13 +880,48 @@ class App {
    * iPad shows; ios/App/App/AppDelegate.swift). New Game re-deals the board
    * in play, as the smiley does. Settings and How to Play are pages of the
    * home screen, so from a game they go home first, which leaves the board the
-   * way the header's back arrow does: without asking. */
+   * way the header's back arrow does: without asking.
+   *
+   * The File menu's boards and difficulties (menuBar.ts) start a board from
+   * wherever the player is, abandoning the one in progress without asking, as
+   * the smiley and the dice do. A blocked board opens its explanation, as its
+   * home-menu row does. A difficulty picked mid-game re-deals the board on
+   * screen at it, the way Minesweeper's Beginner / Intermediate / Expert
+   * always has; on the home screen it moves the pills. */
   private onCommand(name: unknown): void {
+    if (typeof name !== "string") return;
     if (name === "new-game") {
       if (this.screen === "game") this.onAction("restart");
-    } else if ((name === "settings" || name === "help") && !this.clip) {
+      return;
+    }
+    if (this.clip) return;
+    const [verb, arg = ""] = name.split(":", 2);
+    if (name === "settings" || name === "help") {
       if (this.screen === "game") this.showMenu();
       this.menu.openPage(name);
+    } else if ((verb === "board" || verb === "quick") && hasMode(arg)) {
+      if (modeFairness(arg) === "blocked") {
+        if (this.screen === "game") this.showMenu();
+        this.menu.openBlocked(arg);
+      } else {
+        this.startGame(arg, this.settings.difficulty, { trigger: "menu" });
+      }
+    } else if (verb === "random" && (arg === "flat" || arg === "3d")) {
+      const mode = randomMode(arg);
+      if (mode) {
+        this.startGame(mode, this.settings.difficulty, { dealtAtRandom: true, trigger: "random" });
+      }
+    } else if (verb === "difficulty" && hasDifficulty(arg)) {
+      this.setDifficulty(arg);
+      this.menu.syncDifficulty();
+      const session = this.session;
+      if (this.screen === "game" && session && session.difficulty !== arg) {
+        // The same board re-dealt, as the smiley would, only harder or easier.
+        this.startGame(session.mode, arg, {
+          dealtAtRandom: this.dealtAtRandom,
+          trigger: "again",
+        });
+      }
     }
   }
 
