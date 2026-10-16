@@ -146,6 +146,11 @@ function keptScale(tile: readonly Tri[], plate: readonly Tri[]): number {
 
 const MIN_KEPT_SCALE = 0.6;
 
+/** How much a hovered cell's piece of the collar band lightens (HSL lightness)
+ * — more than the tile's own hover step, which barely shows on a band this
+ * dark, and still short of the tile so the seam stays a seam. */
+const COLLAR_HOVER = 0.14;
+
 /** How strongly a capable device's reflection map shows on the tiles and the
  * markers, and how bright the rim light is (`setEffects`). */
 const TILE_ENV = 0.5;
@@ -523,6 +528,13 @@ export class SolidBoard extends Group implements BoardMesh {
   private readonly atlas: GlyphAtlas;
   private readonly states: CellVisual[];
   private hovered = -1;
+  /** The collar band round a self-intersection, cell by cell: which cell each
+   * of its triangles lies in, each cell's run of its vertices, and the colour
+   * attribute those runs are painted through (`writeCollarColor`). */
+  private readonly collarFaceCell: Int32Array;
+  private readonly collarRuns: ({ start: number; count: number } | null)[];
+  private collarColors: BufferAttribute | null = null;
+  private readonly collarRest: Color;
   private readonly anim = new CellAnimations();
   /** The tiles' own motion (render/cellMotion.ts), applied in the vertex
    * shader of the tiles, the glyphs and the markers alike. */
@@ -598,6 +610,8 @@ export class SolidBoard extends Group implements BoardMesh {
     const faceCell: number[] = [];
     const baseFaceCell: number[] = [];
     const collarPositions: number[] = [];
+    const collarFaceCell: number[] = [];
+    const collarRuns: ({ start: number; count: number } | null)[] = [];
     let vertexCount = 0;
     // Where the immersion passes through itself, the enclosed sheet is cut
     // away so the hole can be looked into (Klein bottle; see SurfaceClip).
@@ -728,22 +742,24 @@ export class SolidBoard extends Group implements BoardMesh {
       const fan = fanTriangles(skirt, centroid);
       // A cut cell's grout splits three ways. Inside the hole there is none —
       // grout left behind would cap the hole just as the tiles did. Between
-      // the hole and the collar's edge is the collar band, drawn and picked
-      // as its own mesh (see below), so that pointing at it picks *nothing*:
-      // the band is the seam that says no cell is there, and as this cell's
-      // grout it lit up whatever scraps of the tile were left, away from the
-      // pointer, and a tap on it opened the cell. The rest is this cell's.
+      // the hole and the collar's edge is this cell's piece of the collar
+      // band, drawn as its own mesh (see below) so it can be a seam's colour
+      // and still light up with the cell. The rest is plain grout.
       const holed = clipTriangles(fan, cut?.solid ?? null);
       const grout = cut ? clipTriangles(holed, cut.collar) : holed;
       for (const tri of grout) {
         for (const p of tri) basePositions.push(p[0], p[1], p[2]);
         baseFaceCell.push(ci);
       }
+      const collarStart = collarPositions.length / 3;
       if (cut) {
         for (const tri of collarTriangles(holed, cut.collar)) {
           for (const p of tri) collarPositions.push(p[0], p[1], p[2]);
+          collarFaceCell.push(ci);
         }
       }
+      const collarCount = collarPositions.length / 3 - collarStart;
+      collarRuns.push(collarCount ? { start: collarStart, count: collarCount } : null);
     });
 
     this.view = {
@@ -813,9 +829,17 @@ export class SolidBoard extends Group implements BoardMesh {
     // the sheet crossing it, so the two do not read as neighbours meeting edge
     // to edge. Grout, a shade deeper — it belongs to the theme like the grout
     // lines do, and still stands apart from them. It takes the base layer's
-    // place in the band rather than lying over it, and is a pick layer of its
-    // own that resolves to no cell (`cellForFace`): a ray that lands on it
-    // stops there, rather than picking a cell or passing on to the far sheet.
+    // place in the band rather than lying over it.
+    //
+    // Each piece of it is **part of the cell whose outline it lies in**: picked
+    // as that cell (`cellForFace`) and lit with it on hover
+    // (`writeCollarColor`). Next to the crossing a coarse board's cell is
+    // mostly band, so a band that ignored the pointer — or that picked the cell
+    // but lit only the tile's scraps, away from the pointer — left the cell
+    // under the pointer dead (beta feedback, twice).
+    this.collarFaceCell = Int32Array.from(collarFaceCell);
+    this.collarRuns = collarRuns;
+    this.collarRest = collarColor(style);
     if (collarPositions.length) {
       const collarGeometry = new BufferGeometry();
       collarGeometry.setAttribute(
@@ -823,10 +847,15 @@ export class SolidBoard extends Group implements BoardMesh {
         new BufferAttribute(new Float32Array(collarPositions), 3),
       );
       collarGeometry.computeVertexNormals();
+      this.collarColors = new BufferAttribute(
+        new Float32Array(collarPositions.length),
+        3,
+      );
+      collarGeometry.setAttribute("color", this.collarColors);
       const collar = new Mesh(
         collarGeometry,
         new MeshStandardMaterial({
-          color: collarColor(style),
+          vertexColors: true,
           roughness: 0.8,
           metalness: 0,
           flatShading: true,
@@ -965,8 +994,9 @@ export class SolidBoard extends Group implements BoardMesh {
   }
 
   cellForFace(faceIndex: number, layer: PickLayer = "cells"): CellId | null {
-    if (layer === "collar") return null; // the seam is no cell
-    const ci = (layer === "base" ? this.baseFaceCell : this.faceCell)[faceIndex];
+    const faces =
+      layer === "base" ? this.baseFaceCell : layer === "collar" ? this.collarFaceCell : this.faceCell;
+    const ci = faces[faceIndex];
     return ci == null ? null : (this.order[ci] ?? null);
   }
 
@@ -1244,6 +1274,20 @@ export class SolidBoard extends Group implements BoardMesh {
     this.normalAttr.needsUpdate = true;
   }
 
+  /** Paint cell `i`'s piece of the collar band, if it has one: the seam's
+   * colour, lifted with the cell when it is hovered — by more than the tile
+   * is, the band being so much darker that the tile's step barely shows on
+   * it. */
+  private writeCollarColor(i: number): void {
+    const run = this.collarRuns[i];
+    const colors = this.collarColors;
+    if (!run || !colors) return;
+    const col = this.collarRest.clone();
+    if (i === this.hovered && this.states[i]!.kind === "hidden") col.offsetHSL(0, 0, COLLAR_HOVER);
+    for (let v = run.start; v < run.start + run.count; v++) colors.setXYZ(v, col.r, col.g, col.b);
+    colors.needsUpdate = true;
+  }
+
   private writeColor(i: number): void {
     const col = baseColorFor(this.states[i]!, this.geom[i]!.palette).clone();
     if (i === this.hovered && this.states[i]!.kind === "hidden") {
@@ -1275,6 +1319,7 @@ export class SolidBoard extends Group implements BoardMesh {
       this.colorAttr.setXYZ(g.start + v, col.r * f, col.g * f, col.b * f);
     }
     this.colorAttr.needsUpdate = true;
+    this.writeCollarColor(i);
   }
 
   private rebuildGlyphs(): void {

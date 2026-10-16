@@ -540,15 +540,16 @@ gets a seal round it rather than sharing the wall's tiles.
   both stop at the collar, and the band between the collar's edge and the hole
   (`collarTriangles`: the grout the hole left, inside the collar) is one extra
   mesh that takes the grout's place there — so nothing new can be seen through.
-- **It picks nothing.** The collar is a pick layer of its own (`PICK_LAYERS`)
-  that resolves to no cell, so hovering or tapping the seam does nothing, just
-  as on the page around the board. It used to lie *over* the cut cell's grout,
-  and the pick ray found that grout: the cell under the band lit up — on a
-  coarse board, as a few scraps of tile well away from the pointer, which read
-  as the wrong cell highlighting — and a tap on the seam opened it (beta
-  feedback). It has to be picked rather than left out of the ray: a ray that
-  passed through would carry on to a cell of the far sheet, the trap the grout
-  layer exists to stop.
+- **It is part of its cell.** The band is drawn cell by cell — each piece is
+  the grout the hole left inside one cell's outline — and each piece is picked
+  as that cell (`PICK_LAYERS`) and lights with it on hover
+  (`writeCollarColor`, a bigger step than the tile's, the band being so much
+  darker). Next to the crossing a coarse board's cell is mostly band, and two
+  rounds of beta feedback were about exactly that: a band picked as its cell
+  but never lit showed the hover as a few scraps of tile away from the
+  pointer, and a band that picked nothing left the cell under the pointer
+  dead. It has to be picked either way: a ray that passed through would carry
+  on to a cell of the far sheet, the trap the grout layer exists to stop.
 - **Colour.** The theme's own grout, a shade deeper (`COLLAR_SHADE`, 0.72 of its
   lightness): part of the board like the grout lines, but plainly a different
   kind of edge from them. Near-black was tried and is too loud; the plain grout

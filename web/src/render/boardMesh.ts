@@ -283,9 +283,9 @@ export function roundCorners<P extends readonly number[]>(
  * through the tube and came out on a cell of the *far* sheet — a click on the
  * grout line between two tiles opened, or detonated, a cell on the other side
  * of the board. `"collar"` is the seam a Klein board paints round its
- * self-intersection: it is picked for the same reason, and resolves to no cell
- * — pointing at the seam picks nothing, rather than the cell whose tile was cut
- * back to make it or one on the far sheet behind it. */
+ * self-intersection, where it takes the grout's place: each piece of it picks
+ * the cell whose outline it lies in, as the grout would, rather than letting
+ * the ray on through to the far sheet. */
 export type PickLayer = "cells" | "base" | "collar";
 export const PICK_LAYERS: readonly PickLayer[] = ["cells", "base", "collar"];
 
