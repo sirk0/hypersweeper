@@ -36,6 +36,7 @@
 		C2A1E0062FF1000000000001 /* AppIconOctagon.icon in Resources */ = {isa = PBXBuildFile; fileRef = C2A1E0052FF1000000000001 /* AppIconOctagon.icon */; };
 		C2A1E0082FF1000000000001 /* AppIconPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2A1E0072FF1000000000001 /* AppIconPlugin.swift */; };
 		E6C1A0022FF3000000000001 /* GameCenterPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6C1A0012FF3000000000001 /* GameCenterPlugin.swift */; };
+		D4B1E0022FF5000000000001 /* MenuBarPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4B1E0012FF5000000000001 /* MenuBarPlugin.swift */; };
 		F7C1D0022FF4000000000001 /* CloudRecordPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7C1D0012FF4000000000001 /* CloudRecordPlugin.swift */; };
 		FB104A266143ED91A4DAE59E /* Pods_AppClip.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E89CA311C3F8F3D572D9A30E /* Pods_AppClip.framework */; };
 		D5E1C0072FF2000000000001 /* Stickers.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D5E1C0022FF2000000000001 /* Stickers.xcassets */; };
@@ -113,6 +114,7 @@
 		C2A1E0052FF1000000000001 /* AppIconOctagon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AppIconOctagon.icon; sourceTree = "<group>"; };
 		C2A1E0072FF1000000000001 /* AppIconPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIconPlugin.swift; sourceTree = "<group>"; };
 		E6C1A0012FF3000000000001 /* GameCenterPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameCenterPlugin.swift; sourceTree = "<group>"; };
+		D4B1E0012FF5000000000001 /* MenuBarPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarPlugin.swift; sourceTree = "<group>"; };
 		F7C1D0012FF4000000000001 /* CloudRecordPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudRecordPlugin.swift; sourceTree = "<group>"; };
 		E89CA311C3F8F3D572D9A30E /* Pods_AppClip.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_AppClip.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		F4814435CDD5547B7D5D39F8 /* AppClip.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = AppClip.entitlements; sourceTree = "<group>"; };
@@ -184,6 +186,7 @@
 				A1B2C3D32FE996900072D4E8 /* BridgeViewController.swift */,
 				C2A1E0072FF1000000000001 /* AppIconPlugin.swift */,
 				E6C1A0012FF3000000000001 /* GameCenterPlugin.swift */,
+				D4B1E0012FF5000000000001 /* MenuBarPlugin.swift */,
 				F7C1D0012FF4000000000001 /* CloudRecordPlugin.swift */,
 				504EC30B1FED79650016851F /* Main.storyboard */,
 				504EC30E1FED79650016851F /* Assets.xcassets */,
@@ -478,6 +481,7 @@
 				C2A1E0082FF1000000000001 /* AppIconPlugin.swift in Sources */,
 				E6C1A0022FF3000000000001 /* GameCenterPlugin.swift in Sources */,
 				F7C1D0022FF4000000000001 /* CloudRecordPlugin.swift in Sources */,
+				D4B1E0022FF5000000000001 /* MenuBarPlugin.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

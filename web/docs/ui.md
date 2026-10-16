@@ -1251,7 +1251,9 @@ mode, and everything a clip does differently hangs off it:
   two side clusters have to stay the same width for the smiley to sit on the
   screen's centre. A vacant slot moves to its cluster's inner end, so the flag
   and the ⓘ that are left sit in the two corners, mirroring each other. `onAction` refuses `menu` and `random` anyway, and the
-  native Settings and How to Play commands are ignored.
+  native Settings and How to Play commands are ignored, as are the menu bar's
+  board and difficulty items (the clip registers no `MenuBar` plugin, so it
+  has none to send).
 - **It earns nothing and records nothing.** `countWin` returns before
   `recordWin`, and `checkRecord` skips `recordTime`, so a clip writes neither
   `ms:achievements` nor `ms:scores`; a clip's storage is wiped with it and would

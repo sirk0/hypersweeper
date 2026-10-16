@@ -51,6 +51,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     /// which sits in the responder chain. Menus that have nothing to act on in
     /// a game drawn on a canvas (Format, the text-editing submenus) are removed,
     /// so the bar doesn't offer items that do nothing.
+    ///
+    /// The File menu also picks the difficulty (⌘1, ⌘2, ⌘3) and the board: the
+    /// quick-play entries, then a submenu per group of the home menu. The page
+    /// sends that part (`MenuBarPlugin`) once it has loaded, and asks for this
+    /// to run again, so the first build, before it has, goes without it.
     override func buildMenu(with builder: UIMenuBuilder) {
         super.buildMenu(with: builder)
         guard builder.system == .main else { return }
@@ -62,7 +67,21 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
         let newGame = UIKeyCommand(title: "New Game", action: #selector(BridgeViewController.newGame(_:)),
                                    input: "n", modifierFlags: .command)
-        builder.insertChild(UIMenu(options: .displayInline, children: [newGame]), atStartOfMenu: .file)
+        var fileSections = [UIMenu(options: .displayInline, children: [newGame])]
+        let difficulties = MenuBarModel.difficulties.enumerated().map { (index, d) -> UIMenuElement in
+            let command = "difficulty:\(d.key)"
+            let action = #selector(BridgeViewController.menuCommand(_:))
+            guard index < 9 else { return UICommand(title: d.label, action: action, propertyList: command) }
+            return UIKeyCommand(title: d.label, action: action, input: "\(index + 1)",
+                                modifierFlags: .command, propertyList: command)
+        }
+        if !difficulties.isEmpty {
+            fileSections.append(UIMenu(options: .displayInline, children: difficulties))
+        }
+        fileSections += MenuBarModel.items.compactMap { menuElement($0) as? UIMenu }
+        for section in fileSections.reversed() {
+            builder.insertChild(section, atStartOfMenu: .file)
+        }
 
         let settings = UIKeyCommand(title: "Settings…", action: #selector(BridgeViewController.openSettings(_:)),
                                     input: ",", modifierFlags: .command)
@@ -76,6 +95,18 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // The default Help item only says that help isn't available.
         let help = UICommand(title: "How to Play", action: #selector(BridgeViewController.openHelp(_:)))
         builder.replaceChildren(ofMenu: .help) { _ in [help] }
+    }
+
+    /// One node of the page's board tree: a submenu, or a command whose string
+    /// `BridgeViewController.menuCommand` hands back to the page.
+    private func menuElement(_ node: MenuBarModel.Node) -> UIMenuElement? {
+        if let command = node.command {
+            return UICommand(title: node.title, action: #selector(BridgeViewController.menuCommand(_:)),
+                             propertyList: command)
+        }
+        let children = node.children.compactMap(menuElement)
+        guard !children.isEmpty else { return nil }
+        return UIMenu(title: node.title, options: node.inline ? .displayInline : [], children: children)
     }
 
     func application(_ application: UIApplication,

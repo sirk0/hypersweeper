@@ -55,6 +55,9 @@ class BridgeViewController: CAPBridgeViewController, UIGestureRecognizerDelegate
         #if !APP_CLIP
         bridge?.registerPluginInstance(GameCenterPlugin())
         bridge?.registerPluginInstance(CloudRecordPlugin())
+        // The File menu's boards and difficulties: the clip leads nowhere but
+        // its one board.
+        bridge?.registerPluginInstance(MenuBarPlugin())
         #endif
 
         #if targetEnvironment(macCatalyst)
@@ -104,9 +107,30 @@ class BridgeViewController: CAPBridgeViewController, UIGestureRecognizerDelegate
     @objc func openSettings(_ sender: Any?) { sendCommand("settings") }
     @objc func openHelp(_ sender: Any?) { sendCommand("help") }
 
+    #if !APP_CLIP
+    /// The File menu's boards and difficulties, each carrying the command the
+    /// page gave it (MenuBarPlugin.swift, web/src/menuBar.ts). The app's alone,
+    /// like the plugin that sends them.
+    @objc func menuCommand(_ sender: UICommand) {
+        if let name = sender.propertyList as? String { sendCommand(name) }
+    }
+
+    /// Checkmarks the difficulty in play.
+    override func validate(_ command: UICommand) {
+        super.validate(command)
+        guard command.action == #selector(menuCommand(_:)),
+              let name = command.propertyList as? String,
+              name.hasPrefix("difficulty:") else { return }
+        command.state = name == "difficulty:\(MenuBarModel.difficulty)" ? .on : .off
+    }
+    #endif
+
     private func sendCommand(_ name: String) {
+        // Quoted as JSON: the board commands' strings come from the page.
+        guard let data = try? JSONSerialization.data(withJSONObject: name, options: .fragmentsAllowed),
+              let detail = String(data: data, encoding: .utf8) else { return }
         webView?.evaluateJavaScript(
-            "window.dispatchEvent(new CustomEvent('hypersweeper:command',{detail:'\(name)'}))")
+            "window.dispatchEvent(new CustomEvent('hypersweeper:command',{detail:\(detail)}))")
     }
 
     #if targetEnvironment(macCatalyst)
