@@ -136,11 +136,12 @@ function scoreList(entries: ScoreEntry[], rank: number): HTMLElement {
 }
 
 /** How many unlocks the card lists before it says "and N more". A first win
- * earns six at once — its first board, its first difficulty, its shape, its
- * family, its surface and (a first click that floods the field plants no flag)
- * the flagless one. Six rows push the buttons off a phone's screen, and the
- * card scrolling is no answer when what scrolls away is "Play again". The rest
- * are on the Achievements page, which is where the whole list lives anyway. */
+ * usually earns three — its first board, its shape and (a first click that
+ * floods the field plants no flag) the flagless one — but one on a harder
+ * difficulty, on a board graded harder still, with two kinds of tile, earns
+ * six. Six rows push the buttons off a phone's screen, and the card scrolling
+ * is no answer when what scrolls away is "Play again". The rest are on the
+ * Achievements page, which is where the whole list lives anyway. */
 const MAX_UNLOCKS_SHOWN = 4;
 
 /** What the win just unlocked: one row each, icon, name and the line saying

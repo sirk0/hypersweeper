@@ -21,7 +21,13 @@ import {
   type Progress,
   type Win,
 } from "../../src/achievements";
-import { SOLID_MODES, flatMenuModes, threeDMenuModes } from "../../src/boards/catalog";
+import {
+  SOLID_MODES,
+  SURFACE_SPECS,
+  familyRows,
+  flatMenuModes,
+  threeDMenuModes,
+} from "../../src/boards/catalog";
 import { blockedModes } from "../../src/boards/fairness";
 import { buildBoard, hasMode } from "../../src/boards/presets";
 import { classifyShapes } from "../../src/render/shapePalette";
@@ -95,7 +101,7 @@ afterEach(() => {
 
 describe("the declared shape list", () => {
   // The one table in achievements.ts that is not derived, because deriving it
-  // means this: building all 179 boards, which is a second. A tiling added with
+  // means this: building all 200+ boards, which is a second. A tiling added with
   // heptagonal tiles has to fail here rather than quietly get no badge.
   it("is exactly the side counts the catalogue's boards have", () => {
     const sides = new Set<number>();
@@ -128,6 +134,25 @@ describe("the list", () => {
   it("earns nothing at all from an empty record", () => {
     expect(earned(emptyProgress())).toEqual([]);
   });
+
+  it("gives each group one achievement, for winning all of it", () => {
+    // A "win any one board of this group" half used to sit beside every one of
+    // these: a first win handed out three at once, and the list was half again
+    // as long for Game Center. Nothing like it is to come back.
+    for (const a of ACHIEVEMENTS) {
+      if (["tiling", "surface", "solid"].includes(a.group)) {
+        expect(a.id, a.id).toMatch(new RegExp(`^${a.group}-all:`));
+        expect(a.label, a.id).not.toMatch(/complete/i);
+      }
+    }
+  });
+
+  it("awards neither the Other family nor the easy rung", () => {
+    expect(ACHIEVEMENTS_BY_ID.has("tiling-all:other")).toBe(false);
+    expect(ACHIEVEMENTS.some((a) => a.label === "Other")).toBe(false);
+    expect(ACHIEVEMENTS_BY_ID.has("difficulty:easy")).toBe(false);
+    expect(ACHIEVEMENTS_BY_ID.has("difficulty:hard")).toBe(true);
+  });
 });
 
 describe("Game Center", () => {
@@ -138,7 +163,7 @@ describe("Game Center", () => {
   it("rewrites an app id into a Game Center id", () => {
     expect(gameCenterId("first-win")).toBe("hs.first_win");
     expect(gameCenterId("tiling-all:2-uniform")).toBe("hs.tiling_all.2_uniform");
-    expect(gameCenterId("difficulty:easy")).toBe("hs.difficulty.easy");
+    expect(gameCenterId("difficulty:hard")).toBe("hs.difficulty.hard");
   });
 
   it("only ever sees app ids the rewrite keeps apart", () => {
@@ -171,7 +196,7 @@ describe("Game Center", () => {
   it("prices a group by its kind, not by how many boards it has", () => {
     // Points are fixed once live and groups grow, so two groups of different
     // sizes have to be worth the same.
-    for (const prefix of ["tiling:", "surface:", "solid:", "tiling-all:", "surface-all:", "solid-all:"]) {
+    for (const prefix of ["tiling-all:", "surface-all:", "solid-all:"]) {
       const points = new Set(
         ACHIEVEMENTS.filter((a) => a.id.startsWith(prefix)).map((a) => a.points),
       );
@@ -218,11 +243,21 @@ describe("group membership", () => {
   // A tiling family holds the boards made of a tiling, which is every board
   // off the solids: a Catalan solid is not a tiling of the plane wrapped onto
   // something, it is a solid whose faces were cut up. So the tiling families
-  // partition the catalogue minus the solid groups, and the geometry groups
-  // partition the whole of it — between them every board is counted twice, once
-  // each way, and never twice the same way.
+  // partition the catalogue minus the solid groups — minus, too, the "Other"
+  // family, which has no achievement of its own — and the geometry groups
+  // partition the whole of it. Between them every board is counted at most
+  // twice, once each way, and never twice the same way.
   const solids = new Set(SOLID_MODES);
-  const tiled = playable.filter((mode) => !solids.has(mode));
+  const unawarded = new Set(SURFACE_SPECS.flatMap((s) => familyRows("other", s.key).map((r) => r.mode)));
+  const tiled = playable.filter((mode) => !solids.has(mode) && !unawarded.has(mode));
+
+  it("leaves the Other family's boards out of every tiling family", () => {
+    const other = playable.filter((mode) => unawarded.has(mode));
+    expect(other.length).toBeGreaterThan(0);
+    for (const id of allIds("tiling-all:")) {
+      for (const mode of other) expect(membersOf(id), id).not.toContain(mode);
+    }
+  });
 
   it("puts every tiling board in exactly one tiling family", () => {
     const seen = new Map<string, number>();
@@ -256,15 +291,11 @@ describe("group membership", () => {
     }
   });
 
-  it("counts the same boards for the 'win one' and 'win all' halves of a pair", () => {
+  it("asks a group for exactly its own boards, and never for none", () => {
     for (const id of [...allIds("tiling-all:"), ...allIds("surface-all:"), ...allIds("solid-all:")]) {
-      const one = ACHIEVEMENTS_BY_ID.get(id.replace("-all:", ":"));
-      expect(one, id).toBeDefined();
       const members = membersOf(id);
       expect(members.length, id).toBeGreaterThan(0);
       expect(measureOf(ACHIEVEMENTS_BY_ID.get(id)!, emptyProgress()).need).toBe(members.length);
-      // Any one member earns the "win one" half.
-      expect(measureOf(one!, havingWon([members[0]!])).have).toBe(1);
     }
   });
 

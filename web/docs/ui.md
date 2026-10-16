@@ -1005,29 +1005,42 @@ that reads like a browser warning.
 ## Achievements
 
 A win used to leave no trace unless the clock beat a record. The catalogue is
-179 boards across seven tiling families, five surfaces and four solid groups,
+200+ boards across eleven tiling families, eight surfaces and six solid groups,
 and nothing in the game said so. `src/achievements.ts` is the record of where a
 player has been, and the list of where they have not.
 
-- **The list is derived.** 69 achievements, and none of them typed out: the
+- **The list is derived.** 42 achievements, and none of them typed out: the
   families come from `familyRows` over every surface, the surfaces from
   `SURFACE_SPECS`, the solid groups from `SOLID_GROUPS`, the difficulties from
-  `data/ui/screens.json`. A tiling added tomorrow joins its family's two
-  achievements the way it joins the menu, the info window and the background
+  `data/ui/screens.json`. A tiling added tomorrow joins its family's
+  achievement the way it joins the menu, the info window and the background
   pattern — with no edit here at all. Group membership is computed once at
   module load, from strings; **nothing in this feature builds a board**, which
   is what keeps the page instant.
+- **One achievement per group, for winning all of it.** Each tiling family,
+  surface and solid group used to earn a pair — win any one board, win them
+  all — and a first win handed out its family, its surface and its first
+  difficulty along with everything else. Those halves said nothing a player had
+  not just done, and they doubled the list Game Center has to be told about,
+  so they went: a group's one achievement is its completion, named plainly
+  ("Cylinder", not "Cylinder complete"), and its id keeps the `-all:` form
+  (`surface-all:cylinder`) so no stamp an older record holds can be mistaken
+  for it. **Easy has no rung** for the same reason: a win on easy is the first
+  win almost every player makes, and "First clear" already says so.
+- **"Other" earns nothing.** It is the catch-all family for tilings that fit
+  no named one, and not a name to award (`UNAWARDED_FAMILIES`). Its boards still
+  count towards their surface and the whole catalogue.
 - **One declared table, pinned by measurement.** `SHAPE_SIDES` — the side counts
-  a board's tiles can have, `[3, 4, 5, 6, 8, 10, 12, 13]` — is the exception,
-  because deriving it means building all 179 boards and running
+  a board's tiles can have, `[3, 4, 5, 6, 7, 8, 10, 12, 13]` — is the exception,
+  because deriving it means building all 200+ boards and running
   `classifyShapes`, about a second. `tests/unit/achievements.test.ts` does
-  exactly that and fails if the list drifts, so a tiling with heptagonal tiles
+  exactly that and fails if the list drifts, so a tiling with eleven-sided tiles
   cannot ship without a badge (the `soundHarmony.test.ts` pattern).
 - **Blocked boards are left out of every completion target.** The five triakis
   boards cannot be played at all — their menu row opens `blockedExplanation`
   instead of a game (see "fairness" in `src/boards/fairness.ts`) — so a set
   containing one could never be finished. `blockedModes()` is the filter, the
-  totals run to 174 rather than 179, and the page says so in a line rather than
+  totals leave those five out, and the page says so in a line rather than
   leaving a silent gap.
 - **The stored record is history; unlocking is a pure function of it.** Its own
   key `ms:achievements`, shaped like `leaderboard.ts` (version inside the
@@ -1042,10 +1055,10 @@ player has been, and the list of where they have not.
   that a card is still going to announce.
 - **It seeds itself from the best times.** `allBestTimes()` is already a
   complete list of every board and difficulty this device has won, so a player
-  who has cleared eighty boards does not meet this feature at 0 / 174. Run once,
+  who has cleared eighty boards does not meet this feature at 0 / 200-odd. Run once,
   at record creation. It cannot recover flags or shapes and claims neither.
-- **A win counts a board at any one difficulty.** The completion sets are 174
-  boards; asking for all three each would make that 522.
+- **A win counts a board at any one difficulty.** The completion sets run to
+  200+ boards; asking for all three each would triple that.
 - **No speed milestone.** There was one — a hard board inside two minutes — and
   it was the only number in the feature somebody picked rather than derived.
   Best times already record speed properly, per board and per difficulty, so it
@@ -1068,12 +1081,12 @@ never of how many boards a group has today:
   to `_` (`tiling-all:2-uniform` is `hs.tiling_all.2_uniform`). The app id is
   already stable, so this is too.
 - **`points`** come from `POINTS`, a table over kinds: first clear 5,
-  difficulty rungs 5 / 10 / 15, win tiers 10 / 20 / 40, no flags and against the
-  odds 10 each, a shape 5, any board of a group 5, every board of a group 15,
-  the whole catalogue 100. That is 770 today. A rule over group *size* would
-  have been fairer to "Laves complete" and wrong the day a tiling joined it.
+  difficulty rungs 10 / 15 (medium, hard), win tiers 10 / 20 / 40, no flags and
+  against the odds 10 each, a shape 5, every board of a group 15, the whole
+  catalogue 100. That is 625 today. A rule over group *size* would have been
+  fairer to "Laves" and wrong the day a tiling joined it.
 - **`brief` and `done`** are the pre-earned and earned descriptions. The page's
-  hints quote group sizes ("Win all 33 of them"); these cannot, so a group's
+  hints quote group sizes ("Win all 33 of its boards"); these cannot, so a group's
   text names what its boards share ("Win every board tiled this way").
 
 `GAME_CENTER_ACHIEVEMENTS` is the list in that shape. The unit tests check the
@@ -1108,10 +1121,11 @@ becomes "Achievement unlocked" and the list of times is left out. The
 `data-buttons` layout contract is untouched — no button was added (and the row
 is down to two since, so there is less of it to break).
 
-At most `MAX_UNLOCKS_SHOWN` (4) are listed. A first win earns six at once —
-first board, first difficulty, its shape, its family, its surface, and the
-flagless one, because a first click that floods the field plants no flag — and
-six rows push the buttons off a phone's screen. The card scrolls, but a primary
+At most `MAX_UNLOCKS_SHOWN` (4) are listed. A first win usually earns three —
+first board, its shape, and the flagless one, because a first click that floods
+the field plants no flag — but a first win on medium or hard, on a board graded
+harder than that, with two kinds of tile, earns six, and six rows push the
+buttons off a phone's screen. The card scrolls, but a primary
 action that has scrolled away is not an answer.
 
 The list's **last row is always a link to the whole page**, saying "and N more"
@@ -1142,7 +1156,7 @@ different knobs rather than a second engine. Two things about it:
 
 - **It is derived from the move, like everything else here.** The figure is one
   note per achievement unlocked, `clamp(count + 1, 2, preset.unlock.notes)`, so
-  a single unlock is a two-note lift and a first win's six runs to the ceiling.
+  a single unlock is a two-note lift and a first win's three runs to the ceiling.
 - **What separates it from the win flourish is the gesture, not the register.**
   The win is long and sweeps the whole stereo field, climbing from an octave
   below the root to a third above it; this is a short lift from the root,

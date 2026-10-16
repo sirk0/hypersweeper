@@ -1,6 +1,6 @@
 {
-  "count": 69,
-  "points": 770,
+  "count": 42,
+  "points": 625,
   "achievements": [
     {
       "vendorIdentifier": "hs.first_win",
@@ -17,23 +17,6 @@
         }
       },
       "icon": "star",
-      "ring": null
-    },
-    {
-      "vendorIdentifier": "hs.difficulty.easy",
-      "referenceName": "difficulty:easy",
-      "points": 5,
-      "showBeforeEarned": true,
-      "repeatable": false,
-      "localizations": {
-        "en-US": {
-          "name": "Easy cleared",
-          "beforeEarnedDescription": "Win any board on easy",
-          "afterEarnedDescription": "You won a board on easy",
-          "image": "images/hs.difficulty.easy.png"
-        }
-      },
-      "icon": "bars:1",
       "ring": null
     },
     {
@@ -309,23 +292,6 @@
       "ring": null
     },
     {
-      "vendorIdentifier": "hs.tiling.regular",
-      "referenceName": "tiling:regular",
-      "points": 5,
-      "showBeforeEarned": true,
-      "repeatable": false,
-      "localizations": {
-        "en-US": {
-          "name": "Regular",
-          "beforeEarnedDescription": "Win a board tiled this way",
-          "afterEarnedDescription": "You won a board tiled this way",
-          "image": "images/hs.tiling.regular.png"
-        }
-      },
-      "icon": "regular",
-      "ring": null
-    },
-    {
       "vendorIdentifier": "hs.tiling_all.regular",
       "referenceName": "tiling-all:regular",
       "points": 15,
@@ -333,7 +299,7 @@
       "repeatable": false,
       "localizations": {
         "en-US": {
-          "name": "Regular complete",
+          "name": "Regular",
           "beforeEarnedDescription": "Win every board tiled this way",
           "afterEarnedDescription": "You won every board tiled this way",
           "image": "images/hs.tiling_all.regular.png"
@@ -343,23 +309,6 @@
       "ring": "complete"
     },
     {
-      "vendorIdentifier": "hs.tiling.uniform",
-      "referenceName": "tiling:uniform",
-      "points": 5,
-      "showBeforeEarned": true,
-      "repeatable": false,
-      "localizations": {
-        "en-US": {
-          "name": "Uniform",
-          "beforeEarnedDescription": "Win a board tiled this way",
-          "afterEarnedDescription": "You won a board tiled this way",
-          "image": "images/hs.tiling.uniform.png"
-        }
-      },
-      "icon": "uniform",
-      "ring": null
-    },
-    {
       "vendorIdentifier": "hs.tiling_all.uniform",
       "referenceName": "tiling-all:uniform",
       "points": 15,
@@ -367,7 +316,7 @@
       "repeatable": false,
       "localizations": {
         "en-US": {
-          "name": "Uniform complete",
+          "name": "Uniform",
           "beforeEarnedDescription": "Win every board tiled this way",
           "afterEarnedDescription": "You won every board tiled this way",
           "image": "images/hs.tiling_all.uniform.png"
@@ -377,23 +326,6 @@
       "ring": "complete"
     },
     {
-      "vendorIdentifier": "hs.tiling.dual",
-      "referenceName": "tiling:dual",
-      "points": 5,
-      "showBeforeEarned": true,
-      "repeatable": false,
-      "localizations": {
-        "en-US": {
-          "name": "Laves",
-          "beforeEarnedDescription": "Win a board tiled this way",
-          "afterEarnedDescription": "You won a board tiled this way",
-          "image": "images/hs.tiling.dual.png"
-        }
-      },
-      "icon": "dual",
-      "ring": null
-    },
-    {
       "vendorIdentifier": "hs.tiling_all.dual",
       "referenceName": "tiling-all:dual",
       "points": 15,
@@ -401,7 +333,7 @@
       "repeatable": false,
       "localizations": {
         "en-US": {
-          "name": "Laves complete",
+          "name": "Laves",
           "beforeEarnedDescription": "Win every board tiled this way",
           "afterEarnedDescription": "You won every board tiled this way",
           "image": "images/hs.tiling_all.dual.png"
@@ -411,23 +343,6 @@
       "ring": "complete"
     },
     {
-      "vendorIdentifier": "hs.tiling.2_uniform",
-      "referenceName": "tiling:2-uniform",
-      "points": 5,
-      "showBeforeEarned": true,
-      "repeatable": false,
-      "localizations": {
-        "en-US": {
-          "name": "2-uniform",
-          "beforeEarnedDescription": "Win a board tiled this way",
-          "afterEarnedDescription": "You won a board tiled this way",
-          "image": "images/hs.tiling.2_uniform.png"
-        }
-      },
-      "icon": "2-uniform",
-      "ring": null
-    },
-    {
       "vendorIdentifier": "hs.tiling_all.2_uniform",
       "referenceName": "tiling-all:2-uniform",
       "points": 15,
@@ -435,7 +350,7 @@
       "repeatable": false,
       "localizations": {
         "en-US": {
-          "name": "2-uniform complete",
+          "name": "2-uniform",
           "beforeEarnedDescription": "Win every board tiled this way",
           "afterEarnedDescription": "You won every board tiled this way",
           "image": "images/hs.tiling_all.2_uniform.png"
@@ -445,23 +360,6 @@
       "ring": "complete"
     },
     {
-      "vendorIdentifier": "hs.tiling.isogonal",
-      "referenceName": "tiling:isogonal",
-      "points": 5,
-      "showBeforeEarned": true,
-      "repeatable": false,
-      "localizations": {
-        "en-US": {
-          "name": "Isogonal",
-          "beforeEarnedDescription": "Win a board tiled this way",
-          "afterEarnedDescription": "You won a board tiled this way",
-          "image": "images/hs.tiling.isogonal.png"
-        }
-      },
-      "icon": "isogonal",
-      "ring": null
-    },
-    {
       "vendorIdentifier": "hs.tiling_all.isogonal",
       "referenceName": "tiling-all:isogonal",
       "points": 15,
@@ -469,7 +367,7 @@
       "repeatable": false,
       "localizations": {
         "en-US": {
-          "name": "Isogonal complete",
+          "name": "Isogonal",
           "beforeEarnedDescription": "Win every board tiled this way",
           "afterEarnedDescription": "You won every board tiled this way",
           "image": "images/hs.tiling_all.isogonal.png"
@@ -479,23 +377,6 @@
       "ring": "complete"
     },
     {
-      "vendorIdentifier": "hs.tiling.rectangle",
-      "referenceName": "tiling:rectangle",
-      "points": 5,
-      "showBeforeEarned": true,
-      "repeatable": false,
-      "localizations": {
-        "en-US": {
-          "name": "Congruent rectangles",
-          "beforeEarnedDescription": "Win a board tiled this way",
-          "afterEarnedDescription": "You won a board tiled this way",
-          "image": "images/hs.tiling.rectangle.png"
-        }
-      },
-      "icon": "rectangle",
-      "ring": null
-    },
-    {
       "vendorIdentifier": "hs.tiling_all.rectangle",
       "referenceName": "tiling-all:rectangle",
       "points": 15,
@@ -503,7 +384,7 @@
       "repeatable": false,
       "localizations": {
         "en-US": {
-          "name": "Congruent rectangles complete",
+          "name": "Congruent rectangles",
           "beforeEarnedDescription": "Win every board tiled this way",
           "afterEarnedDescription": "You won every board tiled this way",
           "image": "images/hs.tiling_all.rectangle.png"
@@ -513,57 +394,6 @@
       "ring": "complete"
     },
     {
-      "vendorIdentifier": "hs.tiling.other",
-      "referenceName": "tiling:other",
-      "points": 5,
-      "showBeforeEarned": true,
-      "repeatable": false,
-      "localizations": {
-        "en-US": {
-          "name": "Other",
-          "beforeEarnedDescription": "Win a board tiled this way",
-          "afterEarnedDescription": "You won a board tiled this way",
-          "image": "images/hs.tiling.other.png"
-        }
-      },
-      "icon": "other",
-      "ring": null
-    },
-    {
-      "vendorIdentifier": "hs.tiling_all.other",
-      "referenceName": "tiling-all:other",
-      "points": 15,
-      "showBeforeEarned": true,
-      "repeatable": false,
-      "localizations": {
-        "en-US": {
-          "name": "Other complete",
-          "beforeEarnedDescription": "Win every board tiled this way",
-          "afterEarnedDescription": "You won every board tiled this way",
-          "image": "images/hs.tiling_all.other.png"
-        }
-      },
-      "icon": "other",
-      "ring": "complete"
-    },
-    {
-      "vendorIdentifier": "hs.tiling.aperiodic",
-      "referenceName": "tiling:aperiodic",
-      "points": 5,
-      "showBeforeEarned": true,
-      "repeatable": false,
-      "localizations": {
-        "en-US": {
-          "name": "Aperiodic",
-          "beforeEarnedDescription": "Win a board tiled this way",
-          "afterEarnedDescription": "You won a board tiled this way",
-          "image": "images/hs.tiling.aperiodic.png"
-        }
-      },
-      "icon": "aperiodic",
-      "ring": null
-    },
-    {
       "vendorIdentifier": "hs.tiling_all.aperiodic",
       "referenceName": "tiling-all:aperiodic",
       "points": 15,
@@ -571,7 +401,7 @@
       "repeatable": false,
       "localizations": {
         "en-US": {
-          "name": "Aperiodic complete",
+          "name": "Aperiodic",
           "beforeEarnedDescription": "Win every board tiled this way",
           "afterEarnedDescription": "You won every board tiled this way",
           "image": "images/hs.tiling_all.aperiodic.png"
@@ -581,23 +411,6 @@
       "ring": "complete"
     },
     {
-      "vendorIdentifier": "hs.tiling.spiral",
-      "referenceName": "tiling:spiral",
-      "points": 5,
-      "showBeforeEarned": true,
-      "repeatable": false,
-      "localizations": {
-        "en-US": {
-          "name": "Spirals",
-          "beforeEarnedDescription": "Win a board tiled this way",
-          "afterEarnedDescription": "You won a board tiled this way",
-          "image": "images/hs.tiling.spiral.png"
-        }
-      },
-      "icon": "spiral",
-      "ring": null
-    },
-    {
       "vendorIdentifier": "hs.tiling_all.spiral",
       "referenceName": "tiling-all:spiral",
       "points": 15,
@@ -605,7 +418,7 @@
       "repeatable": false,
       "localizations": {
         "en-US": {
-          "name": "Spirals complete",
+          "name": "Spirals",
           "beforeEarnedDescription": "Win every board tiled this way",
           "afterEarnedDescription": "You won every board tiled this way",
           "image": "images/hs.tiling_all.spiral.png"
@@ -615,23 +428,6 @@
       "ring": "complete"
     },
     {
-      "vendorIdentifier": "hs.tiling.fractal",
-      "referenceName": "tiling:fractal",
-      "points": 5,
-      "showBeforeEarned": true,
-      "repeatable": false,
-      "localizations": {
-        "en-US": {
-          "name": "Fractals",
-          "beforeEarnedDescription": "Win a board tiled this way",
-          "afterEarnedDescription": "You won a board tiled this way",
-          "image": "images/hs.tiling.fractal.png"
-        }
-      },
-      "icon": "fractal",
-      "ring": null
-    },
-    {
       "vendorIdentifier": "hs.tiling_all.fractal",
       "referenceName": "tiling-all:fractal",
       "points": 15,
@@ -639,7 +435,7 @@
       "repeatable": false,
       "localizations": {
         "en-US": {
-          "name": "Fractals complete",
+          "name": "Fractals",
           "beforeEarnedDescription": "Win every board tiled this way",
           "afterEarnedDescription": "You won every board tiled this way",
           "image": "images/hs.tiling_all.fractal.png"
@@ -649,23 +445,6 @@
       "ring": "complete"
     },
     {
-      "vendorIdentifier": "hs.tiling.hyperbolic",
-      "referenceName": "tiling:hyperbolic",
-      "points": 5,
-      "showBeforeEarned": true,
-      "repeatable": false,
-      "localizations": {
-        "en-US": {
-          "name": "Hyperbolic",
-          "beforeEarnedDescription": "Win a board tiled this way",
-          "afterEarnedDescription": "You won a board tiled this way",
-          "image": "images/hs.tiling.hyperbolic.png"
-        }
-      },
-      "icon": "hyperbolic",
-      "ring": null
-    },
-    {
       "vendorIdentifier": "hs.tiling_all.hyperbolic",
       "referenceName": "tiling-all:hyperbolic",
       "points": 15,
@@ -673,7 +452,7 @@
       "repeatable": false,
       "localizations": {
         "en-US": {
-          "name": "Hyperbolic complete",
+          "name": "Hyperbolic",
           "beforeEarnedDescription": "Win every board tiled this way",
           "afterEarnedDescription": "You won every board tiled this way",
           "image": "images/hs.tiling_all.hyperbolic.png"
@@ -683,23 +462,6 @@
       "ring": "complete"
     },
     {
-      "vendorIdentifier": "hs.surface.flat",
-      "referenceName": "surface:flat",
-      "points": 5,
-      "showBeforeEarned": true,
-      "repeatable": false,
-      "localizations": {
-        "en-US": {
-          "name": "The plane",
-          "beforeEarnedDescription": "Win a board on this surface",
-          "afterEarnedDescription": "You won a board on this surface",
-          "image": "images/hs.surface.flat.png"
-        }
-      },
-      "icon": "flat",
-      "ring": null
-    },
-    {
       "vendorIdentifier": "hs.surface_all.flat",
       "referenceName": "surface-all:flat",
       "points": 15,
@@ -707,7 +469,7 @@
       "repeatable": false,
       "localizations": {
         "en-US": {
-          "name": "The plane complete",
+          "name": "The plane",
           "beforeEarnedDescription": "Win every board on this surface",
           "afterEarnedDescription": "You won every board on this surface",
           "image": "images/hs.surface_all.flat.png"
@@ -717,23 +479,6 @@
       "ring": "complete"
     },
     {
-      "vendorIdentifier": "hs.surface.mobius",
-      "referenceName": "surface:mobius",
-      "points": 5,
-      "showBeforeEarned": true,
-      "repeatable": false,
-      "localizations": {
-        "en-US": {
-          "name": "Möbius strip",
-          "beforeEarnedDescription": "Win a board on this surface",
-          "afterEarnedDescription": "You won a board on this surface",
-          "image": "images/hs.surface.mobius.png"
-        }
-      },
-      "icon": "mobius",
-      "ring": null
-    },
-    {
       "vendorIdentifier": "hs.surface_all.mobius",
       "referenceName": "surface-all:mobius",
       "points": 15,
@@ -741,7 +486,7 @@
       "repeatable": false,
       "localizations": {
         "en-US": {
-          "name": "Möbius strip complete",
+          "name": "Möbius strip",
           "beforeEarnedDescription": "Win every board on this surface",
           "afterEarnedDescription": "You won every board on this surface",
           "image": "images/hs.surface_all.mobius.png"
@@ -751,23 +496,6 @@
       "ring": "complete"
     },
     {
-      "vendorIdentifier": "hs.surface.cylinder",
-      "referenceName": "surface:cylinder",
-      "points": 5,
-      "showBeforeEarned": true,
-      "repeatable": false,
-      "localizations": {
-        "en-US": {
-          "name": "Cylinder",
-          "beforeEarnedDescription": "Win a board on this surface",
-          "afterEarnedDescription": "You won a board on this surface",
-          "image": "images/hs.surface.cylinder.png"
-        }
-      },
-      "icon": "cylinder",
-      "ring": null
-    },
-    {
       "vendorIdentifier": "hs.surface_all.cylinder",
       "referenceName": "surface-all:cylinder",
       "points": 15,
@@ -775,7 +503,7 @@
       "repeatable": false,
       "localizations": {
         "en-US": {
-          "name": "Cylinder complete",
+          "name": "Cylinder",
           "beforeEarnedDescription": "Win every board on this surface",
           "afterEarnedDescription": "You won every board on this surface",
           "image": "images/hs.surface_all.cylinder.png"
@@ -785,23 +513,6 @@
       "ring": "complete"
     },
     {
-      "vendorIdentifier": "hs.surface.torus",
-      "referenceName": "surface:torus",
-      "points": 5,
-      "showBeforeEarned": true,
-      "repeatable": false,
-      "localizations": {
-        "en-US": {
-          "name": "Torus",
-          "beforeEarnedDescription": "Win a board on this surface",
-          "afterEarnedDescription": "You won a board on this surface",
-          "image": "images/hs.surface.torus.png"
-        }
-      },
-      "icon": "torus",
-      "ring": null
-    },
-    {
       "vendorIdentifier": "hs.surface_all.torus",
       "referenceName": "surface-all:torus",
       "points": 15,
@@ -809,7 +520,7 @@
       "repeatable": false,
       "localizations": {
         "en-US": {
-          "name": "Torus complete",
+          "name": "Torus",
           "beforeEarnedDescription": "Win every board on this surface",
           "afterEarnedDescription": "You won every board on this surface",
           "image": "images/hs.surface_all.torus.png"
@@ -819,23 +530,6 @@
       "ring": "complete"
     },
     {
-      "vendorIdentifier": "hs.surface.trefoil",
-      "referenceName": "surface:trefoil",
-      "points": 5,
-      "showBeforeEarned": true,
-      "repeatable": false,
-      "localizations": {
-        "en-US": {
-          "name": "Trefoil knot",
-          "beforeEarnedDescription": "Win a board on this surface",
-          "afterEarnedDescription": "You won a board on this surface",
-          "image": "images/hs.surface.trefoil.png"
-        }
-      },
-      "icon": "trefoil",
-      "ring": null
-    },
-    {
       "vendorIdentifier": "hs.surface_all.trefoil",
       "referenceName": "surface-all:trefoil",
       "points": 15,
@@ -843,7 +537,7 @@
       "repeatable": false,
       "localizations": {
         "en-US": {
-          "name": "Trefoil knot complete",
+          "name": "Trefoil knot",
           "beforeEarnedDescription": "Win every board on this surface",
           "afterEarnedDescription": "You won every board on this surface",
           "image": "images/hs.surface_all.trefoil.png"
@@ -853,23 +547,6 @@
       "ring": "complete"
     },
     {
-      "vendorIdentifier": "hs.surface.klein",
-      "referenceName": "surface:klein",
-      "points": 5,
-      "showBeforeEarned": true,
-      "repeatable": false,
-      "localizations": {
-        "en-US": {
-          "name": "Klein bottle",
-          "beforeEarnedDescription": "Win a board on this surface",
-          "afterEarnedDescription": "You won a board on this surface",
-          "image": "images/hs.surface.klein.png"
-        }
-      },
-      "icon": "klein",
-      "ring": null
-    },
-    {
       "vendorIdentifier": "hs.surface_all.klein",
       "referenceName": "surface-all:klein",
       "points": 15,
@@ -877,7 +554,7 @@
       "repeatable": false,
       "localizations": {
         "en-US": {
-          "name": "Klein bottle complete",
+          "name": "Klein bottle",
           "beforeEarnedDescription": "Win every board on this surface",
           "afterEarnedDescription": "You won every board on this surface",
           "image": "images/hs.surface_all.klein.png"
@@ -887,23 +564,6 @@
       "ring": "complete"
     },
     {
-      "vendorIdentifier": "hs.surface.projective",
-      "referenceName": "surface:projective",
-      "points": 5,
-      "showBeforeEarned": true,
-      "repeatable": false,
-      "localizations": {
-        "en-US": {
-          "name": "Projective plane",
-          "beforeEarnedDescription": "Win a board on this surface",
-          "afterEarnedDescription": "You won a board on this surface",
-          "image": "images/hs.surface.projective.png"
-        }
-      },
-      "icon": "projective",
-      "ring": null
-    },
-    {
       "vendorIdentifier": "hs.surface_all.projective",
       "referenceName": "surface-all:projective",
       "points": 15,
@@ -911,7 +571,7 @@
       "repeatable": false,
       "localizations": {
         "en-US": {
-          "name": "Projective plane complete",
+          "name": "Projective plane",
           "beforeEarnedDescription": "Win every board on this surface",
           "afterEarnedDescription": "You won every board on this surface",
           "image": "images/hs.surface_all.projective.png"
@@ -921,23 +581,6 @@
       "ring": "complete"
     },
     {
-      "vendorIdentifier": "hs.surface.doubletorus",
-      "referenceName": "surface:doubletorus",
-      "points": 5,
-      "showBeforeEarned": true,
-      "repeatable": false,
-      "localizations": {
-        "en-US": {
-          "name": "Double torus",
-          "beforeEarnedDescription": "Win a board on this surface",
-          "afterEarnedDescription": "You won a board on this surface",
-          "image": "images/hs.surface.doubletorus.png"
-        }
-      },
-      "icon": "doubletorus",
-      "ring": null
-    },
-    {
       "vendorIdentifier": "hs.surface_all.doubletorus",
       "referenceName": "surface-all:doubletorus",
       "points": 15,
@@ -945,7 +588,7 @@
       "repeatable": false,
       "localizations": {
         "en-US": {
-          "name": "Double torus complete",
+          "name": "Double torus",
           "beforeEarnedDescription": "Win every board on this surface",
           "afterEarnedDescription": "You won every board on this surface",
           "image": "images/hs.surface_all.doubletorus.png"
@@ -955,23 +598,6 @@
       "ring": "complete"
     },
     {
-      "vendorIdentifier": "hs.solid.sphere",
-      "referenceName": "solid:sphere",
-      "points": 5,
-      "showBeforeEarned": true,
-      "repeatable": false,
-      "localizations": {
-        "en-US": {
-          "name": "Sphere",
-          "beforeEarnedDescription": "Win a board in this group of solids",
-          "afterEarnedDescription": "You won a board in this group of solids",
-          "image": "images/hs.solid.sphere.png"
-        }
-      },
-      "icon": "sphere",
-      "ring": null
-    },
-    {
       "vendorIdentifier": "hs.solid_all.sphere",
       "referenceName": "solid-all:sphere",
       "points": 15,
@@ -979,7 +605,7 @@
       "repeatable": false,
       "localizations": {
         "en-US": {
-          "name": "Sphere complete",
+          "name": "Sphere",
           "beforeEarnedDescription": "Win every board in this group of solids",
           "afterEarnedDescription": "You won every board in this group of solids",
           "image": "images/hs.solid_all.sphere.png"
@@ -989,23 +615,6 @@
       "ring": "complete"
     },
     {
-      "vendorIdentifier": "hs.solid.platonic",
-      "referenceName": "solid:platonic",
-      "points": 5,
-      "showBeforeEarned": true,
-      "repeatable": false,
-      "localizations": {
-        "en-US": {
-          "name": "Platonic solids",
-          "beforeEarnedDescription": "Win a board in this group of solids",
-          "afterEarnedDescription": "You won a board in this group of solids",
-          "image": "images/hs.solid.platonic.png"
-        }
-      },
-      "icon": "platonic",
-      "ring": null
-    },
-    {
       "vendorIdentifier": "hs.solid_all.platonic",
       "referenceName": "solid-all:platonic",
       "points": 15,
@@ -1013,7 +622,7 @@
       "repeatable": false,
       "localizations": {
         "en-US": {
-          "name": "Platonic solids complete",
+          "name": "Platonic solids",
           "beforeEarnedDescription": "Win every board in this group of solids",
           "afterEarnedDescription": "You won every board in this group of solids",
           "image": "images/hs.solid_all.platonic.png"
@@ -1023,23 +632,6 @@
       "ring": "complete"
     },
     {
-      "vendorIdentifier": "hs.solid.archimedean",
-      "referenceName": "solid:archimedean",
-      "points": 5,
-      "showBeforeEarned": true,
-      "repeatable": false,
-      "localizations": {
-        "en-US": {
-          "name": "Archimedean solids",
-          "beforeEarnedDescription": "Win a board in this group of solids",
-          "afterEarnedDescription": "You won a board in this group of solids",
-          "image": "images/hs.solid.archimedean.png"
-        }
-      },
-      "icon": "archimedean",
-      "ring": null
-    },
-    {
       "vendorIdentifier": "hs.solid_all.archimedean",
       "referenceName": "solid-all:archimedean",
       "points": 15,
@@ -1047,7 +639,7 @@
       "repeatable": false,
       "localizations": {
         "en-US": {
-          "name": "Archimedean solids complete",
+          "name": "Archimedean solids",
           "beforeEarnedDescription": "Win every board in this group of solids",
           "afterEarnedDescription": "You won every board in this group of solids",
           "image": "images/hs.solid_all.archimedean.png"
@@ -1057,23 +649,6 @@
       "ring": "complete"
     },
     {
-      "vendorIdentifier": "hs.solid.catalan",
-      "referenceName": "solid:catalan",
-      "points": 5,
-      "showBeforeEarned": true,
-      "repeatable": false,
-      "localizations": {
-        "en-US": {
-          "name": "Catalan solids",
-          "beforeEarnedDescription": "Win a board in this group of solids",
-          "afterEarnedDescription": "You won a board in this group of solids",
-          "image": "images/hs.solid.catalan.png"
-        }
-      },
-      "icon": "catalan",
-      "ring": null
-    },
-    {
       "vendorIdentifier": "hs.solid_all.catalan",
       "referenceName": "solid-all:catalan",
       "points": 15,
@@ -1081,7 +656,7 @@
       "repeatable": false,
       "localizations": {
         "en-US": {
-          "name": "Catalan solids complete",
+          "name": "Catalan solids",
           "beforeEarnedDescription": "Win every board in this group of solids",
           "afterEarnedDescription": "You won every board in this group of solids",
           "image": "images/hs.solid_all.catalan.png"
@@ -1091,23 +666,6 @@
       "ring": "complete"
     },
     {
-      "vendorIdentifier": "hs.solid.polyhedra",
-      "referenceName": "solid:polyhedra",
-      "points": 5,
-      "showBeforeEarned": true,
-      "repeatable": false,
-      "localizations": {
-        "en-US": {
-          "name": "Polyhedra",
-          "beforeEarnedDescription": "Win a board in this group of solids",
-          "afterEarnedDescription": "You won a board in this group of solids",
-          "image": "images/hs.solid.polyhedra.png"
-        }
-      },
-      "icon": "polyhedra",
-      "ring": null
-    },
-    {
       "vendorIdentifier": "hs.solid_all.polyhedra",
       "referenceName": "solid-all:polyhedra",
       "points": 15,
@@ -1115,7 +673,7 @@
       "repeatable": false,
       "localizations": {
         "en-US": {
-          "name": "Polyhedra complete",
+          "name": "Polyhedra",
           "beforeEarnedDescription": "Win every board in this group of solids",
           "afterEarnedDescription": "You won every board in this group of solids",
           "image": "images/hs.solid_all.polyhedra.png"
@@ -1125,23 +683,6 @@
       "ring": "complete"
     },
     {
-      "vendorIdentifier": "hs.solid.volume",
-      "referenceName": "solid:volume",
-      "points": 5,
-      "showBeforeEarned": true,
-      "repeatable": false,
-      "localizations": {
-        "en-US": {
-          "name": "Volumes",
-          "beforeEarnedDescription": "Win a board in this group of solids",
-          "afterEarnedDescription": "You won a board in this group of solids",
-          "image": "images/hs.solid.volume.png"
-        }
-      },
-      "icon": "volume",
-      "ring": null
-    },
-    {
       "vendorIdentifier": "hs.solid_all.volume",
       "referenceName": "solid-all:volume",
       "points": 15,
@@ -1149,7 +690,7 @@
       "repeatable": false,
       "localizations": {
         "en-US": {
-          "name": "Volumes complete",
+          "name": "Volumes",
           "beforeEarnedDescription": "Win every board in this group of solids",
           "afterEarnedDescription": "You won every board in this group of solids",
           "image": "images/hs.solid_all.volume.png"

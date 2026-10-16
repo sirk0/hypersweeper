@@ -71,24 +71,48 @@ test.describe("achievements", () => {
     // The card is up for the record, and carries the unlocks under the times.
     await expect(dialog(page)).toBeVisible();
     await expect(page.locator("#score-dialog-title")).toHaveText("New best time!");
-    // A square board is four-sided tiles, on the plane, at easy, and one click
-    // on an empty field plants no flag: six at once, which is exactly the case
-    // the card caps. The first four are listed in the list's own order...
-    for (const id of ["first-win", "difficulty:easy", "flagless", "shape:4"]) {
+    // A square board is four-sided tiles, and one click on an empty field
+    // plants no flag: three at once, listed in the list's own order. Its
+    // surface and family earn nothing yet — a group is only ever won whole.
+    const unlocks = page.locator(".dialog-unlock[data-achievement]");
+    await expect(unlocks).toHaveCount(3);
+    for (const id of ["first-win", "flagless", "shape:4"]) {
       await expect(page.locator(`.dialog-unlock[data-achievement="${id}"]`)).toBeVisible();
     }
-    // ...and the rest are counted rather than listed, so "Play again" stays on
-    // a phone's screen. That count is the link to the whole list.
-    await expect(page.locator('[data-action="show-achievements"]')).toHaveText("and 2 more");
-    for (const id of ["tiling:regular", "surface:flat"]) {
-      await expect(page.locator(`.dialog-unlock[data-achievement="${id}"]`)).toHaveCount(0);
-      // Unlocked all the same — the card is a summary, not the record.
-      expect((await state(page, id))?.unlockedAt, id).toBeGreaterThan(0);
-    }
+    // Nothing was left out, so the link names the page rather than a count.
+    await expect(page.locator('[data-action="show-achievements"]')).toHaveText("All achievements");
 
     expect((await state(page, "first-win"))?.unlockedAt).toBeGreaterThan(0);
     // ...and the completion counts moved by exactly the one board.
     expect(await state(page, "surface-all:flat")).toMatchObject({ have: 1 });
+    expect(await state(page, "tiling-all:regular")).toMatchObject({ have: 1 });
+  });
+
+  test("a win that unlocks more than the card holds counts the rest", async ({ page }) => {
+    // torusrhombille is graded `warn` at medium (data/difficulty.json), so a
+    // first, flagless win there is first clear, medium, no flags, against the
+    // odds and four-sided tiles: five, one past what the card lists.
+    await seedAchievements(page, {});
+    await page.goto("/");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    await page.evaluate(() => {
+      const ms = window.__ms!;
+      ms.startBoard("torusrhombille", "medium", { seed: 1 });
+      const [mine, ...rest] = ms.cells();
+      ms.startBoard("torusrhombille", "medium", { mines: [mine!] });
+      for (const cell of rest) if (ms.state().status !== "won") ms.reveal(cell);
+    });
+    expect((await page.evaluate(() => window.__ms?.state()))?.status).toBe("won");
+
+    await expect(dialog(page)).toBeVisible();
+    await expect(page.locator(".dialog-unlock[data-achievement]")).toHaveCount(4);
+    // The rest are counted rather than listed, so "Play again" stays on a
+    // phone's screen. That count is the link to the whole list.
+    await expect(page.locator('[data-action="show-achievements"]')).toHaveText("and 1 more");
+    // Unlocked all the same — the card is a summary, not the record.
+    for (const id of ["first-win", "difficulty:medium", "flagless", "unfair", "shape:4"]) {
+      expect((await state(page, id))?.unlockedAt, id).toBeGreaterThan(0);
+    }
   });
 
   test("a win that beats no record still opens the card for an unlock", async ({ page }) => {
@@ -115,9 +139,6 @@ test.describe("achievements", () => {
       unlocked: {
         "first-win": 1,
         "shape:4": 1,
-        "surface:flat": 1,
-        "difficulty:easy": 1,
-        "tiling:regular": 1,
         // The fixture win is one click on an empty field, so it plants no flag
         // and earns this too — which is the flagless rule working, and has to
         // be seeded here or the card has something to say after all.
@@ -137,8 +158,8 @@ test.describe("achievements", () => {
     // player is thinking about achievements. Seeded so the win unlocks exactly
     // one thing, which is the case where the row names the page instead of
     // counting what it left out.
-    // A hexagonal board already won: that is the plane, the Regular family, an
-    // easy win, a flagless one and six-sided tiles. All of it is stamped when
+    // A hexagonal board already won: that is a first win, a flagless one and
+    // six-sided tiles. All of it is stamped when
     // the record is read, so the square board below unlocks exactly one thing —
     // its four-sided tiles — and the row names the page rather than a count.
     await seedAchievements(page, { wins: { hex: { easy: 1 } }, shapes: [6], flagless: 1 });

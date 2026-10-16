@@ -15,7 +15,7 @@ import { allBestTimes, splitBoardKey } from "./leaderboard";
 
 // Achievements: what a player has seen of the catalogue, and what is left.
 //
-// The game has 179 boards across seven tiling families, five surfaces and four
+// The game has 200+ boards across eleven tiling families, eight surfaces and six
 // solid groups, and until now finishing one left no trace unless the clock beat
 // a record. This is the trace. It is also the only thing in the app that says
 // there is more to play than the board in front of you.
@@ -56,7 +56,7 @@ const WIN_TIERS = [10, 50, 250];
 
 /** The distinct tile side counts anywhere in the catalogue.
  *
- * Declared rather than derived: answering it honestly means building all 179
+ * Declared rather than derived: answering it honestly means building all 200+
  * boards and running `classifyShapes` over them, which is about a second — fine
  * in a test, not on a settings page. `tests/unit/achievements.test.ts` does
  * exactly that and fails if this list is wrong, so a tiling with heptagons
@@ -96,24 +96,23 @@ export function emptyProgress(): Progress {
  * A rule rather than a value per achievement, and a rule over *kinds*, never
  * over how many boards a group has: Game Center fixes an achievement's points
  * once players can see it, and a group grows whenever a tiling is added. So
- * "Laves complete" is worth the same as "Fractals complete" — the price of
- * points that cannot drift.
+ * "Laves" is worth the same as "Fractals" — the price of points that cannot
+ * drift.
  *
  * Game Center allows 100 points per achievement and 1000 across the game, and
- * achievements are only ever added. Today's 69 spend 770. Points run out
- * first: eleven more group pairs (20 points each) reach 990 at 91
+ * achievements are only ever added. Today's 42 spend 625. Points run out
+ * first: twenty-five more groups (15 points each) reach exactly 1000 at 67
  * achievements. `tests/unit/achievements.test.ts` checks both caps. */
 const POINTS = {
   firstWin: 5,
-  /** Per rung of the difficulty ladder: easy 5, medium 10, hard 15. */
+  /** Per rung of the difficulty ladder: medium 10, hard 15. (Easy has no
+   * achievement of its own — see `milestones`.) */
   difficultyRung: 5,
   /** The first win tier; each later tier doubles it: 10, 20, 40. */
   winTier: 10,
   flagless: 10,
   unfair: 10,
   shape: 5,
-  /** Win any one board of a group. */
-  groupAny: 5,
   /** Win every board of a group. */
   groupAll: 15,
   everything: 100,
@@ -176,14 +175,19 @@ const playable = (modes: Iterable<string>): string[] => {
   return out;
 };
 
-/** One named set of boards an achievement pair is built over. */
+/** One named set of boards a completion achievement is built over. */
 interface Group {
   key: string;
   label: string;
   modes: string[];
 }
 
-/** The seven tiling families, each gathered across every surface it wraps.
+/** Tiling families with no achievement of their own. "Other" is the catch-all
+ * for tilings that fit no named family, and "Other" is not a name to award.
+ * Its boards still count towards their surface and the whole catalogue. */
+const UNAWARDED_FAMILIES = new Set(["other"]);
+
+/** The tiling families, each gathered across every surface it wraps.
  *
  * The *shared* `familyRows` is used rather than the web menu's `menuFamilyRows`
  * so that `regular` holds the three regular tilings as well as the shaped flat
@@ -191,7 +195,7 @@ interface Group {
  * already reports in the info window. The menu's own promotion of those three
  * rows to the top of a picker is a menu decision, not a fact about the tiling. */
 function tilingGroups(): Group[] {
-  return pickerFamilies("flat").map((family) => {
+  return pickerFamilies("flat").filter((family) => !UNAWARDED_FAMILIES.has(family)).map((family) => {
     const modes: string[] = [];
     for (const surface of SURFACE_SPECS) {
       for (const row of familyRows(family, surface.key)) modes.push(row.mode);
@@ -238,12 +242,6 @@ function done(modes: string[], won: ReadonlySet<string>): number {
   return n;
 }
 
-/** "Win one of these" — a yes/no. */
-const anyOf = (modes: string[]) => (_p: Progress, won: ReadonlySet<string>): Measure => ({
-  have: Math.min(1, done(modes, won)),
-  need: 1,
-});
-
 /** "Win all of these" — a count, so the page can show how far along it is. */
 const allOf = (modes: string[]) => (_p: Progress, won: ReadonlySet<string>): Measure => ({
   have: done(modes, won),
@@ -262,8 +260,8 @@ export function totalWins(p: Progress): number {
 }
 
 /** Every board won at least once, at any difficulty. One win ticks a board off
- * — the group-completion sets run to 174 boards, and asking for all three
- * difficulties on each would make that 522. */
+ * — the group-completion sets run to 200+ boards, and asking for all three
+ * difficulties on each would triple that. */
 export function wonModes(p: Progress): Set<string> {
   const out = new Set<string>();
   for (const [mode, byDifficulty] of Object.entries(p.wins)) {
@@ -293,6 +291,9 @@ function milestones(): Achievement[] {
   ];
 
   screens.difficulties.forEach((d, i) => {
+    // Easy has no achievement of its own: a win on easy is the first win
+    // almost every player makes, so it would only say what "First clear" says.
+    if (i === 0) return;
     list.push({
       id: `difficulty:${d.key}`,
       label: `${d.label} cleared`,
@@ -373,54 +374,44 @@ function shapeAchievements(): Achievement[] {
   }));
 }
 
-type PairKind = "tiling" | "surface" | "solid";
+type GroupKind = "tiling" | "surface" | "solid";
 
 /** How Game Center's text names a group's boards, by the kind of group. */
-const PAIR_WORDS: Record<PairKind, string> = {
+const GROUP_WORDS: Record<GroupKind, string> = {
   tiling: "tiled this way",
   surface: "on this surface",
   solid: "in this group of solids",
 };
 
-/** The two achievements a group of boards earns: win one of them, and win all
- * of them.
+/** The one achievement a group of boards earns: win every one of them.
  *
- * Both hints are the count rather than a sentence about the group, because the
- * label has already named it and the number is the thing the label cannot say —
- * "Laves" does not tell you it is 33 boards. It also sidesteps a grammar
- * problem the labels would otherwise force: the groups are named "Torus",
- * "Möbius strip", "The plane" and "Catalan solids", and no one preposition and
- * article fits all four.
+ * There used to be a "win any one" half beside it, which a first win handed
+ * out three of at once (its tiling, its surface, and its solid group). Those
+ * are gone: they said nothing a player had not just done, and they doubled
+ * the list Game Center has to be told about.
  *
- * Game Center's text cannot carry the count (see `brief`), so it names what
- * the boards share instead, in words that fit every group of that kind. */
-function pairFor(group: Group, kind: PairKind): Achievement[] {
+ * The id keeps its `-all:` form, so a record from before carries no stamp that
+ * could be mistaken for this one, and the label is the group's plain name.
+ *
+ * The page's hint is the count, because the label has already named the group
+ * and the number is the thing it cannot say — "Laves" does not tell you it is
+ * 33 boards. Game Center's text cannot carry the count (see `brief`), so it
+ * names what the boards share instead, in words that fit every group of that
+ * kind. */
+function groupAchievement(group: Group, kind: GroupKind): Achievement {
+  const which = GROUP_WORDS[kind];
   const n = group.modes.length;
-  const which = PAIR_WORDS[kind];
-  return [
-    {
-      id: `${kind}:${group.key}`,
-      label: group.label,
-      hint: `Win any one of its ${n} boards`,
-      brief: `Win a board ${which}`,
-      done: `You won a board ${which}`,
-      points: POINTS.groupAny,
-      icon: group.key,
-      group: kind,
-      measure: anyOf(group.modes),
-    },
-    {
-      id: `${kind}-all:${group.key}`,
-      label: `${group.label} complete`,
-      hint: `Win all ${n} of them`,
-      brief: `Win every board ${which}`,
-      done: `You won every board ${which}`,
-      points: POINTS.groupAll,
-      icon: group.key,
-      group: kind,
-      measure: allOf(group.modes),
-    },
-  ];
+  return {
+    id: `${kind}-all:${group.key}`,
+    label: group.label,
+    hint: n === 1 ? "Win its one board" : `Win all ${n} of its boards`,
+    brief: `Win every board ${which}`,
+    done: `You won every board ${which}`,
+    points: POINTS.groupAll,
+    icon: group.key,
+    group: kind,
+    measure: allOf(group.modes),
+  };
 }
 
 /** The whole list, in the order the page shows it. Built once at module load —
@@ -430,9 +421,9 @@ export const ACHIEVEMENTS: Achievement[] = (() => {
   return [
     ...milestones(),
     ...shapeAchievements(),
-    ...tilingGroups().flatMap((g) => pairFor(g, "tiling")),
-    ...surfaceGroups().flatMap((g) => pairFor(g, "surface")),
-    ...solidGroups().flatMap((g) => pairFor(g, "solid")),
+    ...tilingGroups().map((g) => groupAchievement(g, "tiling")),
+    ...surfaceGroups().map((g) => groupAchievement(g, "surface")),
+    ...solidGroups().map((g) => groupAchievement(g, "solid")),
     {
       id: "all-boards",
       label: "The whole catalogue",
@@ -622,7 +613,7 @@ function write(next: Stored): void {
  * Seeding is why this is not simply `emptyProgress()`: `allBestTimes()` is
  * already a complete list of every board and difficulty this device has ever
  * won, so a player who has cleared eighty boards should not meet this feature
- * at 0 / 174. It cannot recover `flagless` (never recorded) or `shapes` (that
+ * at 0 / 200-odd. It cannot recover `flagless` (never recorded) or `shapes` (that
  * needs the boards themselves — see `seedShapes`), so those start where the
  * history genuinely is: empty. */
 function loadStored(now: number = Date.now()): Stored {
