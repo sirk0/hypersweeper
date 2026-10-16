@@ -212,7 +212,8 @@ async function shoot(browser: Browser, device: View, scene: Scene, file?: string
 //
 //   header          5244 x 2950, 3840 x 1646   the banner at the top of the page
 //   header-penrose  the same two sizes          the banner of the Penrose custom
-//                                               product page
+//                                               product page: the tiling alone,
+//                                               edge to edge
 //   search-results  5244 x 2950, 3840 x 2560, 1920 x 1280   the Search tab card
 //   app-clip        1800 x 1200   the image on the App Clip card (App Store
 //                                 Connect → App Clip → default experience),
@@ -228,11 +229,9 @@ async function shoot(browser: Browser, device: View, scene: Scene, file?: string
 // page — its Sand field, its font, its colours — with the app's chrome hidden,
 // rather than on an imitation of it.
 
-type HeaderKey = "header" | "header-penrose";
-
 interface Art {
   /** Output folder, and the `DEVICES` key that selects it. */
-  key: HeaderKey | "search-results" | "app-clip";
+  key: "header" | "header-penrose" | "search-results" | "app-clip";
   file: string;
   /** CSS pixels; times `scale` is the asset's size. */
   viewport: { width: number; height: number };
@@ -254,28 +253,34 @@ const WIDE_HEADER_FOCUS = { centreY: 0.44, maxH: 0.52 };
 const ART: Art[] = [
   { key: "header", file: "header-5244x2950.png", viewport: { width: 2622, height: 1475 }, scale: 2, focus: HEADER_FOCUS },
   { key: "header", file: "header-3840x1646.png", viewport: { width: 1920, height: 823 }, scale: 2, focus: WIDE_HEADER_FOCUS },
-  { key: "header-penrose", file: "header-penrose-5244x2950.png", viewport: { width: 2622, height: 1475 }, scale: 2, focus: HEADER_FOCUS },
-  { key: "header-penrose", file: "header-penrose-3840x1646.png", viewport: { width: 1920, height: 823 }, scale: 2, focus: WIDE_HEADER_FOCUS },
+  { key: "header-penrose", file: "header-penrose-5244x2950.png", viewport: { width: 2622, height: 1475 }, scale: 2 },
+  { key: "header-penrose", file: "header-penrose-3840x1646.png", viewport: { width: 1920, height: 823 }, scale: 2 },
   { key: "search-results", file: "search-5244x2950.png", viewport: { width: 2622, height: 1475 }, scale: 2 },
   { key: "search-results", file: "search-3840x2560.png", viewport: { width: 1920, height: 1280 }, scale: 2 },
   { key: "search-results", file: "search-1920x1280.png", viewport: { width: 1920, height: 1280 }, scale: 1 },
   { key: "app-clip", file: "app-clip-1800x1200.jpg", viewport: { width: 900, height: 600 }, scale: 2 },
 ];
 
-/** Each header's boards, left to right, with their relative heights: the
+/** The header's boards, left to right, with their relative heights: the
  * middle one is the focal point. */
-const HEADERS: Record<HeaderKey, { scene: Scene; weight: number }[]> = {
-  header: [
+const HEADER_BOARDS: { scene: Scene; weight: number }[] = [
   { scene: { name: "h-hyperbolic", shape: "soft", mode: "hyperbolic73", seed: 4, reveal: 0.4, flags: 5 }, weight: 0.72 },
   { scene: { name: "h-mobius", shape: "realistic", mode: "mobiushex", difficulty: "easy", seed: 3, reveal: 0.34, flags: 4, rotate: [70, 40] }, weight: 0.86 },
   { scene: { name: "h-trefoil", shape: "realistic", mode: "trefoilhex", seed: 6, reveal: 0.4, flags: 5 }, weight: 1 },
   { scene: { name: "h-sphere", shape: "realistic", mode: "c180", seed: 7, reveal: 0.26, flags: 4 }, weight: 0.86 },
   { scene: { name: "h-torus", shape: "realistic", mode: "torussnubsquare", seed: 5, reveal: 0.34, flags: 4 }, weight: 0.72 },
-  ],
-  // The Penrose custom product page: the aperiodic tiling alone.
-  "header-penrose": [
-    { scene: { name: "h-penrose", shape: "realistic", mode: "penrose", seed: 11, reveal: 0.26, flags: 5 }, weight: 1 },
-  ],
+];
+
+/** The Penrose custom product page's header: the tiling itself, edge to edge.
+ * The largest Penrose board, untouched — every tile closed, nothing flagged —
+ * zoomed in until its ragged rim is off the banner on every side. */
+const PENROSE_HEADER: Scene = {
+  name: "h-penrose",
+  shape: "realistic",
+  mode: "penrose",
+  difficulty: "hard",
+  reveal: 0,
+  flags: 0,
 };
 
 /** The App Clip card's board: the one the clip plays (`HypersweeperClipBoard`
@@ -319,16 +324,16 @@ async function memo(key: string, make: () => Promise<Buffer>): Promise<Buffer> {
 
 async function composeArt(browser: Browser, art: Art, file: string): Promise<void> {
   const phone = DEVICES.find((d) => d.key === "iphone-6.9")!;
-  const header = art.key === "header" || art.key === "header-penrose" ? HEADERS[art.key] : undefined;
-  const images = header
-    ? await Promise.all(
-        header.map(async ({ scene }) => memo(`cut:${scene.name}`, () => cutout(browser, scene))),
-      )
-    : await Promise.all(
-        SEARCH_SHOTS.map((name) =>
-          memo(`phone:${name}`, () => shoot(browser, phone, SCENES.find((s) => s.name === name)!)),
-        ),
-      );
+  const images =
+    art.key === "header"
+      ? await Promise.all(
+          HEADER_BOARDS.map(async ({ scene }) => memo(`cut:${scene.name}`, () => cutout(browser, scene))),
+        )
+      : await Promise.all(
+          SEARCH_SHOTS.map((name) =>
+            memo(`phone:${name}`, () => shoot(browser, phone, SCENES.find((s) => s.name === name)!)),
+          ),
+        );
 
   // The app's menu in the default look is the canvas: its field and its font.
   const { page, context } = await openScene(
@@ -355,7 +360,7 @@ async function composeArt(browser: Browser, art: Art, file: string): Promise<voi
         "position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;";
       document.body.appendChild(stage);
 
-      if (kind === "header" || kind === "header-penrose") {
+      if (kind === "header") {
         // Trim each cutout to what it actually paints, so the boards are sized
         // by their own silhouettes rather than by the square they were shot in.
         const trimmed = imgs.map((img) => {
@@ -422,7 +427,7 @@ async function composeArt(browser: Browser, art: Art, file: string): Promise<voi
     [
       art.key,
       images.map((b) => `data:image/png;base64,${b.toString("base64")}`),
-      (header ?? []).map((b) => b.weight),
+      HEADER_BOARDS.map((b) => b.weight),
       SEARCH_HEADLINE,
       art.focus ?? null,
     ] as const,
@@ -436,6 +441,27 @@ async function composeArt(browser: Browser, art: Art, file: string): Promise<voi
 /** The App Clip card: the clip's board in play at the card's size, with the
  * app's chrome hidden. Shot whole rather than cut out, so the board keeps the
  * shadow it casts on the page. */
+/** The Penrose header: the board shot whole on the banner, with the app's
+ * chrome hidden, then zoomed in about its centre until the tiling covers the
+ * banner. A wider banner needs the closer zoom, since the patch is about as
+ * wide as it is tall and is framed to the banner's height. */
+async function tiledHeader(browser: Browser, art: Art, file: string): Promise<void> {
+  const { page, context } = await openScene(
+    browser,
+    { viewport: art.viewport, scale: art.scale, touch: false, native: "mac" },
+    PENROSE_HEADER,
+  );
+  await page.addStyleTag({ content: "#ui, .board-name-layer { display: none !important; }" });
+  await page.evaluate(() => window.dispatchEvent(new Event("resize")));
+  await settle(page);
+  const zoom = 1.3 * (art.viewport.width / art.viewport.height);
+  await page.evaluate((z) => window.__ms!.zoomBy(z), zoom);
+  await settle(page);
+  await page.screenshot({ path: file });
+  console.log(`wrote ${file}`);
+  await context.close();
+}
+
 async function clipCard(browser: Browser, art: Art, file: string): Promise<void> {
   const { page, context } = await openScene(
     browser,
@@ -461,7 +487,7 @@ async function clipCard(browser: Browser, art: Art, file: string): Promise<void>
 //
 // They show the pack where it is used: a conversation drawn in the manner of
 // Messages — bubbles, the compose bar, the sticker drawer — with the stickers
-// peeled onto it. Nothing in it is a screenshot of Messages or carries Apple's
+// sent in it. Nothing in it is a screenshot of Messages or carries Apple's
 // marks; it is plain HTML, drawn at each slot's point size and scale. The
 // stickers are read from the pack itself (ios/App/Stickers, written by
 // make-stickers.mts), in the pack's order, so the pictures always show what
@@ -483,12 +509,13 @@ interface MessagesSlot {
 
 const MESSAGES_SLOTS: MessagesSlot[] = [
   { key: "imessage-iphone", device: "iphone-6.3", columns: 2, ui: 1 },
-  { key: "imessage-iphone-duo", device: "iphone-duo", columns: 3, ui: 1.3 },
+  { key: "imessage-iphone-duo", device: "iphone-duo", columns: 3, ui: 1.1 },
   { key: "imessage-ipad", device: "ipad", columns: 4, ui: 1.6 },
 ];
 
-/** A message: a bubble of text, optionally with a sticker peeled onto it, or
- * a sticker sent on its own. `sticker` is an index into the pack. */
+/** A message: a bubble of text, optionally with a sticker sent just above it
+ * (clear of the bubble, so neither hides the other), or a sticker sent on its
+ * own. `sticker` is an index into the pack. */
 interface Message {
   from: "in" | "out";
   text?: string;
@@ -566,7 +593,7 @@ function messagesPage(
 ): string {
   const u = slot.ui;
   const W = device.viewport.width;
-  const peel = Math.round(Math.min(132 * u, W * 0.34));
+  const peel = Math.round(Math.min(116 * u, W * 0.3));
   const tilt = [-9, 7, -5, 10];
 
   const messages = scene.messages
@@ -648,7 +675,7 @@ function messagesPage(
   .when { text-align: center; color: #8a8a8e; font-size: ${12 * u}px; margin-bottom: auto; padding-top: ${8 * u}px; }
   .row { display: flex; position: relative; margin-top: ${10 * u}px; }
   .row.out { justify-content: flex-end; }
-  .row.stuck { padding-top: ${peel - 22 * u}px; }
+  .row.stuck { padding-top: ${peel + 2 * u}px; }
   .row.alone { margin-top: ${6 * u}px; }
   .bubble {
     max-width: 72%; padding: ${8 * u}px ${14 * u}px; border-radius: ${19 * u}px;
@@ -778,7 +805,11 @@ async function main(): Promise<void> {
       const outDir = path.join(outRoot, art.key);
       mkdirSync(outDir, { recursive: true });
       const file = path.join(outDir, art.file);
-      await (art.key === "app-clip" ? clipCard(browser, art, file) : composeArt(browser, art, file));
+      await (art.key === "app-clip"
+        ? clipCard(browser, art, file)
+        : art.key === "header-penrose"
+          ? tiledHeader(browser, art, file)
+          : composeArt(browser, art, file));
     }
     const wantsMessages = MESSAGES_SLOTS.some((slot) => !onlyDevices || onlyDevices.includes(slot.key));
     const pack = wantsMessages ? readPack() : undefined;

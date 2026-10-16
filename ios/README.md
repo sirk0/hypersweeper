@@ -580,8 +580,9 @@ short phrase. The header is a row of real boards with no words. The App
 Store crops it: on an iPhone the sides go, the back and share buttons sit over
 its upper quarter, and the info card covers it from about 64% of its height
 down. So the boards stand in the band between (`HEADER_FOCUS` in the script),
-not centred on the banner. The Penrose header is the same art with one
-Penrose rhombi board, for a custom product page. The search
+not centred on the banner. The Penrose header, for a custom product page, is
+the tiling alone, edge to edge: the largest Penrose rhombi board with every tile
+closed and nothing flagged, zoomed in until its rim is off the banner. The search
 card is three of the iPhone shots under one line, `SEARCH_HEADLINE` in the
 script. It is English, so it needs translating if the app is ever localised.
 Both are composed on the app's own Sand page with its chrome hidden. The App
@@ -591,7 +592,8 @@ card takes no transparency.
 
 The `imessage-*` slots are the iMessage app's own screenshots: a conversation
 drawn in the manner of Messages — bubbles, the compose bar, the sticker drawer —
-with the stickers peeled onto it and laid out in the drawer. It is plain HTML
+with the stickers sent in it, each just above its bubble and clear of it, and
+laid out in the drawer. It is plain HTML
 in the script, with no Apple marks. The stickers are read from the pack in
 `ios/App/Stickers`, in the pack's order, so run `make ios-stickers` first when
 the pack changes.
