@@ -98,10 +98,9 @@ export interface CellStyle {
    *
    * How the falloff is laid down depends on the cell. A cell with relief ramps
    * it over the profile's loops (`vertexShade` below), and a two-sided cell
-   * does the same on each of its two mirrored halves. The one exception is a
-   * cell the Klein clip cuts: it keeps a flat tile with no loops for the ramp to
-   * hang on, so its gradient is measured off the geometry instead
-   * (`radialFalloff` in solidBoard.ts). */
+   * does the same on each of its two mirrored halves. A cell the Klein clip
+   * cuts carries the same ramp with its cut vertices, interpolated where the
+   * cut falls (`CutButton.ramp` in solidBoard.ts). */
   shade?: { center: number; rim: number };
   /** The same gradient for an **opened** cell, when the two states should not be
    * made of the same material. Defaults to `shade`.

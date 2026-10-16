@@ -36,10 +36,18 @@ import {
 import {
   buildClipSolid,
   fanTriangles,
+  byFloor,
+  capsulePiece,
+  crossingPolylines,
+  crossingSegments,
   pruneSolid,
   reachesSolid,
+  solidBounds,
+  subtractSolid,
+  touchesBox,
   trianglesArea,
   trianglesBelow,
+  type ClipPiece,
   type Tri,
 } from "./clipSolid";
 import { geodesic, icosahedron } from "./solids";
@@ -252,7 +260,7 @@ function kleinTubeRadius(u: number, tubeScale: number): number {
 function thinTubeDepth(p: Vec3, tubeScale: number): number {
   const y = p[1];
   if (y > 0 || y < -8) return Infinity;
-  const u = TWO_PI + Math.asin(Math.max(-1, Math.min(1, y / 8)));
+  const u = neckU(y);
   return Math.hypot(p[0] - neckCentreX(u), p[2]) - kleinTubeRadius(u, tubeScale);
 }
 
@@ -287,12 +295,13 @@ function neckSheet(poly: readonly Vec3[], tubeScale: number): "fat" | "thin" | n
 }
 
 /** The clip for a Klein board: the enclosed region the renderer cuts its cells
- * against, plus the handful of cells the cut reaches. The region is built from
- * the *drawn* triangles of the thin tube — the same centroid fan the renderer
- * lays its opaque base layer down as — so a cell comes off exactly where the
- * tube that is meant to hide it begins, on every tiling and at every size.
- * `offset` is what `kleinRecentre` subtracted, so the sheet classification can
- * read the immersion's own frame while the region stays in board space. */
+ * against, the collar round it, and the handful of cells either reaches. The
+ * region is built from the *drawn* triangles of the thin tube — the same
+ * centroid fan the renderer lays its opaque base layer down as — so a cell
+ * comes off exactly where the tube that is meant to hide it begins, on every
+ * tiling and at every size. `offset` is what `kleinRecentre` subtracted, so the
+ * sheet classification can read the immersion's own frame while the region
+ * stays in board space. */
 function kleinClip(
   cells: Cells,
   positions: Positions,
@@ -313,13 +322,36 @@ function kleinClip(
   }
   const occluder = trianglesBelow(tube, seam);
   const whole = buildClipSolid(occluder);
+  const fans = fat.map(([cell, poly]) => [cell, poly, fanTriangles(poly, centroidOf(poly))] as const);
+  const belly = fans.flatMap(([, , tris]) => tris);
+  const floor = kleinCrossingBottom(tubeScale) - COLLAR_FLOOR - offset[1];
+  // The collar is as wide as COLLAR_WIDTH asks unless that would turn some
+  // cell mostly to band — a coarse board's cell can hold the whole crossing
+  // ring, a thin triangle can lie along it — and then it narrows, for the
+  // whole board at once so the seam stays one width all round.
+  let width = collarWidth(fat.map(([, poly]) => poly));
+  let collar = kleinCollar(belly, occluder, width, floor);
+  // The band's share of a cell goes about as its width does, so one look says
+  // how far to narrow, and a second confirms it (further steps only for the
+  // odd board where the guess falls short).
+  const left = new Map<CellId, { area: number; left: Tri[] }>();
+  let worst = worstBandShare(fans, whole, collar, left);
+  for (let tries = 0; worst > MAX_BAND_SHARE && tries < COLLAR_NARROWINGS; tries++) {
+    width *= tries === 0 ? (0.97 * MAX_BAND_SHARE) / worst : COLLAR_NARROWING;
+    collar = kleinCollar(belly, occluder, width, floor);
+    worst = worstBandShare(fans, whole, collar, left);
+  }
   const clipped = new Set<CellId>();
   const reached: Vec3[][] = [];
-  for (const [cell, poly] of fat) {
-    const tris = fanTriangles(poly, centroidOf(poly));
+  // Most of the fat sheet is the far side of the belly, nowhere near the neck:
+  // one look at the two regions' boxes settles those before any piece is asked.
+  const near = [solidBounds(whole), solidBounds(collar)].filter((b) => b !== null);
+  for (const [cell, poly, tris] of fans) {
+    if (!near.some((box) => touchesBox(poly, box))) continue;
     // Exact rather than sampled: the enclosed patch can sit wholly inside one
     // big cell, and a sliver off one corner is still a sliver that has to go.
-    if (reachesSolid(tris, whole, CLIP_MIN_AREA * trianglesArea(tris))) {
+    const min = CLIP_MIN_AREA * trianglesArea(tris);
+    if (reachesSolid(tris, whole, min) || reachesSolid(tris, collar, min)) {
       clipped.add(cell);
       reached.push(poly);
     }
@@ -327,7 +359,176 @@ function kleinClip(
   // The whole tube's interior is decomposed to find those cells; only the part
   // of it near them is ever subtracted from anything, and the rest is a few
   // thousand pieces a phone would carry around for the length of the game.
-  return { cells: clipped, solid: pruneSolid(whole, reached), occluder };
+  return {
+    cells: clipped,
+    solid: pruneSolid(whole, reached),
+    collar: pruneSolid(collar, reached),
+    occluder,
+  };
+}
+
+/** The `u` of the thin neck's cross-section at height `y` (immersion frame). */
+function neckU(y: number): number {
+  return TWO_PI + Math.asin(Math.max(-1, Math.min(1, y / 8)));
+}
+
+// -- the collar ---------------------------------------------------------------
+//
+// Cutting the enclosed patch away leaves the two sheets meeting edge to edge
+// all round the crossing, and a tile of the belly then looks like a neighbour
+// of the neck tile it touches — a number beside the crossing reads as counting
+// a cell it does not. The collar cuts the belly back from the crossing by a
+// margin and the renderer paints the band, so the crossing reads as a seam
+// rather than a shared edge.
+//
+// The band is everything of the belly within that margin of the crossing
+// itself: the segments where the drawn belly passes through the drawn neck,
+// each wrapped in a capsule (`capsulePiece`). Measured from the crossing, it is
+// the same width all the way round. It used to be the neck grown outward by
+// the margin instead, which is the same thing only where the two sheets meet
+// square on: at the top and bottom of the ring they meet almost tangentially,
+// a step out from the neck there runs a long way along the belly, and the band
+// swallowed most of a cell (beta feedback).
+//
+// Down at the bottom of the bottle the two sheets converge on one circle again
+// and *are* joined — the fold is a real edge between neighbours — and their
+// chords can graze there, so crossings that far down are not the crossing and
+// get no collar.
+
+/** How wide the collar is, as a share of the board's own edge length (the
+ * median edge of the cut sheet), so it looks the same on every tiling and at
+ * every size. Chosen against screenshots of the square, triangle, hexagon and
+ * Cairo boards. */
+const COLLAR_WIDTH = 0.3;
+
+/** Immersion units below the bottom of the crossing ring past which a crossing
+ * of the drawn sheets is the fold's grazing, not the crossing. Across the
+ * shipped tube scales (0.7 to 1.3) the sheets stand at least 0.47 apart for two
+ * units below the ring and do not converge until within a tenth of the fold. */
+const COLLAR_FLOOR = 1;
+
+/** The most of any one cell the band may cover — beyond what the hole takes,
+ * which the neck hides. A cell next to the crossing should still read as a
+ * tile with a seam along it, not as a grey patch with a scrap of tile in it
+ * (beta feedback). */
+const MAX_BAND_SHARE = 0.3;
+
+/** How far, as a share of its width, the band's centre line may stray from the
+ * drawn crossing to save capsules (see `crossingPolylines`). */
+const COLLAR_SMOOTHING = 0.05;
+
+/** How much the band narrows per step when a cell would be mostly band, and
+ * at most how many steps it takes. */
+const COLLAR_NARROWING = 0.8;
+const COLLAR_NARROWINGS = 6;
+
+/** The largest share of any cell's area the collar takes beyond the hole.
+ * Only what of a cell lies near the collar is measured, against only the
+ * hole's pieces near it, and that — the cell less the hole, near the collar —
+ * is cached in `left` for the next call: the collar only ever narrows from
+ * here, so what was near it stays a superset of what is near it now. */
+function worstBandShare(
+  fans: readonly (readonly [CellId, Vec3[], Tri[]])[],
+  hole: readonly ClipPiece[],
+  collar: readonly ClipPiece[],
+  left: Map<CellId, { area: number; left: Tri[] }>,
+): number {
+  if (!collar.length) return 0;
+  if (!left.size) {
+    const near = hole.filter((piece) => collar.some((c) => boxesMeet(piece, c)));
+    for (const [cell, , tris] of fans) {
+      // Only what of the cell lies near the collar can be band.
+      const close = tris.filter((t) => {
+        const box = triBounds(t);
+        return collar.some((c) => boxesMeet(box, c));
+      });
+      if (!close.length) continue;
+      left.set(cell, {
+        area: trianglesArea(tris),
+        left: subtractSolid(close, pruneSolid(near, [close.flat()])),
+      });
+    }
+  }
+  let worst = 0;
+  for (const { area, left: rest } of left.values()) {
+    const band = trianglesArea(rest) - trianglesArea(subtractSolid(rest, collar));
+    worst = Math.max(worst, band / area);
+  }
+  return worst;
+}
+
+function boxesMeet(a: { min: Vec3; max: Vec3 }, b: { min: Vec3; max: Vec3 }): boolean {
+  for (let i = 0; i < 3; i++) {
+    if (a.max[i]! < b.min[i]! || a.min[i]! > b.max[i]!) return false;
+  }
+  return true;
+}
+
+/** `COLLAR_WIDTH` of the cut sheet's median edge. */
+function collarWidth(polys: readonly (readonly Vec3[])[]): number {
+  const edges: number[] = [];
+  for (const poly of polys) {
+    for (let e = 0; e < poly.length; e++) {
+      const a = poly[e]!;
+      const b = poly[(e + 1) % poly.length]!;
+      edges.push(Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]));
+    }
+  }
+  if (!edges.length) return 0;
+  edges.sort((a, b) => a - b);
+  return COLLAR_WIDTH * edges[edges.length >> 1]!;
+}
+
+/** The collar: a capsule of radius `width` round every segment where the
+ * belly's drawn triangles pass through the neck's, above `floor` (board
+ * space). */
+function kleinCollar(
+  belly: readonly Tri[],
+  occluder: readonly Tri[],
+  width: number,
+  floor: number,
+): ClipPiece[] {
+  if (!(width > 0) || !occluder.length) return [];
+  const box = solidBounds(occluder.map((t) => ({ planes: [], ...triBounds(t) })))!;
+  const near = belly.filter((t) => touchesBox([t[0], t[1], t[2]], box));
+  const lines = crossingPolylines(
+    crossingSegments(near, occluder).filter(([a, b]) => Math.min(a[1], b[1]) >= floor),
+    width * COLLAR_SMOOTHING,
+  );
+  const pieces: ClipPiece[] = [];
+  for (const line of lines) {
+    for (let i = 0; i + 1 < line.length; i++) pieces.push(capsulePiece(line[i]!, line[i + 1]!, width));
+  }
+  return byFloor(pieces);
+}
+
+function triBounds(t: Tri): { min: Vec3; max: Vec3 } {
+  return {
+    min: [0, 1, 2].map((i) => Math.min(t[0][i]!, t[1][i]!, t[2][i]!)) as Vec3,
+    max: [0, 1, 2].map((i) => Math.max(t[0][i]!, t[1][i]!, t[2][i]!)) as Vec3,
+  };
+}
+
+/** The lowest height (immersion frame) at which the fat and thin cross-sections
+ * of the neck still cross: the bottom of the crossing ring. Scanned down from
+ * the seam, stopping at the end of the first run where the two circles meet —
+ * further down they converge again on the fold, which is a join, not a
+ * crossing. */
+export function kleinCrossingBottom(tubeScale: number): number {
+  const steps = 1024;
+  let bottom: number | null = null;
+  for (let i = 1; i < steps; i++) {
+    const y = (-8 * i) / steps;
+    const a = Math.asin(y / 8);
+    const fatU = Math.PI - a;
+    const thinU = TWO_PI + a;
+    const d = Math.abs(neckCentreX(thinU) - neckCentreX(fatU));
+    const rf = kleinTubeRadius(fatU, tubeScale);
+    const rt = kleinTubeRadius(thinU, tubeScale);
+    if (d <= rf + rt && d >= Math.abs(rf - rt)) bottom = y;
+    else if (bottom !== null) break;
+  }
+  return bottom ?? 0;
 }
 
 /** Below this share of its own area a cell is not worth cutting. All round the

@@ -114,7 +114,8 @@ design rather than the rule itself.
   the `SurfaceClip` — how the Klein bottle drops the sheet its own neck
   encloses, so looking into the hole shows the tube instead of a cap; the
   surface outside the neck is untouched, so the self-intersection still reads
-  from every other angle), `animations.ts` (the shared
+  from every other angle — and the collar painted round the crossing, so the
+  cells either side of it do not read as neighbours), `animations.ts` (the shared
   reveal-ripple / flag-drop / flag-pop / lose-shake / win-wave colour clock),
   `cellMotion.ts` + `motionShader.ts` (the tiles *moving* — sinking, pressing,
   hopping, assembling — evaluated on the CPU into a per-cell float texture the

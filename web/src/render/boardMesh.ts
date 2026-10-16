@@ -282,9 +282,12 @@ export function roundCorners<P extends readonly number[]>(
  * Möbius strip, Klein bottle) both faces are drawn, so the ray carried on
  * through the tube and came out on a cell of the *far* sheet — a click on the
  * grout line between two tiles opened, or detonated, a cell on the other side
- * of the board. */
-export type PickLayer = "cells" | "base";
-export const PICK_LAYERS: readonly PickLayer[] = ["cells", "base"];
+ * of the board. `"collar"` is the seam a Klein board paints round its
+ * self-intersection, where it takes the grout's place: each piece of it picks
+ * the cell whose outline it lies in, as the grout would, rather than letting
+ * the ray on through to the far sheet. */
+export type PickLayer = "cells" | "base" | "collar";
+export const PICK_LAYERS: readonly PickLayer[] = ["cells", "base", "collar"];
 
 export interface BoardMesh extends Group {
   readonly view: BoardView;

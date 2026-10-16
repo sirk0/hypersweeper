@@ -113,6 +113,116 @@ test.describe("picking a two-sided surface", () => {
     });
   }
 
+  // The collar a Klein board paints round its self-intersection takes the
+  // grout's place in a band round the neck (docs/render.md, "The collar"), and
+  // each piece of it is part of the cell whose outline it lies in. Next to the
+  // crossing a coarse board's cell is mostly band, so the band is what the
+  // pointer is on: it has to pick that cell, and *light up* with it — a band
+  // that picked nothing left the cell dead under the pointer, and one that
+  // picked it but stayed dark showed the hover as a few scraps of tile away
+  // from the pointer (beta feedback, twice).
+  //
+  // A canvas has no DOM to find the band by, so it is found in a screenshot by
+  // what it looks like: the one large dark, grey area on the default theme.
+  test("klein: a cell's piece of the collar lights up under the pointer, and a click opens it", async ({
+    page,
+  }) => {
+    const frame = async (mines?: string[]) => {
+      await page.evaluate((mines) => {
+        const ms = window.__ms!;
+        ms.startBoard("klein", "easy", mines ? { mines } : undefined);
+        ms.rotate(-200, 0);
+        ms.rotate(0, -60);
+        ms.zoomBy(2.2, 490, 500);
+      }, mines);
+      await page.mouse.move(899, 699); // parked off the board
+      await page.evaluate(
+        () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
+      );
+    };
+    /** Lightness (0..255) of the screenshot at each point. */
+    const lightness = async (points: { x: number; y: number }[]) => {
+      const png = (await page.screenshot()).toString("base64");
+      return page.evaluate(
+        async ({ png, points }) => {
+          const img = new Image();
+          img.src = `data:image/png;base64,${png}`;
+          await img.decode();
+          const ctx = Object.assign(document.createElement("canvas"), {
+            width: img.width,
+            height: img.height,
+          }).getContext("2d")!;
+          ctx.drawImage(img, 0, 0);
+          return points.map(({ x, y }) => {
+            const [r, g, b] = ctx.getImageData(x, y, 1, 1).data;
+            return (Math.max(r!, g!, b!) + Math.min(r!, g!, b!)) / 2;
+          });
+        },
+        { png, points },
+      );
+    };
+
+    await frame();
+    // Deep inside the band: dark, grey, and with nothing else round it.
+    const png = (await page.screenshot()).toString("base64");
+    const band = await page.evaluate(async (png) => {
+      const img = new Image();
+      img.src = `data:image/png;base64,${png}`;
+      await img.decode();
+      const ctx = Object.assign(document.createElement("canvas"), {
+        width: img.width,
+        height: img.height,
+      }).getContext("2d")!;
+      ctx.drawImage(img, 0, 0);
+      const { data, width, height } = ctx.getImageData(0, 0, img.width, img.height);
+      const grey = (x: number, y: number) => {
+        const i = 4 * (y * width + x);
+        const hi = Math.max(data[i]!, data[i + 1]!, data[i + 2]!);
+        const lo = Math.min(data[i]!, data[i + 1]!, data[i + 2]!);
+        return hi < 125 && hi - lo < 22;
+      };
+      const out: { x: number; y: number }[] = [];
+      for (let y = 160; y < height - 6; y += 4) {
+        for (let x = 6; x < width - 6; x += 4) {
+          let all = true;
+          for (let dy = -4; dy <= 4 && all; dy += 2) {
+            for (let dx = -4; dx <= 4 && all; dx += 2) all = grey(x + dx, y + dy);
+          }
+          if (all) out.push({ x, y });
+        }
+      }
+      return out;
+    }, png);
+    expect(band.length, "no part of the collar band found on screen").toBeGreaterThan(5);
+
+    // Every point of it picks a cell — the one whose outline it lies in.
+    const picked = await page.evaluate(
+      (band) => band.map((p) => window.__ms!.cellAtScreenXY(p.x, p.y)),
+      band,
+    );
+    expect(picked.filter((c) => c === null), "a point of the band picks nothing").toEqual([]);
+
+    // Hovering it lights it, right under the pointer.
+    const p = band[Math.floor(band.length / 2)]!;
+    const [before] = await lightness([p]);
+    await page.mouse.move(p.x, p.y);
+    await page.evaluate(
+      () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
+    );
+    const [after] = await lightness([p]);
+    expect(after! - before!, "the band under the pointer did not light up").toBeGreaterThan(10);
+
+    // And a click there opens that cell — and nothing else: every other cell is
+    // mined, so a click that landed anywhere else would end the game lost (and
+    // opening the one safe cell wins it).
+    const cell = picked[Math.floor(band.length / 2)]!;
+    const mines = await page.evaluate((cell) => window.__ms!.cells().filter((c) => c !== cell), cell);
+    await frame(mines);
+    await page.mouse.click(p.x, p.y);
+    expect(await page.evaluate((cell) => window.__ms!.cellState(cell), cell)).toBe("revealed");
+    expect(await page.evaluate(() => window.__ms!.state().status)).toBe("won");
+  });
+
   // The cylinder's cells are keyed `<around>,<along>`, so "the other side of the
   // board" is a ring index that jumps — and a step of one screen pixel can only
   // ever move to a neighbouring cell of the sheet being looked at.

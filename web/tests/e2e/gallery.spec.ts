@@ -379,6 +379,30 @@ test.describe("board gallery", () => {
     await expect(page).toHaveScreenshot("klein-scrolled.png", { mask: [timer] });
   });
 
+  test("klein collar sets the neck apart from the belly it passes through", async ({ page }) => {
+    // Close in on the self-intersection: the belly's tiles stop short of the
+    // neck, and the band between is the collar (docs/render.md, "The collar")
+    // — the seam that says the cells either side of the crossing are not
+    // neighbours. The three cells the neck pierces are opened, so their
+    // numbers sit right beside it, and every other cell is dense with mines so
+    // nothing cascades. The timer is masked (revealing starts it).
+    await page.goto("/");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    await page.evaluate(() => {
+      const ms = window.__ms!;
+      const pierced = ["13,4", "14,4", "15,4"];
+      ms.startBoard("klein", "medium");
+      const mines = ms.cells().filter((c, i) => !pierced.includes(c) && i % 4 === 1);
+      ms.startBoard("klein", "medium", { mines });
+      for (const c of pierced) ms.reveal(c);
+      ms.rotate(-150, 0);
+      ms.zoomBy(2.2, 485, 540);
+    });
+    const timer = page.locator('.hud-counter[data-slot="timer"]');
+    await page.waitForTimeout(150);
+    await expect(page).toHaveScreenshot("klein-collar.png", { mask: [timer] });
+  });
+
   test("a domed sphere's pins carry their resting ember", async ({ page }) => {
     // The markers' own baseline: the standing pins, lit by nothing but the
     // glow's resting level. That ember is a *look* rather than a motion, so

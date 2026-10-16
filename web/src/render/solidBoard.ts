@@ -36,7 +36,15 @@ import {
   type CellVisual,
   type PickLayer,
 } from "./boardMesh";
-import { clipTriangles, fanTriangles, triangleCentroid, type Tri } from "./clip";
+import { pruneSolid, type ClipPiece } from "../boards/clipSolid";
+import {
+  clipTriangles,
+  collarTriangles,
+  fanTriangles,
+  triangleCentroid,
+  trianglesArea,
+  type Tri,
+} from "./clip";
 import { BoardMotion, cellAttribute, patchMotion } from "./motionShader";
 import { makeGlyphAtlas, type Glyph, type GlyphAtlas } from "./glyphAtlas";
 import {
@@ -70,6 +78,7 @@ import {
   cellVertexCount,
   vertexShade,
   type CellProfile,
+  type CellLoop,
   type CellStyle,
 } from "./cellStyle";
 
@@ -94,12 +103,14 @@ import {
 // and never goes negative, which is what makes the two halves meet cleanly.
 // Grout under the tile gaps keeps them from becoming holes from either face.
 //
-// The exception is the handful of cells the Klein bottle's self-intersection
-// clip cuts (`SurfaceClip`): a cut is a variable number of triangles and a
-// raised profile cuts differently from a sunken one, so those cells could not
-// keep the state-independent vertex count one merged geometry needs. They stay
-// flat tiles, which is what `CellGeom.tile` now means — 1 to 28 cells on a
-// Klein board, all of them at the neck, where the surface is being cut away.
+// The handful of cells the Klein bottle's self-intersection clip cuts
+// (`SurfaceClip`) are the same raised buttons, cut. A cut leaves a variable
+// number of triangles, and a raised profile cuts differently from a sunken
+// one, so both are cut once at build time (`CellGeom.cut`) and the cell is
+// given room for the larger, the smaller padded with degenerate triangles —
+// which keeps the state-independent vertex count one merged geometry needs.
+// They used to be flat tiles instead, and read as a different, thinner kind of
+// cell right where the crossing already asks the eye to work (beta feedback).
 //
 // Glyphs are billboards rebuilt from the current board rotation (`orient`) so
 // numbers stay screen-upright like the pygame renderer, and are depth-tested so
@@ -112,6 +123,37 @@ const QUAD_CORNERS: readonly (readonly [number, number])[] = [
   [-1, -1], [1, 1], [-1, 1],
 ];
 const BASE_COLOR = "#8e8e8e"; // grout surface showing through the tile gaps
+
+/** How much of its grout's lightness the collar keeps: a step deeper than the
+ * grout lines, so it reads as a different kind of edge, without the glare of
+ * black (picked against Sand, Bright and Classic). */
+const COLLAR_SHADE = 0.72;
+
+/** The collar's colour: the style's own grout, a shade deeper. */
+function collarColor(style: CellStyle): Color {
+  const hsl = { h: 0, s: 0, l: 0 };
+  new Color(style.grout ?? BASE_COLOR).getHSL(hsl);
+  return new Color().setHSL(hsl.h, hsl.s, hsl.l * COLLAR_SHADE);
+}
+
+/** How far a cut tile's number and marker shrink: by the square root of the
+ * share of the tile left, as a scale goes with area — but never below
+ * `MIN_KEPT_SCALE`, a number too small to read being worse than one that
+ * reaches a little past a sliver. A tile cut away entirely keeps its size:
+ * its number sits where it always did, inside the tube that hides it. */
+function keptScale(tile: readonly Tri[], plate: readonly Tri[]): number {
+  const whole = trianglesArea(plate);
+  const kept = trianglesArea(tile);
+  if (!(whole > 0) || !(kept > 0)) return 1;
+  return Math.max(MIN_KEPT_SCALE, Math.min(1, Math.sqrt(kept / whole)));
+}
+
+const MIN_KEPT_SCALE = 0.6;
+
+/** How much a hovered cell's piece of the collar band lightens (HSL lightness)
+ * — more than the tile's own hover step, which barely shows on a band this
+ * dark, and still short of the tile so the seam stays a seam. */
+const COLLAR_HOVER = 0.14;
 
 /** How strongly a capable device's reflection map shows on the tiles and the
  * markers, and how bright the rim light is (`setEffects`). */
@@ -355,44 +397,158 @@ interface CellGeom {
   // in the cell's own plane, so a model can use it without depending on where
   // the camera is.
   fit: number;
+  // How far a cut tile's number and marker are scaled down to fit what is left
+  // of it (`keptScale`); 1 on every whole cell. Already folded into `fit`.
+  trim: number;
   center: Vec3; // centre of the (currently raised or sunken) top face
   palette: CellPalette; // hidden/opened tones for this cell's shape
-  // Non-null on exactly the cells that stayed **flat**: a two-sided cell the
-  // surface clip cuts (see the module header). Its triangles are built once —
-  // they never re-extrude — and already cut. Null everywhere else, which is
-  // also the flag the rest of this file branches on.
-  tile: Tri[] | null;
-  // ...and, on a style with a gradient, how far each of that tile's vertices
-  // sits from the cell's centre, 1 at the centroid and 0 out at the edge. A
-  // flat tile has no loop stack for `vertexShade` to ramp over, so its gradient
-  // is measured off the geometry instead — see `radialFalloff`. The *falloff*
-  // is stored rather than the finished factor because which gradient it is
-  // applied to depends on the cell's state, which changes in play.
-  tileFalloff: Float32Array | null;
+  // Non-null on exactly the cells the surface clip cuts (see the module
+  // header): the button for each profile, built and cut once. Null
+  // everywhere else, where the button is written straight from the profile.
+  cut: { closed: CutButton; open: CutButton } | null;
 }
 
-/** Where each vertex of a **clipped, flat** cell's triangles sits across the
- * tile: 1 at the centroid, 0 out at its edge. That is the axis a style's
- * gradient is applied along, and it is measured once here because the geometry
- * never moves — only which gradient rides on it changes, when the cell opens.
- *
- * Every other cell gets its gradient from the profile: those vertices arrive in
- * a known order, ring by ring, so `vertexShade` can ramp `rim` to `center` over
- * the loops without looking at a coordinate. A clipped cell has no loops at all
- * — it is a flat tile on the surface, fan-triangulated and then cut, which can
- * leave any number of vertices anywhere in it — so the same ramp has nothing to
- * hang on. Distance from the centre gives the same bead and survives the clip:
- * a cut vertex lands wherever it truly is. */
-function radialFalloff(tile: Tri[], centroid: Vec3, radius: number): Float32Array {
-  const out = new Float32Array(tile.length * 3);
-  let i = 0;
-  for (const tri of tile) {
-    for (const p of tri) {
-      const d = Math.hypot(p[0] - centroid[0], p[1] - centroid[1], p[2] - centroid[2]);
-      out[i++] = radius > 0 ? Math.max(0, Math.min(1, 1 - d / radius)) : 1;
+/** A button already cut by the surface clip: its vertices, their normals, and
+ * where each sits on the profile's shading ramp (0 at the rim, 1 at the centre
+ * — what `vertexShade` reads off the loop order, which a cut scrambles). */
+interface CutButton {
+  position: Float32Array;
+  normal: Float32Array;
+  ramp: Float32Array;
+  vertices: number;
+}
+
+/** One triangle of a cell's button, with its normal and the shading ramp at
+ * each corner. */
+interface ButtonTri {
+  p: Tri;
+  n: Vec3;
+  t: [number, number, number];
+}
+
+/** The triangles of a cell's button for one profile, in the exact order
+ * `writeGeometry` lays them down (and `vertexShade` ramps over): per face, the
+ * top fan, then one ring of walls per loop gap, the far face mirrored. */
+function buttonTriangles(
+  poly: readonly Vec3[],
+  centroid: Vec3,
+  normal: Vec3,
+  radius: number,
+  loops: readonly CellLoop[],
+  gap: number,
+  twoSided: boolean,
+): ButtonTri[] {
+  const n = poly.length;
+  const top = loops.length - 1;
+  const out: ButtonTri[] = [];
+  for (const s of twoSided ? ([1, -1] as const) : ([1] as const)) {
+    const rings = loops.map((loop) => {
+      const height = radius * loop.height * s;
+      const lift: Vec3 = [normal[0] * height, normal[1] * height, normal[2] * height];
+      return {
+        points: poly.map((p) => add3(lerp3(p, centroid, gap + loop.inset), lift)),
+        center: add3(centroid, lift),
+      };
+    });
+    const crown = rings[top]!;
+    const faceNormal: Vec3 = s > 0 ? normal : [-normal[0], -normal[1], -normal[2]];
+    // top face: fan from the raised centroid (outward winding preserved —
+    // the board's polygons are counterclockwise seen from outside). The
+    // whole fan carries the cell normal, so a cell on a curved surface
+    // (whose polygon is not planar — e.g. the sphere's pentagons) still
+    // shades as one clean facet instead of a pinwheel of fan triangles.
+    const rim = top / loops.length;
+    for (let e = 0; e < n; e++) {
+      const a = crown.points[e]!;
+      const b = crown.points[(e + 1) % n]!;
+      out.push({ p: [crown.center, s > 0 ? a : b, s > 0 ? b : a], n: faceNormal, t: [1, rim, rim] });
+    }
+    // one ring of walls per loop gap, from the outer edge up to the top edge.
+    // One normal per quad keeps its two (slightly non-coplanar) triangles
+    // from showing a diagonal shading crease.
+    for (let r = 1; r < rings.length; r++) {
+      const low = rings[r - 1]!.points;
+      const high = rings[r]!.points;
+      const tl = (r - 1) / loops.length;
+      const th = r / loops.length;
+      for (let e = 0; e < n; e++) {
+        const a = e;
+        const b = (e + 1) % n;
+        // Taking the Newell normal off the *drawn* vertex order is what makes
+        // the mirrored half's walls face outward too: reversing the order
+        // negates it, which is exactly what the mirroring asks for.
+        const quadNormal = normalize(
+          newellNormal(
+            s > 0
+              ? [low[a]!, low[b]!, high[b]!, high[a]!]
+              : [low[b]!, low[a]!, high[a]!, high[b]!],
+          ),
+        );
+        if (s > 0) {
+          out.push({ p: [low[a]!, low[b]!, high[b]!], n: quadNormal, t: [tl, tl, th] });
+          out.push({ p: [low[a]!, high[b]!, high[a]!], n: quadNormal, t: [tl, th, th] });
+        } else {
+          // The same two triangles with one pair swapped each: (la,lb,hb) ->
+          // (lb,la,hb) and (la,hb,ha) -> (la,ha,hb). Both swaps are between
+          // vertices of one loop, so the low/high pattern `vertexShade` reads
+          // is untouched.
+          out.push({ p: [low[b]!, low[a]!, high[b]!], n: quadNormal, t: [tl, tl, th] });
+          out.push({ p: [low[a]!, high[a]!, high[b]!], n: quadNormal, t: [tl, th, th] });
+        }
+      }
     }
   }
   return out;
+}
+
+/** A button cut by the surface clip — the collar, then the hole — one source
+ * triangle at a time, so every piece keeps its triangle's normal and takes its
+ * shading ramp from where it lies in it. The order is for speed: the hole's
+ * edge on this sheet is the crossing itself, which the collar straddles, so
+ * once the collar is out what is left lies wholly inside the hole or wholly
+ * outside it — and the hole, a stack of thin slabs, is cheap to cut from such
+ * pieces and dear to cut from one that crosses its edge. */
+function cutButton(
+  tris: readonly ButtonTri[],
+  hole: readonly ClipPiece[],
+  collar: readonly ClipPiece[],
+): CutButton {
+  const position: number[] = [];
+  const normal: number[] = [];
+  const ramp: number[] = [];
+  for (const { p, n, t } of tris) {
+    for (const piece of clipTriangles(clipTriangles([p], collar), hole)) {
+      for (const q of piece) {
+        position.push(q[0], q[1], q[2]);
+        normal.push(n[0], n[1], n[2]);
+        const [wa, wb, wc] = barycentric(p, q);
+        ramp.push(wa * t[0] + wb * t[1] + wc * t[2]);
+      }
+    }
+  }
+  return {
+    position: Float32Array.from(position),
+    normal: Float32Array.from(normal),
+    ramp: Float32Array.from(ramp),
+    vertices: ramp.length,
+  };
+}
+
+/** `q`'s barycentric weights in triangle `t` (q in its plane). */
+function barycentric(t: Tri, q: Vec3): [number, number, number] {
+  const v0: Vec3 = [t[1][0] - t[0][0], t[1][1] - t[0][1], t[1][2] - t[0][2]];
+  const v1: Vec3 = [t[2][0] - t[0][0], t[2][1] - t[0][1], t[2][2] - t[0][2]];
+  const v2: Vec3 = [q[0] - t[0][0], q[1] - t[0][1], q[2] - t[0][2]];
+  const d00 = v0[0] * v0[0] + v0[1] * v0[1] + v0[2] * v0[2];
+  const d01 = v0[0] * v1[0] + v0[1] * v1[1] + v0[2] * v1[2];
+  const d11 = v1[0] * v1[0] + v1[1] * v1[1] + v1[2] * v1[2];
+  const d20 = v2[0] * v0[0] + v2[1] * v0[1] + v2[2] * v0[2];
+  const d21 = v2[0] * v1[0] + v2[1] * v1[1] + v2[2] * v1[2];
+  const den = d00 * d11 - d01 * d01;
+  if (!(Math.abs(den) > 0)) return [1, 0, 0];
+  const b = (d11 * d20 - d01 * d21) / den;
+  const c = (d00 * d21 - d01 * d20) / den;
+  return [1 - b - c, b, c];
 }
 
 export class SolidBoard extends Group implements BoardMesh {
@@ -487,6 +643,13 @@ export class SolidBoard extends Group implements BoardMesh {
   private readonly atlas: GlyphAtlas;
   private readonly states: CellVisual[];
   private hovered = -1;
+  /** The collar band round a self-intersection, cell by cell: which cell each
+   * of its triangles lies in, each cell's run of its vertices, and the colour
+   * attribute those runs are painted through (`writeCollarColor`). */
+  private readonly collarFaceCell: Int32Array;
+  private readonly collarRuns: ({ start: number; count: number } | null)[];
+  private collarColors: BufferAttribute | null = null;
+  private readonly collarRest: Color;
   private readonly anim = new CellAnimations();
   /** The tiles' own motion (render/cellMotion.ts), applied in the vertex
    * shader of the tiles, the glyphs and the markers alike. */
@@ -561,6 +724,9 @@ export class SolidBoard extends Group implements BoardMesh {
     const basePositions: number[] = [];
     const faceCell: number[] = [];
     const baseFaceCell: number[] = [];
+    const collarPositions: number[] = [];
+    const collarFaceCell: number[] = [];
+    const collarRuns: ({ start: number; count: number } | null)[] = [];
     let vertexCount = 0;
     // Where the immersion passes through itself, the enclosed sheet is cut
     // away so the hole can be looked into (Klein bottle; see SurfaceClip).
@@ -612,28 +778,46 @@ export class SolidBoard extends Group implements BoardMesh {
         }),
         [0, 0],
       );
-      // The cut, if this cell is one of the few the clip reaches.
-      const cut = clip && clip.cells.has(cell) ? clip.solid : null;
+      // The cut, if this cell is one of the few the clip reaches: the tile
+      // stops at the collar, the grout under it only at the hole itself.
+      const cut = clip && clip.cells.has(cell) ? clip : null;
       // A cell is a raised button: an n-triangle top fan plus a ring of n quads
       // under it per loop gap in the profile, mirrored onto the far face where
-      // the surface has two. The exception is a **clipped** cell of such a
-      // surface: a cut leaves a variable number of triangles, and a raised
-      // profile cuts differently from a sunken one, so its vertex count would
-      // not be the state-independent number this one merged geometry needs. It
-      // keeps a flat tile instead, fixed at build time (see the module header).
-      const tile =
+      // the surface has two. A **clipped** cell's button is cut, once per
+      // profile, here (see the module header). Its footprint on the surface —
+      // the plate, cut the same way — is what places and sizes its number.
+      const plate =
         this.twoSided && cut
-          ? clipTriangles(
-              fanTriangles(
-                poly.map((p) => lerp3(p, centroid, this.profile.gap)),
-                centroid,
-              ),
-              cut,
+          ? fanTriangles(
+              poly.map((p) => lerp3(p, centroid, this.profile.gap)),
+              centroid,
             )
           : null;
-      const drawn = style.round && !tile ? roundCorners(poly, style.round) : poly;
-      const count = tile
-        ? 3 * tile.length
+      const drawn = style.round ? roundCorners(poly, style.round) : poly;
+      // Both buttons are cut against only the pieces of the clip near this
+      // cell — found once, rather than by every one of its triangles in turn.
+      const buttons = cut
+        ? ([this.profile.closed, this.profile.open] as const).map((loops) =>
+            buttonTriangles(drawn, centroid, normal, radius, loops, this.profile.gap, this.twoSided),
+          )
+        : null;
+      const near = buttons
+        ? (() => {
+            const reach = buttons.flatMap((tris) => tris.flatMap((t) => t.p));
+            return { hole: pruneSolid(cut!.solid, [reach]), collar: pruneSolid(cut!.collar, [reach]) };
+          })()
+        : null;
+      const tile = plate && near ? clipTriangles(clipTriangles(plate, near.collar), near.hole) : null;
+      const trim = plate && tile ? keptScale(tile, plate) : 1;
+      const cutButtons =
+        buttons && near
+          ? {
+              closed: cutButton(buttons[0]!, near.hole, near.collar),
+              open: cutButton(buttons[1]!, near.hole, near.collar),
+            }
+          : null;
+      const count = cutButtons
+        ? Math.max(cutButtons.closed.vertices, cutButtons.open.vertices)
         : cellVertexCount(drawn.length, this.profile) * (this.twoSided ? 2 : 1);
       this.geom.push({
         start: vertexCount,
@@ -644,20 +828,21 @@ export class SolidBoard extends Group implements BoardMesh {
         centroid,
         normal,
         radius,
-        fit,
+        // A cut tile's number and marker have to fit on what is left of it,
+        // or they spill onto the collar beside it.
+        fit: fit * trim,
+        trim,
         center: tile ? (triangleCentroid(tile) ?? centroid) : centroid,
         palette: cellPalette(tones.get(cell)!, "solid", style.monochrome, style.boardTint),
-        tileFalloff: tile && style.shade ? radialFalloff(tile, centroid, radius) : null,
-        tile,
+        cut: cutButtons,
       });
       vertexCount += count;
       // How far this cell's drawn geometry reaches: a crown stands proud of the
-      // board's own vertex radius, on both faces where the surface has two. A
-      // clipped cell is still a flat tile and adds nothing.
+      // board's own vertex radius, on both faces where the surface has two.
       for (const p of poly) hull.push(p[0], p[1], p[2]);
       const crown = this.profile.closed[this.profile.closed.length - 1]!;
-      const crownHeight = tile ? 0 : radius * crown.height;
-      if (!tile) {
+      const crownHeight = radius * crown.height;
+      {
         for (const s of this.twoSided ? [1, -1] : [1]) {
           for (const p of poly) {
             const top = add3(lerp3(p, centroid, this.profile.gap + crown.inset), [
@@ -680,16 +865,32 @@ export class SolidBoard extends Group implements BoardMesh {
 
       // Opaque base layer under the whole (unshrunk) polygon: the tile gaps
       // and the silhouette show this grout surface instead of seeing through
-      // the hollow interior. It is cut by the same clip — grout left behind
-      // would cap the hole just as the tiles did. Being the whole polygon, it
-      // is also what a click in a gap picks, so it is mapped back to its cell
-      // exactly as the tiles are — and laid a hair over its own edges, so that
-      // a pick ray cannot slip between two cells (see BASE_OVERLAP).
+      // the hollow interior. Being the whole polygon, it is also what a click
+      // in a gap picks, so it is mapped back to its cell exactly as the tiles
+      // are — and laid a hair over its own edges, so that a pick ray cannot
+      // slip between two cells (see BASE_OVERLAP).
       const skirt = poly.map((p) => lerp3(p, centroid, -BASE_OVERLAP));
-      for (const tri of clipTriangles(fanTriangles(skirt, centroid), cut)) {
+      const fan = fanTriangles(skirt, centroid);
+      // A cut cell's grout splits three ways. Inside the hole there is none —
+      // grout left behind would cap the hole just as the tiles did. Between
+      // the hole and the collar's edge is this cell's piece of the collar
+      // band, drawn as its own mesh (see below) so it can be a seam's colour
+      // and still light up with the cell. The rest is plain grout.
+      // (The collar is cut first for speed — see `cutButton`.)
+      const grout = near ? clipTriangles(clipTriangles(fan, near.collar), near.hole) : fan;
+      for (const tri of grout) {
         for (const p of tri) basePositions.push(p[0], p[1], p[2]);
         baseFaceCell.push(ci);
       }
+      const collarStart = collarPositions.length / 3;
+      if (near) {
+        for (const tri of clipTriangles(collarTriangles(fan, near.collar), near.hole)) {
+          for (const p of tri) collarPositions.push(p[0], p[1], p[2]);
+          collarFaceCell.push(ci);
+        }
+      }
+      const collarCount = collarPositions.length / 3 - collarStart;
+      collarRuns.push(collarCount ? { start: collarStart, count: collarCount } : null);
     });
 
     this.view = {
@@ -730,8 +931,7 @@ export class SolidBoard extends Group implements BoardMesh {
     // Grout under the tile gaps on every board, so the gaps read as grout lines
     // rather than as holes. It sits below the raised cells, and on a two-sided
     // surface it is shown from both faces and pushed back in depth
-    // (polygonOffset) — the lenses only touch its plane along their loop-0 rim,
-    // but a clipped cell is still a flat tile lying in it.
+    // (polygonOffset) — the lenses only touch its plane along their loop-0 rim.
     const baseGeometry = new BufferGeometry();
     baseGeometry.setAttribute(
       "position",
@@ -753,6 +953,51 @@ export class SolidBoard extends Group implements BoardMesh {
     );
     base.name = "base";
     this.add(base);
+
+    // The collar round a self-intersection (the Klein bottle's neck going
+    // through its belly): the band where the cut sheet's tiles stop short of
+    // the sheet crossing it, so the two do not read as neighbours meeting edge
+    // to edge. Grout, a shade deeper — it belongs to the theme like the grout
+    // lines do, and still stands apart from them. It takes the base layer's
+    // place in the band rather than lying over it.
+    //
+    // Each piece of it is **part of the cell whose outline it lies in**: picked
+    // as that cell (`cellForFace`) and lit with it on hover
+    // (`writeCollarColor`). Next to the crossing a coarse board's cell is
+    // mostly band, so a band that ignored the pointer — or that picked the cell
+    // but lit only the tile's scraps, away from the pointer — left the cell
+    // under the pointer dead (beta feedback, twice).
+    this.collarFaceCell = Int32Array.from(collarFaceCell);
+    this.collarRuns = collarRuns;
+    this.collarRest = collarColor(style);
+    if (collarPositions.length) {
+      const collarGeometry = new BufferGeometry();
+      collarGeometry.setAttribute(
+        "position",
+        new BufferAttribute(new Float32Array(collarPositions), 3),
+      );
+      collarGeometry.computeVertexNormals();
+      this.collarColors = new BufferAttribute(
+        new Float32Array(collarPositions.length),
+        3,
+      );
+      collarGeometry.setAttribute("color", this.collarColors);
+      const collar = new Mesh(
+        collarGeometry,
+        new MeshStandardMaterial({
+          vertexColors: true,
+          roughness: 0.8,
+          metalness: 0,
+          flatShading: true,
+          side: DoubleSide,
+          polygonOffset: true,
+          polygonOffsetFactor: 1,
+          polygonOffsetUnits: 4,
+        }),
+      );
+      collar.name = "collar";
+      this.add(collar);
+    }
 
     const glyphMaterial = new MeshBasicMaterial({
       map: this.atlas.texture,
@@ -879,7 +1124,9 @@ export class SolidBoard extends Group implements BoardMesh {
   }
 
   cellForFace(faceIndex: number, layer: PickLayer = "cells"): CellId | null {
-    const ci = (layer === "base" ? this.baseFaceCell : this.faceCell)[faceIndex];
+    const faces =
+      layer === "base" ? this.baseFaceCell : layer === "collar" ? this.collarFaceCell : this.faceCell;
+    const ci = faces[faceIndex];
     return ci == null ? null : (this.order[ci] ?? null);
   }
 
@@ -897,9 +1144,9 @@ export class SolidBoard extends Group implements BoardMesh {
     const wasOpen = isOpened(previous);
     this.states[i] = visual;
     // A cell rises when hidden and sinks when revealed, so re-extrude on that
-    // flip — on both faces of a two-sided one. Only a clipped cell is flat and
-    // static, its state showing in colour alone.
-    if (!this.geom[i]!.tile && isOpened(visual) !== wasOpen) this.writeGeometry(i);
+    // flip — on both faces of a two-sided one, and a cut cell as well as a
+    // whole one (it swaps to its other pre-cut profile).
+    if (isOpened(visual) !== wasOpen) this.writeGeometry(i);
     this.writeColor(i);
     if (visual.kind !== "hidden") this.motion.motion.setHover(i, false);
     if (isOpened(visual)) this.motion.motion.setPress(i, false);
@@ -1037,124 +1284,79 @@ export class SolidBoard extends Group implements BoardMesh {
    * loop-level sequence as the first, which is what lets `writeColor` shade it
    * with `v % half` instead of a second ramp.
    *
-   * A clipped cell is flat and static, and goes to `writeFlatTile`. */
+   * A cell the surface clip cuts writes its pre-cut button instead
+   * (`writeCut`). */
   private writeGeometry(i: number): void {
     const g = this.geom[i]!;
-    if (g.tile) return this.writeFlatTile(i);
+    const opened = isOpened(this.states[i]!);
+    if (g.cut) return this.writeCut(i, opened ? g.cut.open : g.cut.closed);
     const { drawn: poly, centroid, normal } = g;
-    const n = poly.length;
-    const loops = isOpened(this.states[i]!) ? this.profile.open : this.profile.closed;
-
+    const loops = opened ? this.profile.open : this.profile.closed;
     let v = g.start;
-    const put = (p: Vec3, nrm: Vec3) => {
-      this.positionAttr.setXYZ(v, p[0], p[1], p[2]);
-      this.normalAttr.setXYZ(v, nrm[0], nrm[1], nrm[2]);
-      v++;
-    };
-
-    /** One half of the cell, lifted along `s * normal`. Returns the centre of
-     * its top face. */
-    const writeHalf = (s: 1 | -1): Vec3 => {
-      const rings = loops.map((loop) => {
-        const height = g.radius * loop.height * s;
-        const lift: Vec3 = [normal[0] * height, normal[1] * height, normal[2] * height];
-        return {
-          points: poly.map((p) => add3(lerp3(p, centroid, this.profile.gap + loop.inset), lift)),
-          center: add3(centroid, lift),
-        };
-      });
-      const top = rings[rings.length - 1]!;
-      const faceNormal: Vec3 = s > 0 ? normal : [-normal[0], -normal[1], -normal[2]];
-      // top face: fan from the raised centroid (outward winding preserved —
-      // the board's polygons are counterclockwise seen from outside). The
-      // whole fan carries the cell normal, so a cell on a curved surface
-      // (whose polygon is not planar — e.g. the sphere's pentagons) still
-      // shades as one clean facet instead of a pinwheel of fan triangles.
-      for (let e = 0; e < n; e++) {
-        const a = top.points[e]!;
-        const b = top.points[(e + 1) % n]!;
-        put(top.center, faceNormal);
-        put(s > 0 ? a : b, faceNormal);
-        put(s > 0 ? b : a, faceNormal);
+    for (const tri of buttonTriangles(
+      poly,
+      centroid,
+      normal,
+      g.radius,
+      loops,
+      this.profile.gap,
+      this.twoSided,
+    )) {
+      for (const p of tri.p) {
+        this.positionAttr.setXYZ(v, p[0], p[1], p[2]);
+        this.normalAttr.setXYZ(v, tri.n[0], tri.n[1], tri.n[2]);
+        v++;
       }
-      // one ring of walls per loop gap, from the outer edge up to the top edge.
-      // One normal per quad keeps its two (slightly non-coplanar) triangles
-      // from showing a diagonal shading crease.
-      for (let r = 1; r < rings.length; r++) {
-        const low = rings[r - 1]!.points;
-        const high = rings[r]!.points;
-        for (let e = 0; e < n; e++) {
-          const a = e;
-          const b = (e + 1) % n;
-          // Taking the Newell normal off the *drawn* vertex order is what makes
-          // the mirrored half's walls face outward too: reversing the order
-          // negates it, which is exactly what the mirroring asks for.
-          const quadNormal = normalize(
-            newellNormal(
-              s > 0
-                ? [low[a]!, low[b]!, high[b]!, high[a]!]
-                : [low[b]!, low[a]!, high[a]!, high[b]!],
-            ),
-          );
-          if (s > 0) {
-            put(low[a]!, quadNormal);
-            put(low[b]!, quadNormal);
-            put(high[b]!, quadNormal);
-            put(low[a]!, quadNormal);
-            put(high[b]!, quadNormal);
-            put(high[a]!, quadNormal);
-          } else {
-            // The same two triangles with one pair swapped each: (la,lb,hb) ->
-            // (lb,la,hb) and (la,hb,ha) -> (la,ha,hb). Both swaps are between
-            // vertices of one loop, so the low/high pattern `vertexShade` reads
-            // is untouched.
-            put(low[b]!, quadNormal);
-            put(low[a]!, quadNormal);
-            put(high[b]!, quadNormal);
-            put(low[a]!, quadNormal);
-            put(high[a]!, quadNormal);
-            put(high[b]!, quadNormal);
-          }
-        }
-      }
-      return top.center;
-    };
-
-    const front = writeHalf(1);
-    if (this.twoSided) {
-      writeHalf(-1);
-      // A two-sided cell's centre stays *on* the surface: both faces are drawn,
-      // so neither crown is "the" top, and everything that reads `center` —
-      // the glyph billboard, the stereo pan, the ripple distances, the test
-      // seam's `cellScreenXY` — wants the cell itself rather than one of its
-      // two faces. The two things that stand *on* a face (the pin and the
-      // falling pin) add the crown themselves, in `rebuildMarkers`.
-    } else {
-      g.center = front;
+    }
+    if (!this.twoSided) {
+      // A one-sided cell's centre is its crown's: what reads `center` — the
+      // glyph billboard, the stereo pan, the ripple distances, the test seam's
+      // `cellScreenXY` — wants the face the player sees. A two-sided cell's
+      // stays *on* the surface: both faces are drawn, so neither crown is "the"
+      // top. The two things that stand *on* a face (the pin and the falling
+      // pin) add the crown themselves, in `rebuildMarkers`.
+      const height = g.radius * loops[loops.length - 1]!.height;
+      g.center = add3(centroid, [normal[0] * height, normal[1] * height, normal[2] * height]);
     }
     this.positionAttr.needsUpdate = true;
     this.normalAttr.needsUpdate = true;
   }
 
-  /** A flat, slightly-shrunk tile fanned from the cell centroid, sitting on the
-   * surface (no raise) — what a cell of a two-sided surface gets when the
-   * surface clip cuts it. It carries the single cell normal and is drawn
-   * two-sided, so it reads the same from inside or outside; the grout base
-   * behind it shows in the shrink gap as a border line. The triangles were
-   * built (and clipped) once in the constructor — a flat tile never moves. */
-  private writeFlatTile(i: number): void {
+  /** A cut cell's button for its current profile, as built in the
+   * constructor, with the rest of its room filled by degenerate triangles
+   * (the other profile may have cut into more pieces). */
+  private writeCut(i: number, button: CutButton): void {
     const g = this.geom[i]!;
-    const { normal } = g;
-    let v = g.start;
-    for (const tri of g.tile ?? []) {
-      for (const p of tri) {
-        this.positionAttr.setXYZ(v, p[0], p[1], p[2]);
-        this.normalAttr.setXYZ(v, normal[0], normal[1], normal[2]);
-        v++;
+    const { position, normal } = button;
+    for (let v = 0; v < g.count; v++) {
+      const k = 3 * Math.min(v, button.vertices - 1);
+      if (v < button.vertices) {
+        this.positionAttr.setXYZ(g.start + v, position[k]!, position[k + 1]!, position[k + 2]!);
+        this.normalAttr.setXYZ(g.start + v, normal[k]!, normal[k + 1]!, normal[k + 2]!);
+      } else if (button.vertices > 0) {
+        this.positionAttr.setXYZ(g.start + v, position[k]!, position[k + 1]!, position[k + 2]!);
+        this.normalAttr.setXYZ(g.start + v, normal[k]!, normal[k + 1]!, normal[k + 2]!);
+      } else {
+        this.positionAttr.setXYZ(g.start + v, g.centroid[0], g.centroid[1], g.centroid[2]);
+        this.normalAttr.setXYZ(g.start + v, g.normal[0], g.normal[1], g.normal[2]);
       }
     }
     this.positionAttr.needsUpdate = true;
     this.normalAttr.needsUpdate = true;
+  }
+
+  /** Paint cell `i`'s piece of the collar band, if it has one: the seam's
+   * colour, lifted with the cell when it is hovered — by more than the tile
+   * is, the band being so much darker that the tile's step barely shows on
+   * it. */
+  private writeCollarColor(i: number): void {
+    const run = this.collarRuns[i];
+    const colors = this.collarColors;
+    if (!run || !colors) return;
+    const col = this.collarRest.clone();
+    if (i === this.hovered && this.states[i]!.kind === "hidden") col.offsetHSL(0, 0, COLLAR_HOVER);
+    for (let v = run.start; v < run.start + run.count; v++) colors.setXYZ(v, col.r, col.g, col.b);
+    colors.needsUpdate = true;
   }
 
   private writeColor(i: number): void {
@@ -1176,18 +1378,20 @@ export class SolidBoard extends Group implements BoardMesh {
     const shade = isOpened(this.states[i]!) ? this.openShade : this.shade;
     // A two-sided cell is two mirrored copies of the same profile written back
     // to back, in the same loop order (see `writeGeometry`), so the second half
-    // reads the first half's ramp: `v % half`. A clipped cell has no loops at
-    // all and rides a falloff measured off its geometry (`radialFalloff`).
-    const half = this.twoSided && !g.tile ? g.count / 2 : 0;
+    // reads the first half's ramp: `v % half`. A cut cell's loop order is
+    // scrambled by the cut, so it carries its ramp with it (`CutButton.ramp`).
+    const ramp = g.cut ? (isOpened(this.states[i]!) ? g.cut.open : g.cut.closed).ramp : null;
+    const half = this.twoSided ? g.count / 2 : 0;
     for (let v = 0; v < g.count; v++) {
       const f = !shade
         ? 1
-        : g.tileFalloff
-          ? shade.rim + (shade.center - shade.rim) * g.tileFalloff[v]!
+        : ramp
+          ? shade.rim + (shade.center - shade.rim) * (ramp[v] ?? 1)
           : vertexShade(shade, this.loops, half ? v % half : v, g.drawn.length);
       this.colorAttr.setXYZ(g.start + v, col.r * f, col.g * f, col.b * f);
     }
     this.colorAttr.needsUpdate = true;
+    this.writeCollarColor(i);
   }
 
   private rebuildGlyphs(): void {
@@ -1253,7 +1457,7 @@ export class SolidBoard extends Group implements BoardMesh {
         projected.reduce((a, q) => a + q[0], 0) / projected.length;
       const py =
         projected.reduce((a, q) => a + q[1], 0) / projected.length;
-      const settled = polygonInradius(projected, [px, py]) * 0.9;
+      const settled = polygonInradius(projected, [px, py]) * 0.9 * g.trim;
       const s = settled * this.anim.popScale(i, now);
       if (!(settled > 0)) continue;
       // Lift the whole billboard toward the camera by its own half-size: a
@@ -1281,7 +1485,7 @@ export class SolidBoard extends Group implements BoardMesh {
       // is the crown's own height, and seen edge-on the projected size goes to
       // nothing while the crown does not. So the crown is a floor under the
       // lift there.
-      const clear = this.twoSided && !g.tile ? g.radius * this.crownLift * 1.35 : 0;
+      const clear = this.twoSided ? g.radius * this.crownLift * 1.35 : 0;
       const lift =
         glyph === "cross"
           ? g.fit * MARKER_REACH * 1.1
@@ -1353,7 +1557,7 @@ export class SolidBoard extends Group implements BoardMesh {
    * the crown the cell is wearing *now*. */
   private crownOf(i: number): number {
     const g = this.geom[i]!;
-    if (!this.twoSided || g.tile) return 0;
+    if (!this.twoSided) return 0;
     const loops = isOpened(this.states[i]!) ? this.profile.open : this.profile.closed;
     return g.radius * loops[this.loops - 1]!.height;
   }
@@ -1385,8 +1589,8 @@ export class SolidBoard extends Group implements BoardMesh {
       if (i === dropIndex && dropAt != null) continue; // the drop's own buffer
       need += markerVertexCount(marker);
       // Every marker gets a second copy on the far face of a two-sided cell
-      // (see below) — but not on a clipped one, which is still a flat tile.
-      if (this.twoSided && !this.geom[i]!.tile) need += markerVertexCount(marker);
+      // (see below).
+      if (this.twoSided) need += markerVertexCount(marker);
     }
     this.markerGeometry.reserve(need);
     this.markerDropGeometry.reserve(markerVertexCount("pin"));
@@ -1471,7 +1675,7 @@ export class SolidBoard extends Group implements BoardMesh {
       // radius, which the immersions produce freely) a crown is taller than the
       // whole bomb, so one model centred on the surface disappears inside it.
       // It gets a copy per face too, each straddling its own crown.
-      if (this.twoSided && !g.tile) {
+      if (this.twoSided) {
         writeMarker(
           marker,
           this.markerBase(g, crown, -1),
