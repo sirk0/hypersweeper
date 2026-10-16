@@ -8,10 +8,13 @@ import Capacitor
 /// `BridgeViewController` checkmarks the difficulty in play.
 enum MenuBarModel {
     /// A submenu (`children`) or a command, whose string goes back to the page
-    /// as a `hypersweeper:command` event when it is picked.
+    /// as a `hypersweeper:command` event when it is picked. A command may
+    /// carry a keyboard shortcut (`input` with its modifiers).
     struct Node {
         let title: String
         let command: String?
+        let input: String?
+        let modifiers: UIKeyModifierFlags
         let children: [Node]
         let inline: Bool
 
@@ -19,6 +22,19 @@ enum MenuBarModel {
             guard let title = object["title"] as? String else { return nil }
             self.title = title
             command = object["command"] as? String
+            let key = object["key"] as? JSObject
+            input = key?["input"] as? String
+            var modifiers: UIKeyModifierFlags = []
+            for name in key?["modifiers"] as? [String] ?? [] {
+                switch name {
+                case "command": modifiers.insert(.command)
+                case "shift": modifiers.insert(.shift)
+                case "option": modifiers.insert(.alternate)
+                case "control": modifiers.insert(.control)
+                default: break
+                }
+            }
+            self.modifiers = modifiers
             children = (object["children"] as? [JSObject] ?? []).compactMap(Node.init)
             inline = object["inline"] as? Bool ?? false
         }

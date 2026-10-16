@@ -31,9 +31,27 @@ import { boardGroups, pickerFor, quickPlayEntries, type Group } from "./ui/board
 export interface MenuBarNode {
   title: string;
   command?: string;
+  /** The command's keyboard shortcut, if it has one. */
+  key?: MenuBarKey;
   children?: MenuBarNode[];
   inline?: boolean;
 }
+
+export interface MenuBarKey {
+  input: string;
+  modifiers: ("command" | "shift" | "option" | "control")[];
+}
+
+/** The quick-play entries' shortcuts, by entry key: ⇧⌘ and the item's
+ * initial. ⌘N, ⌘, and ⌘1–⌘3 are New Game, Settings and the difficulties, which
+ * the native side adds; what the system's Edit, Find and Window menus keep
+ * (⇧⌘Z, ⇧⌘G, ⌥⇧⌘V, ⌘M, ⌘W) none of these touch. */
+const QUICK_KEYS: Record<string, string> = {
+  square: "c", // Classic
+  cube3d: "v", // Volumetric
+  flat: "f",
+  "3d": "d",
+};
 
 interface MenuBarPlugin {
   setMenu(options: {
@@ -82,11 +100,15 @@ function groupItems(group: Group): MenuBarNode[] {
 /** The menu bar's board items: the quick-play entries as one section, then
  * a submenu per geometry group. */
 export function menuBarTree(): MenuBarNode[] {
-  const quick: MenuBarNode[] = quickPlayEntries().map((e) =>
-    e.kind === "mode"
-      ? { title: e.label, command: `quick:${e.key}` }
-      : { title: `Random ${e.label} Board`, command: `random:${e.key}` },
-  );
+  const quick: MenuBarNode[] = quickPlayEntries().map((e) => {
+    const input = QUICK_KEYS[e.key];
+    return {
+      ...(e.kind === "mode"
+        ? { title: e.label, command: `quick:${e.key}` }
+        : { title: `Random ${e.label} Board`, command: `random:${e.key}` }),
+      ...(input ? { key: { input, modifiers: ["command", "shift"] } } : {}),
+    } satisfies MenuBarNode;
+  });
   const groups: MenuBarNode[] = boardGroups().map((g) => ({
     title: g.label,
     children: groupItems(g),

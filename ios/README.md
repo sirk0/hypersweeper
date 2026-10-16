@@ -204,7 +204,8 @@ that tracks `package.json`, and a build number that grows.
   first, leaving the board as the header's back arrow does (without asking).
 - **The File menu picks the difficulty and the board.** Under New Game come
   Easy ⌘1 / Medium ⌘2 / Hard ⌘3, with a checkmark on the one in play, then the
-  quick-play entries (Classic, Volumetric, Random Flat Board, Random 3D Board),
+  quick-play entries (Classic ⇧⌘C, Volumetric ⇧⌘V, Random Flat Board ⇧⌘F,
+  Random 3D Board ⇧⌘D),
   then a submenu for each group of the home menu: Flat, Flat manifolds (a
   submenu per surface), Sphere, the solid pages and Volumes. Each one holds
   the same tilings and families its home-menu page does. The page owns the
@@ -217,8 +218,9 @@ that tracks `package.json`, and a build number that grows.
   smiley does. A blocked board opens its explanation. A difficulty picked
   mid-game re-deals the board on screen at that difficulty. The home page's
   pills and the checkmark follow each other (`setMenuBarDifficulty`). UIKit
-  throws on two identical commands in a menu bar, so
-  `tests/unit/menuBar.test.ts` holds every command to being unique. The
+  throws on two identical commands or shortcuts in a menu bar, so
+  `tests/unit/menuBar.test.ts` holds every command and shortcut to being
+  unique. The
   plugin is in the app target only. `BridgeViewController` is shared with the
   App Clip, so its menu code sits behind `#if !APP_CLIP`.
 - **The Mac app's name.** The Xcode target is `App` (Capacitor's template), and

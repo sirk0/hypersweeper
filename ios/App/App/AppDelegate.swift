@@ -101,8 +101,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     /// `BridgeViewController.menuCommand` hands back to the page.
     private func menuElement(_ node: MenuBarModel.Node) -> UIMenuElement? {
         if let command = node.command {
-            return UICommand(title: node.title, action: #selector(BridgeViewController.menuCommand(_:)),
-                             propertyList: command)
+            let action = #selector(BridgeViewController.menuCommand(_:))
+            if let input = node.input {
+                return UIKeyCommand(title: node.title, action: action, input: input,
+                                    modifierFlags: node.modifiers, propertyList: command)
+            }
+            return UICommand(title: node.title, action: action, propertyList: command)
         }
         let children = node.children.compactMap(menuElement)
         guard !children.isEmpty else { return nil }

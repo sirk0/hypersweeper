@@ -72,6 +72,25 @@ describe("menu bar tree", () => {
     expect(new Set(offered)).toEqual(expected);
   });
 
+  it("gives every quick-start item a shortcut, no two alike, none the native ones", () => {
+    expect(quick!.children!.every((n) => n.key)).toBe(true);
+    const id = (input: string, modifiers: readonly string[]) =>
+      `${[...modifiers].sort().join("+")}+${input}`;
+    // AppDelegate.buildMenu's own: New Game, Settings… and the difficulties.
+    const native = ["n", ",", "1", "2", "3", "4", "5", "6", "7", "8", "9"].map((k) =>
+      id(k, ["command"]),
+    );
+    const shortcuts: string[] = [];
+    walk(tree, (n) => {
+      if (n.key) {
+        expect(n.command).toBeDefined();
+        expect(n.key.input).toHaveLength(1);
+        shortcuts.push(id(n.key.input, n.key.modifiers));
+      }
+    });
+    expect(new Set([...shortcuts, ...native]).size).toBe(shortcuts.length + native.length);
+  });
+
   it("is registered in the app's sources and not the App Clip's", () => {
     const pbx = readFileSync(
       resolve(__dirname, "../../../ios/App/App.xcodeproj/project.pbxproj"),
