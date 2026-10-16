@@ -75,6 +75,7 @@ count is wrong; the script warns about this.
 | `ios/App/App/GameCenterPlugin.swift` | The `GameCenter` plugin: sign-in, reporting achievements, opening Game Center. App target only; see "Game Center" below. |
 | `ios/App/App/CloudRecordPlugin.swift` | The `CloudRecord` plugin: iCloud's key-value store, where the best times and the achievement record are kept in step across devices and through a reinstall. App target only; see "iCloud" below. |
 | `ios/GameCenter/` | The Game Center achievement list (`achievements.json`) and one badge image per achievement, written by `web/scripts/make-gamecenter.mts`. Not part of the Xcode project: it is what App Store Connect is told. See "Game Center" below. |
+| `ios/AppStore/` | The store listing: promotional text, description and App Review notes, as plain text to paste into App Store Connect. See "The store listing" below. |
 | `ios/App/Stickers/` | The iMessage sticker pack: an app extension with no code, just `Info.plist` and `Stickers.xcassets` (the stickers and the drawer icon), all written by `web/scripts/make-stickers.mts`. See "The sticker pack" below. |
 
 Nothing in `web/` is written for iOS beyond the haptics branch below, the
@@ -267,6 +268,25 @@ collected only when the developer or a partner can access it, so this is not
 collection. The policy page says what is kept there ("iCloud", under the
 apps). If the record ever went anywhere the developer can read (CloudKit's
 public database, or a server of ours), the label would change.
+
+### The store listing
+
+`ios/AppStore/` holds the text App Store Connect asks for on the version page,
+one plain-text file per field, to paste as is:
+
+| File | Field | Limit |
+|---|---|---|
+| `promotional-text.txt` | Promotional Text (changes without a new version) | 170 |
+| `description.txt` | Description | 4000 |
+| `review-notes.txt` | App Review Information → Notes | 4000 |
+
+Every claim in them is the code's: the board count, the neighbour counts, the
+features. Change them in the same commit as the feature they describe, and the
+review notes whenever what the app talks to (Game Center, iCloud) changes,
+alongside the privacy page above. `web/tests/unit/storeListing.test.ts` checks
+each file against its limit, and that "more than N boards" stays below the
+boards that can actually be played (the catalogue less those the difficulty
+calibration blocks at every difficulty).
 
 ## The App Clip
 

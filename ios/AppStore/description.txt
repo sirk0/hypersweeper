@@ -1,0 +1,27 @@
+Classic minesweeper, but the board can be almost any shape you can imagine: a sphere, a donut, a Möbius strip, a Klein bottle, a Penrose tiling, the hyperbolic plane, or a solid cube of cubes.
+
+The rules you already know: every number tells you how many of its neighbours hide a mine. What changes is the board. A neighbour is any cell that shares a corner, so a hexagon has six neighbours, a triangle has twelve, a square in the hyperbolic plane has twelve too, and a cell inside the volumetric cube has twenty-six. On a torus the board wraps around in both directions; on a Möbius strip, one trip around brings you back mirror-reversed.
+
+MORE THAN 200 BOARDS
+• Flat: squares, triangles, hexagons, the uniform and Laves tilings, brick bonds, basket weave and herringbone
+• Aperiodic: Penrose rhombi, kites and darts, Ammann–Beenker, the Spectre monotile, and spirals
+• Fractals: Sierpiński carpet, pentaflake, Gosper island, sphinx and chair
+• Hyperbolic: heptagons, pentagons and squares in the Poincaré disc
+• Surfaces: cylinder, torus, Möbius strip, Klein bottle, projective plane, trefoil knot, double torus
+• Solids: Goldberg spheres, the Platonic, Archimedean and Catalan solids, framed and stepped polyhedra
+• Volumetric: minesweeper in three dimensions, inside a cube of cubes
+
+PLAY IT YOUR WAY
+• Easy, medium and hard, with the mine count of every board measured, not guessed
+• Rotate and zoom the 3D boards with touch, mouse, trackpad or keyboard
+• Colour themes and sound sets, in light and dark mode, and a choice of app icons
+• Best times for every board
+• Achievements in Game Center
+• Best times and achievements kept in step across iPhone, iPad and Mac with iCloud
+• Share a board with a link, so a friend can play the exact same game
+• The boards as stickers in Messages
+• Haptic feedback on iPhone
+• Menu bar and keyboard shortcuts on Mac and iPad
+
+PRIVATE AND OFFLINE
+No account, no ads, no tracking, no in-app purchases. The game works entirely offline and collects no data. Game Center and iCloud are Apple's services, used only when you are signed in to them.
