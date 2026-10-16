@@ -195,11 +195,14 @@ test.describe("Game Center through the Capacitor bridge", () => {
     await expect.poll(() => reportedIds(page, true)).toContain("hs.first_win");
     const banners = await reportedIds(page, true);
     expect(banners).toEqual(
-      expect.arrayContaining(["hs.difficulty.easy", "hs.shape.4", "hs.tiling.regular"]),
+      expect.arrayContaining(["hs.flagless", "hs.shape.4"]),
     );
     // Progress that is not an unlock goes along quietly.
-    expect(await reportedIds(page, false)).toContain("hs.wins.10");
+    const quiet = await reportedIds(page, false);
+    expect(quiet).toContain("hs.wins.10");
+    expect(quiet).toContain("hs.tiling_all.regular");
     expect(banners).not.toContain("hs.wins.10");
+    expect(banners).not.toContain("hs.tiling_all.regular");
   });
 
   test("the record window keeps the time and leaves the unlocks out", async ({ page }) => {

@@ -40,11 +40,11 @@ export interface ManifestLocalization {
   image: string;
 }
 
-/** A ring drawn around an image's badge. In the game an achievement and its
- * "complete" partner share one badge, and the list beside it says which is
- * which; Game Center shows the images on their own, where the pair would read
- * as a duplicate. So every "win all of a group" achievement wears a ring, and
- * the whole catalogue a ring of another colour. */
+/** A ring drawn around an image's badge. A group's badge is its menu icon, the
+ * same picture the menu row shows; Game Center shows the images on their own,
+ * with no list beside them to say "win all of these". So every "win all of a
+ * group" achievement wears a ring, and the whole catalogue a ring of another
+ * colour. */
 export type Ring = "complete" | "catalogue";
 
 function ringOf(id: string): Ring | null {

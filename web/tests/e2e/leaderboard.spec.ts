@@ -35,11 +35,8 @@ async function seedNoAchievementsLeft(page: Page): Promise<void> {
         flagless: 1,
         unlocked: {
           "first-win": 1,
-          "difficulty:easy": 1,
           flagless: 1,
           "shape:4": 1,
-          "tiling:regular": 1,
-          "surface:flat": 1,
         },
       }),
     ),

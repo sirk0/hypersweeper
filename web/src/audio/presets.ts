@@ -156,7 +156,7 @@ export interface SoundPreset {
    *
    * `notes` is a ceiling rather than a count: the figure is one note per
    * achievement unlocked, so a single one is a two-note lift and a first win's
-   * six is the full run. */
+   * three is the full run. */
   unlock: Envelope & { notes: number; step: number; interval: number };
   /** One step of the Klein bottle's ring scroll: a glide, mirrored between the
    * two directions (see `voicesFor`). */
