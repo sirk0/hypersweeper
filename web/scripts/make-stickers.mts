@@ -1,7 +1,7 @@
 // Dev-only: render the iMessage sticker pack from the packaged app.
 //
 //   npm run stickers
-//   (SHOTS=klein,trefoilhex renders a subset; ICON_ONLY=1 redraws just the
+//   (SHOTS=trefoil,penrose renders a subset; ICON_ONLY=1 redraws just the
 //   iMessage app icon; SWIFTSHADER=1 takes the software-WebGL path, the one a
 //   machine with no GPU — a cloud session — has to take)
 //
@@ -63,35 +63,18 @@ interface Sticker extends Staging {
   label?: string;
 }
 
-// The boards that say "this is not the minesweeper you know" at a glance: the
-// closed surfaces first, the Klein bottle leading, then the solids and the
-// planes no grid can tile. Easy where Medium's cells would be specks at
-// sticker size.
+// The boards that say "this is not the minesweeper you know" at a glance: a
+// sphere of snub cells, a torus, a knot, a plane no grid can tile and a
+// hyperbolic disc. Easy where Medium's cells would be specks at sticker size, and
+// few enough opened that the flags stand clear of the rim, where the framing
+// would cut their pins off.
 const STICKERS: Sticker[] = [
-  // Turned until the neck shows looping back in through the side: at its
-  // starting tilt the bottle reads as a lumpy sphere.
-  { name: "klein", mode: "kleinhex", seed: 4, reveal: 0.3, flags: 4, rotate: [-160, 0] },
+  { name: "snub-dodecahedron", mode: "snubdodec", difficulty: "easy", seed: 5, reveal: 0.25, flags: 3 },
+  // Tipped towards the viewer so the hole shows: square on, it reads as a ring.
+  { name: "snub-square-torus", mode: "torussnubsquare", difficulty: "easy", seed: 2, reveal: 0.3, flags: 3, rotate: [0, 50], label: "Snub square torus" },
   { name: "trefoil", mode: "trefoilhex", seed: 6, reveal: 0.4, flags: 5 },
-  { name: "mobius", mode: "mobiushex", difficulty: "easy", seed: 3, reveal: 0.34, flags: 4, rotate: [70, 40] },
-  { name: "double-torus", mode: "doubletorushex", difficulty: "easy", seed: 2, reveal: 0.4, flags: 4 },
-  { name: "torus", mode: "torushex", difficulty: "easy", seed: 5, reveal: 0.38, flags: 4 },
-  { name: "projective-plane", mode: "projectivehex", difficulty: "easy", seed: 8, reveal: 0.4, flags: 4 },
-  { name: "chamfered-dodecahedron", mode: "c80", difficulty: "easy", seed: 5, reveal: 0.4, flags: 4 },
-  { name: "cube", mode: "cube", difficulty: "easy", seed: 3, reveal: 0.4, flags: 4 },
-  { name: "tetrahedron", mode: "tetrahedron", difficulty: "easy", seed: 2, reveal: 0.4, flags: 3 },
-  { name: "hyperbolic", mode: "hyperbolic73", shape: "soft", seed: 4, reveal: 0.4, flags: 5 },
   { name: "penrose", mode: "penrose", difficulty: "easy", seed: 11, reveal: 0.4, flags: 4 },
-  {
-    name: "klein-boom",
-    mode: "kleinhex",
-    difficulty: "easy",
-    seed: 4,
-    reveal: 0.3,
-    flags: 3,
-    explode: true,
-    rotate: [-100, 0],
-    label: "Klein bottle, a mine gone off",
-  },
+  { name: "hyperbolic", mode: "hyperbolic73", shape: "soft", seed: 4, reveal: 0.4, flags: 5 },
 ];
 
 /** The board's name, as the menu shows it — `Hexagons · Klein bottle` reads
