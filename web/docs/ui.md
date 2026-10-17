@@ -213,13 +213,34 @@ with no edit to `boardFacts.ts`:
   brick bond from "quadrilaterals". Two further shapes English has a word for
   are picked out: the isosceles triangle (half the Laves duals) and the kite
   (the deltoidal ones).
-- **A wrapped board is named off the flat tiling, not off its drawn cells.** The
-  immersion bends every tile — a hexagonal torus measures 0.80 regular — so
-  naming from the geometry would call the hexagonal tiling irregular. The tiles
-  come from the tiling's own periodic domain instead
-  (`templateCells(archTemplate(key), 0, 0)`, no board built), matched by side
-  count, which is exactly what `classifyShapes` gives a curved board one class
-  of. The three regular tilings need no template.
+- **A tile has two shapes: its ideal one and its drawn one.** On a flat board
+  or a solid they are the same, and the tile is named as measured. On a curved
+  board they cannot be — three regular hexagons meet only on a plane, so no
+  sphere, torus or Klein bottle keeps a hexagonal tiling's hexagons regular —
+  and a tile whose drawing does not keep its ideal shape is named
+  **projected**: a Goldberg sphere is "Regular pentagons" (its symmetry keeps
+  those exact) and "Projected regular hexagons". The ideal shape comes from:
+  - for a wrapped board, the flat tiling it is cut from — the tiling's own
+    periodic domain (`templateCells(archTemplate(key), 0, 0)`, no board built),
+    matched by side count, which is exactly what `classifyShapes` gives a curved
+    board one class of. The three regular tilings need no template. A hexagonal
+    torus measures 0.80 regular, and is the regular hexagonal tiling of the flat
+    torus it is a quotient of; the Klein bottle is flat in the same way, so its
+    tiles are regular too, however far the immersion bends them.
+  - for a board that bends a regular tiling, the builder: `regularTiles` on the
+    Goldberg polyhedra, the geodesic sphere, the spherical snub dodecahedron and
+    the hyperbolic {p,q} boards (whose surface row reads "Hyperbolic plane").
+
+  A class is projected unless *every* cell in it keeps the ideal shape (the
+  geodesic sphere's twenty exact triangles do not make its eighty
+  equilateral). An irregular tile — a Laves pentagon — is irregular on any
+  surface and never projected. Where a row is projected the window explains the
+  word under the tile list (`BoardFacts.note`).
+- **A solid's colour class is split into the shapes it holds.** A solid is
+  coloured by side count, and one count can be two shapes — the truncated
+  octahedron's board is rhombi and squares, a fanned Archimedean solid's
+  triangles are equilateral and isosceles — so exact boards get one row per
+  measured shape, sharing the class's swatch.
 - **Nothing is called equiangular past a quadrilateral.** Corner angles are
   measured unsigned (as `shapeMetrics` measures them), so a reflex corner reads
   as its complement — the chair's L-tromino would otherwise qualify. Side

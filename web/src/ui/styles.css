@@ -2370,6 +2370,13 @@ body {
 
 /* The ⚠ the board's name carries, spelled out: this board's tiling forces
    guesses. */
+.info-note {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
 .info-warning {
   margin: 14px 0 0;
   color: var(--muted);

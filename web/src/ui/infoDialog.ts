@@ -104,6 +104,10 @@ export function openInfoDialog(
     el("h3", "info-heading", facts.shapes.length === 1 ? "Tile" : "Tiles"),
     shapeList(facts, opts.coloured),
   );
+  // A projected row names the tile's ideal shape beside a drawing that is
+  // visibly not that shape — a Klein bottle's hexagons are far from regular —
+  // so the word is explained where it is used.
+  if (facts.note) card.append(el("p", "info-note", facts.note));
   // The ⚠ the board's name carries: a warned board is one whose tiling forces
   // guesses, and the name can only mark it — this is where it is explained. On
   // a phone there is no hover to read the mark's tooltip with, so without this

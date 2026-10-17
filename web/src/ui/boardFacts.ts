@@ -31,6 +31,16 @@ import { classifyShapes, corners, type ShapeTone } from "../render/shapePalette"
 // Everything here is derived, never tabulated: the counts are measured off the
 // board that is being played, and the shape names off the tiling's own geometry.
 // A new tiling therefore describes itself with no edit to this file.
+//
+// A tile has two shapes, and the window keeps them apart: the one it has in the
+// ideal tiling the board is made of, and the one it is drawn as. On a flat
+// board or a solid they are the same. On a curved one they are not, and cannot
+// be — three regular hexagons meet only on a plane, so no sphere, torus or
+// Klein bottle carries a hexagonal tiling with its hexagons left regular. A tile
+// that the drawing bends out of its ideal shape is named **projected**:
+// "Projected regular hexagons" on a Goldberg sphere, beside the pentagons, which
+// the sphere's symmetry does leave regular. An irregular tile is irregular on
+// every surface, so a Laves tile is never projected.
 
 /** One kind of tile on the board: how it is drawn, and how many there are. */
 export interface ShapeFact {
@@ -39,6 +49,8 @@ export interface ShapeFact {
   count: number;
   /** The tone the board paints this shape, for the row's colour swatch. */
   tone: ShapeTone;
+  /** The shape is the ideal tile's, and the drawn tiles do not keep it. */
+  projected: boolean;
 }
 
 export interface BoardFacts {
@@ -57,6 +69,8 @@ export interface BoardFacts {
   shapes: ShapeFact[];
   /** Why this board is graded as harder than its difficulty, when it is. */
   warning: string | undefined;
+  /** What "projected" means, on a board with a projected row. */
+  note: string | undefined;
 }
 
 /** What a tile looks like, as far as its *name* is concerned. Regularity is two
@@ -114,8 +128,8 @@ const noun = sideNoun;
 /** The name a tile of this kind goes by. The shapes English has a word for —
  * the rectangle, the rhombus, the kite, the isosceles triangle — are named by
  * it; everything else is the polygon's own noun, qualified by how regular it
- * is. */
-export function shapeName(kind: ShapeKind, plural: boolean): string {
+ * is. A `projected` tile is the shape in the ideal tiling and not as drawn. */
+export function shapeName(kind: ShapeKind, plural: boolean, projected = false): string {
   const { sides, equalSides, equalAngles, isosceles, kite } = kind;
   const regular = equalSides && equalAngles;
   let base: string;
@@ -133,8 +147,27 @@ export function shapeName(kind: ShapeKind, plural: boolean): string {
     const qualifier = regular ? "regular" : equalSides ? "equilateral" : "irregular";
     base = `${qualifier} ${noun(sides)}`;
   }
-  const word = plural ? pluralise(base) : base;
+  const plain = plural ? pluralise(base) : base;
+  const word = projected ? `projected ${plain}` : plain;
   return word.charAt(0).toUpperCase() + word.slice(1);
+}
+
+/** Whether a kind says anything about the tile beyond its side count — what
+ * a drawing can fail to keep. "Irregular pentagon" claims nothing to lose. */
+function claims(kind: ShapeKind): boolean {
+  return kind.equalSides || kind.equalAngles || kind.isosceles || kind.kite;
+}
+
+/** Whether the drawn tiles are still everything the ideal one is. An
+ * equilateral triangle drawn where an isosceles one is meant has kept it. */
+function keeps(drawn: ShapeKind, ideal: ShapeKind): boolean {
+  return (
+    (!ideal.equalSides || drawn.equalSides) &&
+    (!ideal.equalAngles || drawn.equalAngles) &&
+    (!ideal.isosceles || drawn.isosceles || drawn.equalSides) &&
+    (!ideal.kite || drawn.kite || drawn.equalSides) &&
+    (!ideal.dart || drawn.dart)
+  );
 }
 
 function pluralise(word: string): string {
@@ -261,6 +294,11 @@ function anyShape(sides: number): ShapeKind {
 /** A regular tiling's tile is the regular polygon it is named for. */
 const REGULAR_KIND: Record<string, number> = { tri: 3, square: 4, hex: 6 };
 
+/** The regular polygon of this many sides. */
+function regularKind(sides: number): ShapeKind {
+  return { sides, equalSides: true, equalAngles: true, isosceles: false, kite: false, dart: false };
+}
+
 /** One class of tile, as `classifyShapes` groups them (see its comment: on a
  * curved board that is one class per side count, on a flat one it also splits
  * the Penrose rhombi and the isogonal tilings' two sizes apart). */
@@ -303,59 +341,98 @@ function sizeWord(size: number, count: number): string {
   return `#${size + 1}`;
 }
 
+/** One row of the window: a set of cells, the shape they are named as, and
+ * whether that is their ideal shape rather than their drawn one. */
+interface ShapeRow {
+  tone: ShapeTone;
+  cells: CellId[];
+  kind: ShapeKind;
+  projected: boolean;
+}
+
 /** The board's tiles, counted and named. */
 export function shapeFacts(mode: string, board: AnyBoard): ShapeFact[] {
   const masks = board.cornerMask ?? null;
   const surface = surfaceOf(mode);
   const tilingKey = tilingOf(mode);
-  // A wrapped board is named from the flat tiling it is cut from; everything
-  // else — a flat board, a solid, an aperiodic, spiral or fractal patch — is what it is
-  // drawn as, and is measured directly.
+  // A wrapped board's ideal tile is the flat tiling's it is cut from; a board
+  // that bends a regular tiling (a Goldberg sphere, a hyperbolic disc) says so
+  // itself. Everything else — a flat board, a solid, an aperiodic, spiral or
+  // fractal patch — is exactly what it is drawn as, and is measured directly.
   const wrapped = surface !== null && surface.key !== "flat";
   // A wrapped regular tiling needs no template: its tile is the regular polygon
   // the tiling is named for.
-  const regular = wrapped && tilingKey !== null && REGULAR_KIND[tilingKey] !== undefined;
+  const regular =
+    board.regularTiles === true ||
+    (wrapped && tilingKey !== null && REGULAR_KIND[tilingKey] !== undefined);
   const kinds = wrapped && tilingKey && !regular ? templateKinds(tilingKey) : null;
-
-  const groups = groupCells(board);
-  const kindOfGroup = (group: ShapeGroup): ShapeKind => {
-    const sides = group.tone.sides;
-    if (regular) {
-      return {
-        sides,
-        equalSides: true,
-        equalAngles: true,
-        isosceles: false,
-        kite: false,
-        dart: false,
-      };
-    }
+  const idealOf = (sides: number): ShapeKind | null => {
+    if (regular) return regularKind(sides);
     if (kinds) return kinds.get(sides) ?? anyShape(sides);
-    return measuredKind(group, board, masks);
+    return null;
   };
 
-  // Two classes that come out with the same name need telling apart: by size
+  const rows: ShapeRow[] = [];
+  for (const group of groupCells(board)) {
+    const ideal = idealOf(group.tone.sides);
+    if (ideal) {
+      const drawn = measuredKind(group, board, masks);
+      rows.push({
+        tone: group.tone,
+        cells: group.cells,
+        kind: ideal,
+        projected: claims(ideal) && !keeps(drawn, ideal),
+      });
+    } else rows.push(...measuredRows(group, board, masks));
+  }
+
+  // Two rows that come out with the same name need telling apart: by size
   // where they are two sizes of one tile, by their sharpest corner otherwise
   // (the Penrose rhombi, which differ in nothing else).
-  const names = groups.map((group) => shapeName(kindOfGroup(group), group.count !== 1));
-  return groups.map((group, i) => {
+  const names = rows.map((row) => shapeName(row.kind, row.cells.length !== 1, row.projected));
+  return rows.map((row, i) => {
     let label = names[i]!;
     if (names.filter((n) => n === label).length > 1) {
-      const { size, sizeCount } = group.tone;
+      const { size, sizeCount } = row.tone;
       if (size !== undefined && (sizeCount ?? 1) > 1) {
         label = `${label} · ${sizeWord(size, sizeCount ?? 1)}`;
       } else {
-        const cell = group.cells[0]!;
+        const cell = row.cells[0]!;
         label = `${label} · ${acuteDegrees(board.polygons.get(cell)!, masks?.get(cell))}°`;
       }
     }
-    return { label, count: group.count, tone: group.tone };
+    return { label, count: row.cells.length, tone: row.tone, projected: row.projected };
   });
 }
 
-/** The kind a class of drawn tiles is. Where its cells do not agree — a
- * geodesic sphere's triangles, twenty of the eighty left exact by the
- * projection — the honest answer is the irregular one. */
+/** A class of exactly drawn tiles, one row per shape its cells measure as. A
+ * colour class on a solid is every tile of one side count, and those need not
+ * be one shape: a truncated octahedron cut into a board is squares *and*
+ * rhombi, an Archimedean solid whose faces are fanned into triangles keeps its
+ * equilateral ones beside the isosceles fans. The rows share the class's
+ * swatch, because the board paints them alike. */
+function measuredRows(
+  group: ShapeGroup,
+  board: AnyBoard,
+  masks: Map<CellId, readonly boolean[]> | null,
+): ShapeRow[] {
+  const byName = new Map<string, ShapeRow>();
+  for (const cell of group.cells) {
+    const poly = board.polygons.get(cell);
+    const kind = poly ? kindOf(poly, masks?.get(cell)) : anyShape(group.tone.sides);
+    const name = shapeName(kind, false);
+    const row = byName.get(name);
+    if (row) row.cells.push(cell);
+    else byName.set(name, { tone: group.tone, cells: [cell], kind, projected: false });
+  }
+  return [...byName.entries()]
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+    .map(([, row]) => row);
+}
+
+/** The kind a class of drawn tiles is, to hold against the ideal one. Where
+ * its cells do not agree — a geodesic sphere's triangles, twenty of the eighty
+ * left exact by the projection — the honest answer is the irregular one. */
 function measuredKind(
   group: ShapeGroup,
   board: AnyBoard,
@@ -425,6 +502,7 @@ export function boardFacts(
   const surface = surfaceOf(mode);
   const tilingKey = tilingOf(mode) ?? shapedTiling(mode);
   const tiling = tilingKey ? (TILINGS_BY_KEY.get(tilingKey)?.label ?? null) : null;
+  const shapes = shapeFacts(mode, board);
   return {
     name: fullModeLabel(mode),
     difficulty: hasDifficulty(difficulty) ? difficultySpec(difficulty).label : difficulty,
@@ -436,10 +514,23 @@ export function boardFacts(
     // A shaped, aperiodic, spiral or fractal board is a mode of its own with no
     // `SurfaceSpec` behind it, and it is still on the plane; a solid is not on
     // any of these surfaces at all, and its family row names what it is.
-    surface: surface?.label ?? (isBoard3D(board) ? null : (SURFACES.get("flat")?.label ?? null)),
+    // A hyperbolic board is drawn on the plane but is not of it: the disc is a
+    // model of the hyperbolic plane, which is the surface its tiles tile.
+    surface:
+      surface?.label ??
+      (isBoard3D(board)
+        ? null
+        : HYPERBOLIC_MODES.includes(mode)
+          ? "Hyperbolic plane"
+          : (SURFACES.get("flat")?.label ?? null)),
     cells: board.adjacency.size,
     mines,
-    shapes: shapeFacts(mode, board),
+    shapes,
     warning: fairnessHint(fairnessOf(mode, difficulty)),
+    note: shapes.some((s) => s.projected)
+      ? isBoard3D(board)
+        ? "Projected tiles have that shape in the ideal tiling, and are bent where it is laid on this surface."
+        : "Projected tiles have that shape in the hyperbolic plane, and are bent by the disc it is drawn in."
+      : undefined,
   };
 }

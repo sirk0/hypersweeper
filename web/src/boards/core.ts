@@ -61,6 +61,12 @@ export interface Board {
   // count — rather than splitting the shrinking rings into sizes. Unset for
   // every other flat board.
   curved?: boolean;
+  // Every tile of the tiling this board draws is a regular polygon, however
+  // bent the drawing is: the hyperbolic {p,q} tilings, regular in the plane
+  // the disc is a model of. The info window names a drawn tile that does not
+  // measure regular "projected regular" on the strength of it. Unset for every
+  // other flat board, whose tiles are exactly what they are drawn as.
+  regularTiles?: boolean;
 }
 
 /** Where an immersion passes through itself, the sheet that ends up *inside*
@@ -133,6 +139,14 @@ export interface Board3D {
   // paint its one state. Unset on every other board, where each polygon is
   // its own cell.
   faces?: Map<CellId, CellId>;
+  // Set on a regular tiling bent onto the sphere (the Goldberg polyhedra, the
+  // geodesic sphere, the spherical snub dodecahedron): every tile of the ideal
+  // tiling is a regular polygon, though no sphere can carry them all exactly
+  // regular — three regular hexagons meet only on a plane. The flat twin of
+  // `Board.regularTiles`. Unset on the solids, whose faces are exactly what they
+  // are drawn as, and on the wrapped surfaces, which the info window names off
+  // their flat tiling instead.
+  regularTiles?: boolean;
 }
 
 export type AnyBoard = Board | Board3D;

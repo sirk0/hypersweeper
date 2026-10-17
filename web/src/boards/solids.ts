@@ -207,6 +207,14 @@ export function convexBoard3d(
   });
 }
 
+/** Mark a board as a regular tiling bent onto the sphere (see
+ * `Board3D.regularTiles`). Set on the board rather than spread into a copy,
+ * which would evaluate its lazy `symmetries`. */
+function bentRegular(board: Board3D): Board3D {
+  board.regularTiles = true;
+  return board;
+}
+
 // -- 3D builders --------------------------------------------------------------
 
 /** Sixty spherical pentagons as (cells, vertex positions): the Conway "gyro"
@@ -301,7 +309,7 @@ export function snubDodecahedronBoard(mineCount: number): Board3D {
       ),
     );
   }
-  return convexBoard3d("snubdodec", cells, centers, mineCount);
+  return bentRegular(convexBoard3d("snubdodec", cells, centers, mineCount));
 }
 
 /** Subdivide each triangular face into `frequency**2` triangles. Defaults to
@@ -493,7 +501,7 @@ function goldbergDual(
     ]);
     cells.set(key, tangentOrder(positions.get(key)!, ring));
   }
-  return convexBoard3d(mode, cells, centers, mineCount);
+  return bentRegular(convexBoard3d(mode, cells, centers, mineCount));
 }
 
 /** The dual of a geodesic icosahedron, Goldberg GP(frequency, 0): always 12
@@ -535,7 +543,7 @@ export function sphereTriangleBoard(mineCount: number, frequency = 2): Board3D {
   const { positions, triangles } = geodesic(frequency);
   const cells: Cells = new Map();
   triangles.forEach((triangle, n) => cells.set(cid("t", n), [...triangle]));
-  return convexBoard3d("spheretri", cells, positions, mineCount);
+  return bentRegular(convexBoard3d("spheretri", cells, positions, mineCount));
 }
 
 // Every icosahedron vertex is pulled toward its incident faces' centroid by

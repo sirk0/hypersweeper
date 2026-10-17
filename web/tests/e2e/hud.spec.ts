@@ -341,6 +341,9 @@ test.describe("game header", () => {
         ]),
       );
     expect(shapes).toEqual([["Irregular pentagons", String(cells)]]);
+    // An irregular tile has no ideal shape to bend, so nothing is projected
+    // and there is no word to explain.
+    await expect(dialog.locator(".info-note")).toHaveCount(0);
     // Every row carries the colour the board paints that shape in.
     await expect(dialog.locator(".info-shape .info-swatch")).toHaveCount(shapes.length);
 
@@ -348,6 +351,23 @@ test.describe("game header", () => {
     await page.keyboard.press("Escape");
     await expect(dialog).toBeHidden();
     await expect(page.locator(".board-name")).toContainText("Cairo pentagonal");
+  });
+
+  test("the info window names a sphere's bent hexagons projected, and says what that means", async ({
+    page,
+  }) => {
+    // The App Clip's board. Its hexagons cannot all be regular on any sphere,
+    // its pentagons are, and the word for the difference is explained in place.
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/?mode=c80&difficulty=easy&seed=1");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    await page.locator('.hud-btn[data-slot="info"]').click();
+    const dialog = page.locator('.dialog-backdrop[data-dialog="info"]');
+    await expect(dialog.locator(".info-shape-name")).toHaveText([
+      "Regular pentagons",
+      "Projected regular hexagons",
+    ]);
+    await expect(dialog.locator(".info-note")).toContainText("ideal tiling");
   });
 
   test("the die deals another board of the same kind, mid-game", async ({ page }) => {
