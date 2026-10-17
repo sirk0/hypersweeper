@@ -367,10 +367,13 @@ export class GameSession {
     this.apply(this.game.toggleFlag(gameCell));
     const isFlagged = this.game.cellState(gameCell) === "flagged";
     // Only a flag that lands drops one in; clearing one still buzzes, because
-    // the finger that held the cell is covering the change either way.
+    // the finger that held the cell is covering the change either way. It
+    // drops onto the face that was held and no other: the mesh has room for
+    // one drop at a time, so handing it a projective plane's antipodal twin as
+    // well sent the pin to the far side of the sphere whenever the twin came
+    // second. The twin takes the flag the ordinary way, through `apply`.
     if (heldMs !== undefined && isFlagged && !wasFlagged) {
-      for (const face of this.facesFor(gameCell))
-        this.mesh.dropFlag(face, heldMs);
+      this.mesh.dropFlag(cell, heldMs);
     }
     if (isFlagged && !wasFlagged) this.flagsPlanted++;
     if (isFlagged !== wasFlagged) this.flagMoves++;
