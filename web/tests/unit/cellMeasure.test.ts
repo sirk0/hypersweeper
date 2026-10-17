@@ -54,7 +54,8 @@ function inradiusOf(poly: readonly Vec3[], centre: Vec3): number {
   return polygonInradius(flat, [0, 0]);
 }
 
-const BONDS = ["stackedbond", "basketweave", "basketweave3"] as const;
+// the three bonds, and the brick rings: every brick congruent all the same
+const BONDS = ["stackedbond", "basketweave", "basketweave3", "brickrings"] as const;
 
 describe("a cell is measured by its corners, not by its vertex list", () => {
   // Every brick on a brick cube is congruent — that is what "tiled by one

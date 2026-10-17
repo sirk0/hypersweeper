@@ -62,7 +62,7 @@ describe("which pattern a mode gets", () => {
     // backgroundPattern.ts would leave that board on a blank page.
     const missing = MODES.filter((mode) => patternKey(mode) === null);
     expect(missing).toEqual([]);
-    expect(MODES.length).toBe(212);
+    expect(MODES.length).toBe(213);
   });
 
   it("follows the tiling, not the surface", () => {
@@ -92,6 +92,8 @@ describe("which pattern a mode gets", () => {
     expect(patternKey("cubestackedbond")).toBe("stackedbond");
     expect(patternKey("cubebasketweave")).toBe("basketweave");
     expect(patternKey("cubebasketweave3")).toBe("basketweave3");
+    // ...and the brick-rings cube, every face of which is the flat board
+    expect(patternKey("cubebrickrings")).toBe(patternKey("brickrings"));
     expect(patternKey("tetrahedron")).toBe("tri");
     expect(patternKey("tetraframe")).toBe("tri");
     const group = (key: string): string[] =>

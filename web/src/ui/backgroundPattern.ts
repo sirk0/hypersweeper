@@ -656,6 +656,9 @@ const MODE_PATTERN = new Map<string, string>();
   for (const bond of ["stackedbond", "basketweave", "basketweave3"]) {
     MODE_PATTERN.set("cube" + bond, bond);
   }
+  // The brick-rings cube is the flat brick-rings board on every face, so it
+  // takes that board's page.
+  MODE_PATTERN.set("cubebrickrings", BRICK_PATTERN);
   // A Catalan solid takes the **Laves tiling of the same Conway operation**:
   // the eight Laves tilings are the plane's own face-transitive duals, so the
   // page under a rhombic solid really is a tiling of rhombi and the page under

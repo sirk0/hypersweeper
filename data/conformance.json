@@ -1393,6 +1393,35 @@
         "hasCellCycle": false
       }
     },
+    "cubebrickrings": {
+      "easy": {
+        "cellCount": 108,
+        "mineCount": 19,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 318,
+        "vertexCount": 212,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 300,
+        "mineCount": 64,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 894,
+        "vertexCount": 596,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 432,
+        "mineCount": 110,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 1290,
+        "vertexCount": 860,
+        "hasCellCycle": false
+      }
+    },
     "tetrahedron": {
       "easy": {
         "cellCount": 100,

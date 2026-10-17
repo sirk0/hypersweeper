@@ -913,6 +913,26 @@
         ]
       }
     },
+    "cubebrickrings": {
+      "builder": "brick_cube_board",
+      "args": {
+        "easy": [
+          "brickrings",
+          3,
+          19
+        ],
+        "medium": [
+          "brickrings",
+          5,
+          64
+        ],
+        "hard": [
+          "brickrings",
+          6,
+          110
+        ]
+      }
+    },
     "tetrahedron": {
       "builder": "tetrahedron_board",
       "args": {

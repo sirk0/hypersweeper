@@ -3,6 +3,7 @@
 // textually close to the Python so the two stay diffable; hashable tuple keys
 // become canonical strings. Trig/last-ulp drift is far below the 1e-6
 // quantization the topology helpers use.
+import { brickRingsTiles } from "./aperiodic";
 import {
   cid,
   cross,
@@ -841,6 +842,10 @@ export function cubeBoard(n: number, mineCount: number): Board3D {
 // weave three 1x1/3 bricks the same way. The running bond's block is offset
 // half a brick and the herringbone's is a diagonal, so neither fills a square
 // face.
+//
+// The brick rings (`aperiodic.ts`) lay on one too, by a different route: they
+// have no block at all, but n rings fill a 2n x 2n square exactly, and a cube
+// face is a square. So that cube's faces are each the flat board, whole.
 
 const BRICK_BLOCK = 6; // lattice units per block: divisible by 2 and by 3
 
@@ -850,6 +855,10 @@ export const BRICK_BONDS: Record<string, [number, boolean]> = {
   basketweave: [2, true],
   basketweave3: [3, true],
 };
+
+/** The one brick pattern a cube also takes that is not a bond: no block, the
+ * whole face is the flat board's concentric rings (`brickCubeBoard`). */
+export const BRICK_RINGS = "brickrings";
 
 /** One block's bricks as `[u0, v0, u1, v1]` in block-local units: `count`
  * courses laid across the block, or turned a quarter-turn. */
@@ -865,6 +874,41 @@ function brickCourses(
         ? [k * step, 0, (k + 1) * step, BRICK_BLOCK]
         : [0, k * step, BRICK_BLOCK, (k + 1) * step],
     );
+  }
+  return out;
+}
+
+/** One face's bricks as `[suffix, [u0, v0, u1, v1]]`, in lattice units from
+ * the face's `(-half, -half)` corner; `suffix` ends the cell id (port of
+ * `_face_bricks`).
+ *
+ * A bond's face is an n x n grid of blocks, each cut into the bond's bricks
+ * (and, for the weaves, turned on a checkerboard `phase` shifts). The brick
+ * rings' face is the flat board's `n` rings, its rows along u. */
+function faceBricks(
+  bond: string,
+  n: number,
+  phase: number,
+): [number[], [number, number, number, number]][] {
+  const out: [number[], [number, number, number, number]][] = [];
+  if (bond === BRICK_RINGS) {
+    brickRingsTiles(n).forEach(([x, y, w, h], b) => {
+      out.push([[b], [x + n, y + n, x + n + w, y + n + h]]);
+    });
+    return out;
+  }
+  const [count, checkered] = BRICK_BONDS[bond]!;
+  const block = BRICK_BLOCK;
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < n; j++) {
+      const turned = checkered && (i + j + phase) % 2 === 1;
+      brickCourses(count, turned).forEach(([u0, v0, u1, v1], b) => {
+        out.push([
+          [i, j, b],
+          [i * block + u0, j * block + v0, i * block + u1, j * block + v1],
+        ]);
+      });
+    }
   }
   return out;
 }
@@ -920,28 +964,35 @@ function splitAtLatticePoints(
  * `6 * bricks * n**2` cells (12 n**2 for the two-brick bonds, 18 n**2 for the
  * three-brick weave).
  *
+ * `bond` may also be `BRICK_RINGS`, and then `n` counts rings: each face is the
+ * flat brick-rings board of `n` rings, 2n bricks long a side, so the board is
+ * `12 n**2` 2x1 bricks with every face's rings about its own centre.
+ *
  * Vertices are integer points on `[-N, N]**3` where `N = 3n` (a surface vertex
  * has one axis at +-N; a block is 6 units, so a half- and a third-split both
- * land on the lattice), which is what lets bricks meeting at a cube edge or
- * corner share a vertex id and become neighbors.
+ * land on the lattice) — `N = n` for the rings, whose bricks are whole lattice
+ * units already — which is what lets bricks meeting at a cube edge or corner
+ * share a vertex id and become neighbors.
  *
  * A face's bricks run along the first of its two axes taken cyclically (x-face
  * -> y, y-face -> z, z-face -> x), so the six faces are related by the cube's
  * own rotations rather than one face being laid out differently from the rest.
  * That leaves the bond broken at some of the twelve edges — a brick cannot run
  * round a corner — and `splitAtLatticePoints` is what stitches the mesh back
- * together across the break. */
+ * together across the break. The rings break at every one of the twelve: a
+ * face's outer ring cuts its row edges (along u) at even steps from the corner
+ * and its side edges (along v) at odd ones, and the cyclic rule makes each cube
+ * edge one face's u and the other face's v, so the two cuts never line up. */
 export function brickCubeBoard(
   bond: string,
   n: number,
   mineCount: number,
 ): Board3D {
-  const spec = BRICK_BONDS[bond];
-  if (!spec) throw new Error(`unknown brick bond: ${bond}`);
+  if (bond !== BRICK_RINGS && !BRICK_BONDS[bond]) {
+    throw new Error(`unknown brick bond: ${bond}`);
+  }
   if (n < 1) throw new Error("need at least one block per face side");
-  const [count, checkered] = spec;
-  const block = BRICK_BLOCK;
-  const half = (n * block) / 2;
+  const half = bond === BRICK_RINGS ? n : (n * BRICK_BLOCK) / 2;
 
   let cells = new Map<string, Vec3[]>();
   for (let axis = 0; axis < 3; axis++) {
@@ -958,28 +1009,21 @@ export function brickCubeBoard(
       // keeps a symmetry group of order 24 — the full rotation group for even
       // n, and the 12 rotations plus inversion the odd sizes already had.
       const phase = n % 2 === 0 && sign < 0 ? 1 : 0;
-      for (let i = 0; i < n; i++) {
-        for (let j = 0; j < n; j++) {
-          const turned = checkered && (i + j + phase) % 2 === 1;
-          const courses = brickCourses(count, turned);
-          for (let b = 0; b < courses.length; b++) {
-            const [u0, v0, u1, v1] = courses[b]!;
-            const keys: Vec3[] = [];
-            for (const [du, dv] of [
-              [u0, v0],
-              [u1, v0],
-              [u1, v1],
-              [u0, v1],
-            ] as const) {
-              const coord: Vec3 = [0, 0, 0];
-              coord[axis] = sign * half;
-              coord[uAxis] = -half + i * block + du;
-              coord[vAxis] = -half + j * block + dv;
-              keys.push(coord);
-            }
-            cells.set(cid(axis, sign, i, j, b), keys);
-          }
+      for (const [suffix, [u0, v0, u1, v1]] of faceBricks(bond, n, phase)) {
+        const keys: Vec3[] = [];
+        for (const [u, v] of [
+          [u0, v0],
+          [u1, v0],
+          [u1, v1],
+          [u0, v1],
+        ] as const) {
+          const coord: Vec3 = [0, 0, 0];
+          coord[axis] = sign * half;
+          coord[uAxis] = -half + u;
+          coord[vAxis] = -half + v;
+          keys.push(coord);
         }
+        cells.set(cid(axis, sign, ...suffix), keys);
       }
     }
   }

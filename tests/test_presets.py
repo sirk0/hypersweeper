@@ -95,6 +95,9 @@ EXEMPT_ROWS = {
     # the band -- which is the whole difference between the rows.
     ("cubestackedbond", "easy"),   # 48 or 108
     ("cubebasketweave", "easy"),   # 48 or 108
+    # The brick-rings cube steps the same 12 n**2 ladder for its own reason: a
+    # face is n whole rings, 2 n**2 bricks, and a ring cannot be cut in half.
+    ("cubebrickrings", "easy"),    # 48 or 108
     # The stepped bipyramid's terraces have to run all the way to a single
     # cube at each apex, or it is a slab rather than a diamond, and that fixes
     # `levels` to (base + 1) / 2 on an odd base. The solid then steps 38 -> 64

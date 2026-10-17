@@ -217,7 +217,14 @@ One rule of the weaves outlives the plane: their quarter-turn centres are
 block *corners*, so a face centre is one only when n is even, and at even n
 the checkerboard has to be flipped on the three negative faces or the two
 halves of the cube meet out of phase — measured, that costs the board all
-but 6 of the cube's 48 symmetries. `ARCH_TILINGS` is
+but 6 of the cube's 48 symmetries. The **brick rings** ride the same builder
+(`cubebrickrings`, `brick_cube_board("brickrings", n, …)`) though they are no
+bond: n rings fill a 2n x 2n square exactly, so each face is the flat
+`brickrings` board whole, rows along the face's cyclic first axis. That puts
+one face's row against the other's side at every one of the twelve edges, so
+the rings break at all of them, and each face keeping its rings' two mirrors
+and half turn leaves the board the pyritohedral 24 of the 48 at every n.
+`ARCH_TILINGS` is
 listed in vertex-configuration order — Wikipedia's "List of Euclidean
 uniform tilings" order — and that registry order is the menu order.
 **To add a tiling or surface, see [`board-recipes.md`](board-recipes.md)** —

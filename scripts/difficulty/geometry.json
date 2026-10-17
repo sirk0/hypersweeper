@@ -9328,5 +9328,46 @@
         "reason": "the cell count is the solid"
       }
     }
+  },
+  "cubebrickrings": {
+    "builder": "brick_cube_board",
+    "args": {
+      "easy": {
+        "args": [
+          "brickrings",
+          3,
+          21
+        ],
+        "cells": 108,
+        "score": 11.863,
+        "distortionMean": 1.2923,
+        "distortionP90": 1.299,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          "brickrings",
+          6,
+          109
+        ],
+        "cells": 432,
+        "score": 0.1054,
+        "distortionMean": 1.2974,
+        "distortionP90": 1.299,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          "brickrings",
+          5,
+          63
+        ],
+        "cells": 300,
+        "score": 10.4758,
+        "distortionMean": 1.2966,
+        "distortionP90": 1.299,
+        "indistinguishable": 0
+      }
+    }
   }
 }

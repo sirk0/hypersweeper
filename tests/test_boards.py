@@ -4570,25 +4570,91 @@ class TestBrickCubes:
         is half of what the cube has and all that a face whose centre is only a
         half-turn centre can offer.
         """
-        board = brick_cube_board(bond, n, 5)
-        tiles = {frozenset(tuple(round(c, 9) for c in point)
-                           for point in polygon)
-                 for polygon in board.polygons.values()}
-        kept = 0
-        for permutation in itertools.permutations(range(3)):
-            for signs in itertools.product((1, -1), repeat=3):
-                matrix = [[0] * 3 for _ in range(3)]
-                for row, column in enumerate(permutation):
-                    matrix[row][column] = signs[row]
-                turned = {
-                    frozenset(tuple(round(sum(matrix[r][k] * point[k]
-                                              for k in range(3)), 9)
-                                    for r in range(3))
-                              for point in tile)
-                    for tile in tiles
-                }
-                kept += turned == tiles
-        assert kept == 24
+        assert len(_cube_symmetries(brick_cube_board(bond, n, 5))) == 24
+
+
+def _cube_symmetries(board) -> list[tuple[tuple[int, ...], tuple[int, ...]]]:
+    """The cube's symmetries -- all 48 signed axis permutations, as
+    ``(permutation, signs)`` -- that map the board's tiles onto tiles."""
+    tiles = {frozenset(tuple(round(c, 9) for c in point) for point in polygon)
+             for polygon in board.polygons.values()}
+    kept = []
+    for permutation in itertools.permutations(range(3)):
+        for signs in itertools.product((1, -1), repeat=3):
+            turned = {
+                frozenset(tuple(round(signs[r] * point[permutation[r]], 9)
+                                for r in range(3))
+                          for point in tile)
+                for tile in tiles
+            }
+            if turned == tiles:
+                kept.append((permutation, signs))
+    return kept
+
+
+class TestBrickRingsCube:
+    """The brick rings on a cube: every face the flat ``brickrings`` board of
+    n rings, so 12 n**2 bricks of 2x1, broken at all twelve edges."""
+
+    @pytest.mark.parametrize("n", [1, 2, 3, 4])
+    def test_six_faces_of_n_rings(self, n):
+        board = brick_cube_board("brickrings", n, 5)
+        assert len(board.polygons) == 6 * 2 * n * n
+
+    @pytest.mark.parametrize("n", [1, 2, 3])
+    def test_every_face_is_the_flat_board(self, n):
+        """Each face carries the flat board's bricks exactly, rows along the
+        face's first axis taken cyclically (the bonds' rule)."""
+        flat = {(x, y, x + w, y + h) for x, y, w, h in _brick_rings_tiles(n)}
+        board = brick_cube_board("brickrings", n, 5)
+        for axis in range(3):
+            u_axis, v_axis = (axis + 1) % 3, (axis + 2) % 3
+            for sign in (-1, 1):
+                face = set()
+                for polygon in board.polygons.values():
+                    if all(abs(p[axis] - sign) < 1e-9 for p in polygon):
+                        us = [round(p[u_axis] * n) for p in polygon]
+                        vs = [round(p[v_axis] * n) for p in polygon]
+                        face.add((min(us), min(vs), max(us), max(vs)))
+                assert face == flat
+
+    @pytest.mark.parametrize("n", [1, 2, 3])
+    def test_every_tile_is_a_two_to_one_brick(self, n):
+        for polygon in brick_cube_board("brickrings", n, 5).polygons.values():
+            corners = _corners3d(polygon)
+            assert len(corners) == 4
+            sides = sorted(math.dist(corners[i], corners[(i + 1) % 4])
+                           for i in range(4))
+            assert abs(sides[0] - sides[1]) < 1e-9 * sides[3]
+            assert abs(sides[2] - sides[3]) < 1e-9 * sides[3]
+            assert abs(sides[0] / sides[3] - 0.5) < 1e-9
+
+    @pytest.mark.parametrize("n", [1, 2, 3])
+    def test_closed_connected_sphere_surface(self, n):
+        """Every cube edge is cut out of phase on its two sides (one face's
+        row against the other's side), so this rests on the T-vertex splice
+        at all twelve edges."""
+        board = brick_cube_board("brickrings", n, 5)
+        assert _boundary_components(board) == 0
+        assert _euler_characteristic(board) == 2
+        start = next(iter(board.adjacency))
+        seen, stack = {start}, [start]
+        while stack:
+            for neighbor in board.adjacency[stack.pop()]:
+                if neighbor not in seen:
+                    seen.add(neighbor)
+                    stack.append(neighbor)
+        assert len(seen) == len(board.adjacency)
+
+    @pytest.mark.parametrize("n", [1, 2, 3, 4])
+    def test_the_cube_keeps_a_pyritohedral_symmetry(self, n):
+        """A ring face has two mirrors and a half turn but no quarter turn,
+        so it is a direction on the face, as a stacked-bond face is: the
+        board keeps the tetrahedron's 12 rotations and their inversions (the
+        pyritohedral group, order 24) at every n, the inversion among them."""
+        kept = _cube_symmetries(brick_cube_board("brickrings", n, 5))
+        assert len(kept) == 24
+        assert ((0, 1, 2), (-1, -1, -1)) in kept
 
 
 class TestSolidCube:
