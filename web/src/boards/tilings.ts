@@ -1747,8 +1747,9 @@ function durerTemplate(): ArchTemplate {
 //
 // Edge-to-edge tilings by regular polygons whose vertices fall into exactly two
 // classes under the tiling's symmetries — one step past the uniform tilings,
-// which have one. Each of the three here is a uniform tiling with some of its
-// tiles cut up or merged, so each factory borrows that tiling's polygons:
+// which have one. There are twenty; each of the first three here is a uniform
+// tiling with some of its tiles cut up or merged, so each factory borrows that
+// tiling's polygons (the other seventeen follow them):
 //
 //   3⁶; 3².4.3.4       3.4.6.4 with every hexagon cut into six triangles
 //   3².4.3.4; 3.4.6.4  3.12.12 with every dodecagon cut into the 3.4.6.4
@@ -1757,9 +1758,9 @@ function durerTemplate(): ArchTemplate {
 //                      both lattice directions) merged with its ring of squares
 //                      and triangles into a dodecagon
 //
-// All three are p6m. They ship on the plane only for now — no cut is chosen and
-// no surface builder wraps them (FLAT_ONLY_ARCH_FAMILIES in catalog.ts). Ports
-// of the factories of the same names in boards/tilings.py.
+// All three are p6m. The family ships on the plane only for now — no cut is
+// chosen and no surface builder wraps it (FLAT_ONLY_ARCH_FAMILIES in
+// catalog.ts). Ports of the factories of the same names in boards/tilings.py.
 
 /** A regular polygon cut into triangles from its centre. */
 function fan(polygon: Vertex[]): Vertex[][] {
@@ -1851,6 +1852,263 @@ function dodecarhombitrihexTemplate(): ArchTemplate {
   return template([3, 4, 6, 12], width, height, polygons);
 }
 
+// -- the other seventeen, from one translation cell ---------------------------
+//
+// Each written down from a single translation cell, as `_cell_template` in
+// boards/tilings.py does (the comment above `_steps` there says how the cells
+// were found): `v1`/`v2` are the translation lattice as walks of unit steps
+// (step k heads 30k degrees), `rect` two lattice vectors at right angles as
+// integer combinations of them, `tiles` one `[sides, corner walk, heading]` per
+// translation class, and `centre` the window centre — a tile's index, or a
+// list of walks whose mean it is — round which the domain is laid out.
+
+/** The point a walk of unit steps reaches from the origin, step k heading 30k
+ * degrees. */
+function steps(walk: readonly number[]): Vertex {
+  let x = 0;
+  let y = 0;
+  for (const k of walk) {
+    x += Math.cos(30 * k * DEG);
+    y += Math.sin(30 * k * DEG);
+  }
+  return [x, y];
+}
+
+/** The regular polygon of unit edge with a corner at `corner`, walked
+ * counterclockwise from there with its first edge heading 30*heading degrees. */
+function unitPolygon(sides: number, corner: Vertex, heading: number): Vertex[] {
+  let [x, y] = corner;
+  const out: Vertex[] = [];
+  for (let i = 0; i < sides; i++) {
+    out.push([x, y]);
+    const angle = (30 * heading + (360 * i) / sides) * DEG;
+    x += Math.cos(angle);
+    y += Math.sin(angle);
+  }
+  return out;
+}
+
+const SIDE_NAMES: Record<number, string> = { 3: "tri", 4: "sq", 6: "hex", 12: "dod" };
+
+/** A 2-uniform tiling's template from one translation cell — see the comment
+ * above `steps`. Port of `_cell_template` in boards/tilings.py. */
+function cellTemplate(
+  config: number[],
+  v1: readonly number[],
+  v2: readonly number[],
+  rect: readonly [readonly [number, number], readonly [number, number]],
+  tiles: readonly (readonly [number, readonly number[], number])[],
+  { centre, mirrored = true }: { centre: number | readonly (readonly number[])[]; mirrored?: boolean },
+): ArchTemplate {
+  const a = steps(v1);
+  const b = steps(v2);
+  const [[i1, j1], [i2, j2]] = rect;
+  const along: Vertex = [i1 * a[0] + j1 * b[0], i1 * a[1] + j1 * b[1]];
+  const across: Vertex = [i2 * a[0] + j2 * b[0], i2 * a[1] + j2 * b[1]];
+  const width = Math.hypot(along[0], along[1]);
+  const height = Math.hypot(across[0], across[1]);
+  const polygons: [string, Vertex[]][] = tiles.map(([sides, walk, heading]) => [
+    SIDE_NAMES[sides]!,
+    unitPolygon(sides, steps(walk), heading),
+  ]);
+  const points = typeof centre === "number" ? polygons[centre]![1] : centre.map((walk) => steps(walk));
+  let ox = 0;
+  let oy = 0;
+  for (const [x, y] of points) {
+    ox += x;
+    oy += y;
+  }
+  ox /= points.length;
+  oy /= points.length;
+  const shifted: [string, Vertex[]][] = polygons.map(([name, polygon]) => [
+    name,
+    polygon.map(([x, y]): Vertex => [x - ox, y - oy]),
+  ]);
+  const turn = -Math.atan2(along[1], along[0]) / DEG;
+  return template(config, width, height, periodicDomain(a, b, width, height, shifted, turn), {
+    mirrored,
+    centre: [0, 0],
+  });
+}
+
+/** [3⁶; 3⁴.6] (1), p6m: the triangular tiling with a hexagon in place of
+ * six triangles at every point of a lattice three edges apart. The hexagons
+ * never touch — each is ringed by triangles, its corners 3⁴.6 — and the two
+ * vertices a cell holds that touch no hexagon are 3⁶. */
+function studdedtriTemplate(): ArchTemplate {
+  return cellTemplate([3, 6], [8, 8, 8], [10, 10, 10], [[-1, 1], [-1, -1]], [
+    [6, [0], 0], [3, [], 2], [3, [], 4], [3, [], 8], [3, [], 10], [3, [], 0], [3, [], 6],
+    [3, [10], 0], [3, [4], 0], [3, [6], 8], [3, [10], 10], [3, [0], 10], [3, [2], 2],
+  ], { centre: 0 });
+}
+
+/** [3⁶; 3⁴.6] (2), p6: the same with the hexagons √13 edges apart, on
+ * a lattice turned off the triangle rows, so the tiling is chiral and has no
+ * mirror. (Snub hexagonal is the √7 one, close enough to leave no 3⁶
+ * vertex at all.) */
+function studdedtri2Template(): ArchTemplate {
+  return cellTemplate([3, 6], [6, 8, 8, 8], [8, 10, 10, 10], [[-1, 0], [1, -2]], [
+    [6, [10], 6], [3, [], 2], [3, [], 4], [3, [], 8], [3, [], 10], [3, [], 0], [3, [], 6],
+    [3, [10], 0], [3, [0], 2], [3, [4], 0], [3, [4], 6], [3, [8], 4], [3, [10], 10],
+    [3, [0], 10], [3, [0], 0], [3, [2], 0], [3, [2], 2], [3, [8], 6], [3, [6], 4],
+    [3, [6], 6], [3, [2, 4], 0],
+  ], { centre: 0, mirrored: false });
+}
+
+/** [3⁶; 3³.4²] (1), pmm: elongated triangular with two courses of
+ * triangles between the square courses instead of one. The line between the
+ * two triangle courses is 3⁶, and the square courses line up, so the repeat
+ * is one square wide. */
+function elongated2Template(): ArchTemplate {
+  return cellTemplate([3, 4], [0], [8, 9, 10], [[1, 0], [0, -1]], [
+    [4, [4], 0], [3, [], 4], [3, [], 2], [3, [], 8], [3, [], 6],
+  ], { centre: [[]] });
+}
+
+/** [3⁶; 3³.4²] (2), cmm: three courses of triangles between the square
+ * courses. Both lines inside a band are 3⁶ — mirror images of each other --
+ * and each square course sits half a square along from the last. */
+function elongated3Template(): ArchTemplate {
+  return cellTemplate([3, 4], [0], [8, 8, 9, 10], [[1, 0], [-1, -2]], [
+    [4, [10], 6], [3, [], 4], [3, [], 2], [3, [], 8], [3, [], 6], [3, [4], 0],
+    [3, [4], 2],
+  ], { centre: 0 });
+}
+
+/** [3⁶; 3².4.12], p6m: truncated trihexagonal (4.6.12) with every
+ * hexagon cut into six triangles. A hexagon's centre becomes 3⁶ and each of
+ * its corners, 4.6.12 before, 4.3.3.12. */
+function tritrunctrihexTemplate(): ArchTemplate {
+  return cellTemplate([3, 4, 12], [7, 8, 8, 8, 9], [9, 10, 10, 10, 11], [[-1, 1], [-1, -1]], [
+    [12, [4], 3], [4, [10], 11], [4, [4], 0], [4, [6], 7], [3, [], 2], [3, [], 4],
+    [3, [], 8], [3, [], 10], [3, [], 0], [3, [], 6], [3, [10, 11], 0], [3, [3, 4], 0],
+    [3, [6, 7], 8], [3, [10, 11], 10], [3, [0, 11], 10], [3, [2, 3], 2],
+  ], { centre: 0 });
+}
+
+/** [3⁶; 3².6²], p6m: hexagonal with one hexagon in three cut into six
+ * triangles — the ones on the √3-coarser lattice, so no two cut ones
+ * touch and every corner keeps two hexagons and gains two triangles. */
+function fannedhexTemplate(): ArchTemplate {
+  return cellTemplate([3, 6], [8, 8, 8], [10, 10, 10], [[-1, 1], [-1, -1]], [
+    [6, [10], 10], [6, [0], 0], [3, [], 2], [3, [], 4], [3, [], 8], [3, [], 10],
+    [3, [], 0], [3, [], 6],
+  ], { centre: [[0], [0, 0]] });
+}
+
+/** [3⁴.6; 3².6²], cmm: rows of hexagons, each sharing an edge with the
+ * next, with four triangles to a hexagon filling the zigzag between rows.
+ * Where two hexagons meet is 3².6²; a hexagon's top and bottom corners are
+ * 3⁴.6. */
+function hexbandsTemplate(): ArchTemplate {
+  return cellTemplate([3, 6], [1, 11], [7, 9, 9], [[1, 0], [-1, -2]], [
+    [6, [], 7], [3, [], 3], [3, [], 5], [3, [], 11], [3, [], 1],
+  ], { centre: 0 });
+}
+
+/** [3³.4²; 3².4.3.4] (1), pgg: every square in an edge-sharing pair among
+ * the triangles, the pairs lying two ways a twelfth of a turn apart. The two
+ * ends of a pair's shared edge are 3³.4², every other corner 3².4.3.4.
+ * Glides, but no mirror. */
+function snubelongatedTemplate(): ArchTemplate {
+  return cellTemplate([3, 4], [7, 8], [10, 10, 11, 11], [[-1, 0], [0, -1]], [
+    [4, [], 10], [4, [], 1], [4, [4], 5], [4, [10], 8], [3, [], 4], [3, [], 8],
+    [3, [], 6], [3, [10], 6], [3, [4], 1], [3, [10], 11], [3, [4], 3], [3, [1, 10], 9],
+  ], { centre: [[1], []], mirrored: false });
+}
+
+/** [3³.4²; 3².4.3.4] (2), p4g: the same two vertex types in snub
+ * square's four-fold arrangement, some squares paired along an edge and some
+ * alone. */
+function snubelongated2Template(): ArchTemplate {
+  return cellTemplate([3, 4], [6, 7, 8, 9], [0, 9, 10, 11], [[-1, 1], [-1, -1]], [
+    [4, [], 9], [4, [], 0], [4, [5], 1], [4, [9], 5], [4, [5], 6], [4, [9, 10], 6],
+    [3, [], 3], [3, [], 5], [3, [], 7], [3, [9], 10], [3, [0], 9], [3, [0], 1],
+    [3, [3], 0], [3, [0], 11], [3, [3], 2], [3, [5], 4], [3, [9], 8], [3, [7], 6],
+  ], { centre: [[0], []] });
+}
+
+/** [3³.4²; 3.4.6.4], p6m: dissectedtrunchex with the squares the
+ * other way round — each dodecagon of 3.12.12 cut into a hexagon, six
+ * squares and six triangles, the squares now on the edges it shares with
+ * another dodecagon. Two squares meet across each of those edges, and their
+ * corners read 3³.4². */
+function dissectedtrunchex2Template(): ArchTemplate {
+  return cellTemplate([3, 4, 6], [7, 8, 8, 9], [9, 10, 10, 11], [[-2, 1], [0, -1]], [
+    [6, [4], 1], [4, [], 10], [4, [], 1], [4, [4], 5], [4, [10], 6], [4, [6], 5],
+    [4, [8], 6], [3, [], 4], [3, [], 8], [3, [], 6], [3, [6], 8], [3, [1], 10],
+    [3, [1], 2], [3, [1], 0], [3, [4, 5], 6],
+  ], { centre: 0 });
+}
+
+/** [3³.4²; 4⁴] (1), cmm: elongated triangular with two courses of
+ * squares between the triangle courses instead of one. The line between the
+ * two square courses is 4⁴, and each triangle course moves the squares on
+ * by half a square. */
+function squarerows2Template(): ArchTemplate {
+  return cellTemplate([3, 4], [0], [8, 9, 9], [[1, 0], [-1, -2]], [
+    [4, [], 3], [4, [10], 6], [3, [], 8], [3, [], 6],
+  ], { centre: [[3]] });
+}
+
+/** [3³.4²; 4⁴] (2), cmm: three courses of squares between the triangle
+ * courses. Both lines inside a band are 4⁴, mirror images of each other. */
+function squarerows3Template(): ArchTemplate {
+  return cellTemplate([3, 4], [0], [8, 9, 9, 9], [[1, 0], [-1, -2]], [
+    [4, [], 3], [4, [10], 6], [4, [3], 3], [3, [], 10], [3, [], 8],
+  ], { centre: 2 });
+}
+
+/** [3².6²; 3.6.3.6], pmm: rows of hexagons, each sharing an edge with the
+ * next, close enough that one row's corners touch the next row's, leaving a
+ * bow tie of triangles in each gap. Where two hexagons in a row meet is
+ * 3².6²; a hexagon's top and bottom corners are 3.6.3.6. */
+function hexrowsTemplate(): ArchTemplate {
+  return cellTemplate([3, 6], [1, 11], [9, 9], [[1, 0], [0, -1]], [
+    [6, [], 5], [3, [], 3], [3, [], 1],
+  ], { centre: [[], [3]] });
+}
+
+/** [3.4.3.12; 3.12²], p4m: dodecagons on a square lattice, each sharing an
+ * edge with its four neighbours, and in each gap between four of them a
+ * square with a triangle on every side. A dodecagon's corners where two
+ * dodecagons meet are 3.12², the ones beside a gap 3.4.3.12. */
+function dodecasquareTemplate(): ArchTemplate {
+  return cellTemplate([3, 4, 12], [8, 9, 9, 10], [0, 0, 1, 11], [[0, 1], [-1, 0]], [
+    [12, [], 5], [4, [], 0], [3, [], 3], [3, [], 10], [3, [0], 1], [3, [3], 0],
+  ], { centre: [[2, 3], [2, 3, 3]] });
+}
+
+/** [3.4².6; 3.4.6.4], p6m: hexagons, squares and triangles, as
+ * rhombitrihexagonal has, but with the squares in rows of three laid edge to
+ * edge. Where two squares of a row meet is 3.4².6, every other corner
+ * 3.4.6.4. */
+function hexringsTemplate(): ArchTemplate {
+  return cellTemplate([3, 4, 6], [7, 8, 8, 8, 9], [0, 8, 9, 10, 10, 11], [[-1, 1], [-1, -1]], [
+    [6, [], 4], [6, [11], 8], [6, [2], 11], [4, [], 11], [4, [], 8], [4, [4], 0],
+    [4, [8], 8], [4, [4], 3], [4, [2, 11], 10], [4, [6, 8], 4], [4, [6, 8], 7],
+    [4, [4, 6], 3], [3, [], 2], [3, [11], 0], [3, [8], 6], [3, [8, 11], 8],
+    [3, [4, 6], 6], [3, [3, 4], 0],
+  ], { centre: 2 });
+}
+
+/** [3.4².6; 3.6.3.6] (1), pmm: courses of squares between bands of
+ * trihexagonal one hexagon deep, the hexagons of every band in line with the
+ * next band's. The band's edges are 3.4².6, its middle 3.6.3.6. */
+function squaretrihexTemplate(): ArchTemplate {
+  return cellTemplate([3, 4, 6], [0, 2, 10], [8, 9, 10], [[1, 0], [0, -1]], [
+    [6, [], 4], [4, [4], 0], [4, [4], 3], [3, [], 2], [3, [], 8],
+  ], { centre: [[]] });
+}
+
+/** [3.4².6; 3.6.3.6] (2), cmm: the same with each band half a hexagon
+ * along from the last. */
+function squaretrihex2Template(): ArchTemplate {
+  return cellTemplate([3, 4, 6], [0, 2, 10], [8, 8, 9], [[1, 0], [-1, -2]], [
+    [6, [], 4], [4, [10], 6], [4, [4], 0], [3, [], 2], [3, [], 8],
+  ], { centre: [[]] });
+}
+
 // -- registry ----------------------------------------------------------------
 
 export type ArchFamily = "uniform" | "dual" | "2-uniform" | "isogonal" | "rectangle" | "other";
@@ -1899,10 +2157,27 @@ export const ARCH_TILINGS: ArchTiling[] = [
   { key: "tetrakis", label: "Tetrakis square", config: [4, 8, 8], edgeDirections: 8, template: () => dualTemplate(truncsquareTemplate), family: "dual", halfTurn: true },
   // the 2-uniform tilings: regular polygons edge to edge, like the uniform
   // ones, but with two kinds of vertex. They have no common names, so the
-  // label is the pair of vertex configurations, and config is just the tile
-  // side counts.
+  // label is the pair of vertex configurations — with (1) and (2) where two
+  // share both — and config is just the tile side counts.
+  { key: "studdedtri", label: "3⁶; 3⁴.6 (1)", config: [3, 6], edgeDirections: 6, template: studdedtriTemplate, family: "2-uniform", halfTurn: true },
+  { key: "studdedtri2", label: "3⁶; 3⁴.6 (2)", config: [3, 6], edgeDirections: 6, template: studdedtri2Template, family: "2-uniform", halfTurn: true },
+  { key: "elongated2", label: "3⁶; 3³.4² (1)", config: [3, 4], edgeDirections: 8, template: elongated2Template, family: "2-uniform", halfTurn: true },
+  { key: "elongated3", label: "3⁶; 3³.4² (2)", config: [3, 4], edgeDirections: 8, template: elongated3Template, family: "2-uniform", halfTurn: true },
   { key: "trirhombitrihex", label: "3⁶; 3².4.3.4", config: [3, 4], edgeDirections: 12, template: trirhombitrihexTemplate, family: "2-uniform", halfTurn: true },
+  { key: "tritrunctrihex", label: "3⁶; 3².4.12", config: [3, 4, 12], edgeDirections: 12, template: tritrunctrihexTemplate, family: "2-uniform", halfTurn: true },
+  { key: "fannedhex", label: "3⁶; 3².6²", config: [3, 6], edgeDirections: 6, template: fannedhexTemplate, family: "2-uniform", halfTurn: true },
+  { key: "hexbands", label: "3⁴.6; 3².6²", config: [3, 6], edgeDirections: 6, template: hexbandsTemplate, family: "2-uniform", halfTurn: true },
+  { key: "snubelongated", label: "3³.4²; 3².4.3.4 (1)", config: [3, 4], edgeDirections: 12, template: snubelongatedTemplate, family: "2-uniform", halfTurn: true },
+  { key: "snubelongated2", label: "3³.4²; 3².4.3.4 (2)", config: [3, 4], edgeDirections: 12, template: snubelongated2Template, family: "2-uniform", halfTurn: true },
+  { key: "dissectedtrunchex2", label: "3³.4²; 3.4.6.4", config: [3, 4, 6], edgeDirections: 12, template: dissectedtrunchex2Template, family: "2-uniform", halfTurn: true },
+  { key: "squarerows2", label: "3³.4²; 4⁴ (1)", config: [3, 4], edgeDirections: 8, template: squarerows2Template, family: "2-uniform", halfTurn: true },
+  { key: "squarerows3", label: "3³.4²; 4⁴ (2)", config: [3, 4], edgeDirections: 8, template: squarerows3Template, family: "2-uniform", halfTurn: true },
   { key: "dissectedtrunchex", label: "3².4.3.4; 3.4.6.4", config: [3, 4, 6], edgeDirections: 12, template: dissectedtrunchexTemplate, family: "2-uniform", halfTurn: true },
+  { key: "hexrows", label: "3².6²; 3.6.3.6", config: [3, 6], edgeDirections: 6, template: hexrowsTemplate, family: "2-uniform", halfTurn: true },
+  { key: "dodecasquare", label: "3.4.3.12; 3.12²", config: [3, 4, 12], edgeDirections: 12, template: dodecasquareTemplate, family: "2-uniform", halfTurn: true },
+  { key: "hexrings", label: "3.4².6; 3.4.6.4", config: [3, 4, 6], edgeDirections: 12, template: hexringsTemplate, family: "2-uniform", halfTurn: true },
+  { key: "squaretrihex", label: "3.4².6; 3.6.3.6 (1)", config: [3, 4, 6], edgeDirections: 8, template: squaretrihexTemplate, family: "2-uniform", halfTurn: true },
+  { key: "squaretrihex2", label: "3.4².6; 3.6.3.6 (2)", config: [3, 4, 6], edgeDirections: 8, template: squaretrihex2Template, family: "2-uniform", halfTurn: true },
   { key: "dodecarhombitrihex", label: "3.4.6.4; 4.6.12", config: [3, 4, 6, 12], edgeDirections: 12, template: dodecarhombitrihexTemplate, family: "2-uniform", halfTurn: true },
   // the isogonal tilings that are not edge to edge: vertex-transitive like the
   // uniform ones, but a tile's corner may land in the middle of its neighbour's

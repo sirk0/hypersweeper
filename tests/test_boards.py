@@ -3323,7 +3323,8 @@ class TestTwoUniform:
     every tile is a regular polygon of unit edge, and every interior vertex
     is one of the two types -- read as a *cyclic* sequence, since 3^2.4.3.4
     and 3^3.4^2 meet the same five tiles in a different order -- with both
-    types present."""
+    types present. Five pairs of the twenty share both types, so the vertex
+    check cannot tell a pair apart; test_no_two_are_the_same_tiling does."""
 
     @staticmethod
     def _cyclic(sequence):
@@ -3373,17 +3374,22 @@ class TestTwoUniform:
         sides = set()
         polygons = list(archimedean_board(mode, 3, 3, 5).polygons.values())
         unit = math.dist(polygons[0][0], polygons[0][1])  # the pixel scale
+        # Vertex tags are rounded to 1e-6 of an edge, so an edge measures to a
+        # few parts in a million -- more where the domain is turned off the
+        # tiling's own edges (snubelongated's runs at 45 degrees to them).
+        # Anything not regular is off by far more than this.
+        tolerance = 1e-5
         for polygon in polygons:
             n = len(polygon)
             sides.add(n)
-            assert all(abs(math.dist(polygon[i], polygon[(i + 1) % n]) / unit - 1) < 1e-6
+            assert all(abs(math.dist(polygon[i], polygon[(i + 1) % n]) / unit - 1) < tolerance
                        for i in range(n))
             # equal sides and equal angles: every corner the same distance
             # from the centroid
             cx = sum(x for x, _ in polygon) / n
             cy = sum(y for _, y in polygon) / n
             radii = [math.dist(p, (cx, cy)) / unit for p in polygon]
-            assert max(radii) - min(radii) < 1e-6
+            assert max(radii) - min(radii) < tolerance
         assert sides == set(tiling.config)
 
     @pytest.mark.parametrize("mode, tiles", [
@@ -3400,6 +3406,60 @@ class TestTwoUniform:
     def test_domain_holds_the_expected_tiles(self, mode, tiles):
         template = _arch_template(mode)
         assert Counter(len(refs) for _, refs in template.cells) == tiles
+
+    @pytest.mark.parametrize("mode", _TWO_UNIFORM)
+    def test_domain_is_covered_exactly(self, mode):
+        """The domain's tiles fill it: their areas sum to its own, so the
+        cell a factory was written down from has no gap and no overlap."""
+        template = _arch_template(mode)
+        area = {3: math.sqrt(3) / 4, 4: 1.0, 6: 3 * math.sqrt(3) / 2,
+                12: 3 * (2 + math.sqrt(3))}
+        tiles = sum(area[len(refs)] for _, refs in template.cells)
+        assert tiles == pytest.approx(template.width * template.height)
+
+    @staticmethod
+    def _rings(mode, depth=6):
+        """For each vertex type, the types met ring by ring walking out along
+        the edges from one vertex of that type near the middle of a big board.
+
+        In a 2-uniform tiling every vertex of one type is like every other,
+        so which vertex the walk starts from does not matter and this is a
+        fingerprint of the tiling itself."""
+        template = _arch_template(mode)
+        board = archimedean_board(mode, math.ceil(30 / template.width),
+                                  math.ceil(30 / template.height), 5)
+        fans = TestTwoUniform._vertex_fans(board)
+        kinds = {key: TestTwoUniform._cyclic(fan) for key, fan in fans.items()}
+        steps = defaultdict(set)
+        for polygon in board.polygons.values():
+            keys = [(round(x, 4), round(y, 4)) for x, y in polygon]
+            for a, b in zip(keys, keys[1:] + keys[:1]):
+                steps[a].add(b)
+                steps[b].add(a)
+        xs = [x for x, _ in kinds]
+        ys = [y for _, y in kinds]
+        mid = ((min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2)
+        out = []
+        for kind in sorted(set(kinds.values())):
+            start = min((key for key in kinds if kinds[key] == kind),
+                        key=lambda key: math.dist(key, mid))
+            seen, ring, rings = {start}, [start], []
+            for _ in range(depth):
+                ring = [b for a in ring for b in steps[a] if b not in seen]
+                ring = list(dict.fromkeys(ring))
+                seen.update(ring)
+                rings.append(tuple(sorted(Counter(kinds[v] for v in ring).items())))
+            out.append((kind, tuple(rings)))
+        return tuple(out)
+
+    def test_no_two_are_the_same_tiling(self):
+        """There are twenty 2-uniform tilings and twenty rows here, so no
+        two rows may be one tiling -- which matters most for the five pairs
+        whose vertex types are the same (the (1)s and (2)s), which the vertex
+        check above cannot tell apart."""
+        assert len(_TWO_UNIFORM) == 20
+        rings = {mode: self._rings(mode) for mode in _TWO_UNIFORM}
+        assert len(set(rings.values())) == len(rings)
 
     def test_dissection_leaves_the_uniform_tiling_unchanged(self):
         """trirhombitrihex is rhombitrihex with its hexagons cut up: the same

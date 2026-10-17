@@ -4684,6 +4684,110 @@
         ]
       }
     },
+    "studdedtri": {
+      "builder": "archimedean_board",
+      "args": {
+        "easy": [
+          "studdedtri",
+          3,
+          1,
+          10,
+          58.182
+        ],
+        "medium": [
+          "studdedtri",
+          4,
+          2,
+          29,
+          40.0
+        ],
+        "hard": [
+          "studdedtri",
+          5,
+          3,
+          81,
+          31.373
+        ]
+      }
+    },
+    "studdedtri2": {
+      "builder": "archimedean_board",
+      "args": {
+        "easy": [
+          "studdedtri2",
+          2,
+          1,
+          10,
+          66.564
+        ],
+        "medium": [
+          "studdedtri2",
+          3,
+          2,
+          42,
+          44.376
+        ],
+        "hard": [
+          "studdedtri2",
+          4,
+          3,
+          109,
+          33.282
+        ]
+      }
+    },
+    "elongated2": {
+      "builder": "archimedean_board",
+      "args": {
+        "easy": [
+          "elongated2",
+          7,
+          2,
+          7,
+          68.571
+        ],
+        "medium": [
+          "elongated2",
+          11,
+          4,
+          30,
+          43.333
+        ],
+        "hard": [
+          "elongated2",
+          15,
+          6,
+          85,
+          31.875
+        ]
+      }
+    },
+    "elongated3": {
+      "builder": "archimedean_board",
+      "args": {
+        "easy": [
+          "elongated3",
+          5,
+          1,
+          9,
+          93.333
+        ],
+        "medium": [
+          "elongated3",
+          9,
+          2,
+          48,
+          52.363
+        ],
+        "hard": [
+          "elongated3",
+          15,
+          2,
+          99,
+          31.875
+        ]
+      }
+    },
     "trirhombitrihex": {
       "builder": "archimedean_board",
       "args": {
@@ -4710,6 +4814,214 @@
         ]
       }
     },
+    "tritrunctrihex": {
+      "builder": "archimedean_board",
+      "args": {
+        "easy": [
+          "tritrunctrihex",
+          2,
+          1,
+          4,
+          50.718
+        ],
+        "medium": [
+          "tritrunctrihex",
+          4,
+          2,
+          13,
+          25.359
+        ],
+        "hard": [
+          "tritrunctrihex",
+          5,
+          3,
+          34,
+          20.287
+        ]
+      }
+    },
+    "fannedhex": {
+      "builder": "archimedean_board",
+      "args": {
+        "easy": [
+          "fannedhex",
+          2,
+          2,
+          5,
+          73.333
+        ],
+        "medium": [
+          "fannedhex",
+          5,
+          3,
+          10,
+          32.0
+        ],
+        "hard": [
+          "fannedhex",
+          8,
+          4,
+          32,
+          20.22
+        ]
+      }
+    },
+    "hexbands": {
+      "builder": "archimedean_board",
+      "args": {
+        "easy": [
+          "hexbands",
+          4,
+          2,
+          5,
+          66.511
+        ],
+        "medium": [
+          "hexbands",
+          9,
+          3,
+          20,
+          30.792
+        ],
+        "hard": [
+          "hexbands",
+          12,
+          4,
+          57,
+          23.094
+        ]
+      }
+    },
+    "snubelongated": {
+      "builder": "archimedean_board",
+      "args": {
+        "easy": [
+          "snubelongated",
+          3,
+          2,
+          10,
+          79.865
+        ],
+        "medium": [
+          "snubelongated",
+          7,
+          3,
+          38,
+          35.495
+        ],
+        "hard": [
+          "snubelongated",
+          9,
+          5,
+          112,
+          27.607
+        ]
+      }
+    },
+    "snubelongated2": {
+      "builder": "archimedean_board",
+      "args": {
+        "easy": [
+          "snubelongated2",
+          1,
+          2,
+          9,
+          92.588
+        ],
+        "medium": [
+          "snubelongated2",
+          2,
+          3,
+          34,
+          49.102
+        ],
+        "hard": [
+          "snubelongated2",
+          3,
+          4,
+          93,
+          33.256
+        ]
+      }
+    },
+    "dissectedtrunchex2": {
+      "builder": "archimedean_board",
+      "args": {
+        "easy": [
+          "dissectedtrunchex2",
+          1,
+          2,
+          6,
+          74.256
+        ],
+        "medium": [
+          "dissectedtrunchex2",
+          2,
+          4,
+          28,
+          37.128
+        ],
+        "hard": [
+          "dissectedtrunchex2",
+          3,
+          5,
+          71,
+          24.752
+        ]
+      }
+    },
+    "squarerows2": {
+      "builder": "archimedean_board",
+      "args": {
+        "easy": [
+          "squarerows2",
+          9,
+          1,
+          7,
+          54.0
+        ],
+        "medium": [
+          "squarerows2",
+          14,
+          2,
+          31,
+          34.286
+        ],
+        "hard": [
+          "squarerows2",
+          18,
+          3,
+          78,
+          26.593
+        ]
+      }
+    },
+    "squarerows3": {
+      "builder": "archimedean_board",
+      "args": {
+        "easy": [
+          "squarerows3",
+          8,
+          1,
+          11,
+          60.0
+        ],
+        "medium": [
+          "squarerows3",
+          13,
+          2,
+          48,
+          36.735
+        ],
+        "hard": [
+          "squarerows3",
+          20,
+          2,
+          90,
+          24.06
+        ]
+      }
+    },
     "dissectedtrunchex": {
       "builder": "archimedean_board",
       "args": {
@@ -4733,6 +5045,136 @@
           3,
           74,
           23.233
+        ]
+      }
+    },
+    "hexrows": {
+      "builder": "archimedean_board",
+      "args": {
+        "easy": [
+          "hexrows",
+          6,
+          4,
+          6,
+          46.188
+        ],
+        "medium": [
+          "hexrows",
+          10,
+          8,
+          30,
+          27.713
+        ],
+        "hard": [
+          "hexrows",
+          14,
+          11,
+          70,
+          19.795
+        ]
+      }
+    },
+    "dodecasquare": {
+      "builder": "archimedean_board",
+      "args": {
+        "easy": [
+          "dodecasquare",
+          3,
+          4,
+          6,
+          34.308
+        ],
+        "medium": [
+          "dodecasquare",
+          7,
+          6,
+          16,
+          18.374
+        ],
+        "hard": [
+          "dodecasquare",
+          9,
+          8,
+          37,
+          14.291
+        ]
+      }
+    },
+    "hexrings": {
+      "builder": "archimedean_board",
+      "args": {
+        "easy": [
+          "hexrings",
+          2,
+          1,
+          6,
+          50.718
+        ],
+        "medium": [
+          "hexrings",
+          3,
+          2,
+          24,
+          32.768
+        ],
+        "hard": [
+          "hexrings",
+          4,
+          3,
+          73,
+          24.874
+        ]
+      }
+    },
+    "squaretrihex": {
+      "builder": "archimedean_board",
+      "args": {
+        "easy": [
+          "squaretrihex",
+          4,
+          3,
+          6,
+          64.0
+        ],
+        "medium": [
+          "squaretrihex",
+          8,
+          6,
+          39,
+          30.0
+        ],
+        "hard": [
+          "squaretrihex",
+          11,
+          8,
+          91,
+          21.818
+        ]
+      }
+    },
+    "squaretrihex2": {
+      "builder": "archimedean_board",
+      "args": {
+        "easy": [
+          "squaretrihex2",
+          3,
+          2,
+          7,
+          72.0
+        ],
+        "medium": [
+          "squaretrihex2",
+          8,
+          3,
+          37,
+          30.0
+        ],
+        "hard": [
+          "squaretrihex2",
+          11,
+          4,
+          96,
+          21.818
         ]
       }
     },
