@@ -614,9 +614,10 @@ closed and nothing flagged, zoomed in until its rim is off the banner. The searc
 card is three of the iPhone shots under one line, `SEARCH_HEADLINE` in the
 script. It is English, so it needs translating if the app is ever localised.
 Both are composed on the app's own Sand page with its chrome hidden. The App
-Clip card is the clip's own board in play, on that page, with no words — the
-card prints its title and subtitle under the image — and is a JPEG because the
-card takes no transparency.
+Clip card is the search card cropped in: the same 3:2 page, kept from just
+above the headline to just below the boards' shadows and from just outside the
+phones (`crop` on its `ART` entry), drawn at 1.2× so the kept 1500 × 1000 is the
+card's 1800 × 1200. It is a JPEG because the card takes no transparency.
 
 The `imessage-*` slots are the iMessage app's own screenshots: a conversation
 drawn in the manner of Messages — bubbles, the compose bar, the sticker drawer —

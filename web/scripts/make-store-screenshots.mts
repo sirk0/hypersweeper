@@ -223,11 +223,11 @@ async function shoot(browser: Browser, device: View, scene: Scene, file?: string
 // clear idea, the focal point in the centre so no device crops it, any text a
 // short phrase, and for search "show firsthand experience" — the gameplay.
 // So the header is a row of real boards with no words, and the search card is
-// three of the iPhone shots under one line. The App Clip card is the clip's own
-// board in play, wordless too, since the card prints its title and subtitle
-// under it. All three are on the app's own
-// page — its Sand field, its font, its colours — with the app's chrome hidden,
-// rather than on an imitation of it.
+// three of the iPhone shots under one line. The App Clip card is the search
+// card cropped in: the same 3:2, closed in on the headline and the boards, the
+// empty foot of each phone and the margins round them cut away. All of them
+// are on the app's own page — its Sand field, its font, its colours — with the
+// app's chrome hidden, rather than on an imitation of it.
 
 interface Art {
   /** Output folder, and the `DEVICES` key that selects it. */
@@ -239,6 +239,9 @@ interface Art {
   /** A header's boards: where the row's middle sits and how tall its tallest
    * board stands, as fractions of the banner's height. */
   focus?: { centreY: number; maxH: number };
+  /** The part of the composed page that is kept, in CSS pixels; times `scale`
+   * is the asset's size. Unset: the whole page. */
+  crop?: { x: number; y: number; width: number; height: number };
 }
 
 // The App Store does not show a header whole. On an iPhone it fills the
@@ -258,7 +261,16 @@ const ART: Art[] = [
   { key: "search-results", file: "search-5244x2950.png", viewport: { width: 2622, height: 1475 }, scale: 2 },
   { key: "search-results", file: "search-3840x2560.png", viewport: { width: 1920, height: 1280 }, scale: 2 },
   { key: "search-results", file: "search-1920x1280.png", viewport: { width: 1920, height: 1280 }, scale: 1 },
-  { key: "app-clip", file: "app-clip-1800x1200.jpg", viewport: { width: 900, height: 600 }, scale: 2 },
+  // The search card's page, kept from just above the headline to just below
+  // the boards' shadows and from just outside the phones: 1500 x 1000, the
+  // card's 3:2, at 1.2x.
+  {
+    key: "app-clip",
+    file: "app-clip-1800x1200.jpg",
+    viewport: { width: 1920, height: 1280 },
+    scale: 1.2,
+    crop: { x: 210, y: 55, width: 1500, height: 1000 },
+  },
 ];
 
 /** The header's boards, left to right, with their relative heights: the
@@ -281,19 +293,6 @@ const PENROSE_HEADER: Scene = {
   difficulty: "hard",
   reveal: 0,
   flags: 0,
-};
-
-/** The App Clip card's board: the one the clip plays (`HypersweeperClipBoard`
- * in ios/App/AppClip/Info.plist) at the difficulty it opens at, the default,
- * part played as the header's boards are. */
-const CLIP_SCENE: Scene = {
-  name: "c-chamfered",
-  shape: "realistic",
-  mode: "c80",
-  difficulty: "easy",
-  seed: 5,
-  reveal: 0.4,
-  flags: 4,
 };
 
 /** The search card's three iPhone shots, by scene name; the middle one leads. */
@@ -433,14 +432,16 @@ async function composeArt(browser: Browser, art: Art, file: string): Promise<voi
     ] as const,
   );
   await settle(page);
-  await page.screenshot({ path: file });
+  // The App Clip card is a JPEG: the card takes no transparency.
+  await page.screenshot({
+    path: file,
+    ...(art.crop ? { clip: art.crop } : {}),
+    ...(file.endsWith(".jpg") ? { type: "jpeg" as const, quality: 92 } : {}),
+  });
   console.log(`wrote ${file}`);
   await context.close();
 }
 
-/** The App Clip card: the clip's board in play at the card's size, with the
- * app's chrome hidden. Shot whole rather than cut out, so the board keeps the
- * shadow it casts on the page. */
 /** The Penrose header: the board shot whole on the banner, with the app's
  * chrome hidden, then zoomed in about its centre until the tiling covers the
  * banner. A wider banner needs the closer zoom, since the patch is about as
@@ -458,20 +459,6 @@ async function tiledHeader(browser: Browser, art: Art, file: string): Promise<vo
   await page.evaluate((z) => window.__ms!.zoomBy(z), zoom);
   await settle(page);
   await page.screenshot({ path: file });
-  console.log(`wrote ${file}`);
-  await context.close();
-}
-
-async function clipCard(browser: Browser, art: Art, file: string): Promise<void> {
-  const { page, context } = await openScene(
-    browser,
-    { viewport: art.viewport, scale: art.scale, touch: true, native: "phone" },
-    CLIP_SCENE,
-  );
-  await page.addStyleTag({ content: "#ui, .board-name-layer { display: none !important; }" });
-  await page.evaluate(() => window.dispatchEvent(new Event("resize")));
-  await settle(page);
-  await page.screenshot({ path: file, type: "jpeg", quality: 92 });
   console.log(`wrote ${file}`);
   await context.close();
 }
@@ -805,11 +792,9 @@ async function main(): Promise<void> {
       const outDir = path.join(outRoot, art.key);
       mkdirSync(outDir, { recursive: true });
       const file = path.join(outDir, art.file);
-      await (art.key === "app-clip"
-        ? clipCard(browser, art, file)
-        : art.key === "header-penrose"
-          ? tiledHeader(browser, art, file)
-          : composeArt(browser, art, file));
+      await (art.key === "header-penrose"
+        ? tiledHeader(browser, art, file)
+        : composeArt(browser, art, file));
     }
     const wantsMessages = MESSAGES_SLOTS.some((slot) => !onlyDevices || onlyDevices.includes(slot.key));
     const pack = wantsMessages ? readPack() : undefined;
