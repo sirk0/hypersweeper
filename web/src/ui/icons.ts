@@ -85,7 +85,7 @@ import {
 import { trefoilPoint } from "../boards/surfaces";
 import { solidCubeBoard } from "../boards/volume";
 import { DOMAINS } from "./backgroundPattern";
-import { newellNormal, type Board, type Board3D, type Vec3 } from "../boards/core";
+import { cid, newellNormal, type Board, type Board3D, type Vec3 } from "../boards/core";
 
 const D = 100;
 const C = D / 2;
@@ -1957,28 +1957,56 @@ const NO_WALLPAPER = new Set([
  * would otherwise run past the patch's own boundary.
  *
  * `whole` is where the board's identity is its overall shape rather than the
- * arrangement underfoot: a spiral, an island's ragged outline, rings. Cropped
- * close, those three are a hex grid and a course of bricks — true of the
+ * arrangement underfoot: an island's ragged outline, the hyperbolic disc.
+ * Cropped close, those are a hex grid and a field of polygons — true of the
  * neighbourhood, and the wrong thing said. They get the whole patch, fitted
  * with air around it, the way the shaped boards keep their silhouette. The
  * rest say what they are locally: Penrose's two rhombi never settling into a
  * repeat, the substitutions' tiles inside their own inflation, the pentaflake
- * and the carpet with the holes that are what they are made of. */
+ * and the carpet with the holes that are what they are made of.
+ *
+ * The spirals sit between the two. Their picture is the winding, which a
+ * crop anywhere but the middle loses — but fitted whole, a patch grown out by
+ * rings is a star of ragged arms, and the card shows the star rather than the
+ * spiral. So they are cropped round their own `centre`, the card running edge
+ * to edge, with `tiles` enough of them in the window for the arms to turn. */
 interface PatchBoard {
   build: () => Board;
   whole?: true;
+  /** Where the crop sits, instead of on the densest window. */
+  centre?: (board: Board) => P;
+  /** How many tiles the crop shows, instead of `PREVIEW_TILES`. */
+  tiles?: number;
 }
+
+/** The middle of a patch with a rotational symmetry: the mean of its vertices,
+ * which the symmetry carries onto itself. */
+function symmetryCentre(board: Board): P {
+  const pts = [...board.polygons.values()].flat();
+  return [
+    pts.reduce((sum, p) => sum + p[0], 0) / pts.length,
+    pts.reduce((sum, p) => sum + p[1], 0) / pts.length,
+  ];
+}
+
+/** Klaassen's seed has no symmetry to find it by; it is the hub its first fan
+ * of tiles all start from (`klaassenTiles`: hub 0, each tile's first vertex). */
+function klaassenSeed(board: Board): P {
+  return board.polygons.get(cid(0, 0))![0] as P;
+}
+
+const SPIRAL = { centre: symmetryCentre, tiles: 60 } as const;
 
 const PATCH_BOARDS: Record<string, PatchBoard> = {
   penrose: { build: () => penroseBoard(5, 0, 437.727, null) },
   kitedart: { build: () => kiteDartBoard(5, 0, 437.727, null) },
   ammannbeenker: { build: () => ammannBeenkerBoard(3, 0, 35.891, null) },
   spectre: { build: () => spectreBoard(3, 0, null, 14.361) },
-  phyllotaxis: { build: () => phyllotaxisBoard(5, 0, null, 22.907), whole: true },
-  klaassen: { build: () => klaassenBoard(3, 0, null, 29.521), whole: true },
-  pentaspiral5: { build: () => pentaSpiralBoard(5, 4, 0, null, 10.85), whole: true },
-  pentaspiral6: { build: () => pentaSpiralBoard(6, 4, 0, null, 11.389), whole: true },
-  pentaspiral7: { build: () => pentaSpiralBoard(7, 3, 0, null, 12.097), whole: true },
+  phyllotaxis: { build: () => phyllotaxisBoard(5, 0, null, 22.907), ...SPIRAL },
+  klaassen: { build: () => klaassenBoard(3, 0, null, 29.521), ...SPIRAL, centre: klaassenSeed },
+  pentaspiral5: { build: () => pentaSpiralBoard(5, 4, 0, null, 10.85), ...SPIRAL },
+  pentaspiral6: { build: () => pentaSpiralBoard(6, 4, 0, null, 11.389), ...SPIRAL },
+  pentaspiral7: { build: () => pentaSpiralBoard(7, 3, 0, null, 12.097), ...SPIRAL },
   // Cropped, not whole: the rings are a course of bricks turning a quarter at
   // each remove from the middle, which is what the crop catches — a whole ring
   // block shrunk into the card is just a brick wall.
@@ -2239,9 +2267,13 @@ function patch(key: string): Preview | null {
   }
 
   const scale = Math.sqrt(
-    (PREVIEW_W * PREVIEW_H) / PREVIEW_TILES / meanTileArea(cells.map((c) => ({ pts: c.pts }))),
+    (PREVIEW_W * PREVIEW_H) /
+      (source.tiles ?? PREVIEW_TILES) /
+      meanTileArea(cells.map((c) => ({ pts: c.pts }))),
   );
-  const [cx, cy] = densest(mids, PREVIEW_W / 2 / scale, PREVIEW_H / 2 / scale);
+  const [cx, cy] = source.centre
+    ? source.centre(board)
+    : densest(mids, PREVIEW_W / 2 / scale, PREVIEW_H / 2 / scale);
   const place = (p: P): P => [
     PREVIEW_W / 2 + (p[0] - cx) * scale,
     PREVIEW_H / 2 + (p[1] - cy) * scale,
