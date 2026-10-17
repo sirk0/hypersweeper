@@ -156,7 +156,7 @@ describe("per-board shape classing", () => {
     // The geodesic sphere's triangles measure 0.85 (those stretched by the
     // projection) and 1.00, but both are a regular triangle as far as the
     // palette is concerned, so they must come out one colour rather than two.
-    for (const mode of ["projectivetri"]) {
+    for (const mode of ["spheretri", "projectivetri"]) {
       const triangles = [...classifyShapes(buildBoard(mode, "easy").polygons).values()].filter(
         (t) => t.sides === 3,
       );

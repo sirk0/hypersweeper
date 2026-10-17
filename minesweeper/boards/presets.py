@@ -64,6 +64,7 @@ from minesweeper.boards.solids import (
     gp21_board,
     icosahedron_board,
     octahedron_board,
+    sphere_triangle_board,
     stepped_bipyramid_board,
     stepped_pyramid_board,
     tetrahedron_board,
@@ -124,6 +125,7 @@ _JSON_BUILDERS = {
     "square_diamond_board": square_diamond_board,
     "c180_board": c180_board,
     "gp21_board": gp21_board,
+    "sphere_triangle_board": sphere_triangle_board,
     # the Archimedean solids cut into boards (boards/archimedean.py), duals of
     # their Catalan solids; (mine_count, frequency) like those. The three
     # icosahedral ones take frequency 0 as well, the solid uncut.

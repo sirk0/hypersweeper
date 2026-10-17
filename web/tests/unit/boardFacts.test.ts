@@ -102,10 +102,9 @@ describe("shape names", () => {
       "Regular pentagons 6",
       "Projected regular hexagons 75",
     ]);
-    // The geodesic sphere under the projective plane: only some of its
-    // triangles come out exact, and a class is only as regular as all of its
-    // cells.
-    expect(shapes("projectivetri")).toEqual(["Projected equilateral triangles 90"]);
+    // The geodesic sphere: twenty of its eighty triangles come out exact, and
+    // a class is only as regular as all of its cells.
+    expect(shapes("spheretri")).toEqual(["Projected equilateral triangles 80"]);
   });
 
   it("calls a hyperbolic tiling's tiles regular, as drawn in the disc", () => {

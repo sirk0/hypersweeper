@@ -1641,6 +1641,23 @@
         ]
       }
     },
+    "spheretri": {
+      "builder": "sphere_triangle_board",
+      "args": {
+        "easy": [
+          20,
+          2
+        ],
+        "medium": [
+          87,
+          4
+        ],
+        "hard": [
+          150,
+          5
+        ]
+      }
+    },
     "elongated": {
       "builder": "archimedean_board",
       "args": {

@@ -10044,5 +10044,43 @@
         "indistinguishable": 0
       }
     }
+  },
+  "spheretri": {
+    "builder": "sphere_triangle_board",
+    "args": {
+      "easy": {
+        "args": [
+          20,
+          2
+        ],
+        "cells": 80,
+        "score": 0.0124,
+        "distortionMean": 1.0084,
+        "distortionP90": 1.0112,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          29,
+          5
+        ],
+        "cells": 500,
+        "score": 0.0408,
+        "distortionMean": 1.0037,
+        "distortionP90": 1.019,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          23,
+          4
+        ],
+        "cells": 320,
+        "score": 10.6694,
+        "distortionMean": 1.0044,
+        "distortionP90": 1.0182,
+        "indistinguishable": 0
+      }
+    }
   }
 }

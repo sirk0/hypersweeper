@@ -201,6 +201,7 @@ from minesweeper.boards.solids import (  # noqa: F401
     cube_board,
     cube_frame_board,
     gp21_board,
+    sphere_triangle_board,
     stepped_bipyramid_board,
     tetrahedron_board,
     tetrahedron_frame_board,

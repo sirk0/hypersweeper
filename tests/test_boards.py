@@ -88,6 +88,7 @@ from minesweeper.boards import (
     solid_cube_board,
     spectre_board,
     sphere_board,
+    sphere_triangle_board,
     sphinx_board,
     square_board,
     square_diamond_board,
@@ -166,7 +167,7 @@ from minesweeper.boards.hyperbolic import (
     hyperbolic_positions,
 )
 from minesweeper.boards.presets import _WINDOWS, ARCH_PRESETS, window_for
-from minesweeper.boards.solids import _convex_board3d, _geodesic, _goldberg_board
+from minesweeper.boards.solids import _goldberg_board, icosahedron_board
 from minesweeper.boards.surfaces import TREFOIL_REACH, _trefoil_core
 
 # Template tilings split by symmetry type. Archimedean (uniform) tilings are
@@ -388,6 +389,17 @@ class TestCellCounts:
         assert sizes.count(5) == 12 and set(sizes) == {5, 6}
         assert _euler_characteristic(board) == 2
         assert all(len(board.adjacency[c]) == len(p) for c, p in board.polygons.items())
+
+    @pytest.mark.parametrize("frequency", range(1, 6))
+    def test_geodesic_sphere_is_the_icosahedron_drawn_round(self, frequency):
+        board = sphere_triangle_board(10, frequency)
+        flat = icosahedron_board(10, frequency)
+        assert len(board.adjacency) == 20 * frequency**2
+        assert all(len(p) == 3 for p in board.polygons.values())
+        # the same subdivision, so the same cells and the same neighbours
+        assert board.adjacency == flat.adjacency
+        assert all(abs(math.dist(p, (0, 0, 0)) - 1) < 1e-9
+                   for polygon in board.polygons.values() for p in polygon)
 
     @pytest.mark.parametrize("h,k", [(1, 1), (2, 2), (4, 1)])
     def test_class_iii_refuses_edge_centred_triangles(self, h, k):
@@ -2669,6 +2681,7 @@ class TestNeighborCounts:
             sphere_board(7),
             c180_board(10),
             gp21_board(10),
+            sphere_triangle_board(10),
             cube_board(4, 12),
             tetrahedron_board(8, 4),
             torus_board(12, 6, 9),
@@ -2678,7 +2691,7 @@ class TestNeighborCounts:
             for cell, polygon in board.polygons.items():
                 normal = newell_normal(polygon)
                 centroid = tuple(sum(c) / len(polygon) for c in zip(*polygon))
-                if board.mode in ("sphere", "c180", "gp21", "cube", "tetrahedron"):
+                if board.mode in ("sphere", "c180", "gp21", "spheretri", "cube", "tetrahedron"):
                     outward = centroid
                 else:
                     import math
@@ -5110,9 +5123,7 @@ class TestProjectivePlane:
         if builder is projective_board:
             return cube_board(frequency, 5)
         if builder is projective_triangle_board:
-            positions, triangles = _geodesic(frequency)
-            cells = {("t", n): list(t) for n, t in enumerate(triangles)}
-            return _convex_board3d("geodesic", cells, positions, 5)
+            return sphere_triangle_board(5, frequency)
         return _goldberg_board("goldberg", frequency, 5)
 
     @pytest.mark.parametrize("builder", BUILDERS)

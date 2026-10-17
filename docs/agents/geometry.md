@@ -43,7 +43,7 @@ Import order is a strict DAG; a module only imports from the ones above it.
 | `fractal.py` | The self-similar (fractal) boards: the sphinx, the chair, the Sierpinski carpet, the pentaflake and the Gosper island. One `_Substitution` record per tile — unit outline, the tiles filling the inflated copy, the inflation factor, lattice ops — and the shared inflation (`substitution_placements`) all five `*_board` builders run. The first two are rep-tiles (their children fill the tile); the carpet's and the pentaflake's leave holes, which is what makes them fractals with holes rather than shapes; the Gosper island's fill it with no hole at all and put the fractal in the *outline* instead. Four lattices are integer; the pentaflake's is ℤ[ζ10], since five-fold symmetry needs rank 4. The Gosper island's inflation is the one that is not a pure scaling: multiplication by 2 + ζ, a spiral similarity of √7 at 19.106°. |
 | `aperiodic.py` | Penrose's rhombi (P3) and his kites and darts (P2), Ammann–Beenker (squares and 45° rhombi, eight-fold), the Spectre (Tile(1,1), the chiral monotile), the phyllotactic spiral, Klaassen's spiral monotile and his three pentagonal spirals (5-, 6- and 7-fold, one convex pentagon each), each with exact-arithmetic vertex ids — ℤ[ζ5] for both Penrose boards and the spiral, ℤ[ζ8] for Ammann–Beenker, ℤ[ζ12] for the Spectre. The Spectre's ring is *dense* in the plane, so unlike Penrose's discrete lattice there is no lattice to snap a float vertex back to: its placements are carried as exact `(rotation, mirror, translation)` triples and no floating point enters the substitution at all. The spiral is the odd one out — no substitution, just ten 36° wedges of the tile's own translation lattice, the odd ones offset a step; nonperiodic because its five-fold centre forbids any translation. The **brick rings** are nonperiodic the same way — by symmetry rather than by a substitution — and are the plainest board here: 2x1 bricks on the integer square lattice in concentric square rings about a 2x2 core, ring k being the boundary of the 2k x 2k square with horizontal bricks along its rows and vertical ones up its sides. Every run is even, so every tile is a whole brick and only an even-sided square is tileable at all. A brick's corner lands in the middle of a neighbour's long side, so `_brick_outline` splits each edge at the lattice points that are genuinely some tile's corner — the 2D twin of `solids._split_at_lattice_points`, and *conditional*, unlike the fractal outlines, which carry a vertex at every step. |
 | `hyperbolic.py` | The regular {p,q} tilings of the hyperbolic plane, drawn in the Poincaré disc: {7,3} heptagons, {5,4} pentagons and {4,5} squares. Built combinatorially ring by ring with integer vertex ids, placed afterwards by disc isometries, edges drawn as geodesic arcs, trimmed by hyperbolic-distance shells. See "The hyperbolic boards" below. |
-| `solids.py` | Closed/convex and polycube 3D boards (the Goldberg polyhedra GP(f, 0) and GP(h, k), the geodesic subdivision `_geodesic` and its class III cousin `_geodesic_hk`, cube, the Platonic solids, frames, bipyramid), plus the shared `_wythoff_point` every uniform solid here and every Catalan solid next door is generated from. |
+| `solids.py` | Closed/convex and polycube 3D boards (the Goldberg polyhedra GP(f, 0) and GP(h, k), the geodesic icosahedron and its subdivision `_geodesic`, with its class III cousin `_geodesic_hk`, cube, the Platonic solids, frames, bipyramid), plus the shared `_wythoff_point` every uniform solid here and every Catalan solid next door is generated from. |
 | `catalan.py` | The thirteen Catalan solids, the duals of the Archimedean solids. One recipe for all of them: a Platonic base and one flag, the Wythoff generating point of its Schwarz triangle (`solids._wythoff_point` for the five non-chiral Conway operations, `_snub_point` for the chiral one), a Catalan vertex at `n / <w, n>` on each face axis — polar duality — and the base's flags grouped into faces by the operation. Faces are then subdivided (`solids._geodesic` for triangles, `_quad_grid` for quadrilaterals, a five-way fan first for pentagons), which is these boards' only size knob. `_tri_grid` is `_quad_grid`'s triangle twin, for the solids next door whose triangles meet squares. |
 | `archimedean.py` | Archimedean solids cut into boards — the cube group's cuboctahedron, truncated octahedron and snub cube, and the icosahedral rhombicosidodecahedron, truncated icosidodecahedron and snub dodecahedron — as the **polar duals of their Catalan solids**: `_archimedean_faces` turns `catalan._catalan_faces` inside out (each Catalan face's pole is a vertex, each Catalan vertex a face), so no Wythoff point is solved twice and every vertex id is a Catalan face key. Faces are cut by `catalan._tri_grid` and `_quad_grid`, which name a shared edge's points alike; the truncated octahedron's hexagons are first cut into three rhombi (`_split_hexagons`, by the pyritohedral `_th_spokes` rule), the icosahedral solids' big faces fanned into triangles (`_fan_faces`). See "The Archimedean solids" below. |
 | `surfaces.py` | Wrapping tilings onto surfaces: the three immersion points (`_torus_point`, `_cylinder_point`, `_mobius_point`), the shared `_assemble` tail, the nine simple `*_board` wrappers, and the Archimedean `arch_torus_board` / `arch_cylinder_board` / `arch_mobius_board`. Also `double_torus_board`, the one board here that is *not* wrapped from a rectangle: two overlapping square-tiled donuts cut apart along the plane between them and sewn back together, a connected sum rather than a seam gluing. And `projective_board` / `projective_triangle_board` / `projective_hex_board`, the real projective plane: a cubed sphere, a geodesic sphere or its Goldberg dual with antipodes glued, drawn as the whole sphere through `Board3D.faces`. |
@@ -834,17 +834,23 @@ GP(6,2) (522) at 1,500 games a mine count, and all three calibrate to within
 about a point of the classic hard win rate, a mine moving each by two to four
 points, so nothing but the cell count tells them apart.
 
+**The geodesic icosahedron** (`spheretri`, `sphere_triangle_board`) is the
+page's triangle board: `icosahedron_board`'s subdivision projected onto the
+sphere, so the same graph as the Platonic icosahedron at every frequency, and
+the same ladder -- 80 / 320 / 500 cells, `frequency` 2 / 4 / 5. It is kept for
+the drawing, not the game: one is the solid with its creases, the other the
+round sphere, and the menu is meant to offer every geometry. (Calibrated on
+its own, its mine counts land within a mine or three of the icosahedron's,
+which is the measurement's noise on one graph.)
+
 **What the Sphere page used to carry and why it does not.** It shipped seven
 boards of one fixed size each. `c80` (GP(2,0), 42 cells) was half an easy
-board with no rung below it, and is `c180` at `frequency=2`. The geodesic
-icosahedron `spheretri` was the Platonic `icosahedron` board's graph exactly
--- the same subdivision, projected rather than flat -- and at every frequency
-the two would have stayed one game. And the three uncut Archimedean solids
-(`snubdodec`, `rhombicosidodeca`, `truncicosidodeca`) were the graphs of the
-Archimedean page's own boards at `frequency=0`, which is now those boards' easy
-rung (see "The Archimedean solids"). All five were retired rather than kept
-alongside: a share link to one opens the menu (`link.ts`), and its best times
-stay in the record unshown (`bestTimes.ts`).
+board with no rung below it, and is `c180` at `frequency=2`. The three uncut
+Archimedean solids (`snubdodec`, `rhombicosidodeca`, `truncicosidodeca`) were
+the graphs of the Archimedean page's own boards at `frequency=0`, which is now
+those boards' easy rung (see "The Archimedean solids"). Those four were
+retired rather than kept alongside: a share link to one opens the menu
+(`link.ts`), and its best times stay in the record unshown (`bestTimes.ts`).
 
 ## The Catalan solids
 

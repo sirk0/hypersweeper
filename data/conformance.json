@@ -2379,6 +2379,35 @@
         "hasCellCycle": false
       }
     },
+    "spheretri": {
+      "easy": {
+        "cellCount": 80,
+        "mineCount": 20,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 120,
+        "vertexCount": 42,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 320,
+        "mineCount": 87,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 480,
+        "vertexCount": 162,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 500,
+        "mineCount": 150,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 750,
+        "vertexCount": 252,
+        "hasCellCycle": false
+      }
+    },
     "elongated": {
       "easy": {
         "cellCount": 85,

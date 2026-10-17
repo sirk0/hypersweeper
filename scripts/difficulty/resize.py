@@ -129,6 +129,10 @@ SPEC: dict[str, dict] = {
     "c180_board": dict(size=(1,), mine=0, shape=None, rigid=True),
     "gp21_board": dict(size=(1, 2), mine=0, shape=None, rigid=True,
                        grid="goldberg3"),
+    # The geodesic icosahedron: `icosahedron_board`'s subdivision projected
+    # onto the sphere, so the same one knob and 20 * f**2 cells; ``rigid`` for
+    # the same reason as the Goldberg spheres.
+    "sphere_triangle_board": dict(size=(1,), mine=0, shape=None, rigid=True),
     "cube_board": dict(size=(0,), mine=1, shape=None),
     # The three brick bonds laid on a cube: one knob, the blocks per face side.
     # ``rigid`` for the same reason the Catalan solids are -- every brick lies

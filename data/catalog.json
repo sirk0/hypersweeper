@@ -203,7 +203,8 @@
     "cube3d": "Volumetric",
     "hyperbolic73": "Heptagons {7,3}",
     "hyperbolic54": "Pentagons {5,4}",
-    "hyperbolic45": "Squares {4,5}"
+    "hyperbolic45": "Squares {4,5}",
+    "spheretri": "Geodesic icosahedron"
   },
   "modeInfo": {
     "ammannbeenker": {
@@ -1154,6 +1155,12 @@
       "surface": "solid",
       "family": "catalan"
     },
+    "spheretri": {
+      "label": "Geodesic icosahedron",
+      "tiling": "",
+      "surface": "solid",
+      "family": "sphere"
+    },
     "sphinx": {
       "label": "Sphinx",
       "tiling": "",
@@ -1642,7 +1649,8 @@
         "label": "Sphere",
         "modes": [
           "gp21",
-          "c180"
+          "c180",
+          "spheretri"
         ]
       },
       {

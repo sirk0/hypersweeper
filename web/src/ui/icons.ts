@@ -68,6 +68,7 @@ import {
   dodecahedronBoard,
   icosahedronBoard,
   octahedronBoard,
+  sphereTriangleBoard,
   steppedBipyramidBoard,
   steppedPyramidBoard,
   tetrahedronBoard,
@@ -664,6 +665,7 @@ const SOLID_BUILDERS: Record<string, () => Board3D> = {
   sphere: () => sphereBoard(0),
   gp21: () => gp21Board(0),
   c180: () => c180Board(0),
+  spheretri: () => sphereTriangleBoard(0),
   tetraframe: () => tetrahedronFrameBoard(0, 2),
   // The three solids the small icon draws as a symbol rather than a board — a
   // fanned triangle and two isometric boxes, which is what fits in 38px. A card
@@ -748,6 +750,7 @@ const SOLID_VIEW: Record<string, [number, number] | [number, number, number]> = 
   sphere: [-18, 12],
   gp21: [-20, 10],
   c180: [-20, 10],
+  spheretri: [-10, 18],
   // Seen from just above the equator: from any higher the widest terrace hides
   // the whole lower pyramid, and the icon stops being a bipyramid at all.
   steppedbipyramid: [-85, 0, 28],
@@ -1148,7 +1151,7 @@ const ALIASES: Record<string, string> = {
   random: "start", // the pygame menu's "Random" picker entry
 };
 
-const SPHERES = ["gp21", "c180"];
+const SPHERES = ["gp21", "c180", "spheretri"];
 
 /** What a board's cells actually are, for the icons whose art is not a drawing
  * of one: a subdivided outer polygon (the Laves triangle tilings), an
@@ -1182,6 +1185,7 @@ const ICON_TONES: Record<string, ShapeTone> = {
   sphere: { sides: 5, regularity: 0.95 },
   gp21: { sides: 6, regularity: 0.95 },
   c180: { sides: 6, regularity: 0.95 },
+  spheretri: { sides: 3, regularity: 1 },
 };
 
 // -- achievement badges ----------------------------------------------------

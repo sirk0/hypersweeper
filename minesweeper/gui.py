@@ -1520,6 +1520,10 @@ def _render_icon(key: str) -> pygame.Surface:
         for pt in list(h) + mids:
             pygame.draw.line(s, ICON_BLUE_DARK, (c, c), pt, 3)
         _icon_gloss(s, pygame.Rect(d * 0.1, d * 0.08, d * 0.8, d * 0.4))
+    elif key == "spheretri":
+        fill_circle(s, int(c), int(c), int(d * 0.44), ICON_BLUE)
+        pygame.draw.circle(s, ICON_BLUE_DARK, (int(c), int(c)), int(d * 0.44), 4)
+        _icon_badge(s, c, c, d * 0.2, "tri")
     elif key in ("sphere", "gp21", "c180"):
         fill_circle(s, int(c), int(c), int(d * 0.44), ICON_BLUE)
         pygame.draw.circle(s, ICON_BLUE_DARK, (int(c), int(c)), int(d * 0.44), 4)

@@ -3,6 +3,8 @@ import {
   c180Board,
   gp21Board,
   cubeBoard,
+  icosahedronBoard,
+  sphereTriangleBoard,
   cubeFrameBoard,
   steppedBipyramidBoard,
   tetrahedronBoard,
@@ -103,6 +105,16 @@ describe("solids", () => {
     // a lattice triangle centred on an icosahedron edge is refused
     for (const [h, k] of [[1, 1], [2, 2], [4, 1]] as const) {
       expect(() => gp21Board(5, h, k)).toThrow();
+    }
+  });
+
+  it("the geodesic sphere is the icosahedron board drawn round, at every frequency", () => {
+    for (let f = 1; f <= 5; f++) {
+      const board = sphereTriangleBoard(10, f);
+      const flat = icosahedronBoard(10, f);
+      expect(board.polygons.size).toBe(20 * f * f);
+      expect(sizes(board).every((s) => s === 3)).toBe(true);
+      expect(board.adjacency).toEqual(flat.adjacency);
     }
   });
 

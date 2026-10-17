@@ -297,6 +297,16 @@ def gp21_board(mine_count: int, h: int = 2, k: int = 1) -> Board3D:
     return _goldberg_dual("gp21", *_geodesic_hk(h, k), mine_count)
 
 
+def sphere_triangle_board(mine_count: int, frequency: int = 2) -> Board3D:
+    """A sphere tiled with triangles: a geodesic icosahedron with
+    ``20 * frequency**2`` triangular cells -- `icosahedron_board`'s
+    subdivision projected onto the unit sphere, so the same graph drawn
+    round. ``frequency`` is the board's size knob."""
+    positions, triangles = _geodesic(frequency)
+    cells = {("t", n): list(triangle) for n, triangle in enumerate(triangles)}
+    return _convex_board3d("spheretri", cells, positions, mine_count)
+
+
 def _mirror_normals(v_dir: Vec3, e_dir: Vec3, f_dir: Vec3) -> dict[str, Vec3]:
     """The three mirror planes of a flag's Schwarz triangle, as inward unit
     normals. The mirror *opposite* a corner is the plane through the other two.
@@ -703,8 +713,8 @@ def octahedron_board(mine_count: int, frequency: int = 3) -> Board3D:
 def icosahedron_board(mine_count: int, frequency: int = 2) -> Board3D:
     """A regular icosahedron tiled with triangles: each of the 20 faces
     subdivided into ``frequency**2`` cells, kept flat on the faces --
-    unlike a geodesic sphere, which projects the same subdivision onto the
-    unit sphere, this keeps the solid's flat facets (and their
+    unlike `sphere_triangle_board`, which projects the same subdivision
+    onto the unit sphere, this keeps the solid's flat facets (and their
     creased edges) intact."""
     vertices, faces = _icosahedron()
     positions, triangles = _geodesic(frequency, vertices, faces, project=False)

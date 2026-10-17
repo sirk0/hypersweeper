@@ -64,11 +64,12 @@ Pick a surface, then a tiling:
   **Fractals** and **Hyperbolic**; every periodic family bar 2-uniform and the last five also wraps the
   cylinder and the torus below, and — unless the tiling is chiral — the
   Möbius strip and the Klein bottle too
-- **Sphere (3D)** — two Goldberg polyhedra rounded onto the sphere, growing
-  with the difficulty: GP(n,0) (12 pentagons among 80, 240 and 480 hexagons)
-  and the chiral GP(h,k) (60, 270 and 480 hexagons, twisted off the
-  icosahedron's edges). (A sphere cannot be tiled with hexagons alone —
-  Euler's formula forces 12 pentagons in.)
+- **Sphere (3D)** — boards rounded onto the sphere, growing with the
+  difficulty: two Goldberg polyhedra, GP(n,0) (12 pentagons among 80, 240 and
+  480 hexagons) and the chiral GP(h,k) (60, 270 and 480 hexagons, twisted off
+  the icosahedron's edges), and a geodesic icosahedron (80, 320 and 500
+  triangles — the Platonic icosahedron's cells, drawn round). (A sphere cannot
+  be tiled with hexagons alone — Euler's formula forces 12 pentagons in.)
 - **Platonic solids (3D)** — the five regular solids, each tiled with
   triangles or squares, flat and creased at the edges rather than rounded
   onto a sphere: a tetrahedron (4 faces), a cube (6, squares), an octahedron

@@ -444,6 +444,17 @@ export function gp21Board(mineCount: number, h = 2, k = 1): Board3D {
   return goldbergDual("gp21", positions, triangles, mineCount);
 }
 
+/** A sphere tiled with triangles: a geodesic icosahedron with
+ * `20 * frequency**2` triangular cells — `icosahedronBoard`'s subdivision
+ * projected onto the unit sphere, so the same graph drawn round. `frequency`
+ * is the board's size knob. */
+export function sphereTriangleBoard(mineCount: number, frequency = 2): Board3D {
+  const { positions, triangles } = geodesic(frequency);
+  const cells: Cells = new Map();
+  triangles.forEach((triangle, n) => cells.set(cid("t", n), [...triangle]));
+  return bentRegular(convexBoard3d("spheretri", cells, positions, mineCount));
+}
+
 /** One of a flag's three mirrors, named by the corner opposite it. */
 export type Mirror = "v" | "e" | "f";
 
@@ -962,9 +973,10 @@ export function octahedronBoard(mineCount: number, frequency = 3): Board3D {
 }
 
 /** A regular icosahedron tiled with triangles: each of the 20 faces
- * subdivided into `frequency**2` cells, kept flat on the faces — unlike a
- * geodesic sphere, which projects the same subdivision onto the unit sphere,
- * this keeps the solid's flat facets (and their creased edges) intact. */
+ * subdivided into `frequency**2` cells, kept flat on the faces — unlike
+ * `sphereTriangleBoard`, which projects the same subdivision onto the unit
+ * sphere, this keeps the solid's flat facets (and their creased edges)
+ * intact. */
 export function icosahedronBoard(mineCount: number, frequency = 2): Board3D {
   const { positions, triangles } = geodesic(frequency, icosahedron(), false);
   const cells: Cells = new Map();
