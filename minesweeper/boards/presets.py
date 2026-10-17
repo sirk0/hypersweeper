@@ -453,12 +453,63 @@ ARCH_PRESETS = {
         "cylinder": {"easy": (6, 1 + 7 / 8, 14), "medium": (10, 3 + 1 / 8, 42), "hard": (14, 4 + 3 / 8, 105)},
     },
     # The 2-uniform family is flat-only for now (_FLAT_ONLY_FAMILIES in
-    # catalog.py), so its three carry a "flat" row alone.
+    # catalog.py), so its twenty carry a "flat" row alone.
+    "studdedtri": {
+        "flat": {"easy": (3, 1, 10, 58.182), "medium": (4, 2, 29, 40.0), "hard": (5, 3, 81, 31.373)},
+    },
+    "studdedtri2": {
+        "flat": {"easy": (2, 1, 10, 66.564), "medium": (3, 2, 42, 44.376), "hard": (4, 3, 109, 33.282)},
+    },
+    "elongated2": {
+        "flat": {"easy": (7, 2, 7, 68.571), "medium": (11, 4, 30, 43.333), "hard": (15, 6, 85, 31.875)},
+    },
+    "elongated3": {
+        "flat": {"easy": (5, 1, 9, 93.333), "medium": (9, 2, 48, 52.363), "hard": (15, 2, 99, 31.875)},
+    },
     "trirhombitrihex": {
         "flat": {"easy": (3, 1, 8, 52.196), "medium": (4, 3, 45, 40.241), "hard": (6, 3, 86, 27.598)},
     },
+    "tritrunctrihex": {
+        "flat": {"easy": (2, 1, 4, 50.718), "medium": (4, 2, 13, 25.359), "hard": (5, 3, 34, 20.287)},
+    },
+    "fannedhex": {
+        "flat": {"easy": (2, 2, 5, 73.333), "medium": (5, 3, 10, 32.0), "hard": (8, 4, 32, 20.22)},
+    },
+    "hexbands": {
+        "flat": {"easy": (4, 2, 5, 66.511), "medium": (9, 3, 20, 30.792), "hard": (12, 4, 57, 23.094)},
+    },
+    "snubelongated": {
+        "flat": {"easy": (3, 2, 10, 79.865), "medium": (7, 3, 38, 35.495), "hard": (9, 5, 112, 27.607)},
+    },
+    "snubelongated2": {
+        "flat": {"easy": (1, 2, 9, 92.588), "medium": (2, 3, 34, 49.102), "hard": (3, 4, 93, 33.256)},
+    },
+    "dissectedtrunchex2": {
+        "flat": {"easy": (1, 2, 6, 74.256), "medium": (2, 4, 28, 37.128), "hard": (3, 5, 71, 24.752)},
+    },
+    "squarerows2": {
+        "flat": {"easy": (9, 1, 7, 54.0), "medium": (14, 2, 31, 34.286), "hard": (18, 3, 78, 26.593)},
+    },
+    "squarerows3": {
+        "flat": {"easy": (8, 1, 11, 60.0), "medium": (13, 2, 48, 36.735), "hard": (20, 2, 90, 24.06)},
+    },
     "dissectedtrunchex": {
         "flat": {"easy": (2, 1, 6, 50.718), "medium": (4, 2, 30, 28.355), "hard": (5, 3, 74, 23.233)},
+    },
+    "hexrows": {
+        "flat": {"easy": (6, 4, 6, 46.188), "medium": (10, 8, 30, 27.713), "hard": (14, 11, 70, 19.795)},
+    },
+    "dodecasquare": {
+        "flat": {"easy": (3, 4, 6, 34.308), "medium": (7, 6, 16, 18.374), "hard": (9, 8, 37, 14.291)},
+    },
+    "hexrings": {
+        "flat": {"easy": (2, 1, 6, 50.718), "medium": (3, 2, 24, 32.768), "hard": (4, 3, 73, 24.874)},
+    },
+    "squaretrihex": {
+        "flat": {"easy": (4, 3, 6, 64.0), "medium": (8, 6, 39, 30.0), "hard": (11, 8, 91, 21.818)},
+    },
+    "squaretrihex2": {
+        "flat": {"easy": (3, 2, 7, 72.0), "medium": (8, 3, 37, 30.0), "hard": (11, 4, 96, 21.818)},
     },
     "dodecarhombitrihex": {
         "flat": {"easy": (3, 1, 6, 23.852), "medium": (5, 2, 21, 15.458), "hard": (6, 3, 53, 13.145)},

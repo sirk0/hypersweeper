@@ -1487,9 +1487,9 @@ def _durer_template() -> _ArchTemplate:
 #
 # Edge-to-edge tilings by regular polygons whose vertices fall into exactly two
 # classes under the tiling's symmetries -- one step past the uniform tilings
-# above, which have one. There are twenty; the three here are each a uniform
-# tiling with some of its tiles cut up or merged, so each factory borrows that
-# tiling's polygons:
+# above, which have one. There are twenty; the first three here are each a
+# uniform tiling with some of its tiles cut up or merged, so each factory
+# borrows that tiling's polygons (the other seventeen follow them):
 #
 #   3^6; 3^2.4.3.4       3.4.6.4 with every hexagon cut into six triangles
 #   3^2.4.3.4; 3.4.6.4   3.12.12 with every dodecagon cut into the 3.4.6.4
@@ -1499,8 +1499,8 @@ def _durer_template() -> _ArchTemplate:
 #                        of squares and triangles into a dodecagon
 #
 # All three are p6m, so their windows are symmetric every way a hexagon is.
-# They ship on the plane only for now -- no cut is chosen and no surface
-# builder wraps them (_FLAT_ONLY_FAMILIES in catalog.py).
+# The family ships on the plane only for now -- no cut is chosen and no surface
+# builder wraps it (_FLAT_ONLY_FAMILIES in catalog.py).
 
 
 def _fan(polygon):
@@ -1593,6 +1593,289 @@ def _dodecarhombitrihex_template() -> _ArchTemplate:
         width, height, merged=lambda m, n: m % 2 == 0 and n % 2 == 0,
         reach=range(-5, 7))
     return _template((3, 4, 6, 12), width, height, polygons)
+
+
+# -- the other seventeen, from one translation cell ----------------------------
+#
+# The rest of the twenty are not one uniform tiling with a simple cut or merge,
+# so they are written down from a single translation cell instead -- the cells
+# below came out of a search over tori for every edge-to-edge tiling by
+# triangles, squares, hexagons and dodecagons whose vertices fall into exactly
+# two classes, which finds the twenty and no more. Each is:
+#
+#   * ``v1``, ``v2``: the translation lattice, each vector a walk of unit steps
+#     (``_steps``; step k heads 30k degrees, every edge here runs one of those
+#     twelve ways), so its arithmetic is the tiling's own;
+#   * ``rect``: two lattice vectors at right angles, as integer combinations of
+#     ``v1`` and ``v2`` -- the rectangle the domain is, the first along x;
+#   * ``tiles``: one tile per translation class, as ``(sides, corner, heading)``
+#     -- the unit-edge regular polygon walked counterclockwise from the corner
+#     ``_steps(corner)`` with its first edge heading 30*heading degrees;
+#   * ``centre``: the window centre -- a tile (its index, for its centroid) or
+#     a point (a tuple of walks, for their mean). It is a half-turn centre on
+#     one of the tiling's mirrors where it has any, which is what lets
+#     archimedean_board's window come out symmetric, and the domain is laid
+#     out round it, so it is the template's (0, 0); when the tiling has a
+#     mirror the rectangle runs along one, so y = 0 is a mirror line and
+#     ``mirrored`` holds. Most take the highest-order such centre. fannedhex
+#     and dodecasquare take an edge instead: round their six- and four-fold
+#     centres, every window near the easy size leaves cells on its rim with an
+#     identical twin (metrics.indistinguishable_cells), so the size search
+#     could only answer with a sliver of a board.
+#
+# Where two tilings share both vertex types the label tells them apart with
+# (1) and (2): (1) is the one with the smaller cell -- fewer tiles to a period
+# -- and for 3.4^2.6; 3.6.3.6, whose two have five apiece, the one whose cell
+# is a rectangle (pmm) rather than centred (cmm). TestTwoUniform checks every
+# one: the two vertex types, regular unit-edge tiles, and that no two of the
+# twenty are the same tiling.
+
+
+def _steps(walk):
+    """The point a walk of unit steps reaches from the origin, step k heading
+    30k degrees."""
+    return (sum(math.cos(math.radians(30 * k)) for k in walk),
+            sum(math.sin(math.radians(30 * k)) for k in walk))
+
+
+def _unit_polygon(sides, corner, heading):
+    """The regular polygon of unit edge with a corner at ``corner``, walked
+    counterclockwise from there with its first edge heading 30*heading
+    degrees."""
+    x, y = corner
+    out = []
+    for i in range(sides):
+        out.append((x, y))
+        angle = math.radians(30 * heading + 360 * i / sides)
+        x, y = x + math.cos(angle), y + math.sin(angle)
+    return out
+
+
+_SIDE_NAMES = {3: "tri", 4: "sq", 6: "hex", 12: "dod"}
+
+
+def _cell_template(config, v1, v2, rect, tiles, centre, mirrored=True):
+    """A 2-uniform tiling's template from one translation cell -- see the
+    comment above for what each argument is."""
+    a, b = _steps(v1), _steps(v2)
+    (i1, j1), (i2, j2) = rect
+    along = (i1 * a[0] + j1 * b[0], i1 * a[1] + j1 * b[1])
+    across = (i2 * a[0] + j2 * b[0], i2 * a[1] + j2 * b[1])
+    width, height = math.hypot(*along), math.hypot(*across)
+    polygons = [(_SIDE_NAMES[sides], _unit_polygon(sides, _steps(walk), heading))
+                for sides, walk, heading in tiles]
+    points = (polygons[centre][1] if isinstance(centre, int)
+              else [_steps(walk) for walk in centre])
+    ox = sum(x for x, _ in points) / len(points)
+    oy = sum(y for _, y in points) / len(points)
+    polygons = [(name, [(x - ox, y - oy) for x, y in polygon])
+                for name, polygon in polygons]
+    turn = -math.degrees(math.atan2(along[1], along[0]))
+    return _template(config, width, height,
+                     _periodic_domain(a, b, width, height, polygons, turn),
+                     mirrored=mirrored, centre=(0.0, 0.0))
+
+
+def _studdedtri_template() -> _ArchTemplate:
+    """[3^6; 3^4.6] (1), p6m: the triangular tiling with a hexagon in place of
+    six triangles at every point of a lattice three edges apart. The hexagons
+    never touch -- each is ringed by triangles, its corners 3^4.6 -- and the two
+    vertices a cell holds that touch no hexagon are 3^6."""
+    return _cell_template(
+        (3, 6), (8, 8, 8), (10, 10, 10), ((-1, 1), (-1, -1)), [
+        (6, (0,), 0), (3, (), 2), (3, (), 4), (3, (), 8), (3, (), 10),
+        (3, (), 0), (3, (), 6), (3, (10,), 0), (3, (4,), 0), (3, (6,), 8),
+        (3, (10,), 10), (3, (0,), 10), (3, (2,), 2),
+    ], centre=0)
+
+
+def _studdedtri2_template() -> _ArchTemplate:
+    """[3^6; 3^4.6] (2), p6: the same with the hexagons sqrt(13) edges apart, on
+    a lattice turned off the triangle rows, so the tiling is chiral and has no
+    mirror. (Snub hexagonal is the sqrt(7) one, close enough to leave no 3^6
+    vertex at all.)"""
+    return _cell_template(
+        (3, 6), (6, 8, 8, 8), (8, 10, 10, 10), ((-1, 0), (1, -2)), [
+        (6, (10,), 6), (3, (), 2), (3, (), 4), (3, (), 8), (3, (), 10),
+        (3, (), 0), (3, (), 6), (3, (10,), 0), (3, (0,), 2), (3, (4,), 0),
+        (3, (4,), 6), (3, (8,), 4), (3, (10,), 10), (3, (0,), 10), (3, (0,), 0),
+        (3, (2,), 0), (3, (2,), 2), (3, (8,), 6), (3, (6,), 4), (3, (6,), 6),
+        (3, (2, 4), 0),
+    ], centre=0, mirrored=False)
+
+
+def _elongated2_template() -> _ArchTemplate:
+    """[3^6; 3^3.4^2] (1), pmm: elongated triangular with two courses of
+    triangles between the square courses instead of one. The line between the
+    two triangle courses is 3^6, and the square courses line up, so the repeat
+    is one square wide."""
+    return _cell_template(
+        (3, 4), (0,), (8, 9, 10), ((1, 0), (0, -1)), [
+        (4, (4,), 0), (3, (), 4), (3, (), 2), (3, (), 8), (3, (), 6),
+    ], centre=((),))
+
+
+def _elongated3_template() -> _ArchTemplate:
+    """[3^6; 3^3.4^2] (2), cmm: three courses of triangles between the square
+    courses. Both lines inside a band are 3^6 -- mirror images of each other --
+    and each square course sits half a square along from the last."""
+    return _cell_template(
+        (3, 4), (0,), (8, 8, 9, 10), ((1, 0), (-1, -2)), [
+        (4, (10,), 6), (3, (), 4), (3, (), 2), (3, (), 8), (3, (), 6),
+        (3, (4,), 0), (3, (4,), 2),
+    ], centre=0)
+
+
+def _tritrunctrihex_template() -> _ArchTemplate:
+    """[3^6; 3^2.4.12], p6m: truncated trihexagonal (4.6.12) with every
+    hexagon cut into six triangles. A hexagon's centre becomes 3^6 and each of
+    its corners, 4.6.12 before, 4.3.3.12."""
+    return _cell_template(
+        (3, 4, 12), (7, 8, 8, 8, 9), (9, 10, 10, 10, 11), ((-1, 1), (-1, -1)), [
+        (12, (4,), 3), (4, (10,), 11), (4, (4,), 0), (4, (6,), 7), (3, (), 2),
+        (3, (), 4), (3, (), 8), (3, (), 10), (3, (), 0), (3, (), 6),
+        (3, (10, 11), 0), (3, (3, 4), 0), (3, (6, 7), 8), (3, (10, 11), 10),
+        (3, (0, 11), 10), (3, (2, 3), 2),
+    ], centre=0)
+
+
+def _fannedhex_template() -> _ArchTemplate:
+    """[3^6; 3^2.6^2], p6m: hexagonal with one hexagon in three cut into six
+    triangles -- the ones on the sqrt(3)-coarser lattice, so no two cut ones
+    touch and every corner keeps two hexagons and gains two triangles."""
+    return _cell_template(
+        (3, 6), (8, 8, 8), (10, 10, 10), ((-1, 1), (-1, -1)), [
+        (6, (10,), 10), (6, (0,), 0), (3, (), 2), (3, (), 4), (3, (), 8),
+        (3, (), 10), (3, (), 0), (3, (), 6),
+    ], centre=((0,), (0, 0)))
+
+
+def _hexbands_template() -> _ArchTemplate:
+    """[3^4.6; 3^2.6^2], cmm: rows of hexagons, each sharing an edge with the
+    next, with four triangles to a hexagon filling the zigzag between rows.
+    Where two hexagons meet is 3^2.6^2; a hexagon's top and bottom corners are
+    3^4.6."""
+    return _cell_template(
+        (3, 6), (1, 11), (7, 9, 9), ((1, 0), (-1, -2)), [
+        (6, (), 7), (3, (), 3), (3, (), 5), (3, (), 11), (3, (), 1),
+    ], centre=0)
+
+
+def _snubelongated_template() -> _ArchTemplate:
+    """[3^3.4^2; 3^2.4.3.4] (1), pgg: every square in an edge-sharing pair among
+    the triangles, the pairs lying two ways a twelfth of a turn apart. The two
+    ends of a pair's shared edge are 3^3.4^2, every other corner 3^2.4.3.4.
+    Glides, but no mirror."""
+    return _cell_template(
+        (3, 4), (7, 8), (10, 10, 11, 11), ((-1, 0), (0, -1)), [
+        (4, (), 10), (4, (), 1), (4, (4,), 5), (4, (10,), 8), (3, (), 4),
+        (3, (), 8), (3, (), 6), (3, (10,), 6), (3, (4,), 1), (3, (10,), 11),
+        (3, (4,), 3), (3, (1, 10), 9),
+    ], centre=((1,), ()), mirrored=False)
+
+
+def _snubelongated2_template() -> _ArchTemplate:
+    """[3^3.4^2; 3^2.4.3.4] (2), p4g: the same two vertex types in snub
+    square's four-fold arrangement, some squares paired along an edge and some
+    alone."""
+    return _cell_template(
+        (3, 4), (6, 7, 8, 9), (0, 9, 10, 11), ((-1, 1), (-1, -1)), [
+        (4, (), 9), (4, (), 0), (4, (5,), 1), (4, (9,), 5), (4, (5,), 6),
+        (4, (9, 10), 6), (3, (), 3), (3, (), 5), (3, (), 7), (3, (9,), 10),
+        (3, (0,), 9), (3, (0,), 1), (3, (3,), 0), (3, (0,), 11), (3, (3,), 2),
+        (3, (5,), 4), (3, (9,), 8), (3, (7,), 6),
+    ], centre=((0,), ()))
+
+
+def _dissectedtrunchex2_template() -> _ArchTemplate:
+    """[3^3.4^2; 3.4.6.4], p6m: dissectedtrunchex with the squares the
+    other way round -- each dodecagon of 3.12.12 cut into a hexagon, six
+    squares and six triangles, the squares now on the edges it shares with
+    another dodecagon. Two squares meet across each of those edges, and their
+    corners read 3^3.4^2."""
+    return _cell_template(
+        (3, 4, 6), (7, 8, 8, 9), (9, 10, 10, 11), ((-2, 1), (0, -1)), [
+        (6, (4,), 1), (4, (), 10), (4, (), 1), (4, (4,), 5), (4, (10,), 6),
+        (4, (6,), 5), (4, (8,), 6), (3, (), 4), (3, (), 8), (3, (), 6),
+        (3, (6,), 8), (3, (1,), 10), (3, (1,), 2), (3, (1,), 0), (3, (4, 5), 6),
+    ], centre=0)
+
+
+def _squarerows2_template() -> _ArchTemplate:
+    """[3^3.4^2; 4^4] (1), cmm: elongated triangular with two courses of
+    squares between the triangle courses instead of one. The line between the
+    two square courses is 4^4, and each triangle course moves the squares on
+    by half a square."""
+    return _cell_template(
+        (3, 4), (0,), (8, 9, 9), ((1, 0), (-1, -2)), [
+        (4, (), 3), (4, (10,), 6), (3, (), 8), (3, (), 6),
+    ], centre=((3,),))
+
+
+def _squarerows3_template() -> _ArchTemplate:
+    """[3^3.4^2; 4^4] (2), cmm: three courses of squares between the triangle
+    courses. Both lines inside a band are 4^4, mirror images of each other."""
+    return _cell_template(
+        (3, 4), (0,), (8, 9, 9, 9), ((1, 0), (-1, -2)), [
+        (4, (), 3), (4, (10,), 6), (4, (3,), 3), (3, (), 10), (3, (), 8),
+    ], centre=2)
+
+
+def _hexrows_template() -> _ArchTemplate:
+    """[3^2.6^2; 3.6.3.6], pmm: rows of hexagons, each sharing an edge with the
+    next, close enough that one row's corners touch the next row's, leaving a
+    bow tie of triangles in each gap. Where two hexagons in a row meet is
+    3^2.6^2; a hexagon's top and bottom corners are 3.6.3.6."""
+    return _cell_template(
+        (3, 6), (1, 11), (9, 9), ((1, 0), (0, -1)), [
+        (6, (), 5), (3, (), 3), (3, (), 1),
+    ], centre=((), (3,)))
+
+
+def _dodecasquare_template() -> _ArchTemplate:
+    """[3.4.3.12; 3.12^2], p4m: dodecagons on a square lattice, each sharing an
+    edge with its four neighbours, and in each gap between four of them a
+    square with a triangle on every side. A dodecagon's corners where two
+    dodecagons meet are 3.12^2, the ones beside a gap 3.4.3.12."""
+    return _cell_template(
+        (3, 4, 12), (8, 9, 9, 10), (0, 0, 1, 11), ((0, 1), (-1, 0)), [
+        (12, (), 5), (4, (), 0), (3, (), 3), (3, (), 10), (3, (0,), 1),
+        (3, (3,), 0),
+    ], centre=((2, 3), (2, 3, 3)))
+
+
+def _hexrings_template() -> _ArchTemplate:
+    """[3.4^2.6; 3.4.6.4], p6m: hexagons, squares and triangles, as
+    rhombitrihexagonal has, but with the squares in rows of three laid edge to
+    edge. Where two squares of a row meet is 3.4^2.6, every other corner
+    3.4.6.4."""
+    return _cell_template(
+        (3, 4, 6), (7, 8, 8, 8, 9), (0, 8, 9, 10, 10, 11), ((-1, 1), (-1, -1)), [
+        (6, (), 4), (6, (11,), 8), (6, (2,), 11), (4, (), 11), (4, (), 8),
+        (4, (4,), 0), (4, (8,), 8), (4, (4,), 3), (4, (2, 11), 10),
+        (4, (6, 8), 4), (4, (6, 8), 7), (4, (4, 6), 3), (3, (), 2),
+        (3, (11,), 0), (3, (8,), 6), (3, (8, 11), 8), (3, (4, 6), 6),
+        (3, (3, 4), 0),
+    ], centre=2)
+
+
+def _squaretrihex_template() -> _ArchTemplate:
+    """[3.4^2.6; 3.6.3.6] (1), pmm: courses of squares between bands of
+    trihexagonal one hexagon deep, the hexagons of every band in line with the
+    next band's. The band's edges are 3.4^2.6, its middle 3.6.3.6."""
+    return _cell_template(
+        (3, 4, 6), (0, 2, 10), (8, 9, 10), ((1, 0), (0, -1)), [
+        (6, (), 4), (4, (4,), 0), (4, (4,), 3), (3, (), 2), (3, (), 8),
+    ], centre=((),))
+
+
+def _squaretrihex2_template() -> _ArchTemplate:
+    """[3.4^2.6; 3.6.3.6] (2), cmm: the same with each band half a hexagon
+    along from the last."""
+    return _cell_template(
+        (3, 4, 6), (0, 2, 10), (8, 8, 9), ((1, 0), (-1, -2)), [
+        (6, (), 4), (4, (10,), 6), (4, (4,), 0), (3, (), 2), (3, (), 8),
+    ], centre=((),))
 
 
 @dataclass(frozen=True)
@@ -1709,14 +1992,66 @@ ARCH_TILINGS = (
     # the 2-uniform tilings: regular polygons edge to edge, like the uniform
     # ones, but with two kinds of vertex. They have no common names, so the
     # label is the pair of vertex configurations -- which is what they are
-    # called -- and config is just the tile side counts. Listed in the order
-    # of their first vertex configuration, as the uniform block is.
+    # called -- with (1) and (2) where two share both (see the comment above
+    # _steps) -- and config is just the tile side counts. Listed in the order
+    # of their vertex configurations, as the uniform block is.
+    ArchTiling("studdedtri", "3⁶; 3⁴.6 (1)", (3, 6), 6,
+               _studdedtri_template, family="2-uniform",
+               vertex_types=((3, 3, 3, 3, 3, 3), (3, 3, 3, 3, 6))),
+    ArchTiling("studdedtri2", "3⁶; 3⁴.6 (2)", (3, 6), 6,
+               _studdedtri2_template, family="2-uniform",
+               vertex_types=((3, 3, 3, 3, 3, 3), (3, 3, 3, 3, 6))),
+    ArchTiling("elongated2", "3⁶; 3³.4² (1)", (3, 4), 8,
+               _elongated2_template, family="2-uniform",
+               vertex_types=((3, 3, 3, 3, 3, 3), (3, 3, 3, 4, 4))),
+    ArchTiling("elongated3", "3⁶; 3³.4² (2)", (3, 4), 8,
+               _elongated3_template, family="2-uniform",
+               vertex_types=((3, 3, 3, 3, 3, 3), (3, 3, 3, 4, 4))),
     ArchTiling("trirhombitrihex", "3⁶; 3².4.3.4", (3, 4), 12,
                _trirhombitrihex_template, family="2-uniform",
                vertex_types=((3, 3, 3, 3, 3, 3), (3, 3, 4, 3, 4))),
+    ArchTiling("tritrunctrihex", "3⁶; 3².4.12", (3, 4, 12), 12,
+               _tritrunctrihex_template, family="2-uniform",
+               vertex_types=((3, 3, 3, 3, 3, 3), (3, 3, 4, 12))),
+    ArchTiling("fannedhex", "3⁶; 3².6²", (3, 6), 6,
+               _fannedhex_template, family="2-uniform",
+               vertex_types=((3, 3, 3, 3, 3, 3), (3, 3, 6, 6))),
+    ArchTiling("hexbands", "3⁴.6; 3².6²", (3, 6), 6,
+               _hexbands_template, family="2-uniform",
+               vertex_types=((3, 3, 3, 3, 6), (3, 3, 6, 6))),
+    ArchTiling("snubelongated", "3³.4²; 3².4.3.4 (1)", (3, 4), 12,
+               _snubelongated_template, family="2-uniform",
+               vertex_types=((3, 3, 3, 4, 4), (3, 3, 4, 3, 4))),
+    ArchTiling("snubelongated2", "3³.4²; 3².4.3.4 (2)", (3, 4), 12,
+               _snubelongated2_template, family="2-uniform",
+               vertex_types=((3, 3, 3, 4, 4), (3, 3, 4, 3, 4))),
+    ArchTiling("dissectedtrunchex2", "3³.4²; 3.4.6.4", (3, 4, 6), 12,
+               _dissectedtrunchex2_template, family="2-uniform",
+               vertex_types=((3, 3, 3, 4, 4), (3, 4, 6, 4))),
+    ArchTiling("squarerows2", "3³.4²; 4⁴ (1)", (3, 4), 8,
+               _squarerows2_template, family="2-uniform",
+               vertex_types=((3, 3, 3, 4, 4), (4, 4, 4, 4))),
+    ArchTiling("squarerows3", "3³.4²; 4⁴ (2)", (3, 4), 8,
+               _squarerows3_template, family="2-uniform",
+               vertex_types=((3, 3, 3, 4, 4), (4, 4, 4, 4))),
     ArchTiling("dissectedtrunchex", "3².4.3.4; 3.4.6.4", (3, 4, 6), 12,
                _dissectedtrunchex_template, family="2-uniform",
                vertex_types=((3, 3, 4, 3, 4), (3, 4, 6, 4))),
+    ArchTiling("hexrows", "3².6²; 3.6.3.6", (3, 6), 6,
+               _hexrows_template, family="2-uniform",
+               vertex_types=((3, 3, 6, 6), (3, 6, 3, 6))),
+    ArchTiling("dodecasquare", "3.4.3.12; 3.12²", (3, 4, 12), 12,
+               _dodecasquare_template, family="2-uniform",
+               vertex_types=((3, 4, 3, 12), (3, 12, 12))),
+    ArchTiling("hexrings", "3.4².6; 3.4.6.4", (3, 4, 6), 12,
+               _hexrings_template, family="2-uniform",
+               vertex_types=((3, 4, 4, 6), (3, 4, 6, 4))),
+    ArchTiling("squaretrihex", "3.4².6; 3.6.3.6 (1)", (3, 4, 6), 8,
+               _squaretrihex_template, family="2-uniform",
+               vertex_types=((3, 4, 4, 6), (3, 6, 3, 6))),
+    ArchTiling("squaretrihex2", "3.4².6; 3.6.3.6 (2)", (3, 4, 6), 8,
+               _squaretrihex2_template, family="2-uniform",
+               vertex_types=((3, 4, 4, 6), (3, 6, 3, 6))),
     ArchTiling("dodecarhombitrihex", "3.4.6.4; 4.6.12", (3, 4, 6, 12), 12,
                _dodecarhombitrihex_template, family="2-uniform",
                vertex_types=((3, 4, 6, 4), (4, 6, 12))),

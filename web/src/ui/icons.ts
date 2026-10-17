@@ -464,9 +464,27 @@ function domainPatch(key: string): Tile[] {
 
 /** How far out a "disc" patch reaches, in edge lengths, per tiling. */
 const DISC_RADIUS: Record<string, number> = {
+  // Most of the twenty need a disc past the first ring to hold both kinds of
+  // vertex, and the five pairs that share their kinds — the (1)s and (2)s —
+  // one wide enough that the two come out different: the studded triangular
+  // ones reach the next hexagons, the square-and-trihexagonal ones the next
+  // band, where the one shift tells them apart.
+  studdedtri: 3.1,
+  studdedtri2: 3.7,
+  elongated2: 2.2,
+  elongated3: 2.6,
   // the hexagon cut into six triangles, ringed by squares and triangles: the
   // 3⁶ vertex at the middle, a 3².4.3.4 one at each of its corners
   trirhombitrihex: 2,
+  tritrunctrihex: 3.6,
+  hexbands: 2.2,
+  snubelongated: 2.4,
+  snubelongated2: 2.6,
+  squarerows3: 2.6,
+  dodecasquare: 3.2,
+  hexrings: 2.6,
+  squaretrihex: 2.8,
+  squaretrihex2: 2.8,
   // the dissected dodecagon, plus the six triangles between it and its
   // neighbours and the six of theirs that pair with its own into rhombi —
   // the pairs are what tell it from plain 3.4.6.4

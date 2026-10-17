@@ -315,9 +315,16 @@ preset.
 
 `family="2-uniform"`: edge-to-edge tilings by regular polygons whose vertices
 fall into exactly **two** classes under the tiling's symmetries — the next step
-past the uniform tilings, which have one. There are twenty; three ship, all
-p6m and all on the plane only (the family is in the two flat-only lists, as
-"Other" is — see the recipe above):
+past the uniform tilings, which have one. There are twenty and **all twenty
+ship**, all on the plane only (the family is in the two flat-only lists, as
+"Other" is — see the recipe above). So there is no new one to add; what follows
+is how the twenty are built, what to keep in step when changing one, and what
+wrapping them would take.
+
+**Three are a uniform tiling cut up or merged**, so their factories reuse its
+polygons — `_rhombitrihex_polygons` (with a `merged` predicate for the
+dodecagons, and a `reach` for a domain more than one lattice cell across) and
+`_trunchex_polygons`, plus the helpers `_fan` and `_dodecagon_patch`:
 
 | key | label (its vertex types) | built as |
 |---|---|---|
@@ -325,15 +332,12 @@ p6m and all on the plane only (the family is in the two flat-only lists, as
 | `dissectedtrunchex` | 3².4.3.4; 3.4.6.4 | 3.12.12 with every dodecagon cut into the 3.4.6.4 patch (hexagon, six squares, six triangles), squares on the edges facing triangles |
 | `dodecarhombitrihex` | 3.4.6.4; 4.6.12 | 3.4.6.4 with one hexagon in four (even lattice indices both ways) merged with its ring of squares and triangles into a dodecagon |
 
-Each is a uniform tiling cut up or merged, so the factories reuse its
-polygons: `_rhombitrihex_polygons` (with a `merged` predicate for the
-dodecagons, and a `reach` for a domain more than one lattice cell across) and
-`_trunchex_polygons`, plus the helpers `_fan` and `_dodecagon_patch`. The
-choices that are easy to get wrong:
+The choices that are easy to get wrong there:
 
 - **Which way round a dissection goes.** Cutting 3.12.12's dodecagons with the
   squares on the edges a dodecagon shares with *another dodecagon* gives
-  [3³.4²; 3.4.6.4] instead — same five tiles at the corner, different order.
+  [3³.4²; 3.4.6.4] instead — same five tiles at the corner, different order
+  (that one ships too, as `dissectedtrunchex2`).
 - **How many to merge.** Merging one 3.4.6.4 hexagon in *three* gives plain
   4.6.12; one in four is the 2-uniform one, and it needs a domain twice the
   size both ways.
@@ -341,34 +345,90 @@ choices that are easy to get wrong:
   to pin `centre` to it: `trirhombitrihex`'s biggest tile is a square, a
   two-fold centre, so it pins the 3⁶ vertex `(0, 0)`.
 
-Steps, for a new one `foo`:
+**The other seventeen are written down from one translation cell**
+(`_cell_template` in `tilings.py`, `cellTemplate` in `web/src/boards/tilings.ts`;
+the comment above `_steps` documents the format). Every vertex is a walk of unit
+steps at multiples of 30 degrees from one lattice point, so a factory is data:
+the translation lattice `v1`/`v2` (two walks), the rectangle the domain is (two
+lattice vectors at right angles, as integer combinations of them), one
+`(sides, corner walk, heading)` per translation class of tile, and the window
+`centre`. The cells came out of an exhaustive search over tori for edge-to-edge
+tilings by triangles, squares, hexagons and dodecagons with exactly two vertex
+orbits. It found the twenty and no others, which is how the three above were
+checked too.
 
-1. **Template** — `_foo_template()` in `tilings.py`, built from the uniform
-   tiling it comes from where it can be.
-2. **Registry** — one `ArchTiling("foo", "<vertex types>", <tile side counts>,
-   edge_directions, _foo_template, family="2-uniform", vertex_types=(...))`
-   row. The label is the pair of vertex configurations, which is what these
-   tilings are called; `config` is just the tile side counts, and
-   `vertex_types` the two configurations, each read round its vertex.
-3. **Presets** — a `flat` row in `ARCH_PRESETS`, then the measured pipeline
-   (`resize.py --only`, `calibrate.py --only`, `apply.py`, the exporters), as
-   for any flat-only tiling. The seed's pixel scale matters: `resize` holds a
-   flat board's *width* at whatever the seed gave, so seed a scale that makes
-   the board about as wide as its neighbours (~480 px).
-4. **Port it** to `web/src/boards/tilings.ts`; the conformance oracle compares
-   the boards cell for cell.
+| key | label | group | what it looks like |
+|---|---|---|---|
+| `studdedtri` | 3⁶; 3⁴.6 (1) | p6m | triangles with a hexagon at every point of a lattice three edges apart |
+| `studdedtri2` | 3⁶; 3⁴.6 (2) | p6 | the same, √13 apart and chiral (snub hexagonal is √7) |
+| `elongated2` | 3⁶; 3³.4² (1) | pmm | two triangle courses between square courses |
+| `elongated3` | 3⁶; 3³.4² (2) | cmm | three triangle courses between square courses |
+| `tritrunctrihex` | 3⁶; 3².4.12 | p6m | 4.6.12 with its hexagons fanned |
+| `fannedhex` | 3⁶; 3².6² | p6m | hexagonal with one hexagon in three fanned |
+| `hexbands` | 3⁴.6; 3².6² | cmm | rows of hexagons, triangles in the zigzag between |
+| `snubelongated` | 3³.4²; 3².4.3.4 (1) | pgg | squares all in pairs, the pairs two ways |
+| `snubelongated2` | 3³.4²; 3².4.3.4 (2) | p4g | snub square's arrangement, some squares paired |
+| `dissectedtrunchex2` | 3³.4²; 3.4.6.4 | p6m | `dissectedtrunchex` with the squares the other way round |
+| `squarerows2` | 3³.4²; 4⁴ (1) | cmm | two square courses between triangle courses |
+| `squarerows3` | 3³.4²; 4⁴ (2) | cmm | three square courses between triangle courses |
+| `hexrows` | 3².6²; 3.6.3.6 | pmm | rows of hexagons, corners touching, bow ties between |
+| `dodecasquare` | 3.4.3.12; 3.12² | p4m | dodecagons on a square lattice, a square and four triangles in each gap |
+| `hexrings` | 3.4².6; 3.4.6.4 | p6m | 3.4.6.4's tiles with the squares in rows of three |
+| `squaretrihex` | 3.4².6; 3.6.3.6 (1) | pmm | square courses between trihexagonal bands, in line |
+| `squaretrihex2` | 3.4².6; 3.6.3.6 (2) | cmm | the same, each band half a hexagon along |
 
-`TestTwoUniform` then checks it: every tile a regular polygon of unit edge,
-and every interior vertex one of the two declared types — read as a cyclic
-sequence, which is what tells 3².4.3.4 from 3³.4² — with both present. Its
-menu icon is a `disc` patch (`discPatch` in `web/src/ui/icons.ts`) reaching
-past the first ring of tiles, since a ring round one tile or one vertex shows
-one vertex type and reads as the uniform tiling it was cut from; give it a
-`DISC_RADIUS`.
+The labels stay the vertex types, which is what the tilings are called. Where
+two tilings share both types, (1) is the one with the smaller cell and (2) the
+larger. For 3.4².6; 3.6.3.6, whose two cells are the same size, (1) is the one
+whose cell is a rectangle (pmm) rather than centred (cmm). That numbering is
+this game's own; the literature numbers these pairs too, and nothing here was
+checked against its order.
+
+Three things about a cell that are easy to get wrong:
+
+- **The rectangle runs along a mirror**, and the centre sits on one, so the
+  template's y = 0 is a mirror line and `mirrored` holds. That is what
+  `test_flat_board_is_symmetric` then asks of the board. A tiling with no mirror
+  (`studdedtri2`, p6; `snubelongated`, pgg) passes `mirrored=False`.
+- **The centre has to leave the window fair.** It is a half-turn centre, which
+  the window's symmetry needs, and usually the highest-order one. But round
+  `fannedhex`'s six-fold centre and `dodecasquare`'s four-fold one, every window
+  near the easy size leaves rim cells with an identical twin
+  (`metrics.indistinguishable_cells`), and the size search, which holds that
+  bar, could only answer with a board one domain wide. Both take an edge
+  midpoint instead.
+- **A turned domain measures its edges a little off.** Tags are rounded to
+  1e-6. `snubelongated`'s rectangle runs at 45 degrees to its edges, so
+  `test_tiles_are_regular_with_unit_edges` holds edges to 1e-5, not 1e-6.
+
+To change a tiling, keep three things in step: its factory in both ports (the
+conformance oracle compares the boards cell for cell), its `ArchTiling` row
+(`config` is the tile side counts and `vertex_types` the two configurations,
+each read round its vertex), and its `flat` row in `ARCH_PRESETS`, re-measured
+by the pipeline (`resize.py --only`, `calibrate.py --only`, `apply.py`, then the
+exporters). The seed's pixel scale matters there: `resize` holds a flat board's
+*width* at whatever the seed gave, so seed a scale that makes the board about as
+wide as its neighbours (~480 px).
+
+`TestTwoUniform` then checks every one:
+- every tile is a regular polygon of unit edge;
+- every interior vertex is one of the two declared types, read as a cyclic
+  sequence, which is what tells 3².4.3.4 from 3³.4²;
+- the domain's tiles cover it exactly;
+- no two of the twenty are the same tiling, by the vertex types met ring by
+  ring walking out from each kind of vertex. The (1)/(2) pairs need this,
+  because the vertex check cannot tell them apart.
+
+The menu icon is a `disc` patch (`discPatch` in `web/src/ui/icons.ts`) reaching
+past the first ring of tiles, since a ring round one tile or one vertex shows one
+vertex type and reads as the uniform tiling it was cut from. Its `DISC_RADIUS` is
+per tiling, and for a (1)/(2) pair wide enough that the two icons differ.
 
 **Wrapping them later** is the same as for "Other": choose a `cut`, drop the
-family from the two flat-only lists, and add the surface presets. All three
-have mirrors, so every surface is open to them.
+family from the two flat-only lists, and add the surface presets. The mirror
+already in each template is what a Möbius strip or a Klein bottle would glue
+through. The two without one (`studdedtri2` and `snubelongated`) would stay off
+those two surfaces, like the other chiral and glide-only tilings.
 
 ## Recipe: add a congruent-rectangle bond
 

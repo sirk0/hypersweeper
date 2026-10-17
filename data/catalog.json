@@ -523,6 +523,12 @@
       "surface": "flat",
       "family": "2-uniform"
     },
+    "dissectedtrunchex2": {
+      "label": "3³.4²; 3.4.6.4",
+      "tiling": "dissectedtrunchex2",
+      "surface": "flat",
+      "family": "2-uniform"
+    },
     "dodecahedron": {
       "label": "Dodecahedron",
       "tiling": "",
@@ -532,6 +538,12 @@
     "dodecarhombitrihex": {
       "label": "3.4.6.4; 4.6.12",
       "tiling": "dodecarhombitrihex",
+      "surface": "flat",
+      "family": "2-uniform"
+    },
+    "dodecasquare": {
+      "label": "3.4.3.12; 3.12²",
+      "tiling": "dodecasquare",
       "surface": "flat",
       "family": "2-uniform"
     },
@@ -565,6 +577,24 @@
       "surface": "flat",
       "family": "uniform"
     },
+    "elongated2": {
+      "label": "3⁶; 3³.4² (1)",
+      "tiling": "elongated2",
+      "surface": "flat",
+      "family": "2-uniform"
+    },
+    "elongated3": {
+      "label": "3⁶; 3³.4² (2)",
+      "tiling": "elongated3",
+      "surface": "flat",
+      "family": "2-uniform"
+    },
+    "fannedhex": {
+      "label": "3⁶; 3².6²",
+      "tiling": "fannedhex",
+      "surface": "flat",
+      "family": "2-uniform"
+    },
     "floret": {
       "label": "Floret pentagonal",
       "tiling": "floret",
@@ -595,11 +625,29 @@
       "surface": "flat",
       "family": "regular"
     },
+    "hexbands": {
+      "label": "3⁴.6; 3².6²",
+      "tiling": "hexbands",
+      "surface": "flat",
+      "family": "2-uniform"
+    },
     "hexhex": {
       "label": "Hexagons - hexagonal board",
       "tiling": "hex",
       "surface": "flat",
       "family": "regular"
+    },
+    "hexrings": {
+      "label": "3.4².6; 3.4.6.4",
+      "tiling": "hexrings",
+      "surface": "flat",
+      "family": "2-uniform"
+    },
+    "hexrows": {
+      "label": "3².6²; 3.6.3.6",
+      "tiling": "hexrows",
+      "surface": "flat",
+      "family": "2-uniform"
     },
     "hextri": {
       "label": "Triangles - hexagonal board",
@@ -1093,6 +1141,18 @@
       "surface": "solid",
       "family": "archimedean"
     },
+    "snubelongated": {
+      "label": "3³.4²; 3².4.3.4 (1)",
+      "tiling": "snubelongated",
+      "surface": "flat",
+      "family": "2-uniform"
+    },
+    "snubelongated2": {
+      "label": "3³.4²; 3².4.3.4 (2)",
+      "tiling": "snubelongated2",
+      "surface": "flat",
+      "family": "2-uniform"
+    },
     "snubhex": {
       "label": "Snub hexagonal",
       "tiling": "snubhex",
@@ -1147,6 +1207,30 @@
       "surface": "flat",
       "family": "regular"
     },
+    "squarerows2": {
+      "label": "3³.4²; 4⁴ (1)",
+      "tiling": "squarerows2",
+      "surface": "flat",
+      "family": "2-uniform"
+    },
+    "squarerows3": {
+      "label": "3³.4²; 4⁴ (2)",
+      "tiling": "squarerows3",
+      "surface": "flat",
+      "family": "2-uniform"
+    },
+    "squaretrihex": {
+      "label": "3.4².6; 3.6.3.6 (1)",
+      "tiling": "squaretrihex",
+      "surface": "flat",
+      "family": "2-uniform"
+    },
+    "squaretrihex2": {
+      "label": "3.4².6; 3.6.3.6 (2)",
+      "tiling": "squaretrihex2",
+      "surface": "flat",
+      "family": "2-uniform"
+    },
     "stackedbond": {
       "label": "Stacked bond",
       "tiling": "stackedbond",
@@ -1170,6 +1254,18 @@
       "tiling": "",
       "surface": "solid",
       "family": "polyhedra"
+    },
+    "studdedtri": {
+      "label": "3⁶; 3⁴.6 (1)",
+      "tiling": "studdedtri",
+      "surface": "flat",
+      "family": "2-uniform"
+    },
+    "studdedtri2": {
+      "label": "3⁶; 3⁴.6 (2)",
+      "tiling": "studdedtri2",
+      "surface": "flat",
+      "family": "2-uniform"
     },
     "tetraframe": {
       "label": "Tetrahedron frame",
@@ -1444,6 +1540,12 @@
     "trirhombitrihex": {
       "label": "3⁶; 3².4.3.4",
       "tiling": "trirhombitrihex",
+      "surface": "flat",
+      "family": "2-uniform"
+    },
+    "tritrunctrihex": {
+      "label": "3⁶; 3².4.12",
+      "tiling": "tritrunctrihex",
       "surface": "flat",
       "family": "2-uniform"
     },

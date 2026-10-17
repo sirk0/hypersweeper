@@ -2638,6 +2638,11 @@ class MenuScreen:
     WIDTH = 460 * S
     ITEM_HEIGHT = 58 * S
     ITEM_STEP = 70 * S
+    # A page longer than this wraps into two columns, reading down and then
+    # across. One column of the 2-uniform family's twenty rows is taller than a
+    # laptop screen, and the desktop window neither scrolls nor shrinks; the
+    # longest single-column page is the thirteen Catalan solids.
+    MAX_COLUMN_ROWS = 13
 
     def __init__(self, difficulty: str = "easy") -> None:
         self.difficulty = difficulty
@@ -2752,25 +2757,28 @@ class MenuScreen:
 
     def layout(self):
         items = self._items()
-        # every page is a single column now that no page runs long (the biggest
-        # is the eight-member uniform / dual submenu)
         item_height = self.ITEM_HEIGHT
         item_step = self.ITEM_STEP
+        columns = 2 if len(items) > self.MAX_COLUMN_ROWS else 1
+        margin = (50 if columns == 1 else 16) * S
+        gap = 10 * S
+        width = (self.WIDTH - 2 * margin - (columns - 1) * gap) // columns
+        per_column = -(-len(items) // columns)
         rects = []
         top = 96 * S
-        y = top
-        for key, label, enabled in items:
+        for i, (key, label, enabled) in enumerate(items):
+            column, row = divmod(i, per_column)
             rects.append(
                 (
-                    pygame.Rect(50 * S, y, self.WIDTH - 100 * S, item_height),
+                    pygame.Rect(margin + column * (width + gap),
+                                top + row * item_step, width, item_height),
                     key,
                     label,
                     enabled,
                 )
             )
-            y += item_step
-        items_height = y - top
-        natural_height = y + 14 * S + 40 * S + 30 * S
+        items_height = per_column * item_step
+        natural_height = top + items_height + 14 * S + 40 * S + 30 * S
         # on the web the presenter hands down extra height to fill the window:
         # pin the difficulty row to the bottom and centre the modes between it
         # and the title
@@ -2866,9 +2874,10 @@ class MenuScreen:
             label = fonts.get(14 * S).render("< back", True, TEXT)
             surface.blit(label, label.get_rect(center=rect.center))
 
-        icon_size = 44 * S
         label_size = 18 * S
         for rect, key, label_text, enabled in layout["items"]:
+            # a two-column page has half the room, and the icon gives way first
+            icon_size = 44 * S if rect.width > self.WIDTH // 2 else 32 * S
             hover = enabled and rect.collidepoint(mouse)
             bevel_rect(surface, rect, BUTTON_HOVER if hover else BUTTON)
             # the home "Flat" entry (which opens the tiling picker) shows a
