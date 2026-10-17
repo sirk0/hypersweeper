@@ -67,7 +67,7 @@
           "image": "images/hs.wins.10.png"
         }
       },
-      "icon": "trophy",
+      "icon": "trophy:1",
       "ring": null
     },
     {
@@ -84,7 +84,7 @@
           "image": "images/hs.wins.50.png"
         }
       },
-      "icon": "trophy",
+      "icon": "trophy:2",
       "ring": null
     },
     {
@@ -101,7 +101,7 @@
           "image": "images/hs.wins.250.png"
         }
       },
-      "icon": "trophy",
+      "icon": "trophy:3",
       "ring": null
     },
     {

@@ -318,7 +318,9 @@ function milestones(): Achievement[] {
       brief: `Win ${tier} games, on any boards`,
       done: `You won ${tier} games`,
       points: POINTS.winTier * 2 ** i,
-      icon: "trophy",
+      // Bronze, silver, gold: the three tiers are told apart by their badges,
+      // as the difficulty rungs are by their bars.
+      icon: `trophy:${i + 1}`,
       group: "milestone",
       measure: (p) => ({ have: Math.min(totalWins(p), tier), need: tier }),
     });

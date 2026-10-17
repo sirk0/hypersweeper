@@ -30,7 +30,7 @@ import {
 } from "../../src/boards/catalog";
 import { blockedModes } from "../../src/boards/fairness";
 import { buildBoard, hasMode } from "../../src/boards/presets";
-import { classifyShapes } from "../../src/render/shapePalette";
+import { cellSides } from "../../src/render/shapePalette";
 import { menuIcon } from "../../src/ui/icons";
 
 // What a screenshot of the achievements page could never tell you: that the
@@ -107,10 +107,24 @@ describe("the declared shape list", () => {
     const sides = new Set<number>();
     for (const mode of everyBuiltMode()) {
       const board = buildBoard(mode, "easy");
-      const tones = classifyShapes(board.polygons, board.cornerMask ?? null, "curved" in board && board.curved);
-      for (const tone of tones.values()) sides.add(tone.sides);
+      for (const n of cellSides(board.polygons, board.cornerMask).values()) sides.add(n);
     }
     expect([...sides].sort((a, b) => a - b)).toEqual(SHAPE_SIDES);
+  });
+
+  it("counts a hyperbolic tile by its corners, not the points its arcs are drawn through", () => {
+    // Measured with `cellSides`, the one count a win files (`GameSession.
+    // sideCounts`). The hyperbolic boards draw each edge as an arc through
+    // extra points, and a count that ignored the corner mask filed a {5,4}
+    // win as 13 to 15 sides, and a {7,3} one as 17 to 21 — the heptagon badge
+    // never, and the Spectre's 13-gon badge for the wrong board.
+    for (const [mode, sides] of [["hyperbolic73", 7], ["hyperbolic54", 5], ["hyperbolic45", 4]] as const) {
+      for (const difficulty of ["easy", "medium", "hard"]) {
+        const board = buildBoard(mode, difficulty);
+        expect(new Set(cellSides(board.polygons, board.cornerMask).values()), `${mode} ${difficulty}`)
+          .toEqual(new Set([sides]));
+      }
+    }
   });
 });
 

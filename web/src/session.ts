@@ -16,7 +16,7 @@ import { mulberry32, type Rng } from "./rng";
 import type { BoardMesh, CellVisual } from "./render/boardMesh";
 import { cellStyle, DEFAULT_FINISH, finishStyle, type Finish } from "./render/cellStyle";
 import { PolygonBoard } from "./render/polygonBoard";
-import { shapeMetrics } from "./render/shapePalette";
+import { cellSides } from "./render/shapePalette";
 import { SolidBoard } from "./render/solidBoard";
 
 // GameSession mediates between the pure Game (rules), the board mesh (flat
@@ -515,22 +515,16 @@ export class GameSession {
   }
 
   /** The side count of a cell's tile, the shape its voice is built from.
-   * Measured the way the shape *colours* are (`shapeMetrics`, collinear
-   * T-vertices dropped), so a tile that looks like a pentagon sounds like
-   * one. */
+   * Measured the way the shape *colours* are (`cellSides`: collinear
+   * T-vertices and a hyperbolic edge's arc points dropped), so a tile that
+   * looks like a pentagon sounds like one. */
   private sidesOf(cell: CellId): number {
     return this.sidesMap().get(cell) ?? 4;
   }
 
   /** The whole board measured, built once. */
   private sidesMap(): Map<CellId, number> {
-    if (!this.sides) {
-      this.sides = new Map();
-      const masks = isBoard3D(this.board) ? this.board.cornerMask : null;
-      for (const [id, polygon] of this.board.polygons) {
-        this.sides.set(id, shapeMetrics(polygon, masks?.get(id)).sides);
-      }
-    }
+    this.sides ??= cellSides(this.board.polygons, this.board.cornerMask);
     return this.sides;
   }
 
