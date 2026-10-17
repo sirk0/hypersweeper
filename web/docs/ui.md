@@ -1193,7 +1193,9 @@ trophy) — there is no geometry in "win ten boards". The `badge()` symbols are
 drawn `fill-rule="evenodd"`, because they have holes in them. The trophy is
 not: its pieces overlap (handles into the bowl, collar onto the stem), and
 under even-odd an overlap is a hole, so it is one nonzero fill with its
-handles stroked.
+handles stroked. The three wins milestones (10, 50, 250) draw it in bronze,
+silver and gold (`trophy:1` to `trophy:3`) — the one badge that leaves the
+theme's palette, since a metal's rank is what its colour says.
 
 ## The record in iCloud
 

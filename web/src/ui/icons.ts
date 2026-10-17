@@ -1195,7 +1195,8 @@ const ICON_TONES: Record<string, ShapeTone> = {
 //
 // Four symbols, in the icon set's plain indigo rather than a shape colour:
 // they stand for a milestone rather than for a tile, and painting them in a
-// tile hue would claim a shape they are not about.
+// tile hue would claim a shape they are not about. (The wins tiers' trophies
+// are the exception: bronze, silver and gold, see `trophy`.)
 
 /** A symbol on the icon set's plain disc, so a badge with no tiling in it still
  * fills the same box a tiling patch does. */
@@ -1255,6 +1256,14 @@ function roundRectPath(x: number, y: number, w: number, h: number, r: number): s
   );
 }
 
+/** The wins milestones' metals, lowest tier first: a light disc and the cup
+ * on it in a deep shade of the same metal, the two-tone of every other badge. */
+const TROPHY_METALS: { disc: string; ink: string }[] = [
+  { disc: "#e8c2a0", ink: "#8c5530" }, // bronze
+  { disc: "#d9dee4", ink: "#5f6b78" }, // silver
+  { disc: "#f3d77e", ink: "#94700f" }, // gold
+];
+
 /** The trophy: a lipped rim, a bowl that narrows into its stem, a collar and a
  * plinth, and two loop handles.
  *
@@ -1262,9 +1271,15 @@ function roundRectPath(x: number, y: number, w: number, h: number, r: number): s
  * the collar onto the stem), and under even-odd every overlap is a hole — the
  * old drawing had a light sliver across its stem for exactly that reason. It
  * has no holes, so the body is one nonzero fill, every subpath clockwise, and
- * the handles are a round-capped stroke rather than outlines of one. */
-function trophy(d: number): string[] {
-  const ink = plain("dark");
+ * the handles are a round-capped stroke rather than outlines of one.
+ *
+ * `tier` 1 to 3 is the wins milestone it stands for, drawn in bronze, silver
+ * and gold — the one place a badge leaves the theme's palette, because a
+ * metal's rank is the thing the colour says. A bare `trophy` is the plain
+ * chrome. */
+function trophy(d: number, tier?: number): string[] {
+  const metal = tier === undefined ? undefined : TROPHY_METALS[tier - 1];
+  const ink = metal?.ink ?? plain("dark");
   const body =
     roundRectPath(d * 0.31, d * 0.24, d * 0.38, d * 0.05, d * 0.015) +
     ` M ${n(d * 0.34)} ${n(d * 0.29)} H ${n(d * 0.66)} ` +
@@ -1280,7 +1295,9 @@ function trophy(d: number): string[] {
     `M ${n(d * 0.65)} ${n(d * 0.32)} C ${n(d * 0.76)} ${n(d * 0.31)} ${n(d * 0.76)} ${n(d * 0.47)} ` +
     `${n(d * 0.61)} ${n(d * 0.49)}`;
   return [
-    circle(C, C, D * 0.42, null, 0, LIGHT),
+    metal
+      ? `<circle cx="${n(C)}" cy="${n(C)}" r="${n(D * 0.42)}" fill="${metal.disc}"/>`
+      : circle(C, C, D * 0.42, null, 0, LIGHT),
     `<path d="${body}" fill="${ink}"/>`,
     `<path d="${handles}" fill="none" stroke="${ink}" stroke-width="${n(d * 0.036)}" ` +
       `stroke-linecap="round"/>`,
@@ -1343,6 +1360,10 @@ function draw(rawKey: string): string[] {
   }
   if (key === "star") return badge(starPath(d));
   if (key === "trophy") return trophy(d);
+  if (key.startsWith("trophy:")) {
+    const tier = Number(key.slice(7));
+    if (Number.isInteger(tier) && tier >= 1 && tier <= TROPHY_METALS.length) return trophy(d, tier);
+  }
   if (key === "flag") return badge(flagPath(d));
   if (key === "warning") return badge(warningPath(d));
 
