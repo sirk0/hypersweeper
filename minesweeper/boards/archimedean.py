@@ -33,9 +33,12 @@ the truncated octahedron's are cut into three rhombi first
 instead **fanned into triangles** from their own centres (`_fan_faces`, the
 dodecahedron board's rule), which keeps every symmetry.
 
-The three icosahedral solids already ship uncut, one cell per face, under
-Sphere (`solids.snub_dodecahedron_board` and its neighbours); those keep their
-own modes, and the cut ones here are separate boards.
+``frequency=0`` is the solid **uncut**, one cell per face and no fan, as
+``frequency=0`` on the pentagonal hexecontahedron is its bare pentagons. It is
+the easy rung of the three icosahedral solids -- 62, 62 and 92 cells, where the
+first cut is already 110 to 270. (Those three uncut boards used to ship as
+modes of their own under Sphere, drawn projected onto the sphere; the board
+was the same graph, so they were folded in here.)
 """
 
 from __future__ import annotations
@@ -210,16 +213,20 @@ def _subdivide_mixed(
 def _archimedean_board(
     mode: str, op: str, mine_count: int, frequency: int, base_kind: str = "cube"
 ) -> Board3D:
-    if frequency < 1:
-        raise ValueError("frequency must be at least 1")
+    if frequency < 0:
+        raise ValueError("frequency must be at least 0")
     base = _Base(base_kind)
     faces, positions = _archimedean_faces(base, op)
-    if base_kind == "cube" and op == "kis":
-        faces, positions = _split_hexagons(
-            faces, positions, lambda ring: _th_spokes(base, ring)
-        )
-    faces, positions = _fan_faces(faces, positions)
-    cells, positions = _subdivide_mixed(faces, positions, frequency)
+    if frequency == 0:
+        # the bare solid, one cell per face: the icosahedral solids' easy rung
+        cells = faces
+    else:
+        if base_kind == "cube" and op == "kis":
+            faces, positions = _split_hexagons(
+                faces, positions, lambda ring: _th_spokes(base, ring)
+            )
+        faces, positions = _fan_faces(faces, positions)
+        cells, positions = _subdivide_mixed(faces, positions, frequency)
     # the grids' keys nest a face key of whatever shape that face had, which
     # do not sort against one another; the cell ids only have to be distinct
     cells = {("c", n): ring for n, ring in enumerate(cells.values())}
@@ -256,8 +263,8 @@ def snub_cube_board(mine_count: int, frequency: int = 2) -> Board3D:
 def rhombicosidodecahedron_split_board(mine_count: int, frequency: int = 2) -> Board3D:
     """A rhombicosidodecahedron cut into a board: 20 triangles, 30 squares and
     12 pentagons (3.4.5.4), each pentagon fanned into 5 triangles, then every
-    face cut ``frequency**2`` ways -- ``110 * frequency**2`` cells. The uncut
-    solid, one cell per face, is `solids.rhombicosidodecahedron_board`."""
+    face cut ``frequency**2`` ways -- ``110 * frequency**2`` cells, or the
+    uncut solid's 62 at ``frequency=0``."""
     return _archimedean_board("rhombicosidodecasplit", "ortho", mine_count, frequency,
                               "icosa")
 
@@ -268,8 +275,8 @@ def truncated_icosidodecahedron_split_board(
     """A truncated icosidodecahedron cut into a board: 30 squares, 20 hexagons
     and 12 decagons (4.6.10), the hexagons fanned into 6 triangles and the
     decagons into 10, then every face cut ``frequency**2`` ways --
-    ``270 * frequency**2`` cells. The uncut solid is
-    `solids.truncated_icosidodecahedron_board`."""
+    ``270 * frequency**2`` cells, or the uncut solid's 62 at
+    ``frequency=0``."""
     return _archimedean_board("truncicosidodecasplit", "meta", mine_count, frequency,
                               "icosa")
 
@@ -278,6 +285,6 @@ def snub_dodecahedron_split_board(mine_count: int, frequency: int = 2) -> Board3
     """A snub dodecahedron cut into a board: 80 triangles and 12 pentagons
     (3.3.3.3.5), each pentagon fanned into 5 triangles, then every face cut
     ``frequency**2`` ways -- ``140 * frequency**2`` cells. Chiral, the
-    icosahedral rotations alone. The uncut solid is
-    `solids.snub_dodecahedron_board`."""
+    icosahedral rotations alone. ``frequency=0`` is the uncut solid, 92
+    cells."""
     return _archimedean_board("snubdodecsplit", "gyro", mine_count, frequency, "icosa")

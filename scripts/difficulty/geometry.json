@@ -98,56 +98,36 @@
     "args": {
       "easy": {
         "args": [
-          21
+          21,
+          3
         ],
         "cells": 92,
-        "fixed": true,
-        "reason": "the cell count is the solid"
-      },
-      "hard": {
-        "args": [
-          28
-        ],
-        "cells": 92,
-        "fixed": true,
-        "reason": "the cell count is the solid"
+        "score": 0.1273,
+        "distortionMean": 1.0008,
+        "distortionP90": 1.0012,
+        "indistinguishable": 0
       },
       "medium": {
         "args": [
-          23
+          23,
+          5
         ],
-        "cells": 92,
-        "fixed": true,
-        "reason": "the cell count is the solid"
-      }
-    }
-  },
-  "c80": {
-    "builder": "c80_board",
-    "args": {
-      "easy": {
-        "args": [
-          10
-        ],
-        "cells": 42,
-        "fixed": true,
-        "reason": "the cell count is the solid"
+        "cells": 252,
+        "score": 0.0157,
+        "distortionMean": 1.0008,
+        "distortionP90": 1.0023,
+        "indistinguishable": 0
       },
       "hard": {
         "args": [
-          15
+          28,
+          7
         ],
-        "cells": 42,
-        "fixed": true,
-        "reason": "the cell count is the solid"
-      },
-      "medium": {
-        "args": [
-          12
-        ],
-        "cells": 42,
-        "fixed": true,
-        "reason": "the cell count is the solid"
+        "cells": 492,
+        "score": 0.0247,
+        "distortionMean": 1.001,
+        "distortionP90": 1.0029,
+        "indistinguishable": 0
       }
     }
   },
@@ -4473,35 +4453,6 @@
       }
     }
   },
-  "rhombicosidodeca": {
-    "builder": "rhombicosidodecahedron_board",
-    "args": {
-      "easy": {
-        "args": [
-          10
-        ],
-        "cells": 62,
-        "fixed": true,
-        "reason": "the cell count is the solid"
-      },
-      "medium": {
-        "args": [
-          12
-        ],
-        "cells": 62,
-        "fixed": true,
-        "reason": "the cell count is the solid"
-      },
-      "hard": {
-        "args": [
-          18
-        ],
-        "cells": 62,
-        "fixed": true,
-        "reason": "the cell count is the solid"
-      }
-    }
-  },
   "rhombille": {
     "builder": "archimedean_board",
     "args": {
@@ -4737,35 +4688,6 @@
       }
     }
   },
-  "snubdodec": {
-    "builder": "snub_dodecahedron_board",
-    "args": {
-      "easy": {
-        "args": [
-          18
-        ],
-        "cells": 92,
-        "fixed": true,
-        "reason": "the cell count is the solid"
-      },
-      "medium": {
-        "args": [
-          23
-        ],
-        "cells": 92,
-        "fixed": true,
-        "reason": "the cell count is the solid"
-      },
-      "hard": {
-        "args": [
-          29
-        ],
-        "cells": 92,
-        "fixed": true,
-        "reason": "the cell count is the solid"
-      }
-    }
-  },
   "snubhex": {
     "builder": "archimedean_board",
     "args": {
@@ -4942,35 +4864,6 @@
         "distortionMean": 1.0713,
         "distortionP90": 1.1013,
         "indistinguishable": 0
-      }
-    }
-  },
-  "spheretri": {
-    "builder": "sphere_triangle_board",
-    "args": {
-      "easy": {
-        "args": [
-          20
-        ],
-        "cells": 80,
-        "fixed": true,
-        "reason": "the cell count is the solid"
-      },
-      "medium": {
-        "args": [
-          23
-        ],
-        "cells": 80,
-        "fixed": true,
-        "reason": "the cell count is the solid"
-      },
-      "hard": {
-        "args": [
-          29
-        ],
-        "cells": 80,
-        "fixed": true,
-        "reason": "the cell count is the solid"
       }
     }
   },
@@ -7012,35 +6905,6 @@
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0
-      }
-    }
-  },
-  "truncicosidodeca": {
-    "builder": "truncated_icosidodecahedron_board",
-    "args": {
-      "easy": {
-        "args": [
-          11
-        ],
-        "cells": 62,
-        "fixed": true,
-        "reason": "the cell count is the solid"
-      },
-      "medium": {
-        "args": [
-          13
-        ],
-        "cells": 62,
-        "fixed": true,
-        "reason": "the cell count is the solid"
-      },
-      "hard": {
-        "args": [
-          17
-        ],
-        "cells": 62,
-        "fixed": true,
-        "reason": "the cell count is the solid"
       }
     }
   },
@@ -9191,33 +9055,33 @@
     "args": {
       "easy": {
         "args": [
-          25,
-          1
+          21,
+          0
         ],
-        "cells": 110,
-        "score": 11.9181,
+        "cells": 62,
+        "score": 10.8019,
+        "distortionMean": 1.0,
+        "distortionP90": 1.0,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          100,
+          2
+        ],
+        "cells": 440,
+        "score": 12.6248,
         "distortionMean": 1.0111,
         "distortionP90": 1.0203,
         "indistinguishable": 0
       },
       "hard": {
         "args": [
-          120,
+          118,
           2
         ],
         "cells": 440,
         "score": 0.087,
-        "distortionMean": 1.0111,
-        "distortionP90": 1.0203,
-        "indistinguishable": 0
-      },
-      "medium": {
-        "args": [
-          25,
-          2
-        ],
-        "cells": 440,
-        "score": 12.6248,
         "distortionMean": 1.0111,
         "distortionP90": 1.0203,
         "indistinguishable": 0
@@ -9229,18 +9093,18 @@
     "args": {
       "easy": {
         "args": [
-          30,
-          1
+          37,
+          0
         ],
-        "cells": 140,
-        "score": 12.6416,
-        "distortionMean": 1.0087,
-        "distortionP90": 1.0203,
+        "cells": 92,
+        "score": 0.1273,
+        "distortionMean": 1.0,
+        "distortionP90": 1.0,
         "indistinguishable": 0
       },
       "medium": {
         "args": [
-          30,
+          40,
           1
         ],
         "cells": 140,
@@ -9251,7 +9115,7 @@
       },
       "hard": {
         "args": [
-          150,
+          165,
           2
         ],
         "cells": 560,
@@ -9267,18 +9131,18 @@
     "args": {
       "easy": {
         "args": [
-          60,
-          1
+          47,
+          0
         ],
-        "cells": 270,
-        "score": 14.6119,
-        "distortionMean": 1.0543,
-        "distortionP90": 1.1221,
+        "cells": 62,
+        "score": 10.8019,
+        "distortionMean": 1.0,
+        "distortionP90": 1.0,
         "indistinguishable": 0
       },
       "medium": {
         "args": [
-          60,
+          57,
           1
         ],
         "cells": 270,
@@ -9289,7 +9153,7 @@
       },
       "hard": {
         "args": [
-          60,
+          73,
           1
         ],
         "cells": 270,
@@ -9305,27 +9169,39 @@
     "args": {
       "easy": {
         "args": [
-          17
+          13,
+          2,
+          1
         ],
         "cells": 72,
-        "fixed": true,
-        "reason": "the cell count is the solid"
-      },
-      "hard": {
-        "args": [
-          23
-        ],
-        "cells": 72,
-        "fixed": true,
-        "reason": "the cell count is the solid"
+        "score": 0.1178,
+        "distortionMean": 1.0008,
+        "distortionP90": 1.0009,
+        "indistinguishable": 0
       },
       "medium": {
         "args": [
-          19
+          18,
+          4,
+          2
         ],
-        "cells": 72,
-        "fixed": true,
-        "reason": "the cell count is the solid"
+        "cells": 282,
+        "score": 0.0967,
+        "distortionMean": 1.0007,
+        "distortionP90": 1.002,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          23,
+          5,
+          3
+        ],
+        "cells": 492,
+        "score": 0.0247,
+        "distortionMean": 1.0008,
+        "distortionP90": 1.0024,
+        "indistinguishable": 0
       }
     }
   },

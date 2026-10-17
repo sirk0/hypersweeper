@@ -134,83 +134,6 @@ def _convex_board3d(
 # -- 3D builders --------------------------------------------------------------
 
 
-def _gyro_pentagons() -> tuple[dict, dict]:
-    """Sixty spherical pentagons as (cells, vertex positions): the Conway
-    "gyro" operation on an icosahedron — each triangular face gains a center
-    vertex, each edge two division points, and every (face, corner) pair
-    becomes one pentagon, every point pushed out to the unit sphere.
-
-    This is the pentagonal hexecontahedron's combinatorics, not its metric: the
-    edge points sit at plain thirds rather than where the snub dodecahedron's
-    dual would put them, so the pentagons are congruent on the sphere but not
-    the Catalan solid's flat ones — which is exactly what the board built from
-    it here wants, since dualising these centers gives a snub dodecahedron
-    whose faces are regular. The flat-faced solid is
-    `catalan.sphere_board`."""
-    vertices, faces = _icosahedron()
-    positions: dict[Hashable, Vec3] = {}
-
-    def vertex_key(i: int):
-        key = ("v", i)
-        positions[key] = _normalize(vertices[i])
-        return key
-
-    def edge_key(u: int, v: int, third: int):
-        # point at u + third/3 of the way to v; same point seen from the
-        # other end is (v, u, 3 - third)
-        key = ("e", u, v, third) if u < v else ("e", v, u, 3 - third)
-        a, b = vertices[u], vertices[v]
-        positions[key] = _normalize(
-            tuple(pa + (pb - pa) * third / 3 for pa, pb in zip(a, b))
-        )
-        return key
-
-    cells: dict[Cell, list] = {}
-    for face_index, face in enumerate(faces):
-        center_key = ("c", face_index)
-        positions[center_key] = _normalize(
-            tuple(sum(vertices[i][axis] for i in face) / 3 for axis in range(3))
-        )
-        for i in range(3):
-            u, v, w = face[i - 1], face[i], face[(i + 1) % 3]
-            cells[(face_index, i)] = [
-                center_key,
-                edge_key(u, v, 2),
-                vertex_key(v),
-                edge_key(v, w, 1),
-                edge_key(v, w, 2),
-            ]
-    return cells, positions
-
-
-def snub_dodecahedron_board(mine_count: int) -> Board3D:
-    """A snub dodecahedron: 12 pentagons and 80 triangles (vertex
-    configuration 3.3.3.3.5), projected onto the unit sphere.
-
-    Built as the dual of the spherical gyro pentagons: one cell per pentagon
-    vertex, made of the surrounding pentagon centers.
-    """
-    pentagons, positions = _gyro_pentagons()
-    centers = {
-        cid: _normalize(
-            tuple(
-                sum(positions[k][axis] for k in keys) / len(keys)
-                for axis in range(3)
-            )
-        )
-        for cid, keys in pentagons.items()
-    }
-    around: dict[Hashable, list] = defaultdict(list)
-    for cid, keys in pentagons.items():
-        for key in keys:
-            around[key].append(cid)
-    cells = {
-        key: _tangent_order(positions[key], [(cid, centers[cid]) for cid in ids])
-        for key, ids in around.items()
-    }
-    return _convex_board3d("snubdodec", cells, centers, mine_count)
-
-
 def _geodesic(
     frequency: int, vertices=None, faces=None, project: bool = True
 ) -> tuple[dict, list[tuple]]:
@@ -260,16 +183,19 @@ def _geodesic_hk(h: int, k: int) -> tuple[dict, list[tuple]]:
     them and the subdivision is chiral (``(k, h)`` is its mirror image).
 
     Each face walks the lattice triangles whose centre lies strictly inside
-    it, so each triangle is taken exactly once (a centre can only land on an
-    edge when ``h % 3 == k % 3``, which the count assert below would catch). A point is named by integer
+    it, so each triangle is taken exactly once. A centre can only land on an
+    edge when ``h % 3 == k % 3`` -- class II, ``(1, 1)``, ``(2, 2)``, and the
+    chiral ``(4, 1)`` as well -- so those are refused. A point is named by integer
     barycentric weights over the face's corners, summing to ``T``, gcd-
     normalised as in ``_geodesic``. A triangle straddling an edge has one
     corner beyond it, with one negative weight; that corner is renamed over
     the neighbouring face across the edge, whose far corner D is A + B - C
     in the unfolded net, so the weights stay integers and the key exact.
-    With ``gcd(h, k) == 1`` no lattice point but a corner lies on an edge,
-    so every other point belongs to one face's interior."""
-    assert k > 0 and math.gcd(h, k) == 1, (h, k)
+    With ``gcd(h, k) == 1`` no lattice point but a corner lies on an edge;
+    with ``g = gcd(h, k) > 1`` the edge is cut ``g`` ways, and each of those
+    points has a zero weight on the far corner and the same two weights over
+    the edge's ends from either face, so the two faces name it alike."""
+    assert k > 0 and (h - k) % 3 != 0, (h, k)
     vertices, faces = _icosahedron()
     total = h * h + h * k + k * k
     beyond: dict[tuple[int, int], int] = {}  # directed edge -> the face's third corner
@@ -351,96 +277,24 @@ def _goldberg_board(mode: str, frequency: int, mine_count: int) -> Board3D:
     return _goldberg_dual(mode, *_geodesic(frequency), mine_count)
 
 
-def c80_board(mine_count: int) -> Board3D:
-    """A C80 fullerene (chamfered dodecahedron): 12 pentagons and 30
-    hexagons, projected onto the unit sphere."""
-    return _goldberg_board("c80", 2, mine_count)
+def c180_board(mine_count: int, frequency: int = 3) -> Board3D:
+    """The class I Goldberg polyhedron GP(frequency, 0), projected onto the
+    unit sphere: 12 pentagons and ``10 * frequency**2 - 10`` hexagons. The
+    default is GP(3,0), the C180 fullerene (92 cells) the mode is named
+    after; ``frequency`` is the board's size knob."""
+    return _goldberg_board("c180", frequency, mine_count)
 
 
-def c180_board(mine_count: int) -> Board3D:
-    """A C180 fullerene (Goldberg GP(3,0)): 12 pentagons and 80
-    hexagons, projected onto the unit sphere."""
-    return _goldberg_board("c180", 3, mine_count)
-
-
-def gp21_board(mine_count: int) -> Board3D:
-    """The Goldberg polyhedron GP(2,1), the C140 fullerene: 12 pentagons and
-    60 hexagons, projected onto the unit sphere. The dual of the class III
-    geodesic icosahedron T = 7. Chiral -- GP(1,2) is its mirror image -- so
-    of the icosahedron's symmetries it keeps the 60 rotations only, and the
-    60 hexagons are a single orbit under them, each touching one pentagon."""
-    return _goldberg_dual("gp21", *_geodesic_hk(2, 1), mine_count)
-
-
-def sphere_triangle_board(mine_count: int, frequency: int = 2) -> Board3D:
-    """A sphere tiled with triangles: a geodesic icosahedron with
-    ``20 * frequency**2`` triangular cells."""
-    positions, triangles = _geodesic(frequency)
-    cells = {("t", n): list(triangle) for n, triangle in enumerate(triangles)}
-    return _convex_board3d("spheretri", cells, positions, mine_count)
-
-
-
-# Every icosahedron vertex is pulled toward its incident faces' centroid by
-# this fraction, and every point lands on the unit sphere. Because a vertex
-# and a face are both single orbits under the icosahedron's symmetry, the
-# triangles and pentagons come out equilateral for *any* fraction here — only
-# the squares (one per edge, straddling two faces) are sensitive to it, and
-# this is the fraction (found by a numeric search maximizing their
-# regularity) where they too come out square to within float precision,
-# making the whole solid a true rhombicosidodecahedron rather than merely
-# looking like one.
-_EXPAND_CENTROID_WEIGHT = 0.6496270939773015
-
-
-def _expand_icosahedron() -> tuple[dict, dict]:
-    """The rhombicosidodecahedron as (cells, positions): the Conway
-    "expand" (cantellation) operation on the icosahedron — 20 shrunk
-    triangles (one per face), 30 squares (one per edge, opening a gap
-    between the two faces it used to join) and 12 pentagons (one per
-    vertex, since every icosahedron vertex has degree 5). Cells are keyed
-    by the (face, vertex) incidence flags a corner is pulled toward."""
-    vertices, faces = _icosahedron()
-    w = _EXPAND_CENTROID_WEIGHT
-    positions: dict[Hashable, Vec3] = {}
-    for face_index, face in enumerate(faces):
-        centroid = tuple(sum(vertices[i][axis] for i in face) / 3 for axis in range(3))
-        for v in face:
-            positions[(face_index, v)] = _normalize(
-                tuple((1 - w) * vertices[v][axis] + w * centroid[axis] for axis in range(3))
-            )
-
-    cells: dict[Cell, list] = {
-        ("f", fi): [(fi, v) for v in face] for fi, face in enumerate(faces)
-    }
-
-    edge_faces: dict[tuple[int, int], list[int]] = defaultdict(list)
-    for face_index, face in enumerate(faces):
-        for i in range(3):
-            u, v = face[i], face[(i + 1) % 3]
-            edge_faces[(min(u, v), max(u, v))].append(face_index)
-    for (u, v), face_ids in edge_faces.items():
-        f1, f2 = face_ids
-        cells[("e", u, v)] = [(f1, u), (f1, v), (f2, v), (f2, u)]
-
-    vertex_faces: dict[int, list[int]] = defaultdict(list)
-    for face_index, face in enumerate(faces):
-        for v in face:
-            vertex_faces[v].append(face_index)
-    for v, face_ids in vertex_faces.items():
-        ordered = _tangent_order(
-            vertices[v], [(fi, positions[(fi, v)]) for fi in face_ids]
-        )
-        cells[("v", v)] = [(fi, v) for fi in ordered]
-
-    return cells, positions
-
-
-def rhombicosidodecahedron_board(mine_count: int) -> Board3D:
-    """A rhombicosidodecahedron: 20 triangles, 30 squares and 12 pentagons
-    (vertex configuration 3.4.5.4), projected onto the unit sphere."""
-    cells, positions = _expand_icosahedron()
-    return _convex_board3d("rhombicosidodeca", cells, positions, mine_count)
+def gp21_board(mine_count: int, h: int = 2, k: int = 1) -> Board3D:
+    """The class III Goldberg polyhedron GP(h, k), projected onto the unit
+    sphere: ``10 * T + 2`` cells for ``T = h*h + h*k + k*k``, always 12 of
+    them pentagons. The dual of the class III geodesic icosahedron
+    (`_geodesic_hk`). Chiral -- GP(k, h) is its mirror image -- so of the
+    icosahedron's symmetries it keeps the 60 rotations only. The default is
+    GP(2,1), the C140 fullerene (72 cells) the mode is named after, whose 60
+    hexagons are a single orbit, each touching one pentagon; ``(h, k)`` is
+    the board's size knob."""
+    return _goldberg_dual("gp21", *_geodesic_hk(h, k), mine_count)
 
 
 def _mirror_normals(v_dir: Vec3, e_dir: Vec3, f_dir: Vec3) -> dict[str, Vec3]:
@@ -485,7 +339,7 @@ def _wythoff_point(
 
     ``boards/catalan.py`` reads every non-chiral Conway operation off this;
     ``equal=("v", "e", "f")`` -- equidistant from all three -- is the
-    omnitruncation, which is `_flag_position` below.
+    omnitruncation (the truncated icosidodecahedron, on the icosahedron).
     """
     v_dir, e_dir, f_dir = _normalize(v_dir), _normalize(e_dir), _normalize(f_dir)
     n = _mirror_normals(v_dir, e_dir, f_dir)
@@ -497,81 +351,6 @@ def _wythoff_point(
     if _dot(p, v_dir) + _dot(p, e_dir) + _dot(p, f_dir) < 0:
         p = (-p[0], -p[1], -p[2])
     return p
-
-
-def _flag_position(v_dir: Vec3, e_dir: Vec3, f_dir: Vec3) -> Vec3:
-    """The Wythoff generating point for the icosahedral (2, 3, 5) reflection
-    group: the point inside the flag's fundamental triangle equidistant from
-    all three of its mirrors. Reflecting it through the group's 120 symmetries
-    generates the omnitruncated icosahedron (the truncated icosidodecahedron,
-    a.k.a. great rhombicosidodecahedron)."""
-    return _wythoff_point(v_dir, e_dir, f_dir, equal=("v", "e", "f"))
-
-
-def _truncated_icosidodecahedron() -> tuple[dict, dict]:
-    """The truncated icosidodecahedron as (cells, positions): the
-    omnitruncation of the icosahedron. Each vertex is a flag (icosahedron
-    vertex, edge, face mutually incident) placed by `_flag_position`; there
-    are 4 * 30 edges = 120 of them, keyed by ``(face_index, local_vertex,
-    side)`` (``side`` picks which of the vertex's two edges within that
-    face). 20 hexagons (one per face), 12 decagons (one per vertex) and 30
-    squares (one per edge)."""
-    vertices, faces = _icosahedron()
-    positions: dict[Hashable, Vec3] = {}
-    centroids: dict[int, Vec3] = {
-        fi: tuple(sum(vertices[i][axis] for i in face) / 3 for axis in range(3))
-        for fi, face in enumerate(faces)
-    }
-    for fi, face in enumerate(faces):
-        for lv in range(3):
-            v = face[lv]
-            for side in (0, 1):
-                nb = face[(lv + (1 if side == 0 else -1)) % 3]
-                emid = tuple((vertices[v][axis] + vertices[nb][axis]) / 2 for axis in range(3))
-                positions[(fi, lv, side)] = _flag_position(vertices[v], emid, centroids[fi])
-
-    cells: dict[Cell, list] = {}
-    for fi, face in enumerate(faces):
-        flags = [(fi, lv, side) for lv in range(3) for side in (0, 1)]
-        cells[("h", fi)] = _tangent_order(
-            centroids[fi], [(key, positions[key]) for key in flags]
-        )
-
-    vertex_faces: dict[int, list[tuple[int, int]]] = defaultdict(list)
-    for fi, face in enumerate(faces):
-        for lv, v in enumerate(face):
-            vertex_faces[v].append((fi, lv))
-    for v, incident in vertex_faces.items():
-        flags = [(fi, lv, side) for fi, lv in incident for side in (0, 1)]
-        cells[("d", v)] = _tangent_order(
-            vertices[v], [(key, positions[key]) for key in flags]
-        )
-
-    edge_flags: dict[tuple[int, int], list[tuple[int, int, int]]] = defaultdict(list)
-    for fi, face in enumerate(faces):
-        for i in range(3):
-            u, w = face[i], face[(i + 1) % 3]
-            lu, lw = i, (i + 1) % 3
-            side_u = 0 if face[(lu + 1) % 3] == w else 1
-            side_w = 0 if face[(lw + 1) % 3] == u else 1
-            edge_flags[(min(u, w), max(u, w))].append((fi, lu, side_u))
-            edge_flags[(min(u, w), max(u, w))].append((fi, lw, side_w))
-    for (u, w), flags in edge_flags.items():
-        centre = tuple((vertices[u][axis] + vertices[w][axis]) / 2 for axis in range(3))
-        cells[("s", u, w)] = _tangent_order(
-            centre, [(key, positions[key]) for key in flags]
-        )
-
-    return cells, positions
-
-
-def truncated_icosidodecahedron_board(mine_count: int) -> Board3D:
-    """A truncated icosidodecahedron: 30 squares, 20 hexagons and 12
-    decagons (vertex configuration 4.6.10), projected onto the unit sphere —
-    the exact omnitruncation of the icosahedron (see `_flag_position`), so
-    every face is genuinely regular rather than merely close."""
-    cells, positions = _truncated_icosidodecahedron()
-    return _convex_board3d("truncicosidodeca", cells, positions, mine_count)
 
 
 def cube_board(n: int, mine_count: int) -> Board3D:
@@ -924,8 +703,8 @@ def octahedron_board(mine_count: int, frequency: int = 3) -> Board3D:
 def icosahedron_board(mine_count: int, frequency: int = 2) -> Board3D:
     """A regular icosahedron tiled with triangles: each of the 20 faces
     subdivided into ``frequency**2`` cells, kept flat on the faces --
-    unlike `sphere_triangle_board`, which projects the same subdivision
-    onto the unit sphere, this keeps the solid's flat facets (and their
+    unlike a geodesic sphere, which projects the same subdivision onto the
+    unit sphere, this keeps the solid's flat facets (and their
     creased edges) intact."""
     vertices, faces = _icosahedron()
     positions, triangles = _geodesic(frequency, vertices, faces, project=False)

@@ -61,7 +61,6 @@ import {
 } from "../boards/catalan";
 import {
   brickCubeBoard,
-  c80Board,
   c180Board,
   gp21Board,
   cubeBoard,
@@ -69,14 +68,10 @@ import {
   dodecahedronBoard,
   icosahedronBoard,
   octahedronBoard,
-  rhombicosidodecahedronBoard,
-  snubDodecahedronBoard,
-  sphereTriangleBoard,
   steppedBipyramidBoard,
   steppedPyramidBoard,
   tetrahedronBoard,
   tetrahedronFrameBoard,
-  truncatedIcosidodecahedronBoard,
 } from "../boards/solids";
 import {
   cuboctahedronBoard,
@@ -657,7 +652,7 @@ function tilingPatch(key: string, style: PatchStyle = styleFor(key)): string[] {
 //
 // The sphere-family icons are the actual boards seen head-on: every closed 3D
 // board is built, its front faces projected orthographically and painted in
-// their own shape colours. So the C80 icon really is a fullerene's hexagons and
+// their own shape colours. So the C180 icon really is a fullerene's hexagons and
 // pentagons and the snub dodecahedron really is its twelve pentagons among
 // eighty triangles — detail no hand-drawn badge carries.
 
@@ -667,13 +662,8 @@ type V3 = readonly [number, number, number];
 // many cells as the board a tap on that row opens.
 const SOLID_BUILDERS: Record<string, () => Board3D> = {
   sphere: () => sphereBoard(0),
-  snubdodec: () => snubDodecahedronBoard(0),
-  c80: () => c80Board(0),
   gp21: () => gp21Board(0),
   c180: () => c180Board(0),
-  spheretri: () => sphereTriangleBoard(0),
-  rhombicosidodeca: () => rhombicosidodecahedronBoard(0),
-  truncicosidodeca: () => truncatedIcosidodecahedronBoard(0),
   tetraframe: () => tetrahedronFrameBoard(0, 2),
   // The three solids the small icon draws as a symbol rather than a board — a
   // fanned triangle and two isometric boxes, which is what fits in 38px. A card
@@ -716,9 +706,9 @@ const SOLID_BUILDERS: Record<string, () => Board3D> = {
   cubocta: () => cuboctahedronBoard(0, 2),
   truncocta: () => truncatedOctahedronBoard(0, 2),
   snubcube: () => snubCubeBoard(0, 2),
-  rhombicosidodecasplit: () => rhombicosidodecahedronSplitBoard(0, 1),
-  truncicosidodecasplit: () => truncatedIcosidodecahedronSplitBoard(0, 1),
-  snubdodecsplit: () => snubDodecahedronSplitBoard(0, 1),
+  rhombicosidodecasplit: () => rhombicosidodecahedronSplitBoard(0, 0),
+  truncicosidodecasplit: () => truncatedIcosidodecahedronSplitBoard(0, 0),
+  snubdodecsplit: () => snubDodecahedronSplitBoard(0, 0),
 };
 
 /** The thirteen Catalan solids, drawn as the real board in projection like the
@@ -741,8 +731,8 @@ const CATALAN_ICONS = [
 ];
 
 /** The Archimedean solids cut into boards, drawn the same way: flat faces cut
- * into the cells they are played on. (The uncut icosahedral three, one cell a
- * face, are sphere boards and keep the sphere icons.) */
+ * into the cells they are played on -- or, for the icosahedral three, whose
+ * easy board is the solid uncut, one cell a face. */
 const ARCHIMEDEAN_FLAT_ICONS = [
   "cubocta",
   "truncocta",
@@ -756,13 +746,8 @@ const ARCHIMEDEAN_FLAT_ICONS = [
  * chosen so the face the board is named for sits in the middle of the icon. */
 const SOLID_VIEW: Record<string, [number, number] | [number, number, number]> = {
   sphere: [-18, 12],
-  snubdodec: [-14, 20],
-  c80: [-20, 10],
   gp21: [-20, 10],
   c180: [-20, 10],
-  spheretri: [-10, 18],
-  rhombicosidodeca: [-16, 15],
-  truncicosidodeca: [-16, 15],
   // Seen from just above the equator: from any higher the widest terrace hides
   // the whole lower pyramid, and the icon stops being a bipyramid at all.
   steppedbipyramid: [-85, 0, 28],
@@ -1163,15 +1148,7 @@ const ALIASES: Record<string, string> = {
   random: "start", // the pygame menu's "Random" picker entry
 };
 
-const SPHERES = [
-  "c80",
-  "gp21",
-  "c180",
-  "spheretri",
-  "snubdodec",
-  "rhombicosidodeca",
-  "truncicosidodeca",
-];
+const SPHERES = ["gp21", "c180"];
 
 /** What a board's cells actually are, for the icons whose art is not a drawing
  * of one: a subdivided outer polygon (the Laves triangle tilings), an
@@ -1203,13 +1180,8 @@ const ICON_TONES: Record<string, ShapeTone> = {
   icosahedron: { sides: 3, regularity: 1 },
   dodecahedron: { sides: 3, regularity: 0.8 }, // the pentagon's fan wedge, 72-54-54
   sphere: { sides: 5, regularity: 0.95 },
-  snubdodec: { sides: 3, regularity: 1 },
-  spheretri: { sides: 3, regularity: 1 },
-  c80: { sides: 6, regularity: 0.95 },
   gp21: { sides: 6, regularity: 0.95 },
   c180: { sides: 6, regularity: 0.95 },
-  rhombicosidodeca: { sides: 4, regularity: 1 }, // squares are the majority face
-  truncicosidodeca: { sides: 4, regularity: 1 }, // squares are the majority face
 };
 
 // -- achievement badges ----------------------------------------------------

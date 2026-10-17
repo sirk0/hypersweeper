@@ -7,7 +7,7 @@ import { expect, test, type Page } from "@playwright/test";
 // what the native side does with a message (the full-game SKOverlay) is
 // Apple's and needs a device to see.
 
-const BOARD = "c80";
+const BOARD = "c180";
 
 declare global {
   interface Window {

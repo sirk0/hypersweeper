@@ -69,7 +69,7 @@ interface Sticker extends Staging {
 // few enough opened that the flags stand clear of the rim, where the framing
 // would cut their pins off.
 const STICKERS: Sticker[] = [
-  { name: "snub-dodecahedron", mode: "snubdodec", difficulty: "easy", seed: 5, reveal: 0.25, flags: 3 },
+  { name: "snub-dodecahedron", mode: "snubdodecsplit", difficulty: "easy", seed: 5, reveal: 0.25, flags: 3 },
   // Tipped towards the viewer so the hole shows: square on, it reads as a ring.
   { name: "snub-square-torus", mode: "torussnubsquare", difficulty: "easy", seed: 2, reveal: 0.3, flags: 3, rotate: [0, 50], label: "Snub square torus" },
   { name: "trefoil", mode: "trefoilhex", seed: 6, reveal: 0.4, flags: 5 },

@@ -291,10 +291,12 @@ calibration blocks at every difficulty).
 ## The App Clip
 
 An App Clip lets someone play from the App Store, or from an App Clip link,
-without installing the app. Hypersweeper's plays one board: the **chamfered
-dodecahedron** (`c80`) at the default difficulty, Easy. Twelve pentagons
-and sixty hexagons on a ball are unmistakably not the usual minesweeper, and a
-first game is over in a minute or two.
+without installing the app. Hypersweeper's plays one board: the **Goldberg
+polyhedron** (`c180`) at the default difficulty, Easy, which is GP(3,0).
+Twelve pentagons and eighty hexagons on a ball are unmistakably not the usual
+minesweeper, and a first game is over in a minute or two. (It played the
+chamfered dodecahedron, `c80`, until that board was retired: at 42 cells it
+was half an easy board, and the same family as this one.)
 
 It is a second target, `AppClip` (product type `on-demand-install-capable`,
 bundle ID `io.github.sirk0.hypersweeper.Clip`, iPhone and iPad), running **the

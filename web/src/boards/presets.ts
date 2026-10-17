@@ -52,20 +52,15 @@ import {
   brickCubeBoard,
   c180Board,
   gp21Board,
-  c80Board,
   cubeBoard,
   cubeFrameBoard,
   dodecahedronBoard,
   icosahedronBoard,
   octahedronBoard,
-  rhombicosidodecahedronBoard,
-  snubDodecahedronBoard,
-  sphereTriangleBoard,
   steppedBipyramidBoard,
   steppedPyramidBoard,
   tetrahedronBoard,
   tetrahedronFrameBoard,
-  truncatedIcosidodecahedronBoard,
 } from "./solids";
 import { solidCubeBoard } from "./volume";
 import {
@@ -122,16 +117,11 @@ const BUILDERS: Record<string, Builder> = {
   hextri_board: hextriBoard,
   hextriangle_board: hextriangleBoard,
   square_diamond_board: squareDiamondBoard,
-  c80_board: c80Board,
   c180_board: c180Board,
   gp21_board: gp21Board,
-  sphere_triangle_board: sphereTriangleBoard,
-  snub_dodecahedron_board: snubDodecahedronBoard,
-  rhombicosidodecahedron_board: rhombicosidodecahedronBoard,
-  truncated_icosidodecahedron_board: truncatedIcosidodecahedronBoard,
   // the Archimedean solids cut into boards (boards/archimedean.ts), duals of
   // their Catalan solids; (mineCount, frequency) like those. The three
-  // icosahedral ones also ship uncut, one cell per face, just above.
+  // icosahedral ones take frequency 0 as well, the solid uncut.
   cuboctahedron_board: cuboctahedronBoard,
   truncated_octahedron_board: truncatedOctahedronBoard,
   snub_cube_board: snubCubeBoard,

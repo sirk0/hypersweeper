@@ -20,7 +20,7 @@ import {
   trefoilTriangleBoard,
 } from "../../src/boards/surfaces";
 import { buildBoard, MODES } from "../../src/boards/presets";
-import { c180Board, cubeBoard, sphereTriangleBoard } from "../../src/boards/solids";
+import { c180Board, convexBoard3d, cubeBoard, geodesic, type Cells } from "../../src/boards/solids";
 import {
   fanTriangles,
   insideOccluder,
@@ -31,6 +31,7 @@ import {
   type Tri,
 } from "../../src/boards/clipSolid";
 import {
+  cid,
   eulerCharacteristic,
   isAutomorphism,
   symmetryOf,
@@ -44,6 +45,15 @@ import {
 // (tests/test_boards.py TestKleinBottle / TestKleinTilings and the wrap
 // invariants) — neighbour degrees, two-sidedness, and the board symmetries the
 // conformance oracle's aggregate counts don't pin down.
+
+/** The geodesic sphere a projective triangle board is the quotient of, as its
+ * own board: `20 * frequency**2` triangles on the unit sphere. */
+function geodesicSphere(frequency: number): Board3D {
+  const { positions, triangles } = geodesic(frequency);
+  const cells: Cells = new Map();
+  triangles.forEach((triangle, n) => cells.set(cid("t", n), [...triangle]));
+  return convexBoard3d("geodesic", cells, positions, 5);
+}
 
 function degrees(board: Board3D): Set<number> {
   return new Set([...board.adjacency.values()].map((n) => n.length));
@@ -666,7 +676,7 @@ describe("the projective plane", () => {
     // The gluing moves every point half the sphere away, so no cell meets its
     // twin and no two of a cell's neighbours are each other's twins.
     const pairs: [Board3D, Board3D][] = [
-      [projectiveTriangleBoard(3, 5), sphereTriangleBoard(5, 3)],
+      [projectiveTriangleBoard(3, 5), geodesicSphere(3)],
       [projectiveHexBoard(3, 5), c180Board(5)],
     ];
     for (const [board, sphere] of pairs) {

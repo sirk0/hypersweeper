@@ -27,7 +27,7 @@
 	<!-- The one board the clip plays: a mode key from data/catalog.json, handed
 	     to the page as window.hypersweeperClip (ClipBridgeViewController). -->
 	<key>HypersweeperClipBoard</key>
-	<string>c80</string>
+	<string>c180</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>LSRequiresIPhoneOS</key>

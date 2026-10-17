@@ -121,14 +121,14 @@ SPEC: dict[str, dict] = {
     "cylinder_board": dict(size=(0, 1), mine=2, shape=None),
     "cylinder_triangle_board": dict(size=(0, 1), mine=2, shape=None),
     "cylinder_hex_board": dict(size=(0, 1), mine=2, shape=None),
-    # the named solids: the cell count *is* the solid, so only mines move
-    "c80_board": dict(size=(), mine=0, shape=None),
-    "c180_board": dict(size=(), mine=0, shape=None),
-    "gp21_board": dict(size=(), mine=0, shape=None),
-    "sphere_triangle_board": dict(size=(), mine=0, shape=None),
-    "snub_dodecahedron_board": dict(size=(), mine=0, shape=None),
-    "rhombicosidodecahedron_board": dict(size=(), mine=0, shape=None),
-    "truncated_icosidodecahedron_board": dict(size=(), mine=0, shape=None),
+    # The Goldberg spheres: GP(f, 0) has one knob, the frequency, and
+    # 10 * f**2 + 2 cells; the chiral GP(h, k) two that are not free -- see
+    # `_grid_goldberg3`. ``rigid`` as the projective plane's Goldberg board is:
+    # the hexagons sit on the sphere at the same spacing whatever the knob, and
+    # roundness would only read "subdivide further" as "less distorted".
+    "c180_board": dict(size=(1,), mine=0, shape=None, rigid=True),
+    "gp21_board": dict(size=(1, 2), mine=0, shape=None, rigid=True,
+                       grid="goldberg3"),
     "cube_board": dict(size=(0,), mine=1, shape=None),
     # The three brick bonds laid on a cube: one knob, the blocks per face side.
     # ``rigid`` for the same reason the Catalan solids are -- every brick lies
@@ -196,11 +196,15 @@ SPEC: dict[str, dict] = {
     "cuboctahedron_board": dict(size=(1,), mine=0, shape=None, rigid=True),
     "truncated_octahedron_board": dict(size=(1,), mine=0, shape=None, rigid=True),
     "snub_cube_board": dict(size=(1,), mine=0, shape=None, rigid=True),
-    # ...and the icosahedral three, their big faces fanned into triangles first
-    "rhombicosidodecahedron_split_board": dict(size=(1,), mine=0, shape=None, rigid=True),
+    # ...and the icosahedral three, their big faces fanned into triangles first.
+    # Their floor is 0, the solid uncut: 62, 62 and 92 cells, the only rung
+    # anywhere near easy -- the first cut is already 110 to 270.
+    "rhombicosidodecahedron_split_board": dict(size=(1,), mine=0, shape=None, rigid=True,
+                                               floor=0),
     "truncated_icosidodecahedron_split_board": dict(size=(1,), mine=0, shape=None,
-                                                    rigid=True),
-    "snub_dodecahedron_split_board": dict(size=(1,), mine=0, shape=None, rigid=True),
+                                                    rigid=True, floor=0),
+    "snub_dodecahedron_split_board": dict(size=(1,), mine=0, shape=None, rigid=True,
+                                          floor=0),
     # aperiodic: ``keep`` is exact, the growth arg only has to be generous
     "penrose_board": dict(size=(3,), mine=1, shape=2, kind="scale", grow=0),
     "kitedart_board": dict(size=(3,), mine=1, shape=2, kind="scale", grow=0),
@@ -272,7 +276,17 @@ def _grid_steppedpyramid() -> list[list[int]]:
     return [[base, (base + 1) // 2] for base in range(3, 24, 2)]
 
 
+# ``gp21_board(h, k)``: a class III Goldberg polyhedron needs ``k > 0`` and
+# ``h > k`` (``(k, h)`` is the same board's mirror image), and ``h - k`` not a
+# multiple of three, or lattice triangles centre on the icosahedron's edges
+# (see `solids._geodesic_hk`). Cells are ``10 * (h*h + h*k + k*k) + 2``.
+def _grid_goldberg3() -> list[list[int]]:
+    return [[h, k] for h in range(2, 12) for k in range(1, h)
+            if (h - k) % 3 != 0]
+
+
 GRIDS = {
+    "goldberg3": _grid_goldberg3,
     "cubeframe": _grid_cubeframe,
     "bipyramid": _grid_bipyramid,
     "steppedpyramid": _grid_steppedpyramid,

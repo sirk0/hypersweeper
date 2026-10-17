@@ -37,7 +37,8 @@ from minesweeper.gui import (  # noqa: E402
 
 # mode, difficulty, seed, revealed fraction, flag count, explode?, rotation nudge
 SHOTS = [
-    ("c180", "medium", 7, 0.30, 5, False, (0, 0)),
+    # easy, the GP(3,0) the README shows: medium is the 252-cell GP(5,0)
+    ("c180", "easy", 7, 0.30, 5, False, (0, 0)),
 ]
 
 FILENAMES = {

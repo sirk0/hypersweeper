@@ -1520,40 +1520,26 @@ def _render_icon(key: str) -> pygame.Surface:
         for pt in list(h) + mids:
             pygame.draw.line(s, ICON_BLUE_DARK, (c, c), pt, 3)
         _icon_gloss(s, pygame.Rect(d * 0.1, d * 0.08, d * 0.8, d * 0.4))
-    elif key in ("sphere", "c80", "gp21", "c180", "spheretri", "snubdodec",
-                 "rhombicosidodeca", "truncicosidodeca"):
+    elif key in ("sphere", "gp21", "c180"):
         fill_circle(s, int(c), int(c), int(d * 0.44), ICON_BLUE)
         pygame.draw.circle(s, ICON_BLUE_DARK, (int(c), int(c)), int(d * 0.44), 4)
-        if key == "spheretri":
-            _icon_badge(s, c, c, d * 0.2, "tri")
-        elif key == "snubdodec":
-            _icon_shape(s, _ngon_points(c, c - d * 0.06, d * 0.17, 5, -90),
-                        fill=ICON_BLUE_LIGHT, width=4)
-            for k in range(5):
-                angle = math.radians(72 * k - 90)
-                tx = c + d * 0.3 * math.cos(angle) * 1.05
-                ty = c - d * 0.06 + d * 0.3 * math.sin(angle) * 1.05
-                _icon_badge(s, tx, ty, d * 0.08, "tri")
-        else:
-            # pentagon center for the pentagonal solids, hexagon for C180
-            # and GP(2,1),
-            # square for the two square-majority solids
-            sides = 6 if key in ("gp21", "c180") else (
-                4 if key in ("rhombicosidodeca", "truncicosidodeca") else 5)
-            inner = [
-                (c + d * 0.2 * math.cos(math.radians(360 / sides * k - 90)),
-                 c + d * 0.2 * math.sin(math.radians(360 / sides * k - 90)))
-                for k in range(sides)
-            ]
-            _icon_shape(s, inner, fill=ICON_BLUE_LIGHT, width=4)
-            if key in ("c80", "gp21", "c180"):  # bond lines, fullerene style
-                for k in range(sides):
-                    angle = math.radians(360 / sides * k - 90)
-                    x1 = c + d * 0.2 * math.cos(angle)
-                    y1 = c + d * 0.2 * math.sin(angle)
-                    x2 = c + d * 0.41 * math.cos(angle)
-                    y2 = c + d * 0.41 * math.sin(angle)
-                    pygame.draw.line(s, ICON_BLUE_DARK, (x1, y1), (x2, y2), 4)
+        # pentagon center for the pentagonal hexecontahedron, hexagon for the
+        # two Goldberg spheres
+        sides = 6 if key in ("gp21", "c180") else 5
+        inner = [
+            (c + d * 0.2 * math.cos(math.radians(360 / sides * k - 90)),
+             c + d * 0.2 * math.sin(math.radians(360 / sides * k - 90)))
+            for k in range(sides)
+        ]
+        _icon_shape(s, inner, fill=ICON_BLUE_LIGHT, width=4)
+        if key in ("gp21", "c180"):  # bond lines, fullerene style
+            for k in range(sides):
+                angle = math.radians(360 / sides * k - 90)
+                x1 = c + d * 0.2 * math.cos(angle)
+                y1 = c + d * 0.2 * math.sin(angle)
+                x2 = c + d * 0.41 * math.cos(angle)
+                y2 = c + d * 0.41 * math.sin(angle)
+                pygame.draw.line(s, ICON_BLUE_DARK, (x1, y1), (x2, y2), 4)
         _icon_gloss(s, pygame.Rect(d * 0.13, d * 0.06, d * 0.62, d * 0.62), 90)
     elif key == "cube":
         # an isometric cube: three visible rhombic faces, grid-lined

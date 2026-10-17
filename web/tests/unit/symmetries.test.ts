@@ -325,7 +325,7 @@ describe("board symmetries", () => {
     const pyramid = buildBoard("steppedpyramid", "easy");
     expect(pyramid.symmetries.map((s) => s.id)).toEqual(["ring", "mirror-ring"]);
     expect(spin("steppedpyramid")).toBe(4);
-    for (const chiral of ["sphere", "snubdodec", "pentagonalicositetra", "snubcube", "snubdodecsplit", "gp21"]) {
+    for (const chiral of ["sphere", "pentagonalicositetra", "snubcube", "snubdodecsplit", "gp21"]) {
       const ids = buildBoard(chiral, "easy").symmetries.map((s) => s.id);
       expect(ids, `${chiral} should have no mirror`).not.toContain("mirror-ring");
       expect(ids, `${chiral} should have no mirror`).not.toContain("mirror-tube");

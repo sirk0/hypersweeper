@@ -359,7 +359,7 @@ test.describe("game header", () => {
     // The App Clip's board. Its hexagons cannot all be regular on any sphere,
     // its pentagons are, and the word for the difference is explained in place.
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto("/?mode=c80&difficulty=easy&seed=1");
+    await page.goto("/?mode=c180&difficulty=easy&seed=1");
     await expect(page.locator("body[data-ready]")).toBeVisible();
     await page.locator('.hud-btn[data-slot="info"]').click();
     const dialog = page.locator('.dialog-backdrop[data-dialog="info"]');

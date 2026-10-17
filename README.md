@@ -64,15 +64,11 @@ Pick a surface, then a tiling:
   **Fractals** and **Hyperbolic**; every periodic family bar 2-uniform and the last five also wraps the
   cylinder and the torus below, and — unless the tiling is chiral — the
   Möbius strip and the Klein bottle too
-- **Sphere (3D)** — a chamfered dodecahedron (12 pentagons + 30 hexagons),
-  the chiral Goldberg polyhedron GP(2,1) (12 pentagons + 60 hexagons, its
-  hexagons twisted off the icosahedron's edges), the Goldberg polyhedron
-  GP(3,0) (12 pentagons + 80 hexagons), a geodesic
-  icosahedron (80 triangles), a snub dodecahedron
-  (12 pentagons + 80 triangles), a rhombicosidodecahedron or a truncated
-  icosidodecahedron — each rounded onto the sphere itself.
-  (A sphere cannot be tiled with hexagons alone — Euler's formula
-  forces 12 pentagons in.)
+- **Sphere (3D)** — two Goldberg polyhedra rounded onto the sphere, growing
+  with the difficulty: GP(n,0) (12 pentagons among 80, 240 and 480 hexagons)
+  and the chiral GP(h,k) (60, 270 and 480 hexagons, twisted off the
+  icosahedron's edges). (A sphere cannot be tiled with hexagons alone —
+  Euler's formula forces 12 pentagons in.)
 - **Platonic solids (3D)** — the five regular solids, each tiled with
   triangles or squares, flat and creased at the edges rather than rounded
   onto a sphere: a tetrahedron (4 faces), a cube (6, squares), an octahedron
@@ -82,10 +78,9 @@ Pick a surface, then a tiling:
   alike, flat-faced and each face cut into a grid: a cuboctahedron
   (8 triangles + 6 squares), a truncated octahedron (6 squares + 8 hexagons,
   each cut into three rhombi), a snub cube (32 triangles + 6 squares), and
-  the three icosahedral solids above — the rhombicosidodecahedron, truncated
-  icosidodecahedron and snub dodecahedron — with their pentagons, hexagons and
-  decagons fanned into triangles, as bigger boards than the one-cell-a-face
-  ones under Sphere
+  the three icosahedral solids — the rhombicosidodecahedron, truncated
+  icosidodecahedron and snub dodecahedron — one cell a face on Easy, then
+  with their pentagons, hexagons and decagons fanned into triangles
 - **Catalan solids (3D)** — all thirteen duals of the Archimedean solids,
   flat-faced, each face cut into smaller copies of itself to make a board:
   the triakis tetrahedron, rhombic dodecahedron, triakis octahedron,

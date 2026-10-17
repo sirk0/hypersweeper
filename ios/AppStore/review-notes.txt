@@ -8,6 +8,6 @@ iCloud: best times and the achievement record are kept in step between the user'
 
 Stickers: the app includes an iMessage sticker pack of the boards, in Messages' app drawer.
 
-The App Clip plays a single board (the chamfered dodecahedron, on Easy) and does not use Game Center or iCloud.
+The App Clip plays a single board (a Goldberg polyhedron, on Easy) and does not use Game Center or iCloud.
 
 Haptic feedback is used on iPhone.

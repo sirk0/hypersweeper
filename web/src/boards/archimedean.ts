@@ -20,8 +20,9 @@
 // hexagon cannot be cut into hexagons, so the truncated octahedron's are cut
 // into three rhombi first (`splitHexagons`, `thSpokes`); the icosahedral
 // solids' pentagons, hexagons and decagons are fanned into triangles from their
-// centres instead (`fanFaces`), which keeps every symmetry. Those three also
-// ship uncut, one cell per face, as sphere boards in solids.ts.
+// centres instead (`fanFaces`), which keeps every symmetry. `frequency = 0` is
+// the solid uncut, one cell per face and no fan: the icosahedral three's easy
+// rung, 62, 62 and 92 cells, where the first cut is already 110 to 270.
 import { cid, cross, dot, tangentOrder, type Board3D, type Vec3 } from "./core";
 import { Base, catalanFaces, quadGrid, triGrid, type Op } from "./catalan";
 import { convexBoard3d, type Cells, type Positions } from "./solids";
@@ -192,14 +193,20 @@ function archimedeanBoard(
   frequency: number,
   baseKind = "cube",
 ): Board3D {
-  if (frequency < 1) throw new Error("frequency must be at least 1");
+  if (frequency < 0) throw new Error("frequency must be at least 0");
   const base = new Base(baseKind);
   let { faces, positions } = archimedeanFaces(base, op);
-  if (baseKind === "cube" && op === "kis") {
-    ({ faces, positions } = splitHexagons(faces, positions, (ring) => thSpokes(base, ring)));
+  let sub: { faces: Cells; positions: Positions };
+  if (frequency === 0) {
+    // the bare solid, one cell per face: the icosahedral solids' easy rung
+    sub = { faces, positions };
+  } else {
+    if (baseKind === "cube" && op === "kis") {
+      ({ faces, positions } = splitHexagons(faces, positions, (ring) => thSpokes(base, ring)));
+    }
+    ({ faces, positions } = fanFaces(faces, positions));
+    sub = subdivideMixed(faces, positions, frequency);
   }
-  ({ faces, positions } = fanFaces(faces, positions));
-  const sub = subdivideMixed(faces, positions, frequency);
   // the grids' keys nest a face key of whatever shape that face had; the cell
   // ids only have to be distinct
   const cells: Cells = new Map();
@@ -236,8 +243,8 @@ export function snubCubeBoard(mineCount: number, frequency = 2): Board3D {
 
 /** A rhombicosidodecahedron cut into a board: 20 triangles, 30 squares and 12
  * pentagons (3.4.5.4), each pentagon fanned into 5 triangles, then every face
- * cut `frequency**2` ways — `110 * frequency**2` cells. The uncut solid, one
- * cell per face, is `solids.rhombicosidodecahedronBoard`. */
+ * cut `frequency**2` ways — `110 * frequency**2` cells, or the uncut solid's
+ * 62 at `frequency = 0`. */
 export function rhombicosidodecahedronSplitBoard(mineCount: number, frequency = 2): Board3D {
   return archimedeanBoard("rhombicosidodecasplit", "ortho", mineCount, frequency, "icosa");
 }
@@ -245,7 +252,7 @@ export function rhombicosidodecahedronSplitBoard(mineCount: number, frequency = 
 /** A truncated icosidodecahedron cut into a board: 30 squares, 20 hexagons and
  * 12 decagons (4.6.10), the hexagons fanned into 6 triangles and the decagons
  * into 10, then every face cut `frequency**2` ways — `270 * frequency**2`
- * cells. The uncut solid is `solids.truncatedIcosidodecahedronBoard`. */
+ * cells, or the uncut solid's 62 at `frequency = 0`. */
 export function truncatedIcosidodecahedronSplitBoard(mineCount: number, frequency = 1): Board3D {
   return archimedeanBoard("truncicosidodecasplit", "meta", mineCount, frequency, "icosa");
 }
@@ -253,7 +260,7 @@ export function truncatedIcosidodecahedronSplitBoard(mineCount: number, frequenc
 /** A snub dodecahedron cut into a board: 80 triangles and 12 pentagons
  * (3.3.3.3.5), each pentagon fanned into 5 triangles, then every face cut
  * `frequency**2` ways — `140 * frequency**2` cells. Chiral, the icosahedral
- * rotations alone. The uncut solid is `solids.snubDodecahedronBoard`. */
+ * rotations alone. `frequency = 0` is the uncut solid, 92 cells. */
 export function snubDodecahedronSplitBoard(mineCount: number, frequency = 2): Board3D {
   return archimedeanBoard("snubdodecsplit", "gyro", mineCount, frequency, "icosa");
 }

@@ -62,7 +62,7 @@ describe("which pattern a mode gets", () => {
     // backgroundPattern.ts would leave that board on a blank page.
     const missing = MODES.filter((mode) => patternKey(mode) === null);
     expect(missing).toEqual([]);
-    expect(MODES.length).toBe(230);
+    expect(MODES.length).toBe(225);
   });
 
   it("follows the tiling, not the surface", () => {
@@ -212,7 +212,7 @@ describe("the tile", () => {
   it("is built once per geometry, not once per mode", () => {
     expect(patternLayer("trihex")).toBe(patternLayer("torustrihex"));
     expect(patternLayer("torus")).toBe(patternLayer("cube"));
-    expect(patternLayer("spheretri")).toBe(patternLayer("c80"));
+    expect(patternLayer("gp21")).toBe(patternLayer("c180"));
     expect(patternLayer("sphere")).toBe(patternLayer("floret"));
     expect(patternLayer("penrose")).toBe(patternLayer("penrose"));
   });

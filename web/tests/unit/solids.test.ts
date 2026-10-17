@@ -1,16 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
-  c80Board,
+  c180Board,
   gp21Board,
   cubeBoard,
   cubeFrameBoard,
-  rhombicosidodecahedronBoard,
-  snubDodecahedronBoard,
-  sphereTriangleBoard,
   steppedBipyramidBoard,
   tetrahedronBoard,
   tetrahedronFrameBoard,
-  truncatedIcosidodecahedronBoard,
 } from "../../src/boards/solids";
 import {
   deltoidalHexecontahedronBoard,
@@ -65,12 +61,6 @@ describe("solids", () => {
     for (const n of board.adjacency.values()) expect(n.length).toBe(7);
   });
 
-  it("c80 is a chamfered dodecahedron: 12 pentagons + 30 hexagons", () => {
-    const s = sizes(c80Board(5));
-    expect(count(s, 5)).toBe(12);
-    expect(count(s, 6)).toBe(30);
-  });
-
   it("gp21 is Goldberg GP(2,1): 12 pentagons + 60 hexagons, each hexagon on one pentagon", () => {
     const board = gp21Board(5);
     const s = sizes(board);
@@ -86,36 +76,49 @@ describe("solids", () => {
     }
   });
 
-  it("snub dodecahedron is 12 pentagons + 80 triangles", () => {
-    const board = snubDodecahedronBoard(10);
-    const s = sizes(board);
-    expect(board.adjacency.size).toBe(92);
-    expect(count(s, 3)).toBe(80);
-    expect(count(s, 5)).toBe(12);
+  it("c180 is the class I Goldberg ladder GP(f, 0): 10 f^2 + 2 cells, 12 pentagons", () => {
+    for (let f = 2; f <= 7; f++) {
+      const board = c180Board(5, f);
+      const s = sizes(board);
+      expect(board.adjacency.size).toBe(10 * f * f + 2);
+      expect(count(s, 5)).toBe(12);
+      expect(count(s, 6)).toBe(s.length - 12);
+      expect(eulerCharacteristic(board)).toBe(2);
+    }
   });
 
-  it("rhombicosidodecahedron is 20 triangles + 30 squares + 12 pentagons", () => {
-    const board = rhombicosidodecahedronBoard(10);
-    const s = sizes(board);
-    expect(board.adjacency.size).toBe(62);
-    expect(count(s, 3)).toBe(20);
-    expect(count(s, 4)).toBe(30);
-    expect(count(s, 5)).toBe(12);
+  it("gp21 is the class III Goldberg ladder GP(h, k), gcd(h, k) > 1 included", () => {
+    for (const [h, k] of [[2, 1], [3, 1], [3, 2], [4, 2], [5, 1], [4, 3], [6, 1], [5, 3], [6, 2]] as const) {
+      const board = gp21Board(5, h, k);
+      const s = sizes(board);
+      expect(board.adjacency.size).toBe(10 * (h * h + h * k + k * k) + 2);
+      expect(count(s, 5)).toBe(12);
+      expect(count(s, 6)).toBe(s.length - 12);
+      expect(eulerCharacteristic(board)).toBe(2);
+      // trivalent: a cell's neighbours are exactly the cells across its edges
+      for (const [cell, polygon] of board.polygons) {
+        expect(board.adjacency.get(cell)!.length).toBe(polygon.length);
+      }
+    }
+    // a lattice triangle centred on an icosahedron edge is refused
+    for (const [h, k] of [[1, 1], [2, 2], [4, 1]] as const) {
+      expect(() => gp21Board(5, h, k)).toThrow();
+    }
   });
 
-  it("truncated icosidodecahedron is 30 squares + 20 hexagons + 12 decagons", () => {
-    const board = truncatedIcosidodecahedronBoard(10);
-    const s = sizes(board);
-    expect(board.adjacency.size).toBe(62);
-    expect(count(s, 4)).toBe(30);
-    expect(count(s, 6)).toBe(20);
-    expect(count(s, 10)).toBe(12);
-  });
-
-  it("geodesic sphere has 20 * frequency^2 triangles", () => {
-    const board = sphereTriangleBoard(10, 2);
-    expect(board.polygons.size).toBe(80);
-    expect(sizes(board).every((s) => s === 3)).toBe(true);
+  it("the icosahedral Archimedean solids uncut (frequency 0) are one cell per face", () => {
+    const cases: [Board3D, Record<number, number>][] = [
+      [rhombicosidodecahedronSplitBoard(10, 0), { 3: 20, 4: 30, 5: 12 }],
+      [truncatedIcosidodecahedronSplitBoard(10, 0), { 4: 30, 6: 20, 10: 12 }],
+      [snubDodecahedronSplitBoard(10, 0), { 3: 80, 5: 12 }],
+    ];
+    for (const [board, mix] of cases) {
+      const s = sizes(board);
+      const total = Object.values(mix).reduce((a, b) => a + b, 0);
+      expect(board.adjacency.size).toBe(total);
+      for (const [sides, n] of Object.entries(mix)) expect(count(s, Number(sides))).toBe(n);
+      expect(eulerCharacteristic(board)).toBe(2);
+    }
   });
 
   it("cube is six n x n square faces", () => {

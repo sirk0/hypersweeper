@@ -676,7 +676,7 @@ class TestMenu:
     def test_sphere_lists_spherical_tilings(self):
         menu = MenuScreen()
         self.click_item(menu, "sphere")
-        assert self.click_item(menu, "spheretri") == ("start", "spheretri")
+        assert self.click_item(menu, "c180") == ("start", "c180")
 
     def test_platonic_solids_launch_at_once(self):
         menu = MenuScreen()

@@ -91,7 +91,7 @@ const SCENES: Scene[] = [
   {
     name: "01-snub-dodecahedron",
     shape: "realistic",
-    mode: "snubdodec",
+    mode: "snubdodecsplit",
     seed: 5,
     reveal: 0.3,
     flags: 4,

@@ -57,7 +57,6 @@ from minesweeper.boards.fractal import (
 from minesweeper.boards.hyperbolic import hyperbolic_board
 from minesweeper.boards.solids import (
     brick_cube_board,
-    c80_board,
     c180_board,
     cube_board,
     cube_frame_board,
@@ -65,14 +64,10 @@ from minesweeper.boards.solids import (
     gp21_board,
     icosahedron_board,
     octahedron_board,
-    rhombicosidodecahedron_board,
-    snub_dodecahedron_board,
-    sphere_triangle_board,
     stepped_bipyramid_board,
     stepped_pyramid_board,
     tetrahedron_board,
     tetrahedron_frame_board,
-    truncated_icosidodecahedron_board,
 )
 from minesweeper.boards.surfaces import (
     arch_cylinder_board,
@@ -127,16 +122,11 @@ _JSON_BUILDERS = {
     "hextri_board": hextri_board,
     "hextriangle_board": hextriangle_board,
     "square_diamond_board": square_diamond_board,
-    "c80_board": c80_board,
     "c180_board": c180_board,
     "gp21_board": gp21_board,
-    "sphere_triangle_board": sphere_triangle_board,
-    "snub_dodecahedron_board": snub_dodecahedron_board,
-    "rhombicosidodecahedron_board": rhombicosidodecahedron_board,
-    "truncated_icosidodecahedron_board": truncated_icosidodecahedron_board,
     # the Archimedean solids cut into boards (boards/archimedean.py), duals of
     # their Catalan solids; (mine_count, frequency) like those. The three
-    # icosahedral ones also ship uncut, one cell per face, just above.
+    # icosahedral ones take frequency 0 as well, the solid uncut.
     "cuboctahedron_board": cuboctahedron_board,
     "truncated_octahedron_board": truncated_octahedron_board,
     "snub_cube_board": snub_cube_board,

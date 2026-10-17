@@ -1276,8 +1276,8 @@ Clip have no plugin, and nothing runs.
 
 The iPhone app carries an App Clip (`ios/App/AppClip`, see
 [`../../ios/README.md`](../../ios/README.md)): a second native target running
-this same bundle, which plays one board — the chamfered dodecahedron, at the
-default difficulty — so someone can try the game from the App Store without
+this same bundle, which plays one board — the Goldberg polyhedron GP(3,0)
+(`c180`), at the default difficulty — so someone can try the game from the App Store without
 installing it. The page learns it is a clip from its shell, never from the
 build: `ClipBridgeViewController` sets `window.hypersweeperClip` to the board's
 mode before any script runs, and `src/appClip.ts` reads it (`clipBoard`, which
