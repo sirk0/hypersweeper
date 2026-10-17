@@ -109,7 +109,8 @@ Pick a surface, then a tiling:
   three-brick version, the three congruent-rectangle bonds whose block is a
   square and so fills a square face. A brick cannot run round a corner, so
   the courses break at some of the twelve edges; the bricks either side still
-  meet as neighbours
+  meet as neighbours. A fourth is laid in the **brick rings**, every face the
+  flat board's concentric rings about its own centre
 - **Volumetric (3D)** — a cube *filled* with cubes rather than a surface of
   them: an n×n×n block where a cell's neighbours are the 26 cubes that share a
   corner with it, against 21 for the densest surface here. A solid shows only

@@ -4,6 +4,7 @@ import math
 from collections import defaultdict
 from typing import Hashable
 
+from minesweeper.boards.aperiodic import _brick_rings_tiles
 from minesweeper.boards.core import (
     ROOT3,
     Board3D,
@@ -607,6 +608,10 @@ def cube_board(n: int, mine_count: int) -> Board3D:
 # weave two laid one way or the other in a checkerboard, and the three-brick
 # weave three 1x1/3 bricks the same way. The running bond's block is offset half
 # a brick and the herringbone's is a diagonal, so neither fills a square face.
+#
+# The brick rings (`aperiodic.py`) lay on one too, by a different route: they
+# have no block at all, but n rings fill a 2n x 2n square exactly, and a cube
+# face is a square. So that cube's faces are each the flat board, whole.
 
 _BRICK_BLOCK = 6  # lattice units per block: divisible by 2 and by 3
 
@@ -628,6 +633,32 @@ BRICK_BONDS = {
     "basketweave": (2, True),
     "basketweave3": (3, True),
 }
+
+#: The one brick pattern a cube also takes that is not a bond: no block, the
+#: whole face is the flat board's concentric rings (`brick_cube_board`).
+BRICK_RINGS = "brickrings"
+
+
+def _face_bricks(bond: str, n: int, phase: int):
+    """One face's bricks as ``(suffix, (u0, v0, u1, v1))``, in lattice units
+    from the face's ``(-half, -half)`` corner; ``suffix`` ends the cell id.
+
+    A bond's face is an n x n grid of blocks, each cut into the bond's bricks
+    (and, for the weaves, turned on a checkerboard ``phase`` shifts). The brick
+    rings' face is the flat board's ``n`` rings, its rows along u.
+    """
+    if bond == BRICK_RINGS:
+        for b, (x, y, w, h) in enumerate(_brick_rings_tiles(n)):
+            yield (b,), (x + n, y + n, x + n + w, y + n + h)
+        return
+    count, checkered = BRICK_BONDS[bond]
+    block = _BRICK_BLOCK
+    for i in range(n):
+        for j in range(n):
+            turned = checkered and (i + j + phase) % 2 == 1
+            for b, (u0, v0, u1, v1) in enumerate(_brick_courses(count, turned)):
+                yield (i, j, b), (i * block + u0, j * block + v0,
+                                  i * block + u1, j * block + v1)
 
 
 def _split_at_lattice_points(cells: dict[Cell, list]) -> dict[Cell, list]:
@@ -672,25 +703,35 @@ def brick_cube_board(bond: str, n: int, mine_count: int) -> Board3D:
     is ``6 * bricks * n**2`` cells (12 n**2 for the two-brick bonds, 18 n**2
     for the three-brick weave).
 
+    ``bond`` may also be ``BRICK_RINGS``, and then ``n`` counts rings: each
+    face is the flat brick-rings board of ``n`` rings, 2n bricks long a side,
+    so the board is ``12 n**2`` 2x1 bricks with every face's rings about its
+    own centre.
+
     Vertices are integer points on ``[-N, N]**3`` where ``N = 3n`` (a surface
     vertex has one axis at +-N; a block is 6 units, so a half- and a
-    third-split both land on the lattice), which is what lets bricks meeting
-    at a cube edge or corner share a vertex id and become neighbors.
+    third-split both land on the lattice) -- ``N = n`` for the rings, whose
+    bricks are whole lattice units already -- which is what lets bricks
+    meeting at a cube edge or corner share a vertex id and become neighbors.
 
     A face's bricks run along the first of its two axes taken cyclically
     (x-face -> y, y-face -> z, z-face -> x), so the six faces are related by
     the cube's own rotations rather than one face being laid out differently
     from the rest. That leaves the bond broken at some of the twelve edges --
     a brick cannot run round a corner -- and `_split_at_lattice_points` is
-    what stitches the mesh back together across the break.
+    what stitches the mesh back together across the break. The rings break
+    at every one of the twelve: a face's outer ring cuts its row edges (along
+    u) at even steps from the corner and its side edges (along v) at odd
+    ones, and the cyclic rule makes each cube edge one face's u and the other
+    face's v, so the two cuts never line up. Each face keeps its rings' two
+    mirrors and half turn, and the board the cube's 12 rotations of a
+    tetrahedron plus the inversion -- 24 of 48 at every n, like the bonds.
     """
-    if bond not in BRICK_BONDS:
+    if bond != BRICK_RINGS and bond not in BRICK_BONDS:
         raise ValueError(f"unknown brick bond: {bond}")
     if n < 1:
         raise ValueError("need at least one block per face side")
-    count, checkered = BRICK_BONDS[bond]
-    block = _BRICK_BLOCK
-    half = n * block // 2
+    half = n if bond == BRICK_RINGS else n * _BRICK_BLOCK // 2
 
     cells: dict[Cell, list] = {}
     for axis in range(3):
@@ -707,20 +748,15 @@ def brick_cube_board(bond: str, n: int, mine_count: int) -> Board3D:
             # group of order 24 -- the full rotation group for even n, and the
             # 12 rotations plus inversion the odd sizes already had.
             phase = 1 if n % 2 == 0 and sign < 0 else 0
-            for i in range(n):
-                for j in range(n):
-                    turned = checkered and (i + j + phase) % 2 == 1
-                    for b, (u0, v0, u1, v1) in enumerate(
-                        _brick_courses(count, turned)
-                    ):
-                        keys = []
-                        for du, dv in ((u0, v0), (u1, v0), (u1, v1), (u0, v1)):
-                            coord = [0, 0, 0]
-                            coord[axis] = sign * half
-                            coord[u_axis] = -half + i * block + du
-                            coord[v_axis] = -half + j * block + dv
-                            keys.append(tuple(coord))
-                        cells[(axis, sign, i, j, b)] = keys
+            for suffix, (u0, v0, u1, v1) in _face_bricks(bond, n, phase):
+                keys = []
+                for u, v in ((u0, v0), (u1, v0), (u1, v1), (u0, v1)):
+                    coord = [0, 0, 0]
+                    coord[axis] = sign * half
+                    coord[u_axis] = -half + u
+                    coord[v_axis] = -half + v
+                    keys.append(tuple(coord))
+                cells[(axis, sign, *suffix)] = keys
 
     cells = _split_at_lattice_points(cells)
     positions = {

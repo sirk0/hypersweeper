@@ -443,6 +443,14 @@ things there are worth knowing before touching it:
   `n` the checkerboard is flipped on the three negative faces, or the two
   halves of the cube meet out of phase and the board keeps 6 of the cube's 48
   symmetries instead of 24. `TestBrickCubes` measures that directly.
+* **A pattern with no block can still fill the face whole.** The brick rings
+  (`aperiodic._brick_rings_tiles`) have no fundamental block at all, but n
+  rings tile a 2n x 2n square, so `BRICK_RINGS` is the one key
+  `brick_cube_board` takes that is not a `BRICK_BONDS` row: `_face_bricks`
+  hands back the flat board's bricks for the face instead of a grid of blocks,
+  on a lattice of `[-n, n]**3`, and everything after (the cyclic face axes,
+  the splice, the symmetry) is shared. `TestBrickRingsCube` checks every face
+  against the flat board brick for brick.
 
 `resize.SPEC` wants `rigid=True` there and, deliberately, **no `lead`**, though
 the first argument is a bond key like the Archimedean rows'. `lead` does not

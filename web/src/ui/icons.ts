@@ -673,10 +673,11 @@ const SOLID_BUILDERS: Record<string, () => Board3D> = {
   // the cube of cubes at its easy size: four sheets of sixteen, which is the
   // board itself and about the density of a brick cube's icon
   cube3d: () => solidCubeBoard(4, 0),
-  // the three brick cubes, at their own easy block counts
+  // the four brick cubes, at their own easy block (or ring) counts
   cubestackedbond: () => brickCubeBoard("stackedbond", 3, 0),
   cubebasketweave: () => brickCubeBoard("basketweave", 3, 0),
   cubebasketweave3: () => brickCubeBoard("basketweave3", 2, 0),
+  cubebrickrings: () => brickCubeBoard("brickrings", 3, 0),
   // The thirteen Catalan solids, at their own easy frequencies. There is no
   // drawing of a disdyakis triacontahedron a reader could tell from a pentakis
   // dodecahedron, so every one of these is the real board.
@@ -763,6 +764,7 @@ const SOLID_VIEW: Record<string, [number, number] | [number, number, number]> = 
   cubestackedbond: [-24, 28],
   cubebasketweave: [-24, 28],
   cubebasketweave3: [-24, 28],
+  cubebrickrings: [-24, 28],
   // The two boxes and the tetrahedron, turned like the brick cubes: a three
   // quarter view, shallow enough that the top face still takes the light.
   cube: [-24, 28],
@@ -1176,6 +1178,7 @@ const ICON_TONES: Record<string, ShapeTone> = {
   cubestackedbond: { sides: 4, regularity: 0.75 },
   cubebasketweave: { sides: 4, regularity: 0.75 },
   cubebasketweave3: { sides: 4, regularity: 2 / 3 },
+  cubebrickrings: { sides: 4, regularity: 0.75 },
   tetrahedron: { sides: 3, regularity: 1 },
   tetraframe: { sides: 3, regularity: 1 },
   octahedron: { sides: 3, regularity: 1 },
@@ -1809,6 +1812,7 @@ function draw(rawKey: string): string[] {
     key === "cubestackedbond" ||
     key === "cubebasketweave" ||
     key === "cubebasketweave3" ||
+    key === "cubebrickrings" ||
     key === "tetraframe" ||
     key === "cube3d" ||
     key === "octahedron" ||

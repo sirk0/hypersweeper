@@ -867,6 +867,7 @@ export function initialOrientation(mode: string): Quaternion {
       "cubestackedbond",
       "cubebasketweave",
       "cubebasketweave3",
+      "cubebrickrings",
       "cubocta",
       "truncocta",
       "snubcube",

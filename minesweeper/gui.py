@@ -1617,6 +1617,31 @@ def _render_icon(key: str) -> pygame.Surface:
             pygame.draw.line(s, ICON_BLUE_DARK, at(0.5, 0), at(0.5, 1), 3)
             pygame.draw.line(s, ICON_BLUE_DARK, at(0, 0.5), at(1, 0.5), 3)
         _icon_gloss(s, pygame.Rect(d * 0.12, d * 0.1, d * 0.76, d * 0.4))
+    elif key == "cubebrickrings":
+        # the cube again, each visible face the two-ring board (the flat
+        # board's own icon), its bricks outlined: four along the face's rows,
+        # two up each side, two in the core. (As for the bonds, all three are
+        # drawn the same way round; the real board turns them face to face.)
+        r = d * 0.4
+        h = _hexagon_points(c, c, r, -90)  # h0 top, then clockwise
+        faces = [
+            ([h[0], h[1], (c, c), h[5]], ICON_BLUE_LIGHT),  # top
+            ([h[1], h[2], h[3], (c, c)], ICON_BLUE),        # right
+            ([h[5], (c, c), h[3], h[4]], ICON_BLUE_DARK),   # left
+        ]
+        for quad, fill in faces:
+            _icon_shape(s, quad, fill=fill, width=4)
+            a, b, _far, dd = quad  # a parallelogram: a + (b-a) + (dd-a)
+
+            def at(u, v, a=a, b=b, dd=dd):
+                return (a[0] + (b[0] - a[0]) * u + (dd[0] - a[0]) * v,
+                        a[1] + (b[1] - a[1]) * u + (dd[1] - a[1]) * v)
+
+            for x, y, w, hh in _brick_rings_tiles(2):
+                u0, v0, u1, v1 = (x + 2) / 4, (y + 2) / 4, (x + w + 2) / 4, (y + hh + 2) / 4
+                pygame.draw.lines(s, ICON_BLUE_DARK, True,
+                                  [at(u0, v0), at(u1, v0), at(u1, v1), at(u0, v1)], 3)
+        _icon_gloss(s, pygame.Rect(d * 0.12, d * 0.1, d * 0.76, d * 0.4))
     elif key == "cubeframe":
         # an isometric cube with a square hole punched through each of the
         # three visible faces: the bored-out Menger frame
@@ -2366,7 +2391,7 @@ class GameScreen3D(BaseGameScreen):
         if self.mode in ("cube", "tetrahedron", "cubeframe", "steppedbipyramid",
                         "octahedron", "icosahedron", "steppedpyramid",
                         "dodecahedron", "cubestackedbond", "cubebasketweave",
-                        "cubebasketweave3") or self.mode in SOLID_GROUP_MEMBERS["catalan"] \
+                        "cubebasketweave3", "cubebrickrings") or self.mode in SOLID_GROUP_MEMBERS["catalan"] \
                 or self.mode in _ARCHIMEDEAN_FLAT:
             return mat_mul(rot_x(-0.5), rot_y(0.6))
         # a tetrahedron viewed down a 2-fold axis looks like a flat square;

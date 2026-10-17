@@ -197,6 +197,7 @@
     "cubestackedbond": "Stacked bond cube",
     "cubebasketweave": "Basket weave cube",
     "cubebasketweave3": "Basket weave 3x3 cube",
+    "cubebrickrings": "Brick rings cube",
     "steppedpyramid": "Stepped pyramid",
     "steppedbipyramid": "Stepped bipyramid",
     "triangle": "Triangles - triangular board",
@@ -284,6 +285,12 @@
     },
     "cubebasketweave3": {
       "label": "Basket weave 3x3 cube",
+      "tiling": "",
+      "surface": "solid",
+      "family": "polyhedra"
+    },
+    "cubebrickrings": {
+      "label": "Brick rings cube",
       "tiling": "",
       "surface": "solid",
       "family": "polyhedra"
@@ -1628,7 +1635,8 @@
           "steppedbipyramid",
           "cubestackedbond",
           "cubebasketweave",
-          "cubebasketweave3"
+          "cubebasketweave3",
+          "cubebrickrings"
         ]
       },
       {

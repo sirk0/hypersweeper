@@ -12,7 +12,7 @@ Every board's mine count, chosen so its win probability under the reference solv
 
 ## Coverage
 
-- 636 rows, 603 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
+- 639 rows, 606 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
 - 33 could not be brought on target:
   - `cube3d`/hard: 33.3% vs 50.9% — the search could not resolve it -- its thinnest measurement finished 0 game(s), so the rate here is noise rather than a crossing the search walked to. Re-measure at a bigger `--budget`
   - `cylinder`/easy: 89.1% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (7, 9%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
@@ -80,6 +80,7 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `cube3d` | 14.6 | 64c 11m (17%) 98% | 216c 43m (20%) 90% | 512c 116m (23%) 33% ⚠ |
 | `cubebasketweave` | 6.9 | 108c 21m (19%) 93% | 300c 57m (19%) 85% | 432c 98m (23%) 51% |
 | `cubebasketweave3` | 6.6 | 72c 12m (17%) 98% | 288c 60m (21%) 87% | 450c 110m (24%) 48% |
+| `cubebrickrings` | 5.9 | 108c 19m (18%) 98% | 300c 64m (21%) 90% | 432c 110m (25%) 55% |
 | `cubeframe` | 8.4 | 72c 17m (24%) 99% | 264c 53m (20%) 86% | 480c 126m (26%) 50% |
 | `cubestackedbond` | 7.8 | 108c 21m (19%) 94% | 300c 63m (21%) 84% | 432c 109m (25%) 52% |
 | `cubocta` | 10.0 | 56c 11m (20%) 98% | 224c 55m (25%) 88% | 504c 135m (27%) 50% |
