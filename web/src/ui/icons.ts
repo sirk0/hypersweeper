@@ -1325,16 +1325,30 @@ function trophy(d: number, tier?: number): string[] {
   ];
 }
 
-function flagPath(d: number): string {
-  // The board's own flag: a pennant on a pole over a foot.
-  return (
-    `M ${n(d * 0.42)} ${n(d * 0.26)} v ${n(d * 0.48)} h ${n(d * 0.05)} ` +
-    `v ${n(-d * 0.48)} Z ` +
-    `M ${n(d * 0.47)} ${n(d * 0.27)} L ${n(d * 0.71)} ${n(d * 0.38)} ` +
-    `L ${n(d * 0.47)} ${n(d * 0.49)} Z ` +
-    `M ${n(d * 0.33)} ${n(d * 0.72)} h ${n(d * 0.24)} v ${n(d * 0.05)} ` +
-    `h ${n(-d * 0.24)} Z`
-  );
+/** The "No flags" badge: the board's own flag (render/glyphAtlas.ts
+ * `drawFlag`, the header's copy in ui/hud.ts) — the mast with its knob, the
+ * pennant flush against it, the splayed foot — on the plain disc, with the
+ * mast thickened a little, since a badge is seen far smaller than a cell.
+ *
+ * Not a `badge()`: the knob and the foot overlap the mast, and under even-odd
+ * every overlap is a hole — the old T-stand flag had a light notch through its
+ * foot for exactly that reason. */
+function flagBadge(d: number): string[] {
+  // the glyph's 24-unit grid, its extremes (x 3.3-20.4, y 2.4-20.6) 0.52 d
+  // tall, nudged right of centre so the pennant's weight sits over the middle
+  const u = (d * 0.52) / 18.2;
+  const at = (x: number, y: number): P => [C + (x - 11.85) * u + d * 0.02, C + (y - 11.5) * u];
+  const poly = (...pts: [number, number][]): string =>
+    `M ${pts.map(([x, y]) => at(x, y).map(n).join(" ")).join(" L ")} Z`;
+  const [kx, ky] = at(7.3, 3.5);
+  const ink = plain("dark");
+  return [
+    circle(C, C, D * 0.42, null, 0, LIGHT),
+    `<path d="${poly([6.4, 4], [8.2, 4], [8.2, 19.4], [6.4, 19.4])} ` +
+      `${poly([5.6, 18.2], [9, 18.2], [11.4, 20.6], [3.3, 20.6])} ` +
+      `${poly([8.2, 4.2], [20.4, 8.6], [8.2, 13.8])}" fill="${ink}"/>`,
+    `<circle cx="${n(kx)}" cy="${n(ky)}" r="${n(1.15 * u)}" fill="${ink}"/>`,
+  ];
 }
 
 function warningPath(d: number): string {
@@ -1385,7 +1399,7 @@ function draw(rawKey: string): string[] {
     const tier = Number(key.slice(7));
     if (Number.isInteger(tier) && tier >= 1 && tier <= TROPHY_METALS.length) return trophy(d, tier);
   }
-  if (key === "flag") return badge(flagPath(d));
+  if (key === "flag") return flagBadge(d);
   if (key === "warning") return badge(warningPath(d));
 
   // Every uniform and dual-uniform tiling draws a real patch of itself, and so
@@ -1874,9 +1888,11 @@ function draw(rawKey: string): string[] {
       }),
     );
   } else if (key === "cylinder") {
+    // tipped toward the viewer, so the open end that shows is the top one
+    // (a negative tilt looks up into it from below and reads upside down)
     parts.push(
       ...surfaceMesh(CYLINDER, {
-        view: [-32, 0],
+        view: [32, 0],
         vFrom: -1.15,
         vTo: 1.15,
         uSteps: 36,
