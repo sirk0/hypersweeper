@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
 import presets from "@data/presets.json";
-import { isBoard3D } from "../../src/boards/core";
 import { buildBoard } from "../../src/boards/presets";
-import { shapeMetrics } from "../../src/render/shapePalette";
+import { cellSides } from "../../src/render/shapePalette";
 import { SOUND_PRESETS, type SoundPreset } from "../../src/audio/presets";
 import { gridNote, noteFor, voicesFor, type CellSound } from "../../src/audio/sound";
 
@@ -25,16 +24,10 @@ import { gridNote, noteFor, voicesFor, type CellSound } from "../../src/audio/so
 const CONSONANT = new Set([0, 3, 4, 5, 7, 8, 9]);
 
 /** Every distinct side count on a board, measured the way the game measures
- * it for sound (`GameSession.sidesOf`): `shapeMetrics`, collinear T-vertices
- * dropped, the 3D boards' authoritative corner mask where there is one. */
+ * it for sound (`GameSession.sidesOf`, which is `cellSides`). */
 function sideCounts(mode: string): number[] {
   const board = buildBoard(mode, "easy");
-  const masks = isBoard3D(board) ? board.cornerMask : null;
-  const seen = new Set<number>();
-  for (const [id, polygon] of board.polygons) {
-    seen.add(shapeMetrics(polygon, masks?.get(id)).sides);
-  }
-  return [...seen].sort((a, b) => a - b);
+  return [...new Set(cellSides(board.polygons, board.cornerMask).values())].sort((a, b) => a - b);
 }
 
 /** The catalog's shape sets, one per distinct combination rather than one per

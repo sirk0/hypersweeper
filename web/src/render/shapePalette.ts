@@ -537,6 +537,22 @@ export function tileSpan(
   return total / poly.length;
 }
 
+/** Each cell's side count, through the board's corner mask where it has one.
+ *
+ * The game's own count — what a win files for the shape achievements and what
+ * picks a cell's voice — so it is one function rather than a loop at each
+ * place. The mask is the part that matters: a hyperbolic tile's edges are
+ * drawn as arcs through extra points, and measured without it a heptagon
+ * counts every one of them (17 to 21 sides on {7,3}). */
+export function cellSides<K>(
+  polygons: Iterable<[K, readonly (readonly number[])[]]>,
+  cornerMasks?: Map<K, readonly boolean[]> | null,
+): Map<K, number> {
+  const out = new Map<K, number>();
+  for (const [key, poly] of polygons) out.set(key, shapeMetrics(poly, cornerMasks?.get(key)).sides);
+  return out;
+}
+
 /**
  * One tone per cell, classed **per board**.
  *

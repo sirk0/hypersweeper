@@ -1201,8 +1201,7 @@ const ICON_TONES: Record<string, ShapeTone> = {
  * fills the same box a tiling patch does. */
 function badge(path: string): string[] {
   // even-odd: these symbols have holes in them -- the warning triangle's bar
-  // and dot, the trophy's handles -- and a hole is a subpath, not a second
-  // colour.
+  // and dot -- and a hole is a subpath, not a second colour.
   return [
     circle(C, C, D * 0.42, null, 0, LIGHT),
     `<path d="${path}" fill="${plain("dark")}" fill-rule="evenodd"/>`,
@@ -1246,20 +1245,46 @@ function barsRects(d: number, filled: number, total: number): string[] {
   return rects;
 }
 
-function trophyPath(d: number): string {
-  // A cup with two handles, a stem and a foot.
-  const l = d * 0.36;
-  const r = d * 0.64;
+/** A rectangle with its corners rounded by `r`, as a clockwise subpath. */
+function roundRectPath(x: number, y: number, w: number, h: number, r: number): string {
   return (
-    `M ${n(l)} ${n(d * 0.28)} H ${n(r)} V ${n(d * 0.42)} ` +
-    `A ${n(d * 0.14)} ${n(d * 0.14)} 0 0 1 ${n(l)} ${n(d * 0.42)} Z ` +
-    `M ${n(d * 0.47)} ${n(d * 0.55)} h ${n(d * 0.06)} v ${n(d * 0.11)} h ${n(d * 0.09)} ` +
-    `v ${n(d * 0.06)} h ${n(-d * 0.24)} v ${n(-d * 0.06)} h ${n(d * 0.09)} Z ` +
-    `M ${n(l)} ${n(d * 0.29)} h ${n(-d * 0.09)} v ${n(d * 0.1)} ` +
-    `a ${n(d * 0.09)} ${n(d * 0.09)} 0 0 0 ${n(d * 0.09)} ${n(d * 0.09)} z ` +
-    `M ${n(r)} ${n(d * 0.29)} h ${n(d * 0.09)} v ${n(d * 0.1)} ` +
-    `a ${n(d * 0.09)} ${n(d * 0.09)} 0 0 1 ${n(-d * 0.09)} ${n(d * 0.09)} z`
+    `M ${n(x + r)} ${n(y)} H ${n(x + w - r)} Q ${n(x + w)} ${n(y)} ${n(x + w)} ${n(y + r)} ` +
+    `V ${n(y + h - r)} Q ${n(x + w)} ${n(y + h)} ${n(x + w - r)} ${n(y + h)} ` +
+    `H ${n(x + r)} Q ${n(x)} ${n(y + h)} ${n(x)} ${n(y + h - r)} V ${n(y + r)} ` +
+    `Q ${n(x)} ${n(y)} ${n(x + r)} ${n(y)} Z`
   );
+}
+
+/** The trophy: a lipped rim, a bowl that narrows into its stem, a collar and a
+ * plinth, and two loop handles.
+ *
+ * Not a `badge()`: the pieces meet and overlap (the handles run into the bowl,
+ * the collar onto the stem), and under even-odd every overlap is a hole — the
+ * old drawing had a light sliver across its stem for exactly that reason. It
+ * has no holes, so the body is one nonzero fill, every subpath clockwise, and
+ * the handles are a round-capped stroke rather than outlines of one. */
+function trophy(d: number): string[] {
+  const ink = plain("dark");
+  const body =
+    roundRectPath(d * 0.31, d * 0.24, d * 0.38, d * 0.05, d * 0.015) +
+    ` M ${n(d * 0.34)} ${n(d * 0.29)} H ${n(d * 0.66)} ` +
+    `C ${n(d * 0.66)} ${n(d * 0.45)} ${n(d * 0.6)} ${n(d * 0.54)} ${n(d * 0.525)} ${n(d * 0.565)} ` +
+    `V ${n(d * 0.64)} H ${n(d * 0.475)} V ${n(d * 0.565)} ` +
+    `C ${n(d * 0.4)} ${n(d * 0.54)} ${n(d * 0.34)} ${n(d * 0.45)} ${n(d * 0.34)} ${n(d * 0.29)} Z ` +
+    roundRectPath(d * 0.42, d * 0.63, d * 0.16, d * 0.04, d * 0.01) +
+    " " +
+    roundRectPath(d * 0.37, d * 0.67, d * 0.26, d * 0.08, d * 0.016);
+  const handles =
+    `M ${n(d * 0.35)} ${n(d * 0.32)} C ${n(d * 0.24)} ${n(d * 0.31)} ${n(d * 0.24)} ${n(d * 0.47)} ` +
+    `${n(d * 0.39)} ${n(d * 0.49)} ` +
+    `M ${n(d * 0.65)} ${n(d * 0.32)} C ${n(d * 0.76)} ${n(d * 0.31)} ${n(d * 0.76)} ${n(d * 0.47)} ` +
+    `${n(d * 0.61)} ${n(d * 0.49)}`;
+  return [
+    circle(C, C, D * 0.42, null, 0, LIGHT),
+    `<path d="${body}" fill="${ink}"/>`,
+    `<path d="${handles}" fill="none" stroke="${ink}" stroke-width="${n(d * 0.036)}" ` +
+      `stroke-linecap="round"/>`,
+  ];
 }
 
 function flagPath(d: number): string {
@@ -1317,7 +1342,7 @@ function draw(rawKey: string): string[] {
     }
   }
   if (key === "star") return badge(starPath(d));
-  if (key === "trophy") return badge(trophyPath(d));
+  if (key === "trophy") return trophy(d);
   if (key === "flag") return badge(flagPath(d));
   if (key === "warning") return badge(warningPath(d));
 

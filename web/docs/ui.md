@@ -1187,10 +1187,13 @@ drawn in, and the two match with no table between them. A family, surface or
 solid-group badge reuses that group's own menu icon key, which already draws a
 patch of the real tiling or a mesh of the real immersion. What is left is the
 hand-drawn symbols on the icon set's plain disc (`badge()` in `src/ui/icons.ts`:
-star, trophy, flag, warning, and a three-bar difficulty ladder that fills one
-bar per rung, drawing all three so a lone bar is not left saying nothing) —
-there is no geometry in "win ten boards". They are drawn `fill-rule="evenodd"`,
-because they have holes in them.
+star, flag, warning, and a three-bar difficulty ladder that fills one bar per
+rung, drawing all three so a lone bar is not left saying nothing; and the
+trophy) — there is no geometry in "win ten boards". The `badge()` symbols are
+drawn `fill-rule="evenodd"`, because they have holes in them. The trophy is
+not: its pieces overlap (handles into the bowl, collar onto the stem), and
+under even-odd an overlap is a hole, so it is one nonzero fill with its
+handles stroked.
 
 ## The record in iCloud
 
