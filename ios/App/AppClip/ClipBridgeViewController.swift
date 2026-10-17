@@ -20,7 +20,7 @@ class ClipBridgeViewController: BridgeViewController, WKScriptMessageHandler {
     /// the bundle does not know opens the menu instead (appClip.ts), so the
     /// fallback is only for an Info.plist that lost the entry.
     private static let board =
-        Bundle.main.object(forInfoDictionaryKey: "HypersweeperClipBoard") as? String ?? "c80"
+        Bundle.main.object(forInfoDictionaryKey: "HypersweeperClipBoard") as? String ?? "c180"
 
     override func capacitorDidLoad() {
         super.capacitorDidLoad()

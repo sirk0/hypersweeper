@@ -94,6 +94,8 @@ const SHOTS: Shot[] = [
     scheme: "light",
     backgrounds: true,
     mode: "c180",
+    // Easy, the GP(3,0) the README captions: medium is the 252-cell GP(5,0)
+    difficulty: "easy",
     seed: 7,
     reveal: 0.34,
     flags: 5,

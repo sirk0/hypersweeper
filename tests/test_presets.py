@@ -26,24 +26,16 @@ DATA = Path(__file__).resolve().parent.parent / "data"
 CLASSIC = {"easy": 81, "medium": 256, "hard": 480}
 BAND = 0.15
 
-# Boards whose cell count is not ours to choose. Both kinds are a property of
-# the geometry rather than a preset someone forgot to tune, and both were
-# checked by enumerating what the builder can actually produce near the target
-# rather than assumed.
-#
-#   * no size knob at all -- a sphere is 60 cells because that is what the
-#     solid is;
-#   * a knob that steps over the target. The fractals move by whole
-#     substitution steps (the carpet goes 64, 512, 4096); the polyhedra grow
-#     quadratically, so `cube_board` offers 54 then 96 around an 81 target and
-#     `tetrahedron_board` 64 then 100; `hextri_board` is 54 then 96.
+# Boards whose cell count is not ours to choose. It is a property of the
+# geometry rather than a preset someone forgot to tune, and it was checked by
+# enumerating what the builder can actually produce near the target rather
+# than assumed: a knob that steps over the target. The fractals move by whole
+# substitution steps (the carpet goes 64, 512, 4096); the polyhedra grow
+# quadratically, so `cube_board` offers 54 then 96 around an 81 target and
+# `tetrahedron_board` 64 then 100; `hextri_board` is 54 then 96.
 #
 # Anything else outside the band is a bug in the preset, not a new exception:
 # add it here only after checking the builder genuinely cannot land closer.
-FIXED_GEOMETRY = {
-    "spheretri", "c80", "gp21", "c180", "snubdodec",
-    "rhombicosidodeca", "truncicosidodeca",
-}
 # The fractals move by whole substitution steps; `cube3d` moves by whole
 # *layers*, which is the same thing said about a volume: its only knob is
 # the side of the cube, so it offers 64 then 125 around an 81 target and 216
@@ -51,7 +43,7 @@ FIXED_GEOMETRY = {
 # the mode is exempted whole because the reason is the geometry, not the row.
 COARSE_GEOMETRY = {"sphinx", "chair", "carpet", "pentaflake", "gosper",
                    "cube3d"}
-EXEMPT = FIXED_GEOMETRY | COARSE_GEOMETRY
+EXEMPT = COARSE_GEOMETRY
 
 # Single rows where the size band loses to a bar that matters more. Keyed by
 # (mode, difficulty) so exempting one board does not quietly exempt its other
@@ -160,14 +152,13 @@ EXEMPT_ROWS = {
     ("snubcube", "hard"),                # 342 or 608
     # The icosahedral three are cut the same way once their pentagons, hexagons
     # and decagons are fanned into triangles, which makes their ladders steeper
-    # still -- 110, 440, 990; 270, 1080; 140, 560 -- so easy is the first rung
-    # wherever it lands, and a row between two rungs takes the nearer one. Their
-    # uncut solids, one cell per face, ship as the small boards under Sphere.
-    ("rhombicosidodecasplit", "easy"),   # 110; nothing smaller
+    # still. Below the first cut is the solid uncut, one cell per face
+    # (frequency 0), so the ladders run 62, 110, 440; 62, 270, 1080; 92, 140,
+    # 560, and a row between two rungs takes the nearer one in log terms. The
+    # two 62-cell easy rows are inside the outer band and counted as near
+    # misses; these are the rows beyond it.
     ("rhombicosidodecasplit", "medium"),  # 110 or 440
-    ("truncicosidodecasplit", "easy"),   # 270; nothing smaller
     ("truncicosidodecasplit", "hard"),   # 270 or 1080
-    ("snubdodecsplit", "easy"),          # 140; nothing smaller
     ("snubdodecsplit", "medium"),        # 140 or 560
     # The double torus pays for its genus twice over: it is two donuts, so its
     # window buys twice the cells a donut's does, and the merge has to stay

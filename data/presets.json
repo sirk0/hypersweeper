@@ -718,31 +718,23 @@
         ]
       }
     },
-    "c80": {
-      "builder": "c80_board",
-      "args": {
-        "easy": [
-          10
-        ],
-        "medium": [
-          12
-        ],
-        "hard": [
-          15
-        ]
-      }
-    },
     "gp21": {
       "builder": "gp21_board",
       "args": {
         "easy": [
-          13
+          13,
+          2,
+          1
         ],
         "medium": [
-          18
+          64,
+          4,
+          2
         ],
         "hard": [
-          23
+          125,
+          5,
+          3
         ]
       }
     },
@@ -750,69 +742,16 @@
       "builder": "c180_board",
       "args": {
         "easy": [
-          21
+          21,
+          3
         ],
         "medium": [
-          23
+          56,
+          5
         ],
         "hard": [
-          28
-        ]
-      }
-    },
-    "spheretri": {
-      "builder": "sphere_triangle_board",
-      "args": {
-        "easy": [
-          20
-        ],
-        "medium": [
-          23
-        ],
-        "hard": [
-          29
-        ]
-      }
-    },
-    "snubdodec": {
-      "builder": "snub_dodecahedron_board",
-      "args": {
-        "easy": [
-          18
-        ],
-        "medium": [
-          23
-        ],
-        "hard": [
-          29
-        ]
-      }
-    },
-    "rhombicosidodeca": {
-      "builder": "rhombicosidodecahedron_board",
-      "args": {
-        "easy": [
-          10
-        ],
-        "medium": [
-          12
-        ],
-        "hard": [
-          18
-        ]
-      }
-    },
-    "truncicosidodeca": {
-      "builder": "truncated_icosidodecahedron_board",
-      "args": {
-        "easy": [
-          11
-        ],
-        "medium": [
-          13
-        ],
-        "hard": [
-          17
+          125,
+          7
         ]
       }
     },
@@ -1655,15 +1594,15 @@
       "builder": "rhombicosidodecahedron_split_board",
       "args": {
         "easy": [
-          21,
-          1
+          8,
+          0
         ],
         "medium": [
           100,
           2
         ],
         "hard": [
-          118,
+          119,
           2
         ]
       }
@@ -1672,8 +1611,8 @@
       "builder": "truncated_icosidodecahedron_split_board",
       "args": {
         "easy": [
-          47,
-          1
+          11,
+          0
         ],
         "medium": [
           57,
@@ -1689,16 +1628,33 @@
       "builder": "snub_dodecahedron_split_board",
       "args": {
         "easy": [
-          37,
-          1
+          18,
+          0
         ],
         "medium": [
           40,
           1
         ],
         "hard": [
-          165,
+          163,
           2
+        ]
+      }
+    },
+    "spheretri": {
+      "builder": "sphere_triangle_board",
+      "args": {
+        "easy": [
+          20,
+          2
+        ],
+        "medium": [
+          87,
+          4
+        ],
+        "hard": [
+          150,
+          5
         ]
       }
     },

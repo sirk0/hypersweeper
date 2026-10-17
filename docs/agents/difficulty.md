@@ -84,10 +84,11 @@ hand-picked density is the one thing this game cannot get right by eye.
    centre its strip on a height where the tiling reverses y, and a Möbius
    band's row count stops where the immersion would have to narrow the band
    to draw it (`_mobius_band_clamped`) — past that the extra rows buy no
-   width, only stretched tiles. Boards with no size
-   knob — the sphere family — and the fractals, which quantise by whole
+   width, only stretched tiles. The fractals, which quantise by whole
    substitution steps, keep their geometry and are listed as exceptions in
-   `tests/test_presets.py`.
+   `tests/test_presets.py`. (The sphere family once had no size knob either;
+   the Goldberg parameters are its knob now, the chiral GP(h, k) enumerated by
+   `GRIDS` because its two knobs are not free.)
 
    **A trimmed aperiodic window is held to the fairness bar too.** The
    substitution boards (`grow` in `SPEC`) keep exactly the target count, and a

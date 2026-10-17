@@ -28,7 +28,7 @@ const MODES = [
   "triangle",
   "hexhex",
   "sphere",
-  "c80",
+  "c180",
   "cube",
   "tetraframe",
   "steppedbipyramid",
@@ -48,7 +48,7 @@ const MODES = [
   // rather than a circle, and whose strands pass over and under each other.
   "trefoil",
   // ...and the real projective plane, drawn as the whole Goldberg sphere that
-  // double-covers it: the c80 renderer path, but the one board whose drawn
+  // double-covers it: the c180 renderer path, but the one board whose drawn
   // faces outnumber its cells, every cell painted on two antipodal faces.
   "projectivehex",
   // M5 aperiodic flat tilings: Penrose rhombi (thick/thin), trimmed to a

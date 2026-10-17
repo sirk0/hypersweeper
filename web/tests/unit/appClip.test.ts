@@ -17,8 +17,8 @@ describe("clipBoard", () => {
   });
 
   it("names the board the clip was built for", () => {
-    vi.stubGlobal("window", { hypersweeperClip: "c80" });
-    expect(clipBoard()).toBe("c80");
+    vi.stubGlobal("window", { hypersweeperClip: "c180" });
+    expect(clipBoard()).toBe("c180");
   });
 
   it("ignores a board this build does not have, or a value that is not one", () => {

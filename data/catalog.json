@@ -174,19 +174,14 @@
     "deltoidalhexeconta": "Deltoidal hexecontahedron",
     "sphere": "Pentagonal hexecontahedron",
     "disdyakistriaconta": "Disdyakis triacontahedron",
-    "c80": "Chamfered dodecahedron",
-    "c180": "Goldberg GP(3,0)",
-    "gp21": "Goldberg GP(2,1)",
-    "spheretri": "Geodesic icosahedron",
+    "c180": "Goldberg polyhedron",
+    "gp21": "Chiral Goldberg polyhedron",
     "cubocta": "Cuboctahedron",
     "truncocta": "Truncated octahedron",
     "snubcube": "Snub cube",
-    "rhombicosidodecasplit": "Rhombicosidodecahedron, subdivided",
-    "truncicosidodecasplit": "Truncated icosidodecahedron, subdivided",
-    "snubdodecsplit": "Snub dodecahedron, subdivided",
-    "snubdodec": "Snub dodecahedron",
-    "rhombicosidodeca": "Rhombicosidodecahedron",
-    "truncicosidodeca": "Truncated icosidodecahedron",
+    "rhombicosidodecasplit": "Rhombicosidodecahedron",
+    "truncicosidodecasplit": "Truncated icosidodecahedron",
+    "snubdodecsplit": "Snub dodecahedron",
     "cube": "Cube",
     "tetrahedron": "Tetrahedron",
     "tetraframe": "Tetrahedron frame",
@@ -208,7 +203,8 @@
     "cube3d": "Volumetric",
     "hyperbolic73": "Heptagons {7,3}",
     "hyperbolic54": "Pentagons {5,4}",
-    "hyperbolic45": "Squares {4,5}"
+    "hyperbolic45": "Squares {4,5}",
+    "spheretri": "Geodesic icosahedron"
   },
   "modeInfo": {
     "ammannbeenker": {
@@ -236,13 +232,7 @@
       "family": "spiral"
     },
     "c180": {
-      "label": "Goldberg GP(3,0)",
-      "tiling": "",
-      "surface": "solid",
-      "family": "sphere"
-    },
-    "c80": {
-      "label": "Chamfered dodecahedron",
+      "label": "Goldberg polyhedron",
       "tiling": "",
       "surface": "solid",
       "family": "sphere"
@@ -608,7 +598,7 @@
       "family": "fractal"
     },
     "gp21": {
-      "label": "Goldberg GP(2,1)",
+      "label": "Chiral Goldberg polyhedron",
       "tiling": "",
       "surface": "solid",
       "family": "sphere"
@@ -1075,14 +1065,8 @@
       "surface": "solid",
       "family": "catalan"
     },
-    "rhombicosidodeca": {
-      "label": "Rhombicosidodecahedron",
-      "tiling": "",
-      "surface": "solid",
-      "family": "sphere"
-    },
     "rhombicosidodecasplit": {
-      "label": "Rhombicosidodecahedron, subdivided",
+      "label": "Rhombicosidodecahedron",
       "tiling": "",
       "surface": "solid",
       "family": "archimedean"
@@ -1129,14 +1113,8 @@
       "surface": "solid",
       "family": "archimedean"
     },
-    "snubdodec": {
-      "label": "Snub dodecahedron",
-      "tiling": "",
-      "surface": "solid",
-      "family": "sphere"
-    },
     "snubdodecsplit": {
-      "label": "Snub dodecahedron, subdivided",
+      "label": "Snub dodecahedron",
       "tiling": "",
       "surface": "solid",
       "family": "archimedean"
@@ -1561,14 +1539,8 @@
       "surface": "flat",
       "family": "uniform"
     },
-    "truncicosidodeca": {
-      "label": "Truncated icosidodecahedron",
-      "tiling": "",
-      "surface": "solid",
-      "family": "sphere"
-    },
     "truncicosidodecasplit": {
-      "label": "Truncated icosidodecahedron, subdivided",
+      "label": "Truncated icosidodecahedron",
       "tiling": "",
       "surface": "solid",
       "family": "archimedean"
@@ -1676,13 +1648,9 @@
         "key": "sphere",
         "label": "Sphere",
         "modes": [
-          "c80",
           "gp21",
           "c180",
-          "spheretri",
-          "snubdodec",
-          "rhombicosidodeca",
-          "truncicosidodeca"
+          "spheretri"
         ]
       },
       {

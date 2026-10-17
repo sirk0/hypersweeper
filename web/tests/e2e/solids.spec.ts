@@ -157,11 +157,9 @@ test.describe("M2 solids", () => {
 
   for (const mode of [
     "sphere",
-    "c80",
     "gp21",
     "c180",
     "spheretri",
-    "snubdodec",
     "cube",
     "cubeframe",
     "tetrahedron",

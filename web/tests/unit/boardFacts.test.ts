@@ -10,8 +10,8 @@ import { boardFacts, shapeFacts } from "../../src/ui/boardFacts";
 // itself correctly with no edit to that file.
 
 /** The shape rows of a board at easy, as "name × count". */
-function shapes(mode: string): string[] {
-  return shapeFacts(mode, buildBoard(mode, "easy")).map((s) => `${s.label} ${s.count}`);
+function shapes(mode: string, difficulty = "easy"): string[] {
+  return shapeFacts(mode, buildBoard(mode, difficulty)).map((s) => `${s.label} ${s.count}`);
 }
 
 function facts(mode: string, difficulty = "easy") {
@@ -96,7 +96,7 @@ describe("shape names", () => {
     // Three regular hexagons meet only on a plane, so a Goldberg polyhedron's
     // can never all be regular — but the twelve pentagons sit on the
     // icosahedron's five-fold axes, and its symmetry keeps them exact.
-    expect(shapes("c80")).toEqual(["Regular pentagons 12", "Projected regular hexagons 30"]);
+    expect(shapes("c180")).toEqual(["Regular pentagons 12", "Projected regular hexagons 80"]);
     expect(shapes("gp21")).toEqual(["Regular pentagons 12", "Projected regular hexagons 60"]);
     expect(shapes("projectivehex")).toEqual([
       "Regular pentagons 6",
@@ -105,10 +105,6 @@ describe("shape names", () => {
     // The geodesic sphere: twenty of its eighty triangles come out exact, and
     // a class is only as regular as all of its cells.
     expect(shapes("spheretri")).toEqual(["Projected equilateral triangles 80"]);
-    expect(shapes("snubdodec")).toEqual([
-      "Projected equilateral triangles 80",
-      "Regular pentagons 12",
-    ]);
   });
 
   it("calls a hyperbolic tiling's tiles regular, as drawn in the disc", () => {
@@ -122,7 +118,7 @@ describe("shape names", () => {
     // uniform one's really are regular.
     expect(shapes("rhombictriaconta")).toEqual(["Rhombi 120"]);
     expect(shapes("cube")).toEqual(["Squares 96"]);
-    expect(shapes("truncicosidodeca")).toEqual([
+    expect(shapes("truncicosidodecasplit")).toEqual([
       "Squares 30",
       "Regular hexagons 20",
       "Regular decagons 12",
@@ -133,14 +129,15 @@ describe("shape names", () => {
     // A solid is coloured by side count, and one side count can be two shapes:
     // the truncated octahedron's hexagons are cut into rhombi beside its
     // squares, and a fanned pentagon's triangles are isosceles beside the
-    // solid's own equilateral ones.
+    // solid's own equilateral ones. (Medium, where the icosahedral solids are
+    // cut: their easy board is the solid uncut.)
     expect(shapes("truncocta")).toEqual(["Rhombi 96", "Squares 24"]);
-    expect(shapes("rhombicosidodecasplit")).toEqual([
-      "Equilateral triangles 20",
-      "Isosceles triangles 60",
-      "Squares 30",
+    expect(shapes("rhombicosidodecasplit", "medium")).toEqual([
+      "Equilateral triangles 80",
+      "Isosceles triangles 240",
+      "Squares 120",
     ]);
-    expect(shapes("snubdodecsplit")).toEqual([
+    expect(shapes("snubdodecsplit", "medium")).toEqual([
       "Equilateral triangles 80",
       "Isosceles triangles 60",
     ]);
@@ -204,7 +201,7 @@ describe("boardFacts", () => {
   });
 
   it("explains the word projected wherever it is used", () => {
-    expect(facts("c80").note).toMatch(/ideal tiling/);
+    expect(facts("c180").note).toMatch(/ideal tiling/);
     expect(facts("hyperbolic73").note).toMatch(/hyperbolic plane/);
     expect(facts("cairo").note).toBeUndefined();
     expect(facts("cube").note).toBeUndefined();

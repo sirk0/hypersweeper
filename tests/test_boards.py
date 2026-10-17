@@ -52,7 +52,6 @@ from minesweeper.boards import (
     archimedean_board,
     brick_cube_board,
     build_board,
-    c80_board,
     c180_board,
     carpet_board,
     chair_board,
@@ -86,8 +85,6 @@ from minesweeper.boards import (
     projective_board,
     projective_hex_board,
     projective_triangle_board,
-    rhombicosidodecahedron_board,
-    snub_dodecahedron_board,
     solid_cube_board,
     spectre_board,
     sphere_board,
@@ -108,7 +105,6 @@ from minesweeper.boards import (
     trefoil_triangle_board,
     triangle_board,
     triangle_grid_board,
-    truncated_icosidodecahedron_board,
 )
 from minesweeper.boards import (
     boundary_components as _boundary_components,
@@ -171,7 +167,7 @@ from minesweeper.boards.hyperbolic import (
     hyperbolic_positions,
 )
 from minesweeper.boards.presets import _WINDOWS, ARCH_PRESETS, window_for
-from minesweeper.boards.solids import _goldberg_board
+from minesweeper.boards.solids import _goldberg_board, icosahedron_board
 from minesweeper.boards.surfaces import TREFOIL_REACH, _trefoil_core
 
 # Template tilings split by symmetry type. Archimedean (uniform) tilings are
@@ -370,23 +366,58 @@ class TestCellCounts:
         for cell, neighbors in board.adjacency.items():
             assert set(map(rotated, neighbors)) == set(board.adjacency[rotated(cell)])
 
-    def test_c80_is_a_chamfered_dodecahedron(self):
-        board = c80_board(5)
+    @pytest.mark.parametrize("frequency", range(2, 8))
+    def test_class_i_goldberg_ladder(self, frequency):
+        board = c180_board(5, frequency)
         sizes = sorted(len(p) for p in board.polygons.values())
-        assert len(board.adjacency) == 42
-        assert sizes.count(5) == 12 and sizes.count(6) == 30
+        assert len(board.adjacency) == 10 * frequency**2 + 2
+        assert sizes.count(5) == 12 and set(sizes) == {5, 6}
+        assert _euler_characteristic(board) == 2
+        # a Goldberg polyhedron is trivalent, so a cell's neighbours are
+        # exactly the cells across its edges
+        assert all(len(board.adjacency[c]) == len(p) for c, p in board.polygons.items())
 
-    def test_rhombicosidodecahedron_face_mix(self):
-        board = rhombicosidodecahedron_board(10)
+    # every (h, k) the size search may offer, not just the shipped three --
+    # gcd(h, k) > 1 included, whose lattice points land on the icosahedron's
+    # edges
+    @pytest.mark.parametrize("h,k", [(2, 1), (3, 1), (3, 2), (4, 2), (5, 1),
+                                     (4, 3), (6, 1), (5, 3), (6, 2)])
+    def test_class_iii_goldberg_ladder(self, h, k):
+        board = gp21_board(5, h, k)
         sizes = sorted(len(p) for p in board.polygons.values())
-        assert len(board.adjacency) == 62
-        assert sizes.count(3) == 20 and sizes.count(4) == 30 and sizes.count(5) == 12
+        assert len(board.adjacency) == 10 * (h * h + h * k + k * k) + 2
+        assert sizes.count(5) == 12 and set(sizes) == {5, 6}
+        assert _euler_characteristic(board) == 2
+        assert all(len(board.adjacency[c]) == len(p) for c, p in board.polygons.items())
 
-    def test_truncated_icosidodecahedron_face_mix(self):
-        board = truncated_icosidodecahedron_board(10)
-        sizes = sorted(len(p) for p in board.polygons.values())
-        assert len(board.adjacency) == 62
-        assert sizes.count(4) == 30 and sizes.count(6) == 20 and sizes.count(10) == 12
+    @pytest.mark.parametrize("frequency", range(1, 6))
+    def test_geodesic_sphere_is_the_icosahedron_drawn_round(self, frequency):
+        board = sphere_triangle_board(10, frequency)
+        flat = icosahedron_board(10, frequency)
+        assert len(board.adjacency) == 20 * frequency**2
+        assert all(len(p) == 3 for p in board.polygons.values())
+        # the same subdivision, so the same cells and the same neighbours
+        assert board.adjacency == flat.adjacency
+        assert all(abs(math.dist(p, (0, 0, 0)) - 1) < 1e-9
+                   for polygon in board.polygons.values() for p in polygon)
+
+    @pytest.mark.parametrize("h,k", [(1, 1), (2, 2), (4, 1)])
+    def test_class_iii_refuses_edge_centred_triangles(self, h, k):
+        with pytest.raises(AssertionError):
+            gp21_board(5, h, k)
+
+    # frequency 0 is the solid uncut, one cell per face: the easy rung
+    @pytest.mark.parametrize("builder,mix", [
+        (rhombicosidodecahedron_split_board, {3: 20, 4: 30, 5: 12}),
+        (truncated_icosidodecahedron_split_board, {4: 30, 6: 20, 10: 12}),
+        (snub_dodecahedron_split_board, {3: 80, 5: 12}),
+    ])
+    def test_icosahedral_archimedean_uncut(self, builder, mix):
+        board = builder(10, 0)
+        sizes = Counter(len(p) for p in board.polygons.values())
+        assert dict(sizes) == mix
+        assert len(board.adjacency) == sum(mix.values())
+        assert _euler_characteristic(board) == 2
 
     def test_torus(self):
         assert len(torus_board(12, 6, 9).adjacency) == 72
@@ -480,11 +511,6 @@ class TestCellCounts:
         gp21 = corners(gp21_board(10))
         assert len(gp21) == 140  # no two corners round together
         assert mirrored(gp21) != gp21
-
-    def test_geodesic_sphere_has_80_triangles(self):
-        board = sphere_triangle_board(10)
-        assert len(board.adjacency) == 80
-        assert all(len(p) == 3 for p in board.polygons.values())
 
     def test_triangle_and_hex_surface_counts(self):
         # ring triangles per row x rows: one cell per lattice triangle
@@ -2840,12 +2866,6 @@ class TestArchimedean:
             lr = self._symmetry(board, lambda cx, cy, x, y: (2 * cx - x, y))
             tb = self._symmetry(board, lambda cx, cy, x, y: (x, 2 * cy - y))
             assert max(lr, tb) == 1.0
-
-    def test_snub_dodecahedron_is_12_pentagons_80_triangles(self):
-        board = snub_dodecahedron_board(10)
-        sizes = sorted(len(p) for p in board.polygons.values())
-        assert len(board.adjacency) == 92
-        assert sizes.count(3) == 80 and sizes.count(5) == 12
 
 
 def _corners(polygon, tol=1e-3):
