@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { HYPERBOLIC_MODES, surfaceOf } from "../../src/boards/catalog";
+import { isBoard3D } from "../../src/boards/core";
 import { buildBoard, MODES } from "../../src/boards/presets";
 import { boardFacts, shapeFacts } from "../../src/ui/boardFacts";
 
@@ -69,18 +71,50 @@ describe("shape names", () => {
     ]);
   });
 
-  it("names a wrapped board from the flat tiling, not from the bent tiles", () => {
+  it("names a wrapped board from the flat tiling, projected where the immersion bends it", () => {
     // The whole reason a wrapped board is named off its template: the immersion
     // bends every tile, and a hexagonal torus is still a tiling by regular
-    // hexagons however far the drawn cells are from regular.
-    expect(shapes("torushex")).toEqual(["Regular hexagons 84"]);
-    expect(shapes("klein")).toEqual(["Squares 80"]);
+    // hexagons however far the drawn cells are from regular — on the flat
+    // torus it is the quotient of. The drawn ones are not, and say so.
+    expect(shapes("torushex")).toEqual(["Projected regular hexagons 84"]);
+    expect(shapes("klein")).toEqual(["Projected squares 80"]);
     expect(shapes("mobiustrihex")).toEqual([
-      "Equilateral triangles 54",
-      "Regular hexagons 27",
+      "Projected equilateral triangles 54",
+      "Projected regular hexagons 27",
     ]);
+    expect(shapes("torusstackedbond")).toEqual(["Projected rectangles 80"]);
+    // An irregular tile is irregular on any surface: nothing to project.
     expect(shapes("kleincairo")).toEqual(["Irregular pentagons 78"]);
-    expect(shapes("torusstackedbond")).toEqual(["Rectangles 80"]);
+    // A cylinder bends one way only, and what it leaves exact is exact.
+    expect(shapes("cyltrihex")).toEqual([
+      "Equilateral triangles 54",
+      "Projected regular hexagons 27",
+    ]);
+  });
+
+  it("calls a sphere's hexagons projected regular, and its pentagons regular", () => {
+    // Three regular hexagons meet only on a plane, so a Goldberg polyhedron's
+    // can never all be regular — but the twelve pentagons sit on the
+    // icosahedron's five-fold axes, and its symmetry keeps them exact.
+    expect(shapes("c80")).toEqual(["Regular pentagons 12", "Projected regular hexagons 30"]);
+    expect(shapes("gp21")).toEqual(["Regular pentagons 12", "Projected regular hexagons 60"]);
+    expect(shapes("projectivehex")).toEqual([
+      "Regular pentagons 6",
+      "Projected regular hexagons 75",
+    ]);
+    // The geodesic sphere: twenty of its eighty triangles come out exact, and
+    // a class is only as regular as all of its cells.
+    expect(shapes("spheretri")).toEqual(["Projected equilateral triangles 80"]);
+    expect(shapes("snubdodec")).toEqual([
+      "Projected equilateral triangles 80",
+      "Regular pentagons 12",
+    ]);
+  });
+
+  it("calls a hyperbolic tiling's tiles regular, as drawn in the disc", () => {
+    expect(shapes("hyperbolic73")).toEqual(["Projected regular heptagons 85"]);
+    expect(shapes("hyperbolic45")).toEqual(["Projected squares 81"]);
+    expect(facts("hyperbolic54").surface).toBe("Hyperbolic plane");
   });
 
   it("measures a solid's own faces", () => {
@@ -93,6 +127,27 @@ describe("shape names", () => {
       "Regular hexagons 20",
       "Regular decagons 12",
     ]);
+  });
+
+  it("splits a solid's colour class into the shapes it really holds", () => {
+    // A solid is coloured by side count, and one side count can be two shapes:
+    // the truncated octahedron's hexagons are cut into rhombi beside its
+    // squares, and a fanned pentagon's triangles are isosceles beside the
+    // solid's own equilateral ones.
+    expect(shapes("truncocta")).toEqual(["Rhombi 96", "Squares 24"]);
+    expect(shapes("rhombicosidodecasplit")).toEqual([
+      "Equilateral triangles 20",
+      "Isosceles triangles 60",
+      "Squares 30",
+    ]);
+    expect(shapes("snubdodecsplit")).toEqual([
+      "Equilateral triangles 80",
+      "Isosceles triangles 60",
+    ]);
+    expect(shapes("deltoidalicositetra")).toEqual(["Kites 48", "Quadrilaterals 48"]);
+    // The split rows are one colour on the board, so they carry one swatch.
+    const rows = shapeFacts("truncocta", buildBoard("truncocta", "easy"));
+    expect(rows[0]!.tone).toBe(rows[1]!.tone);
   });
 });
 
@@ -146,6 +201,32 @@ describe("boardFacts", () => {
     // and nothing at all on a phone; this is where it is spelled out.
     expect(facts("triakis").warning).toBeTruthy();
     expect(facts("square").warning).toBeUndefined();
+  });
+
+  it("explains the word projected wherever it is used", () => {
+    expect(facts("c80").note).toMatch(/ideal tiling/);
+    expect(facts("hyperbolic73").note).toMatch(/hyperbolic plane/);
+    expect(facts("cairo").note).toBeUndefined();
+    expect(facts("cube").note).toBeUndefined();
+  });
+
+  it("projects only a named shape, and only on a board that bends its tiles", () => {
+    for (const mode of MODES) {
+      const board = buildBoard(mode, "easy");
+      const surface = surfaceOf(mode);
+      const bent =
+        (surface !== null && surface.key !== "flat") ||
+        board.regularTiles === true ||
+        HYPERBOLIC_MODES.includes(mode);
+      for (const shape of shapeFacts(mode, board)) {
+        if (!shape.projected) continue;
+        expect(bent, `${mode}: ${shape.label}`).toBe(true);
+        // "Projected irregular" would claim a shape it has nothing of.
+        expect(shape.label, mode).not.toMatch(/irregular|quadrilateral/i);
+      }
+      // A flat board or a solid is exactly what it is drawn as.
+      if (!bent) expect(isBoard3D(board) || !board.curved, mode).toBe(true);
+    }
   });
 
   it("has something to say about every board this build ships", () => {

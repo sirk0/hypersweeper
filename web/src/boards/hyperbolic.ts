@@ -340,5 +340,6 @@ export function hyperbolicBoard(
     height: size,
     cornerMask,
     curved: true,
+    regularTiles: true,
   });
 }
