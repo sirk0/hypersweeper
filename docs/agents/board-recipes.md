@@ -217,11 +217,12 @@ and which one it takes depends on what its members are. A family of **one-off
 boards** — the aperiodic and fractal ones, which have no periodic domain to
 glue a seam with — goes in `catalog.FLAT_ONLY_FAMILIES`, whose members are
 modes rather than tiling keys and which is only offered on the plane. A family
-of **tilings** that has not been wrapped yet goes in `_FLAT_ONLY_FAMILIES`
-instead: that sets `TilingSpec.flat_only` on every member, so `allows()`
-refuses every surface but the plane and `picker_families` drops the family from
-the manifold pickers because it has no enabled row left. See "Recipe: add a
-flat-only tiling family" below. Both flags are per family, not per tiling.
+of **tilings** that has not been wrapped yet gets a `_FAMILY_SURFACES` entry
+instead, naming the surfaces it does reach (`{"flat"}` to start with): that sets
+`TilingSpec.surfaces` on every member, so `allows()` refuses every other surface
+and `picker_families` drops the family from those pickers because it has no
+enabled row left. See "Recipe: add a flat-only tiling family" below. Both are
+per family, not per tiling.
 
 ## Recipe: add a flat-only tiling family
 
@@ -268,8 +269,9 @@ Adding one, or adding a tiling to one:
    monohedral and Dürer's is edge to edge, but neither holds of the family, so
    it claims nothing and `monohedral` keeps `test_tiles_are_congruent` off a
    family with two tile shapes in it.
-3. **Flat-only** — add the family key to `_FLAT_ONLY_FAMILIES` in `catalog.py`
-   and to `FLAT_ONLY_ARCH_FAMILIES` in `web/src/boards/catalog.ts`, and put it
+3. **Flat-only** — map the family key to `{"flat"}` in `_FAMILY_SURFACES` in
+   `catalog.py` and to `["flat"]` in `ARCH_FAMILY_SURFACES` in
+   `web/src/boards/catalog.ts`, and put it
    in `PICKER_FAMILIES` (both sides) where it should sit in the menu. Nothing
    else gates it: `picker_families` drops a family with no enabled row.
 4. **Labels and hints** — `menu.familyLabels` in `data/catalog.json` (the
@@ -304,22 +306,23 @@ the sphinx's two boards, and the chair's, number their tiles alike.
 
 **Wrapping one later** is the rest of the Archimedean recipe and nothing new:
 choose the `cut` (neither family has one yet — Dürer's pentagon rows sit at
-y = 0 and y = height/2, so its cut cannot be either), drop the family from the
-two flat-only lists, and add the `torus`/`cylinder`/`mobius`/`klein` preset
-rows the surfaces its mirror and `flips` allow. The tests that only ask
-questions of the tilings that wrap — `test_no_tile_centre_sits_on_the_cut` and
-the rest of `TestWrappedArchimedean` — pick it up the moment it has a torus
-preset.
+y = 0 and y = height/2, so its cut cannot be either), add the surfaces to the
+family's two `_FAMILY_SURFACES` entries (or drop the entries once it reaches
+them all), and add the `torus`/`cylinder`/`mobius`/`klein` preset rows the
+surfaces its mirror and `flips` allow — the 2-uniform family below did exactly
+this for the cylinder alone. The tests that only ask questions of the tilings
+that wrap — `test_no_tile_centre_sits_on_the_cut` and the rest of
+`TestWrappedArchimedean` — pick it up the moment it has any wrapped preset.
 
 ## Recipe: add a 2-uniform tiling
 
 `family="2-uniform"`: edge-to-edge tilings by regular polygons whose vertices
 fall into exactly **two** classes under the tiling's symmetries — the next step
 past the uniform tilings, which have one. There are twenty and **all twenty
-ship**, all on the plane only (the family is in the two flat-only lists, as
-"Other" is — see the recipe above). So there is no new one to add; what follows
-is how the twenty are built, what to keep in step when changing one, and what
-wrapping them would take.
+ship**, on the plane and the cylinder (`_FAMILY_SURFACES` holds them to those
+two — see the recipe above). So there is no new one to add; what follows is
+how the twenty are built, what to keep in step when changing one, how they
+wrap the cylinder, and what wrapping the other surfaces would take.
 
 **Three are a uniform tiling cut up or merged**, so their factories reuse its
 polygons — `_rhombitrihex_polygons` (with a `merged` predicate for the
@@ -444,11 +447,49 @@ past the first ring of tiles, since a ring round one tile or one vertex shows on
 vertex type and reads as the uniform tiling it was cut from. Its `DISC_RADIUS` is
 per tiling, and for a subscripted pair wide enough that the two icons differ.
 
-**Wrapping them later** is the same as for "Other": choose a `cut`, drop the
-family from the two flat-only lists, and add the surface presets. The mirror
-already in each template is what a Möbius strip or a Klein bottle would glue
-through. The two without one (`studdedtri2` and `snubelongated`) would stay off
-those two surfaces, like the other chiral and glide-only tilings.
+**The cylinder.** Every one of the twenty reverses y somewhere — p6 and pgg
+by a half turn, the rest by a mirror too — so every one has `flips` and every
+one wraps a cylinder, `studdedtri2` and `snubelongated` included, as the snubs
+do. Each states a `cut`: `_cell_template`'s takes it as a **fraction of the
+domain height**, the three cut-or-merged factories pass a height directly.
+Which height is a measurement, not a choice. Only the gap between two rows of
+tile centres matters (any height inside one keeps the same tiles), so the cut
+goes in the gap whose rim runs flattest, at the simplest fraction of the
+height that lands inside it — provided the rim is still a puzzle. The
+flattest gap of `dodecasquare` cuts off the triangle on each rim square's
+outer side, and the square and the triangle across from it then have one
+closed neighbourhood between them (`metrics.indistinguishable_cells`), on
+every window there is: no mine count calibrates that, so it takes the other
+gap as flat (two thirds up, not one third). And the window has to show the
+**tiling**, not just its tiles: a 2-uniform board is two kinds of corner, and
+`resize.shows_tiling` (read back by `TestEveryWindowShowsItsTiling` in
+`tests/test_presets.py`) refuses a window with no interior vertex of one of
+them. The four course tilings — `elongated2`, `elongated3`, `squarerows2`,
+`squarerows3`, one edge wide — are where that bites: a vertex on a rim is not
+shown, and twelve tiles round an easy tube leave room for barely one band
+along it, so of their straight lines they cut on the edge of a band (the
+3³.4² line between a square course and a triangle course) rather than inside
+one. Cut on the 4⁴ line, `cylsquarerows3` easy shipped three courses of
+squares and not one triangle. `cylelongated3` easy is the one that still
+lands outside the ±15% band — 96 cells, since its shortest symmetric strip
+showing a 3⁶ corner is two squares and six triangles per unit round — and is
+an `EXEMPT_ROWS` entry in `tests/test_presets.py` for it. Eight have a horizontal line of edges there and
+end on straight rims (`studdedtri`, `elongated2`, `elongated3`, `fannedhex`,
+`squarerows2`, `squarerows3`, `squaretrihex`, `squaretrihex2`, in
+`STRAIGHT_RIM`), and the other twelve on the least ragged zigzag they have.
+Every flip level here is 0 or a quarter of the height, so with a cut that is a
+fraction of the height the cylinder row counts that centre the strip on a flip
+are fractions too, and the `ARCH_PRESETS` rows write them that way
+(`1 + 5 / 6`), which is what lets `apply.py` keep them exact. Changing a cut
+moves those fractions, so re-run `resize.py --only` on the `cyl…` rows after
+one.
+
+**The other surfaces** are the same as for "Other": add them to the family's
+`_FAMILY_SURFACES` entries (both ports) and add the surface presets, measured.
+The cut is already chosen, and both open surfaces share it. The mirror already
+in each template is what a Möbius strip or a Klein bottle would glue through.
+The two without one (`studdedtri2` and `snubelongated`) would stay off those
+two surfaces, like the other chiral and glide-only tilings.
 
 ## Recipe: add a congruent-rectangle bond
 

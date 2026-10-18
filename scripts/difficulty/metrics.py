@@ -25,6 +25,59 @@ from collections import Counter
 from typing import Iterable, Sequence
 
 
+def _cyclic(sequence: Sequence[int]) -> tuple[int, ...]:
+    """The least rotation of a sequence or of its reverse: one key for every
+    way round a vertex configuration can be read."""
+    sequence = list(sequence)
+    return min(tuple(seq[i:] + seq[:i])
+               for seq in (sequence, sequence[::-1]) for i in range(len(seq)))
+
+
+def vertex_types_shown(board, vertex_types: Iterable[Sequence[int]]) -> set:
+    """Which of a tiling's vertex configurations some *interior* vertex of the
+    board has, read in cyclic order round the vertex.
+
+    A window can carry every tile a tiling has and still not show the tiling:
+    a cylinder of `squarerows2` half a domain long has its triangle courses and
+    its square courses, but no two square courses side by side, so no 4^4
+    vertex -- it is the elongated triangular tiling, as far as the player can
+    tell. Order matters because two configurations can meet the same tiles
+    (3^3.4^2 and 3^2.4.3.4 are both three triangles and two squares).
+
+    Read combinatorially, so it works on a flat board and an immersed one
+    alike: the cells round a vertex are chained through the edges they share
+    there, and a vertex whose chain does not close is on a rim.
+    """
+    def key(point) -> tuple:
+        return tuple(round(c, 6) for c in point)
+
+    # vertex -> {the neighbour before it: (the neighbour after it, side count)}
+    around: dict = {}
+    for polygon in board.polygons.values():
+        points = [key(p) for p in polygon]
+        n = len(points)
+        for i, point in enumerate(points):
+            around.setdefault(point, {})[points[i - 1]] = (points[(i + 1) % n], n)
+    want = {_cyclic(t): index for index, t in enumerate(vertex_types)}
+    shown = set()
+    for links in around.values():
+        start = next(iter(links))
+        fan, at = [], start
+        for _ in range(len(links)):
+            if at not in links:
+                break  # the chain runs off the board: a rim vertex
+            at, sides = links[at]
+            fan.append(sides)
+            if at == start:
+                break
+        if at != start or len(fan) != len(links):
+            continue
+        index = want.get(_cyclic(fan))
+        if index is not None:
+            shown.add(index)
+    return shown
+
+
 def mean_degree(adjacency: dict) -> float:
     """Average number of neighbours per cell."""
     return sum(len(tuple(v)) for v in adjacency.values()) / len(adjacency)

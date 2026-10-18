@@ -1176,8 +1176,8 @@ function dualTemplate(primal: () => ArchTemplate, cut = 0): ArchTemplate {
 // vertex adjacency rule still sees the neighbours across a split edge. The
 // extra vertex is collinear, so it is invisible when the tile is drawn;
 // `shapeMetrics` drops it before measuring, and a square with a split edge is
-// still a square. All six are flat-only (TilingSpec.flatOnly): wrapping one
-// onto a manifold needs its own preset windows per surface.
+// still a square. Wrapping one onto a manifold needs its own preset windows
+// per surface, in the same ARCH_PRESETS table every periodic tiling uses.
 
 function rotate2(point: Vertex, degrees: number): Vertex {
   if (!degrees) return point;
@@ -1569,7 +1569,7 @@ function translatedAnchors(
 // pentagon. Inflating one of those tiles is a fractal; laying the same tile
 // down periodically is an ordinary wallpaper pattern, and that is what these
 // templates are. They ship on the plane only for now — no cut is chosen and no
-// surface builder wraps them (FLAT_ONLY_ARCH_FAMILIES in catalog.ts).
+// surface builder wraps them (ARCH_FAMILY_SURFACES in catalog.ts).
 
 /** The sphinx, laid down periodically (p2).
  *
@@ -1758,9 +1758,10 @@ function durerTemplate(): ArchTemplate {
 //                      both lattice directions) merged with its ring of squares
 //                      and triangles into a dodecagon
 //
-// All three are p6m. The family ships on the plane only for now — no cut is
-// chosen and no surface builder wraps it (FLAT_ONLY_ARCH_FAMILIES in
-// catalog.ts). Ports of the factories of the same names in boards/tilings.py.
+// All three are p6m. The family ships on the plane and the cylinder
+// (ARCH_FAMILY_SURFACES in catalog.ts), so each of the twenty states a cut —
+// see the comment above `steps`. Ports of the factories of the same names in
+// boards/tilings.py.
 
 /** A regular polygon cut into triangles from its centre. */
 function fan(polygon: Vertex[]): Vertex[][] {
@@ -1811,7 +1812,7 @@ function trirhombitrihexTemplate(): ArchTemplate {
       polygons.push([name, polygon]);
     }
   }
-  return template([3, 4], width, height, polygons, { centre: [0, 0] });
+  return template([3, 4], width, height, polygons, { centre: [0, 0], cut: height / 7 });
 }
 
 /** [3².4.3.4; 3.4.6.4]: truncated hexagonal with every dodecagon cut into a
@@ -1836,7 +1837,7 @@ function dissectedtrunchexTemplate(): ArchTemplate {
       polygons.push([name, polygon]);
     }
   }
-  return template([3, 4, 6], a, a * ROOT3, polygons);
+  return template([3, 4, 6], a, a * ROOT3, polygons, { cut: (a * ROOT3) / 4 });
 }
 
 /** [3.4.6.4; 4.6.12]: rhombitrihexagonal with the hexagons at every other
@@ -1849,7 +1850,7 @@ function dodecarhombitrihexTemplate(): ArchTemplate {
   const height = 2 * a * ROOT3;
   const even = (v: number): boolean => ((v % 2) + 2) % 2 === 0;
   const polygons = rhombitrihexPolygons(width, height, (m, n) => even(m) && even(n), [-5, 7]);
-  return template([3, 4, 6, 12], width, height, polygons);
+  return template([3, 4, 6, 12], width, height, polygons, { cut: height / 5 });
 }
 
 // -- the other seventeen, from one translation cell ---------------------------
@@ -1859,8 +1860,12 @@ function dodecarhombitrihexTemplate(): ArchTemplate {
 // were found): `v1`/`v2` are the translation lattice as walks of unit steps
 // (step k heads 30k degrees), `rect` two lattice vectors at right angles as
 // integer combinations of them, `tiles` one `[sides, corner walk, heading]` per
-// translation class, and `centre` the window centre — a tile's index, or a
-// list of walks whose mean it is — round which the domain is laid out.
+// translation class, `centre` the window centre — a tile's index, or a
+// list of walks whose mean it is — round which the domain is laid out, and
+// `cut` where a cylinder's rims fall, as a fraction of the domain's height
+// (the simplest one inside the gap between two rows of tile centres whose rim
+// runs flattest, which for eight of them is a horizontal line of edges — see
+// "The cut" after `ArchTemplate`).
 
 /** The point a walk of unit steps reaches from the origin, step k heading 30k
  * degrees. */
@@ -1898,7 +1903,11 @@ function cellTemplate(
   v2: readonly number[],
   rect: readonly [readonly [number, number], readonly [number, number]],
   tiles: readonly (readonly [number, readonly number[], number])[],
-  { centre, mirrored = true }: { centre: number | readonly (readonly number[])[]; mirrored?: boolean },
+  {
+    centre,
+    mirrored = true,
+    cut = 0,
+  }: { centre: number | readonly (readonly number[])[]; mirrored?: boolean; cut?: number },
 ): ArchTemplate {
   const a = steps(v1);
   const b = steps(v2);
@@ -1928,6 +1937,7 @@ function cellTemplate(
   return template(config, width, height, periodicDomain(a, b, width, height, shifted, turn), {
     mirrored,
     centre: [0, 0],
+    cut: cut * height,
   });
 }
 
@@ -1939,7 +1949,7 @@ function studdedtriTemplate(): ArchTemplate {
   return cellTemplate([3, 6], [8, 8, 8], [10, 10, 10], [[-1, 1], [-1, -1]], [
     [6, [0], 0], [3, [], 2], [3, [], 4], [3, [], 8], [3, [], 10], [3, [], 0], [3, [], 6],
     [3, [10], 0], [3, [4], 0], [3, [6], 8], [3, [10], 10], [3, [0], 10], [3, [2], 2],
-  ], { centre: 0 });
+  ], { centre: 0, cut: 1 / 3 });
 }
 
 /** [3⁶; 3⁴.6]₂, p6: the same with the hexagons √13 edges apart, on
@@ -1952,7 +1962,7 @@ function studdedtri2Template(): ArchTemplate {
     [3, [10], 0], [3, [0], 2], [3, [4], 0], [3, [4], 6], [3, [8], 4], [3, [10], 10],
     [3, [0], 10], [3, [0], 0], [3, [2], 0], [3, [2], 2], [3, [8], 6], [3, [6], 4],
     [3, [6], 6], [3, [2, 4], 0],
-  ], { centre: 0, mirrored: false });
+  ], { centre: 0, mirrored: false, cut: 1 / 4 });
 }
 
 /** [3⁶; 3³.4²]₁, pmm: elongated triangular with two courses of
@@ -1962,7 +1972,7 @@ function studdedtri2Template(): ArchTemplate {
 function elongated2Template(): ArchTemplate {
   return cellTemplate([3, 4], [0], [8, 9, 10], [[1, 0], [0, -1]], [
     [4, [4], 0], [3, [], 4], [3, [], 2], [3, [], 8], [3, [], 6],
-  ], { centre: [[]] });
+  ], { centre: [[]], cut: 1 / 3 });
 }
 
 /** [3⁶; 3³.4²]₂, cmm: three courses of triangles between the square
@@ -1972,7 +1982,7 @@ function elongated3Template(): ArchTemplate {
   return cellTemplate([3, 4], [0], [8, 8, 9, 10], [[1, 0], [-1, -2]], [
     [4, [10], 6], [3, [], 4], [3, [], 2], [3, [], 8], [3, [], 6], [3, [4], 0],
     [3, [4], 2],
-  ], { centre: 0 });
+  ], { centre: 0, cut: 3 / 7 });
 }
 
 /** [3⁶; 3².4.12], p6m: truncated trihexagonal (4.6.12) with every
@@ -1983,7 +1993,7 @@ function tritrunctrihexTemplate(): ArchTemplate {
     [12, [4], 3], [4, [10], 11], [4, [4], 0], [4, [6], 7], [3, [], 2], [3, [], 4],
     [3, [], 8], [3, [], 10], [3, [], 0], [3, [], 6], [3, [10, 11], 0], [3, [3, 4], 0],
     [3, [6, 7], 8], [3, [10, 11], 10], [3, [0, 11], 10], [3, [2, 3], 2],
-  ], { centre: 0 });
+  ], { centre: 0, cut: 1 / 3 });
 }
 
 /** [3⁶; 3².6²], p6m: hexagonal with one hexagon in three cut into six
@@ -2003,7 +2013,7 @@ function fannedhexTemplate(): ArchTemplate {
 function hexbandsTemplate(): ArchTemplate {
   return cellTemplate([3, 6], [1, 11], [7, 9, 9], [[1, 0], [-1, -2]], [
     [6, [], 7], [3, [], 3], [3, [], 5], [3, [], 11], [3, [], 1],
-  ], { centre: 0 });
+  ], { centre: 0, cut: 1 / 3 });
 }
 
 /** [3³.4²; 3².4.3.4]₂, pgg: every square in an edge-sharing pair among
@@ -2025,7 +2035,7 @@ function snubelongated2Template(): ArchTemplate {
     [4, [], 9], [4, [], 0], [4, [5], 1], [4, [9], 5], [4, [5], 6], [4, [9, 10], 6],
     [3, [], 3], [3, [], 5], [3, [], 7], [3, [9], 10], [3, [0], 9], [3, [0], 1],
     [3, [3], 0], [3, [0], 11], [3, [3], 2], [3, [5], 4], [3, [9], 8], [3, [7], 6],
-  ], { centre: [[0], []] });
+  ], { centre: [[0], []], cut: 1 / 7 });
 }
 
 /** [3³.4²; 3.4.6.4], p6m: dissectedtrunchex with the squares the
@@ -2038,7 +2048,7 @@ function dissectedtrunchex2Template(): ArchTemplate {
     [6, [4], 1], [4, [], 10], [4, [], 1], [4, [4], 5], [4, [10], 6], [4, [6], 5],
     [4, [8], 6], [3, [], 4], [3, [], 8], [3, [], 6], [3, [6], 8], [3, [1], 10],
     [3, [1], 2], [3, [1], 0], [3, [4, 5], 6],
-  ], { centre: 0 });
+  ], { centre: 0, cut: 1 / 4 });
 }
 
 /** [3³.4²; 4⁴]₁, cmm: elongated triangular with two courses of
@@ -2048,7 +2058,7 @@ function dissectedtrunchex2Template(): ArchTemplate {
 function squarerows2Template(): ArchTemplate {
   return cellTemplate([3, 4], [0], [8, 9, 9], [[1, 0], [-1, -2]], [
     [4, [], 3], [4, [10], 6], [3, [], 8], [3, [], 6],
-  ], { centre: [[3]] });
+  ], { centre: [[3]], cut: 1 / 5 });
 }
 
 /** [3³.4²; 4⁴]₂, cmm: three courses of squares between the triangle
@@ -2056,7 +2066,7 @@ function squarerows2Template(): ArchTemplate {
 function squarerows3Template(): ArchTemplate {
   return cellTemplate([3, 4], [0], [8, 9, 9, 9], [[1, 0], [-1, -2]], [
     [4, [], 3], [4, [10], 6], [4, [3], 3], [3, [], 10], [3, [], 8],
-  ], { centre: 2 });
+  ], { centre: 2, cut: 2 / 5 });
 }
 
 /** [3².6²; 3.6.3.6], pmm: rows of hexagons, each sharing an edge with the
@@ -2066,7 +2076,7 @@ function squarerows3Template(): ArchTemplate {
 function hexrowsTemplate(): ArchTemplate {
   return cellTemplate([3, 6], [1, 11], [9, 9], [[1, 0], [0, -1]], [
     [6, [], 5], [3, [], 3], [3, [], 1],
-  ], { centre: [[], [3]] });
+  ], { centre: [[], [3]], cut: 1 / 3 });
 }
 
 /** [3.4.3.12; 3.12²], p4m: dodecagons on a square lattice, each sharing an
@@ -2076,7 +2086,7 @@ function hexrowsTemplate(): ArchTemplate {
 function dodecasquareTemplate(): ArchTemplate {
   return cellTemplate([3, 4, 12], [8, 9, 9, 10], [0, 0, 1, 11], [[0, 1], [-1, 0]], [
     [12, [], 5], [4, [], 0], [3, [], 3], [3, [], 10], [3, [0], 1], [3, [3], 0],
-  ], { centre: [[2, 3], [2, 3, 3]] });
+  ], { centre: [[2, 3], [2, 3, 3]], cut: 2 / 3 });
 }
 
 /** [3.4².6; 3.4.6.4], p6m: hexagons, squares and triangles, as
@@ -2089,7 +2099,7 @@ function hexringsTemplate(): ArchTemplate {
     [4, [8], 8], [4, [4], 3], [4, [2, 11], 10], [4, [6, 8], 4], [4, [6, 8], 7],
     [4, [4, 6], 3], [3, [], 2], [3, [11], 0], [3, [8], 6], [3, [8, 11], 8],
     [3, [4, 6], 6], [3, [3, 4], 0],
-  ], { centre: 2 });
+  ], { centre: 2, cut: 3 / 7 });
 }
 
 /** [3.4².6; 3.6.3.6]₁, pmm: courses of squares between bands of
@@ -2098,7 +2108,7 @@ function hexringsTemplate(): ArchTemplate {
 function squaretrihexTemplate(): ArchTemplate {
   return cellTemplate([3, 4, 6], [0, 2, 10], [8, 9, 10], [[1, 0], [0, -1]], [
     [6, [], 4], [4, [4], 0], [4, [4], 3], [3, [], 2], [3, [], 8],
-  ], { centre: [[]] });
+  ], { centre: [[]], cut: 1 / 3 });
 }
 
 /** [3.4².6; 3.6.3.6]₂, cmm: the same with each band half a hexagon
@@ -2106,7 +2116,7 @@ function squaretrihexTemplate(): ArchTemplate {
 function squaretrihex2Template(): ArchTemplate {
   return cellTemplate([3, 4, 6], [0, 2, 10], [8, 8, 9], [[1, 0], [-1, -2]], [
     [6, [], 4], [4, [10], 6], [4, [4], 0], [3, [], 2], [3, [], 8],
-  ], { centre: [[]] });
+  ], { centre: [[]], cut: 1 / 3 });
 }
 
 // -- registry ----------------------------------------------------------------

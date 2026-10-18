@@ -9,6 +9,7 @@ import {
   SURFACE_SPECS,
   TILINGS_BY_KEY,
   TILING_SPECS,
+  TWO_UNIFORM_ARCH,
   UNIFORM_ARCH,
   familyRows,
   modeFor,
@@ -19,7 +20,7 @@ import {
 import { MODES } from "../../src/boards/presets";
 
 // The catalog derivations: the uniform / Laves / isogonal / rectangle families
-// lifted from the ARCH_TILINGS registry, chirality and flat-only gating, and
+// lifted from the ARCH_TILINGS registry, chirality and per-family surface gating, and
 // the guarantee
 // that every built mode is reachable through the geometry-first menu (the
 // picker per surface plus the sphere / polyhedra groups). Mirrors catalog.py's
@@ -84,6 +85,29 @@ describe("catalog families", () => {
       expect(pickerFamilies(surface)).toContain("rectangle");
     }
     expect(familyRows("rectangle", "flat").map((r) => r.mode)).toEqual([...RECTANGLE_ARCH]);
+  });
+
+  it("wraps the 2-uniform tilings onto the cylinder and no other surface", () => {
+    // All twenty reverse y somewhere (p6 and pgg by a half turn, the rest by a
+    // mirror too), so all twenty have a cylinder; ARCH_FAMILY_SURFACES holds
+    // them off the torus, Mobius strip and Klein bottle, which have no measured
+    // windows for them yet.
+    expect(TWO_UNIFORM_ARCH.length).toBe(20);
+    for (const key of TWO_UNIFORM_ARCH) {
+      const tiling = TILINGS_BY_KEY.get(key)!;
+      expect(tilingAllows(tiling, SURFACES.get("flat")!)).toBe(true);
+      expect(tilingAllows(tiling, SURFACES.get("cylinder")!)).toBe(true);
+      for (const surface of ["torus", "mobius", "klein"]) {
+        expect(tilingAllows(tiling, SURFACES.get(surface)!), `${key} on ${surface}`).toBe(false);
+      }
+    }
+    expect(pickerFamilies("cylinder")).toContain("2-uniform");
+    for (const surface of ["torus", "mobius", "klein"]) {
+      expect(pickerFamilies(surface)).not.toContain("2-uniform");
+    }
+    expect(familyRows("2-uniform", "cylinder").map((r) => r.mode)).toEqual(
+      TWO_UNIFORM_ARCH.map((key) => modeFor(key, "cylinder")),
+    );
   });
 
   it("marks only the chiral tilings chiral (snub hexagonal + floret)", () => {
@@ -218,7 +242,7 @@ describe("mode -> tiling", () => {
         pairs++;
       }
     }
-    expect(pairs).toBe(167);
+    expect(pairs).toBe(187);
   });
 
   it("has no tiling for the one-off boards", () => {

@@ -349,11 +349,53 @@
       "surface": "cylinder",
       "family": "dual"
     },
+    "cyldissectedtrunchex": {
+      "label": "Dissected truncated hexagonal · Cylinder",
+      "tiling": "dissectedtrunchex",
+      "surface": "cylinder",
+      "family": "2-uniform"
+    },
+    "cyldissectedtrunchex2": {
+      "label": "Turned dissected truncated hexagonal · Cylinder",
+      "tiling": "dissectedtrunchex2",
+      "surface": "cylinder",
+      "family": "2-uniform"
+    },
+    "cyldodecarhombitrihex": {
+      "label": "Studded rhombitrihexagonal · Cylinder",
+      "tiling": "dodecarhombitrihex",
+      "surface": "cylinder",
+      "family": "2-uniform"
+    },
+    "cyldodecasquare": {
+      "label": "Square dodecagonal · Cylinder",
+      "tiling": "dodecasquare",
+      "surface": "cylinder",
+      "family": "2-uniform"
+    },
     "cylelongated": {
       "label": "Elongated triangular · Cylinder",
       "tiling": "elongated",
       "surface": "cylinder",
       "family": "uniform"
+    },
+    "cylelongated2": {
+      "label": "Half-elongated triangular · Cylinder",
+      "tiling": "elongated2",
+      "surface": "cylinder",
+      "family": "2-uniform"
+    },
+    "cylelongated3": {
+      "label": "Third-elongated triangular · Cylinder",
+      "tiling": "elongated3",
+      "surface": "cylinder",
+      "family": "2-uniform"
+    },
+    "cylfannedhex": {
+      "label": "Fanned hexagonal · Cylinder",
+      "tiling": "fannedhex",
+      "surface": "cylinder",
+      "family": "2-uniform"
     },
     "cylfloret": {
       "label": "Floret pentagonal · Cylinder",
@@ -372,6 +414,24 @@
       "tiling": "hex",
       "surface": "cylinder",
       "family": "regular"
+    },
+    "cylhexbands": {
+      "label": "Banded hexagonal · Cylinder",
+      "tiling": "hexbands",
+      "surface": "cylinder",
+      "family": "2-uniform"
+    },
+    "cylhexrings": {
+      "label": "Dissected truncated trihexagonal · Cylinder",
+      "tiling": "hexrings",
+      "surface": "cylinder",
+      "family": "2-uniform"
+    },
+    "cylhexrows": {
+      "label": "Bow-tie hexagonal · Cylinder",
+      "tiling": "hexrows",
+      "surface": "cylinder",
+      "family": "2-uniform"
     },
     "cylinder": {
       "label": "Squares · Cylinder",
@@ -433,6 +493,18 @@
       "surface": "cylinder",
       "family": "rectangle"
     },
+    "cylsnubelongated": {
+      "label": "Zigzag snub square · Cylinder",
+      "tiling": "snubelongated",
+      "surface": "cylinder",
+      "family": "2-uniform"
+    },
+    "cylsnubelongated2": {
+      "label": "Pinwheel snub square · Cylinder",
+      "tiling": "snubelongated2",
+      "surface": "cylinder",
+      "family": "2-uniform"
+    },
     "cylsnubhex": {
       "label": "Snub hexagonal · Cylinder",
       "tiling": "snubhex",
@@ -445,6 +517,30 @@
       "surface": "cylinder",
       "family": "uniform"
     },
+    "cylsquarerows2": {
+      "label": "Doubly elongated triangular · Cylinder",
+      "tiling": "squarerows2",
+      "surface": "cylinder",
+      "family": "2-uniform"
+    },
+    "cylsquarerows3": {
+      "label": "Triply elongated triangular · Cylinder",
+      "tiling": "squarerows3",
+      "surface": "cylinder",
+      "family": "2-uniform"
+    },
+    "cylsquaretrihex": {
+      "label": "Elongated trihexagonal · Cylinder",
+      "tiling": "squaretrihex",
+      "surface": "cylinder",
+      "family": "2-uniform"
+    },
+    "cylsquaretrihex2": {
+      "label": "Staggered elongated trihexagonal · Cylinder",
+      "tiling": "squaretrihex2",
+      "surface": "cylinder",
+      "family": "2-uniform"
+    },
     "cylstackedbond": {
       "label": "Stacked bond · Cylinder",
       "tiling": "stackedbond",
@@ -456,6 +552,18 @@
       "tiling": "staggeredtri",
       "surface": "cylinder",
       "family": "isogonal"
+    },
+    "cylstuddedtri": {
+      "label": "Studded triangular · Cylinder",
+      "tiling": "studdedtri",
+      "surface": "cylinder",
+      "family": "2-uniform"
+    },
+    "cylstuddedtri2": {
+      "label": "Twisted studded triangular · Cylinder",
+      "tiling": "studdedtri2",
+      "surface": "cylinder",
+      "family": "2-uniform"
     },
     "cyltetrakis": {
       "label": "Tetrakis square · Cylinder",
@@ -480,6 +588,18 @@
       "tiling": "trihex",
       "surface": "cylinder",
       "family": "uniform"
+    },
+    "cyltrirhombitrihex": {
+      "label": "Fanned rhombitrihexagonal · Cylinder",
+      "tiling": "trirhombitrihex",
+      "surface": "cylinder",
+      "family": "2-uniform"
+    },
+    "cyltritrunctrihex": {
+      "label": "Fanned truncated trihexagonal · Cylinder",
+      "tiling": "tritrunctrihex",
+      "surface": "cylinder",
+      "family": "2-uniform"
     },
     "cyltrunchex": {
       "label": "Truncated hexagonal · Cylinder",
