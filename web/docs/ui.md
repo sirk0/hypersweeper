@@ -17,7 +17,8 @@ A board reachable from the home page is still reachable through Custom — the
 home row is a shortcut, not a move, which is how `square` has always worked.
 The reverse is **`CUSTOM_ONLY`** (`src/boards/randomBoard.ts`): boards kept off
 the home page *and* out of both random pools until their UX is ready to be
-promoted. The cube of cubes (`cube3d`, Volumetric) is there today — it used to
+promoted. Both pools also drop, per difficulty, the boards
+`data/distortion.json` marks as distorted at the difficulty being dealt. The cube of cubes (`cube3d`, Volumetric) is there today — it used to
 be a second launch row beside Classic, and is now Custom › Volumes only.
 In every tiling picker the three regular tilings are promoted to rows of their
 own, leaving the Regular family holding the shaped boards alone under the label
@@ -45,6 +46,18 @@ puts its vertex-type symbol there (`[3⁶; 3⁴.6]₁` under *Studded triangular
 read from `tilingNotations` in `data/catalog.json` through `TilingSpec.notation`
 — the label says how the tiling is made, in words, and the symbol is what the
 literature calls it.
+
+A wrapped board its surface draws **too far out of shape** carries a second
+mark, per difficulty (`src/boards/distortion.ts`, reading the measured
+`data/distortion.json`): a *Distorted* pill on the desktop card, and on the
+phone a hint line — "Distorted on Easy — Medium and Hard draw the tiles truer"
+— with a ⚠ in the corner unless the fairness mark already holds it. Most of
+these boards are distorted on easy alone, where a few big cells span the whole
+curve, so unlike the fairness mark this one follows the selected difficulty:
+it is built once per row and `paintDistortion` shows or hides it whenever the
+pills change, without re-rendering the page. The board stays playable; the
+in-game caption takes the same ⚠ (its tooltip says why) and the info window a
+line, and the random launchers never deal it at that difficulty.
 
 **A tablet held upright gets the two panes too**: the query's second clause,
 `(min-width: 720px) and (min-height: 800px)`, takes in an iPad in portrait

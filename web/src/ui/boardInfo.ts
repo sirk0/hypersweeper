@@ -1,4 +1,5 @@
 import { fullModeLabel } from "../boards/catalog";
+import { distortionHint } from "../boards/distortion";
 import { fairnessHint, fairnessOf } from "../boards/fairness";
 import { screens, type HudSlot } from "../config/screens";
 import { ICONS, slotKept, slotVisible } from "./hud";
@@ -139,12 +140,15 @@ export class BoardInfo {
     // the mark too, but the Flat and 3D entries deal a board at random and
     // never show that row -- and this is the board where losing is not the
     // player's fault, so it is the one that most needs saying. Only `warn`
-    // reaches here: a blocked board never opens.
+    // reaches here: a blocked board never opens. A board its surface draws
+    // out of shape at this difficulty carries the same mark — a random deal
+    // never lands on one, but a share link or the native menu bar can.
     const level = fairnessOf(mode, difficulty);
-    const warning = fairnessHint(level);
+    const warnings = [fairnessHint(level), distortionHint(mode, difficulty)]
+      .filter((w): w is string => w !== undefined);
     this.nameEl.textContent =
-      warning === undefined ? fullModeLabel(mode) : `${fullModeLabel(mode)} ⚠`;
-    this.nameEl.title = warning ?? "";
+      warnings.length === 0 ? fullModeLabel(mode) : `${fullModeLabel(mode)} ⚠`;
+    this.nameEl.title = warnings.join("\n");
     for (const btn of this.barButtons) {
       btn.hidden =
         !slotVisible(btn.dataset["visibleWhen"], conditions) ||

@@ -308,3 +308,12 @@ generated `data/difficulty.json`, which the TypeScript app reads
 often at random — so a new unfair board needs no front-end edit, only a
 `scripts/difficulty/report.py` re-run.
 
+**Check the cells still look like the tiling.** After a wrapped board's window
+moves, re-run `PYTHONPATH=. python -m scripts.difficulty.distortion`. It
+measures every wrapped board at every difficulty against its tiling's flat
+shape and writes `data/distortion.json`: a level is listed when one cell in ten
+is 60% further from round than in the plane, when the edges are three times as
+unequal, or when any cell is drawn folded over itself, and a board listed at
+two of its three levels is listed at all three. The web menu marks those rows
+and the random buttons stop dealing them, again with no front-end edit.
+

@@ -36,6 +36,15 @@ twice.
   costs solver time no CI job should spend, and `data-sync` therefore does
   not regenerate it.
 
+- `data/distortion.json` — the wrapped boards whose cells their surface draws
+  too far out of shape, per difficulty, with what was measured (cell shape
+  against the flat tiling's own, edge stretch, bend, folded cells). Measured,
+  not exported: `scripts/difficulty/distortion.py` writes it in a few seconds
+  and `data-sync` does not re-run it, so re-run it by hand after changing a
+  wrapped preset window or adding a wrapped tiling. The TypeScript app reads it
+  (`web/src/boards/distortion.ts`) to mark the menu row and to keep the board
+  out of the random pools at that difficulty.
+
 `scripts/export_data.py` and `scripts/export_conformance.py` regenerate
 the rest from the Python side; the CI `data-sync` job re-runs them and fails
 on any diff. `make web-prepare` copies `data/` into the pygbag stage so

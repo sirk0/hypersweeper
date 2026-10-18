@@ -6,6 +6,7 @@ import {
   modeFairness,
   type Fairness,
 } from "../boards/fairness";
+import { distortedDifficulties, distortionHint, isDistorted } from "../boards/distortion";
 import { randomMode, type RandomKind } from "../boards/randomBoard";
 import { clearAchievements } from "../achievements";
 import { clearBestTimes } from "../leaderboard";
@@ -705,7 +706,7 @@ export class Menu {
       } else {
         btn.dataset.random = e.key;
         btn.addEventListener("click", () => {
-          const mode = randomMode(e.key as RandomKind);
+          const mode = randomMode(e.key as RandomKind, this.settings.difficulty);
           if (mode) this.onSelect({ mode, difficulty: this.settings.difficulty, random: true });
         });
       }
@@ -1089,6 +1090,9 @@ export class Menu {
         btn.append(warn);
       }
     }
+    if (level !== "blocked" && distortedDifficulties(mode).length > 0) {
+      this.addDistortionMark(btn, mode, level === "ok");
+    }
     if (level === "blocked") {
       // Deliberately *not* `aria-disabled`: the row is a working control that
       // opens the explanation, and claiming it is disabled would both lie to a
@@ -1101,6 +1105,49 @@ export class Menu {
     }
     li.append(btn);
     return li;
+  }
+
+  /** The mark on a board its surface draws out of shape (boards/distortion.ts):
+   * a "Distorted" pill on the desktop card, a hint line and — unless the
+   * fairness mark already holds the corner — a ⚠ on the phone row. Unlike the
+   * fairness mark it is per difficulty, since most of these boards are fine
+   * on medium and hard, so it is built once and shown or hidden by
+   * `paintDistortion` whenever the difficulty pills change. */
+  private addDistortionMark(btn: HTMLElement, mode: string, glyph: boolean): void {
+    btn.dataset.distortion = mode;
+    const hint = distortionHint(mode, distortedDifficulties(mode)[0] ?? "") ?? "";
+    if (this.isWide()) {
+      const pill = document.createElement("span");
+      pill.className = "menu-fairness-pill menu-distortion-mark";
+      pill.textContent = "Distorted";
+      pill.title = hint;
+      pill.setAttribute("aria-label", hint);
+      btn.querySelector(".menu-board-card-caption")?.append(pill);
+    } else {
+      const line = document.createElement("span");
+      line.className = "menu-entry-hint menu-distortion-mark";
+      line.textContent = hint;
+      btn.querySelector(".menu-entry-text")?.append(line);
+      if (glyph) {
+        const warn = document.createElement("span");
+        warn.className = "menu-entry-warning menu-distortion-mark";
+        warn.textContent = "⚠";
+        warn.setAttribute("aria-label", hint);
+        btn.append(warn);
+      }
+    }
+    this.paintDistortion(btn);
+  }
+
+  /** Show a row's distortion mark at the selected difficulty, hide it at the
+   * others. `data-distorted` is the hook the e2e suite reads. */
+  private paintDistortion(btn: HTMLElement): void {
+    const mode = btn.dataset["distortion"];
+    if (mode === undefined) return;
+    const on = isDistorted(mode, this.settings.difficulty);
+    if (on) btn.dataset.distorted = "";
+    else delete btn.dataset.distorted;
+    for (const el of btn.querySelectorAll<HTMLElement>(".menu-distortion-mark")) el.hidden = !on;
   }
 
   /** The large board preview a desktop card shows instead of the phone's 38px
@@ -1184,7 +1231,7 @@ export class Menu {
       // -- but a tap meant to produce a nice surprise should not land on one
       // as often as on a board that can actually be solved
       // (boards/randomBoard.ts, shared with the record window's New board).
-      const mode = randomMode(key);
+      const mode = randomMode(key, this.settings.difficulty);
       if (mode) this.onSelect({ mode, difficulty: this.settings.difficulty, random: true });
     });
     li.append(btn);
@@ -1236,6 +1283,10 @@ export class Menu {
     const active = this.settings.difficulty;
     for (const b of this.difficultyRowEl?.querySelectorAll(".difficulty-btn") ?? []) {
       b.classList.toggle("active", (b as HTMLElement).dataset["key"] === active);
+    }
+    // The rows already on the page carry a per-difficulty mark.
+    for (const btn of this.root.querySelectorAll<HTMLElement>("[data-distortion]")) {
+      this.paintDistortion(btn);
     }
   }
 }
