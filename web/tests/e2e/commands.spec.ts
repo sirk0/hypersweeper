@@ -70,9 +70,9 @@ test("a board picked from the menu bar starts at the difficulty in play, from an
 
   // ...and from a game in progress, which it abandons without asking.
   await page.evaluate(() => window.__ms!.reveal(window.__ms!.cells()[0]!));
-  await send(page, "quick:cube3d");
+  await send(page, "quick:square");
   state = await page.evaluate(() => window.__ms!.state());
-  expect(state.mode).toBe("cube3d");
+  expect(state.mode).toBe("square");
   expect(state.revealed).toBe(0);
 });
 

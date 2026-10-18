@@ -1,6 +1,6 @@
 Hypersweeper is a self-contained puzzle game: minesweeper on many different surfaces and tilings. It needs no account and has no sign-up, ads or in-app purchases. The game contacts no server of ours and works fully offline.
 
-To try it: on the home screen, tap Classic for the familiar square grid, Volumetric for a 3D cube of cubes, or 3D for a random surface or solid; Custom lists every board. Tap or click to reveal a cell; long-press or right-click to place a flag. Drag a 3D board to rotate it, and pinch or scroll to zoom. On Mac, the File menu picks the difficulty and the board.
+To try it: on the home screen, tap Classic for the familiar square grid, Flat for a random flat tiling, or 3D for a random surface or solid; Custom lists every board. Tap or click to reveal a cell; long-press or right-click to place a flag. Drag a 3D board to rotate it, and pinch or scroll to zoom. On Mac, the File menu picks the difficulty and the board.
 
 Game Center: achievements use Game Center. If the device is not signed in, the app shows Apple's Game Center sign-in sheet at launch; the game is fully playable without signing in. To see an achievement unlock, win any board (Classic on Easy is quickest): "First clear" appears as a Game Center banner. Settings › Game Center opens the achievements page. The app only reports achievement progress, and reads nothing from Game Center except whether the player is signed in.
 

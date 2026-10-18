@@ -14,12 +14,17 @@ import { hasMode } from "./presets";
 /** Which half of the catalogue: the plane, or everything off it. */
 export type RandomKind = "flat" | "3d";
 
+/** Boards reachable through Custom only: off the home page, and so never
+ * dealt here either, until their UX is ready to be promoted. The volume board
+ * is the one — a cube of cubes played as a deck of slices still needs work. */
+export const CUSTOM_ONLY: ReadonlySet<string> = new Set(["cube3d"]);
+
 /** Every board that half can deal, filtered to the modes this build has got.
- * The pools are exactly what the two pickers reach, so a board that is not in
- * the menu is not dealt here either. */
+ * The pools are what the two pickers reach, less CUSTOM_ONLY, so a board that
+ * is not in the menu is not dealt here either. */
 export function randomPool(kind: RandomKind): string[] {
   const modes = kind === "flat" ? flatMenuModes() : threeDMenuModes();
-  return modes.filter(hasMode);
+  return modes.filter((mode) => hasMode(mode) && !CUSTOM_ONLY.has(mode));
 }
 
 /** One board from that half, or undefined when it has none to give. */

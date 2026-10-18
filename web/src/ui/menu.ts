@@ -90,7 +90,7 @@ const SOLID_GROUP_HINTS: Record<string, string> = {
 };
 
 /** The sidebar key of the Quick start page — the desktop menu's own page, with
- * no phone equivalent (the phone lists these four as its home rows). */
+ * no phone equivalent (the phone lists these three as its home rows). */
 const QUICK_START = "quickstart";
 
 /** A menu row's icon (the same glyph the pygame menu draws for that key). */
@@ -357,7 +357,7 @@ export class Menu {
     this.go(() => this.renderRoot());
   }
 
-  /** The desktop landing page: the four quick-play entries as cards. */
+  /** The desktop landing page: the three quick-play entries as cards. */
   private showQuickStart(): void {
     this.selectedPage = QUICK_START;
     this.go(() => this.renderQuickStart());
@@ -366,7 +366,7 @@ export class Menu {
 
   /** The phone has no sidebar, so Quick start is a page it can never navigate
    * to — but it can be *left on* one, by a rotate or a resize that crosses the
-   * breakpoint while it is open. Without this the player is stranded: the four
+   * breakpoint while it is open. Without this the player is stranded: the three
    * quick-play cards, no Custom row, no back row, and the whole geometry tree
    * behind a sidebar that is `display: none`. The mirror of the guards
    * `renderRoot` and `renderCustom` carry for the other direction. */
@@ -678,7 +678,7 @@ export class Menu {
     );
   }
 
-  /** The phone home page's four quick-play rows. */
+  /** The phone home page's three quick-play rows. */
   private quickPlayRows(): HTMLElement[] {
     return quickPlayEntries().map((e) =>
       e.kind === "mode"
@@ -687,7 +687,7 @@ export class Menu {
     );
   }
 
-  /** The desktop Quick start page: the same four entries as cards.
+  /** The desktop Quick start page: the same three entries as cards.
    *
    * The hint rides along as a caption line rather than being dropped as it is
    * on a sidebar row — on the two random entries it is the only thing saying
@@ -722,8 +722,8 @@ export class Menu {
     return group.key === "flat" ? "hex" : group.key;
   }
 
-  /** The home page: the two boards that open straight away (Classic and
-   * Volumetric), one random board from each half of the catalogue, and Custom
+  /** The home page: the board that opens straight away (Classic), one
+   * random board from each half of the catalogue, and Custom
    * for the whole tree. On desktop the sidebar covers this ground instead —
    * see `showRoot`, which only reaches here below the breakpoint (or once
    * the breakpoint is crossed while this page happens to be on screen). */
@@ -899,7 +899,7 @@ export class Menu {
    * the active row do, but its glyphs are baked in the theme's icon palette
    * (see `rebuildSidebar`).
    *
-   * The four quick-play entries are a *page* here rather than four rows of
+   * The three quick-play entries are a *page* here rather than three rows of
    * their own: as rows they competed with the geometry list for the same
    * glance, and they are what a player opening the menu wants first, which is
    * what a landing page is for. */
