@@ -444,13 +444,18 @@ ARCH_PRESETS = {
         "torus": {"easy": (5, 2, 17, 0.38), "medium": (8, 4, 60, 0.45), "hard": (12, 5, 122, 0.38)},
         "cylinder": {"easy": (6, 1 + 7 / 8, 14), "medium": (10, 3 + 1 / 8, 42), "hard": (14, 4 + 3 / 8, 105)},
     },
-    # The 2-uniform family reaches the plane and the cylinder
-    # (_FAMILY_SURFACES in catalog.py), so its twenty carry those two rows.
-    # Each cylinder row count ends in the fraction that centres the strip on
-    # one of the tiling's flip levels (see arch_cylinder_board), given its cut.
+    # The 2-uniform family reaches the plane, the cylinder and the Mobius
+    # strip (_FAMILY_SURFACES in catalog.py), so its twenty carry the first
+    # two rows and the eighteen with a mirror the third -- studdedtri2 (p6)
+    # and snubelongated (pgg) are chiral, with no mirror to glue the seam
+    # through. Each cylinder row count ends in the fraction that centres the
+    # strip on one of the tiling's flip levels (see arch_cylinder_board), and
+    # each Mobius one in the fraction that makes rows + 2*cut/height whole
+    # (see arch_mobius_board), given its cut.
     "studdedtri": {
         "flat": {"easy": (3, 1, 10, 58.182), "medium": (4, 2, 29, 40.0), "hard": (5, 3, 81, 31.373)},
-        "cylinder": {"easy": (4, 5 / 6, 11), "medium": (7, 1 + 1 / 3, 31), "hard": (10, 1 + 5 / 6, 92)},
+        "cylinder": {"easy": (4, 2 / 3, 10), "medium": (7, 1 + 1 / 6, 35), "hard": (10, 1 + 2 / 3, 90)},
+        "mobius": {"easy": (4, 2 / 3, 10), "medium": (12, 2 / 3, 28), "hard": (10, 1 + 2 / 3, 92)},
     },
     "studdedtri2": {
         "flat": {"easy": (2, 1, 10, 66.564), "medium": (3, 2, 42, 44.376), "hard": (4, 3, 109, 33.282)},
@@ -459,26 +464,32 @@ ARCH_PRESETS = {
     "elongated2": {
         "flat": {"easy": (7, 2, 7, 68.571), "medium": (11, 4, 30, 43.333), "hard": (15, 6, 85, 31.875)},
         "cylinder": {"easy": (12, 1 + 1 / 3, 12), "medium": (20, 2 + 1 / 3, 44), "hard": (29, 3 + 1 / 3, 110)},
+        "mobius": {"easy": (12, 1 + 1 / 3, 12), "medium": (21, 2 + 1 / 3, 46), "hard": (29, 3 + 1 / 3, 108)},
     },
     "elongated3": {
         "flat": {"easy": (5, 1, 9, 93.333), "medium": (9, 2, 48, 52.363), "hard": (15, 2, 99, 31.875)},
-        "cylinder": {"easy": (12, 9 / 14, 13), "medium": (19, 1 + 1 / 7, 60), "hard": (29, 1 + 1 / 7, 103)},
+        "cylinder": {"easy": (12, 2 / 3, 7), "medium": (18, 1 + 1 / 6, 42), "hard": (28, 1 + 1 / 6, 90)},
+        "mobius": {"easy": (12, 2 / 3, 7), "medium": (25, 2 / 3, 16), "hard": (46, 2 / 3, 45)},
     },
     "trirhombitrihex": {
         "flat": {"easy": (3, 1, 8, 52.196), "medium": (4, 3, 45, 40.241), "hard": (6, 3, 86, 27.598)},
         "cylinder": {"easy": (5, 5 / 7, 13), "medium": (7, 1 + 5 / 7, 54), "hard": (11, 2 + 3 / 14, 123)},
+        "mobius": {"easy": (5, 5 / 7, 12), "medium": (7, 1 + 5 / 7, 54), "hard": (12, 1 + 5 / 7, 103)},
     },
     "tritrunctrihex": {
         "flat": {"easy": (2, 1, 4, 50.718), "medium": (4, 2, 13, 25.359), "hard": (5, 3, 34, 20.287)},
-        "cylinder": {"easy": (4, 5 / 6, 5), "medium": (7, 1 + 1 / 3, 9), "hard": (9, 1 + 5 / 6, 28)},
+        "cylinder": {"easy": (4, 12 / 23, 4), "medium": (7, 1 + 1 / 46, 8), "hard": (9, 1 + 12 / 23, 29)},
+        "mobius": {"easy": (4, 12 / 23, 4), "medium": (13, 12 / 23, 6), "hard": (9, 1 + 12 / 23, 27)},
     },
     "fannedhex": {
         "flat": {"easy": (2, 2, 5, 73.333), "medium": (5, 3, 10, 32.0), "hard": (8, 4, 32, 20.22)},
         "cylinder": {"easy": (5, 1, 5), "medium": (10, 1 + 1 / 2, 8), "hard": (13, 2 + 1 / 2, 35)},
+        "mobius": {"easy": (5, 1, 5), "medium": (9, 2, 11), "hard": (13, 2, 26)},
     },
     "hexbands": {
         "flat": {"easy": (4, 2, 5, 66.511), "medium": (9, 3, 20, 30.792), "hard": (12, 4, 57, 23.094)},
         "cylinder": {"easy": (8, 1 + 1 / 3, 11), "medium": (16, 1 + 5 / 6, 27), "hard": (22, 2 + 1 / 3, 66)},
+        "mobius": {"easy": (9, 1 + 1 / 3, 10), "medium": (20, 1 + 1 / 3, 25), "hard": (22, 2 + 1 / 3, 63)},
     },
     "snubelongated": {
         "flat": {"easy": (3, 2, 10, 79.865), "medium": (7, 3, 38, 35.495), "hard": (9, 5, 112, 27.607)},
@@ -487,46 +498,57 @@ ARCH_PRESETS = {
     "snubelongated2": {
         "flat": {"easy": (1, 2, 9, 92.588), "medium": (2, 3, 34, 49.102), "hard": (3, 4, 93, 33.256)},
         "cylinder": {"easy": (3, 5 / 7, 9), "medium": (4, 1 + 5 / 7, 45), "hard": (6, 2 + 3 / 14, 107)},
+        "mobius": {"easy": (3, 5 / 7, 11), "medium": (4, 1 + 5 / 7, 45), "hard": (7, 1 + 5 / 7, 92)},
     },
     "dissectedtrunchex2": {
         "flat": {"easy": (1, 2, 6, 74.256), "medium": (2, 4, 28, 37.128), "hard": (3, 5, 71, 24.752)},
         "cylinder": {"easy": (2, 1 + 1 / 2, 11), "medium": (4, 2, 30), "hard": (5, 3, 72)},
+        "mobius": {"easy": (2, 1 + 1 / 2, 9), "medium": (5, 1 + 1 / 2, 24), "hard": (6, 2 + 1 / 2, 72)},
     },
     "squarerows2": {
         "flat": {"easy": (9, 1, 7, 54.0), "medium": (14, 2, 31, 34.286), "hard": (18, 3, 78, 26.593)},
         "cylinder": {"easy": (12, 3 / 5, 10), "medium": (24, 1 + 1 / 10, 37), "hard": (33, 1 + 3 / 5, 95)},
+        "mobius": {"easy": (12, 3 / 5, 12), "medium": (21, 1 + 3 / 5, 46), "hard": (30, 1 + 3 / 5, 88)},
     },
     "squarerows3": {
         "flat": {"easy": (8, 1, 11, 60.0), "medium": (13, 2, 48, 36.735), "hard": (20, 2, 90, 24.06)},
-        "cylinder": {"easy": (15, 7 / 10, 13), "medium": (26, 1 + 1 / 5, 57), "hard": (33, 1 + 7 / 10, 125)},
+        "cylinder": {"easy": (13, 3 / 5, 7), "medium": (24, 1 + 1 / 10, 44), "hard": (31, 1 + 3 / 5, 107)},
+        "mobius": {"easy": (13, 3 / 5, 7), "medium": (33, 3 / 5, 16), "hard": (32, 1 + 3 / 5, 113)},
     },
     "dissectedtrunchex": {
         "flat": {"easy": (2, 1, 6, 50.718), "medium": (4, 2, 30, 28.355), "hard": (5, 3, 74, 23.233)},
         "cylinder": {"easy": (5, 1 / 2, 7), "medium": (6, 1 + 1 / 2, 34), "hard": (10, 1 + 1 / 2, 76)},
+        "mobius": {"easy": (5, 1 / 2, 6), "medium": (6, 1 + 1 / 2, 34), "hard": (10, 1 + 1 / 2, 74)},
     },
     "hexrows": {
         "flat": {"easy": (6, 4, 6, 46.188), "medium": (10, 8, 30, 27.713), "hard": (14, 11, 70, 19.795)},
         "cylinder": {"easy": (10, 2 + 1 / 3, 9), "medium": (18, 5 + 1 / 3, 37), "hard": (24, 6 + 1 / 3, 71)},
+        "mobius": {"easy": (10, 2 + 1 / 3, 9), "medium": (18, 5 + 1 / 3, 28), "hard": (24, 6 + 1 / 3, 71)},
     },
     "dodecasquare": {
         "flat": {"easy": (3, 4, 6, 34.308), "medium": (7, 6, 16, 18.374), "hard": (9, 8, 37, 14.291)},
         "cylinder": {"easy": (6, 2 + 2 / 3, 5), "medium": (12, 3 + 2 / 3, 13), "hard": (16, 4 + 2 / 3, 37)},
+        "mobius": {"easy": (6, 2 + 2 / 3, 6), "medium": (12, 3 + 2 / 3, 15), "hard": (16, 4 + 2 / 3, 36)},
     },
     "hexrings": {
         "flat": {"easy": (2, 1, 6, 50.718), "medium": (3, 2, 24, 32.768), "hard": (4, 3, 73, 24.874)},
-        "cylinder": {"easy": (4, 9 / 14, 7), "medium": (6, 1 + 1 / 7, 19), "hard": (9, 1 + 9 / 14, 70)},
+        "cylinder": {"easy": (4, 3 / 5, 9), "medium": (6, 1 + 1 / 10, 37), "hard": (9, 1 + 3 / 5, 91)},
+        "mobius": {"easy": (4, 3 / 5, 8), "medium": (11, 3 / 5, 22), "hard": (9, 1 + 3 / 5, 92)},
     },
     "squaretrihex": {
         "flat": {"easy": (4, 3, 6, 64.0), "medium": (8, 6, 39, 30.0), "hard": (11, 8, 91, 21.818)},
         "cylinder": {"easy": (7, 2 + 1 / 3, 6), "medium": (15, 3 + 1 / 3, 19), "hard": (20, 4 + 1 / 3, 58)},
+        "mobius": {"easy": (10, 1 + 1 / 3, 6), "medium": (15, 3 + 1 / 3, 15), "hard": (20, 4 + 1 / 3, 58)},
     },
     "squaretrihex2": {
         "flat": {"easy": (3, 2, 7, 72.0), "medium": (8, 3, 37, 30.0), "hard": (11, 4, 96, 21.818)},
-        "cylinder": {"easy": (9, 5 / 6, 10), "medium": (15, 1 + 5 / 6, 40), "hard": (20, 2 + 1 / 3, 93)},
+        "cylinder": {"easy": (8, 1 + 1 / 5, 15), "medium": (15, 1 + 7 / 10, 44), "hard": (21, 2 + 1 / 5, 98)},
+        "mobius": {"easy": (8, 1 + 1 / 5, 15), "medium": (14, 2 + 1 / 5, 54), "hard": (20, 2 + 1 / 5, 92)},
     },
     "dodecarhombitrihex": {
         "flat": {"easy": (3, 1, 6, 23.852), "medium": (5, 2, 21, 15.458), "hard": (6, 3, 53, 13.145)},
         "cylinder": {"easy": (5, 3 / 5, 6), "medium": (7, 1 + 3 / 5, 18), "hard": (10, 2 + 1 / 10, 55)},
+        "mobius": {"easy": (5, 3 / 5, 6), "medium": (7, 1 + 3 / 5, 24), "hard": (11, 1 + 3 / 5, 48)},
     },
     # The "Other" family is flat-only for now (_FAMILY_SURFACES in
     # catalog.py), so its three carry a "flat" row alone.

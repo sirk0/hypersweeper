@@ -1003,17 +1003,77 @@
       "surface": "mobius",
       "family": "dual"
     },
+    "mobiusdissectedtrunchex": {
+      "label": "Dissected truncated hexagonal · Möbius strip",
+      "tiling": "dissectedtrunchex",
+      "surface": "mobius",
+      "family": "2-uniform"
+    },
+    "mobiusdissectedtrunchex2": {
+      "label": "Turned dissected truncated hexagonal · Möbius strip",
+      "tiling": "dissectedtrunchex2",
+      "surface": "mobius",
+      "family": "2-uniform"
+    },
+    "mobiusdodecarhombitrihex": {
+      "label": "Studded rhombitrihexagonal · Möbius strip",
+      "tiling": "dodecarhombitrihex",
+      "surface": "mobius",
+      "family": "2-uniform"
+    },
+    "mobiusdodecasquare": {
+      "label": "Square dodecagonal · Möbius strip",
+      "tiling": "dodecasquare",
+      "surface": "mobius",
+      "family": "2-uniform"
+    },
     "mobiuselongated": {
       "label": "Elongated triangular · Möbius strip",
       "tiling": "elongated",
       "surface": "mobius",
       "family": "uniform"
     },
+    "mobiuselongated2": {
+      "label": "Half-elongated triangular · Möbius strip",
+      "tiling": "elongated2",
+      "surface": "mobius",
+      "family": "2-uniform"
+    },
+    "mobiuselongated3": {
+      "label": "Third-elongated triangular · Möbius strip",
+      "tiling": "elongated3",
+      "surface": "mobius",
+      "family": "2-uniform"
+    },
+    "mobiusfannedhex": {
+      "label": "Fanned hexagonal · Möbius strip",
+      "tiling": "fannedhex",
+      "surface": "mobius",
+      "family": "2-uniform"
+    },
     "mobiushex": {
       "label": "Hexagons · Möbius strip",
       "tiling": "hex",
       "surface": "mobius",
       "family": "regular"
+    },
+    "mobiushexbands": {
+      "label": "Banded hexagonal · Möbius strip",
+      "tiling": "hexbands",
+      "surface": "mobius",
+      "family": "2-uniform"
+    },
+    "mobiushexrings": {
+      "label": "Dissected truncated trihexagonal · Möbius strip",
+      "tiling": "hexrings",
+      "surface": "mobius",
+      "family": "2-uniform"
+    },
+    "mobiushexrows": {
+      "label": "Bow-tie hexagonal · Möbius strip",
+      "tiling": "hexrows",
+      "surface": "mobius",
+      "family": "2-uniform"
     },
     "mobiuskisrhombille": {
       "label": "Kisrhombille · Möbius strip",
@@ -1051,11 +1111,41 @@
       "surface": "mobius",
       "family": "rectangle"
     },
+    "mobiussnubelongated2": {
+      "label": "Pinwheel snub square · Möbius strip",
+      "tiling": "snubelongated2",
+      "surface": "mobius",
+      "family": "2-uniform"
+    },
     "mobiussnubsquare": {
       "label": "Snub square · Möbius strip",
       "tiling": "snubsquare",
       "surface": "mobius",
       "family": "uniform"
+    },
+    "mobiussquarerows2": {
+      "label": "Doubly elongated triangular · Möbius strip",
+      "tiling": "squarerows2",
+      "surface": "mobius",
+      "family": "2-uniform"
+    },
+    "mobiussquarerows3": {
+      "label": "Triply elongated triangular · Möbius strip",
+      "tiling": "squarerows3",
+      "surface": "mobius",
+      "family": "2-uniform"
+    },
+    "mobiussquaretrihex": {
+      "label": "Elongated trihexagonal · Möbius strip",
+      "tiling": "squaretrihex",
+      "surface": "mobius",
+      "family": "2-uniform"
+    },
+    "mobiussquaretrihex2": {
+      "label": "Staggered elongated trihexagonal · Möbius strip",
+      "tiling": "squaretrihex2",
+      "surface": "mobius",
+      "family": "2-uniform"
     },
     "mobiusstackedbond": {
       "label": "Stacked bond · Möbius strip",
@@ -1068,6 +1158,12 @@
       "tiling": "staggeredtri",
       "surface": "mobius",
       "family": "isogonal"
+    },
+    "mobiusstuddedtri": {
+      "label": "Studded triangular · Möbius strip",
+      "tiling": "studdedtri",
+      "surface": "mobius",
+      "family": "2-uniform"
     },
     "mobiustetrakis": {
       "label": "Tetrakis square · Möbius strip",
@@ -1092,6 +1188,18 @@
       "tiling": "trihex",
       "surface": "mobius",
       "family": "uniform"
+    },
+    "mobiustrirhombitrihex": {
+      "label": "Fanned rhombitrihexagonal · Möbius strip",
+      "tiling": "trirhombitrihex",
+      "surface": "mobius",
+      "family": "2-uniform"
+    },
+    "mobiustritrunctrihex": {
+      "label": "Fanned truncated trihexagonal · Möbius strip",
+      "tiling": "tritrunctrihex",
+      "surface": "mobius",
+      "family": "2-uniform"
     },
     "mobiustrunchex": {
       "label": "Truncated hexagonal · Möbius strip",

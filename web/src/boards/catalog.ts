@@ -57,10 +57,11 @@ const TILING_NOTATIONS = catalog.tilingNotations as Record<string, string>;
 // rectangular domain a surface could be glued from), unlike the one-off boards
 // of FLAT_ONLY_FAMILIES below — so they are gated here, by TilingSpec.surfaces,
 // rather than by being kept out of the picker. "Other" is the plane alone (no
-// cut chosen); the 2-uniform tilings have cuts, and so a cylinder, but no
-// torus, Möbius or Klein windows. Mirrors _FAMILY_SURFACES in catalog.py.
+// cut chosen); the 2-uniform tilings have cuts, and so a cylinder and (the
+// eighteen with a mirror) a Möbius strip, but no torus or Klein windows.
+// Mirrors _FAMILY_SURFACES in catalog.py.
 const ARCH_FAMILY_SURFACES: Record<string, readonly string[]> = {
-  "2-uniform": ["flat", "cylinder"],
+  "2-uniform": ["flat", "cylinder", "mobius"],
   other: ["flat"],
 };
 
@@ -200,8 +201,8 @@ export const PICKER_REGULAR = MENU.pickerRegular as string[];
  * only — an aperiodic tiling has no periodic domain to glue a seam with, and a
  * fractal board is a self-similar shape rather than a window. Isogonal and
  * rectangle wrap every surface their member tilings' chirality allows, just
- * like uniform and dual. The 2-uniform tilings (the plane and the cylinder),
- * the rep-tiles and Dürer's tiling (the plane alone) are in this list too,
+ * like uniform and dual. The 2-uniform tilings (the plane, the cylinder and
+ * the Möbius strip), the rep-tiles and Dürer's tiling (the plane alone) are in this list too,
  * being tilings: `pickerFamilies` drops a family a surface has no row of
  * rather than naming it in two places. */
 export const PICKER_FAMILIES = [
@@ -289,8 +290,8 @@ export function familyRows(family: string, surfaceKey: string): FamilyRow[] {
  * is decided row by row in `familyRows`, by the three things that can stop a
  * tiling reaching it — a chiral tiling has no mirror to close a Möbius or
  * Klein seam with, a tiling whose family is held to some surfaces
- * (ARCH_FAMILY_SURFACES: "Other" to the plane, "2-uniform" to the plane and
- * the cylinder) has no windows elsewhere yet, and a surface restricted to an
+ * (ARCH_FAMILY_SURFACES: "Other" to the plane, "2-uniform" to the plane,
+ * the cylinder and the Möbius strip) has no windows elsewhere yet, and a surface restricted to an
  * allow-list of tilings (the
  * double torus) refuses the rest — and a family left with no row at all is
  * dropped with them rather than shown as a page of greyed-out rows. */

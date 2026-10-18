@@ -127,9 +127,10 @@ REGULAR_TILINGS = tuple(
 # of FLAT_ONLY_FAMILIES below -- so they are gated here, by
 # TilingSpec.surfaces, rather than by being kept out of the picker. "Other" is
 # the plane alone (no cut chosen); the 2-uniform tilings have cuts, and so a
-# cylinder, but no torus, Mobius or Klein windows.
+# cylinder and (the eighteen with a mirror) a Mobius strip, but no torus or
+# Klein windows.
 _FAMILY_SURFACES: dict[str, frozenset[str]] = {
-    "2-uniform": frozenset({"flat", "cylinder"}),
+    "2-uniform": frozenset({"flat", "cylinder", "mobius"}),
     "other": frozenset({"flat"}),
 }
 
@@ -341,7 +342,7 @@ def picker_families(surface_key: str) -> tuple[str, ...]:
     stop a tiling reaching it -- a chiral tiling has no mirror to close a
     Mobius or Klein seam with, a tiling whose family is held to some
     surfaces (``_FAMILY_SURFACES``: "Other" to the plane, "2-uniform" to the
-    plane and the cylinder) has no windows elsewhere yet, and a surface
+    plane, the cylinder and the Mobius strip) has no windows elsewhere yet, and a surface
     restricted to an allow-list of tilings (the double torus, square only for
     now) refuses the rest. A family with nothing left on it is a page of greyed-out rows, so it
     is not offered at all.

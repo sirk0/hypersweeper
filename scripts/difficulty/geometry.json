@@ -10325,11 +10325,11 @@
         "args": [
           "elongated3",
           12,
-          0.642857,
-          9
+          0.666667,
+          13
         ],
-        "cells": 96,
-        "score": 10.7396,
+        "cells": 108,
+        "score": 12.1366,
         "distortionMean": 1.0001,
         "distortionP90": 1.0001,
         "indistinguishable": 0,
@@ -10338,12 +10338,12 @@
       "medium": {
         "args": [
           "elongated3",
-          19,
-          1.142857,
-          43
+          18,
+          1.166667,
+          60
         ],
-        "cells": 285,
-        "score": 0.4762,
+        "cells": 288,
+        "score": 0.5763,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
@@ -10352,12 +10352,12 @@
       "hard": {
         "args": [
           "elongated3",
-          29,
-          1.142857,
-          120
+          28,
+          1.166667,
+          103
         ],
-        "cells": 435,
-        "score": 0.237,
+        "cells": 448,
+        "score": 0.1407,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
@@ -10466,12 +10466,12 @@
         "args": [
           "hexrings",
           4,
-          0.642857,
-          10
+          0.6,
+          7
         ],
-        "cells": 88,
-        "score": 0.2523,
-        "distortionMean": 1.0033,
+        "cells": 80,
+        "score": 0.2649,
+        "distortionMean": 1.0036,
         "distortionP90": 1.0104,
         "indistinguishable": 0,
         "facetStep": 0.0408
@@ -10480,12 +10480,12 @@
         "args": [
           "hexrings",
           6,
-          1.142857,
-          36
+          1.1,
+          19
         ],
-        "cells": 240,
-        "score": 0.1113,
-        "distortionMean": 1.0015,
+        "cells": 228,
+        "score": 0.1226,
+        "distortionMean": 1.0016,
         "distortionP90": 1.0046,
         "indistinguishable": 0,
         "facetStep": 0.0183
@@ -10494,11 +10494,11 @@
         "args": [
           "hexrings",
           9,
-          1.642857,
-          101
+          1.6,
+          70
         ],
-        "cells": 522,
-        "score": 0.0937,
+        "cells": 504,
+        "score": 0.0903,
         "distortionMean": 1.0007,
         "distortionP90": 1.002,
         "indistinguishable": 0,
@@ -10700,26 +10700,26 @@
       "easy": {
         "args": [
           "squarerows3",
-          15,
-          0.7,
-          9
+          13,
+          0.6,
+          13
         ],
-        "cells": 90,
-        "score": 0.2559,
+        "cells": 91,
+        "score": 0.2537,
         "distortionMean": 1.0,
-        "distortionP90": 1.0,
+        "distortionP90": 1.0001,
         "indistinguishable": 0,
         "facetStep": 0.0
       },
       "medium": {
         "args": [
           "squarerows3",
-          26,
-          1.2,
-          39
+          24,
+          1.1,
+          57
         ],
-        "cells": 286,
-        "score": 0.248,
+        "cells": 288,
+        "score": 0.2466,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
@@ -10728,12 +10728,12 @@
       "hard": {
         "args": [
           "squarerows3",
-          33,
-          1.7,
-          97
+          31,
+          1.6,
+          125
         ],
-        "cells": 528,
-        "score": 0.3644,
+        "cells": 527,
+        "score": 0.3648,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
@@ -10794,27 +10794,27 @@
       "easy": {
         "args": [
           "squaretrihex2",
-          9,
-          0.833333,
-          9
+          8,
+          1.2,
+          10
         ],
-        "cells": 72,
-        "score": 0.4021,
-        "distortionMean": 1.0029,
-        "distortionP90": 1.0115,
+        "cells": 88,
+        "score": 0.3973,
+        "distortionMean": 1.004,
+        "distortionP90": 1.0146,
         "indistinguishable": 0,
-        "facetStep": 0.0451
+        "facetStep": 0.0569
       },
       "medium": {
         "args": [
           "squaretrihex2",
           15,
-          1.833333,
+          1.7,
           40
         ],
-        "cells": 270,
-        "score": 0.1137,
-        "distortionMean": 1.0009,
+        "cells": 240,
+        "score": 0.1008,
+        "distortionMean": 1.001,
         "distortionP90": 1.0041,
         "indistinguishable": 0,
         "facetStep": 0.0164
@@ -10822,16 +10822,16 @@
       "hard": {
         "args": [
           "squaretrihex2",
-          20,
-          2.333333,
-          89
+          21,
+          2.2,
+          93
         ],
-        "cells": 460,
-        "score": 0.0458,
+        "cells": 441,
+        "score": 0.2138,
         "distortionMean": 1.0005,
-        "distortionP90": 1.0023,
+        "distortionP90": 1.0021,
         "indistinguishable": 0,
-        "facetStep": 0.0092
+        "facetStep": 0.0084
       }
     }
   },
@@ -10842,13 +10842,13 @@
         "args": [
           "studdedtri",
           4,
-          0.833333,
-          9
+          0.666667,
+          11
         ],
-        "cells": 80,
-        "score": 0.1785,
-        "distortionMean": 1.0027,
-        "distortionP90": 1.0262,
+        "cells": 76,
+        "score": 0.1825,
+        "distortionMean": 1.0015,
+        "distortionP90": 1.0001,
         "indistinguishable": 0,
         "facetStep": 0.0999
       },
@@ -10856,12 +10856,12 @@
         "args": [
           "studdedtri",
           7,
-          1.333333,
-          39
+          1.166667,
+          31
         ],
-        "cells": 231,
-        "score": 0.1465,
-        "distortionMean": 1.0008,
+        "cells": 224,
+        "score": 0.2513,
+        "distortionMean": 1.0005,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "facetStep": 0.0333
@@ -10870,12 +10870,12 @@
         "args": [
           "studdedtri",
           10,
-          1.833333,
-          89
+          1.666667,
+          92
         ],
-        "cells": 460,
-        "score": 0.0458,
-        "distortionMean": 1.0004,
+        "cells": 450,
+        "score": 0.1821,
+        "distortionMean": 1.0003,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "facetStep": 0.0164
@@ -10983,12 +10983,12 @@
         "args": [
           "tritrunctrihex",
           4,
-          0.833333,
-          8
+          0.521739,
+          5
         ],
-        "cells": 96,
-        "score": 10.6674,
-        "distortionMean": 1.0046,
+        "cells": 72,
+        "score": 0.5357,
+        "distortionMean": 1.0039,
         "distortionP90": 1.0052,
         "indistinguishable": 0,
         "facetStep": 0.172
@@ -10997,12 +10997,12 @@
         "args": [
           "tritrunctrihex",
           7,
-          1.333333,
-          42
+          1.021739,
+          9
         ],
-        "cells": 280,
-        "score": 0.1348,
-        "distortionMean": 1.0014,
+        "cells": 238,
+        "score": 0.3514,
+        "distortionMean": 1.0012,
         "distortionP90": 1.0017,
         "indistinguishable": 0,
         "facetStep": 0.0575
@@ -11011,13 +11011,859 @@
         "args": [
           "tritrunctrihex",
           9,
-          1.833333,
-          98
+          1.521739,
+          28
+        ],
+        "cells": 450,
+        "score": 0.1658,
+        "distortionMean": 1.0007,
+        "distortionP90": 1.001,
+        "indistinguishable": 0,
+        "facetStep": 0.0349
+      }
+    }
+  },
+  "mobiusdissectedtrunchex": {
+    "builder": "arch_mobius_board",
+    "args": {
+      "easy": {
+        "args": [
+          "dissectedtrunchex",
+          5,
+          0.5,
+          7
+        ],
+        "cells": 75,
+        "score": 1.1228,
+        "distortionMean": 1.201,
+        "distortionP90": 1.3033,
+        "indistinguishable": 0,
+        "facetStep": 0.0455
+      },
+      "medium": {
+        "args": [
+          "dissectedtrunchex",
+          6,
+          1.5,
+          34
+        ],
+        "cells": 270,
+        "score": 0.8103,
+        "distortionMean": 1.221,
+        "distortionP90": 1.4568,
+        "indistinguishable": 0,
+        "facetStep": 0.0317
+      },
+      "hard": {
+        "args": [
+          "dissectedtrunchex",
+          10,
+          1.5,
+          76
+        ],
+        "cells": 450,
+        "score": 0.6372,
+        "distortionMean": 1.1988,
+        "distortionP90": 1.3435,
+        "indistinguishable": 0,
+        "facetStep": 0.0115
+      }
+    }
+  },
+  "mobiusdissectedtrunchex2": {
+    "builder": "arch_mobius_board",
+    "args": {
+      "easy": {
+        "args": [
+          "dissectedtrunchex2",
+          2,
+          1.5,
+          11
+        ],
+        "cells": 90,
+        "score": 0.8674,
+        "distortionMean": 1.224,
+        "distortionP90": 1.4641,
+        "indistinguishable": 0,
+        "facetStep": 0.0937
+      },
+      "medium": {
+        "args": [
+          "dissectedtrunchex2",
+          5,
+          1.5,
+          30
+        ],
+        "cells": 225,
+        "score": 1.1562,
+        "distortionMean": 1.1902,
+        "distortionP90": 1.2782,
+        "indistinguishable": 0,
+        "facetStep": 0.0153
+      },
+      "hard": {
+        "args": [
+          "dissectedtrunchex2",
+          6,
+          2.5,
+          72
+        ],
+        "cells": 450,
+        "score": 0.7164,
+        "distortionMean": 1.1933,
+        "distortionP90": 1.3207,
+        "indistinguishable": 0,
+        "facetStep": 0.0106
+      }
+    }
+  },
+  "mobiusdodecarhombitrihex": {
+    "builder": "arch_mobius_board",
+    "args": {
+      "easy": {
+        "args": [
+          "dodecarhombitrihex",
+          5,
+          0.6,
+          6
+        ],
+        "cells": 80,
+        "score": 0.8411,
+        "distortionMean": 1.1946,
+        "distortionP90": 1.3216,
+        "indistinguishable": 0,
+        "facetStep": 0.0841
+      },
+      "medium": {
+        "args": [
+          "dodecarhombitrihex",
+          7,
+          1.6,
+          18
+        ],
+        "cells": 280,
+        "score": 0.7211,
+        "distortionMean": 1.2128,
+        "distortionP90": 1.4241,
+        "indistinguishable": 0,
+        "facetStep": 0.0432
+      },
+      "hard": {
+        "args": [
+          "dodecarhombitrihex",
+          11,
+          1.6,
+          55
+        ],
+        "cells": 440,
+        "score": 0.6899,
+        "distortionMean": 1.1956,
+        "distortionP90": 1.3327,
+        "indistinguishable": 0,
+        "facetStep": 0.0176
+      }
+    }
+  },
+  "mobiusdodecasquare": {
+    "builder": "arch_mobius_board",
+    "args": {
+      "easy": {
+        "args": [
+          "dodecasquare",
+          6,
+          2.666667,
+          5
+        ],
+        "cells": 90,
+        "score": 0.9069,
+        "distortionMean": 1.2299,
+        "distortionP90": 1.4742,
+        "indistinguishable": 0,
+        "facetStep": 0.1266
+      },
+      "medium": {
+        "args": [
+          "dodecasquare",
+          12,
+          3.666667,
+          13
+        ],
+        "cells": 252,
+        "score": 0.3898,
+        "distortionMean": 1.1978,
+        "distortionP90": 1.3351,
+        "indistinguishable": 0,
+        "facetStep": 0.0322
+      },
+      "hard": {
+        "args": [
+          "dodecasquare",
+          16,
+          4.666667,
+          37
+        ],
+        "cells": 432,
+        "score": 0.5353,
+        "distortionMean": 1.194,
+        "distortionP90": 1.3438,
+        "indistinguishable": 0,
+        "facetStep": 0.0182
+      }
+    }
+  },
+  "mobiuselongated2": {
+    "builder": "arch_mobius_board",
+    "args": {
+      "easy": {
+        "args": [
+          "elongated2",
+          12,
+          1.333333,
+          12
+        ],
+        "cells": 72,
+        "score": 0.5034,
+        "distortionMean": 1.204,
+        "distortionP90": 1.3312,
+        "indistinguishable": 0,
+        "facetStep": 0.0
+      },
+      "medium": {
+        "args": [
+          "elongated2",
+          21,
+          2.333333,
+          44
+        ],
+        "cells": 231,
+        "score": 0.4919,
+        "distortionMean": 1.1964,
+        "distortionP90": 1.3576,
+        "indistinguishable": 0,
+        "facetStep": 0.0
+      },
+      "hard": {
+        "args": [
+          "elongated2",
+          29,
+          3.333333,
+          110
+        ],
+        "cells": 464,
+        "score": 0.3707,
+        "distortionMean": 1.1966,
+        "distortionP90": 1.3259,
+        "indistinguishable": 0,
+        "facetStep": 0.0
+      }
+    }
+  },
+  "mobiuselongated3": {
+    "builder": "arch_mobius_board",
+    "args": {
+      "easy": {
+        "args": [
+          "elongated3",
+          12,
+          0.666667,
+          13
+        ],
+        "cells": 108,
+        "score": 12.6039,
+        "distortionMean": 1.2396,
+        "distortionP90": 1.6572,
+        "indistinguishable": 0,
+        "facetStep": 0.0
+      },
+      "medium": {
+        "args": [
+          "elongated3",
+          25,
+          0.666667,
+          60
+        ],
+        "cells": 225,
+        "score": 1.076,
+        "distortionMean": 1.2013,
+        "distortionP90": 1.3669,
+        "indistinguishable": 0,
+        "facetStep": 0.0
+      },
+      "hard": {
+        "args": [
+          "elongated3",
+          46,
+          0.666667,
+          103
+        ],
+        "cells": 414,
+        "score": 1.7869,
+        "distortionMean": 1.1939,
+        "distortionP90": 1.2785,
+        "indistinguishable": 0,
+        "facetStep": 0.0
+      }
+    }
+  },
+  "mobiusfannedhex": {
+    "builder": "arch_mobius_board",
+    "args": {
+      "easy": {
+        "args": [
+          "fannedhex",
+          5,
+          1.0,
+          5
+        ],
+        "cells": 80,
+        "score": 0.5276,
+        "distortionMean": 1.2447,
+        "distortionP90": 1.4762,
+        "indistinguishable": 0,
+        "facetStep": 0.0646
+      },
+      "medium": {
+        "args": [
+          "fannedhex",
+          9,
+          2.0,
+          8
+        ],
+        "cells": 288,
+        "score": 0.7476,
+        "distortionMean": 1.2317,
+        "distortionP90": 1.4725,
+        "indistinguishable": 0,
+        "facetStep": 0.0202
+      },
+      "hard": {
+        "args": [
+          "fannedhex",
+          13,
+          2.0,
+          35
+        ],
+        "cells": 416,
+        "score": 0.7117,
+        "distortionMean": 1.2144,
+        "distortionP90": 1.38,
+        "indistinguishable": 0,
+        "facetStep": 0.0097
+      }
+    }
+  },
+  "mobiushexbands": {
+    "builder": "arch_mobius_board",
+    "args": {
+      "easy": {
+        "args": [
+          "hexbands",
+          9,
+          1.333333,
+          11
+        ],
+        "cells": 99,
+        "score": 11.2968,
+        "distortionMean": 1.2045,
+        "distortionP90": 1.3615,
+        "indistinguishable": 0,
+        "facetStep": 0.0451
+      },
+      "medium": {
+        "args": [
+          "hexbands",
+          20,
+          1.333333,
+          27
+        ],
+        "cells": 220,
+        "score": 1.0359,
+        "distortionMean": 1.1834,
+        "distortionP90": 1.2514,
+        "indistinguishable": 0,
+        "facetStep": 0.0092
+      },
+      "hard": {
+        "args": [
+          "hexbands",
+          22,
+          2.333333,
+          66
+        ],
+        "cells": 462,
+        "score": 0.4003,
+        "distortionMean": 1.1892,
+        "distortionP90": 1.3287,
+        "indistinguishable": 0,
+        "facetStep": 0.0076
+      }
+    }
+  },
+  "mobiushexrings": {
+    "builder": "arch_mobius_board",
+    "args": {
+      "easy": {
+        "args": [
+          "hexrings",
+          4,
+          0.6,
+          7
+        ],
+        "cells": 80,
+        "score": 0.6075,
+        "distortionMean": 1.2141,
+        "distortionP90": 1.3701,
+        "indistinguishable": 0,
+        "facetStep": 0.0408
+      },
+      "medium": {
+        "args": [
+          "hexrings",
+          11,
+          0.6,
+          19
+        ],
+        "cells": 220,
+        "score": 1.91,
+        "distortionMean": 1.1981,
+        "distortionP90": 1.2714,
+        "indistinguishable": 0,
+        "facetStep": 0.0055
+      },
+      "hard": {
+        "args": [
+          "hexrings",
+          9,
+          1.6,
+          70
         ],
         "cells": 504,
-        "score": 0.1736,
-        "distortionMean": 1.0008,
-        "distortionP90": 1.001,
+        "score": 0.4379,
+        "distortionMean": 1.2097,
+        "distortionP90": 1.3741,
+        "indistinguishable": 0,
+        "facetStep": 0.0081
+      }
+    }
+  },
+  "mobiushexrows": {
+    "builder": "arch_mobius_board",
+    "args": {
+      "easy": {
+        "args": [
+          "hexrows",
+          10,
+          2.333333,
+          9
+        ],
+        "cells": 70,
+        "score": 0.6571,
+        "distortionMean": 1.1988,
+        "distortionP90": 1.2963,
+        "indistinguishable": 0,
+        "facetStep": 0.0366
+      },
+      "medium": {
+        "args": [
+          "hexrows",
+          18,
+          5.333333,
+          37
+        ],
+        "cells": 288,
+        "score": 0.5365,
+        "distortionMean": 1.1962,
+        "distortionP90": 1.3578,
+        "indistinguishable": 0,
+        "facetStep": 0.0114
+      },
+      "hard": {
+        "args": [
+          "hexrows",
+          24,
+          6.333333,
+          71
+        ],
+        "cells": 456,
+        "score": 0.4246,
+        "distortionMean": 1.1916,
+        "distortionP90": 1.338,
+        "indistinguishable": 0,
+        "facetStep": 0.0064
+      }
+    }
+  },
+  "mobiussnubelongated2": {
+    "builder": "arch_mobius_board",
+    "args": {
+      "easy": {
+        "args": [
+          "snubelongated2",
+          3,
+          0.714286,
+          9
+        ],
+        "cells": 78,
+        "score": 0.7356,
+        "distortionMean": 1.2104,
+        "distortionP90": 1.3729,
+        "indistinguishable": 0,
+        "facetStep": 0.027
+      },
+      "medium": {
+        "args": [
+          "snubelongated2",
+          4,
+          1.714286,
+          45
+        ],
+        "cells": 248,
+        "score": 0.7647,
+        "distortionMean": 1.2179,
+        "distortionP90": 1.4302,
+        "indistinguishable": 0,
+        "facetStep": 0.0153
+      },
+      "hard": {
+        "args": [
+          "snubelongated2",
+          7,
+          1.714286,
+          107
+        ],
+        "cells": 434,
+        "score": 0.7313,
+        "distortionMean": 1.193,
+        "distortionP90": 1.3216,
+        "indistinguishable": 0,
+        "facetStep": 0.005
+      }
+    }
+  },
+  "mobiussquarerows2": {
+    "builder": "arch_mobius_board",
+    "args": {
+      "easy": {
+        "args": [
+          "squarerows2",
+          12,
+          0.6,
+          10
+        ],
+        "cells": 72,
+        "score": 0.6556,
+        "distortionMean": 1.2187,
+        "distortionP90": 1.5344,
+        "indistinguishable": 0,
+        "facetStep": 0.0
+      },
+      "medium": {
+        "args": [
+          "squarerows2",
+          21,
+          1.6,
+          37
+        ],
+        "cells": 294,
+        "score": 0.8916,
+        "distortionMean": 1.209,
+        "distortionP90": 1.4446,
+        "indistinguishable": 0,
+        "facetStep": 0.0
+      },
+      "hard": {
+        "args": [
+          "squarerows2",
+          30,
+          1.6,
+          95
+        ],
+        "cells": 420,
+        "score": 0.5129,
+        "distortionMean": 1.1873,
+        "distortionP90": 1.3751,
+        "indistinguishable": 0,
+        "facetStep": 0.0
+      }
+    }
+  },
+  "mobiussquarerows3": {
+    "builder": "arch_mobius_board",
+    "args": {
+      "easy": {
+        "args": [
+          "squarerows3",
+          13,
+          0.6,
+          13
+        ],
+        "cells": 91,
+        "score": 0.6196,
+        "distortionMean": 1.2171,
+        "distortionP90": 1.4037,
+        "indistinguishable": 0,
+        "facetStep": 0.0
+      },
+      "medium": {
+        "args": [
+          "squarerows3",
+          33,
+          0.6,
+          57
+        ],
+        "cells": 231,
+        "score": 1.368,
+        "distortionMean": 1.1745,
+        "distortionP90": 1.2807,
+        "indistinguishable": 0,
+        "facetStep": 0.0
+      },
+      "hard": {
+        "args": [
+          "squarerows3",
+          32,
+          1.6,
+          125
+        ],
+        "cells": 544,
+        "score": 0.6932,
+        "distortionMean": 1.187,
+        "distortionP90": 1.3864,
+        "indistinguishable": 0,
+        "facetStep": 0.0
+      }
+    }
+  },
+  "mobiussquaretrihex": {
+    "builder": "arch_mobius_board",
+    "args": {
+      "easy": {
+        "args": [
+          "squaretrihex",
+          10,
+          1.333333,
+          6
+        ],
+        "cells": 70,
+        "score": 1.1025,
+        "distortionMean": 1.1723,
+        "distortionP90": 1.291,
+        "indistinguishable": 0,
+        "facetStep": 0.0366
+      },
+      "medium": {
+        "args": [
+          "squaretrihex",
+          15,
+          3.333333,
+          19
+        ],
+        "cells": 255,
+        "score": 0.3636,
+        "distortionMean": 1.1815,
+        "distortionP90": 1.3124,
+        "indistinguishable": 0,
+        "facetStep": 0.0164
+      },
+      "hard": {
+        "args": [
+          "squaretrihex",
+          20,
+          4.333333,
+          58
+        ],
+        "cells": 440,
+        "score": 0.476,
+        "distortionMean": 1.1798,
+        "distortionP90": 1.3134,
+        "indistinguishable": 0,
+        "facetStep": 0.0092
+      }
+    }
+  },
+  "mobiussquaretrihex2": {
+    "builder": "arch_mobius_board",
+    "args": {
+      "easy": {
+        "args": [
+          "squaretrihex2",
+          8,
+          1.2,
+          10
+        ],
+        "cells": 88,
+        "score": 0.7305,
+        "distortionMean": 1.2017,
+        "distortionP90": 1.379,
+        "indistinguishable": 0,
+        "facetStep": 0.0569
+      },
+      "medium": {
+        "args": [
+          "squaretrihex2",
+          14,
+          2.2,
+          40
+        ],
+        "cells": 294,
+        "score": 0.848,
+        "distortionMean": 1.1974,
+        "distortionP90": 1.4061,
+        "indistinguishable": 0,
+        "facetStep": 0.0188
+      },
+      "hard": {
+        "args": [
+          "squaretrihex2",
+          20,
+          2.2,
+          93
+        ],
+        "cells": 420,
+        "score": 0.5171,
+        "distortionMean": 1.1835,
+        "distortionP90": 1.3394,
+        "indistinguishable": 0,
+        "facetStep": 0.0092
+      }
+    }
+  },
+  "mobiusstuddedtri": {
+    "builder": "arch_mobius_board",
+    "args": {
+      "easy": {
+        "args": [
+          "studdedtri",
+          4,
+          0.666667,
+          11
+        ],
+        "cells": 76,
+        "score": 0.6093,
+        "distortionMean": 1.2395,
+        "distortionP90": 1.5331,
+        "indistinguishable": 0,
+        "facetStep": 0.0999
+      },
+      "medium": {
+        "args": [
+          "studdedtri",
+          12,
+          0.666667,
+          31
+        ],
+        "cells": 228,
+        "score": 1.8622,
+        "distortionMean": 1.2033,
+        "distortionP90": 1.2859,
+        "indistinguishable": 0,
+        "facetStep": 0.0114
+      },
+      "hard": {
+        "args": [
+          "studdedtri",
+          10,
+          1.666667,
+          92
+        ],
+        "cells": 450,
+        "score": 0.5395,
+        "distortionMean": 1.2178,
+        "distortionP90": 1.379,
+        "indistinguishable": 0,
+        "facetStep": 0.0164
+      }
+    }
+  },
+  "mobiustrirhombitrihex": {
+    "builder": "arch_mobius_board",
+    "args": {
+      "easy": {
+        "args": [
+          "trirhombitrihex",
+          5,
+          0.714286,
+          13
+        ],
+        "cells": 75,
+        "score": 0.749,
+        "distortionMean": 1.2156,
+        "distortionP90": 1.4178,
+        "indistinguishable": 0,
+        "facetStep": 0.0292
+      },
+      "medium": {
+        "args": [
+          "trirhombitrihex",
+          7,
+          1.714286,
+          54
+        ],
+        "cells": 259,
+        "score": 0.7296,
+        "distortionMean": 1.2208,
+        "distortionP90": 1.4158,
+        "indistinguishable": 0,
+        "facetStep": 0.015
+      },
+      "hard": {
+        "args": [
+          "trirhombitrihex",
+          12,
+          1.714286,
+          123
+        ],
+        "cells": 444,
+        "score": 0.6993,
+        "distortionMean": 1.1987,
+        "distortionP90": 1.3175,
+        "indistinguishable": 0,
+        "facetStep": 0.0051
+      }
+    }
+  },
+  "mobiustritrunctrihex": {
+    "builder": "arch_mobius_board",
+    "args": {
+      "easy": {
+        "args": [
+          "tritrunctrihex",
+          4,
+          0.521739,
+          5
+        ],
+        "cells": 72,
+        "score": 0.9126,
+        "distortionMean": 1.2216,
+        "distortionP90": 1.4427,
+        "indistinguishable": 0,
+        "facetStep": 0.172
+      },
+      "medium": {
+        "args": [
+          "tritrunctrihex",
+          13,
+          0.521739,
+          9
+        ],
+        "cells": 234,
+        "score": 2.2169,
+        "distortionMean": 1.2013,
+        "distortionP90": 1.2658,
+        "indistinguishable": 0,
+        "facetStep": 0.0168
+      },
+      "hard": {
+        "args": [
+          "tritrunctrihex",
+          9,
+          1.521739,
+          28
+        ],
+        "cells": 450,
+        "score": 0.5196,
+        "distortionMean": 1.2148,
+        "distortionP90": 1.3785,
         "indistinguishable": 0,
         "facetStep": 0.0349
       }

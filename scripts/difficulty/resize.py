@@ -730,6 +730,26 @@ def _cylinder_rows(tiling: str, limit: int = 40) -> list[float]:
     return sorted(value for value in rows if value > 0.25)
 
 
+def _mobius_rows(tiling: str, limit: int = 31) -> list[float]:
+    """The row counts ``arch_mobius_board`` will accept for a tiling: those
+    that make ``rows + 2*cut/height`` whole, so the seam glues the band's rim
+    to itself through the template's mirror.
+
+    Enumerated rather than read off the seed's fractional part, for the same
+    reason as ``_cylinder_rows``: a band under one domain tall is a real
+    window. Every uniform domain is short enough that a Mobius strip of it is
+    at least one domain across, but a 2-uniform domain can be four to nine
+    edges tall -- ``trirhombitrihex`` is 4.7 -- and its easy band is five
+    sevenths of one, which ``n + frac`` from ``n = 1`` never offered.
+    """
+    from minesweeper.boards.tilings import _arch_template
+
+    template = _arch_template(tiling)
+    fraction = round((-2 * template.cut / template.height) % 1.0, 6) % 1.0
+    return [value for value in (round(whole + fraction, 6)
+                                for whole in range(limit)) if value > 0.25]
+
+
 def _rescale(builder: str, spec: dict, trial: list, before) -> list:
     """Keep a flat board the size on screen it already was.
 
@@ -1389,6 +1409,10 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
             # the board's two rims are different curves and the builder
             # refuses it (see arch_cylinder_board)
             vb = _cylinder_rows(args[0])
+        elif builder == "arch_mobius_board":
+            # ...and a Mobius strip's is what closes its seam through the
+            # mirror (see arch_mobius_board and _mobius_rows)
+            vb = _mobius_rows(args[0])
         else:
             vb = _candidate_values(args[knobs[1]], coarse, domains,
                                    spec.get("floor", 1))

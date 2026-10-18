@@ -165,14 +165,19 @@ their members: no preset window wraps them yet, and none has chosen the
 row each.
 
 The sixth family, `family="2-uniform"`, is edge-to-edge tilings by regular
-polygons with exactly two kinds of vertex. All twenty ship, on the plane and
-the **cylinder** — `_FAMILY_SURFACES` holds them to those two, since no torus,
-Möbius or Klein window has been measured for them yet. All twenty reverse y
-somewhere (every one of their seven groups has a half turn, if not a mirror),
-so all twenty get a cylinder, each with its own `cut`: eight have a
-horizontal line of edges to end on and get straight rims, and the other
-twelve the flattest zigzag the gaps between their rows of tile centres
-allow.
+polygons with exactly two kinds of vertex. All twenty ship, on the plane, the
+**cylinder** and the **Möbius strip** — `_FAMILY_SURFACES` holds them to those
+three, since no torus or Klein window has been measured for them yet. All
+twenty reverse y somewhere (every one of their seven groups has a half turn,
+if not a mirror), so all twenty get a cylinder; the eighteen with a mirror
+(all but the p6 `studdedtri2` and the pgg `snubelongated`) get a Möbius strip
+too. Each has one `cut` for both: seven have a horizontal line of edges to
+end on and get straight rims, and the other thirteen the flattest zigzag the
+gaps between their rows of tile centres allow — among the gaps that give
+both surfaces an easy board of about the classic size that plays as a
+puzzle, which is what moved six of the cuts when the strip arrived (a Möbius
+band steps a whole domain at a time and must be long for its width; see the
+2-uniform recipe in [`board-recipes.md`](board-recipes.md)).
 Three are a uniform tiling cut up or merged — 3.4.6.4 with its hexagons fanned
 into triangles (3⁶; 3².4.3.4), 3.12.12 with its dodecagons cut into the
 3.4.6.4 patch (3².4.3.4; 3.4.6.4), and 3.4.6.4 with one hexagon patch in four
@@ -194,13 +199,13 @@ submenus: **Regular** (the three regular tilings, plus on the plane the
 shaped boards cut from them), **Uniform** (the eight non-regular uniform
 tilings, `family="uniform"` in `ARCH_TILINGS`), **Laves** (their
 eight duals), **Isogonal**, **Congruent rectangles**, **2-uniform** (the
-plane and the cylinder) and, on the plane only, **Other**, **Aperiodic**,
+plane, the cylinder and the Möbius strip) and, on the plane only, **Other**, **Aperiodic**,
 **Fractals** and **Hyperbolic**.
 Every family is offered on every surface its members allow:
 `picker_families` in `catalog.py` (and its mirror in
 `web/src/boards/catalog.ts`) drops a family a surface has no enabled row of
 — the two one-off flat-only families, "Other" everywhere but the plane, and
-"2-uniform" everywhere but the plane and the cylinder — and everything else a surface refuses it refuses one row at a time, in
+"2-uniform" everywhere but the plane, the cylinder and the Möbius strip — and everything else a surface refuses it refuses one row at a time, in
 `family_rows`, on chirality. **Congruent rectangles** was the last gap,
 off the torus/Möbius/Klein bottle because the wrap squashed its bricks;
 what was really wrong was the measure that picked the windows, which

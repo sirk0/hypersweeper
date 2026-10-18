@@ -1758,8 +1758,9 @@ function durerTemplate(): ArchTemplate {
 //                      both lattice directions) merged with its ring of squares
 //                      and triangles into a dodecagon
 //
-// All three are p6m. The family ships on the plane and the cylinder
-// (ARCH_FAMILY_SURFACES in catalog.ts), so each of the twenty states a cut —
+// All three are p6m. The family ships on the plane, the cylinder and (the
+// eighteen with a mirror) the Möbius strip (ARCH_FAMILY_SURFACES in
+// catalog.ts), so each of the twenty states a cut —
 // see the comment above `steps`. Ports of the factories of the same names in
 // boards/tilings.py.
 
@@ -1862,10 +1863,12 @@ function dodecarhombitrihexTemplate(): ArchTemplate {
 // integer combinations of them, `tiles` one `[sides, corner walk, heading]` per
 // translation class, `centre` the window centre — a tile's index, or a
 // list of walks whose mean it is — round which the domain is laid out, and
-// `cut` where a cylinder's rims fall, as a fraction of the domain's height
-// (the simplest one inside the gap between two rows of tile centres whose rim
-// runs flattest, which for eight of them is a horizontal line of edges — see
-// "The cut" after `ArchTemplate`).
+// `cut` where a cylinder's rims and a Möbius band's edge fall, as a fraction
+// of the domain's height (the simplest one inside the flattest gap between two
+// rows of tile centres that gives both surfaces an easy window in the size bar
+// that plays as a puzzle, which for seven of them is a horizontal line of
+// edges — see "The cut" after `ArchTemplate`, and the comment above _steps in
+// boards/tilings.py for why six of them are not the flattest gap of all).
 
 /** The point a walk of unit steps reaches from the origin, step k heading 30k
  * degrees. */
@@ -1949,7 +1952,7 @@ function studdedtriTemplate(): ArchTemplate {
   return cellTemplate([3, 6], [8, 8, 8], [10, 10, 10], [[-1, 1], [-1, -1]], [
     [6, [0], 0], [3, [], 2], [3, [], 4], [3, [], 8], [3, [], 10], [3, [], 0], [3, [], 6],
     [3, [10], 0], [3, [4], 0], [3, [6], 8], [3, [10], 10], [3, [0], 10], [3, [2], 2],
-  ], { centre: 0, cut: 1 / 3 });
+  ], { centre: 0, cut: 2 / 3 });
 }
 
 /** [3⁶; 3⁴.6]₂, p6: the same with the hexagons √13 edges apart, on
@@ -1982,7 +1985,7 @@ function elongated3Template(): ArchTemplate {
   return cellTemplate([3, 4], [0], [8, 8, 9, 10], [[1, 0], [-1, -2]], [
     [4, [10], 6], [3, [], 4], [3, [], 2], [3, [], 8], [3, [], 6], [3, [4], 0],
     [3, [4], 2],
-  ], { centre: 0, cut: 3 / 7 });
+  ], { centre: 0, cut: 2 / 3 });
 }
 
 /** [3⁶; 3².4.12], p6m: truncated trihexagonal (4.6.12) with every
@@ -1993,7 +1996,7 @@ function tritrunctrihexTemplate(): ArchTemplate {
     [12, [4], 3], [4, [10], 11], [4, [4], 0], [4, [6], 7], [3, [], 2], [3, [], 4],
     [3, [], 8], [3, [], 10], [3, [], 0], [3, [], 6], [3, [10, 11], 0], [3, [3, 4], 0],
     [3, [6, 7], 8], [3, [10, 11], 10], [3, [0, 11], 10], [3, [2, 3], 2],
-  ], { centre: 0, cut: 1 / 3 });
+  ], { centre: 0, cut: 17 / 23 });
 }
 
 /** [3⁶; 3².6²], p6m: hexagonal with one hexagon in three cut into six
@@ -2066,7 +2069,7 @@ function squarerows2Template(): ArchTemplate {
 function squarerows3Template(): ArchTemplate {
   return cellTemplate([3, 4], [0], [8, 9, 9, 9], [[1, 0], [-1, -2]], [
     [4, [], 3], [4, [10], 6], [4, [3], 3], [3, [], 10], [3, [], 8],
-  ], { centre: 2, cut: 2 / 5 });
+  ], { centre: 2, cut: 1 / 5 });
 }
 
 /** [3².6²; 3.6.3.6], pmm: rows of hexagons, each sharing an edge with the
@@ -2099,7 +2102,7 @@ function hexringsTemplate(): ArchTemplate {
     [4, [8], 8], [4, [4], 3], [4, [2, 11], 10], [4, [6, 8], 4], [4, [6, 8], 7],
     [4, [4, 6], 3], [3, [], 2], [3, [11], 0], [3, [8], 6], [3, [8, 11], 8],
     [3, [4, 6], 6], [3, [3, 4], 0],
-  ], { centre: 2, cut: 3 / 7 });
+  ], { centre: 2, cut: 1 / 5 });
 }
 
 /** [3.4².6; 3.6.3.6]₁, pmm: courses of squares between bands of
@@ -2116,7 +2119,7 @@ function squaretrihexTemplate(): ArchTemplate {
 function squaretrihex2Template(): ArchTemplate {
   return cellTemplate([3, 4, 6], [0, 2, 10], [8, 8, 9], [[1, 0], [-1, -2]], [
     [6, [], 4], [4, [10], 6], [4, [4], 0], [3, [], 2], [3, [], 8],
-  ], { centre: [[]], cut: 1 / 3 });
+  ], { centre: [[]], cut: 2 / 5 });
 }
 
 // -- registry ----------------------------------------------------------------

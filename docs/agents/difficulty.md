@@ -82,9 +82,12 @@ hand-picked density is the one thing this game cannot get right by eye.
    rest. A knob that is not free says so there rather than in the presets:
    a cylinder's row count comes from `_cylinder_rows`, the values that
    centre its strip on a height where the tiling reverses y, and a Möbius
-   band's row count stops where the immersion would have to narrow the band
-   to draw it (`_mobius_band_clamped`) — past that the extra rows buy no
-   width, only stretched tiles. The fractals, which quantise by whole
+   band's from `_mobius_rows`, the values that close its seam through the
+   mirror — both starting under one domain, since a 2-uniform domain can be
+   nine edges tall and its easy band a fraction of one. A Möbius band's row
+   count also stops where the immersion would have to narrow the band to
+   draw it (`_mobius_band_clamped`) — past that the extra rows buy no width,
+   only stretched tiles. The fractals, which quantise by whole
    substitution steps, keep their geometry and are listed as exceptions in
    `tests/test_presets.py`. (The sphere family once had no size knob either;
    the Goldberg parameters are its knob now, the chiral GP(h, k) enumerated by

@@ -57,11 +57,15 @@ EXEMPT_ROWS = {
     ("cylkisrhombille", "easy"),
     ("mobiuskisrhombille", "easy"),
     # Triply elongated triangular's domain is one edge wide and three
-    # triangle courses tall, so twelve tiles round the tube (`MIN_RING`) and
-    # the shortest strip that shows a 3^6 corner inside it (two squares and six
-    # triangles per tile round, `resize.shows_tiling`) is 96 cells. Showing the
-    # tiling outranks the size band: anything shorter is elongated triangular.
+    # triangle courses tall, so twelve tiles round the tube or the band
+    # (`MIN_RING`), and the shortest strip that shows a 3^6 corner inside it
+    # (`resize.shows_tiling`) and closes both surfaces is two thirds of a
+    # domain across: 108 cells, on the cylinder and the Mobius strip alike
+    # (they share the cut, and a Mobius band steps a whole domain at a time).
+    # Showing the tiling outranks the size band: anything shorter is
+    # elongated triangular.
     ("cylelongated3", "easy"),
+    ("mobiuselongated3", "easy"),
     # The same arithmetic on a donut and a bottle, from the other bar: a tile
     # may not span more than a quarter of a direction that closes, or it is
     # drawn as a flat plate through the axis rather than a facet of a tube

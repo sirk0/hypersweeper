@@ -1499,9 +1499,9 @@ def _durer_template() -> _ArchTemplate:
 #                        of squares and triangles into a dodecagon
 #
 # All three are p6m, so their windows are symmetric every way a hexagon is.
-# The family ships on the plane and the cylinder (_FAMILY_SURFACES in
-# catalog.py), so each of the twenty states a cut -- see "the cut" in the
-# comment above _steps.
+# The family ships on the plane, the cylinder and (the eighteen with a mirror)
+# the Mobius strip (_FAMILY_SURFACES in catalog.py), so each of the twenty
+# states a cut -- see "the cut" in the comment above _steps.
 
 
 def _fan(polygon):
@@ -1624,23 +1624,39 @@ def _dodecarhombitrihex_template() -> _ArchTemplate:
 #     centres, every window near the easy size leaves cells on its rim with an
 #     identical twin (metrics.indistinguishable_cells), so the size search
 #     could only answer with a sliver of a board;
-#   * ``cut``: where a cylinder's rims fall, as a fraction of the domain's
-#     height (see the AGENT NOTE on the cut). Each sits in the gap between two
-#     rows of tile centres whose rim runs flattest, which for the eight with a
-#     horizontal line of edges (studdedtri, elongated2, elongated3, fannedhex,
-#     squarerows2, squarerows3, squaretrihex, squaretrihex2) is that line --
-#     bar a gap whose rim is not a puzzle: dodecasquare's flattest one cuts off
-#     the triangle on a rim square's outer side, which leaves that square and
-#     the triangle across it with one closed neighbourhood between them, so it
-#     takes the other gap as flat. Where several lines are straight -- the
-#     four course tilings (elongated2, elongated3, squarerows2, squarerows3)
-#     have a 3^6 or 4^4 line inside each band and a 3^3.4^2 line at its edge
-#     -- the cut takes the one that lets the shortest strip show *both*
-#     vertex types (resize.shows_tiling), which is the band edge: a vertex on
-#     the rim is not shown, so a strip that ends on the 4^4 line has to run a
-#     whole band further to show one, and on a tube one edge round an easy
-#     board cannot afford that. Any height inside the gap keeps the same
-#     tiles, so the value is the simplest fraction that lands there.
+#   * ``cut``: where a cylinder's rims and a Mobius band's edge fall, as a
+#     fraction of the domain's height (see the AGENT NOTE on the cut). Both
+#     surfaces share it. Each sits in the gap between two rows of tile
+#     centres whose rim runs flattest -- for the seven with a horizontal line
+#     of edges there (studdedtri, elongated2, elongated3, fannedhex,
+#     squarerows2, squarerows3, squaretrihex), that line -- among the gaps
+#     that give *both* surfaces an easy window inside the size bar, showing
+#     both vertex types (resize.shows_tiling), that plays as a puzzle. The
+#     Mobius strip is what bites. Its row count steps a whole domain at a time
+#     (rows + 2*cut/height is whole, see arch_mobius_board), and its band must
+#     run 2.24 times as far round as it is wide or the immersion narrows it
+#     (resize._mobius_band_clamped), so a cut whose shortest band showing both
+#     vertex types is a domain and a bit tall hands the easy strip 200-odd
+#     cells. Six cuts moved for that when the strip arrived: studdedtri and
+#     squarerows3 to another straight line, hexrings and tritrunctrihex from a
+#     zigzag half an edge deep to the 0.87 one that plays best, and two more
+#     for the puzzle. squaretrihex2's straight lines that reach the strip
+#     leave its easy band a coin flip at the opening floor (88% at best), so
+#     it takes a zigzag that plays on target; and elongated3 has no gap in the
+#     size bar at all -- a twelve-tile ring (MIN_RING) of a domain one edge
+#     wide and three triangle courses tall is 108 cells at the least, on
+#     either surface -- so it takes the straight line with the smallest easy
+#     board on both, a 3^6 line inside its triangle band. A rim that is not a
+#     puzzle rules a gap out by itself, too: dodecasquare's flattest one cuts
+#     off the triangle on a rim square's outer side, which leaves that square
+#     and the triangle across it with one closed neighbourhood between them,
+#     so it takes the other gap as flat. The other course tilings (elongated2,
+#     squarerows2, squarerows3), each with a 3^6 or 4^4 line inside each band
+#     and a 3^3.4^2 line at its edge, end on a band edge: a vertex on the rim
+#     is not shown, so a strip that ends on the 4^4 line has to run a whole
+#     band further to show one, and on a tube one edge round an easy board
+#     cannot afford that. Any height inside the gap keeps the same tiles, so
+#     the value is the simplest fraction that lands there.
 #
 # Five pairs of the twenty share both vertex types. The literature tells each
 # pair apart with a subscript (Grunbaum and Shephard, Tilings and Patterns,
@@ -1706,7 +1722,7 @@ def _studdedtri_template() -> _ArchTemplate:
         (6, (0,), 0), (3, (), 2), (3, (), 4), (3, (), 8), (3, (), 10),
         (3, (), 0), (3, (), 6), (3, (10,), 0), (3, (4,), 0), (3, (6,), 8),
         (3, (10,), 10), (3, (0,), 10), (3, (2,), 2),
-    ], centre=0, cut=1 / 3)
+    ], centre=0, cut=2 / 3)
 
 
 def _studdedtri2_template() -> _ArchTemplate:
@@ -1743,7 +1759,7 @@ def _elongated3_template() -> _ArchTemplate:
         (3, 4), (0,), (8, 8, 9, 10), ((1, 0), (-1, -2)), [
         (4, (10,), 6), (3, (), 4), (3, (), 2), (3, (), 8), (3, (), 6),
         (3, (4,), 0), (3, (4,), 2),
-    ], centre=0, cut=3 / 7)
+    ], centre=0, cut=2 / 3)
 
 
 def _tritrunctrihex_template() -> _ArchTemplate:
@@ -1756,7 +1772,7 @@ def _tritrunctrihex_template() -> _ArchTemplate:
         (3, (), 4), (3, (), 8), (3, (), 10), (3, (), 0), (3, (), 6),
         (3, (10, 11), 0), (3, (3, 4), 0), (3, (6, 7), 8), (3, (10, 11), 10),
         (3, (0, 11), 10), (3, (2, 3), 2),
-    ], centre=0, cut=1 / 3)
+    ], centre=0, cut=17 / 23)
 
 
 def _fannedhex_template() -> _ArchTemplate:
@@ -1838,7 +1854,7 @@ def _squarerows3_template() -> _ArchTemplate:
     return _cell_template(
         (3, 4), (0,), (8, 9, 9, 9), ((1, 0), (-1, -2)), [
         (4, (), 3), (4, (10,), 6), (4, (3,), 3), (3, (), 10), (3, (), 8),
-    ], centre=2, cut=2 / 5)
+    ], centre=2, cut=1 / 5)
 
 
 def _hexrows_template() -> _ArchTemplate:
@@ -1876,7 +1892,7 @@ def _hexrings_template() -> _ArchTemplate:
         (4, (6, 8), 4), (4, (6, 8), 7), (4, (4, 6), 3), (3, (), 2),
         (3, (11,), 0), (3, (8,), 6), (3, (8, 11), 8), (3, (4, 6), 6),
         (3, (3, 4), 0),
-    ], centre=2, cut=3 / 7)
+    ], centre=2, cut=1 / 5)
 
 
 def _squaretrihex_template() -> _ArchTemplate:
@@ -1895,7 +1911,7 @@ def _squaretrihex2_template() -> _ArchTemplate:
     return _cell_template(
         (3, 4, 6), (0, 2, 10), (8, 8, 9), ((1, 0), (-1, -2)), [
         (6, (), 4), (4, (10,), 6), (4, (4,), 0), (3, (), 2), (3, (), 8),
-    ], centre=((),), cut=1 / 3)
+    ], centre=((),), cut=2 / 5)
 
 
 @dataclass(frozen=True)
