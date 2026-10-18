@@ -31,7 +31,7 @@ from minesweeper.boards.core import (
     _tangent_order,
 )
 from minesweeper.boards.solids import _geodesic, _icosahedron
-from minesweeper.boards.tilings import _arch_template, _triangle_vertices
+from minesweeper.boards.tilings import _triangle_vertices, _wrap_template
 
 # -- immersions: one point of a surface from its parameters ------------------
 
@@ -1186,7 +1186,7 @@ def arch_torus_board(
 ) -> Board3D:
     """An Archimedean tiling wrapped around a donut: ``nx`` domain copies
     around the ring, ``ny`` around the tube."""
-    template = _arch_template(tiling)
+    template = _wrap_template(tiling)
     ring = nx * template.width
     tube = ny * template.height
 
@@ -1227,7 +1227,7 @@ def arch_cylinder_board(
     and ``rows`` is what puts it there — checked here rather than left to
     the presets. See the AGENT NOTE on the cut in ``tilings.py``.
     """
-    template = _arch_template(tiling)
+    template = _wrap_template(tiling)
     height = template.height
     cut = template.cut
     unit = 2 * math.pi / (ring * template.width)  # arc length of one edge unit
@@ -1298,7 +1298,7 @@ def arch_mobius_board(
     reading one way and half the other — so it is checked here rather
     than left to the presets. See the MOBIUS CUT note in ``tilings.py``.
     """
-    template = _arch_template(tiling)
+    template = _wrap_template(tiling)
     if template.mirror is None:
         raise ValueError(f"{tiling} is chiral and cannot wrap a Möbius strip")
     if template.glide:
@@ -1390,7 +1390,7 @@ def arch_klein_board(
     The immersion self-intersects (the neck passes through the body), so the
     board carries a ``cell_cycle`` -- one domain forward along the ring --
     which lets the UI scroll cell contents past the self-intersection."""
-    template = _arch_template(tiling)
+    template = _wrap_template(tiling)
     if template.mirror is None:
         raise ValueError(f"{tiling} is chiral and cannot wrap a Klein bottle")
     width, height = template.width, template.height

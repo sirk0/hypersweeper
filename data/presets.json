@@ -4672,19 +4672,42 @@
         "easy": [
           "studdedtri",
           4,
-          0.8333333333333334,
-          11
+          0.6666666666666666,
+          10
         ],
         "medium": [
           "studdedtri",
           7,
-          1.3333333333333333,
-          31
+          1.1666666666666667,
+          35
         ],
         "hard": [
           "studdedtri",
           10,
-          1.8333333333333335,
+          1.6666666666666665,
+          90
+        ]
+      }
+    },
+    "mobiusstuddedtri": {
+      "builder": "arch_mobius_board",
+      "args": {
+        "easy": [
+          "studdedtri",
+          4,
+          0.6666666666666666,
+          10
+        ],
+        "medium": [
+          "studdedtri",
+          12,
+          0.6666666666666666,
+          28
+        ],
+        "hard": [
+          "studdedtri",
+          10,
+          1.6666666666666665,
           92
         ]
       }
@@ -4787,6 +4810,29 @@
         ]
       }
     },
+    "mobiuselongated2": {
+      "builder": "arch_mobius_board",
+      "args": {
+        "easy": [
+          "elongated2",
+          12,
+          1.3333333333333333,
+          12
+        ],
+        "medium": [
+          "elongated2",
+          21,
+          2.3333333333333335,
+          46
+        ],
+        "hard": [
+          "elongated2",
+          29,
+          3.3333333333333335,
+          108
+        ]
+      }
+    },
     "elongated3": {
       "builder": "archimedean_board",
       "args": {
@@ -4818,21 +4864,44 @@
       "args": {
         "easy": [
           "elongated3",
-          12,
-          0.6428571428571429,
-          13
+          2,
+          2.8333333333333335,
+          11
         ],
         "medium": [
           "elongated3",
-          19,
-          1.1428571428571428,
-          60
+          3,
+          6.333333333333333,
+          45
         ],
         "hard": [
           "elongated3",
-          29,
-          1.1428571428571428,
+          4,
+          8.333333333333334,
           103
+        ]
+      }
+    },
+    "mobiuselongated3": {
+      "builder": "arch_mobius_board",
+      "args": {
+        "easy": [
+          "elongated3",
+          2,
+          2.3333333333333335,
+          9
+        ],
+        "medium": [
+          "elongated3",
+          3,
+          5.333333333333333,
+          36
+        ],
+        "hard": [
+          "elongated3",
+          7,
+          4.333333333333333,
+          69
         ]
       }
     },
@@ -4885,6 +4954,29 @@
         ]
       }
     },
+    "mobiustrirhombitrihex": {
+      "builder": "arch_mobius_board",
+      "args": {
+        "easy": [
+          "trirhombitrihex",
+          5,
+          0.7142857142857143,
+          12
+        ],
+        "medium": [
+          "trirhombitrihex",
+          7,
+          1.7142857142857144,
+          54
+        ],
+        "hard": [
+          "trirhombitrihex",
+          12,
+          1.7142857142857144,
+          103
+        ]
+      }
+    },
     "tritrunctrihex": {
       "builder": "archimedean_board",
       "args": {
@@ -4917,20 +5009,43 @@
         "easy": [
           "tritrunctrihex",
           4,
-          0.8333333333333334,
-          5
+          0.5217391304347826,
+          4
         ],
         "medium": [
           "tritrunctrihex",
           7,
-          1.3333333333333333,
-          9
+          1.0217391304347827,
+          8
         ],
         "hard": [
           "tritrunctrihex",
           9,
-          1.8333333333333335,
-          28
+          1.5217391304347827,
+          29
+        ]
+      }
+    },
+    "mobiustritrunctrihex": {
+      "builder": "arch_mobius_board",
+      "args": {
+        "easy": [
+          "tritrunctrihex",
+          4,
+          0.5217391304347826,
+          4
+        ],
+        "medium": [
+          "tritrunctrihex",
+          13,
+          0.5217391304347826,
+          6
+        ],
+        "hard": [
+          "tritrunctrihex",
+          9,
+          1.5217391304347827,
+          27
         ]
       }
     },
@@ -4965,21 +5080,44 @@
       "args": {
         "easy": [
           "fannedhex",
-          5,
-          1,
+          6,
+          0.8,
           5
         ],
         "medium": [
           "fannedhex",
           10,
-          1.5,
-          8
+          1.8,
+          12
         ],
         "hard": [
           "fannedhex",
           13,
-          2.5,
-          35
+          2.3,
+          32
+        ]
+      }
+    },
+    "mobiusfannedhex": {
+      "builder": "arch_mobius_board",
+      "args": {
+        "easy": [
+          "fannedhex",
+          6,
+          0.8,
+          6
+        ],
+        "medium": [
+          "fannedhex",
+          10,
+          1.8,
+          11
+        ],
+        "hard": [
+          "fannedhex",
+          12,
+          2.8,
+          36
         ]
       }
     },
@@ -5032,6 +5170,29 @@
         ]
       }
     },
+    "mobiushexbands": {
+      "builder": "arch_mobius_board",
+      "args": {
+        "easy": [
+          "hexbands",
+          9,
+          1.3333333333333333,
+          10
+        ],
+        "medium": [
+          "hexbands",
+          20,
+          1.3333333333333333,
+          25
+        ],
+        "hard": [
+          "hexbands",
+          22,
+          2.3333333333333335,
+          63
+        ]
+      }
+    },
     "snubelongated": {
       "builder": "archimedean_board",
       "args": {
@@ -5065,19 +5226,42 @@
           "snubelongated",
           7,
           1,
-          10
+          5
         ],
         "medium": [
           "snubelongated",
           12,
           2,
-          42
+          40
         ],
         "hard": [
           "snubelongated",
           16,
           2.5,
-          105
+          95
+        ]
+      }
+    },
+    "mobiussnubelongated": {
+      "builder": "arch_mobius_board",
+      "args": {
+        "easy": [
+          "snubelongated",
+          13,
+          1,
+          5
+        ],
+        "medium": [
+          "snubelongated",
+          23,
+          2,
+          42
+        ],
+        "hard": [
+          "snubelongated",
+          29,
+          3,
+          109
         ]
       }
     },
@@ -5130,6 +5314,29 @@
         ]
       }
     },
+    "mobiussnubelongated2": {
+      "builder": "arch_mobius_board",
+      "args": {
+        "easy": [
+          "snubelongated2",
+          3,
+          0.7142857142857143,
+          11
+        ],
+        "medium": [
+          "snubelongated2",
+          4,
+          1.7142857142857144,
+          45
+        ],
+        "hard": [
+          "snubelongated2",
+          7,
+          1.7142857142857144,
+          92
+        ]
+      }
+    },
     "dissectedtrunchex2": {
       "builder": "archimedean_board",
       "args": {
@@ -5175,6 +5382,29 @@
           "dissectedtrunchex2",
           5,
           3,
+          72
+        ]
+      }
+    },
+    "mobiusdissectedtrunchex2": {
+      "builder": "arch_mobius_board",
+      "args": {
+        "easy": [
+          "dissectedtrunchex2",
+          2,
+          1.5,
+          9
+        ],
+        "medium": [
+          "dissectedtrunchex2",
+          5,
+          1.5,
+          24
+        ],
+        "hard": [
+          "dissectedtrunchex2",
+          6,
+          2.5,
           72
         ]
       }
@@ -5228,6 +5458,29 @@
         ]
       }
     },
+    "mobiussquarerows2": {
+      "builder": "arch_mobius_board",
+      "args": {
+        "easy": [
+          "squarerows2",
+          12,
+          0.6,
+          12
+        ],
+        "medium": [
+          "squarerows2",
+          21,
+          1.6,
+          46
+        ],
+        "hard": [
+          "squarerows2",
+          30,
+          1.6,
+          88
+        ]
+      }
+    },
     "squarerows3": {
       "builder": "archimedean_board",
       "args": {
@@ -5259,21 +5512,44 @@
       "args": {
         "easy": [
           "squarerows3",
-          15,
-          0.7,
-          13
+          13,
+          0.6666666666666666,
+          7
         ],
         "medium": [
           "squarerows3",
-          26,
-          1.2,
-          57
+          24,
+          1.1666666666666667,
+          44
         ],
         "hard": [
           "squarerows3",
-          33,
-          1.7,
-          125
+          37,
+          1.1666666666666667,
+          87
+        ]
+      }
+    },
+    "mobiussquarerows3": {
+      "builder": "arch_mobius_board",
+      "args": {
+        "easy": [
+          "squarerows3",
+          13,
+          0.6666666666666666,
+          7
+        ],
+        "medium": [
+          "squarerows3",
+          32,
+          0.6666666666666666,
+          13
+        ],
+        "hard": [
+          "squarerows3",
+          32,
+          1.6666666666666665,
+          109
         ]
       }
     },
@@ -5326,6 +5602,29 @@
         ]
       }
     },
+    "mobiusdissectedtrunchex": {
+      "builder": "arch_mobius_board",
+      "args": {
+        "easy": [
+          "dissectedtrunchex",
+          5,
+          0.5,
+          6
+        ],
+        "medium": [
+          "dissectedtrunchex",
+          6,
+          1.5,
+          34
+        ],
+        "hard": [
+          "dissectedtrunchex",
+          10,
+          1.5,
+          74
+        ]
+      }
+    },
     "hexrows": {
       "builder": "archimedean_board",
       "args": {
@@ -5366,6 +5665,29 @@
           18,
           5.333333333333333,
           37
+        ],
+        "hard": [
+          "hexrows",
+          24,
+          6.333333333333333,
+          71
+        ]
+      }
+    },
+    "mobiushexrows": {
+      "builder": "arch_mobius_board",
+      "args": {
+        "easy": [
+          "hexrows",
+          10,
+          2.3333333333333335,
+          9
+        ],
+        "medium": [
+          "hexrows",
+          18,
+          5.333333333333333,
+          28
         ],
         "hard": [
           "hexrows",
@@ -5424,6 +5746,29 @@
         ]
       }
     },
+    "mobiusdodecasquare": {
+      "builder": "arch_mobius_board",
+      "args": {
+        "easy": [
+          "dodecasquare",
+          6,
+          2.6666666666666665,
+          6
+        ],
+        "medium": [
+          "dodecasquare",
+          12,
+          3.6666666666666665,
+          15
+        ],
+        "hard": [
+          "dodecasquare",
+          16,
+          4.666666666666667,
+          36
+        ]
+      }
+    },
     "hexrings": {
       "builder": "archimedean_board",
       "args": {
@@ -5456,20 +5801,43 @@
         "easy": [
           "hexrings",
           4,
-          0.6428571428571429,
-          7
+          0.6,
+          9
         ],
         "medium": [
           "hexrings",
           6,
-          1.1428571428571428,
-          19
+          1.1,
+          37
         ],
         "hard": [
           "hexrings",
           9,
-          1.6428571428571428,
-          70
+          1.6,
+          91
+        ]
+      }
+    },
+    "mobiushexrings": {
+      "builder": "arch_mobius_board",
+      "args": {
+        "easy": [
+          "hexrings",
+          4,
+          0.6,
+          8
+        ],
+        "medium": [
+          "hexrings",
+          11,
+          0.6,
+          22
+        ],
+        "hard": [
+          "hexrings",
+          9,
+          1.6,
+          92
         ]
       }
     },
@@ -5504,21 +5872,44 @@
       "args": {
         "easy": [
           "squaretrihex",
-          7,
-          2.3333333333333335,
+          9,
+          1.6666666666666665,
           6
         ],
         "medium": [
           "squaretrihex",
           15,
-          3.3333333333333335,
-          19
+          3.6666666666666665,
+          40
         ],
         "hard": [
           "squaretrihex",
           20,
-          4.333333333333333,
-          58
+          4.666666666666667,
+          87
+        ]
+      }
+    },
+    "mobiussquaretrihex": {
+      "builder": "arch_mobius_board",
+      "args": {
+        "easy": [
+          "squaretrihex",
+          9,
+          1.6666666666666665,
+          5
+        ],
+        "medium": [
+          "squaretrihex",
+          15,
+          3.6666666666666665,
+          39
+        ],
+        "hard": [
+          "squaretrihex",
+          20,
+          4.666666666666667,
+          87
         ]
       }
     },
@@ -5553,21 +5944,44 @@
       "args": {
         "easy": [
           "squaretrihex2",
-          9,
-          0.8333333333333334,
-          10
+          8,
+          1.2,
+          15
         ],
         "medium": [
           "squaretrihex2",
           15,
-          1.8333333333333335,
-          40
+          1.7,
+          44
+        ],
+        "hard": [
+          "squaretrihex2",
+          21,
+          2.2,
+          98
+        ]
+      }
+    },
+    "mobiussquaretrihex2": {
+      "builder": "arch_mobius_board",
+      "args": {
+        "easy": [
+          "squaretrihex2",
+          8,
+          1.2,
+          15
+        ],
+        "medium": [
+          "squaretrihex2",
+          14,
+          2.2,
+          54
         ],
         "hard": [
           "squaretrihex2",
           20,
-          2.3333333333333335,
-          93
+          2.2,
+          92
         ]
       }
     },
@@ -5617,6 +6031,29 @@
           10,
           2.1,
           55
+        ]
+      }
+    },
+    "mobiusdodecarhombitrihex": {
+      "builder": "arch_mobius_board",
+      "args": {
+        "easy": [
+          "dodecarhombitrihex",
+          5,
+          0.6,
+          6
+        ],
+        "medium": [
+          "dodecarhombitrihex",
+          7,
+          1.6,
+          24
+        ],
+        "hard": [
+          "dodecarhombitrihex",
+          11,
+          1.6,
+          48
         ]
       }
     },

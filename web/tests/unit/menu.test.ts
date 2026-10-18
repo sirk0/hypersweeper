@@ -84,13 +84,15 @@ describe("picker pages", () => {
       "fractal",
       "hyperbolic",
     ]);
-    // the other manifolds carry the same four families: only the plane has
+    // the closed manifolds carry the same four families: only the plane has
     // shaped boards to fill a Regular page, and aperiodic/spiral/fractal boards
-    for (const surface of ["torus", "mobius", "klein"]) {
+    for (const surface of ["torus", "klein"]) {
       expect(menuFamilies(surface)).toEqual(["uniform", "dual", "isogonal", "rectangle"]);
     }
-    // ...bar the cylinder, which the 2-uniform tilings wrap too
-    expect(menuFamilies("cylinder")).toEqual(["uniform", "dual", "2-uniform", "isogonal", "rectangle"]);
+    // ...and the cylinder and Möbius strip, which the 2-uniform tilings wrap too
+    for (const surface of ["cylinder", "mobius"]) {
+      expect(menuFamilies(surface)).toEqual(["uniform", "dual", "2-uniform", "isogonal", "rectangle"]);
+    }
   });
 
   it("gives every 2-uniform row its vertex-type symbol, and no other row one", () => {

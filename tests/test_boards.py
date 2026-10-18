@@ -37,6 +37,7 @@ from minesweeper.boards import (
     _phyllotaxis_tiles,
     _shared_vertex_adjacency,
     _spectre_leaves,
+    _wrap_template,
     _z7_add,
     _z7_dir,
     _z7_to_xy,
@@ -184,8 +185,8 @@ _UNIFORM = [t.key for t in ARCH_TILINGS if t.family == "uniform"]
 # torus preset yet drops out automatically
 _TORUS_TILINGS = [t.key for t in ARCH_TILINGS if "torus" in TILINGS[t.key][1]]
 # ...and the tilings that wrap a surface at all -- the 2-uniform ones reach the
-# cylinder but no donut (_FAMILY_SURFACES in catalog.py), and they choose a cut
-# all the same
+# cylinder and the Mobius strip but no donut (_FAMILY_SURFACES in catalog.py),
+# and they choose a cut all the same
 _WRAPPED_TILINGS = [t.key for t in ARCH_TILINGS
                     if set(TILINGS[t.key][1]) - {"flat"}]
 _ISOGONAL = [t.key for t in ARCH_TILINGS if t.family == "isogonal"]
@@ -4188,6 +4189,80 @@ class TestKleinTilings:
             assert all(cycle[n] in shifted for n in neighbors)
 
 
+class TestWrapLayout:
+    """The tilings that wrap in a layout of their own (``_ArchTemplate.wrap``):
+    turned a quarter turn, or moved onto a glide line, so the strip glues
+    through a reflection the flat layout does not hold on y = 0. The wrap
+    builders trust ``template.mirror`` to be a symmetry, and ``_template``
+    only checks it vertex by vertex -- so here every tile is carried across
+    whole, and the layout is held to the flat one's tiles."""
+
+    REFRAMED = sorted(t.key for t in ARCH_TILINGS if _arch_template(t.key).wrap)
+
+    @staticmethod
+    def _tile(width, height, points):
+        """A tile as a set of corners wrapped into the domain and rounded, so
+        a tile and its image compare whichever domain copy they land in."""
+        def wrapped(value, size):
+            value %= size
+            return round(0.0 if value > size - 1e-4 else value, 4) + 0.0
+
+        return frozenset((wrapped(x, width), wrapped(y, height)) for x, y in points)
+
+    @classmethod
+    def _tiles(cls, template):
+        return {cls._tile(template.width, template.height,
+                          [(dm * template.width + template.verts[tag][0],
+                            dn * template.height + template.verts[tag][1])
+                           for tag, dm, dn in refs])
+                for _, refs in template.cells}
+
+    def test_these_two_and_no_others(self):
+        # elongated3 turned (its rows otherwise step a whole band of four
+        # courses, too coarse for an easy strip), snubelongated on its glide
+        assert self.REFRAMED == ["elongated3", "snubelongated"]
+
+    @pytest.mark.parametrize("tiling", REFRAMED)
+    def test_the_mirror_carries_every_tile_onto_a_tile(self, tiling):
+        template = _wrap_template(tiling)
+        width, height = template.width, template.height
+        shift = width / 2 if template.glide else 0.0
+        tiles = self._tiles(template)
+        for _, refs in template.cells:
+            image = [(dm * width + template.verts[tag][0] + shift,
+                      height - (dn * height + template.verts[tag][1]))
+                     for tag, dm, dn in refs]
+            assert self._tile(width, height, image) in tiles, (
+                f"{tiling}: a tile's mirror image is no tile")
+
+    @pytest.mark.parametrize("tiling", REFRAMED)
+    def test_the_layout_holds_the_flat_tiles(self, tiling):
+        flat, wrapped = _arch_template(tiling), _wrap_template(tiling)
+        assert flat.width * flat.height == pytest.approx(wrapped.width * wrapped.height)
+        assert (sorted(len(refs) for _, refs in flat.cells)
+                == sorted(len(refs) for _, refs in wrapped.cells))
+
+    def test_elongated3_wraps_a_quarter_turn_round(self):
+        flat, wrapped = _arch_template("elongated3"), _wrap_template("elongated3")
+        assert (wrapped.width, wrapped.height) == pytest.approx((flat.height, flat.width))
+
+    def test_snubelongated_glues_its_mobius_seam_through_a_glide(self):
+        # pgg: no mirror, so the flat layout is gated as chiral -- but a
+        # horizontal glide is all a seam needs, as on snub square, and with a
+        # glide the ring counts half-domains and must be odd
+        assert _arch_template("snubelongated").mirror is None
+        assert _wrap_template("snubelongated").glide
+        assert "mobiussnubelongated" in MODE_LABELS
+        with pytest.raises(ValueError):
+            arch_mobius_board("snubelongated", 12, 1, 5)
+        arch_mobius_board("snubelongated", 13, 1, 5)
+
+    def test_studdedtri2_is_the_one_2_uniform_tiling_off_the_mobius_strip(self):
+        # p6: no mirror and no glide in any direction, turned or not
+        off = sorted(t for t in _TWO_UNIFORM if "mobius" + t not in MODE_LABELS)
+        assert off == ["studdedtri2"]
+
+
 class TestWrappedArchimedean:
     """The Archimedean tilings wrapped onto the donut, cylinder and
     Möbius strip."""
@@ -4349,27 +4424,47 @@ class TestWrappedArchimedean:
             "kleinbasketweave3": (108, 270, 504),
             "torusherringbone": (80, 256, 480),
             "cylherringbone": (90, 250, 490),
-            # the 2-uniform tilings wrap the cylinder alone
-            "cylstuddedtri": (80, 231, 460),
+            # the 2-uniform tilings wrap the cylinder, and all but studdedtri2
+            # the Mobius strip too
+            "cylstuddedtri": (76, 224, 450),
             "cylstuddedtri2": (84, 252, 504),
             "cylelongated2": (72, 220, 464),
-            "cylelongated3": (96, 285, 435),
+            "cylelongated3": (84, 273, 476),
             "cyltrirhombitrihex": (75, 259, 528),
-            "cyltritrunctrihex": (96, 280, 504),
-            "cylfannedhex": (80, 240, 520),
+            "cyltritrunctrihex": (72, 238, 450),
+            "cylfannedhex": (72, 280, 468),
             "cylhexbands": (88, 256, 462),
             "cylsnubelongated2": (78, 248, 480),
             "cylsnubelongated": (84, 288, 480),
             "cyldissectedtrunchex2": (90, 240, 450),
             "cylsquarerows2": (72, 240, 462),
-            "cylsquarerows3": (90, 286, 528),
+            "cylsquarerows3": (91, 288, 444),
             "cyldissectedtrunchex": (75, 270, 450),
             "cylhexrows": (70, 288, 456),
             "cyldodecasquare": (90, 252, 432),
-            "cylhexrings": (88, 240, 522),
-            "cylsquaretrihex": (84, 255, 440),
-            "cylsquaretrihex2": (72, 270, 460),
+            "cylhexrings": (80, 228, 504),
+            "cylsquaretrihex": (72, 270, 460),
+            "cylsquaretrihex2": (88, 240, 441),
             "cyldodecarhombitrihex": (80, 280, 520),
+            "mobiusstuddedtri": (76, 228, 450),
+            "mobiuselongated2": (72, 231, 464),
+            "mobiuselongated3": (70, 231, 441),
+            "mobiustrirhombitrihex": (75, 259, 444),
+            "mobiustritrunctrihex": (72, 234, 450),
+            "mobiusfannedhex": (72, 280, 528),
+            "mobiushexbands": (99, 220, 462),
+            "mobiussnubelongated2": (78, 248, 434),
+            "mobiussnubelongated": (78, 276, 522),
+            "mobiusdissectedtrunchex2": (90, 225, 450),
+            "mobiussquarerows2": (72, 294, 420),
+            "mobiussquarerows3": (91, 224, 544),
+            "mobiusdissectedtrunchex": (75, 270, 450),
+            "mobiushexrows": (70, 288, 456),
+            "mobiusdodecasquare": (90, 252, 432),
+            "mobiushexrings": (80, 220, 504),
+            "mobiussquaretrihex": (72, 270, 460),
+            "mobiussquaretrihex2": (88, 294, 420),
+            "mobiusdodecarhombitrihex": (80, 280, 440),
         }
         assert sorted(counts) == sorted(self.WRAPPED)
         for mode, expected in counts.items():
@@ -4386,9 +4481,13 @@ class TestWrappedArchimedean:
         "elongated", "trihex", "prismaticpent", "deltoidal", "triakis",
         "kisrhombille", "tetrakis", "offsetsquare", "staggeredtri",
         "stackedbond", "runningbond", "basketweave", "basketweave3",
-        # 2-uniform, the cylinder only
-        "studdedtri", "elongated2", "elongated3", "fannedhex", "squarerows2",
-        "squarerows3", "squaretrihex", "squaretrihex2",
+        # 2-uniform, the cylinder and the Mobius strip. fannedhex and
+        # squaretrihex2 have straight lines too, and elongated3 has them in its
+        # flat layout, but a band ending on one either plays coin flips at easy
+        # or has no easy board of the classic size -- see "the cut" in the
+        # comment above _steps in boards/tilings.py
+        "studdedtri", "elongated2", "squarerows2", "squarerows3",
+        "squaretrihex",
     }
 
     MOBIUS_MODES = sorted(m for m in WRAPPED if m.startswith("mobius"))
@@ -4398,9 +4497,10 @@ class TestWrappedArchimedean:
     def _band_rows(mode, difficulty):
         """Where across the band each row of tiles sits, and how tall the band
         is: one domain column's worth of tile centres, measured from the cut
-        that ``arch_mobius_board`` starts the band at."""
+        that ``arch_mobius_board`` starts the band at -- in the layout the
+        surfaces glue (``_wrap_template``)."""
         tiling = max((t for t in _ARCH_CONFIGS if mode.endswith(t)), key=len)
-        template = _arch_template(tiling)
+        template = _wrap_template(tiling)
         height, cut = template.height, template.cut
         strip = ARCH_PRESETS[tiling]["mobius"][difficulty][1] * height
         rows = []
@@ -4545,8 +4645,10 @@ class TestWrappedArchimedean:
         Asked of the tilings that wrap: a flat-only one (the rep-tiles,
         Durer's tiling) has no rim or seam to fall anywhere, and so leaves
         its cut at the default rather than choosing one. Wrapping one is what
-        would make it choose, and this test then covers it automatically."""
-        template = _arch_template(tiling)
+        would make it choose, and this test then covers it automatically.
+        Read off the layout the surfaces glue (``_wrap_template``), whose cut
+        is the one that counts."""
+        template = _wrap_template(tiling)
         height = template.height
         for _, refs in template.cells:
             centre = sum(dn * height + template.verts[tag][1]

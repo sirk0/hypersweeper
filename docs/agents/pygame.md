@@ -16,8 +16,8 @@ described in [`../../web/docs/ui.md`](../../web/docs/ui.md). Classic
 launches flat squares; Flat (the plane) and each flat manifold (cylinder,
 Möbius, Klein, torus) open a shared tiling picker — the Regular / Uniform
 / Laves family submenus, Isogonal and Congruent rectangles on every
-surface, 2-uniform, Other, Aperiodic and
-Fractals on the plane only, and a random option
+surface, 2-uniform on the plane, the cylinder and the Möbius strip, Other,
+Aperiodic and Fractals on the plane only, and a random option
 — parameterised by the surface it was reached through. The last four are
 **solid groups**: a flat list of finished boards, one click from the home
 page, all four declared by one `menu.solidGroups` table in
