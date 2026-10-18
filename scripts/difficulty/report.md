@@ -99,8 +99,8 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `cyldodecarhombitrihex` | 6.6 | 80c 6m (8%) 92% ⚠ | 280c 18m (6%) 93% ⚠ | 520c 55m (11%) 51% |
 | `cyldodecasquare` | 6.5 | 90c 5m (6%) 97% | 252c 13m (5%) 90% | 432c 37m (9%) 48% |
 | `cylelongated` | 9.2 | 91c 6m (7%) 97% | 230c 33m (14%) 87% | 512c 99m (19%) 53% |
-| `cylelongated2` | 9.7 | 70c 9m (13%) 98% | 220c 38m (17%) 87% | 435c 98m (23%) 52% |
-| `cylelongated3` | 10.2 | 70c 9m (13%) 97% | 228c 43m (19%) 86% | 532c 120m (23%) 54% |
+| `cylelongated2` | 10.2 | 72c 12m (17%) 98% | 220c 44m (20%) 85% | 464c 110m (24%) 52% |
+| `cylelongated3` | 10.5 | 96c 13m (14%) 98% | 285c 60m (21%) 86% | 435c 103m (24%) 49% |
 | `cylfannedhex` | 8.3 | 80c 5m (6%) 89% ⚠ | 240c 8m (3%) 86% | 520c 35m (7%) 42% ⚠ |
 | `cylfloret` | 7.3 | 84c 9m (11%) 98% | 264c 41m (16%) 83% | 450c 81m (18%) 51% |
 | `cylherringbone` | 5.7 | 90c 14m (16%) 97% | 250c 42m (17%) 91% | 490c 105m (21%) 53% |
@@ -122,8 +122,8 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `cylsnubelongated2` | 9.3 | 78c 9m (12%) 99% | 248c 45m (18%) 87% | 480c 107m (22%) 53% |
 | `cylsnubhex` | 9.2 | 75c 7m (9%) 93% | 264c 36m (14%) 86% | 504c 98m (19%) 50% |
 | `cylsnubsquare` | 9.3 | 84c 12m (14%) 95% | 231c 38m (16%) 89% | 480c 108m (22%) 51% |
-| `cylsquarerows2` | 9.1 | 72c 8m (11%) 96% | 276c 42m (15%) 84% | 512c 101m (20%) 49% |
-| `cylsquarerows3` | 8.5 | 69c 9m (13%) 97% | 224c 39m (17%) 89% | 442c 97m (22%) 53% |
+| `cylsquarerows2` | 8.7 | 72c 10m (14%) 97% | 240c 37m (15%) 89% | 462c 95m (21%) 49% |
+| `cylsquarerows3` | 8.5 | 90c 13m (14%) 98% | 286c 57m (20%) 89% | 528c 125m (24%) 51% |
 | `cylsquaretrihex` | 7.5 | 84c 6m (7%) 96% | 255c 19m (7%) 87% | 440c 58m (13%) 51% |
 | `cylsquaretrihex2` | 7.5 | 72c 10m (14%) 96% | 270c 40m (15%) 91% ⚠ | 460c 93m (20%) 54% |
 | `cylstackedbond` | 7.6 | 84c 13m (15%) 98% | 260c 52m (20%) 85% | 459c 107m (23%) 53% |

@@ -1632,7 +1632,14 @@ def _dodecarhombitrihex_template() -> _ArchTemplate:
 #     bar a gap whose rim is not a puzzle: dodecasquare's flattest one cuts off
 #     the triangle on a rim square's outer side, which leaves that square and
 #     the triangle across it with one closed neighbourhood between them, so it
-#     takes the other gap as flat. Any height inside the gap keeps the same
+#     takes the other gap as flat. Where several lines are straight -- the
+#     four course tilings (elongated2, elongated3, squarerows2, squarerows3)
+#     have a 3^6 or 4^4 line inside each band and a 3^3.4^2 line at its edge
+#     -- the cut takes the one that lets the shortest strip show *both*
+#     vertex types (resize.shows_tiling), which is the band edge: a vertex on
+#     the rim is not shown, so a strip that ends on the 4^4 line has to run a
+#     whole band further to show one, and on a tube one edge round an easy
+#     board cannot afford that. Any height inside the gap keeps the same
 #     tiles, so the value is the simplest fraction that lands there.
 #
 # Five pairs of the twenty share both vertex types. The literature tells each
@@ -1725,7 +1732,7 @@ def _elongated2_template() -> _ArchTemplate:
     return _cell_template(
         (3, 4), (0,), (8, 9, 10), ((1, 0), (0, -1)), [
         (4, (4,), 0), (3, (), 4), (3, (), 2), (3, (), 8), (3, (), 6),
-    ], centre=((),))
+    ], centre=((),), cut=1 / 3)
 
 
 def _elongated3_template() -> _ArchTemplate:
@@ -1736,7 +1743,7 @@ def _elongated3_template() -> _ArchTemplate:
         (3, 4), (0,), (8, 8, 9, 10), ((1, 0), (-1, -2)), [
         (4, (10,), 6), (3, (), 4), (3, (), 2), (3, (), 8), (3, (), 6),
         (3, (4,), 0), (3, (4,), 2),
-    ], centre=0, cut=1 / 3)
+    ], centre=0, cut=3 / 7)
 
 
 def _tritrunctrihex_template() -> _ArchTemplate:
@@ -1822,7 +1829,7 @@ def _squarerows2_template() -> _ArchTemplate:
     return _cell_template(
         (3, 4), (0,), (8, 9, 9), ((1, 0), (-1, -2)), [
         (4, (), 3), (4, (10,), 6), (3, (), 8), (3, (), 6),
-    ], centre=((3,),))
+    ], centre=((3,),), cut=1 / 5)
 
 
 def _squarerows3_template() -> _ArchTemplate:
@@ -1831,7 +1838,7 @@ def _squarerows3_template() -> _ArchTemplate:
     return _cell_template(
         (3, 4), (0,), (8, 9, 9, 9), ((1, 0), (-1, -2)), [
         (4, (), 3), (4, (10,), 6), (4, (3,), 3), (3, (), 10), (3, (), 8),
-    ], centre=2, cut=1 / 3)
+    ], centre=2, cut=2 / 5)
 
 
 def _hexrows_template() -> _ArchTemplate:

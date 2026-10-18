@@ -44,6 +44,7 @@ from scripts.difficulty.metrics import (
     aspect,
     distortion_summary,
     indistinguishable_cells,
+    vertex_types_shown,
 )
 
 ROOT = Path(__file__).resolve().parent.parent.parent
@@ -658,6 +659,31 @@ def _topology_ok(mode: str, board) -> bool:
     except Exception:
         return False
     return True
+
+
+def shows_tiling(args: list, board) -> bool:
+    """Does the window show the tiling it is named after?
+
+    Asked of the 2-uniform tilings, the ones a window can miss: every interior
+    vertex of any other periodic board has the tiling's one configuration, but
+    a 2-uniform one has two, and a strip of a tiling built in courses can hold
+    only one of them. ``cylsquarerows3`` easy was 23 domains round and a third
+    of one long -- three square courses and no triangle course, the square
+    tiling under another name -- and three more easy cylinders of the
+    one-edge-wide course tilings showed one vertex type of their two. The
+    aspect term had spent their cells going round the tube, which is what it
+    is for; nothing said a window has to reach far enough along it to be the
+    tiling at all. A hard bar, like the topology one: no other measure trades
+    against it.
+    """
+    from minesweeper.boards.tilings import ARCH_TILINGS
+
+    tiling = next((t for t in ARCH_TILINGS
+                   if args and t.key == args[0] and t.vertex_types), None)
+    if tiling is None:
+        return True
+    return len(vertex_types_shown(board, tiling.vertex_types)) == len(
+        tiling.vertex_types)
 
 
 def _candidate_values(current, coarse: bool, domains: bool = True,
@@ -1473,6 +1499,8 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
             if in_band and not (lo <= n <= hi):
                 continue
             if not _topology_ok(mode, board):
+                continue
+            if not shows_tiling(trial, board):
                 continue
             # A window shaped like a bracelet -- 40 domains around, one row
             # across -- can have perfectly square cells and still be a bad

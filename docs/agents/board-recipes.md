@@ -460,7 +460,20 @@ flattest gap of `dodecasquare` cuts off the triangle on each rim square's
 outer side, and the square and the triangle across from it then have one
 closed neighbourhood between them (`metrics.indistinguishable_cells`), on
 every window there is: no mine count calibrates that, so it takes the other
-gap as flat (two thirds up, not one third). Eight have a horizontal line of edges there and
+gap as flat (two thirds up, not one third). And the window has to show the
+**tiling**, not just its tiles: a 2-uniform board is two kinds of corner, and
+`resize.shows_tiling` (read back by `TestEveryWindowShowsItsTiling` in
+`tests/test_presets.py`) refuses a window with no interior vertex of one of
+them. The four course tilings — `elongated2`, `elongated3`, `squarerows2`,
+`squarerows3`, one edge wide — are where that bites: a vertex on a rim is not
+shown, and twelve tiles round an easy tube leave room for barely one band
+along it, so of their straight lines they cut on the edge of a band (the
+3³.4² line between a square course and a triangle course) rather than inside
+one. Cut on the 4⁴ line, `cylsquarerows3` easy shipped three courses of
+squares and not one triangle. `cylelongated3` easy is the one that still
+lands outside the ±15% band — 96 cells, since its shortest symmetric strip
+showing a 3⁶ corner is two squares and six triangles per unit round — and is
+an `EXEMPT_ROWS` entry in `tests/test_presets.py` for it. Eight have a horizontal line of edges there and
 end on straight rims (`studdedtri`, `elongated2`, `elongated3`, `fannedhex`,
 `squarerows2`, `squarerows3`, `squaretrihex`, `squaretrihex2`, in
 `STRAIGHT_RIM`), and the other twelve on the least ragged zigzag they have.

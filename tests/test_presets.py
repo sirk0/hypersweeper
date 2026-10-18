@@ -56,6 +56,12 @@ EXEMPT_ROWS = {
     # the surface outranks the size band (`resize.MIN_RING`).
     ("cylkisrhombille", "easy"),
     ("mobiuskisrhombille", "easy"),
+    # Triply elongated triangular's domain is one edge wide and three
+    # triangle courses tall, so twelve tiles round the tube (`MIN_RING`) and
+    # the shortest strip that shows a 3^6 corner inside it (two squares and six
+    # triangles per tile round, `resize.shows_tiling`) is 96 cells. Showing the
+    # tiling outranks the size band: anything shorter is elongated triangular.
+    ("cylelongated3", "easy"),
     # The same arithmetic on a donut and a bottle, from the other bar: a tile
     # may not span more than a quarter of a direction that closes, or it is
     # drawn as a flat plate through the axis rather than a facet of a tube
@@ -477,6 +483,35 @@ class TestMergedWindowsKeepTheirJoinAJoin:
         assert wide == {}, (
             f"{difficulty} merged boards whose join is more than "
             f"{MAX_WAIST:.0%} of the width of one piece: {wide}"
+        )
+
+
+class TestEveryWindowShowsItsTiling:
+    """No shipped 2-uniform board may leave out one of its two vertex types.
+
+    A 2-uniform tiling is two kinds of corner, and a strip of one built in
+    courses can hold only one of them: `cylsquarerows3` easy shipped 23 domains
+    round and a third of one long, three courses of squares and no triangle at
+    all -- the square tiling under another name -- and three more easy
+    cylinders (`elongated2`, `elongated3`, `squarerows2`) each showed one type
+    of their two. The bar lives with the search (`resize.shows_tiling`); this
+    reads it back off the shipped presets, plane and cylinder alike.
+    """
+
+    @pytest.mark.parametrize("difficulty", DIFFICULTIES)
+    def test_every_two_uniform_board_shows_both_vertex_types(self, difficulty):
+        from minesweeper.boards.presets import build_board
+        from scripts.difficulty.resize import shows_tiling
+
+        presets = json.loads((DATA / "presets.json").read_text())["presets"]
+        missing = [
+            mode for mode, spec in presets.items()
+            if not shows_tiling(spec["args"][difficulty],
+                                build_board(mode, difficulty))
+        ]
+        assert missing == [], (
+            f"{difficulty} boards missing one of their tiling's vertex types: "
+            f"{missing}"
         )
 
 

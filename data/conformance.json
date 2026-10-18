@@ -6035,30 +6035,30 @@
     },
     "cylelongated2": {
       "easy": {
-        "cellCount": 70,
-        "mineCount": 9,
+        "cellCount": 72,
+        "mineCount": 12,
         "euler": 0,
         "boundaryComponents": 2,
-        "edgeCount": 126,
-        "vertexCount": 56,
+        "edgeCount": 132,
+        "vertexCount": 60,
         "hasCellCycle": false
       },
       "medium": {
         "cellCount": 220,
-        "mineCount": 38,
+        "mineCount": 44,
         "euler": 0,
         "boundaryComponents": 2,
-        "edgeCount": 374,
-        "vertexCount": 154,
+        "edgeCount": 380,
+        "vertexCount": 160,
         "hasCellCycle": false
       },
       "hard": {
-        "cellCount": 435,
-        "mineCount": 98,
+        "cellCount": 464,
+        "mineCount": 110,
         "euler": 0,
         "boundaryComponents": 2,
-        "edgeCount": 725,
-        "vertexCount": 290,
+        "edgeCount": 783,
+        "vertexCount": 319,
         "hasCellCycle": false
       }
     },
@@ -6093,30 +6093,30 @@
     },
     "cylelongated3": {
       "easy": {
-        "cellCount": 70,
-        "mineCount": 9,
+        "cellCount": 96,
+        "mineCount": 13,
         "euler": 0,
         "boundaryComponents": 2,
-        "edgeCount": 126,
-        "vertexCount": 56,
+        "edgeCount": 168,
+        "vertexCount": 72,
         "hasCellCycle": false
       },
       "medium": {
-        "cellCount": 228,
-        "mineCount": 43,
+        "cellCount": 285,
+        "mineCount": 60,
         "euler": 0,
         "boundaryComponents": 2,
-        "edgeCount": 380,
-        "vertexCount": 152,
+        "edgeCount": 475,
+        "vertexCount": 190,
         "hasCellCycle": false
       },
       "hard": {
-        "cellCount": 532,
-        "mineCount": 120,
+        "cellCount": 435,
+        "mineCount": 103,
         "euler": 0,
         "boundaryComponents": 2,
-        "edgeCount": 868,
-        "vertexCount": 336,
+        "edgeCount": 725,
+        "vertexCount": 290,
         "hasCellCycle": false
       }
     },
@@ -6558,29 +6558,29 @@
     "cylsquarerows2": {
       "easy": {
         "cellCount": 72,
-        "mineCount": 8,
+        "mineCount": 10,
         "euler": 0,
         "boundaryComponents": 2,
-        "edgeCount": 144,
-        "vertexCount": 72,
+        "edgeCount": 132,
+        "vertexCount": 60,
         "hasCellCycle": false
       },
       "medium": {
-        "cellCount": 276,
-        "mineCount": 42,
+        "cellCount": 240,
+        "mineCount": 37,
         "euler": 0,
         "boundaryComponents": 2,
-        "edgeCount": 506,
-        "vertexCount": 230,
+        "edgeCount": 432,
+        "vertexCount": 192,
         "hasCellCycle": false
       },
       "hard": {
-        "cellCount": 512,
-        "mineCount": 101,
+        "cellCount": 462,
+        "mineCount": 95,
         "euler": 0,
         "boundaryComponents": 2,
-        "edgeCount": 928,
-        "vertexCount": 416,
+        "edgeCount": 825,
+        "vertexCount": 363,
         "hasCellCycle": false
       }
     },
@@ -6615,30 +6615,30 @@
     },
     "cylsquarerows3": {
       "easy": {
-        "cellCount": 69,
-        "mineCount": 9,
+        "cellCount": 90,
+        "mineCount": 13,
         "euler": 0,
         "boundaryComponents": 2,
-        "edgeCount": 161,
-        "vertexCount": 92,
+        "edgeCount": 180,
+        "vertexCount": 90,
         "hasCellCycle": false
       },
       "medium": {
-        "cellCount": 224,
-        "mineCount": 39,
+        "cellCount": 286,
+        "mineCount": 57,
         "euler": 0,
         "boundaryComponents": 2,
-        "edgeCount": 448,
-        "vertexCount": 224,
+        "edgeCount": 546,
+        "vertexCount": 260,
         "hasCellCycle": false
       },
       "hard": {
-        "cellCount": 442,
-        "mineCount": 97,
+        "cellCount": 528,
+        "mineCount": 125,
         "euler": 0,
         "boundaryComponents": 2,
-        "edgeCount": 850,
-        "vertexCount": 408,
+        "edgeCount": 990,
+        "vertexCount": 462,
         "hasCellCycle": false
       }
     },

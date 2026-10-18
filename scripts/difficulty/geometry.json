@@ -10277,26 +10277,26 @@
       "easy": {
         "args": [
           "elongated2",
-          14,
-          1.0,
-          8
+          12,
+          1.333333,
+          9
         ],
-        "cells": 70,
-        "score": 0.7331,
-        "distortionMean": 1.0,
-        "distortionP90": 1.0,
+        "cells": 72,
+        "score": 0.1748,
+        "distortionMean": 1.0001,
+        "distortionP90": 1.0001,
         "indistinguishable": 0,
         "facetStep": 0.0
       },
       "medium": {
         "args": [
           "elongated2",
-          22,
-          2.0,
-          37
+          20,
+          2.333333,
+          38
         ],
         "cells": 220,
-        "score": 0.4493,
+        "score": 0.1532,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
@@ -10306,11 +10306,11 @@
         "args": [
           "elongated2",
           29,
-          3.0,
-          93
+          3.333333,
+          98
         ],
-        "cells": 435,
-        "score": 0.2411,
+        "cells": 464,
+        "score": 0.0502,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
@@ -10324,14 +10324,14 @@
       "easy": {
         "args": [
           "elongated3",
-          14,
-          0.333333,
-          8
+          12,
+          0.642857,
+          9
         ],
-        "cells": 70,
-        "score": 0.8893,
-        "distortionMean": 1.0,
-        "distortionP90": 1.0,
+        "cells": 96,
+        "score": 10.7396,
+        "distortionMean": 1.0001,
+        "distortionP90": 1.0001,
         "indistinguishable": 0,
         "facetStep": 0.0
       },
@@ -10339,11 +10339,11 @@
         "args": [
           "elongated3",
           19,
-          0.833333,
-          34
+          1.142857,
+          43
         ],
-        "cells": 228,
-        "score": 0.126,
+        "cells": 285,
+        "score": 0.4762,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
@@ -10352,12 +10352,12 @@
       "hard": {
         "args": [
           "elongated3",
-          28,
-          1.333333,
-          96
+          29,
+          1.142857,
+          120
         ],
-        "cells": 532,
-        "score": 0.1914,
+        "cells": 435,
+        "score": 0.237,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
@@ -10653,26 +10653,26 @@
       "easy": {
         "args": [
           "squarerows2",
-          18,
-          0.5,
-          10
+          12,
+          0.6,
+          8
         ],
         "cells": 72,
-        "score": 0.9491,
-        "distortionMean": 1.0,
-        "distortionP90": 1.0,
+        "score": 0.2438,
+        "distortionMean": 1.0001,
+        "distortionP90": 1.0001,
         "indistinguishable": 0,
         "facetStep": 0.0
       },
       "medium": {
         "args": [
           "squarerows2",
-          23,
-          1.5,
-          39
+          24,
+          1.1,
+          42
         ],
-        "cells": 276,
-        "score": 0.2682,
+        "cells": 240,
+        "score": 0.2949,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
@@ -10681,12 +10681,12 @@
       "hard": {
         "args": [
           "squarerows2",
-          32,
-          2.0,
-          99
+          33,
+          1.6,
+          101
         ],
-        "cells": 512,
-        "score": 0.2064,
+        "cells": 462,
+        "score": 0.2011,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
@@ -10700,12 +10700,12 @@
       "easy": {
         "args": [
           "squarerows3",
-          23,
-          0.333333,
-          10
+          15,
+          0.7,
+          9
         ],
-        "cells": 69,
-        "score": 1.4132,
+        "cells": 90,
+        "score": 0.2559,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
@@ -10714,12 +10714,12 @@
       "medium": {
         "args": [
           "squarerows3",
-          28,
-          0.833333,
-          35
+          26,
+          1.2,
+          39
         ],
-        "cells": 224,
-        "score": 0.5228,
+        "cells": 286,
+        "score": 0.248,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
@@ -10728,12 +10728,12 @@
       "hard": {
         "args": [
           "squarerows3",
-          34,
-          1.333333,
-          91
+          33,
+          1.7,
+          97
         ],
-        "cells": 442,
-        "score": 0.1408,
+        "cells": 528,
+        "score": 0.3644,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,

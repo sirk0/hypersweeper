@@ -1972,7 +1972,7 @@ function studdedtri2Template(): ArchTemplate {
 function elongated2Template(): ArchTemplate {
   return cellTemplate([3, 4], [0], [8, 9, 10], [[1, 0], [0, -1]], [
     [4, [4], 0], [3, [], 4], [3, [], 2], [3, [], 8], [3, [], 6],
-  ], { centre: [[]] });
+  ], { centre: [[]], cut: 1 / 3 });
 }
 
 /** [3⁶; 3³.4²]₂, cmm: three courses of triangles between the square
@@ -1982,7 +1982,7 @@ function elongated3Template(): ArchTemplate {
   return cellTemplate([3, 4], [0], [8, 8, 9, 10], [[1, 0], [-1, -2]], [
     [4, [10], 6], [3, [], 4], [3, [], 2], [3, [], 8], [3, [], 6], [3, [4], 0],
     [3, [4], 2],
-  ], { centre: 0, cut: 1 / 3 });
+  ], { centre: 0, cut: 3 / 7 });
 }
 
 /** [3⁶; 3².4.12], p6m: truncated trihexagonal (4.6.12) with every
@@ -2058,7 +2058,7 @@ function dissectedtrunchex2Template(): ArchTemplate {
 function squarerows2Template(): ArchTemplate {
   return cellTemplate([3, 4], [0], [8, 9, 9], [[1, 0], [-1, -2]], [
     [4, [], 3], [4, [10], 6], [3, [], 8], [3, [], 6],
-  ], { centre: [[3]] });
+  ], { centre: [[3]], cut: 1 / 5 });
 }
 
 /** [3³.4²; 4⁴]₂, cmm: three courses of squares between the triangle
@@ -2066,7 +2066,7 @@ function squarerows2Template(): ArchTemplate {
 function squarerows3Template(): ArchTemplate {
   return cellTemplate([3, 4], [0], [8, 9, 9, 9], [[1, 0], [-1, -2]], [
     [4, [], 3], [4, [10], 6], [4, [3], 3], [3, [], 10], [3, [], 8],
-  ], { centre: 2, cut: 1 / 3 });
+  ], { centre: 2, cut: 2 / 5 });
 }
 
 /** [3².6²; 3.6.3.6], pmm: rows of hexagons, each sharing an edge with the
