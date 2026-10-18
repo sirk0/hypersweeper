@@ -7,9 +7,9 @@ cells can come out twice the shape they have in the plane, and on a few boards
 a cell even folds back over itself. Those boards are still worth looking at,
 so they stay in the menu -- but marked, and never dealt by the random buttons.
 
-Three measures per board and difficulty, each against the tiling's **own**
-planar shape (``resize.planar_shape``), so a tiling whose tile is meant to be
-long is not marked for being long:
+Two yardsticks, because a cell can look wrong two ways. Against the tiling's
+**own** planar shape (``resize.planar_shape``) -- what the wrap did to it, so a
+tiling whose tile is meant to be long is not marked for being long:
 
 * **shape** -- the 90th-percentile ``metrics.cell_distortion``, as a fraction
   over the flat tiling's. One cell in ten is at least this much worse.
@@ -19,13 +19,25 @@ long is not marked for being long:
   more than a right angle away from the cell's own plane: the tile is drawn
   folded over itself rather than merely bent.
 
+And against the **regular polygon** with as many corners -- what the player
+sees, whatever the cause:
+
+* **regular** -- the 90th-percentile ``metrics.cell_distortion`` of the cell's
+  real corners (the T-vertices ``resize.corner_indices`` names are dropped, or
+  an offset square scores as a squashed pentagon), 1.0 for a regular polygon.
+  This is what the first yardstick cannot see: a tile already far from regular
+  in the plane needs much less of a wrap to stop reading as a tile. The
+  kisrhombille's 30-60-90 triangle starts at 1.24, so a torus that adds a
+  quarter to it -- harmless to a square -- leaves one cell in ten as far from
+  round as a sliver.
+
 ``bend`` -- how far a cell's corners stand off its best plane, over its mean
 edge -- is recorded for the review but marks nothing: on the torus and the
 cylinder the big dodecagons bend a third of an edge and still read as the
 tiles they are.
 
-A level is marked when shape >= ``SHAPE_P90``, stretch >= ``STRETCH``, or any
-cell folds. A board marked at ``BOARD_SHARE`` of its three levels is marked at
+A level is marked when shape >= ``SHAPE_P90``, regular >= ``REGULAR_P90``,
+stretch >= ``STRETCH``, or any cell folds. A board marked at ``BOARD_SHARE`` of its three levels is marked at
 all three: the one level that scraped under the bar is the same surface doing
 the same thing, and a board that is fine only at medium reads as a mistake.
 
@@ -64,6 +76,13 @@ DIFFICULTIES = ("easy", "medium", "hard")
 # trefoil's easy boards and the Möbius strip's bonds sit, and nothing on the
 # torus but its coarsest easy windows.
 SHAPE_P90 = 0.60
+# One cell in ten half again as far from round as a regular polygon of its
+# corners. Lower than SHAPE_P90 on purpose: on a regular tiling the two measure
+# the same thing, and 50% is where the Klein bottle's hexagons and its Cairo
+# pentagons -- both read as squashed in play -- sit; on an irregular one it is
+# reached by far less wrapping (the torus kisrhombille's medium window, 27% over
+# its flat tile, is 58% over a regular triangle).
+REGULAR_P90 = 1.50
 # Edges three times as unequal as the flat tiling's: the trefoil's easy squares
 # (6.2x) and the double torus's (3.3x), whose shape score alone undersells them.
 STRETCH = 3.0
@@ -114,8 +133,24 @@ def bend_and_fold(points) -> tuple[float, float]:
     return bend, fold
 
 
+def _p90(values: list[float]) -> float:
+    values = sorted(values)
+    return values[min(len(values) - 1, int(0.9 * len(values)))]
+
+
+def _real_corners(polygons: dict, corners: dict | None) -> dict:
+    """Each cell with its T-vertices dropped, by template cell name."""
+    if corners is None:
+        return polygons
+    out = {}
+    for cell, points in polygons.items():
+        keep = corners.get(cell[-1]) if isinstance(cell, tuple) else None
+        out[cell] = [points[i] for i in keep] if keep is not None else points
+    return out
+
+
 def measure(mode: str, tiling: str, difficulty: str) -> dict:
-    """The three measures (and the bend) of one board at one difficulty."""
+    """The four measures (and the bend) of one board at one difficulty."""
     arch = {t.key for t in ARCH_TILINGS}
     if tiling in arch:
         _, planar_p90, planar_edge = planar_shape(tiling)
@@ -124,11 +159,12 @@ def measure(mode: str, tiling: str, difficulty: str) -> dict:
         planar_p90 = planar_edge = 1.0
         corners = None
     polygons = build_board(mode, difficulty).polygons
-    shapes = sorted(cell_distortion(polygons))
-    p90 = shapes[min(len(shapes) - 1, int(0.9 * len(shapes)))]
+    p90 = _p90(cell_distortion(polygons))
+    regular = _p90(cell_distortion(_real_corners(polygons, corners)))
     cells = [bend_and_fold(p) for p in polygons.values()]
     return {
         "shapeP90": round(p90 / planar_p90 - 1, 3),
+        "regularP90": round(regular, 3),
         "stretch": round(edge_ratio(_Polygons(polygons), corners) / planar_edge, 2),
         "bend": round(max(b for b, _ in cells), 3),
         "folded": sum(f > FOLD_DEGREES for _, f in cells),
@@ -136,8 +172,8 @@ def measure(mode: str, tiling: str, difficulty: str) -> dict:
 
 
 def crosses(row: dict) -> bool:
-    return (row["shapeP90"] >= SHAPE_P90 or row["stretch"] >= STRETCH
-            or row["folded"] > 0)
+    return (row["shapeP90"] >= SHAPE_P90 or row["regularP90"] >= REGULAR_P90
+            or row["stretch"] >= STRETCH or row["folded"] > 0)
 
 
 def wrapped_modes() -> list[tuple[str, str]]:
@@ -159,10 +195,13 @@ def main() -> int:
         "_comment": "Generated by scripts/difficulty/distortion.py. Wrapped "
         "boards whose cells the surface draws too far out of shape, per "
         "difficulty: shapeP90 is the 90th-percentile cell distortion over the "
-        "flat tiling's (as a fraction), stretch the median edge ratio over the "
+        "flat tiling's (as a fraction), regularP90 the same distortion of the "
+        "real corners against a regular polygon (1.0 is regular), stretch the "
+        "median edge ratio over the "
         "flat tiling's, bend the worst cell's corners off its plane over its "
         "edge, folded the cells drawn folded over themselves. A level is listed "
-        f"when shapeP90 >= {SHAPE_P90}, stretch >= {STRETCH} or any cell folds "
+        f"when shapeP90 >= {SHAPE_P90}, regularP90 >= {REGULAR_P90}, stretch >= "
+        f"{STRETCH} or any cell folds "
         "(crosses: true); a board listed at two of its three levels is listed "
         "at all three (crosses: false on the one that did not). The web menu "
         "marks these rows and the random buttons never deal them.",

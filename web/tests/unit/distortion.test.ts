@@ -41,6 +41,10 @@ describe("the distorted-board list", () => {
     expect(isDistorted("torus", "easy")).toBe(false);
     expect(distortedRow("torus", "easy")).toBeUndefined();
     expect(distortedDifficulties("kleinkisrhombille")).toEqual(["easy", "medium", "hard"]);
+    // Caught by the regular-polygon bar rather than the flat-tiling one: its
+    // 30-60-90 triangle starts far from regular, so the torus's medium window
+    // (27% over the flat tile) is already 58% over a regular triangle.
+    expect(distortedDifficulties("toruskisrhombille")).toEqual(["easy", "medium", "hard"]);
   });
 
   it("never answers for an inherited property", () => {

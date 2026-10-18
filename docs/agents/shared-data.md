@@ -38,7 +38,8 @@ twice.
 
 - `data/distortion.json` — the wrapped boards whose cells their surface draws
   too far out of shape, per difficulty, with what was measured (cell shape
-  against the flat tiling's own, edge stretch, bend, folded cells). Measured,
+  against the flat tiling's own and against a regular polygon, edge stretch,
+  bend, folded cells). Measured,
   not exported: `scripts/difficulty/distortion.py` writes it in a few seconds
   and `data-sync` does not re-run it, so re-run it by hand after changing a
   wrapped preset window or adding a wrapped tiling. The TypeScript app reads it
