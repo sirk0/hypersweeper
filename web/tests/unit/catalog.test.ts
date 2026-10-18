@@ -89,12 +89,14 @@ describe("catalog families", () => {
 
   it("wraps the 2-uniform tilings onto the cylinder and Möbius strip only", () => {
     // All twenty reverse y somewhere (p6 and pgg by a half turn, the rest by a
-    // mirror too), so all twenty have a cylinder, and the eighteen with a
-    // mirror a Möbius strip; ARCH_FAMILY_SURFACES holds them off the torus and
-    // the Klein bottle, which have no measured windows for them yet.
+    // mirror too), so all twenty have a cylinder, and the nineteen with a
+    // mirror or a glide to close a seam a Möbius strip — every one but the p6
+    // studdedtri2 (snubelongated's pgg glide is the one its wrap layout glues
+    // through); ARCH_FAMILY_SURFACES holds them off the torus and the Klein
+    // bottle, which have no measured windows for them yet.
     expect(TWO_UNIFORM_ARCH.length).toBe(20);
     const chiral = TWO_UNIFORM_ARCH.filter((key) => TILINGS_BY_KEY.get(key)!.chiral);
-    expect(chiral).toEqual(["studdedtri2", "snubelongated"]);
+    expect(chiral).toEqual(["studdedtri2"]);
     for (const key of TWO_UNIFORM_ARCH) {
       const tiling = TILINGS_BY_KEY.get(key)!;
       expect(tilingAllows(tiling, SURFACES.get("flat")!)).toBe(true);
@@ -252,7 +254,7 @@ describe("mode -> tiling", () => {
         pairs++;
       }
     }
-    expect(pairs).toBe(205);
+    expect(pairs).toBe(206);
   });
 
   it("has no tiling for the one-off boards", () => {

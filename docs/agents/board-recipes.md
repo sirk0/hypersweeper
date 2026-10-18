@@ -36,7 +36,11 @@ Example goal: a new uniform tiling `foo` (say 3.4.6.4-like).
    `TestWrappedArchimedean.test_mobius_band_is_symmetric`,
    `test_cylinder_rims_are_the_same_curve`, the two
    `..._rim_is_straight_where_the_tiling_allows` tests and
-   `test_no_tile_centre_sits_on_the_cut` measure every rule.
+   `test_no_tile_centre_sits_on_the_cut` measure every rule. A tiling whose
+   flat layout cannot serve the strips — its rows too coarse along this
+   direction, or its only horizontal reflection a glide off y = 0 — can wrap
+   in a layout of its own, turned a quarter turn or moved onto that line
+   (`_ArchTemplate.wrap`; see "The wrap layout" in the 2-uniform recipe).
 2. **Registry** — add one `ArchTiling("foo", "Foo label", config,
    edge_directions, _foo_template)` row to `ARCH_TILINGS`, in
    vertex-configuration order (the registry order is the menu order; the
@@ -319,7 +323,7 @@ that wrap — `test_no_tile_centre_sits_on_the_cut` and the rest of
 `family="2-uniform"`: edge-to-edge tilings by regular polygons whose vertices
 fall into exactly **two** classes under the tiling's symmetries — the next step
 past the uniform tilings, which have one. There are twenty and **all twenty
-ship**, on the plane and the cylinder, and the eighteen with a mirror on the
+ship**, on the plane and the cylinder, and all but `studdedtri2` on the
 Möbius strip too (`_FAMILY_SURFACES` holds them to those three — see the
 recipe above). So there is no new one to add; what follows is how the twenty
 are built, what to keep in step when changing one, how they wrap the cylinder
@@ -451,66 +455,86 @@ per tiling, and for a subscripted pair wide enough that the two icons differ.
 **The cylinder and the Möbius strip.** Every one of the twenty reverses y
 somewhere — p6 and pgg by a half turn, the rest by a mirror too — so every one
 has `flips` and every one wraps a cylinder, `studdedtri2` and `snubelongated`
-included, as the snubs do. The eighteen with a mirror (all but those two) wrap
-the Möbius strip as well, gluing its seam through that mirror; the two without
-one stay off it, as snub hexagonal and the herringbone do.
-Each states a `cut`, which both surfaces share: `_cell_template`'s takes it as
-a **fraction of the domain height**, the three cut-or-merged factories pass a
-height directly. Which height is a measurement, not a choice. Only the gap
-between two rows of tile centres matters (any height inside one keeps the same
-tiles), so the cut goes in the gap whose rim runs flattest, at the simplest
-fraction of the height that lands inside it — provided the rim is still a
-puzzle, and provided **both** surfaces have an easy window at it that is about
-the classic size and plays as one (below). The flattest gap of `dodecasquare` cuts off the triangle on each rim
-square's outer side, and the square and the triangle across from it then have
-one closed neighbourhood between them (`metrics.indistinguishable_cells`), on
-every window there is: no mine count calibrates that, so it takes the other
-gap as flat (two thirds up, not one third). And the window has to show the
-**tiling**, not just its tiles: a 2-uniform board is two kinds of corner, and
-`resize.shows_tiling` (read back by `TestEveryWindowShowsItsTiling` in
-`tests/test_presets.py`) refuses a window with no interior vertex of one of
-them. On the cylinder the four course tilings — `elongated2`, `elongated3`,
-`squarerows2`, `squarerows3`, one edge wide — are where that bites: a vertex on
-a rim is not shown, and twelve tiles round an easy tube leave room for barely
-one band along it, so of their straight lines they cut on the edge of a band
-(the 3³.4² line between a square course and a triangle course) rather than
-inside one. Cut on the 4⁴ line, `cylsquarerows3` easy shipped three courses of
-squares and not one triangle.
+included, as the snubs do. Nineteen wrap the Möbius strip as well, gluing its
+seam through a horizontal mirror — or, for `snubelongated` (pgg, no mirror at
+all), through its horizontal **glide**, as snub square's seam does. Only
+`studdedtri2` (p6: no mirror and no glide, in any direction) stays off it, as
+snub hexagonal does.
+
+**The wrap layout.** A tiling can lie on a strip along either lattice
+direction of its rectangle, and the flat layout is only one of them. A
+template may declare a second layout for the wrapped surfaces
+(`_ArchTemplate.wrap`, built by `_reframed`, read through `_wrap_template`; in
+TypeScript `wrapTemplate`): the same cells **turned a quarter turn**, and/or
+**moved so a mirror or glide line sits on y = 0**, where the Möbius and Klein
+seams glue. The flat board never sees it. Two use it: `elongated3` wraps
+turned (`wrap=dict(cut=1/3, quarter=True)`) and `snubelongated` wraps on its
+glide a quarter of the domain up (`wrap=dict(cut=0, axis=1/4, glide=True)`).
+`TestWrapLayout` in `tests/test_boards.py` checks that each layout's mirror
+carries every tile onto a tile and that it holds the flat layout's tiles. In
+`scripts/difficulty/resize.py` every wrap measure reads the layout the builder
+lays out (`_layout`); `corner_indices` and `planar_shape` stay on the flat
+template, being measured flat. One trap when experimenting: `_TILE_SPAN` and
+`_TILE_FRACTIONS` there cache per tiling key, so a script that swaps layouts
+under one key has to clear them.
+
+**The cut.** Each tiling states one `cut`, which both surfaces share:
+`_cell_template`'s takes it as a **fraction of the domain height** (of the wrap
+layout's, where there is one), the three cut-or-merged factories pass a
+height directly. Which height is a measurement, not a choice, and one rule
+chose all twenty:
+
+1. The cylinder's cut **stands** wherever the strip can share it — the
+   flattest gap between two rows of tile centres (any height inside one keeps
+   the same tiles), at the simplest fraction inside it — provided both
+   surfaces then have an easy window inside the hard size bar (±25%) **that
+   plays as a puzzle**: 90% or better at the opening floor, the most an easy
+   board of that window can manage (a few points under the 96.5% target is
+   what a 300-game scan cannot tell from it).
+2. Otherwise it is **searched** over every gap, in the flat layout and turned
+   a quarter turn, for the flattest rim that clears the same bars; the flat
+   layout, then the simplest fraction, break ties.
+
+A rim that is not a puzzle rules a gap out by itself: the flattest gap of
+`dodecasquare` cuts off the triangle on each rim square's outer side, and the
+square and the triangle across from it then have one closed neighbourhood
+between them (`metrics.indistinguishable_cells`) on every window there is, so
+it takes the other gap as flat (two thirds up, not one third). And the window
+has to show the **tiling**, not just its tiles: a 2-uniform board is two kinds
+of corner, and `resize.shows_tiling` (read back by
+`TestEveryWindowShowsItsTiling` in `tests/test_presets.py`) refuses a window
+with no interior vertex of one of them. The course tilings that end on a
+straight line (`elongated2`, `squarerows2`, `squarerows3`, one edge wide) end
+on the edge of a band — the 3³.4² line between a square course and a triangle
+course — rather than inside one: a vertex on a rim is not shown, and twelve
+tiles round an easy tube leave room for barely one band along it. Cut on the
+4⁴ line, `cylsquarerows3` easy shipped three courses of squares and not one
+triangle.
 
 On the Möbius strip it is the **row count** that bites. `rows + 2*cut/height`
 has to be whole, so the band steps a whole domain at a time, and a band must
-run 2.24 times as far round as it is wide or the immersion narrows it
-(`resize._mobius_band_clamped`). A 2-uniform domain is four to nine edges
-tall, so a cut whose shortest band showing both vertex types is a domain and a
-bit hands the easy strip 200-odd cells — `mobiuselongated3` measured 285 at
-the cut the cylinder alone had chosen. So the cut is chosen for both surfaces
-at once: the flattest gap where each has an easy window inside the hard size
-bar (±25%) **that plays as a puzzle** — measured by the win rate at the
-opening floor, the most an easy board of that window can manage. Six cuts
-moved when the strip arrived. `studdedtri` and `squarerows3` went to another
-straight line; `hexrings` and `tritrunctrihex` from a zigzag half an edge deep
-to the 0.87 one that plays best; `squaretrihex2`, whose straight lines that
-reach the strip leave an easy band a coin flip at the opening floor (88% at
-best), to a zigzag that plays on target, which takes it out of `STRAIGHT_RIM`;
-and `elongated3`, which has no gap inside the bar on either surface, to the
-straight 3⁶ line inside its triangle band whose easy board is smallest on
-both: 108 cells, twelve tiles round (`MIN_RING`) and two thirds of a domain
-across. Those two rows (`cylelongated3` and `mobiuselongated3` easy) are
-`EXEMPT_ROWS` entries in `tests/test_presets.py`. `hexbands` shows why the bar
-is the ±25% one and not the ±15% the search aims for: its one gap that gives
-both surfaces an easy board inside ±15% plays at 79%, while the cut it already
-had gives the strip 99 cells that play on target, so it kept it.
-`tritrunctrihex` easy plays harder than its target whatever the cut (93.5% at
-best at the opening floor, 85% as calibrated) and is flagged in the report on
-both surfaces, as the cylinder was at its old cut. A band under one domain
-tall is a real window here, as it is on the cylinder: `resize._mobius_rows`
+run 2.24 times as far round as it is wide or the immersion narrows it. A
+2-uniform domain is four to nine edges tall, so a cut whose shortest band
+showing both vertex types is a domain and a bit hands the easy strip 200-odd
+cells — `mobiuselongated3` measured 285 at the cylinder's cut. Nine cuts
+moved when the strip arrived, and eleven stood. `studdedtri`, `squarerows3`
+and `squaretrihex` went to another straight line. `fannedhex`,
+`squaretrihex2`, `tritrunctrihex` and `hexrings` took a zigzag, because each
+straight line either leaves the strip no small board or plays coin flips at
+easy (`squaretrihex2`'s at 84–88%, `fannedhex`'s at 88–90%). `elongated3` is
+the quarter turn: flat, its rows step a whole band of four courses and no cut
+gives either surface an easy board under 108 cells; turned, they step one edge
+and both get one of the classic size. `snubelongated` wraps on its glide.
+`tritrunctrihex` easy plays harder than its target whatever the cut and
+layout (93.5% at best at the opening floor) and is flagged in the report on
+both surfaces, as the cylinder was at its old cut. A band under one domain tall
+is a real window here, as it is on the cylinder: `resize._mobius_rows`
 enumerates the row counts the seam accepts the way `_cylinder_rows` does,
 rather than stepping on from the seed's fraction, which never offered
-`mobiustrirhombitrihex` its five-sevenths easy band. Seven have a horizontal
-line of edges at their cut and end on straight rims on both surfaces
-(`studdedtri`, `elongated2`, `elongated3`, `fannedhex`, `squarerows2`,
-`squarerows3`, `squaretrihex`, in `STRAIGHT_RIM`), and the other thirteen on
-the least ragged zigzag that plays.
+`mobiustrirhombitrihex` its five-sevenths easy band. Five end on straight rims
+on both surfaces (`studdedtri`, `elongated2`, `squarerows2`, `squarerows3`,
+`squaretrihex`, in `STRAIGHT_RIM`), and the other fifteen on the least ragged
+zigzag that plays.
 Every flip level here is 0 or a quarter of the height, so with a cut that is a
 fraction of the height the row counts that centre a cylinder's strip on a flip,
 and that close a Möbius seam, are fractions too, and the `ARCH_PRESETS` rows
@@ -520,9 +544,9 @@ the `cyl…` and `mobius…` rows after one.
 
 **The other surfaces** are the same as for "Other": add them to the family's
 `_FAMILY_SURFACES` entries (both ports) and add the surface presets, measured.
-The cut is already chosen. The mirror already in each template is what a
-Klein bottle would glue through, as the Möbius strip does, so the same
-eighteen would reach it.
+The cut and the wrap layouts are already chosen. The mirror or glide the
+Möbius strip glues through is what a Klein bottle would glue through too, so
+the same nineteen would reach it.
 
 ## Recipe: add a congruent-rectangle bond
 

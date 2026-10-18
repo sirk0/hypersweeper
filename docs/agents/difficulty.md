@@ -87,7 +87,10 @@ hand-picked density is the one thing this game cannot get right by eye.
    nine edges tall and its easy band a fraction of one. A Möbius band's row
    count also stops where the immersion would have to narrow the band to
    draw it (`_mobius_band_clamped`) — past that the extra rows buy no width,
-   only stretched tiles. The fractals, which quantise by whole
+   only stretched tiles. Both read the layout the surfaces glue
+   (`_wrap_template`, through `resize._layout`), which for a tiling that
+   wraps turned or moved onto a glide line is not the flat template. The
+   fractals, which quantise by whole
    substitution steps, keep their geometry and are listed as exceptions in
    `tests/test_presets.py`. (The sphere family once had no size knob either;
    the Goldberg parameters are its knob now, the chiral GP(h, k) enumerated by

@@ -522,6 +522,17 @@ SQUARE_LATTICE_CLOSED = {"torus_board", "klein_board", "double_torus_board",
 ROLLED_ASPECT_WEIGHT = 1.2
 
 
+def _layout(builder: str, tiling: str):
+    """The template a builder lays out: the tiling's own for the flat board,
+    and for a wrapped one the layout its surfaces glue (``_wrap_template`` --
+    the same template, bar the tilings that wrap turned a quarter turn or
+    moved onto a glide line)."""
+    from minesweeper.boards.tilings import _arch_template, _wrap_template
+
+    return (_arch_template(tiling) if builder == "archimedean_board"
+            else _wrap_template(tiling))
+
+
 def _rolled_flat(builder: str) -> bool:
     """The surfaces a flat sheet rolls onto with little or no stretching."""
     return "cylinder" in builder or "mobius" in builder
@@ -548,10 +559,9 @@ def _mobius_band_clamped(builder: str, spec: dict, trial: list) -> bool:
     if builder != "arch_mobius_board":
         return False
     from minesweeper.boards.surfaces import MOBIUS_HALF_WIDTH, mobius_half_width
-    from minesweeper.boards.tilings import _arch_template
 
     try:
-        template = _arch_template(trial[0])
+        template = _layout(builder, trial[0])
         ring, rows = trial[spec["size"][0]], trial[spec["size"][1]]
     except Exception:
         return False
@@ -715,9 +725,9 @@ def _candidate_values(current, coarse: bool, domains: bool = True,
 def _cylinder_rows(tiling: str, limit: int = 40) -> list[float]:
     """The row counts ``arch_cylinder_board`` will accept for a tiling: those
     that land the strip's centre line on one of the template's flip levels."""
-    from minesweeper.boards.tilings import _arch_template
+    from minesweeper.boards.tilings import _wrap_template
 
-    template = _arch_template(tiling)
+    template = _wrap_template(tiling)
     half = template.height / 2
     fractions = {round(((flip - template.cut) / half) % 1.0, 6)
                  for flip in template.flips}
@@ -742,9 +752,9 @@ def _mobius_rows(tiling: str, limit: int = 31) -> list[float]:
     edges tall -- ``trirhombitrihex`` is 4.7 -- and its easy band is five
     sevenths of one, which ``n + frac`` from ``n = 1`` never offered.
     """
-    from minesweeper.boards.tilings import _arch_template
+    from minesweeper.boards.tilings import _wrap_template
 
-    template = _arch_template(tiling)
+    template = _wrap_template(tiling)
     fraction = round((-2 * template.cut / template.height) % 1.0, 6) % 1.0
     return [value for value in (round(whole + fraction, 6)
                                 for whole in range(limit)) if value > 0.25]
@@ -851,9 +861,7 @@ def _window_aspect(builder: str, spec: dict, trial: list) -> float:
         a, b = a * spec["unit"][0], b * spec["unit"][1]
     if spec.get("lead"):
         try:
-            from minesweeper.boards.tilings import _arch_template
-
-            template = _arch_template(trial[0])
+            template = _layout(builder, trial[0])
             a, b = a * template.width, b * template.height
         except Exception:
             pass
@@ -875,9 +883,9 @@ def _tile_span(tiling: str) -> tuple[float, float]:
     if tiling not in _TILE_SPAN:
         import statistics
 
-        from minesweeper.boards.tilings import _arch_template
+        from minesweeper.boards.tilings import _wrap_template
 
-        template = _arch_template(tiling)
+        template = _wrap_template(tiling)
         widths, heights = [], []
         for _name, refs in template.cells:
             xs = [template.verts[tag][0] + dm * template.width
@@ -915,9 +923,9 @@ def tile_fractions(tiling: str) -> tuple[tuple[float, ...], tuple[float, ...]]:
     beside them.
     """
     if tiling not in _TILE_FRACTIONS:
-        from minesweeper.boards.tilings import _arch_template
+        from minesweeper.boards.tilings import _wrap_template
 
-        template = _arch_template(tiling)
+        template = _wrap_template(tiling)
         widths, heights = [], []
         for _name, refs in template.cells:
             corners = []
@@ -962,9 +970,9 @@ def _wrap_copies(spec: dict, trial: list, axis: int) -> float:
     copies = float(trial[knobs[axis]])
     if axis == 0 and spec.get("halves"):
         try:
-            from minesweeper.boards.tilings import _arch_template
+            from minesweeper.boards.tilings import _wrap_template
 
-            if _arch_template(trial[0]).glide:
+            if _wrap_template(trial[0]).glide:
                 copies /= 2
         except Exception:
             pass
@@ -1045,9 +1053,7 @@ def _wrap_cells(builder: str, spec: dict, trial: list, axis: int) -> float:
     if not spec.get("lead"):
         return float(count)
     try:
-        from minesweeper.boards.tilings import _arch_template
-
-        template = _arch_template(trial[0])
+        template = _layout(builder, trial[0])
     except Exception:
         return float(count)
     domain = template.width if axis == 0 else template.height
@@ -1079,9 +1085,7 @@ def _rolled_screen_aspect(builder: str, spec: dict, trial: list) -> float:
         return float("inf")
     if spec.get("lead"):
         try:
-            from minesweeper.boards.tilings import _arch_template
-
-            template = _arch_template(trial[0])
+            template = _layout(builder, trial[0])
             a, b = a * template.width, b * template.height
         except Exception:
             pass

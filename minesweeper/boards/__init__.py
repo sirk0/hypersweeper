@@ -260,6 +260,7 @@ from minesweeper.boards.tilings import (  # noqa: F401
     _trunchex_template,
     _truncsquare_template,
     _trunctrihex_template,
+    _wrap_template,
     archimedean_board,
     hex_board,
     hexhex_board,

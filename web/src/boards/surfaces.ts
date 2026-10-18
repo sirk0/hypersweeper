@@ -51,7 +51,7 @@ import {
   type Tri,
 } from "./clipSolid";
 import { geodesic, icosahedron } from "./solids";
-import { archTemplate, type ArchTemplate } from "./tilings";
+import { type ArchTemplate, wrapTemplate } from "./tilings";
 
 const mod = (a: number, b: number): number => ((a % b) + b) % b;
 
@@ -2199,9 +2199,10 @@ export function cylinderHexBoard(ring: number, rows: number, mineCount: number):
 // -- Archimedean tilings wrapped onto the same surfaces ----------------------
 //
 // Port of the arch_* wrap builders in surfaces.py. Each takes an nx x ny grid
-// of the tiling's fundamental-domain copies (an `archTemplate`) and glues the
-// seams with the same modular arithmetic the regular wraps use, mapping each
-// canonical (domain-column, domain-row, tag) vertex key onto the surface.
+// of the tiling's fundamental-domain copies (its `wrapTemplate` — the flat
+// template, or the wrap layout a few tilings declare) and glues the seams with
+// the same modular arithmetic the regular wraps use, mapping each canonical
+// (domain-column, domain-row, tag) vertex key onto the surface.
 
 /** An Archimedean tiling wrapped around a donut: `nx` domain copies around the
  * ring, `ny` around the tube. */
@@ -2276,7 +2277,7 @@ export function archTorusBoard(
   mineCount: number,
   tubeRadius = 0.45,
 ): Board3D {
-  const t = archTemplate(tiling);
+  const t = wrapTemplate(tiling);
   const W = t.width;
   const H = t.height;
   const ring = nx * W;
@@ -2352,7 +2353,7 @@ export function archCylinderBoard(
   rows: number,
   mineCount: number,
 ): Board3D {
-  const t = archTemplate(tiling);
+  const t = wrapTemplate(tiling);
   const W = t.width;
   const H = t.height;
   const cut = t.cut;
@@ -2453,7 +2454,7 @@ export function archMobiusBoard(
   rows: number,
   mineCount: number,
 ): Board3D {
-  const t = archTemplate(tiling);
+  const t = wrapTemplate(tiling);
   const mirror = t.mirror;
   if (mirror === null) throw new Error(`${tiling} is chiral and cannot wrap a Möbius strip`);
   let halves: number;
@@ -2573,7 +2574,7 @@ export function archKleinBoard(
   mineCount: number,
   tubeScale = 1,
 ): Board3D {
-  const t = archTemplate(tiling);
+  const t = wrapTemplate(tiling);
   const mirror = t.mirror;
   if (mirror === null) throw new Error(`${tiling} is chiral and cannot wrap a Klein bottle`);
   const W = t.width;

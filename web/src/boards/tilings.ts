@@ -247,6 +247,11 @@ export interface ArchTemplate {
   // the domain: what makes a line grain is that no *tile* crosses it, not that
   // the pattern repeats there. A period must divide the domain's, or the
   // centre copy the window is built around would not sit on a line.
+  wrap?: ArchTemplate; // THE WRAP LAYOUT: the same tiling laid out again for
+  // the wrapped surfaces, when the flat layout cannot serve them — turned a
+  // quarter turn, or moved so a glide line is y = 0 (see `reframed`). Unset for
+  // every template whose own layout wraps; the builders read whichever applies
+  // through `wrapTemplate`.
 }
 
 // THE CUT. Two surfaces end the tiling on a horizontal line: the cylinder,
@@ -392,6 +397,44 @@ function template(
     grain,
     ...(placed.size ? { anchors: placed } : {}),
   };
+}
+
+/** How a wrap layout is laid out: see `reframed`. */
+interface WrapFrame {
+  cut: number;
+  quarter?: boolean;
+  axis?: number;
+  glide?: boolean;
+}
+
+/** The same tiling laid out again for the wrapped surfaces.
+ *
+ * A tiling has two ways to lie on a strip, along either lattice direction of
+ * its rectangle, and only one of them is the flat layout. The other is the same
+ * domain turned a **quarter turn** (`quarter`), which is a different strip: its
+ * rows step by the domain's other side, its rims run across the tiles the flat
+ * rows run along, and its mirrors are the flat layout's vertical ones. Either
+ * way a Möbius strip and a Klein bottle glue their seam through a horizontal
+ * mirror on y = 0 (or a glide there, with `glide`), so the layout is moved until
+ * the line `axis` — a fraction of the new height — lands on it; a template whose
+ * only horizontal reflection is a glide off y = 0 (pgg) needs that move and
+ * nothing else. `cut` is the new layout's own, as a fraction of its height.
+ *
+ * Rebuilt from the template's own cells, so the tiles are exactly the flat
+ * layout's; edge-to-edge templates only. Port of `_reframed` in
+ * boards/tilings.py. */
+function reframed(t: ArchTemplate, { cut, quarter = false, axis = 0, glide = false }: WrapFrame): ArchTemplate {
+  if (t.straight.size) throw new Error("a template with T-vertices cannot be reframed");
+  let width = t.width;
+  let height = t.height;
+  let polygons: [string, Vertex[]][] = templateCells(t, 0, 0).map((c) => [c.name, c.pts]);
+  if (quarter) {
+    polygons = polygons.map(([name, pts]) => [name, pts.map(([x, y]): Vertex => [-y, x])]);
+    [width, height] = [height, width];
+  }
+  const shift = axis * height;
+  polygons = polygons.map(([name, pts]) => [name, pts.map(([x, y]): Vertex => [x, y - shift])]);
+  return template(t.config, width, height, polygons, { mirrored: true, glide, cut: cut * height });
 }
 
 /** The heights at which the tiling maps onto itself with y reversed.
@@ -1758,9 +1801,9 @@ function durerTemplate(): ArchTemplate {
 //                      both lattice directions) merged with its ring of squares
 //                      and triangles into a dodecagon
 //
-// All three are p6m. The family ships on the plane, the cylinder and (the
-// eighteen with a mirror) the Möbius strip (ARCH_FAMILY_SURFACES in
-// catalog.ts), so each of the twenty states a cut —
+// All three are p6m. The family ships on the plane, the cylinder and (all but
+// the p6 studdedtri2) the Möbius strip (ARCH_FAMILY_SURFACES in catalog.ts),
+// so each of the twenty states a cut —
 // see the comment above `steps`. Ports of the factories of the same names in
 // boards/tilings.py.
 
@@ -1864,11 +1907,12 @@ function dodecarhombitrihexTemplate(): ArchTemplate {
 // translation class, `centre` the window centre — a tile's index, or a
 // list of walks whose mean it is — round which the domain is laid out, and
 // `cut` where a cylinder's rims and a Möbius band's edge fall, as a fraction
-// of the domain's height (the simplest one inside the flattest gap between two
-// rows of tile centres that gives both surfaces an easy window in the size bar
-// that plays as a puzzle, which for seven of them is a horizontal line of
-// edges — see "The cut" after `ArchTemplate`, and the comment above _steps in
-// boards/tilings.py for why six of them are not the flattest gap of all).
+// of the domain's height (the cylinder's flattest gap between two rows of tile
+// centres wherever the strip can share it; otherwise the flattest gap, in this
+// layout or turned a quarter turn — `wrap` — that gives both surfaces an easy
+// board inside the size bar that plays as a puzzle. Five end on a straight
+// line. See "The cut" after `ArchTemplate`, and the comment above _steps in
+// boards/tilings.py for the nine that moved when the strip arrived).
 
 /** The point a walk of unit steps reaches from the origin, step k heading 30k
  * degrees. */
@@ -1910,7 +1954,8 @@ function cellTemplate(
     centre,
     mirrored = true,
     cut = 0,
-  }: { centre: number | readonly (readonly number[])[]; mirrored?: boolean; cut?: number },
+    wrap,
+  }: { centre: number | readonly (readonly number[])[]; mirrored?: boolean; cut?: number; wrap?: WrapFrame },
 ): ArchTemplate {
   const a = steps(v1);
   const b = steps(v2);
@@ -1937,11 +1982,12 @@ function cellTemplate(
     polygon.map(([x, y]): Vertex => [x - ox, y - oy]),
   ]);
   const turn = -Math.atan2(along[1], along[0]) / DEG;
-  return template(config, width, height, periodicDomain(a, b, width, height, shifted, turn), {
+  const t = template(config, width, height, periodicDomain(a, b, width, height, shifted, turn), {
     mirrored,
     centre: [0, 0],
     cut: cut * height,
   });
+  return wrap ? { ...t, wrap: reframed(t, wrap) } : t;
 }
 
 /** [3⁶; 3⁴.6]₁, p6m: the triangular tiling with a hexagon in place of
@@ -1980,12 +2026,16 @@ function elongated2Template(): ArchTemplate {
 
 /** [3⁶; 3³.4²]₂, cmm: three courses of triangles between the square
  * courses. Both lines inside a band are 3⁶ — mirror images of each other --
- * and each square course sits half a square along from the last. */
+ * and each square course sits half a square along from the last.
+ *
+ * Wrapped a quarter turn round: its courses then run across the strip, and the
+ * rows step by one edge rather than by a whole band of four courses — the one
+ * layout with an easy board of the classic size on both open surfaces. */
 function elongated3Template(): ArchTemplate {
   return cellTemplate([3, 4], [0], [8, 8, 9, 10], [[1, 0], [-1, -2]], [
     [4, [10], 6], [3, [], 4], [3, [], 2], [3, [], 8], [3, [], 6], [3, [4], 0],
     [3, [4], 2],
-  ], { centre: 0, cut: 2 / 3 });
+  ], { centre: 0, wrap: { cut: 1 / 3, quarter: true } });
 }
 
 /** [3⁶; 3².4.12], p6m: truncated trihexagonal (4.6.12) with every
@@ -2006,7 +2056,7 @@ function fannedhexTemplate(): ArchTemplate {
   return cellTemplate([3, 6], [8, 8, 8], [10, 10, 10], [[-1, 1], [-1, -1]], [
     [6, [10], 10], [6, [0], 0], [3, [], 2], [3, [], 4], [3, [], 8], [3, [], 10],
     [3, [], 0], [3, [], 6],
-  ], { centre: [[0], [0, 0]] });
+  ], { centre: [[0], [0, 0]], cut: 3 / 5 });
 }
 
 /** [3⁴.6; 3².6²], cmm: rows of hexagons, each sharing an edge with the
@@ -2022,12 +2072,14 @@ function hexbandsTemplate(): ArchTemplate {
 /** [3³.4²; 3².4.3.4]₂, pgg: every square in an edge-sharing pair among
  * the triangles, the pairs lying two ways a twelfth of a turn apart. The two
  * ends of a pair's shared edge are 3³.4², every other corner 3².4.3.4.
- * Glides, but no mirror. */
+ * Glides, but no mirror — and one glide line is horizontal, a quarter of the
+ * domain up, which is all a Möbius seam needs: the wrap layout moves it to
+ * y = 0 and glues through it as snub square's does (see `reframed`). */
 function snubelongatedTemplate(): ArchTemplate {
   return cellTemplate([3, 4], [7, 8], [10, 10, 11, 11], [[-1, 0], [0, -1]], [
     [4, [], 10], [4, [], 1], [4, [4], 5], [4, [10], 8], [3, [], 4], [3, [], 8],
     [3, [], 6], [3, [10], 6], [3, [4], 1], [3, [10], 11], [3, [4], 3], [3, [1, 10], 9],
-  ], { centre: [[1], []], mirrored: false });
+  ], { centre: [[1], []], mirrored: false, wrap: { cut: 0, axis: 1 / 4, glide: true } });
 }
 
 /** [3³.4²; 3².4.3.4]₁, p4g: the same two vertex types in snub
@@ -2069,7 +2121,7 @@ function squarerows2Template(): ArchTemplate {
 function squarerows3Template(): ArchTemplate {
   return cellTemplate([3, 4], [0], [8, 9, 9, 9], [[1, 0], [-1, -2]], [
     [4, [], 3], [4, [10], 6], [4, [3], 3], [3, [], 10], [3, [], 8],
-  ], { centre: 2, cut: 1 / 5 });
+  ], { centre: 2, cut: 2 / 3 });
 }
 
 /** [3².6²; 3.6.3.6], pmm: rows of hexagons, each sharing an edge with the
@@ -2111,7 +2163,7 @@ function hexringsTemplate(): ArchTemplate {
 function squaretrihexTemplate(): ArchTemplate {
   return cellTemplate([3, 4, 6], [0, 2, 10], [8, 9, 10], [[1, 0], [0, -1]], [
     [6, [], 4], [4, [4], 0], [4, [4], 3], [3, [], 2], [3, [], 8],
-  ], { centre: [[]], cut: 1 / 3 });
+  ], { centre: [[]], cut: 2 / 3 });
 }
 
 /** [3.4².6; 3.6.3.6]₂, cmm: the same with each band half a hexagon
@@ -2237,6 +2289,14 @@ export function archTemplate(tiling: string): ArchTemplate {
     TEMPLATE_CACHE.set(tiling, t);
   }
   return t;
+}
+
+/** The layout the wrapped surfaces glue: the tiling's own, unless it declares
+ * a wrap layout (`ArchTemplate.wrap`). The flat board always takes
+ * `archTemplate`. Port of `_wrap_template` in boards/tilings.py. */
+export function wrapTemplate(tiling: string): ArchTemplate {
+  const t = archTemplate(tiling);
+  return t.wrap ?? t;
 }
 
 /** Copy `(m, n)` of a template's repeat, as absolute polygons in template

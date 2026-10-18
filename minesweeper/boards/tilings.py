@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from functools import lru_cache
 from typing import Callable
 
@@ -237,6 +237,11 @@ class _ArchTemplate:
     #   grain is that no *tile* crosses it, not that the pattern repeats there.
     #   A period must divide the domain's, or the centre copy the window is
     #   built around would not sit on a line -- TestFlatGrain checks both.
+    wrap: "_ArchTemplate | None" = None  # THE WRAP LAYOUT: the same tiling
+    #   laid out again for the wrapped surfaces, when the flat layout cannot
+    #   serve them -- turned a quarter turn, or moved so a glide line is y = 0
+    #   (see _reframed). None for every template whose own layout wraps; the
+    #   builders read whichever applies through _wrap_template.
 
 
 # AGENT NOTE (the cut). Two surfaces end the tiling on a horizontal line. The
@@ -427,6 +432,44 @@ def _template(config, width, height, polygons, mirrored=True, glide=False,
                          _flip_levels(width, height, polygons),
                          _straight_vertices(verts, cells, width, height),
                          grain)
+
+
+def _reframed(template: _ArchTemplate, cut: float, quarter: bool = False,
+               axis: float = 0.0, glide: bool = False) -> _ArchTemplate:
+    """The same tiling laid out again for the wrapped surfaces.
+
+    A tiling has two ways to lie on a strip, along either lattice direction of
+    its rectangle, and only one of them is the flat layout. The other is the
+    same domain turned a **quarter turn** (``quarter``), which is a different
+    strip: its rows step by the domain's other side, its rims run across the
+    tiles the flat rows run along, and its mirrors are the flat layout's
+    vertical ones. Either way a Mobius strip and a Klein bottle glue their
+    seam through a horizontal mirror on y = 0 (or a glide there, with
+    ``glide``), so the layout is moved until the line ``axis`` -- a fraction of
+    the new height -- lands on it; a template whose only horizontal reflection
+    is a glide off y = 0 (pgg) needs that move and nothing else. ``cut`` is the
+    new layout's own, as a fraction of its height.
+
+    Rebuilt from the template's own cells, so the tiles are exactly the flat
+    layout's; edge-to-edge templates only (a T-vertex would need its chord
+    rule carried across, and none of the tilings that need this has one).
+    ``tests/test_boards.py`` checks that every wrap layout's mirror carries
+    every tile onto a tile.
+    """
+    if template.straight:
+        raise ValueError("a template with T-vertices cannot be reframed")
+    width, height = template.width, template.height
+    polygons = [(name, [(dm * width + template.verts[tag][0],
+                         dn * height + template.verts[tag][1])
+                        for tag, dm, dn in refs])
+                for name, refs in template.cells]
+    if quarter:
+        polygons = [(name, [(-y, x) for x, y in polygon]) for name, polygon in polygons]
+        width, height = height, width
+    polygons = [(name, [(x, y - axis * height) for x, y in polygon])
+                for name, polygon in polygons]
+    return _template(template.config, width, height, polygons, mirrored=True,
+                     glide=glide, cut=cut * height)
 
 
 # Tag coordinates are rounded to 1e-6, so a vertex genuinely on an edge can
@@ -1499,7 +1542,7 @@ def _durer_template() -> _ArchTemplate:
 #                        of squares and triangles into a dodecagon
 #
 # All three are p6m, so their windows are symmetric every way a hexagon is.
-# The family ships on the plane, the cylinder and (the eighteen with a mirror)
+# The family ships on the plane, the cylinder and (all but the p6 studdedtri2)
 # the Mobius strip (_FAMILY_SURFACES in catalog.py), so each of the twenty
 # states a cut -- see "the cut" in the comment above _steps.
 
@@ -1626,37 +1669,38 @@ def _dodecarhombitrihex_template() -> _ArchTemplate:
 #     could only answer with a sliver of a board;
 #   * ``cut``: where a cylinder's rims and a Mobius band's edge fall, as a
 #     fraction of the domain's height (see the AGENT NOTE on the cut). Both
-#     surfaces share it. Each sits in the gap between two rows of tile
-#     centres whose rim runs flattest -- for the seven with a horizontal line
-#     of edges there (studdedtri, elongated2, elongated3, fannedhex,
-#     squarerows2, squarerows3, squaretrihex), that line -- among the gaps
-#     that give *both* surfaces an easy window inside the size bar, showing
-#     both vertex types (resize.shows_tiling), that plays as a puzzle. The
-#     Mobius strip is what bites. Its row count steps a whole domain at a time
-#     (rows + 2*cut/height is whole, see arch_mobius_board), and its band must
-#     run 2.24 times as far round as it is wide or the immersion narrows it
-#     (resize._mobius_band_clamped), so a cut whose shortest band showing both
-#     vertex types is a domain and a bit tall hands the easy strip 200-odd
-#     cells. Six cuts moved for that when the strip arrived: studdedtri and
-#     squarerows3 to another straight line, hexrings and tritrunctrihex from a
-#     zigzag half an edge deep to the 0.87 one that plays best, and two more
-#     for the puzzle. squaretrihex2's straight lines that reach the strip
-#     leave its easy band a coin flip at the opening floor (88% at best), so
-#     it takes a zigzag that plays on target; and elongated3 has no gap in the
-#     size bar at all -- a twelve-tile ring (MIN_RING) of a domain one edge
-#     wide and three triangle courses tall is 108 cells at the least, on
-#     either surface -- so it takes the straight line with the smallest easy
-#     board on both, a 3^6 line inside its triangle band. A rim that is not a
-#     puzzle rules a gap out by itself, too: dodecasquare's flattest one cuts
-#     off the triangle on a rim square's outer side, which leaves that square
-#     and the triangle across it with one closed neighbourhood between them,
-#     so it takes the other gap as flat. The other course tilings (elongated2,
-#     squarerows2, squarerows3), each with a 3^6 or 4^4 line inside each band
-#     and a 3^3.4^2 line at its edge, end on a band edge: a vertex on the rim
-#     is not shown, so a strip that ends on the 4^4 line has to run a whole
-#     band further to show one, and on a tube one edge round an easy board
-#     cannot afford that. Any height inside the gap keeps the same tiles, so
-#     the value is the simplest fraction that lands there.
+#     surfaces share it, and one rule chose all of them. A cut stands where
+#     the cylinder's own (the flattest gap between two rows of tile centres,
+#     a horizontal line of edges where there is one) also gives the strip an
+#     easy board inside the size bar that plays as a puzzle -- 90% or more at
+#     the opening floor, on both surfaces. Otherwise the cut is searched over
+#     every gap, in the flat layout and turned a quarter turn (``wrap``, see
+#     _reframed), for the flattest rim that clears the same bars, the
+#     unturned layout and then the simplest fraction breaking ties. The
+#     Mobius strip is what bites: its row count steps a whole domain at a
+#     time (rows + 2*cut/height is whole, see arch_mobius_board) and its band
+#     must run 2.24 times as far round as it is wide or the immersion narrows
+#     it (resize._mobius_band_clamped), so a cut whose shortest band showing
+#     both vertex types (resize.shows_tiling) is a domain and a bit tall hands
+#     the easy strip 200-odd cells. Nine moved when the strip arrived. Three
+#     stayed straight on another line (studdedtri, squarerows3, squaretrihex);
+#     four took a zigzag, because their straight lines either leave the strip
+#     no small board or play coin flips at easy (fannedhex, squaretrihex2,
+#     tritrunctrihex, hexrings); elongated3 wraps turned, where its rows step
+#     one edge instead of a band of four courses and both surfaces get an easy
+#     board of the classic size, which no flat-layout cut gives either; and
+#     snubelongated, pgg with no mirror, wraps in a layout moved onto its
+#     horizontal glide, which the seam glues through as snub square's does.
+#     A rim that is not a puzzle rules a gap out by itself, too:
+#     dodecasquare's flattest one cuts off the triangle on a rim square's
+#     outer side, which leaves that square and the triangle across it with
+#     one closed neighbourhood between them, so it takes the other gap as
+#     flat. The course tilings that end on straight lines (elongated2,
+#     squarerows2, squarerows3) end on a band edge, the 3^3.4^2 line: a vertex
+#     on the rim is not shown, so a strip that ends on a 4^4 or 3^6 line has
+#     to run a whole band further to show one, and on a tube one edge round an
+#     easy board cannot afford that. Any height inside the gap keeps the same
+#     tiles, so the value is the simplest fraction that lands there.
 #
 # Five pairs of the twenty share both vertex types. The literature tells each
 # pair apart with a subscript (Grunbaum and Shephard, Tilings and Patterns,
@@ -1690,7 +1734,7 @@ _SIDE_NAMES = {3: "tri", 4: "sq", 6: "hex", 12: "dod"}
 
 
 def _cell_template(config, v1, v2, rect, tiles, centre, mirrored=True,
-                   cut=0.0):
+                   cut=0.0, wrap=None):
     """A 2-uniform tiling's template from one translation cell -- see the
     comment above for what each argument is."""
     a, b = _steps(v1), _steps(v2)
@@ -1707,9 +1751,12 @@ def _cell_template(config, v1, v2, rect, tiles, centre, mirrored=True,
     polygons = [(name, [(x - ox, y - oy) for x, y in polygon])
                 for name, polygon in polygons]
     turn = -math.degrees(math.atan2(along[1], along[0]))
-    return _template(config, width, height,
-                     _periodic_domain(a, b, width, height, polygons, turn),
-                     mirrored=mirrored, centre=(0.0, 0.0), cut=cut * height)
+    template = _template(config, width, height,
+                         _periodic_domain(a, b, width, height, polygons, turn),
+                         mirrored=mirrored, centre=(0.0, 0.0), cut=cut * height)
+    if wrap is not None:
+        template = replace(template, wrap=_reframed(template, **wrap))
+    return template
 
 
 def _studdedtri_template() -> _ArchTemplate:
@@ -1754,12 +1801,17 @@ def _elongated2_template() -> _ArchTemplate:
 def _elongated3_template() -> _ArchTemplate:
     """[3^6; 3^3.4^2]_2, cmm: three courses of triangles between the square
     courses. Both lines inside a band are 3^6 -- mirror images of each other --
-    and each square course sits half a square along from the last."""
+    and each square course sits half a square along from the last.
+
+    Wrapped a quarter turn round: its courses then run across the strip, and
+    the rows step by one edge rather than by a whole band of four courses --
+    the one layout with an easy board of the classic size on both open
+    surfaces (see "the cut" in the comment above _steps)."""
     return _cell_template(
         (3, 4), (0,), (8, 8, 9, 10), ((1, 0), (-1, -2)), [
         (4, (10,), 6), (3, (), 4), (3, (), 2), (3, (), 8), (3, (), 6),
         (3, (4,), 0), (3, (4,), 2),
-    ], centre=0, cut=2 / 3)
+    ], centre=0, wrap=dict(cut=1 / 3, quarter=True))
 
 
 def _tritrunctrihex_template() -> _ArchTemplate:
@@ -1783,7 +1835,7 @@ def _fannedhex_template() -> _ArchTemplate:
         (3, 6), (8, 8, 8), (10, 10, 10), ((-1, 1), (-1, -1)), [
         (6, (10,), 10), (6, (0,), 0), (3, (), 2), (3, (), 4), (3, (), 8),
         (3, (), 10), (3, (), 0), (3, (), 6),
-    ], centre=((0,), (0, 0)))
+    ], centre=((0,), (0, 0)), cut=3 / 5)
 
 
 def _hexbands_template() -> _ArchTemplate:
@@ -1801,13 +1853,16 @@ def _snubelongated_template() -> _ArchTemplate:
     """[3^3.4^2; 3^2.4.3.4]_2, pgg: every square in an edge-sharing pair among
     the triangles, the pairs lying two ways a twelfth of a turn apart. The two
     ends of a pair's shared edge are 3^3.4^2, every other corner 3^2.4.3.4.
-    Glides, but no mirror."""
+    Glides, but no mirror -- and one glide line is horizontal, a quarter of
+    the domain up, which is all a Mobius seam needs: the wrap layout moves it
+    to y = 0 and glues through it as snub square's does (see _reframed)."""
     return _cell_template(
         (3, 4), (7, 8), (10, 10, 11, 11), ((-1, 0), (0, -1)), [
         (4, (), 10), (4, (), 1), (4, (4,), 5), (4, (10,), 8), (3, (), 4),
         (3, (), 8), (3, (), 6), (3, (10,), 6), (3, (4,), 1), (3, (10,), 11),
         (3, (4,), 3), (3, (1, 10), 9),
-    ], centre=((1,), ()), mirrored=False)
+    ], centre=((1,), ()), mirrored=False,
+        wrap=dict(cut=0.0, axis=1 / 4, glide=True))
 
 
 def _snubelongated2_template() -> _ArchTemplate:
@@ -1854,7 +1909,7 @@ def _squarerows3_template() -> _ArchTemplate:
     return _cell_template(
         (3, 4), (0,), (8, 9, 9, 9), ((1, 0), (-1, -2)), [
         (4, (), 3), (4, (10,), 6), (4, (3,), 3), (3, (), 10), (3, (), 8),
-    ], centre=2, cut=1 / 5)
+    ], centre=2, cut=2 / 3)
 
 
 def _hexrows_template() -> _ArchTemplate:
@@ -1902,7 +1957,7 @@ def _squaretrihex_template() -> _ArchTemplate:
     return _cell_template(
         (3, 4, 6), (0, 2, 10), (8, 9, 10), ((1, 0), (0, -1)), [
         (6, (), 4), (4, (4,), 0), (4, (4,), 3), (3, (), 2), (3, (), 8),
-    ], centre=((),), cut=1 / 3)
+    ], centre=((),), cut=2 / 3)
 
 
 def _squaretrihex2_template() -> _ArchTemplate:
@@ -2174,6 +2229,14 @@ _ARCH_CONFIGS = {t.key: (t.config, t.edge_directions) for t in ARCH_TILINGS}
 @lru_cache(maxsize=None)
 def _arch_template(tiling: str) -> _ArchTemplate:
     return _ARCH_TEMPLATES[tiling]()
+
+
+def _wrap_template(tiling: str) -> _ArchTemplate:
+    """The layout the wrapped surfaces glue: the tiling's own, unless it
+    declares a wrap layout (_ArchTemplate.wrap). The flat board always takes
+    _arch_template."""
+    template = _arch_template(tiling)
+    return template if template.wrap is None else template.wrap
 
 
 def _snap_to_grain(half: float, period: float) -> float:

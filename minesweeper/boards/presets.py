@@ -446,9 +446,10 @@ ARCH_PRESETS = {
     },
     # The 2-uniform family reaches the plane, the cylinder and the Mobius
     # strip (_FAMILY_SURFACES in catalog.py), so its twenty carry the first
-    # two rows and the eighteen with a mirror the third -- studdedtri2 (p6)
-    # and snubelongated (pgg) are chiral, with no mirror to glue the seam
-    # through. Each cylinder row count ends in the fraction that centres the
+    # two rows and all but one the third -- studdedtri2 (p6) has no mirror or
+    # glide to glue the seam through, while snubelongated (pgg) glues through
+    # its glide, and elongated3 wraps turned a quarter turn (both in the
+    # layout _wrap_template returns, which is what their rows count). Each cylinder row count ends in the fraction that centres the
     # strip on one of the tiling's flip levels (see arch_cylinder_board), and
     # each Mobius one in the fraction that makes rows + 2*cut/height whole
     # (see arch_mobius_board), given its cut.
@@ -468,8 +469,8 @@ ARCH_PRESETS = {
     },
     "elongated3": {
         "flat": {"easy": (5, 1, 9, 93.333), "medium": (9, 2, 48, 52.363), "hard": (15, 2, 99, 31.875)},
-        "cylinder": {"easy": (12, 2 / 3, 7), "medium": (18, 1 + 1 / 6, 42), "hard": (28, 1 + 1 / 6, 90)},
-        "mobius": {"easy": (12, 2 / 3, 7), "medium": (25, 2 / 3, 16), "hard": (46, 2 / 3, 45)},
+        "cylinder": {"easy": (2, 2 + 5 / 6, 11), "medium": (3, 6 + 1 / 3, 45), "hard": (4, 8 + 1 / 3, 103)},
+        "mobius": {"easy": (2, 2 + 1 / 3, 9), "medium": (3, 5 + 1 / 3, 36), "hard": (7, 4 + 1 / 3, 69)},
     },
     "trirhombitrihex": {
         "flat": {"easy": (3, 1, 8, 52.196), "medium": (4, 3, 45, 40.241), "hard": (6, 3, 86, 27.598)},
@@ -483,8 +484,8 @@ ARCH_PRESETS = {
     },
     "fannedhex": {
         "flat": {"easy": (2, 2, 5, 73.333), "medium": (5, 3, 10, 32.0), "hard": (8, 4, 32, 20.22)},
-        "cylinder": {"easy": (5, 1, 5), "medium": (10, 1 + 1 / 2, 8), "hard": (13, 2 + 1 / 2, 35)},
-        "mobius": {"easy": (5, 1, 5), "medium": (9, 2, 11), "hard": (13, 2, 26)},
+        "cylinder": {"easy": (6, 4 / 5, 5), "medium": (10, 1 + 4 / 5, 12), "hard": (13, 2 + 3 / 10, 32)},
+        "mobius": {"easy": (6, 4 / 5, 6), "medium": (10, 1 + 4 / 5, 11), "hard": (12, 2 + 4 / 5, 36)},
     },
     "hexbands": {
         "flat": {"easy": (4, 2, 5, 66.511), "medium": (9, 3, 20, 30.792), "hard": (12, 4, 57, 23.094)},
@@ -493,7 +494,8 @@ ARCH_PRESETS = {
     },
     "snubelongated": {
         "flat": {"easy": (3, 2, 10, 79.865), "medium": (7, 3, 38, 35.495), "hard": (9, 5, 112, 27.607)},
-        "cylinder": {"easy": (7, 1, 10), "medium": (12, 2, 42), "hard": (16, 2 + 1 / 2, 105)},
+        "cylinder": {"easy": (7, 1, 5), "medium": (12, 2, 40), "hard": (16, 2 + 1 / 2, 95)},
+        "mobius": {"easy": (13, 1, 5), "medium": (23, 2, 42), "hard": (29, 3, 109)},
     },
     "snubelongated2": {
         "flat": {"easy": (1, 2, 9, 92.588), "medium": (2, 3, 34, 49.102), "hard": (3, 4, 93, 33.256)},
@@ -512,8 +514,8 @@ ARCH_PRESETS = {
     },
     "squarerows3": {
         "flat": {"easy": (8, 1, 11, 60.0), "medium": (13, 2, 48, 36.735), "hard": (20, 2, 90, 24.06)},
-        "cylinder": {"easy": (13, 3 / 5, 7), "medium": (24, 1 + 1 / 10, 44), "hard": (31, 1 + 3 / 5, 107)},
-        "mobius": {"easy": (13, 3 / 5, 7), "medium": (33, 3 / 5, 16), "hard": (32, 1 + 3 / 5, 113)},
+        "cylinder": {"easy": (13, 2 / 3, 7), "medium": (24, 1 + 1 / 6, 44), "hard": (37, 1 + 1 / 6, 87)},
+        "mobius": {"easy": (13, 2 / 3, 7), "medium": (32, 2 / 3, 13), "hard": (32, 1 + 2 / 3, 109)},
     },
     "dissectedtrunchex": {
         "flat": {"easy": (2, 1, 6, 50.718), "medium": (4, 2, 30, 28.355), "hard": (5, 3, 74, 23.233)},
@@ -537,8 +539,8 @@ ARCH_PRESETS = {
     },
     "squaretrihex": {
         "flat": {"easy": (4, 3, 6, 64.0), "medium": (8, 6, 39, 30.0), "hard": (11, 8, 91, 21.818)},
-        "cylinder": {"easy": (7, 2 + 1 / 3, 6), "medium": (15, 3 + 1 / 3, 19), "hard": (20, 4 + 1 / 3, 58)},
-        "mobius": {"easy": (10, 1 + 1 / 3, 6), "medium": (15, 3 + 1 / 3, 15), "hard": (20, 4 + 1 / 3, 58)},
+        "cylinder": {"easy": (9, 1 + 2 / 3, 6), "medium": (15, 3 + 2 / 3, 40), "hard": (20, 4 + 2 / 3, 87)},
+        "mobius": {"easy": (9, 1 + 2 / 3, 5), "medium": (15, 3 + 2 / 3, 39), "hard": (20, 4 + 2 / 3, 87)},
     },
     "squaretrihex2": {
         "flat": {"easy": (3, 2, 7, 72.0), "medium": (8, 3, 37, 30.0), "hard": (11, 4, 96, 21.818)},

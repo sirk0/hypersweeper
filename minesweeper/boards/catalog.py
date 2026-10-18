@@ -15,7 +15,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from minesweeper.boards._data import load
-from minesweeper.boards.tilings import ARCH_TILINGS
+from minesweeper.boards.tilings import ARCH_TILINGS, _wrap_template
 
 # The pure-data leaves of this module (surface specs, the regular tiling specs,
 # the menu taxonomy and its labels) live in data/catalog.json, the single
@@ -84,6 +84,8 @@ class TilingSpec:
     key: str
     label: str
     chiral: bool = False                 # no mirror/glide -> no Mobius seam
+    #   (read off the wrap layout, _wrap_template: snubelongated's flat one
+    #   has none, the one it wraps in holds its glide on y = 0)
     reverses_y: bool = True              # some horizontal mirror or half turn
     #   maps the tiling onto itself with y reversed, so a strip of it can end
     #   in two rims that are the same curve -> a cylinder. p3 (three-scale
@@ -127,7 +129,7 @@ REGULAR_TILINGS = tuple(
 # of FLAT_ONLY_FAMILIES below -- so they are gated here, by
 # TilingSpec.surfaces, rather than by being kept out of the picker. "Other" is
 # the plane alone (no cut chosen); the 2-uniform tilings have cuts, and so a
-# cylinder and (the eighteen with a mirror) a Mobius strip, but no torus or
+# cylinder and (all but the p6 studdedtri2) a Mobius strip, but no torus or
 # Klein windows.
 _FAMILY_SURFACES: dict[str, frozenset[str]] = {
     "2-uniform": frozenset({"flat", "cylinder", "mobius"}),
@@ -135,8 +137,8 @@ _FAMILY_SURFACES: dict[str, frozenset[str]] = {
 }
 
 TILING_SPECS = REGULAR_TILINGS + tuple(
-    TilingSpec(t.key, t.label, chiral=t.template().mirror is None,
-               reverses_y=bool(t.template().flips),
+    TilingSpec(t.key, t.label, chiral=_wrap_template(t.key).mirror is None,
+               reverses_y=bool(_wrap_template(t.key).flips),
                surfaces=_FAMILY_SURFACES.get(t.family))
     for t in ARCH_TILINGS
 )

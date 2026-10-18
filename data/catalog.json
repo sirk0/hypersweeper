@@ -1111,6 +1111,12 @@
       "surface": "mobius",
       "family": "rectangle"
     },
+    "mobiussnubelongated": {
+      "label": "Zigzag snub square · Möbius strip",
+      "tiling": "snubelongated",
+      "surface": "mobius",
+      "family": "2-uniform"
+    },
     "mobiussnubelongated2": {
       "label": "Pinwheel snub square · Möbius strip",
       "tiling": "snubelongated2",
