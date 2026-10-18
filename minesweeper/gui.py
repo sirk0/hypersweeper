@@ -2616,6 +2616,41 @@ def make_screen(mode: str, difficulty: str) -> BaseGameScreen:
 # -- menu screen ---------------------------------------------------------------
 
 
+def _fit_label(fonts, text: str, avail: int, size: int, color) -> list:
+    """A menu row's label as one or two rendered lines no wider than `avail`.
+
+    One line, shrunk from `size` as far as 15 px; past that a label of
+    several words breaks in two at the space that balances the lines best,
+    both set at the largest size from 15 px down (to 11 px) that they fit in,
+    so a wrapped label never outsizes its one-line neighbours -- a long worded
+    name like "Turned dissected truncated hexagonal" stays readable in a
+    two-column page instead of being cut off."""
+    def render(line, at):
+        return fonts.get(at).render(line, True, color)
+
+    at = size
+    label = render(text, at)
+    while label.get_width() > avail and at > 15 * S:
+        at -= 1 * S
+        label = render(text, at)
+    words = text.split(" ")
+    if label.get_width() <= avail or len(words) < 2:
+        while label.get_width() > avail and at > 11 * S:
+            at -= 1 * S
+            label = render(text, at)
+        return [label]
+    head, tail = min(
+        ((" ".join(words[:i]), " ".join(words[i:])) for i in range(1, len(words))),
+        key=lambda pair: max(len(pair[0]), len(pair[1])),
+    )
+    at = min(size, 15 * S)
+    lines = [render(head, at), render(tail, at)]
+    while max(line.get_width() for line in lines) > avail and at > 11 * S:
+        at -= 1 * S
+        lines = [render(head, at), render(tail, at)]
+    return lines
+
+
 class MenuScreen:
     """A five-item home page -- Classic, Flat, Flat manifolds, Sphere,
     Polyhedra -- leading straight into a geometry and, where it applies, a
@@ -2879,14 +2914,12 @@ class MenuScreen:
             surface.blit(icon, icon.get_rect(midleft=(rect.left + 10 * S, rect.centery)))
             text_x = rect.left + 10 * S + icon_size + 12 * S
             avail = rect.right - text_x - 10 * S  # shrink long labels to fit
-            size = label_size
-            label = fonts.get(size).render(label_text, True, TEXT if enabled else MUTED)
-            while label.get_width() > avail and size > 11 * S:
-                size -= 1 * S
-                label = fonts.get(size).render(
-                    label_text, True, TEXT if enabled else MUTED
-                )
-            surface.blit(label, label.get_rect(midleft=(text_x, rect.centery)))
+            lines = _fit_label(fonts, label_text, avail, label_size,
+                               TEXT if enabled else MUTED)
+            line_h = lines[0].get_height()
+            top = rect.centery - line_h * len(lines) // 2
+            for i, line in enumerate(lines):
+                surface.blit(line, line.get_rect(topleft=(text_x, top + i * line_h)))
             if not enabled:  # say why, quietly
                 note = fonts.get(11 * S).render("impossible", True, MUTED)
                 surface.blit(

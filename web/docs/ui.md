@@ -36,6 +36,13 @@ board cards under a **pane header** — the page's title, its breadcrumb hint an
 the difficulty pills. Below that width it is the phone column, with the back
 stack in place of the sidebar.
 
+A board row (a card on the desktop) can carry a second, smaller line under its
+label. A graded board's fairness hint takes it; otherwise a 2-uniform tiling
+puts its vertex-type symbol there (`[3⁶; 3⁴.6]₁` under *Studded triangular*),
+read from `tilingNotations` in `data/catalog.json` through `TilingSpec.notation`
+— the label says how the tiling is made, in words, and the symbol is what the
+literature calls it.
+
 **A tablet held upright gets the two panes too**: the query's second clause,
 `(min-width: 720px) and (min-height: 800px)`, takes in an iPad in portrait
 (744–834 wide), which on the width rule alone was handed the 520px phone column

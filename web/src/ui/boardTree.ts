@@ -28,6 +28,8 @@ export interface ModeEntry {
    * e.g. hexagons look the same on every surface), the mode itself
    * otherwise. Matches the icon keys the pygame menu draws. */
   icon: string;
+  /** A 2-uniform tiling's vertex-type symbol, shown under its worded label. */
+  notation?: string;
 }
 
 export interface Family {

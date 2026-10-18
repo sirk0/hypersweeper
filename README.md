@@ -55,7 +55,9 @@ Pick a surface, then a tiling:
   never reach. A tile there has 7, 10 or 12 neighbours.
   The menu groups these as **Regular**, **Uniform**, **Laves**, **2-uniform**
   (regular polygons edge to edge with *two* kinds of corner — all twenty of
-  them, from 3⁶; 3⁴.6 to 3.4.6.4; 4.6.12), **Isogonal**
+  them, named for how each is made from a uniform tiling, from *Studded
+  triangular* [3⁶; 3⁴.6]₁ to *Studded rhombitrihexagonal* [3.4.6.4; 4.6.12]),
+  **Isogonal**
   (six tilings by regular polygons that are *not* edge to edge — a tile's
   corner in the middle of its neighbour's edge), **Congruent rectangles**,
   **Other** (the sphinx and the L-tromino laid down in half-turned pairs

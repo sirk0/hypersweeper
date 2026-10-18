@@ -32,6 +32,9 @@ export interface TilingSpec {
   /** The plane only: no wrap builders or preset windows for this tiling
    * (the 2-uniform and "Other" families — see FLAT_ONLY_ARCH_FAMILIES). */
   flatOnly?: boolean;
+  /** A 2-uniform tiling's symbol as the literature writes it, "[3⁶; 3⁴.6]₁" —
+   * its label is words, so the menu shows this underneath. */
+  notation?: string;
 }
 
 export const DIFFICULTIES = catalog.difficulties as string[];
@@ -40,6 +43,7 @@ export const SURFACES = new Map(SURFACE_SPECS.map((s) => [s.key, s]));
 export const REGULAR_TILINGS = catalog.regularTilings as TilingSpec[];
 export const SOLO_LABELS = catalog.soloLabels as Record<string, string>;
 export const MENU = catalog.menu;
+const TILING_NOTATIONS = catalog.tilingNotations as Record<string, string>;
 
 // The Archimedean (uniform) tilings and their Laves duals are lifted from the
 // tilings.ts ARCH_TILINGS registry — the one place they are declared — exactly
@@ -62,6 +66,7 @@ export const ARCH_TILING_SPECS: TilingSpec[] = ARCH_TILINGS.map((t) => ({
   reversesY: archTemplate(t.key).flips.length > 0,
   modeOverrides: {},
   flatOnly: FLAT_ONLY_ARCH_FAMILIES.has(t.family),
+  ...(TILING_NOTATIONS[t.key] !== undefined ? { notation: TILING_NOTATIONS[t.key] } : {}),
 }));
 
 // Every periodic tiling as the menu sees it: the three regular tilings first,
@@ -230,13 +235,15 @@ const FAMILY_MEMBERS: Record<string, string[]> = {
   hyperbolic: HYPERBOLIC_MODES,
 };
 
-/** One row of a picker family: the mode it launches, its label, and the
+/** One row of a picker family: the mode it launches, its label, the
  * menu-icon key (the tiling key for a wrapped tiling, so e.g. hexagons look
- * the same on every surface, the mode itself otherwise). */
+ * the same on every surface, the mode itself otherwise), and for a 2-uniform
+ * tiling the notation the row shows under its label. */
 export interface FamilyRow {
   mode: string;
   label: string;
   icon: string;
+  notation?: string;
 }
 
 /** The rows of one picker family on a surface (port of catalog.py
@@ -257,7 +264,12 @@ export function familyRows(family: string, surfaceKey: string): FamilyRow[] {
   for (const key of FAMILY_MEMBERS[family] ?? []) {
     const tiling = TILINGS_BY_KEY.get(key);
     if (!tiling || !tilingAllows(tiling, surface)) continue;
-    rows.push({ mode: modeFor(key, surfaceKey), label: tiling.label, icon: key });
+    rows.push({
+      mode: modeFor(key, surfaceKey),
+      label: tiling.label,
+      icon: key,
+      ...(tiling.notation !== undefined ? { notation: tiling.notation } : {}),
+    });
     if (family === "regular" && surfaceKey === "flat") {
       // the same tiling on a triangular / hexagonal / diamond outline
       for (const mode of SHAPED_MODES[key] ?? []) {

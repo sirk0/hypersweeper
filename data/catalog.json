@@ -206,6 +206,28 @@
     "hyperbolic45": "Squares {4,5}",
     "spheretri": "Geodesic icosahedron"
   },
+  "tilingNotations": {
+    "studdedtri": "[3⁶; 3⁴.6]₁",
+    "studdedtri2": "[3⁶; 3⁴.6]₂",
+    "elongated2": "[3⁶; 3³.4²]₁",
+    "elongated3": "[3⁶; 3³.4²]₂",
+    "trirhombitrihex": "[3⁶; 3².4.3.4]",
+    "tritrunctrihex": "[3⁶; 3².4.12]",
+    "fannedhex": "[3⁶; 3².6²]",
+    "hexbands": "[3⁴.6; 3².6²]",
+    "snubelongated2": "[3³.4²; 3².4.3.4]₁",
+    "snubelongated": "[3³.4²; 3².4.3.4]₂",
+    "dissectedtrunchex2": "[3³.4²; 3.4.6.4]",
+    "squarerows2": "[3³.4²; 4⁴]₁",
+    "squarerows3": "[3³.4²; 4⁴]₂",
+    "dissectedtrunchex": "[3².4.3.4; 3.4.6.4]",
+    "hexrows": "[3².6²; 3.6.3.6]",
+    "dodecasquare": "[3.4.3.12; 3.12²]",
+    "hexrings": "[3.4².6; 3.4.6.4]",
+    "squaretrihex": "[3.4².6; 3.6.3.6]₁",
+    "squaretrihex2": "[3.4².6; 3.6.3.6]₂",
+    "dodecarhombitrihex": "[3.4.6.4; 4.6.12]"
+  },
   "modeInfo": {
     "ammannbeenker": {
       "label": "Ammann–Beenker",
@@ -508,13 +530,13 @@
       "family": "catalan"
     },
     "dissectedtrunchex": {
-      "label": "3².4.3.4; 3.4.6.4",
+      "label": "Dissected truncated hexagonal",
       "tiling": "dissectedtrunchex",
       "surface": "flat",
       "family": "2-uniform"
     },
     "dissectedtrunchex2": {
-      "label": "3³.4²; 3.4.6.4",
+      "label": "Turned dissected truncated hexagonal",
       "tiling": "dissectedtrunchex2",
       "surface": "flat",
       "family": "2-uniform"
@@ -526,13 +548,13 @@
       "family": "platonic"
     },
     "dodecarhombitrihex": {
-      "label": "3.4.6.4; 4.6.12",
+      "label": "Studded rhombitrihexagonal",
       "tiling": "dodecarhombitrihex",
       "surface": "flat",
       "family": "2-uniform"
     },
     "dodecasquare": {
-      "label": "3.4.3.12; 3.12²",
+      "label": "Square dodecagonal",
       "tiling": "dodecasquare",
       "surface": "flat",
       "family": "2-uniform"
@@ -568,19 +590,19 @@
       "family": "uniform"
     },
     "elongated2": {
-      "label": "3⁶; 3³.4² (1)",
+      "label": "Half-elongated triangular",
       "tiling": "elongated2",
       "surface": "flat",
       "family": "2-uniform"
     },
     "elongated3": {
-      "label": "3⁶; 3³.4² (2)",
+      "label": "Third-elongated triangular",
       "tiling": "elongated3",
       "surface": "flat",
       "family": "2-uniform"
     },
     "fannedhex": {
-      "label": "3⁶; 3².6²",
+      "label": "Fanned hexagonal",
       "tiling": "fannedhex",
       "surface": "flat",
       "family": "2-uniform"
@@ -616,7 +638,7 @@
       "family": "regular"
     },
     "hexbands": {
-      "label": "3⁴.6; 3².6²",
+      "label": "Banded hexagonal",
       "tiling": "hexbands",
       "surface": "flat",
       "family": "2-uniform"
@@ -628,13 +650,13 @@
       "family": "regular"
     },
     "hexrings": {
-      "label": "3.4².6; 3.4.6.4",
+      "label": "Dissected truncated trihexagonal",
       "tiling": "hexrings",
       "surface": "flat",
       "family": "2-uniform"
     },
     "hexrows": {
-      "label": "3².6²; 3.6.3.6",
+      "label": "Bow-tie hexagonal",
       "tiling": "hexrows",
       "surface": "flat",
       "family": "2-uniform"
@@ -1120,13 +1142,13 @@
       "family": "archimedean"
     },
     "snubelongated": {
-      "label": "3³.4²; 3².4.3.4 (1)",
+      "label": "Zigzag snub square",
       "tiling": "snubelongated",
       "surface": "flat",
       "family": "2-uniform"
     },
     "snubelongated2": {
-      "label": "3³.4²; 3².4.3.4 (2)",
+      "label": "Pinwheel snub square",
       "tiling": "snubelongated2",
       "surface": "flat",
       "family": "2-uniform"
@@ -1186,25 +1208,25 @@
       "family": "regular"
     },
     "squarerows2": {
-      "label": "3³.4²; 4⁴ (1)",
+      "label": "Doubly elongated triangular",
       "tiling": "squarerows2",
       "surface": "flat",
       "family": "2-uniform"
     },
     "squarerows3": {
-      "label": "3³.4²; 4⁴ (2)",
+      "label": "Triply elongated triangular",
       "tiling": "squarerows3",
       "surface": "flat",
       "family": "2-uniform"
     },
     "squaretrihex": {
-      "label": "3.4².6; 3.6.3.6 (1)",
+      "label": "Elongated trihexagonal",
       "tiling": "squaretrihex",
       "surface": "flat",
       "family": "2-uniform"
     },
     "squaretrihex2": {
-      "label": "3.4².6; 3.6.3.6 (2)",
+      "label": "Staggered elongated trihexagonal",
       "tiling": "squaretrihex2",
       "surface": "flat",
       "family": "2-uniform"
@@ -1234,13 +1256,13 @@
       "family": "polyhedra"
     },
     "studdedtri": {
-      "label": "3⁶; 3⁴.6 (1)",
+      "label": "Studded triangular",
       "tiling": "studdedtri",
       "surface": "flat",
       "family": "2-uniform"
     },
     "studdedtri2": {
-      "label": "3⁶; 3⁴.6 (2)",
+      "label": "Twisted studded triangular",
       "tiling": "studdedtri2",
       "surface": "flat",
       "family": "2-uniform"
@@ -1516,13 +1538,13 @@
       "family": "uniform"
     },
     "trirhombitrihex": {
-      "label": "3⁶; 3².4.3.4",
+      "label": "Fanned rhombitrihexagonal",
       "tiling": "trirhombitrihex",
       "surface": "flat",
       "family": "2-uniform"
     },
     "tritrunctrihex": {
-      "label": "3⁶; 3².4.12",
+      "label": "Fanned truncated trihexagonal",
       "tiling": "tritrunctrihex",
       "surface": "flat",
       "family": "2-uniform"

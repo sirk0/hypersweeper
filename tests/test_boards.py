@@ -3475,11 +3475,63 @@ class TestTwoUniform:
     def test_no_two_are_the_same_tiling(self):
         """There are twenty 2-uniform tilings and twenty rows here, so no
         two rows may be one tiling -- which matters most for the five pairs
-        whose vertex types are the same (the (1)s and (2)s), which the vertex
-        check above cannot tell apart."""
+        whose vertex types are the same (the subscripted ones), which the
+        vertex check above cannot tell apart."""
         assert len(_TWO_UNIFORM) == 20
         rings = {mode: self._rings(mode) for mode in _TWO_UNIFORM}
         assert len(set(rings.values())) == len(rings)
+
+    _SUPERSCRIPTS = str.maketrans("⁰¹²³⁴⁵⁶⁷⁸⁹", "0123456789")
+
+    @classmethod
+    def _parse_notation(cls, notation):
+        """"[3⁶; 3².4.12]₁" -> ({(3,)*6, (3, 3, 4, 12)} as cyclic keys, "₁")."""
+        body, _, subscript = notation.partition("]")
+        assert body.startswith("[")
+        types = set()
+        for config in body[1:].split("; "):
+            sides = []
+            for token in config.split("."):
+                n, power = (token[:-1], token[-1]) if token[-1] in "²³⁴⁶" else (token, "1")
+                sides += [int(n)] * int(power.translate(cls._SUPERSCRIPTS))
+            types.add(cls._cyclic(sides))
+        return types, subscript
+
+    @pytest.mark.parametrize("mode", _TWO_UNIFORM)
+    def test_notation_names_the_two_vertex_types(self, mode):
+        """The symbol the menu shows under the worded label is the same two
+        vertex types the tiling is checked against -- a typo in a superscript
+        would otherwise ship unnoticed."""
+        tiling = next(t for t in ARCH_TILINGS if t.key == mode)
+        types, _ = self._parse_notation(tiling.notation)
+        assert types == {self._cyclic(v) for v in tiling.vertex_types}
+
+    def test_subscripts_mark_exactly_the_pairs(self):
+        """A subscript is there only where two tilings share both vertex
+        types, ₁ and ₂ once each, and the twenty symbols are all different."""
+        tilings = [t for t in ARCH_TILINGS if t.family == "2-uniform"]
+        by_types = defaultdict(list)
+        for t in tilings:
+            types, subscript = self._parse_notation(t.notation)
+            by_types[frozenset(types)].append(subscript)
+        for subscripts in by_types.values():
+            assert sorted(subscripts) == (["₁", "₂"] if len(subscripts) == 2 else [""])
+        assert len({t.notation for t in tilings}) == 20
+        assert len({t.label for t in tilings}) == 20
+
+    @pytest.mark.parametrize("first, second", [
+        ("studdedtri", "studdedtri2"),        # p6m, then p6
+        ("snubelongated2", "snubelongated"),  # p4g, then pgg
+    ])
+    def test_subscripts_follow_the_literature(self, first, second):
+        """Grunbaum and Shephard's ₁ and ₂, where a mirror tells them apart:
+        in both of these pairs ₁ has mirrors and ₂ has none. (The game once
+        numbered pairs by cell size, which put the snub-square pair the wrong
+        way round.)"""
+        notation = {t.key: t.notation for t in ARCH_TILINGS}
+        assert notation[first].endswith("₁") and notation[second].endswith("₂")
+        assert _arch_template(first).mirror is not None
+        assert _arch_template(second).mirror is None
 
     def test_dissection_leaves_the_uniform_tiling_unchanged(self):
         """trirhombitrihex is rhombitrihex with its hexagons cut up: the same

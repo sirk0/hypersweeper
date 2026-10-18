@@ -870,7 +870,7 @@ export class Menu {
   private renderFamily(family: Family, onBack: () => void): void {
     const list = document.createElement("ul");
     for (const entry of family.modes) {
-      list.append(this.entryRow(entry.mode, entry.label, entry.icon));
+      list.append(this.entryRow(entry.mode, entry.label, entry.icon, entry.notation));
     }
     const back = this.backRow(family.label, onBack);
     if (this.isWide()) {
@@ -1050,7 +1050,10 @@ export class Menu {
     return li;
   }
 
-  private entryRow(mode: string, label: string, icon = mode): HTMLElement {
+  /** A board row. `notation`, a 2-uniform tiling's vertex-type symbol, is
+   * the row's subtitle — unless the board is graded, when the fairness hint
+   * takes the line, since that is what a player needs before choosing it. */
+  private entryRow(mode: string, label: string, icon = mode, notation?: string): HTMLElement {
     const li = document.createElement("li");
     const btn = document.createElement("button");
     btn.dataset.mode = mode;
@@ -1060,13 +1063,20 @@ export class Menu {
     // lie about what it holds -- but the row opens the explanation instead of
     // a game.
     const level = modeFairness(mode);
-    const hint = fairnessHint(level);
+    const hint = fairnessHint(level) ?? notation;
     if (level !== "ok") btn.dataset.fairness = level;
     if (this.isWide()) {
       btn.className = "menu-entry menu-board-card";
       btn.append(
         this.previewEl(icon),
-        this.cardCaption(label, level !== "ok" ? { trailing: this.fairnessPill(level, hint) } : {}),
+        this.cardCaption(
+          label,
+          level !== "ok"
+            ? { trailing: this.fairnessPill(level, hint) }
+            : notation !== undefined
+              ? { hint: notation }
+              : {},
+        ),
       );
     } else {
       btn.className = "menu-entry";

@@ -91,6 +91,18 @@ describe("picker pages", () => {
     }
   });
 
+  it("gives every 2-uniform row its vertex-type symbol, and no other row one", () => {
+    // The 2-uniform labels are words; the symbol the literature uses goes on
+    // the line under them (menu.ts entryRow), straight from data/catalog.json.
+    const twoUniform = menuFamilyRows("2-uniform", "flat");
+    expect(twoUniform).toHaveLength(20);
+    for (const row of twoUniform) expect(row.notation, row.mode).toMatch(/^\[.+; .+\][₁₂]?$/);
+    expect(twoUniform.find((r) => r.mode === "snubelongated2")?.notation).toBe("[3³.4²; 3².4.3.4]₁");
+    for (const family of menuFamilies("flat").filter((f) => f !== "2-uniform")) {
+      for (const row of menuFamilyRows(family, "flat")) expect(row.notation, row.mode).toBeUndefined();
+    }
+  });
+
   it("offers no Random row: the pools are the home page's", () => {
     for (const surface of ["flat", ...MANIFOLD_ORDER]) {
       expect(menuFamilies(surface)).not.toContain("random");

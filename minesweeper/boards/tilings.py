@@ -1623,12 +1623,12 @@ def _dodecarhombitrihex_template() -> _ArchTemplate:
 #     identical twin (metrics.indistinguishable_cells), so the size search
 #     could only answer with a sliver of a board.
 #
-# Where two tilings share both vertex types the label tells them apart with
-# (1) and (2): (1) is the one with the smaller cell -- fewer tiles to a period
-# -- and for 3.4^2.6; 3.6.3.6, whose two have five apiece, the one whose cell
-# is a rectangle (pmm) rather than centred (cmm). TestTwoUniform checks every
-# one: the two vertex types, regular unit-edge tiles, and that no two of the
-# twenty are the same tiling.
+# Five pairs of the twenty share both vertex types. The literature tells each
+# pair apart with a subscript (Grunbaum and Shephard, Tilings and Patterns,
+# 1987, pp. 65-67, as Wikipedia's tables reproduce them), which ArchTiling's
+# notation carries; the label tells them apart in words. TestTwoUniform checks
+# every one: the two vertex types, regular unit-edge tiles, that the notation
+# names the same two types, and that no two of the twenty are the same tiling.
 
 
 def _steps(walk):
@@ -1677,7 +1677,7 @@ def _cell_template(config, v1, v2, rect, tiles, centre, mirrored=True):
 
 
 def _studdedtri_template() -> _ArchTemplate:
-    """[3^6; 3^4.6] (1), p6m: the triangular tiling with a hexagon in place of
+    """[3^6; 3^4.6]_1, p6m: the triangular tiling with a hexagon in place of
     six triangles at every point of a lattice three edges apart. The hexagons
     never touch -- each is ringed by triangles, its corners 3^4.6 -- and the two
     vertices a cell holds that touch no hexagon are 3^6."""
@@ -1690,7 +1690,7 @@ def _studdedtri_template() -> _ArchTemplate:
 
 
 def _studdedtri2_template() -> _ArchTemplate:
-    """[3^6; 3^4.6] (2), p6: the same with the hexagons sqrt(13) edges apart, on
+    """[3^6; 3^4.6]_2, p6: the same with the hexagons sqrt(13) edges apart, on
     a lattice turned off the triangle rows, so the tiling is chiral and has no
     mirror. (Snub hexagonal is the sqrt(7) one, close enough to leave no 3^6
     vertex at all.)"""
@@ -1705,7 +1705,7 @@ def _studdedtri2_template() -> _ArchTemplate:
 
 
 def _elongated2_template() -> _ArchTemplate:
-    """[3^6; 3^3.4^2] (1), pmm: elongated triangular with two courses of
+    """[3^6; 3^3.4^2]_1, pmm: elongated triangular with two courses of
     triangles between the square courses instead of one. The line between the
     two triangle courses is 3^6, and the square courses line up, so the repeat
     is one square wide."""
@@ -1716,7 +1716,7 @@ def _elongated2_template() -> _ArchTemplate:
 
 
 def _elongated3_template() -> _ArchTemplate:
-    """[3^6; 3^3.4^2] (2), cmm: three courses of triangles between the square
+    """[3^6; 3^3.4^2]_2, cmm: three courses of triangles between the square
     courses. Both lines inside a band are 3^6 -- mirror images of each other --
     and each square course sits half a square along from the last."""
     return _cell_template(
@@ -1762,7 +1762,7 @@ def _hexbands_template() -> _ArchTemplate:
 
 
 def _snubelongated_template() -> _ArchTemplate:
-    """[3^3.4^2; 3^2.4.3.4] (1), pgg: every square in an edge-sharing pair among
+    """[3^3.4^2; 3^2.4.3.4]_2, pgg: every square in an edge-sharing pair among
     the triangles, the pairs lying two ways a twelfth of a turn apart. The two
     ends of a pair's shared edge are 3^3.4^2, every other corner 3^2.4.3.4.
     Glides, but no mirror."""
@@ -1775,7 +1775,7 @@ def _snubelongated_template() -> _ArchTemplate:
 
 
 def _snubelongated2_template() -> _ArchTemplate:
-    """[3^3.4^2; 3^2.4.3.4] (2), p4g: the same two vertex types in snub
+    """[3^3.4^2; 3^2.4.3.4]_1, p4g: the same two vertex types in snub
     square's four-fold arrangement, some squares paired along an edge and some
     alone."""
     return _cell_template(
@@ -1802,7 +1802,7 @@ def _dissectedtrunchex2_template() -> _ArchTemplate:
 
 
 def _squarerows2_template() -> _ArchTemplate:
-    """[3^3.4^2; 4^4] (1), cmm: elongated triangular with two courses of
+    """[3^3.4^2; 4^4]_1, cmm: elongated triangular with two courses of
     squares between the triangle courses instead of one. The line between the
     two square courses is 4^4, and each triangle course moves the squares on
     by half a square."""
@@ -1813,7 +1813,7 @@ def _squarerows2_template() -> _ArchTemplate:
 
 
 def _squarerows3_template() -> _ArchTemplate:
-    """[3^3.4^2; 4^4] (2), cmm: three courses of squares between the triangle
+    """[3^3.4^2; 4^4]_2, cmm: three courses of squares between the triangle
     courses. Both lines inside a band are 4^4, mirror images of each other."""
     return _cell_template(
         (3, 4), (0,), (8, 9, 9, 9), ((1, 0), (-1, -2)), [
@@ -1860,7 +1860,7 @@ def _hexrings_template() -> _ArchTemplate:
 
 
 def _squaretrihex_template() -> _ArchTemplate:
-    """[3.4^2.6; 3.6.3.6] (1), pmm: courses of squares between bands of
+    """[3.4^2.6; 3.6.3.6]_1, pmm: courses of squares between bands of
     trihexagonal one hexagon deep, the hexagons of every band in line with the
     next band's. The band's edges are 3.4^2.6, its middle 3.6.3.6."""
     return _cell_template(
@@ -1870,7 +1870,7 @@ def _squaretrihex_template() -> _ArchTemplate:
 
 
 def _squaretrihex2_template() -> _ArchTemplate:
-    """[3.4^2.6; 3.6.3.6] (2), cmm: the same with each band half a hexagon
+    """[3.4^2.6; 3.6.3.6]_2, cmm: the same with each band half a hexagon
     along from the last."""
     return _cell_template(
         (3, 4, 6), (0, 2, 10), (8, 8, 9), ((1, 0), (-1, -2)), [
@@ -1905,6 +1905,10 @@ class ArchTiling:
     vertex_types: tuple[tuple[int, ...], ...] = ()  # a 2-uniform tiling's
     #   two vertex configurations, ((3, 3, 3, 3, 3, 3), (3, 3, 4, 3, 4)) --
     #   what TestTwoUniform holds every interior vertex to. Empty elsewhere.
+    notation: str = ""             # a 2-uniform tiling's symbol as the
+    #   literature writes it, "[3^6; 3^4.6]_1" -- the menu shows it under the
+    #   label. The subscript is Grunbaum and Shephard's, for the five pairs
+    #   that share both vertex types. Empty elsewhere.
 
     @property
     def vertex_transitive(self) -> bool:
@@ -1990,71 +1994,98 @@ ARCH_TILINGS = (
     ArchTiling("tetrakis", "Tetrakis square", (4, 8, 8), 8,
                _tetrakis_template, family="dual"),
     # the 2-uniform tilings: regular polygons edge to edge, like the uniform
-    # ones, but with two kinds of vertex. They have no common names, so the
-    # label is the pair of vertex configurations -- which is what they are
-    # called -- with (1) and (2) where two share both (see the comment above
-    # _steps) -- and config is just the tile side counts. Listed in the order
-    # of their vertex configurations, as the uniform block is.
-    ArchTiling("studdedtri", "3⁶; 3⁴.6 (1)", (3, 6), 6,
+    # ones, but with two kinds of vertex. The literature knows them by their
+    # vertex types alone -- that is the notation, shown under the label -- so
+    # the labels are this game's own: the uniform tiling each is made from,
+    # with a word for what was done to it. "Fanned" cuts a hexagon into six
+    # triangles; "dissected" cuts a dodecagon into a hexagon ringed by six
+    # squares and six triangles; "elongated" puts rows of squares between
+    # rows of triangles -- half or a third of the gaps get one, or every gap
+    # gets two or three ("doubly", "triply"); "studded" sets a bigger tile at
+    # every point of a sparse lattice. Twisted, turned, staggered, pinwheel and
+    # zigzag tell a pair apart. config is just the tile side counts. Listed in
+    # the order of their vertex configurations, as the uniform block is, each
+    # pair in its subscripts' order.
+    ArchTiling("studdedtri", "Studded triangular", (3, 6), 6,
                _studdedtri_template, family="2-uniform",
-               vertex_types=((3, 3, 3, 3, 3, 3), (3, 3, 3, 3, 6))),
-    ArchTiling("studdedtri2", "3⁶; 3⁴.6 (2)", (3, 6), 6,
+               vertex_types=((3, 3, 3, 3, 3, 3), (3, 3, 3, 3, 6)),
+               notation="[3⁶; 3⁴.6]₁"),
+    ArchTiling("studdedtri2", "Twisted studded triangular", (3, 6), 6,
                _studdedtri2_template, family="2-uniform",
-               vertex_types=((3, 3, 3, 3, 3, 3), (3, 3, 3, 3, 6))),
-    ArchTiling("elongated2", "3⁶; 3³.4² (1)", (3, 4), 8,
+               vertex_types=((3, 3, 3, 3, 3, 3), (3, 3, 3, 3, 6)),
+               notation="[3⁶; 3⁴.6]₂"),
+    ArchTiling("elongated2", "Half-elongated triangular", (3, 4), 8,
                _elongated2_template, family="2-uniform",
-               vertex_types=((3, 3, 3, 3, 3, 3), (3, 3, 3, 4, 4))),
-    ArchTiling("elongated3", "3⁶; 3³.4² (2)", (3, 4), 8,
+               vertex_types=((3, 3, 3, 3, 3, 3), (3, 3, 3, 4, 4)),
+               notation="[3⁶; 3³.4²]₁"),
+    ArchTiling("elongated3", "Third-elongated triangular", (3, 4), 8,
                _elongated3_template, family="2-uniform",
-               vertex_types=((3, 3, 3, 3, 3, 3), (3, 3, 3, 4, 4))),
-    ArchTiling("trirhombitrihex", "3⁶; 3².4.3.4", (3, 4), 12,
+               vertex_types=((3, 3, 3, 3, 3, 3), (3, 3, 3, 4, 4)),
+               notation="[3⁶; 3³.4²]₂"),
+    ArchTiling("trirhombitrihex", "Fanned rhombitrihexagonal", (3, 4), 12,
                _trirhombitrihex_template, family="2-uniform",
-               vertex_types=((3, 3, 3, 3, 3, 3), (3, 3, 4, 3, 4))),
-    ArchTiling("tritrunctrihex", "3⁶; 3².4.12", (3, 4, 12), 12,
+               vertex_types=((3, 3, 3, 3, 3, 3), (3, 3, 4, 3, 4)),
+               notation="[3⁶; 3².4.3.4]"),
+    ArchTiling("tritrunctrihex", "Fanned truncated trihexagonal", (3, 4, 12), 12,
                _tritrunctrihex_template, family="2-uniform",
-               vertex_types=((3, 3, 3, 3, 3, 3), (3, 3, 4, 12))),
-    ArchTiling("fannedhex", "3⁶; 3².6²", (3, 6), 6,
+               vertex_types=((3, 3, 3, 3, 3, 3), (3, 3, 4, 12)),
+               notation="[3⁶; 3².4.12]"),
+    ArchTiling("fannedhex", "Fanned hexagonal", (3, 6), 6,
                _fannedhex_template, family="2-uniform",
-               vertex_types=((3, 3, 3, 3, 3, 3), (3, 3, 6, 6))),
-    ArchTiling("hexbands", "3⁴.6; 3².6²", (3, 6), 6,
+               vertex_types=((3, 3, 3, 3, 3, 3), (3, 3, 6, 6)),
+               notation="[3⁶; 3².6²]"),
+    ArchTiling("hexbands", "Banded hexagonal", (3, 6), 6,
                _hexbands_template, family="2-uniform",
-               vertex_types=((3, 3, 3, 3, 6), (3, 3, 6, 6))),
-    ArchTiling("snubelongated", "3³.4²; 3².4.3.4 (1)", (3, 4), 12,
-               _snubelongated_template, family="2-uniform",
-               vertex_types=((3, 3, 3, 4, 4), (3, 3, 4, 3, 4))),
-    ArchTiling("snubelongated2", "3³.4²; 3².4.3.4 (2)", (3, 4), 12,
+               vertex_types=((3, 3, 3, 3, 6), (3, 3, 6, 6)),
+               notation="[3⁴.6; 3².6²]"),
+    ArchTiling("snubelongated2", "Pinwheel snub square", (3, 4), 12,
                _snubelongated2_template, family="2-uniform",
-               vertex_types=((3, 3, 3, 4, 4), (3, 3, 4, 3, 4))),
-    ArchTiling("dissectedtrunchex2", "3³.4²; 3.4.6.4", (3, 4, 6), 12,
+               vertex_types=((3, 3, 3, 4, 4), (3, 3, 4, 3, 4)),
+               notation="[3³.4²; 3².4.3.4]₁"),
+    ArchTiling("snubelongated", "Zigzag snub square", (3, 4), 12,
+               _snubelongated_template, family="2-uniform",
+               vertex_types=((3, 3, 3, 4, 4), (3, 3, 4, 3, 4)),
+               notation="[3³.4²; 3².4.3.4]₂"),
+    ArchTiling("dissectedtrunchex2", "Turned dissected truncated hexagonal", (3, 4, 6), 12,
                _dissectedtrunchex2_template, family="2-uniform",
-               vertex_types=((3, 3, 3, 4, 4), (3, 4, 6, 4))),
-    ArchTiling("squarerows2", "3³.4²; 4⁴ (1)", (3, 4), 8,
+               vertex_types=((3, 3, 3, 4, 4), (3, 4, 6, 4)),
+               notation="[3³.4²; 3.4.6.4]"),
+    ArchTiling("squarerows2", "Doubly elongated triangular", (3, 4), 8,
                _squarerows2_template, family="2-uniform",
-               vertex_types=((3, 3, 3, 4, 4), (4, 4, 4, 4))),
-    ArchTiling("squarerows3", "3³.4²; 4⁴ (2)", (3, 4), 8,
+               vertex_types=((3, 3, 3, 4, 4), (4, 4, 4, 4)),
+               notation="[3³.4²; 4⁴]₁"),
+    ArchTiling("squarerows3", "Triply elongated triangular", (3, 4), 8,
                _squarerows3_template, family="2-uniform",
-               vertex_types=((3, 3, 3, 4, 4), (4, 4, 4, 4))),
-    ArchTiling("dissectedtrunchex", "3².4.3.4; 3.4.6.4", (3, 4, 6), 12,
+               vertex_types=((3, 3, 3, 4, 4), (4, 4, 4, 4)),
+               notation="[3³.4²; 4⁴]₂"),
+    ArchTiling("dissectedtrunchex", "Dissected truncated hexagonal", (3, 4, 6), 12,
                _dissectedtrunchex_template, family="2-uniform",
-               vertex_types=((3, 3, 4, 3, 4), (3, 4, 6, 4))),
-    ArchTiling("hexrows", "3².6²; 3.6.3.6", (3, 6), 6,
+               vertex_types=((3, 3, 4, 3, 4), (3, 4, 6, 4)),
+               notation="[3².4.3.4; 3.4.6.4]"),
+    ArchTiling("hexrows", "Bow-tie hexagonal", (3, 6), 6,
                _hexrows_template, family="2-uniform",
-               vertex_types=((3, 3, 6, 6), (3, 6, 3, 6))),
-    ArchTiling("dodecasquare", "3.4.3.12; 3.12²", (3, 4, 12), 12,
+               vertex_types=((3, 3, 6, 6), (3, 6, 3, 6)),
+               notation="[3².6²; 3.6.3.6]"),
+    ArchTiling("dodecasquare", "Square dodecagonal", (3, 4, 12), 12,
                _dodecasquare_template, family="2-uniform",
-               vertex_types=((3, 4, 3, 12), (3, 12, 12))),
-    ArchTiling("hexrings", "3.4².6; 3.4.6.4", (3, 4, 6), 12,
+               vertex_types=((3, 4, 3, 12), (3, 12, 12)),
+               notation="[3.4.3.12; 3.12²]"),
+    ArchTiling("hexrings", "Dissected truncated trihexagonal", (3, 4, 6), 12,
                _hexrings_template, family="2-uniform",
-               vertex_types=((3, 4, 4, 6), (3, 4, 6, 4))),
-    ArchTiling("squaretrihex", "3.4².6; 3.6.3.6 (1)", (3, 4, 6), 8,
+               vertex_types=((3, 4, 4, 6), (3, 4, 6, 4)),
+               notation="[3.4².6; 3.4.6.4]"),
+    ArchTiling("squaretrihex", "Elongated trihexagonal", (3, 4, 6), 8,
                _squaretrihex_template, family="2-uniform",
-               vertex_types=((3, 4, 4, 6), (3, 6, 3, 6))),
-    ArchTiling("squaretrihex2", "3.4².6; 3.6.3.6 (2)", (3, 4, 6), 8,
+               vertex_types=((3, 4, 4, 6), (3, 6, 3, 6)),
+               notation="[3.4².6; 3.6.3.6]₁"),
+    ArchTiling("squaretrihex2", "Staggered elongated trihexagonal", (3, 4, 6), 8,
                _squaretrihex2_template, family="2-uniform",
-               vertex_types=((3, 4, 4, 6), (3, 6, 3, 6))),
-    ArchTiling("dodecarhombitrihex", "3.4.6.4; 4.6.12", (3, 4, 6, 12), 12,
+               vertex_types=((3, 4, 4, 6), (3, 6, 3, 6)),
+               notation="[3.4².6; 3.6.3.6]₂"),
+    ArchTiling("dodecarhombitrihex", "Studded rhombitrihexagonal", (3, 4, 6, 12), 12,
                _dodecarhombitrihex_template, family="2-uniform",
-               vertex_types=((3, 4, 6, 4), (4, 6, 12))),
+               vertex_types=((3, 4, 6, 4), (4, 6, 12)),
+               notation="[3.4.6.4; 4.6.12]"),
     # the isogonal tilings that are not edge to edge: vertex-transitive like
     # the uniform ones, but a tile's corner may land in the middle of its
     # neighbour's edge. config counts that neighbour, so it is the tiles

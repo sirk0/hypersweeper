@@ -152,6 +152,10 @@ def build_catalog() -> dict:
         "surfaces": [_surface_json(s) for s in SURFACE_SPECS],
         "regularTilings": [_tiling_json(t) for t in REGULAR_TILINGS],
         "soloLabels": dict(SOLO_LABELS),
+        # tiling key -> its symbol as the literature writes it ("[3⁶; 3⁴.6]₁"),
+        # for the 2-uniform tilings, whose labels are words. The menu shows it
+        # under the label; TestTwoUniform checks it against vertex_types.
+        "tilingNotations": {t.key: t.notation for t in ARCH_TILINGS if t.notation},
         # Flattened per-mode names and taxonomy. Every other block here is a
         # registry the menus derive from; this one is the derivation, written
         # out, because the analytics collector cannot run it — it is a Worker
