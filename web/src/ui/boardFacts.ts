@@ -14,6 +14,7 @@ import {
   tilingOf,
 } from "../boards/catalog";
 import { isBoard3D, type AnyBoard, type CellId } from "../boards/core";
+import { distortionHint } from "../boards/distortion";
 import { fairnessHint, fairnessOf } from "../boards/fairness";
 import { ARCH_TILINGS, archTemplate, templateCells } from "../boards/tilings";
 import { classifyShapes, corners, type ShapeTone } from "../render/shapePalette";
@@ -69,6 +70,9 @@ export interface BoardFacts {
   shapes: ShapeFact[];
   /** Why this board is graded as harder than its difficulty, when it is. */
   warning: string | undefined;
+  /** That its surface draws the tiles too far out of shape at this
+   * difficulty, when it does (boards/distortion.ts). */
+  distortion: string | undefined;
   /** What "projected" means, on a board with a projected row. */
   note: string | undefined;
 }
@@ -527,6 +531,7 @@ export function boardFacts(
     mines,
     shapes,
     warning: fairnessHint(fairnessOf(mode, difficulty)),
+    distortion: distortionHint(mode, difficulty),
     note: shapes.some((s) => s.projected)
       ? isBoard3D(board)
         ? "Projected tiles have that shape in the ideal tiling, and are bent where it is laid on this surface."

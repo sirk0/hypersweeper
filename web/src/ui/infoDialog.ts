@@ -113,6 +113,7 @@ export function openInfoDialog(
   // a phone there is no hover to read the mark's tooltip with, so without this
   // the mark says nothing at all.
   if (facts.warning) card.append(el("p", "info-warning", `⚠ ${facts.warning}`));
+  if (facts.distortion) card.append(el("p", "info-warning", `⚠ ${facts.distortion}`));
   card.append(actions);
 
   const handle = openModal(host, card, {

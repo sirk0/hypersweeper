@@ -907,7 +907,7 @@ class App {
         this.startGame(arg, this.settings.difficulty, { trigger: "menu" });
       }
     } else if (verb === "random" && (arg === "flat" || arg === "3d")) {
-      const mode = randomMode(arg);
+      const mode = randomMode(arg, this.settings.difficulty);
       if (mode) {
         this.startGame(mode, this.settings.difficulty, { dealtAtRandom: true, trigger: "random" });
       }
@@ -935,7 +935,7 @@ class App {
   private startRandomBoard(): void {
     const session = this.session;
     if (!session || this.screen !== "game") return;
-    const mode = randomMode(session.is3d ? "3d" : "flat");
+    const mode = randomMode(session.is3d ? "3d" : "flat", session.difficulty);
     if (mode) {
       this.startGame(mode, session.difficulty, {
         dealtAtRandom: true,

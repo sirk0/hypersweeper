@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { distortedDifficulties, isDistorted } from "../../src/boards/distortion";
 import { blockedModes, modeFairness } from "../../src/boards/fairness";
 import { hasMode } from "../../src/boards/presets";
 import { CUSTOM_ONLY, randomMode, randomPool } from "../../src/boards/randomBoard";
@@ -49,12 +50,30 @@ describe("random board pools", () => {
     for (const kind of ["flat", "3d"] as const) {
       // `random` is injected, so this walks the whole pool rather than sampling
       // it: every ticket lands on a playable board.
-      const pool = randomPool(kind);
+      const pool = randomPool(kind, "easy");
       for (let i = 0; i < pool.length; i++) {
-        const mode = randomMode(kind, () => i / pool.length);
+        const mode = randomMode(kind, "easy", () => i / pool.length);
         expect(mode, `${kind} ${i}`).toBeDefined();
         expect(blocked.has(mode!), mode).toBe(false);
         expect(modeFairness(mode!)).not.toBe("blocked");
+      }
+    }
+  });
+
+  it("never deals a board at a difficulty its surface draws it distorted at", () => {
+    // Distortion is per difficulty: the trefoil's squares are distorted on easy
+    // only, so they leave the easy pool and stay in the other two.
+    expect(distortedDifficulties("trefoil")).toEqual(["easy"]);
+    expect(randomPool("3d", "easy")).not.toContain("trefoil");
+    expect(randomPool("3d", "medium")).toContain("trefoil");
+    expect(randomPool("3d", "hard")).toContain("trefoil");
+    for (const difficulty of ["easy", "medium", "hard"]) {
+      const pool = randomPool("3d", difficulty);
+      expect(pool.length).toBeGreaterThan(0);
+      for (let i = 0; i < pool.length; i++) {
+        const mode = randomMode("3d", difficulty, () => i / pool.length);
+        expect(mode, `${difficulty} ${i}`).toBeDefined();
+        expect(isDistorted(mode!, difficulty), `${mode} ${difficulty}`).toBe(false);
       }
     }
   });
