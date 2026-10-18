@@ -200,8 +200,8 @@ function heading(text: string): HTMLElement {
 }
 
 /** A look in miniature: a theme's page field (texture and all), a chrome card on
- * it, a strip of board tiles cut to a shape — one of the four "opened" — and an
- * accent dot. Every picker draws with it, and each varies the one axis it is
+ * it carrying the accent as a switch, and under it a corner of board — six
+ * square tiles cut to a shape, two of them opened. Every picker draws with it, and each varies the one axis it is
  * about: the theme page draws every theme at the shape in force, the shape page
  * every shape under the theme in force, and the scheme page the current pair
  * under each scheme. So a row always shows exactly what picking it changes.
@@ -235,14 +235,17 @@ function themeSwatch(key: string, shape: string, scheme: Scheme): HTMLElement {
   const cells = document.createElement("span");
   cells.className = "cell-swatch";
   cells.dataset["shape"] = shape;
-  for (let i = 0; i < 4; i++) {
+  // Three by two, the last two opened: a corner of a board in play, with both
+  // of a cut's states side by side and touching, as they are on the board.
+  for (let i = 0; i < 6; i++) {
     const tile = document.createElement("span");
-    tile.className = i === 3 ? "cell-swatch-tile open" : "cell-swatch-tile";
+    tile.className = i >= 4 ? "cell-swatch-tile open" : "cell-swatch-tile";
     cells.append(tile);
   }
   const dot = document.createElement("span");
   dot.className = "theme-swatch-dot";
-  el.append(card, cells, dot);
+  card.append(dot);
+  el.append(card, cells);
   return el;
 }
 
