@@ -326,11 +326,11 @@ polygons — `_rhombitrihex_polygons` (with a `merged` predicate for the
 dodecagons, and a `reach` for a domain more than one lattice cell across) and
 `_trunchex_polygons`, plus the helpers `_fan` and `_dodecagon_patch`:
 
-| key | label (its vertex types) | built as |
-|---|---|---|
-| `trirhombitrihex` | 3⁶; 3².4.3.4 | 3.4.6.4 with every hexagon fanned into six triangles |
-| `dissectedtrunchex` | 3².4.3.4; 3.4.6.4 | 3.12.12 with every dodecagon cut into the 3.4.6.4 patch (hexagon, six squares, six triangles), squares on the edges facing triangles |
-| `dodecarhombitrihex` | 3.4.6.4; 4.6.12 | 3.4.6.4 with one hexagon in four (even lattice indices both ways) merged with its ring of squares and triangles into a dodecagon |
+| key | label | notation | built as |
+|---|---|---|---|
+| `trirhombitrihex` | Fanned rhombitrihexagonal | [3⁶; 3².4.3.4] | 3.4.6.4 with every hexagon fanned into six triangles |
+| `dissectedtrunchex` | Dissected truncated hexagonal | [3².4.3.4; 3.4.6.4] | 3.12.12 with every dodecagon cut into the 3.4.6.4 patch (hexagon, six squares, six triangles), squares on the edges facing triangles |
+| `dodecarhombitrihex` | Studded rhombitrihexagonal | [3.4.6.4; 4.6.12] | 3.4.6.4 with one hexagon in four (even lattice indices both ways) merged with its ring of squares and triangles into a dodecagon |
 
 The choices that are easy to get wrong there:
 
@@ -357,32 +357,50 @@ tilings by triangles, squares, hexagons and dodecagons with exactly two vertex
 orbits. It found the twenty and no others, which is how the three above were
 checked too.
 
-| key | label | group | what it looks like |
-|---|---|---|---|
-| `studdedtri` | 3⁶; 3⁴.6 (1) | p6m | triangles with a hexagon at every point of a lattice three edges apart |
-| `studdedtri2` | 3⁶; 3⁴.6 (2) | p6 | the same, √13 apart and chiral (snub hexagonal is √7) |
-| `elongated2` | 3⁶; 3³.4² (1) | pmm | two triangle courses between square courses |
-| `elongated3` | 3⁶; 3³.4² (2) | cmm | three triangle courses between square courses |
-| `tritrunctrihex` | 3⁶; 3².4.12 | p6m | 4.6.12 with its hexagons fanned |
-| `fannedhex` | 3⁶; 3².6² | p6m | hexagonal with one hexagon in three fanned |
-| `hexbands` | 3⁴.6; 3².6² | cmm | rows of hexagons, triangles in the zigzag between |
-| `snubelongated` | 3³.4²; 3².4.3.4 (1) | pgg | squares all in pairs, the pairs two ways |
-| `snubelongated2` | 3³.4²; 3².4.3.4 (2) | p4g | snub square's arrangement, some squares paired |
-| `dissectedtrunchex2` | 3³.4²; 3.4.6.4 | p6m | `dissectedtrunchex` with the squares the other way round |
-| `squarerows2` | 3³.4²; 4⁴ (1) | cmm | two square courses between triangle courses |
-| `squarerows3` | 3³.4²; 4⁴ (2) | cmm | three square courses between triangle courses |
-| `hexrows` | 3².6²; 3.6.3.6 | pmm | rows of hexagons, corners touching, bow ties between |
-| `dodecasquare` | 3.4.3.12; 3.12² | p4m | dodecagons on a square lattice, a square and four triangles in each gap |
-| `hexrings` | 3.4².6; 3.4.6.4 | p6m | 3.4.6.4's tiles with the squares in rows of three |
-| `squaretrihex` | 3.4².6; 3.6.3.6 (1) | pmm | square courses between trihexagonal bands, in line |
-| `squaretrihex2` | 3.4².6; 3.6.3.6 (2) | cmm | the same, each band half a hexagon along |
+| key | label | notation | group | what it looks like |
+|---|---|---|---|---|
+| `studdedtri` | Studded triangular | [3⁶; 3⁴.6]₁ | p6m | triangles with a hexagon at every point of a lattice three edges apart |
+| `studdedtri2` | Twisted studded triangular | [3⁶; 3⁴.6]₂ | p6 | the same, √13 apart and chiral (snub hexagonal is √7) |
+| `elongated2` | Half-elongated triangular | [3⁶; 3³.4²]₁ | pmm | two triangle courses between square courses |
+| `elongated3` | Third-elongated triangular | [3⁶; 3³.4²]₂ | cmm | three triangle courses between square courses |
+| `tritrunctrihex` | Fanned truncated trihexagonal | [3⁶; 3².4.12] | p6m | 4.6.12 with its hexagons fanned |
+| `fannedhex` | Fanned hexagonal | [3⁶; 3².6²] | p6m | hexagonal with one hexagon in three fanned |
+| `hexbands` | Banded hexagonal | [3⁴.6; 3².6²] | cmm | rows of hexagons, triangles in the zigzag between |
+| `snubelongated2` | Pinwheel snub square | [3³.4²; 3².4.3.4]₁ | p4g | snub square's arrangement, some squares paired |
+| `snubelongated` | Zigzag snub square | [3³.4²; 3².4.3.4]₂ | pgg | squares all in pairs, the pairs two ways |
+| `dissectedtrunchex2` | Turned dissected truncated hexagonal | [3³.4²; 3.4.6.4] | p6m | `dissectedtrunchex` with the squares the other way round |
+| `squarerows2` | Doubly elongated triangular | [3³.4²; 4⁴]₁ | cmm | two square courses between triangle courses |
+| `squarerows3` | Triply elongated triangular | [3³.4²; 4⁴]₂ | cmm | three square courses between triangle courses |
+| `hexrows` | Bow-tie hexagonal | [3².6²; 3.6.3.6] | pmm | rows of hexagons, corners touching, bow ties between |
+| `dodecasquare` | Square dodecagonal | [3.4.3.12; 3.12²] | p4m | dodecagons on a square lattice, a square and four triangles in each gap |
+| `hexrings` | Dissected truncated trihexagonal | [3.4².6; 3.4.6.4] | p6m | 3.4.6.4's tiles with the squares in rows of three |
+| `squaretrihex` | Elongated trihexagonal | [3.4².6; 3.6.3.6]₁ | pmm | square courses between trihexagonal bands, in line |
+| `squaretrihex2` | Staggered elongated trihexagonal | [3.4².6; 3.6.3.6]₂ | cmm | the same, each band half a hexagon along |
 
-The labels stay the vertex types, which is what the tilings are called. Where
-two tilings share both types, (1) is the one with the smaller cell and (2) the
-larger. For 3.4².6; 3.6.3.6, whose two cells are the same size, (1) is the one
-whose cell is a rectangle (pmm) rather than centred (cmm). That numbering is
-this game's own; the literature numbers these pairs too, and nothing here was
-checked against its order.
+The literature knows these tilings only by their vertex types, so that is the
+`notation`, written as Grünbaum and Shephard (*Tilings and Patterns*, 1987,
+pp. 65–67) and Wikipedia's tables write it. Where two tilings share both
+types, its subscript is theirs: ₁ and ₂ are not this game's to choose, and
+`test_subscripts_follow_the_literature` pins the two pairs a mirror tells apart.
+The menu shows the notation under the label.
+
+The **label** is this game's own, in words, after the uniform tiling each is
+made from and what was done to it — the same few words throughout:
+
+- **fanned**: a hexagon cut into six triangles from its centre;
+- **dissected**: a dodecagon cut into a hexagon ringed by six squares and six
+  triangles (Wikipedia's word for it); **turned** when the ring sits the other
+  way round;
+- **elongated**: rows of squares between rows of triangles, as in *elongated
+  triangular*. **Half-** and **third-** put one row in every second or third
+  gap; **doubly** and **triply** put two or three in every gap;
+- **studded**: a bigger tile at every point of a sparse lattice (**twisted**
+  when that lattice is turned off the grid, so the tiling is chiral);
+- **banded**, **bow-tie**, **pinwheel**, **zigzag**, **staggered**: what the
+  pattern looks like, where no operation names it.
+
+A new label wants a word from that list, or one that reads as plainly; a
+label that only a geometer could decode belongs in the notation instead.
 
 Three things about a cell that are easy to get wrong:
 
@@ -415,14 +433,16 @@ wide as its neighbours (~480 px).
 - every interior vertex is one of the two declared types, read as a cyclic
   sequence, which is what tells 3².4.3.4 from 3³.4²;
 - the domain's tiles cover it exactly;
+- the notation names the same two vertex types, and carries a subscript
+  exactly where two tilings share them;
 - no two of the twenty are the same tiling, by the vertex types met ring by
-  ring walking out from each kind of vertex. The (1)/(2) pairs need this,
+  ring walking out from each kind of vertex. The subscripted pairs need this,
   because the vertex check cannot tell them apart.
 
 The menu icon is a `disc` patch (`discPatch` in `web/src/ui/icons.ts`) reaching
 past the first ring of tiles, since a ring round one tile or one vertex shows one
 vertex type and reads as the uniform tiling it was cut from. Its `DISC_RADIUS` is
-per tiling, and for a (1)/(2) pair wide enough that the two icons differ.
+per tiling, and for a subscripted pair wide enough that the two icons differ.
 
 **Wrapping them later** is the same as for "Other": choose a `cut`, drop the
 family from the two flat-only lists, and add the surface presets. The mirror

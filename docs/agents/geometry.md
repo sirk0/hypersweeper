@@ -172,7 +172,10 @@ into triangles (3⁶; 3².4.3.4), 3.12.12 with its dodecagons cut into the
 merged into a dodecagon (3.4.6.4; 4.6.12) — and the other seventeen are
 written down from one translation cell each (`_cell_template`). Between them
 they cover seven wallpaper groups (p6m, p6, p4m, p4g, pmm, cmm and pgg). Five
-pairs share both vertex types and are told apart by (1) and (2) in their labels.
+pairs share both vertex types. The labels are words (fanned, dissected,
+elongated, studded … — "label" in the recipe below); the literature's symbol,
+with its ₁/₂ subscript for those pairs, is `ArchTiling.notation`, exported to
+`data/catalog.json` as `tilingNotations` and shown under the label in the menu.
 `_FAMILY_TRAITS` says edge to edge and nothing else, and
 `ArchTiling.vertex_types` holds the two configurations `TestTwoUniform` checks
 every interior vertex against. See "Recipe: add a 2-uniform tiling" in
