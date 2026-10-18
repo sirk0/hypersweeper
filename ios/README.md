@@ -205,7 +205,7 @@ that tracks `package.json`, and a build number that grows.
   first, leaving the board as the header's back arrow does (without asking).
 - **The File menu picks the difficulty and the board.** Under New Game come
   Easy ⌘1 / Medium ⌘2 / Hard ⌘3, with a checkmark on the one in play, then the
-  quick-play entries (Classic ⇧⌘C, Volumetric ⇧⌘V, Random Flat Board ⇧⌘F,
+  quick-play entries (Classic ⇧⌘C, Random Flat Board ⇧⌘F,
   Random 3D Board ⇧⌘D),
   then a submenu for each group of the home menu: Flat, Flat manifolds (a
   submenu per surface), Sphere, the solid pages and Volumes. Each one holds

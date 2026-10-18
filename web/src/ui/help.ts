@@ -101,15 +101,13 @@ const SECTIONS: Section[] = [
     heading: "Choosing a board",
     rows: [
       [
-        "Classic, Volumetric",
-        "The two boards that open straight away. Classic is the original " +
-          "square grid; Volumetric is a cube filled with cubes, where a cell " +
-          "touches 26 others and the board is played as a deck of slices.",
+        "Classic",
+        "Opens straight away: the original square grid.",
       ],
       [
         "Flat, 3D",
-        "Each deals a random board — a flat tiling, or a manifold, sphere, " +
-          "polyhedron or volume.",
+        "Each deals a random board — a flat tiling, or a manifold, sphere " +
+          "or polyhedron.",
       ],
       [
         "Custom",

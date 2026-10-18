@@ -1,7 +1,6 @@
 import {
   MENU,
   MENU_FAMILY_LABELS,
-  MODE_LABELS,
   SOLID_GROUPS,
   SURFACES,
   menuFamilies,
@@ -91,7 +90,7 @@ export interface ModeGroup {
 
 export type Group = PickerGroup | ManifoldGroup | ModeGroup;
 
-/** One of the four quick-play entries. `mode` opens that board; `random`
+/** One of the three quick-play entries. `mode` opens that board; `random`
  * deals one from that half of the catalogue at click time, so it is a
  * different board every time (see `randomRow`). */
 export interface QuickEntry {
@@ -152,17 +151,15 @@ export function boardGroups(): Group[] {
   });
 }
 
-/** Classic and Volumetric (which open one particular board straight away)
- * and one random board from each half of the catalogue — the four entries
- * the phone home page lists as rows and the desktop shows as the Quick start
- * page's cards. Stated once here so the two cannot drift apart.
+/** Classic (which opens one particular board straight away) and one random
+ * board from each half of the catalogue — the three entries the phone home
+ * page lists as rows and the desktop shows as the Quick start page's cards.
+ * Stated once here so the two cannot drift apart.
  *
- * The two launch entries come first: the rows that open a named board sit
- * above the ones that deal a surprise. Volumetric's label comes from the
- * shared MODE_LABELS rather than a string here, because unlike Classic
- * (whose entry says "Classic" and whose board is captioned "Squares") the
- * entry and the board are the same word, and reading it once is what keeps
- * them so. */
+ * The launch entry comes first: the row that opens a named board sits above
+ * the ones that deal a surprise. Volumetric (cube3d) used to be a second
+ * launch entry; it is in Custom › Volumes only until its UX is ready to be
+ * promoted (see CUSTOM_ONLY in boards/randomBoard.ts). */
 export function quickPlayEntries(): QuickEntry[] {
   const entries: QuickEntry[] = [];
   // Classic — flat squares, launched straight away (gui.py MenuScreen).
@@ -173,15 +170,6 @@ export function quickPlayEntries(): QuickEntry[] {
       label: ROOT_LABELS["classic"] ?? "Classic",
       hint: "Flat squares — the original.",
       icon: "classic",
-    });
-  }
-  if (hasMode("cube3d")) {
-    entries.push({
-      kind: "mode",
-      key: "cube3d",
-      label: MODE_LABELS["cube3d"] ?? "Volumetric",
-      hint: "A cube filled with cubes — 26 neighbours.",
-      icon: "cube3d",
     });
   }
   if (randomPool("flat").length > 0) {
@@ -199,7 +187,7 @@ export function quickPlayEntries(): QuickEntry[] {
       kind: "random",
       key: "3d",
       label: "3D",
-      hint: "A random manifold, sphere, polyhedron or volume.",
+      hint: "A random manifold, sphere or polyhedron.",
       icon: "3d",
     });
   }

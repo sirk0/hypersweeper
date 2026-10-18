@@ -18,8 +18,7 @@ import { boardGroups, pickerFor, quickPlayEntries, type Group } from "./ui/board
 //   board:<mode>      start that board
 //   quick:<mode>      the same, for a quick-play entry. A command of its own
 //                     because UIKit throws on two identical commands in one
-//                     menu bar, and Classic and Volumetric also sit in their
-//                     groups.
+//                     menu bar, and Classic also sits in its group.
 //   random:<kind>     deal a board from that half of the catalogue
 //   difficulty:<key>  play at that difficulty (⌘1, ⌘2, ⌘3, checkmarked)
 //
@@ -48,7 +47,6 @@ export interface MenuBarKey {
  * (⇧⌘Z, ⇧⌘G, ⌥⇧⌘V, ⌘M, ⌘W) none of these touch. */
 const QUICK_KEYS: Record<string, string> = {
   square: "c", // Classic
-  cube3d: "v", // Volumetric
   flat: "f",
   "3d": "d",
 };

@@ -156,9 +156,11 @@ cell minus itself — **26** neighbours, against 21 for the densest surface in
 the zoo — and it is exact integer arithmetic, so nothing is rounded together to
 make a neighbour.
 
-It sits on the **home page**, second, under **Volumetric** — the game's fifth
-front-page row and its second one-tap launcher, beside Classic. Three notes on
-that. The name: *Solid* was the obvious word and is unusable, because "solid"
+It sat on the **home page**, second, under **Volumetric** — the game's fifth
+front-page row and its second one-tap launcher, beside Classic. *(Since taken
+off it, and out of the random 3D pool: it is Custom › Volumes only until its UX
+is ready to be promoted — `CUSTOM_ONLY` in `src/boards/randomBoard.ts`.)* Three
+notes on that. The name: *Solid* was the obvious word and is unusable, because "solid"
 already means *polyhedron* everywhere in this codebase (`SOLID_MODES`,
 `solidBoard`, Platonic and Catalan solids), and a sixth meaning for it would
 cost more than it bought; *Volumetric* is unambiguous, and it pairs with the

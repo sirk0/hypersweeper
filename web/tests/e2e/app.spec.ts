@@ -59,12 +59,13 @@ test.describe("M1 app", () => {
     expect(state?.mode).toBe("brickrings");
   });
 
-  // The home page's two *launch* rows open one particular board with no
-  // drilling. Classic is covered by the flat-board test above, which reaches
-  // `square` the long way through Custom; this pins the short way, and that
-  // the board it opens is the volume one rather than the Volumes group page.
-  test("the home Volumetric row opens the cube of cubes outright", async ({ page }) => {
+  // The cube of cubes is Custom-only until its UX is ready to be promoted:
+  // no home row (or Quick start card) launches it, and Volumes still does.
+  test("the cube of cubes opens from Volumes, not from the home page", async ({ page }) => {
+    await expect(page.locator('.menu-entry[data-mode="square"]:visible')).toBeVisible();
+    await expect(page.locator('.menu-entry[data-mode="cube3d"]')).toHaveCount(0);
     await page.locator('.difficulty-btn[data-key="easy"]').click();
+    await page.locator('.menu-entry[data-group="volume"]').click();
     await page.locator('.menu-entry[data-mode="cube3d"]').click();
     const state = await page.evaluate(() => window.__ms?.state());
     expect(state?.screen).toBe("game");

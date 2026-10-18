@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { blockedModes, modeFairness } from "../../src/boards/fairness";
 import { hasMode } from "../../src/boards/presets";
-import { randomMode, randomPool } from "../../src/boards/randomBoard";
+import { CUSTOM_ONLY, randomMode, randomPool } from "../../src/boards/randomBoard";
+import { quickPlayEntries } from "../../src/ui/boardTree";
 import { isBoard3D } from "../../src/boards/core";
 import { buildBoard } from "../../src/boards/presets";
 
@@ -27,6 +28,17 @@ describe("random board pools", () => {
     }
     const flat = new Set(randomPool("flat"));
     expect(randomPool("3d").some((mode) => flat.has(mode))).toBe(false);
+  });
+
+  it("keeps the Custom-only boards off the home page and out of both pools", () => {
+    expect(CUSTOM_ONLY.has("cube3d")).toBe(true);
+    const home = quickPlayEntries().map((e) => e.key);
+    for (const mode of CUSTOM_ONLY) {
+      expect(hasMode(mode), mode).toBe(true);
+      expect(home, mode).not.toContain(mode);
+      expect(randomPool("flat"), mode).not.toContain(mode);
+      expect(randomPool("3d"), mode).not.toContain(mode);
+    }
   });
 
   it("never deals a board that cannot be played", () => {
