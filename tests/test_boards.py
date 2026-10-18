@@ -180,10 +180,14 @@ from minesweeper.boards.surfaces import TREFOIL_REACH, _trefoil_core
 # both treatments. Reflective tilings (a plain mirror, not just a glide or
 # pinwheel) additionally give left-right / top-bottom symmetric boards.
 _UNIFORM = [t.key for t in ARCH_TILINGS if t.family == "uniform"]
-# the tilings that wrap a surface at all: derived from the catalog, so a
-# chiral tiling (no template mirror) or one without a torus preset yet drops
-# out automatically
-_WRAPPED_TILINGS = [t.key for t in ARCH_TILINGS if "torus" in TILINGS[t.key][1]]
+# the tilings that wrap a donut: derived from the catalog, so one without a
+# torus preset yet drops out automatically
+_TORUS_TILINGS = [t.key for t in ARCH_TILINGS if "torus" in TILINGS[t.key][1]]
+# ...and the tilings that wrap a surface at all -- the 2-uniform ones reach the
+# cylinder but no donut (_FAMILY_SURFACES in catalog.py), and they choose a cut
+# all the same
+_WRAPPED_TILINGS = [t.key for t in ARCH_TILINGS
+                    if set(TILINGS[t.key][1]) - {"flat"}]
 _ISOGONAL = [t.key for t in ARCH_TILINGS if t.family == "isogonal"]
 _RECTANGLE = [t.key for t in ARCH_TILINGS if t.family == "rectangle"]
 # the two rep-tile patterns. They share the "other" family with Durer's
@@ -4201,13 +4205,15 @@ class TestWrappedArchimedean:
     # tilings' T-vertices inflate every cell's stored corner count (see
     # _insert_t_vertices) -- TestIsogonal covers their vertex configuration
     # on the plane, corners measured with the T-vertices dropped.
+    # longest suffix wins: "cylsquaretrihex" ends in "trihex" too
     WRAPPED_VERTEX_TRANSITIVE = [
         m for m in WRAPPED
-        if any(m.endswith(t) for t in set(_VERTEX_TRANSITIVE) & set(_EDGE_TO_EDGE))
+        if max((t for t in _ARCH_CONFIGS if m.endswith(t)), key=len)
+        in set(_VERTEX_TRANSITIVE) & set(_EDGE_TO_EDGE)
     ]
 
     @pytest.mark.parametrize(
-        "tiling", sorted(set(_UNIFORM) & set(_WRAPPED_TILINGS)))
+        "tiling", sorted(set(_UNIFORM) & set(_TORUS_TILINGS)))
     def test_torus_vertex_configuration_everywhere(self, tiling):
         """A torus has no boundary, so every single vertex must show the
         tiling's full vertex configuration."""
@@ -4343,6 +4349,27 @@ class TestWrappedArchimedean:
             "kleinbasketweave3": (108, 270, 504),
             "torusherringbone": (80, 256, 480),
             "cylherringbone": (90, 250, 490),
+            # the 2-uniform tilings wrap the cylinder alone
+            "cylstuddedtri": (80, 231, 460),
+            "cylstuddedtri2": (84, 252, 504),
+            "cylelongated2": (70, 220, 435),
+            "cylelongated3": (70, 228, 532),
+            "cyltrirhombitrihex": (75, 259, 528),
+            "cyltritrunctrihex": (96, 280, 504),
+            "cylfannedhex": (80, 240, 520),
+            "cylhexbands": (88, 256, 462),
+            "cylsnubelongated2": (78, 248, 480),
+            "cylsnubelongated": (84, 288, 480),
+            "cyldissectedtrunchex2": (90, 240, 450),
+            "cylsquarerows2": (72, 276, 512),
+            "cylsquarerows3": (69, 224, 442),
+            "cyldissectedtrunchex": (75, 270, 450),
+            "cylhexrows": (70, 288, 456),
+            "cyldodecasquare": (90, 252, 432),
+            "cylhexrings": (88, 240, 522),
+            "cylsquaretrihex": (84, 255, 440),
+            "cylsquaretrihex2": (72, 270, 460),
+            "cyldodecarhombitrihex": (80, 280, 520),
         }
         assert sorted(counts) == sorted(self.WRAPPED)
         for mode, expected in counts.items():
@@ -4353,12 +4380,15 @@ class TestWrappedArchimedean:
     # band or tube comes out with a straight rim (see the AGENT NOTE on the cut
     # in boards/tilings.py). The rest are cut halfway between two courses and
     # get a symmetric zigzag instead. One list for both surfaces, because they
-    # share the cut: every tiling here is straight on the Mobius strip and on
-    # the cylinder alike.
+    # share the cut: every tiling here is straight on whichever of the Mobius
+    # strip and the cylinder it wraps.
     STRAIGHT_RIM = {
         "elongated", "trihex", "prismaticpent", "deltoidal", "triakis",
         "kisrhombille", "tetrakis", "offsetsquare", "staggeredtri",
         "stackedbond", "runningbond", "basketweave", "basketweave3",
+        # 2-uniform, the cylinder only
+        "studdedtri", "elongated2", "elongated3", "fannedhex", "squarerows2",
+        "squarerows3", "squaretrihex", "squaretrihex2",
     }
 
     MOBIUS_MODES = sorted(m for m in WRAPPED if m.startswith("mobius"))
@@ -4557,7 +4587,7 @@ class TestWrappedArchimedean:
             arch_torus_board("trihex", 1, 3, 2)
 
     def test_torus_polygons_face_outward(self):
-        for tiling in sorted(_WRAPPED_TILINGS):
+        for tiling in sorted(_TORUS_TILINGS):
             board = build_board("torus" + tiling, "easy")
             for cell, polygon in board.polygons.items():
                 normal = newell_normal(polygon)

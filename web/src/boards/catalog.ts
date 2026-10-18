@@ -29,9 +29,9 @@ export interface TilingSpec {
    * The regular tilings in data/catalog.json omit it, and all three do. */
   reversesY?: boolean;
   modeOverrides: Record<string, string>;
-  /** The plane only: no wrap builders or preset windows for this tiling
-   * (the 2-uniform and "Other" families — see FLAT_ONLY_ARCH_FAMILIES). */
-  flatOnly?: boolean;
+  /** The only surfaces this tiling has preset windows on; absent means every
+   * surface its symmetry allows. Set per family, by ARCH_FAMILY_SURFACES. */
+  surfaces?: readonly string[];
   /** A 2-uniform tiling's symbol as the literature writes it, "[3⁶; 3⁴.6]₁" —
    * its label is words, so the menu shows this underneath. */
   notation?: string;
@@ -52,12 +52,17 @@ const TILING_NOTATIONS = catalog.tilingNotations as Record<string, string>;
 // gates it out of the orientation-reversing Möbius / Klein surfaces; one whose
 // template never reverses y at all (three-scale triangular, p3) is gated out of
 // the cylinder, whose two rims have to be the same curve.
-// The ARCH_TILINGS families that live on the plane only: no wrap builders and
-// no per-surface preset windows for them yet. Their members are tilings all
-// the same (a rectangular domain a surface could be glued from), unlike the
-// one-off boards of FLAT_ONLY_FAMILIES below — so they are gated here, by
-// TilingSpec.flatOnly, rather than by being kept out of the picker.
-const FLAT_ONLY_ARCH_FAMILIES = new Set<string>(["2-uniform", "other"]);
+// The ARCH_TILINGS families that reach only some surfaces: the rest have no
+// preset windows for them yet. Their members are tilings all the same (a
+// rectangular domain a surface could be glued from), unlike the one-off boards
+// of FLAT_ONLY_FAMILIES below — so they are gated here, by TilingSpec.surfaces,
+// rather than by being kept out of the picker. "Other" is the plane alone (no
+// cut chosen); the 2-uniform tilings have cuts, and so a cylinder, but no
+// torus, Möbius or Klein windows. Mirrors _FAMILY_SURFACES in catalog.py.
+const ARCH_FAMILY_SURFACES: Record<string, readonly string[]> = {
+  "2-uniform": ["flat", "cylinder"],
+  other: ["flat"],
+};
 
 export const ARCH_TILING_SPECS: TilingSpec[] = ARCH_TILINGS.map((t) => ({
   key: t.key,
@@ -65,7 +70,7 @@ export const ARCH_TILING_SPECS: TilingSpec[] = ARCH_TILINGS.map((t) => ({
   chiral: archTemplate(t.key).mirror === null,
   reversesY: archTemplate(t.key).flips.length > 0,
   modeOverrides: {},
-  flatOnly: FLAT_ONLY_ARCH_FAMILIES.has(t.family),
+  ...(ARCH_FAMILY_SURFACES[t.family] !== undefined ? { surfaces: ARCH_FAMILY_SURFACES[t.family] } : {}),
   ...(TILING_NOTATIONS[t.key] !== undefined ? { notation: TILING_NOTATIONS[t.key] } : {}),
 }));
 
@@ -101,7 +106,7 @@ export function modeFor(tilingKey: string, surfaceKey: string): string {
  * one (the cylinder) rejects a tiling that never reverses y, and a surface may
  * restrict itself to an explicit tiling allow-list. */
 export function tilingAllows(tiling: TilingSpec, surface: SurfaceSpec): boolean {
-  if (tiling.flatOnly && surface.key !== "flat") return false;
+  if (tiling.surfaces && !tiling.surfaces.includes(surface.key)) return false;
   if (surface.needsMirror && tiling.chiral) return false;
   if (surface.needsFlip && tiling.reversesY === false) return false;
   if (surface.tilings && !surface.tilings.includes(tiling.key)) return false;
@@ -195,10 +200,10 @@ export const PICKER_REGULAR = MENU.pickerRegular as string[];
  * only — an aperiodic tiling has no periodic domain to glue a seam with, and a
  * fractal board is a self-similar shape rather than a window. Isogonal and
  * rectangle wrap every surface their member tilings' chirality allows, just
- * like uniform and dual. The 2-uniform tilings, the rep-tiles and Dürer's
- * tiling are in this list too, flat-only as they are, being tilings:
- * `pickerFamilies` drops a family a surface has no row of rather than naming
- * it in two places. */
+ * like uniform and dual. The 2-uniform tilings (the plane and the cylinder),
+ * the rep-tiles and Dürer's tiling (the plane alone) are in this list too,
+ * being tilings: `pickerFamilies` drops a family a surface has no row of
+ * rather than naming it in two places. */
 export const PICKER_FAMILIES = [
   "regular",
   "uniform",
@@ -283,8 +288,10 @@ export function familyRows(family: string, surfaceKey: string): FamilyRow[] {
 /** The family rows a surface's picker offers, in order. What a surface drops
  * is decided row by row in `familyRows`, by the three things that can stop a
  * tiling reaching it — a chiral tiling has no mirror to close a Möbius or
- * Klein seam with, a flat-only tiling ("Other", for now) has no wrap builder
- * yet, and a surface restricted to an allow-list of tilings (the
+ * Klein seam with, a tiling whose family is held to some surfaces
+ * (ARCH_FAMILY_SURFACES: "Other" to the plane, "2-uniform" to the plane and
+ * the cylinder) has no windows elsewhere yet, and a surface restricted to an
+ * allow-list of tilings (the
  * double torus) refuses the rest — and a family left with no row at all is
  * dropped with them rather than shown as a page of greyed-out rows. */
 export function pickerFamilies(surfaceKey: string): string[] {

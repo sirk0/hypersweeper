@@ -89,15 +89,15 @@ class TilingSpec:
     #   in two rims that are the same curve -> a cylinder. p3 (three-scale
     #   triangular) has neither; see _ArchTemplate.flips.
     mode_overrides: dict = field(default_factory=dict)  # surface -> mode string
-    flat_only: bool = False              # the plane only: no wrap builders or
-    #   preset windows for this tiling (currently no ARCH_TILINGS family --
-    #   see _FLAT_ONLY_FAMILIES -- but a future one-off tiling could set it)
+    surfaces: frozenset[str] | None = None  # the only surfaces this tiling
+    #   has preset windows on; None means every surface its symmetry allows.
+    #   Set per family, by _FAMILY_SURFACES.
 
     def mode(self, surface: SurfaceSpec) -> str:
         return self.mode_overrides.get(surface.key, surface.prefix + self.key)
 
     def allows(self, surface: SurfaceSpec) -> bool:
-        if self.flat_only and surface.key != "flat":
+        if self.surfaces is not None and surface.key not in self.surfaces:
             return False
         if surface.needs_mirror and self.chiral:
             return False
@@ -121,17 +121,22 @@ REGULAR_TILINGS = tuple(
     for r in _CATALOG["regularTilings"]
 )
 
-# the ARCH_TILINGS families that live on the plane only: no wrap builders and
-# no per-surface preset windows for them yet. Their members are tilings all
-# the same (a rectangular domain a surface could be glued from), unlike the
-# one-off boards of FLAT_ONLY_FAMILIES below -- so they are gated here, by
-# TilingSpec.flat_only, rather than by being kept out of the picker.
-_FLAT_ONLY_FAMILIES: frozenset[str] = frozenset({"2-uniform", "other"})
+# the ARCH_TILINGS families that reach only some surfaces: the rest have no
+# preset windows for them yet. Their members are tilings all the same (a
+# rectangular domain a surface could be glued from), unlike the one-off boards
+# of FLAT_ONLY_FAMILIES below -- so they are gated here, by
+# TilingSpec.surfaces, rather than by being kept out of the picker. "Other" is
+# the plane alone (no cut chosen); the 2-uniform tilings have cuts, and so a
+# cylinder, but no torus, Mobius or Klein windows.
+_FAMILY_SURFACES: dict[str, frozenset[str]] = {
+    "2-uniform": frozenset({"flat", "cylinder"}),
+    "other": frozenset({"flat"}),
+}
 
 TILING_SPECS = REGULAR_TILINGS + tuple(
     TilingSpec(t.key, t.label, chiral=t.template().mirror is None,
                reverses_y=bool(t.template().flips),
-               flat_only=t.family in _FLAT_ONLY_FAMILIES)
+               surfaces=_FAMILY_SURFACES.get(t.family))
     for t in ARCH_TILINGS
 )
 TILINGS_BY_KEY = {t.key: t for t in TILING_SPECS}
@@ -261,9 +266,9 @@ FAMILY_MEMBERS = {
 }
 # the picker's family rows, in order; the flat-only families (whose members are
 # one-off modes, not tilings) are added on the plane alone. "2-uniform" and
-# "Other" are in the ordinary list although they are flat-only too: their
-# members are tilings, and picker_families drops a family a surface has no row
-# of rather than naming it in two places.
+# "Other" are in the ordinary list although they reach only some surfaces (see
+# _FAMILY_SURFACES): their members are tilings, and picker_families drops a
+# family a surface has no row of rather than naming it in two places.
 PICKER_FAMILIES = ("regular", "uniform", "dual", "2-uniform", "isogonal",
                    "rectangle", "other")
 FLAT_ONLY_FAMILIES = ("aperiodic", "spiral", "fractal", "hyperbolic")
@@ -334,10 +339,11 @@ def picker_families(surface_key: str) -> tuple[str, ...]:
     and any whose rows a surface disables to the last one. What a surface
     drops it drops row by row in ``family_rows``, on the three things that can
     stop a tiling reaching it -- a chiral tiling has no mirror to close a
-    Mobius or Klein seam with, a flat-only tiling ("2-uniform" and "Other",
-    for now) has no wrap builder yet, and a surface restricted to an
-    allow-list of tilings (the double torus, square only for now) refuses the
-    rest. A family with nothing left on it is a page of greyed-out rows, so it
+    Mobius or Klein seam with, a tiling whose family is held to some
+    surfaces (``_FAMILY_SURFACES``: "Other" to the plane, "2-uniform" to the
+    plane and the cylinder) has no windows elsewhere yet, and a surface
+    restricted to an allow-list of tilings (the double torus, square only for
+    now) refuses the rest. A family with nothing left on it is a page of greyed-out rows, so it
     is not offered at all.
     """
     families = (PICKER_FAMILIES + FLAT_ONLY_FAMILIES if surface_key == "flat"

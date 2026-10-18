@@ -1370,7 +1370,7 @@ def _herringbone_template() -> _ArchTemplate:
 # pentagon. Inflating one of those tiles is a fractal; laying the same tile
 # down periodically is an ordinary wallpaper pattern, and that is what these
 # templates are. They ship on the plane only for now -- no cut is chosen and
-# no surface builder wraps them (_FLAT_ONLY_FAMILIES in catalog.py).
+# no surface builder wraps them (_FAMILY_SURFACES in catalog.py).
 
 
 def _sphinxpairs_template() -> _ArchTemplate:
@@ -1499,8 +1499,9 @@ def _durer_template() -> _ArchTemplate:
 #                        of squares and triangles into a dodecagon
 #
 # All three are p6m, so their windows are symmetric every way a hexagon is.
-# The family ships on the plane only for now -- no cut is chosen and no surface
-# builder wraps it (_FLAT_ONLY_FAMILIES in catalog.py).
+# The family ships on the plane and the cylinder (_FAMILY_SURFACES in
+# catalog.py), so each of the twenty states a cut -- see "the cut" in the
+# comment above _steps.
 
 
 def _fan(polygon):
@@ -1545,7 +1546,8 @@ def _trirhombitrihex_template() -> _ArchTemplate:
             polygons += [(f"{name}t{k}", t) for k, t in enumerate(_fan(polygon))]
         else:
             polygons.append((name, polygon))
-    return _template((3, 4), width, height, polygons, centre=(0.0, 0.0))
+    return _template((3, 4), width, height, polygons, centre=(0.0, 0.0),
+                     cut=height / 7)
 
 
 def _dissectedtrunchex_template() -> _ArchTemplate:
@@ -1571,7 +1573,7 @@ def _dissectedtrunchex_template() -> _ArchTemplate:
                          for k, piece in enumerate(_dodecagon_patch(cx, cy, 30))]
         else:
             polygons.append((name, polygon))
-    return _template((3, 4, 6), a, a * ROOT3, polygons)
+    return _template((3, 4, 6), a, a * ROOT3, polygons, cut=a * ROOT3 / 4)
 
 
 def _dodecarhombitrihex_template() -> _ArchTemplate:
@@ -1592,7 +1594,7 @@ def _dodecarhombitrihex_template() -> _ArchTemplate:
     polygons = _rhombitrihex_polygons(
         width, height, merged=lambda m, n: m % 2 == 0 and n % 2 == 0,
         reach=range(-5, 7))
-    return _template((3, 4, 6, 12), width, height, polygons)
+    return _template((3, 4, 6, 12), width, height, polygons, cut=height / 5)
 
 
 # -- the other seventeen, from one translation cell ----------------------------
@@ -1621,7 +1623,17 @@ def _dodecarhombitrihex_template() -> _ArchTemplate:
 #     and dodecasquare take an edge instead: round their six- and four-fold
 #     centres, every window near the easy size leaves cells on its rim with an
 #     identical twin (metrics.indistinguishable_cells), so the size search
-#     could only answer with a sliver of a board.
+#     could only answer with a sliver of a board;
+#   * ``cut``: where a cylinder's rims fall, as a fraction of the domain's
+#     height (see the AGENT NOTE on the cut). Each sits in the gap between two
+#     rows of tile centres whose rim runs flattest, which for the eight with a
+#     horizontal line of edges (studdedtri, elongated2, elongated3, fannedhex,
+#     squarerows2, squarerows3, squaretrihex, squaretrihex2) is that line --
+#     bar a gap whose rim is not a puzzle: dodecasquare's flattest one cuts off
+#     the triangle on a rim square's outer side, which leaves that square and
+#     the triangle across it with one closed neighbourhood between them, so it
+#     takes the other gap as flat. Any height inside the gap keeps the same
+#     tiles, so the value is the simplest fraction that lands there.
 #
 # Five pairs of the twenty share both vertex types. The literature tells each
 # pair apart with a subscript (Grunbaum and Shephard, Tilings and Patterns,
@@ -1654,7 +1666,8 @@ def _unit_polygon(sides, corner, heading):
 _SIDE_NAMES = {3: "tri", 4: "sq", 6: "hex", 12: "dod"}
 
 
-def _cell_template(config, v1, v2, rect, tiles, centre, mirrored=True):
+def _cell_template(config, v1, v2, rect, tiles, centre, mirrored=True,
+                   cut=0.0):
     """A 2-uniform tiling's template from one translation cell -- see the
     comment above for what each argument is."""
     a, b = _steps(v1), _steps(v2)
@@ -1673,7 +1686,7 @@ def _cell_template(config, v1, v2, rect, tiles, centre, mirrored=True):
     turn = -math.degrees(math.atan2(along[1], along[0]))
     return _template(config, width, height,
                      _periodic_domain(a, b, width, height, polygons, turn),
-                     mirrored=mirrored, centre=(0.0, 0.0))
+                     mirrored=mirrored, centre=(0.0, 0.0), cut=cut * height)
 
 
 def _studdedtri_template() -> _ArchTemplate:
@@ -1686,7 +1699,7 @@ def _studdedtri_template() -> _ArchTemplate:
         (6, (0,), 0), (3, (), 2), (3, (), 4), (3, (), 8), (3, (), 10),
         (3, (), 0), (3, (), 6), (3, (10,), 0), (3, (4,), 0), (3, (6,), 8),
         (3, (10,), 10), (3, (0,), 10), (3, (2,), 2),
-    ], centre=0)
+    ], centre=0, cut=1 / 3)
 
 
 def _studdedtri2_template() -> _ArchTemplate:
@@ -1701,7 +1714,7 @@ def _studdedtri2_template() -> _ArchTemplate:
         (3, (4,), 6), (3, (8,), 4), (3, (10,), 10), (3, (0,), 10), (3, (0,), 0),
         (3, (2,), 0), (3, (2,), 2), (3, (8,), 6), (3, (6,), 4), (3, (6,), 6),
         (3, (2, 4), 0),
-    ], centre=0, mirrored=False)
+    ], centre=0, mirrored=False, cut=1 / 4)
 
 
 def _elongated2_template() -> _ArchTemplate:
@@ -1723,7 +1736,7 @@ def _elongated3_template() -> _ArchTemplate:
         (3, 4), (0,), (8, 8, 9, 10), ((1, 0), (-1, -2)), [
         (4, (10,), 6), (3, (), 4), (3, (), 2), (3, (), 8), (3, (), 6),
         (3, (4,), 0), (3, (4,), 2),
-    ], centre=0)
+    ], centre=0, cut=1 / 3)
 
 
 def _tritrunctrihex_template() -> _ArchTemplate:
@@ -1736,7 +1749,7 @@ def _tritrunctrihex_template() -> _ArchTemplate:
         (3, (), 4), (3, (), 8), (3, (), 10), (3, (), 0), (3, (), 6),
         (3, (10, 11), 0), (3, (3, 4), 0), (3, (6, 7), 8), (3, (10, 11), 10),
         (3, (0, 11), 10), (3, (2, 3), 2),
-    ], centre=0)
+    ], centre=0, cut=1 / 3)
 
 
 def _fannedhex_template() -> _ArchTemplate:
@@ -1758,7 +1771,7 @@ def _hexbands_template() -> _ArchTemplate:
     return _cell_template(
         (3, 6), (1, 11), (7, 9, 9), ((1, 0), (-1, -2)), [
         (6, (), 7), (3, (), 3), (3, (), 5), (3, (), 11), (3, (), 1),
-    ], centre=0)
+    ], centre=0, cut=1 / 3)
 
 
 def _snubelongated_template() -> _ArchTemplate:
@@ -1784,7 +1797,7 @@ def _snubelongated2_template() -> _ArchTemplate:
         (4, (9, 10), 6), (3, (), 3), (3, (), 5), (3, (), 7), (3, (9,), 10),
         (3, (0,), 9), (3, (0,), 1), (3, (3,), 0), (3, (0,), 11), (3, (3,), 2),
         (3, (5,), 4), (3, (9,), 8), (3, (7,), 6),
-    ], centre=((0,), ()))
+    ], centre=((0,), ()), cut=1 / 7)
 
 
 def _dissectedtrunchex2_template() -> _ArchTemplate:
@@ -1798,7 +1811,7 @@ def _dissectedtrunchex2_template() -> _ArchTemplate:
         (6, (4,), 1), (4, (), 10), (4, (), 1), (4, (4,), 5), (4, (10,), 6),
         (4, (6,), 5), (4, (8,), 6), (3, (), 4), (3, (), 8), (3, (), 6),
         (3, (6,), 8), (3, (1,), 10), (3, (1,), 2), (3, (1,), 0), (3, (4, 5), 6),
-    ], centre=0)
+    ], centre=0, cut=1 / 4)
 
 
 def _squarerows2_template() -> _ArchTemplate:
@@ -1818,7 +1831,7 @@ def _squarerows3_template() -> _ArchTemplate:
     return _cell_template(
         (3, 4), (0,), (8, 9, 9, 9), ((1, 0), (-1, -2)), [
         (4, (), 3), (4, (10,), 6), (4, (3,), 3), (3, (), 10), (3, (), 8),
-    ], centre=2)
+    ], centre=2, cut=1 / 3)
 
 
 def _hexrows_template() -> _ArchTemplate:
@@ -1829,7 +1842,7 @@ def _hexrows_template() -> _ArchTemplate:
     return _cell_template(
         (3, 6), (1, 11), (9, 9), ((1, 0), (0, -1)), [
         (6, (), 5), (3, (), 3), (3, (), 1),
-    ], centre=((), (3,)))
+    ], centre=((), (3,)), cut=1 / 3)
 
 
 def _dodecasquare_template() -> _ArchTemplate:
@@ -1841,7 +1854,7 @@ def _dodecasquare_template() -> _ArchTemplate:
         (3, 4, 12), (8, 9, 9, 10), (0, 0, 1, 11), ((0, 1), (-1, 0)), [
         (12, (), 5), (4, (), 0), (3, (), 3), (3, (), 10), (3, (0,), 1),
         (3, (3,), 0),
-    ], centre=((2, 3), (2, 3, 3)))
+    ], centre=((2, 3), (2, 3, 3)), cut=2 / 3)
 
 
 def _hexrings_template() -> _ArchTemplate:
@@ -1856,7 +1869,7 @@ def _hexrings_template() -> _ArchTemplate:
         (4, (6, 8), 4), (4, (6, 8), 7), (4, (4, 6), 3), (3, (), 2),
         (3, (11,), 0), (3, (8,), 6), (3, (8, 11), 8), (3, (4, 6), 6),
         (3, (3, 4), 0),
-    ], centre=2)
+    ], centre=2, cut=3 / 7)
 
 
 def _squaretrihex_template() -> _ArchTemplate:
@@ -1866,7 +1879,7 @@ def _squaretrihex_template() -> _ArchTemplate:
     return _cell_template(
         (3, 4, 6), (0, 2, 10), (8, 9, 10), ((1, 0), (0, -1)), [
         (6, (), 4), (4, (4,), 0), (4, (4,), 3), (3, (), 2), (3, (), 8),
-    ], centre=((),))
+    ], centre=((),), cut=1 / 3)
 
 
 def _squaretrihex2_template() -> _ArchTemplate:
@@ -1875,7 +1888,7 @@ def _squaretrihex2_template() -> _ArchTemplate:
     return _cell_template(
         (3, 4, 6), (0, 2, 10), (8, 8, 9), ((1, 0), (-1, -2)), [
         (6, (), 4), (4, (10,), 6), (4, (4,), 0), (3, (), 2), (3, (), 8),
-    ], centre=((),))
+    ], centre=((),), cut=1 / 3)
 
 
 @dataclass(frozen=True)

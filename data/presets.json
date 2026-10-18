@@ -4666,6 +4666,29 @@
         ]
       }
     },
+    "cylstuddedtri": {
+      "builder": "arch_cylinder_board",
+      "args": {
+        "easy": [
+          "studdedtri",
+          4,
+          0.8333333333333334,
+          11
+        ],
+        "medium": [
+          "studdedtri",
+          7,
+          1.3333333333333333,
+          31
+        ],
+        "hard": [
+          "studdedtri",
+          10,
+          1.8333333333333335,
+          92
+        ]
+      }
+    },
     "studdedtri2": {
       "builder": "archimedean_board",
       "args": {
@@ -4689,6 +4712,29 @@
           3,
           109,
           33.282
+        ]
+      }
+    },
+    "cylstuddedtri2": {
+      "builder": "arch_cylinder_board",
+      "args": {
+        "easy": [
+          "studdedtri2",
+          4,
+          0.5,
+          11
+        ],
+        "medium": [
+          "studdedtri2",
+          6,
+          1,
+          39
+        ],
+        "hard": [
+          "studdedtri2",
+          8,
+          1.5,
+          105
         ]
       }
     },
@@ -4718,6 +4764,29 @@
         ]
       }
     },
+    "cylelongated2": {
+      "builder": "arch_cylinder_board",
+      "args": {
+        "easy": [
+          "elongated2",
+          14,
+          1,
+          9
+        ],
+        "medium": [
+          "elongated2",
+          22,
+          2,
+          38
+        ],
+        "hard": [
+          "elongated2",
+          29,
+          3,
+          98
+        ]
+      }
+    },
     "elongated3": {
       "builder": "archimedean_board",
       "args": {
@@ -4741,6 +4810,29 @@
           2,
           99,
           31.875
+        ]
+      }
+    },
+    "cylelongated3": {
+      "builder": "arch_cylinder_board",
+      "args": {
+        "easy": [
+          "elongated3",
+          14,
+          0.3333333333333333,
+          9
+        ],
+        "medium": [
+          "elongated3",
+          19,
+          0.8333333333333334,
+          43
+        ],
+        "hard": [
+          "elongated3",
+          28,
+          1.3333333333333333,
+          120
         ]
       }
     },
@@ -4770,6 +4862,29 @@
         ]
       }
     },
+    "cyltrirhombitrihex": {
+      "builder": "arch_cylinder_board",
+      "args": {
+        "easy": [
+          "trirhombitrihex",
+          5,
+          0.7142857142857143,
+          13
+        ],
+        "medium": [
+          "trirhombitrihex",
+          7,
+          1.7142857142857144,
+          54
+        ],
+        "hard": [
+          "trirhombitrihex",
+          11,
+          2.2142857142857144,
+          123
+        ]
+      }
+    },
     "tritrunctrihex": {
       "builder": "archimedean_board",
       "args": {
@@ -4793,6 +4908,29 @@
           3,
           34,
           20.287
+        ]
+      }
+    },
+    "cyltritrunctrihex": {
+      "builder": "arch_cylinder_board",
+      "args": {
+        "easy": [
+          "tritrunctrihex",
+          4,
+          0.8333333333333334,
+          5
+        ],
+        "medium": [
+          "tritrunctrihex",
+          7,
+          1.3333333333333333,
+          9
+        ],
+        "hard": [
+          "tritrunctrihex",
+          9,
+          1.8333333333333335,
+          28
         ]
       }
     },
@@ -4822,6 +4960,29 @@
         ]
       }
     },
+    "cylfannedhex": {
+      "builder": "arch_cylinder_board",
+      "args": {
+        "easy": [
+          "fannedhex",
+          5,
+          1,
+          5
+        ],
+        "medium": [
+          "fannedhex",
+          10,
+          1.5,
+          8
+        ],
+        "hard": [
+          "fannedhex",
+          13,
+          2.5,
+          35
+        ]
+      }
+    },
     "hexbands": {
       "builder": "archimedean_board",
       "args": {
@@ -4845,6 +5006,29 @@
           4,
           57,
           23.094
+        ]
+      }
+    },
+    "cylhexbands": {
+      "builder": "arch_cylinder_board",
+      "args": {
+        "easy": [
+          "hexbands",
+          8,
+          1.3333333333333333,
+          11
+        ],
+        "medium": [
+          "hexbands",
+          16,
+          1.8333333333333335,
+          27
+        ],
+        "hard": [
+          "hexbands",
+          22,
+          2.3333333333333335,
+          66
         ]
       }
     },
@@ -4874,6 +5058,29 @@
         ]
       }
     },
+    "cylsnubelongated": {
+      "builder": "arch_cylinder_board",
+      "args": {
+        "easy": [
+          "snubelongated",
+          7,
+          1,
+          10
+        ],
+        "medium": [
+          "snubelongated",
+          12,
+          2,
+          42
+        ],
+        "hard": [
+          "snubelongated",
+          16,
+          2.5,
+          105
+        ]
+      }
+    },
     "snubelongated2": {
       "builder": "archimedean_board",
       "args": {
@@ -4897,6 +5104,29 @@
           4,
           93,
           33.256
+        ]
+      }
+    },
+    "cylsnubelongated2": {
+      "builder": "arch_cylinder_board",
+      "args": {
+        "easy": [
+          "snubelongated2",
+          3,
+          0.7142857142857143,
+          9
+        ],
+        "medium": [
+          "snubelongated2",
+          4,
+          1.7142857142857144,
+          45
+        ],
+        "hard": [
+          "snubelongated2",
+          6,
+          2.2142857142857144,
+          107
         ]
       }
     },
@@ -4926,6 +5156,29 @@
         ]
       }
     },
+    "cyldissectedtrunchex2": {
+      "builder": "arch_cylinder_board",
+      "args": {
+        "easy": [
+          "dissectedtrunchex2",
+          2,
+          1.5,
+          11
+        ],
+        "medium": [
+          "dissectedtrunchex2",
+          4,
+          2,
+          30
+        ],
+        "hard": [
+          "dissectedtrunchex2",
+          5,
+          3,
+          72
+        ]
+      }
+    },
     "squarerows2": {
       "builder": "archimedean_board",
       "args": {
@@ -4949,6 +5202,29 @@
           3,
           78,
           26.593
+        ]
+      }
+    },
+    "cylsquarerows2": {
+      "builder": "arch_cylinder_board",
+      "args": {
+        "easy": [
+          "squarerows2",
+          18,
+          0.5,
+          8
+        ],
+        "medium": [
+          "squarerows2",
+          23,
+          1.5,
+          42
+        ],
+        "hard": [
+          "squarerows2",
+          32,
+          2,
+          101
         ]
       }
     },
@@ -4978,6 +5254,29 @@
         ]
       }
     },
+    "cylsquarerows3": {
+      "builder": "arch_cylinder_board",
+      "args": {
+        "easy": [
+          "squarerows3",
+          23,
+          0.3333333333333333,
+          9
+        ],
+        "medium": [
+          "squarerows3",
+          28,
+          0.8333333333333334,
+          39
+        ],
+        "hard": [
+          "squarerows3",
+          34,
+          1.3333333333333333,
+          97
+        ]
+      }
+    },
     "dissectedtrunchex": {
       "builder": "archimedean_board",
       "args": {
@@ -5001,6 +5300,29 @@
           3,
           74,
           23.233
+        ]
+      }
+    },
+    "cyldissectedtrunchex": {
+      "builder": "arch_cylinder_board",
+      "args": {
+        "easy": [
+          "dissectedtrunchex",
+          5,
+          0.5,
+          7
+        ],
+        "medium": [
+          "dissectedtrunchex",
+          6,
+          1.5,
+          34
+        ],
+        "hard": [
+          "dissectedtrunchex",
+          10,
+          1.5,
+          76
         ]
       }
     },
@@ -5030,6 +5352,29 @@
         ]
       }
     },
+    "cylhexrows": {
+      "builder": "arch_cylinder_board",
+      "args": {
+        "easy": [
+          "hexrows",
+          10,
+          2.3333333333333335,
+          9
+        ],
+        "medium": [
+          "hexrows",
+          18,
+          5.333333333333333,
+          37
+        ],
+        "hard": [
+          "hexrows",
+          24,
+          6.333333333333333,
+          71
+        ]
+      }
+    },
     "dodecasquare": {
       "builder": "archimedean_board",
       "args": {
@@ -5053,6 +5398,29 @@
           8,
           37,
           14.291
+        ]
+      }
+    },
+    "cyldodecasquare": {
+      "builder": "arch_cylinder_board",
+      "args": {
+        "easy": [
+          "dodecasquare",
+          6,
+          2.6666666666666665,
+          5
+        ],
+        "medium": [
+          "dodecasquare",
+          12,
+          3.6666666666666665,
+          13
+        ],
+        "hard": [
+          "dodecasquare",
+          16,
+          4.666666666666667,
+          37
         ]
       }
     },
@@ -5082,6 +5450,29 @@
         ]
       }
     },
+    "cylhexrings": {
+      "builder": "arch_cylinder_board",
+      "args": {
+        "easy": [
+          "hexrings",
+          4,
+          0.6428571428571429,
+          7
+        ],
+        "medium": [
+          "hexrings",
+          6,
+          1.1428571428571428,
+          19
+        ],
+        "hard": [
+          "hexrings",
+          9,
+          1.6428571428571428,
+          70
+        ]
+      }
+    },
     "squaretrihex": {
       "builder": "archimedean_board",
       "args": {
@@ -5105,6 +5496,29 @@
           8,
           91,
           21.818
+        ]
+      }
+    },
+    "cylsquaretrihex": {
+      "builder": "arch_cylinder_board",
+      "args": {
+        "easy": [
+          "squaretrihex",
+          7,
+          2.3333333333333335,
+          6
+        ],
+        "medium": [
+          "squaretrihex",
+          15,
+          3.3333333333333335,
+          19
+        ],
+        "hard": [
+          "squaretrihex",
+          20,
+          4.333333333333333,
+          58
         ]
       }
     },
@@ -5134,6 +5548,29 @@
         ]
       }
     },
+    "cylsquaretrihex2": {
+      "builder": "arch_cylinder_board",
+      "args": {
+        "easy": [
+          "squaretrihex2",
+          9,
+          0.8333333333333334,
+          10
+        ],
+        "medium": [
+          "squaretrihex2",
+          15,
+          1.8333333333333335,
+          40
+        ],
+        "hard": [
+          "squaretrihex2",
+          20,
+          2.3333333333333335,
+          93
+        ]
+      }
+    },
     "dodecarhombitrihex": {
       "builder": "archimedean_board",
       "args": {
@@ -5157,6 +5594,29 @@
           3,
           53,
           13.145
+        ]
+      }
+    },
+    "cyldodecarhombitrihex": {
+      "builder": "arch_cylinder_board",
+      "args": {
+        "easy": [
+          "dodecarhombitrihex",
+          5,
+          0.6,
+          6
+        ],
+        "medium": [
+          "dodecarhombitrihex",
+          7,
+          1.6,
+          18
+        ],
+        "hard": [
+          "dodecarhombitrihex",
+          10,
+          2.1,
+          55
         ]
       }
     },
