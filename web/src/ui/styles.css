@@ -1663,16 +1663,19 @@ body {
   right: 4px;
   top: 4px;
   height: 8px;
-  box-sizing: border-box;
-  border: 0.5px solid var(--border);
   border-radius: 2.5px;
+  /* The hairline is a shadow rather than a border: a 0.5px border is rounded
+     to whole device pixels, which moved the padding box the switch is placed
+     in and left it a pixel low. A shadow takes no room, so the switch sits on
+     exact 2px margins top, bottom and right. */
+  box-shadow: inset 0 0 0 0.5px var(--border);
   background: var(--panel);
 }
 
 .theme-swatch-dot {
   position: absolute;
-  right: 1.5px;
-  top: 1.5px;
+  right: 2px;
+  top: 2px;
   width: 8px;
   height: 4px;
   border-radius: 999px;
