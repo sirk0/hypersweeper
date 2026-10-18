@@ -1476,13 +1476,19 @@ body {
    retuning a profile. */
 .cell-swatch {
   position: absolute;
-  left: 5px;
-  bottom: 5px;
+  left: 50%;
+  bottom: 4px;
+  transform: translateX(-50%);
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  width: 21px;
-  height: 18px;
-  border-radius: 4px;
+  /* Fixed square tracks rather than `1fr`: each cut below picks its own gap
+     and padding, and a fraction of a fixed box would turn the tiles into
+     ovals the moment those differ. The block sizes itself instead, 27–29px
+     wide under every cut, and is centred under the card. */
+  grid-template-columns: repeat(3, var(--tile-size));
+  grid-auto-rows: var(--tile-size);
+  --tile-size: 8px;
+  gap: 2px;
+  border-radius: 3px;
   overflow: hidden;
   /* Bright's board, and the fallback: the shape palette's own orange at the
      hidden/opened step a square tile is drawn at. */
@@ -1525,13 +1531,12 @@ body {
 /* Soft: rounded pillows with a lit top edge, lifted off the panel by a soft
    shadow; an opened tile is a shallow dish that casts none. */
 .cell-swatch[data-shape="soft"] {
-  gap: 3px;
-  padding: 2px;
+  overflow: visible;
   background: transparent;
 }
 
 .cell-swatch[data-shape="soft"] .cell-swatch-tile {
-  border-radius: 4px;
+  border-radius: 2.5px;
   box-shadow:
     inset 0 1px 0 var(--tile-hi),
     inset 0 -1px 0 var(--tile-lo),
@@ -1544,7 +1549,9 @@ body {
 
 /* Classic: a hard bevel, inverted on the opened tile. */
 .cell-swatch[data-shape="classic"] {
-  gap: 1px;
+  --tile-size: 9px;
+  gap: 0;
+  border-radius: 1px;
 }
 
 .cell-swatch[data-shape="classic"] .cell-swatch-tile {
@@ -1557,12 +1564,16 @@ body {
   border-color: var(--tile-lo) var(--tile-hi) var(--tile-hi) var(--tile-lo);
 }
 
-/* Flat: unlit plate colour, wide gaps, no relief at all. The panel shows
-   between the tiles rather than the grout, as the page does on the real board. */
+/* Flat: unlit plate colour, near-square corners, no relief at all. The swatch's
+   own page field shows between the tiles rather than the grout, as the page
+   does on the real board. */
 .cell-swatch[data-shape="flat"] {
-  gap: 3px;
-  padding: 2px;
-  background: var(--panel);
+  border-radius: 0;
+  background: transparent;
+}
+
+.cell-swatch[data-shape="flat"] .cell-swatch-tile {
+  border-radius: 1px;
 }
 
 /* Realistic: glass beads, each lit from its own middle — and an opened tile that
@@ -1572,13 +1583,13 @@ body {
    theme whose board stays opaque at every cut (`BOARD_LOOKS.classic` clears
    `openAlpha`), so it takes that back below. */
 .cell-swatch[data-shape="realistic"] {
+  --tile-size: 9px;
   gap: 1px;
-  padding: 1px;
   background: transparent;
 }
 
 .cell-swatch[data-shape="realistic"] .cell-swatch-tile {
-  border-radius: 3px;
+  border-radius: 2.5px;
   background: radial-gradient(circle at 50% 50%, var(--tile-hi) 0 12%, var(--tile-lo) 92%);
 }
 
@@ -1621,7 +1632,6 @@ body {
   opacity: 0.5;
 }
 
-/* A theme's palette in miniature: its page field, a card on it, an accent dot. */
 /* A theme in miniature, and literally so: ui/settings.ts writes the theme's
    whole custom-property set onto this element, so everything inside resolves
    its colours (and the page texture) through the same `var(--…)` the real
@@ -1634,7 +1644,8 @@ body {
 .theme-swatch {
   position: relative;
   flex: none;
-  width: 44px;
+  box-sizing: border-box;
+  width: 38px;
   height: 38px;
   border: 1px solid var(--border);
   border-radius: 9px;
@@ -1644,22 +1655,29 @@ body {
     linear-gradient(160deg, var(--bg), var(--bg2));
 }
 
+/* The chrome above the board: a card the width of the tile block, carrying the
+   accent as the one place the real chrome wears it most — a switch, on. */
 .theme-swatch-card {
   position: absolute;
-  left: 5px;
-  top: 5px;
-  width: 34px;
-  height: 11px;
-  border-radius: 3px;
+  left: 4px;
+  right: 4px;
+  top: 4px;
+  height: 8px;
+  border-radius: 2.5px;
+  /* The hairline is a shadow rather than a border: a 0.5px border is rounded
+     to whole device pixels, which moved the padding box the switch is placed
+     in and left it a pixel low. A shadow takes no room, so the switch sits on
+     exact 2px margins top, bottom and right. */
+  box-shadow: inset 0 0 0 0.5px var(--border);
   background: var(--panel);
 }
 
 .theme-swatch-dot {
   position: absolute;
-  right: 5px;
-  bottom: 5px;
-  width: 9px;
-  height: 9px;
+  right: 2px;
+  top: 2px;
+  width: 8px;
+  height: 4px;
   border-radius: 999px;
   background: var(--accent);
 }
@@ -1669,6 +1687,7 @@ body {
    theme's, so the cream icon still has an edge on the Sand page. */
 .app-icon-swatch {
   flex: none;
+  box-sizing: border-box;
   width: 38px;
   height: 38px;
   border: 1px solid var(--border);
