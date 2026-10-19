@@ -31,7 +31,11 @@ from minesweeper.boards.core import (
     _tangent_order,
 )
 from minesweeper.boards.solids import _geodesic, _icosahedron
-from minesweeper.boards.tilings import _triangle_vertices, _wrap_template
+from minesweeper.boards.tilings import (
+    _torus_template,
+    _triangle_vertices,
+    _wrap_template,
+)
 
 # -- immersions: one point of a surface from its parameters ------------------
 
@@ -1185,8 +1189,9 @@ def arch_torus_board(
     tiling: str, nx: int, ny: int, mine_count: int, tube_radius: float = 0.45
 ) -> Board3D:
     """An Archimedean tiling wrapped around a donut: ``nx`` domain copies
-    around the ring, ``ny`` around the tube."""
-    template = _wrap_template(tiling)
+    around the ring, ``ny`` around the tube -- in the tiling's torus layout
+    (``_torus_template``), which for most tilings is the wrap layout."""
+    template = _torus_template(tiling)
     ring = nx * template.width
     tube = ny * template.height
 

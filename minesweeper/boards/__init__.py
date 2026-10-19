@@ -255,6 +255,7 @@ from minesweeper.boards.tilings import (  # noqa: F401
     _snubsquare_template,
     _square_on_edge,
     _template,
+    _torus_template,
     _triangle_vertices,
     _trihex_template,
     _trunchex_template,

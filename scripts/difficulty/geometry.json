@@ -12123,47 +12123,47 @@
       "easy": {
         "args": [
           "elongated2",
+          4,
+          4,
           8,
-          2,
-          12,
-          0.45
+          0.38
         ],
         "cells": 80,
-        "score": 0.2844,
-        "distortionMean": 1.1282,
-        "distortionP90": 1.3536,
+        "score": 0.0657,
+        "distortionMean": 1.0315,
+        "distortionP90": 1.0456,
         "indistinguishable": 0,
-        "facetStep": 0.0394
+        "facetStep": 0.0102
       },
       "medium": {
         "args": [
           "elongated2",
-          17,
-          3,
-          43,
-          0.45
+          7,
+          7,
+          48,
+          0.33
         ],
-        "cells": 255,
-        "score": 0.0899,
-        "distortionMean": 1.0434,
-        "distortionP90": 1.0909,
+        "cells": 245,
+        "score": 0.0977,
+        "distortionMean": 1.0265,
+        "distortionP90": 1.0568,
         "indistinguishable": 0,
-        "facetStep": 0.018
+        "facetStep": 0.0034
       },
       "hard": {
         "args": [
           "elongated2",
-          24,
-          4,
-          101,
-          0.38
+          8,
+          12,
+          120,
+          0.45
         ],
         "cells": 480,
-        "score": 0.0911,
-        "distortionMean": 1.0396,
-        "distortionP90": 1.1103,
+        "score": 0.1048,
+        "distortionMean": 1.0501,
+        "distortionP90": 1.1182,
         "indistinguishable": 0,
-        "facetStep": 0.0102
+        "facetStep": 0.0026
       }
     }
   },
@@ -12173,47 +12173,47 @@
       "easy": {
         "args": [
           "elongated3",
-          4,
-          4,
-          27,
-          0.28
+          6,
+          1,
+          12,
+          0.52
         ],
-        "cells": 224,
-        "score": 1.2286,
-        "distortionMean": 1.1174,
-        "distortionP90": 1.2226,
+        "cells": 84,
+        "score": 0.7977,
+        "distortionMean": 1.4454,
+        "distortionP90": 2.1943,
         "indistinguishable": 0,
-        "facetStep": 0.0015
+        "facetStep": 0.0232
       },
       "medium": {
         "args": [
           "elongated3",
-          4,
-          5,
-          48,
-          0.28
+          18,
+          1,
+          44,
+          0.38
         ],
-        "cells": 280,
-        "score": 0.2226,
-        "distortionMean": 1.0705,
-        "distortionP90": 1.1385,
+        "cells": 252,
+        "score": 0.077,
+        "distortionMean": 1.0282,
+        "distortionP90": 1.0691,
         "indistinguishable": 0,
-        "facetStep": 0.0015
+        "facetStep": 0.0232
       },
       "hard": {
         "args": [
           "elongated3",
-          4,
-          9,
-          106,
+          34,
+          1,
+          110,
           0.28
         ],
-        "cells": 504,
-        "score": 0.0919,
-        "distortionMean": 1.0198,
-        "distortionP90": 1.048,
+        "cells": 476,
+        "score": 0.1016,
+        "distortionMean": 1.039,
+        "distortionP90": 1.1163,
         "indistinguishable": 0,
-        "facetStep": 0.0015
+        "facetStep": 0.0232
       }
     }
   },
@@ -12825,45 +12825,45 @@
           "trirhombitrihex",
           4,
           2,
-          21,
-          0.52
+          30,
+          0.28
         ],
         "cells": 176,
-        "score": 1.0724,
-        "distortionMean": 1.1589,
-        "distortionP90": 1.347,
+        "score": 0.8425,
+        "distortionMean": 1.0321,
+        "distortionP90": 1.0721,
         "indistinguishable": 0,
-        "facetStep": 0.06
+        "facetStep": 0.1715
       },
       "medium": {
         "args": [
           "trirhombitrihex",
-          6,
-          2,
-          45,
-          0.52
+          4,
+          3,
+          60,
+          0.38
         ],
         "cells": 264,
-        "score": 0.1573,
-        "distortionMean": 1.0697,
-        "distortionP90": 1.1254,
+        "score": 0.1191,
+        "distortionMean": 1.0437,
+        "distortionP90": 1.0954,
         "indistinguishable": 0,
-        "facetStep": 0.06
+        "facetStep": 0.0794
       },
       "hard": {
         "args": [
           "trirhombitrihex",
-          11,
-          2,
-          102,
+          7,
+          3,
+          120,
           0.28
         ],
-        "cells": 484,
-        "score": 0.0609,
-        "distortionMean": 1.0254,
-        "distortionP90": 1.0566,
+        "cells": 462,
+        "score": 0.0997,
+        "distortionMean": 1.0272,
+        "distortionP90": 1.0717,
         "indistinguishable": 0,
-        "facetStep": 0.06
+        "facetStep": 0.0794
       }
     }
   },

@@ -51,7 +51,7 @@ import {
   type Tri,
 } from "./clipSolid";
 import { geodesic, icosahedron } from "./solids";
-import { type ArchTemplate, wrapTemplate } from "./tilings";
+import { type ArchTemplate, torusTemplate, wrapTemplate } from "./tilings";
 
 const mod = (a: number, b: number): number => ((a % b) + b) % b;
 
@@ -2200,7 +2200,8 @@ export function cylinderHexBoard(ring: number, rows: number, mineCount: number):
 //
 // Port of the arch_* wrap builders in surfaces.py. Each takes an nx x ny grid
 // of the tiling's fundamental-domain copies (its `wrapTemplate` — the flat
-// template, or the wrap layout a few tilings declare) and glues the seams with
+// template, or the wrap layout a few tilings declare; the donut reads
+// `torusTemplate`, which a few more turn for it alone) and glues the seams with
 // the same modular arithmetic the regular wraps use, mapping each canonical
 // (domain-column, domain-row, tag) vertex key onto the surface.
 
@@ -2277,7 +2278,7 @@ export function archTorusBoard(
   mineCount: number,
   tubeRadius = 0.45,
 ): Board3D {
-  const t = wrapTemplate(tiling);
+  const t = torusTemplate(tiling);
   const W = t.width;
   const H = t.height;
   const ring = nx * W;

@@ -429,6 +429,16 @@
         "crosses": true
       }
     },
+    "toruselongated3": {
+      "easy": {
+        "shapeP90": 1.194,
+        "regularP90": 2.194,
+        "stretch": 1.58,
+        "bend": 0.0,
+        "folded": 0,
+        "crosses": true
+      }
+    },
     "torustritrunctrihex": {
       "hard": {
         "shapeP90": 0.561,

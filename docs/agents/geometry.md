@@ -178,7 +178,9 @@ read through `_wrap_template` / `wrapTemplate`; the flat board keeps the
 original): `elongated3` turned a quarter turn, so its rows step one edge
 rather than a band of four courses, and the pgg `snubelongated`, which has no
 mirror, moved so its horizontal glide sits on y = 0 for the seam to glue
-through (the donut is glued in the same layout). Each has one `cut` for both
+through. The donut takes the wrap layout too, bar three tilings that glue it
+in a torus layout of their own (`_ArchTemplate.torus`): `elongated3` flat, and
+`elongated2` and `trirhombitrihex` turned. Each has one `cut` for both
 open surfaces: five end on a straight line of
 edges, and the other fifteen on the flattest zigzag the gaps between their
 rows of tile centres allow — among the gaps, in either layout, that give both

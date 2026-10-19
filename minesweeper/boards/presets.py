@@ -449,10 +449,12 @@ ARCH_PRESETS = {
     # first three rows and all but one the fourth -- studdedtri2 (p6) has no
     # mirror or glide to glue the seam through, while snubelongated (pgg)
     # glues through its glide, and elongated3 wraps turned a quarter turn
-    # (both in the layout _wrap_template returns, which is what their rows
-    # count). Eleven easy donuts are 4x2 domains (hexrings 4x1, elongated3
-    # 4x4), the smallest that close, and well over the easy size -- see
-    # EXEMPT_ROWS in tests/test_presets.py. Each cylinder row count ends in the fraction that centres the
+    # (both in the layout _wrap_template returns, which is what their strip
+    # rows count; the donut reads its own torus layout where one is declared --
+    # elongated3 flat, elongated2 and trirhombitrihex turned, see _with_torus).
+    # Ten easy donuts are 4x2 domains (hexrings 4x1), the smallest that close,
+    # and well over the easy size -- see EXEMPT_ROWS in tests/test_presets.py.
+    # Each cylinder row count ends in the fraction that centres the
     # strip on one of the tiling's flip levels (see arch_cylinder_board), and
     # each Mobius one in the fraction that makes rows + 2*cut/height whole
     # (see arch_mobius_board), given its cut.
@@ -469,19 +471,19 @@ ARCH_PRESETS = {
     },
     "elongated2": {
         "flat": {"easy": (7, 2, 7, 68.571), "medium": (11, 4, 30, 43.333), "hard": (15, 6, 85, 31.875)},
-        "torus": {"easy": (8, 2, 6, 0.45), "medium": (17, 3, 51, 0.45), "hard": (24, 4, 126, 0.38)},
+        "torus": {"easy": (4, 4, 11, 0.38), "medium": (7, 7, 49, 0.33), "hard": (8, 12, 123, 0.45)},
         "cylinder": {"easy": (12, 1 + 1 / 3, 12), "medium": (20, 2 + 1 / 3, 44), "hard": (29, 3 + 1 / 3, 110)},
         "mobius": {"easy": (12, 1 + 1 / 3, 12), "medium": (21, 2 + 1 / 3, 46), "hard": (29, 3 + 1 / 3, 108)},
     },
     "elongated3": {
         "flat": {"easy": (5, 1, 9, 93.333), "medium": (9, 2, 48, 52.363), "hard": (15, 2, 99, 31.875)},
-        "torus": {"easy": (4, 4, 30, 0.28), "medium": (4, 5, 44, 0.28), "hard": (4, 9, 125, 0.28)},
+        "torus": {"easy": (6, 1, 15, 0.52), "medium": (18, 1, 60, 0.38), "hard": (34, 1, 127, 0.28)},
         "cylinder": {"easy": (2, 2 + 5 / 6, 11), "medium": (3, 6 + 1 / 3, 45), "hard": (4, 8 + 1 / 3, 103)},
         "mobius": {"easy": (2, 2 + 1 / 3, 9), "medium": (3, 5 + 1 / 3, 36), "hard": (7, 4 + 1 / 3, 69)},
     },
     "trirhombitrihex": {
         "flat": {"easy": (3, 1, 8, 52.196), "medium": (4, 3, 45, 40.241), "hard": (6, 3, 86, 27.598)},
-        "torus": {"easy": (4, 2, 32, 0.52), "medium": (6, 2, 63, 0.52), "hard": (11, 2, 125, 0.28)},
+        "torus": {"easy": (4, 2, 12, 0.28), "medium": (4, 3, 56, 0.38), "hard": (7, 3, 113, 0.28)},
         "cylinder": {"easy": (5, 5 / 7, 13), "medium": (7, 1 + 5 / 7, 54), "hard": (11, 2 + 3 / 14, 123)},
         "mobius": {"easy": (5, 5 / 7, 12), "medium": (7, 1 + 5 / 7, 54), "hard": (12, 1 + 5 / 7, 103)},
     },

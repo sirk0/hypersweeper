@@ -37,6 +37,7 @@ from minesweeper.boards import (
     _phyllotaxis_tiles,
     _shared_vertex_adjacency,
     _spectre_leaves,
+    _torus_template,
     _wrap_template,
     _z7_add,
     _z7_dir,
@@ -4264,6 +4265,48 @@ class TestWrapLayout:
         assert off == ["studdedtri2"]
 
 
+class TestTorusLayout:
+    """The tilings whose donut is glued in a layout of its own
+    (``_ArchTemplate.torus``, see ``_with_torus``): the flat one where the
+    strips take a wrap layout, or the flat one turned a quarter turn. A donut
+    needs no mirror, so all a layout has to be is the same tiling -- and the
+    one thing it changes is which side of the domain goes round the ring."""
+
+    TORUS = sorted(t.key for t in ARCH_TILINGS if _arch_template(t.key).torus)
+
+    def test_these_three_and_no_others(self):
+        # elongated3 flat, where its strips wrap turned: 84 cells on the easy
+        # donut rather than 224; elongated2 and trirhombitrihex turned, the
+        # same sizes with rounder cells
+        assert self.TORUS == ["elongated2", "elongated3", "trirhombitrihex"]
+
+    @pytest.mark.parametrize("tiling", TORUS)
+    def test_the_layout_holds_the_flat_tiles(self, tiling):
+        flat, torus = _arch_template(tiling), _torus_template(tiling)
+        assert flat.width * flat.height == pytest.approx(torus.width * torus.height)
+        assert (sorted(len(refs) for _, refs in flat.cells)
+                == sorted(len(refs) for _, refs in torus.cells))
+        assert torus.torus is None and torus.wrap is None
+
+    def test_elongated3_glues_its_donut_flat_and_its_strips_turned(self):
+        flat = _arch_template("elongated3")
+        torus, wrapped = _torus_template("elongated3"), _wrap_template("elongated3")
+        assert (torus.width, torus.height) == pytest.approx((flat.width, flat.height))
+        assert (wrapped.width, wrapped.height) == pytest.approx((flat.height, flat.width))
+
+    @pytest.mark.parametrize("tiling", ["elongated2", "trirhombitrihex"])
+    def test_turned_for_the_donut_alone(self, tiling):
+        flat = _arch_template(tiling)
+        torus, wrapped = _torus_template(tiling), _wrap_template(tiling)
+        assert (torus.width, torus.height) == pytest.approx((flat.height, flat.width))
+        assert wrapped is flat
+
+    def test_every_other_tiling_glues_its_donut_like_its_strips(self):
+        for t in ARCH_TILINGS:
+            if t.key not in self.TORUS:
+                assert _torus_template(t.key) is _wrap_template(t.key), t.key
+
+
 class TestWrappedArchimedean:
     """The Archimedean tilings wrapped onto the donut, cylinder and
     Möbius strip."""
@@ -4487,9 +4530,9 @@ class TestWrappedArchimedean:
             # band are EXEMPT_ROWS in tests/test_presets.py
             "torusstuddedtri": (208, 260, 468),
             "torusstuddedtri2": (336, 336, 504),
-            "toruselongated2": (80, 255, 480),
-            "toruselongated3": (224, 280, 504),
-            "torustrirhombitrihex": (176, 264, 484),
+            "toruselongated2": (80, 245, 480),
+            "toruselongated3": (84, 252, 476),
+            "torustrirhombitrihex": (176, 264, 462),
             "torustritrunctrihex": (256, 256, 480),
             "torusfannedhex": (128, 256, 480),
             "torushexbands": (80, 260, 480),

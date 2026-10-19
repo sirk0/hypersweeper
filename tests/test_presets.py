@@ -67,20 +67,21 @@ EXEMPT_ROWS = {
     ("toruskisrhombille", "easy"),
     ("kleinkisrhombille", "easy"),
     ("torussnubhex", "easy"),
-    # Eleven 2-uniform donuts are the same arithmetic on bigger domains. A
-    # 2-uniform rectangle holds 12 to 42 cells, and in all but hexrings the
+    # Ten 2-uniform donuts are the same arithmetic on bigger domains. A
+    # 2-uniform rectangle holds 16 to 42 cells, and in all but hexrings the
     # tallest tile is over a quarter of the domain's height, so the tube takes
     # two rows and the ring four domains: 4x2 of the domain is the smallest
-    # legal window -- 96 to 336 cells, the counts beside each row. Hexrings'
+    # legal window -- 128 to 336 cells, the counts beside each row. Hexrings'
     # tallest tile is 0.24 of its 36-cell domain, so it closes in one row
-    # (4x1); elongated3 wraps turned (`_ArchTemplate.wrap`), a 14-cell domain
-    # one edge tall, so a unit tile is a quarter turn at four rows (4x4).
-    # Where the 4x2 window is also the closest to 256, medium ships it too.
+    # (4x1). Turning the domain a quarter turn (`_ArchTemplate.torus`) puts its
+    # long side round the ring instead, four times over, and makes every one of
+    # these bigger still; it is only elongated3, whose strip layout is already
+    # turned, that it brings inside the band. Where the 4x2 window is also the
+    # closest to 256, medium ships it too.
     ("torusstuddedtri", "easy"),            # 4x2 of 26 = 208
     ("torusstuddedtri2", "easy"),           # 4x2 of 42 = 336
     ("torusstuddedtri2", "medium"),         # ...and nothing smaller at all
-    ("toruselongated3", "easy"),            # 4x4 of 14 = 224
-    ("torustrirhombitrihex", "easy"),       # 4x2 of 22 = 176
+    ("torustrirhombitrihex", "easy"),       # 4x2 of 22 = 176, turned
     ("torustritrunctrihex", "easy"),        # 4x2 of 32 = 256
     ("torusfannedhex", "easy"),             # 4x2 of 16 = 128
     ("torussnubelongated2", "easy"),        # 4x2 of 36 = 288
