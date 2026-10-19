@@ -99,6 +99,13 @@
   --smiley-ink: #2b2f3a;
   --radius: 20px;
   --shadow: 0 2px 10px rgba(64, 35, 16, 0.16);
+  /* How far a card's `--shadow` paints outside its box, for the widest any
+     palette states (`0 4px 16px`; the neumorphic pair is ±4px 8px). A scroll
+     box clips at its padding edge on both axes — `overflow-y: auto` turns the
+     x axis to `auto` as well — so a scroller whose cards run to its edges
+     cuts their shadows off flat. Each one pads by this much and takes it back
+     with a negative margin: the cards stay put, the shadow gets the room. */
+  --shadow-room: 16px;
   /* Header control sizing, all on one scale — the CSS counterpart of the
      pygame header's `_header_scale`. Everything in the row is a fraction of
      `--hud-btn`: the glyph inside a button, the gaps, the LED counters' width
@@ -718,6 +725,12 @@ body {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+  /* Room for the rows' shadows (`--shadow-room`). Top and bottom take 12px,
+     not the full room: that is all a shadow reaches above a card, and it
+     keeps the box inside the 14px gap to the header and the difficulty row,
+     so it never lies over their buttons. */
+  padding: 12px var(--shadow-room);
+  margin: -12px calc(-1 * var(--shadow-room));
 }
 
 .menu-body > .menu-list {
@@ -1138,6 +1151,9 @@ body {
   .menu-body {
     grid-column: 2;
     min-height: 0;
+    /* The pane's own padding is already wider than `--shadow-room`, so the
+       phone's negative margin is not wanted here. */
+    margin: 0;
     padding: 30px 34px max(34px, env(safe-area-inset-bottom));
     display: flex;
     flex-direction: column;
@@ -1182,6 +1198,11 @@ body {
     min-height: 0;
     overflow-y: auto;
     padding-bottom: max(34px, env(safe-area-inset-bottom));
+    /* The cards' shadows and their hover lift (`--shadow-room`), taken back
+       out of the pane's padding and the 20–24px gap under its header. */
+    padding-top: var(--shadow-room);
+    padding-inline: var(--shadow-room);
+    margin: calc(-1 * var(--shadow-room)) calc(-1 * var(--shadow-room)) 0;
   }
 
   .menu-pane-heading {
