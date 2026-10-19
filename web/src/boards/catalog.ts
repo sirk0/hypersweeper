@@ -59,11 +59,11 @@ const TILING_NOTATIONS = catalog.tilingNotations as Record<string, string>;
 // of FLAT_ONLY_FAMILIES below — so they are gated here, by TilingSpec.surfaces,
 // rather than by being kept out of the picker. "Other" is the plane alone (no
 // cut chosen); the 2-uniform tilings have cuts, and so a
-// cylinder and (all but the p6 studdedtri2) a Möbius strip, but no torus or
-// Klein windows.
+// cylinder and (all but the p6 studdedtri2) a Möbius strip, and a donut, which
+// needs no cut, but no Klein windows.
 // Mirrors _FAMILY_SURFACES in catalog.py.
 const ARCH_FAMILY_SURFACES: Record<string, readonly string[]> = {
-  "2-uniform": ["flat", "cylinder", "mobius"],
+  "2-uniform": ["flat", "cylinder", "mobius", "torus"],
   other: ["flat"],
 };
 
@@ -203,8 +203,8 @@ export const PICKER_REGULAR = MENU.pickerRegular as string[];
  * only — an aperiodic tiling has no periodic domain to glue a seam with, and a
  * fractal board is a self-similar shape rather than a window. Isogonal and
  * rectangle wrap every surface their member tilings' chirality allows, just
- * like uniform and dual. The 2-uniform tilings (the plane, the cylinder and
- * the Möbius strip), the rep-tiles and Dürer's tiling (the plane alone) are in this list too,
+ * like uniform and dual. The 2-uniform tilings (the plane, the cylinder, the
+ * Möbius strip and the donut), the rep-tiles and Dürer's tiling (the plane alone) are in this list too,
  * being tilings: `pickerFamilies` drops a family a surface has no row of
  * rather than naming it in two places. */
 export const PICKER_FAMILIES = [
@@ -293,7 +293,8 @@ export function familyRows(family: string, surfaceKey: string): FamilyRow[] {
  * tiling reaching it — a chiral tiling has no mirror to close a Möbius or
  * Klein seam with, a tiling whose family is held to some surfaces
  * (ARCH_FAMILY_SURFACES: "Other" to the plane, "2-uniform" to the plane,
- * the cylinder and the Möbius strip) has no windows elsewhere yet, and a surface restricted to an
+ * the cylinder, the Möbius strip and the donut) has no windows elsewhere yet,
+ * and a surface restricted to an
  * allow-list of tilings (the
  * double torus) refuses the rest — and a family left with no row at all is
  * dropped with them rather than shown as a page of greyed-out rows. */

@@ -1561,11 +1561,53 @@
       "surface": "torus",
       "family": "dual"
     },
+    "torusdissectedtrunchex": {
+      "label": "Dissected truncated hexagonal · Torus",
+      "tiling": "dissectedtrunchex",
+      "surface": "torus",
+      "family": "2-uniform"
+    },
+    "torusdissectedtrunchex2": {
+      "label": "Turned dissected truncated hexagonal · Torus",
+      "tiling": "dissectedtrunchex2",
+      "surface": "torus",
+      "family": "2-uniform"
+    },
+    "torusdodecarhombitrihex": {
+      "label": "Studded rhombitrihexagonal · Torus",
+      "tiling": "dodecarhombitrihex",
+      "surface": "torus",
+      "family": "2-uniform"
+    },
+    "torusdodecasquare": {
+      "label": "Square dodecagonal · Torus",
+      "tiling": "dodecasquare",
+      "surface": "torus",
+      "family": "2-uniform"
+    },
     "toruselongated": {
       "label": "Elongated triangular · Torus",
       "tiling": "elongated",
       "surface": "torus",
       "family": "uniform"
+    },
+    "toruselongated2": {
+      "label": "Half-elongated triangular · Torus",
+      "tiling": "elongated2",
+      "surface": "torus",
+      "family": "2-uniform"
+    },
+    "toruselongated3": {
+      "label": "Third-elongated triangular · Torus",
+      "tiling": "elongated3",
+      "surface": "torus",
+      "family": "2-uniform"
+    },
+    "torusfannedhex": {
+      "label": "Fanned hexagonal · Torus",
+      "tiling": "fannedhex",
+      "surface": "torus",
+      "family": "2-uniform"
     },
     "torusfloret": {
       "label": "Floret pentagonal · Torus",
@@ -1584,6 +1626,24 @@
       "tiling": "hex",
       "surface": "torus",
       "family": "regular"
+    },
+    "torushexbands": {
+      "label": "Banded hexagonal · Torus",
+      "tiling": "hexbands",
+      "surface": "torus",
+      "family": "2-uniform"
+    },
+    "torushexrings": {
+      "label": "Dissected truncated trihexagonal · Torus",
+      "tiling": "hexrings",
+      "surface": "torus",
+      "family": "2-uniform"
+    },
+    "torushexrows": {
+      "label": "Bow-tie hexagonal · Torus",
+      "tiling": "hexrows",
+      "surface": "torus",
+      "family": "2-uniform"
     },
     "toruskisrhombille": {
       "label": "Kisrhombille · Torus",
@@ -1639,6 +1699,18 @@
       "surface": "torus",
       "family": "rectangle"
     },
+    "torussnubelongated": {
+      "label": "Zigzag snub square · Torus",
+      "tiling": "snubelongated",
+      "surface": "torus",
+      "family": "2-uniform"
+    },
+    "torussnubelongated2": {
+      "label": "Pinwheel snub square · Torus",
+      "tiling": "snubelongated2",
+      "surface": "torus",
+      "family": "2-uniform"
+    },
     "torussnubhex": {
       "label": "Snub hexagonal · Torus",
       "tiling": "snubhex",
@@ -1651,6 +1723,30 @@
       "surface": "torus",
       "family": "uniform"
     },
+    "torussquarerows2": {
+      "label": "Doubly elongated triangular · Torus",
+      "tiling": "squarerows2",
+      "surface": "torus",
+      "family": "2-uniform"
+    },
+    "torussquarerows3": {
+      "label": "Triply elongated triangular · Torus",
+      "tiling": "squarerows3",
+      "surface": "torus",
+      "family": "2-uniform"
+    },
+    "torussquaretrihex": {
+      "label": "Elongated trihexagonal · Torus",
+      "tiling": "squaretrihex",
+      "surface": "torus",
+      "family": "2-uniform"
+    },
+    "torussquaretrihex2": {
+      "label": "Staggered elongated trihexagonal · Torus",
+      "tiling": "squaretrihex2",
+      "surface": "torus",
+      "family": "2-uniform"
+    },
     "torusstackedbond": {
       "label": "Stacked bond · Torus",
       "tiling": "stackedbond",
@@ -1662,6 +1758,18 @@
       "tiling": "staggeredtri",
       "surface": "torus",
       "family": "isogonal"
+    },
+    "torusstuddedtri": {
+      "label": "Studded triangular · Torus",
+      "tiling": "studdedtri",
+      "surface": "torus",
+      "family": "2-uniform"
+    },
+    "torusstuddedtri2": {
+      "label": "Twisted studded triangular · Torus",
+      "tiling": "studdedtri2",
+      "surface": "torus",
+      "family": "2-uniform"
     },
     "torustetrakis": {
       "label": "Tetrakis square · Torus",
@@ -1692,6 +1800,18 @@
       "tiling": "trihex",
       "surface": "torus",
       "family": "uniform"
+    },
+    "torustrirhombitrihex": {
+      "label": "Fanned rhombitrihexagonal · Torus",
+      "tiling": "trirhombitrihex",
+      "surface": "torus",
+      "family": "2-uniform"
+    },
+    "torustritrunctrihex": {
+      "label": "Fanned truncated trihexagonal · Torus",
+      "tiling": "tritrunctrihex",
+      "surface": "torus",
+      "family": "2-uniform"
     },
     "torustrunchex": {
       "label": "Truncated hexagonal · Torus",

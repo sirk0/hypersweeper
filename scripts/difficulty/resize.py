@@ -239,7 +239,8 @@ SPEC: dict[str, dict] = {
     # candidate and the size penalty decides alone, as for the brick rings.
     "hyperbolic_board": dict(size=(2,), mine=3, shape=4, kind="scale"),
     "archimedean_board": dict(size=(1, 2), mine=3, shape=4, kind="scale", lead=1),
-    "arch_torus_board": dict(size=(1, 2), mine=3, shape=4, kind="tube", lead=1),
+    "arch_torus_board": dict(size=(1, 2), mine=3, shape=4, kind="tube", lead=1,
+                             torus=True),
     "arch_cylinder_board": dict(size=(1, 2), mine=3, shape=4, kind="cut", lead=1),
     "arch_mobius_board": dict(size=(1, 2), mine=3, shape=None, lead=1, halves=True),
     "arch_klein_board": dict(size=(1, 2), mine=3, shape=4, kind="tubescale", lead=1,
@@ -247,6 +248,8 @@ SPEC: dict[str, dict] = {
 }
 # ``halves``: the ring knob counts *half*-domains where the tiling glues its
 # seam through a glide rather than a plain mirror -- see ``_wrap_copies``.
+# ``torus``: the builder lays out the tiling's torus layout
+# (``_torus_template``) rather than its wrap layout -- see ``_spec_layout``.
 
 # Two solids whose two knobs are not independent: taken as a free grid they
 # offer degenerate shapes at the right cell count -- a cube frame bored out to
@@ -527,9 +530,22 @@ def _layout(builder: str, tiling: str):
     and for a wrapped one the layout its surfaces glue (``_wrap_template`` --
     the same template, bar the tilings that wrap turned a quarter turn or
     moved onto a glide line)."""
-    from minesweeper.boards.tilings import _arch_template, _wrap_template
+    from minesweeper.boards.tilings import _arch_template
 
-    return (_arch_template(tiling) if builder == "archimedean_board"
+    if builder == "archimedean_board":
+        return _arch_template(tiling)
+    return _spec_layout(SPEC.get(builder, {}), tiling)
+
+
+def _spec_layout(spec: dict, tiling: str):
+    """The wrapped layout a builder's knobs count copies of: the donut's own
+    torus layout (``_torus_template``) for the builder that declares
+    ``torus``, otherwise the layout every wrapped surface glues
+    (``_wrap_template``). The tile measures below are cached per layout, so
+    the donut and the strips of one tiling never read each other's."""
+    from minesweeper.boards.tilings import _torus_template, _wrap_template
+
+    return (_torus_template(tiling) if spec.get("torus")
             else _wrap_template(tiling))
 
 
@@ -869,10 +885,10 @@ def _window_aspect(builder: str, spec: dict, trial: list) -> float:
     return max(ratio, 1 / ratio)
 
 
-_TILE_SPAN: dict[str, tuple[float, float]] = {}
+_TILE_SPAN: dict[tuple[str, bool], tuple[float, float]] = {}
 
 
-def _tile_span(tiling: str) -> tuple[float, float]:
+def _tile_span(tiling: str, torus: bool = False) -> tuple[float, float]:
     """Median tile width and height in one domain of an Archimedean template.
 
     A wrap knob counts *domain copies*, and a domain is anything from one tile
@@ -880,12 +896,10 @@ def _tile_span(tiling: str) -> tuple[float, float]:
     domain's size by this turns a knob into the number of tiles that direction
     actually closes over, which is what ``MIN_RING`` and ``MIN_TUBE`` mean.
     """
-    if tiling not in _TILE_SPAN:
+    if (tiling, torus) not in _TILE_SPAN:
         import statistics
 
-        from minesweeper.boards.tilings import _wrap_template
-
-        template = _wrap_template(tiling)
+        template = _spec_layout({"torus": torus}, tiling)
         widths, heights = [], []
         for _name, refs in template.cells:
             xs = [template.verts[tag][0] + dm * template.width
@@ -894,15 +908,17 @@ def _tile_span(tiling: str) -> tuple[float, float]:
                   for tag, _dm, dn in refs]
             widths.append(max(xs) - min(xs))
             heights.append(max(ys) - min(ys))
-        _TILE_SPAN[tiling] = (statistics.median(widths) or 1.0,
-                              statistics.median(heights) or 1.0)
-    return _TILE_SPAN[tiling]
+        _TILE_SPAN[tiling, torus] = (statistics.median(widths) or 1.0,
+                                     statistics.median(heights) or 1.0)
+    return _TILE_SPAN[tiling, torus]
 
 
-_TILE_FRACTIONS: dict[str, tuple[tuple[float, ...], tuple[float, ...]]] = {}
+_TILE_FRACTIONS: dict[tuple[str, bool],
+                      tuple[tuple[float, ...], tuple[float, ...]]] = {}
 
 
-def tile_fractions(tiling: str) -> tuple[tuple[float, ...], tuple[float, ...]]:
+def tile_fractions(tiling: str, torus: bool = False
+                   ) -> tuple[tuple[float, ...], tuple[float, ...]]:
     """Every tile's width and height, as fractions of one domain.
 
     The median span above answers "how many tiles is a domain"; this answers
@@ -922,10 +938,8 @@ def tile_fractions(tiling: str) -> tuple[tuple[float, ...], tuple[float, ...]]:
     whole blocks rather than a ring of bricks a third the depth of the ones
     beside them.
     """
-    if tiling not in _TILE_FRACTIONS:
-        from minesweeper.boards.tilings import _wrap_template
-
-        template = _wrap_template(tiling)
+    if (tiling, torus) not in _TILE_FRACTIONS:
+        template = _spec_layout({"torus": torus}, tiling)
         widths, heights = [], []
         for _name, refs in template.cells:
             corners = []
@@ -943,14 +957,14 @@ def tile_fractions(tiling: str) -> tuple[tuple[float, ...], tuple[float, ...]]:
                   for tag, _dm, dn in corners]
             widths.append((max(xs) - min(xs)) / template.width)
             heights.append((max(ys) - min(ys)) / template.height)
-        _TILE_FRACTIONS[tiling] = (tuple(widths) or (1.0,),
-                                   tuple(heights) or (1.0,))
-    return _TILE_FRACTIONS[tiling]
+        _TILE_FRACTIONS[tiling, torus] = (tuple(widths) or (1.0,),
+                                          tuple(heights) or (1.0,))
+    return _TILE_FRACTIONS[tiling, torus]
 
 
-def widest_tile(tiling: str) -> tuple[float, float]:
+def widest_tile(tiling: str, torus: bool = False) -> tuple[float, float]:
     """The biggest tile's width and height, as fractions of one domain."""
-    widths, heights = tile_fractions(tiling)
+    widths, heights = tile_fractions(tiling, torus)
     return max(widths), max(heights)
 
 
@@ -1013,7 +1027,7 @@ def _tile_turn(spec: dict, trial: list, axis: int) -> float:
         copies = _wrap_copies(spec, trial, axis)
         if not copies:
             return float("inf")
-        return widest_tile(trial[0])[axis] / copies
+        return widest_tile(trial[0], bool(spec.get("torus")))[axis] / copies
     except Exception:
         return 0.0
 
@@ -1033,7 +1047,7 @@ def _facet_step(spec: dict, trial: list, axis: int) -> float:
         if not copies:
             return float("inf")
         sags = [1 - math.cos(math.pi * min(fraction / copies, 1.0))
-                for fraction in tile_fractions(trial[0])[axis]]
+                for fraction in tile_fractions(trial[0], bool(spec.get("torus")))[axis]]
         return max(sags) - min(sags)
     except Exception:
         return 0.0
@@ -1059,7 +1073,7 @@ def _wrap_cells(builder: str, spec: dict, trial: list, axis: int) -> float:
     domain = template.width if axis == 0 else template.height
     # the slack absorbs the float division: a ring of exactly MIN_RING tiles
     # must not fail the bar because the width divides to 11.9999996
-    return count * domain / _tile_span(trial[0])[axis] + 1e-6
+    return count * domain / _tile_span(trial[0], bool(spec.get("torus")))[axis] + 1e-6
 
 
 def _rolled_screen_aspect(builder: str, spec: dict, trial: list) -> float:

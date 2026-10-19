@@ -636,9 +636,10 @@ class TestMenu:
         self.click_item(menu, "torus")
         assert menu.path == ["manifolds", "torus"]
         # aperiodic and fractal are not offered on a wrapped surface, only on
-        # the plane; every other family is offered on every manifold
-        assert self.items(menu) == {"regular", "uniform", "dual", "isogonal",
-                                    "rectangle", "random"}
+        # the plane, and "Other" not yet; every other family is offered on the
+        # donut, 2-uniform included
+        assert self.items(menu) == {"regular", "uniform", "dual", "2-uniform",
+                                    "isogonal", "rectangle", "random"}
         self.click_item(menu, "uniform")
         assert self.click_item(menu, "trihex") == ("start", "torustrihex")
 

@@ -252,6 +252,11 @@ export interface ArchTemplate {
   // quarter turn, or moved so a glide line is y = 0 (see `reframed`). Unset for
   // every template whose own layout wraps; the builders read whichever applies
   // through `wrapTemplate`.
+  torus?: ArchTemplate; // THE TORUS LAYOUT: the one the donut glues, where that
+  // is not the wrap layout. A donut has no rim and no seam mirror, so the only
+  // thing a layout decides there is which side of the domain goes round the
+  // ring and which round the tube. Unset for every template whose wrap layout
+  // serves; read through `torusTemplate`. See `withTorus`.
 }
 
 // THE CUT. Two surfaces end the tiling on a horizontal line: the cylinder,
@@ -435,6 +440,17 @@ function reframed(t: ArchTemplate, { cut, quarter = false, axis = 0, glide = fal
   const shift = axis * height;
   polygons = polygons.map(([name, pts]) => [name, pts.map(([x, y]): Vertex => [x, y - shift])]);
   return template(t.config, width, height, polygons, { mirrored: true, glide, cut: cut * height });
+}
+
+/** The template with its torus layout (`ArchTemplate.torus`) declared: "flat"
+ * glues the donut in the flat layout although the open surfaces take a wrap
+ * layout of their own, and "quarter" turns the flat layout a quarter turn for
+ * the donut alone. Port of `_with_torus` in boards/tilings.py, which says why
+ * which tilings take one. */
+function withTorus(t: ArchTemplate, torus: "flat" | "quarter" | undefined): ArchTemplate {
+  if (torus === undefined) return t;
+  const { wrap: _wrap, ...flat } = t;
+  return { ...t, torus: torus === "flat" ? flat : reframed(t, { cut: 0, quarter: true }) };
 }
 
 /** The heights at which the tiling maps onto itself with y reversed.
@@ -1801,10 +1817,10 @@ function durerTemplate(): ArchTemplate {
 //                      both lattice directions) merged with its ring of squares
 //                      and triangles into a dodecagon
 //
-// All three are p6m. The family ships on the plane, the cylinder and (all but
-// the p6 studdedtri2) the Möbius strip (ARCH_FAMILY_SURFACES in catalog.ts),
-// so each of the twenty states a cut —
-// see the comment above `steps`. Ports of the factories of the same names in
+// All three are p6m. The family ships on the plane, the cylinder, the torus and
+// (all but the p6 studdedtri2) the Möbius strip (ARCH_FAMILY_SURFACES in
+// catalog.ts), so each of the twenty states a cut for the two open surfaces —
+// see the comment above `steps`; the torus needs none. Ports of the factories of the same names in
 // boards/tilings.py.
 
 /** A regular polygon cut into triangles from its centre. */
@@ -1856,7 +1872,7 @@ function trirhombitrihexTemplate(): ArchTemplate {
       polygons.push([name, polygon]);
     }
   }
-  return template([3, 4], width, height, polygons, { centre: [0, 0], cut: height / 7 });
+  return withTorus(template([3, 4], width, height, polygons, { centre: [0, 0], cut: height / 7 }), "quarter");
 }
 
 /** [3².4.3.4; 3.4.6.4]: truncated hexagonal with every dodecagon cut into a
@@ -1955,7 +1971,14 @@ function cellTemplate(
     mirrored = true,
     cut = 0,
     wrap,
-  }: { centre: number | readonly (readonly number[])[]; mirrored?: boolean; cut?: number; wrap?: WrapFrame },
+    torus,
+  }: {
+    centre: number | readonly (readonly number[])[];
+    mirrored?: boolean;
+    cut?: number;
+    wrap?: WrapFrame;
+    torus?: "flat" | "quarter";
+  },
 ): ArchTemplate {
   const a = steps(v1);
   const b = steps(v2);
@@ -1987,7 +2010,7 @@ function cellTemplate(
     centre: [0, 0],
     cut: cut * height,
   });
-  return wrap ? { ...t, wrap: reframed(t, wrap) } : t;
+  return withTorus(wrap ? { ...t, wrap: reframed(t, wrap) } : t, torus);
 }
 
 /** [3⁶; 3⁴.6]₁, p6m: the triangular tiling with a hexagon in place of
@@ -2021,7 +2044,7 @@ function studdedtri2Template(): ArchTemplate {
 function elongated2Template(): ArchTemplate {
   return cellTemplate([3, 4], [0], [8, 9, 10], [[1, 0], [0, -1]], [
     [4, [4], 0], [3, [], 4], [3, [], 2], [3, [], 8], [3, [], 6],
-  ], { centre: [[]], cut: 1 / 3 });
+  ], { centre: [[]], cut: 1 / 3, torus: "quarter" });
 }
 
 /** [3⁶; 3³.4²]₂, cmm: three courses of triangles between the square
@@ -2035,7 +2058,7 @@ function elongated3Template(): ArchTemplate {
   return cellTemplate([3, 4], [0], [8, 8, 9, 10], [[1, 0], [-1, -2]], [
     [4, [10], 6], [3, [], 4], [3, [], 2], [3, [], 8], [3, [], 6], [3, [4], 0],
     [3, [4], 2],
-  ], { centre: 0, wrap: { cut: 1 / 3, quarter: true } });
+  ], { centre: 0, wrap: { cut: 1 / 3, quarter: true }, torus: "flat" });
 }
 
 /** [3⁶; 3².4.12], p6m: truncated trihexagonal (4.6.12) with every
@@ -2297,6 +2320,13 @@ export function archTemplate(tiling: string): ArchTemplate {
 export function wrapTemplate(tiling: string): ArchTemplate {
   const t = archTemplate(tiling);
   return t.wrap ?? t;
+}
+
+/** The layout the donut glues: its own torus layout (`ArchTemplate.torus`)
+ * where the tiling declares one, otherwise the wrap layout. Port of
+ * `_torus_template` in boards/tilings.py. */
+export function torusTemplate(tiling: string): ArchTemplate {
+  return archTemplate(tiling).torus ?? wrapTemplate(tiling);
 }
 
 /** Copy `(m, n)` of a template's repeat, as absolute polygons in template

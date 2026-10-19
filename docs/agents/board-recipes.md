@@ -323,11 +323,11 @@ that wrap — `test_no_tile_centre_sits_on_the_cut` and the rest of
 `family="2-uniform"`: edge-to-edge tilings by regular polygons whose vertices
 fall into exactly **two** classes under the tiling's symmetries — the next step
 past the uniform tilings, which have one. There are twenty and **all twenty
-ship**, on the plane and the cylinder, and all but `studdedtri2` on the
-Möbius strip too (`_FAMILY_SURFACES` holds them to those three — see the
+ship**, on the plane, the cylinder and the torus, and all but `studdedtri2`
+on the Möbius strip too (`_FAMILY_SURFACES` holds them to those four — see the
 recipe above). So there is no new one to add; what follows is how the twenty
-are built, what to keep in step when changing one, how they wrap the cylinder
-and the Möbius strip, and what wrapping the other surfaces would take.
+are built, what to keep in step when changing one, how they wrap the cylinder,
+the Möbius strip and the torus, and what wrapping the Klein bottle would take.
 
 **Three are a uniform tiling cut up or merged**, so their factories reuse its
 polygons — `_rhombitrihex_polygons` (with a `merged` predicate for the
@@ -475,8 +475,8 @@ carries every tile onto a tile and that it holds the flat layout's tiles. In
 `scripts/difficulty/resize.py` every wrap measure reads the layout the builder
 lays out (`_layout`); `corner_indices` and `planar_shape` stay on the flat
 template, being measured flat. One trap when experimenting: `_TILE_SPAN` and
-`_TILE_FRACTIONS` there cache per tiling key, so a script that swaps layouts
-under one key has to clear them.
+`_TILE_FRACTIONS` there cache per tiling key (and per donut or strip layout,
+below), so a script that swaps layouts under one key has to clear them.
 
 **The cut.** Each tiling states one `cut`, which both surfaces share:
 `_cell_template`'s takes it as a **fraction of the domain height** (of the wrap
@@ -542,11 +542,59 @@ write them that way (`1 + 5 / 6`), which is what lets `apply.py` keep them
 exact. Changing a cut moves those fractions, so re-run `resize.py --only` on
 the `cyl…` and `mobius…` rows after one.
 
-**The other surfaces** are the same as for "Other": add them to the family's
+**The torus.** A donut has no rim and needs no mirror, so it takes no cut and
+all twenty reach it, `studdedtri2` included. What binds is size. The ring needs
+four whole domains (`resize.MIN_WRAP_DOMAINS`) and no tile may span more than a
+quarter of the tube (`MAX_TILE_TURN`), and a 2-uniform rectangle holds 5 to 42
+cells with, in most of them, a tile over a quarter of the domain tall — so the
+smallest legal donut is 4x2 domains, and for ten tilings that is well past the
+easy size: 128 cells for `fannedhex` up to 336 for `studdedtri2` (`hexrings`
+closes in one row at 4x1, 144). Those easy rows ship at that smallest window,
+seeded there so the shape bar (1.02x the seed's edge ratio) did not defend a
+bigger, rounder one — the search otherwise doubled `torustrirhombitrihex` easy
+to its medium window. They are `EXEMPT_ROWS` in `tests/test_presets.py` with the
+count beside each; where the 4x2 window is also the closest to 256
+(`studdedtri2`, `tritrunctrihex`, `snubelongated2`, both dissected truncated
+hexagonals) medium ships the same window, with more mines.
+
+**The torus layout.** Which side of the domain goes round the ring is the one
+thing a layout decides on a donut, so a tiling may glue its donut in a layout of
+its own (`_ArchTemplate.torus`, declared by `_with_torus` and read through
+`_torus_template`; in TypeScript `withTorus` / `torusTemplate`):
+`torus="flat"` keeps the flat layout where the strips take a wrap layout, and
+`torus="quarter"` turns the flat layout for the donut alone. Every 2-uniform
+tiling was measured both ways, and three take one. `elongated3` glues its donut
+flat: its wrap layout is turned for the strips, which puts the domain's long
+side round the ring, four times over, and its easy donut at 224 cells; flat,
+it is 84 (six domains one edge wide round the ring, one round the tube, the
+classic size, though chunky enough that `data/distortion.json` marks it). And
+`elongated2` and `trirhombitrihex` turn, for the same sizes with rounder cells
+(a p90 cell distortion of 1.05 and 1.07 at easy, against 1.35). For the other
+seventeen the turn puts the long side round the ring and makes the donut
+bigger or no better. `TestTorusLayout` checks the three and that every other tiling's
+donut is its wrap layout; `resize` reads the torus layout through
+`SPEC["arch_torus_board"]["torus"]` (`_spec_layout`), and its tile measures
+are cached per layout.
+
+The other ten make easy donuts of about the classic size: eight at 80 to 90
+cells (`elongated2`, `elongated3`, `hexbands`, `squarerows2`, `squarerows3`,
+`hexrows`, `squaretrihex`, `squaretrihex2`), `dodecasquare` and
+`snubelongated` at 96. At that size `hexbands`, `squaretrihex2` and
+`dodecasquare` are chunky (`TestWrappedWindowsDoNotFold.CHUNKY`), `hexbands`,
+`squaretrihex2` and `snubelongated` are marked distorted
+(`data/distortion.json`, which lists `torustritrunctrihex` hard as well), and
+`fannedhex` and `dodecasquare` easy play at 90–91% even at the opening floor,
+short of the 96.5% target, as `tritrunctrihex` easy does on the cylinder.
+`TestWrappedArchimedean.test_two_uniform_torus_vertices_are_the_two_types`
+checks every vertex of every donut closes and is one of the two types, in
+cyclic order, both present.
+
+**The Klein bottle** is the same as for "Other": add it to the family's
 `_FAMILY_SURFACES` entries (both ports) and add the surface presets, measured.
 The cut and the wrap layouts are already chosen. The mirror or glide the
 Möbius strip glues through is what a Klein bottle would glue through too, so
-the same nineteen would reach it.
+the same nineteen would reach it, and the torus's size arithmetic applies to
+it unchanged.
 
 ## Recipe: add a congruent-rectangle bond
 
