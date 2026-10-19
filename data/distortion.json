@@ -429,6 +429,46 @@
         "crosses": true
       }
     },
+    "torustritrunctrihex": {
+      "hard": {
+        "shapeP90": 0.561,
+        "regularP90": 1.561,
+        "stretch": 1.52,
+        "bend": 0.399,
+        "folded": 0,
+        "crosses": true
+      }
+    },
+    "torushexbands": {
+      "easy": {
+        "shapeP90": 0.784,
+        "regularP90": 1.784,
+        "stretch": 2.98,
+        "bend": 0.366,
+        "folded": 0,
+        "crosses": true
+      }
+    },
+    "torussnubelongated": {
+      "easy": {
+        "shapeP90": 0.529,
+        "regularP90": 1.529,
+        "stretch": 1.8,
+        "bend": 0.094,
+        "folded": 0,
+        "crosses": true
+      }
+    },
+    "torussquaretrihex2": {
+      "easy": {
+        "shapeP90": 1.349,
+        "regularP90": 2.349,
+        "stretch": 1.95,
+        "bend": 0.305,
+        "folded": 0,
+        "crosses": true
+      }
+    },
     "torusrotatedhex": {
       "easy": {
         "shapeP90": 0.428,

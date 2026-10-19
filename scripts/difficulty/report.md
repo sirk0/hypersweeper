@@ -12,8 +12,8 @@ Every board's mine count, chosen so its win probability under the reference solv
 
 ## Coverage
 
-- 795 rows, 757 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
-- 38 could not be brought on target:
+- 855 rows, 811 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
+- 44 could not be brought on target:
   - `cube3d`/hard: 33.3% vs 50.9% — the search could not resolve it -- its thinnest measurement finished 0 game(s), so the rate here is noise rather than a crossing the search walked to. Re-measure at a bigger `--budget`
   - `cyldodecarhombitrihex`/medium: 92.9% vs 87.1% — no integer mine count lands within tolerance; this is the closest
   - `cyldodecarhombitrihex`/easy: 92.3% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (6, 8%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
@@ -44,15 +44,21 @@ Every board's mine count, chosen so its win probability under the reference solv
   - `mobiustritrunctrihex`/easy: 85.1% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (4, 6%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
   - `penrose`/easy: 91.7% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (6, 7%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
   - `rhombille`/easy: 75.7% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (5, 6%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
+  - `torusdissectedtrunchex2`/hard: 45.2% vs 50.9% — no integer mine count lands within tolerance; this is the closest
+  - `torusdodecasquare`/easy: 91.4% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (7, 7%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
+  - `toruselongated2`/hard: 57.1% vs 50.9% — the search could not resolve it -- its thinnest measurement finished 5 game(s), so the rate here is noise rather than a crossing the search walked to. Re-measure at a bigger `--budget`
+  - `torusfannedhex`/easy: 90.3% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (7, 5%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
   - `torusrhombille`/medium: 74.0% vs 87.1% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (9, 4%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
   - `torusrhombille`/easy: 64.9% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (5, 6%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
+  - `torussnubelongated2`/hard: 45.3% vs 50.9% — no integer mine count lands within tolerance; this is the closest
+  - `torusstuddedtri2`/hard: 57.1% vs 50.9% — the search could not resolve it -- its thinnest measurement finished 6 game(s), so the rate here is noise rather than a crossing the search walked to. Re-measure at a bigger `--budget`
   - `torustriakis`/hard: 0.0% vs 50.9% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `torustriakis`/medium: 0.0% vs 87.1% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `torustriakis`/easy: 0.0% vs 96.5% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `triakis`/hard: 0.0% vs 50.9% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `triakis`/medium: 0.0% vs 87.1% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `triakis`/easy: 1.8% vs 96.5% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
-- 198 rows had games the solver abandoned (its frontier DP hit its node budget); their rates are measured over the games that finished:
+- 237 rows had games the solver abandoned (its frontier DP hit its node budget); their rates are measured over the games that finished:
   - `cube3d`/hard: 466 abandoned
   - `torustrunchex`/hard: 168 abandoned
   - `torusrotatedhex`/hard: 144 abandoned
@@ -294,10 +300,20 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `torusbasketweave3` | 6.7 | 96c 20m (21%) 95% | 252c 53m (21%) 88% | 480c 115m (24%) 51% |
 | `toruscairo` | 7.0 | 84c 12m (14%) 99% | 256c 47m (18%) 85% | 480c 105m (22%) 52% |
 | `torusdeltoidal` | 9.0 | 96c 13m (14%) 98% | 264c 44m (17%) 83% | 468c 102m (22%) 52% |
+| `torusdissectedtrunchex` | 9.2 | 240c 19m (8%) 97% | 240c 26m (11%) 89% | 480c 73m (15%) 49% |
+| `torusdissectedtrunchex2` | 9.2 | 240c 28m (12%) 96% | 240c 39m (16%) 86% | 450c 92m (20%) 45% ⚠ |
+| `torusdodecarhombitrihex` | 7.0 | 192c 14m (7%) 97% | 288c 28m (10%) 85% | 480c 60m (12%) 54% |
+| `torusdodecasquare` | 7.3 | 96c 7m (7%) 91% ⚠ | 270c 16m (6%) 86% | 468c 35m (7%) 48% |
 | `toruselongated` | 10.0 | 84c 18m (21%) 93% | 270c 61m (23%) 86% | 486c 123m (25%) 52% |
+| `toruselongated2` | 10.8 | 80c 6m (8%) 97% | 255c 51m (20%) 91% | 480c 126m (26%) 57% ⚠ |
+| `toruselongated3` | 11.1 | 224c 30m (13%) 97% | 280c 44m (16%) 89% | 504c 125m (25%) 50% |
+| `torusfannedhex` | 9.0 | 128c 7m (5%) 90% ⚠ | 256c 11m (4%) 88% | 480c 32m (7%) 47% |
 | `torusfloret` | 8.0 | 96c 16m (17%) 96% | 264c 47m (18%) 84% | 468c 97m (21%) 51% |
 | `torusherringbone` | 6.0 | 80c 17m (21%) 95% | 256c 60m (23%) 86% | 480c 122m (25%) 50% |
 | `torushex` | 6.0 | 84c 18m (21%) 96% | 260c 58m (22%) 87% | 476c 119m (25%) 54% |
+| `torushexbands` | 9.2 | 80c 6m (8%) 99% | 260c 27m (10%) 88% | 480c 67m (14%) 53% |
+| `torushexrings` | 8.0 | 144c 23m (16%) 97% | 288c 47m (16%) 89% | 504c 111m (22%) 47% |
+| `torushexrows` | 8.0 | 90c 11m (12%) 95% | 255c 29m (11%) 88% | 483c 72m (15%) 54% |
 | `toruskisrhombille` | 16.0 | 192c 12m (6%) 99% | 288c 26m (9%) 90% | 480c 68m (14%) 51% |
 | `torusoffsetsquare` | 6.0 | 84c 16m (19%) 98% | 252c 59m (23%) 85% | 476c 120m (25%) 51% |
 | `torusprismaticpent` | 7.0 | 88c 19m (22%) 95% | 252c 58m (23%) 84% | 480c 118m (25%) 49% |
@@ -307,15 +323,25 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `torusrotatedhex` | 6.0 | 90c 6m (7%) 96% | 252c 16m (6%) 88% | 480c 41m (9%) 48% |
 | `torusrotatedtri` | 6.0 | 84c 12m (14%) 97% | 252c 56m (22%) 88% | 480c 123m (26%) 55% |
 | `torusrunningbond` | 6.0 | 80c 14m (18%) 100% | 252c 58m (23%) 88% | 480c 122m (25%) 52% |
+| `torussnubelongated` | 10.0 | 96c 20m (21%) 95% | 264c 61m (23%) 88% | 468c 127m (27%) 50% |
+| `torussnubelongated2` | 10.0 | 288c 52m (18%) 98% | 288c 64m (22%) 86% | 504c 135m (27%) 45% ⚠ |
 | `torussnubhex` | 10.0 | 144c 26m (18%) 99% | 252c 51m (20%) 90% | 432c 107m (25%) 54% |
 | `torussnubsquare` | 10.0 | 90c 20m (22%) 95% | 264c 63m (24%) 87% | 480c 129m (27%) 52% |
+| `torussquarerows2` | 9.5 | 80c 14m (18%) 98% | 256c 58m (23%) 83% | 480c 120m (25%) 52% |
+| `torussquarerows3` | 9.2 | 90c 19m (21%) 93% | 250c 49m (20%) 91% | 500c 129m (26%) 55% |
+| `torussquaretrihex` | 8.0 | 90c 10m (11%) 99% | 260c 53m (20%) 84% | 475c 108m (23%) 55% |
+| `torussquaretrihex2` | 8.0 | 80c 15m (19%) 98% | 260c 54m (21%) 87% | 480c 120m (25%) 53% |
 | `torusstackedbond` | 8.0 | 80c 15m (19%) 98% | 252c 58m (23%) 84% | 480c 131m (27%) 48% |
 | `torusstaggeredtri` | 8.0 | 84c 18m (21%) 97% | 256c 58m (23%) 90% | 480c 131m (27%) 49% |
+| `torusstuddedtri` | 10.6 | 208c 35m (17%) 98% | 260c 54m (21%) 91% | 468c 116m (25%) 52% |
+| `torusstuddedtri2` | 11.1 | 336c 68m (20%) 95% | 336c 80m (24%) 90% | 504c 129m (26%) 57% ⚠ |
 | `torustetrakis` | 14.0 | 80c 9m (11%) 96% | 260c 26m (10%) 91% | 476c 68m (14%) 53% |
 | `torusthreescaletri` | 8.0 | 90c 18m (20%) 95% | 252c 56m (22%) 87% | 480c 120m (25%) 53% |
 | `torustri` | 12.0 | 80c 17m (21%) 97% | 256c 69m (27%) 89% | 480c 138m (29%) 52% |
 | `torustriakis` | 21.0 | 96c 12m (12%) 0% ⚠ | 264c 42m (16%) 0% ⚠ | 504c 101m (20%) 0% ⚠ |
 | `torustrihex` | 8.0 | 90c 18m (20%) 96% | 270c 60m (22%) 84% | 480c 116m (24%) 53% |
+| `torustrirhombitrihex` | 10.4 | 176c 32m (18%) 97% | 264c 63m (24%) 84% | 484c 125m (26%) 50% |
+| `torustritrunctrihex` | 9.0 | 256c 9m (4%) 94% | 256c 10m (4%) 89% | 480c 36m (8%) 49% |
 | `torustrunchex` | 6.0 | 90c 6m (7%) 97% | 252c 16m (6%) 91% | 480c 40m (8%) 50% |
 | `torustruncsquare` | 6.0 | 80c 7m (9%) 94% | 252c 39m (15%) 88% | 480c 98m (20%) 52% |
 | `torustrunctrihex` | 6.0 | 96c 13m (14%) 98% | 288c 47m (16%) 87% | 468c 87m (19%) 52% |

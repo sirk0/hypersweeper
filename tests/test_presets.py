@@ -67,6 +67,27 @@ EXEMPT_ROWS = {
     ("toruskisrhombille", "easy"),
     ("kleinkisrhombille", "easy"),
     ("torussnubhex", "easy"),
+    # Eleven 2-uniform donuts are the same arithmetic on bigger domains. A
+    # 2-uniform rectangle holds 12 to 42 cells, and in all but hexrings the
+    # tallest tile is over a quarter of the domain's height, so the tube takes
+    # two rows and the ring four domains: 4x2 of the domain is the smallest
+    # legal window -- 96 to 336 cells, the counts beside each row. Hexrings'
+    # tallest tile is 0.24 of its 36-cell domain, so it closes in one row
+    # (4x1); elongated3 wraps turned (`_ArchTemplate.wrap`), a 14-cell domain
+    # one edge tall, so a unit tile is a quarter turn at four rows (4x4).
+    # Where the 4x2 window is also the closest to 256, medium ships it too.
+    ("torusstuddedtri", "easy"),            # 4x2 of 26 = 208
+    ("torusstuddedtri2", "easy"),           # 4x2 of 42 = 336
+    ("torusstuddedtri2", "medium"),         # ...and nothing smaller at all
+    ("toruselongated3", "easy"),            # 4x4 of 14 = 224
+    ("torustrirhombitrihex", "easy"),       # 4x2 of 22 = 176
+    ("torustritrunctrihex", "easy"),        # 4x2 of 32 = 256
+    ("torusfannedhex", "easy"),             # 4x2 of 16 = 128
+    ("torussnubelongated2", "easy"),        # 4x2 of 36 = 288
+    ("torusdissectedtrunchex", "easy"),     # 4x2 of 30 = 240
+    ("torusdissectedtrunchex2", "easy"),    # 4x2 of 30 = 240
+    ("torushexrings", "easy"),              # 4x1 of 36 = 144
+    ("torusdodecarhombitrihex", "easy"),    # 4x2 of 24 = 192
     # And once more from `resize.MIN_WRAP_DOMAINS`, on the tiling whose ring
     # knob counts *half*-domains. A Klein bottle glues the three-brick basket
     # weave's seam through a glide, so the odd ring counts the search can offer
@@ -398,6 +419,17 @@ class TestWrappedWindowsDoNotFold:
         ("torustetrakis", "easy"): 0.217,
         ("kleintetrakis", "easy"): 0.217,
         ("torusrotatedhex", "easy"): 0.206,
+        # The 2-uniform donuts: a dodecagon or a hexagon beside triangles, on a
+        # tube one or two domains round. tritrunctrihex and hexrings are at
+        # their smallest window already (EXEMPT_ROWS), so smoothing them would
+        # take a bigger board still; the other three are at the easy size,
+        # where the step gives way to the band as it does for the rows above.
+        ("torustritrunctrihex", "easy"): 0.231,
+        ("torustritrunctrihex", "medium"): 0.231,
+        ("torushexrings", "easy"): 0.225,
+        ("torusdodecasquare", "easy"): 0.276,
+        ("torushexbands", "easy"): 0.217,
+        ("torussquaretrihex2", "easy"): 0.217,
     }
 
     @pytest.mark.parametrize("difficulty", DIFFICULTIES)

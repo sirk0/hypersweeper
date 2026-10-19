@@ -184,9 +184,10 @@ _UNIFORM = [t.key for t in ARCH_TILINGS if t.family == "uniform"]
 # the tilings that wrap a donut: derived from the catalog, so one without a
 # torus preset yet drops out automatically
 _TORUS_TILINGS = [t.key for t in ARCH_TILINGS if "torus" in TILINGS[t.key][1]]
-# ...and the tilings that wrap a surface at all -- the 2-uniform ones reach the
-# cylinder and the Mobius strip but no donut (_FAMILY_SURFACES in catalog.py),
-# and they choose a cut all the same
+# ...and the tilings that wrap a surface at all (the same list, now that the
+# 2-uniform tilings reach the donut as well as the cylinder and the Mobius
+# strip -- _FAMILY_SURFACES in catalog.py -- but derived separately, so a
+# family held to the open surfaces would still be caught)
 _WRAPPED_TILINGS = [t.key for t in ARCH_TILINGS
                     if set(TILINGS[t.key][1]) - {"flat"}]
 _ISOGONAL = [t.key for t in ARCH_TILINGS if t.family == "isogonal"]
@@ -4297,6 +4298,23 @@ class TestWrappedArchimedean:
         for fan in _corner_fans(board).values():
             assert sorted(fan) == config
 
+    @pytest.mark.parametrize(
+        "tiling", sorted(set(_TWO_UNIFORM) & set(_TORUS_TILINGS)))
+    @pytest.mark.parametrize("difficulty", DIFFICULTIES)
+    def test_two_uniform_torus_vertices_are_the_two_types(self, tiling, difficulty):
+        """The 2-uniform version of the test above: a donut has no rim, so
+        every vertex closes, and each is one of the tiling's two
+        configurations read in cyclic order -- which is what a seam glued one
+        domain out of step would break -- with both of them present."""
+        from scripts.difficulty.metrics import _cyclic, vertex_fans
+
+        board = build_board("torus" + tiling, difficulty)
+        spec = next(t for t in ARCH_TILINGS if t.key == tiling)
+        want = {_cyclic(v) for v in spec.vertex_types}
+        seen = Counter(vertex_fans(board).values())
+        assert None not in seen, f"{tiling}: {seen[None]} vertices on a rim"
+        assert set(seen) == want, dict(seen)
+
     @pytest.mark.parametrize("mode", sorted(WRAPPED_VERTEX_TRANSITIVE))
     def test_vertices_are_full_or_boundary(self, mode):
         """On the open surfaces every vertex fan is the configuration or
@@ -4465,6 +4483,28 @@ class TestWrappedArchimedean:
             "mobiussquaretrihex": (72, 270, 460),
             "mobiussquaretrihex2": (88, 294, 420),
             "mobiusdodecarhombitrihex": (80, 280, 440),
+            # ...and the donut, which needs no cut; the easy rows over the
+            # band are EXEMPT_ROWS in tests/test_presets.py
+            "torusstuddedtri": (208, 260, 468),
+            "torusstuddedtri2": (336, 336, 504),
+            "toruselongated2": (80, 255, 480),
+            "toruselongated3": (224, 280, 504),
+            "torustrirhombitrihex": (176, 264, 484),
+            "torustritrunctrihex": (256, 256, 480),
+            "torusfannedhex": (128, 256, 480),
+            "torushexbands": (80, 260, 480),
+            "torussnubelongated2": (288, 288, 504),
+            "torussnubelongated": (96, 264, 468),
+            "torusdissectedtrunchex2": (240, 240, 450),
+            "torussquarerows2": (80, 256, 480),
+            "torussquarerows3": (90, 250, 500),
+            "torusdissectedtrunchex": (240, 240, 480),
+            "torushexrows": (90, 255, 483),
+            "torusdodecasquare": (96, 270, 468),
+            "torushexrings": (144, 288, 504),
+            "torussquaretrihex": (90, 260, 475),
+            "torussquaretrihex2": (80, 260, 480),
+            "torusdodecarhombitrihex": (192, 288, 480),
         }
         assert sorted(counts) == sorted(self.WRAPPED)
         for mode, expected in counts.items():

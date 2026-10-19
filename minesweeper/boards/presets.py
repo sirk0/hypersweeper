@@ -444,111 +444,134 @@ ARCH_PRESETS = {
         "torus": {"easy": (5, 2, 17, 0.38), "medium": (8, 4, 60, 0.45), "hard": (12, 5, 122, 0.38)},
         "cylinder": {"easy": (6, 1 + 7 / 8, 14), "medium": (10, 3 + 1 / 8, 42), "hard": (14, 4 + 3 / 8, 105)},
     },
-    # The 2-uniform family reaches the plane, the cylinder and the Mobius
-    # strip (_FAMILY_SURFACES in catalog.py), so its twenty carry the first
-    # two rows and all but one the third -- studdedtri2 (p6) has no mirror or
-    # glide to glue the seam through, while snubelongated (pgg) glues through
-    # its glide, and elongated3 wraps turned a quarter turn (both in the
-    # layout _wrap_template returns, which is what their rows count). Each cylinder row count ends in the fraction that centres the
+    # The 2-uniform family reaches the plane, the torus, the cylinder and the
+    # Mobius strip (_FAMILY_SURFACES in catalog.py), so its twenty carry the
+    # first three rows and all but one the fourth -- studdedtri2 (p6) has no
+    # mirror or glide to glue the seam through, while snubelongated (pgg)
+    # glues through its glide, and elongated3 wraps turned a quarter turn
+    # (both in the layout _wrap_template returns, which is what their rows
+    # count). Eleven easy donuts are 4x2 domains (hexrings 4x1, elongated3
+    # 4x4), the smallest that close, and well over the easy size -- see
+    # EXEMPT_ROWS in tests/test_presets.py. Each cylinder row count ends in the fraction that centres the
     # strip on one of the tiling's flip levels (see arch_cylinder_board), and
     # each Mobius one in the fraction that makes rows + 2*cut/height whole
     # (see arch_mobius_board), given its cut.
     "studdedtri": {
         "flat": {"easy": (3, 1, 10, 58.182), "medium": (4, 2, 29, 40.0), "hard": (5, 3, 81, 31.373)},
+        "torus": {"easy": (4, 2, 35, 0.52), "medium": (5, 2, 54, 0.52), "hard": (9, 2, 116, 0.45)},
         "cylinder": {"easy": (4, 2 / 3, 10), "medium": (7, 1 + 1 / 6, 35), "hard": (10, 1 + 2 / 3, 90)},
         "mobius": {"easy": (4, 2 / 3, 10), "medium": (12, 2 / 3, 28), "hard": (10, 1 + 2 / 3, 92)},
     },
     "studdedtri2": {
         "flat": {"easy": (2, 1, 10, 66.564), "medium": (3, 2, 42, 44.376), "hard": (4, 3, 109, 33.282)},
+        "torus": {"easy": (4, 2, 68, 0.52), "medium": (4, 2, 80, 0.52), "hard": (6, 2, 129, 0.45)},
         "cylinder": {"easy": (4, 1 / 2, 11), "medium": (6, 1, 39), "hard": (8, 1 + 1 / 2, 105)},
     },
     "elongated2": {
         "flat": {"easy": (7, 2, 7, 68.571), "medium": (11, 4, 30, 43.333), "hard": (15, 6, 85, 31.875)},
+        "torus": {"easy": (8, 2, 6, 0.45), "medium": (17, 3, 51, 0.45), "hard": (24, 4, 126, 0.38)},
         "cylinder": {"easy": (12, 1 + 1 / 3, 12), "medium": (20, 2 + 1 / 3, 44), "hard": (29, 3 + 1 / 3, 110)},
         "mobius": {"easy": (12, 1 + 1 / 3, 12), "medium": (21, 2 + 1 / 3, 46), "hard": (29, 3 + 1 / 3, 108)},
     },
     "elongated3": {
         "flat": {"easy": (5, 1, 9, 93.333), "medium": (9, 2, 48, 52.363), "hard": (15, 2, 99, 31.875)},
+        "torus": {"easy": (4, 4, 30, 0.28), "medium": (4, 5, 44, 0.28), "hard": (4, 9, 125, 0.28)},
         "cylinder": {"easy": (2, 2 + 5 / 6, 11), "medium": (3, 6 + 1 / 3, 45), "hard": (4, 8 + 1 / 3, 103)},
         "mobius": {"easy": (2, 2 + 1 / 3, 9), "medium": (3, 5 + 1 / 3, 36), "hard": (7, 4 + 1 / 3, 69)},
     },
     "trirhombitrihex": {
         "flat": {"easy": (3, 1, 8, 52.196), "medium": (4, 3, 45, 40.241), "hard": (6, 3, 86, 27.598)},
+        "torus": {"easy": (4, 2, 32, 0.52), "medium": (6, 2, 63, 0.52), "hard": (11, 2, 125, 0.28)},
         "cylinder": {"easy": (5, 5 / 7, 13), "medium": (7, 1 + 5 / 7, 54), "hard": (11, 2 + 3 / 14, 123)},
         "mobius": {"easy": (5, 5 / 7, 12), "medium": (7, 1 + 5 / 7, 54), "hard": (12, 1 + 5 / 7, 103)},
     },
     "tritrunctrihex": {
         "flat": {"easy": (2, 1, 4, 50.718), "medium": (4, 2, 13, 25.359), "hard": (5, 3, 34, 20.287)},
+        "torus": {"easy": (4, 2, 9, 0.52), "medium": (4, 2, 10, 0.52), "hard": (5, 3, 36, 0.52)},
         "cylinder": {"easy": (4, 12 / 23, 4), "medium": (7, 1 + 1 / 46, 8), "hard": (9, 1 + 12 / 23, 29)},
         "mobius": {"easy": (4, 12 / 23, 4), "medium": (13, 12 / 23, 6), "hard": (9, 1 + 12 / 23, 27)},
     },
     "fannedhex": {
         "flat": {"easy": (2, 2, 5, 73.333), "medium": (5, 3, 10, 32.0), "hard": (8, 4, 32, 20.22)},
+        "torus": {"easy": (4, 2, 7, 0.52), "medium": (8, 2, 11, 0.33), "hard": (10, 3, 32, 0.45)},
         "cylinder": {"easy": (6, 4 / 5, 5), "medium": (10, 1 + 4 / 5, 12), "hard": (13, 2 + 3 / 10, 32)},
         "mobius": {"easy": (6, 4 / 5, 6), "medium": (10, 1 + 4 / 5, 11), "hard": (12, 2 + 4 / 5, 36)},
     },
     "hexbands": {
         "flat": {"easy": (4, 2, 5, 66.511), "medium": (9, 3, 20, 30.792), "hard": (12, 4, 57, 23.094)},
+        "torus": {"easy": (4, 2, 6, 0.52), "medium": (13, 2, 27, 0.45), "hard": (16, 3, 67, 0.45)},
         "cylinder": {"easy": (8, 1 + 1 / 3, 11), "medium": (16, 1 + 5 / 6, 27), "hard": (22, 2 + 1 / 3, 66)},
         "mobius": {"easy": (9, 1 + 1 / 3, 10), "medium": (20, 1 + 1 / 3, 25), "hard": (22, 2 + 1 / 3, 63)},
     },
     "snubelongated": {
         "flat": {"easy": (3, 2, 10, 79.865), "medium": (7, 3, 38, 35.495), "hard": (9, 5, 112, 27.607)},
+        "torus": {"easy": (4, 2, 20, 0.52), "medium": (11, 2, 61, 0.33), "hard": (13, 3, 127, 0.38)},
         "cylinder": {"easy": (7, 1, 5), "medium": (12, 2, 40), "hard": (16, 2 + 1 / 2, 95)},
         "mobius": {"easy": (13, 1, 5), "medium": (23, 2, 42), "hard": (29, 3, 109)},
     },
     "snubelongated2": {
         "flat": {"easy": (1, 2, 9, 92.588), "medium": (2, 3, 34, 49.102), "hard": (3, 4, 93, 33.256)},
+        "torus": {"easy": (4, 2, 52, 0.45), "medium": (4, 2, 64, 0.45), "hard": (7, 2, 135, 0.28)},
         "cylinder": {"easy": (3, 5 / 7, 9), "medium": (4, 1 + 5 / 7, 45), "hard": (6, 2 + 3 / 14, 107)},
         "mobius": {"easy": (3, 5 / 7, 11), "medium": (4, 1 + 5 / 7, 45), "hard": (7, 1 + 5 / 7, 92)},
     },
     "dissectedtrunchex2": {
         "flat": {"easy": (1, 2, 6, 74.256), "medium": (2, 4, 28, 37.128), "hard": (3, 5, 71, 24.752)},
+        "torus": {"easy": (4, 2, 28, 0.28), "medium": (4, 2, 39, 0.28), "hard": (5, 3, 92, 0.33)},
         "cylinder": {"easy": (2, 1 + 1 / 2, 11), "medium": (4, 2, 30), "hard": (5, 3, 72)},
         "mobius": {"easy": (2, 1 + 1 / 2, 9), "medium": (5, 1 + 1 / 2, 24), "hard": (6, 2 + 1 / 2, 72)},
     },
     "squarerows2": {
         "flat": {"easy": (9, 1, 7, 54.0), "medium": (14, 2, 31, 34.286), "hard": (18, 3, 78, 26.593)},
+        "torus": {"easy": (10, 1, 14, 0.45), "medium": (16, 2, 58, 0.52), "hard": (30, 2, 120, 0.38)},
         "cylinder": {"easy": (12, 3 / 5, 10), "medium": (24, 1 + 1 / 10, 37), "hard": (33, 1 + 3 / 5, 95)},
         "mobius": {"easy": (12, 3 / 5, 12), "medium": (21, 1 + 3 / 5, 46), "hard": (30, 1 + 3 / 5, 88)},
     },
     "squarerows3": {
         "flat": {"easy": (8, 1, 11, 60.0), "medium": (13, 2, 48, 36.735), "hard": (20, 2, 90, 24.06)},
+        "torus": {"easy": (9, 1, 19, 0.52), "medium": (25, 1, 49, 0.28), "hard": (25, 2, 129, 0.52)},
         "cylinder": {"easy": (13, 2 / 3, 7), "medium": (24, 1 + 1 / 6, 44), "hard": (37, 1 + 1 / 6, 87)},
         "mobius": {"easy": (13, 2 / 3, 7), "medium": (32, 2 / 3, 13), "hard": (32, 1 + 2 / 3, 109)},
     },
     "dissectedtrunchex": {
         "flat": {"easy": (2, 1, 6, 50.718), "medium": (4, 2, 30, 28.355), "hard": (5, 3, 74, 23.233)},
+        "torus": {"easy": (4, 2, 19, 0.52), "medium": (4, 2, 26, 0.52), "hard": (8, 2, 73, 0.38)},
         "cylinder": {"easy": (5, 1 / 2, 7), "medium": (6, 1 + 1 / 2, 34), "hard": (10, 1 + 1 / 2, 76)},
         "mobius": {"easy": (5, 1 / 2, 6), "medium": (6, 1 + 1 / 2, 34), "hard": (10, 1 + 1 / 2, 74)},
     },
     "hexrows": {
         "flat": {"easy": (6, 4, 6, 46.188), "medium": (10, 8, 30, 27.713), "hard": (14, 11, 70, 19.795)},
+        "torus": {"easy": (6, 5, 11, 0.52), "medium": (17, 5, 29, 0.33), "hard": (23, 7, 72, 0.33)},
         "cylinder": {"easy": (10, 2 + 1 / 3, 9), "medium": (18, 5 + 1 / 3, 37), "hard": (24, 6 + 1 / 3, 71)},
         "mobius": {"easy": (10, 2 + 1 / 3, 9), "medium": (18, 5 + 1 / 3, 28), "hard": (24, 6 + 1 / 3, 71)},
     },
     "dodecasquare": {
         "flat": {"easy": (3, 4, 6, 34.308), "medium": (7, 6, 16, 18.374), "hard": (9, 8, 37, 14.291)},
+        "torus": {"easy": (4, 4, 7, 0.52), "medium": (9, 5, 16, 0.45), "hard": (13, 6, 35, 0.45)},
         "cylinder": {"easy": (6, 2 + 2 / 3, 5), "medium": (12, 3 + 2 / 3, 13), "hard": (16, 4 + 2 / 3, 37)},
         "mobius": {"easy": (6, 2 + 2 / 3, 6), "medium": (12, 3 + 2 / 3, 15), "hard": (16, 4 + 2 / 3, 36)},
     },
     "hexrings": {
         "flat": {"easy": (2, 1, 6, 50.718), "medium": (3, 2, 24, 32.768), "hard": (4, 3, 73, 24.874)},
+        "torus": {"easy": (4, 1, 23, 0.38), "medium": (4, 2, 47, 0.52), "hard": (7, 2, 111, 0.45)},
         "cylinder": {"easy": (4, 3 / 5, 9), "medium": (6, 1 + 1 / 10, 37), "hard": (9, 1 + 3 / 5, 91)},
         "mobius": {"easy": (4, 3 / 5, 8), "medium": (11, 3 / 5, 22), "hard": (9, 1 + 3 / 5, 92)},
     },
     "squaretrihex": {
         "flat": {"easy": (4, 3, 6, 64.0), "medium": (8, 6, 39, 30.0), "hard": (11, 8, 91, 21.818)},
+        "torus": {"easy": (6, 3, 10, 0.52), "medium": (13, 4, 53, 0.38), "hard": (19, 5, 108, 0.33)},
         "cylinder": {"easy": (9, 1 + 2 / 3, 6), "medium": (15, 3 + 2 / 3, 40), "hard": (20, 4 + 2 / 3, 87)},
         "mobius": {"easy": (9, 1 + 2 / 3, 5), "medium": (15, 3 + 2 / 3, 39), "hard": (20, 4 + 2 / 3, 87)},
     },
     "squaretrihex2": {
         "flat": {"easy": (3, 2, 7, 72.0), "medium": (8, 3, 37, 30.0), "hard": (11, 4, 96, 21.818)},
+        "torus": {"easy": (4, 2, 15, 0.52), "medium": (13, 2, 54, 0.38), "hard": (16, 3, 120, 0.45)},
         "cylinder": {"easy": (8, 1 + 1 / 5, 15), "medium": (15, 1 + 7 / 10, 44), "hard": (21, 2 + 1 / 5, 98)},
         "mobius": {"easy": (8, 1 + 1 / 5, 15), "medium": (14, 2 + 1 / 5, 54), "hard": (20, 2 + 1 / 5, 92)},
     },
     "dodecarhombitrihex": {
         "flat": {"easy": (3, 1, 6, 23.852), "medium": (5, 2, 21, 15.458), "hard": (6, 3, 53, 13.145)},
+        "torus": {"easy": (4, 2, 14, 0.52), "medium": (6, 2, 28, 0.45), "hard": (10, 2, 60, 0.33)},
         "cylinder": {"easy": (5, 3 / 5, 6), "medium": (7, 1 + 3 / 5, 18), "hard": (10, 2 + 1 / 10, 55)},
         "mobius": {"easy": (5, 3 / 5, 6), "medium": (7, 1 + 3 / 5, 24), "hard": (11, 1 + 3 / 5, 48)},
     },

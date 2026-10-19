@@ -1801,10 +1801,10 @@ function durerTemplate(): ArchTemplate {
 //                      both lattice directions) merged with its ring of squares
 //                      and triangles into a dodecagon
 //
-// All three are p6m. The family ships on the plane, the cylinder and (all but
-// the p6 studdedtri2) the Möbius strip (ARCH_FAMILY_SURFACES in catalog.ts),
-// so each of the twenty states a cut —
-// see the comment above `steps`. Ports of the factories of the same names in
+// All three are p6m. The family ships on the plane, the cylinder, the torus and
+// (all but the p6 studdedtri2) the Möbius strip (ARCH_FAMILY_SURFACES in
+// catalog.ts), so each of the twenty states a cut for the two open surfaces —
+// see the comment above `steps`; the torus needs none. Ports of the factories of the same names in
 // boards/tilings.py.
 
 /** A regular polygon cut into triangles from its centre. */

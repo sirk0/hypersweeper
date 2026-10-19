@@ -165,10 +165,12 @@ their members: no preset window wraps them yet, and none has chosen the
 row each.
 
 The sixth family, `family="2-uniform"`, is edge-to-edge tilings by regular
-polygons with exactly two kinds of vertex. All twenty ship, on the plane and
-the **cylinder**, and nineteen on the **Möbius strip** too — `_FAMILY_SURFACES`
-holds them to those three, since no torus or Klein window has been measured
-for them yet. All twenty reverse y somewhere (every one of their seven groups
+polygons with exactly two kinds of vertex. All twenty ship, on the plane, the
+**cylinder** and the **torus**, and nineteen on the **Möbius strip** too —
+`_FAMILY_SURFACES` holds them to those four, since no Klein window has been
+measured for them yet. A donut needs neither a cut nor a mirror, so all twenty
+reach it, but most of their domains are too big for an easy one of the
+classic size (see the 2-uniform recipe). All twenty reverse y somewhere (every one of their seven groups
 has a half turn, if not a mirror), so all twenty get a cylinder; every one
 with a horizontal mirror or glide gets a Möbius strip, which is all but the p6
 `studdedtri2`. Two wrap in a **layout of their own** (`_ArchTemplate.wrap`,
@@ -176,7 +178,8 @@ read through `_wrap_template` / `wrapTemplate`; the flat board keeps the
 original): `elongated3` turned a quarter turn, so its rows step one edge
 rather than a band of four courses, and the pgg `snubelongated`, which has no
 mirror, moved so its horizontal glide sits on y = 0 for the seam to glue
-through. Each has one `cut` for both surfaces: five end on a straight line of
+through (the donut is glued in the same layout). Each has one `cut` for both
+open surfaces: five end on a straight line of
 edges, and the other fifteen on the flattest zigzag the gaps between their
 rows of tile centres allow — among the gaps, in either layout, that give both
 surfaces an easy board of about the classic size that plays as a puzzle,

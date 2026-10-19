@@ -1542,9 +1542,10 @@ def _durer_template() -> _ArchTemplate:
 #                        of squares and triangles into a dodecagon
 #
 # All three are p6m, so their windows are symmetric every way a hexagon is.
-# The family ships on the plane, the cylinder and (all but the p6 studdedtri2)
-# the Mobius strip (_FAMILY_SURFACES in catalog.py), so each of the twenty
-# states a cut -- see "the cut" in the comment above _steps.
+# The family ships on the plane, the cylinder, the torus and (all but the p6
+# studdedtri2) the Mobius strip (_FAMILY_SURFACES in catalog.py), so each of
+# the twenty states a cut for the two open surfaces -- see "the cut" in the
+# comment above _steps. The torus needs none.
 
 
 def _fan(polygon):
