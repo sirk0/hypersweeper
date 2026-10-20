@@ -9,7 +9,9 @@ that choose a look are in [`ui.md`](ui.md).
 The board zooms **in the app**, never in the browser. Pinch on the canvas, or
 `ctrl`+wheel / a trackpad pinch, or the wheel on any board with no ring to
 scroll, or `+` / `-` / `0` (frame it again); a zoomed flat board is dragged
-with one finger, any board with two. Zoom is bounded — `MIN_ZOOM` is the fitted
+with one finger, any board with two, and a hyperbolic board with one at any
+zoom — by a disc isometry rather than a slide (see "Hyperbolic panning"
+below). Zoom is bounded — `MIN_ZOOM` is the fitted
 board (it can never be shrunk into the void) and `MAX_ZOOM` caps magnification
 — and the pan is clamped to the board's overhang, so no gesture can lose the
 board off-screen. A new board always starts framed. `window.__ms.zoom()` reads
@@ -71,6 +73,50 @@ press drops them, a hidden page forgets everything, and lifts are heard on
 `window`, so one that is hit-tested onto the chrome still counts.
 `tests/e2e/stuckTouch.spec.ts` loses a lift on purpose and drives real touches
 (DevTools `Input.dispatchTouchEvent`) after it.
+
+### Hyperbolic panning (`src/render/disc.ts`)
+
+A board drawn in the Poincaré disc (`Board.disc`, the hyperbolic boards) is
+dragged by a **disc isometry** instead of the Euclidean pan: one finger or the
+mouse at *every* zoom (`pans()` in `main.ts`), the pinch's midpoint, the
+Catalyst swipe, and the arrow keys (`KEY_PAN_STEP`). The view is a Möbius map
+`z -> rot (z - c) / (1 - conj(c) z)` — `c` the board point shown at the centre,
+`rot` its turn — and a drag step composes the translation along the geodesic
+through the two points, so the point under the finger is the one that follows
+it (`discDrag`; `panBy` gets the step's end point from `controls.ts` for that,
+and a drag with no point under it — the swipe, a key — uses the centre of the
+view). The map is conformal, so a rim cell brought to the middle is drawn as
+big as the central cell, its bevel and number with it. Three limits keep it
+from getting lost:
+
+- `|c|` never passes `Board.disc.reach`, the farthest cell centre: any cell can
+  be centred, and the board cannot be carried off into the rim.
+- A finger past `GRAB_LIMIT` (0.95 of the disc radius, or off the disc
+  altogether) is taken as being at it, so a drag out there moves the board
+  steadily rather than by a cell a pixel.
+- `0` (`resetView`) puts the board back as built, as it reframes the zoom; a
+  new board always starts that way.
+
+**The pan is the vertex shader's**, not a rewrite of the buffers: a hard board
+is hundreds of thousands of vertices, too many to re-cut per pointer move on a
+phone. `patchMotion` takes the disc's uniforms (`DiscUniforms`) and appends a
+stage after the cell motion: a tile vertex goes through the map, and its height
+is scaled by the map's magnification at the cell's pivot (`discScale`, one
+factor per cell, so a tile keeps its proportions); a **glyph** quad is not
+mapped point by point — the map turns the plane by a different angle
+everywhere, which tipped the numbers over and sheared them — but carried whole
+to its cell's mapped pivot, scaled by the same factor and never turned. Every
+other board compiles without the stage. What the shader moves, the CPU has to
+know about too, and three places do: `cellAnchor` returns the mapped centre
+(so `cellScreenXY`, the particles and the stereo pan follow), `pick` aims its
+ray at the board-as-built point the view draws under the pointer
+(`discSource`), and the flying flag, which is not patched, is placed by hand.
+The meshes skip frustum culling, their bounds being the board as built. The
+reveal ripple and the tile waves still time themselves off the board as built.
+`tests/unit/disc.test.ts` pins the map (an isometry, the finger followed, the
+reach held), and `tests/e2e/hyperbolicPan.spec.ts` the gestures: a hard rim
+cell dragged in to full size and opened by a tap there, `0`, the arrows, and a
+touch drag that neither opens nor flags.
 
 ## Picking (`Renderer.pick`)
 
@@ -325,8 +371,8 @@ Glyphs are sized per cell already (`glyphInradius * 0.9`), so a rim cell a
 twentieth the size of the central one gets a number a twentieth the size. That
 is what makes the disc readable at easy and, on a phone, not at medium or hard:
 the outer cells end up a pixel or two across. The Euclidean zoom does not reach
-them; hyperbolic panning, which would move the disc rather than the camera, is
-the planned answer.
+them; hyperbolic panning, which moves the disc rather than the camera, does —
+see "Hyperbolic panning" under "Zoom".
 
 ### The Soft cut (`round`, `shadow`, `grout`)
 

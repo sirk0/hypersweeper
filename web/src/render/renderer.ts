@@ -61,6 +61,8 @@ const FLAT_MARGIN = 1.06;
 
 const X_AXIS = new Vector3(1, 0, 0);
 const Y_AXIS = new Vector3(0, 1, 0);
+/** Scratch for `boardPoint` and the disc pick. */
+const BOARD_POINT = new Vector3();
 /** Scratch for `panFor`, which runs once per sounding cell of a flood fill. */
 const PAN_POINT = new Vector3();
 
@@ -419,12 +421,20 @@ export class BoardRenderer {
     return this.zoomLevel;
   }
 
-  /** Frame the board again: fitted, unpanned. */
+  /** Frame the board again: fitted, unpanned — and a disc board back where
+   * it was built, its central cell in the middle. */
   resetView(): void {
     this.zoomLevel = MIN_ZOOM;
     this.panX = 0;
     this.panY = 0;
+    this.board?.resetDisc?.();
     this.frame();
+  }
+
+  /** Whether drags move the current board hyperbolically (it is drawn in the
+   * Poincaré disc): then a one-finger drag pans it at every zoom. */
+  get discPans(): boolean {
+    return this.board?.discPans === true;
   }
 
   /** Multiply the zoom by `factor`, keeping the board fixed under the anchor
@@ -448,12 +458,41 @@ export class BoardRenderer {
   }
 
   /** Drag the board by (dx, dy) CSS pixels — it follows the finger, and the
-   * clamp in the framing keeps it from being pushed off the screen. */
-  panBy(dxPx: number, dyPx: number): void {
-    if (!this.board || (dxPx === 0 && dyPx === 0)) return;
+   * clamp in the framing keeps it from being pushed off the screen. A board
+   * drawn in the Poincaré disc is moved by a disc isometry instead (hyperbolic
+   * panning, render/disc.ts), which is not the same motion everywhere: the
+   * point under the finger is the one that follows it, so (x, y) — canvas CSS
+   * pixels, where the drag step ended — says which point that is. Without one
+   * (a wheel, a key) it is the centre of the view. */
+  panBy(dxPx: number, dyPx: number, x?: number, y?: number): void {
+    const board = this.board;
+    if (!board || (dxPx === 0 && dyPx === 0)) return;
+    if (board.discPans && board.dragDisc) {
+      const toX = x ?? this.centerX + dxPx;
+      const toY = y ?? this.centerY + dyPx;
+      const from = this.boardPoint(toX - dxPx, toY - dyPx);
+      const to = this.boardPoint(toX, toY);
+      if (board.dragDisc(from, to)) this.dirty = true;
+      return;
+    }
     this.panX -= dxPx * this.wpp;
     this.panY += dyPx * this.wpp;
     this.frame();
+  }
+
+  /** The point of a flat board's plane (mesh units) under canvas CSS pixel
+   * (x, y): the screen->world model in zoom.ts, then the board's own turn and
+   * shake undone. */
+  private boardPoint(x: number, y: number): [number, number] {
+    const board = this.board!;
+    board.updateWorldMatrix(true, false);
+    const p = BOARD_POINT.set(
+      this.panX + this.wpp * (x - this.centerX),
+      this.panY + this.wpp * (this.centerY - y),
+      0,
+    );
+    board.worldToLocal(p);
+    return [p.x, p.y];
   }
 
   /** Place the perspective camera so the solid fills the region below the
@@ -802,6 +841,10 @@ export class BoardRenderer {
   pick(ndc: Vector2): CellId | null {
     const board = this.board;
     if (!board) return null;
+    // A panned disc is drawn by its vertex shader, so the ray is aimed at the
+    // point of the board as built that the view draws there. The camera looks
+    // straight down at a flat board, so that is the whole correction.
+    if (board.discPans && board.discSource) ndc = this.discNdc(board, ndc);
     this.raycaster.setFromCamera(ndc, this.camera);
     const targets = PICK_LAYERS.map((name) => board.getObjectByName(name)).filter(
       (mesh) => mesh != null,
@@ -811,6 +854,17 @@ export class BoardRenderer {
     const hit = hits[0];
     if (!hit || hit.faceIndex == null) return null;
     return board.cellForFace(hit.faceIndex, hit.object.name as PickLayer);
+  }
+
+  private discNdc(board: BoardMesh, ndc: Vector2): Vector2 {
+    const camera = this.camera;
+    board.updateWorldMatrix(true, false);
+    const p = BOARD_POINT.set(ndc.x, ndc.y, 0).unproject(camera);
+    board.worldToLocal(p);
+    const [x, y] = board.discSource!([p.x, p.y]);
+    p.set(x, y, 0);
+    board.localToWorld(p).project(camera);
+    return new Vector2(p.x, p.y);
   }
 
   private renderOnce = (): void => {

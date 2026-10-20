@@ -67,6 +67,13 @@ export interface Board {
   // measure regular "projected regular" on the strength of it. Unset for every
   // other flat board, whose tiles are exactly what they are drawn as.
   regularTiles?: boolean;
+  // The Poincaré disc the board is drawn in (the hyperbolic boards), in the
+  // polygons' own pixel space: its centre, the radius of its unit circle, and
+  // `reach`, the disc radius (0..1) of the farthest cell centre. It is what
+  // lets the renderer move the board by a disc isometry — hyperbolic panning,
+  // see render/disc.ts — and `reach` is how far that may carry it: far enough
+  // to bring any cell to the centre, no farther. Unset for every other board.
+  disc?: { cx: number; cy: number; radius: number; reach: number };
 }
 
 /** Where an immersion passes through itself, the sheet that ends up *inside*

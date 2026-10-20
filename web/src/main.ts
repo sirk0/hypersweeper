@@ -76,6 +76,9 @@ function withShellIcon(settings: Settings): Settings {
 
 /** Zoom step for one press of the +/- keys. */
 const ZOOM_KEY_STEP = 1.3;
+/** How far one arrow press drags a hyperbolic board, in CSS pixels at the
+ * centre of the view — a little under half the central cell on a phone. */
+const KEY_PAN_STEP = 40;
 
 /** How long the record dialog waits after a win, so the board's win wave and
  * the flags cascading in are seen before a card covers them. Skipped when
@@ -253,13 +256,14 @@ class App {
       onHover: (cell) => this.hover(cell),
       rotates: () => this.screen === "game" && (this.session?.is3d ?? false),
       onRotate: (dx, dy) => this.rotate(dx, dy),
-      // A zoomed-in flat board is dragged around; a 3D one is rotated instead
-      // (two fingers still pan it).
+      // A zoomed-in flat board is dragged around, and a hyperbolic one at any
+      // zoom (it moves by a disc isometry, which needs no overhang); a 3D one
+      // is rotated instead (two fingers still pan it).
       pans: () =>
         this.screen === "game" &&
         !(this.session?.is3d ?? false) &&
-        this.renderer.zoom > 1,
-      onPan: (dx, dy) => this.pan(dx, dy),
+        (this.renderer.zoom > 1 || this.renderer.discPans),
+      onPan: (dx, dy, x, y) => this.pan(dx, dy, x, y),
       onZoom: (factor, x, y) => this.zoom(factor, x, y),
       // The wheel walks the ring; with shift held it rolls round the tube, on
       // the boards that have one.
@@ -1025,10 +1029,11 @@ class App {
     this.renderer.zoomBy(factor, x, y);
   }
 
-  /** Drag the zoomed board by (dx, dy) CSS pixels. */
-  private pan(dxPx: number, dyPx: number): void {
+  /** Drag the zoomed (or hyperbolic) board by (dx, dy) CSS pixels, a step
+   * that ended at canvas pixel (x, y) when there is a finger behind it. */
+  private pan(dxPx: number, dyPx: number, x?: number, y?: number): void {
     if (this.screen !== "game") return;
-    this.renderer.panBy(dxPx, dyPx);
+    this.renderer.panBy(dxPx, dyPx, x, y);
   }
 
   /** Move the board's contents one step along one of its symmetries (a
@@ -1063,12 +1068,26 @@ class App {
       // but it does have its own turn and mirrors.
       const [id, direction] = App.SYMMETRY_KEYS[e.key]!;
       this.move(id, direction);
-    } else if (!this.session?.is3d) return;
+    } else if (this.renderer.discPans && this.onKeyDisc(e)) return;
+    else if (!this.session?.is3d) return;
     else {
       this.onKey3d(e);
       return;
     }
     e.preventDefault();
+  }
+
+  /** Arrow keys carry a hyperbolic board the way they turn a 3D one: the
+   * board moves the way the arrow points, as a drag that way would move it. */
+  private onKeyDisc(e: KeyboardEvent): boolean {
+    const step = KEY_PAN_STEP;
+    if (e.key === "ArrowLeft") this.pan(-step, 0);
+    else if (e.key === "ArrowRight") this.pan(step, 0);
+    else if (e.key === "ArrowUp") this.pan(0, -step);
+    else if (e.key === "ArrowDown") this.pan(0, step);
+    else return false;
+    e.preventDefault();
+    return true;
   }
 
   private onKey3d(e: KeyboardEvent): void {

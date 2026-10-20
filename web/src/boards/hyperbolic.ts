@@ -331,6 +331,9 @@ export function hyperbolicBoard(
     );
   }
   const size = 2 * extent * scale;
+  const centre = centralPolygon(p, q);
+  let reach = 0;
+  for (const f of kept) reach = Math.max(reach, abs(faceCentre(centre, faces[f]!, pos)));
   return flatBoard({
     mode: `hyperbolic${p}${q}`,
     polygons,
@@ -341,5 +344,6 @@ export function hyperbolicBoard(
     cornerMask,
     curved: true,
     regularTiles: true,
+    disc: { cx: extent * scale, cy: extent * scale, radius: scale, reach },
   });
 }

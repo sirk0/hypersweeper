@@ -8,6 +8,7 @@ import {
   MeshStandardMaterial,
   ShapeUtils,
   Vector2,
+  Vector3,
   type Texture,
 } from "three";
 import type { Board, CellId, Vertex } from "../boards/core";
@@ -37,7 +38,16 @@ import {
   WIN_PER_CELL,
 } from "./animations";
 import { cellPalette, classifyShapes, type CellPalette, corners } from "./shapePalette";
-import { BoardMotion, cellAttribute, patchMotion } from "./motionShader";
+import { BoardMotion, cellAttribute, patchMotion, type DiscUniforms } from "./motionShader";
+import {
+  DISC_IDENTITY,
+  discDrag,
+  discMap,
+  discScale,
+  discUnmap,
+  type Cx,
+  type DiscView,
+} from "./disc";
 import {
   cellStyle,
   cellStyleLoops,
@@ -134,6 +144,14 @@ export class PolygonBoard extends Group implements BoardMesh {
   private shadowPos: BufferAttribute | null = null;
   private shadowColor: BufferAttribute | null = null;
   private shadowStart: number[] = [];
+  /** The Poincaré disc a hyperbolic board is drawn in (mesh units: centre and
+   * unit radius, and the `reach` its view may carry it to), the view it is
+   * shown at, and the uniforms that hand that view to the vertex shader —
+   * which is where the pan is applied, so a drag costs three uniforms rather
+   * than a rewrite of every tile. Null on every other board. */
+  private readonly disc: { x: number; y: number; r: number; reach: number } | null;
+  private discView: DiscView = DISC_IDENTITY;
+  private readonly discUniforms: DiscUniforms | null;
 
   constructor(board: Board, style: CellStyle = cellStyle(null)) {
     super();
@@ -166,6 +184,21 @@ export class PolygonBoard extends Group implements BoardMesh {
       height: board.height,
       mode: board.mode,
     };
+    this.disc = board.disc
+      ? {
+          x: board.disc.cx - cx,
+          y: cy - board.disc.cy,
+          r: board.disc.radius,
+          reach: board.disc.reach,
+        }
+      : null;
+    this.discUniforms = this.disc
+      ? {
+          uDisc: { value: new Vector3(this.disc.x, this.disc.y, this.disc.r) },
+          uDiscC: { value: new Vector2(0, 0) },
+          uDiscRot: { value: new Vector2(1, 0) },
+        }
+      : null;
 
     const faceCell: number[] = [];
     let vertexCount = 0;
@@ -272,7 +305,7 @@ export class PolygonBoard extends Group implements BoardMesh {
           side: DoubleSide,
           ...translucent,
         });
-    patchMotion(cellMaterial, this.motion.uniforms, "tile", !style.unlit);
+    patchMotion(cellMaterial, this.motion.uniforms, "tile", !style.unlit, this.discUniforms);
     const cells = new Mesh(geometry, cellMaterial);
     cells.name = "cells";
     this.add(cells);
@@ -307,7 +340,7 @@ export class PolygonBoard extends Group implements BoardMesh {
         depthWrite: false,
         side: DoubleSide,
       });
-      patchMotion(shadowMaterial, this.motion.uniforms, "tile", false);
+      patchMotion(shadowMaterial, this.motion.uniforms, "tile", false, this.discUniforms);
       const shadowMesh = new Mesh(sg, shadowMaterial);
       shadowMesh.name = "shadows";
       shadowMesh.renderOrder = 0.5;
@@ -321,7 +354,7 @@ export class PolygonBoard extends Group implements BoardMesh {
       side: DoubleSide,
       depthWrite: false,
     });
-    patchMotion(glyphMaterial, this.motion.uniforms, "glyph", false);
+    patchMotion(glyphMaterial, this.motion.uniforms, "glyph", false, this.discUniforms);
     const glyphMesh = new Mesh(this.glyphGeometry, glyphMaterial);
     glyphMesh.name = "glyphs";
     glyphMesh.renderOrder = 1;
@@ -369,6 +402,10 @@ export class PolygonBoard extends Group implements BoardMesh {
       );
       geometry.boundingSphere.radius += maxRadius * (this.glyphHeight - lowest);
     }
+    // The bounds three.js culls by are the board as built; panned, the disc
+    // draws it elsewhere (never outside the unit circle, which the board
+    // already all but fills), so a disc board is never culled.
+    if (this.disc) this.traverse((o) => (o.frustumCulled = false));
     this.rebuildGlyphs();
   }
 
@@ -385,7 +422,58 @@ export class PolygonBoard extends Group implements BoardMesh {
     const i = this.cellIndex.get(cell);
     if (i == null) return null;
     const g = this.geom[i]!;
-    return { center: [g.center[0], g.center[1], 0], normal: [0, 0, 1] };
+    const [x, y] = this.discPoint(g.center);
+    return { center: [x, y, 0], normal: [0, 0, 1] };
+  }
+
+  // -- hyperbolic panning (see render/disc.ts) --------------------------------
+
+  get discPans(): boolean {
+    return this.disc !== null;
+  }
+
+  /** Move the disc so what is drawn at `from` is drawn at `to` (mesh units). */
+  dragDisc(from: Vertex, to: Vertex): boolean {
+    if (!this.disc) return false;
+    const next = discDrag(this.discView, this.toDisc(from), this.toDisc(to), this.disc.reach);
+    if (next === this.discView) return false;
+    this.setDiscView(next);
+    return true;
+  }
+
+  resetDisc(): void {
+    if (this.disc && this.discView !== DISC_IDENTITY) this.setDiscView(DISC_IDENTITY);
+  }
+
+  /** The point of the board as built that is drawn at `p` (mesh units). */
+  discSource(p: Vertex): Vertex {
+    if (!this.disc) return p;
+    return this.fromDisc(discUnmap(this.discView, this.toDisc(p)));
+  }
+
+  /** Where the current view draws the board-as-built point `p`. */
+  private discPoint(p: Vertex): Vertex {
+    if (!this.disc || this.discView === DISC_IDENTITY) return p;
+    return this.fromDisc(discMap(this.discView, this.toDisc(p)));
+  }
+
+  private toDisc(p: Vertex): Cx {
+    const d = this.disc!;
+    return [(p[0] - d.x) / d.r, (p[1] - d.y) / d.r];
+  }
+
+  private fromDisc(z: Cx): Vertex {
+    const d = this.disc!;
+    return [d.x + z[0] * d.r, d.y + z[1] * d.r];
+  }
+
+  private setDiscView(view: DiscView): void {
+    this.discView = view;
+    const u = this.discUniforms!;
+    u.uDiscC.value.set(view.c[0], view.c[1]);
+    u.uDiscRot.value.set(view.rot[0], view.rot[1]);
+    // The flag in flight is the one thing drawn outside the shader's reach.
+    if (this.anim.dropProgress(performance.now()) != null) this.rebuildGlyphs();
   }
 
   setVisual(cell: CellId, visual: CellVisual): void {
@@ -664,8 +752,19 @@ export class PolygonBoard extends Group implements BoardMesh {
       // frame the drop ends and the hand-off is invisible. Drawing both would
       // stand a second, tiny flag beside the falling one.
       if (i === dropIndex && dropAt != null) {
-        const half = dropSize(settled, extent, dropAt);
-        quad(dropPos, dropUvs, half, z + 0.02, dropRise(settled, half));
+        // Not patched by the motion shader (it hangs over the board, at many
+        // times a cell's size), so on a panned disc it is placed here: at the
+        // glyph's drawn place, the size the pan draws that cell at.
+        const grow = this.disc ? discScale(this.discView, this.toDisc(g.glyphCenter)) : 1;
+        const [ox, oy] = this.discPoint(g.glyphCenter);
+        const fly = settled * grow;
+        const half = dropSize(fly, extent, dropAt);
+        const from = dropPos.length;
+        quad(dropPos, dropUvs, half, z * grow + 0.02, dropRise(fly, half));
+        for (let k = from; k < dropPos.length; k += 3) {
+          dropPos[k] = dropPos[k]! - cxp + ox;
+          dropPos[k + 1] = dropPos[k + 1]! - cyp + oy;
+        }
       } else {
         quad(pos, uvs, s, z);
         owners.push(i, i, i, i, i, i);
