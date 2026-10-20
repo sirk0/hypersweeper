@@ -1194,9 +1194,10 @@ export class Menu {
     return li;
   }
 
-  /** The star in a board row's top-right corner. A sibling of the row's own
-   * button, not inside it — a button cannot hold a button — laid over the
-   * row's corner by `.menu-fav` in styles.css; so the row still launches the
+  /** The star at a board row's right edge (on a desktop card, the preview's
+   * top-right corner). A sibling of the row's own button, not inside it — a
+   * button cannot hold a button — laid over the row by `.menu-fav` in
+   * styles.css; so the row still launches the
    * board and the star only stars it. `data-fav` is the e2e suite's handle. */
   private favButton(mode: string, label: string): HTMLElement {
     const btn = document.createElement("button");

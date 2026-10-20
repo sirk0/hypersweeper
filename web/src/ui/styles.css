@@ -915,9 +915,10 @@ body {
 }
 
 /* The favourite star (menu.ts `favButton`): a button of its own laid over the
-   row's top-right corner — a sibling of the row's button, since a button
-   cannot hold one — so the row keeps launching the board. The row gives up the
-   corner (`.has-fav`) so a long name or the ⚠ never runs under it. */
+   row's right edge, centred on the row's height — a sibling of the row's
+   button, since a button cannot hold one — so the row keeps launching the
+   board. The row gives up that edge (`.has-fav`) so a long name or the ⚠
+   never runs under it. */
 .menu-list > li {
   position: relative;
 }
@@ -929,8 +930,9 @@ body {
 .menu-fav {
   touch-action: manipulation;
   position: absolute;
-  top: 3px;
+  top: 50%;
   right: 3px;
+  transform: translateY(-50%);
   width: 44px;
   height: 44px;
   padding: 11px;
@@ -1334,6 +1336,7 @@ body {
   .menu-card-grid > li > .menu-fav {
     top: 9px;
     right: 9px;
+    transform: none;
     width: 36px;
     height: 36px;
     padding: 8px;

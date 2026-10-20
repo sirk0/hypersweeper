@@ -1,9 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
 
-// Favourites and completion marks on the menu: the star in a board row's
-// corner, the Favourites section of the home page (phone) and Quick start
-// (desktop), and the three bars that say which difficulties a board has been
-// won at. The default viewport is the desktop's; `phone` drops below the
+// Favourites and completion marks on the menu: the star on a board row, the
+// Favourites section of the home page (phone) and Quick start (desktop), and
+// the three bars that say which difficulties a board has been won at. The default viewport is the desktop's; `phone` drops below the
 // two-pane breakpoint.
 
 const phone = async (page: Page) => page.setViewportSize({ width: 390, height: 844 });
@@ -33,6 +32,11 @@ test.describe("favourites", () => {
     await page.locator('.menu-body [data-group="flat"]').click();
     const star = page.locator('.menu-fav[data-fav="hex"]');
     await expect(star).toHaveAttribute("aria-pressed", "false");
+    // On a phone row the star sits at the right edge, centred on the row's height.
+    const rowBox = await page.locator('.menu-entry[data-mode="hex"]').boundingBox();
+    const starBox = await star.boundingBox();
+    expect(Math.abs(starBox!.y + starBox!.height / 2 - (rowBox!.y + rowBox!.height / 2))).toBeLessThan(1);
+    expect(starBox!.x + starBox!.width).toBeGreaterThan(rowBox!.x + rowBox!.width - 8);
     await star.click();
     await expect(star).toHaveAttribute("aria-pressed", "true");
     // The star only stars: the row's own button is what launches the board.

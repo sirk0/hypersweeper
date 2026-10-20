@@ -127,8 +127,9 @@ way:
 
 ### Favourites and completion marks
 
-Every playable board row carries a **star** in its top-right corner
-(`Menu.favButton`), and the starred boards are listed in a **Favourites**
+Every playable board row carries a **star** at its right edge, centred on the
+row's height (`Menu.favButton`; on a desktop card, in the preview's top-right
+corner), and the starred boards are listed in a **Favourites**
 section on the main screen: under Classic / Flat / 3D / Custom on the phone
 home page, and under the three quick-play cards on the desktop's Quick start —
 the desktop's landing page, whose sidebar row was already a star. The section is
