@@ -1,5 +1,5 @@
 import { screens } from "../config/screens";
-import { MENU_FAMILY_HINTS, MODE_LABELS } from "../boards/catalog";
+import { MENU_FAMILY_HINTS, MODE_LABELS, surfaceOf } from "../boards/catalog";
 import {
   blockedExplanation,
   fairnessHint,
@@ -8,13 +8,15 @@ import {
 } from "../boards/fairness";
 import { distortedDifficulties, distortionHint, isDistorted } from "../boards/distortion";
 import { randomMode, type RandomKind } from "../boards/randomBoard";
-import { clearAchievements } from "../achievements";
+import { clearAchievements, loadProgress, type Progress } from "../achievements";
 import { clearBestTimes } from "../leaderboard";
-import { clearCloudRecord } from "../cloudRecord";
+import { clearCloudRecord, syncCloudRecord } from "../cloudRecord";
+import { favourites, isFavourite, toggleFavourite } from "../favourites";
 import { renderAchievements } from "./achievements";
 import { renderBestTimes } from "./bestTimes";
 import {
   boardGroups,
+  menuEntryFor,
   pickerFor,
   quickPlayEntries,
   type Family,
@@ -94,6 +96,18 @@ const SOLID_GROUP_HINTS: Record<string, string> = {
  * no phone equivalent (the phone lists these three as its home rows). */
 const QUICK_START = "quickstart";
 
+/** The favourite star: outlined when off, filled (`.menu-fav[aria-pressed]` in
+ * styles.css) when on. Drawn rather than a ☆/★ character, whose two glyphs
+ * differ in size and weight from one system font to the next. */
+const STAR_ICON =
+  '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l2.85 5.78 6.38.93-4.62 4.5 1.09 6.35L12 17.36l-5.7 3 1.09-6.35-4.62-4.5 6.38-.93z"/></svg>';
+
+/** "Easy", "Easy and Hard", "Easy, Medium and Hard". */
+function listWords(words: string[]): string {
+  if (words.length < 2) return words.join("");
+  return `${words.slice(0, -1).join(", ")} and ${words[words.length - 1]}`;
+}
+
 /** A menu row's icon (the same glyph the pygame menu draws for that key). */
 function iconEl(key: string): HTMLElement {
   const el = document.createElement("span");
@@ -165,6 +179,12 @@ export class Menu {
   /** The page currently on screen, re-runnable so returning from a board
    * restores it (see `show`). */
   private view: () => void = () => this.renderRoot();
+  /** The win record, read once per render for the completion marks. */
+  private progress: Progress | null = null;
+  /** Whether the page on screen is the one carrying the Favourites section —
+   * the phone home page or the desktop Quick start — so unstarring a board
+   * there takes its row away at once. Set by those two pages per render. */
+  private favouritesOnScreen = false;
 
   constructor(
     private readonly onSelect: (sel: MenuSelection) => void,
@@ -311,6 +331,11 @@ export class Menu {
     // re-added by `paneHeader`, so the pane's own scroll layout is derived from
     // the page actually on screen rather than left over from the last one.
     this.body.classList.remove("paned");
+    this.favouritesOnScreen = false;
+    // Read once here rather than per row: a page lists up to thirty boards,
+    // and the record changes only with a win, which is never while the menu is
+    // up. `show()` comes back through here after one.
+    this.progress = loadProgress();
     this.view();
     // On the phone width no page reparents the difficulty block into itself
     // (that only happens inside `paneHeader`, on desktop), so it can drift
@@ -377,16 +402,59 @@ export class Menu {
       this.showRoot();
       return;
     }
+    this.favouritesOnScreen = true;
     const list = document.createElement("ul");
     list.className = "menu-list menu-card-grid";
     list.append(...this.quickPlayCards());
-    this.body.replaceChildren(
-      this.paneHeader(
-        "Quick start",
-        "Straight into a board, or a surprise from half the catalogue.",
-      ),
-      list,
+    const header = this.paneHeader(
+      "Quick start",
+      "Straight into a board, or a surprise from half the catalogue.",
     );
+    const faves = this.favouriteRows();
+    if (faves.length === 0) {
+      this.body.replaceChildren(header, list);
+      return;
+    }
+    // Two grids and a heading under one pane header: they share one scroller
+    // (`.menu-pane-scroll`), which takes the place the single grid has on every
+    // other page (`.menu-body.paned > .menu-list` in styles.css).
+    const favList = document.createElement("ul");
+    favList.className = "menu-list menu-card-grid menu-fav-list";
+    favList.append(...faves);
+    const scroll = document.createElement("div");
+    scroll.className = "menu-pane-scroll";
+    scroll.append(list, this.sectionHeading("Favourites"), favList);
+    this.body.replaceChildren(header, scroll);
+  }
+
+  /** A row for each starred board, in the order they were starred — the
+   * Favourites section of the home page (phone) or Quick start (desktop). The
+   * same `entryRow` every board page builds, star included, so a favourite is
+   * unstarred where it is listed. Named by its row's own label plus its
+   * surface, as `fullModeLabel` names a board for the best-times list:
+   * "Squares" alone does not say plane or torus once the page it was reached
+   * through is gone. (Not `fullModeLabel` itself — its tiling half is the
+   * catalogue's name, which is not always the row's: the plane's triangles are
+   * "Triangle grid" there.) A board the menu cannot reach, or one that cannot
+   * be played, is left out. */
+  private favouriteRows(): HTMLElement[] {
+    const rows: HTMLElement[] = [];
+    for (const mode of favourites()) {
+      const entry = menuEntryFor(mode);
+      if (!entry || modeFairness(mode) === "blocked") continue;
+      const surface = surfaceOf(mode);
+      const label =
+        surface && surface.key !== "flat" ? `${entry.label} · ${surface.label}` : entry.label;
+      rows.push(this.entryRow(mode, label, entry.icon, entry.notation));
+    }
+    return rows;
+  }
+
+  private sectionHeading(text: string): HTMLElement {
+    const heading = document.createElement("h2");
+    heading.className = "menu-section-heading";
+    heading.textContent = text;
+    return heading;
   }
 
   /** Open the settings or how-to-play page from outside the menu (the Mac
@@ -711,6 +779,7 @@ export class Menu {
         });
       }
       btn.append(this.previewEl(e.icon), this.cardCaption(e.label, { hint: e.hint }));
+      if (e.kind === "mode") this.addDoneMark(btn, e.key);
       li.append(btn);
       return li;
     });
@@ -749,7 +818,19 @@ export class Menu {
       li.append(btn);
       list.append(li);
     }
-    this.body.replaceChildren(list);
+    this.favouritesOnScreen = true;
+    const faves = this.favouriteRows();
+    if (faves.length === 0) {
+      this.body.replaceChildren(list);
+      return;
+    }
+    // The two lists are centred as one block: the first gives up its bottom
+    // auto margin, the second its top one (styles.css, `.menu-list-lead`).
+    list.classList.add("menu-list-lead");
+    const favList = document.createElement("ul");
+    favList.className = "menu-list menu-fav-list";
+    favList.append(...faves);
+    this.body.replaceChildren(list, this.sectionHeading("Favourites"), favList);
   }
 
   private showCustom(): void {
@@ -1093,6 +1174,7 @@ export class Menu {
     if (level !== "blocked" && distortedDifficulties(mode).length > 0) {
       this.addDistortionMark(btn, mode, level === "ok");
     }
+    this.addDoneMark(btn, mode);
     if (level === "blocked") {
       // Deliberately *not* `aria-disabled`: the row is a working control that
       // opens the explanation, and claiming it is disabled would both lie to a
@@ -1104,7 +1186,73 @@ export class Menu {
       );
     }
     li.append(btn);
+    // A blocked board cannot be played, so there is nothing to come back to.
+    if (level !== "blocked") {
+      btn.classList.add("has-fav");
+      li.append(this.favButton(mode, label));
+    }
     return li;
+  }
+
+  /** The star in a board row's top-right corner. A sibling of the row's own
+   * button, not inside it — a button cannot hold a button — laid over the
+   * row's corner by `.menu-fav` in styles.css; so the row still launches the
+   * board and the star only stars it. `data-fav` is the e2e suite's handle. */
+  private favButton(mode: string, label: string): HTMLElement {
+    const btn = document.createElement("button");
+    btn.className = "menu-fav";
+    btn.dataset.fav = mode;
+    btn.innerHTML = STAR_ICON;
+    this.paintFav(btn, label, isFavourite(mode));
+    btn.addEventListener("click", () => {
+      const on = toggleFavourite(mode);
+      // The section lists only starred boards, so on its page a re-render
+      // takes an unstarred board out of it. Elsewhere the row stays put and
+      // repaints its star, and any other star on the page for the same board.
+      if (this.favouritesOnScreen) this.render();
+      else {
+        for (const other of this.root.querySelectorAll<HTMLElement>(".menu-fav")) {
+          if (other.dataset["fav"] === mode) this.paintFav(other, label, on);
+        }
+      }
+      syncCloudRecord(); // …and to the player's other devices, in the app
+    });
+    return btn;
+  }
+
+  private paintFav(btn: HTMLElement, label: string, on: boolean): void {
+    btn.setAttribute("aria-pressed", String(on));
+    btn.setAttribute("aria-label", on ? `Remove ${label} from favourites` : `Add ${label} to favourites`);
+    btn.title = on ? "Remove from favourites" : "Add to favourites";
+  }
+
+  /** The completion mark: three bars rising Easy, Medium, Hard, each filled
+   * once the board has been won at that difficulty. Deliberately not stars —
+   * the star is the favourite — and only on a board won at least once, so the
+   * catalogue's untouched rows stay as they were. Read from the achievement
+   * record's win counts (`Progress.wins`), the one record of every win. On a
+   * phone row it follows the board's name; on a desktop card it sits at the
+   * caption's right, before any pill or chevron. */
+  private addDoneMark(btn: HTMLElement, mode: string): void {
+    const wins = this.progress?.wins[mode] ?? {};
+    const won = screens.difficulties.filter((d) => (wins[d.key] ?? 0) > 0);
+    if (won.length === 0) return;
+    const mark = document.createElement("span");
+    mark.className = "menu-done";
+    mark.dataset.won = won.map((d) => d.key).join(" ");
+    mark.setAttribute("role", "img");
+    mark.setAttribute("aria-label", `Won on ${listWords(won.map((d) => d.label))}`);
+    mark.title = mark.getAttribute("aria-label") ?? "";
+    for (const d of screens.difficulties) {
+      const bar = document.createElement("span");
+      bar.className = won.includes(d) ? "menu-done-bar won" : "menu-done-bar";
+      mark.append(bar);
+    }
+    if (btn.classList.contains("menu-board-card")) {
+      btn.querySelector(".menu-board-card-caption .menu-entry-text")?.after(mark);
+    } else {
+      btn.querySelector(".menu-entry-label")?.append(mark);
+    }
   }
 
   /** The mark on a board its surface draws out of shape (boards/distortion.ts):
@@ -1204,6 +1352,7 @@ export class Menu {
     btn.className = "menu-entry";
     btn.dataset.mode = mode;
     btn.append(iconEl(icon), textBlock(label, hint));
+    this.addDoneMark(btn, mode);
     btn.addEventListener("click", () =>
       this.onSelect({ mode, difficulty: this.settings.difficulty }),
     );

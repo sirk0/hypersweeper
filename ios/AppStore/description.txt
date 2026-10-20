@@ -17,7 +17,8 @@ PLAY IT YOUR WAY
 • Colour themes and sound sets, in light and dark mode, and a choice of app icons
 • Best times for every board
 • Achievements in Game Center
-• Best times and achievements kept in step across iPhone, iPad and Mac with iCloud
+• Star your favourite boards; each board shows which difficulties you have beaten
+• Best times, achievements and favourites kept in step across iPhone, iPad and Mac with iCloud
 • Share a board with a link, so a friend can play the exact same game
 • The boards as stickers in Messages
 • Haptic feedback on iPhone

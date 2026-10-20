@@ -914,6 +914,117 @@ body {
   flex: none;
 }
 
+/* The favourite star (menu.ts `favButton`): a button of its own laid over the
+   row's top-right corner — a sibling of the row's button, since a button
+   cannot hold one — so the row keeps launching the board. The row gives up the
+   corner (`.has-fav`) so a long name or the ⚠ never runs under it. */
+.menu-list > li {
+  position: relative;
+}
+
+.menu-entry.has-fav {
+  padding-right: 52px;
+}
+
+.menu-fav {
+  touch-action: manipulation;
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 44px;
+  height: 44px;
+  padding: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.menu-fav svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+}
+
+.menu-fav:hover,
+.menu-fav[aria-pressed="true"] {
+  color: var(--accent);
+}
+
+.menu-fav[aria-pressed="true"] svg {
+  fill: currentColor;
+}
+
+.menu-fav:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* The completion mark (menu.ts `addDoneMark`): three bars rising Easy, Medium,
+   Hard, filled once the board is won at that difficulty — a 1-2-3 that is not
+   a row of stars, so it cannot be read as the favourite. */
+.menu-done {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 13px;
+  margin-left: 9px;
+  vertical-align: -1px;
+}
+
+.menu-done-bar {
+  width: 4px;
+  border-radius: 1px;
+  background: var(--muted);
+  opacity: 0.3;
+}
+
+.menu-done-bar:nth-child(1) {
+  height: 5px;
+}
+
+.menu-done-bar:nth-child(2) {
+  height: 9px;
+}
+
+.menu-done-bar:nth-child(3) {
+  height: 13px;
+}
+
+.menu-done-bar.won {
+  background: var(--accent);
+  opacity: 1;
+}
+
+/* The home page's Favourites section (menu.ts `renderRoot`): the quick-play
+   list and the starred boards under it are centred in the body as one block,
+   so the first list gives up its bottom auto margin and the second its top. */
+.menu-body > .menu-list.menu-list-lead {
+  margin-bottom: 0;
+}
+
+.menu-body > .menu-fav-list {
+  margin-top: 0;
+}
+
+.menu-section-heading {
+  margin: 22px 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: center;
+}
+
 /* A blocked board keeps its row and stays tappable — the row opens the
    explanation — but reads as unavailable rather than as a board you could
    choose. */
@@ -1192,7 +1303,8 @@ body {
     padding-bottom: 0;
   }
 
-  .menu-body.paned > .menu-list {
+  .menu-body.paned > .menu-list,
+  .menu-body.paned > .menu-pane-scroll {
     /* A flex item's min-content floor would refuse to shrink, and the grid
        would push its overflow out of the pane instead of scrolling. */
     min-height: 0;
@@ -1203,6 +1315,35 @@ body {
     padding-top: var(--shadow-room);
     padding-inline: var(--shadow-room);
     margin: calc(-1 * var(--shadow-room)) calc(-1 * var(--shadow-room)) 0;
+  }
+
+  /* Quick start with favourites: two card grids and a heading in the one
+     scroller (menu.ts `renderQuickStart`). */
+  .menu-pane-scroll > .menu-section-heading {
+    margin: 30px 0 14px;
+    text-align: left;
+  }
+
+  /* On a card the star sits over the preview's corner, on a disc of the
+     panel colour so it reads over a busy tiling — and the card, whose caption
+     is under the preview, keeps its full width. */
+  .menu-entry.menu-board-card.has-fav {
+    padding-right: 0;
+  }
+
+  .menu-card-grid > li > .menu-fav {
+    top: 9px;
+    right: 9px;
+    width: 36px;
+    height: 36px;
+    padding: 8px;
+    background: var(--panel);
+    box-shadow: var(--shadow);
+  }
+
+  .menu-board-card-caption .menu-done {
+    flex: none;
+    margin-left: 0;
   }
 
   .menu-pane-heading {

@@ -3,7 +3,7 @@ import Capacitor
 
 /// iCloud's key-value store, for the page's record (web/src/cloudRecord.ts).
 ///
-/// The best times and the achievement record live in the page's
+/// The best times, the achievement record and the favourites live in the page's
 /// `localStorage`, which is one device's and goes with the app when it is
 /// deleted. `NSUbiquitousKeyValueStore` is the same few keys on every device
 /// signed in to the player's iCloud account, and survives a reinstall, so the

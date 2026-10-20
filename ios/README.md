@@ -73,7 +73,7 @@ count is wrong; the script warns about this.
 | `ios/App/AppClip/` | The App Clip target: its own delegates, `ClipBridgeViewController`, `Info.plist` and entitlements. Everything else — the game, the icon, the launch screen, the privacy manifest, `BridgeViewController.swift` — it takes from `App/`. See "The App Clip" below. |
 | `ios/App/App/App-iOS.entitlements` | **iPhone and iPad only** (`CODE_SIGN_ENTITLEMENTS[sdk=iphone*]`): names the App Clip as this app's (`associated-appclip-app-identifiers`), and turns on Game Center and iCloud key-value storage. |
 | `ios/App/App/GameCenterPlugin.swift` | The `GameCenter` plugin: sign-in, reporting achievements, opening Game Center. App target only; see "Game Center" below. |
-| `ios/App/App/CloudRecordPlugin.swift` | The `CloudRecord` plugin: iCloud's key-value store, where the best times and the achievement record are kept in step across devices and through a reinstall. App target only; see "iCloud" below. |
+| `ios/App/App/CloudRecordPlugin.swift` | The `CloudRecord` plugin: iCloud's key-value store, where the best times, the achievement record and the favourites are kept in step across devices and through a reinstall. App target only; see "iCloud" below. |
 | `ios/GameCenter/` | The Game Center achievement list (`achievements.json`) and one badge image per achievement, written by `web/scripts/make-gamecenter.mts`. Not part of the Xcode project: it is what App Store Connect is told. See "Game Center" below. |
 | `ios/AppStore/` | The store listing: promotional text, description and App Review notes, as plain text to paste into App Store Connect. See "The store listing" below. |
 | `ios/App/Stickers/` | The iMessage sticker pack: an app extension with no code, just `Info.plist` and `Stickers.xcassets` (the stickers and the drawer icon), all written by `web/scripts/make-stickers.mts`. See "The sticker pack" below. |
@@ -261,9 +261,9 @@ it ("Game Center", under the apps). If the app ever reads data back from Game
 Center (the player's name, say, or their friends), that is collection by the
 app, and the label and the page have to change with it.
 
-iCloud does not change it either. The best times and the achievement record go
-to the player's own iCloud key-value store (see "iCloud" below), labelled with
-a random per-install id, and we have no way to read them. Apple counts data as
+iCloud does not change it either. The best times, the achievement record and
+the favourites go to the player's own iCloud key-value store (see "iCloud"
+below), labelled with a random per-install id, and we have no way to read them. Apple counts data as
 collected only when the developer or a partner can access it, so this is not
 collection. The policy page says what is kept there ("iCloud", under the
 apps). If the record ever went anywhere the developer can read (CloudKit's
@@ -480,8 +480,8 @@ nobody.
 
 ## iCloud
 
-The best times and the achievement record are kept in iCloud, so the iPhone,
-the iPad and the Mac share one record, and deleting and reinstalling the app
+The best times, the achievement record and the starred favourites are kept in
+iCloud, so the iPhone, the iPad and the Mac share one record, and deleting and reinstalling the app
 loses nothing. It uses iCloud's **key-value store**
 (`NSUbiquitousKeyValueStore`): 1 MB and 1024 keys per app, which the record is
 far inside (a few kilobytes per device, at most ~60 KB of best times).

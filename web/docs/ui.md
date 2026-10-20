@@ -125,6 +125,56 @@ way:
   a stack of sections with no single list to scroll — so they still scroll
   whole.
 
+### Favourites and completion marks
+
+Every playable board row carries a **star** in its top-right corner
+(`Menu.favButton`), and the starred boards are listed in a **Favourites**
+section on the main screen: under Classic / Flat / 3D / Custom on the phone
+home page, and under the three quick-play cards on the desktop's Quick start —
+the desktop's landing page, whose sidebar row was already a star. The section is
+not there at all until something is starred; the stars on the rows are how a
+player finds it.
+
+- **The star is a button of its own**, a sibling of the row's button inside the
+  same `<li>` and laid over its corner, because a button cannot hold a button.
+  So the row still launches the board, the star only stars it, and every
+  `.menu-entry[data-mode]` selector still finds one element. `data-fav` is its
+  handle. On a desktop card it sits on a panel-coloured disc over the preview,
+  which a busy tiling would otherwise swallow.
+- **Per board, not per board and difficulty.** The star says "I like this
+  board"; the pills say how to play it.
+- **Blocked boards get no star**, and a stored one is left out of the section:
+  they cannot be played.
+- **Rows outside their page are named in full** — the row's own label plus its
+  surface ("Squares · Torus"), since the page that said "torus" is gone. The row
+  label, not `fullModeLabel`'s catalogue name: the plane's triangles are
+  "Triangles" on their page and would be "Triangle grid" there.
+  `menuEntryFor` (`src/ui/boardTree.ts`) finds a board's row — label, icon,
+  notation — by walking the tree once.
+- **Unstarring in the section takes the row away at once** (the page re-renders);
+  anywhere else the row stays and just repaints its star.
+
+`src/favourites.ts` keeps them under its own key, `ms:favourites`, shaped like
+best times (a version inside the record, total reads, a re-read before each
+write, unknown boards carried through). **A favourite is a dated switch, not a
+list entry**: each board stores `{on, at}`, and an unstar keeps its entry with
+`on: false`. The section lists the `on` ones by `at`, which is the order they
+were starred. The date is what lets two devices merge — see "The record in
+iCloud". Another tab's change, or one merged in from iCloud, reaches the menu
+through `subscribeFavourites`, which `main.ts` points at `Menu.refresh`.
+
+The **completion mark** (`Menu.addDoneMark`) is three bars rising Easy, Medium,
+Hard after a board's name (on a card, at the caption's right), each filled in
+`--accent` once the board has been won at that difficulty. Deliberately not
+stars, so it cannot be read as the favourite, and shown only on a board won at
+least once, so the catalogue's untouched rows are as they were. It reads the
+achievement record's win counts (`Progress.wins`, `src/achievements.ts`) — the
+one record of every win, seeded from the best times — once per menu render;
+clearing achievements clears the marks with it. Classic carries one too, being
+the plane's squares. `data-won` ("easy hard") is the e2e handle, and the
+`aria-label` says it in words. `tests/e2e/favourites.spec.ts` pins both
+features.
+
 ## Telling the player where they are
 
 `src/ui/boardInfo.ts` owns the board's name and the row of controls under the
@@ -1243,8 +1293,8 @@ theme's palette, since a metal's rank is what its colour says.
 
 ## The record in iCloud
 
-In the App Store app (iPhone, iPad and Mac) the best times and the achievement
-record are kept in step through iCloud, so a second device, or the same one
+In the App Store app (iPhone, iPad and Mac) the best times, the achievement
+record and the favourites are kept in step through iCloud, so a second device, or the same one
 after the app is deleted and installed again, starts with everything the player
 has won. `src/cloudRecord.ts` does it over a native plugin, `CloudRecord`
 (`ios/App/App/CloudRecordPlugin.swift`), which hands the page iCloud's
@@ -1284,6 +1334,11 @@ Clip have no plugin, and nothing runs.
   cannot tell is which of its wins came before a clear made elsewhere, so on
   hearing of one it clears every win it counted; its times carry their own
   dates, and those set after the clear stay.
+- **Favourites go the same way** (the `favourites` key): each board's star and
+  when it last changed, the later change winning board by board
+  (`mergeStars`). Like best times that is idempotent, so the merged map is
+  written whole; unlike a plain set union, an unstar made after a star wins
+  rather than being merged straight back. A star or an unstar syncs at once.
 - **Game Center hears about merged wins.** When a sync changes the achievement
   record, the whole record is sent to Game Center again, quietly
   (`catchUpGameCenter`).

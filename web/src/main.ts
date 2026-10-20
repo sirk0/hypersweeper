@@ -13,6 +13,7 @@ import {
 import { setAnalyticsEnabled, trackGame } from "./analytics";
 import { clipBoard, tellClip } from "./appClip";
 import { startCloudRecord, syncCloudRecord } from "./cloudRecord";
+import { subscribeFavourites } from "./favourites";
 import type { PreviousState, StartTrigger } from "./analyticsEvent";
 import { applyWebAppIcon, nativeAppIcon, setAppIcon, type AppIconKey } from "./appIcon";
 import {
@@ -279,6 +280,9 @@ class App {
     // ever a trap here (see blockBrowserZoom).
     blockBrowserZoom();
     subscribeSettings((s) => this.adoptSettings(s));
+    // A star set in another tab, or merged in from another device's iCloud
+    // record, has to show on the menu (its Favourites section and the stars).
+    subscribeFavourites(() => this.menu.refresh());
     // The colour scheme may be the device's rather than a stored choice, and a
     // phone switches itself at dusk. Nothing else notices, so the page would sit
     // on the wrong palette until the next reload.
