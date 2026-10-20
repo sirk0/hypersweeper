@@ -8,6 +8,7 @@ import {
   progressSince,
   type SyncState,
 } from "../../src/cloudRecord";
+import type { Stars } from "../../src/favourites";
 import type { ScoreEntry } from "../../src/leaderboard";
 
 // The iCloud merge, played out between simulated devices sharing one simulated
@@ -29,6 +30,7 @@ const win = (mode: string, over: Partial<Win> = {}): Win => ({
 class Device {
   boards: Record<string, ScoreEntry[]> = {};
   record: Stored = { progress: emptyProgress(), unlocked: {} };
+  stars: Stars = {};
   state: SyncState | null = null;
 
   constructor(
@@ -62,11 +64,13 @@ class Device {
     const result = mergeRecords({
       boards: this.boards,
       record: this.record,
+      stars: this.stars,
       state: this.state ?? freshState(this.id, this.cloud),
       cloud: { ...this.cloud },
     });
     this.boards = result.boards;
     this.record = result.record;
+    this.stars = result.stars;
     this.state = result.state;
     Object.assign(this.cloud, result.writes);
     return result.writes;
@@ -80,6 +84,31 @@ class Device {
 describe("iCloud record", () => {
   it("is off outside the native app", () => {
     expect(cloudRecordSupported()).toBe(false);
+  });
+
+  it("carries a star to the other device, and an unstar after it", () => {
+    const cloud: Record<string, string> = {};
+    const phone = new Device("aa", cloud);
+    const mac = new Device("bb", cloud);
+    // Nothing starred anywhere: nothing written.
+    expect(phone.sync()).not.toHaveProperty("favourites");
+
+    phone.stars = { hex: { on: true, at: 100 }, cube: { on: true, at: 100 } };
+    phone.sync();
+    mac.sync();
+    expect(mac.stars).toEqual(phone.stars);
+
+    // Unstarred on the Mac later: the phone's older star does not bring it back.
+    mac.stars = { ...mac.stars, hex: { on: false, at: 200 } };
+    mac.sync();
+    expect(phone.sync()).toEqual({});
+    expect(phone.stars["hex"]).toEqual({ on: false, at: 200 });
+    expect(phone.stars["cube"]?.on).toBe(true);
+
+    // A reinstall starts with none and is given them all, writing nothing.
+    const again = new Device("cc", cloud);
+    expect(again.sync()).toEqual({});
+    expect(again.stars).toEqual(phone.stars);
   });
 
   it("adds and subtracts progress", () => {

@@ -1,6 +1,7 @@
 import {
   MENU,
   MENU_FAMILY_LABELS,
+  MODE_LABELS,
   SOLID_GROUPS,
   SURFACES,
   menuFamilies,
@@ -192,4 +193,32 @@ export function quickPlayEntries(): QuickEntry[] {
     });
   }
   return entries;
+}
+
+let entries: Map<string, ModeEntry> | null = null;
+
+/** The menu row a board has wherever the tree lists it — its icon and, for a
+ * 2-uniform tiling, its notation — for the places that list boards outside
+ * their page (the home page's Favourites). `null` for a board the menu does not
+ * reach (a mode this build has not got, or a blocked one stored before). The
+ * first page a board appears on wins; the walk is done once. */
+export function menuEntryFor(mode: string): ModeEntry | null {
+  if (!entries) {
+    const found = new Map<string, ModeEntry>();
+    const add = (e: ModeEntry): void => {
+      if (!found.has(e.mode)) found.set(e.mode, e);
+    };
+    const addPicker = (surfaceKey: string): void => {
+      const picker = pickerFor(surfaceKey);
+      picker.tilings.forEach(add);
+      for (const family of picker.families) family.modes.forEach(add);
+    };
+    for (const group of boardGroups()) {
+      if (group.kind === "picker") addPicker(group.surfaceKey);
+      else if (group.kind === "manifolds") group.surfaces.forEach((s) => addPicker(s.key));
+      else for (const m of group.modes) add({ mode: m, label: MODE_LABELS[m] ?? m, icon: m });
+    }
+    entries = found;
+  }
+  return entries.get(mode) ?? null;
 }

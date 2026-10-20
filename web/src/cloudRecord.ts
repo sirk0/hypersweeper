@@ -7,6 +7,7 @@ import {
   type Progress,
   type Stored,
 } from "./achievements";
+import { mergeStars, parseStars, replaceStars, storedStars, type Stars } from "./favourites";
 import { catchUpGameCenter } from "./gameCenter";
 import {
   TOP_N,
@@ -25,7 +26,8 @@ import { readObject, storage } from "./storage";
 // `CloudRecord` plugin (ios/App/App/CloudRecordPlugin.swift) hands the page
 // iCloud's key-value store, the same few keys on every device signed in to the
 // player's account and kept through a reinstall, and this mirrors the record
-// there and merges back what the other devices wrote. Everywhere else — the
+// (and the starred boards, `favourites.ts`) there and merges back what the
+// other devices wrote. Everywhere else — the
 // website, the PWA, Android, the Electron Mac app, the App Clip — the plugin is
 // not there and nothing here runs.
 //
@@ -35,7 +37,7 @@ import { readObject, storage } from "./storage";
 // whenever iCloud says another device wrote. So a win while offline, or while
 // signed out of iCloud, is simply merged next time.
 //
-// **Three kinds of key**, because the two records merge differently:
+// **Four kinds of key**, because the records merge differently:
 //
 // - `scores`: every device's best times, one key. A union is idempotent — the
 //   fastest three of everyone's times are the same however often the same time
@@ -49,6 +51,10 @@ import { readObject, storage } from "./storage";
 //   own key, no other device ever writes that key, and the record is the sum
 //   of all of them. A reinstall is a new device: the old key stays and keeps
 //   counting, which is exactly right — those wins happened.
+// - `favourites`: every board's star and when it last changed, one key. For
+//   each board the later change wins — idempotent like `scores`, so it is
+//   written whole the same way — and an unstar is a change like any other, so
+//   it reaches the other devices instead of being merged back.
 // - `reset`: when each record was last cleared. Clearing is the one change a
 //   merge cannot express — every other device still holds what was cleared and
 //   would merge it straight back — so a clear is a date instead: times set
@@ -71,6 +77,7 @@ const Native = registerPlugin<CloudRecordPlugin>("CloudRecord");
 
 /** iCloud's keys. */
 const SCORES = "scores";
+const FAVOURITES = "favourites";
 const RESET = "reset";
 const WINS = "wins.";
 
@@ -103,6 +110,8 @@ export interface MergeInput {
   boards: Record<string, unknown>;
   /** The local achievement record (`loadRecord()`). */
   record: Stored;
+  /** The local stars (`storedStars()`); none when left out. */
+  stars?: Stars;
   state: SyncState;
   /** Every string iCloud holds. */
   cloud: Record<string, string>;
@@ -111,6 +120,7 @@ export interface MergeInput {
 export interface MergeResult {
   boards: Record<string, ScoreEntry[]>;
   record: Stored;
+  stars: Stars;
   state: SyncState;
   /** The iCloud keys to write. */
   writes: Record<string, string>;
@@ -118,6 +128,8 @@ export interface MergeResult {
    * from what was read — and so need writing back. */
   boardsChanged: boolean;
   recordChanged: boolean;
+  /** Whether the local stars differ from the merge. */
+  starsChanged: boolean;
 }
 
 // -- the merge (pure) --------------------------------------------------------
@@ -236,7 +248,7 @@ function mergeBoards(sources: Record<string, unknown>[], reset: number): Record<
 
 /** One sync: the local record and iCloud's, merged. Pure, so the unit tests
  * can play several devices against one store. */
-export function mergeRecords({ boards, record, state, cloud }: MergeInput): MergeResult {
+export function mergeRecords({ boards, record, stars = {}, state, cloud }: MergeInput): MergeResult {
   const writes: Record<string, string> = {};
   const known = parseResets(cloud[RESET]);
   const reset: Resets = {
@@ -293,13 +305,23 @@ export function mergeRecords({ boards, record, state, cloud }: MergeInput): Merg
     writes[SCORES] = stable({ v: 1, boards: mergedBoards });
   }
 
+  // -- favourites: the later change to each board's star.
+  const sharedStars = parseStars(parseJson(cloud[FAVOURITES])?.["modes"]);
+  const mergedStars = mergeStars(stars, sharedStars);
+  const starsChanged = stable(mergedStars) !== stable(stars);
+  if (Object.keys(mergedStars).length > 0 && stable(mergedStars) !== stable(sharedStars)) {
+    writes[FAVOURITES] = stable({ v: 1, modes: mergedStars });
+  }
+
   return {
     boards: mergedBoards,
     record: merged,
+    stars: mergedStars,
     state: { device: state.device, since, own, base: total, reset },
     writes,
     boardsChanged,
     recordChanged,
+    starsChanged,
   };
 }
 
@@ -394,12 +416,19 @@ async function runSync(): Promise<void> {
       };
     }
   }
-  const result = mergeRecords({ boards: storedBoards(), record, state, cloud });
+  const result = mergeRecords({
+    boards: storedBoards(),
+    record,
+    stars: storedStars(),
+    state,
+    cloud,
+  });
   // Whenever the best times change, the achievement record is written too, so
   // there is always one — a missing record would re-seed from the merged
   // times and count the other devices' wins as this one's.
   if (result.recordChanged || result.boardsChanged) replaceRecord(result.record);
   if (result.boardsChanged) replaceBoards(result.boards);
+  if (result.starsChanged) replaceStars(result.stars);
   saveState(result.state);
   if (Object.keys(result.writes).length > 0) await Native.write({ values: result.writes });
   if (result.recordChanged) catchUpGameCenter();
