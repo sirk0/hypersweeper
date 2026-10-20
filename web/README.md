@@ -8,6 +8,17 @@ as the reference implementation and is not deployed.
 newest first. For the rules and reference an agent needs while working here, see
 [`AGENTS.md`](AGENTS.md) and the topic files in [`docs/`](docs/) it routes to.
 
+**M25 — Boy's surface: the projective plane drawn as itself.** `boy` is the
+projective plane's square board cell for cell, drawn once on Bryant and
+Kusner's immersion rather than twice on the sphere. The immersion is a map from
+the sphere that is constant on antipodal pairs, so the cubed sphere's quotient
+(`antipodalQuotient`, split out of `projective`) is placed directly and needs
+no `faces`; its symmetries are the projective plane's (`antipodalSymmetries`),
+and only the three-fold turn about the axis -- the cube's diagonal, put there
+on purpose -- is one the drawing shows. It is conformal, so the squares stay
+square, but not equal-area: the lobes' cells are many times the funnel's. See
+"Boy's surface" in `docs/agents/geometry.md` for what was tried against that.
+
 **M24 — The real projective plane: a surface drawn as its cover.** The only
 closed one-sided surface besides the Klein bottle, and the first board whose
 drawn faces outnumber its cells. `projective`, `projectivetri` and

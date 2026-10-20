@@ -113,6 +113,11 @@ SPEC: dict[str, dict] = {
     "projective_board": dict(size=(0,), mine=1, shape=None, rigid=True),
     "projective_triangle_board": dict(size=(0,), mine=1, shape=None, rigid=True),
     "projective_hex_board": dict(size=(0,), mine=1, shape=None, rigid=True),
+    # Boy's surface is the projective plane's square board cell for cell,
+    # drawn on an immersion instead of its double cover: the same knob, and
+    # ``rigid`` because roundness would only read the immersion's uneven
+    # cell sizes as a reason to pick a different n.
+    "boy_board": dict(size=(0,), mine=1, shape=None, rigid=True),
     "mobius_board": dict(size=(0, 1), mine=2, shape=None),
     "mobius_triangle_board": dict(size=(0, 1), mine=2, shape=None),
     "mobius_hex_board": dict(size=(0, 1), mine=2, shape=None),

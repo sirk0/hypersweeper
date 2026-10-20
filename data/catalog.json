@@ -99,6 +99,20 @@
       ]
     },
     {
+      "key": "boy",
+      "label": "Boy's surface",
+      "prefix": "boy",
+      "is3d": true,
+      "needsMirror": true,
+      "needsFlip": false,
+      "boundaryComponents": 0,
+      "euler": 1,
+      "tilt": -1.6,
+      "tilings": [
+        "square"
+      ]
+    },
+    {
       "key": "doubletorus",
       "label": "Double torus",
       "prefix": "doubletorus",
@@ -135,7 +149,8 @@
         "klein": "klein",
         "doubletorus": "doubletorus",
         "trefoil": "trefoil",
-        "projective": "projective"
+        "projective": "projective",
+        "boy": "boy"
       }
     },
     {
@@ -246,6 +261,12 @@
       "tiling": "basketweave3",
       "surface": "flat",
       "family": "rectangle"
+    },
+    "boy": {
+      "label": "Squares · Boy's surface",
+      "tiling": "square",
+      "surface": "boy",
+      "family": "regular"
     },
     "brickrings": {
       "label": "Brick rings",
@@ -1964,6 +1985,7 @@
       "trefoil",
       "klein",
       "projective",
+      "boy",
       "doubletorus"
     ],
     "manifoldLabels": {
@@ -1973,7 +1995,8 @@
       "torus": "Torus",
       "doubletorus": "Double torus",
       "trefoil": "Trefoil knot",
-      "projective": "Projective plane"
+      "projective": "Projective plane",
+      "boy": "Boy's surface"
     },
     "pickerRegular": [
       "tri",

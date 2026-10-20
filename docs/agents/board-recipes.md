@@ -1108,6 +1108,15 @@ Read [`geometry.md`](geometry.md#the-real-projective-plane) first. What it took:
    the textbook model -- in `icons.ts` and `gui.py`), the surface in the three
    Grafana dashboards' `surface` variable, and a gallery baseline.
 
+The same board drawn **once**, on an immersion, is the trefoil's recipe again:
+`boy_board` takes `_antipodal_quotient`'s cells and places each vertex class
+with `_boy_point`, which is already constant on antipodal pairs -- so the
+immersion has to be a map *from the sphere* that identifies antipodes. It
+needs no `faces`, takes the projective plane's symmetries unchanged
+(`antipodalSymmetries` in TypeScript), and is restricted to the tilings it has
+builders for (`["square"]`). See
+[`geometry.md`](geometry.md#boys-surface) for what its geometry costs.
+
 ## Recipe: add a surface that is not a wrapped rectangle
 
 The Klein bottle above is the pattern for a surface the plane *wraps onto*: an

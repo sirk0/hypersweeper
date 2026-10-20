@@ -51,6 +51,10 @@ const MODES = [
   // double-covers it: the c180 renderer path, but the one board whose drawn
   // faces outnumber its cells, every cell painted on two antipodal faces.
   "projectivehex",
+  // ...and the same surface drawn as itself, on Boy's surface: the Klein
+  // bottle's two-sided path, but the only immersion that passes through itself
+  // along three loops meeting at a triple point.
+  "boy",
   // M5 aperiodic flat tilings: Penrose rhombi (thick/thin), trimmed to a
   // square patch, and the Spectre (a non-convex 13-gon, the chiral monotile
   // -- no tile in its patch is ever mirrored).

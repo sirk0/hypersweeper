@@ -1358,6 +1358,23 @@
         ]
       }
     },
+    "boy": {
+      "builder": "boy_board",
+      "args": {
+        "easy": [
+          5,
+          12
+        ],
+        "medium": [
+          9,
+          57
+        ],
+        "hard": [
+          13,
+          136
+        ]
+      }
+    },
     "projectivetri": {
       "builder": "projective_triangle_board",
       "args": {

@@ -79,6 +79,11 @@ about the tiling:
   measured point group is pushed down to the pairs — less the central
   inversion, which is the identity there, and with each mirror merged into the
   half turn about its normal.
+- **Boy's surface** keeps what the projective plane keeps, since it is the
+  same board drawn a second way. Only the three-fold turn about its axis moves
+  the drawing onto itself; every other motion moves the contents across a
+  surface that does not move with them, which is the point on a board that
+  hides cells under its own lobes.
 - A **double torus** keeps *no* translation. It is not glued from a rectangle:
   it is two overlapping donuts cut apart along the plane between them, and the
   block each gives up there pins the lattice both ways, so there is nothing to

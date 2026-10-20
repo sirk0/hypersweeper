@@ -692,7 +692,7 @@
         "name": "surface",
         "label": "Surface",
         "description": "",
-        "query": "all,flat,cylinder,mobius,torus,trefoil,klein,projective,doubletorus,solid",
+        "query": "all,flat,cylinder,mobius,torus,trefoil,klein,projective,boy,doubletorus,solid",
         "current": {
           "selected": true,
           "text": "all",
@@ -738,6 +738,11 @@
             "selected": false,
             "text": "projective",
             "value": "projective"
+          },
+          {
+            "selected": false,
+            "text": "boy",
+            "value": "boy"
           },
           {
             "selected": false,
