@@ -9,7 +9,8 @@
 // polygon's matching edge onto an edge already placed; edges are drawn as
 // geodesic arcs through points whose ids derive from the edge's own ends; and
 // the board keeps the faces at the `shells` smallest hyperbolic distances from
-// the centre, so every trim keeps the central polygon's dihedral symmetry.
+// the centre, so every trim keeps the central polygon's dihedral symmetry --
+// less every rim cell that trim leaves with a twin.
 import { flatBoard, sharedVertexAdjacency, cid } from "./core";
 import type { Board, CellId, Vertex } from "./core";
 
@@ -222,6 +223,37 @@ function ringsFor(
   throw new Error("too many shells");
 }
 
+/**
+ * `kept` less every face whose closed neighbourhood (itself and every face
+ * sharing a vertex with it) is another kept face's too, repeated until none is
+ * left. All of a twin class goes, never all but one, which keeps the trim's
+ * symmetry. Mirrors `_without_twins` -- see "A trim then drops its twins" in
+ * that module's docstring.
+ */
+function withoutTwins(faces: readonly (readonly number[])[], kept: number[]): number[] {
+  for (;;) {
+    const at = new Map<number, number[]>();
+    for (const f of kept) {
+      for (const v of faces[f]!) {
+        const star = at.get(v);
+        if (star) star.push(f);
+        else at.set(v, [f]);
+      }
+    }
+    const hood = new Map<number, string>();
+    for (const f of kept) {
+      const near = new Set<number>();
+      for (const v of faces[f]!) for (const g of at.get(v)!) near.add(g);
+      hood.set(f, [...near].sort((a, b) => a - b).join(","));
+    }
+    const seen = new Map<string, number>();
+    for (const h of hood.values()) seen.set(h, (seen.get(h) ?? 0) + 1);
+    const twins = new Set(kept.filter((f) => seen.get(hood.get(f)!)! > 1));
+    if (twins.size === 0) return kept;
+    kept = kept.filter((f) => !twins.has(f));
+  }
+}
+
 /** Connected, Euler characteristic 1 and one boundary circle, on ids alone. */
 function isDisc(cells: Map<CellId, string[]>): boolean {
   const edges = new Map<string, [string, string, number]>();
@@ -260,8 +292,8 @@ function isDisc(cells: Map<CellId, string[]>): boolean {
 
 /**
  * The {p,q} tiling in the Poincaré disc, trimmed to the faces at the `shells`
- * smallest distances from the central p-gon (shell 1 is that p-gon alone).
- * `scale` is pixels per unit of disc radius; `arc` is how many straight
+ * smallest distances from the central p-gon (shell 1 is that p-gon alone),
+ * less any rim cells that trim leaves with a twin. `scale` is pixels per unit of disc radius; `arc` is how many straight
  * segments draw each geodesic edge. Throws when the trim is not a disc. Mirrors
  * `hyperbolic_board`.
  */
@@ -276,10 +308,13 @@ export function hyperbolicBoard(
   checkHyperbolic(p, q);
   if (shells < 1) throw new Error("shells must be at least 1");
   const { faces, pos, groups } = ringsFor(p, q, shells);
-  const kept = groups
-    .slice(0, shells)
-    .flat()
-    .sort((a, b) => a - b);
+  const kept = withoutTwins(
+    faces,
+    groups
+      .slice(0, shells)
+      .flat()
+      .sort((a, b) => a - b),
+  );
 
   // Arc points along each edge: ids built from the edge's end ids (the lower
   // first), positions computed once per edge from its lower end, so both faces

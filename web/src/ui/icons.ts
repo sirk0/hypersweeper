@@ -2038,9 +2038,13 @@ const PATCH_BOARDS: Record<string, PatchBoard> = {
   carpet: { build: () => carpetBoard(3, 0, 32) },
   // Whole: the disc is the picture -- the tiles shrinking toward a rim they
   // never reach is what a hyperbolic tiling looks like.
+  hyperbolic83: { build: () => hyperbolicBoard(8, 3, 13, 0, 100), whole: true },
   hyperbolic73: { build: () => hyperbolicBoard(7, 3, 16, 0, 100), whole: true },
+  hyperbolic64: { build: () => hyperbolicBoard(6, 4, 14, 0, 100), whole: true },
   hyperbolic54: { build: () => hyperbolicBoard(5, 4, 18, 0, 100), whole: true },
+  hyperbolic55: { build: () => hyperbolicBoard(5, 5, 15, 0, 100), whole: true },
   hyperbolic45: { build: () => hyperbolicBoard(4, 5, 21, 0, 100), whole: true },
+  hyperbolic46: { build: () => hyperbolicBoard(4, 6, 17, 0, 100), whole: true },
 };
 
 /** The hyperbolic boards' row icons: how many distance shells to draw -- the
@@ -2048,9 +2052,13 @@ const PATCH_BOARDS: Record<string, PatchBoard> = {
  * much as reads at row-icon size. Must match
  * `_HYPERBOLIC_ICON_SHELLS` in gui.py. */
 const HYPERBOLIC_ICON_SHELLS: Record<string, number> = {
+  hyperbolic83: 4,
   hyperbolic73: 4,
+  hyperbolic64: 4,
   hyperbolic54: 4,
+  hyperbolic55: 4,
   hyperbolic45: 5,
+  hyperbolic46: 6,
 };
 
 /** Where a mode's repeat domain is filed under another name. */

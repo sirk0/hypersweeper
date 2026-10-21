@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SOLID_MODES, surfaceOf } from "../../src/boards/catalog";
+import { HYPERBOLIC_MODES, SOLID_MODES, surfaceOf } from "../../src/boards/catalog";
 import {
   isAutomorphism,
   isBoard3D,
@@ -284,6 +284,10 @@ describe("board symmetries", () => {
       ["hyperbolic73", "easy", 14], // D7
       ["hyperbolic54", "medium", 10], // D5
       ["hyperbolic45", "hard", 8], // D4
+      ["hyperbolic83", "medium", 16], // D8
+      ["hyperbolic64", "easy", 12], // D6
+      ["hyperbolic55", "hard", 10], // D5
+      ["hyperbolic46", "medium", 8], // D4
     ];
     for (const [mode, difficulty, order] of orders) {
       const board = buildBoard(mode, difficulty);
@@ -502,7 +506,7 @@ describe("the board bar's symmetry controls", () => {
       "symmetry-tube-back",
       "symmetry-tube-fwd",
     ]);
-    for (const mode of ["hyperbolic73", "hyperbolic54", "hyperbolic45"]) {
+    for (const mode of HYPERBOLIC_MODES) {
       expect(kept(mode), mode).toEqual(["pan-left", "pan-right", "pan-up", "pan-down"]);
     }
     // ...and nothing else in the catalogue keeps a control, wrapped or not.

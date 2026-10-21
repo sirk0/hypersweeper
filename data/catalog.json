@@ -225,9 +225,13 @@
     "hexhex": "Hexagons - hexagonal board",
     "hextriangle": "Hexagons - triangular board",
     "cube3d": "Volumetric",
+    "hyperbolic83": "Octagons {8,3}",
     "hyperbolic73": "Heptagons {7,3}",
+    "hyperbolic64": "Hexagons {6,4}",
     "hyperbolic54": "Pentagons {5,4}",
+    "hyperbolic55": "Pentagons {5,5}",
     "hyperbolic45": "Squares {4,5}",
+    "hyperbolic46": "Squares {4,6}",
     "spheretri": "Geodesic icosahedron"
   },
   "tilingNotations": {
@@ -829,14 +833,38 @@
       "surface": "flat",
       "family": "hyperbolic"
     },
+    "hyperbolic46": {
+      "label": "Squares {4,6}",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
     "hyperbolic54": {
       "label": "Pentagons {5,4}",
       "tiling": "",
       "surface": "flat",
       "family": "hyperbolic"
     },
+    "hyperbolic55": {
+      "label": "Pentagons {5,5}",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
+    "hyperbolic64": {
+      "label": "Hexagons {6,4}",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
     "hyperbolic73": {
       "label": "Heptagons {7,3}",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
+    "hyperbolic83": {
+      "label": "Octagons {8,3}",
       "tiling": "",
       "surface": "flat",
       "family": "hyperbolic"
@@ -2034,9 +2062,13 @@
       "gosper"
     ],
     "hyperbolic": [
+      "hyperbolic83",
       "hyperbolic73",
+      "hyperbolic64",
       "hyperbolic54",
-      "hyperbolic45"
+      "hyperbolic55",
+      "hyperbolic45",
+      "hyperbolic46"
     ],
     "familyLabels": {
       "regular": "Regular",
