@@ -1012,7 +1012,8 @@ _ICON_ALIASES = {
 # The hyperbolic boards' icons: how many distance shells to draw -- the central
 # polygon, its ring, and the next ring's nearest cells, which is as much as
 # reads at icon size.
-_HYPERBOLIC_ICON_SHELLS = {"hyperbolic73": 4, "hyperbolic54": 4, "hyperbolic45": 5}
+_HYPERBOLIC_ICON_SHELLS = {"hyperbolic83": 4, "hyperbolic73": 4, "hyperbolic64": 4, "hyperbolic54": 4,
+                           "hyperbolic55": 4, "hyperbolic45": 5, "hyperbolic46": 6}
 
 
 # How each flat-faced solid drawn by `_icon_solid` -- the Catalan solids and

@@ -2349,7 +2349,7 @@ class TestGosperIsland:
 
 
 
-_HYPERBOLIC = [(7, 3), (5, 4), (4, 5)]
+_HYPERBOLIC = [(8, 3), (7, 3), (6, 4), (5, 4), (5, 5), (4, 5), (4, 6)]
 
 
 def _hyp_dist(a: complex, b: complex) -> float:
@@ -2428,7 +2428,7 @@ class TestHyperbolic:
 
     @pytest.mark.parametrize("p,q", _HYPERBOLIC)
     def test_an_inner_cell_has_p_times_q_minus_2_neighbours(self, p, q):
-        board = hyperbolic_board(p, q, 12, 1)
+        board = hyperbolic_board(p, q, 30, 1)
         degrees = [len(n) for n in board.adjacency.values()]
         assert max(degrees) == p * (q - 2)
         # the central p-gon and its first ring are all interior
@@ -2523,21 +2523,27 @@ class TestHyperbolic:
         assert sum(xs) / len(xs) == pytest.approx(board.width / 2)
         assert sum(ys) / len(ys) == pytest.approx(board.height / 2)
 
-    def test_no_fair_trim_of_45_lands_in_the_medium_band(self):
-        # why `hyperbolic45` medium ships at 205 cells, outside +-15% of 256
-        # (see NEAR_MISS_ALLOWANCE in tests/test_presets.py): every trim in
-        # the band leaves rim cells with a twin, and 20 shells is the nearest
-        # one that does not
+    @pytest.mark.parametrize("p,q", _HYPERBOLIC)
+    def test_no_trim_leaves_a_twin(self, p, q):
+        # where q is large, a rim vertex can keep a fan of faces that touch the
+        # board there alone, all with the same closed neighbourhood; the builder
+        # drops every such cell, so no trim is left with a forced coin flip
         from scripts.difficulty.metrics import indistinguishable_cells
-        in_band = {}
-        for shells in range(18, 30):
-            board = hyperbolic_board(4, 5, shells, 1)
-            if 0.85 * 256 <= len(board.adjacency) <= 1.15 * 256:
-                in_band[shells] = indistinguishable_cells(board.adjacency)
-        assert in_band and all(twins > 0 for twins in in_band.values())
-        board = hyperbolic_board(4, 5, 20, 1)
-        assert len(board.adjacency) == 205
-        assert indistinguishable_cells(board.adjacency) == 0
+        for shells in range(3, 30):
+            board = hyperbolic_board(p, q, shells, 1)
+            assert indistinguishable_cells(board.adjacency) == 0, shells
+
+    def test_dropping_twins_leaves_a_twin_free_trim_as_it_was(self):
+        # the drop is a no-op where the shell trim had no twins, which is why
+        # the boards that shipped before it are the same boards: {4,5} at 20
+        # shells is 205 cells either way, and at 21 it loses its 8 twins
+        from minesweeper.boards import hyperbolic as hyp
+        faces, pos, groups = hyp._rings_for(4, 5, 21)
+        for shells, before, after in [(20, 205, 205), (21, 237, 229)]:
+            kept = sorted(f for group in groups[:shells] for f in group)
+            assert len(kept) == before
+            assert len(hyp._without_twins(faces, kept)) == after
+            assert len(hyperbolic_board(4, 5, shells, 1).adjacency) == after
 
     def test_a_euclidean_or_spherical_tiling_is_refused(self):
         for p, q in [(4, 4), (6, 3), (3, 6), (5, 3)]:

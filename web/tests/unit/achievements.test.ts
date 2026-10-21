@@ -118,7 +118,15 @@ describe("the declared shape list", () => {
     // extra points, and a count that ignored the corner mask filed a {5,4}
     // win as 13 to 15 sides, and a {7,3} one as 17 to 21 — the heptagon badge
     // never, and the Spectre's 13-gon badge for the wrong board.
-    for (const [mode, sides] of [["hyperbolic73", 7], ["hyperbolic54", 5], ["hyperbolic45", 4]] as const) {
+    for (const [mode, sides] of [
+      ["hyperbolic83", 8],
+      ["hyperbolic73", 7],
+      ["hyperbolic64", 6],
+      ["hyperbolic54", 5],
+      ["hyperbolic55", 5],
+      ["hyperbolic45", 4],
+      ["hyperbolic46", 4],
+    ] as const) {
       for (const difficulty of ["easy", "medium", "hard"]) {
         const board = buildBoard(mode, difficulty);
         expect(new Set(cellSides(board.polygons, board.cornerMask).values()), `${mode} ${difficulty}`)

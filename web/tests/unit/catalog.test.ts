@@ -216,9 +216,13 @@ describe("catalog families", () => {
     expect(pickerFamilies("flat")).toContain("hyperbolic");
     expect(pickerFamilies("torus")).not.toContain("hyperbolic");
     expect(familyRows("hyperbolic", "flat").map((r) => r.mode)).toEqual([
+      "hyperbolic83",
       "hyperbolic73",
+      "hyperbolic64",
       "hyperbolic54",
+      "hyperbolic55",
       "hyperbolic45",
+      "hyperbolic46",
     ]);
   });
 });

@@ -123,15 +123,29 @@ describe("geometry groups", () => {
     const hyperbolic = groups[1]!;
     expect(hyperbolic.label).toBe("Hyperbolic");
     expect(hyperbolic.kind === "modes" && hyperbolic.modes).toEqual([
+      "hyperbolic83",
       "hyperbolic73",
+      "hyperbolic64",
       "hyperbolic54",
+      "hyperbolic55",
       "hyperbolic45",
+      "hyperbolic46",
     ]);
     expect(menuFamilies("flat")).not.toContain("hyperbolic");
   });
 
   it("still deals the hyperbolic boards from the Flat pool", () => {
-    expect(flatMenuModes()).toEqual(expect.arrayContaining(["hyperbolic73", "hyperbolic54", "hyperbolic45"]));
+    expect(flatMenuModes()).toEqual(
+      expect.arrayContaining([
+        "hyperbolic83",
+        "hyperbolic73",
+        "hyperbolic64",
+        "hyperbolic54",
+        "hyperbolic55",
+        "hyperbolic45",
+        "hyperbolic46",
+      ]),
+    );
   });
 });
 

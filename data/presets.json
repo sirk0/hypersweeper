@@ -1539,6 +1539,110 @@
         ]
       }
     },
+    "hyperbolic83": {
+      "builder": "hyperbolic_board",
+      "args": {
+        "easy": [
+          8,
+          3,
+          7,
+          7,
+          300.0
+        ],
+        "medium": [
+          8,
+          3,
+          16,
+          24,
+          300.0
+        ],
+        "hard": [
+          8,
+          3,
+          24,
+          45,
+          300.0
+        ]
+      }
+    },
+    "hyperbolic64": {
+      "builder": "hyperbolic_board",
+      "args": {
+        "easy": [
+          6,
+          4,
+          9,
+          7,
+          300.0
+        ],
+        "medium": [
+          6,
+          4,
+          17,
+          24,
+          300.0
+        ],
+        "hard": [
+          6,
+          4,
+          30,
+          45,
+          300.0
+        ]
+      }
+    },
+    "hyperbolic55": {
+      "builder": "hyperbolic_board",
+      "args": {
+        "easy": [
+          5,
+          5,
+          9,
+          7,
+          300.0
+        ],
+        "medium": [
+          5,
+          5,
+          19,
+          24,
+          300.0
+        ],
+        "hard": [
+          5,
+          5,
+          35,
+          45,
+          300.0
+        ]
+      }
+    },
+    "hyperbolic46": {
+      "builder": "hyperbolic_board",
+      "args": {
+        "easy": [
+          4,
+          6,
+          11,
+          7,
+          300.0
+        ],
+        "medium": [
+          4,
+          6,
+          25,
+          24,
+          300.0
+        ],
+        "hard": [
+          4,
+          6,
+          40,
+          45,
+          300.0
+        ]
+      }
+    },
     "cubocta": {
       "builder": "cuboctahedron_board",
       "args": {

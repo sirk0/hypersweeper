@@ -9,9 +9,13 @@ import { HYPERBOLIC_MODES } from "../../src/boards/catalog";
 // the port to the Python builder's boards; these pin what a picture of one has
 // to get right, which the oracle cannot see.
 const TILINGS: [number, number][] = [
+  [8, 3],
   [7, 3],
+  [6, 4],
   [5, 4],
+  [5, 5],
   [4, 5],
+  [4, 6],
 ];
 
 describe("the hyperbolic boards", () => {
@@ -20,9 +24,13 @@ describe("the hyperbolic boards", () => {
       const { ringOf } = hyperbolicFaces(p, q, 4);
       return [0, 1, 2, 3, 4].map((r) => ringOf.filter((x) => x === r).length);
     };
+    expect(counts(8, 3)).toEqual([1, 8, 32, 120, 448]);
     expect(counts(7, 3)).toEqual([1, 7, 21, 56, 147]);
+    expect(counts(6, 4)).toEqual([1, 12, 72, 420, 2448]);
     expect(counts(5, 4)).toEqual([1, 10, 40, 150, 560]);
+    expect(counts(5, 5)).toEqual([1, 15, 105, 720, 4935]);
     expect(counts(4, 5)).toEqual([1, 12, 48, 180, 672]);
+    expect(counts(4, 6)).toEqual([1, 16, 96, 560, 3264]);
   });
 
   it("give an inner cell p(q - 2) neighbours", () => {

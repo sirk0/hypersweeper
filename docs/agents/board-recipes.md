@@ -784,10 +784,12 @@ which it refuses rather than gets wrong). Read
    [`difficulty.md`](difficulty.md)): `SPEC["hyperbolic_board"]` already says
    which arg is which. Re-run `scripts/export_data.py` and
    `export_conformance.py`.
-2. **Watch for twins.** A shell can leave two rim cells with the same closed
-   neighbourhood -- the size search skips those windows, which is why {4,5}
-   medium ships out of band. If a difficulty has no fair trim in band, say so
-   where `tests/test_presets.py` counts its near-misses.
+2. **Twins are already handled.** A shell can leave rim cells with the same
+   closed neighbourhood -- on a large q, nearly every shell does -- and the
+   builder drops them (see "Then the trim drops its twins" in
+   [`geometry.md`](geometry.md#the-hyperbolic-boards)), so every trim the size
+   search sees is fair. Neighbouring shell counts can therefore build the same
+   board; that is expected.
 3. **Icons** -- add the mode to `HYPERBOLIC_ICON_SHELLS` in
    `web/src/ui/icons.ts` and `_HYPERBOLIC_ICON_SHELLS` in `gui.py` (about a
    ring and a half: what still reads at row size), and to `PATCH_BOARDS` for

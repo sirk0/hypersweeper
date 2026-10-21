@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildBoard } from "../../src/boards/presets";
 import type { Board } from "../../src/boards/core";
+import { HYPERBOLIC_MODES } from "../../src/boards/catalog";
 import {
   DISC_IDENTITY,
   DRAG_SPEED,
@@ -232,7 +233,7 @@ describe("the reach", () => {
 
 describe("the hyperbolic boards' disc", () => {
   it("is the unit circle the cells were placed in, whole out to its rim", () => {
-    for (const mode of ["hyperbolic73", "hyperbolic54", "hyperbolic45"]) {
+    for (const mode of HYPERBOLIC_MODES) {
       const board = buildBoard(mode, "hard") as Board;
       const disc = board.disc!;
       expect(disc).toBeDefined();

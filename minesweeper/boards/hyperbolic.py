@@ -4,9 +4,9 @@ in the Poincaré disc.
 A {p,q} tiling puts q regular p-gons round every vertex, and when
 (p - 2)(q - 2) > 4 the angles do not close up in the plane: the tiling lives in
 the hyperbolic plane, where a circle's circumference grows exponentially with
-its radius. Three ship -- {7,3} heptagons, {5,4} pentagons and {4,5} squares --
-and each one gives an interior cell p + p(q - 3) = p(q - 2) neighbours under
-the shared-vertex rule (7, 10 and 12), counts nothing else in the game has.
+its radius. Seven ship -- {7,3} and {8,3}, {5,4} and {6,4}, {4,5}, {5,5} and
+{4,6} -- and each one gives an interior cell p + p(q - 3) = p(q - 2)
+neighbours under the shared-vertex rule (7, 8, 10, 12, 12, 15 and 16).
 
 **The tiling is built combinatorially, ring by ring, with integer vertex ids.**
 Ring 0 is the central p-gon, vertices 0 .. p-1. Each new ring is every face
@@ -58,6 +58,17 @@ ones, which `TestHyperbolic` measures. The trim is never by area or by
 Euclidean radius in the disc: the rim's cells are tiny there by nature, and a
 Euclidean cut would take a ragged sliver of them.
 
+**A trim then drops its twins.** Where q is large a rim vertex can be left
+with a fan of two or more outer faces that touch the board at that vertex
+alone, and every face of such a fan sees exactly the faces round the vertex:
+the same closed neighbourhood, so no number can ever tell them apart and a
+mine among them is a coin flip. On {5,5} and {4,6} nearly every trim has one.
+So every cell that shares its closed neighbourhood with another is dropped --
+all of them, never all but one, which is what keeps the trim's symmetry, the
+twin relation being one the symmetry preserves. One pass has always left none
+(the loop is there in case one ever does not), and a trim that had no twins
+is untouched, so the boards that shipped before the drop are the same boards.
+
 The board is round by nature -- a deliberate exception to the square-window
 convention, as the fractals and Klaassen's spiral already are.
 """
@@ -75,7 +86,7 @@ from minesweeper.boards.core import Board, Cell, _shared_vertex_adjacency
 ARC_SEGMENTS = 3
 
 #: Two face centres are at the *same* distance from the disc's centre when
-#: their distances differ by less than this. Distinct shells on the three
+#: their distances differ by less than this. Distinct shells on the
 #: shipped tilings are more than 1e-5 apart (``TestHyperbolic`` measures it);
 #: float error is ~1e-12.
 _SHELL_TOL = 1e-7
@@ -92,7 +103,7 @@ def hyperbolic_faces(p: int, q: int, rings: int) -> tuple[list[tuple[int, ...]],
 
     Pure combinatorics -- see the module docstring for the walk. Raises
     ValueError for a tiling whose faces are too small to span a boundary run
-    (the walk below needs ``p >= 4``, which all three shipped tilings meet).
+    (the walk below needs ``p >= 4``, which every shipped tiling meets).
     """
     _check_hyperbolic(p, q)
     faces: list[tuple[int, ...]] = [tuple(range(p))]
@@ -265,6 +276,25 @@ def _rings_for(p: int, q: int, shells: int) -> tuple:
             raise ValueError("too many shells")
 
 
+def _without_twins(faces: list[tuple[int, ...]], kept: list[int]) -> list[int]:
+    """``kept`` less every face whose closed neighbourhood (itself and every
+    face sharing a vertex with it) is another kept face's too, repeated until
+    none is left -- see "A trim then drops its twins" above."""
+    while True:
+        at: dict[int, set[int]] = {}
+        for f in kept:
+            for v in faces[f]:
+                at.setdefault(v, set()).add(f)
+        hood = {f: frozenset().union(*(at[v] for v in faces[f])) for f in kept}
+        seen: dict[frozenset, int] = {}
+        for h in hood.values():
+            seen[h] = seen.get(h, 0) + 1
+        twins = {f for f in kept if seen[hood[f]] > 1}
+        if not twins:
+            return kept
+        kept = [f for f in kept if f not in twins]
+
+
 def _is_disc(cells: dict[Cell, list]) -> bool:
     """Connected, Euler characteristic 1 and a single boundary circle, counted
     on the ids alone."""
@@ -304,7 +334,7 @@ def hyperbolic_board(
 ) -> Board:
     """The {p,q} tiling in the Poincaré disc, trimmed to the faces at the
     ``shells`` smallest distances from the central p-gon (shell 1 is that
-    p-gon alone). ``scale`` is pixels per unit of disc radius; ``arc`` is how
+    p-gon alone), less any rim cells that trim leaves with a twin. ``scale`` is pixels per unit of disc radius; ``arc`` is how
     many straight segments draw each geodesic edge.
 
     Raises ValueError when the trim is not a disc -- a shell that leaves a cell
@@ -315,7 +345,7 @@ def hyperbolic_board(
     if shells < 1:
         raise ValueError("shells must be at least 1")
     faces, pos, groups = _rings_for(p, q, shells)
-    kept = sorted(f for group in groups[:shells] for f in group)
+    kept = _without_twins(faces, sorted(f for group in groups[:shells] for f in group))
 
     # Arc points along each edge: ids built from the edge's end ids (the lower
     # first), so both faces of an edge share them, and positions computed once
