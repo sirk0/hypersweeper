@@ -23,7 +23,9 @@ home row is a shortcut, not a move, which is how `square` has always worked.
 The reverse is **`CUSTOM_ONLY`** (`src/boards/randomBoard.ts`): boards kept off
 the home page *and* out of both random pools until their UX is ready to be
 promoted. Both pools also drop, per difficulty, the boards
-`data/distortion.json` marks as distorted at the difficulty being dealt. The cube of cubes (`cube3d`, Volumetric) is there today — it used to
+`data/distortion.json` marks as distorted at the difficulty being dealt, and at
+every difficulty the boards whose surface carries a **caution** (Boy's surface).
+The cube of cubes (`cube3d`, Volumetric) is there today — it used to
 be a second launch row beside Classic, and is now Custom › Volumes only.
 In every tiling picker the three regular tilings are promoted to rows of their
 own, leaving the Regular family holding the shaped boards alone under the label
@@ -63,6 +65,17 @@ it is built once per row and `paintDistortion` shows or hides it whenever the
 pills change, without re-rendering the page. The board stays playable; the
 in-game caption takes the same ⚠ (its tooltip says why) and the info window a
 line, and the random launchers never deal it at that difficulty.
+
+A third mark is **declared** rather than measured: a surface may carry a
+`caution` in `data/catalog.json` (`surfaceCaution` in `src/boards/catalog.ts`),
+and every board on it is marked the distortion mark's way — an *Intersects*
+pill on the desktop card, the caution as the hint line and a ⚠ on the phone
+row, the ⚠ on the caption and the line in the info window — at every
+difficulty, since it is the surface's and not the size's, and is left out of
+both random pools. Boy's surface is the one: it passes through itself, so some
+of its cells hide behind others however it is turned. (The Klein bottle passes
+through itself too, but its scroll brings every cell round, and it carries
+none.)
 
 **A tablet held upright gets the two panes too**: the query's second clause,
 `(min-width: 720px) and (min-height: 800px)`, takes in an iPad in portrait

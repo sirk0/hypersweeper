@@ -9,6 +9,7 @@ import {
   SOLID_GROUPS,
   SPIRAL_MODES,
   SURFACES,
+  surfaceCaution,
   surfaceOf,
   TILINGS_BY_KEY,
   tilingOf,
@@ -73,6 +74,9 @@ export interface BoardFacts {
   /** That its surface draws the tiles too far out of shape at this
    * difficulty, when it does (boards/distortion.ts). */
   distortion: string | undefined;
+  /** What its surface warns of, at every difficulty, when it does (catalog.ts
+   * `surfaceCaution`: Boy's surface passes through itself). */
+  caution: string | undefined;
   /** What "projected" means, on a board with a projected row. */
   note: string | undefined;
 }
@@ -532,6 +536,7 @@ export function boardFacts(
     shapes,
     warning: fairnessHint(fairnessOf(mode, difficulty)),
     distortion: distortionHint(mode, difficulty),
+    caution: surfaceCaution(mode),
     note: shapes.some((s) => s.projected)
       ? isBoard3D(board)
         ? "Projected tiles have that shape in the ideal tiling, and are bent where it is laid on this surface."

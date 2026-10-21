@@ -1,4 +1,4 @@
-import { fullModeLabel } from "../boards/catalog";
+import { fullModeLabel, surfaceCaution } from "../boards/catalog";
 import { distortionHint } from "../boards/distortion";
 import { fairnessHint, fairnessOf } from "../boards/fairness";
 import { screens, type HudSlot } from "../config/screens";
@@ -143,9 +143,11 @@ export class BoardInfo {
     // player's fault, so it is the one that most needs saying. Only `warn`
     // reaches here: a blocked board never opens. A board its surface draws
     // out of shape at this difficulty carries the same mark — a random deal
-    // never lands on one, but a share link or the native menu bar can.
+    // never lands on one, but a share link or the native menu bar can — and so
+    // does one whose surface carries a caution (Boy's surface), at every
+    // difficulty.
     const level = fairnessOf(mode, difficulty);
-    const warnings = [fairnessHint(level), distortionHint(mode, difficulty)]
+    const warnings = [fairnessHint(level), distortionHint(mode, difficulty), surfaceCaution(mode)]
       .filter((w): w is string => w !== undefined);
     this.nameEl.textContent =
       warnings.length === 0 ? fullModeLabel(mode) : `${fullModeLabel(mode)} ⚠`;

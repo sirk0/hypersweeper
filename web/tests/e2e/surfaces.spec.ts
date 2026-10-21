@@ -107,7 +107,14 @@ test.describe("M3 surfaces", () => {
     await expect(page.locator("body[data-ready]")).toBeVisible();
     await page.locator('.menu-entry[data-group="manifolds"]').click();
     await page.locator('.menu-entry[data-surface="boy"]').click();
-    await page.locator('.menu-entry[data-mode="boy"]').click();
+    // Marked in the menu, whatever the difficulty: the surface passes through
+    // itself, which is declared rather than measured (catalog.ts
+    // `surfaceCaution`), and the caption carries the same mark once it opens.
+    const row = page.locator('.menu-entry[data-mode="boy"]');
+    await expect(row).toHaveAttribute("data-caution", "");
+    await row.click();
+    await expect(page.locator(".board-name")).toContainText("⚠");
+    await expect(page.locator(".board-name")).toHaveAttribute("title", /Self-intersecting/);
     await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
     const target = await page.evaluate(() => {
       const ms = window.__ms!;
