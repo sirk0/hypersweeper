@@ -756,17 +756,23 @@ Under Behaviour, and **off** by default.
 A board with everything shows eight buttons, and for most players that is a row
 of chrome on every screen for a feature they never reach for. What makes the
 setting safe is that the controls are the only way to reach a hidden cell on
-exactly one board: the Klein bottle's neck passes through its own belly, and no
-amount of turning the board brings those cells out. Everywhere else a control is
+exactly two surfaces: the Klein bottle's neck passes through its own belly, and
+Boy's surface folds its three lobes over its own funnel, and no amount of
+turning either board brings those cells out. Everywhere else a control is
 a second look at a puzzle already fully on screen — a donut's inner wall is
 glimpsed through the hole, a flat board's quarter turn shows the same patch
 sideways.
 
-So the exception is declared rather than coded: the two ring slots in
-`data/ui/screens.json` carry **`keepWhen: "surface:klein"`**, `boardConditions`
-adds a `surface:<key>` condition beside the symmetry ones, and `slotKept` (the
-mirror of `slotVisible`, with the opposite default — no condition means *not*
-kept) is what `BoardInfo.setBoard` ands in when the setting is off. A whitelist,
+So the exception is declared rather than coded: a slot in
+`data/ui/screens.json` lists the conditions that keep it — the two ring slots
+**`keepWhen: ["surface:klein", "surface:boy"]`**, the two tube slots
+**`["surface:boy"]`** (the Klein bottle's tube step is not kept; its ring roll is
+what reaches the neck, while on Boy's surface no single motion of the
+projective plane reaches every lobe, so it keeps both of its quarter turns).
+`boardConditions` adds a `surface:<key>` condition beside the symmetry ones, and
+`slotKept` (the mirror of `slotVisible`, with the opposite default — no
+condition means *not* kept, and any one listed is enough) is what
+`BoardInfo.setBoard` ands in when the setting is off. A whitelist,
 so a control added later is quiet until someone says otherwise.
 
 Two things it is **not**. It never adds a control — a board still has to have

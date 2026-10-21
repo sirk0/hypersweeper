@@ -55,7 +55,7 @@ function button(slot: HudSlot, onAction: (action: string) => void): HTMLButtonEl
   btn.setAttribute("aria-label", slot.label ?? slot.slot);
   btn.title = slot.label ?? slot.slot;
   if (slot.visibleWhen) btn.dataset.visibleWhen = slot.visibleWhen;
-  if (slot.keepWhen) btn.dataset.keepWhen = slot.keepWhen;
+  if (slot.keepWhen) btn.dataset.keepWhen = slot.keepWhen.join(" ");
   if (slot.action) btn.addEventListener("click", () => onAction(slot.action!));
   return btn;
 }
@@ -126,8 +126,9 @@ export class BoardInfo {
    * icon is drawn from — see ui/symmetryIcon.ts.
    *
    * `extraControls` is the player's setting. With it off the row keeps only the
-   * slots whose `keepWhen` this board meets — the Klein bottle's ring pair, and
-   * nothing else in the catalogue — so most boards show no row at all. It never
+   * slots whose `keepWhen` this board meets — the Klein bottle's ring pair and
+   * Boy's surface's two pairs, nothing else in the catalogue — so most boards
+   * show no row at all. It never
    * *adds* a control: a board still has to have the symmetry. */
   setBoard(
     mode: string,
@@ -152,7 +153,7 @@ export class BoardInfo {
     for (const btn of this.barButtons) {
       btn.hidden =
         !slotVisible(btn.dataset["visibleWhen"], conditions) ||
-        !(extraControls || slotKept(btn.dataset["keepWhen"], conditions));
+        !(extraControls || slotKept(btn.dataset["keepWhen"]?.split(" "), conditions));
     }
     this.drawIcons(pictures);
     // A board with no controls hides the strip outright rather than reserving

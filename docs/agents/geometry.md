@@ -502,7 +502,14 @@ projective plane: no new topology, a new drawing.
   it offers the same motions: the sphere's point group carried down to the
   pairs. On this drawing only the three-fold turn is a motion you can see; the
   rest move the contents across the surface, which is how a cell tucked under
-  a lobe is brought out.
+  a lobe is brought out. Both pairs stay on the board's row with the extra
+  controls switched off, as the Klein bottle's ring pair does
+  (`keepWhen` in `data/ui/screens.json`). A step of one cell is not among
+  them, and cannot be on any board of the projective plane: every
+  self-map of it has a fixed point (Lefschetz), so every symmetry is a turn
+  about some point, and cells across the surface from it move far. Measured
+  on the board itself, its 24 automorphisms move some cell at least 4 steps
+  at n = 5, where the board is 5 across.
 * **Sizes and mines are measured, not copied.** The size search lands on
   projective's windows (n = 5, 9, 13). The calibration plays the same graph
   under a seed of its own name, so the mine counts came out within its noise

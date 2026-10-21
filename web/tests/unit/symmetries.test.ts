@@ -452,11 +452,11 @@ describe("the board bar's symmetry controls", () => {
     expect(shown(boardConditions([]))).toEqual([]);
   });
 
-  it("keeps only the Klein bottle's ring pair when the extras are off", () => {
+  it("keeps only the Klein bottle's and Boy's surface's controls when the extras are off", () => {
     // The setting is a whitelist: a slot with no `keepWhen` goes, whatever the
-    // board has. Only the Klein bottle names one, because it is the only board
-    // whose own surface hides cells from the camera — everything else is a
-    // second look at a puzzle already fully on screen.
+    // board has. Only the Klein bottle and Boy's surface name one, because they
+    // are the boards whose own surface hides cells from every angle —
+    // everything else is a second look at a puzzle already fully on screen.
     const kept = (mode: string) => {
       const board = buildBoard(mode, "easy");
       const symmetries = isBoard3D(board) ? board.symmetries : [];
@@ -468,9 +468,17 @@ describe("the board bar's symmetry controls", () => {
     for (const mode of MODES.filter((m) => surfaceKey(m) === "klein")) {
       expect(kept(mode), mode).toEqual(["symmetry-ring-back", "symmetry-ring-fwd"]);
     }
+    // Boy's lobes hide cells whichever way the board is turned, and no single
+    // motion of the projective plane brings them all out, so both pairs stay.
+    expect(kept("boy")).toEqual([
+      "symmetry-ring-back",
+      "symmetry-ring-fwd",
+      "symmetry-tube-back",
+      "symmetry-tube-fwd",
+    ]);
     // ...and nothing else in the catalogue keeps a control, wrapped or not.
     for (const mode of [...WRAPPED, "square", "cube", "penrose"]) {
-      if (surfaceKey(mode) === "klein") continue;
+      if (surfaceKey(mode) === "klein" || surfaceKey(mode) === "boy") continue;
       expect(kept(mode), mode).toEqual([]);
     }
   });

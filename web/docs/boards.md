@@ -297,11 +297,12 @@ the mirror line turns with it. And the buttons carry `data-motion`,
 `data-turns` and `data-mirror`, which is what the tests assert against: 26
 pixels of glyph are no evidence.
 
-**The row is opt-in, and the Klein bottle is the exception.** Settings ›
-Behaviour › *Extra board controls* is off by default, and with it off a board
-keeps only the slots whose `keepWhen` it meets — `surface:klein`, on the two ring
-chevrons, and nothing else in the catalogue. That is the one board whose own
-surface hides cells from the camera; everywhere else a control is a second look
+**The row is opt-in, and the Klein bottle and Boy's surface are the
+exceptions.** Settings › Behaviour › *Extra board controls* is off by default,
+and with it off a board keeps only the slots whose `keepWhen` it meets — the
+Klein bottle its two ring chevrons, Boy's surface its ring and tube pairs, and
+nothing else in the catalogue. Those are the boards whose own surface hides
+cells from every angle; everywhere else a control is a second look
 at a puzzle already fully on screen, which is a lot of chrome to carry on every
 screen for a feature most players never reach for. The setting is chrome only:
 the wheel and the keys below drive the same permutations either way, and it can

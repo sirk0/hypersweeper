@@ -225,20 +225,21 @@ export function slotVisible(
 }
 
 /** Whether a slot survives the extra-controls setting being *off* — its
- * `keepWhen` (`data/ui/screens.json`), and the board meeting it.
+ * `keepWhen` (`data/ui/screens.json`), and the board meeting any one of it.
  *
  * The opposite default from `slotVisible`, deliberately: a slot with no
  * `visibleWhen` always shows, and one with no `keepWhen` never does. That is
  * what makes the setting a whitelist rather than a blacklist — only the Klein
- * bottle's two ring chevrons name one, because they are the only controls a
- * board cannot be played without (see "Board symmetries" in docs/boards.md:
- * every other control looks at the same puzzle from another angle, while the
- * bottle's neck really does hide cells from the camera). */
+ * bottle's ring chevrons and Boy's surface's two pairs name one, because they
+ * are the only controls a board cannot be played without (see "Board
+ * symmetries" in docs/boards.md: every other control looks at the same puzzle
+ * from another angle, while the bottle's neck and Boy's lobes really do hide
+ * cells from the camera). */
 export function slotKept(
-  keepWhen: string | undefined,
+  keepWhen: readonly string[] | undefined,
   conditions: ReadonlySet<string>,
 ): boolean {
-  return keepWhen !== undefined && conditions.has(keepWhen);
+  return keepWhen !== undefined && keepWhen.some((c) => conditions.has(c));
 }
 
 export class Hud {
