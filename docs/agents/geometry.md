@@ -740,10 +740,10 @@ Four things worth knowing before touching them:
   inradius, medium at 2px and hard at 1px; the Euclidean zoom (`MAX_ZOOM` 6)
   helps on a desktop and not much on a phone. What reaches them is
   **hyperbolic panning**: in the TypeScript app a drag moves the disc by a
-  Möbius map (a disc isometry), so any cell can be brought to the centre at
-  the central cell's size and tapped there. The board says which disc it is
-  drawn in (`Board.disc`: centre, unit radius, and `reach`, the farthest cell
-  centre, which bounds the pan); the view and its drag are `web/src/render/disc.ts`,
+  Möbius map (a disc isometry), so a cell can be brought towards the centre,
+  growing as it comes, and tapped there. The board says which disc it is
+  drawn in (`Board.disc`: centre, unit radius, and `rim`, how far out it is
+  whole, which bounds the pan); the view and its drag are `web/src/render/disc.ts`,
   and how the renderer applies it is "Hyperbolic panning" in
   [`web/docs/render.md`](../../web/docs/render.md). Nothing about the board
   changes -- ids, adjacency and the data are the board as built -- so the

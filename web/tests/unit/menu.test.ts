@@ -7,10 +7,12 @@ import {
   flatMenuModes,
   menuFamilies,
   menuFamilyRows,
+  menuGroupFamilies,
   menuTilingRows,
   threeDMenuModes,
 } from "../../src/boards/catalog";
 import { MODES, hasMode } from "../../src/boards/presets";
+import { boardGroups } from "../../src/ui/boardTree";
 
 // The web menu's own shape over the shared catalog (catalog.ts, "the web
 // menu"): the three regular tilings promoted to the top of every picker page,
@@ -59,6 +61,8 @@ describe("picker pages", () => {
     const families = new Set<string>();
     for (const surface of ["flat", ...MANIFOLD_ORDER]) {
       for (const family of menuFamilies(surface)) families.add(family);
+      // a family lifted into a group of its own carries the group's hint
+      for (const family of menuGroupFamilies(surface)) families.add(family);
     }
     expect(families.size).toBeGreaterThan(0);
     for (const family of families) {
@@ -82,7 +86,6 @@ describe("picker pages", () => {
       "aperiodic",
       "spiral",
       "fractal",
-      "hyperbolic",
     ]);
     // the Klein bottle carries four families: only the plane has shaped
     // boards to fill a Regular page, and aperiodic/spiral/fractal boards
@@ -110,6 +113,25 @@ describe("picker pages", () => {
     for (const surface of ["flat", ...MANIFOLD_ORDER]) {
       expect(menuFamilies(surface)).not.toContain("random");
     }
+  });
+});
+
+describe("geometry groups", () => {
+  it("puts Hyperbolic beside Flat rather than inside it", () => {
+    const groups = boardGroups();
+    expect(groups.map((g) => g.key).slice(0, 3)).toEqual(["flat", "hyperbolic", "manifolds"]);
+    const hyperbolic = groups[1]!;
+    expect(hyperbolic.label).toBe("Hyperbolic");
+    expect(hyperbolic.kind === "modes" && hyperbolic.modes).toEqual([
+      "hyperbolic73",
+      "hyperbolic54",
+      "hyperbolic45",
+    ]);
+    expect(menuFamilies("flat")).not.toContain("hyperbolic");
+  });
+
+  it("still deals the hyperbolic boards from the Flat pool", () => {
+    expect(flatMenuModes()).toEqual(expect.arrayContaining(["hyperbolic73", "hyperbolic54", "hyperbolic45"]));
   });
 });
 

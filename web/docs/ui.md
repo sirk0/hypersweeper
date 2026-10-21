@@ -11,8 +11,13 @@ is Classic, Flat, 3D and Custom (`src/ui/menu.ts`). Classic opens one
 particular board straight away — the original square grid — and sits above the
 two that deal a *random* one: the flat picker's pool, and every flat manifold
 plus the spheres and polyhedra. So no picker carries a Random row; Custom holds the old root (Flat,
-Flat manifolds, Sphere, Platonic solids, Archimedean solids, Catalan solids,
-Polyhedra, Volumes).
+Hyperbolic, Flat manifolds, Sphere, Platonic solids, Archimedean solids,
+Catalan solids, Polyhedra, Volumes). Hyperbolic is the one geometry group the
+pygame menu does not have: there it is a family on the flat picker, and the
+web menu lifts it out to sit beside Flat (`MENU_GROUP_FAMILIES` in
+`src/boards/catalog.ts`) — a curved space of its own rather than a kind of
+flat tiling. Its boards still count as the plane's everywhere else: the Flat
+pool deals them and the achievements file them there.
 A board reachable from the home page is still reachable through Custom — the
 home row is a shortcut, not a move, which is how `square` has always worked.
 The reverse is **`CUSTOM_ONLY`** (`src/boards/randomBoard.ts`): boards kept off

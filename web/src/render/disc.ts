@@ -13,11 +13,15 @@
 // a cell keeps its shape as it moves — a rim cell dragged to the centre is
 // drawn as big as the central one, which no Euclidean zoom can do.
 //
-// A drag is a *transvection*: the translation along the geodesic through the
-// two points, so the point under the finger follows the finger and nothing
-// turns that a translation would not turn. Two translations along different
-// lines compose to a translation and a turn — the disc's holonomy — which is
-// why the view carries `rot` at all.
+// A drag step is a *translation along a line through the centre of the view*
+// (a diameter), the one that moves the point under the finger exactly as the
+// finger moved (`dragShift`), so what the player grabbed stays under their
+// finger. Not the translation along the geodesic through the finger's two
+// positions, which keeps the grabbed point but, near the rim, slides along a
+// tight circle there and swings the rest of the board — its centre too — off
+// at a sharp angle: a sideways drag at the edge sent the board up or down.
+// Two translations along different lines compose to a translation and a turn
+// — the disc's holonomy — which is why the view carries `rot` at all.
 
 export type Cx = readonly [number, number];
 
@@ -30,10 +34,23 @@ export interface DiscView {
 
 export const DISC_IDENTITY: DiscView = { c: [0, 0], rot: [1, 0] };
 
-/** How far out of the disc a finger is taken at its word. Past it a pixel is
- * worth more than a cell of hyperbolic distance — and past the rim it is worth
- * infinitely many — so a drag there moves the board as if it had been made at
- * this radius: still under the finger's direction, never a lurch. */
+/** How close to the centre of the view the board's own rim may be carried, in
+ * disc radii. A disc board is finite, so a pan that went on until its last
+ * cell was in the middle showed half a screen of nothing; held here, the board
+ * still fills most of the view at its farthest, and its rim cells come in to
+ * where they are big enough to tap. */
+export const EDGE_HOLD = 0.75;
+
+/** How much faster than a drag through the centre a drag made anywhere may
+ * move the board. Near the rim a pixel is worth a whole cell of hyperbolic
+ * distance — past it, infinitely many — so a drag taken literally there flung
+ * the board. Capped, the grabbed point follows the finger exactly wherever
+ * that is no faster than this (out to sqrt(1 - 1/DRAG_SPEED) of the radius,
+ * 0.71 at 2); beyond, it goes the way the finger goes, more slowly. */
+export const DRAG_SPEED = 2;
+
+/** A finger out at the rim or off the disc altogether is taken to be here, on
+ * the same ray, its movement applied from this point. */
 export const GRAB_LIMIT = 0.95;
 
 const mul = (a: Cx, b: Cx): Cx => [a[0] * b[0] - a[1] * b[1], a[0] * b[1] + a[1] * b[0]];
@@ -97,26 +114,59 @@ function capped(z: Cx, limit: number): Cx {
   return n > limit ? [(z[0] * limit) / n, (z[1] * limit) / n] : z;
 }
 
+/** Where a drag step from `from` to `to` (finger positions as the view draws
+ * them, disc units) carries the centre of the view: the translation along a
+ * diameter that moves the point under the finger, `a`, by the finger's own
+ * movement `d`. A translation with velocity `t` at the centre moves `a` at
+ * t - conj(t) a^2, so t = (d + conj(d) a^2) / (1 - |a|^4) — exactly `d` at the
+ * centre, growing as 1 / (1 - |a|^2) towards the rim, where it is held to
+ * `DRAG_SPEED` times |d| (shortened, never turned, so the grabbed point still
+ * moves the way the finger does). A finger past `GRAB_LIMIT` is taken to be
+ * at it, on the same ray. */
+export function dragShift(from: Cx, to: Cx): Cx {
+  const a = capped(from, GRAB_LIMIT);
+  const d: Cx = [to[0] - from[0], to[1] - from[1]];
+  const a2 = mul(a, a);
+  const k = 1 - abs2(a2);
+  const da = mul(conj(d), a2);
+  let t: Cx = [(d[0] + da[0]) / k, (d[1] + da[1]) / k];
+  const n = Math.hypot(t[0], t[1]);
+  if (n === 0) return [0, 0];
+  const most = DRAG_SPEED * Math.hypot(d[0], d[1]);
+  if (n > most) t = [(t[0] * most) / n, (t[1] * most) / n];
+  // Run for unit time: 2|t| of hyperbolic distance from the centre, which is
+  // tanh(|t|) of the disc's radius.
+  const m = Math.hypot(t[0], t[1]);
+  return [(t[0] * Math.tanh(m)) / m, (t[1] * Math.tanh(m)) / m];
+}
+
+/** How far from the centre of the board as built the view may be centred, in
+ * disc units, for a board that is whole out to `rim`: no point of its outline
+ * then comes closer than `EDGE_HOLD` to the middle of the view. Measured in
+ * hyperbolic distance: every outline point is at least R = 2 atanh(rim) from
+ * the board's centre, so at least R - d from a view centred d away from it
+ * (the triangle inequality) — and everything nearer the view's centre than
+ * that is board. */
+export function discReach(rim: number): number {
+  const spare = 2 * Math.atanh(rim) - 2 * Math.atanh(EDGE_HOLD);
+  return spare > 0 ? Math.tanh(spare / 2) : 0;
+}
+
 /**
- * The view after a drag from `from` to `to` (both points as the view draws
- * them, in disc units): the translation along the geodesic through them
- * composed after the view, so what was drawn at `from` is drawn at `to`.
- * `reach` bounds how far the board can be carried — the point shown at the
- * centre never leaves the disc of that radius, so the board cannot be lost
- * off into the rim the way a Euclidean pan is kept from leaving the screen.
+ * The view after a drag step from `from` to `to` (both points as the view
+ * draws them, in disc units): the translation `dragShift` finds, composed
+ * after the view, so what was drawn under the finger follows it — exactly
+ * away from the rim, in the finger's direction at `DRAG_SPEED` near it. A step
+ * is one pointer move: the translation is exact to first order in it, which is
+ * what a stream of them, re-aimed at every move, needs. `reach` bounds how far
+ * the board can be carried (`discReach`) — the point shown at the centre
+ * never leaves the disc of that radius, so the board cannot be lost off into
+ * the rim the way a Euclidean pan is kept from leaving the screen.
  */
 export function discDrag(v: DiscView, from: Cx, to: Cx, reach: number): DiscView {
-  const a = capped(from, GRAB_LIMIT);
-  const b = capped(to, GRAB_LIMIT);
-  if (a[0] === b[0] && a[1] === b[1]) return v;
-  // u: where the translation taking a to 0 sends b; conjugating the plain
-  // translation 0 -> u by that one gives the translation a -> b along their
-  // own geodesic.
-  const back = shift([-a[0], -a[1]]);
-  const num: Cx = [b[0] - a[0], b[1] - a[1]];
-  const ab = mul(conj(a), b);
-  const u = div(num, [1 - ab[0], -ab[1]]);
-  const t = matMul(shift(a), matMul(shift(u), back));
-  const next = fromMat(matMul(t, viewMat(v)));
+  if (from[0] === to[0] && from[1] === to[1]) return v;
+  const p = dragShift(from, to);
+  if (p[0] === 0 && p[1] === 0) return v;
+  const next = fromMat(matMul(shift(p), viewMat(v)));
   return { c: capped(next.c, reach), rot: next.rot };
 }

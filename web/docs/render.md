@@ -81,19 +81,32 @@ dragged by a **disc isometry** instead of the Euclidean pan: one finger or the
 mouse at *every* zoom (`pans()` in `main.ts`), the pinch's midpoint, the
 Catalyst swipe, and the arrow keys (`KEY_PAN_STEP`). The view is a Möbius map
 `z -> rot (z - c) / (1 - conj(c) z)` — `c` the board point shown at the centre,
-`rot` its turn — and a drag step composes the translation along the geodesic
-through the two points, so the point under the finger is the one that follows
-it (`discDrag`; `panBy` gets the step's end point from `controls.ts` for that,
-and a drag with no point under it — the swipe, a key — uses the centre of the
-view). The map is conformal, so a rim cell brought to the middle is drawn as
-big as the central cell, its bevel and number with it. Three limits keep it
-from getting lost:
+`rot` its turn — and each pointer move composes a translation along a
+**diameter** of the view, the one that moves the point under the finger by
+exactly the finger's step (`dragShift`; `panBy` gets the step's end point
+from `controls.ts` for that, and a drag with no point under it — the swipe, a
+key — uses the centre of the view). The map is conformal, so a cell brought
+to the middle is drawn as big as the central cell, its bevel and number with
+it. *Not* the translation along the geodesic through the finger's two
+positions: that keeps the grabbed point too, but near the rim the geodesic is
+a tight circle, and sliding along it swung the rest of the board off at a
+sharp angle — a sideways drag at the edge sent the board up or down, which
+read as the board jumping. Three limits keep it under control:
 
-- `|c|` never passes `Board.disc.reach`, the farthest cell centre: any cell can
-  be centred, and the board cannot be carried off into the rim.
-- A finger past `GRAB_LIMIT` (0.95 of the disc radius, or off the disc
-  altogether) is taken as being at it, so a drag out there moves the board
-  steadily rather than by a cell a pixel.
+- **The rim is held at `EDGE_HOLD`** (0.75 of the disc radius) from the
+  middle of the view: `|c|` never passes `discReach(Board.disc.rim)`, where
+  `rim` is how far out the board is *whole* — the nearest point of its
+  outline, the outer shell being ragged by about a cell. A pan that went on
+  until the last cell was in the middle showed half a screen of nothing; held,
+  the board always fills most of the view, and its outermost cells come in to
+  about a quarter of the central cell's size (from a pixel or two).
+- **A drag moves the board at most `DRAG_SPEED` (2) times as fast as one
+  through the centre.** Near the rim a pixel is worth a cell of hyperbolic
+  distance, so a drag taken literally there flung the board. Out to 0.71 of the
+  radius the cap never bites and the grabbed point follows the finger exactly;
+  beyond, it is shortened but never turned, so the board still goes the way
+  the finger goes. A finger past `GRAB_LIMIT` (0.95, or off the disc) counts
+  as being at it.
 - `0` (`resetView`) puts the board back as built, as it reframes the zoom; a
   new board always starts that way.
 
@@ -114,9 +127,11 @@ ray at the board-as-built point the view draws under the pointer
 The meshes skip frustum culling, their bounds being the board as built. The
 reveal ripple and the tile waves still time themselves off the board as built.
 `tests/unit/disc.test.ts` pins the map (an isometry, the finger followed, the
-reach held), and `tests/e2e/hyperbolicPan.spec.ts` the gestures: a hard rim
-cell dragged in to full size and opened by a tap there, `0`, the arrows, and a
-touch drag that neither opens nor flags.
+speed cap, the direction kept at the rim, the hold), and
+`tests/e2e/hyperbolicPan.spec.ts` the gestures: a cell dragged in to full size
+and opened by a tap there, the outermost one brought in as far as the hold
+allows, the board thrown as far as it goes and still filling the view, a drag
+along the rim, `0`, the arrows, and a touch drag that neither opens nor flags.
 
 ## Picking (`Renderer.pick`)
 

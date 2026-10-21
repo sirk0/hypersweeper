@@ -6,14 +6,15 @@ import {
   SURFACES,
   menuFamilies,
   menuFamilyRows,
+  menuGroupFamilies,
   menuTilingRows,
 } from "../boards/catalog";
 import { randomPool } from "../boards/randomBoard";
 import { hasMode } from "../boards/presets";
 
 // How the catalogue is grouped for a player picking a board: the quick-play
-// entries, then the geometry groups (Flat, Flat manifolds and the solid pages),
-// each down to its boards. Two menus are drawn from it — the home page
+// entries, then the geometry groups (Flat, Hyperbolic, Flat manifolds and the
+// solid pages), each down to its boards. Two menus are drawn from it — the home page
 // (ui/menu.ts) and the native menu bar of the Mac and iPad app (menuBar.ts) —
 // so the two cannot group the boards differently.
 
@@ -127,6 +128,15 @@ export function manifoldSurfaces(): SurfaceEntry[] {
 export function boardGroups(): Group[] {
   const groups: Group[] = [
     { key: "flat", label: ROOT_LABELS["flat"] ?? "Flat", kind: "picker", surfaceKey: "flat" },
+    // The families lifted off the plane's picker (Hyperbolic), right beside it.
+    ...menuGroupFamilies("flat").map(
+      (key): Group => ({
+        key,
+        label: MENU_FAMILY_LABELS[key] ?? key,
+        kind: "modes",
+        modes: menuFamilyRows(key, "flat").map((r) => r.mode),
+      }),
+    ),
     {
       key: "manifolds",
       label: ROOT_LABELS["manifolds"] ?? "Flat manifolds",

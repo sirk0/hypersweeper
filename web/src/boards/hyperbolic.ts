@@ -331,9 +331,23 @@ export function hyperbolicBoard(
     );
   }
   const size = 2 * extent * scale;
-  const centre = centralPolygon(p, q);
-  let reach = 0;
-  for (const f of kept) reach = Math.max(reach, abs(faceCentre(centre, faces[f]!, pos)));
+  // How far out the board is whole: the nearest point of its outline (every
+  // point on an edge only one cell has) to the centre. The outer shell is
+  // ragged by about a cell, so this is well inside `extent` -- and it is what
+  // bounds the pan, the board being solid within it.
+  const sides = new Map<string, number>();
+  for (const ids of cells.values()) {
+    ids.forEach((a, i) => {
+      const b = ids[(i + 1) % ids.length]!;
+      const key = a < b ? `${a}|${b}` : `${b}|${a}`;
+      sides.set(key, (sides.get(key) ?? 0) + 1);
+    });
+  }
+  let rim = Infinity;
+  for (const [key, n] of sides) {
+    if (n !== 1) continue;
+    for (const k of key.split("|")) rim = Math.min(rim, abs(points.get(k)!));
+  }
   return flatBoard({
     mode: `hyperbolic${p}${q}`,
     polygons,
@@ -344,6 +358,6 @@ export function hyperbolicBoard(
     cornerMask,
     curved: true,
     regularTiles: true,
-    disc: { cx: extent * scale, cy: extent * scale, radius: scale, reach },
+    disc: { cx: extent * scale, cy: extent * scale, radius: scale, rim },
   });
 }

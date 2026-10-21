@@ -51,13 +51,38 @@ async function cellOut(page: Page, f: number): Promise<{ cell: string; centre: {
   }, f);
 }
 
-async function drag(page: Page, from: { x: number; y: number }, to: { x: number; y: number }) {
-  await page.mouse.move(from.x, from.y);
-  await page.mouse.down();
-  for (let i = 1; i <= 20; i++) {
-    await page.mouse.move(from.x + ((to.x - from.x) * i) / 20, from.y + ((to.y - from.y) * i) / 20);
-  }
-  await page.mouse.up();
+/** A mouse drag in `steps` moves, sent as the pointer stream a mouse makes
+ * (as zoom.spec.ts sends its pinches): Playwright's own mouse waits for a
+ * frame at every move, and a hard board under software WebGL takes long
+ * enough to draw that a test stroking it a few times ran out of time. */
+async function drag(
+  page: Page,
+  from: { x: number; y: number },
+  to: { x: number; y: number },
+  steps = 20,
+) {
+  await page.evaluate(
+    ({ a, b, n }) => {
+      const canvas = document.getElementById("board")!;
+      const send = (type: string, x: number, y: number, buttons: number) =>
+        canvas.dispatchEvent(
+          new PointerEvent(type, {
+            pointerId: 1,
+            pointerType: "mouse",
+            clientX: x,
+            clientY: y,
+            button: 0,
+            buttons,
+            bubbles: true,
+            isPrimary: true,
+          }),
+        );
+      send("pointerdown", a.x, a.y, 1);
+      for (let i = 1; i <= n; i++) send("pointermove", a.x + ((b.x - a.x) * i) / n, a.y + ((b.y - a.y) * i) / n, 1);
+      send("pointerup", b.x, b.y, 0);
+    },
+    { a: from, b: to, n: steps },
+  );
   await frame(page);
 }
 
@@ -70,20 +95,20 @@ test.describe("hyperbolic panning", () => {
     await frame(page);
   });
 
-  test("a drag brings a rim cell to the centre at full size, where a tap opens it", async ({
+  test("a drag brings a cell from the rim to the centre at full size, where a tap opens it", async ({
     page,
   }) => {
-    const { cell, centre } = await cellOut(page, 0.9);
+    const { cell, centre } = await cellOut(page, 0.7);
     const start = await at(page, cell);
     const small = await reach(page, start.x, start.y);
     const middle = await reach(page, centre.x, centre.y);
-    expect(small).toBeLessThan(middle / 4);
+    expect(small).toBeLessThan(middle / 2);
 
     // A drag is a drag: it neither opens nor flags anything on its way.
-    for (let stroke = 0; stroke < 4; stroke++) {
+    for (let stroke = 0; stroke < 3; stroke++) {
       const now = await at(page, cell);
       if (Math.hypot(now.x - centre.x, now.y - centre.y) < 12) break;
-      await drag(page, now, centre);
+      await drag(page, now, centre, 10);
     }
     expect(await page.evaluate(() => window.__ms!.state().revealed)).toBe(0);
     expect(await page.evaluate(() => window.__ms!.zoom())).toBe(1);
@@ -91,12 +116,77 @@ test.describe("hyperbolic panning", () => {
     const end = await at(page, cell);
     // Within the tap slop the drag spends before it starts moving the board.
     expect(Math.hypot(end.x - centre.x, end.y - centre.y)).toBeLessThan(12);
-    // Every {7,3} tile is congruent, and the pan is an isometry: the rim cell
-    // is now drawn as big as the central one was.
+    // Every {7,3} tile is congruent, and the pan is an isometry: the cell is
+    // now drawn as big as the central one was.
     expect(await reach(page, end.x, end.y)).toBeGreaterThan(middle * 0.6);
 
     await page.mouse.click(end.x, end.y);
     expect(await page.evaluate((c) => window.__ms!.cellState(c), cell)).toBe("revealed");
+  });
+
+  test("the outermost cell comes in as far as the board allows, big enough to tap", async ({
+    page,
+  }) => {
+    const { cell, centre } = await cellOut(page, 1);
+    const start = await at(page, cell);
+    const middle = await reach(page, centre.x, centre.y);
+    const small = await reach(page, start.x, start.y);
+    expect(small).toBeLessThan(middle / 8);
+    for (let stroke = 0; stroke < 3; stroke++) await drag(page, await at(page, cell), centre, 10);
+    // The board's rim is held most of the way out (EDGE_HOLD), so its last
+    // cells stop short of the middle -- but many times the size they were.
+    const end = await at(page, cell);
+    const grown = await reach(page, end.x, end.y);
+    expect(grown).toBeGreaterThan(4 * small);
+    expect(grown).toBeGreaterThan(middle / 5);
+    await page.mouse.click(end.x, end.y);
+    expect(await page.evaluate((c) => window.__ms!.cellState(c), cell)).toBe("revealed");
+  });
+
+  test("the board stops with its rim most of the way out, never at the centre", async ({
+    page,
+  }) => {
+    const { centre } = await cellOut(page, 0);
+    const rim = await page.evaluate(() => {
+      const ms = window.__ms!;
+      return Math.max(...ms.cells().map((c) => ms.cellScreenXY(c)!.x));
+    });
+    const radius = rim - centre.x;
+    // Throw the board left, further than it can go (each stroke carries it
+    // about 2.8 of hyperbolic distance; the hold stops it at about 3.4).
+    for (let k = 0; k < 4; k++) {
+      await drag(page, { x: centre.x + radius * 0.6, y: centre.y }, { x: centre.x - radius * 0.6, y: centre.y }, 10);
+    }
+    // Still board under the middle of the view, and most of the way out on
+    // the side it was thrown from: no half screen of nothing. (A probe can
+    // land in the gap between two tiles, so each looks a few pixels round.)
+    const board = (x: number, y: number) =>
+      page.evaluate(
+        ([px, py]) =>
+          [[0, 0], [4, 0], [-4, 0], [0, 4], [0, -4]].some(
+            ([dx, dy]) => window.__ms!.cellAtScreenXY(px! + dx!, py! + dy!) !== null,
+          ),
+        [x, y],
+      );
+    expect(await board(centre.x, centre.y)).toBe(true);
+    expect(await board(centre.x + radius * 0.6, centre.y)).toBe(true);
+  });
+
+  test("a drag along the rim moves the board along with it", async ({ page }) => {
+    // Up the right-hand rim, a finger's width outside the board: the board
+    // goes up, not off sideways, and not by a screenful.
+    const { cell, centre } = await cellOut(page, 0);
+    const rim = await page.evaluate(() => {
+      const ms = window.__ms!;
+      return Math.max(...ms.cells().map((c) => ms.cellScreenXY(c)!.x));
+    });
+    const start = await at(page, cell);
+    await drag(page, { x: rim + 8, y: centre.y + 30 }, { x: rim + 8, y: centre.y - 30 });
+    const end = await at(page, cell);
+    const up = start.y - end.y;
+    expect(up).toBeGreaterThan(10);
+    expect(up).toBeLessThan(2 * 60);
+    expect(Math.abs(end.x - start.x)).toBeLessThan(up / 2);
   });
 
   test("0 puts the board back where it was built", async ({ page }) => {

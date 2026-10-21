@@ -43,6 +43,7 @@ import {
   DISC_IDENTITY,
   discDrag,
   discMap,
+  discReach,
   discScale,
   discUnmap,
   type Cx,
@@ -189,7 +190,7 @@ export class PolygonBoard extends Group implements BoardMesh {
           x: board.disc.cx - cx,
           y: cy - board.disc.cy,
           r: board.disc.radius,
-          reach: board.disc.reach,
+          reach: discReach(board.disc.rim),
         }
       : null;
     this.discUniforms = this.disc
