@@ -76,8 +76,9 @@ function withShellIcon(settings: Settings): Settings {
 
 /** Zoom step for one press of the +/- keys. */
 const ZOOM_KEY_STEP = 1.3;
-/** How far one arrow press drags a hyperbolic board, in CSS pixels at the
- * centre of the view — a little under half the central cell on a phone. */
+/** How far one press of an arrow key or a pan arrow drags a hyperbolic board,
+ * in CSS pixels at the centre of the view — a little under half the central
+ * cell on a phone. */
 const KEY_PAN_STEP = 40;
 
 /** How long the record dialog waits after a win, so the board's win wave and
@@ -842,7 +843,11 @@ class App {
     this.boardInfo.setBoard(
       this.session.mode,
       this.session.difficulty,
-      boardConditions(this.session.symmetries, this.session.mode),
+      boardConditions(
+        this.session.symmetries,
+        this.session.mode,
+        !isBoard3D(this.session.board) && this.session.board.disc !== undefined,
+      ),
       this.symmetryPictures(),
       this.settings.extraControls,
     );
@@ -877,6 +882,11 @@ class App {
       // symmetries; see data/ui/screens.json boardBar.
       const [, id, direction] = action.split(":");
       this.move(id as SymmetryId, Number(direction));
+    } else if (action.startsWith("pan:")) {
+      // `pan:<dx>:<dy>` — a hyperbolic board's pan arrows: the board moves the
+      // way the arrow points, as the arrow keys and a drag move it.
+      const [, dx, dy] = action.split(":");
+      this.nudge(Number(dx), Number(dy));
     } else if (action === "info") {
       this.showBoardInfo();
     } else if (action === "random") {
@@ -1080,14 +1090,20 @@ class App {
   /** Arrow keys carry a hyperbolic board the way they turn a 3D one: the
    * board moves the way the arrow points, as a drag that way would move it. */
   private onKeyDisc(e: KeyboardEvent): boolean {
-    const step = KEY_PAN_STEP;
-    if (e.key === "ArrowLeft") this.pan(-step, 0);
-    else if (e.key === "ArrowRight") this.pan(step, 0);
-    else if (e.key === "ArrowUp") this.pan(0, -step);
-    else if (e.key === "ArrowDown") this.pan(0, step);
+    if (e.key === "ArrowLeft") this.nudge(-1, 0);
+    else if (e.key === "ArrowRight") this.nudge(1, 0);
+    else if (e.key === "ArrowUp") this.nudge(0, -1);
+    else if (e.key === "ArrowDown") this.nudge(0, 1);
     else return false;
     e.preventDefault();
     return true;
+  }
+
+  /** One step of a hyperbolic board's pan, from a pan arrow or an arrow key:
+   * `KEY_PAN_STEP` CSS px the way (dx, dy) points, glided as a drag. */
+  private nudge(dx: number, dy: number): void {
+    if (this.screen !== "game" || !this.renderer.discPans) return;
+    this.renderer.nudge(dx * KEY_PAN_STEP, dy * KEY_PAN_STEP);
   }
 
   private onKey3d(e: KeyboardEvent): void {

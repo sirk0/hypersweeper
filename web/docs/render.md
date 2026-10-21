@@ -79,7 +79,11 @@ press drops them, a hidden page forgets everything, and lifts are heard on
 A board drawn in the Poincaré disc (`Board.disc`, the hyperbolic boards) is
 dragged by a **disc isometry** instead of the Euclidean pan: one finger or the
 mouse at *every* zoom (`pans()` in `main.ts`), the pinch's midpoint, the
-Catalyst swipe, and the arrow keys (`KEY_PAN_STEP`). The view is a Möbius map
+Catalyst swipe, the arrow keys, and the four pan arrows on the board bar,
+which are always shown on these boards because they are what tells a player
+the board can be dragged at all (both of the last two are `KEY_PAN_STEP`
+through the centre, glided by `BoardRenderer.nudge`; see the extra-controls
+setting in [`ui.md`](ui.md)). The view is a Möbius map
 `z -> rot (z - c) / (1 - conj(c) z)` — `c` the board point shown at the centre,
 `rot` its turn — and each pointer move composes a translation along a
 **diameter** of the view, the one that moves the point under the finger by

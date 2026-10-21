@@ -295,7 +295,9 @@ pixels of glyph are no evidence.
 **The row is opt-in, and the Klein bottle is the exception.** Settings ›
 Behaviour › *Extra board controls* is off by default, and with it off a board
 keeps only the slots whose `keepWhen` it meets — `surface:klein`, on the two ring
-chevrons, and nothing else in the catalogue. That is the one board whose own
+chevrons, and nothing else among the symmetry controls (the hyperbolic boards'
+pan arrows are kept too, but they are not symmetries — see "Settings and themes" in
+[`ui.md`](ui.md)). That is the one board whose own
 surface hides cells from the camera; everywhere else a control is a second look
 at a puzzle already fully on screen, which is a lot of chrome to carry on every
 screen for a feature most players never reach for. The setting is chrome only:

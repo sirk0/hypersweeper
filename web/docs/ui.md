@@ -774,6 +774,17 @@ mirror of `slotVisible`, with the opposite default — no condition means *not*
 kept) is what `BoardInfo.setBoard` ands in when the setting is off. A whitelist,
 so a control added later is quiet until someone says otherwise.
 
+The second exception is not a symmetry at all: a hyperbolic board's **pan
+arrows** (`pan-left` / `pan-right` / `pan-up` / `pan-down`, both
+`visibleWhen` and `keepWhen` `"disc"`, a condition `boardConditions` adds for a
+board drawn in the Poincaré disc). A drag is how a hyperbolic board's rim cells
+are reached at all, and nothing else on screen says that a flat board can be
+dragged, so they show whatever the setting — first in the row, before the turn
+and mirror controls when those are on. Each press is one step of the same pan a
+drag makes (`pan:<dx>:<dy>` → `App.nudge`, `KEY_PAN_STEP` through the centre),
+glided over `NUDGE_MS` so it reads as the board being dragged, and landing at
+once with motion off.
+
 Two things it is **not**. It never adds a control — a board still has to have
 the symmetry — and it takes no motion away: the wheel, `[` / `]`, `,` / `.` and
 `;` / `'` drive the same permutations either way. It is chrome.

@@ -201,6 +201,34 @@ test.describe("hyperbolic panning", () => {
     expect(back.y).toBeCloseTo(start.y, 1);
   });
 
+  test("pan arrows sit on the board bar, on with the extra controls off", async ({ page }) => {
+    // They are what says this board can be dragged at all, so the setting
+    // that hides the extra controls (off out of the box) keeps them.
+    const shown = () =>
+      page.$$eval(".board-caption-controls .board-bar-btn", (nodes) =>
+        nodes.filter((n) => !(n as HTMLElement).hidden).map((n) => (n as HTMLElement).dataset["slot"]),
+      );
+    expect(await shown()).toEqual(["pan-left", "pan-right", "pan-up", "pan-down"]);
+
+    const { cell } = await cellOut(page, 0);
+    const moves = { "pan-left": [-1, 0], "pan-right": [1, 0], "pan-up": [0, -1], "pan-down": [0, 1] };
+    for (const [slot, [dx, dy]] of Object.entries(moves)) {
+      const start = await at(page, cell);
+      await page.locator(`.board-bar-btn[data-slot="${slot}"]`).click();
+      await frame(page);
+      const end = await at(page, cell);
+      // the board goes the way the arrow points, and only that way
+      expect((end.x - start.x) * dx! + (end.y - start.y) * dy!, slot).toBeGreaterThan(20);
+      expect(Math.abs((end.x - start.x) * dy! - (end.y - start.y) * dx!), slot).toBeLessThan(2);
+    }
+    // a press is a move of the view, never of the game
+    expect(await page.evaluate(() => window.__ms!.state().revealed)).toBe(0);
+
+    // ...and no other flat board has them
+    await page.evaluate(() => window.__ms!.startBoard("square", "easy"));
+    expect(await shown()).toEqual([]);
+  });
+
   test("the arrow keys carry the board the way they point", async ({ page }) => {
     const { cell } = await cellOut(page, 0);
     const start = await at(page, cell);

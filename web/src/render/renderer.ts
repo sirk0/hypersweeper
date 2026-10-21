@@ -89,6 +89,9 @@ interface SolidFrame {
 
 /** The victory turn: one full revolution, eased in and out. */
 const SPIN_MS = 1700;
+/** How long a pan the board makes on its own (a pan arrow, an arrow key) takes
+ * to glide to where it is going — about a quick flick of a finger. */
+const NUDGE_MS = 220;
 /** Confetti colours: festive, and none of them the board's own. */
 const CONFETTI = ["#ff5d73", "#ffc233", "#3ddc97", "#4cc9f0", "#9b7bff", "#ff8c42"].map(
   (c) => new Color(c),
@@ -133,6 +136,9 @@ export class BoardRenderer {
   motion = true;
   private fling: { vx: number; vy: number } | null = null;
   private spin: { start: number; done: number } | null = null;
+  /** A pan in flight (`nudge`): the whole of it in CSS px, and the share of it
+   * already applied. */
+  private nudging: { dx: number; dy: number; start: number; done: number } | null = null;
   private lastFrame = 0;
   /** The framing a solid is shown at, and the one its current pose asks for.
    * They differ only while the camera is gliding to a new fit (`stepFrame`);
@@ -237,6 +243,7 @@ export class BoardRenderer {
   setBoard(board: BoardMesh): void {
     if (this.board) this.scene.remove(this.board);
     this.board = board;
+    this.nudging = null;
     if (board.view.kind === "solid") {
       // Scale the solid into the unit sphere so one camera setup frames all.
       board.scale.setScalar(1 / board.view.radius);
@@ -478,6 +485,28 @@ export class BoardRenderer {
     this.panX -= dxPx * this.wpp;
     this.panY += dyPx * this.wpp;
     this.frame();
+  }
+
+  /** Pan the board by (dx, dy) CSS pixels on its own account — a pan arrow, an
+   * arrow key — about the centre of the view, as a drag of that length through
+   * the middle would. It glides there (`NUDGE_MS`, eased out) rather than
+   * jumping, so it reads as the board being dragged, which is what the arrows
+   * are there to teach; with motion off it lands at once. A press during a
+   * glide carries on from wherever the last one had got to. */
+  nudge(dxPx: number, dyPx: number): void {
+    if (!this.motion) {
+      this.nudging = null;
+      this.panBy(dxPx, dyPx);
+      return;
+    }
+    const left = this.nudging ? 1 - this.nudging.done : 0;
+    this.nudging = {
+      dx: dxPx + (this.nudging?.dx ?? 0) * left,
+      dy: dyPx + (this.nudging?.dy ?? 0) * left,
+      start: performance.now(),
+      done: 0,
+    };
+    this.dirty = true;
   }
 
   /** The point of a flat board's plane (mesh units) under canvas CSS pixel
@@ -801,6 +830,16 @@ export class BoardRenderer {
       this.spin.done = angle;
       if (step !== 0) this.turn(step / ROTATE_SPEED, 0);
       if (p >= 1) this.spin = null;
+      else busy = true;
+    }
+    if (this.nudging) {
+      const n = this.nudging;
+      const p = Math.max(0, Math.min(1, (now - n.start) / NUDGE_MS));
+      const eased = 1 - Math.pow(1 - p, 3);
+      const step = eased - n.done;
+      n.done = eased;
+      if (step !== 0) this.panBy(n.dx * step, n.dy * step);
+      if (p >= 1) this.nudging = null;
       else busy = true;
     }
     if (this.stepFrame(dt)) busy = true;
