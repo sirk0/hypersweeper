@@ -3,9 +3,10 @@ import { distortedDifficulties, isDistorted } from "../../src/boards/distortion"
 import { blockedModes, modeFairness } from "../../src/boards/fairness";
 import { hasMode } from "../../src/boards/presets";
 import { CUSTOM_ONLY, randomMode, randomPool } from "../../src/boards/randomBoard";
+import { surfaceCaution, threeDMenuModes } from "../../src/boards/catalog";
 import { quickPlayEntries } from "../../src/ui/boardTree";
 import { isBoard3D } from "../../src/boards/core";
-import { buildBoard } from "../../src/boards/presets";
+import { buildBoard, MODES } from "../../src/boards/presets";
 
 // The two pools the home page's Flat and 3D rows deal from, and the record
 // window's "New board" with them (boards/randomBoard.ts).
@@ -76,5 +77,16 @@ describe("random board pools", () => {
         expect(isDistorted(mode!, difficulty), `${mode} ${difficulty}`).toBe(false);
       }
     }
+  });
+
+  it("never deals a board whose surface carries a caution", () => {
+    // Boy's surface is in the 3D menu, marked, at every difficulty, and in no
+    // random pool at any of them -- and it is the only surface so marked.
+    expect(threeDMenuModes()).toContain("boy");
+    expect(MODES.filter((mode) => surfaceCaution(mode) !== undefined)).toEqual(["boy"]);
+    for (const difficulty of [undefined, "easy", "medium", "hard"]) {
+      expect(randomPool("3d", difficulty), String(difficulty)).not.toContain("boy");
+    }
+    expect(randomPool("3d", "medium")).toContain("projective");
   });
 });

@@ -17,6 +17,9 @@ export interface SurfaceSpec {
   euler: number | null;
   tilt: number | null;
   tilings: string[] | null;
+  /** A warning shown against every board on this surface, which also keeps
+   * them out of the random deals (see `surfaceCaution`); null for most. */
+  caution: string | null;
 }
 
 export interface TilingSpec {
@@ -138,6 +141,17 @@ for (const tiling of TILING_SPECS) {
  * one-off solid/aperiodic/shaped mode. */
 export function surfaceOf(mode: string): SurfaceSpec | null {
   return MODE_SURFACE.get(mode) ?? null;
+}
+
+/** The warning a board's surface carries, or `undefined`. Declared on the
+ * surface rather than measured, and for every difficulty alike: Boy's surface
+ * passes through itself, so some of its cells hide behind others whichever way
+ * it is turned. The board stays in the menu, marked, with the same mark on its
+ * caption and in its info window, and the random launchers never deal it — a
+ * tap meant to produce a nice surprise should not land on a board that takes
+ * some explaining. */
+export function surfaceCaution(mode: string): string | undefined {
+  return surfaceOf(mode)?.caution ?? undefined;
 }
 
 /** The tiling a periodic (tiling × surface) mode is made of, or null for a

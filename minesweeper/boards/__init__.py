@@ -209,6 +209,7 @@ from minesweeper.boards.solids import (  # noqa: F401
 from minesweeper.boards.surfaces import (  # noqa: F401
     _arch_cells,
     _assemble,
+    _boy_point,
     _cylinder_point,
     _klein_point,
     _mobius_point,
@@ -218,6 +219,7 @@ from minesweeper.boards.surfaces import (  # noqa: F401
     arch_klein_board,
     arch_mobius_board,
     arch_torus_board,
+    boy_board,
     cylinder_board,
     cylinder_hex_board,
     cylinder_triangle_board,

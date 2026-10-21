@@ -1,5 +1,5 @@
 import { screens } from "../config/screens";
-import { MENU_FAMILY_HINTS, MODE_LABELS, surfaceOf } from "../boards/catalog";
+import { MENU_FAMILY_HINTS, MODE_LABELS, surfaceCaution, surfaceOf } from "../boards/catalog";
 import {
   blockedExplanation,
   fairnessHint,
@@ -1178,6 +1178,8 @@ export class Menu {
     if (level !== "blocked" && distortedDifficulties(mode).length > 0) {
       this.addDistortionMark(btn, mode, level === "ok");
     }
+    const caution = surfaceCaution(mode);
+    if (caution !== undefined) this.addCautionMark(btn, caution, level === "ok");
     this.addDoneMark(btn, mode);
     if (level === "blocked") {
       // Deliberately *not* `aria-disabled`: the row is a working control that
@@ -1290,6 +1292,36 @@ export class Menu {
       }
     }
     this.paintDistortion(btn);
+  }
+
+  /** The mark on a board whose surface carries a caution (catalog.ts
+   * `surfaceCaution`): an "Intersects" pill on the desktop card, a hint line and
+   * — unless the fairness mark already holds the corner — a ⚠ on the phone row.
+   * The distortion mark's look, but shown at every difficulty, since it is the
+   * surface's and not the size's. `data-caution` is the hook the e2e suite
+   * reads. */
+  private addCautionMark(btn: HTMLElement, caution: string, glyph: boolean): void {
+    btn.dataset.caution = "";
+    if (this.isWide()) {
+      const pill = document.createElement("span");
+      pill.className = "menu-fairness-pill";
+      pill.textContent = "Intersects";
+      pill.title = caution;
+      pill.setAttribute("aria-label", caution);
+      btn.querySelector(".menu-board-card-caption")?.append(pill);
+    } else {
+      const line = document.createElement("span");
+      line.className = "menu-entry-hint";
+      line.textContent = caution;
+      btn.querySelector(".menu-entry-text")?.append(line);
+      if (glyph) {
+        const warn = document.createElement("span");
+        warn.className = "menu-entry-warning";
+        warn.textContent = "⚠";
+        warn.setAttribute("aria-label", caution);
+        btn.append(warn);
+      }
+    }
   }
 
   /** Show a row's distortion mark at the selected difficulty, hide it at the

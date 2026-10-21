@@ -58,7 +58,7 @@ from minesweeper.boards import (
     surface_of,
     view_hint,
 )
-from minesweeper.boards.surfaces import _trefoil_core
+from minesweeper.boards.surfaces import _boy_point, _trefoil_core
 from minesweeper.game import CellState, Game, GameState
 
 # pygame.gfxdraw gives antialiased primitives on the desktop but does not
@@ -1089,6 +1089,52 @@ def _icon_solid(surface, mode: str, d: float) -> None:
         outline_polygon(surface, pts, ICON_OUTLINE)
 
 
+def _icon_boy(surface, d: float) -> None:
+    """Boy's surface's icon: its immersion (`_boy_point`, the board's own)
+    meshed over one hemisphere -- which covers the projective plane once --
+    seen from the side with its three-fold axis nearly upright, as the board
+    starts. Two-sided, so nothing is culled: far quads first, each shaded by
+    how squarely it faces the viewer, from either side."""
+    pitch, yaw = math.radians(-100), math.radians(20)
+    cp, sp, cy, sy = math.cos(pitch), math.sin(pitch), math.cos(yaw), math.sin(yaw)
+
+    def project(point):
+        x, y, z = point
+        y, z = y * cp - z * sp, z * cp + y * sp
+        x, z = x * cy + z * sy, z * cy - x * sy
+        return x, y, z
+
+    steps_u, steps_v = 36, 10
+    grid = [[project(_boy_point((math.sin(v) * math.cos(u), math.sin(v) * math.sin(u),
+                                 math.cos(v))))
+             for v in (math.pi / 2 * j / steps_v for j in range(steps_v + 1))]
+            for u in (2 * math.pi * i / steps_u for i in range(steps_u + 1))]
+    points = [p for row in grid for p in row]
+    lo_x, hi_x = min(p[0] for p in points), max(p[0] for p in points)
+    lo_y, hi_y = min(p[1] for p in points), max(p[1] for p in points)
+    scale = d * 0.88 / max(hi_x - lo_x, hi_y - lo_y)
+    mid_x, mid_y = (lo_x + hi_x) / 2, (lo_y + hi_y) / 2
+    faces = []
+    for i in range(steps_u):
+        for j in range(steps_v):
+            quad = [grid[i][j], grid[i + 1][j], grid[i + 1][j + 1], grid[i][j + 1]]
+            normal = newell_normal(quad)
+            length = math.hypot(*normal)
+            if length == 0:
+                continue
+            faces.append((
+                sum(p[2] for p in quad) / 4,
+                [(d / 2 + (p[0] - mid_x) * scale, d / 2 - (p[1] - mid_y) * scale)
+                 for p in quad],
+                abs(normal[2]) / length,
+            ))
+    for _, quad, lit in sorted(faces):
+        fill = ICON_BLUE_LIGHT if lit > 0.86 else (
+            ICON_BLUE if lit > 0.5 else ICON_BLUE_DARK)
+        fill_polygon(surface, quad, fill)
+        outline_polygon(surface, [(int(x), int(y)) for x, y in quad], fill)
+
+
 def _render_icon(key: str) -> pygame.Surface:
     """Draw a menu icon supersampled at 4x, then smooth-scale down."""
     d = ICON_SIZE * 4
@@ -1856,6 +1902,8 @@ def _render_icon(key: str) -> pygame.Surface:
         pygame.draw.ellipse(s, ICON_BLUE_DARK, rim)
         pygame.draw.ellipse(s, ICON_BLUE_LIGHT, rim, 4)
         _icon_gloss(s, pygame.Rect(d * 0.14, d * 0.6, d * 0.72, d * 0.16), 80)
+    elif key == "boy":
+        _icon_boy(s, d)
     elif key == "mobius":
         band = pygame.Rect(d * 0.05, d * 0.16, d * 0.9, d * 0.68)
         pygame.draw.ellipse(s, ICON_BLUE, band)

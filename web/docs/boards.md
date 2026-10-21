@@ -79,6 +79,11 @@ about the tiling:
   measured point group is pushed down to the pairs — less the central
   inversion, which is the identity there, and with each mirror merged into the
   half turn about its normal.
+- **Boy's surface** keeps what the projective plane keeps, since it is the
+  same board drawn a second way. Only the three-fold turn about its axis moves
+  the drawing onto itself; every other motion moves the contents across a
+  surface that does not move with them, which is the point on a board that
+  hides cells under its own lobes.
 - A **double torus** keeps *no* translation. It is not glued from a rectangle:
   it is two overlapping donuts cut apart along the plane between them, and the
   block each gives up there pins the lattice both ways, so there is nothing to
@@ -292,13 +297,14 @@ the mirror line turns with it. And the buttons carry `data-motion`,
 `data-turns` and `data-mirror`, which is what the tests assert against: 26
 pixels of glyph are no evidence.
 
-**The row is opt-in, and the Klein bottle is the exception.** Settings ›
-Behaviour › *Extra board controls* is off by default, and with it off a board
-keeps only the slots whose `keepWhen` it meets — `surface:klein`, on the two ring
-chevrons, and nothing else among the symmetry controls (the hyperbolic boards'
-pan arrows are kept too, but they are not symmetries — see "Settings and themes" in
-[`ui.md`](ui.md)). That is the one board whose own
-surface hides cells from the camera; everywhere else a control is a second look
+**The row is opt-in, and the Klein bottle and Boy's surface are the
+exceptions.** Settings › Behaviour › *Extra board controls* is off by default,
+and with it off a board keeps only the slots whose `keepWhen` it meets — the
+Klein bottle its two ring chevrons, Boy's surface its ring and tube pairs, and
+nothing else among the symmetry controls (the hyperbolic boards' pan arrows are
+kept too, but they are not symmetries — see "Settings and themes" in
+[`ui.md`](ui.md)). Those are the boards whose own surface hides cells from
+every angle; everywhere else a control is a second look
 at a puzzle already fully on screen, which is a lot of chrome to carry on every
 screen for a feature most players never reach for. The setting is chrome only:
 the wheel and the keys below drive the same permutations either way, and it can

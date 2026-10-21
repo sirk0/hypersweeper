@@ -1,4 +1,4 @@
-import { flatMenuModes, threeDMenuModes } from "./catalog";
+import { flatMenuModes, surfaceCaution, threeDMenuModes } from "./catalog";
 import { isDistorted } from "./distortion";
 import { pickWeighted } from "./fairness";
 import { hasMode } from "./presets";
@@ -12,7 +12,9 @@ import { hasMode } from "./presets";
 // keeps the boards whose tiling forces guesses in the pool but deals them a
 // quarter as often (boards/fairness.ts). A board its surface draws too far out
 // of shape at the difficulty being dealt is left out of the pool altogether
-// (boards/distortion.ts): it is in the menu, marked, for whoever wants it.
+// (boards/distortion.ts), and so is one on a surface that carries a caution
+// (catalog.ts `surfaceCaution`, Boy's surface): both are in the menu, marked,
+// for whoever wants them.
 
 /** Which half of the catalogue: the plane, or everything off it. */
 export type RandomKind = "flat" | "3d";
@@ -23,15 +25,17 @@ export type RandomKind = "flat" | "3d";
 export const CUSTOM_ONLY: ReadonlySet<string> = new Set(["cube3d"]);
 
 /** Every board that half can deal, filtered to the modes this build has got.
- * The pools are what the two pickers reach, less CUSTOM_ONLY, so a board that
- * is not in the menu is not dealt here either. Given a `difficulty`, the
- * boards distorted at it are dropped too. */
+ * The pools are what the two pickers reach, less CUSTOM_ONLY and the boards
+ * whose surface carries a caution, so a board that is not in the menu is not
+ * dealt here either. Given a `difficulty`, the boards distorted at it are
+ * dropped too. */
 export function randomPool(kind: RandomKind, difficulty?: string): string[] {
   const modes = kind === "flat" ? flatMenuModes() : threeDMenuModes();
   return modes.filter(
     (mode) =>
       hasMode(mode) &&
       !CUSTOM_ONLY.has(mode) &&
+      surfaceCaution(mode) === undefined &&
       (difficulty === undefined || !isDistorted(mode, difficulty)),
   );
 }

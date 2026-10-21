@@ -1,6 +1,6 @@
 {
-  "count": 42,
-  "points": 625,
+  "count": 43,
+  "points": 640,
   "achievements": [
     {
       "vendorIdentifier": "hs.first_win",
@@ -578,6 +578,23 @@
         }
       },
       "icon": "projective",
+      "ring": "complete"
+    },
+    {
+      "vendorIdentifier": "hs.surface_all.boy",
+      "referenceName": "surface-all:boy",
+      "points": 15,
+      "showBeforeEarned": true,
+      "repeatable": false,
+      "localizations": {
+        "en-US": {
+          "name": "Boy's surface",
+          "beforeEarnedDescription": "Win every board on this surface",
+          "afterEarnedDescription": "You won every board on this surface",
+          "image": "images/hs.surface_all.boy.png"
+        }
+      },
+      "icon": "boy",
       "ring": "complete"
     },
     {

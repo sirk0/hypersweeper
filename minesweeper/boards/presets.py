@@ -75,6 +75,7 @@ from minesweeper.boards.surfaces import (
     arch_klein_board,
     arch_mobius_board,
     arch_torus_board,
+    boy_board,
     cylinder_board,
     cylinder_hex_board,
     cylinder_triangle_board,
@@ -175,6 +176,8 @@ _JSON_BUILDERS = {
     "projective_board": projective_board,
     "projective_triangle_board": projective_triangle_board,
     "projective_hex_board": projective_hex_board,
+    # the same cubed-sphere board drawn once, on Boy's surface
+    "boy_board": boy_board,
     # the genus-2 board: two square-tiled donuts merged at their outer rims
     "double_torus_board": double_torus_board,
     "double_torus_triangle_board": double_torus_triangle_board,

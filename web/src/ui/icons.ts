@@ -82,7 +82,7 @@ import {
   truncatedIcosidodecahedronSplitBoard,
   truncatedOctahedronBoard,
 } from "../boards/archimedean";
-import { trefoilPoint } from "../boards/surfaces";
+import { boyPoint, trefoilPoint } from "../boards/surfaces";
 import { solidCubeBoard } from "../boards/volume";
 import { DOMAINS } from "./backgroundPattern";
 import { cid, newellNormal, type Board, type Board3D, type Vec3 } from "../boards/core";
@@ -1020,6 +1020,12 @@ const HEMISPHERE: SurfacePoint = (u, v) => [
   Math.cos(v) * Math.sin(u),
 ];
 
+/** Boy's surface (surfaces.ts `boyPoint`, the board's own immersion), meshed
+ * over one hemisphere — which covers the projective plane once, as the
+ * immersion's antipodal symmetry says: u round the axis, v down from the pole. */
+const BOY: SurfacePoint = (u, v) =>
+  boyPoint([Math.sin(v) * Math.cos(u), Math.sin(v) * Math.sin(u), Math.cos(v)]);
+
 interface MeshOptions {
   /** rotation about x then y, in degrees, before projecting */
   view: [number, number];
@@ -1885,6 +1891,20 @@ function draw(rawKey: string): string[] {
     // trefoil is known by; the slight tilt keeps the crossings reading as
     // over and under rather than as a flat ribbon
     parts.push(...surfaceMesh(TREFOIL, { view: [-18, 0], uSteps: 96, vSteps: 8 }));
+  } else if (key === "boy") {
+    // from the side, the three-fold axis nearly upright, as the board starts:
+    // down the axis the three lobes cover everything and it reads as a lumpy
+    // ball, and from here the funnel spirals into the body beside them
+    parts.push(
+      ...surfaceMesh(BOY, {
+        view: [-100, 20],
+        vFrom: 0,
+        vTo: Math.PI / 2,
+        uSteps: 48,
+        vSteps: 16,
+        twoSided: true,
+      }),
+    );
   } else if (key === "klein") {
     parts.push(...surfaceMesh(KLEIN, { view: [180, -18], uSteps: 48, vSteps: 14 }));
   } else {

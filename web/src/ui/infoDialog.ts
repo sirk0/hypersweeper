@@ -114,6 +114,7 @@ export function openInfoDialog(
   // the mark says nothing at all.
   if (facts.warning) card.append(el("p", "info-warning", `⚠ ${facts.warning}`));
   if (facts.distortion) card.append(el("p", "info-warning", `⚠ ${facts.distortion}`));
+  if (facts.caution) card.append(el("p", "info-warning", `⚠ ${facts.caution}`));
   card.append(actions);
 
   const handle = openModal(host, card, {

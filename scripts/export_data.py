@@ -69,6 +69,7 @@ def _surface_json(s) -> dict:
         "euler": s.euler,
         "tilt": s.tilt,
         "tilings": sorted(s.tilings) if s.tilings is not None else None,
+        "caution": s.caution,
     }
 
 
