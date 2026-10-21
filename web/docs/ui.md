@@ -11,8 +11,13 @@ is Classic, Flat, 3D and Custom (`src/ui/menu.ts`). Classic opens one
 particular board straight away — the original square grid — and sits above the
 two that deal a *random* one: the flat picker's pool, and every flat manifold
 plus the spheres and polyhedra. So no picker carries a Random row; Custom holds the old root (Flat,
-Flat manifolds, Sphere, Platonic solids, Archimedean solids, Catalan solids,
-Polyhedra, Volumes).
+Hyperbolic, Flat manifolds, Sphere, Platonic solids, Archimedean solids,
+Catalan solids, Polyhedra, Volumes). Hyperbolic is the one geometry group the
+pygame menu does not have: there it is a family on the flat picker, and the
+web menu lifts it out to sit beside Flat (`MENU_GROUP_FAMILIES` in
+`src/boards/catalog.ts`) — a curved space of its own rather than a kind of
+flat tiling. Its boards still count as the plane's everywhere else: the Flat
+pool deals them and the achievements file them there.
 A board reachable from the home page is still reachable through Custom — the
 home row is a shortcut, not a move, which is how `square` has always worked.
 The reverse is **`CUSTOM_ONLY`** (`src/boards/randomBoard.ts`): boards kept off
@@ -774,6 +779,17 @@ projective plane reaches every lobe, so it keeps both of its quarter turns).
 condition means *not* kept, and any one listed is enough) is what
 `BoardInfo.setBoard` ands in when the setting is off. A whitelist,
 so a control added later is quiet until someone says otherwise.
+
+The second exception is not a symmetry at all: a hyperbolic board's **pan
+arrows** (`pan-left` / `pan-right` / `pan-up` / `pan-down`, both
+`visibleWhen` `"disc"` and `keepWhen` `["disc"]`, a condition `boardConditions` adds for a
+board drawn in the Poincaré disc). A drag is how a hyperbolic board's rim cells
+are reached at all, and nothing else on screen says that a flat board can be
+dragged, so they show whatever the setting — first in the row, before the turn
+and mirror controls when those are on. Each press is one step of the same pan a
+drag makes (`pan:<dx>:<dy>` → `App.nudge`, `KEY_PAN_STEP` through the centre),
+glided over `NUDGE_MS` so it reads as the board being dragged, and landing at
+once with motion off.
 
 Two things it is **not**. It never adds a control — a board still has to have
 the symmetry — and it takes no motion away: the wheel, `[` / `]`, `,` / `.` and

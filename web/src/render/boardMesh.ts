@@ -306,6 +306,23 @@ export interface BoardMesh extends Group {
    * counter-rotated and stay upright. Only flat boards are ever turned. */
   setQuarterTurn?(on: boolean): void;
 
+  // -- hyperbolic panning (see render/disc.ts) --------------------------------
+  // Only a board drawn in the Poincaré disc moves this way; it reports
+  // `discPans` and the renderer routes its drags here instead of to the
+  // Euclidean pan. Points are in the mesh's own units.
+
+  /** Whether drags move this board by a disc isometry. */
+  readonly discPans?: boolean;
+  /** Move the board so what is drawn at `from` is drawn at `to` — as near as
+   * the view's reach allows. Returns false when there was nothing to move. */
+  dragDisc?(from: readonly [number, number], to: readonly [number, number]): boolean;
+  /** Back to the board as it was built. */
+  resetDisc?(): void;
+  /** The point of the board as built that is drawn at `p`. The geometry a
+   * pick ray is cast against is the board as built (the pan is the vertex
+   * shader's), so this is where the ray has to be aimed. */
+  discSource?(p: readonly [number, number]): readonly [number, number];
+
   // -- animations (see render/animations.ts) ---------------------------------
   /** Enable or disable this board's animations (reduced-motion / test seam).
    * Disabling drops any in-flight animation and renders the settled state. */

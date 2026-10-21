@@ -126,9 +126,9 @@ export class BoardInfo {
    * icon is drawn from — see ui/symmetryIcon.ts.
    *
    * `extraControls` is the player's setting. With it off the row keeps only the
-   * slots whose `keepWhen` this board meets — the Klein bottle's ring pair and
-   * Boy's surface's two pairs, nothing else in the catalogue — so most boards
-   * show no row at all. It never
+   * slots whose `keepWhen` this board meets — the Klein bottle's ring pair,
+   * Boy's surface's two pairs and a hyperbolic board's pan arrows, nothing else
+   * in the catalogue — so most boards show no row at all. It never
    * *adds* a control: a board still has to have the symmetry. */
   setBoard(
     mode: string,

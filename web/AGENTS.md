@@ -125,12 +125,15 @@ design rather than the rule itself.
 - `src/session.ts` — `GameSession`: Game ↔ mesh ↔ HUD.
 - `src/input/controls.ts` — pointer/touch state machine (tap, long-press,
   right-click, drag-rotate on 3D boards, pinch-zoom and drag-pan on every
-  board), plus `blockBrowserZoom` — the guard that keeps the *browser* from
-  zooming the page (see "Zoom" in [`docs/render.md`](docs/render.md)).
+  board — a hyperbolic one at every zoom), plus `blockBrowserZoom` — the
+  guard that keeps the *browser* from zooming the page (see "Zoom" in [`docs/render.md`](docs/render.md)).
 - `src/render/zoom.ts` — the pure view-transform arithmetic (zoom bounds, the
   anchor that holds a point under the fingers, the pan clamp), unit tested
   without a WebGL context; `renderer.ts` owns the state and applies it to
-  whichever camera the board uses.
+  whichever camera the board uses. `src/render/disc.ts` is its hyperbolic twin:
+  the Möbius view a hyperbolic board is dragged by (see "Hyperbolic panning" in
+  [`docs/render.md`](docs/render.md)), applied by `polygonBoard.ts` through the
+  vertex shader.
 - `src/ui/` — HTML/CSS overlay chrome: `hud.ts` (header — laid out like the
   pygame one: back + flag at the left edge, the smiley on the exact screen
   centre with an equal-height LED counter either side of it, and the Klein

@@ -49,6 +49,23 @@ test.describe("M1 app", () => {
     expect(state?.cellCount).toBeLessThan(105);
   });
 
+  test("Hyperbolic sits beside Flat, not inside it", async ({ page }) => {
+    const groups = await page
+      .locator(".menu-sidebar .menu-entry[data-group]")
+      .evaluateAll((rows) => rows.map((r) => (r as HTMLElement).dataset["group"]));
+    expect(groups.indexOf("hyperbolic")).toBe(groups.indexOf("flat") + 1);
+    await page.locator('.menu-entry[data-group="flat"]').click();
+    await expect(page.locator('.menu-entry[data-submenu="aperiodic"]')).toBeVisible();
+    await expect(page.locator('.menu-entry[data-submenu="hyperbolic"]')).toHaveCount(0);
+
+    await page.locator('.difficulty-btn[data-key="easy"]').click();
+    await page.locator('.menu-entry[data-group="hyperbolic"]').click();
+    await page.locator('.menu-entry[data-mode="hyperbolic54"]').click();
+    const state = await page.evaluate(() => window.__ms?.state());
+    expect(state?.screen).toBe("game");
+    expect(state?.mode).toBe("hyperbolic54");
+  });
+
   test("menu drills into the spiral family to launch the brick rings", async ({ page }) => {
     await page.locator('.difficulty-btn[data-key="easy"]').click();
     await page.locator('.menu-entry[data-group="flat"]').click();

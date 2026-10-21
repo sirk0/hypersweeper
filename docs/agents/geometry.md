@@ -790,12 +790,19 @@ Four things worth knowing before touching them:
   its area, so the outer shells hold well over half the cells, and those see
   far fewer than p(q - 2) neighbours: the mean degree is 4.6 ({7,3}) to 7
   ({4,5}), and the calibrated densities 6-10%.
-* **Rim cells are small, and on a phone at medium and hard too small to tap.**
-  A 370px-wide disc puts the outermost easy cells at about a 6px inradius,
-  medium at 2px and hard at 1px; the Euclidean zoom (`MAX_ZOOM` 6) helps on a
-  desktop and not much on a phone. The fix is *hyperbolic* panning -- a drag that
-  moves the disc by a Möbius map, so any cell can be brought to the centre at
-  full size -- which is the follow-up this family was shipped ahead of.
+* **Rim cells are small, and as built on a phone at medium and hard too small
+  to tap.** A 370px-wide disc puts the outermost easy cells at about a 6px
+  inradius, medium at 2px and hard at 1px; the Euclidean zoom (`MAX_ZOOM` 6)
+  helps on a desktop and not much on a phone. What reaches them is
+  **hyperbolic panning**: in the TypeScript app a drag moves the disc by a
+  Möbius map (a disc isometry), so a cell can be brought towards the centre,
+  growing as it comes, and tapped there. The board says which disc it is
+  drawn in (`Board.disc`: centre, unit radius, and `rim`, how far out it is
+  whole, which bounds the pan); the view and its drag are `web/src/render/disc.ts`,
+  and how the renderer applies it is "Hyperbolic panning" in
+  [`web/docs/render.md`](../../web/docs/render.md). Nothing about the board
+  changes -- ids, adjacency and the data are the board as built -- so the
+  pygame game, which does not pan, plays the same boards.
 * **One shape, at every size.** Every tile is congruent in the plane it lives in
   and none is drawn congruent, so a flat classifier splits the shrinking shells
   into seven sizes. The board says it is drawn in a curved model (`Board.curved`

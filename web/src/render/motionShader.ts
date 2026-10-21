@@ -5,6 +5,8 @@ import {
   NearestFilter,
   RGBAFormat,
   type BufferGeometry,
+  type Vector2,
+  type Vector3,
   type Material,
   type WebGLProgramParametersWithUniforms,
 } from "three";
@@ -314,6 +316,50 @@ const vertBody = (role: MotionRole): string => /* glsl */ `
 }
 `;
 
+/** The hyperbolic pan (render/disc.ts), after the cell's own motion: every
+ * tile vertex goes through the view's Möbius map, and its height is scaled by
+ * how much the map magnifies the board at the cell's pivot — one factor per
+ * cell, so a tile keeps its proportions and stays flat-topped as it grows or
+ * shrinks on its way across the disc. A glyph is not mapped point by point:
+ * the map turns the plane by a different angle everywhere, which tipped the
+ * numbers over and sheared them. It is carried whole instead — to where the
+ * map draws its cell's pivot, scaled by that same factor, never turned — so it
+ * reads upright wherever the cell is. `uDisc` is the disc's centre and radius
+ * in mesh units; `uDiscC` and `uDiscRot` the view. */
+const DISC_HEAD = /* glsl */ `
+uniform vec3 uDisc;
+uniform vec2 uDiscC;
+uniform vec2 uDiscRot;
+vec2 discMul(vec2 a, vec2 b) { return vec2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x); }
+vec2 discDiv(vec2 a, vec2 b) { return vec2(a.x * b.x + a.y * b.y, a.y * b.x - a.x * b.y) / dot(b, b); }
+vec2 discMap(vec2 z) {
+  vec2 cz = discMul(vec2(uDiscC.x, -uDiscC.y), z);
+  return discMul(uDiscRot, discDiv(z - uDiscC, vec2(1.0 - cz.x, -cz.y)));
+}
+`;
+
+const discBody = (role: MotionRole): string => /* glsl */ `
+{
+  vec2 pivot = texelFetch(uCellGeo, motionTexel(int(aCell + 0.5) * 2), 0).xy;
+  vec2 pz = (pivot - uDisc.xy) / uDisc.z;
+  vec2 pw = discMap(pz);
+  float grow = (1.0 - dot(pw, pw)) / (1.0 - dot(pz, pz));
+  ${
+    role === "glyph"
+      ? "vec2 xy = uDisc.xy + pw * uDisc.z + (transformed.xy - pivot) * grow;"
+      : "vec2 xy = uDisc.xy + discMap((transformed.xy - uDisc.xy) / uDisc.z) * uDisc.z;"
+  }
+  transformed = vec3(xy, transformed.z * grow);
+}
+`;
+
+/** The uniforms of the hyperbolic pan's stage (see `DISC_HEAD`). */
+export interface DiscUniforms {
+  uDisc: { value: Vector3 };
+  uDiscC: { value: Vector2 };
+  uDiscRot: { value: Vector2 };
+}
+
 const FRAG_HEAD = /* glsl */ `
 uniform float uDesat;
 uniform float uRim;
@@ -338,21 +384,26 @@ const FRAG_RIM = /* glsl */ `
 
 /** Teach `material` to move with its cells. Chains after any patch it already
  * has (the marker glow), and keys the program cache on the role, so two
- * materials patched differently never share a compiled program. */
+ * materials patched differently never share a compiled program. `disc` adds
+ * the hyperbolic pan's stage after the motion (a board drawn in the Poincaré
+ * disc); every other board compiles without it. */
 export function patchMotion(
   material: Material,
   uniforms: MotionUniforms,
   role: MotionRole,
   lit: boolean,
+  disc: DiscUniforms | null = null,
 ): void {
   const prev = material.onBeforeCompile.bind(material);
   const prevKey = material.customProgramCacheKey.bind(material);
   material.onBeforeCompile = (shader: WebGLProgramParametersWithUniforms, renderer) => {
     prev(shader, renderer);
-    Object.assign(shader.uniforms, uniforms);
+    Object.assign(shader.uniforms, uniforms, disc ?? {});
+    const head = disc ? VERT_HEAD + DISC_HEAD : VERT_HEAD;
+    const body = disc ? vertBody(role) + discBody(role) : vertBody(role);
     shader.vertexShader = shader.vertexShader
-      .replace("#include <common>", `#include <common>\n${VERT_HEAD}`)
-      .replace("#include <begin_vertex>", `#include <begin_vertex>\n${vertBody(role)}`);
+      .replace("#include <common>", `#include <common>\n${head}`)
+      .replace("#include <begin_vertex>", `#include <begin_vertex>\n${body}`);
     let frag = shader.fragmentShader.replace(
       "#include <common>",
       `#include <common>\n${FRAG_HEAD}`,
@@ -368,7 +419,8 @@ export function patchMotion(
     }
     shader.fragmentShader = frag;
   };
-  material.customProgramCacheKey = () => `${prevKey()}|motion:${role}:${lit ? 1 : 0}`;
+  material.customProgramCacheKey = () =>
+    `${prevKey()}|motion:${role}:${lit ? 1 : 0}${disc ? ":disc" : ""}`;
 }
 
 export { MOTION_CHANNELS };

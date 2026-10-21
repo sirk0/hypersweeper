@@ -238,8 +238,40 @@
       }
     ],
     "_boardBarComment": "Controls that belong to the board rather than to the game: they sit on the caption row under the header, beside the board's name, not in the header row itself. The header holds two slots a side and the centred status block, which is all that fits on one row on a phone; these are shown only on a board that has them, so putting them there would wrap that row on exactly the boards that have the most to fit.",
-    "_symmetryComment": "One control per symmetry the board carries (boards/symmetry.ts BoardSymmetry). The ids are named for a wrapped surface, whose two directions are round the ring and round the tube, and carry over to the other two kinds: a flat board is the window such a surface is cut from, so its x is the ring and its y the tube, and on a solid `ring` and `tube` are rotations about the board's principal axis and one across it. The labels say what the control does to the board rather than naming a seam, because one label has to serve all three. `symmetry:<id>` shows a control on a board that has that symmetry at all; `symmetry-pair:<id>` shows the second of a pair only where the symmetry is not its own inverse. A reflection always is one -- `keepSymmetries` drops a candidate mirror that is not -- and so is a Klein bottle's half-tube step, so those get a single button where a translation gets two. `keepWhen` is what survives the player turning the extra controls off (web only -- web/src/settings.ts `extraControls`): a board meeting any of its conditions keeps the control and everything else goes. Only the two surfaces that hide cells from every angle name one -- the Klein bottle, whose neck passes through its belly, keeps its ring pair, and Boy's surface, whose lobes fold over its funnel, keeps both its pairs -- because every other control shows the same puzzle from another angle.",
+    "_symmetryComment": "One control per symmetry the board carries (boards/symmetry.ts BoardSymmetry). The ids are named for a wrapped surface, whose two directions are round the ring and round the tube, and carry over to the other two kinds: a flat board is the window such a surface is cut from, so its x is the ring and its y the tube, and on a solid `ring` and `tube` are rotations about the board's principal axis and one across it. The labels say what the control does to the board rather than naming a seam, because one label has to serve all three. `symmetry:<id>` shows a control on a board that has that symmetry at all; `symmetry-pair:<id>` shows the second of a pair only where the symmetry is not its own inverse. A reflection always is one -- `keepSymmetries` drops a candidate mirror that is not -- and so is a Klein bottle's half-tube step, so those get a single button where a translation gets two. `keepWhen` is what survives the player turning the extra controls off (web only -- web/src/settings.ts `extraControls`): a board meeting any one of its conditions keeps the control and everything else goes. Three kinds name one: the two surfaces that hide cells from every angle -- the Klein bottle, whose neck passes through its belly, keeps its ring pair, and Boy's surface, whose lobes fold over its funnel, keeps both its pairs -- because every other symmetry control shows the same puzzle from another angle; and the four pan arrows of a board drawn in the Poincare disc (`disc`), which move the board as a drag does -- a drag being how its rim cells are reached at all, and nothing else on screen saying a flat board can be dragged.",
     "boardBar": [
+      {
+        "slot": "pan-left",
+        "label": "Move the board left",
+        "icon": "pan-left",
+        "action": "pan:-1:0",
+        "visibleWhen": "disc",
+        "keepWhen": ["disc"]
+      },
+      {
+        "slot": "pan-right",
+        "label": "Move the board right",
+        "icon": "pan-right",
+        "action": "pan:1:0",
+        "visibleWhen": "disc",
+        "keepWhen": ["disc"]
+      },
+      {
+        "slot": "pan-up",
+        "label": "Move the board up",
+        "icon": "pan-up",
+        "action": "pan:0:-1",
+        "visibleWhen": "disc",
+        "keepWhen": ["disc"]
+      },
+      {
+        "slot": "pan-down",
+        "label": "Move the board down",
+        "icon": "pan-down",
+        "action": "pan:0:1",
+        "visibleWhen": "disc",
+        "keepWhen": ["disc"]
+      },
       {
         "slot": "symmetry-ring-back",
         "label": "Spin the board back",

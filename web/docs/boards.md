@@ -301,8 +301,10 @@ pixels of glyph are no evidence.
 exceptions.** Settings › Behaviour › *Extra board controls* is off by default,
 and with it off a board keeps only the slots whose `keepWhen` it meets — the
 Klein bottle its two ring chevrons, Boy's surface its ring and tube pairs, and
-nothing else in the catalogue. Those are the boards whose own surface hides
-cells from every angle; everywhere else a control is a second look
+nothing else among the symmetry controls (the hyperbolic boards' pan arrows are
+kept too, but they are not symmetries — see "Settings and themes" in
+[`ui.md`](ui.md)). Those are the boards whose own surface hides cells from
+every angle; everywhere else a control is a second look
 at a puzzle already fully on screen, which is a lot of chrome to carry on every
 screen for a feature most players never reach for. The setting is chrome only:
 the wheel and the keys below drive the same permutations either way, and it can

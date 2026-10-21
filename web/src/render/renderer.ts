@@ -61,6 +61,8 @@ const FLAT_MARGIN = 1.06;
 
 const X_AXIS = new Vector3(1, 0, 0);
 const Y_AXIS = new Vector3(0, 1, 0);
+/** Scratch for `boardPoint` and the disc pick. */
+const BOARD_POINT = new Vector3();
 /** Scratch for `panFor`, which runs once per sounding cell of a flood fill. */
 const PAN_POINT = new Vector3();
 
@@ -87,6 +89,9 @@ interface SolidFrame {
 
 /** The victory turn: one full revolution, eased in and out. */
 const SPIN_MS = 1700;
+/** How long a pan the board makes on its own (a pan arrow, an arrow key) takes
+ * to glide to where it is going — about a quick flick of a finger. */
+const NUDGE_MS = 220;
 /** Confetti colours: festive, and none of them the board's own. */
 const CONFETTI = ["#ff5d73", "#ffc233", "#3ddc97", "#4cc9f0", "#9b7bff", "#ff8c42"].map(
   (c) => new Color(c),
@@ -131,6 +136,9 @@ export class BoardRenderer {
   motion = true;
   private fling: { vx: number; vy: number } | null = null;
   private spin: { start: number; done: number } | null = null;
+  /** A pan in flight (`nudge`): the whole of it in CSS px, and the share of it
+   * already applied. */
+  private nudging: { dx: number; dy: number; start: number; done: number } | null = null;
   private lastFrame = 0;
   /** The framing a solid is shown at, and the one its current pose asks for.
    * They differ only while the camera is gliding to a new fit (`stepFrame`);
@@ -235,6 +243,7 @@ export class BoardRenderer {
   setBoard(board: BoardMesh): void {
     if (this.board) this.scene.remove(this.board);
     this.board = board;
+    this.nudging = null;
     if (board.view.kind === "solid") {
       // Scale the solid into the unit sphere so one camera setup frames all.
       board.scale.setScalar(1 / board.view.radius);
@@ -419,12 +428,20 @@ export class BoardRenderer {
     return this.zoomLevel;
   }
 
-  /** Frame the board again: fitted, unpanned. */
+  /** Frame the board again: fitted, unpanned — and a disc board back where
+   * it was built, its central cell in the middle. */
   resetView(): void {
     this.zoomLevel = MIN_ZOOM;
     this.panX = 0;
     this.panY = 0;
+    this.board?.resetDisc?.();
     this.frame();
+  }
+
+  /** Whether drags move the current board hyperbolically (it is drawn in the
+   * Poincaré disc): then a one-finger drag pans it at every zoom. */
+  get discPans(): boolean {
+    return this.board?.discPans === true;
   }
 
   /** Multiply the zoom by `factor`, keeping the board fixed under the anchor
@@ -448,12 +465,63 @@ export class BoardRenderer {
   }
 
   /** Drag the board by (dx, dy) CSS pixels — it follows the finger, and the
-   * clamp in the framing keeps it from being pushed off the screen. */
-  panBy(dxPx: number, dyPx: number): void {
-    if (!this.board || (dxPx === 0 && dyPx === 0)) return;
+   * clamp in the framing keeps it from being pushed off the screen. A board
+   * drawn in the Poincaré disc is moved by a disc isometry instead (hyperbolic
+   * panning, render/disc.ts), which is not the same motion everywhere: the
+   * point under the finger is the one that follows it, so (x, y) — canvas CSS
+   * pixels, where the drag step ended — says which point that is. Without one
+   * (a wheel, a key) it is the centre of the view. */
+  panBy(dxPx: number, dyPx: number, x?: number, y?: number): void {
+    const board = this.board;
+    if (!board || (dxPx === 0 && dyPx === 0)) return;
+    if (board.discPans && board.dragDisc) {
+      const toX = x ?? this.centerX + dxPx;
+      const toY = y ?? this.centerY + dyPx;
+      const from = this.boardPoint(toX - dxPx, toY - dyPx);
+      const to = this.boardPoint(toX, toY);
+      if (board.dragDisc(from, to)) this.dirty = true;
+      return;
+    }
     this.panX -= dxPx * this.wpp;
     this.panY += dyPx * this.wpp;
     this.frame();
+  }
+
+  /** Pan the board by (dx, dy) CSS pixels on its own account — a pan arrow, an
+   * arrow key — about the centre of the view, as a drag of that length through
+   * the middle would. It glides there (`NUDGE_MS`, eased out) rather than
+   * jumping, so it reads as the board being dragged, which is what the arrows
+   * are there to teach; with motion off it lands at once. A press during a
+   * glide carries on from wherever the last one had got to. */
+  nudge(dxPx: number, dyPx: number): void {
+    if (!this.motion) {
+      this.nudging = null;
+      this.panBy(dxPx, dyPx);
+      return;
+    }
+    const left = this.nudging ? 1 - this.nudging.done : 0;
+    this.nudging = {
+      dx: dxPx + (this.nudging?.dx ?? 0) * left,
+      dy: dyPx + (this.nudging?.dy ?? 0) * left,
+      start: performance.now(),
+      done: 0,
+    };
+    this.dirty = true;
+  }
+
+  /** The point of a flat board's plane (mesh units) under canvas CSS pixel
+   * (x, y): the screen->world model in zoom.ts, then the board's own turn and
+   * shake undone. */
+  private boardPoint(x: number, y: number): [number, number] {
+    const board = this.board!;
+    board.updateWorldMatrix(true, false);
+    const p = BOARD_POINT.set(
+      this.panX + this.wpp * (x - this.centerX),
+      this.panY + this.wpp * (this.centerY - y),
+      0,
+    );
+    board.worldToLocal(p);
+    return [p.x, p.y];
   }
 
   /** Place the perspective camera so the solid fills the region below the
@@ -764,6 +832,16 @@ export class BoardRenderer {
       if (p >= 1) this.spin = null;
       else busy = true;
     }
+    if (this.nudging) {
+      const n = this.nudging;
+      const p = Math.max(0, Math.min(1, (now - n.start) / NUDGE_MS));
+      const eased = 1 - Math.pow(1 - p, 3);
+      const step = eased - n.done;
+      n.done = eased;
+      if (step !== 0) this.panBy(n.dx * step, n.dy * step);
+      if (p >= 1) this.nudging = null;
+      else busy = true;
+    }
     if (this.stepFrame(dt)) busy = true;
     if (this.particles.active) {
       const down = new Vector3(0, -1, 0);
@@ -802,6 +880,10 @@ export class BoardRenderer {
   pick(ndc: Vector2): CellId | null {
     const board = this.board;
     if (!board) return null;
+    // A panned disc is drawn by its vertex shader, so the ray is aimed at the
+    // point of the board as built that the view draws there. The camera looks
+    // straight down at a flat board, so that is the whole correction.
+    if (board.discPans && board.discSource) ndc = this.discNdc(board, ndc);
     this.raycaster.setFromCamera(ndc, this.camera);
     const targets = PICK_LAYERS.map((name) => board.getObjectByName(name)).filter(
       (mesh) => mesh != null,
@@ -811,6 +893,17 @@ export class BoardRenderer {
     const hit = hits[0];
     if (!hit || hit.faceIndex == null) return null;
     return board.cellForFace(hit.faceIndex, hit.object.name as PickLayer);
+  }
+
+  private discNdc(board: BoardMesh, ndc: Vector2): Vector2 {
+    const camera = this.camera;
+    board.updateWorldMatrix(true, false);
+    const p = BOARD_POINT.set(ndc.x, ndc.y, 0).unproject(camera);
+    board.worldToLocal(p);
+    const [x, y] = board.discSource!([p.x, p.y]);
+    p.set(x, y, 0);
+    board.localToWorld(p).project(camera);
+    return new Vector2(p.x, p.y);
   }
 
   private renderOnce = (): void => {

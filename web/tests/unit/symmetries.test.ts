@@ -420,7 +420,7 @@ describe("the board bar's symmetry controls", () => {
   });
 
   it("every slot draws an icon this build has and names a real symmetry", () => {
-    for (const slot of slots) {
+    for (const slot of slots.filter((s) => s.action!.startsWith("symmetry:"))) {
       expect(slot.icon && ICONS[slot.icon], slot.slot).toBeTruthy();
       expect(slot.label, slot.slot).toBeTruthy();
       const [kind, id, direction] = slot.action!.split(":");
@@ -431,6 +431,27 @@ describe("the board bar's symmetry controls", () => {
       const want = direction === "-1" ? "symmetry-pair" : "symmetry";
       expect(slot.visibleWhen).toBe(`${want}:${id}`);
     }
+  });
+
+  it("gives a disc board four pan arrows, one each way, and no other board any", () => {
+    const pans = slots.filter((s) => s.action!.startsWith("pan:"));
+    expect(pans.map((s) => s.action).sort()).toEqual(["pan:-1:0", "pan:0:-1", "pan:0:1", "pan:1:0"]);
+    for (const slot of pans) {
+      expect(slot.icon && ICONS[slot.icon], slot.slot).toBeTruthy();
+      expect(slot.label, slot.slot).toBeTruthy();
+      expect(slot.visibleWhen).toBe("disc");
+    }
+    // Every other slot is a symmetry control.
+    expect(slots.filter((s) => !s.action!.startsWith("pan:")).every((s) => s.action!.startsWith("symmetry:"))).toBe(true);
+    const shown = (conditions: Set<string>) =>
+      slots.filter((s) => slotVisible(s.visibleWhen, conditions)).map((s) => s.slot);
+    expect(shown(boardConditions([], "hyperbolic73", true))).toEqual([
+      "pan-left",
+      "pan-right",
+      "pan-up",
+      "pan-down",
+    ]);
+    expect(shown(boardConditions([], "square"))).toEqual([]);
   });
 
   it("a reflection gets one button and a translation two", () => {
@@ -452,15 +473,20 @@ describe("the board bar's symmetry controls", () => {
     expect(shown(boardConditions([]))).toEqual([]);
   });
 
-  it("keeps only the Klein bottle's and Boy's surface's controls when the extras are off", () => {
+  it("keeps only the Klein bottle's and Boy's controls and the disc's pan arrows when the extras are off", () => {
     // The setting is a whitelist: a slot with no `keepWhen` goes, whatever the
-    // board has. Only the Klein bottle and Boy's surface name one, because they
-    // are the boards whose own surface hides cells from every angle —
-    // everything else is a second look at a puzzle already fully on screen.
+    // board has. The Klein bottle and Boy's surface name one, because they are
+    // the boards whose own surface hides cells from every angle — every other
+    // symmetry control is a second look at a puzzle already fully on screen —
+    // and so do the hyperbolic boards' pan arrows, the one thing on screen that
+    // says the board can be dragged, which is how their rim cells are reached.
     const kept = (mode: string) => {
       const board = buildBoard(mode, "easy");
-      const symmetries = isBoard3D(board) ? board.symmetries : [];
-      const conditions = boardConditions(symmetries, mode);
+      const conditions = boardConditions(
+        board.symmetries,
+        mode,
+        !isBoard3D(board) && board.disc !== undefined,
+      );
       return slots
         .filter((s) => slotVisible(s.visibleWhen, conditions) && slotKept(s.keepWhen, conditions))
         .map((s) => s.slot);
@@ -476,6 +502,9 @@ describe("the board bar's symmetry controls", () => {
       "symmetry-tube-back",
       "symmetry-tube-fwd",
     ]);
+    for (const mode of ["hyperbolic73", "hyperbolic54", "hyperbolic45"]) {
+      expect(kept(mode), mode).toEqual(["pan-left", "pan-right", "pan-up", "pan-down"]);
+    }
     // ...and nothing else in the catalogue keeps a control, wrapped or not.
     for (const mode of [...WRAPPED, "square", "cube", "penrose"]) {
       if (surfaceKey(mode) === "klein" || surfaceKey(mode) === "boy") continue;
