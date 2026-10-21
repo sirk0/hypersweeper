@@ -8548,7 +8548,7 @@
           4,
           5,
           10,
-          12,
+          5,
           300.0
         ],
         "cells": 81,
@@ -8557,32 +8557,32 @@
         "distortionP90": 1.4114,
         "indistinguishable": 0
       },
+      "medium": {
+        "args": [
+          4,
+          5,
+          22,
+          13,
+          300.0
+        ],
+        "cells": 245,
+        "score": 0.0439,
+        "distortionMean": 1.408,
+        "distortionP90": 1.4169,
+        "indistinguishable": 0
+      },
       "hard": {
         "args": [
           4,
           5,
           35,
-          95,
+          38,
           300.0
         ],
         "cells": 485,
         "score": 0.0104,
         "distortionMean": 1.4102,
         "distortionP90": 1.4189,
-        "indistinguishable": 0
-      },
-      "medium": {
-        "args": [
-          4,
-          5,
-          20,
-          45,
-          300.397
-        ],
-        "cells": 205,
-        "score": 10.6665,
-        "distortionMean": 1.4078,
-        "distortionP90": 1.4169,
         "indistinguishable": 0
       }
     }
@@ -12916,6 +12916,194 @@
         "distortionP90": 1.5611,
         "indistinguishable": 0,
         "facetStep": 0.1115
+      }
+    }
+  },
+  "hyperbolic46": {
+    "builder": "hyperbolic_board",
+    "args": {
+      "easy": {
+        "args": [
+          4,
+          6,
+          14,
+          7,
+          298.977
+        ],
+        "cells": 89,
+        "score": 0.0942,
+        "distortionMean": 1.5528,
+        "distortionP90": 1.5717,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          4,
+          6,
+          27,
+          24,
+          300.0
+        ],
+        "cells": 265,
+        "score": 0.0346,
+        "distortionMean": 1.5612,
+        "distortionP90": 1.5886,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          4,
+          6,
+          40,
+          45,
+          300.0
+        ],
+        "cells": 457,
+        "score": 0.0491,
+        "distortionMean": 1.5635,
+        "distortionP90": 1.5952,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "hyperbolic55": {
+    "builder": "hyperbolic_board",
+    "args": {
+      "easy": {
+        "args": [
+          5,
+          5,
+          9,
+          7,
+          300.0
+        ],
+        "cells": 81,
+        "score": 0.0,
+        "distortionMean": 1.4039,
+        "distortionP90": 1.4221,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          5,
+          5,
+          20,
+          24,
+          299.884
+        ],
+        "cells": 271,
+        "score": 0.0569,
+        "distortionMean": 1.4092,
+        "distortionP90": 1.4265,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          5,
+          5,
+          35,
+          45,
+          300.0
+        ],
+        "cells": 471,
+        "score": 0.0189,
+        "distortionMean": 1.4103,
+        "distortionP90": 1.4307,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "hyperbolic64": {
+    "builder": "hyperbolic_board",
+    "args": {
+      "easy": {
+        "args": [
+          6,
+          4,
+          8,
+          7,
+          300.64
+        ],
+        "cells": 79,
+        "score": 0.025,
+        "distortionMean": 1.249,
+        "distortionP90": 1.2555,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          6,
+          4,
+          19,
+          24,
+          299.918
+        ],
+        "cells": 259,
+        "score": 0.0117,
+        "distortionMean": 1.2523,
+        "distortionP90": 1.2578,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          6,
+          4,
+          31,
+          45,
+          299.985
+        ],
+        "cells": 487,
+        "score": 0.0145,
+        "distortionMean": 1.2533,
+        "distortionP90": 1.2584,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "hyperbolic83": {
+    "builder": "hyperbolic_board",
+    "args": {
+      "easy": {
+        "args": [
+          8,
+          3,
+          7,
+          7,
+          300.0
+        ],
+        "cells": 89,
+        "score": 0.0942,
+        "distortionMean": 1.0954,
+        "distortionP90": 1.0965,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          8,
+          3,
+          16,
+          24,
+          300.0
+        ],
+        "cells": 265,
+        "score": 0.0346,
+        "distortionMean": 1.0964,
+        "distortionP90": 1.097,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          8,
+          3,
+          24,
+          45,
+          300.0
+        ],
+        "cells": 473,
+        "score": 0.0147,
+        "distortionMean": 1.0967,
+        "distortionP90": 1.0971,
+        "indistinguishable": 0
       }
     }
   }

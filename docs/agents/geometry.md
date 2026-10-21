@@ -771,10 +771,10 @@ Four things worth knowing before touching them:
   into seven sizes. The board says it is drawn in a curved model (`Board.curved`
   on the TypeScript side), and shape colouring then classes it as it does a
   curved surface: one class per side count.
-* **{4,5} medium is a near-miss on purpose.** The four trims in the medium band
-  (237-285 cells) all leave rim cells with an indistinguishable twin, so it
-  ships the nearest fair trim at 205 (-20%), counted against
-  `NEAR_MISS_ALLOWANCE` in `tests/test_presets.py`.
+* **{4,5} medium used to be a near-miss.** Before the trim dropped its twins,
+  every {4,5} trim in the medium band left rim cells with an indistinguishable
+  twin, and it shipped the nearest fair one at 205 cells (-20%). With the drop
+  it is in band like every other row.
 
 ## The fractal boards
 
