@@ -751,8 +751,8 @@ Four things worth knowing before touching them:
 
 * **The rim is most of the board.** A hyperbolic disc's boundary grows as fast as
   its area, so the outer shells hold well over half the cells, and those see
-  far fewer than p(q - 2) neighbours: the mean degree is 4.6 ({7,3}) to 7
-  ({4,5}), and the calibrated densities 6-10%.
+  far fewer than p(q - 2) neighbours: the mean degree is 4.3 ({8,3}) to 7.1
+  ({4,6}), and the calibrated densities 4-10%.
 * **Rim cells are small, and as built on a phone at medium and hard too small
   to tap.** A 370px-wide disc puts the outermost easy cells at about a 6px
   inradius, medium at 2px and hard at 1px; the Euclidean zoom (`MAX_ZOOM` 6)
