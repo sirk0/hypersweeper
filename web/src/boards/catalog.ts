@@ -309,8 +309,10 @@ export function pickerFamilies(surfaceKey: string): string[] {
 // Below is the web menu's own shape, derived from it: the three regular
 // tilings are promoted to the top of every picker page rather than sitting in
 // a Regular submenu, which leaves that submenu holding the shaped boards
-// alone (hence its own label), and the Random entry moves off the pickers on
-// to the home page, where it becomes one flat pool and one 3D pool. None of
+// alone (hence its own label), the Hyperbolic family moves off the plane's
+// picker to a geometry group of its own beside Flat, and the Random entry
+// moves off the pickers on to the home page, where it becomes one flat pool
+// and one 3D pool. None of
 // this is filtered by what is actually built -- callers pass their own
 // `hasMode`, as the menu already does for family rows.
 
@@ -342,13 +344,29 @@ export function menuFamilyRows(family: string, surfaceKey: string): FamilyRow[] 
   return family === "regular" ? menuShapedRows(surfaceKey) : familyRows(family, surfaceKey);
 }
 
+/** The families lifted off a picker page to a geometry group of their own,
+ * next to the surface's (`boardGroups` in ui/boardTree.ts). Hyperbolic is
+ * drawn flat but is not the flat plane: a curved space of its own deserves a
+ * place beside Flat rather than a row inside it. Its boards still belong to
+ * the plane everywhere but the menu's grouping — the Flat pool deals them and
+ * the achievements count them there (`surfaceMenuModes`). */
+export const MENU_GROUP_FAMILIES = ["hyperbolic"];
+
 /** The family submenus a surface's picker offers, in order: `pickerFamilies`
  * minus `regular` wherever promoting its tilings leaves nothing behind (every
- * manifold -- the shaped boards are flat-only). */
+ * manifold -- the shaped boards are flat-only), and minus the families that
+ * are groups of their own (`MENU_GROUP_FAMILIES`). */
 export function menuFamilies(surfaceKey: string): string[] {
   return pickerFamilies(surfaceKey).filter(
-    (f) => f !== "regular" || menuShapedRows(surfaceKey).length > 0,
+    (f) =>
+      !MENU_GROUP_FAMILIES.includes(f) &&
+      (f !== "regular" || menuShapedRows(surfaceKey).length > 0),
   );
+}
+
+/** The `MENU_GROUP_FAMILIES` a surface carries, in picker order. */
+export function menuGroupFamilies(surfaceKey: string): string[] {
+  return pickerFamilies(surfaceKey).filter((f) => MENU_GROUP_FAMILIES.includes(f));
 }
 
 /** The web menu's family labels: `regular` no longer names the regular
@@ -389,10 +407,11 @@ export const MENU_FAMILY_HINTS: Record<string, string> = {
   hyperbolic: "Curved space: 7, 10 or 12 neighbours a tile",
 };
 
-/** Every mode a surface's picker page can reach, promoted rows included. */
+/** Every mode on a surface the menu reaches: its picker page, promoted rows
+ * included, and the families lifted out of it into groups of their own. */
 export function surfaceMenuModes(surfaceKey: string): string[] {
   const modes = menuTilingRows(surfaceKey).map((r) => r.mode);
-  for (const family of menuFamilies(surfaceKey)) {
+  for (const family of [...menuFamilies(surfaceKey), ...menuGroupFamilies(surfaceKey)]) {
     for (const row of menuFamilyRows(family, surfaceKey)) modes.push(row.mode);
   }
   return modes;

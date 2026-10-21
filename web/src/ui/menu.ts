@@ -865,7 +865,11 @@ export class Menu {
 
   private groupHint(group: Group): string {
     if (group.kind === "modes") {
-      return SOLID_GROUP_HINTS[group.key] ?? group.modes.map((m) => MODE_LABELS[m] ?? m).join(" · ");
+      return (
+        SOLID_GROUP_HINTS[group.key] ??
+        MENU_FAMILY_HINTS[group.key] ??
+        group.modes.map((m) => MODE_LABELS[m] ?? m).join(" · ")
+      );
     }
     if (group.kind === "manifolds") return group.surfaces.map((s) => s.label).join(" · ");
     return pickerHint(group.surfaceKey);
