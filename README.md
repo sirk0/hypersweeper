@@ -145,6 +145,11 @@ Pick a surface, then a tiling:
   sides of the ball. Squares (a cube's faces rounded onto the sphere),
   triangles (a geodesic sphere) or hexagons (a Goldberg sphere, with the six
   pentagons the surface forces)
+- **Boy's surface (3D)** — the same projective plane, drawn as itself: a
+  surface that passes through itself along three loops meeting at one point,
+  every cell drawn once. The squares keep their right angles but not their
+  size, and the board's moves bring the cells hidden under its lobes into view.
+  Squares
 - **Cylinder (3D)** — an open tube, wrapping in one direction only
 
 ## Playing

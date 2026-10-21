@@ -16,7 +16,8 @@
       "boundaryComponents": null,
       "euler": null,
       "tilt": null,
-      "tilings": null
+      "tilings": null,
+      "caution": null
     },
     {
       "key": "mobius",
@@ -28,7 +29,8 @@
       "boundaryComponents": 1,
       "euler": 0,
       "tilt": -0.8,
-      "tilings": null
+      "tilings": null,
+      "caution": null
     },
     {
       "key": "cylinder",
@@ -40,7 +42,8 @@
       "boundaryComponents": 2,
       "euler": 0,
       "tilt": -0.35,
-      "tilings": null
+      "tilings": null,
+      "caution": null
     },
     {
       "key": "torus",
@@ -52,7 +55,8 @@
       "boundaryComponents": 0,
       "euler": 0,
       "tilt": -1.0,
-      "tilings": null
+      "tilings": null,
+      "caution": null
     },
     {
       "key": "trefoil",
@@ -68,7 +72,8 @@
         "hex",
         "square",
         "tri"
-      ]
+      ],
+      "caution": null
     },
     {
       "key": "klein",
@@ -80,7 +85,8 @@
       "boundaryComponents": 0,
       "euler": 0,
       "tilt": -0.4,
-      "tilings": null
+      "tilings": null,
+      "caution": null
     },
     {
       "key": "projective",
@@ -96,7 +102,23 @@
         "hex",
         "square",
         "tri"
-      ]
+      ],
+      "caution": null
+    },
+    {
+      "key": "boy",
+      "label": "Boy's surface",
+      "prefix": "boy",
+      "is3d": true,
+      "needsMirror": true,
+      "needsFlip": false,
+      "boundaryComponents": 0,
+      "euler": 1,
+      "tilt": -1.6,
+      "tilings": [
+        "square"
+      ],
+      "caution": "Self-intersecting — the surface passes through itself, so some cells hide behind others"
     },
     {
       "key": "doubletorus",
@@ -112,7 +134,8 @@
         "hex",
         "square",
         "tri"
-      ]
+      ],
+      "caution": null
     }
   ],
   "regularTilings": [
@@ -135,7 +158,8 @@
         "klein": "klein",
         "doubletorus": "doubletorus",
         "trefoil": "trefoil",
-        "projective": "projective"
+        "projective": "projective",
+        "boy": "boy"
       }
     },
     {
@@ -246,6 +270,12 @@
       "tiling": "basketweave3",
       "surface": "flat",
       "family": "rectangle"
+    },
+    "boy": {
+      "label": "Squares · Boy's surface",
+      "tiling": "square",
+      "surface": "boy",
+      "family": "regular"
     },
     "brickrings": {
       "label": "Brick rings",
@@ -1964,6 +1994,7 @@
       "trefoil",
       "klein",
       "projective",
+      "boy",
       "doubletorus"
     ],
     "manifoldLabels": {
@@ -1973,7 +2004,8 @@
       "torus": "Torus",
       "doubletorus": "Double torus",
       "trefoil": "Trefoil knot",
-      "projective": "Projective plane"
+      "projective": "Projective plane",
+      "boy": "Boy's surface"
     },
     "pickerRegular": [
       "tri",

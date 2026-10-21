@@ -192,6 +192,17 @@ describe("boardFacts", () => {
     expect(f.difficulty).toBe("Medium");
   });
 
+  it("explains a surface's caution at every difficulty", () => {
+    // Boy's surface passes through itself: declared on the surface, so the same
+    // line at all three levels, and nothing on the projective plane, which is
+    // the same board drawn on the sphere.
+    for (const difficulty of ["easy", "medium", "hard"]) {
+      expect(facts("boy", difficulty).caution, difficulty).toMatch(/^Self-intersecting/);
+      expect(facts("projective", difficulty).caution, difficulty).toBeUndefined();
+    }
+    expect(facts("klein").caution).toBeUndefined();
+  });
+
   it("explains the ⚠ the board's name carries", () => {
     // The triakis boards are made entirely of indistinguishable pairs, so they
     // are graded and the name is marked. The mark is a tooltip on the desktop

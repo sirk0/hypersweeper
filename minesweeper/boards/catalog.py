@@ -44,6 +44,10 @@ class SurfaceSpec:
     tilt: float | None = None         # GameScreen3D initial x-rotation
     tilings: frozenset[str] | None = None  # restrict to these tiling keys;
     #                                        None means every tiling (default)
+    caution: str | None = None        # a warning the web app shows against
+    #                                   the surface's boards, which also keeps
+    #                                   them out of its random deals (Boy's
+    #                                   surface: it passes through itself)
 
 
 # The menu picks a group, then a tiling, then -- for the uniform and
@@ -68,6 +72,7 @@ def _surface_from_json(row: dict) -> SurfaceSpec:
         euler=row["euler"],
         tilt=row["tilt"],
         tilings=frozenset(tilings) if tilings is not None else None,
+        caution=row.get("caution"),
     )
 
 

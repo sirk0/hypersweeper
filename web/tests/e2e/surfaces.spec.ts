@@ -99,6 +99,39 @@ test.describe("M3 surfaces", () => {
     expect(moved, "wheel scroll did not move the cell").toBe(true);
   });
 
+  test("Boy's surface opens from the menu, and a tap opens the cell on top", async ({ page }) => {
+    // The projective plane drawn once, on a two-sided immersion that passes
+    // through itself: a cell may sit behind another sheet from every angle, so
+    // the tap goes to a cell the raycast itself puts on top.
+    await page.goto("/");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    await page.locator('.menu-entry[data-group="manifolds"]').click();
+    await page.locator('.menu-entry[data-surface="boy"]').click();
+    // Marked in the menu, whatever the difficulty: the surface passes through
+    // itself, which is declared rather than measured (catalog.ts
+    // `surfaceCaution`), and the caption carries the same mark once it opens.
+    const row = page.locator('.menu-entry[data-mode="boy"]');
+    await expect(row).toHaveAttribute("data-caution", "");
+    await row.click();
+    await expect(page.locator(".board-name")).toContainText("⚠");
+    await expect(page.locator(".board-name")).toHaveAttribute("title", /Self-intersecting/);
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+    const target = await page.evaluate(() => {
+      const ms = window.__ms!;
+      for (const cell of ms.cells()) {
+        const xy = ms.cellScreenXY(cell);
+        if (xy && ms.cellAtScreenXY(xy.x, xy.y) === cell) return { cell, ...xy };
+      }
+      return null;
+    });
+    expect(target).not.toBeNull();
+    const state = await page.evaluate(() => window.__ms!.state());
+    expect(state.mode).toBe("boy");
+    expect(state.cellCount % 3).toBe(0); // 3 n^2 squares
+    await page.mouse.click(target!.x, target!.y);
+    await expect.poll(() => page.evaluate(() => window.__ms!.state().revealed)).toBeGreaterThan(0);
+  });
+
   test("the projective plane shows every cell on both antipodal faces", async ({ page }) => {
     // Drawn as the sphere that double-covers it, so a cell is on screen
     // wherever either of its two faces is: from any one side nearly every cell

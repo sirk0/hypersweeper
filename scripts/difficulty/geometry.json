@@ -12918,5 +12918,43 @@
         "facetStep": 0.1115
       }
     }
+  },
+  "boy": {
+    "builder": "boy_board",
+    "args": {
+      "easy": {
+        "args": [
+          5,
+          15
+        ],
+        "cells": 75,
+        "score": 0.077,
+        "distortionMean": 1.0958,
+        "distortionP90": 1.2095,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          9,
+          57
+        ],
+        "cells": 243,
+        "score": 0.0521,
+        "distortionMean": 1.0472,
+        "distortionP90": 1.0786,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          13,
+          138
+        ],
+        "cells": 507,
+        "score": 0.0547,
+        "distortionMean": 1.0348,
+        "distortionP90": 1.0751,
+        "indistinguishable": 0
+      }
+    }
   }
 }

@@ -46,7 +46,7 @@ Import order is a strict DAG; a module only imports from the ones above it.
 | `solids.py` | Closed/convex and polycube 3D boards (the Goldberg polyhedra GP(f, 0) and GP(h, k), the geodesic icosahedron and its subdivision `_geodesic`, with its class III cousin `_geodesic_hk`, cube, the Platonic solids, frames, bipyramid), plus the shared `_wythoff_point` every uniform solid here and every Catalan solid next door is generated from. |
 | `catalan.py` | The thirteen Catalan solids, the duals of the Archimedean solids. One recipe for all of them: a Platonic base and one flag, the Wythoff generating point of its Schwarz triangle (`solids._wythoff_point` for the five non-chiral Conway operations, `_snub_point` for the chiral one), a Catalan vertex at `n / <w, n>` on each face axis — polar duality — and the base's flags grouped into faces by the operation. Faces are then subdivided (`solids._geodesic` for triangles, `_quad_grid` for quadrilaterals, a five-way fan first for pentagons), which is these boards' only size knob. `_tri_grid` is `_quad_grid`'s triangle twin, for the solids next door whose triangles meet squares. |
 | `archimedean.py` | Archimedean solids cut into boards — the cube group's cuboctahedron, truncated octahedron and snub cube, and the icosahedral rhombicosidodecahedron, truncated icosidodecahedron and snub dodecahedron — as the **polar duals of their Catalan solids**: `_archimedean_faces` turns `catalan._catalan_faces` inside out (each Catalan face's pole is a vertex, each Catalan vertex a face), so no Wythoff point is solved twice and every vertex id is a Catalan face key. Faces are cut by `catalan._tri_grid` and `_quad_grid`, which name a shared edge's points alike; the truncated octahedron's hexagons are first cut into three rhombi (`_split_hexagons`, by the pyritohedral `_th_spokes` rule), the icosahedral solids' big faces fanned into triangles (`_fan_faces`). See "The Archimedean solids" below. |
-| `surfaces.py` | Wrapping tilings onto surfaces: the three immersion points (`_torus_point`, `_cylinder_point`, `_mobius_point`), the shared `_assemble` tail, the nine simple `*_board` wrappers, and the Archimedean `arch_torus_board` / `arch_cylinder_board` / `arch_mobius_board`. Also `double_torus_board`, the one board here that is *not* wrapped from a rectangle: two overlapping square-tiled donuts cut apart along the plane between them and sewn back together, a connected sum rather than a seam gluing. And `projective_board` / `projective_triangle_board` / `projective_hex_board`, the real projective plane: a cubed sphere, a geodesic sphere or its Goldberg dual with antipodes glued, drawn as the whole sphere through `Board3D.faces`. |
+| `surfaces.py` | Wrapping tilings onto surfaces: the three immersion points (`_torus_point`, `_cylinder_point`, `_mobius_point`), the shared `_assemble` tail, the nine simple `*_board` wrappers, and the Archimedean `arch_torus_board` / `arch_cylinder_board` / `arch_mobius_board`. Also `double_torus_board`, the one board here that is *not* wrapped from a rectangle: two overlapping square-tiled donuts cut apart along the plane between them and sewn back together, a connected sum rather than a seam gluing. And `projective_board` / `projective_triangle_board` / `projective_hex_board`, the real projective plane: a cubed sphere, a geodesic sphere or its Goldberg dual with antipodes glued, drawn as the whole sphere through `Board3D.faces` -- or `boy_board`, the same square board drawn once on Boy's surface. |
 | `volume.py` | The volume boards — a solid block of cells rather than a surface of them. One so far: `solid_cube_board`, the `n**3` cube of cubes, whose 26-neighbour adjacency comes off the lattice and whose drawing is the `n` slices laid out on a grid and stepped back in depth. |
 | `catalog.py` | The menu, **derived**: `SURFACE_SPECS` and `TILING_SPECS` (leaf data loaded from `data/catalog.json`) produce `MODE_LABELS`, `TILINGS`, `SURFACE_LABELS`, the geometry-first menu tables (`MENU_ROOT`/`MANIFOLD_*`/`FAMILY_*`/`SOLID_GROUP_*`/`SOLID_MODES`/`SHAPED_MODES`) and the picker helpers (`family_rows`, `picker_families`, `picker_modes`), `MODES_3D`, `mode_for`, `surface_of`, `view_hint`. |
 | `presets.py` | Difficulty presets and `build_board`. Flat regular, solid, Archimedean/Laves and aperiodic (penrose/kitedart/ammannbeenker/spectre/phyllotaxis/…) presets all load from `data/presets.json` (shared with the web port). The Archimedean rows are authored in the compact **`ARCH_PRESETS`** table (tiling → surface → difficulty → args) that `scripts/export_data.py` expands into `data/presets.json`. |
@@ -265,8 +265,9 @@ mode strings, `MODES_3D`, and chirality gating all derive from those
 registries. A fifth surface, the **double torus**, is not a wrap of a
 rectangle at all -- see the next section -- a sixth, the **trefoil knot**,
 is not a new surface at all but the torus drawn a second way (see "The trefoil
-knot" below), and a seventh, the **projective plane**, is not drawn as itself
-but as the sphere that covers it twice (see "The real projective plane").
+knot" below), and a seventh, the **projective plane**, is drawn two ways: as
+the sphere that covers it twice (see "The real projective plane"), and as
+itself on **Boy's surface** (see "Boy's surface").
 
 ## The double torus
 
@@ -415,8 +416,9 @@ and both rows are listed with that arithmetic in `tests/test_presets.py`.
 its antipode: closed, chi = 1, and non-orientable -- with the Klein bottle, the
 only closed one-sided surface in the zoo. It has no embedding in 3-space and its
 immersions (Boy's surface, the cross-cap) pass through themselves far worse
-than the bottle's neck, so it is not immersed at all. It is drawn as the
-**sphere that double-covers it**, every cell twice:
+than the bottle's neck, so these three are not immersed at all (`boy` is: see
+"Boy's surface" below). They are drawn as the **sphere that double-covers
+it**, every cell twice:
 
 * **`Board3D.faces`** maps each drawn face to the cell it shows. `polygons` is
   keyed by face (the whole sphere, wound outward and back-face culled like any
@@ -459,6 +461,63 @@ than the bottle's neck, so it is not immersed at all. It is drawn as the
   carries down to the pairs (`projective` in `surfaces.ts`); the central
   inversion itself becomes the identity, and a mirror and the half turn about
   its normal become one motion, which `keepSymmetries` drops.
+
+## Boy's surface
+
+`boy` is `projective`'s square board **cell for cell** -- the same cubed
+sphere with antipodes glued, the same vertex classes, the same ids and
+adjacency (`TestBoySurface` checks it on a sweep of sizes) -- drawn once, on an
+immersion of the projective plane. It is the trefoil's trick applied to the
+projective plane: no new topology, a new drawing.
+
+* **The immersion is Bryant and Kusner's** (`_boy_point` / `boyPoint`), the
+  one that bends least (it minimises the Willmore energy). It is a map from
+  the sphere, read through stereographic projection, that sends a point and
+  its antipode to the same place -- so a vertex class is placed by either of
+  its keys, and nothing about the quotient has to be redone. It passes through
+  itself along one curve, three loops meeting at a triple point, and has no
+  pinch or crease: the test measures it conformal everywhere, the two tangent
+  stretches equal and nonzero. One-sided, so it is drawn two-sided, as the
+  Klein bottle is.
+* **The cube's diagonal goes on the axis** (`_diagonal_up`). The immersion has
+  a three-fold axis (z), and the cube has one along (1, 1, 1); lined up, the
+  cube's turn is the surface's own, which a test checks vertex for vertex. Of
+  the orientations measured it also gives the most even cells.
+* **The cells keep their shape, not their size.** Conformal means a square
+  stays a square -- the distortion bars pass with room (worst p90 shape 0.21,
+  at easy) -- but the magnification runs round the axis, lobes against gaps:
+  at medium the largest cell is 30 times the smallest (p90/p10 7.7), against
+  the Klein bottle's 13 (4.7). What was tried and dropped: spinning the cube
+  about the axis (at most a fifth better), inverting the surface in a sphere
+  on its axis (conformal too, and worse), a radial warp of the sphere (the
+  spread is round the axis, not along it), and flowing the sphere's points
+  towards the magnified regions (cells lose their right angles long before
+  their sizes even out).
+* **Centred by a measured constant.** `BOY_CENTRE` is the point of the axis
+  nearest to the surface's farthest point (the raw surface runs from its pole
+  at z = -2 to z = 0.44), and the tests re-measure it. The view tilt (-1.6)
+  stands the axis nearly upright, where the funnel spirals in beside the
+  lobes; down the axis the three lobes hide everything else.
+* **Symmetries are the projective plane's.** The board is the same graph, so
+  it offers the same motions: the sphere's point group carried down to the
+  pairs. On this drawing only the three-fold turn is a motion you can see; the
+  rest move the contents across the surface, which is how a cell tucked under
+  a lobe is brought out. Both pairs stay on the board's row with the extra
+  controls switched off, as the Klein bottle's ring pair does
+  (`keepWhen` in `data/ui/screens.json`). A step of one cell is not among
+  them, and cannot be on any board of the projective plane: every
+  self-map of it has a fixed point (Lefschetz), so every symmetry is a turn
+  about some point, and cells across the surface from it move far. Measured
+  on the board itself, its 24 automorphisms move some cell at least 4 steps
+  at n = 5, where the board is 5 across.
+* **Marked, and never dealt at random.** The `SurfaceSpec` declares a
+  `caution` -- it passes through itself, so some cells hide behind others --
+  which the web app puts on the menu row, the caption and the info window, and
+  which keeps the board out of both random pools at every difficulty.
+* **Sizes and mines are measured, not copied.** The size search lands on
+  projective's windows (n = 5, 9, 13). The calibration plays the same graph
+  under a seed of its own name, so the mine counts came out within its noise
+  rather than equal: 12 / 57 / 136 against projective's 15 / 57 / 138.
 
 ## The aperiodic boards
 

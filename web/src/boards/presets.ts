@@ -94,6 +94,7 @@ import {
   trefoilBoard,
   trefoilHexBoard,
   trefoilTriangleBoard,
+  boyBoard,
   projectiveBoard,
   projectiveHexBoard,
   projectiveTriangleBoard,
@@ -170,6 +171,8 @@ const BUILDERS: Record<string, Builder> = {
   projective_board: projectiveBoard,
   projective_triangle_board: projectiveTriangleBoard,
   projective_hex_board: projectiveHexBoard,
+  // the same cubed-sphere board drawn once, on Boy's surface
+  boy_board: boyBoard,
   // the genus-2 board: two square-tiled donuts merged at their outer rims
   double_torus_board: doubleTorusBoard,
   double_torus_triangle_board: doubleTorusTriangleBoard,

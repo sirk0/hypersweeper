@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  BOY_CENTRE,
+  boyBoard,
+  boyPoint,
   cylinderBoard,
   cylinderHexBoard,
   cylinderTriangleBoard,
@@ -690,5 +693,68 @@ describe("the projective plane", () => {
       expect(board.symmetries.length, mode).toBeGreaterThan(0);
       for (const id of ids(board)) assertSymmetry(board, id);
     }
+  });
+});
+
+// Boy's surface: the projective plane's square board drawn once, on the
+// Bryant–Kusner immersion (see `boyBoard` in boards/surfaces.ts). Mirrors
+// TestBoySurface in tests/test_boards.py.
+describe("Boy's surface", () => {
+  const sphereSamples = function* (count: number): Generator<Vec3> {
+    const golden = Math.PI * (3 - Math.sqrt(5));
+    for (let i = 0; i < count; i++) {
+      const z = 1 - (2 * (i + 0.5)) / count;
+      const r = Math.sqrt(1 - z * z);
+      yield [r * Math.cos(golden * i), r * Math.sin(golden * i), z];
+    }
+  };
+
+  it("is the projective plane cell for cell, each cell drawn once", () => {
+    for (const n of [2, 3, 5, 9]) {
+      const board = boyBoard(n, 5);
+      const projective = projectiveBoard(n, 5);
+      expect(board.adjacency).toEqual(projective.adjacency);
+      expect(board.faces).toBeUndefined();
+      expect(board.twoSided).toBe(true);
+      expect(new Set(board.polygons.keys())).toEqual(new Set(board.adjacency.keys()));
+    }
+  });
+
+  it("draws no two vertices at one point, so it reads as χ = 1", () => {
+    // The surface passes through itself, and the topology helpers key on
+    // rounded coordinates: two vertex classes on one point would lower χ.
+    for (const n of [2, 3, 5, 9, 13]) {
+      expect(eulerCharacteristic(boyBoard(n, 5))).toBe(1);
+    }
+  });
+
+  it("lands a point and its antipode together", () => {
+    for (const p of sphereSamples(500)) {
+      const a = boyPoint(p);
+      const b = boyPoint([-p[0], -p[1], -p[2]]);
+      for (let i = 0; i < 3; i++) expect(a[i]).toBeCloseTo(b[i]!, 12);
+    }
+  });
+
+  it("sends the poles to the tip of the axis, z = -2 before recentring", () => {
+    // w = 0: g = (0, 0, -1/2), so the point is g / |g|^2 = (0, 0, -2)
+    const pole = boyPoint([0, 0, 1]);
+    const expected = [0, 0, -2 - BOY_CENTRE[2]];
+    for (let i = 0; i < 3; i++) expect(pole[i]).toBeCloseTo(expected[i]!, 12);
+  });
+
+  it("turns a third about z with the cube's turn about its diagonal", () => {
+    const board = boyBoard(5, 5);
+    const hull = [...board.polygons.values()].flat();
+    const key = (p: Vec3) => p.map((c) => c.toFixed(6)).join(",");
+    const points = new Set(hull.map(key));
+    const [c, s] = [-0.5, Math.sqrt(3) / 2];
+    for (const [x, y, z] of hull) expect(points.has(key([c * x - s * y, s * x + c * y, z]))).toBe(true);
+  });
+
+  it("offers the projective plane's motions, each an automorphism", () => {
+    const board = buildBoard("boy", "easy") as Board3D;
+    expect(ids(board)).toEqual(ids(buildBoard("projective", "easy") as Board3D));
+    for (const id of ids(board)) assertSymmetry(board, id);
   });
 });

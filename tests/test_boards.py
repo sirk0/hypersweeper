@@ -158,7 +158,7 @@ from minesweeper.boards.catalan import (
 from minesweeper.boards.catalan import (
     sphere_board as catalan_sphere_board,
 )
-from minesweeper.boards.core import _cross
+from minesweeper.boards.core import _cross, _normalize
 from minesweeper.boards.core import newell_normal as _newell_normal
 from minesweeper.boards.hyperbolic import (
     _central_polygon,
@@ -170,7 +170,17 @@ from minesweeper.boards.hyperbolic import (
 )
 from minesweeper.boards.presets import _WINDOWS, ARCH_PRESETS, window_for
 from minesweeper.boards.solids import _goldberg_board, icosahedron_board
-from minesweeper.boards.surfaces import TREFOIL_REACH, _trefoil_core
+from minesweeper.boards.surfaces import (
+    BOY_CENTRE,
+    TREFOIL_REACH,
+    _antipodal_quotient,
+    _boy_point,
+    _cubed_sphere,
+    _diagonal_up,
+    _negate,
+    _trefoil_core,
+    boy_board,
+)
 
 # Template tilings split by symmetry type. Archimedean (uniform) tilings are
 # vertex-transitive (every vertex has the same configuration) and edge to
@@ -5473,3 +5483,116 @@ class TestProjectivePlane:
             twin = [tuple(-c for c in p) for p in polygon]
             outward = [sum(c) for c in zip(*twin)]
             assert sum(n * o for n, o in zip(newell_normal(twin), outward)) < 0
+
+
+class TestBoySurface:
+    """Boy's surface: the projective plane's square board drawn once, on an
+    immersion, rather than twice on the sphere that covers it. The board is
+    the projective plane's; what is tested here is the drawing."""
+
+    FREQUENCIES = range(2, 15)
+
+    @staticmethod
+    def _sphere_samples(count: int):
+        golden = math.pi * (3 - math.sqrt(5))
+        for i in range(count):
+            z = 1 - 2 * (i + 0.5) / count
+            r = math.sqrt(1 - z * z)
+            yield (r * math.cos(golden * i), r * math.sin(golden * i), z)
+
+    @pytest.mark.parametrize("frequency", FREQUENCIES)
+    def test_it_is_the_projective_plane_cell_for_cell(self, frequency):
+        board = boy_board(frequency, 5)
+        projective = projective_board(frequency, 5)
+        assert board.adjacency == projective.adjacency
+        assert board.faces is None
+        assert board.two_sided
+        assert set(board.polygons) == set(board.adjacency)
+
+    @pytest.mark.parametrize("frequency", FREQUENCIES)
+    def test_no_two_vertices_are_drawn_at_one_point(self, frequency):
+        # The surface passes through itself along a curve, and the topology
+        # helpers key on rounded coordinates: two vertex classes landing on
+        # the same point there would read as one and lower chi. Read off the
+        # drawing, the board must come out the projective plane.
+        board = boy_board(frequency, 5)
+        _, cells = _boy_cells(frequency)
+        drawn = {}
+        for cell, keys in cells.items():
+            for key, point in zip(keys, board.polygons[cell]):
+                drawn.setdefault(tuple(round(c, 6) for c in point), set()).add(key)
+        assert all(len(keys) == 1 for keys in drawn.values())
+        assert _euler_characteristic(board) == 1
+        assert _boundary_components(board) == 0
+
+    def test_a_point_and_its_antipode_land_together(self):
+        for p in self._sphere_samples(2000):
+            q = _boy_point(tuple(-c for c in p))
+            assert _boy_point(p) == pytest.approx(q, abs=1e-12)
+
+    def test_it_is_an_immersion(self):
+        # Bryant--Kusner is conformal: at every point the two tangent
+        # directions are stretched alike and stay perpendicular, and neither
+        # stretch is zero, so there is no pinch or crease anywhere -- the
+        # self-intersection is the only thing it does to the plane.
+        h = 1e-6
+        for p in self._sphere_samples(4000):
+            a = _normalize(_cross(p, (1.0, 0.0, 0.0) if abs(p[0]) < 0.9
+                                  else (0.0, 1.0, 0.0)))
+            b = _cross(p, a)
+
+            def d(t):
+                ahead = _boy_point(_normalize(tuple(x + h * y for x, y in zip(p, t))))
+                behind = _boy_point(_normalize(tuple(x - h * y for x, y in zip(p, t))))
+                return [(u - v) / (2 * h) for u, v in zip(ahead, behind)]
+
+            da, db = d(a), d(b)
+            la, lb = math.hypot(*da), math.hypot(*db)
+            assert min(la, lb) > 0.05
+            assert la == pytest.approx(lb, rel=1e-4)
+            assert sum(x * y for x, y in zip(da, db)) == pytest.approx(
+                0, abs=1e-4 * la * lb)
+
+    @pytest.mark.parametrize("frequency", [3, 5, 9])
+    def test_the_cubes_three_fold_turn_is_the_surfaces(self, frequency):
+        # The cube's turn about (1, 1, 1) permutes the cells, and
+        # `_diagonal_up` makes it the surface's own turn about z: every
+        # vertex class is drawn where its turned class is, turned a third.
+        board = boy_board(frequency, 5)
+        _, cells = _boy_cells(frequency)
+        at = {}
+        for cell, keys in cells.items():
+            for key, point in zip(keys, board.polygons[cell]):
+                at[key] = point
+        cos, sin = -0.5, math.sqrt(3) / 2
+        for key, (x, y, z) in at.items():
+            turned = (key[2], key[0], key[1])
+            turned = min(turned, tuple(-c for c in turned))
+            tx, ty, tz = at[turned]
+            options = [(cos * x - s * y, s * x + cos * y, z) for s in (sin, -sin)]
+            assert any(
+                max(abs(u - v) for u, v in zip(o, (tx, ty, tz))) < 1e-9
+                for o in options
+            )
+
+    def test_boy_centre_is_measured(self):
+        """`BOY_CENTRE` is the minimax centre on the axis; find it again."""
+        points = [_boy_point(_diagonal_up(p)) for p in self._sphere_samples(20000)]
+        points = [tuple(c + o for c, o in zip(p, BOY_CENTRE)) for p in points]
+        assert all(abs(p[0]) < 2 and abs(p[1]) < 2 for p in points)
+
+        def farthest(c):
+            return max(math.sqrt(x * x + y * y + (z - c) ** 2) for x, y, z in points)
+
+        lo, hi = -1.2, -0.3
+        for _ in range(40):
+            a, b = lo + (hi - lo) / 3, hi - (hi - lo) / 3
+            lo, hi = (lo, b) if farthest(a) < farthest(b) else (a, hi)
+        assert BOY_CENTRE[2] == pytest.approx(lo, abs=2e-3)
+
+
+def _boy_cells(frequency):
+    """The cubed sphere's cells as `boy_board` names them: the lesser twin's
+    id, its corners as vertex classes in drawing order."""
+    sphere_cells, _ = _cubed_sphere(frequency)
+    return _antipodal_quotient(sphere_cells, _negate)

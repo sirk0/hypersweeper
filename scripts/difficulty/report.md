@@ -12,7 +12,7 @@ Every board's mine count, chosen so its win probability under the reference solv
 
 ## Coverage
 
-- 855 rows, 810 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
+- 858 rows, 813 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
 - 45 could not be brought on target:
   - `cube3d`/hard: 33.3% vs 50.9% — the search could not resolve it -- its thinnest measurement finished 0 game(s), so the rate here is noise rather than a crossing the search walked to. Re-measure at a bigger `--budget`
   - `cyldodecarhombitrihex`/medium: 92.9% vs 87.1% — no integer mine count lands within tolerance; this is the closest
@@ -82,6 +82,7 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `ammannbeenker` | 7.3 | 81c 9m (11%) 97% | 280c 28m (10%) 87% | 480c 82m (17%) 54% |
 | `basketweave` | 6.3 | 72c 10m (14%) 98% | 288c 44m (15%) 86% | 512c 99m (19%) 48% |
 | `basketweave3` | 6.1 | 72c 6m (8%) 96% | 240c 21m (9%) 90% | 432c 64m (15%) 55% |
+| `boy` | 7.8 | 75c 12m (16%) 98% | 243c 57m (23%) 90% | 507c 136m (27%) 53% |
 | `brickrings` | 5.3 | 72c 12m (17%) 97% | 242c 47m (19%) 90% | 512c 114m (22%) 53% |
 | `c180` | 6.0 | 92c 21m (23%) 95% | 252c 56m (22%) 90% | 492c 125m (25%) 51% |
 | `cairo` | 6.4 | 80c 8m (10%) 96% | 256c 24m (9%) 90% | 484c 81m (17%) 51% |
