@@ -1660,6 +1660,174 @@
         ]
       }
     },
+    "hyperbolic37": {
+      "builder": "hyperbolic_board",
+      "args": {
+        "easy": [
+          3,
+          7,
+          8,
+          7,
+          300.0
+        ],
+        "medium": [
+          3,
+          7,
+          20,
+          23,
+          300.0
+        ],
+        "hard": [
+          3,
+          7,
+          36,
+          75,
+          300.0
+        ]
+      }
+    },
+    "hyperbolic38": {
+      "builder": "hyperbolic_board",
+      "args": {
+        "easy": [
+          3,
+          8,
+          6,
+          9,
+          300.0
+        ],
+        "medium": [
+          3,
+          8,
+          17,
+          23,
+          300.0
+        ],
+        "hard": [
+          3,
+          8,
+          33,
+          57,
+          299.88
+        ]
+      }
+    },
+    "hyperbolic667": {
+      "builder": "hyperbolic_uniform_board",
+      "args": {
+        "easy": [
+          7,
+          3,
+          "zip",
+          9,
+          9,
+          303.283
+        ],
+        "medium": [
+          7,
+          3,
+          "zip",
+          22,
+          29,
+          300.0
+        ],
+        "hard": [
+          7,
+          3,
+          "zip",
+          36,
+          74,
+          300.0
+        ]
+      }
+    },
+    "hyperbolic3737": {
+      "builder": "hyperbolic_uniform_board",
+      "args": {
+        "easy": [
+          7,
+          3,
+          "ambo",
+          9,
+          6,
+          300.0
+        ],
+        "medium": [
+          7,
+          3,
+          "ambo",
+          22,
+          20,
+          300.0
+        ],
+        "hard": [
+          7,
+          3,
+          "ambo",
+          37,
+          67,
+          300.0
+        ]
+      }
+    },
+    "hyperbolic3474": {
+      "builder": "hyperbolic_uniform_board",
+      "args": {
+        "easy": [
+          7,
+          3,
+          "expand",
+          10,
+          5,
+          300.0
+        ],
+        "medium": [
+          7,
+          3,
+          "expand",
+          26,
+          21,
+          293.288
+        ],
+        "hard": [
+          7,
+          3,
+          "expand",
+          40,
+          58,
+          300.0
+        ]
+      }
+    },
+    "hyperbolic4614": {
+      "builder": "hyperbolic_uniform_board",
+      "args": {
+        "easy": [
+          7,
+          3,
+          "bevel",
+          10,
+          7,
+          300.0
+        ],
+        "medium": [
+          7,
+          3,
+          "bevel",
+          26,
+          22,
+          280.857
+        ],
+        "hard": [
+          7,
+          3,
+          "bevel",
+          40,
+          47,
+          300.0
+        ]
+      }
+    },
     "cubocta": {
       "builder": "cuboctahedron_board",
       "args": {

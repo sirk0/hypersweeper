@@ -167,6 +167,9 @@ from minesweeper.boards.hyperbolic import (
     hyperbolic_board,
     hyperbolic_faces,
     hyperbolic_positions,
+    hyperbolic_uniform_board,
+    wythoff_faces,
+    wythoff_mode,
 )
 from minesweeper.boards.presets import _WINDOWS, ARCH_PRESETS, window_for
 from minesweeper.boards.solids import _goldberg_board, icosahedron_board
@@ -2359,7 +2362,13 @@ class TestGosperIsland:
 
 
 
-_HYPERBOLIC = [(8, 3), (7, 3), (6, 4), (5, 4), (5, 5), (4, 5), (4, 6)]
+_HYPERBOLIC = [(8, 3), (7, 3), (6, 4), (5, 4), (5, 5), (4, 5), (4, 6), (3, 7), (3, 8)]
+
+
+def _turns(p: int, q: int) -> int:
+    """How many rotations a board keeps: the central p-gon's p, or for a
+    triangle tiling, centred on a vertex, that vertex's q."""
+    return q if p == 3 else p
 
 
 def _hyp_dist(a: complex, b: complex) -> float:
@@ -2371,12 +2380,22 @@ def _float_rings(p: int, q: int, rings: int) -> list[int]:
     """Face counts per ring, derived with nothing the builder uses: reflect the
     central p-gon across its edges in the disc, over and over, merge faces by
     rounded centre (fine here -- this is the *check*, not a board), and count
-    vertex-adjacency layers outward from the centre."""
+    vertex-adjacency layers outward from the centre. A triangle tiling starts
+    from the q triangles round a vertex at the centre instead -- the star its
+    ring 0 is -- each one the central triangle turned about a corner."""
     big_r = math.acosh(1 / (math.tan(math.pi / p) * math.tan(math.pi / q)))
     first = [cmath.rect(math.tanh(big_r / 2), 2 * math.pi * k / p) for k in range(p)]
+    if p == 3:
+        to_corner = lambda z: (z - first[0]) / (1 - first[0].conjugate() * z)  # noqa: E731
+        star = [[to_corner(z) * cmath.exp(2j * math.pi * k / q) for z in first]
+                for k in range(q)]
+    else:
+        star = [first]
 
     def reflect(z, a, b):
         # inversion in the circle through a and b orthogonal to the rim
+        if abs(a) < abs(b):  # the same mirror; keep a corner at the centre as b
+            a, b = b, a
         a2 = 1 / a.conjugate()
         w = (a2 - a) / (b - a)
         if abs(w.imag) < 1e-12:  # a diameter: a straight mirror
@@ -2388,8 +2407,9 @@ def _float_rings(p: int, q: int, rings: int) -> list[int]:
     def key(z):
         return (round(z.real, 7), round(z.imag, 7))
 
-    faces, seen, frontier = [first], {key(0j)}, [first]
-    limit = rings * 2 * big_r + 1e-6
+    faces, frontier = list(star), list(star)
+    seen = {key(sum(face) / p) for face in star}
+    limit = (rings + (p == 3)) * 2 * big_r + 1e-6
     while frontier:
         grown = []
         for face in frontier:
@@ -2406,7 +2426,8 @@ def _float_rings(p: int, q: int, rings: int) -> list[int]:
     for index, face in enumerate(faces):
         for z in face:
             at[key(z)].append(index)
-    layer, current, counts = {0: 0}, [0], [1]
+    current = list(range(len(star)))
+    layer, counts = dict.fromkeys(current, 0), [len(star)]
     for ring in range(1, rings + 1):
         nxt = [j for i in current for z in faces[i] for j in at[key(z)] if j not in layer]
         for j in nxt:
@@ -2513,7 +2534,7 @@ class TestHyperbolic:
                           for z in (transform(complex(*xy) - c) for xy in poly))
 
         same = points(lambda z: z)
-        turn = cmath.exp(2j * math.pi / p)
+        turn = cmath.exp(2j * math.pi / _turns(p, q))
         assert points(lambda z: z * turn) == same
         assert points(lambda z: -z.conjugate()) == same  # the vertical mirror
 
@@ -2532,6 +2553,46 @@ class TestHyperbolic:
         ys = [y for _, y in board.polygons[0]]
         assert sum(xs) / len(xs) == pytest.approx(board.width / 2)
         assert sum(ys) / len(ys) == pytest.approx(board.height / 2)
+
+    @pytest.mark.parametrize("q", [7, 8])
+    def test_a_triangle_tiling_is_the_dual_of_its_q3(self, q):
+        # {3,q}'s vertex ids are {q,3}'s face indices, and each one is placed
+        # exactly where that face is centred; its triangles are {q,3}'s
+        # finished vertices, each with that vertex's three faces as corners
+        from minesweeper.boards import hyperbolic as hyp
+        faces, _ = hyperbolic_faces(3, q, 3)
+        pos = hyperbolic_positions(3, q, faces)
+        primal, _ = hyp._ring_walk(q, 3, 4)
+        primal_pos = hyperbolic_positions(q, 3, primal)
+        for f, z in pos.items():
+            assert abs(z - face_centre(q, 3, primal[f], primal_pos)) < 1e-12
+        round_vertex = Counter(v for face in primal for v in face)
+        finished = sorted(v for v, n in round_vertex.items() if n == 3)
+        for face, v in zip(faces, finished):
+            assert {f for f in face} == {f for f, pf in enumerate(primal) if v in pf}
+            # counterclockwise, the way every face is
+            a, b, c = (pos[f] for f in face)
+            assert ((b - a).conjugate() * (c - a)).imag > 0
+
+    @pytest.mark.parametrize("q", [7, 8])
+    def test_a_triangle_board_is_centred_on_a_vertex(self, q):
+        # the q triangles round vertex 0 all have a corner at the board's centre
+        board = hyperbolic_board(3, q, 9, 1)
+        for cell in range(q):
+            assert any(x == pytest.approx(board.width / 2) and y == pytest.approx(board.height / 2)
+                       for x, y in board.polygons[cell])
+
+    @pytest.mark.parametrize("p,q", [(7, 3), (3, 7), (3, 8)])
+    def test_the_rings_built_hold_every_face_inside_the_cut(self, p, q):
+        # `_rings_for` stops growing once the newest ring is well past the cut;
+        # a far bigger build must find nothing nearer that it missed
+        from minesweeper.boards import hyperbolic as hyp
+        for shells in (3, 12, 30):
+            faces, _, groups = hyp._rings_for(p, q, shells)
+            rings = next(r for r in range(1, 12) if len(hyperbolic_faces(p, q, r)[0]) == len(faces))
+            bigger, _ = hyperbolic_faces(p, q, rings + 1)
+            reference = hyp._shells(p, q, bigger, hyperbolic_positions(p, q, bigger))
+            assert groups[:shells] == reference[:shells]
 
     @pytest.mark.parametrize("p,q", _HYPERBOLIC)
     def test_no_trim_leaves_a_twin(self, p, q):
@@ -2579,6 +2640,156 @@ class TestHyperbolic:
         for p, q in [(4, 4), (6, 3), (3, 6), (5, 3)]:
             with pytest.raises(ValueError):
                 hyperbolic_board(p, q, 3, 1)
+
+
+# Wythoff's operations on {7,3}: the vertex configuration each makes, and the
+# neighbour count of an inner tile of each side count (the tiling is
+# trivalent for zip and bevel, so a tile's neighbours are its sides; ambo and
+# expand meet four at a corner, so every corner adds the tile across it).
+_WYTHOFF = {
+    "ambo": ("3.7.3.7", {3: 6, 7: 14}),
+    "zip": ("6.6.7", {6: 6, 7: 7}),
+    "expand": ("3.4.7.4", {3: 6, 4: 8, 7: 14}),
+    "bevel": ("4.6.14", {4: 4, 6: 6, 14: 14}),
+}
+
+
+class TestHyperbolicUniform:
+    """The uniform tilings Wythoff's construction makes of {7,3}
+    (boards/hyperbolic.py): 6.6.7, the hyperbolic soccer ball, and its
+    siblings."""
+
+    @pytest.mark.parametrize("op", sorted(_WYTHOFF))
+    def test_the_mode_names_the_vertex_configuration(self, op):
+        assert wythoff_mode(7, 3, op) == "hyperbolic" + _WYTHOFF[op][0].replace(".", "")
+
+    @pytest.mark.parametrize("op", sorted(_WYTHOFF))
+    def test_every_inner_vertex_has_the_configuration(self, op):
+        faces, _, _ = wythoff_faces(7, 3, op, 3)
+        config = [int(n) for n in _WYTHOFF[op][0].split(".")]
+        at = defaultdict(list)
+        for face in faces:
+            for v in face:
+                at[v].append(len(face))
+        full = [sorted(sides) for sides in at.values() if len(sides) == len(config)]
+        assert full and all(sides == sorted(config) for sides in full)
+        assert max(len(sides) for sides in at.values()) == len(config)
+        assert {len(face) for face in faces} == set(config)
+
+    @pytest.mark.parametrize("op", sorted(_WYTHOFF))
+    def test_faces_are_regular_with_one_edge_length(self, op):
+        faces, pos, centres = wythoff_faces(7, 3, op, 3)
+        side = _hyp_dist(pos[faces[0][0]], pos[faces[0][1]])
+        for face, centre in zip(faces, centres):
+            corners = [pos[v] for v in face]
+            for a, b in zip(corners, corners[1:] + corners[:1]):
+                assert _hyp_dist(a, b) == pytest.approx(side, rel=1e-9)
+            radii = [_hyp_dist(centre, z) for z in corners]
+            assert radii == pytest.approx([radii[0]] * len(face), rel=1e-9)
+            # counterclockwise, as every flat builder's faces are
+            area = sum((a.conjugate() * b).imag for a, b in zip(corners, corners[1:] + corners[:1]))
+            assert area > 0
+
+    @pytest.mark.parametrize("op", sorted(_WYTHOFF))
+    def test_the_faces_close_up_round_a_vertex(self, op):
+        # the corner angles round an inner vertex, measured on the arcs as in
+        # TestHyperbolic, sum to 2 pi: the tiling really is flat-free
+        board = hyperbolic_uniform_board(7, 3, op, 12, 1, scale=1, arc=64)
+        angle: dict = defaultdict(float)
+        for cell, polygon in board.polygons.items():
+            mask = board.corner_mask[cell]
+            n = len(polygon)
+            for i in range(n):
+                if not mask[i]:
+                    continue
+                a, b, c = polygon[i - 1], polygon[i], polygon[(i + 1) % n]
+                u = complex(a[0] - b[0], a[1] - b[1])
+                w = complex(c[0] - b[0], c[1] - b[1])
+                angle[(round(b[0], 6), round(b[1], 6))] += abs(cmath.phase(w / u))
+        centre = complex(board.width / 2, board.height / 2)
+        inner = [total for (x, y), total in angle.items() if abs(complex(x, y) - centre) < 0.3]
+        assert inner and all(total == pytest.approx(2 * math.pi, abs=0.03) for total in inner)
+
+    @pytest.mark.parametrize("op", sorted(_WYTHOFF))
+    def test_an_inner_tile_sees_the_neighbours_its_shape_gives(self, op):
+        board = hyperbolic_uniform_board(7, 3, op, 30, 1)
+        sides = {cell: sum(mask) for cell, mask in board.corner_mask.items()}
+        expected = _WYTHOFF[op][1]
+        for n, degree in expected.items():
+            assert max(len(board.adjacency[c]) for c in sides if sides[c] == n) == degree
+        # the central face is the heptagon (or the 14-gon) and is interior
+        assert sides[0] == max(expected)
+        assert len(board.adjacency[0]) == expected[sides[0]]
+
+    @pytest.mark.parametrize("op", sorted(_WYTHOFF))
+    @pytest.mark.parametrize("shells", [4, 11, 23, 37])
+    def test_a_trim_keeps_the_dihedral_symmetry(self, op, shells):
+        board = hyperbolic_uniform_board(7, 3, op, shells, 1, scale=1)
+        c = complex(board.width / 2, board.height / 2)
+
+        def points(transform):
+            return sorted((round(z.real, 6), round(z.imag, 6))
+                          for poly in board.polygons.values()
+                          for z in (transform(complex(*xy) - c) for xy in poly))
+
+        same = points(lambda z: z)
+        assert points(lambda z: z * cmath.exp(2j * math.pi / 7)) == same
+        assert points(lambda z: -z.conjugate()) == same
+
+    @pytest.mark.parametrize("op", sorted(_WYTHOFF))
+    def test_every_trim_is_a_twin_free_disc(self, op):
+        from scripts.difficulty.metrics import indistinguishable_cells
+        for shells in range(2, 45):
+            board = hyperbolic_uniform_board(7, 3, op, shells, 1)
+            assert _euler_characteristic(board) == 1, shells
+            assert _boundary_components(board) == 1, shells
+            assert _connected(board), shells
+            assert indistinguishable_cells(board.adjacency) == 0, shells
+
+    @pytest.mark.parametrize("op", sorted(_WYTHOFF))
+    def test_no_trim_leaves_a_near_twin(self, op):
+        # the {p,q} boards' near-twin drop, which the uniform boards share
+        for shells in range(3, 45):
+            board = hyperbolic_uniform_board(7, 3, op, shells, 1)
+            hood = {c: frozenset([c, *ns]) for c, ns in board.adjacency.items()}
+            assert not [
+                (a, b) for a, ns in board.adjacency.items() for b in ns
+                if len(hood[b]) == len(hood[a]) + 1 and hood[a] < hood[b]
+            ], shells
+
+    def test_the_soccer_ball_has_no_twin_or_near_twin_to_drop(self):
+        # trivalent, like {7,3}: every 6.6.7 trim is kept whole
+        from minesweeper.boards import hyperbolic as hyp
+        faces, _, groups = hyp._wythoff_rings_for(7, 3, "zip", 40)
+        for shells in range(2, 40):
+            kept = sorted(f for group in groups[:shells] for f in group)
+            assert hyp._without_twins(faces, kept) == kept
+
+    @pytest.mark.parametrize("op", sorted(_WYTHOFF))
+    def test_distance_shells_are_far_apart(self, op):
+        _, _, centres = wythoff_faces(7, 3, op, 4)
+        dists = sorted(2 * math.atanh(abs(z)) for z in centres)
+        gaps = [b - a for a, b in zip(dists, dists[1:])]
+        assert all(g < 1e-10 or g > 1e-5 for g in gaps)
+
+    def test_the_soccer_ball_keeps_rim_cells_bigger_than_heptagons_do(self):
+        # the point of 6.6.7: a hexagon covers far less of the hyperbolic plane
+        # than a {7,3} heptagon, so at the same cell count the disc is smaller
+        # and its rim cells are drawn bigger
+        def smallest(board):
+            def area(poly):
+                return abs(sum(x0 * y1 - x1 * y0 for (x0, y0), (x1, y1)
+                               in zip(poly, poly[1:] + poly[:1]))) / 2
+            return min(area(p) for p in board.polygons.values()) / board.width ** 2
+
+        soccer = hyperbolic_uniform_board(7, 3, "zip", 36, 1)  # 484
+        heptagons = hyperbolic_board(7, 3, 26, 1)  # 477, the hard board
+        assert abs(len(soccer.adjacency) - len(heptagons.adjacency)) < 40
+        assert smallest(soccer) > 2 * smallest(heptagons)
+
+    def test_an_unknown_operation_is_refused(self):
+        with pytest.raises(ValueError):
+            hyperbolic_uniform_board(7, 3, "snub", 3, 1)
 
 
 @pytest.mark.parametrize("mode", sorted(SUBSTITUTIONS))

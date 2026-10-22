@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { buildBoard } from "../../src/boards/presets";
 import { boundaryComponents, eulerCharacteristic, type Board } from "../../src/boards/core";
-import { hyperbolicBoard, hyperbolicFaces } from "../../src/boards/hyperbolic";
+import {
+  hyperbolicBoard,
+  hyperbolicFaces,
+  hyperbolicUniformBoard,
+  wythoffMode,
+  type WythoffOp,
+} from "../../src/boards/hyperbolic";
 import { classifyShapes, corners } from "../../src/render/shapePalette";
 import { HYPERBOLIC_MODES } from "../../src/boards/catalog";
 
@@ -16,6 +22,8 @@ const TILINGS: [number, number][] = [
   [5, 5],
   [4, 5],
   [4, 6],
+  [3, 7],
+  [3, 8],
 ];
 
 describe("the hyperbolic boards", () => {
@@ -31,6 +39,9 @@ describe("the hyperbolic boards", () => {
     expect(counts(5, 5)).toEqual([1, 15, 105, 720, 4935]);
     expect(counts(4, 5)).toEqual([1, 12, 48, 180, 672]);
     expect(counts(4, 6)).toEqual([1, 16, 96, 560, 3264]);
+    // the triangle tilings are centred on a vertex: ring 0 is its q triangles
+    expect(counts(3, 7)).toEqual([7, 28, 77, 203, 532]);
+    expect(counts(3, 8)).toEqual([8, 40, 152, 568, 2120]);
   });
 
   it("give an inner cell p(q - 2) neighbours", () => {
@@ -77,13 +88,71 @@ describe("the hyperbolic boards", () => {
     expect(my).toBeCloseTo(board.height / 2, 9);
   });
 
+  it("centre a triangle tiling on a vertex, its q triangles round it", () => {
+    for (const q of [7, 8]) {
+      const board = hyperbolicBoard(3, q, 9, 1);
+      for (let cell = 0; cell < q; cell++) {
+        const hit = board.polygons
+          .get(String(cell))!
+          .some(([x, y]) => Math.abs(x - board.width / 2) < 1e-9 && Math.abs(y - board.height / 2) < 1e-9);
+        expect(hit, `{3,${q}} cell ${cell}`).toBe(true);
+      }
+    }
+  });
+
   it("refuse a tiling that is not hyperbolic", () => {
     for (const [p, q] of [
       [4, 4],
       [6, 3],
       [5, 3],
+      [3, 6],
     ] as const) {
       expect(() => hyperbolicBoard(p, q, 3, 1)).toThrow();
+    }
+  });
+});
+
+// Wythoff's operations on {7,3}: the vertex configuration each makes, and the
+// neighbours an inner tile of each side count has. Mirrors `_WYTHOFF` in
+// tests/test_boards.py.
+const UNIFORM: [WythoffOp, string, Record<number, number>][] = [
+  ["ambo", "3.7.3.7", { 3: 6, 7: 14 }],
+  ["zip", "6.6.7", { 6: 6, 7: 7 }],
+  ["expand", "3.4.7.4", { 3: 6, 4: 8, 7: 14 }],
+  ["bevel", "4.6.14", { 4: 4, 6: 6, 14: 14 }],
+];
+
+describe("the uniform hyperbolic boards", () => {
+  it("are named by their vertex configuration", () => {
+    for (const [op, config] of UNIFORM) {
+      expect(wythoffMode(7, 3, op)).toBe(`hyperbolic${config.replaceAll(".", "")}`);
+      expect(HYPERBOLIC_MODES).toContain(wythoffMode(7, 3, op));
+    }
+  });
+
+  it("give an inner tile the neighbours its shape has", () => {
+    for (const [op, config, degree] of UNIFORM) {
+      const board = hyperbolicUniformBoard(7, 3, op, 30, 1);
+      const most = new Map<number, number>();
+      for (const [cell, poly] of board.polygons) {
+        const n = corners(poly, board.cornerMask!.get(cell)).length;
+        most.set(n, Math.max(most.get(n) ?? 0, board.adjacency.get(cell)!.length));
+      }
+      expect(Object.fromEntries(most), config).toEqual(degree);
+    }
+  });
+
+  it("colour one class per side count, and keep the central heptagon in the middle", () => {
+    for (const [op, config, degree] of UNIFORM) {
+      const board = hyperbolicUniformBoard(7, 3, op, 20, 1);
+      const tones = classifyShapes(board.polygons, board.cornerMask, board.curved);
+      const sides = new Set([...tones.values()].map((t) => t.sides));
+      expect([...sides].sort((a, b) => a - b), config).toEqual(Object.keys(degree).map(Number));
+      expect(new Set([...tones.values()].map((t) => JSON.stringify(t))).size, config).toBe(sides.size);
+      const centre = corners(board.polygons.get("0")!, board.cornerMask!.get("0")!);
+      expect(centre.length).toBe(op === "bevel" ? 14 : 7);
+      const mx = centre.reduce((s, v) => s + v[0]!, 0) / centre.length;
+      expect(mx).toBeCloseTo(board.width / 2, 9);
     }
   });
 });

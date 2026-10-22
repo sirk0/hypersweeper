@@ -244,6 +244,9 @@ SPEC: dict[str, dict] = {
     # board is a disc, so the flat shape term is log(1) = 0 for every
     # candidate and the size penalty decides alone, as for the brick rings.
     "hyperbolic_board": dict(size=(2,), mine=3, shape=4, kind="scale"),
+    # the uniform tilings of {7,3} (hyperbolic_uniform_board(p, q, op, shells,
+    # mines, scale)): the same disc and the same knob, after the op
+    "hyperbolic_uniform_board": dict(size=(3,), mine=4, shape=5, kind="scale"),
     "archimedean_board": dict(size=(1, 2), mine=3, shape=4, kind="scale", lead=1),
     "arch_torus_board": dict(size=(1, 2), mine=3, shape=4, kind="tube", lead=1,
                              torus=True),

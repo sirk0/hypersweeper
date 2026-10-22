@@ -4,7 +4,8 @@
 // conformance oracle (data/conformance.json) holds the two to the same boards.
 //
 // In short: the tiling is built combinatorially, ring by ring, with integer
-// vertex ids (no coordinate is ever read back into an id); positions come
+// vertex ids (no coordinate is ever read back into an id) -- a triangle
+// tiling {3,q} as the dual of {q,3}, centred on a vertex; positions come
 // afterwards, each face placed by the disc isometry taking the central
 // polygon's matching edge onto an edge already placed; edges are drawn as
 // geodesic arcs through points whose ids derive from the edge's own ends; and
@@ -43,15 +44,55 @@ function checkHyperbolic(p: number, q: number): void {
   }
 }
 
-/** The {p,q} tiling's faces out to `rings` rings round the central one, as
- * counterclockwise lists of integer vertex ids, and each face's ring. Mirrors
- * `hyperbolic_faces`. */
+/** The {p,q} tiling's faces out to `rings` rings round the centre, as
+ * counterclockwise lists of integer vertex ids, and each face's ring: for
+ * `p >= 4` ring 0 is the central p-gon, for {3,q} the q triangles round the
+ * central vertex. Mirrors `hyperbolic_faces`. */
 export function hyperbolicFaces(
   p: number,
   q: number,
   rings: number,
 ): { faces: number[][]; ringOf: number[] } {
   checkHyperbolic(p, q);
+  return p === 3 ? dualFaces(q, rings) : ringWalk(p, q, rings);
+}
+
+/** {3,q} as the dual of {q,3}: one triangle for every {q,3} vertex that has
+ * all three of its faces, its corners those faces' indices, counterclockwise,
+ * lowest first; its ring the newest of those faces' rings, less one. Mirrors
+ * `_dual_faces`. */
+function dualFaces(q: number, rings: number): { faces: number[][]; ringOf: number[] } {
+  const primal = ringWalk(q, 3, rings + 1);
+  // each corner of a {q,3} face: the face, and its corners before and after
+  const star = new Map<number, [number, number, number][]>();
+  primal.faces.forEach((face, f) => {
+    face.forEach((v, i) => {
+      const entry: [number, number, number] = [f, face[(i + q - 1) % q]!, face[(i + 1) % q]!];
+      const round = star.get(v);
+      if (round) round.push(entry);
+      else star.set(v, [entry]);
+    });
+  });
+  const faces: number[][] = [];
+  const ringOf: number[] = [];
+  for (const v of [...star.keys()].sort((a, b) => a - b)) {
+    const round = star.get(v)!;
+    if (round.length < 3) continue;
+    // counterclockwise round v, face g is followed by the face whose corner
+    // after v is g's corner before v
+    const prev = new Map(round.map(([f, u]) => [f, u]));
+    const byNext = new Map(round.map(([f, , w]) => [w, f]));
+    const order = [Math.min(...prev.keys())];
+    while (order.length < 3) order.push(byNext.get(prev.get(order[order.length - 1]!)!)!);
+    faces.push(order);
+    ringOf.push(Math.max(...order.map((f) => primal.ringOf[f]!)) - 1);
+  }
+  return { faces, ringOf };
+}
+
+/** The ring walk: ring 0 the central p-gon, each ring every face touching the
+ * boundary so far. Needs `p >= 4`. Mirrors `_ring_walk`. */
+function ringWalk(p: number, q: number, rings: number): { faces: number[][]; ringOf: number[] } {
   const faces: number[][] = [Array.from({ length: p }, (_, i) => i)];
   const ringOf = [0];
   const count = new Map<number, number>();
@@ -132,12 +173,20 @@ function isometry(a: C, b: C, a2: C, b2: C): (z: C) => C {
   return (z) => fromOrigin(a2, mul(turn, toOrigin(a, z)));
 }
 
-/** Every vertex's point in the disc, placed face by face. Mirrors
+/** Every vertex's point in the disc, placed face by face; the first face by
+ * hand -- the central p-gon, or for {3,q} the star's first triangle, vertex 0
+ * at the centre and its next corner straight up the vertical axis. Mirrors
  * `hyperbolic_positions`. */
 export function hyperbolicPositions(p: number, q: number, faces: number[][]): Map<number, C> {
   const centre = centralPolygon(p, q);
+  let first = centre;
+  if (p === 3) {
+    const side = abs(toOrigin(centre[0]!, centre[1]!)); // tanh(edge / 2)
+    const t = Math.PI / 2 + (2 * Math.PI) / q;
+    first = [[0, 0], [0, side], [side * Math.cos(t), side * Math.sin(t)]];
+  }
   const pos = new Map<number, C>();
-  faces[0]!.forEach((v, i) => pos.set(v, centre[i]!));
+  faces[0]!.forEach((v, i) => pos.set(v, first[i]!));
   let pending = faces.map((_, f) => f).slice(1);
   while (pending.length) {
     const deferred: number[] = [];
@@ -306,9 +355,11 @@ function isDisc(cells: Map<CellId, string[]>): boolean {
 
 /**
  * The {p,q} tiling in the Poincaré disc, trimmed to the faces at the `shells`
- * smallest distances from the central p-gon (shell 1 is that p-gon alone),
- * less any rim cells that trim leaves with a twin or a near-twin. `scale` is pixels per unit of disc radius; `arc` is how many straight
- * segments draw each geodesic edge. Throws when the trim is not a disc. Mirrors
+ * smallest distances from the centre of the disc (shell 1 is the central p-gon
+ * alone, or for {3,q} the q triangles round the central vertex), less any rim
+ * cells that trim leaves with a twin or a near-twin. `scale` is pixels per
+ * unit of disc radius; `arc` is how many straight segments draw each geodesic
+ * edge. Throws when the trim is not a disc. Mirrors
  * `hyperbolic_board`.
  */
 export function hyperbolicBoard(
@@ -329,7 +380,23 @@ export function hyperbolicBoard(
       .flat()
       .sort((a, b) => a - b),
   );
+  return discBoard(`hyperbolic${p}${q}`, `{${p},${q}}`, shells, faces, kept, pos, mineCount, scale, arc);
+}
 
+/** The kept faces as a board in the disc, each edge drawn as its geodesic arc
+ * and the board centred on the disc's own centre. Shared by the regular {p,q}
+ * boards and the uniform ones below. Mirrors `_disc_board`. */
+function discBoard(
+  mode: string,
+  name: string,
+  shells: number,
+  faces: readonly (readonly number[])[],
+  kept: number[],
+  pos: Map<number, C>,
+  mineCount: number,
+  scale: number,
+  arc: number,
+): Board {
   // Arc points along each edge: ids built from the edge's end ids (the lower
   // first), positions computed once per edge from its lower end, so both faces
   // of an edge share the very same points.
@@ -361,10 +428,10 @@ export function hyperbolicBoard(
     cells.set(cid(f), ids);
     cornerMask.set(cid(f), corner);
   }
-  if (!isDisc(cells)) throw new Error(`{${p},${q}} trimmed to ${shells} shells is not a disc`);
+  if (!isDisc(cells)) throw new Error(`${name} trimmed to ${shells} shells is not a disc`);
 
-  // Centred on the disc's own centre, so the central p-gon sits in the middle
-  // of the board whatever the trim.
+  // Centred on the disc's own centre, so the central p-gon (or vertex) sits in
+  // the middle of the board whatever the trim.
   let extent = 0;
   for (const ids of cells.values()) {
     for (const k of ids) extent = Math.max(extent, abs(points.get(k)!));
@@ -398,7 +465,7 @@ export function hyperbolicBoard(
     for (const k of key.split("|")) rim = Math.min(rim, abs(points.get(k)!));
   }
   return flatBoard({
-    mode: `hyperbolic${p}${q}`,
+    mode,
     polygons,
     adjacency: sharedVertexAdjacency(cells),
     mineCount,
@@ -409,4 +476,287 @@ export function hyperbolicBoard(
     regularTiles: true,
     disc: { cx: extent * scale, cy: extent * scale, radius: scale, rim },
   });
+}
+
+// -- the uniform tilings: Wythoff's construction on {p,q} ---------------------
+//
+// Port of the section of the same name in hyperbolic.py, which says why: a
+// generating point in one flag triangle (face centre F, corner V, edge
+// midpoint E) reflected everywhere, its place deciding the tiling --
+// `ambo` 3.7.3.7, `zip` 6.6.7 (the hyperbolic soccer ball), `expand` 3.4.7.4,
+// `bevel` 4.6.14 on {7,3}. New vertices are named by the part of their flag
+// the op does not collapse, as tuples of the ring walk's integer ids, and
+// renumbered in the order the faces meet them.
+
+/** Must match `WYTHOFF_OPS`. */
+export const WYTHOFF_OPS = ["ambo", "zip", "expand", "bevel"] as const;
+export type WythoffOp = (typeof WYTHOFF_OPS)[number];
+
+/** The faces round a vertex, smallest first as the notation writes them.
+ * Mirrors `_vertex_config`. */
+function vertexConfig(p: number, q: number, op: WythoffOp): number[] {
+  const ring = {
+    ambo: [p, q, p, q],
+    zip: [2 * q, 2 * q, p],
+    expand: [p, 4, q, 4],
+    bevel: [4, 2 * q, 2 * p],
+  }[op];
+  const turns = ring.map((_, i) => [...ring.slice(i), ...ring.slice(0, i)]);
+  const all = [...turns, ...turns.map((t) => [...t].reverse())];
+  const less = (a: number[], b: number[]): boolean => {
+    for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i]! < b[i]!;
+    return false;
+  };
+  return all.reduce((best, t) => (less(t, best) ? t : best));
+}
+
+/** The mode name: `hyperbolic` and the vertex configuration's digits. Mirrors
+ * `wythoff_mode`. */
+export function wythoffMode(p: number, q: number, op: WythoffOp): string {
+  return `hyperbolic${vertexConfig(p, q, op).join("")}`;
+}
+
+type V3 = readonly [number, number, number];
+
+/** A disc point on the hyperboloid t^2 - x^2 - y^2 = 1. */
+function lift(z: C): V3 {
+  const r2 = z[0] * z[0] + z[1] * z[1];
+  const s = 1 - r2;
+  return [(1 + r2) / s, (2 * z[0]) / s, (2 * z[1]) / s];
+}
+
+/** A timelike vector back to the disc, normalised and on the upper sheet. */
+function drop(v: V3): C {
+  const [t, x, y] = v;
+  let norm = Math.sqrt(t * t - x * x - y * y);
+  if (t < 0) norm = -norm;
+  const d = 1 + t / norm;
+  return [x / norm / d, y / norm / d];
+}
+
+/** A vector Minkowski-orthogonal to both a and b. */
+function minkCross(a: V3, b: V3): V3 {
+  return [
+    -(a[1] * b[2] - a[2] * b[1]),
+    a[2] * b[0] - a[0] * b[2],
+    a[0] * b[1] - a[1] * b[0],
+  ];
+}
+
+const minus = (a: V3, b: V3): V3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+
+/** The geodesic through a and b as its unit normal, signed so `inside` is on
+ * its positive side. */
+function line(a: C, b: C, inside: C): V3 {
+  const n = minkCross(lift(a), lift(b));
+  let length = Math.sqrt(n[1] * n[1] + n[2] * n[2] - n[0] * n[0]);
+  const x = lift(inside);
+  if (-n[0] * x[0] + n[1] * x[1] + n[2] * x[2] < 0) length = -length;
+  return [n[0] / length, n[1] / length, n[2] / length];
+}
+
+/** The midpoint of the central p-gon's edge from corner 0 to corner 1. */
+function edgeMidpoint(p: number, q: number): C {
+  const inR = Math.acosh(Math.cos(Math.PI / q) / Math.sin(Math.PI / p));
+  const t = Math.PI / 2 + (2 * Math.PI) / p;
+  const r = Math.tanh(inR / 2);
+  return [r * Math.cos(t), r * Math.sin(t)];
+}
+
+/** The generating point in the central p-gon's flag triangle at corner 0 and
+ * the edge from corner 0 to corner 1. Mirrors `_generating_point`. */
+function generatingPoint(p: number, q: number, op: WythoffOp): C {
+  const mid = edgeMidpoint(p, q);
+  if (op === "ambo") return mid;
+  const corner = centralPolygon(p, q)[0]!;
+  const inside = scaleC(add(corner, mid), 1 / 3);
+  const fv = line([0, 0], corner, inside);
+  const fe = line([0, 0], mid, inside);
+  const ve = line(corner, mid, inside);
+  if (op === "zip") return drop(minkCross(fe, minus(fv, ve)));
+  if (op === "expand") return drop(minkCross(fv, minus(fe, ve)));
+  return drop(minkCross(minus(fv, fe), minus(fe, ve)));
+}
+
+/** The uniform tiling `op` of {p,q}, from the {p,q} tiling out to `rings`
+ * rings: its faces as counterclockwise lists of integer vertex ids, each
+ * vertex's position, and each face's centre. Mirrors `wythoff_faces`. */
+export function wythoffFaces(
+  p: number,
+  q: number,
+  op: WythoffOp,
+  rings: number,
+): { faces: number[][]; pos: Map<number, C>; centres: C[] } {
+  if (!WYTHOFF_OPS.includes(op)) throw new Error(`unknown Wythoff operation ${op}`);
+  const base = hyperbolicFaces(p, q, rings).faces;
+  const bpos = hyperbolicPositions(p, q, base);
+  const centre = centralPolygon(p, q);
+  const w0 = generatingPoint(p, q, op);
+  const t = 2 * (Math.PI / 2 + (2 * Math.PI) / p);
+  const w1 = mul([Math.cos(t), Math.sin(t)], conj(w0)); // its mirror across F-E
+  const mid = edgeMidpoint(p, q);
+  const turn = Array.from({ length: p }, (_, k): C => [
+    Math.cos((2 * Math.PI * k) / p),
+    Math.sin((2 * Math.PI * k) / p),
+  ]);
+
+  const key = (f: number, i: number, side: number): string => {
+    // the flag at face f's corner i, on its edge to the next corner (side 0)
+    // or from the previous one (side 1), named by what the op keeps
+    const face = base[f]!;
+    const v = face[i]!;
+    const u = side === 0 ? face[(i + 1) % p]! : face[(i + p - 1) % p]!;
+    const edge = `${Math.min(u, v)},${Math.max(u, v)}`;
+    if (op === "ambo") return edge;
+    if (op === "zip") return `${f},${edge}`;
+    if (op === "expand") return `${f},${v}`;
+    return `${f},${v},${u}`;
+  };
+
+  const maps = base.map((face) =>
+    isometry(centre[0]!, centre[1]!, bpos.get(face[0]!)!, bpos.get(face[1]!)!),
+  );
+  const where = new Map<string, C>();
+  const flag = (f: number, i: number, side: number): string => {
+    const k = key(f, i, side);
+    if (!where.has(k)) {
+      const local = side === 0 ? mul(turn[i]!, w0) : mul(turn[(i + p - 1) % p]!, w1);
+      where.set(k, maps[f]!(local));
+    }
+    return k;
+  };
+  const ringOf = (keys: string[]): string[] => {
+    const out = keys.filter((k, j) => k !== keys[(j + keys.length - 1) % keys.length]);
+    return new Set(out).size === out.length ? out : [];
+  };
+
+  const newFaces: string[][] = [];
+  const centres: C[] = [];
+  // F: one per face of {p,q}, its flags in order round it
+  base.forEach((_, f) => {
+    const keys: string[] = [];
+    for (let i = 0; i < p; i++) keys.push(flag(f, i, 1), flag(f, i, 0));
+    const loop = ringOf(keys);
+    if (loop.length >= 3) {
+      newFaces.push(loop);
+      centres.push(maps[f]!([0, 0]));
+    }
+  });
+  // V: one per vertex with its whole star, the faces round it counterclockwise
+  const left = new Map<string, [number, number]>(); // directed edge -> (face, index)
+  const star = new Map<number, [number, number][]>();
+  base.forEach((face, f) => {
+    face.forEach((v, i) => {
+      left.set(`${v}>${face[(i + 1) % p]}`, [f, i]);
+      const at = star.get(v);
+      if (at) at.push([f, i]);
+      else star.set(v, [[f, i]]);
+    });
+  });
+  for (const v of [...star.keys()].sort((a, b) => a - b)) {
+    const round = star.get(v)!;
+    if (round.length !== q) continue;
+    let [f, i] = round.reduce((a, b) => (b[0] < a[0] || (b[0] === a[0] && b[1] < a[1]) ? b : a));
+    const keys: string[] = [];
+    for (let n = 0; n < q; n++) {
+      keys.push(flag(f, i, 0), flag(f, i, 1));
+      [f, i] = left.get(`${v}>${base[f]![(i + p - 1) % p]}`)!;
+    }
+    const loop = ringOf(keys);
+    if (loop.length >= 3) {
+      newFaces.push(loop);
+      centres.push(bpos.get(v)!);
+    }
+  }
+  // E: one per edge with both its faces, round the edge's midpoint
+  base.forEach((face, f) => {
+    for (let i = 0; i < p; i++) {
+      const u = face[i]!;
+      const v = face[(i + 1) % p]!;
+      const other = left.get(`${v}>${u}`);
+      if (u > v || !other) continue;
+      const [g, j] = other;
+      const loop = ringOf([flag(g, (j + 1) % p, 1), flag(g, j, 0), flag(f, (i + 1) % p, 1), flag(f, i, 0)]);
+      if (loop.length >= 3) {
+        newFaces.push(loop);
+        centres.push(maps[f]!(mul(turn[i]!, mid)));
+      }
+    }
+  });
+  const ids = new Map<string, number>();
+  for (const loop of newFaces) for (const k of loop) if (!ids.has(k)) ids.set(k, ids.size);
+  const faces = newFaces.map((loop) => loop.map((k) => ids.get(k)!));
+  const pos = new Map<number, C>();
+  for (const [k, id] of ids) pos.set(id, where.get(k)!);
+  return { faces, pos, centres };
+}
+
+/** Face indices grouped by their centre's distance from the disc's centre,
+ * nearest first. Mirrors `_shell_groups`. */
+function shellGroups(centres: C[]): number[][] {
+  const rows = centres
+    .map((z, f) => [distance(z), f] as const)
+    .sort((x, y) => x[0] - y[0] || x[1] - y[1]);
+  const groups: number[][] = [];
+  let last = -Infinity;
+  for (const [d, f] of rows) {
+    if (d - last > SHELL_TOL) groups.push([]);
+    groups[groups.length - 1]!.push(f);
+    last = d;
+  }
+  return groups;
+}
+
+/** Grow the {p,q} rings until every new face out to the `shells`-th distance
+ * is built. Mirrors `_wythoff_rings_for`. */
+function wythoffRingsFor(
+  p: number,
+  q: number,
+  op: WythoffOp,
+  shells: number,
+): { faces: number[][]; pos: Map<number, C>; groups: number[][] } {
+  const centre = centralPolygon(p, q);
+  for (let rings = 1; rings <= 12; rings++) {
+    const { faces, pos, centres } = wythoffFaces(p, q, op, rings);
+    const groups = shellGroups(centres);
+    const base = hyperbolicFaces(p, q, rings);
+    const bpos = hyperbolicPositions(p, q, base.faces);
+    let outer = Infinity;
+    base.faces.forEach((face, f) => {
+      if (base.ringOf[f] === rings) outer = Math.min(outer, distance(faceCentre(centre, face, bpos)));
+    });
+    if (groups.length > shells) {
+      const cut = distance(centres[groups[shells - 1]![0]!]!);
+      if (outer > cut + 1.0) return { faces, pos, groups };
+    }
+  }
+  throw new Error("too many shells");
+}
+
+/**
+ * The uniform tiling `op` of {p,q} in the Poincaré disc, trimmed as
+ * `hyperbolicBoard` trims: the faces at the `shells` smallest distances from
+ * the central face, less their twins. Mirrors `hyperbolic_uniform_board`.
+ */
+export function hyperbolicUniformBoard(
+  p: number,
+  q: number,
+  op: WythoffOp,
+  shells: number,
+  mineCount: number,
+  scale = 300,
+  arc = ARC_SEGMENTS,
+): Board {
+  checkHyperbolic(p, q);
+  if (shells < 1) throw new Error("shells must be at least 1");
+  const { faces, pos, groups } = wythoffRingsFor(p, q, op, shells);
+  const kept = withoutTwins(
+    faces,
+    groups
+      .slice(0, shells)
+      .flat()
+      .sort((a, b) => a - b),
+  );
+  const name = vertexConfig(p, q, op).join(".");
+  return discBoard(wythoffMode(p, q, op), name, shells, faces, kept, pos, mineCount, scale, arc);
 }

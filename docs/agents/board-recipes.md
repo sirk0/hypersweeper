@@ -774,9 +774,10 @@ so there is nothing to glue a seam with. That is one line: it is in
 The **Hyperbolic** family (`hyperbolic.py`, `web/src/boards/hyperbolic.ts`) is
 one builder, `hyperbolic_board(p, q, shells, mine_count, scale)`, so a new
 {p,q} is data, not code -- provided the tiling is hyperbolic ((p - 2)(q - 2) >
-4) and its faces can span the boundary runs the ring walk hands them (`p >= 4`;
-a triangle tiling {3,q} would need the walk to close a face on one new vertex,
-which it refuses rather than gets wrong). Read
+4). A face-centred {p,q} with `p >= 4` comes from the ring walk; a triangle
+tiling {3,q} cannot (the walk would have to close a face on one new vertex) and
+is built as the dual of {q,3} instead, centred on a vertex, so it keeps D_q
+rather than D_3 -- that too is automatic. Read
 [`geometry.md`](geometry.md#the-hyperbolic-boards) first.
 
 1. **Menu + presets** -- add `hyperbolic{p}{q}` to `menu.hyperbolic` and
@@ -800,7 +801,21 @@ which it refuses rather than gets wrong). Read
    the menu card.
 4. **Tests** -- add the tiling to `_HYPERBOLIC` in `tests/test_boards.py` and
    `TILINGS` in `web/tests/unit/hyperbolic.test.ts`, its ring counts to the
-   latter, and its point group (D_p) to `symmetries.test.ts`.
+   latter, and its point group (D_p, or D_q for a {3,q}) to
+   `symmetries.test.ts`.
+
+**A uniform tiling of a {p,q}** (6.6.7, 3.7.3.7, 3.4.7.4, 4.6.14 on {7,3}) is
+also data: a `{builder: "hyperbolic_uniform_board", args: {difficulty: [p, q,
+op, shells, mines, scale]}}` row with `op` one of `WYTHOFF_OPS`, and the mode
+must be `wythoff_mode(p, q, op)`. Add it to `_HYPERBOLIC_UNIFORM` in `gui.py`
+and `HYPERBOLIC_UNIFORM` in `icons.ts` (with its icon shells and menu card, as
+in step 3), and to `_WYTHOFF` / `UNIFORM` in the two test files. Then the
+checks above, plus two the regular boards never needed: **a new side count**
+(a 14-gon was one) needs a badge in `SHAPE_SIDES` and a regenerated Game
+Center list (`npm run gamecenter`), and **a new pair of shapes on one board**
+must sound a chord -- `soundHarmony.test.ts` fails if it does not, and the fix
+is the spelling in `audio/presets.ts`. See
+[`geometry.md`](geometry.md#the-uniform-hyperbolic-boards).
 
 ## Recipe: add an aperiodic / shaped / solid board
 

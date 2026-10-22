@@ -125,12 +125,18 @@ describe("the declared shape list", () => {
       ["hyperbolic54", 5],
       ["hyperbolic55", 5],
       ["hyperbolic45", 4],
-      ["hyperbolic46", 4],
+      ["hyperbolic46", [4]],
+      ["hyperbolic37", [3]],
+      ["hyperbolic38", [3]],
+      ["hyperbolic667", [6, 7]],
+      ["hyperbolic3737", [3, 7]],
+      ["hyperbolic3474", [3, 4, 7]],
+      ["hyperbolic4614", [4, 6, 14]],
     ] as const) {
       for (const difficulty of ["easy", "medium", "hard"]) {
         const board = buildBoard(mode, difficulty);
         expect(new Set(cellSides(board.polygons, board.cornerMask).values()), `${mode} ${difficulty}`)
-          .toEqual(new Set([sides]));
+          .toEqual(new Set(typeof sides === "number" ? [sides] : sides));
       }
     }
   });

@@ -54,7 +54,7 @@ from minesweeper.boards.fractal import (
     pentaflake_board,
     sphinx_board,
 )
-from minesweeper.boards.hyperbolic import hyperbolic_board
+from minesweeper.boards.hyperbolic import hyperbolic_board, hyperbolic_uniform_board
 from minesweeper.boards.solids import (
     brick_cube_board,
     c180_board,
@@ -234,6 +234,10 @@ _JSON_BUILDERS = {
     # the {p,q} tiling in the Poincare disc trimmed to the faces at its
     # ``shells`` smallest distances from the centre (boards/hyperbolic.py).
     "hyperbolic_board": hyperbolic_board,
+    # ...and the uniform tilings Wythoff's construction makes of one,
+    # hyperbolic_uniform_board(p, q, op, shells, mine_count, scale): 6.6.7,
+    # 3.7.3.7, 3.4.7.4 and 4.6.14 from {7,3}, trimmed the same way.
+    "hyperbolic_uniform_board": hyperbolic_uniform_board,
 }
 
 # Explicit presets for the one-off boards not yet in the shared data/presets.json.

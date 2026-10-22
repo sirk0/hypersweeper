@@ -12,7 +12,7 @@ Every board's mine count, chosen so its win probability under the reference solv
 
 ## Coverage
 
-- 870 rows, 832 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
+- 888 rows, 850 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
 - 38 could not be brought on target:
   - `cube3d`/hard: 33.3% vs 50.9% — the search could not resolve it -- its thinnest measurement finished 0 game(s), so the rate here is noise rather than a crossing the search walked to. Re-measure at a bigger `--budget`
   - `cylhexrows`/medium: 81.7% vs 87.1% — no integer mine count lands within tolerance; this is the closest
@@ -52,7 +52,7 @@ Every board's mine count, chosen so its win probability under the reference solv
   - `triakis`/hard: 0.0% vs 50.9% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `triakis`/medium: 0.0% vs 87.1% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `triakis`/easy: 1.8% vs 96.5% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
-- 254 rows had games the solver abandoned (its frontier DP hit its node budget); their rates are measured over the games that finished:
+- 260 rows had games the solver abandoned (its frontier DP hit its node budget); their rates are measured over the games that finished:
   - `cube3d`/hard: 466 abandoned
   - `torustrunchex`/hard: 168 abandoned
   - `torusrotatedhex`/hard: 144 abandoned
@@ -64,7 +64,7 @@ Every board's mine count, chosen so its win probability under the reference solv
   - `doubletorustri`/hard: 41 abandoned
   - `torussnubhex`/hard: 39 abandoned
 
-Densities run from 2.8% to 30.0% (median 17.0%) — the spread the old flat 14/16/19 per cent could not express.
+Densities run from 2.8% to 30.0% (median 16.7%) — the spread the old flat 14/16/19 per cent could not express.
 
 The only floor under the search is the **opening**: the fewest mines at which the first click alone stops finishing the board (`calibrate.opening_floor`). As a density that runs 1.1% to 14.3% across the zoo — which is why it is measured per board rather than set as a percentage.
 
@@ -74,7 +74,7 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | --- | --- | --- | --- | --- |
 | `ammannbeenker` | 7.3 | 81c 9m (11%) 97% | 280c 28m (10%) 87% | 480c 82m (17%) 54% |
 | `basketweave` | 6.3 | 72c 10m (14%) 98% | 288c 44m (15%) 86% | 512c 99m (19%) 48% |
-| `basketweave3` | 6.0 | 84c 12m (14%) 94% | 280c 48m (17%) 86% | 408c 82m (20%) 53% |
+| `basketweave3` | 6.1 | 84c 12m (14%) 94% | 280c 48m (17%) 86% | 408c 82m (20%) 53% |
 | `boy` | 7.8 | 75c 12m (16%) 98% | 243c 57m (23%) 90% | 507c 136m (27%) 53% |
 | `brickrings` | 5.3 | 72c 12m (17%) 97% | 242c 47m (19%) 90% | 512c 114m (22%) 53% |
 | `c180` | 6.0 | 92c 21m (23%) 95% | 252c 56m (22%) 90% | 492c 125m (25%) 51% |
@@ -113,7 +113,7 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `cylprismaticpent` | 6.5 | 90c 14m (16%) 98% | 270c 51m (19%) 87% | 456c 101m (22%) 51% |
 | `cylpythagorean` | 5.6 | 85c 10m (12%) 97% | 261c 33m (13%) 88% | 468c 77m (16%) 52% |
 | `cylrhombille` | 9.3 | 90c 7m (8%) 66% ⚠ | 240c 9m (4%) 77% ⚠ | 462c 19m (4%) 50% |
-| `cylrhombitrihex` | 7.3 | 84c 12m (14%) 96% | 264c 36m (14%) 90% | 450c 77m (17%) 52% |
+| `cylrhombitrihex` | 7.5 | 84c 12m (14%) 96% | 264c 36m (14%) 90% | 450c 77m (17%) 52% |
 | `cylrotatedhex` | 5.7 | 81c 4m (5%) 93% | 270c 13m (5%) 87% | 504c 36m (7%) 47% |
 | `cylrotatedtri` | 5.7 | 81c 14m (17%) 93% | 270c 49m (18%) 88% | 504c 111m (22%) 48% |
 | `cylrunningbond` | 5.8 | 84c 16m (19%) 96% | 260c 52m (20%) 87% | 476c 112m (24%) 52% |
@@ -134,7 +134,7 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `cyltriakis` | 18.7 | 84c 11m (13%) 1% ⚠ | 264c 42m (16%) 0% ⚠ | 450c 90m (20%) 0% ⚠ |
 | `cyltrihex` | 7.5 | 81c 9m (11%) 99% | 270c 47m (17%) 85% | 504c 102m (20%) 55% |
 | `cyltrirhombitrihex` | 9.8 | 75c 13m (17%) 94% | 259c 54m (21%) 89% | 528c 123m (23%) 53% |
-| `cyltritrunctrihex` | 8.6 | 72c 5m (7%) 92% ⚠ | 238c 12m (5%) 83% | 450c 32m (7%) 50% |
+| `cyltritrunctrihex` | 8.7 | 72c 5m (7%) 92% ⚠ | 238c 12m (5%) 83% | 450c 32m (7%) 50% |
 | `cyltrunchex` | 5.7 | 81c 4m (5%) 94% | 270c 13m (5%) 87% | 504c 37m (7%) 54% |
 | `cyltruncsquare` | 5.5 | 77c 5m (6%) 95% | 260c 30m (12%) 85% | 459c 70m (15%) 48% |
 | `cyltrunctrihex` | 5.8 | 84c 12m (14%) 97% | 240c 32m (13%) 89% | 480c 80m (17%) 53% |
@@ -151,9 +151,9 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `doubletorus` | 8.2 | 104c 21m (20%) 98% | 252c 56m (22%) 90% | 486c 127m (26%) 50% |
 | `doubletorushex` | 6.1 | 196c 36m (18%) 93% | 264c 47m (18%) 88% | 474c 115m (24%) 47% |
 | `doubletorustri` | 12.4 | 256c 60m (23%) 93% | 256c 63m (25%) 85% | 488c 126m (26%) 49% |
-| `durer` | 6.8 | 85c 9m (11%) 98% | 283c 44m (16%) 90% | 481c 92m (19%) 52% |
-| `elongated` | 9.4 | 81c 9m (11%) 95% | 237c 30m (13%) 89% | 539c 101m (19%) 47% |
-| `elongated2` | 9.8 | 70c 6m (9%) 97% | 248c 40m (16%) 87% | 458c 87m (19%) 54% |
+| `durer` | 6.1 | 85c 9m (11%) 98% | 283c 44m (16%) 90% | 481c 92m (19%) 52% |
+| `elongated` | 9.1 | 81c 9m (11%) 95% | 237c 30m (13%) 89% | 539c 101m (19%) 47% |
+| `elongated2` | 9.5 | 70c 6m (9%) 97% | 248c 40m (16%) 87% | 458c 87m (19%) 54% |
 | `elongated3` | 10.1 | 83c 9m (11%) 98% | 275c 48m (17%) 84% | 449c 99m (22%) 51% |
 | `fannedhex` | 8.4 | 84c 6m (7%) 93% | 220c 12m (5%) 85% | 532c 39m (7%) 49% |
 | `floret` | 7.4 | 72c 7m (10%) 97% | 288c 37m (13%) 86% | 480c 81m (17%) 52% |
@@ -167,11 +167,17 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `hexrows` | 7.5 | 84c 6m (7%) 98% | 260c 30m (12%) 85% | 472c 73m (15%) 50% |
 | `hextri` | 11.1 | 96c 14m (15%) 97% | 294c 56m (19%) 86% | 486c 117m (24%) 49% |
 | `hextriangle` | 5.6 | 78c 9m (12%) 97% | 253c 38m (15%) 89% | 465c 97m (21%) 49% |
+| `hyperbolic3474` | 6.7 | 85c 5m (6%) 96% | 267c 21m (8%) 89% | 463c 58m (13%) 51% |
+| `hyperbolic37` | 9.7 | 84c 7m (8%) 95% | 252c 23m (9%) 89% | 490c 75m (15%) 51% |
+| `hyperbolic3737` | 6.5 | 78c 6m (8%) 96% | 253c 20m (8%) 87% | 484c 67m (14%) 50% |
+| `hyperbolic38` | 9.7 | 80c 9m (11%) 97% | 272c 23m (8%) 90% | 496c 57m (11%) 53% |
 | `hyperbolic45` | 6.8 | 81c 8m (10%) 97% | 253c 25m (10%) 89% | 481c 64m (13%) 52% |
 | `hyperbolic46` | 6.9 | 89c 6m (7%) 98% | 257c 23m (9%) 87% | 481c 53m (11%) 54% |
+| `hyperbolic4614` | 5.2 | 85c 7m (8%) 94% | 267c 22m (8%) 87% | 477c 47m (10%) 51% |
 | `hyperbolic54` | 5.6 | 91c 7m (8%) 99% | 261c 23m (9%) 85% | 481c 51m (11%) 53% |
 | `hyperbolic55` | 5.8 | 96c 7m (7%) 98% | 261c 22m (8%) 88% | 466c 48m (10%) 50% |
 | `hyperbolic64` | 5.3 | 85c 4m (5%) 98% | 259c 15m (6%) 89% | 475c 39m (8%) 48% |
+| `hyperbolic667` | 5.1 | 78c 9m (12%) 98% | 253c 29m (11%) 88% | 484c 74m (15%) 52% |
 | `hyperbolic73` | 4.6 | 85c 7m (8%) 99% | 246c 24m (10%) 86% | 477c 50m (10%) 55% |
 | `hyperbolic83` | 4.4 | 89c 6m (7%) 96% | 265c 17m (6%) 89% | 473c 44m (9%) 49% |
 | `icosahedron` | 11.8 | 80c 21m (26%) 96% | 320c 84m (26%) 90% | 500c 149m (30%) 55% |
@@ -262,7 +268,7 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `rhombicosidodecasplit` | 10.4 | 62c 8m (13%) 98% | 440c 100m (23%) 85% | 440c 119m (27%) 48% |
 | `rhombictriaconta` | 8.0 | 120c 28m (23%) 93% | 270c 62m (23%) 89% | 480c 127m (26%) 53% |
 | `rhombille` | 9.2 | 80c 5m (6%) 76% ⚠ | 254c 7m (3%) 85% | 476c 19m (4%) 51% |
-| `rhombitrihex` | 7.5 | 79c 8m (10%) 97% | 227c 28m (12%) 85% | 499c 78m (16%) 50% |
+| `rhombitrihex` | 7.2 | 79c 8m (10%) 97% | 227c 28m (12%) 85% | 499c 78m (16%) 50% |
 | `rotatedhex` | 5.7 | 85c 4m (5%) 95% | 263c 14m (5%) 85% | 537c 40m (7%) 47% |
 | `rotatedtri` | 5.7 | 85c 13m (15%) 93% | 263c 45m (17%) 86% | 537c 112m (21%) 52% |
 | `runningbond` | 5.6 | 85c 12m (14%) 95% | 265c 45m (17%) 83% | 481c 100m (21%) 51% |
@@ -279,7 +285,7 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `sphinxpairs` | 10.6 | 78c 11m (14%) 97% | 254c 46m (18%) 86% | 526c 124m (24%) 50% |
 | `square` | 7.4 | 81c 10m (12%) 98% | 256c 40m (16%) 90% | 480c 99m (21%) 50% |
 | `squarediamond` | 7.3 | 85c 13m (15%) 97% | 265c 49m (18%) 89% | 481c 111m (23%) 55% |
-| `squarerows2` | 8.9 | 76c 7m (9%) 98% | 232c 31m (13%) 87% | 440c 83m (19%) 48% |
+| `squarerows2` | 8.7 | 76c 7m (9%) 98% | 232c 31m (13%) 87% | 440c 83m (19%) 48% |
 | `squarerows3` | 8.5 | 93c 11m (12%) 95% | 283c 48m (17%) 83% | 431c 90m (21%) 51% |
 | `squaretrihex` | 7.6 | 82c 8m (10%) 99% | 266c 39m (15%) 88% | 464c 93m (20%) 51% |
 | `squaretrihex2` | 7.5 | 70c 9m (13%) 97% | 260c 44m (17%) 86% | 468c 97m (21%) 53% |
@@ -291,7 +297,7 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `studdedtri2` | 10.4 | 87c 9m (10%) 99% | 259c 45m (17%) 90% | 515c 112m (22%) 54% |
 | `tetraframe` | 11.9 | 64c 7m (11%) 99% | 256c 37m (14%) 85% | 400c 83m (21%) 51% |
 | `tetrahedron` | 11.9 | 100c 19m (19%) 96% | 256c 66m (26%) 88% | 484c 143m (30%) 54% |
-| `tetrakis` | 12.7 | 84c 7m (8%) 97% | 256c 27m (11%) 90% | 480c 68m (14%) 55% |
+| `tetrakis` | 12.2 | 84c 7m (8%) 97% | 256c 27m (11%) 90% | 480c 68m (14%) 55% |
 | `tetrakishexa` | 11.8 | 96c 25m (26%) 93% | 216c 58m (27%) 88% | 384c 115m (30%) 47% |
 | `threescaletri` | 7.6 | 85c 12m (14%) 97% | 263c 45m (17%) 87% | 537c 115m (21%) 48% |
 | `torus` | 8.0 | 80c 14m (18%) 99% | 261c 42m (16%) 83% | 480c 123m (26%) 53% |
