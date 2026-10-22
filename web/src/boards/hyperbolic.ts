@@ -10,7 +10,7 @@
 // geodesic arcs through points whose ids derive from the edge's own ends; and
 // the board keeps the faces at the `shells` smallest hyperbolic distances from
 // the centre, so every trim keeps the central polygon's dihedral symmetry --
-// less every rim cell that trim leaves with a twin.
+// less every rim cell that trim leaves with a twin or a near-twin.
 import { flatBoard, sharedVertexAdjacency, cid } from "./core";
 import type { Board, CellId, Vertex } from "./core";
 
@@ -225,9 +225,10 @@ function ringsFor(
 
 /**
  * `kept` less every face whose closed neighbourhood (itself and every face
- * sharing a vertex with it) is another kept face's too, repeated until none is
- * left. All of a twin class goes, never all but one, which keeps the trim's
- * symmetry. Mirrors `_without_twins` -- see "A trim then drops its twins" in
+ * sharing a vertex with it) is another kept face's too, or another kept face's
+ * less one cell, repeated until none is left. All of a twin class goes, never
+ * all but one, which keeps the trim's symmetry; of a near-twin pair, the
+ * smaller. Mirrors `_without_twins` -- see "A trim then drops its twins" in
  * that module's docstring.
  */
 function withoutTwins(faces: readonly (readonly number[])[], kept: number[]): number[] {
@@ -240,15 +241,28 @@ function withoutTwins(faces: readonly (readonly number[])[], kept: number[]): nu
         else at.set(v, [f]);
       }
     }
-    const hood = new Map<number, string>();
+    const hood = new Map<number, Set<number>>();
+    const key = new Map<number, string>();
     for (const f of kept) {
       const near = new Set<number>();
       for (const v of faces[f]!) for (const g of at.get(v)!) near.add(g);
-      hood.set(f, [...near].sort((a, b) => a - b).join(","));
+      hood.set(f, near);
+      key.set(f, [...near].sort((a, b) => a - b).join(","));
     }
     const seen = new Map<string, number>();
-    for (const h of hood.values()) seen.set(h, (seen.get(h) ?? 0) + 1);
-    const twins = new Set(kept.filter((f) => seen.get(hood.get(f)!)! > 1));
+    for (const h of key.values()) seen.set(h, (seen.get(h) ?? 0) + 1);
+    const twins = new Set(kept.filter((f) => seen.get(key.get(f)!)! > 1));
+    // a near-twin's bigger partner is in its own neighbourhood
+    for (const f of kept) {
+      const mine = hood.get(f)!;
+      for (const g of mine) {
+        const theirs = hood.get(g)!;
+        if (theirs.size === mine.size + 1 && [...mine].every((x) => theirs.has(x))) {
+          twins.add(f);
+          break;
+        }
+      }
+    }
     if (twins.size === 0) return kept;
     kept = kept.filter((f) => !twins.has(f));
   }
@@ -293,7 +307,7 @@ function isDisc(cells: Map<CellId, string[]>): boolean {
 /**
  * The {p,q} tiling in the Poincaré disc, trimmed to the faces at the `shells`
  * smallest distances from the central p-gon (shell 1 is that p-gon alone),
- * less any rim cells that trim leaves with a twin. `scale` is pixels per unit of disc radius; `arc` is how many straight
+ * less any rim cells that trim leaves with a twin or a near-twin. `scale` is pixels per unit of disc radius; `arc` is how many straight
  * segments draw each geodesic edge. Throws when the trim is not a disc. Mirrors
  * `hyperbolic_board`.
  */

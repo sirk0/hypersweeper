@@ -59,7 +59,7 @@ Every board's mine count, chosen so its win probability under the reference solv
   - `triakis`/hard: 0.0% vs 50.9% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `triakis`/medium: 0.0% vs 87.1% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `triakis`/easy: 1.8% vs 96.5% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
-- 239 rows had games the solver abandoned (its frontier DP hit its node budget); their rates are measured over the games that finished:
+- 237 rows had games the solver abandoned (its frontier DP hit its node budget); their rates are measured over the games that finished:
   - `cube3d`/hard: 466 abandoned
   - `torustrunchex`/hard: 168 abandoned
   - `torusrotatedhex`/hard: 144 abandoned
@@ -73,7 +73,7 @@ Every board's mine count, chosen so its win probability under the reference solv
 
 Densities run from 2.6% to 30.0% (median 16.7%) — the spread the old flat 14/16/19 per cent could not express.
 
-The only floor under the search is the **opening**: the fewest mines at which the first click alone stops finishing the board (`calibrate.opening_floor`). As a density that runs 1.0% to 14.3% across the zoo — which is why it is measured per board rather than set as a percentage.
+The only floor under the search is the **opening**: the fewest mines at which the first click alone stops finishing the board (`calibrate.opening_floor`). As a density that runs 1.1% to 14.3% across the zoo — which is why it is measured per board rather than set as a percentage.
 
 ## Every board
 
@@ -174,11 +174,11 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `hexrows` | 7.5 | 84c 6m (7%) 98% | 260c 30m (12%) 85% | 476c 70m (15%) 51% |
 | `hextri` | 11.1 | 96c 14m (15%) 97% | 294c 56m (19%) 86% | 486c 117m (24%) 49% |
 | `hextriangle` | 5.6 | 78c 9m (12%) 97% | 253c 38m (15%) 89% | 465c 97m (21%) 49% |
-| `hyperbolic45` | 6.5 | 81c 5m (6%) 96% | 245c 12m (5%) 89% | 485c 38m (8%) 50% |
-| `hyperbolic46` | 7.1 | 89c 6m (7%) 98% | 265c 15m (6%) 90% | 457c 37m (8%) 52% |
-| `hyperbolic54` | 5.6 | 81c 5m (6%) 95% | 261c 16m (6%) 90% | 471c 48m (10%) 48% |
-| `hyperbolic55` | 6.1 | 81c 4m (5%) 94% | 271c 11m (4%) 86% | 471c 25m (5%) 54% |
-| `hyperbolic64` | 5.3 | 79c 4m (5%) 95% | 259c 13m (5%) 83% | 487c 37m (8%) 55% |
+| `hyperbolic45` | 6.8 | 81c 8m (10%) 97% | 253c 25m (10%) 89% | 481c 64m (13%) 52% |
+| `hyperbolic46` | 6.9 | 89c 6m (7%) 98% | 257c 23m (9%) 87% | 481c 53m (11%) 54% |
+| `hyperbolic54` | 5.6 | 91c 7m (8%) 99% | 261c 23m (9%) 85% | 481c 51m (11%) 53% |
+| `hyperbolic55` | 5.8 | 96c 7m (7%) 98% | 261c 22m (8%) 88% | 466c 48m (10%) 50% |
+| `hyperbolic64` | 5.3 | 85c 4m (5%) 98% | 259c 15m (6%) 89% | 475c 39m (8%) 48% |
 | `hyperbolic73` | 4.6 | 85c 7m (8%) 99% | 246c 24m (10%) 86% | 477c 50m (10%) 55% |
 | `hyperbolic83` | 4.4 | 89c 6m (7%) 96% | 265c 17m (6%) 89% | 473c 44m (9%) 49% |
 | `icosahedron` | 11.8 | 80c 21m (26%) 96% | 320c 84m (26%) 90% | 500c 149m (30%) 55% |
