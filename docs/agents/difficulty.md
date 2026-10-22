@@ -302,7 +302,15 @@ a coin flip. A board mostly made of them cannot be calibrated to any target —
 its win rate is 0.5^mines whatever the density. The five triakis boards are
 exactly that and ship uncalibrated and flagged. If a new tiling scores above
 zero here, say so in its preset comment; above half its cells and the board is
-not a puzzle. Every row the calibration cannot bring on target lands in the
+not a puzzle. Then look one step further, at **near-twins**: adjacent cells
+whose closed neighbourhoods differ by a single cell. That cell's number is the
+only thing that separates them, so a mine on it turns a mine in the pair into a
+coin flip, and a board with many of them calibrates — the search walks the
+mine count down until the rim's 50/50s are rare — to a board with almost
+nothing else to solve. The classic board has none (a corner is two cells
+short); the hyperbolic builder drops them (see "The hyperbolic boards" in
+[`geometry.md`](geometry.md)). Where a calibrated density looks low for the
+board's degree, count them before believing it. Every row the calibration cannot bring on target lands in the
 generated `data/difficulty.json`, which the TypeScript app reads
 (`web/src/boards/fairness.ts`) to mark the menu row and to deal the board less
 often at random — so a new unfair board needs no front-end edit, only a

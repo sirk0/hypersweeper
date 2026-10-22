@@ -2543,13 +2543,33 @@ class TestHyperbolic:
             board = hyperbolic_board(p, q, shells, 1)
             assert indistinguishable_cells(board.adjacency) == 0, shells
 
-    def test_dropping_twins_leaves_a_twin_free_trim_as_it_was(self):
-        # the drop is a no-op where the shell trim had no twins, which is why
-        # the boards that shipped before it are the same boards: {4,5} at 20
-        # shells is 205 cells either way, and at 21 it loses its 8 twins
+    @pytest.mark.parametrize("p,q", _HYPERBOLIC)
+    def test_no_trim_leaves_a_near_twin(self, p, q):
+        # a rim cell whose closed neighbourhood is a neighbour's less one cell
+        # can only be told from it by that cell's number, so it is a coin flip
+        # whenever that cell is a mine; the builder drops the smaller of every
+        # such pair, so the rim is left with no pair a single mine can lock
+        for shells in range(3, 30):
+            board = hyperbolic_board(p, q, shells, 1)
+            hood = {c: frozenset([c, *ns]) for c, ns in board.adjacency.items()}
+            assert not [
+                (a, b) for a, ns in board.adjacency.items() for b in ns
+                if len(hood[b]) == len(hood[a]) + 1 and hood[a] < hood[b]
+            ], shells
+
+    def test_dropping_twins_leaves_a_clean_trim_as_it_was(self):
+        # the drop is a no-op where the shell trim had neither twins nor
+        # near-twins -- every {7,3} trim, which is why those boards are the
+        # same boards. {4,5} at 20 shells has no twins and loses its 32
+        # near-twins; at 21 it loses 8 twins and 24 near-twins, then the 8
+        # near-twins that first drop uncovers -- which is what the loop is for
         from minesweeper.boards import hyperbolic as hyp
+        faces, pos, groups = hyp._rings_for(7, 3, 27)
+        for shells in range(3, 27):
+            kept = sorted(f for group in groups[:shells] for f in group)
+            assert hyp._without_twins(faces, kept) == kept
         faces, pos, groups = hyp._rings_for(4, 5, 21)
-        for shells, before, after in [(20, 205, 205), (21, 237, 229)]:
+        for shells, before, after in [(20, 205, 173), (21, 237, 197)]:
             kept = sorted(f for group in groups[:shells] for f in group)
             assert len(kept) == before
             assert len(hyp._without_twins(faces, kept)) == after
