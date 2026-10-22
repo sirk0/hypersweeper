@@ -1,6 +1,6 @@
 {
-  "count": 43,
-  "points": 640,
+  "count": 44,
+  "points": 645,
   "achievements": [
     {
       "vendorIdentifier": "hs.first_win",
@@ -289,6 +289,23 @@
         }
       },
       "icon": "ngon:13",
+      "ring": null
+    },
+    {
+      "vendorIdentifier": "hs.shape.14",
+      "referenceName": "shape:14",
+      "points": 5,
+      "showBeforeEarned": true,
+      "repeatable": false,
+      "localizations": {
+        "en-US": {
+          "name": "14-gons",
+          "beforeEarnedDescription": "Win a board whose tiles have 14 sides",
+          "afterEarnedDescription": "You won a board whose tiles have 14 sides",
+          "image": "images/hs.shape.14.png"
+        }
+      },
+      "icon": "ngon:14",
       "ring": null
     },
     {

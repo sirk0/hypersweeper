@@ -79,10 +79,12 @@ export interface SoundPreset {
    * Deliberately *not* one degree per side. Degrees are skipped so that the
    * shape sets that actually share a board come out as chords — measured
    * across every mode in data/presets.json, those sets are {3,4} {3,5} {3,6}
-   * {3,12} {4,8} {5,6} {3,4,6} {3,4,5} {4,6,12} {4,6,10} and nothing else,
-   * and `tests/unit/soundHarmony.test.ts` re-measures them rather than
-   * trusting this comment. Side counts 7, 9 and 11 are in no board at all;
-   * their entries only keep the table indexable. */
+   * {3,7} {3,12} {4,5} {4,8} {5,6} {6,7} {3,4,5} {3,4,6} {3,4,7} {3,4,12}
+   * {4,6,10} {4,6,12} {4,6,14} {3,4,6,12} and nothing else, and
+   * `tests/unit/soundHarmony.test.ts` re-measures them rather than trusting
+   * this comment. Side counts 9 and 11 are in no board at all; their entries
+   * only keep the table indexable. A 14-gon (the truncated triheptagonal
+   * board's) clamps to the 13-gon's degree. */
   degrees: readonly number[];
   /** One cell opening under the finger. */
   open: Envelope;
@@ -198,13 +200,17 @@ const PENTATONIC_OPEN = [0, -2, -5, -7, -9];
 
 /** The spelling Chime and Arcade share: side counts 3..13 onto grid degrees.
  * One degree per side would put a *second* between a hexagon and a decagon and
- * between a triangle and a dodecagon; the three skips (5→6, 11→12, and the
- * fifth the square takes at the top) are what land the real shape sets on
- * chord tones instead. */
-const SPELLING = [0, 3, 5, 6, 7, 8, 9, 10, 11, 13, 14];
+ * between a triangle and a dodecagon; the skips (the fifth the square takes at
+ * the top, and every one from the heptagon down) are what land the real shape
+ * sets on chord tones instead. The heptagon sits two degrees under the hexagon
+ * because the hyperbolic soccer ball puts the two on one board, and one degree
+ * is a whole tone; everything below it moves down to make room, which leaves
+ * the triangle-to-hexagon boards ringing exactly as they did. */
+const SPELLING = [0, 3, 5, 6, 8, 10, 11, 13, 14, 15, 16];
 /** Blocks' rotation puts its thirds elsewhere, so it needs its own spelling —
- * and gets a shallower descent out of it, which suits the lowest preset. */
-const SPELLING_OPEN = [0, 2, 4, 5, 6, 7, 8, 9, 10, 12, 13];
+ * and gets a shallower descent out of it, which suits the lowest preset (its
+ * 13-gon still rings at 52 Hz, above what a phone can reproduce). */
+const SPELLING_OPEN = [0, 2, 4, 5, 7, 9, 10, 12, 13, 14, 15];
 
 /** Soft mallets on a pentatonic scale — the default. Sine-ish partials with a
  * quick attack and a long tail, so a flood fill rings out like a struck

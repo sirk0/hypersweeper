@@ -50,6 +50,7 @@ from minesweeper.boards import (
     build_board,
     family_rows,
     hyperbolic_board,
+    hyperbolic_uniform_board,
     newell_normal,
     picker_families,
     picker_modes,
@@ -1014,7 +1015,12 @@ _ICON_ALIASES = {
 # reads at icon size.
 _HYPERBOLIC_ICON_SHELLS = {"hyperbolic83": 4, "hyperbolic73": 4, "hyperbolic64": 4, "hyperbolic54": 4,
                            "hyperbolic55": 4, "hyperbolic45": 5, "hyperbolic46": 6,
-                           "hyperbolic37": 5, "hyperbolic38": 5}
+                           "hyperbolic667": 4, "hyperbolic3737": 4, "hyperbolic3474": 5,
+                           "hyperbolic4614": 5, "hyperbolic37": 5, "hyperbolic38": 5}
+# The uniform ones are Wythoff's operations on {7,3}; every other hyperbolic
+# mode is ``hyperbolic{p}{q}``.
+_HYPERBOLIC_UNIFORM = {"hyperbolic667": "zip", "hyperbolic3737": "ambo",
+                       "hyperbolic3474": "expand", "hyperbolic4614": "bevel"}
 
 
 # How each flat-faced solid drawn by `_icon_solid` -- the Catalan solids and
@@ -1426,9 +1432,15 @@ def _render_icon(key: str) -> pygame.Surface:
         # the board itself, a ring and a half deep, in the disc whose rim it never
         # reaches: drawn with its geodesic arcs and no corner rounding, since
         # the arcs are what make it read as the Poincare disc
-        p, q = int(key[-2]), int(key[-1])
-        board = hyperbolic_board(p, q, _HYPERBOLIC_ICON_SHELLS[key], 1, scale=1)
-        central = q if p == 3 else 1  # {3,q}: the star round the central vertex
+        central = 1
+        if key in _HYPERBOLIC_UNIFORM:
+            board = hyperbolic_uniform_board(7, 3, _HYPERBOLIC_UNIFORM[key],
+                                             _HYPERBOLIC_ICON_SHELLS[key], 1, scale=1)
+        else:
+            p, q = int(key[-2]), int(key[-1])
+            board = hyperbolic_board(p, q, _HYPERBOLIC_ICON_SHELLS[key], 1, scale=1)
+            if p == 3:
+                central = q  # {3,q}: the star round the central vertex
         r = d * 0.46
         sc = 2 * r / board.width
         pygame.draw.circle(s, ICON_OUTLINE, (int(c), int(c)), int(r), 4)

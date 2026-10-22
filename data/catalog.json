@@ -234,6 +234,10 @@
     "hyperbolic46": "Squares {4,6}",
     "hyperbolic37": "Triangles {3,7}",
     "hyperbolic38": "Triangles {3,8}",
+    "hyperbolic667": "Soccer ball 6.6.7",
+    "hyperbolic3737": "Triheptagonal 3.7.3.7",
+    "hyperbolic3474": "Rhombitriheptagonal 3.4.7.4",
+    "hyperbolic4614": "Truncated triheptagonal 4.6.14",
     "spheretri": "Geodesic icosahedron"
   },
   "tilingNotations": {
@@ -829,8 +833,20 @@
       "surface": "flat",
       "family": "regular"
     },
+    "hyperbolic3474": {
+      "label": "Rhombitriheptagonal 3.4.7.4",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
     "hyperbolic37": {
       "label": "Triangles {3,7}",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
+    "hyperbolic3737": {
+      "label": "Triheptagonal 3.7.3.7",
       "tiling": "",
       "surface": "flat",
       "family": "hyperbolic"
@@ -853,6 +869,12 @@
       "surface": "flat",
       "family": "hyperbolic"
     },
+    "hyperbolic4614": {
+      "label": "Truncated triheptagonal 4.6.14",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
     "hyperbolic54": {
       "label": "Pentagons {5,4}",
       "tiling": "",
@@ -867,6 +889,12 @@
     },
     "hyperbolic64": {
       "label": "Hexagons {6,4}",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
+    "hyperbolic667": {
+      "label": "Soccer ball 6.6.7",
       "tiling": "",
       "surface": "flat",
       "family": "hyperbolic"
@@ -2084,7 +2112,11 @@
       "hyperbolic45",
       "hyperbolic46",
       "hyperbolic37",
-      "hyperbolic38"
+      "hyperbolic38",
+      "hyperbolic667",
+      "hyperbolic3737",
+      "hyperbolic3474",
+      "hyperbolic4614"
     ],
     "familyLabels": {
       "regular": "Regular",

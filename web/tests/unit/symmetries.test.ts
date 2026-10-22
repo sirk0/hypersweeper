@@ -291,6 +291,10 @@ describe("board symmetries", () => {
       // a triangle tiling is centred on a vertex, so keeps its q-fold turn
       ["hyperbolic37", "hard", 14], // D7
       ["hyperbolic38", "easy", 16], // D8
+      ["hyperbolic667", "hard", 14], // D7: the central heptagon's
+      ["hyperbolic3737", "easy", 14],
+      ["hyperbolic3474", "medium", 14],
+      ["hyperbolic4614", "hard", 14],
     ];
     for (const [mode, difficulty, order] of orders) {
       const board = buildBoard(mode, difficulty);

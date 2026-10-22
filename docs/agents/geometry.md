@@ -744,6 +744,9 @@ counts nothing else in the game has for its tile (a {3,7} triangle's 15 against
 a flat triangle's 12) -- and the boards are drawn in the
 **Poincaré disc**, a deliberate round exception to the square-window convention
 like the fractals and Klaassen's spiral.
+Four more are **uniform** rather than regular -- every corner alike, more than
+one tile -- and come off the same {7,3} walk; see "The uniform hyperbolic
+boards" below.
 
 **The ids are combinatorial, never geometric.** The tiling is built ring by
 ring: ring 0 is the central p-gon (vertices 0 .. p-1), and each new ring is
@@ -867,6 +870,80 @@ Four things worth knowing before touching them:
   every {4,5} trim in the medium band left rim cells with an indistinguishable
   twin, and it shipped the nearest fair one at 205 cells (-20%). With the drop
   it is in band like every other row.
+
+## The uniform hyperbolic boards
+
+`hyperbolic_uniform_board(p, q, op, shells, mines, scale)` (and
+`hyperbolicUniformBoard`) builds the tilings with a {p,q} tiling's symmetry
+that are not {p,q} itself, by **Wythoff's construction**: put a generating
+point in one flag triangle -- a face's centre F, one of its corners V and the
+midpoint E of an edge at that corner -- and reflect it everywhere. Where it
+sits decides the tiling, and the four that ship are the four places that give
+something new on {7,3} (Conway's names):
+
+| `op` | the point | {7,3} gives | Mode | Inner tile's neighbours |
+|---|---|---|---|---|
+| `zip` | on FE, as far from FV as from VE | **6.6.7**, the truncated {3,7} | `hyperbolic667` | hexagon 6, heptagon 7 |
+| `ambo` | at E | **3.7.3.7**, triheptagonal | `hyperbolic3737` | triangle 6, heptagon 14 |
+| `expand` | on FV, as far from FE as from VE | **3.4.7.4**, rhombitriheptagonal | `hyperbolic3474` | triangle 6, square 8, heptagon 14 |
+| `bevel` | inside, as far from all three sides | **4.6.14**, truncated triheptagonal | `hyperbolic4614` | square 4, hexagon 6, 14-gon 14 |
+
+(The other two places, V and the VE line, give {7,3} back and 3.14.14, its
+truncation, whose triangles are tiny beside the 14-gons.) The mode is
+`hyperbolic` and the vertex configuration's digits, smallest first as the
+notation writes it.
+
+**6.6.7 is the one built for play: HyperRogue's tiling, the hyperbolic soccer
+ball.** A hexagon covers far less of the hyperbolic plane than a {7,3}
+heptagon, so at the same cell count the disc is smaller and its rim is drawn
+bigger -- the smallest tile of the 484-cell hard board covers about 2.4 times
+the screen area of the 477-cell {7,3} board's (a test pins "more than twice").
+It is trivalent, so a tile's neighbours are just its sides: six for a hexagon,
+seven for a heptagon, and a 7 next to a 6 is the thing to read with care.
+
+**The ids stay combinatorial.** A flag is (face, corner, edge) of the {p,q} the
+ring walk builds with integer ids, and a new vertex is named by the part of
+its flag the point's position does not collapse: (face, edge) for `zip`, the
+edge for `ambo`, (face, corner) for `expand`, the whole flag for `bevel` --
+tuples of the walk's integers, then renumbered in the order the faces meet
+them. A new face stands on every old face (F), every old vertex with all q
+faces round it (V) and every old edge with both of its faces (E), wherever
+that orbit does not collapse to fewer than three points. Nothing is rounded.
+
+**So do the positions.** The generating point is solved once, in the central
+p-gon's flag triangle, on the hyperboloid, where "as far from line A as from
+line B" is a linear condition on the lines' unit normals (one Minkowski cross
+product), and every face carries it -- turned to the right corner, mirrored
+for the flag on the other side of it -- through the isometry that placed the
+face. `TestHyperbolicUniform` checks one edge length throughout, every face
+regular and counterclockwise, the configuration at every inner vertex, and
+the corner angles round a vertex summing to 2 pi.
+
+**The trim, the twins and the disc are the {p,q} boards' own** (`_disc_board`
+is shared): faces kept by the distance of their centre (an old face's centre,
+an old vertex, an old edge's midpoint) from the central face, which is the
+heptagon (the 14-gon on `bevel`), so every trim keeps D7. The ring walk grows
+until its outer ring is a unit beyond the cut, as for {p,q}. `ambo` and `zip`
+have the same faces at the same centres, and `expand` and `bevel` likewise,
+so each pair's shell trims are the same faces before the drop. **The drop is
+where they part.** `zip` is trivalent, like {7,3}, and no trim of it has a
+twin or a near-twin, so it is the one uniform board the drop never touches.
+The other three meet four at a corner (`ambo`, `expand`) or carry 14-gons
+whose rims fan out (`bevel`), and lose rim cells to it at most trims --
+`expand` at 39 shells goes from 477 to 421 -- which is what moved their
+medium and hard rows out a few shells and roughly doubled the mines on
+`expand` and `bevel` medium (13 and 12 before the near-twins went, 21 and 22
+after). That also took away the 78-cell easy trim of `expand` and `bevel`,
+which played too hard to calibrate (0.91 and 0.88 at the opening floor), so
+their easy rows are 85 cells.
+
+**Two new things for the rest of the app.** A 14-gon is a side count nothing
+else has: it has a badge (`SHAPE_SIDES`, `hs.shape.14` in Game Center), shape
+colouring and the sound clamp it to the 13-gon's hue and pitch. And 6.6.7
+puts a hexagon and a heptagon on one board, which one pentatonic degree apart
+is a whole tone, so the sound spelling moved the 7-gon and everything above it
+down (see "One collection, and a spelling measured against the catalog" in
+[`web/docs/audio.md`](../../web/docs/audio.md)).
 
 ## The fractal boards
 
