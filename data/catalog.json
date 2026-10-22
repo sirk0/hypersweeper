@@ -232,6 +232,8 @@
     "hyperbolic55": "Pentagons {5,5}",
     "hyperbolic45": "Squares {4,5}",
     "hyperbolic46": "Squares {4,6}",
+    "hyperbolic37": "Triangles {3,7}",
+    "hyperbolic38": "Triangles {3,8}",
     "hyperbolic667": "Soccer ball 6.6.7",
     "hyperbolic3737": "Triheptagonal 3.7.3.7",
     "hyperbolic3474": "Rhombitriheptagonal 3.4.7.4",
@@ -837,8 +839,20 @@
       "surface": "flat",
       "family": "hyperbolic"
     },
+    "hyperbolic37": {
+      "label": "Triangles {3,7}",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
     "hyperbolic3737": {
       "label": "Triheptagonal 3.7.3.7",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
+    "hyperbolic38": {
+      "label": "Triangles {3,8}",
       "tiling": "",
       "surface": "flat",
       "family": "hyperbolic"
@@ -2097,6 +2111,8 @@
       "hyperbolic55",
       "hyperbolic45",
       "hyperbolic46",
+      "hyperbolic37",
+      "hyperbolic38",
       "hyperbolic667",
       "hyperbolic3737",
       "hyperbolic3474",

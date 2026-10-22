@@ -22,6 +22,8 @@ const TILINGS: [number, number][] = [
   [5, 5],
   [4, 5],
   [4, 6],
+  [3, 7],
+  [3, 8],
 ];
 
 describe("the hyperbolic boards", () => {
@@ -37,6 +39,9 @@ describe("the hyperbolic boards", () => {
     expect(counts(5, 5)).toEqual([1, 15, 105, 720, 4935]);
     expect(counts(4, 5)).toEqual([1, 12, 48, 180, 672]);
     expect(counts(4, 6)).toEqual([1, 16, 96, 560, 3264]);
+    // the triangle tilings are centred on a vertex: ring 0 is its q triangles
+    expect(counts(3, 7)).toEqual([7, 28, 77, 203, 532]);
+    expect(counts(3, 8)).toEqual([8, 40, 152, 568, 2120]);
   });
 
   it("give an inner cell p(q - 2) neighbours", () => {
@@ -83,11 +88,24 @@ describe("the hyperbolic boards", () => {
     expect(my).toBeCloseTo(board.height / 2, 9);
   });
 
+  it("centre a triangle tiling on a vertex, its q triangles round it", () => {
+    for (const q of [7, 8]) {
+      const board = hyperbolicBoard(3, q, 9, 1);
+      for (let cell = 0; cell < q; cell++) {
+        const hit = board.polygons
+          .get(String(cell))!
+          .some(([x, y]) => Math.abs(x - board.width / 2) < 1e-9 && Math.abs(y - board.height / 2) < 1e-9);
+        expect(hit, `{3,${q}} cell ${cell}`).toBe(true);
+      }
+    }
+  });
+
   it("refuse a tiling that is not hyperbolic", () => {
     for (const [p, q] of [
       [4, 4],
       [6, 3],
       [5, 3],
+      [3, 6],
     ] as const) {
       expect(() => hyperbolicBoard(p, q, 3, 1)).toThrow();
     }

@@ -126,6 +126,8 @@ describe("the declared shape list", () => {
       ["hyperbolic55", 5],
       ["hyperbolic45", 4],
       ["hyperbolic46", [4]],
+      ["hyperbolic37", [3]],
+      ["hyperbolic38", [3]],
       ["hyperbolic667", [6, 7]],
       ["hyperbolic3737", [3, 7]],
       ["hyperbolic3474", [3, 4, 7]],
