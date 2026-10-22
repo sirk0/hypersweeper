@@ -81,6 +81,11 @@ were. Both rules together are repeated until neither finds anything.
 
 The board is round by nature -- a deliberate exception to the square-window
 convention, as the fractals and Klaassen's spiral already are.
+
+**The uniform tilings come from the same walk.** `hyperbolic_uniform_board`
+builds 6.6.7 (the hyperbolic soccer ball), 3.7.3.7, 3.4.7.4 and 4.6.14 by
+Wythoff's construction on the {7,3} tiling above -- see the section of that
+name below -- and trims and draws them exactly as the {p,q} boards are.
 """
 
 from __future__ import annotations
@@ -361,7 +366,16 @@ def hyperbolic_board(
         raise ValueError("shells must be at least 1")
     faces, pos, groups = _rings_for(p, q, shells)
     kept = _without_twins(faces, sorted(f for group in groups[:shells] for f in group))
+    return _disc_board(f"hyperbolic{p}{q}", f"{{{p},{q}}}", shells, faces, kept, pos,
+                       mine_count, scale, arc)
 
+
+def _disc_board(mode: str, name: str, shells: int, faces: list[tuple[int, ...]],
+                kept: list[int], pos: dict[int, complex], mine_count: int,
+                scale: float, arc: int) -> Board:
+    """The kept faces as a board in the disc: each edge drawn as its geodesic
+    arc, the board centred on the disc's own centre. Shared by the regular
+    {p,q} boards and the uniform ones below; ``name`` is what the error says."""
     # Arc points along each edge: ids built from the edge's end ids (the lower
     # first), so both faces of an edge share them, and positions computed once
     # per edge, from its lower end, so both faces see the very same points.
@@ -386,7 +400,7 @@ def hyperbolic_board(
         cells[f] = ids
         mask[f] = corner
     if not _is_disc(cells):
-        raise ValueError(f"{{{p},{q}}} trimmed to {shells} shells is not a disc")
+        raise ValueError(f"{name} trimmed to {shells} shells is not a disc")
 
     def xy(key) -> tuple[float, float]:
         z = arc_pos[key] if isinstance(key, tuple) else pos[key]
@@ -403,7 +417,7 @@ def hyperbolic_board(
     }
     size = 2 * extent * scale
     return Board(
-        f"hyperbolic{p}{q}",
+        mode,
         polygons,
         _shared_vertex_adjacency(cells),
         mine_count,
@@ -411,3 +425,275 @@ def hyperbolic_board(
         size,
         corner_mask=mask,
     )
+
+
+# -- the uniform tilings: Wythoff's construction on {p,q} ----------------------
+#
+# Every uniform tiling with the {p,q} tiling's symmetry is one point's orbit
+# under that symmetry: put a *generating point* in one flag triangle -- the
+# triangle cut out of a face by its centre F, one of its corners V and the
+# midpoint E of an edge at that corner -- and reflect it everywhere. Where the
+# point sits decides the tiling (Conway's names, after Hart):
+#
+#   ``ambo``   at E                                   r{p,q}   3.7.3.7 on {7,3}
+#   ``zip``    on FE, as far from FV as from VE       t{q,p}   6.6.7
+#   ``expand`` on FV, as far from FE as from VE       rr{p,q}  3.4.7.4
+#   ``bevel``  inside, as far from all three sides    tr{p,q}  4.6.14
+#
+# ``zip`` is the truncation of the dual {q,p}: on {7,3} the hyperbolic soccer
+# ball, HyperRogue's default -- hexagons, with each heptagon ringed by them.
+#
+# **The ids stay combinatorial.** A flag is (face, corner, edge) of the {p,q}
+# the ring walk already builds with integer ids, and each new vertex is named
+# by the part of its flag that the generating point's position does not
+# collapse: (face, edge) for ``zip``, the edge alone for ``ambo``, (face,
+# corner) for ``expand`` and the whole flag for ``bevel`` -- tuples of the
+# walk's integers, renumbered in the order the faces meet them. The new tiling
+# has a face for every old face (F), every old vertex with all q faces round it
+# (V), and every old edge with both faces (E) wherever those orbits are not
+# collapsed to fewer than three points, which is exactly the table above.
+#
+# **So do the positions.** The generating point is found once, in the central
+# p-gon's flag triangle, on the hyperboloid (where "as far from" is a linear
+# condition), and every face carries it -- turned to the right corner, mirrored
+# for the flag on the other side of the corner -- through the same isometry
+# that placed that face.
+
+#: The four operations, in the order of the table above.
+WYTHOFF_OPS = ("ambo", "zip", "expand", "bevel")
+
+
+def _vertex_config(p: int, q: int, op: str) -> tuple[int, ...]:
+    """The faces round a vertex, smallest first as the notation writes them
+    (3.7.3.7, 6.6.7, 3.4.7.4, 4.6.14)."""
+    ring = {"ambo": [p, q, p, q], "zip": [2 * q, 2 * q, p],
+            "expand": [p, 4, q, 4], "bevel": [4, 2 * q, 2 * p]}[op]
+    turns = [ring[i:] + ring[:i] for i in range(len(ring))]
+    return tuple(min(turns + [t[::-1] for t in turns]))
+
+
+def wythoff_mode(p: int, q: int, op: str) -> str:
+    """The mode name: ``hyperbolic`` and the vertex configuration's digits."""
+    return "hyperbolic" + "".join(str(n) for n in _vertex_config(p, q, op))
+
+
+def _lift(z: complex) -> tuple[float, float, float]:
+    """A disc point on the hyperboloid t**2 - x**2 - y**2 = 1."""
+    s = 1 - abs(z) ** 2
+    return ((1 + abs(z) ** 2) / s, 2 * z.real / s, 2 * z.imag / s)
+
+
+def _drop(v: tuple[float, float, float]) -> complex:
+    """A timelike vector back to the disc, normalised and on the upper sheet."""
+    t, x, y = v
+    norm = math.sqrt(t * t - x * x - y * y)
+    if t < 0:
+        norm = -norm
+    return complex(x / norm, y / norm) / (1 + t / norm)
+
+
+def _mink_cross(a, b) -> tuple[float, float, float]:
+    """A vector Minkowski-orthogonal to both a and b."""
+    cx = a[1] * b[2] - a[2] * b[1]
+    cy = a[2] * b[0] - a[0] * b[2]
+    cz = a[0] * b[1] - a[1] * b[0]
+    return (-cx, cy, cz)
+
+
+def _line(a: complex, b: complex, inside: complex) -> tuple[float, float, float]:
+    """The geodesic through a and b as its unit normal on the hyperboloid,
+    signed so that ``inside`` is on its positive side; the normal's Minkowski
+    product with a lifted point is the sinh of the point's distance to it."""
+    n = _mink_cross(_lift(a), _lift(b))
+    length = math.sqrt(n[1] ** 2 + n[2] ** 2 - n[0] ** 2)
+    x = _lift(inside)
+    if -n[0] * x[0] + n[1] * x[1] + n[2] * x[2] < 0:
+        length = -length
+    return (n[0] / length, n[1] / length, n[2] / length)
+
+
+def _edge_midpoint(p: int, q: int) -> complex:
+    """The midpoint of the central p-gon's edge from corner 0 to corner 1: its
+    inradius r has cosh r = cos(pi/q) / sin(pi/p)."""
+    in_r = math.acosh(math.cos(math.pi / q) / math.sin(math.pi / p))
+    return cmath.rect(math.tanh(in_r / 2), math.pi / 2 + 2 * math.pi / p)
+
+
+def _generating_point(p: int, q: int, op: str) -> complex:
+    """The generating point in the central p-gon's flag triangle at corner 0
+    and the edge from corner 0 to corner 1."""
+    centre = _central_polygon(p, q)
+    mid = _edge_midpoint(p, q)
+    if op == "ambo":
+        return mid
+    corner = centre[0]
+    inside = (corner + mid) / 3
+    fv, fe, ve = (_line(0j, corner, inside), _line(0j, mid, inside),
+                  _line(corner, mid, inside))
+
+    def minus(a, b):
+        return (a[0] - b[0], a[1] - b[1], a[2] - b[2])
+
+    if op == "zip":
+        point = _mink_cross(fe, minus(fv, ve))
+    elif op == "expand":
+        point = _mink_cross(fv, minus(fe, ve))
+    elif op == "bevel":
+        point = _mink_cross(minus(fv, fe), minus(fe, ve))
+    else:
+        raise ValueError(f"unknown Wythoff operation {op!r}")
+    return _drop(point)
+
+
+def wythoff_faces(p: int, q: int, op: str, rings: int):
+    """The uniform tiling ``op`` of {p,q}, from the {p,q} tiling out to
+    ``rings`` rings: its faces as counterclockwise tuples of integer vertex
+    ids, each vertex's position, and each face's centre."""
+    if op not in WYTHOFF_OPS:
+        raise ValueError(f"unknown Wythoff operation {op!r}")
+    base, _ = hyperbolic_faces(p, q, rings)
+    bpos = hyperbolic_positions(p, q, base)
+    centre = _central_polygon(p, q)
+    w0 = _generating_point(p, q, op)
+    axis = cmath.exp(2j * (math.pi / 2 + 2 * math.pi / p))
+    w1 = axis * w0.conjugate()  # its mirror image across the line F-E
+    mid = _edge_midpoint(p, q)
+    turn = [cmath.exp(2j * math.pi * k / p) for k in range(p)]
+
+    def key(f: int, i: int, side: int) -> tuple:
+        # the flag at face f's corner i, on its edge to the next corner (side
+        # 0) or from the previous one (side 1), named by what the op keeps
+        face = base[f]
+        v = face[i]
+        u = face[(i + 1) % p] if side == 0 else face[i - 1]
+        edge = (min(u, v), max(u, v))
+        if op == "ambo":
+            return edge
+        if op == "zip":
+            return (f, *edge)
+        if op == "expand":
+            return (f, v)
+        return (f, v, u)
+
+    maps = [_isometry(centre[0], centre[1], bpos[face[0]], bpos[face[1]]) for face in base]
+    where: dict[tuple, complex] = {}
+
+    def flag(f: int, i: int, side: int) -> tuple:
+        k = key(f, i, side)
+        if k not in where:
+            local = turn[i] * w0 if side == 0 else turn[i - 1] * w1
+            where[k] = maps[f](local)
+        return k
+
+    def ring_of(keys: list[tuple]) -> list[tuple]:
+        out = [k for j, k in enumerate(keys) if k != keys[j - 1]]
+        return out if len(set(out)) == len(out) else []
+
+    new_faces: list[list[tuple]] = []
+    centres: list[complex] = []
+    # F: one per face of {p,q}, its flags in order round it
+    for f in range(len(base)):
+        loop = ring_of([flag(f, i, s) for i in range(p) for s in (1, 0)])
+        if len(loop) >= 3:
+            new_faces.append(loop)
+            centres.append(maps[f](0j))
+    # V: one per vertex with its whole star, the faces round it counterclockwise
+    left: dict[tuple[int, int], tuple[int, int]] = {}  # directed edge -> (face, index)
+    for f, face in enumerate(base):
+        for i in range(p):
+            left[(face[i], face[(i + 1) % p])] = (f, i)
+    star: dict[int, list[tuple[int, int]]] = {}
+    for f, face in enumerate(base):
+        for i, v in enumerate(face):
+            star.setdefault(v, []).append((f, i))
+    for v in sorted(star):
+        if len(star[v]) != q:
+            continue
+        f, i = min(star[v])
+        keys: list[tuple] = []
+        for _ in range(q):
+            keys += [flag(f, i, 0), flag(f, i, 1)]
+            f, i = left[(v, base[f][i - 1])]
+        loop = ring_of(keys)
+        if len(loop) >= 3:
+            new_faces.append(loop)
+            centres.append(bpos[v])
+    # E: one per edge with both its faces, round the edge's midpoint
+    for f, face in enumerate(base):
+        for i in range(p):
+            u, v = face[i], face[(i + 1) % p]
+            if u > v or (v, u) not in left:
+                continue
+            g, j = left[(v, u)]
+            loop = ring_of([flag(g, (j + 1) % p, 1), flag(g, j, 0),
+                            flag(f, (i + 1) % p, 1), flag(f, i, 0)])
+            if len(loop) >= 3:
+                new_faces.append(loop)
+                centres.append(maps[f](turn[i] * mid))
+    ids: dict[tuple, int] = {}
+    for loop in new_faces:
+        for k in loop:
+            ids.setdefault(k, len(ids))
+    faces = [tuple(ids[k] for k in loop) for loop in new_faces]
+    pos = {ids[k]: where[k] for k in ids}
+    return faces, pos, centres
+
+
+def _shell_groups(centres: list[complex]) -> list[list[int]]:
+    """Face indices grouped by their centre's distance from the disc's centre,
+    nearest first, within ``_SHELL_TOL``."""
+    rows = sorted((_distance(z), f) for f, z in enumerate(centres))
+    groups: list[list[int]] = []
+    last = -math.inf
+    for d, f in rows:
+        if d - last > _SHELL_TOL:
+            groups.append([])
+        groups[-1].append(f)
+        last = d
+    return groups
+
+
+def _wythoff_rings_for(p: int, q: int, op: str, shells: int) -> tuple:
+    """Grow the {p,q} rings until every new face out to the ``shells``-th
+    distance is built: a face is missing only where its {p,q} face, vertex or
+    edge is on the outer ring, which lies within a circumradius of that ring's
+    face centres -- so those centres a whole unit beyond the cut is enough."""
+    rings = 1
+    while True:
+        faces, pos, centres = wythoff_faces(p, q, op, rings)
+        groups = _shell_groups(centres)
+        base, ring_of = hyperbolic_faces(p, q, rings)
+        bpos = hyperbolic_positions(p, q, base)
+        outer = min(_distance(face_centre(p, q, face, bpos))
+                    for face, r in zip(base, ring_of) if r == rings)
+        if len(groups) > shells:
+            cut = _distance(centres[groups[shells - 1][0]])
+            if outer > cut + 1.0:
+                return faces, pos, groups
+        rings += 1
+        if rings > 12:
+            raise ValueError("too many shells")
+
+
+def hyperbolic_uniform_board(
+    p: int,
+    q: int,
+    op: str,
+    shells: int,
+    mine_count: int,
+    scale: float = 300.0,
+    arc: int = ARC_SEGMENTS,
+) -> Board:
+    """The uniform tiling ``op`` of {p,q} (one of `WYTHOFF_OPS`) in the
+    Poincaré disc, trimmed as `hyperbolic_board` trims: the faces at the
+    ``shells`` smallest distances from the central face, less their twins.
+    The central face is the one standing on the {p,q} tiling's central p-gon,
+    so every trim keeps its dihedral symmetry."""
+    _check_hyperbolic(p, q)
+    if shells < 1:
+        raise ValueError("shells must be at least 1")
+    faces, pos, groups = _wythoff_rings_for(p, q, op, shells)
+    kept = _without_twins(faces, sorted(f for group in groups[:shells] for f in group))
+    config = ".".join(str(n) for n in _vertex_config(p, q, op))
+    return _disc_board(wythoff_mode(p, q, op), config, shells, faces, kept, pos,
+                       mine_count, scale, arc)

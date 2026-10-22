@@ -30,7 +30,8 @@ import {
   substitutionPlacements,
   SUBSTITUTIONS,
 } from "../boards/fractal";
-import { hyperbolicBoard } from "../boards/hyperbolic";
+import { hyperbolicBoard, hyperbolicUniformBoard } from "../boards/hyperbolic";
+import type { WythoffOp } from "../boards/hyperbolic";
 import {
   ammannBeenkerBoard,
   brickRingsBoard,
@@ -1674,9 +1675,7 @@ function draw(rawKey: string): string[] {
     // rounded corner on every arc point would blur the curve away), the
     // central polygon lighter. Toned by the board's own corner mask, so the
     // arc points do not make a heptagon read as a 21-gon.
-    const p = Number(key.at(-2));
-    const q = Number(key.at(-1));
-    const board = hyperbolicBoard(p, q, HYPERBOLIC_ICON_SHELLS[key]!, 1, 1);
+    const board = hyperbolicDisc(key, HYPERBOLIC_ICON_SHELLS[key]!, 1);
     const tones = classifyShapes(board.polygons, board.cornerMask, true);
     const r = d * 0.46;
     const sc = (2 * r) / board.width;
@@ -2045,7 +2044,27 @@ const PATCH_BOARDS: Record<string, PatchBoard> = {
   hyperbolic55: { build: () => hyperbolicBoard(5, 5, 15, 0, 100), whole: true },
   hyperbolic45: { build: () => hyperbolicBoard(4, 5, 21, 0, 100), whole: true },
   hyperbolic46: { build: () => hyperbolicBoard(4, 6, 17, 0, 100), whole: true },
+  hyperbolic667: { build: () => hyperbolicDisc("hyperbolic667", 18, 100), whole: true },
+  hyperbolic3737: { build: () => hyperbolicDisc("hyperbolic3737", 18, 100), whole: true },
+  hyperbolic3474: { build: () => hyperbolicDisc("hyperbolic3474", 16, 100), whole: true },
+  hyperbolic4614: { build: () => hyperbolicDisc("hyperbolic4614", 16, 100), whole: true },
 };
+
+/** The uniform hyperbolic boards, each one of Wythoff's operations on {7,3}
+ * (boards/hyperbolic.ts); every other hyperbolic mode is `hyperbolic{p}{q}`. */
+const HYPERBOLIC_UNIFORM: Record<string, WythoffOp> = {
+  hyperbolic667: "zip",
+  hyperbolic3737: "ambo",
+  hyperbolic3474: "expand",
+  hyperbolic4614: "bevel",
+};
+
+/** A hyperbolic mode's disc trimmed to `shells`, with no mines. */
+function hyperbolicDisc(key: string, shells: number, scale: number): Board {
+  const op = HYPERBOLIC_UNIFORM[key];
+  if (op) return hyperbolicUniformBoard(7, 3, op, shells, 0, scale);
+  return hyperbolicBoard(Number(key.at(-2)), Number(key.at(-1)), shells, 0, scale);
+}
 
 /** The hyperbolic boards' row icons: how many distance shells to draw -- the
  * central polygon, its ring, and the next ring's nearest cells, which is as
@@ -2059,6 +2078,10 @@ const HYPERBOLIC_ICON_SHELLS: Record<string, number> = {
   hyperbolic55: 4,
   hyperbolic45: 5,
   hyperbolic46: 6,
+  hyperbolic667: 4,
+  hyperbolic3737: 4,
+  hyperbolic3474: 5,
+  hyperbolic4614: 5,
 };
 
 /** Where a mode's repeat domain is filed under another name. */

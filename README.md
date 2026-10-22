@@ -48,11 +48,15 @@ Pick a surface, then a tiling:
   self-similar — one tile inflated into a patch shaped like itself: the
   sphinx, the chair, the Sierpiński carpet, the pentaflake, and hexagons
   filling a Gosper island.
-  And three are not Euclidean at all — the game's namesake: regular
-  heptagons three to a corner ({7,3}), pentagons four to a corner ({5,4})
-  and squares five to a corner ({4,5}), which only fit in the *hyperbolic*
-  plane, drawn in the Poincaré disc with tiles shrinking toward a rim they
-  never reach. A tile there has 7, 10 or 12 neighbours.
+  And eleven are not Euclidean at all — the game's namesake: seven regular
+  {p,q} tilings, from octagons three to a corner ({8,3}) and heptagons
+  three to a corner ({7,3}) to squares six to a corner ({4,6}), which only fit
+  in the *hyperbolic* plane, drawn in the Poincaré disc with tiles shrinking
+  toward a rim they never reach; and four uniform tilings made from {7,3}:
+  the hyperbolic soccer ball (6.6.7 — hexagons ringing every heptagon,
+  HyperRogue's tiling), triangles and heptagons (3.7.3.7), triangles,
+  squares and heptagons (3.4.7.4), and squares, hexagons and 14-gons
+  (4.6.14).
   The menu groups these as **Regular**, **Uniform**, **Laves**, **2-uniform**
   (regular polygons edge to edge with *two* kinds of corner — all twenty of
   them, named for how each is made from a uniform tiling, from *Studded

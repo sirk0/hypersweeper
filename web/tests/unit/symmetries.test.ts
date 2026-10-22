@@ -288,6 +288,10 @@ describe("board symmetries", () => {
       ["hyperbolic64", "easy", 12], // D6
       ["hyperbolic55", "hard", 10], // D5
       ["hyperbolic46", "medium", 8], // D4
+      ["hyperbolic667", "hard", 14], // D7: the central heptagon's
+      ["hyperbolic3737", "easy", 14],
+      ["hyperbolic3474", "medium", 14],
+      ["hyperbolic4614", "hard", 14],
     ];
     for (const [mode, difficulty, order] of orders) {
       const board = buildBoard(mode, difficulty);

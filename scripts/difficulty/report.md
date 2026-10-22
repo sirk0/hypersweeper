@@ -12,7 +12,7 @@ Every board's mine count, chosen so its win probability under the reference solv
 
 ## Coverage
 
-- 870 rows, 825 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
+- 882 rows, 837 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
 - 45 could not be brought on target:
   - `cube3d`/hard: 33.3% vs 50.9% — the search could not resolve it -- its thinnest measurement finished 0 game(s), so the rate here is noise rather than a crossing the search walked to. Re-measure at a bigger `--budget`
   - `cyldodecarhombitrihex`/medium: 92.9% vs 87.1% — no integer mine count lands within tolerance; this is the closest
@@ -59,7 +59,7 @@ Every board's mine count, chosen so its win probability under the reference solv
   - `triakis`/hard: 0.0% vs 50.9% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `triakis`/medium: 0.0% vs 87.1% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `triakis`/easy: 1.8% vs 96.5% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
-- 237 rows had games the solver abandoned (its frontier DP hit its node budget); their rates are measured over the games that finished:
+- 239 rows had games the solver abandoned (its frontier DP hit its node budget); their rates are measured over the games that finished:
   - `cube3d`/hard: 466 abandoned
   - `torustrunchex`/hard: 168 abandoned
   - `torusrotatedhex`/hard: 144 abandoned
@@ -174,11 +174,15 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `hexrows` | 7.5 | 84c 6m (7%) 98% | 260c 30m (12%) 85% | 476c 70m (15%) 51% |
 | `hextri` | 11.1 | 96c 14m (15%) 97% | 294c 56m (19%) 86% | 486c 117m (24%) 49% |
 | `hextriangle` | 5.6 | 78c 9m (12%) 97% | 253c 38m (15%) 89% | 465c 97m (21%) 49% |
+| `hyperbolic3474` | 6.7 | 85c 5m (6%) 96% | 267c 21m (8%) 89% | 463c 58m (13%) 51% |
+| `hyperbolic3737` | 6.5 | 78c 6m (8%) 96% | 253c 20m (8%) 87% | 484c 67m (14%) 50% |
 | `hyperbolic45` | 6.8 | 81c 8m (10%) 97% | 253c 25m (10%) 89% | 481c 64m (13%) 52% |
 | `hyperbolic46` | 6.9 | 89c 6m (7%) 98% | 257c 23m (9%) 87% | 481c 53m (11%) 54% |
+| `hyperbolic4614` | 5.2 | 85c 7m (8%) 94% | 267c 22m (8%) 87% | 477c 47m (10%) 51% |
 | `hyperbolic54` | 5.6 | 91c 7m (8%) 99% | 261c 23m (9%) 85% | 481c 51m (11%) 53% |
 | `hyperbolic55` | 5.8 | 96c 7m (7%) 98% | 261c 22m (8%) 88% | 466c 48m (10%) 50% |
 | `hyperbolic64` | 5.3 | 85c 4m (5%) 98% | 259c 15m (6%) 89% | 475c 39m (8%) 48% |
+| `hyperbolic667` | 5.1 | 78c 9m (12%) 98% | 253c 29m (11%) 88% | 484c 74m (15%) 52% |
 | `hyperbolic73` | 4.6 | 85c 7m (8%) 99% | 246c 24m (10%) 86% | 477c 50m (10%) 55% |
 | `hyperbolic83` | 4.4 | 89c 6m (7%) 96% | 265c 17m (6%) 89% | 473c 44m (9%) 49% |
 | `icosahedron` | 11.8 | 80c 21m (26%) 96% | 320c 84m (26%) 90% | 500c 149m (30%) 55% |

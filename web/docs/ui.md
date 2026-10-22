@@ -321,7 +321,8 @@ with no edit to `boardFacts.ts`:
     tiles are regular too, however far the immersion bends them.
   - for a board that bends a regular tiling, the builder: `regularTiles` on the
     Goldberg polyhedra, the geodesic sphere, the spherical snub dodecahedron and
-    the hyperbolic {p,q} boards (whose surface row reads "Hyperbolic plane").
+    the hyperbolic boards, {p,q} and uniform alike (whose surface row reads
+    "Hyperbolic plane").
 
   A class is projected unless *every* cell in it keeps the ideal shape (the
   geodesic sphere's twenty exact triangles do not make its eighty

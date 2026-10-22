@@ -418,7 +418,7 @@ export const MENU_FAMILY_HINTS: Record<string, string> = {
   aperiodic: "Never repeats: Penrose, Ammann–Beenker, the Spectre",
   spiral: "Wound round a centre: sunflower, pentagons, brick rings",
   fractal: "One tile, grown into itself",
-  hyperbolic: "Curved space: 7, 10 or 12 neighbours a tile",
+  hyperbolic: "Curved space: more round a corner than fit flat",
 };
 
 /** Every mode on a surface the menu reaches: its picker page, promoted rows
