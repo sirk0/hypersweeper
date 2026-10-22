@@ -44,6 +44,7 @@ from scripts.difficulty.metrics import (
     aspect,
     distortion_summary,
     indistinguishable_cells,
+    near_twin_cells,
     vertex_types_shown,
 )
 
@@ -437,6 +438,14 @@ MAX_FACET_STEP = 0.20
 # what it takes to keep `torusbasketweave3` easy off a one-domain tube, where
 # a single brick would take a whole half turn.
 FOLD_WEIGHT = 3.0
+
+# How hard a window is pushed off one whose rim keeps near-twins the builder
+# could not peel (see `near_twin_cells`), charged on the share of the board
+# they make up. A coin flip outranks squareness: at 1.0 the tetrakis hard row
+# kept an 11x11 window with 40 of them over a 10x12 with none, the same 480
+# cells a fifth off square. At 4.0 a tenth of the cells costs about what that
+# fifth does -- still nothing like enough to leave the size band for.
+NEAR_TWIN_WEIGHT = 4.0
 
 # How wide the join of a *merged* board may be, over the width of one of the
 # pieces it joins (`waist_ratio`). Only the double torus has one, and it is the
@@ -1280,7 +1289,8 @@ def _score(mode: str, board, target: int, is_flat: bool,
            builder: str = "", spec: dict | None = None,
            trial: list | None = None) -> float:
     n = len(board.adjacency)
-    size_penalty = abs(math.log(n / target))
+    size_penalty = (abs(math.log(n / target))
+                    + NEAR_TWIN_WEIGHT * near_twin_cells(board.adjacency) / n)
     if spec is not None and spec.get("rigid"):
         return size_penalty
     if is_flat:

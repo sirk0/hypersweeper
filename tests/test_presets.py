@@ -50,12 +50,17 @@ EXEMPT = COARSE_GEOMETRY
 # two difficulties.
 EXEMPT_ROWS = {
     # Kisrhombille packs 24 cells into a domain two tiles wide, so the
-    # smallest tube or strip of it with enough tiles around to *close* as one
-    # -- rather than crumple into a twisted lozenge, which three domains
-    # around does -- is six domains, and that is already 144 cells. Reading as
-    # the surface outranks the size band (`resize.MIN_RING`).
-    ("cylkisrhombille", "easy"),
+    # smallest strip of it with enough tiles around to *close* as one --
+    # rather than crumple into a twisted lozenge, which three domains around
+    # does -- is six domains: 144 cells, 120 once its rim's near-twins are
+    # peeled. Reading as the surface outranks the size band
+    # (`resize.MIN_RING`). The cylinder's half-domain tube peels to 72.
     ("mobiuskisrhombille", "easy"),
+    # Tritrunctrihexagonal's strip is cut just below a row of dodecagons (the
+    # one cut whose rim pins no near-twin by a corner), so a Mobius band of it
+    # closes its seam only at whole domains plus a sliver, and the narrowest
+    # that the immersion draws at its full width is five domains round: 170.
+    ("mobiustritrunctrihex", "easy"),
     # The same arithmetic on a donut and a bottle, from the other bar: a tile
     # may not span more than a quarter of a direction that closes, or it is
     # drawn as a flat plate through the axis rather than a facet of a tube

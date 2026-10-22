@@ -525,9 +525,13 @@ easy (`squaretrihex2`'s at 84–88%, `fannedhex`'s at 88–90%). `elongated3` is
 the quarter turn: flat, its rows step a whole band of four courses and no cut
 gives either surface an easy board under 108 cells; turned, they step one edge
 and both get one of the classic size. `snubelongated` wraps on its glide.
-`tritrunctrihex` easy plays harder than its target whatever the cut and
-layout (93.5% at best at the opening floor) and is flagged in the report on
-both surfaces, as the cylinder was at its old cut. A band under one domain tall
+`tritrunctrihex` has since moved its cut once more, to just below a row of
+dodecagons: every strip at the zigzag pinned two triangles per gap to the rim by
+a corner, near-twins no peel can reach (see "A window's rim is cut back by its
+near-twins" in [`geometry.md`](geometry.md)). Its easy cylinder still plays
+harder than its target at the opening floor (92%) and is flagged; its easy band
+closes its seam only at whole domains plus a sliver and ships at 170 cells, an
+`EXEMPT_ROWS` entry, and plays on target. A band under one domain tall
 is a real window here, as it is on the cylinder: `resize._mobius_rows`
 enumerates the row counts the seam accepts the way `_cylinder_rows` does,
 rather than stepping on from the seed's fraction, which never offered

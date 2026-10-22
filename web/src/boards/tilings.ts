@@ -5,6 +5,7 @@ import {
   buildLattice,
   cid,
   finalizeFlat,
+  withoutNearTwins,
   type Board,
   type CellId,
   type Vertex,
@@ -2063,13 +2064,15 @@ function elongated3Template(): ArchTemplate {
 
 /** [3⁶; 3².4.12], p6m: truncated trihexagonal (4.6.12) with every
  * hexagon cut into six triangles. A hexagon's centre becomes 3⁶ and each of
- * its corners, 4.6.12 before, 4.3.3.12. */
+ * its corners, 4.6.12 before, 4.3.3.12. Cut just below a row of dodecagon
+ * centres, so each rim is dodecagons with a square between each two -- see
+ * `_tritrunctrihex_template` for why. */
 function tritrunctrihexTemplate(): ArchTemplate {
   return cellTemplate([3, 4, 12], [7, 8, 8, 8, 9], [9, 10, 10, 10, 11], [[-1, 1], [-1, -1]], [
     [12, [4], 3], [4, [10], 11], [4, [4], 0], [4, [6], 7], [3, [], 2], [3, [], 4],
     [3, [], 8], [3, [], 10], [3, [], 0], [3, [], 6], [3, [10, 11], 0], [3, [3, 4], 0],
     [3, [6, 7], 8], [3, [10, 11], 10], [3, [0, 11], 10], [3, [2, 3], 2],
-  ], { centre: 0, cut: 17 / 23 });
+  ], { centre: 0, cut: 1 - ROOT3 / 36 });
 }
 
 /** [3⁶; 3².6²], p6m: hexagonal with one hexagon in three cut into six
@@ -2352,6 +2355,15 @@ export function templateCells(
  * built from the tiling's periodic domain (the same template that wraps the
  * donut/cylinder/Möbius/Klein). The window is centred on the larger tile
  * nearest the middle so the patch is symmetric under the tiling's point group. */
+/** Drop from `positions` every vertex no cell of `cells` uses any more, so a
+ * trimmed board measures (and shifts, and frames) off its own corners only,
+ * as the Python builders do by placing vertices from the cells. */
+export function pruneTo<P>(cells: Map<CellId, string[]>, positions: Map<string, P>): void {
+  const used = new Set<string>();
+  for (const keys of cells.values()) for (const k of keys) used.add(k);
+  for (const k of [...positions.keys()]) if (!used.has(k)) positions.delete(k);
+}
+
 /** Round a window's half-extent to a whole number of grain lines.
  *
  * A window that ends between two of them ends inside a course of tiles, and the
@@ -2478,7 +2490,14 @@ export function archimedeanBoard(
       kept.push([cell, g]);
     }
   }
-  const board = finalizeFlat(tiling, cells, positions, mineCount, scale);
+  // a window's edge can leave a tile whose neighbours are all a neighbour's
+  // too, bar one: it is cut away rather than left to end games on a coin flip
+  const trimmed = withoutNearTwins(cells);
+  if (trimmed.size < cells.size) {
+    pruneTo(trimmed, positions);
+    kept.splice(0, kept.length, ...kept.filter(([cell]) => trimmed.has(cell)));
+  }
+  const board = finalizeFlat(tiling, trimmed, positions, mineCount, scale);
   if (!t.anchors) return board;
   // Match finalizeFlat's own shift-then-scale exactly, off the same
   // `positions` it read — an anchor is not one of the cell's vertices, so it

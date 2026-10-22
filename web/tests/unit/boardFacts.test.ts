@@ -43,7 +43,7 @@ describe("shape names", () => {
     expect(shapes("rhombille")).toEqual(["Rhombi 80"]);
     expect(shapes("deltoidal")).toEqual(["Kites 76"]);
     expect(shapes("tetrakis")).toEqual(["Isosceles triangles 84"]);
-    expect(shapes("kisrhombille")).toEqual(["Irregular triangles 72"]); // 30-60-90
+    expect(shapes("kisrhombille")).toEqual(["Irregular triangles 76"]); // 30-60-90
     expect(shapes("cairo")).toEqual(["Irregular pentagons 80"]);
     expect(shapes("stackedbond")).toEqual(["Rectangles 91"]);
   });
@@ -63,7 +63,7 @@ describe("shape names", () => {
     // dart's reflex corner rather than by size or angle.
     expect(shapes("kitedart")).toEqual(["Darts 26", "Kites 55"]);
     // The Pythagorean tiling: one square in two sizes.
-    expect(shapes("pythagorean")).toEqual(["Squares · small 40", "Squares · large 47"]);
+    expect(shapes("pythagorean")).toEqual(["Squares · small 40", "Squares · large 43"]);
     expect(shapes("threescaletri")).toEqual([
       "Equilateral triangles · small 27",
       "Equilateral triangles · medium 27",

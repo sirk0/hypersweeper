@@ -27,16 +27,6 @@
         "crosses": true
       }
     },
-    "mobiustrunctrihex": {
-      "easy": {
-        "shapeP90": 0.513,
-        "regularP90": 1.513,
-        "stretch": 1.68,
-        "bend": 0.405,
-        "folded": 0,
-        "crosses": true
-      }
-    },
     "mobiusdeltoidal": {
       "easy": {
         "shapeP90": 0.521,
@@ -117,25 +107,25 @@
     },
     "mobiuskisrhombille": {
       "easy": {
-        "shapeP90": 0.701,
-        "regularP90": 2.117,
-        "stretch": 1.0,
+        "shapeP90": 0.585,
+        "regularP90": 1.972,
+        "stretch": 0.93,
         "bend": 0.0,
         "folded": 0,
         "crosses": true
       },
       "medium": {
-        "shapeP90": 0.588,
-        "regularP90": 1.976,
-        "stretch": 1.0,
+        "shapeP90": 0.503,
+        "regularP90": 1.869,
+        "stretch": 0.96,
         "bend": 0.0,
         "folded": 0,
         "crosses": true
       },
       "hard": {
-        "shapeP90": 0.667,
-        "regularP90": 2.074,
-        "stretch": 1.0,
+        "shapeP90": 0.625,
+        "regularP90": 2.022,
+        "stretch": 0.98,
         "bend": 0.0,
         "folded": 0,
         "crosses": true
@@ -267,26 +257,26 @@
     },
     "mobiusbasketweave3": {
       "easy": {
-        "shapeP90": 0.568,
-        "regularP90": 2.198,
-        "stretch": 1.67,
-        "bend": 0.103,
+        "shapeP90": 0.532,
+        "regularP90": 2.121,
+        "stretch": 0.58,
+        "bend": 0.073,
         "folded": 0,
         "crosses": true
       },
       "medium": {
-        "shapeP90": 0.686,
-        "regularP90": 2.41,
-        "stretch": 1.05,
-        "bend": 0.105,
+        "shapeP90": 0.661,
+        "regularP90": 2.308,
+        "stretch": 0.84,
+        "bend": 0.068,
         "folded": 0,
         "crosses": true
       },
       "hard": {
-        "shapeP90": 0.697,
-        "regularP90": 2.379,
-        "stretch": 1.06,
-        "bend": 0.073,
+        "shapeP90": 0.665,
+        "regularP90": 2.299,
+        "stretch": 0.83,
+        "bend": 0.051,
         "folded": 0,
         "crosses": true
       }

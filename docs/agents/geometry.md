@@ -253,6 +253,32 @@ bond: n rings fill a 2n x 2n square exactly, so each face is the flat
 one face's row against the other's side at every one of the twelve edges, so
 the rings break at all of them, and each face keeping its rings' two mirrors
 and half turn leaves the board the pyritohedral 24 of the 48 at every n.
+
+**A window's rim is cut back by its near-twins.** A periodic tiling has no
+near-twin in its interior -- no seamless donut of one has any -- but a window's
+edge can leave a tile whose closed neighbourhood is a neighbour's less one cell:
+the square between two hexagons on a rhombitrihexagonal rim, the outer brick of
+a three-brick block lying along the edge, the sliver between two big triangles
+on a kisrhombille one. Only that one cell's number tells the pair apart, so a
+mine on it makes a mine in the pair a coin flip, and the calibration answered a
+rim of them as it did the hyperbolic discs' -- with half the mines the seamless
+donut of the same tiling carries. So the flat window, the cylinder and the
+Möbius strip all pass their cells through `core._without_near_twins`
+(`withoutNearTwins` in `core.ts`), which drops the smaller tile of every such
+pair -- or, where that tile cannot come away whole, the bigger -- repeated until
+none is left. *Whole* is `_peelable`: the tile meets the rim in one unbroken run
+of its own edges and nowhere else, so the board stays a disc or a strip, never
+a window with a hole in it or two tiles pinched together at a corner. Both the
+relation and that test are ones a window's symmetry preserves, so the trim keeps
+it. Exact twins are left alone: the triakis tiling is made of them and peeling
+would eat the board, so it stays flagged instead. Where a window's edge pins a
+near-twin by a corner the peel cannot reach, the size search pays for the ones
+left (`resize.NEAR_TWIN_WEIGHT`) and steps to a window without; and
+`tritrunctrihex` moved its cut (to `1 - ROOT3 / 36` of the domain, just below a
+row of dodecagon centres) because every strip at the old one pinned two triangles
+per gap. `TestRimNearTwins` holds every shipped window to none, bar the one row
+it lists.
+
 `ARCH_TILINGS` is
 listed in vertex-configuration order — Wikipedia's "List of Euclidean
 uniform tilings" order — and that registry order is the menu order.
