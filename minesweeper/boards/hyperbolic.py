@@ -106,6 +106,7 @@ name below -- and trims and draws them exactly as the {p,q} boards are.
 from __future__ import annotations
 
 import cmath
+import functools
 import math
 
 from minesweeper.boards.core import Board, Cell, _shared_vertex_adjacency
@@ -240,7 +241,8 @@ def _ring_walk(p: int, q: int, rings: int) -> tuple[list[tuple[int, ...]], list[
 # -- the Poincaré disc ---------------------------------------------------------
 
 
-def _central_polygon(p: int, q: int) -> list[complex]:
+@functools.cache
+def _central_polygon(p: int, q: int) -> tuple[complex, ...]:
     """The central p-gon's corners: circumradius R with cosh R =
     cot(pi/p) cot(pi/q), which in the disc is Euclidean radius tanh(R/2).
     One edge is horizontal, so the polygon (and every trim of the tiling) is
@@ -248,11 +250,11 @@ def _central_polygon(p: int, q: int) -> list[complex]:
     these coordinates, which is the bottom of the screen: pixel y runs down,
     and like every flat builder this one hands its y over unflipped. For
     {3,q}, centred on a vertex, it is only the template every triangle is a
-    copy of."""
+    copy of. Cached: every face's centre is measured against it."""
     big_r = math.acosh(1 / (math.tan(math.pi / p) * math.tan(math.pi / q)))
     r = math.tanh(big_r / 2)
-    return [cmath.rect(r, math.pi / 2 + math.pi / p + 2 * math.pi * k / p)
-            for k in range(p)]
+    return tuple(cmath.rect(r, math.pi / 2 + math.pi / p + 2 * math.pi * k / p)
+                 for k in range(p))
 
 
 def _to_origin(a: complex, z: complex) -> complex:
@@ -335,36 +337,33 @@ def _arc_points(a: complex, b: complex, segments: int) -> list[complex]:
 
 def _shells(p: int, q: int, faces, pos) -> list[list[int]]:
     """Face indices grouped by distance from the disc's centre, nearest first."""
-    rows = sorted((_distance(face_centre(p, q, face, pos)), f)
-                  for f, face in enumerate(faces))
-    groups: list[list[int]] = []
-    last = -math.inf
-    for d, f in rows:
-        if d - last > _SHELL_TOL:
-            groups.append([])
-        groups[-1].append(f)
-        last = d
-    return groups
+    return _shell_groups([face_centre(p, q, face, pos) for face in faces])
+
+
+@functools.cache
+def _tiling(p: int, q: int, rings: int) -> tuple:
+    """The {p,q} tiling out to ``rings`` rings: its faces, their rings, every
+    vertex's position and every face's centre. Cached, and only ever read: a
+    trim regrows the tiling ring by ring from the first, and the size search,
+    the icons and the tests trim one tiling many times over."""
+    faces, ring_of = hyperbolic_faces(p, q, rings)
+    pos = hyperbolic_positions(p, q, faces)
+    return faces, ring_of, pos, [face_centre(p, q, face, pos) for face in faces]
 
 
 def _rings_for(p: int, q: int, shells: int) -> tuple:
     """Grow rings until the nearest face of the newest ring lies beyond the
     ``shells``-th distance, so every face that close has been generated (each
     ring encloses the ones before it). One spare ring settles the last shell."""
-    rings = 1
-    while True:
-        faces, ring_of = hyperbolic_faces(p, q, rings)
-        pos = hyperbolic_positions(p, q, faces)
-        groups = _shells(p, q, faces, pos)
-        outer = min(_distance(face_centre(p, q, face, pos))
-                    for face, r in zip(faces, ring_of) if r == rings)
+    for rings in range(1, 13):
+        faces, ring_of, pos, centres = _tiling(p, q, rings)
+        groups = _shell_groups(centres)
+        outer = min(_distance(z) for z, r in zip(centres, ring_of) if r == rings)
         if len(groups) > shells:
-            cut = _distance(face_centre(p, q, faces[groups[shells - 1][0]], pos))
+            cut = _distance(centres[groups[shells - 1][0]])
             if outer > cut + 1.0:
                 return faces, pos, groups
-        rings += 1
-        if rings > 12:
-            raise ValueError("too many shells")
+    raise ValueError("too many shells")
 
 
 def _without_twins(faces: list[tuple[int, ...]], kept: list[int]) -> list[int]:
@@ -630,8 +629,7 @@ def wythoff_faces(p: int, q: int, op: str, rings: int):
     ids, each vertex's position, and each face's centre."""
     if op not in WYTHOFF_OPS:
         raise ValueError(f"unknown Wythoff operation {op!r}")
-    base, _ = hyperbolic_faces(p, q, rings)
-    bpos = hyperbolic_positions(p, q, base)
+    base, _, bpos, _ = _tiling(p, q, rings)
     centre = _central_polygon(p, q)
     w0 = _generating_point(p, q, op)
     axis = cmath.exp(2j * (math.pi / 2 + 2 * math.pi / p))
@@ -737,21 +735,20 @@ def _wythoff_rings_for(p: int, q: int, op: str, shells: int) -> tuple:
     distance is built: a face is missing only where its {p,q} face, vertex or
     edge is on the outer ring, which lies within a circumradius of that ring's
     face centres -- so those centres a whole unit beyond the cut is enough."""
-    rings = 1
-    while True:
-        faces, pos, centres = wythoff_faces(p, q, op, rings)
+    for rings in range(1, 13):
+        faces, pos, centres = _wythoff_tiling(p, q, op, rings)
         groups = _shell_groups(centres)
-        base, ring_of = hyperbolic_faces(p, q, rings)
-        bpos = hyperbolic_positions(p, q, base)
-        outer = min(_distance(face_centre(p, q, face, bpos))
-                    for face, r in zip(base, ring_of) if r == rings)
+        _, ring_of, _, base_centres = _tiling(p, q, rings)
+        outer = min(_distance(z) for z, r in zip(base_centres, ring_of) if r == rings)
         if len(groups) > shells:
             cut = _distance(centres[groups[shells - 1][0]])
             if outer > cut + 1.0:
                 return faces, pos, groups
-        rings += 1
-        if rings > 12:
-            raise ValueError("too many shells")
+    raise ValueError("too many shells")
+
+
+#: `wythoff_faces`, cached as `_tiling` is and for the same reason.
+_wythoff_tiling = functools.cache(wythoff_faces)
 
 
 def hyperbolic_uniform_board(
