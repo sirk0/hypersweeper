@@ -246,7 +246,11 @@ describe("the hyperbolic boards' disc", () => {
       expect(far).toBeLessThan(1);
       // the outer shell is ragged, so the rim is well inside the farthest point
       expect(disc.rim).toBeLessThan(far);
-      expect(disc.rim).toBeGreaterThan(0.9);
+      // (0.97 to 0.99 on the {p,q} boards; the uniform ones' tiles cover less
+      // of the plane, so the same cell count fills less of the disc -- the
+      // point of them -- and 3.4.7.4's rim, carved by the near-twin drop, is
+      // whole to 0.89)
+      expect(disc.rim, mode).toBeGreaterThan(0.85);
       // ...and the board covers everything inside it: probe a ring just
       // inside the rim, every point in some cell's outline
       const polys = [...board.polygons.values()];
