@@ -102,6 +102,9 @@ const MODES = [
   "hyperbolic73",
   "hyperbolic54",
   "hyperbolic45",
+  // ...and a closed surface drawn as a patch of the disc that covers it: every
+  // cell drawn at least once, its copies showing one state
+  "hurwitz667",
   // M7 isogonal tilings, which are not edge to edge: the two that put one
   // regular polygon on the board at several sizes, so the shots cover both the
   // T-vertex geometry and the size-lightness axis it needs.

@@ -273,3 +273,56 @@ test.describe("hyperbolic panning", () => {
     expect(await page.evaluate(() => window.__ms!.state().minesRemaining)).toBe(mines);
   });
 });
+
+test.describe("a closed surface's pan", () => {
+  // hurwitz667 is a closed surface drawn as a patch of the disc that covers
+  // it: the pan steps across the cover and relabels as it goes
+  // (`discRecentre`), so unlike a disc board it never runs out of board.
+  test.beforeEach(async ({ page }) => {
+    await page.setViewportSize({ width: 420, height: 780 });
+    await page.goto("/");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    await page.evaluate(() => window.__ms?.startBoard("hurwitz667", "hard", { seed: 7 }));
+    await frame(page);
+  });
+
+  test("goes on as far as it is thrown, board all round the view, and a tap still opens", async ({
+    page,
+  }) => {
+    const centre = (await at(page, "0"))!;
+    const radius = await page.evaluate(() => {
+      const ms = window.__ms!;
+      return Math.max(...ms.cells().map((c) => ms.cellScreenXY(c)!.x));
+    }) - centre.x;
+    const board = (x: number, y: number) =>
+      page.evaluate(
+        ([px, py]) =>
+          [[0, 0], [4, 0], [-4, 0], [0, 4], [0, -4]].some(
+            ([dx, dy]) => window.__ms!.cellAtScreenXY(px! + dx!, py! + dy!) !== null,
+          ),
+        [x, y],
+      );
+    // Twice as far as a disc board's hold lets one go, and round a corner.
+    for (let k = 0; k < 8; k++) {
+      const [dx, dy] = k < 5 ? [1, 0] : [0, 1];
+      await drag(
+        page,
+        { x: centre.x + dx * radius * 0.6, y: centre.y + dy * radius * 0.6 },
+        { x: centre.x - dx * radius * 0.6, y: centre.y - dy * radius * 0.6 },
+        10,
+      );
+      for (const [px, py] of [[0, 0], [0.6, 0], [-0.6, 0], [0, 0.6], [0, -0.6]]) {
+        expect(await board(centre.x + px! * radius, centre.y + py! * radius), `stroke ${k}`).toBe(true);
+      }
+    }
+    expect(await page.evaluate(() => window.__ms!.state().revealed)).toBe(0);
+    const cell = await page.evaluate(([x, y]) => window.__ms!.cellAtScreenXY(x!, y!), [centre.x, centre.y]);
+    expect(cell).not.toBeNull();
+    await page.mouse.click(centre.x, centre.y);
+    const after = await page.evaluate((c) => {
+      const ms = window.__ms!;
+      return { state: ms.cellState(c), status: ms.state().status };
+    }, cell!);
+    expect(after.state === "revealed" || after.status === "lost").toBe(true);
+  });
+});

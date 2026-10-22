@@ -229,6 +229,7 @@ describe("catalog families", () => {
       "hyperbolic3737",
       "hyperbolic3474",
       "hyperbolic4614",
+      "hurwitz667",
     ]);
   });
 });

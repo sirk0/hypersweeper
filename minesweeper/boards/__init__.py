@@ -177,6 +177,12 @@ from minesweeper.boards.fractal import (  # noqa: F401
     sphinx_board,
     substitution_placements,
 )
+from minesweeper.boards.hurwitz import (  # noqa: F401
+    HURWITZ_SURFACES,
+    hurwitz_board,
+    hurwitz_cells,
+    hurwitz_map,
+)
 from minesweeper.boards.hyperbolic import (  # noqa: F401
     hyperbolic_board,
     hyperbolic_faces,

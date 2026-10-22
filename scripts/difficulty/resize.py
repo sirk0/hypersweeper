@@ -40,6 +40,7 @@ from pathlib import Path
 from minesweeper.boards import presets as P
 from minesweeper.boards.catalog import surface_of
 from minesweeper.boards.core import boundary_components, euler_characteristic
+from minesweeper.boards.hurwitz import HURWITZ_SURFACES
 from scripts.difficulty.metrics import (
     aspect,
     distortion_summary,
@@ -247,6 +248,12 @@ SPEC: dict[str, dict] = {
     # the uniform tilings of {7,3} (hyperbolic_uniform_board(p, q, op, shells,
     # mines, scale)): the same disc and the same knob, after the op
     "hyperbolic_uniform_board": dict(size=(3,), mine=4, shape=5, kind="scale"),
+    # the closed hyperbolic surfaces (hurwitz_board(surface, op, margin, mines,
+    # scale)): the surface *is* the size -- its genus fixes how many heptagons
+    # it carries -- so the knob is the surface itself, enumerated by
+    # `_grid_hurwitz`, and ``rigid``: the patch draws every tile congruent in
+    # the plane it lives in, so there is no shape for the search to weigh.
+    "hurwitz_board": dict(size=(0,), mine=3, shape=None, rigid=True, grid="hurwitz"),
     "archimedean_board": dict(size=(1, 2), mine=3, shape=4, kind="scale", lead=1),
     "arch_torus_board": dict(size=(1, 2), mine=3, shape=4, kind="tube", lead=1,
                              torus=True),
@@ -302,8 +309,14 @@ def _grid_goldberg3() -> list[list[int]]:
             if (h - k) % 3 != 0]
 
 
+# ``hurwitz_board(surface, ...)``: the three Hurwitz surfaces, smallest first.
+def _grid_hurwitz() -> list[list[str]]:
+    return [[surface] for surface in HURWITZ_SURFACES]
+
+
 GRIDS = {
     "goldberg3": _grid_goldberg3,
+    "hurwitz": _grid_hurwitz,
     "cubeframe": _grid_cubeframe,
     "bipyramid": _grid_bipyramid,
     "steppedpyramid": _grid_steppedpyramid,

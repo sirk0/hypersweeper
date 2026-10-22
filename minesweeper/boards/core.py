@@ -32,6 +32,17 @@ class Board:
     # web/src/boards/core.ts. None where every point is a corner, or where the
     # extra points are collinear T-vertices a geometric test finds exactly.
     corner_mask: dict[Cell, list[bool]] | None = None
+    # A board drawn as a *patch of its own cover* (the closed hyperbolic
+    # surfaces, drawn in the Poincaré disc that covers them, every cell as
+    # many times as the patch reaches it): ``faces`` maps each drawn face to
+    # the cell it shows, as `Board3D.faces` does, so ``polygons`` and
+    # ``corner_mask`` are keyed by face and ``adjacency`` by cell. A patch is
+    # no whole number of sheets, so `covering_sheets` cannot count the
+    # surface off the drawing; ``quotient`` gives each cell's corners as the
+    # surface's own vertex ids instead, and the topology helpers count those.
+    # Both None for every other flat board.
+    faces: dict | None = None
+    quotient: dict[Cell, list] | None = None
 
 
 @dataclass(frozen=True)
@@ -176,22 +187,34 @@ _HEX_VERTEX_OFFSETS = [(0, -2), (1, -1), (1, 1), (0, 2), (-1, 1), (-1, -1)]
 # -- topology (surface invariants, shared by tests and future surfaces) ------
 
 
+def mesh_loops(board) -> list[list]:
+    """The board's surface as loops of vertex keys, one per polygon: its
+    polygons' corners rounded to six places -- or, on a board drawn as a
+    patch of its cover, each cell's corners as the surface's own ids
+    (``Board.quotient``), since the patch is not the surface."""
+    quotient = getattr(board, "quotient", None)
+    if quotient is not None:
+        return [list(keys) for keys in quotient.values()]
+    return [[tuple(round(c, 6) for c in p) for p in polygon]
+            for polygon in board.polygons.values()]
+
+
 def corner_fans(board) -> dict:
     """Map each distinct polygon corner (rounded) to the list of cell
     sizes meeting there. The number of keys is the vertex count V."""
     at_vertex = defaultdict(list)
-    for polygon in board.polygons.values():
-        for point in polygon:
-            key = tuple(round(c, 6) for c in point)
-            at_vertex[key].append(len(polygon))
+    for loop in mesh_loops(board):
+        for key in loop:
+            at_vertex[key].append(len(loop))
     return at_vertex
 
 
 def covering_sheets(board) -> int:
     """How many times the drawing covers the board: 1 for every board but
     one drawn through ``Board3D.faces`` (the projective plane, drawn as the
-    sphere that double-covers it, so 2)."""
-    if getattr(board, "faces", None) is None:
+    sphere that double-covers it, so 2). A patch of a cover counts its
+    surface off ``Board.quotient`` instead, which is the surface once."""
+    if getattr(board, "faces", None) is None or getattr(board, "quotient", None):
         return 1
     return len(board.polygons) // len(board.adjacency)
 
@@ -203,12 +226,12 @@ def euler_characteristic(board) -> int:
     has k times its Euler characteristic, so the projective plane, drawn as
     the sphere, measures 2 / 2 = 1."""
     vertices = len(corner_fans(board))
+    loops = mesh_loops(board)
     edges = set()
-    for polygon in board.polygons.values():
-        points = [tuple(round(c, 6) for c in p) for p in polygon]
+    for points in loops:
         for a, b in zip(points, points[1:] + points[:1]):
             edges.add(frozenset((a, b)))
-    chi = vertices - len(edges) + len(board.polygons)
+    chi = vertices - len(edges) + len(loops)
     sheets = covering_sheets(board)
     if chi % sheets:
         raise ValueError(f"a {sheets}-sheeted drawing with chi {chi}")
@@ -220,8 +243,7 @@ def boundary_components(board) -> int:
     cell. 0 = closed (sphere, torus, Klein bottle), 2 = cylinder rims,
     1 = Mobius strip edge."""
     count = defaultdict(int)
-    for polygon in board.polygons.values():
-        points = [tuple(round(c, 6) for c in p) for p in polygon]
+    for points in mesh_loops(board):
         for a, b in zip(points, points[1:] + points[:1]):
             count[frozenset((a, b))] += 1
     graph = defaultdict(set)

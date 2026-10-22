@@ -817,6 +817,35 @@ must sound a chord -- `soundHarmony.test.ts` fails if it does not, and the fix
 is the spelling in `audio/presets.ts`. See
 [`geometry.md`](geometry.md#the-uniform-hyperbolic-boards).
 
+**A closed hyperbolic surface** (`hurwitz.py`, `web/src/boards/hurwitz.ts`)
+is a surface rather than a trim, and a new one is a group, not a builder. Read
+[`geometry.md`](geometry.md#the-closed-hyperbolic-surfaces) first.
+
+1. **The surface** -- a row in `HURWITZ_SURFACES` in both ports: the q of the
+   PSL(2,q) whose Hurwitz generators make it, and its genus. The group code
+   takes a prime q, and 8; another prime power needs its field written into
+   `_field` / `field` (as GF(8) is). A group with more than one Hurwitz
+   surface (PSL(2,13) has three) gives the one the generator search meets
+   first; say which by a computed invariant -- the Petrie length
+   (`petrie_length` / `petrieLength`) -- and pin it in both test files, or a
+   change to the search swaps the board without a word. Add its label to
+   `HURWITZ_LABELS`.
+2. **Which mode it joins.** The surface is the size, so a new surface is a
+   preset row of an existing mode at the difficulty whose band its cell count
+   lands in (`_grid_hurwitz` in `resize.py` offers every surface the table
+   lists), or a new mode for a new tiling: any of `HURWITZ_OPS` builds, and
+   the mode is `hurwitz_mode(op)`. A new mode needs the menu, label, icon and
+   test rows of a hyperbolic one (steps 1, 3 and 4 above, with `hurwitz667`'s
+   entries to copy).
+3. **The patch must reach every cell** -- the builder grows it until it does --
+   and its face count grows quickly with the genus: 1863 faces for the
+   genus-14 board. A much bigger surface wants a measurement of the build and
+   the pan before it ships.
+4. **Tests** -- `_HURWITZ` in `tests/test_boards.py` and `SURFACES` in
+   `web/tests/unit/hurwitz.test.ts` (group order, faces, vertices, edges), and
+   the D7 the patch keeps to `symmetries.test.ts` -- which measures whether the
+   mirror survives, so a chiral surface would show there as 7 rather than 14.
+
 ## Recipe: add an aperiodic / shaped / solid board
 
 These are one-offs, not tiling×surface products.

@@ -14,7 +14,8 @@ import {
   TILINGS_BY_KEY,
   tilingOf,
 } from "../boards/catalog";
-import { isBoard3D, type AnyBoard, type CellId } from "../boards/core";
+import { eulerCharacteristic, isBoard3D, type AnyBoard, type CellId } from "../boards/core";
+import { hurwitzSurfaceLabel } from "../boards/hurwitz";
 import { distortionHint } from "../boards/distortion";
 import { fairnessHint, fairnessOf } from "../boards/fairness";
 import { ARCH_TILINGS, archTemplate, templateCells } from "../boards/tilings";
@@ -524,13 +525,17 @@ export function boardFacts(
     // any of these surfaces at all, and its family row names what it is.
     // A hyperbolic board is drawn on the plane but is not of it: the disc is a
     // model of the hyperbolic plane, which is the surface its tiles tile.
+    // A closed hyperbolic surface is drawn in the disc too, but the surface it
+    // is is the one its patch covers, which the difficulty picks.
     surface:
       surface?.label ??
       (isBoard3D(board)
         ? null
-        : HYPERBOLIC_MODES.includes(mode)
-          ? "Hyperbolic plane"
-          : (SURFACES.get("flat")?.label ?? null)),
+        : board.quotient
+          ? hurwitzSurfaceLabel(eulerCharacteristic(board))
+          : HYPERBOLIC_MODES.includes(mode)
+            ? "Hyperbolic plane"
+            : (SURFACES.get("flat")?.label ?? null)),
     cells: board.adjacency.size,
     mines,
     shapes,

@@ -296,6 +296,9 @@ export interface BoardMesh extends Group {
   cellForFace(faceIndex: number, layer?: PickLayer): CellId | null;
   cellAnchor(cell: CellId): CellAnchor | null;
   setVisual(cell: CellId, visual: CellVisual): void;
+  /** `setVisual` for many cells at once, where a mesh can do it cheaper than
+   * one at a time. */
+  setVisuals?(visuals: Iterable<readonly [CellId, CellVisual]>): void;
   setHover(cell: CellId | null): void;
   /** Told the current board rotation and camera position so view-dependent
    * content (billboarded glyphs, per-cell glyph culling on closed surfaces)

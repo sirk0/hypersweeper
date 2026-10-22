@@ -2408,6 +2408,35 @@
         "hasCellCycle": false
       }
     },
+    "hurwitz667": {
+      "easy": {
+        "cellCount": 80,
+        "mineCount": 15,
+        "euler": -4,
+        "boundaryComponents": 0,
+        "edgeCount": 252,
+        "vertexCount": 168,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 240,
+        "mineCount": 55,
+        "euler": -12,
+        "boundaryComponents": 0,
+        "edgeCount": 756,
+        "vertexCount": 504,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 520,
+        "mineCount": 145,
+        "euler": -26,
+        "boundaryComponents": 0,
+        "edgeCount": 1638,
+        "vertexCount": 1092,
+        "hasCellCycle": false
+      }
+    },
     "hyperbolic667": {
       "easy": {
         "cellCount": 78,

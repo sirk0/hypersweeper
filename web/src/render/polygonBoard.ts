@@ -42,11 +42,13 @@ import { BoardMotion, cellAttribute, patchMotion, type DiscUniforms } from "./mo
 import {
   DISC_IDENTITY,
   discDrag,
+  discRecentre,
   discMap,
   discReach,
   discScale,
   discUnmap,
   type Cx,
+  type CoverStep,
   type DiscView,
 } from "./disc";
 import {
@@ -70,6 +72,11 @@ import {
 
 /** A lift shows on the plane as growth (see `MotionUniforms.uLiftScale`). */
 const FLAT_LIFT_SCALE = 0.4;
+
+/** How far a closed surface's view may be carried in one drag step, in disc
+ * radii: anywhere, short of the rim itself. The recentring keeps its centre in
+ * the central tile between steps, so this only guards the arithmetic. */
+const COVER_REACH = 0.999;
 
 interface CellGeom {
   start: number; // first vertex index in the position/color buffers
@@ -152,6 +159,11 @@ export class PolygonBoard extends Group implements BoardMesh {
    * than a rewrite of every tile. Null on every other board. */
   private readonly disc: { x: number; y: number; r: number; reach: number } | null;
   private discView: DiscView = DISC_IDENTITY;
+  /** A closed surface's pan steps (`Board.disc.cover`), and who is told when
+   * the view takes one -- the session, which moves the labels to match, so
+   * the picture does not change. */
+  private readonly coverSteps: readonly CoverStep[] | null;
+  onCoverStep: ((steps: number[]) => void) | null = null;
   private readonly discUniforms: DiscUniforms | null;
 
   constructor(board: Board, style: CellStyle = cellStyle(null)) {
@@ -190,9 +202,13 @@ export class PolygonBoard extends Group implements BoardMesh {
           x: board.disc.cx - cx,
           y: cy - board.disc.cy,
           r: board.disc.radius,
-          reach: discReach(board.disc.rim),
+          // A closed surface's patch never runs out (`discRecentre` carries
+          // the view back to the central tile as it goes), so nothing bounds
+          // its pan but the disc itself.
+          reach: board.disc.cover ? COVER_REACH : discReach(board.disc.rim),
         }
       : null;
+    this.coverSteps = board.disc?.cover?.steps ?? null;
     this.discUniforms = this.disc
       ? {
           uDisc: { value: new Vector3(this.disc.x, this.disc.y, this.disc.r) },
@@ -436,8 +452,13 @@ export class PolygonBoard extends Group implements BoardMesh {
   /** Move the disc so what is drawn at `from` is drawn at `to` (mesh units). */
   dragDisc(from: Vertex, to: Vertex): boolean {
     if (!this.disc) return false;
-    const next = discDrag(this.discView, this.toDisc(from), this.toDisc(to), this.disc.reach);
+    let next = discDrag(this.discView, this.toDisc(from), this.toDisc(to), this.disc.reach);
     if (next === this.discView) return false;
+    if (this.coverSteps) {
+      const { view, taken } = discRecentre(next, this.coverSteps);
+      next = view;
+      if (taken.length) this.onCoverStep?.(taken);
+    }
     this.setDiscView(next);
     return true;
   }
@@ -478,8 +499,21 @@ export class PolygonBoard extends Group implements BoardMesh {
   }
 
   setVisual(cell: CellId, visual: CellVisual): void {
+    if (this.writeVisual(cell, visual)) this.rebuildGlyphs();
+  }
+
+  /** `setVisual` for many cells at once, the glyphs rebuilt once at the end
+   * rather than once a cell -- a closed surface relabels every face of its
+   * patch as its pan steps across the cover. */
+  setVisuals(visuals: Iterable<readonly [CellId, CellVisual]>): void {
+    let any = false;
+    for (const [cell, visual] of visuals) any = this.writeVisual(cell, visual) || any;
+    if (any) this.rebuildGlyphs();
+  }
+
+  private writeVisual(cell: CellId, visual: CellVisual): boolean {
     const i = this.cellIndex.get(cell);
-    if (i == null) return;
+    if (i == null) return false;
     const wasOpen = isOpened(this.states[i]!);
     this.states[i] = visual;
     if (isOpened(visual) !== wasOpen) {
@@ -489,7 +523,7 @@ export class PolygonBoard extends Group implements BoardMesh {
     this.writeColor(i);
     if (visual.kind !== "hidden") this.motion.motion.setHover(i, false);
     if (isOpened(visual)) this.motion.motion.setPress(i, false);
-    this.rebuildGlyphs();
+    return true;
   }
 
   setHover(cell: CellId | null): void {

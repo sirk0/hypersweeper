@@ -54,7 +54,9 @@ describe("the hyperbolic boards", () => {
   });
 
   it("are discs at every difficulty", () => {
-    for (const mode of HYPERBOLIC_MODES) {
+    // ...bar the closed surfaces in the same menu group, which are drawn in
+    // the disc but are not one (tests/unit/hurwitz.test.ts)
+    for (const mode of HYPERBOLIC_MODES.filter((m) => m.startsWith("hyperbolic"))) {
       for (const difficulty of ["easy", "medium", "hard"]) {
         const board = buildBoard(mode, difficulty) as Board;
         expect(eulerCharacteristic(board), `${mode}/${difficulty}`).toBe(1);

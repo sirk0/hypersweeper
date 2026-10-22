@@ -30,6 +30,7 @@ import {
   substitutionPlacements,
   SUBSTITUTIONS,
 } from "../boards/fractal";
+import { hurwitzBoard } from "../boards/hurwitz";
 import { hyperbolicBoard, hyperbolicUniformBoard } from "../boards/hyperbolic";
 import type { WythoffOp } from "../boards/hyperbolic";
 import {
@@ -1678,6 +1679,12 @@ function draw(rawKey: string): string[] {
     // so the arc points do not make a heptagon read as a 21-gon.
     const board = hyperbolicDisc(key, HYPERBOLIC_ICON_SHELLS[key]!, 1);
     const central = !(key in HYPERBOLIC_UNIFORM) && key.at(-2) === "3" ? Number(key.at(-1)) : 1;
+    // A closed surface lights every heptagon rather than the central one: with
+    // no rim, each of them is a full seven-neighbour cell. Must match gui.py.
+    const lit = (cell: string) =>
+      key.startsWith("hurwitz")
+        ? board.cornerMask!.get(cell)!.filter(Boolean).length === 7
+        : Number(cell) < central;
     const tones = classifyShapes(board.polygons, board.cornerMask, true);
     const r = d * 0.46;
     const sc = (2 * r) / board.width;
@@ -1686,7 +1693,7 @@ function draw(rawKey: string): string[] {
       parts.push(
         shape(
           polygon.map(([x, y]): P => [C - r + x * sc, C - r + y * sc]),
-          Number(cell) < central ? LIGHT : BASE,
+          lit(cell) ? LIGHT : BASE,
           4,
           tones.get(cell)!,
           0,
@@ -2052,6 +2059,9 @@ const PATCH_BOARDS: Record<string, PatchBoard> = {
   hyperbolic3737: { build: () => hyperbolicDisc("hyperbolic3737", 18, 100), whole: true },
   hyperbolic3474: { build: () => hyperbolicDisc("hyperbolic3474", 16, 100), whole: true },
   hyperbolic4614: { build: () => hyperbolicDisc("hyperbolic4614", 16, 100), whole: true },
+  // The easy board itself: the patch of the disc that covers Klein's quartic,
+  // every one of its 80 cells drawn at least once.
+  hurwitz667: { build: () => hurwitzBoard("quartic", "zip", 0, 0, 100), whole: true },
 };
 
 /** The uniform hyperbolic boards, each one of Wythoff's operations on {7,3}
@@ -2061,6 +2071,8 @@ const HYPERBOLIC_UNIFORM: Record<string, WythoffOp> = {
   hyperbolic3737: "ambo",
   hyperbolic3474: "expand",
   hyperbolic4614: "bevel",
+  // the closed surface's row icon is its tiling's disc (see the icon above)
+  hurwitz667: "zip",
 };
 
 /** A hyperbolic mode's disc trimmed to `shells`, with no mines. */
@@ -2088,6 +2100,7 @@ const HYPERBOLIC_ICON_SHELLS: Record<string, number> = {
   hyperbolic3737: 4,
   hyperbolic3474: 5,
   hyperbolic4614: 5,
+  hurwitz667: 4,
 };
 
 /** Where a mode's repeat domain is filed under another name. */

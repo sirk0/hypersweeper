@@ -13456,5 +13456,52 @@
         "indistinguishable": 0
       }
     }
+  },
+  "hurwitz667": {
+    "builder": "hurwitz_board",
+    "args": {
+      "easy": {
+        "args": [
+          "quartic",
+          "zip",
+          0,
+          10,
+          300.0
+        ],
+        "cells": 80,
+        "score": 0.0124,
+        "distortionMean": 1.0925,
+        "distortionP90": 1.1017,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          "macbeath",
+          "zip",
+          0,
+          30,
+          300.0
+        ],
+        "cells": 240,
+        "score": 0.0645,
+        "distortionMean": 1.0937,
+        "distortionP90": 1.1021,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          "triplet",
+          "zip",
+          0,
+          60,
+          300.0
+        ],
+        "cells": 520,
+        "score": 0.08,
+        "distortionMean": 1.094,
+        "distortionP90": 1.1021,
+        "indistinguishable": 0
+      }
+    }
   }
 }

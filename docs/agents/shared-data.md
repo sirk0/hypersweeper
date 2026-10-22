@@ -87,7 +87,10 @@ produce identical boards.
 That oracle is **combinatorial** — cell, edge and vertex counts, Euler
 characteristic, boundary components — which is everything the two ports can
 disagree about *structurally* and nothing they can disagree about
-*positionally*. One rule moves points without changing any of those counts:
+*positionally*. The counts are of the *board*: a drawing that covers it twice
+(the projective plane's sphere) is divided by its sheets, and a patch of its
+cover (the closed hyperbolic surfaces) is counted off `Board.quotient`, each
+cell's corners as the surface's own ids (`mesh_loops` / `meshLoops`). One rule moves points without changing any of those counts:
 `straightVertices` / `straightenPositions` put a vertex the tiling runs
 *through* (a neighbour's corner sitting inside a tile's edge) back onto the
 chord its line has become, so a three-brick basket-weave block is drawn as one

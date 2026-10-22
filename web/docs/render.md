@@ -137,6 +137,35 @@ and opened by a tap there, the outermost one brought in as far as the hold
 allows, the board thrown as far as it goes and still filling the view, a drag
 along the rim, `0`, the arrows, and a touch drag that neither opens nor flags.
 
+#### A board with no rim: the closed surfaces (`discRecentre`)
+
+`hurwitz667` is a closed hyperbolic surface drawn as a **patch of the disc that
+covers it** (see "The closed hyperbolic surfaces" in
+[`geometry.md`](../../docs/agents/geometry.md)): every face shows the cell it
+covers (`Board.faces`), so a cell is drawn several times and its copies paint
+one state, as the projective plane's antipodal twins do. Its pan is not held at
+the rim, because there is no rim to hold — the patch looks the same from every
+tile once the labels are moved by the surface's own symmetry. So
+`Board.disc.cover` carries one **step** per tile round the central heptagon:
+the disc isometry taking the central tile onto it (in a view's own `(c, rot)`
+shape) and the symmetry of the surface that goes with it, as a cell
+permutation. After every drag `PolygonBoard.dragDisc` runs `discRecentre`:
+while the point at the centre of the view is nearer a neighbouring tile's
+centre than the central one's, the view is composed with that step and the
+step is reported (`onCoverStep`) to the session, which relabels every face
+(`GameSession.stepCover`, one batched `setVisuals` rather than a glyph rebuild
+a face). The picture does not change — every point is drawn where it was,
+showing the cell it showed — but the view's centre is back on the central
+tile, so the patch round it is whole however far the pan goes; `discDrag`'s
+reach is only `COVER_REACH`, short of the disc itself. The relabelling reads
+the current label off the face a label is named after (a cell's id is the id
+of its own nearest copy), so the board-bar symmetries and the pan compose.
+`tests/unit/disc.test.ts` pins that a step leaves the picture unchanged and that
+a long drag stays on the central tile; `tests/unit/hurwitz.test.ts` that each
+step's symmetry is what its isometry does to the drawing;
+`tests/e2e/hyperbolicPan.spec.ts` that a board thrown twice as far as a disc's
+hold allows still fills the view, and a tap at the centre opens.
+
 ## Picking (`Renderer.pick`)
 
 A click is a ray, and the cell it lands on is the one **drawn** where it lands.

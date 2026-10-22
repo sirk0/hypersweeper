@@ -1712,6 +1712,32 @@
         ]
       }
     },
+    "hurwitz667": {
+      "builder": "hurwitz_board",
+      "args": {
+        "easy": [
+          "quartic",
+          "zip",
+          0,
+          15,
+          300.0
+        ],
+        "medium": [
+          "macbeath",
+          "zip",
+          0,
+          55,
+          300.0
+        ],
+        "hard": [
+          "triplet",
+          "zip",
+          0,
+          145,
+          300.0
+        ]
+      }
+    },
     "hyperbolic667": {
       "builder": "hyperbolic_uniform_board",
       "args": {
