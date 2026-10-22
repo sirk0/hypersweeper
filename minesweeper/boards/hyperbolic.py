@@ -65,9 +65,19 @@ the same closed neighbourhood, so no number can ever tell them apart and a
 mine among them is a coin flip. On {5,5} and {4,6} nearly every trim has one.
 So every cell that shares its closed neighbourhood with another is dropped --
 all of them, never all but one, which is what keeps the trim's symmetry, the
-twin relation being one the symmetry preserves. One pass has always left none
-(the loop is there in case one ever does not), and a trim that had no twins
-is untouched, so the boards that shipped before the drop are the same boards.
+twin relation being one the symmetry preserves.
+
+**And its near-twins.** The same fans leave pairs one cell short of that: a rim
+face whose closed neighbourhood is a neighbour's less a single cell. Only that
+one cell's number can tell the two apart, so once it is a mine, a mine in the
+pair is a coin flip again -- and a trim of {5,5} had 150 such pairs among 471
+cells, where a classic board has none (its nearest, a corner, is two cells
+short). Left in, they decided the game: the reference solver lost {5,5} and
+{4,5} hard almost only on a last 50/50 at the rim, so calibration answered with
+half the mines and boards with nothing to do before that flip. So the smaller
+of each such pair is dropped too, which the symmetry also preserves. {7,3}
+has none at any trim, nor do the trims {8,3} ships, so those boards are as they
+were. Both rules together are repeated until neither finds anything.
 
 The board is round by nature -- a deliberate exception to the square-window
 convention, as the fractals and Klaassen's spiral already are.
@@ -283,8 +293,9 @@ def _rings_for(p: int, q: int, shells: int) -> tuple:
 
 def _without_twins(faces: list[tuple[int, ...]], kept: list[int]) -> list[int]:
     """``kept`` less every face whose closed neighbourhood (itself and every
-    face sharing a vertex with it) is another kept face's too, repeated until
-    none is left -- see "A trim then drops its twins" above."""
+    face sharing a vertex with it) is another kept face's too, or another kept
+    face's less one cell, repeated until none is left -- see "A trim then drops
+    its twins" above."""
     while True:
         at: dict[int, set[int]] = {}
         for f in kept:
@@ -295,6 +306,10 @@ def _without_twins(faces: list[tuple[int, ...]], kept: list[int]) -> list[int]:
         for h in hood.values():
             seen[h] = seen.get(h, 0) + 1
         twins = {f for f in kept if seen[hood[f]] > 1}
+        # a near-twin's bigger partner is in its own neighbourhood
+        twins |= {f for f in kept
+                  if any(len(hood[g]) == len(hood[f]) + 1 and hood[f] < hood[g]
+                         for g in hood[f])}
         if not twins:
             return kept
         kept = [f for f in kept if f not in twins]
@@ -339,7 +354,7 @@ def hyperbolic_board(
 ) -> Board:
     """The {p,q} tiling in the Poincaré disc, trimmed to the faces at the
     ``shells`` smallest distances from the central p-gon (shell 1 is that
-    p-gon alone), less any rim cells that trim leaves with a twin. ``scale`` is pixels per unit of disc radius; ``arc`` is how
+    p-gon alone), less any rim cells that trim leaves with a twin or a near-twin. ``scale`` is pixels per unit of disc radius; ``arc`` is how
     many straight segments draw each geodesic edge.
 
     Raises ValueError when the trim is not a disc -- a shell that leaves a cell

@@ -642,11 +642,6 @@ PINNED = {"square"}
 # is typical at 450 tiles (0.41 against a median of 0.43), so that is the size.
 PINNED_ROWS = {
     ("kitedart", "hard"): "the centred window plays like a typical one at 450",
-    # One shell nearer the target, 78 cells, leaves these two a rim the solver
-    # can only guess at: even at the opening floor they win 0.91 and 0.88
-    # against 0.965. The next shell out, 85, calibrates on target.
-    ("hyperbolic3474", "easy"): "78 cells cannot reach the easy win rate; 85 can",
-    ("hyperbolic4614", "easy"): "78 cells cannot reach the easy win rate; 85 can",
 }
 
 

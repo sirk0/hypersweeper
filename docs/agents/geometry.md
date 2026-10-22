@@ -804,17 +804,28 @@ share one closed neighbourhood and no number can ever tell them apart. On
 trim at hard. So the builder drops every cell that shares its closed
 neighbourhood with another (`_without_twins` / `withoutTwins`) -- the whole
 class, never all but one, which keeps the dihedral symmetry, since a symmetry
-maps twins to twins. One pass has always left none. A trim with no twins is
-untouched, so `shells` still means what it did on every board that already
-shipped twin-free, and several neighbouring shell counts can come out as the
-same board.
+maps twins to twins.
+
+**And its near-twins.** The same fans leave rim pairs one cell short of
+twins: a cell whose closed neighbourhood is a neighbour's less a single cell.
+Only that cell's number tells the two apart, so whenever it is a mine a mine in
+the pair is a coin flip -- and `indistinguishable_cells` cannot see it, since
+the neighbourhoods do differ. {5,5} hard had 150 such pairs and {4,5} 88; the
+reference solver lost those boards almost only on a last 50/50 at the rim, so
+calibration gave them half the mines of {7,3} and nothing to do before the
+flip. The builder drops the smaller of every such pair as well, in the same
+loop (a drop can uncover new ones), which the symmetry also preserves. {7,3}
+never has one and the shipped {8,3} trims have none, so those boards are as
+they were; the other five were re-sized and re-calibrated, and roughly doubled
+their mines. A trim with neither is untouched, and several neighbouring shell
+counts can come out as the same board.
 
 Four things worth knowing before touching them:
 
 * **The rim is most of the board.** A hyperbolic disc's boundary grows as fast as
   its area, so the outer shells hold well over half the cells, and those see
-  far fewer than p(q - 2) neighbours: the mean degree is 4.3 ({8,3}) to 7.1
-  ({4,6}), and the calibrated densities 4-10%.
+  far fewer than p(q - 2) neighbours: the mean degree is 4.4 ({8,3}) to 6.9
+  ({4,6}), and the calibrated densities 5-13%.
 * **Rim cells are small, and as built on a phone at medium and hard too small
   to tap.** A 370px-wide disc puts the outermost easy cells at about a 6px
   inradius, medium at 2px and hard at 1px; the Euclidean zoom (`MAX_ZOOM` 6)
@@ -891,12 +902,18 @@ is shared): faces kept by the distance of their centre (an old face's centre,
 an old vertex, an old edge's midpoint) from the central face, which is the
 heptagon (the 14-gon on `bevel`), so every trim keeps D7. The ring walk grows
 until its outer ring is a unit beyond the cut, as for {p,q}. `ambo` and `zip`
-have the same faces at the same centres, so their ladders are identical (9
-shells 78 cells, 22 shells 253, 36 shells 484), as are `expand`'s and
-`bevel`'s up to the twin drop (`expand` at 23 shells drops 28). The easy rows
-of those two are held at 85 cells, a shell past the nearest (`PINNED_ROWS` in
-`resize.py`): at 78 the rim leaves the solver guessing, and even at the
-opening floor they win 0.91 and 0.88 against 0.965.
+have the same faces at the same centres, and `expand` and `bevel` likewise,
+so each pair's shell trims are the same faces before the drop. **The drop is
+where they part.** `zip` is trivalent, like {7,3}, and no trim of it has a
+twin or a near-twin, so it is the one uniform board the drop never touches.
+The other three meet four at a corner (`ambo`, `expand`) or carry 14-gons
+whose rims fan out (`bevel`), and lose rim cells to it at most trims --
+`expand` at 39 shells goes from 477 to 421 -- which is what moved their
+medium and hard rows out a few shells and roughly doubled the mines on
+`expand` and `bevel` medium (13 and 12 before the near-twins went, 21 and 22
+after). That also took away the 78-cell easy trim of `expand` and `bevel`,
+which played too hard to calibrate (0.91 and 0.88 at the opening floor), so
+their easy rows are 85 cells.
 
 **Two new things for the rest of the app.** A 14-gon is a side count nothing
 else has: it has a badge (`SHAPE_SIDES`, `hs.shape.14` in Game Center), shape
