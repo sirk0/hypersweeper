@@ -2350,6 +2350,64 @@
         "hasCellCycle": false
       }
     },
+    "hyperbolic37": {
+      "easy": {
+        "cellCount": 84,
+        "mineCount": 7,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 462,
+        "vertexCount": 379,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 252,
+        "mineCount": 23,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 1365,
+        "vertexCount": 1114,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 490,
+        "mineCount": 75,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 2688,
+        "vertexCount": 2199,
+        "hasCellCycle": false
+      }
+    },
+    "hyperbolic38": {
+      "easy": {
+        "cellCount": 80,
+        "mineCount": 9,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 456,
+        "vertexCount": 377,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 272,
+        "mineCount": 23,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 1512,
+        "vertexCount": 1241,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 496,
+        "mineCount": 57,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 2856,
+        "vertexCount": 2361,
+        "hasCellCycle": false
+      }
+    },
     "cubocta": {
       "easy": {
         "cellCount": 56,

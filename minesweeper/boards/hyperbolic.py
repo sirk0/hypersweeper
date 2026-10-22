@@ -4,9 +4,10 @@ in the Poincaré disc.
 A {p,q} tiling puts q regular p-gons round every vertex, and when
 (p - 2)(q - 2) > 4 the angles do not close up in the plane: the tiling lives in
 the hyperbolic plane, where a circle's circumference grows exponentially with
-its radius. Seven ship -- {7,3} and {8,3}, {5,4} and {6,4}, {4,5}, {5,5} and
-{4,6} -- and each one gives an interior cell p + p(q - 3) = p(q - 2)
-neighbours under the shared-vertex rule (7, 8, 10, 12, 12, 15 and 16).
+its radius. Nine ship -- {7,3} and {8,3}, {5,4} and {6,4}, {4,5}, {5,5} and
+{4,6}, and the triangles {3,7} and {3,8} -- and each one gives an interior
+cell p + p(q - 3) = p(q - 2) neighbours under the shared-vertex rule (7, 8,
+10, 12, 12, 15, 16, 15 and 18).
 
 **The tiling is built combinatorially, ring by ring, with integer vertex ids.**
 Ring 0 is the central p-gon, vertices 0 .. p-1. Each new ring is every face
@@ -29,11 +30,24 @@ the walk meets it. No coordinate is ever read back into an id, which is the
 rule the whole game rests on: two cells are neighbours exactly when they share
 a vertex id, and no two nearby points are ever rounded into one.
 
+**The triangle tilings are duals.** The walk cannot build {3,q}: a run between
+two anchors is at least one edge, and a face along it needs p >= run + 2
+corners, so a triangle could only close a run onto one new vertex, which the
+walk does not do. Instead {3,q} is built as the dual of {q,3}, which the walk
+builds fine: every vertex of {q,3} with all three of its faces is a triangle,
+whose corners *are* those three faces -- their integer indices are the
+triangle's vertex ids, so the dual numbers nothing of its own -- ordered
+counterclockwise by the edges the faces share. The dual of a face-centred
+{q,3} is centred on a vertex, so {3,q} is the q triangles round vertex 0 and
+keeps the q-fold rotation and q mirrors, rounder than a central triangle's 3.
+
 **Positions come afterwards**, and only ever *from* the ids. The central
-polygon is placed by hand; every other face has an edge whose two ends are
-already placed, and since all faces are congruent there is exactly one
-orientation-preserving isometry of the disc (a Möbius map) taking the central
-polygon's matching edge onto it. That map places the face's other corners. A
+polygon is placed by hand (for {3,q}, the first triangle of the star, its
+vertex 0 at the centre of the disc -- which puts every dual vertex exactly on
+the centre of the {q,3} face it stands for); every other face has an edge
+whose two ends are already placed, and since all faces are congruent there is
+exactly one orientation-preserving isometry of the disc (a Möbius map) taking
+the central polygon's matching edge onto it. That map places the face's other corners. A
 vertex keeps the position it was first given; `TestHyperbolic` re-derives
 every vertex from every face that has it and checks they agree.
 
@@ -50,8 +64,9 @@ the board by a factor of about 2.6 ({7,3}) or 4 ({5,4}, {4,5}) a ring, which
 misses most of the classic size bands; so ``shells`` keeps the faces whose
 centres lie at the ``shells`` smallest distances from the centre of the disc.
 Faces at the same distance are one orbit of the board's own symmetry group
-(the dihedral group of the central p-gon) and are kept or dropped together, so
-every trim keeps the full p-fold rotation and the p mirrors. The distance is a
+(the dihedral group of the central p-gon, or of the central vertex's q
+triangles) and are kept or dropped together, so every trim keeps the full
+rotation and the mirrors. The distance is a
 float, but it only *orders* faces -- it never forms an id -- and equal
 distances are grouped with a tolerance far below the gap between distinct
 ones, which `TestHyperbolic` measures. The trim is never by area or by
@@ -108,14 +123,62 @@ def _check_hyperbolic(p: int, q: int) -> None:
 
 
 def hyperbolic_faces(p: int, q: int, rings: int) -> tuple[list[tuple[int, ...]], list[int]]:
-    """The {p,q} tiling's faces out to ``rings`` rings round the central one,
-    as counterclockwise tuples of integer vertex ids, and each face's ring.
+    """The {p,q} tiling's faces out to ``rings`` rings round the centre, as
+    counterclockwise tuples of integer vertex ids, and each face's ring.
 
-    Pure combinatorics -- see the module docstring for the walk. Raises
-    ValueError for a tiling whose faces are too small to span a boundary run
-    (the walk below needs ``p >= 4``, which every shipped tiling meets).
+    Pure combinatorics -- see the module docstring. For ``p >= 4`` ring 0 is
+    the central p-gon and the rings come from the walk; a triangle tiling is
+    the dual of {q,3} (`_dual_faces`), centred on a vertex, and its ring 0 is
+    the q triangles round that vertex.
     """
     _check_hyperbolic(p, q)
+    if p == 3:
+        return _dual_faces(q, rings)
+    return _ring_walk(p, q, rings)
+
+
+def _dual_faces(q: int, rings: int) -> tuple[list[tuple[int, ...]], list[int]]:
+    """{3,q} as the dual of {q,3}: one triangle for every {q,3} vertex that has
+    all three of its faces, its corners those faces' indices -- so the ids are
+    the primal's own and nothing new is numbered. The triangles follow the
+    primal vertices in id order, skipping the unfinished, so triangles 0 ..
+    q-1 are the central q-gon's corners: the star round dual vertex 0.
+
+    A triangle's ring is the newest of its three corners' faces' rings, less
+    one; so ``rings + 1`` rings of {q,3} finish every triangle out to
+    ``rings``, and nothing past it.
+    """
+    primal, primal_ring = _ring_walk(q, 3, rings + 1)
+    # each corner of a {q,3} face, with the corners before and after it
+    star: dict[int, list[tuple[int, int, int]]] = {}
+    for f, face in enumerate(primal):
+        for i, v in enumerate(face):
+            star.setdefault(v, []).append((f, face[i - 1], face[(i + 1) % q]))
+    faces: list[tuple[int, ...]] = []
+    ring_of: list[int] = []
+    for v in sorted(star):
+        round_v = star[v]
+        if len(round_v) < 3:
+            continue
+        # counterclockwise round v, face g is followed by the face whose corner
+        # after v is g's corner before v: the two share that edge, g on its
+        # clockwise side. Start at the lowest id, as the central triangles'
+        # placement needs (dual vertex 0 first).
+        prev = {f: u for f, u, _ in round_v}
+        by_next = {w: f for f, _, w in round_v}
+        order = [min(prev)]
+        while len(order) < 3:
+            order.append(by_next[prev[order[-1]]])
+        faces.append(tuple(order))
+        ring_of.append(max(primal_ring[f] for f in order) - 1)
+    return faces, ring_of
+
+
+def _ring_walk(p: int, q: int, rings: int) -> tuple[list[tuple[int, ...]], list[int]]:
+    """The walk the module docstring describes: ring 0 the central p-gon, each
+    ring every face touching the boundary so far. Raises ValueError for a
+    tiling whose faces are too small to span a boundary run (``p >= 4`` is
+    needed, which is why the triangle tilings are built as duals)."""
     faces: list[tuple[int, ...]] = [tuple(range(p))]
     ring_of = [0]
     count = dict.fromkeys(range(p), 1)  # faces seen at each vertex
@@ -178,7 +241,9 @@ def _central_polygon(p: int, q: int) -> list[complex]:
     One edge is horizontal, so the polygon (and every trim of the tiling) is
     mirror-symmetric about the vertical axis. It is the edge at the top in
     these coordinates, which is the bottom of the screen: pixel y runs down,
-    and like every flat builder this one hands its y over unflipped."""
+    and like every flat builder this one hands its y over unflipped. For
+    {3,q}, centred on a vertex, it is only the template every triangle is a
+    copy of."""
     big_r = math.acosh(1 / (math.tan(math.pi / p) * math.tan(math.pi / q)))
     r = math.tanh(big_r / 2)
     return [cmath.rect(r, math.pi / 2 + math.pi / p + 2 * math.pi * k / p)
@@ -205,9 +270,20 @@ def _isometry(a: complex, b: complex, a2: complex, b2: complex):
 
 
 def hyperbolic_positions(p: int, q: int, faces: list[tuple[int, ...]]) -> dict[int, complex]:
-    """Every vertex's point in the Poincaré disc, placed face by face."""
+    """Every vertex's point in the Poincaré disc, placed face by face.
+
+    The first face is placed by hand: the central p-gon round the disc's
+    centre, or for a triangle tiling the first triangle of the star round it,
+    its vertex 0 at the centre and its next corner straight up the vertical
+    axis, which puts dual vertex k exactly where {q,3}'s face k is centred.
+    """
     centre = _central_polygon(p, q)
-    pos: dict[int, complex] = dict(zip(faces[0], centre))
+    if p == 3:
+        side = abs(_to_origin(centre[0], centre[1]))  # tanh(edge / 2)
+        first = [0j, side * 1j, side * cmath.exp(1j * (math.pi / 2 + 2 * math.pi / q))]
+    else:
+        first = centre
+    pos: dict[int, complex] = dict(zip(faces[0], first))
     pending = list(range(1, len(faces)))
     while pending:
         deferred = []
@@ -348,9 +424,11 @@ def hyperbolic_board(
     arc: int = ARC_SEGMENTS,
 ) -> Board:
     """The {p,q} tiling in the Poincaré disc, trimmed to the faces at the
-    ``shells`` smallest distances from the central p-gon (shell 1 is that
-    p-gon alone), less any rim cells that trim leaves with a twin or a near-twin. ``scale`` is pixels per unit of disc radius; ``arc`` is how
-    many straight segments draw each geodesic edge.
+    ``shells`` smallest distances from the centre of the disc (shell 1 is the
+    central p-gon alone, or for {3,q} the q triangles round the central
+    vertex), less any rim cells that trim leaves with a twin or a near-twin.
+    ``scale`` is pixels per unit of disc radius; ``arc`` is how many straight
+    segments draw each geodesic edge.
 
     Raises ValueError when the trim is not a disc -- a shell that leaves a cell
     hanging by one corner -- which the size search treats as a window that
@@ -393,7 +471,8 @@ def hyperbolic_board(
         return (z.real, z.imag)
 
     # Centred on the disc's own centre rather than shifted to the bounding box,
-    # so the central p-gon sits in the middle of the board whatever the trim.
+    # so the central p-gon (or vertex) sits in the middle of the board whatever
+    # the trim.
     extent = max(abs(arc_pos[k] if isinstance(k, tuple) else pos[k])
                  for ids in cells.values() for k in ids)
     polygons = {

@@ -126,6 +126,8 @@ describe("the declared shape list", () => {
       ["hyperbolic55", 5],
       ["hyperbolic45", 4],
       ["hyperbolic46", 4],
+      ["hyperbolic37", 3],
+      ["hyperbolic38", 3],
     ] as const) {
       for (const difficulty of ["easy", "medium", "hard"]) {
         const board = buildBoard(mode, difficulty);

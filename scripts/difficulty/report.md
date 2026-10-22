@@ -12,7 +12,7 @@ Every board's mine count, chosen so its win probability under the reference solv
 
 ## Coverage
 
-- 870 rows, 825 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
+- 876 rows, 831 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
 - 45 could not be brought on target:
   - `cube3d`/hard: 33.3% vs 50.9% — the search could not resolve it -- its thinnest measurement finished 0 game(s), so the rate here is noise rather than a crossing the search walked to. Re-measure at a bigger `--budget`
   - `cyldodecarhombitrihex`/medium: 92.9% vs 87.1% — no integer mine count lands within tolerance; this is the closest
@@ -59,7 +59,7 @@ Every board's mine count, chosen so its win probability under the reference solv
   - `triakis`/hard: 0.0% vs 50.9% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `triakis`/medium: 0.0% vs 87.1% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `triakis`/easy: 1.8% vs 96.5% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
-- 237 rows had games the solver abandoned (its frontier DP hit its node budget); their rates are measured over the games that finished:
+- 241 rows had games the solver abandoned (its frontier DP hit its node budget); their rates are measured over the games that finished:
   - `cube3d`/hard: 466 abandoned
   - `torustrunchex`/hard: 168 abandoned
   - `torusrotatedhex`/hard: 144 abandoned
@@ -174,6 +174,8 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `hexrows` | 7.5 | 84c 6m (7%) 98% | 260c 30m (12%) 85% | 476c 70m (15%) 51% |
 | `hextri` | 11.1 | 96c 14m (15%) 97% | 294c 56m (19%) 86% | 486c 117m (24%) 49% |
 | `hextriangle` | 5.6 | 78c 9m (12%) 97% | 253c 38m (15%) 89% | 465c 97m (21%) 49% |
+| `hyperbolic37` | 9.7 | 84c 7m (8%) 95% | 252c 23m (9%) 89% | 490c 75m (15%) 51% |
+| `hyperbolic38` | 9.7 | 80c 9m (11%) 97% | 272c 23m (8%) 90% | 496c 57m (11%) 53% |
 | `hyperbolic45` | 6.8 | 81c 8m (10%) 97% | 253c 25m (10%) 89% | 481c 64m (13%) 52% |
 | `hyperbolic46` | 6.9 | 89c 6m (7%) 98% | 257c 23m (9%) 87% | 481c 53m (11%) 54% |
 | `hyperbolic54` | 5.6 | 91c 7m (8%) 99% | 261c 23m (9%) 85% | 481c 51m (11%) 53% |

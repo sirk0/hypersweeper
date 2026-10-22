@@ -2359,7 +2359,13 @@ class TestGosperIsland:
 
 
 
-_HYPERBOLIC = [(8, 3), (7, 3), (6, 4), (5, 4), (5, 5), (4, 5), (4, 6)]
+_HYPERBOLIC = [(8, 3), (7, 3), (6, 4), (5, 4), (5, 5), (4, 5), (4, 6), (3, 7), (3, 8)]
+
+
+def _turns(p: int, q: int) -> int:
+    """How many rotations a board keeps: the central p-gon's p, or for a
+    triangle tiling, centred on a vertex, that vertex's q."""
+    return q if p == 3 else p
 
 
 def _hyp_dist(a: complex, b: complex) -> float:
@@ -2371,12 +2377,22 @@ def _float_rings(p: int, q: int, rings: int) -> list[int]:
     """Face counts per ring, derived with nothing the builder uses: reflect the
     central p-gon across its edges in the disc, over and over, merge faces by
     rounded centre (fine here -- this is the *check*, not a board), and count
-    vertex-adjacency layers outward from the centre."""
+    vertex-adjacency layers outward from the centre. A triangle tiling starts
+    from the q triangles round a vertex at the centre instead -- the star its
+    ring 0 is -- each one the central triangle turned about a corner."""
     big_r = math.acosh(1 / (math.tan(math.pi / p) * math.tan(math.pi / q)))
     first = [cmath.rect(math.tanh(big_r / 2), 2 * math.pi * k / p) for k in range(p)]
+    if p == 3:
+        to_corner = lambda z: (z - first[0]) / (1 - first[0].conjugate() * z)  # noqa: E731
+        star = [[to_corner(z) * cmath.exp(2j * math.pi * k / q) for z in first]
+                for k in range(q)]
+    else:
+        star = [first]
 
     def reflect(z, a, b):
         # inversion in the circle through a and b orthogonal to the rim
+        if abs(a) < abs(b):  # the same mirror; keep a corner at the centre as b
+            a, b = b, a
         a2 = 1 / a.conjugate()
         w = (a2 - a) / (b - a)
         if abs(w.imag) < 1e-12:  # a diameter: a straight mirror
@@ -2388,8 +2404,9 @@ def _float_rings(p: int, q: int, rings: int) -> list[int]:
     def key(z):
         return (round(z.real, 7), round(z.imag, 7))
 
-    faces, seen, frontier = [first], {key(0j)}, [first]
-    limit = rings * 2 * big_r + 1e-6
+    faces, frontier = list(star), list(star)
+    seen = {key(sum(face) / p) for face in star}
+    limit = (rings + (p == 3)) * 2 * big_r + 1e-6
     while frontier:
         grown = []
         for face in frontier:
@@ -2406,7 +2423,8 @@ def _float_rings(p: int, q: int, rings: int) -> list[int]:
     for index, face in enumerate(faces):
         for z in face:
             at[key(z)].append(index)
-    layer, current, counts = {0: 0}, [0], [1]
+    current = list(range(len(star)))
+    layer, counts = dict.fromkeys(current, 0), [len(star)]
     for ring in range(1, rings + 1):
         nxt = [j for i in current for z in faces[i] for j in at[key(z)] if j not in layer]
         for j in nxt:
@@ -2513,7 +2531,7 @@ class TestHyperbolic:
                           for z in (transform(complex(*xy) - c) for xy in poly))
 
         same = points(lambda z: z)
-        turn = cmath.exp(2j * math.pi / p)
+        turn = cmath.exp(2j * math.pi / _turns(p, q))
         assert points(lambda z: z * turn) == same
         assert points(lambda z: -z.conjugate()) == same  # the vertical mirror
 
@@ -2532,6 +2550,46 @@ class TestHyperbolic:
         ys = [y for _, y in board.polygons[0]]
         assert sum(xs) / len(xs) == pytest.approx(board.width / 2)
         assert sum(ys) / len(ys) == pytest.approx(board.height / 2)
+
+    @pytest.mark.parametrize("q", [7, 8])
+    def test_a_triangle_tiling_is_the_dual_of_its_q3(self, q):
+        # {3,q}'s vertex ids are {q,3}'s face indices, and each one is placed
+        # exactly where that face is centred; its triangles are {q,3}'s
+        # finished vertices, each with that vertex's three faces as corners
+        from minesweeper.boards import hyperbolic as hyp
+        faces, _ = hyperbolic_faces(3, q, 3)
+        pos = hyperbolic_positions(3, q, faces)
+        primal, _ = hyp._ring_walk(q, 3, 4)
+        primal_pos = hyperbolic_positions(q, 3, primal)
+        for f, z in pos.items():
+            assert abs(z - face_centre(q, 3, primal[f], primal_pos)) < 1e-12
+        round_vertex = Counter(v for face in primal for v in face)
+        finished = sorted(v for v, n in round_vertex.items() if n == 3)
+        for face, v in zip(faces, finished):
+            assert {f for f in face} == {f for f, pf in enumerate(primal) if v in pf}
+            # counterclockwise, the way every face is
+            a, b, c = (pos[f] for f in face)
+            assert ((b - a).conjugate() * (c - a)).imag > 0
+
+    @pytest.mark.parametrize("q", [7, 8])
+    def test_a_triangle_board_is_centred_on_a_vertex(self, q):
+        # the q triangles round vertex 0 all have a corner at the board's centre
+        board = hyperbolic_board(3, q, 9, 1)
+        for cell in range(q):
+            assert any(x == pytest.approx(board.width / 2) and y == pytest.approx(board.height / 2)
+                       for x, y in board.polygons[cell])
+
+    @pytest.mark.parametrize("p,q", [(7, 3), (3, 7), (3, 8)])
+    def test_the_rings_built_hold_every_face_inside_the_cut(self, p, q):
+        # `_rings_for` stops growing once the newest ring is well past the cut;
+        # a far bigger build must find nothing nearer that it missed
+        from minesweeper.boards import hyperbolic as hyp
+        for shells in (3, 12, 30):
+            faces, _, groups = hyp._rings_for(p, q, shells)
+            rings = next(r for r in range(1, 12) if len(hyperbolic_faces(p, q, r)[0]) == len(faces))
+            bigger, _ = hyperbolic_faces(p, q, rings + 1)
+            reference = hyp._shells(p, q, bigger, hyperbolic_positions(p, q, bigger))
+            assert groups[:shells] == reference[:shells]
 
     @pytest.mark.parametrize("p,q", _HYPERBOLIC)
     def test_no_trim_leaves_a_twin(self, p, q):

@@ -42,7 +42,7 @@ Import order is a strict DAG; a module only imports from the ones above it.
 | `tilings.py` | Regular flat builders (square/triangle/trigrid/hex/hexhex/hextri/hextriangle/squarediamond), the `_ArchTemplate` system, the eight Archimedean `_*_template()` factories plus their eight Laves duals (built by `_dual_template`), the six isogonal (non-edge-to-edge) ones, the five congruent-rectangle bonds, the two rep-tile patterns and Dürer's pentagon tiling, all twenty 2-uniform tilings (three cut or merged from a uniform tiling, seventeen written down from one translation cell by `_cell_template`), and the **`ARCH_TILINGS`** registry (the one place any of them is declared, with `_FAMILY_TRAITS` saying what each family is). |
 | `fractal.py` | The self-similar (fractal) boards: the sphinx, the chair, the Sierpinski carpet, the pentaflake and the Gosper island. One `_Substitution` record per tile — unit outline, the tiles filling the inflated copy, the inflation factor, lattice ops — and the shared inflation (`substitution_placements`) all five `*_board` builders run. The first two are rep-tiles (their children fill the tile); the carpet's and the pentaflake's leave holes, which is what makes them fractals with holes rather than shapes; the Gosper island's fill it with no hole at all and put the fractal in the *outline* instead. Four lattices are integer; the pentaflake's is ℤ[ζ10], since five-fold symmetry needs rank 4. The Gosper island's inflation is the one that is not a pure scaling: multiplication by 2 + ζ, a spiral similarity of √7 at 19.106°. |
 | `aperiodic.py` | Penrose's rhombi (P3) and his kites and darts (P2), Ammann–Beenker (squares and 45° rhombi, eight-fold), the Spectre (Tile(1,1), the chiral monotile), the phyllotactic spiral, Klaassen's spiral monotile and his three pentagonal spirals (5-, 6- and 7-fold, one convex pentagon each), each with exact-arithmetic vertex ids — ℤ[ζ5] for both Penrose boards and the spiral, ℤ[ζ8] for Ammann–Beenker, ℤ[ζ12] for the Spectre. The Spectre's ring is *dense* in the plane, so unlike Penrose's discrete lattice there is no lattice to snap a float vertex back to: its placements are carried as exact `(rotation, mirror, translation)` triples and no floating point enters the substitution at all. The spiral is the odd one out — no substitution, just ten 36° wedges of the tile's own translation lattice, the odd ones offset a step; nonperiodic because its five-fold centre forbids any translation. The **brick rings** are nonperiodic the same way — by symmetry rather than by a substitution — and are the plainest board here: 2x1 bricks on the integer square lattice in concentric square rings about a 2x2 core, ring k being the boundary of the 2k x 2k square with horizontal bricks along its rows and vertical ones up its sides. Every run is even, so every tile is a whole brick and only an even-sided square is tileable at all. A brick's corner lands in the middle of a neighbour's long side, so `_brick_outline` splits each edge at the lattice points that are genuinely some tile's corner — the 2D twin of `solids._split_at_lattice_points`, and *conditional*, unlike the fractal outlines, which carry a vertex at every step. |
-| `hyperbolic.py` | The regular {p,q} tilings of the hyperbolic plane, drawn in the Poincaré disc: {8,3} octagons, {7,3} heptagons, {6,4} hexagons, {5,4} and {5,5} pentagons, {4,5} and {4,6} squares. Built combinatorially ring by ring with integer vertex ids, placed afterwards by disc isometries, edges drawn as geodesic arcs, trimmed by hyperbolic-distance shells. See "The hyperbolic boards" below. |
+| `hyperbolic.py` | The regular {p,q} tilings of the hyperbolic plane, drawn in the Poincaré disc: {8,3} octagons, {7,3} heptagons, {6,4} hexagons, {5,4} and {5,5} pentagons, {4,5} and {4,6} squares, {3,7} and {3,8} triangles. Built combinatorially ring by ring with integer vertex ids (the triangles as the duals of {7,3} and {8,3}), placed afterwards by disc isometries, edges drawn as geodesic arcs, trimmed by hyperbolic-distance shells. See "The hyperbolic boards" below. |
 | `solids.py` | Closed/convex and polycube 3D boards (the Goldberg polyhedra GP(f, 0) and GP(h, k), the geodesic icosahedron and its subdivision `_geodesic`, with its class III cousin `_geodesic_hk`, cube, the Platonic solids, frames, bipyramid), plus the shared `_wythoff_point` every uniform solid here and every Catalan solid next door is generated from. |
 | `catalan.py` | The thirteen Catalan solids, the duals of the Archimedean solids. One recipe for all of them: a Platonic base and one flag, the Wythoff generating point of its Schwarz triangle (`solids._wythoff_point` for the five non-chiral Conway operations, `_snub_point` for the chiral one), a Catalan vertex at `n / <w, n>` on each face axis — polar duality — and the base's flags grouped into faces by the operation. Faces are then subdivided (`solids._geodesic` for triangles, `_quad_grid` for quadrilaterals, a five-way fan first for pentagons), which is these boards' only size knob. `_tri_grid` is `_quad_grid`'s triangle twin, for the solids next door whose triangles meet squares. |
 | `archimedean.py` | Archimedean solids cut into boards — the cube group's cuboctahedron, truncated octahedron and snub cube, and the icosahedral rhombicosidodecahedron, truncated icosidodecahedron and snub dodecahedron — as the **polar duals of their Catalan solids**: `_archimedean_faces` turns `catalan._catalan_faces` inside out (each Catalan face's pole is a vertex, each Catalan vertex a face), so no Wythoff point is solved twice and every vertex id is a Catalan face key. Faces are cut by `catalan._tri_grid` and `_quad_grid`, which name a shared edge's points alike; the truncated octahedron's hexagons are first cut into three rhombi (`_split_hexagons`, by the pyritohedral `_th_spokes` rule), the icosahedral solids' big faces fanned into triangles (`_fan_faces`). See "The Archimedean solids" below. |
@@ -733,13 +733,15 @@ tie (512/480 and 450/480 are reciprocals), broken towards the larger board.
 The game's namesake. `hyperbolic.py` (ported to `web/src/boards/hyperbolic.ts`)
 builds the regular **{p,q}** tilings -- q regular p-gons round every corner --
 for which (p - 2)(q - 2) > 4, so the angles do not close up in the plane and the
-tiling lives in the hyperbolic plane instead. Seven ship, as the flat-only
+tiling lives in the hyperbolic plane instead. Nine ship, as the flat-only
 **Hyperbolic** family: `hyperbolic83` ({8,3} octagons), `hyperbolic73` ({7,3}
 heptagons), `hyperbolic64` ({6,4} hexagons), `hyperbolic54` ({5,4} pentagons),
-`hyperbolic55` ({5,5} pentagons), `hyperbolic45` ({4,5} squares) and
-`hyperbolic46` ({4,6} squares). An interior cell has p + p(q - 3) = p(q - 2)
-neighbours under the shared-vertex rule -- **7, 8, 10, 12, 15 and 16**, counts
-nothing else in the game has for its tile -- and the boards are drawn in the
+`hyperbolic55` ({5,5} pentagons), `hyperbolic45` ({4,5} squares),
+`hyperbolic46` ({4,6} squares), `hyperbolic37` ({3,7} triangles) and
+`hyperbolic38` ({3,8} triangles). An interior cell has p + p(q - 3) = p(q - 2)
+neighbours under the shared-vertex rule -- **7, 8, 10, 12, 15, 16 and 18**,
+counts nothing else in the game has for its tile (a {3,7} triangle's 15 against
+a flat triangle's 12) -- and the boards are drawn in the
 **Poincaré disc**, a deliberate round exception to the square-window convention
 like the fractals and Klaassen's spiral.
 
@@ -758,6 +760,23 @@ for {6,4}, 10, 40, 150, 560 for {5,4}, 15, 105, 720, 4935 for {5,5}, 12, 48,
 checks against an independent float
 construction (reflecting polygons across their edges) that shares no code with
 the builder.
+
+**The triangle tilings are duals.** The walk cannot lay a triangle: a run
+between two anchors is at least one edge, a face along it needs `p >= run + 2`
+corners, and a triangle could only close a run onto a single new vertex, which
+the walk refuses rather than gets wrong. So {3,q} is built as the dual of
+{q,3} (`_dual_faces` / `dualFaces`): every {q,3} vertex with all three of its
+faces is a triangle whose corners *are* those three faces, the faces' integer
+indices serving as its vertex ids -- the dual numbers nothing of its own --
+ordered counterclockwise by the edges the faces share. Its ring is the newest
+of the three faces' rings less one, so `rings + 1` rings of {q,3} finish every
+triangle out to `rings`. The dual of a face-centred {q,3} is centred on a
+**vertex**: ring 0 is the q triangles round vertex 0 (7, 28, 77, 203 for
+{3,7}, 8, 40, 152, 568 for {3,8}), and a trim keeps that vertex's q turns and q
+mirrors rather than a central triangle's 3, which is rounder. Its first
+triangle is placed with vertex 0 at the centre of the disc and its next corner
+up the vertical axis, which lands every dual vertex exactly on the centre of
+the {q,3} face it stands for -- the test that checks the dual holds it to that.
 
 **Positions come afterwards, from the ids.** The central polygon is placed by
 hand (circumradius R with cosh R = cot(pi/p) cot(pi/q), Euclidean radius
@@ -785,13 +804,15 @@ size slots. `shells` keeps the faces whose centres lie at the `shells` smallest
 distances from the centre of the disc; faces at the same distance are one orbit
 of the central polygon's dihedral group and are kept or dropped together, so
 every trim keeps all p rotations and p mirrors (the web app finds D8, D7, D6, D5
-and D4).
+and D4), or on {3,q} the central vertex's q (D7 and D8).
 The distance is a float, but it only *orders* faces -- it never forms an id --
 and equal distances are grouped within 1e-7 where distinct ones measure at least
 1e-5 apart, which the tests pin. The trim is never by Euclidean area or radius:
 a rim cell is tiny in the disc by nature, and a Euclidean cut would take a
 ragged sliver of them. The builder refuses a trim that is not a disc (a rim
-pinched at a vertex), though none of the seven tilings has produced one.
+pinched at a vertex), though none of the nine tilings has produced one at a
+shipped trim (a {3,q} trim to its bare central star is all twins, and so
+empty: the size search never lands there).
 
 **Then the trim drops its twins.** Where q is large, a shell can leave a rim
 vertex with a fan of two or more outer faces that touch the board at that
@@ -822,7 +843,8 @@ Four things worth knowing before touching them:
 * **The rim is most of the board.** A hyperbolic disc's boundary grows as fast as
   its area, so the outer shells hold well over half the cells, and those see
   far fewer than p(q - 2) neighbours: the mean degree is 4.4 ({8,3}) to 6.9
-  ({4,6}), and the calibrated densities 5-13%.
+  ({4,6}), about 10 on the triangle tilings, and the calibrated densities
+  5-15%.
 * **Rim cells are small, and as built on a phone at medium and hard too small
   to tap.** A 370px-wide disc puts the outermost easy cells at about a 6px
   inradius, medium at 2px and hard at 1px; the Euclidean zoom (`MAX_ZOOM` 6)

@@ -770,9 +770,10 @@ so there is nothing to glue a seam with. That is one line: it is in
 The **Hyperbolic** family (`hyperbolic.py`, `web/src/boards/hyperbolic.ts`) is
 one builder, `hyperbolic_board(p, q, shells, mine_count, scale)`, so a new
 {p,q} is data, not code -- provided the tiling is hyperbolic ((p - 2)(q - 2) >
-4) and its faces can span the boundary runs the ring walk hands them (`p >= 4`;
-a triangle tiling {3,q} would need the walk to close a face on one new vertex,
-which it refuses rather than gets wrong). Read
+4). A face-centred {p,q} with `p >= 4` comes from the ring walk; a triangle
+tiling {3,q} cannot (the walk would have to close a face on one new vertex) and
+is built as the dual of {q,3} instead, centred on a vertex, so it keeps D_q
+rather than D_3 -- that too is automatic. Read
 [`geometry.md`](geometry.md#the-hyperbolic-boards) first.
 
 1. **Menu + presets** -- add `hyperbolic{p}{q}` to `menu.hyperbolic` and
@@ -796,7 +797,8 @@ which it refuses rather than gets wrong). Read
    the menu card.
 4. **Tests** -- add the tiling to `_HYPERBOLIC` in `tests/test_boards.py` and
    `TILINGS` in `web/tests/unit/hyperbolic.test.ts`, its ring counts to the
-   latter, and its point group (D_p) to `symmetries.test.ts`.
+   latter, and its point group (D_p, or D_q for a {3,q}) to
+   `symmetries.test.ts`.
 
 ## Recipe: add an aperiodic / shaped / solid board
 

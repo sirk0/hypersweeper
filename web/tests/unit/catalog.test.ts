@@ -223,6 +223,8 @@ describe("catalog families", () => {
       "hyperbolic55",
       "hyperbolic45",
       "hyperbolic46",
+      "hyperbolic37",
+      "hyperbolic38",
     ]);
   });
 });

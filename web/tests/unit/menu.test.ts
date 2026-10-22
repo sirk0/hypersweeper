@@ -130,6 +130,8 @@ describe("geometry groups", () => {
       "hyperbolic55",
       "hyperbolic45",
       "hyperbolic46",
+      "hyperbolic37",
+      "hyperbolic38",
     ]);
     expect(menuFamilies("flat")).not.toContain("hyperbolic");
   });
@@ -144,6 +146,8 @@ describe("geometry groups", () => {
         "hyperbolic55",
         "hyperbolic45",
         "hyperbolic46",
+        "hyperbolic37",
+        "hyperbolic38",
       ]),
     );
   });

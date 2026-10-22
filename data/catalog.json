@@ -232,6 +232,8 @@
     "hyperbolic55": "Pentagons {5,5}",
     "hyperbolic45": "Squares {4,5}",
     "hyperbolic46": "Squares {4,6}",
+    "hyperbolic37": "Triangles {3,7}",
+    "hyperbolic38": "Triangles {3,8}",
     "spheretri": "Geodesic icosahedron"
   },
   "tilingNotations": {
@@ -826,6 +828,18 @@
       "tiling": "hex",
       "surface": "flat",
       "family": "regular"
+    },
+    "hyperbolic37": {
+      "label": "Triangles {3,7}",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
+    "hyperbolic38": {
+      "label": "Triangles {3,8}",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
     },
     "hyperbolic45": {
       "label": "Squares {4,5}",
@@ -2068,7 +2082,9 @@
       "hyperbolic54",
       "hyperbolic55",
       "hyperbolic45",
-      "hyperbolic46"
+      "hyperbolic46",
+      "hyperbolic37",
+      "hyperbolic38"
     ],
     "familyLabels": {
       "regular": "Regular",
