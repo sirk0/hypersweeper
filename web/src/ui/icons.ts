@@ -30,7 +30,7 @@ import {
   substitutionPlacements,
   SUBSTITUTIONS,
 } from "../boards/fractal";
-import { hyperbolicBoard, hyperbolicUniformBoard } from "../boards/hyperbolic";
+import { binaryBoard, hyperbolicBoard, hyperbolicUniformBoard } from "../boards/hyperbolic";
 import type { WythoffOp } from "../boards/hyperbolic";
 import {
   ammannBeenkerBoard,
@@ -1669,6 +1669,23 @@ function draw(rawKey: string): string[] {
         ),
       );
     });
+  } else if (key === "hyperbolicbinary") {
+    // the binary tiling's top three rows, two tiles, four and eight: each row
+    // half the width of the one above, the top row lighter. Three, because the
+    // fourth's sixteen are already too narrow to read at row size.
+    const board = binaryBoard(2, 3, 0, 1);
+    const sc = (d * 0.9) / board.width;
+    const ox = (d - board.width * sc) / 2;
+    const oy = (d - board.height * sc) / 2;
+    for (const [cell, poly] of board.polygons) {
+      parts.push(
+        shape(
+          poly.map(([x, y]): P => [ox + x * sc, oy + y * sc]),
+          cell.startsWith("0,") ? LIGHT : BASE,
+          2,
+        ),
+      );
+    }
   } else if (key in HYPERBOLIC_ICON_SHELLS) {
     // the board itself, a ring and a half deep, inside the rim of the disc it
     // never reaches -- drawn with its geodesic arcs and square corners (a
@@ -2052,6 +2069,9 @@ const PATCH_BOARDS: Record<string, PatchBoard> = {
   hyperbolic3737: { build: () => hyperbolicDisc("hyperbolic3737", 18, 100), whole: true },
   hyperbolic3474: { build: () => hyperbolicDisc("hyperbolic3474", 16, 100), whole: true },
   hyperbolic4614: { build: () => hyperbolicDisc("hyperbolic4614", 16, 100), whole: true },
+  // Whole as well: the rectangle with its rows halving down to the ideal line
+  // is the picture, as the disc is the {p,q} boards'.
+  hyperbolicbinary: { build: () => binaryBoard(2, 5, 0, 100), whole: true },
 };
 
 /** The uniform hyperbolic boards, each one of Wythoff's operations on {7,3}

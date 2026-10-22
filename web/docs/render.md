@@ -137,6 +137,38 @@ and opened by a tap there, the outermost one brought in as far as the hold
 allows, the board thrown as far as it goes and still filling the view, a drag
 along the rim, `0`, the arrows, and a touch drag that neither opens nor flags.
 
+### Half-plane panning (`src/render/halfPlane.ts`)
+
+The binary tiling is drawn in the upper half-plane (`Board.halfPlane`), and
+it is dragged by that plane's isometries in the same places the disc boards
+are:
+- one finger or the mouse at every zoom;
+- the pan arrows, shown for it as for the discs (`pansHyperbolically`, which gives the board bar its `disc` condition);
+- the arrow keys.
+
+The isometries that fix the point at infinity are z -> a z + b. They are
+simply transitive, so exactly one takes the point under the finger to where
+the finger went, and `halfPlaneDrag` solves for it: a = (height of `to` above
+the ideal line) / (height of `from`), and b slides the rest. Each one is a
+**Euclidean similarity**, a magnification about the ideal line under the
+board plus a slide along it. So unlike the disc pan this is not a vertex-shader
+stage. It is the ordinary flat camera: `Renderer.dragHalfPlane` multiplies the
+zoom by `a` and moves the pan by the board's own turn of the translation, which
+is also what keeps it right on a board shown quarter-turned. Picking, glyphs,
+particles and everything else that reads the camera need nothing.
+
+The holds are the flat camera's own:
+- **Zoom** runs from 1 up to `Board.halfPlane.maxZoom` (2^(levels-1), enough to bring the bottom row up to the size the top row is framed at). For this board that ceiling replaces `MAX_ZOOM`, for the pinch and wheel too.
+- **The pan clamp** keeps the rectangle filling the view, so a dragged-up bottom row stays along the bottom of the screen, at full size.
+- **At the ceiling**, a drag still follows the finger along the line, only no further across it.
+
+A drag starting on or below the ideal line (the margin under the board) does
+nothing. `0` frames the board again. `tests/unit/halfPlane.test.ts` pins the
+map (an isometry, the finger followed, the clamp), and
+`tests/e2e/halfPlanePan.spec.ts` the gestures: a bottom-row cell dragged up to
+tappable size and opened, a sideways slide at constant zoom, no shrinking past
+fitted, and the arrow keys.
+
 ## Picking (`Renderer.pick`)
 
 A click is a ray, and the cell it lands on is the one **drawn** where it lands.

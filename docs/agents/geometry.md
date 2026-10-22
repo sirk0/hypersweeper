@@ -42,7 +42,7 @@ Import order is a strict DAG; a module only imports from the ones above it.
 | `tilings.py` | Regular flat builders (square/triangle/trigrid/hex/hexhex/hextri/hextriangle/squarediamond), the `_ArchTemplate` system, the eight Archimedean `_*_template()` factories plus their eight Laves duals (built by `_dual_template`), the six isogonal (non-edge-to-edge) ones, the five congruent-rectangle bonds, the two rep-tile patterns and Dürer's pentagon tiling, all twenty 2-uniform tilings (three cut or merged from a uniform tiling, seventeen written down from one translation cell by `_cell_template`), and the **`ARCH_TILINGS`** registry (the one place any of them is declared, with `_FAMILY_TRAITS` saying what each family is). |
 | `fractal.py` | The self-similar (fractal) boards: the sphinx, the chair, the Sierpinski carpet, the pentaflake and the Gosper island. One `_Substitution` record per tile — unit outline, the tiles filling the inflated copy, the inflation factor, lattice ops — and the shared inflation (`substitution_placements`) all five `*_board` builders run. The first two are rep-tiles (their children fill the tile); the carpet's and the pentaflake's leave holes, which is what makes them fractals with holes rather than shapes; the Gosper island's fill it with no hole at all and put the fractal in the *outline* instead. Four lattices are integer; the pentaflake's is ℤ[ζ10], since five-fold symmetry needs rank 4. The Gosper island's inflation is the one that is not a pure scaling: multiplication by 2 + ζ, a spiral similarity of √7 at 19.106°. |
 | `aperiodic.py` | Penrose's rhombi (P3) and his kites and darts (P2), Ammann–Beenker (squares and 45° rhombi, eight-fold), the Spectre (Tile(1,1), the chiral monotile), the phyllotactic spiral, Klaassen's spiral monotile and his three pentagonal spirals (5-, 6- and 7-fold, one convex pentagon each), each with exact-arithmetic vertex ids — ℤ[ζ5] for both Penrose boards and the spiral, ℤ[ζ8] for Ammann–Beenker, ℤ[ζ12] for the Spectre. The Spectre's ring is *dense* in the plane, so unlike Penrose's discrete lattice there is no lattice to snap a float vertex back to: its placements are carried as exact `(rotation, mirror, translation)` triples and no floating point enters the substitution at all. The spiral is the odd one out — no substitution, just ten 36° wedges of the tile's own translation lattice, the odd ones offset a step; nonperiodic because its five-fold centre forbids any translation. The **brick rings** are nonperiodic the same way — by symmetry rather than by a substitution — and are the plainest board here: 2x1 bricks on the integer square lattice in concentric square rings about a 2x2 core, ring k being the boundary of the 2k x 2k square with horizontal bricks along its rows and vertical ones up its sides. Every run is even, so every tile is a whole brick and only an even-sided square is tileable at all. A brick's corner lands in the middle of a neighbour's long side, so `_brick_outline` splits each edge at the lattice points that are genuinely some tile's corner — the 2D twin of `solids._split_at_lattice_points`, and *conditional*, unlike the fractal outlines, which carry a vertex at every step. |
-| `hyperbolic.py` | The regular {p,q} tilings of the hyperbolic plane, drawn in the Poincaré disc: {8,3} octagons, {7,3} heptagons, {6,4} hexagons, {5,4} and {5,5} pentagons, {4,5} and {4,6} squares, {3,7} and {3,8} triangles. Built combinatorially ring by ring with integer vertex ids (the triangles as the duals of {7,3} and {8,3}), placed afterwards by disc isometries, edges drawn as geodesic arcs, trimmed by hyperbolic-distance shells. See "The hyperbolic boards" below. |
+| `hyperbolic.py` | The regular {p,q} tilings of the hyperbolic plane, drawn in the Poincaré disc: {8,3} octagons, {7,3} heptagons, {6,4} hexagons, {5,4} and {5,5} pentagons, {4,5} and {4,6} squares, {3,7} and {3,8} triangles. Built combinatorially ring by ring with integer vertex ids (the triangles as the duals of {7,3} and {8,3}), placed afterwards by disc isometries, edges drawn as geodesic arcs, trimmed by hyperbolic-distance shells. See "The hyperbolic boards" below. Also Böröczky's binary tiling, drawn in the upper half-plane as a rectangle (`binary_board`); see "The binary tiling" below. |
 | `solids.py` | Closed/convex and polycube 3D boards (the Goldberg polyhedra GP(f, 0) and GP(h, k), the geodesic icosahedron and its subdivision `_geodesic`, with its class III cousin `_geodesic_hk`, cube, the Platonic solids, frames, bipyramid), plus the shared `_wythoff_point` every uniform solid here and every Catalan solid next door is generated from. |
 | `catalan.py` | The thirteen Catalan solids, the duals of the Archimedean solids. One recipe for all of them: a Platonic base and one flag, the Wythoff generating point of its Schwarz triangle (`solids._wythoff_point` for the five non-chiral Conway operations, `_snub_point` for the chiral one), a Catalan vertex at `n / <w, n>` on each face axis — polar duality — and the base's flags grouped into faces by the operation. Faces are then subdivided (`solids._geodesic` for triangles, `_quad_grid` for quadrilaterals, a five-way fan first for pentagons), which is these boards' only size knob. `_tri_grid` is `_quad_grid`'s triangle twin, for the solids next door whose triangles meet squares. |
 | `archimedean.py` | Archimedean solids cut into boards — the cube group's cuboctahedron, truncated octahedron and snub cube, and the icosahedral rhombicosidodecahedron, truncated icosidodecahedron and snub dodecahedron — as the **polar duals of their Catalan solids**: `_archimedean_faces` turns `catalan._catalan_faces` inside out (each Catalan face's pole is a vertex, each Catalan vertex a face), so no Wythoff point is solved twice and every vertex id is a Catalan face key. Faces are cut by `catalan._tri_grid` and `_quad_grid`, which name a shared edge's points alike; the truncated octahedron's hexagons are first cut into three rhombi (`_split_hexagons`, by the pyritohedral `_th_spokes` rule), the icosahedral solids' big faces fanned into triangles (`_fan_faces`). See "The Archimedean solids" below. |
@@ -772,7 +772,8 @@ a flat triangle's 12) -- and the boards are drawn in the
 like the fractals and Klaassen's spiral.
 Four more are **uniform** rather than regular -- every corner alike, more than
 one tile -- and come off the same {7,3} walk; see "The uniform hyperbolic
-boards" below.
+boards" below. One more is drawn in the upper half-plane rather than the disc,
+as a rectangle: Böröczky's binary tiling (see "The binary tiling" below).
 
 **The ids are combinatorial, never geometric.** The tiling is built ring by
 ring: ring 0 is the central p-gon (vertices 0 .. p-1), and each new ring is
@@ -970,6 +971,56 @@ puts a hexagon and a heptagon on one board, which one pentatonic degree apart
 is a whole tone, so the sound spelling moved the 7-gon and everything above it
 down (see "One collection, and a spelling measured against the catalog" in
 [`web/docs/audio.md`](../../web/docs/audio.md)).
+
+## The binary tiling
+
+`binary_board(top, levels, mines, scale)` (`binaryBoard`, mode
+`hyperbolicbinary`) is Böröczky's binary tiling, the one hyperbolic board
+that is **not a disc**. In the upper half-plane model the horizontal lines are
+horocycles and the vertical ones geodesics, and z -> 2z is an isometry. Cut
+along y = 2^i and along x = j·2^i between y = 2^i and 2^(i+1), and every piece
+is the unit piece [0, 1] x [1, 2] moved by z -> 2^i z + j·2^i. So all the tiles
+are congruent, and each row's tiles are twice the width of the row below.
+Drawn in the model they are Euclidean squares with straight edges, and a window
+of whole tiles is a **rectangle**: `top` tiles across the top row, `levels`
+rows, top·(2^levels - 1) cells, mirror-symmetric about its middle (D1). It is
+the one hyperbolic board inside the square-window convention.
+
+**The ids are the corners themselves.** In bottom-row tiles every corner is
+(j·2^i, 2^i), an integer pair, so nothing is computed or rounded. A tile's
+bottom edge carries its midpoint, where its two children meet. That point is a
+T-vertex, which `corner_mask` marks as not a corner. With it, shared-vertex
+adjacency gives an interior tile **8** neighbours:
+- 2 beside it;
+- 4 below: its two children, plus one child of each side neighbour, at its bottom corners;
+- 2 above: its parent, plus the parent's neighbour on the tile's own side.
+
+That last pair is the left/right asymmetry that makes it play unlike the square
+grid. `TestBinaryTiling` pins all of it, and checks congruence exactly, mapping
+every tile onto the unit tile in rationals.
+
+**The rim is half the board.** The bottom row has no children, so its tiles
+have 4 neighbours, and it holds just over half the cells. Mean degree is 5.6
+to 5.9. No window has a twin, and each has exactly **two near-twins**: the
+bottom row's second tile and its parent, at each end. Peeling either would cut
+a notch in the rectangle, so they stay. The calibrated densities are 6–11%.
+
+**The size knob is coarse and not a product.** The cell count is
+top·(2^levels - 1), so `resize.py` enumerates the candidates (`grid="binary"`)
+rather than filtering on the product of the knobs. A square window is about 2
+tiles across the top whatever the depth: 3×5 (93 cells) easy, 2×7 (254)
+medium, 2×8 (510) hard.
+
+**Its bottom rows are tiny, and the pan is what reaches them.** At hard on a
+phone the bottom row is 256 tiles across, about 1.5px each. In the TypeScript
+app a drag moves the board by z -> a z + b, the half-plane isometry that takes
+the point under the finger to the finger. That is a magnification about the
+ideal line under the board plus a slide along it, so a bottom-row cell dragged
+up comes in at tappable size. It is a Euclidean similarity, so it runs on the
+ordinary flat camera (zoom up to `2^(levels-1)` for this board) with no
+shader stage. The board says where its ideal line is (`Board.halfPlane`).
+See "Half-plane panning" in [`web/docs/render.md`](../../web/docs/render.md).
+The pygame game does not pan; it plays the same board.
 
 ## The fractal boards
 

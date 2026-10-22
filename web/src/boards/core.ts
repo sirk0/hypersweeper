@@ -76,6 +76,13 @@ export interface Board {
   // bounds that (`discReach`): the board's edge is never carried in past most
   // of the way to the centre of the view. Unset for every other board.
   disc?: { cx: number; cy: number; radius: number; rim: number };
+  // The upper half-plane the board is drawn in (the binary tiling), in the
+  // polygons' own pixel space: `boundary`, the y of the ideal line y = 0 (below
+  // the board — pixel y grows downward), and `maxZoom`, the magnification that
+  // brings the bottom row up to the size the top row is framed at. It is what
+  // lets the renderer move the board by a half-plane isometry z -> a z + b —
+  // half-plane panning, see render/halfPlane.ts. Unset for every other board.
+  halfPlane?: { boundary: number; maxZoom: number };
 }
 
 /** Where an immersion passes through itself, the sheet that ends up *inside*
@@ -348,6 +355,14 @@ export function flatBoard(board: Omit<Board, "symmetries">): Board {
       return (measured ??= planeSymmetries(board.polygons, board.adjacency));
     },
   };
+}
+
+/** Whether a drag moves this board by an isometry of the hyperbolic plane it
+ * is drawn in — the Poincaré disc's (render/disc.ts) or the upper
+ * half-plane's (render/halfPlane.ts) — rather than sliding it, which is what
+ * its pan arrows are shown for. */
+export function pansHyperbolically(board: Board): boolean {
+  return board.disc !== undefined || board.halfPlane !== undefined;
 }
 
 /** The same for a closed solid, whose point group `solidSymmetries` measures

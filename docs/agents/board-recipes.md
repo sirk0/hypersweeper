@@ -817,6 +817,16 @@ must sound a chord -- `soundHarmony.test.ts` fails if it does not, and the fix
 is the spelling in `audio/presets.ts`. See
 [`geometry.md`](geometry.md#the-uniform-hyperbolic-boards).
 
+**A board in the upper half-plane** -- today only Böröczky's binary tiling,
+`binary_board` -- is not a {p,q} and shares none of the disc machinery. It
+is a lattice builder whose ids are its integer corners, drawn as a rectangle.
+What it needs that the disc boards do not:
+- its own `SPEC` grid in `resize.py` (`_grid_binary`), because its cell count is not the product of its knobs;
+- `Board.halfPlane` in place of `Board.disc`, which switches on the half-plane pan;
+- a row icon of its own in `icons.ts` and `gui.py`, instead of an entry in the icon-shell tables.
+
+See [`geometry.md`](geometry.md#the-binary-tiling).
+
 ## Recipe: add an aperiodic / shaped / solid board
 
 These are one-offs, not tiling×surface products.

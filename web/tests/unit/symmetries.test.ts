@@ -3,6 +3,7 @@ import { HYPERBOLIC_MODES, SOLID_MODES, surfaceOf } from "../../src/boards/catal
 import {
   isAutomorphism,
   isBoard3D,
+  pansHyperbolically,
   symmetryOf,
   SYMMETRY_IDS,
   type BoardSymmetry,
@@ -295,6 +296,9 @@ describe("board symmetries", () => {
       ["hyperbolic3737", "easy", 14],
       ["hyperbolic3474", "medium", 14],
       ["hyperbolic4614", "hard", 14],
+      // the binary tiling's window has the one mirror, down its middle
+      ["hyperbolicbinary", "easy", 2],
+      ["hyperbolicbinary", "hard", 2],
     ];
     for (const [mode, difficulty, order] of orders) {
       const board = buildBoard(mode, difficulty);
@@ -496,7 +500,7 @@ describe("the board bar's symmetry controls", () => {
       const conditions = boardConditions(
         board.symmetries,
         mode,
-        !isBoard3D(board) && board.disc !== undefined,
+        !isBoard3D(board) && pansHyperbolically(board),
       );
       return slots
         .filter((s) => slotVisible(s.visibleWhen, conditions) && slotKept(s.keepWhen, conditions))

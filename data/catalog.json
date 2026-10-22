@@ -238,6 +238,7 @@
     "hyperbolic3737": "Triheptagonal 3.7.3.7",
     "hyperbolic3474": "Rhombitriheptagonal 3.4.7.4",
     "hyperbolic4614": "Truncated triheptagonal 4.6.14",
+    "hyperbolicbinary": "Binary tiling",
     "spheretri": "Geodesic icosahedron"
   },
   "tilingNotations": {
@@ -907,6 +908,12 @@
     },
     "hyperbolic83": {
       "label": "Octagons {8,3}",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
+    "hyperbolicbinary": {
+      "label": "Binary tiling",
       "tiling": "",
       "surface": "flat",
       "family": "hyperbolic"
@@ -2116,7 +2123,8 @@
       "hyperbolic667",
       "hyperbolic3737",
       "hyperbolic3474",
-      "hyperbolic4614"
+      "hyperbolic4614",
+      "hyperbolicbinary"
     ],
     "familyLabels": {
       "regular": "Regular",

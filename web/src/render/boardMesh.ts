@@ -323,6 +323,14 @@ export interface BoardMesh extends Group {
    * shader's), so this is where the ray has to be aimed. */
   discSource?(p: readonly [number, number]): readonly [number, number];
 
+  // -- half-plane panning (see render/halfPlane.ts) ---------------------------
+  // A board drawn in the upper half-plane (the binary tiling) is moved by the
+  // ordinary flat camera, its drags turned into a zoom about the ideal line and
+  // a slide along it. All the renderer needs is where that line is.
+
+  /** The ideal line's y and the furthest the view may magnify (mesh units). */
+  readonly halfPlane?: { line: number; maxZoom: number };
+
   // -- animations (see render/animations.ts) ---------------------------------
   /** Enable or disable this board's animations (reduced-motion / test seam).
    * Disabling drops any in-flight animation and renders the settled state. */

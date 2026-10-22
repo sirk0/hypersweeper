@@ -178,6 +178,7 @@ from minesweeper.boards.fractal import (  # noqa: F401
     substitution_placements,
 )
 from minesweeper.boards.hyperbolic import (  # noqa: F401
+    binary_board,
     hyperbolic_board,
     hyperbolic_faces,
     hyperbolic_positions,
