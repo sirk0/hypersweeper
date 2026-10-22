@@ -309,8 +309,13 @@ coin flip, and a board with many of them calibrates — the search walks the
 mine count down until the rim's 50/50s are rare — to a board with almost
 nothing else to solve. The classic board has none (a corner is two cells
 short); the hyperbolic builder drops them (see "The hyperbolic boards" in
-[`geometry.md`](geometry.md)). Where a calibrated density looks low for the
-board's degree, count them before believing it. Every row the calibration cannot bring on target lands in the
+[`geometry.md`](geometry.md)), and so do the periodic windows -- flat, cylinder
+and Möbius -- wherever the tile can be peeled off the rim whole (see "A window's
+rim is cut back by its near-twins" there). `metrics.near_twin_cells` counts
+what is left, and the size search charges for it (`NEAR_TWIN_WEIGHT`), so a
+window whose edge pins one by a corner loses to one that does not. Where a
+calibrated density looks low for the board's degree, count them before
+believing it -- or compare it with the same tiling's donut, which has no rim. Every row the calibration cannot bring on target lands in the
 generated `data/difficulty.json`, which the TypeScript app reads
 (`web/src/boards/fairness.ts`) to mark the menu row and to deal the board less
 often at random — so a new unfair board needs no front-end edit, only a

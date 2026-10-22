@@ -30,6 +30,7 @@ from minesweeper.boards.core import (
     _orient_outward,
     _shared_vertex_adjacency,
     _tangent_order,
+    _without_near_twins,
 )
 from minesweeper.boards.solids import _geodesic, _icosahedron
 from minesweeper.boards.tilings import (
@@ -1364,6 +1365,7 @@ def arch_cylinder_board(
                 if len(set(keys)) < len(keys):
                     raise ValueError(f"ring {ring} is too small for {tiling}")
                 cells[(m, n, name)] = keys
+    cells = _without_near_twins(cells)  # the rims' coin flips, as on a flat window
     positions = _wrapped_positions(
         template, cells, point,
         lambda m, n, tag: ((m % ring), n, tag))
@@ -1462,6 +1464,7 @@ def arch_mobius_board(
                 if len(set(keys)) < len(keys):
                     raise ValueError(f"ring {ring} is too small for {tiling}")
                 cells[(m, n, name)] = keys
+    cells = _without_near_twins(cells)  # the edge's coin flips, as on a flat window
     positions = _wrapped_positions(template, cells, point, canonical)
     return _assemble("mobius" + tiling, cells, positions.__getitem__, mine_count,
                      two_sided=True, radius=_max_radius)

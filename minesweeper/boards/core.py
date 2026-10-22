@@ -65,6 +65,63 @@ def _shared_vertex_adjacency(cells: dict[Cell, list]) -> dict[Cell, tuple[Cell, 
     return {cell: tuple(sorted(others - {cell})) for cell, others in touching.items()}
 
 
+def _peelable(keys: list, rim_edges: set, rim: set) -> bool:
+    """Whether dropping a cell leaves the board the surface it was: the cell
+    meets the rim in one unbroken run of its own edges and nowhere else. A
+    cell touching it only at a corner, or in two places, would leave a hole
+    or two tiles pinched together at a point."""
+    edges = [frozenset((a, b)) in rim_edges for a, b in zip(keys, keys[1:] + keys[:1])]
+    runs = sum(1 for i, on in enumerate(edges) if on and not edges[i - 1])
+    if runs != 1:
+        return False
+    run_ends = {k for i, on in enumerate(edges) if on
+                for k in (keys[i], keys[(i + 1) % len(keys)])}
+    return all(k in run_ends for k in keys if k in rim)
+
+
+def _without_near_twins(cells: dict[Cell, list]) -> dict[Cell, list]:
+    """``cells`` less the smaller of every **near-twin** pair on a rim: two
+    neighbours whose closed neighbourhoods (each cell and every cell sharing
+    a vertex with it) differ by one cell. That cell's number is the only
+    thing that tells the two apart, so once it is a mine, a mine in the pair
+    is a coin flip. Repeated until none is left, since a drop can uncover
+    new ones.
+
+    A periodic tiling only ever has near-twins on a rim -- an interior cell
+    sees the whole tiling round it, and no seamless donut of one has any --
+    so on a window this is the edge being cut back, and only a cell the edge
+    can give up whole is dropped (``_peelable``); a near-twin wedged into the
+    rim by a corner stays. The relation and the test are both ones every
+    symmetry of the board preserves, so the trim keeps the board's symmetry.
+
+    Exact twins are left alone: the only periodic tiling with any is the
+    triakis, which is made of them and is flagged unfair instead (see "Check
+    the board is playable at all" in docs/agents/difficulty.md). The
+    hyperbolic builder drops both from its disc (``hyperbolic._without_twins``).
+    """
+    while True:
+        adjacency = _shared_vertex_adjacency(cells)
+        hood = {cell: frozenset([cell, *others]) for cell, others in adjacency.items()}
+        used: dict[frozenset, int] = defaultdict(int)
+        for keys in cells.values():
+            for a, b in zip(keys, keys[1:] + keys[:1]):
+                used[frozenset((a, b))] += 1
+        rim_edges = {edge for edge, count in used.items() if count == 1}
+        rim = {key for edge in rim_edges for key in edge}
+        drop = set()
+        for cell, h in hood.items():
+            # a near-twin's bigger partner is in its own neighbourhood
+            for other in adjacency[cell]:
+                if len(hood[other]) == len(h) + 1 and h < hood[other]:
+                    if _peelable(cells[cell], rim_edges, rim):
+                        drop.add(cell)
+                    elif _peelable(cells[other], rim_edges, rim):
+                        drop.add(other)
+        if not drop:
+            return cells
+        cells = {cell: keys for cell, keys in cells.items() if cell not in drop}
+
+
 def _build(
     mode: str,
     lattice_cells: dict[Cell, list[LatticePoint]],

@@ -192,6 +192,71 @@ export function sharedVertexAdjacency(
   return adjacency;
 }
 
+/** Whether dropping a cell leaves the board the surface it was: the cell meets
+ * the rim in one unbroken run of its own edges and nowhere else. Mirrors
+ * core.py `_peelable`. */
+function peelable(keys: readonly string[], rimEdges: Set<string>, rim: Set<string>): boolean {
+  const n = keys.length;
+  const edgeKey = (a: string, b: string) => (a < b ? `${a}|${b}` : `${b}|${a}`);
+  const on = keys.map((a, i) => rimEdges.has(edgeKey(a, keys[(i + 1) % n]!)));
+  let runs = 0;
+  for (let i = 0; i < n; i++) if (on[i] && !on[(i + n - 1) % n]) runs++;
+  if (runs !== 1) return false;
+  const runEnds = new Set<string>();
+  for (let i = 0; i < n; i++) {
+    if (on[i]) {
+      runEnds.add(keys[i]!);
+      runEnds.add(keys[(i + 1) % n]!);
+    }
+  }
+  return keys.every((k) => !rim.has(k) || runEnds.has(k));
+}
+
+/**
+ * `cells` less the smaller of every near-twin pair on a rim -- two neighbours
+ * whose closed neighbourhoods differ by one cell, so that cell's number is all
+ * that tells them apart -- or, where the smaller cannot be peeled off the rim
+ * whole, the bigger. Repeated until none is left. Mirrors core.py
+ * `_without_near_twins`, which says why.
+ */
+export function withoutNearTwins(cells: Map<CellId, string[]>): Map<CellId, string[]> {
+  for (;;) {
+    const adjacency = sharedVertexAdjacency(cells);
+    const hood = new Map<CellId, Set<CellId>>();
+    for (const [cell, others] of adjacency) hood.set(cell, new Set([cell, ...others]));
+    const used = new Map<string, number>();
+    for (const keys of cells.values()) {
+      for (let i = 0; i < keys.length; i++) {
+        const a = keys[i]!;
+        const b = keys[(i + 1) % keys.length]!;
+        const edge = a < b ? `${a}|${b}` : `${b}|${a}`;
+        used.set(edge, (used.get(edge) ?? 0) + 1);
+      }
+    }
+    const rimEdges = new Set<string>();
+    const rim = new Set<string>();
+    for (const [edge, count] of used) {
+      if (count !== 1) continue;
+      rimEdges.add(edge);
+      for (const key of edge.split("|")) rim.add(key);
+    }
+    const drop = new Set<CellId>();
+    for (const [cell, mine] of hood) {
+      // a near-twin's bigger partner is in its own neighbourhood
+      for (const other of adjacency.get(cell)!) {
+        const theirs = hood.get(other)!;
+        if (theirs.size !== mine.size + 1 || ![...mine].every((x) => theirs.has(x))) continue;
+        if (peelable(cells.get(cell)!, rimEdges, rim)) drop.add(cell);
+        else if (peelable(cells.get(other)!, rimEdges, rim)) drop.add(other);
+      }
+    }
+    if (drop.size === 0) return cells;
+    const kept = new Map<CellId, string[]>();
+    for (const [cell, keys] of cells) if (!drop.has(cell)) kept.set(cell, keys);
+    cells = kept;
+  }
+}
+
 /**
  * Assemble a flat board from cells keyed by integer lattice points (matches
  * core.py `_build`): adjacency by shared exact vertices, polygons scaled per

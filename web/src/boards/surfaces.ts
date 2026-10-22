@@ -24,6 +24,7 @@ import {
   orientOutward,
   sharedVertexAdjacency,
   solidSymmetries,
+  withoutNearTwins,
   tangentOrder,
   type Board3D,
   type BoardSymmetry,
@@ -51,7 +52,7 @@ import {
   type Tri,
 } from "./clipSolid";
 import { geodesic, icosahedron } from "./solids";
-import { type ArchTemplate, torusTemplate, wrapTemplate } from "./tilings";
+import { type ArchTemplate, pruneTo, torusTemplate, wrapTemplate } from "./tilings";
 
 const mod = (a: number, b: number): number => ((a % b) + b) % b;
 
@@ -2459,6 +2460,19 @@ export function archTorusBoard(
   });
 }
 
+/** Cut a strip's rim back by its near-twins (`withoutNearTwins`), in place,
+ * taking the dropped cells' corner masks and now-unused vertices with them. */
+function trimRim(cells: Cells, positions: Positions, cornerMask: Map<CellId, boolean[]>): void {
+  const kept = withoutNearTwins(cells);
+  if (kept.size === cells.size) return;
+  for (const cell of [...cells.keys()]) {
+    if (kept.has(cell)) continue;
+    cells.delete(cell);
+    cornerMask.delete(cell);
+  }
+  pruneTo(cells, positions);
+}
+
 /** An Archimedean tiling around the side of a cylinder: `ring` domain copies
  * around, `rows` (may be fractional) up the axis, open ends. The strip runs
  * from `template.cut` to `cut + rows*height`.
@@ -2536,6 +2550,7 @@ export function archCylinderBoard(
       }
     }
   }
+  trimRim(cells, positions, cornerMask); // the rims' coin flips, as on a flat window
   straightenPositions(t, cells, positions, (m, n, tag) => `${mod(m, ring)},${n},${tag}`);
   // The strip's own centre line is the only horizontal line it can be flipped
   // about: any other would carry the band off itself. It is guaranteed to be
@@ -2666,6 +2681,7 @@ export function archMobiusBoard(
       }
     }
   }
+  trimRim(cells, positions, cornerMask); // the edge's coin flips, as on a flat window
   straightenPositions(t, cells, positions, (m, n, tag) => {
     const c = canonical(m, n, tag);
     return `${c[0]},${c[1]},${c[2]}`;

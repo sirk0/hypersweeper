@@ -4658,10 +4658,10 @@ class TestWrappedArchimedean:
             "mobiustrunchex": (81, 225, 420),
             "torusrhombitrihex": (96, 264, 468),
             "torustrunctrihex": (96, 288, 468),
-            "cylrhombitrihex": (84, 286, 480),
-            "cyltrunctrihex": (80, 242, 510),
-            "mobiusrhombitrihex": (84, 286, 532),
-            "mobiustrunctrihex": (80, 280, 420),
+            "cylrhombitrihex": (84, 264, 450),
+            "cyltrunctrihex": (84, 240, 480),
+            "mobiusrhombitrihex": (84, 264, 540),
+            "mobiustrunctrihex": (84, 286, 416),
             "torusprismaticpent": (88, 252, 480),
             "cylprismaticpent": (90, 270, 456),
             "mobiusprismaticpent": (72, 224, 444),
@@ -4683,8 +4683,8 @@ class TestWrappedArchimedean:
             "cyldeltoidal": (72, 264, 450),
             "mobiusdeltoidal": (72, 264, 468),
             "toruskisrhombille": (192, 288, 480),
-            "cylkisrhombille": (72, 288, 480),
-            "mobiuskisrhombille": (144, 240, 528),
+            "cylkisrhombille": (72, 256, 484),
+            "mobiuskisrhombille": (120, 220, 484),
             "kleinelongated": (84, 264, 486),
             "kleinsnubsquare": (81, 252, 486),
             "kleintrihex": (90, 252, 480),
@@ -4727,8 +4727,8 @@ class TestWrappedArchimedean:
             "mobiusbasketweave": (88, 228, 464),
             "kleinbasketweave": (72, 272, 460),
             "torusbasketweave3": (96, 252, 480),
-            "cylbasketweave3": (90, 240, 462),
-            "mobiusbasketweave3": (78, 270, 504),
+            "cylbasketweave3": (80, 224, 440),
+            "mobiusbasketweave3": (75, 289, 529),
             "kleinbasketweave3": (108, 270, 504),
             "torusherringbone": (80, 256, 480),
             "cylherringbone": (90, 250, 490),
@@ -4753,12 +4753,12 @@ class TestWrappedArchimedean:
             "cylhexrings": (80, 228, 504),
             "cylsquaretrihex": (72, 270, 460),
             "cylsquaretrihex2": (88, 240, 441),
-            "cyldodecarhombitrihex": (80, 280, 520),
+            "cyldodecarhombitrihex": (70, 266, 550),
             "mobiusstuddedtri": (76, 228, 450),
             "mobiuselongated2": (72, 231, 464),
             "mobiuselongated3": (70, 231, 441),
             "mobiustrirhombitrihex": (75, 259, 444),
-            "mobiustritrunctrihex": (72, 234, 450),
+            "mobiustritrunctrihex": (170, 238, 408),
             "mobiusfannedhex": (72, 280, 528),
             "mobiushexbands": (99, 220, 462),
             "mobiussnubelongated2": (78, 248, 434),
@@ -4772,7 +4772,7 @@ class TestWrappedArchimedean:
             "mobiushexrings": (80, 220, 504),
             "mobiussquaretrihex": (72, 270, 460),
             "mobiussquaretrihex2": (88, 294, 420),
-            "mobiusdodecarhombitrihex": (80, 280, 440),
+            "mobiusdodecarhombitrihex": (70, 266, 418),
             # ...and the donut, which needs no cut; the easy rows over the
             # band are EXEMPT_ROWS in tests/test_presets.py
             "torusstuddedtri": (208, 260, 468),
@@ -4807,10 +4807,16 @@ class TestWrappedArchimedean:
     # get a symmetric zigzag instead. One list for both surfaces, because they
     # share the cut: every tiling here is straight on whichever of the Mobius
     # strip and the cylinder it wraps.
+    #
+    # basketweave3 and kisrhombille have the line too, and are cut along it,
+    # but a rim along it leaves near-twins -- the outer brick of each block
+    # lying along the edge, the sliver between two big triangles -- which the
+    # builder then peels off (``core._without_near_twins``), so the rim comes
+    # out crenellated or zigzag rather than straight.
     STRAIGHT_RIM = {
         "elongated", "trihex", "prismaticpent", "deltoidal", "triakis",
-        "kisrhombille", "tetrakis", "offsetsquare", "staggeredtri",
-        "stackedbond", "runningbond", "basketweave", "basketweave3",
+        "tetrakis", "offsetsquare", "staggeredtri",
+        "stackedbond", "runningbond", "basketweave",
         # 2-uniform, the cylinder and the Mobius strip. fannedhex and
         # squaretrihex2 have straight lines too, and elongated3 has them in its
         # flat layout, but a band ending on one either plays coin flips at easy
@@ -5034,6 +5040,72 @@ class TestWrappedArchimedean:
                     board.mode,
                     cell,
                 )
+
+
+class TestRimNearTwins:
+    """A periodic window's edge is cut back by its near-twins: a rim tile
+    whose closed neighbourhood is a neighbour's less one cell can only be
+    told from it by that cell's number, so the builders peel it off
+    (``core._without_near_twins``) and the size search steers away from
+    windows that leave one it cannot peel (``NEAR_TWIN_WEIGHT``)."""
+
+    # tiling -> the flat, cylinder and Mobius modes it ships as
+    MODES = sorted(
+        {"flat": tiling, "cylinder": "cyl" + tiling, "mobius": "mobius" + tiling}[surface]
+        for tiling, rows in ARCH_PRESETS.items()
+        for surface in rows if surface in ("flat", "cylinder", "mobius")
+    )
+
+    # What is left where nothing better was available. The tetrakis window's
+    # sides cut through its squares unless both knobs are even, and the only
+    # even windows are 64 and 96 cells, either side of the easy band; the
+    # triangles pinned to the rim there by a corner cannot be peeled whole.
+    KEPT = {("tetrakis", "easy"): 8}
+
+    @staticmethod
+    def _near_twins(board) -> int:
+        hood = {c: frozenset([c, *ns]) for c, ns in board.adjacency.items()}
+        return sum(1 for c, ns in board.adjacency.items()
+                   if any(len(hood[o]) == len(hood[c]) + 1 and hood[c] < hood[o]
+                          for o in ns))
+
+    @pytest.mark.parametrize("difficulty", DIFFICULTIES)
+    def test_no_shipped_window_keeps_a_near_twin(self, difficulty):
+        left = {mode: n for mode in self.MODES
+                if (n := self._near_twins(build_board(mode, difficulty)))}
+        expected = {mode: n for (mode, level), n in self.KEPT.items()
+                    if level == difficulty}
+        assert left == expected
+
+    @pytest.mark.parametrize("mode", sorted(
+        tiling for tiling, rows in ARCH_PRESETS.items() if "flat" in rows))
+    def test_peeling_leaves_a_flat_window_a_disc(self, mode):
+        # only a tile that meets the rim in one run of its own edges is
+        # peeled, so the window never comes out with a hole in it or two
+        # tiles pinched together at a corner
+        for difficulty in DIFFICULTIES:
+            board = build_board(mode, difficulty)
+            assert _euler_characteristic(board) == 1, difficulty
+            assert _boundary_components(board) == 1, difficulty
+
+    def test_the_peel_takes_the_rim_and_only_the_rim(self, monkeypatch):
+        # rhombitrihexagonal's medium window ends on a row of squares between
+        # hexagons, each square a near-twin of the triangle-square-triangle
+        # fan inside it; the peel takes those squares and nothing else
+        from minesweeper.boards import tilings
+        from minesweeper.boards.core import _without_near_twins
+        peeled = archimedean_board("rhombitrihex", 7, 4, 5)
+        monkeypatch.setattr(tilings, "_without_near_twins", lambda cells: cells)
+        whole = archimedean_board("rhombitrihex", 7, 4, 5)
+        gone = set(whole.adjacency) - set(peeled.adjacency)
+        assert set(peeled.adjacency) < set(whole.adjacency)
+        assert gone and {len(whole.polygons[c]) for c in gone} == {4}
+        assert self._near_twins(whole) > 0 and self._near_twins(peeled) == 0
+        # and a window with none is left exactly as it was
+        snub = archimedean_board("snubsquare", 5, 5, 5)
+        assert self._near_twins(snub) == 0
+        cells = {c: [tuple(p) for p in poly] for c, poly in snub.polygons.items()}
+        assert _without_near_twins(cells) == cells
 
 
 class TestPolyhedra:

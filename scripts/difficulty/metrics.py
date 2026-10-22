@@ -98,6 +98,22 @@ def indistinguishable_cells(adjacency: dict) -> int:
     return sum(count for count in groups.values() if count > 1)
 
 
+def near_twin_cells(adjacency: dict) -> int:
+    """How many cells have a neighbour whose closed neighbourhood is theirs
+    plus one cell.
+
+    That one cell's number is all that separates the pair, so whenever it is
+    a mine a mine in the pair is a coin flip. The classic board has none (a
+    corner is two cells short); a periodic tiling has them only on a rim,
+    which the builders cut back (``core._without_near_twins``) wherever the
+    cell can be peeled off whole. What this counts is what that leaves.
+    """
+    hood = {cell: frozenset([cell, *ns]) for cell, ns in adjacency.items()}
+    return sum(1 for cell, ns in adjacency.items()
+               if any(len(hood[other]) == len(hood[cell]) + 1
+                      and hood[cell] < hood[other] for other in ns))
+
+
 def _polygon_area_3d(points: Sequence[Sequence[float]]) -> float:
     """Area of a planar polygon in 3-space, via the vector cross products."""
     cx = cy = cz = 0.0

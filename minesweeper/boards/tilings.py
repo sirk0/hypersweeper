@@ -12,6 +12,7 @@ from minesweeper.boards.core import (
     LatticePoint,
     _build,
     _finalize_flat,
+    _without_near_twins,
 )
 
 # -- 2D builders (cells keyed by (row, index)) ------------------------------
@@ -1849,14 +1850,21 @@ def _elongated3_template() -> _ArchTemplate:
 def _tritrunctrihex_template() -> _ArchTemplate:
     """[3^6; 3^2.4.12], p6m: truncated trihexagonal (4.6.12) with every
     hexagon cut into six triangles. A hexagon's centre becomes 3^6 and each of
-    its corners, 4.6.12 before, 4.3.3.12."""
+    its corners, 4.6.12 before, 4.3.3.12.
+
+    Cut just below a row of dodecagon centres -- halfway to the next row of
+    tile centres -- so each rim is dodecagons with a square between each two.
+    The cut it had before (17/23 of the domain) ended the strip at a fan of
+    triangles between two tilted squares in every gap, with two triangles in
+    each touching the rim at a corner only: near-twins no peel can reach (see
+    ``core._without_near_twins``), and a fifth of the easy board."""
     return _cell_template(
         (3, 4, 12), (7, 8, 8, 8, 9), (9, 10, 10, 10, 11), ((-1, 1), (-1, -1)), [
         (12, (4,), 3), (4, (10,), 11), (4, (4,), 0), (4, (6,), 7), (3, (), 2),
         (3, (), 4), (3, (), 8), (3, (), 10), (3, (), 0), (3, (), 6),
         (3, (10, 11), 0), (3, (3, 4), 0), (3, (6, 7), 8), (3, (10, 11), 10),
         (3, (0, 11), 10), (3, (2, 3), 2),
-    ], centre=0, cut=17 / 23)
+    ], centre=0, cut=1 - ROOT3 / 36)
 
 
 def _fannedhex_template() -> _ArchTemplate:
@@ -2308,7 +2316,9 @@ def archimedean_board(
     point group: a plain left-right / top-bottom mirror for the reflective
     tilings (that same centre lies on their mirror axes), and the natural
     pinwheel rotation for the chiral snub tilings. That is what keeps the
-    edges clean and balanced instead of leaving stray tiles on one side."""
+    edges clean and balanced instead of leaving stray tiles on one side.
+    The rim is then cut back by any near-twins it leaves
+    (``core._without_near_twins``), which the symmetry survives too."""
     template = _arch_template(tiling)
     width_units, height_units = template.width, template.height
 
@@ -2367,5 +2377,8 @@ def archimedean_board(
         if abs(centroid[cell][0] - cx) <= half_w + slack
         and abs(centroid[cell][1] - cy) <= half_h + slack
     }
+    # a window's edge can leave a tile whose neighbours are all a neighbour's
+    # too, bar one: it is cut away rather than left to end games on a coin flip
+    cells = _without_near_twins(cells)
 
     return _finalize_flat(tiling, cells, position, mine_count, scale)
