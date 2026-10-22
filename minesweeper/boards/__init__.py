@@ -181,6 +181,8 @@ from minesweeper.boards.hyperbolic import (  # noqa: F401
     hyperbolic_board,
     hyperbolic_faces,
     hyperbolic_positions,
+    hyperbolic_uniform_board,
+    wythoff_faces,
 )
 from minesweeper.boards.presets import (  # noqa: F401
     _PRESETS,

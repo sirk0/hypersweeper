@@ -798,6 +798,19 @@ which it refuses rather than gets wrong). Read
    `TILINGS` in `web/tests/unit/hyperbolic.test.ts`, its ring counts to the
    latter, and its point group (D_p) to `symmetries.test.ts`.
 
+**A uniform tiling of a {p,q}** (6.6.7, 3.7.3.7, 3.4.7.4, 4.6.14 on {7,3}) is
+also data: a `{builder: "hyperbolic_uniform_board", args: {difficulty: [p, q,
+op, shells, mines, scale]}}` row with `op` one of `WYTHOFF_OPS`, and the mode
+must be `wythoff_mode(p, q, op)`. Add it to `_HYPERBOLIC_UNIFORM` in `gui.py`
+and `HYPERBOLIC_UNIFORM` in `icons.ts` (with its icon shells and menu card, as
+in step 3), and to `_WYTHOFF` / `UNIFORM` in the two test files. Then the
+checks above, plus two the regular boards never needed: **a new side count**
+(a 14-gon was one) needs a badge in `SHAPE_SIDES` and a regenerated Game
+Center list (`npm run gamecenter`), and **a new pair of shapes on one board**
+must sound a chord -- `soundHarmony.test.ts` fails if it does not, and the fix
+is the spelling in `audio/presets.ts`. See
+[`geometry.md`](geometry.md#the-uniform-hyperbolic-boards).
+
 ## Recipe: add an aperiodic / shaped / solid board
 
 These are one-offs, not tiling×surface products.

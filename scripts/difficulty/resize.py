@@ -243,6 +243,9 @@ SPEC: dict[str, dict] = {
     # board is a disc, so the flat shape term is log(1) = 0 for every
     # candidate and the size penalty decides alone, as for the brick rings.
     "hyperbolic_board": dict(size=(2,), mine=3, shape=4, kind="scale"),
+    # the uniform tilings of {7,3} (hyperbolic_uniform_board(p, q, op, shells,
+    # mines, scale)): the same disc and the same knob, after the op
+    "hyperbolic_uniform_board": dict(size=(3,), mine=4, shape=5, kind="scale"),
     "archimedean_board": dict(size=(1, 2), mine=3, shape=4, kind="scale", lead=1),
     "arch_torus_board": dict(size=(1, 2), mine=3, shape=4, kind="tube", lead=1,
                              torus=True),
@@ -639,6 +642,11 @@ PINNED = {"square"}
 # is typical at 450 tiles (0.41 against a median of 0.43), so that is the size.
 PINNED_ROWS = {
     ("kitedart", "hard"): "the centred window plays like a typical one at 450",
+    # One shell nearer the target, 78 cells, leaves these two a rim the solver
+    # can only guess at: even at the opening floor they win 0.91 and 0.88
+    # against 0.965. The next shell out, 85, calibrates on target.
+    ("hyperbolic3474", "easy"): "78 cells cannot reach the easy win rate; 85 can",
+    ("hyperbolic4614", "easy"): "78 cells cannot reach the easy win rate; 85 can",
 }
 
 

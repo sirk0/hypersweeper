@@ -167,6 +167,9 @@ from minesweeper.boards.hyperbolic import (
     hyperbolic_board,
     hyperbolic_faces,
     hyperbolic_positions,
+    hyperbolic_uniform_board,
+    wythoff_faces,
+    wythoff_mode,
 )
 from minesweeper.boards.presets import _WINDOWS, ARCH_PRESETS, window_for
 from minesweeper.boards.solids import _goldberg_board, icosahedron_board
@@ -2559,6 +2562,137 @@ class TestHyperbolic:
         for p, q in [(4, 4), (6, 3), (3, 6), (5, 3)]:
             with pytest.raises(ValueError):
                 hyperbolic_board(p, q, 3, 1)
+
+
+# Wythoff's operations on {7,3}: the vertex configuration each makes, and the
+# neighbour count of an inner tile of each side count (the tiling is
+# trivalent for zip and bevel, so a tile's neighbours are its sides; ambo and
+# expand meet four at a corner, so every corner adds the tile across it).
+_WYTHOFF = {
+    "ambo": ("3.7.3.7", {3: 6, 7: 14}),
+    "zip": ("6.6.7", {6: 6, 7: 7}),
+    "expand": ("3.4.7.4", {3: 6, 4: 8, 7: 14}),
+    "bevel": ("4.6.14", {4: 4, 6: 6, 14: 14}),
+}
+
+
+class TestHyperbolicUniform:
+    """The uniform tilings Wythoff's construction makes of {7,3}
+    (boards/hyperbolic.py): 6.6.7, the hyperbolic soccer ball, and its
+    siblings."""
+
+    @pytest.mark.parametrize("op", sorted(_WYTHOFF))
+    def test_the_mode_names_the_vertex_configuration(self, op):
+        assert wythoff_mode(7, 3, op) == "hyperbolic" + _WYTHOFF[op][0].replace(".", "")
+
+    @pytest.mark.parametrize("op", sorted(_WYTHOFF))
+    def test_every_inner_vertex_has_the_configuration(self, op):
+        faces, _, _ = wythoff_faces(7, 3, op, 3)
+        config = [int(n) for n in _WYTHOFF[op][0].split(".")]
+        at = defaultdict(list)
+        for face in faces:
+            for v in face:
+                at[v].append(len(face))
+        full = [sorted(sides) for sides in at.values() if len(sides) == len(config)]
+        assert full and all(sides == sorted(config) for sides in full)
+        assert max(len(sides) for sides in at.values()) == len(config)
+        assert {len(face) for face in faces} == set(config)
+
+    @pytest.mark.parametrize("op", sorted(_WYTHOFF))
+    def test_faces_are_regular_with_one_edge_length(self, op):
+        faces, pos, centres = wythoff_faces(7, 3, op, 3)
+        side = _hyp_dist(pos[faces[0][0]], pos[faces[0][1]])
+        for face, centre in zip(faces, centres):
+            corners = [pos[v] for v in face]
+            for a, b in zip(corners, corners[1:] + corners[:1]):
+                assert _hyp_dist(a, b) == pytest.approx(side, rel=1e-9)
+            radii = [_hyp_dist(centre, z) for z in corners]
+            assert radii == pytest.approx([radii[0]] * len(face), rel=1e-9)
+            # counterclockwise, as every flat builder's faces are
+            area = sum((a.conjugate() * b).imag for a, b in zip(corners, corners[1:] + corners[:1]))
+            assert area > 0
+
+    @pytest.mark.parametrize("op", sorted(_WYTHOFF))
+    def test_the_faces_close_up_round_a_vertex(self, op):
+        # the corner angles round an inner vertex, measured on the arcs as in
+        # TestHyperbolic, sum to 2 pi: the tiling really is flat-free
+        board = hyperbolic_uniform_board(7, 3, op, 12, 1, scale=1, arc=64)
+        angle: dict = defaultdict(float)
+        for cell, polygon in board.polygons.items():
+            mask = board.corner_mask[cell]
+            n = len(polygon)
+            for i in range(n):
+                if not mask[i]:
+                    continue
+                a, b, c = polygon[i - 1], polygon[i], polygon[(i + 1) % n]
+                u = complex(a[0] - b[0], a[1] - b[1])
+                w = complex(c[0] - b[0], c[1] - b[1])
+                angle[(round(b[0], 6), round(b[1], 6))] += abs(cmath.phase(w / u))
+        centre = complex(board.width / 2, board.height / 2)
+        inner = [total for (x, y), total in angle.items() if abs(complex(x, y) - centre) < 0.3]
+        assert inner and all(total == pytest.approx(2 * math.pi, abs=0.03) for total in inner)
+
+    @pytest.mark.parametrize("op", sorted(_WYTHOFF))
+    def test_an_inner_tile_sees_the_neighbours_its_shape_gives(self, op):
+        board = hyperbolic_uniform_board(7, 3, op, 30, 1)
+        sides = {cell: sum(mask) for cell, mask in board.corner_mask.items()}
+        expected = _WYTHOFF[op][1]
+        for n, degree in expected.items():
+            assert max(len(board.adjacency[c]) for c in sides if sides[c] == n) == degree
+        # the central face is the heptagon (or the 14-gon) and is interior
+        assert sides[0] == max(expected)
+        assert len(board.adjacency[0]) == expected[sides[0]]
+
+    @pytest.mark.parametrize("op", sorted(_WYTHOFF))
+    @pytest.mark.parametrize("shells", [4, 11, 23, 37])
+    def test_a_trim_keeps_the_dihedral_symmetry(self, op, shells):
+        board = hyperbolic_uniform_board(7, 3, op, shells, 1, scale=1)
+        c = complex(board.width / 2, board.height / 2)
+
+        def points(transform):
+            return sorted((round(z.real, 6), round(z.imag, 6))
+                          for poly in board.polygons.values()
+                          for z in (transform(complex(*xy) - c) for xy in poly))
+
+        same = points(lambda z: z)
+        assert points(lambda z: z * cmath.exp(2j * math.pi / 7)) == same
+        assert points(lambda z: -z.conjugate()) == same
+
+    @pytest.mark.parametrize("op", sorted(_WYTHOFF))
+    def test_every_trim_is_a_twin_free_disc(self, op):
+        from scripts.difficulty.metrics import indistinguishable_cells
+        for shells in range(2, 45):
+            board = hyperbolic_uniform_board(7, 3, op, shells, 1)
+            assert _euler_characteristic(board) == 1, shells
+            assert _boundary_components(board) == 1, shells
+            assert _connected(board), shells
+            assert indistinguishable_cells(board.adjacency) == 0, shells
+
+    @pytest.mark.parametrize("op", sorted(_WYTHOFF))
+    def test_distance_shells_are_far_apart(self, op):
+        _, _, centres = wythoff_faces(7, 3, op, 4)
+        dists = sorted(2 * math.atanh(abs(z)) for z in centres)
+        gaps = [b - a for a, b in zip(dists, dists[1:])]
+        assert all(g < 1e-10 or g > 1e-5 for g in gaps)
+
+    def test_the_soccer_ball_keeps_rim_cells_bigger_than_heptagons_do(self):
+        # the point of 6.6.7: a hexagon covers far less of the hyperbolic plane
+        # than a {7,3} heptagon, so at the same cell count the disc is smaller
+        # and its rim cells are drawn bigger
+        def smallest(board):
+            def area(poly):
+                return abs(sum(x0 * y1 - x1 * y0 for (x0, y0), (x1, y1)
+                               in zip(poly, poly[1:] + poly[:1]))) / 2
+            return min(area(p) for p in board.polygons.values()) / board.width ** 2
+
+        soccer = hyperbolic_uniform_board(7, 3, "zip", 36, 1)  # 484
+        heptagons = hyperbolic_board(7, 3, 26, 1)  # 477, the hard board
+        assert abs(len(soccer.adjacency) - len(heptagons.adjacency)) < 40
+        assert smallest(soccer) > 2 * smallest(heptagons)
+
+    def test_an_unknown_operation_is_refused(self):
+        with pytest.raises(ValueError):
+            hyperbolic_uniform_board(7, 3, "snub", 3, 1)
 
 
 @pytest.mark.parametrize("mode", sorted(SUBSTITUTIONS))
