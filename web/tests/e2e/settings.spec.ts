@@ -502,17 +502,16 @@ test.describe("settings", () => {
     expect(await cssVar(page, "--bg-pattern")).toContain("data:image/svg+xml");
   });
 
-  test("the finish switches ride over whatever the theme names", async ({ page }) => {
+  test("the finish settings ride over whatever the theme names", async ({ page }) => {
     // Two halves of the Realistic look that used to be welded to it. They are
     // cut into the mesh, so each is read when a board is built — which is what
     // `state().cellStyle` cannot show, since the finish adds no style of its
     // own. Asserted through the seam's own reading of the mesh instead: the
     // pins are the thing a board either has standing on it or has not.
     await page.locator('.menu-header-btn[data-action="settings"]').click();
-    await expect(page.locator('.menu-entry[data-setting="gloss"]')).toHaveAttribute(
-      "aria-checked",
-      "true",
-    );
+    const gloss = page.locator('.menu-entry[data-setting="gloss"]');
+    await expect(gloss).toHaveAttribute("data-level", "medium");
+    await expect(gloss.locator(".menu-entry-value")).toHaveText("Medium");
     await expect(page.locator('.menu-entry[data-setting="pins"]')).toHaveAttribute(
       "aria-checked",
       "true",
@@ -545,15 +544,18 @@ test.describe("settings", () => {
     // Back to the menu first — a board writes its own link, so reloading on one
     // reopens the board rather than the page the gear is on.
     await page.locator('.hud-btn[data-slot="back"]').click();
+    // The gloss is a level rather than a switch: each tap steps it on, and
+    // past High it wraps round to Off.
     await page.locator('.menu-header-btn[data-action="settings"]').click();
-    await page.locator('.menu-entry[data-setting="gloss"]').click();
+    for (const level of ["high", "off", "low"]) {
+      await gloss.click();
+      await expect(gloss).toHaveAttribute("data-level", level);
+    }
     await page.reload();
     await expect(page.locator("body[data-ready]")).toBeVisible();
     await page.locator('.menu-header-btn[data-action="settings"]').click();
-    await expect(page.locator('.menu-entry[data-setting="gloss"]')).toHaveAttribute(
-      "aria-checked",
-      "false",
-    );
+    await expect(gloss).toHaveAttribute("data-level", "low");
+    await expect(gloss.locator(".menu-entry-value")).toHaveText("Low");
     await expect(page.locator('.menu-entry[data-setting="pins"]')).toHaveAttribute(
       "aria-checked",
       "false",

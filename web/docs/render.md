@@ -253,8 +253,8 @@ that in both directions.
 **Two of a style's fields are the player's rather than either setting's.** The
 polished finish (`material`, and the centre-hotspot `shade` / `openShade`) and
 the 3D markers (`solidMarkers`) are settings — Settings › Appearance › *Glossy
-tiles* and *3D flag pins*, off and on by default respectively — applied over the
-composed style by `finishStyle` at board-build time. Both were the old Realistic
+tiles* (Off, Low, Medium or High; Medium by default) and *3D flag pins* (on by
+default) — applied over the composed style by `finishStyle` at board-build time. Both were the old Realistic
 theme's alone and welded to it, and neither argument had anything to do with
 which page the board sits on. What `finishStyle` may **not** touch is the
 style's colour (`openAlpha`, `unlit`, `albedo`, `boardTint`, `monochrome`) or

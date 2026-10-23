@@ -28,7 +28,7 @@ import {
 import { allBestTimes } from "../leaderboard";
 import { animationsEnabled } from "../settings";
 import { checkForUpdate, loadDeployedBuild } from "../update";
-import { boardShape, SHAPE_KEYS } from "../render/cellStyle";
+import { boardShape, GLOSS_LEVELS, SHAPE_KEYS, type GlossLevel } from "../render/cellStyle";
 import {
   activeScheme,
   SCHEME_KEYS,
@@ -105,8 +105,8 @@ export interface SettingsHost {
   holdToFlagMs: number;
   /** Whether the page behind the board follows that board's own tiling. */
   backgrounds: boolean;
-  /** Whether the board's tiles carry a polished finish. */
-  gloss: boolean;
+  /** How polished the board's tiles are. */
+  gloss: GlossLevel;
   /** Whether a flag and a mine are real models on a board you can turn. */
   pins: boolean;
   /** Whether the board's row carries every symmetry control it has. */
@@ -134,7 +134,7 @@ export interface SettingsHost {
    * player's finger. */
   setHoldToFlag(ms: number): void;
   setBackgrounds(on: boolean): void;
-  setGloss(on: boolean): void;
+  setGloss(level: GlossLevel): void;
   setPins(on: boolean): void;
   setExtraControls(on: boolean): void;
   setAnalytics(on: boolean): void;
@@ -169,6 +169,40 @@ function qualityRow(host: SettingsHost): HTMLElement {
     "menu-submenu",
   );
   btn.dataset["setting"] = "quality";
+  return li;
+}
+
+const GLOSS_LABELS: Record<GlossLevel, string> = {
+  off: "Off",
+  low: "Low",
+  medium: "Medium",
+  high: "High",
+};
+
+/** Glossy tiles: a row that steps Off → Low → Medium → High, drawn like the
+ * Visual effects row above it rather than as a switch, since it is no longer
+ * one. The level is cut into the mesh, so it lands on the next board (the note
+ * under the list says so). */
+function glossRow(host: SettingsHost): HTMLElement {
+  const value = document.createElement("span");
+  value.className = "menu-entry-value";
+  value.textContent = GLOSS_LABELS[host.gloss];
+  const next = GLOSS_LEVELS[(GLOSS_LEVELS.indexOf(host.gloss) + 1) % GLOSS_LEVELS.length]!;
+  const { li, btn } = buttonRow(
+    [
+      textBlock(
+        "Glossy tiles",
+        host.gloss === "off"
+          ? "A matte finish, with no highlight as you turn the board"
+          : "A polished finish, and a highlight that sweeps as you turn the board",
+      ),
+      value,
+    ],
+    () => host.setGloss(next),
+    "menu-submenu",
+  );
+  btn.dataset["setting"] = "gloss";
+  btn.dataset["level"] = host.gloss;
   return li;
 }
 
@@ -860,13 +894,7 @@ export function renderSettings(host: SettingsHost, pages: SettingsPages): Docume
   // made of, not what the game does. Both are cut into the mesh, so both say
   // so — the theme picker's own footer makes the same promise.
   appearance.append(
-    toggleRow(
-      "gloss",
-      "Glossy tiles",
-      "A polished finish, and a highlight that sweeps as you turn the board",
-      host.gloss,
-      () => host.setGloss(!host.gloss),
-    ),
+    glossRow(host),
     toggleRow(
       "pins",
       "3D flag pins",

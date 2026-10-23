@@ -53,7 +53,7 @@ import { Menu } from "./ui/menu";
 import type { ModalHandle } from "./ui/modal";
 import { openScoreDialog } from "./ui/scoreDialog";
 import type { SettingsHost } from "./ui/settings";
-import { boardStyleKey, cellStyle } from "./render/cellStyle";
+import { boardStyleKey, cellStyle, type GlossLevel } from "./render/cellStyle";
 import { applyTheme, onSchemeChange, theme, type SchemePref } from "./ui/theme";
 import { setIconPalette } from "./ui/icons";
 import {
@@ -384,7 +384,7 @@ class App {
       setHaptics: (on) => this.setHaptics(on),
       setHoldToFlag: (ms) => this.setHoldToFlag(ms),
       setBackgrounds: (on) => this.setBackgrounds(on),
-      setGloss: (on) => this.setGloss(on),
+      setGloss: (level) => this.setGloss(level),
       setPins: (on) => this.setPins(on),
       setExtraControls: (on) => this.setExtraControls(on),
       setAnalytics: (on) => this.setAnalytics(on),
@@ -494,12 +494,12 @@ class App {
     this.paintTheme();
   }
 
-  /** Turn the board's polished finish on or off, and the same for its 3D
-   * markers. Unlike the page pattern above, and like the cell style they are
+  /** Set how polished the board's tiles are, and turn its 3D markers on or
+   * off. Unlike the page pattern above, and like the cell style they are
    * part of, these are cut into the mesh — so there is nothing to repaint and
    * they land on the next board (the settings page says so). */
-  private setGloss(on: boolean): void {
-    this.settings = { ...this.settings, gloss: on };
+  private setGloss(level: GlossLevel): void {
+    this.settings = { ...this.settings, gloss: level };
     saveSettings(this.settings);
   }
 

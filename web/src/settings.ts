@@ -2,7 +2,13 @@ import { DEFAULT_APP_ICON, resolveAppIcon, type AppIconKey } from "./appIcon";
 import { clampVolume, DEFAULT_SOUND, DEFAULT_VOLUME, resolveSound } from "./audio/presets";
 import { hasDifficulty, screens } from "./config/screens";
 import { clampHoldMs, DEFAULT_HOLD_MS } from "./input/hold";
-import { DEFAULT_SHAPE, resolveShape } from "./render/cellStyle";
+import {
+  DEFAULT_GLOSS,
+  DEFAULT_SHAPE,
+  resolveGloss,
+  resolveShape,
+  type GlossLevel,
+} from "./render/cellStyle";
 import { resolveQuality, type QualityPref } from "./render/quality";
 import { readObject, storage } from "./storage";
 import {
@@ -92,14 +98,15 @@ export interface Settings {
    * a flourish is something to turn on rather than something to discover
    * already running. */
   backgrounds: boolean;
-  /** Whether the board's tiles carry a polished finish — the specular sheen a
-   * solid catches a moving highlight with, and the bright-centre gradient that
-   * is the only thing saying "polished" on a flat board (Settings ›
-   * Appearance). Was Realistic's alone, and is now a setting that overrides
-   * whatever the theme's cell style says, either way. On by default: the
-   * polished tiles are the look the game is meant to be met in. Baked into the mesh (render/cellStyle.ts `finishStyle`), so it lands on the
+  /** How polished the board's tiles are — the specular sheen a solid catches a
+   * moving highlight with, and the bright-centre gradient that is the only
+   * thing saying "polished" on a flat board (Settings › Appearance). Was
+   * Realistic's alone, then an on/off switch over every theme, and is now four
+   * levels. Medium by default: the polished tiles are the look the game is
+   * meant to be met in, and Medium is exactly what the switch's *on* was.
+   * Baked into the mesh (render/cellStyle.ts `finishStyle`), so it lands on the
    * next board. */
-  gloss: boolean;
+  gloss: GlossLevel;
   /** Whether a flag and a mine are real models on a board you can turn — a pin
    * standing on a flagged cell, a bomb sitting on a mined one — rather than
    * atlas billboards (Settings › Appearance; render/markers3d.ts). Also
@@ -145,7 +152,7 @@ export const DEFAULT_SETTINGS: Settings = {
   haptics: true,
   holdToFlagMs: DEFAULT_HOLD_MS,
   backgrounds: false,
-  gloss: true,
+  gloss: DEFAULT_GLOSS,
   pins: true,
   extraControls: false,
   analytics: true,
@@ -333,8 +340,10 @@ export function loadSettings(): Settings {
         : DEFAULT_SETTINGS.backgrounds,
     // Additive, and defaulting *on* for both: a record from a build before they
     // were settings lacks the keys and takes the polished tiles, and pins are
-    // what a turnable board wants.
-    gloss: typeof rec["gloss"] === "boolean" ? rec["gloss"] : DEFAULT_SETTINGS.gloss,
+    // what a turnable board wants. A gloss stored as the old switch's boolean
+    // needs no schema bump: `resolveGloss` reads `true` as Medium, which is
+    // what it was, and `false` as Off.
+    gloss: resolveGloss(rec["gloss"]),
     pins: typeof rec["pins"] === "boolean" ? rec["pins"] : DEFAULT_SETTINGS.pins,
     // Additive, and defaulting *off*: a record from a build where every control
     // was always shown lacks the key, and the point of the setting is that the

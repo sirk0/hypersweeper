@@ -14,6 +14,7 @@ import {
   DEFAULT_CELL_STYLE,
   DEFAULT_FINISH,
   finishStyle,
+  GLOSS_LEVELS,
   type Finish,
   DEFAULT_SHAPE,
   resolveCellStyle,
@@ -276,15 +277,13 @@ describe("the Sand board tint", () => {
 // the geometry, because a board is cut from the profile and re-cut in place
 // from the same slice of the buffer.
 describe("the player's finish", () => {
-  const FINISHES: Finish[] = [
-    { gloss: false, pins: false },
-    { gloss: false, pins: true },
-    { gloss: true, pins: false },
-    { gloss: true, pins: true },
-  ];
+  const FINISHES: Finish[] = GLOSS_LEVELS.flatMap((gloss) => [
+    { gloss, pins: false },
+    { gloss, pins: true },
+  ]);
 
   it("ships matte, with pins", () => {
-    expect(DEFAULT_FINISH).toEqual({ gloss: false, pins: true });
+    expect(DEFAULT_FINISH).toEqual({ gloss: "off", pins: true });
   });
 
   it("never touches the geometry, whatever it is set to", () => {
@@ -322,26 +321,26 @@ describe("the player's finish", () => {
     // that is what the closed cells fall back to: the tile keeps its relief and
     // its edges and loses only the polish.
     const realistic = cellStyle(boardStyleKey("realistic", "bright"));
-    const matte = finishStyle(realistic, { gloss: false, pins: true });
+    const matte = finishStyle(realistic, { gloss: "off", pins: true });
     expect(matte.material.roughness).toBeGreaterThan(realistic.material.roughness);
     expect(matte.material.metalness).toBe(0);
     expect(matte.shade).toEqual(realistic.openShade);
     expect(matte.openShade).toEqual(realistic.openShade);
     // A style with no gradient at all has nothing to flatten.
     const flat = cellStyle(boardStyleKey("flat", "bright"));
-    expect(finishStyle(flat, { gloss: false, pins: true }).shade).toBeUndefined();
+    expect(finishStyle(flat, { gloss: "off", pins: true }).shade).toBeUndefined();
   });
 
   it("lends the glass finish to a style that has none, and keeps one that has", () => {
     const classic = cellStyle(boardStyleKey("classic", "classic"));
-    const glossy = finishStyle(classic, { gloss: true, pins: false });
+    const glossy = finishStyle(classic, { gloss: "medium", pins: false });
     expect(glossy.material.roughness).toBeLessThan(classic.material.roughness);
     expect(glossy.shade).toBeDefined();
     expect(glossy.shade!.center).toBeGreaterThan(glossy.shade!.rim);
     // Sand's gradient is tuned a hair off the bright one's on purpose;
     // answering the setting must not quietly retune the theme.
     const sand = cellStyle(boardStyleKey("realistic", "sand"));
-    const kept = finishStyle(sand, { gloss: true, pins: false });
+    const kept = finishStyle(sand, { gloss: "medium", pins: false });
     expect(kept.shade).toEqual(sand.shade);
     expect(kept.material).toEqual(sand.material);
   });
@@ -351,22 +350,73 @@ describe("the player's finish", () => {
     // untouched by the setting because a gradient was read as polish.
     for (const key of CELL_STYLE_KEYS) {
       const style = cellStyle(key);
-      const on = finishStyle(style, { gloss: true, pins: true });
-      const off = finishStyle(style, { gloss: false, pins: true });
+      const on = finishStyle(style, { gloss: "medium", pins: true });
+      const off = finishStyle(style, { gloss: "off", pins: true });
       expect(on.material.roughness, key).toBeLessThan(off.material.roughness);
       expect(on.material.roughness, key).toBeLessThanOrEqual(style.material.roughness);
     }
     const soft = cellStyle(boardStyleKey("soft", "sand"));
-    const glossy = finishStyle(soft, { gloss: true, pins: true });
+    const glossy = finishStyle(soft, { gloss: "medium", pins: true });
     expect(glossy.material.roughness).toBeLessThan(soft.material.roughness);
     expect(glossy.shade).toEqual(soft.shade);
+  });
+
+  it("is exactly the old switch at Off and at Medium", () => {
+    // Medium is what the on/off switch's *on* was, so the default board did not
+    // change when the switch became levels; Off is its *off*. Written out as
+    // the old switch computed them rather than read back from the table.
+    const realistic = cellStyle(boardStyleKey("realistic", "bright"));
+    expect(finishStyle(realistic, { gloss: "medium", pins: true }).material).toEqual({
+      roughness: 0.16,
+      metalness: 0.1,
+    });
+    expect(finishStyle(realistic, { gloss: "medium", pins: true }).shade).toEqual(realistic.shade);
+    expect(finishStyle(realistic, { gloss: "off", pins: true }).material).toEqual({
+      roughness: 0.7,
+      metalness: 0,
+    });
+    const classic = cellStyle(boardStyleKey("classic", "classic"));
+    const medium = finishStyle(classic, { gloss: "medium", pins: true });
+    expect(medium.shade).toEqual({ center: 1.06, rim: 0.7 });
+    expect(medium.openShade).toEqual({ center: 0.99, rim: 0.92 });
+  });
+
+  it("gets glossier at every step up, on every style", () => {
+    // Rougher to smoother, and a gradient that widens from the matte reading
+    // to past the polished one — on the cuts that have one of their own and on
+    // the ones that borrow it alike.
+    for (const key of CELL_STYLE_KEYS) {
+      const style = cellStyle(key);
+      const cuts = GLOSS_LEVELS.map((gloss) => finishStyle(style, { gloss, pins: true }));
+      for (let i = 1; i < cuts.length; i++) {
+        const [lo, hi] = [cuts[i - 1]!, cuts[i]!];
+        expect(hi.material.roughness, `${key} ${GLOSS_LEVELS[i]}`).toBeLessThan(
+          lo.material.roughness,
+        );
+        expect(hi.material.metalness, `${key} ${GLOSS_LEVELS[i]}`).toBeGreaterThanOrEqual(
+          lo.material.metalness,
+        );
+        const contrast = (c: typeof lo) => (c.shade ? c.shade.center - c.shade.rim : 0);
+        if (style.shade && style.shade.center === (style.openShade ?? style.shade).center) {
+          continue; // a style whose two gradients agree has nothing to widen
+        }
+        expect(contrast(hi), `${key} ${GLOSS_LEVELS[i]}`).toBeGreaterThan(contrast(lo));
+      }
+      // The opened cells are the style's own at every level: the finish reads
+      // on the closed tiles, and the recess keeps its matte pan.
+      for (const cut of cuts.slice(1)) {
+        expect(cut.openShade ?? cut.shade, key).toEqual(
+          style.shade ? (style.openShade ?? style.shade) : { center: 0.99, rim: 0.92 },
+        );
+      }
+    }
   });
 
   it("puts real markers on any style, and takes Realistic's away", () => {
     for (const key of CELL_STYLE_KEYS) {
       const style = cellStyle(key);
-      expect(finishStyle(style, { gloss: false, pins: true }).solidMarkers, key).toBe(true);
-      expect(finishStyle(style, { gloss: false, pins: false }).solidMarkers, key).toBeUndefined();
+      expect(finishStyle(style, { gloss: "off", pins: true }).solidMarkers, key).toBe(true);
+      expect(finishStyle(style, { gloss: "off", pins: false }).solidMarkers, key).toBeUndefined();
     }
   });
 });
