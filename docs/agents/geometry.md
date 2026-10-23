@@ -1081,8 +1081,9 @@ stands on, before `wythoff_faces` renumbers them), so a 6.6.7 vertex is
 **The board draws a patch of the cover, every cell at least once.** It keeps
 the disc's shells out to the first one by which every surface cell has appeared,
 or out to `patch_reach(op)` if that is farther, plus `margin` more (0 ships):
-1212 faces for 6.6.7 on the quartic and Macbeath's surface, 1863 on the
-genus-14 surface, 2122 and 2822 for the quartic's GC(3,0) and GC(4,0). The
+533 faces for the quartic's 6.6.7, 778 and 981 for its GC(3,0) and GC(4,0),
+1023 on Macbeath's surface and 1863 on the genus-14 surface (whose cells need
+that much disc to all appear). The
 reach is the web pan's (below): Klein's quartic has every cell within 2.9 of
 the centre, and a patch that small showed its edge moving as the view stepped
 from tile to tile. Shells are orbits of the
@@ -1112,19 +1113,27 @@ Four things worth knowing before touching it:
   central one, the isometry and the matching surface symmetry, so a view that
   wanders off the central tile is carried back and the labels follow, the
   picture unchanged. The view shows the patch out to `cover_view(op)` round
-  its centre and hides the rest, which keeps the board's edge one fixed circle:
-  3.6 (0.95 of the disc) for 6.6.7, and shorter by ln(n / sqrt 3) for GC(n, 0),
-  whose tiles are that much smaller -- the hidden cells at the edge come out
-  the same size on screen, and the patch, which grows as e^d, a third the
-  faces it would otherwise be. `patch_reach` is the view plus the central
-  heptagon's circumradius and a tile, so the circle is full from anywhere on
-  the central tile (a test probes it from the heptagon's corners). Nothing about the board changes, so the pygame game,
+  its centre and hides the rest, which keeps the board's edge one fixed circle,
+  and the web board is framed to that circle: 3.0 (0.905 of the disc) for
+  6.6.7 -- past it a tile is a few pixels across on a phone, too small to tap
+  -- and shorter by ln(n / sqrt 3) for GC(n, 0), whose tiles are that much
+  smaller, so the tiles at the edge come out the same size on screen.
+  `patch_reach` is the view, plus `VIEW_SHIFT` (the central heptagon's
+  circumradius, as far as the view's centre ever strays), plus the tiling's own
+  tile radius (measured, `_tile_radius`), so the circle is full from anywhere
+  on the central tile (a test probes it from the heptagon's corners). Nothing about the board changes, so the pygame game,
   which does not pan, plays the same board as a static disc -- and the patch
   reaching every cell is what lets it.
-* **The biggest boards are big drawings.** 1863 faces for the genus-14
-  surface's 520 cells, 2822 for the quartic's 444; they build in about 0.6 s
-  and 1.3 s (Python; most of it the group and the cover, once) and pan like the
-  disc boards, the pan being the vertex shader's.
+* **What the renderer draws is bounded by the same pan.** Since the view's
+  centre never strays past `VIEW_SHIFT`, how big any face can ever be drawn is
+  known, and the web board spends nothing it cannot show: a face beyond
+  `patch_reach` is never in view (`Board.unseen` -- most of the genus-14
+  surface's patch, which reaches farther only so every cell has a copy) and
+  gets no geometry, and an edge whose curve could never miss its chord by half
+  a pixel is drawn straight (`edgeSegments` -- nearly every edge out at the
+  rim). Each outline point carries a cell's whole bevel, so that was most of
+  the cost: a frame of the hard quartic drew 3.3 million vertices and now
+  draws about 0.9 million, the hard disc board's budget.
 * **The info window names the surface**, read off the board's own Euler
   characteristic (`hurwitzSurfaceLabel`): "Klein quartic, genus 3" and so on.
 

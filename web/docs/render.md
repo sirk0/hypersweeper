@@ -169,12 +169,25 @@ Two things make it *look* continuous, and the pan jumped without either:
 - **The edge is a fixed circle of the view.** The patch is a disc round the
   central tile, so seen from near a neighbouring tile its rim is off-centre,
   and a recentring snapped it back. So the shader hides every cell whose pivot
-  the view draws past `coverClip(cover.view)` (`uDiscClip`; the view is 3.6 of
-  hyperbolic distance, 0.95 of the disc, for 6.6.7, and shorter for a
+  the view draws past `coverClip(cover.view)` (`uDiscClip`; the view is 3.0 of
+  hyperbolic distance, 0.905 of the disc, for 6.6.7, and shorter for a
   subdivision's smaller tiles -- `coverView`), and a tap out there finds
-  nothing (`discSource`). The patch reaches `patchReach` from its centre, so
+  nothing (`discSource`). The board is framed to that circle, not to the whole
+  patch, whose polygons run on past the frame, hidden. The patch reaches
+  `patchReach` from its centre, so
   that circle is always full: what moves at its edge are cells a pixel or two
   across.
+
+**And it draws nothing it cannot show.** A closed surface's patch is a
+thousand faces or more, and each point of a cell's outline carries the cell's
+whole bevel, so a frame of the hard quartic once drew 3.3 million vertices and
+the reveal ripple crawled. The pan bounds how big any face can ever be drawn,
+and the builder spends accordingly: a face beyond `patchReach` is never in view
+(`Board.unseen`), and `PolygonBoard` gives it no geometry, no shadow and no
+gradient; and an edge whose geodesic could never miss its chord by half a pixel
+on a disc a thousand device pixels in radius is drawn straight
+(`edgeSegments`), which out at the rim is nearly every edge. Now the hard
+quartic draws about 0.9 million, the hard disc board's budget.
 
 The relabelling reads
 the current label off the face a label is named after (a cell's id is the id

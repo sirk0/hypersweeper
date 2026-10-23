@@ -23,6 +23,7 @@ import { cid, flatBoard, keepSymmetries, planeSymmetries, sharedVertexAdjacency 
 import type { Board, BoardSymmetry, CellId, DiscCover, SymmetryCandidate } from "./core";
 import {
   ARC_SEGMENTS,
+  arcPoints,
   centralPolygon,
   discDrawing,
   distance,
@@ -50,13 +51,15 @@ export const HURWITZ_SURFACES: Record<string, readonly [number, number]> = {
 };
 
 /** How far round the centre of the view the pan always has board to show for a
- * 6.6.7 patch, in hyperbolic distance (`DiscCover.view`): 3.6, 0.95 of the
- * disc. The pan keeps the view's centre on the central tile, the patch reaches
- * `patchReach` from its centre, so every point this close to the view is
- * drawn; the renderer hides what lies farther out, which keeps the board's
- * edge one fixed circle however the view steps across the cover. Must match
- * `COVER_VIEW` in hurwitz.py. */
-export const COVER_VIEW = 3.6;
+ * 6.6.7 patch, in hyperbolic distance (`DiscCover.view`): 3.0, 0.905 of the
+ * disc. Farther out a tile is a few pixels across on a phone -- too small to
+ * tap, and with the patch growing as e^d, most of what there is to draw. The
+ * pan keeps the view's centre on the central tile and the patch reaches
+ * `patchReach` from its centre, so every point this close to the view is drawn;
+ * the renderer hides what lies farther out, which keeps the board's edge one
+ * fixed circle however the view steps across the cover, and the board is
+ * framed to that circle. Must match `COVER_VIEW` in hurwitz.py. */
+export const COVER_VIEW = 3.0;
 
 /** `COVER_VIEW` for tiling `op`: shorter by ln(n / sqrt(3)) for GC(n, 0),
  * whose tiles are that much smaller, so the cells hidden at the edge come out
@@ -66,10 +69,71 @@ export function coverView(op: HurwitzOp): number {
   return n !== null ? COVER_VIEW - Math.log(n / Math.sqrt(3)) : COVER_VIEW;
 }
 
-/** How far from the centre the patch always reaches: the view, plus the
- * heptagon's circumradius, plus a tile. Mirrors `patch_reach`. */
+/** How far the view's centre can ever be from the patch's: the pan carries it
+ * back onto the central {7,3} heptagon (`discRecentre`), so its circumradius,
+ * acosh(cot(pi/7) cot(pi/3)). Mirrors `VIEW_SHIFT`. */
+export const VIEW_SHIFT = Math.acosh(1 / (Math.tan(Math.PI / 7) * Math.tan(Math.PI / 3)));
+
+/** How far from the centre the patch always reaches: the view, plus as far as
+ * the view's centre can be from the patch's, plus the tiling's own tile
+ * radius -- a tile whose centre is farther out cannot reach into the view.
+ * Mirrors `patch_reach`. */
 export function patchReach(op: HurwitzOp): number {
-  return coverView(op) + 1.2;
+  return coverView(op) + VIEW_SHIFT + tileRadius(op);
+}
+
+const radiusCache = new Map<string, number>();
+
+/** The farthest any tile's corner is from its own centre, in hyperbolic
+ * distance, measured on the disc's first rings (the tiles are congruent by
+ * type, so a few rings hold every kind). Mirrors `_tile_radius`. */
+export function tileRadius(op: HurwitzOp): number {
+  const hit = radiusCache.get(op);
+  if (hit !== undefined) return hit;
+  let loops: string[][];
+  let where: Map<string, C>;
+  let centres: C[];
+  const n = gcOrder(op);
+  if (n !== null) ({ loops, where, centres } = gcLoops(n, 3));
+  else if (op === "none") {
+    const t = hyperbolicTiling(7, 3, 3);
+    loops = t.faces.map((face) => face.map(String));
+    where = new Map([...t.pos].map(([v, z]) => [String(v), z]));
+    centres = t.centres;
+  } else ({ loops, where, centres } = wythoffLoops(7, 3, op as WythoffOp, 3));
+  let far = 0;
+  loops.forEach((loop, f) => {
+    for (const k of loop) far = Math.max(far, 2 * Math.atanh(Math.hypot(...toOrigin(centres[f]!, where.get(k)!))));
+  });
+  radiusCache.set(op, far);
+  return far;
+}
+
+/** How many device pixels a unit of the board's disc can be drawn as, at
+ * most: the pan's worst case (a translation by `VIEW_SHIFT` magnifies by at
+ * most e^VIEW_SHIFT) on a disc a thousand device pixels in radius -- a retina
+ * desktop's at more than twice the fitted zoom, a phone's at three times.
+ * Zoomed further still, a rim edge drawn straight is off by about a pixel,
+ * under the gap between two tiles. The web port's alone: the pygame game
+ * draws a static disc, every edge at full curve. */
+const DRAWN_SCALE = Math.exp(VIEW_SHIFT) * 1000;
+
+/**
+ * How many segments draw the edge from a to b: as many as its curve needs,
+ * at most `most`. A geodesic of the disc is a circular arc, and its chord
+ * misses it by the sagitta; k segments miss it by about the sagitta over k^2.
+ * The patch's view never comes closer to an edge than `VIEW_SHIFT`, so how big
+ * the edge can ever be shown is known, and an edge whose miss could never
+ * reach half a pixel is drawn straight. That is nearly every edge out at the
+ * rim, which is most of a patch -- and every corner a cell's outline carries
+ * is another run of the cell's bevel, so it is most of what the renderer
+ * draws.
+ */
+export function edgeSegments(a: C, b: C, most: number): number {
+  const [m] = arcPoints(a, b, 2);
+  const sag = Math.hypot(m![0] - (a[0] + b[0]) / 2, m![1] - (a[1] + b[1]) / 2) * DRAWN_SCALE;
+  for (let k = 1; k < most; k++) if (sag / (k * k) <= 0.5) return k;
+  return most;
 }
 
 /** What each surface is called, for the info window. */
@@ -779,7 +843,7 @@ export function hurwitzBoard(
     faces.map((_, i) => i),
     pos,
     scale,
-    arc,
+    (a, b) => edgeSegments(a, b, arc),
   );
   // each cell is named after its copy nearest the centre: the first drawn
   const nameOf = new Map<string, CellId>();
@@ -792,7 +856,27 @@ export function hurwitzBoard(
   for (const [key, corners] of surfaceCells) quotient.set(nameOf.get(key)!, corners);
   const adjacency = sharedVertexAdjacency(quotient);
   const coverSteps_ = coverSteps(surface, op, rings, nameOf);
-  const size = 2 * extent * scale;
+  // Framed to the circle the view shows (`coverClip`), not to the whole patch:
+  // past it nothing is ever drawn, so the board fills its frame as a disc
+  // board does. The patch's polygons run on past the frame, hidden.
+  const shown = Math.tanh(coverView(op) / 2);
+  const shift = (shown - extent) * scale;
+  for (const poly of polygons.values()) {
+    for (const p of poly) {
+      p[0] += shift;
+      p[1] += shift;
+    }
+  }
+  const size = 2 * shown * scale;
+  // Faces the pan can never bring into the view: farther from the centre than
+  // the view's reach plus the most its centre strays plus a tile. They stay
+  // on the board -- every cell has a copy, which the pygame game and the cell
+  // names need -- but the renderer builds nothing for them.
+  const reach = patchReach(op);
+  const unseen = new Set<CellId>();
+  drawn.forEach((f, face) => {
+    if (distance(p.centres[f]!) > reach) unseen.add(cid(face));
+  });
   const board = flatBoard({
     mode: SURFACE_MODES[surface]!,
     polygons,
@@ -803,9 +887,10 @@ export function hurwitzBoard(
     cornerMask,
     curved: true,
     regularTiles: true,
-    disc: { cx: extent * scale, cy: extent * scale, radius: scale, rim, cover: coverSteps_ },
+    disc: { cx: shown * scale, cy: shown * scale, radius: scale, rim, cover: coverSteps_ },
     faces: faceCell,
     quotient,
+    unseen,
   });
   let measured: BoardSymmetry[] | null = null;
   return Object.defineProperty(board, "symmetries", {

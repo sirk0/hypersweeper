@@ -225,7 +225,7 @@ function faceCentre(centre: C[], face: number[], pos: Map<number, C>): C {
 
 export const distance = (z: C): number => 2 * Math.atanh(abs(z));
 
-function arcPoints(a: C, b: C, segments: number): C[] {
+export function arcPoints(a: C, b: C, segments: number): C[] {
   const w = toOrigin(a, b);
   const length = Math.atanh(abs(w));
   const unit = scaleC(w, 1 / abs(w));
@@ -497,7 +497,7 @@ export function discDrawing(
   kept: readonly number[],
   pos: Map<number, C>,
   scale: number,
-  arc: number,
+  arc: number | ((a: C, b: C) => number),
 ): {
   cells: Map<CellId, string[]>;
   cornerMask: Map<CellId, boolean[]>;
@@ -505,6 +505,16 @@ export function discDrawing(
   extent: number;
   rim: number;
 } {
+  // `arc` may be decided edge by edge (the closed surfaces draw a far edge
+  // straight); the decision is the edge's own, so both its faces agree.
+  const segments = new Map<string, number>();
+  const segmentsOf = (lo: number, hi: number): number => {
+    if (typeof arc === "number") return arc;
+    const key = `${lo}:${hi}`;
+    let n = segments.get(key);
+    if (n === undefined) segments.set(key, (n = arc(pos.get(lo)!, pos.get(hi)!)));
+    return n;
+  };
   // Arc points along each edge: ids built from the edge's end ids (the lower
   // first), positions computed once per edge from its lower end, so both faces
   // of an edge share the very same points.
@@ -524,13 +534,14 @@ export function discDrawing(
       corner.push(true);
       const lo = Math.min(a, b);
       const hi = Math.max(a, b);
-      if (!points.has(`${lo}:${hi}:1`)) {
-        arcPoints(pos.get(lo)!, pos.get(hi)!, arc).forEach((z, s) =>
+      const n = segmentsOf(lo, hi);
+      if (n > 1 && !points.has(`${lo}:${hi}:1`)) {
+        arcPoints(pos.get(lo)!, pos.get(hi)!, n).forEach((z, s) =>
           points.set(`${lo}:${hi}:${s + 1}`, z),
         );
       }
-      for (let t = 1; t < arc; t++) {
-        const s = a === lo ? t : arc - t;
+      for (let t = 1; t < n; t++) {
+        const s = a === lo ? t : n - t;
         ids.push(`${lo}:${hi}:${s}`);
         corner.push(false);
       }

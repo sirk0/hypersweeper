@@ -93,6 +93,12 @@ export interface Board {
   // topology helpers count those. Unset on every other flat board.
   faces?: Map<CellId, CellId>;
   quotient?: Map<CellId, string[]>;
+  // The drawn faces the pan can never bring into view at all (a closed
+  // surface's patch reaches far enough that every cell has a copy, which can be
+  // farther out than any view goes). They stay on the board, for what reads
+  // it, and the renderer builds no geometry for them. Unset on every other
+  // board.
+  unseen?: Set<CellId>;
 }
 
 /** How a patch of a closed surface's cover pans without end

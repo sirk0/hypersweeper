@@ -85,32 +85,56 @@ HURWITZ_SURFACES: dict[str, tuple[int, int]] = {
 }
 
 #: How far round the centre of its view the web app shows a 6.6.7 patch, in
-#: hyperbolic distance: 3.6, 0.95 of the disc. The pan keeps the view's centre
-#: on the central tile and hides whatever it would draw farther out, which is
-#: what keeps the board's edge one fixed circle as the view steps from tile to
-#: tile. Must match `COVER_VIEW` in hurwitz.ts.
-COVER_VIEW = 3.6
+#: hyperbolic distance: 3.0, 0.905 of the disc. Farther out a tile is a few
+#: pixels across on a phone -- too small to tap, and with the patch growing as
+#: e^d, most of what there would be to draw. The pan keeps the view's centre on
+#: the central tile and hides whatever it would draw farther out, which keeps
+#: the board's edge one fixed circle as the view steps from tile to tile. Must
+#: match `COVER_VIEW` in hurwitz.ts.
+COVER_VIEW = 3.0
+
+#: How far the view's centre can ever be from the patch's: the pan carries it
+#: back onto the central {7,3} heptagon, so its circumradius,
+#: acosh(cot(pi/7) cot(pi/3)). Must match `VIEW_SHIFT`.
+VIEW_SHIFT = math.acosh(1 / (math.tan(math.pi / 7) * math.tan(math.pi / 3)))
 
 
 def cover_view(op: str) -> float:
     """`COVER_VIEW` for tiling ``op``. A subdivision's tiles are smaller --
     GC(n, 0)'s edges are 1/n of {7,3}'s where 6.6.7's are 1/sqrt(3) -- and a
     tile drawn d out from the centre of the view shrinks as e^-d, so its view
-    is shorter by ln(n / sqrt(3)): the cells hidden at its edge come out the
-    same size on screen, and the patch, which grows as e^d, a third the faces.
-    Must match `coverView`."""
+    is shorter by ln(n / sqrt(3)): the cells at its edge come out the same size
+    on screen. Must match `coverView`."""
     n = _gc_order(op)
     return COVER_VIEW - math.log(n / math.sqrt(3)) if n else COVER_VIEW
+
+
+@functools.cache
+def _tile_radius(op: str) -> float:
+    """The farthest any tile's corner is from its own centre, in hyperbolic
+    distance, measured on the disc's first rings (the tiles are congruent by
+    type, so a few rings hold every kind). Must match `tileRadius`."""
+    n = _gc_order(op)
+    if n is not None:
+        loops, where, centres, _ = gc_loops(n, 3)
+    elif op == "none":
+        faces, _, pos, centres = _tiling(7, 3, 3)
+        loops, where = faces, pos
+    else:
+        loops, where, centres, _ = wythoff_loops(7, 3, op, 3)
+    return max(_distance(_to_origin(z, where[k])) for loop, z in zip(loops, centres)
+               for k in loop)
 
 
 def patch_reach(op: str) -> float:
     """How far from the centre the patch always reaches: past every face whose
     centre is this close, whatever the surface. The patch has to fill the
-    view's circle from anywhere on the central tile, so this is
-    `cover_view`, plus the heptagon's circumradius (0.62), plus a tile. Klein's
+    view's circle from anywhere the pan leaves the view's centre, so this is
+    `cover_view`, plus `VIEW_SHIFT`, plus the tiling's own tile radius -- a
+    tile whose centre is farther out cannot reach into the view. Klein's
     quartic needs it (every one of its cells is within 2.9 of the centre); the
     bigger surfaces' patches already reach past it. Must match `patchReach`."""
-    return cover_view(op) + 1.2
+    return cover_view(op) + VIEW_SHIFT + _tile_radius(op)
 
 #: The tilings a surface can be drawn in: ``"none"`` is {7,3} itself, then its
 #: Wythoff tilings (`hyperbolic.WYTHOFF_OPS`), then its Goldberg--Coxeter

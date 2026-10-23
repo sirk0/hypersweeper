@@ -80,6 +80,10 @@ const FLAT_LIFT_SCALE = 0.4;
  * the central tile between steps, so this only guards the arithmetic. */
 const COVER_REACH = 0.999;
 
+/** Vertices of a cell's soft shadow: a fan and a fading ring round its
+ * outline, or none on a face that is never seen. */
+const shadowCount = (g: CellGeom): number => (g.unseen ? 0 : 9 * g.poly.length);
+
 interface CellGeom {
   start: number; // first vertex index in the position/color buffers
   count: number; // vertex count for this cell
@@ -91,6 +95,9 @@ interface CellGeom {
   //   spot), else the same as `center`
   glyphInradius: number; // distance glyphCenter -> nearest edge (glyph sizing)
   palette: CellPalette; // hidden/opened tones for this cell's shape
+  // A face the board says is never seen (`Board.unseen`): no geometry at all,
+  // so no shadow and no gradient either.
+  unseen: boolean;
   // Set only for a cell that is not star-shaped about its centroid (Klaassen's
   // bent heptagon): its loops are mitred insets rather than pulls toward one
   // centre, by `inset` times these vectors, and its top face is the polygon's
@@ -291,11 +298,14 @@ export class PolygonBoard extends Group implements BoardMesh {
           };
       // A cut with rounded corners draws the rounded outline; everything that
       // *measures* the cell above still read its true corners.
+      const unseen = board.unseen?.has(cell) ?? false;
       const drawn =
-        style.round && !bent ? roundCorners(poly, style.round, board.cornerMask?.get(cell)) : poly;
+        style.round && !bent && !unseen
+          ? roundCorners(poly, style.round, board.cornerMask?.get(cell))
+          : poly;
       const n = drawn.length;
       // n fan triangles for the top face, 2n for each ring of walls under it
-      const count = cellVertexCount(n, this.profile);
+      const count = unseen ? 0 : cellVertexCount(n, this.profile);
       for (let t = 0; t < count / 3; t++) faceCell.push(ci);
       this.geom.push({
         start: vertexCount,
@@ -310,6 +320,7 @@ export class PolygonBoard extends Group implements BoardMesh {
         glyphInradius: polygonInradius(board.cornerMask ? poly : shape, glyphCenter),
         palette: cellPalette(tones.get(cell)!, "flat", style.monochrome, style.boardTint),
         bent,
+        unseen,
       });
       vertexCount += count;
     });
@@ -361,7 +372,7 @@ export class PolygonBoard extends Group implements BoardMesh {
     // neighbour catches it.
     this.shadow = style.shadow ?? null;
     if (this.shadow) {
-      const shadowVerts = this.geom.reduce((sum, g) => sum + 9 * g.poly.length, 0);
+      const shadowVerts = this.geom.reduce((sum, g) => sum + shadowCount(g), 0);
       this.shadowPos = new BufferAttribute(new Float32Array(shadowVerts * 3), 3);
       this.shadowColor = new BufferAttribute(new Float32Array(shadowVerts * 4), 4);
       const sg = new BufferGeometry();
@@ -370,13 +381,13 @@ export class PolygonBoard extends Group implements BoardMesh {
       let at = 0;
       this.shadowStart = this.geom.map((g) => {
         const start = at;
-        at += 9 * g.poly.length;
+        at += shadowCount(g);
         return start;
       });
       cellAttribute(
         sg,
         shadowVerts,
-        this.geom.map((g, i) => ({ start: this.shadowStart[i]!, count: 9 * g.poly.length })),
+        this.geom.map((g, i) => ({ start: this.shadowStart[i]!, count: shadowCount(g) })),
       );
       const shadowMaterial = new MeshBasicMaterial({
         vertexColors: true,
@@ -627,6 +638,7 @@ export class PolygonBoard extends Group implements BoardMesh {
    * in exactly the slice of the buffer the other state wrote. */
   private writeGeometry(i: number): void {
     const g = this.geom[i]!;
+    if (g.count === 0) return; // a face the board says is never seen
     const loops = isOpened(this.states[i]!) ? this.profile.open : this.profile.closed;
     const n = g.poly.length;
     const bent = g.bent;
@@ -697,7 +709,7 @@ export class PolygonBoard extends Group implements BoardMesh {
     // solid, or the board would be a window rather than a field of tiles.
     const opened = isOpened(this.states[i]!);
     const alpha = this.openAlpha === null || !opened ? 1 : this.openAlpha;
-    const ramp = this.ramp(g.poly.length, opened);
+    const ramp = g.unseen ? null : this.ramp(g.poly.length, opened);
     // Straight into the array: this runs for every vertex of every cell a
     // ripple recolours, every frame it runs.
     const out = this.colorAttr.array as Float32Array;
@@ -736,6 +748,7 @@ export class PolygonBoard extends Group implements BoardMesh {
     const sh = this.shadow;
     if (!pos || !sh) return;
     const g = this.geom[i]!;
+    if (g.unseen) return;
     const n = g.poly.length;
     const off = g.radius * sh.offset;
     const [dx, dy] = this.quarterTurn ? [off, 0] : [0, -off];
@@ -770,6 +783,7 @@ export class PolygonBoard extends Group implements BoardMesh {
     const sh = this.shadow;
     if (!col || !sh) return;
     const g = this.geom[i]!;
+    if (g.unseen) return;
     const n = g.poly.length;
     const a = isOpened(this.states[i]!) ? 0 : sh.opacity;
     let v = this.shadowStart[i]!;
@@ -962,6 +976,7 @@ export class PolygonBoard extends Group implements BoardMesh {
  * neighbouring cells, or the whole board, still goes up in one piece. Every
  * writer of these buffers marks its range, so none relies on a whole upload. */
 function touch(attr: BufferAttribute, start: number, count: number): void {
+  if (count === 0) return; // a cell with no geometry (`Board.unseen`)
   attr.addUpdateRange(start * attr.itemSize, count * attr.itemSize);
   attr.needsUpdate = true;
 }

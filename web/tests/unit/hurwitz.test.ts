@@ -234,9 +234,11 @@ describe("the Hurwitz surfaces", () => {
     for (const [surface, op] of boards) {
       const board = hurwitzBoard(surface, op, 0, 1);
       const { cx, cy, radius } = board.disc!;
-      const polys = [...board.polygons.values()].map((poly) =>
-        poly.map(([x, y]) => [(x - cx) / radius, (y - cy) / radius] as Cx),
-      );
+      // only the faces the renderer draws: the ones it is told are never seen
+      // must not be needed
+      const polys = [...board.polygons]
+        .filter(([face]) => !board.unseen?.has(face))
+        .map(([, poly]) => poly.map(([x, y]) => [(x - cx) / radius, (y - cy) / radius] as Cx));
       const inside = ([x, y]: Cx) =>
         polys.some((poly) => {
           let hit = false;
