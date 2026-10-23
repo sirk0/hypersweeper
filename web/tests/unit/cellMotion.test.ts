@@ -191,6 +191,18 @@ describe("roundCorners", () => {
     expect(r[2]![0]).toBeCloseTo(3);
   });
 
+  it("keeps a point the corner mask says is no corner as it is", () => {
+    // a square whose bottom edge is drawn through its midpoint, as a hyperbolic
+    // edge is drawn through its arc points
+    const drawn: [number, number][] = [[0, 0], [5, 0], [10, 0], [10, 10], [0, 10]];
+    const r = roundCorners(drawn, 0.2, [true, false, true, true, true]);
+    expect(r).toHaveLength(3 * 4 + 1);
+    expect(r[3]).toEqual([5, 0]);
+    // the corners either side are rounded off the same segments as before
+    expect(r.slice(0, 3)).toEqual(roundCorners(drawn, 0.2).slice(0, 3));
+    expect(r.slice(4)).toEqual(roundCorners(drawn, 0.2).slice(6));
+  });
+
   it("works in 3D", () => {
     const r = roundCorners(
       square.map(([x, y]) => [x, y, 1] as [number, number, number]),
