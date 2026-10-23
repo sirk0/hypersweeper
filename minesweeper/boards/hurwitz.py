@@ -18,11 +18,11 @@ with the most symmetry their genus allows (84(g - 1) turns), on which the
 The count of heptagons is fixed by the surface -- a genus-g Hurwitz surface
 has 84(g - 1) turns, seven to a face, so 12(g - 1) of them -- and so is the
 size of its 6.6.7 (the {7,3} tiling's ``zip``, a hexagon on every corner): 80,
-240 and 520 cells. Each surface is a mode of its own (`SURFACE_MODES`). Klein's
-quartic grows from difficulty to difficulty by subdividing its tiles
-(Goldberg--Coxeter GC(n, 0), `gc_loops`: 248 and 444 cells); the two bigger
-surfaces are one board at every difficulty, the mines alone telling the
-difficulties apart.
+240 and 520 cells. Each surface is a mode of its own (`SURFACE_MODES`), and
+grows from difficulty to difficulty by changing its tiling, never the surface:
+{7,3} itself, its 6.6.7, or a Goldberg--Coxeter subdivision GC(n, 0)
+(`gc_loops`). Klein's quartic goes 80, 248, 444; Macbeath's surface 72, 240,
+324; the triplet 156, 520, 702.
 
 **The surface is built from its group, exactly.** A Hurwitz group is generated
 by an x of order 2 and a y of order 3 whose product R = xy has order 7, and
@@ -84,14 +84,13 @@ HURWITZ_SURFACES: dict[str, tuple[int, int]] = {
     "triplet": (13, 14),
 }
 
-#: How far round the centre of its view the web app shows a 6.6.7 patch, in
-#: hyperbolic distance: 3.0, 0.905 of the disc. Farther out a tile is a few
-#: pixels across on a phone -- too small to tap, and with the patch growing as
-#: e^d, most of what there would be to draw. The pan keeps the view's centre on
-#: the central tile and hides whatever it would draw farther out, which keeps
-#: the board's edge one fixed circle as the view steps from tile to tile. Must
-#: match `COVER_VIEW` in hurwitz.ts.
-COVER_VIEW = 3.0
+#: How many copies of the surface the web app's view holds: its area over the
+#: surface's. That is what decides how a closed surface plays -- under one copy
+#: and a flag at the view's edge has its twin near the opposite edge, so the
+#: whole surface reads at a glance; well over one and every cell is on screen
+#: two or three times over; well under and most of the surface is off screen.
+#: Must match `COVER_COPIES` in hurwitz.ts.
+COVER_COPIES = 0.75
 
 #: How far the view's centre can ever be from the patch's: the pan carries it
 #: back onto the central {7,3} heptagon, so its circumradius,
@@ -99,14 +98,20 @@ COVER_VIEW = 3.0
 VIEW_SHIFT = math.acosh(1 / (math.tan(math.pi / 7) * math.tan(math.pi / 3)))
 
 
-def cover_view(op: str) -> float:
-    """`COVER_VIEW` for tiling ``op``. A subdivision's tiles are smaller --
-    GC(n, 0)'s edges are 1/n of {7,3}'s where 6.6.7's are 1/sqrt(3) -- and a
-    tile drawn d out from the centre of the view shrinks as e^-d, so its view
-    is shorter by ln(n / sqrt(3)): the cells at its edge come out the same size
-    on screen. Must match `coverView`."""
-    n = _gc_order(op)
-    return COVER_VIEW - math.log(n / math.sqrt(3)) if n else COVER_VIEW
+def cover_view(surface: str) -> float:
+    """How far round the centre of its view the web app shows ``surface``, in
+    hyperbolic distance: the radius v whose disc holds `COVER_COPIES` copies of
+    the surface. A disc of radius v has area 2 pi (cosh v - 1) and a genus-g
+    surface 4 pi (g - 1), so cosh v = 1 + 2 COVER_COPIES (g - 1): 2.06 on Klein's
+    quartic, 2.99 on Macbeath's surface, 3.71 on the triplet. The tiling does not
+    enter -- a subdivision makes the tiles smaller, not the surface -- so every
+    difficulty of a surface shows the same view, its cells smaller the harder it
+    is, as a flat board's are. The pan keeps the view's centre on the central
+    tile and hides whatever it would draw farther out, which keeps the board's
+    edge one fixed circle as the view steps from tile to tile. Must match
+    `coverView`."""
+    _, genus = HURWITZ_SURFACES[surface]
+    return math.acosh(1 + 2 * COVER_COPIES * (genus - 1))
 
 
 @functools.cache
@@ -126,29 +131,27 @@ def _tile_radius(op: str) -> float:
                for k in loop)
 
 
-def patch_reach(op: str) -> float:
+def patch_reach(surface: str, op: str) -> float:
     """How far from the centre the patch always reaches: past every face whose
     centre is this close, whatever the surface. The patch has to fill the
     view's circle from anywhere the pan leaves the view's centre, so this is
     `cover_view`, plus `VIEW_SHIFT`, plus the tiling's own tile radius -- a
-    tile whose centre is farther out cannot reach into the view. Klein's
-    quartic needs it (every one of its cells is within 2.9 of the centre); the
-    bigger surfaces' patches already reach past it. Must match `patchReach`."""
-    return cover_view(op) + VIEW_SHIFT + _tile_radius(op)
+    tile whose centre is farther out cannot reach into the view. Must match
+    `patchReach`."""
+    return cover_view(surface) + VIEW_SHIFT + _tile_radius(op)
 
 #: The tilings a surface can be drawn in: ``"none"`` is {7,3} itself, then its
 #: Wythoff tilings (`hyperbolic.WYTHOFF_OPS`), then its Goldberg--Coxeter
 #: subdivisions GC(n, 0), ``"gc2"`` .. ``"gc4"`` (`gc_loops`).
 HURWITZ_OPS = ("none", *WYTHOFF_OPS, "gc2", "gc3", "gc4")
 
-#: Each surface's mode: one surface a mode, whatever the difficulty. Klein's
-#: quartic grows from difficulty to difficulty by subdividing its tiles; the
-#: two bigger surfaces are one board at every difficulty, the mines alone
-#: telling them apart.
+#: Each surface's mode: one surface a mode, whatever the difficulty, which
+#: grows the board by changing the tiling -- {7,3} itself, its 6.6.7, or a
+#: Goldberg--Coxeter subdivision -- never the surface.
 SURFACE_MODES: dict[str, str] = {
     "quartic": "quartic",
-    "macbeath": "macbeath667",
-    "triplet": "triplet667",
+    "macbeath": "macbeath",
+    "triplet": "triplet",
 }
 
 Matrix = tuple[int, int, int, int]
@@ -456,7 +459,7 @@ def _patch_for(surface: str, op: str, margin: int):
                 break
         if cover is None:
             continue
-        far = patch_reach(op)
+        far = patch_reach(surface, op)
         reach = sum(1 for group in groups if _distance(centres[group[0]]) <= far)
         keep = max(cover, reach) + margin
         if len(groups) <= keep:
@@ -520,8 +523,8 @@ def hurwitz_board(
     arc: int = ARC_SEGMENTS,
 ) -> Board:
     """The closed surface ``surface`` (one of `HURWITZ_SURFACES`) in tiling
-    ``op`` (one of `HURWITZ_OPS`; the boards that ship are ``zip``, 6.6.7, and
-    on Klein's quartic its subdivisions ``gc3`` and ``gc4``), drawn as a patch
+    ``op`` (one of `HURWITZ_OPS`; the boards that ship are ``none``, ``zip``
+    (6.6.7), ``gc2``, ``gc3`` and ``gc4``), drawn as a patch
     of the Poincaré disc that covers it: the shells out to where every cell has
     a copy, and ``margin`` more. The board is the surface's mode
     (`SURFACE_MODES`). ``scale`` and ``arc`` are

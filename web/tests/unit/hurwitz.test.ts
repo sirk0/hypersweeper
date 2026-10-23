@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { boundaryComponents, eulerCharacteristic, type Board } from "../../src/boards/core";
 import {
-  COVER_VIEW,
+  COVER_COPIES,
+  coverView,
   HURWITZ_SURFACES,
   hurwitzBoard,
   hurwitzGroup,
@@ -30,8 +31,10 @@ const SURFACES: Record<string, readonly [number, number, number, number]> = {
 
 type Cx = readonly [number, number];
 
-/** A face's centroid in the board's own disc coordinates. */
-function discCentre(board: Board, face: string): Cx {
+/** A face's centroid in the board's own disc coordinates, taken after `move`:
+ * an isometry of the disc is not affine, so the centroid of a face's image is
+ * not the image of its centroid. */
+function discCentre(board: Board, face: string, move: (z: Cx) => Cx = (z) => z): Cx {
   const { cx, cy, radius } = board.disc!;
   const poly = board.polygons.get(face)!;
   const mask = board.cornerMask!.get(face)!;
@@ -40,8 +43,9 @@ function discCentre(board: Board, face: string): Cx {
   let n = 0;
   poly.forEach(([px, py], i) => {
     if (!mask[i]) return;
-    x += (px - cx) / radius;
-    y += (py - cy) / radius;
+    const [mx, my] = move([(px - cx) / radius, (py - cy) / radius]);
+    x += mx;
+    y += my;
     n++;
   });
   return [x / n, y / n];
@@ -106,22 +110,55 @@ describe("the Hurwitz surfaces", () => {
     }
   });
 
-  it("subdivide Klein's quartic for medium and hard, every cell still whole", () => {
-    // GC(3,0) and GC(4,0): the 24 heptagons survive, hexagons everywhere else
-    for (const [difficulty, cells] of [
-      ["easy", 80],
-      ["medium", 248],
-      ["hard", 444],
+  it("grow every surface by its tiling, every cell still whole", () => {
+    // {7,3}, 6.6.7, then GC(n,0): the surface's heptagons survive every one of
+    // them -- 12(g - 1) -- and the rest are hexagons
+    const levels: Record<string, readonly [number, number, number]> = {
+      quartic: [80, 248, 444],
+      macbeath: [72, 240, 324],
+      triplet: [156, 520, 702],
+    };
+    for (const [surface, counts] of Object.entries(levels)) {
+      ["easy", "medium", "hard"].forEach((difficulty, i) => {
+        const board = buildBoard(SURFACE_MODES[surface]!, difficulty) as Board;
+        expect(board.adjacency.size, `${surface} ${difficulty}`).toBe(counts[i]);
+        let heptagons = 0;
+        for (const [cell, neighbours] of board.adjacency) {
+          const sides = board.quotient!.get(cell)!.length;
+          if (sides === 7) heptagons++;
+          expect(neighbours.length).toBe(sides);
+        }
+        expect(heptagons).toBe(SURFACES[surface]![1]);
+      });
+    }
+  });
+
+  it("show about COVER_COPIES of the surface in the view, whatever its tiling", () => {
+    // the view's area over the surface's, counted rather than computed: the
+    // drawn tiles whose centre lies in the view against the surface's cells
+    for (const [surface, op] of [
+      ["quartic", "zip"],
+      ["quartic", "gc4"],
+      ["macbeath", "none"],
+      ["macbeath", "zip"],
+      ["triplet", "zip"],
+      ["triplet", "gc2"],
     ] as const) {
-      const board = buildBoard("quartic", difficulty) as Board;
-      expect(board.adjacency.size).toBe(cells);
-      let heptagons = 0;
-      for (const [cell, neighbours] of board.adjacency) {
-        const sides = board.quotient!.get(cell)!.length;
-        if (sides === 7) heptagons++;
-        expect(neighbours.length).toBe(sides);
+      const board = hurwitzBoard(surface, op, 0, 1);
+      const { cx, cy, radius, cover } = board.disc!;
+      expect(cover!.view).toBeCloseTo(coverView(surface), 12);
+      const r = Math.tanh(cover!.view / 2);
+      let seen = 0;
+      for (const poly of board.polygons.values()) {
+        const x = poly.reduce((t, p) => t + p[0], 0) / poly.length;
+        const y = poly.reduce((t, p) => t + p[1], 0) / poly.length;
+        if (Math.hypot((x - cx) / radius, (y - cy) / radius) <= r) seen++;
       }
-      expect(heptagons).toBe(24);
+      const copies = seen / board.adjacency.size;
+      // within a fifth: a count of whole tiles is coarse where few of them are
+      // in view (the quartic's easy board shows about 50)
+      expect(copies, `${surface} ${op}`).toBeGreaterThan(COVER_COPIES * 0.8);
+      expect(copies, `${surface} ${op}`).toBeLessThan(COVER_COPIES * 1.2);
     }
   });
 
@@ -177,8 +214,12 @@ describe("the Hurwitz surfaces", () => {
   it("pan by steps that leave the picture as it was", () => {
     // A step's isometry carries a face onto another; the step's symmetry must
     // say the second shows what the first did.
-    for (const surface of Object.keys(SURFACES)) {
-      const board = hurwitzBoard(surface, "zip", 0, 1);
+    for (const [surface, op] of [
+      ...Object.keys(SURFACES).map((s): [string, HurwitzOp] => [s, "zip"]),
+      ["macbeath", "none"],
+      ["triplet", "gc2"],
+    ] as [string, HurwitzOp][]) {
+      const board = hurwitzBoard(surface, op, 0, 1);
       const steps = board.disc!.cover!.steps;
       expect(steps.length).toBe(7);
       const centres = [...board.polygons.keys()].map((f) => [f, discCentre(board, f)] as const);
@@ -201,20 +242,20 @@ describe("the Hurwitz surfaces", () => {
           if (Math.hypot(z[0], z[1]) > 0.6) continue;
           // the face the step carries this one onto shows the symmetry's
           // image of what this one shows
-          const there = nearest(apply(c, rot, z));
+          const there = nearest(discCentre(board, face, (w) => apply(c, rot, w)));
           if (there.d > 1e-6) continue;
           expect(board.faces!.get(there.face)).toBe(cells.get(board.faces!.get(face)!));
           checked++;
         }
-        expect(checked).toBeGreaterThan(5);
+        expect(checked, `${surface} ${op}`).toBeGreaterThan(5);
       }
     }
   });
 
   it("draw the whole view round anywhere the pan can put its centre", () => {
     // The pan keeps the view's centre on the central heptagon of {7,3}
-    // (`discRecentre`) and shows what lies within its view of it (COVER_VIEW,
-    // shorter on a subdivision, whose tiles are smaller), so the
+    // (`discRecentre`) and shows what lies within its view of it (`coverView`,
+    // from the surface's genus), so the
     // patch has to cover that circle from every point of the heptagon -- its
     // corners are the worst case. Probed on the circle itself: inside it the
     // patch is a disc, so a covered rim means a covered circle.
@@ -230,6 +271,10 @@ describe("the Hurwitz surfaces", () => {
       ...Object.keys(SURFACES).map((s): [string, HurwitzOp] => [s, "zip"]),
       ["quartic", "gc3"],
       ["quartic", "gc4"],
+      ["macbeath", "none"],
+      ["macbeath", "gc2"],
+      ["triplet", "none"],
+      ["triplet", "gc2"],
     ];
     for (const [surface, op] of boards) {
       const board = hurwitzBoard(surface, op, 0, 1);
@@ -250,7 +295,7 @@ describe("the Hurwitz surfaces", () => {
           return hit;
         });
       const view = board.disc!.cover!.view;
-      expect(view).toBeCloseTo(op === "zip" ? COVER_VIEW : COVER_VIEW - Math.log(Number(op.slice(2)) / Math.sqrt(3)), 9);
+      expect(view).toBeCloseTo(coverView(surface), 12);
       const r = Math.tanh(view / 2);
       for (const centre of [[0, 0] as Cx, ...corners]) {
         for (let k = 0; k < 120; k++) {

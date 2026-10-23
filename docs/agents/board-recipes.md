@@ -837,16 +837,19 @@ is a surface rather than a trim, and a new one is a group, not a builder. Read
    change to the search swaps the board without a word. Add its label to
    `HURWITZ_LABELS`.
 2. **Its mode.** One surface a mode (`SURFACE_MODES`), in the Closed surfaces
-   submenu (the `hurwitz_board` builder files it). The surface fixes its 6.6.7
-   size, so either it is one board at every difficulty, the mines alone
-   changing (add it to `ONE_BOARD` in `tests/test_presets.py`), or its medium
-   and hard rows subdivide it (`"gc3"`, `"gc4"`, as Klein's quartic does). The
+   submenu (the `hurwitz_board` builder files it). The genus fixes every
+   tiling's size -- {7,3} 12(g - 1), 6.6.7 40(g - 1), GC(n,0) beyond -- so
+   pick the three rungs nearest the size band, smallest to largest; a row the
+   band cannot reach goes in `EXEMPT_ROWS` (or the mode in `GENUS_BOUND`) in
+   `tests/test_presets.py`, with the rungs that miss it. The view is sized
+   from the genus (`cover_view`), so nothing else needs choosing. The
    mode needs the menu, label, icon and test rows of a hyperbolic one (steps 1,
    3 and 4 above, with `quartic`'s entries to copy); `resize.py` holds every
    row as declared.
 3. **The patch must reach every cell** -- the builder grows it until it does,
-   and never short of `patch_reach(op)`, which the web pan needs -- and its
-   face count grows quickly with the genus: 1863 faces for the genus-14 board.
+   and never short of `patch_reach(surface, op)`, which the web pan needs --
+   and its face count grows quickly with the genus: 2521 faces for the
+   genus-14 hard board.
    A much bigger surface wants a measurement of the build and the pan before it
    ships.
 4. **Tests** -- `_HURWITZ` in `tests/test_boards.py` and `SURFACES` in

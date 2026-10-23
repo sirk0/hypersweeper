@@ -50,23 +50,28 @@ export const HURWITZ_SURFACES: Record<string, readonly [number, number]> = {
   triplet: [13, 14],
 };
 
-/** How far round the centre of the view the pan always has board to show for a
- * 6.6.7 patch, in hyperbolic distance (`DiscCover.view`): 3.0, 0.905 of the
- * disc. Farther out a tile is a few pixels across on a phone -- too small to
- * tap, and with the patch growing as e^d, most of what there is to draw. The
- * pan keeps the view's centre on the central tile and the patch reaches
- * `patchReach` from its centre, so every point this close to the view is drawn;
- * the renderer hides what lies farther out, which keeps the board's edge one
- * fixed circle however the view steps across the cover, and the board is
- * framed to that circle. Must match `COVER_VIEW` in hurwitz.py. */
-export const COVER_VIEW = 3.0;
+/** How many copies of the surface the view holds: its area over the
+ * surface's. That is what decides how a closed surface plays -- under one copy
+ * and a flag at the view's edge has its twin near the opposite edge, so the
+ * whole surface reads at a glance; well over one and every cell is on screen
+ * two or three times over; well under and most of the surface is off screen.
+ * Must match `COVER_COPIES` in hurwitz.py. */
+export const COVER_COPIES = 0.75;
 
-/** `COVER_VIEW` for tiling `op`: shorter by ln(n / sqrt(3)) for GC(n, 0),
- * whose tiles are that much smaller, so the cells hidden at the edge come out
- * the same size on screen. Mirrors `cover_view`. */
-export function coverView(op: HurwitzOp): number {
-  const n = gcOrder(op);
-  return n !== null ? COVER_VIEW - Math.log(n / Math.sqrt(3)) : COVER_VIEW;
+/** How far round the centre of the view the pan always has board to show for
+ * `surface`, in hyperbolic distance (`DiscCover.view`): the radius v whose disc
+ * holds `COVER_COPIES` copies of the surface, cosh v = 1 + 2 COVER_COPIES
+ * (g - 1) -- a disc's area is 2 pi (cosh v - 1), a genus-g surface's 4 pi (g - 1).
+ * The tiling does not enter, so every difficulty of a surface shows the same
+ * view, its cells smaller the harder it is. The pan keeps the view's centre on
+ * the central tile and the patch reaches `patchReach` from its centre, so every
+ * point this close to the view is drawn; the renderer hides what lies farther
+ * out, which keeps the board's edge one fixed circle however the view steps
+ * across the cover, and the board is framed to that circle. Mirrors
+ * `cover_view`. */
+export function coverView(surface: string): number {
+  const [, genus] = HURWITZ_SURFACES[surface]!;
+  return Math.acosh(1 + 2 * COVER_COPIES * (genus - 1));
 }
 
 /** How far the view's centre can ever be from the patch's: the pan carries it
@@ -78,8 +83,8 @@ export const VIEW_SHIFT = Math.acosh(1 / (Math.tan(Math.PI / 7) * Math.tan(Math.
  * the view's centre can be from the patch's, plus the tiling's own tile
  * radius -- a tile whose centre is farther out cannot reach into the view.
  * Mirrors `patch_reach`. */
-export function patchReach(op: HurwitzOp): number {
-  return coverView(op) + VIEW_SHIFT + tileRadius(op);
+export function patchReach(surface: string, op: HurwitzOp): number {
+  return coverView(surface) + VIEW_SHIFT + tileRadius(op);
 }
 
 const radiusCache = new Map<string, number>();
@@ -158,12 +163,13 @@ export function hurwitzSurfaceLabel(euler: number): string | null {
 export const HURWITZ_OPS = ["none", ...WYTHOFF_OPS, "gc2", "gc3", "gc4"] as const;
 export type HurwitzOp = (typeof HURWITZ_OPS)[number];
 
-/** Each surface's mode: one surface a mode, whatever the difficulty. Must
- * match `SURFACE_MODES`. */
+/** Each surface's mode: one surface a mode, whatever the difficulty, which
+ * grows the board by changing the tiling, never the surface. Must match
+ * `SURFACE_MODES`. */
 export const SURFACE_MODES: Record<string, string> = {
   quartic: "quartic",
-  macbeath: "macbeath667",
-  triplet: "triplet667",
+  macbeath: "macbeath",
+  triplet: "triplet",
 };
 
 /** The n of a Goldberg--Coxeter tiling `gc<n>`, or null for any other. */
@@ -719,7 +725,7 @@ function patchFor(
       }
     }
     if (reach < 0) continue;
-    const far = patchReach(op);
+    const far = patchReach(surface, op);
     const near = groups.filter((group) => distance(p.centres[group[0]!]!) <= far).length;
     const keep = Math.max(reach, near) + margin;
     if (groups.length <= keep) continue;
@@ -806,7 +812,7 @@ function coverSteps(
     for (const key of surfaceCells.keys()) cells.set(nameOf.get(key)!, nameOf.get(moved(key))!);
     steps.push({ c, rot, cells });
   }
-  return { steps, view: coverView(op) };
+  return { steps, view: coverView(surface) };
 }
 
 // -- the board ----------------------------------------------------------------
@@ -858,8 +864,11 @@ export function hurwitzBoard(
   const coverSteps_ = coverSteps(surface, op, rings, nameOf);
   // Framed to the circle the view shows (`coverClip`), not to the whole patch:
   // past it nothing is ever drawn, so the board fills its frame as a disc
-  // board does. The patch's polygons run on past the frame, hidden.
-  const shown = Math.tanh(coverView(op) / 2);
+  // board does. The patch's polygons run on past the frame, hidden. The clip
+  // keeps a tile by its centre, so one just inside it reaches out by a tile
+  // radius more -- a sliver at the triplet's view, half a heptagon at the
+  // quartic's -- and the frame takes that in too.
+  const shown = Math.tanh((coverView(surface) + tileRadius(op)) / 2);
   const shift = (shown - extent) * scale;
   for (const poly of polygons.values()) {
     for (const p of poly) {
@@ -872,7 +881,7 @@ export function hurwitzBoard(
   // the view's reach plus the most its centre strays plus a tile. They stay
   // on the board -- every cell has a copy, which the pygame game and the cell
   // names need -- but the renderer builds nothing for them.
-  const reach = patchReach(op);
+  const reach = patchReach(surface, op);
   const unseen = new Set<CellId>();
   drawn.forEach((f, face) => {
     if (distance(p.centres[f]!) > reach) unseen.add(cid(face));

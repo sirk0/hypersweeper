@@ -139,7 +139,7 @@ along the rim, `0`, the arrows, and a touch drag that neither opens nor flags.
 
 #### A board with no rim: the closed surfaces (`discRecentre`)
 
-The closed hyperbolic surfaces (`quartic`, `macbeath667`, `triplet667`) are
+The closed hyperbolic surfaces (`quartic`, `macbeath`, `triplet`) are
 each drawn as a **patch of the disc that covers it** (see "The closed hyperbolic surfaces" in
 [`geometry.md`](../../docs/agents/geometry.md)): every face shows the cell it
 covers (`Board.faces`), so a cell is drawn several times and its copies paint
@@ -169,11 +169,13 @@ Two things make it *look* continuous, and the pan jumped without either:
 - **The edge is a fixed circle of the view.** The patch is a disc round the
   central tile, so seen from near a neighbouring tile its rim is off-centre,
   and a recentring snapped it back. So the shader hides every cell whose pivot
-  the view draws past `coverClip(cover.view)` (`uDiscClip`; the view is 3.0 of
-  hyperbolic distance, 0.905 of the disc, for 6.6.7, and shorter for a
-  subdivision's smaller tiles -- `coverView`), and a tap out there finds
-  nothing (`discSource`). The board is framed to that circle, not to the whole
-  patch, whose polygons run on past the frame, hidden. The patch reaches
+  the view draws past `coverClip(cover.view)` (`uDiscClip`; the view is
+  sized from the surface's genus to hold three quarters of the surface --
+  `coverView`, 2.06 of hyperbolic distance on the quartic, 2.99 on Macbeath's,
+  3.71 on the triplet), and a tap out there finds
+  nothing (`discSource`). The board is framed to that circle widened by a tile
+  radius (`tileRadius` -- a tile the clip keeps reaches that far past it), not
+  to the whole patch, whose polygons run on past the frame, hidden. The patch reaches
   `patchReach` from its centre, so
   that circle is always full: what moves at its edge are cells a pixel or two
   across.

@@ -43,18 +43,25 @@ BAND = 0.15
 # the mode is exempted whole because the reason is the geometry, not the row.
 COARSE_GEOMETRY = {"sphinx", "chair", "carpet", "pentaflake", "gosper",
                    "cube3d"}
-# One board at every difficulty, by design: a closed hyperbolic surface's cell
-# count is fixed by its genus (Macbeath's surface carries 240 cells of 6.6.7,
-# the genus-14 Hurwitz surface 520), and each of these modes is one surface,
-# its difficulties told apart by the mines alone. Klein's quartic grows by
-# subdividing its tiles instead, and lands in the band at all three.
-ONE_BOARD = {"macbeath667", "triplet667"}
-EXEMPT = COARSE_GEOMETRY | ONE_BOARD
+# A closed hyperbolic surface's cell counts are fixed by its genus: the board
+# grows only by changing its tiling, and the rungs are {7,3}, 6.6.7 and the
+# Goldberg--Coxeter subdivisions -- 12(g - 1), 40(g - 1), then 54(g - 1),
+# 124(g - 1) and 222(g - 1) cells. The genus-14 Hurwitz surface's smallest is
+# 156, against an easy target of 81, and its rungs go 156, 520, 702; no row of
+# it can land in the band. (Klein's quartic does at all three, and Macbeath's
+# surface at easy and medium -- its hard is in EXEMPT_ROWS.)
+GENUS_BOUND = {"triplet"}
+EXEMPT = COARSE_GEOMETRY | GENUS_BOUND
 
 # Single rows where the size band loses to a bar that matters more. Keyed by
 # (mode, difficulty) so exempting one board does not quietly exempt its other
 # two difficulties.
 EXEMPT_ROWS = {
+    # Macbeath's surface (genus 7) steps 240 -> 324 -> 744 cells: 6.6.7, then
+    # GC(2,0), then GC(3,0). 324 is 32% under hard's 480 and 744 is 55% over;
+    # 324 keeps the view holding most of the surface at once, which is how the
+    # board plays best (see `hurwitz.COVER_COPIES`), and its mines make it hard.
+    ("macbeath", "hard"),
     # Kisrhombille packs 24 cells into a domain two tiles wide, so the
     # smallest strip of it with enough tiles around to *close* as one --
     # rather than crumple into a twisted lozenge, which three domains around

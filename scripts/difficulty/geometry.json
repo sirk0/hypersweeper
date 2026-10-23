@@ -13542,18 +13542,18 @@
       }
     }
   },
-  "macbeath667": {
+  "macbeath": {
     "builder": "hurwitz_board",
     "args": {
       "easy": {
         "args": [
           "macbeath",
-          "zip",
+          "none",
           0,
-          40,
+          14,
           300.0
         ],
-        "cells": 240,
+        "cells": 72,
         "fixed": true,
         "reason": "the cell count is the solid"
       },
@@ -13562,7 +13562,7 @@
           "macbeath",
           "zip",
           0,
-          55,
+          59,
           300.0
         ],
         "cells": 240,
@@ -13572,38 +13572,38 @@
       "hard": {
         "args": [
           "macbeath",
-          "zip",
+          "gc2",
           0,
-          75,
+          90,
           300.0
         ],
-        "cells": 240,
+        "cells": 324,
         "fixed": true,
         "reason": "the cell count is the solid"
       }
     }
   },
-  "triplet667": {
+  "triplet": {
     "builder": "hurwitz_board",
     "args": {
+      "easy": {
+        "args": [
+          "triplet",
+          "none",
+          0,
+          32,
+          300.0
+        ],
+        "cells": 156,
+        "fixed": true,
+        "reason": "the cell count is the solid"
+      },
       "medium": {
         "args": [
           "triplet",
           "zip",
           0,
-          120,
-          300.0
-        ],
-        "cells": 520,
-        "fixed": true,
-        "reason": "the cell count is the solid"
-      },
-      "easy": {
-        "args": [
-          "triplet",
-          "zip",
-          0,
-          90,
+          124,
           300.0
         ],
         "cells": 520,
@@ -13613,12 +13613,12 @@
       "hard": {
         "args": [
           "triplet",
-          "zip",
+          "gc2",
           0,
-          145,
+          200,
           300.0
         ],
-        "cells": 520,
+        "cells": 702,
         "fixed": true,
         "reason": "the cell count is the solid"
       }

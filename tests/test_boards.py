@@ -162,9 +162,11 @@ from minesweeper.boards.catalan import (
 from minesweeper.boards.core import _cross, _normalize
 from minesweeper.boards.core import newell_normal as _newell_normal
 from minesweeper.boards.hurwitz import (
+    COVER_COPIES,
     HURWITZ_SURFACES,
     SURFACE_MODES,
     _patch_for,
+    cover_view,
     gc_loops,
     hurwitz_board,
     hurwitz_cells,
@@ -3013,6 +3015,26 @@ class TestHurwitz:
         assert len(set(hood.values())) == len(hood)
         assert not any(len(hood[o]) == len(hood[c]) + 1 and hood[c] < hood[o]
                        for c in hood for o in board.adjacency[c])
+
+    @pytest.mark.parametrize("surface, cells", [("macbeath", 324), ("triplet", 702)])
+    def test_the_bigger_surfaces_subdivided_keep_the_surface(self, surface, cells):
+        # GC(2, 0) is their hard board: F + E cells, the heptagons still whole
+        faces_n, edges_n = _HURWITZ[surface][1], _HURWITZ[surface][3]
+        board = hurwitz_board(surface, "gc2", 0, 1)
+        assert board.mode == SURFACE_MODES[surface]
+        assert len(board.adjacency) == cells == faces_n + edges_n
+        assert _euler_characteristic(board) == 2 - 2 * HURWITZ_SURFACES[surface][1]
+        sides = Counter(len(board.quotient[c]) for c in board.adjacency)
+        assert sides == {7: faces_n, 6: cells - faces_n}
+        for cell, neighbours in board.adjacency.items():
+            assert len(neighbours) == len(board.quotient[cell])
+
+    @pytest.mark.parametrize("surface", sorted(_HURWITZ))
+    def test_the_view_holds_the_same_share_of_every_surface(self, surface):
+        # the view's area, 2 pi (cosh v - 1), over the surface's, 4 pi (g - 1)
+        genus = HURWITZ_SURFACES[surface][1]
+        copies = (math.cosh(cover_view(surface)) - 1) / (2 * (genus - 1))
+        assert copies == pytest.approx(COVER_COPIES)
 
     @pytest.mark.parametrize("n", [2, 3])
     def test_the_subdivision_ids_are_shared_exactly(self, n):

@@ -257,9 +257,8 @@ SPEC: dict[str, dict] = {
     # the closed hyperbolic surfaces (hurwitz_board(surface, op, margin, mines,
     # scale)): one surface a mode, so no knob is the search's to turn -- the
     # surface fixes how many heptagons there are, and each row names the
-    # tiling it is cut into (Klein's quartic subdivided for medium and hard,
-    # the bigger surfaces the same board throughout). Every row is held as
-    # declared.
+    # tiling it is cut into ({7,3}, 6.6.7 or a subdivision, a rung per
+    # difficulty). Every row is held as declared.
     "hurwitz_board": dict(size=(), mine=3, shape=None, rigid=True),
     "archimedean_board": dict(size=(1, 2), mine=3, shape=4, kind="scale", lead=1),
     "arch_torus_board": dict(size=(1, 2), mine=3, shape=4, kind="tube", lead=1,

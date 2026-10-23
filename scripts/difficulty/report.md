@@ -12,7 +12,7 @@ Every board's mine count, chosen so its win probability under the reference solv
 
 ## Coverage
 
-- 891 rows, 853 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
+- 900 rows, 862 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
 - 38 could not be brought on target:
   - `cube3d`/hard: 33.3% vs 50.9% — the search could not resolve it -- its thinnest measurement finished 0 game(s), so the rate here is noise rather than a crossing the search walked to. Re-measure at a bigger `--budget`
   - `cylhexrows`/medium: 81.7% vs 87.1% — no integer mine count lands within tolerance; this is the closest
@@ -52,7 +52,7 @@ Every board's mine count, chosen so its win probability under the reference solv
   - `triakis`/hard: 0.0% vs 50.9% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `triakis`/medium: 0.0% vs 87.1% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `triakis`/easy: 1.8% vs 96.5% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
-- 260 rows had games the solver abandoned (its frontier DP hit its node budget); their rates are measured over the games that finished:
+- 262 rows had games the solver abandoned (its frontier DP hit its node budget); their rates are measured over the games that finished:
   - `cube3d`/hard: 466 abandoned
   - `torustrunchex`/hard: 168 abandoned
   - `torusrotatedhex`/hard: 144 abandoned
@@ -64,7 +64,7 @@ Every board's mine count, chosen so its win probability under the reference solv
   - `doubletorustri`/hard: 41 abandoned
   - `torussnubhex`/hard: 39 abandoned
 
-Densities run from 2.8% to 30.0% (median 16.7%) — the spread the old flat 14/16/19 per cent could not express.
+Densities run from 2.8% to 30.0% (median 16.8%) — the spread the old flat 14/16/19 per cent could not express.
 
 The only floor under the search is the **opening**: the fewest mines at which the first click alone stops finishing the board (`calibrate.opening_floor`). As a density that runs 1.1% to 14.3% across the zoo — which is why it is measured per board rather than set as a percentage.
 
@@ -208,6 +208,7 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `kleintrunchex` | 6.0 | 90c 6m (7%) 96% | 252c 17m (7%) 87% | 480c 45m (9%) 52% |
 | `kleintruncsquare` | 6.0 | 80c 7m (9%) 93% | 256c 48m (19%) 85% | 480c 98m (20%) 50% |
 | `kleintrunctrihex` | 6.0 | 96c 14m (15%) 96% | 252c 41m (16%) 89% | 468c 89m (19%) 54% |
+| `macbeath` | 6.3 | 72c 15m (21%) 96% | 240c 55m (23%) 89% | 324c 93m (29%) 52% |
 | `mobius` | 7.0 | 84c 12m (14%) 98% | 252c 44m (17%) 89% | 480c 103m (21%) 53% |
 | `mobiusbasketweave` | 6.5 | 88c 15m (17%) 95% | 228c 39m (17%) 90% | 464c 93m (20%) 55% |
 | `mobiusbasketweave3` | 6.3 | 75c 10m (13%) 93% | 289c 54m (19%) 84% | 529c 112m (21%) 52% |
@@ -265,6 +266,7 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `projectivehex` | 6.0 | 81c 17m (21%) 96% | 246c 57m (23%) 88% | 501c 128m (26%) 49% |
 | `projectivetri` | 11.7 | 90c 23m (26%) 97% | 250c 67m (27%) 86% | 490c 146m (30%) 53% |
 | `pythagorean` | 5.5 | 83c 8m (10%) 99% | 261c 30m (11%) 86% | 505c 77m (15%) 51% |
+| `quartic` | 6.1 | 80c 18m (22%) 94% | 248c 61m (25%) 83% | 444c 118m (27%) 54% |
 | `rhombicdodeca` | 7.9 | 108c 19m (18%) 98% | 300c 72m (24%) 86% | 432c 116m (27%) 53% |
 | `rhombicosidodecasplit` | 10.4 | 62c 8m (13%) 98% | 440c 100m (23%) 85% | 440c 119m (27%) 48% |
 | `rhombictriaconta` | 8.0 | 120c 28m (23%) 93% | 270c 62m (23%) 89% | 480c 127m (26%) 53% |
@@ -361,6 +363,7 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `triangle` | 10.9 | 81c 5m (6%) 98% | 256c 37m (14%) 87% | 484c 104m (21%) 49% |
 | `trigrid` | 11.0 | 77c 8m (10%) 97% | 252c 37m (15%) 88% | 476c 108m (23%) 52% |
 | `trihex` | 7.6 | 85c 9m (11%) 99% | 263c 44m (17%) 87% | 537c 111m (21%) 50% |
+| `triplet` | 6.3 | 156c 33m (21%) 95% | 520c 122m (23%) 89% | 702c 191m (27%) 53% |
 | `trirhombitrihex` | 9.5 | 74c 10m (14%) 97% | 282c 47m (17%) 84% | 420c 94m (22%) 47% |
 | `tritrunctrihex` | 8.5 | 93c 6m (6%) 94% | 261c 11m (4%) 89% | 485c 33m (7%) 52% |
 | `tromino` | 6.4 | 72c 10m (14%) 95% | 280c 47m (17%) 85% | 432c 92m (21%) 49% |

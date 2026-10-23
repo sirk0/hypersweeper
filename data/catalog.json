@@ -240,8 +240,8 @@
     "hyperbolic4614": "Truncated triheptagonal 4.6.14",
     "hyperbolicbinary": "Binary tiling",
     "quartic": "Klein quartic",
-    "macbeath667": "Macbeath surface 6.6.7",
-    "triplet667": "Hurwitz triplet 6.6.7",
+    "macbeath": "Macbeath surface",
+    "triplet": "Hurwitz triplet",
     "spheretri": "Geodesic icosahedron"
   },
   "tilingNotations": {
@@ -1083,8 +1083,8 @@
       "surface": "klein",
       "family": "uniform"
     },
-    "macbeath667": {
-      "label": "Macbeath surface 6.6.7",
+    "macbeath": {
+      "label": "Macbeath surface",
       "tiling": "",
       "surface": "flat",
       "family": "hyperbolic"
@@ -2013,8 +2013,8 @@
       "surface": "flat",
       "family": "uniform"
     },
-    "triplet667": {
-      "label": "Hurwitz triplet 6.6.7",
+    "triplet": {
+      "label": "Hurwitz triplet",
       "tiling": "",
       "surface": "flat",
       "family": "hyperbolic"
@@ -2147,8 +2147,8 @@
       "hyperbolic4614",
       "hyperbolicbinary",
       "quartic",
-      "macbeath667",
-      "triplet667"
+      "macbeath",
+      "triplet"
     ],
     "familyLabels": {
       "regular": "Regular",

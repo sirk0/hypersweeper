@@ -77,7 +77,7 @@ test.describe("M1 app", () => {
     await page.locator('.difficulty-btn[data-key="medium"]').click();
     await page.locator('.menu-entry[data-group="hyperbolic"]').click();
     await page.locator('.menu-entry[data-submenu="hyperbolic-closed"]').click();
-    for (const mode of ["quartic", "macbeath667", "triplet667"]) {
+    for (const mode of ["quartic", "macbeath", "triplet"]) {
       await expect(page.locator(`.menu-entry[data-mode="${mode}"]`)).toBeVisible();
     }
     await page.locator('.menu-entry[data-mode="quartic"]').click();

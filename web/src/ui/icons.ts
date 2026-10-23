@@ -2086,11 +2086,13 @@ const PATCH_BOARDS: Record<string, PatchBoard> = {
   // The closed surfaces' tilings, drawn in the disc on their own: the boards
   // themselves build the surface and its cover, a second or more for all
   // three, which a menu page cannot wait on. Up close a closed surface looks
-  // like the plane it is glued from, so the 6.6.7 ones are the soccer ball's
-  // disc, and the quartic shows what sets it apart -- its subdivided medium.
+  // like the plane it is glued from, so each card shows one of the tilings the
+  // three grow through, a different one apiece: the quartic its subdivided
+  // medium, Macbeath's surface its 6.6.7 (the soccer ball's disc) and the
+  // triplet the plain heptagons of its easy.
   quartic: { build: () => gcDisc(3, 30, 100), whole: true },
-  macbeath667: { build: () => hyperbolicDisc("hyperbolic667", 18, 100), whole: true },
-  triplet667: { build: () => hyperbolicDisc("hyperbolic667", 18, 100), whole: true },
+  macbeath: { build: () => hyperbolicDisc("hyperbolic667", 18, 100), whole: true },
+  triplet: { build: () => hyperbolicDisc("hyperbolic73", 16, 100), whole: true },
 };
 
 /** The uniform hyperbolic boards, each one of Wythoff's operations on {7,3}
@@ -2102,8 +2104,8 @@ const HYPERBOLIC_UNIFORM: Record<string, WythoffOp> = {
   hyperbolic4614: "bevel",
   // the closed surface's row icon is its tiling's disc (see the icon above)
   quartic: "zip",
-  macbeath667: "zip",
-  triplet667: "zip",
+  macbeath: "zip",
+  triplet: "zip",
 };
 
 /** The closed surfaces (boards/hurwitz.ts), whose icon lights every heptagon.
@@ -2136,8 +2138,8 @@ const HYPERBOLIC_ICON_SHELLS: Record<string, number> = {
   hyperbolic3474: 5,
   hyperbolic4614: 5,
   quartic: 4,
-  macbeath667: 4,
-  triplet667: 4,
+  macbeath: 4,
+  triplet: 4,
 };
 
 /** Where a mode's repeat domain is filed under another name. */

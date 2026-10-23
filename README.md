@@ -63,8 +63,9 @@ Pick a surface, then a tiling:
   And three have no rim at all: the plane glued
   up into closed surfaces — Klein's quartic, Macbeath's surface and a genus-14
   Hurwitz surface — each drawn as a patch of the disc that covers it, every
-  cell drawn at least once and keeping its full six or seven neighbours; the
-  quartic's harder boards subdivide its tiles, and the pan never runs out.
+  cell drawn at least once and keeping its full six or seven neighbours; each
+  grows by its tiling — plain heptagons, 6.6.7, then subdivided — under a view
+  sized to hold three quarters of the surface, and the pan never runs out.
   The menu groups these as **Regular**, **Uniform**, **Laves**, **2-uniform**
   (regular polygons edge to edge with *two* kinds of corner — all twenty of
   them, named for how each is made from a uniform tiling, from *Studded

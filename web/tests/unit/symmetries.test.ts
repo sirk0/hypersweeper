@@ -305,8 +305,8 @@ describe("board symmetries", () => {
       ["quartic", "easy", 14],
       ["quartic", "medium", 14], // the subdivision GC(3,0) keeps the mirrors
       ["quartic", "hard", 14],
-      ["macbeath667", "hard", 14],
-      ["triplet667", "easy", 14],
+      ["macbeath", "hard", 14],
+      ["triplet", "easy", 14],
     ];
     for (const [mode, difficulty, order] of orders) {
       const board = buildBoard(mode, difficulty);

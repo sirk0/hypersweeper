@@ -1018,17 +1018,17 @@ _HYPERBOLIC_ICON_SHELLS = {"hyperbolic83": 4, "hyperbolic73": 4, "hyperbolic64":
                            "hyperbolic55": 4, "hyperbolic45": 5, "hyperbolic46": 6,
                            "hyperbolic667": 4, "hyperbolic3737": 4, "hyperbolic3474": 5,
                            "hyperbolic4614": 5, "hyperbolic37": 5, "hyperbolic38": 5,
-                           "quartic": 4, "macbeath667": 4, "triplet667": 4}
+                           "quartic": 4, "macbeath": 4, "triplet": 4}
 # The uniform ones are Wythoff's operations on {7,3}; every other hyperbolic
 # mode is ``hyperbolic{p}{q}``. The closed surface draws the same disc as its
 # tiling's, with every heptagon lit rather than the central one: on a surface
 # with no rim every one of them is a full seven-neighbour cell.
 _HYPERBOLIC_UNIFORM = {"hyperbolic667": "zip", "hyperbolic3737": "ambo",
                        "hyperbolic3474": "expand", "hyperbolic4614": "bevel",
-                       "quartic": "zip", "macbeath667": "zip",
-                       "triplet667": "zip"}
+                       "quartic": "zip", "macbeath": "zip",
+                       "triplet": "zip"}
 # The closed surfaces (boards/hurwitz.py), whose icon lights every heptagon.
-_CLOSED_SURFACE_MODES = frozenset({"quartic", "macbeath667", "triplet667"})
+_CLOSED_SURFACE_MODES = frozenset({"quartic", "macbeath", "triplet"})
 
 
 # How each flat-faced solid drawn by `_icon_solid` -- the Catalan solids and

@@ -137,7 +137,7 @@ const REGULAR = [
   "hyperbolic83",
 ];
 const UNIFORM = ["hyperbolic667", "hyperbolic3737", "hyperbolic3474", "hyperbolic4614"];
-const CLOSED = ["quartic", "macbeath667", "triplet667"];
+const CLOSED = ["quartic", "macbeath", "triplet"];
 
 describe("geometry groups", () => {
   it("puts Hyperbolic after Flat manifolds, not inside Flat", () => {

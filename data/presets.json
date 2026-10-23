@@ -1738,54 +1738,54 @@
         ]
       }
     },
-    "macbeath667": {
+    "macbeath": {
       "builder": "hurwitz_board",
       "args": {
         "easy": [
           "macbeath",
-          "zip",
+          "none",
           0,
-          44,
+          15,
           300.0
         ],
         "medium": [
           "macbeath",
           "zip",
           0,
-          59,
+          55,
           300.0
         ],
         "hard": [
           "macbeath",
-          "zip",
+          "gc2",
           0,
-          71,
+          93,
           300.0
         ]
       }
     },
-    "triplet667": {
+    "triplet": {
       "builder": "hurwitz_board",
       "args": {
         "easy": [
           "triplet",
-          "zip",
+          "none",
           0,
-          99,
+          33,
           300.0
         ],
         "medium": [
           "triplet",
           "zip",
           0,
-          124,
+          122,
           300.0
         ],
         "hard": [
           "triplet",
-          "zip",
+          "gc2",
           0,
-          147,
+          191,
           300.0
         ]
       }
