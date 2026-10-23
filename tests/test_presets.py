@@ -43,7 +43,13 @@ BAND = 0.15
 # the mode is exempted whole because the reason is the geometry, not the row.
 COARSE_GEOMETRY = {"sphinx", "chair", "carpet", "pentaflake", "gosper",
                    "cube3d"}
-EXEMPT = COARSE_GEOMETRY
+# One board at every difficulty, by design: a closed hyperbolic surface's cell
+# count is fixed by its genus (Macbeath's surface carries 240 cells of 6.6.7,
+# the genus-14 Hurwitz surface 520), and each of these modes is one surface,
+# its difficulties told apart by the mines alone. Klein's quartic grows by
+# subdividing its tiles instead, and lands in the band at all three.
+ONE_BOARD = {"macbeath667", "triplet667"}
+EXEMPT = COARSE_GEOMETRY | ONE_BOARD
 
 # Single rows where the size band loses to a bar that matters more. Keyed by
 # (mode, difficulty) so exempting one board does not quietly exempt its other

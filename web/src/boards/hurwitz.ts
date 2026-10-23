@@ -10,7 +10,9 @@
 // disc's ring walk covers it, and the covering map is a breadth-first walk on
 // ids alone; the board draws the shells out to where every cell has a copy,
 // each face showing the cell it covers (`Board.faces`), with the surface's own
-// adjacency and topology (`Board.quotient`).
+// adjacency and topology (`Board.quotient`). Each surface is a mode of its own;
+// Klein's quartic grows from difficulty to difficulty by subdividing its tiles
+// (Goldberg--Coxeter GC(n, 0), `gcLoops`).
 //
 // What this port adds is the pan (`Board.disc.cover`): one step for each tile
 // round the central one, the disc isometry that carries the central tile onto
@@ -24,13 +26,17 @@ import {
   centralPolygon,
   discDrawing,
   distance,
+  drop,
+  dualFaces,
   hyperbolicTiling,
   isometry,
+  lift,
   shellGroups,
-  vertexConfig,
+  toOrigin,
   wythoffLoops,
   WYTHOFF_OPS,
   type C,
+  type V3,
   type WythoffOp,
   type WythoffOrigin,
 } from "./hyperbolic";
@@ -43,18 +49,28 @@ export const HURWITZ_SURFACES: Record<string, readonly [number, number]> = {
   triplet: [13, 14],
 };
 
-/** How far from the centre the patch always reaches, in hyperbolic distance:
- * past every face whose centre is this close, whatever the surface. Must match
- * `PATCH_REACH` in hurwitz.py, which says how it is reckoned. */
-export const PATCH_REACH = 4.8;
-
-/** How far round the centre of the view the pan always has board to show, in
- * hyperbolic distance (`DiscCover.view`). The pan keeps the view's centre on
- * the central tile, and the patch reaches `PATCH_REACH` from its centre, so
- * every point this close to the view is drawn; the renderer hides what lies
- * farther out, which keeps the board's edge one fixed circle however the view
- * steps across the cover. 3.6 is 0.95 of the disc's radius. */
+/** How far round the centre of the view the pan always has board to show for a
+ * 6.6.7 patch, in hyperbolic distance (`DiscCover.view`): 3.6, 0.95 of the
+ * disc. The pan keeps the view's centre on the central tile, the patch reaches
+ * `patchReach` from its centre, so every point this close to the view is
+ * drawn; the renderer hides what lies farther out, which keeps the board's
+ * edge one fixed circle however the view steps across the cover. Must match
+ * `COVER_VIEW` in hurwitz.py. */
 export const COVER_VIEW = 3.6;
+
+/** `COVER_VIEW` for tiling `op`: shorter by ln(n / sqrt(3)) for GC(n, 0),
+ * whose tiles are that much smaller, so the cells hidden at the edge come out
+ * the same size on screen. Mirrors `cover_view`. */
+export function coverView(op: HurwitzOp): number {
+  const n = gcOrder(op);
+  return n !== null ? COVER_VIEW - Math.log(n / Math.sqrt(3)) : COVER_VIEW;
+}
+
+/** How far from the centre the patch always reaches: the view, plus the
+ * heptagon's circumradius, plus a tile. Mirrors `patch_reach`. */
+export function patchReach(op: HurwitzOp): number {
+  return coverView(op) + 1.2;
+}
 
 /** What each surface is called, for the info window. */
 export const HURWITZ_LABELS: Record<string, string> = {
@@ -72,16 +88,23 @@ export function hurwitzSurfaceLabel(euler: number): string | null {
   return name ? `${HURWITZ_LABELS[name]}, genus ${genus}` : null;
 }
 
-/** `"none"` is {7,3} itself; the rest are its Wythoff tilings. Must match
+/** `"none"` is {7,3} itself, then its Wythoff tilings, then its
+ * Goldberg--Coxeter subdivisions GC(n, 0) (`gcLoops`). Must match
  * `HURWITZ_OPS`. */
-export const HURWITZ_OPS = ["none", ...WYTHOFF_OPS] as const;
+export const HURWITZ_OPS = ["none", ...WYTHOFF_OPS, "gc2", "gc3", "gc4"] as const;
 export type HurwitzOp = (typeof HURWITZ_OPS)[number];
 
-/** The mode: `hurwitz` and the tiling's vertex configuration. Mirrors
- * `hurwitz_mode`. */
-export function hurwitzMode(op: HurwitzOp): string {
-  if (op === "none") return "hurwitz73";
-  return "hurwitz" + vertexConfig(7, 3, op).join("");
+/** Each surface's mode: one surface a mode, whatever the difficulty. Must
+ * match `SURFACE_MODES`. */
+export const SURFACE_MODES: Record<string, string> = {
+  quartic: "quartic",
+  macbeath: "macbeath667",
+  triplet: "triplet667",
+};
+
+/** The n of a Goldberg--Coxeter tiling `gc<n>`, or null for any other. */
+function gcOrder(op: HurwitzOp): number | null {
+  return op.startsWith("gc") ? Number(op.slice(2)) : null;
 }
 
 // -- the group ----------------------------------------------------------------
@@ -381,10 +404,167 @@ interface Patch {
   key: (k: string) => string;
 }
 
+// -- the subdivided tilings: Goldberg--Coxeter GC(n, 0) ------------------------
+//
+// Port of the section of the same name in hurwitz.py, which says why: the
+// triangles dual to {7,3} cut into n * n small ones, and the dual taken again
+// -- a heptagon round every heptagon's centre, hexagons everywhere else. A
+// point of the cut is named by its weights over its triangle's corners (the
+// ring walk's faces), `face:weight` pairs sorted and joined by `;`; a small
+// triangle by its three points, sorted and joined by `|`.
+
+interface GcLoops {
+  loops: string[][];
+  where: Map<string, C>;
+  centres: C[];
+  origins: string[];
+}
+
+const gcCache = new Map<string, GcLoops>();
+
+/** A point's name from its (face, weight) pairs, zero weights dropped. */
+function pointKey(pairs: [number, number][]): string {
+  return pairs
+    .filter(([, w]) => w > 0)
+    .sort((a, b) => a[0] - b[0] || a[1] - b[1])
+    .map(([f, w]) => `${f}:${w}`)
+    .join(";");
+}
+
+/** GC(n, 0) of the {7,3} disc out to `rings` rings: each cell as the loop of
+ * the small triangles round its point, counterclockwise, their positions, each
+ * cell's centre (its point) and its point's key. Mirrors `gc_loops`. */
+export function gcLoops(n: number, rings: number): GcLoops {
+  const cacheKey = `${n},${rings}`;
+  const hit = gcCache.get(cacheKey);
+  if (hit) return hit;
+  if (n < 2) throw new Error("a subdivision needs n of at least 2");
+  const { centres } = hyperbolicTiling(7, 3, rings);
+  const triangles = dualFaces(7, rings - 1).faces; // corners: faces of the tiling above
+  const lifted = centres.map(lift);
+  const blend = (points: readonly V3[], weights: readonly number[]): C =>
+    drop([0, 1, 2].map((axis) => points.reduce((sum, p, i) => sum + weights[i]! * p[axis]!, 0)) as unknown as V3);
+  const pointAt = new Map<string, C>();
+  const around = new Map<string, string[]>();
+  const where = new Map<string, C>();
+  const order: string[] = [];
+  for (const corners of triangles) {
+    const point = (a: number, b: number): string => {
+      const weights = [n - a - b, a, b];
+      const key = pointKey(corners.map((f, i) => [f, weights[i]!] as [number, number]));
+      if (!pointAt.has(key)) {
+        pointAt.set(key, blend(corners.map((f) => lifted[f]!), weights));
+        order.push(key);
+      }
+      return key;
+    };
+    const smalls: string[][] = [];
+    for (let a = 0; a < n; a++) {
+      for (let b = 0; b < n - a; b++) {
+        smalls.push([point(a, b), point(a + 1, b), point(a, b + 1)]);
+        if (a + b <= n - 2) smalls.push([point(a + 1, b), point(a + 1, b + 1), point(a, b + 1)]);
+      }
+    }
+    for (const tri of smalls) {
+      const key = [...tri].sort().join("|");
+      if (where.has(key)) continue;
+      where.set(key, blend(tri.map((k) => lift(pointAt.get(k)!)), [1, 1, 1]));
+      for (const k of tri) {
+        const list = around.get(k);
+        if (list) list.push(key);
+        else around.set(k, [key]);
+      }
+    }
+  }
+  const out: GcLoops = { loops: [], where, centres: [], origins: [] };
+  for (const key of order) {
+    const tris = around.get(key)!;
+    if (tris.length !== (key.includes(";") ? 6 : 7)) continue; // a triangle round it was not built
+    const z = pointAt.get(key)!;
+    const angle = (t: string) => {
+      const w = toOrigin(z, where.get(t)!);
+      return Math.atan2(w[1], w[0]);
+    };
+    out.loops.push([...tris].sort((s, t) => angle(s) - angle(t)));
+    out.centres.push(z);
+    out.origins.push(key);
+  }
+  gcCache.set(cacheKey, out);
+  return out;
+}
+
+/** GC(n, 0) of {7,3} on its own, in the disc -- no surface, no cover --
+ * trimmed to the cells at the `shells` smallest distances from the centre: a
+ * picture of the subdivided tiling for a menu card, which the board itself is
+ * too costly to build for. */
+export function gcDisc(n: number, shells: number, scale: number): Board {
+  for (let rings = 2; rings <= 8; rings++) {
+    const g = gcLoops(n, rings);
+    const groups = shellGroups(g.centres);
+    if (groups.length <= shells) continue;
+    const base = hyperbolicTiling(7, 3, rings);
+    let outer = Infinity;
+    base.centres.forEach((z, f) => {
+      if (base.ringOf[f] === rings) outer = Math.min(outer, distance(z));
+    });
+    if (outer <= distance(g.centres[groups[shells - 1]![0]!]!) + 1.0) continue;
+    const ids = new Map<string, number>();
+    const faces = groups
+      .slice(0, shells)
+      .flat()
+      .map((f) =>
+        g.loops[f]!.map((k) => {
+          let id = ids.get(k);
+          if (id === undefined) ids.set(k, (id = ids.size));
+          return id;
+        }),
+      );
+    const pos = new Map<number, C>();
+    for (const [k, id] of ids) pos.set(id, g.where.get(k)!);
+    const drawing = discDrawing(faces, faces.map((_, i) => i), pos, scale, ARC_SEGMENTS);
+    const size = 2 * drawing.extent * scale;
+    return flatBoard({
+      mode: `gc${n}`,
+      polygons: drawing.polygons,
+      adjacency: sharedVertexAdjacency(drawing.cells),
+      mineCount: 0,
+      width: size,
+      height: size,
+      cornerMask: drawing.cornerMask,
+      curved: true,
+      regularTiles: true,
+    });
+  }
+  throw new Error("too many shells");
+}
+
+/** A point's key carried down to the surface: each face through the covering
+ * map, re-sorted. */
+function pointDown(key: string, faceOf: (f: number) => number): string {
+  return pointKey(
+    key.split(";").map((pair) => {
+      const [f, w] = pair.split(":").map(Number);
+      return [faceOf(f!), w!] as [number, number];
+    }),
+  );
+}
+
 /** The disc out to `rings` rings in tiling `op`, and how it covers the
  * surface. Mirrors `_patch`. */
 function patch(surface: string, op: HurwitzOp, rings: number): Patch {
   const { phiFace, phi } = cover(surface, rings);
+  const n = gcOrder(op);
+  if (n !== null) {
+    const g = gcLoops(n, rings);
+    const down = (k: string) => pointDown(k, (f) => phiFace[f]!);
+    return {
+      loops: g.loops,
+      where: g.where,
+      centres: g.centres,
+      cells: g.origins.map((o) => `G,${down(o)}`),
+      key: (k) => k.split("|").map(down).sort().join("|"),
+    };
+  }
   if (op === "none") {
     const t = hyperbolicTiling(7, 3, rings);
     const where = new Map<string, C>();
@@ -427,9 +607,14 @@ export function hurwitzCells(surface: string, op: HurwitzOp): Map<string, string
   const faces = hurwitzMap(surface);
   const vertices = new Set(faces.flat()).size;
   const edges = (7 * faces.length) / 2;
+  const n = gcOrder(op);
   const want =
     faces.length +
-    { none: 0, ambo: vertices, zip: vertices, expand: vertices + edges, bevel: vertices + edges }[op];
+    (n !== null
+      ? edges * (n - 1) + (vertices * (n - 1) * (n - 2)) / 2
+      : { none: 0, ambo: vertices, zip: vertices, expand: vertices + edges, bevel: vertices + edges }[
+          op as "none" | WythoffOp
+        ]);
   for (let rings = 2; rings <= 12; rings++) {
     const { loops, cells, key } = patch(surface, op, rings);
     const out = new Map<string, string[]>();
@@ -449,7 +634,7 @@ export function hurwitzCells(surface: string, op: HurwitzOp): Map<string, string
 }
 
 /** Grow the disc until it holds every face out to the shells the patch keeps:
- * the first to reach every cell or out to `PATCH_REACH`, whichever is farther,
+ * the first to reach every cell or out to `patchReach`, whichever is farther,
  * and `margin` more. Mirrors `_patch_for`. */
 function patchFor(
   surface: string,
@@ -470,7 +655,8 @@ function patchFor(
       }
     }
     if (reach < 0) continue;
-    const near = groups.filter((group) => distance(p.centres[group[0]!]!) <= PATCH_REACH).length;
+    const far = patchReach(op);
+    const near = groups.filter((group) => distance(p.centres[group[0]!]!) <= far).length;
     const keep = Math.max(reach, near) + margin;
     if (groups.length <= keep) continue;
     const base = hyperbolicTiling(7, 3, rings);
@@ -479,7 +665,7 @@ function patchFor(
       if (base.ringOf[f] === rings) outer = Math.min(outer, distance(z));
     });
     const cut = distance(p.centres[groups[keep - 1]![0]!]!);
-    if (outer > cut + 1.0 && outer > PATCH_REACH + 1.0) {
+    if (outer > cut + 1.0 && outer > far + 1.0) {
       return { patch: p, groups: groups.slice(0, keep), rings };
     }
   }
@@ -548,6 +734,7 @@ function coverSteps(
       const [kind, ...ids] = key.split(",");
       if (kind === "F") return `F,${faceMap.get(Number(ids[0]))}`;
       if (kind === "V") return `V,${vertexMap.get(Number(ids[0]))}`;
+      if (kind === "G") return `G,${pointDown(ids[0]!, (f) => faceMap.get(f)!)}`;
       const [u, v] = ids.map((x) => vertexMap.get(Number(x))!).sort((s, r) => s - r);
       return `E,${u},${v}`;
     };
@@ -555,7 +742,7 @@ function coverSteps(
     for (const key of surfaceCells.keys()) cells.set(nameOf.get(key)!, nameOf.get(moved(key))!);
     steps.push({ c, rot, cells });
   }
-  return { steps, view: COVER_VIEW };
+  return { steps, view: coverView(op) };
 }
 
 // -- the board ----------------------------------------------------------------
@@ -607,7 +794,7 @@ export function hurwitzBoard(
   const coverSteps_ = coverSteps(surface, op, rings, nameOf);
   const size = 2 * extent * scale;
   const board = flatBoard({
-    mode: hurwitzMode(op),
+    mode: SURFACE_MODES[surface]!,
     polygons,
     adjacency,
     mineCount,

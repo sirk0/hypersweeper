@@ -302,9 +302,11 @@ describe("board symmetries", () => {
       // a closed surface's patch: the central heptagon's turns and mirrors,
       // carried down to the surface -- all three Hurwitz surfaces here are
       // reflexible, so the mirrors survive as well as the turns
-      ["hurwitz667", "easy", 14],
-      ["hurwitz667", "medium", 14],
-      ["hurwitz667", "hard", 14],
+      ["quartic", "easy", 14],
+      ["quartic", "medium", 14], // the subdivision GC(3,0) keeps the mirrors
+      ["quartic", "hard", 14],
+      ["macbeath667", "hard", 14],
+      ["triplet667", "easy", 14],
     ];
     for (const [mode, difficulty, order] of orders) {
       const board = buildBoard(mode, difficulty);

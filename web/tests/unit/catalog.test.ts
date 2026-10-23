@@ -230,7 +230,9 @@ describe("catalog families", () => {
       "hyperbolic3474",
       "hyperbolic4614",
       "hyperbolicbinary",
-      "hurwitz667",
+      "quartic",
+      "macbeath667",
+      "triplet667",
     ]);
   });
 });

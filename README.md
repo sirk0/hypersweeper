@@ -48,7 +48,7 @@ Pick a surface, then a tiling:
   self-similar — one tile inflated into a patch shaped like itself: the
   sphinx, the chair, the Sierpiński carpet, the pentaflake, and hexagons
   filling a Gosper island.
-  And fifteen are not Euclidean at all — the game's namesake: nine regular
+  And seventeen are not Euclidean at all — the game's namesake: nine regular
   {p,q} tilings, from octagons three to a corner ({8,3}) and heptagons
   three to a corner ({7,3}) to squares six to a corner ({4,6}) and triangles
   seven and eight to a corner ({3,7}, {3,8} — a {3,7} triangle has 15
@@ -60,11 +60,11 @@ Pick a surface, then a tiling:
   squares and heptagons (3.4.7.4), and squares, hexagons and 14-gons
   (4.6.14). One is drawn in the upper half-plane instead, as a rectangle:
   Böröczky's binary tiling, every row twice as many tiles as the one above.
-  And the last has no rim at all: the soccer ball glued up into a
-  closed surface — Klein's quartic at easy, Macbeath's surface at medium and
-  a genus-14 Hurwitz surface at hard — drawn as a patch of the disc that
-  covers it, every cell drawn at least once and every one keeping its full
-  six or seven neighbours; its pan never runs out.
+  And three have no rim at all: the plane glued
+  up into closed surfaces — Klein's quartic, Macbeath's surface and a genus-14
+  Hurwitz surface — each drawn as a patch of the disc that covers it, every
+  cell drawn at least once and keeping its full six or seven neighbours; the
+  quartic's harder boards subdivide its tiles, and the pan never runs out.
   The menu groups these as **Regular**, **Uniform**, **Laves**, **2-uniform**
   (regular polygons edge to edge with *two* kinds of corner — all twenty of
   them, named for how each is made from a uniform tiling, from *Studded

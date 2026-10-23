@@ -805,7 +805,7 @@ rather than D_3 -- that too is automatic. Read
    `symmetries.test.ts`.
 
 The web menu files a hyperbolic board on its own: Custom › Hyperbolic is split
-into Regular and Uniform by the preset's builder (`MENU_SUBFAMILIES` in
+into Regular, Uniform and Closed surfaces by the preset's builder (`MENU_SUBFAMILIES` in
 `web/src/boards/catalog.ts`). A board from a builder no submenu names fails
 `web/tests/unit/menu.test.ts` rather than vanishing from the menu — add its
 submenu there, with a label, a hint and an icon alias.
@@ -836,17 +836,19 @@ is a surface rather than a trim, and a new one is a group, not a builder. Read
    (`petrie_length` / `petrieLength`) -- and pin it in both test files, or a
    change to the search swaps the board without a word. Add its label to
    `HURWITZ_LABELS`.
-2. **Which mode it joins.** The surface is the size, so a new surface is a
-   preset row of an existing mode at the difficulty whose band its cell count
-   lands in (`_grid_hurwitz` in `resize.py` offers every surface the table
-   lists), or a new mode for a new tiling: any of `HURWITZ_OPS` builds, and
-   the mode is `hurwitz_mode(op)`. A new mode needs the menu, label, icon and
-   test rows of a hyperbolic one (steps 1, 3 and 4 above, with `hurwitz667`'s
-   entries to copy).
+2. **Its mode.** One surface a mode (`SURFACE_MODES`), in the Closed surfaces
+   submenu (the `hurwitz_board` builder files it). The surface fixes its 6.6.7
+   size, so either it is one board at every difficulty, the mines alone
+   changing (add it to `ONE_BOARD` in `tests/test_presets.py`), or its medium
+   and hard rows subdivide it (`"gc3"`, `"gc4"`, as Klein's quartic does). The
+   mode needs the menu, label, icon and test rows of a hyperbolic one (steps 1,
+   3 and 4 above, with `quartic`'s entries to copy); `resize.py` holds every
+   row as declared.
 3. **The patch must reach every cell** -- the builder grows it until it does,
-   and never short of `PATCH_REACH`, which the web pan needs -- and its face
-   count grows quickly with the genus: 1863 faces for the genus-14 board. A much bigger surface wants a measurement of the build and
-   the pan before it ships.
+   and never short of `patch_reach(op)`, which the web pan needs -- and its
+   face count grows quickly with the genus: 1863 faces for the genus-14 board.
+   A much bigger surface wants a measurement of the build and the pan before it
+   ships.
 4. **Tests** -- `_HURWITZ` in `tests/test_boards.py` and `SURFACES` in
    `web/tests/unit/hurwitz.test.ts` (group order, faces, vertices, edges), and
    the D7 the patch keeps to `symmetries.test.ts` -- which measures whether the

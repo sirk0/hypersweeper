@@ -61,7 +61,7 @@ export function hyperbolicFaces(
  * all three of its faces, its corners those faces' indices, counterclockwise,
  * lowest first; its ring the newest of those faces' rings, less one. Mirrors
  * `_dual_faces`. */
-function dualFaces(q: number, rings: number): { faces: number[][]; ringOf: number[] } {
+export function dualFaces(q: number, rings: number): { faces: number[][]; ringOf: number[] } {
   const primal = ringWalk(q, 3, rings + 1);
   // each corner of a {q,3} face: the face, and its corners before and after
   const star = new Map<number, [number, number, number][]>();
@@ -161,7 +161,7 @@ export function centralPolygon(p: number, q: number): C[] {
 }
 
 /** z -> (z - a) / (1 - conj(a) z), taking a to 0. */
-const toOrigin = (a: C, z: C): C => div(sub(z, a), sub(ONE, mul(conj(a), z)));
+export const toOrigin = (a: C, z: C): C => div(sub(z, a), sub(ONE, mul(conj(a), z)));
 /** Its inverse, taking 0 to a. */
 const fromOrigin = (a: C, z: C): C => div(add(z, a), add(ONE, mul(conj(a), z)));
 
@@ -613,17 +613,17 @@ export function wythoffMode(p: number, q: number, op: WythoffOp): string {
   return `hyperbolic${vertexConfig(p, q, op).join("")}`;
 }
 
-type V3 = readonly [number, number, number];
+export type V3 = readonly [number, number, number];
 
 /** A disc point on the hyperboloid t^2 - x^2 - y^2 = 1. */
-function lift(z: C): V3 {
+export function lift(z: C): V3 {
   const r2 = z[0] * z[0] + z[1] * z[1];
   const s = 1 - r2;
   return [(1 + r2) / s, (2 * z[0]) / s, (2 * z[1]) / s];
 }
 
 /** A timelike vector back to the disc, normalised and on the upper sheet. */
-function drop(v: V3): C {
+export function drop(v: V3): C {
   const [t, x, y] = v;
   let norm = Math.sqrt(t * t - x * x - y * y);
   if (t < 0) norm = -norm;

@@ -163,12 +163,13 @@ from minesweeper.boards.core import _cross, _normalize
 from minesweeper.boards.core import newell_normal as _newell_normal
 from minesweeper.boards.hurwitz import (
     HURWITZ_SURFACES,
+    SURFACE_MODES,
     _patch_for,
+    gc_loops,
     hurwitz_board,
     hurwitz_cells,
     hurwitz_group,
     hurwitz_map,
-    hurwitz_mode,
     petrie_length,
 )
 from minesweeper.boards.hyperbolic import (
@@ -2895,7 +2896,7 @@ class TestHurwitz:
     def test_the_board_is_closed_with_the_surface_genus(self, surface, op):
         _, faces_n, vertices_n, _ = _HURWITZ[surface]
         board = hurwitz_board(surface, op, 0, 1)
-        assert board.mode == hurwitz_mode(op)
+        assert board.mode == SURFACE_MODES[surface]
         assert len(board.adjacency) == faces_n + (vertices_n if op == "zip" else 0)
         genus = HURWITZ_SURFACES[surface][1]
         assert _euler_characteristic(board) == 2 - 2 * genus
@@ -2994,6 +2995,48 @@ class TestHurwitz:
             z = complex(x, y) * turn
             assert (round(z.real, 5), round(z.imag, 5)) in centres or any(
                 abs(complex(*p) - z) < 1e-4 for p in centres)
+
+    @pytest.mark.parametrize("n, cells", [(2, 108), (3, 248), (4, 444)])
+    def test_the_quartic_subdivided_keeps_the_surface(self, n, cells):
+        # GC(n, 0): the heptagons survive, hexagons everywhere else, F + E(n-1)
+        # + V(n-1)(n-2)/2 cells -- and the surface is still Klein's quartic
+        board = hurwitz_board("quartic", f"gc{n}", 0, 1)
+        assert board.mode == "quartic"
+        assert len(board.adjacency) == cells
+        assert _euler_characteristic(board) == -4
+        assert _boundary_components(board) == 0
+        sides = Counter(len(board.quotient[c]) for c in board.adjacency)
+        assert sides == {7: 24, 6: cells - 24}
+        for cell, neighbours in board.adjacency.items():
+            assert len(neighbours) == len(board.quotient[cell])
+        hood = {c: frozenset([c, *nb]) for c, nb in board.adjacency.items()}
+        assert len(set(hood.values())) == len(hood)
+        assert not any(len(hood[o]) == len(hood[c]) + 1 and hood[c] < hood[o]
+                       for c in hood for o in board.adjacency[c])
+
+    @pytest.mark.parametrize("n", [2, 3])
+    def test_the_subdivision_ids_are_shared_exactly(self, n):
+        # every point the cut makes on an edge between two triangles is one
+        # key, and every cell's corners go round it counterclockwise
+        loops, where, centres, origins = gc_loops(n, 3)
+        assert len(set(origins)) == len(origins)
+        for loop, z in zip(loops, centres):
+            corners = [where[k] for k in loop]
+            area = sum(((a - z).conjugate() * (b - z)).imag
+                       for a, b in zip(corners, corners[1:] + corners[:1]))
+            assert area > 0
+            assert len(loop) in (6, 7)
+        # the heptagons stand on the ring walk's faces, one each
+        assert sum(1 for o in origins if len(o) == 1) == sum(1 for loop in loops if len(loop) == 7)
+
+    def test_the_subdivision_draws_the_same_cells_as_the_surface(self):
+        (loops, _, _, cells, key), groups = _patch_for("quartic", "gc3", 0)
+        surface_cells = hurwitz_cells("quartic", "gc3")
+        for f in (f for group in groups for f in group):
+            corners = [key(k) for k in loops[f]]
+            want = surface_cells[cells[f]]
+            i = corners.index(want[0])
+            assert corners[i:] + corners[:i] == want
 
     def test_margin_widens_the_patch_and_not_the_board(self):
         small = hurwitz_board("quartic", "zip", 0, 1)

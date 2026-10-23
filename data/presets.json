@@ -1712,28 +1712,80 @@
         ]
       }
     },
-    "hurwitz667": {
+    "quartic": {
       "builder": "hurwitz_board",
       "args": {
         "easy": [
           "quartic",
           "zip",
           0,
-          15,
+          18,
+          300.0
+        ],
+        "medium": [
+          "quartic",
+          "gc3",
+          0,
+          61,
+          300.0
+        ],
+        "hard": [
+          "quartic",
+          "gc4",
+          0,
+          118,
+          300.0
+        ]
+      }
+    },
+    "macbeath667": {
+      "builder": "hurwitz_board",
+      "args": {
+        "easy": [
+          "macbeath",
+          "zip",
+          0,
+          44,
           300.0
         ],
         "medium": [
           "macbeath",
           "zip",
           0,
-          55,
+          59,
+          300.0
+        ],
+        "hard": [
+          "macbeath",
+          "zip",
+          0,
+          71,
+          300.0
+        ]
+      }
+    },
+    "triplet667": {
+      "builder": "hurwitz_board",
+      "args": {
+        "easy": [
+          "triplet",
+          "zip",
+          0,
+          99,
+          300.0
+        ],
+        "medium": [
+          "triplet",
+          "zip",
+          0,
+          124,
           300.0
         ],
         "hard": [
           "triplet",
           "zip",
           0,
-          145,
+          147,
           300.0
         ]
       }

@@ -2408,10 +2408,10 @@
         "hasCellCycle": false
       }
     },
-    "hurwitz667": {
+    "quartic": {
       "easy": {
         "cellCount": 80,
-        "mineCount": 15,
+        "mineCount": 18,
         "euler": -4,
         "boundaryComponents": 0,
         "edgeCount": 252,
@@ -2419,8 +2419,37 @@
         "hasCellCycle": false
       },
       "medium": {
+        "cellCount": 248,
+        "mineCount": 61,
+        "euler": -4,
+        "boundaryComponents": 0,
+        "edgeCount": 756,
+        "vertexCount": 504,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 444,
+        "mineCount": 118,
+        "euler": -4,
+        "boundaryComponents": 0,
+        "edgeCount": 1344,
+        "vertexCount": 896,
+        "hasCellCycle": false
+      }
+    },
+    "macbeath667": {
+      "easy": {
         "cellCount": 240,
-        "mineCount": 55,
+        "mineCount": 44,
+        "euler": -12,
+        "boundaryComponents": 0,
+        "edgeCount": 756,
+        "vertexCount": 504,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 240,
+        "mineCount": 59,
         "euler": -12,
         "boundaryComponents": 0,
         "edgeCount": 756,
@@ -2428,8 +2457,37 @@
         "hasCellCycle": false
       },
       "hard": {
+        "cellCount": 240,
+        "mineCount": 71,
+        "euler": -12,
+        "boundaryComponents": 0,
+        "edgeCount": 756,
+        "vertexCount": 504,
+        "hasCellCycle": false
+      }
+    },
+    "triplet667": {
+      "easy": {
         "cellCount": 520,
-        "mineCount": 145,
+        "mineCount": 99,
+        "euler": -26,
+        "boundaryComponents": 0,
+        "edgeCount": 1638,
+        "vertexCount": 1092,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 520,
+        "mineCount": 124,
+        "euler": -26,
+        "boundaryComponents": 0,
+        "edgeCount": 1638,
+        "vertexCount": 1092,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 520,
+        "mineCount": 147,
         "euler": -26,
         "boundaryComponents": 0,
         "edgeCount": 1638,

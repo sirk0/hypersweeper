@@ -40,7 +40,6 @@ from pathlib import Path
 from minesweeper.boards import presets as P
 from minesweeper.boards.catalog import surface_of
 from minesweeper.boards.core import boundary_components, euler_characteristic
-from minesweeper.boards.hurwitz import HURWITZ_SURFACES
 from scripts.difficulty.metrics import (
     aspect,
     distortion_summary,
@@ -256,11 +255,12 @@ SPEC: dict[str, dict] = {
     # is ~2 tiles across the top whatever the depth.
     "binary_board": dict(size=(0, 1), mine=2, shape=3, kind="scale", grid="binary"),
     # the closed hyperbolic surfaces (hurwitz_board(surface, op, margin, mines,
-    # scale)): the surface *is* the size -- its genus fixes how many heptagons
-    # it carries -- so the knob is the surface itself, enumerated by
-    # `_grid_hurwitz`, and ``rigid``: the patch draws every tile congruent in
-    # the plane it lives in, so there is no shape for the search to weigh.
-    "hurwitz_board": dict(size=(0,), mine=3, shape=None, rigid=True, grid="hurwitz"),
+    # scale)): one surface a mode, so no knob is the search's to turn -- the
+    # surface fixes how many heptagons there are, and each row names the
+    # tiling it is cut into (Klein's quartic subdivided for medium and hard,
+    # the bigger surfaces the same board throughout). Every row is held as
+    # declared.
+    "hurwitz_board": dict(size=(), mine=3, shape=None, rigid=True),
     "archimedean_board": dict(size=(1, 2), mine=3, shape=4, kind="scale", lead=1),
     "arch_torus_board": dict(size=(1, 2), mine=3, shape=4, kind="tube", lead=1,
                              torus=True),
@@ -323,15 +323,9 @@ def _grid_binary() -> list[list[int]]:
     return [[top, levels] for top in range(1, 9) for levels in range(2, 11)]
 
 
-# ``hurwitz_board(surface, ...)``: the three Hurwitz surfaces, smallest first.
-def _grid_hurwitz() -> list[list[str]]:
-    return [[surface] for surface in HURWITZ_SURFACES]
-
-
 GRIDS = {
     "binary": _grid_binary,
     "goldberg3": _grid_goldberg3,
-    "hurwitz": _grid_hurwitz,
     "cubeframe": _grid_cubeframe,
     "bipyramid": _grid_bipyramid,
     "steppedpyramid": _grid_steppedpyramid,

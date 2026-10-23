@@ -282,7 +282,7 @@ describe("the hyperbolic boards' disc", () => {
 });
 
 describe("a closed surface's pan", () => {
-  const board = buildBoard("hurwitz667", "easy") as Board;
+  const board = buildBoard("quartic", "easy") as Board;
   const steps = board.disc!.cover!.steps;
   /** The step as a map of the disc. */
   const step = (k: number, z: Cx): Cx => discMap({ c: steps[k]!.c, rot: steps[k]!.rot }, z);

@@ -6,7 +6,9 @@ import {
   hurwitzBoard,
   hurwitzGroup,
   hurwitzMap,
-  hurwitzMode,
+  SURFACE_MODES,
+  gcDisc,
+  type HurwitzOp,
   petrieLength,
 } from "../../src/boards/hurwitz";
 import { centralPolygon } from "../../src/boards/hyperbolic";
@@ -93,16 +95,33 @@ describe("the Hurwitz surfaces", () => {
     expect(["quartic", "macbeath", "triplet"].map(petrieLength)).toEqual([8, 18, 14]);
   });
 
-  it("are closed, with the surface's genus, at every difficulty", () => {
-    for (const [difficulty, surface] of [
-      ["easy", "quartic"],
-      ["medium", "macbeath"],
-      ["hard", "triplet"],
+  it("are one surface a mode, closed, with its genus, at every difficulty", () => {
+    for (const [surface, mode] of Object.entries(SURFACE_MODES)) {
+      for (const difficulty of ["easy", "medium", "hard"]) {
+        const board = buildBoard(mode, difficulty) as Board;
+        expect(board.mode).toBe(mode);
+        expect(eulerCharacteristic(board)).toBe(2 - 2 * HURWITZ_SURFACES[surface]![1]);
+        expect(boundaryComponents(board)).toBe(0);
+      }
+    }
+  });
+
+  it("subdivide Klein's quartic for medium and hard, every cell still whole", () => {
+    // GC(3,0) and GC(4,0): the 24 heptagons survive, hexagons everywhere else
+    for (const [difficulty, cells] of [
+      ["easy", 80],
+      ["medium", 248],
+      ["hard", 444],
     ] as const) {
-      const board = buildBoard("hurwitz667", difficulty) as Board;
-      expect(board.mode).toBe(hurwitzMode("zip"));
-      expect(eulerCharacteristic(board)).toBe(2 - 2 * HURWITZ_SURFACES[surface]![1]);
-      expect(boundaryComponents(board)).toBe(0);
+      const board = buildBoard("quartic", difficulty) as Board;
+      expect(board.adjacency.size).toBe(cells);
+      let heptagons = 0;
+      for (const [cell, neighbours] of board.adjacency) {
+        const sides = board.quotient!.get(cell)!.length;
+        if (sides === 7) heptagons++;
+        expect(neighbours.length).toBe(sides);
+      }
+      expect(heptagons).toBe(24);
     }
   });
 
@@ -194,7 +213,8 @@ describe("the Hurwitz surfaces", () => {
 
   it("draw the whole view round anywhere the pan can put its centre", () => {
     // The pan keeps the view's centre on the central heptagon of {7,3}
-    // (`discRecentre`) and shows what lies within COVER_VIEW of it, so the
+    // (`discRecentre`) and shows what lies within its view of it (COVER_VIEW,
+    // shorter on a subdivision, whose tiles are smaller), so the
     // patch has to cover that circle from every point of the heptagon -- its
     // corners are the worst case. Probed on the circle itself: inside it the
     // patch is a disc, so a covered rim means a covered circle.
@@ -206,8 +226,13 @@ describe("the Hurwitz surfaces", () => {
       const d = den[0] * den[0] + den[1] * den[1];
       return [(num[0] * den[0] + num[1] * den[1]) / d, (num[1] * den[0] - num[0] * den[1]) / d];
     };
-    for (const surface of Object.keys(SURFACES)) {
-      const board = hurwitzBoard(surface, "zip", 0, 1);
+    const boards: [string, HurwitzOp][] = [
+      ...Object.keys(SURFACES).map((s): [string, HurwitzOp] => [s, "zip"]),
+      ["quartic", "gc3"],
+      ["quartic", "gc4"],
+    ];
+    for (const [surface, op] of boards) {
+      const board = hurwitzBoard(surface, op, 0, 1);
       const { cx, cy, radius } = board.disc!;
       const polys = [...board.polygons.values()].map((poly) =>
         poly.map(([x, y]) => [(x - cx) / radius, (y - cy) / radius] as Cx),
@@ -222,15 +247,26 @@ describe("the Hurwitz surfaces", () => {
           }
           return hit;
         });
-      const r = Math.tanh(COVER_VIEW / 2);
+      const view = board.disc!.cover!.view;
+      expect(view).toBeCloseTo(op === "zip" ? COVER_VIEW : COVER_VIEW - Math.log(Number(op.slice(2)) / Math.sqrt(3)), 9);
+      const r = Math.tanh(view / 2);
       for (const centre of [[0, 0] as Cx, ...corners]) {
         for (let k = 0; k < 120; k++) {
           const t = (k * 2 * Math.PI) / 120;
           const z = toward(centre, [r * Math.cos(t), r * Math.sin(t)]);
-          expect(inside(z), `${surface} from ${centre} at ${k * 3}°`).toBe(true);
+          expect(inside(z), `${surface} ${op} from ${centre} at ${k * 3}°`).toBe(true);
         }
       }
     }
+  });
+
+  it("draw the subdivided tiling alone for a menu card, heptagons ringed by hexagons", () => {
+    // `gcDisc` is GC(3,0) of {7,3} with no surface behind it -- what the card
+    // shows instead of building the board -- so its cells are the board's shapes
+    const card = gcDisc(3, 30, 1);
+    const sides = [...card.polygons.keys()].map((f) => card.cornerMask!.get(f)!.filter(Boolean).length);
+    expect(new Set(sides)).toEqual(new Set([6, 7]));
+    expect(card.polygons.size).toBeGreaterThan(100);
   });
 
   it("keep the central heptagon's turn as a control", () => {

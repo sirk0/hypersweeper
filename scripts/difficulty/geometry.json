@@ -13501,7 +13501,7 @@
       }
     }
   },
-  "hurwitz667": {
+  "quartic": {
     "builder": "hurwitz_board",
     "args": {
       "easy": {
@@ -13513,10 +13513,49 @@
           300.0
         ],
         "cells": 80,
-        "score": 0.0124,
-        "distortionMean": 1.0925,
-        "distortionP90": 1.1017,
-        "indistinguishable": 0
+        "fixed": true,
+        "reason": "the cell count is the solid"
+      },
+      "medium": {
+        "args": [
+          "quartic",
+          "gc3",
+          0,
+          45,
+          300.0
+        ],
+        "cells": 248,
+        "fixed": true,
+        "reason": "the cell count is the solid"
+      },
+      "hard": {
+        "args": [
+          "quartic",
+          "gc4",
+          0,
+          100,
+          300.0
+        ],
+        "cells": 444,
+        "fixed": true,
+        "reason": "the cell count is the solid"
+      }
+    }
+  },
+  "macbeath667": {
+    "builder": "hurwitz_board",
+    "args": {
+      "easy": {
+        "args": [
+          "macbeath",
+          "zip",
+          0,
+          40,
+          300.0
+        ],
+        "cells": 240,
+        "fixed": true,
+        "reason": "the cell count is the solid"
       },
       "medium": {
         "args": [
@@ -13527,10 +13566,49 @@
           300.0
         ],
         "cells": 240,
-        "score": 0.0645,
-        "distortionMean": 1.0937,
-        "distortionP90": 1.1021,
-        "indistinguishable": 0
+        "fixed": true,
+        "reason": "the cell count is the solid"
+      },
+      "hard": {
+        "args": [
+          "macbeath",
+          "zip",
+          0,
+          75,
+          300.0
+        ],
+        "cells": 240,
+        "fixed": true,
+        "reason": "the cell count is the solid"
+      }
+    }
+  },
+  "triplet667": {
+    "builder": "hurwitz_board",
+    "args": {
+      "medium": {
+        "args": [
+          "triplet",
+          "zip",
+          0,
+          120,
+          300.0
+        ],
+        "cells": 520,
+        "fixed": true,
+        "reason": "the cell count is the solid"
+      },
+      "easy": {
+        "args": [
+          "triplet",
+          "zip",
+          0,
+          90,
+          300.0
+        ],
+        "cells": 520,
+        "fixed": true,
+        "reason": "the cell count is the solid"
       },
       "hard": {
         "args": [
@@ -13541,10 +13619,8 @@
           300.0
         ],
         "cells": 520,
-        "score": 0.08,
-        "distortionMean": 1.094,
-        "distortionP90": 1.1021,
-        "indistinguishable": 0
+        "fixed": true,
+        "reason": "the cell count is the solid"
       }
     }
   }

@@ -30,7 +30,7 @@ import {
   substitutionPlacements,
   SUBSTITUTIONS,
 } from "../boards/fractal";
-import { hurwitzBoard } from "../boards/hurwitz";
+import { gcDisc, SURFACE_MODES } from "../boards/hurwitz";
 import { binaryBoard, hyperbolicBoard, hyperbolicUniformBoard } from "../boards/hyperbolic";
 import type { WythoffOp } from "../boards/hyperbolic";
 import {
@@ -1703,7 +1703,7 @@ function draw(rawKey: string): string[] {
     // A closed surface lights every heptagon rather than the central one: with
     // no rim, each of them is a full seven-neighbour cell. Must match gui.py.
     const lit = (cell: string) =>
-      key.startsWith("hurwitz")
+      CLOSED_SURFACE_MODES.includes(key)
         ? board.cornerMask!.get(cell)!.filter(Boolean).length === 7
         : Number(cell) < central;
     const tones = classifyShapes(board.polygons, board.cornerMask, true);
@@ -2083,9 +2083,14 @@ const PATCH_BOARDS: Record<string, PatchBoard> = {
   // Whole as well: the rectangle with its rows halving down to the ideal line
   // is the picture, as the disc is the {p,q} boards'.
   hyperbolicbinary: { build: () => binaryBoard(2, 5, 0, 100), whole: true },
-  // The easy board itself: the patch of the disc that covers Klein's quartic,
-  // every one of its 80 cells drawn at least once.
-  hurwitz667: { build: () => hurwitzBoard("quartic", "zip", 0, 0, 100), whole: true },
+  // The closed surfaces' tilings, drawn in the disc on their own: the boards
+  // themselves build the surface and its cover, a second or more for all
+  // three, which a menu page cannot wait on. Up close a closed surface looks
+  // like the plane it is glued from, so the 6.6.7 ones are the soccer ball's
+  // disc, and the quartic shows what sets it apart -- its subdivided medium.
+  quartic: { build: () => gcDisc(3, 30, 100), whole: true },
+  macbeath667: { build: () => hyperbolicDisc("hyperbolic667", 18, 100), whole: true },
+  triplet667: { build: () => hyperbolicDisc("hyperbolic667", 18, 100), whole: true },
 };
 
 /** The uniform hyperbolic boards, each one of Wythoff's operations on {7,3}
@@ -2096,8 +2101,14 @@ const HYPERBOLIC_UNIFORM: Record<string, WythoffOp> = {
   hyperbolic3474: "expand",
   hyperbolic4614: "bevel",
   // the closed surface's row icon is its tiling's disc (see the icon above)
-  hurwitz667: "zip",
+  quartic: "zip",
+  macbeath667: "zip",
+  triplet667: "zip",
 };
+
+/** The closed surfaces (boards/hurwitz.ts), whose icon lights every heptagon.
+ * Must match `_CLOSED_SURFACE_MODES` in gui.py. */
+const CLOSED_SURFACE_MODES = Object.values(SURFACE_MODES);
 
 /** A hyperbolic mode's disc trimmed to `shells`, with no mines. */
 function hyperbolicDisc(key: string, shells: number, scale: number): Board {
@@ -2124,7 +2135,9 @@ const HYPERBOLIC_ICON_SHELLS: Record<string, number> = {
   hyperbolic3737: 4,
   hyperbolic3474: 5,
   hyperbolic4614: 5,
-  hurwitz667: 4,
+  quartic: 4,
+  macbeath667: 4,
+  triplet667: 4,
 };
 
 /** Where a mode's repeat domain is filed under another name. */

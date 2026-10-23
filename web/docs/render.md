@@ -139,8 +139,8 @@ along the rim, `0`, the arrows, and a touch drag that neither opens nor flags.
 
 #### A board with no rim: the closed surfaces (`discRecentre`)
 
-`hurwitz667` is a closed hyperbolic surface drawn as a **patch of the disc that
-covers it** (see "The closed hyperbolic surfaces" in
+The closed hyperbolic surfaces (`quartic`, `macbeath667`, `triplet667`) are
+each drawn as a **patch of the disc that covers it** (see "The closed hyperbolic surfaces" in
 [`geometry.md`](../../docs/agents/geometry.md)): every face shows the cell it
 covers (`Board.faces`), so a cell is drawn several times and its copies paint
 one state, as the projective plane's antipodal twins do. Its pan is not held at
@@ -169,10 +169,12 @@ Two things make it *look* continuous, and the pan jumped without either:
 - **The edge is a fixed circle of the view.** The patch is a disc round the
   central tile, so seen from near a neighbouring tile its rim is off-centre,
   and a recentring snapped it back. So the shader hides every cell whose pivot
-  the view draws past `coverClip(cover.view)` (`uDiscClip`; `COVER_VIEW` is 3.6
-  of hyperbolic distance, 0.95 of the disc), and a tap out there finds nothing
-  (`discSource`). The patch reaches `PATCH_REACH` (4.8) from its centre, so that
-  circle is always full: what moves at its edge are cells a pixel or two across.
+  the view draws past `coverClip(cover.view)` (`uDiscClip`; the view is 3.6 of
+  hyperbolic distance, 0.95 of the disc, for 6.6.7, and shorter for a
+  subdivision's smaller tiles -- `coverView`), and a tap out there finds
+  nothing (`discSource`). The patch reaches `patchReach` from its centre, so
+  that circle is always full: what moves at its edge are cells a pixel or two
+  across.
 
 The relabelling reads
 the current label off the face a label is named after (a cell's id is the id

@@ -16,10 +16,13 @@ with the most symmetry their genus allows (84(g - 1) turns), on which the
   and `TestHurwitz` pins which by its Petrie polygons.
 
 The count of heptagons is fixed by the surface -- a genus-g Hurwitz surface
-has 84(g - 1) turns, seven to a face, so 12(g - 1) of them -- and a bigger board
-means a bigger surface. The boards that ship are 6.6.7 -- the {7,3} tiling's
-``zip``, a hexagon on every corner -- which gives 80, 240 and 520 cells: the
-three classic sizes.
+has 84(g - 1) turns, seven to a face, so 12(g - 1) of them -- and so is the
+size of its 6.6.7 (the {7,3} tiling's ``zip``, a hexagon on every corner): 80,
+240 and 520 cells. Each surface is a mode of its own (`SURFACE_MODES`). Klein's
+quartic grows from difficulty to difficulty by subdividing its tiles
+(Goldberg--Coxeter GC(n, 0), `gc_loops`: 248 and 444 cells); the two bigger
+surfaces are one board at every difficulty, the mines alone telling the
+difficulties apart.
 
 **The surface is built from its group, exactly.** A Hurwitz group is generated
 by an x of order 2 and a y of order 3 whose product R = xy has order 7, and
@@ -41,7 +44,7 @@ one surface vertex, which the walk checks. A uniform tiling of the disc
 (`hyperbolic.wythoff_loops`) is carried down through its flag keys.
 
 **The patch is the shells out to where every cell has been drawn once** -- and
-at least out to `PATCH_REACH`, so the web app's pan always has board round the
+at least out to `patch_reach`, so the web app's pan always has board round the
 view -- plus ``margin`` more, so every cell is somewhere on the board and the
 drawing keeps the central heptagon's seven turns and mirrors. Each drawn face shows the cell
 it covers (``Board.faces``); the cell is named after its copy nearest the
@@ -53,17 +56,22 @@ the surface, chi = 2 - 2g, rather than the disc.
 
 from __future__ import annotations
 
+import cmath
 import functools
 import itertools
+import math
 
 from minesweeper.boards.core import Board, _shared_vertex_adjacency
 from minesweeper.boards.hyperbolic import (
     ARC_SEGMENTS,
     WYTHOFF_OPS,
     _distance,
+    _drop,
+    _dual_faces,
+    _lift,
     _shell_groups,
     _tiling,
-    _vertex_config,
+    _to_origin,
     disc_drawing,
     wythoff_loops,
 )
@@ -76,31 +84,55 @@ HURWITZ_SURFACES: dict[str, tuple[int, int]] = {
     "triplet": (13, 14),
 }
 
-#: How far from the centre the patch always reaches, in hyperbolic distance,
-#: whatever the surface: past every face whose centre is this close. The web
-#: app's pan keeps the view's centre on the central tile and hides whatever it
-#: would draw farther out than `COVER_VIEW` in hurwitz.ts, so the patch has to
-#: fill that circle from anywhere on the central tile -- 3.6, plus the
-#: heptagon's circumradius (0.62), plus a tile -- and that is what keeps the
-#: board's edge from moving as the view steps from tile to tile. Klein's
-#: quartic needs it (every one of its cells is within 2.9); the bigger
-#: surfaces' patches already reach past it. Must match `PATCH_REACH`.
-PATCH_REACH = 4.8
+#: How far round the centre of its view the web app shows a 6.6.7 patch, in
+#: hyperbolic distance: 3.6, 0.95 of the disc. The pan keeps the view's centre
+#: on the central tile and hides whatever it would draw farther out, which is
+#: what keeps the board's edge one fixed circle as the view steps from tile to
+#: tile. Must match `COVER_VIEW` in hurwitz.ts.
+COVER_VIEW = 3.6
 
-#: The tilings a surface can be drawn in: ``"none"`` is {7,3} itself, the rest
-#: are its Wythoff tilings (`hyperbolic.WYTHOFF_OPS`).
-HURWITZ_OPS = ("none", *WYTHOFF_OPS)
+
+def cover_view(op: str) -> float:
+    """`COVER_VIEW` for tiling ``op``. A subdivision's tiles are smaller --
+    GC(n, 0)'s edges are 1/n of {7,3}'s where 6.6.7's are 1/sqrt(3) -- and a
+    tile drawn d out from the centre of the view shrinks as e^-d, so its view
+    is shorter by ln(n / sqrt(3)): the cells hidden at its edge come out the
+    same size on screen, and the patch, which grows as e^d, a third the faces.
+    Must match `coverView`."""
+    n = _gc_order(op)
+    return COVER_VIEW - math.log(n / math.sqrt(3)) if n else COVER_VIEW
+
+
+def patch_reach(op: str) -> float:
+    """How far from the centre the patch always reaches: past every face whose
+    centre is this close, whatever the surface. The patch has to fill the
+    view's circle from anywhere on the central tile, so this is
+    `cover_view`, plus the heptagon's circumradius (0.62), plus a tile. Klein's
+    quartic needs it (every one of its cells is within 2.9 of the centre); the
+    bigger surfaces' patches already reach past it. Must match `patchReach`."""
+    return cover_view(op) + 1.2
+
+#: The tilings a surface can be drawn in: ``"none"`` is {7,3} itself, then its
+#: Wythoff tilings (`hyperbolic.WYTHOFF_OPS`), then its Goldberg--Coxeter
+#: subdivisions GC(n, 0), ``"gc2"`` .. ``"gc4"`` (`gc_loops`).
+HURWITZ_OPS = ("none", *WYTHOFF_OPS, "gc2", "gc3", "gc4")
+
+#: Each surface's mode: one surface a mode, whatever the difficulty. Klein's
+#: quartic grows from difficulty to difficulty by subdividing its tiles; the
+#: two bigger surfaces are one board at every difficulty, the mines alone
+#: telling them apart.
+SURFACE_MODES: dict[str, str] = {
+    "quartic": "quartic",
+    "macbeath": "macbeath667",
+    "triplet": "triplet667",
+}
 
 Matrix = tuple[int, int, int, int]
 
 
-def hurwitz_mode(op: str) -> str:
-    """The mode: ``hurwitz`` and the tiling's vertex configuration, as the
-    disc boards name theirs (``hurwitz667``; ``hurwitz73`` for {7,3}). One
-    mode spans the surfaces -- the surface is the board's size."""
-    if op == "none":
-        return "hurwitz73"
-    return "hurwitz" + "".join(str(n) for n in _vertex_config(7, 3, op))
+def _gc_order(op: str) -> int | None:
+    """The n of a Goldberg--Coxeter tiling ``"gc<n>"``, or None for any other."""
+    return int(op[2:]) if op.startswith("gc") else None
 
 
 def _field(q: int):
@@ -261,6 +293,86 @@ def _cover(surface: str, rings: int) -> tuple[list[int], dict[int, int]]:
     return [face_map[f] for f in range(len(base))], vertex
 
 
+# -- the subdivided tilings: Goldberg--Coxeter GC(n, 0) ------------------------
+#
+# {7,3} is trivalent, so its dual is a triangle tiling, {3,7}: a triangle for
+# every corner of the heptagons, its own corners the centres of the three
+# heptagons that meet there. Cut every triangle into n * n small ones and take
+# the dual again, and the heptagons come back -- one for every heptagon, round
+# its centre -- with hexagons everywhere else: GC(n, 0) of {7,3}, trivalent,
+# every heptagon 7 neighbours and every hexagon 6. On a surface with F
+# heptagons, V corners and E edges it is F + E (n - 1) + V (n - 1)(n - 2) / 2
+# cells: 108, 248 and 444 on Klein's quartic for n = 2, 3, 4.
+#
+# **The ids are exact.** A point of the cut is named by its weights over its
+# triangle's corners, the corners being heptagons of the ring walk: the sorted
+# pairs (heptagon, weight) with a weight that is not zero, as
+# `solids._geodesic` names the points of an icosahedron's. A point on a shared
+# edge gets the same name from both triangles, and a point at a corner from all
+# seven. A small triangle is named by its three points. Nothing is rounded.
+#
+# **The positions are only drawn.** A point is the weighted average of its
+# corners' centres on the hyperboloid, a small triangle the average of its
+# points, and the edges between are drawn as geodesic arcs like every other
+# disc board's; the floats order a cell's corners round it and nothing else.
+
+
+@functools.cache
+def gc_loops(n: int, rings: int):
+    """GC(n, 0) of the {7,3} disc out to ``rings`` rings, in the shape
+    `hyperbolic.wythoff_loops` returns: each cell as the loop of its corners'
+    keys (the small triangles round a point of the cut, counterclockwise), the
+    keys' positions, each cell's centre (its point), and what it stands on
+    (the point's key). A point is kept only where every triangle round it was
+    built."""
+    if n < 2:
+        raise ValueError("a subdivision needs n of at least 2")
+    _, _, _, centres = _tiling(7, 3, rings)
+    triangles, _ = _dual_faces(7, rings - 1)  # corners: faces of _tiling(7, 3, rings)
+    lifted = [_lift(z) for z in centres]
+
+    def blend(points: list[tuple[float, float, float]], weights: list[float]) -> complex:
+        return _drop(tuple(sum(w * p[axis] for p, w in zip(points, weights)) for axis in range(3)))
+
+    point_at: dict[tuple, complex] = {}
+    around: dict[tuple, list[tuple]] = {}
+    where: dict[tuple, complex] = {}
+    order: list[tuple] = []
+    for corners in triangles:
+        def point(a: int, b: int) -> tuple:
+            weights = (n - a - b, a, b)
+            key = tuple(sorted((f, w) for f, w in zip(corners, weights) if w))
+            if key not in point_at:
+                point_at[key] = blend([lifted[f] for f in corners], list(weights))
+                order.append(key)
+            return key
+
+        smalls = []
+        for a in range(n):
+            for b in range(n - a):
+                smalls.append((point(a, b), point(a + 1, b), point(a, b + 1)))
+                if a + b <= n - 2:
+                    smalls.append((point(a + 1, b), point(a + 1, b + 1), point(a, b + 1)))
+        for tri in smalls:
+            key = tuple(sorted(tri))
+            if key in where:
+                continue
+            where[key] = blend([_lift(point_at[k]) for k in tri], [1.0, 1.0, 1.0])
+            for k in tri:
+                around.setdefault(k, []).append(key)
+    loops, cell_centres, origins = [], [], []
+    for key in order:
+        tris = around[key]
+        if len(tris) != (7 if len(key) == 1 else 6):
+            continue  # a triangle round it was not built
+        z = point_at[key]
+        tris = sorted(tris, key=lambda t: cmath.phase(_to_origin(z, where[t])))
+        loops.append(tuple(tris))
+        cell_centres.append(z)
+        origins.append(key)
+    return loops, where, cell_centres, origins
+
+
 def _patch(surface: str, op: str, rings: int):
     """The disc out to ``rings`` rings in tiling ``op``, and how it covers the
     surface: each face's loop of keys, the keys' positions, the face centres,
@@ -271,6 +383,15 @@ def _patch(surface: str, op: str, rings: int):
         base, _, pos, centres = _tiling(7, 3, rings)
         cells = [("F", phi_face[f]) for f in range(len(base))]
         return [tuple(face) for face in base], pos, centres, cells, phi.__getitem__
+    n = _gc_order(op)
+    if n is not None:
+        loops, where, centres, origins = gc_loops(n, rings)
+
+        def down(point: tuple) -> tuple:
+            return tuple(sorted((phi_face[f], w) for f, w in point))
+
+        return (loops, where, centres, [("G", down(o)) for o in origins],
+                lambda k: tuple(sorted(down(p) for p in k)))
     loops, where, centres, origins = wythoff_loops(7, 3, op, rings)
 
     def cell(origin: tuple) -> tuple:
@@ -294,7 +415,7 @@ def _patch(surface: str, op: str, rings: int):
 
 def _patch_for(surface: str, op: str, margin: int):
     """Grow the disc until it holds every face out to the shells the patch
-    keeps -- the first shells to reach every cell or out to `PATCH_REACH`,
+    keeps -- the first shells to reach every cell or out to `patch_reach`,
     whichever is farther, and ``margin`` more -- with a unit to spare past the
     last, as `hyperbolic._rings_for` grows it. Returns the patch and its
     shells."""
@@ -311,14 +432,15 @@ def _patch_for(surface: str, op: str, margin: int):
                 break
         if cover is None:
             continue
-        reach = sum(1 for group in groups if _distance(centres[group[0]]) <= PATCH_REACH)
+        far = patch_reach(op)
+        reach = sum(1 for group in groups if _distance(centres[group[0]]) <= far)
         keep = max(cover, reach) + margin
         if len(groups) <= keep:
             continue
         _, ring_of, _, base_centres = _tiling(7, 3, rings)
         outer = min(_distance(z) for z, r in zip(base_centres, ring_of) if r == rings)
         cut = _distance(centres[groups[keep - 1][0]])
-        if outer > cut + 1.0 and outer > PATCH_REACH + 1.0:
+        if outer > cut + 1.0 and outer > far + 1.0:
             return (loops, where, centres, cells, key), groups[:keep]
     raise ValueError("the patch needs too many rings")
 
@@ -327,15 +449,19 @@ def _patch_for(surface: str, op: str, margin: int):
 def hurwitz_cells(surface: str, op: str) -> dict[tuple, list]:
     """The surface's cells in tiling ``op``, each as its corners' surface
     vertex ids in order, keyed by what it stands on (``("F", face)``,
-    ``("V", vertex)``, ``("E", u, v)``). Read off a disc big enough to hold
-    a copy of every one of them."""
+    ``("V", vertex)``, ``("E", u, v)``, or a subdivision's point
+    ``("G", ((face, weight), ...))``). Read off a disc big enough to hold a
+    copy of every one of them."""
     if op not in HURWITZ_OPS:
         raise ValueError(f"unknown tiling {op!r}")
     faces = hurwitz_map(surface)
     want = len(faces)
-    if op in ("zip", "bevel", "ambo", "expand"):
-        vertices = len({v for face in faces for v in face})
-        edges = 7 * want // 2
+    vertices = len({v for face in faces for v in face})
+    edges = 7 * want // 2
+    n = _gc_order(op)
+    if n is not None:
+        want += edges * (n - 1) + vertices * (n - 1) * (n - 2) // 2
+    elif op != "none":
         want += {"zip": vertices, "ambo": vertices, "expand": vertices + edges,
                  "bevel": vertices + edges}[op]
     for rings in range(2, 13):
@@ -370,10 +496,12 @@ def hurwitz_board(
     arc: int = ARC_SEGMENTS,
 ) -> Board:
     """The closed surface ``surface`` (one of `HURWITZ_SURFACES`) in tiling
-    ``op`` (one of `HURWITZ_OPS`; the boards that ship are ``zip``, 6.6.7),
-    drawn as a patch of the Poincaré disc that covers it: the shells out to
-    where every cell has a copy, and ``margin`` more. ``scale`` and ``arc``
-    are `hyperbolic.hyperbolic_board`'s."""
+    ``op`` (one of `HURWITZ_OPS`; the boards that ship are ``zip``, 6.6.7, and
+    on Klein's quartic its subdivisions ``gc3`` and ``gc4``), drawn as a patch
+    of the Poincaré disc that covers it: the shells out to where every cell has
+    a copy, and ``margin`` more. The board is the surface's mode
+    (`SURFACE_MODES`). ``scale`` and ``arc`` are
+    `hyperbolic.hyperbolic_board`'s."""
     if margin < 0:
         raise ValueError("margin must not be negative")
     surface_cells = hurwitz_cells(surface, op)
@@ -392,7 +520,7 @@ def hurwitz_board(
     face_cell = {face: name[cells[f]] for face, f in enumerate(drawn)}
     quotient = {name[cell]: corners for cell, corners in surface_cells.items()}
     return Board(
-        hurwitz_mode(op),
+        SURFACE_MODES[surface],
         polygons,
         _shared_vertex_adjacency(quotient),
         mine_count,

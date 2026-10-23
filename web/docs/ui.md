@@ -17,8 +17,10 @@ Polyhedra, Volumes). Hyperbolic is the one geometry group the pygame menu does
 not have: there it is a family on the flat picker, and the web menu lifts it
 out into a group of its own (`MENU_GROUP_FAMILIES` in `src/boards/catalog.ts`)
 — a curved space rather than a kind of flat tiling — after Flat manifolds and
-before the solids. Its page is two submenus, **Regular** (the {p,q} tilings)
-and **Uniform** (Wythoff's tilings of them), filed by each board's builder in
+before the solids. Its page is three submenus, **Regular** (the {p,q} tilings),
+**Uniform** (Wythoff's tilings of them) and **Closed surfaces** (the plane glued
+up with no rim: Klein's quartic, Macbeath's surface and a genus-14 Hurwitz
+surface, one surface a board), filed by each board's builder in
 `data/presets.json` (`menuSubfamilies`), so a new hyperbolic board lands in the
 right one without a list to edit. The binary tiling is hyperbolic too, but it
 is drawn in a rectangle of the upper half-plane rather than in the disc, and

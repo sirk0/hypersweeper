@@ -275,14 +275,14 @@ test.describe("hyperbolic panning", () => {
 });
 
 test.describe("a closed surface's pan", () => {
-  // hurwitz667 is a closed surface drawn as a patch of the disc that covers
+  // quartic is a closed surface drawn as a patch of the disc that covers
   // it: the pan steps across the cover and relabels as it goes
   // (`discRecentre`), so unlike a disc board it never runs out of board.
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize({ width: 420, height: 780 });
     await page.goto("/");
     await expect(page.locator("body[data-ready]")).toBeVisible();
-    await page.evaluate(() => window.__ms?.startBoard("hurwitz667", "hard", { seed: 7 }));
+    await page.evaluate(() => window.__ms?.startBoard("quartic", "medium", { seed: 7 }));
     await frame(page);
   });
 
