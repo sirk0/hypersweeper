@@ -837,9 +837,9 @@ is a surface rather than a trim, and a new one is a group, not a builder. Read
    the mode is `hurwitz_mode(op)`. A new mode needs the menu, label, icon and
    test rows of a hyperbolic one (steps 1, 3 and 4 above, with `hurwitz667`'s
    entries to copy).
-3. **The patch must reach every cell** -- the builder grows it until it does --
-   and its face count grows quickly with the genus: 1863 faces for the
-   genus-14 board. A much bigger surface wants a measurement of the build and
+3. **The patch must reach every cell** -- the builder grows it until it does,
+   and never short of `PATCH_REACH`, which the web pan needs -- and its face
+   count grows quickly with the genus: 1863 faces for the genus-14 board. A much bigger surface wants a measurement of the build and
    the pan before it ships.
 4. **Tests** -- `_HURWITZ` in `tests/test_boards.py` and `SURFACES` in
    `web/tests/unit/hurwitz.test.ts` (group order, faces, vertices, edges), and

@@ -157,12 +157,31 @@ step is reported (`onCoverStep`) to the session, which relabels every face
 a face). The picture does not change — every point is drawn where it was,
 showing the cell it showed — but the view's centre is back on the central
 tile, so the patch round it is whole however far the pan goes; `discDrag`'s
-reach is only `COVER_REACH`, short of the disc itself. The relabelling reads
+reach is only `COVER_REACH`, short of the disc itself.
+
+Two things make it *look* continuous, and the pan jumped without either:
+
+- **The steps are turned into the mesh's frame** (`meshCoverSteps`). The board's
+  disc runs y down, the way its pixels do, and the mesh turns it upright, so the
+  mesh draws the board's point z at conj(z) and needs every step conjugated.
+  Applied as built, each recentring composed the view with a mirror image of
+  the right isometry, and the whole board leapt.
+- **The edge is a fixed circle of the view.** The patch is a disc round the
+  central tile, so seen from near a neighbouring tile its rim is off-centre,
+  and a recentring snapped it back. So the shader hides every cell whose pivot
+  the view draws past `coverClip(cover.view)` (`uDiscClip`; `COVER_VIEW` is 3.6
+  of hyperbolic distance, 0.95 of the disc), and a tap out there finds nothing
+  (`discSource`). The patch reaches `PATCH_REACH` (4.8) from its centre, so that
+  circle is always full: what moves at its edge are cells a pixel or two across.
+
+The relabelling reads
 the current label off the face a label is named after (a cell's id is the id
 of its own nearest copy), so the board-bar symmetries and the pan compose.
-`tests/unit/disc.test.ts` pins that a step leaves the picture unchanged and that
-a long drag stays on the central tile; `tests/unit/hurwitz.test.ts` that each
-step's symmetry is what its isometry does to the drawing;
+`tests/unit/disc.test.ts` pins that a step leaves the picture unchanged, in the
+board's frame and in the mesh's, and that a long drag stays on the central tile;
+`tests/unit/hurwitz.test.ts` that each step's symmetry is what its isometry does
+to the drawing, and that the patch fills the view's circle from every corner of
+the central tile;
 `tests/e2e/hyperbolicPan.spec.ts` that a board thrown twice as far as a disc's
 hold allows still fills the view, and a tap at the centre opens.
 

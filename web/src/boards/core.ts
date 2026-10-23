@@ -104,7 +104,13 @@ export interface Board {
  * labels together leaves the picture as it was, so a pan that has wandered a
  * tile off centre can be carried back to it, and never runs out of board. */
 export interface DiscCover {
+  /** In the board's own disc coordinates, as its polygons are -- y downward,
+   * the way the pixels run. */
   steps: { c: readonly [number, number]; rot: readonly [number, number]; cells: Map<CellId, CellId> }[];
+  /** How far round the centre of the view, in hyperbolic distance, the patch
+   * is drawn whole wherever the pan has the view: the renderer shows that
+   * circle of it and hides the rest, so the board's edge stays put. */
+  view: number;
 }
 
 /** Where an immersion passes through itself, the sheet that ends up *inside*

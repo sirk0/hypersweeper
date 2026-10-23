@@ -40,9 +40,10 @@ breadth-first walk on ids alone; a disc vertex reached two ways must land on
 one surface vertex, which the walk checks. A uniform tiling of the disc
 (`hyperbolic.wythoff_loops`) is carried down through its flag keys.
 
-**The patch is the shells out to where every cell has been drawn once**, plus
-``margin`` more, so every cell is somewhere on the board and the drawing keeps
-the central heptagon's seven turns and mirrors. Each drawn face shows the cell
+**The patch is the shells out to where every cell has been drawn once** -- and
+at least out to `PATCH_REACH`, so the web app's pan always has board round the
+view -- plus ``margin`` more, so every cell is somewhere on the board and the
+drawing keeps the central heptagon's seven turns and mirrors. Each drawn face shows the cell
 it covers (``Board.faces``); the cell is named after its copy nearest the
 centre. Adjacency is the *surface's*, from the cells' corners as surface ids
 (``Board.quotient``) -- so a cell is a full neighbour of its neighbours even
@@ -74,6 +75,17 @@ HURWITZ_SURFACES: dict[str, tuple[int, int]] = {
     "macbeath": (8, 7),
     "triplet": (13, 14),
 }
+
+#: How far from the centre the patch always reaches, in hyperbolic distance,
+#: whatever the surface: past every face whose centre is this close. The web
+#: app's pan keeps the view's centre on the central tile and hides whatever it
+#: would draw farther out than `COVER_VIEW` in hurwitz.ts, so the patch has to
+#: fill that circle from anywhere on the central tile -- 3.6, plus the
+#: heptagon's circumradius (0.62), plus a tile -- and that is what keeps the
+#: board's edge from moving as the view steps from tile to tile. Klein's
+#: quartic needs it (every one of its cells is within 2.9); the bigger
+#: surfaces' patches already reach past it. Must match `PATCH_REACH`.
+PATCH_REACH = 4.8
 
 #: The tilings a surface can be drawn in: ``"none"`` is {7,3} itself, the rest
 #: are its Wythoff tilings (`hyperbolic.WYTHOFF_OPS`).
@@ -282,9 +294,10 @@ def _patch(surface: str, op: str, rings: int):
 
 def _patch_for(surface: str, op: str, margin: int):
     """Grow the disc until it holds every face out to the shells the patch
-    keeps -- the first shells to reach every cell, and ``margin`` more -- with
-    a unit to spare past the last, as `hyperbolic._rings_for` grows it.
-    Returns the patch and its shells."""
+    keeps -- the first shells to reach every cell or out to `PATCH_REACH`,
+    whichever is farther, and ``margin`` more -- with a unit to spare past the
+    last, as `hyperbolic._rings_for` grows it. Returns the patch and its
+    shells."""
     target = len(hurwitz_cells(surface, op))
     for rings in range(2, 13):
         loops, where, centres, cells, key = _patch(surface, op, rings)
@@ -296,13 +309,17 @@ def _patch_for(surface: str, op: str, margin: int):
             if len(seen) == target:
                 cover = s + 1
                 break
-        if cover is None or len(groups) <= cover + margin:
+        if cover is None:
+            continue
+        reach = sum(1 for group in groups if _distance(centres[group[0]]) <= PATCH_REACH)
+        keep = max(cover, reach) + margin
+        if len(groups) <= keep:
             continue
         _, ring_of, _, base_centres = _tiling(7, 3, rings)
         outer = min(_distance(z) for z, r in zip(base_centres, ring_of) if r == rings)
-        cut = _distance(centres[groups[cover + margin - 1][0]])
-        if outer > cut + 1.0:
-            return (loops, where, centres, cells, key), groups[:cover + margin]
+        cut = _distance(centres[groups[keep - 1][0]])
+        if outer > cut + 1.0 and outer > PATCH_REACH + 1.0:
+            return (loops, where, centres, cells, key), groups[:keep]
     raise ValueError("the patch needs too many rings")
 
 

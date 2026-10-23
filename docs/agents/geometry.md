@@ -1029,7 +1029,10 @@ stands on, before `wythoff_faces` renumbers them), so a 6.6.7 vertex is
 
 **The board draws a patch of the cover, every cell at least once.** It keeps
 the disc's shells out to the first one by which every surface cell has appeared,
-plus `margin` more (0 ships): 169, 1023 and 1863 faces. Shells are orbits of the
+or out to `PATCH_REACH` (4.8) if that is farther, plus `margin` more (0 ships):
+1212, 1212 and 1863 faces. The reach is the web pan's (below): Klein's quartic
+has every cell within 2.9 of the centre, and a patch that small showed its edge
+moving as the view stepped from tile to tile. Shells are orbits of the
 central heptagon's dihedral group, so the patch keeps D7, and the surface keeps
 it too -- the turn is the surface's own, and all three surfaces are reflexible,
 so the mirror is as well (measured, `symmetries.test.ts`). Each drawn face
@@ -1055,9 +1058,13 @@ Four things worth knowing before touching it:
   [`web/docs/render.md`](../../web/docs/render.md)): a step per tile round the
   central one, the isometry and the matching surface symmetry, so a view that
   wanders off the central tile is carried back and the labels follow, the
-  picture unchanged. Nothing about the board changes, so the pygame game, which
-  does not pan, plays the same board as a static disc -- and the patch reaching
-  every cell is what lets it.
+  picture unchanged. The view shows the patch out to `COVER_VIEW` (3.6) round
+  its centre and hides the rest, which keeps the board's edge one fixed circle;
+  `PATCH_REACH` is that plus the central heptagon's circumradius and a tile, so
+  the circle is full from anywhere on the central tile (a test probes it from
+  the heptagon's corners). Nothing about the board changes, so the pygame game,
+  which does not pan, plays the same board as a static disc -- and the patch
+  reaching every cell is what lets it.
 * **The hard board is a big drawing.** 1863 faces for 520 cells; it builds in
   about 0.6 s, measured under Node (most of it the group and the cover, once),
   and pans like the disc boards, the pan being the vertex shader's.

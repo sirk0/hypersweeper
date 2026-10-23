@@ -43,6 +43,8 @@ import {
   DISC_IDENTITY,
   discDrag,
   discRecentre,
+  coverClip,
+  meshCoverSteps,
   discMap,
   discReach,
   discScale,
@@ -166,6 +168,10 @@ export class PolygonBoard extends Group implements BoardMesh {
    * the view takes one -- the session, which moves the labels to match, so
    * the picture does not change. */
   private readonly coverSteps: readonly CoverStep[] | null;
+  /** How far out, in disc radii, the view of a closed surface shows its patch
+   * (`coverClip`): the shader hides every cell drawn beyond it, and a tap
+   * there finds nothing. Null on every other board. */
+  private readonly coverClip: number | null;
   onCoverStep: ((steps: number[]) => void) | null = null;
   private readonly discUniforms: DiscUniforms | null;
 
@@ -214,12 +220,17 @@ export class PolygonBoard extends Group implements BoardMesh {
           reach: board.disc.cover ? COVER_REACH : discReach(board.disc.rim),
         }
       : null;
-    this.coverSteps = board.disc?.cover?.steps ?? null;
+    // The steps are the board's, whose disc runs y down; the mesh's runs up.
+    const cover = board.disc?.cover;
+    this.coverSteps = cover ? meshCoverSteps(cover.steps) : null;
+    this.coverClip = cover ? coverClip(cover.view) : null;
     this.discUniforms = this.disc
       ? {
           uDisc: { value: new Vector3(this.disc.x, this.disc.y, this.disc.r) },
           uDiscC: { value: new Vector2(0, 0) },
           uDiscRot: { value: new Vector2(1, 0) },
+          // past the rim, where no cell is: nothing hidden but on a cover
+          uDiscClip: { value: this.coverClip ?? 2 },
         }
       : null;
 
@@ -476,7 +487,13 @@ export class PolygonBoard extends Group implements BoardMesh {
   /** The point of the board as built that is drawn at `p` (mesh units). */
   discSource(p: Vertex): Vertex {
     if (!this.disc) return p;
-    return this.fromDisc(discUnmap(this.discView, this.toDisc(p)));
+    const w = this.toDisc(p);
+    // Beyond a cover's clip the cells are hidden, so a tap there is a tap on
+    // nothing: aim it off the board altogether.
+    if (this.coverClip !== null && Math.hypot(w[0], w[1]) > this.coverClip) {
+      return this.fromDisc([4, 0]);
+    }
+    return this.fromDisc(discUnmap(this.discView, w));
   }
 
   /** Where the current view draws the board-as-built point `p`. */

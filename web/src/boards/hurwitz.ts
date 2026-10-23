@@ -43,6 +43,19 @@ export const HURWITZ_SURFACES: Record<string, readonly [number, number]> = {
   triplet: [13, 14],
 };
 
+/** How far from the centre the patch always reaches, in hyperbolic distance:
+ * past every face whose centre is this close, whatever the surface. Must match
+ * `PATCH_REACH` in hurwitz.py, which says how it is reckoned. */
+export const PATCH_REACH = 4.8;
+
+/** How far round the centre of the view the pan always has board to show, in
+ * hyperbolic distance (`DiscCover.view`). The pan keeps the view's centre on
+ * the central tile, and the patch reaches `PATCH_REACH` from its centre, so
+ * every point this close to the view is drawn; the renderer hides what lies
+ * farther out, which keeps the board's edge one fixed circle however the view
+ * steps across the cover. 3.6 is 0.95 of the disc's radius. */
+export const COVER_VIEW = 3.6;
+
 /** What each surface is called, for the info window. */
 export const HURWITZ_LABELS: Record<string, string> = {
   quartic: "Klein quartic",
@@ -435,8 +448,9 @@ export function hurwitzCells(surface: string, op: HurwitzOp): Map<string, string
   throw new Error("the disc never reaches every cell");
 }
 
-/** Grow the disc until it holds every face out to the shells the patch keeps.
- * Mirrors `_patch_for`. */
+/** Grow the disc until it holds every face out to the shells the patch keeps:
+ * the first to reach every cell or out to `PATCH_REACH`, whichever is farther,
+ * and `margin` more. Mirrors `_patch_for`. */
 function patchFor(
   surface: string,
   op: HurwitzOp,
@@ -455,14 +469,19 @@ function patchFor(
         break;
       }
     }
-    if (reach < 0 || groups.length <= reach + margin) continue;
+    if (reach < 0) continue;
+    const near = groups.filter((group) => distance(p.centres[group[0]!]!) <= PATCH_REACH).length;
+    const keep = Math.max(reach, near) + margin;
+    if (groups.length <= keep) continue;
     const base = hyperbolicTiling(7, 3, rings);
     let outer = Infinity;
     base.centres.forEach((z, f) => {
       if (base.ringOf[f] === rings) outer = Math.min(outer, distance(z));
     });
-    const cut = distance(p.centres[groups[reach + margin - 1]![0]!]!);
-    if (outer > cut + 1.0) return { patch: p, groups: groups.slice(0, reach + margin), rings };
+    const cut = distance(p.centres[groups[keep - 1]![0]!]!);
+    if (outer > cut + 1.0 && outer > PATCH_REACH + 1.0) {
+      return { patch: p, groups: groups.slice(0, keep), rings };
+    }
   }
   throw new Error("the patch needs too many rings");
 }
@@ -536,7 +555,7 @@ function coverSteps(
     for (const key of surfaceCells.keys()) cells.set(nameOf.get(key)!, nameOf.get(moved(key))!);
     steps.push({ c, rot, cells });
   }
-  return { steps };
+  return { steps, view: COVER_VIEW };
 }
 
 // -- the board ----------------------------------------------------------------

@@ -10,6 +10,7 @@ import {
   discDrag,
   discMap,
   discRecentre,
+  meshCoverSteps,
   discReach,
   discScale,
   discUnmap,
@@ -304,6 +305,19 @@ describe("a closed surface's pan", () => {
       // point the step carries it to -- the same picture, relabelled
       for (const z of [[0, 0], [0.2, 0.1], [-0.3, 0.25], [0.05, -0.4]] as Cx[]) {
         close(discMap(next, z), discMap(view, step(k, z)));
+      }
+    }
+  });
+
+  it("is turned into the mesh's frame, whose y runs the other way", () => {
+    // The mesh draws the board's point z at conj(z); a step it applies has to
+    // carry conj(z) to conj(step(z)), or each recentring redraws the board as a
+    // mirror image of where it was.
+    const mesh = meshCoverSteps(steps);
+    for (let k = 0; k < steps.length; k++) {
+      for (const z of [[0, 0], [0.2, 0.1], [-0.3, 0.25], [0.05, -0.4]] as Cx[]) {
+        const there = step(k, z);
+        close(discMap(mesh[k]!, [z[0], -z[1]]), [there[0], -there[1]]);
       }
     }
   });

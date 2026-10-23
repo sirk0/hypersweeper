@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { boundaryComponents, eulerCharacteristic, type Board } from "../../src/boards/core";
 import {
+  COVER_VIEW,
   HURWITZ_SURFACES,
   hurwitzBoard,
   hurwitzGroup,
@@ -8,6 +9,7 @@ import {
   hurwitzMode,
   petrieLength,
 } from "../../src/boards/hurwitz";
+import { centralPolygon } from "../../src/boards/hyperbolic";
 import { buildBoard } from "../../src/boards/presets";
 
 // The closed hyperbolic surfaces (boards/hurwitz.ts). The conformance oracle
@@ -186,6 +188,47 @@ describe("the Hurwitz surfaces", () => {
           checked++;
         }
         expect(checked).toBeGreaterThan(5);
+      }
+    }
+  });
+
+  it("draw the whole view round anywhere the pan can put its centre", () => {
+    // The pan keeps the view's centre on the central heptagon of {7,3}
+    // (`discRecentre`) and shows what lies within COVER_VIEW of it, so the
+    // patch has to cover that circle from every point of the heptagon -- its
+    // corners are the worst case. Probed on the circle itself: inside it the
+    // patch is a disc, so a covered rim means a covered circle.
+    const corners = centralPolygon(7, 3);
+    const toward = (a: Cx, z: Cx): Cx => {
+      // the disc translation taking 0 to a, applied to z
+      const num: Cx = [z[0] + a[0], z[1] + a[1]];
+      const den: Cx = [1 + a[0] * z[0] + a[1] * z[1], a[0] * z[1] - a[1] * z[0]];
+      const d = den[0] * den[0] + den[1] * den[1];
+      return [(num[0] * den[0] + num[1] * den[1]) / d, (num[1] * den[0] - num[0] * den[1]) / d];
+    };
+    for (const surface of Object.keys(SURFACES)) {
+      const board = hurwitzBoard(surface, "zip", 0, 1);
+      const { cx, cy, radius } = board.disc!;
+      const polys = [...board.polygons.values()].map((poly) =>
+        poly.map(([x, y]) => [(x - cx) / radius, (y - cy) / radius] as Cx),
+      );
+      const inside = ([x, y]: Cx) =>
+        polys.some((poly) => {
+          let hit = false;
+          for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+            const [xi, yi] = poly[i]!;
+            const [xj, yj] = poly[j]!;
+            if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) hit = !hit;
+          }
+          return hit;
+        });
+      const r = Math.tanh(COVER_VIEW / 2);
+      for (const centre of [[0, 0] as Cx, ...corners]) {
+        for (let k = 0; k < 120; k++) {
+          const t = (k * 2 * Math.PI) / 120;
+          const z = toward(centre, [r * Math.cos(t), r * Math.sin(t)]);
+          expect(inside(z), `${surface} from ${centre} at ${k * 3}°`).toBe(true);
+        }
       }
     }
   });

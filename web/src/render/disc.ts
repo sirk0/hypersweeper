@@ -226,3 +226,24 @@ export function discRecentre(
   }
   return { view, taken };
 }
+
+/**
+ * A closed surface's steps as the mesh needs them.
+ *
+ * The board's disc runs y downward, the way its pixels do, and the mesh turns
+ * it upright, so a point the board calls z the mesh calls conj(z) -- and an
+ * isometry T of the board's disc is z -> conj(T(conj z)) in the mesh's. A view
+ * composed with the board's own steps is composed with a mirror image of the
+ * right isometry, so every recentring redrew the board somewhere else.
+ * Conjugating both halves of the view's shape, `c` and `rot`, is exactly that
+ * map.
+ */
+export function meshCoverSteps(steps: readonly CoverStep[]): CoverStep[] {
+  return steps.map(({ c, rot }) => ({ c: [c[0], -c[1]], rot: [rot[0], -rot[1]] }));
+}
+
+/** The disc radius a closed surface's view is shown out to: everything within
+ * `view` of the centre of the view, in hyperbolic distance (`DiscCover.view`). */
+export function coverClip(view: number): number {
+  return Math.tanh(view / 2);
+}
