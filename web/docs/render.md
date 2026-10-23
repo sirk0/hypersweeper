@@ -492,7 +492,14 @@ carry it — none of them is a colour:
   true polygon, which on a solid is why `CellGeom` carries `drawn` beside
   `poly`. A cell with no centre it can see all of (Klaassen's heptagon) and a
   cell the Klein clip cuts keep their corners. The cost is three times the
-  vertices per loop, which is why it is a cut's choice.
+  vertices per loop, which is why it is a cut's choice. **A point that is no
+  corner is not rounded:** a hyperbolic edge is drawn through `ARC_SEGMENTS - 1`
+  arc points, which `Board.cornerMask` marks, and `PolygonBoard` hands that mask
+  to `roundCorners`, which keeps such a point as it is. Rounding them took
+  nothing visible off the outline (the arc barely bends there) but tripled the
+  points of a hyperbolic tile — 63 for a {7,3} heptagon rather than 35 — and
+  every vertex of that was cut, recoloured on every frame of a reveal ripple and
+  drawn: the hard {7,3} board was 631k vertices to the square board's 121k.
 - **`shadow`** (flat boards) lays a soft shadow under every *closed* tile: a fan
   of the outline at full strength ringed by the outline pushed outward and
   faded to nothing, offset down the **screen** (so `setQuarterTurn` rewrites
@@ -505,6 +512,21 @@ carry it — none of them is a colour:
 
 Two things move a board beyond recolouring it, and they are deliberately split
 by what decides whether they run.
+
+The recolouring is the reveal ripple's and the win wave's colour clock
+(`animations.ts`), and on `PolygonBoard` it is kept cheap per frame in two
+ways, since a hyperbolic flood ripples a couple of hundred cells of thirty-odd
+outline points each:
+
+- **The style's gradient is laid out once per shape** (`ramps`: a factor per
+  vertex, by side count and cell state), not worked out by `vertexShade` for
+  every vertex of every cell on every frame it is recoloured.
+- **Only what changed is uploaded.** Every writer of the tile, colour and
+  shadow buffers marks its own cell's range (`touch`, through three.js's
+  `addUpdateRange`) rather than the whole buffer, which three.js merges where
+  ranges touch — so a flood's neighbours, or the whole board, still go up in
+  one piece. Every writer marks a range; one that set a bare `needsUpdate`
+  beside the others would see only *their* ranges uploaded.
 
 ### Tile motion (`src/render/cellMotion.ts`, `src/render/motionShader.ts`)
 
@@ -793,7 +815,9 @@ The rest of what to know before changing one:
   hundred triangles per marked cell is not a thing to rewrite at 60fps to produce
   the identical buffer.
 - **...and once per batch, not once per cell.** `setVisual` only *marks*
-  (`glyphsDirty` / `markersDirty`); `tickAnimations` flushes, ahead of its own
+  (`glyphsDirty` / `markersDirty`, and `glyphsDirty` on `PolygonBoard` too,
+  whose flood fills on the hyperbolic boards open a couple of hundred cells a
+  press); `tickAnimations` flushes, ahead of its own
   early-out, on the frame that is about to be drawn anyway. This matters because
   every caller that matters changes many cells at once — a loss turns over every
   mine, a Klein scroll rewrites *all* of them, a flood fill opens a wide patch —

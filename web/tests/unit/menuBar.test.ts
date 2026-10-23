@@ -64,7 +64,9 @@ describe("menu bar tree", () => {
     for (const g of boardGroups()) {
       if (g.kind === "picker") addPicker(g.surfaceKey);
       else if (g.kind === "manifolds") g.surfaces.forEach((s) => addPicker(s.key));
-      else g.modes.forEach((m) => expected.add(m));
+      else if (g.kind === "families") {
+        for (const f of g.families) for (const m of f.modes) expected.add(m.mode);
+      } else g.modes.forEach((m) => expected.add(m));
     }
     const offered = commands([groups!])
       .filter((c) => c.startsWith("board:"))

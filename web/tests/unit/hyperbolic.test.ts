@@ -6,11 +6,25 @@ import {
   hyperbolicBoard,
   hyperbolicFaces,
   hyperbolicUniformBoard,
+  ringsFor,
   wythoffMode,
+  wythoffRingsFor,
   type WythoffOp,
 } from "../../src/boards/hyperbolic";
 import { classifyShapes, corners } from "../../src/render/shapePalette";
 import { HYPERBOLIC_MODES } from "../../src/boards/catalog";
+
+/** The first `shells` shells of a grown tiling, each face named by where its
+ * corners are rather than by its index -- the uniform tilings number their
+ * faces after the whole {p,q} tiling they grew, so a bigger one renumbers. */
+function shellsByPlace(
+  grown: { faces: number[][]; pos: Map<number, readonly [number, number]>; groups: number[][] },
+  shells: number,
+): string[][] {
+  const place = (f: number): string =>
+    grown.faces[f]!.map((v) => grown.pos.get(v)!.map((x) => x.toFixed(9)).join(",")).join(" ");
+  return grown.groups.slice(0, shells).map((group) => group.map(place).sort());
+}
 
 // The {p,q} boards in the Poincaré disc. The conformance oracle already holds
 // the port to the Python builder's boards; these pin what a picture of one has
@@ -103,6 +117,20 @@ describe("the hyperbolic boards", () => {
     }
   });
 
+  it("grow just the rings that hold every face inside the trim", () => {
+    // a tiling grown a ring further must find nothing nearer that was missed
+    for (const [p, q] of TILINGS) {
+      for (const shells of [3, 12, 30]) {
+        const grown = ringsFor(p, q, shells);
+        expect(shellsByPlace(ringsFor(p, q, shells, grown.rings + 1), shells), `{${p},${q}} ${shells}`)
+          .toEqual(shellsByPlace(grown, shells));
+      }
+    }
+    // ...and stops as soon as it can: the hard {6,4} board's 475 cells are cut
+    // from 4 rings (2953 faces), where a spare ring for safety grew 6 (100381)
+    expect(ringsFor(6, 4, 31).rings).toBe(4);
+  });
+
   it("refuse a tiling that is not hyperbolic", () => {
     for (const [p, q] of [
       [4, 4],
@@ -142,6 +170,17 @@ describe("the uniform hyperbolic boards", () => {
         most.set(n, Math.max(most.get(n) ?? 0, board.adjacency.get(cell)!.length));
       }
       expect(Object.fromEntries(most), config).toEqual(degree);
+    }
+  });
+
+  it("grow just the rings that hold every face inside the trim", () => {
+    for (const [op, config] of UNIFORM) {
+      for (const shells of [3, 20, 40]) {
+        const grown = wythoffRingsFor(7, 3, op, shells);
+        const further = wythoffRingsFor(7, 3, op, shells, grown.rings + 1);
+        expect(shellsByPlace(further, shells), `${config} ${shells}`)
+          .toEqual(shellsByPlace(grown, shells));
+      }
     }
   });
 

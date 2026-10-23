@@ -2,18 +2,24 @@ import { describe, expect, it } from "vitest";
 import { distortedDifficulties, isDistorted } from "../../src/boards/distortion";
 import { blockedModes, modeFairness } from "../../src/boards/fairness";
 import { hasMode } from "../../src/boards/presets";
-import { CUSTOM_ONLY, randomMode, randomPool } from "../../src/boards/randomBoard";
+import {
+  CUSTOM_ONLY,
+  RANDOM_KINDS,
+  randomKindOf,
+  randomMode,
+  randomPool,
+} from "../../src/boards/randomBoard";
 import { surfaceCaution, threeDMenuModes } from "../../src/boards/catalog";
 import { quickPlayEntries } from "../../src/ui/boardTree";
 import { isBoard3D } from "../../src/boards/core";
 import { buildBoard, MODES } from "../../src/boards/presets";
 
-// The two pools the home page's Flat and 3D rows deal from, and the record
-// window's "New board" with them (boards/randomBoard.ts).
+// The pools the home page's Flat, 3D and Hyperbolic rows deal from, and the
+// record window's "New board" with them (boards/randomBoard.ts).
 
 describe("random board pools", () => {
   it("deals only boards this build has got", () => {
-    for (const kind of ["flat", "3d"] as const) {
+    for (const kind of RANDOM_KINDS) {
       expect(randomPool(kind).length).toBeGreaterThan(0);
       for (const mode of randomPool(kind)) expect(hasMode(mode), mode).toBe(true);
     }
@@ -28,18 +34,29 @@ describe("random board pools", () => {
     for (const mode of randomPool("3d")) {
       expect(isBoard3D(buildBoard(mode, "easy")), mode).toBe(true);
     }
+    for (const mode of randomPool("hyperbolic")) {
+      expect(isBoard3D(buildBoard(mode, "easy")), mode).toBe(false);
+    }
     const flat = new Set(randomPool("flat"));
     expect(randomPool("3d").some((mode) => flat.has(mode))).toBe(false);
+    expect(randomPool("hyperbolic").some((mode) => flat.has(mode))).toBe(false);
   });
 
-  it("keeps the Custom-only boards off the home page and out of both pools", () => {
+  it("deals another board from the pool the one on screen came from", () => {
+    for (const kind of RANDOM_KINDS) {
+      for (const mode of randomPool(kind)) {
+        expect(randomKindOf(mode, isBoard3D(buildBoard(mode, "easy"))), mode).toBe(kind);
+      }
+    }
+  });
+
+  it("keeps the Custom-only boards off the home page and out of every pool", () => {
     expect(CUSTOM_ONLY.has("cube3d")).toBe(true);
     const home = quickPlayEntries().map((e) => e.key);
     for (const mode of CUSTOM_ONLY) {
       expect(hasMode(mode), mode).toBe(true);
       expect(home, mode).not.toContain(mode);
-      expect(randomPool("flat"), mode).not.toContain(mode);
-      expect(randomPool("3d"), mode).not.toContain(mode);
+      for (const kind of RANDOM_KINDS) expect(randomPool(kind), mode).not.toContain(mode);
     }
   });
 
@@ -48,7 +65,7 @@ describe("random board pools", () => {
     // menu, greyed, and never dealt at random.
     const blocked = new Set(blockedModes());
     expect(blocked.size).toBeGreaterThan(0);
-    for (const kind of ["flat", "3d"] as const) {
+    for (const kind of RANDOM_KINDS) {
       // `random` is injected, so this walks the whole pool rather than sampling
       // it: every ticket lands on a playable board.
       const pool = randomPool(kind, "easy");

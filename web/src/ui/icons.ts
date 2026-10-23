@@ -1144,6 +1144,10 @@ const ALIASES: Record<string, string> = {
   spiral: "phyllotaxis", // the Spirals family row: the sunflower
   fractal: "sphinx", // the Fractals family row
   hyperbolic: "hyperbolic73", // the Hyperbolic family row: the game's namesake
+  // the Hyperbolic page's two submenus: a {p,q} other than the group's own
+  // {7,3}, and the uniform tiling with the most kinds of corner on show
+  "hyperbolic-regular": "hyperbolic54",
+  "hyperbolic-uniform": "hyperbolic3474",
   // the solid-group rows borrow one of their own members' icons: there is no
   // board named "platonic", "archimedean" or "catalan" to draw, and
   // "polyhedra" now holds the frames and the stacks rather than the cube

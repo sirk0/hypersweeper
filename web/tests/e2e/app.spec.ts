@@ -49,17 +49,24 @@ test.describe("M1 app", () => {
     expect(state?.cellCount).toBeLessThan(105);
   });
 
-  test("Hyperbolic sits beside Flat, not inside it", async ({ page }) => {
+  test("Hyperbolic sits after Flat manifolds, split into Regular and Uniform", async ({
+    page,
+  }) => {
     const groups = await page
       .locator(".menu-sidebar .menu-entry[data-group]")
       .evaluateAll((rows) => rows.map((r) => (r as HTMLElement).dataset["group"]));
-    expect(groups.indexOf("hyperbolic")).toBe(groups.indexOf("flat") + 1);
+    expect(groups.indexOf("hyperbolic")).toBe(groups.indexOf("manifolds") + 1);
     await page.locator('.menu-entry[data-group="flat"]').click();
     await expect(page.locator('.menu-entry[data-submenu="aperiodic"]')).toBeVisible();
     await expect(page.locator('.menu-entry[data-submenu="hyperbolic"]')).toHaveCount(0);
+    // the binary tiling is filed with the self-similar boards
+    await page.locator('.menu-entry[data-submenu="fractal"]').click();
+    await expect(page.locator('.menu-entry[data-mode="hyperbolicbinary"]')).toBeVisible();
 
     await page.locator('.difficulty-btn[data-key="easy"]').click();
     await page.locator('.menu-entry[data-group="hyperbolic"]').click();
+    await expect(page.locator(".menu-body .menu-entry[data-submenu]")).toHaveCount(2);
+    await page.locator('.menu-entry[data-submenu="hyperbolic-regular"]').click();
     await page.locator('.menu-entry[data-mode="hyperbolic54"]').click();
     const state = await page.evaluate(() => window.__ms?.state());
     expect(state?.screen).toBe("game");
@@ -93,9 +100,9 @@ test.describe("M1 app", () => {
     await expect(page.locator(".hud-smiley")).toBeVisible();
   });
 
-  // ...and the two *random* ones. Which board they deal is random, so
-  // what is pinned is that a board opens and that it came from the right half
-  // of the catalogue: the Flat pool builds flat boards, the 3D pool solids.
+  // ...and the *random* ones. Which board they deal is random, so what is
+  // pinned is that a board opens and that it came from the right pool: the Flat
+  // pool builds flat boards, the 3D pool solids, the Hyperbolic pool discs.
   test("the home Flat row deals a random flat board", async ({ page }) => {
     await page.locator('.difficulty-btn[data-key="easy"]').click();
     await page.locator('.menu-entry[data-random="flat"]').click();
@@ -113,6 +120,16 @@ test.describe("M1 app", () => {
     const state = await page.evaluate(() => window.__ms?.state());
     expect(state?.screen).toBe("game");
     expect(state?.is3d).toBe(true);
+    await expect(page).toHaveURL(new RegExp(`\\?mode=${state?.mode}&difficulty=easy&seed=\\d+$`));
+  });
+
+  test("the home Hyperbolic row deals a random hyperbolic board", async ({ page }) => {
+    await page.locator('.difficulty-btn[data-key="easy"]').click();
+    await page.locator('.menu-entry[data-random="hyperbolic"]').click();
+    const state = await page.evaluate(() => window.__ms?.state());
+    expect(state?.screen).toBe("game");
+    expect(state?.is3d).toBe(false);
+    expect(state?.mode).toMatch(/^hyperbolic\d+$/);
     await expect(page).toHaveURL(new RegExp(`\\?mode=${state?.mode}&difficulty=easy&seed=\\d+$`));
   });
 

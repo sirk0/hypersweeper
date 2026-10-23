@@ -2606,6 +2606,14 @@ class TestHyperbolic:
             reference = hyp._shells(p, q, bigger, hyperbolic_positions(p, q, bigger))
             assert groups[:shells] == reference[:shells]
 
+    def test_the_rings_stop_as_soon_as_the_trim_is_held(self):
+        # the hard {6,4} board's 475 cells are cut from 4 rings (2953 faces);
+        # stopping a whole unit past the cut grew 6 (100381), and the web app
+        # took a second to open the board
+        from minesweeper.boards import hyperbolic as hyp
+        faces, _, _ = hyp._rings_for(6, 4, 31)
+        assert len(faces) == 2953
+
     @pytest.mark.parametrize("p,q", _HYPERBOLIC)
     def test_no_trim_leaves_a_twin(self, p, q):
         # where q is large, a rim vertex can keep a fan of faces that touch the

@@ -290,7 +290,30 @@ export function buildBoard(mode: string, difficulty: string, seed = 0): AnyBoard
   const builder = BUILDERS[spec.builder];
   const args = spec.args[difficulty];
   if (!builder || !args) throw new Error(`no preset for ${mode}/${difficulty}`);
-  return VARIANT_BUILDERS.has(spec.builder)
-    ? builder(...args, windowFor(mode, difficulty, seed))
-    : builder(...args);
+  const variant = VARIANT_BUILDERS.has(spec.builder);
+  const patch = variant ? windowFor(mode, difficulty, seed) : 0;
+  const key = `${mode}|${difficulty}|${patch}`;
+  let board = BUILT.get(key);
+  if (board) {
+    BUILT.delete(key); // re-inserted below, as the most recent
+  } else {
+    board = variant ? builder(...args, patch) : builder(...args);
+  }
+  BUILT.set(key, board);
+  if (BUILT.size > BUILT_KEEP) BUILT.delete(BUILT.keys().next().value!);
+  return board;
 }
+
+/**
+ * The boards `buildBoard` handed out last, by mode, difficulty and window,
+ * most recent last. A restart — the smiley, *Play again*, a share link to the
+ * board just played — deals the same board again, and the biggest boards
+ * take long enough to build that a player sees the pause, so the board is
+ * handed back instead of rebuilt. Sharing it is safe because a
+ * board is never changed once built: `Game` copies the adjacency it is dealt
+ * on, the meshes read the board and keep their own buffers, and the lazy
+ * `symmetries` is measured once either way. A few are kept, not every one:
+ * the conformance suite builds every board there is.
+ */
+const BUILT = new Map<string, AnyBoard>();
+const BUILT_KEEP = 4;

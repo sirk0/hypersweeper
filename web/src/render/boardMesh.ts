@@ -237,12 +237,18 @@ export function insetMitres(points: readonly Pt[]): [number, number][] {
  * game; the shapes have to stay legible.
  *
  * A straight "corner" (a T-vertex) comes out as three points on the straight
- * edge, which is harmless. The count is always `3 * points.length`, so a
- * cell's vertex count stays a function of its side count — which is what lets
- * a cell be re-cut in place (see cellStyle.ts). */
+ * edge, which is harmless. A point the board says is no corner at all
+ * (`corners`, its corner mask: the points a hyperbolic edge's arc is drawn
+ * through) is kept as it is, one point: rounding it took nothing off the
+ * outline but tripled the points a hyperbolic tile is cut from, and so the
+ * vertices its board draws and recolours. The count is `3` per corner and `1`
+ * per other point, fixed for the cell, so its vertex count stays a function of
+ * its outline — which is what lets a cell be re-cut in place (see
+ * cellStyle.ts). */
 export function roundCorners<P extends readonly number[]>(
   points: readonly P[],
   edgeFrac: number,
+  corners?: readonly boolean[] | null,
 ): P[] {
   const frac = Math.max(0, Math.min(edgeFrac, 0.45));
   const n = points.length;
@@ -259,6 +265,10 @@ export function roundCorners<P extends readonly number[]>(
     const prev = points[(i + n - 1) % n]!;
     const cur = points[i]!;
     const next = points[(i + 1) % n]!;
+    if (corners?.[i] === false) {
+      out.push(cur);
+      continue;
+    }
     const u0 = len(cur, prev) > 0 ? frac : 0;
     const u1 = len(cur, next) > 0 ? frac : 0;
     const a = at(cur, prev, u0);

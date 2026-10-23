@@ -141,6 +141,16 @@ export class PolygonBoard extends Group implements BoardMesh {
   private readonly shade: CellStyle["shade"];
   private readonly openShade: CellStyle["shade"];
   private readonly loops: number;
+  /** Those gradients laid out per vertex, by side count and cell state
+   * (`ramp`). `vertexShade` is a function of nothing else, and a flood or a
+   * reveal ripple recolours hundreds of cells a frame, so each is worked out
+   * once rather than once per vertex per recolour. */
+  private readonly ramps = new Map<string, Float32Array | null>();
+  /** Whether the glyph quads need regenerating before the next frame. The
+   * rebuild is a whole-board pass, and a flood fill sets hundreds of cells in a
+   * row with nothing drawn in between, so `setVisual` marks and
+   * `tickAnimations` flushes once — as `SolidBoard` already does. */
+  private glyphsDirty = false;
   /** Multiplier on every tile colour. 1 on an unlit style, whose tiles already
    * arrive as the palette named them; a lit one may pay back what the diffuse
    * shading takes (see CellStyle.albedo). */
@@ -282,7 +292,7 @@ export class PolygonBoard extends Group implements BoardMesh {
       // A cut with rounded corners draws the rounded outline; everything that
       // *measures* the cell above still read its true corners.
       const drawn =
-        style.round && !bent ? roundCorners(poly, style.round) : poly;
+        style.round && !bent ? roundCorners(poly, style.round, board.cornerMask?.get(cell)) : poly;
       const n = drawn.length;
       // n fan triangles for the top face, 2n for each ring of walls under it
       const count = cellVertexCount(n, this.profile);
@@ -425,6 +435,12 @@ export class PolygonBoard extends Group implements BoardMesh {
       this.writeColor(i);
       this.writeShadow(i);
     }
+    // The first upload is the whole buffer whatever the ranges say, so the
+    // ranges every cell just marked would only go up a second time with the
+    // first change after it.
+    for (const attr of [this.positionAttr, this.colorAttr, this.shadowPos, this.shadowColor]) {
+      attr?.clearUpdateRanges();
+    }
     // Cells are re-cut in place afterwards, so pad the (raised-state) bounds by
     // the full relief the style can take rather than recomputing per update.
     geometry.computeBoundingSphere();
@@ -522,21 +538,19 @@ export class PolygonBoard extends Group implements BoardMesh {
   }
 
   setVisual(cell: CellId, visual: CellVisual): void {
-    if (this.writeVisual(cell, visual)) this.rebuildGlyphs();
+    this.writeVisual(cell, visual);
   }
 
-  /** `setVisual` for many cells at once, the glyphs rebuilt once at the end
-   * rather than once a cell -- a closed surface relabels every face of its
-   * patch as its pan steps across the cover. */
+  /** `setVisual` for many cells at once -- a closed surface relabels every
+   * face of its patch as its pan steps across the cover. The glyphs are
+   * rebuilt once, on the next frame, either way (`glyphsDirty`). */
   setVisuals(visuals: Iterable<readonly [CellId, CellVisual]>): void {
-    let any = false;
-    for (const [cell, visual] of visuals) any = this.writeVisual(cell, visual) || any;
-    if (any) this.rebuildGlyphs();
+    for (const [cell, visual] of visuals) this.writeVisual(cell, visual);
   }
 
-  private writeVisual(cell: CellId, visual: CellVisual): boolean {
+  private writeVisual(cell: CellId, visual: CellVisual): void {
     const i = this.cellIndex.get(cell);
-    if (i == null) return false;
+    if (i == null) return;
     const wasOpen = isOpened(this.states[i]!);
     this.states[i] = visual;
     if (isOpened(visual) !== wasOpen) {
@@ -546,7 +560,7 @@ export class PolygonBoard extends Group implements BoardMesh {
     this.writeColor(i);
     if (visual.kind !== "hidden") this.motion.motion.setHover(i, false);
     if (isOpened(visual)) this.motion.motion.setPress(i, false);
-    return true;
+    this.glyphsDirty = true;
   }
 
   setHover(cell: CellId | null): void {
@@ -662,7 +676,7 @@ export class PolygonBoard extends Group implements BoardMesh {
         put(high.points[a]!, high.z);
       }
     }
-    this.positionAttr.needsUpdate = true;
+    touch(this.positionAttr, g.start, g.count);
   }
 
   private writeColor(i: number): void {
@@ -683,16 +697,35 @@ export class PolygonBoard extends Group implements BoardMesh {
     // solid, or the board would be a window rather than a field of tiles.
     const opened = isOpened(this.states[i]!);
     const alpha = this.openAlpha === null || !opened ? 1 : this.openAlpha;
-    const shade = opened ? this.openShade : this.shade;
-    for (let v = 0; v < g.count; v++) {
-      const f = shade ? vertexShade(shade, this.loops, v, g.poly.length) : 1;
-      if (this.colorAttr.itemSize === 4) {
-        this.colorAttr.setXYZW(g.start + v, col.r * f, col.g * f, col.b * f, alpha);
-      } else {
-        this.colorAttr.setXYZ(g.start + v, col.r * f, col.g * f, col.b * f);
-      }
+    const ramp = this.ramp(g.poly.length, opened);
+    // Straight into the array: this runs for every vertex of every cell a
+    // ripple recolours, every frame it runs.
+    const out = this.colorAttr.array as Float32Array;
+    const k = this.colorAttr.itemSize;
+    for (let v = 0, o = g.start * k; v < g.count; v++, o += k) {
+      const f = ramp ? ramp[v]! : 1;
+      out[o] = col.r * f;
+      out[o + 1] = col.g * f;
+      out[o + 2] = col.b * f;
+      if (k === 4) out[o + 3] = alpha;
     }
-    this.colorAttr.needsUpdate = true;
+    touch(this.colorAttr, g.start, g.count);
+  }
+
+  /** The style's gradient over an `n`-sided cell, a factor per vertex, or null
+   * where the style has none. See `ramps`. */
+  private ramp(n: number, opened: boolean): Float32Array | null {
+    const key = `${n}:${opened ? 1 : 0}`;
+    let ramp = this.ramps.get(key);
+    if (ramp === undefined) {
+      const shade = opened ? this.openShade : this.shade;
+      const count = cellVertexCount(n, this.profile);
+      ramp = shade
+        ? Float32Array.from({ length: count }, (_, v) => vertexShade(shade, this.loops, v, n))
+        : null;
+      this.ramps.set(key, ramp);
+    }
+    return ramp;
   }
 
   /** Lay cell `i`'s shadow: offset down the *screen* (which on a board shown
@@ -727,7 +760,7 @@ export class PolygonBoard extends Group implements BoardMesh {
       put(outer[b]!);
       put(inner[b]!);
     }
-    pos.needsUpdate = true;
+    touch(pos, this.shadowStart[i]!, 9 * n);
     this.writeShadowAlpha(i);
   }
 
@@ -747,7 +780,7 @@ export class PolygonBoard extends Group implements BoardMesh {
         col.setXYZW(v++, 0, 0, 0, inner ? a : 0);
       }
     }
-    col.needsUpdate = true;
+    touch(col, this.shadowStart[i]!, 9 * n);
   }
 
   /** Draw the glyphs counter-rotated (the board is being shown turned). */
@@ -759,6 +792,7 @@ export class PolygonBoard extends Group implements BoardMesh {
   }
 
   private rebuildGlyphs(): void {
+    this.glyphsDirty = false;
     const pos: number[] = [];
     const uvs: number[] = [];
     const owners: number[] = [];
@@ -905,15 +939,31 @@ export class PolygonBoard extends Group implements BoardMesh {
   }
 
   tickAnimations(now: number): boolean {
+    // Ahead of the early-out: a batch of `setVisual` calls with no animation
+    // running still has to reach the screen, and the renderer calls this on
+    // every frame whether or not it means to draw.
+    const flushed = this.glyphsDirty;
+    if (flushed) this.rebuildGlyphs();
     const moving = this.motion.step(now);
-    if (!this.anim.pending()) return moving;
+    if (!this.anim.pending()) return flushed || moving;
     const step = this.anim.step(now);
     for (const i of step.recolor) this.writeColor(i);
     if (step.glyphsDirty) this.rebuildGlyphs();
     this.position.set(step.offset[0], step.offset[1], 0);
     // The frame a flash or a pop settles on has to be drawn too.
-    return step.active || moving || step.recolor.length > 0 || step.glyphsDirty;
+    return step.active || flushed || moving || step.recolor.length > 0 || step.glyphsDirty;
   }
+}
+
+/** Mark `count` vertices of `attr` from vertex `start` for upload — those
+ * alone. A flood or a ripple frame changes a few hundred cells' worth of a
+ * buffer that holds every cell, and uploading the whole of it for each was
+ * most of the traffic; three.js merges ranges that touch, so a run of
+ * neighbouring cells, or the whole board, still goes up in one piece. Every
+ * writer of these buffers marks its range, so none relies on a whole upload. */
+function touch(attr: BufferAttribute, start: number, count: number): void {
+  attr.addUpdateRange(start * attr.itemSize, count * attr.itemSize);
+  attr.needsUpdate = true;
 }
 
 function lerp(p: Vertex, q: Vertex, t: number): Vertex {
