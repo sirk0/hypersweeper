@@ -47,6 +47,7 @@ from minesweeper.boards import (
     _klaassen_tiles,
     _pentaspiral_tiles,
     _z7_to_xy,
+    binary_board,
     build_board,
     family_rows,
     hyperbolic_board,
@@ -1431,6 +1432,16 @@ def _render_icon(key: str) -> pygame.Surface:
             _icon_shape(s, [(ox + (x - min_x) * sc, oy + (max_y - y) * sc)
                             for x, y in polygon],
                         fill=ICON_BLUE if i % 2 else ICON_BLUE_LIGHT, width=3)
+        _icon_gloss(s, pygame.Rect(d * 0.08, d * 0.06, d * 0.84, d * 0.55))
+    elif key == "hyperbolicbinary":
+        # the binary tiling's top three rows, two tiles, four and eight: each
+        # row half the width of the one above, the top row lighter
+        board = binary_board(2, 3, 1, scale=1)
+        sc = d * 0.9 / board.width
+        ox, oy = (d - board.width * sc) / 2, (d - board.height * sc) / 2
+        for (row, _), polygon in board.polygons.items():
+            pts = [(ox + x * sc, oy + y * sc) for x, y in polygon]
+            _icon_shape(s, pts, fill=ICON_BLUE_LIGHT if row == 0 else ICON_BLUE, width=3)
         _icon_gloss(s, pygame.Rect(d * 0.08, d * 0.06, d * 0.84, d * 0.55))
     elif key in _HYPERBOLIC_ICON_SHELLS:
         # the board itself, a ring and a half deep, in the disc whose rim it never

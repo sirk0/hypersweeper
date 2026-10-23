@@ -13457,6 +13457,50 @@
       }
     }
   },
+  "hyperbolicbinary": {
+    "builder": "binary_board",
+    "args": {
+      "medium": {
+        "args": [
+          2,
+          7,
+          30,
+          300.0
+        ],
+        "cells": 254,
+        "score": 0.055,
+        "distortionMean": 1.0502,
+        "distortionP90": 1.1011,
+        "indistinguishable": 0
+      },
+      "easy": {
+        "args": [
+          3,
+          5,
+          10,
+          200.0
+        ],
+        "cells": 93,
+        "score": 1.0986,
+        "distortionMean": 1.0489,
+        "distortionP90": 1.1011,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          2,
+          8,
+          60,
+          300.0
+        ],
+        "cells": 510,
+        "score": 0.0841,
+        "distortionMean": 1.0504,
+        "distortionP90": 1.1011,
+        "indistinguishable": 0
+      }
+    }
+  },
   "hurwitz667": {
     "builder": "hurwitz_board",
     "args": {
@@ -13465,7 +13509,7 @@
           "quartic",
           "zip",
           0,
-          10,
+          15,
           300.0
         ],
         "cells": 80,
@@ -13479,7 +13523,7 @@
           "macbeath",
           "zip",
           0,
-          30,
+          55,
           300.0
         ],
         "cells": 240,
@@ -13493,7 +13537,7 @@
           "triplet",
           "zip",
           0,
-          60,
+          145,
           300.0
         ],
         "cells": 520,

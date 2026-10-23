@@ -3,6 +3,7 @@ import itertools
 import math
 import statistics
 from collections import Counter, defaultdict
+from fractions import Fraction
 
 import pytest
 
@@ -173,6 +174,7 @@ from minesweeper.boards.hurwitz import (
 from minesweeper.boards.hyperbolic import (
     _central_polygon,
     _isometry,
+    binary_board,
     face_centre,
     hyperbolic_board,
     hyperbolic_faces,
@@ -2994,6 +2996,106 @@ class TestHurwitz:
             hurwitz_board("quartic", "zip", -1, 1)
         with pytest.raises(ValueError):
             hurwitz_board("klein", "zip", 0, 1)
+
+
+class TestBinaryTiling:
+    """Böröczky's binary tiling in the upper half-plane (boards/hyperbolic.py):
+    a rectangle of rows each half the width of the one above, every tile
+    congruent in the hyperbolic plane, every interior tile 8 neighbours."""
+
+    # (top, levels): the shipped windows, and a few that are not
+    WINDOWS = [(3, 5), (2, 7), (2, 8), (1, 4), (4, 3)]
+
+    @staticmethod
+    def _plane(top, levels):
+        """The board at one pixel per bottom-row tile, with each cell's corners
+        read back into the half-plane (y up, the ideal line at y = 0) -- exact,
+        since every coordinate is then an integer."""
+        board = binary_board(top, levels, 0, scale=2 ** (levels - 1))
+        height = 2 ** levels
+        cells = {cell: [(x, height - y) for x, y in polygon]
+                 for cell, polygon in board.polygons.items()}
+        return board, cells
+
+    @pytest.mark.parametrize("top,levels", WINDOWS)
+    def test_cell_count(self, top, levels):
+        board, _ = self._plane(top, levels)
+        assert len(board.adjacency) == top * (2 ** levels - 1)
+
+    @pytest.mark.parametrize("top,levels", WINDOWS)
+    def test_corners_are_integer_pairs_on_the_rows(self, top, levels):
+        _, cells = self._plane(top, levels)
+        for points in cells.values():
+            for x, y in points:
+                assert x == int(x) and y == int(y)
+                assert y > 0 and int(y) & (int(y) - 1) == 0  # a power of two
+
+    @pytest.mark.parametrize("top,levels", WINDOWS)
+    def test_every_tile_is_the_unit_tile_moved_by_an_isometry(self, top, levels):
+        """z -> (z - x0) / w, an isometry of the half-plane, takes each tile
+        onto [0, 1] x [1, 2] -- with its bottom midpoint, where it has
+        children."""
+        _, cells = self._plane(top, levels)
+        unit = [(0, 2), (1, 2), (1, 1), (Fraction(1, 2), 1), (0, 1)]
+        for (row, _), points in cells.items():
+            x0, w = points[0][0], points[1][0] - points[0][0]
+            moved = [(Fraction(x - x0) / w, Fraction(y) / w) for x, y in points]
+            assert moved == (unit if row < levels - 1 else unit[:3] + unit[4:])
+
+    @pytest.mark.parametrize("top,levels", WINDOWS)
+    def test_the_window_is_a_whole_rectangle(self, top, levels):
+        board, cells = self._plane(top, levels)
+        area = sum((p[1][0] - p[0][0]) ** 2 for p in cells.values())
+        assert area == top * 2 ** (levels - 1) * (2 ** levels - 1)
+        assert board.width == top * 2 ** (levels - 1)
+        assert board.height == 2 ** levels - 1
+
+    @pytest.mark.parametrize("top,levels", WINDOWS)
+    def test_the_window_is_mirror_symmetric(self, top, levels):
+        board, cells = self._plane(top, levels)
+        shapes = {frozenset(points) for points in cells.values()}
+        assert {frozenset((board.width - x, y) for x, y in s) for s in shapes} == shapes
+
+    def test_interior_tiles_have_two_beside_four_below_two_above(self):
+        top, levels = 2, 7
+        board, cells = self._plane(top, levels)
+        width = board.width
+        checked = 0
+        for (row, j), others in board.adjacency.items():
+            points = cells[(row, j)]
+            if row in (0, levels - 1) or points[0][0] == 0 or points[1][0] == width:
+                continue
+            by_row = Counter(other[0] - row for other in others)
+            assert len(others) == 8
+            assert by_row == {0: 2, 1: 4, -1: 2}
+            # above: the parent, and the parent's neighbour on the child's own
+            # side -- which is what varies from tile to tile
+            above = sorted(other[1] for other in others if other[0] == row - 1)
+            side = -1 if j % 2 == 0 else 1
+            assert above == sorted([j // 2, j // 2 + side])
+            checked += 1
+        assert checked > 50
+
+    def test_no_window_has_a_twin_and_only_two_near_twins(self):
+        """No two cells share a closed neighbourhood. Two do miss a neighbour's
+        by one cell: the bottom row's second tile and its parent, at each end
+        of the window, which only cutting the rectangle could remove."""
+        for top, levels in self.WINDOWS + [(2, 4)]:
+            board, _ = self._plane(top, levels)
+            hood = {c: frozenset([c, *ns]) for c, ns in board.adjacency.items()}
+            assert len(set(hood.values())) == len(hood)
+            near = {c for c, ns in board.adjacency.items()
+                    if any(len(hood[o]) == len(hood[c]) + 1 and hood[c] < hood[o]
+                           for o in ns)}
+            if levels >= 3:
+                bottom = levels - 1
+                assert near == {(bottom, 1), (bottom, top * 2 ** bottom - 2)}
+
+    def test_the_corner_mask_drops_the_bottom_midpoint(self):
+        board = binary_board(2, 3, 0)
+        for (row, _), mask in board.corner_mask.items():
+            assert sum(mask) == 4
+            assert len(mask) == (5 if row < 2 else 4)
 
 
 class TestNeighborCounts:

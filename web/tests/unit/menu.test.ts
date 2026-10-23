@@ -136,6 +136,7 @@ describe("geometry groups", () => {
       "hyperbolic3737",
       "hyperbolic3474",
       "hyperbolic4614",
+      "hyperbolicbinary",
       "hurwitz667",
     ]);
     expect(menuFamilies("flat")).not.toContain("hyperbolic");
@@ -157,6 +158,7 @@ describe("geometry groups", () => {
         "hyperbolic3737",
         "hyperbolic3474",
         "hyperbolic4614",
+        "hyperbolicbinary",
       ]),
     );
   });

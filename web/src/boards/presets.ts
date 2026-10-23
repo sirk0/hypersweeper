@@ -46,7 +46,7 @@ import {
   sphinxBoard,
 } from "./fractal";
 import { hurwitzBoard } from "./hurwitz";
-import { hyperbolicBoard, hyperbolicUniformBoard } from "./hyperbolic";
+import { binaryBoard, hyperbolicBoard, hyperbolicUniformBoard } from "./hyperbolic";
 import { DIFFICULTIES } from "./catalog";
 import type { AnyBoard } from "./core";
 import {
@@ -209,6 +209,7 @@ const BUILDERS: Record<string, Builder> = {
   gosper_board: gosperBoard,
   hyperbolic_board: hyperbolicBoard,
   hyperbolic_uniform_board: hyperbolicUniformBoard,
+  binary_board: binaryBoard,
   hurwitz_board: hurwitzBoard,
 };
 

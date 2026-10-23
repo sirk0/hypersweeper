@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buildBoard } from "../../src/boards/presets";
 import { boundaryComponents, eulerCharacteristic, type Board } from "../../src/boards/core";
 import {
+  binaryBoard,
   hyperbolicBoard,
   hyperbolicFaces,
   hyperbolicUniformBoard,
@@ -156,5 +157,68 @@ describe("the uniform hyperbolic boards", () => {
       const mx = centre.reduce((s, v) => s + v[0]!, 0) / centre.length;
       expect(mx).toBeCloseTo(board.width / 2, 9);
     }
+  });
+});
+
+// Böröczky's binary tiling, in the upper half-plane rather than the disc. The
+// conformance oracle holds it to the Python board; these pin the half-plane
+// the renderer pans it in, and what makes it read as one tile.
+describe("the binary tiling", () => {
+  it("is top * (2^levels - 1) cells in a rectangle, at every difficulty", () => {
+    for (const difficulty of ["easy", "medium", "hard"]) {
+      const board = buildBoard("hyperbolicbinary", difficulty) as Board;
+      expect(board.disc).toBeUndefined();
+      expect(eulerCharacteristic(board), difficulty).toBe(1);
+      expect(boundaryComponents(board), difficulty).toBe(1);
+      const area = [...board.polygons.values()].reduce((sum, poly) => {
+        const xs = poly.map((p) => p[0]);
+        const ys = poly.map((p) => p[1]);
+        return sum + (Math.max(...xs) - Math.min(...xs)) * (Math.max(...ys) - Math.min(...ys));
+      }, 0);
+      expect(area / (board.width * board.height)).toBeCloseTo(1, 9);
+    }
+    expect(binaryBoard(2, 7, 0).adjacency.size).toBe(254);
+    expect(binaryBoard(3, 5, 0).adjacency.size).toBe(93);
+  });
+
+  it("gives an interior tile 2 beside, 4 below and 2 above", () => {
+    const levels = 7;
+    const board = binaryBoard(2, levels, 0, 2 ** (levels - 1));
+    let checked = 0;
+    for (const [cell, others] of board.adjacency) {
+      const [row, j] = cell.split(",").map(Number) as [number, number];
+      const poly = board.polygons.get(cell)!;
+      const xs = poly.map((p) => p[0]);
+      if (row === 0 || row === levels - 1) continue;
+      if (Math.min(...xs) === 0 || Math.max(...xs) === board.width) continue;
+      const rows = others.map((o) => Number(o.split(",")[0]) - row);
+      expect(others.length).toBe(8);
+      expect(rows.filter((d) => d === 0).length).toBe(2);
+      expect(rows.filter((d) => d === 1).length).toBe(4);
+      expect(rows.filter((d) => d === -1).length).toBe(2);
+      // the parent, and its neighbour on this tile's own side
+      const above = others.filter((o) => Number(o.split(",")[0]) === row - 1);
+      const side = j % 2 === 0 ? -1 : 1;
+      expect(new Set(above)).toEqual(new Set([`${row - 1},${j >> 1}`, `${row - 1},${(j >> 1) + side}`]));
+      checked++;
+    }
+    expect(checked).toBeGreaterThan(50);
+  });
+
+  it("colours every cell as one four-sided shape, at every size", () => {
+    const board = binaryBoard(2, 6, 0);
+    const tones = classifyShapes(board.polygons, board.cornerMask, board.curved);
+    const kinds = new Set([...tones.values()].map((t) => JSON.stringify(t)));
+    expect(kinds.size).toBe(1);
+    expect([...tones.values()][0]!.sides).toBe(4);
+  });
+
+  it("puts the ideal line one bottom row below the board", () => {
+    const board = binaryBoard(2, 5, 0, 320);
+    // bottom-row tiles are 320 / 16 = 20px, and the board ends one of them
+    // above the line y = 0
+    expect(board.halfPlane).toEqual({ boundary: board.height + 20, maxZoom: 16 });
+    const bottom = Math.max(...[...board.polygons.values()].flat().map((p) => p[1]));
+    expect(board.halfPlane!.boundary - bottom).toBeCloseTo(20, 9);
   });
 });

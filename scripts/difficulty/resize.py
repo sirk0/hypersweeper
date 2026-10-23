@@ -248,6 +248,13 @@ SPEC: dict[str, dict] = {
     # the uniform tilings of {7,3} (hyperbolic_uniform_board(p, q, op, shells,
     # mines, scale)): the same disc and the same knob, after the op
     "hyperbolic_uniform_board": dict(size=(3,), mine=4, shape=5, kind="scale"),
+    # Böröczky's binary tiling (binary_board(top, levels, mines, scale)): two
+    # knobs, but top * (2**levels - 1) cells rather than anything near their
+    # product, so the product filter below would throw the right windows away.
+    # Its candidates are enumerated instead (`_grid_binary`). The window is a
+    # rectangle, so the flat shape term is its aspect ratio, and a square one
+    # is ~2 tiles across the top whatever the depth.
+    "binary_board": dict(size=(0, 1), mine=2, shape=3, kind="scale", grid="binary"),
     # the closed hyperbolic surfaces (hurwitz_board(surface, op, margin, mines,
     # scale)): the surface *is* the size -- its genus fixes how many heptagons
     # it carries -- so the knob is the surface itself, enumerated by
@@ -309,12 +316,20 @@ def _grid_goldberg3() -> list[list[int]]:
             if (h - k) % 3 != 0]
 
 
+# ``binary_board(top, levels)``: every row doubles, so the count is
+# ``top * (2**levels - 1)`` -- 1, 3, 7, 15 ... times the top row. A row deep
+# enough for hard is far past anything near easy, so the grid is small.
+def _grid_binary() -> list[list[int]]:
+    return [[top, levels] for top in range(1, 9) for levels in range(2, 11)]
+
+
 # ``hurwitz_board(surface, ...)``: the three Hurwitz surfaces, smallest first.
 def _grid_hurwitz() -> list[list[str]]:
     return [[surface] for surface in HURWITZ_SURFACES]
 
 
 GRIDS = {
+    "binary": _grid_binary,
     "goldberg3": _grid_goldberg3,
     "hurwitz": _grid_hurwitz,
     "cubeframe": _grid_cubeframe,

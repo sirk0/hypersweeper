@@ -21,7 +21,8 @@ import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment
 import type { CellId } from "../boards/core";
 import { SOLID_GROUPS, surfaceOf, viewHint } from "../boards/catalog";
 import { PICK_LAYERS, type BoardMesh, type PickLayer } from "./boardMesh";
-import { anchoredPan, clampPan, clampZoom, MIN_ZOOM } from "./zoom";
+import { halfPlaneDrag } from "./halfPlane";
+import { anchoredPan, clampPan, clampZoom, MAX_ZOOM, MIN_ZOOM } from "./zoom";
 import { ParticleField } from "./particles";
 import { capableDevice, rendererName } from "./quality";
 
@@ -444,15 +445,31 @@ export class BoardRenderer {
     return this.board?.discPans === true;
   }
 
+  /** Whether drags move the current board by an isometry of the hyperbolic
+   * plane it is drawn in — the Poincaré disc's (`discPans`) or the upper
+   * half-plane's (render/halfPlane.ts) — so a one-finger drag pans it at every
+   * zoom and the pan arrows and arrow keys carry it. */
+  get hyperbolicPans(): boolean {
+    return this.discPans || this.board?.halfPlane !== undefined;
+  }
+
+  /** The furthest the current board may be magnified: `MAX_ZOOM`, or for a
+   * board in the half-plane as far as brings its bottom row up to the size
+   * its top row is framed at, if that is further. */
+  private get maxZoom(): number {
+    return Math.max(MAX_ZOOM, this.board?.halfPlane?.maxZoom ?? 0);
+  }
+
   /** Multiply the zoom by `factor`, keeping the board fixed under the anchor
    * pixel (a pinch's midpoint, the mouse under the wheel; the centre of the
-   * view when omitted). Clamped to [MIN_ZOOM, MAX_ZOOM]. */
+   * view when omitted). Clamped to [MIN_ZOOM, MAX_ZOOM] — further, on a board
+   * in the half-plane (`maxZoom`). */
   zoomBy(factor: number, anchorX?: number, anchorY?: number): void {
     this.zoomTo(this.zoomLevel * factor, anchorX, anchorY);
   }
 
   private zoomTo(zoom: number, anchorX?: number, anchorY?: number): void {
-    const next = clampZoom(zoom);
+    const next = clampZoom(zoom, this.maxZoom);
     if (next === this.zoomLevel || !this.board) return;
     const before = this.wpp;
     const after = (before * this.zoomLevel) / next;
@@ -482,6 +499,13 @@ export class BoardRenderer {
       if (board.dragDisc(from, to)) this.dirty = true;
       return;
     }
+    if (board.halfPlane) {
+      const toX = x ?? this.centerX + dxPx;
+      const toY = y ?? this.centerY + dyPx;
+      this.dragHalfPlane(board.halfPlane, this.boardPoint(toX - dxPx, toY - dyPx),
+        this.boardPoint(toX, toY));
+      return;
+    }
     this.panX -= dxPx * this.wpp;
     this.panY += dyPx * this.wpp;
     this.frame();
@@ -507,6 +531,33 @@ export class BoardRenderer {
       done: 0,
     };
     this.dirty = true;
+  }
+
+  /** Move a board drawn in the half-plane by the isometry taking board point
+   * `from` to `to` (render/halfPlane.ts). The view draws board point p at
+   * S(R p), R the board's own turn and S the camera; drawing it at S(R(a p +
+   * t)) instead is the camera magnified by `a` and moved by R t, which is how
+   * the board's quarter turn on a portrait screen comes out right with no
+   * case of its own. */
+  private dragHalfPlane(
+    plane: { line: number; maxZoom: number },
+    from: [number, number],
+    to: [number, number],
+  ): void {
+    const move = halfPlaneDrag(from, to, plane.line, this.zoomLevel, this.maxZoom);
+    if (!move || !this.board) return;
+    this.board.updateWorldMatrix(true, false);
+    const origin = BOARD_POINT.set(0, 0, 0);
+    this.board.localToWorld(origin);
+    const [ox, oy] = [origin.x, origin.y];
+    const shift = BOARD_POINT.set(move.t[0], move.t[1], 0);
+    this.board.localToWorld(shift);
+    // the world moves by w -> a w + c, c = L(t) - a L(0) for the board's own
+    // local-to-world map L
+    this.panX = (this.panX - (shift.x - move.a * ox)) / move.a;
+    this.panY = (this.panY - (shift.y - move.a * oy)) / move.a;
+    this.zoomLevel *= move.a;
+    this.frame();
   }
 
   /** The point of a flat board's plane (mesh units) under canvas CSS pixel

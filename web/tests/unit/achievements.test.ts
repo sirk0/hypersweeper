@@ -132,6 +132,8 @@ describe("the declared shape list", () => {
       ["hyperbolic3737", [3, 7]],
       ["hyperbolic3474", [3, 4, 7]],
       ["hyperbolic4614", [4, 6, 14]],
+      // drawn as squares, each with its children's T-vertex on its bottom edge
+      ["hyperbolicbinary", [4]],
     ] as const) {
       for (const difficulty of ["easy", "medium", "hard"]) {
         const board = buildBoard(mode, difficulty);

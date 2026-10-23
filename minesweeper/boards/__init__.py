@@ -184,6 +184,7 @@ from minesweeper.boards.hurwitz import (  # noqa: F401
     hurwitz_map,
 )
 from minesweeper.boards.hyperbolic import (  # noqa: F401
+    binary_board,
     hyperbolic_board,
     hyperbolic_faces,
     hyperbolic_positions,

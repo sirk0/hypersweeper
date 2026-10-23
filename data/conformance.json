@@ -2553,6 +2553,35 @@
         "hasCellCycle": false
       }
     },
+    "hyperbolicbinary": {
+      "easy": {
+        "cellCount": 93,
+        "mineCount": 6,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 239,
+        "vertexCount": 147,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 254,
+        "mineCount": 23,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 643,
+        "vertexCount": 390,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 510,
+        "mineCount": 57,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 1284,
+        "vertexCount": 775,
+        "hasCellCycle": false
+      }
+    },
     "cubocta": {
       "easy": {
         "cellCount": 56,

@@ -102,6 +102,9 @@ const MODES = [
   "hyperbolic73",
   "hyperbolic54",
   "hyperbolic45",
+  // ...and the one in the upper half-plane: straight edges, rows halving down
+  // to the ideal line, a rectangle rather than a disc
+  "hyperbolicbinary",
   // ...and a closed surface drawn as a patch of the disc that covers it: every
   // cell drawn at least once, its copies showing one state
   "hurwitz667",

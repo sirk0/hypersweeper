@@ -55,7 +55,11 @@ from minesweeper.boards.fractal import (
     sphinx_board,
 )
 from minesweeper.boards.hurwitz import hurwitz_board
-from minesweeper.boards.hyperbolic import hyperbolic_board, hyperbolic_uniform_board
+from minesweeper.boards.hyperbolic import (
+    binary_board,
+    hyperbolic_board,
+    hyperbolic_uniform_board,
+)
 from minesweeper.boards.solids import (
     brick_cube_board,
     c180_board,
@@ -239,6 +243,9 @@ _JSON_BUILDERS = {
     # hyperbolic_uniform_board(p, q, op, shells, mine_count, scale): 6.6.7,
     # 3.7.3.7, 3.4.7.4 and 4.6.14 from {7,3}, trimmed the same way.
     "hyperbolic_uniform_board": hyperbolic_uniform_board,
+    # Böröczky's binary tiling in the upper half-plane: binary_board(top,
+    # levels, mine_count, scale), top * (2**levels - 1) cells.
+    "binary_board": binary_board,
     # The closed hyperbolic surfaces: hurwitz_board(surface, op, margin,
     # mine_count, scale), a Hurwitz surface tiled in ``op`` and drawn as a
     # patch of the disc that covers it (boards/hurwitz.py). The surface is the

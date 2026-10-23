@@ -234,7 +234,9 @@ describe("the reach", () => {
 
 describe("the hyperbolic boards' disc", () => {
   it("is the unit circle the cells were placed in, whole out to its rim", () => {
-    for (const mode of HYPERBOLIC_MODES) {
+    // every hyperbolic board but the binary tiling, which is drawn in the
+    // half-plane instead (render/halfPlane.ts)
+    for (const mode of HYPERBOLIC_MODES.filter((m) => m !== "hyperbolicbinary")) {
       const board = buildBoard(mode, "hard") as Board;
       const disc = board.disc!;
       expect(disc).toBeDefined();

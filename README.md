@@ -48,7 +48,7 @@ Pick a surface, then a tiling:
   self-similar — one tile inflated into a patch shaped like itself: the
   sphinx, the chair, the Sierpiński carpet, the pentaflake, and hexagons
   filling a Gosper island.
-  And fourteen are not Euclidean at all — the game's namesake: nine regular
+  And fifteen are not Euclidean at all — the game's namesake: nine regular
   {p,q} tilings, from octagons three to a corner ({8,3}) and heptagons
   three to a corner ({7,3}) to squares six to a corner ({4,6}) and triangles
   seven and eight to a corner ({3,7}, {3,8} — a {3,7} triangle has 15
@@ -58,7 +58,9 @@ Pick a surface, then a tiling:
   the hyperbolic soccer ball (6.6.7 — hexagons ringing every heptagon,
   HyperRogue's tiling), triangles and heptagons (3.7.3.7), triangles,
   squares and heptagons (3.4.7.4), and squares, hexagons and 14-gons
-  (4.6.14). The fourteenth has no rim at all: the soccer ball glued up into a
+  (4.6.14). One is drawn in the upper half-plane instead, as a rectangle:
+  Böröczky's binary tiling, every row twice as many tiles as the one above.
+  And the last has no rim at all: the soccer ball glued up into a
   closed surface — Klein's quartic at easy, Macbeath's surface at medium and
   a genus-14 Hurwitz surface at hard — drawn as a patch of the disc that
   covers it, every cell drawn at least once and every one keeping its full

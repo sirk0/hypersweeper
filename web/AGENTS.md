@@ -133,7 +133,9 @@ design rather than the rule itself.
   whichever camera the board uses. `src/render/disc.ts` is its hyperbolic twin:
   the Möbius view a hyperbolic board is dragged by (see "Hyperbolic panning" in
   [`docs/render.md`](docs/render.md)), applied by `polygonBoard.ts` through the
-  vertex shader.
+  vertex shader. `src/render/halfPlane.ts` is the binary tiling's: a drag on a
+  board drawn in the upper half-plane becomes a zoom about its ideal line and a
+  slide along it, applied by the ordinary flat camera.
 - `src/ui/` — HTML/CSS overlay chrome: `hud.ts` (header — laid out like the
   pygame one: back + flag at the left edge, the smiley on the exact screen
   centre with an equal-height LED counter either side of it, and the Klein

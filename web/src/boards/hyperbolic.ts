@@ -841,3 +841,71 @@ export function hyperbolicUniformBoard(
   const name = vertexConfig(p, q, op).join(".");
   return discBoard(wythoffMode(p, q, op), name, shells, faces, kept, pos, mineCount, scale, arc);
 }
+
+// -- Böröczky's binary tiling, in the upper half-plane -----------------------
+//
+// Port of the section of the same name in hyperbolic.py, which says why: the
+// half-plane cut along the horocycles y = 2**i and the geodesics x = j * 2**i
+// between them, every tile the image of the unit one under z -> 2**i z + j 2**i,
+// so all congruent; drawn as squares, each row half the width of the one above,
+// in a rectangular window. Ids are the corners themselves, integer pairs in
+// bottom-row tiles; a tile's bottom midpoint, where its two children meet, is a
+// T-vertex the corner mask drops.
+
+/** `top` tiles across the top row, `levels` rows; `scale` is the pixel width of
+ * one top-row tile. Cells are `row,j`, row 0 the top row. */
+export function binaryBoard(
+  top: number,
+  levels: number,
+  mineCount: number,
+  scale = 300,
+): Board {
+  if (top < 1 || levels < 1) {
+    throw new Error("binaryBoard needs at least one tile and one row");
+  }
+  const cells = new Map<CellId, string[]>();
+  const cornerMask = new Map<CellId, boolean[]>();
+  const points = new Map<string, [number, number]>();
+  const unit = scale / 2 ** (levels - 1);
+  const height = 2 ** levels;
+  const id = (x: number, y: number): string => {
+    const k = cid(x, y);
+    points.set(k, [x * unit, (height - y) * unit]);
+    return k;
+  };
+  for (let row = 0; row < levels; row++) {
+    const level = levels - 1 - row; // 0 = the bottom row
+    const w = 2 ** level;
+    for (let j = 0; j < top * 2 ** row; j++) {
+      const [x0, x1, y0, y1] = [j * w, (j + 1) * w, w, 2 * w];
+      // clockwise in the half-plane, which is the pixel space's (y down)
+      // counterclockwise -- the order every flat builder uses
+      const ids = [id(x0, y1), id(x1, y1), id(x1, y0)];
+      const corner = [true, true, true];
+      if (level > 0) {
+        // the T-vertex where the two children below meet
+        ids.push(id(x0 + w / 2, y0));
+        corner.push(false);
+      }
+      ids.push(id(x0, y0));
+      corner.push(true);
+      cells.set(cid(row, j), ids);
+      cornerMask.set(cid(row, j), corner);
+    }
+  }
+  const polygons = new Map<CellId, Vertex[]>();
+  for (const [cell, ids] of cells) {
+    polygons.set(cell, ids.map((k) => [...points.get(k)!] as Vertex));
+  }
+  return flatBoard({
+    mode: "hyperbolicbinary",
+    polygons,
+    adjacency: sharedVertexAdjacency(cells),
+    mineCount,
+    width: top * scale,
+    height: (height - 1) * unit,
+    cornerMask,
+    curved: true,
+    halfPlane: { boundary: height * unit, maxZoom: 2 ** (levels - 1) },
+  });
+}
