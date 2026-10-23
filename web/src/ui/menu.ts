@@ -576,8 +576,8 @@ export class Menu {
         this.settings.setBackgrounds(on);
         page();
       },
-      setGloss: (on) => {
-        this.settings.setGloss(on);
+      setGloss: (level) => {
+        this.settings.setGloss(level);
         page();
       },
       setPins: (on) => {

@@ -742,7 +742,7 @@ written-out `V3_DEFAULT = "light"` and v3 to `V4_DEFAULT = "realistic"` rather
 than to `DEFAULT_THEME` — letting either drift with the current default would
 silently re-aim every record that passes through it.
 
-**The board's finish: glossy tiles and 3D pins.** Two switches under Appearance,
+**The board's finish: glossy tiles and 3D pins.** Two rows under Appearance,
 beside Custom backgrounds, and the same kind of thing — what the board is made
 of rather than what the game does.
 
@@ -754,17 +754,30 @@ changes a cell's vertex layout, and the argument for each is independent of the
 argument for a textured page — so each is a setting that overrides whatever the
 composed style says, either way.
 
-- **Glossy tiles** is on by default, so the board ships polished. What it covers
-  is the polished *reading*, both halves of it: the specular finish a solid
-  catches a sweeping highlight with, and the bright-centre-to-dark-rim gradient
-  that is the only thing saying "polished" on a flat board lit head-on. Turning
-  it off mattes the material and falls the closed cells back to the style's own
-  `openShade` — which is not an invented number but the matte reading that cut
-  already declares ("glass beads closed, matte pans opened"), so the tile keeps
-  its relief and its edges and loses only the hotspot. Turning it *on* lends the
-  dome's finish to a cut that declares no gradient (Classic, Flat) and leaves
-  alone one that does: Sand's is tuned a hair off Bright's on purpose, and
-  answering a switch is not an excuse to retune a theme.
+- **Glossy tiles** is a level — Off, Low, Medium or High — and **Medium** by
+  default, so the board ships polished. The row steps through the four on each
+  tap and shows the level at its right, like Visual effects beside it. What it
+  covers is the polished *reading*, both halves of it: the specular finish a
+  solid catches a sweeping highlight with (the material's roughness), and the
+  bright-centre-to-dark-rim gradient that is the only thing saying "polished" on
+  a flat board lit head-on (the closed cells' `shade`). Each level is a
+  roughness, a metalness and a gradient strength (`GLOSS` in `cellStyle.ts`):
+  - **Off** mattes the material and falls the closed cells back to the style's
+    own `openShade` — which is not an invented number but the matte reading that
+    cut already declares ("glass beads closed, matte pans opened"), so the tile
+    keeps its relief and its edges and loses only the hotspot.
+  - **Low**, **Medium** and **High** run the closed gradient from that matte
+    reading toward the polished one, and High past it. The polished one is the
+    style's own `shade` where it declares one — Sand's is tuned a hair off
+    Bright's on purpose, and answering a setting is not an excuse to retune a
+    theme — and the dome's borrowed one for a cut that declares no gradient
+    (Classic, Flat).
+  - **Medium is exactly what the old on/off switch's *on* was**, and Off its
+    *off*, so the default board did not move when the switch became levels and a
+    stored boolean carries over without a schema bump (`resolveGloss`: `true`
+    reads as Medium, `false` as Off). High keeps Medium's metalness: more of it
+    only darkens a lit tile — a metal takes less diffuse light — and a tile's
+    colour is the theme's to set.
 - **3D flag pins** is on by default, and applies to every look rather than to the
   domed cut alone — a board you can turn is exactly the case a billboard fails at
   (see "3D markers" in [`render.md`](render.md)), and that argument never had

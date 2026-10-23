@@ -54,7 +54,7 @@ const SETTINGS: Settings = {
   haptics: false,
   holdToFlagMs: 500,
   backgrounds: true,
-  gloss: true,
+  gloss: "medium",
   pins: false,
   extraControls: true,
   analytics: false,
@@ -123,15 +123,15 @@ describe("custom backgrounds", () => {
 describe("the board's finish, and the extra controls", () => {
   it("default the way the look shipped, and take a stored choice", () => {
     // Three purely additive fields, so a record from a build that predates them
-    // simply lacks them. Gloss is on — the polished tiles are the look the game
-    // is meant to be met in — the control row is quiet, and the pins are on
+    // simply lacks them. Gloss is at Medium — the polished tiles are the look
+    // the game is meant to be met in — the control row is quiet, and the pins are on
     // because a board you can turn is exactly the case a billboard fails at.
-    expect(DEFAULT_SETTINGS.gloss).toBe(true);
+    expect(DEFAULT_SETTINGS.gloss).toBe("medium");
     expect(DEFAULT_SETTINGS.pins).toBe(true);
     expect(DEFAULT_SETTINGS.extraControls).toBe(false);
     const store = withStorage(fakeStorage());
     store.setItem(KEY, JSON.stringify({ version: 4, theme: "realistic" }));
-    expect(loadSettings().gloss).toBe(true);
+    expect(loadSettings().gloss).toBe("medium");
     expect(loadSettings().pins).toBe(true);
     expect(loadSettings().extraControls).toBe(false);
 
@@ -139,16 +139,28 @@ describe("the board's finish, and the extra controls", () => {
       KEY,
       JSON.stringify({ version: 4, gloss: false, pins: false, extraControls: true }),
     );
-    expect(loadSettings().gloss).toBe(false);
+    // A gloss stored by the old on/off switch: off stays matte.
+    expect(loadSettings().gloss).toBe("off");
     expect(loadSettings().pins).toBe(false);
     expect(loadSettings().extraControls).toBe(true);
 
-    // ...and anything that is not a boolean is not a choice.
+    // ...on was the polish Medium now is...
+    store.setItem(KEY, JSON.stringify({ version: 5, gloss: true }));
+    expect(loadSettings().gloss).toBe("medium");
+    // ...and every level is taken as stored.
+    for (const level of ["off", "low", "medium", "high"]) {
+      store.setItem(KEY, JSON.stringify({ version: 5, gloss: level }));
+      expect(loadSettings().gloss).toBe(level);
+    }
+
+    // ...and anything else is not a choice (`"toString"` included).
     store.setItem(
       KEY,
       JSON.stringify({ version: 4, gloss: "no", pins: 0, extraControls: null }),
     );
-    expect(loadSettings().gloss).toBe(true);
+    expect(loadSettings().gloss).toBe("medium");
+    store.setItem(KEY, JSON.stringify({ version: 5, gloss: "toString" }));
+    expect(loadSettings().gloss).toBe("medium");
     expect(loadSettings().pins).toBe(true);
     expect(loadSettings().extraControls).toBe(false);
   });

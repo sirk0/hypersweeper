@@ -621,36 +621,57 @@ export function cellStyle(key: string | null | undefined): CellStyle {
   return CELL_STYLES[resolveCellStyle(key)]!;
 }
 
+/** How polished the tiles are — Settings › Appearance › *Glossy tiles*, a
+ * row that steps through the four in this order. */
+export type GlossLevel = "off" | "low" | "medium" | "high";
+
+export const GLOSS_LEVELS: readonly GlossLevel[] = ["off", "low", "medium", "high"];
+
+/** The level a board is polished to when nothing says otherwise. Medium is the
+ * finish the game shipped with while this was an on/off switch. */
+export const DEFAULT_GLOSS: GlossLevel = "medium";
+
+/** The named level, or the default for anything this build does not know. A
+ * boolean is what builds before the levels stored: `true` was the polished
+ * finish, which is Medium now, and `false` was matte. */
+export function resolveGloss(value: unknown): GlossLevel {
+  if (value === true) return "medium";
+  if (value === false) return "off";
+  return typeof value === "string" && (GLOSS_LEVELS as readonly string[]).includes(value)
+    ? (value as GlossLevel)
+    : DEFAULT_GLOSS;
+}
+
 /** The two halves of a style's finish the *player* gets to choose, rather than
  * the theme (settings.ts `gloss` and `pins`; ui/settings.ts draws the rows).
  *
  * They were Realistic's alone, welded to its cell style, which meant the glass
  * finish could not be had without its page and its pins could not be had at
- * all on any other theme. Both are one flag or one number deep in the table
+ * all on any other theme. Both are one flag or a few numbers deep in the table
  * above, and neither changes the vertex layout, so both can simply be spread
  * over whichever style the theme names. */
 export interface Finish {
-  /** The polished reading: the specular finish a solid catches a moving
-   * highlight with, and the bright-centre gradient that is the *only* thing
-   * saying "polished" on a flat board lit head-on (see `shade`). */
-  gloss: boolean;
+  /** How polished: the specular finish a solid catches a moving highlight
+   * with, and the bright-centre gradient that is the *only* thing saying
+   * "polished" on a flat board lit head-on (see `shade`). */
+  gloss: GlossLevel;
   /** Real models for a flag and a mine on a board you can turn
    * (`solidMarkers`; flat boards never take them whatever this says). */
   pins: boolean;
 }
 
-/** What the finish is when nobody has said — the shipped defaults, matching
- * `DEFAULT_SETTINGS`. Gloss is off because it is a flourish; pins are on
- * because a board you can turn should carry objects rather than pictures. */
-export const DEFAULT_FINISH: Finish = { gloss: false, pins: true };
+/** What the finish is when nobody has said. Gloss is off because it is a
+ * flourish; pins are on because a board you can turn should carry objects
+ * rather than pictures. The app always passes the player's own finish, so
+ * this reaches only a session built without one. */
+export const DEFAULT_FINISH: Finish = { gloss: "off", pins: true };
 
-/** The glossy half, lifted out of `REALISTIC` so a style with no polish of its
- * own can borrow one. The material always goes on — it is what the setting
- * names — but a style that already has a *gradient* keeps it: Sand's is tuned
- * a hair off Realistic's on purpose, and Soft's is its own, and taking either
- * away would be retuning a theme rather than answering a setting. */
-const GLOSSY = {
-  material: { roughness: 0.16, metalness: 0.1 },
+/** The polished gradient, lifted out of `REALISTIC` so a style with no polish
+ * of its own can borrow one. A style that already has a *gradient* keeps it:
+ * Sand's is tuned a hair off Realistic's on purpose, and Soft's is its own, and
+ * taking either away would be retuning a theme rather than answering a
+ * setting. */
+const GLOSSY_SHADE = {
   shade: { center: 1.06, rim: 0.7 },
   openShade: { center: 0.99, rim: 0.92 },
 } as const;
@@ -658,43 +679,69 @@ const GLOSSY = {
 /** What a matte board's material is — Flat's own, the dullest in the table. */
 const MATTE = { roughness: 0.7, metalness: 0 } as const;
 
+/** Each level as a material and a gradient `strength`: how far the closed
+ * cells' gradient is taken from the style's matte reading (0) toward its
+ * polished one (1), and past it. Medium is exactly the old switch's *on*, so
+ * the default board did not change when the switch became levels; High goes
+ * beyond anything the game had, with a tighter highlight and a hotter centre;
+ * its metalness stays at Medium's, since more of it only darkens the tile —
+ * a metal takes less diffuse light — which is the theme's colour to set.
+ * Off is `MATTE` at strength 0, the old switch's *off*. */
+const GLOSS: Record<GlossLevel, { roughness: number; metalness: number; strength: number }> = {
+  off: { ...MATTE, strength: 0 },
+  low: { roughness: 0.4, metalness: 0.04, strength: 0.5 },
+  medium: { roughness: 0.16, metalness: 0.1, strength: 1 },
+  high: { roughness: 0.07, metalness: 0.1, strength: 1.5 },
+};
+
+function mixShade(
+  matte: { center: number; rim: number },
+  glossy: { center: number; rim: number },
+  t: number,
+): { center: number; rim: number } {
+  // The ends exactly, so Off and Medium are the old switch's numbers to the bit.
+  if (t === 0) return { ...matte };
+  if (t === 1) return { ...glossy };
+  return {
+    center: matte.center + (glossy.center - matte.center) * t,
+    rim: matte.rim + (glossy.rim - matte.rim) * t,
+  };
+}
+
 /** `style` as the player's finish settings ask for it.
  *
  * Three rules, and what is deliberately *not* touched:
  *
- *   * **Gloss off** mattes the material and replaces the closed gradient with
- *     the style's own `openShade`. That is not an invented number: a style that
- *     has both already calls the second one its matte reading (Realistic's
- *     "glass beads closed, matte pans opened"), so the board keeps its relief
- *     and its edges and loses only the hotspot. A style with no gradient at all
- *     (Classic, Flat) changes only its material.
- *   * **Gloss on** gives every style `GLOSSY`'s material, and lends its
- *     gradients to a style that declares no `shade`. A gradient is not proof
- *     of polish: Soft has one and a roughness of 0.5, so reading "has a
- *     `shade`" as "already glossy" left the default cut untouched by the
- *     setting.
+ *   * **The material** is the level's (`GLOSS`), whatever the style said.
+ *   * **The closed gradient** runs from the style's matte reading to its
+ *     polished one by the level's `strength`. The matte reading is the style's
+ *     own `openShade`. That is not an invented number: a style that has both
+ *     already calls the second one its matte reading (Realistic's "glass beads
+ *     closed, matte pans opened"), so the board keeps its relief and its edges
+ *     and loses only the hotspot. The polished reading is the style's own
+ *     `shade`, or `GLOSSY_SHADE`'s for a style that declares no gradient — a
+ *     gradient is not proof of polish (Soft has one and a roughness of 0.5),
+ *     and a style without one (Classic, Flat) borrows it at any level above
+ *     Off and changes only its material at Off.
  *   * **Pins** set or clear `solidMarkers`.
  *
- * The profiles, `openAlpha`, `unlit`, `albedo`, `boardTint` and `monochrome`
- * are untouched. The profiles because a style's two states must keep the same
- * loop count (`cellStyleLoops`) and a board is re-cut in place from it; the
- * rest because they are the style's *colour*, which is the theme's business and
- * not the finish's — turning the gloss off is not meant to make Realistic
- * opaque or Classic coloured. */
+ * The profiles, `openShade`, `openAlpha`, `unlit`, `albedo`, `boardTint` and
+ * `monochrome` are untouched. The profiles because a style's two states must
+ * keep the same loop count (`cellStyleLoops`) and a board is re-cut in place
+ * from it; the rest because they are the style's *colour*, which is the
+ * theme's business and not the finish's — turning the gloss off is not meant
+ * to make Realistic opaque or Classic coloured. */
 export function finishStyle(style: CellStyle, finish: Finish): CellStyle {
   const next: CellStyle = { ...style };
-  if (finish.gloss) {
-    next.material = { ...GLOSSY.material };
-    if (!style.shade) {
-      next.shade = { ...GLOSSY.shade };
-      next.openShade = { ...GLOSSY.openShade };
-    }
-  } else {
-    next.material = { ...MATTE };
+  const level = GLOSS[resolveGloss(finish.gloss)];
+  next.material = { roughness: level.roughness, metalness: level.metalness };
+  if (style.shade) {
     // `openShade` defaults to `shade` when a style names only one, so this
     // reads the same as the renderers do.
-    const matte = style.openShade ?? style.shade;
-    if (matte) next.shade = { ...matte };
+    next.shade = mixShade(style.openShade ?? style.shade, style.shade, level.strength);
+  } else if (level.strength > 0) {
+    next.shade = mixShade(GLOSSY_SHADE.openShade, GLOSSY_SHADE.shade, level.strength);
+    next.openShade = { ...GLOSSY_SHADE.openShade };
   }
   if (finish.pins) next.solidMarkers = true;
   else delete next.solidMarkers;
