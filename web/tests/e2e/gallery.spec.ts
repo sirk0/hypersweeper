@@ -102,6 +102,9 @@ const MODES = [
   "hyperbolic73",
   "hyperbolic54",
   "hyperbolic45",
+  // ...and the one in the upper half-plane: straight edges, rows halving down
+  // to the ideal line, a rectangle rather than a disc
+  "hyperbolicbinary",
   // M7 isogonal tilings, which are not edge to edge: the two that put one
   // regular polygon on the board at several sizes, so the shots cover both the
   // T-vertex geometry and the size-lightness axis it needs.

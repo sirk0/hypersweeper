@@ -20,8 +20,10 @@ export const MIN_ZOOM = 1;
  * is mostly off-screen, so more magnification is only a way to get lost. */
 export const MAX_ZOOM = 6;
 
-export function clampZoom(zoom: number): number {
-  return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom));
+/** `max` is `MAX_ZOOM` but for a board drawn in the half-plane, whose bottom
+ * row can need far more to be tapped (render/halfPlane.ts). */
+export function clampZoom(zoom: number, max = MAX_ZOOM): number {
+  return Math.min(max, Math.max(MIN_ZOOM, zoom));
 }
 
 /** The pan that keeps the world point under an anchor pixel fixed while the

@@ -95,7 +95,10 @@ has none at any trim, nor do the trims {8,3} ships, so those boards are as they
 were. Both rules together are repeated until neither finds anything.
 
 The board is round by nature -- a deliberate exception to the square-window
-convention, as the fractals and Klaassen's spiral already are.
+convention, as the fractals and Klaassen's spiral already are. The one
+exception to *that* is Böröczky's binary tiling (`binary_board`, at the end of
+this module), drawn in the upper half-plane, where a window of whole tiles is a
+rectangle.
 
 **The uniform tilings come from the same walk.** `hyperbolic_uniform_board`
 builds 6.6.7 (the hyperbolic soccer ball), 3.7.3.7, 3.4.7.4 and 4.6.14 by
@@ -773,3 +776,76 @@ def hyperbolic_uniform_board(
     config = ".".join(str(n) for n in _vertex_config(p, q, op))
     return _disc_board(wythoff_mode(p, q, op), config, shells, faces, kept, pos,
                        mine_count, scale, arc)
+
+
+# -- Böröczky's binary tiling, in the upper half-plane -------------------------
+#
+# The one hyperbolic board that is not a disc. In the upper half-plane model
+# (x + iy, y > 0) the horizontal lines y = const are horocycles and the vertical
+# lines are geodesics, and z -> 2z is an isometry. Cut the plane along the
+# horocycles y = 2**i and along the verticals x = j * 2**i between y = 2**i and
+# 2**(i + 1): every piece is the image of the unit piece [0, 1] x [1, 2] under
+# z -> 2**i z + j * 2**i, so all of them are congruent, and each row's tiles are
+# twice the width of the row below -- bricks that keep splitting in two. Drawn in
+# the model the tiles are Euclidean squares, the edges are straight, and a window
+# of whole tiles is a rectangle: the only hyperbolic board that sits in the
+# square-window convention rather than being another disc.
+#
+# **The ids are exact for free.** Measured in bottom-row tiles, every corner is
+# (j * 2**i, 2**i) -- an integer pair -- so the ids are the coordinates
+# themselves and nothing is ever rounded. A tile's bottom edge carries its
+# midpoint, where its two children meet: a T-vertex (collinear, 180 degrees),
+# which `corner_mask` marks as not a corner, so the tile measures as the four-
+# sided tile it is drawn as. With it, shared-vertex adjacency gives every
+# interior tile 8 neighbours -- 2 beside it, 4 below (its two children and one
+# child of each side neighbour, at its bottom corners) and 2 above (its parent,
+# and the parent's neighbour at its outer top corner) -- and which side the
+# parent's neighbour is on depends on whether the tile is a left or a right
+# child, which is what makes the board read differently from the square grid.
+#
+# **The window** is ``top`` tiles across the top row and ``levels`` rows deep,
+# top * (2**levels - 1) cells, mirror-symmetric about its vertical centre line.
+# The bottom row is 2**(levels - 1) times narrower than the top, which is what
+# the TypeScript app's half-plane pan is for (render/halfPlane.ts): a drag moves
+# the board by z -> a z + b, an isometry, so a bottom-row tile dragged up comes
+# in at full size. The pygame game, which does not pan, plays the same board.
+
+
+def binary_board(top: int, levels: int, mine_count: int, scale: float = 300.0) -> Board:
+    """Böröczky's binary tiling in the upper half-plane: ``top`` tiles across
+    the top row, ``levels`` rows, each half the width of the row above.
+    ``scale`` is the pixel width of one top-row tile. Cells are ``(row, j)``,
+    row 0 the top row."""
+    if top < 1 or levels < 1:
+        raise ValueError("binary_board needs at least one tile and one row")
+    cells: dict[Cell, list] = {}
+    mask: dict[Cell, list[bool]] = {}
+    for row in range(levels):
+        level = levels - 1 - row  # 0 = the bottom row
+        w = 1 << level
+        for j in range(top << row):
+            x0, x1, y0, y1 = j * w, (j + 1) * w, w, 2 * w
+            # clockwise in the half-plane, which is the pixel space's (y down)
+            # counterclockwise -- the order every flat builder uses
+            ids = [(x0, y1), (x1, y1), (x1, y0)]
+            corner = [True, True, True]
+            if level > 0:  # the T-vertex where the two children below meet
+                ids.append((x0 + w // 2, y0))
+                corner.append(False)
+            ids.append((x0, y0))
+            corner.append(True)
+            cells[(row, j)] = ids
+            mask[(row, j)] = corner
+    unit = scale / (1 << (levels - 1))
+    height = 1 << levels
+    polygons = {cell: [(x * unit, (height - y) * unit) for x, y in ids]
+                for cell, ids in cells.items()}
+    return Board(
+        "hyperbolicbinary",
+        polygons,
+        _shared_vertex_adjacency(cells),
+        mine_count,
+        top * scale,
+        (height - 1) * unit,
+        corner_mask=mask,
+    )

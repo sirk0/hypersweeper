@@ -12,7 +12,7 @@ Every board's mine count, chosen so its win probability under the reference solv
 
 ## Coverage
 
-- 888 rows, 850 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
+- 891 rows, 853 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
 - 38 could not be brought on target:
   - `cube3d`/hard: 33.3% vs 50.9% — the search could not resolve it -- its thinnest measurement finished 0 game(s), so the rate here is noise rather than a crossing the search walked to. Re-measure at a bigger `--budget`
   - `cylhexrows`/medium: 81.7% vs 87.1% — no integer mine count lands within tolerance; this is the closest
@@ -180,6 +180,7 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `hyperbolic667` | 5.1 | 78c 9m (12%) 98% | 253c 29m (11%) 88% | 484c 74m (15%) 52% |
 | `hyperbolic73` | 4.6 | 85c 7m (8%) 99% | 246c 24m (10%) 86% | 477c 50m (10%) 55% |
 | `hyperbolic83` | 4.4 | 89c 6m (7%) 96% | 265c 17m (6%) 89% | 473c 44m (9%) 49% |
+| `hyperbolicbinary` | 5.6 | 93c 6m (6%) 97% | 254c 23m (9%) 86% | 510c 57m (11%) 47% |
 | `icosahedron` | 11.8 | 80c 21m (26%) 96% | 320c 84m (26%) 90% | 500c 149m (30%) 55% |
 | `kisrhombille` | 14.2 | 76c 7m (9%) 98% | 264c 30m (11%) 85% | 532c 73m (14%) 51% |
 | `kitedart` | 7.3 | 81c 6m (7%) 97% | 256c 29m (11%) 86% | 450c 73m (16%) 48% |

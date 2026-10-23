@@ -219,9 +219,10 @@ export interface HudState {
  * reflection is, and so is a Klein bottle's half-tube step, so those get one
  * button where a translation gets a back/forward pair. A wrapped board also
  * declares `surface:<key>` for the surface it is glued into, and a board drawn
- * in the Poincaré disc (`disc`, the hyperbolic boards) declares `disc`, which
- * is what its pan arrows show on; a slot's `keepWhen` is matched against the
- * same set. */
+ * in a model of the hyperbolic plane — the Poincaré disc or the upper
+ * half-plane, the hyperbolic boards, either of which is dragged by an isometry
+ * — declares `disc`, which is what its pan arrows show on; a slot's `keepWhen`
+ * is matched against the same set. */
 export function boardConditions(
   symmetries: readonly BoardSymmetry[],
   mode?: string,

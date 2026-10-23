@@ -255,8 +255,9 @@ SPIRAL_MODES = tuple(_MENU["spiral"])
 # modes rather than a tiling x surface product, so they live on the plane only.
 FRACTAL_MODES = tuple(_MENU["fractal"])
 # The hyperbolic family: regular {p,q} tilings of the hyperbolic plane, drawn
-# in the Poincare disc. One-off modes again, and a disc rather than a periodic
-# window, so on the plane only (boards/hyperbolic.py).
+# in the Poincare disc, and Böröczky's binary tiling, drawn in the upper
+# half-plane. One-off modes again, a disc or a half-plane window rather than a
+# periodic one, so on the plane only (boards/hyperbolic.py).
 HYPERBOLIC_MODES = tuple(_MENU["hyperbolic"])
 FAMILY_LABELS = dict(_MENU["familyLabels"])
 FAMILY_MEMBERS = {

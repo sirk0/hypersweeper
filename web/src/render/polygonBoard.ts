@@ -151,6 +151,9 @@ export class PolygonBoard extends Group implements BoardMesh {
    * which is where the pan is applied, so a drag costs three uniforms rather
    * than a rewrite of every tile. Null on every other board. */
   private readonly disc: { x: number; y: number; r: number; reach: number } | null;
+  /** The upper half-plane the board is drawn in (render/halfPlane.ts), in
+   * mesh units: the y of its ideal line, and how far the view may magnify. */
+  readonly halfPlane?: { line: number; maxZoom: number };
   private discView: DiscView = DISC_IDENTITY;
   private readonly discUniforms: DiscUniforms | null;
 
@@ -185,6 +188,9 @@ export class PolygonBoard extends Group implements BoardMesh {
       height: board.height,
       mode: board.mode,
     };
+    if (board.halfPlane) {
+      this.halfPlane = { line: cy - board.halfPlane.boundary, maxZoom: board.halfPlane.maxZoom };
+    }
     this.disc = board.disc
       ? {
           x: board.disc.cx - cx,

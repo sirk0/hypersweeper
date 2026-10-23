@@ -24,7 +24,7 @@ import {
   soundVolume,
   unlockAudio,
 } from "./audio/sound";
-import { isBoard3D, type CellId, type SymmetryId } from "./boards/core";
+import { isBoard3D, pansHyperbolically, type CellId, type SymmetryId } from "./boards/core";
 import { fairnessOf, modeFairness } from "./boards/fairness";
 import { gameCenterSupported, reportUnlocks, startGameCenter } from "./gameCenter";
 import { hasMode } from "./boards/presets";
@@ -258,12 +258,13 @@ class App {
       rotates: () => this.screen === "game" && (this.session?.is3d ?? false),
       onRotate: (dx, dy) => this.rotate(dx, dy),
       // A zoomed-in flat board is dragged around, and a hyperbolic one at any
-      // zoom (it moves by a disc isometry, which needs no overhang); a 3D one
-      // is rotated instead (two fingers still pan it).
+      // zoom (it moves by an isometry of the disc or the half-plane, which
+      // needs no overhang); a 3D one is rotated instead (two fingers still pan
+      // it).
       pans: () =>
         this.screen === "game" &&
         !(this.session?.is3d ?? false) &&
-        (this.renderer.zoom > 1 || this.renderer.discPans),
+        (this.renderer.zoom > 1 || this.renderer.hyperbolicPans),
       onPan: (dx, dy, x, y) => this.pan(dx, dy, x, y),
       onZoom: (factor, x, y) => this.zoom(factor, x, y),
       // The wheel walks the ring; with shift held it rolls round the tube, on
@@ -846,7 +847,7 @@ class App {
       boardConditions(
         this.session.symmetries,
         this.session.mode,
-        !isBoard3D(this.session.board) && this.session.board.disc !== undefined,
+        !isBoard3D(this.session.board) && pansHyperbolically(this.session.board),
       ),
       this.symmetryPictures(),
       this.settings.extraControls,
@@ -1078,7 +1079,7 @@ class App {
       // but it does have its own turn and mirrors.
       const [id, direction] = App.SYMMETRY_KEYS[e.key]!;
       this.move(id, direction);
-    } else if (this.renderer.discPans && this.onKeyDisc(e)) return;
+    } else if (this.renderer.hyperbolicPans && this.onKeyDisc(e)) return;
     else if (!this.session?.is3d) return;
     else {
       this.onKey3d(e);
@@ -1102,7 +1103,7 @@ class App {
   /** One step of a hyperbolic board's pan, from a pan arrow or an arrow key:
    * `KEY_PAN_STEP` CSS px the way (dx, dy) points, glided as a drag. */
   private nudge(dx: number, dy: number): void {
-    if (this.screen !== "game" || !this.renderer.discPans) return;
+    if (this.screen !== "game" || !this.renderer.hyperbolicPans) return;
     this.renderer.nudge(dx * KEY_PAN_STEP, dy * KEY_PAN_STEP);
   }
 
