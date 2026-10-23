@@ -236,37 +236,105 @@ function arcPoints(a: C, b: C, segments: number): C[] {
   return out;
 }
 
-function shellsOf(centre: C[], faces: number[][], pos: Map<number, C>): number[][] {
-  const rows = faces
-    .map((face, f) => [distance(faceCentre(centre, face, pos)), f] as const)
-    .sort((x, y) => x[0] - y[0] || x[1] - y[1]);
-  const groups: number[][] = [];
-  let last = -Infinity;
-  for (const [d, f] of rows) {
-    if (d - last > SHELL_TOL) groups.push([]);
-    groups[groups.length - 1]!.push(f);
-    last = d;
-  }
-  return groups;
+interface Tiling {
+  faces: number[][];
+  ringOf: number[];
+  pos: Map<number, C>;
+  centres: C[];
 }
 
-function ringsFor(
+const TILINGS = new Map<string, Tiling>();
+
+/** The {p,q} tiling out to `rings` rings: its faces, their rings, every
+ * vertex's position and every face's centre. Cached, and only ever read: a trim
+ * regrows the tiling ring by ring from the first, the uniform tilings stand on
+ * it, and the menu icons trim the same tilings the boards do. Mirrors
+ * `_tiling`. */
+function tiling(p: number, q: number, rings: number): Tiling {
+  const key = `${p},${q},${rings}`;
+  let built = TILINGS.get(key);
+  if (!built) {
+    const { faces, ringOf } = hyperbolicFaces(p, q, rings);
+    const pos = hyperbolicPositions(p, q, faces);
+    const centre = centralPolygon(p, q);
+    built = { faces, ringOf, pos, centres: faces.map((face) => faceCentre(centre, face, pos)) };
+    TILINGS.set(key, built);
+  }
+  return built;
+}
+
+/** Hyperbolic distance from the centre of the disc to the geodesic segment
+ * from a to b. On the hyperboloid the segment is X(s) = (sinh(L - s) A +
+ * sinh(s) B) / sinh L, and the distance to the centre is acosh of its time
+ * coordinate, A_t cosh s + lean sinh s: least at tanh s = -lean / A_t if that
+ * falls inside the segment, else at an end. Mirrors `_segment_distance`. */
+function segmentDistance(a: C, b: C): number {
+  const [at, ax, ay] = lift(a);
+  const [bt, bx, by] = lift(b);
+  const coshL = Math.max(at * bt - ax * bx - ay * by, 1);
+  const sinhL = Math.sqrt(coshL * coshL - 1);
+  if (sinhL === 0) return Math.acosh(at);
+  const lean = (bt - at * coshL) / sinhL;
+  const s = Math.atanh(-lean / at);
+  const least =
+    s > 0 && s < Math.acosh(coshL) ? Math.sqrt(at * at - lean * lean) : Math.min(at, bt);
+  return Math.acosh(Math.max(least, 1));
+}
+
+const EDGE_KEY = 2 ** 26;
+
+/** How far from the centre of the disc the faces built so far are whole: the
+ * nearest point of their outline, every edge only one of them has. A face not
+ * yet built lies outside that outline, and its centre lies at least its
+ * inradius in from its own sides, so no such centre is nearer than this plus
+ * the inradius. Mirrors `_reach`. */
+function reach(faces: readonly (readonly number[])[], pos: Map<number, C>): number {
+  // an edge keyed by its two end ids, lower first (ids stay far below 2^26)
+  const sides = new Map<number, number>();
+  for (const face of faces) {
+    face.forEach((a, i) => {
+      const b = face[(i + 1) % face.length]!;
+      const key = a < b ? a * EDGE_KEY + b : b * EDGE_KEY + a;
+      sides.set(key, (sides.get(key) ?? 0) + 1);
+    });
+  }
+  let near = Infinity;
+  for (const [key, n] of sides) {
+    if (n !== 1) continue;
+    const a = Math.floor(key / EDGE_KEY);
+    near = Math.min(near, segmentDistance(pos.get(a)!, pos.get(key - a * EDGE_KEY)!));
+  }
+  return near;
+}
+
+/** Whether every face out to the `shells`-th distance is among `centres`:
+ * `bound` -- the reach of the faces built, plus the smallest inradius a
+ * missing face can have -- is past that shell (and a tolerance, so a missing
+ * face cannot belong to it either). The bound is only measured once there
+ * are that many shells to hold. */
+function holdsShells(groups: number[][], centres: C[], shells: number, bound: () => number): boolean {
+  if (groups.length < shells) return false;
+  const last = groups[shells - 1]!;
+  return bound() > distance(centres[last[last.length - 1]!]!) + SHELL_TOL;
+}
+
+/** Grow rings until no face that is missing could lie within the `shells`-th
+ * distance -- the fewest rings that hold every face that close, counting from
+ * `from`, and how many that was. Mirrors `_rings_for`; exported for the tests,
+ * which grow it further to show that nothing nearer was missed. */
+export function ringsFor(
   p: number,
   q: number,
   shells: number,
-): { faces: number[][]; pos: Map<number, C>; groups: number[][] } {
-  const centre = centralPolygon(p, q);
-  for (let rings = 1; rings <= 12; rings++) {
-    const { faces, ringOf } = hyperbolicFaces(p, q, rings);
-    const pos = hyperbolicPositions(p, q, faces);
-    const groups = shellsOf(centre, faces, pos);
-    let outer = Infinity;
-    faces.forEach((face, f) => {
-      if (ringOf[f] === rings) outer = Math.min(outer, distance(faceCentre(centre, face, pos)));
-    });
-    if (groups.length > shells) {
-      const cut = distance(faceCentre(centre, faces[groups[shells - 1]![0]!]!, pos));
-      if (outer > cut + 1.0) return { faces, pos, groups };
+  from = 1,
+): { faces: number[][]; pos: Map<number, C>; groups: number[][]; rings: number } {
+  // a {p,q} face's inradius, the same for every face of the tiling
+  const inradius = Math.acosh(Math.cos(Math.PI / q) / Math.sin(Math.PI / p));
+  for (let rings = from; rings <= 12; rings++) {
+    const { faces, pos, centres } = tiling(p, q, rings);
+    const groups = shellGroups(centres);
+    if (holdsShells(groups, centres, shells, () => reach(faces, pos) + inradius)) {
+      return { faces, pos, groups, rings };
     }
   }
   throw new Error("too many shells");
@@ -400,8 +468,10 @@ function discBoard(
   // Arc points along each edge: ids built from the edge's end ids (the lower
   // first), positions computed once per edge from its lower end, so both faces
   // of an edge share the very same points.
+  // Only the kept faces' corners: the tiling they were cut from can be
+  // several times bigger, and none of the rest is drawn.
   const points = new Map<string, C>();
-  for (const [v, z] of pos) points.set(String(v), z);
+  for (const f of kept) for (const v of faces[f]!) points.set(String(v), pos.get(v)!);
   const cells = new Map<CellId, string[]>();
   const cornerMask = new Map<CellId, boolean[]>();
   for (const f of kept) {
@@ -588,8 +658,7 @@ export function wythoffFaces(
   rings: number,
 ): { faces: number[][]; pos: Map<number, C>; centres: C[] } {
   if (!WYTHOFF_OPS.includes(op)) throw new Error(`unknown Wythoff operation ${op}`);
-  const base = hyperbolicFaces(p, q, rings).faces;
-  const bpos = hyperbolicPositions(p, q, base);
+  const { faces: base, pos: bpos } = tiling(p, q, rings);
   const centre = centralPolygon(p, q);
   const w0 = generatingPoint(p, q, op);
   const t = 2 * (Math.PI / 2 + (2 * Math.PI) / p);
@@ -707,28 +776,44 @@ function shellGroups(centres: C[]): number[][] {
   return groups;
 }
 
-/** Grow the {p,q} rings until every new face out to the `shells`-th distance
- * is built. Mirrors `_wythoff_rings_for`. */
-function wythoffRingsFor(
+const WYTHOFF_TILINGS = new Map<string, ReturnType<typeof wythoffFaces>>();
+
+/** `wythoffFaces`, cached as `tiling` is and for the same reason. Mirrors
+ * `_wythoff_tiling`. */
+function wythoffTiling(p: number, q: number, op: WythoffOp, rings: number) {
+  const key = `${p},${q},${op},${rings}`;
+  let built = WYTHOFF_TILINGS.get(key);
+  if (!built) WYTHOFF_TILINGS.set(key, (built = wythoffFaces(p, q, op, rings)));
+  return built;
+}
+
+/** The smallest inradius among the faces: every face is regular, so the
+ * distance from its centre to the midpoint of one of its sides. Every shape
+ * the tiling has is already among the faces round the central one. */
+function leastInradius(faces: readonly (readonly number[])[], pos: Map<number, C>, centres: C[]): number {
+  let least = Infinity;
+  faces.forEach((face, f) => {
+    const [mid] = arcPoints(pos.get(face[0]!)!, pos.get(face[1]!)!, 2);
+    least = Math.min(least, distance(toOrigin(centres[f]!, mid!)));
+  });
+  return least;
+}
+
+/** Grow the {p,q} rings until no new face that is missing could lie within
+ * the `shells`-th distance, as `ringsFor` does. Mirrors
+ * `_wythoff_rings_for`; exported for the tests, as `ringsFor` is. */
+export function wythoffRingsFor(
   p: number,
   q: number,
   op: WythoffOp,
   shells: number,
-): { faces: number[][]; pos: Map<number, C>; groups: number[][] } {
-  const centre = centralPolygon(p, q);
-  for (let rings = 1; rings <= 12; rings++) {
-    const { faces, pos, centres } = wythoffFaces(p, q, op, rings);
+  from = 1,
+): { faces: number[][]; pos: Map<number, C>; groups: number[][]; rings: number } {
+  for (let rings = from; rings <= 12; rings++) {
+    const { faces, pos, centres } = wythoffTiling(p, q, op, rings);
     const groups = shellGroups(centres);
-    const base = hyperbolicFaces(p, q, rings);
-    const bpos = hyperbolicPositions(p, q, base.faces);
-    let outer = Infinity;
-    base.faces.forEach((face, f) => {
-      if (base.ringOf[f] === rings) outer = Math.min(outer, distance(faceCentre(centre, face, bpos)));
-    });
-    if (groups.length > shells) {
-      const cut = distance(centres[groups[shells - 1]![0]!]!);
-      if (outer > cut + 1.0) return { faces, pos, groups };
-    }
+    const bound = () => reach(faces, pos) + leastInradius(faces, pos, centres);
+    if (holdsShells(groups, centres, shells, bound)) return { faces, pos, groups, rings };
   }
   throw new Error("too many shells");
 }
