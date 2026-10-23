@@ -9,6 +9,8 @@ import {
   GRAB_LIMIT,
   discDrag,
   discMap,
+  discRecentre,
+  meshCoverSteps,
   discReach,
   discScale,
   discUnmap,
@@ -276,5 +278,61 @@ describe("the hyperbolic boards' disc", () => {
 
   it("is on no other flat board", () => {
     expect((buildBoard("square", "easy") as Board).disc).toBeUndefined();
+  });
+});
+
+describe("a closed surface's pan", () => {
+  const board = buildBoard("quartic", "easy") as Board;
+  const steps = board.disc!.cover!.steps;
+  /** The step as a map of the disc. */
+  const step = (k: number, z: Cx): Cx => discMap({ c: steps[k]!.c, rot: steps[k]!.rot }, z);
+
+  it("leaves a view on the central tile alone", () => {
+    expect(discRecentre(DISC_IDENTITY, steps)).toEqual({ view: DISC_IDENTITY, taken: [] });
+    const near: DiscView = { c: [0.05, -0.03], rot: [0.6, 0.8] };
+    expect(discRecentre(near, steps).taken).toEqual([]);
+  });
+
+  it("carries a view off the central tile back, drawing every point where it was", () => {
+    for (let k = 0; k < steps.length; k++) {
+      // a view centred most of the way to the neighbouring tile's centre
+      const there = step(k, [0, 0]);
+      const view: DiscView = { c: [there[0] * 0.8, there[1] * 0.8], rot: [0, 1] };
+      const { view: next, taken } = discRecentre(view, steps);
+      expect(taken).toEqual([k]);
+      expect(dist(next.c, [0, 0])).toBeLessThan(dist(view.c, [0, 0]));
+      // what the new view draws of a point is what the old one drew of the
+      // point the step carries it to -- the same picture, relabelled
+      for (const z of [[0, 0], [0.2, 0.1], [-0.3, 0.25], [0.05, -0.4]] as Cx[]) {
+        close(discMap(next, z), discMap(view, step(k, z)));
+      }
+    }
+  });
+
+  it("is turned into the mesh's frame, whose y runs the other way", () => {
+    // The mesh draws the board's point z at conj(z); a step it applies has to
+    // carry conj(z) to conj(step(z)), or each recentring redraws the board as a
+    // mirror image of where it was.
+    const mesh = meshCoverSteps(steps);
+    for (let k = 0; k < steps.length; k++) {
+      for (const z of [[0, 0], [0.2, 0.1], [-0.3, 0.25], [0.05, -0.4]] as Cx[]) {
+        const there = step(k, z);
+        close(discMap(mesh[k]!, [z[0], -z[1]]), [there[0], -there[1]]);
+      }
+    }
+  });
+
+  it("never runs out of board: a long drag keeps the view on the central tile", () => {
+    let view: DiscView = DISC_IDENTITY;
+    let taken = 0;
+    for (let i = 0; i < 400; i++) {
+      const dragged = discDrag(view, [0, 0], [0.01, 0.004], 0.999);
+      const out = discRecentre(dragged, steps);
+      view = out.view;
+      taken += out.taken.length;
+      // never farther out than the central heptagon's corners
+      expect(dist(view.c, [0, 0])).toBeLessThan(1.1);
+    }
+    expect(taken).toBeGreaterThan(3);
   });
 });

@@ -43,6 +43,7 @@ Import order is a strict DAG; a module only imports from the ones above it.
 | `fractal.py` | The self-similar (fractal) boards: the sphinx, the chair, the Sierpinski carpet, the pentaflake and the Gosper island. One `_Substitution` record per tile — unit outline, the tiles filling the inflated copy, the inflation factor, lattice ops — and the shared inflation (`substitution_placements`) all five `*_board` builders run. The first two are rep-tiles (their children fill the tile); the carpet's and the pentaflake's leave holes, which is what makes them fractals with holes rather than shapes; the Gosper island's fill it with no hole at all and put the fractal in the *outline* instead. Four lattices are integer; the pentaflake's is ℤ[ζ10], since five-fold symmetry needs rank 4. The Gosper island's inflation is the one that is not a pure scaling: multiplication by 2 + ζ, a spiral similarity of √7 at 19.106°. |
 | `aperiodic.py` | Penrose's rhombi (P3) and his kites and darts (P2), Ammann–Beenker (squares and 45° rhombi, eight-fold), the Spectre (Tile(1,1), the chiral monotile), the phyllotactic spiral, Klaassen's spiral monotile and his three pentagonal spirals (5-, 6- and 7-fold, one convex pentagon each), each with exact-arithmetic vertex ids — ℤ[ζ5] for both Penrose boards and the spiral, ℤ[ζ8] for Ammann–Beenker, ℤ[ζ12] for the Spectre. The Spectre's ring is *dense* in the plane, so unlike Penrose's discrete lattice there is no lattice to snap a float vertex back to: its placements are carried as exact `(rotation, mirror, translation)` triples and no floating point enters the substitution at all. The spiral is the odd one out — no substitution, just ten 36° wedges of the tile's own translation lattice, the odd ones offset a step; nonperiodic because its five-fold centre forbids any translation. The **brick rings** are nonperiodic the same way — by symmetry rather than by a substitution — and are the plainest board here: 2x1 bricks on the integer square lattice in concentric square rings about a 2x2 core, ring k being the boundary of the 2k x 2k square with horizontal bricks along its rows and vertical ones up its sides. Every run is even, so every tile is a whole brick and only an even-sided square is tileable at all. A brick's corner lands in the middle of a neighbour's long side, so `_brick_outline` splits each edge at the lattice points that are genuinely some tile's corner — the 2D twin of `solids._split_at_lattice_points`, and *conditional*, unlike the fractal outlines, which carry a vertex at every step. |
 | `hyperbolic.py` | The regular {p,q} tilings of the hyperbolic plane, drawn in the Poincaré disc: {8,3} octagons, {7,3} heptagons, {6,4} hexagons, {5,4} and {5,5} pentagons, {4,5} and {4,6} squares, {3,7} and {3,8} triangles. Built combinatorially ring by ring with integer vertex ids (the triangles as the duals of {7,3} and {8,3}), placed afterwards by disc isometries, edges drawn as geodesic arcs, trimmed by hyperbolic-distance shells. See "The hyperbolic boards" below. Also Böröczky's binary tiling, drawn in the upper half-plane as a rectangle (`binary_board`); see "The binary tiling" below. |
+| `hurwitz.py` | The closed hyperbolic surfaces: Klein's quartic, Macbeath's surface and one of the first Hurwitz triplet, the {7,3} tiling glued up with no rim. Each surface's map is read off its group, PSL(2,q), with integer ids; the {7,3} disc of `hyperbolic.py` covers it, by a covering map walked on ids alone; and the board draws a patch of that disc, every face showing the cell it covers (`Board.faces`), with the surface's own adjacency and topology (`Board.quotient`). See "The closed hyperbolic surfaces" below. |
 | `solids.py` | Closed/convex and polycube 3D boards (the Goldberg polyhedra GP(f, 0) and GP(h, k), the geodesic icosahedron and its subdivision `_geodesic`, with its class III cousin `_geodesic_hk`, cube, the Platonic solids, frames, bipyramid), plus the shared `_wythoff_point` every uniform solid here and every Catalan solid next door is generated from. |
 | `catalan.py` | The thirteen Catalan solids, the duals of the Archimedean solids. One recipe for all of them: a Platonic base and one flag, the Wythoff generating point of its Schwarz triangle (`solids._wythoff_point` for the five non-chiral Conway operations, `_snub_point` for the chiral one), a Catalan vertex at `n / <w, n>` on each face axis — polar duality — and the base's flags grouped into faces by the operation. Faces are then subdivided (`solids._geodesic` for triangles, `_quad_grid` for quadrilaterals, a five-way fan first for pentagons), which is these boards' only size knob. `_tri_grid` is `_quad_grid`'s triangle twin, for the solids next door whose triangles meet squares. |
 | `archimedean.py` | Archimedean solids cut into boards — the cube group's cuboctahedron, truncated octahedron and snub cube, and the icosahedral rhombicosidodecahedron, truncated icosidodecahedron and snub dodecahedron — as the **polar duals of their Catalan solids**: `_archimedean_faces` turns `catalan._catalan_faces` inside out (each Catalan face's pole is a vertex, each Catalan vertex a face), so no Wythoff point is solved twice and every vertex id is a Catalan face key. Faces are cut by `catalan._tri_grid` and `_quad_grid`, which name a shared edge's points alike; the truncated octahedron's hexagons are first cut into three rhombi (`_split_hexagons`, by the pyritohedral `_th_spokes` rule), the icosahedral solids' big faces fanned into triangles (`_fan_faces`). See "The Archimedean solids" below. |
@@ -774,6 +775,9 @@ Four more are **uniform** rather than regular -- every corner alike, more than
 one tile -- and come off the same {7,3} walk; see "The uniform hyperbolic
 boards" below. One more is drawn in the upper half-plane rather than the disc,
 as a rectangle: Böröczky's binary tiling (see "The binary tiling" below).
+And three -- `quartic`, `macbeath`, `triplet` -- are drawn in the disc
+but are not discs at all: the hyperbolic plane glued up into closed surfaces,
+with no rim; see "The closed hyperbolic surfaces".
 
 **The ids are combinatorial, never geometric.** The tiling is built ring by
 ring: ring 0 is the central p-gon (vertices 0 .. p-1), and each new ring is
@@ -989,6 +993,165 @@ puts a hexagon and a heptagon on one board, which one pentatonic degree apart
 is a whole tone, so the sound spelling moved the 7-gon and everything above it
 down (see "One collection, and a spelling measured against the catalog" in
 [`web/docs/audio.md`](../../web/docs/audio.md)).
+
+## The closed hyperbolic surfaces
+
+A hyperbolic disc is mostly rim, and a rim cell sees far fewer than its tile's
+neighbours -- which is why the disc boards calibrate to 5-15% mines and why
+their twins and near-twins have to be dropped. **Glue the plane up into a
+closed surface and the rim is gone**: every cell keeps its full count, as on a
+sphere. `hurwitz_board(surface, op, margin, mines, scale)` (`hurwitz.py`,
+`hurwitz.ts`) builds the {7,3} tiling's closed surfaces of most symmetry, the
+**Hurwitz surfaces**, **one surface a mode** (`SURFACE_MODES`), in the
+Hyperbolic page's own submenu, *Closed surfaces*:
+
+| mode | surface | genus | group | easy | medium | hard |
+|---|---|---|---|---|---|---|
+| `quartic` | Klein's quartic | 3 | PSL(2,7), 168 | 6.6.7, 80 cells, 18 mines | GC(3,0), 248, 61 | GC(4,0), 444, 118 |
+| `macbeath` | Macbeath's surface | 7 | PSL(2,8), 504 | {7,3}, 72 cells, 15 mines | 6.6.7, 240, 55 | GC(2,0), 324, 93 |
+| `triplet` | the first Hurwitz triplet, one of the three | 14 | PSL(2,13), 1092 | {7,3}, 156 cells, 33 mines | 6.6.7, 520, 122 | GC(2,0), 702, 191 |
+
+A genus-g Hurwitz surface carries exactly 12(g - 1) heptagons (its 84(g - 1)
+turns, seven to a face), so every tiling of it is one size and no other:
+{7,3} 12(g - 1) cells, 6.6.7 40(g - 1), GC(2,0) 54(g - 1), GC(3,0) 124(g - 1),
+GC(4,0) 222(g - 1). **A surface grows by its tiling, never by changing the
+surface** -- the mode is the surface, the difficulty picks a rung. The quartic
+lands in the size band at all three; Macbeath's surface at easy and medium, its
+hard 32% short (the next rung, GC(3,0), is 744 -- `EXEMPT_ROWS` in
+`tests/test_presets.py`); the triplet at none, since 156 cells is the fewest
+genus 14 can carry (`GENUS_BOUND`). `resize.py` holds every row as declared
+(`size=()`): no knob is the search's to turn. With no rim the densities came
+out 21-29% -- the projective plane's, a closed surface of about the same
+degree, and nothing like the discs'. The builder also takes every Wythoff
+operation, and the tests sweep them.
+
+**Why not one mode whose difficulty changes the surface?** That was the first
+cut (easy the quartic, medium Macbeath's, hard the triplet), and it played as
+three different games: on the quartic every cell was on screen two or three
+times over, on the triplet most of the surface was off it. What decides that
+is how many copies of the surface the view holds -- the view's area over the
+surface's, (cosh v - 1) / (2(g - 1)) for a view of radius v -- and at one
+fixed view it is set by the genus alone: 2.3, 0.76, 0.35. Macbeath's 0.76 is
+the one that plays: a flag at the view's edge has its twin in sight near the
+opposite edge, so the whole surface reads at a glance without a cell shown
+twice over. So the view is sized from the genus instead (`cover_view`, below),
+every surface at `COVER_COPIES` = 0.75, and the difficulty is the tiling.
+
+**The subdivision, GC(n, 0) (Goldberg--Coxeter).** {7,3} is trivalent, so its
+dual is a triangle tiling, {3,7}: a triangle for every corner of the heptagons,
+its own corners the centres of the three heptagons that meet there (56 of them
+on the quartic). Cut every triangle into n x n small ones and take the dual
+again: the heptagons come back, one round every heptagon's centre, and every
+other point of the cut becomes a hexagon. It is trivalent, so a heptagon has 7
+neighbours and a hexagon 6 everywhere, and it keeps the mirrors (GC(a, b) with
+b != 0 would not). On a surface of F heptagons, E edges and V corners it is
+F + E(n - 1) + V(n - 1)(n - 2)/2 cells -- 108, 248, 444 for n = 2, 3, 4 on the
+quartic. The 6.6.7 the easy board plays is GC(1, 1) of the same family, turned.
+The ids are exact (`gc_loops` / `gcLoops`): a point of the cut is named by its
+weights over its triangle's corners, the sorted (heptagon, weight) pairs with a
+weight that is not zero, as `solids._geodesic` names an icosahedron's points,
+so a point on a shared edge gets one name from both triangles; a small triangle
+is named by its three points. Positions are only drawn -- a point at the
+weighted average of its corners' centres on the hyperboloid, a small triangle
+at the average of its points -- and order a cell's corners round it. The
+covering map carries a point down by its heptagons, and the check that two
+copies of a cell agree also catches the one way it could go wrong (two
+surface heptagons sharing two edges, which the quartic never does).
+
+**Levels that could be added** (not built): on the quartic, the plain {7,3}
+(24 cells, heptagons only), GC(2,0) (108), and the chiral GC(2,1) (192),
+GC(3,1) (360) and GC(3,2) (528), which lose the mirrors and need a skewed
+subdivision; and GC(2,2) (332), which keeps them but is skewed too (class II,
+as 6.6.7 is). The same rungs are 16(g - 1) for GC(2,1) and so on, so on
+Macbeath's surface GC(2,1) would give 576 cells, in the hard band -- the one
+way to bring its hard row in, at the price of the mirrors.
+
+**The surface is read off its group, exactly.** A Hurwitz group is generated by
+an x of order 2 and a y of order 3 whose product xy has order 7, and its regular
+map is the group itself: elements are darts, the cosets of <xy> faces, of <y>
+vertices, of <x> edges, a face's corners in <xy> order. PSL(2,q) is 2x2
+matrices of determinant 1 over GF(q) with a matrix and its negative counted
+once; GF(7) and GF(13) are integers mod p, GF(8) three-bit polynomials mod
+x^3 + x + 1. The generators are the first pair met in element order, so both
+ports find the same map, with the same numbering (`TestHurwitz` checks the
+group orders, the generators' orders, chi = 2 - 2g, three faces at every vertex
+and every edge once each way). **Which surface of the triplet** is the one
+thing a generator search can change silently -- the three share PSL(2,13) and
+are not the same surface -- so the Petrie polygons pin it: 8 on the quartic (its
+classical {7,3}_8), 18 on Macbeath's surface, and 14 on the triplet's, whose
+other two members have 12 and 26.
+
+**The disc covers it, and the covering map is ids alone.** The ring walk's
+{7,3} disc is the surface's universal cover. Its central heptagon's corners go
+in order onto face 0's, and every disc face across an edge from one already
+mapped goes onto the one surface face across that edge's image -- a
+breadth-first walk on integer ids, which refuses a disc vertex reached two ways
+that land on different surface vertices. A Wythoff tiling of the disc is carried
+down through its flag keys (`wythoff_loops` keeps them, and what each face
+stands on, before `wythoff_faces` renumbers them), so a 6.6.7 vertex is
+(surface face, surface edge) -- the same key `zip` gives on the disc.
+
+**The board draws a patch of the cover, every cell at least once.** It keeps
+the disc's shells out to the first one by which every surface cell has appeared,
+or out to `patch_reach(surface, op)` if that is farther, plus `margin` more (0
+ships): on the quartic 183, 519 and 911 faces for easy to hard, on Macbeath's
+surface 316, 1023 and 1408, on the genus-14 surface 561, 1863 and 2521. The
+reach is the web pan's (below): Klein's quartic has every cell within 2.9 of
+the centre, and a patch that small showed its edge moving as the view stepped
+from tile to tile. Shells are orbits of the
+central heptagon's dihedral group, so the patch keeps D7, and the surface keeps
+it too -- the turn is the surface's own, and all three surfaces are reflexible,
+so the mirror is as well (measured, `symmetries.test.ts`). Each drawn face
+shows the cell it covers (`Board.faces`, the projective plane's field, now on
+the flat `Board` too); a cell is named after its copy nearest the centre, which
+is the face with the least id. **Adjacency is the surface's**: each cell's
+corners as surface ids (`Board.quotient`) go through the shared-vertex rule, so
+a cell copied at the rim of the patch still has all its neighbours, and the
+test checks that round every copy whole inside the patch the drawn neighbours
+are exactly the adjacency's. The patch is no whole number of sheets, so
+`covering_sheets` cannot count the surface off the drawing; the topology
+helpers count `quotient` instead (`mesh_loops`), which is how the oracle sees
+chi = -4, -12 and -26 with no boundary.
+
+Four things worth knowing before touching it:
+
+* **No twins, no near-twins, no trim.** The surface is regular, so no cell's
+  neighbourhood is another's or one short of it (asserted); there is nothing to
+  drop and no disc to keep whole, so the builder draws through `disc_drawing`,
+  the half of `_disc_board` without `_is_disc`.
+* **The web app pans without end** (`Board.disc.cover`, `render/disc.ts`
+  `discRecentre`, and "A board with no rim" under "Hyperbolic panning" in
+  [`web/docs/render.md`](../../web/docs/render.md)): a step per tile round the
+  central one, the isometry and the matching surface symmetry, so a view that
+  wanders off the central tile is carried back and the labels follow, the
+  picture unchanged. The view shows the patch out to `cover_view(surface)`
+  round its centre and hides the rest, which keeps the board's edge one fixed
+  circle, and the web board is framed to that circle widened by a tile radius
+  (the clip keeps a tile by its centre, so one just inside it reaches that far
+  out -- half a heptagon on the quartic). The radius is the one
+  whose disc holds `COVER_COPIES` (0.75) of the surface, cosh v = 1 + 1.5(g - 1):
+  2.06 on the quartic (0.77 of the disc), 2.99 on Macbeath's (0.905), 3.71 on
+  the triplet (0.95). The tiling does not enter, so a surface shows the same
+  view at every difficulty and a harder board's cells are smaller, as a flat
+  board's are.
+  `patch_reach` is the view, plus `VIEW_SHIFT` (the central heptagon's
+  circumradius, as far as the view's centre ever strays), plus the tiling's own
+  tile radius (measured, `_tile_radius`), so the circle is full from anywhere
+  on the central tile (a test probes it from the heptagon's corners). Nothing about the board changes, so the pygame game,
+  which does not pan, plays the same board as a static disc -- and the patch
+  reaching every cell is what lets it.
+* **What the renderer draws is bounded by the same pan.** Since the view's
+  centre never strays past `VIEW_SHIFT`, how big any face can ever be drawn is
+  known, and the web board spends nothing it cannot show: a face beyond
+  `patch_reach` is never in view (`Board.unseen` -- most of the genus-14
+  surface's patch, which reaches farther only so every cell has a copy) and
+  gets no geometry, and an edge whose curve could never miss its chord by half
+  a pixel is drawn straight (`edgeSegments` -- nearly every edge out at the
+  rim). Each outline point carries a cell's whole bevel, so that was most of
+  the cost: a frame of the hard quartic drew 3.3 million vertices and now
+  draws about 0.9 million, the hard disc board's budget.
+* **The info window names the surface**, read off the board's own Euler
+  characteristic (`hurwitzSurfaceLabel`): "Klein quartic, genus 3" and so on.
 
 ## The binary tiling
 

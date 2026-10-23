@@ -137,6 +137,71 @@ and opened by a tap there, the outermost one brought in as far as the hold
 allows, the board thrown as far as it goes and still filling the view, a drag
 along the rim, `0`, the arrows, and a touch drag that neither opens nor flags.
 
+#### A board with no rim: the closed surfaces (`discRecentre`)
+
+The closed hyperbolic surfaces (`quartic`, `macbeath`, `triplet`) are
+each drawn as a **patch of the disc that covers it** (see "The closed hyperbolic surfaces" in
+[`geometry.md`](../../docs/agents/geometry.md)): every face shows the cell it
+covers (`Board.faces`), so a cell is drawn several times and its copies paint
+one state, as the projective plane's antipodal twins do. Its pan is not held at
+the rim, because there is no rim to hold — the patch looks the same from every
+tile once the labels are moved by the surface's own symmetry. So
+`Board.disc.cover` carries one **step** per tile round the central heptagon:
+the disc isometry taking the central tile onto it (in a view's own `(c, rot)`
+shape) and the symmetry of the surface that goes with it, as a cell
+permutation. After every drag `PolygonBoard.dragDisc` runs `discRecentre`:
+while the point at the centre of the view is nearer a neighbouring tile's
+centre than the central one's, the view is composed with that step and the
+step is reported (`onCoverStep`) to the session, which relabels every face
+(`GameSession.stepCover`, one batched `setVisuals` rather than a glyph rebuild
+a face). The picture does not change — every point is drawn where it was,
+showing the cell it showed — but the view's centre is back on the central
+tile, so the patch round it is whole however far the pan goes; `discDrag`'s
+reach is only `COVER_REACH`, short of the disc itself.
+
+Two things make it *look* continuous, and the pan jumped without either:
+
+- **The steps are turned into the mesh's frame** (`meshCoverSteps`). The board's
+  disc runs y down, the way its pixels do, and the mesh turns it upright, so the
+  mesh draws the board's point z at conj(z) and needs every step conjugated.
+  Applied as built, each recentring composed the view with a mirror image of
+  the right isometry, and the whole board leapt.
+- **The edge is a fixed circle of the view.** The patch is a disc round the
+  central tile, so seen from near a neighbouring tile its rim is off-centre,
+  and a recentring snapped it back. So the shader hides every cell whose pivot
+  the view draws past `coverClip(cover.view)` (`uDiscClip`; the view is
+  sized from the surface's genus to hold three quarters of the surface --
+  `coverView`, 2.06 of hyperbolic distance on the quartic, 2.99 on Macbeath's,
+  3.71 on the triplet), and a tap out there finds
+  nothing (`discSource`). The board is framed to that circle widened by a tile
+  radius (`tileRadius` -- a tile the clip keeps reaches that far past it), not
+  to the whole patch, whose polygons run on past the frame, hidden. The patch reaches
+  `patchReach` from its centre, so
+  that circle is always full: what moves at its edge are cells a pixel or two
+  across.
+
+**And it draws nothing it cannot show.** A closed surface's patch is a
+thousand faces or more, and each point of a cell's outline carries the cell's
+whole bevel, so a frame of the hard quartic once drew 3.3 million vertices and
+the reveal ripple crawled. The pan bounds how big any face can ever be drawn,
+and the builder spends accordingly: a face beyond `patchReach` is never in view
+(`Board.unseen`), and `PolygonBoard` gives it no geometry, no shadow and no
+gradient; and an edge whose geodesic could never miss its chord by half a pixel
+on a disc a thousand device pixels in radius is drawn straight
+(`edgeSegments`), which out at the rim is nearly every edge. Now the hard
+quartic draws about 0.9 million, the hard disc board's budget.
+
+The relabelling reads
+the current label off the face a label is named after (a cell's id is the id
+of its own nearest copy), so the board-bar symmetries and the pan compose.
+`tests/unit/disc.test.ts` pins that a step leaves the picture unchanged, in the
+board's frame and in the mesh's, and that a long drag stays on the central tile;
+`tests/unit/hurwitz.test.ts` that each step's symmetry is what its isometry does
+to the drawing, and that the patch fills the view's circle from every corner of
+the central tile;
+`tests/e2e/hyperbolicPan.spec.ts` that a board thrown twice as far as a disc's
+hold allows still fills the view, and a tap at the centre opens.
+
 ### Half-plane panning (`src/render/halfPlane.ts`)
 
 The binary tiling is drawn in the upper half-plane (`Board.halfPlane`), and

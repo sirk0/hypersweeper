@@ -13500,5 +13500,128 @@
         "indistinguishable": 0
       }
     }
+  },
+  "quartic": {
+    "builder": "hurwitz_board",
+    "args": {
+      "easy": {
+        "args": [
+          "quartic",
+          "zip",
+          0,
+          15,
+          300.0
+        ],
+        "cells": 80,
+        "fixed": true,
+        "reason": "the cell count is the solid"
+      },
+      "medium": {
+        "args": [
+          "quartic",
+          "gc3",
+          0,
+          45,
+          300.0
+        ],
+        "cells": 248,
+        "fixed": true,
+        "reason": "the cell count is the solid"
+      },
+      "hard": {
+        "args": [
+          "quartic",
+          "gc4",
+          0,
+          100,
+          300.0
+        ],
+        "cells": 444,
+        "fixed": true,
+        "reason": "the cell count is the solid"
+      }
+    }
+  },
+  "macbeath": {
+    "builder": "hurwitz_board",
+    "args": {
+      "easy": {
+        "args": [
+          "macbeath",
+          "none",
+          0,
+          14,
+          300.0
+        ],
+        "cells": 72,
+        "fixed": true,
+        "reason": "the cell count is the solid"
+      },
+      "medium": {
+        "args": [
+          "macbeath",
+          "zip",
+          0,
+          59,
+          300.0
+        ],
+        "cells": 240,
+        "fixed": true,
+        "reason": "the cell count is the solid"
+      },
+      "hard": {
+        "args": [
+          "macbeath",
+          "gc2",
+          0,
+          90,
+          300.0
+        ],
+        "cells": 324,
+        "fixed": true,
+        "reason": "the cell count is the solid"
+      }
+    }
+  },
+  "triplet": {
+    "builder": "hurwitz_board",
+    "args": {
+      "easy": {
+        "args": [
+          "triplet",
+          "none",
+          0,
+          32,
+          300.0
+        ],
+        "cells": 156,
+        "fixed": true,
+        "reason": "the cell count is the solid"
+      },
+      "medium": {
+        "args": [
+          "triplet",
+          "zip",
+          0,
+          124,
+          300.0
+        ],
+        "cells": 520,
+        "fixed": true,
+        "reason": "the cell count is the solid"
+      },
+      "hard": {
+        "args": [
+          "triplet",
+          "gc2",
+          0,
+          200,
+          300.0
+        ],
+        "cells": 702,
+        "fixed": true,
+        "reason": "the cell count is the solid"
+      }
+    }
   }
 }

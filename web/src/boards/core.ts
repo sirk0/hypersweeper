@@ -75,7 +75,7 @@ export interface Board {
   // isometry — hyperbolic panning, see render/disc.ts — and `rim` is what
   // bounds that (`discReach`): the board's edge is never carried in past most
   // of the way to the centre of the view. Unset for every other board.
-  disc?: { cx: number; cy: number; radius: number; rim: number };
+  disc?: { cx: number; cy: number; radius: number; rim: number; cover?: DiscCover };
   // The upper half-plane the board is drawn in (the binary tiling), in the
   // polygons' own pixel space: `boundary`, the y of the ideal line y = 0 (below
   // the board — pixel y grows downward), and `maxZoom`, the magnification that
@@ -83,6 +83,40 @@ export interface Board {
   // lets the renderer move the board by a half-plane isometry z -> a z + b —
   // half-plane panning, see render/halfPlane.ts. Unset for every other board.
   halfPlane?: { boundary: number; maxZoom: number };
+  // Set on a board drawn as a *patch of its own cover* (the closed hyperbolic
+  // surfaces, drawn in the Poincaré disc that covers them, every cell as many
+  // times as the patch reaches it): drawn face -> the cell it shows, as
+  // `Board3D.faces` is, so `polygons` and `cornerMask` are keyed by face and
+  // `adjacency` by cell. A patch is no whole number of sheets, so
+  // `coveringSheets` cannot count the surface off the drawing; `quotient` gives
+  // each cell's corners as the surface's own vertex ids instead, and the
+  // topology helpers count those. Unset on every other flat board.
+  faces?: Map<CellId, CellId>;
+  quotient?: Map<CellId, string[]>;
+  // The drawn faces the pan can never bring into view at all (a closed
+  // surface's patch reaches far enough that every cell has a copy, which can be
+  // farther out than any view goes). They stay on the board, for what reads
+  // it, and the renderer builds no geometry for them. Unset on every other
+  // board.
+  unseen?: Set<CellId>;
+}
+
+/** How a patch of a closed surface's cover pans without end
+ * (`render/disc.ts`): one step for each tile next to the central one -- the
+ * disc isometry carrying the central tile onto it, in the shape of a view,
+ * z -> rot (z - c) / (1 - conj(c) z), and the symmetry of the surface that
+ * goes with it, as a cell permutation: a face that showed cell x shows
+ * `cells.get(x)` once the view has taken the step. Stepping the view and the
+ * labels together leaves the picture as it was, so a pan that has wandered a
+ * tile off centre can be carried back to it, and never runs out of board. */
+export interface DiscCover {
+  /** In the board's own disc coordinates, as its polygons are -- y downward,
+   * the way the pixels run. */
+  steps: { c: readonly [number, number]; rot: readonly [number, number]; cells: Map<CellId, CellId> }[];
+  /** How far round the centre of the view, in hyperbolic distance, the patch
+   * is drawn whole wherever the pan has the view: the renderer shows that
+   * circle of it and hides the rest, so the board's edge stays put. */
+  view: number;
 }
 
 /** Where an immersion passes through itself, the sheet that ends up *inside*
@@ -384,8 +418,7 @@ export function solidBoard(board: Omit<Board3D, "symmetries">): Board3D {
 
 function edgesOf(board: AnyBoard): Map<string, number> {
   const count = new Map<string, number>();
-  for (const poly of board.polygons.values()) {
-    const pts = poly.map((p: readonly number[]) => vkey(p));
+  for (const pts of meshLoops(board)) {
     for (let i = 0; i < pts.length; i++) {
       const a = pts[i]!;
       const b = pts[(i + 1) % pts.length]!;
@@ -401,16 +434,23 @@ function edgesOf(board: AnyBoard): Map<string, number> {
  * double-covers it, so 2). The counts below are of the *board*, so they divide
  * the drawing's by it. */
 export function coveringSheets(board: AnyBoard): number {
-  if (!isBoard3D(board) || !board.faces) return 1;
+  if (!board.faces || (!isBoard3D(board) && board.quotient)) return 1;
   return board.polygons.size / board.adjacency.size;
+}
+
+/** The board's surface as loops of vertex keys, one per polygon: its polygons'
+ * corners, quantized -- or, on a board drawn as a patch of its cover, each
+ * cell's corners as the surface's own ids (`Board.quotient`), since the patch
+ * is not the surface. Mirrors core.py `mesh_loops`. */
+function meshLoops(board: AnyBoard): string[][] {
+  if (!isBoard3D(board) && board.quotient) return [...board.quotient.values()];
+  return [...board.polygons.values()].map((poly) => poly.map((p: readonly number[]) => vkey(p)));
 }
 
 /** Distinct polygon corners (V). */
 export function vertexCount(board: AnyBoard): number {
   const seen = new Set<string>();
-  for (const poly of board.polygons.values()) {
-    for (const p of poly) seen.add(vkey(p));
-  }
+  for (const loop of meshLoops(board)) for (const k of loop) seen.add(k);
   return seen.size / coveringSheets(board);
 }
 

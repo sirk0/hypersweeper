@@ -239,6 +239,9 @@
     "hyperbolic3474": "Rhombitriheptagonal 3.4.7.4",
     "hyperbolic4614": "Truncated triheptagonal 4.6.14",
     "hyperbolicbinary": "Binary tiling",
+    "quartic": "Klein quartic",
+    "macbeath": "Macbeath surface",
+    "triplet": "Hurwitz triplet",
     "spheretri": "Geodesic icosahedron"
   },
   "tilingNotations": {
@@ -1080,6 +1083,12 @@
       "surface": "klein",
       "family": "uniform"
     },
+    "macbeath": {
+      "label": "Macbeath surface",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
     "mobius": {
       "label": "Squares · Möbius strip",
       "tiling": "square",
@@ -1421,6 +1430,12 @@
       "tiling": "pythagorean",
       "surface": "flat",
       "family": "isogonal"
+    },
+    "quartic": {
+      "label": "Klein quartic",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
     },
     "rhombicdodeca": {
       "label": "Rhombic dodecahedron",
@@ -1998,6 +2013,12 @@
       "surface": "flat",
       "family": "uniform"
     },
+    "triplet": {
+      "label": "Hurwitz triplet",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
     "trirhombitrihex": {
       "label": "Fanned rhombitrihexagonal",
       "tiling": "trirhombitrihex",
@@ -2124,7 +2145,10 @@
       "hyperbolic3737",
       "hyperbolic3474",
       "hyperbolic4614",
-      "hyperbolicbinary"
+      "hyperbolicbinary",
+      "quartic",
+      "macbeath",
+      "triplet"
     ],
     "familyLabels": {
       "regular": "Regular",

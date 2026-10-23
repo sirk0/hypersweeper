@@ -137,6 +137,7 @@ const REGULAR = [
   "hyperbolic83",
 ];
 const UNIFORM = ["hyperbolic667", "hyperbolic3737", "hyperbolic3474", "hyperbolic4614"];
+const CLOSED = ["quartic", "macbeath", "triplet"];
 
 describe("geometry groups", () => {
   it("puts Hyperbolic after Flat manifolds, not inside Flat", () => {
@@ -152,17 +153,19 @@ describe("geometry groups", () => {
     expect(menuFamilies("flat")).not.toContain("hyperbolic");
   });
 
-  it("splits the Hyperbolic page into Regular and Uniform", () => {
+  it("splits the Hyperbolic page into Regular, Uniform and Closed surfaces", () => {
     const hyperbolic = boardGroups().find((g) => g.key === "hyperbolic")!;
     expect(hyperbolic.kind).toBe("families");
     if (hyperbolic.kind !== "families") return;
     expect(hyperbolic.families.map((f) => [f.key, f.label])).toEqual([
       ["hyperbolic-regular", "Regular"],
       ["hyperbolic-uniform", "Uniform"],
+      ["hyperbolic-closed", "Closed surfaces"],
     ]);
     expect(hyperbolic.families.map((f) => f.modes.map((m) => m.mode))).toEqual([
       REGULAR,
       UNIFORM,
+      CLOSED,
     ]);
   });
 
@@ -222,7 +225,7 @@ describe("home page pools", () => {
   });
 
   it("deals the hyperbolic boards from a pool of their own", () => {
-    expect([...hyperbolic].sort()).toEqual([...REGULAR, ...UNIFORM].sort());
+    expect([...hyperbolic].sort()).toEqual([...REGULAR, ...UNIFORM, ...CLOSED].sort());
     expect(flat.filter((m) => hyperbolic.includes(m))).toEqual([]);
   });
 

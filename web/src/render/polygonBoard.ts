@@ -42,11 +42,15 @@ import { BoardMotion, cellAttribute, patchMotion, type DiscUniforms } from "./mo
 import {
   DISC_IDENTITY,
   discDrag,
+  discRecentre,
+  coverClip,
+  meshCoverSteps,
   discMap,
   discReach,
   discScale,
   discUnmap,
   type Cx,
+  type CoverStep,
   type DiscView,
 } from "./disc";
 import {
@@ -71,6 +75,15 @@ import {
 /** A lift shows on the plane as growth (see `MotionUniforms.uLiftScale`). */
 const FLAT_LIFT_SCALE = 0.4;
 
+/** How far a closed surface's view may be carried in one drag step, in disc
+ * radii: anywhere, short of the rim itself. The recentring keeps its centre in
+ * the central tile between steps, so this only guards the arithmetic. */
+const COVER_REACH = 0.999;
+
+/** Vertices of a cell's soft shadow: a fan and a fading ring round its
+ * outline, or none on a face that is never seen. */
+const shadowCount = (g: CellGeom): number => (g.unseen ? 0 : 9 * g.poly.length);
+
 interface CellGeom {
   start: number; // first vertex index in the position/color buffers
   count: number; // vertex count for this cell
@@ -82,6 +95,9 @@ interface CellGeom {
   //   spot), else the same as `center`
   glyphInradius: number; // distance glyphCenter -> nearest edge (glyph sizing)
   palette: CellPalette; // hidden/opened tones for this cell's shape
+  // A face the board says is never seen (`Board.unseen`): no geometry at all,
+  // so no shadow and no gradient either.
+  unseen: boolean;
   // Set only for a cell that is not star-shaped about its centroid (Klaassen's
   // bent heptagon): its loops are mitred insets rather than pulls toward one
   // centre, by `inset` times these vectors, and its top face is the polygon's
@@ -165,6 +181,15 @@ export class PolygonBoard extends Group implements BoardMesh {
    * mesh units: the y of its ideal line, and how far the view may magnify. */
   readonly halfPlane?: { line: number; maxZoom: number };
   private discView: DiscView = DISC_IDENTITY;
+  /** A closed surface's pan steps (`Board.disc.cover`), and who is told when
+   * the view takes one -- the session, which moves the labels to match, so
+   * the picture does not change. */
+  private readonly coverSteps: readonly CoverStep[] | null;
+  /** How far out, in disc radii, the view of a closed surface shows its patch
+   * (`coverClip`): the shader hides every cell drawn beyond it, and a tap
+   * there finds nothing. Null on every other board. */
+  private readonly coverClip: number | null;
+  onCoverStep: ((steps: number[]) => void) | null = null;
   private readonly discUniforms: DiscUniforms | null;
 
   constructor(board: Board, style: CellStyle = cellStyle(null)) {
@@ -206,14 +231,23 @@ export class PolygonBoard extends Group implements BoardMesh {
           x: board.disc.cx - cx,
           y: cy - board.disc.cy,
           r: board.disc.radius,
-          reach: discReach(board.disc.rim),
+          // A closed surface's patch never runs out (`discRecentre` carries
+          // the view back to the central tile as it goes), so nothing bounds
+          // its pan but the disc itself.
+          reach: board.disc.cover ? COVER_REACH : discReach(board.disc.rim),
         }
       : null;
+    // The steps are the board's, whose disc runs y down; the mesh's runs up.
+    const cover = board.disc?.cover;
+    this.coverSteps = cover ? meshCoverSteps(cover.steps) : null;
+    this.coverClip = cover ? coverClip(cover.view) : null;
     this.discUniforms = this.disc
       ? {
           uDisc: { value: new Vector3(this.disc.x, this.disc.y, this.disc.r) },
           uDiscC: { value: new Vector2(0, 0) },
           uDiscRot: { value: new Vector2(1, 0) },
+          // past the rim, where no cell is: nothing hidden but on a cover
+          uDiscClip: { value: this.coverClip ?? 2 },
         }
       : null;
 
@@ -264,11 +298,14 @@ export class PolygonBoard extends Group implements BoardMesh {
           };
       // A cut with rounded corners draws the rounded outline; everything that
       // *measures* the cell above still read its true corners.
+      const unseen = board.unseen?.has(cell) ?? false;
       const drawn =
-        style.round && !bent ? roundCorners(poly, style.round, board.cornerMask?.get(cell)) : poly;
+        style.round && !bent && !unseen
+          ? roundCorners(poly, style.round, board.cornerMask?.get(cell))
+          : poly;
       const n = drawn.length;
       // n fan triangles for the top face, 2n for each ring of walls under it
-      const count = cellVertexCount(n, this.profile);
+      const count = unseen ? 0 : cellVertexCount(n, this.profile);
       for (let t = 0; t < count / 3; t++) faceCell.push(ci);
       this.geom.push({
         start: vertexCount,
@@ -283,6 +320,7 @@ export class PolygonBoard extends Group implements BoardMesh {
         glyphInradius: polygonInradius(board.cornerMask ? poly : shape, glyphCenter),
         palette: cellPalette(tones.get(cell)!, "flat", style.monochrome, style.boardTint),
         bent,
+        unseen,
       });
       vertexCount += count;
     });
@@ -334,7 +372,7 @@ export class PolygonBoard extends Group implements BoardMesh {
     // neighbour catches it.
     this.shadow = style.shadow ?? null;
     if (this.shadow) {
-      const shadowVerts = this.geom.reduce((sum, g) => sum + 9 * g.poly.length, 0);
+      const shadowVerts = this.geom.reduce((sum, g) => sum + shadowCount(g), 0);
       this.shadowPos = new BufferAttribute(new Float32Array(shadowVerts * 3), 3);
       this.shadowColor = new BufferAttribute(new Float32Array(shadowVerts * 4), 4);
       const sg = new BufferGeometry();
@@ -343,13 +381,13 @@ export class PolygonBoard extends Group implements BoardMesh {
       let at = 0;
       this.shadowStart = this.geom.map((g) => {
         const start = at;
-        at += 9 * g.poly.length;
+        at += shadowCount(g);
         return start;
       });
       cellAttribute(
         sg,
         shadowVerts,
-        this.geom.map((g, i) => ({ start: this.shadowStart[i]!, count: 9 * g.poly.length })),
+        this.geom.map((g, i) => ({ start: this.shadowStart[i]!, count: shadowCount(g) })),
       );
       const shadowMaterial = new MeshBasicMaterial({
         vertexColors: true,
@@ -458,8 +496,13 @@ export class PolygonBoard extends Group implements BoardMesh {
   /** Move the disc so what is drawn at `from` is drawn at `to` (mesh units). */
   dragDisc(from: Vertex, to: Vertex): boolean {
     if (!this.disc) return false;
-    const next = discDrag(this.discView, this.toDisc(from), this.toDisc(to), this.disc.reach);
+    let next = discDrag(this.discView, this.toDisc(from), this.toDisc(to), this.disc.reach);
     if (next === this.discView) return false;
+    if (this.coverSteps) {
+      const { view, taken } = discRecentre(next, this.coverSteps);
+      next = view;
+      if (taken.length) this.onCoverStep?.(taken);
+    }
     this.setDiscView(next);
     return true;
   }
@@ -471,7 +514,13 @@ export class PolygonBoard extends Group implements BoardMesh {
   /** The point of the board as built that is drawn at `p` (mesh units). */
   discSource(p: Vertex): Vertex {
     if (!this.disc) return p;
-    return this.fromDisc(discUnmap(this.discView, this.toDisc(p)));
+    const w = this.toDisc(p);
+    // Beyond a cover's clip the cells are hidden, so a tap there is a tap on
+    // nothing: aim it off the board altogether.
+    if (this.coverClip !== null && Math.hypot(w[0], w[1]) > this.coverClip) {
+      return this.fromDisc([4, 0]);
+    }
+    return this.fromDisc(discUnmap(this.discView, w));
   }
 
   /** Where the current view draws the board-as-built point `p`. */
@@ -500,6 +549,17 @@ export class PolygonBoard extends Group implements BoardMesh {
   }
 
   setVisual(cell: CellId, visual: CellVisual): void {
+    this.writeVisual(cell, visual);
+  }
+
+  /** `setVisual` for many cells at once -- a closed surface relabels every
+   * face of its patch as its pan steps across the cover. The glyphs are
+   * rebuilt once, on the next frame, either way (`glyphsDirty`). */
+  setVisuals(visuals: Iterable<readonly [CellId, CellVisual]>): void {
+    for (const [cell, visual] of visuals) this.writeVisual(cell, visual);
+  }
+
+  private writeVisual(cell: CellId, visual: CellVisual): void {
     const i = this.cellIndex.get(cell);
     if (i == null) return;
     const wasOpen = isOpened(this.states[i]!);
@@ -578,6 +638,7 @@ export class PolygonBoard extends Group implements BoardMesh {
    * in exactly the slice of the buffer the other state wrote. */
   private writeGeometry(i: number): void {
     const g = this.geom[i]!;
+    if (g.count === 0) return; // a face the board says is never seen
     const loops = isOpened(this.states[i]!) ? this.profile.open : this.profile.closed;
     const n = g.poly.length;
     const bent = g.bent;
@@ -648,7 +709,7 @@ export class PolygonBoard extends Group implements BoardMesh {
     // solid, or the board would be a window rather than a field of tiles.
     const opened = isOpened(this.states[i]!);
     const alpha = this.openAlpha === null || !opened ? 1 : this.openAlpha;
-    const ramp = this.ramp(g.poly.length, opened);
+    const ramp = g.unseen ? null : this.ramp(g.poly.length, opened);
     // Straight into the array: this runs for every vertex of every cell a
     // ripple recolours, every frame it runs.
     const out = this.colorAttr.array as Float32Array;
@@ -687,6 +748,7 @@ export class PolygonBoard extends Group implements BoardMesh {
     const sh = this.shadow;
     if (!pos || !sh) return;
     const g = this.geom[i]!;
+    if (g.unseen) return;
     const n = g.poly.length;
     const off = g.radius * sh.offset;
     const [dx, dy] = this.quarterTurn ? [off, 0] : [0, -off];
@@ -721,6 +783,7 @@ export class PolygonBoard extends Group implements BoardMesh {
     const sh = this.shadow;
     if (!col || !sh) return;
     const g = this.geom[i]!;
+    if (g.unseen) return;
     const n = g.poly.length;
     const a = isOpened(this.states[i]!) ? 0 : sh.opacity;
     let v = this.shadowStart[i]!;
@@ -913,6 +976,7 @@ export class PolygonBoard extends Group implements BoardMesh {
  * neighbouring cells, or the whole board, still goes up in one piece. Every
  * writer of these buffers marks its range, so none relies on a whole upload. */
 function touch(attr: BufferAttribute, start: number, count: number): void {
+  if (count === 0) return; // a cell with no geometry (`Board.unseen`)
   attr.addUpdateRange(start * attr.itemSize, count * attr.itemSize);
   attr.needsUpdate = true;
 }

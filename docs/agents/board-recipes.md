@@ -805,7 +805,7 @@ rather than D_3 -- that too is automatic. Read
    `symmetries.test.ts`.
 
 The web menu files a hyperbolic board on its own: Custom › Hyperbolic is split
-into Regular and Uniform by the preset's builder (`MENU_SUBFAMILIES` in
+into Regular, Uniform and Closed surfaces by the preset's builder (`MENU_SUBFAMILIES` in
 `web/src/boards/catalog.ts`). A board from a builder no submenu names fails
 `web/tests/unit/menu.test.ts` rather than vanishing from the menu — add its
 submenu there, with a label, a hint and an icon alias.
@@ -822,6 +822,40 @@ Center list (`npm run gamecenter`), and **a new pair of shapes on one board**
 must sound a chord -- `soundHarmony.test.ts` fails if it does not, and the fix
 is the spelling in `audio/presets.ts`. See
 [`geometry.md`](geometry.md#the-uniform-hyperbolic-boards).
+
+**A closed hyperbolic surface** (`hurwitz.py`, `web/src/boards/hurwitz.ts`)
+is a surface rather than a trim, and a new one is a group, not a builder. Read
+[`geometry.md`](geometry.md#the-closed-hyperbolic-surfaces) first.
+
+1. **The surface** -- a row in `HURWITZ_SURFACES` in both ports: the q of the
+   PSL(2,q) whose Hurwitz generators make it, and its genus. The group code
+   takes a prime q, and 8; another prime power needs its field written into
+   `_field` / `field` (as GF(8) is). A group with more than one Hurwitz
+   surface (PSL(2,13) has three) gives the one the generator search meets
+   first; say which by a computed invariant -- the Petrie length
+   (`petrie_length` / `petrieLength`) -- and pin it in both test files, or a
+   change to the search swaps the board without a word. Add its label to
+   `HURWITZ_LABELS`.
+2. **Its mode.** One surface a mode (`SURFACE_MODES`), in the Closed surfaces
+   submenu (the `hurwitz_board` builder files it). The genus fixes every
+   tiling's size -- {7,3} 12(g - 1), 6.6.7 40(g - 1), GC(n,0) beyond -- so
+   pick the three rungs nearest the size band, smallest to largest; a row the
+   band cannot reach goes in `EXEMPT_ROWS` (or the mode in `GENUS_BOUND`) in
+   `tests/test_presets.py`, with the rungs that miss it. The view is sized
+   from the genus (`cover_view`), so nothing else needs choosing. The
+   mode needs the menu, label, icon and test rows of a hyperbolic one (steps 1,
+   3 and 4 above, with `quartic`'s entries to copy); `resize.py` holds every
+   row as declared.
+3. **The patch must reach every cell** -- the builder grows it until it does,
+   and never short of `patch_reach(surface, op)`, which the web pan needs --
+   and its face count grows quickly with the genus: 2521 faces for the
+   genus-14 hard board.
+   A much bigger surface wants a measurement of the build and the pan before it
+   ships.
+4. **Tests** -- `_HURWITZ` in `tests/test_boards.py` and `SURFACES` in
+   `web/tests/unit/hurwitz.test.ts` (group order, faces, vertices, edges), and
+   the D7 the patch keeps to `symmetries.test.ts` -- which measures whether the
+   mirror survives, so a chiral surface would show there as 7 rather than 14.
 
 **A board in the upper half-plane** -- today only Böröczky's binary tiling,
 `binary_board` -- is not a {p,q} and shares none of the disc machinery. It

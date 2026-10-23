@@ -45,6 +45,7 @@ import {
   pentaflakeBoard,
   sphinxBoard,
 } from "./fractal";
+import { hurwitzBoard } from "./hurwitz";
 import { binaryBoard, hyperbolicBoard, hyperbolicUniformBoard } from "./hyperbolic";
 import { DIFFICULTIES } from "./catalog";
 import type { AnyBoard } from "./core";
@@ -209,6 +210,7 @@ const BUILDERS: Record<string, Builder> = {
   hyperbolic_board: hyperbolicBoard,
   hyperbolic_uniform_board: hyperbolicUniformBoard,
   binary_board: binaryBoard,
+  hurwitz_board: hurwitzBoard,
 };
 
 /** The builders that take a `variant` after their preset args: the

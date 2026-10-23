@@ -49,7 +49,7 @@ test.describe("M1 app", () => {
     expect(state?.cellCount).toBeLessThan(105);
   });
 
-  test("Hyperbolic sits after Flat manifolds, split into Regular and Uniform", async ({
+  test("Hyperbolic sits after Flat manifolds, split into Regular, Uniform and Closed surfaces", async ({
     page,
   }) => {
     const groups = await page
@@ -65,12 +65,26 @@ test.describe("M1 app", () => {
 
     await page.locator('.difficulty-btn[data-key="easy"]').click();
     await page.locator('.menu-entry[data-group="hyperbolic"]').click();
-    await expect(page.locator(".menu-body .menu-entry[data-submenu]")).toHaveCount(2);
+    await expect(page.locator(".menu-body .menu-entry[data-submenu]")).toHaveCount(3);
     await page.locator('.menu-entry[data-submenu="hyperbolic-regular"]').click();
     await page.locator('.menu-entry[data-mode="hyperbolic54"]').click();
     const state = await page.evaluate(() => window.__ms?.state());
     expect(state?.screen).toBe("game");
     expect(state?.mode).toBe("hyperbolic54");
+  });
+
+  test("the Closed surfaces submenu launches Klein's quartic", async ({ page }) => {
+    await page.locator('.difficulty-btn[data-key="medium"]').click();
+    await page.locator('.menu-entry[data-group="hyperbolic"]').click();
+    await page.locator('.menu-entry[data-submenu="hyperbolic-closed"]').click();
+    for (const mode of ["quartic", "macbeath", "triplet"]) {
+      await expect(page.locator(`.menu-entry[data-mode="${mode}"]`)).toBeVisible();
+    }
+    await page.locator('.menu-entry[data-mode="quartic"]').click();
+    const state = await page.evaluate(() => window.__ms?.state());
+    expect(state?.mode).toBe("quartic");
+    // medium is the quartic subdivided: 248 cells, the same surface as easy's 80
+    expect(state?.cellCount).toBe(248);
   });
 
   test("menu drills into the spiral family to launch the brick rings", async ({ page }) => {

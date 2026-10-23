@@ -416,8 +416,9 @@ function presetPQ(mode: string): [number, number] {
 }
 
 /** The sub-families a group family's page is split into, each the boards one
- * builder makes: the Hyperbolic page holds the regular {p,q} tilings and the
- * uniform tilings Wythoff's construction makes from them. Keyed by builder so
+ * builder makes: the Hyperbolic page holds the regular {p,q} tilings, the
+ * uniform tilings Wythoff's construction makes from them, and the closed
+ * surfaces they glue up into (boards/hurwitz.ts). Keyed by builder so
  * a new board files itself; `tests/unit/menu.test.ts` checks every board of
  * the family lands in one. `byPQ` sorts a page by p, then q — triangles first,
  * as the flat picker lists Triangles, Squares, Hexagons — rather than in the
@@ -426,6 +427,7 @@ const MENU_SUBFAMILIES: Record<string, { key: string; builder: string; byPQ?: bo
   hyperbolic: [
     { key: "hyperbolic-regular", builder: "hyperbolic_board", byPQ: true },
     { key: "hyperbolic-uniform", builder: "hyperbolic_uniform_board" },
+    { key: "hyperbolic-closed", builder: "hurwitz_board" },
   ],
 };
 
@@ -462,6 +464,7 @@ export const MENU_FAMILY_LABELS: Record<string, string> = {
   regular: "Shaped boards",
   "hyperbolic-regular": "Regular",
   "hyperbolic-uniform": "Uniform",
+  "hyperbolic-closed": "Closed surfaces",
 };
 
 /** One line under each family row, saying what the name means.
@@ -489,6 +492,7 @@ export const MENU_FAMILY_HINTS: Record<string, string> = {
   hyperbolic: "Curved space: more round a corner than fit flat",
   "hyperbolic-regular": "One shape throughout: {p,q} is p sides, q to a corner",
   "hyperbolic-uniform": "Two or three shapes, same at every corner",
+  "hyperbolic-closed": "No rim: the plane glued up, every cell whole",
 };
 
 /** Every mode on a surface the menu reaches: its picker page, promoted rows

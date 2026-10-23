@@ -2408,6 +2408,93 @@
         "hasCellCycle": false
       }
     },
+    "quartic": {
+      "easy": {
+        "cellCount": 80,
+        "mineCount": 18,
+        "euler": -4,
+        "boundaryComponents": 0,
+        "edgeCount": 252,
+        "vertexCount": 168,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 248,
+        "mineCount": 61,
+        "euler": -4,
+        "boundaryComponents": 0,
+        "edgeCount": 756,
+        "vertexCount": 504,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 444,
+        "mineCount": 118,
+        "euler": -4,
+        "boundaryComponents": 0,
+        "edgeCount": 1344,
+        "vertexCount": 896,
+        "hasCellCycle": false
+      }
+    },
+    "macbeath": {
+      "easy": {
+        "cellCount": 72,
+        "mineCount": 15,
+        "euler": -12,
+        "boundaryComponents": 0,
+        "edgeCount": 252,
+        "vertexCount": 168,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 240,
+        "mineCount": 55,
+        "euler": -12,
+        "boundaryComponents": 0,
+        "edgeCount": 756,
+        "vertexCount": 504,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 324,
+        "mineCount": 93,
+        "euler": -12,
+        "boundaryComponents": 0,
+        "edgeCount": 1008,
+        "vertexCount": 672,
+        "hasCellCycle": false
+      }
+    },
+    "triplet": {
+      "easy": {
+        "cellCount": 156,
+        "mineCount": 33,
+        "euler": -26,
+        "boundaryComponents": 0,
+        "edgeCount": 546,
+        "vertexCount": 364,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 520,
+        "mineCount": 122,
+        "euler": -26,
+        "boundaryComponents": 0,
+        "edgeCount": 1638,
+        "vertexCount": 1092,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 702,
+        "mineCount": 191,
+        "euler": -26,
+        "boundaryComponents": 0,
+        "edgeCount": 2184,
+        "vertexCount": 1456,
+        "hasCellCycle": false
+      }
+    },
     "hyperbolic667": {
       "easy": {
         "cellCount": 78,

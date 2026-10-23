@@ -170,3 +170,80 @@ export function discDrag(v: DiscView, from: Cx, to: Cx, reach: number): DiscView
   const next = fromMat(matMul(shift(p), viewMat(v)));
   return { c: capped(next.c, reach), rot: next.rot };
 }
+
+// -- a board with no edge: the closed surfaces ----------------------------------
+
+/** One step of a closed surface's cover (`DiscCover` in boards/core.ts): the
+ * isometry carrying the central tile onto one next to it, in the shape of a
+ * view. */
+export interface CoverStep {
+  readonly c: Cx;
+  readonly rot: Cx;
+}
+
+/** At most this many steps are taken at once. A drag moves the view by a
+ * fraction of a tile, so one is almost always enough; the cap only stops a
+ * pathological view from spinning the loop. */
+const MAX_RECENTRE = 16;
+
+/**
+ * Carry a view that has wandered off the central tile back onto it.
+ *
+ * A closed surface drawn as a patch of its cover looks the same from every
+ * tile, once the labels are moved by the surface's matching symmetry: so while
+ * the point shown at the centre of the view is nearer the centre of a
+ * neighbouring tile than the central one's, the view is composed with the step
+ * that carries the central tile there, and the step is reported for the labels
+ * to follow. The view draws exactly what it did -- every point lands where it
+ * was, showing the cell it showed -- but its centre is back within the central
+ * tile, so the patch around it is whole however far the pan goes. Returns the
+ * new view and the indices of the steps taken, in order.
+ */
+export function discRecentre(
+  v: DiscView,
+  steps: readonly CoverStep[],
+): { view: DiscView; taken: number[] } {
+  const taken: number[] = [];
+  let view = v;
+  for (let n = 0; n < MAX_RECENTRE; n++) {
+    // hyperbolic distance from the view's centre, as the disc radius of its
+    // image when that point is moved to 0 -- monotonic in the distance itself
+    const near = (p: Cx) => {
+      const num: Cx = [view.c[0] - p[0], view.c[1] - p[1]];
+      const pc = mul(conj(p), view.c);
+      return Math.sqrt(abs2(num) / abs2([1 - pc[0], -pc[1]]));
+    };
+    let best = -1;
+    let bestD = Math.sqrt(abs2(view.c));
+    steps.forEach((s, k) => {
+      const centre = mul(s.rot, [-s.c[0], -s.c[1]]); // the step's image of 0
+      const d = near(centre);
+      if (d < bestD - 1e-12) [best, bestD] = [k, d];
+    });
+    if (best < 0) break;
+    view = fromMat(matMul(viewMat(view), viewMat(steps[best]!)));
+    taken.push(best);
+  }
+  return { view, taken };
+}
+
+/**
+ * A closed surface's steps as the mesh needs them.
+ *
+ * The board's disc runs y downward, the way its pixels do, and the mesh turns
+ * it upright, so a point the board calls z the mesh calls conj(z) -- and an
+ * isometry T of the board's disc is z -> conj(T(conj z)) in the mesh's. A view
+ * composed with the board's own steps is composed with a mirror image of the
+ * right isometry, so every recentring redrew the board somewhere else.
+ * Conjugating both halves of the view's shape, `c` and `rot`, is exactly that
+ * map.
+ */
+export function meshCoverSteps(steps: readonly CoverStep[]): CoverStep[] {
+  return steps.map(({ c, rot }) => ({ c: [c[0], -c[1]], rot: [rot[0], -rot[1]] }));
+}
+
+/** The disc radius a closed surface's view is shown out to: everything within
+ * `view` of the centre of the view, in hyperbolic distance (`DiscCover.view`). */
+export function coverClip(view: number): number {
+  return Math.tanh(view / 2);
+}

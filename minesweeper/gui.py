@@ -1017,11 +1017,18 @@ _ICON_ALIASES = {
 _HYPERBOLIC_ICON_SHELLS = {"hyperbolic83": 4, "hyperbolic73": 4, "hyperbolic64": 4, "hyperbolic54": 4,
                            "hyperbolic55": 4, "hyperbolic45": 5, "hyperbolic46": 6,
                            "hyperbolic667": 4, "hyperbolic3737": 4, "hyperbolic3474": 5,
-                           "hyperbolic4614": 5, "hyperbolic37": 5, "hyperbolic38": 5}
+                           "hyperbolic4614": 5, "hyperbolic37": 5, "hyperbolic38": 5,
+                           "quartic": 4, "macbeath": 4, "triplet": 4}
 # The uniform ones are Wythoff's operations on {7,3}; every other hyperbolic
-# mode is ``hyperbolic{p}{q}``.
+# mode is ``hyperbolic{p}{q}``. The closed surface draws the same disc as its
+# tiling's, with every heptagon lit rather than the central one: on a surface
+# with no rim every one of them is a full seven-neighbour cell.
 _HYPERBOLIC_UNIFORM = {"hyperbolic667": "zip", "hyperbolic3737": "ambo",
-                       "hyperbolic3474": "expand", "hyperbolic4614": "bevel"}
+                       "hyperbolic3474": "expand", "hyperbolic4614": "bevel",
+                       "quartic": "zip", "macbeath": "zip",
+                       "triplet": "zip"}
+# The closed surfaces (boards/hurwitz.py), whose icon lights every heptagon.
+_CLOSED_SURFACE_MODES = frozenset({"quartic", "macbeath", "triplet"})
 
 
 # How each flat-faced solid drawn by `_icon_solid` -- the Catalan solids and
@@ -1457,7 +1464,9 @@ def _render_icon(key: str) -> pygame.Surface:
         pygame.draw.circle(s, ICON_OUTLINE, (int(c), int(c)), int(r), 4)
         for cell, polygon in board.polygons.items():
             pts = [(c - r + x * sc, c - r + y * sc) for x, y in polygon]
-            fill_polygon(s, pts, ICON_BLUE_LIGHT if cell < central else ICON_BLUE)
+            lit = (sum(board.corner_mask[cell]) == 7 if key in _CLOSED_SURFACE_MODES
+                   else cell < central)
+            fill_polygon(s, pts, ICON_BLUE_LIGHT if lit else ICON_BLUE)
             ipts = [(int(x), int(y)) for x, y in pts]
             pygame.draw.lines(s, ICON_OUTLINE, True, ipts, 3)
             outline_polygon(s, ipts, ICON_OUTLINE)
@@ -2424,16 +2433,21 @@ class GameScreen(BaseGameScreen):
         )
 
     def cell_at(self, pos):
-        for cell, vertices in self.polygons.items():
+        # A board drawn as a patch of its cover (the closed hyperbolic
+        # surfaces) draws each cell several times; a tap on any copy is a
+        # tap on the cell.
+        faces = self.board.faces or {}
+        for face, vertices in self.polygons.items():
             if point_in_polygon(pos, vertices):
-                return cell
+                return faces.get(face, face)
         return None
 
     def draw_board(self, surface, fonts: FontCache) -> None:
-        for cell in self.polygons:
+        faces = self.board.faces or {}
+        for face in self.polygons:
             self.draw_cell(
-                surface, fonts, cell, self.polygons[cell],
-                self.centers[cell], self.glyph_radius[cell],
+                surface, fonts, faces.get(face, face), self.polygons[face],
+                self.centers[face], self.glyph_radius[face],
             )
 
 

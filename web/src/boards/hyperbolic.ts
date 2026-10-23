@@ -24,7 +24,7 @@ const SHELL_TOL = 1e-7;
 
 // -- complex arithmetic -------------------------------------------------------
 
-type C = readonly [number, number];
+export type C = readonly [number, number];
 
 const add = (a: C, b: C): C => [a[0] + b[0], a[1] + b[1]];
 const sub = (a: C, b: C): C => [a[0] - b[0], a[1] - b[1]];
@@ -61,7 +61,7 @@ export function hyperbolicFaces(
  * all three of its faces, its corners those faces' indices, counterclockwise,
  * lowest first; its ring the newest of those faces' rings, less one. Mirrors
  * `_dual_faces`. */
-function dualFaces(q: number, rings: number): { faces: number[][]; ringOf: number[] } {
+export function dualFaces(q: number, rings: number): { faces: number[][]; ringOf: number[] } {
   const primal = ringWalk(q, 3, rings + 1);
   // each corner of a {q,3} face: the face, and its corners before and after
   const star = new Map<number, [number, number, number][]>();
@@ -151,7 +151,7 @@ function ringWalk(p: number, q: number, rings: number): { faces: number[][]; rin
 
 // -- the Poincaré disc --------------------------------------------------------
 
-function centralPolygon(p: number, q: number): C[] {
+export function centralPolygon(p: number, q: number): C[] {
   const bigR = Math.acosh(1 / (Math.tan(Math.PI / p) * Math.tan(Math.PI / q)));
   const r = Math.tanh(bigR / 2);
   return Array.from({ length: p }, (_, k) => {
@@ -161,12 +161,12 @@ function centralPolygon(p: number, q: number): C[] {
 }
 
 /** z -> (z - a) / (1 - conj(a) z), taking a to 0. */
-const toOrigin = (a: C, z: C): C => div(sub(z, a), sub(ONE, mul(conj(a), z)));
+export const toOrigin = (a: C, z: C): C => div(sub(z, a), sub(ONE, mul(conj(a), z)));
 /** Its inverse, taking 0 to a. */
 const fromOrigin = (a: C, z: C): C => div(add(z, a), add(ONE, mul(conj(a), z)));
 
 /** The orientation-preserving disc isometry taking a -> a2 and b -> b2. */
-function isometry(a: C, b: C, a2: C, b2: C): (z: C) => C {
+export function isometry(a: C, b: C, a2: C, b2: C): (z: C) => C {
   const w = toOrigin(a, b);
   const w2 = toOrigin(a2, b2);
   const turn = div(scaleC(w2, 1 / abs(w2)), scaleC(w, 1 / abs(w)));
@@ -223,9 +223,9 @@ function faceCentre(centre: C[], face: number[], pos: Map<number, C>): C {
   return isometry(centre[0]!, centre[1]!, pos.get(face[0]!)!, pos.get(face[1]!)!)([0, 0]);
 }
 
-const distance = (z: C): number => 2 * Math.atanh(abs(z));
+export const distance = (z: C): number => 2 * Math.atanh(abs(z));
 
-function arcPoints(a: C, b: C, segments: number): C[] {
+export function arcPoints(a: C, b: C, segments: number): C[] {
   const w = toOrigin(a, b);
   const length = Math.atanh(abs(w));
   const unit = scaleC(w, 1 / abs(w));
@@ -244,6 +244,10 @@ interface Tiling {
 }
 
 const TILINGS = new Map<string, Tiling>();
+
+/** `tiling`, for the closed surfaces (`hurwitz.ts`), which cover their own
+ * patch of it. */
+export const hyperbolicTiling = (p: number, q: number, rings: number): Tiling => tiling(p, q, rings);
 
 /** The {p,q} tiling out to `rings` rings: its faces, their rings, every
  * vertex's position and every face's centre. Cached, and only ever read: a trim
@@ -465,6 +469,52 @@ function discBoard(
   scale: number,
   arc: number,
 ): Board {
+  const { cells, cornerMask, polygons, extent, rim } = discDrawing(faces, kept, pos, scale, arc);
+  if (!isDisc(cells)) throw new Error(`${name} trimmed to ${shells} shells is not a disc`);
+  const size = 2 * extent * scale;
+  return flatBoard({
+    mode,
+    polygons,
+    adjacency: sharedVertexAdjacency(cells),
+    mineCount,
+    width: size,
+    height: size,
+    cornerMask,
+    curved: true,
+    regularTiles: true,
+    disc: { cx: extent * scale, cy: extent * scale, radius: scale, rim },
+  });
+}
+
+/** The kept faces drawn in the disc: each one's point ids (its corners and the
+ * arc points between them), which of those are corners, its polygon in pixels
+ * -- centred on the disc's own centre, `scale` pixels to the unit -- the disc
+ * radius the drawing reaches out to (`extent`) and the one out to which it is
+ * whole (`rim`). `discBoard` makes a board of it; the closed surfaces
+ * (`hurwitz.ts`) draw a patch of their cover with it. Mirrors `disc_drawing`. */
+export function discDrawing(
+  faces: readonly (readonly number[])[],
+  kept: readonly number[],
+  pos: Map<number, C>,
+  scale: number,
+  arc: number | ((a: C, b: C) => number),
+): {
+  cells: Map<CellId, string[]>;
+  cornerMask: Map<CellId, boolean[]>;
+  polygons: Map<CellId, Vertex[]>;
+  extent: number;
+  rim: number;
+} {
+  // `arc` may be decided edge by edge (the closed surfaces draw a far edge
+  // straight); the decision is the edge's own, so both its faces agree.
+  const segments = new Map<string, number>();
+  const segmentsOf = (lo: number, hi: number): number => {
+    if (typeof arc === "number") return arc;
+    const key = `${lo}:${hi}`;
+    let n = segments.get(key);
+    if (n === undefined) segments.set(key, (n = arc(pos.get(lo)!, pos.get(hi)!)));
+    return n;
+  };
   // Arc points along each edge: ids built from the edge's end ids (the lower
   // first), positions computed once per edge from its lower end, so both faces
   // of an edge share the very same points.
@@ -484,13 +534,14 @@ function discBoard(
       corner.push(true);
       const lo = Math.min(a, b);
       const hi = Math.max(a, b);
-      if (!points.has(`${lo}:${hi}:1`)) {
-        arcPoints(pos.get(lo)!, pos.get(hi)!, arc).forEach((z, s) =>
+      const n = segmentsOf(lo, hi);
+      if (n > 1 && !points.has(`${lo}:${hi}:1`)) {
+        arcPoints(pos.get(lo)!, pos.get(hi)!, n).forEach((z, s) =>
           points.set(`${lo}:${hi}:${s + 1}`, z),
         );
       }
-      for (let t = 1; t < arc; t++) {
-        const s = a === lo ? t : arc - t;
+      for (let t = 1; t < n; t++) {
+        const s = a === lo ? t : n - t;
         ids.push(`${lo}:${hi}:${s}`);
         corner.push(false);
       }
@@ -498,7 +549,6 @@ function discBoard(
     cells.set(cid(f), ids);
     cornerMask.set(cid(f), corner);
   }
-  if (!isDisc(cells)) throw new Error(`${name} trimmed to ${shells} shells is not a disc`);
 
   // Centred on the disc's own centre, so the central p-gon (or vertex) sits in
   // the middle of the board whatever the trim.
@@ -516,7 +566,6 @@ function discBoard(
       }),
     );
   }
-  const size = 2 * extent * scale;
   // How far out the board is whole: the nearest point of its outline (every
   // point on an edge only one cell has) to the centre. The outer shell is
   // ragged by about a cell, so this is well inside `extent` -- and it is what
@@ -534,18 +583,7 @@ function discBoard(
     if (n !== 1) continue;
     for (const k of key.split("|")) rim = Math.min(rim, abs(points.get(k)!));
   }
-  return flatBoard({
-    mode,
-    polygons,
-    adjacency: sharedVertexAdjacency(cells),
-    mineCount,
-    width: size,
-    height: size,
-    cornerMask,
-    curved: true,
-    regularTiles: true,
-    disc: { cx: extent * scale, cy: extent * scale, radius: scale, rim },
-  });
+  return { cells, cornerMask, polygons, extent, rim };
 }
 
 // -- the uniform tilings: Wythoff's construction on {p,q} ---------------------
@@ -564,7 +602,7 @@ export type WythoffOp = (typeof WYTHOFF_OPS)[number];
 
 /** The faces round a vertex, smallest first as the notation writes them.
  * Mirrors `_vertex_config`. */
-function vertexConfig(p: number, q: number, op: WythoffOp): number[] {
+export function vertexConfig(p: number, q: number, op: WythoffOp): number[] {
   const ring = {
     ambo: [p, q, p, q],
     zip: [2 * q, 2 * q, p],
@@ -586,17 +624,17 @@ export function wythoffMode(p: number, q: number, op: WythoffOp): string {
   return `hyperbolic${vertexConfig(p, q, op).join("")}`;
 }
 
-type V3 = readonly [number, number, number];
+export type V3 = readonly [number, number, number];
 
 /** A disc point on the hyperboloid t^2 - x^2 - y^2 = 1. */
-function lift(z: C): V3 {
+export function lift(z: C): V3 {
   const r2 = z[0] * z[0] + z[1] * z[1];
   const s = 1 - r2;
   return [(1 + r2) / s, (2 * z[0]) / s, (2 * z[1]) / s];
 }
 
 /** A timelike vector back to the disc, normalised and on the upper sheet. */
-function drop(v: V3): C {
+export function drop(v: V3): C {
   const [t, x, y] = v;
   let norm = Math.sqrt(t * t - x * x - y * y);
   if (t < 0) norm = -norm;
@@ -657,6 +695,38 @@ export function wythoffFaces(
   op: WythoffOp,
   rings: number,
 ): { faces: number[][]; pos: Map<number, C>; centres: C[] } {
+  const { loops, where, centres } = wythoffLoops(p, q, op, rings);
+  const ids = new Map<string, number>();
+  for (const loop of loops) for (const k of loop) if (!ids.has(k)) ids.set(k, ids.size);
+  const faces = loops.map((loop) => loop.map((k) => ids.get(k)!));
+  const pos = new Map<number, C>();
+  for (const [k, id] of ids) pos.set(id, where.get(k)!);
+  return { faces, pos, centres };
+}
+
+/** What a face of a uniform tiling stands on: an old face, an old vertex, or
+ * an old edge (`u < v`). Mirrors the origins `wythoff_loops` returns. */
+export type WythoffOrigin = readonly ["F", number] | readonly ["V", number] | readonly ["E", number, number];
+
+export interface WythoffLoops {
+  /** Each face as the loop of flag keys round it: the {p,q} ids the key is
+   * named by, joined with commas (`f,u,v` on `zip`). */
+  loops: string[][];
+  where: Map<string, C>;
+  centres: C[];
+  origins: WythoffOrigin[];
+}
+
+const loopsCache = new Map<string, WythoffLoops>();
+
+/** `wythoffFaces` before its vertices are renumbered: each face's loop of flag
+ * keys, the keys' positions, each face's centre and what it stands on. The
+ * closed surfaces (`hurwitz.ts`) read the keys and origins through their
+ * covering map. Cached, and only ever read. Mirrors `wythoff_loops`. */
+export function wythoffLoops(p: number, q: number, op: WythoffOp, rings: number): WythoffLoops {
+  const cacheKey = `${p},${q},${op},${rings}`;
+  const hit = loopsCache.get(cacheKey);
+  if (hit) return hit;
   if (!WYTHOFF_OPS.includes(op)) throw new Error(`unknown Wythoff operation ${op}`);
   const { faces: base, pos: bpos } = tiling(p, q, rings);
   const centre = centralPolygon(p, q);
@@ -701,6 +771,7 @@ export function wythoffFaces(
 
   const newFaces: string[][] = [];
   const centres: C[] = [];
+  const origins: WythoffOrigin[] = [];
   // F: one per face of {p,q}, its flags in order round it
   base.forEach((_, f) => {
     const keys: string[] = [];
@@ -709,6 +780,7 @@ export function wythoffFaces(
     if (loop.length >= 3) {
       newFaces.push(loop);
       centres.push(maps[f]!([0, 0]));
+      origins.push(["F", f]);
     }
   });
   // V: one per vertex with its whole star, the faces round it counterclockwise
@@ -735,6 +807,7 @@ export function wythoffFaces(
     if (loop.length >= 3) {
       newFaces.push(loop);
       centres.push(bpos.get(v)!);
+      origins.push(["V", v]);
     }
   }
   // E: one per edge with both its faces, round the edge's midpoint
@@ -749,20 +822,18 @@ export function wythoffFaces(
       if (loop.length >= 3) {
         newFaces.push(loop);
         centres.push(maps[f]!(mul(turn[i]!, mid)));
+        origins.push(["E", u, v]);
       }
     }
   });
-  const ids = new Map<string, number>();
-  for (const loop of newFaces) for (const k of loop) if (!ids.has(k)) ids.set(k, ids.size);
-  const faces = newFaces.map((loop) => loop.map((k) => ids.get(k)!));
-  const pos = new Map<number, C>();
-  for (const [k, id] of ids) pos.set(id, where.get(k)!);
-  return { faces, pos, centres };
+  const out = { loops: newFaces, where, centres, origins };
+  loopsCache.set(cacheKey, out);
+  return out;
 }
 
 /** Face indices grouped by their centre's distance from the disc's centre,
  * nearest first. Mirrors `_shell_groups`. */
-function shellGroups(centres: C[]): number[][] {
+export function shellGroups(centres: C[]): number[][] {
   const rows = centres
     .map((z, f) => [distance(z), f] as const)
     .sort((x, y) => x[0] - y[0] || x[1] - y[1]);

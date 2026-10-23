@@ -1712,6 +1712,84 @@
         ]
       }
     },
+    "quartic": {
+      "builder": "hurwitz_board",
+      "args": {
+        "easy": [
+          "quartic",
+          "zip",
+          0,
+          18,
+          300.0
+        ],
+        "medium": [
+          "quartic",
+          "gc3",
+          0,
+          61,
+          300.0
+        ],
+        "hard": [
+          "quartic",
+          "gc4",
+          0,
+          118,
+          300.0
+        ]
+      }
+    },
+    "macbeath": {
+      "builder": "hurwitz_board",
+      "args": {
+        "easy": [
+          "macbeath",
+          "none",
+          0,
+          15,
+          300.0
+        ],
+        "medium": [
+          "macbeath",
+          "zip",
+          0,
+          55,
+          300.0
+        ],
+        "hard": [
+          "macbeath",
+          "gc2",
+          0,
+          93,
+          300.0
+        ]
+      }
+    },
+    "triplet": {
+      "builder": "hurwitz_board",
+      "args": {
+        "easy": [
+          "triplet",
+          "none",
+          0,
+          33,
+          300.0
+        ],
+        "medium": [
+          "triplet",
+          "zip",
+          0,
+          122,
+          300.0
+        ],
+        "hard": [
+          "triplet",
+          "gc2",
+          0,
+          191,
+          300.0
+        ]
+      }
+    },
     "hyperbolic667": {
       "builder": "hyperbolic_uniform_board",
       "args": {

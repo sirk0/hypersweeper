@@ -93,8 +93,11 @@ class TestGameScreenGeometry:
     @pytest.mark.parametrize("mode", MODES_2D)
     def test_every_cell_center_maps_back_to_its_cell(self, mode):
         screen = GameScreen(mode, "easy")
-        for cell, center in screen.centers.items():
-            assert screen.cell_at(center) == cell
+        # a board drawn as a patch of its cover draws a cell several times, and
+        # a tap on any copy is a tap on the cell it shows
+        faces = screen.board.faces or {}
+        for face, center in screen.centers.items():
+            assert screen.cell_at(center) == faces.get(face, face)
 
     def test_positions_outside_the_board_map_to_none(self, gui):
         assert gui.cell_at((2, 2)) is None  # header area

@@ -498,6 +498,27 @@ def _disc_board(mode: str, name: str, shells: int, faces: list[tuple[int, ...]],
     """The kept faces as a board in the disc: each edge drawn as its geodesic
     arc, the board centred on the disc's own centre. Shared by the regular
     {p,q} boards and the uniform ones below; ``name`` is what the error says."""
+    cells, mask, polygons, size = disc_drawing(faces, kept, pos, scale, arc)
+    if not _is_disc(cells):
+        raise ValueError(f"{name} trimmed to {shells} shells is not a disc")
+    return Board(
+        mode,
+        polygons,
+        _shared_vertex_adjacency(cells),
+        mine_count,
+        size,
+        size,
+        corner_mask=mask,
+    )
+
+
+def disc_drawing(faces: list[tuple[int, ...]], kept: list[int],
+                 pos: dict[int, complex], scale: float, arc: int) -> tuple:
+    """The kept faces drawn in the disc: each one's point ids (its corners and
+    the arc points between them), which of those are corners, its polygon in
+    pixels -- centred on the disc's own centre, ``scale`` pixels to the unit --
+    and the board's side. `_disc_board` makes a board of it; the closed
+    surfaces (`hurwitz.py`) draw a patch of their cover with it."""
     # Arc points along each edge: ids built from the edge's end ids (the lower
     # first), so both faces of an edge share them, and positions computed once
     # per edge, from its lower end, so both faces see the very same points.
@@ -521,8 +542,6 @@ def _disc_board(mode: str, name: str, shells: int, faces: list[tuple[int, ...]],
                 corner.append(False)
         cells[f] = ids
         mask[f] = corner
-    if not _is_disc(cells):
-        raise ValueError(f"{name} trimmed to {shells} shells is not a disc")
 
     def xy(key) -> tuple[float, float]:
         z = arc_pos[key] if isinstance(key, tuple) else pos[key]
@@ -538,16 +557,7 @@ def _disc_board(mode: str, name: str, shells: int, faces: list[tuple[int, ...]],
                for x, y in (xy(k) for k in ids)]
         for cell, ids in cells.items()
     }
-    size = 2 * extent * scale
-    return Board(
-        mode,
-        polygons,
-        _shared_vertex_adjacency(cells),
-        mine_count,
-        size,
-        size,
-        corner_mask=mask,
-    )
+    return cells, mask, polygons, 2 * extent * scale
 
 
 # -- the uniform tilings: Wythoff's construction on {p,q} ----------------------
@@ -672,6 +682,25 @@ def wythoff_faces(p: int, q: int, op: str, rings: int):
     """The uniform tiling ``op`` of {p,q}, from the {p,q} tiling out to
     ``rings`` rings: its faces as counterclockwise tuples of integer vertex
     ids, each vertex's position, and each face's centre."""
+    new_faces, where, centres, _ = wythoff_loops(p, q, op, rings)
+    ids: dict[tuple, int] = {}
+    for loop in new_faces:
+        for k in loop:
+            ids.setdefault(k, len(ids))
+    faces = [tuple(ids[k] for k in loop) for loop in new_faces]
+    pos = {ids[k]: where[k] for k in ids}
+    return faces, pos, centres
+
+
+@functools.cache
+def wythoff_loops(p: int, q: int, op: str, rings: int):
+    """`wythoff_faces` before its vertices are renumbered: each face as the
+    loop of flag keys round it (the tuples of {p,q} ids the module notes
+    describe), each key's position, each face's centre, and what each face
+    stands on -- ``("F", f)`` an old face, ``("V", v)`` an old vertex,
+    ``("E", u, v)`` an old edge (``u < v``). The closed surfaces
+    (`hurwitz.py`) read the keys and origins through their covering map.
+    Cached, and only ever read."""
     if op not in WYTHOFF_OPS:
         raise ValueError(f"unknown Wythoff operation {op!r}")
     base, _, bpos, _ = _tiling(p, q, rings)
@@ -713,12 +742,14 @@ def wythoff_faces(p: int, q: int, op: str, rings: int):
 
     new_faces: list[list[tuple]] = []
     centres: list[complex] = []
+    origins: list[tuple] = []
     # F: one per face of {p,q}, its flags in order round it
     for f in range(len(base)):
         loop = ring_of([flag(f, i, s) for i in range(p) for s in (1, 0)])
         if len(loop) >= 3:
             new_faces.append(loop)
             centres.append(maps[f](0j))
+            origins.append(("F", f))
     # V: one per vertex with its whole star, the faces round it counterclockwise
     left: dict[tuple[int, int], tuple[int, int]] = {}  # directed edge -> (face, index)
     for f, face in enumerate(base):
@@ -740,6 +771,7 @@ def wythoff_faces(p: int, q: int, op: str, rings: int):
         if len(loop) >= 3:
             new_faces.append(loop)
             centres.append(bpos[v])
+            origins.append(("V", v))
     # E: one per edge with both its faces, round the edge's midpoint
     for f, face in enumerate(base):
         for i in range(p):
@@ -752,13 +784,8 @@ def wythoff_faces(p: int, q: int, op: str, rings: int):
             if len(loop) >= 3:
                 new_faces.append(loop)
                 centres.append(maps[f](turn[i] * mid))
-    ids: dict[tuple, int] = {}
-    for loop in new_faces:
-        for k in loop:
-            ids.setdefault(k, len(ids))
-    faces = [tuple(ids[k] for k in loop) for loop in new_faces]
-    pos = {ids[k]: where[k] for k in ids}
-    return faces, pos, centres
+                origins.append(("E", u, v))
+    return [tuple(loop) for loop in new_faces], where, centres, origins
 
 
 def _shell_groups(centres: list[complex]) -> list[list[int]]:

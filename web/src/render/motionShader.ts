@@ -325,11 +325,13 @@ const vertBody = (role: MotionRole): string => /* glsl */ `
  * numbers over and sheared them. It is carried whole instead — to where the
  * map draws its cell's pivot, scaled by that same factor, never turned — so it
  * reads upright wherever the cell is. `uDisc` is the disc's centre and radius
- * in mesh units; `uDiscC` and `uDiscRot` the view. */
+ * in mesh units; `uDiscC` and `uDiscRot` the view; `uDiscClip` the radius past
+ * which a cell is hidden. */
 const DISC_HEAD = /* glsl */ `
 uniform vec3 uDisc;
 uniform vec2 uDiscC;
 uniform vec2 uDiscRot;
+uniform float uDiscClip;
 vec2 discMul(vec2 a, vec2 b) { return vec2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x); }
 vec2 discDiv(vec2 a, vec2 b) { return vec2(a.x * b.x + a.y * b.y, a.y * b.x - a.x * b.y) / dot(b, b); }
 vec2 discMap(vec2 z) {
@@ -350,6 +352,10 @@ const discBody = (role: MotionRole): string => /* glsl */ `
       : "vec2 xy = uDisc.xy + discMap((transformed.xy - uDisc.xy) / uDisc.z) * uDisc.z;"
   }
   transformed = vec3(xy, transformed.z * grow);
+  // A closed surface's patch is shown out to a fixed circle of the view: a cell
+  // drawn past it collapses onto its own pivot and vanishes, so the board's
+  // edge does not move as the pan steps from tile to tile.
+  if (dot(pw, pw) > uDiscClip * uDiscClip) transformed = vec3(uDisc.xy + pw * uDisc.z, 0.0);
 }
 `;
 
@@ -358,6 +364,9 @@ export interface DiscUniforms {
   uDisc: { value: Vector3 };
   uDiscC: { value: Vector2 };
   uDiscRot: { value: Vector2 };
+  /** The disc radius past which a cell is hidden: 2 -- none -- but on a
+   * closed surface's cover (`coverClip`). */
+  uDiscClip: { value: number };
 }
 
 const FRAG_HEAD = /* glsl */ `
