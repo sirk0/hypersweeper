@@ -93,7 +93,7 @@ const SOLID_GROUP_HINTS: Record<string, string> = {
 };
 
 /** The sidebar key of the Quick start page — the desktop menu's own page, with
- * no phone equivalent (the phone lists these three as its home rows). */
+ * no phone equivalent (the phone lists these entries as its home rows). */
 const QUICK_START = "quickstart";
 
 /** The favourite star: outlined when off, filled (`.menu-fav[aria-pressed]` in
@@ -383,7 +383,7 @@ export class Menu {
     this.go(() => this.renderRoot());
   }
 
-  /** The desktop landing page: the three quick-play entries as cards. */
+  /** The desktop landing page: the quick-play entries as cards. */
   private showQuickStart(): void {
     this.selectedPage = QUICK_START;
     this.go(() => this.renderQuickStart());
@@ -392,7 +392,7 @@ export class Menu {
 
   /** The phone has no sidebar, so Quick start is a page it can never navigate
    * to — but it can be *left on* one, by a rotate or a resize that crosses the
-   * breakpoint while it is open. Without this the player is stranded: the three
+   * breakpoint while it is open. Without this the player is stranded: the
    * quick-play cards, no Custom row, no back row, and the whole geometry tree
    * behind a sidebar that is `display: none`. The mirror of the guards
    * `renderRoot` and `renderCustom` carry for the other direction. */
@@ -408,7 +408,7 @@ export class Menu {
     list.append(...this.quickPlayCards());
     const header = this.paneHeader(
       "Quick start",
-      "Straight into a board, or a surprise from half the catalogue.",
+      "Straight into a board, or a surprise from one corner of the catalogue.",
     );
     const faves = this.favouriteRows();
     if (faves.length === 0) {
@@ -747,7 +747,7 @@ export class Menu {
     );
   }
 
-  /** The phone home page's three quick-play rows. */
+  /** The phone home page's quick-play rows. */
   private quickPlayRows(): HTMLElement[] {
     return quickPlayEntries().map((e) =>
       e.kind === "mode"
@@ -756,10 +756,10 @@ export class Menu {
     );
   }
 
-  /** The desktop Quick start page: the same three entries as cards.
+  /** The desktop Quick start page: the same entries as cards.
    *
    * The hint rides along as a caption line rather than being dropped as it is
-   * on a sidebar row — on the two random entries it is the only thing saying
+   * on a sidebar row — on the random entries it is the only thing saying
    * that the card deals a board rather than opening a named one. */
   private quickPlayCards(): HTMLElement[] {
     return quickPlayEntries().map((e) => {
@@ -793,7 +793,7 @@ export class Menu {
   }
 
   /** The home page: the board that opens straight away (Classic), one
-   * random board from each half of the catalogue, and Custom
+   * random board from each pool (flat, 3D, hyperbolic), and Custom
    * for the whole tree. On desktop the sidebar covers this ground instead —
    * see `showRoot`, which only reaches here below the breakpoint (or once
    * the breakpoint is crossed while this page happens to be on screen). */
@@ -872,6 +872,9 @@ export class Menu {
       );
     }
     if (group.kind === "manifolds") return group.surfaces.map((s) => s.label).join(" · ");
+    if (group.kind === "families") {
+      return MENU_FAMILY_HINTS[group.key] ?? group.families.map((f) => f.label).join(" · ");
+    }
     return pickerHint(group.surfaceKey);
   }
 
@@ -907,6 +910,14 @@ export class Menu {
     const list = document.createElement("ul");
     if (group.kind === "modes") {
       for (const mode of group.modes) list.append(this.entryRow(mode, MODE_LABELS[mode] ?? mode));
+    } else if (group.kind === "families") {
+      for (const family of group.families) {
+        list.append(
+          this.submenuRow(family.label, family.key, () =>
+            this.showFamily(family, () => this.showGroup(group)),
+          ),
+        );
+      }
     } else {
       for (const surface of group.surfaces) list.append(this.surfaceRow(group, surface));
     }
@@ -985,10 +996,10 @@ export class Menu {
    * the active row do, but its glyphs are baked in the theme's icon palette
    * (see `rebuildSidebar`).
    *
-   * The three quick-play entries are a *page* here rather than three rows of
-   * their own: as rows they competed with the geometry list for the same
-   * glance, and they are what a player opening the menu wants first, which is
-   * what a landing page is for. */
+   * The quick-play entries are a *page* here rather than rows of their own:
+   * as rows they competed with the geometry list for the same glance, and they
+   * are what a player opening the menu wants first, which is what a landing
+   * page is for. */
   private buildSidebar(): HTMLElement {
     const sidebar = document.createElement("div");
     sidebar.className = "menu-sidebar";
@@ -1397,8 +1408,8 @@ export class Menu {
     return li;
   }
 
-  /** A home-page random entry (Flat, 3D) — resolves to a random mode from its
-   * half of the catalogue at click time, so it is a different board every tap
+  /** A home-page random entry (Flat, 3D, Hyperbolic) — resolves to a random
+   * mode from its pool at click time, so it is a different board every tap
    * (mirrors gui.py's random choice). */
   private randomRow(
     key: RandomKind,

@@ -28,7 +28,7 @@ import { isBoard3D, pansHyperbolically, type CellId, type SymmetryId } from "./b
 import { fairnessOf, modeFairness } from "./boards/fairness";
 import { gameCenterSupported, reportUnlocks, startGameCenter } from "./gameCenter";
 import { hasMode } from "./boards/presets";
-import { randomMode } from "./boards/randomBoard";
+import { isRandomKind, randomKindOf, randomMode } from "./boards/randomBoard";
 import { hasDifficulty } from "./config/screens";
 import { haptic, setHapticsEnabled } from "./haptics";
 import { boardLinkQuery, parseBoardLink } from "./link";
@@ -129,10 +129,10 @@ class App {
    * `checkRecord` puts up a moment later. */
   private unlocked: Achievement[] = [];
   /** Whether the board on screen was *dealt* rather than chosen — the home
-   * page's Flat and 3D rows, the header's die, the win window's New board. It
-   * is what that window highlights on (ui/scoreDialog.ts): a board the player
-   * picked is one they came for, a dealt one is a step in a wander through the
-   * catalogue. It sticks to the board, so replaying a dealt board with Play
+   * page's Flat, 3D and Hyperbolic rows, the header's die, the win window's
+   * New board. It is what that window highlights on (ui/scoreDialog.ts): a
+   * board the player picked is one they came for, a dealt one is a step in a
+   * wander through the catalogue. It sticks to the board, so replaying a dealt board with Play
    * again or the smiley does not turn it into a chosen one — the highlight
    * would otherwise move between two wins on the same board. */
   private dealtAtRandom = false;
@@ -925,7 +925,7 @@ class App {
       } else {
         this.startGame(arg, this.settings.difficulty, { trigger: "menu" });
       }
-    } else if (verb === "random" && (arg === "flat" || arg === "3d")) {
+    } else if (verb === "random" && isRandomKind(arg)) {
       const mode = randomMode(arg, this.settings.difficulty);
       if (mode) {
         this.startGame(mode, this.settings.difficulty, { dealtAtRandom: true, trigger: "random" });
@@ -944,9 +944,10 @@ class App {
     }
   }
 
-  /** Deal another board at random, from the half of the catalogue the one on
-   * screen came from — flat deals flat, anything off the plane deals another
-   * manifold, sphere or polyhedron — at the difficulty being played. The record
+  /** Deal another board at random, from the pool the one on screen belongs to
+   * — flat deals flat, hyperbolic deals hyperbolic, anything off the plane
+   * deals another manifold, sphere or polyhedron — at the difficulty being
+   * played. The record
    * window's "New board" is the same move (boards/randomBoard.ts, the home
    * page's own pools and fairness weighting); this is it without having to win
    * first, which is what makes the catalogue something to wander through. Like
@@ -954,7 +955,7 @@ class App {
   private startRandomBoard(): void {
     const session = this.session;
     if (!session || this.screen !== "game") return;
-    const mode = randomMode(session.is3d ? "3d" : "flat", session.difficulty);
+    const mode = randomMode(randomKindOf(session.mode, session.is3d), session.difficulty);
     if (mode) {
       this.startGame(mode, session.difficulty, {
         dealtAtRandom: true,
