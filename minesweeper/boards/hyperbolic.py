@@ -354,18 +354,60 @@ def _tiling(p: int, q: int, rings: int) -> tuple:
     return faces, ring_of, pos, [face_centre(p, q, face, pos) for face in faces]
 
 
+def _segment_distance(a: complex, b: complex) -> float:
+    """Hyperbolic distance from the centre of the disc to the geodesic segment
+    from a to b. On the hyperboloid the segment is X(s) = (sinh(L - s) A +
+    sinh(s) B) / sinh L, and the distance to the centre is acosh of its time
+    coordinate, A_t cosh s + lean sinh s: least at tanh s = -lean / A_t if
+    that falls inside the segment, else at an end."""
+    at, ax, ay = _lift(a)
+    bt, bx, by = _lift(b)
+    cosh_l = max(at * bt - ax * bx - ay * by, 1.0)
+    sinh_l = math.sqrt(cosh_l * cosh_l - 1)
+    if sinh_l == 0:
+        return math.acosh(at)
+    lean = (bt - at * cosh_l) / sinh_l
+    s = math.atanh(-lean / at)
+    least = math.sqrt(at * at - lean * lean) if 0 < s < math.acosh(cosh_l) else min(at, bt)
+    return math.acosh(max(least, 1.0))
+
+
+def _reach(faces, pos) -> float:
+    """How far from the centre of the disc the faces built so far are whole:
+    the nearest point of their outline, every edge only one of them has. A
+    face not yet built lies outside that outline, and its centre lies at least
+    its inradius in from its own sides, so no such centre is nearer than this
+    plus the inradius."""
+    sides: dict[tuple[int, int], int] = {}
+    for face in faces:
+        for a, b in zip(face, face[1:] + face[:1]):
+            key = (a, b) if a < b else (b, a)
+            sides[key] = sides.get(key, 0) + 1
+    return min(_segment_distance(pos[a], pos[b]) for (a, b), n in sides.items() if n == 1)
+
+
+def _holds_shells(groups: list[list[int]], centres: list[complex], shells: int, bound) -> bool:
+    """Whether every face out to the ``shells``-th distance is among
+    ``centres``: ``bound()`` -- the reach of the faces built, plus the smallest
+    inradius a missing face can have -- is past that shell (and a tolerance,
+    so a missing face cannot belong to it either). The bound is only measured
+    once there are that many shells to hold."""
+    if len(groups) < shells:
+        return False
+    return bound() > _distance(centres[groups[shells - 1][-1]]) + _SHELL_TOL
+
+
 def _rings_for(p: int, q: int, shells: int) -> tuple:
-    """Grow rings until the nearest face of the newest ring lies beyond the
-    ``shells``-th distance, so every face that close has been generated (each
-    ring encloses the ones before it). One spare ring settles the last shell."""
+    """Grow rings until no face that is missing could lie within the
+    ``shells``-th distance -- the fewest rings that hold every face that
+    close."""
+    # a {p,q} face's inradius, the same for every face of the tiling
+    inradius = math.acosh(math.cos(math.pi / q) / math.sin(math.pi / p))
     for rings in range(1, 13):
-        faces, ring_of, pos, centres = _tiling(p, q, rings)
+        faces, _, pos, centres = _tiling(p, q, rings)
         groups = _shell_groups(centres)
-        outer = min(_distance(z) for z, r in zip(centres, ring_of) if r == rings)
-        if len(groups) > shells:
-            cut = _distance(centres[groups[shells - 1][0]])
-            if outer > cut + 1.0:
-                return faces, pos, groups
+        if _holds_shells(groups, centres, shells, lambda: _reach(faces, pos) + inradius):
+            return faces, pos, groups
     raise ValueError("too many shells")
 
 
@@ -733,20 +775,23 @@ def _shell_groups(centres: list[complex]) -> list[list[int]]:
     return groups
 
 
+def _least_inradius(faces, pos, centres: list[complex]) -> float:
+    """The smallest inradius among the faces: every face is regular, so the
+    distance from its centre to the midpoint of one of its sides. Every shape
+    the tiling has is already among the faces round the central one."""
+    return min(_distance(_to_origin(c, _arc_points(pos[face[0]], pos[face[1]], 2)[0]))
+               for face, c in zip(faces, centres))
+
+
 def _wythoff_rings_for(p: int, q: int, op: str, shells: int) -> tuple:
-    """Grow the {p,q} rings until every new face out to the ``shells``-th
-    distance is built: a face is missing only where its {p,q} face, vertex or
-    edge is on the outer ring, which lies within a circumradius of that ring's
-    face centres -- so those centres a whole unit beyond the cut is enough."""
+    """Grow the {p,q} rings until no new face that is missing could lie
+    within the ``shells``-th distance, as `_rings_for` does."""
     for rings in range(1, 13):
         faces, pos, centres = _wythoff_tiling(p, q, op, rings)
         groups = _shell_groups(centres)
-        _, ring_of, _, base_centres = _tiling(p, q, rings)
-        outer = min(_distance(z) for z, r in zip(base_centres, ring_of) if r == rings)
-        if len(groups) > shells:
-            cut = _distance(centres[groups[shells - 1][0]])
-            if outer > cut + 1.0:
-                return faces, pos, groups
+        if _holds_shells(groups, centres, shells,
+                         lambda: _reach(faces, pos) + _least_inradius(faces, pos, centres)):
+            return faces, pos, groups
     raise ValueError("too many shells")
 
 

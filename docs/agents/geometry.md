@@ -844,6 +844,20 @@ pinched at a vertex), though none of the nine tilings has produced one at a
 shipped trim (a {3,q} trim to its bare central star is all twins, and so
 empty: the size search never lands there).
 
+**The walk grows just the rings the trim needs, and that is a bound, not a
+margin** (`_rings_for` / `ringsFor`). A face not yet built lies outside the
+outline of the faces that are, and its centre lies at least its inradius in
+from its own sides; so once the outline's nearest point (`_reach`: the least
+distance from the centre to any edge only one built face has, each a geodesic
+segment measured exactly on the hyperboloid) plus the inradius is past the
+`shells`-th distance, nothing missing can belong to the trim. Growth stops at
+the first ring where that holds. It used to stop a whole unit of distance past
+the cut, and since each ring multiplies the faces, that spare ring was most of
+the build: the hard {6,4} board's 475 cells were cut from 100381 faces (6
+rings) where 2953 (4) hold them, and opening it took a second. The boards are
+the same faces either way; `TestHyperbolic` and `hyperbolic.test.ts` grow one
+ring further and find nothing nearer that was missed.
+
 **Then the trim drops its twins.** Where q is large, a shell can leave a rim
 vertex with a fan of two or more outer faces that touch the board at that
 vertex alone; each of them sees exactly the faces round that vertex, so they
@@ -950,7 +964,11 @@ the corner angles round a vertex summing to 2 pi.
 is shared): faces kept by the distance of their centre (an old face's centre,
 an old vertex, an old edge's midpoint) from the central face, which is the
 heptagon (the 14-gon on `bevel`), so every trim keeps D7. The ring walk grows
-until its outer ring is a unit beyond the cut, as for {p,q}. `ambo` and `zip`
+until no face that is missing could reach the cut, as for {p,q}, the inradius
+there the smallest of the tiling's shapes. A face's index counts every face of
+the {p,q} tiling the walk grew, so a trim built from fewer rings numbers its
+cells differently; their order, which is what a seed deals the mines by, is
+the same. `ambo` and `zip`
 have the same faces at the same centres, and `expand` and `bevel` likewise,
 so each pair's shell trims are the same faces before the drop. **The drop is
 where they part.** `zip` is trivalent, like {7,3}, and no trim of it has a
