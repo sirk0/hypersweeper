@@ -9,6 +9,7 @@ import {
   MENU,
   MODE_LABELS,
   PICKER_FAMILIES,
+  menuSubfamilies,
   OTHER_ARCH,
   RECTANGLE_ARCH,
   SHAPED_MODES,
@@ -27,7 +28,10 @@ const groups: [string, string[]][] = [
   ["Surfaces", ["flat", ...(MENU.manifoldOrder as string[])]],
   ["Regular tilings", MENU.pickerRegular as string[]],
   // derived, so a new family row cannot go stale here either
-  ["Families / random", [...PICKER_FAMILIES, ...FLAT_ONLY_FAMILIES, "random"]],
+  [
+    "Families / random",
+    [...PICKER_FAMILIES, ...FLAT_ONLY_FAMILIES, ...FLAT_ONLY_FAMILIES.flatMap(menuSubfamilies), "random"],
+  ],
   ["Uniform tilings", UNIFORM_ARCH],
   ["Dual-uniform tilings", DUAL_ARCH],
   ["2-uniform tilings", TWO_UNIFORM_ARCH],

@@ -15,7 +15,7 @@ export interface MsState {
   cellCount: number;
   is3d: boolean;
   /** Whether the board on screen was dealt rather than chosen (the home page's
-   * Flat and 3D rows, the header's die, the win window's New board). The win
+   * Flat, 3D and Hyperbolic rows, the header's die, the win window's New board). The win
    * window highlights on it, and it leaves no other trace to assert from
    * outside — a dealt board is an ordinary board once it is up. */
   dealtAtRandom: boolean;

@@ -2,6 +2,7 @@
 // same data/catalog.json. M1 needs the flat regular modes; the derivations
 // mirror the Python and grow as later milestones port more of the catalog.
 import catalog from "@data/catalog.json";
+import presetsData from "@data/presets.json";
 import { ARCH_TILINGS, wrapTemplate } from "./tilings";
 
 export interface SurfaceSpec {
@@ -324,9 +325,9 @@ export function pickerFamilies(surfaceKey: string): string[] {
 // tilings are promoted to the top of every picker page rather than sitting in
 // a Regular submenu, which leaves that submenu holding the shaped boards
 // alone (hence its own label), the Hyperbolic family moves off the plane's
-// picker to a geometry group of its own beside Flat, and the Random entry
-// moves off the pickers on to the home page, where it becomes one flat pool
-// and one 3D pool. None of
+// picker to a geometry group of its own (split into Regular and Uniform), and
+// the Random entry moves off the pickers on to the home page, where it becomes
+// a flat pool, a 3D pool and a hyperbolic pool. None of
 // this is filtered by what is actually built -- callers pass their own
 // `hasMode`, as the menu already does for family rows.
 
@@ -352,18 +353,38 @@ export function menuShapedRows(surfaceKey: string): FamilyRow[] {
   return familyRows("regular", surfaceKey).filter((r) => isShapedMode(r.mode));
 }
 
+/** Boards the web menu files under another family on the same surface than
+ * the one they belong to: the binary tiling is hyperbolic, but it is drawn in
+ * a rectangle of the upper half-plane rather than in the Poincaré disc, so the
+ * menu lists it with the plane's odd ones out (Flat › Other) and leaves the
+ * Hyperbolic page to the disc tilings. Its family is still `hyperbolic`
+ * everywhere but the menu — the info window and the achievements say so. */
+const MENU_REFILED: Record<string, { from: string; to: string }> = {
+  hyperbolicbinary: { from: "hyperbolic", to: "other" },
+};
+
 /** One family's rows as the web menu shows them: `regular` is the shaped
- * boards alone (its tilings are promoted), every other family unchanged. */
+ * boards alone (its tilings are promoted), less the boards `MENU_REFILED` moves
+ * out of a family and plus those it moves in. */
 export function menuFamilyRows(family: string, surfaceKey: string): FamilyRow[] {
-  return family === "regular" ? menuShapedRows(surfaceKey) : familyRows(family, surfaceKey);
+  const rows = family === "regular" ? menuShapedRows(surfaceKey) : familyRows(family, surfaceKey);
+  const kept = rows.filter((r) => MENU_REFILED[r.mode]?.from !== family);
+  for (const [mode, { from, to }] of Object.entries(MENU_REFILED)) {
+    if (to !== family || !pickerFamilies(surfaceKey).includes(from)) continue;
+    const row = familyRows(from, surfaceKey).find((r) => r.mode === mode);
+    if (row) kept.push(row);
+  }
+  return kept;
 }
 
 /** The families lifted off a picker page to a geometry group of their own,
  * next to the surface's (`boardGroups` in ui/boardTree.ts). Hyperbolic is
  * drawn flat but is not the flat plane: a curved space of its own deserves a
- * place beside Flat rather than a row inside it. Its boards still belong to
- * the plane everywhere but the menu's grouping — the Flat pool deals them and
- * the achievements count them there (`surfaceMenuModes`). */
+ * group of its own rather than a row inside Flat. It sits after Flat
+ * manifolds, the last of the plane's relatives, and has a home-page row and a
+ * random pool of its own (`hyperbolicMenuModes`). Its boards still belong to
+ * the plane everywhere but the menu — the achievements count them there
+ * (`surfaceMenuModes`). */
 export const MENU_GROUP_FAMILIES = ["hyperbolic"];
 
 /** The family submenus a surface's picker offers, in order: `pickerFamilies`
@@ -383,6 +404,34 @@ export function menuGroupFamilies(surfaceKey: string): string[] {
   return pickerFamilies(surfaceKey).filter((f) => MENU_GROUP_FAMILIES.includes(f));
 }
 
+const PRESET_BUILDERS = (presetsData as { presets: Record<string, { builder: string }> }).presets;
+
+/** The sub-families a group family's page is split into, each the boards one
+ * builder makes: the Hyperbolic page holds the regular {p,q} tilings and the
+ * uniform tilings Wythoff's construction makes from them. Keyed by builder so
+ * a new board files itself; `tests/unit/menu.test.ts` checks every board of
+ * the family lands in one. */
+const MENU_SUBFAMILIES: Record<string, { key: string; builder: string }[]> = {
+  hyperbolic: [
+    { key: "hyperbolic-regular", builder: "hyperbolic_board" },
+    { key: "hyperbolic-uniform", builder: "hyperbolic_uniform_board" },
+  ],
+};
+
+/** The sub-family keys a group family's page is split into, or none for a
+ * family shown as one list. */
+export function menuSubfamilies(family: string): string[] {
+  return (MENU_SUBFAMILIES[family] ?? []).map((s) => s.key);
+}
+
+/** One sub-family's rows, in the family's own order. */
+export function menuSubfamilyRows(family: string, sub: string, surfaceKey: string): FamilyRow[] {
+  const builder = MENU_SUBFAMILIES[family]?.find((s) => s.key === sub)?.builder;
+  return menuFamilyRows(family, surfaceKey).filter(
+    (r) => builder !== undefined && PRESET_BUILDERS[r.mode]?.builder === builder,
+  );
+}
+
 /** The web menu's family labels: `regular` no longer names the regular
  * tilings (they are promoted) but the shaped boards left behind. The shared
  * FAMILY_LABELS still says "Regular" -- that is the pygame menu's page.
@@ -394,6 +443,8 @@ export function menuGroupFamilies(surfaceKey: string): string[] {
 export const MENU_FAMILY_LABELS: Record<string, string> = {
   ...FAMILY_LABELS,
   regular: "Shaped boards",
+  "hyperbolic-regular": "Regular",
+  "hyperbolic-uniform": "Uniform",
 };
 
 /** One line under each family row, saying what the name means.
@@ -414,11 +465,13 @@ export const MENU_FAMILY_HINTS: Record<string, string> = {
   rectangle: "Brick bonds, one rectangle throughout",
   // A grab-bag rather than a symmetry class, so the hint names its members
   // instead of a property they share.
-  other: "Two rep-tiles, and Dürer's pentagons",
+  other: "Two rep-tiles, Dürer's pentagons and the binary tiling",
   aperiodic: "Never repeats: Penrose, Ammann–Beenker, the Spectre",
   spiral: "Wound round a centre: sunflower, pentagons, brick rings",
   fractal: "One tile, grown into itself",
   hyperbolic: "Curved space: more round a corner than fit flat",
+  "hyperbolic-regular": "One shape throughout: {p,q} is p sides, q to a corner",
+  "hyperbolic-uniform": "Two or three shapes, same at every corner",
 };
 
 /** Every mode on a surface the menu reaches: its picker page, promoted rows
@@ -431,9 +484,16 @@ export function surfaceMenuModes(surfaceKey: string): string[] {
   return modes;
 }
 
-/** The home page's Flat pool: every board the flat picker reaches. */
+/** The home page's Hyperbolic pool: every board on the Hyperbolic page. */
+export function hyperbolicMenuModes(): string[] {
+  return menuGroupFamilies("flat").flatMap((f) => menuFamilyRows(f, "flat").map((r) => r.mode));
+}
+
+/** The home page's Flat pool: every board the flat picker reaches — the plane
+ * less the Hyperbolic page, which is a pool of its own. */
 export function flatMenuModes(): string[] {
-  return surfaceMenuModes("flat");
+  const hyperbolic = new Set(hyperbolicMenuModes());
+  return surfaceMenuModes("flat").filter((m) => !hyperbolic.has(m));
 }
 
 /** The home page's 3D pool: every board on a flat manifold, plus every solid --

@@ -26,6 +26,7 @@ import {
   SURFACE_SPECS,
   familyRows,
   flatMenuModes,
+  hyperbolicMenuModes,
   threeDMenuModes,
 } from "../../src/boards/catalog";
 import { blockedModes } from "../../src/boards/fairness";
@@ -82,10 +83,12 @@ const win = (mode: string, over: Partial<Win> = {}): Win => ({
   ...over,
 });
 
-/** Every board the two random pools reach — the whole catalogue, as the menu
+/** Every board the random pools reach — the whole catalogue, as the menu
  * sees it. */
 function everyBuiltMode(): string[] {
-  return [...new Set([...flatMenuModes(), ...threeDMenuModes()])].filter(hasMode);
+  return [
+    ...new Set([...flatMenuModes(), ...hyperbolicMenuModes(), ...threeDMenuModes()]),
+  ].filter(hasMode);
 }
 
 /** A progress record that has won each of `modes` once. */

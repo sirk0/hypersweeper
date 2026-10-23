@@ -539,7 +539,7 @@ projective plane: no new topology, a new drawing.
 * **Marked, and never dealt at random.** The `SurfaceSpec` declares a
   `caution` -- it passes through itself, so some cells hide behind others --
   which the web app puts on the menu row, the caption and the info window, and
-  which keeps the board out of both random pools at every difficulty.
+  which keeps the board out of every random pool at every difficulty.
 * **Sizes and mines are measured, not copied.** The size search lands on
   projective's windows (n = 5, 9, 13). The calibration plays the same graph
   under a seed of its own name, so the mine counts came out within its noise

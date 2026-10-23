@@ -804,6 +804,12 @@ rather than D_3 -- that too is automatic. Read
    latter, and its point group (D_p, or D_q for a {3,q}) to
    `symmetries.test.ts`.
 
+The web menu files a hyperbolic board on its own: Custom › Hyperbolic is split
+into Regular and Uniform by the preset's builder (`MENU_SUBFAMILIES` in
+`web/src/boards/catalog.ts`). A board from a builder no submenu names fails
+`web/tests/unit/menu.test.ts` rather than vanishing from the menu — add its
+submenu there, with a label, a hint and an icon alias.
+
 **A uniform tiling of a {p,q}** (6.6.7, 3.7.3.7, 3.4.7.4, 4.6.14 on {7,3}) is
 also data: a `{builder: "hyperbolic_uniform_board", args: {difficulty: [p, q,
 op, shells, mines, scale]}}` row with `op` one of `WYTHOFF_OPS`, and the mode
@@ -824,6 +830,10 @@ What it needs that the disc boards do not:
 - its own `SPEC` grid in `resize.py` (`_grid_binary`), because its cell count is not the product of its knobs;
 - `Board.halfPlane` in place of `Board.disc`, which switches on the half-plane pan;
 - a row icon of its own in `icons.ts` and `gui.py`, instead of an entry in the icon-shell tables.
+
+The web menu lists it under Flat › Other rather than on the Hyperbolic page
+(`MENU_REFILED` in `web/src/boards/catalog.ts`), so the home page's Flat row
+deals it, not the Hyperbolic one.
 
 See [`geometry.md`](geometry.md#the-binary-tiling).
 

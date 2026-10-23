@@ -49,6 +49,7 @@ const QUICK_KEYS: Record<string, string> = {
   square: "c", // Classic
   flat: "f",
   "3d": "d",
+  hyperbolic: "h",
 };
 
 interface MenuBarPlugin {
@@ -91,6 +92,12 @@ function groupItems(group: Group): MenuBarNode[] {
   if (group.kind === "picker") return pickerItems(group.surfaceKey);
   if (group.kind === "manifolds") {
     return group.surfaces.map((s) => ({ title: s.label, children: pickerItems(s.key) }));
+  }
+  if (group.kind === "families") {
+    return group.families.map((f) => ({
+      title: f.label,
+      children: f.modes.map((m) => board(m.mode, m.label)),
+    }));
   }
   return group.modes.map((m) => board(m, MODE_LABELS[m] ?? m));
 }

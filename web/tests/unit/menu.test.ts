@@ -7,17 +7,21 @@ import {
   flatMenuModes,
   menuFamilies,
   menuFamilyRows,
+  hyperbolicMenuModes,
   menuGroupFamilies,
+  menuSubfamilies,
+  menuSubfamilyRows,
   menuTilingRows,
   threeDMenuModes,
 } from "../../src/boards/catalog";
 import { MODES, hasMode } from "../../src/boards/presets";
-import { boardGroups } from "../../src/ui/boardTree";
+import { boardGroups, quickPlayEntries } from "../../src/ui/boardTree";
 
 // The web menu's own shape over the shared catalog (catalog.ts, "the web
 // menu"): the three regular tilings promoted to the top of every picker page,
-// the Regular family left holding the shaped boards alone, and the two home
-// page random pools that replaced the per-picker Random entry. The pygame
+// the Regular family left holding the shaped boards alone, the Hyperbolic
+// family lifted out into a group of its own, and the home page's random pools
+// that replaced the per-picker Random entry. The pygame
 // menu's shape is the one catalog.test.ts pins; this is where the two differ.
 
 const MANIFOLD_ORDER = MENU.manifoldOrder as string[];
@@ -61,8 +65,12 @@ describe("picker pages", () => {
     const families = new Set<string>();
     for (const surface of ["flat", ...MANIFOLD_ORDER]) {
       for (const family of menuFamilies(surface)) families.add(family);
-      // a family lifted into a group of its own carries the group's hint
-      for (const family of menuGroupFamilies(surface)) families.add(family);
+      // a family lifted into a group of its own carries the group's hint, and
+      // so does each submenu its page is split into
+      for (const family of menuGroupFamilies(surface)) {
+        families.add(family);
+        for (const sub of menuSubfamilies(family)) families.add(sub);
+      }
     }
     expect(families.size).toBeGreaterThan(0);
     for (const family of families) {
@@ -116,56 +124,90 @@ describe("picker pages", () => {
   });
 });
 
+const REGULAR = [
+  "hyperbolic83",
+  "hyperbolic73",
+  "hyperbolic64",
+  "hyperbolic54",
+  "hyperbolic55",
+  "hyperbolic45",
+  "hyperbolic46",
+  "hyperbolic37",
+  "hyperbolic38",
+];
+const UNIFORM = ["hyperbolic667", "hyperbolic3737", "hyperbolic3474", "hyperbolic4614"];
+
 describe("geometry groups", () => {
-  it("puts Hyperbolic beside Flat rather than inside it", () => {
+  it("puts Hyperbolic after Flat manifolds, not inside Flat", () => {
     const groups = boardGroups();
-    expect(groups.map((g) => g.key).slice(0, 3)).toEqual(["flat", "hyperbolic", "manifolds"]);
-    const hyperbolic = groups[1]!;
-    expect(hyperbolic.label).toBe("Hyperbolic");
-    expect(hyperbolic.kind === "modes" && hyperbolic.modes).toEqual([
-      "hyperbolic83",
-      "hyperbolic73",
-      "hyperbolic64",
-      "hyperbolic54",
-      "hyperbolic55",
-      "hyperbolic45",
-      "hyperbolic46",
-      "hyperbolic37",
-      "hyperbolic38",
-      "hyperbolic667",
-      "hyperbolic3737",
-      "hyperbolic3474",
-      "hyperbolic4614",
-      "hyperbolicbinary",
+    expect(groups.map((g) => g.key).slice(0, 4)).toEqual([
+      "flat",
+      "manifolds",
+      "hyperbolic",
+      "sphere",
     ]);
+    const hyperbolic = groups[2]!;
+    expect(hyperbolic.label).toBe("Hyperbolic");
     expect(menuFamilies("flat")).not.toContain("hyperbolic");
   });
 
-  it("still deals the hyperbolic boards from the Flat pool", () => {
-    expect(flatMenuModes()).toEqual(
-      expect.arrayContaining([
-        "hyperbolic83",
-        "hyperbolic73",
-        "hyperbolic64",
-        "hyperbolic54",
-        "hyperbolic55",
-        "hyperbolic45",
-        "hyperbolic46",
-        "hyperbolic37",
-        "hyperbolic38",
-        "hyperbolic667",
-        "hyperbolic3737",
-        "hyperbolic3474",
-        "hyperbolic4614",
-        "hyperbolicbinary",
-      ]),
+  it("splits the Hyperbolic page into Regular and Uniform", () => {
+    const hyperbolic = boardGroups().find((g) => g.key === "hyperbolic")!;
+    expect(hyperbolic.kind).toBe("families");
+    if (hyperbolic.kind !== "families") return;
+    expect(hyperbolic.families.map((f) => [f.key, f.label])).toEqual([
+      ["hyperbolic-regular", "Regular"],
+      ["hyperbolic-uniform", "Uniform"],
+    ]);
+    expect(hyperbolic.families.map((f) => f.modes.map((m) => m.mode))).toEqual([
+      REGULAR,
+      UNIFORM,
+    ]);
+  });
+
+  it("files every board of the Hyperbolic page in exactly one submenu", () => {
+    // keyed by builder, so a board from a builder no submenu names would
+    // silently vanish from the menu; this is what catches it
+    const filed = menuSubfamilies("hyperbolic").flatMap((sub) =>
+      menuSubfamilyRows("hyperbolic", sub, "flat").map((r) => r.mode),
     );
+    expect([...filed].sort()).toEqual(
+      menuFamilyRows("hyperbolic", "flat")
+        .map((r) => r.mode)
+        .sort(),
+    );
+    expect(new Set(filed).size).toBe(filed.length);
+  });
+
+  it("files the binary tiling under Flat › Other, not Hyperbolic", () => {
+    expect(menuFamilyRows("other", "flat").map((r) => r.mode)).toContain("hyperbolicbinary");
+    expect(menuFamilyRows("hyperbolic", "flat").map((r) => r.mode)).not.toContain(
+      "hyperbolicbinary",
+    );
+    // ...and nowhere off the plane, which has no binary tiling
+    for (const surface of MANIFOLD_ORDER) {
+      expect(menuFamilyRows("other", surface).map((r) => r.mode)).not.toContain(
+        "hyperbolicbinary",
+      );
+    }
+  });
+});
+
+describe("home page", () => {
+  it("lists Hyperbolic under Classic, Flat and 3D", () => {
+    expect(quickPlayEntries().map((e) => [e.kind, e.key])).toEqual([
+      ["mode", "square"],
+      ["random", "flat"],
+      ["random", "3d"],
+      ["random", "hyperbolic"],
+    ]);
   });
 });
 
 describe("home page pools", () => {
   const flat = flatMenuModes().filter(hasMode);
   const threeD = threeDMenuModes().filter(hasMode);
+  const hyperbolic = hyperbolicMenuModes().filter(hasMode);
 
   it("draws the flat pool from the plane alone", () => {
     expect(flat).toContain("trigrid");
@@ -173,6 +215,13 @@ describe("home page pools", () => {
     expect(flat).toContain("hexhex");
     expect(flat).not.toContain("torus");
     expect(flat).not.toContain("sphere");
+    // the binary tiling is dealt with the plane's boards, as the menu files it
+    expect(flat).toContain("hyperbolicbinary");
+  });
+
+  it("deals the hyperbolic boards from a pool of their own", () => {
+    expect(hyperbolic).toEqual([...REGULAR, ...UNIFORM]);
+    expect(flat.filter((m) => hyperbolic.includes(m))).toEqual([]);
   });
 
   it("draws the 3D pool from the manifolds and every solid", () => {
@@ -183,9 +232,10 @@ describe("home page pools", () => {
     expect(threeD).not.toContain("penrose");
   });
 
-  it("keeps the two pools disjoint, and every mode in them built", () => {
+  it("keeps the pools disjoint, and every mode in them built", () => {
     expect(flat.filter((m) => threeD.includes(m))).toEqual([]);
-    for (const mode of [...flat, ...threeD]) expect(hasMode(mode)).toBe(true);
+    expect(hyperbolic.filter((m) => threeD.includes(m))).toEqual([]);
+    for (const mode of [...flat, ...threeD, ...hyperbolic]) expect(hasMode(mode)).toBe(true);
   });
 });
 
@@ -198,6 +248,7 @@ describe("menu reachability", () => {
     add("square"); // Classic
     for (const mode of flatMenuModes()) add(mode); // the Flat pool, and Custom › Flat
     for (const mode of threeDMenuModes()) add(mode); // the 3D pool, and the rest of Custom
+    for (const mode of hyperbolicMenuModes()) add(mode); // the Hyperbolic pool, and Custom › Hyperbolic
 
     // no gaps: every mode this build knows is reachable from the menu
     expect(reachable).toEqual(new Set(MODES));

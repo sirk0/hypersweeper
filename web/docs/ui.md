@@ -7,21 +7,28 @@ The app's pages, windows and stored state. For how cells are *drawn* see
 ## The menu
 
 The menu is play-first, and deliberately **not** the pygame one: the home page
-is Classic, Flat, 3D and Custom (`src/ui/menu.ts`). Classic opens one
-particular board straight away — the original square grid — and sits above the
-two that deal a *random* one: the flat picker's pool, and every flat manifold
-plus the spheres and polyhedra. So no picker carries a Random row; Custom holds the old root (Flat,
-Hyperbolic, Flat manifolds, Sphere, Platonic solids, Archimedean solids,
-Catalan solids, Polyhedra, Volumes). Hyperbolic is the one geometry group the
-pygame menu does not have: there it is a family on the flat picker, and the
-web menu lifts it out to sit beside Flat (`MENU_GROUP_FAMILIES` in
-`src/boards/catalog.ts`) — a curved space of its own rather than a kind of
-flat tiling. Its boards still count as the plane's everywhere else: the Flat
-pool deals them and the achievements file them there.
+is Classic, Flat, 3D, Hyperbolic and Custom (`src/ui/menu.ts`). Classic opens
+one particular board straight away — the original square grid — and sits above
+the three that deal a *random* one: the flat picker's pool, every flat manifold
+plus the spheres and polyhedra, and the Hyperbolic page's boards. So no picker
+carries a Random row; Custom holds the old root (Flat, Flat manifolds,
+Hyperbolic, Sphere, Platonic solids, Archimedean solids, Catalan solids,
+Polyhedra, Volumes). Hyperbolic is the one geometry group the pygame menu does
+not have: there it is a family on the flat picker, and the web menu lifts it
+out into a group of its own (`MENU_GROUP_FAMILIES` in `src/boards/catalog.ts`)
+— a curved space rather than a kind of flat tiling — after Flat manifolds and
+before the solids. Its page is two submenus, **Regular** (the {p,q} tilings)
+and **Uniform** (Wythoff's tilings of them), filed by each board's builder in
+`data/presets.json` (`menuSubfamilies`), so a new hyperbolic board lands in the
+right one without a list to edit. The binary tiling is hyperbolic too, but it
+is drawn in a rectangle of the upper half-plane rather than in the disc, so the
+menu files it under **Flat › Other** instead (`MENU_REFILED`) and the Flat pool
+deals it. Everywhere but the menu the hyperbolic boards still count as the
+plane's: the info window says Hyperbolic, and the achievements file them there.
 A board reachable from the home page is still reachable through Custom — the
 home row is a shortcut, not a move, which is how `square` has always worked.
 The reverse is **`CUSTOM_ONLY`** (`src/boards/randomBoard.ts`): boards kept off
-the home page *and* out of both random pools until their UX is ready to be
+the home page *and* out of every random pool until their UX is ready to be
 promoted. Both pools also drop, per difficulty, the boards
 `data/distortion.json` marks as distorted at the difficulty being dealt, and at
 every difficulty the boards whose surface carries a **caution** (Boy's surface).
@@ -72,7 +79,7 @@ and every board on it is marked the distortion mark's way — an *Intersects*
 pill on the desktop card, the caution as the hint line and a ⚠ on the phone
 row, the ⚠ on the caption and the line in the info window — at every
 difficulty, since it is the surface's and not the size's, and is left out of
-both random pools. Boy's surface is the one: it passes through itself, so some
+every random pool. Boy's surface is the one: it passes through itself, so some
 of its cells hide behind others however it is turned. (The Klein bottle passes
 through itself too, but its scroll brings every cell round, and it carries
 none.)
@@ -148,8 +155,8 @@ way:
 Every playable board row carries a **star** at its right edge, centred on the
 row's height (`Menu.favButton`; on a desktop card, in the preview's top-right
 corner), and the starred boards are listed in a **Favourites**
-section on the main screen: under Classic / Flat / 3D / Custom on the phone
-home page, and under the three quick-play cards on the desktop's Quick start —
+section on the main screen: under Classic / Flat / 3D / Hyperbolic / Custom on the phone
+home page, and under the quick-play cards on the desktop's Quick start —
 the desktop's landing page, whose sidebar row was already a star. The section is
 not there at all until something is starred; the stars on the rows are how a
 player finds it.
@@ -200,7 +207,8 @@ features.
 header.
 
 The **name** (`fullModeLabel`) says which board it is. Nothing on the game
-screen did before, and the menu's Flat and 3D rows each open a *random* board —
+screen did before, and the menu's Flat, 3D and Hyperbolic rows each open a
+*random* board —
 so a player could be dropped on a truncated icosahedron with no way to find out
 what it was. It is also what makes a screenshot of the game say what it is.
 
@@ -1084,9 +1092,10 @@ sees it immediately. Leaving or restarting inside that gap cancels it.
 
 It asks **one question** — this board again, or another — and its foot is that
 question and nothing else. **Play again** re-deals the same board. **New board**
-deals a random one from the half of the catalogue this board came from — flat if
-it was flat, otherwise a manifold, sphere or polyhedron — through
-`src/boards/randomBoard.ts`, which is the home page's Flat and 3D pools and
+deals a random one from the pool this board came from — flat if it was flat,
+hyperbolic if it was on the Hyperbolic page, otherwise a manifold, sphere or
+polyhedron (`randomKindOf`) — through `src/boards/randomBoard.ts`, which is the
+home page's Flat, 3D and Hyperbolic pools and
 their fairness weighting, shared rather than re-derived. It is the same call as
 the header's die (`App.startRandomBoard`), which is that move without having to
 win first; both abandon the board in progress the way the smiley does, without
@@ -1110,7 +1119,8 @@ feedback and gets neither.
 `App.dealtAtRandom`, set by `startGame` and passed to the card as `primary`. A
 board the player picked out of the catalogue is one they came for, so playing it
 again is the obvious next move; a board the game *dealt* them — the home page's
-Flat and 3D rows, the header's die, this window's own New board — is a step in a
+Flat, 3D and Hyperbolic rows, the header's die, this window's own New board — is
+a step in a
 wander, and the next step is another board. Focus lands on whichever it is, so
 Enter takes the card's own answer. The flag **sticks to the board**: Play again
 and the smiley pass it through, so replaying a dealt board does not turn it into
