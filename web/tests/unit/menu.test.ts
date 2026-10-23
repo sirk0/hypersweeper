@@ -124,16 +124,17 @@ describe("picker pages", () => {
   });
 });
 
+// triangles first, as the flat picker lists them: by p, then q
 const REGULAR = [
-  "hyperbolic83",
-  "hyperbolic73",
-  "hyperbolic64",
-  "hyperbolic54",
-  "hyperbolic55",
-  "hyperbolic45",
-  "hyperbolic46",
   "hyperbolic37",
   "hyperbolic38",
+  "hyperbolic45",
+  "hyperbolic46",
+  "hyperbolic54",
+  "hyperbolic55",
+  "hyperbolic64",
+  "hyperbolic73",
+  "hyperbolic83",
 ];
 const UNIFORM = ["hyperbolic667", "hyperbolic3737", "hyperbolic3474", "hyperbolic4614"];
 
@@ -179,14 +180,15 @@ describe("geometry groups", () => {
     expect(new Set(filed).size).toBe(filed.length);
   });
 
-  it("files the binary tiling under Flat › Other, not Hyperbolic", () => {
-    expect(menuFamilyRows("other", "flat").map((r) => r.mode)).toContain("hyperbolicbinary");
+  it("files the binary tiling under Flat › Fractals, not Hyperbolic", () => {
+    expect(menuFamilyRows("fractal", "flat").map((r) => r.mode)).toContain("hyperbolicbinary");
+    expect(menuFamilyRows("other", "flat").map((r) => r.mode)).not.toContain("hyperbolicbinary");
     expect(menuFamilyRows("hyperbolic", "flat").map((r) => r.mode)).not.toContain(
       "hyperbolicbinary",
     );
     // ...and nowhere off the plane, which has no binary tiling
     for (const surface of MANIFOLD_ORDER) {
-      expect(menuFamilyRows("other", surface).map((r) => r.mode)).not.toContain(
+      expect(menuFamilyRows("fractal", surface).map((r) => r.mode)).not.toContain(
         "hyperbolicbinary",
       );
     }
@@ -220,7 +222,7 @@ describe("home page pools", () => {
   });
 
   it("deals the hyperbolic boards from a pool of their own", () => {
-    expect(hyperbolic).toEqual([...REGULAR, ...UNIFORM]);
+    expect([...hyperbolic].sort()).toEqual([...REGULAR, ...UNIFORM].sort());
     expect(flat.filter((m) => hyperbolic.includes(m))).toEqual([]);
   });
 

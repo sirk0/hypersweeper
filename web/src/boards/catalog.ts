@@ -355,12 +355,13 @@ export function menuShapedRows(surfaceKey: string): FamilyRow[] {
 
 /** Boards the web menu files under another family on the same surface than
  * the one they belong to: the binary tiling is hyperbolic, but it is drawn in
- * a rectangle of the upper half-plane rather than in the Poincaré disc, so the
- * menu lists it with the plane's odd ones out (Flat › Other) and leaves the
- * Hyperbolic page to the disc tilings. Its family is still `hyperbolic`
- * everywhere but the menu — the info window and the achievements say so. */
+ * a rectangle of the upper half-plane rather than in the Poincaré disc, and
+ * what a player sees is a self-similar board — every row the one above it
+ * halved — so the menu lists it with the Fractals and leaves the Hyperbolic
+ * page to the disc tilings. Its family is still `hyperbolic` everywhere but
+ * the menu — the info window and the achievements say so. */
 const MENU_REFILED: Record<string, { from: string; to: string }> = {
-  hyperbolicbinary: { from: "hyperbolic", to: "other" },
+  hyperbolicbinary: { from: "hyperbolic", to: "fractal" },
 };
 
 /** One family's rows as the web menu shows them: `regular` is the shaped
@@ -404,16 +405,26 @@ export function menuGroupFamilies(surfaceKey: string): string[] {
   return pickerFamilies(surfaceKey).filter((f) => MENU_GROUP_FAMILIES.includes(f));
 }
 
-const PRESET_BUILDERS = (presetsData as { presets: Record<string, { builder: string }> }).presets;
+const PRESETS_BY_MODE = (
+  presetsData as { presets: Record<string, { builder: string; args: Record<string, unknown[]> }> }
+).presets;
+
+/** A hyperbolic board's {p,q}: the first two args of either disc builder. */
+function presetPQ(mode: string): [number, number] {
+  const args = Object.values(PRESETS_BY_MODE[mode]?.args ?? {})[0] ?? [];
+  return [Number(args[0]), Number(args[1])];
+}
 
 /** The sub-families a group family's page is split into, each the boards one
  * builder makes: the Hyperbolic page holds the regular {p,q} tilings and the
  * uniform tilings Wythoff's construction makes from them. Keyed by builder so
  * a new board files itself; `tests/unit/menu.test.ts` checks every board of
- * the family lands in one. */
-const MENU_SUBFAMILIES: Record<string, { key: string; builder: string }[]> = {
+ * the family lands in one. `byPQ` sorts a page by p, then q — triangles first,
+ * as the flat picker lists Triangles, Squares, Hexagons — rather than in the
+ * shared catalog's order, which the pygame menu keeps. */
+const MENU_SUBFAMILIES: Record<string, { key: string; builder: string; byPQ?: boolean }[]> = {
   hyperbolic: [
-    { key: "hyperbolic-regular", builder: "hyperbolic_board" },
+    { key: "hyperbolic-regular", builder: "hyperbolic_board", byPQ: true },
     { key: "hyperbolic-uniform", builder: "hyperbolic_uniform_board" },
   ],
 };
@@ -424,12 +435,18 @@ export function menuSubfamilies(family: string): string[] {
   return (MENU_SUBFAMILIES[family] ?? []).map((s) => s.key);
 }
 
-/** One sub-family's rows, in the family's own order. */
+/** One sub-family's rows, in the family's own order unless it sorts `byPQ`. */
 export function menuSubfamilyRows(family: string, sub: string, surfaceKey: string): FamilyRow[] {
-  const builder = MENU_SUBFAMILIES[family]?.find((s) => s.key === sub)?.builder;
-  return menuFamilyRows(family, surfaceKey).filter(
-    (r) => builder !== undefined && PRESET_BUILDERS[r.mode]?.builder === builder,
+  const spec = MENU_SUBFAMILIES[family]?.find((s) => s.key === sub);
+  const rows = menuFamilyRows(family, surfaceKey).filter(
+    (r) => spec !== undefined && PRESETS_BY_MODE[r.mode]?.builder === spec.builder,
   );
+  if (!spec?.byPQ) return rows;
+  return rows.sort((a, b) => {
+    const [pa, qa] = presetPQ(a.mode);
+    const [pb, qb] = presetPQ(b.mode);
+    return pa - pb || qa - qb;
+  });
 }
 
 /** The web menu's family labels: `regular` no longer names the regular
@@ -465,10 +482,10 @@ export const MENU_FAMILY_HINTS: Record<string, string> = {
   rectangle: "Brick bonds, one rectangle throughout",
   // A grab-bag rather than a symmetry class, so the hint names its members
   // instead of a property they share.
-  other: "Two rep-tiles, Dürer's pentagons and the binary tiling",
+  other: "Two rep-tiles, and Dürer's pentagons",
   aperiodic: "Never repeats: Penrose, Ammann–Beenker, the Spectre",
   spiral: "Wound round a centre: sunflower, pentagons, brick rings",
-  fractal: "One tile, grown into itself",
+  fractal: "One tile grown into itself, or halved row on row",
   hyperbolic: "Curved space: more round a corner than fit flat",
   "hyperbolic-regular": "One shape throughout: {p,q} is p sides, q to a corner",
   "hyperbolic-uniform": "Two or three shapes, same at every corner",

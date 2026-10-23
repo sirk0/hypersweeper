@@ -21,9 +21,12 @@ before the solids. Its page is two submenus, **Regular** (the {p,q} tilings)
 and **Uniform** (Wythoff's tilings of them), filed by each board's builder in
 `data/presets.json` (`menuSubfamilies`), so a new hyperbolic board lands in the
 right one without a list to edit. The binary tiling is hyperbolic too, but it
-is drawn in a rectangle of the upper half-plane rather than in the disc, so the
-menu files it under **Flat › Other** instead (`MENU_REFILED`) and the Flat pool
-deals it. Everywhere but the menu the hyperbolic boards still count as the
+is drawn in a rectangle of the upper half-plane rather than in the disc, and
+reads as a self-similar board — every row the one above it halved — so the
+menu files it under **Flat › Fractals** instead (`MENU_REFILED`) and the Flat
+pool deals it. The Regular page is sorted by p, then q — triangles first, as
+the flat picker lists Triangles, Squares, Hexagons — rather than in the shared
+catalog's order, which the pygame menu keeps. Everywhere but the menu the hyperbolic boards still count as the
 plane's: the info window says Hyperbolic, and the achievements file them there.
 A board reachable from the home page is still reachable through Custom — the
 home row is a shortcut, not a move, which is how `square` has always worked.

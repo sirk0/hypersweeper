@@ -59,8 +59,8 @@ test.describe("M1 app", () => {
     await page.locator('.menu-entry[data-group="flat"]').click();
     await expect(page.locator('.menu-entry[data-submenu="aperiodic"]')).toBeVisible();
     await expect(page.locator('.menu-entry[data-submenu="hyperbolic"]')).toHaveCount(0);
-    // the binary tiling is filed with the plane's odd ones out
-    await page.locator('.menu-entry[data-submenu="other"]').click();
+    // the binary tiling is filed with the self-similar boards
+    await page.locator('.menu-entry[data-submenu="fractal"]').click();
     await expect(page.locator('.menu-entry[data-mode="hyperbolicbinary"]')).toBeVisible();
 
     await page.locator('.difficulty-btn[data-key="easy"]').click();

@@ -831,7 +831,7 @@ What it needs that the disc boards do not:
 - `Board.halfPlane` in place of `Board.disc`, which switches on the half-plane pan;
 - a row icon of its own in `icons.ts` and `gui.py`, instead of an entry in the icon-shell tables.
 
-The web menu lists it under Flat › Other rather than on the Hyperbolic page
+The web menu lists it under Flat › Fractals rather than on the Hyperbolic page
 (`MENU_REFILED` in `web/src/boards/catalog.ts`), so the home page's Flat row
 deals it, not the Hyperbolic one.
 
