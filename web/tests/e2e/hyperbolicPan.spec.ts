@@ -368,8 +368,9 @@ test.describe("a closed surface's zoom", () => {
     const zoomIn = await page.evaluate(() => window.__ms!.zoom());
     const inward = await across(page, centre);
     // bounded: a few presses reach the nearest horizon and stop there
-    expect(zoomIn).toBeGreaterThan(1.2);
-    expect(zoomIn).toBeLessThan(2);
+    // (e^(view - near), the level is the horizon's distance moved)
+    expect(zoomIn).toBeGreaterThan(2);
+    expect(zoomIn).toBeLessThan(4);
     expect(inward.cells).toBeLessThan(opened.cells * 0.75);
     expect(Math.abs(inward.end - opened.end)).toBeLessThan(opened.end * 0.2);
     // the middle stays put: the cell under the centre of the view is the same
@@ -379,8 +380,8 @@ test.describe("a closed surface's zoom", () => {
     await frame(page);
     const zoomOut = await page.evaluate(() => window.__ms!.zoom());
     const outward = await across(page, centre);
-    expect(zoomOut).toBeLessThan(1);
-    expect(zoomOut).toBeGreaterThan(0.8);
+    expect(zoomOut).toBeLessThan(0.5);
+    expect(zoomOut).toBeGreaterThan(0.2);
     expect(outward.cells).toBeGreaterThan(opened.cells);
     expect(Math.abs(outward.end - opened.end)).toBeLessThan(opened.end * 0.2);
 
@@ -388,5 +389,20 @@ test.describe("a closed surface's zoom", () => {
     await frame(page);
     expect(await page.evaluate(() => window.__ms!.zoom())).toBe(1);
     expect((await across(page, centre)).cells).toBe(opened.cells);
+  });
+
+  test("has zoom buttons beside its pan arrows, a key press's step each", async ({ page }) => {
+    const shown = () =>
+      page.$$eval(".board-caption-controls .board-bar-btn", (nodes) =>
+        nodes.filter((n) => !(n as HTMLElement).hidden).map((n) => (n as HTMLElement).dataset["slot"]),
+      );
+    expect(await shown()).toEqual(["pan-left", "pan-right", "pan-up", "pan-down", "zoom-in", "zoom-out"]);
+    await page.locator('.board-bar-btn[data-slot="zoom-in"]').click();
+    expect(await page.evaluate(() => window.__ms!.zoom())).toBeCloseTo(1.3, 6);
+    await page.locator('.board-bar-btn[data-slot="zoom-out"]').click();
+    await page.locator('.board-bar-btn[data-slot="zoom-out"]').click();
+    expect(await page.evaluate(() => window.__ms!.zoom())).toBeCloseTo(1 / 1.3, 6);
+    // a press is a move of the view, never of the game
+    expect(await page.evaluate(() => window.__ms!.state().revealed)).toBe(0);
   });
 });

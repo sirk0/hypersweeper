@@ -464,8 +464,12 @@ describe("the board bar's symmetry controls", () => {
       expect(slot.label, slot.slot).toBeTruthy();
       expect(slot.visibleWhen).toBe("disc");
     }
-    // Every other slot is a symmetry control.
-    expect(slots.filter((s) => !s.action!.startsWith("pan:")).every((s) => s.action!.startsWith("symmetry:"))).toBe(true);
+    // Every other slot is a symmetry control, or a closed surface's zoom.
+    expect(
+      slots
+        .filter((s) => !s.action!.startsWith("pan:") && !s.action!.startsWith("zoom:"))
+        .every((s) => s.action!.startsWith("symmetry:")),
+    ).toBe(true);
     const shown = (conditions: Set<string>) =>
       slots.filter((s) => slotVisible(s.visibleWhen, conditions)).map((s) => s.slot);
     expect(shown(boardConditions([], "hyperbolic73", true))).toEqual([
@@ -475,6 +479,27 @@ describe("the board bar's symmetry controls", () => {
       "pan-down",
     ]);
     expect(shown(boardConditions([], "square"))).toEqual([]);
+  });
+
+  it("gives a closed hyperbolic surface two zoom buttons beside its pan arrows, and no other board any", () => {
+    const zooms = slots.filter((s) => s.action!.startsWith("zoom:"));
+    expect(zooms.map((s) => s.action)).toEqual(["zoom:in", "zoom:out"]);
+    for (const slot of zooms) {
+      expect(slot.icon && ICONS[slot.icon], slot.slot).toBeTruthy();
+      expect(slot.label, slot.slot).toBeTruthy();
+      expect(slot.visibleWhen).toBe("horizon");
+    }
+    const shown = (conditions: Set<string>) =>
+      slots.filter((s) => slotVisible(s.visibleWhen, conditions)).map((s) => s.slot);
+    expect(shown(boardConditions([], "quartic", true, true))).toEqual([
+      "pan-left",
+      "pan-right",
+      "pan-up",
+      "pan-down",
+      "zoom-in",
+      "zoom-out",
+    ]);
+    expect(shown(boardConditions([], "hyperbolic73", true))).not.toContain("zoom-in");
   });
 
   it("a reflection gets one button and a translation two", () => {
@@ -509,6 +534,7 @@ describe("the board bar's symmetry controls", () => {
         board.symmetries,
         mode,
         !isBoard3D(board) && pansHyperbolically(board),
+        !isBoard3D(board) && board.disc?.cover !== undefined,
       );
       return slots
         .filter((s) => slotVisible(s.visibleWhen, conditions) && slotKept(s.keepWhen, conditions))
@@ -525,8 +551,10 @@ describe("the board bar's symmetry controls", () => {
       "symmetry-tube-back",
       "symmetry-tube-fwd",
     ]);
+    // ...and a closed surface its zoom buttons, which say its horizon moves.
     for (const mode of HYPERBOLIC_MODES) {
-      expect(kept(mode), mode).toEqual(["pan-left", "pan-right", "pan-up", "pan-down"]);
+      const zoom = ["quartic", "macbeath", "triplet"].includes(mode) ? ["zoom-in", "zoom-out"] : [];
+      expect(kept(mode), mode).toEqual(["pan-left", "pan-right", "pan-up", "pan-down", ...zoom]);
     }
     // ...and nothing else in the catalogue keeps a control, wrapped or not.
     for (const mode of [...WRAPPED, "square", "cube", "penrose"]) {

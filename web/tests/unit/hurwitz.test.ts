@@ -310,13 +310,14 @@ describe("the Hurwitz surfaces", () => {
     }
   });
 
-  it("zoom out until a cell at the edge shows twice, but never one near the centre", () => {
+  it("zoom out until a cell at the edge shows twice, but never the one in the middle", () => {
     // The zoom moves the horizon between `near` and `far`. All the way out a
     // cell near the edge has its copy in view across it -- the cover reads as
-    // a cover -- but a cell inside even the nearest horizon is so far from
-    // all its copies that none is ever in view: d(a, b) > near + far for every
-    // two copies a, b of a cell, wherever the view's centre is (the triangle
-    // inequality). Measured off the faces' centroids, as the clip keeps them.
+    // a cover -- but the cell under the centre of the view (its centre within
+    // a tile radius of it) is so far from all its copies that none is ever in
+    // view: d(a, b) > far + tile for every two copies a, b of a cell, wherever
+    // the view's centre is (the triangle inequality). Measured off the faces'
+    // centroids, as the clip keeps them.
     for (const [surface, op] of [
       ["quartic", "zip"],
       ["quartic", "gc4"],
@@ -326,7 +327,7 @@ describe("the Hurwitz surfaces", () => {
       ["triplet", "zip"],
     ] as const) {
       const board = hurwitzBoard(surface, op, 0, 1);
-      const { view, near, far } = board.disc!.cover!;
+      const { view, near, far, tile } = board.disc!.cover!;
       expect(near).toBeLessThan(view);
       expect(far).toBeGreaterThan(view);
       const [, genus] = HURWITZ_SURFACES[surface]!;
@@ -352,8 +353,28 @@ describe("the Hurwitz surfaces", () => {
           }
         }
       }
-      expect(closest, `${surface} ${op}`).toBeGreaterThan(near + far);
+      expect(closest, `${surface} ${op}`).toBeGreaterThan(far + tile);
       expect(twice, `${surface} ${op}`).toBeGreaterThan(0);
+    }
+  });
+
+  it("cut flat only faces out at the rim, never one inside the view a board opens at", () => {
+    // `Board.tiny`: a face never drawn more than a few pixels across has no
+    // bevel. The farthest zoom shows thousands of them round the bigger
+    // surfaces; none is anywhere a board shows as it opens.
+    for (const [surface, op] of [
+      ["triplet", "none"],
+      ["triplet", "gc2"],
+      ["macbeath", "gc2"],
+    ] as const) {
+      const board = hurwitzBoard(surface, op, 0, 1);
+      const tiny = board.tiny!;
+      expect(tiny.size, `${surface} ${op}`).toBeGreaterThan(0);
+      const r = Math.tanh(coverView(surface) / 2);
+      for (const face of tiny) {
+        expect(board.unseen?.has(face)).toBe(false);
+        expect(Math.hypot(...discCentre(board, face)), `${surface} ${op} ${face}`).toBeGreaterThan(r);
+      }
     }
   });
 

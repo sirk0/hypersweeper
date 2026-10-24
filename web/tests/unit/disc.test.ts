@@ -15,6 +15,7 @@ import {
   discScale,
   discUnmap,
   dragShift,
+  horizonFrame,
   horizonZoom,
   zoomHorizon,
   type Cx,
@@ -346,15 +347,24 @@ describe("a closed surface's horizon", () => {
   const horizon = board.disc!.cover!;
 
   it("opens at the view, framed as the board is", () => {
-    expect(horizonZoom(horizon, horizon.view)).toBeCloseTo(1, 12);
-    expect(zoomHorizon(horizon, 1)).toBeCloseTo(horizon.view, 12);
+    expect(horizonZoom(horizon, horizon.view)).toBe(1);
+    expect(zoomHorizon(horizon, 1)).toBe(horizon.view);
+    expect(horizonFrame(horizon, horizon.view)).toBe(1);
   });
 
   it("closes in as the zoom goes up and opens out as it comes down", () => {
-    const zooms = [0.5, 0.9, 1, 1.2, 1.4, 3].map((z) => zoomHorizon(horizon, z));
+    const zooms = [0.2, 0.5, 0.9, 1, 1.2, 2, 5].map((z) => zoomHorizon(horizon, z));
     for (let i = 1; i < zooms.length; i++) expect(zooms[i]!).toBeLessThanOrEqual(zooms[i - 1]!);
     expect(horizonZoom(horizon, horizon.near)).toBeGreaterThan(1);
     expect(horizonZoom(horizon, horizon.far)).toBeLessThan(1);
+  });
+
+  it("moves the same distance for every step of the zoom, wherever it is", () => {
+    // what makes a pinch or a key press feel the same zoomed in as out: the
+    // camera's own magnification hardly changes out past the view
+    const step = (z: number) => zoomHorizon(horizon, z) - zoomHorizon(horizon, z * 1.3);
+    expect(step(0.5)).toBeCloseTo(Math.log(1.3), 12);
+    expect(step(1.5)).toBeCloseTo(Math.log(1.3), 12);
   });
 
   it("is the zoom's inverse between its bounds, and held to them past", () => {
@@ -368,7 +378,7 @@ describe("a closed surface's horizon", () => {
   it("frames its circle, and the tile it keeps reaching past it, the same size at every zoom", () => {
     // the disc radius drawn at the frame's edge, in units of the frame
     for (const v of [horizon.near, horizon.view, horizon.far]) {
-      const edge = Math.tanh((v + horizon.tile) / 2) * horizonZoom(horizon, v);
+      const edge = Math.tanh((v + horizon.tile) / 2) * horizonFrame(horizon, v);
       expect(edge).toBeCloseTo(Math.tanh((horizon.view + horizon.tile) / 2), 12);
     }
   });

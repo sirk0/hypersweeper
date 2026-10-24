@@ -73,6 +73,18 @@ export const ICONS: Record<string, string> = {
     <path d="M12 18 L5.5 7.5 H18.5 Z" fill="currentColor" stroke="currentColor"
       stroke-width="1.6" stroke-linejoin="round"/>
   </svg>`,
+  // A closed hyperbolic surface's zoom, beside its pan arrows: a magnifier
+  // with a plus or a minus, which moves the horizon in or out.
+  "zoom-in": `<svg viewBox="0 0 24 24" aria-hidden="true">
+    <circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" stroke-width="1.9" fill="none"/>
+    <path d="M15.2 15.2 L20 20 M7.5 10.5 H13.5 M10.5 7.5 V13.5" stroke="currentColor"
+      stroke-width="1.9" fill="none" stroke-linecap="round"/>
+  </svg>`,
+  "zoom-out": `<svg viewBox="0 0 24 24" aria-hidden="true">
+    <circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" stroke-width="1.9" fill="none"/>
+    <path d="M15.2 15.2 L20 20 M7.5 10.5 H13.5" stroke="currentColor"
+      stroke-width="1.9" fill="none" stroke-linecap="round"/>
+  </svg>`,
   // Fallbacks (see above): a generic turn and a generic mirror, replaced by the
   // board's own the moment one is on screen.
   "rotate-right": `<svg viewBox="0 0 24 24" aria-hidden="true">
@@ -221,12 +233,15 @@ export interface HudState {
  * declares `surface:<key>` for the surface it is glued into, and a board drawn
  * in a model of the hyperbolic plane — the Poincaré disc or the upper
  * half-plane, the hyperbolic boards, either of which is dragged by an isometry
- * — declares `disc`, which is what its pan arrows show on; a slot's `keepWhen`
- * is matched against the same set. */
+ * — declares `disc`, which is what its pan arrows show on, and a closed
+ * hyperbolic surface, whose zoom moves its horizon, declares `horizon` too,
+ * which is what its zoom buttons show on; a slot's `keepWhen` is matched
+ * against the same set. */
 export function boardConditions(
   symmetries: readonly BoardSymmetry[],
   mode?: string,
   disc = false,
+  horizon = false,
 ): Set<string> {
   const conditions = new Set<string>();
   for (const symmetry of symmetries) {
@@ -236,6 +251,7 @@ export function boardConditions(
   const surface = mode === undefined ? null : surfaceOf(mode);
   if (surface) conditions.add(`surface:${surface.key}`);
   if (disc) conditions.add("disc");
+  if (horizon) conditions.add("horizon");
   return conditions;
 }
 

@@ -99,6 +99,11 @@ export interface Board {
   // it, and the renderer builds no geometry for them. Unset on every other
   // board.
   unseen?: Set<CellId>;
+  // The drawn faces the view can never show more than a few device pixels
+  // across (a closed surface's rim, out where the farthest zoom reaches): the
+  // renderer cuts them as a flat top face, with no bevel and no shadow, which
+  // at that size nobody could see. Unset on every other board.
+  tiny?: Set<CellId>;
 }
 
 /** How a patch of a closed surface's cover pans without end

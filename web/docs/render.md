@@ -24,9 +24,16 @@ multi-touch API).
 magnify towards, so the zoom moves how far round the centre of the view the
 cover is shown, and the camera follows that circle: in, fewer cells and the
 ones at the edge several times bigger; out, more of the surface, until a cell
-near the edge is in view twice. It runs from `near` to `far` (`DiscCover`),
-so the zoom level goes *below* 1 there, and it is always about the centre of
-the view — the board only ever moves by the disc's isometries.
+near the edge is in view twice. It runs from `near` to `far` (`DiscCover`).
+The zoom level is e^(view − horizon), so every pinch step, wheel notch or key
+press moves the horizon by the same hyperbolic distance, and the level goes
+*below* 1 zooming out; the camera's own magnification is derived from the
+horizon (`horizonFrame`). Not the magnification as the level: out past the
+view it hardly changes, and a pinch of a few percent swept the triplet from
+its view to its farthest. It is always about the centre of the view — the
+board only ever moves by the disc's isometries — and the board bar carries a
+zoom-in and a zoom-out button beside the pan arrows (`horizon` in
+`boardConditions`, kept with the extra controls off), a key press's step each.
 
 A trackpad pinch takes two routes. Chromium and Electron send it as `ctrl`+wheel
 (`onWheel`). WebKit — Safari, and the Mac Catalyst app's WKWebView — sends
@@ -184,15 +191,19 @@ Two things make it *look* continuous, and the pan jumped without either:
   3.71 on the triplet), and a tap out there finds
   nothing (`discSource`). That circle is the **horizon**, and the zoom moves
   it (`PolygonBoard.setHorizon`, one uniform): in to half the view
-  (`COVER_NEAR`), out to where the disc holds one and a half copies of the
-  surface (`COVER_COPIES_FAR` -- 2.63 on the quartic, 3.64 on Macbeath's, 4.38
-  on the triplet). Out there a cell near the edge shows twice, once each side
-  of the view, but a cell's copies are all at least `near + far` apart (3.9 on
-  the quartic, 5.7 on Macbeath's, 6.8 on the triplet), so a cell inside the
-  nearest horizon is never in view twice, whatever the zoom
-  (`tests/unit/hurwitz.test.ts`). The camera zoom that frames horizon v is
-  `horizonZoom`: the board's size is framed at `coverView`, so the zoom is the
-  ratio of the two framed radii, tanh((v + tile) / 2). The board is framed to that circle widened by a tile
+  (`COVER_NEAR`), out to where the disc holds three copies of the surface
+  (`COVER_COPIES_FAR` -- 3.26 on the quartic, 4.30 on Macbeath's, 5.06 on the
+  triplet). Out there most cells past the first rings show twice or more, but
+  a cell's copies are all farther apart than `far` plus a tile (3.9 on the
+  quartic, 5.7 on Macbeath's, 6.8 on the triplet), so the cell under the
+  centre of the view is never in view twice, whatever the zoom
+  (`tests/unit/hurwitz.test.ts`). The camera magnification that frames horizon
+  v is `horizonFrame`: the board's size is framed at `coverView`, so it is the
+  ratio of the two framed radii, tanh((v + tile) / 2). That ratio is also why
+  the zoom-out reads less on a big surface than on the quartic: the triplet's
+  view already reaches 0.95 of the disc, so what the farther horizon adds is a
+  band of cells a few pixels across round its rim -- the Poincaré disc has no
+  room left to show them bigger. The board is framed to that circle widened by a tile
   radius (`tileRadius` -- a tile the clip keeps reaches that far past it), not
   to the whole patch, whose polygons run on past the frame, hidden. The patch reaches
   `patchReach` from its centre, so
@@ -210,9 +221,15 @@ gradient; and an edge whose geodesic could never miss its chord by half a pixel
 on a disc a thousand device pixels in radius is drawn straight
 (`edgeSegments`), which out at the rim is nearly every edge. Now the hard
 quartic draws about 0.9 million, the hard disc board's budget. The zoom's
-farthest horizon roughly doubles the area that has to be built, which costs
-about 1.75 times the tile vertices of a patch built to `coverView` alone (the
-hard triplet's 0.7 million to 1.2 million); `COVER_COPIES_FAR` is the knob.
+farthest horizon holds four times the view's area, and building out to it
+would have cost the hard triplet 2.3 million tile vertices where the view
+alone needs 0.7. Most of those are rim faces no view ever draws more than a
+few pixels across, so those are cut flat (`Board.tiny`, under `TINY_PX` = 16
+device pixels on the same worst case as `edgeSegments`): the top face alone,
+no walls, no shadow -- a seventh of a bevelled face. That brings the hard
+triplet to 1.1 million and Macbeath's to 0.9; the hard quartic, whose rim
+cells stay big enough to keep their bevels, is the most at 1.3.
+`COVER_COPIES_FAR` is the knob.
 
 The relabelling reads
 the current label off the face a label is named after (a cell's id is the id

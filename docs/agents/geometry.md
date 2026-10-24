@@ -1139,7 +1139,7 @@ Four things worth knowing before touching it:
   tile radius (measured, `_tile_radius`), so the circle is full from anywhere
   on the central tile (a test probes it from the heptagon's corners). The web
   port goes farther: its zoom moves that circle (the *horizon*) out to where
-  the disc holds 1.5 copies (`COVER_COPIES_FAR`, `coverFar`), so its patch and
+  the disc holds 3 copies (`COVER_COPIES_FAR`, `coverFar`), so its patch and
   its `Board.unseen` are built to `zoomedReach`, the same sum with the farthest
   horizon -- more faces than the counts above, appended after them, so every
   face the pygame game draws has the same id and every cell the same name. Nothing about the board changes, so the pygame game,

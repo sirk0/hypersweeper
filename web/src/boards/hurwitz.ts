@@ -74,15 +74,17 @@ export function coverView(surface: string): number {
   return Math.acosh(1 + 2 * COVER_COPIES * (genus - 1));
 }
 
-/** How many copies of the surface the view holds zoomed all the way out. The
- * zoom on a closed surface moves its horizon (`DiscCover.near` .. `far`), and
- * out here a cell near the edge shows twice, once each side of the view -- a
- * cell's nearest copy is about 3.9 away on the quartic, 5.7 on Macbeath's and
- * 6.8 on the triplet, under twice this far -- while a cell near the centre
- * cannot have a copy in view, being more than this far from every one of
- * them. Twice the default's area: the patch the renderer builds grows with it.
- * The web port's alone: the pygame game has no zoom. */
-export const COVER_COPIES_FAR = 1.5;
+/** How many copies of the surface the view holds zoomed all the way out: four
+ * times the view's. The zoom on a closed surface moves its horizon
+ * (`DiscCover.near` .. `far`), and out here the cover reads as a cover -- every
+ * cell out past the first rings or so is in view twice or more -- while the
+ * cell under the centre of the view still never is: a cell's nearest copy is
+ * about 3.9 away on the quartic, 5.7 on Macbeath's and 6.8 on the triplet,
+ * farther than this horizon (3.26, 4.30, 5.06) plus a tile. The patch the
+ * renderer builds grows with it; out at its rim most of the faces are a few
+ * pixels across, and are cut flat (`Board.tiny`). The web port's alone: the
+ * pygame game has no zoom. */
+export const COVER_COPIES_FAR = 3;
 
 /** How far round the centre of the view a closed surface is shown zoomed all
  * the way in, as a share of its default view (`coverView`): the central tile
@@ -153,6 +155,12 @@ export function tileRadius(op: HurwitzOp): number {
  * under the gap between two tiles. The web port's alone: the pygame game
  * draws a static disc, every edge at full curve. */
 const DRAWN_SCALE = Math.exp(VIEW_SHIFT) * 1000;
+
+/** A face never drawn wider than this many device pixels, on that same worst
+ * case, is cut flat (`Board.tiny`): a bevel on it would be a pixel wide. The
+ * farthest zoom shows thousands of these round the rim of the bigger surfaces,
+ * and their walls were most of what the patch cost to draw. */
+const TINY_PX = 16;
 
 /**
  * How many segments draw the edge from a to b: as many as its curve needs,
@@ -925,6 +933,13 @@ export function hurwitzBoard(
   drawn.forEach((f, face) => {
     if (distance(p.centres[f]!) > reach) unseen.add(cid(face));
   });
+  const tiny = new Set<CellId>();
+  for (const [face, poly] of polygons) {
+    if (unseen.has(face)) continue;
+    let wide = 0;
+    for (const a of poly) for (const b of poly) wide = Math.max(wide, Math.hypot(a[0] - b[0], a[1] - b[1]));
+    if ((wide / scale) * DRAWN_SCALE < TINY_PX) tiny.add(face);
+  }
   const board = flatBoard({
     mode: SURFACE_MODES[surface]!,
     polygons,
@@ -939,6 +954,7 @@ export function hurwitzBoard(
     faces: faceCell,
     quotient,
     unseen,
+    tiny,
   });
   let measured: BoardSymmetry[] | null = null;
   return Object.defineProperty(board, "symmetries", {

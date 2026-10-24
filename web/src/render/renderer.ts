@@ -21,7 +21,7 @@ import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment
 import type { CellId } from "../boards/core";
 import { SOLID_GROUPS, surfaceOf, viewHint } from "../boards/catalog";
 import { PICK_LAYERS, type BoardMesh, type PickLayer } from "./boardMesh";
-import { horizonZoom, zoomHorizon } from "./disc";
+import { horizonFrame, horizonZoom, zoomHorizon } from "./disc";
 import { halfPlaneDrag } from "./halfPlane";
 import { anchoredPan, clampPan, clampZoom, MAX_ZOOM, MIN_ZOOM } from "./zoom";
 import { ParticleField } from "./particles";
@@ -386,7 +386,7 @@ export class BoardRenderer {
     // World units per CSS pixel: the fit that shows the whole board in the
     // region both ways, magnified by the current zoom.
     const wpp =
-      Math.max((2 * halfW) / w, (2 * halfH) / usableH) / this.zoomLevel;
+      Math.max((2 * halfW) / w, (2 * halfH) / usableH) / this.magnification;
     // Zoomed in, the board is larger than the region and can be panned by the
     // overhang; fitted (or smaller), it stays centred.
     this.panX = clampPan(this.panX, halfW, (wpp * w) / 2);
@@ -464,6 +464,15 @@ export class BoardRenderer {
     const horizon = this.board?.horizon;
     if (horizon) return horizonZoom(horizon, horizon.near);
     return Math.max(MAX_ZOOM, this.board?.halfPlane?.maxZoom ?? 0);
+  }
+
+  /** How much the flat camera magnifies the fitted board: the zoom level, but
+   * on a closed surface, whose zoom level moves its horizon, as much as frames
+   * that horizon (`horizonFrame`). */
+  private get magnification(): number {
+    const horizon = this.board?.horizon;
+    if (!horizon) return this.zoomLevel;
+    return horizonFrame(horizon, zoomHorizon(horizon, this.zoomLevel));
   }
 
   /** The least the current board may be zoomed: fitted, `MIN_ZOOM`, but for a

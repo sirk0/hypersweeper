@@ -80,7 +80,8 @@ const SECTIONS: Section[] = [
           "the wheel slides along instead (below), hold ctrl to zoom. On a " +
           "closed hyperbolic surface the zoom moves the horizon: in shows " +
           "fewer cells and its edge bigger, out shows more of the surface, " +
-          "until a cell at the edge is there twice.",
+          "until cells round the edge are there twice. The magnifier " +
+          "buttons beside its arrows zoom it too.",
       ],
       [
         "Move the cells along",
