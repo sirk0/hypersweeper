@@ -40,6 +40,9 @@ describe("card previews", () => {
     expect(previewIcon("classic").svg).toBe(previewIcon("square").svg);
     expect(previewIcon("3d").svg).toBe(previewIcon("sphere").svg);
     expect(previewIcon("tri").svg).toBe(previewIcon("trigrid").svg);
+    // the Closed surfaces submenu is Klein's quartic, on the card and the row
+    expect(previewIcon("hyperbolic-closed").svg).toBe(previewIcon("quartic").svg);
+    expect(menuIcon("hyperbolic-closed")).toBe(menuIcon("quartic"));
   });
 
   it("draws a solid as the real board, not the row's symbol", () => {
@@ -115,13 +118,30 @@ describe("card previews", () => {
     }
   });
 
+  it("wallpapers a flat family card with the tiling its row icon is drawn from", () => {
+    // The row icon is a small patch of one member; the card is that member's
+    // whole tiling, the same picture its own card shows.
+    for (const [family, member] of [
+      ["uniform", "rhombitrihex"],
+      ["dual", "deltoidal"],
+      ["2-uniform", "dodecarhombitrihex"],
+      ["isogonal", "rotatedhex"],
+      ["rectangle", "herringbone"],
+      ["other", "durer"],
+    ] as const) {
+      const preview = previewIcon(family);
+      expect(preview.tiled, family).toBe(true);
+      expect(preview.svg, family).toBe(previewIcon(member).svg);
+    }
+  });
+
   it("keeps the row's figure when there is no lattice and no solid", () => {
-    // A family row, a surface and a shaped board: the first two have no tiling
-    // of their own, and the shaped boards *are* a tiling — cut to an outline,
-    // which is the one thing a wallpaper of them could not show. Each is the
-    // row's own drawing, repainted (see below), so the shape count matches
-    // while the colours do not.
-    for (const key of ["uniform", "torus", "hexhex"]) {
+    // A surface and a shaped board: the first has no tiling of its own, and the
+    // shaped boards *are* a tiling — cut to an outline, which is the one thing
+    // a wallpaper of them could not show. Each is the row's own drawing,
+    // repainted (see below), so the shape count matches while the colours do
+    // not.
+    for (const key of ["torus", "hexhex"]) {
       const preview = previewIcon(key);
       expect(preview.tiled, key).toBe(false);
       expect(paths(preview.svg), key).toBe(paths(menuIcon(key)));

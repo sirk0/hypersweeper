@@ -1137,6 +1137,29 @@ function surfaceMesh(point: SurfacePoint | SurfacePoint[], opts: MeshOptions): s
   });
 }
 
+/** The tiling a flat family row is drawn from: a small patch of it on the row
+ * icon, and on a desktop card the whole tiling wallpapered, as its boards' own
+ * cards are (`buildPreview`), rather than the row icon blown up. */
+const FAMILY_TILINGS: Record<string, string> = {
+  // 3.4.6.4: a triangle, a square and a hexagon in one figure
+  uniform: "rhombitrihex",
+  // its own Laves dual (the two family rows are a dual pair themselves)
+  dual: "deltoidal",
+  // 4.6.12; 3.4.6.4: a dodecagon ringed by squares and hexagons beside a
+  // 3.4.6.4 patch — the four shapes the family is made of
+  "2-uniform": "dodecarhombitrihex",
+  // rotated hexagonal, the clearest picture of what the family is — tiles
+  // sliding along each other's edges rather than meeting them, with the gaps
+  // that opens filled by a second shape
+  isogonal: "rotatedhex",
+  // the herringbone, the bond whose staggered rectangles read as a pattern even
+  // at icon size (a stacked or running bond patch is a handful of plain bars)
+  rectangle: "herringbone",
+  // Dürer's pentagons, the one of its three that reads in two colours at icon
+  // size (a rep-tile patch is a huddle of one tone)
+  other: "durer",
+};
+
 /** Menu keys that reuse another key's drawing (gui.py _ICON_ALIASES). */
 const ALIASES: Record<string, string> = {
   tri: "trigrid",
@@ -1144,10 +1167,12 @@ const ALIASES: Record<string, string> = {
   spiral: "phyllotaxis", // the Spirals family row: the sunflower
   fractal: "sphinx", // the Fractals family row
   hyperbolic: "hyperbolic73", // the Hyperbolic family row: the game's namesake
-  // the Hyperbolic page's two submenus: a {p,q} other than the group's own
-  // {7,3}, and the uniform tiling with the most kinds of corner on show
+  // the Hyperbolic page's three submenus: a {p,q} other than the group's own
+  // {7,3}, the uniform tiling with the most kinds of corner on show, and
+  // Klein's quartic, the best known of the closed surfaces
   "hyperbolic-regular": "hyperbolic54",
   "hyperbolic-uniform": "hyperbolic3474",
+  "hyperbolic-closed": "quartic",
   // the solid-group rows borrow one of their own members' icons: there is no
   // board named "platonic", "archimedean" or "catalan" to draw, and
   // "polyhedra" now holds the frames and the stacks rather than the cube
@@ -1391,28 +1416,12 @@ function draw(rawKey: string): string[] {
   if (key === "warning") return badge(warningPath(d));
 
   // Every uniform and dual-uniform tiling draws a real patch of itself, and so
-  // do the two family rows: a 3.4.6.4 rosette (a triangle, a square and a
-  // hexagon in one figure) for the uniform family, and its own Laves dual for
-  // the dual-uniform one.
-  // (the two family rows are a dual pair themselves: 3.4.6.4's vertex figure
-  // for the uniform family, its Laves dual's tile rosette for the other)
+  // does each flat family row, from the member FAMILY_TILINGS names.
   if (ARCH_KEYS.has(key)) return tilingPatch(key);
-  if (key === "uniform") return tilingPatch("rhombitrihex", "rosette");
-  if (key === "dual") return tilingPatch("deltoidal");
-  // the 2-uniform family row: 3.4.6.4; 4.6.12, a dodecagon ringed by squares
-  // and hexagons beside a 3.4.6.4 patch — the four shapes it is made of
-  if (key === "2-uniform") return tilingPatch("dodecarhombitrihex");
-  // the Isogonal family row: rotated hexagonal, the clearest picture of what
-  // the family is — tiles sliding along each other's edges rather than meeting
-  // them, with the gaps that opens filled by a second shape
-  if (key === "isogonal") return tilingPatch("rotatedhex");
-  // the Congruent rectangles family row: the herringbone, the bond whose
-  // staggered rectangles read as a pattern even at icon size (a stacked or
-  // running bond patch is a handful of plain bars)
-  if (key === "rectangle") return tilingPatch("herringbone");
-  // the Other family row: Dürer's pentagons, the one of its three that reads
-  // in two colours at icon size (a rep-tile patch is a huddle of one tone)
-  if (key === "other") return tilingPatch("durer");
+  // the uniform family row is 3.4.6.4's vertex rosette rather than the ring
+  // of tiles round one tile its own row draws
+  if (key === "uniform") return tilingPatch(FAMILY_TILINGS[key]!, "rosette");
+  if (key in FAMILY_TILINGS) return tilingPatch(FAMILY_TILINGS[key]!);
   if (key === "regular") {
     // the Regular family row: one tile of each of the three regular tilings
     return [
@@ -2249,7 +2258,7 @@ function muted<T>(paint: () => T): T {
 }
 
 function buildPreview(rawKey: string): Preview {
-  const key = ALIASES[rawKey] ?? rawKey;
+  const key = ALIASES[rawKey] ?? FAMILY_TILINGS[rawKey] ?? rawKey;
   // The patch source first: most of these keys have a `DOMAINS` entry too, and
   // it is the one that would lie about them (see PATCH_BOARDS).
   const board = patch(key);
