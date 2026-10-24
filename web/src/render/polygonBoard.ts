@@ -52,6 +52,7 @@ import {
   type Cx,
   type CoverStep,
   type DiscView,
+  type Horizon,
 } from "./disc";
 import {
   cellStyle,
@@ -82,7 +83,7 @@ const COVER_REACH = 0.999;
 
 /** Vertices of a cell's soft shadow: a fan and a fading ring round its
  * outline, or none on a face that is never seen. */
-const shadowCount = (g: CellGeom): number => (g.unseen ? 0 : 9 * g.poly.length);
+const shadowCount = (g: CellGeom): number => (g.unseen || g.tiny ? 0 : 9 * g.poly.length);
 
 interface CellGeom {
   start: number; // first vertex index in the position/color buffers
@@ -98,6 +99,10 @@ interface CellGeom {
   // A face the board says is never seen (`Board.unseen`): no geometry at all,
   // so no shadow and no gradient either.
   unseen: boolean;
+  // A face the board says is never drawn more than a few pixels across
+  // (`Board.tiny`): its top face alone, flat, the first slice of the layout
+  // every other cell has, and no shadow.
+  tiny: boolean;
   // Set only for a cell that is not star-shaped about its centroid (Klaassen's
   // bent heptagon): its loops are mitred insets rather than pulls toward one
   // centre, by `inset` times these vectors, and its top face is the polygon's
@@ -187,8 +192,12 @@ export class PolygonBoard extends Group implements BoardMesh {
   private readonly coverSteps: readonly CoverStep[] | null;
   /** How far out, in disc radii, the view of a closed surface shows its patch
    * (`coverClip`): the shader hides every cell drawn beyond it, and a tap
-   * there finds nothing. Null on every other board. */
-  private readonly coverClip: number | null;
+   * there finds nothing. Moved by the zoom (`setHorizon`). Null on every
+   * other board. */
+  private coverClip: number | null;
+  /** A closed surface's horizon range (`Board.disc.cover`), which its zoom
+   * moves through. Unset on every other board. */
+  readonly horizon?: Horizon;
   onCoverStep: ((steps: number[]) => void) | null = null;
   private readonly discUniforms: DiscUniforms | null;
 
@@ -241,6 +250,7 @@ export class PolygonBoard extends Group implements BoardMesh {
     const cover = board.disc?.cover;
     this.coverSteps = cover ? meshCoverSteps(cover.steps) : null;
     this.coverClip = cover ? coverClip(cover.view) : null;
+    if (cover) this.horizon = { view: cover.view, near: cover.near, far: cover.far, tile: cover.tile };
     this.discUniforms = this.disc
       ? {
           uDisc: { value: new Vector3(this.disc.x, this.disc.y, this.disc.r) },
@@ -305,7 +315,8 @@ export class PolygonBoard extends Group implements BoardMesh {
           : poly;
       const n = drawn.length;
       // n fan triangles for the top face, 2n for each ring of walls under it
-      const count = unseen ? 0 : cellVertexCount(n, this.profile);
+      const tiny = board.tiny?.has(cell) ?? false;
+      const count = unseen ? 0 : tiny ? 3 * n : cellVertexCount(n, this.profile);
       for (let t = 0; t < count / 3; t++) faceCell.push(ci);
       this.geom.push({
         start: vertexCount,
@@ -321,6 +332,7 @@ export class PolygonBoard extends Group implements BoardMesh {
         palette: cellPalette(tones.get(cell)!, "flat", style.monochrome, style.boardTint),
         bent,
         unseen,
+        tiny,
       });
       vertexCount += count;
     });
@@ -511,6 +523,15 @@ export class PolygonBoard extends Group implements BoardMesh {
     if (this.disc && this.discView !== DISC_IDENTITY) this.setDiscView(DISC_IDENTITY);
   }
 
+  /** Show a closed surface out to `v` from the centre of the view (the zoom
+   * moves it; see `horizonZoom`): the shader hides every cell past it, as it
+   * hides those past the view the board opens at. */
+  setHorizon(v: number): void {
+    if (this.coverClip === null) return;
+    this.coverClip = coverClip(v);
+    this.discUniforms!.uDiscClip.value = this.coverClip;
+  }
+
   /** The point of the board as built that is drawn at `p` (mesh units). */
   discSource(p: Vertex): Vertex {
     if (!this.disc) return p;
@@ -657,7 +678,9 @@ export class PolygonBoard extends Group implements BoardMesh {
 
     let v = g.start;
     const put = (p: Vertex, z: number) => this.positionAttr.setXYZ(v++, p[0], p[1], z);
-    const top = rings[rings.length - 1]!;
+    // A tiny face has no walls, so its top runs out to the outermost loop,
+    // filling the cell up to the grout as a bevelled one does.
+    const top = g.tiny ? { points: rings[0]!.points, z: rings[rings.length - 1]!.z } : rings[rings.length - 1]!;
     if (bent) {
       // top face: the polygon's own n - 2 triangles, then two degenerate ones
       // so the cell fills the same n-triangle slice a fan would have
@@ -673,8 +696,8 @@ export class PolygonBoard extends Group implements BoardMesh {
     }
     // one ring of walls per gap between consecutive loops — sloping up and out
     // on a closed cell, down and in on an opened one, which is what inverts the
-    // highlight and shadow under the fixed key light
-    for (let r = 1; r < rings.length; r++) {
+    // highlight and shadow under the fixed key light (none on a tiny face)
+    for (let r = 1; r < (g.tiny ? 0 : rings.length); r++) {
       const low = rings[r - 1]!;
       const high = rings[r]!;
       for (let e = 0; e < n; e++) {
@@ -748,7 +771,7 @@ export class PolygonBoard extends Group implements BoardMesh {
     const sh = this.shadow;
     if (!pos || !sh) return;
     const g = this.geom[i]!;
-    if (g.unseen) return;
+    if (g.unseen || g.tiny) return;
     const n = g.poly.length;
     const off = g.radius * sh.offset;
     const [dx, dy] = this.quarterTurn ? [off, 0] : [0, -off];
@@ -783,7 +806,7 @@ export class PolygonBoard extends Group implements BoardMesh {
     const sh = this.shadow;
     if (!col || !sh) return;
     const g = this.geom[i]!;
-    if (g.unseen) return;
+    if (g.unseen || g.tiny) return;
     const n = g.poly.length;
     const a = isOpened(this.states[i]!) ? 0 : sh.opacity;
     let v = this.shadowStart[i]!;

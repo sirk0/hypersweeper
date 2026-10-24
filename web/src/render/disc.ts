@@ -247,3 +247,58 @@ export function meshCoverSteps(steps: readonly CoverStep[]): CoverStep[] {
 export function coverClip(view: number): number {
   return Math.tanh(view / 2);
 }
+
+// -- the horizon: how a closed surface zooms ---------------------------------
+
+/** How far round the centre of the view a closed surface may be shown
+ * (`DiscCover` in boards/core.ts, in hyperbolic distance): `view` as it
+ * opens, `near` zoomed all the way in, `far` all the way out, and `tile`, how
+ * far a tile kept by the clip reaches past it. */
+export interface Horizon {
+  readonly view: number;
+  readonly near: number;
+  readonly far: number;
+  readonly tile: number;
+}
+
+/** The disc radius the board is framed to with its horizon at `v`: the clip's
+ * circle (`coverClip`) widened by a tile, which is how far one it keeps can
+ * reach past it. */
+function framed(h: Horizon, v: number): number {
+  return Math.tanh((v + h.tile) / 2);
+}
+
+/**
+ * The zoom level that puts a closed surface's horizon at `v`: e^(view - v),
+ * 1 as the board opens, so each step of a pinch, the wheel or a zoom button
+ * moves the horizon by the same hyperbolic distance (ln 1.3, a quarter of a
+ * unit, for a key press).
+ *
+ * The zoom on a closed surface is not a magnification of the picture -- there
+ * is no edge to bring nearer, and a magnified patch would only crop its own
+ * circle -- but a move of its *horizon*: zoomed in, the clip closes in round
+ * the centre of the view and the camera follows it (`horizonFrame`), so fewer
+ * cells are shown and the ones at the edge, no longer squeezed against the
+ * rim, are drawn several times bigger; zoomed out, it opens up and shows more
+ * of the cover, until a cell near the edge is in view twice. The view of the
+ * board in the disc is not moved, so the cell in the middle stays there. Not
+ * the camera's magnification itself as the level: out past the view that
+ * barely changes (the frame is nearly the whole disc already), so a pinch of a
+ * few percent swept the triplet's horizon from its view to its farthest.
+ */
+export function horizonZoom(h: Horizon, v: number): number {
+  return Math.exp(h.view - v);
+}
+
+/** The horizon a zoom level puts the view at -- `horizonZoom`'s inverse, held
+ * to `near`..`far`. */
+export function zoomHorizon(h: Horizon, zoom: number): number {
+  return Math.min(h.far, Math.max(h.near, h.view - Math.log(zoom)));
+}
+
+/** How much the camera magnifies the board with the horizon at `v`, against
+ * the board as it opens (horizon `view`, which is what the board's own size is
+ * framed to): enough that the horizon's circle fills the frame. */
+export function horizonFrame(h: Horizon, v: number): number {
+  return framed(h, h.view) / framed(h, v);
+}

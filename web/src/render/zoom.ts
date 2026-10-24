@@ -21,9 +21,11 @@ export const MIN_ZOOM = 1;
 export const MAX_ZOOM = 6;
 
 /** `max` is `MAX_ZOOM` but for a board drawn in the half-plane, whose bottom
- * row can need far more to be tapped (render/halfPlane.ts). */
-export function clampZoom(zoom: number, max = MAX_ZOOM): number {
-  return Math.min(max, Math.max(MIN_ZOOM, zoom));
+ * row can need far more to be tapped (render/halfPlane.ts); `min` and `max`
+ * both are a closed surface's, whose zoom moves its horizon (render/disc.ts,
+ * `horizonZoom`) and goes below 1 to show more of it. */
+export function clampZoom(zoom: number, max = MAX_ZOOM, min = MIN_ZOOM): number {
+  return Math.min(max, Math.max(min, zoom));
 }
 
 /** The pan that keeps the world point under an anchor pixel fixed while the

@@ -1137,7 +1137,12 @@ Four things worth knowing before touching it:
   `patch_reach` is the view, plus `VIEW_SHIFT` (the central heptagon's
   circumradius, as far as the view's centre ever strays), plus the tiling's own
   tile radius (measured, `_tile_radius`), so the circle is full from anywhere
-  on the central tile (a test probes it from the heptagon's corners). Nothing about the board changes, so the pygame game,
+  on the central tile (a test probes it from the heptagon's corners). The web
+  port goes farther: its zoom moves that circle (the *horizon*) out to where
+  the disc holds 3 copies (`COVER_COPIES_FAR`, `coverFar`), so its patch and
+  its `Board.unseen` are built to `zoomedReach`, the same sum with the farthest
+  horizon -- more faces than the counts above, appended after them, so every
+  face the pygame game draws has the same id and every cell the same name. Nothing about the board changes, so the pygame game,
   which does not pan, plays the same board as a static disc -- and the patch
   reaching every cell is what lets it.
 * **What the renderer draws is bounded by the same pan.** Since the view's

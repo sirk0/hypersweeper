@@ -848,6 +848,7 @@ class App {
         this.session.symmetries,
         this.session.mode,
         !isBoard3D(this.session.board) && pansHyperbolically(this.session.board),
+        !isBoard3D(this.session.board) && this.session.board.disc?.cover !== undefined,
       ),
       this.symmetryPictures(),
       this.settings.extraControls,
@@ -888,6 +889,10 @@ class App {
       // way the arrow points, as the arrow keys and a drag move it.
       const [, dx, dy] = action.split(":");
       this.nudge(Number(dx), Number(dy));
+    } else if (action === "zoom:in" || action === "zoom:out") {
+      // a closed surface's zoom buttons: a key press's step, about the centre
+      // of the view, which is where its horizon is centred
+      if (this.screen === "game") this.zoom(action === "zoom:in" ? ZOOM_KEY_STEP : 1 / ZOOM_KEY_STEP);
     } else if (action === "info") {
       this.showBoardInfo();
     } else if (action === "random") {

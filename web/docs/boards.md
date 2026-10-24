@@ -302,7 +302,7 @@ exceptions.** Settings › Behaviour › *Extra board controls* is off by defaul
 and with it off a board keeps only the slots whose `keepWhen` it meets — the
 Klein bottle its two ring chevrons, Boy's surface its ring and tube pairs, and
 nothing else among the symmetry controls (the hyperbolic boards' pan arrows are
-kept too, but they are not symmetries — see "Settings and themes" in
+kept too, and the closed surfaces' zoom buttons, but they are not symmetries — see "Settings and themes" in
 [`ui.md`](ui.md)). Those are the boards whose own surface hides cells from
 every angle; everywhere else a control is a second look
 at a puzzle already fully on screen, which is a lot of chrome to carry on every

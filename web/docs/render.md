@@ -19,6 +19,22 @@ the level and `zoomBy(factor, x, y)` drives it; `tests/e2e/zoom.spec.ts` pins
 the gestures with synthetic multi-touch pointer streams (Playwright has no
 multi-touch API).
 
+**A closed hyperbolic surface zooms its horizon instead** (`horizonZoom` in
+`src/render/disc.ts`; see "A board with no rim" below). There is no edge to
+magnify towards, so the zoom moves how far round the centre of the view the
+cover is shown, and the camera follows that circle: in, fewer cells and the
+ones at the edge several times bigger; out, more of the surface, until a cell
+near the edge is in view twice. It runs from `near` to `far` (`DiscCover`).
+The zoom level is e^(view − horizon), so every pinch step, wheel notch or key
+press moves the horizon by the same hyperbolic distance, and the level goes
+*below* 1 zooming out; the camera's own magnification is derived from the
+horizon (`horizonFrame`). Not the magnification as the level: out past the
+view it hardly changes, and a pinch of a few percent swept the triplet from
+its view to its farthest. It is always about the centre of the view — the
+board only ever moves by the disc's isometries — and the board bar carries a
+zoom-in and a zoom-out button beside the pan arrows (`horizon` in
+`boardConditions`, kept with the extra controls off), a key press's step each.
+
 A trackpad pinch takes two routes. Chromium and Electron send it as `ctrl`+wheel
 (`onWheel`). WebKit — Safari, and the Mac Catalyst app's WKWebView — sends
 Safari's own `gesturestart` / `gesturechange` / `gestureend` instead, with a
@@ -173,7 +189,21 @@ Two things make it *look* continuous, and the pan jumped without either:
   sized from the surface's genus to hold three quarters of the surface --
   `coverView`, 2.06 of hyperbolic distance on the quartic, 2.99 on Macbeath's,
   3.71 on the triplet), and a tap out there finds
-  nothing (`discSource`). The board is framed to that circle widened by a tile
+  nothing (`discSource`). That circle is the **horizon**, and the zoom moves
+  it (`PolygonBoard.setHorizon`, one uniform): in to half the view
+  (`COVER_NEAR`), out to where the disc holds three copies of the surface
+  (`COVER_COPIES_FAR` -- 3.26 on the quartic, 4.30 on Macbeath's, 5.06 on the
+  triplet). Out there most cells past the first rings show twice or more, but
+  a cell's copies are all farther apart than `far` plus a tile (3.9 on the
+  quartic, 5.7 on Macbeath's, 6.8 on the triplet), so the cell under the
+  centre of the view is never in view twice, whatever the zoom
+  (`tests/unit/hurwitz.test.ts`). The camera magnification that frames horizon
+  v is `horizonFrame`: the board's size is framed at `coverView`, so it is the
+  ratio of the two framed radii, tanh((v + tile) / 2). That ratio is also why
+  the zoom-out reads less on a big surface than on the quartic: the triplet's
+  view already reaches 0.95 of the disc, so what the farther horizon adds is a
+  band of cells a few pixels across round its rim -- the Poincaré disc has no
+  room left to show them bigger. The board is framed to that circle widened by a tile
   radius (`tileRadius` -- a tile the clip keeps reaches that far past it), not
   to the whole patch, whose polygons run on past the frame, hidden. The patch reaches
   `patchReach` from its centre, so
@@ -184,12 +214,22 @@ Two things make it *look* continuous, and the pan jumped without either:
 thousand faces or more, and each point of a cell's outline carries the cell's
 whole bevel, so a frame of the hard quartic once drew 3.3 million vertices and
 the reveal ripple crawled. The pan bounds how big any face can ever be drawn,
-and the builder spends accordingly: a face beyond `patchReach` is never in view
+and the builder spends accordingly: a face beyond `zoomedReach` (`patchReach`
+with the horizon all the way out) is never in view
 (`Board.unseen`), and `PolygonBoard` gives it no geometry, no shadow and no
 gradient; and an edge whose geodesic could never miss its chord by half a pixel
 on a disc a thousand device pixels in radius is drawn straight
 (`edgeSegments`), which out at the rim is nearly every edge. Now the hard
-quartic draws about 0.9 million, the hard disc board's budget.
+quartic draws about 0.9 million, the hard disc board's budget. The zoom's
+farthest horizon holds four times the view's area, and building out to it
+would have cost the hard triplet 2.3 million tile vertices where the view
+alone needs 0.7. Most of those are rim faces no view ever draws more than a
+few pixels across, so those are cut flat (`Board.tiny`, under `TINY_PX` = 16
+device pixels on the same worst case as `edgeSegments`): the top face alone,
+no walls, no shadow -- a seventh of a bevelled face. That brings the hard
+triplet to 1.1 million and Macbeath's to 0.9; the hard quartic, whose rim
+cells stay big enough to keep their bevels, is the most at 1.3.
+`COVER_COPIES_FAR` is the knob.
 
 The relabelling reads
 the current label off the face a label is named after (a cell's id is the id
@@ -200,7 +240,9 @@ board's frame and in the mesh's, and that a long drag stays on the central tile;
 to the drawing, and that the patch fills the view's circle from every corner of
 the central tile;
 `tests/e2e/hyperbolicPan.spec.ts` that a board thrown twice as far as a disc's
-hold allows still fills the view, and a tap at the centre opens.
+hold allows still fills the view, and a tap at the centre opens, and that the
+zoom shows fewer cells in and more out, filling the same circle, and `0` puts
+it back.
 
 ### Half-plane panning (`src/render/halfPlane.ts`)
 

@@ -21,6 +21,7 @@ import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment
 import type { CellId } from "../boards/core";
 import { SOLID_GROUPS, surfaceOf, viewHint } from "../boards/catalog";
 import { PICK_LAYERS, type BoardMesh, type PickLayer } from "./boardMesh";
+import { horizonFrame, horizonZoom, zoomHorizon } from "./disc";
 import { halfPlaneDrag } from "./halfPlane";
 import { anchoredPan, clampPan, clampZoom, MAX_ZOOM, MIN_ZOOM } from "./zoom";
 import { ParticleField } from "./particles";
@@ -385,7 +386,7 @@ export class BoardRenderer {
     // World units per CSS pixel: the fit that shows the whole board in the
     // region both ways, magnified by the current zoom.
     const wpp =
-      Math.max((2 * halfW) / w, (2 * halfH) / usableH) / this.zoomLevel;
+      Math.max((2 * halfW) / w, (2 * halfH) / usableH) / this.magnification;
     // Zoomed in, the board is larger than the region and can be panned by the
     // overhang; fitted (or smaller), it stays centred.
     this.panX = clampPan(this.panX, halfW, (wpp * w) / 2);
@@ -436,6 +437,8 @@ export class BoardRenderer {
     this.panX = 0;
     this.panY = 0;
     this.board?.resetDisc?.();
+    const horizon = this.board?.horizon;
+    if (horizon) this.board!.setHorizon?.(horizon.view);
     this.frame();
   }
 
@@ -455,22 +458,52 @@ export class BoardRenderer {
 
   /** The furthest the current board may be magnified: `MAX_ZOOM`, or for a
    * board in the half-plane as far as brings its bottom row up to the size
-   * its top row is framed at, if that is further. */
+   * its top row is framed at, if that is further. A closed surface's is its
+   * nearest horizon's (`horizonZoom`). */
   private get maxZoom(): number {
+    const horizon = this.board?.horizon;
+    if (horizon) return horizonZoom(horizon, horizon.near);
     return Math.max(MAX_ZOOM, this.board?.halfPlane?.maxZoom ?? 0);
+  }
+
+  /** How much the flat camera magnifies the fitted board: the zoom level, but
+   * on a closed surface, whose zoom level moves its horizon, as much as frames
+   * that horizon (`horizonFrame`). */
+  private get magnification(): number {
+    const horizon = this.board?.horizon;
+    if (!horizon) return this.zoomLevel;
+    return horizonFrame(horizon, zoomHorizon(horizon, this.zoomLevel));
+  }
+
+  /** The least the current board may be zoomed: fitted, `MIN_ZOOM`, but for a
+   * closed surface, which zooms out past that to its farthest horizon. */
+  private get minZoom(): number {
+    const horizon = this.board?.horizon;
+    return horizon ? horizonZoom(horizon, horizon.far) : MIN_ZOOM;
   }
 
   /** Multiply the zoom by `factor`, keeping the board fixed under the anchor
    * pixel (a pinch's midpoint, the mouse under the wheel; the centre of the
    * view when omitted). Clamped to [MIN_ZOOM, MAX_ZOOM] — further, on a board
-   * in the half-plane (`maxZoom`). */
+   * in the half-plane (`maxZoom`). A closed surface's zoom moves its horizon
+   * instead (render/disc.ts, `horizonZoom`), always about the centre of the
+   * view, which is where the horizon is centred. */
   zoomBy(factor: number, anchorX?: number, anchorY?: number): void {
     this.zoomTo(this.zoomLevel * factor, anchorX, anchorY);
   }
 
   private zoomTo(zoom: number, anchorX?: number, anchorY?: number): void {
-    const next = clampZoom(zoom, this.maxZoom);
+    const next = clampZoom(zoom, this.maxZoom, this.minZoom);
     if (next === this.zoomLevel || !this.board) return;
+    const horizon = this.board.horizon;
+    if (horizon) {
+      // The camera only follows the horizon, which stays centred on the view:
+      // the board moves by the disc's isometries, never by a Euclidean pan.
+      this.zoomLevel = next;
+      this.board.setHorizon?.(zoomHorizon(horizon, next));
+      this.frame();
+      return;
+    }
     const before = this.wpp;
     const after = (before * this.zoomLevel) / next;
     const ax = anchorX ?? this.centerX;

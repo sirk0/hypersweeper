@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { boundaryComponents, eulerCharacteristic, type Board } from "../../src/boards/core";
 import {
   COVER_COPIES,
+  COVER_COPIES_FAR,
+  coverFar,
   coverView,
   HURWITZ_SURFACES,
   hurwitzBoard,
@@ -252,13 +254,13 @@ describe("the Hurwitz surfaces", () => {
     }
   });
 
-  it("draw the whole view round anywhere the pan can put its centre", () => {
+  it("draw the whole view round anywhere the pan can put its centre, zoomed all the way out", () => {
     // The pan keeps the view's centre on the central heptagon of {7,3}
-    // (`discRecentre`) and shows what lies within its view of it (`coverView`,
-    // from the surface's genus), so the
-    // patch has to cover that circle from every point of the heptagon -- its
-    // corners are the worst case. Probed on the circle itself: inside it the
-    // patch is a disc, so a covered rim means a covered circle.
+    // (`discRecentre`) and shows what lies within its horizon of it -- out to
+    // `far` zoomed all the way out (`coverFar`, from the surface's genus) --
+    // so the patch has to cover that circle from every point of the heptagon
+    // -- its corners are the worst case. Probed on the circle itself: inside
+    // it the patch is a disc, so a covered rim means a covered circle.
     const corners = centralPolygon(7, 3);
     const toward = (a: Cx, z: Cx): Cx => {
       // the disc translation taking 0 to a, applied to z
@@ -294,15 +296,84 @@ describe("the Hurwitz surfaces", () => {
           }
           return hit;
         });
-      const view = board.disc!.cover!.view;
+      const { view, far } = board.disc!.cover!;
       expect(view).toBeCloseTo(coverView(surface), 12);
-      const r = Math.tanh(view / 2);
+      expect(far).toBeCloseTo(coverFar(surface), 12);
+      const r = Math.tanh(far / 2);
       for (const centre of [[0, 0] as Cx, ...corners]) {
         for (let k = 0; k < 120; k++) {
           const t = (k * 2 * Math.PI) / 120;
           const z = toward(centre, [r * Math.cos(t), r * Math.sin(t)]);
           expect(inside(z), `${surface} ${op} from ${centre} at ${k * 3}°`).toBe(true);
         }
+      }
+    }
+  });
+
+  it("zoom out until a cell at the edge shows twice, but never the one in the middle", () => {
+    // The zoom moves the horizon between `near` and `far`. All the way out a
+    // cell near the edge has its copy in view across it -- the cover reads as
+    // a cover -- but the cell under the centre of the view (its centre within
+    // a tile radius of it) is so far from all its copies that none is ever in
+    // view: d(a, b) > far + tile for every two copies a, b of a cell, wherever
+    // the view's centre is (the triangle inequality). Measured off the faces'
+    // centroids, as the clip keeps them.
+    for (const [surface, op] of [
+      ["quartic", "zip"],
+      ["quartic", "gc4"],
+      ["macbeath", "none"],
+      ["macbeath", "gc2"],
+      ["triplet", "none"],
+      ["triplet", "zip"],
+    ] as const) {
+      const board = hurwitzBoard(surface, op, 0, 1);
+      const { view, near, far, tile } = board.disc!.cover!;
+      expect(near).toBeLessThan(view);
+      expect(far).toBeGreaterThan(view);
+      const [, genus] = HURWITZ_SURFACES[surface]!;
+      expect((Math.cosh(far) - 1) / (2 * (genus - 1))).toBeCloseTo(COVER_COPIES_FAR, 12);
+      const copies = new Map<string, Cx[]>();
+      for (const face of board.polygons.keys()) {
+        if (board.unseen?.has(face)) continue;
+        const cell = board.faces!.get(face)!;
+        copies.set(cell, [...(copies.get(cell) ?? []), discCentre(board, face)]);
+      }
+      const apart = (a: Cx, b: Cx) =>
+        Math.acosh(
+          1 + (2 * ((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2)) / ((1 - a[0] ** 2 - a[1] ** 2) * (1 - b[0] ** 2 - b[1] ** 2)),
+        );
+      const fromCentre = (a: Cx) => 2 * Math.atanh(Math.hypot(a[0], a[1]));
+      let closest = Infinity;
+      let twice = 0;
+      for (const zs of copies.values()) {
+        for (let i = 0; i < zs.length; i++) {
+          for (let j = i + 1; j < zs.length; j++) {
+            closest = Math.min(closest, apart(zs[i]!, zs[j]!));
+            if (fromCentre(zs[i]!) <= far && fromCentre(zs[j]!) <= far) twice++;
+          }
+        }
+      }
+      expect(closest, `${surface} ${op}`).toBeGreaterThan(far + tile);
+      expect(twice, `${surface} ${op}`).toBeGreaterThan(0);
+    }
+  });
+
+  it("cut flat only faces out at the rim, never one inside the view a board opens at", () => {
+    // `Board.tiny`: a face never drawn more than a few pixels across has no
+    // bevel. The farthest zoom shows thousands of them round the bigger
+    // surfaces; none is anywhere a board shows as it opens.
+    for (const [surface, op] of [
+      ["triplet", "none"],
+      ["triplet", "gc2"],
+      ["macbeath", "gc2"],
+    ] as const) {
+      const board = hurwitzBoard(surface, op, 0, 1);
+      const tiny = board.tiny!;
+      expect(tiny.size, `${surface} ${op}`).toBeGreaterThan(0);
+      const r = Math.tanh(coverView(surface) / 2);
+      for (const face of tiny) {
+        expect(board.unseen?.has(face)).toBe(false);
+        expect(Math.hypot(...discCentre(board, face)), `${surface} ${op} ${face}`).toBeGreaterThan(r);
       }
     }
   });

@@ -74,6 +74,33 @@ export function coverView(surface: string): number {
   return Math.acosh(1 + 2 * COVER_COPIES * (genus - 1));
 }
 
+/** How many copies of the surface the view holds zoomed all the way out: four
+ * times the view's. The zoom on a closed surface moves its horizon
+ * (`DiscCover.near` .. `far`), and out here the cover reads as a cover -- every
+ * cell out past the first rings or so is in view twice or more -- while the
+ * cell under the centre of the view still never is: a cell's nearest copy is
+ * about 3.9 away on the quartic, 5.7 on Macbeath's and 6.8 on the triplet,
+ * farther than this horizon (3.26, 4.30, 5.06) plus a tile. The patch the
+ * renderer builds grows with it; out at its rim most of the faces are a few
+ * pixels across, and are cut flat (`Board.tiny`). The web port's alone: the
+ * pygame game has no zoom. */
+export const COVER_COPIES_FAR = 3;
+
+/** How far round the centre of the view a closed surface is shown zoomed all
+ * the way in, as a share of its default view (`coverView`): the central tile
+ * and a ring or two of its neighbours on the easy boards, a few dozen cells on
+ * the hard ones, and the rim cells drawn several times the size they are at the
+ * default view. The web port's alone. */
+export const COVER_NEAR = 0.5;
+
+/** The farthest horizon `surface` is shown out to (`DiscCover.far`): the
+ * radius whose disc holds `COVER_COPIES_FAR` copies, as `coverView`'s holds
+ * `COVER_COPIES`. */
+export function coverFar(surface: string): number {
+  const [, genus] = HURWITZ_SURFACES[surface]!;
+  return Math.acosh(1 + 2 * COVER_COPIES_FAR * (genus - 1));
+}
+
 /** How far the view's centre can ever be from the patch's: the pan carries it
  * back onto the central {7,3} heptagon (`discRecentre`), so its circumradius,
  * acosh(cot(pi/7) cot(pi/3)). Mirrors `VIEW_SHIFT`. */
@@ -85,6 +112,12 @@ export const VIEW_SHIFT = Math.acosh(1 / (Math.tan(Math.PI / 7) * Math.tan(Math.
  * Mirrors `patch_reach`. */
 export function patchReach(surface: string, op: HurwitzOp): number {
   return coverView(surface) + VIEW_SHIFT + tileRadius(op);
+}
+
+/** `patchReach` with the view zoomed all the way out (`coverFar`): how far the
+ * renderer can ever be asked to draw. The web port's alone. */
+export function zoomedReach(surface: string, op: HurwitzOp): number {
+  return coverFar(surface) + VIEW_SHIFT + tileRadius(op);
 }
 
 const radiusCache = new Map<string, number>();
@@ -122,6 +155,12 @@ export function tileRadius(op: HurwitzOp): number {
  * under the gap between two tiles. The web port's alone: the pygame game
  * draws a static disc, every edge at full curve. */
 const DRAWN_SCALE = Math.exp(VIEW_SHIFT) * 1000;
+
+/** A face never drawn wider than this many device pixels, on that same worst
+ * case, is cut flat (`Board.tiny`): a bevel on it would be a pixel wide. The
+ * farthest zoom shows thousands of these round the rim of the bigger surfaces,
+ * and their walls were most of what the patch cost to draw. */
+const TINY_PX = 16;
 
 /**
  * How many segments draw the edge from a to b: as many as its curve needs,
@@ -704,8 +743,10 @@ export function hurwitzCells(surface: string, op: HurwitzOp): Map<string, string
 }
 
 /** Grow the disc until it holds every face out to the shells the patch keeps:
- * the first to reach every cell or out to `patchReach`, whichever is farther,
- * and `margin` more. Mirrors `_patch_for`. */
+ * the first to reach every cell or out to `zoomedReach`, whichever is farther,
+ * and `margin` more. Mirrors `_patch_for`, but for the reach: the pygame game,
+ * which has no zoom, stops at `patch_reach`. The shells past it come after,
+ * so the faces both keep have the same ids. */
 function patchFor(
   surface: string,
   op: HurwitzOp,
@@ -725,7 +766,7 @@ function patchFor(
       }
     }
     if (reach < 0) continue;
-    const far = patchReach(surface, op);
+    const far = zoomedReach(surface, op);
     const near = groups.filter((group) => distance(p.centres[group[0]!]!) <= far).length;
     const keep = Math.max(reach, near) + margin;
     if (groups.length <= keep) continue;
@@ -812,7 +853,13 @@ function coverSteps(
     for (const key of surfaceCells.keys()) cells.set(nameOf.get(key)!, nameOf.get(moved(key))!);
     steps.push({ c, rot, cells });
   }
-  return { steps, view: coverView(surface) };
+  return {
+    steps,
+    view: coverView(surface),
+    near: COVER_NEAR * coverView(surface),
+    far: coverFar(surface),
+    tile: tileRadius(op),
+  };
 }
 
 // -- the board ----------------------------------------------------------------
@@ -878,14 +925,21 @@ export function hurwitzBoard(
   }
   const size = 2 * shown * scale;
   // Faces the pan can never bring into the view: farther from the centre than
-  // the view's reach plus the most its centre strays plus a tile. They stay
-  // on the board -- every cell has a copy, which the pygame game and the cell
-  // names need -- but the renderer builds nothing for them.
-  const reach = patchReach(surface, op);
+  // the farthest horizon plus the most the view's centre strays plus a tile.
+  // They stay on the board -- every cell has a copy, which the pygame game and
+  // the cell names need -- but the renderer builds nothing for them.
+  const reach = zoomedReach(surface, op);
   const unseen = new Set<CellId>();
   drawn.forEach((f, face) => {
     if (distance(p.centres[f]!) > reach) unseen.add(cid(face));
   });
+  const tiny = new Set<CellId>();
+  for (const [face, poly] of polygons) {
+    if (unseen.has(face)) continue;
+    let wide = 0;
+    for (const a of poly) for (const b of poly) wide = Math.max(wide, Math.hypot(a[0] - b[0], a[1] - b[1]));
+    if ((wide / scale) * DRAWN_SCALE < TINY_PX) tiny.add(face);
+  }
   const board = flatBoard({
     mode: SURFACE_MODES[surface]!,
     polygons,
@@ -900,6 +954,7 @@ export function hurwitzBoard(
     faces: faceCell,
     quotient,
     unseen,
+    tiny,
   });
   let measured: BoardSymmetry[] | null = null;
   return Object.defineProperty(board, "symmetries", {
