@@ -2788,20 +2788,21 @@ class TestHyperbolicUniform:
         assert points(lambda z: -z.conjugate()) == same
 
     @pytest.mark.parametrize("p,q,op", _WYTHOFF, ids=_WYTHOFF_IDS)
-    def test_every_trim_is_a_twin_free_disc(self, p, q, op):
+    def test_every_trim_is_a_disc_with_no_twin_or_near_twin(self, p, q, op):
+        # One sweep for both, since building the trims is most of the cost,
+        # and with no arc points along the edges: they are not corners, and
+        # adjacency and topology are the same without them. Every trim of
+        # {7,3}'s tilings, and every third of the other families' -- the
+        # pytest job runs under a five-minute limit, and every shipped trim is
+        # built again by TestPresets and TestInvariants.
         from scripts.difficulty.metrics import indistinguishable_cells
-        for shells in range(2, 45):
-            board = hyperbolic_uniform_board(p, q, op, shells, 1)
+        for shells in range(2, 45) if (p, q) == (7, 3) else range(2, 47, 3):
+            board = hyperbolic_uniform_board(p, q, op, shells, 1, arc=1)
             assert _euler_characteristic(board) == 1, shells
             assert _boundary_components(board) == 1, shells
             assert _connected(board), shells
             assert indistinguishable_cells(board.adjacency) == 0, shells
-
-    @pytest.mark.parametrize("p,q,op", _WYTHOFF, ids=_WYTHOFF_IDS)
-    def test_no_trim_leaves_a_near_twin(self, p, q, op):
-        # the {p,q} boards' near-twin drop, which the uniform boards share
-        for shells in range(3, 45):
-            board = hyperbolic_uniform_board(p, q, op, shells, 1)
+            # the {p,q} boards' near-twin drop, which the uniform boards share
             hood = {c: frozenset([c, *ns]) for c, ns in board.adjacency.items()}
             assert not [
                 (a, b) for a, ns in board.adjacency.items() for b in ns
