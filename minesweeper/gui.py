@@ -1018,6 +1018,7 @@ _HYPERBOLIC_ICON_SHELLS = {"hyperbolic83": 4, "hyperbolic73": 4, "hyperbolic64":
                            "hyperbolic55": 4, "hyperbolic45": 5, "hyperbolic46": 6,
                            "hyperbolic667": 4, "hyperbolic3737": 4, "hyperbolic3474": 5,
                            "hyperbolic4614": 5, "hyperbolic37": 5, "hyperbolic38": 5,
+                           "hyperbolic31414": 4, "hyperbolic31616": 4,
                            "hyperbolic668": 4, "hyperbolic3838": 4, "hyperbolic3484": 5,
                            "hyperbolic4616": 5, "hyperbolic588": 5, "hyperbolic41010": 5,
                            "hyperbolic4545": 5, "hyperbolic4445": 5, "hyperbolic4810": 5,
@@ -1031,10 +1032,12 @@ _HYPERBOLIC_ICON_SHELLS = {"hyperbolic83": 4, "hyperbolic73": 4, "hyperbolic64":
 # cell. Must match `HYPERBOLIC_UNIFORM` in web/src/ui/icons.ts.
 _HYPERBOLIC_UNIFORM = {
     "hyperbolic667": (7, 3, "zip"),
+    "hyperbolic31414": (7, 3, "truncate"),
     "hyperbolic3737": (7, 3, "ambo"),
     "hyperbolic3474": (7, 3, "expand"),
     "hyperbolic4614": (7, 3, "bevel"),
     "hyperbolic668": (8, 3, "zip"),
+    "hyperbolic31616": (8, 3, "truncate"),
     "hyperbolic3838": (8, 3, "ambo"),
     "hyperbolic3484": (8, 3, "expand"),
     "hyperbolic4616": (8, 3, "bevel"),

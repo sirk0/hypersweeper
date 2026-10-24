@@ -771,7 +771,7 @@ counts nothing else in the game has for its tile (a {3,7} triangle's 15 against
 a flat triangle's 12) -- and the boards are drawn in the
 **Poincaré disc**, a deliberate round exception to the square-window convention
 like the fractals and Klaassen's spiral.
-Nineteen more are **uniform** rather than regular -- every corner alike, more
+Twenty-one more are **uniform** rather than regular -- every corner alike, more
 than one tile -- and come off the same ring walk, on {7,3}, {8,3}, {5,4},
 {6,4} and {5,5}; see "The uniform hyperbolic boards" below. One more is drawn in the upper half-plane rather than the disc,
 as a rectangle: Böröczky's binary tiling (see "The binary tiling" below).
@@ -931,7 +931,7 @@ sits decides the tiling (Conway's names):
 | `ambo` | at E | **3.7.3.7**, triheptagonal | `hyperbolic3737` | triangle 6, heptagon 14 |
 | `expand` | on FV, as far from FE as from VE | **3.4.7.4**, rhombitriheptagonal | `hyperbolic3474` | triangle 6, square 8, heptagon 14 |
 | `bevel` | inside, as far from all three sides | **4.6.14**, truncated triheptagonal | `hyperbolic4614` | square 4, hexagon 6, 14-gon 14 |
-| `truncate` | on VE, as far from FV as from FE | 3.14.14, the truncated {7,3} | -- | -- |
+| `truncate` | on VE, as far from FV as from FE | **3.14.14**, the truncated {7,3} | `hyperbolic31414` | triangle 3, 14-gon 14 |
 
 (The last place, V, gives {7,3} back.) The mode is `hyperbolic` and the vertex
 configuration's digits, smallest first as the notation writes it. An inner
@@ -941,13 +941,13 @@ meet (`zip`, `bevel`, `truncate`), twice them where four do (`ambo`,
 
 **The same five places on every shipped family, less what repeats.** Each
 regular board's family -- {8,3} with {3,8}, {5,4} with {4,5}, {6,4} with
-{4,6}, and {5,5} -- has its own uniform tilings, and nineteen ship in all,
+{4,6}, and {5,5} -- has its own uniform tilings, and twenty-one ship in all,
 filed family by family on the Uniform page:
 
 | Family | `zip` | `truncate` | `ambo` | `expand` | `bevel` |
 |---|---|---|---|---|---|
-| {7,3} | 6.6.7 | -- | 3.7.3.7 | 3.4.7.4 | 4.6.14 |
-| {8,3} | 6.6.8 | -- | 3.8.3.8 | 3.4.8.4 | 4.6.16 |
+| {7,3} | 6.6.7 | 3.14.14 | 3.7.3.7 | 3.4.7.4 | 4.6.14 |
+| {8,3} | 6.6.8 | 3.16.16 | 3.8.3.8 | 3.4.8.4 | 4.6.16 |
 | {5,4} | 5.8.8 | 4.10.10 | 4.5.4.5 | 4.4.4.5 | 4.8.10 |
 | {6,4} | 6.8.8 | 4.12.12 | 4.6.4.6 | 4.4.4.6 | 4.8.12 |
 | {5,5} | 5.10.10 | -- | -- | -- | -- |
@@ -955,11 +955,12 @@ filed family by family on the Uniform page:
 Every one is built on the face-centred {p,q} of the row (p >= q), so its
 central face stands on the central p-gon: the p-gon itself, or the 2p-gon of
 `bevel` and `truncate`, and every trim keeps D_p. What the table leaves out
-repeats or does not play. `truncate` on {p,q} is `zip` on its dual {q,p} --
-the same tiling, centred on the other face -- so the op exists for the two
-places where the zipped dual would centre the board on a small square: 4.10.10 and 4.12.12 sit on a
-decagon and a dodecagon instead. On the triangle families it is 3.14.14 and
-3.16.16, whose triangles are tiny beside their big faces, and neither ships.
+repeats. `truncate` on {p,q} is `zip` on its dual {q,p} -- the same tiling,
+centred on the other face -- so on {5,4} and {6,4} it centres 4.10.10 and
+4.12.12 on a decagon and a dodecagon where the zipped dual would put a small
+square. On the triangle families it gives 3.14.14 and 3.16.16, whose
+triangles are slivers between the big faces and which play as thin boards
+(below).
 {5,5} is self-dual, so its `ambo` is {5,4} itself (5.5.5.5), its `expand` is
 4.5.4.5 and its `bevel` 4.10.10, all already in the {5,4} row; the mode name
 is what collapses them, since it is the vertex configuration. The snubs
@@ -1017,19 +1018,28 @@ after). That also took away the 78-cell easy trim of `expand` and `bevel`,
 which played too hard to calibrate (0.91 and 0.88 at the opening floor), so
 their easy rows are 85 cells.
 
-**The other families size and calibrate like {7,3}, with three exceptions.**
+**The other tilings size and calibrate like the first four, with exceptions.**
 4.6.16's easy row is 65 cells, a near-miss under the band: its trims step
 57 -> 65 -> 113, a whole D8 orbit of 16-gons at a time. And two medium trims
 the size search preferred had rims of forced guesses, which showed as a
 mine count out of line with the board's other two rows; `resize.PINNED_ROWS`
 holds them at the trim that plays like its neighbours: 4.8.12 at 247 cells
 (14 mines, where 259 took 6) and 4.12.12 at 289 (5 mines, where 253 took 3,
-fewer than its easy board's 4). 4.12.12 is the thinnest board in the game
-whatever the trim: a square's four neighbours are all dodecagons and a
-dodecagon's number covers twelve cells, so it calibrates to 1.7-5% mines
-(square-centred, as `zip` on {4,6} would build it, it is no better -- its easy
-trims miss the target even at the opening floor), and one click opens most of
-the board.
+fewer than its easy board's 4). 4.12.12 is a thin board whatever the trim: a
+square's four neighbours are all dodecagons and a dodecagon's number covers
+twelve cells, so it calibrates to 1.7-5% mines (square-centred, as `zip` on
+{4,6} would build it, it is no better -- its easy trims miss the target even
+at the opening floor), and one click opens most of the board.
+
+**3.14.14 and 3.16.16 are the same, only more so.** A triangle sees its three
+big neighbours and nothing else, so a mine on one is often a coin flip.
+3.16.16 is the one uniform board the calibration cannot bring on target at
+easy -- no trim in the band reaches it even with a single mine, so the 81-cell
+row ships at 1 mine and is flagged `warn` in `data/difficulty.json` -- and at
+medium only the 209-cell trim calibrates (3 mines; every other trim from 193
+to 305 cells plays at 0.43-0.76 against 0.87), so it is pinned there, 18%
+under the band. 3.14.14 calibrates at 1.7-5%, its hard row pinned at 442
+cells, where 484 took fewer mines (8) than its medium board (9).
 
 **Two new things for the rest of the app.** A 14-gon is a side count nothing
 else has: it has a badge (`SHAPE_SIDES`, `hs.shape.14` in Game Center), shape

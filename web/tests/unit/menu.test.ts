@@ -138,10 +138,12 @@ const REGULAR = [
 ];
 const UNIFORM = [
   "hyperbolic667",
+  "hyperbolic31414",
   "hyperbolic3737",
   "hyperbolic3474",
   "hyperbolic4614",
   "hyperbolic668",
+  "hyperbolic31616",
   "hyperbolic3838",
   "hyperbolic3484",
   "hyperbolic4616",

@@ -1819,6 +1819,35 @@
         ]
       }
     },
+    "hyperbolic31414": {
+      "builder": "hyperbolic_uniform_board",
+      "args": {
+        "easy": [
+          7,
+          3,
+          "truncate",
+          9,
+          4,
+          284.02
+        ],
+        "medium": [
+          7,
+          3,
+          "truncate",
+          22,
+          9,
+          299.26
+        ],
+        "hard": [
+          7,
+          3,
+          "truncate",
+          34,
+          11,
+          298.993
+        ]
+      }
+    },
     "hyperbolic3737": {
       "builder": "hyperbolic_uniform_board",
       "args": {
@@ -1931,6 +1960,35 @@
           "zip",
           30,
           56,
+          300.0
+        ]
+      }
+    },
+    "hyperbolic31616": {
+      "builder": "hyperbolic_uniform_board",
+      "args": {
+        "easy": [
+          8,
+          3,
+          "truncate",
+          8,
+          1,
+          300.0
+        ],
+        "medium": [
+          8,
+          3,
+          "truncate",
+          17,
+          3,
+          300.0
+        ],
+        "hard": [
+          8,
+          3,
+          "truncate",
+          30,
+          12,
           300.0
         ]
       }

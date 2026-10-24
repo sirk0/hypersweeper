@@ -677,6 +677,14 @@ PINNED_ROWS = {
     # 4.12.12 at 253 to 3, fewer than its easy board's 4, where 289 takes 5.
     ("hyperbolic4812", "medium"): "259 cells is all coin flips at the rim; 247 plays like 235",
     ("hyperbolic41212", "medium"): "253 cells is all coin flips at the rim; 289 does not",
+    # 3.16.16's triangles each see three 16-gons and nothing else, so a mine
+    # on one is a coin flip more often than not: every medium trim from 193 to
+    # 305 cells plays far under the target at its opening floor (0.43-0.76)
+    # except 209, which calibrates. Fairness outranks the size band here.
+    ("hyperbolic31616", "medium"): "the one medium trim that calibrates (209 cells, 18% under)",
+    # 3.14.14's hard trims from 414 to 498 cells all take 7 to 11 mines; 484
+    # took 8, fewer than its medium board's 9, and 442 takes 11.
+    ("hyperbolic31414", "hard"): "484 cells took fewer mines than medium; 442 does not",
 }
 
 

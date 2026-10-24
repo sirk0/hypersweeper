@@ -810,7 +810,7 @@ into Regular, Uniform and Closed surfaces by the preset's builder (`MENU_SUBFAMI
 `web/tests/unit/menu.test.ts` rather than vanishing from the menu — add its
 submenu there, with a label, a hint and an icon alias.
 
-**A uniform tiling of a {p,q}** (6.6.7 on {7,3}, 4.8.10 on {5,4}, nineteen in
+**A uniform tiling of a {p,q}** (6.6.7 on {7,3}, 4.8.10 on {5,4}, twenty-one in
 all) is also data: a `{builder: "hyperbolic_uniform_board", args: {difficulty:
 [p, q, op, shells, mines, scale]}}` row with `op` one of `WYTHOFF_OPS`, and the
 mode must be `wythoff_mode(p, q, op)`. Build it on the face-centred {p,q} with
@@ -828,7 +828,8 @@ sound a chord -- `soundHarmony.test.ts` fails if it does not, and the fix is
 the spelling in `audio/presets.ts`. Read the calibrated rows before believing
 them: a mine count out of line with the board's other two rows means a trim
 whose rim is mostly forced guesses, and the fix is the neighbouring trim,
-pinned in `resize.PINNED_ROWS` (4.8.12 and 4.12.12 medium are). See
+pinned in `resize.PINNED_ROWS` (4.8.12, 4.12.12 and 3.16.16 medium and
+3.14.14 hard are). See
 [`geometry.md`](geometry.md#the-uniform-hyperbolic-boards).
 
 **A closed hyperbolic surface** (`hurwitz.py`, `web/src/boards/hurwitz.ts`)

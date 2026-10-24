@@ -150,10 +150,12 @@ describe("the hyperbolic boards", () => {
 const UNIFORM: [number, number, WythoffOp, string][] = [
   [7, 3, "ambo", "3.7.3.7"],
   [7, 3, "zip", "6.6.7"],
+  [7, 3, "truncate", "3.14.14"],
   [7, 3, "expand", "3.4.7.4"],
   [7, 3, "bevel", "4.6.14"],
   [8, 3, "ambo", "3.8.3.8"],
   [8, 3, "zip", "6.6.8"],
+  [8, 3, "truncate", "3.16.16"],
   [8, 3, "expand", "3.4.8.4"],
   [8, 3, "bevel", "4.6.16"],
   [5, 4, "ambo", "4.5.4.5"],

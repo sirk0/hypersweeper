@@ -235,10 +235,12 @@
     "hyperbolic37": "Triangles {3,7}",
     "hyperbolic38": "Triangles {3,8}",
     "hyperbolic667": "Soccer ball 6.6.7",
+    "hyperbolic31414": "Truncated {7,3} 3.14.14",
     "hyperbolic3737": "Triheptagonal 3.7.3.7",
     "hyperbolic3474": "Rhombitriheptagonal 3.4.7.4",
     "hyperbolic4614": "Truncated triheptagonal 4.6.14",
     "hyperbolic668": "Truncated {3,8} 6.6.8",
+    "hyperbolic31616": "Truncated {8,3} 3.16.16",
     "hyperbolic3838": "Trioctagonal 3.8.3.8",
     "hyperbolic3484": "Rhombitrioctagonal 3.4.8.4",
     "hyperbolic4616": "Truncated trioctagonal 4.6.16",
@@ -851,6 +853,18 @@
       "tiling": "hex",
       "surface": "flat",
       "family": "regular"
+    },
+    "hyperbolic31414": {
+      "label": "Truncated {7,3} 3.14.14",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
+    "hyperbolic31616": {
+      "label": "Truncated {8,3} 3.16.16",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
     },
     "hyperbolic3474": {
       "label": "Rhombitriheptagonal 3.4.7.4",
@@ -2247,10 +2261,12 @@
       "hyperbolic37",
       "hyperbolic38",
       "hyperbolic667",
+      "hyperbolic31414",
       "hyperbolic3737",
       "hyperbolic3474",
       "hyperbolic4614",
       "hyperbolic668",
+      "hyperbolic31616",
       "hyperbolic3838",
       "hyperbolic3484",
       "hyperbolic4616",

@@ -297,7 +297,9 @@ describe("board symmetries", () => {
       ["hyperbolic3474", "medium", 14],
       ["hyperbolic4614", "hard", 14],
       // the other families' uniform tilings keep their central face's Dp
+      ["hyperbolic31414", "medium", 14], // D7
       ["hyperbolic668", "easy", 16], // D8
+      ["hyperbolic31616", "hard", 16], // D8
       ["hyperbolic3838", "medium", 16], // D8
       ["hyperbolic3484", "hard", 16], // D8
       ["hyperbolic4616", "easy", 16], // D8

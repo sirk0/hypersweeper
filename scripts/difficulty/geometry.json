@@ -14369,5 +14369,101 @@
         "indistinguishable": 0
       }
     }
+  },
+  "hyperbolic31414": {
+    "builder": "hyperbolic_uniform_board",
+    "args": {
+      "hard": {
+        "args": [
+          7,
+          3,
+          "truncate",
+          34,
+          8,
+          298.993
+        ],
+        "cells": 442,
+        "fixed": true,
+        "reason": "484 cells took fewer mines than medium; 442 does not"
+      },
+      "easy": {
+        "args": [
+          7,
+          3,
+          "truncate",
+          9,
+          4,
+          284.02
+        ],
+        "cells": 78,
+        "score": 0.0377,
+        "distortionMean": 1.3816,
+        "distortionP90": 1.5954,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          7,
+          3,
+          "truncate",
+          22,
+          9,
+          299.26
+        ],
+        "cells": 253,
+        "score": 0.0118,
+        "distortionMean": 1.4025,
+        "distortionP90": 1.5957,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "hyperbolic31616": {
+    "builder": "hyperbolic_uniform_board",
+    "args": {
+      "medium": {
+        "args": [
+          8,
+          3,
+          "truncate",
+          17,
+          3,
+          300.0
+        ],
+        "cells": 209,
+        "fixed": true,
+        "reason": "the one medium trim that calibrates (209 cells, 18% under)"
+      },
+      "easy": {
+        "args": [
+          8,
+          3,
+          "truncate",
+          8,
+          1,
+          300.0
+        ],
+        "cells": 81,
+        "score": 0.0,
+        "distortionMean": 1.4793,
+        "distortionP90": 1.6018,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          8,
+          3,
+          "truncate",
+          30,
+          12,
+          300.0
+        ],
+        "cells": 473,
+        "score": 0.0147,
+        "distortionMean": 1.4141,
+        "distortionP90": 1.6023,
+        "indistinguishable": 0
+      }
+    }
   }
 }

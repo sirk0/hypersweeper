@@ -576,9 +576,10 @@ def disc_drawing(faces: list[tuple[int, ...]], kept: list[int],
 #
 # ``zip`` is the truncation of the dual {q,p}: on {7,3} the hyperbolic soccer
 # ball, HyperRogue's default -- hexagons, with each heptagon ringed by them.
-# ``truncate`` is {p,q}'s own, centred on a 2p-gon: no {7,3} board uses it (its
-# triangles are tiny beside the 14-gons), but on {5,4} and {6,4} it is what
-# centres 4.10.10 and 4.12.12 on their big face rather than on a square.
+# ``truncate`` is {p,q}'s own, centred on a 2p-gon: on {5,4} and {6,4} it is
+# what centres 4.10.10 and 4.12.12 on their big face rather than on a square,
+# and on {7,3} and {8,3} it gives 3.14.14 and 3.16.16, whose triangles are
+# slivers beside the big faces and play as thin boards.
 #
 # **The ids stay combinatorial.** A flag is (face, corner, edge) of the {p,q}
 # the ring walk already builds with integer ids, and each new vertex is named

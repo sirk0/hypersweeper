@@ -592,8 +592,8 @@ export function discDrawing(
 // generating point in one flag triangle (face centre F, corner V, edge
 // midpoint E) reflected everywhere, its place deciding the tiling --
 // `ambo` 3.7.3.7, `zip` 6.6.7 (the hyperbolic soccer ball), `expand` 3.4.7.4,
-// `bevel` 4.6.14 and `truncate` 3.14.14 on {7,3} (truncate ships on {5,4} and
-// {6,4}, centring 4.10.10 and 4.12.12 on their big face). New vertices are named by the part of their flag
+// `bevel` 4.6.14 and `truncate` 3.14.14 on {7,3} (on {5,4} and {6,4} truncate
+// centres 4.10.10 and 4.12.12 on their big face). New vertices are named by the part of their flag
 // the op does not collapse, as tuples of the ring walk's integer ids, and
 // renumbered in the order the faces meet them.
 
