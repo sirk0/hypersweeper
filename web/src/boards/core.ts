@@ -115,8 +115,18 @@ export interface DiscCover {
   steps: { c: readonly [number, number]; rot: readonly [number, number]; cells: Map<CellId, CellId> }[];
   /** How far round the centre of the view, in hyperbolic distance, the patch
    * is drawn whole wherever the pan has the view: the renderer shows that
-   * circle of it and hides the rest, so the board's edge stays put. */
+   * circle of it and hides the rest, so the board's edge stays put. This is
+   * the view a board opens at; the zoom moves it (the *horizon*) between
+   * `near` and `far`. */
   view: number;
+  /** The horizon zoomed all the way in and all the way out, in the same
+   * hyperbolic distance. The patch is drawn whole out to `far`. */
+  near: number;
+  far: number;
+  /** The tiling's tile radius, in hyperbolic distance: the clip keeps a tile
+   * by its centre, so one just inside the horizon reaches this much past it,
+   * and the board is framed to take that in. */
+  tile: number;
 }
 
 /** Where an immersion passes through itself, the sheet that ends up *inside*

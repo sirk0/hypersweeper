@@ -1,5 +1,6 @@
 import { Color, type Group, type Quaternion, type Texture, type Vector3 } from "three";
 import type { CellId, Vec3 } from "../boards/core";
+import type { Horizon } from "./disc";
 import { MAX_DIGIT_GLYPH, type Glyph } from "./glyphAtlas";
 import type { GlowCell } from "./markerGlow";
 import type { CellPalette } from "./shapePalette";
@@ -335,6 +336,13 @@ export interface BoardMesh extends Group {
    * pick ray is cast against is the board as built (the pan is the vertex
    * shader's), so this is where the ray has to be aimed. */
   discSource?(p: readonly [number, number]): readonly [number, number];
+  /** Set on a closed surface, whose zoom moves its horizon rather than
+   * magnifying it (render/disc.ts, `horizonZoom`): how far round the centre of
+   * the view it can be shown, in hyperbolic distance. */
+  readonly horizon?: Horizon;
+  /** Show the closed surface out to `v` from the centre of the view, and hide
+   * the cells beyond. */
+  setHorizon?(v: number): void;
 
   // -- half-plane panning (see render/halfPlane.ts) ---------------------------
   // A board drawn in the upper half-plane (the binary tiling) is moved by the

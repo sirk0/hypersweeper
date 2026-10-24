@@ -326,3 +326,67 @@ test.describe("a closed surface's pan", () => {
     expect(after.state === "revealed" || after.status === "lost").toBe(true);
   });
 });
+
+test.describe("a closed surface's zoom", () => {
+  // On a closed surface the zoom moves the horizon -- how far round the centre
+  // of the view the cover is shown (`horizonZoom` in render/disc.ts) -- and the
+  // camera follows it, so the board fills the same circle at every zoom.
+  test.beforeEach(async ({ page }) => {
+    await page.setViewportSize({ width: 420, height: 780 });
+    await page.goto("/");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    await page.evaluate(() => window.__ms?.startBoard("quartic", "medium", { seed: 7 }));
+    await frame(page);
+  });
+
+  /** Along the line from the centre of the view to the right: how many cells
+   * are crossed, and how far out the last one ends. */
+  async function across(page: Page, centre: { x: number; y: number }) {
+    return page.evaluate(([x0, y0]) => {
+      const ms = window.__ms!;
+      let cells = 0;
+      let last: string | null = null;
+      let end = 0;
+      for (let d = 0; d < 420 - x0!; d += 0.5) {
+        const cell = ms.cellAtScreenXY(x0! + d, y0!);
+        if (cell === null) continue;
+        if (cell !== last) cells++;
+        last = cell;
+        end = d;
+      }
+      return { cells, end };
+    }, [centre.x, centre.y]);
+  }
+
+  test("shows fewer, bigger cells zoomed in, more zoomed out, the same circle filled, and 0 puts it back", async ({
+    page,
+  }) => {
+    const centre = (await at(page, "0"))!;
+    const opened = await across(page, centre);
+    for (let i = 0; i < 12; i++) await page.keyboard.press("+");
+    await frame(page);
+    const zoomIn = await page.evaluate(() => window.__ms!.zoom());
+    const inward = await across(page, centre);
+    // bounded: a few presses reach the nearest horizon and stop there
+    expect(zoomIn).toBeGreaterThan(1.2);
+    expect(zoomIn).toBeLessThan(2);
+    expect(inward.cells).toBeLessThan(opened.cells * 0.75);
+    expect(Math.abs(inward.end - opened.end)).toBeLessThan(opened.end * 0.2);
+    // the middle stays put: the cell under the centre of the view is the same
+    expect(await page.evaluate(([x, y]) => window.__ms!.cellAtScreenXY(x!, y!), [centre.x, centre.y])).toBe("0");
+
+    for (let i = 0; i < 24; i++) await page.keyboard.press("-");
+    await frame(page);
+    const zoomOut = await page.evaluate(() => window.__ms!.zoom());
+    const outward = await across(page, centre);
+    expect(zoomOut).toBeLessThan(1);
+    expect(zoomOut).toBeGreaterThan(0.8);
+    expect(outward.cells).toBeGreaterThan(opened.cells);
+    expect(Math.abs(outward.end - opened.end)).toBeLessThan(opened.end * 0.2);
+
+    await page.keyboard.press("0");
+    await frame(page);
+    expect(await page.evaluate(() => window.__ms!.zoom())).toBe(1);
+    expect((await across(page, centre)).cells).toBe(opened.cells);
+  });
+});

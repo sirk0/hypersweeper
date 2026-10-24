@@ -15,6 +15,8 @@ import {
   discScale,
   discUnmap,
   dragShift,
+  horizonZoom,
+  zoomHorizon,
   type Cx,
   type DiscView,
 } from "../../src/render/disc";
@@ -334,5 +336,40 @@ describe("a closed surface's pan", () => {
       expect(dist(view.c, [0, 0])).toBeLessThan(1.1);
     }
     expect(taken).toBeGreaterThan(3);
+  });
+});
+
+describe("a closed surface's horizon", () => {
+  // The quartic's medium board: the zoom moves how far round the centre of the
+  // view it is shown, and the camera follows that circle.
+  const board = buildBoard("quartic", "medium") as Board;
+  const horizon = board.disc!.cover!;
+
+  it("opens at the view, framed as the board is", () => {
+    expect(horizonZoom(horizon, horizon.view)).toBeCloseTo(1, 12);
+    expect(zoomHorizon(horizon, 1)).toBeCloseTo(horizon.view, 12);
+  });
+
+  it("closes in as the zoom goes up and opens out as it comes down", () => {
+    const zooms = [0.5, 0.9, 1, 1.2, 1.4, 3].map((z) => zoomHorizon(horizon, z));
+    for (let i = 1; i < zooms.length; i++) expect(zooms[i]!).toBeLessThanOrEqual(zooms[i - 1]!);
+    expect(horizonZoom(horizon, horizon.near)).toBeGreaterThan(1);
+    expect(horizonZoom(horizon, horizon.far)).toBeLessThan(1);
+  });
+
+  it("is the zoom's inverse between its bounds, and held to them past", () => {
+    for (const v of [horizon.near, 1.5, horizon.view, 2.4, horizon.far]) {
+      expect(zoomHorizon(horizon, horizonZoom(horizon, v))).toBeCloseTo(v, 9);
+    }
+    expect(zoomHorizon(horizon, 100)).toBe(horizon.near);
+    expect(zoomHorizon(horizon, 0.01)).toBe(horizon.far);
+  });
+
+  it("frames its circle, and the tile it keeps reaching past it, the same size at every zoom", () => {
+    // the disc radius drawn at the frame's edge, in units of the frame
+    for (const v of [horizon.near, horizon.view, horizon.far]) {
+      const edge = Math.tanh((v + horizon.tile) / 2) * horizonZoom(horizon, v);
+      expect(edge).toBeCloseTo(Math.tanh((horizon.view + horizon.tile) / 2), 12);
+    }
   });
 });

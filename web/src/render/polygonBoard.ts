@@ -52,6 +52,7 @@ import {
   type Cx,
   type CoverStep,
   type DiscView,
+  type Horizon,
 } from "./disc";
 import {
   cellStyle,
@@ -187,8 +188,12 @@ export class PolygonBoard extends Group implements BoardMesh {
   private readonly coverSteps: readonly CoverStep[] | null;
   /** How far out, in disc radii, the view of a closed surface shows its patch
    * (`coverClip`): the shader hides every cell drawn beyond it, and a tap
-   * there finds nothing. Null on every other board. */
-  private readonly coverClip: number | null;
+   * there finds nothing. Moved by the zoom (`setHorizon`). Null on every
+   * other board. */
+  private coverClip: number | null;
+  /** A closed surface's horizon range (`Board.disc.cover`), which its zoom
+   * moves through. Unset on every other board. */
+  readonly horizon?: Horizon;
   onCoverStep: ((steps: number[]) => void) | null = null;
   private readonly discUniforms: DiscUniforms | null;
 
@@ -241,6 +246,7 @@ export class PolygonBoard extends Group implements BoardMesh {
     const cover = board.disc?.cover;
     this.coverSteps = cover ? meshCoverSteps(cover.steps) : null;
     this.coverClip = cover ? coverClip(cover.view) : null;
+    if (cover) this.horizon = { view: cover.view, near: cover.near, far: cover.far, tile: cover.tile };
     this.discUniforms = this.disc
       ? {
           uDisc: { value: new Vector3(this.disc.x, this.disc.y, this.disc.r) },
@@ -509,6 +515,15 @@ export class PolygonBoard extends Group implements BoardMesh {
 
   resetDisc(): void {
     if (this.disc && this.discView !== DISC_IDENTITY) this.setDiscView(DISC_IDENTITY);
+  }
+
+  /** Show a closed surface out to `v` from the centre of the view (the zoom
+   * moves it; see `horizonZoom`): the shader hides every cell past it, as it
+   * hides those past the view the board opens at. */
+  setHorizon(v: number): void {
+    if (this.coverClip === null) return;
+    this.coverClip = coverClip(v);
+    this.discUniforms!.uDiscClip.value = this.coverClip;
   }
 
   /** The point of the board as built that is drawn at `p` (mesh units). */

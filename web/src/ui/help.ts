@@ -77,7 +77,10 @@ const SECTIONS: Section[] = [
         "Zoom",
         "Scroll or pinch to zoom, and drag a zoomed-in flat board to pan. " +
           "The + and − keys zoom too, and 0 puts the view back. On a board " +
-          "the wheel slides along instead (below), hold ctrl to zoom.",
+          "the wheel slides along instead (below), hold ctrl to zoom. On a " +
+          "closed hyperbolic surface the zoom moves the horizon: in shows " +
+          "fewer cells and its edge bigger, out shows more of the surface, " +
+          "until a cell at the edge is there twice.",
       ],
       [
         "Move the cells along",
