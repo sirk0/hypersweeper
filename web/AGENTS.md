@@ -21,6 +21,11 @@ npm run e2e         # Playwright e2e + visual regression
 npm run e2e:docker  # …the whole suite on Linux, in a container
 ```
 
+Those are the full runs, and CI makes them. While working, run only what your
+change touches — `npx vitest related --run <files>`, one spec with
+`npx playwright test hud.spec.ts -g "<title>"` — within about four minutes; see
+"Verifying a change" in the root [`AGENTS.md`](../AGENTS.md).
+
 The visual baselines are Linux pixels, so `gallery.spec.ts` skips itself
 elsewhere and `npm run e2e:docker` is how the gallery runs off Linux — see
 "Running the visual suite off Linux" in [`docs/testing.md`](docs/testing.md).
