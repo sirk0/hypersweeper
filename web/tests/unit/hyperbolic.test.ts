@@ -143,56 +143,82 @@ describe("the hyperbolic boards", () => {
   });
 });
 
-// Wythoff's operations on {7,3}: the vertex configuration each makes, and the
-// neighbours an inner tile of each side count has. Mirrors `_WYTHOFF` in
+// Wythoff's operations on {p,q}: the vertex configuration each shipped board
+// makes. An inner tile's neighbour count follows from it -- its sides on a
+// trivalent tiling, twice them where four tiles meet. Mirrors `_WYTHOFF` in
 // tests/test_boards.py.
-const UNIFORM: [WythoffOp, string, Record<number, number>][] = [
-  ["ambo", "3.7.3.7", { 3: 6, 7: 14 }],
-  ["zip", "6.6.7", { 6: 6, 7: 7 }],
-  ["expand", "3.4.7.4", { 3: 6, 4: 8, 7: 14 }],
-  ["bevel", "4.6.14", { 4: 4, 6: 6, 14: 14 }],
+const UNIFORM: [number, number, WythoffOp, string][] = [
+  [7, 3, "ambo", "3.7.3.7"],
+  [7, 3, "zip", "6.6.7"],
+  [7, 3, "truncate", "3.14.14"],
+  [7, 3, "expand", "3.4.7.4"],
+  [7, 3, "bevel", "4.6.14"],
+  [8, 3, "ambo", "3.8.3.8"],
+  [8, 3, "zip", "6.6.8"],
+  [8, 3, "truncate", "3.16.16"],
+  [8, 3, "expand", "3.4.8.4"],
+  [8, 3, "bevel", "4.6.16"],
+  [5, 4, "ambo", "4.5.4.5"],
+  [5, 4, "zip", "5.8.8"],
+  [5, 4, "expand", "4.4.4.5"],
+  [5, 4, "bevel", "4.8.10"],
+  [5, 4, "truncate", "4.10.10"],
+  [6, 4, "ambo", "4.6.4.6"],
+  [6, 4, "zip", "6.8.8"],
+  [6, 4, "expand", "4.4.4.6"],
+  [6, 4, "bevel", "4.8.12"],
+  [6, 4, "truncate", "4.12.12"],
+  [5, 5, "zip", "5.10.10"],
 ];
+
+/** An inner tile's neighbours, by its side count. */
+function degrees(config: string): Record<number, number> {
+  const ring = config.split(".").map(Number);
+  return Object.fromEntries(ring.map((n) => [n, n * (ring.length - 2)]));
+}
 
 describe("the uniform hyperbolic boards", () => {
   it("are named by their vertex configuration", () => {
-    for (const [op, config] of UNIFORM) {
-      expect(wythoffMode(7, 3, op)).toBe(`hyperbolic${config.replaceAll(".", "")}`);
-      expect(HYPERBOLIC_MODES).toContain(wythoffMode(7, 3, op));
+    for (const [p, q, op, config] of UNIFORM) {
+      expect(wythoffMode(p, q, op)).toBe(`hyperbolic${config.replaceAll(".", "")}`);
+      expect(HYPERBOLIC_MODES).toContain(wythoffMode(p, q, op));
     }
   });
 
   it("give an inner tile the neighbours its shape has", () => {
-    for (const [op, config, degree] of UNIFORM) {
-      const board = hyperbolicUniformBoard(7, 3, op, 30, 1);
+    for (const [p, q, op, config] of UNIFORM) {
+      const board = hyperbolicUniformBoard(p, q, op, 30, 1);
       const most = new Map<number, number>();
       for (const [cell, poly] of board.polygons) {
         const n = corners(poly, board.cornerMask!.get(cell)).length;
         most.set(n, Math.max(most.get(n) ?? 0, board.adjacency.get(cell)!.length));
       }
-      expect(Object.fromEntries(most), config).toEqual(degree);
+      expect(Object.fromEntries(most), config).toEqual(degrees(config));
     }
   });
 
   it("grow just the rings that hold every face inside the trim", () => {
-    for (const [op, config] of UNIFORM) {
+    for (const [p, q, op, config] of UNIFORM) {
       for (const shells of [3, 20, 40]) {
-        const grown = wythoffRingsFor(7, 3, op, shells);
-        const further = wythoffRingsFor(7, 3, op, shells, grown.rings + 1);
+        const grown = wythoffRingsFor(p, q, op, shells);
+        const further = wythoffRingsFor(p, q, op, shells, grown.rings + 1);
         expect(shellsByPlace(further, shells), `${config} ${shells}`)
           .toEqual(shellsByPlace(grown, shells));
       }
     }
   });
 
-  it("colour one class per side count, and keep the central heptagon in the middle", () => {
-    for (const [op, config, degree] of UNIFORM) {
-      const board = hyperbolicUniformBoard(7, 3, op, 20, 1);
+  it("colour one class per side count, and keep the central face in the middle", () => {
+    for (const [p, q, op, config] of UNIFORM) {
+      const board = hyperbolicUniformBoard(p, q, op, 20, 1);
       const tones = classifyShapes(board.polygons, board.cornerMask, board.curved);
       const sides = new Set([...tones.values()].map((t) => t.sides));
-      expect([...sides].sort((a, b) => a - b), config).toEqual(Object.keys(degree).map(Number));
+      expect([...sides].sort((a, b) => a - b), config).toEqual(Object.keys(degrees(config)).map(Number));
       expect(new Set([...tones.values()].map((t) => JSON.stringify(t))).size, config).toBe(sides.size);
+      // the face on the central p-gon: the p-gon itself, or bevel's and
+      // truncate's 2p-gon
       const centre = corners(board.polygons.get("0")!, board.cornerMask!.get("0")!);
-      expect(centre.length).toBe(op === "bevel" ? 14 : 7);
+      expect(centre.length, config).toBe(op === "bevel" || op === "truncate" ? 2 * p : p);
       const mx = centre.reduce((s, v) => s + v[0]!, 0) / centre.length;
       expect(mx).toBeCloseTo(board.width / 2, 9);
     }

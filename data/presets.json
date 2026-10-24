@@ -1819,6 +1819,35 @@
         ]
       }
     },
+    "hyperbolic31414": {
+      "builder": "hyperbolic_uniform_board",
+      "args": {
+        "easy": [
+          7,
+          3,
+          "truncate",
+          9,
+          4,
+          284.02
+        ],
+        "medium": [
+          7,
+          3,
+          "truncate",
+          22,
+          9,
+          299.26
+        ],
+        "hard": [
+          7,
+          3,
+          "truncate",
+          34,
+          11,
+          298.993
+        ]
+      }
+    },
     "hyperbolic3737": {
       "builder": "hyperbolic_uniform_board",
       "args": {
@@ -1903,6 +1932,470 @@
           40,
           47,
           300.0
+        ]
+      }
+    },
+    "hyperbolic668": {
+      "builder": "hyperbolic_uniform_board",
+      "args": {
+        "easy": [
+          8,
+          3,
+          "zip",
+          8,
+          8,
+          300.0
+        ],
+        "medium": [
+          8,
+          3,
+          "zip",
+          19,
+          26,
+          301.137
+        ],
+        "hard": [
+          8,
+          3,
+          "zip",
+          30,
+          56,
+          300.0
+        ]
+      }
+    },
+    "hyperbolic31616": {
+      "builder": "hyperbolic_uniform_board",
+      "args": {
+        "easy": [
+          8,
+          3,
+          "truncate",
+          8,
+          1,
+          300.0
+        ],
+        "medium": [
+          8,
+          3,
+          "truncate",
+          17,
+          3,
+          300.0
+        ],
+        "hard": [
+          8,
+          3,
+          "truncate",
+          30,
+          12,
+          300.0
+        ]
+      }
+    },
+    "hyperbolic3838": {
+      "builder": "hyperbolic_uniform_board",
+      "args": {
+        "easy": [
+          8,
+          3,
+          "ambo",
+          8,
+          6,
+          300.0
+        ],
+        "medium": [
+          8,
+          3,
+          "ambo",
+          20,
+          26,
+          300.0
+        ],
+        "hard": [
+          8,
+          3,
+          "ambo",
+          31,
+          52,
+          300.0
+        ]
+      }
+    },
+    "hyperbolic3484": {
+      "builder": "hyperbolic_uniform_board",
+      "args": {
+        "easy": [
+          8,
+          3,
+          "expand",
+          10,
+          6,
+          289.853
+        ],
+        "medium": [
+          8,
+          3,
+          "expand",
+          24,
+          19,
+          300.0
+        ],
+        "hard": [
+          8,
+          3,
+          "expand",
+          37,
+          40,
+          292.835
+        ]
+      }
+    },
+    "hyperbolic4616": {
+      "builder": "hyperbolic_uniform_board",
+      "args": {
+        "easy": [
+          8,
+          3,
+          "bevel",
+          10,
+          3,
+          284.19
+        ],
+        "medium": [
+          8,
+          3,
+          "bevel",
+          23,
+          22,
+          300.0
+        ],
+        "hard": [
+          8,
+          3,
+          "bevel",
+          36,
+          44,
+          293.52
+        ]
+      }
+    },
+    "hyperbolic588": {
+      "builder": "hyperbolic_uniform_board",
+      "args": {
+        "easy": [
+          5,
+          4,
+          "zip",
+          11,
+          5,
+          291.035
+        ],
+        "medium": [
+          5,
+          4,
+          "zip",
+          26,
+          23,
+          297.492
+        ],
+        "hard": [
+          5,
+          4,
+          "zip",
+          43,
+          57,
+          298.047
+        ]
+      }
+    },
+    "hyperbolic41010": {
+      "builder": "hyperbolic_uniform_board",
+      "args": {
+        "easy": [
+          5,
+          4,
+          "truncate",
+          11,
+          7,
+          289.392
+        ],
+        "medium": [
+          5,
+          4,
+          "truncate",
+          26,
+          14,
+          297.066
+        ],
+        "hard": [
+          5,
+          4,
+          "truncate",
+          43,
+          30,
+          298.294
+        ]
+      }
+    },
+    "hyperbolic4545": {
+      "builder": "hyperbolic_uniform_board",
+      "args": {
+        "easy": [
+          5,
+          4,
+          "ambo",
+          11,
+          5,
+          287.702
+        ],
+        "medium": [
+          5,
+          4,
+          "ambo",
+          26,
+          22,
+          296.619
+        ],
+        "hard": [
+          5,
+          4,
+          "ambo",
+          43,
+          63,
+          297.956
+        ]
+      }
+    },
+    "hyperbolic4445": {
+      "builder": "hyperbolic_uniform_board",
+      "args": {
+        "easy": [
+          5,
+          4,
+          "expand",
+          11,
+          8,
+          275.192
+        ],
+        "medium": [
+          5,
+          4,
+          "expand",
+          26,
+          31,
+          294.854
+        ],
+        "hard": [
+          5,
+          4,
+          "expand",
+          44,
+          71,
+          296.921
+        ]
+      }
+    },
+    "hyperbolic4810": {
+      "builder": "hyperbolic_uniform_board",
+      "args": {
+        "easy": [
+          5,
+          4,
+          "bevel",
+          11,
+          4,
+          282.74
+        ],
+        "medium": [
+          5,
+          4,
+          "bevel",
+          26,
+          17,
+          294.298
+        ],
+        "hard": [
+          5,
+          4,
+          "bevel",
+          46,
+          46,
+          297.37
+        ]
+      }
+    },
+    "hyperbolic688": {
+      "builder": "hyperbolic_uniform_board",
+      "args": {
+        "easy": [
+          6,
+          4,
+          "zip",
+          10,
+          6,
+          297.632
+        ],
+        "medium": [
+          6,
+          4,
+          "zip",
+          23,
+          22,
+          299.508
+        ],
+        "hard": [
+          6,
+          4,
+          "zip",
+          36,
+          45,
+          299.429
+        ]
+      }
+    },
+    "hyperbolic41212": {
+      "builder": "hyperbolic_uniform_board",
+      "args": {
+        "easy": [
+          6,
+          4,
+          "truncate",
+          9,
+          4,
+          290.725
+        ],
+        "medium": [
+          6,
+          4,
+          "truncate",
+          25,
+          5,
+          300.0
+        ],
+        "hard": [
+          6,
+          4,
+          "truncate",
+          36,
+          13,
+          299.798
+        ]
+      }
+    },
+    "hyperbolic4646": {
+      "builder": "hyperbolic_uniform_board",
+      "args": {
+        "easy": [
+          6,
+          4,
+          "ambo",
+          10,
+          7,
+          295.259
+        ],
+        "medium": [
+          6,
+          4,
+          "ambo",
+          23,
+          23,
+          299.209
+        ],
+        "hard": [
+          6,
+          4,
+          "ambo",
+          36,
+          49,
+          299.806
+        ]
+      }
+    },
+    "hyperbolic4446": {
+      "builder": "hyperbolic_uniform_board",
+      "args": {
+        "easy": [
+          6,
+          4,
+          "expand",
+          9,
+          9,
+          295.049
+        ],
+        "medium": [
+          6,
+          4,
+          "expand",
+          24,
+          23,
+          297.841
+        ],
+        "hard": [
+          6,
+          4,
+          "expand",
+          38,
+          60,
+          298.461
+        ]
+      }
+    },
+    "hyperbolic4812": {
+      "builder": "hyperbolic_uniform_board",
+      "args": {
+        "easy": [
+          6,
+          4,
+          "bevel",
+          9,
+          4,
+          300.0
+        ],
+        "medium": [
+          6,
+          4,
+          "bevel",
+          23,
+          14,
+          300.0
+        ],
+        "hard": [
+          6,
+          4,
+          "bevel",
+          39,
+          39,
+          298.486
+        ]
+      }
+    },
+    "hyperbolic51010": {
+      "builder": "hyperbolic_uniform_board",
+      "args": {
+        "easy": [
+          5,
+          5,
+          "zip",
+          10,
+          5,
+          299.364
+        ],
+        "medium": [
+          5,
+          5,
+          "zip",
+          22,
+          13,
+          300.0
+        ],
+        "hard": [
+          5,
+          5,
+          "zip",
+          33,
+          32,
+          299.943
         ]
       }
     },

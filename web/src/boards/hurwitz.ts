@@ -35,7 +35,6 @@ import {
   shellGroups,
   toOrigin,
   wythoffLoops,
-  WYTHOFF_OPS,
   type C,
   type V3,
   type WythoffOp,
@@ -157,10 +156,11 @@ export function hurwitzSurfaceLabel(euler: number): string | null {
   return name ? `${HURWITZ_LABELS[name]}, genus ${genus}` : null;
 }
 
-/** `"none"` is {7,3} itself, then its Wythoff tilings, then its
+/** `"none"` is {7,3} itself, then its Wythoff tilings (`WYTHOFF_OPS` bar
+ * `truncate`: 3.14.14's triangles are tiny beside its 14-gons), then its
  * Goldberg--Coxeter subdivisions GC(n, 0) (`gcLoops`). Must match
  * `HURWITZ_OPS`. */
-export const HURWITZ_OPS = ["none", ...WYTHOFF_OPS, "gc2", "gc3", "gc4"] as const;
+export const HURWITZ_OPS = ["none", "ambo", "zip", "expand", "bevel", "gc2", "gc3", "gc4"] as const;
 export type HurwitzOp = (typeof HURWITZ_OPS)[number];
 
 /** Each surface's mode: one surface a mode, whatever the difficulty, which
@@ -683,7 +683,7 @@ export function hurwitzCells(surface: string, op: HurwitzOp): Map<string, string
     (n !== null
       ? edges * (n - 1) + (vertices * (n - 1) * (n - 2)) / 2
       : { none: 0, ambo: vertices, zip: vertices, expand: vertices + edges, bevel: vertices + edges }[
-          op as "none" | WythoffOp
+          op as Exclude<HurwitzOp, "gc2" | "gc3" | "gc4">
         ]);
   for (let rings = 2; rings <= 12; rings++) {
     const { loops, cells, key } = patch(surface, op, rings);
