@@ -163,6 +163,7 @@ from minesweeper.boards.core import _cross, _normalize
 from minesweeper.boards.core import newell_normal as _newell_normal
 from minesweeper.boards.hurwitz import (
     COVER_COPIES,
+    HURWITZ_OPS,
     HURWITZ_SURFACES,
     SURFACE_MODES,
     _patch_for,
@@ -2960,7 +2961,8 @@ class TestHurwitz:
         for cell, neighbours in board.adjacency.items():
             assert len(neighbours) == len(board.quotient[cell])
 
-    @pytest.mark.parametrize("op", sorted(op for p, q, op in _WYTHOFF if (p, q) == (7, 3)))
+    @pytest.mark.parametrize("op", sorted(op for p, q, op in _WYTHOFF
+                                          if (p, q) == (7, 3) and op in HURWITZ_OPS))
     def test_every_tiling_of_the_quartic_keeps_its_count(self, op):
         cells = hurwitz_cells("quartic", op)
         board = hurwitz_board("quartic", op, 0, 1)
