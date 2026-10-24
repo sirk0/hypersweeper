@@ -18,12 +18,19 @@ npm run preview     # serve dist/ at http://localhost:4173
 npm run e2e         # Playwright e2e + visual regression
 npm run e2e:update  # refresh visual baselines
 npm run e2e:docker  # …the whole suite on Linux, in a container (see below)
+npx vitest related --run src/game.ts      # only the unit tests that import a file
+npx playwright test hud.spec.ts -g "<title>"  # only one spec, or one test in it
 npm run screenshots # regenerate the README gallery (SHOTS=menu.png for one)
 npm run store-screenshots # the App Store shots for every device slot (see ios/README.md)
 npm run stickers    # the iMessage sticker pack (see "The sticker pack" in ios/README.md)
 npm run icons       # regenerate the app icons from the vector source
 npm run og          # regenerate the social card, public/og.png
 ```
+
+**Run the targeted forms while working, not the whole suite.** The full unit
+and e2e runs are CI's job (below); locally, run what a change touches within
+about four minutes — "Verifying a change" in the root
+[`AGENTS.md`](../../AGENTS.md) has the table.
 
 **Two ways to run it, and they are not interchangeable.** `npm run dev` is the
 one to iterate in — Vite serves the sources with HMR. `npm run build && npm run

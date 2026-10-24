@@ -45,7 +45,8 @@ carries over.
 `make help` lists every target. CI runs `make test`, `make lint`, the
 `data-sync` exporters, `web-checks` (typecheck, unit tests, the packaged-bundle
 and iOS-sync guards) and `web-e2e`, which shards the Playwright suite across
-four runners. The two web jobs are independent and run at the same time.
+four runners. The two web jobs are independent and run at the same time. That is the full
+run; locally, run only what a change touches — see "Verifying a change" below.
 No CI job builds the native app: `app-store.yml`, started by hand from
 `master`, archives it and uploads it to App Store Connect.
 
@@ -74,7 +75,7 @@ runs off Linux. To *look at* a change without a browser of your own, see
 
 ```sh
 make venv                              # (re)create .venv — Python 3.13, per .python-version
-make test                              # pytest, sub-second
+make test                              # pytest, the whole suite (minutes)
 make lint                              # ruff (E/F/W/I; long geometry/table lines allowed)
 make run                               # the game (menu)
 .venv/bin/python -m minesweeper --mode hexhex   # …or skip the menu
@@ -96,6 +97,33 @@ make ios-app                           # build and open the iPhone project in Xc
 
 See [`desktop/README.md`](desktop/README.md) and
 [`ios/README.md`](ios/README.md). `make clean` removes every build artifact.
+
+## Verifying a change
+
+**Run only what your change touches, locally, in about four minutes; CI runs
+everything.** The full suite no longer fits an agent's loop — `make test` alone
+is over three minutes, `vitest run` a minute and a half, and the Playwright
+suite is long enough that CI shards it across four runners — and CI already
+runs all of it on every push. So pick the impacted checks, stay inside the
+budget, and leave the full run to CI:
+
+| Change touches | Run locally |
+|---|---|
+| Docs, comments, `README`s only | nothing (check any link you added resolves) |
+| `web/src/**`, `web/functions/**` | `npm run typecheck` (seconds — always), then `npx vitest related --run <changed files>` (the unit tests that import them) |
+| UI, rendering, input behaviour | the e2e spec(s) that cover it — `npx playwright test hud.spec.ts`, narrowed with `-g "<title>"`. The topic docs name the spec that pins each behaviour |
+| A visual baseline | only that slice — `npx playwright test gallery.spec.ts -g <board>` — then run it once more to confirm determinism |
+| Python (`minesweeper/`, `scripts/`) | `make lint`, and the matching test file — `.venv/bin/pytest tests/test_game.py`, or `-k <name>` |
+| Anything the `data/*.json` exporters read | the exporters, then `git diff --exit-code data/` — exactly what CI's `data-sync` checks |
+
+If the impacted set will not fit the four minutes, run the part most likely to
+break and say what you left to CI. Never widen a local run to "the whole suite
+to be safe" — that is what CI is for.
+
+**When the work is ready** — not after every edit — commit, push the branch and
+open a pull request. CI's jobs (pytest, ruff, `data-sync`, `web-checks`, the
+four e2e shards) are the authoritative full run; a red one is yours to fix on
+the same branch, and the change is done when CI is green.
 
 ## Rules that apply to every change
 

@@ -22,18 +22,15 @@ default, which works in Codex's sandboxed worktrees. Set `UV_CACHE_DIR` and
 
 ## Verification
 
-Run the checks relevant to a change before handing it back:
+Follow "Verifying a change" in [`AGENTS.md`](AGENTS.md): run only the checks
+your change touches, within about four minutes, and leave the full suite to CI,
+which runs all of it — the visual baselines included — on every push.
 
-```sh
-make test
-make lint
-cd web && npm run typecheck && npm run test && npm run build
-make web-e2e-docker
-```
-
-The Docker command is the authoritative full Playwright run: it includes the
-Linux visual baselines that macOS skips. It requires Docker Desktop with Compose
-v2 and may take longer on Apple Silicon because the image is `linux/amd64`.
+`make web-e2e-docker` is still how a Mac runs the gallery slice a change
+touches, and the only way to regenerate its Linux baselines there. Give it a
+spec and a `-g` filter (`make web-e2e-docker ARGS="gallery.spec.ts -g sphere"`)
+rather than the whole suite. It requires Docker Desktop with Compose v2 and is
+slower on Apple Silicon because the image is `linux/amd64`.
 
 ## Shared-worktree hygiene
 
