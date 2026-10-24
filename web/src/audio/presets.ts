@@ -79,12 +79,13 @@ export interface SoundPreset {
    * Deliberately *not* one degree per side. Degrees are skipped so that the
    * shape sets that actually share a board come out as chords — measured
    * across every mode in data/presets.json, those sets are {3,4} {3,5} {3,6}
-   * {3,7} {3,12} {4,5} {4,8} {5,6} {6,7} {3,4,5} {3,4,6} {3,4,7} {3,4,12}
-   * {4,6,10} {4,6,12} {4,6,14} {3,4,6,12} and nothing else, and
+   * {3,7} {3,8} {3,12} {4,5} {4,6} {4,8} {4,10} {4,12} {5,6} {5,8} {5,10}
+   * {6,7} {6,8} {3,4,5} {3,4,6} {3,4,7} {3,4,8} {3,4,12} {4,6,10} {4,6,12}
+   * {4,6,14} {4,6,16} {4,8,10} {4,8,12} {3,4,6,12} and nothing else, and
    * `tests/unit/soundHarmony.test.ts` re-measures them rather than trusting
    * this comment. Side counts 9 and 11 are in no board at all; their entries
-   * only keep the table indexable. A 14-gon (the truncated triheptagonal
-   * board's) clamps to the 13-gon's degree. */
+   * only keep the table indexable. A 14-gon and a 16-gon (the truncated
+   * triheptagonal and trioctagonal boards') clamp to the 13-gon's degree. */
   degrees: readonly number[];
   /** One cell opening under the finger. */
   open: Envelope;

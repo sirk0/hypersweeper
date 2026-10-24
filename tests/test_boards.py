@@ -163,6 +163,7 @@ from minesweeper.boards.core import _cross, _normalize
 from minesweeper.boards.core import newell_normal as _newell_normal
 from minesweeper.boards.hurwitz import (
     COVER_COPIES,
+    HURWITZ_OPS,
     HURWITZ_SURFACES,
     SURFACE_MODES,
     _patch_for,
@@ -2665,31 +2666,53 @@ class TestHyperbolic:
                 hyperbolic_board(p, q, 3, 1)
 
 
-# Wythoff's operations on {7,3}: the vertex configuration each makes, and the
-# neighbour count of an inner tile of each side count (the tiling is
-# trivalent for zip and bevel, so a tile's neighbours are its sides; ambo and
-# expand meet four at a corner, so every corner adds the tile across it).
+# Wythoff's operations on {p,q}: the vertex configuration each shipped board
+# makes. An inner tile's neighbour count follows from it: the trivalent ones
+# (zip, bevel, truncate) give a tile its sides, and the four-valent ones (ambo,
+# expand) add the tile across every corner, so twice its sides.
 _WYTHOFF = {
-    "ambo": ("3.7.3.7", {3: 6, 7: 14}),
-    "zip": ("6.6.7", {6: 6, 7: 7}),
-    "expand": ("3.4.7.4", {3: 6, 4: 8, 7: 14}),
-    "bevel": ("4.6.14", {4: 4, 6: 6, 14: 14}),
+    (7, 3, "ambo"): "3.7.3.7",
+    (7, 3, "zip"): "6.6.7",
+    (7, 3, "truncate"): "3.14.14",
+    (7, 3, "expand"): "3.4.7.4",
+    (7, 3, "bevel"): "4.6.14",
+    (8, 3, "ambo"): "3.8.3.8",
+    (8, 3, "zip"): "6.6.8",
+    (8, 3, "truncate"): "3.16.16",
+    (8, 3, "expand"): "3.4.8.4",
+    (8, 3, "bevel"): "4.6.16",
+    (5, 4, "ambo"): "4.5.4.5",
+    (5, 4, "zip"): "5.8.8",
+    (5, 4, "expand"): "4.4.4.5",
+    (5, 4, "bevel"): "4.8.10",
+    (5, 4, "truncate"): "4.10.10",
+    (6, 4, "ambo"): "4.6.4.6",
+    (6, 4, "zip"): "6.8.8",
+    (6, 4, "expand"): "4.4.4.6",
+    (6, 4, "bevel"): "4.8.12",
+    (6, 4, "truncate"): "4.12.12",
+    (5, 5, "zip"): "5.10.10",
 }
+_WYTHOFF_IDS = [f"{p}{q}-{op}" for p, q, op in _WYTHOFF]
+
+
+def _wythoff_config(p, q, op) -> list[int]:
+    return [int(n) for n in _WYTHOFF[(p, q, op)].split(".")]
 
 
 class TestHyperbolicUniform:
-    """The uniform tilings Wythoff's construction makes of {7,3}
+    """The uniform tilings Wythoff's construction makes of {p,q}
     (boards/hyperbolic.py): 6.6.7, the hyperbolic soccer ball, and its
-    siblings."""
+    siblings on {7,3}, {8,3}, {5,4}, {6,4} and {5,5}."""
 
-    @pytest.mark.parametrize("op", sorted(_WYTHOFF))
-    def test_the_mode_names_the_vertex_configuration(self, op):
-        assert wythoff_mode(7, 3, op) == "hyperbolic" + _WYTHOFF[op][0].replace(".", "")
+    @pytest.mark.parametrize("p,q,op", _WYTHOFF, ids=_WYTHOFF_IDS)
+    def test_the_mode_names_the_vertex_configuration(self, p, q, op):
+        assert wythoff_mode(p, q, op) == "hyperbolic" + _WYTHOFF[(p, q, op)].replace(".", "")
 
-    @pytest.mark.parametrize("op", sorted(_WYTHOFF))
-    def test_every_inner_vertex_has_the_configuration(self, op):
-        faces, _, _ = wythoff_faces(7, 3, op, 3)
-        config = [int(n) for n in _WYTHOFF[op][0].split(".")]
+    @pytest.mark.parametrize("p,q,op", _WYTHOFF, ids=_WYTHOFF_IDS)
+    def test_every_inner_vertex_has_the_configuration(self, p, q, op):
+        faces, _, _ = wythoff_faces(p, q, op, 3)
+        config = _wythoff_config(p, q, op)
         at = defaultdict(list)
         for face in faces:
             for v in face:
@@ -2699,9 +2722,9 @@ class TestHyperbolicUniform:
         assert max(len(sides) for sides in at.values()) == len(config)
         assert {len(face) for face in faces} == set(config)
 
-    @pytest.mark.parametrize("op", sorted(_WYTHOFF))
-    def test_faces_are_regular_with_one_edge_length(self, op):
-        faces, pos, centres = wythoff_faces(7, 3, op, 3)
+    @pytest.mark.parametrize("p,q,op", _WYTHOFF, ids=_WYTHOFF_IDS)
+    def test_faces_are_regular_with_one_edge_length(self, p, q, op):
+        faces, pos, centres = wythoff_faces(p, q, op, 3)
         side = _hyp_dist(pos[faces[0][0]], pos[faces[0][1]])
         for face, centre in zip(faces, centres):
             corners = [pos[v] for v in face]
@@ -2713,12 +2736,14 @@ class TestHyperbolicUniform:
             area = sum((a.conjugate() * b).imag for a, b in zip(corners, corners[1:] + corners[:1]))
             assert area > 0
 
-    @pytest.mark.parametrize("op", sorted(_WYTHOFF))
-    def test_the_faces_close_up_round_a_vertex(self, op):
+    @pytest.mark.parametrize("p,q,op", _WYTHOFF, ids=_WYTHOFF_IDS)
+    def test_the_faces_close_up_round_a_vertex(self, p, q, op):
         # the corner angles round an inner vertex, measured on the arcs as in
         # TestHyperbolic, sum to 2 pi: the tiling really is flat-free
-        board = hyperbolic_uniform_board(7, 3, op, 12, 1, scale=1, arc=64)
+        # (an inner vertex being one with all its corners on the board)
+        board = hyperbolic_uniform_board(p, q, op, 12, 1, scale=1, arc=64)
         angle: dict = defaultdict(float)
+        corners: dict = defaultdict(int)
         for cell, polygon in board.polygons.items():
             mask = board.corner_mask[cell]
             n = len(polygon)
@@ -2728,26 +2753,30 @@ class TestHyperbolicUniform:
                 a, b, c = polygon[i - 1], polygon[i], polygon[(i + 1) % n]
                 u = complex(a[0] - b[0], a[1] - b[1])
                 w = complex(c[0] - b[0], c[1] - b[1])
-                angle[(round(b[0], 6), round(b[1], 6))] += abs(cmath.phase(w / u))
-        centre = complex(board.width / 2, board.height / 2)
-        inner = [total for (x, y), total in angle.items() if abs(complex(x, y) - centre) < 0.3]
+                at = (round(b[0], 6), round(b[1], 6))
+                angle[at] += abs(cmath.phase(w / u))
+                corners[at] += 1
+        valence = len(_wythoff_config(p, q, op))
+        inner = [total for at, total in angle.items() if corners[at] == valence]
         assert inner and all(total == pytest.approx(2 * math.pi, abs=0.03) for total in inner)
 
-    @pytest.mark.parametrize("op", sorted(_WYTHOFF))
-    def test_an_inner_tile_sees_the_neighbours_its_shape_gives(self, op):
-        board = hyperbolic_uniform_board(7, 3, op, 30, 1)
+    @pytest.mark.parametrize("p,q,op", _WYTHOFF, ids=_WYTHOFF_IDS)
+    def test_an_inner_tile_sees_the_neighbours_its_shape_gives(self, p, q, op):
+        board = hyperbolic_uniform_board(p, q, op, 30, 1)
         sides = {cell: sum(mask) for cell, mask in board.corner_mask.items()}
-        expected = _WYTHOFF[op][1]
-        for n, degree in expected.items():
+        config = _wythoff_config(p, q, op)
+        for n in set(config):
+            degree = n * (len(config) - 2)
             assert max(len(board.adjacency[c]) for c in sides if sides[c] == n) == degree
-        # the central face is the heptagon (or the 14-gon) and is interior
-        assert sides[0] == max(expected)
-        assert len(board.adjacency[0]) == expected[sides[0]]
+        # the central face stands on the central p-gon -- the p-gon itself, or
+        # the 2p-gon of bevel and truncate -- and is interior
+        assert sides[0] == (2 * p if op in ("bevel", "truncate") else p)
+        assert len(board.adjacency[0]) == sides[0] * (len(config) - 2)
 
-    @pytest.mark.parametrize("op", sorted(_WYTHOFF))
+    @pytest.mark.parametrize("p,q,op", _WYTHOFF, ids=_WYTHOFF_IDS)
     @pytest.mark.parametrize("shells", [4, 11, 23, 37])
-    def test_a_trim_keeps_the_dihedral_symmetry(self, op, shells):
-        board = hyperbolic_uniform_board(7, 3, op, shells, 1, scale=1)
+    def test_a_trim_keeps_the_dihedral_symmetry(self, p, q, op, shells):
+        board = hyperbolic_uniform_board(p, q, op, shells, 1, scale=1)
         c = complex(board.width / 2, board.height / 2)
 
         def points(transform):
@@ -2756,44 +2785,54 @@ class TestHyperbolicUniform:
                           for z in (transform(complex(*xy) - c) for xy in poly))
 
         same = points(lambda z: z)
-        assert points(lambda z: z * cmath.exp(2j * math.pi / 7)) == same
+        assert points(lambda z: z * cmath.exp(2j * math.pi / p)) == same
         assert points(lambda z: -z.conjugate()) == same
 
-    @pytest.mark.parametrize("op", sorted(_WYTHOFF))
-    def test_every_trim_is_a_twin_free_disc(self, op):
+    @pytest.mark.parametrize("p,q,op", _WYTHOFF, ids=_WYTHOFF_IDS)
+    def test_every_trim_is_a_disc_with_no_twin_or_near_twin(self, p, q, op):
+        # One sweep for both, since building the trims is most of the cost,
+        # and with no arc points along the edges: they are not corners, and
+        # adjacency and topology are the same without them. Every trim of
+        # {7,3}'s tilings, and every third of the other families' -- the
+        # pytest job runs under a five-minute limit, and every shipped trim is
+        # built again by TestPresets and TestInvariants.
         from scripts.difficulty.metrics import indistinguishable_cells
-        for shells in range(2, 45):
-            board = hyperbolic_uniform_board(7, 3, op, shells, 1)
+        for shells in range(2, 45) if (p, q) == (7, 3) else range(2, 47, 3):
+            board = hyperbolic_uniform_board(p, q, op, shells, 1, arc=1)
             assert _euler_characteristic(board) == 1, shells
             assert _boundary_components(board) == 1, shells
             assert _connected(board), shells
             assert indistinguishable_cells(board.adjacency) == 0, shells
-
-    @pytest.mark.parametrize("op", sorted(_WYTHOFF))
-    def test_no_trim_leaves_a_near_twin(self, op):
-        # the {p,q} boards' near-twin drop, which the uniform boards share
-        for shells in range(3, 45):
-            board = hyperbolic_uniform_board(7, 3, op, shells, 1)
+            # the {p,q} boards' near-twin drop, which the uniform boards share
             hood = {c: frozenset([c, *ns]) for c, ns in board.adjacency.items()}
             assert not [
                 (a, b) for a, ns in board.adjacency.items() for b in ns
                 if len(hood[b]) == len(hood[a]) + 1 and hood[a] < hood[b]
             ], shells
 
-    def test_the_soccer_ball_has_no_twin_or_near_twin_to_drop(self):
-        # trivalent, like {7,3}: every 6.6.7 trim is kept whole
+    @pytest.mark.parametrize("p", [7, 8])
+    def test_the_soccer_ball_has_no_twin_or_near_twin_to_drop(self, p):
+        # trivalent, like {7,3}: every 6.6.7 trim is kept whole, and every
+        # 6.6.8 one (the zips of {5,4}, {6,4} and {5,5} do drop rim cells)
         from minesweeper.boards import hyperbolic as hyp
-        faces, _, groups = hyp._wythoff_rings_for(7, 3, "zip", 40)
+        faces, _, groups = hyp._wythoff_rings_for(p, 3, "zip", 40)
         for shells in range(2, 40):
             kept = sorted(f for group in groups[:shells] for f in group)
             assert hyp._without_twins(faces, kept) == kept
 
-    @pytest.mark.parametrize("op", sorted(_WYTHOFF))
-    def test_distance_shells_are_far_apart(self, op):
-        _, _, centres = wythoff_faces(7, 3, op, 4)
-        dists = sorted(2 * math.atanh(abs(z)) for z in centres)
-        gaps = [b - a for a, b in zip(dists, dists[1:])]
-        assert all(g < 1e-10 or g > 1e-5 for g in gaps)
+    @pytest.mark.parametrize("p,q,op", _WYTHOFF, ids=_WYTHOFF_IDS)
+    def test_distance_shells_are_far_apart(self, p, q, op):
+        # out to the 60th distance, well past any trim the boards use: four
+        # rings of {6,4} reach two orbits 9e-6 apart at distance 6.97, which
+        # the 1e-7 grouping still parts but this margin would not
+        for rings in range(4, 7):
+            _, _, centres = wythoff_faces(p, q, op, rings)
+            dists = sorted(2 * math.atanh(abs(z)) for z in centres)
+            gaps = [b - a for a, b in zip(dists, dists[1:])]
+            distinct = [i for i, g in enumerate(gaps) if g >= 1e-10]
+            if len(distinct) >= 60:
+                break
+        assert all(g < 1e-10 or g > 1e-5 for g in gaps[:distinct[59] + 1])
 
     def test_the_soccer_ball_keeps_rim_cells_bigger_than_heptagons_do(self):
         # the point of 6.6.7: a hexagon covers far less of the hyperbolic plane
@@ -2809,6 +2848,13 @@ class TestHyperbolicUniform:
         heptagons = hyperbolic_board(7, 3, 26, 1)  # 477, the hard board
         assert abs(len(soccer.adjacency) - len(heptagons.adjacency)) < 40
         assert smallest(soccer) > 2 * smallest(heptagons)
+
+    def test_truncate_is_the_dual_zipped(self):
+        # t{p,q} is zip on {q,p}: the same tiling, centred on a 2p-gon rather
+        # than on a q-gon, which is why the 4.10.10 and 4.12.12 boards use it
+        assert wythoff_mode(5, 4, "truncate") == wythoff_mode(4, 5, "zip")
+        assert wythoff_mode(6, 4, "truncate") == wythoff_mode(4, 6, "zip")
+        assert wythoff_mode(7, 3, "truncate") == wythoff_mode(3, 7, "zip")
 
     def test_an_unknown_operation_is_refused(self):
         with pytest.raises(ValueError):
@@ -2915,14 +2961,15 @@ class TestHurwitz:
         for cell, neighbours in board.adjacency.items():
             assert len(neighbours) == len(board.quotient[cell])
 
-    @pytest.mark.parametrize("op", sorted(_WYTHOFF))
+    @pytest.mark.parametrize("op", sorted(op for p, q, op in _WYTHOFF
+                                          if (p, q) == (7, 3) and op in HURWITZ_OPS))
     def test_every_tiling_of_the_quartic_keeps_its_count(self, op):
         cells = hurwitz_cells("quartic", op)
         board = hurwitz_board("quartic", op, 0, 1)
-        counts = _WYTHOFF[op][1]
+        valence = len(_wythoff_config(7, 3, op))
         assert len(board.adjacency) == len(cells)
         for cell, neighbours in board.adjacency.items():
-            assert len(neighbours) == counts[len(board.quotient[cell])]
+            assert len(neighbours) == len(board.quotient[cell]) * (valence - 2)
 
     @pytest.mark.parametrize("surface", sorted(_HURWITZ))
     def test_no_two_cells_can_be_told_apart_only_by_one(self, surface):

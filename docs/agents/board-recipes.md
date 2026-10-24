@@ -810,17 +810,26 @@ into Regular, Uniform and Closed surfaces by the preset's builder (`MENU_SUBFAMI
 `web/tests/unit/menu.test.ts` rather than vanishing from the menu — add its
 submenu there, with a label, a hint and an icon alias.
 
-**A uniform tiling of a {p,q}** (6.6.7, 3.7.3.7, 3.4.7.4, 4.6.14 on {7,3}) is
-also data: a `{builder: "hyperbolic_uniform_board", args: {difficulty: [p, q,
-op, shells, mines, scale]}}` row with `op` one of `WYTHOFF_OPS`, and the mode
-must be `wythoff_mode(p, q, op)`. Add it to `_HYPERBOLIC_UNIFORM` in `gui.py`
-and `HYPERBOLIC_UNIFORM` in `icons.ts` (with its icon shells and menu card, as
-in step 3), and to `_WYTHOFF` / `UNIFORM` in the two test files. Then the
-checks above, plus two the regular boards never needed: **a new side count**
-(a 14-gon was one) needs a badge in `SHAPE_SIDES` and a regenerated Game
-Center list (`npm run gamecenter`), and **a new pair of shapes on one board**
-must sound a chord -- `soundHarmony.test.ts` fails if it does not, and the fix
-is the spelling in `audio/presets.ts`. See
+**A uniform tiling of a {p,q}** (6.6.7 on {7,3}, 4.8.10 on {5,4}, twenty-one in
+all) is also data: a `{builder: "hyperbolic_uniform_board", args: {difficulty:
+[p, q, op, shells, mines, scale]}}` row with `op` one of `WYTHOFF_OPS`, and the
+mode must be `wythoff_mode(p, q, op)`. Build it on the face-centred {p,q} with
+p >= q, so the board centres on its big face; `truncate` is there for a
+truncation that `zip` on the dual would centre on a small square. Add the mode
+to `menu.hyperbolic` in its family's run (the Uniform page lists them in that
+order), to `_HYPERBOLIC_UNIFORM` in `gui.py` and `HYPERBOLIC_UNIFORM` in
+`icons.ts` as `(p, q, op)` (with its icon shells and menu card, as in step 3),
+and to `_WYTHOFF` / `UNIFORM` in the two test files. Then the checks above,
+plus two the regular boards never needed: **a new side count** (the 14-gon and
+16-gon were) needs a badge in `SHAPE_SIDES` and a regenerated Game Center list
+(`npm run gamecenter`, with `PLAYWRIGHT_CHROMIUM_EXECUTABLE` where the pinned
+browser is not installed), and **a new pair of shapes on one board** must
+sound a chord -- `soundHarmony.test.ts` fails if it does not, and the fix is
+the spelling in `audio/presets.ts`. Read the calibrated rows before believing
+them: a mine count out of line with the board's other two rows means a trim
+whose rim is mostly forced guesses, and the fix is the neighbouring trim,
+pinned in `resize.PINNED_ROWS` (4.8.12, 4.12.12 and 3.16.16 medium and
+3.14.14 hard are). See
 [`geometry.md`](geometry.md#the-uniform-hyperbolic-boards).
 
 **A closed hyperbolic surface** (`hurwitz.py`, `web/src/boards/hurwitz.ts`)

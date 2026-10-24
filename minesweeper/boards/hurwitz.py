@@ -141,9 +141,10 @@ def patch_reach(surface: str, op: str) -> float:
     return cover_view(surface) + VIEW_SHIFT + _tile_radius(op)
 
 #: The tilings a surface can be drawn in: ``"none"`` is {7,3} itself, then its
-#: Wythoff tilings (`hyperbolic.WYTHOFF_OPS`), then its Goldberg--Coxeter
+#: Wythoff tilings (`hyperbolic.WYTHOFF_OPS`, bar ``truncate``: 3.14.14's
+#: triangles are tiny beside its 14-gons), then its Goldberg--Coxeter
 #: subdivisions GC(n, 0), ``"gc2"`` .. ``"gc4"`` (`gc_loops`).
-HURWITZ_OPS = ("none", *WYTHOFF_OPS, "gc2", "gc3", "gc4")
+HURWITZ_OPS = ("none", *(op for op in WYTHOFF_OPS if op != "truncate"), "gc2", "gc3", "gc4")
 
 #: Each surface's mode: one surface a mode, whatever the difficulty, which
 #: grows the board by changing the tiling -- {7,3} itself, its 6.6.7, or a

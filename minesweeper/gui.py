@@ -1018,15 +1018,44 @@ _HYPERBOLIC_ICON_SHELLS = {"hyperbolic83": 4, "hyperbolic73": 4, "hyperbolic64":
                            "hyperbolic55": 4, "hyperbolic45": 5, "hyperbolic46": 6,
                            "hyperbolic667": 4, "hyperbolic3737": 4, "hyperbolic3474": 5,
                            "hyperbolic4614": 5, "hyperbolic37": 5, "hyperbolic38": 5,
+                           "hyperbolic31414": 4, "hyperbolic31616": 4,
+                           "hyperbolic668": 4, "hyperbolic3838": 4, "hyperbolic3484": 5,
+                           "hyperbolic4616": 5, "hyperbolic588": 5, "hyperbolic41010": 5,
+                           "hyperbolic4545": 5, "hyperbolic4445": 5, "hyperbolic4810": 5,
+                           "hyperbolic688": 5, "hyperbolic41212": 5, "hyperbolic4646": 5,
+                           "hyperbolic4446": 4, "hyperbolic4812": 4, "hyperbolic51010": 4,
                            "quartic": 4, "macbeath": 4, "triplet": 4}
-# The uniform ones are Wythoff's operations on {7,3}; every other hyperbolic
-# mode is ``hyperbolic{p}{q}``. The closed surface draws the same disc as its
-# tiling's, with every heptagon lit rather than the central one: on a surface
-# with no rim every one of them is a full seven-neighbour cell.
-_HYPERBOLIC_UNIFORM = {"hyperbolic667": "zip", "hyperbolic3737": "ambo",
-                       "hyperbolic3474": "expand", "hyperbolic4614": "bevel",
-                       "quartic": "zip", "macbeath": "zip",
-                       "triplet": "zip"}
+# The uniform ones are Wythoff's operations on a {p,q}, as (p, q, op); every
+# other hyperbolic mode is ``hyperbolic{p}{q}``. The closed surface draws the
+# same disc as its tiling's, with every heptagon lit rather than the central
+# one: on a surface with no rim every one of them is a full seven-neighbour
+# cell. Must match `HYPERBOLIC_UNIFORM` in web/src/ui/icons.ts.
+_HYPERBOLIC_UNIFORM = {
+    "hyperbolic667": (7, 3, "zip"),
+    "hyperbolic31414": (7, 3, "truncate"),
+    "hyperbolic3737": (7, 3, "ambo"),
+    "hyperbolic3474": (7, 3, "expand"),
+    "hyperbolic4614": (7, 3, "bevel"),
+    "hyperbolic668": (8, 3, "zip"),
+    "hyperbolic31616": (8, 3, "truncate"),
+    "hyperbolic3838": (8, 3, "ambo"),
+    "hyperbolic3484": (8, 3, "expand"),
+    "hyperbolic4616": (8, 3, "bevel"),
+    "hyperbolic588": (5, 4, "zip"),
+    "hyperbolic41010": (5, 4, "truncate"),
+    "hyperbolic4545": (5, 4, "ambo"),
+    "hyperbolic4445": (5, 4, "expand"),
+    "hyperbolic4810": (5, 4, "bevel"),
+    "hyperbolic688": (6, 4, "zip"),
+    "hyperbolic41212": (6, 4, "truncate"),
+    "hyperbolic4646": (6, 4, "ambo"),
+    "hyperbolic4446": (6, 4, "expand"),
+    "hyperbolic4812": (6, 4, "bevel"),
+    "hyperbolic51010": (5, 5, "zip"),
+    "quartic": (7, 3, "zip"),
+    "macbeath": (7, 3, "zip"),
+    "triplet": (7, 3, "zip"),
+}
 # The closed surfaces (boards/hurwitz.py), whose icon lights every heptagon.
 _CLOSED_SURFACE_MODES = frozenset({"quartic", "macbeath", "triplet"})
 
@@ -1452,7 +1481,7 @@ def _render_icon(key: str) -> pygame.Surface:
         # the arcs are what make it read as the Poincare disc
         central = 1
         if key in _HYPERBOLIC_UNIFORM:
-            board = hyperbolic_uniform_board(7, 3, _HYPERBOLIC_UNIFORM[key],
+            board = hyperbolic_uniform_board(*_HYPERBOLIC_UNIFORM[key],
                                              _HYPERBOLIC_ICON_SHELLS[key], 1, scale=1)
         else:
             p, q = int(key[-2]), int(key[-1])
