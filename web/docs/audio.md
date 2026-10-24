@@ -81,7 +81,11 @@ Two consequences worth knowing before touching the numbers:
   and {4,6,14} sets on chord tones. Triangles to hexagons did not move, so
   the boards most people play ring exactly as before; the octagon-and-up
   boards ring lower, Blocks' 13-gon at 52 Hz, just above that 50 Hz floor.
-  A 14-gon clamps to the 13-gon's degree.
+  A 14-gon clamps to the 13-gon's degree, and so does the 16-gon of the
+  truncated trioctagonal board (4.6.16): its {4,6,16} spells as {4,6,14}
+  does. The other uniform hyperbolic boards' sets ({3,8}, {4,6}, {4,10},
+  {4,12}, {5,8}, {5,10}, {6,8}, {3,4,8}, {4,8,10}, {4,8,12}) all landed on
+  chord tones with no change to the spelling.
 
 `flag.interval` is the one pitch left in semitones. A flag is a lone gesture
 rather than part of a chord, so its glide is free to leave the grid.

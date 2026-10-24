@@ -296,6 +296,22 @@ describe("board symmetries", () => {
       ["hyperbolic3737", "easy", 14],
       ["hyperbolic3474", "medium", 14],
       ["hyperbolic4614", "hard", 14],
+      // the other families' uniform tilings keep their central face's Dp
+      ["hyperbolic668", "easy", 16], // D8
+      ["hyperbolic3838", "medium", 16], // D8
+      ["hyperbolic3484", "hard", 16], // D8
+      ["hyperbolic4616", "easy", 16], // D8
+      ["hyperbolic588", "medium", 10], // D5
+      ["hyperbolic41010", "hard", 10], // D5
+      ["hyperbolic4545", "easy", 10], // D5
+      ["hyperbolic4445", "medium", 10], // D5
+      ["hyperbolic4810", "hard", 10], // D5
+      ["hyperbolic688", "easy", 12], // D6
+      ["hyperbolic41212", "medium", 12], // D6
+      ["hyperbolic4646", "hard", 12], // D6
+      ["hyperbolic4446", "easy", 12], // D6
+      ["hyperbolic4812", "medium", 12], // D6
+      ["hyperbolic51010", "hard", 10], // D5
       // the binary tiling's window has the one mirror, down its middle
       ["hyperbolicbinary", "easy", 2],
       ["hyperbolicbinary", "hard", 2],

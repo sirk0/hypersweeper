@@ -136,7 +136,27 @@ const REGULAR = [
   "hyperbolic73",
   "hyperbolic83",
 ];
-const UNIFORM = ["hyperbolic667", "hyperbolic3737", "hyperbolic3474", "hyperbolic4614"];
+const UNIFORM = [
+  "hyperbolic667",
+  "hyperbolic3737",
+  "hyperbolic3474",
+  "hyperbolic4614",
+  "hyperbolic668",
+  "hyperbolic3838",
+  "hyperbolic3484",
+  "hyperbolic4616",
+  "hyperbolic588",
+  "hyperbolic41010",
+  "hyperbolic4545",
+  "hyperbolic4445",
+  "hyperbolic4810",
+  "hyperbolic688",
+  "hyperbolic41212",
+  "hyperbolic4646",
+  "hyperbolic4446",
+  "hyperbolic4812",
+  "hyperbolic51010",
+];
 const CLOSED = ["quartic", "macbeath", "triplet"];
 
 describe("geometry groups", () => {

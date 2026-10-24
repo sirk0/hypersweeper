@@ -572,15 +572,20 @@ def disc_drawing(faces: list[tuple[int, ...]], kept: list[int],
 #   ``zip``    on FE, as far from FV as from VE       t{q,p}   6.6.7
 #   ``expand`` on FV, as far from FE as from VE       rr{p,q}  3.4.7.4
 #   ``bevel``  inside, as far from all three sides    tr{p,q}  4.6.14
+#   ``truncate`` on VE, as far from FV as from FE      t{p,q}   3.14.14
 #
 # ``zip`` is the truncation of the dual {q,p}: on {7,3} the hyperbolic soccer
 # ball, HyperRogue's default -- hexagons, with each heptagon ringed by them.
+# ``truncate`` is {p,q}'s own, centred on a 2p-gon: no {7,3} board uses it (its
+# triangles are tiny beside the 14-gons), but on {5,4} and {6,4} it is what
+# centres 4.10.10 and 4.12.12 on their big face rather than on a square.
 #
 # **The ids stay combinatorial.** A flag is (face, corner, edge) of the {p,q}
 # the ring walk already builds with integer ids, and each new vertex is named
 # by the part of its flag that the generating point's position does not
 # collapse: (face, edge) for ``zip``, the edge alone for ``ambo``, (face,
-# corner) for ``expand`` and the whole flag for ``bevel`` -- tuples of the
+# corner) for ``expand``, (corner, the edge's other end) for ``truncate`` and
+# the whole flag for ``bevel`` -- tuples of the
 # walk's integers, renumbered in the order the faces meet them. The new tiling
 # has a face for every old face (F), every old vertex with all q faces round it
 # (V), and every old edge with both faces (E) wherever those orbits are not
@@ -592,15 +597,16 @@ def disc_drawing(faces: list[tuple[int, ...]], kept: list[int],
 # for the flag on the other side of the corner -- through the same isometry
 # that placed that face.
 
-#: The four operations, in the order of the table above.
-WYTHOFF_OPS = ("ambo", "zip", "expand", "bevel")
+#: The five operations, in the order of the table above.
+WYTHOFF_OPS = ("ambo", "zip", "expand", "bevel", "truncate")
 
 
 def _vertex_config(p: int, q: int, op: str) -> tuple[int, ...]:
     """The faces round a vertex, smallest first as the notation writes them
-    (3.7.3.7, 6.6.7, 3.4.7.4, 4.6.14)."""
+    (3.7.3.7, 6.6.7, 3.4.7.4, 4.6.14, 3.14.14)."""
     ring = {"ambo": [p, q, p, q], "zip": [2 * q, 2 * q, p],
-            "expand": [p, 4, q, 4], "bevel": [4, 2 * q, 2 * p]}[op]
+            "expand": [p, 4, q, 4], "bevel": [4, 2 * q, 2 * p],
+            "truncate": [q, 2 * p, 2 * p]}[op]
     turns = [ring[i:] + ring[:i] for i in range(len(ring))]
     return tuple(min(turns + [t[::-1] for t in turns]))
 
@@ -673,6 +679,8 @@ def _generating_point(p: int, q: int, op: str) -> complex:
         point = _mink_cross(fv, minus(fe, ve))
     elif op == "bevel":
         point = _mink_cross(minus(fv, fe), minus(fe, ve))
+    elif op == "truncate":
+        point = _mink_cross(ve, minus(fv, fe))
     else:
         raise ValueError(f"unknown Wythoff operation {op!r}")
     return _drop(point)
@@ -724,6 +732,8 @@ def wythoff_loops(p: int, q: int, op: str, rings: int):
             return (f, *edge)
         if op == "expand":
             return (f, v)
+        if op == "truncate":
+            return (v, u)  # on the edge, so both its faces' flags meet here
         return (f, v, u)
 
     maps = [_isometry(centre[0], centre[1], bpos[face[0]], bpos[face[1]]) for face in base]

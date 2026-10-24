@@ -672,6 +672,11 @@ PINNED = {"square"}
 # is typical at 450 tiles (0.41 against a median of 0.43), so that is the size.
 PINNED_ROWS = {
     ("kitedart", "hard"): "the centred window plays like a typical one at 450",
+    # Two hyperbolic trims whose rims are mostly forced guesses: 4.8.12 at 259
+    # cells calibrates to 6 mines (2.3%) where its 235 and 247 take 14, and
+    # 4.12.12 at 253 to 3, fewer than its easy board's 4, where 289 takes 5.
+    ("hyperbolic4812", "medium"): "259 cells is all coin flips at the rim; 247 plays like 235",
+    ("hyperbolic41212", "medium"): "253 cells is all coin flips at the rim; 289 does not",
 }
 
 

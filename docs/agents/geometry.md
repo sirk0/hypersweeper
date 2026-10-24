@@ -42,7 +42,7 @@ Import order is a strict DAG; a module only imports from the ones above it.
 | `tilings.py` | Regular flat builders (square/triangle/trigrid/hex/hexhex/hextri/hextriangle/squarediamond), the `_ArchTemplate` system, the eight Archimedean `_*_template()` factories plus their eight Laves duals (built by `_dual_template`), the six isogonal (non-edge-to-edge) ones, the five congruent-rectangle bonds, the two rep-tile patterns and Dürer's pentagon tiling, all twenty 2-uniform tilings (three cut or merged from a uniform tiling, seventeen written down from one translation cell by `_cell_template`), and the **`ARCH_TILINGS`** registry (the one place any of them is declared, with `_FAMILY_TRAITS` saying what each family is). |
 | `fractal.py` | The self-similar (fractal) boards: the sphinx, the chair, the Sierpinski carpet, the pentaflake and the Gosper island. One `_Substitution` record per tile — unit outline, the tiles filling the inflated copy, the inflation factor, lattice ops — and the shared inflation (`substitution_placements`) all five `*_board` builders run. The first two are rep-tiles (their children fill the tile); the carpet's and the pentaflake's leave holes, which is what makes them fractals with holes rather than shapes; the Gosper island's fill it with no hole at all and put the fractal in the *outline* instead. Four lattices are integer; the pentaflake's is ℤ[ζ10], since five-fold symmetry needs rank 4. The Gosper island's inflation is the one that is not a pure scaling: multiplication by 2 + ζ, a spiral similarity of √7 at 19.106°. |
 | `aperiodic.py` | Penrose's rhombi (P3) and his kites and darts (P2), Ammann–Beenker (squares and 45° rhombi, eight-fold), the Spectre (Tile(1,1), the chiral monotile), the phyllotactic spiral, Klaassen's spiral monotile and his three pentagonal spirals (5-, 6- and 7-fold, one convex pentagon each), each with exact-arithmetic vertex ids — ℤ[ζ5] for both Penrose boards and the spiral, ℤ[ζ8] for Ammann–Beenker, ℤ[ζ12] for the Spectre. The Spectre's ring is *dense* in the plane, so unlike Penrose's discrete lattice there is no lattice to snap a float vertex back to: its placements are carried as exact `(rotation, mirror, translation)` triples and no floating point enters the substitution at all. The spiral is the odd one out — no substitution, just ten 36° wedges of the tile's own translation lattice, the odd ones offset a step; nonperiodic because its five-fold centre forbids any translation. The **brick rings** are nonperiodic the same way — by symmetry rather than by a substitution — and are the plainest board here: 2x1 bricks on the integer square lattice in concentric square rings about a 2x2 core, ring k being the boundary of the 2k x 2k square with horizontal bricks along its rows and vertical ones up its sides. Every run is even, so every tile is a whole brick and only an even-sided square is tileable at all. A brick's corner lands in the middle of a neighbour's long side, so `_brick_outline` splits each edge at the lattice points that are genuinely some tile's corner — the 2D twin of `solids._split_at_lattice_points`, and *conditional*, unlike the fractal outlines, which carry a vertex at every step. |
-| `hyperbolic.py` | The regular {p,q} tilings of the hyperbolic plane, drawn in the Poincaré disc: {8,3} octagons, {7,3} heptagons, {6,4} hexagons, {5,4} and {5,5} pentagons, {4,5} and {4,6} squares, {3,7} and {3,8} triangles. Built combinatorially ring by ring with integer vertex ids (the triangles as the duals of {7,3} and {8,3}), placed afterwards by disc isometries, edges drawn as geodesic arcs, trimmed by hyperbolic-distance shells. See "The hyperbolic boards" below. Also Böröczky's binary tiling, drawn in the upper half-plane as a rectangle (`binary_board`); see "The binary tiling" below. |
+| `hyperbolic.py` | The regular {p,q} tilings of the hyperbolic plane, drawn in the Poincaré disc: {8,3} octagons, {7,3} heptagons, {6,4} hexagons, {5,4} and {5,5} pentagons, {4,5} and {4,6} squares, {3,7} and {3,8} triangles. Built combinatorially ring by ring with integer vertex ids (the triangles as the duals of {7,3} and {8,3}), placed afterwards by disc isometries, edges drawn as geodesic arcs, trimmed by hyperbolic-distance shells. See "The hyperbolic boards" below. Their uniform tilings come off the same walk by Wythoff's construction (`ambo`, `zip`, `expand`, `bevel`, `truncate`; see "The uniform hyperbolic boards"). Also Böröczky's binary tiling, drawn in the upper half-plane as a rectangle (`binary_board`); see "The binary tiling" below. |
 | `hurwitz.py` | The closed hyperbolic surfaces: Klein's quartic, Macbeath's surface and one of the first Hurwitz triplet, the {7,3} tiling glued up with no rim. Each surface's map is read off its group, PSL(2,q), with integer ids; the {7,3} disc of `hyperbolic.py` covers it, by a covering map walked on ids alone; and the board draws a patch of that disc, every face showing the cell it covers (`Board.faces`), with the surface's own adjacency and topology (`Board.quotient`). See "The closed hyperbolic surfaces" below. |
 | `solids.py` | Closed/convex and polycube 3D boards (the Goldberg polyhedra GP(f, 0) and GP(h, k), the geodesic icosahedron and its subdivision `_geodesic`, with its class III cousin `_geodesic_hk`, cube, the Platonic solids, frames, bipyramid), plus the shared `_wythoff_point` every uniform solid here and every Catalan solid next door is generated from. |
 | `catalan.py` | The thirteen Catalan solids, the duals of the Archimedean solids. One recipe for all of them: a Platonic base and one flag, the Wythoff generating point of its Schwarz triangle (`solids._wythoff_point` for the five non-chiral Conway operations, `_snub_point` for the chiral one), a Catalan vertex at `n / <w, n>` on each face axis — polar duality — and the base's flags grouped into faces by the operation. Faces are then subdivided (`solids._geodesic` for triangles, `_quad_grid` for quadrilaterals, a five-way fan first for pentagons), which is these boards' only size knob. `_tri_grid` is `_quad_grid`'s triangle twin, for the solids next door whose triangles meet squares. |
@@ -771,9 +771,9 @@ counts nothing else in the game has for its tile (a {3,7} triangle's 15 against
 a flat triangle's 12) -- and the boards are drawn in the
 **Poincaré disc**, a deliberate round exception to the square-window convention
 like the fractals and Klaassen's spiral.
-Four more are **uniform** rather than regular -- every corner alike, more than
-one tile -- and come off the same {7,3} walk; see "The uniform hyperbolic
-boards" below. One more is drawn in the upper half-plane rather than the disc,
+Nineteen more are **uniform** rather than regular -- every corner alike, more
+than one tile -- and come off the same ring walk, on {7,3}, {8,3}, {5,4},
+{6,4} and {5,5}; see "The uniform hyperbolic boards" below. One more is drawn in the upper half-plane rather than the disc,
 as a rectangle: Böröczky's binary tiling (see "The binary tiling" below).
 And three -- `quartic`, `macbeath`, `triplet` -- are drawn in the disc
 but are not discs at all: the hyperbolic plane glued up into closed surfaces,
@@ -923,8 +923,7 @@ Four things worth knowing before touching them:
 that are not {p,q} itself, by **Wythoff's construction**: put a generating
 point in one flag triangle -- a face's centre F, one of its corners V and the
 midpoint E of an edge at that corner -- and reflect it everywhere. Where it
-sits decides the tiling, and the four that ship are the four places that give
-something new on {7,3} (Conway's names):
+sits decides the tiling (Conway's names):
 
 | `op` | the point | {7,3} gives | Mode | Inner tile's neighbours |
 |---|---|---|---|---|
@@ -932,11 +931,40 @@ something new on {7,3} (Conway's names):
 | `ambo` | at E | **3.7.3.7**, triheptagonal | `hyperbolic3737` | triangle 6, heptagon 14 |
 | `expand` | on FV, as far from FE as from VE | **3.4.7.4**, rhombitriheptagonal | `hyperbolic3474` | triangle 6, square 8, heptagon 14 |
 | `bevel` | inside, as far from all three sides | **4.6.14**, truncated triheptagonal | `hyperbolic4614` | square 4, hexagon 6, 14-gon 14 |
+| `truncate` | on VE, as far from FV as from FE | 3.14.14, the truncated {7,3} | -- | -- |
 
-(The other two places, V and the VE line, give {7,3} back and 3.14.14, its
-truncation, whose triangles are tiny beside the 14-gons.) The mode is
-`hyperbolic` and the vertex configuration's digits, smallest first as the
-notation writes it.
+(The last place, V, gives {7,3} back.) The mode is `hyperbolic` and the vertex
+configuration's digits, smallest first as the notation writes it. An inner
+tile's neighbours follow from the configuration: its sides where three tiles
+meet (`zip`, `bevel`, `truncate`), twice them where four do (`ambo`,
+`expand`).
+
+**The same five places on every shipped family, less what repeats.** Each
+regular board's family -- {8,3} with {3,8}, {5,4} with {4,5}, {6,4} with
+{4,6}, and {5,5} -- has its own uniform tilings, and nineteen ship in all,
+filed family by family on the Uniform page:
+
+| Family | `zip` | `truncate` | `ambo` | `expand` | `bevel` |
+|---|---|---|---|---|---|
+| {7,3} | 6.6.7 | -- | 3.7.3.7 | 3.4.7.4 | 4.6.14 |
+| {8,3} | 6.6.8 | -- | 3.8.3.8 | 3.4.8.4 | 4.6.16 |
+| {5,4} | 5.8.8 | 4.10.10 | 4.5.4.5 | 4.4.4.5 | 4.8.10 |
+| {6,4} | 6.8.8 | 4.12.12 | 4.6.4.6 | 4.4.4.6 | 4.8.12 |
+| {5,5} | 5.10.10 | -- | -- | -- | -- |
+
+Every one is built on the face-centred {p,q} of the row (p >= q), so its
+central face stands on the central p-gon: the p-gon itself, or the 2p-gon of
+`bevel` and `truncate`, and every trim keeps D_p. What the table leaves out
+repeats or does not play. `truncate` on {p,q} is `zip` on its dual {q,p} --
+the same tiling, centred on the other face -- so the op exists for the two
+places where the zipped dual would centre the board on a small square: 4.10.10 and 4.12.12 sit on a
+decagon and a dodecagon instead. On the triangle families it is 3.14.14 and
+3.16.16, whose triangles are tiny beside their big faces, and neither ships.
+{5,5} is self-dual, so its `ambo` is {5,4} itself (5.5.5.5), its `expand` is
+4.5.4.5 and its `bevel` 4.10.10, all already in the {5,4} row; the mode name
+is what collapses them, since it is the vertex configuration. The snubs
+(3.3.3.3.7 and the rest) are not a Wythoff point at all but an alternation,
+and chiral, so none ships yet.
 
 **6.6.7 is the one built for play: HyperRogue's tiling, the hyperbolic soccer
 ball.** A hexagon covers far less of the hyperbolic plane than a {7,3}
@@ -949,7 +977,9 @@ seven for a heptagon, and a 7 next to a 6 is the thing to read with care.
 **The ids stay combinatorial.** A flag is (face, corner, edge) of the {p,q} the
 ring walk builds with integer ids, and a new vertex is named by the part of
 its flag the point's position does not collapse: (face, edge) for `zip`, the
-edge for `ambo`, (face, corner) for `expand`, the whole flag for `bevel` --
+edge for `ambo`, (face, corner) for `expand`, (corner, the edge's other end)
+for `truncate` -- the point is on the edge, so the flags either side of it
+meet there -- and the whole flag for `bevel` --
 tuples of the walk's integers, then renumbered in the order the faces meet
 them. A new face stands on every old face (F), every old vertex with all q
 faces round it (V) and every old edge with both of its faces (E), wherever
@@ -967,8 +997,8 @@ the corner angles round a vertex summing to 2 pi.
 **The trim, the twins and the disc are the {p,q} boards' own** (`_disc_board`
 is shared): faces kept by the distance of their centre (an old face's centre,
 an old vertex, an old edge's midpoint) from the central face, which is the
-heptagon (the 14-gon on `bevel`), so every trim keeps D7. The ring walk grows
-until no face that is missing could reach the cut, as for {p,q}, the inradius
+p-gon (the 2p-gon on `bevel` and `truncate`), so every trim keeps D_p. The
+ring walk grows until no face that is missing could reach the cut, as for {p,q}, the inradius
 there the smallest of the tiling's shapes. A face's index counts every face of
 the {p,q} tiling the walk grew, so a trim built from fewer rings numbers its
 cells differently; their order, which is what a seed deals the mines by, is
@@ -976,8 +1006,9 @@ the same. `ambo` and `zip`
 have the same faces at the same centres, and `expand` and `bevel` likewise,
 so each pair's shell trims are the same faces before the drop. **The drop is
 where they part.** `zip` is trivalent, like {7,3}, and no trim of it has a
-twin or a near-twin, so it is the one uniform board the drop never touches.
-The other three meet four at a corner (`ambo`, `expand`) or carry 14-gons
+twin or a near-twin, so on {7,3} it is the one uniform board the drop never
+touches (on {8,3} too; the trivalent `zip`s of {5,4}, {6,4} and {5,5} do lose
+rim cells at some trims). The other three meet four at a corner (`ambo`, `expand`) or carry 14-gons
 whose rims fan out (`bevel`), and lose rim cells to it at most trims --
 `expand` at 39 shells goes from 477 to 421 -- which is what moved their
 medium and hard rows out a few shells and roughly doubled the mines on
@@ -986,9 +1017,24 @@ after). That also took away the 78-cell easy trim of `expand` and `bevel`,
 which played too hard to calibrate (0.91 and 0.88 at the opening floor), so
 their easy rows are 85 cells.
 
+**The other families size and calibrate like {7,3}, with three exceptions.**
+4.6.16's easy row is 65 cells, a near-miss under the band: its trims step
+57 -> 65 -> 113, a whole D8 orbit of 16-gons at a time. And two medium trims
+the size search preferred had rims of forced guesses, which showed as a
+mine count out of line with the board's other two rows; `resize.PINNED_ROWS`
+holds them at the trim that plays like its neighbours: 4.8.12 at 247 cells
+(14 mines, where 259 took 6) and 4.12.12 at 289 (5 mines, where 253 took 3,
+fewer than its easy board's 4). 4.12.12 is the thinnest board in the game
+whatever the trim: a square's four neighbours are all dodecagons and a
+dodecagon's number covers twelve cells, so it calibrates to 1.7-5% mines
+(square-centred, as `zip` on {4,6} would build it, it is no better -- its easy
+trims miss the target even at the opening floor), and one click opens most of
+the board.
+
 **Two new things for the rest of the app.** A 14-gon is a side count nothing
 else has: it has a badge (`SHAPE_SIDES`, `hs.shape.14` in Game Center), shape
-colouring and the sound clamp it to the 13-gon's hue and pitch. And 6.6.7
+colouring and the sound clamp it to the 13-gon's hue and pitch. The 16-gon of
+4.6.16 is the same again, with `hs.shape.16`. And 6.6.7
 puts a hexagon and a heptagon on one board, which one pentatonic degree apart
 is a whole tone, so the sound spelling moved the 7-gon and everything above it
 down (see "One collection, and a spelling measured against the catalog" in

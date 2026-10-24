@@ -592,12 +592,13 @@ export function discDrawing(
 // generating point in one flag triangle (face centre F, corner V, edge
 // midpoint E) reflected everywhere, its place deciding the tiling --
 // `ambo` 3.7.3.7, `zip` 6.6.7 (the hyperbolic soccer ball), `expand` 3.4.7.4,
-// `bevel` 4.6.14 on {7,3}. New vertices are named by the part of their flag
+// `bevel` 4.6.14 and `truncate` 3.14.14 on {7,3} (truncate ships on {5,4} and
+// {6,4}, centring 4.10.10 and 4.12.12 on their big face). New vertices are named by the part of their flag
 // the op does not collapse, as tuples of the ring walk's integer ids, and
 // renumbered in the order the faces meet them.
 
 /** Must match `WYTHOFF_OPS`. */
-export const WYTHOFF_OPS = ["ambo", "zip", "expand", "bevel"] as const;
+export const WYTHOFF_OPS = ["ambo", "zip", "expand", "bevel", "truncate"] as const;
 export type WythoffOp = (typeof WYTHOFF_OPS)[number];
 
 /** The faces round a vertex, smallest first as the notation writes them.
@@ -608,6 +609,7 @@ export function vertexConfig(p: number, q: number, op: WythoffOp): number[] {
     zip: [2 * q, 2 * q, p],
     expand: [p, 4, q, 4],
     bevel: [4, 2 * q, 2 * p],
+    truncate: [q, 2 * p, 2 * p],
   }[op];
   const turns = ring.map((_, i) => [...ring.slice(i), ...ring.slice(0, i)]);
   const all = [...turns, ...turns.map((t) => [...t].reverse())];
@@ -683,6 +685,7 @@ function generatingPoint(p: number, q: number, op: WythoffOp): C {
   const ve = line(corner, mid, inside);
   if (op === "zip") return drop(minkCross(fe, minus(fv, ve)));
   if (op === "expand") return drop(minkCross(fv, minus(fe, ve)));
+  if (op === "truncate") return drop(minkCross(ve, minus(fv, fe)));
   return drop(minkCross(minus(fv, fe), minus(fe, ve)));
 }
 
@@ -749,6 +752,7 @@ export function wythoffLoops(p: number, q: number, op: WythoffOp, rings: number)
     if (op === "ambo") return edge;
     if (op === "zip") return `${f},${edge}`;
     if (op === "expand") return `${f},${v}`;
+    if (op === "truncate") return `${v},${u}`; // on the edge, so both its faces' flags meet here
     return `${f},${v},${u}`;
   };
 

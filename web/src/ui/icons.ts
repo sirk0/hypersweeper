@@ -2080,6 +2080,21 @@ const PATCH_BOARDS: Record<string, PatchBoard> = {
   hyperbolic3737: { build: () => hyperbolicDisc("hyperbolic3737", 18, 100), whole: true },
   hyperbolic3474: { build: () => hyperbolicDisc("hyperbolic3474", 16, 100), whole: true },
   hyperbolic4614: { build: () => hyperbolicDisc("hyperbolic4614", 16, 100), whole: true },
+  hyperbolic668: { build: () => hyperbolicDisc("hyperbolic668", 16, 100), whole: true },
+  hyperbolic3838: { build: () => hyperbolicDisc("hyperbolic3838", 16, 100), whole: true },
+  hyperbolic3484: { build: () => hyperbolicDisc("hyperbolic3484", 16, 100), whole: true },
+  hyperbolic4616: { build: () => hyperbolicDisc("hyperbolic4616", 16, 100), whole: true },
+  hyperbolic588: { build: () => hyperbolicDisc("hyperbolic588", 18, 100), whole: true },
+  hyperbolic41010: { build: () => hyperbolicDisc("hyperbolic41010", 18, 100), whole: true },
+  hyperbolic4545: { build: () => hyperbolicDisc("hyperbolic4545", 18, 100), whole: true },
+  hyperbolic4445: { build: () => hyperbolicDisc("hyperbolic4445", 18, 100), whole: true },
+  hyperbolic4810: { build: () => hyperbolicDisc("hyperbolic4810", 18, 100), whole: true },
+  hyperbolic688: { build: () => hyperbolicDisc("hyperbolic688", 16, 100), whole: true },
+  hyperbolic41212: { build: () => hyperbolicDisc("hyperbolic41212", 16, 100), whole: true },
+  hyperbolic4646: { build: () => hyperbolicDisc("hyperbolic4646", 16, 100), whole: true },
+  hyperbolic4446: { build: () => hyperbolicDisc("hyperbolic4446", 16, 100), whole: true },
+  hyperbolic4812: { build: () => hyperbolicDisc("hyperbolic4812", 16, 100), whole: true },
+  hyperbolic51010: { build: () => hyperbolicDisc("hyperbolic51010", 16, 100), whole: true },
   // Whole as well: the rectangle with its rows halving down to the ideal line
   // is the picture, as the disc is the {p,q} boards'.
   hyperbolicbinary: { build: () => binaryBoard(2, 5, 0, 100), whole: true },
@@ -2095,17 +2110,33 @@ const PATCH_BOARDS: Record<string, PatchBoard> = {
   triplet: { build: () => hyperbolicDisc("hyperbolic73", 16, 100), whole: true },
 };
 
-/** The uniform hyperbolic boards, each one of Wythoff's operations on {7,3}
- * (boards/hyperbolic.ts); every other hyperbolic mode is `hyperbolic{p}{q}`. */
-const HYPERBOLIC_UNIFORM: Record<string, WythoffOp> = {
-  hyperbolic667: "zip",
-  hyperbolic3737: "ambo",
-  hyperbolic3474: "expand",
-  hyperbolic4614: "bevel",
+/** The uniform hyperbolic boards, each one of Wythoff's operations on a {p,q}
+ * (boards/hyperbolic.ts); every other hyperbolic mode is `hyperbolic{p}{q}`.
+ * Must match `_HYPERBOLIC_UNIFORM` in gui.py. */
+const HYPERBOLIC_UNIFORM: Record<string, readonly [number, number, WythoffOp]> = {
+  hyperbolic667: [7, 3, "zip"],
+  hyperbolic3737: [7, 3, "ambo"],
+  hyperbolic3474: [7, 3, "expand"],
+  hyperbolic4614: [7, 3, "bevel"],
+  hyperbolic668: [8, 3, "zip"],
+  hyperbolic3838: [8, 3, "ambo"],
+  hyperbolic3484: [8, 3, "expand"],
+  hyperbolic4616: [8, 3, "bevel"],
+  hyperbolic588: [5, 4, "zip"],
+  hyperbolic41010: [5, 4, "truncate"],
+  hyperbolic4545: [5, 4, "ambo"],
+  hyperbolic4445: [5, 4, "expand"],
+  hyperbolic4810: [5, 4, "bevel"],
+  hyperbolic688: [6, 4, "zip"],
+  hyperbolic41212: [6, 4, "truncate"],
+  hyperbolic4646: [6, 4, "ambo"],
+  hyperbolic4446: [6, 4, "expand"],
+  hyperbolic4812: [6, 4, "bevel"],
+  hyperbolic51010: [5, 5, "zip"],
   // the closed surface's row icon is its tiling's disc (see the icon above)
-  quartic: "zip",
-  macbeath: "zip",
-  triplet: "zip",
+  quartic: [7, 3, "zip"],
+  macbeath: [7, 3, "zip"],
+  triplet: [7, 3, "zip"],
 };
 
 /** The closed surfaces (boards/hurwitz.ts), whose icon lights every heptagon.
@@ -2114,8 +2145,8 @@ const CLOSED_SURFACE_MODES = Object.values(SURFACE_MODES);
 
 /** A hyperbolic mode's disc trimmed to `shells`, with no mines. */
 function hyperbolicDisc(key: string, shells: number, scale: number): Board {
-  const op = HYPERBOLIC_UNIFORM[key];
-  if (op) return hyperbolicUniformBoard(7, 3, op, shells, 0, scale);
+  const uniform = HYPERBOLIC_UNIFORM[key];
+  if (uniform) return hyperbolicUniformBoard(...uniform, shells, 0, scale);
   return hyperbolicBoard(Number(key.at(-2)), Number(key.at(-1)), shells, 0, scale);
 }
 
@@ -2137,6 +2168,21 @@ const HYPERBOLIC_ICON_SHELLS: Record<string, number> = {
   hyperbolic3737: 4,
   hyperbolic3474: 5,
   hyperbolic4614: 5,
+  hyperbolic668: 4,
+  hyperbolic3838: 4,
+  hyperbolic3484: 5,
+  hyperbolic4616: 5,
+  hyperbolic588: 5,
+  hyperbolic41010: 5,
+  hyperbolic4545: 5,
+  hyperbolic4445: 5,
+  hyperbolic4810: 5,
+  hyperbolic688: 5,
+  hyperbolic41212: 5,
+  hyperbolic4646: 5,
+  hyperbolic4446: 4,
+  hyperbolic4812: 4,
+  hyperbolic51010: 4,
   quartic: 4,
   macbeath: 4,
   triplet: 4,
