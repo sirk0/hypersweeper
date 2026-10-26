@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buildBoard } from "../../src/boards/presets";
 import type { Board } from "../../src/boards/core";
 import { HYPERBOLIC_MODES } from "../../src/boards/catalog";
+import { CLOSED_SURFACES, viewShift } from "../../src/boards/hurwitz";
 import {
   DISC_IDENTITY,
   DRAG_SPEED,
@@ -253,8 +254,16 @@ describe("the hyperbolic boards' disc", () => {
       // (0.97 to 0.99 on the {p,q} boards; the uniform ones' tiles cover less
       // of the plane, so the same cell count fills less of the disc -- the
       // point of them -- and 3.4.7.4's rim, carved by the near-twin drop, is
-      // whole to 0.89)
-      expect(disc.rim, mode).toBeGreaterThan(0.85);
+      // whole to 0.89). A closed surface's patch reaches only as far as its
+      // pan needs (`patchReach`), so its bound is the farthest its view can
+      // ever show -- the view's radius past a view centre strayed to the
+      // central p-gon's corner: 0.84 on the genus-2 Bolza surface, whose
+      // patch is the smallest.
+      const surface = CLOSED_SURFACES[mode];
+      const least = disc.cover
+        ? Math.tanh((disc.cover.view + viewShift(surface!.p, surface!.q)) / 2)
+        : 0.85;
+      expect(disc.rim, mode).toBeGreaterThan(least);
       // ...and the board covers everything inside it: probe a ring just
       // inside the rim, every point in some cell's outline
       const polys = [...board.polygons.values()];

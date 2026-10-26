@@ -163,7 +163,7 @@ const UNIFORM = [
   "hyperbolic51010",
   "hyperbolic669",
 ];
-const CLOSED = ["quartic", "macbeath", "triplet"];
+const CLOSED = ["bolza", "quartic", "dyck", "bring", "macbeath", "triplet"];
 
 describe("geometry groups", () => {
   it("puts Hyperbolic after Flat manifolds, not inside Flat", () => {

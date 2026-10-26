@@ -1712,6 +1712,32 @@
         ]
       }
     },
+    "bolza": {
+      "builder": "hurwitz_board",
+      "args": {
+        "easy": [
+          "bolza",
+          "gc3",
+          0,
+          16,
+          300.0
+        ],
+        "medium": [
+          "bolza",
+          "gc6",
+          0,
+          68,
+          300.0
+        ],
+        "hard": [
+          "bolza",
+          "gc8",
+          0,
+          134,
+          300.0
+        ]
+      }
+    },
     "quartic": {
       "builder": "hurwitz_board",
       "args": {
@@ -1734,6 +1760,58 @@
           "gc4",
           0,
           118,
+          300.0
+        ]
+      }
+    },
+    "dyck": {
+      "builder": "hurwitz_board",
+      "args": {
+        "easy": [
+          "dyck",
+          "gc2",
+          0,
+          10,
+          300.0
+        ],
+        "medium": [
+          "dyck",
+          "gc4",
+          0,
+          60,
+          300.0
+        ],
+        "hard": [
+          "dyck",
+          "gc5",
+          0,
+          107,
+          300.0
+        ]
+      }
+    },
+    "bring": {
+      "builder": "hurwitz_board",
+      "args": {
+        "easy": [
+          "bring",
+          "expand",
+          0,
+          20,
+          300.0
+        ],
+        "medium": [
+          "bring",
+          "gc3",
+          0,
+          59,
+          300.0
+        ],
+        "hard": [
+          "bring",
+          "gc4",
+          0,
+          131,
           300.0
         ]
       }

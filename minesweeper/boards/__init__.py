@@ -178,7 +178,7 @@ from minesweeper.boards.fractal import (  # noqa: F401
     substitution_placements,
 )
 from minesweeper.boards.hurwitz import (  # noqa: F401
-    HURWITZ_SURFACES,
+    CLOSED_SURFACES,
     hurwitz_board,
     hurwitz_cells,
     hurwitz_map,

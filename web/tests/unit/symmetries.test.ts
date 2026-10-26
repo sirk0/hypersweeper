@@ -320,9 +320,15 @@ describe("board symmetries", () => {
       // the binary tiling's window has the one mirror, down its middle
       ["hyperbolicbinary", "easy", 2],
       ["hyperbolicbinary", "hard", 2],
-      // a closed surface's patch: the central heptagon's turns and mirrors,
-      // carried down to the surface -- all three Hurwitz surfaces here are
-      // reflexible, so the mirrors survive as well as the turns
+      // a closed surface's patch: the central p-gon's turns and mirrors,
+      // carried down to the surface -- every surface here is reflexible, so
+      // the mirrors survive as well as the turns
+      ["bolza", "easy", 16], // D8
+      ["bolza", "hard", 16],
+      ["dyck", "easy", 16], // D8
+      ["dyck", "medium", 16],
+      ["bring", "easy", 10], // D5
+      ["bring", "hard", 10],
       ["quartic", "easy", 14],
       ["quartic", "medium", 14], // the subdivision GC(3,0) keeps the mirrors
       ["quartic", "hard", 14],

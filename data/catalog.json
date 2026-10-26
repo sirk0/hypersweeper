@@ -259,7 +259,10 @@
     "hyperbolic51010": "Truncated {5,5} 5.10.10",
     "hyperbolic669": "Truncated {3,9} 6.6.9",
     "hyperbolicbinary": "Binary tiling",
+    "bolza": "Bolza surface",
     "quartic": "Klein quartic",
+    "dyck": "Dyck's surface",
+    "bring": "Bring's surface",
     "macbeath": "Macbeath surface",
     "triplet": "Hurwitz triplet",
     "spheretri": "Geodesic icosahedron"
@@ -305,6 +308,12 @@
       "surface": "flat",
       "family": "rectangle"
     },
+    "bolza": {
+      "label": "Bolza surface",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
     "boy": {
       "label": "Squares · Boy's surface",
       "tiling": "square",
@@ -316,6 +325,12 @@
       "tiling": "",
       "surface": "flat",
       "family": "spiral"
+    },
+    "bring": {
+      "label": "Bring's surface",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
     },
     "c180": {
       "label": "Goldberg polyhedron",
@@ -766,6 +781,12 @@
       "tiling": "durer",
       "surface": "flat",
       "family": "other"
+    },
+    "dyck": {
+      "label": "Dyck's surface",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
     },
     "elongated": {
       "label": "Elongated triangular",
@@ -2306,7 +2327,10 @@
       "hyperbolic51010",
       "hyperbolic669",
       "hyperbolicbinary",
+      "bolza",
       "quartic",
+      "dyck",
+      "bring",
       "macbeath",
       "triplet"
     ],

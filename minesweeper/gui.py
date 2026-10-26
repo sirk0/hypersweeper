@@ -60,6 +60,7 @@ from minesweeper.boards import (
     surface_of,
     view_hint,
 )
+from minesweeper.boards.hurwitz import CLOSED_SURFACES, SURFACE_MODES
 from minesweeper.boards.surfaces import _boy_point, _trefoil_core
 from minesweeper.game import CellState, Game, GameState
 
@@ -1026,12 +1027,14 @@ _HYPERBOLIC_ICON_SHELLS = {"hyperbolic93": 4, "hyperbolic83": 4, "hyperbolic73":
                            "hyperbolic4545": 5, "hyperbolic4445": 5, "hyperbolic4810": 5,
                            "hyperbolic688": 5, "hyperbolic41212": 5, "hyperbolic4646": 5,
                            "hyperbolic4446": 4, "hyperbolic4812": 4, "hyperbolic51010": 4,
-                           "quartic": 4, "macbeath": 4, "triplet": 4}
+                           "bolza": 4, "quartic": 4, "dyck": 4, "bring": 5,
+                           "macbeath": 4, "triplet": 4}
 # The uniform ones are Wythoff's operations on a {p,q}, as (p, q, op); every
 # other hyperbolic mode is ``hyperbolic{p}{q}``. The closed surface draws the
-# same disc as its tiling's, with every heptagon lit rather than the central
-# one: on a surface with no rim every one of them is a full seven-neighbour
-# cell. Must match `HYPERBOLIC_UNIFORM` in web/src/ui/icons.ts.
+# same disc as its tiling's, with every face of the surface's tiling lit (a
+# Hurwitz surface's heptagons) rather than the central one: on a surface with
+# no rim every one of them is a full cell. Must match `HYPERBOLIC_UNIFORM` in
+# web/src/ui/icons.ts.
 _HYPERBOLIC_UNIFORM = {
     "hyperbolic667": (7, 3, "zip"),
     "hyperbolic31414": (7, 3, "truncate"),
@@ -1055,12 +1058,17 @@ _HYPERBOLIC_UNIFORM = {
     "hyperbolic4812": (6, 4, "bevel"),
     "hyperbolic51010": (5, 5, "zip"),
     "hyperbolic669": (9, 3, "zip"),
+    "bolza": (8, 3, "zip"),
     "quartic": (7, 3, "zip"),
+    "dyck": (8, 3, "zip"),
+    "bring": (5, 4, "expand"),
     "macbeath": (7, 3, "zip"),
     "triplet": (7, 3, "zip"),
 }
-# The closed surfaces (boards/hurwitz.py), whose icon lights every heptagon.
-_CLOSED_SURFACE_MODES = frozenset({"quartic", "macbeath", "triplet"})
+# The closed surfaces (boards/hurwitz.py), whose icon lights every face of the
+# surface's own tiling, by its side count.
+_CLOSED_SURFACE_MODES = {mode: CLOSED_SURFACES[surface].p
+                         for surface, mode in SURFACE_MODES.items()}
 
 
 # How each flat-faced solid drawn by `_icon_solid` -- the Catalan solids and
@@ -1496,8 +1504,8 @@ def _render_icon(key: str) -> pygame.Surface:
         pygame.draw.circle(s, ICON_OUTLINE, (int(c), int(c)), int(r), 4)
         for cell, polygon in board.polygons.items():
             pts = [(c - r + x * sc, c - r + y * sc) for x, y in polygon]
-            lit = (sum(board.corner_mask[cell]) == 7 if key in _CLOSED_SURFACE_MODES
-                   else cell < central)
+            lit = (sum(board.corner_mask[cell]) == _CLOSED_SURFACE_MODES[key]
+                   if key in _CLOSED_SURFACE_MODES else cell < central)
             fill_polygon(s, pts, ICON_BLUE_LIGHT if lit else ICON_BLUE)
             ipts = [(int(x), int(y)) for x, y in pts]
             pygame.draw.lines(s, ICON_OUTLINE, True, ipts, 3)

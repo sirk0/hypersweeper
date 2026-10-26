@@ -30,7 +30,7 @@ import {
   substitutionPlacements,
   SUBSTITUTIONS,
 } from "../boards/fractal";
-import { gcDisc, SURFACE_MODES } from "../boards/hurwitz";
+import { CLOSED_SURFACES, gcDisc, SURFACE_MODES } from "../boards/hurwitz";
 import { binaryBoard, hyperbolicBoard, hyperbolicUniformBoard } from "../boards/hyperbolic";
 import type { WythoffOp } from "../boards/hyperbolic";
 import {
@@ -1710,11 +1710,12 @@ function draw(rawKey: string): string[] {
     // so the arc points do not make a heptagon read as a 21-gon.
     const board = hyperbolicDisc(key, HYPERBOLIC_ICON_SHELLS[key]!, 1);
     const central = !(key in HYPERBOLIC_UNIFORM) && key.at(-2) === "3" ? Number(key.at(-1)) : 1;
-    // A closed surface lights every heptagon rather than the central one: with
-    // no rim, each of them is a full seven-neighbour cell. Must match gui.py.
+    // A closed surface lights every face of its tiling (a Hurwitz surface's
+    // heptagons) rather than the central one: with no rim, each of them is a
+    // full cell. Must match gui.py.
     const lit = (cell: string) =>
       CLOSED_SURFACE_MODES.includes(key)
-        ? board.cornerMask!.get(cell)!.filter(Boolean).length === 7
+        ? board.cornerMask!.get(cell)!.filter(Boolean).length === CLOSED_SURFACES[key]!.p
         : Number(cell) < central;
     const tones = classifyShapes(board.polygons, board.cornerMask, true);
     const r = d * 0.46;
@@ -2114,13 +2115,17 @@ const PATCH_BOARDS: Record<string, PatchBoard> = {
   // is the picture, as the disc is the {p,q} boards'.
   hyperbolicbinary: { build: () => binaryBoard(2, 5, 0, 100), whole: true },
   // The closed surfaces' tilings, drawn in the disc on their own: the boards
-  // themselves build the surface and its cover, a second or more for all
-  // three, which a menu page cannot wait on. Up close a closed surface looks
-  // like the plane it is glued from, so each card shows one of the tilings the
-  // three grow through, a different one apiece: the quartic its subdivided
-  // medium, Macbeath's surface its 6.6.7 (the soccer ball's disc) and the
-  // triplet the plain heptagons of its easy.
-  quartic: { build: () => gcDisc(3, 30, 100), whole: true },
+  // themselves build the surface and its cover, a second or more for all of
+  // them, which a menu page cannot wait on. Up close a closed surface looks
+  // like the plane it is glued from, so each card shows one of the tilings it
+  // grows through: the quartic its subdivided medium, Macbeath's surface its
+  // 6.6.7 (the soccer ball's disc), the triplet the plain heptagons of its
+  // easy, the Bolza and Dyck surfaces the octagons among hexagons of their
+  // GC(3,0) and GC(2,0), and Bring's surface its easy 4.4.4.5.
+  bolza: { build: () => gcDisc(8, 3, 3, 24, 100), whole: true },
+  quartic: { build: () => gcDisc(7, 3, 3, 30, 100), whole: true },
+  dyck: { build: () => gcDisc(8, 3, 2, 18, 100), whole: true },
+  bring: { build: () => hyperbolicDisc("hyperbolic4445", 18, 100), whole: true },
   macbeath: { build: () => hyperbolicDisc("hyperbolic667", 18, 100), whole: true },
   triplet: { build: () => hyperbolicDisc("hyperbolic73", 16, 100), whole: true },
 };
@@ -2152,12 +2157,16 @@ const HYPERBOLIC_UNIFORM: Record<string, readonly [number, number, WythoffOp]> =
   hyperbolic51010: [5, 5, "zip"],
   hyperbolic669: [9, 3, "zip"],
   // the closed surface's row icon is its tiling's disc (see the icon above)
+  bolza: [8, 3, "zip"],
   quartic: [7, 3, "zip"],
+  dyck: [8, 3, "zip"],
+  bring: [5, 4, "expand"],
   macbeath: [7, 3, "zip"],
   triplet: [7, 3, "zip"],
 };
 
-/** The closed surfaces (boards/hurwitz.ts), whose icon lights every heptagon.
+/** The closed surfaces (boards/hurwitz.ts), whose icon lights every face of
+ * the surface's own tiling (every heptagon of a Hurwitz surface's).
  * Must match `_CLOSED_SURFACE_MODES` in gui.py. */
 const CLOSED_SURFACE_MODES = Object.values(SURFACE_MODES);
 
@@ -2206,7 +2215,10 @@ const HYPERBOLIC_ICON_SHELLS: Record<string, number> = {
   hyperbolic4812: 4,
   hyperbolic51010: 4,
   hyperbolic669: 3,
+  bolza: 4,
   quartic: 4,
+  dyck: 4,
+  bring: 5,
   macbeath: 4,
   triplet: 4,
 };

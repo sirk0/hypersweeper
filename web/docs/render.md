@@ -139,14 +139,15 @@ along the rim, `0`, the arrows, and a touch drag that neither opens nor flags.
 
 #### A board with no rim: the closed surfaces (`discRecentre`)
 
-The closed hyperbolic surfaces (`quartic`, `macbeath`, `triplet`) are
+The closed hyperbolic surfaces (`bolza`, `quartic`, `dyck`, `bring`, `macbeath`,
+`triplet`) are
 each drawn as a **patch of the disc that covers it** (see "The closed hyperbolic surfaces" in
 [`geometry.md`](../../docs/agents/geometry.md)): every face shows the cell it
 covers (`Board.faces`), so a cell is drawn several times and its copies paint
 one state, as the projective plane's antipodal twins do. Its pan is not held at
 the rim, because there is no rim to hold — the patch looks the same from every
 tile once the labels are moved by the surface's own symmetry. So
-`Board.disc.cover` carries one **step** per tile round the central heptagon:
+`Board.disc.cover` carries one **step** per tile round the central p-gon:
 the disc isometry taking the central tile onto it (in a view's own `(c, rot)`
 shape) and the symmetry of the surface that goes with it, as a cell
 permutation. After every drag `PolygonBoard.dragDisc` runs `discRecentre`:
@@ -171,8 +172,9 @@ Two things make it *look* continuous, and the pan jumped without either:
   and a recentring snapped it back. So the shader hides every cell whose pivot
   the view draws past `coverClip(cover.view)` (`uDiscClip`; the view is
   sized from the surface's genus to hold three quarters of the surface --
-  `coverView`, 2.06 of hyperbolic distance on the quartic, 2.99 on Macbeath's,
-  3.71 on the triplet), and a tap out there finds
+  `coverView`, 1.57 of hyperbolic distance on the Bolza surface, 2.06 on genus
+  3 (the quartic and Dyck's), 2.39 on Bring's, 2.99 on Macbeath's, 3.71 on the
+  triplet), and a tap out there finds
   nothing (`discSource`). The board is framed to that circle widened by a tile
   radius (`tileRadius` -- a tile the clip keeps reaches that far past it), not
   to the whole patch, whose polygons run on past the frame, hidden. The patch reaches

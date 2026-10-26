@@ -14,7 +14,7 @@ import {
   TILINGS_BY_KEY,
   tilingOf,
 } from "../boards/catalog";
-import { eulerCharacteristic, isBoard3D, type AnyBoard, type CellId } from "../boards/core";
+import { isBoard3D, type AnyBoard, type CellId } from "../boards/core";
 import { hurwitzSurfaceLabel } from "../boards/hurwitz";
 import { distortionHint } from "../boards/distortion";
 import { fairnessHint, fairnessOf } from "../boards/fairness";
@@ -532,7 +532,7 @@ export function boardFacts(
       (isBoard3D(board)
         ? null
         : board.quotient
-          ? hurwitzSurfaceLabel(eulerCharacteristic(board))
+          ? hurwitzSurfaceLabel(mode)
           : HYPERBOLIC_MODES.includes(mode)
             ? "Hyperbolic plane"
             : (SURFACES.get("flat")?.label ?? null)),
