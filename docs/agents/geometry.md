@@ -1078,7 +1078,7 @@ submenu, *Closed surfaces*, in order of genus:
 |---|---|---|---|---|---|---|---|
 | `bolza` | the Bolza surface | {8,3} | 2 | GL(2,3), 48 | GC(3,0), 70 cells, 16 mines | GC(6,0), 286, 68 | GC(8,0), 510, 134 |
 | `quartic` | Klein's quartic | {7,3} | 3 | PSL(2,7), 168 | 6.6.7, 80 cells, 18 mines | GC(3,0), 248, 61 | GC(4,0), 444, 118 |
-| `dyck` | Dyck's surface | {8,3} | 3 | {8,3}_6, 96 | 3.4.8.4, 92 cells, 11 mines | GC(4,0), 252, 60 | GC(5,0), 396, 107 |
+| `dyck` | Dyck's surface | {8,3} | 3 | {8,3}_6, 96 | GC(2,0), 60 cells, 10 mines | GC(4,0), 252, 60 | GC(5,0), 396, 107 |
 | `bring` | Bring's surface | {5,4} | 4 | S5, 120 | 4.4.4.5, 114 cells, 20 mines | GC(3,0) of squares, 264, 59 | GC(4,0) of squares, 474, 131 |
 | `macbeath` | Macbeath's surface | {7,3} | 7 | PSL(2,8), 504 | {7,3}, 72 cells, 15 mines | 6.6.7, 240, 55 | GC(2,0), 324, 93 |
 | `triplet` | the first Hurwitz triplet, one of the three | {7,3} | 14 | PSL(2,13), 1092 | {7,3}, 156 cells, 33 mines | 6.6.7, 520, 122 | GC(2,0), 702, 191 |
@@ -1096,12 +1096,16 @@ own faces (`cell_count` / `cellCount`): the Bolza surface's six octagons make
 GC(n,0) 8n^2 - 2 cells, so GC(3,0), GC(6,0) and GC(8,0) land in the band at all
 three; Dyck's surface's twelve make it 16n^2 - 4, and with nothing in the hard
 band (GC(5,0) is 396, GC(6,0) 572) its hard row is 17.5% short, in
-`EXEMPT_ROWS`, its easy board the 3.4.8.4 at 92; Bring's surface's square
+`EXEMPT_ROWS`, and so is its easy GC(2,0) at 60, 26% short. Its 3.4.8.4 is 92
+cells, in the band, and played as a different game from the octagons among
+hexagons of medium and hard -- a Wythoff tiling of a surface comes in one size,
+so it cannot grow with the difficulty -- so all three rows are subdivisions;
+Bring's surface's square
 subdivision is 30n^2 - 6, 264 and 474 for its medium and hard, and its easy
 4.4.4.5, 114 cells, is 41% over (`EXEMPT_ROWS`) -- {5,4} has nothing nearer 81
 than that and the 54 of 4.5.4.5. `resize.py` holds every row as declared
 (`size=()`): no knob is the search's to turn. With no rim the densities came
-out 12-29% -- the projective plane's, a closed surface of about the same
+out 17-29% -- the projective plane's, a closed surface of about the same
 degree, and nothing like the discs'. The builder also takes every Wythoff
 operation, and the tests sweep them.
 

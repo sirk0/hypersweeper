@@ -1769,9 +1769,9 @@
       "args": {
         "easy": [
           "dyck",
-          "expand",
+          "gc2",
           0,
-          11,
+          10,
           300.0
         ],
         "medium": [

@@ -195,7 +195,7 @@ describe("the closed surfaces", () => {
     const levels: Record<string, readonly [number, number, number]> = {
       bolza: [70, 286, 510],
       quartic: [80, 248, 444],
-      dyck: [92, 252, 396],
+      dyck: [60, 252, 396],
       bring: [114, 264, 474],
       macbeath: [72, 240, 324],
       triplet: [156, 520, 702],

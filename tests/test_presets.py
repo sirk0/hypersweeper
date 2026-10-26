@@ -49,8 +49,8 @@ COARSE_GEOMETRY = {"sphinx", "chair", "carpet", "pentaflake", "gosper",
 # 124(g - 1) and 222(g - 1) cells. The genus-14 Hurwitz surface's smallest is
 # 156, against an easy target of 81, and its rungs go 156, 520, 702; no row of
 # it can land in the band. (Klein's quartic and the Bolza surface do at all
-# three, Macbeath's and Dyck's surfaces at easy and medium, and Bring's surface
-# at medium and hard -- their other rows are in EXEMPT_ROWS.)
+# three, Macbeath's surface at easy and medium, Dyck's at medium and Bring's at
+# medium and hard -- their other rows are in EXEMPT_ROWS.)
 GENUS_BOUND = {"triplet"}
 EXEMPT = COARSE_GEOMETRY | GENUS_BOUND
 
@@ -63,10 +63,14 @@ EXEMPT_ROWS = {
     # 324 keeps the view holding most of the surface at once, which is how the
     # board plays best (see `hurwitz.COVER_COPIES`), and its mines make it hard.
     ("macbeath", "hard"),
-    # Dyck's surface (genus 3, 12 octagons) steps 252 -> 396 -> 572 cells:
-    # GC(4,0), GC(5,0), GC(6,0). 396 is 17.5% under hard's 480 and 572 is 19%
-    # over; a GC(n,m) that lands (GC(3,3), 428) needs a skewed subdivision.
-    # The smaller keeps more of the surface in view, as Macbeath's hard does.
+    # Dyck's surface (genus 3, 12 octagons) subdivides as 16n^2 - 4 cells:
+    # 60, 140, 252, 396, 572 for GC(2,0) .. GC(6,0). Easy is GC(2,0), 26%
+    # under 81, so all three rows are one tiling -- octagons among hexagons --
+    # rather than opening on its 3.4.8.4 (92 cells, the one size that tiling
+    # comes in). Hard is GC(5,0), 17.5% under 480, with 572 19% over; a
+    # GC(n,m) that lands (GC(3,3), 428) needs a skewed subdivision. The smaller
+    # keeps more of the surface in view, as Macbeath's hard does.
+    ("dyck", "easy"),
     ("dyck", "hard"),
     # Bring's surface (genus 4, 24 pentagons of {5,4}) has nothing near 81:
     # {5,4} is 24 cells, 4.5.4.5 and 5.8.8 are 54, 4.4.4.5 is 114 (41% over),

@@ -2119,11 +2119,11 @@ const PATCH_BOARDS: Record<string, PatchBoard> = {
   // like the plane it is glued from, so each card shows one of the tilings it
   // grows through: the quartic its subdivided medium, Macbeath's surface its
   // 6.6.7 (the soccer ball's disc), the triplet the plain heptagons of its
-  // easy, the Bolza surface the octagons among hexagons of its GC(3,0), and
-  // Dyck's and Bring's surfaces their easy 3.4.8.4 and 4.4.4.5.
+  // easy, the Bolza and Dyck surfaces the octagons among hexagons of their
+  // GC(3,0) and GC(2,0), and Bring's surface its easy 4.4.4.5.
   bolza: { build: () => gcDisc(8, 3, 3, 24, 100), whole: true },
   quartic: { build: () => gcDisc(7, 3, 3, 30, 100), whole: true },
-  dyck: { build: () => hyperbolicDisc("hyperbolic3484", 16, 100), whole: true },
+  dyck: { build: () => gcDisc(8, 3, 2, 18, 100), whole: true },
   bring: { build: () => hyperbolicDisc("hyperbolic4445", 18, 100), whole: true },
   macbeath: { build: () => hyperbolicDisc("hyperbolic667", 18, 100), whole: true },
   triplet: { build: () => hyperbolicDisc("hyperbolic73", 16, 100), whole: true },
@@ -2158,7 +2158,7 @@ const HYPERBOLIC_UNIFORM: Record<string, readonly [number, number, WythoffOp]> =
   // the closed surface's row icon is its tiling's disc (see the icon above)
   bolza: [8, 3, "zip"],
   quartic: [7, 3, "zip"],
-  dyck: [8, 3, "expand"],
+  dyck: [8, 3, "zip"],
   bring: [5, 4, "expand"],
   macbeath: [7, 3, "zip"],
   triplet: [7, 3, "zip"],
@@ -2216,7 +2216,7 @@ const HYPERBOLIC_ICON_SHELLS: Record<string, number> = {
   hyperbolic669: 3,
   bolza: 4,
   quartic: 4,
-  dyck: 5,
+  dyck: 4,
   bring: 5,
   macbeath: 4,
   triplet: 4,

@@ -33,7 +33,7 @@ grows from difficulty to difficulty by changing its tiling, never the surface:
 (`gc_loops`). Klein's quartic goes 80, 248, 444; Macbeath's surface 72, 240,
 324; the triplet 156, 520, 702. The other three count the same way from their
 own faces: the Bolza surface goes 70, 286, 510 (GC(3,0), GC(6,0), GC(8,0)),
-Dyck's surface 92, 252, 396 (3.4.8.4, GC(4,0), GC(5,0)), and Bring's surface
+Dyck's surface 60, 252, 396 (GC(2,0), GC(4,0), GC(5,0)), and Bring's surface
 114, 264, 474 (4.4.4.5, then the square subdivision of a 4-valent tiling,
 GC(3,0) and GC(4,0)).
 
@@ -761,7 +761,7 @@ def hurwitz_board(
 ) -> Board:
     """The closed surface ``surface`` (one of `CLOSED_SURFACES`) in tiling ``op``
     (one of `HURWITZ_OPS`; the boards that ship are ``none``, ``zip``,
-    ``expand`` and ``gc2`` .. ``gc8``), drawn as a patch of the Poincaré disc
+    ``expand`` (Bring's surface's 4.4.4.5) and ``gc2`` .. ``gc8``), drawn as a patch of the Poincaré disc
     that covers it: the shells out to where every cell has a copy, and
     ``margin`` more. The board is the surface's mode (`SURFACE_MODES`).
     ``scale`` and ``arc`` are `hyperbolic.hyperbolic_board`'s."""

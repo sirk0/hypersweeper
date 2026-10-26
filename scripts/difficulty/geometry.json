@@ -14698,12 +14698,12 @@
       "easy": {
         "args": [
           "dyck",
-          "expand",
+          "gc2",
           0,
-          20,
+          13,
           300.0
         ],
-        "cells": 92,
+        "cells": 60,
         "fixed": true,
         "reason": "the cell count is the solid"
       },
@@ -14712,7 +14712,7 @@
           "dyck",
           "gc4",
           0,
-          55,
+          60,
           300.0
         ],
         "cells": 252,
@@ -14724,7 +14724,7 @@
           "dyck",
           "gc5",
           0,
-          100,
+          107,
           300.0
         ],
         "cells": 396,

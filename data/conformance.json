@@ -2468,12 +2468,12 @@
     },
     "dyck": {
       "easy": {
-        "cellCount": 92,
-        "mineCount": 11,
+        "cellCount": 60,
+        "mineCount": 10,
         "euler": -4,
         "boundaryComponents": 0,
         "edgeCount": 192,
-        "vertexCount": 96,
+        "vertexCount": 128,
         "hasCellCycle": false
       },
       "medium": {

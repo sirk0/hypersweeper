@@ -3171,7 +3171,7 @@ class TestHurwitz:
         assert copies == pytest.approx(COVER_COPIES)
 
     @pytest.mark.parametrize("surface, cells", [
-        ("bolza", (70, 286, 510)), ("dyck", (252, 396)), ("bring", (264, 474))])
+        ("bolza", (70, 286, 510)), ("dyck", (60, 252, 396)), ("bring", (264, 474))])
     def test_the_other_surfaces_subdivided_keep_the_surface(self, surface, cells):
         # The rungs they ship: the faces survive whole, and every other cell is
         # a hexagon (q = 3) or a square (q = 4) -- 8n^2 - 2 cells on the Bolza

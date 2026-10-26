@@ -66,7 +66,7 @@ Pick a surface, then a tiling:
   Bring's surfaces, Macbeath's surface and a genus-14 Hurwitz surface — each
   drawn as a patch of the disc that covers it, every cell drawn at least once
   and keeping its full count of neighbours; each grows by its tiling — plain
-  heptagons, 6.6.7, 3.4.8.4 or 4.4.4.5, then subdivided — under a view sized
+  heptagons, 6.6.7 or 4.4.4.5, then subdivided — under a view sized
   to hold three quarters of the surface, and the pan never runs out.
   The menu groups these as **Regular**, **Uniform**, **Laves**, **2-uniform**
   (regular polygons edge to edge with *two* kinds of corner — all twenty of

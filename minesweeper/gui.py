@@ -1027,7 +1027,7 @@ _HYPERBOLIC_ICON_SHELLS = {"hyperbolic93": 4, "hyperbolic83": 4, "hyperbolic73":
                            "hyperbolic4545": 5, "hyperbolic4445": 5, "hyperbolic4810": 5,
                            "hyperbolic688": 5, "hyperbolic41212": 5, "hyperbolic4646": 5,
                            "hyperbolic4446": 4, "hyperbolic4812": 4, "hyperbolic51010": 4,
-                           "bolza": 4, "quartic": 4, "dyck": 5, "bring": 5,
+                           "bolza": 4, "quartic": 4, "dyck": 4, "bring": 5,
                            "macbeath": 4, "triplet": 4}
 # The uniform ones are Wythoff's operations on a {p,q}, as (p, q, op); every
 # other hyperbolic mode is ``hyperbolic{p}{q}``. The closed surface draws the
@@ -1060,7 +1060,7 @@ _HYPERBOLIC_UNIFORM = {
     "hyperbolic669": (9, 3, "zip"),
     "bolza": (8, 3, "zip"),
     "quartic": (7, 3, "zip"),
-    "dyck": (8, 3, "expand"),
+    "dyck": (8, 3, "zip"),
     "bring": (5, 4, "expand"),
     "macbeath": (7, 3, "zip"),
     "triplet": (7, 3, "zip"),
