@@ -40,14 +40,14 @@ import {
 // Play-first menu. The home page is Classic (flat squares, launched straight
 // away), Flat and 3D — one tap each for a random board from that half of the
 // catalogue — and Custom, which opens the geometry-first tree the pygame
-// MenuScreen (gui.py) shows at its root: Flat, Flat manifolds, Sphere,
-// Polyhedra. The plane and every flat manifold (cylinder, Möbius, Klein,
+// MenuScreen (gui.py) shows at its root — Flat, Flat manifolds, Hyperbolic,
+// Sphere, then the polyhedra gathered onto one Solids page, and Volumes. The plane and every flat manifold (cylinder, Möbius, Klein,
 // torus) open the same tiling picker: the three regular tilings promoted to
 // the top, then the Uniform, Laves, Isogonal, Congruent-rectangles and
 // (plane-only) Aperiodic, Spirals and Fractals families as submenus. On the plane one
 // more submenu holds the shaped boards — the same regular tilings cut to a
-// triangular or hexagonal outline instead of the default rectangle. Sphere and
-// Polyhedra list their finished boards. Title, difficulty row and theme come
+// triangular or hexagonal outline instead of the default rectangle. Sphere,
+// Volumes and each of Solids' submenus list their finished boards. Title, difficulty row and theme come
 // from the shared UI-screen config; the header's gear and ? open the settings
 // and how-to-play pages.
 
@@ -90,7 +90,17 @@ const SOLID_GROUP_HINTS: Record<string, string> = {
   catalan: "The thirteen duals of the Archimedean solids",
   polyhedra: "Hollow frames, terraced pyramids and cubes laid in brick",
   volume: "A solid cube of cells — 26 neighbours, laid out slice by slice",
+  // the page the Platonic, Archimedean and Catalan solids and the Polyhedra
+  // share (boardTree.ts SOLIDS_PAGE)
+  solids: "Platonic, Archimedean and Catalan solids, and more polyhedra",
 };
+
+/** The one line under a submenu row, or a group page's header: a tiling
+ * family's hint, or — for the solid groups the Solids page holds as submenus —
+ * the solid page's. */
+function familyHint(key: string): string | undefined {
+  return MENU_FAMILY_HINTS[key] ?? SOLID_GROUP_HINTS[key];
+}
 
 /** The sidebar key of the Quick start page — the desktop menu's own page, with
  * no phone equivalent (the phone lists these entries as its home rows). */
@@ -873,7 +883,7 @@ export class Menu {
     }
     if (group.kind === "manifolds") return group.surfaces.map((s) => s.label).join(" · ");
     if (group.kind === "families") {
-      return MENU_FAMILY_HINTS[group.key] ?? group.families.map((f) => f.label).join(" · ");
+      return familyHint(group.key) ?? group.families.map((f) => f.label).join(" · ");
     }
     return pickerHint(group.surfaceKey);
   }
@@ -977,7 +987,7 @@ export class Menu {
       // pills stay reachable one level down from the group page.
       this.body.replaceChildren(
         back,
-        this.paneHeader(family.label, MENU_FAMILY_HINTS[family.key] ?? ""),
+        this.paneHeader(family.label, familyHint(family.key) ?? ""),
         list,
       );
     } else {
@@ -1124,7 +1134,7 @@ export class Menu {
     label: string,
     key: string,
     onClick: () => void,
-    hint: string | undefined = MENU_FAMILY_HINTS[key],
+    hint: string | undefined = familyHint(key),
   ): HTMLElement {
     const li = document.createElement("li");
     const btn = document.createElement("button");
@@ -1138,8 +1148,8 @@ export class Menu {
       btn.className = "menu-entry menu-submenu";
       // "Laves" and "Isogonal" name a classification, not a look — the hint is
       // what tells a player choosing a board what they would be playing on.
-      // Defaults to the tiling-family hint by key; the Polyhedra groups pass
-      // their own (`MENU_FAMILY_HINTS` knows nothing about them).
+      // Defaults to the family's hint by key (`familyHint`), which covers the
+      // Solids page's submenus too.
       btn.append(iconEl(iconKey), textBlock(label, hint), this.chevronEl());
     }
     btn.addEventListener("click", onClick);

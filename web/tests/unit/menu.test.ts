@@ -3,6 +3,7 @@ import {
   MENU,
   MENU_FAMILY_HINTS,
   MENU_FAMILY_LABELS,
+  SOLID_GROUPS,
   SOLID_MODES,
   flatMenuModes,
   menuFamilies,
@@ -206,6 +207,33 @@ describe("geometry groups", () => {
         .sort(),
     );
     expect(new Set(filed).size).toBe(filed.length);
+  });
+
+  it("lists Sphere, Solids and Volumes after Hyperbolic", () => {
+    expect(boardGroups().map((g) => g.key)).toEqual([
+      "flat",
+      "manifolds",
+      "hyperbolic",
+      "sphere",
+      "solids",
+      "volume",
+    ]);
+  });
+
+  it("gathers the polyhedra onto the Solids page, a submenu per solid group", () => {
+    const solids = boardGroups().find((g) => g.key === "solids")!;
+    expect(solids.label).toBe("Solids");
+    expect(solids.kind).toBe("families");
+    if (solids.kind !== "families") return;
+    const keys = ["platonic", "archimedean", "catalan", "polyhedra"];
+    expect(solids.families.map((f) => f.key)).toEqual(keys);
+    // each submenu is its solid group, label and boards alike, so nothing is
+    // dropped or doubled on the way in
+    for (const family of solids.families) {
+      const group = SOLID_GROUPS.find((g) => g.key === family.key)!;
+      expect(family.label).toBe(group.label);
+      expect(family.modes.map((m) => m.mode)).toEqual(group.modes.filter(hasMode));
+    }
   });
 
   it("files the binary tiling under Flat › Fractals, not Hyperbolic", () => {

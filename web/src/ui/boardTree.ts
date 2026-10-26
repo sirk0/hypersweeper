@@ -15,8 +15,8 @@ import { randomPool } from "../boards/randomBoard";
 import { hasMode } from "../boards/presets";
 
 // How the catalogue is grouped for a player picking a board: the quick-play
-// entries, then the geometry groups (Flat, Flat manifolds, Hyperbolic and the
-// solid pages), each down to its boards. Two menus are drawn from it — the home page
+// entries, then the geometry groups (Flat, Flat manifolds, Hyperbolic, Sphere,
+// Solids and Volumes), each down to its boards. Two menus are drawn from it — the home page
 // (ui/menu.ts) and the native menu bar of the Mac and iPad app (menuBar.ts) —
 // so the two cannot group the boards differently.
 
@@ -150,6 +150,34 @@ function familyGroup(key: string): Group {
   return { key, label, kind: "families", families };
 }
 
+/** The solid groups gathered onto the one Solids page, a submenu each. The
+ * shared table (`menu.solidGroups`) keeps them as groups of their own -- an
+ * achievement, a board's family in its info window -- and so does the pygame
+ * menu; only this menu nests them, so the polyhedra do not take four of the
+ * Custom rows. Sphere and Volumes stay rows of their own. */
+const SOLIDS_PAGE = ["platonic", "archimedean", "catalan", "polyhedra"];
+
+/** The solid groups in the shared table's order: each a flat list of boards,
+ * except the `SOLIDS_PAGE` ones, which become one families group standing
+ * where the first of them would. */
+function solidGroups(): Group[] {
+  const groups: Group[] = [];
+  let solids: FamiliesGroup | null = null;
+  for (const g of SOLID_GROUPS) {
+    if (!SOLIDS_PAGE.includes(g.key)) {
+      groups.push({ key: g.key, label: g.label, kind: "modes", modes: [...g.modes] });
+      continue;
+    }
+    if (!solids) {
+      solids = { key: "solids", label: "Solids", kind: "families", families: [] };
+      groups.push(solids);
+    }
+    const modes = builtRows(g.modes.map((m) => ({ mode: m, label: MODE_LABELS[m] ?? m, icon: m })));
+    if (modes.length > 0) solids.families.push({ key: g.key, label: g.label, modes });
+  }
+  return groups;
+}
+
 /** The geometry groups — the desktop sidebar's rows and the phone's Custom
  * page — with every group this build has nothing in left out. */
 export function boardGroups(): Group[] {
@@ -164,16 +192,9 @@ export function boardGroups(): Group[] {
     // The families lifted off the plane's picker (Hyperbolic), after the
     // plane's flat relatives and before the curved solids.
     ...menuGroupFamilies("flat").map((key): Group => familyGroup(key)),
-    // The four solid pages -- Sphere, Platonic solids, Catalan solids and
-    // Polyhedra -- are one flat board list each, so they all come off the
-    // shared table rather than being spelled out here. (The shaped flat
-    // boards live under Flat › Shaped boards.)
-    ...SOLID_GROUPS.map((g): Group => ({
-      key: g.key,
-      label: g.label,
-      kind: "modes",
-      modes: [...g.modes],
-    })),
+    // The solid pages come off the shared table rather than being spelled
+    // out here. (The shaped flat boards live under Flat › Shaped boards.)
+    ...solidGroups(),
   ];
   return groups.filter((g) => {
     if (g.kind === "modes") return (g.modes = g.modes.filter(hasMode)).length > 0;

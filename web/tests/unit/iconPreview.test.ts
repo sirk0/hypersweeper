@@ -43,6 +43,9 @@ describe("card previews", () => {
     // the Closed surfaces submenu is Klein's quartic, on the card and the row
     expect(previewIcon("hyperbolic-closed").svg).toBe(previewIcon("quartic").svg);
     expect(menuIcon("hyperbolic-closed")).toBe(menuIcon("quartic"));
+    // ...and the Solids page is the dodecahedron
+    expect(previewIcon("solids").svg).toBe(previewIcon("dodecahedron").svg);
+    expect(menuIcon("solids")).toBe(menuIcon("dodecahedron"));
   });
 
   it("draws a solid as the real board, not the row's symbol", () => {
