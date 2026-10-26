@@ -1180,6 +1180,7 @@ const ALIASES: Record<string, string> = {
   archimedean: "cubocta",
   catalan: "rhombictriaconta",
   polyhedra: "steppedbipyramid",
+  solids: "dodecahedron", // the Solids page: the four above are its submenus
   volume: "cube3d", // the Volumes row: its only board
   classic: "square", // the "Classic" home entry: flat squares
   manifolds: "torus", // the "Flat manifolds" entry under Custom

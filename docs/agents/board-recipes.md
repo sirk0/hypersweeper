@@ -905,15 +905,19 @@ These are one-offs, not tiling×surface products.
    are); the exporter round-trip test keeps the two sides honest. Both menus
    follow from that table: on the web a `shapedModes` entry lands under
    **Custom › Flat › Shaped boards** (the regular tilings themselves are
-   rows of the picker there), each solid group is a home-page row leading
-   straight to a flat list of its boards, and everything else joins the home
+   rows of the picker there), each solid group is a Custom row leading
+   straight to a flat list of its boards — or, for Platonic, Archimedean,
+   Catalan and Polyhedra, a submenu of the web menu's **Solids** page — and
+   everything else joins the home
    page's Flat or 3D random pool along with its group.
 
    A **new solid group** is one more `menu.solidGroups` row: its key joins
    `menu.root`, both menus grow a page, and the only code either side needs is
    an icon for the row (`_ICON_ALIASES` in `gui.py`, `ALIASES` in
    `web/src/ui/icons.ts` — there is no board named "catalan" to draw) and a
-   one-line hint (`SOLID_GROUP_HINTS` in `web/src/ui/menu.ts`).
+   one-line hint (`SOLID_GROUP_HINTS` in `web/src/ui/menu.ts`). On the web it
+   is a Custom row of its own unless its key is added to `SOLIDS_PAGE` in
+   `web/src/ui/boardTree.ts`, which files it on the Solids page instead.
 3. Add the builder to `_JSON_BUILDERS` in `presets.py`, add a
    `{mode: {builder, args: {difficulty: [...]}}}` row to
    `data/presets.json` (positional args), and re-run

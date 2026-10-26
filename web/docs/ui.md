@@ -12,8 +12,11 @@ one particular board straight away — the original square grid — and sits abo
 the three that deal a *random* one: the flat picker's pool, every flat manifold
 plus the spheres and polyhedra, and the Hyperbolic page's boards. So no picker
 carries a Random row; Custom holds the old root (Flat, Flat manifolds,
-Hyperbolic, Sphere, Platonic solids, Archimedean solids, Catalan solids,
-Polyhedra, Volumes). Hyperbolic is the one geometry group the pygame menu does
+Hyperbolic, Sphere, Solids, Volumes). **Solids** gathers four of the shared
+solid groups — Platonic, Archimedean and Catalan solids, and Polyhedra — as
+submenus of one page (`SOLIDS_PAGE` in `src/ui/boardTree.ts`); they stay
+groups of their own everywhere else (achievements, a board's family in its
+info window, the pygame menu), so only this menu nests them. Hyperbolic is the one geometry group the pygame menu does
 not have: there it is a family on the flat picker, and the web menu lifts it
 out into a group of its own (`MENU_GROUP_FAMILIES` in `src/boards/catalog.ts`)
 — a curved space rather than a kind of flat tiling — after Flat manifolds and
