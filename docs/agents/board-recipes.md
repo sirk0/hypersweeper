@@ -836,35 +836,54 @@ pinned in `resize.PINNED_ROWS` (4.8.12, 4.12.12 and 3.16.16 medium and
 is a surface rather than a trim, and a new one is a group, not a builder. Read
 [`geometry.md`](geometry.md#the-closed-hyperbolic-surfaces) first.
 
-1. **The surface** -- a row in `HURWITZ_SURFACES` in both ports: the q of the
-   PSL(2,q) whose Hurwitz generators make it, and its genus. The group code
-   takes a prime q, and 8; another prime power needs its field written into
-   `_field` / `field` (as GF(8) is). A group with more than one Hurwitz
-   surface (PSL(2,13) has three) gives the one the generator search meets
-   first; say which by a computed invariant -- the Petrie length
-   (`petrie_length` / `petrieLength`) -- and pin it in both test files, or a
-   change to the search swaps the board without a word. Add its label to
-   `HURWITZ_LABELS`.
+1. **The surface** -- a row in `CLOSED_SURFACES` in both ports: its {p,q}, its
+   genus and its group, which is one of two things.
+   - **A PSL(2,q)**, for a {7,3} Hurwitz surface: the group is the q of the
+     field. The group code takes a prime q, and 8; another prime power needs
+     its field written into `_field` / `field` (as GF(8) is). A group with more
+     than one Hurwitz surface (PSL(2,13) has three) gives the one the
+     generator search meets first.
+   - **A presentation**, for anything else: the group is the relator w that
+     <x, y | x^2, y^q, (xy)^p, w> needs, a word in `x`, `y` and `Y` (y^-1).
+     (xyxY)^k pins a map whose Petrie polygons are 2k long, Coxeter's
+     {p,q}_2k, which is often enough (Dyck's and Bring's surfaces); when it is
+     not, find a short word the group kills (the Bolza surface's (xyxyxY)^2).
+     Check the enumeration's order against |G| = 4(g - 1) / (1 - 2/p - 2/q)
+     before going further -- a wrong relator gives a smaller quotient or never
+     closes (`todd_coxeter` raises at `limit`).
+
+   Either way, say which surface it is by a computed invariant -- the Petrie
+   length (`petrie_length` / `petrieLength`) -- and pin it in both test
+   files, or a change to the search or the relator swaps the board without a
+   word. Add its label to `HURWITZ_LABELS` and `soloLabels`.
 2. **Its mode.** One surface a mode (`SURFACE_MODES`), in the Closed surfaces
-   submenu (the `hurwitz_board` builder files it). The genus fixes every
-   tiling's size -- {7,3} 12(g - 1), 6.6.7 40(g - 1), GC(n,0) beyond -- so
-   pick the three rungs nearest the size band, smallest to largest; a row the
-   band cannot reach goes in `EXEMPT_ROWS` (or the mode in `GENUS_BOUND`) in
-   `tests/test_presets.py`, with the rungs that miss it. The view is sized
-   from the genus (`cover_view`), so nothing else needs choosing. The
-   mode needs the menu, label, icon and test rows of a hyperbolic one (steps 1,
-   3 and 4 above, with `quartic`'s entries to copy); `resize.py` holds every
-   row as declared.
+   submenu (the `hurwitz_board` builder files it), in order of genus in
+   `menu.hyperbolic`. The genus fixes every tiling's size (`cell_count` /
+   `cellCount`) -- the plain {p,q}, the Wythoff tilings, GC(n,0) beyond (up to
+   `gc8`; a subdivision needs q of 3 or 4) -- so pick the three rungs nearest
+   the size band, smallest to largest; a row the band cannot reach goes in
+   `EXEMPT_ROWS` (or the mode in `GENUS_BOUND`) in `tests/test_presets.py`,
+   with the rungs that miss it. The view is sized from the genus
+   (`cover_view`), so nothing else needs choosing. Seed the preset rows, then
+   `resize --only` (it holds them as declared) and `calibrate --only` with a
+   raised `--budget` if games are abandoned, and `apply`. The mode needs the
+   menu, label, icon and test rows of a hyperbolic one (steps 1, 3 and 4
+   above, with `quartic`'s entries to copy); the icon lights every p-gon of
+   its tiling.
 3. **The patch must reach every cell** -- the builder grows it until it does,
    and never short of `patch_reach(surface, op)`, which the web pan needs --
    and its face count grows quickly with the genus: 2521 faces for the
    genus-14 hard board.
    A much bigger surface wants a measurement of the build and the pan before it
    ships.
-4. **Tests** -- `_HURWITZ` in `tests/test_boards.py` and `SURFACES` in
-   `web/tests/unit/hurwitz.test.ts` (group order, faces, vertices, edges), and
-   the D7 the patch keeps to `symmetries.test.ts` -- which measures whether the
-   mirror survives, so a chiral surface would show there as 7 rather than 14.
+4. **Tests** -- `_HURWITZ` and `_TILING` in `tests/test_boards.py` and
+   `SURFACES` and `TILING` in `web/tests/unit/hurwitz.test.ts` (group order,
+   faces, vertices, edges, and the tiling the board tests run on), and the
+   D_p the patch keeps to `symmetries.test.ts` -- which measures whether the
+   mirror survives, so a chiral surface would show there as p rather than 2p.
+   A small surface can break things a big one never does: two faces sharing
+   two edges (the Bolza surface) is why the subdivision names a point by what
+   it lies inside as well as by its weights.
 
 **A board in the upper half-plane** -- today only Böröczky's binary tiling,
 `binary_board` -- is not a {p,q} and shares none of the disc machinery. It

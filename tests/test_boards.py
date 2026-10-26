@@ -162,11 +162,13 @@ from minesweeper.boards.catalan import (
 from minesweeper.boards.core import _cross, _normalize
 from minesweeper.boards.core import newell_normal as _newell_normal
 from minesweeper.boards.hurwitz import (
+    CLOSED_SURFACES,
     COVER_COPIES,
     HURWITZ_OPS,
-    HURWITZ_SURFACES,
     SURFACE_MODES,
+    _darts,
     _patch_for,
+    cell_count,
     cover_view,
     gc_loops,
     hurwitz_board,
@@ -174,6 +176,7 @@ from minesweeper.boards.hurwitz import (
     hurwitz_group,
     hurwitz_map,
     petrie_length,
+    todd_coxeter,
 )
 from minesweeper.boards.hyperbolic import (
     _central_polygon,
@@ -2886,23 +2889,45 @@ def test_a_substitutions_scale_is_its_factor(mode):
     assert turns[0] == pytest.approx(expected)
 
 
-# The Hurwitz surfaces: the order of PSL(2,q), and the {7,3} map's faces,
-# vertices and edges -- |G|/7, |G|/3 and |G|/2.
+# The closed surfaces: the order of the group, and the {p,q} map's faces,
+# vertices and edges -- |G|/p, |G|/q and |G|/2.
 _HURWITZ = {
+    "bolza": (48, 6, 16, 24),
     "quartic": (168, 24, 56, 84),
+    "dyck": (96, 12, 32, 48),
+    "bring": (120, 24, 30, 60),
     "macbeath": (504, 72, 168, 252),
     "triplet": (1092, 156, 364, 546),
 }
+# The ones whose group is a PSL(2,q), found by a generator search.
+_PSL = sorted(s for s in _HURWITZ if isinstance(CLOSED_SURFACES[s].group, int))
+# The tiling each surface's board tests are run on: the 6.6.7 of the Hurwitz
+# surfaces, and the easy board of the others.
+_TILING = {"bolza": "gc3", "quartic": "zip", "dyck": "expand", "bring": "expand",
+           "macbeath": "zip", "triplet": "zip"}
+
+
+def _valence(surface: str, op: str) -> int:
+    """How many cells meet at every corner of ``surface`` in tiling ``op``."""
+    p, q, _, _ = CLOSED_SURFACES[surface]
+    if op == "none" or op.startswith("gc"):
+        return q
+    return len(_wythoff_config(p, q, op))
 
 
 class TestHurwitz:
     """The closed hyperbolic surfaces (boards/hurwitz.py): Klein's quartic,
     Macbeath's surface and one of the first Hurwitz triplet, built from their
-    groups and drawn as a patch of the Poincare disc that covers them."""
+    PSL(2,q), and the Bolza, Dyck and Bring surfaces, built from a
+    presentation -- all drawn as a patch of the Poincare disc that covers
+    them."""
 
-    @pytest.mark.parametrize("surface", sorted(_HURWITZ))
+    def test_every_surface_is_tested(self):
+        assert set(_HURWITZ) == set(CLOSED_SURFACES) == set(SURFACE_MODES)
+
+    @pytest.mark.parametrize("surface", _PSL)
     def test_the_group_and_its_generators(self, surface):
-        q, _ = HURWITZ_SURFACES[surface]
+        q = CLOSED_SURFACES[surface].group
         elements, times, x, y = hurwitz_group(q)
         assert len(elements) == _HURWITZ[surface][0]
         identity = times(x, x)
@@ -2917,37 +2942,88 @@ class TestHurwitz:
         assert (order(x), order(y), order(times(x, y))) == (2, 3, 7)
 
     @pytest.mark.parametrize("surface", sorted(_HURWITZ))
+    def test_the_darts_are_the_group(self, surface):
+        # x an involution, y of order q and xy of order p, acting on |G| darts
+        # with no fixed point (a regular action) and reaching all of them
+        p, q, _, _ = CLOSED_SURFACES[surface]
+        step_x, step_y = _darts(surface)
+        darts = range(len(step_x))
+        assert len(step_x) == _HURWITZ[surface][0]
+        assert sorted(step_x) == sorted(step_y) == list(darts)
+
+        def power(step, k, d):
+            for _ in range(k):
+                d = step[d]
+            return d
+
+        turn = [step_y[step_x[d]] for d in darts]
+        for step, n in ((step_x, 2), (step_y, q), (turn, p)):
+            assert all(power(step, n, d) == d for d in darts)
+            assert all(power(step, k, 0) != 0 for k in range(1, n))
+        seen, frontier = {0}, [0]
+        while frontier:
+            frontier = [e for d in frontier for e in (step_x[d], step_y[d])
+                        if e not in seen and not seen.add(e)]
+        assert len(seen) == len(step_x)
+
+    def test_the_coset_enumeration_is_the_group_not_the_run(self):
+        # The quartic is also <x, y | x^2, y^3, (xy)^7, [x, y]^4>: the same
+        # map, numbered breadth-first from the identity -- so the presentation
+        # route and the PSL(2,7) route give one face per face and one corner
+        # per corner, up to relabelling.
+        step_x, step_y = todd_coxeter(7, 3, "xyxY" * 4)
+        assert len(step_x) == 168
+        assert step_x[0] == 1 and step_y[0] in (1, 2)  # breadth-first, x first
+        assert todd_coxeter.__wrapped__(7, 3, "xyxY" * 4) == (step_x, step_y)
+        with pytest.raises(ValueError):
+            todd_coxeter.__wrapped__(7, 3, "xyxY" * 9, limit=500)
+
+    @pytest.mark.parametrize("surface", sorted(_HURWITZ))
     def test_the_map_is_the_surface(self, surface):
+        p, q, genus, _ = CLOSED_SURFACES[surface]
         _, faces_n, vertices_n, edges_n = _HURWITZ[surface]
         faces = hurwitz_map(surface)
         assert len(faces) == faces_n
-        assert all(len(set(face)) == 7 for face in faces)
-        directed = Counter((face[i], face[(i + 1) % 7]) for face in faces for i in range(7))
+        assert all(len(set(face)) == p for face in faces)
+        directed = Counter((face[i], face[(i + 1) % p]) for face in faces for i in range(p))
         # every edge once each way (orientable, and no edge doubled)...
         assert set(directed.values()) == {1}
         assert all((b, a) in directed for a, b in directed)
         assert len(directed) == 2 * edges_n
-        # ...three faces at every vertex, and chi = 2 - 2g
+        # ...q faces at every vertex, and chi = 2 - 2g
         at = Counter(v for face in faces for v in face)
-        assert len(at) == vertices_n and set(at.values()) == {3}
-        genus = HURWITZ_SURFACES[surface][1]
+        assert len(at) == vertices_n and set(at.values()) == {q}
         assert vertices_n - edges_n + faces_n == 2 - 2 * genus
+        # no face borders itself (the Bolza surface's faces do border each
+        # other twice -- six octagons, eight sides each)
+        side = {(face[i], face[(i + 1) % p]): f for f, face in enumerate(faces) for i in range(p)}
+        assert all(side[(b, a)] != f for (a, b), f in side.items())
 
     def test_the_petrie_polygons_say_which_surface(self):
         # The quartic is {7,3}_8 and Macbeath's surface {7,3}_18; the first
         # Hurwitz triplet's three maps have Petrie polygons of 12, 14 and 26,
         # and the generator search meets the 14 first. A change to the search
-        # that landed on another surface of the triplet would show here.
+        # that landed on another surface of the triplet would show here. Dyck's
+        # surface is {8,3}_6 and Bring's {5,4}_6, as their presentations say;
+        # the Bolza surface's are 12 long.
         assert [petrie_length(s) for s in ("quartic", "macbeath", "triplet")] == [8, 18, 14]
+        assert [petrie_length(s) for s in ("bolza", "dyck", "bring")] == [12, 6, 6]
 
     @pytest.mark.parametrize("surface", sorted(_HURWITZ))
-    @pytest.mark.parametrize("op", ["none", "zip"])
+    @pytest.mark.parametrize("op", ["none", "zip", "tiling"])
     def test_the_board_is_closed_with_the_surface_genus(self, surface, op):
-        _, faces_n, vertices_n, _ = _HURWITZ[surface]
+        _, faces_n, vertices_n, edges_n = _HURWITZ[surface]
+        op = _TILING[surface] if op == "tiling" else op
         board = hurwitz_board(surface, op, 0, 1)
         assert board.mode == SURFACE_MODES[surface]
-        assert len(board.adjacency) == faces_n + (vertices_n if op == "zip" else 0)
-        genus = HURWITZ_SURFACES[surface][1]
+        assert len(board.adjacency) == cell_count(surface, op) == len(hurwitz_cells(surface, op))
+        assert cell_count(surface, "none") == faces_n
+        assert cell_count(surface, "zip") == faces_n + vertices_n
+        # GC(2, 0) adds a cell per edge, and on a 4-valent tiling one per
+        # corner too (the middle of each dual square)
+        q = CLOSED_SURFACES[surface].q
+        assert cell_count(surface, "gc2") == faces_n + edges_n + (vertices_n if q == 4 else 0)
+        genus = CLOSED_SURFACES[surface].genus
         assert _euler_characteristic(board) == 2 - 2 * genus
         assert _boundary_components(board) == 0
 
@@ -2955,12 +3031,20 @@ class TestHurwitz:
     def test_every_cell_keeps_its_full_count(self, surface):
         # no rim: a heptagon of {7,3} has its seven, and on 6.6.7 a hexagon
         # its six and a heptagon its seven, everywhere -- as an interior tile
-        # of the disc does
-        board = hurwitz_board(surface, "none", 0, 1)
-        assert {len(n) for n in board.adjacency.values()} == {7}
-        board = hurwitz_board(surface, "zip", 0, 1)
+        # of the disc does. Each corner adds the cells round it bar the two
+        # that share a side with the cell there.
+        op = _TILING[surface]
+        board = hurwitz_board(surface, op, 0, 1)
         for cell, neighbours in board.adjacency.items():
-            assert len(neighbours) == len(board.quotient[cell])
+            assert len(neighbours) == len(board.quotient[cell]) * (_valence(surface, op) - 2)
+
+    @pytest.mark.parametrize("surface", sorted(set(_HURWITZ) - {"bolza"}))
+    def test_every_face_of_the_plain_tiling_keeps_its_count(self, surface):
+        # {p,q} itself: p (q - 2) neighbours a face. Not on the Bolza surface,
+        # whose six octagons border the other five each, some of them twice.
+        p, q, _, _ = CLOSED_SURFACES[surface]
+        board = hurwitz_board(surface, "none", 0, 1)
+        assert {len(n) for n in board.adjacency.values()} == {p * (q - 2)}
 
     @pytest.mark.parametrize("op", sorted(op for p, q, op in _WYTHOFF
                                           if (p, q) == (7, 3) and op in HURWITZ_OPS))
@@ -2974,17 +3058,18 @@ class TestHurwitz:
 
     @pytest.mark.parametrize("surface", sorted(_HURWITZ))
     def test_no_two_cells_can_be_told_apart_only_by_one(self, surface):
-        board = hurwitz_board(surface, "zip", 0, 1)
+        board = hurwitz_board(surface, _TILING[surface], 0, 1)
         hood = {c: frozenset([c, *n]) for c, n in board.adjacency.items()}
         assert len(set(hood.values())) == len(hood)  # no twins
         assert not any(len(hood[o]) == len(hood[c]) + 1 and hood[c] < hood[o]
                        for c in hood for o in board.adjacency[c])  # no near-twins
 
     @pytest.mark.parametrize("surface", sorted(_HURWITZ))
-    @pytest.mark.parametrize("op", ["none", "zip"])
+    @pytest.mark.parametrize("op", ["none", "zip", "tiling"])
     def test_every_copy_is_its_cell(self, surface, op):
         # each drawn face's corners, carried down by the covering map, are its
         # cell's corners on the surface, read from any start
+        op = _TILING[surface] if op == "tiling" else op
         (loops, _, _, cells, key), groups = _patch_for(surface, op, 0)
         surface_cells = hurwitz_cells(surface, op)
         for f in (f for group in groups for f in group):
@@ -2995,7 +3080,7 @@ class TestHurwitz:
 
     @pytest.mark.parametrize("surface", sorted(_HURWITZ))
     def test_every_cell_is_drawn_and_named_after_its_nearest_copy(self, surface):
-        board = hurwitz_board(surface, "zip", 0, 1)
+        board = hurwitz_board(surface, _TILING[surface], 0, 1)
         shown = defaultdict(list)
         for face, cell in board.faces.items():
             shown[cell].append(face)
@@ -3009,10 +3094,11 @@ class TestHurwitz:
 
     @pytest.mark.parametrize("surface", sorted(_HURWITZ))
     def test_the_drawing_agrees_with_the_surface(self, surface):
-        # Where a copy is whole inside the patch -- every corner met by its
-        # three faces -- the faces drawn round it show exactly its neighbours:
+        # Where a copy is whole inside the patch -- every corner met by all
+        # its faces -- the faces drawn round it show exactly its neighbours:
         # the adjacency is the surface's, and the drawing says the same.
-        board = hurwitz_board(surface, "zip", 0, 1)
+        valence = _valence(surface, _TILING[surface])
+        board = hurwitz_board(surface, _TILING[surface], 0, 1)
         at = defaultdict(set)
         for face, polygon in board.polygons.items():
             for (x, y), corner in zip(polygon, board.corner_mask[face]):
@@ -3022,7 +3108,7 @@ class TestHurwitz:
         for face, polygon in board.polygons.items():
             points = [(round(x, 6), round(y, 6))
                       for (x, y), c in zip(polygon, board.corner_mask[face]) if c]
-            if any(len(at[p]) != 3 for p in points):
+            if any(len(at[p]) != valence for p in points):
                 continue
             around = {board.faces[g] for p in points for g in at[p]} - {board.faces[face]}
             assert around == set(board.adjacency[board.faces[face]])
@@ -3030,17 +3116,17 @@ class TestHurwitz:
         assert checked >= len(board.adjacency) // 4
 
     @pytest.mark.parametrize("surface", sorted(_HURWITZ))
-    def test_the_patch_keeps_the_central_heptagon_turns(self, surface):
-        # the shells are orbits of the central heptagon's dihedral group, so the
-        # drawing turns into itself by a seventh about the disc's centre
-        board = hurwitz_board(surface, "zip", 0, 1, scale=1)
+    def test_the_patch_keeps_the_central_polygon_turns(self, surface):
+        # the shells are orbits of the central p-gon's dihedral group, so the
+        # drawing turns into itself by a p-th about the disc's centre
+        board = hurwitz_board(surface, _TILING[surface], 0, 1, scale=1)
         c = board.width / 2
         centres = {
             tuple(round(v, 5) for v in (sum(x for x, _ in poly) / len(poly) - c,
                                           sum(y for _, y in poly) / len(poly) - c))
             for poly in board.polygons.values()
         }
-        turn = cmath.exp(2j * math.pi / 7)
+        turn = cmath.exp(2j * math.pi / CLOSED_SURFACES[surface].p)
         for x, y in centres:
             z = complex(x, y) * turn
             assert (round(z.real, 5), round(z.imag, 5)) in centres or any(
@@ -3071,7 +3157,7 @@ class TestHurwitz:
         board = hurwitz_board(surface, "gc2", 0, 1)
         assert board.mode == SURFACE_MODES[surface]
         assert len(board.adjacency) == cells == faces_n + edges_n
-        assert _euler_characteristic(board) == 2 - 2 * HURWITZ_SURFACES[surface][1]
+        assert _euler_characteristic(board) == 2 - 2 * CLOSED_SURFACES[surface].genus
         sides = Counter(len(board.quotient[c]) for c in board.adjacency)
         assert sides == {7: faces_n, 6: cells - faces_n}
         for cell, neighbours in board.adjacency.items():
@@ -3080,24 +3166,62 @@ class TestHurwitz:
     @pytest.mark.parametrize("surface", sorted(_HURWITZ))
     def test_the_view_holds_the_same_share_of_every_surface(self, surface):
         # the view's area, 2 pi (cosh v - 1), over the surface's, 4 pi (g - 1)
-        genus = HURWITZ_SURFACES[surface][1]
+        genus = CLOSED_SURFACES[surface].genus
         copies = (math.cosh(cover_view(surface)) - 1) / (2 * (genus - 1))
         assert copies == pytest.approx(COVER_COPIES)
 
-    @pytest.mark.parametrize("n", [2, 3])
-    def test_the_subdivision_ids_are_shared_exactly(self, n):
-        # every point the cut makes on an edge between two triangles is one
+    @pytest.mark.parametrize("surface, cells", [
+        ("bolza", (70, 286, 510)), ("dyck", (252, 396)), ("bring", (264, 474))])
+    def test_the_other_surfaces_subdivided_keep_the_surface(self, surface, cells):
+        # The rungs they ship: the faces survive whole, and every other cell is
+        # a hexagon (q = 3) or a square (q = 4) -- 8n^2 - 2 cells on the Bolza
+        # surface, 16n^2 - 4 on Dyck's and 30n^2 - 6 on Bring's
+        p, q, genus, _ = CLOSED_SURFACES[surface]
+        faces_n = _HURWITZ[surface][1]
+        per = {"bolza": (8, 2), "dyck": (16, 4), "bring": (30, 6)}[surface]
+        for count in cells:
+            n = next(n for n in range(2, 9) if per[0] * n * n - per[1] == count)
+            board = hurwitz_board(surface, f"gc{n}", 0, 1)
+            assert len(board.adjacency) == count
+            assert _euler_characteristic(board) == 2 - 2 * genus
+            assert _boundary_components(board) == 0
+            sides = Counter(len(board.quotient[c]) for c in board.adjacency)
+            assert sides == {p: faces_n, 6 if q == 3 else 4: count - faces_n}
+            for cell, neighbours in board.adjacency.items():
+                assert len(neighbours) == len(board.quotient[cell]) * (q - 2)
+            hood = {c: frozenset([c, *nb]) for c, nb in board.adjacency.items()}
+            assert len(set(hood.values())) == len(hood)
+
+    @pytest.mark.parametrize("p, q, n", [(7, 3, 2), (7, 3, 3), (8, 3, 3), (5, 4, 2), (5, 4, 3)])
+    def test_the_subdivision_ids_are_shared_exactly(self, p, q, n):
+        # every point the cut makes on a side between two dual polygons is one
         # key, and every cell's corners go round it counterclockwise
-        loops, where, centres, origins = gc_loops(n, 3)
+        loops, where, centres, origins = gc_loops(p, q, n, 3)
         assert len(set(origins)) == len(origins)
         for loop, z in zip(loops, centres):
             corners = [where[k] for k in loop]
             area = sum(((a - z).conjugate() * (b - z)).imag
                        for a, b in zip(corners, corners[1:] + corners[:1]))
             assert area > 0
-            assert len(loop) in (6, 7)
-        # the heptagons stand on the ring walk's faces, one each
-        assert sum(1 for o in origins if len(o) == 1) == sum(1 for loop in loops if len(loop) == 7)
+            assert len(loop) in (p, 6 if q == 3 else 4)
+        # the p-gons stand on the ring walk's faces, one each, and nothing else
+        # does: a point on a side stands on its edge, one inside on its corner
+        assert all(len(support) == {1: 0, 2: 2}.get(len(pairs), 1) for support, pairs in origins)
+        assert (sum(1 for _, pairs in origins if len(pairs) == 1)
+                == sum(1 for loop in loops if len(loop) == p))
+
+    def test_two_faces_that_share_two_edges_keep_their_points_apart(self):
+        # The Bolza surface's six octagons border each other twice over, so a
+        # point on a side named by its two faces alone would be two points --
+        # what it stands on keeps them apart (and `hurwitz_cells` would find
+        # two copies of one cell disagreeing if it did not)
+        faces = hurwitz_map("bolza")
+        side = Counter(frozenset((f, g)) for f, face in enumerate(faces)
+                       for g, other in enumerate(faces) if f < g
+                       for i in range(8) if (face[(i + 1) % 8], face[i]) in
+                       {(other[j], other[(j + 1) % 8]) for j in range(8)})
+        assert max(side.values()) >= 2
+        assert len(hurwitz_cells("bolza", "gc2")) == cell_count("bolza", "gc2") == 30
 
     def test_the_subdivision_draws_the_same_cells_as_the_surface(self):
         (loops, _, _, cells, key), groups = _patch_for("quartic", "gc3", 0)

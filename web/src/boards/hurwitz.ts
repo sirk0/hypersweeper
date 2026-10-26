@@ -1,18 +1,20 @@
-// Port of minesweeper/boards/hurwitz.py: the closed hyperbolic surfaces -- the
-// {7,3} tiling glued up into a surface with no edge at all (Klein's quartic,
-// Macbeath's surface, one of the first Hurwitz triplet), drawn as a patch of
-// the Poincaré disc that covers it. See that module's docstring for the
+// Port of minesweeper/boards/hurwitz.py: the closed hyperbolic surfaces -- a
+// regular {p,q} tiling glued up into a surface with no edge at all (the {7,3}
+// Hurwitz surfaces: Klein's quartic, Macbeath's surface, one of the first
+// Hurwitz triplet; and the Bolza, Dyck and Bring surfaces), drawn as a patch
+// of the Poincaré disc that covers it. See that module's docstring for the
 // construction; this file follows it step for step, and the conformance oracle
 // holds the two to the same boards.
 //
-// In short: the surface's {7,3} map is read off its group, PSL(2,q), exactly
-// (darts are group elements, faces the cosets of <xy>, vertices of <y>); the
+// In short: the surface's {p,q} map is read off its group exactly -- PSL(2,q)
+// for a Hurwitz surface, a presentation enumerated by Todd--Coxeter for the
+// others (darts are group elements, faces the cosets of <xy>, vertices of <y>); the
 // disc's ring walk covers it, and the covering map is a breadth-first walk on
 // ids alone; the board draws the shells out to where every cell has a copy,
 // each face showing the cell it covers (`Board.faces`), with the surface's own
-// adjacency and topology (`Board.quotient`). Each surface is a mode of its own;
-// Klein's quartic grows from difficulty to difficulty by subdividing its tiles
-// (Goldberg--Coxeter GC(n, 0), `gcLoops`).
+// adjacency and topology (`Board.quotient`). Each surface is a mode of its own,
+// and grows from difficulty to difficulty by changing its tiling: a Wythoff
+// tiling of it, or a Goldberg--Coxeter subdivision GC(n, 0) (`gcLoops`).
 //
 // What this port adds is the pan (`Board.disc.cover`): one step for each tile
 // round the central one, the disc isometry that carries the central tile onto
@@ -28,7 +30,6 @@ import {
   discDrawing,
   distance,
   drop,
-  dualFaces,
   hyperbolicTiling,
   isometry,
   lift,
@@ -41,13 +42,32 @@ import {
   type WythoffOrigin,
 } from "./hyperbolic";
 
-/** The surfaces, by name: the order of the field the group is PSL(2,q) over,
- * and the genus. Must match `HURWITZ_SURFACES`. */
-export const HURWITZ_SURFACES: Record<string, readonly [number, number]> = {
-  quartic: [7, 3],
-  macbeath: [8, 7],
-  triplet: [13, 14],
+/** A closed surface: its tiling {p,q}, its genus, and its group -- the order
+ * of the field of a PSL(2,q) (a number), or the relator a presentation adds to
+ * x^2, y^q and (xy)^p (a word in x, y and Y = y^-1). Mirrors `Surface`. */
+export interface ClosedSurface {
+  p: number;
+  q: number;
+  genus: number;
+  group: number | string;
+}
+
+/** The surfaces, by name, in order of genus. Must match `CLOSED_SURFACES`. */
+export const CLOSED_SURFACES: Record<string, ClosedSurface> = {
+  bolza: { p: 8, q: 3, genus: 2, group: "xyxyxY".repeat(2) },
+  quartic: { p: 7, q: 3, genus: 3, group: 7 },
+  dyck: { p: 8, q: 3, genus: 3, group: "xyxY".repeat(3) },
+  bring: { p: 5, q: 4, genus: 4, group: "xyxY".repeat(3) },
+  macbeath: { p: 7, q: 3, genus: 7, group: 8 },
+  triplet: { p: 7, q: 3, genus: 14, group: 13 },
 };
+
+/** The surface named `surface`, or an error. */
+function surfaceOf(surface: string): ClosedSurface {
+  const spec = CLOSED_SURFACES[surface];
+  if (!spec) throw new Error(`unknown closed surface ${surface}`);
+  return spec;
+}
 
 /** How many copies of the surface the view holds: its area over the
  * surface's. That is what decides how a closed surface plays -- under one copy
@@ -69,21 +89,23 @@ export const COVER_COPIES = 0.75;
  * across the cover, and the board is framed to that circle. Mirrors
  * `cover_view`. */
 export function coverView(surface: string): number {
-  const [, genus] = HURWITZ_SURFACES[surface]!;
-  return Math.acosh(1 + 2 * COVER_COPIES * (genus - 1));
+  return Math.acosh(1 + 2 * COVER_COPIES * (surfaceOf(surface).genus - 1));
 }
 
 /** How far the view's centre can ever be from the patch's: the pan carries it
- * back onto the central {7,3} heptagon (`discRecentre`), so its circumradius,
- * acosh(cot(pi/7) cot(pi/3)). Mirrors `VIEW_SHIFT`. */
-export const VIEW_SHIFT = Math.acosh(1 / (Math.tan(Math.PI / 7) * Math.tan(Math.PI / 3)));
+ * back onto the central p-gon of {p,q} (`discRecentre`), so its circumradius,
+ * acosh(cot(pi/p) cot(pi/q)). Mirrors `view_shift`. */
+export function viewShift(p: number, q: number): number {
+  return Math.acosh(1 / (Math.tan(Math.PI / p) * Math.tan(Math.PI / q)));
+}
 
 /** How far from the centre the patch always reaches: the view, plus as far as
  * the view's centre can be from the patch's, plus the tiling's own tile
  * radius -- a tile whose centre is farther out cannot reach into the view.
  * Mirrors `patch_reach`. */
 export function patchReach(surface: string, op: HurwitzOp): number {
-  return coverView(surface) + VIEW_SHIFT + tileRadius(op);
+  const { p, q } = surfaceOf(surface);
+  return coverView(surface) + viewShift(p, q) + tileRadius(p, q, op);
 }
 
 const radiusCache = new Map<string, number>();
@@ -91,86 +113,101 @@ const radiusCache = new Map<string, number>();
 /** The farthest any tile's corner is from its own centre, in hyperbolic
  * distance, measured on the disc's first rings (the tiles are congruent by
  * type, so a few rings hold every kind). Mirrors `_tile_radius`. */
-export function tileRadius(op: HurwitzOp): number {
-  const hit = radiusCache.get(op);
+export function tileRadius(p: number, q: number, op: HurwitzOp): number {
+  const cacheKey = `${p},${q},${op}`;
+  const hit = radiusCache.get(cacheKey);
   if (hit !== undefined) return hit;
   let loops: string[][];
   let where: Map<string, C>;
   let centres: C[];
   const n = gcOrder(op);
-  if (n !== null) ({ loops, where, centres } = gcLoops(n, 3));
+  if (n !== null) ({ loops, where, centres } = gcLoops(p, q, n, 3));
   else if (op === "none") {
-    const t = hyperbolicTiling(7, 3, 3);
+    const t = hyperbolicTiling(p, q, 3);
     loops = t.faces.map((face) => face.map(String));
     where = new Map([...t.pos].map(([v, z]) => [String(v), z]));
     centres = t.centres;
-  } else ({ loops, where, centres } = wythoffLoops(7, 3, op as WythoffOp, 3));
+  } else ({ loops, where, centres } = wythoffLoops(p, q, op as WythoffOp, 3));
   let far = 0;
   loops.forEach((loop, f) => {
     for (const k of loop) far = Math.max(far, 2 * Math.atanh(Math.hypot(...toOrigin(centres[f]!, where.get(k)!))));
   });
-  radiusCache.set(op, far);
+  radiusCache.set(cacheKey, far);
   return far;
 }
 
 /** How many device pixels a unit of the board's disc can be drawn as, at
- * most: the pan's worst case (a translation by `VIEW_SHIFT` magnifies by at
- * most e^VIEW_SHIFT) on a disc a thousand device pixels in radius -- a retina
- * desktop's at more than twice the fitted zoom, a phone's at three times.
- * Zoomed further still, a rim edge drawn straight is off by about a pixel,
- * under the gap between two tiles. The web port's alone: the pygame game
- * draws a static disc, every edge at full curve. */
-const DRAWN_SCALE = Math.exp(VIEW_SHIFT) * 1000;
+ * most, for a view that strays up to `shift` from the centre (`viewShift`):
+ * the pan's worst case (a translation by `shift` magnifies by at most
+ * e^shift) on a disc a thousand device pixels in radius -- a retina desktop's
+ * at more than twice the fitted zoom, a phone's at three times. Zoomed
+ * further still, a rim edge drawn straight is off by about a pixel, under the
+ * gap between two tiles. The web port's alone: the pygame game draws a static
+ * disc, every edge at full curve. */
+const drawnScale = (shift: number): number => Math.exp(shift) * 1000;
 
 /**
  * How many segments draw the edge from a to b: as many as its curve needs,
  * at most `most`. A geodesic of the disc is a circular arc, and its chord
  * misses it by the sagitta; k segments miss it by about the sagitta over k^2.
- * The patch's view never comes closer to an edge than `VIEW_SHIFT`, so how big
+ * The patch's view never comes closer to an edge than `shift`, so how big
  * the edge can ever be shown is known, and an edge whose miss could never
  * reach half a pixel is drawn straight. That is nearly every edge out at the
  * rim, which is most of a patch -- and every corner a cell's outline carries
  * is another run of the cell's bevel, so it is most of what the renderer
  * draws.
  */
-export function edgeSegments(a: C, b: C, most: number): number {
+export function edgeSegments(a: C, b: C, most: number, shift = viewShift(7, 3)): number {
   const [m] = arcPoints(a, b, 2);
-  const sag = Math.hypot(m![0] - (a[0] + b[0]) / 2, m![1] - (a[1] + b[1]) / 2) * DRAWN_SCALE;
+  const sag = Math.hypot(m![0] - (a[0] + b[0]) / 2, m![1] - (a[1] + b[1]) / 2) * drawnScale(shift);
   for (let k = 1; k < most; k++) if (sag / (k * k) <= 0.5) return k;
   return most;
 }
 
 /** What each surface is called, for the info window. */
 export const HURWITZ_LABELS: Record<string, string> = {
+  bolza: "Bolza surface",
   quartic: "Klein quartic",
+  dyck: "Dyck's surface",
+  bring: "Bring's surface",
   macbeath: "Macbeath surface",
   triplet: "First Hurwitz triplet",
 };
 
 /** The surface a closed hyperbolic board is drawn on, named and with its genus
- * -- read off the board's own topology, since the surface is the board's size
- * rather than its mode. Null for a genus no surface here has. */
-export function hurwitzSurfaceLabel(euler: number): string | null {
-  const genus = 1 - euler / 2;
-  const name = Object.entries(HURWITZ_SURFACES).find(([, [, g]]) => g === genus)?.[0];
-  return name ? `${HURWITZ_LABELS[name]}, genus ${genus}` : null;
+ * -- by its mode, since two surfaces can share a genus (Klein's quartic and
+ * Dyck's surface are both genus 3). Null for a mode that is no surface here. */
+export function hurwitzSurfaceLabel(mode: string): string | null {
+  const name = Object.keys(SURFACE_MODES).find((s) => SURFACE_MODES[s] === mode);
+  return name ? `${HURWITZ_LABELS[name]}, genus ${CLOSED_SURFACES[name]!.genus}` : null;
 }
 
-/** `"none"` is {7,3} itself, then its Wythoff tilings (`WYTHOFF_OPS` bar
+/** `"none"` is {p,q} itself, then its Wythoff tilings (`WYTHOFF_OPS` bar
  * `truncate`: 3.14.14's triangles are tiny beside its 14-gons), then its
  * Goldberg--Coxeter subdivisions GC(n, 0) (`gcLoops`). Must match
  * `HURWITZ_OPS`. */
-export const HURWITZ_OPS = ["none", "ambo", "zip", "expand", "bevel", "gc2", "gc3", "gc4"] as const;
+export const HURWITZ_OPS = [
+  "none",
+  "ambo",
+  "zip",
+  "expand",
+  "bevel",
+  "gc2",
+  "gc3",
+  "gc4",
+  "gc5",
+  "gc6",
+  "gc7",
+  "gc8",
+] as const;
 export type HurwitzOp = (typeof HURWITZ_OPS)[number];
 
 /** Each surface's mode: one surface a mode, whatever the difficulty, which
  * grows the board by changing the tiling, never the surface. Must match
  * `SURFACE_MODES`. */
-export const SURFACE_MODES: Record<string, string> = {
-  quartic: "quartic",
-  macbeath: "macbeath",
-  triplet: "triplet",
-};
+export const SURFACE_MODES: Record<string, string> = Object.fromEntries(
+  Object.keys(CLOSED_SURFACES).map((name) => [name, name]),
+);
 
 /** The n of a Goldberg--Coxeter tiling `gc<n>`, or null for any other. */
 function gcOrder(op: HurwitzOp): number | null {
@@ -298,43 +335,176 @@ export function hurwitzGroup(q: number): HurwitzGroup {
   throw new Error(`PSL(2,${q}) has no Hurwitz generators`);
 }
 
+const tcCache = new Map<string, readonly [number[], number[]]>();
+
+/**
+ * The group <x, y | x^2, y^q, (xy)^p, relator> acting on itself on the right:
+ * x and y as permutations of its elements, numbered breadth-first from the
+ * identity, x before y -- a numbering that depends only on the group and its
+ * generators, so it is `todd_coxeter`'s whatever order either enumeration
+ * runs in. Haselgrove--Leech--Trotter over the trivial subgroup; throws if it
+ * outgrows `limit` cosets. Mirrors `todd_coxeter`.
+ */
+export function toddCoxeter(p: number, q: number, relator: string, limit = 100_000): readonly [number[], number[]] {
+  const cacheKey = `${p},${q},${relator},${limit}`;
+  const hit = tcCache.get(cacheKey);
+  if (hit) return hit;
+  // generator columns: x, x^-1, y, y^-1
+  const inverse = [1, 0, 3, 2];
+  const letter: Record<string, number> = { x: 0, X: 1, y: 2, Y: 3 };
+  const relators = [
+    [0, 0],
+    Array<number>(q).fill(2),
+    Array.from({ length: 2 * p }, (_, i) => (i % 2 === 0 ? 0 : 2)),
+    [...relator].map((c) => letter[c]!),
+  ];
+  const table: (number | null)[][] = [[null, null, null, null]];
+  const parent = [0];
+  const find = (c: number): number => {
+    while (parent[c] !== c) {
+      parent[c] = parent[parent[c]!]!;
+      c = parent[c]!;
+    }
+    return c;
+  };
+  const coincide = (a0: number, b0: number): void => {
+    const pending: [number, number][] = [[a0, b0]];
+    while (pending.length) {
+      const [s, t0] = pending.pop()!;
+      let a = find(s);
+      let b = find(t0);
+      if (a === b) continue;
+      if (a > b) [a, b] = [b, a];
+      parent[b] = a;
+      for (let g = 0; g < 4; g++) {
+        const t = table[b]![g];
+        if (t === null || t === undefined) continue;
+        table[b]![g] = null;
+        if (table[t]![inverse[g]!] === b) table[t]![inverse[g]!] = null;
+        const u = table[a]![g];
+        if (u === null || u === undefined) {
+          table[a]![g] = t;
+          const back = table[t]![inverse[g]!];
+          if (back === null || back === undefined) table[t]![inverse[g]!] = a;
+          else pending.push([back, a]);
+        } else {
+          pending.push([u, t]);
+          if (table[t]![inverse[g]!] === null) table[t]![inverse[g]!] = find(a);
+        }
+      }
+    }
+  };
+  const define = (c: number, g: number): number => {
+    if (table.length >= limit) throw new Error("the coset enumeration does not close");
+    const n = table.length;
+    table.push([null, null, null, null]);
+    parent.push(n);
+    table[c]![g] = n;
+    table[n]![inverse[g]!] = c;
+    return n;
+  };
+  const scan = (c: number, word: number[]): void => {
+    // trace the relator forward from c, then backward, defining the gap
+    let f = c;
+    let i = 0;
+    while (i < word.length && table[f]![word[i]!] !== null) f = table[f]![word[i++]!]!;
+    if (i === word.length) {
+      if (f !== c) coincide(f, c);
+      return;
+    }
+    let b = c;
+    let j = word.length - 1;
+    while (j >= i && table[b]![inverse[word[j]!]!] !== null) b = table[b]![inverse[word[j--]!]!]!;
+    if (j < i) {
+      coincide(f, b);
+      return;
+    }
+    while (i < j) f = define(f, word[i++]!);
+    table[f]![word[i]!] = b;
+    table[b]![inverse[word[i]!]!] = f;
+  };
+  for (let c = 0; c < table.length; c++) {
+    for (const word of relators) {
+      if (find(c) !== c) break;
+      scan(c, word);
+    }
+    if (find(c) === c) for (let g = 0; g < 4; g++) if (table[c]![g] === null) define(c, g);
+  }
+  // renumber the live cosets breadth-first from the identity, x before y
+  const number = new Map<number, number>([[0, 0]]);
+  const order = [0];
+  for (let k = 0; k < order.length; k++) {
+    for (const g of [0, 2]) {
+      const d = find(table[order[k]!]![g]!);
+      if (!number.has(d)) {
+        number.set(d, order.length);
+        order.push(d);
+      }
+    }
+  }
+  const out = [
+    order.map((c) => number.get(find(table[c]![0]!))!),
+    order.map((c) => number.get(find(table[c]![2]!))!),
+  ] as const;
+  tcCache.set(cacheKey, out);
+  return out;
+}
+
+const dartsCache = new Map<string, readonly [number[], number[]]>();
+
+/** How x and y act on the surface's darts, numbered 0 .. |G| - 1: for a
+ * Hurwitz group the elements of PSL(2,q) in order, times x or y on the right;
+ * for a presentation the cosets `toddCoxeter` counts. Mirrors `_darts`. */
+export function darts(surface: string): readonly [number[], number[]] {
+  const hit = dartsCache.get(surface);
+  if (hit) return hit;
+  const { p, q, group } = surfaceOf(surface);
+  let out: readonly [number[], number[]];
+  if (typeof group === "string") out = toddCoxeter(p, q, group);
+  else {
+    const { elements, times, x, y } = hurwitzGroup(group);
+    const index = new Map(elements.map((g, i) => [g, i]));
+    out = [elements.map((g) => index.get(times(g, x))!), elements.map((g) => index.get(times(g, y))!)];
+  }
+  dartsCache.set(surface, out);
+  return out;
+}
+
 const mapCache = new Map<string, number[][]>();
 
-/** The surface's {7,3} map: each face as its seven vertex ids in order,
- * numbered in the order of the first element of their coset. Mirrors
- * `hurwitz_map`. */
+/** The surface's {p,q} map: each face as its p vertex ids in order, numbered
+ * in the order of the first dart of their coset. Mirrors `hurwitz_map`. */
 export function hurwitzMap(surface: string): number[][] {
   const hit = mapCache.get(surface);
   if (hit) return hit;
-  const spec = HURWITZ_SURFACES[surface];
-  if (!spec) throw new Error(`unknown Hurwitz surface ${surface}`);
-  const { elements, times, x, y } = hurwitzGroup(spec[0]);
-  const turn = times(x, y);
-  const cosets = (generator: number, n: number): Map<number, number> => {
-    const out = new Map<number, number>();
+  const [stepX, stepY] = darts(surface);
+  const { p, q } = surfaceOf(surface);
+  const turn = stepX.map((d) => stepY[d]!);
+  const cosets = (step: readonly number[], n: number): number[] => {
+    const out: number[] = Array<number>(step.length).fill(-1);
     let k = 0;
-    for (const g of elements) {
-      if (out.has(g)) continue;
-      let h = g;
+    for (let d = 0; d < step.length; d++) {
+      if (out[d] !== -1) continue;
+      let h = d;
       for (let i = 0; i < n; i++) {
-        out.set(h, k);
-        h = times(h, generator);
+        out[h] = k;
+        h = step[h]!;
       }
       k++;
     }
     return out;
   };
-  const faceOf = cosets(turn, 7);
-  const vertexOf = cosets(y, 3);
+  const faceOf = cosets(turn, p);
+  const vertexOf = cosets(stepY, q);
   const faces: number[][] = [];
-  for (const g of elements) {
-    const f = faceOf.get(g)!;
+  for (let d = 0; d < turn.length; d++) {
+    const f = faceOf[d]!;
     if (faces[f]) continue;
     const corners: number[] = [];
-    let h = g;
-    for (let i = 0; i < 7; i++) {
-      corners.push(vertexOf.get(h)!);
-      h = times(h, turn);
+    let h = d;
+    for (let i = 0; i < p; i++) {
+      corners.push(vertexOf[h]!);
+      h = turn[h]!;
     }
     faces[f] = corners;
   }
@@ -348,11 +518,12 @@ export function petrieLength(surface: string): number {
   const left = new Map<string, number>();
   const right = new Map<string, number>();
   const faces = hurwitzMap(surface);
+  const p = faces[0]!.length;
   for (const face of faces) {
-    for (let i = 0; i < 7; i++) {
-      const u = face[(i + 6) % 7]!;
+    for (let i = 0; i < p; i++) {
+      const u = face[(i + p - 1) % p]!;
       const v = face[i]!;
-      const w = face[(i + 1) % 7]!;
+      const w = face[(i + 1) % p]!;
       left.set(`${u}>${v}`, w);
       right.set(`${w}>${v}`, u);
     }
@@ -370,17 +541,18 @@ export function petrieLength(surface: string): number {
 
 // -- the cover ----------------------------------------------------------------
 
-/** The edges of a map of heptagons, each directed edge -> (face, corner). */
+/** The edges of a map of p-gons, each directed edge -> (face, corner). */
 function across(faces: readonly (readonly number[])[]): Map<string, readonly [number, number]> {
   const out = new Map<string, readonly [number, number]>();
   faces.forEach((face, f) => {
-    for (let i = 0; i < 7; i++) out.set(`${face[i]}>${face[(i + 1) % 7]}`, [f, i]);
+    const p = face.length;
+    for (let i = 0; i < p; i++) out.set(`${face[i]}>${face[(i + 1) % p]}`, [f, i]);
   });
   return out;
 }
 
 /**
- * The walk that carries one map of heptagons onto another: `from`'s face 0
+ * The walk that carries one map of p-gons onto another: `from`'s face 0
  * corner i goes to `to`'s face `face` corner `offset + i`, and every face
  * across an edge from one already carried goes to the one across that edge's
  * image. Returns the face map and the vertex map (whatever of `from` the walk
@@ -393,28 +565,29 @@ function carry(
   face: number,
   offset: number,
 ): { faceMap: Map<number, number>; vertexMap: Map<number, number> } {
+  const p = from[0]!.length;
   const target = across(to);
   const source = new Map<string, number>();
   from.forEach((f, i) => {
-    for (let k = 0; k < 7; k++) source.set(`${f[k]}>${f[(k + 1) % 7]}`, i);
+    for (let k = 0; k < p; k++) source.set(`${f[k]}>${f[(k + 1) % p]}`, i);
   });
   const vertexMap = new Map<number, number>();
-  from[0]!.forEach((v, i) => vertexMap.set(v, to[face]![(offset + i) % 7]!));
+  from[0]!.forEach((v, i) => vertexMap.set(v, to[face]![(offset + i) % p]!));
   const faceMap = new Map<number, number>([[0, face]]);
   const stack = [0];
   while (stack.length) {
     const f = stack.pop()!;
     const corners = from[f]!;
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < p; i++) {
       const a = corners[i]!;
-      const b = corners[(i + 1) % 7]!;
+      const b = corners[(i + 1) % p]!;
       const g = source.get(`${b}>${a}`);
       if (g === undefined || faceMap.has(g)) continue;
       const [h, k] = target.get(`${vertexMap.get(b)}>${vertexMap.get(a)}`)!;
       const start = from[g]!.indexOf(b);
-      for (let s = 0; s < 7; s++) {
-        const v = from[g]![(start + s) % 7]!;
-        const w = to[h]![(k + s) % 7]!;
+      for (let s = 0; s < p; s++) {
+        const v = from[g]![(start + s) % p]!;
+        const w = to[h]![(k + s) % p]!;
         const was = vertexMap.get(v);
         if (was !== undefined && was !== w) throw new Error("the disc does not cover the surface");
         vertexMap.set(v, w);
@@ -433,13 +606,14 @@ interface Cover {
 
 const coverCache = new Map<string, Cover>();
 
-/** The covering map from the {7,3} disc out to `rings` rings onto the surface.
+/** The covering map from the {p,q} disc out to `rings` rings onto the surface.
  * Mirrors `_cover`. */
 function cover(surface: string, rings: number): Cover {
   const cacheKey = `${surface},${rings}`;
   const hit = coverCache.get(cacheKey);
   if (hit) return hit;
-  const base = hyperbolicTiling(7, 3, rings).faces;
+  const { p, q } = surfaceOf(surface);
+  const base = hyperbolicTiling(p, q, rings).faces;
   const { faceMap, vertexMap } = carry(base, hurwitzMap(surface), 0, 0);
   const out = { phiFace: base.map((_, f) => faceMap.get(f)!), phi: vertexMap };
   coverCache.set(cacheKey, out);
@@ -477,11 +651,14 @@ interface Patch {
 // -- the subdivided tilings: Goldberg--Coxeter GC(n, 0) ------------------------
 //
 // Port of the section of the same name in hurwitz.py, which says why: the
-// triangles dual to {7,3} cut into n * n small ones, and the dual taken again
-// -- a heptagon round every heptagon's centre, hexagons everywhere else. A
-// point of the cut is named by its weights over its triangle's corners (the
-// ring walk's faces), `face:weight` pairs sorted and joined by `;`; a small
-// triangle by its three points, sorted and joined by `|`.
+// dual {q,p} cut into small triangles (q = 3) or an n x n grid of squares
+// (q = 4), and the dual taken again -- a p-gon round every p-gon's centre,
+// hexagons or squares everywhere else. A point of the cut is named by what it
+// lies inside (nothing for a face's centre, `u,v` for the edge a point on a
+// side crosses, `v` for the corner a point inside a dual polygon stands on)
+// and its weights over its dual polygon's corners (the ring walk's faces),
+// `face:weight` pairs sorted and joined by `;` -- the two parts joined by
+// `/`. A small polygon is named by its points, sorted and joined by `|`.
 
 interface GcLoops {
   loops: string[][];
@@ -492,36 +669,79 @@ interface GcLoops {
 
 const gcCache = new Map<string, GcLoops>();
 
-/** A point's name from its (face, weight) pairs, zero weights dropped. */
-function pointKey(pairs: [number, number][]): string {
-  return pairs
+/** A point's name from what it lies inside and its (face, weight) pairs, zero
+ * weights dropped. */
+function pointKey(support: readonly number[], pairs: [number, number][]): string {
+  const held = pairs
     .filter(([, w]) => w > 0)
     .sort((a, b) => a[0] - b[0] || a[1] - b[1])
     .map(([f, w]) => `${f}:${w}`)
     .join(";");
+  return `${[...support].sort((a, b) => a - b).join(",")}/${held}`;
 }
 
-/** GC(n, 0) of the {7,3} disc out to `rings` rings: each cell as the loop of
- * the small triangles round its point, counterclockwise, their positions, each
- * cell's centre (its point) and its point's key. Mirrors `gc_loops`. */
-export function gcLoops(n: number, rings: number): GcLoops {
-  const cacheKey = `${n},${rings}`;
+/** The dual {q,p} of the {p,q} disc out to `rings` rings: for every vertex
+ * with all q of its faces, the vertex, its faces counterclockwise from the
+ * least, and the far end of the edge each face shares with the next. Mirrors
+ * `_stars`. */
+function stars(p: number, q: number, rings: number): [number, number[], number[]][] {
+  const { faces } = hyperbolicTiling(p, q, rings);
+  const star = new Map<number, [number, number, number][]>();
+  faces.forEach((face, f) => {
+    face.forEach((v, i) => {
+      const entry: [number, number, number] = [f, face[(i + p - 1) % p]!, face[(i + 1) % p]!];
+      const round = star.get(v);
+      if (round) round.push(entry);
+      else star.set(v, [entry]);
+    });
+  });
+  const out: [number, number[], number[]][] = [];
+  for (const v of [...star.keys()].sort((a, b) => a - b)) {
+    const round = star.get(v)!;
+    if (round.length < q) continue;
+    // counterclockwise round v, face g is followed by the face whose corner
+    // after v is g's corner before v: the two share that edge
+    const prev = new Map(round.map(([f, u]) => [f, u]));
+    const byNext = new Map(round.map(([f, , w]) => [w, f]));
+    const order = [Math.min(...prev.keys())];
+    while (order.length < q) order.push(byNext.get(prev.get(order[order.length - 1]!)!)!);
+    out.push([v, order, order.map((f) => prev.get(f)!)]);
+  }
+  return out;
+}
+
+/** GC(n, 0) of the {p,q} disc out to `rings` rings (q of 3 or 4): each cell
+ * as the loop of the small polygons round its point, counterclockwise, their
+ * positions, each cell's centre (its point) and its point's key. Mirrors
+ * `gc_loops`. */
+export function gcLoops(p: number, q: number, n: number, rings: number): GcLoops {
+  const cacheKey = `${p},${q},${n},${rings}`;
   const hit = gcCache.get(cacheKey);
   if (hit) return hit;
   if (n < 2) throw new Error("a subdivision needs n of at least 2");
-  const { centres } = hyperbolicTiling(7, 3, rings);
-  const triangles = dualFaces(7, rings - 1).faces; // corners: faces of the tiling above
+  if (q !== 3 && q !== 4) throw new Error("a subdivision needs a tiling of valence 3 or 4");
+  const { centres } = hyperbolicTiling(p, q, rings);
   const lifted = centres.map(lift);
   const blend = (points: readonly V3[], weights: readonly number[]): C =>
-    drop([0, 1, 2].map((axis) => points.reduce((sum, p, i) => sum + weights[i]! * p[axis]!, 0)) as unknown as V3);
+    drop([0, 1, 2].map((axis) => points.reduce((sum, pt, i) => sum + weights[i]! * pt[axis]!, 0)) as unknown as V3);
   const pointAt = new Map<string, C>();
   const around = new Map<string, string[]>();
   const where = new Map<string, C>();
   const order: string[] = [];
-  for (const corners of triangles) {
-    const point = (a: number, b: number): string => {
-      const weights = [n - a - b, a, b];
-      const key = pointKey(corners.map((f, i) => [f, weights[i]!] as [number, number]));
+  for (const [v, corners, shared] of stars(p, q, rings)) {
+    const point = (weights: number[]): string => {
+      const held = weights.flatMap((w, i) => (w ? [i] : []));
+      let support: number[];
+      if (held.length === 1) support = [];
+      else if (held.length === 2) {
+        // corners i and i + 1 (cyclically) share the edge to shared[i]
+        const i = held[0] === 0 && held[1] === q - 1 ? held[1]! : held[0]!;
+        support = [v, shared[i]!];
+      } else support = [v];
+      const key = pointKey(
+        support,
+        held.map((i) => [corners[i]!, weights[i]!] as [number, number]),
+      );
       if (!pointAt.has(key)) {
         pointAt.set(key, blend(corners.map((f) => lifted[f]!), weights));
         order.push(key);
@@ -529,17 +749,35 @@ export function gcLoops(n: number, rings: number): GcLoops {
       return key;
     };
     const smalls: string[][] = [];
-    for (let a = 0; a < n; a++) {
-      for (let b = 0; b < n - a; b++) {
-        smalls.push([point(a, b), point(a + 1, b), point(a, b + 1)]);
-        if (a + b <= n - 2) smalls.push([point(a + 1, b), point(a + 1, b + 1), point(a, b + 1)]);
+    if (q === 3) {
+      for (let a = 0; a < n; a++) {
+        for (let b = 0; b < n - a; b++) {
+          smalls.push([point([n - a - b, a, b]), point([n - a - 1 - b, a + 1, b]), point([n - a - b - 1, a, b + 1])]);
+          if (a + b <= n - 2) {
+            smalls.push([
+              point([n - a - b - 1, a + 1, b]),
+              point([n - a - b - 2, a + 1, b + 1]),
+              point([n - a - b - 1, a, b + 1]),
+            ]);
+          }
+        }
       }
+    } else {
+      const grid = (i: number, j: number) => point([(n - i) * (n - j), i * (n - j), i * j, (n - i) * j]);
+      for (let i = 0; i < n; i++)
+        for (let j = 0; j < n; j++) smalls.push([grid(i, j), grid(i + 1, j), grid(i + 1, j + 1), grid(i, j + 1)]);
     }
-    for (const tri of smalls) {
-      const key = [...tri].sort().join("|");
+    for (const small of smalls) {
+      const key = [...small].sort().join("|");
       if (where.has(key)) continue;
-      where.set(key, blend(tri.map((k) => lift(pointAt.get(k)!)), [1, 1, 1]));
-      for (const k of tri) {
+      where.set(
+        key,
+        blend(
+          small.map((k) => lift(pointAt.get(k)!)),
+          small.map(() => 1),
+        ),
+      );
+      for (const k of small) {
         const list = around.get(k);
         if (list) list.push(key);
         else around.set(k, [key]);
@@ -548,14 +786,15 @@ export function gcLoops(n: number, rings: number): GcLoops {
   }
   const out: GcLoops = { loops: [], where, centres: [], origins: [] };
   for (const key of order) {
-    const tris = around.get(key)!;
-    if (tris.length !== (key.includes(";") ? 6 : 7)) continue; // a triangle round it was not built
+    const smalls = around.get(key)!;
+    const corner = !key.includes(";");
+    if (smalls.length !== (corner ? p : q === 3 ? 6 : 4)) continue; // a small polygon round it was not built
     const z = pointAt.get(key)!;
     const angle = (t: string) => {
       const w = toOrigin(z, where.get(t)!);
       return Math.atan2(w[1], w[0]);
     };
-    out.loops.push([...tris].sort((s, t) => angle(s) - angle(t)));
+    out.loops.push([...smalls].sort((s, t) => angle(s) - angle(t)));
     out.centres.push(z);
     out.origins.push(key);
   }
@@ -563,16 +802,16 @@ export function gcLoops(n: number, rings: number): GcLoops {
   return out;
 }
 
-/** GC(n, 0) of {7,3} on its own, in the disc -- no surface, no cover --
+/** GC(n, 0) of {p,q} on its own, in the disc -- no surface, no cover --
  * trimmed to the cells at the `shells` smallest distances from the centre: a
  * picture of the subdivided tiling for a menu card, which the board itself is
  * too costly to build for. */
-export function gcDisc(n: number, shells: number, scale: number): Board {
+export function gcDisc(p: number, q: number, n: number, shells: number, scale: number): Board {
   for (let rings = 2; rings <= 8; rings++) {
-    const g = gcLoops(n, rings);
+    const g = gcLoops(p, q, n, rings);
     const groups = shellGroups(g.centres);
     if (groups.length <= shells) continue;
-    const base = hyperbolicTiling(7, 3, rings);
+    const base = hyperbolicTiling(p, q, rings);
     let outer = Infinity;
     base.centres.forEach((z, f) => {
       if (base.ringOf[f] === rings) outer = Math.min(outer, distance(z));
@@ -608,11 +847,13 @@ export function gcDisc(n: number, shells: number, scale: number): Board {
   throw new Error("too many shells");
 }
 
-/** A point's key carried down to the surface: each face through the covering
- * map, re-sorted. */
-function pointDown(key: string, faceOf: (f: number) => number): string {
+/** A point's key carried down to the surface: what it lies inside through
+ * the vertex map, each face through the face map, re-sorted. */
+function pointDown(key: string, faceOf: (f: number) => number, vertexOf: (v: number) => number): string {
+  const [support, held] = key.split("/");
   return pointKey(
-    key.split(";").map((pair) => {
+    support ? support.split(",").map((v) => vertexOf(Number(v))) : [],
+    held!.split(";").map((pair) => {
       const [f, w] = pair.split(":").map(Number);
       return [faceOf(f!), w!] as [number, number];
     }),
@@ -622,11 +863,17 @@ function pointDown(key: string, faceOf: (f: number) => number): string {
 /** The disc out to `rings` rings in tiling `op`, and how it covers the
  * surface. Mirrors `_patch`. */
 function patch(surface: string, op: HurwitzOp, rings: number): Patch {
+  const { p, q } = surfaceOf(surface);
   const { phiFace, phi } = cover(surface, rings);
   const n = gcOrder(op);
   if (n !== null) {
-    const g = gcLoops(n, rings);
-    const down = (k: string) => pointDown(k, (f) => phiFace[f]!);
+    const g = gcLoops(p, q, n, rings);
+    const down = (k: string) =>
+      pointDown(
+        k,
+        (f) => phiFace[f]!,
+        (v) => phi.get(v)!,
+      );
     return {
       loops: g.loops,
       where: g.where,
@@ -636,7 +883,7 @@ function patch(surface: string, op: HurwitzOp, rings: number): Patch {
     };
   }
   if (op === "none") {
-    const t = hyperbolicTiling(7, 3, rings);
+    const t = hyperbolicTiling(p, q, rings);
     const where = new Map<string, C>();
     for (const [v, z] of t.pos) where.set(String(v), z);
     return {
@@ -647,7 +894,7 @@ function patch(surface: string, op: HurwitzOp, rings: number): Patch {
       key: (k) => surfaceKey(op, k, phiFace, phi),
     };
   }
-  const w = wythoffLoops(7, 3, op as WythoffOp, rings);
+  const w = wythoffLoops(p, q, op as WythoffOp, rings);
   return {
     loops: w.loops,
     where: w.where,
@@ -665,6 +912,30 @@ function sameLoop(a: readonly string[], b: readonly string[]): boolean {
   return a.every((k, j) => k === b[(i + j) % b.length]);
 }
 
+/** How many cells the surface has in tiling `op`: F, V and E are its map's,
+ * so this is arithmetic, not a build. Mirrors `cell_count`. */
+export function cellCount(surface: string, op: HurwitzOp): number {
+  const { p, q, genus } = surfaceOf(surface);
+  // chi = V - E + F with pF = 2E = qV
+  const faces = ((2 - 2 * genus) * 2 * q) / (2 * q - p * q + 2 * p);
+  const edges = (p * faces) / 2;
+  const vertices = (p * faces) / q;
+  const n = gcOrder(op);
+  if (n !== null) {
+    return q === 3
+      ? faces + edges * (n - 1) + (vertices * (n - 1) * (n - 2)) / 2
+      : faces + edges * (n - 1) + vertices * (n - 1) ** 2;
+  }
+  const extra: Record<string, number> = {
+    none: 0,
+    ambo: vertices,
+    zip: vertices,
+    expand: vertices + edges,
+    bevel: vertices + edges,
+  };
+  return faces + extra[op]!;
+}
+
 const cellsCache = new Map<string, Map<string, string[]>>();
 
 /** The surface's cells in tiling `op`, each as its corners' surface vertex ids
@@ -674,17 +945,9 @@ export function hurwitzCells(surface: string, op: HurwitzOp): Map<string, string
   const hit = cellsCache.get(cacheKey);
   if (hit) return hit;
   if (!HURWITZ_OPS.includes(op)) throw new Error(`unknown tiling ${op}`);
-  const faces = hurwitzMap(surface);
-  const vertices = new Set(faces.flat()).size;
-  const edges = (7 * faces.length) / 2;
-  const n = gcOrder(op);
-  const want =
-    faces.length +
-    (n !== null
-      ? edges * (n - 1) + (vertices * (n - 1) * (n - 2)) / 2
-      : { none: 0, ambo: vertices, zip: vertices, expand: vertices + edges, bevel: vertices + edges }[
-          op as Exclude<HurwitzOp, "gc2" | "gc3" | "gc4">
-        ]);
+  if (gcOrder(op) !== null && ![3, 4].includes(surfaceOf(surface).q))
+    throw new Error(`${surface} has no subdivision`);
+  const want = cellCount(surface, op);
   for (let rings = 2; rings <= 12; rings++) {
     const { loops, cells, key } = patch(surface, op, rings);
     const out = new Map<string, string[]>();
@@ -699,6 +962,7 @@ export function hurwitzCells(surface: string, op: HurwitzOp): Map<string, string
       cellsCache.set(cacheKey, out);
       return out;
     }
+    if (out.size > want) throw new Error("the surface has more cells than its map counts");
   }
   throw new Error("the disc never reaches every cell");
 }
@@ -711,6 +975,7 @@ function patchFor(
   op: HurwitzOp,
   margin: number,
 ): { patch: Patch; groups: number[][]; rings: number } {
+  const { p: sides, q } = surfaceOf(surface);
   const target = hurwitzCells(surface, op).size;
   for (let rings = 2; rings <= 12; rings++) {
     const p = patch(surface, op, rings);
@@ -729,7 +994,7 @@ function patchFor(
     const near = groups.filter((group) => distance(p.centres[group[0]!]!) <= far).length;
     const keep = Math.max(reach, near) + margin;
     if (groups.length <= keep) continue;
-    const base = hyperbolicTiling(7, 3, rings);
+    const base = hyperbolicTiling(sides, q, rings);
     let outer = Infinity;
     base.centres.forEach((z, f) => {
       if (base.ringOf[f] === rings) outer = Math.min(outer, distance(z));
@@ -745,7 +1010,7 @@ function patchFor(
 // -- the pan ------------------------------------------------------------------
 
 /**
- * One step per tile round the central heptagon of the {7,3} disc: the
+ * One step per tile round the central p-gon of the {p,q} disc: the
  * isometry carrying the central tile onto it, as a view-shaped pair (c, rot) --
  * z -> rot (z - c) / (1 - conj(c) z) -- and the symmetry of the surface it
  * covers, carried to the board's cells: for each cell, the cell the step puts
@@ -758,34 +1023,35 @@ function coverSteps(
   rings: number,
   nameOf: Map<string, CellId>,
 ): DiscCover {
-  const t = hyperbolicTiling(7, 3, rings);
+  const { p, q } = surfaceOf(surface);
+  const t = hyperbolicTiling(p, q, rings);
   const { phiFace, phi } = cover(surface, rings);
-  const centre = centralPolygon(7, 3);
+  const centre = centralPolygon(p, q);
   const surfaceFaces = hurwitzMap(surface);
   const surfaceCells = hurwitzCells(surface, op);
   const steps: DiscCover["steps"][number][] = [];
   const disc = new Map<string, number>();
   t.faces.forEach((face, f) => {
-    for (let i = 0; i < 7; i++) disc.set(`${face[i]}>${face[(i + 1) % 7]}`, f);
+    for (let i = 0; i < p; i++) disc.set(`${face[i]}>${face[(i + 1) % p]}`, f);
   });
   const central = t.faces[0]!;
-  for (let k = 0; k < 7; k++) {
-    // the tile across the central heptagon's edge k, its corners lined up so
+  for (let k = 0; k < p; k++) {
+    // the tile across the central p-gon's edge k, its corners lined up so
     // that the central corner k + 1 lands on the corner the two tiles share
     const a = central[k]!;
-    const b = central[(k + 1) % 7]!;
+    const b = central[(k + 1) % p]!;
     const g = disc.get(`${b}>${a}`)!;
     const neighbour = t.faces[g]!;
-    const j = (neighbour.indexOf(b) - (k + 1) + 14) % 7;
+    const j = (neighbour.indexOf(b) - (k + 1) + 2 * p) % p;
     const map = isometry(
       centre[0]!,
       centre[1]!,
       t.pos.get(neighbour[j]!)!,
-      t.pos.get(neighbour[(j + 1) % 7]!)!,
+      t.pos.get(neighbour[(j + 1) % p]!)!,
     );
     const back = isometry(
       t.pos.get(neighbour[j]!)!,
-      t.pos.get(neighbour[(j + 1) % 7]!)!,
+      t.pos.get(neighbour[(j + 1) % p]!)!,
       centre[0]!,
       centre[1]!,
     );
@@ -801,10 +1067,16 @@ function coverSteps(
     const offset = surfaceFaces[h]!.indexOf(image);
     const { faceMap, vertexMap } = carry(surfaceFaces, surfaceFaces, h, offset);
     const moved = (key: string): string => {
+      if (key.startsWith("G,")) {
+        return `G,${pointDown(
+          key.slice(2),
+          (f) => faceMap.get(f)!,
+          (v) => vertexMap.get(v)!,
+        )}`;
+      }
       const [kind, ...ids] = key.split(",");
       if (kind === "F") return `F,${faceMap.get(Number(ids[0]))}`;
       if (kind === "V") return `V,${vertexMap.get(Number(ids[0]))}`;
-      if (kind === "G") return `G,${pointDown(ids[0]!, (f) => faceMap.get(f)!)}`;
       const [u, v] = ids.map((x) => vertexMap.get(Number(x))!).sort((s, r) => s - r);
       return `E,${u},${v}`;
     };
@@ -831,6 +1103,8 @@ export function hurwitzBoard(
   arc = ARC_SEGMENTS,
 ): Board {
   if (margin < 0) throw new Error("margin must not be negative");
+  const { p: sides, q } = surfaceOf(surface);
+  const shift = viewShift(sides, q);
   const surfaceCells = hurwitzCells(surface, op);
   const { patch: p, groups, rings } = patchFor(surface, op, margin);
   const drawn = groups.flatMap((group) => [...group].sort((a, b) => a - b));
@@ -849,7 +1123,7 @@ export function hurwitzBoard(
     faces.map((_, i) => i),
     pos,
     scale,
-    (a, b) => edgeSegments(a, b, arc),
+    (a, b) => edgeSegments(a, b, arc, shift),
   );
   // each cell is named after its copy nearest the centre: the first drawn
   const nameOf = new Map<string, CellId>();
@@ -868,12 +1142,12 @@ export function hurwitzBoard(
   // keeps a tile by its centre, so one just inside it reaches out by a tile
   // radius more -- a sliver at the triplet's view, half a heptagon at the
   // quartic's -- and the frame takes that in too.
-  const shown = Math.tanh((coverView(surface) + tileRadius(op)) / 2);
-  const shift = (shown - extent) * scale;
+  const shown = Math.tanh((coverView(surface) + tileRadius(sides, q, op)) / 2);
+  const offset = (shown - extent) * scale;
   for (const poly of polygons.values()) {
     for (const p of poly) {
-      p[0] += shift;
-      p[1] += shift;
+      p[0] += offset;
+      p[1] += offset;
     }
   }
   const size = 2 * shown * scale;
@@ -907,7 +1181,7 @@ export function hurwitzBoard(
   });
 }
 
-/** The patch's own point group (the central heptagon's turns and mirrors),
+/** The patch's own point group (the central p-gon's turns and mirrors),
  * measured off the drawing and carried down to the cells through `faces`; what
  * the surface does not carry -- a mirror of a chiral one -- `keepSymmetries`
  * drops. The projective plane's recipe (`antipodalSymmetries`). */

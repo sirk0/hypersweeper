@@ -250,7 +250,10 @@ describe("catalog families", () => {
       "hyperbolic51010",
       "hyperbolic669",
       "hyperbolicbinary",
+      "bolza",
       "quartic",
+      "dyck",
+      "bring",
       "macbeath",
       "triplet",
     ]);

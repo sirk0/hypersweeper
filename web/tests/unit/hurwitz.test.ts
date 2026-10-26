@@ -1,16 +1,21 @@
 import { describe, expect, it } from "vitest";
 import { boundaryComponents, eulerCharacteristic, type Board } from "../../src/boards/core";
 import {
+  cellCount,
+  CLOSED_SURFACES,
   COVER_COPIES,
   coverView,
-  HURWITZ_SURFACES,
+  darts,
   hurwitzBoard,
+  hurwitzCells,
   hurwitzGroup,
   hurwitzMap,
+  hurwitzSurfaceLabel,
   SURFACE_MODES,
   gcDisc,
   type HurwitzOp,
   petrieLength,
+  toddCoxeter,
 } from "../../src/boards/hurwitz";
 import { centralPolygon } from "../../src/boards/hyperbolic";
 import { buildBoard } from "../../src/boards/presets";
@@ -22,12 +27,33 @@ import { buildBoard } from "../../src/boards/presets";
 // says what the adjacency says, and that the pan's steps leave the picture as
 // it was.
 
-// The order of PSL(2,q), and the {7,3} map's faces, vertices and edges.
+// The order of the group, and the {p,q} map's faces, vertices and edges.
 const SURFACES: Record<string, readonly [number, number, number, number]> = {
+  bolza: [48, 6, 16, 24],
   quartic: [168, 24, 56, 84],
+  dyck: [96, 12, 32, 48],
+  bring: [120, 24, 30, 60],
   macbeath: [504, 72, 168, 252],
   triplet: [1092, 156, 364, 546],
 };
+
+// The tiling each surface's board tests run on: the 6.6.7 of the Hurwitz
+// surfaces, the easy board of the others. Mirrors `_TILING` in test_boards.py.
+const TILING: Record<string, HurwitzOp> = {
+  bolza: "gc3",
+  quartic: "zip",
+  dyck: "expand",
+  bring: "expand",
+  macbeath: "zip",
+  triplet: "zip",
+};
+
+/** How many cells meet at every corner of `surface` in tiling `op`. */
+function valence(surface: string, op: HurwitzOp): number {
+  const { q } = CLOSED_SURFACES[surface]!;
+  if (op === "none" || op.startsWith("gc")) return q;
+  return { zip: 3, ambo: 4, expand: 4, bevel: 3 }[op as "zip" | "ambo" | "expand" | "bevel"];
+}
 
 type Cx = readonly [number, number];
 
@@ -60,10 +86,17 @@ function apply(c: Cx, rot: Cx, z: Cx): Cx {
   return [rot[0] * q[0] - rot[1] * q[1], rot[0] * q[1] + rot[1] * q[0]];
 }
 
-describe("the Hurwitz surfaces", () => {
+describe("the closed surfaces", () => {
+  it("test every surface there is", () => {
+    expect(Object.keys(SURFACES)).toEqual(Object.keys(CLOSED_SURFACES));
+    expect(Object.keys(TILING)).toEqual(Object.keys(CLOSED_SURFACES));
+  });
+
   it("are built from the groups the Python port finds", () => {
     for (const [surface, [order]] of Object.entries(SURFACES)) {
-      const { elements, times, x, y } = hurwitzGroup(HURWITZ_SURFACES[surface]![0]);
+      const { group } = CLOSED_SURFACES[surface]!;
+      if (typeof group !== "number") continue;
+      const { elements, times, x, y } = hurwitzGroup(group);
       expect(elements.length, surface).toBe(order);
       const identity = times(x, x);
       let power = times(x, y);
@@ -76,14 +109,50 @@ describe("the Hurwitz surfaces", () => {
     }
   });
 
+  it("act on their darts as the group: x of order 2, y of order q, xy of order p", () => {
+    for (const [surface, [order]] of Object.entries(SURFACES)) {
+      const { p, q } = CLOSED_SURFACES[surface]!;
+      const [stepX, stepY] = darts(surface);
+      expect(stepX.length, surface).toBe(order);
+      const turn = stepX.map((d) => stepY[d]!);
+      for (const [step, n] of [
+        [stepX, 2],
+        [stepY, q],
+        [turn, p],
+      ] as const) {
+        for (let d = 0; d < order; d++) {
+          let e = d;
+          for (let k = 0; k < n; k++) e = step[e]!;
+          expect(e).toBe(d);
+        }
+        let e = 0;
+        for (let k = 1; k < n; k++) {
+          e = step[e]!;
+          expect(e).not.toBe(0);
+        }
+      }
+    }
+  });
+
+  it("enumerate a presentation into the same numbering as the Python port", () => {
+    // breadth-first from the identity, x before y: the quartic's own
+    // presentation gives 168 darts, x taking the identity to dart 1
+    const [stepX, stepY] = toddCoxeter(7, 3, "xyxY".repeat(4));
+    expect(stepX.length).toBe(168);
+    expect(stepX[0]).toBe(1);
+    expect([1, 2]).toContain(stepY[0]);
+    expect(() => toddCoxeter(7, 3, "xyxY".repeat(9), 500)).toThrow();
+  });
+
   it("read the map off the group: every edge once each way, chi = 2 - 2g", () => {
     for (const [surface, [, faces, vertices, edges]] of Object.entries(SURFACES)) {
+      const { p, genus } = CLOSED_SURFACES[surface]!;
       const map = hurwitzMap(surface);
       expect(map.length).toBe(faces);
       const directed = new Set<string>();
       for (const face of map) {
-        expect(new Set(face).size).toBe(7);
-        for (let i = 0; i < 7; i++) directed.add(`${face[i]}>${face[(i + 1) % 7]}`);
+        expect(new Set(face).size).toBe(p);
+        for (let i = 0; i < p; i++) directed.add(`${face[i]}>${face[(i + 1) % p]}`);
       }
       expect(directed.size).toBe(2 * edges);
       for (const e of directed) {
@@ -91,12 +160,22 @@ describe("the Hurwitz surfaces", () => {
         expect(directed.has(`${b}>${a}`)).toBe(true);
       }
       expect(new Set(map.flat()).size).toBe(vertices);
-      expect(vertices - edges + faces).toBe(2 - 2 * HURWITZ_SURFACES[surface]![1]);
+      expect(vertices - edges + faces).toBe(2 - 2 * genus);
     }
   });
 
   it("land on the same surface of the triplet as the Python port", () => {
     expect(["quartic", "macbeath", "triplet"].map(petrieLength)).toEqual([8, 18, 14]);
+    // and the others are the surfaces their presentations name
+    expect(["bolza", "dyck", "bring"].map(petrieLength)).toEqual([12, 6, 6]);
+  });
+
+  it("are named in the info window by their mode, not their genus", () => {
+    // Klein's quartic and Dyck's surface are both genus 3
+    expect(hurwitzSurfaceLabel("quartic")).toBe("Klein quartic, genus 3");
+    expect(hurwitzSurfaceLabel("dyck")).toBe("Dyck's surface, genus 3");
+    expect(hurwitzSurfaceLabel("bolza")).toBe("Bolza surface, genus 2");
+    expect(hurwitzSurfaceLabel("hyperbolic73")).toBeNull();
   });
 
   it("are one surface a mode, closed, with its genus, at every difficulty", () => {
@@ -104,32 +183,42 @@ describe("the Hurwitz surfaces", () => {
       for (const difficulty of ["easy", "medium", "hard"]) {
         const board = buildBoard(mode, difficulty) as Board;
         expect(board.mode).toBe(mode);
-        expect(eulerCharacteristic(board)).toBe(2 - 2 * HURWITZ_SURFACES[surface]![1]);
+        expect(eulerCharacteristic(board)).toBe(2 - 2 * CLOSED_SURFACES[surface]!.genus);
         expect(boundaryComponents(board)).toBe(0);
       }
     }
   });
 
   it("grow every surface by its tiling, every cell still whole", () => {
-    // {7,3}, 6.6.7, then GC(n,0): the surface's heptagons survive every one of
-    // them -- 12(g - 1) -- and the rest are hexagons
+    // {p,q}, a Wythoff tiling, then GC(n,0): the surface's own faces survive
+    // every one of them, and every cell keeps its full count
     const levels: Record<string, readonly [number, number, number]> = {
+      bolza: [70, 286, 510],
       quartic: [80, 248, 444],
+      dyck: [92, 252, 396],
+      bring: [114, 264, 474],
       macbeath: [72, 240, 324],
       triplet: [156, 520, 702],
     };
     for (const [surface, counts] of Object.entries(levels)) {
+      const { p } = CLOSED_SURFACES[surface]!;
       ["easy", "medium", "hard"].forEach((difficulty, i) => {
         const board = buildBoard(SURFACE_MODES[surface]!, difficulty) as Board;
         expect(board.adjacency.size, `${surface} ${difficulty}`).toBe(counts[i]);
-        let heptagons = 0;
-        for (const [cell, neighbours] of board.adjacency) {
-          const sides = board.quotient!.get(cell)!.length;
-          if (sides === 7) heptagons++;
-          expect(neighbours.length).toBe(sides);
-        }
-        expect(heptagons).toBe(SURFACES[surface]![1]);
+        let faces = 0;
+        for (const cell of board.adjacency.keys()) if (board.quotient!.get(cell)!.length === p) faces++;
+        expect(faces, `${surface} ${difficulty}`).toBe(SURFACES[surface]![1]);
       });
+    }
+  });
+
+  it("count every surface's cells from its map, as the Python port does", () => {
+    for (const surface of Object.keys(SURFACES)) {
+      const [, faces, vertices, edges] = SURFACES[surface]!;
+      expect(cellCount(surface, "none")).toBe(faces);
+      expect(cellCount(surface, "zip")).toBe(faces + vertices);
+      expect(cellCount(surface, "expand")).toBe(faces + vertices + edges);
+      expect(hurwitzCells(surface, TILING[surface]!).size).toBe(cellCount(surface, TILING[surface]!));
     }
   });
 
@@ -137,8 +226,11 @@ describe("the Hurwitz surfaces", () => {
     // the view's area over the surface's, counted rather than computed: the
     // drawn tiles whose centre lies in the view against the surface's cells
     for (const [surface, op] of [
+      ["bolza", "gc6"],
       ["quartic", "zip"],
       ["quartic", "gc4"],
+      ["dyck", "gc4"],
+      ["bring", "gc3"],
       ["macbeath", "none"],
       ["macbeath", "zip"],
       ["triplet", "zip"],
@@ -162,14 +254,18 @@ describe("the Hurwitz surfaces", () => {
     }
   });
 
-  it("give every cell its full count: a hexagon six, a heptagon seven", () => {
+  it("give every cell its full count: on 6.6.7 a hexagon six, a heptagon seven", () => {
+    // each corner adds the cells round it bar the two that share a side
     for (const surface of Object.keys(SURFACES)) {
-      const board = hurwitzBoard(surface, "zip", 0, 1);
+      const op = TILING[surface]!;
+      const board = hurwitzBoard(surface, op, 0, 1);
       for (const [cell, neighbours] of board.adjacency) {
-        expect(neighbours.length).toBe(board.quotient!.get(cell)!.length);
+        expect(neighbours.length).toBe(board.quotient!.get(cell)!.length * (valence(surface, op) - 2));
       }
+      if (surface === "bolza") continue; // six octagons, each bordering the other five
+      const { p, q } = CLOSED_SURFACES[surface]!;
       const plain = hurwitzBoard(surface, "none", 0, 1);
-      expect(new Set([...plain.adjacency.values()].map((n) => n.length))).toEqual(new Set([7]));
+      expect(new Set([...plain.adjacency.values()].map((n) => n.length))).toEqual(new Set([p * (q - 2)]));
     }
   });
 
@@ -215,13 +311,14 @@ describe("the Hurwitz surfaces", () => {
     // A step's isometry carries a face onto another; the step's symmetry must
     // say the second shows what the first did.
     for (const [surface, op] of [
-      ...Object.keys(SURFACES).map((s): [string, HurwitzOp] => [s, "zip"]),
+      ...Object.keys(SURFACES).map((s): [string, HurwitzOp] => [s, TILING[s]!]),
       ["macbeath", "none"],
       ["triplet", "gc2"],
+      ["bring", "gc3"],
     ] as [string, HurwitzOp][]) {
       const board = hurwitzBoard(surface, op, 0, 1);
       const steps = board.disc!.cover!.steps;
-      expect(steps.length).toBe(7);
+      expect(steps.length).toBe(CLOSED_SURFACES[surface]!.p);
       const centres = [...board.polygons.keys()].map((f) => [f, discCentre(board, f)] as const);
       const nearest = (z: Cx) => {
         let best = centres[0]!;
@@ -233,7 +330,7 @@ describe("the Hurwitz surfaces", () => {
         return { face: best[0], d: bestD };
       };
       for (const { c, rot, cells } of steps) {
-        // the central heptagon goes to one next to it
+        // the central p-gon goes to one next to it
         expect(Math.hypot(c[0], c[1])).toBeGreaterThan(0.1);
         expect(cells.size).toBe(board.adjacency.size);
         expect(new Set(cells.values()).size).toBe(board.adjacency.size);
@@ -253,13 +350,12 @@ describe("the Hurwitz surfaces", () => {
   });
 
   it("draw the whole view round anywhere the pan can put its centre", () => {
-    // The pan keeps the view's centre on the central heptagon of {7,3}
+    // The pan keeps the view's centre on the central p-gon of {p,q}
     // (`discRecentre`) and shows what lies within its view of it (`coverView`,
-    // from the surface's genus), so the
-    // patch has to cover that circle from every point of the heptagon -- its
-    // corners are the worst case. Probed on the circle itself: inside it the
-    // patch is a disc, so a covered rim means a covered circle.
-    const corners = centralPolygon(7, 3);
+    // from the surface's genus), so the patch has to cover that circle from
+    // every point of the p-gon -- its corners are the worst case. Probed on
+    // the circle itself: inside it the patch is a disc, so a covered rim means
+    // a covered circle.
     const toward = (a: Cx, z: Cx): Cx => {
       // the disc translation taking 0 to a, applied to z
       const num: Cx = [z[0] + a[0], z[1] + a[1]];
@@ -269,6 +365,12 @@ describe("the Hurwitz surfaces", () => {
     };
     const boards: [string, HurwitzOp][] = [
       ...Object.keys(SURFACES).map((s): [string, HurwitzOp] => [s, "zip"]),
+      ["bolza", "gc3"],
+      ["bolza", "gc8"],
+      ["dyck", "expand"],
+      ["dyck", "gc5"],
+      ["bring", "expand"],
+      ["bring", "gc4"],
       ["quartic", "gc3"],
       ["quartic", "gc4"],
       ["macbeath", "none"],
@@ -277,6 +379,7 @@ describe("the Hurwitz surfaces", () => {
       ["triplet", "gc2"],
     ];
     for (const [surface, op] of boards) {
+      const corners = centralPolygon(CLOSED_SURFACES[surface]!.p, CLOSED_SURFACES[surface]!.q);
       const board = hurwitzBoard(surface, op, 0, 1);
       const { cx, cy, radius } = board.disc!;
       // only the faces the renderer draws: the ones it is told are never seen
@@ -310,15 +413,23 @@ describe("the Hurwitz surfaces", () => {
   it("draw the subdivided tiling alone for a menu card, heptagons ringed by hexagons", () => {
     // `gcDisc` is GC(3,0) of {7,3} with no surface behind it -- what the card
     // shows instead of building the board -- so its cells are the board's shapes
-    const card = gcDisc(3, 30, 1);
+    const card = gcDisc(7, 3, 3, 30, 1);
     const sides = [...card.polygons.keys()].map((f) => card.cornerMask!.get(f)!.filter(Boolean).length);
     expect(new Set(sides)).toEqual(new Set([6, 7]));
     expect(card.polygons.size).toBeGreaterThan(100);
+    // and the Bolza surface's card, octagons ringed by hexagons; a square
+    // subdivision of {5,4} draws pentagons among squares
+    const bolza = gcDisc(8, 3, 3, 24, 1);
+    const octagons = [...bolza.polygons.keys()].map((f) => bolza.cornerMask!.get(f)!.filter(Boolean).length);
+    expect(new Set(octagons)).toEqual(new Set([6, 8]));
+    const square = gcDisc(5, 4, 3, 20, 1);
+    const pentagons = [...square.polygons.keys()].map((f) => square.cornerMask!.get(f)!.filter(Boolean).length);
+    expect(new Set(pentagons)).toEqual(new Set([4, 5]));
   });
 
-  it("keep the central heptagon's turn as a control", () => {
+  it("keep the central p-gon's turn as a control", () => {
     for (const surface of Object.keys(SURFACES)) {
-      const board = hurwitzBoard(surface, "zip", 0, 1);
+      const board = hurwitzBoard(surface, TILING[surface]!, 0, 1);
       expect(board.symmetries.map((s) => s.id)).toContain("turn");
     }
   });

@@ -19,8 +19,9 @@ out into a group of its own (`MENU_GROUP_FAMILIES` in `src/boards/catalog.ts`)
 — a curved space rather than a kind of flat tiling — after Flat manifolds and
 before the solids. Its page is three submenus, **Regular** (the {p,q} tilings),
 **Uniform** (Wythoff's tilings of them) and **Closed surfaces** (the plane glued
-up with no rim: Klein's quartic, Macbeath's surface and a genus-14 Hurwitz
-surface, one surface a board), filed by each board's builder in
+up with no rim: the Bolza surface, Klein's quartic, Dyck's and Bring's
+surfaces, Macbeath's surface and a genus-14 Hurwitz surface, one surface a
+board), filed by each board's builder in
 `data/presets.json` (`menuSubfamilies`), so a new hyperbolic board lands in the
 right one without a list to edit. The binary tiling is hyperbolic too, but it
 is drawn in a rectangle of the upper half-plane rather than in the disc, and

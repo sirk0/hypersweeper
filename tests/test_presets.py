@@ -48,8 +48,9 @@ COARSE_GEOMETRY = {"sphinx", "chair", "carpet", "pentaflake", "gosper",
 # Goldberg--Coxeter subdivisions -- 12(g - 1), 40(g - 1), then 54(g - 1),
 # 124(g - 1) and 222(g - 1) cells. The genus-14 Hurwitz surface's smallest is
 # 156, against an easy target of 81, and its rungs go 156, 520, 702; no row of
-# it can land in the band. (Klein's quartic does at all three, and Macbeath's
-# surface at easy and medium -- its hard is in EXEMPT_ROWS.)
+# it can land in the band. (Klein's quartic and the Bolza surface do at all
+# three, Macbeath's and Dyck's surfaces at easy and medium, and Bring's surface
+# at medium and hard -- their other rows are in EXEMPT_ROWS.)
 GENUS_BOUND = {"triplet"}
 EXEMPT = COARSE_GEOMETRY | GENUS_BOUND
 
@@ -62,6 +63,16 @@ EXEMPT_ROWS = {
     # 324 keeps the view holding most of the surface at once, which is how the
     # board plays best (see `hurwitz.COVER_COPIES`), and its mines make it hard.
     ("macbeath", "hard"),
+    # Dyck's surface (genus 3, 12 octagons) steps 252 -> 396 -> 572 cells:
+    # GC(4,0), GC(5,0), GC(6,0). 396 is 17.5% under hard's 480 and 572 is 19%
+    # over; a GC(n,m) that lands (GC(3,3), 428) needs a skewed subdivision.
+    # The smaller keeps more of the surface in view, as Macbeath's hard does.
+    ("dyck", "hard"),
+    # Bring's surface (genus 4, 24 pentagons of {5,4}) has nothing near 81:
+    # {5,4} is 24 cells, 4.5.4.5 and 5.8.8 are 54, 4.4.4.5 is 114 (41% over),
+    # and the square subdivisions start at 114 too. 114 leads into its
+    # subdivided medium and hard, 264 and 474, both in the band.
+    ("bring", "easy"),
     # Kisrhombille packs 24 cells into a domain two tiles wide, so the
     # smallest strip of it with enough tiles around to *close* as one --
     # rather than crumple into a twisted lozenge, which three domains around
