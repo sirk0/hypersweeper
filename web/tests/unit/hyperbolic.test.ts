@@ -39,10 +39,8 @@ const TILINGS: [number, number][] = [
   [5, 5],
   [4, 5],
   [4, 6],
-  [4, 7],
   [3, 7],
   [3, 8],
-  [3, 9],
 ];
 
 describe("the hyperbolic boards", () => {
@@ -60,11 +58,9 @@ describe("the hyperbolic boards", () => {
     expect(counts(5, 5)).toEqual([1, 15, 105, 720, 4935]);
     expect(counts(4, 5)).toEqual([1, 12, 48, 180, 672]);
     expect(counts(4, 6)).toEqual([1, 16, 96, 560, 3264]);
-    expect(counts(4, 7)).toEqual([1, 20, 160, 1260, 9920]);
     // the triangle tilings are centred on a vertex: ring 0 is its q triangles
     expect(counts(3, 7)).toEqual([7, 28, 77, 203, 532]);
     expect(counts(3, 8)).toEqual([8, 40, 152, 568, 2120]);
-    expect(counts(3, 9)).toEqual([9, 54, 261, 1251, 5994]);
   });
 
   it("give an inner cell p(q - 2) neighbours", () => {

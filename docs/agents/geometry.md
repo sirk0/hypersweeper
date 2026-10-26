@@ -760,17 +760,18 @@ tie (512/480 and 450/480 are reciprocals), broken towards the larger board.
 The game's namesake. `hyperbolic.py` (ported to `web/src/boards/hyperbolic.ts`)
 builds the regular **{p,q}** tilings -- q regular p-gons round every corner --
 for which (p - 2)(q - 2) > 4, so the angles do not close up in the plane and the
-tiling lives in the hyperbolic plane instead. Thirteen ship, as the flat-only
+tiling lives in the hyperbolic plane instead. Eleven ship, as the flat-only
 **Hyperbolic** family: `hyperbolic93` ({9,3} nonagons), `hyperbolic83` ({8,3}
 octagons), `hyperbolic73` ({7,3} heptagons), `hyperbolic74` ({7,4} heptagons),
 `hyperbolic64` ({6,4} hexagons), `hyperbolic54` ({5,4} pentagons),
 `hyperbolic55` ({5,5} pentagons), `hyperbolic45` ({4,5} squares),
-`hyperbolic46` ({4,6} squares), `hyperbolic47` ({4,7} squares),
-`hyperbolic37` ({3,7} triangles), `hyperbolic38` ({3,8} triangles) and
-`hyperbolic39` ({3,9} triangles). An interior cell has p + p(q - 3) = p(q - 2)
-neighbours under the shared-vertex rule -- **7, 8, 9, 10, 12, 14, 15, 16, 18,
-20 and 21**, counts nothing else in the game has for its tile (a {3,7}
-triangle's 15 against a flat triangle's 12) -- and the boards are drawn in the
+`hyperbolic46` ({4,6} squares), `hyperbolic37` ({3,7} triangles) and
+`hyperbolic38` ({3,8} triangles). An interior cell has p + p(q - 3) = p(q - 2)
+neighbours under the shared-vertex rule -- **7, 8, 9, 10, 12, 14, 15, 16 and
+18**, counts nothing else in the game has for its tile (a {3,7} triangle's 15
+against a flat triangle's 12). {4,7} and {3,9} build too, at 20 and 21, and
+were tried and dropped: that many neighbours is too hard to read to play.
+The boards are drawn in the
 **Poincaré disc**, a deliberate round exception to the square-window convention
 like the fractals and Klaassen's spiral.
 Twenty-two more are **uniform** rather than regular -- every corner alike, more
@@ -793,8 +794,7 @@ Every vertex a face needs that is not on the boundary is the next integer. Ring
 sizes are 9, 45, 216, 1035 for {9,3}, 8, 32, 120, 448 for {8,3}, 7, 21, 56,
 147 for {7,3}, 14, 112, 882, 6944 for {7,4}, 12, 72, 420, 2448 for {6,4}, 10,
 40, 150, 560 for {5,4}, 15, 105, 720, 4935 for {5,5}, 12, 48, 180, 672 for
-{4,5}, 16, 96, 560, 3264 for {4,6} and 20, 160, 1260, 9920 for {4,7}, which
-`TestHyperbolic`
+{4,5} and 16, 96, 560, 3264 for {4,6}, which `TestHyperbolic`
 checks against an independent float
 construction (reflecting polygons across their edges) that shares no code with
 the builder.
@@ -810,7 +810,7 @@ ordered counterclockwise by the edges the faces share. Its ring is the newest
 of the three faces' rings less one, so `rings + 1` rings of {q,3} finish every
 triangle out to `rings`. The dual of a face-centred {q,3} is centred on a
 **vertex**: ring 0 is the q triangles round vertex 0 (7, 28, 77, 203 for
-{3,7}, 8, 40, 152, 568 for {3,8}, 9, 54, 261, 1251 for {3,9}), and a trim keeps that vertex's q turns and q
+{3,7}, 8, 40, 152, 568 for {3,8}), and a trim keeps that vertex's q turns and q
 mirrors rather than a central triangle's 3, which is rounder. Its first
 triangle is placed with vertex 0 at the centre of the disc and its next corner
 up the vertical axis, which lands every dual vertex exactly on the centre of
@@ -842,7 +842,7 @@ size slots. `shells` keeps the faces whose centres lie at the `shells` smallest
 distances from the centre of the disc; faces at the same distance are one orbit
 of the central polygon's dihedral group and are kept or dropped together, so
 every trim keeps all p rotations and p mirrors (the web app finds D9, D8, D7,
-D6, D5 and D4), or on {3,q} the central vertex's q (D7, D8 and D9).
+D6, D5 and D4), or on {3,q} the central vertex's q (D7 and D8).
 The distance is a float, but it only *orders* faces -- it never forms an id --
 and equal distances are grouped within 1e-7 where distinct ones measure at least
 1e-5 apart, which the tests pin. The trim is never by Euclidean area or radius:
@@ -890,7 +890,7 @@ they were; the other five were re-sized and re-calibrated, and roughly doubled
 their mines. A trim with neither is untouched, and several neighbouring shell
 counts can come out as the same board.
 
-Five things worth knowing before touching them:
+Four things worth knowing before touching them:
 
 * **The rim is most of the board.** A hyperbolic disc's boundary grows as fast as
   its area, so the outer shells hold well over half the cells, and those see
@@ -915,11 +915,6 @@ Five things worth knowing before touching them:
   into seven sizes. The board says it is drawn in a curved model (`Board.curved`
   on the TypeScript side), and shape colouring then classes it as it does a
   curved surface: one class per side count.
-* **{3,9} and {4,7} calibrate at a bigger solver budget.** At 21 and 20
-  neighbours an inner cell's frontier is wide, and at the default budget the
-  reference solver abandoned 82 of {3,9}'s hard games; their medium and hard
-  rows were measured with `calibrate.py --budget 40000`, which brings that
-  down to the {3,8} boards' handful.
 * **{4,5} medium used to be a near-miss.** Before the trim dropped its twins,
   every {4,5} trim in the medium band left rim cells with an indistinguishable
   twin, and it shipped the nearest fair one at 205 cells (-20%). With the drop
@@ -950,8 +945,8 @@ meet (`zip`, `bevel`, `truncate`), twice them where four do (`ambo`,
 
 **The same five places on every shipped family, less what repeats.** Each
 regular board's family -- {8,3} with {3,8}, {5,4} with {4,5}, {6,4} with
-{4,6}, {9,3} with {3,9}, and {5,5} -- has its own uniform tilings, and
-twenty-two ship in all,
+{4,6}, {5,5}, and {9,3} -- has its own uniform tilings, and twenty-two
+ship in all,
 filed family by family on the Uniform page:
 
 | Family | `zip` | `truncate` | `ambo` | `expand` | `bevel` |
@@ -971,8 +966,8 @@ centred on the other face -- so on {5,4} and {6,4} it centres 4.10.10 and
 4.12.12 on a decagon and a dodecagon where the zipped dual would put a small
 square. {9,3} so far ships only its `zip`, 6.6.9 -- the soccer ball's
 third member, nonagons ringed by hexagons -- since the rest of its row would
-add an 18-gon and play as thin as the 3.16.16 row does. {7,4} and {4,7} have
-no uniform row yet. On the triangle families it gives 3.14.14 and 3.16.16, whose
+add an 18-gon and play as thin as the 3.16.16 row does. {7,4} has no
+uniform row yet. On the triangle families it gives 3.14.14 and 3.16.16, whose
 triangles are slivers between the big faces and which play as thin boards
 (below).
 {5,5} is self-dual, so its `ambo` is {5,4} itself (5.5.5.5), its `expand` is

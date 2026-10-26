@@ -128,10 +128,8 @@ describe("picker pages", () => {
 const REGULAR = [
   "hyperbolic37",
   "hyperbolic38",
-  "hyperbolic39",
   "hyperbolic45",
   "hyperbolic46",
-  "hyperbolic47",
   "hyperbolic54",
   "hyperbolic55",
   "hyperbolic64",

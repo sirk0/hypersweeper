@@ -48,11 +48,11 @@ Pick a surface, then a tiling:
   self-similar — one tile inflated into a patch shaped like itself: the
   sphinx, the chair, the Sierpiński carpet, the pentaflake, and hexagons
   filling a Gosper island.
-  And thirty-nine are not Euclidean at all — the game's namesake: thirteen
+  And thirty-seven are not Euclidean at all — the game's namesake: eleven
   regular {p,q} tilings, from nonagons and octagons three to a corner ({9,3},
   {8,3}) and heptagons three and four to a corner ({7,3}, {7,4}) to squares
-  seven to a corner ({4,7}) and triangles seven, eight and nine to a corner
-  ({3,7}, {3,8}, {3,9} — a {3,9} triangle has 21 neighbours), which only fit
+  six to a corner ({4,6}) and triangles seven and eight to a corner ({3,7},
+  {3,8} — a {3,7} triangle has 15 neighbours), which only fit
   in the *hyperbolic* plane, drawn in the Poincaré disc with tiles shrinking
   toward a rim they never reach; and twenty-two uniform tilings made from
   {7,3}, {8,3}, {9,3}, {5,4}, {6,4} and {5,5}: among them the hyperbolic

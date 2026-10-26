@@ -1016,10 +1016,10 @@ _ICON_ALIASES = {
 # reads at icon size.
 _HYPERBOLIC_ICON_SHELLS = {"hyperbolic93": 4, "hyperbolic83": 4, "hyperbolic73": 4, "hyperbolic74": 4,
                            "hyperbolic64": 4, "hyperbolic54": 4, "hyperbolic55": 4,
-                           "hyperbolic45": 5, "hyperbolic46": 6, "hyperbolic47": 6,
+                           "hyperbolic45": 5, "hyperbolic46": 6,
                            "hyperbolic667": 4, "hyperbolic3737": 4, "hyperbolic3474": 5,
                            "hyperbolic4614": 5, "hyperbolic37": 5, "hyperbolic38": 5,
-                           "hyperbolic39": 5, "hyperbolic669": 3,
+                           "hyperbolic669": 3,
                            "hyperbolic31414": 4, "hyperbolic31616": 4,
                            "hyperbolic668": 4, "hyperbolic3838": 4, "hyperbolic3484": 5,
                            "hyperbolic4616": 5, "hyperbolic588": 5, "hyperbolic41010": 5,

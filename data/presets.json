@@ -2593,58 +2593,6 @@
         ]
       }
     },
-    "hyperbolic47": {
-      "builder": "hyperbolic_board",
-      "args": {
-        "easy": [
-          4,
-          7,
-          12,
-          8,
-          300.0
-        ],
-        "medium": [
-          4,
-          7,
-          30,
-          20,
-          300.0
-        ],
-        "hard": [
-          4,
-          7,
-          50,
-          52,
-          300.0
-        ]
-      }
-    },
-    "hyperbolic39": {
-      "builder": "hyperbolic_board",
-      "args": {
-        "easy": [
-          3,
-          9,
-          6,
-          5,
-          302.846
-        ],
-        "medium": [
-          3,
-          9,
-          17,
-          22,
-          300.0
-        ],
-        "hard": [
-          3,
-          9,
-          24,
-          55,
-          300.0
-        ]
-      }
-    },
     "hyperbolic669": {
       "builder": "hyperbolic_uniform_board",
       "args": {

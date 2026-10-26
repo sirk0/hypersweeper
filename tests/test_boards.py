@@ -2378,8 +2378,7 @@ class TestGosperIsland:
 
 
 
-_HYPERBOLIC = [(9, 3), (8, 3), (7, 3), (7, 4), (6, 4), (5, 4), (5, 5), (4, 5), (4, 6), (4, 7),
-               (3, 7), (3, 8), (3, 9)]
+_HYPERBOLIC = [(9, 3), (8, 3), (7, 3), (7, 4), (6, 4), (5, 4), (5, 5), (4, 5), (4, 6), (3, 7), (3, 8)]
 
 
 def _turns(p: int, q: int) -> int:
@@ -2476,8 +2475,7 @@ class TestHyperbolic:
 
     @pytest.mark.parametrize("p,q", _HYPERBOLIC)
     def test_an_inner_cell_has_p_times_q_minus_2_neighbours(self, p, q):
-        # {4,7}'s shells are thin: its first ring is only surrounded at 60
-        board = hyperbolic_board(p, q, 60 if (p, q) == (4, 7) else 30, 1)
+        board = hyperbolic_board(p, q, 30, 1)
         degrees = [len(n) for n in board.adjacency.values()]
         assert max(degrees) == p * (q - 2)
         # the central p-gon and its first ring are all interior
@@ -2572,7 +2570,7 @@ class TestHyperbolic:
         assert sum(xs) / len(xs) == pytest.approx(board.width / 2)
         assert sum(ys) / len(ys) == pytest.approx(board.height / 2)
 
-    @pytest.mark.parametrize("q", [7, 8, 9])
+    @pytest.mark.parametrize("q", [7, 8])
     def test_a_triangle_tiling_is_the_dual_of_its_q3(self, q):
         # {3,q}'s vertex ids are {q,3}'s face indices, and each one is placed
         # exactly where that face is centred; its triangles are {q,3}'s
@@ -2592,7 +2590,7 @@ class TestHyperbolic:
             a, b, c = (pos[f] for f in face)
             assert ((b - a).conjugate() * (c - a)).imag > 0
 
-    @pytest.mark.parametrize("q", [7, 8, 9])
+    @pytest.mark.parametrize("q", [7, 8])
     def test_a_triangle_board_is_centred_on_a_vertex(self, q):
         # the q triangles round vertex 0 all have a corner at the board's centre
         board = hyperbolic_board(3, q, 9, 1)
