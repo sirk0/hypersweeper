@@ -18,7 +18,9 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # The whole pytest run is about five minutes on a hosted runner; the limit
+    # is there to catch a hang, not to budget the run.
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
