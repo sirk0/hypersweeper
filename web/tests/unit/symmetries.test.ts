@@ -289,6 +289,8 @@ describe("board symmetries", () => {
       ["hyperbolic64", "easy", 12], // D6
       ["hyperbolic55", "hard", 10], // D5
       ["hyperbolic46", "medium", 8], // D4
+      ["hyperbolic93", "hard", 18], // D9
+      ["hyperbolic74", "medium", 14], // D7
       // a triangle tiling is centred on a vertex, so keeps its q-fold turn
       ["hyperbolic37", "hard", 14], // D7
       ["hyperbolic38", "easy", 16], // D8
@@ -314,6 +316,7 @@ describe("board symmetries", () => {
       ["hyperbolic4446", "easy", 12], // D6
       ["hyperbolic4812", "medium", 12], // D6
       ["hyperbolic51010", "hard", 10], // D5
+      ["hyperbolic669", "medium", 18], // D9
       // the binary tiling's window has the one mirror, down its middle
       ["hyperbolicbinary", "easy", 2],
       ["hyperbolicbinary", "hard", 2],

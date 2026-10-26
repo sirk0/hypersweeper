@@ -12,7 +12,7 @@ Every board's mine count, chosen so its win probability under the reference solv
 
 ## Coverage
 
-- 951 rows, 911 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
+- 960 rows, 920 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
 - 40 could not be brought on target:
   - `cube3d`/hard: 33.3% vs 50.9% — the search could not resolve it -- its thinnest measurement finished 0 game(s), so the rate here is noise rather than a crossing the search walked to. Re-measure at a bigger `--budget`
   - `cylhexrows`/medium: 81.7% vs 87.1% — no integer mine count lands within tolerance; this is the closest
@@ -54,7 +54,7 @@ Every board's mine count, chosen so its win probability under the reference solv
   - `triakis`/hard: 0.0% vs 50.9% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `triakis`/medium: 0.0% vs 87.1% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `triakis`/easy: 1.8% vs 96.5% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
-- 272 rows had games the solver abandoned (its frontier DP hit its node budget); their rates are measured over the games that finished:
+- 273 rows had games the solver abandoned (its frontier DP hit its node budget); their rates are measured over the games that finished:
   - `cube3d`/hard: 466 abandoned
   - `torustrunchex`/hard: 168 abandoned
   - `torusrotatedhex`/hard: 144 abandoned
@@ -66,7 +66,7 @@ Every board's mine count, chosen so its win probability under the reference solv
   - `doubletorustri`/hard: 41 abandoned
   - `torussnubhex`/hard: 39 abandoned
 
-Densities run from 1.2% to 30.0% (median 16.3%) — the spread the old flat 14/16/19 per cent could not express.
+Densities run from 1.2% to 30.0% (median 16.2%) — the spread the old flat 14/16/19 per cent could not express.
 
 The only floor under the search is the **opening**: the fewest mines at which the first click alone stops finishing the board (`calibrate.opening_floor`). As a density that runs 0.8% to 14.3% across the zoo — which is why it is measured per board rather than set as a percentage.
 
@@ -196,9 +196,12 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `hyperbolic64` | 5.3 | 85c 4m (5%) 98% | 259c 15m (6%) 89% | 475c 39m (8%) 48% |
 | `hyperbolic667` | 5.1 | 78c 9m (12%) 98% | 253c 29m (11%) 88% | 484c 74m (15%) 52% |
 | `hyperbolic668` | 4.9 | 81c 8m (10%) 95% | 241c 26m (11%) 85% | 473c 56m (12%) 48% |
+| `hyperbolic669` | 4.7 | 82c 8m (10%) 97% | 271c 23m (8%) 90% | 487c 54m (11%) 51% |
 | `hyperbolic688` | 4.6 | 85c 6m (7%) 93% | 265c 22m (8%) 89% | 481c 45m (9%) 54% |
 | `hyperbolic73` | 4.6 | 85c 7m (8%) 99% | 246c 24m (10%) 86% | 477c 50m (10%) 55% |
+| `hyperbolic74` | 5.1 | 71c 5m (7%) 98% | 253c 16m (6%) 89% | 463c 30m (6%) 53% |
 | `hyperbolic83` | 4.4 | 89c 6m (7%) 96% | 265c 17m (6%) 89% | 473c 44m (9%) 49% |
+| `hyperbolic93` | 4.3 | 73c 5m (7%) 98% | 253c 16m (6%) 83% | 487c 36m (7%) 53% |
 | `hyperbolicbinary` | 5.6 | 93c 6m (6%) 97% | 254c 23m (9%) 86% | 510c 57m (11%) 47% |
 | `icosahedron` | 11.8 | 80c 21m (26%) 96% | 320c 84m (26%) 90% | 500c 149m (30%) 55% |
 | `kisrhombille` | 14.2 | 76c 7m (9%) 98% | 264c 30m (11%) 85% | 532c 73m (14%) 51% |

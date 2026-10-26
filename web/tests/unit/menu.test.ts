@@ -134,7 +134,9 @@ const REGULAR = [
   "hyperbolic55",
   "hyperbolic64",
   "hyperbolic73",
+  "hyperbolic74",
   "hyperbolic83",
+  "hyperbolic93",
 ];
 const UNIFORM = [
   "hyperbolic667",
@@ -158,6 +160,7 @@ const UNIFORM = [
   "hyperbolic4446",
   "hyperbolic4812",
   "hyperbolic51010",
+  "hyperbolic669",
 ];
 const CLOSED = ["quartic", "macbeath", "triplet"];
 

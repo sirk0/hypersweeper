@@ -760,20 +760,23 @@ tie (512/480 and 450/480 are reciprocals), broken towards the larger board.
 The game's namesake. `hyperbolic.py` (ported to `web/src/boards/hyperbolic.ts`)
 builds the regular **{p,q}** tilings -- q regular p-gons round every corner --
 for which (p - 2)(q - 2) > 4, so the angles do not close up in the plane and the
-tiling lives in the hyperbolic plane instead. Nine ship, as the flat-only
-**Hyperbolic** family: `hyperbolic83` ({8,3} octagons), `hyperbolic73` ({7,3}
-heptagons), `hyperbolic64` ({6,4} hexagons), `hyperbolic54` ({5,4} pentagons),
+tiling lives in the hyperbolic plane instead. Eleven ship, as the flat-only
+**Hyperbolic** family: `hyperbolic93` ({9,3} nonagons), `hyperbolic83` ({8,3}
+octagons), `hyperbolic73` ({7,3} heptagons), `hyperbolic74` ({7,4} heptagons),
+`hyperbolic64` ({6,4} hexagons), `hyperbolic54` ({5,4} pentagons),
 `hyperbolic55` ({5,5} pentagons), `hyperbolic45` ({4,5} squares),
 `hyperbolic46` ({4,6} squares), `hyperbolic37` ({3,7} triangles) and
 `hyperbolic38` ({3,8} triangles). An interior cell has p + p(q - 3) = p(q - 2)
-neighbours under the shared-vertex rule -- **7, 8, 10, 12, 15, 16 and 18**,
-counts nothing else in the game has for its tile (a {3,7} triangle's 15 against
-a flat triangle's 12) -- and the boards are drawn in the
+neighbours under the shared-vertex rule -- **7, 8, 9, 10, 12, 14, 15, 16 and
+18**, counts nothing else in the game has for its tile (a {3,7} triangle's 15
+against a flat triangle's 12). {4,7} and {3,9} build too, at 20 and 21, and
+were tried and dropped: that many neighbours is too hard to read to play.
+The boards are drawn in the
 **Poincaré disc**, a deliberate round exception to the square-window convention
 like the fractals and Klaassen's spiral.
-Twenty-one more are **uniform** rather than regular -- every corner alike, more
+Twenty-two more are **uniform** rather than regular -- every corner alike, more
 than one tile -- and come off the same ring walk, on {7,3}, {8,3}, {5,4},
-{6,4} and {5,5}; see "The uniform hyperbolic boards" below. One more is drawn in the upper half-plane rather than the disc,
+{6,4}, {5,5} and {9,3}; see "The uniform hyperbolic boards" below. One more is drawn in the upper half-plane rather than the disc,
 as a rectangle: Böröczky's binary tiling (see "The binary tiling" below).
 And three -- `quartic`, `macbeath`, `triplet` -- are drawn in the disc
 but are not discs at all: the hyperbolic plane glued up into closed surfaces,
@@ -788,9 +791,10 @@ outside a vertex's two edges are the same face (which therefore runs along
 several boundary edges); where `d >= 2` they are separated by `d - 1` outward
 *spokes* and the `d - 2` faces that touch the boundary at that vertex alone.
 Every vertex a face needs that is not on the boundary is the next integer. Ring
-sizes are 8, 32, 120, 448 for {8,3}, 7, 21, 56, 147 for {7,3}, 12, 72, 420, 2448
-for {6,4}, 10, 40, 150, 560 for {5,4}, 15, 105, 720, 4935 for {5,5}, 12, 48,
-180, 672 for {4,5} and 16, 96, 560, 3264 for {4,6}, which `TestHyperbolic`
+sizes are 9, 45, 216, 1035 for {9,3}, 8, 32, 120, 448 for {8,3}, 7, 21, 56,
+147 for {7,3}, 14, 112, 882, 6944 for {7,4}, 12, 72, 420, 2448 for {6,4}, 10,
+40, 150, 560 for {5,4}, 15, 105, 720, 4935 for {5,5}, 12, 48, 180, 672 for
+{4,5} and 16, 96, 560, 3264 for {4,6}, which `TestHyperbolic`
 checks against an independent float
 construction (reflecting polygons across their edges) that shares no code with
 the builder.
@@ -837,8 +841,8 @@ by about 2.6x ({7,3}) to 7x ({5,5}) a ring, which hits three of the nine
 size slots. `shells` keeps the faces whose centres lie at the `shells` smallest
 distances from the centre of the disc; faces at the same distance are one orbit
 of the central polygon's dihedral group and are kept or dropped together, so
-every trim keeps all p rotations and p mirrors (the web app finds D8, D7, D6, D5
-and D4), or on {3,q} the central vertex's q (D7 and D8).
+every trim keeps all p rotations and p mirrors (the web app finds D9, D8, D7,
+D6, D5 and D4), or on {3,q} the central vertex's q (D7 and D8).
 The distance is a float, but it only *orders* faces -- it never forms an id --
 and equal distances are grouped within 1e-7 where distinct ones measure at least
 1e-5 apart, which the tests pin. The trim is never by Euclidean area or radius:
@@ -941,7 +945,8 @@ meet (`zip`, `bevel`, `truncate`), twice them where four do (`ambo`,
 
 **The same five places on every shipped family, less what repeats.** Each
 regular board's family -- {8,3} with {3,8}, {5,4} with {4,5}, {6,4} with
-{4,6}, and {5,5} -- has its own uniform tilings, and twenty-one ship in all,
+{4,6}, {5,5}, and {9,3} -- has its own uniform tilings, and twenty-two
+ship in all,
 filed family by family on the Uniform page:
 
 | Family | `zip` | `truncate` | `ambo` | `expand` | `bevel` |
@@ -951,6 +956,7 @@ filed family by family on the Uniform page:
 | {5,4} | 5.8.8 | 4.10.10 | 4.5.4.5 | 4.4.4.5 | 4.8.10 |
 | {6,4} | 6.8.8 | 4.12.12 | 4.6.4.6 | 4.4.4.6 | 4.8.12 |
 | {5,5} | 5.10.10 | -- | -- | -- | -- |
+| {9,3} | 6.6.9 | -- | -- | -- | -- |
 
 Every one is built on the face-centred {p,q} of the row (p >= q), so its
 central face stands on the central p-gon: the p-gon itself, or the 2p-gon of
@@ -958,7 +964,10 @@ central face stands on the central p-gon: the p-gon itself, or the 2p-gon of
 repeats. `truncate` on {p,q} is `zip` on its dual {q,p} -- the same tiling,
 centred on the other face -- so on {5,4} and {6,4} it centres 4.10.10 and
 4.12.12 on a decagon and a dodecagon where the zipped dual would put a small
-square. On the triangle families it gives 3.14.14 and 3.16.16, whose
+square. {9,3} so far ships only its `zip`, 6.6.9 -- the soccer ball's
+third member, nonagons ringed by hexagons -- since the rest of its row would
+add an 18-gon and play as thin as the 3.16.16 row does. {7,4} has no
+uniform row yet. On the triangle families it gives 3.14.14 and 3.16.16, whose
 triangles are slivers between the big faces and which play as thin boards
 (below).
 {5,5} is self-dual, so its `ambo` is {5,4} itself (5.5.5.5), its `expand` is
@@ -1008,8 +1017,8 @@ have the same faces at the same centres, and `expand` and `bevel` likewise,
 so each pair's shell trims are the same faces before the drop. **The drop is
 where they part.** `zip` is trivalent, like {7,3}, and no trim of it has a
 twin or a near-twin, so on {7,3} it is the one uniform board the drop never
-touches (on {8,3} too; the trivalent `zip`s of {5,4}, {6,4} and {5,5} do lose
-rim cells at some trims). The other three meet four at a corner (`ambo`, `expand`) or carry 14-gons
+touches (on {8,3} too; the trivalent `zip`s of {5,4}, {6,4}, {5,5} and {9,3}
+do lose rim cells at some trims). The other three meet four at a corner (`ambo`, `expand`) or carry 14-gons
 whose rims fan out (`bevel`), and lose rim cells to it at most trims --
 `expand` at 39 shells goes from 477 to 421 -- which is what moved their
 medium and hard rows out a few shells and roughly doubled the mines on
@@ -1044,7 +1053,8 @@ cells, where 484 took fewer mines (8) than its medium board (9).
 **Two new things for the rest of the app.** A 14-gon is a side count nothing
 else has: it has a badge (`SHAPE_SIDES`, `hs.shape.14` in Game Center), shape
 colouring and the sound clamp it to the 13-gon's hue and pitch. The 16-gon of
-4.6.16 is the same again, with `hs.shape.16`. And 6.6.7
+4.6.16 is the same again, with `hs.shape.16`, and so is the 9-gon of {9,3}
+and 6.6.9, with `hs.shape.9`. And 6.6.7
 puts a hexagon and a heptagon on one board, which one pentatonic degree apart
 is a whole tone, so the sound spelling moved the 7-gon and everything above it
 down (see "One collection, and a spelling measured against the catalog" in
