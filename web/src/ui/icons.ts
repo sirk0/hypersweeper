@@ -2076,15 +2076,19 @@ const PATCH_BOARDS: Record<string, PatchBoard> = {
   carpet: { build: () => carpetBoard(3, 0, 32) },
   // Whole: the disc is the picture -- the tiles shrinking toward a rim they
   // never reach is what a hyperbolic tiling looks like.
+  hyperbolic93: { build: () => hyperbolicBoard(9, 3, 11, 0, 100), whole: true },
   hyperbolic83: { build: () => hyperbolicBoard(8, 3, 13, 0, 100), whole: true },
   hyperbolic73: { build: () => hyperbolicBoard(7, 3, 16, 0, 100), whole: true },
+  hyperbolic74: { build: () => hyperbolicBoard(7, 4, 14, 0, 100), whole: true },
   hyperbolic64: { build: () => hyperbolicBoard(6, 4, 14, 0, 100), whole: true },
   hyperbolic54: { build: () => hyperbolicBoard(5, 4, 18, 0, 100), whole: true },
   hyperbolic55: { build: () => hyperbolicBoard(5, 5, 15, 0, 100), whole: true },
   hyperbolic45: { build: () => hyperbolicBoard(4, 5, 21, 0, 100), whole: true },
   hyperbolic46: { build: () => hyperbolicBoard(4, 6, 17, 0, 100), whole: true },
+  hyperbolic47: { build: () => hyperbolicBoard(4, 7, 25, 0, 100), whole: true },
   hyperbolic37: { build: () => hyperbolicDisc("hyperbolic37", 16, 100), whole: true },
   hyperbolic38: { build: () => hyperbolicDisc("hyperbolic38", 14, 100), whole: true },
+  hyperbolic39: { build: () => hyperbolicDisc("hyperbolic39", 13, 100), whole: true },
   hyperbolic667: { build: () => hyperbolicDisc("hyperbolic667", 18, 100), whole: true },
   hyperbolic31414: { build: () => hyperbolicDisc("hyperbolic31414", 17, 100), whole: true },
   hyperbolic3737: { build: () => hyperbolicDisc("hyperbolic3737", 18, 100), whole: true },
@@ -2106,6 +2110,7 @@ const PATCH_BOARDS: Record<string, PatchBoard> = {
   hyperbolic4446: { build: () => hyperbolicDisc("hyperbolic4446", 16, 100), whole: true },
   hyperbolic4812: { build: () => hyperbolicDisc("hyperbolic4812", 16, 100), whole: true },
   hyperbolic51010: { build: () => hyperbolicDisc("hyperbolic51010", 16, 100), whole: true },
+  hyperbolic669: { build: () => hyperbolicDisc("hyperbolic669", 11, 100), whole: true },
   // Whole as well: the rectangle with its rows halving down to the ideal line
   // is the picture, as the disc is the {p,q} boards'.
   hyperbolicbinary: { build: () => binaryBoard(2, 5, 0, 100), whole: true },
@@ -2146,6 +2151,7 @@ const HYPERBOLIC_UNIFORM: Record<string, readonly [number, number, WythoffOp]> =
   hyperbolic4446: [6, 4, "expand"],
   hyperbolic4812: [6, 4, "bevel"],
   hyperbolic51010: [5, 5, "zip"],
+  hyperbolic669: [9, 3, "zip"],
   // the closed surface's row icon is its tiling's disc (see the icon above)
   quartic: [7, 3, "zip"],
   macbeath: [7, 3, "zip"],
@@ -2168,15 +2174,19 @@ function hyperbolicDisc(key: string, shells: number, scale: number): Board {
  * much as reads at row-icon size. Must match
  * `_HYPERBOLIC_ICON_SHELLS` in gui.py. */
 const HYPERBOLIC_ICON_SHELLS: Record<string, number> = {
+  hyperbolic93: 4,
   hyperbolic83: 4,
   hyperbolic73: 4,
+  hyperbolic74: 4,
   hyperbolic64: 4,
   hyperbolic54: 4,
   hyperbolic55: 4,
   hyperbolic45: 5,
   hyperbolic46: 6,
+  hyperbolic47: 6,
   hyperbolic37: 5,
   hyperbolic38: 5,
+  hyperbolic39: 5,
   hyperbolic667: 4,
   hyperbolic31414: 4,
   hyperbolic3737: 4,
@@ -2198,6 +2208,7 @@ const HYPERBOLIC_ICON_SHELLS: Record<string, number> = {
   hyperbolic4446: 4,
   hyperbolic4812: 4,
   hyperbolic51010: 4,
+  hyperbolic669: 3,
   quartic: 4,
   macbeath: 4,
   triplet: 4,

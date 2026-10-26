@@ -30,15 +30,19 @@ function shellsByPlace(
 // the port to the Python builder's boards; these pin what a picture of one has
 // to get right, which the oracle cannot see.
 const TILINGS: [number, number][] = [
+  [9, 3],
   [8, 3],
   [7, 3],
+  [7, 4],
   [6, 4],
   [5, 4],
   [5, 5],
   [4, 5],
   [4, 6],
+  [4, 7],
   [3, 7],
   [3, 8],
+  [3, 9],
 ];
 
 describe("the hyperbolic boards", () => {
@@ -47,16 +51,20 @@ describe("the hyperbolic boards", () => {
       const { ringOf } = hyperbolicFaces(p, q, 4);
       return [0, 1, 2, 3, 4].map((r) => ringOf.filter((x) => x === r).length);
     };
+    expect(counts(9, 3)).toEqual([1, 9, 45, 216, 1035]);
     expect(counts(8, 3)).toEqual([1, 8, 32, 120, 448]);
     expect(counts(7, 3)).toEqual([1, 7, 21, 56, 147]);
+    expect(counts(7, 4)).toEqual([1, 14, 112, 882, 6944]);
     expect(counts(6, 4)).toEqual([1, 12, 72, 420, 2448]);
     expect(counts(5, 4)).toEqual([1, 10, 40, 150, 560]);
     expect(counts(5, 5)).toEqual([1, 15, 105, 720, 4935]);
     expect(counts(4, 5)).toEqual([1, 12, 48, 180, 672]);
     expect(counts(4, 6)).toEqual([1, 16, 96, 560, 3264]);
+    expect(counts(4, 7)).toEqual([1, 20, 160, 1260, 9920]);
     // the triangle tilings are centred on a vertex: ring 0 is its q triangles
     expect(counts(3, 7)).toEqual([7, 28, 77, 203, 532]);
     expect(counts(3, 8)).toEqual([8, 40, 152, 568, 2120]);
+    expect(counts(3, 9)).toEqual([9, 54, 261, 1251, 5994]);
   });
 
   it("give an inner cell p(q - 2) neighbours", () => {
@@ -169,6 +177,7 @@ const UNIFORM: [number, number, WythoffOp, string][] = [
   [6, 4, "bevel", "4.8.12"],
   [6, 4, "truncate", "4.12.12"],
   [5, 5, "zip", "5.10.10"],
+  [9, 3, "zip", "6.6.9"],
 ];
 
 /** An inner tile's neighbours, by its side count. */

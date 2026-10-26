@@ -810,7 +810,7 @@ into Regular, Uniform and Closed surfaces by the preset's builder (`MENU_SUBFAMI
 `web/tests/unit/menu.test.ts` rather than vanishing from the menu — add its
 submenu there, with a label, a hint and an icon alias.
 
-**A uniform tiling of a {p,q}** (6.6.7 on {7,3}, 4.8.10 on {5,4}, twenty-one in
+**A uniform tiling of a {p,q}** (6.6.7 on {7,3}, 4.8.10 on {5,4}, twenty-two in
 all) is also data: a `{builder: "hyperbolic_uniform_board", args: {difficulty:
 [p, q, op, shells, mines, scale]}}` row with `op` one of `WYTHOFF_OPS`, and the
 mode must be `wythoff_mode(p, q, op)`. Build it on the face-centred {p,q} with

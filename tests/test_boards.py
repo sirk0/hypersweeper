@@ -2378,7 +2378,8 @@ class TestGosperIsland:
 
 
 
-_HYPERBOLIC = [(8, 3), (7, 3), (6, 4), (5, 4), (5, 5), (4, 5), (4, 6), (3, 7), (3, 8)]
+_HYPERBOLIC = [(9, 3), (8, 3), (7, 3), (7, 4), (6, 4), (5, 4), (5, 5), (4, 5), (4, 6), (4, 7),
+               (3, 7), (3, 8), (3, 9)]
 
 
 def _turns(p: int, q: int) -> int:
@@ -2475,7 +2476,8 @@ class TestHyperbolic:
 
     @pytest.mark.parametrize("p,q", _HYPERBOLIC)
     def test_an_inner_cell_has_p_times_q_minus_2_neighbours(self, p, q):
-        board = hyperbolic_board(p, q, 30, 1)
+        # {4,7}'s shells are thin: its first ring is only surrounded at 60
+        board = hyperbolic_board(p, q, 60 if (p, q) == (4, 7) else 30, 1)
         degrees = [len(n) for n in board.adjacency.values()]
         assert max(degrees) == p * (q - 2)
         # the central p-gon and its first ring are all interior
@@ -2570,7 +2572,7 @@ class TestHyperbolic:
         assert sum(xs) / len(xs) == pytest.approx(board.width / 2)
         assert sum(ys) / len(ys) == pytest.approx(board.height / 2)
 
-    @pytest.mark.parametrize("q", [7, 8])
+    @pytest.mark.parametrize("q", [7, 8, 9])
     def test_a_triangle_tiling_is_the_dual_of_its_q3(self, q):
         # {3,q}'s vertex ids are {q,3}'s face indices, and each one is placed
         # exactly where that face is centred; its triangles are {q,3}'s
@@ -2590,7 +2592,7 @@ class TestHyperbolic:
             a, b, c = (pos[f] for f in face)
             assert ((b - a).conjugate() * (c - a)).imag > 0
 
-    @pytest.mark.parametrize("q", [7, 8])
+    @pytest.mark.parametrize("q", [7, 8, 9])
     def test_a_triangle_board_is_centred_on_a_vertex(self, q):
         # the q triangles round vertex 0 all have a corner at the board's centre
         board = hyperbolic_board(3, q, 9, 1)
@@ -2692,6 +2694,7 @@ _WYTHOFF = {
     (6, 4, "bevel"): "4.8.12",
     (6, 4, "truncate"): "4.12.12",
     (5, 5, "zip"): "5.10.10",
+    (9, 3, "zip"): "6.6.9",
 }
 _WYTHOFF_IDS = [f"{p}{q}-{op}" for p, q, op in _WYTHOFF]
 
@@ -2813,7 +2816,7 @@ class TestHyperbolicUniform:
     @pytest.mark.parametrize("p", [7, 8])
     def test_the_soccer_ball_has_no_twin_or_near_twin_to_drop(self, p):
         # trivalent, like {7,3}: every 6.6.7 trim is kept whole, and every
-        # 6.6.8 one (the zips of {5,4}, {6,4} and {5,5} do drop rim cells)
+        # 6.6.8 one (the zips of {5,4}, {6,4}, {5,5} and {9,3} do drop rim cells)
         from minesweeper.boards import hyperbolic as hyp
         faces, _, groups = hyp._wythoff_rings_for(p, 3, "zip", 40)
         for shells in range(2, 40):

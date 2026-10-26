@@ -2541,6 +2541,139 @@
         ]
       }
     },
+    "hyperbolic93": {
+      "builder": "hyperbolic_board",
+      "args": {
+        "easy": [
+          9,
+          3,
+          6,
+          5,
+          301.009
+        ],
+        "medium": [
+          9,
+          3,
+          13,
+          16,
+          300.0
+        ],
+        "hard": [
+          9,
+          3,
+          21,
+          36,
+          300.0
+        ]
+      }
+    },
+    "hyperbolic74": {
+      "builder": "hyperbolic_board",
+      "args": {
+        "easy": [
+          7,
+          4,
+          7,
+          5,
+          300.0
+        ],
+        "medium": [
+          7,
+          4,
+          20,
+          16,
+          300.0
+        ],
+        "hard": [
+          7,
+          4,
+          30,
+          30,
+          300.0
+        ]
+      }
+    },
+    "hyperbolic47": {
+      "builder": "hyperbolic_board",
+      "args": {
+        "easy": [
+          4,
+          7,
+          12,
+          8,
+          300.0
+        ],
+        "medium": [
+          4,
+          7,
+          30,
+          20,
+          300.0
+        ],
+        "hard": [
+          4,
+          7,
+          50,
+          52,
+          300.0
+        ]
+      }
+    },
+    "hyperbolic39": {
+      "builder": "hyperbolic_board",
+      "args": {
+        "easy": [
+          3,
+          9,
+          6,
+          5,
+          302.846
+        ],
+        "medium": [
+          3,
+          9,
+          17,
+          22,
+          300.0
+        ],
+        "hard": [
+          3,
+          9,
+          24,
+          55,
+          300.0
+        ]
+      }
+    },
+    "hyperbolic669": {
+      "builder": "hyperbolic_uniform_board",
+      "args": {
+        "easy": [
+          9,
+          3,
+          "zip",
+          6,
+          8,
+          300.0
+        ],
+        "medium": [
+          9,
+          3,
+          "zip",
+          14,
+          23,
+          300.0
+        ],
+        "hard": [
+          9,
+          3,
+          "zip",
+          20,
+          54,
+          300.0
+        ]
+      }
+    },
     "elongated": {
       "builder": "archimedean_board",
       "args": {

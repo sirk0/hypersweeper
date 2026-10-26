@@ -225,15 +225,19 @@
     "hexhex": "Hexagons - hexagonal board",
     "hextriangle": "Hexagons - triangular board",
     "cube3d": "Volumetric",
+    "hyperbolic93": "Nonagons {9,3}",
     "hyperbolic83": "Octagons {8,3}",
     "hyperbolic73": "Heptagons {7,3}",
+    "hyperbolic74": "Heptagons {7,4}",
     "hyperbolic64": "Hexagons {6,4}",
     "hyperbolic54": "Pentagons {5,4}",
     "hyperbolic55": "Pentagons {5,5}",
     "hyperbolic45": "Squares {4,5}",
     "hyperbolic46": "Squares {4,6}",
+    "hyperbolic47": "Squares {4,7}",
     "hyperbolic37": "Triangles {3,7}",
     "hyperbolic38": "Triangles {3,8}",
+    "hyperbolic39": "Triangles {3,9}",
     "hyperbolic667": "Soccer ball 6.6.7",
     "hyperbolic31414": "Truncated {7,3} 3.14.14",
     "hyperbolic3737": "Triheptagonal 3.7.3.7",
@@ -255,6 +259,7 @@
     "hyperbolic4446": "Rhombitetrahexagonal 4.4.4.6",
     "hyperbolic4812": "Truncated tetrahexagonal 4.8.12",
     "hyperbolic51010": "Truncated {5,5} 5.10.10",
+    "hyperbolic669": "Truncated {3,9} 6.6.9",
     "hyperbolicbinary": "Binary tiling",
     "quartic": "Klein quartic",
     "macbeath": "Macbeath surface",
@@ -902,6 +907,12 @@
       "surface": "flat",
       "family": "hyperbolic"
     },
+    "hyperbolic39": {
+      "label": "Triangles {3,9}",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
     "hyperbolic41010": {
       "label": "Truncated {5,4} 4.10.10",
       "tiling": "",
@@ -962,6 +973,12 @@
       "surface": "flat",
       "family": "hyperbolic"
     },
+    "hyperbolic47": {
+      "label": "Squares {4,7}",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
     "hyperbolic4810": {
       "label": "Truncated tetrapentagonal 4.8.10",
       "tiling": "",
@@ -1016,6 +1033,12 @@
       "surface": "flat",
       "family": "hyperbolic"
     },
+    "hyperbolic669": {
+      "label": "Truncated {3,9} 6.6.9",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
     "hyperbolic688": {
       "label": "Truncated {4,6} 6.8.8",
       "tiling": "",
@@ -1028,8 +1051,20 @@
       "surface": "flat",
       "family": "hyperbolic"
     },
+    "hyperbolic74": {
+      "label": "Heptagons {7,4}",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
     "hyperbolic83": {
       "label": "Octagons {8,3}",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
+    "hyperbolic93": {
+      "label": "Nonagons {9,3}",
       "tiling": "",
       "surface": "flat",
       "family": "hyperbolic"
@@ -2251,15 +2286,19 @@
       "gosper"
     ],
     "hyperbolic": [
+      "hyperbolic93",
       "hyperbolic83",
       "hyperbolic73",
+      "hyperbolic74",
       "hyperbolic64",
       "hyperbolic54",
       "hyperbolic55",
       "hyperbolic45",
       "hyperbolic46",
+      "hyperbolic47",
       "hyperbolic37",
       "hyperbolic38",
+      "hyperbolic39",
       "hyperbolic667",
       "hyperbolic31414",
       "hyperbolic3737",
@@ -2281,6 +2320,7 @@
       "hyperbolic4446",
       "hyperbolic4812",
       "hyperbolic51010",
+      "hyperbolic669",
       "hyperbolicbinary",
       "quartic",
       "macbeath",

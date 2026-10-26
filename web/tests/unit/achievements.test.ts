@@ -122,15 +122,19 @@ describe("the declared shape list", () => {
     // win as 13 to 15 sides, and a {7,3} one as 17 to 21 — the heptagon badge
     // never, and the Spectre's 13-gon badge for the wrong board.
     for (const [mode, sides] of [
+      ["hyperbolic93", 9],
       ["hyperbolic83", 8],
       ["hyperbolic73", 7],
+      ["hyperbolic74", 7],
       ["hyperbolic64", 6],
       ["hyperbolic54", 5],
       ["hyperbolic55", 5],
       ["hyperbolic45", 4],
       ["hyperbolic46", [4]],
+      ["hyperbolic47", [4]],
       ["hyperbolic37", [3]],
       ["hyperbolic38", [3]],
+      ["hyperbolic39", [3]],
       ["hyperbolic667", [6, 7]],
       ["hyperbolic3737", [3, 7]],
       ["hyperbolic3474", [3, 4, 7]],
@@ -152,6 +156,7 @@ describe("the declared shape list", () => {
       ["hyperbolic4446", [4, 6]],
       ["hyperbolic4812", [4, 8, 12]],
       ["hyperbolic51010", [5, 10]],
+      ["hyperbolic669", [6, 9]],
       // drawn as squares, each with its children's T-vertex on its bottom edge
       ["hyperbolicbinary", [4]],
     ] as const) {

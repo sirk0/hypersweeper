@@ -128,13 +128,17 @@ describe("picker pages", () => {
 const REGULAR = [
   "hyperbolic37",
   "hyperbolic38",
+  "hyperbolic39",
   "hyperbolic45",
   "hyperbolic46",
+  "hyperbolic47",
   "hyperbolic54",
   "hyperbolic55",
   "hyperbolic64",
   "hyperbolic73",
+  "hyperbolic74",
   "hyperbolic83",
+  "hyperbolic93",
 ];
 const UNIFORM = [
   "hyperbolic667",
@@ -158,6 +162,7 @@ const UNIFORM = [
   "hyperbolic4446",
   "hyperbolic4812",
   "hyperbolic51010",
+  "hyperbolic669",
 ];
 const CLOSED = ["quartic", "macbeath", "triplet"];
 

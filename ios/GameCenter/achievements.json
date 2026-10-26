@@ -1,6 +1,6 @@
 {
-  "count": 45,
-  "points": 650,
+  "count": 46,
+  "points": 655,
   "achievements": [
     {
       "vendorIdentifier": "hs.first_win",
@@ -238,6 +238,23 @@
         }
       },
       "icon": "ngon:8",
+      "ring": null
+    },
+    {
+      "vendorIdentifier": "hs.shape.9",
+      "referenceName": "shape:9",
+      "points": 5,
+      "showBeforeEarned": true,
+      "repeatable": false,
+      "localizations": {
+        "en-US": {
+          "name": "Nonagons",
+          "beforeEarnedDescription": "Win a board whose tiles have 9 sides",
+          "afterEarnedDescription": "You won a board whose tiles have 9 sides",
+          "image": "images/hs.shape.9.png"
+        }
+      },
+      "icon": "ngon:9",
       "ring": null
     },
     {
