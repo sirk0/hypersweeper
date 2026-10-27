@@ -1174,8 +1174,8 @@ everything about where it is *drawn*.
    into `EXEMPT_ROWS` rather than tuning it away.
 
 The rest is the Klein recipe's: one `MANIFOLD_ORDER` / `MANIFOLD_LABELS` entry,
-the square tiling's `modeOverrides`, both icons (here the TypeScript one meshes
-the board's own `trefoilPoint`), the surface in the three Grafana dashboards'
+the square tiling's `modeOverrides`, both icons (here the TypeScript one is the
+easy board itself — a `SOLID_BUILDERS` row and a `SURFACE_ICONS` entry), the surface in the three Grafana dashboards'
 `surface` variable, and a gallery baseline.
 
 
@@ -1212,7 +1212,8 @@ Read [`geometry.md`](geometry.md#the-real-projective-plane) first. What it took:
    and `klein`), `MANIFOLD_ORDER` / `MANIFOLD_LABELS`, the
    builders in `_JSON_BUILDERS` / `BUILDERS`, a `SPEC` row (`rigid`, one knob:
    the frequency) and the measured pipeline, both icons (a hemisphere bowl --
-   the textbook model -- in `icons.ts` and `gui.py`), the surface in the three
+   the textbook model -- in `gui.py`, and in `icons.ts` the easy board cut to
+   its lower hemisphere by `SURFACE_ICONS`' `keep`), the surface in the three
    Grafana dashboards' `surface` variable, and a gallery baseline.
 
 The same board drawn **once**, on an immersion, is the trefoil's recipe again:
@@ -1316,9 +1317,8 @@ picked — and four things do not:
    often the best one at a thin tube. And the same bar belongs *inside* the
    radius sweep, or the sweep hands the width straight back.
 
-Its two icons are hand-written like every other surface's: `DOUBLE_TORUS` in
-`web/src/ui/icons.ts` (a pair of `SurfacePoint`s — `surfaceMesh` takes several
-and meshes them into **one** frame, since two calls each scale their own grid
-to fill the icon and come out overlapping) and a `doubletorus` branch in
-`gui.py`'s `_render_icon`. `tests/test_gui.py` requires one for every
+Its two icons are the TypeScript one — the easy board itself, like every
+other surface's in `web/src/ui/icons.ts` (a `SOLID_BUILDERS` row, a
+`SURFACE_ICONS` entry and a `SOLID_VIEW` angle) — and a hand-written
+`doubletorus` branch in `gui.py`'s `_render_icon`. `tests/test_gui.py` requires one for every
 `MANIFOLD_ORDER` key, so a missing icon fails rather than draws blank.

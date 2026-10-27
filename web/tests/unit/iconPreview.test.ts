@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { menuIcon, previewIcon, setIconPalette } from "../../src/ui/icons";
-import { SOLID_MODES } from "../../src/boards/catalog";
+import { MENU, SOLID_MODES } from "../../src/boards/catalog";
 import { theme } from "../../src/ui/theme";
 
 // The desktop menu's card previews (icons.ts `previewIcon`). A card is four
@@ -11,6 +11,8 @@ import { theme } from "../../src/ui/theme";
 // previews are cached under the same single-writer rule the small icons are.
 
 afterEach(() => setIconPalette(undefined));
+
+const MANIFOLD_ORDER = MENU.manifoldOrder as string[];
 
 const paths = (svg: string): number => (svg.match(/<path/g) ?? []).length;
 
@@ -58,6 +60,27 @@ describe("card previews", () => {
       // Every cell of the visible half, where the symbol is a few strokes.
       expect(paths(preview.svg), key).toBeGreaterThan(20);
     }
+  });
+
+  it("draws a flat manifold as its easy board's squares, on the row and the card", () => {
+    // Each surface is the board itself on its own immersion, one quad a cell,
+    // where it used to be a smooth mesh of the surface. The row and the card
+    // are one drawing at two sizes, so they draw the same cells.
+    for (const key of MANIFOLD_ORDER) {
+      const preview = previewIcon(key);
+      expect(preview.tiled, key).toBe(false);
+      expect(paths(preview.svg), key).toBeGreaterThan(20);
+      expect(paths(menuIcon(key)), key).toBe(paths(preview.svg));
+    }
+    // An open surface keeps the far side that shows through its open ends:
+    // all sixteen by five of the easy cylinder's cells are drawn.
+    expect(paths(menuIcon("cylinder"))).toBe(80);
+    // The projective plane is played on the whole cubed sphere, each cell
+    // twice (150 faces at the easy size); the icon is the bowl, the lower
+    // half of it, so it does not read as the sphere boards' ball.
+    expect(paths(menuIcon("projective"))).toBeLessThan(75);
+    // ...and the Flat manifolds entry is still the torus.
+    expect(previewIcon("manifolds").svg).toBe(previewIcon("torus").svg);
   });
 
   it("draws the boards that do not repeat from the board itself", () => {
