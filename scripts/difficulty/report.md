@@ -12,7 +12,7 @@ Every board's mine count, chosen so its win probability under the reference solv
 
 ## Coverage
 
-- 969 rows, 929 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
+- 972 rows, 932 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
 - 40 could not be brought on target:
   - `cube3d`/hard: 33.3% vs 50.9% — the search could not resolve it -- its thinnest measurement finished 0 game(s), so the rate here is noise rather than a crossing the search walked to. Re-measure at a bigger `--budget`
   - `cylhexrows`/medium: 81.7% vs 87.1% — no integer mine count lands within tolerance; this is the closest
@@ -66,7 +66,7 @@ Every board's mine count, chosen so its win probability under the reference solv
   - `doubletorustri`/hard: 41 abandoned
   - `torussnubhex`/hard: 39 abandoned
 
-Densities run from 1.2% to 30.0% (median 16.3%) — the spread the old flat 14/16/19 per cent could not express.
+Densities run from 1.2% to 30.0% (median 16.4%) — the spread the old flat 14/16/19 per cent could not express.
 
 The only floor under the search is the **opening**: the fewest mines at which the first click alone stops finishing the board (`calibrate.opening_floor`). As a density that runs 0.8% to 15.0% across the zoo — which is why it is measured per board rather than set as a percentage.
 
@@ -308,6 +308,7 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `snubsquare` | 9.3 | 79c 9m (11%) 97% | 229c 35m (15%) 88% | 505c 107m (21%) 48% |
 | `spectre` | 5.9 | 81c 11m (14%) 95% | 256c 37m (14%) 83% | 480c 89m (19%) 49% |
 | `sphere` | 7.0 | 60c 10m (17%) 99% | 300c 65m (22%) 87% | 300c 76m (25%) 55% |
+| `spheresquare` | 7.8 | 96c 20m (21%) 96% | 294c 67m (23%) 89% | 486c 128m (26%) 51% |
 | `spheretri` | 11.2 | 80c 20m (25%) 98% | 320c 87m (27%) 85% | 500c 150m (30%) 48% |
 | `sphinx` | 7.3 | 64c 7m (11%) 97% | 256c 35m (14%) 88% | 256c 51m (20%) 49% |
 | `sphinxpairs` | 10.6 | 78c 11m (14%) 97% | 254c 46m (18%) 86% | 526c 124m (24%) 50% |

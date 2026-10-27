@@ -140,6 +140,10 @@ SPEC: dict[str, dict] = {
     # onto the sphere, so the same one knob and 20 * f**2 cells; ``rigid`` for
     # the same reason as the Goldberg spheres.
     "sphere_triangle_board": dict(size=(1,), mine=0, shape=None, rigid=True),
+    # The spherical cube: `cube_board`'s grid drawn round by the equiangular
+    # cube map, so one knob, the squares along an edge, and 6 * n**2 cells;
+    # ``rigid`` for the same reason again.
+    "sphere_square_board": dict(size=(1,), mine=0, shape=None, rigid=True),
     "cube_board": dict(size=(0,), mine=1, shape=None),
     # The three brick bonds laid on a cube: one knob, the blocks per face side.
     # ``rigid`` for the same reason the Catalan solids are -- every brick lies

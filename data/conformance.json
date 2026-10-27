@@ -3394,6 +3394,35 @@
         "hasCellCycle": false
       }
     },
+    "spheresquare": {
+      "easy": {
+        "cellCount": 96,
+        "mineCount": 20,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 192,
+        "vertexCount": 98,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 294,
+        "mineCount": 67,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 588,
+        "vertexCount": 296,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 486,
+        "mineCount": 128,
+        "euler": 2,
+        "boundaryComponents": 0,
+        "edgeCount": 972,
+        "vertexCount": 488,
+        "hasCellCycle": false
+      }
+    },
     "spheretri": {
       "easy": {
         "cellCount": 80,

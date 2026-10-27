@@ -105,6 +105,9 @@ describe("shape names", () => {
     // The geodesic sphere: twenty of its eighty triangles come out exact, and
     // a class is only as regular as all of its cells.
     expect(shapes("spheretri")).toEqual(["Projected equilateral triangles 80"]);
+    // ...and the spherical cube's squares, none of which the cube map keeps
+    // exactly square.
+    expect(shapes("spheresquare")).toEqual(["Projected squares 96"]);
   });
 
   it("calls a hyperbolic tiling's tiles regular, as drawn in the disc", () => {

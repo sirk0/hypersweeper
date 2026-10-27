@@ -265,6 +265,7 @@
     "bring": "Bring's surface",
     "macbeath": "Macbeath surface",
     "triplet": "Hurwitz triplet",
+    "spheresquare": "Spherical cube",
     "spheretri": "Geodesic icosahedron"
   },
   "tilingNotations": {
@@ -1694,6 +1695,12 @@
       "surface": "solid",
       "family": "catalan"
     },
+    "spheresquare": {
+      "label": "Spherical cube",
+      "tiling": "",
+      "surface": "solid",
+      "family": "sphere"
+    },
     "spheretri": {
       "label": "Geodesic icosahedron",
       "tiling": "",
@@ -2354,7 +2361,8 @@
         "modes": [
           "gp21",
           "c180",
-          "spheretri"
+          "spheretri",
+          "spheresquare"
         ]
       },
       {
