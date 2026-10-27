@@ -1175,7 +1175,9 @@ everything about where it is *drawn*.
 
 The rest is the Klein recipe's: one `MANIFOLD_ORDER` / `MANIFOLD_LABELS` entry,
 the square tiling's `modeOverrides`, both icons (here the TypeScript one is the
-easy board itself — a `SOLID_BUILDERS` row and a `SURFACE_ICONS` entry), the surface in the three Grafana dashboards'
+easy board itself — a `SOLID_BUILDERS` row and a `SURFACE_ICONS` entry; its
+card takes the medium board from `PREVIEW_BUILDERS`, since the easy knot is a
+chain of kinks at that size), the surface in the three Grafana dashboards'
 `surface` variable, and a gallery baseline.
 
 
@@ -1212,8 +1214,9 @@ Read [`geometry.md`](geometry.md#the-real-projective-plane) first. What it took:
    and `klein`), `MANIFOLD_ORDER` / `MANIFOLD_LABELS`, the
    builders in `_JSON_BUILDERS` / `BUILDERS`, a `SPEC` row (`rigid`, one knob:
    the frequency) and the measured pipeline, both icons (a hemisphere bowl --
-   the textbook model -- in `gui.py`, and in `icons.ts` the easy board cut to
-   its lower hemisphere by `SURFACE_ICONS`' `keep`), the surface in the three
+   the textbook model -- in `gui.py`, and in `icons.ts` the easy board as the
+   whole cubed sphere it is played on, drawn with the sphere boards'
+   `SPHERES`), the surface in the three
    Grafana dashboards' `surface` variable, and a gallery baseline.
 
 The same board drawn **once**, on an immersion, is the trefoil's recipe again:

@@ -797,9 +797,10 @@ export class Menu {
 
   /** The icon a group's own row shows: the "Flat" entry (which opens the
    * tiling picker) shows a hexagon, since the flat-plane surface keeps its
-   * square icon in the manifolds list. */
+   * square icon in the manifolds list, and the Sphere group shows a sphere of
+   * hexagons, since its own key names a board that is now a Catalan solid. */
   private groupIcon(group: Group): string {
-    return group.key === "flat" ? "hex" : group.key;
+    return group.key === "flat" ? "hex" : group.key === "sphere" ? "spheres" : group.key;
   }
 
   /** The home page: the board that opens straight away (Classic), one
