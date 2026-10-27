@@ -726,13 +726,18 @@ const SOLID_BUILDERS: Record<string, () => Board3D> = {
   snubdodecsplit: () => snubDodecahedronSplitBoard(0, 0),
   // The flat manifolds in squares, at their easy sizes: the wrapped lattice
   // itself, every cell of the board a quad on the icon (see SURFACE_ICONS).
+  // Two are the exception. The trefoil is at its medium size: the easy knot's
+  // sixteen cells along it are bent into trapezoids at every turn, and the
+  // knot draws as a chain of kinks. Boy's surface is at its hard size: the
+  // easy board's 75 cells are too coarse for its lobes and funnel to read at
+  // all, and the surface is a lump of a few dozen bent squares.
   mobius: () => mobiusBoard(14, 6, 0),
   cylinder: () => cylinderBoard(16, 5, 0),
   torus: () => torusBoard(10, 8, 0, 0.38),
-  trefoil: () => trefoilBoard(16, 8, 0, 0.5),
+  trefoil: () => trefoilBoard(32, 8, 0, 0.8),
   klein: () => kleinBoard(10, 8, 0, 1.15),
   projective: () => projectiveBoard(5, 0),
-  boy: () => boyBoard(5, 0),
+  boy: () => boyBoard(13, 0),
   doubletorus: () => doubleTorusBoard(8, 8, 0, 0.38),
 };
 
@@ -771,17 +776,15 @@ const ARCHIMEDEAN_FLAT_ICONS = [
  * the board's own immersion, rather than a smooth mesh of the surface. The
  * open and one-sided ones (`twoSided`) keep the faces turned away from the
  * viewer, a shade darker, since their back is what shows through the band, the
- * open end or the neck. `keep` cuts a board down to the part that is the
- * picture: the projective plane is played on the whole sphere, every cell and
- * its antipode, which would draw as a plain ball — so the icon keeps the lower
- * hemisphere, the bowl whose rim is glued to itself across the middle. */
-const SURFACE_ICONS: Record<string, { twoSided: boolean; keep?: (mid: V3) => boolean }> = {
+ * open end or the neck. The projective plane is not here: it is played on the
+ * whole sphere, every cell and its antipode, and is drawn as that sphere, with
+ * the sphere boards (`SPHERES`). */
+const SURFACE_ICONS: Record<string, { twoSided: boolean }> = {
   mobius: { twoSided: true },
   cylinder: { twoSided: true },
   torus: { twoSided: false },
   trefoil: { twoSided: false },
   klein: { twoSided: true },
-  projective: { twoSided: true, keep: (mid) => mid[1] < -1e-6 },
   boy: { twoSided: true },
   doubletorus: { twoSided: false },
 };
@@ -860,17 +863,20 @@ const SOLID_VIEW: Record<string, [number, number] | [number, number, number]> = 
   // flatter than the single donut's view: the eight is what identifies it,
   // and at -62 degrees the two rings overlap into one blob
   doubletorus: [-48, 0],
-  // nearly straight down the knot's three-fold axis, the view it is known by
-  trefoil: [-18, 0],
+  // down the knot's three-fold axis, the view it is known by, spun so a lobe
+  // points straight up and tipped a little toward the viewer: the picture is
+  // then symmetric left to right, where a lobe pointing sideways put two
+  // crossings on one side and left that side a tangle
+  trefoil: [12, 0, 90],
   // the body with the neck looping over the top and back into its side; the
   // board's coarse easy tube shows its open bottom ring from below
   klein: [20, 30],
-  // tipped so the inside of the bowl shows: a hemisphere, not a ball
-  projective: [38, 0],
-  // down the three-fold axis: the easy board is 75 cells, too coarse for the
-  // funnel to read from the side, where it is a lump; from here the three
-  // lobes are the picture
-  boy: [0, 0],
+  // the cubed sphere it is played on, a corner of the cube in the middle like
+  // the square sphere's
+  projective: [-24, 28],
+  // from above and to one side, the textbook view: two of the three lobes
+  // folding over the funnel that the third one dives into
+  boy: [-60, 0, 30],
 };
 
 /** Where a card turns a solid further than its 38px icon does. Two boards read
@@ -961,7 +967,6 @@ function solidFaces(
   }[] = [];
   const box: number[][] = [];
   for (const [cell, poly] of board.polygons) {
-    if (surface?.keep && !surface.keep(centre3(poly as V3[]))) continue;
     const spun = poly.map((v) => rotate(v as V3, rx, ry, rz));
     const mid = centre3(spun);
     box.push(...spun.map((v) => [v[0], v[1]]));
@@ -1100,12 +1105,16 @@ const ALIASES: Record<string, string> = {
   volume: "cube3d", // the Volumes row: its only board
   classic: "square", // the "Classic" home entry: flat squares
   manifolds: "torus", // the "Flat manifolds" entry under Custom
-  "3d": "sphere", // the "3D" home entry: a random board off the plane
+  // the Sphere group's row and the "3D" home entry: a Goldberg polyhedron,
+  // hexagons with the twelve pentagons a sphere needs. Not "sphere", which
+  // names the pentagonal hexecontahedron, now one of the Catalan solids
+  spheres: "c180",
+  "3d": "c180", // a random board off the plane
   custom: "regular", // the "Custom" home entry: one tile of each regular tiling
   random: "start", // the pygame menu's "Random" picker entry
 };
 
-const SPHERES = ["gp21", "c180", "spheretri", "spheresquare"];
+const SPHERES = ["gp21", "c180", "spheretri", "spheresquare", "projective"];
 
 /** What a board's cells actually are, for the icons whose art is not a drawing
  * of one: a subdivided outer polygon (the Laves triangle tilings), an
@@ -1141,6 +1150,7 @@ const ICON_TONES: Record<string, ShapeTone> = {
   c180: { sides: 6, regularity: 0.95 },
   spheretri: { sides: 3, regularity: 1 },
   spheresquare: { sides: 4, regularity: 1 },
+  projective: { sides: 4, regularity: 1 }, // the same cubed sphere
 };
 
 // -- achievement badges ----------------------------------------------------

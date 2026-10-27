@@ -38,9 +38,12 @@ describe("card previews", () => {
 
   it("keeps the aliases pointing at the same drawing as the row", () => {
     // The home-page keys resolve before anything else, exactly as `draw` does:
-    // Classic is squares, 3D is the sphere board.
+    // Classic is squares, 3D and the Sphere group are the Goldberg sphere of
+    // hexagons — not "sphere", which is the pentagonal hexecontahedron.
     expect(previewIcon("classic").svg).toBe(previewIcon("square").svg);
-    expect(previewIcon("3d").svg).toBe(previewIcon("sphere").svg);
+    expect(previewIcon("3d").svg).toBe(previewIcon("c180").svg);
+    expect(menuIcon("spheres")).toBe(menuIcon("c180"));
+    expect(menuIcon("spheres")).not.toBe(menuIcon("sphere"));
     expect(previewIcon("tri").svg).toBe(previewIcon("trigrid").svg);
     // the Closed surfaces submenu is Klein's quartic, on the card and the row
     expect(previewIcon("hyperbolic-closed").svg).toBe(previewIcon("quartic").svg);
@@ -76,9 +79,10 @@ describe("card previews", () => {
     // all sixteen by five of the easy cylinder's cells are drawn.
     expect(paths(menuIcon("cylinder"))).toBe(80);
     // The projective plane is played on the whole cubed sphere, each cell
-    // twice (150 faces at the easy size); the icon is the bowl, the lower
-    // half of it, so it does not read as the sphere boards' ball.
-    expect(paths(menuIcon("projective"))).toBeLessThan(75);
+    // twice (150 faces at the easy size), and is drawn as that sphere: the
+    // near half of it, the far half culled.
+    expect(paths(menuIcon("projective"))).toBeLessThan(150);
+    expect(paths(menuIcon("projective"))).toBeGreaterThan(50);
     // ...and the Flat manifolds entry is still the torus.
     expect(previewIcon("manifolds").svg).toBe(previewIcon("torus").svg);
   });
