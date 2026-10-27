@@ -68,15 +68,12 @@ describe("card previews", () => {
   it("draws a flat manifold as its easy board's squares, on the row and the card", () => {
     // Each surface is the board itself on its own immersion, one quad a cell,
     // where it used to be a smooth mesh of the surface. The row and the card
-    // are one drawing at two sizes, so they draw the same cells -- except the
-    // trefoil, whose card is the medium board: the easy one's sixteen cells
-    // along the knot are a chain of kinks at card size.
+    // are one drawing at two sizes, so they draw the same cells.
     for (const key of MANIFOLD_ORDER) {
       const preview = previewIcon(key);
       expect(preview.tiled, key).toBe(false);
       expect(paths(preview.svg), key).toBeGreaterThan(20);
-      if (key === "trefoil") expect(paths(preview.svg)).toBeGreaterThan(paths(menuIcon(key)));
-      else expect(paths(menuIcon(key)), key).toBe(paths(preview.svg));
+      expect(paths(menuIcon(key)), key).toBe(paths(preview.svg));
     }
     // An open surface keeps the far side that shows through its open ends:
     // all sixteen by five of the easy cylinder's cells are drawn.

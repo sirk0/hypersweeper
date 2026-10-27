@@ -726,13 +726,15 @@ const SOLID_BUILDERS: Record<string, () => Board3D> = {
   snubdodecsplit: () => snubDodecahedronSplitBoard(0, 0),
   // The flat manifolds in squares, at their easy sizes: the wrapped lattice
   // itself, every cell of the board a quad on the icon (see SURFACE_ICONS).
-  // Boy's surface is the exception, at its hard size: the easy board's 75
-  // cells are too coarse for its lobes and funnel to read at all, and the
-  // surface is a lump of a few dozen bent squares.
+  // Two are the exception. The trefoil is at its medium size: the easy knot's
+  // sixteen cells along it are bent into trapezoids at every turn, and the
+  // knot draws as a chain of kinks. Boy's surface is at its hard size: the
+  // easy board's 75 cells are too coarse for its lobes and funnel to read at
+  // all, and the surface is a lump of a few dozen bent squares.
   mobius: () => mobiusBoard(14, 6, 0),
   cylinder: () => cylinderBoard(16, 5, 0),
   torus: () => torusBoard(10, 8, 0, 0.38),
-  trefoil: () => trefoilBoard(16, 8, 0, 0.5),
+  trefoil: () => trefoilBoard(32, 8, 0, 0.8),
   klein: () => kleinBoard(10, 8, 0, 1.15),
   projective: () => projectiveBoard(5, 0),
   boy: () => boyBoard(13, 0),
@@ -888,21 +890,11 @@ const PREVIEW_VIEW: Record<string, [number, number] | [number, number, number]> 
   cube3d: [-24, 28],
 };
 
-/** Where a card draws a bigger board than its row's icon does. The easy
- * trefoil is sixteen cells along the knot, which at 38px still reads as a knot
- * but on a card is a chain of straight segments, every bend a kink — so the
- * card takes the medium board, as smooth as the knot is meant to be. */
-const PREVIEW_BUILDERS: Record<string, () => Board3D> = {
-  trefoil: () => trefoilBoard(32, 8, 0, 0.8),
-};
-
 const solidCache = new Map<string, Board3D>();
 
-function solidBoard(key: string, lit = false): Board3D {
-  const build = (lit ? PREVIEW_BUILDERS[key] : undefined) ?? SOLID_BUILDERS[key]!;
-  const slot = build === SOLID_BUILDERS[key] ? key : `${key}:preview`;
-  let board = solidCache.get(slot);
-  if (!board) solidCache.set(slot, (board = build()));
+function solidBoard(key: string): Board3D {
+  let board = solidCache.get(key);
+  if (!board) solidCache.set(key, (board = SOLID_BUILDERS[key]!()));
   return board;
 }
 
@@ -950,7 +942,7 @@ function solidFaces(
   kind: "round" | "blocky" | "surface" = "round",
   lit = false,
 ): string[] {
-  const board = solidBoard(key, lit);
+  const board = solidBoard(key);
   const surface = kind === "surface" ? SURFACE_ICONS[key]! : null;
   const [rxDeg, ryDeg, rzDeg = 0] = (lit ? PREVIEW_VIEW[key] : undefined) ??
     SOLID_VIEW[key] ?? [-18, 15];

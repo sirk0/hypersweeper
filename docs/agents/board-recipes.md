@@ -1175,9 +1175,8 @@ everything about where it is *drawn*.
 
 The rest is the Klein recipe's: one `MANIFOLD_ORDER` / `MANIFOLD_LABELS` entry,
 the square tiling's `modeOverrides`, both icons (here the TypeScript one is the
-easy board itself — a `SOLID_BUILDERS` row and a `SURFACE_ICONS` entry; its
-card takes the medium board from `PREVIEW_BUILDERS`, since the easy knot is a
-chain of kinks at that size), the surface in the three Grafana dashboards'
+medium board — a `SOLID_BUILDERS` row and a `SURFACE_ICONS` entry; the easy
+knot's few cells are bent into a chain of kinks), the surface in the three Grafana dashboards'
 `surface` variable, and a gallery baseline.
 
 
