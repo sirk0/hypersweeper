@@ -85,7 +85,16 @@ import {
   truncatedIcosidodecahedronSplitBoard,
   truncatedOctahedronBoard,
 } from "../boards/archimedean";
-import { boyPoint, trefoilPoint } from "../boards/surfaces";
+import {
+  boyBoard,
+  cylinderBoard,
+  doubleTorusBoard,
+  kleinBoard,
+  mobiusBoard,
+  projectiveBoard,
+  torusBoard,
+  trefoilBoard,
+} from "../boards/surfaces";
 import { solidCubeBoard } from "../boards/volume";
 import { DOMAINS } from "./backgroundPattern";
 import { cid, newellNormal, type Board, type Board3D, type Vec3 } from "../boards/core";
@@ -715,6 +724,16 @@ const SOLID_BUILDERS: Record<string, () => Board3D> = {
   rhombicosidodecasplit: () => rhombicosidodecahedronSplitBoard(0, 0),
   truncicosidodecasplit: () => truncatedIcosidodecahedronSplitBoard(0, 0),
   snubdodecsplit: () => snubDodecahedronSplitBoard(0, 0),
+  // The flat manifolds in squares, at their easy sizes: the wrapped lattice
+  // itself, every cell of the board a quad on the icon (see SURFACE_ICONS).
+  mobius: () => mobiusBoard(14, 6, 0),
+  cylinder: () => cylinderBoard(16, 5, 0),
+  torus: () => torusBoard(10, 8, 0, 0.38),
+  trefoil: () => trefoilBoard(16, 8, 0, 0.5),
+  klein: () => kleinBoard(10, 8, 0, 1.15),
+  projective: () => projectiveBoard(5, 0),
+  boy: () => boyBoard(5, 0),
+  doubletorus: () => doubleTorusBoard(8, 8, 0, 0.38),
 };
 
 /** The thirteen Catalan solids, drawn as the real board in projection like the
@@ -747,6 +766,25 @@ const ARCHIMEDEAN_FLAT_ICONS = [
   "truncicosidodecasplit",
   "snubdodecsplit",
 ];
+
+/** The flat manifolds, drawn like the solids: the easy board's own squares on
+ * the board's own immersion, rather than a smooth mesh of the surface. The
+ * open and one-sided ones (`twoSided`) keep the faces turned away from the
+ * viewer, a shade darker, since their back is what shows through the band, the
+ * open end or the neck. `keep` cuts a board down to the part that is the
+ * picture: the projective plane is played on the whole sphere, every cell and
+ * its antipode, which would draw as a plain ball — so the icon keeps the lower
+ * hemisphere, the bowl whose rim is glued to itself across the middle. */
+const SURFACE_ICONS: Record<string, { twoSided: boolean; keep?: (mid: V3) => boolean }> = {
+  mobius: { twoSided: true },
+  cylinder: { twoSided: true },
+  torus: { twoSided: false },
+  trefoil: { twoSided: false },
+  klein: { twoSided: true },
+  projective: { twoSided: true, keep: (mid) => mid[1] < -1e-6 },
+  boy: { twoSided: true },
+  doubletorus: { twoSided: false },
+};
 
 /** How each solid is turned before projecting, in degrees about x then y —
  * chosen so the face the board is named for sits in the middle of the icon. */
@@ -811,6 +849,28 @@ const SOLID_VIEW: Record<string, [number, number] | [number, number, number]> = 
   rhombicosidodecasplit: [-16, 15],
   truncicosidodecasplit: [-16, 15],
   snubdodecsplit: [-14, 20],
+  // The flat manifolds, each in its board's own frame.
+  torus: [-62, 0],
+  // three-quarters on: the easy band is six cells wide, nearly a disc with a
+  // hole, and seen from above its twist hides in the far side of the loop
+  mobius: [-20, 40],
+  // tipped toward the viewer, so the open end that shows is the top one (a
+  // negative tilt looks up into it from below and reads upside down)
+  cylinder: [32, 0],
+  // flatter than the single donut's view: the eight is what identifies it,
+  // and at -62 degrees the two rings overlap into one blob
+  doubletorus: [-48, 0],
+  // nearly straight down the knot's three-fold axis, the view it is known by
+  trefoil: [-18, 0],
+  // the body with the neck looping over the top and back into its side; the
+  // board's coarse easy tube shows its open bottom ring from below
+  klein: [20, 30],
+  // tipped so the inside of the bowl shows: a hemisphere, not a ball
+  projective: [38, 0],
+  // down the three-fold axis: the easy board is 75 cells, too coarse for the
+  // funnel to read from the side, where it is a lump; from here the three
+  // lobes are the picture
+  boy: [0, 0],
 };
 
 /** Where a card turns a solid further than its 38px icon does. Two boards read
@@ -846,6 +906,16 @@ function rotate(p: V3, rx: number, ry: number, rz = 0): V3 {
   return [x0 * cy + z1 * sy, y, -x0 * sy + z1 * cy];
 }
 
+/** The mean of a polygon's vertices. */
+function centre3(poly: V3[]): V3 {
+  const k = 1 / poly.length;
+  return [
+    poly.reduce((s, v) => s + v[0], 0) * k,
+    poly.reduce((s, v) => s + v[1], 0) * k,
+    poly.reduce((s, v) => s + v[2], 0) * k,
+  ];
+}
+
 /**
  * The visible half of a 3D board, as icon-space polygons: every cell shaded by
  * how squarely it faces the viewer — the same cue that makes the board's 3D
@@ -861,8 +931,13 @@ function rotate(p: V3, rx: number, ry: number, rz = 0): V3 {
  * wind outward for the renderer's back-face culling, and are painted back to
  * front so a near tile covers the far one behind it.
  */
-function solidFaces(key: string, kind: "round" | "blocky" = "round", lit = false): string[] {
+function solidFaces(
+  key: string,
+  kind: "round" | "blocky" | "surface" = "round",
+  lit = false,
+): string[] {
   const board = solidBoard(key);
+  const surface = kind === "surface" ? SURFACE_ICONS[key]! : null;
   const [rxDeg, ryDeg, rzDeg = 0] = (lit ? PREVIEW_VIEW[key] : undefined) ??
     SOLID_VIEW[key] ?? [-18, 15];
   const rad = Math.PI / 180;
@@ -871,16 +946,24 @@ function solidFaces(key: string, kind: "round" | "blocky" = "round", lit = false
   // regularity across the whole board and reads the corner mask, exactly as
   // render/solidBoard.ts does, where the small icon measures each polygon on
   // its own. The difference shows on the boards with T-vertices.
-  const tones = lit ? classifyShapes(board.polygons, board.cornerMask) : null;
-  const faces: { pts: P[]; depth: number; facing: number; lambert: number; tone: ShapeTone }[] = [];
+  // A surface takes them on the small icon too: its squares are bent by the
+  // immersion, each by a different amount, and measured one at a time they
+  // would scatter over the regularity scale where the board paints them one
+  // colour.
+  const tones = lit || surface ? classifyShapes(board.polygons, board.cornerMask) : null;
+  const faces: {
+    pts: P[];
+    depth: number;
+    facing: number;
+    lambert: number;
+    tone: ShapeTone;
+    back: boolean;
+  }[] = [];
   const box: number[][] = [];
   for (const [cell, poly] of board.polygons) {
+    if (surface?.keep && !surface.keep(centre3(poly as V3[]))) continue;
     const spun = poly.map((v) => rotate(v as V3, rx, ry, rz));
-    const mid: V3 = [
-      spun.reduce((s, v) => s + v[0], 0) / spun.length,
-      spun.reduce((s, v) => s + v[1], 0) / spun.length,
-      spun.reduce((s, v) => s + v[2], 0) / spun.length,
-    ];
+    const mid = centre3(spun);
     box.push(...spun.map((v) => [v[0], v[1]]));
     let facing: number;
     if (kind === "round") {
@@ -898,7 +981,12 @@ function solidFaces(key: string, kind: "round" | "blocky" = "round", lit = false
       const n = newellNormal(spun as Vec3[]);
       facing = n[2] / (Math.hypot(n[0], n[1], n[2]) || 1);
     }
-    if (facing <= 0.06) continue; // back-facing, and the rim it would alias with
+    // An open or one-sided surface shows its back through the band, the open
+    // end or the neck, so nothing of it is culled; the back is shaded by how
+    // squarely it faces the viewer just the same, and darkened below.
+    const back = facing < 0;
+    if (surface?.twoSided) facing = Math.abs(facing);
+    else if (facing <= 0.06) continue; // back-facing, and the rim it would alias with
     // Blocky boards have far more, far smaller cells than a sphere's, so their
     // seams are cut thinner or the tiles dissolve into speckle. A card's seams
     // are cut thinner again: at four times the size the icon's 6-10% gap reads
@@ -910,6 +998,7 @@ function solidFaces(key: string, kind: "round" | "blocky" = "round", lit = false
       facing,
       lambert: lit ? lambertOf(spun as Vec3[], facing) : 0,
       tone: tones?.get(cell) ?? shapeMetrics(poly),
+      back,
     });
   }
   // Fit the silhouette rather than the bounding sphere, so a solid that is not
@@ -932,15 +1021,19 @@ function solidFaces(key: string, kind: "round" | "blocky" = "round", lit = false
     // surfaces are shaded (see surfaceMesh). The icon's three buckets are what
     // a 38px solid needs to read as solid at all; on a card they band.
     if (!lit) {
-      const variant = f.facing > 0.8 ? LIGHT : f.facing > 0.45 ? BASE : DARK;
+      // the far side of a two-sided surface a shade down from the near side
+      const step = f.back ? 1 : 0;
+      const variants = [LIGHT, BASE, DARK, DARK];
+      const variant = variants[(f.facing > 0.8 ? 0 : f.facing > 0.45 ? 1 : 2) + step]!;
       return shape(pts, variant, 0, f.tone, D * 0.008);
     }
     const base = tint(BASE, f.tone);
     const l = f.lambert;
-    const fill =
+    const lit2 =
       l > 0.5
         ? mixHex(base, tint(LIGHT, f.tone), (l - 0.5) * 2)
         : mixHex(tint(DARK, f.tone), base, l * 2);
+    const fill = f.back ? mixHex(lit2, tint(DARK, f.tone), 0.4) : lit2;
     // Fill alone. `poly` strokes a face in its own colour to seal the
     // antialiased seam against its neighbour, which is right where the seam
     // should not show — but the inset above is deliberate grout, and a stroke
@@ -958,187 +1051,6 @@ function lambertOf(spun: Vec3[], facing: number): number {
   const len = Math.hypot(nrm[0], nrm[1], nrm[2]);
   if (len < 1e-9) return facing;
   return Math.abs((nrm[0] * light[0] + nrm[1] * light[1] + nrm[2] * light[2]) / len);
-}
-
-// -- the four surfaces -------------------------------------------------------
-//
-// Torus, cylinder, Möbius strip and Klein bottle are drawn from the same
-// immersions the boards are wrapped onto (surfaces.ts), meshed into quads,
-// depth-sorted and flat-shaded. A twist that is really a twist beats any
-// arrangement of ellipse arcs: the Möbius strip shows its single edge running
-// round the band, and the Klein bottle's neck really does pass through the
-// belly and open into the inside.
-
-type SurfacePoint = (u: number, v: number) => V3;
-
-/** u round the ring, v round the tube. */
-const TORUS: SurfacePoint = (u, v) => {
-  const r = 0.42;
-  const radial = 1 + r * Math.cos(v);
-  return [radial * Math.cos(u), radial * Math.sin(u), r * Math.sin(v)];
-};
-
-/** The two donuts of the genus-2 board (surfaces.py `double_torus_board`), as
- * a pair of surfaces meshed into one frame. Their centres sit 2 apart, as the
- * board's do — a point of each one's outer equator on the other's inner one —
- * so they overlap in a lens rather than touching, which is what makes the
- * silhouette a figure of eight with a merged waist. The board cuts the overlap
- * away along the plane between them and sews the edges; the icon just lets the
- * two meshes cross, which at this size draws the same shape. */
-const DOUBLE_TORUS: SurfacePoint[] = [-1, 1].map((side) => (u, v) => {
-  const r = 0.42;
-  const radial = 1 + r * Math.cos(v);
-  return [side + radial * Math.cos(u), radial * Math.sin(u), r * Math.sin(v)];
-});
-
-/** The trefoil knot's tube (surfaces.ts `trefoilPoint`, the board's own
- * immersion): u along the knot, v round the tube. At a board's fattest tube the
- * strands all but touch at icon size and the three holes close up, so it is
- * drawn at a middling one -- the holes are what make it read as a knot. */
-const TREFOIL: SurfacePoint = (u, v) => trefoilPoint(u, v, 0.6);
-
-/** u round the loop, v across the half-twisting band. */
-const MOBIUS: SurfacePoint = (u, v) => {
-  const radial = 1 + v * Math.cos(u / 2);
-  return [radial * Math.cos(u), radial * Math.sin(u), v * Math.sin(u / 2)];
-};
-
-/** u round the axis, v up it. */
-const CYLINDER: SurfacePoint = (u, v) => [Math.cos(u), v, Math.sin(u)];
-
-/** The classic self-intersecting bottle (kleinPoint in surfaces.ts): u runs up
- * the belly, over the top and back down through the neck, v round the tube. */
-const KLEIN: SurfacePoint = (u, v) => {
-  const [cu, su, cv] = [Math.cos(u), Math.sin(u), Math.cos(v)];
-  const r = 1.05 * (2.5 - 1.5 * cu);
-  const x = u < Math.PI ? 3 * cu * (1 + su) + r * cu * cv : 3 * cu * (1 + su) - r * cv;
-  const y = u < Math.PI ? 8 * su + r * su * cv : 8 * su;
-  return [x, y, r * Math.sin(v)];
-};
-
-/** The projective plane's textbook model: a hemisphere, its rim glued to
- * itself across the middle (each rim point to the opposite one) — which is
- * also how the board is played, a sphere with every cell glued to its
- * antipode. A bowl: u round the rim, v from the rim down to the bottom. */
-const HEMISPHERE: SurfacePoint = (u, v) => [
-  Math.cos(v) * Math.cos(u),
-  -Math.sin(v),
-  Math.cos(v) * Math.sin(u),
-];
-
-/** Boy's surface (surfaces.ts `boyPoint`, the board's own immersion), meshed
- * over one hemisphere — which covers the projective plane once, as the
- * immersion's antipodal symmetry says: u round the axis, v down from the pole. */
-const BOY: SurfacePoint = (u, v) =>
-  boyPoint([Math.sin(v) * Math.cos(u), Math.sin(v) * Math.sin(u), Math.cos(v)]);
-
-interface MeshOptions {
-  /** rotation about x then y, in degrees, before projecting */
-  view: [number, number];
-  /** v range (u always runs a full turn) */
-  vFrom?: number;
-  vTo?: number;
-  uSteps?: number;
-  vSteps?: number;
-  /** an open surface is seen from both sides, so nothing is culled */
-  twoSided?: boolean;
-}
-
-/** Flat-shaded quads of a parametric surface, far ones first. Adjacent quads
- * share an edge, so each is stroked in its own fill: without that the
- * antialiased seams show the page through the surface.
- *
- * Several surfaces may be passed together, and then they are meshed into one
- * frame -- one set of bounds, one scale, one depth sort -- rather than side by
- * side. Two calls cannot do it: each scales its own grid to fill the icon, so
- * two donuts drawn separately come out the same size as one and overlapping.
- * The double torus is two of them. */
-function surfaceMesh(point: SurfacePoint | SurfacePoint[], opts: MeshOptions): string[] {
-  const {
-    view: [rxDeg, ryDeg],
-    vFrom = 0,
-    vTo = 2 * Math.PI,
-    uSteps = 36,
-    vSteps = 12,
-    twoSided = false,
-  } = opts;
-  const [rx, ry] = [rxDeg * (Math.PI / 180), ryDeg * (Math.PI / 180)];
-  const grids: V3[][][] = (Array.isArray(point) ? point : [point]).map((piece) => {
-    const grid: V3[][] = [];
-    for (let i = 0; i <= uSteps; i++) {
-      const row: V3[] = [];
-      for (let j = 0; j <= vSteps; j++) {
-        row.push(
-          rotate(piece((2 * Math.PI * i) / uSteps, vFrom + ((vTo - vFrom) * j) / vSteps), rx, ry),
-        );
-      }
-      grid.push(row);
-    }
-    return grid;
-  });
-  const flat = grids.flat(2);
-  const bounds = (k: 0 | 1): [number, number] => [
-    Math.min(...flat.map((p) => p[k])),
-    Math.max(...flat.map((p) => p[k])),
-  ];
-  const [minX, maxX] = bounds(0);
-  const [minY, maxY] = bounds(1);
-  const scale = (D * 0.94) / Math.max(maxX - minX, maxY - minY);
-  const ox = (D - (maxX - minX) * scale) / 2 - minX * scale;
-  const oy = (D + (maxY - minY) * scale) / 2 + minY * scale;
-  const at = (p: V3): P => [ox + p[0] * scale, oy - p[1] * scale];
-
-  const light = [-0.35, 0.5, 0.79] as const;
-  const faces: { pts: P[]; depth: number; fill: string }[] = [];
-  for (const grid of grids) {
-    for (let i = 0; i < uSteps; i++) {
-      for (let j = 0; j < vSteps; j++) {
-        const corners: V3[] = [
-          grid[i]![j]!,
-          grid[i + 1]![j]!,
-          grid[i + 1]![j + 1]!,
-          grid[i]![j + 1]!,
-        ];
-        const [a, b, c] = [corners[0]!, corners[1]!, corners[3]!];
-        const e1 = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
-        const e2 = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
-        const nx = e1[1]! * e2[2]! - e1[2]! * e2[1]!;
-        const ny = e1[2]! * e2[0]! - e1[0]! * e2[2]!;
-        const nz = e1[0]! * e2[1]! - e1[1]! * e2[0]!;
-        const len = Math.hypot(nx, ny, nz) || 1;
-        const facing = nz / len;
-        if (!twoSided && facing <= 0) continue;
-        const lambert = Math.abs((nx * light[0] + ny * light[1] + nz * light[2]) / len);
-        faces.push({
-          pts: corners.map(at),
-          depth: corners.reduce((s, p) => s + p[2], 0) / 4,
-          // the inside of an open surface reads a shade cooler than the outside
-          fill: mixHex(
-            facing < 0 ? plain("dark") : plain("base"),
-            facing < 0 ? plain("base") : plain("light"),
-            0.15 + 0.85 * lambert,
-          ),
-        });
-      }
-    }
-  }
-  faces.sort((f, g) => f.depth - g.depth);
-  // Hundreds of quads per icon, so they are written as bare polygons at one
-  // decimal (0.04 px at the size a menu row draws them) and grown 2% about
-  // their own centre instead of being stroked — that seals the antialiased
-  // seams between neighbours, which would otherwise show the page through the
-  // surface, for none of the markup a per-path stroke costs.
-  const f1 = (v: number): string => (Math.round(v * 10) / 10).toString();
-  return faces.map((f) => {
-    const [cx, cy] = centroid(f.pts);
-    const d = f.pts
-      .map(
-        (p, i) =>
-          `${i ? "L" : "M"}${f1(cx + (p[0] - cx) * 1.02)} ${f1(cy + (p[1] - cy) * 1.02)}`,
-      )
-      .join("");
-    return `<path d="${d}Z" fill="${f.fill}"/>`;
-  });
 }
 
 /** The tiling a flat family row is drawn from: a small patch of it on the row
@@ -1786,19 +1698,6 @@ function draw(rawKey: string): string[] {
         ),
       );
     }
-  } else if (key === "projective") {
-    // tipped toward the viewer so the inside of the bowl shows, which is what
-    // makes it a hemisphere rather than a ball
-    parts.push(
-      ...surfaceMesh(HEMISPHERE, {
-        view: [38, 0],
-        vFrom: 0,
-        vTo: Math.PI / 2,
-        uSteps: 36,
-        vSteps: 9,
-        twoSided: true,
-      }),
-    );
   } else if (SPHERES.includes(key)) {
     // the real solid, projected: a dark disc behind it closes the silhouette
     // where the outermost faces fall away from the viewer
@@ -1899,59 +1798,9 @@ function draw(rawKey: string): string[] {
       parts.push(line(lerp(a, b, 0.5), [C, C], DARK, 3, cell));
       parts.push(line(lerp(a, [C, C], 0.5), lerp(b, [C, C], 0.5), DARK, 3, cell));
     }
-  } else if (key === "torus") {
-    parts.push(...surfaceMesh(TORUS, { view: [-62, 0] }));
-  } else if (key === "mobius") {
-    // an open band: both faces show, and the half twist brings the far edge
-    // round to meet the near one
-    parts.push(
-      ...surfaceMesh(MOBIUS, {
-        view: [-52, 0],
-        vFrom: -0.42,
-        vTo: 0.42,
-        uSteps: 60,
-        vSteps: 3,
-        twoSided: true,
-      }),
-    );
-  } else if (key === "cylinder") {
-    // tipped toward the viewer, so the open end that shows is the top one
-    // (a negative tilt looks up into it from below and reads upside down)
-    parts.push(
-      ...surfaceMesh(CYLINDER, {
-        view: [32, 0],
-        vFrom: -1.15,
-        vTo: 1.15,
-        uSteps: 36,
-        vSteps: 5,
-        twoSided: true,
-      }),
-    );
-  } else if (key === "doubletorus") {
-    // flatter than the single donut's view: the eight is what identifies it,
-    // and at -62 degrees the two rings overlap into one blob
-    parts.push(...surfaceMesh(DOUBLE_TORUS, { view: [-48, 0], uSteps: 30, vSteps: 10 }));
-  } else if (key === "trefoil") {
-    // nearly straight down the knot's three-fold axis, which is the view the
-    // trefoil is known by; the slight tilt keeps the crossings reading as
-    // over and under rather than as a flat ribbon
-    parts.push(...surfaceMesh(TREFOIL, { view: [-18, 0], uSteps: 96, vSteps: 8 }));
-  } else if (key === "boy") {
-    // from the side, the three-fold axis nearly upright, as the board starts:
-    // down the axis the three lobes cover everything and it reads as a lumpy
-    // ball, and from here the funnel spirals into the body beside them
-    parts.push(
-      ...surfaceMesh(BOY, {
-        view: [-100, 20],
-        vFrom: 0,
-        vTo: Math.PI / 2,
-        uSteps: 48,
-        vSteps: 16,
-        twoSided: true,
-      }),
-    );
-  } else if (key === "klein") {
-    parts.push(...surfaceMesh(KLEIN, { view: [180, -18], uSteps: 48, vSteps: 14 }));
+  } else if (SURFACE_ICONS[key]) {
+    // the flat manifolds: the easy board's squares on its own immersion
+    parts.push(...solidFaces(key, "surface"));
   } else {
     parts.push(circle(C, C, d * 0.4, null, 2));
   }
@@ -2292,9 +2141,13 @@ function buildPreview(rawKey: string): Preview {
   if (tiles) return tiledSvg(tiles);
   return figureSvg(
     SOLID_BUILDERS[key]
-      ? solidFaces(key, SPHERES.includes(key) ? "round" : "blocky", true)
-      : // Neither a patch, a lattice nor a solid: a family rosette, a surface,
-        // a shaped board's outline. `draw` rather than `menuIcon`, which would
+      ? solidFaces(
+          key,
+          SURFACE_ICONS[key] ? "surface" : SPHERES.includes(key) ? "round" : "blocky",
+          true,
+        )
+      : // Neither a patch, a lattice nor a solid: a family rosette, a shaped
+        // board's outline. `draw` rather than `menuIcon`, which would
         // fill the row icons' cache with a card's muted colours.
         draw(rawKey),
   );

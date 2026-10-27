@@ -156,8 +156,9 @@ design rather than the rule itself.
   real `_ArchTemplate` tiling (a tile with its ring of neighbours, a vertex
   rosette, or whole periods for a rectangle bond, per `PATCH_STYLE`), a sphere
   row from the real solid projected and
-  back-face culled, a surface row from the real immersion meshed, depth-sorted
-  and flat-shaded — so they cannot drift from the boards),
+  back-face culled, a flat-manifold row from its easy board in squares on the
+  board's own immersion, depth-sorted and flat-shaded — so they cannot drift
+  from the boards),
   both **rendered from the shared UI-screen config**.
 - **The viewport the app lays out in** is `--app-h` (`styles.css`), never
   `100vh`: on iOS Safari `100vh` is the *large* viewport — the toolbars
