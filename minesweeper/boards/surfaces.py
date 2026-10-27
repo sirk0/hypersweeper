@@ -32,7 +32,7 @@ from minesweeper.boards.core import (
     _tangent_order,
     _without_near_twins,
 )
-from minesweeper.boards.solids import _geodesic, _icosahedron
+from minesweeper.boards.solids import _cubed_sphere, _geodesic, _icosahedron
 from minesweeper.boards.tilings import (
     _torus_template,
     _triangle_vertices,
@@ -687,38 +687,6 @@ def _projective(mode: str, sphere_cells: dict, positions: dict, flip,
         polygons[face] = _orient_outward(polygon, centroid)
     return Board3D(mode, polygons, adjacency, mine_count, radius=1.0,
                    faces=faces)
-
-
-def _cubed_sphere(n: int) -> tuple[dict, dict]:
-    """The cube of ``n x n`` faces a side, drawn round: ``sphere_cells``
-    maps each of its ``6 * n**2`` squares (keyed by its sorted corners) to
-    its corner keys, which are the cube's integer lattice points on
-    ``[-n, n]**3`` (as ``solids.cube_board``), so the antipode is plain
-    negation (`_negate`). ``positions`` places each by the *equiangular*
-    cube map (every face coordinate through ``tan(pi/4 * c)``, then onto
-    the unit sphere), which keeps the squares near the cube's corners from
-    shrinking the way a straight projection does. Shared by the projective
-    plane and Boy's surface, which are the same board drawn two ways."""
-    sphere_cells: dict = {}
-    for axis in range(3):
-        u_axis, v_axis = (a for a in range(3) if a != axis)
-        for sign in (-1, 1):
-            for i in range(n):
-                for j in range(n):
-                    keys = []
-                    for du, dv in ((0, 0), (1, 0), (1, 1), (0, 1)):
-                        coord = [0, 0, 0]
-                        coord[axis] = sign * n
-                        coord[u_axis] = -n + 2 * (i + du)
-                        coord[v_axis] = -n + 2 * (j + dv)
-                        keys.append(tuple(coord))
-                    sphere_cells[tuple(sorted(keys))] = keys
-
-    def place(key) -> Vec3:
-        return _normalize(tuple(math.tan(math.pi / 4 * c / n) for c in key))
-
-    positions = {k: place(k) for keys in sphere_cells.values() for k in keys}
-    return sphere_cells, positions
 
 
 def _negate(key):

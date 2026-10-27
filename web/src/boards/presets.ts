@@ -58,6 +58,7 @@ import {
   dodecahedronBoard,
   icosahedronBoard,
   octahedronBoard,
+  sphereSquareBoard,
   sphereTriangleBoard,
   steppedBipyramidBoard,
   steppedPyramidBoard,
@@ -122,6 +123,7 @@ const BUILDERS: Record<string, Builder> = {
   square_diamond_board: squareDiamondBoard,
   c180_board: c180Board,
   gp21_board: gp21Board,
+  sphere_square_board: sphereSquareBoard,
   sphere_triangle_board: sphereTriangleBoard,
   // the Archimedean solids cut into boards (boards/archimedean.ts), duals of
   // their Catalan solids; (mineCount, frequency) like those. The three

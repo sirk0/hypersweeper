@@ -168,6 +168,7 @@ test.describe("M2 solids", () => {
     "gp21",
     "c180",
     "spheretri",
+    "spheresquare",
     "cube",
     "cubeframe",
     "tetrahedron",

@@ -51,7 +51,7 @@ import {
   type ClipPiece,
   type Tri,
 } from "./clipSolid";
-import { geodesic, icosahedron } from "./solids";
+import { cubedSphere, geodesic, icosahedron } from "./solids";
 import { type ArchTemplate, pruneTo, torusTemplate, wrapTemplate } from "./tilings";
 
 const mod = (a: number, b: number): number => ((a % b) + b) % b;
@@ -1613,48 +1613,6 @@ function projective(
       return (measured ??= antipodalSymmetries(sphereCells, polygons, faces, adjacency));
     },
   };
-}
-
-/** The cube of `n x n` faces a side, drawn round: `sphereCells` maps each of
- * its `6 * n**2` squares to its corner keys, which are the cube's integer
- * lattice points on `[-n, n]**3` (as solids.ts `cubeBoard`), so the antipode is
- * plain negation (`negateKey`). `positions` places each by the *equiangular*
- * cube map (every coordinate through `tan(π/4 · c)`, then onto the unit
- * sphere), which keeps the squares near the cube's corners from shrinking the
- * way a straight projection does. Shared by the projective plane and Boy's
- * surface, which are the same board drawn two ways. */
-function cubedSphere(n: number): { sphereCells: Cells; positions: Positions } {
-  const sphereCells: Cells = new Map();
-  const positions: Positions = new Map();
-  for (let axis = 0; axis < 3; axis++) {
-    const [uAxis, vAxis] = [0, 1, 2].filter((a) => a !== axis) as [number, number];
-    for (const sign of [-1, 1]) {
-      for (let i = 0; i < n; i++) {
-        for (let j = 0; j < n; j++) {
-          const keys: string[] = [];
-          for (const [du, dv] of [
-            [0, 0],
-            [1, 0],
-            [1, 1],
-            [0, 1],
-          ] as const) {
-            const coord: Vec3 = [0, 0, 0];
-            coord[axis] = sign * n;
-            coord[uAxis] = -n + 2 * (i + du);
-            coord[vAxis] = -n + 2 * (j + dv);
-            const key = cid(...coord);
-            keys.push(key);
-            if (!positions.has(key)) {
-              const square = coord.map((c) => Math.tan(((Math.PI / 4) * c) / n)) as Vec3;
-              positions.set(key, normalize(square));
-            }
-          }
-          sphereCells.set([...keys].sort().join(";"), keys);
-        }
-      }
-    }
-  }
-  return { sphereCells, positions };
 }
 
 const negateKey = (key: string): string =>

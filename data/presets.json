@@ -2602,6 +2602,23 @@
         ]
       }
     },
+    "spheresquare": {
+      "builder": "sphere_square_board",
+      "args": {
+        "easy": [
+          20,
+          4
+        ],
+        "medium": [
+          67,
+          7
+        ],
+        "hard": [
+          128,
+          9
+        ]
+      }
+    },
     "spheretri": {
       "builder": "sphere_triangle_board",
       "args": {

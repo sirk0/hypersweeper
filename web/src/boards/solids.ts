@@ -455,6 +455,58 @@ export function sphereTriangleBoard(mineCount: number, frequency = 2): Board3D {
   return bentRegular(convexBoard3d("spheretri", cells, positions, mineCount));
 }
 
+/** The cube of `n x n` faces a side, drawn round: `sphereCells` maps each of
+ * its `6 * n**2` squares to its corner keys, which are the cube's integer
+ * lattice points on `[-n, n]**3` (as `cubeBoard`), so the antipode is plain
+ * negation (surfaces.ts `negateKey`). `positions` places each by the
+ * *equiangular* cube map (every coordinate through `tan(π/4 · c)`, then onto
+ * the unit sphere), which keeps the squares near the cube's corners from
+ * shrinking the way a straight projection does. Shared by the spherical cube
+ * (`sphereSquareBoard`) and by its antipodal quotient, the projective plane,
+ * and Boy's surface, which draw that quotient two ways. */
+export function cubedSphere(n: number): { sphereCells: Cells; positions: Positions } {
+  const sphereCells: Cells = new Map();
+  const positions: Positions = new Map();
+  for (let axis = 0; axis < 3; axis++) {
+    const [uAxis, vAxis] = [0, 1, 2].filter((a) => a !== axis) as [number, number];
+    for (const sign of [-1, 1]) {
+      for (let i = 0; i < n; i++) {
+        for (let j = 0; j < n; j++) {
+          const keys: string[] = [];
+          for (const [du, dv] of [
+            [0, 0],
+            [1, 0],
+            [1, 1],
+            [0, 1],
+          ] as const) {
+            const coord: Vec3 = [0, 0, 0];
+            coord[axis] = sign * n;
+            coord[uAxis] = -n + 2 * (i + du);
+            coord[vAxis] = -n + 2 * (j + dv);
+            const key = cid(...coord);
+            keys.push(key);
+            if (!positions.has(key)) {
+              const square = coord.map((c) => Math.tan(((Math.PI / 4) * c) / n)) as Vec3;
+              positions.set(key, normalize(square));
+            }
+          }
+          sphereCells.set([...keys].sort().join(";"), keys);
+        }
+      }
+    }
+  }
+  return { sphereCells, positions };
+}
+
+/** A sphere tiled with squares: the spherical cube, `6 * n**2` square cells —
+ * `cubeBoard`'s grid on the same lattice keys, put on the sphere by the
+ * equiangular cube map (`cubedSphere`), so the same graph drawn round. `n`, the squares
+ * along a cube edge, is the board's size knob. */
+export function sphereSquareBoard(mineCount: number, n = 4): Board3D {
+  const { sphereCells, positions } = cubedSphere(n);
+  return bentRegular(convexBoard3d("spheresquare", sphereCells, positions, mineCount));
+}
+
 /** One of a flag's three mirrors, named by the corner opposite it. */
 export type Mirror = "v" | "e" | "f";
 

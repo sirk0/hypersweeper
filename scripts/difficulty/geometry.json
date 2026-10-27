@@ -14732,5 +14732,43 @@
         "reason": "the cell count is the solid"
       }
     }
+  },
+  "spheresquare": {
+    "builder": "sphere_square_board",
+    "args": {
+      "easy": {
+        "args": [
+          18,
+          4
+        ],
+        "cells": 96,
+        "score": 10.5097,
+        "distortionMean": 1.0231,
+        "distortionP90": 1.0533,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          66,
+          7
+        ],
+        "cells": 294,
+        "score": 0.1384,
+        "distortionMean": 1.0231,
+        "distortionP90": 1.0453,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          130,
+          9
+        ],
+        "cells": 486,
+        "score": 0.0124,
+        "distortionMean": 1.0231,
+        "distortionP90": 1.0605,
+        "indistinguishable": 0
+      }
+    }
   }
 }

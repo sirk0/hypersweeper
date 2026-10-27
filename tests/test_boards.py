@@ -91,6 +91,7 @@ from minesweeper.boards import (
     solid_cube_board,
     spectre_board,
     sphere_board,
+    sphere_square_board,
     sphere_triangle_board,
     sphinx_board,
     square_board,
@@ -437,6 +438,30 @@ class TestCellCounts:
         assert all(len(p) == 3 for p in board.polygons.values())
         # the same subdivision, so the same cells and the same neighbours
         assert board.adjacency == flat.adjacency
+        assert all(abs(math.dist(p, (0, 0, 0)) - 1) < 1e-9
+                   for polygon in board.polygons.values() for p in polygon)
+
+    @pytest.mark.parametrize("n", range(1, 8))
+    def test_spherical_cube_is_the_cube_drawn_round(self, n):
+        board = sphere_square_board(10, n)
+        flat = cube_board(n, 10)
+        assert len(board.adjacency) == 6 * n**2
+        assert all(len(p) == 4 for p in board.polygons.values())
+        # the same lattice keys, so the same cells and the same neighbours:
+        # name the cube's cells as the sphere does, by their sorted corners
+        # (its corners are drawn at key / n, so key is exact back)
+        name = {
+            cell: tuple(sorted(tuple(round(c * n) for c in p) for p in polygon))
+            for cell, polygon in flat.polygons.items()
+        }
+        assert {name[c]: {name[d] for d in ns} for c, ns in flat.adjacency.items()} == {
+            c: set(ns) for c, ns in board.adjacency.items()
+        }
+        assert _euler_characteristic(board) == 2
+        # the cube's eight 3-valent corners: 4 * chi, each with three cells
+        # of seven neighbours round it
+        degrees = Counter(len(ns) for ns in board.adjacency.values())
+        assert (degrees[7], degrees[8]) == ((24, 6 * n**2 - 24) if n > 1 else (0, 0))
         assert all(abs(math.dist(p, (0, 0, 0)) - 1) < 1e-9
                    for polygon in board.polygons.values() for p in polygon)
 
@@ -3464,6 +3489,7 @@ class TestNeighborCounts:
             c180_board(10),
             gp21_board(10),
             sphere_triangle_board(10),
+            sphere_square_board(10),
             cube_board(4, 12),
             tetrahedron_board(8, 4),
             torus_board(12, 6, 9),
@@ -3473,7 +3499,8 @@ class TestNeighborCounts:
             for cell, polygon in board.polygons.items():
                 normal = newell_normal(polygon)
                 centroid = tuple(sum(c) / len(polygon) for c in zip(*polygon))
-                if board.mode in ("sphere", "c180", "gp21", "spheretri", "cube", "tetrahedron"):
+                if board.mode in ("sphere", "c180", "gp21", "spheretri", "spheresquare", "cube",
+                                  "tetrahedron"):
                     outward = centroid
                 else:
                     import math

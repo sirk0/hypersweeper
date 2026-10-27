@@ -307,6 +307,50 @@ def sphere_triangle_board(mine_count: int, frequency: int = 2) -> Board3D:
     return _convex_board3d("spheretri", cells, positions, mine_count)
 
 
+def _cubed_sphere(n: int) -> tuple[dict, dict]:
+    """The cube of ``n x n`` faces a side, drawn round: ``sphere_cells``
+    maps each of its ``6 * n**2`` squares (keyed by its sorted corners) to
+    its corner keys, which are the cube's integer lattice points on
+    ``[-n, n]**3`` (as `cube_board`), so the antipode is plain negation
+    (`surfaces._negate`). ``positions`` places each by the *equiangular*
+    cube map (every face coordinate through ``tan(pi/4 * c)``, then onto
+    the unit sphere), which keeps the squares near the cube's corners from
+    shrinking the way a straight projection does. Shared by the spherical
+    cube (`sphere_square_board`) and by its antipodal quotient, the
+    projective plane, and Boy's surface, which draw that quotient two
+    ways."""
+    sphere_cells: dict = {}
+    for axis in range(3):
+        u_axis, v_axis = (a for a in range(3) if a != axis)
+        for sign in (-1, 1):
+            for i in range(n):
+                for j in range(n):
+                    keys = []
+                    for du, dv in ((0, 0), (1, 0), (1, 1), (0, 1)):
+                        coord = [0, 0, 0]
+                        coord[axis] = sign * n
+                        coord[u_axis] = -n + 2 * (i + du)
+                        coord[v_axis] = -n + 2 * (j + dv)
+                        keys.append(tuple(coord))
+                    sphere_cells[tuple(sorted(keys))] = keys
+
+    def place(key) -> Vec3:
+        return _normalize(tuple(math.tan(math.pi / 4 * c / n) for c in key))
+
+    positions = {k: place(k) for keys in sphere_cells.values() for k in keys}
+    return sphere_cells, positions
+
+
+def sphere_square_board(mine_count: int, n: int = 4) -> Board3D:
+    """A sphere tiled with squares: the spherical cube, ``6 * n**2`` square
+    cells -- `cube_board`'s grid on the same lattice keys, put on the sphere
+    by the equiangular cube map (`_cubed_sphere`), so the same graph drawn
+    round. ``n``, the squares along a cube edge, is the board's size
+    knob."""
+    cells, positions = _cubed_sphere(n)
+    return _convex_board3d("spheresquare", cells, positions, mine_count)
+
+
 def _mirror_normals(v_dir: Vec3, e_dir: Vec3, f_dir: Vec3) -> dict[str, Vec3]:
     """The three mirror planes of a flag's Schwarz triangle, as inward unit
     normals. The mirror *opposite* a corner is the plane through the other two.
