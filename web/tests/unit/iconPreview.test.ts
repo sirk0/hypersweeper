@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { menuIcon, previewIcon, setIconPalette } from "../../src/ui/icons";
+import {
+  cachedLevelPreview,
+  levelPreview,
+  menuIcon,
+  previewIcon,
+  setIconPalette,
+} from "../../src/ui/icons";
 import { FRACTAL_MODES, MENU, SHAPED_MODES, SOLID_MODES } from "../../src/boards/catalog";
 import type { Board } from "../../src/boards/core";
 import { presetBoard } from "../../src/boards/presets";
@@ -153,6 +159,32 @@ describe("card previews", () => {
     }
     const [, , w, h] = box(previewIcon("doubletorus").svg) as number[];
     expect(w! / h!).toBeGreaterThan(1.5);
+  });
+
+  it("draws a level preview as the dealt board, at its difficulty", () => {
+    // Every cell of the level, flat or bent onto its surface, so the card
+    // changes with the difficulty the way the level does.
+    for (const [mode, difficulty] of [
+      ["square", "easy"],
+      ["square", "hard"],
+      ["penrose", "medium"],
+      ["hyperbolic54", "easy"],
+    ] as const) {
+      const preview = levelPreview(mode, difficulty);
+      expect(preview.tiled, mode).toBe(false);
+      const board = presetBoard(mode, difficulty) as Board;
+      expect(paths(preview.svg), `${mode} ${difficulty}`).toBe(board.polygons.size);
+    }
+    expect(levelPreview("square", "hard").svg).not.toBe(levelPreview("square", "easy").svg);
+    // A wrapped surface shows the near side of the real immersion: more
+    // cells at Hard, and fewer drawn than the board has.
+    const easy = paths(levelPreview("torus", "easy").svg);
+    const hard = paths(levelPreview("torus", "hard").svg);
+    expect(hard).toBeGreaterThan(easy);
+    expect(hard).toBeLessThan(presetBoard("torus", "hard").polygons.size);
+    // ...and a drawn level is cached, under its difficulty.
+    expect(cachedLevelPreview("square", "hard")).toBe(levelPreview("square", "hard"));
+    expect(cachedLevelPreview("square", "medium")).toBeUndefined();
   });
 
   it("gives the home page's rows their own drawings", () => {

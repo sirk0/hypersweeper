@@ -1442,7 +1442,7 @@ body {
      drawing (icons.ts `figureSvg`), so this is the gap to the card's edge. */
   .menu-board-card-preview {
     height: 168px;
-    padding: 12px;
+    padding: 6px;
     background: var(--bg);
     display: flex;
     align-items: center;

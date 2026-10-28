@@ -487,6 +487,22 @@ test.describe("the desktop menu breakpoint", () => {
     await expect(page.locator(".menu-difficulty .difficulty-btn.active")).toBeVisible();
   });
 
+  test("a board's card shows its level, and follows the difficulty", async ({ page }) => {
+    // The card is the board it opens — every cell of the dealt level, one
+    // path each — drawn in the background, and redrawn when the pills move:
+    // Squares is 9x9 on Easy and 16x30 on Hard (data/presets.json).
+    await page.goto("/");
+    await expect(page.locator("body[data-ready]")).toBeVisible();
+    await page.locator('.menu-sidebar .menu-entry[data-group="flat"]').click();
+    const cells = page.locator('.menu-board-card[data-mode="square"] .menu-board-card-preview path');
+    await page.locator('.difficulty-btn[data-key="easy"]').click();
+    await expect(cells).toHaveCount(81);
+    await page.locator('.difficulty-btn[data-key="hard"]').click();
+    await expect(cells).toHaveCount(480);
+    // A family's card is not a level: it keeps its wallpaper.
+    await expect(page.locator(".menu-board-card-preview.is-tiled").first()).toBeVisible();
+  });
+
   test("a pane page keeps its header while the cards scroll", async ({ page }) => {
     // Short enough that the Flat page's card grid overflows several rows.
     await page.setViewportSize({ width: 1000, height: 560 });

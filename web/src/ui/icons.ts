@@ -91,10 +91,10 @@ import {
   trefoilBoard,
 } from "../boards/surfaces";
 import { solidCubeBoard } from "../boards/volume";
-import { FRACTAL_MODES, SHAPED_MODES } from "../boards/catalog";
+import { FRACTAL_MODES, SHAPED_MODES, surfaceOf } from "../boards/catalog";
 import { presetBoard } from "../boards/presets";
 import { DOMAINS } from "./backgroundPattern";
-import { cid, newellNormal, type Board, type Board3D, type Vec3 } from "../boards/core";
+import { cid, isBoard3D, newellNormal, type Board, type Board3D, type Vec3 } from "../boards/core";
 
 const D = 100;
 const C = D / 2;
@@ -144,6 +144,7 @@ export function setIconPalette(next: IconPalette | undefined): void {
   iconPalette = next ?? {};
   cache.clear();
   previewCache.clear();
+  levelCache.clear();
 }
 
 const BASE: IconVariant = "base";
@@ -938,9 +939,13 @@ function solidFaces(
   key: string,
   kind: "round" | "blocky" | "surface" = "round",
   lit = false,
+  source?: Board3D,
 ): string[] {
-  const board = solidBoard(key);
-  const surface = kind === "surface" ? SURFACE_ICONS[key]! : null;
+  // `key` names the view (and, without `source`, the board); a level preview
+  // hands in the real board and its surface's key for the view.
+  const board = source ?? solidBoard(key);
+  const surface =
+    kind === "surface" ? { twoSided: source ? source.twoSided : SURFACE_ICONS[key]!.twoSided } : null;
   const [rxDeg, ryDeg, rzDeg = 0] = (lit ? PREVIEW_VIEW[key] : undefined) ??
     SOLID_VIEW[key] ?? [-18, 15];
   const rad = Math.PI / 180;
@@ -2425,27 +2430,7 @@ function patch(key: string): Preview | null {
   }));
   const mids = cells.map((c) => centroid(c.pts));
 
-  if (source.whole) {
-    const xs = cells.flatMap((c) => c.pts.map((p) => p[0]));
-    const ys = cells.flatMap((c) => c.pts.map((p) => p[1]));
-    const [minX, maxX] = [Math.min(...xs), Math.max(...xs)];
-    const [minY, maxY] = [Math.min(...ys), Math.max(...ys)];
-    const scale = (D * 0.94) / Math.max(maxX - minX, maxY - minY);
-    const place = (p: P): P => [
-      C + (p[0] - (minX + maxX) / 2) * scale,
-      C + (p[1] - (minY + maxY) / 2) * scale,
-    ];
-    return figureSvg(
-      tileSvg(
-        cells.map((c, i) => ({
-          kind: "cell",
-          pts: c.pts.map(place),
-          centre: place(mids[i]!),
-          tone: c.tone,
-        })),
-      ),
-    );
-  }
+  if (source.whole) return wholeSvg(cells, mids);
 
   const scale = Math.sqrt(
     (PREVIEW_W * PREVIEW_H) /
@@ -2466,6 +2451,85 @@ function patch(key: string): Preview | null {
     tiles.push({ kind: "cell", pts, centre: centroid(pts), tone: cell.tone });
   }
   return tiles.length > 0 ? tiledSvg(tileSvg(tiles)) : null;
+}
+
+/** A flat board's every cell, fitted whole into the figure box. */
+function wholeSvg(cells: { pts: P[]; tone: ShapeTone }[], mids: P[]): Preview {
+  const xs = cells.flatMap((c) => c.pts.map((p) => p[0]));
+  const ys = cells.flatMap((c) => c.pts.map((p) => p[1]));
+  const [minX, maxX] = [Math.min(...xs), Math.max(...xs)];
+  const [minY, maxY] = [Math.min(...ys), Math.max(...ys)];
+  const scale = (D * 0.94) / Math.max(maxX - minX, maxY - minY);
+  const place = (p: P): P => [
+    C + (p[0] - (minX + maxX) / 2) * scale,
+    C + (p[1] - (minY + maxY) / 2) * scale,
+  ];
+  return figureSvg(
+    tileSvg(
+      cells.map((c, i) => ({
+        kind: "cell",
+        pts: c.pts.map(place),
+        centre: place(mids[i]!),
+        tone: c.tone,
+      })),
+    ),
+  );
+}
+
+// -- level previews ----------------------------------------------------------
+//
+// A board's own card shows the board it opens, at the difficulty the pills
+// have selected: the whole level, every cell, the way the game deals it — a
+// flat board as its outline, a solid or a wrapped surface as the real thing
+// lit. So the card changes with the difficulty, as the level does. The
+// `previewIcon` drawings stay for what is not a level (a family, a random
+// pool) and as the placeholder a card shows while its board is built, which
+// the menu does in the background (ui/menu.ts `paintLevel`).
+
+const levelCache = new Map<string, Preview>();
+
+/** How many level previews are kept. Each is a string of SVG, not a board, so
+ * a few hundred — every board at one difficulty — cost little. */
+const LEVEL_KEEP = 600;
+
+/** The card for `mode` at `difficulty`, if it has already been drawn. */
+export function cachedLevelPreview(mode: string, difficulty: string): Preview | undefined {
+  return levelCache.get(`${mode}|${difficulty}`);
+}
+
+/** The card for `mode` at `difficulty`: its real board, built fresh
+ * (`presetBoard`, which leaves the game's restart cache alone) and drawn whole. */
+export function levelPreview(mode: string, difficulty: string): Preview {
+  const key = `${mode}|${difficulty}`;
+  let preview = levelCache.get(key);
+  if (preview === undefined) {
+    preview = muted(() => buildLevel(mode, difficulty));
+    levelCache.set(key, preview);
+    if (levelCache.size > LEVEL_KEEP) levelCache.delete(levelCache.keys().next().value!);
+  }
+  return preview;
+}
+
+function buildLevel(mode: string, difficulty: string): Preview {
+  const board = presetBoard(mode, difficulty);
+  if (isBoard3D(board)) {
+    // Seen as its row icon is, from the surface's view for a wrapped tiling
+    // (a torus of triangles turns like the torus), and painted the same way.
+    const surface = surfaceOf(mode);
+    const view = surface?.is3d ? surface.key : mode;
+    const kind = SPHERES.includes(view) ? "round" : surface?.is3d ? "surface" : "blocky";
+    return figureSvg(solidFaces(view, kind, true, board));
+  }
+  // Tones measured across the whole board, as the played board measures them.
+  const tones = classifyShapes(board.polygons, board.cornerMask, board.curved);
+  const cells = [...board.polygons].map(([id, poly]) => ({
+    pts: poly as P[],
+    tone: tones.get(id)!,
+  }));
+  return wholeSvg(
+    cells,
+    cells.map((c) => centroid(c.pts)),
+  );
 }
 
 /** How far a preview's tiles are pulled in from their shared edges, as a

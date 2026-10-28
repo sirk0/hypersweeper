@@ -63,6 +63,17 @@ board cards under a **pane header** — the page's title, its breadcrumb hint an
 the difficulty pills. Below that width it is the phone column, with the back
 stack in place of the sidebar.
 
+A board's card shows **the level it opens**: the preset board at the selected
+difficulty, every cell, drawn whole — a flat board as its outline, a solid or
+a wrapped surface as the real thing lit (`levelPreview` in `ui/icons.ts`). So
+Squares is a 9×9 grid on Easy and 16×30 on Hard, and the card is redrawn when
+the pills move. Building a board takes up to a second and a half (a closed
+surface at Hard), so `Menu.paintLevel` draws a page's cards in the
+background, one board per task, with the card's `previewIcon` (or the level
+at the old difficulty) standing in meanwhile; the drawings are cached per
+mode and difficulty, and nothing is built while a game is on screen. Cards
+that are not a level — a family, a random pool — keep their `previewIcon`.
+
 A board row (a card on the desktop) can carry a second, smaller line under its
 label. A graded board's fairness hint takes it; otherwise a 2-uniform tiling
 puts its vertex-type symbol there (`[3⁶; 3⁴.6]₁` under *Studded triangular*),
