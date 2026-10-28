@@ -472,8 +472,8 @@ three axes that have nothing to say to each other:
   **Sand** (the shape colours at about a quarter chroma, Space Grotesk digits,
   on a warm page). The shipped default is Sand.
 - a **colour scheme** — which half of the theme's palette pair the chrome paints
-  with. **Light** (the default), **Dark**, **Auto** (the device's own
-  `prefers-color-scheme`).
+  with. **Auto** (the default — the device's own `prefers-color-scheme`),
+  **Light**, **Dark**.
 
 The first two were one setting of five entries until v5, and that list was the
 two axes tangled: Realistic and Flat were one palette at two cuts, Sand and Flat
@@ -504,8 +504,8 @@ matters:
 properties onto `document.documentElement` — the `:root` block in `styles.css` is
 only the *boot* default (Sand on light — including its `--ui-font`, since that
 theme names a face of its own) and must stay in step with it, as must the
-`prefers-color-scheme: dark` block beside it, which now covers the player who
-has *chosen* auto or dark rather than the default. Things worth knowing:
+`prefers-color-scheme: dark` block beside it, which covers every player on a
+dark device who has not chosen light. Things worth knowing:
 
 - **`auto` is resolved at paint time, and it is live.** `activeScheme` reads
   `matchMedia("(prefers-color-scheme: dark)")` exactly as `animationsEnabled`
@@ -559,8 +559,12 @@ has *chosen* auto or dark rather than the default. Things worth knowing:
   reintroduce an opaque clear colour — it would cover the CSS background.
 - Any new chrome colour must be a `var(--…)` from `themeVars`. A hard-coded dark
   stroke is the classic dark-theme bug (the header icons in `hud.ts` stroke in
-  `currentColor` for this reason; the flag keeps fixed colours because it is the
-  game's own glyph, not a control).
+  `currentColor` for this reason; the flag keeps its own colours because it is
+  the game's own glyph, not a control — all but the mast, `--flag-mast`, whose
+  near-black vanished on the dark scheme's buttons and which turns to the
+  palette's `--text` there. It is not written by `themeVars`, so the dark rules
+  in `styles.css` decide it: `[data-scheme="dark"]`, and the boot media query
+  guarded by `:not([data-scheme="light"])`).
 - **The reset button's face is the other glyph, and it is yellow.** Same
   argument as the flag's: a minesweeper's face is yellow the way its flag is
   red, so it does not follow the chrome. It is still a `var(--…)` —
@@ -762,10 +766,11 @@ v5 splits it again along the other seam: `theme` keeps the palette and the board
 colours, and the new `shape` takes the cut (`V4_THEMES`, one `[theme, shape]`
 pair per v4 key). Here the pair **is** carried over, because every v4 look is
 still reachable and nobody's board should change under them. What v5 does *not*
-touch is a stored `scheme`, though the default has moved to `light`: every v4
+touch is a stored `scheme`, though the default had moved to `light`: every v4
 record carries one, so there is no telling "chose auto" from "never chose", and
 switching a player on a dark device to a light page is the worse mistake. The new
-default reaches new records only.
+default reached new records only, and the same goes for its move back to `auto`:
+a stored `light` may have been chosen, so it stays.
 
 Two things about the run of branches. They run in **series**, not as
 alternatives: a v1 record passes through all of them, so each may only speak the

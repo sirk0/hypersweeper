@@ -97,6 +97,11 @@
   --smiley: #f0e342;
   --smiley-rim: #b5ac2f;
   --smiley-ink: #2b2f3a;
+  /* The header flag's mast and foot (`ICONS.flag` in ui/hud.ts): the in-game
+     glyph's near-black (glyphAtlas.ts `FLAG_COLORS.mast`) on a light page, the
+     palette's own text colour on a dark one — see the dark rules below. Not
+     written by `themeVars`, so these stylesheet rules are what decide it. */
+  --flag-mast: #2b2f3a;
   --radius: 20px;
   --shadow: 0 2px 10px rgba(64, 35, 16, 0.16);
   /* How far a card's `--shadow` paints outside its box, for the widest any
@@ -193,8 +198,8 @@
 }
 
 /* The boot frame for a device that prefers dark. The default colour scheme is
-   `light` now, so this covers the player who has *chosen* `auto` (or dark) on a
-   dark device: until main.ts has read localStorage and called `applyTheme`, the
+   `auto`, so this covers every player on a dark device who has not chosen
+   light: until main.ts has read localStorage and called `applyTheme`, the
    block above is what paints, which would be one bright flash on every launch.
 
    This can never fight an explicit choice: `applyTheme` writes these as *inline*
@@ -224,6 +229,17 @@
     --counter-bg: #000000;
     --shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
   }
+
+  /* Guarded, unlike the block above: `--flag-mast` is never written inline, so
+     nothing else would stop this beating a player's explicit light scheme. */
+  :root:not([data-scheme="light"]) {
+    --flag-mast: var(--text);
+  }
+}
+
+/* The dark scheme chosen on a light device: `applyTheme` sets `data-scheme`. */
+:root[data-scheme="dark"] {
+  --flag-mast: var(--text);
 }
 
 @supports (height: 100dvh) {
@@ -627,6 +643,10 @@ body {
   align-items: center;
   justify-content: center;
   position: relative;
+}
+
+.hud-icon-btn svg .flag-mast {
+  fill: var(--flag-mast);
 }
 
 .hud-icon-btn svg {

@@ -165,9 +165,10 @@ test.describe("settings", () => {
     await page.locator('.menu-header-btn[data-action="settings"]').click();
     const row = page.locator('.menu-entry[data-settings-group="scheme"]');
     await expect(row).toContainText("Colour scheme");
-    // Light by default. It reports the *choice*, so a player who picks Auto can
-    // still tell "auto" from "not applied" (that row reads "Auto · light").
-    await expect(row).toContainText("Light");
+    // Auto by default. It reports the *choice* and what it resolved to, so a
+    // player can tell "auto" from "not applied" — on this light device, "Auto ·
+    // light".
+    await expect(row).toContainText("Auto · light");
     await expect(page.locator(".menu-entry[data-scheme]")).toHaveCount(0);
 
     await row.click();
@@ -175,7 +176,7 @@ test.describe("settings", () => {
     await expect(page.locator('.menu-entry[data-action="back"]')).toContainText(
       "Colour scheme",
     );
-    await expect(page.locator('.menu-entry[data-scheme="light"]')).toHaveAttribute(
+    await expect(page.locator('.menu-entry[data-scheme="auto"]')).toHaveAttribute(
       "aria-pressed",
       "true",
     );
@@ -249,14 +250,9 @@ test.describe("settings", () => {
     const bg = (): ReturnType<typeof expect.poll> =>
       expect.poll(() => cssVar(page, "--bg"));
 
-    // The default is Light, so the device is not asked until Auto is picked.
+    // The default is Auto, so a dark device gets the dark page with nothing
+    // picked...
     await page.emulateMedia({ colorScheme: "dark" });
-    await page.waitForTimeout(150);
-    expect(await cssVar(page, "--bg")).toBe("#f5ead8");
-
-    await page.locator('.menu-header-btn[data-action="settings"]').click();
-    await page.locator('.menu-entry[data-settings-group="scheme"]').click();
-    await page.locator('.menu-entry[data-scheme="auto"]').click();
     await bg().toBe("#191712");
     // ...and it repaints when the device changes its mind, with no reload.
     await page.emulateMedia({ colorScheme: "light" });
