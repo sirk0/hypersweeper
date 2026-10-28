@@ -2250,14 +2250,64 @@ function tiledSvg(parts: string[]): Preview {
   };
 }
 
-/** A drawing that sits in the card with air around it. */
+/** A drawing that sits in the card with air around it — the card's padding,
+ * and nothing more. The parts are drawn for the row icon's square box with a
+ * margin of their own, and a square box `meet`-fitted into a card half again
+ * as wide as it is tall leaves a wide board (a triangle, a Möbius band, a row
+ * of fractal pentagons) at the height of the card and the air on every side.
+ * So the viewBox is the drawing's own bounding box: the card's frame then
+ * fits the board, whichever of its two sides is the one that limits it. */
 function figureSvg(parts: string[]): Preview {
+  const [x, y, w, h] = figureBox(parts) ?? [0, 0, D, D];
   return {
     svg:
-      `<svg viewBox="0 0 ${D} ${D}" aria-hidden="true" focusable="false">` +
+      `<svg viewBox="${n(x)} ${n(y)} ${n(w)} ${n(h)}" aria-hidden="true" focusable="false">` +
       `${parts.join("")}</svg>`,
     tiled: false,
   };
+}
+
+/** Room left round a figure's bounding box for the outlines drawn on its
+ * edge, in icon units — wider than the widest stroke `shape` gives a tile. */
+const FIGURE_MARGIN = 1.5;
+
+/** The bounding box of a figure's paths and circles, as `[x, y, w, h]`, or
+ * `null` for a drawing with anything this does not read — a relative or arc
+ * path command, a rectangle, text — which keeps the whole icon box. Every
+ * number in an absolute M/L/Q path is a coordinate pair, control points
+ * included; a control point lies on the hull of its curve, so the box can
+ * only come out a touch generous, never short. */
+function figureBox(parts: string[]): [number, number, number, number] | null {
+  let [minX, minY, maxX, maxY] = [Infinity, Infinity, -Infinity, -Infinity];
+  const take = (x: number, y: number, r = 0): void => {
+    minX = Math.min(minX, x - r);
+    maxX = Math.max(maxX, x + r);
+    minY = Math.min(minY, y - r);
+    maxY = Math.max(maxY, y + r);
+  };
+  for (const part of parts) {
+    for (const [, tag, attrs = ""] of part.matchAll(/<(\w+)\b([^>]*)>/g)) {
+      if (tag === "path") {
+        const d = /\sd="([^"]*)"/.exec(attrs)?.[1];
+        if (d === undefined || /[^MLQZ\d\s.,-]/.test(d)) return null;
+        const nums = (d.match(/-?\d*\.?\d+/g) ?? []).map(Number);
+        for (let i = 0; i + 1 < nums.length; i += 2) take(nums[i]!, nums[i + 1]!);
+      } else if (tag === "circle") {
+        const num = (name: string): number =>
+          Number(new RegExp(`\\s${name}="([^"]*)"`).exec(attrs)?.[1]);
+        take(num("cx"), num("cy"), num("r"));
+      } else {
+        return null;
+      }
+    }
+  }
+  if (!(maxX > minX && maxY > minY)) return null;
+  return [
+    minX - FIGURE_MARGIN,
+    minY - FIGURE_MARGIN,
+    maxX - minX + 2 * FIGURE_MARGIN,
+    maxY - minY + 2 * FIGURE_MARGIN,
+  ];
 }
 
 /** A periodic tiling as a lattice: one domain's tiles, and the translations

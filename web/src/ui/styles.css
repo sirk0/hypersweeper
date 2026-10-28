@@ -1438,9 +1438,11 @@ body {
     outline-offset: 2px;
   }
 
+  /* The padding is all the air a figure gets: its viewBox is cropped to the
+     drawing (icons.ts `figureSvg`), so this is the gap to the card's edge. */
   .menu-board-card-preview {
     height: 168px;
-    padding: 18px;
+    padding: 12px;
     background: var(--bg);
     display: flex;
     align-items: center;

@@ -127,6 +127,34 @@ describe("card previews", () => {
     }
   });
 
+  it("crops a figure card to the drawing, so it fills the card", () => {
+    // A figure is drawn in the row icon's square box; shown in that box, a
+    // wide board sat at the card's height with air either side. Its viewBox
+    // is the drawing's own bounds instead — wide for a wide board — and
+    // still holds every point drawn.
+    const box = (svg: string): number[] =>
+      / viewBox="([^"]*)"/.exec(svg)![1]!.split(" ").map(Number);
+    for (const key of ["doubletorus", "torus", "triangle", "steppedbipyramid", "hyperbolic73"]) {
+      const { svg, tiled } = previewIcon(key);
+      expect(tiled, key).toBe(false);
+      const [x, y, w, h] = box(svg) as [number, number, number, number];
+      const coords = [...svg.matchAll(/ d="([^"]*)"/g)].flatMap(
+        (m) => (m[1]!.match(/-?\d*\.?\d+/g) ?? []).map(Number),
+      );
+      const xs = coords.filter((_, i) => i % 2 === 0);
+      const ys = coords.filter((_, i) => i % 2 === 1);
+      expect(Math.min(...xs), key).toBeGreaterThanOrEqual(x);
+      expect(Math.max(...xs), key).toBeLessThanOrEqual(x + w);
+      expect(Math.min(...ys), key).toBeGreaterThanOrEqual(y);
+      expect(Math.max(...ys), key).toBeLessThanOrEqual(y + h);
+      // tight: no more than the outline margin to spare on any side
+      expect(Math.min(...xs) - x, key).toBeLessThan(2);
+      expect(Math.min(...ys) - y, key).toBeLessThan(2);
+    }
+    const [, , w, h] = box(previewIcon("doubletorus").svg) as number[];
+    expect(w! / h!).toBeGreaterThan(1.5);
+  });
+
   it("gives the home page's rows their own drawings", () => {
     // Classic and the Flat entry are corners of their grids, not one tile:
     // two by two squares, and hexagons three, two, three.
