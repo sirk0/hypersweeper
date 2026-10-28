@@ -21,12 +21,7 @@ import {
 } from "../render/shapePalette";
 import { ARCH_TILINGS, type ArchTemplate, archTemplate, templateCells } from "../boards/tilings";
 import {
-  carpetBoard,
-  chairBoard,
-  gosperBoard,
-  pentaflakeBoard,
   placePoint,
-  sphinxBoard,
   substitutionPlacements,
   SUBSTITUTIONS,
 } from "../boards/fractal";
@@ -96,6 +91,8 @@ import {
   trefoilBoard,
 } from "../boards/surfaces";
 import { solidCubeBoard } from "../boards/volume";
+import { FRACTAL_MODES, SHAPED_MODES } from "../boards/catalog";
+import { presetBoard } from "../boards/presets";
 import { DOMAINS } from "./backgroundPattern";
 import { cid, newellNormal, type Board, type Board3D, type Vec3 } from "../boards/core";
 
@@ -1110,7 +1107,9 @@ const ALIASES: Record<string, string> = {
   // names the pentagonal hexecontahedron, now one of the Catalan solids
   spheres: "c180",
   "3d": "c180", // a random board off the plane
-  custom: "regular", // the "Custom" home entry: one tile of each regular tiling
+  // the "Custom" home entry: the uniform tiling with three shapes in one
+  // figure, the triangle, square and hexagon the regular tilings are made of
+  custom: "rhombitrihex",
   random: "start", // the pygame menu's "Random" picker entry
 };
 
@@ -1367,16 +1366,26 @@ function draw(rawKey: string): string[] {
         `font-weight="700" font-size="${n(d * 0.92)}" fill="${plain("base")}">?</text>`,
     );
   } else if (key === "flat" || key === "square" || key === "torus_tile") {
-    // one square, the way the hexagon icon is one hexagon
-    const r = d * 0.36;
-    parts.push(
-      shape([
-        [C - r, C - r],
-        [C + r, C - r],
-        [C + r, C + r],
-        [C - r, C + r],
-      ]),
-    );
+    // a two-by-two corner of the grid, the way the hexagon icon is a 3-2-3
+    // cluster: one square alone reads as a button, four as a board. Sized so
+    // the outer corners stay 56 units out, inside the round crop the Game
+    // Center badges are cut to (scripts/make-gamecenter.mts `BADGE_PX`)
+    const s = d * 0.41;
+    for (const [i, j] of [
+      [0, 0],
+      [1, 0],
+      [0, 1],
+      [1, 1],
+    ] as const) {
+      const [x, y] = [C - s + i * s, C - s + j * s];
+      const sq: P[] = [
+        [x, y],
+        [x + s, y],
+        [x + s, y + s],
+        [x, y + s],
+      ];
+      parts.push(shape(seamed(sq)));
+    }
   } else if (key === "triangle") {
     parts.push(
       holed(
@@ -1393,10 +1402,53 @@ function draw(rawKey: string): string[] {
       ),
     );
   } else if (key === "trigrid") {
-    // one equilateral triangle, matching the one-square and one-hexagon icons
-    parts.push(shape(ngon(C, C + d * 0.04, d * 0.46, 3, -90), BASE, 4, cell));
+    // a square's worth of the triangular grid, matching the two-by-two squares
+    // and the 3-2-3 hexagons: three whole rows of five equilateral cells, 3
+    // sides wide by 2.6 tall, each row a trapezoid the next one turns over, so
+    // the sides step in and out rather than cutting a cell
+    const h = Math.sqrt(3) / 2;
+    const tiles: Tile[] = [];
+    for (let j = 0; j < 3; j++) {
+      const [top, bottom] = [j * h, (j + 1) * h];
+      for (let i = 0; i < 5; i++) {
+        const x = i / 2 - 1;
+        // up and down cells alternate along a row, and swap row to row
+        const pts: P[] =
+          (i + j) % 2 === 0
+            ? [
+                [x - 0.5, bottom],
+                [x + 0.5, bottom],
+                [x, top],
+              ]
+            : [
+                [x - 0.5, top],
+                [x + 0.5, top],
+                [x, bottom],
+              ];
+        tiles.push({ kind: "tri", pts, centre: centroid(pts) });
+      }
+    }
+    // twice the seam: a triangle's edges sit closer to its centre than a
+    // square's or a hexagon's, so the same fraction would be a thinner line
+    for (const t of fitTiles(tiles, d * 0.92)) {
+      parts.push(shape(seamed(t.pts, 2 * SEAM), BASE, 4, cell));
+    }
   } else if (key === "hex") {
-    parts.push(shape(hexagon(C, C, d * 0.44)));
+    // three, two, three: pointy-top hexagons a cell apart, the middle row
+    // offset half a cell, which comes out as near a square as hexagons get
+    // (5.2 radii wide by 5 tall)
+    const r = (d * 0.92) / (3 * Math.sqrt(3));
+    const dx = Math.sqrt(3) * r;
+    for (const [row, count] of [
+      [-1, 3],
+      [0, 2],
+      [1, 3],
+    ] as const) {
+      for (let k = 0; k < count; k++) {
+        const hx = C + (k - (count - 1) / 2) * dx;
+        parts.push(shape(seamed(hexagon(hx, C + row * 1.5 * r, r))));
+      }
+    }
   } else if (key === "hextri") {
     // the hexagonal triangle board: one hexagon cut into six triangles,
     // vertices left and right the way the board's outline sits
@@ -1628,37 +1680,13 @@ function draw(rawKey: string): string[] {
         ),
       );
     }
+  } else if (key === "hyperbolic-home") {
+    // the Hyperbolic home entry: {5,4}, the right-angled pentagons, cut apart
+    // by seams the way the sphere icons' faces are, so it reads as cells at a
+    // glance where the family row's hairlines blur into one disc
+    parts.push(...hyperbolicIcon("hyperbolic54", true));
   } else if (key in HYPERBOLIC_ICON_SHELLS) {
-    // the board itself, a ring and a half deep, inside the rim of the disc it
-    // never reaches -- drawn with its geodesic arcs and square corners (a
-    // rounded corner on every arc point would blur the curve away), the
-    // central polygon lighter (on {3,q}, the star of q triangles round the
-    // central vertex: cells 0 .. q-1). Toned by the board's own corner mask,
-    // so the arc points do not make a heptagon read as a 21-gon.
-    const board = hyperbolicDisc(key, HYPERBOLIC_ICON_SHELLS[key]!, 1);
-    const central = !(key in HYPERBOLIC_UNIFORM) && key.at(-2) === "3" ? Number(key.at(-1)) : 1;
-    // A closed surface lights every face of its tiling (a Hurwitz surface's
-    // heptagons) rather than the central one: with no rim, each of them is a
-    // full cell. Must match gui.py.
-    const lit = (cell: string) =>
-      CLOSED_SURFACE_MODES.includes(key)
-        ? board.cornerMask!.get(cell)!.filter(Boolean).length === CLOSED_SURFACES[key]!.p
-        : Number(cell) < central;
-    const tones = classifyShapes(board.polygons, board.cornerMask, true);
-    const r = d * 0.46;
-    const sc = (2 * r) / board.width;
-    parts.push(circle(C, C, r, tones.get("0")!, 2, LIGHT));
-    for (const [cell, polygon] of board.polygons) {
-      parts.push(
-        shape(
-          polygon.map(([x, y]): P => [C - r + x * sc, C - r + y * sc]),
-          lit(cell) ? LIGHT : BASE,
-          4,
-          tones.get(cell)!,
-          0,
-        ),
-      );
-    }
+    parts.push(...hyperbolicIcon(key, false));
   } else if (key.startsWith("pentaspiral")) {
     // the innermost ring of hexagons, each drawn as its two pentagons: the n
     // that meet at the centre and the n of the odd wedges offset one side out,
@@ -1853,18 +1881,6 @@ const PREVIEW_H = 70;
  * instead of one filling the box with three shapes and the next with ninety. */
 const PREVIEW_TILES = 20;
 
-/** Boards whose picture is their outline, not their tiling: the shaped boards
- * *are* the regular tilings, cut to a triangle or a hexagon, so wallpapered
- * each would be indistinguishable from the plain tiling it is cut from, which
- * is the one thing its picture has to say. */
-const NO_WALLPAPER = new Set([
-  "triangle",
-  "hextri",
-  "squarediamond",
-  "hexhex",
-  "hextriangle",
-]);
-
 /** The boards that do not repeat, and the patch of each to draw.
  *
  * These must never reach the lattice below. `DOMAINS` has an entry for most of
@@ -1935,11 +1951,17 @@ const PATCH_BOARDS: Record<string, PatchBoard> = {
   // each remove from the middle, which is what the crop catches — a whole ring
   // block shrunk into the card is just a brick wall.
   brickrings: { build: () => brickRingsBoard(8, 0, 27) },
-  sphinx: { build: () => sphinxBoard(4, 0, 16.5) },
-  chair: { build: () => chairBoard(4, 0, 22) },
-  gosper: { build: () => gosperBoard(3, 0, 25), whole: true },
-  pentaflake: { build: () => pentaflakeBoard(3, 0, 18) },
-  carpet: { build: () => carpetBoard(3, 0, 32) },
+  // The fractals and the shaped boards: the easy board itself, whole. A
+  // fractal's picture is the one tile grown into itself, which a crop of a
+  // deeper patch loses; a shaped board *is* a regular tiling cut to an
+  // outline, so wallpapered it would be the plain tiling it is cut from — the
+  // one thing its picture must not say.
+  ...Object.fromEntries(
+    [...FRACTAL_MODES, ...Object.values(SHAPED_MODES).flat()].map((mode) => [
+      mode,
+      { build: () => presetBoard(mode, "easy") as Board, whole: true } as const,
+    ]),
+  ),
   // Whole: the disc is the picture -- the tiles shrinking toward a rim they
   // never reach is what a hyperbolic tiling looks like.
   hyperbolic93: { build: () => hyperbolicBoard(9, 3, 11, 0, 100), whole: true },
@@ -2033,6 +2055,56 @@ const HYPERBOLIC_UNIFORM: Record<string, readonly [number, number, WythoffOp]> =
  * the surface's own tiling (every heptagon of a Hurwitz surface's).
  * Must match `_CLOSED_SURFACE_MODES` in gui.py. */
 const CLOSED_SURFACE_MODES = Object.values(SURFACE_MODES);
+
+/** A hyperbolic board's row icon: the board itself, a ring and a half deep,
+ * inside the rim of the disc it never reaches -- drawn with its geodesic arcs
+ * and square corners (a rounded corner on every arc point would blur the curve
+ * away), the central polygon lighter (on {3,q}, the star of q triangles round
+ * the central vertex: cells 0 .. q-1). Toned by the board's own corner mask,
+ * so the arc points do not make a heptagon read as a 21-gon.
+ *
+ * `seams` parts the cells instead of outlining them, the rim left as a ring
+ * with the background showing through: the home entry's look (see `draw`). */
+function hyperbolicIcon(key: string, seams: boolean): string[] {
+  const board = hyperbolicDisc(key, HYPERBOLIC_ICON_SHELLS[key]!, 1);
+  const central = !(key in HYPERBOLIC_UNIFORM) && key.at(-2) === "3" ? Number(key.at(-1)) : 1;
+  // A closed surface lights every face of its tiling (a Hurwitz surface's
+  // heptagons) rather than the central one: with no rim, each of them is a
+  // full cell. Must match gui.py.
+  const lit = (cell: string) =>
+    CLOSED_SURFACE_MODES.includes(key)
+      ? board.cornerMask!.get(cell)!.filter(Boolean).length === CLOSED_SURFACES[key]!.p
+      : Number(cell) < central;
+  const tones = classifyShapes(board.polygons, board.cornerMask, true);
+  const r = D * 0.46;
+  const sc = (2 * r) / board.width;
+  const parts = [
+    seams
+      ? `<circle cx="${n(C)}" cy="${n(C)}" r="${n(r)}" fill="none" stroke="${tint(
+          "outline",
+          tones.get("0")!,
+        )}" stroke-width="${n(sw(3))}"/>`
+      : circle(C, C, r, tones.get("0")!, 2, LIGHT),
+  ];
+  for (const [cell, polygon] of board.polygons) {
+    const pts = polygon.map(([x, y]): P => [C - r + x * sc, C - r + y * sc]);
+    parts.push(
+      shape(
+        seams ? inset(pts, centroid(pts), HYPERBOLIC_SEAM) : pts,
+        lit(cell) ? LIGHT : BASE,
+        seams ? 0 : 4,
+        tones.get(cell)!,
+        0,
+      ),
+    );
+  }
+  return parts;
+}
+
+/** The seamed hyperbolic icon's seam, a little wider than the flat cells'
+ * (`SEAM`): its cells shrink toward the rim, and a seam in proportion to each
+ * cell is what keeps the outer rings from closing up. */
+const HYPERBOLIC_SEAM = 0.12;
 
 /** A hyperbolic mode's disc trimmed to `shells`, with no mines. */
 function hyperbolicDisc(key: string, shells: number, scale: number): Board {
@@ -2142,6 +2214,8 @@ function muted<T>(paint: () => T): T {
 }
 
 function buildPreview(rawKey: string): Preview {
+  // the Hyperbolic home entry's card is its board's disc, as the {5,4} row's is
+  if (rawKey === "hyperbolic-home") return buildPreview("hyperbolic54");
   const key = ALIASES[rawKey] ?? FAMILY_TILINGS[rawKey] ?? rawKey;
   // The patch source first: most of these keys have a `DOMAINS` entry too, and
   // it is the one that would lie about them (see PATCH_BOARDS).
@@ -2199,7 +2273,6 @@ interface Lattice {
 }
 
 function latticeFor(key: string): Lattice | null {
-  if (NO_WALLPAPER.has(key)) return null;
   if (ARCH_KEYS.has(key)) {
     const t = archTemplate(key);
     return {
@@ -2349,6 +2422,16 @@ function patch(key: string): Preview | null {
  * fraction of the way to the centre. The board's own grout — `CellProfile.gap`
  * is 0.1 on the Flat and Sand cell styles, 0.04 on Classic. */
 const GROUT = 0.08;
+
+/** How far a row icon's cells are pulled apart (`seamed`), as a fraction of
+ * the way to each cell's centre — the sphere icons' seam (`solidFaces`). */
+const SEAM = 0.1;
+
+/** A cell shrunk toward its own centre by `gap`, so the background shows
+ * between it and its neighbours as a line of contrast. */
+function seamed(pts: P[], gap = SEAM): P[] {
+  return inset(pts, centroid(pts), gap);
+}
 
 /** A polygon shrunk toward a point — the board's grout, and the seams between
  * a solid's faces (see `solidFaces`). */

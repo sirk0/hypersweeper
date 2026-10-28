@@ -284,15 +284,7 @@ export function windowFor(mode: string, difficulty: string, seed: number): numbe
  * window, and a share link — which carries the seed — reopens the one it names.
  */
 export function buildBoard(mode: string, difficulty: string, seed = 0): AnyBoard {
-  const spec = PRESETS[mode];
-  if (!spec) throw new Error(`unknown mode ${mode}`);
-  if (!DIFFICULTIES.includes(difficulty)) {
-    throw new Error(`unknown difficulty ${difficulty}`);
-  }
-  const builder = BUILDERS[spec.builder];
-  const args = spec.args[difficulty];
-  if (!builder || !args) throw new Error(`no preset for ${mode}/${difficulty}`);
-  const variant = VARIANT_BUILDERS.has(spec.builder);
+  const { builder, args, variant } = presetBuilder(mode, difficulty);
   const patch = variant ? windowFor(mode, difficulty, seed) : 0;
   const key = `${mode}|${difficulty}|${patch}`;
   let board = BUILT.get(key);
@@ -304,6 +296,32 @@ export function buildBoard(mode: string, difficulty: string, seed = 0): AnyBoard
   BUILT.set(key, board);
   if (BUILT.size > BUILT_KEEP) BUILT.delete(BUILT.keys().next().value!);
   return board;
+}
+
+/**
+ * The board a mode and difficulty name, built fresh and kept nowhere — for a
+ * picture of the board (a menu card, ui/icons.ts) rather than a game. It skips
+ * `BUILT`, which exists for restarts: a page of cards would push the board
+ * just played out of it. A variant mode gets its centred window.
+ */
+export function presetBoard(mode: string, difficulty: string): AnyBoard {
+  const { builder, args, variant } = presetBuilder(mode, difficulty);
+  return variant ? builder(...args, 0) : builder(...args);
+}
+
+function presetBuilder(
+  mode: string,
+  difficulty: string,
+): { builder: Builder; args: Arg[]; variant: boolean } {
+  const spec = PRESETS[mode];
+  if (!spec) throw new Error(`unknown mode ${mode}`);
+  if (!DIFFICULTIES.includes(difficulty)) {
+    throw new Error(`unknown difficulty ${difficulty}`);
+  }
+  const builder = BUILDERS[spec.builder];
+  const args = spec.args[difficulty];
+  if (!builder || !args) throw new Error(`no preset for ${mode}/${difficulty}`);
+  return { builder, args, variant: VARIANT_BUILDERS.has(spec.builder) };
 }
 
 /**

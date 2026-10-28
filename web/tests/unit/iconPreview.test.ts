@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { menuIcon, previewIcon, setIconPalette } from "../../src/ui/icons";
-import { MENU, SOLID_MODES } from "../../src/boards/catalog";
+import { FRACTAL_MODES, MENU, SHAPED_MODES, SOLID_MODES } from "../../src/boards/catalog";
+import type { Board } from "../../src/boards/core";
+import { presetBoard } from "../../src/boards/presets";
 import { theme } from "../../src/ui/theme";
 
 // The desktop menu's card previews (icons.ts `previewIcon`). A card is four
@@ -23,15 +25,15 @@ describe("card previews", () => {
     // Wider than tall and sliced, so one drawing covers a card of any width.
     expect(square.svg).toContain('viewBox="0 0 100 70"');
     expect(square.svg).toContain('preserveAspectRatio="xMidYMid slice"');
-    // Many tiles, where the row's glyph is a single square.
+    // Many tiles, where the row's glyph is a two-by-two corner of the grid.
     expect(paths(square.svg)).toBeGreaterThan(10);
-    expect(paths(menuIcon("square"))).toBe(1);
+    expect(paths(menuIcon("square"))).toBe(4);
   });
 
   it("wallpapers from a template and from a stated domain alike", () => {
     // `rhombitrihex` is an ArchTemplate; `hex` and `penrose` are boards built
     // by hand, whose repeats backgroundPattern.ts states. Both paths tile.
-    for (const key of ["rhombitrihex", "deltoidal", "hex", "penrose", "sphinx"]) {
+    for (const key of ["rhombitrihex", "deltoidal", "hex", "penrose"]) {
       expect(previewIcon(key).tiled, key).toBe(true);
     }
   });
@@ -92,16 +94,7 @@ describe("card previews", () => {
     // uses — and must not take it: repeating a sample of an aperiodic tiling
     // or a substitution claims the one thing that is not true of it. Cropped
     // from the real patch, they fill the card like any other tiling.
-    for (const key of [
-      "penrose",
-      "kitedart",
-      "ammannbeenker",
-      "spectre",
-      "sphinx",
-      "chair",
-      "pentaflake",
-      "carpet",
-    ]) {
+    for (const key of ["penrose", "kitedart", "ammannbeenker", "spectre"]) {
       const preview = previewIcon(key);
       expect(preview.tiled, key).toBe(true);
       expect(paths(preview.svg), key).toBeGreaterThan(10);
@@ -119,6 +112,33 @@ describe("card previews", () => {
     const preview = previewIcon("gosper");
     expect(preview.tiled).toBe(false);
     expect(paths(preview.svg)).toBeGreaterThan(paths(menuIcon("gosper")));
+  });
+
+  it("draws a fractal or a shaped board as its easy board, whole", () => {
+    // A fractal is one tile grown into itself, and a shaped board a regular
+    // tiling cut to an outline: either way the picture is the whole board,
+    // which a crop or a wallpaper would lose. Every cell of the easy board is
+    // one path, so the counts are the boards' own.
+    for (const key of [...FRACTAL_MODES, ...Object.values(SHAPED_MODES).flat()]) {
+      const preview = previewIcon(key);
+      expect(preview.tiled, key).toBe(false);
+      const board = presetBoard(key, "easy") as Board;
+      expect(paths(preview.svg), key).toBe(board.polygons.size);
+    }
+  });
+
+  it("gives the home page's rows their own drawings", () => {
+    // Classic and the Flat entry are corners of their grids, not one tile:
+    // two by two squares, and hexagons three, two, three.
+    expect(paths(menuIcon("classic"))).toBe(4);
+    expect(paths(menuIcon("hex"))).toBe(8);
+    // Custom is a real uniform tiling, not three loose regular polygons.
+    expect(menuIcon("custom")).toBe(menuIcon("rhombitrihex"));
+    // Hyperbolic is {5,4} parted by seams; the family row stays {7,3}, and the
+    // desktop card is the {5,4} board's.
+    expect(menuIcon("hyperbolic-home")).not.toBe(menuIcon("hyperbolic"));
+    expect(menuIcon("hyperbolic-home")).not.toBe(menuIcon("hyperbolic54"));
+    expect(previewIcon("hyperbolic-home").svg).toBe(previewIcon("hyperbolic54").svg);
   });
 
   it("crops a spiral round its own centre, edge to edge", () => {
@@ -166,12 +186,10 @@ describe("card previews", () => {
   });
 
   it("keeps the row's figure when there is no lattice and no solid", () => {
-    // A surface and a shaped board: the first has no tiling of its own, and the
-    // shaped boards *are* a tiling — cut to an outline, which is the one thing
-    // a wallpaper of them could not show. Each is the row's own drawing,
+    // A surface has no tiling of its own. It is the row's own drawing,
     // repainted (see below), so the shape count matches while the colours do
     // not.
-    for (const key of ["torus", "hexhex"]) {
+    for (const key of ["torus"]) {
       const preview = previewIcon(key);
       expect(preview.tiled, key).toBe(false);
       expect(paths(preview.svg), key).toBe(paths(menuIcon(key)));

@@ -716,6 +716,11 @@ menu is in anyway.
   other half: the `--tile-*` custom properties a theme's `[data-theme]` block in
   `styles.css` declares, worn by whichever `[data-shape]` rule the swatch
   carries — the same two-halves composition the real board gets, done in CSS.
+  On the settings page itself the three appearance rows each wear a different
+  cut of it, so they say which axis they open: Theme the whole miniature,
+  Board shape a close-up of two by two tiles (`themeSwatch`'s `closeUp`), and
+  Colour scheme the look under both schemes split on the diagonal
+  (`schemeSwatch`). The picker pages keep the whole miniature on every row.
 
 **The v2 → v3 → v4 → v5 migrations.** Until v3, `theme` named a chrome palette and
 `cellStyle` sat beside it as a second setting. `migrate` in `settings.ts` reads
