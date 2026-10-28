@@ -393,9 +393,12 @@ describe("settings upgrades", () => {
     // saveSettings always wrote one), so there is no telling "chose auto" from
     // "never chose" — and switching a player on a dark device to a light page is
     // the worse of the two mistakes. The new default reaches new records only.
+    // Equally, a stored `light` stays light now the default is `auto` again.
     withStorage(fakeStorage({ [KEY]: JSON.stringify({ scheme: "auto", version: 4 }) }));
     expect(loadSettings().scheme).toBe("auto");
-    expect(DEFAULT_SETTINGS.scheme).toBe("light");
+    withStorage(fakeStorage({ [KEY]: JSON.stringify({ scheme: "light", version: 4 }) }));
+    expect(loadSettings().scheme).toBe("light");
+    expect(DEFAULT_SETTINGS.scheme).toBe("auto");
   });
 
   it("keeps a v4 record's scheme, and defaults an unreadable one", () => {

@@ -262,11 +262,12 @@ export const SCHEME_LABELS: Record<SchemePref, string> = {
   dark: "Dark",
 };
 
-/** Light unless told otherwise. `auto` is still a choice — and still resolved
- * live, so a player on it follows their device from one repaint to the next —
- * but it is no longer the one the app opens on: the three themes are all drawn
- * as light pages first, and their dark halves are derivations of them. */
-export const DEFAULT_SCHEME: SchemePref = "light";
+/** Follow the device unless told otherwise. Resolved live (`activeScheme`,
+ * `onSchemeChange`), so a player on it follows their device from one repaint to
+ * the next. It was `light` for a while, when the dark halves were still being
+ * derived from the light pages; a phone in dark mode opening on a bright page
+ * is the wrong first impression now that they are finished. */
+export const DEFAULT_SCHEME: SchemePref = "auto";
 
 /** Keys that named a theme this build has folded away, and what they became.
  *

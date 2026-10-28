@@ -232,11 +232,12 @@ const V4_THEMES: Record<string, [string, string]> = {
  * the new `shape` takes the cut (`V4_THEMES`). Here the pair *is* carried over,
  * unlike the scheme in v4, because every v4 look is still reachable and nobody's
  * board should change under them. Note what is **not** done: a stored `scheme`
- * is left exactly as it is, though the default has moved to `light`. Every v4
+ * is left exactly as it is, though the default had moved to `light`. Every v4
  * record carries one (it is in `DEFAULT_SETTINGS`, so `saveSettings` always
  * wrote it), so there is no telling "chose auto" from "never chose" — and
  * switching a player on a dark device to a light page is the worse of the two
- * mistakes. The new default reaches new records only.
+ * mistakes. The new default reached new records only — and the same holds now
+ * the default is `auto` again: a stored `light` may be a choice, so it stays.
  *
  * The branches run in **series**, not as alternatives: a v1 record passes
  * through both, so each may only speak the vocabulary of the version it is

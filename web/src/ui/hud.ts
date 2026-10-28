@@ -10,17 +10,19 @@ import { screens, type HudSlot } from "../config/screens";
 // Inline SVGs for slots whose config declares an `icon` we can draw; slots
 // with no entry here fall back to their text label. The flag mirrors the
 // in-game glyph (glyphAtlas.ts drawFlag): dark pole and base, red pennant —
-// the one icon that keeps fixed colours, because it stands for the game's own
-// flag rather than for a control. The rest stroke in `currentColor` so they
-// follow the theme's text colour (a fixed dark stroke would vanish on the dark
-// theme's buttons). Sized by CSS (--hud-icon) rather than hard-coded
+// the one icon that keeps its own colours, because it stands for the game's
+// own flag rather than for a control. Only its mast is a `var(--flag-mast)`
+// (styles.css) rather than a fixed fill: the glyph's near-black mast vanished
+// against the dark scheme's buttons, so there it turns light. The rest stroke
+// in `currentColor` so they follow the theme's text colour (a fixed dark stroke
+// would vanish on the dark theme's buttons). Sized by CSS (--hud-icon) rather than hard-coded
 // width/height attributes, so the header controls can grow to a comfortable
 // touch size on phones.
 export const ICONS: Record<string, string> = {
   flag: `<svg viewBox="0 0 24 24" aria-hidden="true">
-    <path d="M3.3 20.6 L5.9 18.4 H8.8 L11.4 20.6 Z" fill="#2b2f3a"/>
-    <rect x="6.7" y="4" width="1.3" height="15.4" fill="#2b2f3a"/>
-    <circle cx="7.35" cy="3.55" r="0.95" fill="#2b2f3a"/>
+    <path class="flag-mast" d="M3.3 20.6 L5.9 18.4 H8.8 L11.4 20.6 Z"/>
+    <rect class="flag-mast" x="6.7" y="4" width="1.3" height="15.4"/>
+    <circle class="flag-mast" cx="7.35" cy="3.55" r="0.95"/>
     <path d="M8 4.2 L20.4 8.4 L8 13.6 Z" fill="#e5534b"/>
   </svg>`,
   // Back to the menu.
