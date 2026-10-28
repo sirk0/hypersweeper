@@ -183,6 +183,28 @@ describe("the enclosed region of a drawn tube", () => {
     expect(solidDepth(solid, between)).toBeGreaterThan(0);
   });
 
+  it("slices a shared edge to one point, whichever way each side winds it", () => {
+    // A twisted three-sided prism. Its edge B2–T2 is wound upward by one
+    // triangle and downward by the other, and at y = 0.011 interpolating it
+    // from either end rounds to a different z (-2.8923 / -2.8922999999999996,
+    // in plain IEEE arithmetic, so on every platform). A +x ray from outside
+    // through that vertex must still cross the loop an even number of times;
+    // with two endpoints a hair apart it counted the vertex once or not at
+    // all, and the Klein test failed on whichever machine rounded the wrong
+    // way.
+    const B: Vec3[] = [[3, 0, 0.1], [0.3, 0, 2.7], [0.2, 0, -2.9]];
+    const T: Vec3[] = [[2.7, 1, 0.9], [-0.4, 1, 2.3], [0.6, 1, -2.2]];
+    const occluder: Tri[] = [];
+    for (let i = 0; i < 3; i++) {
+      const j = (i + 1) % 3;
+      occluder.push([B[i]!, B[j]!, T[j]!], [B[i]!, T[j]!, T[i]!]);
+    }
+    for (const z of [-2.8923, -2.8922999999999996]) {
+      expect(insideOccluder(occluder, [-5, 0.011, z])).toBe(false);
+    }
+    expect(insideOccluder(occluder, [1, 0.011, 0])).toBe(true);
+  });
+
   it("cuts a sheet that crosses it along the sheet's own crossing", () => {
     const occluder = drawnTube(6, 2, 2, () => 1);
     const solid = buildClipSolid(occluder);
