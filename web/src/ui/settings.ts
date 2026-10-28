@@ -217,10 +217,15 @@ function heading(text: string): HTMLElement {
  * tile colours come from the theme (the `--tile-*` properties its `[data-theme]`
  * block declares) and the cut from `data-shape`, so the two halves compose in
  * CSS the way `composeStyle` composes them for the real board. */
-function themeSwatch(key: string, shape: string, scheme: Scheme): HTMLElement {
+function themeSwatch(
+  key: string,
+  shape: string,
+  scheme: Scheme,
+  closeUp = false,
+): HTMLElement {
   const spec = themeDef(key);
   const el = document.createElement("span");
-  el.className = "theme-swatch";
+  el.className = closeUp ? "theme-swatch shape-swatch" : "theme-swatch";
   // The palette reaches the tiles through CSS rather than through `themeVars`:
   // the `--tile-*` properties are the swatch's own, not the chrome's, so they
   // are declared per theme in styles.css beside the shape rules that use them.
@@ -237,15 +242,35 @@ function themeSwatch(key: string, shape: string, scheme: Scheme): HTMLElement {
   cells.dataset["shape"] = shape;
   // Three by two, the last two opened: a corner of a board in play, with both
   // of a cut's states side by side and touching, as they are on the board.
-  for (let i = 0; i < 6; i++) {
+  // The close-up is two by two, the last one opened, and no card: only the cut.
+  const [count, opened] = closeUp ? [4, 1] : [6, 2];
+  for (let i = 0; i < count; i++) {
     const tile = document.createElement("span");
-    tile.className = i >= 4 ? "cell-swatch-tile open" : "cell-swatch-tile";
+    tile.className = i >= count - opened ? "cell-swatch-tile open" : "cell-swatch-tile";
     cells.append(tile);
+  }
+  if (closeUp) {
+    el.append(cells);
+    return el;
   }
   const dot = document.createElement("span");
   dot.className = "theme-swatch-dot";
   card.append(dot);
   el.append(card, cells);
+  return el;
+}
+
+/** The colour scheme row's swatch: the look under both schemes at once, split
+ * on the diagonal — light top left, dark bottom right — the way a light/dark
+ * control is usually drawn. The settings page's three appearance rows would
+ * otherwise wear the same miniature; this one, and the board shape row's
+ * close-up of the cut (`themeSwatch`'s `closeUp`), say which axis each row is. */
+function schemeSwatch(key: string, shape: string): HTMLElement {
+  const el = document.createElement("span");
+  el.className = "scheme-swatch";
+  const dark = themeSwatch(key, shape, "dark");
+  dark.classList.add("scheme-swatch-dark");
+  el.append(themeSwatch(key, shape, "light"), dark);
   return el;
 }
 
@@ -789,7 +814,7 @@ export function renderSettings(host: SettingsHost, pages: SettingsPages): Docume
   shapeChevron.textContent = "›";
   const { li: shapeLi, btn: shapeBtn } = buttonRow(
     [
-      themeSwatch(host.theme, host.shape, scheme),
+      themeSwatch(host.theme, host.shape, scheme, true),
       textBlock("Board shape", boardShape(host.shape).label),
       shapeChevron,
     ],
@@ -809,7 +834,7 @@ export function renderSettings(host: SettingsHost, pages: SettingsPages): Docume
   schemeChevron.textContent = "›";
   const { li: schemeLi, btn: schemeBtn } = buttonRow(
     [
-      themeSwatch(host.theme, host.shape, scheme),
+      schemeSwatch(host.theme, host.shape),
       textBlock(
         "Colour scheme",
         host.scheme === "auto"

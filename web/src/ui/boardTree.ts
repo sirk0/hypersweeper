@@ -251,7 +251,8 @@ export function quickPlayEntries(): QuickEntry[] {
       key: "hyperbolic",
       label: MENU_FAMILY_LABELS["hyperbolic"] ?? "Hyperbolic",
       hint: "A random tiling of the hyperbolic plane.",
-      icon: "hyperbolic",
+      // {5,4} with seams, not the family row's {7,3} (ui/icons.ts)
+      icon: "hyperbolic-home",
     });
   }
   return entries;

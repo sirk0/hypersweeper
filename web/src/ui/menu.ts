@@ -7,6 +7,7 @@ import {
   type Fairness,
 } from "../boards/fairness";
 import { distortedDifficulties, distortionHint, isDistorted } from "../boards/distortion";
+import { hasMode } from "../boards/presets";
 import { randomMode, type RandomKind } from "../boards/randomBoard";
 import { clearAchievements, loadProgress, type Progress } from "../achievements";
 import { clearBestTimes } from "../leaderboard";
@@ -22,10 +23,18 @@ import {
   type Family,
   type Group,
   type ManifoldGroup,
+  type ModeEntry,
   type SurfaceEntry,
 } from "./boardTree";
 import { HELP_ICON, renderHelp } from "./help";
-import { menuIcon, previewIcon } from "./icons";
+import {
+  cachedLevelPreview,
+  iconBoard,
+  levelPreview,
+  menuIcon,
+  previewIcon,
+  type Preview,
+} from "./icons";
 import {
   GEAR_ICON,
   renderAppIconPicker,
@@ -788,7 +797,10 @@ export class Menu {
           if (mode) this.onSelect({ mode, difficulty: this.settings.difficulty, random: true });
         });
       }
-      btn.append(this.previewEl(e.icon), this.cardCaption(e.label, { hint: e.hint }));
+      btn.append(
+        this.previewEl(e.icon, e.kind === "mode" ? e.key : this.cardBoard(e.icon)),
+        this.cardCaption(e.label, { hint: e.hint }),
+      );
       if (e.kind === "mode") this.addDoneMark(btn, e.key);
       li.append(btn);
       return li;
@@ -800,7 +812,12 @@ export class Menu {
    * square icon in the manifolds list, and the Sphere group shows a sphere of
    * hexagons, since its own key names a board that is now a Catalan solid. */
   private groupIcon(group: Group): string {
-    return group.key === "flat" ? "hex" : group.key === "sphere" ? "spheres" : group.key;
+    if (group.key === "flat") return "hex";
+    if (group.key === "sphere") return "spheres";
+    // the seamed {5,4} of the home page's Hyperbolic entry, so the desktop
+    // sidebar (the desktop's home) and the Custom page wear the same one
+    if (group.key === "hyperbolic") return "hyperbolic-home";
+    return group.key;
   }
 
   /** The home page: the board that opens straight away (Classic), one
@@ -924,8 +941,12 @@ export class Menu {
     } else if (group.kind === "families") {
       for (const family of group.families) {
         list.append(
-          this.submenuRow(family.label, family.key, () =>
-            this.showFamily(family, () => this.showGroup(group)),
+          this.submenuRow(
+            family.label,
+            family.key,
+            () => this.showFamily(family, () => this.showGroup(group)),
+            undefined,
+            family.modes,
           ),
         );
       }
@@ -957,8 +978,12 @@ export class Menu {
     }
     for (const family of picker.families) {
       list.append(
-        this.submenuRow(family.label, family.key, () =>
-          this.showFamily(family, () => this.showPicker(label, surfaceKey, onBack)),
+        this.submenuRow(
+          family.label,
+          family.key,
+          () => this.showFamily(family, () => this.showPicker(label, surfaceKey, onBack)),
+          undefined,
+          family.modes,
         ),
       );
     }
@@ -1119,7 +1144,10 @@ export class Menu {
     btn.dataset.surface = surface.key;
     if (this.isWide()) {
       btn.className = "menu-entry menu-board-card";
-      btn.append(this.previewEl(surface.key), this.cardCaption(surface.label));
+      btn.append(
+        this.previewEl(surface.key, this.cardBoard(surface.key)),
+        this.cardCaption(surface.label),
+      );
     } else {
       btn.className = "menu-entry";
       btn.append(iconEl(surface.key), textBlock(surface.label, pickerHint(surface.key)));
@@ -1136,6 +1164,7 @@ export class Menu {
     key: string,
     onClick: () => void,
     hint: string | undefined = familyHint(key),
+    modes: readonly ModeEntry[] = [],
   ): HTMLElement {
     const li = document.createElement("li");
     const btn = document.createElement("button");
@@ -1143,7 +1172,10 @@ export class Menu {
     const iconKey = FAMILY_ICONS[key] ?? key;
     if (this.isWide()) {
       btn.className = "menu-entry menu-submenu menu-board-card";
-      btn.append(this.previewEl(iconKey), this.cardCaption(label, { trailing: this.chevronEl() }));
+      btn.append(
+        this.previewEl(iconKey, this.cardBoard(iconKey, modes)),
+        this.cardCaption(label, { trailing: this.chevronEl() }),
+      );
     } else {
       // menu-submenu lays the label and the › chevron out on one row.
       btn.className = "menu-entry menu-submenu";
@@ -1176,7 +1208,7 @@ export class Menu {
     if (this.isWide()) {
       btn.className = "menu-entry menu-board-card";
       btn.append(
-        this.previewEl(icon),
+        this.previewEl(icon, mode),
         this.cardCaption(
           label,
           level !== "ok"
@@ -1358,18 +1390,77 @@ export class Menu {
   }
 
   /** The large board preview a desktop card shows instead of the phone's 38px
-   * glyph (icons.ts `previewIcon`): a tiling wallpapered to the card's edges,
-   * or — for a solid, a surface or a shaped board, where the silhouette is the
-   * picture — a centred figure with air around it, which `is-tiled` tells the
-   * card's padding apart. */
-  private previewEl(key: string): HTMLElement {
+   * glyph. A board's own card (`mode`) shows the level it opens, at the
+   * selected difficulty (icons.ts `levelPreview`), drawn in the background —
+   * see `paintLevel`. Anything else (a family, a random pool) shows its
+   * `previewIcon`: a tiling wallpapered to the card's edges, or a centred
+   * figure, which `is-tiled` tells the card's padding apart. */
+  private previewEl(key: string, mode?: string): HTMLElement {
     const el = document.createElement("div");
-    const preview = previewIcon(key);
-    el.className = preview.tiled
-      ? "menu-board-card-preview is-tiled"
-      : "menu-board-card-preview";
-    el.innerHTML = preview.svg;
+    if (mode !== undefined && hasMode(mode)) {
+      el.dataset["previewMode"] = mode;
+      this.paintLevel(el, key);
+    } else {
+      paintPreview(el, previewIcon(key));
+    }
     return el;
+  }
+
+  /** The board a group's card shows the level of — a family, a surface, a
+   * random pool: the board its icon is drawn from (icons.ts `iconBoard`),
+   * taken from the group's own members where it has them, so the Uniform
+   * card on the torus page is the torus's rhombitrihexagonal, not the
+   * plane's. A family without that member shows its first board. */
+  private cardBoard(iconKey: string, modes: readonly ModeEntry[] = []): string | undefined {
+    const target = iconBoard(iconKey);
+    if (modes.length === 0) return target;
+    return (modes.find((e) => e.mode === target) ?? modes.find((e) => e.icon === target) ?? modes[0])!
+      .mode;
+  }
+
+  /** Cards waiting for their level to be drawn, in page order. */
+  private readonly levelQueue = new Set<HTMLElement>();
+  private levelTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /** Put a card's level on it: at once when that level at this difficulty is
+   * already drawn, otherwise in the background. Building a board takes from a
+   * millisecond to a second and a half (a closed surface at Hard), so a page
+   * of cards is drawn one board per task — the page stays live while it fills
+   * — with the card's `previewIcon`, or the level it showed at the old
+   * difficulty, standing in until then. */
+  private paintLevel(el: HTMLElement, placeholder?: string): void {
+    const mode = el.dataset["previewMode"]!;
+    const ready = cachedLevelPreview(mode, this.settings.difficulty);
+    if (ready) {
+      this.levelQueue.delete(el);
+      paintPreview(el, ready);
+      return;
+    }
+    if (placeholder !== undefined) paintPreview(el, previewIcon(placeholder));
+    this.levelQueue.add(el);
+    this.levelTimer ??= setTimeout(() => this.drawNextLevel(), 0);
+  }
+
+  private drawNextLevel(): void {
+    this.levelTimer = null;
+    // Not while a game is on screen: `show` renders the page afresh, and its
+    // cards queue themselves again.
+    if (this.root.hidden) {
+      this.levelQueue.clear();
+      return;
+    }
+    for (const el of this.levelQueue) {
+      this.levelQueue.delete(el);
+      // a card whose page has since been left
+      if (!el.isConnected) continue;
+      try {
+        paintPreview(el, levelPreview(el.dataset["previewMode"]!, this.settings.difficulty));
+      } catch {
+        // a board that will not build keeps the picture it has
+      }
+      break;
+    }
+    if (this.levelQueue.size > 0) this.levelTimer = setTimeout(() => this.drawNextLevel(), 0);
   }
 
   /** A desktop card's caption: the board/family name, an optional hint line
@@ -1492,9 +1583,19 @@ export class Menu {
     for (const b of this.difficultyRowEl?.querySelectorAll(".difficulty-btn") ?? []) {
       b.classList.toggle("active", (b as HTMLElement).dataset["key"] === active);
     }
-    // The rows already on the page carry a per-difficulty mark.
+    // The rows already on the page carry a per-difficulty mark, and the cards
+    // a picture of the level at this difficulty.
     for (const btn of this.root.querySelectorAll<HTMLElement>("[data-distortion]")) {
       this.paintDistortion(btn);
     }
+    for (const el of this.root.querySelectorAll<HTMLElement>("[data-preview-mode]")) {
+      this.paintLevel(el);
+    }
   }
+}
+
+/** Show a preview on a card's preview box. */
+function paintPreview(el: HTMLElement, preview: Preview): void {
+  el.className = preview.tiled ? "menu-board-card-preview is-tiled" : "menu-board-card-preview";
+  el.innerHTML = preview.svg;
 }

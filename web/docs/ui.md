@@ -63,6 +63,27 @@ board cards under a **pane header** — the page's title, its breadcrumb hint an
 the difficulty pills. Below that width it is the phone column, with the back
 stack in place of the sidebar.
 
+A board's card shows **the level it opens**: the preset board at the selected
+difficulty, every cell, drawn whole — a flat board as its outline, a solid or
+a wrapped surface as the real thing lit (`levelPreview` in `ui/icons.ts`). So
+Squares is a 9×9 grid on Easy and 16×30 on Hard, and the card is redrawn when
+the pills move. Building a board takes up to a second and a half (a closed
+surface at Hard), so `Menu.paintLevel` draws a page's cards in the
+background, one board per task, with the card's `previewIcon` (or the level
+at the old difficulty) standing in meanwhile; the drawings are cached per
+mode and difficulty, and nothing is built while a game is on screen.
+
+A **group's** card — a family, a surface, a Solids submenu, a random pool —
+shows a level too: the board its icon is drawn from (`iconBoard`: Uniform's
+rhombitrihexagonal, the Flat manifolds' squares on each surface), taken from
+the group's own members where it has them (`Menu.cardBoard`), so the Uniform
+card on the Torus page is the torus's rhombitrihexagonal. On a solid or a
+surface every cell is laid over a solid grout in its own shade, as the board
+lays its grout under the tiles, so a seam is a line and never a hole onto the
+far side; and a surface's cells are painted back to front rather than culled,
+since a big cell (an easy board's) can face the viewer in part while its one
+normal points away.
+
 A board row (a card on the desktop) can carry a second, smaller line under its
 label. A graded board's fairness hint takes it; otherwise a 2-uniform tiling
 puts its vertex-type symbol there (`[3⁶; 3⁴.6]₁` under *Studded triangular*),
@@ -716,6 +737,11 @@ menu is in anyway.
   other half: the `--tile-*` custom properties a theme's `[data-theme]` block in
   `styles.css` declares, worn by whichever `[data-shape]` rule the swatch
   carries — the same two-halves composition the real board gets, done in CSS.
+  On the settings page itself the three appearance rows each wear a different
+  cut of it, so they say which axis they open: Theme the whole miniature,
+  Board shape a close-up of two by two tiles (`themeSwatch`'s `closeUp`), and
+  Colour scheme the look under both schemes split on the diagonal
+  (`schemeSwatch`). The picker pages keep the whole miniature on every row.
 
 **The v2 → v3 → v4 → v5 migrations.** Until v3, `theme` named a chrome palette and
 `cellStyle` sat beside it as a second setting. `migrate` in `settings.ts` reads
