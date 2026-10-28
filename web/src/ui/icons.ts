@@ -92,7 +92,7 @@ import {
 } from "../boards/surfaces";
 import { solidCubeBoard } from "../boards/volume";
 import { FRACTAL_MODES, SHAPED_MODES, surfaceOf } from "../boards/catalog";
-import { presetBoard } from "../boards/presets";
+import { hasMode, presetBoard } from "../boards/presets";
 import { DOMAINS } from "./backgroundPattern";
 import { cid, isBoard3D, newellNormal, type Board, type Board3D, type Vec3 } from "../boards/core";
 
@@ -944,8 +944,13 @@ function solidFaces(
   // `key` names the view (and, without `source`, the board); a level preview
   // hands in the real board and its surface's key for the view.
   const board = source ?? solidBoard(key);
+  // A level's surface is never culled, closed or not: its cells can be big
+  // (an easy board of rotated hexagons on a torus), and a big cell whose one
+  // normal points away still has a part that faces the viewer — culled, it
+  // leaves a hole at the silhouette. Painted back to front, every cell, the
+  // near side covers the far one as it does on an open band.
   const surface =
-    kind === "surface" ? { twoSided: source ? source.twoSided : SURFACE_ICONS[key]!.twoSided } : null;
+    kind === "surface" ? { twoSided: source ? true : SURFACE_ICONS[key]!.twoSided } : null;
   const [rxDeg, ryDeg, rzDeg = 0] = (lit ? PREVIEW_VIEW[key] : undefined) ??
     SOLID_VIEW[key] ?? [-18, 15];
   const rad = Math.PI / 180;
@@ -961,6 +966,8 @@ function solidFaces(
   const tones = lit || surface ? classifyShapes(board.polygons, board.cornerMask) : null;
   const faces: {
     pts: P[];
+    /** the face before its inset: on a card, the grout laid under it */
+    full: P[];
     depth: number;
     facing: number;
     lambert: number;
@@ -1001,6 +1008,7 @@ function solidFaces(
     const inset = lit ? (kind === "round" ? 0.96 : 0.975) : kind === "round" ? 0.9 : 0.94;
     faces.push({
       pts: spun.map((v) => [mid[0] + (v[0] - mid[0]) * inset, mid[1] + (v[1] - mid[1]) * inset]),
+      full: spun.map((v) => [v[0], v[1]]),
       depth: mid[2],
       facing,
       lambert: lit ? lambertOf(spun as Vec3[], facing) : 0,
@@ -1022,8 +1030,9 @@ function solidFaces(
   const scale = (D * 0.92) / Math.max(hi(0) - lo(0), hi(1) - lo(1));
   const [mx, my] = [(lo(0) + hi(0)) / 2, (lo(1) + hi(1)) / 2];
   faces.sort((f, g) => f.depth - g.depth);
+  const toBox = ([x, y]: P): P => [C + (x - mx) * scale, C - (y - my) * scale];
   return faces.map((f) => {
-    const pts = f.pts.map(([x, y]) => [C + (x - mx) * scale, C - (y - my) * scale] as P);
+    const pts = f.pts.map(toBox);
     // Lit: a continuous ramp between the tone's three variants, the way the
     // surfaces are shaded (see surfaceMesh). The icon's three buckets are what
     // a 38px solid needs to read as solid at all; on a card they band.
@@ -1041,13 +1050,26 @@ function solidFaces(
         ? mixHex(base, tint(LIGHT, f.tone), (l - 0.5) * 2)
         : mixHex(tint(DARK, f.tone), base, l * 2);
     const fill = f.back ? mixHex(lit2, tint(DARK, f.tone), 0.4) : lit2;
-    // Fill alone. `poly` strokes a face in its own colour to seal the
-    // antialiased seam against its neighbour, which is right where the seam
-    // should not show — but the inset above is deliberate grout, and a stroke
-    // over it only smears the edge the card is big enough to show cleanly.
-    return `<path d="${roundedPath(pts, D * 0.006)}" fill="${fill}"/>`;
+    // The grout first, the whole face, as the board lays its grout under the
+    // tiles (render/solidBoard.ts): the seams are then solid lines rather
+    // than holes onto whatever is behind — the far side of a band, the
+    // inside of a tube. Lit with the tile, so it turns with the surface, and
+    // stroked in its own colour to seal the hairline between two neighbours'
+    // grout. The tile over it is fill alone: a stroke over the deliberate
+    // inset would only smear the edge the card is big enough to show cleanly.
+    const grout = mixHex(fill, GROUT_INK, 0.5);
+    return (
+      `<path d="${roundedPath(f.full.map(toBox), 0)}" fill="${grout}" stroke="${grout}" ` +
+      `stroke-width="${n(sw(1.2))}" stroke-linejoin="round"/>` +
+      `<path d="${roundedPath(pts, D * 0.006)}" fill="${fill}"/>`
+    );
   });
 }
+
+/** What a card's grout is mixed toward: the board's mid-grey grout
+ * (render/solidBoard.ts `BASE_COLOR`) a step warmer and deeper, so a seam reads
+ * as the shadowed edge between two tiles rather than a grey wire. */
+const GROUT_INK = "#5f5850";
 
 /** How squarely a face meets the light, in 0..1 — the shading a card's solids
  * take. Falls back to how squarely the face meets the viewer when the polygon
@@ -2491,6 +2513,18 @@ const levelCache = new Map<string, Preview>();
 /** How many level previews are kept. Each is a string of SVG, not a board, so
  * a few hundred — every board at one difficulty — cost little. */
 const LEVEL_KEEP = 600;
+
+/** The board an icon key stands for, when it stands for one: a mode's own
+ * key, or the board an alias or a family row is drawn from — the Uniform
+ * family's rhombitrihexagonal, Solids' dodecahedron, the Hyperbolic home
+ * entry's {5,4}. `undefined` for a drawing that is no board (a badge, the
+ * question mark). A family or group card shows this board's level, so it
+ * follows the difficulty the way a board's own card does. */
+export function iconBoard(rawKey: string): string | undefined {
+  if (rawKey === "hyperbolic-home") return "hyperbolic54";
+  const key = ALIASES[rawKey] ?? FAMILY_TILINGS[rawKey] ?? rawKey;
+  return hasMode(key) ? key : undefined;
+}
 
 /** The card for `mode` at `difficulty`, if it has already been drawn. */
 export function cachedLevelPreview(mode: string, difficulty: string): Preview | undefined {

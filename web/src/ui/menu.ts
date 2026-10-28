@@ -23,10 +23,18 @@ import {
   type Family,
   type Group,
   type ManifoldGroup,
+  type ModeEntry,
   type SurfaceEntry,
 } from "./boardTree";
 import { HELP_ICON, renderHelp } from "./help";
-import { cachedLevelPreview, levelPreview, menuIcon, previewIcon, type Preview } from "./icons";
+import {
+  cachedLevelPreview,
+  iconBoard,
+  levelPreview,
+  menuIcon,
+  previewIcon,
+  type Preview,
+} from "./icons";
 import {
   GEAR_ICON,
   renderAppIconPicker,
@@ -790,7 +798,7 @@ export class Menu {
         });
       }
       btn.append(
-        this.previewEl(e.icon, e.kind === "mode" ? e.key : undefined),
+        this.previewEl(e.icon, e.kind === "mode" ? e.key : this.cardBoard(e.icon)),
         this.cardCaption(e.label, { hint: e.hint }),
       );
       if (e.kind === "mode") this.addDoneMark(btn, e.key);
@@ -933,8 +941,12 @@ export class Menu {
     } else if (group.kind === "families") {
       for (const family of group.families) {
         list.append(
-          this.submenuRow(family.label, family.key, () =>
-            this.showFamily(family, () => this.showGroup(group)),
+          this.submenuRow(
+            family.label,
+            family.key,
+            () => this.showFamily(family, () => this.showGroup(group)),
+            undefined,
+            family.modes,
           ),
         );
       }
@@ -966,8 +978,12 @@ export class Menu {
     }
     for (const family of picker.families) {
       list.append(
-        this.submenuRow(family.label, family.key, () =>
-          this.showFamily(family, () => this.showPicker(label, surfaceKey, onBack)),
+        this.submenuRow(
+          family.label,
+          family.key,
+          () => this.showFamily(family, () => this.showPicker(label, surfaceKey, onBack)),
+          undefined,
+          family.modes,
         ),
       );
     }
@@ -1128,7 +1144,10 @@ export class Menu {
     btn.dataset.surface = surface.key;
     if (this.isWide()) {
       btn.className = "menu-entry menu-board-card";
-      btn.append(this.previewEl(surface.key), this.cardCaption(surface.label));
+      btn.append(
+        this.previewEl(surface.key, this.cardBoard(surface.key)),
+        this.cardCaption(surface.label),
+      );
     } else {
       btn.className = "menu-entry";
       btn.append(iconEl(surface.key), textBlock(surface.label, pickerHint(surface.key)));
@@ -1145,6 +1164,7 @@ export class Menu {
     key: string,
     onClick: () => void,
     hint: string | undefined = familyHint(key),
+    modes: readonly ModeEntry[] = [],
   ): HTMLElement {
     const li = document.createElement("li");
     const btn = document.createElement("button");
@@ -1152,7 +1172,10 @@ export class Menu {
     const iconKey = FAMILY_ICONS[key] ?? key;
     if (this.isWide()) {
       btn.className = "menu-entry menu-submenu menu-board-card";
-      btn.append(this.previewEl(iconKey), this.cardCaption(label, { trailing: this.chevronEl() }));
+      btn.append(
+        this.previewEl(iconKey, this.cardBoard(iconKey, modes)),
+        this.cardCaption(label, { trailing: this.chevronEl() }),
+      );
     } else {
       // menu-submenu lays the label and the › chevron out on one row.
       btn.className = "menu-entry menu-submenu";
@@ -1381,6 +1404,18 @@ export class Menu {
       paintPreview(el, previewIcon(key));
     }
     return el;
+  }
+
+  /** The board a group's card shows the level of — a family, a surface, a
+   * random pool: the board its icon is drawn from (icons.ts `iconBoard`),
+   * taken from the group's own members where it has them, so the Uniform
+   * card on the torus page is the torus's rhombitrihexagonal, not the
+   * plane's. A family without that member shows its first board. */
+  private cardBoard(iconKey: string, modes: readonly ModeEntry[] = []): string | undefined {
+    const target = iconBoard(iconKey);
+    if (modes.length === 0) return target;
+    return (modes.find((e) => e.mode === target) ?? modes.find((e) => e.icon === target) ?? modes[0])!
+      .mode;
   }
 
   /** Cards waiting for their level to be drawn, in page order. */

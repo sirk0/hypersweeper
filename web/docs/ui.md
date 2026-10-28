@@ -71,8 +71,18 @@ the pills move. Building a board takes up to a second and a half (a closed
 surface at Hard), so `Menu.paintLevel` draws a page's cards in the
 background, one board per task, with the card's `previewIcon` (or the level
 at the old difficulty) standing in meanwhile; the drawings are cached per
-mode and difficulty, and nothing is built while a game is on screen. Cards
-that are not a level — a family, a random pool — keep their `previewIcon`.
+mode and difficulty, and nothing is built while a game is on screen.
+
+A **group's** card — a family, a surface, a Solids submenu, a random pool —
+shows a level too: the board its icon is drawn from (`iconBoard`: Uniform's
+rhombitrihexagonal, the Flat manifolds' squares on each surface), taken from
+the group's own members where it has them (`Menu.cardBoard`), so the Uniform
+card on the Torus page is the torus's rhombitrihexagonal. On a solid or a
+surface every cell is laid over a solid grout in its own shade, as the board
+lays its grout under the tiles, so a seam is a line and never a hole onto the
+far side; and a surface's cells are painted back to front rather than culled,
+since a big cell (an easy board's) can face the viewer in part while its one
+normal points away.
 
 A board row (a card on the desktop) can carry a second, smaller line under its
 label. A graded board's fairness hint takes it; otherwise a 2-uniform tiling

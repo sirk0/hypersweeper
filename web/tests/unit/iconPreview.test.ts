@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import {
   cachedLevelPreview,
+  iconBoard,
   levelPreview,
   menuIcon,
   previewIcon,
@@ -76,12 +77,13 @@ describe("card previews", () => {
   it("draws a flat manifold as its easy board's squares, on the row and the card", () => {
     // Each surface is the board itself on its own immersion, one quad a cell,
     // where it used to be a smooth mesh of the surface. The row and the card
-    // are one drawing at two sizes, so they draw the same cells.
+    // are one drawing at two sizes, so they draw the same cells — the card
+    // with its solid grout laid under each, two paths a cell.
     for (const key of MANIFOLD_ORDER) {
       const preview = previewIcon(key);
       expect(preview.tiled, key).toBe(false);
       expect(paths(preview.svg), key).toBeGreaterThan(20);
-      expect(paths(menuIcon(key)), key).toBe(paths(preview.svg));
+      expect(2 * paths(menuIcon(key)), key).toBe(paths(preview.svg));
     }
     // An open surface keeps the far side that shows through its open ends:
     // all sixteen by five of the easy cylinder's cells are drawn.
@@ -176,15 +178,29 @@ describe("card previews", () => {
       expect(paths(preview.svg), `${mode} ${difficulty}`).toBe(board.polygons.size);
     }
     expect(levelPreview("square", "hard").svg).not.toBe(levelPreview("square", "easy").svg);
-    // A wrapped surface shows the near side of the real immersion: more
-    // cells at Hard, and fewer drawn than the board has.
-    const easy = paths(levelPreview("torus", "easy").svg);
-    const hard = paths(levelPreview("torus", "hard").svg);
-    expect(hard).toBeGreaterThan(easy);
-    expect(hard).toBeLessThan(presetBoard("torus", "hard").polygons.size);
+    // A wrapped surface is the real immersion, every cell painted back to
+    // front over its own solid grout (two paths a cell), so no seam is a hole
+    // onto the far side and no culled cell leaves a gap at the silhouette.
+    for (const difficulty of ["easy", "hard"]) {
+      expect(paths(levelPreview("torus", difficulty).svg), difficulty).toBe(
+        2 * presetBoard("torus", difficulty).polygons.size,
+      );
+    }
     // ...and a drawn level is cached, under its difficulty.
     expect(cachedLevelPreview("square", "hard")).toBe(levelPreview("square", "hard"));
     expect(cachedLevelPreview("square", "medium")).toBeUndefined();
+  });
+
+  it("names the board a group's card is drawn from", () => {
+    // A family, a submenu or a random pool shows a level too: the board its
+    // icon is drawn from.
+    expect(iconBoard("uniform")).toBe("rhombitrihex");
+    expect(iconBoard("aperiodic")).toBe("penrose");
+    expect(iconBoard("platonic")).toBe("tetrahedron");
+    expect(iconBoard("manifolds")).toBe("torus");
+    expect(iconBoard("hyperbolic-home")).toBe("hyperbolic54");
+    expect(iconBoard("torus")).toBe("torus");
+    expect(iconBoard("start")).toBeUndefined();
   });
 
   it("gives the home page's rows their own drawings", () => {
@@ -247,12 +263,12 @@ describe("card previews", () => {
 
   it("keeps the row's figure when there is no lattice and no solid", () => {
     // A surface has no tiling of its own. It is the row's own drawing,
-    // repainted (see below), so the shape count matches while the colours do
-    // not.
+    // repainted (see below), so the shape count matches — the card's cells
+    // each over their grout — while the colours do not.
     for (const key of ["torus"]) {
       const preview = previewIcon(key);
       expect(preview.tiled, key).toBe(false);
-      expect(paths(preview.svg), key).toBe(paths(menuIcon(key)));
+      expect(paths(preview.svg), key).toBe(2 * paths(menuIcon(key)));
     }
   });
 

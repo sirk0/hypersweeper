@@ -499,8 +499,12 @@ test.describe("the desktop menu breakpoint", () => {
     await expect(cells).toHaveCount(81);
     await page.locator('.difficulty-btn[data-key="hard"]').click();
     await expect(cells).toHaveCount(480);
-    // A family's card is not a level: it keeps its wallpaper.
-    await expect(page.locator(".menu-board-card-preview.is-tiled").first()).toBeVisible();
+    // A family's card is a level too: the board its icon is drawn from, the
+    // Uniform family's rhombitrihexagonal, drawn whole rather than as the
+    // tiling's wallpaper.
+    const uniform = page.locator('.menu-board-card[data-submenu="uniform"] .menu-board-card-preview');
+    await expect(uniform).toHaveAttribute("data-preview-mode", "rhombitrihex");
+    await expect(uniform).not.toHaveClass(/is-tiled/);
   });
 
   test("a pane page keeps its header while the cards scroll", async ({ page }) => {
