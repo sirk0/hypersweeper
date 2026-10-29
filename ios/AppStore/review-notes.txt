@@ -4,7 +4,7 @@ To try it: on the home screen, tap Classic for the familiar square grid, Flat fo
 
 Game Center: achievements use Game Center. If the device is not signed in, the app shows Apple's Game Center sign-in sheet at launch; the game is fully playable without signing in. To see an achievement unlock, win any board (Classic on Easy is quickest): "First clear" appears as a Game Center banner. Settings › Game Center opens the achievements page. The app only reports achievement progress, and reads nothing from Game Center except whether the player is signed in.
 
-iCloud: best times and the achievement record are kept in step between the user's devices through iCloud key-value storage, so they also survive a reinstall. With iCloud signed out or offline, everything works from the copy on the device.
+iCloud: best times, the achievement record and the boards starred as favourites are kept in step between the user's devices through iCloud key-value storage, so they also survive a reinstall. With iCloud signed out or offline, everything works from the copy on the device.
 
 Stickers: the app includes an iMessage sticker pack of the boards, in Messages' app drawer.
 

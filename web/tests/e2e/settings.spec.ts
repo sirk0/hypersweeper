@@ -571,6 +571,12 @@ test.describe("settings", () => {
       );
     await page.evaluate(() => window.__ms!.startBoard("torus", "easy"));
     expect(await shown()).toBe(0);
+    // ...except where the surface hides cells from every angle: the Klein
+    // bottle keeps its ring pair, and Boy's surface both of its pairs.
+    await page.evaluate(() => window.__ms!.startBoard("klein", "easy"));
+    expect(await shown()).toBe(2);
+    await page.evaluate(() => window.__ms!.startBoard("boy", "easy"));
+    expect(await shown()).toBe(4);
 
     await page.locator('.hud-btn[data-slot="back"]').click();
     await page.locator('.menu-header-btn[data-action="settings"]').click();

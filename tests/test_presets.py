@@ -43,19 +43,52 @@ BAND = 0.15
 # the mode is exempted whole because the reason is the geometry, not the row.
 COARSE_GEOMETRY = {"sphinx", "chair", "carpet", "pentaflake", "gosper",
                    "cube3d"}
-EXEMPT = COARSE_GEOMETRY
+# A closed hyperbolic surface's cell counts are fixed by its genus: the board
+# grows only by changing its tiling, and the rungs are {7,3}, 6.6.7 and the
+# Goldberg--Coxeter subdivisions -- 12(g - 1), 40(g - 1), then 54(g - 1),
+# 124(g - 1) and 222(g - 1) cells. The genus-14 Hurwitz surface's smallest is
+# 156, against an easy target of 81, and its rungs go 156, 520, 702; no row of
+# it can land in the band. (Klein's quartic and the Bolza surface do at all
+# three, Macbeath's surface at easy and medium, Dyck's at medium and Bring's at
+# medium and hard -- their other rows are in EXEMPT_ROWS.)
+GENUS_BOUND = {"triplet"}
+EXEMPT = COARSE_GEOMETRY | GENUS_BOUND
 
 # Single rows where the size band loses to a bar that matters more. Keyed by
 # (mode, difficulty) so exempting one board does not quietly exempt its other
 # two difficulties.
 EXEMPT_ROWS = {
+    # Macbeath's surface (genus 7) steps 240 -> 324 -> 744 cells: 6.6.7, then
+    # GC(2,0), then GC(3,0). 324 is 32% under hard's 480 and 744 is 55% over;
+    # 324 keeps the view holding most of the surface at once, which is how the
+    # board plays best (see `hurwitz.COVER_COPIES`), and its mines make it hard.
+    ("macbeath", "hard"),
+    # Dyck's surface (genus 3, 12 octagons) subdivides as 16n^2 - 4 cells:
+    # 60, 140, 252, 396, 572 for GC(2,0) .. GC(6,0). Easy is GC(2,0), 26%
+    # under 81, so all three rows are one tiling -- octagons among hexagons --
+    # rather than opening on its 3.4.8.4 (92 cells, the one size that tiling
+    # comes in). Hard is GC(5,0), 17.5% under 480, with 572 19% over; a
+    # GC(n,m) that lands (GC(3,3), 428) needs a skewed subdivision. The smaller
+    # keeps more of the surface in view, as Macbeath's hard does.
+    ("dyck", "easy"),
+    ("dyck", "hard"),
+    # Bring's surface (genus 4, 24 pentagons of {5,4}) has nothing near 81:
+    # {5,4} is 24 cells, 4.5.4.5 and 5.8.8 are 54, 4.4.4.5 is 114 (41% over),
+    # and the square subdivisions start at 114 too. 114 leads into its
+    # subdivided medium and hard, 264 and 474, both in the band.
+    ("bring", "easy"),
     # Kisrhombille packs 24 cells into a domain two tiles wide, so the
-    # smallest tube or strip of it with enough tiles around to *close* as one
-    # -- rather than crumple into a twisted lozenge, which three domains
-    # around does -- is six domains, and that is already 144 cells. Reading as
-    # the surface outranks the size band (`resize.MIN_RING`).
-    ("cylkisrhombille", "easy"),
+    # smallest strip of it with enough tiles around to *close* as one --
+    # rather than crumple into a twisted lozenge, which three domains around
+    # does -- is six domains: 144 cells, 120 once its rim's near-twins are
+    # peeled. Reading as the surface outranks the size band
+    # (`resize.MIN_RING`). The cylinder's half-domain tube peels to 72.
     ("mobiuskisrhombille", "easy"),
+    # Tritrunctrihexagonal's strip is cut just below a row of dodecagons (the
+    # one cut whose rim pins no near-twin by a corner), so a Mobius band of it
+    # closes its seam only at whole domains plus a sliver, and the narrowest
+    # that the immersion draws at its full width is five domains round: 170.
+    ("mobiustritrunctrihex", "easy"),
     # The same arithmetic on a donut and a bottle, from the other bar: a tile
     # may not span more than a quarter of a direction that closes, or it is
     # drawn as a flat plate through the axis rather than a facet of a tube
@@ -67,6 +100,28 @@ EXEMPT_ROWS = {
     ("toruskisrhombille", "easy"),
     ("kleinkisrhombille", "easy"),
     ("torussnubhex", "easy"),
+    # Ten 2-uniform donuts are the same arithmetic on bigger domains. A
+    # 2-uniform rectangle holds 16 to 42 cells, and in all but hexrings the
+    # tallest tile is over a quarter of the domain's height, so the tube takes
+    # two rows and the ring four domains: 4x2 of the domain is the smallest
+    # legal window -- 128 to 336 cells, the counts beside each row. Hexrings'
+    # tallest tile is 0.24 of its 36-cell domain, so it closes in one row
+    # (4x1). Turning the domain a quarter turn (`_ArchTemplate.torus`) puts its
+    # long side round the ring instead, four times over, and makes every one of
+    # these bigger still; it is only elongated3, whose strip layout is already
+    # turned, that it brings inside the band. Where the 4x2 window is also the
+    # closest to 256, medium ships it too.
+    ("torusstuddedtri", "easy"),            # 4x2 of 26 = 208
+    ("torusstuddedtri2", "easy"),           # 4x2 of 42 = 336
+    ("torusstuddedtri2", "medium"),         # ...and nothing smaller at all
+    ("torustrirhombitrihex", "easy"),       # 4x2 of 22 = 176, turned
+    ("torustritrunctrihex", "easy"),        # 4x2 of 32 = 256
+    ("torusfannedhex", "easy"),             # 4x2 of 16 = 128
+    ("torussnubelongated2", "easy"),        # 4x2 of 36 = 288
+    ("torusdissectedtrunchex", "easy"),     # 4x2 of 30 = 240
+    ("torusdissectedtrunchex2", "easy"),    # 4x2 of 30 = 240
+    ("torushexrings", "easy"),              # 4x1 of 36 = 144
+    ("torusdodecarhombitrihex", "easy"),    # 4x2 of 24 = 192
     # And once more from `resize.MIN_WRAP_DOMAINS`, on the tiling whose ring
     # knob counts *half*-domains. A Klein bottle glues the three-brick basket
     # weave's seam through a glide, so the odd ring counts the search can offer
@@ -229,12 +284,6 @@ OUTER_BAND = 0.25
 # between, so the triakis octahedron, the tetrakis hexahedron and the deltoidal
 # icositetrahedron each land at 96. Their rows are inside the outer band, so
 # they are counted here rather than exempted (see EXEMPT_ROWS).
-#
-# So is `hyperbolic45` medium, at 205 cells (-20%): the {4,5} disc trimmed to
-# any of the four distance shells that land in the medium band (237, 253, 277
-# and 285 cells) leaves 8 rim cells with an indistinguishable twin each, which
-# no number can ever separate, and the nearest fair trim is 20 shells. Being a
-# puzzle outranks the size band, as reading as the surface does above.
 NEAR_MISS_ALLOWANCE = 0.12
 
 
@@ -409,6 +458,17 @@ class TestWrappedWindowsDoNotFold:
         ("torustetrakis", "easy"): 0.217,
         ("kleintetrakis", "easy"): 0.217,
         ("torusrotatedhex", "easy"): 0.206,
+        # The 2-uniform donuts: a dodecagon or a hexagon beside triangles, on a
+        # tube one or two domains round. tritrunctrihex and hexrings are at
+        # their smallest window already (EXEMPT_ROWS), so smoothing them would
+        # take a bigger board still; the other three are at the easy size,
+        # where the step gives way to the band as it does for the rows above.
+        ("torustritrunctrihex", "easy"): 0.231,
+        ("torustritrunctrihex", "medium"): 0.231,
+        ("torushexrings", "easy"): 0.225,
+        ("torusdodecasquare", "easy"): 0.276,
+        ("torushexbands", "easy"): 0.217,
+        ("torussquaretrihex2", "easy"): 0.217,
     }
 
     @pytest.mark.parametrize("difficulty", DIFFICULTIES)

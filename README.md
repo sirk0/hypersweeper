@@ -48,11 +48,26 @@ Pick a surface, then a tiling:
   self-similar — one tile inflated into a patch shaped like itself: the
   sphinx, the chair, the Sierpiński carpet, the pentaflake, and hexagons
   filling a Gosper island.
-  And three are not Euclidean at all — the game's namesake: regular
-  heptagons three to a corner ({7,3}), pentagons four to a corner ({5,4})
-  and squares five to a corner ({4,5}), which only fit in the *hyperbolic*
-  plane, drawn in the Poincaré disc with tiles shrinking toward a rim they
-  never reach. A tile there has 7, 10 or 12 neighbours.
+  And thirty-seven are not Euclidean at all — the game's namesake: eleven
+  regular {p,q} tilings, from nonagons and octagons three to a corner ({9,3},
+  {8,3}) and heptagons three and four to a corner ({7,3}, {7,4}) to squares
+  six to a corner ({4,6}) and triangles seven and eight to a corner ({3,7},
+  {3,8} — a {3,7} triangle has 15 neighbours), which only fit
+  in the *hyperbolic* plane, drawn in the Poincaré disc with tiles shrinking
+  toward a rim they never reach; and twenty-two uniform tilings made from
+  {7,3}, {8,3}, {9,3}, {5,4}, {6,4} and {5,5}: among them the hyperbolic
+  soccer ball (6.6.7 — hexagons ringing every heptagon, HyperRogue's tiling)
+  and its nonagon cousin 6.6.9, triangles and heptagons (3.7.3.7),
+  squares and pentagons (4.5.4.5), squares, octagons and decagons (4.8.10),
+  and squares, hexagons and 16-gons (4.6.16). One is drawn in the upper half-plane instead, as a rectangle:
+  Böröczky's binary tiling, every row twice as many tiles as the one above.
+  And six have no rim at all: the plane glued
+  up into closed surfaces — the Bolza surface, Klein's quartic, Dyck's and
+  Bring's surfaces, Macbeath's surface and a genus-14 Hurwitz surface — each
+  drawn as a patch of the disc that covers it, every cell drawn at least once
+  and keeping its full count of neighbours; each grows by its tiling — plain
+  heptagons, 6.6.7 or 4.4.4.5, then subdivided — under a view sized
+  to hold three quarters of the surface, and the pan never runs out.
   The menu groups these as **Regular**, **Uniform**, **Laves**, **2-uniform**
   (regular polygons edge to edge with *two* kinds of corner — all twenty of
   them, named for how each is made from a uniform tiling, from *Studded
@@ -145,6 +160,11 @@ Pick a surface, then a tiling:
   sides of the ball. Squares (a cube's faces rounded onto the sphere),
   triangles (a geodesic sphere) or hexagons (a Goldberg sphere, with the six
   pentagons the surface forces)
+- **Boy's surface (3D)** — the same projective plane, drawn as itself: a
+  surface that passes through itself along three loops meeting at one point,
+  every cell drawn once. The squares keep their right angles but not their
+  size, and the board's moves bring the cells hidden under its lobes into view.
+  Squares
 - **Cylinder (3D)** — an open tube, wrapping in one direction only
 
 ## Playing

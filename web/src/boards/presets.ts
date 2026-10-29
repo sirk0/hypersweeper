@@ -45,7 +45,8 @@ import {
   pentaflakeBoard,
   sphinxBoard,
 } from "./fractal";
-import { hyperbolicBoard } from "./hyperbolic";
+import { hurwitzBoard } from "./hurwitz";
+import { binaryBoard, hyperbolicBoard, hyperbolicUniformBoard } from "./hyperbolic";
 import { DIFFICULTIES } from "./catalog";
 import type { AnyBoard } from "./core";
 import {
@@ -57,6 +58,7 @@ import {
   dodecahedronBoard,
   icosahedronBoard,
   octahedronBoard,
+  sphereSquareBoard,
   sphereTriangleBoard,
   steppedBipyramidBoard,
   steppedPyramidBoard,
@@ -94,6 +96,7 @@ import {
   trefoilBoard,
   trefoilHexBoard,
   trefoilTriangleBoard,
+  boyBoard,
   projectiveBoard,
   projectiveHexBoard,
   projectiveTriangleBoard,
@@ -120,6 +123,7 @@ const BUILDERS: Record<string, Builder> = {
   square_diamond_board: squareDiamondBoard,
   c180_board: c180Board,
   gp21_board: gp21Board,
+  sphere_square_board: sphereSquareBoard,
   sphere_triangle_board: sphereTriangleBoard,
   // the Archimedean solids cut into boards (boards/archimedean.ts), duals of
   // their Catalan solids; (mineCount, frequency) like those. The three
@@ -170,6 +174,8 @@ const BUILDERS: Record<string, Builder> = {
   projective_board: projectiveBoard,
   projective_triangle_board: projectiveTriangleBoard,
   projective_hex_board: projectiveHexBoard,
+  // the same cubed-sphere board drawn once, on Boy's surface
+  boy_board: boyBoard,
   // the genus-2 board: two square-tiled donuts merged at their outer rims
   double_torus_board: doubleTorusBoard,
   double_torus_triangle_board: doubleTorusTriangleBoard,
@@ -204,6 +210,9 @@ const BUILDERS: Record<string, Builder> = {
   pentaflake_board: pentaflakeBoard,
   gosper_board: gosperBoard,
   hyperbolic_board: hyperbolicBoard,
+  hyperbolic_uniform_board: hyperbolicUniformBoard,
+  binary_board: binaryBoard,
+  hurwitz_board: hurwitzBoard,
 };
 
 /** The builders that take a `variant` after their preset args: the
@@ -275,6 +284,35 @@ export function windowFor(mode: string, difficulty: string, seed: number): numbe
  * window, and a share link — which carries the seed — reopens the one it names.
  */
 export function buildBoard(mode: string, difficulty: string, seed = 0): AnyBoard {
+  const { builder, args, variant } = presetBuilder(mode, difficulty);
+  const patch = variant ? windowFor(mode, difficulty, seed) : 0;
+  const key = `${mode}|${difficulty}|${patch}`;
+  let board = BUILT.get(key);
+  if (board) {
+    BUILT.delete(key); // re-inserted below, as the most recent
+  } else {
+    board = variant ? builder(...args, patch) : builder(...args);
+  }
+  BUILT.set(key, board);
+  if (BUILT.size > BUILT_KEEP) BUILT.delete(BUILT.keys().next().value!);
+  return board;
+}
+
+/**
+ * The board a mode and difficulty name, built fresh and kept nowhere — for a
+ * picture of the board (a menu card, ui/icons.ts) rather than a game. It skips
+ * `BUILT`, which exists for restarts: a page of cards would push the board
+ * just played out of it. A variant mode gets its centred window.
+ */
+export function presetBoard(mode: string, difficulty: string): AnyBoard {
+  const { builder, args, variant } = presetBuilder(mode, difficulty);
+  return variant ? builder(...args, 0) : builder(...args);
+}
+
+function presetBuilder(
+  mode: string,
+  difficulty: string,
+): { builder: Builder; args: Arg[]; variant: boolean } {
   const spec = PRESETS[mode];
   if (!spec) throw new Error(`unknown mode ${mode}`);
   if (!DIFFICULTIES.includes(difficulty)) {
@@ -283,7 +321,19 @@ export function buildBoard(mode: string, difficulty: string, seed = 0): AnyBoard
   const builder = BUILDERS[spec.builder];
   const args = spec.args[difficulty];
   if (!builder || !args) throw new Error(`no preset for ${mode}/${difficulty}`);
-  return VARIANT_BUILDERS.has(spec.builder)
-    ? builder(...args, windowFor(mode, difficulty, seed))
-    : builder(...args);
+  return { builder, args, variant: VARIANT_BUILDERS.has(spec.builder) };
 }
+
+/**
+ * The boards `buildBoard` handed out last, by mode, difficulty and window,
+ * most recent last. A restart — the smiley, *Play again*, a share link to the
+ * board just played — deals the same board again, and the biggest boards
+ * take long enough to build that a player sees the pause, so the board is
+ * handed back instead of rebuilt. Sharing it is safe because a
+ * board is never changed once built: `Game` copies the adjacency it is dealt
+ * on, the meshes read the board and keep their own buffers, and the lazy
+ * `symmetries` is measured once either way. A few are kept, not every one:
+ * the conformance suite builds every board there is.
+ */
+const BUILT = new Map<string, AnyBoard>();
+const BUILT_KEEP = 4;

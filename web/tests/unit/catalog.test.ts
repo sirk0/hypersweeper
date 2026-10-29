@@ -87,34 +87,34 @@ describe("catalog families", () => {
     expect(familyRows("rectangle", "flat").map((r) => r.mode)).toEqual([...RECTANGLE_ARCH]);
   });
 
-  it("wraps the 2-uniform tilings onto the cylinder and Möbius strip only", () => {
+  it("wraps the 2-uniform tilings onto the cylinder, Möbius strip and torus only", () => {
     // All twenty reverse y somewhere (p6 and pgg by a half turn, the rest by a
     // mirror too), so all twenty have a cylinder, and the nineteen with a
     // mirror or a glide to close a seam a Möbius strip — every one but the p6
     // studdedtri2 (snubelongated's pgg glide is the one its wrap layout glues
-    // through); ARCH_FAMILY_SURFACES holds them off the torus and the Klein
-    // bottle, which have no measured windows for them yet.
+    // through). A donut needs neither a cut nor a mirror, so all twenty reach
+    // it; ARCH_FAMILY_SURFACES holds them off the Klein bottle, which has no
+    // measured windows for them yet.
     expect(TWO_UNIFORM_ARCH.length).toBe(20);
     const chiral = TWO_UNIFORM_ARCH.filter((key) => TILINGS_BY_KEY.get(key)!.chiral);
     expect(chiral).toEqual(["studdedtri2"]);
     for (const key of TWO_UNIFORM_ARCH) {
       const tiling = TILINGS_BY_KEY.get(key)!;
-      expect(tilingAllows(tiling, SURFACES.get("flat")!)).toBe(true);
-      expect(tilingAllows(tiling, SURFACES.get("cylinder")!)).toBe(true);
-      expect(tilingAllows(tiling, SURFACES.get("mobius")!), `${key} on mobius`).toBe(!tiling.chiral);
-      for (const surface of ["torus", "klein"]) {
-        expect(tilingAllows(tiling, SURFACES.get(surface)!), `${key} on ${surface}`).toBe(false);
+      for (const surface of ["flat", "cylinder", "torus"]) {
+        expect(tilingAllows(tiling, SURFACES.get(surface)!), `${key} on ${surface}`).toBe(true);
       }
+      expect(tilingAllows(tiling, SURFACES.get("mobius")!), `${key} on mobius`).toBe(!tiling.chiral);
+      expect(tilingAllows(tiling, SURFACES.get("klein")!), `${key} on klein`).toBe(false);
     }
-    for (const surface of ["cylinder", "mobius"]) {
+    for (const surface of ["cylinder", "mobius", "torus"]) {
       expect(pickerFamilies(surface)).toContain("2-uniform");
     }
-    for (const surface of ["torus", "klein"]) {
-      expect(pickerFamilies(surface)).not.toContain("2-uniform");
+    expect(pickerFamilies("klein")).not.toContain("2-uniform");
+    for (const surface of ["cylinder", "torus"]) {
+      expect(familyRows("2-uniform", surface).map((r) => r.mode)).toEqual(
+        TWO_UNIFORM_ARCH.map((key) => modeFor(key, surface)),
+      );
     }
-    expect(familyRows("2-uniform", "cylinder").map((r) => r.mode)).toEqual(
-      TWO_UNIFORM_ARCH.map((key) => modeFor(key, "cylinder")),
-    );
     // ...and the chiral two drop off the Möbius page, as snub hexagonal does
     // off the uniform one
     expect(familyRows("2-uniform", "mobius").map((r) => r.mode)).toEqual(
@@ -216,9 +216,46 @@ describe("catalog families", () => {
     expect(pickerFamilies("flat")).toContain("hyperbolic");
     expect(pickerFamilies("torus")).not.toContain("hyperbolic");
     expect(familyRows("hyperbolic", "flat").map((r) => r.mode)).toEqual([
+      "hyperbolic93",
+      "hyperbolic83",
       "hyperbolic73",
+      "hyperbolic74",
+      "hyperbolic64",
       "hyperbolic54",
+      "hyperbolic55",
       "hyperbolic45",
+      "hyperbolic46",
+      "hyperbolic37",
+      "hyperbolic38",
+      "hyperbolic667",
+      "hyperbolic31414",
+      "hyperbolic3737",
+      "hyperbolic3474",
+      "hyperbolic4614",
+      "hyperbolic668",
+      "hyperbolic31616",
+      "hyperbolic3838",
+      "hyperbolic3484",
+      "hyperbolic4616",
+      "hyperbolic588",
+      "hyperbolic41010",
+      "hyperbolic4545",
+      "hyperbolic4445",
+      "hyperbolic4810",
+      "hyperbolic688",
+      "hyperbolic41212",
+      "hyperbolic4646",
+      "hyperbolic4446",
+      "hyperbolic4812",
+      "hyperbolic51010",
+      "hyperbolic669",
+      "hyperbolicbinary",
+      "bolza",
+      "quartic",
+      "dyck",
+      "bring",
+      "macbeath",
+      "triplet",
     ]);
   });
 });
@@ -254,7 +291,7 @@ describe("mode -> tiling", () => {
         pairs++;
       }
     }
-    expect(pairs).toBe(206);
+    expect(pairs).toBe(227);
   });
 
   it("has no tiling for the one-off boards", () => {

@@ -52,6 +52,7 @@ from scripts.difficulty.metrics import (
     aspect,
     distortion_summary,
     indistinguishable_cells,
+    near_twin_cells,
     vertex_types_shown,
 )
 
@@ -121,6 +122,11 @@ SPEC: dict[str, dict] = {
     "projective_board": dict(size=(0,), mine=1, shape=None, rigid=True),
     "projective_triangle_board": dict(size=(0,), mine=1, shape=None, rigid=True),
     "projective_hex_board": dict(size=(0,), mine=1, shape=None, rigid=True),
+    # Boy's surface is the projective plane's square board cell for cell,
+    # drawn on an immersion instead of its double cover: the same knob, and
+    # ``rigid`` because roundness would only read the immersion's uneven
+    # cell sizes as a reason to pick a different n.
+    "boy_board": dict(size=(0,), mine=1, shape=None, rigid=True),
     "mobius_board": dict(size=(0, 1), mine=2, shape=None),
     "mobius_triangle_board": dict(size=(0, 1), mine=2, shape=None),
     "mobius_hex_board": dict(size=(0, 1), mine=2, shape=None),
@@ -142,6 +148,10 @@ SPEC: dict[str, dict] = {
     # onto the sphere, so the same one knob and 20 * f**2 cells; ``rigid`` for
     # the same reason as the Goldberg spheres.
     "sphere_triangle_board": dict(size=(1,), mine=0, shape=None, rigid=True),
+    # The spherical cube: `cube_board`'s grid drawn round by the equiangular
+    # cube map, so one knob, the squares along an edge, and 6 * n**2 cells;
+    # ``rigid`` for the same reason again.
+    "sphere_square_board": dict(size=(1,), mine=0, shape=None, rigid=True),
     "cube_board": dict(size=(0,), mine=1, shape=None),
     # The three brick bonds laid on a cube: one knob, the blocks per face side.
     # ``rigid`` for the same reason the Catalan solids are -- every brick lies
@@ -246,11 +256,28 @@ SPEC: dict[str, dict] = {
     # board is a disc, so the flat shape term is log(1) = 0 for every
     # candidate and the size penalty decides alone, as for the brick rings.
     "hyperbolic_board": dict(size=(2,), mine=3, shape=4, kind="scale"),
+    # the uniform tilings of {7,3} (hyperbolic_uniform_board(p, q, op, shells,
+    # mines, scale)): the same disc and the same knob, after the op
+    "hyperbolic_uniform_board": dict(size=(3,), mine=4, shape=5, kind="scale"),
+    # Böröczky's binary tiling (binary_board(top, levels, mines, scale)): two
+    # knobs, but top * (2**levels - 1) cells rather than anything near their
+    # product, so the product filter below would throw the right windows away.
+    # Its candidates are enumerated instead (`_grid_binary`). The window is a
+    # rectangle, so the flat shape term is its aspect ratio, and a square one
+    # is ~2 tiles across the top whatever the depth.
+    "binary_board": dict(size=(0, 1), mine=2, shape=3, kind="scale", grid="binary"),
+    # the closed hyperbolic surfaces (hurwitz_board(surface, op, margin, mines,
+    # scale)): one surface a mode, so no knob is the search's to turn -- the
+    # surface fixes how many heptagons there are, and each row names the
+    # tiling it is cut into ({7,3}, 6.6.7 or a subdivision, a rung per
+    # difficulty). Every row is held as declared.
+    "hurwitz_board": dict(size=(), mine=3, shape=None, rigid=True),
     # ...and ``centre``, the half-turn centre the window is cut about, which
     # the search picks from `flat_centres` alongside the two extents
     "archimedean_board": dict(size=(1, 2), mine=3, shape=4, kind="scale", lead=1,
                               centre=5),
-    "arch_torus_board": dict(size=(1, 2), mine=3, shape=4, kind="tube", lead=1),
+    "arch_torus_board": dict(size=(1, 2), mine=3, shape=4, kind="tube", lead=1,
+                             torus=True),
     "arch_cylinder_board": dict(size=(1, 2), mine=3, shape=4, kind="cut", lead=1),
     "arch_mobius_board": dict(size=(1, 2), mine=3, shape=None, lead=1, halves=True),
     "arch_klein_board": dict(size=(1, 2), mine=3, shape=4, kind="tubescale", lead=1,
@@ -258,6 +285,8 @@ SPEC: dict[str, dict] = {
 }
 # ``halves``: the ring knob counts *half*-domains where the tiling glues its
 # seam through a glide rather than a plain mirror -- see ``_wrap_copies``.
+# ``torus``: the builder lays out the tiling's torus layout
+# (``_torus_template``) rather than its wrap layout -- see ``_spec_layout``.
 
 # Two solids whose two knobs are not independent: taken as a free grid they
 # offer degenerate shapes at the right cell count -- a cube frame bored out to
@@ -301,7 +330,15 @@ def _grid_goldberg3() -> list[list[int]]:
             if (h - k) % 3 != 0]
 
 
+# ``binary_board(top, levels)``: every row doubles, so the count is
+# ``top * (2**levels - 1)`` -- 1, 3, 7, 15 ... times the top row. A row deep
+# enough for hard is far past anything near easy, so the grid is small.
+def _grid_binary() -> list[list[int]]:
+    return [[top, levels] for top in range(1, 9) for levels in range(2, 11)]
+
+
 GRIDS = {
+    "binary": _grid_binary,
     "goldberg3": _grid_goldberg3,
     "cubeframe": _grid_cubeframe,
     "bipyramid": _grid_bipyramid,
@@ -481,6 +518,14 @@ MAX_FACET_STEP = 0.20
 # a single brick would take a whole half turn.
 FOLD_WEIGHT = 3.0
 
+# How hard a window is pushed off one whose rim keeps near-twins the builder
+# could not peel (see `near_twin_cells`), charged on the share of the board
+# they make up. A coin flip outranks squareness: at 1.0 the tetrakis hard row
+# kept an 11x11 window with 40 of them over a 10x12 with none, the same 480
+# cells a fifth off square. At 4.0 a tenth of the cells costs about what that
+# fifth does -- still nothing like enough to leave the size band for.
+NEAR_TWIN_WEIGHT = 4.0
+
 # How wide the join of a *merged* board may be, over the width of one of the
 # pieces it joins (`waist_ratio`). Only the double torus has one, and it is the
 # one thing about that board no other measure here can see: cell distortion
@@ -578,9 +623,22 @@ def _layout(builder: str, tiling: str):
     and for a wrapped one the layout its surfaces glue (``_wrap_template`` --
     the same template, bar the tilings that wrap turned a quarter turn or
     moved onto a glide line)."""
-    from minesweeper.boards.tilings import _arch_template, _wrap_template
+    from minesweeper.boards.tilings import _arch_template
 
-    return (_arch_template(tiling) if builder == "archimedean_board"
+    if builder == "archimedean_board":
+        return _arch_template(tiling)
+    return _spec_layout(SPEC.get(builder, {}), tiling)
+
+
+def _spec_layout(spec: dict, tiling: str):
+    """The wrapped layout a builder's knobs count copies of: the donut's own
+    torus layout (``_torus_template``) for the builder that declares
+    ``torus``, otherwise the layout every wrapped surface glues
+    (``_wrap_template``). The tile measures below are cached per layout, so
+    the donut and the strips of one tiling never read each other's."""
+    from minesweeper.boards.tilings import _torus_template, _wrap_template
+
+    return (_torus_template(tiling) if spec.get("torus")
             else _wrap_template(tiling))
 
 
@@ -661,10 +719,30 @@ MAX_WINDOW_ASPECT = 15.0
 # board here is square, and the shipped square hard board is 22x22, searched
 # and calibrated like any other row.
 #
+# A substitution board deals many windows onto its patch, and only those that
+# play like the centred one (scripts/difficulty/windows.py) -- so the centred
+# window has to be a *typical* one, and nothing here measures that. On the
+# kite-and-dart hard board at 480 tiles it is not: the solver wins 0.55 of its
+# games where the median window gives 0.42 (2.6 standard deviations out), and
+# 3 windows of 96 played like it. Measured across the band, the centred window
+# is typical at 450 tiles (0.41 against a median of 0.43), so that is the size.
 PINNED_ROWS = {
     ("square", "easy"): "the classic beginner board",
     ("square", "medium"): "the classic intermediate board",
     ("kitedart", "hard"): "the centred window plays like a typical one at 450",
+    # Two hyperbolic trims whose rims are mostly forced guesses: 4.8.12 at 259
+    # cells calibrates to 6 mines (2.3%) where its 235 and 247 take 14, and
+    # 4.12.12 at 253 to 3, fewer than its easy board's 4, where 289 takes 5.
+    ("hyperbolic4812", "medium"): "259 cells is all coin flips at the rim; 247 plays like 235",
+    ("hyperbolic41212", "medium"): "253 cells is all coin flips at the rim; 289 does not",
+    # 3.16.16's triangles each see three 16-gons and nothing else, so a mine
+    # on one is a coin flip more often than not: every medium trim from 193 to
+    # 305 cells plays far under the target at its opening floor (0.43-0.76)
+    # except 209, which calibrates. Fairness outranks the size band here.
+    ("hyperbolic31616", "medium"): "the one medium trim that calibrates (209 cells, 18% under)",
+    # 3.14.14's hard trims from 414 to 498 cells all take 7 to 11 mines; 484
+    # took 8, fewer than its medium board's 9, and 442 takes 11.
+    ("hyperbolic31414", "hard"): "484 cells took fewer mines than medium; 442 does not",
 }
 
 
@@ -1066,6 +1144,35 @@ def loose_tiles(board) -> int:
     return sum(1 for cell in board.polygons if cell not in shared)
 
 
+def _straight_grain_edges(tiling: str, board) -> bool:
+    """Does a grained tiling's window end on each grain line in one straight
+    run? ``test_the_edge_is_one_straight_run``'s own measure, imported as
+    `_symmetric_enough` imports the symmetry one: a window ends on the grain
+    by construction, but peeling a near-twin off its rim can take a tile out
+    of the middle of that edge and leave a notch."""
+    try:
+        from minesweeper.boards.tilings import _arch_template
+        from tests.test_boards import _outline_at
+    except Exception:
+        return True  # tooling should not fail because the suite moved
+    template = _arch_template(tiling)
+    polygons = list(board.polygons.values())
+    for axis, period in enumerate(template.grain):
+        if not period:
+            continue
+        other = 1 - axis
+        values = [point[other] for p in polygons for point in p]
+        low, high = min(values), max(values)
+        for side in (max, min):
+            edge = side(point[axis] for p in polygons for point in p)
+            on = [abs(_outline_at(polygons, axis, other,
+                                  low + (high - low) * (i + 0.5) / 400, side) - edge) < 1e-6
+                  for i in range(400)]
+            if sum(1 for i, here in enumerate(on) if here and (i == 0 or not on[i - 1])) != 1:
+                return False
+    return True
+
+
 def window_symmetries(board) -> int:
     """The order of a flat board's symmetry group about its own centre: how
     many of the square's eight motions -- the identity, the half and quarter
@@ -1230,10 +1337,10 @@ def _window_aspect(builder: str, spec: dict, trial: list) -> float:
     return max(ratio, 1 / ratio)
 
 
-_TILE_SPAN: dict[str, tuple[float, float]] = {}
+_TILE_SPAN: dict[tuple[str, bool], tuple[float, float]] = {}
 
 
-def _tile_span(tiling: str) -> tuple[float, float]:
+def _tile_span(tiling: str, torus: bool = False) -> tuple[float, float]:
     """Median tile width and height in one domain of an Archimedean template.
 
     A wrap knob counts *domain copies*, and a domain is anything from one tile
@@ -1241,12 +1348,10 @@ def _tile_span(tiling: str) -> tuple[float, float]:
     domain's size by this turns a knob into the number of tiles that direction
     actually closes over, which is what ``MIN_RING`` and ``MIN_TUBE`` mean.
     """
-    if tiling not in _TILE_SPAN:
+    if (tiling, torus) not in _TILE_SPAN:
         import statistics
 
-        from minesweeper.boards.tilings import _wrap_template
-
-        template = _wrap_template(tiling)
+        template = _spec_layout({"torus": torus}, tiling)
         widths, heights = [], []
         for _name, refs in template.cells:
             xs = [template.verts[tag][0] + dm * template.width
@@ -1255,15 +1360,17 @@ def _tile_span(tiling: str) -> tuple[float, float]:
                   for tag, _dm, dn in refs]
             widths.append(max(xs) - min(xs))
             heights.append(max(ys) - min(ys))
-        _TILE_SPAN[tiling] = (statistics.median(widths) or 1.0,
-                              statistics.median(heights) or 1.0)
-    return _TILE_SPAN[tiling]
+        _TILE_SPAN[tiling, torus] = (statistics.median(widths) or 1.0,
+                                     statistics.median(heights) or 1.0)
+    return _TILE_SPAN[tiling, torus]
 
 
-_TILE_FRACTIONS: dict[str, tuple[tuple[float, ...], tuple[float, ...]]] = {}
+_TILE_FRACTIONS: dict[tuple[str, bool],
+                      tuple[tuple[float, ...], tuple[float, ...]]] = {}
 
 
-def tile_fractions(tiling: str) -> tuple[tuple[float, ...], tuple[float, ...]]:
+def tile_fractions(tiling: str, torus: bool = False
+                   ) -> tuple[tuple[float, ...], tuple[float, ...]]:
     """Every tile's width and height, as fractions of one domain.
 
     The median span above answers "how many tiles is a domain"; this answers
@@ -1283,10 +1390,8 @@ def tile_fractions(tiling: str) -> tuple[tuple[float, ...], tuple[float, ...]]:
     whole blocks rather than a ring of bricks a third the depth of the ones
     beside them.
     """
-    if tiling not in _TILE_FRACTIONS:
-        from minesweeper.boards.tilings import _wrap_template
-
-        template = _wrap_template(tiling)
+    if (tiling, torus) not in _TILE_FRACTIONS:
+        template = _spec_layout({"torus": torus}, tiling)
         widths, heights = [], []
         for _name, refs in template.cells:
             corners = []
@@ -1304,14 +1409,14 @@ def tile_fractions(tiling: str) -> tuple[tuple[float, ...], tuple[float, ...]]:
                   for tag, _dm, dn in corners]
             widths.append((max(xs) - min(xs)) / template.width)
             heights.append((max(ys) - min(ys)) / template.height)
-        _TILE_FRACTIONS[tiling] = (tuple(widths) or (1.0,),
-                                   tuple(heights) or (1.0,))
-    return _TILE_FRACTIONS[tiling]
+        _TILE_FRACTIONS[tiling, torus] = (tuple(widths) or (1.0,),
+                                          tuple(heights) or (1.0,))
+    return _TILE_FRACTIONS[tiling, torus]
 
 
-def widest_tile(tiling: str) -> tuple[float, float]:
+def widest_tile(tiling: str, torus: bool = False) -> tuple[float, float]:
     """The biggest tile's width and height, as fractions of one domain."""
-    widths, heights = tile_fractions(tiling)
+    widths, heights = tile_fractions(tiling, torus)
     return max(widths), max(heights)
 
 
@@ -1374,7 +1479,7 @@ def _tile_turn(spec: dict, trial: list, axis: int) -> float:
         copies = _wrap_copies(spec, trial, axis)
         if not copies:
             return float("inf")
-        return widest_tile(trial[0])[axis] / copies
+        return widest_tile(trial[0], bool(spec.get("torus")))[axis] / copies
     except Exception:
         return 0.0
 
@@ -1394,7 +1499,7 @@ def _facet_step(spec: dict, trial: list, axis: int) -> float:
         if not copies:
             return float("inf")
         sags = [1 - math.cos(math.pi * min(fraction / copies, 1.0))
-                for fraction in tile_fractions(trial[0])[axis]]
+                for fraction in tile_fractions(trial[0], bool(spec.get("torus")))[axis]]
         return max(sags) - min(sags)
     except Exception:
         return 0.0
@@ -1420,7 +1525,7 @@ def _wrap_cells(builder: str, spec: dict, trial: list, axis: int) -> float:
     domain = template.width if axis == 0 else template.height
     # the slack absorbs the float division: a ring of exactly MIN_RING tiles
     # must not fail the bar because the width divides to 11.9999996
-    return count * domain / _tile_span(trial[0])[axis] + 1e-6
+    return count * domain / _tile_span(trial[0], bool(spec.get("torus")))[axis] + 1e-6
 
 
 def _rolled_screen_aspect(builder: str, spec: dict, trial: list) -> float:
@@ -1622,7 +1727,8 @@ def _score(mode: str, board, target: int, is_flat: bool,
            builder: str = "", spec: dict | None = None,
            trial: list | None = None) -> float:
     n = len(board.adjacency)
-    size_penalty = abs(math.log(n / target))
+    size_penalty = (abs(math.log(n / target))
+                    + NEAR_TWIN_WEIGHT * near_twin_cells(board.adjacency) / n)
     if spec is not None and spec.get("rigid"):
         return size_penalty
     if is_flat:
@@ -1976,9 +2082,16 @@ def search(mode: str, builder: str, args: list, difficulty: str,
             if keep_shape and not is_flat and _off_planar(
                     edge_ratio(board, corners), base_edge) > shape_bar:
                 continue
-            # ...and, flat, no tile hung on by a corner (see `loose_tiles`):
-            # the flat board's shape bar, which gives way where the cell one does
-            if keep_shape and is_flat and spec.get("lead") and loose_tiles(board):
+            # ...and, flat, no tile hung on by a corner (see `loose_tiles`),
+            # no near-twin left on the rim that the builder could not peel --
+            # a weighted term everywhere else, but against the flat squareness
+            # weights it was outbid, and a coin flip outranks a squarer board
+            # -- and, on a grained tiling, an edge that is still one straight
+            # run once the peel has been at it. The flat board's shape bars,
+            # which give way where the cell one does.
+            if keep_shape and is_flat and spec.get("lead") and (
+                    loose_tiles(board) or near_twin_cells(board.adjacency)
+                    or not _straight_grain_edges(trial[0], board)):
                 continue
             # A window can hit the cell count, keep its topology and still not
             # be a puzzle: three cells around a cylinder gives every cell the

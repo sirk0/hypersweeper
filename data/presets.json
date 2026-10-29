@@ -82,7 +82,7 @@
         "hard": [
           17,
           28,
-          109,
+          108,
           29.793
         ]
       }
@@ -1358,6 +1358,23 @@
         ]
       }
     },
+    "boy": {
+      "builder": "boy_board",
+      "args": {
+        "easy": [
+          5,
+          12
+        ],
+        "medium": [
+          9,
+          57
+        ],
+        "hard": [
+          13,
+          136
+        ]
+      }
+    },
     "projectivetri": {
       "builder": "projective_triangle_board",
       "args": {
@@ -1493,23 +1510,23 @@
         "easy": [
           5,
           4,
-          10,
-          5,
-          300.0
+          11,
+          7,
+          298.833
         ],
         "medium": [
           5,
           4,
-          21,
-          16,
-          300.0
+          22,
+          23,
+          299.961
         ],
         "hard": [
           5,
           4,
-          33,
-          48,
-          300.0
+          34,
+          51,
+          299.982
         ]
       }
     },
@@ -1519,22 +1536,966 @@
         "easy": [
           4,
           5,
+          11,
+          8,
+          299.419
+        ],
+        "medium": [
+          4,
+          5,
+          23,
+          25,
+          299.662
+        ],
+        "hard": [
+          4,
+          5,
+          43,
+          64,
+          299.592
+        ]
+      }
+    },
+    "hyperbolic83": {
+      "builder": "hyperbolic_board",
+      "args": {
+        "easy": [
+          8,
+          3,
+          7,
+          6,
+          300.0
+        ],
+        "medium": [
+          8,
+          3,
+          16,
+          17,
+          300.0
+        ],
+        "hard": [
+          8,
+          3,
+          24,
+          44,
+          300.0
+        ]
+      }
+    },
+    "hyperbolic64": {
+      "builder": "hyperbolic_board",
+      "args": {
+        "easy": [
+          6,
+          4,
+          9,
+          4,
+          299.052
+        ],
+        "medium": [
+          6,
+          4,
+          21,
+          15,
+          299.804
+        ],
+        "hard": [
+          6,
+          4,
+          31,
+          39,
+          299.985
+        ]
+      }
+    },
+    "hyperbolic55": {
+      "builder": "hyperbolic_board",
+      "args": {
+        "easy": [
+          5,
+          5,
+          12,
+          7,
+          298.449
+        ],
+        "medium": [
+          5,
+          5,
+          22,
+          22,
+          299.827
+        ],
+        "hard": [
+          5,
+          5,
+          37,
+          48,
+          299.98
+        ]
+      }
+    },
+    "hyperbolic46": {
+      "builder": "hyperbolic_board",
+      "args": {
+        "easy": [
+          4,
+          6,
+          14,
+          6,
+          298.977
+        ],
+        "medium": [
+          4,
+          6,
+          26,
+          23,
+          300.0
+        ],
+        "hard": [
+          4,
+          6,
+          42,
+          53,
+          299.994
+        ]
+      }
+    },
+    "hyperbolic37": {
+      "builder": "hyperbolic_board",
+      "args": {
+        "easy": [
+          3,
+          7,
+          8,
+          7,
+          300.0
+        ],
+        "medium": [
+          3,
+          7,
+          20,
+          23,
+          300.0
+        ],
+        "hard": [
+          3,
+          7,
+          36,
+          75,
+          300.0
+        ]
+      }
+    },
+    "hyperbolic38": {
+      "builder": "hyperbolic_board",
+      "args": {
+        "easy": [
+          3,
+          8,
+          6,
+          9,
+          300.0
+        ],
+        "medium": [
+          3,
+          8,
+          17,
+          23,
+          300.0
+        ],
+        "hard": [
+          3,
+          8,
+          33,
+          57,
+          299.88
+        ]
+      }
+    },
+    "bolza": {
+      "builder": "hurwitz_board",
+      "args": {
+        "easy": [
+          "bolza",
+          "gc3",
+          0,
+          16,
+          300.0
+        ],
+        "medium": [
+          "bolza",
+          "gc6",
+          0,
+          68,
+          300.0
+        ],
+        "hard": [
+          "bolza",
+          "gc8",
+          0,
+          134,
+          300.0
+        ]
+      }
+    },
+    "quartic": {
+      "builder": "hurwitz_board",
+      "args": {
+        "easy": [
+          "quartic",
+          "zip",
+          0,
+          18,
+          300.0
+        ],
+        "medium": [
+          "quartic",
+          "gc3",
+          0,
+          61,
+          300.0
+        ],
+        "hard": [
+          "quartic",
+          "gc4",
+          0,
+          118,
+          300.0
+        ]
+      }
+    },
+    "dyck": {
+      "builder": "hurwitz_board",
+      "args": {
+        "easy": [
+          "dyck",
+          "gc2",
+          0,
+          10,
+          300.0
+        ],
+        "medium": [
+          "dyck",
+          "gc4",
+          0,
+          60,
+          300.0
+        ],
+        "hard": [
+          "dyck",
+          "gc5",
+          0,
+          107,
+          300.0
+        ]
+      }
+    },
+    "bring": {
+      "builder": "hurwitz_board",
+      "args": {
+        "easy": [
+          "bring",
+          "expand",
+          0,
+          20,
+          300.0
+        ],
+        "medium": [
+          "bring",
+          "gc3",
+          0,
+          59,
+          300.0
+        ],
+        "hard": [
+          "bring",
+          "gc4",
+          0,
+          131,
+          300.0
+        ]
+      }
+    },
+    "macbeath": {
+      "builder": "hurwitz_board",
+      "args": {
+        "easy": [
+          "macbeath",
+          "none",
+          0,
+          15,
+          300.0
+        ],
+        "medium": [
+          "macbeath",
+          "zip",
+          0,
+          55,
+          300.0
+        ],
+        "hard": [
+          "macbeath",
+          "gc2",
+          0,
+          93,
+          300.0
+        ]
+      }
+    },
+    "triplet": {
+      "builder": "hurwitz_board",
+      "args": {
+        "easy": [
+          "triplet",
+          "none",
+          0,
+          33,
+          300.0
+        ],
+        "medium": [
+          "triplet",
+          "zip",
+          0,
+          122,
+          300.0
+        ],
+        "hard": [
+          "triplet",
+          "gc2",
+          0,
+          191,
+          300.0
+        ]
+      }
+    },
+    "hyperbolic667": {
+      "builder": "hyperbolic_uniform_board",
+      "args": {
+        "easy": [
+          7,
+          3,
+          "zip",
+          9,
+          9,
+          303.283
+        ],
+        "medium": [
+          7,
+          3,
+          "zip",
+          22,
+          29,
+          300.0
+        ],
+        "hard": [
+          7,
+          3,
+          "zip",
+          36,
+          74,
+          300.0
+        ]
+      }
+    },
+    "hyperbolic31414": {
+      "builder": "hyperbolic_uniform_board",
+      "args": {
+        "easy": [
+          7,
+          3,
+          "truncate",
+          9,
+          4,
+          284.02
+        ],
+        "medium": [
+          7,
+          3,
+          "truncate",
+          22,
+          9,
+          299.26
+        ],
+        "hard": [
+          7,
+          3,
+          "truncate",
+          34,
+          11,
+          298.993
+        ]
+      }
+    },
+    "hyperbolic3737": {
+      "builder": "hyperbolic_uniform_board",
+      "args": {
+        "easy": [
+          7,
+          3,
+          "ambo",
+          9,
+          6,
+          300.0
+        ],
+        "medium": [
+          7,
+          3,
+          "ambo",
+          22,
+          20,
+          300.0
+        ],
+        "hard": [
+          7,
+          3,
+          "ambo",
+          37,
+          67,
+          300.0
+        ]
+      }
+    },
+    "hyperbolic3474": {
+      "builder": "hyperbolic_uniform_board",
+      "args": {
+        "easy": [
+          7,
+          3,
+          "expand",
           10,
           5,
           300.0
         ],
         "medium": [
-          4,
-          5,
-          20,
-          13,
-          300.397
+          7,
+          3,
+          "expand",
+          26,
+          21,
+          293.288
         ],
         "hard": [
-          4,
+          7,
+          3,
+          "expand",
+          40,
+          58,
+          300.0
+        ]
+      }
+    },
+    "hyperbolic4614": {
+      "builder": "hyperbolic_uniform_board",
+      "args": {
+        "easy": [
+          7,
+          3,
+          "bevel",
+          10,
+          7,
+          300.0
+        ],
+        "medium": [
+          7,
+          3,
+          "bevel",
+          26,
+          22,
+          280.857
+        ],
+        "hard": [
+          7,
+          3,
+          "bevel",
+          40,
+          47,
+          300.0
+        ]
+      }
+    },
+    "hyperbolic668": {
+      "builder": "hyperbolic_uniform_board",
+      "args": {
+        "easy": [
+          8,
+          3,
+          "zip",
+          8,
+          8,
+          300.0
+        ],
+        "medium": [
+          8,
+          3,
+          "zip",
+          19,
+          26,
+          301.137
+        ],
+        "hard": [
+          8,
+          3,
+          "zip",
+          30,
+          56,
+          300.0
+        ]
+      }
+    },
+    "hyperbolic31616": {
+      "builder": "hyperbolic_uniform_board",
+      "args": {
+        "easy": [
+          8,
+          3,
+          "truncate",
+          8,
+          1,
+          300.0
+        ],
+        "medium": [
+          8,
+          3,
+          "truncate",
+          17,
+          3,
+          300.0
+        ],
+        "hard": [
+          8,
+          3,
+          "truncate",
+          30,
+          12,
+          300.0
+        ]
+      }
+    },
+    "hyperbolic3838": {
+      "builder": "hyperbolic_uniform_board",
+      "args": {
+        "easy": [
+          8,
+          3,
+          "ambo",
+          8,
+          6,
+          300.0
+        ],
+        "medium": [
+          8,
+          3,
+          "ambo",
+          20,
+          26,
+          300.0
+        ],
+        "hard": [
+          8,
+          3,
+          "ambo",
+          31,
+          52,
+          300.0
+        ]
+      }
+    },
+    "hyperbolic3484": {
+      "builder": "hyperbolic_uniform_board",
+      "args": {
+        "easy": [
+          8,
+          3,
+          "expand",
+          10,
+          6,
+          289.853
+        ],
+        "medium": [
+          8,
+          3,
+          "expand",
+          24,
+          19,
+          300.0
+        ],
+        "hard": [
+          8,
+          3,
+          "expand",
+          37,
+          40,
+          292.835
+        ]
+      }
+    },
+    "hyperbolic4616": {
+      "builder": "hyperbolic_uniform_board",
+      "args": {
+        "easy": [
+          8,
+          3,
+          "bevel",
+          10,
+          3,
+          284.19
+        ],
+        "medium": [
+          8,
+          3,
+          "bevel",
+          23,
+          22,
+          300.0
+        ],
+        "hard": [
+          8,
+          3,
+          "bevel",
+          36,
+          44,
+          293.52
+        ]
+      }
+    },
+    "hyperbolic588": {
+      "builder": "hyperbolic_uniform_board",
+      "args": {
+        "easy": [
           5,
-          35,
+          4,
+          "zip",
+          11,
+          5,
+          291.035
+        ],
+        "medium": [
+          5,
+          4,
+          "zip",
+          26,
+          23,
+          297.492
+        ],
+        "hard": [
+          5,
+          4,
+          "zip",
+          43,
+          57,
+          298.047
+        ]
+      }
+    },
+    "hyperbolic41010": {
+      "builder": "hyperbolic_uniform_board",
+      "args": {
+        "easy": [
+          5,
+          4,
+          "truncate",
+          11,
+          7,
+          289.392
+        ],
+        "medium": [
+          5,
+          4,
+          "truncate",
+          26,
+          14,
+          297.066
+        ],
+        "hard": [
+          5,
+          4,
+          "truncate",
+          43,
+          30,
+          298.294
+        ]
+      }
+    },
+    "hyperbolic4545": {
+      "builder": "hyperbolic_uniform_board",
+      "args": {
+        "easy": [
+          5,
+          4,
+          "ambo",
+          11,
+          5,
+          287.702
+        ],
+        "medium": [
+          5,
+          4,
+          "ambo",
+          26,
+          22,
+          296.619
+        ],
+        "hard": [
+          5,
+          4,
+          "ambo",
+          43,
+          63,
+          297.956
+        ]
+      }
+    },
+    "hyperbolic4445": {
+      "builder": "hyperbolic_uniform_board",
+      "args": {
+        "easy": [
+          5,
+          4,
+          "expand",
+          11,
+          8,
+          275.192
+        ],
+        "medium": [
+          5,
+          4,
+          "expand",
+          26,
+          31,
+          294.854
+        ],
+        "hard": [
+          5,
+          4,
+          "expand",
+          44,
+          71,
+          296.921
+        ]
+      }
+    },
+    "hyperbolic4810": {
+      "builder": "hyperbolic_uniform_board",
+      "args": {
+        "easy": [
+          5,
+          4,
+          "bevel",
+          11,
+          4,
+          282.74
+        ],
+        "medium": [
+          5,
+          4,
+          "bevel",
+          26,
+          17,
+          294.298
+        ],
+        "hard": [
+          5,
+          4,
+          "bevel",
+          46,
+          46,
+          297.37
+        ]
+      }
+    },
+    "hyperbolic688": {
+      "builder": "hyperbolic_uniform_board",
+      "args": {
+        "easy": [
+          6,
+          4,
+          "zip",
+          10,
+          6,
+          297.632
+        ],
+        "medium": [
+          6,
+          4,
+          "zip",
+          23,
+          22,
+          299.508
+        ],
+        "hard": [
+          6,
+          4,
+          "zip",
+          36,
+          45,
+          299.429
+        ]
+      }
+    },
+    "hyperbolic41212": {
+      "builder": "hyperbolic_uniform_board",
+      "args": {
+        "easy": [
+          6,
+          4,
+          "truncate",
+          9,
+          4,
+          290.725
+        ],
+        "medium": [
+          6,
+          4,
+          "truncate",
+          25,
+          5,
+          300.0
+        ],
+        "hard": [
+          6,
+          4,
+          "truncate",
+          36,
+          13,
+          299.798
+        ]
+      }
+    },
+    "hyperbolic4646": {
+      "builder": "hyperbolic_uniform_board",
+      "args": {
+        "easy": [
+          6,
+          4,
+          "ambo",
+          10,
+          7,
+          295.259
+        ],
+        "medium": [
+          6,
+          4,
+          "ambo",
+          23,
+          23,
+          299.209
+        ],
+        "hard": [
+          6,
+          4,
+          "ambo",
+          36,
+          49,
+          299.806
+        ]
+      }
+    },
+    "hyperbolic4446": {
+      "builder": "hyperbolic_uniform_board",
+      "args": {
+        "easy": [
+          6,
+          4,
+          "expand",
+          9,
+          9,
+          295.049
+        ],
+        "medium": [
+          6,
+          4,
+          "expand",
+          24,
+          23,
+          297.841
+        ],
+        "hard": [
+          6,
+          4,
+          "expand",
           38,
+          60,
+          298.461
+        ]
+      }
+    },
+    "hyperbolic4812": {
+      "builder": "hyperbolic_uniform_board",
+      "args": {
+        "easy": [
+          6,
+          4,
+          "bevel",
+          9,
+          4,
+          300.0
+        ],
+        "medium": [
+          6,
+          4,
+          "bevel",
+          23,
+          14,
+          300.0
+        ],
+        "hard": [
+          6,
+          4,
+          "bevel",
+          39,
+          39,
+          298.486
+        ]
+      }
+    },
+    "hyperbolic51010": {
+      "builder": "hyperbolic_uniform_board",
+      "args": {
+        "easy": [
+          5,
+          5,
+          "zip",
+          10,
+          5,
+          299.364
+        ],
+        "medium": [
+          5,
+          5,
+          "zip",
+          22,
+          13,
+          300.0
+        ],
+        "hard": [
+          5,
+          5,
+          "zip",
+          33,
+          32,
+          299.943
+        ]
+      }
+    },
+    "hyperbolicbinary": {
+      "builder": "binary_board",
+      "args": {
+        "easy": [
+          3,
+          5,
+          6,
+          200.0
+        ],
+        "medium": [
+          2,
+          7,
+          23,
+          300.0
+        ],
+        "hard": [
+          2,
+          8,
+          57,
           300.0
         ]
       }
@@ -1641,6 +2602,23 @@
         ]
       }
     },
+    "spheresquare": {
+      "builder": "sphere_square_board",
+      "args": {
+        "easy": [
+          20,
+          4
+        ],
+        "medium": [
+          67,
+          7
+        ],
+        "hard": [
+          128,
+          9
+        ]
+      }
+    },
     "spheretri": {
       "builder": "sphere_triangle_board",
       "args": {
@@ -1658,14 +2636,95 @@
         ]
       }
     },
+    "hyperbolic93": {
+      "builder": "hyperbolic_board",
+      "args": {
+        "easy": [
+          9,
+          3,
+          6,
+          5,
+          301.009
+        ],
+        "medium": [
+          9,
+          3,
+          13,
+          16,
+          300.0
+        ],
+        "hard": [
+          9,
+          3,
+          21,
+          36,
+          300.0
+        ]
+      }
+    },
+    "hyperbolic74": {
+      "builder": "hyperbolic_board",
+      "args": {
+        "easy": [
+          7,
+          4,
+          7,
+          5,
+          300.0
+        ],
+        "medium": [
+          7,
+          4,
+          20,
+          16,
+          300.0
+        ],
+        "hard": [
+          7,
+          4,
+          30,
+          30,
+          300.0
+        ]
+      }
+    },
+    "hyperbolic669": {
+      "builder": "hyperbolic_uniform_board",
+      "args": {
+        "easy": [
+          9,
+          3,
+          "zip",
+          6,
+          8,
+          300.0
+        ],
+        "medium": [
+          9,
+          3,
+          "zip",
+          14,
+          23,
+          300.0
+        ],
+        "hard": [
+          9,
+          3,
+          "zip",
+          20,
+          54,
+          300.0
+        ]
+      }
+    },
     "elongated": {
       "builder": "archimedean_board",
       "args": {
         "easy": [
           "elongated",
           6.5,
-          1.789,
-          6,
+          2.211,
+          9,
           65.143,
           [
             0.0,
@@ -1686,9 +2745,13 @@
         "hard": [
           "elongated",
           17.5,
-          4.789,
-          96,
-          25.0
+          4.5,
+          98,
+          25.0,
+          [
+            0.0,
+            0.0
+          ]
         ]
       }
     },
@@ -1815,7 +2878,7 @@
           "snubsquare",
           9.5,
           9.5,
-          121,
+          112,
           26.149,
           [
             1.931851,
@@ -1935,15 +2998,19 @@
         "medium": [
           "trihex",
           8.5,
-          5.5,
-          41,
-          26.667
+          5.167,
+          44,
+          26.667,
+          [
+            0.0,
+            1.732051
+          ]
         ],
         "hard": [
           "trihex",
           12.5,
           7.167,
-          112,
+          111,
           16.923
         ]
       }
@@ -2051,13 +3118,13 @@
       "args": {
         "easy": [
           "snubhex",
-          3,
-          1.714,
-          9,
+          3.143,
+          1.548,
+          13,
           45.872,
           [
             1.133893,
-            1.309308
+            3.600595
           ]
         ],
         "medium": [
@@ -2068,14 +3135,14 @@
           35.2,
           [
             1.133893,
-            3.600595
+            1.309308
           ]
         ],
         "hard": [
           "snubhex",
-          6.714,
+          6.857,
           4.071,
-          87,
+          95,
           25.418,
           [
             1.133893,
@@ -2140,14 +3207,14 @@
           "truncsquare",
           6.5,
           6.5,
-          7,
+          8,
           29
         ],
         "medium": [
           "truncsquare",
           11.5,
           11.5,
-          35,
+          38,
           16.775,
           [
             1.207107,
@@ -2158,7 +3225,7 @@
           "truncsquare",
           15.5,
           15.5,
-          81,
+          82,
           12.737,
           [
             1.207107,
@@ -2271,16 +3338,16 @@
         "easy": [
           "trunchex",
           4.5,
-          2.833,
+          3.167,
           4,
           26.6
         ],
         "medium": [
           "trunchex",
-          8.5,
+          9.5,
           5.167,
-          13,
-          14,
+          15,
+          12.6,
           [
             0.0,
             3.232051
@@ -2290,12 +3357,8 @@
           "trunchex",
           12.5,
           7.167,
-          38,
-          9.308,
-          [
-            0.0,
-            3.232051
-          ]
+          39,
+          9.308
         ]
       }
     },
@@ -2402,9 +3465,9 @@
       "args": {
         "easy": [
           "rhombitrihex",
-          3.25,
+          3.75,
           2.167,
-          7,
+          8,
           48.457,
           [
             0.0,
@@ -2415,14 +3478,14 @@
           "rhombitrihex",
           6.25,
           3.583,
-          30,
+          28,
           26.53
         ],
         "hard": [
           "rhombitrihex",
           8.25,
           4.583,
-          70,
+          68,
           19.979,
           [
             0.0,
@@ -2462,21 +3525,21 @@
       "args": {
         "easy": [
           "rhombitrihex",
-          6,
+          7,
           1.1666666666666667,
-          6
+          12
         ],
         "medium": [
           "rhombitrihex",
           11,
           2.1666666666666665,
-          23
+          36
         ],
         "hard": [
           "rhombitrihex",
           15,
           2.6666666666666665,
-          60
+          77
         ]
       }
     },
@@ -2485,21 +3548,21 @@
       "args": {
         "easy": [
           "rhombitrihex",
-          6,
+          7,
           1.1666666666666667,
-          6
+          12
         ],
         "medium": [
           "rhombitrihex",
           11,
           2.1666666666666665,
-          21
+          40
         ],
         "hard": [
           "rhombitrihex",
-          14,
+          15,
           3.1666666666666665,
-          68
+          88
         ]
       }
     },
@@ -2550,7 +3613,7 @@
           "trunctrihex",
           8.25,
           4.833,
-          69,
+          73,
           11.25
         ]
       }
@@ -2586,21 +3649,21 @@
       "args": {
         "easy": [
           "trunctrihex",
-          5,
+          6,
           1.4166666666666667,
-          6
+          12
         ],
         "medium": [
           "trunctrihex",
-          11,
+          12,
           1.9166666666666665,
-          21
+          32
         ],
         "hard": [
           "trunctrihex",
           15,
           2.9166666666666665,
-          71
+          80
         ]
       }
     },
@@ -2609,21 +3672,21 @@
       "args": {
         "easy": [
           "trunctrihex",
-          5,
+          6,
           1.4166666666666667,
-          5
+          10
         ],
         "medium": [
           "trunctrihex",
-          10,
+          11,
           2.4166666666666665,
-          27
+          39
         ],
         "hard": [
           "trunctrihex",
-          15,
+          16,
           2.4166666666666665,
-          54
+          69
         ]
       }
     },
@@ -2660,21 +3723,25 @@
           "prismaticpent",
           8.5,
           2.5,
-          9,
-          50.667
+          11,
+          50.667,
+          [
+            0.0,
+            0.0
+          ]
         ],
         "medium": [
           "prismaticpent",
           14.5,
           4,
-          41,
+          40,
           31.533
         ],
         "hard": [
           "prismaticpent",
           21.5,
           6,
-          112,
+          105,
           20.455
         ]
       }
@@ -2791,12 +3858,8 @@
           "cairo",
           8,
           8,
-          29,
-          28.559,
-          [
-            0.0,
-            0.482963
-          ]
+          34,
+          28.559
         ],
         "hard": [
           "cairo",
@@ -2916,22 +3979,34 @@
           "rhombille",
           4.75,
           2.75,
-          5,
-          48
+          6,
+          48,
+          [
+            0.0,
+            1.732051
+          ]
         ],
         "medium": [
           "rhombille",
-          8.75,
-          5.25,
-          10,
-          26.667
+          8.25,
+          4.75,
+          7,
+          26.667,
+          [
+            0.0,
+            0.0
+          ]
         ],
         "hard": [
           "rhombille",
           11.75,
           6.75,
-          22,
-          18.333
+          18,
+          18.333,
+          [
+            0.0,
+            1.732051
+          ]
         ]
       }
     },
@@ -3051,7 +4126,7 @@
           "floret",
           6.143,
           3.5,
-          37,
+          33,
           25.714,
           [
             1.133894,
@@ -3062,7 +4137,7 @@
           "floret",
           8.214,
           4.786,
-          83,
+          80,
           19.734
         ]
       }
@@ -3121,13 +4196,13 @@
       "args": {
         "easy": [
           "tetrakis",
+          5.0,
           4.667,
-          5,
           8,
           34.8,
           [
-            0.0,
-            1.207107
+            1.207107,
+            0.0
           ]
         ],
         "medium": [
@@ -3403,14 +4478,10 @@
         ],
         "hard": [
           "deltoidal",
-          8.188,
+          8.812,
           5,
-          75,
-          20.212,
-          [
-            0.0,
-            2.366025
-          ]
+          91,
+          19.089
         ]
       }
     },
@@ -3517,23 +4588,23 @@
       "args": {
         "easy": [
           "kisrhombille",
-          2.583,
+          3,
           1.333,
-          5,
+          6,
           28
         ],
         "medium": [
           "kisrhombille",
-          4,
-          2.333,
-          17,
-          22.5
+          4.417,
+          2.806,
+          30,
+          18.0
         ],
         "hard": [
           "kisrhombille",
           6,
           3.333,
-          54,
+          63,
           15.167,
           [
             0.0,
@@ -3573,21 +4644,21 @@
       "args": {
         "easy": [
           "kisrhombille",
-          6,
+          9,
           0.5,
-          5
+          7
         ],
         "medium": [
           "kisrhombille",
           8,
           1.5,
-          17
+          29
         ],
         "hard": [
           "kisrhombille",
-          10,
+          11,
           2,
-          52
+          68
         ]
       }
     },
@@ -3598,19 +4669,19 @@
           "kisrhombille",
           6,
           1,
-          7
+          10
         ],
         "medium": [
           "kisrhombille",
-          10,
+          11,
           1,
-          15
+          27
         ],
         "hard": [
           "kisrhombille",
           11,
           2,
-          52
+          73
         ]
       }
     },
@@ -4023,8 +5094,8 @@
         "hard": [
           "rotatedhex",
           12,
-          6.667,
-          35,
+          7,
+          33,
           21.137,
           [
             0.450694,
@@ -4177,10 +5248,10 @@
         ],
         "medium": [
           "threescaletri",
-          8,
+          9,
           5,
-          45,
-          40.929
+          48,
+          36.865
         ],
         "hard": [
           "threescaletri",
@@ -4630,35 +5701,35 @@
       "args": {
         "easy": [
           "basketweave3",
-          2.5,
-          2.5,
-          5,
-          84,
-          [
-            0.5,
-            0.5
-          ]
-        ],
-        "medium": [
-          "basketweave3",
-          4.5,
-          4.194,
-          27,
-          48,
+          2.806,
+          2.806,
+          12,
+          74.118,
           [
             0.5,
             1.5
           ]
         ],
-        "hard": [
+        "medium": [
           "basketweave3",
-          6.194,
-          6.5,
-          89,
-          34.615,
+          4.806,
+          4.806,
+          42,
+          44.69,
           [
             0.5,
             0.5
+          ]
+        ],
+        "hard": [
+          "basketweave3",
+          6.194,
+          6.194,
+          97,
+          34.615,
+          [
+            0.5,
+            1.5
           ]
         ]
       }
@@ -4696,19 +5767,19 @@
           "basketweave3",
           5,
           1.5,
-          7
+          12
         ],
         "medium": [
           "basketweave3",
           8,
           2.5,
-          29
+          41
         ],
         "hard": [
           "basketweave3",
           11,
           3.5,
-          73
+          94
         ]
       }
     },
@@ -4717,21 +5788,21 @@
       "args": {
         "easy": [
           "basketweave3",
-          13,
+          15,
           1,
-          6
+          10
         ],
         "medium": [
           "basketweave3",
-          15,
+          17,
           3,
-          31
+          54
         ],
         "hard": [
           "basketweave3",
-          21,
+          23,
           4,
-          86
+          112
         ]
       }
     },
@@ -4766,31 +5837,27 @@
       "args": {
         "easy": [
           "herringbone",
-          3.375,
           3.125,
-          13,
-          70.428,
+          3.375,
+          11,
+          75.846,
           [
-            0.0,
-            1.75
+            0.25,
+            1.5
           ]
         ],
         "medium": [
           "herringbone",
-          5.875,
           5.625,
-          37,
-          41.125,
-          [
-            0.0,
-            0.75
-          ]
+          5.875,
+          45,
+          42.913
         ],
         "hard": [
           "herringbone",
           7.625,
           7.875,
-          101,
+          99,
           31.451,
           [
             0.25,
@@ -4877,12 +5944,38 @@
           "studdedtri",
           5.5,
           3.333,
-          82,
+          86,
           31.373,
           [
             0.0,
             2.598076
           ]
+        ]
+      }
+    },
+    "torusstuddedtri": {
+      "builder": "arch_torus_board",
+      "args": {
+        "easy": [
+          "studdedtri",
+          4,
+          2,
+          35,
+          0.52
+        ],
+        "medium": [
+          "studdedtri",
+          5,
+          2,
+          54,
+          0.52
+        ],
+        "hard": [
+          "studdedtri",
+          9,
+          2,
+          116,
+          0.45
         ]
       }
     },
@@ -4937,10 +6030,10 @@
       "args": {
         "easy": [
           "studdedtri2",
-          1.769,
-          1.077,
-          9,
-          82.891,
+          1.923,
+          1.038,
+          8,
+          79.877,
           [
             0.901388,
             4.683749
@@ -4950,11 +6043,11 @@
           "studdedtri2",
           3.154,
           1.846,
-          32,
+          39,
           45.872,
           [
             0.901388,
-            4.683749
+            1.56125
           ]
         ],
         "hard": [
@@ -4967,6 +6060,32 @@
             1.802776,
             0.0
           ]
+        ]
+      }
+    },
+    "torusstuddedtri2": {
+      "builder": "arch_torus_board",
+      "args": {
+        "easy": [
+          "studdedtri2",
+          4,
+          2,
+          68,
+          0.52
+        ],
+        "medium": [
+          "studdedtri2",
+          4,
+          2,
+          80,
+          0.52
+        ],
+        "hard": [
+          "studdedtri2",
+          6,
+          2,
+          129,
+          0.45
         ]
       }
     },
@@ -5017,13 +6136,35 @@
         "hard": [
           "elongated2",
           16.5,
-          6.289,
-          115,
-          30.0,
-          [
-            0.0,
-            1.366025
-          ]
+          6,
+          105,
+          30.0
+        ]
+      }
+    },
+    "toruselongated2": {
+      "builder": "arch_torus_board",
+      "args": {
+        "easy": [
+          "elongated2",
+          4,
+          4,
+          11,
+          0.38
+        ],
+        "medium": [
+          "elongated2",
+          7,
+          7,
+          49,
+          0.33
+        ],
+        "hard": [
+          "elongated2",
+          8,
+          12,
+          123,
+          0.45
         ]
       }
     },
@@ -5078,10 +6219,10 @@
       "args": {
         "easy": [
           "elongated3",
-          5.5,
+          6.5,
           0.89,
-          7,
-          93.333
+          14,
+          80.0
         ],
         "medium": [
           "elongated3",
@@ -5093,9 +6234,35 @@
         "hard": [
           "elongated3",
           16.5,
-          2.259,
-          116,
+          2.38,
+          117,
           30.0
+        ]
+      }
+    },
+    "toruselongated3": {
+      "builder": "arch_torus_board",
+      "args": {
+        "easy": [
+          "elongated3",
+          6,
+          1,
+          15,
+          0.52
+        ],
+        "medium": [
+          "elongated3",
+          18,
+          1,
+          60,
+          0.38
+        ],
+        "hard": [
+          "elongated3",
+          34,
+          1,
+          127,
+          0.28
         ]
       }
     },
@@ -5179,6 +6346,32 @@
         ]
       }
     },
+    "torustrirhombitrihex": {
+      "builder": "arch_torus_board",
+      "args": {
+        "easy": [
+          "trirhombitrihex",
+          4,
+          2,
+          12,
+          0.28
+        ],
+        "medium": [
+          "trirhombitrihex",
+          4,
+          3,
+          56,
+          0.38
+        ],
+        "hard": [
+          "trirhombitrihex",
+          7,
+          3,
+          113,
+          0.28
+        ]
+      }
+    },
     "cyltrirhombitrihex": {
       "builder": "arch_cylinder_board",
       "args": {
@@ -5230,32 +6423,50 @@
       "args": {
         "easy": [
           "tritrunctrihex",
-          2.644,
-          1.096,
+          2.106,
+          1.228,
           5,
-          50.718,
-          [
-            0.0,
-            4.098076
-          ]
+          50.718
         ],
         "medium": [
           "tritrunctrihex",
-          3.644,
-          2.228,
+          4.106,
+          2.096,
           11,
-          32.052,
-          [
-            0.0,
-            4.098076
-          ]
+          25.359
         ],
         "hard": [
           "tritrunctrihex",
-          5.106,
-          3.228,
-          35,
+          5.356,
+          3.096,
+          33,
           20.287
+        ]
+      }
+    },
+    "torustritrunctrihex": {
+      "builder": "arch_torus_board",
+      "args": {
+        "easy": [
+          "tritrunctrihex",
+          4,
+          2,
+          9,
+          0.52
+        ],
+        "medium": [
+          "tritrunctrihex",
+          4,
+          2,
+          10,
+          0.52
+        ],
+        "hard": [
+          "tritrunctrihex",
+          5,
+          3,
+          36,
+          0.52
         ]
       }
     },
@@ -5265,20 +6476,20 @@
         "easy": [
           "tritrunctrihex",
           4,
-          0.5217391304347826,
-          4
+          0.5962250448649377,
+          5
         ],
         "medium": [
           "tritrunctrihex",
           7,
-          1.0217391304347827,
-          8
+          1.0962250448649375,
+          12
         ],
         "hard": [
           "tritrunctrihex",
           9,
-          1.5217391304347827,
-          29
+          1.5962250448649375,
+          32
         ]
       }
     },
@@ -5287,20 +6498,20 @@
       "args": {
         "easy": [
           "tritrunctrihex",
-          4,
-          0.5217391304347826,
-          4
+          5,
+          1.0962250448649375,
+          7
         ],
         "medium": [
           "tritrunctrihex",
-          13,
-          0.5217391304347826,
-          6
+          7,
+          1.0962250448649375,
+          12
         ],
         "hard": [
           "tritrunctrihex",
-          9,
-          1.5217391304347827,
+          12,
+          1.0962250448649375,
           27
         ]
       }
@@ -5310,28 +6521,58 @@
       "args": {
         "easy": [
           "fannedhex",
-          3.5,
-          1.722,
+          3.167,
+          1.833,
           6,
-          53.333
+          53.333,
+          [
+            0.0,
+            2.598076
+          ]
         ],
         "medium": [
           "fannedhex",
           5.167,
-          3.167,
-          8,
+          3,
+          12,
           32.0
         ],
         "hard": [
           "fannedhex",
           7.167,
           4.167,
-          27,
+          33,
           22.857,
           [
             0.0,
             2.598076
           ]
+        ]
+      }
+    },
+    "torusfannedhex": {
+      "builder": "arch_torus_board",
+      "args": {
+        "easy": [
+          "fannedhex",
+          4,
+          2,
+          7,
+          0.52
+        ],
+        "medium": [
+          "fannedhex",
+          8,
+          2,
+          11,
+          0.33
+        ],
+        "hard": [
+          "fannedhex",
+          10,
+          3,
+          32,
+          0.45
         ]
       }
     },
@@ -5386,36 +6627,54 @@
       "args": {
         "easy": [
           "hexbands",
-          4.833,
-          1.5,
-          5,
-          66.511,
-          [
-            0.0,
-            2.5
-          ]
+          5.167,
+          1.8,
+          6,
+          55.426
         ],
         "medium": [
           "hexbands",
-          9.5,
+          9.167,
           3.2,
-          21,
-          30.792,
-          [
-            0.0,
-            2.5
-          ]
+          27,
+          30.792
         ],
         "hard": [
           "hexbands",
           12.167,
           4.2,
-          57,
+          66,
           23.094,
           [
             0.0,
             2.5
           ]
+        ]
+      }
+    },
+    "torushexbands": {
+      "builder": "arch_torus_board",
+      "args": {
+        "easy": [
+          "hexbands",
+          4,
+          2,
+          6,
+          0.52
+        ],
+        "medium": [
+          "hexbands",
+          13,
+          2,
+          27,
+          0.45
+        ],
+        "hard": [
+          "hexbands",
+          16,
+          3,
+          67,
+          0.45
         ]
       }
     },
@@ -5483,10 +6742,10 @@
           "snubelongated",
           6.76,
           3.5,
-          41,
+          42,
           36.81,
           [
-            0.0,
+            0.965926,
             1.931852
           ]
         ],
@@ -5494,12 +6753,34 @@
           "snubelongated",
           8.76,
           4.5,
-          102,
-          28.408,
-          [
-            0.0,
-            1.931852
-          ]
+          97,
+          28.408
+        ]
+      }
+    },
+    "torussnubelongated": {
+      "builder": "arch_torus_board",
+      "args": {
+        "easy": [
+          "snubelongated",
+          4,
+          2,
+          20,
+          0.52
+        ],
+        "medium": [
+          "snubelongated",
+          11,
+          2,
+          61,
+          0.33
+        ],
+        "hard": [
+          "snubelongated",
+          13,
+          3,
+          127,
+          0.38
         ]
       }
     },
@@ -5578,8 +6859,34 @@
           "snubelongated2",
           3.606,
           3.728,
-          113,
+          105,
           28.188
+        ]
+      }
+    },
+    "torussnubelongated2": {
+      "builder": "arch_torus_board",
+      "args": {
+        "easy": [
+          "snubelongated2",
+          4,
+          2,
+          52,
+          0.45
+        ],
+        "medium": [
+          "snubelongated2",
+          4,
+          2,
+          64,
+          0.45
+        ],
+        "hard": [
+          "snubelongated2",
+          7,
+          2,
+          135,
+          0.28
         ]
       }
     },
@@ -5636,19 +6943,19 @@
           "dissectedtrunchex2",
           1.289,
           2.134,
-          6,
-          68.345
+          7,
+          68.345,
+          [
+            0.0,
+            1.866025
+          ]
         ],
         "medium": [
           "dissectedtrunchex2",
           2.122,
           3.866,
-          33,
-          37.128,
-          [
-            0.0,
-            1.866025
-          ]
+          30,
+          37.128
         ],
         "hard": [
           "dissectedtrunchex2",
@@ -5656,6 +6963,32 @@
           5.5,
           81,
           24.752
+        ]
+      }
+    },
+    "torusdissectedtrunchex2": {
+      "builder": "arch_torus_board",
+      "args": {
+        "easy": [
+          "dissectedtrunchex2",
+          4,
+          2,
+          28,
+          0.28
+        ],
+        "medium": [
+          "dissectedtrunchex2",
+          4,
+          2,
+          39,
+          0.28
+        ],
+        "hard": [
+          "dissectedtrunchex2",
+          5,
+          3,
+          92,
+          0.33
         ]
       }
     },
@@ -5731,6 +7064,32 @@
         ]
       }
     },
+    "torussquarerows2": {
+      "builder": "arch_torus_board",
+      "args": {
+        "easy": [
+          "squarerows2",
+          10,
+          1,
+          14,
+          0.45
+        ],
+        "medium": [
+          "squarerows2",
+          16,
+          2,
+          58,
+          0.52
+        ],
+        "hard": [
+          "squarerows2",
+          30,
+          2,
+          120,
+          0.38
+        ]
+      }
+    },
     "cylsquarerows2": {
       "builder": "arch_cylinder_board",
       "args": {
@@ -5789,21 +7148,43 @@
         ],
         "medium": [
           "squarerows3",
-          13.5,
+          14.5,
           1.871,
-          32,
-          36.735,
-          [
-            0.0,
-            3.866025
-          ]
+          38,
+          34.286
         ],
         "hard": [
           "squarerows3",
           19.5,
           2.5,
-          100,
+          96,
           25.263
+        ]
+      }
+    },
+    "torussquarerows3": {
+      "builder": "arch_torus_board",
+      "args": {
+        "easy": [
+          "squarerows3",
+          9,
+          1,
+          19,
+          0.52
+        ],
+        "medium": [
+          "squarerows3",
+          25,
+          1,
+          49,
+          0.28
+        ],
+        "hard": [
+          "squarerows3",
+          25,
+          2,
+          129,
+          0.52
         ]
       }
     },
@@ -5858,7 +7239,7 @@
       "args": {
         "easy": [
           "dissectedtrunchex",
-          2.077,
+          2.26,
           1.272,
           8,
           50.718,
@@ -5869,17 +7250,47 @@
         ],
         "medium": [
           "dissectedtrunchex",
-          3.923,
-          2.106,
-          17,
-          32.154
+          4.077,
+          2.272,
+          30,
+          28.355
         ],
         "hard": [
           "dissectedtrunchex",
-          5.5,
+          5.26,
           3.106,
+          76,
+          23.233,
+          [
+            0.0,
+            3.232051
+          ]
+        ]
+      }
+    },
+    "torusdissectedtrunchex": {
+      "builder": "arch_torus_board",
+      "args": {
+        "easy": [
+          "dissectedtrunchex",
+          4,
+          2,
+          19,
+          0.52
+        ],
+        "medium": [
+          "dissectedtrunchex",
+          4,
+          2,
+          26,
+          0.52
+        ],
+        "hard": [
+          "dissectedtrunchex",
+          8,
+          2,
           73,
-          22.438
+          0.38
         ]
       }
     },
@@ -5936,7 +7347,7 @@
           "hexrows",
           6,
           4.5,
-          5,
+          8,
           46.188,
           [
             0.0,
@@ -5947,15 +7358,45 @@
           "hexrows",
           10,
           8.5,
-          30,
-          27.713
+          29,
+          27.713,
+          [
+            0.0,
+            1.0
+          ]
         ],
         "hard": [
           "hexrows",
           14,
           11.5,
-          70,
+          74,
           19.795
+        ]
+      }
+    },
+    "torushexrows": {
+      "builder": "arch_torus_board",
+      "args": {
+        "easy": [
+          "hexrows",
+          6,
+          5,
+          11,
+          0.52
+        ],
+        "medium": [
+          "hexrows",
+          17,
+          5,
+          29,
+          0.33
+        ],
+        "hard": [
+          "hexrows",
+          23,
+          7,
+          72,
+          0.33
         ]
       }
     },
@@ -6023,7 +7464,7 @@
           "dodecasquare",
           6.789,
           6.789,
-          16,
+          15,
           20.999,
           [
             1.866025,
@@ -6040,6 +7481,32 @@
             0.0,
             1.866025
           ]
+        ]
+      }
+    },
+    "torusdodecasquare": {
+      "builder": "arch_torus_board",
+      "args": {
+        "easy": [
+          "dodecasquare",
+          4,
+          4,
+          7,
+          0.52
+        ],
+        "medium": [
+          "dodecasquare",
+          9,
+          5,
+          16,
+          0.45
+        ],
+        "hard": [
+          "dodecasquare",
+          13,
+          6,
+          35,
+          0.45
         ]
       }
     },
@@ -6094,28 +7561,54 @@
       "args": {
         "easy": [
           "hexrings",
-          1.856,
+          2.144,
           1.096,
-          6,
-          61.436
+          11,
+          50.718,
+          [
+            0.0,
+            4.098076
+          ]
         ],
         "medium": [
           "hexrings",
           3.644,
           2.096,
-          25,
+          41,
           29.602
         ],
         "hard": [
           "hexrings",
           4.856,
-          2.904,
-          73,
-          22.002,
-          [
-            0.0,
-            4.098076
-          ]
+          2.759,
+          83,
+          22.002
+        ]
+      }
+    },
+    "torushexrings": {
+      "builder": "arch_torus_board",
+      "args": {
+        "easy": [
+          "hexrings",
+          4,
+          1,
+          23,
+          0.38
+        ],
+        "medium": [
+          "hexrings",
+          4,
+          2,
+          47,
+          0.52
+        ],
+        "hard": [
+          "hexrings",
+          7,
+          2,
+          111,
+          0.45
         ]
       }
     },
@@ -6170,10 +7663,10 @@
       "args": {
         "easy": [
           "squaretrihex",
-          4.5,
+          5.5,
           3.211,
-          6,
-          57.6,
+          10,
+          52.364,
           [
             1.0,
             1.366025
@@ -6183,7 +7676,7 @@
           "squaretrihex",
           8.5,
           6.211,
-          35,
+          44,
           28.333,
           [
             1.0,
@@ -6194,12 +7687,38 @@
           "squaretrihex",
           11.5,
           8.211,
-          95,
+          92,
           22.767,
           [
             1.0,
             0.0
           ]
+        ]
+      }
+    },
+    "torussquaretrihex": {
+      "builder": "arch_torus_board",
+      "args": {
+        "easy": [
+          "squaretrihex",
+          6,
+          3,
+          10,
+          0.52
+        ],
+        "medium": [
+          "squaretrihex",
+          13,
+          4,
+          53,
+          0.38
+        ],
+        "hard": [
+          "squaretrihex",
+          19,
+          5,
+          108,
+          0.33
         ]
       }
     },
@@ -6273,9 +7792,39 @@
         "hard": [
           "squaretrihex2",
           11.5,
-          4.106,
-          96,
-          21.818
+          4.356,
+          98,
+          21.818,
+          [
+            0.0,
+            2.732051
+          ]
+        ]
+      }
+    },
+    "torussquaretrihex2": {
+      "builder": "arch_torus_board",
+      "args": {
+        "easy": [
+          "squaretrihex2",
+          4,
+          2,
+          15,
+          0.52
+        ],
+        "medium": [
+          "squaretrihex2",
+          13,
+          2,
+          54,
+          0.38
+        ],
+        "hard": [
+          "squaretrihex2",
+          16,
+          3,
+          120,
+          0.45
         ]
       }
     },
@@ -6331,8 +7880,8 @@
         "easy": [
           "dodecarhombitrihex",
           2.375,
-          1.417,
-          6,
+          1.583,
+          8,
           32.742,
           [
             2.732051,
@@ -6343,19 +7892,41 @@
           "dodecarhombitrihex",
           4.375,
           2.583,
-          18,
+          24,
           18.759
         ],
         "hard": [
           "dodecarhombitrihex",
           5.625,
           3.292,
-          49,
-          15.102,
-          [
-            2.732051,
-            0.0
-          ]
+          52,
+          15.102
+        ]
+      }
+    },
+    "torusdodecarhombitrihex": {
+      "builder": "arch_torus_board",
+      "args": {
+        "easy": [
+          "dodecarhombitrihex",
+          4,
+          2,
+          14,
+          0.52
+        ],
+        "medium": [
+          "dodecarhombitrihex",
+          6,
+          2,
+          28,
+          0.45
+        ],
+        "hard": [
+          "dodecarhombitrihex",
+          10,
+          2,
+          60,
+          0.33
         ]
       }
     },
@@ -6366,19 +7937,19 @@
           "dodecarhombitrihex",
           5,
           0.6,
-          6
+          7
         ],
         "medium": [
           "dodecarhombitrihex",
           7,
           1.6,
-          18
+          27
         ],
         "hard": [
           "dodecarhombitrihex",
-          10,
+          11,
           2.1,
-          55
+          69
         ]
       }
     },
@@ -6389,19 +7960,19 @@
           "dodecarhombitrihex",
           5,
           0.6,
-          6
+          7
         ],
         "medium": [
           "dodecarhombitrihex",
           7,
           1.6,
-          24
+          27
         ],
         "hard": [
           "dodecarhombitrihex",
           11,
           1.6,
-          48
+          57
         ]
       }
     },
@@ -6410,27 +7981,27 @@
       "args": {
         "easy": [
           "sphinxpairs",
-          4.333,
-          3.333,
-          9,
-          30.0
-        ],
-        "medium": [
-          "sphinxpairs",
-          8.333,
-          5,
-          46,
-          17.778,
+          4.667,
+          3,
+          13,
+          28.236,
           [
             0.5,
             3.464102
           ]
         ],
+        "medium": [
+          "sphinxpairs",
+          8.333,
+          5.333,
+          52,
+          17.143
+        ],
         "hard": [
           "sphinxpairs",
           12,
-          7,
-          115,
+          7.333,
+          124,
           12.632
         ]
       }
@@ -6440,7 +8011,7 @@
       "args": {
         "easy": [
           "tromino",
-          6,
+          5,
           6,
           10,
           30.0
@@ -6448,7 +8019,7 @@
         "medium": [
           "tromino",
           9,
-          13,
+          14,
           47,
           17.143
         ],

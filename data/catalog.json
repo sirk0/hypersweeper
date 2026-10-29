@@ -16,7 +16,8 @@
       "boundaryComponents": null,
       "euler": null,
       "tilt": null,
-      "tilings": null
+      "tilings": null,
+      "caution": null
     },
     {
       "key": "mobius",
@@ -28,7 +29,8 @@
       "boundaryComponents": 1,
       "euler": 0,
       "tilt": -0.8,
-      "tilings": null
+      "tilings": null,
+      "caution": null
     },
     {
       "key": "cylinder",
@@ -40,7 +42,8 @@
       "boundaryComponents": 2,
       "euler": 0,
       "tilt": -0.35,
-      "tilings": null
+      "tilings": null,
+      "caution": null
     },
     {
       "key": "torus",
@@ -52,7 +55,8 @@
       "boundaryComponents": 0,
       "euler": 0,
       "tilt": -1.0,
-      "tilings": null
+      "tilings": null,
+      "caution": null
     },
     {
       "key": "trefoil",
@@ -68,7 +72,8 @@
         "hex",
         "square",
         "tri"
-      ]
+      ],
+      "caution": null
     },
     {
       "key": "klein",
@@ -80,7 +85,8 @@
       "boundaryComponents": 0,
       "euler": 0,
       "tilt": -0.4,
-      "tilings": null
+      "tilings": null,
+      "caution": null
     },
     {
       "key": "projective",
@@ -96,7 +102,23 @@
         "hex",
         "square",
         "tri"
-      ]
+      ],
+      "caution": null
+    },
+    {
+      "key": "boy",
+      "label": "Boy's surface",
+      "prefix": "boy",
+      "is3d": true,
+      "needsMirror": true,
+      "needsFlip": false,
+      "boundaryComponents": 0,
+      "euler": 1,
+      "tilt": -1.6,
+      "tilings": [
+        "square"
+      ],
+      "caution": "Self-intersecting — the surface passes through itself, so some cells hide behind others"
     },
     {
       "key": "doubletorus",
@@ -112,7 +134,8 @@
         "hex",
         "square",
         "tri"
-      ]
+      ],
+      "caution": null
     }
   ],
   "regularTilings": [
@@ -135,7 +158,8 @@
         "klein": "klein",
         "doubletorus": "doubletorus",
         "trefoil": "trefoil",
-        "projective": "projective"
+        "projective": "projective",
+        "boy": "boy"
       }
     },
     {
@@ -201,9 +225,47 @@
     "hexhex": "Hexagons - hexagonal board",
     "hextriangle": "Hexagons - triangular board",
     "cube3d": "Volumetric",
+    "hyperbolic93": "Nonagons {9,3}",
+    "hyperbolic83": "Octagons {8,3}",
     "hyperbolic73": "Heptagons {7,3}",
+    "hyperbolic74": "Heptagons {7,4}",
+    "hyperbolic64": "Hexagons {6,4}",
     "hyperbolic54": "Pentagons {5,4}",
+    "hyperbolic55": "Pentagons {5,5}",
     "hyperbolic45": "Squares {4,5}",
+    "hyperbolic46": "Squares {4,6}",
+    "hyperbolic37": "Triangles {3,7}",
+    "hyperbolic38": "Triangles {3,8}",
+    "hyperbolic667": "Soccer ball 6.6.7",
+    "hyperbolic31414": "Truncated {7,3} 3.14.14",
+    "hyperbolic3737": "Triheptagonal 3.7.3.7",
+    "hyperbolic3474": "Rhombitriheptagonal 3.4.7.4",
+    "hyperbolic4614": "Truncated triheptagonal 4.6.14",
+    "hyperbolic668": "Truncated {3,8} 6.6.8",
+    "hyperbolic31616": "Truncated {8,3} 3.16.16",
+    "hyperbolic3838": "Trioctagonal 3.8.3.8",
+    "hyperbolic3484": "Rhombitrioctagonal 3.4.8.4",
+    "hyperbolic4616": "Truncated trioctagonal 4.6.16",
+    "hyperbolic588": "Truncated {4,5} 5.8.8",
+    "hyperbolic41010": "Truncated {5,4} 4.10.10",
+    "hyperbolic4545": "Tetrapentagonal 4.5.4.5",
+    "hyperbolic4445": "Rhombitetrapentagonal 4.4.4.5",
+    "hyperbolic4810": "Truncated tetrapentagonal 4.8.10",
+    "hyperbolic688": "Truncated {4,6} 6.8.8",
+    "hyperbolic41212": "Truncated {6,4} 4.12.12",
+    "hyperbolic4646": "Tetrahexagonal 4.6.4.6",
+    "hyperbolic4446": "Rhombitetrahexagonal 4.4.4.6",
+    "hyperbolic4812": "Truncated tetrahexagonal 4.8.12",
+    "hyperbolic51010": "Truncated {5,5} 5.10.10",
+    "hyperbolic669": "Truncated {3,9} 6.6.9",
+    "hyperbolicbinary": "Binary tiling",
+    "bolza": "Bolza surface",
+    "quartic": "Klein quartic",
+    "dyck": "Dyck's surface",
+    "bring": "Bring's surface",
+    "macbeath": "Macbeath surface",
+    "triplet": "Hurwitz triplet",
+    "spheresquare": "Spherical cube",
     "spheretri": "Geodesic icosahedron"
   },
   "tilingNotations": {
@@ -247,11 +309,29 @@
       "surface": "flat",
       "family": "rectangle"
     },
+    "bolza": {
+      "label": "Bolza surface",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
+    "boy": {
+      "label": "Squares · Boy's surface",
+      "tiling": "square",
+      "surface": "boy",
+      "family": "regular"
+    },
     "brickrings": {
       "label": "Brick rings",
       "tiling": "",
       "surface": "flat",
       "family": "spiral"
+    },
+    "bring": {
+      "label": "Bring's surface",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
     },
     "c180": {
       "label": "Goldberg polyhedron",
@@ -703,6 +783,12 @@
       "surface": "flat",
       "family": "other"
     },
+    "dyck": {
+      "label": "Dyck's surface",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
     "elongated": {
       "label": "Elongated triangular",
       "tiling": "elongated",
@@ -793,8 +879,128 @@
       "surface": "flat",
       "family": "regular"
     },
+    "hyperbolic31414": {
+      "label": "Truncated {7,3} 3.14.14",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
+    "hyperbolic31616": {
+      "label": "Truncated {8,3} 3.16.16",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
+    "hyperbolic3474": {
+      "label": "Rhombitriheptagonal 3.4.7.4",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
+    "hyperbolic3484": {
+      "label": "Rhombitrioctagonal 3.4.8.4",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
+    "hyperbolic37": {
+      "label": "Triangles {3,7}",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
+    "hyperbolic3737": {
+      "label": "Triheptagonal 3.7.3.7",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
+    "hyperbolic38": {
+      "label": "Triangles {3,8}",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
+    "hyperbolic3838": {
+      "label": "Trioctagonal 3.8.3.8",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
+    "hyperbolic41010": {
+      "label": "Truncated {5,4} 4.10.10",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
+    "hyperbolic41212": {
+      "label": "Truncated {6,4} 4.12.12",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
+    "hyperbolic4445": {
+      "label": "Rhombitetrapentagonal 4.4.4.5",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
+    "hyperbolic4446": {
+      "label": "Rhombitetrahexagonal 4.4.4.6",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
     "hyperbolic45": {
       "label": "Squares {4,5}",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
+    "hyperbolic4545": {
+      "label": "Tetrapentagonal 4.5.4.5",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
+    "hyperbolic46": {
+      "label": "Squares {4,6}",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
+    "hyperbolic4614": {
+      "label": "Truncated triheptagonal 4.6.14",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
+    "hyperbolic4616": {
+      "label": "Truncated trioctagonal 4.6.16",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
+    "hyperbolic4646": {
+      "label": "Tetrahexagonal 4.6.4.6",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
+    "hyperbolic4810": {
+      "label": "Truncated tetrapentagonal 4.8.10",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
+    "hyperbolic4812": {
+      "label": "Truncated tetrahexagonal 4.8.12",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
+    "hyperbolic51010": {
+      "label": "Truncated {5,5} 5.10.10",
       "tiling": "",
       "surface": "flat",
       "family": "hyperbolic"
@@ -805,8 +1011,74 @@
       "surface": "flat",
       "family": "hyperbolic"
     },
+    "hyperbolic55": {
+      "label": "Pentagons {5,5}",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
+    "hyperbolic588": {
+      "label": "Truncated {4,5} 5.8.8",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
+    "hyperbolic64": {
+      "label": "Hexagons {6,4}",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
+    "hyperbolic667": {
+      "label": "Soccer ball 6.6.7",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
+    "hyperbolic668": {
+      "label": "Truncated {3,8} 6.6.8",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
+    "hyperbolic669": {
+      "label": "Truncated {3,9} 6.6.9",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
+    "hyperbolic688": {
+      "label": "Truncated {4,6} 6.8.8",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
     "hyperbolic73": {
       "label": "Heptagons {7,3}",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
+    "hyperbolic74": {
+      "label": "Heptagons {7,4}",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
+    "hyperbolic83": {
+      "label": "Octagons {8,3}",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
+    "hyperbolic93": {
+      "label": "Nonagons {9,3}",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
+    "hyperbolicbinary": {
+      "label": "Binary tiling",
       "tiling": "",
       "surface": "flat",
       "family": "hyperbolic"
@@ -972,6 +1244,12 @@
       "tiling": "trunctrihex",
       "surface": "klein",
       "family": "uniform"
+    },
+    "macbeath": {
+      "label": "Macbeath surface",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
     },
     "mobius": {
       "label": "Squares · Möbius strip",
@@ -1315,6 +1593,12 @@
       "surface": "flat",
       "family": "isogonal"
     },
+    "quartic": {
+      "label": "Klein quartic",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
     "rhombicdodeca": {
       "label": "Rhombic dodecahedron",
       "tiling": "",
@@ -1410,6 +1694,12 @@
       "tiling": "",
       "surface": "solid",
       "family": "catalan"
+    },
+    "spheresquare": {
+      "label": "Spherical cube",
+      "tiling": "",
+      "surface": "solid",
+      "family": "sphere"
     },
     "spheretri": {
       "label": "Geodesic icosahedron",
@@ -1561,11 +1851,53 @@
       "surface": "torus",
       "family": "dual"
     },
+    "torusdissectedtrunchex": {
+      "label": "Dissected truncated hexagonal · Torus",
+      "tiling": "dissectedtrunchex",
+      "surface": "torus",
+      "family": "2-uniform"
+    },
+    "torusdissectedtrunchex2": {
+      "label": "Turned dissected truncated hexagonal · Torus",
+      "tiling": "dissectedtrunchex2",
+      "surface": "torus",
+      "family": "2-uniform"
+    },
+    "torusdodecarhombitrihex": {
+      "label": "Studded rhombitrihexagonal · Torus",
+      "tiling": "dodecarhombitrihex",
+      "surface": "torus",
+      "family": "2-uniform"
+    },
+    "torusdodecasquare": {
+      "label": "Square dodecagonal · Torus",
+      "tiling": "dodecasquare",
+      "surface": "torus",
+      "family": "2-uniform"
+    },
     "toruselongated": {
       "label": "Elongated triangular · Torus",
       "tiling": "elongated",
       "surface": "torus",
       "family": "uniform"
+    },
+    "toruselongated2": {
+      "label": "Half-elongated triangular · Torus",
+      "tiling": "elongated2",
+      "surface": "torus",
+      "family": "2-uniform"
+    },
+    "toruselongated3": {
+      "label": "Third-elongated triangular · Torus",
+      "tiling": "elongated3",
+      "surface": "torus",
+      "family": "2-uniform"
+    },
+    "torusfannedhex": {
+      "label": "Fanned hexagonal · Torus",
+      "tiling": "fannedhex",
+      "surface": "torus",
+      "family": "2-uniform"
     },
     "torusfloret": {
       "label": "Floret pentagonal · Torus",
@@ -1584,6 +1916,24 @@
       "tiling": "hex",
       "surface": "torus",
       "family": "regular"
+    },
+    "torushexbands": {
+      "label": "Banded hexagonal · Torus",
+      "tiling": "hexbands",
+      "surface": "torus",
+      "family": "2-uniform"
+    },
+    "torushexrings": {
+      "label": "Dissected truncated trihexagonal · Torus",
+      "tiling": "hexrings",
+      "surface": "torus",
+      "family": "2-uniform"
+    },
+    "torushexrows": {
+      "label": "Bow-tie hexagonal · Torus",
+      "tiling": "hexrows",
+      "surface": "torus",
+      "family": "2-uniform"
     },
     "toruskisrhombille": {
       "label": "Kisrhombille · Torus",
@@ -1639,6 +1989,18 @@
       "surface": "torus",
       "family": "rectangle"
     },
+    "torussnubelongated": {
+      "label": "Zigzag snub square · Torus",
+      "tiling": "snubelongated",
+      "surface": "torus",
+      "family": "2-uniform"
+    },
+    "torussnubelongated2": {
+      "label": "Pinwheel snub square · Torus",
+      "tiling": "snubelongated2",
+      "surface": "torus",
+      "family": "2-uniform"
+    },
     "torussnubhex": {
       "label": "Snub hexagonal · Torus",
       "tiling": "snubhex",
@@ -1651,6 +2013,30 @@
       "surface": "torus",
       "family": "uniform"
     },
+    "torussquarerows2": {
+      "label": "Doubly elongated triangular · Torus",
+      "tiling": "squarerows2",
+      "surface": "torus",
+      "family": "2-uniform"
+    },
+    "torussquarerows3": {
+      "label": "Triply elongated triangular · Torus",
+      "tiling": "squarerows3",
+      "surface": "torus",
+      "family": "2-uniform"
+    },
+    "torussquaretrihex": {
+      "label": "Elongated trihexagonal · Torus",
+      "tiling": "squaretrihex",
+      "surface": "torus",
+      "family": "2-uniform"
+    },
+    "torussquaretrihex2": {
+      "label": "Staggered elongated trihexagonal · Torus",
+      "tiling": "squaretrihex2",
+      "surface": "torus",
+      "family": "2-uniform"
+    },
     "torusstackedbond": {
       "label": "Stacked bond · Torus",
       "tiling": "stackedbond",
@@ -1662,6 +2048,18 @@
       "tiling": "staggeredtri",
       "surface": "torus",
       "family": "isogonal"
+    },
+    "torusstuddedtri": {
+      "label": "Studded triangular · Torus",
+      "tiling": "studdedtri",
+      "surface": "torus",
+      "family": "2-uniform"
+    },
+    "torusstuddedtri2": {
+      "label": "Twisted studded triangular · Torus",
+      "tiling": "studdedtri2",
+      "surface": "torus",
+      "family": "2-uniform"
     },
     "torustetrakis": {
       "label": "Tetrakis square · Torus",
@@ -1692,6 +2090,18 @@
       "tiling": "trihex",
       "surface": "torus",
       "family": "uniform"
+    },
+    "torustrirhombitrihex": {
+      "label": "Fanned rhombitrihexagonal · Torus",
+      "tiling": "trirhombitrihex",
+      "surface": "torus",
+      "family": "2-uniform"
+    },
+    "torustritrunctrihex": {
+      "label": "Fanned truncated trihexagonal · Torus",
+      "tiling": "tritrunctrihex",
+      "surface": "torus",
+      "family": "2-uniform"
     },
     "torustrunchex": {
       "label": "Truncated hexagonal · Torus",
@@ -1771,6 +2181,12 @@
       "surface": "flat",
       "family": "uniform"
     },
+    "triplet": {
+      "label": "Hurwitz triplet",
+      "tiling": "",
+      "surface": "flat",
+      "family": "hyperbolic"
+    },
     "trirhombitrihex": {
       "label": "Fanned rhombitrihexagonal",
       "tiling": "trirhombitrihex",
@@ -1844,6 +2260,7 @@
       "trefoil",
       "klein",
       "projective",
+      "boy",
       "doubletorus"
     ],
     "manifoldLabels": {
@@ -1853,7 +2270,8 @@
       "torus": "Torus",
       "doubletorus": "Double torus",
       "trefoil": "Trefoil knot",
-      "projective": "Projective plane"
+      "projective": "Projective plane",
+      "boy": "Boy's surface"
     },
     "pickerRegular": [
       "tri",
@@ -1882,9 +2300,46 @@
       "gosper"
     ],
     "hyperbolic": [
+      "hyperbolic93",
+      "hyperbolic83",
       "hyperbolic73",
+      "hyperbolic74",
+      "hyperbolic64",
       "hyperbolic54",
-      "hyperbolic45"
+      "hyperbolic55",
+      "hyperbolic45",
+      "hyperbolic46",
+      "hyperbolic37",
+      "hyperbolic38",
+      "hyperbolic667",
+      "hyperbolic31414",
+      "hyperbolic3737",
+      "hyperbolic3474",
+      "hyperbolic4614",
+      "hyperbolic668",
+      "hyperbolic31616",
+      "hyperbolic3838",
+      "hyperbolic3484",
+      "hyperbolic4616",
+      "hyperbolic588",
+      "hyperbolic41010",
+      "hyperbolic4545",
+      "hyperbolic4445",
+      "hyperbolic4810",
+      "hyperbolic688",
+      "hyperbolic41212",
+      "hyperbolic4646",
+      "hyperbolic4446",
+      "hyperbolic4812",
+      "hyperbolic51010",
+      "hyperbolic669",
+      "hyperbolicbinary",
+      "bolza",
+      "quartic",
+      "dyck",
+      "bring",
+      "macbeath",
+      "triplet"
     ],
     "familyLabels": {
       "regular": "Regular",
@@ -1906,7 +2361,8 @@
         "modes": [
           "gp21",
           "c180",
-          "spheretri"
+          "spheretri",
+          "spheresquare"
         ]
       },
       {

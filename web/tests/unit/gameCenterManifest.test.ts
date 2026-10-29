@@ -53,7 +53,7 @@ describe("the committed Game Center list", () => {
       const expected = id === "all-boards" ? "catalogue" : /^[a-z]+-all:/.test(id) ? "complete" : null;
       expect(ring, id).toBe(expected);
     }
-    expect([...rings.values()].filter((r) => r === "complete")).toHaveLength(24);
+    expect([...rings.values()].filter((r) => r === "complete")).toHaveLength(25);
   });
 
   it("has a 1024 px RGB image for each achievement, and no others", () => {

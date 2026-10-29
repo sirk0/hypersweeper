@@ -21,16 +21,13 @@ import {
 } from "../render/shapePalette";
 import { ARCH_TILINGS, type ArchTemplate, archTemplate, templateCells } from "../boards/tilings";
 import {
-  carpetBoard,
-  chairBoard,
-  gosperBoard,
-  pentaflakeBoard,
   placePoint,
-  sphinxBoard,
   substitutionPlacements,
   SUBSTITUTIONS,
 } from "../boards/fractal";
-import { hyperbolicBoard } from "../boards/hyperbolic";
+import { CLOSED_SURFACES, gcDisc, SURFACE_MODES } from "../boards/hurwitz";
+import { binaryBoard, hyperbolicBoard, hyperbolicUniformBoard } from "../boards/hyperbolic";
+import type { WythoffOp } from "../boards/hyperbolic";
 import {
   ammannBeenkerBoard,
   brickRingsBoard,
@@ -68,6 +65,7 @@ import {
   dodecahedronBoard,
   icosahedronBoard,
   octahedronBoard,
+  sphereSquareBoard,
   sphereTriangleBoard,
   steppedBipyramidBoard,
   steppedPyramidBoard,
@@ -82,10 +80,21 @@ import {
   truncatedIcosidodecahedronSplitBoard,
   truncatedOctahedronBoard,
 } from "../boards/archimedean";
-import { trefoilPoint } from "../boards/surfaces";
+import {
+  boyBoard,
+  cylinderBoard,
+  doubleTorusBoard,
+  kleinBoard,
+  mobiusBoard,
+  projectiveBoard,
+  torusBoard,
+  trefoilBoard,
+} from "../boards/surfaces";
 import { solidCubeBoard } from "../boards/volume";
+import { FRACTAL_MODES, SHAPED_MODES, surfaceOf } from "../boards/catalog";
+import { hasMode, presetBoard } from "../boards/presets";
 import { DOMAINS } from "./backgroundPattern";
-import { cid, newellNormal, type Board, type Board3D, type Vec3 } from "../boards/core";
+import { cid, isBoard3D, newellNormal, type Board, type Board3D, type Vec3 } from "../boards/core";
 
 const D = 100;
 const C = D / 2;
@@ -135,6 +144,7 @@ export function setIconPalette(next: IconPalette | undefined): void {
   iconPalette = next ?? {};
   cache.clear();
   previewCache.clear();
+  levelCache.clear();
 }
 
 const BASE: IconVariant = "base";
@@ -666,6 +676,7 @@ const SOLID_BUILDERS: Record<string, () => Board3D> = {
   gp21: () => gp21Board(0),
   c180: () => c180Board(0),
   spheretri: () => sphereTriangleBoard(0),
+  spheresquare: () => sphereSquareBoard(0),
   tetraframe: () => tetrahedronFrameBoard(0, 2),
   // The three solids the small icon draws as a symbol rather than a board — a
   // fanned triangle and two isometric boxes, which is what fits in 38px. A card
@@ -711,6 +722,21 @@ const SOLID_BUILDERS: Record<string, () => Board3D> = {
   rhombicosidodecasplit: () => rhombicosidodecahedronSplitBoard(0, 0),
   truncicosidodecasplit: () => truncatedIcosidodecahedronSplitBoard(0, 0),
   snubdodecsplit: () => snubDodecahedronSplitBoard(0, 0),
+  // The flat manifolds in squares, at their easy sizes: the wrapped lattice
+  // itself, every cell of the board a quad on the icon (see SURFACE_ICONS).
+  // Two are the exception. The trefoil is at its medium size: the easy knot's
+  // sixteen cells along it are bent into trapezoids at every turn, and the
+  // knot draws as a chain of kinks. Boy's surface is at its hard size: the
+  // easy board's 75 cells are too coarse for its lobes and funnel to read at
+  // all, and the surface is a lump of a few dozen bent squares.
+  mobius: () => mobiusBoard(14, 6, 0),
+  cylinder: () => cylinderBoard(16, 5, 0),
+  torus: () => torusBoard(10, 8, 0, 0.38),
+  trefoil: () => trefoilBoard(32, 8, 0, 0.8),
+  klein: () => kleinBoard(10, 8, 0, 1.15),
+  projective: () => projectiveBoard(5, 0),
+  boy: () => boyBoard(13, 0),
+  doubletorus: () => doubleTorusBoard(8, 8, 0, 0.38),
 };
 
 /** The thirteen Catalan solids, drawn as the real board in projection like the
@@ -744,6 +770,23 @@ const ARCHIMEDEAN_FLAT_ICONS = [
   "snubdodecsplit",
 ];
 
+/** The flat manifolds, drawn like the solids: the easy board's own squares on
+ * the board's own immersion, rather than a smooth mesh of the surface. The
+ * open and one-sided ones (`twoSided`) keep the faces turned away from the
+ * viewer, a shade darker, since their back is what shows through the band, the
+ * open end or the neck. The projective plane is not here: it is played on the
+ * whole sphere, every cell and its antipode, and is drawn as that sphere, with
+ * the sphere boards (`SPHERES`). */
+const SURFACE_ICONS: Record<string, { twoSided: boolean }> = {
+  mobius: { twoSided: true },
+  cylinder: { twoSided: true },
+  torus: { twoSided: false },
+  trefoil: { twoSided: false },
+  klein: { twoSided: true },
+  boy: { twoSided: true },
+  doubletorus: { twoSided: false },
+};
+
 /** How each solid is turned before projecting, in degrees about x then y —
  * chosen so the face the board is named for sits in the middle of the icon. */
 const SOLID_VIEW: Record<string, [number, number] | [number, number, number]> = {
@@ -751,6 +794,8 @@ const SOLID_VIEW: Record<string, [number, number] | [number, number, number]> = 
   gp21: [-20, 10],
   c180: [-20, 10],
   spheretri: [-10, 18],
+  // the cube's own view: one of the eight 3-valent corners in the middle
+  spheresquare: [-24, 28],
   // Seen from just above the equator: from any higher the widest terrace hides
   // the whole lower pyramid, and the icon stops being a bipyramid at all.
   steppedbipyramid: [-85, 0, 28],
@@ -805,6 +850,31 @@ const SOLID_VIEW: Record<string, [number, number] | [number, number, number]> = 
   rhombicosidodecasplit: [-16, 15],
   truncicosidodecasplit: [-16, 15],
   snubdodecsplit: [-14, 20],
+  // The flat manifolds, each in its board's own frame.
+  torus: [-62, 0],
+  // three-quarters on: the easy band is six cells wide, nearly a disc with a
+  // hole, and seen from above its twist hides in the far side of the loop
+  mobius: [-20, 40],
+  // tipped toward the viewer, so the open end that shows is the top one (a
+  // negative tilt looks up into it from below and reads upside down)
+  cylinder: [32, 0],
+  // flatter than the single donut's view: the eight is what identifies it,
+  // and at -62 degrees the two rings overlap into one blob
+  doubletorus: [-48, 0],
+  // down the knot's three-fold axis, the view it is known by, spun so a lobe
+  // points straight up and tipped a little toward the viewer: the picture is
+  // then symmetric left to right, where a lobe pointing sideways put two
+  // crossings on one side and left that side a tangle
+  trefoil: [12, 0, 90],
+  // the body with the neck looping over the top and back into its side; the
+  // board's coarse easy tube shows its open bottom ring from below
+  klein: [20, 30],
+  // the cubed sphere it is played on, a corner of the cube in the middle like
+  // the square sphere's
+  projective: [-24, 28],
+  // from above and to one side, the textbook view: two of the three lobes
+  // folding over the funnel that the third one dives into
+  boy: [-60, 0, 30],
 };
 
 /** Where a card turns a solid further than its 38px icon does. Two boards read
@@ -840,6 +910,16 @@ function rotate(p: V3, rx: number, ry: number, rz = 0): V3 {
   return [x0 * cy + z1 * sy, y, -x0 * sy + z1 * cy];
 }
 
+/** The mean of a polygon's vertices. */
+function centre3(poly: V3[]): V3 {
+  const k = 1 / poly.length;
+  return [
+    poly.reduce((s, v) => s + v[0], 0) * k,
+    poly.reduce((s, v) => s + v[1], 0) * k,
+    poly.reduce((s, v) => s + v[2], 0) * k,
+  ];
+}
+
 /**
  * The visible half of a 3D board, as icon-space polygons: every cell shaded by
  * how squarely it faces the viewer — the same cue that makes the board's 3D
@@ -855,8 +935,22 @@ function rotate(p: V3, rx: number, ry: number, rz = 0): V3 {
  * wind outward for the renderer's back-face culling, and are painted back to
  * front so a near tile covers the far one behind it.
  */
-function solidFaces(key: string, kind: "round" | "blocky" = "round", lit = false): string[] {
-  const board = solidBoard(key);
+function solidFaces(
+  key: string,
+  kind: "round" | "blocky" | "surface" = "round",
+  lit = false,
+  source?: Board3D,
+): string[] {
+  // `key` names the view (and, without `source`, the board); a level preview
+  // hands in the real board and its surface's key for the view.
+  const board = source ?? solidBoard(key);
+  // A level's surface is never culled, closed or not: its cells can be big
+  // (an easy board of rotated hexagons on a torus), and a big cell whose one
+  // normal points away still has a part that faces the viewer — culled, it
+  // leaves a hole at the silhouette. Painted back to front, every cell, the
+  // near side covers the far one as it does on an open band.
+  const surface =
+    kind === "surface" ? { twoSided: source ? true : SURFACE_ICONS[key]!.twoSided } : null;
   const [rxDeg, ryDeg, rzDeg = 0] = (lit ? PREVIEW_VIEW[key] : undefined) ??
     SOLID_VIEW[key] ?? [-18, 15];
   const rad = Math.PI / 180;
@@ -865,16 +959,25 @@ function solidFaces(key: string, kind: "round" | "blocky" = "round", lit = false
   // regularity across the whole board and reads the corner mask, exactly as
   // render/solidBoard.ts does, where the small icon measures each polygon on
   // its own. The difference shows on the boards with T-vertices.
-  const tones = lit ? classifyShapes(board.polygons, board.cornerMask) : null;
-  const faces: { pts: P[]; depth: number; facing: number; lambert: number; tone: ShapeTone }[] = [];
+  // A surface takes them on the small icon too: its squares are bent by the
+  // immersion, each by a different amount, and measured one at a time they
+  // would scatter over the regularity scale where the board paints them one
+  // colour.
+  const tones = lit || surface ? classifyShapes(board.polygons, board.cornerMask) : null;
+  const faces: {
+    pts: P[];
+    /** the face before its inset: on a card, the grout laid under it */
+    full: P[];
+    depth: number;
+    facing: number;
+    lambert: number;
+    tone: ShapeTone;
+    back: boolean;
+  }[] = [];
   const box: number[][] = [];
   for (const [cell, poly] of board.polygons) {
     const spun = poly.map((v) => rotate(v as V3, rx, ry, rz));
-    const mid: V3 = [
-      spun.reduce((s, v) => s + v[0], 0) / spun.length,
-      spun.reduce((s, v) => s + v[1], 0) / spun.length,
-      spun.reduce((s, v) => s + v[2], 0) / spun.length,
-    ];
+    const mid = centre3(spun);
     box.push(...spun.map((v) => [v[0], v[1]]));
     let facing: number;
     if (kind === "round") {
@@ -892,7 +995,12 @@ function solidFaces(key: string, kind: "round" | "blocky" = "round", lit = false
       const n = newellNormal(spun as Vec3[]);
       facing = n[2] / (Math.hypot(n[0], n[1], n[2]) || 1);
     }
-    if (facing <= 0.06) continue; // back-facing, and the rim it would alias with
+    // An open or one-sided surface shows its back through the band, the open
+    // end or the neck, so nothing of it is culled; the back is shaded by how
+    // squarely it faces the viewer just the same, and darkened below.
+    const back = facing < 0;
+    if (surface?.twoSided) facing = Math.abs(facing);
+    else if (facing <= 0.06) continue; // back-facing, and the rim it would alias with
     // Blocky boards have far more, far smaller cells than a sphere's, so their
     // seams are cut thinner or the tiles dissolve into speckle. A card's seams
     // are cut thinner again: at four times the size the icon's 6-10% gap reads
@@ -900,10 +1008,12 @@ function solidFaces(key: string, kind: "round" | "blocky" = "round", lit = false
     const inset = lit ? (kind === "round" ? 0.96 : 0.975) : kind === "round" ? 0.9 : 0.94;
     faces.push({
       pts: spun.map((v) => [mid[0] + (v[0] - mid[0]) * inset, mid[1] + (v[1] - mid[1]) * inset]),
+      full: spun.map((v) => [v[0], v[1]]),
       depth: mid[2],
       facing,
       lambert: lit ? lambertOf(spun as Vec3[], facing) : 0,
       tone: tones?.get(cell) ?? shapeMetrics(poly),
+      back,
     });
   }
   // Fit the silhouette rather than the bounding sphere, so a solid that is not
@@ -920,28 +1030,46 @@ function solidFaces(key: string, kind: "round" | "blocky" = "round", lit = false
   const scale = (D * 0.92) / Math.max(hi(0) - lo(0), hi(1) - lo(1));
   const [mx, my] = [(lo(0) + hi(0)) / 2, (lo(1) + hi(1)) / 2];
   faces.sort((f, g) => f.depth - g.depth);
+  const toBox = ([x, y]: P): P => [C + (x - mx) * scale, C - (y - my) * scale];
   return faces.map((f) => {
-    const pts = f.pts.map(([x, y]) => [C + (x - mx) * scale, C - (y - my) * scale] as P);
+    const pts = f.pts.map(toBox);
     // Lit: a continuous ramp between the tone's three variants, the way the
     // surfaces are shaded (see surfaceMesh). The icon's three buckets are what
     // a 38px solid needs to read as solid at all; on a card they band.
     if (!lit) {
-      const variant = f.facing > 0.8 ? LIGHT : f.facing > 0.45 ? BASE : DARK;
+      // the far side of a two-sided surface a shade down from the near side
+      const step = f.back ? 1 : 0;
+      const variants = [LIGHT, BASE, DARK, DARK];
+      const variant = variants[(f.facing > 0.8 ? 0 : f.facing > 0.45 ? 1 : 2) + step]!;
       return shape(pts, variant, 0, f.tone, D * 0.008);
     }
     const base = tint(BASE, f.tone);
     const l = f.lambert;
-    const fill =
+    const lit2 =
       l > 0.5
         ? mixHex(base, tint(LIGHT, f.tone), (l - 0.5) * 2)
         : mixHex(tint(DARK, f.tone), base, l * 2);
-    // Fill alone. `poly` strokes a face in its own colour to seal the
-    // antialiased seam against its neighbour, which is right where the seam
-    // should not show — but the inset above is deliberate grout, and a stroke
-    // over it only smears the edge the card is big enough to show cleanly.
-    return `<path d="${roundedPath(pts, D * 0.006)}" fill="${fill}"/>`;
+    const fill = f.back ? mixHex(lit2, tint(DARK, f.tone), 0.4) : lit2;
+    // The grout first, the whole face, as the board lays its grout under the
+    // tiles (render/solidBoard.ts): the seams are then solid lines rather
+    // than holes onto whatever is behind — the far side of a band, the
+    // inside of a tube. Lit with the tile, so it turns with the surface, and
+    // stroked in its own colour to seal the hairline between two neighbours'
+    // grout. The tile over it is fill alone: a stroke over the deliberate
+    // inset would only smear the edge the card is big enough to show cleanly.
+    const grout = mixHex(fill, GROUT_INK, 0.5);
+    return (
+      `<path d="${roundedPath(f.full.map(toBox), 0)}" fill="${grout}" stroke="${grout}" ` +
+      `stroke-width="${n(sw(1.2))}" stroke-linejoin="round"/>` +
+      `<path d="${roundedPath(pts, D * 0.006)}" fill="${fill}"/>`
+    );
   });
 }
+
+/** What a card's grout is mixed toward: the board's mid-grey grout
+ * (render/solidBoard.ts `BASE_COLOR`) a step warmer and deeper, so a seam reads
+ * as the shadowed edge between two tiles rather than a grey wire. */
+const GROUT_INK = "#5f5850";
 
 /** How squarely a face meets the light, in 0..1 — the shading a card's solids
  * take. Falls back to how squarely the face meets the viewer when the polygon
@@ -954,180 +1082,28 @@ function lambertOf(spun: Vec3[], facing: number): number {
   return Math.abs((nrm[0] * light[0] + nrm[1] * light[1] + nrm[2] * light[2]) / len);
 }
 
-// -- the four surfaces -------------------------------------------------------
-//
-// Torus, cylinder, Möbius strip and Klein bottle are drawn from the same
-// immersions the boards are wrapped onto (surfaces.ts), meshed into quads,
-// depth-sorted and flat-shaded. A twist that is really a twist beats any
-// arrangement of ellipse arcs: the Möbius strip shows its single edge running
-// round the band, and the Klein bottle's neck really does pass through the
-// belly and open into the inside.
-
-type SurfacePoint = (u: number, v: number) => V3;
-
-/** u round the ring, v round the tube. */
-const TORUS: SurfacePoint = (u, v) => {
-  const r = 0.42;
-  const radial = 1 + r * Math.cos(v);
-  return [radial * Math.cos(u), radial * Math.sin(u), r * Math.sin(v)];
+/** The tiling a flat family row is drawn from: a small patch of it on the row
+ * icon, and on a desktop card the whole tiling wallpapered, as its boards' own
+ * cards are (`buildPreview`), rather than the row icon blown up. */
+const FAMILY_TILINGS: Record<string, string> = {
+  // 3.4.6.4: a triangle, a square and a hexagon in one figure
+  uniform: "rhombitrihex",
+  // its own Laves dual (the two family rows are a dual pair themselves)
+  dual: "deltoidal",
+  // 4.6.12; 3.4.6.4: a dodecagon ringed by squares and hexagons beside a
+  // 3.4.6.4 patch — the four shapes the family is made of
+  "2-uniform": "dodecarhombitrihex",
+  // rotated hexagonal, the clearest picture of what the family is — tiles
+  // sliding along each other's edges rather than meeting them, with the gaps
+  // that opens filled by a second shape
+  isogonal: "rotatedhex",
+  // the herringbone, the bond whose staggered rectangles read as a pattern even
+  // at icon size (a stacked or running bond patch is a handful of plain bars)
+  rectangle: "herringbone",
+  // Dürer's pentagons, the one of its three that reads in two colours at icon
+  // size (a rep-tile patch is a huddle of one tone)
+  other: "durer",
 };
-
-/** The two donuts of the genus-2 board (surfaces.py `double_torus_board`), as
- * a pair of surfaces meshed into one frame. Their centres sit 2 apart, as the
- * board's do — a point of each one's outer equator on the other's inner one —
- * so they overlap in a lens rather than touching, which is what makes the
- * silhouette a figure of eight with a merged waist. The board cuts the overlap
- * away along the plane between them and sews the edges; the icon just lets the
- * two meshes cross, which at this size draws the same shape. */
-const DOUBLE_TORUS: SurfacePoint[] = [-1, 1].map((side) => (u, v) => {
-  const r = 0.42;
-  const radial = 1 + r * Math.cos(v);
-  return [side + radial * Math.cos(u), radial * Math.sin(u), r * Math.sin(v)];
-});
-
-/** The trefoil knot's tube (surfaces.ts `trefoilPoint`, the board's own
- * immersion): u along the knot, v round the tube. At a board's fattest tube the
- * strands all but touch at icon size and the three holes close up, so it is
- * drawn at a middling one -- the holes are what make it read as a knot. */
-const TREFOIL: SurfacePoint = (u, v) => trefoilPoint(u, v, 0.6);
-
-/** u round the loop, v across the half-twisting band. */
-const MOBIUS: SurfacePoint = (u, v) => {
-  const radial = 1 + v * Math.cos(u / 2);
-  return [radial * Math.cos(u), radial * Math.sin(u), v * Math.sin(u / 2)];
-};
-
-/** u round the axis, v up it. */
-const CYLINDER: SurfacePoint = (u, v) => [Math.cos(u), v, Math.sin(u)];
-
-/** The classic self-intersecting bottle (kleinPoint in surfaces.ts): u runs up
- * the belly, over the top and back down through the neck, v round the tube. */
-const KLEIN: SurfacePoint = (u, v) => {
-  const [cu, su, cv] = [Math.cos(u), Math.sin(u), Math.cos(v)];
-  const r = 1.05 * (2.5 - 1.5 * cu);
-  const x = u < Math.PI ? 3 * cu * (1 + su) + r * cu * cv : 3 * cu * (1 + su) - r * cv;
-  const y = u < Math.PI ? 8 * su + r * su * cv : 8 * su;
-  return [x, y, r * Math.sin(v)];
-};
-
-/** The projective plane's textbook model: a hemisphere, its rim glued to
- * itself across the middle (each rim point to the opposite one) — which is
- * also how the board is played, a sphere with every cell glued to its
- * antipode. A bowl: u round the rim, v from the rim down to the bottom. */
-const HEMISPHERE: SurfacePoint = (u, v) => [
-  Math.cos(v) * Math.cos(u),
-  -Math.sin(v),
-  Math.cos(v) * Math.sin(u),
-];
-
-interface MeshOptions {
-  /** rotation about x then y, in degrees, before projecting */
-  view: [number, number];
-  /** v range (u always runs a full turn) */
-  vFrom?: number;
-  vTo?: number;
-  uSteps?: number;
-  vSteps?: number;
-  /** an open surface is seen from both sides, so nothing is culled */
-  twoSided?: boolean;
-}
-
-/** Flat-shaded quads of a parametric surface, far ones first. Adjacent quads
- * share an edge, so each is stroked in its own fill: without that the
- * antialiased seams show the page through the surface.
- *
- * Several surfaces may be passed together, and then they are meshed into one
- * frame -- one set of bounds, one scale, one depth sort -- rather than side by
- * side. Two calls cannot do it: each scales its own grid to fill the icon, so
- * two donuts drawn separately come out the same size as one and overlapping.
- * The double torus is two of them. */
-function surfaceMesh(point: SurfacePoint | SurfacePoint[], opts: MeshOptions): string[] {
-  const {
-    view: [rxDeg, ryDeg],
-    vFrom = 0,
-    vTo = 2 * Math.PI,
-    uSteps = 36,
-    vSteps = 12,
-    twoSided = false,
-  } = opts;
-  const [rx, ry] = [rxDeg * (Math.PI / 180), ryDeg * (Math.PI / 180)];
-  const grids: V3[][][] = (Array.isArray(point) ? point : [point]).map((piece) => {
-    const grid: V3[][] = [];
-    for (let i = 0; i <= uSteps; i++) {
-      const row: V3[] = [];
-      for (let j = 0; j <= vSteps; j++) {
-        row.push(
-          rotate(piece((2 * Math.PI * i) / uSteps, vFrom + ((vTo - vFrom) * j) / vSteps), rx, ry),
-        );
-      }
-      grid.push(row);
-    }
-    return grid;
-  });
-  const flat = grids.flat(2);
-  const bounds = (k: 0 | 1): [number, number] => [
-    Math.min(...flat.map((p) => p[k])),
-    Math.max(...flat.map((p) => p[k])),
-  ];
-  const [minX, maxX] = bounds(0);
-  const [minY, maxY] = bounds(1);
-  const scale = (D * 0.94) / Math.max(maxX - minX, maxY - minY);
-  const ox = (D - (maxX - minX) * scale) / 2 - minX * scale;
-  const oy = (D + (maxY - minY) * scale) / 2 + minY * scale;
-  const at = (p: V3): P => [ox + p[0] * scale, oy - p[1] * scale];
-
-  const light = [-0.35, 0.5, 0.79] as const;
-  const faces: { pts: P[]; depth: number; fill: string }[] = [];
-  for (const grid of grids) {
-    for (let i = 0; i < uSteps; i++) {
-      for (let j = 0; j < vSteps; j++) {
-        const corners: V3[] = [
-          grid[i]![j]!,
-          grid[i + 1]![j]!,
-          grid[i + 1]![j + 1]!,
-          grid[i]![j + 1]!,
-        ];
-        const [a, b, c] = [corners[0]!, corners[1]!, corners[3]!];
-        const e1 = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
-        const e2 = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
-        const nx = e1[1]! * e2[2]! - e1[2]! * e2[1]!;
-        const ny = e1[2]! * e2[0]! - e1[0]! * e2[2]!;
-        const nz = e1[0]! * e2[1]! - e1[1]! * e2[0]!;
-        const len = Math.hypot(nx, ny, nz) || 1;
-        const facing = nz / len;
-        if (!twoSided && facing <= 0) continue;
-        const lambert = Math.abs((nx * light[0] + ny * light[1] + nz * light[2]) / len);
-        faces.push({
-          pts: corners.map(at),
-          depth: corners.reduce((s, p) => s + p[2], 0) / 4,
-          // the inside of an open surface reads a shade cooler than the outside
-          fill: mixHex(
-            facing < 0 ? plain("dark") : plain("base"),
-            facing < 0 ? plain("base") : plain("light"),
-            0.15 + 0.85 * lambert,
-          ),
-        });
-      }
-    }
-  }
-  faces.sort((f, g) => f.depth - g.depth);
-  // Hundreds of quads per icon, so they are written as bare polygons at one
-  // decimal (0.04 px at the size a menu row draws them) and grown 2% about
-  // their own centre instead of being stroked — that seals the antialiased
-  // seams between neighbours, which would otherwise show the page through the
-  // surface, for none of the markup a per-path stroke costs.
-  const f1 = (v: number): string => (Math.round(v * 10) / 10).toString();
-  return faces.map((f) => {
-    const [cx, cy] = centroid(f.pts);
-    const d = f.pts
-      .map(
-        (p, i) =>
-          `${i ? "L" : "M"}${f1(cx + (p[0] - cx) * 1.02)} ${f1(cy + (p[1] - cy) * 1.02)}`,
-      )
-      .join("");
-    return `<path d="${d}Z" fill="${f.fill}"/>`;
-  });
-}
 
 /** Menu keys that reuse another key's drawing (gui.py _ICON_ALIASES). */
 const ALIASES: Record<string, string> = {
@@ -1136,6 +1112,12 @@ const ALIASES: Record<string, string> = {
   spiral: "phyllotaxis", // the Spirals family row: the sunflower
   fractal: "sphinx", // the Fractals family row
   hyperbolic: "hyperbolic73", // the Hyperbolic family row: the game's namesake
+  // the Hyperbolic page's three submenus: a {p,q} other than the group's own
+  // {7,3}, the uniform tiling with the most kinds of corner on show, and
+  // Klein's quartic, the best known of the closed surfaces
+  "hyperbolic-regular": "hyperbolic54",
+  "hyperbolic-uniform": "hyperbolic3474",
+  "hyperbolic-closed": "quartic",
   // the solid-group rows borrow one of their own members' icons: there is no
   // board named "platonic", "archimedean" or "catalan" to draw, and
   // "polyhedra" now holds the frames and the stacks rather than the cube
@@ -1143,15 +1125,22 @@ const ALIASES: Record<string, string> = {
   archimedean: "cubocta",
   catalan: "rhombictriaconta",
   polyhedra: "steppedbipyramid",
+  solids: "dodecahedron", // the Solids page: the four above are its submenus
   volume: "cube3d", // the Volumes row: its only board
   classic: "square", // the "Classic" home entry: flat squares
   manifolds: "torus", // the "Flat manifolds" entry under Custom
-  "3d": "sphere", // the "3D" home entry: a random board off the plane
-  custom: "regular", // the "Custom" home entry: one tile of each regular tiling
+  // the Sphere group's row and the "3D" home entry: a Goldberg polyhedron,
+  // hexagons with the twelve pentagons a sphere needs. Not "sphere", which
+  // names the pentagonal hexecontahedron, now one of the Catalan solids
+  spheres: "c180",
+  "3d": "c180", // a random board off the plane
+  // the "Custom" home entry: the uniform tiling with three shapes in one
+  // figure, the triangle, square and hexagon the regular tilings are made of
+  custom: "rhombitrihex",
   random: "start", // the pygame menu's "Random" picker entry
 };
 
-const SPHERES = ["gp21", "c180", "spheretri"];
+const SPHERES = ["gp21", "c180", "spheretri", "spheresquare", "projective"];
 
 /** What a board's cells actually are, for the icons whose art is not a drawing
  * of one: a subdivided outer polygon (the Laves triangle tilings), an
@@ -1186,6 +1175,8 @@ const ICON_TONES: Record<string, ShapeTone> = {
   gp21: { sides: 6, regularity: 0.95 },
   c180: { sides: 6, regularity: 0.95 },
   spheretri: { sides: 3, regularity: 1 },
+  spheresquare: { sides: 4, regularity: 1 },
+  projective: { sides: 4, regularity: 1 }, // the same cubed sphere
 };
 
 // -- achievement badges ----------------------------------------------------
@@ -1379,28 +1370,12 @@ function draw(rawKey: string): string[] {
   if (key === "warning") return badge(warningPath(d));
 
   // Every uniform and dual-uniform tiling draws a real patch of itself, and so
-  // do the two family rows: a 3.4.6.4 rosette (a triangle, a square and a
-  // hexagon in one figure) for the uniform family, and its own Laves dual for
-  // the dual-uniform one.
-  // (the two family rows are a dual pair themselves: 3.4.6.4's vertex figure
-  // for the uniform family, its Laves dual's tile rosette for the other)
+  // does each flat family row, from the member FAMILY_TILINGS names.
   if (ARCH_KEYS.has(key)) return tilingPatch(key);
-  if (key === "uniform") return tilingPatch("rhombitrihex", "rosette");
-  if (key === "dual") return tilingPatch("deltoidal");
-  // the 2-uniform family row: 3.4.6.4; 4.6.12, a dodecagon ringed by squares
-  // and hexagons beside a 3.4.6.4 patch — the four shapes it is made of
-  if (key === "2-uniform") return tilingPatch("dodecarhombitrihex");
-  // the Isogonal family row: rotated hexagonal, the clearest picture of what
-  // the family is — tiles sliding along each other's edges rather than meeting
-  // them, with the gaps that opens filled by a second shape
-  if (key === "isogonal") return tilingPatch("rotatedhex");
-  // the Congruent rectangles family row: the herringbone, the bond whose
-  // staggered rectangles read as a pattern even at icon size (a stacked or
-  // running bond patch is a handful of plain bars)
-  if (key === "rectangle") return tilingPatch("herringbone");
-  // the Other family row: Dürer's pentagons, the one of its three that reads
-  // in two colours at icon size (a rep-tile patch is a huddle of one tone)
-  if (key === "other") return tilingPatch("durer");
+  // the uniform family row is 3.4.6.4's vertex rosette rather than the ring
+  // of tiles round one tile its own row draws
+  if (key === "uniform") return tilingPatch(FAMILY_TILINGS[key]!, "rosette");
+  if (key in FAMILY_TILINGS) return tilingPatch(FAMILY_TILINGS[key]!);
   if (key === "regular") {
     // the Regular family row: one tile of each of the three regular tilings
     return [
@@ -1418,16 +1393,26 @@ function draw(rawKey: string): string[] {
         `font-weight="700" font-size="${n(d * 0.92)}" fill="${plain("base")}">?</text>`,
     );
   } else if (key === "flat" || key === "square" || key === "torus_tile") {
-    // one square, the way the hexagon icon is one hexagon
-    const r = d * 0.36;
-    parts.push(
-      shape([
-        [C - r, C - r],
-        [C + r, C - r],
-        [C + r, C + r],
-        [C - r, C + r],
-      ]),
-    );
+    // a two-by-two corner of the grid, the way the hexagon icon is a 3-2-3
+    // cluster: one square alone reads as a button, four as a board. Sized so
+    // the outer corners stay 56 units out, inside the round crop the Game
+    // Center badges are cut to (scripts/make-gamecenter.mts `BADGE_PX`)
+    const s = d * 0.41;
+    for (const [i, j] of [
+      [0, 0],
+      [1, 0],
+      [0, 1],
+      [1, 1],
+    ] as const) {
+      const [x, y] = [C - s + i * s, C - s + j * s];
+      const sq: P[] = [
+        [x, y],
+        [x + s, y],
+        [x + s, y + s],
+        [x, y + s],
+      ];
+      parts.push(shape(seamed(sq)));
+    }
   } else if (key === "triangle") {
     parts.push(
       holed(
@@ -1444,10 +1429,53 @@ function draw(rawKey: string): string[] {
       ),
     );
   } else if (key === "trigrid") {
-    // one equilateral triangle, matching the one-square and one-hexagon icons
-    parts.push(shape(ngon(C, C + d * 0.04, d * 0.46, 3, -90), BASE, 4, cell));
+    // a square's worth of the triangular grid, matching the two-by-two squares
+    // and the 3-2-3 hexagons: three whole rows of five equilateral cells, 3
+    // sides wide by 2.6 tall, each row a trapezoid the next one turns over, so
+    // the sides step in and out rather than cutting a cell
+    const h = Math.sqrt(3) / 2;
+    const tiles: Tile[] = [];
+    for (let j = 0; j < 3; j++) {
+      const [top, bottom] = [j * h, (j + 1) * h];
+      for (let i = 0; i < 5; i++) {
+        const x = i / 2 - 1;
+        // up and down cells alternate along a row, and swap row to row
+        const pts: P[] =
+          (i + j) % 2 === 0
+            ? [
+                [x - 0.5, bottom],
+                [x + 0.5, bottom],
+                [x, top],
+              ]
+            : [
+                [x - 0.5, top],
+                [x + 0.5, top],
+                [x, bottom],
+              ];
+        tiles.push({ kind: "tri", pts, centre: centroid(pts) });
+      }
+    }
+    // twice the seam: a triangle's edges sit closer to its centre than a
+    // square's or a hexagon's, so the same fraction would be a thinner line
+    for (const t of fitTiles(tiles, d * 0.92)) {
+      parts.push(shape(seamed(t.pts, 2 * SEAM), BASE, 4, cell));
+    }
   } else if (key === "hex") {
-    parts.push(shape(hexagon(C, C, d * 0.44)));
+    // three, two, three: pointy-top hexagons a cell apart, the middle row
+    // offset half a cell, which comes out as near a square as hexagons get
+    // (5.2 radii wide by 5 tall)
+    const r = (d * 0.92) / (3 * Math.sqrt(3));
+    const dx = Math.sqrt(3) * r;
+    for (const [row, count] of [
+      [-1, 3],
+      [0, 2],
+      [1, 3],
+    ] as const) {
+      for (let k = 0; k < count; k++) {
+        const hx = C + (k - (count - 1) / 2) * dx;
+        parts.push(shape(seamed(hexagon(hx, C + row * 1.5 * r, r))));
+      }
+    }
   } else if (key === "hextri") {
     // the hexagonal triangle board: one hexagon cut into six triangles,
     // vertices left and right the way the board's outline sits
@@ -1662,30 +1690,30 @@ function draw(rawKey: string): string[] {
         ),
       );
     });
-  } else if (key in HYPERBOLIC_ICON_SHELLS) {
-    // the board itself, a ring and a half deep, inside the rim of the disc it
-    // never reaches -- drawn with its geodesic arcs and square corners (a
-    // rounded corner on every arc point would blur the curve away), the
-    // central polygon lighter. Toned by the board's own corner mask, so the
-    // arc points do not make a heptagon read as a 21-gon.
-    const p = Number(key.at(-2));
-    const q = Number(key.at(-1));
-    const board = hyperbolicBoard(p, q, HYPERBOLIC_ICON_SHELLS[key]!, 1, 1);
-    const tones = classifyShapes(board.polygons, board.cornerMask, true);
-    const r = d * 0.46;
-    const sc = (2 * r) / board.width;
-    parts.push(circle(C, C, r, tones.get("0")!, 2, LIGHT));
-    for (const [cell, polygon] of board.polygons) {
+  } else if (key === "hyperbolicbinary") {
+    // the binary tiling's top three rows, two tiles, four and eight: each row
+    // half the width of the one above, the top row lighter. Three, because the
+    // fourth's sixteen are already too narrow to read at row size.
+    const board = binaryBoard(2, 3, 0, 1);
+    const sc = (d * 0.9) / board.width;
+    const ox = (d - board.width * sc) / 2;
+    const oy = (d - board.height * sc) / 2;
+    for (const [cell, poly] of board.polygons) {
       parts.push(
         shape(
-          polygon.map(([x, y]): P => [C - r + x * sc, C - r + y * sc]),
-          cell === "0" ? LIGHT : BASE,
-          4,
-          tones.get(cell)!,
-          0,
+          poly.map(([x, y]): P => [ox + x * sc, oy + y * sc]),
+          cell.startsWith("0,") ? LIGHT : BASE,
+          2,
         ),
       );
     }
+  } else if (key === "hyperbolic-home") {
+    // the Hyperbolic home entry: {5,4}, the right-angled pentagons, cut apart
+    // by seams the way the sphere icons' faces are, so it reads as cells at a
+    // glance where the family row's hairlines blur into one disc
+    parts.push(...hyperbolicIcon("hyperbolic54", true));
+  } else if (key in HYPERBOLIC_ICON_SHELLS) {
+    parts.push(...hyperbolicIcon(key, false));
   } else if (key.startsWith("pentaspiral")) {
     // the innermost ring of hexagons, each drawn as its two pentagons: the n
     // that meet at the centre and the n of the odd wedges offset one side out,
@@ -1735,19 +1763,6 @@ function draw(rawKey: string): string[] {
         ),
       );
     }
-  } else if (key === "projective") {
-    // tipped toward the viewer so the inside of the bowl shows, which is what
-    // makes it a hemisphere rather than a ball
-    parts.push(
-      ...surfaceMesh(HEMISPHERE, {
-        view: [38, 0],
-        vFrom: 0,
-        vTo: Math.PI / 2,
-        uSteps: 36,
-        vSteps: 9,
-        twoSided: true,
-      }),
-    );
   } else if (SPHERES.includes(key)) {
     // the real solid, projected: a dark disc behind it closes the silhouette
     // where the outermost faces fall away from the viewer
@@ -1848,45 +1863,9 @@ function draw(rawKey: string): string[] {
       parts.push(line(lerp(a, b, 0.5), [C, C], DARK, 3, cell));
       parts.push(line(lerp(a, [C, C], 0.5), lerp(b, [C, C], 0.5), DARK, 3, cell));
     }
-  } else if (key === "torus") {
-    parts.push(...surfaceMesh(TORUS, { view: [-62, 0] }));
-  } else if (key === "mobius") {
-    // an open band: both faces show, and the half twist brings the far edge
-    // round to meet the near one
-    parts.push(
-      ...surfaceMesh(MOBIUS, {
-        view: [-52, 0],
-        vFrom: -0.42,
-        vTo: 0.42,
-        uSteps: 60,
-        vSteps: 3,
-        twoSided: true,
-      }),
-    );
-  } else if (key === "cylinder") {
-    // tipped toward the viewer, so the open end that shows is the top one
-    // (a negative tilt looks up into it from below and reads upside down)
-    parts.push(
-      ...surfaceMesh(CYLINDER, {
-        view: [32, 0],
-        vFrom: -1.15,
-        vTo: 1.15,
-        uSteps: 36,
-        vSteps: 5,
-        twoSided: true,
-      }),
-    );
-  } else if (key === "doubletorus") {
-    // flatter than the single donut's view: the eight is what identifies it,
-    // and at -62 degrees the two rings overlap into one blob
-    parts.push(...surfaceMesh(DOUBLE_TORUS, { view: [-48, 0], uSteps: 30, vSteps: 10 }));
-  } else if (key === "trefoil") {
-    // nearly straight down the knot's three-fold axis, which is the view the
-    // trefoil is known by; the slight tilt keeps the crossings reading as
-    // over and under rather than as a flat ribbon
-    parts.push(...surfaceMesh(TREFOIL, { view: [-18, 0], uSteps: 96, vSteps: 8 }));
-  } else if (key === "klein") {
-    parts.push(...surfaceMesh(KLEIN, { view: [180, -18], uSteps: 48, vSteps: 14 }));
+  } else if (SURFACE_ICONS[key]) {
+    // the flat manifolds: the easy board's squares on its own immersion
+    parts.push(...solidFaces(key, "surface"));
   } else {
     parts.push(circle(C, C, d * 0.4, null, 2));
   }
@@ -1928,18 +1907,6 @@ const PREVIEW_H = 70;
  * hexagons and a card of triakis triangles show tiles of about the same size
  * instead of one filling the box with three shapes and the next with ninety. */
 const PREVIEW_TILES = 20;
-
-/** Boards whose picture is their outline, not their tiling: the shaped boards
- * *are* the regular tilings, cut to a triangle or a hexagon, so wallpapered
- * each would be indistinguishable from the plain tiling it is cut from, which
- * is the one thing its picture has to say. */
-const NO_WALLPAPER = new Set([
-  "triangle",
-  "hextri",
-  "squarediamond",
-  "hexhex",
-  "hextriangle",
-]);
 
 /** The boards that do not repeat, and the patch of each to draw.
  *
@@ -2011,26 +1978,212 @@ const PATCH_BOARDS: Record<string, PatchBoard> = {
   // each remove from the middle, which is what the crop catches — a whole ring
   // block shrunk into the card is just a brick wall.
   brickrings: { build: () => brickRingsBoard(8, 0, 27) },
-  sphinx: { build: () => sphinxBoard(4, 0, 16.5) },
-  chair: { build: () => chairBoard(4, 0, 22) },
-  gosper: { build: () => gosperBoard(3, 0, 25), whole: true },
-  pentaflake: { build: () => pentaflakeBoard(3, 0, 18) },
-  carpet: { build: () => carpetBoard(3, 0, 32) },
+  // The fractals and the shaped boards: the easy board itself, whole. A
+  // fractal's picture is the one tile grown into itself, which a crop of a
+  // deeper patch loses; a shaped board *is* a regular tiling cut to an
+  // outline, so wallpapered it would be the plain tiling it is cut from — the
+  // one thing its picture must not say.
+  ...Object.fromEntries(
+    [...FRACTAL_MODES, ...Object.values(SHAPED_MODES).flat()].map((mode) => [
+      mode,
+      { build: () => presetBoard(mode, "easy") as Board, whole: true } as const,
+    ]),
+  ),
   // Whole: the disc is the picture -- the tiles shrinking toward a rim they
   // never reach is what a hyperbolic tiling looks like.
+  hyperbolic93: { build: () => hyperbolicBoard(9, 3, 11, 0, 100), whole: true },
+  hyperbolic83: { build: () => hyperbolicBoard(8, 3, 13, 0, 100), whole: true },
   hyperbolic73: { build: () => hyperbolicBoard(7, 3, 16, 0, 100), whole: true },
+  hyperbolic74: { build: () => hyperbolicBoard(7, 4, 14, 0, 100), whole: true },
+  hyperbolic64: { build: () => hyperbolicBoard(6, 4, 14, 0, 100), whole: true },
   hyperbolic54: { build: () => hyperbolicBoard(5, 4, 18, 0, 100), whole: true },
+  hyperbolic55: { build: () => hyperbolicBoard(5, 5, 15, 0, 100), whole: true },
   hyperbolic45: { build: () => hyperbolicBoard(4, 5, 21, 0, 100), whole: true },
+  hyperbolic46: { build: () => hyperbolicBoard(4, 6, 17, 0, 100), whole: true },
+  hyperbolic37: { build: () => hyperbolicDisc("hyperbolic37", 16, 100), whole: true },
+  hyperbolic38: { build: () => hyperbolicDisc("hyperbolic38", 14, 100), whole: true },
+  hyperbolic667: { build: () => hyperbolicDisc("hyperbolic667", 18, 100), whole: true },
+  hyperbolic31414: { build: () => hyperbolicDisc("hyperbolic31414", 17, 100), whole: true },
+  hyperbolic3737: { build: () => hyperbolicDisc("hyperbolic3737", 18, 100), whole: true },
+  hyperbolic3474: { build: () => hyperbolicDisc("hyperbolic3474", 16, 100), whole: true },
+  hyperbolic4614: { build: () => hyperbolicDisc("hyperbolic4614", 16, 100), whole: true },
+  hyperbolic668: { build: () => hyperbolicDisc("hyperbolic668", 16, 100), whole: true },
+  hyperbolic31616: { build: () => hyperbolicDisc("hyperbolic31616", 16, 100), whole: true },
+  hyperbolic3838: { build: () => hyperbolicDisc("hyperbolic3838", 16, 100), whole: true },
+  hyperbolic3484: { build: () => hyperbolicDisc("hyperbolic3484", 16, 100), whole: true },
+  hyperbolic4616: { build: () => hyperbolicDisc("hyperbolic4616", 16, 100), whole: true },
+  hyperbolic588: { build: () => hyperbolicDisc("hyperbolic588", 18, 100), whole: true },
+  hyperbolic41010: { build: () => hyperbolicDisc("hyperbolic41010", 18, 100), whole: true },
+  hyperbolic4545: { build: () => hyperbolicDisc("hyperbolic4545", 18, 100), whole: true },
+  hyperbolic4445: { build: () => hyperbolicDisc("hyperbolic4445", 18, 100), whole: true },
+  hyperbolic4810: { build: () => hyperbolicDisc("hyperbolic4810", 18, 100), whole: true },
+  hyperbolic688: { build: () => hyperbolicDisc("hyperbolic688", 16, 100), whole: true },
+  hyperbolic41212: { build: () => hyperbolicDisc("hyperbolic41212", 16, 100), whole: true },
+  hyperbolic4646: { build: () => hyperbolicDisc("hyperbolic4646", 16, 100), whole: true },
+  hyperbolic4446: { build: () => hyperbolicDisc("hyperbolic4446", 16, 100), whole: true },
+  hyperbolic4812: { build: () => hyperbolicDisc("hyperbolic4812", 16, 100), whole: true },
+  hyperbolic51010: { build: () => hyperbolicDisc("hyperbolic51010", 16, 100), whole: true },
+  hyperbolic669: { build: () => hyperbolicDisc("hyperbolic669", 11, 100), whole: true },
+  // Whole as well: the rectangle with its rows halving down to the ideal line
+  // is the picture, as the disc is the {p,q} boards'.
+  hyperbolicbinary: { build: () => binaryBoard(2, 5, 0, 100), whole: true },
+  // The closed surfaces' tilings, drawn in the disc on their own: the boards
+  // themselves build the surface and its cover, a second or more for all of
+  // them, which a menu page cannot wait on. Up close a closed surface looks
+  // like the plane it is glued from, so each card shows one of the tilings it
+  // grows through: the quartic its subdivided medium, Macbeath's surface its
+  // 6.6.7 (the soccer ball's disc), the triplet the plain heptagons of its
+  // easy, the Bolza and Dyck surfaces the octagons among hexagons of their
+  // GC(3,0) and GC(2,0), and Bring's surface its easy 4.4.4.5.
+  bolza: { build: () => gcDisc(8, 3, 3, 24, 100), whole: true },
+  quartic: { build: () => gcDisc(7, 3, 3, 30, 100), whole: true },
+  dyck: { build: () => gcDisc(8, 3, 2, 18, 100), whole: true },
+  bring: { build: () => hyperbolicDisc("hyperbolic4445", 18, 100), whole: true },
+  macbeath: { build: () => hyperbolicDisc("hyperbolic667", 18, 100), whole: true },
+  triplet: { build: () => hyperbolicDisc("hyperbolic73", 16, 100), whole: true },
 };
+
+/** The uniform hyperbolic boards, each one of Wythoff's operations on a {p,q}
+ * (boards/hyperbolic.ts); every other hyperbolic mode is `hyperbolic{p}{q}`.
+ * Must match `_HYPERBOLIC_UNIFORM` in gui.py. */
+const HYPERBOLIC_UNIFORM: Record<string, readonly [number, number, WythoffOp]> = {
+  hyperbolic667: [7, 3, "zip"],
+  hyperbolic31414: [7, 3, "truncate"],
+  hyperbolic3737: [7, 3, "ambo"],
+  hyperbolic3474: [7, 3, "expand"],
+  hyperbolic4614: [7, 3, "bevel"],
+  hyperbolic668: [8, 3, "zip"],
+  hyperbolic31616: [8, 3, "truncate"],
+  hyperbolic3838: [8, 3, "ambo"],
+  hyperbolic3484: [8, 3, "expand"],
+  hyperbolic4616: [8, 3, "bevel"],
+  hyperbolic588: [5, 4, "zip"],
+  hyperbolic41010: [5, 4, "truncate"],
+  hyperbolic4545: [5, 4, "ambo"],
+  hyperbolic4445: [5, 4, "expand"],
+  hyperbolic4810: [5, 4, "bevel"],
+  hyperbolic688: [6, 4, "zip"],
+  hyperbolic41212: [6, 4, "truncate"],
+  hyperbolic4646: [6, 4, "ambo"],
+  hyperbolic4446: [6, 4, "expand"],
+  hyperbolic4812: [6, 4, "bevel"],
+  hyperbolic51010: [5, 5, "zip"],
+  hyperbolic669: [9, 3, "zip"],
+  // the closed surface's row icon is its tiling's disc (see the icon above)
+  bolza: [8, 3, "zip"],
+  quartic: [7, 3, "zip"],
+  dyck: [8, 3, "zip"],
+  bring: [5, 4, "expand"],
+  macbeath: [7, 3, "zip"],
+  triplet: [7, 3, "zip"],
+};
+
+/** The closed surfaces (boards/hurwitz.ts), whose icon lights every face of
+ * the surface's own tiling (every heptagon of a Hurwitz surface's).
+ * Must match `_CLOSED_SURFACE_MODES` in gui.py. */
+const CLOSED_SURFACE_MODES = Object.values(SURFACE_MODES);
+
+/** A hyperbolic board's row icon: the board itself, a ring and a half deep,
+ * inside the rim of the disc it never reaches -- drawn with its geodesic arcs
+ * and square corners (a rounded corner on every arc point would blur the curve
+ * away), the central polygon lighter (on {3,q}, the star of q triangles round
+ * the central vertex: cells 0 .. q-1). Toned by the board's own corner mask,
+ * so the arc points do not make a heptagon read as a 21-gon.
+ *
+ * `seams` parts the cells instead of outlining them, the rim left as a ring
+ * with the background showing through: the home entry's look (see `draw`). */
+function hyperbolicIcon(key: string, seams: boolean): string[] {
+  const board = hyperbolicDisc(key, HYPERBOLIC_ICON_SHELLS[key]!, 1);
+  const central = !(key in HYPERBOLIC_UNIFORM) && key.at(-2) === "3" ? Number(key.at(-1)) : 1;
+  // A closed surface lights every face of its tiling (a Hurwitz surface's
+  // heptagons) rather than the central one: with no rim, each of them is a
+  // full cell. Must match gui.py.
+  const lit = (cell: string) =>
+    CLOSED_SURFACE_MODES.includes(key)
+      ? board.cornerMask!.get(cell)!.filter(Boolean).length === CLOSED_SURFACES[key]!.p
+      : Number(cell) < central;
+  const tones = classifyShapes(board.polygons, board.cornerMask, true);
+  const r = D * 0.46;
+  const sc = (2 * r) / board.width;
+  const parts = [
+    seams
+      ? `<circle cx="${n(C)}" cy="${n(C)}" r="${n(r)}" fill="none" stroke="${tint(
+          "outline",
+          tones.get("0")!,
+        )}" stroke-width="${n(sw(3))}"/>`
+      : circle(C, C, r, tones.get("0")!, 2, LIGHT),
+  ];
+  for (const [cell, polygon] of board.polygons) {
+    const pts = polygon.map(([x, y]): P => [C - r + x * sc, C - r + y * sc]);
+    parts.push(
+      shape(
+        seams ? inset(pts, centroid(pts), HYPERBOLIC_SEAM) : pts,
+        lit(cell) ? LIGHT : BASE,
+        seams ? 0 : 4,
+        tones.get(cell)!,
+        0,
+      ),
+    );
+  }
+  return parts;
+}
+
+/** The seamed hyperbolic icon's seam, a little wider than the flat cells'
+ * (`SEAM`): its cells shrink toward the rim, and a seam in proportion to each
+ * cell is what keeps the outer rings from closing up. */
+const HYPERBOLIC_SEAM = 0.12;
+
+/** A hyperbolic mode's disc trimmed to `shells`, with no mines. */
+function hyperbolicDisc(key: string, shells: number, scale: number): Board {
+  const uniform = HYPERBOLIC_UNIFORM[key];
+  if (uniform) return hyperbolicUniformBoard(...uniform, shells, 0, scale);
+  return hyperbolicBoard(Number(key.at(-2)), Number(key.at(-1)), shells, 0, scale);
+}
 
 /** The hyperbolic boards' row icons: how many distance shells to draw -- the
  * central polygon, its ring, and the next ring's nearest cells, which is as
  * much as reads at row-icon size. Must match
  * `_HYPERBOLIC_ICON_SHELLS` in gui.py. */
 const HYPERBOLIC_ICON_SHELLS: Record<string, number> = {
+  hyperbolic93: 4,
+  hyperbolic83: 4,
   hyperbolic73: 4,
+  hyperbolic74: 4,
+  hyperbolic64: 4,
   hyperbolic54: 4,
+  hyperbolic55: 4,
   hyperbolic45: 5,
+  hyperbolic46: 6,
+  hyperbolic37: 5,
+  hyperbolic38: 5,
+  hyperbolic667: 4,
+  hyperbolic31414: 4,
+  hyperbolic3737: 4,
+  hyperbolic3474: 5,
+  hyperbolic4614: 5,
+  hyperbolic668: 4,
+  hyperbolic31616: 4,
+  hyperbolic3838: 4,
+  hyperbolic3484: 5,
+  hyperbolic4616: 5,
+  hyperbolic588: 5,
+  hyperbolic41010: 5,
+  hyperbolic4545: 5,
+  hyperbolic4445: 5,
+  hyperbolic4810: 5,
+  hyperbolic688: 5,
+  hyperbolic41212: 5,
+  hyperbolic4646: 5,
+  hyperbolic4446: 4,
+  hyperbolic4812: 4,
+  hyperbolic51010: 4,
+  hyperbolic669: 3,
+  bolza: 4,
+  quartic: 4,
+  dyck: 4,
+  bring: 5,
+  macbeath: 4,
+  triplet: 4,
 };
 
 /** Where a mode's repeat domain is filed under another name. */
@@ -2088,7 +2241,9 @@ function muted<T>(paint: () => T): T {
 }
 
 function buildPreview(rawKey: string): Preview {
-  const key = ALIASES[rawKey] ?? rawKey;
+  // the Hyperbolic home entry's card is its board's disc, as the {5,4} row's is
+  if (rawKey === "hyperbolic-home") return buildPreview("hyperbolic54");
+  const key = ALIASES[rawKey] ?? FAMILY_TILINGS[rawKey] ?? rawKey;
   // The patch source first: most of these keys have a `DOMAINS` entry too, and
   // it is the one that would lie about them (see PATCH_BOARDS).
   const board = patch(key);
@@ -2097,9 +2252,13 @@ function buildPreview(rawKey: string): Preview {
   if (tiles) return tiledSvg(tiles);
   return figureSvg(
     SOLID_BUILDERS[key]
-      ? solidFaces(key, SPHERES.includes(key) ? "round" : "blocky", true)
-      : // Neither a patch, a lattice nor a solid: a family rosette, a surface,
-        // a shaped board's outline. `draw` rather than `menuIcon`, which would
+      ? solidFaces(
+          key,
+          SURFACE_ICONS[key] ? "surface" : SPHERES.includes(key) ? "round" : "blocky",
+          true,
+        )
+      : // Neither a patch, a lattice nor a solid: a family rosette, a shaped
+        // board's outline. `draw` rather than `menuIcon`, which would
         // fill the row icons' cache with a card's muted colours.
         draw(rawKey),
   );
@@ -2118,14 +2277,64 @@ function tiledSvg(parts: string[]): Preview {
   };
 }
 
-/** A drawing that sits in the card with air around it. */
+/** A drawing that sits in the card with air around it — the card's padding,
+ * and nothing more. The parts are drawn for the row icon's square box with a
+ * margin of their own, and a square box `meet`-fitted into a card half again
+ * as wide as it is tall leaves a wide board (a triangle, a Möbius band, a row
+ * of fractal pentagons) at the height of the card and the air on every side.
+ * So the viewBox is the drawing's own bounding box: the card's frame then
+ * fits the board, whichever of its two sides is the one that limits it. */
 function figureSvg(parts: string[]): Preview {
+  const [x, y, w, h] = figureBox(parts) ?? [0, 0, D, D];
   return {
     svg:
-      `<svg viewBox="0 0 ${D} ${D}" aria-hidden="true" focusable="false">` +
+      `<svg viewBox="${n(x)} ${n(y)} ${n(w)} ${n(h)}" aria-hidden="true" focusable="false">` +
       `${parts.join("")}</svg>`,
     tiled: false,
   };
+}
+
+/** Room left round a figure's bounding box for the outlines drawn on its
+ * edge, in icon units — wider than the widest stroke `shape` gives a tile. */
+const FIGURE_MARGIN = 1.5;
+
+/** The bounding box of a figure's paths and circles, as `[x, y, w, h]`, or
+ * `null` for a drawing with anything this does not read — a relative or arc
+ * path command, a rectangle, text — which keeps the whole icon box. Every
+ * number in an absolute M/L/Q path is a coordinate pair, control points
+ * included; a control point lies on the hull of its curve, so the box can
+ * only come out a touch generous, never short. */
+function figureBox(parts: string[]): [number, number, number, number] | null {
+  let [minX, minY, maxX, maxY] = [Infinity, Infinity, -Infinity, -Infinity];
+  const take = (x: number, y: number, r = 0): void => {
+    minX = Math.min(minX, x - r);
+    maxX = Math.max(maxX, x + r);
+    minY = Math.min(minY, y - r);
+    maxY = Math.max(maxY, y + r);
+  };
+  for (const part of parts) {
+    for (const [, tag, attrs = ""] of part.matchAll(/<(\w+)\b([^>]*)>/g)) {
+      if (tag === "path") {
+        const d = /\sd="([^"]*)"/.exec(attrs)?.[1];
+        if (d === undefined || /[^MLQZ\d\s.,-]/.test(d)) return null;
+        const nums = (d.match(/-?\d*\.?\d+/g) ?? []).map(Number);
+        for (let i = 0; i + 1 < nums.length; i += 2) take(nums[i]!, nums[i + 1]!);
+      } else if (tag === "circle") {
+        const num = (name: string): number =>
+          Number(new RegExp(`\\s${name}="([^"]*)"`).exec(attrs)?.[1]);
+        take(num("cx"), num("cy"), num("r"));
+      } else {
+        return null;
+      }
+    }
+  }
+  if (!(maxX > minX && maxY > minY)) return null;
+  return [
+    minX - FIGURE_MARGIN,
+    minY - FIGURE_MARGIN,
+    maxX - minX + 2 * FIGURE_MARGIN,
+    maxY - minY + 2 * FIGURE_MARGIN,
+  ];
 }
 
 /** A periodic tiling as a lattice: one domain's tiles, and the translations
@@ -2141,7 +2350,6 @@ interface Lattice {
 }
 
 function latticeFor(key: string): Lattice | null {
-  if (NO_WALLPAPER.has(key)) return null;
   if (ARCH_KEYS.has(key)) {
     const t = archTemplate(key);
     return {
@@ -2244,27 +2452,7 @@ function patch(key: string): Preview | null {
   }));
   const mids = cells.map((c) => centroid(c.pts));
 
-  if (source.whole) {
-    const xs = cells.flatMap((c) => c.pts.map((p) => p[0]));
-    const ys = cells.flatMap((c) => c.pts.map((p) => p[1]));
-    const [minX, maxX] = [Math.min(...xs), Math.max(...xs)];
-    const [minY, maxY] = [Math.min(...ys), Math.max(...ys)];
-    const scale = (D * 0.94) / Math.max(maxX - minX, maxY - minY);
-    const place = (p: P): P => [
-      C + (p[0] - (minX + maxX) / 2) * scale,
-      C + (p[1] - (minY + maxY) / 2) * scale,
-    ];
-    return figureSvg(
-      tileSvg(
-        cells.map((c, i) => ({
-          kind: "cell",
-          pts: c.pts.map(place),
-          centre: place(mids[i]!),
-          tone: c.tone,
-        })),
-      ),
-    );
-  }
+  if (source.whole) return wholeSvg(cells, mids);
 
   const scale = Math.sqrt(
     (PREVIEW_W * PREVIEW_H) /
@@ -2287,10 +2475,111 @@ function patch(key: string): Preview | null {
   return tiles.length > 0 ? tiledSvg(tileSvg(tiles)) : null;
 }
 
+/** A flat board's every cell, fitted whole into the figure box. */
+function wholeSvg(cells: { pts: P[]; tone: ShapeTone }[], mids: P[]): Preview {
+  const xs = cells.flatMap((c) => c.pts.map((p) => p[0]));
+  const ys = cells.flatMap((c) => c.pts.map((p) => p[1]));
+  const [minX, maxX] = [Math.min(...xs), Math.max(...xs)];
+  const [minY, maxY] = [Math.min(...ys), Math.max(...ys)];
+  const scale = (D * 0.94) / Math.max(maxX - minX, maxY - minY);
+  const place = (p: P): P => [
+    C + (p[0] - (minX + maxX) / 2) * scale,
+    C + (p[1] - (minY + maxY) / 2) * scale,
+  ];
+  return figureSvg(
+    tileSvg(
+      cells.map((c, i) => ({
+        kind: "cell",
+        pts: c.pts.map(place),
+        centre: place(mids[i]!),
+        tone: c.tone,
+      })),
+    ),
+  );
+}
+
+// -- level previews ----------------------------------------------------------
+//
+// A board's own card shows the board it opens, at the difficulty the pills
+// have selected: the whole level, every cell, the way the game deals it — a
+// flat board as its outline, a solid or a wrapped surface as the real thing
+// lit. So the card changes with the difficulty, as the level does. The
+// `previewIcon` drawings stay for what is not a level (a family, a random
+// pool) and as the placeholder a card shows while its board is built, which
+// the menu does in the background (ui/menu.ts `paintLevel`).
+
+const levelCache = new Map<string, Preview>();
+
+/** How many level previews are kept. Each is a string of SVG, not a board, so
+ * a few hundred — every board at one difficulty — cost little. */
+const LEVEL_KEEP = 600;
+
+/** The board an icon key stands for, when it stands for one: a mode's own
+ * key, or the board an alias or a family row is drawn from — the Uniform
+ * family's rhombitrihexagonal, Solids' dodecahedron, the Hyperbolic home
+ * entry's {5,4}. `undefined` for a drawing that is no board (a badge, the
+ * question mark). A family or group card shows this board's level, so it
+ * follows the difficulty the way a board's own card does. */
+export function iconBoard(rawKey: string): string | undefined {
+  if (rawKey === "hyperbolic-home") return "hyperbolic54";
+  const key = ALIASES[rawKey] ?? FAMILY_TILINGS[rawKey] ?? rawKey;
+  return hasMode(key) ? key : undefined;
+}
+
+/** The card for `mode` at `difficulty`, if it has already been drawn. */
+export function cachedLevelPreview(mode: string, difficulty: string): Preview | undefined {
+  return levelCache.get(`${mode}|${difficulty}`);
+}
+
+/** The card for `mode` at `difficulty`: its real board, built fresh
+ * (`presetBoard`, which leaves the game's restart cache alone) and drawn whole. */
+export function levelPreview(mode: string, difficulty: string): Preview {
+  const key = `${mode}|${difficulty}`;
+  let preview = levelCache.get(key);
+  if (preview === undefined) {
+    preview = muted(() => buildLevel(mode, difficulty));
+    levelCache.set(key, preview);
+    if (levelCache.size > LEVEL_KEEP) levelCache.delete(levelCache.keys().next().value!);
+  }
+  return preview;
+}
+
+function buildLevel(mode: string, difficulty: string): Preview {
+  const board = presetBoard(mode, difficulty);
+  if (isBoard3D(board)) {
+    // Seen as its row icon is, from the surface's view for a wrapped tiling
+    // (a torus of triangles turns like the torus), and painted the same way.
+    const surface = surfaceOf(mode);
+    const view = surface?.is3d ? surface.key : mode;
+    const kind = SPHERES.includes(view) ? "round" : surface?.is3d ? "surface" : "blocky";
+    return figureSvg(solidFaces(view, kind, true, board));
+  }
+  // Tones measured across the whole board, as the played board measures them.
+  const tones = classifyShapes(board.polygons, board.cornerMask, board.curved);
+  const cells = [...board.polygons].map(([id, poly]) => ({
+    pts: poly as P[],
+    tone: tones.get(id)!,
+  }));
+  return wholeSvg(
+    cells,
+    cells.map((c) => centroid(c.pts)),
+  );
+}
+
 /** How far a preview's tiles are pulled in from their shared edges, as a
  * fraction of the way to the centre. The board's own grout — `CellProfile.gap`
  * is 0.1 on the Flat and Sand cell styles, 0.04 on Classic. */
 const GROUT = 0.08;
+
+/** How far a row icon's cells are pulled apart (`seamed`), as a fraction of
+ * the way to each cell's centre — the sphere icons' seam (`solidFaces`). */
+const SEAM = 0.1;
+
+/** A cell shrunk toward its own centre by `gap`, so the background shows
+ * between it and its neighbours as a line of contrast. */
+function seamed(pts: P[], gap = SEAM): P[] {
+  return inset(pts, centroid(pts), gap);
+}
 
 /** A polygon shrunk toward a point — the board's grout, and the seams between
  * a solid's faces (see `solidFaces`). */

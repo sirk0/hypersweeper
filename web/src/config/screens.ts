@@ -49,9 +49,9 @@ export interface HudSlot {
   digits?: number;
   visibleWhen?: string;
   /** What keeps this control on the board's row when the player has the extra
-   * controls turned off (web only — see ui/hud.ts `slotKept`). Unlike
-   * `visibleWhen`, absent means *not* kept. */
-  keepWhen?: string;
+   * controls turned off (web only — see ui/hud.ts `slotKept`): any one of these
+   * conditions. Unlike `visibleWhen`, absent means *not* kept. */
+  keepWhen?: string[];
 }
 
 export interface Hud {

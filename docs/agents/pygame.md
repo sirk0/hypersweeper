@@ -16,7 +16,7 @@ described in [`../../web/docs/ui.md`](../../web/docs/ui.md). Classic
 launches flat squares; Flat (the plane) and each flat manifold (cylinder,
 Möbius, Klein, torus) open a shared tiling picker — the Regular / Uniform
 / Laves family submenus, Isogonal and Congruent rectangles on every
-surface, 2-uniform on the plane, the cylinder and the Möbius strip, Other,
+surface, 2-uniform on every surface but the Klein bottle, Other,
 Aperiodic and Fractals on the plane only, and a random option
 — parameterised by the surface it was reached through. The last four are
 **solid groups**: a flat list of finished boards, one click from the home
@@ -56,7 +56,9 @@ in `web/`, not this one — `make web-package` is a local build only.
 ## Tests
 
 ```sh
-.venv/bin/pytest            # full suite, sub-second
+.venv/bin/pytest                      # full suite — a few minutes; CI runs it
+.venv/bin/pytest tests/test_game.py   # …the file your change touches
+.venv/bin/pytest -k <name>            # …or the tests matching a name
 ```
 
 GUI tests run headless (SDL dummy driver, set in tests/test_gui.py).
@@ -143,7 +145,9 @@ make web-run   # builds, then serves at http://localhost:8000
 
 ## Verifying a change
 
-- `make test` — the suite is sub-second. New boards are covered
+- `make test` — the whole suite, a few minutes, so leave it to CI and run
+  the impacted file or `-k` locally (see "Verifying a change" in the root
+  [`AGENTS.md`](../../AGENTS.md)). New boards are covered
   automatically: `TestInvariants` runs over every registered mode
   (adjacency symmetry, no self/duplicate neighbours, polygons in bounds,
   solvable mine counts), and for wrapped surfaces `TestWrappedArchimedean`

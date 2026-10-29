@@ -136,7 +136,13 @@ describe("per-board shape classing", () => {
     const offenders: string[] = [];
     for (const mode of Object.keys(presets.presets)) {
       const perSides = new Map<number, Set<number>>();
-      for (const t of classifyShapes(buildBoard(mode, "easy").polygons).values()) {
+      // classed as the renderer classes them (polygonBoard.ts): with the board's
+      // own word on which points are corners, and on a curved model, so a
+      // hyperbolic tile's arc points -- as many as each edge needs -- are not
+      // read as sides
+      const board = buildBoard(mode, "easy");
+      const curved = "curved" in board ? board.curved : undefined;
+      for (const t of classifyShapes(board.polygons, board.cornerMask, curved).values()) {
         const seen = perSides.get(t.sides) ?? new Set<number>();
         seen.add(t.regularity);
         perSides.set(t.sides, seen);

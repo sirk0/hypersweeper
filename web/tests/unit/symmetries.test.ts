@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { SOLID_MODES, surfaceOf } from "../../src/boards/catalog";
+import { HYPERBOLIC_MODES, SOLID_MODES, surfaceOf } from "../../src/boards/catalog";
 import {
   isAutomorphism,
   isBoard3D,
+  pansHyperbolically,
   symmetryOf,
   SYMMETRY_IDS,
   type BoardSymmetry,
@@ -285,6 +286,55 @@ describe("board symmetries", () => {
       ["hyperbolic73", "easy", 14], // D7
       ["hyperbolic54", "medium", 10], // D5
       ["hyperbolic45", "hard", 8], // D4
+      ["hyperbolic83", "medium", 16], // D8
+      ["hyperbolic64", "easy", 12], // D6
+      ["hyperbolic55", "hard", 10], // D5
+      ["hyperbolic46", "medium", 8], // D4
+      ["hyperbolic93", "hard", 18], // D9
+      ["hyperbolic74", "medium", 14], // D7
+      // a triangle tiling is centred on a vertex, so keeps its q-fold turn
+      ["hyperbolic37", "hard", 14], // D7
+      ["hyperbolic38", "easy", 16], // D8
+      ["hyperbolic667", "hard", 14], // D7: the central heptagon's
+      ["hyperbolic3737", "easy", 14],
+      ["hyperbolic3474", "medium", 14],
+      ["hyperbolic4614", "hard", 14],
+      // the other families' uniform tilings keep their central face's Dp
+      ["hyperbolic31414", "medium", 14], // D7
+      ["hyperbolic668", "easy", 16], // D8
+      ["hyperbolic31616", "hard", 16], // D8
+      ["hyperbolic3838", "medium", 16], // D8
+      ["hyperbolic3484", "hard", 16], // D8
+      ["hyperbolic4616", "easy", 16], // D8
+      ["hyperbolic588", "medium", 10], // D5
+      ["hyperbolic41010", "hard", 10], // D5
+      ["hyperbolic4545", "easy", 10], // D5
+      ["hyperbolic4445", "medium", 10], // D5
+      ["hyperbolic4810", "hard", 10], // D5
+      ["hyperbolic688", "easy", 12], // D6
+      ["hyperbolic41212", "medium", 12], // D6
+      ["hyperbolic4646", "hard", 12], // D6
+      ["hyperbolic4446", "easy", 12], // D6
+      ["hyperbolic4812", "medium", 12], // D6
+      ["hyperbolic51010", "hard", 10], // D5
+      ["hyperbolic669", "medium", 18], // D9
+      // the binary tiling's window has the one mirror, down its middle
+      ["hyperbolicbinary", "easy", 2],
+      ["hyperbolicbinary", "hard", 2],
+      // a closed surface's patch: the central p-gon's turns and mirrors,
+      // carried down to the surface -- every surface here is reflexible, so
+      // the mirrors survive as well as the turns
+      ["bolza", "easy", 16], // D8
+      ["bolza", "hard", 16],
+      ["dyck", "easy", 16], // D8
+      ["dyck", "medium", 16],
+      ["bring", "easy", 10], // D5
+      ["bring", "hard", 10],
+      ["quartic", "easy", 14],
+      ["quartic", "medium", 14], // the subdivision GC(3,0) keeps the mirrors
+      ["quartic", "hard", 14],
+      ["macbeath", "hard", 14],
+      ["triplet", "easy", 14],
     ];
     for (const [mode, difficulty, order] of orders) {
       const board = buildBoard(mode, difficulty);
@@ -424,7 +474,7 @@ describe("the board bar's symmetry controls", () => {
   });
 
   it("every slot draws an icon this build has and names a real symmetry", () => {
-    for (const slot of slots) {
+    for (const slot of slots.filter((s) => s.action!.startsWith("symmetry:"))) {
       expect(slot.icon && ICONS[slot.icon], slot.slot).toBeTruthy();
       expect(slot.label, slot.slot).toBeTruthy();
       const [kind, id, direction] = slot.action!.split(":");
@@ -435,6 +485,27 @@ describe("the board bar's symmetry controls", () => {
       const want = direction === "-1" ? "symmetry-pair" : "symmetry";
       expect(slot.visibleWhen).toBe(`${want}:${id}`);
     }
+  });
+
+  it("gives a disc board four pan arrows, one each way, and no other board any", () => {
+    const pans = slots.filter((s) => s.action!.startsWith("pan:"));
+    expect(pans.map((s) => s.action).sort()).toEqual(["pan:-1:0", "pan:0:-1", "pan:0:1", "pan:1:0"]);
+    for (const slot of pans) {
+      expect(slot.icon && ICONS[slot.icon], slot.slot).toBeTruthy();
+      expect(slot.label, slot.slot).toBeTruthy();
+      expect(slot.visibleWhen).toBe("disc");
+    }
+    // Every other slot is a symmetry control.
+    expect(slots.filter((s) => !s.action!.startsWith("pan:")).every((s) => s.action!.startsWith("symmetry:"))).toBe(true);
+    const shown = (conditions: Set<string>) =>
+      slots.filter((s) => slotVisible(s.visibleWhen, conditions)).map((s) => s.slot);
+    expect(shown(boardConditions([], "hyperbolic73", true))).toEqual([
+      "pan-left",
+      "pan-right",
+      "pan-up",
+      "pan-down",
+    ]);
+    expect(shown(boardConditions([], "square"))).toEqual([]);
   });
 
   it("a reflection gets one button and a translation two", () => {
@@ -456,15 +527,20 @@ describe("the board bar's symmetry controls", () => {
     expect(shown(boardConditions([]))).toEqual([]);
   });
 
-  it("keeps only the Klein bottle's ring pair when the extras are off", () => {
+  it("keeps only the Klein bottle's and Boy's controls and the disc's pan arrows when the extras are off", () => {
     // The setting is a whitelist: a slot with no `keepWhen` goes, whatever the
-    // board has. Only the Klein bottle names one, because it is the only board
-    // whose own surface hides cells from the camera — everything else is a
-    // second look at a puzzle already fully on screen.
+    // board has. The Klein bottle and Boy's surface name one, because they are
+    // the boards whose own surface hides cells from every angle — every other
+    // symmetry control is a second look at a puzzle already fully on screen —
+    // and so do the hyperbolic boards' pan arrows, the one thing on screen that
+    // says the board can be dragged, which is how their rim cells are reached.
     const kept = (mode: string) => {
       const board = buildBoard(mode, "easy");
-      const symmetries = isBoard3D(board) ? board.symmetries : [];
-      const conditions = boardConditions(symmetries, mode);
+      const conditions = boardConditions(
+        board.symmetries,
+        mode,
+        !isBoard3D(board) && pansHyperbolically(board),
+      );
       return slots
         .filter((s) => slotVisible(s.visibleWhen, conditions) && slotKept(s.keepWhen, conditions))
         .map((s) => s.slot);
@@ -472,9 +548,20 @@ describe("the board bar's symmetry controls", () => {
     for (const mode of MODES.filter((m) => surfaceKey(m) === "klein")) {
       expect(kept(mode), mode).toEqual(["symmetry-ring-back", "symmetry-ring-fwd"]);
     }
+    // Boy's lobes hide cells whichever way the board is turned, and no single
+    // motion of the projective plane brings them all out, so both pairs stay.
+    expect(kept("boy")).toEqual([
+      "symmetry-ring-back",
+      "symmetry-ring-fwd",
+      "symmetry-tube-back",
+      "symmetry-tube-fwd",
+    ]);
+    for (const mode of HYPERBOLIC_MODES) {
+      expect(kept(mode), mode).toEqual(["pan-left", "pan-right", "pan-up", "pan-down"]);
+    }
     // ...and nothing else in the catalogue keeps a control, wrapped or not.
     for (const mode of [...WRAPPED, "square", "cube", "penrose"]) {
-      if (surfaceKey(mode) === "klein") continue;
+      if (surfaceKey(mode) === "klein" || surfaceKey(mode) === "boy") continue;
       expect(kept(mode), mode).toEqual([]);
     }
   });

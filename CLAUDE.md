@@ -40,6 +40,16 @@ on a Mac uses: those baselines are `-chromium-linux` pixels, so
 `tests/e2e/gallery.spec.ts` skips itself on every other platform. Regenerate
 them in one of those three, then re-run the spec to confirm determinism.
 
+## Verifying through CI
+
+Follow "Verifying a change" in [`AGENTS.md`](AGENTS.md): run only the impacted
+checks locally, within about four minutes, and never the whole suite. When the
+work is ready — not after every edit — push the branch, open the pull request
+(this counts as being asked to), and call `subscribe_pr_activity` on it. Then
+end the turn: the CI results and review comments arrive as events, and each red
+job is yours to fix and re-push until the PR is green. Do not poll and do not
+`sleep` waiting for CI.
+
 ## Debug launch
 
 `.claude/launch.json` runs the pygame game (`.venv/bin/python -m minesweeper`).

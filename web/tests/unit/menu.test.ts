@@ -3,19 +3,26 @@ import {
   MENU,
   MENU_FAMILY_HINTS,
   MENU_FAMILY_LABELS,
+  SOLID_GROUPS,
   SOLID_MODES,
   flatMenuModes,
   menuFamilies,
   menuFamilyRows,
+  hyperbolicMenuModes,
+  menuGroupFamilies,
+  menuSubfamilies,
+  menuSubfamilyRows,
   menuTilingRows,
   threeDMenuModes,
 } from "../../src/boards/catalog";
 import { MODES, hasMode } from "../../src/boards/presets";
+import { boardGroups, quickPlayEntries } from "../../src/ui/boardTree";
 
 // The web menu's own shape over the shared catalog (catalog.ts, "the web
 // menu"): the three regular tilings promoted to the top of every picker page,
-// the Regular family left holding the shaped boards alone, and the two home
-// page random pools that replaced the per-picker Random entry. The pygame
+// the Regular family left holding the shaped boards alone, the Hyperbolic
+// family lifted out into a group of its own, and the home page's random pools
+// that replaced the per-picker Random entry. The pygame
 // menu's shape is the one catalog.test.ts pins; this is where the two differ.
 
 const MANIFOLD_ORDER = MENU.manifoldOrder as string[];
@@ -59,6 +66,12 @@ describe("picker pages", () => {
     const families = new Set<string>();
     for (const surface of ["flat", ...MANIFOLD_ORDER]) {
       for (const family of menuFamilies(surface)) families.add(family);
+      // a family lifted into a group of its own carries the group's hint, and
+      // so does each submenu its page is split into
+      for (const family of menuGroupFamilies(surface)) {
+        families.add(family);
+        for (const sub of menuSubfamilies(family)) families.add(sub);
+      }
     }
     expect(families.size).toBeGreaterThan(0);
     for (const family of families) {
@@ -82,15 +95,13 @@ describe("picker pages", () => {
       "aperiodic",
       "spiral",
       "fractal",
-      "hyperbolic",
     ]);
-    // the closed manifolds carry the same four families: only the plane has
-    // shaped boards to fill a Regular page, and aperiodic/spiral/fractal boards
-    for (const surface of ["torus", "klein"]) {
-      expect(menuFamilies(surface)).toEqual(["uniform", "dual", "isogonal", "rectangle"]);
-    }
-    // ...and the cylinder and Möbius strip, which the 2-uniform tilings wrap too
-    for (const surface of ["cylinder", "mobius"]) {
+    // the Klein bottle carries four families: only the plane has shaped
+    // boards to fill a Regular page, and aperiodic/spiral/fractal boards
+    expect(menuFamilies("klein")).toEqual(["uniform", "dual", "isogonal", "rectangle"]);
+    // ...and the cylinder, Möbius strip and torus, which the 2-uniform tilings
+    // wrap too
+    for (const surface of ["cylinder", "mobius", "torus"]) {
       expect(menuFamilies(surface)).toEqual(["uniform", "dual", "2-uniform", "isogonal", "rectangle"]);
     }
   });
@@ -114,9 +125,147 @@ describe("picker pages", () => {
   });
 });
 
+// triangles first, as the flat picker lists them: by p, then q
+const REGULAR = [
+  "hyperbolic37",
+  "hyperbolic38",
+  "hyperbolic45",
+  "hyperbolic46",
+  "hyperbolic54",
+  "hyperbolic55",
+  "hyperbolic64",
+  "hyperbolic73",
+  "hyperbolic74",
+  "hyperbolic83",
+  "hyperbolic93",
+];
+const UNIFORM = [
+  "hyperbolic667",
+  "hyperbolic31414",
+  "hyperbolic3737",
+  "hyperbolic3474",
+  "hyperbolic4614",
+  "hyperbolic668",
+  "hyperbolic31616",
+  "hyperbolic3838",
+  "hyperbolic3484",
+  "hyperbolic4616",
+  "hyperbolic588",
+  "hyperbolic41010",
+  "hyperbolic4545",
+  "hyperbolic4445",
+  "hyperbolic4810",
+  "hyperbolic688",
+  "hyperbolic41212",
+  "hyperbolic4646",
+  "hyperbolic4446",
+  "hyperbolic4812",
+  "hyperbolic51010",
+  "hyperbolic669",
+];
+const CLOSED = ["bolza", "quartic", "dyck", "bring", "macbeath", "triplet"];
+
+describe("geometry groups", () => {
+  it("puts Hyperbolic after Flat manifolds, not inside Flat", () => {
+    const groups = boardGroups();
+    expect(groups.map((g) => g.key).slice(0, 4)).toEqual([
+      "flat",
+      "manifolds",
+      "hyperbolic",
+      "sphere",
+    ]);
+    const hyperbolic = groups[2]!;
+    expect(hyperbolic.label).toBe("Hyperbolic");
+    expect(menuFamilies("flat")).not.toContain("hyperbolic");
+  });
+
+  it("splits the Hyperbolic page into Regular, Uniform and Closed surfaces", () => {
+    const hyperbolic = boardGroups().find((g) => g.key === "hyperbolic")!;
+    expect(hyperbolic.kind).toBe("families");
+    if (hyperbolic.kind !== "families") return;
+    expect(hyperbolic.families.map((f) => [f.key, f.label])).toEqual([
+      ["hyperbolic-regular", "Regular"],
+      ["hyperbolic-uniform", "Uniform"],
+      ["hyperbolic-closed", "Closed surfaces"],
+    ]);
+    expect(hyperbolic.families.map((f) => f.modes.map((m) => m.mode))).toEqual([
+      REGULAR,
+      UNIFORM,
+      CLOSED,
+    ]);
+  });
+
+  it("files every board of the Hyperbolic page in exactly one submenu", () => {
+    // keyed by builder, so a board from a builder no submenu names would
+    // silently vanish from the menu; this is what catches it
+    const filed = menuSubfamilies("hyperbolic").flatMap((sub) =>
+      menuSubfamilyRows("hyperbolic", sub, "flat").map((r) => r.mode),
+    );
+    expect([...filed].sort()).toEqual(
+      menuFamilyRows("hyperbolic", "flat")
+        .map((r) => r.mode)
+        .sort(),
+    );
+    expect(new Set(filed).size).toBe(filed.length);
+  });
+
+  it("lists Sphere, Solids and Volumes after Hyperbolic", () => {
+    expect(boardGroups().map((g) => g.key)).toEqual([
+      "flat",
+      "manifolds",
+      "hyperbolic",
+      "sphere",
+      "solids",
+      "volume",
+    ]);
+  });
+
+  it("gathers the polyhedra onto the Solids page, a submenu per solid group", () => {
+    const solids = boardGroups().find((g) => g.key === "solids")!;
+    expect(solids.label).toBe("Solids");
+    expect(solids.kind).toBe("families");
+    if (solids.kind !== "families") return;
+    const keys = ["platonic", "archimedean", "catalan", "polyhedra"];
+    expect(solids.families.map((f) => f.key)).toEqual(keys);
+    // each submenu is its solid group, label and boards alike, so nothing is
+    // dropped or doubled on the way in
+    for (const family of solids.families) {
+      const group = SOLID_GROUPS.find((g) => g.key === family.key)!;
+      expect(family.label).toBe(group.label);
+      expect(family.modes.map((m) => m.mode)).toEqual(group.modes.filter(hasMode));
+    }
+  });
+
+  it("files the binary tiling under Flat › Fractals, not Hyperbolic", () => {
+    expect(menuFamilyRows("fractal", "flat").map((r) => r.mode)).toContain("hyperbolicbinary");
+    expect(menuFamilyRows("other", "flat").map((r) => r.mode)).not.toContain("hyperbolicbinary");
+    expect(menuFamilyRows("hyperbolic", "flat").map((r) => r.mode)).not.toContain(
+      "hyperbolicbinary",
+    );
+    // ...and nowhere off the plane, which has no binary tiling
+    for (const surface of MANIFOLD_ORDER) {
+      expect(menuFamilyRows("fractal", surface).map((r) => r.mode)).not.toContain(
+        "hyperbolicbinary",
+      );
+    }
+  });
+});
+
+describe("home page", () => {
+  it("lists Hyperbolic under Classic, Flat and 3D", () => {
+    expect(quickPlayEntries().map((e) => [e.kind, e.key])).toEqual([
+      ["mode", "square"],
+      ["random", "flat"],
+      ["random", "3d"],
+      ["random", "hyperbolic"],
+    ]);
+  });
+});
+
 describe("home page pools", () => {
   const flat = flatMenuModes().filter(hasMode);
   const threeD = threeDMenuModes().filter(hasMode);
+  const hyperbolic = hyperbolicMenuModes().filter(hasMode);
 
   it("draws the flat pool from the plane alone", () => {
     expect(flat).toContain("trigrid");
@@ -124,6 +273,13 @@ describe("home page pools", () => {
     expect(flat).toContain("hexhex");
     expect(flat).not.toContain("torus");
     expect(flat).not.toContain("sphere");
+    // the binary tiling is dealt with the plane's boards, as the menu files it
+    expect(flat).toContain("hyperbolicbinary");
+  });
+
+  it("deals the hyperbolic boards from a pool of their own", () => {
+    expect([...hyperbolic].sort()).toEqual([...REGULAR, ...UNIFORM, ...CLOSED].sort());
+    expect(flat.filter((m) => hyperbolic.includes(m))).toEqual([]);
   });
 
   it("draws the 3D pool from the manifolds and every solid", () => {
@@ -134,9 +290,10 @@ describe("home page pools", () => {
     expect(threeD).not.toContain("penrose");
   });
 
-  it("keeps the two pools disjoint, and every mode in them built", () => {
+  it("keeps the pools disjoint, and every mode in them built", () => {
     expect(flat.filter((m) => threeD.includes(m))).toEqual([]);
-    for (const mode of [...flat, ...threeD]) expect(hasMode(mode)).toBe(true);
+    expect(hyperbolic.filter((m) => threeD.includes(m))).toEqual([]);
+    for (const mode of [...flat, ...threeD, ...hyperbolic]) expect(hasMode(mode)).toBe(true);
   });
 });
 
@@ -149,6 +306,7 @@ describe("menu reachability", () => {
     add("square"); // Classic
     for (const mode of flatMenuModes()) add(mode); // the Flat pool, and Custom › Flat
     for (const mode of threeDMenuModes()) add(mode); // the 3D pool, and the rest of Custom
+    for (const mode of hyperbolicMenuModes()) add(mode); // the Hyperbolic pool, and Custom › Hyperbolic
 
     // no gaps: every mode this build knows is reachable from the menu
     expect(reachable).toEqual(new Set(MODES));

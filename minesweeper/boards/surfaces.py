@@ -1,11 +1,12 @@
 """Wrapping flat tilings onto 3D surfaces (donut, trefoil knot, cylinder,
 Möbius strip, Klein bottle, double donut), and the real projective plane --
-a geodesic sphere with antipodes glued, drawn as the sphere that covers it.
+a geodesic sphere with antipodes glued, drawn as the sphere that covers it,
+or as itself on Boy's surface.
 
 Every wrapped board is built the same way: pick vertex keys on an integer
 grid, glue them at the seam, map each key onto the surface with an
 *immersion* ( _torus_point / _trefoil_point / _cylinder_point /
-_mobius_point / _klein_point ),
+_mobius_point / _klein_point / _boy_point ),
 then hand the cells to _assemble, which shares the adjacency / polygon /
 Board3D tail and the outward-orientation (closed) vs two-sided (open)
 choice.
@@ -29,9 +30,14 @@ from minesweeper.boards.core import (
     _orient_outward,
     _shared_vertex_adjacency,
     _tangent_order,
+    _without_near_twins,
 )
-from minesweeper.boards.solids import _geodesic, _icosahedron
-from minesweeper.boards.tilings import _triangle_vertices, _wrap_template
+from minesweeper.boards.solids import _cubed_sphere, _geodesic, _icosahedron
+from minesweeper.boards.tilings import (
+    _torus_template,
+    _triangle_vertices,
+    _wrap_template,
+)
 
 # -- immersions: one point of a surface from its parameters ------------------
 
@@ -616,13 +622,13 @@ def double_torus_hex_board(
 #
 # The sphere with every point glued to its antipode: closed, non-orientable,
 # chi = 1 -- the one closed surface besides the Klein bottle that has no
-# inside. It has no embedding in 3-space and no immersion this game could
-# draw without a self-intersection far worse than the bottle's (Boy's
-# surface), so it is drawn the other way round: as the whole sphere, which
-# double-covers it, every cell twice. The game is played on the antipodal
-# *pairs* -- a cell's neighbours are its own sphere neighbours and its
-# twin's, and the two faces show one state -- so whatever happens on one
-# face happens on the one diametrically opposite.
+# inside. It has no embedding in 3-space, and its immersions pass through
+# themselves far worse than the bottle's neck (Boy's surface, below, is the
+# one drawn here), so these boards draw it the other way round: as the whole
+# sphere, which double-covers it, every cell twice. The game is played on
+# the antipodal *pairs* -- a cell's neighbours are its own sphere neighbours
+# and its twin's, and the two faces show one state -- so whatever happens on
+# one face happens on the one diametrically opposite.
 #
 # Any centrally symmetric tiling of the sphere will do, and the cubed sphere,
 # the geodesic icosahedron and its dual, the Goldberg polyhedron GP(n, 0),
@@ -641,15 +647,12 @@ def _antipodes() -> list[int]:
     return [where[(-x + 0.0, -y + 0.0, -z + 0.0)] for x, y, z in vertices]
 
 
-def _projective(mode: str, sphere_cells: dict, positions: dict, flip,
-                mine_count: int) -> Board3D:
-    """The quotient of a centrally symmetric sphere board by its antipodal
-    map. ``sphere_cells`` maps each face to its vertex keys, and ``flip`` is
-    the antipodal map on vertex keys -- exact, so no two points are ever
-    rounded together. A face's cell is the lesser of it and its twin (both
-    faces are keyed by their sorted vertex keys, so the twin is found by
-    flipping them), and cells are adjacent when any of their faces share a
-    vertex: the shared-vertex rule, run on vertex classes."""
+def _antipodal_quotient(sphere_cells: dict, flip) -> tuple[dict, dict]:
+    """Pair every face of a centrally symmetric sphere board with its twin.
+    Returns ``faces`` (each face -> its cell, the lesser of it and its twin;
+    both are keyed by their sorted vertex keys, so the twin is found by
+    flipping them) and ``cells`` (each cell -> its vertex *classes*, the
+    lesser of a key and its flip, in the face's own order)."""
     by_keys = {tuple(sorted(keys)): face for face, keys in sphere_cells.items()}
 
     def twin(face):
@@ -663,6 +666,19 @@ def _projective(mode: str, sphere_cells: dict, positions: dict, flip,
         for face, keys in sphere_cells.items()
         if faces[face] == face
     }
+    return faces, cells
+
+
+def _projective(mode: str, sphere_cells: dict, positions: dict, flip,
+                mine_count: int) -> Board3D:
+    """The quotient of a centrally symmetric sphere board by its antipodal
+    map. ``sphere_cells`` maps each face to its vertex keys, and ``flip`` is
+    the antipodal map on vertex keys -- exact, so no two points are ever
+    rounded together. A face's cell is the lesser of it and its twin (both
+    faces are keyed by their sorted vertex keys, so the twin is found by
+    flipping them), and cells are adjacent when any of their faces share a
+    vertex: the shared-vertex rule, run on vertex classes."""
+    faces, cells = _antipodal_quotient(sphere_cells, flip)
     adjacency = _shared_vertex_adjacency(cells)
     polygons = {}
     for face, keys in sphere_cells.items():
@@ -673,40 +689,19 @@ def _projective(mode: str, sphere_cells: dict, positions: dict, flip,
                    faces=faces)
 
 
+def _negate(key):
+    return tuple(-c for c in key)
+
+
 def projective_board(n: int, mine_count: int) -> Board3D:
     """The real projective plane in squares: a cube of ``n x n`` faces --
     ``6 * n**2`` squares -- with antipodes identified, so ``3 * n**2``
-    cells, drawn as the whole sphere. Vertex keys are the cube's integer
-    lattice points on ``[-n, n]**3`` (as ``solids.cube_board``), so the
-    antipode is plain negation; each is placed by the *equiangular* cube
-    map (every face coordinate through ``tan(pi/4 * c)``, then onto the unit
-    sphere), which keeps the squares near the cube's corners from shrinking
-    the way a straight projection does. The cube's eight 3-valent corners
-    come down to four: what a closed surface of squares needs, 4 * chi."""
-    sphere_cells: dict = {}
-    for axis in range(3):
-        u_axis, v_axis = (a for a in range(3) if a != axis)
-        for sign in (-1, 1):
-            for i in range(n):
-                for j in range(n):
-                    keys = []
-                    for du, dv in ((0, 0), (1, 0), (1, 1), (0, 1)):
-                        coord = [0, 0, 0]
-                        coord[axis] = sign * n
-                        coord[u_axis] = -n + 2 * (i + du)
-                        coord[v_axis] = -n + 2 * (j + dv)
-                        keys.append(tuple(coord))
-                    sphere_cells[tuple(sorted(keys))] = keys
-
-    def place(key) -> Vec3:
-        return _normalize(tuple(math.tan(math.pi / 4 * c / n) for c in key))
-
-    positions = {k: place(k) for keys in sphere_cells.values() for k in keys}
-
-    def flip(key):
-        return tuple(-c for c in key)
-
-    return _projective("projective", sphere_cells, positions, flip, mine_count)
+    cells, drawn as the whole sphere (`_cubed_sphere`). The cube's eight
+    3-valent corners come down to four: what a closed surface of squares
+    needs, 4 * chi."""
+    sphere_cells, positions = _cubed_sphere(n)
+    return _projective("projective", sphere_cells, positions, _negate,
+                       mine_count)
 
 
 def projective_triangle_board(frequency: int, mine_count: int) -> Board3D:
@@ -757,6 +752,74 @@ def projective_hex_board(frequency: int, mine_count: int) -> Board3D:
     # the twin lookup in `_projective` goes through the corners regardless
     return _projective("projectivehex", sphere_cells, centres, flip,
                        mine_count)
+
+
+# -- Boy's surface ------------------------------------------------------------
+#
+# The real projective plane again, now drawn as itself: Boy's surface is an
+# immersion of it -- it passes through itself along one curve, three loops
+# meeting at a triple point, but has no pinch or crease anywhere -- so every
+# cell is drawn once, both sides showing, as on the Klein bottle. The board
+# is the projective plane's cell for cell (the same cubed sphere with
+# antipodes glued, the same vertex classes, the same adjacency); only where a
+# vertex is drawn changes.
+#
+# The immersion is Bryant and Kusner's, the one that bends the least (it
+# minimises the Willmore energy). It is a map from the sphere -- read through
+# stereographic projection -- that sends a point and its antipode to the same
+# place, so a vertex class is placed by either key. It is also conformal, so
+# the squares keep their right angles; what it does not keep is their size,
+# which is why the board is turned before it is mapped (`_diagonal_up`).
+
+BOY_CENTRE = (0.0, 0.0, -0.554)
+"""Where the immersion's surface is centred: the point of its axis of
+three-fold symmetry nearest to its farthest point (the minimax centre, which
+`tests/test_boards.py` re-measures). The raw surface runs from its pole at z
+= -2 up to z = 0.44, and the 3D view frames and pivots about the origin."""
+
+_SQRT5 = math.sqrt(5.0)
+
+
+def _boy_point(p: Vec3) -> Vec3:
+    """Boy's surface (Bryant--Kusner) at the unit-sphere point ``p``,
+    recentred on `BOY_CENTRE`. ``p`` and ``-p`` land on the same point; its
+    axis of three-fold symmetry is z, the image of the poles."""
+    x, y, z = p
+    if z < 0:
+        # the antipode lands on the same point, and the upper hemisphere
+        # is where the stereographic chart from the south pole is tame
+        x, y, z = -x, -y, -z
+    w = complex(x, y) / (1.0 + z)
+    w3 = w ** 3
+    w6 = w3 * w3
+    denominator = w6 + _SQRT5 * w3 - 1.0
+    g1 = -1.5 * (w * (1.0 - w3 * w) / denominator).imag
+    g2 = -1.5 * (w * (1.0 + w3 * w) / denominator).real
+    g3 = ((1.0 + w6) / denominator).imag - 0.5
+    g = g1 * g1 + g2 * g2 + g3 * g3
+    return tuple(c / g - o for c, o in zip((g1, g2, g3), BOY_CENTRE))
+
+
+def _diagonal_up(p: Vec3) -> Vec3:
+    """Turn the cube's diagonal (1, 1, 1) onto z, the immersion's axis. The
+    cube's three-fold turn about that diagonal then becomes the surface's
+    own, so the board keeps a symmetry it can show; and the cells come out
+    the most even of any orientation measured (the largest is 31 times the
+    smallest at n = 9, against 42 with a face up)."""
+    x, y, z = p
+    return ((x - y) / math.sqrt(2.0), (x + y - 2.0 * z) / math.sqrt(6.0),
+            (x + y + z) / math.sqrt(3.0))
+
+
+def boy_board(n: int, mine_count: int) -> Board3D:
+    """Boy's surface in squares: `projective_board`'s ``3 * n**2`` cells --
+    the same ids, vertex classes and adjacency -- each drawn once, on the
+    immersion. Non-orientable, so both sides are drawn."""
+    sphere_cells, sphere = _cubed_sphere(n)
+    _, cells = _antipodal_quotient(sphere_cells, _negate)
+    return _assemble("boy", cells,
+                     lambda key: _boy_point(_diagonal_up(sphere[key])),
+                     mine_count, two_sided=True, radius=_max_radius)
 
 
 # -- the Möbius strip --------------------------------------------------------
@@ -1185,8 +1248,9 @@ def arch_torus_board(
     tiling: str, nx: int, ny: int, mine_count: int, tube_radius: float = 0.45
 ) -> Board3D:
     """An Archimedean tiling wrapped around a donut: ``nx`` domain copies
-    around the ring, ``ny`` around the tube."""
-    template = _wrap_template(tiling)
+    around the ring, ``ny`` around the tube -- in the tiling's torus layout
+    (``_torus_template``), which for most tilings is the wrap layout."""
+    template = _torus_template(tiling)
     ring = nx * template.width
     tube = ny * template.height
 
@@ -1269,6 +1333,7 @@ def arch_cylinder_board(
                 if len(set(keys)) < len(keys):
                     raise ValueError(f"ring {ring} is too small for {tiling}")
                 cells[(m, n, name)] = keys
+    cells = _without_near_twins(cells)  # the rims' coin flips, as on a flat window
     positions = _wrapped_positions(
         template, cells, point,
         lambda m, n, tag: ((m % ring), n, tag))
@@ -1367,6 +1432,7 @@ def arch_mobius_board(
                 if len(set(keys)) < len(keys):
                     raise ValueError(f"ring {ring} is too small for {tiling}")
                 cells[(m, n, name)] = keys
+    cells = _without_near_twins(cells)  # the edge's coin flips, as on a flat window
     positions = _wrapped_positions(template, cells, point, canonical)
     return _assemble("mobius" + tiling, cells, positions.__getitem__, mine_count,
                      two_sided=True, radius=_max_radius)

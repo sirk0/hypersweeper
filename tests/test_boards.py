@@ -3,6 +3,7 @@ import itertools
 import math
 import statistics
 from collections import Counter, defaultdict
+from fractions import Fraction
 
 import pytest
 
@@ -37,6 +38,7 @@ from minesweeper.boards import (
     _phyllotaxis_tiles,
     _shared_vertex_adjacency,
     _spectre_leaves,
+    _torus_template,
     _wrap_template,
     _z7_add,
     _z7_dir,
@@ -89,6 +91,7 @@ from minesweeper.boards import (
     solid_cube_board,
     spectre_board,
     sphere_board,
+    sphere_square_board,
     sphere_triangle_board,
     sphinx_board,
     square_board,
@@ -157,19 +160,50 @@ from minesweeper.boards.catalan import (
 from minesweeper.boards.catalan import (
     sphere_board as catalan_sphere_board,
 )
-from minesweeper.boards.core import _cross
+from minesweeper.boards.core import _cross, _normalize
 from minesweeper.boards.core import newell_normal as _newell_normal
+from minesweeper.boards.hurwitz import (
+    CLOSED_SURFACES,
+    COVER_COPIES,
+    HURWITZ_OPS,
+    SURFACE_MODES,
+    _darts,
+    _patch_for,
+    cell_count,
+    cover_view,
+    gc_loops,
+    hurwitz_board,
+    hurwitz_cells,
+    hurwitz_group,
+    hurwitz_map,
+    petrie_length,
+    todd_coxeter,
+)
 from minesweeper.boards.hyperbolic import (
     _central_polygon,
     _isometry,
+    binary_board,
     face_centre,
     hyperbolic_board,
     hyperbolic_faces,
     hyperbolic_positions,
+    hyperbolic_uniform_board,
+    wythoff_faces,
+    wythoff_mode,
 )
 from minesweeper.boards.presets import _WINDOWS, ARCH_PRESETS, window_for
 from minesweeper.boards.solids import _goldberg_board, icosahedron_board
-from minesweeper.boards.surfaces import TREFOIL_REACH, _trefoil_core
+from minesweeper.boards.surfaces import (
+    BOY_CENTRE,
+    TREFOIL_REACH,
+    _antipodal_quotient,
+    _boy_point,
+    _cubed_sphere,
+    _diagonal_up,
+    _negate,
+    _trefoil_core,
+    boy_board,
+)
 
 # Template tilings split by symmetry type. Archimedean (uniform) tilings are
 # vertex-transitive (every vertex has the same configuration) and edge to
@@ -184,9 +218,10 @@ _UNIFORM = [t.key for t in ARCH_TILINGS if t.family == "uniform"]
 # the tilings that wrap a donut: derived from the catalog, so one without a
 # torus preset yet drops out automatically
 _TORUS_TILINGS = [t.key for t in ARCH_TILINGS if "torus" in TILINGS[t.key][1]]
-# ...and the tilings that wrap a surface at all -- the 2-uniform ones reach the
-# cylinder and the Mobius strip but no donut (_FAMILY_SURFACES in catalog.py),
-# and they choose a cut all the same
+# ...and the tilings that wrap a surface at all (the same list, now that the
+# 2-uniform tilings reach the donut as well as the cylinder and the Mobius
+# strip -- _FAMILY_SURFACES in catalog.py -- but derived separately, so a
+# family held to the open surfaces would still be caught)
 _WRAPPED_TILINGS = [t.key for t in ARCH_TILINGS
                     if set(TILINGS[t.key][1]) - {"flat"}]
 _ISOGONAL = [t.key for t in ARCH_TILINGS if t.family == "isogonal"]
@@ -403,6 +438,30 @@ class TestCellCounts:
         assert all(len(p) == 3 for p in board.polygons.values())
         # the same subdivision, so the same cells and the same neighbours
         assert board.adjacency == flat.adjacency
+        assert all(abs(math.dist(p, (0, 0, 0)) - 1) < 1e-9
+                   for polygon in board.polygons.values() for p in polygon)
+
+    @pytest.mark.parametrize("n", range(1, 8))
+    def test_spherical_cube_is_the_cube_drawn_round(self, n):
+        board = sphere_square_board(10, n)
+        flat = cube_board(n, 10)
+        assert len(board.adjacency) == 6 * n**2
+        assert all(len(p) == 4 for p in board.polygons.values())
+        # the same lattice keys, so the same cells and the same neighbours:
+        # name the cube's cells as the sphere does, by their sorted corners
+        # (its corners are drawn at key / n, so key is exact back)
+        name = {
+            cell: tuple(sorted(tuple(round(c * n) for c in p) for p in polygon))
+            for cell, polygon in flat.polygons.items()
+        }
+        assert {name[c]: {name[d] for d in ns} for c, ns in flat.adjacency.items()} == {
+            c: set(ns) for c, ns in board.adjacency.items()
+        }
+        assert _euler_characteristic(board) == 2
+        # the cube's eight 3-valent corners: 4 * chi, each with three cells
+        # of seven neighbours round it
+        degrees = Counter(len(ns) for ns in board.adjacency.values())
+        assert (degrees[7], degrees[8]) == ((24, 6 * n**2 - 24) if n > 1 else (0, 0))
         assert all(abs(math.dist(p, (0, 0, 0)) - 1) < 1e-9
                    for polygon in board.polygons.values() for p in polygon)
 
@@ -2347,7 +2406,13 @@ class TestGosperIsland:
 
 
 
-_HYPERBOLIC = [(7, 3), (5, 4), (4, 5)]
+_HYPERBOLIC = [(9, 3), (8, 3), (7, 3), (7, 4), (6, 4), (5, 4), (5, 5), (4, 5), (4, 6), (3, 7), (3, 8)]
+
+
+def _turns(p: int, q: int) -> int:
+    """How many rotations a board keeps: the central p-gon's p, or for a
+    triangle tiling, centred on a vertex, that vertex's q."""
+    return q if p == 3 else p
 
 
 def _hyp_dist(a: complex, b: complex) -> float:
@@ -2359,12 +2424,22 @@ def _float_rings(p: int, q: int, rings: int) -> list[int]:
     """Face counts per ring, derived with nothing the builder uses: reflect the
     central p-gon across its edges in the disc, over and over, merge faces by
     rounded centre (fine here -- this is the *check*, not a board), and count
-    vertex-adjacency layers outward from the centre."""
+    vertex-adjacency layers outward from the centre. A triangle tiling starts
+    from the q triangles round a vertex at the centre instead -- the star its
+    ring 0 is -- each one the central triangle turned about a corner."""
     big_r = math.acosh(1 / (math.tan(math.pi / p) * math.tan(math.pi / q)))
     first = [cmath.rect(math.tanh(big_r / 2), 2 * math.pi * k / p) for k in range(p)]
+    if p == 3:
+        to_corner = lambda z: (z - first[0]) / (1 - first[0].conjugate() * z)  # noqa: E731
+        star = [[to_corner(z) * cmath.exp(2j * math.pi * k / q) for z in first]
+                for k in range(q)]
+    else:
+        star = [first]
 
     def reflect(z, a, b):
         # inversion in the circle through a and b orthogonal to the rim
+        if abs(a) < abs(b):  # the same mirror; keep a corner at the centre as b
+            a, b = b, a
         a2 = 1 / a.conjugate()
         w = (a2 - a) / (b - a)
         if abs(w.imag) < 1e-12:  # a diameter: a straight mirror
@@ -2376,8 +2451,9 @@ def _float_rings(p: int, q: int, rings: int) -> list[int]:
     def key(z):
         return (round(z.real, 7), round(z.imag, 7))
 
-    faces, seen, frontier = [first], {key(0j)}, [first]
-    limit = rings * 2 * big_r + 1e-6
+    faces, frontier = list(star), list(star)
+    seen = {key(sum(face) / p) for face in star}
+    limit = (rings + (p == 3)) * 2 * big_r + 1e-6
     while frontier:
         grown = []
         for face in frontier:
@@ -2394,7 +2470,8 @@ def _float_rings(p: int, q: int, rings: int) -> list[int]:
     for index, face in enumerate(faces):
         for z in face:
             at[key(z)].append(index)
-    layer, current, counts = {0: 0}, [0], [1]
+    current = list(range(len(star)))
+    layer, counts = dict.fromkeys(current, 0), [len(star)]
     for ring in range(1, rings + 1):
         nxt = [j for i in current for z in faces[i] for j in at[key(z)] if j not in layer]
         for j in nxt:
@@ -2426,7 +2503,7 @@ class TestHyperbolic:
 
     @pytest.mark.parametrize("p,q", _HYPERBOLIC)
     def test_an_inner_cell_has_p_times_q_minus_2_neighbours(self, p, q):
-        board = hyperbolic_board(p, q, 12, 1)
+        board = hyperbolic_board(p, q, 30, 1)
         degrees = [len(n) for n in board.adjacency.values()]
         assert max(degrees) == p * (q - 2)
         # the central p-gon and its first ring are all interior
@@ -2501,7 +2578,7 @@ class TestHyperbolic:
                           for z in (transform(complex(*xy) - c) for xy in poly))
 
         same = points(lambda z: z)
-        turn = cmath.exp(2j * math.pi / p)
+        turn = cmath.exp(2j * math.pi / _turns(p, q))
         assert points(lambda z: z * turn) == same
         assert points(lambda z: -z.conjugate()) == same  # the vertical mirror
 
@@ -2521,26 +2598,296 @@ class TestHyperbolic:
         assert sum(xs) / len(xs) == pytest.approx(board.width / 2)
         assert sum(ys) / len(ys) == pytest.approx(board.height / 2)
 
-    def test_no_fair_trim_of_45_lands_in_the_medium_band(self):
-        # why `hyperbolic45` medium ships at 205 cells, outside +-15% of 256
-        # (see NEAR_MISS_ALLOWANCE in tests/test_presets.py): every trim in
-        # the band leaves rim cells with a twin, and 20 shells is the nearest
-        # one that does not
+    @pytest.mark.parametrize("q", [7, 8])
+    def test_a_triangle_tiling_is_the_dual_of_its_q3(self, q):
+        # {3,q}'s vertex ids are {q,3}'s face indices, and each one is placed
+        # exactly where that face is centred; its triangles are {q,3}'s
+        # finished vertices, each with that vertex's three faces as corners
+        from minesweeper.boards import hyperbolic as hyp
+        faces, _ = hyperbolic_faces(3, q, 3)
+        pos = hyperbolic_positions(3, q, faces)
+        primal, _ = hyp._ring_walk(q, 3, 4)
+        primal_pos = hyperbolic_positions(q, 3, primal)
+        for f, z in pos.items():
+            assert abs(z - face_centre(q, 3, primal[f], primal_pos)) < 1e-12
+        round_vertex = Counter(v for face in primal for v in face)
+        finished = sorted(v for v, n in round_vertex.items() if n == 3)
+        for face, v in zip(faces, finished):
+            assert {f for f in face} == {f for f, pf in enumerate(primal) if v in pf}
+            # counterclockwise, the way every face is
+            a, b, c = (pos[f] for f in face)
+            assert ((b - a).conjugate() * (c - a)).imag > 0
+
+    @pytest.mark.parametrize("q", [7, 8])
+    def test_a_triangle_board_is_centred_on_a_vertex(self, q):
+        # the q triangles round vertex 0 all have a corner at the board's centre
+        board = hyperbolic_board(3, q, 9, 1)
+        for cell in range(q):
+            assert any(x == pytest.approx(board.width / 2) and y == pytest.approx(board.height / 2)
+                       for x, y in board.polygons[cell])
+
+    @pytest.mark.parametrize("p,q", [(7, 3), (3, 7), (3, 8)])
+    def test_the_rings_built_hold_every_face_inside_the_cut(self, p, q):
+        # `_rings_for` stops growing once the newest ring is well past the cut;
+        # a far bigger build must find nothing nearer that it missed
+        from minesweeper.boards import hyperbolic as hyp
+        for shells in (3, 12, 30):
+            faces, _, groups = hyp._rings_for(p, q, shells)
+            rings = next(r for r in range(1, 12) if len(hyperbolic_faces(p, q, r)[0]) == len(faces))
+            bigger, _ = hyperbolic_faces(p, q, rings + 1)
+            reference = hyp._shells(p, q, bigger, hyperbolic_positions(p, q, bigger))
+            assert groups[:shells] == reference[:shells]
+
+    def test_the_rings_stop_as_soon_as_the_trim_is_held(self):
+        # the hard {6,4} board's 475 cells are cut from 4 rings (2953 faces);
+        # stopping a whole unit past the cut grew 6 (100381), and the web app
+        # took a second to open the board
+        from minesweeper.boards import hyperbolic as hyp
+        faces, _, _ = hyp._rings_for(6, 4, 31)
+        assert len(faces) == 2953
+
+    @pytest.mark.parametrize("p,q", _HYPERBOLIC)
+    def test_no_trim_leaves_a_twin(self, p, q):
+        # where q is large, a rim vertex can keep a fan of faces that touch the
+        # board there alone, all with the same closed neighbourhood; the builder
+        # drops every such cell, so no trim is left with a forced coin flip
         from scripts.difficulty.metrics import indistinguishable_cells
-        in_band = {}
-        for shells in range(18, 30):
-            board = hyperbolic_board(4, 5, shells, 1)
-            if 0.85 * 256 <= len(board.adjacency) <= 1.15 * 256:
-                in_band[shells] = indistinguishable_cells(board.adjacency)
-        assert in_band and all(twins > 0 for twins in in_band.values())
-        board = hyperbolic_board(4, 5, 20, 1)
-        assert len(board.adjacency) == 205
-        assert indistinguishable_cells(board.adjacency) == 0
+        for shells in range(3, 30):
+            board = hyperbolic_board(p, q, shells, 1)
+            assert indistinguishable_cells(board.adjacency) == 0, shells
+
+    @pytest.mark.parametrize("p,q", _HYPERBOLIC)
+    def test_no_trim_leaves_a_near_twin(self, p, q):
+        # a rim cell whose closed neighbourhood is a neighbour's less one cell
+        # can only be told from it by that cell's number, so it is a coin flip
+        # whenever that cell is a mine; the builder drops the smaller of every
+        # such pair, so the rim is left with no pair a single mine can lock
+        for shells in range(3, 30):
+            board = hyperbolic_board(p, q, shells, 1)
+            hood = {c: frozenset([c, *ns]) for c, ns in board.adjacency.items()}
+            assert not [
+                (a, b) for a, ns in board.adjacency.items() for b in ns
+                if len(hood[b]) == len(hood[a]) + 1 and hood[a] < hood[b]
+            ], shells
+
+    def test_dropping_twins_leaves_a_clean_trim_as_it_was(self):
+        # the drop is a no-op where the shell trim had neither twins nor
+        # near-twins -- every {7,3} trim, which is why those boards are the
+        # same boards. {4,5} at 20 shells has no twins and loses its 32
+        # near-twins; at 21 it loses 8 twins and 24 near-twins, then the 8
+        # near-twins that first drop uncovers -- which is what the loop is for
+        from minesweeper.boards import hyperbolic as hyp
+        faces, pos, groups = hyp._rings_for(7, 3, 27)
+        for shells in range(3, 27):
+            kept = sorted(f for group in groups[:shells] for f in group)
+            assert hyp._without_twins(faces, kept) == kept
+        faces, pos, groups = hyp._rings_for(4, 5, 21)
+        for shells, before, after in [(20, 205, 173), (21, 237, 197)]:
+            kept = sorted(f for group in groups[:shells] for f in group)
+            assert len(kept) == before
+            assert len(hyp._without_twins(faces, kept)) == after
+            assert len(hyperbolic_board(4, 5, shells, 1).adjacency) == after
 
     def test_a_euclidean_or_spherical_tiling_is_refused(self):
         for p, q in [(4, 4), (6, 3), (3, 6), (5, 3)]:
             with pytest.raises(ValueError):
                 hyperbolic_board(p, q, 3, 1)
+
+
+# Wythoff's operations on {p,q}: the vertex configuration each shipped board
+# makes. An inner tile's neighbour count follows from it: the trivalent ones
+# (zip, bevel, truncate) give a tile its sides, and the four-valent ones (ambo,
+# expand) add the tile across every corner, so twice its sides.
+_WYTHOFF = {
+    (7, 3, "ambo"): "3.7.3.7",
+    (7, 3, "zip"): "6.6.7",
+    (7, 3, "truncate"): "3.14.14",
+    (7, 3, "expand"): "3.4.7.4",
+    (7, 3, "bevel"): "4.6.14",
+    (8, 3, "ambo"): "3.8.3.8",
+    (8, 3, "zip"): "6.6.8",
+    (8, 3, "truncate"): "3.16.16",
+    (8, 3, "expand"): "3.4.8.4",
+    (8, 3, "bevel"): "4.6.16",
+    (5, 4, "ambo"): "4.5.4.5",
+    (5, 4, "zip"): "5.8.8",
+    (5, 4, "expand"): "4.4.4.5",
+    (5, 4, "bevel"): "4.8.10",
+    (5, 4, "truncate"): "4.10.10",
+    (6, 4, "ambo"): "4.6.4.6",
+    (6, 4, "zip"): "6.8.8",
+    (6, 4, "expand"): "4.4.4.6",
+    (6, 4, "bevel"): "4.8.12",
+    (6, 4, "truncate"): "4.12.12",
+    (5, 5, "zip"): "5.10.10",
+    (9, 3, "zip"): "6.6.9",
+}
+_WYTHOFF_IDS = [f"{p}{q}-{op}" for p, q, op in _WYTHOFF]
+
+
+def _wythoff_config(p, q, op) -> list[int]:
+    return [int(n) for n in _WYTHOFF[(p, q, op)].split(".")]
+
+
+class TestHyperbolicUniform:
+    """The uniform tilings Wythoff's construction makes of {p,q}
+    (boards/hyperbolic.py): 6.6.7, the hyperbolic soccer ball, and its
+    siblings on {7,3}, {8,3}, {5,4}, {6,4} and {5,5}."""
+
+    @pytest.mark.parametrize("p,q,op", _WYTHOFF, ids=_WYTHOFF_IDS)
+    def test_the_mode_names_the_vertex_configuration(self, p, q, op):
+        assert wythoff_mode(p, q, op) == "hyperbolic" + _WYTHOFF[(p, q, op)].replace(".", "")
+
+    @pytest.mark.parametrize("p,q,op", _WYTHOFF, ids=_WYTHOFF_IDS)
+    def test_every_inner_vertex_has_the_configuration(self, p, q, op):
+        faces, _, _ = wythoff_faces(p, q, op, 3)
+        config = _wythoff_config(p, q, op)
+        at = defaultdict(list)
+        for face in faces:
+            for v in face:
+                at[v].append(len(face))
+        full = [sorted(sides) for sides in at.values() if len(sides) == len(config)]
+        assert full and all(sides == sorted(config) for sides in full)
+        assert max(len(sides) for sides in at.values()) == len(config)
+        assert {len(face) for face in faces} == set(config)
+
+    @pytest.mark.parametrize("p,q,op", _WYTHOFF, ids=_WYTHOFF_IDS)
+    def test_faces_are_regular_with_one_edge_length(self, p, q, op):
+        faces, pos, centres = wythoff_faces(p, q, op, 3)
+        side = _hyp_dist(pos[faces[0][0]], pos[faces[0][1]])
+        for face, centre in zip(faces, centres):
+            corners = [pos[v] for v in face]
+            for a, b in zip(corners, corners[1:] + corners[:1]):
+                assert _hyp_dist(a, b) == pytest.approx(side, rel=1e-9)
+            radii = [_hyp_dist(centre, z) for z in corners]
+            assert radii == pytest.approx([radii[0]] * len(face), rel=1e-9)
+            # counterclockwise, as every flat builder's faces are
+            area = sum((a.conjugate() * b).imag for a, b in zip(corners, corners[1:] + corners[:1]))
+            assert area > 0
+
+    @pytest.mark.parametrize("p,q,op", _WYTHOFF, ids=_WYTHOFF_IDS)
+    def test_the_faces_close_up_round_a_vertex(self, p, q, op):
+        # the corner angles round an inner vertex, measured on the arcs as in
+        # TestHyperbolic, sum to 2 pi: the tiling really is flat-free
+        # (an inner vertex being one with all its corners on the board)
+        board = hyperbolic_uniform_board(p, q, op, 12, 1, scale=1, arc=64)
+        angle: dict = defaultdict(float)
+        corners: dict = defaultdict(int)
+        for cell, polygon in board.polygons.items():
+            mask = board.corner_mask[cell]
+            n = len(polygon)
+            for i in range(n):
+                if not mask[i]:
+                    continue
+                a, b, c = polygon[i - 1], polygon[i], polygon[(i + 1) % n]
+                u = complex(a[0] - b[0], a[1] - b[1])
+                w = complex(c[0] - b[0], c[1] - b[1])
+                at = (round(b[0], 6), round(b[1], 6))
+                angle[at] += abs(cmath.phase(w / u))
+                corners[at] += 1
+        valence = len(_wythoff_config(p, q, op))
+        inner = [total for at, total in angle.items() if corners[at] == valence]
+        assert inner and all(total == pytest.approx(2 * math.pi, abs=0.03) for total in inner)
+
+    @pytest.mark.parametrize("p,q,op", _WYTHOFF, ids=_WYTHOFF_IDS)
+    def test_an_inner_tile_sees_the_neighbours_its_shape_gives(self, p, q, op):
+        board = hyperbolic_uniform_board(p, q, op, 30, 1)
+        sides = {cell: sum(mask) for cell, mask in board.corner_mask.items()}
+        config = _wythoff_config(p, q, op)
+        for n in set(config):
+            degree = n * (len(config) - 2)
+            assert max(len(board.adjacency[c]) for c in sides if sides[c] == n) == degree
+        # the central face stands on the central p-gon -- the p-gon itself, or
+        # the 2p-gon of bevel and truncate -- and is interior
+        assert sides[0] == (2 * p if op in ("bevel", "truncate") else p)
+        assert len(board.adjacency[0]) == sides[0] * (len(config) - 2)
+
+    @pytest.mark.parametrize("p,q,op", _WYTHOFF, ids=_WYTHOFF_IDS)
+    @pytest.mark.parametrize("shells", [4, 11, 23, 37])
+    def test_a_trim_keeps_the_dihedral_symmetry(self, p, q, op, shells):
+        board = hyperbolic_uniform_board(p, q, op, shells, 1, scale=1)
+        c = complex(board.width / 2, board.height / 2)
+
+        def points(transform):
+            return sorted((round(z.real, 6), round(z.imag, 6))
+                          for poly in board.polygons.values()
+                          for z in (transform(complex(*xy) - c) for xy in poly))
+
+        same = points(lambda z: z)
+        assert points(lambda z: z * cmath.exp(2j * math.pi / p)) == same
+        assert points(lambda z: -z.conjugate()) == same
+
+    @pytest.mark.parametrize("p,q,op", _WYTHOFF, ids=_WYTHOFF_IDS)
+    def test_every_trim_is_a_disc_with_no_twin_or_near_twin(self, p, q, op):
+        # One sweep for both, since building the trims is most of the cost,
+        # and with no arc points along the edges: they are not corners, and
+        # adjacency and topology are the same without them. Every trim of
+        # {7,3}'s tilings, and every third of the other families' -- the
+        # pytest job runs under a five-minute limit, and every shipped trim is
+        # built again by TestPresets and TestInvariants.
+        from scripts.difficulty.metrics import indistinguishable_cells
+        for shells in range(2, 45) if (p, q) == (7, 3) else range(2, 47, 3):
+            board = hyperbolic_uniform_board(p, q, op, shells, 1, arc=1)
+            assert _euler_characteristic(board) == 1, shells
+            assert _boundary_components(board) == 1, shells
+            assert _connected(board), shells
+            assert indistinguishable_cells(board.adjacency) == 0, shells
+            # the {p,q} boards' near-twin drop, which the uniform boards share
+            hood = {c: frozenset([c, *ns]) for c, ns in board.adjacency.items()}
+            assert not [
+                (a, b) for a, ns in board.adjacency.items() for b in ns
+                if len(hood[b]) == len(hood[a]) + 1 and hood[a] < hood[b]
+            ], shells
+
+    @pytest.mark.parametrize("p", [7, 8])
+    def test_the_soccer_ball_has_no_twin_or_near_twin_to_drop(self, p):
+        # trivalent, like {7,3}: every 6.6.7 trim is kept whole, and every
+        # 6.6.8 one (the zips of {5,4}, {6,4}, {5,5} and {9,3} do drop rim cells)
+        from minesweeper.boards import hyperbolic as hyp
+        faces, _, groups = hyp._wythoff_rings_for(p, 3, "zip", 40)
+        for shells in range(2, 40):
+            kept = sorted(f for group in groups[:shells] for f in group)
+            assert hyp._without_twins(faces, kept) == kept
+
+    @pytest.mark.parametrize("p,q,op", _WYTHOFF, ids=_WYTHOFF_IDS)
+    def test_distance_shells_are_far_apart(self, p, q, op):
+        # out to the 60th distance, well past any trim the boards use: four
+        # rings of {6,4} reach two orbits 9e-6 apart at distance 6.97, which
+        # the 1e-7 grouping still parts but this margin would not
+        for rings in range(4, 7):
+            _, _, centres = wythoff_faces(p, q, op, rings)
+            dists = sorted(2 * math.atanh(abs(z)) for z in centres)
+            gaps = [b - a for a, b in zip(dists, dists[1:])]
+            distinct = [i for i, g in enumerate(gaps) if g >= 1e-10]
+            if len(distinct) >= 60:
+                break
+        assert all(g < 1e-10 or g > 1e-5 for g in gaps[:distinct[59] + 1])
+
+    def test_the_soccer_ball_keeps_rim_cells_bigger_than_heptagons_do(self):
+        # the point of 6.6.7: a hexagon covers far less of the hyperbolic plane
+        # than a {7,3} heptagon, so at the same cell count the disc is smaller
+        # and its rim cells are drawn bigger
+        def smallest(board):
+            def area(poly):
+                return abs(sum(x0 * y1 - x1 * y0 for (x0, y0), (x1, y1)
+                               in zip(poly, poly[1:] + poly[:1]))) / 2
+            return min(area(p) for p in board.polygons.values()) / board.width ** 2
+
+        soccer = hyperbolic_uniform_board(7, 3, "zip", 36, 1)  # 484
+        heptagons = hyperbolic_board(7, 3, 26, 1)  # 477, the hard board
+        assert abs(len(soccer.adjacency) - len(heptagons.adjacency)) < 40
+        assert smallest(soccer) > 2 * smallest(heptagons)
+
+    def test_truncate_is_the_dual_zipped(self):
+        # t{p,q} is zip on {q,p}: the same tiling, centred on a 2p-gon rather
+        # than on a q-gon, which is why the 4.10.10 and 4.12.12 boards use it
+        assert wythoff_mode(5, 4, "truncate") == wythoff_mode(4, 5, "zip")
+        assert wythoff_mode(6, 4, "truncate") == wythoff_mode(4, 6, "zip")
+        assert wythoff_mode(7, 3, "truncate") == wythoff_mode(3, 7, "zip")
+
+    def test_an_unknown_operation_is_refused(self):
+        with pytest.raises(ValueError):
+            hyperbolic_uniform_board(7, 3, "snub", 3, 1)
 
 
 @pytest.mark.parametrize("mode", sorted(SUBSTITUTIONS))
@@ -2565,6 +2912,461 @@ def test_a_substitutions_scale_is_its_factor(mode):
     assert turns == pytest.approx([turns[0]] * len(turns))
     expected = cmath.exp(1j * math.atan2(ROOT3, 5)) if mode == "gosper" else 1
     assert turns[0] == pytest.approx(expected)
+
+
+# The closed surfaces: the order of the group, and the {p,q} map's faces,
+# vertices and edges -- |G|/p, |G|/q and |G|/2.
+_HURWITZ = {
+    "bolza": (48, 6, 16, 24),
+    "quartic": (168, 24, 56, 84),
+    "dyck": (96, 12, 32, 48),
+    "bring": (120, 24, 30, 60),
+    "macbeath": (504, 72, 168, 252),
+    "triplet": (1092, 156, 364, 546),
+}
+# The ones whose group is a PSL(2,q), found by a generator search.
+_PSL = sorted(s for s in _HURWITZ if isinstance(CLOSED_SURFACES[s].group, int))
+# The tiling each surface's board tests are run on: the 6.6.7 of the Hurwitz
+# surfaces, and the easy board of the others.
+_TILING = {"bolza": "gc3", "quartic": "zip", "dyck": "expand", "bring": "expand",
+           "macbeath": "zip", "triplet": "zip"}
+
+
+def _valence(surface: str, op: str) -> int:
+    """How many cells meet at every corner of ``surface`` in tiling ``op``."""
+    p, q, _, _ = CLOSED_SURFACES[surface]
+    if op == "none" or op.startswith("gc"):
+        return q
+    return len(_wythoff_config(p, q, op))
+
+
+class TestHurwitz:
+    """The closed hyperbolic surfaces (boards/hurwitz.py): Klein's quartic,
+    Macbeath's surface and one of the first Hurwitz triplet, built from their
+    PSL(2,q), and the Bolza, Dyck and Bring surfaces, built from a
+    presentation -- all drawn as a patch of the Poincare disc that covers
+    them."""
+
+    def test_every_surface_is_tested(self):
+        assert set(_HURWITZ) == set(CLOSED_SURFACES) == set(SURFACE_MODES)
+
+    @pytest.mark.parametrize("surface", _PSL)
+    def test_the_group_and_its_generators(self, surface):
+        q = CLOSED_SURFACES[surface].group
+        elements, times, x, y = hurwitz_group(q)
+        assert len(elements) == _HURWITZ[surface][0]
+        identity = times(x, x)
+        assert x != identity and times(times(y, y), y) == identity and y != identity
+
+        def order(m):
+            k, power = 1, m
+            while power != identity:
+                power, k = times(power, m), k + 1
+            return k
+
+        assert (order(x), order(y), order(times(x, y))) == (2, 3, 7)
+
+    @pytest.mark.parametrize("surface", sorted(_HURWITZ))
+    def test_the_darts_are_the_group(self, surface):
+        # x an involution, y of order q and xy of order p, acting on |G| darts
+        # with no fixed point (a regular action) and reaching all of them
+        p, q, _, _ = CLOSED_SURFACES[surface]
+        step_x, step_y = _darts(surface)
+        darts = range(len(step_x))
+        assert len(step_x) == _HURWITZ[surface][0]
+        assert sorted(step_x) == sorted(step_y) == list(darts)
+
+        def power(step, k, d):
+            for _ in range(k):
+                d = step[d]
+            return d
+
+        turn = [step_y[step_x[d]] for d in darts]
+        for step, n in ((step_x, 2), (step_y, q), (turn, p)):
+            assert all(power(step, n, d) == d for d in darts)
+            assert all(power(step, k, 0) != 0 for k in range(1, n))
+        seen, frontier = {0}, [0]
+        while frontier:
+            frontier = [e for d in frontier for e in (step_x[d], step_y[d])
+                        if e not in seen and not seen.add(e)]
+        assert len(seen) == len(step_x)
+
+    def test_the_coset_enumeration_is_the_group_not_the_run(self):
+        # The quartic is also <x, y | x^2, y^3, (xy)^7, [x, y]^4>: the same
+        # map, numbered breadth-first from the identity -- so the presentation
+        # route and the PSL(2,7) route give one face per face and one corner
+        # per corner, up to relabelling.
+        step_x, step_y = todd_coxeter(7, 3, "xyxY" * 4)
+        assert len(step_x) == 168
+        assert step_x[0] == 1 and step_y[0] in (1, 2)  # breadth-first, x first
+        assert todd_coxeter.__wrapped__(7, 3, "xyxY" * 4) == (step_x, step_y)
+        with pytest.raises(ValueError):
+            todd_coxeter.__wrapped__(7, 3, "xyxY" * 9, limit=500)
+
+    @pytest.mark.parametrize("surface", sorted(_HURWITZ))
+    def test_the_map_is_the_surface(self, surface):
+        p, q, genus, _ = CLOSED_SURFACES[surface]
+        _, faces_n, vertices_n, edges_n = _HURWITZ[surface]
+        faces = hurwitz_map(surface)
+        assert len(faces) == faces_n
+        assert all(len(set(face)) == p for face in faces)
+        directed = Counter((face[i], face[(i + 1) % p]) for face in faces for i in range(p))
+        # every edge once each way (orientable, and no edge doubled)...
+        assert set(directed.values()) == {1}
+        assert all((b, a) in directed for a, b in directed)
+        assert len(directed) == 2 * edges_n
+        # ...q faces at every vertex, and chi = 2 - 2g
+        at = Counter(v for face in faces for v in face)
+        assert len(at) == vertices_n and set(at.values()) == {q}
+        assert vertices_n - edges_n + faces_n == 2 - 2 * genus
+        # no face borders itself (the Bolza surface's faces do border each
+        # other twice -- six octagons, eight sides each)
+        side = {(face[i], face[(i + 1) % p]): f for f, face in enumerate(faces) for i in range(p)}
+        assert all(side[(b, a)] != f for (a, b), f in side.items())
+
+    def test_the_petrie_polygons_say_which_surface(self):
+        # The quartic is {7,3}_8 and Macbeath's surface {7,3}_18; the first
+        # Hurwitz triplet's three maps have Petrie polygons of 12, 14 and 26,
+        # and the generator search meets the 14 first. A change to the search
+        # that landed on another surface of the triplet would show here. Dyck's
+        # surface is {8,3}_6 and Bring's {5,4}_6, as their presentations say;
+        # the Bolza surface's are 12 long.
+        assert [petrie_length(s) for s in ("quartic", "macbeath", "triplet")] == [8, 18, 14]
+        assert [petrie_length(s) for s in ("bolza", "dyck", "bring")] == [12, 6, 6]
+
+    @pytest.mark.parametrize("surface", sorted(_HURWITZ))
+    @pytest.mark.parametrize("op", ["none", "zip", "tiling"])
+    def test_the_board_is_closed_with_the_surface_genus(self, surface, op):
+        _, faces_n, vertices_n, edges_n = _HURWITZ[surface]
+        op = _TILING[surface] if op == "tiling" else op
+        board = hurwitz_board(surface, op, 0, 1)
+        assert board.mode == SURFACE_MODES[surface]
+        assert len(board.adjacency) == cell_count(surface, op) == len(hurwitz_cells(surface, op))
+        assert cell_count(surface, "none") == faces_n
+        assert cell_count(surface, "zip") == faces_n + vertices_n
+        # GC(2, 0) adds a cell per edge, and on a 4-valent tiling one per
+        # corner too (the middle of each dual square)
+        q = CLOSED_SURFACES[surface].q
+        assert cell_count(surface, "gc2") == faces_n + edges_n + (vertices_n if q == 4 else 0)
+        genus = CLOSED_SURFACES[surface].genus
+        assert _euler_characteristic(board) == 2 - 2 * genus
+        assert _boundary_components(board) == 0
+
+    @pytest.mark.parametrize("surface", sorted(_HURWITZ))
+    def test_every_cell_keeps_its_full_count(self, surface):
+        # no rim: a heptagon of {7,3} has its seven, and on 6.6.7 a hexagon
+        # its six and a heptagon its seven, everywhere -- as an interior tile
+        # of the disc does. Each corner adds the cells round it bar the two
+        # that share a side with the cell there.
+        op = _TILING[surface]
+        board = hurwitz_board(surface, op, 0, 1)
+        for cell, neighbours in board.adjacency.items():
+            assert len(neighbours) == len(board.quotient[cell]) * (_valence(surface, op) - 2)
+
+    @pytest.mark.parametrize("surface", sorted(set(_HURWITZ) - {"bolza"}))
+    def test_every_face_of_the_plain_tiling_keeps_its_count(self, surface):
+        # {p,q} itself: p (q - 2) neighbours a face. Not on the Bolza surface,
+        # whose six octagons border the other five each, some of them twice.
+        p, q, _, _ = CLOSED_SURFACES[surface]
+        board = hurwitz_board(surface, "none", 0, 1)
+        assert {len(n) for n in board.adjacency.values()} == {p * (q - 2)}
+
+    @pytest.mark.parametrize("op", sorted(op for p, q, op in _WYTHOFF
+                                          if (p, q) == (7, 3) and op in HURWITZ_OPS))
+    def test_every_tiling_of_the_quartic_keeps_its_count(self, op):
+        cells = hurwitz_cells("quartic", op)
+        board = hurwitz_board("quartic", op, 0, 1)
+        valence = len(_wythoff_config(7, 3, op))
+        assert len(board.adjacency) == len(cells)
+        for cell, neighbours in board.adjacency.items():
+            assert len(neighbours) == len(board.quotient[cell]) * (valence - 2)
+
+    @pytest.mark.parametrize("surface", sorted(_HURWITZ))
+    def test_no_two_cells_can_be_told_apart_only_by_one(self, surface):
+        board = hurwitz_board(surface, _TILING[surface], 0, 1)
+        hood = {c: frozenset([c, *n]) for c, n in board.adjacency.items()}
+        assert len(set(hood.values())) == len(hood)  # no twins
+        assert not any(len(hood[o]) == len(hood[c]) + 1 and hood[c] < hood[o]
+                       for c in hood for o in board.adjacency[c])  # no near-twins
+
+    @pytest.mark.parametrize("surface", sorted(_HURWITZ))
+    @pytest.mark.parametrize("op", ["none", "zip", "tiling"])
+    def test_every_copy_is_its_cell(self, surface, op):
+        # each drawn face's corners, carried down by the covering map, are its
+        # cell's corners on the surface, read from any start
+        op = _TILING[surface] if op == "tiling" else op
+        (loops, _, _, cells, key), groups = _patch_for(surface, op, 0)
+        surface_cells = hurwitz_cells(surface, op)
+        for f in (f for group in groups for f in group):
+            corners = [key(k) for k in loops[f]]
+            want = surface_cells[cells[f]]
+            i = corners.index(want[0])
+            assert corners[i:] + corners[:i] == want
+
+    @pytest.mark.parametrize("surface", sorted(_HURWITZ))
+    def test_every_cell_is_drawn_and_named_after_its_nearest_copy(self, surface):
+        board = hurwitz_board(surface, _TILING[surface], 0, 1)
+        shown = defaultdict(list)
+        for face, cell in board.faces.items():
+            shown[cell].append(face)
+        assert set(shown) == set(board.adjacency)
+        # faces are numbered outward from the centre, so the nearest is the least
+        assert all(min(faces) == cell for cell, faces in shown.items())
+        assert board.faces[0] == 0  # the central heptagon is its own cell
+        # and the patch is a cover, not one copy of each: every cell at least
+        # once, the quartic's many times
+        assert len(board.polygons) > len(board.adjacency)
+
+    @pytest.mark.parametrize("surface", sorted(_HURWITZ))
+    def test_the_drawing_agrees_with_the_surface(self, surface):
+        # Where a copy is whole inside the patch -- every corner met by all
+        # its faces -- the faces drawn round it show exactly its neighbours:
+        # the adjacency is the surface's, and the drawing says the same.
+        valence = _valence(surface, _TILING[surface])
+        board = hurwitz_board(surface, _TILING[surface], 0, 1)
+        at = defaultdict(set)
+        for face, polygon in board.polygons.items():
+            for (x, y), corner in zip(polygon, board.corner_mask[face]):
+                if corner:
+                    at[(round(x, 6), round(y, 6))].add(face)
+        checked = 0
+        for face, polygon in board.polygons.items():
+            points = [(round(x, 6), round(y, 6))
+                      for (x, y), c in zip(polygon, board.corner_mask[face]) if c]
+            if any(len(at[p]) != valence for p in points):
+                continue
+            around = {board.faces[g] for p in points for g in at[p]} - {board.faces[face]}
+            assert around == set(board.adjacency[board.faces[face]])
+            checked += 1
+        assert checked >= len(board.adjacency) // 4
+
+    @pytest.mark.parametrize("surface", sorted(_HURWITZ))
+    def test_the_patch_keeps_the_central_polygon_turns(self, surface):
+        # the shells are orbits of the central p-gon's dihedral group, so the
+        # drawing turns into itself by a p-th about the disc's centre
+        board = hurwitz_board(surface, _TILING[surface], 0, 1, scale=1)
+        c = board.width / 2
+        centres = {
+            tuple(round(v, 5) for v in (sum(x for x, _ in poly) / len(poly) - c,
+                                          sum(y for _, y in poly) / len(poly) - c))
+            for poly in board.polygons.values()
+        }
+        turn = cmath.exp(2j * math.pi / CLOSED_SURFACES[surface].p)
+        for x, y in centres:
+            z = complex(x, y) * turn
+            assert (round(z.real, 5), round(z.imag, 5)) in centres or any(
+                abs(complex(*p) - z) < 1e-4 for p in centres)
+
+    @pytest.mark.parametrize("n, cells", [(2, 108), (3, 248), (4, 444)])
+    def test_the_quartic_subdivided_keeps_the_surface(self, n, cells):
+        # GC(n, 0): the heptagons survive, hexagons everywhere else, F + E(n-1)
+        # + V(n-1)(n-2)/2 cells -- and the surface is still Klein's quartic
+        board = hurwitz_board("quartic", f"gc{n}", 0, 1)
+        assert board.mode == "quartic"
+        assert len(board.adjacency) == cells
+        assert _euler_characteristic(board) == -4
+        assert _boundary_components(board) == 0
+        sides = Counter(len(board.quotient[c]) for c in board.adjacency)
+        assert sides == {7: 24, 6: cells - 24}
+        for cell, neighbours in board.adjacency.items():
+            assert len(neighbours) == len(board.quotient[cell])
+        hood = {c: frozenset([c, *nb]) for c, nb in board.adjacency.items()}
+        assert len(set(hood.values())) == len(hood)
+        assert not any(len(hood[o]) == len(hood[c]) + 1 and hood[c] < hood[o]
+                       for c in hood for o in board.adjacency[c])
+
+    @pytest.mark.parametrize("surface, cells", [("macbeath", 324), ("triplet", 702)])
+    def test_the_bigger_surfaces_subdivided_keep_the_surface(self, surface, cells):
+        # GC(2, 0) is their hard board: F + E cells, the heptagons still whole
+        faces_n, edges_n = _HURWITZ[surface][1], _HURWITZ[surface][3]
+        board = hurwitz_board(surface, "gc2", 0, 1)
+        assert board.mode == SURFACE_MODES[surface]
+        assert len(board.adjacency) == cells == faces_n + edges_n
+        assert _euler_characteristic(board) == 2 - 2 * CLOSED_SURFACES[surface].genus
+        sides = Counter(len(board.quotient[c]) for c in board.adjacency)
+        assert sides == {7: faces_n, 6: cells - faces_n}
+        for cell, neighbours in board.adjacency.items():
+            assert len(neighbours) == len(board.quotient[cell])
+
+    @pytest.mark.parametrize("surface", sorted(_HURWITZ))
+    def test_the_view_holds_the_same_share_of_every_surface(self, surface):
+        # the view's area, 2 pi (cosh v - 1), over the surface's, 4 pi (g - 1)
+        genus = CLOSED_SURFACES[surface].genus
+        copies = (math.cosh(cover_view(surface)) - 1) / (2 * (genus - 1))
+        assert copies == pytest.approx(COVER_COPIES)
+
+    @pytest.mark.parametrize("surface, cells", [
+        ("bolza", (70, 510)), ("dyck", (60, 396)), ("bring", (264, 474))])
+    def test_the_other_surfaces_subdivided_keep_the_surface(self, surface, cells):
+        # The rungs they ship, least and most (the middle ones are built by
+        # test_presets): the faces survive whole, and every other cell is
+        # a hexagon (q = 3) or a square (q = 4) -- 8n^2 - 2 cells on the Bolza
+        # surface, 16n^2 - 4 on Dyck's and 30n^2 - 6 on Bring's
+        p, q, genus, _ = CLOSED_SURFACES[surface]
+        faces_n = _HURWITZ[surface][1]
+        per = {"bolza": (8, 2), "dyck": (16, 4), "bring": (30, 6)}[surface]
+        for count in cells:
+            n = next(n for n in range(2, 9) if per[0] * n * n - per[1] == count)
+            board = hurwitz_board(surface, f"gc{n}", 0, 1)
+            assert len(board.adjacency) == count
+            assert _euler_characteristic(board) == 2 - 2 * genus
+            assert _boundary_components(board) == 0
+            sides = Counter(len(board.quotient[c]) for c in board.adjacency)
+            assert sides == {p: faces_n, 6 if q == 3 else 4: count - faces_n}
+            for cell, neighbours in board.adjacency.items():
+                assert len(neighbours) == len(board.quotient[cell]) * (q - 2)
+            hood = {c: frozenset([c, *nb]) for c, nb in board.adjacency.items()}
+            assert len(set(hood.values())) == len(hood)
+
+    @pytest.mark.parametrize("p, q, n", [(7, 3, 2), (7, 3, 3), (8, 3, 3), (5, 4, 2), (5, 4, 3)])
+    def test_the_subdivision_ids_are_shared_exactly(self, p, q, n):
+        # every point the cut makes on a side between two dual polygons is one
+        # key, and every cell's corners go round it counterclockwise
+        loops, where, centres, origins = gc_loops(p, q, n, 3)
+        assert len(set(origins)) == len(origins)
+        for loop, z in zip(loops, centres):
+            corners = [where[k] for k in loop]
+            area = sum(((a - z).conjugate() * (b - z)).imag
+                       for a, b in zip(corners, corners[1:] + corners[:1]))
+            assert area > 0
+            assert len(loop) in (p, 6 if q == 3 else 4)
+        # the p-gons stand on the ring walk's faces, one each, and nothing else
+        # does: a point on a side stands on its edge, one inside on its corner
+        assert all(len(support) == {1: 0, 2: 2}.get(len(pairs), 1) for support, pairs in origins)
+        assert (sum(1 for _, pairs in origins if len(pairs) == 1)
+                == sum(1 for loop in loops if len(loop) == p))
+
+    def test_two_faces_that_share_two_edges_keep_their_points_apart(self):
+        # The Bolza surface's six octagons border each other twice over, so a
+        # point on a side named by its two faces alone would be two points --
+        # what it stands on keeps them apart (and `hurwitz_cells` would find
+        # two copies of one cell disagreeing if it did not)
+        faces = hurwitz_map("bolza")
+        side = Counter(frozenset((f, g)) for f, face in enumerate(faces)
+                       for g, other in enumerate(faces) if f < g
+                       for i in range(8) if (face[(i + 1) % 8], face[i]) in
+                       {(other[j], other[(j + 1) % 8]) for j in range(8)})
+        assert max(side.values()) >= 2
+        assert len(hurwitz_cells("bolza", "gc2")) == cell_count("bolza", "gc2") == 30
+
+    def test_the_subdivision_draws_the_same_cells_as_the_surface(self):
+        (loops, _, _, cells, key), groups = _patch_for("quartic", "gc3", 0)
+        surface_cells = hurwitz_cells("quartic", "gc3")
+        for f in (f for group in groups for f in group):
+            corners = [key(k) for k in loops[f]]
+            want = surface_cells[cells[f]]
+            i = corners.index(want[0])
+            assert corners[i:] + corners[:i] == want
+
+    def test_margin_widens_the_patch_and_not_the_board(self):
+        small = hurwitz_board("quartic", "zip", 0, 1)
+        wide = hurwitz_board("quartic", "zip", 3, 1)
+        assert len(wide.polygons) > len(small.polygons)
+        assert wide.adjacency == small.adjacency
+        with pytest.raises(ValueError):
+            hurwitz_board("quartic", "zip", -1, 1)
+        with pytest.raises(ValueError):
+            hurwitz_board("klein", "zip", 0, 1)
+
+
+class TestBinaryTiling:
+    """Böröczky's binary tiling in the upper half-plane (boards/hyperbolic.py):
+    a rectangle of rows each half the width of the one above, every tile
+    congruent in the hyperbolic plane, every interior tile 8 neighbours."""
+
+    # (top, levels): the shipped windows, and a few that are not
+    WINDOWS = [(3, 5), (2, 7), (2, 8), (1, 4), (4, 3)]
+
+    @staticmethod
+    def _plane(top, levels):
+        """The board at one pixel per bottom-row tile, with each cell's corners
+        read back into the half-plane (y up, the ideal line at y = 0) -- exact,
+        since every coordinate is then an integer."""
+        board = binary_board(top, levels, 0, scale=2 ** (levels - 1))
+        height = 2 ** levels
+        cells = {cell: [(x, height - y) for x, y in polygon]
+                 for cell, polygon in board.polygons.items()}
+        return board, cells
+
+    @pytest.mark.parametrize("top,levels", WINDOWS)
+    def test_cell_count(self, top, levels):
+        board, _ = self._plane(top, levels)
+        assert len(board.adjacency) == top * (2 ** levels - 1)
+
+    @pytest.mark.parametrize("top,levels", WINDOWS)
+    def test_corners_are_integer_pairs_on_the_rows(self, top, levels):
+        _, cells = self._plane(top, levels)
+        for points in cells.values():
+            for x, y in points:
+                assert x == int(x) and y == int(y)
+                assert y > 0 and int(y) & (int(y) - 1) == 0  # a power of two
+
+    @pytest.mark.parametrize("top,levels", WINDOWS)
+    def test_every_tile_is_the_unit_tile_moved_by_an_isometry(self, top, levels):
+        """z -> (z - x0) / w, an isometry of the half-plane, takes each tile
+        onto [0, 1] x [1, 2] -- with its bottom midpoint, where it has
+        children."""
+        _, cells = self._plane(top, levels)
+        unit = [(0, 2), (1, 2), (1, 1), (Fraction(1, 2), 1), (0, 1)]
+        for (row, _), points in cells.items():
+            x0, w = points[0][0], points[1][0] - points[0][0]
+            moved = [(Fraction(x - x0) / w, Fraction(y) / w) for x, y in points]
+            assert moved == (unit if row < levels - 1 else unit[:3] + unit[4:])
+
+    @pytest.mark.parametrize("top,levels", WINDOWS)
+    def test_the_window_is_a_whole_rectangle(self, top, levels):
+        board, cells = self._plane(top, levels)
+        area = sum((p[1][0] - p[0][0]) ** 2 for p in cells.values())
+        assert area == top * 2 ** (levels - 1) * (2 ** levels - 1)
+        assert board.width == top * 2 ** (levels - 1)
+        assert board.height == 2 ** levels - 1
+
+    @pytest.mark.parametrize("top,levels", WINDOWS)
+    def test_the_window_is_mirror_symmetric(self, top, levels):
+        board, cells = self._plane(top, levels)
+        shapes = {frozenset(points) for points in cells.values()}
+        assert {frozenset((board.width - x, y) for x, y in s) for s in shapes} == shapes
+
+    def test_interior_tiles_have_two_beside_four_below_two_above(self):
+        top, levels = 2, 7
+        board, cells = self._plane(top, levels)
+        width = board.width
+        checked = 0
+        for (row, j), others in board.adjacency.items():
+            points = cells[(row, j)]
+            if row in (0, levels - 1) or points[0][0] == 0 or points[1][0] == width:
+                continue
+            by_row = Counter(other[0] - row for other in others)
+            assert len(others) == 8
+            assert by_row == {0: 2, 1: 4, -1: 2}
+            # above: the parent, and the parent's neighbour on the child's own
+            # side -- which is what varies from tile to tile
+            above = sorted(other[1] for other in others if other[0] == row - 1)
+            side = -1 if j % 2 == 0 else 1
+            assert above == sorted([j // 2, j // 2 + side])
+            checked += 1
+        assert checked > 50
+
+    def test_no_window_has_a_twin_and_only_two_near_twins(self):
+        """No two cells share a closed neighbourhood. Two do miss a neighbour's
+        by one cell: the bottom row's second tile and its parent, at each end
+        of the window, which only cutting the rectangle could remove."""
+        for top, levels in self.WINDOWS + [(2, 4)]:
+            board, _ = self._plane(top, levels)
+            hood = {c: frozenset([c, *ns]) for c, ns in board.adjacency.items()}
+            assert len(set(hood.values())) == len(hood)
+            near = {c for c, ns in board.adjacency.items()
+                    if any(len(hood[o]) == len(hood[c]) + 1 and hood[c] < hood[o]
+                           for o in ns)}
+            if levels >= 3:
+                bottom = levels - 1
+                assert near == {(bottom, 1), (bottom, top * 2 ** bottom - 2)}
+
+    def test_the_corner_mask_drops_the_bottom_midpoint(self):
+        board = binary_board(2, 3, 0)
+        for (row, _), mask in board.corner_mask.items():
+            assert sum(mask) == 4
+            assert len(mask) == (5 if row < 2 else 4)
 
 
 class TestNeighborCounts:
@@ -2687,6 +3489,7 @@ class TestNeighborCounts:
             c180_board(10),
             gp21_board(10),
             sphere_triangle_board(10),
+            sphere_square_board(10),
             cube_board(4, 12),
             tetrahedron_board(8, 4),
             torus_board(12, 6, 9),
@@ -2696,7 +3499,8 @@ class TestNeighborCounts:
             for cell, polygon in board.polygons.items():
                 normal = newell_normal(polygon)
                 centroid = tuple(sum(c) / len(polygon) for c in zip(*polygon))
-                if board.mode in ("sphere", "c180", "gp21", "spheretri", "cube", "tetrahedron"):
+                if board.mode in ("sphere", "c180", "gp21", "spheretri", "spheresquare", "cube",
+                                  "tetrahedron"):
                     outward = centroid
                 else:
                     import math
@@ -2890,6 +3694,21 @@ class TestArchimedean:
         # p3: no half turn, so no window of it is centrally symmetric and it
         # keeps the whole-domain search about its three-fold centre: 1.24.
         ("threescaletri", "easy"),
+        # Fairness outranks squareness (`resize.UNFAIR_PENALTY`): every
+        # squarer window in the easy band leaves a rim no mine count brings to
+        # the target -- the truncated hexagonal's triangles each touching one
+        # dodecagon, the kisrhombille's fans cut through, the elongated
+        # triangular's courses ending in lone triangles -- so these keep the
+        # squarest one that calibrates: 1.24, 1.30 and 1.21.
+        ("trunchex", "easy"),
+        ("kisrhombille", "easy"),
+        ("elongated", "easy"),
+        # ...and a near-twin outranks squareness the same way: every squarer
+        # easy window of these leaves a rim tile the builder cannot peel
+        # whole (the tetrakis triangles pinned by a corner where the window
+        # cuts its squares), so they take the squarest one without: 1.25, 1.30.
+        ("tetrakis", "easy"),
+        ("hexbands", "easy"),
     }
 
     @pytest.mark.parametrize("mode", sorted(_ARCH_CONFIGS))
@@ -4296,6 +5115,48 @@ class TestWrapLayout:
         assert off == ["studdedtri2"]
 
 
+class TestTorusLayout:
+    """The tilings whose donut is glued in a layout of its own
+    (``_ArchTemplate.torus``, see ``_with_torus``): the flat one where the
+    strips take a wrap layout, or the flat one turned a quarter turn. A donut
+    needs no mirror, so all a layout has to be is the same tiling -- and the
+    one thing it changes is which side of the domain goes round the ring."""
+
+    TORUS = sorted(t.key for t in ARCH_TILINGS if _arch_template(t.key).torus)
+
+    def test_these_three_and_no_others(self):
+        # elongated3 flat, where its strips wrap turned: 84 cells on the easy
+        # donut rather than 224; elongated2 and trirhombitrihex turned, the
+        # same sizes with rounder cells
+        assert self.TORUS == ["elongated2", "elongated3", "trirhombitrihex"]
+
+    @pytest.mark.parametrize("tiling", TORUS)
+    def test_the_layout_holds_the_flat_tiles(self, tiling):
+        flat, torus = _arch_template(tiling), _torus_template(tiling)
+        assert flat.width * flat.height == pytest.approx(torus.width * torus.height)
+        assert (sorted(len(refs) for _, refs in flat.cells)
+                == sorted(len(refs) for _, refs in torus.cells))
+        assert torus.torus is None and torus.wrap is None
+
+    def test_elongated3_glues_its_donut_flat_and_its_strips_turned(self):
+        flat = _arch_template("elongated3")
+        torus, wrapped = _torus_template("elongated3"), _wrap_template("elongated3")
+        assert (torus.width, torus.height) == pytest.approx((flat.width, flat.height))
+        assert (wrapped.width, wrapped.height) == pytest.approx((flat.height, flat.width))
+
+    @pytest.mark.parametrize("tiling", ["elongated2", "trirhombitrihex"])
+    def test_turned_for_the_donut_alone(self, tiling):
+        flat = _arch_template(tiling)
+        torus, wrapped = _torus_template(tiling), _wrap_template(tiling)
+        assert (torus.width, torus.height) == pytest.approx((flat.height, flat.width))
+        assert wrapped is flat
+
+    def test_every_other_tiling_glues_its_donut_like_its_strips(self):
+        for t in ARCH_TILINGS:
+            if t.key not in self.TORUS:
+                assert _torus_template(t.key) is _wrap_template(t.key), t.key
+
+
 class TestWrappedArchimedean:
     """The Archimedean tilings wrapped onto the donut, cylinder and
     Möbius strip."""
@@ -4329,6 +5190,23 @@ class TestWrappedArchimedean:
         config = sorted(_ARCH_CONFIGS[tiling][0])
         for fan in _corner_fans(board).values():
             assert sorted(fan) == config
+
+    @pytest.mark.parametrize(
+        "tiling", sorted(set(_TWO_UNIFORM) & set(_TORUS_TILINGS)))
+    @pytest.mark.parametrize("difficulty", DIFFICULTIES)
+    def test_two_uniform_torus_vertices_are_the_two_types(self, tiling, difficulty):
+        """The 2-uniform version of the test above: a donut has no rim, so
+        every vertex closes, and each is one of the tiling's two
+        configurations read in cyclic order -- which is what a seam glued one
+        domain out of step would break -- with both of them present."""
+        from scripts.difficulty.metrics import _cyclic, vertex_fans
+
+        board = build_board("torus" + tiling, difficulty)
+        spec = next(t for t in ARCH_TILINGS if t.key == tiling)
+        want = {_cyclic(v) for v in spec.vertex_types}
+        seen = Counter(vertex_fans(board).values())
+        assert None not in seen, f"{tiling}: {seen[None]} vertices on a rim"
+        assert set(seen) == want, dict(seen)
 
     @pytest.mark.parametrize("mode", sorted(WRAPPED_VERTEX_TRANSITIVE))
     def test_vertices_are_full_or_boundary(self, mode):
@@ -4383,10 +5261,10 @@ class TestWrappedArchimedean:
             "mobiustrunchex": (81, 225, 420),
             "torusrhombitrihex": (96, 264, 468),
             "torustrunctrihex": (96, 288, 468),
-            "cylrhombitrihex": (84, 286, 480),
-            "cyltrunctrihex": (80, 242, 510),
-            "mobiusrhombitrihex": (84, 286, 532),
-            "mobiustrunctrihex": (80, 280, 420),
+            "cylrhombitrihex": (84, 264, 450),
+            "cyltrunctrihex": (84, 240, 480),
+            "mobiusrhombitrihex": (84, 264, 540),
+            "mobiustrunctrihex": (84, 286, 416),
             "torusprismaticpent": (88, 252, 480),
             "cylprismaticpent": (90, 270, 456),
             "mobiusprismaticpent": (72, 224, 444),
@@ -4408,8 +5286,8 @@ class TestWrappedArchimedean:
             "cyldeltoidal": (72, 264, 450),
             "mobiusdeltoidal": (72, 264, 468),
             "toruskisrhombille": (192, 288, 480),
-            "cylkisrhombille": (72, 288, 480),
-            "mobiuskisrhombille": (144, 240, 528),
+            "cylkisrhombille": (72, 256, 484),
+            "mobiuskisrhombille": (120, 220, 484),
             "kleinelongated": (84, 264, 486),
             "kleinsnubsquare": (81, 252, 486),
             "kleintrihex": (90, 252, 480),
@@ -4452,8 +5330,8 @@ class TestWrappedArchimedean:
             "mobiusbasketweave": (88, 228, 464),
             "kleinbasketweave": (72, 272, 460),
             "torusbasketweave3": (96, 252, 480),
-            "cylbasketweave3": (90, 240, 462),
-            "mobiusbasketweave3": (78, 270, 504),
+            "cylbasketweave3": (80, 224, 440),
+            "mobiusbasketweave3": (75, 289, 529),
             "kleinbasketweave3": (108, 270, 504),
             "torusherringbone": (80, 256, 480),
             "cylherringbone": (90, 250, 490),
@@ -4478,12 +5356,12 @@ class TestWrappedArchimedean:
             "cylhexrings": (80, 228, 504),
             "cylsquaretrihex": (72, 270, 460),
             "cylsquaretrihex2": (88, 240, 441),
-            "cyldodecarhombitrihex": (80, 280, 520),
+            "cyldodecarhombitrihex": (70, 266, 550),
             "mobiusstuddedtri": (76, 228, 450),
             "mobiuselongated2": (72, 231, 464),
             "mobiuselongated3": (70, 231, 441),
             "mobiustrirhombitrihex": (75, 259, 444),
-            "mobiustritrunctrihex": (72, 234, 450),
+            "mobiustritrunctrihex": (170, 238, 408),
             "mobiusfannedhex": (72, 280, 528),
             "mobiushexbands": (99, 220, 462),
             "mobiussnubelongated2": (78, 248, 434),
@@ -4497,7 +5375,29 @@ class TestWrappedArchimedean:
             "mobiushexrings": (80, 220, 504),
             "mobiussquaretrihex": (72, 270, 460),
             "mobiussquaretrihex2": (88, 294, 420),
-            "mobiusdodecarhombitrihex": (80, 280, 440),
+            "mobiusdodecarhombitrihex": (70, 266, 418),
+            # ...and the donut, which needs no cut; the easy rows over the
+            # band are EXEMPT_ROWS in tests/test_presets.py
+            "torusstuddedtri": (208, 260, 468),
+            "torusstuddedtri2": (336, 336, 504),
+            "toruselongated2": (80, 245, 480),
+            "toruselongated3": (84, 252, 476),
+            "torustrirhombitrihex": (176, 264, 462),
+            "torustritrunctrihex": (256, 256, 480),
+            "torusfannedhex": (128, 256, 480),
+            "torushexbands": (80, 260, 480),
+            "torussnubelongated2": (288, 288, 504),
+            "torussnubelongated": (96, 264, 468),
+            "torusdissectedtrunchex2": (240, 240, 450),
+            "torussquarerows2": (80, 256, 480),
+            "torussquarerows3": (90, 250, 500),
+            "torusdissectedtrunchex": (240, 240, 480),
+            "torushexrows": (90, 255, 483),
+            "torusdodecasquare": (96, 270, 468),
+            "torushexrings": (144, 288, 504),
+            "torussquaretrihex": (90, 260, 475),
+            "torussquaretrihex2": (80, 260, 480),
+            "torusdodecarhombitrihex": (192, 288, 480),
         }
         assert sorted(counts) == sorted(self.WRAPPED)
         for mode, expected in counts.items():
@@ -4510,10 +5410,16 @@ class TestWrappedArchimedean:
     # get a symmetric zigzag instead. One list for both surfaces, because they
     # share the cut: every tiling here is straight on whichever of the Mobius
     # strip and the cylinder it wraps.
+    #
+    # basketweave3 and kisrhombille have the line too, and are cut along it,
+    # but a rim along it leaves near-twins -- the outer brick of each block
+    # lying along the edge, the sliver between two big triangles -- which the
+    # builder then peels off (``core._without_near_twins``), so the rim comes
+    # out crenellated or zigzag rather than straight.
     STRAIGHT_RIM = {
         "elongated", "trihex", "prismaticpent", "deltoidal", "triakis",
-        "kisrhombille", "tetrakis", "offsetsquare", "staggeredtri",
-        "stackedbond", "runningbond", "basketweave", "basketweave3",
+        "tetrakis", "offsetsquare", "staggeredtri",
+        "stackedbond", "runningbond", "basketweave",
         # 2-uniform, the cylinder and the Mobius strip. fannedhex and
         # squaretrihex2 have straight lines too, and elongated3 has them in its
         # flat layout, but a band ending on one either plays coin flips at easy
@@ -4737,6 +5643,72 @@ class TestWrappedArchimedean:
                     board.mode,
                     cell,
                 )
+
+
+class TestRimNearTwins:
+    """A periodic window's edge is cut back by its near-twins: a rim tile
+    whose closed neighbourhood is a neighbour's less one cell can only be
+    told from it by that cell's number, so the builders peel it off
+    (``core._without_near_twins``) and the size search steers away from
+    windows that leave one it cannot peel (``NEAR_TWIN_WEIGHT``)."""
+
+    # tiling -> the flat, cylinder and Mobius modes it ships as
+    MODES = sorted(
+        {"flat": tiling, "cylinder": "cyl" + tiling, "mobius": "mobius" + tiling}[surface]
+        for tiling, rows in ARCH_PRESETS.items()
+        for surface in rows if surface in ("flat", "cylinder", "mobius")
+    )
+
+    # What is left where nothing better was available -- nothing, now: the
+    # flat search bars a window that keeps one (`resize`'s flat shape bars),
+    # and tetrakis easy, which used to keep eight, takes a near-twin-free
+    # window off square instead (see SQUARE_EXEMPT in TestArchimedean).
+    KEPT: dict = {}
+
+    @staticmethod
+    def _near_twins(board) -> int:
+        hood = {c: frozenset([c, *ns]) for c, ns in board.adjacency.items()}
+        return sum(1 for c, ns in board.adjacency.items()
+                   if any(len(hood[o]) == len(hood[c]) + 1 and hood[c] < hood[o]
+                          for o in ns))
+
+    @pytest.mark.parametrize("difficulty", DIFFICULTIES)
+    def test_no_shipped_window_keeps_a_near_twin(self, difficulty):
+        left = {mode: n for mode in self.MODES
+                if (n := self._near_twins(build_board(mode, difficulty)))}
+        expected = {mode: n for (mode, level), n in self.KEPT.items()
+                    if level == difficulty}
+        assert left == expected
+
+    @pytest.mark.parametrize("mode", sorted(
+        tiling for tiling, rows in ARCH_PRESETS.items() if "flat" in rows))
+    def test_peeling_leaves_a_flat_window_a_disc(self, mode):
+        # only a tile that meets the rim in one run of its own edges is
+        # peeled, so the window never comes out with a hole in it or two
+        # tiles pinched together at a corner
+        for difficulty in DIFFICULTIES:
+            board = build_board(mode, difficulty)
+            assert _euler_characteristic(board) == 1, difficulty
+            assert _boundary_components(board) == 1, difficulty
+
+    def test_the_peel_takes_the_rim_and_only_the_rim(self, monkeypatch):
+        # rhombitrihexagonal's medium window ends on a row of squares between
+        # hexagons, each square a near-twin of the triangle-square-triangle
+        # fan inside it; the peel takes those squares and nothing else
+        from minesweeper.boards import tilings
+        from minesweeper.boards.core import _without_near_twins
+        peeled = archimedean_board("rhombitrihex", 7, 4, 5)
+        monkeypatch.setattr(tilings, "_without_near_twins", lambda cells: cells)
+        whole = archimedean_board("rhombitrihex", 7, 4, 5)
+        gone = set(whole.adjacency) - set(peeled.adjacency)
+        assert set(peeled.adjacency) < set(whole.adjacency)
+        assert gone and {len(whole.polygons[c]) for c in gone} == {4}
+        assert self._near_twins(whole) > 0 and self._near_twins(peeled) == 0
+        # and a window with none is left exactly as it was
+        snub = archimedean_board("snubsquare", 5, 5, 5)
+        assert self._near_twins(snub) == 0
+        cells = {c: [tuple(p) for p in poly] for c, poly in snub.polygons.items()}
+        assert _without_near_twins(cells) == cells
 
 
 class TestPolyhedra:
@@ -5423,3 +6395,116 @@ class TestProjectivePlane:
             twin = [tuple(-c for c in p) for p in polygon]
             outward = [sum(c) for c in zip(*twin)]
             assert sum(n * o for n, o in zip(newell_normal(twin), outward)) < 0
+
+
+class TestBoySurface:
+    """Boy's surface: the projective plane's square board drawn once, on an
+    immersion, rather than twice on the sphere that covers it. The board is
+    the projective plane's; what is tested here is the drawing."""
+
+    FREQUENCIES = range(2, 15)
+
+    @staticmethod
+    def _sphere_samples(count: int):
+        golden = math.pi * (3 - math.sqrt(5))
+        for i in range(count):
+            z = 1 - 2 * (i + 0.5) / count
+            r = math.sqrt(1 - z * z)
+            yield (r * math.cos(golden * i), r * math.sin(golden * i), z)
+
+    @pytest.mark.parametrize("frequency", FREQUENCIES)
+    def test_it_is_the_projective_plane_cell_for_cell(self, frequency):
+        board = boy_board(frequency, 5)
+        projective = projective_board(frequency, 5)
+        assert board.adjacency == projective.adjacency
+        assert board.faces is None
+        assert board.two_sided
+        assert set(board.polygons) == set(board.adjacency)
+
+    @pytest.mark.parametrize("frequency", FREQUENCIES)
+    def test_no_two_vertices_are_drawn_at_one_point(self, frequency):
+        # The surface passes through itself along a curve, and the topology
+        # helpers key on rounded coordinates: two vertex classes landing on
+        # the same point there would read as one and lower chi. Read off the
+        # drawing, the board must come out the projective plane.
+        board = boy_board(frequency, 5)
+        _, cells = _boy_cells(frequency)
+        drawn = {}
+        for cell, keys in cells.items():
+            for key, point in zip(keys, board.polygons[cell]):
+                drawn.setdefault(tuple(round(c, 6) for c in point), set()).add(key)
+        assert all(len(keys) == 1 for keys in drawn.values())
+        assert _euler_characteristic(board) == 1
+        assert _boundary_components(board) == 0
+
+    def test_a_point_and_its_antipode_land_together(self):
+        for p in self._sphere_samples(2000):
+            q = _boy_point(tuple(-c for c in p))
+            assert _boy_point(p) == pytest.approx(q, abs=1e-12)
+
+    def test_it_is_an_immersion(self):
+        # Bryant--Kusner is conformal: at every point the two tangent
+        # directions are stretched alike and stay perpendicular, and neither
+        # stretch is zero, so there is no pinch or crease anywhere -- the
+        # self-intersection is the only thing it does to the plane.
+        h = 1e-6
+        for p in self._sphere_samples(4000):
+            a = _normalize(_cross(p, (1.0, 0.0, 0.0) if abs(p[0]) < 0.9
+                                  else (0.0, 1.0, 0.0)))
+            b = _cross(p, a)
+
+            def d(t):
+                ahead = _boy_point(_normalize(tuple(x + h * y for x, y in zip(p, t))))
+                behind = _boy_point(_normalize(tuple(x - h * y for x, y in zip(p, t))))
+                return [(u - v) / (2 * h) for u, v in zip(ahead, behind)]
+
+            da, db = d(a), d(b)
+            la, lb = math.hypot(*da), math.hypot(*db)
+            assert min(la, lb) > 0.05
+            assert la == pytest.approx(lb, rel=1e-4)
+            assert sum(x * y for x, y in zip(da, db)) == pytest.approx(
+                0, abs=1e-4 * la * lb)
+
+    @pytest.mark.parametrize("frequency", [3, 5, 9])
+    def test_the_cubes_three_fold_turn_is_the_surfaces(self, frequency):
+        # The cube's turn about (1, 1, 1) permutes the cells, and
+        # `_diagonal_up` makes it the surface's own turn about z: every
+        # vertex class is drawn where its turned class is, turned a third.
+        board = boy_board(frequency, 5)
+        _, cells = _boy_cells(frequency)
+        at = {}
+        for cell, keys in cells.items():
+            for key, point in zip(keys, board.polygons[cell]):
+                at[key] = point
+        cos, sin = -0.5, math.sqrt(3) / 2
+        for key, (x, y, z) in at.items():
+            turned = (key[2], key[0], key[1])
+            turned = min(turned, tuple(-c for c in turned))
+            tx, ty, tz = at[turned]
+            options = [(cos * x - s * y, s * x + cos * y, z) for s in (sin, -sin)]
+            assert any(
+                max(abs(u - v) for u, v in zip(o, (tx, ty, tz))) < 1e-9
+                for o in options
+            )
+
+    def test_boy_centre_is_measured(self):
+        """`BOY_CENTRE` is the minimax centre on the axis; find it again."""
+        points = [_boy_point(_diagonal_up(p)) for p in self._sphere_samples(20000)]
+        points = [tuple(c + o for c, o in zip(p, BOY_CENTRE)) for p in points]
+        assert all(abs(p[0]) < 2 and abs(p[1]) < 2 for p in points)
+
+        def farthest(c):
+            return max(math.sqrt(x * x + y * y + (z - c) ** 2) for x, y, z in points)
+
+        lo, hi = -1.2, -0.3
+        for _ in range(40):
+            a, b = lo + (hi - lo) / 3, hi - (hi - lo) / 3
+            lo, hi = (lo, b) if farthest(a) < farthest(b) else (a, hi)
+        assert BOY_CENTRE[2] == pytest.approx(lo, abs=2e-3)
+
+
+def _boy_cells(frequency):
+    """The cubed sphere's cells as `boy_board` names them: the lesser twin's
+    id, its corners as vertex classes in drawing order."""
+    sphere_cells, _ = _cubed_sphere(frequency)
+    return _antipodal_quotient(sphere_cells, _negate)

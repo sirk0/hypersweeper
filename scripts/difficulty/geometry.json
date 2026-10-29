@@ -21,6 +21,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.1528,
+        "fair": true,
         "aspect": 1.0,
         "fill": 1.0
       },
@@ -43,6 +44,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.1612,
+        "fair": true,
         "aspect": 1.0,
         "fill": 1.0
       },
@@ -65,6 +67,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.1978,
+        "fair": true,
         "aspect": 1.0,
         "fill": 1.0
       }
@@ -76,68 +79,71 @@
       "easy": {
         "args": [
           "basketweave3",
-          2.5,
-          2.5,
-          6,
-          84.0,
-          [
-            0.5,
-            0.5
-          ]
-        ],
-        "cells": 75,
-        "score": 0.2357,
-        "distortionMean": 1.4708,
-        "distortionP90": 1.5396,
-        "indistinguishable": 0,
-        "symmetries": 4,
-        "density": 0.08,
-        "aspect": 1.0,
-        "fill": 1.0
-      },
-      "medium": {
-        "args": [
-          "basketweave3",
-          4.5,
-          4.194,
-          21,
-          48.0,
+          2.806,
+          2.806,
+          12,
+          74.118,
           [
             0.5,
             1.5
           ]
         ],
-        "cells": 235,
-        "score": 0.2565,
-        "distortionMean": 1.4685,
+        "cells": 85,
+        "score": 0.4025,
+        "distortionMean": 1.4789,
         "distortionP90": 1.5396,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.1191,
+        "density": 0.1647,
+        "fair": true,
         "aspect": 1.0,
-        "fill": 0.9671
+        "fill": 0.8824
       },
-      "hard": {
+      "medium": {
         "args": [
           "basketweave3",
-          6.194,
-          6.5,
-          64,
-          34.615,
+          4.806,
+          4.806,
+          48,
+          44.69,
           [
             0.5,
             0.5
           ]
         ],
-        "cells": 495,
-        "score": 0.1827,
-        "distortionMean": 1.4692,
+        "cells": 261,
+        "score": 0.2662,
+        "distortionMean": 1.4756,
         "distortionP90": 1.5396,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.1798,
+        "density": 0.1839,
+        "fair": true,
         "aspect": 1.0,
-        "fill": 0.9763
+        "fill": 0.931
+      },
+      "hard": {
+        "args": [
+          "basketweave3",
+          6.194,
+          6.194,
+          82,
+          34.615,
+          [
+            0.5,
+            1.5
+          ]
+        ],
+        "cells": 481,
+        "score": 0.2113,
+        "distortionMean": 1.4671,
+        "distortionP90": 1.5396,
+        "indistinguishable": 0,
+        "symmetries": 4,
+        "density": 0.1954,
+        "fair": true,
+        "aspect": 1.0,
+        "fill": 0.9487
       }
     }
   },
@@ -197,6 +203,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.15,
+        "fair": true,
         "aspect": 1.0,
         "fill": 0.8
       },
@@ -205,29 +212,26 @@
           "cairo",
           8.0,
           8.0,
-          24,
-          28.559,
-          [
-            0.0,
-            0.482963
-          ]
+          34,
+          28.559
         ],
-        "cells": 256,
-        "score": 0.2083,
+        "cells": 252,
+        "score": 0.2555,
         "distortionMean": 1.0273,
         "distortionP90": 1.0273,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.1289,
+        "density": 0.1349,
+        "fair": true,
         "aspect": 1.0,
-        "fill": 0.9492
+        "fill": 0.9344
       },
       "hard": {
         "args": [
           "cairo",
           11.0,
           11.0,
-          81,
+          86,
           21.226,
           [
             0.965925,
@@ -241,6 +245,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.1777,
+        "fair": true,
         "aspect": 1.0,
         "fill": 0.9627
       }
@@ -464,10 +469,10 @@
           1.5,
           7
         ],
-        "cells": 90,
-        "score": 0.1807,
-        "distortionMean": 1.471,
-        "distortionP90": 1.5524,
+        "cells": 80,
+        "score": 0.0933,
+        "distortionMean": 1.4647,
+        "distortionP90": 1.5571,
         "indistinguishable": 0,
         "facetStep": 0.0
       },
@@ -478,10 +483,10 @@
           2.5,
           29
         ],
-        "cells": 240,
-        "score": 0.0883,
-        "distortionMean": 1.4709,
-        "distortionP90": 1.5446,
+        "cells": 224,
+        "score": 0.1608,
+        "distortionMean": 1.4665,
+        "distortionP90": 1.5464,
         "indistinguishable": 0,
         "facetStep": 0.0
       },
@@ -492,10 +497,10 @@
           3.5,
           73
         ],
-        "cells": 462,
-        "score": 0.0396,
-        "distortionMean": 1.4709,
-        "distortionP90": 1.5422,
+        "cells": 440,
+        "score": 0.0909,
+        "distortionMean": 1.4676,
+        "distortionP90": 1.5432,
         "indistinguishable": 0,
         "facetStep": 0.0
       }
@@ -809,15 +814,16 @@
       "easy": {
         "args": [
           "kisrhombille",
-          6,
+          9,
           0.5,
-          6
+          5
         ],
         "cells": 72,
-        "score": 1.3923,
-        "distortionMean": 1.2406,
-        "distortionP90": 1.2458,
-        "indistinguishable": 0
+        "score": 1.5547,
+        "distortionMean": 1.2428,
+        "distortionP90": 1.2448,
+        "indistinguishable": 0,
+        "facetStep": 0.0114
       },
       "medium": {
         "args": [
@@ -826,24 +832,26 @@
           1.5,
           17
         ],
-        "cells": 288,
-        "score": 0.4682,
-        "distortionMean": 1.242,
+        "cells": 256,
+        "score": 0.026,
+        "distortionMean": 1.2422,
         "distortionP90": 1.245,
-        "indistinguishable": 0
+        "indistinguishable": 0,
+        "facetStep": 0.0144
       },
       "hard": {
         "args": [
           "kisrhombille",
-          10,
+          11,
           2.0,
           52
         ],
-        "cells": 480,
-        "score": 0.4283,
-        "distortionMean": 1.2428,
-        "distortionP90": 1.2447,
-        "indistinguishable": 0
+        "cells": 484,
+        "score": 0.0222,
+        "distortionMean": 1.243,
+        "distortionP90": 1.2445,
+        "indistinguishable": 0,
+        "facetStep": 0.0076
       }
     }
   },
@@ -1029,41 +1037,44 @@
       "easy": {
         "args": [
           "rhombitrihex",
-          6,
+          7,
           1.166667,
-          5
+          6
         ],
         "cells": 84,
-        "score": 0.116,
-        "distortionMean": 1.005,
-        "distortionP90": 1.0139,
-        "indistinguishable": 0
+        "score": 0.163,
+        "distortionMean": 1.0043,
+        "distortionP90": 1.0102,
+        "indistinguishable": 0,
+        "facetStep": 0.0267
       },
       "medium": {
         "args": [
           "rhombitrihex",
           11,
           2.166667,
-          21
+          23
         ],
-        "cells": 286,
-        "score": 0.1975,
-        "distortionMean": 1.0014,
+        "cells": 264,
+        "score": 0.1176,
+        "distortionMean": 1.0015,
         "distortionP90": 1.0041,
-        "indistinguishable": 0
+        "indistinguishable": 0,
+        "facetStep": 0.0109
       },
       "hard": {
         "args": [
           "rhombitrihex",
           15,
           2.666667,
-          59
+          60
         ],
-        "cells": 480,
-        "score": 0.0417,
+        "cells": 450,
+        "score": 0.1063,
         "distortionMean": 1.0008,
         "distortionP90": 1.0022,
-        "indistinguishable": 0
+        "indistinguishable": 0,
+        "facetStep": 0.0059
       }
     }
   },
@@ -1642,41 +1653,44 @@
       "easy": {
         "args": [
           "trunctrihex",
-          5,
+          6,
           1.416667,
-          7
+          6
         ],
-        "cells": 80,
-        "score": 0.5565,
-        "distortionMean": 1.0092,
-        "distortionP90": 1.0314,
-        "indistinguishable": 0
+        "cells": 84,
+        "score": 0.3544,
+        "distortionMean": 1.0066,
+        "distortionP90": 1.0216,
+        "indistinguishable": 0,
+        "facetStep": 0.0779
       },
       "medium": {
         "args": [
           "trunctrihex",
-          11,
+          12,
           1.916667,
-          32
+          21
         ],
-        "cells": 242,
-        "score": 0.1252,
-        "distortionMean": 1.0018,
-        "distortionP90": 1.0064,
-        "indistinguishable": 0
+        "cells": 240,
+        "score": 0.2371,
+        "distortionMean": 1.0016,
+        "distortionP90": 1.0053,
+        "indistinguishable": 0,
+        "facetStep": 0.0197
       },
       "hard": {
         "args": [
           "trunctrihex",
           15,
           2.916667,
-          58
+          71
         ],
-        "cells": 510,
-        "score": 0.131,
+        "cells": 480,
+        "score": 0.0704,
         "distortionMean": 1.001,
         "distortionP90": 1.0034,
-        "indistinguishable": 0
+        "indistinguishable": 0,
+        "facetStep": 0.0126
       }
     }
   },
@@ -1692,12 +1706,13 @@
           49.692
         ],
         "cells": 76,
-        "score": 0.4091,
+        "score": 0.4634,
         "distortionMean": 1.0774,
         "distortionP90": 1.0774,
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.0789,
+        "fair": true,
         "aspect": 1.0104,
         "fill": 0.9048
       },
@@ -1720,30 +1735,28 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.1325,
+        "fair": true,
         "aspect": 1.0104,
         "fill": 0.9286
       },
       "hard": {
         "args": [
           "deltoidal",
-          8.188,
+          8.812,
           5.0,
           84,
-          20.212,
-          [
-            0.0,
-            2.366025
-          ]
+          19.089
         ],
-        "cells": 490,
-        "score": 0.3852,
+        "cells": 530,
+        "score": 0.3944,
         "distortionMean": 1.0774,
         "distortionP90": 1.0774,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.1612,
-        "aspect": 1.0189,
-        "fill": 0.9608
+        "density": 0.1792,
+        "fair": true,
+        "aspect": 1.0392,
+        "fill": 0.9815
       }
     }
   },
@@ -1754,30 +1767,31 @@
         "args": [
           "elongated",
           6.5,
-          1.789,
-          5,
+          2.211,
+          9,
           65.143,
           [
             0.0,
             0.0
           ]
         ],
-        "cells": 72,
-        "score": 0.6649,
+        "cells": 84,
+        "score": 1.1032,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.0972,
-        "aspect": 1.0829,
-        "fill": 0.9396
+        "density": 0.1071,
+        "fair": true,
+        "aspect": 1.2092,
+        "fill": 0.9201
       },
       "medium": {
         "args": [
           "elongated",
           13.5,
           3.5,
-          26,
+          30,
           33.786,
           [
             0.0,
@@ -1791,6 +1805,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.1596,
+        "fair": true,
         "aspect": 1.0052,
         "fill": 0.8995
       },
@@ -1798,19 +1813,24 @@
         "args": [
           "elongated",
           17.5,
-          4.789,
-          92,
-          25.0
+          4.5,
+          101,
+          25.0,
+          [
+            0.0,
+            0.0
+          ]
         ],
-        "cells": 507,
-        "score": 0.2945,
+        "cells": 474,
+        "score": 0.3433,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.1893,
+        "density": 0.2068,
+        "fair": true,
         "aspect": 1.0192,
-        "fill": 0.9706
+        "fill": 0.9275
       }
     }
   },
@@ -1836,6 +1856,7 @@
         "indistinguishable": 0,
         "symmetries": 2,
         "density": 0.1184,
+        "fair": true,
         "aspect": 1.0161,
         "fill": 0.8464
       },
@@ -1858,6 +1879,7 @@
         "indistinguishable": 0,
         "symmetries": 2,
         "density": 0.1423,
+        "fair": true,
         "aspect": 1.0438,
         "fill": 0.9272
       },
@@ -1876,6 +1898,7 @@
         "indistinguishable": 0,
         "symmetries": 2,
         "density": 0.1646,
+        "fair": true,
         "aspect": 1.0104,
         "fill": 0.9217
       }
@@ -1928,46 +1951,44 @@
       "easy": {
         "args": [
           "herringbone",
-          3.375,
           3.125,
+          3.375,
           11,
-          70.428,
+          75.846,
           [
-            0.0,
-            1.75
+            0.25,
+            1.5
           ]
         ],
-        "cells": 84,
-        "score": 0.7008,
+        "cells": 83,
+        "score": 0.7128,
         "distortionMean": 1.299,
         "distortionP90": 1.299,
         "indistinguishable": 0,
         "symmetries": 2,
-        "density": 0.1548,
+        "density": 0.1687,
+        "fair": true,
         "aspect": 1.0769,
-        "fill": 0.9231
+        "fill": 0.9121
       },
       "medium": {
         "args": [
           "herringbone",
-          5.875,
           5.625,
+          5.875,
           42,
-          41.125,
-          [
-            0.0,
-            0.75
-          ]
+          42.913
         ],
-        "cells": 265,
-        "score": 0.4941,
+        "cells": 263,
+        "score": 0.5017,
         "distortionMean": 1.299,
         "distortionP90": 1.299,
         "indistinguishable": 0,
         "symmetries": 2,
-        "density": 0.1774,
+        "density": 0.1825,
+        "fair": true,
         "aspect": 1.0435,
-        "fill": 0.9601
+        "fill": 0.9529
       },
       "hard": {
         "args": [
@@ -1988,6 +2009,7 @@
         "indistinguishable": 0,
         "symmetries": 2,
         "density": 0.2104,
+        "fair": true,
         "aspect": 1.0323,
         "fill": 0.9677
       }
@@ -2172,60 +2194,63 @@
       "easy": {
         "args": [
           "kisrhombille",
-          2.583,
+          3.0,
           1.333,
-          5,
+          7,
           28.0
         ],
-        "cells": 88,
-        "score": 1.4006,
+        "cells": 80,
+        "score": 1.5275,
         "distortionMean": 1.244,
         "distortionP90": 1.244,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.0568,
-        "aspect": 1.1547,
-        "fill": 0.8148
+        "density": 0.1,
+        "fair": true,
+        "aspect": 1.299,
+        "fill": 0.8333
       },
       "medium": {
         "args": [
           "kisrhombille",
-          4.0,
-          2.333,
-          21,
-          22.5
+          4.417,
+          2.806,
+          30,
+          18.0
         ],
-        "cells": 224,
-        "score": 0.6927,
+        "cells": 280,
+        "score": 0.8501,
         "distortionMean": 1.244,
         "distortionP90": 1.244,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.1205,
-        "aspect": 1.0825,
-        "fill": 0.9333
+        "density": 0.0964,
+        "fair": true,
+        "aspect": 1.0392,
+        "fill": 0.7778
       },
       "hard": {
         "args": [
           "kisrhombille",
           6.0,
           3.333,
-          50,
+          73,
           15.167,
           [
             0.0,
             4.098076
           ]
         ],
-        "cells": 480,
-        "score": 0.2939,
+        "cells": 444,
+        "score": 0.4918,
         "distortionMean": 1.244,
         "distortionP90": 1.244,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.1125,
-        "aspect": 1.0104,
-        "fill": 0.9524
+        "density": 0.1441,
+        "fair": true,
+        "aspect": 1.0392,
+        "fill": 0.925
       }
     }
   },
@@ -3427,42 +3452,42 @@
       "easy": {
         "args": [
           "basketweave3",
-          13,
-          1,
+          15,
+          1.0,
           6
         ],
-        "cells": 78,
-        "score": 1.3053,
-        "distortionMean": 1.7263,
-        "distortionP90": 2.463,
+        "cells": 75,
+        "score": 1.4094,
+        "distortionMean": 1.5852,
+        "distortionP90": 2.359,
         "indistinguishable": 0,
         "facetStep": 0.0
       },
       "medium": {
         "args": [
           "basketweave3",
-          15,
-          3,
+          17,
+          3.0,
           31
         ],
-        "cells": 270,
-        "score": 0.775,
-        "distortionMean": 1.7449,
-        "distortionP90": 2.6779,
+        "cells": 289,
+        "score": 0.6391,
+        "distortionMean": 1.6925,
+        "distortionP90": 2.5566,
         "indistinguishable": 0,
         "facetStep": 0.0
       },
       "hard": {
         "args": [
           "basketweave3",
-          21,
-          4,
+          23,
+          4.0,
           86
         ],
-        "cells": 504,
-        "score": 0.6953,
-        "distortionMean": 1.7341,
-        "distortionP90": 2.6225,
+        "cells": 529,
+        "score": 0.6017,
+        "distortionMean": 1.6972,
+        "distortionP90": 2.5635,
         "indistinguishable": 0,
         "facetStep": 0.0
       }
@@ -3647,44 +3672,47 @@
   "mobiuskisrhombille": {
     "builder": "arch_mobius_board",
     "args": {
+      "medium": {
+        "args": [
+          "kisrhombille",
+          11,
+          1.0,
+          15
+        ],
+        "cells": 220,
+        "score": 1.3507,
+        "distortionMean": 1.4466,
+        "distortionP90": 1.8693,
+        "indistinguishable": 0,
+        "facetStep": 0.0076
+      },
       "easy": {
         "args": [
           "kisrhombille",
           6,
-          1,
+          1.0,
           7
         ],
-        "cells": 144,
-        "score": 13.6526,
-        "distortionMean": 1.5439,
-        "distortionP90": 2.1165,
-        "indistinguishable": 0
-      },
-      "medium": {
-        "args": [
-          "kisrhombille",
-          10,
-          1,
-          18
-        ],
-        "cells": 240,
-        "score": 1.5488,
-        "distortionMean": 1.5123,
-        "distortionP90": 1.9755,
-        "indistinguishable": 0
+        "cells": 120,
+        "score": 12.7015,
+        "distortionMean": 1.4818,
+        "distortionP90": 1.9716,
+        "indistinguishable": 0,
+        "facetStep": 0.0255
       },
       "hard": {
         "args": [
           "kisrhombille",
           11,
-          2,
-          48
+          2.0,
+          52
         ],
-        "cells": 528,
-        "score": 0.8942,
-        "distortionMean": 1.5238,
-        "distortionP90": 2.0743,
-        "indistinguishable": 0
+        "cells": 484,
+        "score": 0.4465,
+        "distortionMean": 1.4933,
+        "distortionP90": 2.0215,
+        "indistinguishable": 0,
+        "facetStep": 0.0076
       }
     }
   },
@@ -3826,41 +3854,44 @@
       "easy": {
         "args": [
           "rhombitrihex",
-          6,
-          1.1666666666666667,
-          5
+          7,
+          1.166667,
+          6
         ],
         "cells": 84,
-        "score": 0.4648,
-        "distortionMean": 1.216,
-        "distortionP90": 1.3913,
-        "indistinguishable": 0
+        "score": 0.5078,
+        "distortionMean": 1.2164,
+        "distortionP90": 1.3726,
+        "indistinguishable": 0,
+        "facetStep": 0.0267
       },
       "medium": {
         "args": [
           "rhombitrihex",
           11,
-          2.1666666666666665,
-          22
+          2.166667,
+          21
         ],
-        "cells": 286,
-        "score": 0.5492,
-        "distortionMean": 1.2085,
-        "distortionP90": 1.3932,
-        "indistinguishable": 0
+        "cells": 264,
+        "score": 0.4728,
+        "distortionMean": 1.2127,
+        "distortionP90": 1.3937,
+        "indistinguishable": 0,
+        "facetStep": 0.0109
       },
       "hard": {
         "args": [
           "rhombitrihex",
-          14,
-          3.1666666666666665,
+          15,
+          3.166667,
           68
         ],
-        "cells": 532,
-        "score": 0.7185,
-        "distortionMean": 1.2136,
-        "distortionP90": 1.4131,
-        "indistinguishable": 0
+        "cells": 540,
+        "score": 0.6495,
+        "distortionMean": 1.2129,
+        "distortionP90": 1.4114,
+        "indistinguishable": 0,
+        "facetStep": 0.0059
       }
     }
   },
@@ -4313,41 +4344,44 @@
       "easy": {
         "args": [
           "trunctrihex",
-          5,
-          1.4166666666666667,
-          8
+          6,
+          1.416667,
+          5
         ],
-        "cells": 80,
-        "score": 0.9965,
-        "distortionMean": 1.2936,
-        "distortionP90": 1.5132,
-        "indistinguishable": 0
+        "cells": 84,
+        "score": 0.6942,
+        "distortionMean": 1.2139,
+        "distortionP90": 1.3864,
+        "indistinguishable": 0,
+        "facetStep": 0.0779
       },
       "medium": {
         "args": [
           "trunctrihex",
-          10,
-          2.4166666666666665,
-          31
+          11,
+          2.416667,
+          27
         ],
-        "cells": 280,
-        "score": 0.8038,
-        "distortionMean": 1.2189,
-        "distortionP90": 1.4552,
-        "indistinguishable": 0
+        "cells": 286,
+        "score": 0.6809,
+        "distortionMean": 1.2095,
+        "distortionP90": 1.3928,
+        "indistinguishable": 0,
+        "facetStep": 0.0234
       },
       "hard": {
         "args": [
           "trunctrihex",
-          15,
-          2.4166666666666665,
-          83
+          16,
+          2.416667,
+          54
         ],
-        "cells": 420,
-        "score": 0.631,
-        "distortionMean": 1.2027,
-        "distortionP90": 1.3633,
-        "indistinguishable": 0
+        "cells": 416,
+        "score": 0.7037,
+        "distortionMean": 1.1988,
+        "distortionP90": 1.3333,
+        "indistinguishable": 0,
+        "facetStep": 0.0111
       }
     }
   },
@@ -4373,6 +4407,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.1579,
+        "fair": true,
         "aspect": 1.0,
         "fill": 0.9383
       },
@@ -4395,6 +4430,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.1857,
+        "fair": true,
         "aspect": 1.0,
         "fill": 0.9689
       },
@@ -4417,6 +4453,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.2085,
+        "fair": true,
         "aspect": 1.0,
         "fill": 0.9792
       }
@@ -4566,17 +4603,22 @@
           8.5,
           2.5,
           10,
-          50.667
+          50.667,
+          [
+            0.0,
+            0.0
+          ]
         ],
-        "cells": 84,
-        "score": 0.6052,
+        "cells": 82,
+        "score": 0.6293,
         "distortionMean": 1.0273,
         "distortionP90": 1.0273,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.119,
+        "density": 0.1463,
+        "fair": true,
         "aspect": 1.0688,
-        "fill": 0.9053
+        "fill": 0.8838
       },
       "medium": {
         "args": [
@@ -4593,6 +4635,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.1767,
+        "fair": true,
         "aspect": 1.0048,
         "fill": 0.9667
       },
@@ -4611,6 +4654,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.2171,
+        "fair": true,
         "aspect": 1.0178,
         "fill": 0.9773
       }
@@ -4624,7 +4668,7 @@
           "pythagorean",
           2.9,
           2.9,
-          6,
+          8,
           65.066,
           [
             0.25,
@@ -4638,6 +4682,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.1176,
+        "fair": true,
         "aspect": 1.0,
         "fill": 0.9111
       },
@@ -4656,6 +4701,7 @@
         "indistinguishable": 0,
         "symmetries": 2,
         "density": 0.1325,
+        "fair": true,
         "aspect": 1.0,
         "fill": 0.9231
       },
@@ -4678,6 +4724,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.1551,
+        "fair": true,
         "aspect": 1.0,
         "fill": 0.9576
       }
@@ -4692,53 +4739,68 @@
           4.75,
           2.75,
           5,
-          48.0
+          48.0,
+          [
+            0.0,
+            1.732051
+          ]
         ],
-        "cells": 82,
-        "score": 0.4563,
+        "cells": 79,
+        "score": 1.5962,
         "distortionMean": 1.1547,
         "distortionP90": 1.1547,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.0732,
+        "density": 0.0759,
+        "fair": false,
         "aspect": 1.0392,
-        "fill": 0.9111
+        "fill": 0.8778
       },
       "medium": {
         "args": [
           "rhombille",
-          8.75,
-          5.25,
+          8.25,
+          4.75,
           7,
-          26.667
+          26.667,
+          [
+            0.0,
+            0.0
+          ]
         ],
-        "cells": 274,
-        "score": 0.3786,
+        "cells": 232,
+        "score": 0.8519,
         "distortionMean": 1.1547,
         "distortionP90": 1.1547,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.0365,
-        "aspect": 1.0264,
-        "fill": 0.9514
+        "density": 0.0302,
+        "fair": true,
+        "aspect": 1.0392,
+        "fill": 0.8593
       },
       "hard": {
         "args": [
           "rhombille",
           11.75,
           6.75,
-          18,
-          18.333
+          19,
+          18.333,
+          [
+            0.0,
+            1.732051
+          ]
         ],
-        "cells": 486,
-        "score": 0.2304,
+        "cells": 481,
+        "score": 0.2407,
         "distortionMean": 1.1547,
         "distortionP90": 1.1547,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.0432,
+        "density": 0.0457,
+        "fair": true,
         "aspect": 1.0104,
-        "fill": 0.9643
+        "fill": 0.9544
       }
     }
   },
@@ -4748,64 +4810,67 @@
       "easy": {
         "args": [
           "rhombitrihex",
-          3.25,
+          3.75,
           2.167,
-          6,
+          8,
           48.457,
           [
             0.0,
             2.366025
           ]
         ],
-        "cells": 87,
-        "score": 1.0328,
+        "cells": 81,
+        "score": 1.0643,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.0805,
+        "density": 0.0988,
+        "fair": true,
         "aspect": 1.1547,
-        "fill": 0.8776
+        "fill": 0.8249
       },
       "medium": {
         "args": [
           "rhombitrihex",
           6.25,
           3.583,
-          24,
+          28,
           26.53
         ],
-        "cells": 279,
-        "score": 0.4016,
+        "cells": 275,
+        "score": 0.3988,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.1075,
+        "density": 0.1091,
+        "fair": true,
         "aspect": 1.0109,
-        "fill": 0.9194
+        "fill": 0.9141
       },
       "hard": {
         "args": [
           "rhombitrihex",
           8.25,
           4.583,
-          69,
+          78,
           19.979,
           [
             0.0,
             2.366025
           ]
         ],
-        "cells": 467,
-        "score": 0.421,
+        "cells": 463,
+        "score": 0.4365,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.1499,
+        "density": 0.1577,
+        "fair": true,
         "aspect": 1.041,
-        "fill": 0.9375
+        "fill": 0.9343
       }
     }
   },
@@ -4824,15 +4889,16 @@
             2.341874
           ]
         ],
-        "cells": 80,
-        "score": 0.672,
-        "distortionMean": 1.029,
+        "cells": 78,
+        "score": 0.8376,
+        "distortionMean": 1.0278,
         "distortionP90": 1.0774,
         "indistinguishable": 0,
         "symmetries": 2,
-        "density": 0.05,
+        "density": 0.0513,
+        "fair": true,
         "aspect": 1.0335,
-        "fill": 0.8523
+        "fill": 0.7991
       },
       "medium": {
         "args": [
@@ -4853,6 +4919,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.0612,
+        "fair": true,
         "aspect": 1.0361,
         "fill": 0.9128
       },
@@ -4860,7 +4927,7 @@
         "args": [
           "rotatedhex",
           12.0,
-          6.667,
+          7.0,
           40,
           21.137,
           [
@@ -4868,15 +4935,16 @@
             2.341874
           ]
         ],
-        "cells": 480,
-        "score": 0.4268,
-        "distortionMean": 1.0271,
+        "cells": 504,
+        "score": 0.4645,
+        "distortionMean": 1.0258,
         "distortionP90": 1.0774,
         "indistinguishable": 0,
         "symmetries": 2,
-        "density": 0.0729,
+        "density": 0.0734,
+        "fair": true,
         "aspect": 1.0205,
-        "fill": 0.9335
+        "fill": 0.9387
       }
     }
   },
@@ -4902,6 +4970,7 @@
         "indistinguishable": 0,
         "symmetries": 2,
         "density": 0.15,
+        "fair": true,
         "aspect": 1.0561,
         "fill": 0.865
       },
@@ -4924,6 +4993,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.1789,
+        "fair": true,
         "aspect": 1.0057,
         "fill": 0.8907
       },
@@ -4942,6 +5012,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.2104,
+        "fair": true,
         "aspect": 1.0007,
         "fill": 0.9431
       }
@@ -4969,6 +5040,7 @@
         "indistinguishable": 0,
         "symmetries": 8,
         "density": 0.1429,
+        "fair": true,
         "aspect": 1.0769,
         "fill": 0.9231
       },
@@ -4991,6 +5063,7 @@
         "indistinguishable": 0,
         "symmetries": 8,
         "density": 0.1667,
+        "fair": true,
         "aspect": 1.0435,
         "fill": 0.9565
       },
@@ -5013,6 +5086,7 @@
         "indistinguishable": 0,
         "symmetries": 8,
         "density": 0.2125,
+        "fair": true,
         "aspect": 1.0323,
         "fill": 0.9677
       }
@@ -5024,24 +5098,25 @@
       "easy": {
         "args": [
           "snubhex",
-          3.0,
-          1.714,
+          3.143,
+          1.548,
           8,
           45.872,
           [
             1.133893,
-            1.309308
+            3.600595
           ]
         ],
-        "cells": 90,
-        "score": 0.7122,
+        "cells": 84,
+        "score": 0.7249,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 2,
-        "density": 0.1222,
+        "density": 0.1548,
+        "fair": true,
         "aspect": 1.005,
-        "fill": 0.8274
+        "fill": 0.7943
       },
       "medium": {
         "args": [
@@ -5052,40 +5127,42 @@
           35.2,
           [
             1.133893,
-            3.600595
+            1.309308
           ]
         ],
-        "cells": 256,
-        "score": 0.4887,
+        "cells": 252,
+        "score": 0.5243,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 2,
-        "density": 0.1328,
+        "density": 0.1508,
+        "fair": true,
         "aspect": 1.007,
-        "fill": 0.8812
+        "fill": 0.8726
       },
       "hard": {
         "args": [
           "snubhex",
-          6.714,
+          6.857,
           4.071,
-          104,
+          109,
           25.418,
           [
             1.133893,
             3.600595
           ]
         ],
-        "cells": 502,
-        "score": 0.4694,
+        "cells": 506,
+        "score": 0.4672,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 2,
-        "density": 0.1873,
+        "density": 0.1957,
+        "fair": true,
         "aspect": 1.0118,
-        "fill": 0.9186
+        "fill": 0.9233
       }
     }
   },
@@ -5107,6 +5184,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.1507,
+        "fair": true,
         "aspect": 1.0,
         "fill": 0.929
       },
@@ -5123,12 +5201,13 @@
           ]
         ],
         "cells": 253,
-        "score": 0.1965,
+        "score": 0.199,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.1621,
+        "fair": true,
         "aspect": 1.0,
         "fill": 0.9604
       },
@@ -5151,6 +5230,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.2237,
+        "fair": true,
         "aspect": 1.0,
         "fill": 0.9726
       }
@@ -5346,6 +5426,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.0972,
+        "fair": true,
         "aspect": 1.0,
         "fill": 1.0
       },
@@ -5368,6 +5449,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.1694,
+        "fair": true,
         "aspect": 1.0,
         "fill": 1.0
       },
@@ -5390,6 +5472,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.1978,
+        "fair": true,
         "aspect": 1.0,
         "fill": 1.0
       }
@@ -5417,6 +5500,7 @@
         "indistinguishable": 0,
         "symmetries": 2,
         "density": 0.1786,
+        "fair": true,
         "aspect": 1.0722,
         "fill": 0.9231
       },
@@ -5439,6 +5523,7 @@
         "indistinguishable": 0,
         "symmetries": 2,
         "density": 0.1875,
+        "fair": true,
         "aspect": 1.0104,
         "fill": 0.9524
       },
@@ -5461,6 +5546,7 @@
         "indistinguishable": 0,
         "symmetries": 2,
         "density": 0.2311,
+        "fair": true,
         "aspect": 1.0153,
         "fill": 0.9655
       }
@@ -5589,24 +5675,25 @@
       "easy": {
         "args": [
           "tetrakis",
-          4.667,
           5.0,
-          5,
+          4.667,
+          6,
           34.8,
           [
-            0.0,
-            1.207107
+            1.207107,
+            0.0
           ]
         ],
-        "cells": 90,
-        "score": 0.4201,
+        "cells": 80,
+        "score": 1.009,
         "distortionMean": 1.1217,
         "distortionP90": 1.1217,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.0778,
-        "aspect": 1.0,
-        "fill": 0.9
+        "density": 0.1,
+        "fair": true,
+        "aspect": 1.25,
+        "fill": 1.0
       },
       "medium": {
         "args": [
@@ -5623,6 +5710,7 @@
         "indistinguishable": 0,
         "symmetries": 8,
         "density": 0.1055,
+        "fair": true,
         "aspect": 1.0,
         "fill": 1.0
       },
@@ -5631,7 +5719,7 @@
           "tetrakis",
           11.0,
           11.0,
-          59,
+          69,
           19.21,
           [
             1.207107,
@@ -5645,6 +5733,7 @@
         "indistinguishable": 0,
         "symmetries": 8,
         "density": 0.1405,
+        "fair": true,
         "aspect": 1.0,
         "fill": 1.0
       }
@@ -5662,28 +5751,34 @@
           77.817
         ],
         "cells": 85,
-        "score": 1.3675,
+        "score": 1.4714,
         "distortionMean": 1.1824,
         "distortionP90": 1.5,
         "indistinguishable": 0,
+        "symmetries": 4,
+        "density": 0.1412,
+        "fair": true,
         "aspect": 1.2441,
         "fill": 0.8003
       },
       "medium": {
         "args": [
           "threescaletri",
-          8,
+          9,
           5,
           45,
-          40.929
+          36.865
         ],
-        "cells": 263,
-        "score": 0.5798,
-        "distortionMean": 1.1768,
+        "cells": 291,
+        "score": 0.6313,
+        "distortionMean": 1.1735,
         "distortionP90": 1.5,
         "indistinguishable": 0,
-        "aspect": 1.0774,
-        "fill": 0.8805
+        "symmetries": 4,
+        "density": 0.1684,
+        "fair": true,
+        "aspect": 1.0305,
+        "fill": 0.8697
       },
       "hard": {
         "args": [
@@ -5700,6 +5795,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.2142,
+        "fair": true,
         "aspect": 1.0127,
         "fill": 0.9145
       }
@@ -7152,12 +7248,13 @@
           ]
         ],
         "cells": 90,
-        "score": 0.6939,
+        "score": 1.6939,
         "distortionMean": 1.5476,
         "distortionP90": 1.5476,
         "indistinguishable": 82,
         "symmetries": 4,
         "density": 0.1333,
+        "fair": false,
         "aspect": 1.0104,
         "fill": 0.8036
       },
@@ -7174,12 +7271,13 @@
           ]
         ],
         "cells": 222,
-        "score": 0.5563,
+        "score": 1.5563,
         "distortionMean": 1.5476,
         "distortionP90": 1.5476,
         "indistinguishable": 222,
         "symmetries": 4,
         "density": 0.1622,
+        "fair": false,
         "aspect": 1.0392,
         "fill": 0.925
       },
@@ -7192,12 +7290,13 @@
           13.588
         ],
         "cells": 530,
-        "score": 0.3964,
+        "score": 1.3984,
         "distortionMean": 1.5476,
         "distortionP90": 1.5476,
         "indistinguishable": 512,
         "symmetries": 4,
         "density": 0.2,
+        "fair": false,
         "aspect": 1.0392,
         "fill": 0.9815
       }
@@ -7255,7 +7354,7 @@
           52.0
         ],
         "cells": 77,
-        "score": 0.2659,
+        "score": 0.3698,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
@@ -7270,7 +7369,7 @@
           34.0
         ],
         "cells": 252,
-        "score": 0.3361,
+        "score": 0.3996,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
@@ -7285,7 +7384,7 @@
           29.793
         ],
         "cells": 476,
-        "score": 0.1394,
+        "score": 0.1563,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
@@ -7312,6 +7411,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.1558,
+        "fair": true,
         "aspect": 1.0392,
         "fill": 0.8
       },
@@ -7319,19 +7419,24 @@
         "args": [
           "trihex",
           8.5,
-          5.5,
+          5.167,
           44,
-          26.667
+          26.667,
+          [
+            0.0,
+            1.732051
+          ]
         ],
-        "cells": 281,
-        "score": 0.5441,
+        "cells": 260,
+        "score": 0.5654,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.1637,
+        "density": 0.1962,
+        "fair": true,
         "aspect": 1.0585,
-        "fill": 0.9419
+        "fill": 0.8965
       },
       "hard": {
         "args": [
@@ -7348,6 +7453,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.2123,
+        "fair": true,
         "aspect": 1.0007,
         "fill": 0.9436
       }
@@ -7360,41 +7466,43 @@
         "args": [
           "trunchex",
           4.5,
-          2.833,
+          3.167,
           4,
           26.6
         ],
-        "cells": 77,
-        "score": 0.6132,
+        "cells": 85,
+        "score": 1.4122,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.0519,
-        "aspect": 1.0146,
-        "fill": 0.8184
+        "density": 0.0471,
+        "fair": true,
+        "aspect": 1.2392,
+        "fill": 0.8585
       },
       "medium": {
         "args": [
           "trunchex",
-          8.5,
+          9.5,
           5.167,
           13,
-          14.0,
+          12.6,
           [
             0.0,
             3.232051
           ]
         ],
-        "cells": 264,
-        "score": 0.5633,
+        "cells": 294,
+        "score": 0.5754,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.0606,
-        "aspect": 1.0734,
-        "fill": 0.9299
+        "density": 0.051,
+        "fair": true,
+        "aspect": 1.0352,
+        "fill": 0.9265
       },
       "hard": {
         "args": [
@@ -7402,21 +7510,18 @@
           12.5,
           7.167,
           38,
-          9.308,
-          [
-            0.0,
-            3.232051
-          ]
+          9.308
         ],
-        "cells": 538,
-        "score": 0.3597,
+        "cells": 537,
+        "score": 0.3678,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.0706,
+        "density": 0.0689,
+        "fair": true,
         "aspect": 1.0096,
-        "fill": 0.9495
+        "fill": 0.9448
       }
     }
   },
@@ -7428,18 +7533,19 @@
           "truncsquare",
           6.5,
           6.5,
-          7,
+          8,
           29.0
         ],
-        "cells": 85,
-        "score": 0.1414,
+        "cells": 81,
+        "score": 0.4262,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 8,
-        "density": 0.1176,
+        "density": 0.0988,
+        "fair": true,
         "aspect": 1.0,
-        "fill": 0.9545
+        "fill": 0.8869
       },
       "medium": {
         "args": [
@@ -7453,15 +7559,16 @@
             1.207107
           ]
         ],
-        "cells": 265,
-        "score": 0.1462,
+        "cells": 261,
+        "score": 0.1228,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 8,
-        "density": 0.1283,
+        "density": 0.1341,
+        "fair": true,
         "aspect": 1.0,
-        "fill": 0.9726
+        "fill": 0.9496
       },
       "hard": {
         "args": [
@@ -7475,15 +7582,16 @@
             1.207107
           ]
         ],
-        "cells": 481,
-        "score": 0.1108,
+        "cells": 477,
+        "score": 0.0749,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 8,
-        "density": 0.1622,
+        "density": 0.1761,
+        "fair": true,
         "aspect": 1.0,
-        "fill": 0.9792
+        "fill": 0.9663
       }
     }
   },
@@ -7505,6 +7613,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.1264,
+        "fair": true,
         "aspect": 1.1225,
         "fill": 0.8456
       },
@@ -7523,6 +7632,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.1203,
+        "fair": true,
         "aspect": 1.0107,
         "fill": 0.8971
       },
@@ -7534,15 +7644,16 @@
           83,
           11.25
         ],
-        "cells": 483,
-        "score": 0.4216,
+        "cells": 479,
+        "score": 0.431,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.1449,
+        "density": 0.1524,
+        "fair": true,
         "aspect": 1.0402,
-        "fill": 0.926
+        "fill": 0.9198
       }
     }
   },
@@ -8538,60 +8649,63 @@
       "easy": {
         "args": [
           "sphinxpairs",
-          4.333,
-          3.333,
-          5,
-          30.0
-        ],
-        "cells": 86,
-        "score": 1.0158,
-        "distortionMean": 1.8585,
-        "distortionP90": 1.8585,
-        "indistinguishable": 0,
-        "symmetries": 2,
-        "density": 0.1512,
-        "aspect": 1.0825,
-        "fill": 0.8063
-      },
-      "medium": {
-        "args": [
-          "sphinxpairs",
-          8.333,
-          5.0,
-          38,
-          17.778,
+          4.667,
+          3.0,
+          13,
+          28.236,
           [
             0.5,
             3.464102
           ]
         ],
-        "cells": 266,
-        "score": 0.5094,
+        "cells": 92,
+        "score": 0.8271,
         "distortionMean": 1.8585,
         "distortionP90": 1.8585,
         "indistinguishable": 0,
         "symmetries": 2,
-        "density": 0.1729,
-        "aspect": 1.0264,
-        "fill": 0.9236
+        "density": 0.1739,
+        "fair": true,
+        "aspect": 1.0189,
+        "fill": 0.8118
+      },
+      "medium": {
+        "args": [
+          "sphinxpairs",
+          8.333,
+          5.333,
+          48,
+          17.143
+        ],
+        "cells": 264,
+        "score": 0.5267,
+        "distortionMean": 1.8585,
+        "distortionP90": 1.8585,
+        "indistinguishable": 0,
+        "symmetries": 2,
+        "density": 0.1932,
+        "fair": true,
+        "aspect": 1.0104,
+        "fill": 0.8839
       },
       "hard": {
         "args": [
           "sphinxpairs",
           12.0,
-          7.0,
-          115,
+          7.333,
+          124,
           12.632
         ],
-        "cells": 528,
-        "score": 0.4322,
+        "cells": 526,
+        "score": 0.4288,
         "distortionMean": 1.8585,
         "distortionP90": 1.8585,
         "indistinguishable": 0,
         "symmetries": 2,
-        "density": 0.2235,
+        "density": 0.2357,
+        "fair": true,
         "aspect": 1.0028,
-        "fill": 0.9474
+        "fill": 0.9438
       }
     }
   },
@@ -8601,44 +8715,59 @@
       "easy": {
         "args": [
           "tromino",
-          6,
-          6,
-          8,
+          5.0,
+          6.0,
+          10,
           30.0
         ],
         "cells": 72,
-        "score": 0.9287,
+        "score": 1.9476,
         "distortionMean": 1.5821,
         "distortionP90": 1.5821,
-        "indistinguishable": 0
+        "indistinguishable": 0,
+        "symmetries": 2,
+        "density": 0.1389,
+        "fair": true,
+        "aspect": 1.5,
+        "fill": 1.0
       },
       "medium": {
         "args": [
           "tromino",
-          9,
-          13,
-          32,
+          9.0,
+          14.0,
+          47,
           17.143
         ],
         "cells": 280,
-        "score": 0.2276,
+        "score": 0.5735,
         "distortionMean": 1.5821,
         "distortionP90": 1.5821,
-        "indistinguishable": 0
+        "indistinguishable": 0,
+        "symmetries": 2,
+        "density": 0.1464,
+        "fair": true,
+        "aspect": 1.0714,
+        "fill": 1.0
       },
       "hard": {
         "args": [
           "tromino",
-          12,
-          18,
-          95,
+          12.0,
+          18.0,
+          92,
           14.0
         ],
         "cells": 432,
-        "score": 0.1054,
+        "score": 0.3133,
         "distortionMean": 1.5821,
         "distortionP90": 1.5821,
-        "indistinguishable": 0
+        "indistinguishable": 0,
+        "symmetries": 2,
+        "density": 0.213,
+        "fair": true,
+        "aspect": 1.0,
+        "fill": 1.0
       }
     }
   },
@@ -8660,6 +8789,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.1412,
+        "fair": true,
         "aspect": 1.0473,
         "fill": 0.8103
       },
@@ -8668,7 +8798,7 @@
           "durer",
           10.5,
           3.5,
-          41,
+          44,
           29.455,
           [
             0.5,
@@ -8682,6 +8812,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.1727,
+        "fair": true,
         "aspect": 1.0123,
         "fill": 0.919
       },
@@ -8704,6 +8835,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.2067,
+        "fair": true,
         "aspect": 1.0397,
         "fill": 0.9551
       }
@@ -9127,42 +9259,42 @@
         "args": [
           4,
           5,
-          10,
-          12,
-          300.0
+          11,
+          5,
+          299.419
         ],
         "cells": 81,
         "score": 0.0,
-        "distortionMean": 1.4034,
-        "distortionP90": 1.4114,
-        "indistinguishable": 0
-      },
-      "hard": {
-        "args": [
-          4,
-          5,
-          35,
-          95,
-          300.0
-        ],
-        "cells": 485,
-        "score": 0.0104,
-        "distortionMean": 1.4102,
-        "distortionP90": 1.4189,
+        "distortionMean": 1.4028,
+        "distortionP90": 1.4092,
         "indistinguishable": 0
       },
       "medium": {
         "args": [
           4,
           5,
-          20,
-          45,
-          300.397
+          23,
+          12,
+          299.662
         ],
-        "cells": 205,
-        "score": 10.6665,
-        "distortionMean": 1.4078,
-        "distortionP90": 1.4169,
+        "cells": 253,
+        "score": 0.0118,
+        "distortionMean": 1.4076,
+        "distortionP90": 1.4158,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          4,
+          5,
+          43,
+          38,
+          299.592
+        ],
+        "cells": 481,
+        "score": 0.0021,
+        "distortionMean": 1.4087,
+        "distortionP90": 1.4166,
         "indistinguishable": 0
       }
     }
@@ -9174,13 +9306,13 @@
         "args": [
           5,
           4,
-          10,
-          12,
-          300.0
+          11,
+          5,
+          298.833
         ],
-        "cells": 81,
-        "score": 0.0,
-        "distortionMean": 1.2454,
+        "cells": 91,
+        "score": 0.1164,
+        "distortionMean": 1.2456,
         "distortionP90": 1.2489,
         "indistinguishable": 0
       },
@@ -9188,26 +9320,26 @@
         "args": [
           5,
           4,
-          21,
-          45,
-          300.0
+          22,
+          16,
+          299.961
         ],
         "cells": 261,
         "score": 0.0193,
-        "distortionMean": 1.2482,
-        "distortionP90": 1.2514,
+        "distortionMean": 1.2483,
+        "distortionP90": 1.2516,
         "indistinguishable": 0
       },
       "hard": {
         "args": [
           5,
           4,
-          33,
-          95,
-          300.0
+          34,
+          48,
+          299.982
         ],
-        "cells": 471,
-        "score": 0.0189,
+        "cells": 481,
+        "score": 0.0021,
         "distortionMean": 1.2492,
         "distortionP90": 1.2521,
         "indistinguishable": 0
@@ -9267,9 +9399,9 @@
       "easy": {
         "args": [
           "dissectedtrunchex",
-          2.077,
+          2.26,
           1.272,
-          6,
+          8,
           50.718,
           [
             0.0,
@@ -9283,44 +9415,51 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.1,
+        "fair": true,
         "aspect": 1.0291,
         "fill": 0.8185
       },
       "medium": {
         "args": [
           "dissectedtrunchex",
-          3.923,
-          2.106,
-          30,
-          32.154
+          4.077,
+          2.272,
+          26,
+          28.355
         ],
-        "cells": 241,
-        "score": 0.4848,
+        "cells": 279,
+        "score": 0.7308,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.083,
-        "aspect": 1.0183,
-        "fill": 0.8834
+        "density": 0.1075,
+        "fair": true,
+        "aspect": 1.081,
+        "fill": 0.8917
       },
       "hard": {
         "args": [
           "dissectedtrunchex",
-          5.5,
+          5.26,
           3.106,
-          74,
-          22.438
+          76,
+          23.233,
+          [
+            0.0,
+            3.232051
+          ]
         ],
-        "cells": 511,
-        "score": 0.3731,
+        "cells": 480,
+        "score": 0.3894,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.1507,
-        "aspect": 1.0127,
-        "fill": 0.9249
+        "density": 0.1583,
+        "fair": true,
+        "aspect": 1.0225,
+        "fill": 0.9064
       }
     }
   },
@@ -9331,63 +9470,62 @@
         "args": [
           "dodecarhombitrihex",
           2.375,
-          1.417,
-          6,
+          1.583,
+          9,
           32.742,
           [
             2.732051,
             0.0
           ]
         ],
-        "cells": 75,
-        "score": 0.8847,
+        "cells": 81,
+        "score": 0.9102,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.08,
-        "aspect": 1.1109,
-        "fill": 0.8922
+        "density": 0.1111,
+        "fair": true,
+        "aspect": 1.1048,
+        "fill": 0.8156
       },
       "medium": {
         "args": [
           "dodecarhombitrihex",
           4.375,
           2.583,
-          21,
+          24,
           18.759
         ],
-        "cells": 279,
-        "score": 0.3801,
+        "cells": 255,
+        "score": 0.3639,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.0681,
+        "density": 0.0863,
+        "fair": true,
         "aspect": 1.0028,
-        "fill": 0.9144
+        "fill": 0.8848
       },
       "hard": {
         "args": [
           "dodecarhombitrihex",
           5.625,
           3.292,
-          53,
-          15.102,
-          [
-            2.732051,
-            0.0
-          ]
+          58,
+          15.102
         ],
-        "cells": 437,
-        "score": 0.3545,
+        "cells": 421,
+        "score": 0.4072,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.1167,
+        "density": 0.1306,
+        "fair": true,
         "aspect": 1.0107,
-        "fill": 0.9445
+        "fill": 0.9373
       }
     }
   },
@@ -9399,7 +9537,7 @@
           "trirhombitrihex",
           2.539,
           1.583,
-          8,
+          10,
           58.564
         ],
         "cells": 90,
@@ -9409,6 +9547,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.1778,
+        "fair": true,
         "aspect": 1.0327,
         "fill": 0.8233
       },
@@ -9417,7 +9556,7 @@
           "trirhombitrihex",
           4.461,
           2.728,
-          45,
+          47,
           37.914,
           [
             0.0,
@@ -9431,6 +9570,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.1556,
+        "fair": true,
         "aspect": 1.0423,
         "fill": 0.9071
       },
@@ -9439,7 +9579,7 @@
           "trirhombitrihex",
           6.317,
           3.728,
-          86,
+          94,
           26.483,
           [
             0.0,
@@ -9453,6 +9593,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.2261,
+        "fair": true,
         "aspect": 1.0109,
         "fill": 0.9297
       }
@@ -9890,47 +10031,49 @@
           "dissectedtrunchex2",
           1.289,
           2.134,
-          6,
-          68.345
+          7,
+          68.345,
+          [
+            0.0,
+            1.866025
+          ]
         ],
-        "cells": 79,
-        "score": 0.648,
+        "cells": 76,
+        "score": 0.6732,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.1013,
+        "density": 0.1316,
+        "fair": true,
         "aspect": 1.0,
-        "fill": 0.7714
+        "fill": 0.7817
       },
       "medium": {
         "args": [
           "dissectedtrunchex2",
           2.122,
           3.866,
-          28,
-          37.128,
-          [
-            0.0,
-            1.866025
-          ]
+          34,
+          37.128
         ],
-        "cells": 242,
-        "score": 0.3495,
+        "cells": 241,
+        "score": 0.4009,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.1281,
+        "density": 0.1245,
+        "fair": true,
         "aspect": 1.0,
-        "fill": 0.9097
+        "fill": 0.898
       },
       "hard": {
         "args": [
           "dissectedtrunchex2",
           3.122,
           5.5,
-          71,
+          84,
           24.752
         ],
         "cells": 511,
@@ -9940,6 +10083,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.1683,
+        "fair": true,
         "aspect": 1.0,
         "fill": 0.9257
       }
@@ -9965,6 +10109,9 @@
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
+        "symmetries": 8,
+        "density": 0.0548,
+        "fair": true,
         "aspect": 1.0,
         "fill": 0.9375
       },
@@ -9987,6 +10134,7 @@
         "indistinguishable": 0,
         "symmetries": 8,
         "density": 0.0632,
+        "fair": true,
         "aspect": 1.0,
         "fill": 0.9632
       },
@@ -10009,6 +10157,7 @@
         "indistinguishable": 0,
         "symmetries": 8,
         "density": 0.0851,
+        "fair": true,
         "aspect": 1.0,
         "fill": 0.9627
       }
@@ -10022,7 +10171,7 @@
           "elongated2",
           6.5,
           2.711,
-          7,
+          6,
           78.367
         ],
         "cells": 92,
@@ -10032,6 +10181,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.1522,
+        "fair": true,
         "aspect": 1.028,
         "fill": 0.9484
       },
@@ -10040,7 +10190,7 @@
           "elongated2",
           11.5,
           4.289,
-          30,
+          40,
           43.333,
           [
             0.5,
@@ -10054,6 +10204,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.1967,
+        "fair": true,
         "aspect": 1.006,
         "fill": 0.9758
       },
@@ -10061,23 +10212,20 @@
         "args": [
           "elongated2",
           16.5,
-          6.289,
-          85,
-          30.0,
-          [
-            0.0,
-            1.366025
-          ]
+          6.0,
+          87,
+          30.0
         ],
-        "cells": 515,
-        "score": 0.3011,
+        "cells": 494,
+        "score": 0.3287,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.2136,
-        "aspect": 1.0231,
-        "fill": 0.9824
+        "density": 0.2267,
+        "fair": true,
+        "aspect": 1.0371,
+        "fill": 0.9751
       }
     }
   },
@@ -10087,20 +10235,21 @@
       "easy": {
         "args": [
           "elongated3",
-          5.5,
+          6.5,
           0.89,
           9,
-          93.333
+          80.0
         ],
-        "cells": 71,
-        "score": 0.568,
+        "cells": 81,
+        "score": 0.8023,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.1268,
-        "aspect": 1.0327,
-        "fill": 0.9032
+        "density": 0.1728,
+        "fair": true,
+        "aspect": 1.1297,
+        "fill": 0.9002
       },
       "medium": {
         "args": [
@@ -10111,12 +10260,13 @@
           43.636
         ],
         "cells": 265,
-        "score": 0.3311,
+        "score": 0.3459,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.1472,
+        "fair": true,
         "aspect": 1.0291,
         "fill": 0.9619
       },
@@ -10124,19 +10274,20 @@
         "args": [
           "elongated3",
           16.5,
-          2.259,
+          2.38,
           99,
           30.0
         ],
-        "cells": 513,
-        "score": 0.3562,
+        "cells": 541,
+        "score": 0.3395,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.2203,
+        "density": 0.2163,
+        "fair": true,
         "aspect": 1.0073,
-        "fill": 0.9247
+        "fill": 0.9664
       }
     }
   },
@@ -10146,60 +10297,67 @@
       "easy": {
         "args": [
           "fannedhex",
-          3.5,
-          1.722,
-          5,
-          53.333
+          3.167,
+          1.833,
+          6,
+          53.333,
+          [
+            0.0,
+            2.598076
+          ]
         ],
-        "cells": 88,
-        "score": 0.7074,
+        "cells": 84,
+        "score": 0.6963,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.0682,
+        "density": 0.0714,
+        "fair": true,
         "aspect": 1.0585,
-        "fill": 0.8636
+        "fill": 0.8485
       },
       "medium": {
         "args": [
           "fannedhex",
           5.167,
-          3.167,
-          10,
+          3.0,
+          12,
           32.0
         ],
-        "cells": 272,
-        "score": 0.483,
+        "cells": 220,
+        "score": 0.8159,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.0331,
-        "aspect": 1.0189,
-        "fill": 0.8853
+        "density": 0.0545,
+        "fair": true,
+        "aspect": 1.0906,
+        "fill": 0.8987
       },
       "hard": {
         "args": [
           "fannedhex",
           7.167,
           4.167,
-          32,
+          33,
           22.857,
           [
             0.0,
             2.598076
           ]
         ],
-        "cells": 492,
-        "score": 0.3956,
+        "cells": 420,
+        "score": 0.8009,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.0549,
-        "aspect": 1.0215,
-        "fill": 0.913
+        "density": 0.0762,
+        "fair": true,
+        "aspect": 1.1066,
+        "fill": 0.9239
       }
     }
   },
@@ -10209,68 +10367,63 @@
       "easy": {
         "args": [
           "hexbands",
-          4.833,
-          1.5,
+          5.167,
+          1.8,
           5,
-          66.511,
-          [
-            0.0,
-            2.5
-          ]
+          55.426
         ],
-        "cells": 74,
-        "score": 0.7355,
+        "cells": 69,
+        "score": 1.7519,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.0676,
-        "aspect": 1.0825,
-        "fill": 0.9
+        "density": 0.1014,
+        "fair": true,
+        "aspect": 1.299,
+        "fill": 0.8021
       },
       "medium": {
         "args": [
           "hexbands",
-          9.5,
+          9.167,
           3.2,
-          20,
-          30.792,
-          [
-            0.0,
-            2.5
-          ]
+          27,
+          30.792
         ],
-        "cells": 294,
-        "score": 0.489,
+        "cells": 271,
+        "score": 0.4661,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.0782,
+        "density": 0.1144,
+        "fair": true,
         "aspect": 1.0189,
-        "fill": 0.9176
+        "fill": 0.8912
       },
       "hard": {
         "args": [
           "hexbands",
           12.167,
           4.2,
-          57,
+          66,
           23.094,
           [
             0.0,
             2.5
           ]
         ],
-        "cells": 496,
-        "score": 0.3897,
+        "cells": 480,
+        "score": 0.3874,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.121,
+        "density": 0.1521,
+        "fair": true,
         "aspect": 1.0235,
-        "fill": 0.9231
+        "fill": 0.9091
       }
     }
   },
@@ -10280,60 +10433,63 @@
       "easy": {
         "args": [
           "hexrings",
-          1.856,
+          2.144,
           1.096,
-          6,
-          61.436
+          11,
+          50.718,
+          [
+            0.0,
+            4.098076
+          ]
         ],
-        "cells": 73,
-        "score": 0.9289,
+        "cells": 79,
+        "score": 1.0546,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.0822,
-        "aspect": 1.0774,
-        "fill": 0.8094
+        "density": 0.1392,
+        "fair": true,
+        "aspect": 1.1244,
+        "fill": 0.7958
       },
       "medium": {
         "args": [
           "hexrings",
           3.644,
           2.096,
-          24,
+          34,
           29.602
         ],
-        "cells": 283,
-        "score": 0.4773,
+        "cells": 267,
+        "score": 0.5277,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.0883,
+        "density": 0.1536,
+        "fair": true,
         "aspect": 1.0259,
-        "fill": 0.9181
+        "fill": 0.8696
       },
       "hard": {
         "args": [
           "hexrings",
           4.856,
-          2.904,
-          73,
-          22.002,
-          [
-            0.0,
-            4.098076
-          ]
+          2.759,
+          80,
+          22.002
         ],
-        "cells": 503,
-        "score": 0.3065,
+        "cells": 475,
+        "score": 0.304,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.167,
+        "density": 0.1853,
+        "fair": true,
         "aspect": 1.003,
-        "fill": 0.9421
+        "fill": 0.9151
       }
     }
   },
@@ -10352,15 +10508,16 @@
             1.0
           ]
         ],
-        "cells": 78,
-        "score": 0.3982,
+        "cells": 74,
+        "score": 0.6733,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.0897,
+        "density": 0.1081,
+        "fair": true,
         "aspect": 1.0392,
-        "fill": 0.95
+        "fill": 0.85
       },
       "medium": {
         "args": [
@@ -10368,35 +10525,41 @@
           10.0,
           8.5,
           30,
-          27.713
+          27.713,
+          [
+            0.0,
+            1.0
+          ]
         ],
-        "cells": 260,
-        "score": 0.3281,
+        "cells": 246,
+        "score": 0.4239,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.1077,
-        "aspect": 1.0189,
-        "fill": 0.9706
+        "density": 0.1301,
+        "fair": true,
+        "aspect": 1.0392,
+        "fill": 0.9389
       },
       "hard": {
         "args": [
           "hexrows",
           14.0,
           11.5,
-          70,
+          73,
           19.795
         ],
-        "cells": 476,
-        "score": 0.2119,
+        "cells": 472,
+        "score": 0.2409,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.1471,
+        "density": 0.1547,
+        "fair": true,
         "aspect": 1.0104,
-        "fill": 0.9792
+        "fill": 0.9613
       }
     }
   },
@@ -10408,7 +10571,7 @@
           "snubelongated",
           3.76,
           2.0,
-          10,
+          16,
           66.05,
           [
             0.965926,
@@ -10416,12 +10579,13 @@
           ]
         ],
         "cells": 88,
-        "score": 0.7651,
+        "score": 0.7806,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 2,
         "density": 0.1477,
+        "fair": true,
         "aspect": 1.0237,
         "fill": 0.8267
       },
@@ -10430,44 +10594,42 @@
           "snubelongated",
           6.76,
           3.5,
-          38,
+          40,
           36.81,
           [
-            0.0,
+            0.965926,
             1.931852
           ]
         ],
-        "cells": 280,
-        "score": 0.5616,
+        "cells": 276,
+        "score": 0.5805,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 2,
-        "density": 0.1464,
+        "density": 0.1522,
+        "fair": true,
         "aspect": 1.0137,
-        "fill": 0.9006
+        "fill": 0.8857
       },
       "hard": {
         "args": [
           "snubelongated",
           8.76,
           4.5,
-          112,
-          28.408,
-          [
-            0.0,
-            1.931852
-          ]
+          114,
+          28.408
         ],
         "cells": 468,
-        "score": 0.4476,
+        "score": 0.4584,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 2,
-        "density": 0.2158,
+        "density": 0.2073,
+        "fair": true,
         "aspect": 1.0107,
-        "fill": 0.9178
+        "fill": 0.9214
       }
     }
   },
@@ -10493,6 +10655,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.1413,
+        "fair": true,
         "aspect": 1.0,
         "fill": 0.8252
       },
@@ -10515,6 +10678,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.1729,
+        "fair": true,
         "aspect": 1.0,
         "fill": 0.9414
       },
@@ -10533,6 +10697,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.2325,
+        "fair": true,
         "aspect": 1.0,
         "fill": 0.9405
       }
@@ -10556,6 +10721,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.1081,
+        "fair": true,
         "aspect": 1.0347,
         "fill": 0.9213
       },
@@ -10574,6 +10740,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.1721,
+        "fair": true,
         "aspect": 1.0398,
         "fill": 0.9696
       },
@@ -10582,7 +10749,7 @@
           "squarerows2",
           18.5,
           3.312,
-          78,
+          83,
           26.593
         ],
         "cells": 482,
@@ -10592,6 +10759,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.2095,
+        "fair": true,
         "aspect": 1.0103,
         "fill": 0.9764
       }
@@ -10615,30 +10783,28 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.1398,
+        "fair": true,
         "aspect": 1.0307,
         "fill": 0.9381
       },
       "medium": {
         "args": [
           "squarerows3",
-          13.5,
+          14.5,
           1.871,
           48,
-          36.735,
-          [
-            0.0,
-            3.866025
-          ]
+          34.286
         ],
-        "cells": 256,
-        "score": 0.3123,
+        "cells": 271,
+        "score": 0.4176,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.1523,
-        "aspect": 1.0332,
-        "fill": 0.9618
+        "density": 0.1587,
+        "fair": true,
+        "aspect": 1.0371,
+        "fill": 0.9459
       },
       "hard": {
         "args": [
@@ -10655,6 +10821,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.2062,
+        "fair": true,
         "aspect": 1.0098,
         "fill": 0.9284
       }
@@ -10666,24 +10833,25 @@
       "easy": {
         "args": [
           "squaretrihex",
-          4.5,
+          5.5,
           3.211,
-          6,
-          57.6,
+          8,
+          52.364,
           [
             1.0,
             1.366025
           ]
         ],
-        "cells": 71,
-        "score": 0.4753,
+        "cells": 89,
+        "score": 0.7735,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.0986,
-        "aspect": 1.0072,
-        "fill": 0.9
+        "density": 0.1348,
+        "fair": true,
+        "aspect": 1.108,
+        "fill": 0.9207
       },
       "medium": {
         "args": [
@@ -10697,22 +10865,23 @@
             0.0
           ]
         ],
-        "cells": 261,
-        "score": 0.2708,
+        "cells": 257,
+        "score": 0.3242,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.1456,
+        "density": 0.1712,
+        "fair": true,
         "aspect": 1.0069,
-        "fill": 0.9418
+        "fill": 0.9099
       },
       "hard": {
         "args": [
           "squaretrihex",
           11.5,
           8.211,
-          91,
+          93,
           22.767,
           [
             1.0,
@@ -10726,6 +10895,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.1979,
+        "fair": true,
         "aspect": 1.0256,
         "fill": 0.9665
       }
@@ -10739,7 +10909,7 @@
           "squaretrihex2",
           4.5,
           1.894,
-          7,
+          9,
           57.6
         ],
         "cells": 86,
@@ -10749,6 +10919,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.1395,
+        "fair": true,
         "aspect": 1.0928,
         "fill": 0.8049
       },
@@ -10757,7 +10928,7 @@
           "squaretrihex2",
           8.5,
           3.106,
-          37,
+          44,
           30.0,
           [
             0.0,
@@ -10771,6 +10942,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.1825,
+        "fair": true,
         "aspect": 1.0069,
         "fill": 0.9179
       },
@@ -10778,19 +10950,24 @@
         "args": [
           "squaretrihex2",
           11.5,
-          4.106,
-          96,
-          21.818
+          4.356,
+          97,
+          21.818,
+          [
+            0.0,
+            2.732051
+          ]
         ],
-        "cells": 472,
-        "score": 0.3073,
+        "cells": 495,
+        "score": 0.3285,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.2161,
+        "density": 0.2061,
+        "fair": true,
         "aspect": 1.0174,
-        "fill": 0.943
+        "fill": 0.9568
       }
     }
   },
@@ -10816,6 +10993,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.125,
+        "fair": true,
         "aspect": 1.1547,
         "fill": 0.9375
       },
@@ -10838,6 +11016,7 @@
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.1562,
+        "fair": true,
         "aspect": 1.0104,
         "fill": 0.9345
       },
@@ -10853,15 +11032,16 @@
             2.598076
           ]
         ],
-        "cells": 470,
-        "score": 0.3618,
+        "cells": 462,
+        "score": 0.339,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.1745,
+        "density": 0.1861,
+        "fair": true,
         "aspect": 1.0189,
-        "fill": 0.9706
+        "fill": 0.9588
       }
     }
   },
@@ -10871,53 +11051,55 @@
       "easy": {
         "args": [
           "studdedtri2",
-          1.769,
-          1.077,
-          10,
-          82.891,
+          1.923,
+          1.038,
+          9,
+          79.877,
           [
             0.901388,
             4.683749
           ]
         ],
-        "cells": 80,
-        "score": 0.7407,
+        "cells": 82,
+        "score": 0.8192,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 2,
-        "density": 0.1125,
-        "aspect": 1.0131,
-        "fill": 0.7912
+        "density": 0.1341,
+        "fair": true,
+        "aspect": 1.0243,
+        "fill": 0.7777
       },
       "medium": {
         "args": [
           "studdedtri2",
           3.154,
           1.846,
-          42,
+          45,
           45.872,
           [
             0.901388,
-            4.683749
+            1.56125
           ]
         ],
-        "cells": 242,
-        "score": 0.5844,
+        "cells": 240,
+        "score": 0.606,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 2,
-        "density": 0.1488,
+        "density": 0.1625,
+        "fair": true,
         "aspect": 1.0075,
-        "fill": 0.8649
+        "fill": 0.8592
       },
       "hard": {
         "args": [
           "studdedtri2",
           4.423,
           2.538,
-          109,
+          112,
           32.191,
           [
             1.802776,
@@ -10931,6 +11113,7 @@
         "indistinguishable": 0,
         "symmetries": 2,
         "density": 0.2236,
+        "fair": true,
         "aspect": 1.0062,
         "fill": 0.889
       }
@@ -10942,64 +11125,59 @@
       "easy": {
         "args": [
           "tritrunctrihex",
-          2.644,
-          1.096,
+          2.106,
+          1.228,
           4,
-          50.718,
-          [
-            0.0,
-            4.098076
-          ]
+          50.718
         ],
-        "cells": 87,
-        "score": 0.8933,
+        "cells": 69,
+        "score": 1.5023,
+        "distortionMean": 1.0,
+        "distortionP90": 1.0,
+        "indistinguishable": 0,
+        "symmetries": 4,
+        "density": 0.058,
+        "fair": true,
+        "aspect": 1.1063,
+        "fill": 0.7261
+      },
+      "medium": {
+        "args": [
+          "tritrunctrihex",
+          4.106,
+          2.096,
+          11,
+          25.359
+        ],
+        "cells": 261,
+        "score": 0.9048,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 4,
         "density": 0.0575,
-        "aspect": 1.1063,
-        "fill": 0.8548
-      },
-      "medium": {
-        "args": [
-          "tritrunctrihex",
-          3.644,
-          2.228,
-          13,
-          32.052,
-          [
-            0.0,
-            4.098076
-          ]
-        ],
-        "cells": 241,
-        "score": 0.8302,
-        "distortionMean": 1.0,
-        "distortionP90": 1.0,
-        "indistinguishable": 0,
-        "symmetries": 4,
-        "density": 0.0498,
-        "aspect": 1.1225,
-        "fill": 0.9032
+        "fair": true,
+        "aspect": 1.126,
+        "fill": 0.8578
       },
       "hard": {
         "args": [
           "tritrunctrihex",
-          5.106,
-          3.228,
-          34,
+          5.356,
+          3.096,
+          33,
           20.287
         ],
-        "cells": 519,
-        "score": 0.5207,
+        "cells": 485,
+        "score": 0.4955,
         "distortionMean": 1.0,
         "distortionP90": 1.0,
         "indistinguishable": 0,
         "symmetries": 4,
-        "density": 0.0674,
+        "density": 0.0722,
+        "fair": true,
         "aspect": 1.0339,
-        "fill": 0.9024
+        "fill": 0.8834
       }
     }
   },
@@ -11143,11 +11321,11 @@
           "dodecarhombitrihex",
           5,
           0.6,
-          9
+          6
         ],
-        "cells": 80,
-        "score": 0.53,
-        "distortionMean": 1.0036,
+        "cells": 70,
+        "score": 0.6641,
+        "distortionMean": 1.0042,
         "distortionP90": 1.005,
         "indistinguishable": 0,
         "facetStep": 0.0841
@@ -11157,11 +11335,11 @@
           "dodecarhombitrihex",
           7,
           1.6,
-          42
+          18
         ],
-        "cells": 280,
-        "score": 0.3546,
-        "distortionMean": 1.002,
+        "cells": 266,
+        "score": 0.3034,
+        "distortionMean": 1.0021,
         "distortionP90": 1.0025,
         "indistinguishable": 0,
         "facetStep": 0.0432
@@ -11169,16 +11347,16 @@
       "hard": {
         "args": [
           "dodecarhombitrihex",
-          10,
+          11,
           2.1,
-          101
+          55
         ],
-        "cells": 520,
-        "score": 0.2417,
-        "distortionMean": 1.001,
-        "distortionP90": 1.0012,
+        "cells": 550,
+        "score": 0.1832,
+        "distortionMean": 1.0008,
+        "distortionP90": 1.001,
         "indistinguishable": 0,
-        "facetStep": 0.0213
+        "facetStep": 0.0176
       }
     }
   },
@@ -11941,13 +12119,13 @@
         "args": [
           "tritrunctrihex",
           4,
-          0.521739,
-          5
+          0.596225,
+          4
         ],
         "cells": 72,
-        "score": 0.5357,
-        "distortionMean": 1.0039,
-        "distortionP90": 1.0052,
+        "score": 0.3993,
+        "distortionMean": 1.0061,
+        "distortionP90": 1.0496,
         "indistinguishable": 0,
         "facetStep": 0.172
       },
@@ -11955,12 +12133,12 @@
         "args": [
           "tritrunctrihex",
           7,
-          1.021739,
-          9
+          1.096225,
+          8
         ],
         "cells": 238,
-        "score": 0.3514,
-        "distortionMean": 1.0012,
+        "score": 0.2673,
+        "distortionMean": 1.0016,
         "distortionP90": 1.0017,
         "indistinguishable": 0,
         "facetStep": 0.0575
@@ -11969,12 +12147,12 @@
         "args": [
           "tritrunctrihex",
           9,
-          1.521739,
-          28
+          1.596225,
+          29
         ],
         "cells": 450,
-        "score": 0.1658,
-        "distortionMean": 1.0007,
+        "score": 0.1086,
+        "distortionMean": 1.0009,
         "distortionP90": 1.001,
         "indistinguishable": 0,
         "facetStep": 0.0349
@@ -12085,10 +12263,10 @@
           0.6,
           6
         ],
-        "cells": 80,
-        "score": 0.8411,
-        "distortionMean": 1.1946,
-        "distortionP90": 1.3216,
+        "cells": 70,
+        "score": 0.9824,
+        "distortionMean": 1.2025,
+        "distortionP90": 1.3246,
         "indistinguishable": 0,
         "facetStep": 0.0841
       },
@@ -12097,12 +12275,12 @@
           "dodecarhombitrihex",
           7,
           1.6,
-          18
+          24
         ],
-        "cells": 280,
-        "score": 0.7211,
-        "distortionMean": 1.2128,
-        "distortionP90": 1.4241,
+        "cells": 266,
+        "score": 0.6755,
+        "distortionMean": 1.2152,
+        "distortionP90": 1.4348,
         "indistinguishable": 0,
         "facetStep": 0.0432
       },
@@ -12111,12 +12289,12 @@
           "dodecarhombitrihex",
           11,
           1.6,
-          55
+          48
         ],
-        "cells": 440,
-        "score": 0.6899,
-        "distortionMean": 1.1956,
-        "distortionP90": 1.3327,
+        "cells": 418,
+        "score": 0.744,
+        "distortionMean": 1.1984,
+        "distortionP90": 1.3339,
         "indistinguishable": 0,
         "facetStep": 0.0176
       }
@@ -12786,44 +12964,44 @@
       "easy": {
         "args": [
           "tritrunctrihex",
-          4,
-          0.521739,
-          5
+          5,
+          1.096225,
+          4
         ],
-        "cells": 72,
-        "score": 0.9126,
-        "distortionMean": 1.2216,
-        "distortionP90": 1.4427,
+        "cells": 170,
+        "score": 13.8112,
+        "distortionMean": 1.2217,
+        "distortionP90": 1.4193,
         "indistinguishable": 0,
-        "facetStep": 0.172
+        "facetStep": 0.1115
       },
       "medium": {
         "args": [
           "tritrunctrihex",
-          13,
-          0.521739,
-          9
+          7,
+          1.096225,
+          6
         ],
-        "cells": 234,
-        "score": 2.2169,
-        "distortionMean": 1.2013,
-        "distortionP90": 1.2658,
+        "cells": 238,
+        "score": 0.6062,
+        "distortionMean": 1.2077,
+        "distortionP90": 1.3568,
         "indistinguishable": 0,
-        "facetStep": 0.0168
+        "facetStep": 0.0575
       },
       "hard": {
         "args": [
           "tritrunctrihex",
-          9,
-          1.521739,
-          28
+          12,
+          1.096225,
+          27
         ],
-        "cells": 450,
-        "score": 0.5196,
-        "distortionMean": 1.2148,
-        "distortionP90": 1.3785,
+        "cells": 408,
+        "score": 1.3091,
+        "distortionMean": 1.1987,
+        "distortionP90": 1.288,
         "indistinguishable": 0,
-        "facetStep": 0.0349
+        "facetStep": 0.0197
       }
     }
   },
@@ -12871,6 +13049,2843 @@
         "distortionP90": 1.4096,
         "indistinguishable": 0,
         "facetStep": 0.0036
+      }
+    }
+  },
+  "torusdissectedtrunchex": {
+    "builder": "arch_torus_board",
+    "args": {
+      "medium": {
+        "args": [
+          "dissectedtrunchex",
+          4,
+          2,
+          41,
+          0.52
+        ],
+        "cells": 240,
+        "score": 0.3618,
+        "distortionMean": 1.1531,
+        "distortionP90": 1.363,
+        "indistinguishable": 0,
+        "facetStep": 0.0707
+      },
+      "easy": {
+        "args": [
+          "dissectedtrunchex",
+          4,
+          2,
+          29,
+          0.52
+        ],
+        "cells": 240,
+        "score": 1.3835,
+        "distortionMean": 1.1531,
+        "distortionP90": 1.363,
+        "indistinguishable": 0,
+        "facetStep": 0.0707
+      },
+      "hard": {
+        "args": [
+          "dissectedtrunchex",
+          8,
+          2,
+          101,
+          0.38
+        ],
+        "cells": 480,
+        "score": 0.0815,
+        "distortionMean": 1.0396,
+        "distortionP90": 1.0892,
+        "indistinguishable": 0,
+        "facetStep": 0.0652
+      }
+    }
+  },
+  "torusdissectedtrunchex2": {
+    "builder": "arch_torus_board",
+    "args": {
+      "medium": {
+        "args": [
+          "dissectedtrunchex2",
+          4,
+          2,
+          41,
+          0.28
+        ],
+        "cells": 240,
+        "score": 0.1319,
+        "distortionMean": 1.0316,
+        "distortionP90": 1.0753,
+        "indistinguishable": 0,
+        "facetStep": 0.1669
+      },
+      "easy": {
+        "args": [
+          "dissectedtrunchex2",
+          4,
+          2,
+          29,
+          0.28
+        ],
+        "cells": 240,
+        "score": 1.1536,
+        "distortionMean": 1.0316,
+        "distortionP90": 1.0753,
+        "indistinguishable": 0,
+        "facetStep": 0.1669
+      },
+      "hard": {
+        "args": [
+          "dissectedtrunchex2",
+          5,
+          3,
+          101,
+          0.33
+        ],
+        "cells": 450,
+        "score": 0.1196,
+        "distortionMean": 1.0294,
+        "distortionP90": 1.0536,
+        "indistinguishable": 0,
+        "facetStep": 0.0767
+      }
+    }
+  },
+  "torusdodecarhombitrihex": {
+    "builder": "arch_torus_board",
+    "args": {
+      "medium": {
+        "args": [
+          "dodecarhombitrihex",
+          6,
+          2,
+          49,
+          0.45
+        ],
+        "cells": 288,
+        "score": 0.2624,
+        "distortionMean": 1.0704,
+        "distortionP90": 1.1653,
+        "indistinguishable": 0,
+        "facetStep": 0.1755
+      },
+      "easy": {
+        "args": [
+          "dodecarhombitrihex",
+          4,
+          2,
+          23,
+          0.52
+        ],
+        "cells": 192,
+        "score": 1.172,
+        "distortionMean": 1.156,
+        "distortionP90": 1.3881,
+        "indistinguishable": 0,
+        "facetStep": 0.1755
+      },
+      "hard": {
+        "args": [
+          "dodecarhombitrihex",
+          10,
+          2,
+          101,
+          0.33
+        ],
+        "cells": 480,
+        "score": 0.0573,
+        "distortionMean": 1.0317,
+        "distortionP90": 1.0536,
+        "indistinguishable": 0,
+        "facetStep": 0.1755
+      }
+    }
+  },
+  "torusdodecasquare": {
+    "builder": "arch_torus_board",
+    "args": {
+      "easy": {
+        "args": [
+          "dodecasquare",
+          4,
+          4,
+          12,
+          0.52
+        ],
+        "cells": 96,
+        "score": 0.803,
+        "distortionMean": 1.2262,
+        "distortionP90": 1.4924,
+        "indistinguishable": 0,
+        "facetStep": 0.2763,
+        "folded": true
+      },
+      "medium": {
+        "args": [
+          "dodecasquare",
+          9,
+          5,
+          45,
+          0.45
+        ],
+        "cells": 270,
+        "score": 0.1772,
+        "distortionMean": 1.0628,
+        "distortionP90": 1.1343,
+        "indistinguishable": 0,
+        "facetStep": 0.1804
+      },
+      "hard": {
+        "args": [
+          "dodecasquare",
+          13,
+          6,
+          98,
+          0.45
+        ],
+        "cells": 468,
+        "score": 0.1135,
+        "distortionMean": 1.0488,
+        "distortionP90": 1.0845,
+        "indistinguishable": 0,
+        "facetStep": 0.1266
+      }
+    }
+  },
+  "toruselongated2": {
+    "builder": "arch_torus_board",
+    "args": {
+      "easy": {
+        "args": [
+          "elongated2",
+          4,
+          4,
+          8,
+          0.38
+        ],
+        "cells": 80,
+        "score": 0.0657,
+        "distortionMean": 1.0315,
+        "distortionP90": 1.0456,
+        "indistinguishable": 0,
+        "facetStep": 0.0102
+      },
+      "medium": {
+        "args": [
+          "elongated2",
+          7,
+          7,
+          48,
+          0.33
+        ],
+        "cells": 245,
+        "score": 0.0977,
+        "distortionMean": 1.0265,
+        "distortionP90": 1.0568,
+        "indistinguishable": 0,
+        "facetStep": 0.0034
+      },
+      "hard": {
+        "args": [
+          "elongated2",
+          8,
+          12,
+          120,
+          0.45
+        ],
+        "cells": 480,
+        "score": 0.1048,
+        "distortionMean": 1.0501,
+        "distortionP90": 1.1182,
+        "indistinguishable": 0,
+        "facetStep": 0.0026
+      }
+    }
+  },
+  "toruselongated3": {
+    "builder": "arch_torus_board",
+    "args": {
+      "easy": {
+        "args": [
+          "elongated3",
+          6,
+          1,
+          12,
+          0.52
+        ],
+        "cells": 84,
+        "score": 0.7977,
+        "distortionMean": 1.4454,
+        "distortionP90": 2.1943,
+        "indistinguishable": 0,
+        "facetStep": 0.0232
+      },
+      "medium": {
+        "args": [
+          "elongated3",
+          18,
+          1,
+          44,
+          0.38
+        ],
+        "cells": 252,
+        "score": 0.077,
+        "distortionMean": 1.0282,
+        "distortionP90": 1.0691,
+        "indistinguishable": 0,
+        "facetStep": 0.0232
+      },
+      "hard": {
+        "args": [
+          "elongated3",
+          34,
+          1,
+          110,
+          0.28
+        ],
+        "cells": 476,
+        "score": 0.1016,
+        "distortionMean": 1.039,
+        "distortionP90": 1.1163,
+        "indistinguishable": 0,
+        "facetStep": 0.0232
+      }
+    }
+  },
+  "torusfannedhex": {
+    "builder": "arch_torus_board",
+    "args": {
+      "medium": {
+        "args": [
+          "fannedhex",
+          8,
+          2,
+          44,
+          0.33
+        ],
+        "cells": 256,
+        "score": 0.1238,
+        "distortionMean": 1.0615,
+        "distortionP90": 1.1368,
+        "indistinguishable": 0,
+        "facetStep": 0.0999
+      },
+      "easy": {
+        "args": [
+          "fannedhex",
+          4,
+          2,
+          15,
+          0.52
+        ],
+        "cells": 128,
+        "score": 0.7909,
+        "distortionMean": 1.1772,
+        "distortionP90": 1.4055,
+        "indistinguishable": 0,
+        "facetStep": 0.0999
+      },
+      "hard": {
+        "args": [
+          "fannedhex",
+          10,
+          3,
+          101,
+          0.45
+        ],
+        "cells": 480,
+        "score": 0.103,
+        "distortionMean": 1.0539,
+        "distortionP90": 1.1064,
+        "indistinguishable": 0,
+        "facetStep": 0.0451
+      }
+    }
+  },
+  "torushexbands": {
+    "builder": "arch_torus_board",
+    "args": {
+      "easy": {
+        "args": [
+          "hexbands",
+          4,
+          2,
+          12,
+          0.52
+        ],
+        "cells": 80,
+        "score": 0.7458,
+        "distortionMean": 1.4823,
+        "distortionP90": 1.7843,
+        "indistinguishable": 0,
+        "facetStep": 0.2168,
+        "folded": true
+      },
+      "medium": {
+        "args": [
+          "hexbands",
+          13,
+          2,
+          44,
+          0.45
+        ],
+        "cells": 260,
+        "score": 0.1031,
+        "distortionMean": 1.0531,
+        "distortionP90": 1.0742,
+        "indistinguishable": 0,
+        "facetStep": 0.142
+      },
+      "hard": {
+        "args": [
+          "hexbands",
+          16,
+          3,
+          101,
+          0.45
+        ],
+        "cells": 480,
+        "score": 0.1034,
+        "distortionMean": 1.0548,
+        "distortionP90": 1.1053,
+        "indistinguishable": 0,
+        "facetStep": 0.0646
+      }
+    }
+  },
+  "torushexrings": {
+    "builder": "arch_torus_board",
+    "args": {
+      "easy": {
+        "args": [
+          "hexrings",
+          4,
+          1,
+          17,
+          0.38
+        ],
+        "cells": 144,
+        "score": 0.7543,
+        "distortionMean": 1.0584,
+        "distortionP90": 1.0979,
+        "indistinguishable": 0,
+        "facetStep": 0.2251,
+        "folded": true
+      },
+      "medium": {
+        "args": [
+          "hexrings",
+          4,
+          2,
+          43,
+          0.52
+        ],
+        "cells": 288,
+        "score": 0.4258,
+        "distortionMean": 1.1555,
+        "distortionP90": 1.3867,
+        "indistinguishable": 0,
+        "facetStep": 0.0588
+      },
+      "hard": {
+        "args": [
+          "hexrings",
+          7,
+          2,
+          106,
+          0.45
+        ],
+        "cells": 504,
+        "score": 0.1421,
+        "distortionMean": 1.0509,
+        "distortionP90": 1.0912,
+        "indistinguishable": 0,
+        "facetStep": 0.0588
+      }
+    }
+  },
+  "torushexrows": {
+    "builder": "arch_torus_board",
+    "args": {
+      "easy": {
+        "args": [
+          "hexrows",
+          6,
+          5,
+          12,
+          0.52
+        ],
+        "cells": 90,
+        "score": 0.4679,
+        "distortionMean": 1.2114,
+        "distortionP90": 1.4071,
+        "indistinguishable": 0,
+        "facetStep": 0.142
+      },
+      "medium": {
+        "args": [
+          "hexrows",
+          17,
+          5,
+          43,
+          0.33
+        ],
+        "cells": 255,
+        "score": 0.0661,
+        "distortionMean": 1.0364,
+        "distortionP90": 1.0542,
+        "indistinguishable": 0,
+        "facetStep": 0.142
+      },
+      "hard": {
+        "args": [
+          "hexrows",
+          23,
+          7,
+          101,
+          0.33
+        ],
+        "cells": 483,
+        "score": 0.0598,
+        "distortionMean": 1.0299,
+        "distortionP90": 1.0495,
+        "indistinguishable": 0,
+        "facetStep": 0.074
+      }
+    }
+  },
+  "torussnubelongated": {
+    "builder": "arch_torus_board",
+    "args": {
+      "easy": {
+        "args": [
+          "snubelongated",
+          4,
+          2,
+          12,
+          0.52
+        ],
+        "cells": 96,
+        "score": 0.5952,
+        "distortionMean": 1.2372,
+        "distortionP90": 1.5294,
+        "indistinguishable": 0,
+        "facetStep": 0.0453
+      },
+      "medium": {
+        "args": [
+          "snubelongated",
+          11,
+          2,
+          45,
+          0.33
+        ],
+        "cells": 264,
+        "score": 0.0848,
+        "distortionMean": 1.0298,
+        "distortionP90": 1.0506,
+        "indistinguishable": 0,
+        "facetStep": 0.0453
+      },
+      "hard": {
+        "args": [
+          "snubelongated",
+          13,
+          3,
+          98,
+          0.38
+        ],
+        "cells": 468,
+        "score": 0.1146,
+        "distortionMean": 1.042,
+        "distortionP90": 1.1011,
+        "indistinguishable": 0,
+        "facetStep": 0.0205
+      }
+    }
+  },
+  "torussnubelongated2": {
+    "builder": "arch_torus_board",
+    "args": {
+      "easy": {
+        "args": [
+          "snubelongated2",
+          4,
+          2,
+          35,
+          0.45
+        ],
+        "cells": 288,
+        "score": 1.3572,
+        "distortionMean": 1.0482,
+        "distortionP90": 1.0868,
+        "indistinguishable": 0,
+        "facetStep": 0.06
+      },
+      "medium": {
+        "args": [
+          "snubelongated2",
+          4,
+          2,
+          49,
+          0.45
+        ],
+        "cells": 288,
+        "score": 0.2065,
+        "distortionMean": 1.0482,
+        "distortionP90": 1.0868,
+        "indistinguishable": 0,
+        "facetStep": 0.06
+      },
+      "hard": {
+        "args": [
+          "snubelongated2",
+          7,
+          2,
+          106,
+          0.28
+        ],
+        "cells": 504,
+        "score": 0.0834,
+        "distortionMean": 1.0179,
+        "distortionP90": 1.0342,
+        "indistinguishable": 0,
+        "facetStep": 0.06
+      }
+    }
+  },
+  "torussquarerows2": {
+    "builder": "arch_torus_board",
+    "args": {
+      "easy": {
+        "args": [
+          "squarerows2",
+          10,
+          1,
+          12,
+          0.45
+        ],
+        "cells": 80,
+        "score": 0.1454,
+        "distortionMean": 1.0655,
+        "distortionP90": 1.1492,
+        "indistinguishable": 0,
+        "facetStep": 0.0359
+      },
+      "medium": {
+        "args": [
+          "squarerows2",
+          16,
+          2,
+          44,
+          0.52
+        ],
+        "cells": 256,
+        "score": 0.1889,
+        "distortionMean": 1.0805,
+        "distortionP90": 1.25,
+        "indistinguishable": 0,
+        "facetStep": 0.0093
+      },
+      "hard": {
+        "args": [
+          "squarerows2",
+          30,
+          2,
+          101,
+          0.38
+        ],
+        "cells": 480,
+        "score": 0.0534,
+        "distortionMean": 1.0259,
+        "distortionP90": 1.0571,
+        "indistinguishable": 0,
+        "facetStep": 0.0093
+      }
+    }
+  },
+  "torussquarerows3": {
+    "builder": "arch_torus_board",
+    "args": {
+      "easy": {
+        "args": [
+          "squarerows3",
+          9,
+          1,
+          12,
+          0.52
+        ],
+        "cells": 90,
+        "score": 0.3834,
+        "distortionMean": 1.1404,
+        "distortionP90": 1.3407,
+        "indistinguishable": 0,
+        "facetStep": 0.0201
+      },
+      "medium": {
+        "args": [
+          "squarerows3",
+          25,
+          1,
+          42,
+          0.28
+        ],
+        "cells": 250,
+        "score": 0.0542,
+        "distortionMean": 1.0151,
+        "distortionP90": 1.0315,
+        "indistinguishable": 0,
+        "facetStep": 0.0201
+      },
+      "hard": {
+        "args": [
+          "squarerows3",
+          25,
+          2,
+          101,
+          0.52
+        ],
+        "cells": 500,
+        "score": 0.1565,
+        "distortionMean": 1.0543,
+        "distortionP90": 1.1339,
+        "indistinguishable": 0,
+        "facetStep": 0.0051
+      }
+    }
+  },
+  "torussquaretrihex": {
+    "builder": "arch_torus_board",
+    "args": {
+      "easy": {
+        "args": [
+          "squaretrihex",
+          6,
+          3,
+          12,
+          0.52
+        ],
+        "cells": 90,
+        "score": 0.2606,
+        "distortionMean": 1.0981,
+        "distortionP90": 1.1313,
+        "indistinguishable": 0,
+        "facetStep": 0.1578
+      },
+      "medium": {
+        "args": [
+          "squaretrihex",
+          13,
+          4,
+          44,
+          0.38
+        ],
+        "cells": 260,
+        "score": 0.0933,
+        "distortionMean": 1.0368,
+        "distortionP90": 1.0869,
+        "indistinguishable": 0,
+        "facetStep": 0.0906
+      },
+      "hard": {
+        "args": [
+          "squaretrihex",
+          19,
+          5,
+          101,
+          0.33
+        ],
+        "cells": 475,
+        "score": 0.0615,
+        "distortionMean": 1.0259,
+        "distortionP90": 1.0522,
+        "indistinguishable": 0,
+        "facetStep": 0.0585
+      }
+    }
+  },
+  "torussquaretrihex2": {
+    "builder": "arch_torus_board",
+    "args": {
+      "easy": {
+        "args": [
+          "squaretrihex2",
+          4,
+          2,
+          12,
+          0.52
+        ],
+        "cells": 80,
+        "score": 0.8603,
+        "distortionMean": 1.4485,
+        "distortionP90": 2.3495,
+        "indistinguishable": 0,
+        "facetStep": 0.2168,
+        "folded": true
+      },
+      "medium": {
+        "args": [
+          "squaretrihex2",
+          13,
+          2,
+          44,
+          0.38
+        ],
+        "cells": 260,
+        "score": 0.0933,
+        "distortionMean": 1.0368,
+        "distortionP90": 1.0869,
+        "indistinguishable": 0,
+        "facetStep": 0.0906
+      },
+      "hard": {
+        "args": [
+          "squaretrihex2",
+          16,
+          3,
+          101,
+          0.45
+        ],
+        "cells": 480,
+        "score": 0.0875,
+        "distortionMean": 1.0448,
+        "distortionP90": 1.0912,
+        "indistinguishable": 0,
+        "facetStep": 0.0408
+      }
+    }
+  },
+  "torusstuddedtri": {
+    "builder": "arch_torus_board",
+    "args": {
+      "easy": {
+        "args": [
+          "studdedtri",
+          4,
+          2,
+          25,
+          0.52
+        ],
+        "cells": 208,
+        "score": 1.2848,
+        "distortionMean": 1.1676,
+        "distortionP90": 1.4529,
+        "indistinguishable": 0,
+        "facetStep": 0.0999
+      },
+      "medium": {
+        "args": [
+          "studdedtri",
+          5,
+          2,
+          44,
+          0.52
+        ],
+        "cells": 260,
+        "score": 0.2097,
+        "distortionMean": 1.0937,
+        "distortionP90": 1.2328,
+        "indistinguishable": 0,
+        "facetStep": 0.0999
+      },
+      "hard": {
+        "args": [
+          "studdedtri",
+          9,
+          2,
+          98,
+          0.45
+        ],
+        "cells": 468,
+        "score": 0.1585,
+        "distortionMean": 1.0616,
+        "distortionP90": 1.1582,
+        "indistinguishable": 0,
+        "facetStep": 0.0999
+      }
+    }
+  },
+  "torusstuddedtri2": {
+    "builder": "arch_torus_board",
+    "args": {
+      "easy": {
+        "args": [
+          "studdedtri2",
+          4,
+          2,
+          40,
+          0.52
+        ],
+        "cells": 336,
+        "fixed": true,
+        "reason": "no window builds at this size"
+      },
+      "hard": {
+        "args": [
+          "studdedtri2",
+          6,
+          2,
+          106,
+          0.45
+        ],
+        "cells": 504,
+        "score": 0.1808,
+        "distortionMean": 1.0638,
+        "distortionP90": 1.1508,
+        "indistinguishable": 0,
+        "facetStep": 0.0855
+      },
+      "medium": {
+        "args": [
+          "studdedtri2",
+          4,
+          2,
+          43,
+          0.52
+        ],
+        "cells": 336,
+        "score": 0.5717,
+        "distortionMean": 1.1519,
+        "distortionP90": 1.3725,
+        "indistinguishable": 0,
+        "facetStep": 0.0855
+      }
+    }
+  },
+  "torustrirhombitrihex": {
+    "builder": "arch_torus_board",
+    "args": {
+      "easy": {
+        "args": [
+          "trirhombitrihex",
+          4,
+          2,
+          30,
+          0.28
+        ],
+        "cells": 176,
+        "score": 0.8425,
+        "distortionMean": 1.0321,
+        "distortionP90": 1.0721,
+        "indistinguishable": 0,
+        "facetStep": 0.1715
+      },
+      "medium": {
+        "args": [
+          "trirhombitrihex",
+          4,
+          3,
+          60,
+          0.38
+        ],
+        "cells": 264,
+        "score": 0.1191,
+        "distortionMean": 1.0437,
+        "distortionP90": 1.0954,
+        "indistinguishable": 0,
+        "facetStep": 0.0794
+      },
+      "hard": {
+        "args": [
+          "trirhombitrihex",
+          7,
+          3,
+          120,
+          0.28
+        ],
+        "cells": 462,
+        "score": 0.0997,
+        "distortionMean": 1.0272,
+        "distortionP90": 1.0717,
+        "indistinguishable": 0,
+        "facetStep": 0.0794
+      }
+    }
+  },
+  "torustritrunctrihex": {
+    "builder": "arch_torus_board",
+    "args": {
+      "medium": {
+        "args": [
+          "tritrunctrihex",
+          4,
+          2,
+          44,
+          0.52
+        ],
+        "cells": 256,
+        "score": 0.4095,
+        "distortionMean": 1.1592,
+        "distortionP90": 1.3987,
+        "indistinguishable": 0,
+        "facetStep": 0.2313,
+        "folded": true
+      },
+      "easy": {
+        "args": [
+          "tritrunctrihex",
+          4,
+          2,
+          31,
+          0.52
+        ],
+        "cells": 256,
+        "score": 1.5602,
+        "distortionMean": 1.1592,
+        "distortionP90": 1.3987,
+        "indistinguishable": 0,
+        "facetStep": 0.2313,
+        "folded": true
+      },
+      "hard": {
+        "args": [
+          "tritrunctrihex",
+          5,
+          3,
+          108,
+          0.52
+        ],
+        "cells": 480,
+        "score": 0.4395,
+        "distortionMean": 1.2421,
+        "distortionP90": 1.5611,
+        "indistinguishable": 0,
+        "facetStep": 0.1115
+      }
+    }
+  },
+  "boy": {
+    "builder": "boy_board",
+    "args": {
+      "easy": {
+        "args": [
+          5,
+          15
+        ],
+        "cells": 75,
+        "score": 0.077,
+        "distortionMean": 1.0958,
+        "distortionP90": 1.2095,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          9,
+          57
+        ],
+        "cells": 243,
+        "score": 0.0521,
+        "distortionMean": 1.0472,
+        "distortionP90": 1.0786,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          13,
+          138
+        ],
+        "cells": 507,
+        "score": 0.0547,
+        "distortionMean": 1.0348,
+        "distortionP90": 1.0751,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "hyperbolic46": {
+    "builder": "hyperbolic_board",
+    "args": {
+      "easy": {
+        "args": [
+          4,
+          6,
+          14,
+          6,
+          298.977
+        ],
+        "cells": 89,
+        "score": 0.0942,
+        "distortionMean": 1.5528,
+        "distortionP90": 1.5717,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          4,
+          6,
+          26,
+          15,
+          300.0
+        ],
+        "cells": 257,
+        "score": 0.0039,
+        "distortionMean": 1.5593,
+        "distortionP90": 1.5855,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          4,
+          6,
+          42,
+          37,
+          299.994
+        ],
+        "cells": 481,
+        "score": 0.0021,
+        "distortionMean": 1.5618,
+        "distortionP90": 1.5891,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "hyperbolic55": {
+    "builder": "hyperbolic_board",
+    "args": {
+      "easy": {
+        "args": [
+          5,
+          5,
+          12,
+          4,
+          298.449
+        ],
+        "cells": 96,
+        "score": 10.5097,
+        "distortionMean": 1.4022,
+        "distortionP90": 1.4221,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          5,
+          5,
+          22,
+          11,
+          299.827
+        ],
+        "cells": 261,
+        "score": 0.0193,
+        "distortionMean": 1.4059,
+        "distortionP90": 1.4221,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          5,
+          5,
+          37,
+          25,
+          299.98
+        ],
+        "cells": 466,
+        "score": 0.0296,
+        "distortionMean": 1.4074,
+        "distortionP90": 1.4237,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "hyperbolic64": {
+    "builder": "hyperbolic_board",
+    "args": {
+      "easy": {
+        "args": [
+          6,
+          4,
+          9,
+          4,
+          299.052
+        ],
+        "cells": 85,
+        "score": 0.0482,
+        "distortionMean": 1.2495,
+        "distortionP90": 1.2555,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          6,
+          4,
+          21,
+          13,
+          299.804
+        ],
+        "cells": 259,
+        "score": 0.0117,
+        "distortionMean": 1.2524,
+        "distortionP90": 1.2579,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          6,
+          4,
+          31,
+          37,
+          299.985
+        ],
+        "cells": 475,
+        "score": 0.0105,
+        "distortionMean": 1.2532,
+        "distortionP90": 1.2586,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "hyperbolic83": {
+    "builder": "hyperbolic_board",
+    "args": {
+      "easy": {
+        "args": [
+          8,
+          3,
+          7,
+          7,
+          300.0
+        ],
+        "cells": 89,
+        "score": 0.0942,
+        "distortionMean": 1.0954,
+        "distortionP90": 1.0965,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          8,
+          3,
+          16,
+          24,
+          300.0
+        ],
+        "cells": 265,
+        "score": 0.0346,
+        "distortionMean": 1.0964,
+        "distortionP90": 1.097,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          8,
+          3,
+          24,
+          45,
+          300.0
+        ],
+        "cells": 473,
+        "score": 0.0147,
+        "distortionMean": 1.0967,
+        "distortionP90": 1.0971,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "hyperbolic3474": {
+    "builder": "hyperbolic_uniform_board",
+    "args": {
+      "easy": {
+        "args": [
+          7,
+          3,
+          "expand",
+          10,
+          5,
+          300.0
+        ],
+        "cells": 85,
+        "score": 0.0482,
+        "distortionMean": 1.3823,
+        "distortionP90": 1.6031,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          7,
+          3,
+          "expand",
+          26,
+          13,
+          293.288
+        ],
+        "cells": 267,
+        "score": 0.0421,
+        "distortionMean": 1.3372,
+        "distortionP90": 1.6039,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          7,
+          3,
+          "expand",
+          40,
+          42,
+          300.0
+        ],
+        "cells": 463,
+        "score": 0.0361,
+        "distortionMean": 1.3396,
+        "distortionP90": 1.6041,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "hyperbolic3737": {
+    "builder": "hyperbolic_uniform_board",
+    "args": {
+      "easy": {
+        "args": [
+          7,
+          3,
+          "ambo",
+          9,
+          6,
+          300.0
+        ],
+        "cells": 78,
+        "score": 0.0377,
+        "distortionMean": 1.4193,
+        "distortionP90": 1.6182,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          7,
+          3,
+          "ambo",
+          22,
+          20,
+          300.0
+        ],
+        "cells": 253,
+        "score": 0.0118,
+        "distortionMean": 1.4396,
+        "distortionP90": 1.6197,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          7,
+          3,
+          "ambo",
+          37,
+          65,
+          300.0
+        ],
+        "cells": 484,
+        "score": 0.0083,
+        "distortionMean": 1.4792,
+        "distortionP90": 1.6202,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "hyperbolic4614": {
+    "builder": "hyperbolic_uniform_board",
+    "args": {
+      "easy": {
+        "args": [
+          7,
+          3,
+          "bevel",
+          10,
+          7,
+          300.0
+        ],
+        "cells": 85,
+        "score": 0.0482,
+        "distortionMean": 1.1636,
+        "distortionP90": 1.2484,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          7,
+          3,
+          "bevel",
+          26,
+          12,
+          280.857
+        ],
+        "cells": 267,
+        "score": 0.0421,
+        "distortionMean": 1.1633,
+        "distortionP90": 1.2486,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          7,
+          3,
+          "bevel",
+          40,
+          53,
+          300.0
+        ],
+        "cells": 477,
+        "score": 0.0063,
+        "distortionMean": 1.1627,
+        "distortionP90": 1.2487,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "hyperbolic667": {
+    "builder": "hyperbolic_uniform_board",
+    "args": {
+      "easy": {
+        "args": [
+          7,
+          3,
+          "zip",
+          9,
+          9,
+          303.283
+        ],
+        "cells": 78,
+        "score": 0.0377,
+        "distortionMean": 1.0913,
+        "distortionP90": 1.1015,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          7,
+          3,
+          "zip",
+          22,
+          29,
+          300.0
+        ],
+        "cells": 253,
+        "score": 0.0118,
+        "distortionMean": 1.0926,
+        "distortionP90": 1.1019,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          7,
+          3,
+          "zip",
+          36,
+          74,
+          300.0
+        ],
+        "cells": 484,
+        "score": 0.0083,
+        "distortionMean": 1.094,
+        "distortionP90": 1.102,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "hyperbolic37": {
+    "builder": "hyperbolic_board",
+    "args": {
+      "easy": {
+        "args": [
+          3,
+          7,
+          8,
+          8,
+          300.0
+        ],
+        "cells": 84,
+        "score": 0.0364,
+        "distortionMean": 1.7359,
+        "distortionP90": 1.7466,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          3,
+          7,
+          20,
+          25,
+          300.0
+        ],
+        "cells": 252,
+        "score": 0.0157,
+        "distortionMean": 1.742,
+        "distortionP90": 1.755,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          3,
+          7,
+          36,
+          50,
+          300.0
+        ],
+        "cells": 490,
+        "score": 0.0206,
+        "distortionMean": 1.7441,
+        "distortionP90": 1.7564,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "hyperbolic38": {
+    "builder": "hyperbolic_board",
+    "args": {
+      "easy": {
+        "args": [
+          3,
+          8,
+          6,
+          8,
+          300.0
+        ],
+        "cells": 80,
+        "score": 0.0124,
+        "distortionMean": 1.874,
+        "distortionP90": 1.9022,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          3,
+          8,
+          17,
+          25,
+          300.0
+        ],
+        "cells": 272,
+        "score": 0.0606,
+        "distortionMean": 1.8902,
+        "distortionP90": 1.9298,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          3,
+          8,
+          33,
+          50,
+          299.88
+        ],
+        "cells": 496,
+        "score": 0.0328,
+        "distortionMean": 1.8925,
+        "distortionP90": 1.9237,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "hyperbolicbinary": {
+    "builder": "binary_board",
+    "args": {
+      "medium": {
+        "args": [
+          2,
+          7,
+          30,
+          300.0
+        ],
+        "cells": 254,
+        "score": 0.055,
+        "distortionMean": 1.0502,
+        "distortionP90": 1.1011,
+        "indistinguishable": 0
+      },
+      "easy": {
+        "args": [
+          3,
+          5,
+          10,
+          200.0
+        ],
+        "cells": 93,
+        "score": 1.0986,
+        "distortionMean": 1.0489,
+        "distortionP90": 1.1011,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          2,
+          8,
+          60,
+          300.0
+        ],
+        "cells": 510,
+        "score": 0.0841,
+        "distortionMean": 1.0504,
+        "distortionP90": 1.1011,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "quartic": {
+    "builder": "hurwitz_board",
+    "args": {
+      "easy": {
+        "args": [
+          "quartic",
+          "zip",
+          0,
+          15,
+          300.0
+        ],
+        "cells": 80,
+        "fixed": true,
+        "reason": "the cell count is the solid"
+      },
+      "medium": {
+        "args": [
+          "quartic",
+          "gc3",
+          0,
+          45,
+          300.0
+        ],
+        "cells": 248,
+        "fixed": true,
+        "reason": "the cell count is the solid"
+      },
+      "hard": {
+        "args": [
+          "quartic",
+          "gc4",
+          0,
+          100,
+          300.0
+        ],
+        "cells": 444,
+        "fixed": true,
+        "reason": "the cell count is the solid"
+      }
+    }
+  },
+  "macbeath": {
+    "builder": "hurwitz_board",
+    "args": {
+      "easy": {
+        "args": [
+          "macbeath",
+          "none",
+          0,
+          14,
+          300.0
+        ],
+        "cells": 72,
+        "fixed": true,
+        "reason": "the cell count is the solid"
+      },
+      "medium": {
+        "args": [
+          "macbeath",
+          "zip",
+          0,
+          59,
+          300.0
+        ],
+        "cells": 240,
+        "fixed": true,
+        "reason": "the cell count is the solid"
+      },
+      "hard": {
+        "args": [
+          "macbeath",
+          "gc2",
+          0,
+          90,
+          300.0
+        ],
+        "cells": 324,
+        "fixed": true,
+        "reason": "the cell count is the solid"
+      }
+    }
+  },
+  "triplet": {
+    "builder": "hurwitz_board",
+    "args": {
+      "easy": {
+        "args": [
+          "triplet",
+          "none",
+          0,
+          32,
+          300.0
+        ],
+        "cells": 156,
+        "fixed": true,
+        "reason": "the cell count is the solid"
+      },
+      "medium": {
+        "args": [
+          "triplet",
+          "zip",
+          0,
+          124,
+          300.0
+        ],
+        "cells": 520,
+        "fixed": true,
+        "reason": "the cell count is the solid"
+      },
+      "hard": {
+        "args": [
+          "triplet",
+          "gc2",
+          0,
+          200,
+          300.0
+        ],
+        "cells": 702,
+        "fixed": true,
+        "reason": "the cell count is the solid"
+      }
+    }
+  },
+  "hyperbolic3484": {
+    "builder": "hyperbolic_uniform_board",
+    "args": {
+      "easy": {
+        "args": [
+          8,
+          3,
+          "expand",
+          10,
+          8,
+          289.853
+        ],
+        "cells": 81,
+        "score": 0.0,
+        "distortionMean": 1.3128,
+        "distortionP90": 1.6132,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          8,
+          3,
+          "expand",
+          24,
+          25,
+          300.0
+        ],
+        "cells": 265,
+        "score": 0.0346,
+        "distortionMean": 1.3731,
+        "distortionP90": 1.6163,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          8,
+          3,
+          "expand",
+          37,
+          50,
+          292.835
+        ],
+        "cells": 465,
+        "score": 0.0317,
+        "distortionMean": 1.3691,
+        "distortionP90": 1.617,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "hyperbolic3838": {
+    "builder": "hyperbolic_uniform_board",
+    "args": {
+      "easy": {
+        "args": [
+          8,
+          3,
+          "ambo",
+          8,
+          8,
+          300.0
+        ],
+        "cells": 81,
+        "score": 0.0,
+        "distortionMean": 1.5216,
+        "distortionP90": 1.6412,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          8,
+          3,
+          "ambo",
+          20,
+          25,
+          300.0
+        ],
+        "cells": 273,
+        "score": 0.0643,
+        "distortionMean": 1.5237,
+        "distortionP90": 1.6423,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          8,
+          3,
+          "ambo",
+          31,
+          50,
+          300.0
+        ],
+        "cells": 473,
+        "score": 0.0147,
+        "distortionMean": 1.4796,
+        "distortionP90": 1.6432,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "hyperbolic41010": {
+    "builder": "hyperbolic_uniform_board",
+    "args": {
+      "easy": {
+        "args": [
+          5,
+          4,
+          "truncate",
+          11,
+          8,
+          289.392
+        ],
+        "cells": 76,
+        "score": 0.0637,
+        "distortionMean": 1.1611,
+        "distortionP90": 1.2647,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          5,
+          4,
+          "truncate",
+          26,
+          25,
+          297.066
+        ],
+        "cells": 256,
+        "score": 0.0,
+        "distortionMean": 1.1705,
+        "distortionP90": 1.265,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          5,
+          4,
+          "truncate",
+          43,
+          50,
+          298.294
+        ],
+        "cells": 486,
+        "score": 0.0124,
+        "distortionMean": 1.1751,
+        "distortionP90": 1.2652,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "hyperbolic41212": {
+    "builder": "hyperbolic_uniform_board",
+    "args": {
+      "medium": {
+        "args": [
+          6,
+          4,
+          "truncate",
+          25,
+          25,
+          300.0
+        ],
+        "cells": 289,
+        "fixed": true,
+        "reason": "253 cells is all coin flips at the rim; 289 does not"
+      },
+      "easy": {
+        "args": [
+          6,
+          4,
+          "truncate",
+          9,
+          8,
+          290.725
+        ],
+        "cells": 79,
+        "score": 0.025,
+        "distortionMean": 1.1681,
+        "distortionP90": 1.276,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          6,
+          4,
+          "truncate",
+          36,
+          50,
+          299.798
+        ],
+        "cells": 481,
+        "score": 0.0021,
+        "distortionMean": 1.1846,
+        "distortionP90": 1.2768,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "hyperbolic4445": {
+    "builder": "hyperbolic_uniform_board",
+    "args": {
+      "easy": {
+        "args": [
+          5,
+          4,
+          "expand",
+          11,
+          8,
+          275.192
+        ],
+        "cells": 81,
+        "score": 0.0,
+        "distortionMean": 1.2596,
+        "distortionP90": 1.2751,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          5,
+          4,
+          "expand",
+          26,
+          25,
+          294.854
+        ],
+        "cells": 261,
+        "score": 0.0193,
+        "distortionMean": 1.2544,
+        "distortionP90": 1.2763,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          5,
+          4,
+          "expand",
+          44,
+          50,
+          296.921
+        ],
+        "cells": 471,
+        "score": 0.0189,
+        "distortionMean": 1.2529,
+        "distortionP90": 1.2766,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "hyperbolic4446": {
+    "builder": "hyperbolic_uniform_board",
+    "args": {
+      "easy": {
+        "args": [
+          6,
+          4,
+          "expand",
+          9,
+          8,
+          295.049
+        ],
+        "cells": 79,
+        "score": 0.025,
+        "distortionMean": 1.267,
+        "distortionP90": 1.2951,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          6,
+          4,
+          "expand",
+          24,
+          25,
+          297.841
+        ],
+        "cells": 259,
+        "score": 0.0117,
+        "distortionMean": 1.2686,
+        "distortionP90": 1.2966,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          6,
+          4,
+          "expand",
+          38,
+          50,
+          298.461
+        ],
+        "cells": 469,
+        "score": 0.0232,
+        "distortionMean": 1.2688,
+        "distortionP90": 1.2969,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "hyperbolic4545": {
+    "builder": "hyperbolic_uniform_board",
+    "args": {
+      "easy": {
+        "args": [
+          5,
+          4,
+          "ambo",
+          11,
+          8,
+          287.702
+        ],
+        "cells": 81,
+        "score": 0.0,
+        "distortionMean": 1.2482,
+        "distortionP90": 1.3064,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          5,
+          4,
+          "ambo",
+          26,
+          25,
+          296.619
+        ],
+        "cells": 256,
+        "score": 0.0,
+        "distortionMean": 1.2582,
+        "distortionP90": 1.3074,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          5,
+          4,
+          "ambo",
+          43,
+          50,
+          297.956
+        ],
+        "cells": 486,
+        "score": 0.0124,
+        "distortionMean": 1.2611,
+        "distortionP90": 1.3082,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "hyperbolic4616": {
+    "builder": "hyperbolic_uniform_board",
+    "args": {
+      "easy": {
+        "args": [
+          8,
+          3,
+          "bevel",
+          10,
+          8,
+          284.19
+        ],
+        "cells": 65,
+        "score": 10.6602,
+        "distortionMean": 1.181,
+        "distortionP90": 1.2515,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          8,
+          3,
+          "bevel",
+          23,
+          25,
+          300.0
+        ],
+        "cells": 257,
+        "score": 0.0039,
+        "distortionMean": 1.1664,
+        "distortionP90": 1.2518,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          8,
+          3,
+          "bevel",
+          36,
+          50,
+          293.52
+        ],
+        "cells": 481,
+        "score": 0.0021,
+        "distortionMean": 1.1703,
+        "distortionP90": 1.2518,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "hyperbolic4646": {
+    "builder": "hyperbolic_uniform_board",
+    "args": {
+      "easy": {
+        "args": [
+          6,
+          4,
+          "ambo",
+          10,
+          8,
+          295.259
+        ],
+        "cells": 85,
+        "score": 0.0482,
+        "distortionMean": 1.2674,
+        "distortionP90": 1.3411,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          6,
+          4,
+          "ambo",
+          23,
+          25,
+          299.209
+        ],
+        "cells": 265,
+        "score": 0.0346,
+        "distortionMean": 1.289,
+        "distortionP90": 1.3451,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          6,
+          4,
+          "ambo",
+          36,
+          50,
+          299.806
+        ],
+        "cells": 481,
+        "score": 0.0021,
+        "distortionMean": 1.2766,
+        "distortionP90": 1.3451,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "hyperbolic4810": {
+    "builder": "hyperbolic_uniform_board",
+    "args": {
+      "easy": {
+        "args": [
+          5,
+          4,
+          "bevel",
+          11,
+          8,
+          282.74
+        ],
+        "cells": 81,
+        "score": 0.0,
+        "distortionMean": 1.1763,
+        "distortionP90": 1.2545,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          5,
+          4,
+          "bevel",
+          26,
+          25,
+          294.298
+        ],
+        "cells": 261,
+        "score": 0.0193,
+        "distortionMean": 1.1597,
+        "distortionP90": 1.2548,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          5,
+          4,
+          "bevel",
+          46,
+          50,
+          297.37
+        ],
+        "cells": 471,
+        "score": 0.0189,
+        "distortionMean": 1.1605,
+        "distortionP90": 1.255,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "hyperbolic4812": {
+    "builder": "hyperbolic_uniform_board",
+    "args": {
+      "medium": {
+        "args": [
+          6,
+          4,
+          "bevel",
+          23,
+          25,
+          300.0
+        ],
+        "cells": 247,
+        "fixed": true,
+        "reason": "259 cells is all coin flips at the rim; 247 plays like 235"
+      },
+      "easy": {
+        "args": [
+          6,
+          4,
+          "bevel",
+          9,
+          8,
+          300.0
+        ],
+        "cells": 79,
+        "score": 0.025,
+        "distortionMean": 1.1781,
+        "distortionP90": 1.261,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          6,
+          4,
+          "bevel",
+          39,
+          50,
+          298.486
+        ],
+        "cells": 481,
+        "score": 0.0021,
+        "distortionMean": 1.1648,
+        "distortionP90": 1.2614,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "hyperbolic51010": {
+    "builder": "hyperbolic_uniform_board",
+    "args": {
+      "easy": {
+        "args": [
+          5,
+          5,
+          "zip",
+          10,
+          8,
+          299.364
+        ],
+        "cells": 81,
+        "score": 0.0,
+        "distortionMean": 1.1153,
+        "distortionP90": 1.1789,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          5,
+          5,
+          "zip",
+          22,
+          25,
+          300.0
+        ],
+        "cells": 261,
+        "score": 0.0193,
+        "distortionMean": 1.1227,
+        "distortionP90": 1.1793,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          5,
+          5,
+          "zip",
+          33,
+          50,
+          299.943
+        ],
+        "cells": 471,
+        "score": 0.0189,
+        "distortionMean": 1.1216,
+        "distortionP90": 1.1795,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "hyperbolic588": {
+    "builder": "hyperbolic_uniform_board",
+    "args": {
+      "easy": {
+        "args": [
+          5,
+          4,
+          "zip",
+          11,
+          8,
+          291.035
+        ],
+        "cells": 81,
+        "score": 0.0,
+        "distortionMean": 1.1144,
+        "distortionP90": 1.1606,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          5,
+          4,
+          "zip",
+          26,
+          25,
+          297.492
+        ],
+        "cells": 256,
+        "score": 0.0,
+        "distortionMean": 1.1083,
+        "distortionP90": 1.161,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          5,
+          4,
+          "zip",
+          43,
+          50,
+          298.047
+        ],
+        "cells": 486,
+        "score": 0.0124,
+        "distortionMean": 1.1067,
+        "distortionP90": 1.1612,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "hyperbolic668": {
+    "builder": "hyperbolic_uniform_board",
+    "args": {
+      "easy": {
+        "args": [
+          8,
+          3,
+          "zip",
+          8,
+          8,
+          300.0
+        ],
+        "cells": 81,
+        "score": 0.0,
+        "distortionMean": 1.0993,
+        "distortionP90": 1.109,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          8,
+          3,
+          "zip",
+          19,
+          25,
+          301.137
+        ],
+        "cells": 241,
+        "score": 0.0604,
+        "distortionMean": 1.0987,
+        "distortionP90": 1.1093,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          8,
+          3,
+          "zip",
+          30,
+          50,
+          300.0
+        ],
+        "cells": 473,
+        "score": 0.0147,
+        "distortionMean": 1.0952,
+        "distortionP90": 1.1095,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "hyperbolic688": {
+    "builder": "hyperbolic_uniform_board",
+    "args": {
+      "easy": {
+        "args": [
+          6,
+          4,
+          "zip",
+          10,
+          8,
+          297.632
+        ],
+        "cells": 85,
+        "score": 0.0482,
+        "distortionMean": 1.0997,
+        "distortionP90": 1.1254,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          6,
+          4,
+          "zip",
+          23,
+          25,
+          299.508
+        ],
+        "cells": 265,
+        "score": 0.0346,
+        "distortionMean": 1.0955,
+        "distortionP90": 1.1258,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          6,
+          4,
+          "zip",
+          36,
+          50,
+          299.429
+        ],
+        "cells": 481,
+        "score": 0.0021,
+        "distortionMean": 1.0994,
+        "distortionP90": 1.1261,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "hyperbolic31414": {
+    "builder": "hyperbolic_uniform_board",
+    "args": {
+      "hard": {
+        "args": [
+          7,
+          3,
+          "truncate",
+          34,
+          8,
+          298.993
+        ],
+        "cells": 442,
+        "fixed": true,
+        "reason": "484 cells took fewer mines than medium; 442 does not"
+      },
+      "easy": {
+        "args": [
+          7,
+          3,
+          "truncate",
+          9,
+          4,
+          284.02
+        ],
+        "cells": 78,
+        "score": 0.0377,
+        "distortionMean": 1.3816,
+        "distortionP90": 1.5954,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          7,
+          3,
+          "truncate",
+          22,
+          9,
+          299.26
+        ],
+        "cells": 253,
+        "score": 0.0118,
+        "distortionMean": 1.4025,
+        "distortionP90": 1.5957,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "hyperbolic31616": {
+    "builder": "hyperbolic_uniform_board",
+    "args": {
+      "medium": {
+        "args": [
+          8,
+          3,
+          "truncate",
+          17,
+          3,
+          300.0
+        ],
+        "cells": 209,
+        "fixed": true,
+        "reason": "the one medium trim that calibrates (209 cells, 18% under)"
+      },
+      "easy": {
+        "args": [
+          8,
+          3,
+          "truncate",
+          8,
+          1,
+          300.0
+        ],
+        "cells": 81,
+        "score": 0.0,
+        "distortionMean": 1.4793,
+        "distortionP90": 1.6018,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          8,
+          3,
+          "truncate",
+          30,
+          12,
+          300.0
+        ],
+        "cells": 473,
+        "score": 0.0147,
+        "distortionMean": 1.4141,
+        "distortionP90": 1.6023,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "hyperbolic669": {
+    "builder": "hyperbolic_uniform_board",
+    "args": {
+      "easy": {
+        "args": [
+          9,
+          3,
+          "zip",
+          6,
+          8,
+          300.0
+        ],
+        "cells": 82,
+        "score": 0.0123,
+        "distortionMean": 1.1009,
+        "distortionP90": 1.1142,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          9,
+          3,
+          "zip",
+          14,
+          26,
+          300.0
+        ],
+        "cells": 271,
+        "score": 0.0569,
+        "distortionMean": 1.0996,
+        "distortionP90": 1.1148,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          9,
+          3,
+          "zip",
+          20,
+          56,
+          300.0
+        ],
+        "cells": 487,
+        "score": 0.0145,
+        "distortionMean": 1.1023,
+        "distortionP90": 1.1148,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "hyperbolic74": {
+    "builder": "hyperbolic_board",
+    "args": {
+      "easy": {
+        "args": [
+          7,
+          4,
+          7,
+          8,
+          300.0
+        ],
+        "cells": 71,
+        "score": 0.1318,
+        "distortionMean": 1.2491,
+        "distortionP90": 1.2547,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          7,
+          4,
+          20,
+          25,
+          300.0
+        ],
+        "cells": 253,
+        "score": 0.0118,
+        "distortionMean": 1.2534,
+        "distortionP90": 1.2597,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          7,
+          4,
+          30,
+          50,
+          300.0
+        ],
+        "cells": 463,
+        "score": 0.0361,
+        "distortionMean": 1.2555,
+        "distortionP90": 1.2624,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "hyperbolic93": {
+    "builder": "hyperbolic_board",
+    "args": {
+      "easy": {
+        "args": [
+          9,
+          3,
+          6,
+          8,
+          301.009
+        ],
+        "cells": 73,
+        "score": 0.104,
+        "distortionMean": 1.0966,
+        "distortionP90": 1.098,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          9,
+          3,
+          13,
+          25,
+          300.0
+        ],
+        "cells": 253,
+        "score": 0.0118,
+        "distortionMean": 1.0979,
+        "distortionP90": 1.0985,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          9,
+          3,
+          21,
+          50,
+          300.0
+        ],
+        "cells": 487,
+        "score": 0.0145,
+        "distortionMean": 1.0982,
+        "distortionP90": 1.0988,
+        "indistinguishable": 0
+      }
+    }
+  },
+  "bolza": {
+    "builder": "hurwitz_board",
+    "args": {
+      "easy": {
+        "args": [
+          "bolza",
+          "gc3",
+          0,
+          15,
+          300.0
+        ],
+        "cells": 70,
+        "fixed": true,
+        "reason": "the cell count is the solid"
+      },
+      "medium": {
+        "args": [
+          "bolza",
+          "gc6",
+          0,
+          63,
+          300.0
+        ],
+        "cells": 286,
+        "fixed": true,
+        "reason": "the cell count is the solid"
+      },
+      "hard": {
+        "args": [
+          "bolza",
+          "gc8",
+          0,
+          130,
+          300.0
+        ],
+        "cells": 510,
+        "fixed": true,
+        "reason": "the cell count is the solid"
+      }
+    }
+  },
+  "bring": {
+    "builder": "hurwitz_board",
+    "args": {
+      "easy": {
+        "args": [
+          "bring",
+          "expand",
+          0,
+          25,
+          300.0
+        ],
+        "cells": 114,
+        "fixed": true,
+        "reason": "the cell count is the solid"
+      },
+      "medium": {
+        "args": [
+          "bring",
+          "gc3",
+          0,
+          58,
+          300.0
+        ],
+        "cells": 264,
+        "fixed": true,
+        "reason": "the cell count is the solid"
+      },
+      "hard": {
+        "args": [
+          "bring",
+          "gc4",
+          0,
+          120,
+          300.0
+        ],
+        "cells": 474,
+        "fixed": true,
+        "reason": "the cell count is the solid"
+      }
+    }
+  },
+  "dyck": {
+    "builder": "hurwitz_board",
+    "args": {
+      "easy": {
+        "args": [
+          "dyck",
+          "gc2",
+          0,
+          13,
+          300.0
+        ],
+        "cells": 60,
+        "fixed": true,
+        "reason": "the cell count is the solid"
+      },
+      "medium": {
+        "args": [
+          "dyck",
+          "gc4",
+          0,
+          60,
+          300.0
+        ],
+        "cells": 252,
+        "fixed": true,
+        "reason": "the cell count is the solid"
+      },
+      "hard": {
+        "args": [
+          "dyck",
+          "gc5",
+          0,
+          107,
+          300.0
+        ],
+        "cells": 396,
+        "fixed": true,
+        "reason": "the cell count is the solid"
+      }
+    }
+  },
+  "spheresquare": {
+    "builder": "sphere_square_board",
+    "args": {
+      "easy": {
+        "args": [
+          18,
+          4
+        ],
+        "cells": 96,
+        "score": 10.5097,
+        "distortionMean": 1.0231,
+        "distortionP90": 1.0533,
+        "indistinguishable": 0
+      },
+      "medium": {
+        "args": [
+          66,
+          7
+        ],
+        "cells": 294,
+        "score": 0.1384,
+        "distortionMean": 1.0231,
+        "distortionP90": 1.0453,
+        "indistinguishable": 0
+      },
+      "hard": {
+        "args": [
+          130,
+          9
+        ],
+        "cells": 486,
+        "score": 0.0124,
+        "distortionMean": 1.0231,
+        "distortionP90": 1.0605,
+        "indistinguishable": 0
       }
     }
   }

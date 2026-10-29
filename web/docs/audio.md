@@ -42,9 +42,11 @@ one that gets noticed. So the spelling skips degrees, chosen against the
 sets of side counts that genuinely share a board. Measured across every mode
 in `data/presets.json` those sets are
 
-    {3,4} {3,5} {3,6} {3,12} {4,8} {5,6} {3,4,6} {3,4,5} {4,6,12} {4,6,10}
+    {3,4} {3,5} {3,6} {3,7} {3,12} {4,5} {4,8} {5,6} {6,7}
+    {3,4,5} {3,4,6} {3,4,7} {3,4,12} {4,6,10} {4,6,12} {4,6,14} {3,4,6,12}
 
-and nothing else — never four shapes at once, and every wrapped surface
+and nothing else — four shapes at once only on the 2-uniform 3.4.6.4; 4.6.12,
+and every wrapped surface
 repeats its flat template's set exactly. `tests/unit/soundHarmony.test.ts`
 re-measures them from the boards rather than trusting that list, and fails
 on any pair that is not a third, a fourth, a fifth, a sixth or an octave, so
@@ -71,6 +73,19 @@ Two consequences worth knowing before touching the numbers:
   cannot be anchored as well. Blocks moved 340 → 415 Hz for a second reason:
   at the old root its 12- and 13-gon boards sat under 50 Hz, which a phone
   cannot reproduce.
+- **The heptagon is two degrees under the hexagon.** The hyperbolic soccer
+  ball (6.6.7) puts hexagons and heptagons on one board, and adjacent degrees
+  of a pentatonic are a whole tone or a minor third apart — a whole tone in
+  one of the presets — so the 7-gon skips a degree, and every larger shape
+  moves down with it to keep the {4,8}, {4,6,10}, {4,6,12} and new {3,4,7}
+  and {4,6,14} sets on chord tones. Triangles to hexagons did not move, so
+  the boards most people play ring exactly as before; the octagon-and-up
+  boards ring lower, Blocks' 13-gon at 52 Hz, just above that 50 Hz floor.
+  A 14-gon clamps to the 13-gon's degree, and so does the 16-gon of the
+  truncated trioctagonal board (4.6.16): its {4,6,16} spells as {4,6,14}
+  does. The other uniform hyperbolic boards' sets ({3,8}, {4,6}, {4,10},
+  {4,12}, {5,8}, {5,10}, {6,8}, {3,4,8}, {4,8,10}, {4,8,12}) all landed on
+  chord tones with no change to the spelling.
 
 `flag.interval` is the one pitch left in semitones. A flag is a lone gesture
 rather than part of a chord, so its glide is free to leave the grid.

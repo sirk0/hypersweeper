@@ -177,10 +177,19 @@ from minesweeper.boards.fractal import (  # noqa: F401
     sphinx_board,
     substitution_placements,
 )
+from minesweeper.boards.hurwitz import (  # noqa: F401
+    CLOSED_SURFACES,
+    hurwitz_board,
+    hurwitz_cells,
+    hurwitz_map,
+)
 from minesweeper.boards.hyperbolic import (  # noqa: F401
+    binary_board,
     hyperbolic_board,
     hyperbolic_faces,
     hyperbolic_positions,
+    hyperbolic_uniform_board,
+    wythoff_faces,
 )
 from minesweeper.boards.presets import (  # noqa: F401
     _PRESETS,
@@ -201,6 +210,7 @@ from minesweeper.boards.solids import (  # noqa: F401
     cube_board,
     cube_frame_board,
     gp21_board,
+    sphere_square_board,
     sphere_triangle_board,
     stepped_bipyramid_board,
     tetrahedron_board,
@@ -209,6 +219,7 @@ from minesweeper.boards.solids import (  # noqa: F401
 from minesweeper.boards.surfaces import (  # noqa: F401
     _arch_cells,
     _assemble,
+    _boy_point,
     _cylinder_point,
     _klein_point,
     _mobius_point,
@@ -218,6 +229,7 @@ from minesweeper.boards.surfaces import (  # noqa: F401
     arch_klein_board,
     arch_mobius_board,
     arch_torus_board,
+    boy_board,
     cylinder_board,
     cylinder_hex_board,
     cylinder_triangle_board,
@@ -255,6 +267,7 @@ from minesweeper.boards.tilings import (  # noqa: F401
     _snubsquare_template,
     _square_on_edge,
     _template,
+    _torus_template,
     _triangle_vertices,
     _trihex_template,
     _trunchex_template,

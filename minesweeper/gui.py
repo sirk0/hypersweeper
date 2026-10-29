@@ -47,9 +47,11 @@ from minesweeper.boards import (
     _klaassen_tiles,
     _pentaspiral_tiles,
     _z7_to_xy,
+    binary_board,
     build_board,
     family_rows,
     hyperbolic_board,
+    hyperbolic_uniform_board,
     newell_normal,
     picker_families,
     picker_modes,
@@ -58,7 +60,8 @@ from minesweeper.boards import (
     surface_of,
     view_hint,
 )
-from minesweeper.boards.surfaces import _trefoil_core
+from minesweeper.boards.hurwitz import CLOSED_SURFACES, SURFACE_MODES
+from minesweeper.boards.surfaces import _boy_point, _trefoil_core
 from minesweeper.game import CellState, Game, GameState
 
 # pygame.gfxdraw gives antialiased primitives on the desktop but does not
@@ -1012,7 +1015,60 @@ _ICON_ALIASES = {
 # The hyperbolic boards' icons: how many distance shells to draw -- the central
 # polygon, its ring, and the next ring's nearest cells, which is as much as
 # reads at icon size.
-_HYPERBOLIC_ICON_SHELLS = {"hyperbolic73": 4, "hyperbolic54": 4, "hyperbolic45": 5}
+_HYPERBOLIC_ICON_SHELLS = {"hyperbolic93": 4, "hyperbolic83": 4, "hyperbolic73": 4, "hyperbolic74": 4,
+                           "hyperbolic64": 4, "hyperbolic54": 4, "hyperbolic55": 4,
+                           "hyperbolic45": 5, "hyperbolic46": 6,
+                           "hyperbolic667": 4, "hyperbolic3737": 4, "hyperbolic3474": 5,
+                           "hyperbolic4614": 5, "hyperbolic37": 5, "hyperbolic38": 5,
+                           "hyperbolic669": 3,
+                           "hyperbolic31414": 4, "hyperbolic31616": 4,
+                           "hyperbolic668": 4, "hyperbolic3838": 4, "hyperbolic3484": 5,
+                           "hyperbolic4616": 5, "hyperbolic588": 5, "hyperbolic41010": 5,
+                           "hyperbolic4545": 5, "hyperbolic4445": 5, "hyperbolic4810": 5,
+                           "hyperbolic688": 5, "hyperbolic41212": 5, "hyperbolic4646": 5,
+                           "hyperbolic4446": 4, "hyperbolic4812": 4, "hyperbolic51010": 4,
+                           "bolza": 4, "quartic": 4, "dyck": 4, "bring": 5,
+                           "macbeath": 4, "triplet": 4}
+# The uniform ones are Wythoff's operations on a {p,q}, as (p, q, op); every
+# other hyperbolic mode is ``hyperbolic{p}{q}``. The closed surface draws the
+# same disc as its tiling's, with every face of the surface's tiling lit (a
+# Hurwitz surface's heptagons) rather than the central one: on a surface with
+# no rim every one of them is a full cell. Must match `HYPERBOLIC_UNIFORM` in
+# web/src/ui/icons.ts.
+_HYPERBOLIC_UNIFORM = {
+    "hyperbolic667": (7, 3, "zip"),
+    "hyperbolic31414": (7, 3, "truncate"),
+    "hyperbolic3737": (7, 3, "ambo"),
+    "hyperbolic3474": (7, 3, "expand"),
+    "hyperbolic4614": (7, 3, "bevel"),
+    "hyperbolic668": (8, 3, "zip"),
+    "hyperbolic31616": (8, 3, "truncate"),
+    "hyperbolic3838": (8, 3, "ambo"),
+    "hyperbolic3484": (8, 3, "expand"),
+    "hyperbolic4616": (8, 3, "bevel"),
+    "hyperbolic588": (5, 4, "zip"),
+    "hyperbolic41010": (5, 4, "truncate"),
+    "hyperbolic4545": (5, 4, "ambo"),
+    "hyperbolic4445": (5, 4, "expand"),
+    "hyperbolic4810": (5, 4, "bevel"),
+    "hyperbolic688": (6, 4, "zip"),
+    "hyperbolic41212": (6, 4, "truncate"),
+    "hyperbolic4646": (6, 4, "ambo"),
+    "hyperbolic4446": (6, 4, "expand"),
+    "hyperbolic4812": (6, 4, "bevel"),
+    "hyperbolic51010": (5, 5, "zip"),
+    "hyperbolic669": (9, 3, "zip"),
+    "bolza": (8, 3, "zip"),
+    "quartic": (7, 3, "zip"),
+    "dyck": (8, 3, "zip"),
+    "bring": (5, 4, "expand"),
+    "macbeath": (7, 3, "zip"),
+    "triplet": (7, 3, "zip"),
+}
+# The closed surfaces (boards/hurwitz.py), whose icon lights every face of the
+# surface's own tiling, by its side count.
+_CLOSED_SURFACE_MODES = {mode: CLOSED_SURFACES[surface].p
+                         for surface, mode in SURFACE_MODES.items()}
 
 
 # How each flat-faced solid drawn by `_icon_solid` -- the Catalan solids and
@@ -1086,6 +1142,52 @@ def _icon_solid(surface, mode: str, d: float) -> None:
         pts = [(int(x), int(y)) for x, y in points]
         fill_polygon(surface, points, fill)
         outline_polygon(surface, pts, ICON_OUTLINE)
+
+
+def _icon_boy(surface, d: float) -> None:
+    """Boy's surface's icon: its immersion (`_boy_point`, the board's own)
+    meshed over one hemisphere -- which covers the projective plane once --
+    seen from the side with its three-fold axis nearly upright, as the board
+    starts. Two-sided, so nothing is culled: far quads first, each shaded by
+    how squarely it faces the viewer, from either side."""
+    pitch, yaw = math.radians(-100), math.radians(20)
+    cp, sp, cy, sy = math.cos(pitch), math.sin(pitch), math.cos(yaw), math.sin(yaw)
+
+    def project(point):
+        x, y, z = point
+        y, z = y * cp - z * sp, z * cp + y * sp
+        x, z = x * cy + z * sy, z * cy - x * sy
+        return x, y, z
+
+    steps_u, steps_v = 36, 10
+    grid = [[project(_boy_point((math.sin(v) * math.cos(u), math.sin(v) * math.sin(u),
+                                 math.cos(v))))
+             for v in (math.pi / 2 * j / steps_v for j in range(steps_v + 1))]
+            for u in (2 * math.pi * i / steps_u for i in range(steps_u + 1))]
+    points = [p for row in grid for p in row]
+    lo_x, hi_x = min(p[0] for p in points), max(p[0] for p in points)
+    lo_y, hi_y = min(p[1] for p in points), max(p[1] for p in points)
+    scale = d * 0.88 / max(hi_x - lo_x, hi_y - lo_y)
+    mid_x, mid_y = (lo_x + hi_x) / 2, (lo_y + hi_y) / 2
+    faces = []
+    for i in range(steps_u):
+        for j in range(steps_v):
+            quad = [grid[i][j], grid[i + 1][j], grid[i + 1][j + 1], grid[i][j + 1]]
+            normal = newell_normal(quad)
+            length = math.hypot(*normal)
+            if length == 0:
+                continue
+            faces.append((
+                sum(p[2] for p in quad) / 4,
+                [(d / 2 + (p[0] - mid_x) * scale, d / 2 - (p[1] - mid_y) * scale)
+                 for p in quad],
+                abs(normal[2]) / length,
+            ))
+    for _, quad, lit in sorted(faces):
+        fill = ICON_BLUE_LIGHT if lit > 0.86 else (
+            ICON_BLUE if lit > 0.5 else ICON_BLUE_DARK)
+        fill_polygon(surface, quad, fill)
+        outline_polygon(surface, [(int(x), int(y)) for x, y in quad], fill)
 
 
 def _render_icon(key: str) -> pygame.Surface:
@@ -1374,18 +1476,37 @@ def _render_icon(key: str) -> pygame.Surface:
                             for x, y in polygon],
                         fill=ICON_BLUE if i % 2 else ICON_BLUE_LIGHT, width=3)
         _icon_gloss(s, pygame.Rect(d * 0.08, d * 0.06, d * 0.84, d * 0.55))
+    elif key == "hyperbolicbinary":
+        # the binary tiling's top three rows, two tiles, four and eight: each
+        # row half the width of the one above, the top row lighter
+        board = binary_board(2, 3, 1, scale=1)
+        sc = d * 0.9 / board.width
+        ox, oy = (d - board.width * sc) / 2, (d - board.height * sc) / 2
+        for (row, _), polygon in board.polygons.items():
+            pts = [(ox + x * sc, oy + y * sc) for x, y in polygon]
+            _icon_shape(s, pts, fill=ICON_BLUE_LIGHT if row == 0 else ICON_BLUE, width=3)
+        _icon_gloss(s, pygame.Rect(d * 0.08, d * 0.06, d * 0.84, d * 0.55))
     elif key in _HYPERBOLIC_ICON_SHELLS:
         # the board itself, a ring and a half deep, in the disc whose rim it never
         # reaches: drawn with its geodesic arcs and no corner rounding, since
         # the arcs are what make it read as the Poincare disc
-        p, q = int(key[-2]), int(key[-1])
-        board = hyperbolic_board(p, q, _HYPERBOLIC_ICON_SHELLS[key], 1, scale=1)
+        central = 1
+        if key in _HYPERBOLIC_UNIFORM:
+            board = hyperbolic_uniform_board(*_HYPERBOLIC_UNIFORM[key],
+                                             _HYPERBOLIC_ICON_SHELLS[key], 1, scale=1)
+        else:
+            p, q = int(key[-2]), int(key[-1])
+            board = hyperbolic_board(p, q, _HYPERBOLIC_ICON_SHELLS[key], 1, scale=1)
+            if p == 3:
+                central = q  # {3,q}: the star round the central vertex
         r = d * 0.46
         sc = 2 * r / board.width
         pygame.draw.circle(s, ICON_OUTLINE, (int(c), int(c)), int(r), 4)
         for cell, polygon in board.polygons.items():
             pts = [(c - r + x * sc, c - r + y * sc) for x, y in polygon]
-            fill_polygon(s, pts, ICON_BLUE_LIGHT if cell == 0 else ICON_BLUE)
+            lit = (sum(board.corner_mask[cell]) == _CLOSED_SURFACE_MODES[key]
+                   if key in _CLOSED_SURFACE_MODES else cell < central)
+            fill_polygon(s, pts, ICON_BLUE_LIGHT if lit else ICON_BLUE)
             ipts = [(int(x), int(y)) for x, y in pts]
             pygame.draw.lines(s, ICON_OUTLINE, True, ipts, 3)
             outline_polygon(s, ipts, ICON_OUTLINE)
@@ -1524,6 +1645,10 @@ def _render_icon(key: str) -> pygame.Surface:
         fill_circle(s, int(c), int(c), int(d * 0.44), ICON_BLUE)
         pygame.draw.circle(s, ICON_BLUE_DARK, (int(c), int(c)), int(d * 0.44), 4)
         _icon_badge(s, c, c, d * 0.2, "tri")
+    elif key == "spheresquare":
+        fill_circle(s, int(c), int(c), int(d * 0.44), ICON_BLUE)
+        pygame.draw.circle(s, ICON_BLUE_DARK, (int(c), int(c)), int(d * 0.44), 4)
+        _icon_badge(s, c, c, d * 0.2, "square")
     elif key in ("sphere", "gp21", "c180"):
         fill_circle(s, int(c), int(c), int(d * 0.44), ICON_BLUE)
         pygame.draw.circle(s, ICON_BLUE_DARK, (int(c), int(c)), int(d * 0.44), 4)
@@ -1855,6 +1980,8 @@ def _render_icon(key: str) -> pygame.Surface:
         pygame.draw.ellipse(s, ICON_BLUE_DARK, rim)
         pygame.draw.ellipse(s, ICON_BLUE_LIGHT, rim, 4)
         _icon_gloss(s, pygame.Rect(d * 0.14, d * 0.6, d * 0.72, d * 0.16), 80)
+    elif key == "boy":
+        _icon_boy(s, d)
     elif key == "mobius":
         band = pygame.Rect(d * 0.05, d * 0.16, d * 0.9, d * 0.68)
         pygame.draw.ellipse(s, ICON_BLUE, band)
@@ -2352,16 +2479,21 @@ class GameScreen(BaseGameScreen):
         )
 
     def cell_at(self, pos):
-        for cell, vertices in self.polygons.items():
+        # A board drawn as a patch of its cover (the closed hyperbolic
+        # surfaces) draws each cell several times; a tap on any copy is a
+        # tap on the cell.
+        faces = self.board.faces or {}
+        for face, vertices in self.polygons.items():
             if point_in_polygon(pos, vertices):
-                return cell
+                return faces.get(face, face)
         return None
 
     def draw_board(self, surface, fonts: FontCache) -> None:
-        for cell in self.polygons:
+        faces = self.board.faces or {}
+        for face in self.polygons:
             self.draw_cell(
-                surface, fonts, cell, self.polygons[cell],
-                self.centers[cell], self.glyph_radius[cell],
+                surface, fonts, faces.get(face, face), self.polygons[face],
+                self.centers[face], self.glyph_radius[face],
             )
 
 

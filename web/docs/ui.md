@@ -7,18 +7,41 @@ The app's pages, windows and stored state. For how cells are *drawn* see
 ## The menu
 
 The menu is play-first, and deliberately **not** the pygame one: the home page
-is Classic, Flat, 3D and Custom (`src/ui/menu.ts`). Classic opens one
-particular board straight away — the original square grid — and sits above the
-two that deal a *random* one: the flat picker's pool, and every flat manifold
-plus the spheres and polyhedra. So no picker carries a Random row; Custom holds the old root (Flat,
-Flat manifolds, Sphere, Platonic solids, Archimedean solids, Catalan solids,
-Polyhedra, Volumes).
+is Classic, Flat, 3D, Hyperbolic and Custom (`src/ui/menu.ts`). Classic opens
+one particular board straight away — the original square grid — and sits above
+the three that deal a *random* one: the flat picker's pool, every flat manifold
+plus the spheres and polyhedra, and the Hyperbolic page's boards. So no picker
+carries a Random row; Custom holds the old root (Flat, Flat manifolds,
+Hyperbolic, Sphere, Solids, Volumes). **Solids** gathers four of the shared
+solid groups — Platonic, Archimedean and Catalan solids, and Polyhedra — as
+submenus of one page (`SOLIDS_PAGE` in `src/ui/boardTree.ts`); they stay
+groups of their own everywhere else (achievements, a board's family in its
+info window, the pygame menu), so only this menu nests them. Hyperbolic is the one geometry group the pygame menu does
+not have: there it is a family on the flat picker, and the web menu lifts it
+out into a group of its own (`MENU_GROUP_FAMILIES` in `src/boards/catalog.ts`)
+— a curved space rather than a kind of flat tiling — after Flat manifolds and
+before the solids. Its page is three submenus, **Regular** (the {p,q} tilings),
+**Uniform** (Wythoff's tilings of them) and **Closed surfaces** (the plane glued
+up with no rim: the Bolza surface, Klein's quartic, Dyck's and Bring's
+surfaces, Macbeath's surface and a genus-14 Hurwitz surface, one surface a
+board), filed by each board's builder in
+`data/presets.json` (`menuSubfamilies`), so a new hyperbolic board lands in the
+right one without a list to edit. The binary tiling is hyperbolic too, but it
+is drawn in a rectangle of the upper half-plane rather than in the disc, and
+reads as a self-similar board — every row the one above it halved — so the
+menu files it under **Flat › Fractals** instead (`MENU_REFILED`) and the Flat
+pool deals it. The Regular page is sorted by p, then q — triangles first, as
+the flat picker lists Triangles, Squares, Hexagons — rather than in the shared
+catalog's order, which the pygame menu keeps. Everywhere but the menu the hyperbolic boards still count as the
+plane's: the info window says Hyperbolic, and the achievements file them there.
 A board reachable from the home page is still reachable through Custom — the
 home row is a shortcut, not a move, which is how `square` has always worked.
 The reverse is **`CUSTOM_ONLY`** (`src/boards/randomBoard.ts`): boards kept off
-the home page *and* out of both random pools until their UX is ready to be
+the home page *and* out of every random pool until their UX is ready to be
 promoted. Both pools also drop, per difficulty, the boards
-`data/distortion.json` marks as distorted at the difficulty being dealt. The cube of cubes (`cube3d`, Volumetric) is there today — it used to
+`data/distortion.json` marks as distorted at the difficulty being dealt, and at
+every difficulty the boards whose surface carries a **caution** (Boy's surface).
+The cube of cubes (`cube3d`, Volumetric) is there today — it used to
 be a second launch row beside Classic, and is now Custom › Volumes only.
 In every tiling picker the three regular tilings are promoted to rows of their
 own, leaving the Regular family holding the shaped boards alone under the label
@@ -40,6 +63,27 @@ board cards under a **pane header** — the page's title, its breadcrumb hint an
 the difficulty pills. Below that width it is the phone column, with the back
 stack in place of the sidebar.
 
+A board's card shows **the level it opens**: the preset board at the selected
+difficulty, every cell, drawn whole — a flat board as its outline, a solid or
+a wrapped surface as the real thing lit (`levelPreview` in `ui/icons.ts`). So
+Squares is a 9×9 grid on Easy and 16×30 on Hard, and the card is redrawn when
+the pills move. Building a board takes up to a second and a half (a closed
+surface at Hard), so `Menu.paintLevel` draws a page's cards in the
+background, one board per task, with the card's `previewIcon` (or the level
+at the old difficulty) standing in meanwhile; the drawings are cached per
+mode and difficulty, and nothing is built while a game is on screen.
+
+A **group's** card — a family, a surface, a Solids submenu, a random pool —
+shows a level too: the board its icon is drawn from (`iconBoard`: Uniform's
+rhombitrihexagonal, the Flat manifolds' squares on each surface), taken from
+the group's own members where it has them (`Menu.cardBoard`), so the Uniform
+card on the Torus page is the torus's rhombitrihexagonal. On a solid or a
+surface every cell is laid over a solid grout in its own shade, as the board
+lays its grout under the tiles, so a seam is a line and never a hole onto the
+far side; and a surface's cells are painted back to front rather than culled,
+since a big cell (an easy board's) can face the viewer in part while its one
+normal points away.
+
 A board row (a card on the desktop) can carry a second, smaller line under its
 label. A graded board's fairness hint takes it; otherwise a 2-uniform tiling
 puts its vertex-type symbol there (`[3⁶; 3⁴.6]₁` under *Studded triangular*),
@@ -58,6 +102,17 @@ it is built once per row and `paintDistortion` shows or hides it whenever the
 pills change, without re-rendering the page. The board stays playable; the
 in-game caption takes the same ⚠ (its tooltip says why) and the info window a
 line, and the random launchers never deal it at that difficulty.
+
+A third mark is **declared** rather than measured: a surface may carry a
+`caution` in `data/catalog.json` (`surfaceCaution` in `src/boards/catalog.ts`),
+and every board on it is marked the distortion mark's way — an *Intersects*
+pill on the desktop card, the caution as the hint line and a ⚠ on the phone
+row, the ⚠ on the caption and the line in the info window — at every
+difficulty, since it is the surface's and not the size's, and is left out of
+every random pool. Boy's surface is the one: it passes through itself, so some
+of its cells hide behind others however it is turned. (The Klein bottle passes
+through itself too, but its scroll brings every cell round, and it carries
+none.)
 
 **A tablet held upright gets the two panes too**: the query's second clause,
 `(min-width: 720px) and (min-height: 800px)`, takes in an iPad in portrait
@@ -125,13 +180,65 @@ way:
   a stack of sections with no single list to scroll — so they still scroll
   whole.
 
+### Favourites and completion marks
+
+Every playable board row carries a **star** at its right edge, centred on the
+row's height (`Menu.favButton`; on a desktop card, in the preview's top-right
+corner), and the starred boards are listed in a **Favourites**
+section on the main screen: under Classic / Flat / 3D / Hyperbolic / Custom on the phone
+home page, and under the quick-play cards on the desktop's Quick start —
+the desktop's landing page, whose sidebar row was already a star. The section is
+not there at all until something is starred; the stars on the rows are how a
+player finds it.
+
+- **The star is a button of its own**, a sibling of the row's button inside the
+  same `<li>` and laid over its corner, because a button cannot hold a button.
+  So the row still launches the board, the star only stars it, and every
+  `.menu-entry[data-mode]` selector still finds one element. `data-fav` is its
+  handle. On a desktop card it sits on a panel-coloured disc over the preview,
+  which a busy tiling would otherwise swallow.
+- **Per board, not per board and difficulty.** The star says "I like this
+  board"; the pills say how to play it.
+- **Blocked boards get no star**, and a stored one is left out of the section:
+  they cannot be played.
+- **Rows outside their page are named in full** — the row's own label plus its
+  surface ("Squares · Torus"), since the page that said "torus" is gone. The row
+  label, not `fullModeLabel`'s catalogue name: the plane's triangles are
+  "Triangles" on their page and would be "Triangle grid" there.
+  `menuEntryFor` (`src/ui/boardTree.ts`) finds a board's row — label, icon,
+  notation — by walking the tree once.
+- **Unstarring in the section takes the row away at once** (the page re-renders);
+  anywhere else the row stays and just repaints its star.
+
+`src/favourites.ts` keeps them under its own key, `ms:favourites`, shaped like
+best times (a version inside the record, total reads, a re-read before each
+write, unknown boards carried through). **A favourite is a dated switch, not a
+list entry**: each board stores `{on, at}`, and an unstar keeps its entry with
+`on: false`. The section lists the `on` ones by `at`, which is the order they
+were starred. The date is what lets two devices merge — see "The record in
+iCloud". Another tab's change, or one merged in from iCloud, reaches the menu
+through `subscribeFavourites`, which `main.ts` points at `Menu.refresh`.
+
+The **completion mark** (`Menu.addDoneMark`) is three bars rising Easy, Medium,
+Hard after a board's name (on a card, at the caption's right), each filled in
+`--accent` once the board has been won at that difficulty. Deliberately not
+stars, so it cannot be read as the favourite, and shown only on a board won at
+least once, so the catalogue's untouched rows are as they were. It reads the
+achievement record's win counts (`Progress.wins`, `src/achievements.ts`) — the
+one record of every win, seeded from the best times — once per menu render;
+clearing achievements clears the marks with it. Classic carries one too, being
+the plane's squares. `data-won` ("easy hard") is the e2e handle, and the
+`aria-label` says it in words. `tests/e2e/favourites.spec.ts` pins both
+features.
+
 ## Telling the player where they are
 
 `src/ui/boardInfo.ts` owns the board's name and the row of controls under the
 header.
 
 The **name** (`fullModeLabel`) says which board it is. Nothing on the game
-screen did before, and the menu's Flat and 3D rows each open a *random* board —
+screen did before, and the menu's Flat, 3D and Hyperbolic rows each open a
+*random* board —
 so a player could be dropped on a truncated icosahedron with no way to find out
 what it was. It is also what makes a screenshot of the game say what it is.
 
@@ -252,7 +359,8 @@ with no edit to `boardFacts.ts`:
     tiles are regular too, however far the immersion bends them.
   - for a board that bends a regular tiling, the builder: `regularTiles` on the
     Goldberg polyhedra, the geodesic sphere, the spherical snub dodecahedron and
-    the hyperbolic {p,q} boards (whose surface row reads "Hyperbolic plane").
+    the hyperbolic boards, {p,q} and uniform alike (whose surface row reads
+    "Hyperbolic plane").
 
   A class is projected unless *every* cell in it keeps the ideal shape (the
   geodesic sphere's twenty exact triangles do not make its eighty
@@ -633,6 +741,11 @@ menu is in anyway.
   other half: the `--tile-*` custom properties a theme's `[data-theme]` block in
   `styles.css` declares, worn by whichever `[data-shape]` rule the swatch
   carries — the same two-halves composition the real board gets, done in CSS.
+  On the settings page itself the three appearance rows each wear a different
+  cut of it, so they say which axis they open: Theme the whole miniature,
+  Board shape a close-up of two by two tiles (`themeSwatch`'s `closeUp`), and
+  Colour scheme the look under both schemes split on the diagonal
+  (`schemeSwatch`). The picker pages keep the whole miniature on every row.
 
 **The v2 → v3 → v4 → v5 migrations.** Until v3, `theme` named a chrome palette and
 `cellStyle` sat beside it as a second setting. `migrate` in `settings.ts` reads
@@ -710,18 +823,35 @@ Under Behaviour, and **off** by default.
 A board with everything shows eight buttons, and for most players that is a row
 of chrome on every screen for a feature they never reach for. What makes the
 setting safe is that the controls are the only way to reach a hidden cell on
-exactly one board: the Klein bottle's neck passes through its own belly, and no
-amount of turning the board brings those cells out. Everywhere else a control is
+exactly two surfaces: the Klein bottle's neck passes through its own belly, and
+Boy's surface folds its three lobes over its own funnel, and no amount of
+turning either board brings those cells out. Everywhere else a control is
 a second look at a puzzle already fully on screen — a donut's inner wall is
 glimpsed through the hole, a flat board's quarter turn shows the same patch
 sideways.
 
-So the exception is declared rather than coded: the two ring slots in
-`data/ui/screens.json` carry **`keepWhen: "surface:klein"`**, `boardConditions`
-adds a `surface:<key>` condition beside the symmetry ones, and `slotKept` (the
-mirror of `slotVisible`, with the opposite default — no condition means *not*
-kept) is what `BoardInfo.setBoard` ands in when the setting is off. A whitelist,
+So the exception is declared rather than coded: a slot in
+`data/ui/screens.json` lists the conditions that keep it — the two ring slots
+**`keepWhen: ["surface:klein", "surface:boy"]`**, the two tube slots
+**`["surface:boy"]`** (the Klein bottle's tube step is not kept; its ring roll is
+what reaches the neck, while on Boy's surface no single motion of the
+projective plane reaches every lobe, so it keeps both of its quarter turns).
+`boardConditions` adds a `surface:<key>` condition beside the symmetry ones, and
+`slotKept` (the mirror of `slotVisible`, with the opposite default — no
+condition means *not* kept, and any one listed is enough) is what
+`BoardInfo.setBoard` ands in when the setting is off. A whitelist,
 so a control added later is quiet until someone says otherwise.
+
+The second exception is not a symmetry at all: a hyperbolic board's **pan
+arrows** (`pan-left` / `pan-right` / `pan-up` / `pan-down`, both
+`visibleWhen` `"disc"` and `keepWhen` `["disc"]`, a condition `boardConditions` adds for a
+board drawn in the Poincaré disc). A drag is how a hyperbolic board's rim cells
+are reached at all, and nothing else on screen says that a flat board can be
+dragged, so they show whatever the setting — first in the row, before the turn
+and mirror controls when those are on. Each press is one step of the same pan a
+drag makes (`pan:<dx>:<dy>` → `App.nudge`, `KEY_PAN_STEP` through the centre),
+glided over `NUDGE_MS` so it reads as the board being dragged, and landing at
+once with motion off.
 
 Two things it is **not**. It never adds a control — a board still has to have
 the symmetry — and it takes no motion away: the wheel, `[` / `]`, `,` / `.` and
@@ -1002,9 +1132,10 @@ sees it immediately. Leaving or restarting inside that gap cancels it.
 
 It asks **one question** — this board again, or another — and its foot is that
 question and nothing else. **Play again** re-deals the same board. **New board**
-deals a random one from the half of the catalogue this board came from — flat if
-it was flat, otherwise a manifold, sphere or polyhedron — through
-`src/boards/randomBoard.ts`, which is the home page's Flat and 3D pools and
+deals a random one from the pool this board came from — flat if it was flat,
+hyperbolic if it was on the Hyperbolic page, otherwise a manifold, sphere or
+polyhedron (`randomKindOf`) — through `src/boards/randomBoard.ts`, which is the
+home page's Flat, 3D and Hyperbolic pools and
 their fairness weighting, shared rather than re-derived. It is the same call as
 the header's die (`App.startRandomBoard`), which is that move without having to
 win first; both abandon the board in progress the way the smiley does, without
@@ -1028,7 +1159,8 @@ feedback and gets neither.
 `App.dealtAtRandom`, set by `startGame` and passed to the card as `primary`. A
 board the player picked out of the catalogue is one they came for, so playing it
 again is the obvious next move; a board the game *dealt* them — the home page's
-Flat and 3D rows, the header's die, this window's own New board — is a step in a
+Flat, 3D and Hyperbolic rows, the header's die, this window's own New board — is
+a step in a
 wander, and the next step is another board. Focus lands on whichever it is, so
 Enter takes the card's own answer. The flag **sticks to the board**: Play again
 and the smiley pass it through, so replaying a dealt board does not turn it into
@@ -1248,8 +1380,8 @@ theme's palette, since a metal's rank is what its colour says.
 
 ## The record in iCloud
 
-In the App Store app (iPhone, iPad and Mac) the best times and the achievement
-record are kept in step through iCloud, so a second device, or the same one
+In the App Store app (iPhone, iPad and Mac) the best times, the achievement
+record and the favourites are kept in step through iCloud, so a second device, or the same one
 after the app is deleted and installed again, starts with everything the player
 has won. `src/cloudRecord.ts` does it over a native plugin, `CloudRecord`
 (`ios/App/App/CloudRecordPlugin.swift`), which hands the page iCloud's
@@ -1289,6 +1421,11 @@ Clip have no plugin, and nothing runs.
   cannot tell is which of its wins came before a clear made elsewhere, so on
   hearing of one it clears every win it counted; its times carry their own
   dates, and those set after the clear stay.
+- **Favourites go the same way** (the `favourites` key): each board's star and
+  when it last changed, the later change winning board by board
+  (`mergeStars`). Like best times that is idempotent, so the merged map is
+  written whole; unlike a plain set union, an unstar made after a star wins
+  rather than being merged straight back. A star or an unstar syncs at once.
 - **Game Center hears about merged wins.** When a sync changes the achievement
   record, the whole record is sent to Game Center again, quietly
   (`catchUpGameCenter`).

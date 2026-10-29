@@ -237,12 +237,18 @@ export function insetMitres(points: readonly Pt[]): [number, number][] {
  * game; the shapes have to stay legible.
  *
  * A straight "corner" (a T-vertex) comes out as three points on the straight
- * edge, which is harmless. The count is always `3 * points.length`, so a
- * cell's vertex count stays a function of its side count — which is what lets
- * a cell be re-cut in place (see cellStyle.ts). */
+ * edge, which is harmless. A point the board says is no corner at all
+ * (`corners`, its corner mask: the points a hyperbolic edge's arc is drawn
+ * through) is kept as it is, one point: rounding it took nothing off the
+ * outline but tripled the points a hyperbolic tile is cut from, and so the
+ * vertices its board draws and recolours. The count is `3` per corner and `1`
+ * per other point, fixed for the cell, so its vertex count stays a function of
+ * its outline — which is what lets a cell be re-cut in place (see
+ * cellStyle.ts). */
 export function roundCorners<P extends readonly number[]>(
   points: readonly P[],
   edgeFrac: number,
+  corners?: readonly boolean[] | null,
 ): P[] {
   const frac = Math.max(0, Math.min(edgeFrac, 0.45));
   const n = points.length;
@@ -259,6 +265,10 @@ export function roundCorners<P extends readonly number[]>(
     const prev = points[(i + n - 1) % n]!;
     const cur = points[i]!;
     const next = points[(i + 1) % n]!;
+    if (corners?.[i] === false) {
+      out.push(cur);
+      continue;
+    }
     const u0 = len(cur, prev) > 0 ? frac : 0;
     const u1 = len(cur, next) > 0 ? frac : 0;
     const a = at(cur, prev, u0);
@@ -296,6 +306,9 @@ export interface BoardMesh extends Group {
   cellForFace(faceIndex: number, layer?: PickLayer): CellId | null;
   cellAnchor(cell: CellId): CellAnchor | null;
   setVisual(cell: CellId, visual: CellVisual): void;
+  /** `setVisual` for many cells at once, where a mesh can do it cheaper than
+   * one at a time. */
+  setVisuals?(visuals: Iterable<readonly [CellId, CellVisual]>): void;
   setHover(cell: CellId | null): void;
   /** Told the current board rotation and camera position so view-dependent
    * content (billboarded glyphs, per-cell glyph culling on closed surfaces)
@@ -305,6 +318,31 @@ export interface BoardMesh extends Group {
    * landscape flat board on a portrait viewport), so its glyphs can be
    * counter-rotated and stay upright. Only flat boards are ever turned. */
   setQuarterTurn?(on: boolean): void;
+
+  // -- hyperbolic panning (see render/disc.ts) --------------------------------
+  // Only a board drawn in the Poincaré disc moves this way; it reports
+  // `discPans` and the renderer routes its drags here instead of to the
+  // Euclidean pan. Points are in the mesh's own units.
+
+  /** Whether drags move this board by a disc isometry. */
+  readonly discPans?: boolean;
+  /** Move the board so what is drawn at `from` is drawn at `to` — as near as
+   * the view's reach allows. Returns false when there was nothing to move. */
+  dragDisc?(from: readonly [number, number], to: readonly [number, number]): boolean;
+  /** Back to the board as it was built. */
+  resetDisc?(): void;
+  /** The point of the board as built that is drawn at `p`. The geometry a
+   * pick ray is cast against is the board as built (the pan is the vertex
+   * shader's), so this is where the ray has to be aimed. */
+  discSource?(p: readonly [number, number]): readonly [number, number];
+
+  // -- half-plane panning (see render/halfPlane.ts) ---------------------------
+  // A board drawn in the upper half-plane (the binary tiling) is moved by the
+  // ordinary flat camera, its drags turned into a zoom about the ideal line and
+  // a slide along it. All the renderer needs is where that line is.
+
+  /** The ideal line's y and the furthest the view may magnify (mesh units). */
+  readonly halfPlane?: { line: number; maxZoom: number };
 
   // -- animations (see render/animations.ts) ---------------------------------
   /** Enable or disable this board's animations (reduced-motion / test seam).

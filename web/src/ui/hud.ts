@@ -56,6 +56,25 @@ export const ICONS: Record<string, string> = {
     <path d="M5 7 L12 14 L19 7 M5 13 L12 20 L19 13" stroke="currentColor"
       stroke-width="1.9" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>`,
+  // The pan arrows of a board drawn in the Poincaré disc: a filled pad rather
+  // than a stroke, so they read as moving the board — a D-pad — and are not
+  // taken for the ring/tube steps above or for the header's back arrow.
+  "pan-left": `<svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M6 12 L16.5 5.5 V18.5 Z" fill="currentColor" stroke="currentColor"
+      stroke-width="1.6" stroke-linejoin="round"/>
+  </svg>`,
+  "pan-right": `<svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M18 12 L7.5 5.5 V18.5 Z" fill="currentColor" stroke="currentColor"
+      stroke-width="1.6" stroke-linejoin="round"/>
+  </svg>`,
+  "pan-up": `<svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M12 6 L5.5 16.5 H18.5 Z" fill="currentColor" stroke="currentColor"
+      stroke-width="1.6" stroke-linejoin="round"/>
+  </svg>`,
+  "pan-down": `<svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M12 18 L5.5 7.5 H18.5 Z" fill="currentColor" stroke="currentColor"
+      stroke-width="1.6" stroke-linejoin="round"/>
+  </svg>`,
   // Fallbacks (see above): a generic turn and a generic mirror, replaced by the
   // board's own the moment one is on screen.
   "rotate-right": `<svg viewBox="0 0 24 24" aria-hidden="true">
@@ -201,11 +220,15 @@ export interface HudState {
  * `symmetry-pair:<id>` for the ones that are not their own inverse. A
  * reflection is, and so is a Klein bottle's half-tube step, so those get one
  * button where a translation gets a back/forward pair. A wrapped board also
- * declares `surface:<key>` for the surface it is glued into, which is what a
- * slot's `keepWhen` is matched against. */
+ * declares `surface:<key>` for the surface it is glued into, and a board drawn
+ * in a model of the hyperbolic plane — the Poincaré disc or the upper
+ * half-plane, the hyperbolic boards, either of which is dragged by an isometry
+ * — declares `disc`, which is what its pan arrows show on; a slot's `keepWhen`
+ * is matched against the same set. */
 export function boardConditions(
   symmetries: readonly BoardSymmetry[],
   mode?: string,
+  disc = false,
 ): Set<string> {
   const conditions = new Set<string>();
   for (const symmetry of symmetries) {
@@ -214,6 +237,7 @@ export function boardConditions(
   }
   const surface = mode === undefined ? null : surfaceOf(mode);
   if (surface) conditions.add(`surface:${surface.key}`);
+  if (disc) conditions.add("disc");
   return conditions;
 }
 
@@ -227,20 +251,23 @@ export function slotVisible(
 }
 
 /** Whether a slot survives the extra-controls setting being *off* — its
- * `keepWhen` (`data/ui/screens.json`), and the board meeting it.
+ * `keepWhen` (`data/ui/screens.json`), and the board meeting any one of it.
  *
  * The opposite default from `slotVisible`, deliberately: a slot with no
  * `visibleWhen` always shows, and one with no `keepWhen` never does. That is
- * what makes the setting a whitelist rather than a blacklist — only the Klein
- * bottle's two ring chevrons name one, because they are the only controls a
- * board cannot be played without (see "Board symmetries" in docs/boards.md:
- * every other control looks at the same puzzle from another angle, while the
- * bottle's neck really does hide cells from the camera). */
+ * what makes the setting a whitelist rather than a blacklist — three kinds
+ * name one: the Klein bottle's two ring chevrons and Boy's surface's two
+ * pairs, the symmetry controls a board cannot be played without (see "Board
+ * symmetries" in docs/boards.md: every other control looks at the same puzzle
+ * from another angle, while the bottle's neck and Boy's lobes really do hide
+ * cells from the camera), and a hyperbolic board's pan arrows, which are
+ * there to say the board can be dragged — how its rim cells are reached at
+ * all. A slot may list several conditions; any one keeps it. */
 export function slotKept(
-  keepWhen: string | undefined,
+  keepWhen: readonly string[] | undefined,
   conditions: ReadonlySet<string>,
 ): boolean {
-  return keepWhen !== undefined && conditions.has(keepWhen);
+  return keepWhen !== undefined && keepWhen.some((c) => conditions.has(c));
 }
 
 export class Hud {

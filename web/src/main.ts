@@ -13,6 +13,7 @@ import {
 import { setAnalyticsEnabled, trackGame } from "./analytics";
 import { clipBoard, tellClip } from "./appClip";
 import { startCloudRecord, syncCloudRecord } from "./cloudRecord";
+import { subscribeFavourites } from "./favourites";
 import type { PreviousState, StartTrigger } from "./analyticsEvent";
 import { applyWebAppIcon, nativeAppIcon, setAppIcon, type AppIconKey } from "./appIcon";
 import {
@@ -23,11 +24,11 @@ import {
   soundVolume,
   unlockAudio,
 } from "./audio/sound";
-import { isBoard3D, type CellId, type SymmetryId } from "./boards/core";
+import { isBoard3D, pansHyperbolically, type CellId, type SymmetryId } from "./boards/core";
 import { fairnessOf, modeFairness } from "./boards/fairness";
 import { gameCenterSupported, reportUnlocks, startGameCenter } from "./gameCenter";
 import { hasMode } from "./boards/presets";
-import { randomMode } from "./boards/randomBoard";
+import { isRandomKind, randomKindOf, randomMode } from "./boards/randomBoard";
 import { hasDifficulty } from "./config/screens";
 import { haptic, setHapticsEnabled } from "./haptics";
 import { boardLinkQuery, parseBoardLink } from "./link";
@@ -75,6 +76,10 @@ function withShellIcon(settings: Settings): Settings {
 
 /** Zoom step for one press of the +/- keys. */
 const ZOOM_KEY_STEP = 1.3;
+/** How far one press of an arrow key or a pan arrow drags a hyperbolic board,
+ * in CSS pixels at the centre of the view — a little under half the central
+ * cell on a phone. */
+const KEY_PAN_STEP = 40;
 
 /** How long the record dialog waits after a win, so the board's win wave and
  * the flags cascading in are seen before a card covers them. Skipped when
@@ -124,10 +129,10 @@ class App {
    * `checkRecord` puts up a moment later. */
   private unlocked: Achievement[] = [];
   /** Whether the board on screen was *dealt* rather than chosen — the home
-   * page's Flat and 3D rows, the header's die, the win window's New board. It
-   * is what that window highlights on (ui/scoreDialog.ts): a board the player
-   * picked is one they came for, a dealt one is a step in a wander through the
-   * catalogue. It sticks to the board, so replaying a dealt board with Play
+   * page's Flat, 3D and Hyperbolic rows, the header's die, the win window's
+   * New board. It is what that window highlights on (ui/scoreDialog.ts): a
+   * board the player picked is one they came for, a dealt one is a step in a
+   * wander through the catalogue. It sticks to the board, so replaying a dealt board with Play
    * again or the smiley does not turn it into a chosen one — the highlight
    * would otherwise move between two wins on the same board. */
   private dealtAtRandom = false;
@@ -252,13 +257,15 @@ class App {
       onHover: (cell) => this.hover(cell),
       rotates: () => this.screen === "game" && (this.session?.is3d ?? false),
       onRotate: (dx, dy) => this.rotate(dx, dy),
-      // A zoomed-in flat board is dragged around; a 3D one is rotated instead
-      // (two fingers still pan it).
+      // A zoomed-in flat board is dragged around, and a hyperbolic one at any
+      // zoom (it moves by an isometry of the disc or the half-plane, which
+      // needs no overhang); a 3D one is rotated instead (two fingers still pan
+      // it).
       pans: () =>
         this.screen === "game" &&
         !(this.session?.is3d ?? false) &&
-        this.renderer.zoom > 1,
-      onPan: (dx, dy) => this.pan(dx, dy),
+        (this.renderer.zoom > 1 || this.renderer.hyperbolicPans),
+      onPan: (dx, dy, x, y) => this.pan(dx, dy, x, y),
       onZoom: (factor, x, y) => this.zoom(factor, x, y),
       // The wheel walks the ring; with shift held it rolls round the tube, on
       // the boards that have one.
@@ -279,6 +286,9 @@ class App {
     // ever a trap here (see blockBrowserZoom).
     blockBrowserZoom();
     subscribeSettings((s) => this.adoptSettings(s));
+    // A star set in another tab, or merged in from another device's iCloud
+    // record, has to show on the menu (its Favourites section and the stars).
+    subscribeFavourites(() => this.menu.refresh());
     // The colour scheme may be the device's rather than a stored choice, and a
     // phone switches itself at dusk. Nothing else notices, so the page would sit
     // on the wrong palette until the next reload.
@@ -834,7 +844,11 @@ class App {
     this.boardInfo.setBoard(
       this.session.mode,
       this.session.difficulty,
-      boardConditions(this.session.symmetries, this.session.mode),
+      boardConditions(
+        this.session.symmetries,
+        this.session.mode,
+        !isBoard3D(this.session.board) && pansHyperbolically(this.session.board),
+      ),
       this.symmetryPictures(),
       this.settings.extraControls,
     );
@@ -869,6 +883,11 @@ class App {
       // symmetries; see data/ui/screens.json boardBar.
       const [, id, direction] = action.split(":");
       this.move(id as SymmetryId, Number(direction));
+    } else if (action.startsWith("pan:")) {
+      // `pan:<dx>:<dy>` — a hyperbolic board's pan arrows: the board moves the
+      // way the arrow points, as the arrow keys and a drag move it.
+      const [, dx, dy] = action.split(":");
+      this.nudge(Number(dx), Number(dy));
     } else if (action === "info") {
       this.showBoardInfo();
     } else if (action === "random") {
@@ -906,7 +925,7 @@ class App {
       } else {
         this.startGame(arg, this.settings.difficulty, { trigger: "menu" });
       }
-    } else if (verb === "random" && (arg === "flat" || arg === "3d")) {
+    } else if (verb === "random" && isRandomKind(arg)) {
       const mode = randomMode(arg, this.settings.difficulty);
       if (mode) {
         this.startGame(mode, this.settings.difficulty, { dealtAtRandom: true, trigger: "random" });
@@ -925,9 +944,10 @@ class App {
     }
   }
 
-  /** Deal another board at random, from the half of the catalogue the one on
-   * screen came from — flat deals flat, anything off the plane deals another
-   * manifold, sphere or polyhedron — at the difficulty being played. The record
+  /** Deal another board at random, from the pool the one on screen belongs to
+   * — flat deals flat, hyperbolic deals hyperbolic, anything off the plane
+   * deals another manifold, sphere or polyhedron — at the difficulty being
+   * played. The record
    * window's "New board" is the same move (boards/randomBoard.ts, the home
    * page's own pools and fairness weighting); this is it without having to win
    * first, which is what makes the catalogue something to wander through. Like
@@ -935,7 +955,7 @@ class App {
   private startRandomBoard(): void {
     const session = this.session;
     if (!session || this.screen !== "game") return;
-    const mode = randomMode(session.is3d ? "3d" : "flat", session.difficulty);
+    const mode = randomMode(randomKindOf(session.mode, session.is3d), session.difficulty);
     if (mode) {
       this.startGame(mode, session.difficulty, {
         dealtAtRandom: true,
@@ -1021,10 +1041,11 @@ class App {
     this.renderer.zoomBy(factor, x, y);
   }
 
-  /** Drag the zoomed board by (dx, dy) CSS pixels. */
-  private pan(dxPx: number, dyPx: number): void {
+  /** Drag the zoomed (or hyperbolic) board by (dx, dy) CSS pixels, a step
+   * that ended at canvas pixel (x, y) when there is a finger behind it. */
+  private pan(dxPx: number, dyPx: number, x?: number, y?: number): void {
     if (this.screen !== "game") return;
-    this.renderer.panBy(dxPx, dyPx);
+    this.renderer.panBy(dxPx, dyPx, x, y);
   }
 
   /** Move the board's contents one step along one of its symmetries (a
@@ -1059,12 +1080,32 @@ class App {
       // but it does have its own turn and mirrors.
       const [id, direction] = App.SYMMETRY_KEYS[e.key]!;
       this.move(id, direction);
-    } else if (!this.session?.is3d) return;
+    } else if (this.renderer.hyperbolicPans && this.onKeyDisc(e)) return;
+    else if (!this.session?.is3d) return;
     else {
       this.onKey3d(e);
       return;
     }
     e.preventDefault();
+  }
+
+  /** Arrow keys carry a hyperbolic board the way they turn a 3D one: the
+   * board moves the way the arrow points, as a drag that way would move it. */
+  private onKeyDisc(e: KeyboardEvent): boolean {
+    if (e.key === "ArrowLeft") this.nudge(-1, 0);
+    else if (e.key === "ArrowRight") this.nudge(1, 0);
+    else if (e.key === "ArrowUp") this.nudge(0, -1);
+    else if (e.key === "ArrowDown") this.nudge(0, 1);
+    else return false;
+    e.preventDefault();
+    return true;
+  }
+
+  /** One step of a hyperbolic board's pan, from a pan arrow or an arrow key:
+   * `KEY_PAN_STEP` CSS px the way (dx, dy) points, glided as a drag. */
+  private nudge(dx: number, dy: number): void {
+    if (this.screen !== "game" || !this.renderer.hyperbolicPans) return;
+    this.renderer.nudge(dx * KEY_PAN_STEP, dy * KEY_PAN_STEP);
   }
 
   private onKey3d(e: KeyboardEvent): void {

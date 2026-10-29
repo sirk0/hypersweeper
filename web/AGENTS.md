@@ -21,6 +21,11 @@ npm run e2e         # Playwright e2e + visual regression
 npm run e2e:docker  # …the whole suite on Linux, in a container
 ```
 
+Those are the full runs, and CI makes them. While working, run only what your
+change touches — `npx vitest related --run <files>`, one spec with
+`npx playwright test hud.spec.ts -g "<title>"` — within about four minutes; see
+"Verifying a change" in the root [`AGENTS.md`](../AGENTS.md).
+
 The visual baselines are Linux pixels, so `gallery.spec.ts` skips itself
 elsewhere and `npm run e2e:docker` is how the gallery runs off Linux — see
 "Running the visual suite off Linux" in [`docs/testing.md`](docs/testing.md).
@@ -125,12 +130,17 @@ design rather than the rule itself.
 - `src/session.ts` — `GameSession`: Game ↔ mesh ↔ HUD.
 - `src/input/controls.ts` — pointer/touch state machine (tap, long-press,
   right-click, drag-rotate on 3D boards, pinch-zoom and drag-pan on every
-  board), plus `blockBrowserZoom` — the guard that keeps the *browser* from
-  zooming the page (see "Zoom" in [`docs/render.md`](docs/render.md)).
+  board — a hyperbolic one at every zoom), plus `blockBrowserZoom` — the
+  guard that keeps the *browser* from zooming the page (see "Zoom" in [`docs/render.md`](docs/render.md)).
 - `src/render/zoom.ts` — the pure view-transform arithmetic (zoom bounds, the
   anchor that holds a point under the fingers, the pan clamp), unit tested
   without a WebGL context; `renderer.ts` owns the state and applies it to
-  whichever camera the board uses.
+  whichever camera the board uses. `src/render/disc.ts` is its hyperbolic twin:
+  the Möbius view a hyperbolic board is dragged by (see "Hyperbolic panning" in
+  [`docs/render.md`](docs/render.md)), applied by `polygonBoard.ts` through the
+  vertex shader. `src/render/halfPlane.ts` is the binary tiling's: a drag on a
+  board drawn in the upper half-plane becomes a zoom about its ideal line and a
+  slide along it, applied by the ordinary flat camera.
 - `src/ui/` — HTML/CSS overlay chrome: `hud.ts` (header — laid out like the
   pygame one: back + flag at the left edge, the smiley on the exact screen
   centre with an equal-height LED counter either side of it, and the Klein
@@ -146,8 +156,9 @@ design rather than the rule itself.
   real `_ArchTemplate` tiling (a tile with its ring of neighbours, a vertex
   rosette, or whole periods for a rectangle bond, per `PATCH_STYLE`), a sphere
   row from the real solid projected and
-  back-face culled, a surface row from the real immersion meshed, depth-sorted
-  and flat-shaded — so they cannot drift from the boards),
+  back-face culled, a flat-manifold row from its easy board in squares on the
+  board's own immersion, depth-sorted and flat-shaded — so they cannot drift
+  from the boards),
   both **rendered from the shared UI-screen config**.
 - **The viewport the app lays out in** is `--app-h` (`styles.css`), never
   `100vh`: on iOS Safari `100vh` is the *large* viewport — the toolbars

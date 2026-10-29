@@ -9,11 +9,13 @@ import {
   SOLID_GROUPS,
   SPIRAL_MODES,
   SURFACES,
+  surfaceCaution,
   surfaceOf,
   TILINGS_BY_KEY,
   tilingOf,
 } from "../boards/catalog";
 import { isBoard3D, type AnyBoard, type CellId } from "../boards/core";
+import { hurwitzSurfaceLabel } from "../boards/hurwitz";
 import { distortionHint } from "../boards/distortion";
 import { fairnessHint, fairnessOf } from "../boards/fairness";
 import { ARCH_TILINGS, archTemplate, templateCells } from "../boards/tilings";
@@ -73,6 +75,9 @@ export interface BoardFacts {
   /** That its surface draws the tiles too far out of shape at this
    * difficulty, when it does (boards/distortion.ts). */
   distortion: string | undefined;
+  /** What its surface warns of, at every difficulty, when it does (catalog.ts
+   * `surfaceCaution`: Boy's surface passes through itself). */
+  caution: string | undefined;
   /** What "projected" means, on a board with a projected row. */
   note: string | undefined;
 }
@@ -520,18 +525,23 @@ export function boardFacts(
     // any of these surfaces at all, and its family row names what it is.
     // A hyperbolic board is drawn on the plane but is not of it: the disc is a
     // model of the hyperbolic plane, which is the surface its tiles tile.
+    // A closed hyperbolic surface is drawn in the disc too, but the surface it
+    // is is the one its patch covers, which the difficulty picks.
     surface:
       surface?.label ??
       (isBoard3D(board)
         ? null
-        : HYPERBOLIC_MODES.includes(mode)
-          ? "Hyperbolic plane"
-          : (SURFACES.get("flat")?.label ?? null)),
+        : board.quotient
+          ? hurwitzSurfaceLabel(mode)
+          : HYPERBOLIC_MODES.includes(mode)
+            ? "Hyperbolic plane"
+            : (SURFACES.get("flat")?.label ?? null)),
     cells: board.adjacency.size,
     mines,
     shapes,
     warning: fairnessHint(fairnessOf(mode, difficulty)),
     distortion: distortionHint(mode, difficulty),
+    caution: surfaceCaution(mode),
     note: shapes.some((s) => s.projected)
       ? isBoard3D(board)
         ? "Projected tiles have that shape in the ideal tiling, and are bent where it is laid on this surface."

@@ -33,16 +33,9 @@ def _cyclic(sequence: Sequence[int]) -> tuple[int, ...]:
                for seq in (sequence, sequence[::-1]) for i in range(len(seq)))
 
 
-def vertex_types_shown(board, vertex_types: Iterable[Sequence[int]]) -> set:
-    """Which of a tiling's vertex configurations some *interior* vertex of the
-    board has, read in cyclic order round the vertex.
-
-    A window can carry every tile a tiling has and still not show the tiling:
-    a cylinder of `squarerows2` half a domain long has its triangle courses and
-    its square courses, but no two square courses side by side, so no 4^4
-    vertex -- it is the elongated triangular tiling, as far as the player can
-    tell. Order matters because two configurations can meet the same tiles
-    (3^3.4^2 and 3^2.4.3.4 are both three triangles and two squares).
+def vertex_fans(board) -> dict:
+    """Each vertex of the board -> the side counts of the tiles round it, in
+    cyclic order (as ``_cyclic`` keys it), or None for a vertex on a rim.
 
     Read combinatorially, so it works on a flat board and an immersed one
     alike: the cells round a vertex are chained through the edges they share
@@ -58,9 +51,8 @@ def vertex_types_shown(board, vertex_types: Iterable[Sequence[int]]) -> set:
         n = len(points)
         for i, point in enumerate(points):
             around.setdefault(point, {})[points[i - 1]] = (points[(i + 1) % n], n)
-    want = {_cyclic(t): index for index, t in enumerate(vertex_types)}
-    shown = set()
-    for links in around.values():
+    fans: dict = {}
+    for vertex, links in around.items():
         start = next(iter(links))
         fan, at = [], start
         for _ in range(len(links)):
@@ -70,12 +62,24 @@ def vertex_types_shown(board, vertex_types: Iterable[Sequence[int]]) -> set:
             fan.append(sides)
             if at == start:
                 break
-        if at != start or len(fan) != len(links):
-            continue
-        index = want.get(_cyclic(fan))
-        if index is not None:
-            shown.add(index)
-    return shown
+        closed = at == start and len(fan) == len(links)
+        fans[vertex] = _cyclic(fan) if closed else None
+    return fans
+
+
+def vertex_types_shown(board, vertex_types: Iterable[Sequence[int]]) -> set:
+    """Which of a tiling's vertex configurations some *interior* vertex of the
+    board has, read in cyclic order round the vertex (``vertex_fans``).
+
+    A window can carry every tile a tiling has and still not show the tiling:
+    a cylinder of `squarerows2` half a domain long has its triangle courses and
+    its square courses, but no two square courses side by side, so no 4^4
+    vertex -- it is the elongated triangular tiling, as far as the player can
+    tell. Order matters because two configurations can meet the same tiles
+    (3^3.4^2 and 3^2.4.3.4 are both three triangles and two squares).
+    """
+    want = {_cyclic(t): index for index, t in enumerate(vertex_types)}
+    return {want[fan] for fan in vertex_fans(board).values() if fan in want}
 
 
 def mean_degree(adjacency: dict) -> float:
@@ -92,6 +96,22 @@ def indistinguishable_cells(adjacency: dict) -> int:
     """
     groups = Counter(frozenset([cell, *ns]) for cell, ns in adjacency.items())
     return sum(count for count in groups.values() if count > 1)
+
+
+def near_twin_cells(adjacency: dict) -> int:
+    """How many cells have a neighbour whose closed neighbourhood is theirs
+    plus one cell.
+
+    That one cell's number is all that separates the pair, so whenever it is
+    a mine a mine in the pair is a coin flip. The classic board has none (a
+    corner is two cells short); a periodic tiling has them only on a rim,
+    which the builders cut back (``core._without_near_twins``) wherever the
+    cell can be peeled off whole. What this counts is what that leaves.
+    """
+    hood = {cell: frozenset([cell, *ns]) for cell, ns in adjacency.items()}
+    return sum(1 for cell, ns in adjacency.items()
+               if any(len(hood[other]) == len(hood[cell]) + 1
+                      and hood[cell] < hood[other] for other in ns))
 
 
 def _polygon_area_3d(points: Sequence[Sequence[float]]) -> float:

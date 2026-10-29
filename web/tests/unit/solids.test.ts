@@ -4,6 +4,7 @@ import {
   gp21Board,
   cubeBoard,
   icosahedronBoard,
+  sphereSquareBoard,
   sphereTriangleBoard,
   cubeFrameBoard,
   steppedBipyramidBoard,
@@ -115,6 +116,34 @@ describe("solids", () => {
       expect(board.polygons.size).toBe(20 * f * f);
       expect(sizes(board).every((s) => s === 3)).toBe(true);
       expect(board.adjacency).toEqual(flat.adjacency);
+    }
+  });
+
+  it("the spherical cube is the cube board drawn round, at every size", () => {
+    for (let n = 1; n <= 6; n++) {
+      const board = sphereSquareBoard(10, n);
+      const flat = cubeBoard(n, 10);
+      expect(board.polygons.size).toBe(6 * n * n);
+      expect(sizes(board).every((s) => s === 4)).toBe(true);
+      // the same lattice keys, so the same neighbours: name the cube's cells
+      // as the sphere does, by their sorted corners (drawn at key / n)
+      const name = new Map(
+        [...flat.polygons].map(([cell, polygon]) => [
+          cell,
+          polygon
+            .map((p) => p.map((c) => Math.round(c * n) + 0).join(","))
+            .sort()
+            .join(";"),
+        ]),
+      );
+      const renamed = new Map(
+        [...flat.adjacency].map(([cell, ns]) => [name.get(cell)!, ns.map((d) => name.get(d)!).sort()]),
+      );
+      const sorted = new Map([...board.adjacency].map(([cell, ns]) => [cell, [...ns].sort()]));
+      expect(sorted).toEqual(renamed);
+      for (const polygon of board.polygons.values()) {
+        for (const p of polygon) expect(Math.hypot(...p)).toBeCloseTo(1, 9);
+      }
     }
   });
 

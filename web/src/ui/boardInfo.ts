@@ -1,4 +1,4 @@
-import { fullModeLabel } from "../boards/catalog";
+import { fullModeLabel, surfaceCaution } from "../boards/catalog";
 import { distortionHint } from "../boards/distortion";
 import { fairnessHint, fairnessOf } from "../boards/fairness";
 import { screens, type HudSlot } from "../config/screens";
@@ -55,7 +55,7 @@ function button(slot: HudSlot, onAction: (action: string) => void): HTMLButtonEl
   btn.setAttribute("aria-label", slot.label ?? slot.slot);
   btn.title = slot.label ?? slot.slot;
   if (slot.visibleWhen) btn.dataset.visibleWhen = slot.visibleWhen;
-  if (slot.keepWhen) btn.dataset.keepWhen = slot.keepWhen;
+  if (slot.keepWhen) btn.dataset.keepWhen = slot.keepWhen.join(" ");
   if (slot.action) btn.addEventListener("click", () => onAction(slot.action!));
   return btn;
 }
@@ -126,8 +126,9 @@ export class BoardInfo {
    * icon is drawn from — see ui/symmetryIcon.ts.
    *
    * `extraControls` is the player's setting. With it off the row keeps only the
-   * slots whose `keepWhen` this board meets — the Klein bottle's ring pair, and
-   * nothing else in the catalogue — so most boards show no row at all. It never
+   * slots whose `keepWhen` this board meets — the Klein bottle's ring pair,
+   * Boy's surface's two pairs and a hyperbolic board's pan arrows, nothing else
+   * in the catalogue — so most boards show no row at all. It never
    * *adds* a control: a board still has to have the symmetry. */
   setBoard(
     mode: string,
@@ -142,9 +143,11 @@ export class BoardInfo {
     // player's fault, so it is the one that most needs saying. Only `warn`
     // reaches here: a blocked board never opens. A board its surface draws
     // out of shape at this difficulty carries the same mark — a random deal
-    // never lands on one, but a share link or the native menu bar can.
+    // never lands on one, but a share link or the native menu bar can — and so
+    // does one whose surface carries a caution (Boy's surface), at every
+    // difficulty.
     const level = fairnessOf(mode, difficulty);
-    const warnings = [fairnessHint(level), distortionHint(mode, difficulty)]
+    const warnings = [fairnessHint(level), distortionHint(mode, difficulty), surfaceCaution(mode)]
       .filter((w): w is string => w !== undefined);
     this.nameEl.textContent =
       warnings.length === 0 ? fullModeLabel(mode) : `${fullModeLabel(mode)} ⚠`;
@@ -152,7 +155,7 @@ export class BoardInfo {
     for (const btn of this.barButtons) {
       btn.hidden =
         !slotVisible(btn.dataset["visibleWhen"], conditions) ||
-        !(extraControls || slotKept(btn.dataset["keepWhen"], conditions));
+        !(extraControls || slotKept(btn.dataset["keepWhen"]?.split(" "), conditions));
     }
     this.drawIcons(pictures);
     // A board with no controls hides the strip outright rather than reserving

@@ -35,12 +35,17 @@ test.describe("M2 solids", () => {
     await page.goto("/");
     await expect(page.locator("body[data-ready]")).toBeVisible();
     await page.locator('.difficulty-btn[data-key="easy"]').click();
-    for (const group of ["sphere", "platonic", "archimedean", "catalan", "polyhedra"]) {
+    for (const group of ["sphere", "solids", "volume"]) {
       await expect(page.locator(`.menu-entry[data-group="${group}"]`)).toBeVisible();
     }
+    // the polyhedra are one Solids row, not a row each
+    for (const group of ["platonic", "archimedean", "catalan", "polyhedra"]) {
+      await expect(page.locator(`.menu-entry[data-group="${group}"]`)).toHaveCount(0);
+    }
     // Drill in, back out, drill in again — the sidebar row works both ways.
-    await page.locator('.menu-entry[data-group="catalan"]').click();
-    await page.locator('.menu-entry[data-group="catalan"]').click();
+    await page.locator('.menu-entry[data-group="solids"]').click();
+    await page.locator('.menu-entry[data-group="solids"]').click();
+    await page.locator('.menu-entry[data-submenu="catalan"]').click();
     await page.locator('.menu-entry[data-mode="sphere"]').click();
     const state = await page.evaluate(() => window.__ms!.state());
     expect(state.screen).toBe("game");
@@ -49,14 +54,16 @@ test.describe("M2 solids", () => {
     expect(state.cellCount).toBe(60);
   });
 
-  test("every solid group is one click from a board — no group picker", async ({ page }) => {
+  test("the Solids page holds the four solid groups, each a submenu", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator("body[data-ready]")).toBeVisible();
     await page.locator('.difficulty-btn[data-key="easy"]').click();
-    await page.locator('.menu-entry[data-group="platonic"]').click();
-    // straight to the boards: the Platonic solids used to sit behind a
-    // "Polyhedra -> choose a group" page, and no longer do
-    await expect(page.locator('.menu-entry[data-submenu="platonic"]')).toHaveCount(0);
+    await page.locator('.menu-entry[data-group="solids"]').click();
+    for (const group of ["platonic", "archimedean", "catalan", "polyhedra"]) {
+      await expect(page.locator(`.menu-entry[data-submenu="${group}"]`)).toBeVisible();
+    }
+    // one more click and it is the boards themselves
+    await page.locator('.menu-entry[data-submenu="platonic"]').click();
     await expect(page.locator('.menu-entry[data-mode="dodecahedron"]')).toBeVisible();
     await page.locator('.menu-entry[data-mode="dodecahedron"]').click();
     const state = await page.evaluate(() => window.__ms!.state());
@@ -70,7 +77,8 @@ test.describe("M2 solids", () => {
     await page.goto("/");
     await expect(page.locator("body[data-ready]")).toBeVisible();
     await page.locator('.difficulty-btn[data-key="easy"]').click();
-    await page.locator('.menu-entry[data-group="catalan"]').click();
+    await page.locator('.menu-entry[data-group="solids"]').click();
+    await page.locator('.menu-entry[data-submenu="catalan"]').click();
     await page.locator('.menu-entry[data-mode="rhombictriaconta"]').click();
     const state = await page.evaluate(() => window.__ms!.state());
     expect(state.screen).toBe("game");
@@ -160,6 +168,7 @@ test.describe("M2 solids", () => {
     "gp21",
     "c180",
     "spheretri",
+    "spheresquare",
     "cube",
     "cubeframe",
     "tetrahedron",

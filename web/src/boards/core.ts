@@ -67,6 +67,56 @@ export interface Board {
   // measure regular "projected regular" on the strength of it. Unset for every
   // other flat board, whose tiles are exactly what they are drawn as.
   regularTiles?: boolean;
+  // The Poincaré disc the board is drawn in (the hyperbolic boards), in the
+  // polygons' own pixel space: its centre, the radius of its unit circle, and
+  // `rim`, the disc radius (0..1) out to which the board is whole — the
+  // nearest point of its outline to the centre, its ragged outer shell being
+  // about a cell deep. It is what lets the renderer move the board by a disc
+  // isometry — hyperbolic panning, see render/disc.ts — and `rim` is what
+  // bounds that (`discReach`): the board's edge is never carried in past most
+  // of the way to the centre of the view. Unset for every other board.
+  disc?: { cx: number; cy: number; radius: number; rim: number; cover?: DiscCover };
+  // The upper half-plane the board is drawn in (the binary tiling), in the
+  // polygons' own pixel space: `boundary`, the y of the ideal line y = 0 (below
+  // the board — pixel y grows downward), and `maxZoom`, the magnification that
+  // brings the bottom row up to the size the top row is framed at. It is what
+  // lets the renderer move the board by a half-plane isometry z -> a z + b —
+  // half-plane panning, see render/halfPlane.ts. Unset for every other board.
+  halfPlane?: { boundary: number; maxZoom: number };
+  // Set on a board drawn as a *patch of its own cover* (the closed hyperbolic
+  // surfaces, drawn in the Poincaré disc that covers them, every cell as many
+  // times as the patch reaches it): drawn face -> the cell it shows, as
+  // `Board3D.faces` is, so `polygons` and `cornerMask` are keyed by face and
+  // `adjacency` by cell. A patch is no whole number of sheets, so
+  // `coveringSheets` cannot count the surface off the drawing; `quotient` gives
+  // each cell's corners as the surface's own vertex ids instead, and the
+  // topology helpers count those. Unset on every other flat board.
+  faces?: Map<CellId, CellId>;
+  quotient?: Map<CellId, string[]>;
+  // The drawn faces the pan can never bring into view at all (a closed
+  // surface's patch reaches far enough that every cell has a copy, which can be
+  // farther out than any view goes). They stay on the board, for what reads
+  // it, and the renderer builds no geometry for them. Unset on every other
+  // board.
+  unseen?: Set<CellId>;
+}
+
+/** How a patch of a closed surface's cover pans without end
+ * (`render/disc.ts`): one step for each tile next to the central one -- the
+ * disc isometry carrying the central tile onto it, in the shape of a view,
+ * z -> rot (z - c) / (1 - conj(c) z), and the symmetry of the surface that
+ * goes with it, as a cell permutation: a face that showed cell x shows
+ * `cells.get(x)` once the view has taken the step. Stepping the view and the
+ * labels together leaves the picture as it was, so a pan that has wandered a
+ * tile off centre can be carried back to it, and never runs out of board. */
+export interface DiscCover {
+  /** In the board's own disc coordinates, as its polygons are -- y downward,
+   * the way the pixels run. */
+  steps: { c: readonly [number, number]; rot: readonly [number, number]; cells: Map<CellId, CellId> }[];
+  /** How far round the centre of the view, in hyperbolic distance, the patch
+   * is drawn whole wherever the pan has the view: the renderer shows that
+   * circle of it and hides the rest, so the board's edge stays put. */
+  view: number;
 }
 
 /** Where an immersion passes through itself, the sheet that ends up *inside*
@@ -183,6 +233,71 @@ export function sharedVertexAdjacency(
   return adjacency;
 }
 
+/** Whether dropping a cell leaves the board the surface it was: the cell meets
+ * the rim in one unbroken run of its own edges and nowhere else. Mirrors
+ * core.py `_peelable`. */
+function peelable(keys: readonly string[], rimEdges: Set<string>, rim: Set<string>): boolean {
+  const n = keys.length;
+  const edgeKey = (a: string, b: string) => (a < b ? `${a}|${b}` : `${b}|${a}`);
+  const on = keys.map((a, i) => rimEdges.has(edgeKey(a, keys[(i + 1) % n]!)));
+  let runs = 0;
+  for (let i = 0; i < n; i++) if (on[i] && !on[(i + n - 1) % n]) runs++;
+  if (runs !== 1) return false;
+  const runEnds = new Set<string>();
+  for (let i = 0; i < n; i++) {
+    if (on[i]) {
+      runEnds.add(keys[i]!);
+      runEnds.add(keys[(i + 1) % n]!);
+    }
+  }
+  return keys.every((k) => !rim.has(k) || runEnds.has(k));
+}
+
+/**
+ * `cells` less the smaller of every near-twin pair on a rim -- two neighbours
+ * whose closed neighbourhoods differ by one cell, so that cell's number is all
+ * that tells them apart -- or, where the smaller cannot be peeled off the rim
+ * whole, the bigger. Repeated until none is left. Mirrors core.py
+ * `_without_near_twins`, which says why.
+ */
+export function withoutNearTwins(cells: Map<CellId, string[]>): Map<CellId, string[]> {
+  for (;;) {
+    const adjacency = sharedVertexAdjacency(cells);
+    const hood = new Map<CellId, Set<CellId>>();
+    for (const [cell, others] of adjacency) hood.set(cell, new Set([cell, ...others]));
+    const used = new Map<string, number>();
+    for (const keys of cells.values()) {
+      for (let i = 0; i < keys.length; i++) {
+        const a = keys[i]!;
+        const b = keys[(i + 1) % keys.length]!;
+        const edge = a < b ? `${a}|${b}` : `${b}|${a}`;
+        used.set(edge, (used.get(edge) ?? 0) + 1);
+      }
+    }
+    const rimEdges = new Set<string>();
+    const rim = new Set<string>();
+    for (const [edge, count] of used) {
+      if (count !== 1) continue;
+      rimEdges.add(edge);
+      for (const key of edge.split("|")) rim.add(key);
+    }
+    const drop = new Set<CellId>();
+    for (const [cell, mine] of hood) {
+      // a near-twin's bigger partner is in its own neighbourhood
+      for (const other of adjacency.get(cell)!) {
+        const theirs = hood.get(other)!;
+        if (theirs.size !== mine.size + 1 || ![...mine].every((x) => theirs.has(x))) continue;
+        if (peelable(cells.get(cell)!, rimEdges, rim)) drop.add(cell);
+        else if (peelable(cells.get(other)!, rimEdges, rim)) drop.add(other);
+      }
+    }
+    if (drop.size === 0) return cells;
+    const kept = new Map<CellId, string[]>();
+    for (const [cell, keys] of cells) if (!drop.has(cell)) kept.set(cell, keys);
+    cells = kept;
+  }
+}
+
 /**
  * Assemble a flat board from cells keyed by integer lattice points (matches
  * core.py `_build`): adjacency by shared exact vertices, polygons scaled per
@@ -276,6 +391,14 @@ export function flatBoard(board: Omit<Board, "symmetries">): Board {
   };
 }
 
+/** Whether a drag moves this board by an isometry of the hyperbolic plane it
+ * is drawn in — the Poincaré disc's (render/disc.ts) or the upper
+ * half-plane's (render/halfPlane.ts) — rather than sliding it, which is what
+ * its pan arrows are shown for. */
+export function pansHyperbolically(board: Board): boolean {
+  return board.disc !== undefined || board.halfPlane !== undefined;
+}
+
 /** The same for a closed solid, whose point group `solidSymmetries` measures
  * off the polyhedron it is drawn as. The wrapped surfaces do *not* come through
  * here: their cells are not congruent (a donut's inner tiles are smaller than
@@ -295,8 +418,7 @@ export function solidBoard(board: Omit<Board3D, "symmetries">): Board3D {
 
 function edgesOf(board: AnyBoard): Map<string, number> {
   const count = new Map<string, number>();
-  for (const poly of board.polygons.values()) {
-    const pts = poly.map((p: readonly number[]) => vkey(p));
+  for (const pts of meshLoops(board)) {
     for (let i = 0; i < pts.length; i++) {
       const a = pts[i]!;
       const b = pts[(i + 1) % pts.length]!;
@@ -312,16 +434,23 @@ function edgesOf(board: AnyBoard): Map<string, number> {
  * double-covers it, so 2). The counts below are of the *board*, so they divide
  * the drawing's by it. */
 export function coveringSheets(board: AnyBoard): number {
-  if (!isBoard3D(board) || !board.faces) return 1;
+  if (!board.faces || (!isBoard3D(board) && board.quotient)) return 1;
   return board.polygons.size / board.adjacency.size;
+}
+
+/** The board's surface as loops of vertex keys, one per polygon: its polygons'
+ * corners, quantized -- or, on a board drawn as a patch of its cover, each
+ * cell's corners as the surface's own ids (`Board.quotient`), since the patch
+ * is not the surface. Mirrors core.py `mesh_loops`. */
+function meshLoops(board: AnyBoard): string[][] {
+  if (!isBoard3D(board) && board.quotient) return [...board.quotient.values()];
+  return [...board.polygons.values()].map((poly) => poly.map((p: readonly number[]) => vkey(p)));
 }
 
 /** Distinct polygon corners (V). */
 export function vertexCount(board: AnyBoard): number {
   const seen = new Set<string>();
-  for (const poly of board.polygons.values()) {
-    for (const p of poly) seen.add(vkey(p));
-  }
+  for (const loop of meshLoops(board)) for (const k of loop) seen.add(k);
   return seen.size / coveringSheets(board);
 }
 

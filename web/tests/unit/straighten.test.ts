@@ -19,9 +19,10 @@ describe("straightened T-vertices", () => {
       (key) => archTemplate(key).straight.size > 0,
     );
     // a running bond's mortar line never reaches a corner, so it has no chord
-    // to lie on and its vertices stay on the surface
+    // to lie on and its vertices stay on the surface; the sphinx pairs and the
+    // tromino are flat-only, so their rules are never applied
     expect(withRule).toEqual(Object.keys(rules));
-    expect(withRule).toEqual(["basketweave", "basketweave3"]);
+    expect(withRule).toEqual(["basketweave", "basketweave3", "sphinxpairs", "tromino"]);
   });
 
   it("every rule matches the one Python computed", () => {

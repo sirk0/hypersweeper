@@ -32,6 +32,17 @@ class Board:
     # web/src/boards/core.ts. None where every point is a corner, or where the
     # extra points are collinear T-vertices a geometric test finds exactly.
     corner_mask: dict[Cell, list[bool]] | None = None
+    # A board drawn as a *patch of its own cover* (the closed hyperbolic
+    # surfaces, drawn in the Poincaré disc that covers them, every cell as
+    # many times as the patch reaches it): ``faces`` maps each drawn face to
+    # the cell it shows, as `Board3D.faces` does, so ``polygons`` and
+    # ``corner_mask`` are keyed by face and ``adjacency`` by cell. A patch is
+    # no whole number of sheets, so `covering_sheets` cannot count the
+    # surface off the drawing; ``quotient`` gives each cell's corners as the
+    # surface's own vertex ids instead, and the topology helpers count those.
+    # Both None for every other flat board.
+    faces: dict | None = None
+    quotient: dict[Cell, list] | None = None
 
 
 @dataclass(frozen=True)
@@ -63,6 +74,63 @@ def _shared_vertex_adjacency(cells: dict[Cell, list]) -> dict[Cell, tuple[Cell, 
         for cell in group:
             touching[cell].update(group)
     return {cell: tuple(sorted(others - {cell})) for cell, others in touching.items()}
+
+
+def _peelable(keys: list, rim_edges: set, rim: set) -> bool:
+    """Whether dropping a cell leaves the board the surface it was: the cell
+    meets the rim in one unbroken run of its own edges and nowhere else. A
+    cell touching it only at a corner, or in two places, would leave a hole
+    or two tiles pinched together at a point."""
+    edges = [frozenset((a, b)) in rim_edges for a, b in zip(keys, keys[1:] + keys[:1])]
+    runs = sum(1 for i, on in enumerate(edges) if on and not edges[i - 1])
+    if runs != 1:
+        return False
+    run_ends = {k for i, on in enumerate(edges) if on
+                for k in (keys[i], keys[(i + 1) % len(keys)])}
+    return all(k in run_ends for k in keys if k in rim)
+
+
+def _without_near_twins(cells: dict[Cell, list]) -> dict[Cell, list]:
+    """``cells`` less the smaller of every **near-twin** pair on a rim: two
+    neighbours whose closed neighbourhoods (each cell and every cell sharing
+    a vertex with it) differ by one cell. That cell's number is the only
+    thing that tells the two apart, so once it is a mine, a mine in the pair
+    is a coin flip. Repeated until none is left, since a drop can uncover
+    new ones.
+
+    A periodic tiling only ever has near-twins on a rim -- an interior cell
+    sees the whole tiling round it, and no seamless donut of one has any --
+    so on a window this is the edge being cut back, and only a cell the edge
+    can give up whole is dropped (``_peelable``); a near-twin wedged into the
+    rim by a corner stays. The relation and the test are both ones every
+    symmetry of the board preserves, so the trim keeps the board's symmetry.
+
+    Exact twins are left alone: the only periodic tiling with any is the
+    triakis, which is made of them and is flagged unfair instead (see "Check
+    the board is playable at all" in docs/agents/difficulty.md). The
+    hyperbolic builder drops both from its disc (``hyperbolic._without_twins``).
+    """
+    while True:
+        adjacency = _shared_vertex_adjacency(cells)
+        hood = {cell: frozenset([cell, *others]) for cell, others in adjacency.items()}
+        used: dict[frozenset, int] = defaultdict(int)
+        for keys in cells.values():
+            for a, b in zip(keys, keys[1:] + keys[:1]):
+                used[frozenset((a, b))] += 1
+        rim_edges = {edge for edge, count in used.items() if count == 1}
+        rim = {key for edge in rim_edges for key in edge}
+        drop = set()
+        for cell, h in hood.items():
+            # a near-twin's bigger partner is in its own neighbourhood
+            for other in adjacency[cell]:
+                if len(hood[other]) == len(h) + 1 and h < hood[other]:
+                    if _peelable(cells[cell], rim_edges, rim):
+                        drop.add(cell)
+                    elif _peelable(cells[other], rim_edges, rim):
+                        drop.add(other)
+        if not drop:
+            return cells
+        cells = {cell: keys for cell, keys in cells.items() if cell not in drop}
 
 
 def _build(
@@ -119,22 +187,34 @@ _HEX_VERTEX_OFFSETS = [(0, -2), (1, -1), (1, 1), (0, 2), (-1, 1), (-1, -1)]
 # -- topology (surface invariants, shared by tests and future surfaces) ------
 
 
+def mesh_loops(board) -> list[list]:
+    """The board's surface as loops of vertex keys, one per polygon: its
+    polygons' corners rounded to six places -- or, on a board drawn as a
+    patch of its cover, each cell's corners as the surface's own ids
+    (``Board.quotient``), since the patch is not the surface."""
+    quotient = getattr(board, "quotient", None)
+    if quotient is not None:
+        return [list(keys) for keys in quotient.values()]
+    return [[tuple(round(c, 6) for c in p) for p in polygon]
+            for polygon in board.polygons.values()]
+
+
 def corner_fans(board) -> dict:
     """Map each distinct polygon corner (rounded) to the list of cell
     sizes meeting there. The number of keys is the vertex count V."""
     at_vertex = defaultdict(list)
-    for polygon in board.polygons.values():
-        for point in polygon:
-            key = tuple(round(c, 6) for c in point)
-            at_vertex[key].append(len(polygon))
+    for loop in mesh_loops(board):
+        for key in loop:
+            at_vertex[key].append(len(loop))
     return at_vertex
 
 
 def covering_sheets(board) -> int:
     """How many times the drawing covers the board: 1 for every board but
     one drawn through ``Board3D.faces`` (the projective plane, drawn as the
-    sphere that double-covers it, so 2)."""
-    if getattr(board, "faces", None) is None:
+    sphere that double-covers it, so 2). A patch of a cover counts its
+    surface off ``Board.quotient`` instead, which is the surface once."""
+    if getattr(board, "faces", None) is None or getattr(board, "quotient", None):
         return 1
     return len(board.polygons) // len(board.adjacency)
 
@@ -146,12 +226,12 @@ def euler_characteristic(board) -> int:
     has k times its Euler characteristic, so the projective plane, drawn as
     the sphere, measures 2 / 2 = 1."""
     vertices = len(corner_fans(board))
+    loops = mesh_loops(board)
     edges = set()
-    for polygon in board.polygons.values():
-        points = [tuple(round(c, 6) for c in p) for p in polygon]
+    for points in loops:
         for a, b in zip(points, points[1:] + points[:1]):
             edges.add(frozenset((a, b)))
-    chi = vertices - len(edges) + len(board.polygons)
+    chi = vertices - len(edges) + len(loops)
     sheets = covering_sheets(board)
     if chi % sheets:
         raise ValueError(f"a {sheets}-sheeted drawing with chi {chi}")
@@ -163,8 +243,7 @@ def boundary_components(board) -> int:
     cell. 0 = closed (sphere, torus, Klein bottle), 2 = cylinder rims,
     1 = Mobius strip edge."""
     count = defaultdict(int)
-    for polygon in board.polygons.values():
-        points = [tuple(round(c, 6) for c in p) for p in polygon]
+    for points in mesh_loops(board):
         for a, b in zip(points, points[1:] + points[:1]):
             count[frozenset((a, b))] += 1
     graph = defaultdict(set)

@@ -6,8 +6,8 @@ import type { CellId, SymmetryId } from "../boards/core";
 // a press that stays put and is released is a tap (reveal); held long on
 // touch it becomes a long-press (flag); moved past the threshold it becomes a
 // drag, which rotates the board when the app says the current board rotates
-// (3D), pans it when the app says it can be panned (a zoomed-in flat board),
-// and otherwise just cancels the tap. Right-click is a secondary (flag).
+// (3D), pans it when the app says it can be panned (a zoomed-in flat board, or
+// a hyperbolic one at any zoom), and otherwise just cancels the tap. Right-click is a secondary (flag).
 // A second finger starts a pinch: it zooms the board about the midpoint and
 // pans with it, and it can never fire a tap.
 //
@@ -46,11 +46,15 @@ export interface ControlHandlers {
   rotates(): boolean;
   /** A drag step of (dx, dy) CSS pixels while rotating. */
   onRotate(dx: number, dy: number): void;
-  /** Whether a one-finger drag should pan the board (it is zoomed in and does
-   * not rotate). A pinch pans whatever the answer. */
+  /** Whether a one-finger drag should pan the board (it does not rotate, and
+   * is zoomed in or drawn in the Poincaré disc). A pinch pans whatever the
+   * answer. */
   pans(): boolean;
-  /** Drag the board by (dx, dy) CSS pixels. */
-  onPan(dx: number, dy: number): void;
+  /** Drag the board by (dx, dy) CSS pixels, a step that ended at (x, y) in
+   * canvas CSS pixels — which a hyperbolic pan needs, the point under the
+   * finger being the one that follows it. A drag with no point under it (a
+   * trackpad swipe) leaves them out. */
+  onPan(dx: number, dy: number, x?: number, y?: number): void;
   /** Zoom by `factor` about the point (x, y) in canvas CSS pixels. */
   onZoom(factor: number, x: number, y: number): void;
   /** Whether the board carries this symmetry, so the wheel should walk it
@@ -273,7 +277,7 @@ export function attachControls(
           handlers.onZoom(g.span / pinchSpan, g.x, g.y);
         }
         // Two fingers travelling together drag the board as they zoom it.
-        handlers.onPan(g.x - pinchX, g.y - pinchY);
+        handlers.onPan(g.x - pinchX, g.y - pinchY, g.x, g.y);
         pinchSpan = g.span;
         pinchX = g.x;
         pinchY = g.y;
@@ -304,7 +308,10 @@ export function attachControls(
         velY = velY * 0.6 + ((e.clientY - lastY) / dt) * 0.4;
         lastT = e.timeStamp;
       }
-      else if (panning) handlers.onPan(e.clientX - lastX, e.clientY - lastY);
+      else if (panning) {
+        const at = local(e.clientX, e.clientY);
+        handlers.onPan(e.clientX - lastX, e.clientY - lastY, at.x, at.y);
+      }
     }
     lastX = e.clientX;
     lastY = e.clientY;
@@ -467,7 +474,7 @@ export function attachControls(
     // Two fingers travelling together drag the board as they zoom it, as the
     // touch pinch does.
     if (Number.isFinite(dx) && Number.isFinite(dy) && (dx || dy)) {
-      handlers.onPan(dx, dy);
+      handlers.onPan(dx, dy, p.x, p.y);
     }
   };
   const onGestureStart = (e: Event) => {

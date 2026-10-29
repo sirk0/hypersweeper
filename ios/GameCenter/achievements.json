@@ -1,6 +1,6 @@
 {
-  "count": 42,
-  "points": 625,
+  "count": 46,
+  "points": 655,
   "achievements": [
     {
       "vendorIdentifier": "hs.first_win",
@@ -241,6 +241,23 @@
       "ring": null
     },
     {
+      "vendorIdentifier": "hs.shape.9",
+      "referenceName": "shape:9",
+      "points": 5,
+      "showBeforeEarned": true,
+      "repeatable": false,
+      "localizations": {
+        "en-US": {
+          "name": "Nonagons",
+          "beforeEarnedDescription": "Win a board whose tiles have 9 sides",
+          "afterEarnedDescription": "You won a board whose tiles have 9 sides",
+          "image": "images/hs.shape.9.png"
+        }
+      },
+      "icon": "ngon:9",
+      "ring": null
+    },
+    {
       "vendorIdentifier": "hs.shape.10",
       "referenceName": "shape:10",
       "points": 5,
@@ -289,6 +306,40 @@
         }
       },
       "icon": "ngon:13",
+      "ring": null
+    },
+    {
+      "vendorIdentifier": "hs.shape.14",
+      "referenceName": "shape:14",
+      "points": 5,
+      "showBeforeEarned": true,
+      "repeatable": false,
+      "localizations": {
+        "en-US": {
+          "name": "14-gons",
+          "beforeEarnedDescription": "Win a board whose tiles have 14 sides",
+          "afterEarnedDescription": "You won a board whose tiles have 14 sides",
+          "image": "images/hs.shape.14.png"
+        }
+      },
+      "icon": "ngon:14",
+      "ring": null
+    },
+    {
+      "vendorIdentifier": "hs.shape.16",
+      "referenceName": "shape:16",
+      "points": 5,
+      "showBeforeEarned": true,
+      "repeatable": false,
+      "localizations": {
+        "en-US": {
+          "name": "16-gons",
+          "beforeEarnedDescription": "Win a board whose tiles have 16 sides",
+          "afterEarnedDescription": "You won a board whose tiles have 16 sides",
+          "image": "images/hs.shape.16.png"
+        }
+      },
+      "icon": "ngon:16",
       "ring": null
     },
     {
@@ -578,6 +629,23 @@
         }
       },
       "icon": "projective",
+      "ring": "complete"
+    },
+    {
+      "vendorIdentifier": "hs.surface_all.boy",
+      "referenceName": "surface-all:boy",
+      "points": 15,
+      "showBeforeEarned": true,
+      "repeatable": false,
+      "localizations": {
+        "en-US": {
+          "name": "Boy's surface",
+          "beforeEarnedDescription": "Win every board on this surface",
+          "afterEarnedDescription": "You won every board on this surface",
+          "image": "images/hs.surface_all.boy.png"
+        }
+      },
+      "icon": "boy",
       "ring": "complete"
     },
     {

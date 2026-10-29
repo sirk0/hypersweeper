@@ -12,6 +12,7 @@ from minesweeper.boards.core import (
     LatticePoint,
     _build,
     _finalize_flat,
+    _without_near_twins,
 )
 
 # -- 2D builders (cells keyed by (row, index)) ------------------------------
@@ -246,6 +247,12 @@ class _ArchTemplate:
     #   serve them -- turned a quarter turn, or moved so a glide line is y = 0
     #   (see _reframed). None for every template whose own layout wraps; the
     #   builders read whichever applies through _wrap_template.
+    torus: "_ArchTemplate | None" = None  # THE TORUS LAYOUT: the one the donut
+    #   glues, where that is not the wrap layout. A donut has no rim and no
+    #   seam mirror, so the only thing a layout decides there is which side of
+    #   the domain goes round the ring -- the side MIN_WRAP_DOMAINS counts four
+    #   copies of -- and which round the tube. None for every template whose
+    #   wrap layout serves; read through _torus_template. See _with_torus.
 
 
 # AGENT NOTE (the cut). Two surfaces end the tiling on a horizontal line. The
@@ -474,6 +481,29 @@ def _reframed(template: _ArchTemplate, cut: float, quarter: bool = False,
                 for name, polygon in polygons]
     return _template(template.config, width, height, polygons, mirrored=True,
                      glide=glide, cut=cut * height)
+
+
+def _with_torus(template: _ArchTemplate, torus: str | None) -> _ArchTemplate:
+    """The template with its torus layout (_ArchTemplate.torus) declared:
+    ``"flat"`` glues the donut in the flat layout although the open surfaces
+    take a wrap layout of their own, and ``"quarter"`` turns the flat layout a
+    quarter turn for the donut alone.
+
+    Which one is a measurement, like the cut. A donut's ring needs four whole
+    domains and its tube enough rows that no tile spans more than a quarter of
+    it, so a long thin domain wants its short side round the ring:
+    ``elongated3``'s wrap layout lies the other way (it serves the strips, whose
+    rows step by its short side) and put 224 cells on its smallest easy donut,
+    where the flat layout puts 84. A turn can also keep the size and round the
+    cells, which is ``elongated2`` and ``trirhombitrihex``. For the other
+    seventeen 2-uniform tilings the turn makes the donut bigger or no better:
+    it puts the domain's long side round the ring, four times over.
+    """
+    if torus is None:
+        return template
+    layout = (replace(template, wrap=None) if torus == "flat"
+              else _reframed(template, cut=0.0, quarter=True))
+    return replace(template, torus=layout)
 
 
 # Tag coordinates are rounded to 1e-6, so a vertex genuinely on an edge can
@@ -1546,9 +1576,10 @@ def _durer_template() -> _ArchTemplate:
 #                        of squares and triangles into a dodecagon
 #
 # All three are p6m, so their windows are symmetric every way a hexagon is.
-# The family ships on the plane, the cylinder and (all but the p6 studdedtri2)
-# the Mobius strip (_FAMILY_SURFACES in catalog.py), so each of the twenty
-# states a cut -- see "the cut" in the comment above _steps.
+# The family ships on the plane, the cylinder, the torus and (all but the p6
+# studdedtri2) the Mobius strip (_FAMILY_SURFACES in catalog.py), so each of
+# the twenty states a cut for the two open surfaces -- see "the cut" in the
+# comment above _steps. The torus needs none.
 
 
 def _fan(polygon):
@@ -1593,8 +1624,10 @@ def _trirhombitrihex_template() -> _ArchTemplate:
             polygons += [(f"{name}t{k}", t) for k, t in enumerate(_fan(polygon))]
         else:
             polygons.append((name, polygon))
-    return _template((3, 4), width, height, polygons, centre=(0.0, 0.0),
-                     cut=height / 7)
+    return _with_torus(
+        _template((3, 4), width, height, polygons, centre=(0.0, 0.0),
+                  cut=height / 7),
+        "quarter")
 
 
 def _dissectedtrunchex_template() -> _ArchTemplate:
@@ -1738,7 +1771,7 @@ _SIDE_NAMES = {3: "tri", 4: "sq", 6: "hex", 12: "dod"}
 
 
 def _cell_template(config, v1, v2, rect, tiles, centre, mirrored=True,
-                   cut=0.0, wrap=None):
+                   cut=0.0, wrap=None, torus=None):
     """A 2-uniform tiling's template from one translation cell -- see the
     comment above for what each argument is."""
     a, b = _steps(v1), _steps(v2)
@@ -1760,7 +1793,7 @@ def _cell_template(config, v1, v2, rect, tiles, centre, mirrored=True,
                          mirrored=mirrored, centre=(0.0, 0.0), cut=cut * height)
     if wrap is not None:
         template = replace(template, wrap=_reframed(template, **wrap))
-    return template
+    return _with_torus(template, torus)
 
 
 def _studdedtri_template() -> _ArchTemplate:
@@ -1799,7 +1832,7 @@ def _elongated2_template() -> _ArchTemplate:
     return _cell_template(
         (3, 4), (0,), (8, 9, 10), ((1, 0), (0, -1)), [
         (4, (4,), 0), (3, (), 4), (3, (), 2), (3, (), 8), (3, (), 6),
-    ], centre=((),), cut=1 / 3)
+    ], centre=((),), cut=1 / 3, torus="quarter")
 
 
 def _elongated3_template() -> _ArchTemplate:
@@ -1815,20 +1848,27 @@ def _elongated3_template() -> _ArchTemplate:
         (3, 4), (0,), (8, 8, 9, 10), ((1, 0), (-1, -2)), [
         (4, (10,), 6), (3, (), 4), (3, (), 2), (3, (), 8), (3, (), 6),
         (3, (4,), 0), (3, (4,), 2),
-    ], centre=0, wrap=dict(cut=1 / 3, quarter=True))
+    ], centre=0, wrap=dict(cut=1 / 3, quarter=True), torus="flat")
 
 
 def _tritrunctrihex_template() -> _ArchTemplate:
     """[3^6; 3^2.4.12], p6m: truncated trihexagonal (4.6.12) with every
     hexagon cut into six triangles. A hexagon's centre becomes 3^6 and each of
-    its corners, 4.6.12 before, 4.3.3.12."""
+    its corners, 4.6.12 before, 4.3.3.12.
+
+    Cut just below a row of dodecagon centres -- halfway to the next row of
+    tile centres -- so each rim is dodecagons with a square between each two.
+    The cut it had before (17/23 of the domain) ended the strip at a fan of
+    triangles between two tilted squares in every gap, with two triangles in
+    each touching the rim at a corner only: near-twins no peel can reach (see
+    ``core._without_near_twins``), and a fifth of the easy board."""
     return _cell_template(
         (3, 4, 12), (7, 8, 8, 8, 9), (9, 10, 10, 10, 11), ((-1, 1), (-1, -1)), [
         (12, (4,), 3), (4, (10,), 11), (4, (4,), 0), (4, (6,), 7), (3, (), 2),
         (3, (), 4), (3, (), 8), (3, (), 10), (3, (), 0), (3, (), 6),
         (3, (10, 11), 0), (3, (3, 4), 0), (3, (6, 7), 8), (3, (10, 11), 10),
         (3, (0, 11), 10), (3, (2, 3), 2),
-    ], centre=0, cut=17 / 23)
+    ], centre=0, cut=1 - ROOT3 / 36)
 
 
 def _fannedhex_template() -> _ArchTemplate:
@@ -2243,6 +2283,13 @@ def _wrap_template(tiling: str) -> _ArchTemplate:
     return template if template.wrap is None else template.wrap
 
 
+def _torus_template(tiling: str) -> _ArchTemplate:
+    """The layout the donut glues: its own torus layout (_ArchTemplate.torus)
+    where the tiling declares one, otherwise the wrap layout."""
+    template = _arch_template(tiling)
+    return template.torus or _wrap_template(tiling)
+
+
 def _snap_to_grain(half: float, period: float) -> float:
     """Round a window's half-extent to a whole number of grain lines.
 
@@ -2286,7 +2333,10 @@ def archimedean_board(
     centre of the tiling, in domain coordinates -- a three-brick basket
     weave's block centre rather than the corner where four blocks meet, say,
     which is what an odd number of blocks across has to be centred on. Any
-    copy of it nearest the middle is used, as for the template's own."""
+    copy of it nearest the middle is used, as for the template's own.
+
+    The rim is then cut back by any near-twins it leaves
+    (``core._without_near_twins``), which the symmetry survives too."""
     template = _arch_template(tiling)
     width_units, height_units = template.width, template.height
 
@@ -2350,5 +2400,8 @@ def archimedean_board(
         if abs(centroid[cell][0] - cx) <= half_w + slack
         and abs(centroid[cell][1] - cy) <= half_h + slack
     }
+    # a window's edge can leave a tile whose neighbours are all a neighbour's
+    # too, bar one: it is cut away rather than left to end games on a coin flip
+    cells = _without_near_twins(cells)
 
     return _finalize_flat(tiling, cells, position, mine_count, scale)

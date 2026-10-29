@@ -1,5 +1,5 @@
 import { screens } from "../config/screens";
-import { MENU_FAMILY_HINTS, MODE_LABELS } from "../boards/catalog";
+import { MENU_FAMILY_HINTS, MODE_LABELS, surfaceCaution, surfaceOf } from "../boards/catalog";
 import {
   blockedExplanation,
   fairnessHint,
@@ -7,23 +7,34 @@ import {
   type Fairness,
 } from "../boards/fairness";
 import { distortedDifficulties, distortionHint, isDistorted } from "../boards/distortion";
+import { hasMode } from "../boards/presets";
 import { randomMode, type RandomKind } from "../boards/randomBoard";
-import { clearAchievements } from "../achievements";
+import { clearAchievements, loadProgress, type Progress } from "../achievements";
 import { clearBestTimes } from "../leaderboard";
-import { clearCloudRecord } from "../cloudRecord";
+import { clearCloudRecord, syncCloudRecord } from "../cloudRecord";
+import { favourites, isFavourite, toggleFavourite } from "../favourites";
 import { renderAchievements } from "./achievements";
 import { renderBestTimes } from "./bestTimes";
 import {
   boardGroups,
+  menuEntryFor,
   pickerFor,
   quickPlayEntries,
   type Family,
   type Group,
   type ManifoldGroup,
+  type ModeEntry,
   type SurfaceEntry,
 } from "./boardTree";
 import { HELP_ICON, renderHelp } from "./help";
-import { menuIcon, previewIcon } from "./icons";
+import {
+  cachedLevelPreview,
+  iconBoard,
+  levelPreview,
+  menuIcon,
+  previewIcon,
+  type Preview,
+} from "./icons";
 import {
   GEAR_ICON,
   renderAppIconPicker,
@@ -38,14 +49,14 @@ import {
 // Play-first menu. The home page is Classic (flat squares, launched straight
 // away), Flat and 3D — one tap each for a random board from that half of the
 // catalogue — and Custom, which opens the geometry-first tree the pygame
-// MenuScreen (gui.py) shows at its root: Flat, Flat manifolds, Sphere,
-// Polyhedra. The plane and every flat manifold (cylinder, Möbius, Klein,
+// MenuScreen (gui.py) shows at its root — Flat, Flat manifolds, Hyperbolic,
+// Sphere, then the polyhedra gathered onto one Solids page, and Volumes. The plane and every flat manifold (cylinder, Möbius, Klein,
 // torus) open the same tiling picker: the three regular tilings promoted to
 // the top, then the Uniform, Laves, Isogonal, Congruent-rectangles and
 // (plane-only) Aperiodic, Spirals and Fractals families as submenus. On the plane one
 // more submenu holds the shaped boards — the same regular tilings cut to a
-// triangular or hexagonal outline instead of the default rectangle. Sphere and
-// Polyhedra list their finished boards. Title, difficulty row and theme come
+// triangular or hexagonal outline instead of the default rectangle. Sphere,
+// Volumes and each of Solids' submenus list their finished boards. Title, difficulty row and theme come
 // from the shared UI-screen config; the header's gear and ? open the settings
 // and how-to-play pages.
 
@@ -88,11 +99,33 @@ const SOLID_GROUP_HINTS: Record<string, string> = {
   catalan: "The thirteen duals of the Archimedean solids",
   polyhedra: "Hollow frames, terraced pyramids and cubes laid in brick",
   volume: "A solid cube of cells — 26 neighbours, laid out slice by slice",
+  // the page the Platonic, Archimedean and Catalan solids and the Polyhedra
+  // share (boardTree.ts SOLIDS_PAGE)
+  solids: "Platonic, Archimedean and Catalan solids, and more polyhedra",
 };
 
+/** The one line under a submenu row, or a group page's header: a tiling
+ * family's hint, or — for the solid groups the Solids page holds as submenus —
+ * the solid page's. */
+function familyHint(key: string): string | undefined {
+  return MENU_FAMILY_HINTS[key] ?? SOLID_GROUP_HINTS[key];
+}
+
 /** The sidebar key of the Quick start page — the desktop menu's own page, with
- * no phone equivalent (the phone lists these three as its home rows). */
+ * no phone equivalent (the phone lists these entries as its home rows). */
 const QUICK_START = "quickstart";
+
+/** The favourite star: outlined when off, filled (`.menu-fav[aria-pressed]` in
+ * styles.css) when on. Drawn rather than a ☆/★ character, whose two glyphs
+ * differ in size and weight from one system font to the next. */
+const STAR_ICON =
+  '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l2.85 5.78 6.38.93-4.62 4.5 1.09 6.35L12 17.36l-5.7 3 1.09-6.35-4.62-4.5 6.38-.93z"/></svg>';
+
+/** "Easy", "Easy and Hard", "Easy, Medium and Hard". */
+function listWords(words: string[]): string {
+  if (words.length < 2) return words.join("");
+  return `${words.slice(0, -1).join(", ")} and ${words[words.length - 1]}`;
+}
 
 /** A menu row's icon (the same glyph the pygame menu draws for that key). */
 function iconEl(key: string): HTMLElement {
@@ -165,6 +198,12 @@ export class Menu {
   /** The page currently on screen, re-runnable so returning from a board
    * restores it (see `show`). */
   private view: () => void = () => this.renderRoot();
+  /** The win record, read once per render for the completion marks. */
+  private progress: Progress | null = null;
+  /** Whether the page on screen is the one carrying the Favourites section —
+   * the phone home page or the desktop Quick start — so unstarring a board
+   * there takes its row away at once. Set by those two pages per render. */
+  private favouritesOnScreen = false;
 
   constructor(
     private readonly onSelect: (sel: MenuSelection) => void,
@@ -311,6 +350,11 @@ export class Menu {
     // re-added by `paneHeader`, so the pane's own scroll layout is derived from
     // the page actually on screen rather than left over from the last one.
     this.body.classList.remove("paned");
+    this.favouritesOnScreen = false;
+    // Read once here rather than per row: a page lists up to thirty boards,
+    // and the record changes only with a win, which is never while the menu is
+    // up. `show()` comes back through here after one.
+    this.progress = loadProgress();
     this.view();
     // On the phone width no page reparents the difficulty block into itself
     // (that only happens inside `paneHeader`, on desktop), so it can drift
@@ -358,7 +402,7 @@ export class Menu {
     this.go(() => this.renderRoot());
   }
 
-  /** The desktop landing page: the three quick-play entries as cards. */
+  /** The desktop landing page: the quick-play entries as cards. */
   private showQuickStart(): void {
     this.selectedPage = QUICK_START;
     this.go(() => this.renderQuickStart());
@@ -367,7 +411,7 @@ export class Menu {
 
   /** The phone has no sidebar, so Quick start is a page it can never navigate
    * to — but it can be *left on* one, by a rotate or a resize that crosses the
-   * breakpoint while it is open. Without this the player is stranded: the three
+   * breakpoint while it is open. Without this the player is stranded: the
    * quick-play cards, no Custom row, no back row, and the whole geometry tree
    * behind a sidebar that is `display: none`. The mirror of the guards
    * `renderRoot` and `renderCustom` carry for the other direction. */
@@ -377,16 +421,59 @@ export class Menu {
       this.showRoot();
       return;
     }
+    this.favouritesOnScreen = true;
     const list = document.createElement("ul");
     list.className = "menu-list menu-card-grid";
     list.append(...this.quickPlayCards());
-    this.body.replaceChildren(
-      this.paneHeader(
-        "Quick start",
-        "Straight into a board, or a surprise from half the catalogue.",
-      ),
-      list,
+    const header = this.paneHeader(
+      "Quick start",
+      "Straight into a board, or a surprise from one corner of the catalogue.",
     );
+    const faves = this.favouriteRows();
+    if (faves.length === 0) {
+      this.body.replaceChildren(header, list);
+      return;
+    }
+    // Two grids and a heading under one pane header: they share one scroller
+    // (`.menu-pane-scroll`), which takes the place the single grid has on every
+    // other page (`.menu-body.paned > .menu-list` in styles.css).
+    const favList = document.createElement("ul");
+    favList.className = "menu-list menu-card-grid menu-fav-list";
+    favList.append(...faves);
+    const scroll = document.createElement("div");
+    scroll.className = "menu-pane-scroll";
+    scroll.append(list, this.sectionHeading("Favourites"), favList);
+    this.body.replaceChildren(header, scroll);
+  }
+
+  /** A row for each starred board, in the order they were starred — the
+   * Favourites section of the home page (phone) or Quick start (desktop). The
+   * same `entryRow` every board page builds, star included, so a favourite is
+   * unstarred where it is listed. Named by its row's own label plus its
+   * surface, as `fullModeLabel` names a board for the best-times list:
+   * "Squares" alone does not say plane or torus once the page it was reached
+   * through is gone. (Not `fullModeLabel` itself — its tiling half is the
+   * catalogue's name, which is not always the row's: the plane's triangles are
+   * "Triangle grid" there.) A board the menu cannot reach, or one that cannot
+   * be played, is left out. */
+  private favouriteRows(): HTMLElement[] {
+    const rows: HTMLElement[] = [];
+    for (const mode of favourites()) {
+      const entry = menuEntryFor(mode);
+      if (!entry || modeFairness(mode) === "blocked") continue;
+      const surface = surfaceOf(mode);
+      const label =
+        surface && surface.key !== "flat" ? `${entry.label} · ${surface.label}` : entry.label;
+      rows.push(this.entryRow(mode, label, entry.icon, entry.notation));
+    }
+    return rows;
+  }
+
+  private sectionHeading(text: string): HTMLElement {
+    const heading = document.createElement("h2");
+    heading.className = "menu-section-heading";
+    heading.textContent = text;
+    return heading;
   }
 
   /** Open the settings or how-to-play page from outside the menu (the Mac
@@ -679,7 +766,7 @@ export class Menu {
     );
   }
 
-  /** The phone home page's three quick-play rows. */
+  /** The phone home page's quick-play rows. */
   private quickPlayRows(): HTMLElement[] {
     return quickPlayEntries().map((e) =>
       e.kind === "mode"
@@ -688,10 +775,10 @@ export class Menu {
     );
   }
 
-  /** The desktop Quick start page: the same three entries as cards.
+  /** The desktop Quick start page: the same entries as cards.
    *
    * The hint rides along as a caption line rather than being dropped as it is
-   * on a sidebar row — on the two random entries it is the only thing saying
+   * on a sidebar row — on the random entries it is the only thing saying
    * that the card deals a board rather than opening a named one. */
   private quickPlayCards(): HTMLElement[] {
     return quickPlayEntries().map((e) => {
@@ -710,7 +797,11 @@ export class Menu {
           if (mode) this.onSelect({ mode, difficulty: this.settings.difficulty, random: true });
         });
       }
-      btn.append(this.previewEl(e.icon), this.cardCaption(e.label, { hint: e.hint }));
+      btn.append(
+        this.previewEl(e.icon, e.kind === "mode" ? e.key : this.cardBoard(e.icon)),
+        this.cardCaption(e.label, { hint: e.hint }),
+      );
+      if (e.kind === "mode") this.addDoneMark(btn, e.key);
       li.append(btn);
       return li;
     });
@@ -718,13 +809,19 @@ export class Menu {
 
   /** The icon a group's own row shows: the "Flat" entry (which opens the
    * tiling picker) shows a hexagon, since the flat-plane surface keeps its
-   * square icon in the manifolds list. */
+   * square icon in the manifolds list, and the Sphere group shows a sphere of
+   * hexagons, since its own key names a board that is now a Catalan solid. */
   private groupIcon(group: Group): string {
-    return group.key === "flat" ? "hex" : group.key;
+    if (group.key === "flat") return "hex";
+    if (group.key === "sphere") return "spheres";
+    // the seamed {5,4} of the home page's Hyperbolic entry, so the desktop
+    // sidebar (the desktop's home) and the Custom page wear the same one
+    if (group.key === "hyperbolic") return "hyperbolic-home";
+    return group.key;
   }
 
   /** The home page: the board that opens straight away (Classic), one
-   * random board from each half of the catalogue, and Custom
+   * random board from each pool (flat, 3D, hyperbolic), and Custom
    * for the whole tree. On desktop the sidebar covers this ground instead —
    * see `showRoot`, which only reaches here below the breakpoint (or once
    * the breakpoint is crossed while this page happens to be on screen). */
@@ -749,7 +846,19 @@ export class Menu {
       li.append(btn);
       list.append(li);
     }
-    this.body.replaceChildren(list);
+    this.favouritesOnScreen = true;
+    const faves = this.favouriteRows();
+    if (faves.length === 0) {
+      this.body.replaceChildren(list);
+      return;
+    }
+    // The two lists are centred as one block: the first gives up its bottom
+    // auto margin, the second its top one (styles.css, `.menu-list-lead`).
+    list.classList.add("menu-list-lead");
+    const favList = document.createElement("ul");
+    favList.className = "menu-list menu-fav-list";
+    favList.append(...faves);
+    this.body.replaceChildren(list, this.sectionHeading("Favourites"), favList);
   }
 
   private showCustom(): void {
@@ -784,9 +893,16 @@ export class Menu {
 
   private groupHint(group: Group): string {
     if (group.kind === "modes") {
-      return SOLID_GROUP_HINTS[group.key] ?? group.modes.map((m) => MODE_LABELS[m] ?? m).join(" · ");
+      return (
+        SOLID_GROUP_HINTS[group.key] ??
+        MENU_FAMILY_HINTS[group.key] ??
+        group.modes.map((m) => MODE_LABELS[m] ?? m).join(" · ")
+      );
     }
     if (group.kind === "manifolds") return group.surfaces.map((s) => s.label).join(" · ");
+    if (group.kind === "families") {
+      return familyHint(group.key) ?? group.families.map((f) => f.label).join(" · ");
+    }
     return pickerHint(group.surfaceKey);
   }
 
@@ -822,6 +938,18 @@ export class Menu {
     const list = document.createElement("ul");
     if (group.kind === "modes") {
       for (const mode of group.modes) list.append(this.entryRow(mode, MODE_LABELS[mode] ?? mode));
+    } else if (group.kind === "families") {
+      for (const family of group.families) {
+        list.append(
+          this.submenuRow(
+            family.label,
+            family.key,
+            () => this.showFamily(family, () => this.showGroup(group)),
+            undefined,
+            family.modes,
+          ),
+        );
+      }
     } else {
       for (const surface of group.surfaces) list.append(this.surfaceRow(group, surface));
     }
@@ -850,8 +978,12 @@ export class Menu {
     }
     for (const family of picker.families) {
       list.append(
-        this.submenuRow(family.label, family.key, () =>
-          this.showFamily(family, () => this.showPicker(label, surfaceKey, onBack)),
+        this.submenuRow(
+          family.label,
+          family.key,
+          () => this.showFamily(family, () => this.showPicker(label, surfaceKey, onBack)),
+          undefined,
+          family.modes,
         ),
       );
     }
@@ -881,7 +1013,7 @@ export class Menu {
       // pills stay reachable one level down from the group page.
       this.body.replaceChildren(
         back,
-        this.paneHeader(family.label, MENU_FAMILY_HINTS[family.key] ?? ""),
+        this.paneHeader(family.label, familyHint(family.key) ?? ""),
         list,
       );
     } else {
@@ -900,10 +1032,10 @@ export class Menu {
    * the active row do, but its glyphs are baked in the theme's icon palette
    * (see `rebuildSidebar`).
    *
-   * The three quick-play entries are a *page* here rather than three rows of
-   * their own: as rows they competed with the geometry list for the same
-   * glance, and they are what a player opening the menu wants first, which is
-   * what a landing page is for. */
+   * The quick-play entries are a *page* here rather than rows of their own:
+   * as rows they competed with the geometry list for the same glance, and they
+   * are what a player opening the menu wants first, which is what a landing
+   * page is for. */
   private buildSidebar(): HTMLElement {
     const sidebar = document.createElement("div");
     sidebar.className = "menu-sidebar";
@@ -1012,7 +1144,10 @@ export class Menu {
     btn.dataset.surface = surface.key;
     if (this.isWide()) {
       btn.className = "menu-entry menu-board-card";
-      btn.append(this.previewEl(surface.key), this.cardCaption(surface.label));
+      btn.append(
+        this.previewEl(surface.key, this.cardBoard(surface.key)),
+        this.cardCaption(surface.label),
+      );
     } else {
       btn.className = "menu-entry";
       btn.append(iconEl(surface.key), textBlock(surface.label, pickerHint(surface.key)));
@@ -1028,7 +1163,8 @@ export class Menu {
     label: string,
     key: string,
     onClick: () => void,
-    hint: string | undefined = MENU_FAMILY_HINTS[key],
+    hint: string | undefined = familyHint(key),
+    modes: readonly ModeEntry[] = [],
   ): HTMLElement {
     const li = document.createElement("li");
     const btn = document.createElement("button");
@@ -1036,14 +1172,17 @@ export class Menu {
     const iconKey = FAMILY_ICONS[key] ?? key;
     if (this.isWide()) {
       btn.className = "menu-entry menu-submenu menu-board-card";
-      btn.append(this.previewEl(iconKey), this.cardCaption(label, { trailing: this.chevronEl() }));
+      btn.append(
+        this.previewEl(iconKey, this.cardBoard(iconKey, modes)),
+        this.cardCaption(label, { trailing: this.chevronEl() }),
+      );
     } else {
       // menu-submenu lays the label and the › chevron out on one row.
       btn.className = "menu-entry menu-submenu";
       // "Laves" and "Isogonal" name a classification, not a look — the hint is
       // what tells a player choosing a board what they would be playing on.
-      // Defaults to the tiling-family hint by key; the Polyhedra groups pass
-      // their own (`MENU_FAMILY_HINTS` knows nothing about them).
+      // Defaults to the family's hint by key (`familyHint`), which covers the
+      // Solids page's submenus too.
       btn.append(iconEl(iconKey), textBlock(label, hint), this.chevronEl());
     }
     btn.addEventListener("click", onClick);
@@ -1069,7 +1208,7 @@ export class Menu {
     if (this.isWide()) {
       btn.className = "menu-entry menu-board-card";
       btn.append(
-        this.previewEl(icon),
+        this.previewEl(icon, mode),
         this.cardCaption(
           label,
           level !== "ok"
@@ -1093,6 +1232,9 @@ export class Menu {
     if (level !== "blocked" && distortedDifficulties(mode).length > 0) {
       this.addDistortionMark(btn, mode, level === "ok");
     }
+    const caution = surfaceCaution(mode);
+    if (caution !== undefined) this.addCautionMark(btn, caution, level === "ok");
+    this.addDoneMark(btn, mode);
     if (level === "blocked") {
       // Deliberately *not* `aria-disabled`: the row is a working control that
       // opens the explanation, and claiming it is disabled would both lie to a
@@ -1104,7 +1246,74 @@ export class Menu {
       );
     }
     li.append(btn);
+    // A blocked board cannot be played, so there is nothing to come back to.
+    if (level !== "blocked") {
+      btn.classList.add("has-fav");
+      li.append(this.favButton(mode, label));
+    }
     return li;
+  }
+
+  /** The star at a board row's right edge (on a desktop card, the preview's
+   * top-right corner). A sibling of the row's own button, not inside it — a
+   * button cannot hold a button — laid over the row by `.menu-fav` in
+   * styles.css; so the row still launches the
+   * board and the star only stars it. `data-fav` is the e2e suite's handle. */
+  private favButton(mode: string, label: string): HTMLElement {
+    const btn = document.createElement("button");
+    btn.className = "menu-fav";
+    btn.dataset.fav = mode;
+    btn.innerHTML = STAR_ICON;
+    this.paintFav(btn, label, isFavourite(mode));
+    btn.addEventListener("click", () => {
+      const on = toggleFavourite(mode);
+      // The section lists only starred boards, so on its page a re-render
+      // takes an unstarred board out of it. Elsewhere the row stays put and
+      // repaints its star, and any other star on the page for the same board.
+      if (this.favouritesOnScreen) this.render();
+      else {
+        for (const other of this.root.querySelectorAll<HTMLElement>(".menu-fav")) {
+          if (other.dataset["fav"] === mode) this.paintFav(other, label, on);
+        }
+      }
+      syncCloudRecord(); // …and to the player's other devices, in the app
+    });
+    return btn;
+  }
+
+  private paintFav(btn: HTMLElement, label: string, on: boolean): void {
+    btn.setAttribute("aria-pressed", String(on));
+    btn.setAttribute("aria-label", on ? `Remove ${label} from favourites` : `Add ${label} to favourites`);
+    btn.title = on ? "Remove from favourites" : "Add to favourites";
+  }
+
+  /** The completion mark: three bars rising Easy, Medium, Hard, each filled
+   * once the board has been won at that difficulty. Deliberately not stars —
+   * the star is the favourite — and only on a board won at least once, so the
+   * catalogue's untouched rows stay as they were. Read from the achievement
+   * record's win counts (`Progress.wins`), the one record of every win. On a
+   * phone row it follows the board's name; on a desktop card it sits at the
+   * caption's right, before any pill or chevron. */
+  private addDoneMark(btn: HTMLElement, mode: string): void {
+    const wins = this.progress?.wins[mode] ?? {};
+    const won = screens.difficulties.filter((d) => (wins[d.key] ?? 0) > 0);
+    if (won.length === 0) return;
+    const mark = document.createElement("span");
+    mark.className = "menu-done";
+    mark.dataset.won = won.map((d) => d.key).join(" ");
+    mark.setAttribute("role", "img");
+    mark.setAttribute("aria-label", `Won on ${listWords(won.map((d) => d.label))}`);
+    mark.title = mark.getAttribute("aria-label") ?? "";
+    for (const d of screens.difficulties) {
+      const bar = document.createElement("span");
+      bar.className = won.includes(d) ? "menu-done-bar won" : "menu-done-bar";
+      mark.append(bar);
+    }
+    if (btn.classList.contains("menu-board-card")) {
+      btn.querySelector(".menu-board-card-caption .menu-entry-text")?.after(mark);
+    } else {
+      btn.querySelector(".menu-entry-label")?.append(mark);
+    }
   }
 
   /** The mark on a board its surface draws out of shape (boards/distortion.ts):
@@ -1139,6 +1348,36 @@ export class Menu {
     this.paintDistortion(btn);
   }
 
+  /** The mark on a board whose surface carries a caution (catalog.ts
+   * `surfaceCaution`): an "Intersects" pill on the desktop card, a hint line and
+   * — unless the fairness mark already holds the corner — a ⚠ on the phone row.
+   * The distortion mark's look, but shown at every difficulty, since it is the
+   * surface's and not the size's. `data-caution` is the hook the e2e suite
+   * reads. */
+  private addCautionMark(btn: HTMLElement, caution: string, glyph: boolean): void {
+    btn.dataset.caution = "";
+    if (this.isWide()) {
+      const pill = document.createElement("span");
+      pill.className = "menu-fairness-pill";
+      pill.textContent = "Intersects";
+      pill.title = caution;
+      pill.setAttribute("aria-label", caution);
+      btn.querySelector(".menu-board-card-caption")?.append(pill);
+    } else {
+      const line = document.createElement("span");
+      line.className = "menu-entry-hint";
+      line.textContent = caution;
+      btn.querySelector(".menu-entry-text")?.append(line);
+      if (glyph) {
+        const warn = document.createElement("span");
+        warn.className = "menu-entry-warning";
+        warn.textContent = "⚠";
+        warn.setAttribute("aria-label", caution);
+        btn.append(warn);
+      }
+    }
+  }
+
   /** Show a row's distortion mark at the selected difficulty, hide it at the
    * others. `data-distorted` is the hook the e2e suite reads. */
   private paintDistortion(btn: HTMLElement): void {
@@ -1151,18 +1390,77 @@ export class Menu {
   }
 
   /** The large board preview a desktop card shows instead of the phone's 38px
-   * glyph (icons.ts `previewIcon`): a tiling wallpapered to the card's edges,
-   * or — for a solid, a surface or a shaped board, where the silhouette is the
-   * picture — a centred figure with air around it, which `is-tiled` tells the
-   * card's padding apart. */
-  private previewEl(key: string): HTMLElement {
+   * glyph. A board's own card (`mode`) shows the level it opens, at the
+   * selected difficulty (icons.ts `levelPreview`), drawn in the background —
+   * see `paintLevel`. Anything else (a family, a random pool) shows its
+   * `previewIcon`: a tiling wallpapered to the card's edges, or a centred
+   * figure, which `is-tiled` tells the card's padding apart. */
+  private previewEl(key: string, mode?: string): HTMLElement {
     const el = document.createElement("div");
-    const preview = previewIcon(key);
-    el.className = preview.tiled
-      ? "menu-board-card-preview is-tiled"
-      : "menu-board-card-preview";
-    el.innerHTML = preview.svg;
+    if (mode !== undefined && hasMode(mode)) {
+      el.dataset["previewMode"] = mode;
+      this.paintLevel(el, key);
+    } else {
+      paintPreview(el, previewIcon(key));
+    }
     return el;
+  }
+
+  /** The board a group's card shows the level of — a family, a surface, a
+   * random pool: the board its icon is drawn from (icons.ts `iconBoard`),
+   * taken from the group's own members where it has them, so the Uniform
+   * card on the torus page is the torus's rhombitrihexagonal, not the
+   * plane's. A family without that member shows its first board. */
+  private cardBoard(iconKey: string, modes: readonly ModeEntry[] = []): string | undefined {
+    const target = iconBoard(iconKey);
+    if (modes.length === 0) return target;
+    return (modes.find((e) => e.mode === target) ?? modes.find((e) => e.icon === target) ?? modes[0])!
+      .mode;
+  }
+
+  /** Cards waiting for their level to be drawn, in page order. */
+  private readonly levelQueue = new Set<HTMLElement>();
+  private levelTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /** Put a card's level on it: at once when that level at this difficulty is
+   * already drawn, otherwise in the background. Building a board takes from a
+   * millisecond to a second and a half (a closed surface at Hard), so a page
+   * of cards is drawn one board per task — the page stays live while it fills
+   * — with the card's `previewIcon`, or the level it showed at the old
+   * difficulty, standing in until then. */
+  private paintLevel(el: HTMLElement, placeholder?: string): void {
+    const mode = el.dataset["previewMode"]!;
+    const ready = cachedLevelPreview(mode, this.settings.difficulty);
+    if (ready) {
+      this.levelQueue.delete(el);
+      paintPreview(el, ready);
+      return;
+    }
+    if (placeholder !== undefined) paintPreview(el, previewIcon(placeholder));
+    this.levelQueue.add(el);
+    this.levelTimer ??= setTimeout(() => this.drawNextLevel(), 0);
+  }
+
+  private drawNextLevel(): void {
+    this.levelTimer = null;
+    // Not while a game is on screen: `show` renders the page afresh, and its
+    // cards queue themselves again.
+    if (this.root.hidden) {
+      this.levelQueue.clear();
+      return;
+    }
+    for (const el of this.levelQueue) {
+      this.levelQueue.delete(el);
+      // a card whose page has since been left
+      if (!el.isConnected) continue;
+      try {
+        paintPreview(el, levelPreview(el.dataset["previewMode"]!, this.settings.difficulty));
+      } catch {
+        // a board that will not build keeps the picture it has
+      }
+      break;
+    }
+    if (this.levelQueue.size > 0) this.levelTimer = setTimeout(() => this.drawNextLevel(), 0);
   }
 
   /** A desktop card's caption: the board/family name, an optional hint line
@@ -1204,6 +1502,7 @@ export class Menu {
     btn.className = "menu-entry";
     btn.dataset.mode = mode;
     btn.append(iconEl(icon), textBlock(label, hint));
+    this.addDoneMark(btn, mode);
     btn.addEventListener("click", () =>
       this.onSelect({ mode, difficulty: this.settings.difficulty }),
     );
@@ -1211,8 +1510,8 @@ export class Menu {
     return li;
   }
 
-  /** A home-page random entry (Flat, 3D) — resolves to a random mode from its
-   * half of the catalogue at click time, so it is a different board every tap
+  /** A home-page random entry (Flat, 3D, Hyperbolic) — resolves to a random
+   * mode from its pool at click time, so it is a different board every tap
    * (mirrors gui.py's random choice). */
   private randomRow(
     key: RandomKind,
@@ -1284,9 +1583,19 @@ export class Menu {
     for (const b of this.difficultyRowEl?.querySelectorAll(".difficulty-btn") ?? []) {
       b.classList.toggle("active", (b as HTMLElement).dataset["key"] === active);
     }
-    // The rows already on the page carry a per-difficulty mark.
+    // The rows already on the page carry a per-difficulty mark, and the cards
+    // a picture of the level at this difficulty.
     for (const btn of this.root.querySelectorAll<HTMLElement>("[data-distortion]")) {
       this.paintDistortion(btn);
     }
+    for (const el of this.root.querySelectorAll<HTMLElement>("[data-preview-mode]")) {
+      this.paintLevel(el);
+    }
   }
+}
+
+/** Show a preview on a card's preview box. */
+function paintPreview(el: HTMLElement, preview: Preview): void {
+  el.className = preview.tiled ? "menu-board-card-preview is-tiled" : "menu-board-card-preview";
+  el.innerHTML = preview.svg;
 }

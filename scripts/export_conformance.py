@@ -33,6 +33,7 @@ from minesweeper.boards.core import (
     corner_fans,
     covering_sheets,
     euler_characteristic,
+    mesh_loops,
 )
 from minesweeper.boards.presets import _VARIANT_BUILDERS, build_board
 
@@ -41,8 +42,7 @@ DATA = Path(__file__).resolve().parent.parent / "data"
 
 def _edge_count(board) -> int:
     edges = set()
-    for polygon in board.polygons.values():
-        pts = [tuple(round(c, 6) for c in p) for p in polygon]
+    for pts in mesh_loops(board):
         for a, b in zip(pts, pts[1:] + pts[:1]):
             edges.add(frozenset((a, b)))
     return len(edges)

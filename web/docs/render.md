@@ -9,7 +9,9 @@ that choose a look are in [`ui.md`](ui.md).
 The board zooms **in the app**, never in the browser. Pinch on the canvas, or
 `ctrl`+wheel / a trackpad pinch, or the wheel on any board with no ring to
 scroll, or `+` / `-` / `0` (frame it again); a zoomed flat board is dragged
-with one finger, any board with two. Zoom is bounded — `MIN_ZOOM` is the fitted
+with one finger, any board with two, and a hyperbolic board with one at any
+zoom — by a disc isometry rather than a slide (see "Hyperbolic panning"
+below). Zoom is bounded — `MIN_ZOOM` is the fitted
 board (it can never be shrunk into the void) and `MAX_ZOOM` caps magnification
 — and the pan is clamped to the board's overhang, so no gesture can lose the
 board off-screen. A new board always starts framed. `window.__ms.zoom()` reads
@@ -71,6 +73,168 @@ press drops them, a hidden page forgets everything, and lifts are heard on
 `window`, so one that is hit-tested onto the chrome still counts.
 `tests/e2e/stuckTouch.spec.ts` loses a lift on purpose and drives real touches
 (DevTools `Input.dispatchTouchEvent`) after it.
+
+### Hyperbolic panning (`src/render/disc.ts`)
+
+A board drawn in the Poincaré disc (`Board.disc`, the hyperbolic boards) is
+dragged by a **disc isometry** instead of the Euclidean pan: one finger or the
+mouse at *every* zoom (`pans()` in `main.ts`), the pinch's midpoint, the
+Catalyst swipe, the arrow keys, and the four pan arrows on the board bar,
+which are always shown on these boards because they are what tells a player
+the board can be dragged at all (both of the last two are `KEY_PAN_STEP`
+through the centre, glided by `BoardRenderer.nudge`; see the extra-controls
+setting in [`ui.md`](ui.md)). The view is a Möbius map
+`z -> rot (z - c) / (1 - conj(c) z)` — `c` the board point shown at the centre,
+`rot` its turn — and each pointer move composes a translation along a
+**diameter** of the view, the one that moves the point under the finger by
+exactly the finger's step (`dragShift`; `panBy` gets the step's end point
+from `controls.ts` for that, and a drag with no point under it — the swipe, a
+key — uses the centre of the view). The map is conformal, so a cell brought
+to the middle is drawn as big as the central cell, its bevel and number with
+it. *Not* the translation along the geodesic through the finger's two
+positions: that keeps the grabbed point too, but near the rim the geodesic is
+a tight circle, and sliding along it swung the rest of the board off at a
+sharp angle — a sideways drag at the edge sent the board up or down, which
+read as the board jumping. Three limits keep it under control:
+
+- **The rim is held at `EDGE_HOLD`** (0.75 of the disc radius) from the
+  middle of the view: `|c|` never passes `discReach(Board.disc.rim)`, where
+  `rim` is how far out the board is *whole* — the nearest point of its
+  outline, the outer shell being ragged by about a cell. A pan that went on
+  until the last cell was in the middle showed half a screen of nothing; held,
+  the board always fills most of the view, and its outermost cells come in to
+  about a quarter of the central cell's size (from a pixel or two).
+- **A drag moves the board at most `DRAG_SPEED` (2) times as fast as one
+  through the centre.** Near the rim a pixel is worth a cell of hyperbolic
+  distance, so a drag taken literally there flung the board. Out to 0.71 of the
+  radius the cap never bites and the grabbed point follows the finger exactly;
+  beyond, it is shortened but never turned, so the board still goes the way
+  the finger goes. A finger past `GRAB_LIMIT` (0.95, or off the disc) counts
+  as being at it.
+- `0` (`resetView`) puts the board back as built, as it reframes the zoom; a
+  new board always starts that way.
+
+**The pan is the vertex shader's**, not a rewrite of the buffers: a hard board
+is hundreds of thousands of vertices, too many to re-cut per pointer move on a
+phone. `patchMotion` takes the disc's uniforms (`DiscUniforms`) and appends a
+stage after the cell motion: a tile vertex goes through the map, and its height
+is scaled by the map's magnification at the cell's pivot (`discScale`, one
+factor per cell, so a tile keeps its proportions); a **glyph** quad is not
+mapped point by point — the map turns the plane by a different angle
+everywhere, which tipped the numbers over and sheared them — but carried whole
+to its cell's mapped pivot, scaled by the same factor and never turned. Every
+other board compiles without the stage. What the shader moves, the CPU has to
+know about too, and three places do: `cellAnchor` returns the mapped centre
+(so `cellScreenXY`, the particles and the stereo pan follow), `pick` aims its
+ray at the board-as-built point the view draws under the pointer
+(`discSource`), and the flying flag, which is not patched, is placed by hand.
+The meshes skip frustum culling, their bounds being the board as built. The
+reveal ripple and the tile waves still time themselves off the board as built.
+`tests/unit/disc.test.ts` pins the map (an isometry, the finger followed, the
+speed cap, the direction kept at the rim, the hold), and
+`tests/e2e/hyperbolicPan.spec.ts` the gestures: a cell dragged in to full size
+and opened by a tap there, the outermost one brought in as far as the hold
+allows, the board thrown as far as it goes and still filling the view, a drag
+along the rim, `0`, the arrows, and a touch drag that neither opens nor flags.
+
+#### A board with no rim: the closed surfaces (`discRecentre`)
+
+The closed hyperbolic surfaces (`bolza`, `quartic`, `dyck`, `bring`, `macbeath`,
+`triplet`) are
+each drawn as a **patch of the disc that covers it** (see "The closed hyperbolic surfaces" in
+[`geometry.md`](../../docs/agents/geometry.md)): every face shows the cell it
+covers (`Board.faces`), so a cell is drawn several times and its copies paint
+one state, as the projective plane's antipodal twins do. Its pan is not held at
+the rim, because there is no rim to hold — the patch looks the same from every
+tile once the labels are moved by the surface's own symmetry. So
+`Board.disc.cover` carries one **step** per tile round the central p-gon:
+the disc isometry taking the central tile onto it (in a view's own `(c, rot)`
+shape) and the symmetry of the surface that goes with it, as a cell
+permutation. After every drag `PolygonBoard.dragDisc` runs `discRecentre`:
+while the point at the centre of the view is nearer a neighbouring tile's
+centre than the central one's, the view is composed with that step and the
+step is reported (`onCoverStep`) to the session, which relabels every face
+(`GameSession.stepCover`, one batched `setVisuals` rather than a glyph rebuild
+a face). The picture does not change — every point is drawn where it was,
+showing the cell it showed — but the view's centre is back on the central
+tile, so the patch round it is whole however far the pan goes; `discDrag`'s
+reach is only `COVER_REACH`, short of the disc itself.
+
+Two things make it *look* continuous, and the pan jumped without either:
+
+- **The steps are turned into the mesh's frame** (`meshCoverSteps`). The board's
+  disc runs y down, the way its pixels do, and the mesh turns it upright, so the
+  mesh draws the board's point z at conj(z) and needs every step conjugated.
+  Applied as built, each recentring composed the view with a mirror image of
+  the right isometry, and the whole board leapt.
+- **The edge is a fixed circle of the view.** The patch is a disc round the
+  central tile, so seen from near a neighbouring tile its rim is off-centre,
+  and a recentring snapped it back. So the shader hides every cell whose pivot
+  the view draws past `coverClip(cover.view)` (`uDiscClip`; the view is
+  sized from the surface's genus to hold three quarters of the surface --
+  `coverView`, 1.57 of hyperbolic distance on the Bolza surface, 2.06 on genus
+  3 (the quartic and Dyck's), 2.39 on Bring's, 2.99 on Macbeath's, 3.71 on the
+  triplet), and a tap out there finds
+  nothing (`discSource`). The board is framed to that circle widened by a tile
+  radius (`tileRadius` -- a tile the clip keeps reaches that far past it), not
+  to the whole patch, whose polygons run on past the frame, hidden. The patch reaches
+  `patchReach` from its centre, so
+  that circle is always full: what moves at its edge are cells a pixel or two
+  across.
+
+**And it draws nothing it cannot show.** A closed surface's patch is a
+thousand faces or more, and each point of a cell's outline carries the cell's
+whole bevel, so a frame of the hard quartic once drew 3.3 million vertices and
+the reveal ripple crawled. The pan bounds how big any face can ever be drawn,
+and the builder spends accordingly: a face beyond `patchReach` is never in view
+(`Board.unseen`), and `PolygonBoard` gives it no geometry, no shadow and no
+gradient; and an edge whose geodesic could never miss its chord by half a pixel
+on a disc a thousand device pixels in radius is drawn straight
+(`edgeSegments`), which out at the rim is nearly every edge. Now the hard
+quartic draws about 0.9 million, the hard disc board's budget.
+
+The relabelling reads
+the current label off the face a label is named after (a cell's id is the id
+of its own nearest copy), so the board-bar symmetries and the pan compose.
+`tests/unit/disc.test.ts` pins that a step leaves the picture unchanged, in the
+board's frame and in the mesh's, and that a long drag stays on the central tile;
+`tests/unit/hurwitz.test.ts` that each step's symmetry is what its isometry does
+to the drawing, and that the patch fills the view's circle from every corner of
+the central tile;
+`tests/e2e/hyperbolicPan.spec.ts` that a board thrown twice as far as a disc's
+hold allows still fills the view, and a tap at the centre opens.
+
+### Half-plane panning (`src/render/halfPlane.ts`)
+
+The binary tiling is drawn in the upper half-plane (`Board.halfPlane`), and
+it is dragged by that plane's isometries in the same places the disc boards
+are:
+- one finger or the mouse at every zoom;
+- the pan arrows, shown for it as for the discs (`pansHyperbolically`, which gives the board bar its `disc` condition);
+- the arrow keys.
+
+The isometries that fix the point at infinity are z -> a z + b. They are
+simply transitive, so exactly one takes the point under the finger to where
+the finger went, and `halfPlaneDrag` solves for it: a = (height of `to` above
+the ideal line) / (height of `from`), and b slides the rest. Each one is a
+**Euclidean similarity**, a magnification about the ideal line under the
+board plus a slide along it. So unlike the disc pan this is not a vertex-shader
+stage. It is the ordinary flat camera: `Renderer.dragHalfPlane` multiplies the
+zoom by `a` and moves the pan by the board's own turn of the translation, which
+is also what keeps it right on a board shown quarter-turned. Picking, glyphs,
+particles and everything else that reads the camera need nothing.
+
+The holds are the flat camera's own:
+- **Zoom** runs from 1 up to `Board.halfPlane.maxZoom` (2^(levels-1), enough to bring the bottom row up to the size the top row is framed at). For this board that ceiling replaces `MAX_ZOOM`, for the pinch and wheel too.
+- **The pan clamp** keeps the rectangle filling the view, so a dragged-up bottom row stays along the bottom of the screen, at full size.
+- **At the ceiling**, a drag still follows the finger along the line, only no further across it.
+
+A drag starting on or below the ideal line (the margin under the board) does
+nothing. `0` frames the board again. `tests/unit/halfPlane.test.ts` pins the
+map (an isometry, the finger followed, the clamp), and
+`tests/e2e/halfPlanePan.spec.ts` the gestures: a bottom-row cell dragged up to
+tappable size and opened, a sideways slide at constant zoom, no shrinking past
+fitted, and the arrow keys.
 
 ## Picking (`Renderer.pick`)
 
@@ -325,8 +489,8 @@ Glyphs are sized per cell already (`glyphInradius * 0.9`), so a rim cell a
 twentieth the size of the central one gets a number a twentieth the size. That
 is what makes the disc readable at easy and, on a phone, not at medium or hard:
 the outer cells end up a pixel or two across. The Euclidean zoom does not reach
-them; hyperbolic panning, which would move the disc rather than the camera, is
-the planned answer.
+them; hyperbolic panning, which moves the disc rather than the camera, does —
+see "Hyperbolic panning" under "Zoom".
 
 ### The Soft cut (`round`, `shadow`, `grout`)
 
@@ -347,7 +511,14 @@ carry it — none of them is a colour:
   true polygon, which on a solid is why `CellGeom` carries `drawn` beside
   `poly`. A cell with no centre it can see all of (Klaassen's heptagon) and a
   cell the Klein clip cuts keep their corners. The cost is three times the
-  vertices per loop, which is why it is a cut's choice.
+  vertices per loop, which is why it is a cut's choice. **A point that is no
+  corner is not rounded:** a hyperbolic edge is drawn through `ARC_SEGMENTS - 1`
+  arc points, which `Board.cornerMask` marks, and `PolygonBoard` hands that mask
+  to `roundCorners`, which keeps such a point as it is. Rounding them took
+  nothing visible off the outline (the arc barely bends there) but tripled the
+  points of a hyperbolic tile — 63 for a {7,3} heptagon rather than 35 — and
+  every vertex of that was cut, recoloured on every frame of a reveal ripple and
+  drawn: the hard {7,3} board was 631k vertices to the square board's 121k.
 - **`shadow`** (flat boards) lays a soft shadow under every *closed* tile: a fan
   of the outline at full strength ringed by the outline pushed outward and
   faded to nothing, offset down the **screen** (so `setQuarterTurn` rewrites
@@ -360,6 +531,21 @@ carry it — none of them is a colour:
 
 Two things move a board beyond recolouring it, and they are deliberately split
 by what decides whether they run.
+
+The recolouring is the reveal ripple's and the win wave's colour clock
+(`animations.ts`), and on `PolygonBoard` it is kept cheap per frame in two
+ways, since a hyperbolic flood ripples a couple of hundred cells of thirty-odd
+outline points each:
+
+- **The style's gradient is laid out once per shape** (`ramps`: a factor per
+  vertex, by side count and cell state), not worked out by `vertexShade` for
+  every vertex of every cell on every frame it is recoloured.
+- **Only what changed is uploaded.** Every writer of the tile, colour and
+  shadow buffers marks its own cell's range (`touch`, through three.js's
+  `addUpdateRange`) rather than the whole buffer, which three.js merges where
+  ranges touch — so a flood's neighbours, or the whole board, still go up in
+  one piece. Every writer marks a range; one that set a bare `needsUpdate`
+  beside the others would see only *their* ranges uploaded.
 
 ### Tile motion (`src/render/cellMotion.ts`, `src/render/motionShader.ts`)
 
@@ -648,7 +834,9 @@ The rest of what to know before changing one:
   hundred triangles per marked cell is not a thing to rewrite at 60fps to produce
   the identical buffer.
 - **...and once per batch, not once per cell.** `setVisual` only *marks*
-  (`glyphsDirty` / `markersDirty`); `tickAnimations` flushes, ahead of its own
+  (`glyphsDirty` / `markersDirty`, and `glyphsDirty` on `PolygonBoard` too,
+  whose flood fills on the hyperbolic boards open a couple of hundred cells a
+  press); `tickAnimations` flushes, ahead of its own
   early-out, on the frame that is about to be drawn anyway. This matters because
   every caller that matters changes many cells at once — a loss turns over every
   mine, a Klein scroll rewrites *all* of them, a flood fill opens a wide patch —

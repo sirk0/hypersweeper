@@ -783,12 +783,21 @@ function clipHalf(poly: readonly Vec3[], h: ClipPlane, side: 1 | -1): Vec3[] {
   return out;
 }
 
-/** Where a triangle meets the horizontal plane at `y`, as a segment. */
+/** Where a triangle meets the horizontal plane at `y`, as a segment.
+ *
+ * Every edge is interpolated from its lower end, whichever way this triangle
+ * winds it. The neighbour across an edge winds it the other way, and the two
+ * directions round differently in the last bit — so the slices of two
+ * triangles sharing an edge would end on two points a hair apart, where both
+ * `insideOccluder`'s half-open crossing rule and `buildClipSolid`'s shared
+ * wedge walls need the same point. A ray through that vertex then counted it
+ * twice or not at all, and which one depended on the platform's rounding. */
 function sliceTriangle(t: Tri, y: number): [Vec3, Vec3] | null {
   const hits: Vec3[] = [];
   for (let i = 0; i < 3; i++) {
-    const a = t[i]!;
-    const b = t[(i + 1) % 3]!;
+    let a = t[i]!;
+    let b = t[(i + 1) % 3]!;
+    if (a[1] > b[1]) [a, b] = [b, a];
     const da = a[1] - y;
     const db = b[1] - y;
     if ((da > 0 && db > 0) || (da < 0 && db < 0)) continue;

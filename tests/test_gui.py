@@ -93,8 +93,11 @@ class TestGameScreenGeometry:
     @pytest.mark.parametrize("mode", MODES_2D)
     def test_every_cell_center_maps_back_to_its_cell(self, mode):
         screen = GameScreen(mode, "easy")
-        for cell, center in screen.centers.items():
-            assert screen.cell_at(center) == cell
+        # a board drawn as a patch of its cover draws a cell several times, and
+        # a tap on any copy is a tap on the cell it shows
+        faces = screen.board.faces or {}
+        for face, center in screen.centers.items():
+            assert screen.cell_at(center) == faces.get(face, face)
 
     def test_positions_outside_the_board_map_to_none(self, gui):
         assert gui.cell_at((2, 2)) is None  # header area
@@ -650,9 +653,10 @@ class TestMenu:
         self.click_item(menu, "torus")
         assert menu.path == ["manifolds", "torus"]
         # aperiodic and fractal are not offered on a wrapped surface, only on
-        # the plane; every other family is offered on every manifold
-        assert self.items(menu) == {"regular", "uniform", "dual", "isogonal",
-                                    "rectangle", "random"}
+        # the plane, and "Other" not yet; every other family is offered on the
+        # donut, 2-uniform included
+        assert self.items(menu) == {"regular", "uniform", "dual", "2-uniform",
+                                    "isogonal", "rectangle", "random"}
         self.click_item(menu, "uniform")
         assert self.click_item(menu, "trihex") == ("start", "torustrihex")
 

@@ -26,6 +26,7 @@ import {
   SURFACE_SPECS,
   familyRows,
   flatMenuModes,
+  hyperbolicMenuModes,
   threeDMenuModes,
 } from "../../src/boards/catalog";
 import { blockedModes } from "../../src/boards/fairness";
@@ -82,10 +83,12 @@ const win = (mode: string, over: Partial<Win> = {}): Win => ({
   ...over,
 });
 
-/** Every board the two random pools reach — the whole catalogue, as the menu
+/** Every board the random pools reach — the whole catalogue, as the menu
  * sees it. */
 function everyBuiltMode(): string[] {
-  return [...new Set([...flatMenuModes(), ...threeDMenuModes()])].filter(hasMode);
+  return [
+    ...new Set([...flatMenuModes(), ...hyperbolicMenuModes(), ...threeDMenuModes()]),
+  ].filter(hasMode);
 }
 
 /** A progress record that has won each of `modes` once. */
@@ -118,11 +121,47 @@ describe("the declared shape list", () => {
     // extra points, and a count that ignored the corner mask filed a {5,4}
     // win as 13 to 15 sides, and a {7,3} one as 17 to 21 — the heptagon badge
     // never, and the Spectre's 13-gon badge for the wrong board.
-    for (const [mode, sides] of [["hyperbolic73", 7], ["hyperbolic54", 5], ["hyperbolic45", 4]] as const) {
+    for (const [mode, sides] of [
+      ["hyperbolic93", 9],
+      ["hyperbolic83", 8],
+      ["hyperbolic73", 7],
+      ["hyperbolic74", 7],
+      ["hyperbolic64", 6],
+      ["hyperbolic54", 5],
+      ["hyperbolic55", 5],
+      ["hyperbolic45", 4],
+      ["hyperbolic46", [4]],
+      ["hyperbolic37", [3]],
+      ["hyperbolic38", [3]],
+      ["hyperbolic667", [6, 7]],
+      ["hyperbolic3737", [3, 7]],
+      ["hyperbolic3474", [3, 4, 7]],
+      ["hyperbolic4614", [4, 6, 14]],
+      ["hyperbolic31414", [3, 14]],
+      ["hyperbolic668", [6, 8]],
+      ["hyperbolic31616", [3, 16]],
+      ["hyperbolic3838", [3, 8]],
+      ["hyperbolic3484", [3, 4, 8]],
+      ["hyperbolic4616", [4, 6, 16]],
+      ["hyperbolic588", [5, 8]],
+      ["hyperbolic41010", [4, 10]],
+      ["hyperbolic4545", [4, 5]],
+      ["hyperbolic4445", [4, 5]],
+      ["hyperbolic4810", [4, 8, 10]],
+      ["hyperbolic688", [6, 8]],
+      ["hyperbolic41212", [4, 12]],
+      ["hyperbolic4646", [4, 6]],
+      ["hyperbolic4446", [4, 6]],
+      ["hyperbolic4812", [4, 8, 12]],
+      ["hyperbolic51010", [5, 10]],
+      ["hyperbolic669", [6, 9]],
+      // drawn as squares, each with its children's T-vertex on its bottom edge
+      ["hyperbolicbinary", [4]],
+    ] as const) {
       for (const difficulty of ["easy", "medium", "hard"]) {
         const board = buildBoard(mode, difficulty);
         expect(new Set(cellSides(board.polygons, board.cornerMask).values()), `${mode} ${difficulty}`)
-          .toEqual(new Set([sides]));
+          .toEqual(new Set(typeof sides === "number" ? [sides] : sides));
       }
     }
   });

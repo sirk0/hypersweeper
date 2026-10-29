@@ -40,10 +40,10 @@ describe("shape names", () => {
   it("uses the word for the shape where English has one", () => {
     // A Laves dual is one irregular tile throughout, and "quadrilateral" or
     // "irregular triangle" would be the least it could say about them.
-    expect(shapes("rhombille")).toEqual(["Rhombi 82"]);
+    expect(shapes("rhombille")).toEqual(["Rhombi 79"]);
     expect(shapes("deltoidal")).toEqual(["Kites 76"]);
-    expect(shapes("tetrakis")).toEqual(["Isosceles triangles 90"]);
-    expect(shapes("kisrhombille")).toEqual(["Irregular triangles 88"]); // 30-60-90
+    expect(shapes("tetrakis")).toEqual(["Isosceles triangles 80"]);
+    expect(shapes("kisrhombille")).toEqual(["Irregular triangles 80"]); // 30-60-90
     expect(shapes("cairo")).toEqual(["Irregular pentagons 80"]);
     expect(shapes("stackedbond")).toEqual(["Rectangles 72"]);
   });
@@ -105,6 +105,9 @@ describe("shape names", () => {
     // The geodesic sphere: twenty of its eighty triangles come out exact, and
     // a class is only as regular as all of its cells.
     expect(shapes("spheretri")).toEqual(["Projected equilateral triangles 80"]);
+    // ...and the spherical cube's squares, none of which the cube map keeps
+    // exactly square.
+    expect(shapes("spheresquare")).toEqual(["Projected squares 96"]);
   });
 
   it("calls a hyperbolic tiling's tiles regular, as drawn in the disc", () => {
@@ -190,6 +193,17 @@ describe("boardFacts", () => {
     expect(f.mines).toBe(42);
     expect(f.name).toBe("Hexagons · Torus");
     expect(f.difficulty).toBe("Medium");
+  });
+
+  it("explains a surface's caution at every difficulty", () => {
+    // Boy's surface passes through itself: declared on the surface, so the same
+    // line at all three levels, and nothing on the projective plane, which is
+    // the same board drawn on the sphere.
+    for (const difficulty of ["easy", "medium", "hard"]) {
+      expect(facts("boy", difficulty).caution, difficulty).toMatch(/^Self-intersecting/);
+      expect(facts("projective", difficulty).caution, difficulty).toBeUndefined();
+    }
+    expect(facts("klein").caution).toBeUndefined();
   });
 
   it("explains the ⚠ the board's name carries", () => {

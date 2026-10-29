@@ -402,6 +402,12 @@ def calibrate_row(args: tuple) -> dict:
     return row
 
 
+def _configure(effort: float, budget: int) -> None:
+    """Set a worker's effort and node budget to the parent's."""
+    global BUDGET, EFFORT
+    EFFORT, BUDGET = effort, budget
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--jobs", type=int, default=max(1, mp.cpu_count() - 1))
@@ -484,7 +490,13 @@ def main() -> int:
         if options.jobs == 1:
             results = map(calibrate_row, jobs)
         else:
-            pool = mp.Pool(options.jobs)
+            # `--effort` and `--budget` are module globals, and a spawned
+            # worker (macOS, Windows) re-imports the module with the
+            # defaults rather than inheriting them, so they are handed over
+            # explicitly -- or a `--redo --effort 3` pass re-runs every row
+            # at effort 1 and lands exactly where the first pass did
+            pool = mp.Pool(options.jobs, initializer=_configure,
+                           initargs=(EFFORT, BUDGET))
             results = pool.imap_unordered(calibrate_row, jobs)
         for i, row in enumerate(results, 1):
             handle.write(json.dumps(row) + "\n")

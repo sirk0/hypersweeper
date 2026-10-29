@@ -6,6 +6,7 @@ import {
   invertCycle,
   isBoard3D,
   type AnyBoard,
+  type Board,
   type BoardSymmetry,
   type CellId,
   type SymmetryId,
@@ -207,11 +208,40 @@ export class GameSession {
     this.panOf = opts.panOf ?? null;
     this.fx = opts.fx ?? null;
     this.moves = symmetryMoves(this.board.symmetries, mode);
-    const faces = isBoard3D(this.board) ? this.board.faces : undefined;
+    const faces = this.board.faces;
     for (const face of this.board.polygons.keys()) {
       this.remap.set(face, faces?.get(face) ?? face);
     }
     this.remapInv = facesShowing(this.remap);
+    const cover = !isBoard3D(this.board) ? this.board.disc?.cover : undefined;
+    if (cover && this.mesh instanceof PolygonBoard) {
+      this.mesh.onCoverStep = (taken) => {
+        for (const k of taken) this.stepCover(cover.steps[k]!.cells);
+      };
+    }
+  }
+
+  /** Follow a closed surface's view one step across its cover
+   * (`render/disc.ts` `discRecentre`): every face now shows what the face the
+   * step carried it onto showed. `cells` is the surface's symmetry that goes
+   * with the step, on the board's own labels (`Board.faces`); what a label
+   * shows now is read off the face it is named after, which is a copy of that
+   * cell -- so the moves already made along the board's symmetries carry
+   * through. The picture does not change, so nothing is played or counted. */
+  private stepCover(cells: Map<CellId, CellId>): void {
+    const faces = (this.board as Board).faces!;
+    const next = new Map<CellId, CellId>();
+    for (const geom of this.remap.keys()) {
+      const label = cells.get(faces.get(geom)!)!;
+      next.set(geom, this.remap.get(label)!);
+    }
+    this.remap = next;
+    this.remapInv = facesShowing(next);
+    const visuals = [...this.board.polygons.keys()].map(
+      (geom) => [geom, this.visualFor(this.gameFor(geom))] as const,
+    );
+    if (this.mesh.setVisuals) this.mesh.setVisuals(visuals);
+    else for (const [geom, visual] of visuals) this.mesh.setVisual(geom, visual);
   }
 
   get status() {

@@ -8,6 +8,7 @@ import {
   MeshStandardMaterial,
   ShapeUtils,
   Vector2,
+  Vector3,
   type Texture,
 } from "three";
 import type { Board, CellId, Vertex } from "../boards/core";
@@ -37,7 +38,21 @@ import {
   WIN_PER_CELL,
 } from "./animations";
 import { cellPalette, classifyShapes, type CellPalette, corners } from "./shapePalette";
-import { BoardMotion, cellAttribute, patchMotion } from "./motionShader";
+import { BoardMotion, cellAttribute, patchMotion, type DiscUniforms } from "./motionShader";
+import {
+  DISC_IDENTITY,
+  discDrag,
+  discRecentre,
+  coverClip,
+  meshCoverSteps,
+  discMap,
+  discReach,
+  discScale,
+  discUnmap,
+  type Cx,
+  type CoverStep,
+  type DiscView,
+} from "./disc";
 import {
   cellStyle,
   cellStyleLoops,
@@ -60,6 +75,15 @@ import {
 /** A lift shows on the plane as growth (see `MotionUniforms.uLiftScale`). */
 const FLAT_LIFT_SCALE = 0.4;
 
+/** How far a closed surface's view may be carried in one drag step, in disc
+ * radii: anywhere, short of the rim itself. The recentring keeps its centre in
+ * the central tile between steps, so this only guards the arithmetic. */
+const COVER_REACH = 0.999;
+
+/** Vertices of a cell's soft shadow: a fan and a fading ring round its
+ * outline, or none on a face that is never seen. */
+const shadowCount = (g: CellGeom): number => (g.unseen ? 0 : 9 * g.poly.length);
+
 interface CellGeom {
   start: number; // first vertex index in the position/color buffers
   count: number; // vertex count for this cell
@@ -71,6 +95,9 @@ interface CellGeom {
   //   spot), else the same as `center`
   glyphInradius: number; // distance glyphCenter -> nearest edge (glyph sizing)
   palette: CellPalette; // hidden/opened tones for this cell's shape
+  // A face the board says is never seen (`Board.unseen`): no geometry at all,
+  // so no shadow and no gradient either.
+  unseen: boolean;
   // Set only for a cell that is not star-shaped about its centroid (Klaassen's
   // bent heptagon): its loops are mitred insets rather than pulls toward one
   // centre, by `inset` times these vectors, and its top face is the polygon's
@@ -121,6 +148,16 @@ export class PolygonBoard extends Group implements BoardMesh {
   private readonly shade: CellStyle["shade"];
   private readonly openShade: CellStyle["shade"];
   private readonly loops: number;
+  /** Those gradients laid out per vertex, by side count and cell state
+   * (`ramp`). `vertexShade` is a function of nothing else, and a flood or a
+   * reveal ripple recolours hundreds of cells a frame, so each is worked out
+   * once rather than once per vertex per recolour. */
+  private readonly ramps = new Map<string, Float32Array | null>();
+  /** Whether the glyph quads need regenerating before the next frame. The
+   * rebuild is a whole-board pass, and a flood fill sets hundreds of cells in a
+   * row with nothing drawn in between, so `setVisual` marks and
+   * `tickAnimations` flushes once — as `SolidBoard` already does. */
+  private glyphsDirty = false;
   /** Multiplier on every tile colour. 1 on an unlit style, whose tiles already
    * arrive as the palette named them; a lit one may pay back what the diffuse
    * shading takes (see CellStyle.albedo). */
@@ -134,6 +171,26 @@ export class PolygonBoard extends Group implements BoardMesh {
   private shadowPos: BufferAttribute | null = null;
   private shadowColor: BufferAttribute | null = null;
   private shadowStart: number[] = [];
+  /** The Poincaré disc a hyperbolic board is drawn in (mesh units: centre and
+   * unit radius, and the `reach` its view may carry it to), the view it is
+   * shown at, and the uniforms that hand that view to the vertex shader —
+   * which is where the pan is applied, so a drag costs three uniforms rather
+   * than a rewrite of every tile. Null on every other board. */
+  private readonly disc: { x: number; y: number; r: number; reach: number } | null;
+  /** The upper half-plane the board is drawn in (render/halfPlane.ts), in
+   * mesh units: the y of its ideal line, and how far the view may magnify. */
+  readonly halfPlane?: { line: number; maxZoom: number };
+  private discView: DiscView = DISC_IDENTITY;
+  /** A closed surface's pan steps (`Board.disc.cover`), and who is told when
+   * the view takes one -- the session, which moves the labels to match, so
+   * the picture does not change. */
+  private readonly coverSteps: readonly CoverStep[] | null;
+  /** How far out, in disc radii, the view of a closed surface shows its patch
+   * (`coverClip`): the shader hides every cell drawn beyond it, and a tap
+   * there finds nothing. Null on every other board. */
+  private readonly coverClip: number | null;
+  onCoverStep: ((steps: number[]) => void) | null = null;
+  private readonly discUniforms: DiscUniforms | null;
 
   constructor(board: Board, style: CellStyle = cellStyle(null)) {
     super();
@@ -166,6 +223,33 @@ export class PolygonBoard extends Group implements BoardMesh {
       height: board.height,
       mode: board.mode,
     };
+    if (board.halfPlane) {
+      this.halfPlane = { line: cy - board.halfPlane.boundary, maxZoom: board.halfPlane.maxZoom };
+    }
+    this.disc = board.disc
+      ? {
+          x: board.disc.cx - cx,
+          y: cy - board.disc.cy,
+          r: board.disc.radius,
+          // A closed surface's patch never runs out (`discRecentre` carries
+          // the view back to the central tile as it goes), so nothing bounds
+          // its pan but the disc itself.
+          reach: board.disc.cover ? COVER_REACH : discReach(board.disc.rim),
+        }
+      : null;
+    // The steps are the board's, whose disc runs y down; the mesh's runs up.
+    const cover = board.disc?.cover;
+    this.coverSteps = cover ? meshCoverSteps(cover.steps) : null;
+    this.coverClip = cover ? coverClip(cover.view) : null;
+    this.discUniforms = this.disc
+      ? {
+          uDisc: { value: new Vector3(this.disc.x, this.disc.y, this.disc.r) },
+          uDiscC: { value: new Vector2(0, 0) },
+          uDiscRot: { value: new Vector2(1, 0) },
+          // past the rim, where no cell is: nothing hidden but on a cover
+          uDiscClip: { value: this.coverClip ?? 2 },
+        }
+      : null;
 
     const faceCell: number[] = [];
     let vertexCount = 0;
@@ -214,11 +298,14 @@ export class PolygonBoard extends Group implements BoardMesh {
           };
       // A cut with rounded corners draws the rounded outline; everything that
       // *measures* the cell above still read its true corners.
+      const unseen = board.unseen?.has(cell) ?? false;
       const drawn =
-        style.round && !bent ? roundCorners(poly, style.round) : poly;
+        style.round && !bent && !unseen
+          ? roundCorners(poly, style.round, board.cornerMask?.get(cell))
+          : poly;
       const n = drawn.length;
       // n fan triangles for the top face, 2n for each ring of walls under it
-      const count = cellVertexCount(n, this.profile);
+      const count = unseen ? 0 : cellVertexCount(n, this.profile);
       for (let t = 0; t < count / 3; t++) faceCell.push(ci);
       this.geom.push({
         start: vertexCount,
@@ -233,6 +320,7 @@ export class PolygonBoard extends Group implements BoardMesh {
         glyphInradius: polygonInradius(board.cornerMask ? poly : shape, glyphCenter),
         palette: cellPalette(tones.get(cell)!, "flat", style.monochrome, style.boardTint),
         bent,
+        unseen,
       });
       vertexCount += count;
     });
@@ -272,7 +360,7 @@ export class PolygonBoard extends Group implements BoardMesh {
           side: DoubleSide,
           ...translucent,
         });
-    patchMotion(cellMaterial, this.motion.uniforms, "tile", !style.unlit);
+    patchMotion(cellMaterial, this.motion.uniforms, "tile", !style.unlit, this.discUniforms);
     const cells = new Mesh(geometry, cellMaterial);
     cells.name = "cells";
     this.add(cells);
@@ -284,7 +372,7 @@ export class PolygonBoard extends Group implements BoardMesh {
     // neighbour catches it.
     this.shadow = style.shadow ?? null;
     if (this.shadow) {
-      const shadowVerts = this.geom.reduce((sum, g) => sum + 9 * g.poly.length, 0);
+      const shadowVerts = this.geom.reduce((sum, g) => sum + shadowCount(g), 0);
       this.shadowPos = new BufferAttribute(new Float32Array(shadowVerts * 3), 3);
       this.shadowColor = new BufferAttribute(new Float32Array(shadowVerts * 4), 4);
       const sg = new BufferGeometry();
@@ -293,13 +381,13 @@ export class PolygonBoard extends Group implements BoardMesh {
       let at = 0;
       this.shadowStart = this.geom.map((g) => {
         const start = at;
-        at += 9 * g.poly.length;
+        at += shadowCount(g);
         return start;
       });
       cellAttribute(
         sg,
         shadowVerts,
-        this.geom.map((g, i) => ({ start: this.shadowStart[i]!, count: 9 * g.poly.length })),
+        this.geom.map((g, i) => ({ start: this.shadowStart[i]!, count: shadowCount(g) })),
       );
       const shadowMaterial = new MeshBasicMaterial({
         vertexColors: true,
@@ -307,7 +395,7 @@ export class PolygonBoard extends Group implements BoardMesh {
         depthWrite: false,
         side: DoubleSide,
       });
-      patchMotion(shadowMaterial, this.motion.uniforms, "tile", false);
+      patchMotion(shadowMaterial, this.motion.uniforms, "tile", false, this.discUniforms);
       const shadowMesh = new Mesh(sg, shadowMaterial);
       shadowMesh.name = "shadows";
       shadowMesh.renderOrder = 0.5;
@@ -321,7 +409,7 @@ export class PolygonBoard extends Group implements BoardMesh {
       side: DoubleSide,
       depthWrite: false,
     });
-    patchMotion(glyphMaterial, this.motion.uniforms, "glyph", false);
+    patchMotion(glyphMaterial, this.motion.uniforms, "glyph", false, this.discUniforms);
     const glyphMesh = new Mesh(this.glyphGeometry, glyphMaterial);
     glyphMesh.name = "glyphs";
     glyphMesh.renderOrder = 1;
@@ -358,6 +446,12 @@ export class PolygonBoard extends Group implements BoardMesh {
       this.writeColor(i);
       this.writeShadow(i);
     }
+    // The first upload is the whole buffer whatever the ranges say, so the
+    // ranges every cell just marked would only go up a second time with the
+    // first change after it.
+    for (const attr of [this.positionAttr, this.colorAttr, this.shadowPos, this.shadowColor]) {
+      attr?.clearUpdateRanges();
+    }
     // Cells are re-cut in place afterwards, so pad the (raised-state) bounds by
     // the full relief the style can take rather than recomputing per update.
     geometry.computeBoundingSphere();
@@ -369,6 +463,10 @@ export class PolygonBoard extends Group implements BoardMesh {
       );
       geometry.boundingSphere.radius += maxRadius * (this.glyphHeight - lowest);
     }
+    // The bounds three.js culls by are the board as built; panned, the disc
+    // draws it elsewhere (never outside the unit circle, which the board
+    // already all but fills), so a disc board is never culled.
+    if (this.disc) this.traverse((o) => (o.frustumCulled = false));
     this.rebuildGlyphs();
   }
 
@@ -385,10 +483,83 @@ export class PolygonBoard extends Group implements BoardMesh {
     const i = this.cellIndex.get(cell);
     if (i == null) return null;
     const g = this.geom[i]!;
-    return { center: [g.center[0], g.center[1], 0], normal: [0, 0, 1] };
+    const [x, y] = this.discPoint(g.center);
+    return { center: [x, y, 0], normal: [0, 0, 1] };
+  }
+
+  // -- hyperbolic panning (see render/disc.ts) --------------------------------
+
+  get discPans(): boolean {
+    return this.disc !== null;
+  }
+
+  /** Move the disc so what is drawn at `from` is drawn at `to` (mesh units). */
+  dragDisc(from: Vertex, to: Vertex): boolean {
+    if (!this.disc) return false;
+    let next = discDrag(this.discView, this.toDisc(from), this.toDisc(to), this.disc.reach);
+    if (next === this.discView) return false;
+    if (this.coverSteps) {
+      const { view, taken } = discRecentre(next, this.coverSteps);
+      next = view;
+      if (taken.length) this.onCoverStep?.(taken);
+    }
+    this.setDiscView(next);
+    return true;
+  }
+
+  resetDisc(): void {
+    if (this.disc && this.discView !== DISC_IDENTITY) this.setDiscView(DISC_IDENTITY);
+  }
+
+  /** The point of the board as built that is drawn at `p` (mesh units). */
+  discSource(p: Vertex): Vertex {
+    if (!this.disc) return p;
+    const w = this.toDisc(p);
+    // Beyond a cover's clip the cells are hidden, so a tap there is a tap on
+    // nothing: aim it off the board altogether.
+    if (this.coverClip !== null && Math.hypot(w[0], w[1]) > this.coverClip) {
+      return this.fromDisc([4, 0]);
+    }
+    return this.fromDisc(discUnmap(this.discView, w));
+  }
+
+  /** Where the current view draws the board-as-built point `p`. */
+  private discPoint(p: Vertex): Vertex {
+    if (!this.disc || this.discView === DISC_IDENTITY) return p;
+    return this.fromDisc(discMap(this.discView, this.toDisc(p)));
+  }
+
+  private toDisc(p: Vertex): Cx {
+    const d = this.disc!;
+    return [(p[0] - d.x) / d.r, (p[1] - d.y) / d.r];
+  }
+
+  private fromDisc(z: Cx): Vertex {
+    const d = this.disc!;
+    return [d.x + z[0] * d.r, d.y + z[1] * d.r];
+  }
+
+  private setDiscView(view: DiscView): void {
+    this.discView = view;
+    const u = this.discUniforms!;
+    u.uDiscC.value.set(view.c[0], view.c[1]);
+    u.uDiscRot.value.set(view.rot[0], view.rot[1]);
+    // The flag in flight is the one thing drawn outside the shader's reach.
+    if (this.anim.dropProgress(performance.now()) != null) this.rebuildGlyphs();
   }
 
   setVisual(cell: CellId, visual: CellVisual): void {
+    this.writeVisual(cell, visual);
+  }
+
+  /** `setVisual` for many cells at once -- a closed surface relabels every
+   * face of its patch as its pan steps across the cover. The glyphs are
+   * rebuilt once, on the next frame, either way (`glyphsDirty`). */
+  setVisuals(visuals: Iterable<readonly [CellId, CellVisual]>): void {
+    for (const [cell, visual] of visuals) this.writeVisual(cell, visual);
+  }
+
+  private writeVisual(cell: CellId, visual: CellVisual): void {
     const i = this.cellIndex.get(cell);
     if (i == null) return;
     const wasOpen = isOpened(this.states[i]!);
@@ -400,7 +571,7 @@ export class PolygonBoard extends Group implements BoardMesh {
     this.writeColor(i);
     if (visual.kind !== "hidden") this.motion.motion.setHover(i, false);
     if (isOpened(visual)) this.motion.motion.setPress(i, false);
-    this.rebuildGlyphs();
+    this.glyphsDirty = true;
   }
 
   setHover(cell: CellId | null): void {
@@ -467,6 +638,7 @@ export class PolygonBoard extends Group implements BoardMesh {
    * in exactly the slice of the buffer the other state wrote. */
   private writeGeometry(i: number): void {
     const g = this.geom[i]!;
+    if (g.count === 0) return; // a face the board says is never seen
     const loops = isOpened(this.states[i]!) ? this.profile.open : this.profile.closed;
     const n = g.poly.length;
     const bent = g.bent;
@@ -516,7 +688,7 @@ export class PolygonBoard extends Group implements BoardMesh {
         put(high.points[a]!, high.z);
       }
     }
-    this.positionAttr.needsUpdate = true;
+    touch(this.positionAttr, g.start, g.count);
   }
 
   private writeColor(i: number): void {
@@ -537,16 +709,35 @@ export class PolygonBoard extends Group implements BoardMesh {
     // solid, or the board would be a window rather than a field of tiles.
     const opened = isOpened(this.states[i]!);
     const alpha = this.openAlpha === null || !opened ? 1 : this.openAlpha;
-    const shade = opened ? this.openShade : this.shade;
-    for (let v = 0; v < g.count; v++) {
-      const f = shade ? vertexShade(shade, this.loops, v, g.poly.length) : 1;
-      if (this.colorAttr.itemSize === 4) {
-        this.colorAttr.setXYZW(g.start + v, col.r * f, col.g * f, col.b * f, alpha);
-      } else {
-        this.colorAttr.setXYZ(g.start + v, col.r * f, col.g * f, col.b * f);
-      }
+    const ramp = g.unseen ? null : this.ramp(g.poly.length, opened);
+    // Straight into the array: this runs for every vertex of every cell a
+    // ripple recolours, every frame it runs.
+    const out = this.colorAttr.array as Float32Array;
+    const k = this.colorAttr.itemSize;
+    for (let v = 0, o = g.start * k; v < g.count; v++, o += k) {
+      const f = ramp ? ramp[v]! : 1;
+      out[o] = col.r * f;
+      out[o + 1] = col.g * f;
+      out[o + 2] = col.b * f;
+      if (k === 4) out[o + 3] = alpha;
     }
-    this.colorAttr.needsUpdate = true;
+    touch(this.colorAttr, g.start, g.count);
+  }
+
+  /** The style's gradient over an `n`-sided cell, a factor per vertex, or null
+   * where the style has none. See `ramps`. */
+  private ramp(n: number, opened: boolean): Float32Array | null {
+    const key = `${n}:${opened ? 1 : 0}`;
+    let ramp = this.ramps.get(key);
+    if (ramp === undefined) {
+      const shade = opened ? this.openShade : this.shade;
+      const count = cellVertexCount(n, this.profile);
+      ramp = shade
+        ? Float32Array.from({ length: count }, (_, v) => vertexShade(shade, this.loops, v, n))
+        : null;
+      this.ramps.set(key, ramp);
+    }
+    return ramp;
   }
 
   /** Lay cell `i`'s shadow: offset down the *screen* (which on a board shown
@@ -557,6 +748,7 @@ export class PolygonBoard extends Group implements BoardMesh {
     const sh = this.shadow;
     if (!pos || !sh) return;
     const g = this.geom[i]!;
+    if (g.unseen) return;
     const n = g.poly.length;
     const off = g.radius * sh.offset;
     const [dx, dy] = this.quarterTurn ? [off, 0] : [0, -off];
@@ -581,7 +773,7 @@ export class PolygonBoard extends Group implements BoardMesh {
       put(outer[b]!);
       put(inner[b]!);
     }
-    pos.needsUpdate = true;
+    touch(pos, this.shadowStart[i]!, 9 * n);
     this.writeShadowAlpha(i);
   }
 
@@ -591,6 +783,7 @@ export class PolygonBoard extends Group implements BoardMesh {
     const sh = this.shadow;
     if (!col || !sh) return;
     const g = this.geom[i]!;
+    if (g.unseen) return;
     const n = g.poly.length;
     const a = isOpened(this.states[i]!) ? 0 : sh.opacity;
     let v = this.shadowStart[i]!;
@@ -601,7 +794,7 @@ export class PolygonBoard extends Group implements BoardMesh {
         col.setXYZW(v++, 0, 0, 0, inner ? a : 0);
       }
     }
-    col.needsUpdate = true;
+    touch(col, this.shadowStart[i]!, 9 * n);
   }
 
   /** Draw the glyphs counter-rotated (the board is being shown turned). */
@@ -613,6 +806,7 @@ export class PolygonBoard extends Group implements BoardMesh {
   }
 
   private rebuildGlyphs(): void {
+    this.glyphsDirty = false;
     const pos: number[] = [];
     const uvs: number[] = [];
     const owners: number[] = [];
@@ -664,8 +858,19 @@ export class PolygonBoard extends Group implements BoardMesh {
       // frame the drop ends and the hand-off is invisible. Drawing both would
       // stand a second, tiny flag beside the falling one.
       if (i === dropIndex && dropAt != null) {
-        const half = dropSize(settled, extent, dropAt);
-        quad(dropPos, dropUvs, half, z + 0.02, dropRise(settled, half));
+        // Not patched by the motion shader (it hangs over the board, at many
+        // times a cell's size), so on a panned disc it is placed here: at the
+        // glyph's drawn place, the size the pan draws that cell at.
+        const grow = this.disc ? discScale(this.discView, this.toDisc(g.glyphCenter)) : 1;
+        const [ox, oy] = this.discPoint(g.glyphCenter);
+        const fly = settled * grow;
+        const half = dropSize(fly, extent, dropAt);
+        const from = dropPos.length;
+        quad(dropPos, dropUvs, half, z * grow + 0.02, dropRise(fly, half));
+        for (let k = from; k < dropPos.length; k += 3) {
+          dropPos[k] = dropPos[k]! - cxp + ox;
+          dropPos[k + 1] = dropPos[k + 1]! - cyp + oy;
+        }
       } else {
         quad(pos, uvs, s, z);
         owners.push(i, i, i, i, i, i);
@@ -748,15 +953,32 @@ export class PolygonBoard extends Group implements BoardMesh {
   }
 
   tickAnimations(now: number): boolean {
+    // Ahead of the early-out: a batch of `setVisual` calls with no animation
+    // running still has to reach the screen, and the renderer calls this on
+    // every frame whether or not it means to draw.
+    const flushed = this.glyphsDirty;
+    if (flushed) this.rebuildGlyphs();
     const moving = this.motion.step(now);
-    if (!this.anim.pending()) return moving;
+    if (!this.anim.pending()) return flushed || moving;
     const step = this.anim.step(now);
     for (const i of step.recolor) this.writeColor(i);
     if (step.glyphsDirty) this.rebuildGlyphs();
     this.position.set(step.offset[0], step.offset[1], 0);
     // The frame a flash or a pop settles on has to be drawn too.
-    return step.active || moving || step.recolor.length > 0 || step.glyphsDirty;
+    return step.active || flushed || moving || step.recolor.length > 0 || step.glyphsDirty;
   }
+}
+
+/** Mark `count` vertices of `attr` from vertex `start` for upload — those
+ * alone. A flood or a ripple frame changes a few hundred cells' worth of a
+ * buffer that holds every cell, and uploading the whole of it for each was
+ * most of the traffic; three.js merges ranges that touch, so a run of
+ * neighbouring cells, or the whole board, still goes up in one piece. Every
+ * writer of these buffers marks its range, so none relies on a whole upload. */
+function touch(attr: BufferAttribute, start: number, count: number): void {
+  if (count === 0) return; // a cell with no geometry (`Board.unseen`)
+  attr.addUpdateRange(start * attr.itemSize, count * attr.itemSize);
+  attr.needsUpdate = true;
 }
 
 function lerp(p: Vertex, q: Vertex, t: number): Vertex {

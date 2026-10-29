@@ -323,11 +323,11 @@ that wrap — `test_no_tile_centre_sits_on_the_cut` and the rest of
 `family="2-uniform"`: edge-to-edge tilings by regular polygons whose vertices
 fall into exactly **two** classes under the tiling's symmetries — the next step
 past the uniform tilings, which have one. There are twenty and **all twenty
-ship**, on the plane and the cylinder, and all but `studdedtri2` on the
-Möbius strip too (`_FAMILY_SURFACES` holds them to those three — see the
+ship**, on the plane, the cylinder and the torus, and all but `studdedtri2`
+on the Möbius strip too (`_FAMILY_SURFACES` holds them to those four — see the
 recipe above). So there is no new one to add; what follows is how the twenty
-are built, what to keep in step when changing one, how they wrap the cylinder
-and the Möbius strip, and what wrapping the other surfaces would take.
+are built, what to keep in step when changing one, how they wrap the cylinder,
+the Möbius strip and the torus, and what wrapping the Klein bottle would take.
 
 **Three are a uniform tiling cut up or merged**, so their factories reuse its
 polygons — `_rhombitrihex_polygons` (with a `merged` predicate for the
@@ -475,8 +475,8 @@ carries every tile onto a tile and that it holds the flat layout's tiles. In
 `scripts/difficulty/resize.py` every wrap measure reads the layout the builder
 lays out (`_layout`); `corner_indices` and `planar_shape` stay on the flat
 template, being measured flat. One trap when experimenting: `_TILE_SPAN` and
-`_TILE_FRACTIONS` there cache per tiling key, so a script that swaps layouts
-under one key has to clear them.
+`_TILE_FRACTIONS` there cache per tiling key (and per donut or strip layout,
+below), so a script that swaps layouts under one key has to clear them.
 
 **The cut.** Each tiling states one `cut`, which both surfaces share:
 `_cell_template`'s takes it as a **fraction of the domain height** (of the wrap
@@ -525,9 +525,13 @@ easy (`squaretrihex2`'s at 84–88%, `fannedhex`'s at 88–90%). `elongated3` is
 the quarter turn: flat, its rows step a whole band of four courses and no cut
 gives either surface an easy board under 108 cells; turned, they step one edge
 and both get one of the classic size. `snubelongated` wraps on its glide.
-`tritrunctrihex` easy plays harder than its target whatever the cut and
-layout (93.5% at best at the opening floor) and is flagged in the report on
-both surfaces, as the cylinder was at its old cut. A band under one domain tall
+`tritrunctrihex` has since moved its cut once more, to just below a row of
+dodecagons: every strip at the zigzag pinned two triangles per gap to the rim by
+a corner, near-twins no peel can reach (see "A window's rim is cut back by its
+near-twins" in [`geometry.md`](geometry.md)). Its easy cylinder still plays
+harder than its target at the opening floor (92%) and is flagged; its easy band
+closes its seam only at whole domains plus a sliver and ships at 170 cells, an
+`EXEMPT_ROWS` entry, and plays on target. A band under one domain tall
 is a real window here, as it is on the cylinder: `resize._mobius_rows`
 enumerates the row counts the seam accepts the way `_cylinder_rows` does,
 rather than stepping on from the seed's fraction, which never offered
@@ -542,11 +546,59 @@ write them that way (`1 + 5 / 6`), which is what lets `apply.py` keep them
 exact. Changing a cut moves those fractions, so re-run `resize.py --only` on
 the `cyl…` and `mobius…` rows after one.
 
-**The other surfaces** are the same as for "Other": add them to the family's
+**The torus.** A donut has no rim and needs no mirror, so it takes no cut and
+all twenty reach it, `studdedtri2` included. What binds is size. The ring needs
+four whole domains (`resize.MIN_WRAP_DOMAINS`) and no tile may span more than a
+quarter of the tube (`MAX_TILE_TURN`), and a 2-uniform rectangle holds 5 to 42
+cells with, in most of them, a tile over a quarter of the domain tall — so the
+smallest legal donut is 4x2 domains, and for ten tilings that is well past the
+easy size: 128 cells for `fannedhex` up to 336 for `studdedtri2` (`hexrings`
+closes in one row at 4x1, 144). Those easy rows ship at that smallest window,
+seeded there so the shape bar (1.02x the seed's edge ratio) did not defend a
+bigger, rounder one — the search otherwise doubled `torustrirhombitrihex` easy
+to its medium window. They are `EXEMPT_ROWS` in `tests/test_presets.py` with the
+count beside each; where the 4x2 window is also the closest to 256
+(`studdedtri2`, `tritrunctrihex`, `snubelongated2`, both dissected truncated
+hexagonals) medium ships the same window, with more mines.
+
+**The torus layout.** Which side of the domain goes round the ring is the one
+thing a layout decides on a donut, so a tiling may glue its donut in a layout of
+its own (`_ArchTemplate.torus`, declared by `_with_torus` and read through
+`_torus_template`; in TypeScript `withTorus` / `torusTemplate`):
+`torus="flat"` keeps the flat layout where the strips take a wrap layout, and
+`torus="quarter"` turns the flat layout for the donut alone. Every 2-uniform
+tiling was measured both ways, and three take one. `elongated3` glues its donut
+flat: its wrap layout is turned for the strips, which puts the domain's long
+side round the ring, four times over, and its easy donut at 224 cells; flat,
+it is 84 (six domains one edge wide round the ring, one round the tube, the
+classic size, though chunky enough that `data/distortion.json` marks it). And
+`elongated2` and `trirhombitrihex` turn, for the same sizes with rounder cells
+(a p90 cell distortion of 1.05 and 1.07 at easy, against 1.35). For the other
+seventeen the turn puts the long side round the ring and makes the donut
+bigger or no better. `TestTorusLayout` checks the three and that every other tiling's
+donut is its wrap layout; `resize` reads the torus layout through
+`SPEC["arch_torus_board"]["torus"]` (`_spec_layout`), and its tile measures
+are cached per layout.
+
+The other ten make easy donuts of about the classic size: eight at 80 to 90
+cells (`elongated2`, `elongated3`, `hexbands`, `squarerows2`, `squarerows3`,
+`hexrows`, `squaretrihex`, `squaretrihex2`), `dodecasquare` and
+`snubelongated` at 96. At that size `hexbands`, `squaretrihex2` and
+`dodecasquare` are chunky (`TestWrappedWindowsDoNotFold.CHUNKY`), `hexbands`,
+`squaretrihex2` and `snubelongated` are marked distorted
+(`data/distortion.json`, which lists `torustritrunctrihex` hard as well), and
+`fannedhex` and `dodecasquare` easy play at 90–91% even at the opening floor,
+short of the 96.5% target, as `tritrunctrihex` easy does on the cylinder.
+`TestWrappedArchimedean.test_two_uniform_torus_vertices_are_the_two_types`
+checks every vertex of every donut closes and is one of the two types, in
+cyclic order, both present.
+
+**The Klein bottle** is the same as for "Other": add it to the family's
 `_FAMILY_SURFACES` entries (both ports) and add the surface presets, measured.
 The cut and the wrap layouts are already chosen. The mirror or glide the
 Möbius strip glues through is what a Klein bottle would glue through too, so
-the same nineteen would reach it.
+the same nineteen would reach it, and the torus's size arithmetic applies to
+it unchanged.
 
 ## Recipe: add a congruent-rectangle bond
 
@@ -722,9 +774,10 @@ so there is nothing to glue a seam with. That is one line: it is in
 The **Hyperbolic** family (`hyperbolic.py`, `web/src/boards/hyperbolic.ts`) is
 one builder, `hyperbolic_board(p, q, shells, mine_count, scale)`, so a new
 {p,q} is data, not code -- provided the tiling is hyperbolic ((p - 2)(q - 2) >
-4) and its faces can span the boundary runs the ring walk hands them (`p >= 4`;
-a triangle tiling {3,q} would need the walk to close a face on one new vertex,
-which it refuses rather than gets wrong). Read
+4). A face-centred {p,q} with `p >= 4` comes from the ring walk; a triangle
+tiling {3,q} cannot (the walk would have to close a face on one new vertex) and
+is built as the dual of {q,3} instead, centred on a vertex, so it keeps D_q
+rather than D_3 -- that too is automatic. Read
 [`geometry.md`](geometry.md#the-hyperbolic-boards) first.
 
 1. **Menu + presets** -- add `hyperbolic{p}{q}` to `menu.hyperbolic` and
@@ -736,17 +789,115 @@ which it refuses rather than gets wrong). Read
    [`difficulty.md`](difficulty.md)): `SPEC["hyperbolic_board"]` already says
    which arg is which. Re-run `scripts/export_data.py` and
    `export_conformance.py`.
-2. **Watch for twins.** A shell can leave two rim cells with the same closed
-   neighbourhood -- the size search skips those windows, which is why {4,5}
-   medium ships out of band. If a difficulty has no fair trim in band, say so
-   where `tests/test_presets.py` counts its near-misses.
+2. **Twins are already handled.** A shell can leave rim cells with the same
+   closed neighbourhood -- on a large q, nearly every shell does -- and the
+   builder drops them (see "Then the trim drops its twins" in
+   [`geometry.md`](geometry.md#the-hyperbolic-boards)), so every trim the size
+   search sees is fair. Neighbouring shell counts can therefore build the same
+   board; that is expected.
 3. **Icons** -- add the mode to `HYPERBOLIC_ICON_SHELLS` in
    `web/src/ui/icons.ts` and `_HYPERBOLIC_ICON_SHELLS` in `gui.py` (about a
    ring and a half: what still reads at row size), and to `PATCH_BOARDS` for
    the menu card.
 4. **Tests** -- add the tiling to `_HYPERBOLIC` in `tests/test_boards.py` and
    `TILINGS` in `web/tests/unit/hyperbolic.test.ts`, its ring counts to the
-   latter, and its point group (D_p) to `symmetries.test.ts`.
+   latter, and its point group (D_p, or D_q for a {3,q}) to
+   `symmetries.test.ts`.
+
+The web menu files a hyperbolic board on its own: Custom › Hyperbolic is split
+into Regular, Uniform and Closed surfaces by the preset's builder (`MENU_SUBFAMILIES` in
+`web/src/boards/catalog.ts`). A board from a builder no submenu names fails
+`web/tests/unit/menu.test.ts` rather than vanishing from the menu — add its
+submenu there, with a label, a hint and an icon alias.
+
+**A uniform tiling of a {p,q}** (6.6.7 on {7,3}, 4.8.10 on {5,4}, twenty-two in
+all) is also data: a `{builder: "hyperbolic_uniform_board", args: {difficulty:
+[p, q, op, shells, mines, scale]}}` row with `op` one of `WYTHOFF_OPS`, and the
+mode must be `wythoff_mode(p, q, op)`. Build it on the face-centred {p,q} with
+p >= q, so the board centres on its big face; `truncate` is there for a
+truncation that `zip` on the dual would centre on a small square. Add the mode
+to `menu.hyperbolic` in its family's run (the Uniform page lists them in that
+order), to `_HYPERBOLIC_UNIFORM` in `gui.py` and `HYPERBOLIC_UNIFORM` in
+`icons.ts` as `(p, q, op)` (with its icon shells and menu card, as in step 3),
+and to `_WYTHOFF` / `UNIFORM` in the two test files. Then the checks above,
+plus two the regular boards never needed: **a new side count** (the 14-gon and
+16-gon were) needs a badge in `SHAPE_SIDES` and a regenerated Game Center list
+(`npm run gamecenter`, with `PLAYWRIGHT_CHROMIUM_EXECUTABLE` where the pinned
+browser is not installed), and **a new pair of shapes on one board** must
+sound a chord -- `soundHarmony.test.ts` fails if it does not, and the fix is
+the spelling in `audio/presets.ts`. Read the calibrated rows before believing
+them: a mine count out of line with the board's other two rows means a trim
+whose rim is mostly forced guesses, and the fix is the neighbouring trim,
+pinned in `resize.PINNED_ROWS` (4.8.12, 4.12.12 and 3.16.16 medium and
+3.14.14 hard are). See
+[`geometry.md`](geometry.md#the-uniform-hyperbolic-boards).
+
+**A closed hyperbolic surface** (`hurwitz.py`, `web/src/boards/hurwitz.ts`)
+is a surface rather than a trim, and a new one is a group, not a builder. Read
+[`geometry.md`](geometry.md#the-closed-hyperbolic-surfaces) first.
+
+1. **The surface** -- a row in `CLOSED_SURFACES` in both ports: its {p,q}, its
+   genus and its group, which is one of two things.
+   - **A PSL(2,q)**, for a {7,3} Hurwitz surface: the group is the q of the
+     field. The group code takes a prime q, and 8; another prime power needs
+     its field written into `_field` / `field` (as GF(8) is). A group with more
+     than one Hurwitz surface (PSL(2,13) has three) gives the one the
+     generator search meets first.
+   - **A presentation**, for anything else: the group is the relator w that
+     <x, y | x^2, y^q, (xy)^p, w> needs, a word in `x`, `y` and `Y` (y^-1).
+     (xyxY)^k pins a map whose Petrie polygons are 2k long, Coxeter's
+     {p,q}_2k, which is often enough (Dyck's and Bring's surfaces); when it is
+     not, find a short word the group kills (the Bolza surface's (xyxyxY)^2).
+     Check the enumeration's order against |G| = 4(g - 1) / (1 - 2/p - 2/q)
+     before going further -- a wrong relator gives a smaller quotient or never
+     closes (`todd_coxeter` raises at `limit`).
+
+   Either way, say which surface it is by a computed invariant -- the Petrie
+   length (`petrie_length` / `petrieLength`) -- and pin it in both test
+   files, or a change to the search or the relator swaps the board without a
+   word. Add its label to `HURWITZ_LABELS` and `soloLabels`.
+2. **Its mode.** One surface a mode (`SURFACE_MODES`), in the Closed surfaces
+   submenu (the `hurwitz_board` builder files it), in order of genus in
+   `menu.hyperbolic`. The genus fixes every tiling's size (`cell_count` /
+   `cellCount`) -- the plain {p,q}, the Wythoff tilings, GC(n,0) beyond (up to
+   `gc8`; a subdivision needs q of 3 or 4) -- so pick the three rungs nearest
+   the size band, smallest to largest; a row the band cannot reach goes in
+   `EXEMPT_ROWS` (or the mode in `GENUS_BOUND`) in `tests/test_presets.py`,
+   with the rungs that miss it. The view is sized from the genus
+   (`cover_view`), so nothing else needs choosing. Seed the preset rows, then
+   `resize --only` (it holds them as declared) and `calibrate --only` with a
+   raised `--budget` if games are abandoned, and `apply`. The mode needs the
+   menu, label, icon and test rows of a hyperbolic one (steps 1, 3 and 4
+   above, with `quartic`'s entries to copy); the icon lights every p-gon of
+   its tiling.
+3. **The patch must reach every cell** -- the builder grows it until it does,
+   and never short of `patch_reach(surface, op)`, which the web pan needs --
+   and its face count grows quickly with the genus: 2521 faces for the
+   genus-14 hard board.
+   A much bigger surface wants a measurement of the build and the pan before it
+   ships.
+4. **Tests** -- `_HURWITZ` and `_TILING` in `tests/test_boards.py` and
+   `SURFACES` and `TILING` in `web/tests/unit/hurwitz.test.ts` (group order,
+   faces, vertices, edges, and the tiling the board tests run on), and the
+   D_p the patch keeps to `symmetries.test.ts` -- which measures whether the
+   mirror survives, so a chiral surface would show there as p rather than 2p.
+   A small surface can break things a big one never does: two faces sharing
+   two edges (the Bolza surface) is why the subdivision names a point by what
+   it lies inside as well as by its weights.
+
+**A board in the upper half-plane** -- today only Böröczky's binary tiling,
+`binary_board` -- is not a {p,q} and shares none of the disc machinery. It
+is a lattice builder whose ids are its integer corners, drawn as a rectangle.
+What it needs that the disc boards do not:
+- its own `SPEC` grid in `resize.py` (`_grid_binary`), because its cell count is not the product of its knobs;
+- `Board.halfPlane` in place of `Board.disc`, which switches on the half-plane pan;
+- a row icon of its own in `icons.ts` and `gui.py`, instead of an entry in the icon-shell tables.
+
+The web menu lists it under Flat › Fractals rather than on the Hyperbolic page
+(`MENU_REFILED` in `web/src/boards/catalog.ts`), so the home page's Flat row
+deals it, not the Hyperbolic one.
+
+See [`geometry.md`](geometry.md#the-binary-tiling).
 
 ## Recipe: add an aperiodic / shaped / solid board
 
@@ -773,15 +924,19 @@ These are one-offs, not tiling×surface products.
    are); the exporter round-trip test keeps the two sides honest. Both menus
    follow from that table: on the web a `shapedModes` entry lands under
    **Custom › Flat › Shaped boards** (the regular tilings themselves are
-   rows of the picker there), each solid group is a home-page row leading
-   straight to a flat list of its boards, and everything else joins the home
+   rows of the picker there), each solid group is a Custom row leading
+   straight to a flat list of its boards — or, for Platonic, Archimedean,
+   Catalan and Polyhedra, a submenu of the web menu's **Solids** page — and
+   everything else joins the home
    page's Flat or 3D random pool along with its group.
 
    A **new solid group** is one more `menu.solidGroups` row: its key joins
    `menu.root`, both menus grow a page, and the only code either side needs is
    an icon for the row (`_ICON_ALIASES` in `gui.py`, `ALIASES` in
    `web/src/ui/icons.ts` — there is no board named "catalan" to draw) and a
-   one-line hint (`SOLID_GROUP_HINTS` in `web/src/ui/menu.ts`).
+   one-line hint (`SOLID_GROUP_HINTS` in `web/src/ui/menu.ts`). On the web it
+   is a Custom row of its own unless its key is added to `SOLIDS_PAGE` in
+   `web/src/ui/boardTree.ts`, which files it on the Solids page instead.
 3. Add the builder to `_JSON_BUILDERS` in `presets.py`, add a
    `{mode: {builder, args: {difficulty: [...]}}}` row to
    `data/presets.json` (positional args), and re-run
@@ -1019,8 +1174,9 @@ everything about where it is *drawn*.
    into `EXEMPT_ROWS` rather than tuning it away.
 
 The rest is the Klein recipe's: one `MANIFOLD_ORDER` / `MANIFOLD_LABELS` entry,
-the square tiling's `modeOverrides`, both icons (here the TypeScript one meshes
-the board's own `trefoilPoint`), the surface in the three Grafana dashboards'
+the square tiling's `modeOverrides`, both icons (here the TypeScript one is the
+medium board — a `SOLID_BUILDERS` row and a `SURFACE_ICONS` entry; the easy
+knot's few cells are bent into a chain of kinks), the surface in the three Grafana dashboards'
 `surface` variable, and a gallery baseline.
 
 
@@ -1057,8 +1213,19 @@ Read [`geometry.md`](geometry.md#the-real-projective-plane) first. What it took:
    and `klein`), `MANIFOLD_ORDER` / `MANIFOLD_LABELS`, the
    builders in `_JSON_BUILDERS` / `BUILDERS`, a `SPEC` row (`rigid`, one knob:
    the frequency) and the measured pipeline, both icons (a hemisphere bowl --
-   the textbook model -- in `icons.ts` and `gui.py`), the surface in the three
+   the textbook model -- in `gui.py`, and in `icons.ts` the easy board as the
+   whole cubed sphere it is played on, drawn with the sphere boards'
+   `SPHERES`), the surface in the three
    Grafana dashboards' `surface` variable, and a gallery baseline.
+
+The same board drawn **once**, on an immersion, is the trefoil's recipe again:
+`boy_board` takes `_antipodal_quotient`'s cells and places each vertex class
+with `_boy_point`, which is already constant on antipodal pairs -- so the
+immersion has to be a map *from the sphere* that identifies antipodes. It
+needs no `faces`, takes the projective plane's symmetries unchanged
+(`antipodalSymmetries` in TypeScript), and is restricted to the tilings it has
+builders for (`["square"]`). See
+[`geometry.md`](geometry.md#boys-surface) for what its geometry costs.
 
 ## Recipe: add a surface that is not a wrapped rectangle
 
@@ -1152,9 +1319,8 @@ picked — and four things do not:
    often the best one at a thin tube. And the same bar belongs *inside* the
    radius sweep, or the sweep hands the width straight back.
 
-Its two icons are hand-written like every other surface's: `DOUBLE_TORUS` in
-`web/src/ui/icons.ts` (a pair of `SurfacePoint`s — `surfaceMesh` takes several
-and meshes them into **one** frame, since two calls each scale their own grid
-to fill the icon and come out overlapping) and a `doubletorus` branch in
-`gui.py`'s `_render_icon`. `tests/test_gui.py` requires one for every
+Its two icons are the TypeScript one — the easy board itself, like every
+other surface's in `web/src/ui/icons.ts` (a `SOLID_BUILDERS` row, a
+`SURFACE_ICONS` entry and a `SOLID_VIEW` angle) — and a hand-written
+`doubletorus` branch in `gui.py`'s `_render_icon`. `tests/test_gui.py` requires one for every
 `MANIFOLD_ORDER` key, so a missing icon fails rather than draws blank.

@@ -51,6 +51,10 @@ const MODES = [
   // double-covers it: the c180 renderer path, but the one board whose drawn
   // faces outnumber its cells, every cell painted on two antipodal faces.
   "projectivehex",
+  // ...and the same surface drawn as itself, on Boy's surface: the Klein
+  // bottle's two-sided path, but the only immersion that passes through itself
+  // along three loops meeting at a triple point.
+  "boy",
   // M5 aperiodic flat tilings: Penrose rhombi (thick/thin), trimmed to a
   // square patch, and the Spectre (a non-convex 13-gon, the chiral monotile
   // -- no tile in its patch is ever mirrored).
@@ -98,6 +102,12 @@ const MODES = [
   "hyperbolic73",
   "hyperbolic54",
   "hyperbolic45",
+  // ...and the one in the upper half-plane: straight edges, rows halving down
+  // to the ideal line, a rectangle rather than a disc
+  "hyperbolicbinary",
+  // ...and a closed surface drawn as a patch of the disc that covers it: every
+  // cell drawn at least once, its copies showing one state
+  "quartic",
   // M7 isogonal tilings, which are not edge to edge: the two that put one
   // regular polygon on the board at several sizes, so the shots cover both the
   // T-vertex geometry and the size-lightness axis it needs.

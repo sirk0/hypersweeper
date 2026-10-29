@@ -44,6 +44,10 @@ class SurfaceSpec:
     tilt: float | None = None         # GameScreen3D initial x-rotation
     tilings: frozenset[str] | None = None  # restrict to these tiling keys;
     #                                        None means every tiling (default)
+    caution: str | None = None        # a warning the web app shows against
+    #                                   the surface's boards, which also keeps
+    #                                   them out of its random deals (Boy's
+    #                                   surface: it passes through itself)
 
 
 # The menu picks a group, then a tiling, then -- for the uniform and
@@ -68,6 +72,7 @@ def _surface_from_json(row: dict) -> SurfaceSpec:
         euler=row["euler"],
         tilt=row["tilt"],
         tilings=frozenset(tilings) if tilings is not None else None,
+        caution=row.get("caution"),
     )
 
 
@@ -129,10 +134,10 @@ REGULAR_TILINGS = tuple(
 # of FLAT_ONLY_FAMILIES below -- so they are gated here, by
 # TilingSpec.surfaces, rather than by being kept out of the picker. "Other" is
 # the plane alone (no cut chosen); the 2-uniform tilings have cuts, and so a
-# cylinder and (all but the p6 studdedtri2) a Mobius strip, but no torus or
-# Klein windows.
+# cylinder and (all but the p6 studdedtri2) a Mobius strip, and a donut, which
+# needs no cut, but no Klein windows.
 _FAMILY_SURFACES: dict[str, frozenset[str]] = {
-    "2-uniform": frozenset({"flat", "cylinder", "mobius"}),
+    "2-uniform": frozenset({"flat", "cylinder", "mobius", "torus"}),
     "other": frozenset({"flat"}),
 }
 
@@ -250,8 +255,9 @@ SPIRAL_MODES = tuple(_MENU["spiral"])
 # modes rather than a tiling x surface product, so they live on the plane only.
 FRACTAL_MODES = tuple(_MENU["fractal"])
 # The hyperbolic family: regular {p,q} tilings of the hyperbolic plane, drawn
-# in the Poincare disc. One-off modes again, and a disc rather than a periodic
-# window, so on the plane only (boards/hyperbolic.py).
+# in the Poincare disc, and Böröczky's binary tiling, drawn in the upper
+# half-plane. One-off modes again, a disc or a half-plane window rather than a
+# periodic one, so on the plane only (boards/hyperbolic.py).
 HYPERBOLIC_MODES = tuple(_MENU["hyperbolic"])
 FAMILY_LABELS = dict(_MENU["familyLabels"])
 FAMILY_MEMBERS = {
@@ -344,7 +350,8 @@ def picker_families(surface_key: str) -> tuple[str, ...]:
     stop a tiling reaching it -- a chiral tiling has no mirror to close a
     Mobius or Klein seam with, a tiling whose family is held to some
     surfaces (``_FAMILY_SURFACES``: "Other" to the plane, "2-uniform" to the
-    plane, the cylinder and the Mobius strip) has no windows elsewhere yet, and a surface
+    plane, the cylinder, the Mobius strip and the donut) has no windows
+    elsewhere yet, and a surface
     restricted to an allow-list of tilings (the double torus, square only for
     now) refuses the rest. A family with nothing left on it is a page of greyed-out rows, so it
     is not offered at all.

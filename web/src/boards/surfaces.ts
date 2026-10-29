@@ -24,6 +24,7 @@ import {
   orientOutward,
   sharedVertexAdjacency,
   solidSymmetries,
+  withoutNearTwins,
   tangentOrder,
   type Board3D,
   type BoardSymmetry,
@@ -50,8 +51,8 @@ import {
   type ClipPiece,
   type Tri,
 } from "./clipSolid";
-import { geodesic, icosahedron } from "./solids";
-import { type ArchTemplate, wrapTemplate } from "./tilings";
+import { cubedSphere, geodesic, icosahedron } from "./solids";
+import { type ArchTemplate, pruneTo, torusTemplate, wrapTemplate } from "./tilings";
 
 const mod = (a: number, b: number): number => ((a % b) + b) % b;
 
@@ -1483,9 +1484,9 @@ export function doubleTorusHexBoard(
 // -- the real projective plane -----------------------------------------------
 //
 // Port of surfaces.py's projective plane: the sphere with every point glued to
-// its antipode — closed, non-orientable, χ = 1. It has no embedding in 3-space
-// and no immersion worth drawing (Boy's surface), so it is drawn as the whole
-// sphere that double-covers it, every cell twice: `polygons` holds both faces
+// its antipode — closed, non-orientable, χ = 1. It has no embedding in 3-space,
+// so it is drawn here as the whole sphere that double-covers it (and below, on
+// Boy's surface, as an immersion), every cell twice: `polygons` holds both faces
 // of a cell and `faces` says which cell each one shows, while `adjacency` (and
 // so the game) runs on the antipodal pairs. GameSession paints a cell's state
 // on both faces, so whatever happens on one happens on the face diametrically
@@ -1516,18 +1517,17 @@ function flipGeodesicKey(key: string, antipode: readonly number[]): string {
 
 const lesser = (a: string, b: string): string => (a < b ? a : b);
 
-/** The quotient of a centrally symmetric sphere board by its antipodal map.
+/** Pair every face of a centrally symmetric sphere board with its twin.
  * `sphereCells` maps each face to its vertex keys and `flip` is the antipodal
- * map on vertex keys — exact, so no two points are rounded together. A face's
- * cell is the lesser of it and its twin, and cells are adjacent when any of
- * their faces share a vertex: the shared-vertex rule run on vertex classes. */
-function projective(
+ * map on vertex keys — exact, so no two points are rounded together. Returns
+ * `faces` (each face -> its cell, the lesser of it and its twin) and `cells`
+ * (each cell -> its vertex *classes*, the lesser of a key and its flip, in the
+ * face's own order). */
+function antipodalQuotient(
   mode: string,
   sphereCells: Cells,
-  positions: Positions,
   flip: (key: string) => string,
-  mineCount: number,
-): Board3D {
+): { faces: Map<CellId, CellId>; cells: Cells } {
   const corners = (keys: readonly string[]) => [...keys].sort().join(";");
   const byCorners = new Map<string, CellId>();
   for (const [face, keys] of sphereCells) byCorners.set(corners(keys), face);
@@ -1547,12 +1547,57 @@ function projective(
         keys.map((k) => lesser(k, flip(k))),
       );
   }
-  const adjacency = sharedVertexAdjacency(cells);
+  return { faces, cells };
+}
+
+/** The whole sphere, every face wound outward, keyed by face. */
+function spherePolygons(sphereCells: Cells, positions: Positions): Map<CellId, Vec3[]> {
   const polygons = new Map<CellId, Vec3[]>();
   for (const [face, keys] of sphereCells) {
     const polygon = keys.map((k) => positions.get(k)!);
     polygons.set(face, orientOutward(polygon, centroidOf(polygon)));
   }
+  return polygons;
+}
+
+/** The sphere's own symmetries, measured off its drawing, carried down to the
+ * pairs. Every rotation and reflection about the centre commutes with the
+ * antipodal map, so a face's image's cell depends only on the face's cell; the
+ * central inversion itself comes down as the identity, and a mirror and the
+ * half turn about its normal as one motion, which `keepSymmetries` drops as
+ * useless or duplicate. */
+function antipodalSymmetries(
+  sphereCells: Cells,
+  polygons: Map<CellId, Vec3[]>,
+  faces: Map<CellId, CellId>,
+  adjacency: Map<CellId, CellId[]>,
+): BoardSymmetry[] {
+  const onSphere = solidSymmetries(polygons, sharedVertexAdjacency(sphereCells));
+  const candidates: SymmetryCandidate[] = onSphere.map(({ id, cycle }) => ({
+    id,
+    build: () => {
+      const down = new Map<CellId, CellId>();
+      for (const cell of adjacency.keys()) down.set(cell, faces.get(cycle.get(cell)!)!);
+      return down;
+    },
+  }));
+  return keepSymmetries(adjacency, candidates);
+}
+
+/** The quotient of a centrally symmetric sphere board by its antipodal map,
+ * drawn as the whole sphere (see `antipodalQuotient`). Cells are adjacent when
+ * any of their faces share a vertex: the shared-vertex rule run on vertex
+ * classes. */
+function projective(
+  mode: string,
+  sphereCells: Cells,
+  positions: Positions,
+  flip: (key: string) => string,
+  mineCount: number,
+): Board3D {
+  const { faces, cells } = antipodalQuotient(mode, sphereCells, flip);
+  const adjacency = sharedVertexAdjacency(cells);
+  const polygons = spherePolygons(sphereCells, positions);
   let measured: BoardSymmetry[] | null = null;
   return {
     mode,
@@ -1564,78 +1609,25 @@ function projective(
     clip: null,
     cornerMask: null,
     faces,
-    // The sphere's own symmetries, measured off its drawing, carried down to
-    // the pairs. Every rotation and reflection about the centre commutes with
-    // the antipodal map, so a face's image's cell depends only on the face's
-    // cell; the central inversion itself comes down as the identity, and a
-    // mirror and the half turn about its normal as one motion, which
-    // `keepSymmetries` drops as useless or duplicate.
     get symmetries(): BoardSymmetry[] {
-      if (measured) return measured;
-      const onSphere = solidSymmetries(
-        polygons,
-        sharedVertexAdjacency(sphereCells),
-      );
-      const candidates: SymmetryCandidate[] = onSphere.map(({ id, cycle }) => ({
-        id,
-        build: () => {
-          const down = new Map<CellId, CellId>();
-          for (const cell of adjacency.keys())
-            down.set(cell, faces.get(cycle.get(cell)!)!);
-          return down;
-        },
-      }));
-      return (measured = keepSymmetries(adjacency, candidates));
+      return (measured ??= antipodalSymmetries(sphereCells, polygons, faces, adjacency));
     },
   };
 }
 
+const negateKey = (key: string): string =>
+  key
+    .split(",")
+    .map((c) => String(-Number(c) + 0))
+    .join(",");
+
 /** The real projective plane in squares: a cube of `n x n` faces —
  * `6 * n**2` squares — with antipodes identified, so `3 * n**2` cells, drawn as
- * the whole sphere. Vertex keys are the cube's integer lattice points on
- * `[-n, n]**3` (as solids.ts `cubeBoard`), so the antipode is plain negation;
- * each is placed by the *equiangular* cube map (every coordinate through
- * `tan(π/4 · c)`, then onto the unit sphere), which keeps the squares near the
- * cube's corners from shrinking the way a straight projection does. The cube's
- * eight 3-valent corners come down to four: what a closed surface of squares
- * needs, 4 · χ. */
+ * the whole sphere (`cubedSphere`). The cube's eight 3-valent corners come
+ * down to four: what a closed surface of squares needs, 4 · χ. */
 export function projectiveBoard(n: number, mineCount: number): Board3D {
-  const sphereCells: Cells = new Map();
-  const positions: Positions = new Map();
-  for (let axis = 0; axis < 3; axis++) {
-    const [uAxis, vAxis] = [0, 1, 2].filter((a) => a !== axis) as [number, number];
-    for (const sign of [-1, 1]) {
-      for (let i = 0; i < n; i++) {
-        for (let j = 0; j < n; j++) {
-          const keys: string[] = [];
-          for (const [du, dv] of [
-            [0, 0],
-            [1, 0],
-            [1, 1],
-            [0, 1],
-          ] as const) {
-            const coord: Vec3 = [0, 0, 0];
-            coord[axis] = sign * n;
-            coord[uAxis] = -n + 2 * (i + du);
-            coord[vAxis] = -n + 2 * (j + dv);
-            const key = cid(...coord);
-            keys.push(key);
-            if (!positions.has(key)) {
-              const square = coord.map((c) => Math.tan(((Math.PI / 4) * c) / n)) as Vec3;
-              positions.set(key, normalize(square));
-            }
-          }
-          sphereCells.set([...keys].sort().join(";"), keys);
-        }
-      }
-    }
-  }
-  const flip = (key: string) =>
-    key
-      .split(",")
-      .map((c) => String(-Number(c) + 0))
-      .join(",");
-  return projective("projective", sphereCells, positions, flip, mineCount);
+  const { sphereCells, positions } = cubedSphere(n);
+  return projective("projective", sphereCells, positions, negateKey, mineCount);
 }
 
 /** The real projective plane in triangles: a geodesic icosahedron of
@@ -1700,6 +1692,97 @@ export function projectiveHexBoard(
       .sort()
       .join(";");
   return projective("projectivehex", sphereCells, centres, flip, mineCount);
+}
+
+// -- Boy's surface ------------------------------------------------------------
+//
+// Port of surfaces.py's Boy's surface: the projective plane drawn as itself, on
+// an immersion that passes through itself along one curve (three loops meeting
+// at a triple point) with no pinch or crease anywhere. The board is the
+// projective plane's square board cell for cell — the same quotient of the
+// cubed sphere, the same adjacency — each cell drawn once, both sides showing.
+// The immersion is Bryant and Kusner's: it sends a point and its antipode to
+// the same place, and it is conformal, so the squares keep their right angles
+// though not their size.
+
+/** Where the immersion is centred: the minimax centre on its axis of
+ * three-fold symmetry (surfaces.py `BOY_CENTRE`, which its tests re-measure). */
+export const BOY_CENTRE: Vec3 = [0, 0, -0.554];
+
+const SQRT5 = Math.sqrt(5);
+
+/** Boy's surface (Bryant–Kusner) at the unit-sphere point `p`, recentred on
+ * `BOY_CENTRE`. `p` and `-p` land on the same point; the axis of three-fold
+ * symmetry is z, the image of the poles. Complex arithmetic by hand: `w` is
+ * the stereographic coordinate of `p`'s upper-hemisphere twin. */
+export function boyPoint(p: Vec3): Vec3 {
+  let [x, y, z] = p;
+  // the antipode lands on the same point, and the upper hemisphere is where
+  // the stereographic chart from the south pole is tame
+  if (z < 0) [x, y, z] = [-x, -y, -z];
+  const mul = (a: [number, number], b: [number, number]): [number, number] => [
+    a[0] * b[0] - a[1] * b[1],
+    a[0] * b[1] + a[1] * b[0],
+  ];
+  const div = (a: [number, number], b: [number, number]): [number, number] => {
+    const d = b[0] * b[0] + b[1] * b[1];
+    return [(a[0] * b[0] + a[1] * b[1]) / d, (a[1] * b[0] - a[0] * b[1]) / d];
+  };
+  const w: [number, number] = [x / (1 + z), y / (1 + z)];
+  const w3 = mul(mul(w, w), w);
+  const w4 = mul(w3, w);
+  const w6 = mul(w3, w3);
+  const denominator: [number, number] = [w6[0] + SQRT5 * w3[0] - 1, w6[1] + SQRT5 * w3[1]];
+  const g1 = -1.5 * div(mul(w, [1 - w4[0], -w4[1]]), denominator)[1];
+  const g2 = -1.5 * div(mul(w, [1 + w4[0], w4[1]]), denominator)[0];
+  const g3 = div([1 + w6[0], w6[1]], denominator)[1] - 0.5;
+  const g = g1 * g1 + g2 * g2 + g3 * g3;
+  return [g1 / g - BOY_CENTRE[0], g2 / g - BOY_CENTRE[1], g3 / g - BOY_CENTRE[2]];
+}
+
+/** Turn the cube's diagonal (1, 1, 1) onto z, the immersion's axis, so the
+ * cube's three-fold turn about it is the surface's own and the cells come out
+ * the most even of any orientation measured (surfaces.py `_diagonal_up`). */
+function diagonalUp([x, y, z]: Vec3): Vec3 {
+  return [(x - y) / Math.SQRT2, (x + y - 2 * z) / Math.sqrt(6), (x + y + z) / Math.sqrt(3)];
+}
+
+/** Boy's surface in squares: `projectiveBoard`'s `3 * n**2` cells — the same
+ * ids, vertex classes and adjacency — each drawn once, on the immersion.
+ * Non-orientable, so both sides are drawn. Its symmetries are the projective
+ * plane's: motions of the sphere carried down to the pairs. Only the
+ * three-fold turn about the axis is a motion of the drawing too; the rest move
+ * the contents across the surface, which is what brings a cell out from under
+ * a lobe. */
+export function boyBoard(n: number, mineCount: number): Board3D {
+  const { sphereCells, positions: sphere } = cubedSphere(n);
+  const { faces, cells } = antipodalQuotient("boy", sphereCells, negateKey);
+  const adjacency = sharedVertexAdjacency(cells);
+  const positions: Positions = new Map();
+  for (const keys of cells.values())
+    for (const key of keys)
+      if (!positions.has(key)) positions.set(key, boyPoint(diagonalUp(sphere.get(key)!)));
+  const polygons = new Map<CellId, Vec3[]>();
+  for (const [cell, keys] of cells) polygons.set(cell, keys.map((k) => positions.get(k)!));
+  let measured: BoardSymmetry[] | null = null;
+  return {
+    mode: "boy",
+    polygons,
+    adjacency,
+    mineCount,
+    radius: maxRadius(positions),
+    twoSided: true,
+    clip: null,
+    cornerMask: null,
+    get symmetries(): BoardSymmetry[] {
+      return (measured ??= antipodalSymmetries(
+        sphereCells,
+        spherePolygons(sphereCells, sphere),
+        faces,
+        adjacency,
+      ));
+    },
+  };
 }
 
 // -- the Möbius strip --------------------------------------------------------
@@ -2200,7 +2283,8 @@ export function cylinderHexBoard(ring: number, rows: number, mineCount: number):
 //
 // Port of the arch_* wrap builders in surfaces.py. Each takes an nx x ny grid
 // of the tiling's fundamental-domain copies (its `wrapTemplate` — the flat
-// template, or the wrap layout a few tilings declare) and glues the seams with
+// template, or the wrap layout a few tilings declare; the donut reads
+// `torusTemplate`, which a few more turn for it alone) and glues the seams with
 // the same modular arithmetic the regular wraps use, mapping each canonical
 // (domain-column, domain-row, tag) vertex key onto the surface.
 
@@ -2277,7 +2361,7 @@ export function archTorusBoard(
   mineCount: number,
   tubeRadius = 0.45,
 ): Board3D {
-  const t = wrapTemplate(tiling);
+  const t = torusTemplate(tiling);
   const W = t.width;
   const H = t.height;
   const ring = nx * W;
@@ -2332,6 +2416,19 @@ export function archTorusBoard(
     symmetries,
     cornerMask,
   });
+}
+
+/** Cut a strip's rim back by its near-twins (`withoutNearTwins`), in place,
+ * taking the dropped cells' corner masks and now-unused vertices with them. */
+function trimRim(cells: Cells, positions: Positions, cornerMask: Map<CellId, boolean[]>): void {
+  const kept = withoutNearTwins(cells);
+  if (kept.size === cells.size) return;
+  for (const cell of [...cells.keys()]) {
+    if (kept.has(cell)) continue;
+    cells.delete(cell);
+    cornerMask.delete(cell);
+  }
+  pruneTo(cells, positions);
 }
 
 /** An Archimedean tiling around the side of a cylinder: `ring` domain copies
@@ -2411,6 +2508,7 @@ export function archCylinderBoard(
       }
     }
   }
+  trimRim(cells, positions, cornerMask); // the rims' coin flips, as on a flat window
   straightenPositions(t, cells, positions, (m, n, tag) => `${mod(m, ring)},${n},${tag}`);
   // The strip's own centre line is the only horizontal line it can be flipped
   // about: any other would carry the band off itself. It is guaranteed to be
@@ -2541,6 +2639,7 @@ export function archMobiusBoard(
       }
     }
   }
+  trimRim(cells, positions, cornerMask); // the edge's coin flips, as on a flat window
   straightenPositions(t, cells, positions, (m, n, tag) => {
     const c = canonical(m, n, tag);
     return `${c[0]},${c[1]},${c[2]}`;

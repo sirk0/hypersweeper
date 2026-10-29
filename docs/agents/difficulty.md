@@ -65,6 +65,10 @@ pass, one rule set ranks every flat row at every difficulty:
    third of its rim teeth (`resize.fill`). And, as a bar, no tile hung on
    by a corner alone (`resize.loose_tiles`): a cut between centroid rows
    can keep a kisrhombille triangle whose every edge-neighbour it dropped.
+   Two more bars ride with it: no near-twin left on the rim that
+   `_without_near_twins` could not peel (`NEAR_TWIN_WEIGHT` alone was
+   outbid by the squareness weights), and on a grained tiling an edge
+   that is still one straight run after the peel.
 4. **Symmetry, as a preference**: `SYMMETRY_WEIGHT * log(8 / order)`,
    where the order counts which of the square's eight motions the board
    keeps (`resize.window_symmetries`) -- a square window on a four-fold
@@ -357,7 +361,20 @@ a coin flip. A board mostly made of them cannot be calibrated to any target —
 its win rate is 0.5^mines whatever the density. The five triakis boards are
 exactly that and ship uncalibrated and flagged. If a new tiling scores above
 zero here, say so in its preset comment; above half its cells and the board is
-not a puzzle. Every row the calibration cannot bring on target lands in the
+not a puzzle. Then look one step further, at **near-twins**: adjacent cells
+whose closed neighbourhoods differ by a single cell. That cell's number is the
+only thing that separates them, so a mine on it turns a mine in the pair into a
+coin flip, and a board with many of them calibrates — the search walks the
+mine count down until the rim's 50/50s are rare — to a board with almost
+nothing else to solve. The classic board has none (a corner is two cells
+short); the hyperbolic builder drops them (see "The hyperbolic boards" in
+[`geometry.md`](geometry.md)), and so do the periodic windows -- flat, cylinder
+and Möbius -- wherever the tile can be peeled off the rim whole (see "A window's
+rim is cut back by its near-twins" there). `metrics.near_twin_cells` counts
+what is left, and the size search charges for it (`NEAR_TWIN_WEIGHT`), so a
+window whose edge pins one by a corner loses to one that does not. Where a
+calibrated density looks low for the board's degree, count them before
+believing it -- or compare it with the same tiling's donut, which has no rim. Every row the calibration cannot bring on target lands in the
 generated `data/difficulty.json`, which the TypeScript app reads
 (`web/src/boards/fairness.ts`) to mark the menu row and to deal the board less
 often at random — so a new unfair board needs no front-end edit, only a
