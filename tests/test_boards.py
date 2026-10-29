@@ -3680,35 +3680,21 @@ class TestArchimedean:
     # any extent about any half-turn centre (see "How square" in
     # docs/agents/difficulty.md), so nearly every row is within a few per cent;
     # this is the bar a hand-edited preset cannot slip past, set just above the
-    # worst ordinary row the search ships (kisrhombille, rhombitrihex and
-    # studded triangular easy, 1.155: a fan of twelve triangles is a hexagon,
-    # and 81 cells is about one and a half of them).
+    # worst ordinary row the search ships (studded triangular easy, 1.155).
     MAX_FLAT_ASPECT = 1.16
     # ...and the two rows that cannot meet it, with what they measure:
     SQUARE_EXEMPT = {
-        # Its grain is 3 by 2 -- the window ends on a line no tromino crosses,
-        # or its edge is a row of half-kept trominoes -- and the only clean
-        # window in the easy band is 72 cells, 1.5 to 1. (Centred off the
-        # grain it reaches 1.29, with teeth down both sides.)
-        ("tromino", "easy"),
         # p3: no half turn, so no window of it is centrally symmetric and it
-        # keeps the whole-domain search about its three-fold centre: 1.24.
+        # keeps the whole-domain search about its three-fold centre: 1.22.
         ("threescaletri", "easy"),
-        # Fairness outranks squareness (`resize.UNFAIR_PENALTY`): every
-        # squarer window in the easy band leaves a rim no mine count brings to
-        # the target -- the truncated hexagonal's triangles each touching one
-        # dodecagon, the kisrhombille's fans cut through, the elongated
-        # triangular's courses ending in lone triangles -- so these keep the
-        # squarest one that calibrates: 1.24, 1.30 and 1.21.
-        ("trunchex", "easy"),
+        # Twelve-triangle fans (kisrhombille) and fanned hexagons a box can
+        # only take whole: near 81 tiles every symmetric, twin-free window
+        # that keeps the fans whole is a row and a half of them -- 1.30, 1.30.
         ("kisrhombille", "easy"),
-        ("elongated", "easy"),
-        # ...and a near-twin outranks squareness the same way: every squarer
-        # easy window of these leaves a rim tile the builder cannot peel
-        # whole (the tetrakis triangles pinned by a corner where the window
-        # cuts its squares), so they take the squarest one without: 1.25, 1.30.
-        ("tetrakis", "easy"),
-        ("hexbands", "easy"),
+        ("fannedhex", "easy"),
+        # 3.4.6.4 with fanned hexagons between: the squarest twin-free
+        # window in the easy band is 91 tiles at 1.18.
+        ("trirhombitrihex", "easy"),
     }
 
     @pytest.mark.parametrize("mode", sorted(_ARCH_CONFIGS))
@@ -3919,7 +3905,7 @@ class TestRectangles:
         """The stacked bond is the square tiling stretched, so its cells have
         the classic board's eight neighbours -- worth pinning, since that is
         the one thing about it that is *not* new."""
-        board = archimedean_board("stackedbond", 6, 6, 5)
+        board = archimedean_board("stackedbond", 10, 10, 5)
         interior = [n for n in board.adjacency.values() if len(n) == 8]
         assert len(interior) > len(board.adjacency) / 2
         assert max(len(n) for n in board.adjacency.values()) == 8
@@ -4005,12 +3991,12 @@ class TestFlatGrain:
     window ending on one.
 
     Most tilings have none -- pick any horizontal line through a hexagonal
-    tiling and hexagons straddle it -- so a flat board's edge is a row of
-    tiles kept by centroid, half in and half out, and that is simply what the
-    board looks like. Two do have one: every sphinx lies inside a horizontal
-    band sqrt3 tall, and the L-tromino pair fills its 3 x 2 rectangle with
-    nothing overhanging. ``_snap_to_grain`` rounds the window onto those
-    lines, and the edge comes out straight.
+    tiling and hexagons straddle it -- so a flat board's edge steps, and that
+    is simply what the board looks like. Two do have one: every sphinx lies
+    inside a horizontal band sqrt3 tall, and the L-tromino pair fills its
+    3 x 2 rectangle with nothing overhanging. ``archimedean_board`` keeps only
+    tiles that fit its window whole, so a band fits whole or not at all and
+    the edge comes out straight on a grain line by itself.
     """
 
     @staticmethod
@@ -4021,8 +4007,8 @@ class TestFlatGrain:
     @pytest.mark.parametrize("tiling", sorted(_GRAINED))
     def test_no_tile_crosses_the_grain(self, tiling):
         """What makes a line grain: every tile of the domain lies wholly
-        between two of them. (Were one to straddle a line, snapping the window
-        there would cut it in half rather than end the board on it.)"""
+        between two of them. (Were one to straddle a line, a window ending
+        there would drop it rather than end the board on a straight edge.)"""
         template = _arch_template(tiling)
         for axis, period in enumerate(template.grain):
             if not period:
@@ -4046,7 +4032,8 @@ class TestFlatGrain:
     @pytest.mark.parametrize("difficulty", DIFFICULTIES)
     def test_the_board_is_whole_courses(self, mode, difficulty):
         """A board that ends on the grain is a whole number of courses tall
-        (or wide): what the snapping buys, measured on the shipped preset."""
+        (or wide): what keeping only whole tiles buys, measured on the
+        shipped preset."""
         board = build_board(mode, difficulty)
         template = _arch_template(mode)
         for axis, period in enumerate(template.grain):
@@ -5646,23 +5633,24 @@ class TestWrappedArchimedean:
 
 
 class TestRimNearTwins:
-    """A periodic window's edge is cut back by its near-twins: a rim tile
-    whose closed neighbourhood is a neighbour's less one cell can only be
-    told from it by that cell's number, so the builders peel it off
+    """A strip's edge is cut back by its near-twins: a rim tile whose closed
+    neighbourhood is a neighbour's less one cell can only be told from it by
+    that cell's number, so the cylinder and Mobius builders peel it off
     (``core._without_near_twins``) and the size search steers away from
-    windows that leave one it cannot peel (``NEAR_TWIN_WEIGHT``)."""
+    windows that leave one it cannot peel (``NEAR_TWIN_WEIGHT``).
 
-    # tiling -> the flat, cylinder and Mobius modes it ships as
+    A flat board does not: it keeps every tile that fits its box, a corner
+    octagon that is a near-twin of the square beside it included, and is
+    calibrated as drawn (see "How square" in docs/agents/difficulty.md)."""
+
+    # tiling -> the cylinder and Mobius modes it ships as
     MODES = sorted(
-        {"flat": tiling, "cylinder": "cyl" + tiling, "mobius": "mobius" + tiling}[surface]
+        {"cylinder": "cyl" + tiling, "mobius": "mobius" + tiling}[surface]
         for tiling, rows in ARCH_PRESETS.items()
-        for surface in rows if surface in ("flat", "cylinder", "mobius")
+        for surface in rows if surface in ("cylinder", "mobius")
     )
 
-    # What is left where nothing better was available -- nothing, now: the
-    # flat search bars a window that keeps one (`resize`'s flat shape bars),
-    # and tetrakis easy, which used to keep eight, takes a near-twin-free
-    # window off square instead (see SQUARE_EXEMPT in TestArchimedean).
+    # What is left where nothing better was available.
     KEPT: dict = {}
 
     @staticmethod
@@ -5682,28 +5670,27 @@ class TestRimNearTwins:
 
     @pytest.mark.parametrize("mode", sorted(
         tiling for tiling, rows in ARCH_PRESETS.items() if "flat" in rows))
-    def test_peeling_leaves_a_flat_window_a_disc(self, mode):
-        # only a tile that meets the rim in one run of its own edges is
-        # peeled, so the window never comes out with a hole in it or two
-        # tiles pinched together at a corner
+    def test_a_flat_window_is_a_disc(self, mode):
+        # whole tiles inside a box: never a hole, never two tiles pinched
+        # together at a corner
         for difficulty in DIFFICULTIES:
             board = build_board(mode, difficulty)
             assert _euler_characteristic(board) == 1, difficulty
             assert _boundary_components(board) == 1, difficulty
 
-    def test_the_peel_takes_the_rim_and_only_the_rim(self, monkeypatch):
-        # rhombitrihexagonal's medium window ends on a row of squares between
-        # hexagons, each square a near-twin of the triangle-square-triangle
-        # fan inside it; the peel takes those squares and nothing else
-        from minesweeper.boards import tilings
+    def test_the_peel_takes_the_rim_and_only_the_rim(self):
+        # a flat truncated square window's corner octagons are near-twins of
+        # the square beside them; the peel takes those and nothing else
         from minesweeper.boards.core import _without_near_twins
-        peeled = archimedean_board("rhombitrihex", 7, 4, 5)
-        monkeypatch.setattr(tilings, "_without_near_twins", lambda cells: cells)
-        whole = archimedean_board("rhombitrihex", 7, 4, 5)
-        gone = set(whole.adjacency) - set(peeled.adjacency)
-        assert set(peeled.adjacency) < set(whole.adjacency)
-        assert gone and {len(whole.polygons[c]) for c in gone} == {4}
-        assert self._near_twins(whole) > 0 and self._near_twins(peeled) == 0
+        whole = archimedean_board("truncsquare", 7, 7, 5)
+        cells = {c: [tuple(p) for p in poly] for c, poly in whole.polygons.items()}
+        peeled = _without_near_twins(cells)
+        gone = set(cells) - set(peeled)
+        hood = {c: frozenset([c, *ns]) for c, ns in whole.adjacency.items()}
+        twins = {c for c, ns in whole.adjacency.items()
+                 if any(len(hood[o]) == len(hood[c]) + 1 and hood[c] < hood[o]
+                        for o in ns)}
+        assert gone and gone <= twins
         # and a window with none is left exactly as it was
         snub = archimedean_board("snubsquare", 5, 5, 5)
         assert self._near_twins(snub) == 0

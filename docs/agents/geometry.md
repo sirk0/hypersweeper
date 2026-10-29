@@ -263,8 +263,8 @@ a three-brick block lying along the edge, the sliver between two big triangles
 on a kisrhombille one. Only that one cell's number tells the pair apart, so a
 mine on it makes a mine in the pair a coin flip, and the calibration answered a
 rim of them as it did the hyperbolic discs' -- with half the mines the seamless
-donut of the same tiling carries. So the flat window, the cylinder and the
-Möbius strip all pass their cells through `core._without_near_twins`
+donut of the same tiling carries. So the cylinder and the Möbius strip pass
+their cells through `core._without_near_twins`
 (`withoutNearTwins` in `core.ts`), which drops the smaller tile of every such
 pair -- or, where that tile cannot come away whole, the bigger -- repeated until
 none is left. *Whole* is `_peelable`: the tile meets the rim in one unbroken run
@@ -277,8 +277,14 @@ near-twin by a corner the peel cannot reach, the size search pays for the ones
 left (`resize.NEAR_TWIN_WEIGHT`) and steps to a window without; and
 `tritrunctrihex` moved its cut (to `1 - ROOT3 / 36` of the domain, just below a
 row of dodecagon centres) because every strip at the old one pinned two triangles
-per gap. `TestRimNearTwins` holds every shipped window to none, bar the one row
-it lists.
+per gap. `TestRimNearTwins` holds every shipped strip to none.
+
+The **flat** window no longer peels. It keeps every tile that fits its box whole
+(see "Board-shape convention" in [`difficulty.md`](difficulty.md)), a corner
+octagon that is a near-twin of the square beside it included: a board that is a
+whole box of the tiling reads as one, where a peeled one has notches at every
+corner, and its mine count is calibrated on it as drawn -- the size search's
+density and fairness terms are what price the guesses in.
 
 `ARCH_TILINGS` is
 listed in vertex-configuration order — Wikipedia's "List of Euclidean

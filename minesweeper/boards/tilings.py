@@ -12,7 +12,6 @@ from minesweeper.boards.core import (
     LatticePoint,
     _build,
     _finalize_flat,
-    _without_near_twins,
 )
 
 # -- 2D builders (cells keyed by (row, index)) ------------------------------
@@ -32,12 +31,13 @@ from minesweeper.boards.core import (
 #     square/hex/triangle boards
 #     are naturally rectangular, and the named shaped boards
 #     (triangle, hexhex, hextri, hextriangle, squarediamond) are polygons of
-#     their own tiling's symmetry, exactly filled. Where the tiling has a
-#     **grain** -- straight lines no tile of it crosses -- the window ends on
-#     one, and the board's edge comes out straight rather than a row of tiles
-#     kept by half; see _ArchTemplate.grain and _snap_to_grain. Most tilings
-#     have none, and a chewed-looking edge is simply what a hexagon or an
-#     octagon does at a boundary.
+#     their own tiling's symmetry, exactly filled. The window keeps every
+#     tile that *fits* in it, whole -- not every tile whose centre does --
+#     so each edge carries every tile that lies inside it and none that
+#     overhang, and where the tiling has a **grain** (straight lines no tile
+#     of it crosses, _ArchTemplate.grain) the edge comes out straight by
+#     itself. Most tilings have none, and a stepped edge is simply what a
+#     hexagon or an octagon does at a boundary.
 #   * Aperiodic tilings (Penrose, Spectre) have no period to repeat, so grow
 #     a generous patch and trim to the ``keep`` centremost cells by
 #     Chebyshev distance ``max(|dx|, |dy|)`` from the centroid, which
@@ -233,9 +233,10 @@ class _ArchTemplate:
     #   edge-to-edge template. See _straight_vertices and _straightened.
     grain: tuple[float, float] = (0.0, 0.0)  # THE GRAIN: the spacing of the
     #   straight lines the tiling never crosses, along x and y, measured from
-    #   the window centre; 0 where it has none. ``archimedean_board`` snaps its
-    #   flat window onto them, so the board ends on one of those lines and its
-    #   edge comes out straight instead of a row of tiles kept by half. Most
+    #   the window centre; 0 where it has none. ``archimedean_board`` keeps
+    #   only tiles that fit whole in its window, so a course between two of
+    #   these lines is kept whole or not at all, the board ends on one of
+    #   them and its edge comes out straight. Most
     #   tilings have no grain at all (a hexagon straddles every horizontal
     #   line there is, whichever one you pick), which is why this is declared
     #   per template rather than derived from the domain: what makes a line
@@ -2290,21 +2291,6 @@ def _torus_template(tiling: str) -> _ArchTemplate:
     return template.torus or _wrap_template(tiling)
 
 
-def _snap_to_grain(half: float, period: float) -> float:
-    """Round a window's half-extent to a whole number of grain lines.
-
-    A window that ends between two of them ends inside a course of tiles, and
-    the centroid rule then keeps some of that course and drops the rest -- the
-    row of half-kept tiles that leaves a board's edge looking chewed. Rounding
-    to the nearest line costs at most half a course of cells (the size search
-    measures what it actually gets) and buys a straight edge. Never rounds down
-    to nothing: one course is the smallest board there is.
-    """
-    if not period:
-        return half
-    return max(1, math.floor(half / period + 0.5)) * period
-
-
 def archimedean_board(
     tiling: str, nx: float, ny: float, mine_count: int, scale: float = 40,
     centre: tuple[float, float] | None = None,
@@ -2313,8 +2299,8 @@ def archimedean_board(
     Archimedean tiling, built from the tiling's periodic domain (the same
     ``_ArchTemplate`` that wraps the donut/cylinder/Mobius).
 
-    The tiles are kept by centroid inside an ``nx*width`` by ``ny*height``
-    window centred on the larger tile nearest the middle -- a square,
+    The tiles are kept that fit whole inside an ``nx*width`` by
+    ``ny*height`` window centred on the larger tile nearest the middle -- a square,
     hexagon, octagon or dodecagon, whose centre is always a rotation
     centre of the tiling. Rotating that window 180 degrees maps it (and
     the tiling) onto itself, so the patch is symmetric under the tiling's
@@ -2333,10 +2319,7 @@ def archimedean_board(
     centre of the tiling, in domain coordinates -- a three-brick basket
     weave's block centre rather than the corner where four blocks meet, say,
     which is what an odd number of blocks across has to be centred on. Any
-    copy of it nearest the middle is used, as for the template's own.
-
-    The rim is then cut back by any near-twins it leaves
-    (``core._without_near_twins``), which the symmetry survives too."""
+    copy of it nearest the middle is used, as for the template's own."""
     template = _arch_template(tiling)
     width_units, height_units = template.width, template.height
 
@@ -2382,26 +2365,32 @@ def archimedean_board(
             (c for cell, c in centroid.items() if len(grown[cell]) == biggest),
             key=lambda c: (c[0] - mid_x) ** 2 + (c[1] - mid_y) ** 2,
         )
-    half_w = _snap_to_grain(nx * width_units / 2, template.grain[0])
-    half_h = _snap_to_grain(ny * height_units / 2, template.grain[1])
-    # The window is closed at both ends, so a row of centroids landing exactly
-    # on it is kept on *both* sides and the patch stays symmetric about the
-    # centre. That makes the tolerance load-bearing rather than cosmetic:
-    # ``_ArchTemplate.centre`` is stored rounded to six decimals, so the window
-    # edge can miss a centroid by ~5e-7 -- far more than a 1e-9 slack -- and
-    # dropping the row at one edge while keeping the row at the other is
-    # exactly the half-column offset that leaves stray tiles down one side.
-    # Anything below a tile is safe here; centroids are never this close
-    # together.
+    # The window is a box, and a tile is on the board when it *fits* in it --
+    # every corner inside -- not when its centre does. Keeping by centre
+    # leaves a row of half-out tiles along every edge and drops whole ones in
+    # the corners (a truncated square board missing its corner octagons, a
+    # rhombille board with gaps where a rhombus would fit); keeping what fits
+    # gives each edge every tile that lies inside it, and none that overhang.
+    # It also ends a grained tiling's window on a grain line by itself: a
+    # course spans the gap between two, so a partial one fits nowhere.
+    #
+    # The box is closed, so a tile whose corner lands exactly on it is kept on
+    # *both* sides and the patch stays symmetric about the centre; the slack
+    # absorbs `_ArchTemplate.centre` being stored to six decimals. The size
+    # search (scripts/difficulty/resize.py) cuts the box midway between two
+    # tiles' extents in any case, so no corner sits near its edge.
+    half_w, half_h = nx * width_units / 2, ny * height_units / 2
     slack = 1e-6 * max(1.0, width_units, height_units)
-    cells = {
-        cell: keys
-        for cell, keys in grown.items()
-        if abs(centroid[cell][0] - cx) <= half_w + slack
-        and abs(centroid[cell][1] - cy) <= half_h + slack
-    }
-    # a window's edge can leave a tile whose neighbours are all a neighbour's
-    # too, bar one: it is cut away rather than left to end games on a coin flip
-    cells = _without_near_twins(cells)
+
+    def fits(keys) -> bool:
+        return all(abs(x - cx) <= half_w + slack and abs(y - cy) <= half_h + slack
+                   for x, y in (position(k) for k in keys))
+
+    # Every tile that fits stays, a near-twin on the rim included (a truncated
+    # square board's corner octagon, whose neighbours are the square beside it
+    # less one cell): the flat board is a whole box of the tiling, and the
+    # mine count is calibrated on it as drawn, guesses and all. The strips
+    # still peel theirs (`_without_near_twins`), where nothing reads as a box.
+    cells = {cell: keys for cell, keys in grown.items() if fits(keys)}
 
     return _finalize_flat(tiling, cells, position, mine_count, scale)

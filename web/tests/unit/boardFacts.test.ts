@@ -40,10 +40,10 @@ describe("shape names", () => {
   it("uses the word for the shape where English has one", () => {
     // A Laves dual is one irregular tile throughout, and "quadrilateral" or
     // "irregular triangle" would be the least it could say about them.
-    expect(shapes("rhombille")).toEqual(["Rhombi 79"]);
+    expect(shapes("rhombille")).toEqual(["Rhombi 82"]);
     expect(shapes("deltoidal")).toEqual(["Kites 76"]);
-    expect(shapes("tetrakis")).toEqual(["Isosceles triangles 80"]);
-    expect(shapes("kisrhombille")).toEqual(["Irregular triangles 80"]); // 30-60-90
+    expect(shapes("tetrakis")).toEqual(["Isosceles triangles 90"]);
+    expect(shapes("kisrhombille")).toEqual(["Irregular triangles 84"]); // 30-60-90
     expect(shapes("cairo")).toEqual(["Irregular pentagons 80"]);
     expect(shapes("stackedbond")).toEqual(["Rectangles 72"]);
   });
@@ -65,9 +65,9 @@ describe("shape names", () => {
     // The Pythagorean tiling: one square in two sizes.
     expect(shapes("pythagorean")).toEqual(["Squares · small 45", "Squares · large 40"]);
     expect(shapes("threescaletri")).toEqual([
-      "Equilateral triangles · small 27",
-      "Equilateral triangles · medium 27",
-      "Equilateral triangles · large 31",
+      "Equilateral triangles · small 33",
+      "Equilateral triangles · medium 28",
+      "Equilateral triangles · large 25",
     ]);
   });
 
