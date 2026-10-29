@@ -2342,10 +2342,16 @@ export function archimedeanBoard(
   ny: number,
   mineCount: number,
   scale = 40,
+  centre: Vertex | null = null,
 ): Board {
   const t = archTemplate(tiling);
   const W = t.width;
   const H = t.height;
+  // `nx`/`ny` need not be whole (the size search cuts the window midway between
+  // two rows of centroids), and `centre` may name another half-turn centre of
+  // the tiling than the template's own -- see `archimedean_board` in
+  // `minesweeper/boards/tilings.py`.
+  const pivot = centre ?? t.centre;
   const position = (m: number, n: number, tag: string): Vertex => {
     const v = t.verts.get(tag)!;
     return [m * W + v[0], n * H + v[1]];
@@ -2391,8 +2397,8 @@ export function archimedeanBoard(
   let cx0 = 0;
   let cy0 = 0;
   let best = Infinity;
-  if (t.centre) {
-    const [ccx, ccy] = t.centre;
+  if (pivot) {
+    const [ccx, ccy] = pivot;
     for (let m = 0; m < nx + 2; m++) {
       for (let n = 0; n < ny + 2; n++) {
         const x = ccx + m * W;

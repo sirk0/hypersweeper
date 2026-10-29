@@ -221,7 +221,10 @@ def build_presets() -> dict:
             presets[mode_for(tiling, surface)] = {
                 "builder": _ARCH_BUILDER_NAMES[surface],
                 "args": {
-                    difficulty: [tiling, *params]
+                    # a flat window's centre is a point, a tuple in the table
+                    # and a list in JSON
+                    difficulty: [tiling, *(list(p) if isinstance(p, tuple) else p
+                                           for p in params)]
                     for difficulty, params in by_difficulty.items()
                 },
             }

@@ -22,6 +22,14 @@ keeps it rather than having the wrap square it off -- and tunes the tube radius
 jointly since that is the other half of what sets the surface's own
 proportions.
 
+**Square.** A flat board has nothing to distort, so its shape is the board's
+own: as square as the tiling allows, as symmetric as it allows, and among
+windows about as good as each other the one that carries the most mines. The
+window is cut about any half-turn centre (``flat_centres``) at any extent that
+falls between two rows of centroids (``flat_window_values``) -- not a whole
+number of domains, which on most of the catalogue has no square board near 81
+cells. See ``FLAT_ASPECT_WEIGHT``, ``SYMMETRY_WEIGHT`` and ``DENSITY_WEIGHT``.
+
 **Fold.** No measure of cell shape can see one: a flat tile cutting through a
 donut's axis is perfectly well-proportioned. So three bars rule folds out
 directly -- ``MIN_WRAP_DOMAINS`` on the domains round the ring,
@@ -238,7 +246,10 @@ SPEC: dict[str, dict] = {
     # board is a disc, so the flat shape term is log(1) = 0 for every
     # candidate and the size penalty decides alone, as for the brick rings.
     "hyperbolic_board": dict(size=(2,), mine=3, shape=4, kind="scale"),
-    "archimedean_board": dict(size=(1, 2), mine=3, shape=4, kind="scale", lead=1),
+    # ...and ``centre``, the half-turn centre the window is cut about, which
+    # the search picks from `flat_centres` alongside the two extents
+    "archimedean_board": dict(size=(1, 2), mine=3, shape=4, kind="scale", lead=1,
+                              centre=5),
     "arch_torus_board": dict(size=(1, 2), mine=3, shape=4, kind="tube", lead=1),
     "arch_cylinder_board": dict(size=(1, 2), mine=3, shape=4, kind="cut", lead=1),
     "arch_mobius_board": dict(size=(1, 2), mine=3, shape=None, lead=1, halves=True),
@@ -327,7 +338,47 @@ SHAPE_SWEEP = {
 
 # How hard squareness pushes. A flat board is judged on the board's own aspect
 # and a rolled one on its unrolled window, since the immersion hides it.
-FLAT_ASPECT_WEIGHT = 2.0
+FLAT_ASPECT_WEIGHT = 4.0
+# How much a ragged outline costs a flat board: FILL_WEIGHT * log(box / area),
+# the bounding box against the tiles actually in it. Aspect alone is measured on
+# that box, so a window cut through a ring of tiles -- the kisrhombille's fans,
+# a dodecagon row's triangles -- reads as square while a third of its rim is
+# teeth. Relative, not a bar: a hexagonal tiling never fills its box better
+# than about 0.86, the square ones fill it exactly, and a window that cuts
+# through its tiling where a whole-domain one would not pays 2 * log(0.86/0.78)
+# = 0.2 for it, about what a 5% longer side does. At half that, the three-brick
+# basket weave's hard board kept a rim of part-blocks (fill 0.95) over whole
+# ones 26 bricks bigger, and the snub hexagonal easy board a sawtooth edge.
+FILL_WEIGHT = 2.0
+# ...and how much a flat window's symmetry is worth: log(8 / order), so a
+# square window that keeps all eight of the square's motions beats one that
+# keeps only the half turn and a mirror by 0.15 * log 2 -- about what a 3.5%
+# longer side costs. Enough to settle near-ties, never to buy a lopsided board.
+SYMMETRY_WEIGHT = 0.15
+# A flat window can be as square as another and still carry far fewer mines,
+# because its edge is lined with tiles that touch almost nothing (a corner
+# triangle of the truncated hexagonal tiling sees one dodecagon) and every one
+# of them is a guess. Nothing geometric sees that, so the few best windows of a
+# row are calibrated -- briefly, at DENSITY_EFFORT of a full run -- and the
+# score pays DENSITY_WEIGHT * log(best density / this density): a third fewer
+# mines costs what a 10% longer side does. Only windows within DENSITY_SLACK of
+# the best geometric score are offered, so density settles between boards that
+# are all about as square, and never trades a square board for a lopsided one.
+DENSITY_WEIGHT = 1.0
+DENSITY_SLACK = 0.3
+DENSITY_SHORTLIST = 4
+DENSITY_EFFORT = 0.5
+# The extreme of the same thing: a window whose edge forces so many guesses
+# that no mine count brings it to the target at all (`fair: false` -- the
+# calibration's verdict, the floor being the opening click). The truncated
+# hexagonal easy board was fair at 1.24 to 1 and is not at 1.01, its rim of
+# triangles each touching a single dodecagon; so is the dodecagonal
+# rhombitrihexagonal. An unfair window pays UNFAIR_PENALTY -- what a side 28%
+# longer costs -- and when every window on the shortlist is unfair the search
+# reads on down the ranking, UNFAIR_EXTRA windows at most, for a fair one.
+# A tiling that is unfair at every size (rhombille, triakis) keeps its squarest.
+UNFAIR_PENALTY = 1.0
+UNFAIR_EXTRA = 8
 # cells this close to regular are not stretched; the no-regression bar on cell
 # shape never bites below it
 SHAPE_BAR_FLOOR = 1.15
@@ -601,22 +652,18 @@ WIDE_CANDIDATE_LIMIT = 1500
 # how lopsided an unrolled window may be before it reads as a hoop, not a board
 MAX_WINDOW_ASPECT = 15.0
 
-# The classic board is the yardstick every other board is calibrated against,
-# so it is never reshaped. It is also the one flat board that is deliberately
-# not square -- 30x16 is what Minesweeper's expert board has always been.
-PINNED = {"square"}
-
 # Single rows whose size is decided by something this search cannot see, with
-# the reason -- kept as they ship, like PINNED, but for one difficulty only.
+# the reason -- kept as they ship, for one difficulty only.
 #
-# A substitution board deals many windows onto its patch, and only those that
-# play like the centred one (scripts/difficulty/windows.py) -- so the centred
-# window has to be a *typical* one, and nothing here measures that. On the
-# kite-and-dart hard board at 480 tiles it is not: the solver wins 0.55 of its
-# games where the median window gives 0.42 (2.6 standard deviations out), and
-# 3 windows of 96 played like it. Measured across the band, the centred window
-# is typical at 450 tiles (0.41 against a median of 0.43), so that is the size.
+# The classic 9x9 and 16x16 boards are the classic boards: there is nothing to
+# search. The classic *expert* board, 30x16, is not on this list. It is still
+# the yardstick hard is calibrated against (`calibrate.CLASSIC`), but a flat
+# board here is square, and the shipped square hard board is 22x22, searched
+# and calibrated like any other row.
+#
 PINNED_ROWS = {
+    ("square", "easy"): "the classic beginner board",
+    ("square", "medium"): "the classic intermediate board",
     ("kitedart", "hard"): "the centred window plays like a typical one at 450",
 }
 
@@ -760,6 +807,314 @@ def _mobius_rows(tiling: str, limit: int = 31) -> list[float]:
                                 for whole in range(limit)) if value > 0.25]
 
 
+def _flat_patch(tiling: str) -> dict:
+    """A patch of the flat tiling big enough to cut any hard window from:
+    each tile's centroid and side count, its vertices and its edge midpoints,
+    in the template's own units. Shared by the two helpers below."""
+    from minesweeper.boards.tilings import _arch_template
+
+    template = _arch_template(tiling)
+    width, height = template.width, template.height
+    # the hard band's top, in domain areas, with room to spare on every side
+    side = math.sqrt(1.4 * TARGETS["hard"] * width * height / len(template.cells))
+    span_x = math.ceil(side / width) + 6
+    span_y = math.ceil(side / height) + 6
+
+    def position(key):
+        m, n, tag = key
+        vx, vy = template.verts[tag]
+        return (m * width + vx, n * height + vy)
+
+    tiles, vertices, midpoints = [], set(), set()
+    for m in range(span_x):
+        for n in range(span_y):
+            for _, refs in template.cells:
+                points = [position((m + dm, n + dn, tag)) for tag, dm, dn in refs]
+                tiles.append((sum(x for x, _ in points) / len(points),
+                              sum(y for _, y in points) / len(points), len(points)))
+                for i, (x, y) in enumerate(points):
+                    nx_, ny_ = points[(i + 1) % len(points)]
+                    vertices.add((round(x, 9), round(y, 9)))
+                    midpoints.add((round((x + nx_) / 2, 9), round((y + ny_) / 2, 9)))
+    return dict(template=template, tiles=tiles, vertices=vertices,
+                midpoints=midpoints, middle=(span_x * width / 2, span_y * height / 2))
+
+
+_FLAT_PATCHES: dict[str, dict] = {}
+
+
+def _patch(tiling: str) -> dict:
+    if tiling not in _FLAT_PATCHES:
+        _FLAT_PATCHES[tiling] = _flat_patch(tiling)
+    return _FLAT_PATCHES[tiling]
+
+
+def flat_centres(tiling: str) -> list[tuple[float, float]]:
+    """Every point a flat window of ``tiling`` can be centred on and stay
+    symmetric: its half-turn centres, one per class under translation, in
+    domain coordinates.
+
+    ``archimedean_board`` centres on one of these by default -- the template's
+    declared centre, or its biggest tile -- and it is usually the most
+    symmetric one. But a window's size is a whole number of *rows about the
+    centre*, so the centre decides which sizes are square at all: a three-brick
+    basket weave centred where four blocks meet has square windows of four
+    blocks and six blocks (48 and 108 bricks) and nothing between, while one
+    centred on a block has five (75). So the search tries every one.
+
+    A symmetry centre lies on a tile centroid, a vertex or an edge midpoint, so
+    those are the candidates, and a candidate is kept when a half turn about it
+    maps every tile near it onto a tile with as many sides. A tiling with no
+    half turn at all (three-scale triangular) has none, and keeps its default.
+    """
+    patch = _patch(tiling)
+    template = patch["template"]
+    width, height = template.width, template.height
+    tol = 1e-5
+
+    def key(x, y, sides):
+        return (round(x / tol), round(y / tol), sides)
+
+    # tiles by centroid and side count, and the vertices with them: a set of
+    # centroids can be centrally symmetric when the tiles are not (the
+    # three-scale triangular tiling's up and down triangles share one lattice)
+    present = ({key(x, y, s) for x, y, s in patch["tiles"]}
+               | {key(x, y, 0) for x, y in patch["vertices"]})
+    mx, my = patch["middle"]
+    # far enough to see several domains, never past the patch's own edge
+    reach = min(2.5 * max(width, height), min(mx, my) / 2)
+    near = [(x, y, s) for x, y, s in patch["tiles"]
+            if abs(x - mx) <= reach + 2 * width and abs(y - my) <= reach + 2 * height]
+    near += [(x, y, 0) for x, y in patch["vertices"]
+             if abs(x - mx) <= reach + 2 * width and abs(y - my) <= reach + 2 * height]
+
+    def maps_onto_itself(motion, cx, cy) -> bool:
+        for x, y, s in near:
+            if abs(x - cx) > reach or abs(y - cy) > reach:
+                continue
+            rx, ry = motion(x, y)
+            if not any(key(rx + dx * tol, ry + dy * tol, s) in present
+                       for dx in (-1, 0, 1) for dy in (-1, 0, 1)):
+                return False
+        return True
+
+    def is_centre(cx, cy) -> bool:
+        return maps_onto_itself(lambda x, y: (2 * cx - x, 2 * cy - y), cx, cy)
+
+    def translates(a, b) -> bool:
+        """Is ``b`` ``a`` moved by a translation of the tiling? Then the two
+        centre the same windows, and only one is worth searching."""
+        tx, ty = b[0] - a[0], b[1] - a[1]
+        return maps_onto_itself(lambda x, y: (x + tx, y + ty), a[0], a[1])
+
+    # one domain's worth of candidates, from the copy at the middle
+    ox = math.floor(mx / width) * width
+    oy = math.floor(my / height) * height
+    points = ({(x, y) for x, y, _ in patch["tiles"]}
+              | patch["vertices"] | patch["midpoints"])
+    found: list[tuple[tuple[float, float], tuple[float, float]]] = []
+    for x, y in sorted(points):
+        if not (ox - 1e-9 <= x < ox + width - 1e-9
+                and oy - 1e-9 <= y < oy + height - 1e-9):
+            continue
+        domain = (round((x - ox) % width, 6) % round(width, 6),
+                  round((y - oy) % height, 6) % round(height, 6))
+        if any(domain == seen for seen, _ in found):
+            continue
+        if not is_centre(x, y):
+            continue
+        if any(translates(point, (x, y)) for _, point in found):
+            continue
+        found.append((domain, (x, y)))
+    # the builder's own centre first, so a tie keeps the window the builder
+    # would have cut anyway (and the preset needs no `centre` argument)
+    own = template.centre
+    centres = [domain for domain, _ in found]
+    if own is not None:
+        centres.sort(key=lambda c: not any(
+            translates((c[0] + ox, c[1] + oy), (own[0] + ox, own[1] + oy))
+            for _ in [0]))
+    return centres
+
+
+def flat_window_values(tiling: str, centre: tuple[float, float],
+                       axis: int) -> list[float]:
+    """The window extents worth trying about ``centre`` along ``axis``, in
+    domains (``archimedean_board``'s ``nx``/``ny``).
+
+    The window keeps a tile when its centroid lies inside, so its size moves
+    only when an edge crosses a row of centroids -- and an edge that sits *on*
+    a row keeps it or drops it on a rounding error, which is the stray-column
+    bug ``archimedean_board``'s ``slack`` exists for. So each extent is the
+    midpoint between two consecutive rows: every distinct window, and none
+    with a tile on its edge. Where the tiling declares a grain the builder
+    snaps the extent to it, and these collapse onto the grain lines.
+    """
+    patch = _patch(tiling)
+    template = patch["template"]
+    unit = template.width if axis == 0 else template.height
+    mx, my = patch["middle"]
+    cx = centre[0] + math.floor(mx / template.width) * template.width
+    cy = centre[1] + math.floor(my / template.height) * template.height
+    # rows the patch has whole: two domains short of its edge on this axis
+    limit = (mx if axis == 0 else my) - 2 * unit
+    offsets = sorted({round(abs((x - cx) if axis == 0 else (y - cy)), 6)
+                      for x, y, _ in patch["tiles"]})
+    offsets = [o for o in offsets if o <= limit]
+    values = []
+    for low, high in zip(offsets, offsets[1:]):
+        value = round((low + high) / unit, 3)  # 2 * midpoint / unit
+        half = value * unit / 2
+        if low + 1e-4 < half < high - 1e-4:
+            values.append(value)
+    return values
+
+
+def _flat_grids(tiling: str, target: int, limit: int, loose: bool = False) -> list[list]:
+    """Candidate ``[nx, ny, centre]`` windows for a flat Archimedean board,
+    nearest the target size and squarest first (both estimated from the
+    extents alone -- nothing is built here)."""
+    from minesweeper.boards.tilings import _arch_template
+
+    template = _arch_template(tiling)
+    per = len(template.cells)
+    want = target / per
+    lo, hi = (0.25, 4.0) if loose else (0.7, 1.35)
+    # A grain is measured from the window centre (`_snap_to_grain`), so it is
+    # only the tiling's grain about a centre that sits on it: on a grained
+    # axis, a centre has to be a whole number of grain periods from the
+    # template's own, or the tromino's straight edges come out a row of teeth.
+    own = template.centre or (0.0, 0.0)
+
+    def on_grain(centre) -> bool:
+        for axis, period in enumerate(template.grain):
+            if period:
+                steps = (centre[axis] - own[axis]) / period
+                if abs(steps - round(steps)) > 1e-6:
+                    return False
+        return True
+
+    out = []
+    for centre in [c for c in flat_centres(tiling) if on_grain(c)] or [None]:
+        at = centre if centre is not None else (0.0, 0.0)
+        xs = flat_window_values(tiling, at, 0)
+        ys = flat_window_values(tiling, at, 1)
+        for a in xs:
+            for b in ys:
+                product = a * b
+                if not lo * want <= product <= hi * want:
+                    continue
+                ratio = a * template.width / (b * template.height)
+                estimate = (abs(math.log(product / want))
+                            + FLAT_ASPECT_WEIGHT * abs(math.log(ratio)))
+                out.append((estimate, [a, b, list(centre) if centre else None]))
+    out.sort(key=lambda row: row[0])
+    return [grid for _, grid in out[:limit]]
+
+
+def _same_board(one, other) -> bool:
+    """Do two flat boards draw the same tiles?
+
+    Up to a ten-thousandth of the board: a template's vertices are stored to
+    six decimals, so the same window cut from another copy of the domain sits
+    a few 1e-7 off, which is not a different board.
+    """
+    if len(one.polygons) != len(other.polygons) or not one.width or not other.width:
+        return False
+    if abs(one.width / other.width - 1) > 1e-4 or abs(one.height / other.height - 1) > 1e-4:
+        return False
+
+    def shape(board):
+        unit = board.width / 1e4
+        return sorted(tuple(sorted((round(x / unit), round(y / unit)) for x, y in polygon))
+                      for polygon in board.polygons.values())
+    return shape(one) == shape(other)
+
+
+def _area(polygon) -> float:
+    return abs(sum(x0 * y1 - x1 * y0 for (x0, y0), (x1, y1)
+                   in zip(polygon, polygon[1:] + polygon[:1]))) / 2
+
+
+def fill(board) -> float:
+    """How much of a flat board's bounding box its tiles cover, in (0, 1]."""
+    box = (board.width or 0) * (board.height or 0)
+    if not box:
+        return 1.0
+    return min(1.0, sum(_area(list(p)) for p in board.polygons.values()) / box)
+
+
+def loose_tiles(board) -> int:
+    """Tiles that share no edge with the rest of the board -- hung on by a
+    single corner, like the kisrhombille's triangles at a window's corners.
+
+    A window cut between rows of centroids can keep one: its centroid is in,
+    every tile it shared an edge with is out. It is a tile the player sees
+    float off the board, and a cell whose only neighbours meet it at a point
+    says almost nothing about them. An edge is a pair of corners, so a
+    T-vertex tiling's split edge matches the small tile's whole one.
+    """
+    def key(point):
+        return (round(point[0], 3), round(point[1], 3))
+
+    owners: dict = {}
+    for cell, polygon in board.polygons.items():
+        points = [key(p) for p in polygon]
+        for a, b in zip(points, points[1:] + points[:1]):
+            owners.setdefault(frozenset((a, b)), []).append(cell)
+    shared = {cell for cells in owners.values() if len(cells) > 1 for cell in cells}
+    return sum(1 for cell in board.polygons if cell not in shared)
+
+
+def window_symmetries(board) -> int:
+    """The order of a flat board's symmetry group about its own centre: how
+    many of the square's eight motions -- the identity, the half and quarter
+    turns, the two axis mirrors and the two diagonal ones -- carry every tile
+    onto a tile with as many sides.
+
+    The symmetry *bar* (``_symmetric_enough``) asks only for the half turn and,
+    on a reflective tiling, a mirror. This is what tells two windows that pass
+    it apart: a square window on a square tiling's four-fold centre keeps the
+    quarter turn and both diagonals as well, and a rectangle cannot.
+    """
+    tiles = []
+    for polygon in board.polygons.values():
+        tiles.append((sum(x for x, _ in polygon) / len(polygon),
+                      sum(y for _, y in polygon) / len(polygon), len(polygon)))
+    if not tiles:
+        return 1
+    cx = sum(x for x, _, _ in tiles) / len(tiles)
+    cy = sum(y for _, y, _ in tiles) / len(tiles)
+    edge = min(math.dist(p[i], p[(i + 1) % len(p)])
+               for p in board.polygons.values() for i in range(len(p)))
+    tol = 0.05 * edge
+    grid: dict = {}
+    for x, y, s in tiles:
+        grid.setdefault((round(x / tol), round(y / tol)), []).append((x, y, s))
+
+    def present(x, y, s) -> bool:
+        gx, gy = round(x / tol), round(y / tol)
+        return any(abs(px - x) < tol and abs(py - y) < tol and ps == s
+                   for i in (-1, 0, 1) for j in (-1, 0, 1)
+                   for px, py, ps in grid.get((gx + i, gy + j), ()))
+
+    motions = (
+        lambda dx, dy: (-dx, -dy),   # half turn
+        lambda dx, dy: (-dy, dx),    # quarter turn
+        lambda dx, dy: (-dx, dy),    # mirror across the vertical axis
+        lambda dx, dy: (dx, -dy),    # ...and the horizontal one
+        lambda dx, dy: (dy, dx),     # the two diagonals
+        lambda dx, dy: (-dy, -dx),
+        lambda dx, dy: (dy, -dx),    # three-quarter turn
+    )
+    order = 1
+    for motion in motions:
+        if all(present(cx + mx, cy + my, s)
+               for x, y, s in tiles for mx, my in [motion(x - cx, y - cy)]):
+            order += 1
+    return order
+
+
 def _rescale(builder: str, spec: dict, trial: list, before) -> list:
     """Keep a flat board the size on screen it already was.
 
@@ -770,6 +1125,9 @@ def _rescale(builder: str, spec: dict, trial: list, before) -> list:
     hand-tuned rows were already doing as difficulty rose.
     """
     if spec.get("kind") != "scale" or spec.get("shape") is None:
+        return trial
+    if builder == "square_board":
+        # the classic board keeps the classic cell, whatever its size
         return trial
     trial = _pad(builder, trial, spec["shape"])
     probe_args = list(trial)
@@ -811,7 +1169,10 @@ def _symmetric_enough(mode: str, board, is_flat: bool) -> bool:
         rotation = TestArchimedean._symmetry(
             board, lambda cx, cy, x, y: (2 * cx - x, 2 * cy - y)
         )
-        if rotation < 0.85:
+        # exactly, as the test asks: a window cut midway between rows of
+        # centroids about a true half-turn centre has every tile's partner,
+        # and one about a point that only nearly is one is the wrong window
+        if rotation < 1.0:
             return False
         if mode in TestArchimedean.REFLECTIVE:
             lr = TestArchimedean._symmetry(
@@ -820,7 +1181,7 @@ def _symmetric_enough(mode: str, board, is_flat: bool) -> bool:
             tb = TestArchimedean._symmetry(
                 board, lambda cx, cy, x, y: (x, 2 * cy - y)
             )
-            if max(lr, tb) < 0.9:
+            if max(lr, tb) < 1.0:
                 return False
     except Exception:
         return True
@@ -1265,7 +1626,8 @@ def _score(mode: str, board, target: int, is_flat: bool,
     if spec is not None and spec.get("rigid"):
         return size_penalty
     if is_flat:
-        shape_penalty = FLAT_ASPECT_WEIGHT * math.log(aspect(board))
+        shape_penalty = (FLAT_ASPECT_WEIGHT * math.log(aspect(board))
+                         + FILL_WEIGHT * math.log(1 / max(fill(board), 1e-6)))
     else:
         mean, p90 = distortion_summary(board.polygons)
         # ...against the tiling's *own* tile, not against a regular polygon:
@@ -1298,17 +1660,16 @@ def _score(mode: str, board, target: int, is_flat: bool,
     return size_penalty + SHAPE_WEIGHT * shape_penalty
 
 
-def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
+def search(mode: str, builder: str, args: list, difficulty: str,
+           density: bool = True) -> dict:
     """Best geometry for one (mode, difficulty), or the current one if the
-    board has no size knob."""
+    board has no size knob. ``density`` switches off the calibration of the
+    flat shortlist (see DENSITY_WEIGHT), for a quick look at the geometry."""
     spec = SPEC[builder]
     target = TARGETS[difficulty]
     probe = _build(builder, args)
     is_flat = probe.__class__.__name__ == "Board"
 
-    if mode in PINNED:
-        return dict(args=list(args), cells=len(probe.adjacency), fixed=True,
-                    reason="the reference board")
     if (mode, difficulty) in PINNED_ROWS:
         return dict(args=list(args), cells=len(probe.adjacency), fixed=True,
                     reason=PINNED_ROWS[mode, difficulty])
@@ -1384,6 +1745,14 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
     domains = bool(spec.get("lead"))
     if spec.get("grid"):
         grids = GRIDS[spec["grid"]]()
+    elif builder == "archimedean_board" and flat_centres(args[0]):
+        # A flat window is any rectangle about a half-turn centre, cut midway
+        # between rows of centroids -- not a whole number of domains, which on
+        # a domain a dozen tiles big and far from square has no square board
+        # near 81 cells at all (see `flat_window_values`). The candidates come
+        # ranked by an estimate of size and squareness; the builds below judge.
+        grids = _flat_grids(args[0], target, 3 * CANDIDATE_LIMIT)
+        wider = _flat_grids(args[0], target, WIDE_CANDIDATE_LIMIT, loose=True)
     elif len(knobs) == 1:
         # One knob, and cell count rises with it -- often quadratically
         # (``cube_board`` is 6n**2, ``hexhex_board`` 3r**2-3r+1). Walk upwards
@@ -1508,6 +1877,9 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
             trial = list(args)
             for knob, value in zip(knobs, values):
                 trial[knob] = value
+            if len(values) > len(knobs):  # a flat window's centre, too
+                trial = _pad(builder, trial, spec["centre"])
+                trial[spec["centre"]] = values[len(knobs)]
             if spec.get("kind") == "knot":
                 # The trefoil refuses a window whose chords sag into another
                 # strand, and how much sag it can take shrinks as the tube
@@ -1604,6 +1976,10 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
             if keep_shape and not is_flat and _off_planar(
                     edge_ratio(board, corners), base_edge) > shape_bar:
                 continue
+            # ...and, flat, no tile hung on by a corner (see `loose_tiles`):
+            # the flat board's shape bar, which gives way where the cell one does
+            if keep_shape and is_flat and spec.get("lead") and loose_tiles(board):
+                continue
             # A window can hit the cell count, keep its topology and still not
             # be a puzzle: three cells around a cylinder gives every cell the
             # same closed neighbourhood, so no number can ever separate them
@@ -1682,6 +2058,12 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
             scored = wider
     scored = scored[max(index, 0):]
 
+    # Among flat windows about as good as the best, the more symmetric one and
+    # the one that carries more mines (see SYMMETRY_WEIGHT, DENSITY_WEIGHT)
+    measured: dict[str, dict] = {}
+    if is_flat and not coarse and spec.get("lead"):
+        scored = _refine_flat(mode, difficulty, builder, scored, density, measured)
+
     # tune the surface's own proportions against the best few windows: the
     # window and the tube radius together are what set cell distortion
     if spec.get("kind") in SHAPE_SWEEP and spec["shape"] is not None:
@@ -1736,6 +2118,8 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
             scored = refined
 
     score, trial, n = scored[0]
+    extra = measured.get(json.dumps(trial), {})
+    trial = _drop_default_centre(builder, spec, trial)
     # A flat board's trailing arg is a pixel scale, and each family has its own
     # convention for it (the classic board keeps a constant *cell* size, the
     # Archimedean rows a constant board *width*). Rather than impose one, keep
@@ -1753,7 +2137,11 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
         distortionMean=round(mean, 4),
         distortionP90=round(p90, 4),
         indistinguishable=indistinguishable_cells(board.adjacency),
+        **extra,
     )
+    if is_flat:
+        result["aspect"] = round(aspect(board), 4)
+        result["fill"] = round(fill(board), 4)
     if not is_flat and spec.get("lead"):
         axes = (0, 1) if _closed_tube(builder) else (0,)
         step = max(_facet_step(spec, trial, axis) for axis in axes)
@@ -1765,10 +2153,109 @@ def search(mode: str, builder: str, args: list, difficulty: str) -> dict:
     return result
 
 
+def _refine_flat(mode: str, difficulty: str, builder: str, scored: list,
+                 density: bool, measured: dict) -> list:
+    """Re-rank the flat windows within DENSITY_SLACK of the best by symmetry
+    and, when ``density``, by the mines a short calibration lets them carry
+    and whether it can bring them to the target at all.
+
+    ``scored`` arrives sorted and starting at a symmetric window; only
+    symmetric ones are shortlisted, so the winner still passes the bar.
+    ``measured`` collects what was found, keyed by the trial, for the record.
+    """
+    best = scored[0][0]
+    rows = iter(scored)
+
+    def next_symmetric(ceiling: float):
+        for row in rows:
+            if row[0] > ceiling:
+                return None
+            try:
+                board = _build(builder, row[1])
+            except Exception:
+                continue
+            if _symmetric_enough(mode, board, True):
+                return row, board
+        return None
+
+    shortlist = []
+    while len(shortlist) < DENSITY_SHORTLIST:
+        found = next_symmetric(best + DENSITY_SLACK)
+        if found is None:
+            break
+        shortlist.append(found)
+    if not shortlist or (len(shortlist) < 2 and not density):
+        return scored
+
+    ranked = []
+
+    def measure(row, board) -> dict:
+        score, trial, n = row
+        order = window_symmetries(board)
+        info = {"symmetries": order}
+        score += SYMMETRY_WEIGHT * math.log(8 / order)
+        if density:
+            info["density"], info["fair"] = _quick_density(mode, difficulty,
+                                                           builder, trial)
+            if not info["fair"]:
+                score += UNFAIR_PENALTY
+        measured[json.dumps(trial)] = info
+        ranked.append([score, trial, n, info])
+        return info
+
+    infos = [measure(row, board) for row, board in shortlist]
+    if density and not any(info["fair"] for info in infos):
+        # every window about as square as the best is one no mine count can
+        # bring to target: read on down the ranking for one that can be
+        for _ in range(UNFAIR_EXTRA):
+            found = next_symmetric(best + UNFAIR_PENALTY)
+            if found is None or measure(*found)["fair"]:
+                break
+    if density:
+        most = max(info["density"] for *_, info in ranked)
+        for row in ranked:
+            row[0] += DENSITY_WEIGHT * math.log(most / max(row[3]["density"], 1e-6))
+    ranked.sort(key=lambda row: row[0])
+    kept = {json.dumps(trial) for _, trial, _, _ in ranked}
+    return ([(score, trial, n) for score, trial, n, _ in ranked]
+            + [row for row in scored if json.dumps(row[1]) not in kept])
+
+
+def _quick_density(mode: str, difficulty: str, builder: str,
+                   trial: list) -> tuple[float, bool]:
+    """The mine density a short calibration settles a window on, and whether
+    it could bring the window to the target at all."""
+    from scripts.difficulty import calibrate
+
+    calibrate.EFFORT = DENSITY_EFFORT
+    targets = json.loads((Path(__file__).parent / "targets.json").read_text())
+    row = calibrate.calibrate_row((mode, difficulty, builder, list(trial),
+                                   targets[difficulty]))
+    return round(row["mines"] / row["cells"], 4), bool(row.get("fair", True))
+
+
+def _drop_default_centre(builder: str, spec: dict, trial: list) -> list:
+    """Leave the ``centre`` argument off when the builder would cut the same
+    window without it -- most rows, and every row that shipped before it."""
+    index = spec.get("centre")
+    if index is None or len(trial) <= index:
+        return trial
+    bare = trial[:index]
+    if trial[index] is None:
+        return bare
+    try:
+        if _same_board(_build(builder, trial), _build(builder, bare)):
+            return bare
+    except Exception:
+        pass
+    return trial
+
+
 def _one(job: tuple) -> tuple:
-    mode, builder, args, difficulty = job
+    mode, builder, args, difficulty, density = job
     before = len(_build(builder, args).adjacency)
-    return mode, difficulty, before, search(mode, builder, args, difficulty)
+    return mode, difficulty, before, search(mode, builder, args, difficulty,
+                                            density)
 
 
 def _share_reused_scales(out: dict[str, dict]) -> None:
@@ -1804,6 +2291,8 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--jobs", type=int, default=max(1, mp.cpu_count() - 1))
     parser.add_argument("--only", default="", help="comma-separated modes")
+    parser.add_argument("--no-density", action="store_true",
+                        help="skip calibrating the flat shortlists (geometry only)")
     options = parser.parse_args()
 
     presets = json.loads((ROOT / "data" / "presets.json").read_text())["presets"]
@@ -1826,7 +2315,8 @@ def main() -> int:
             continue
         out[mode] = {"builder": builder, "args": {}}
         for difficulty in ("easy", "medium", "hard"):
-            jobs.append((mode, builder, list(spec["args"][difficulty]), difficulty))
+            jobs.append((mode, builder, list(spec["args"][difficulty]), difficulty,
+                         not options.no_density))
 
     print(f"{len(jobs)} rows on {options.jobs} workers")
     if options.jobs == 1:

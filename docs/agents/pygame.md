@@ -107,7 +107,8 @@ screen taller than the window is clamped down to stay fully visible, so
 there are never letterbox gaps on a tall phone. On a portrait viewport
 (a phone held upright — `is_portrait`, plumbed through
 `set_portrait`) a clearly landscape flat board (width > 1.2× height,
-i.e. the classic 30×16 hard board) is drawn turned a quarter-turn
+such as the classic 30×16 expert grid — no shipped board, since flat boards
+are built square and `square` hard is 22×22) is drawn turned a quarter-turn
 (`GameScreen._rotated`) so it fills the width; the desktop presenter
 never reports portrait, so desktop and landscape windows keep boards as
 designed. Cell size still varies per board, but the header controls do

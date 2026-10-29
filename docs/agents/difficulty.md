@@ -21,10 +21,10 @@ shaped boards — `triangle`, `hexhex`, `hextri`, `hextriangle`,
 `squarediamond` — are the
 deliberate exception: each is a polygon of the tiling's own symmetry,
 exactly filled, never a trimmed disc.) For periodic
-tilings take a rectangular window of whole periods centred on a rotation
-centre (`archimedean_board` keeps an `nx`×`ny` domain block of the
-`_ArchTemplate` centred on the tiling's biggest tile, so the window maps
-onto itself under the tiling's point group; where the tiling declares a
+tilings take a rectangular window centred on a half-turn centre of the
+tiling (`archimedean_board` keeps the tiles whose centroids fall in an
+`nx*width` by `ny*height` rectangle about it, so the window maps onto
+itself under the tiling's point group; where the tiling declares a
 **grain**, the window is snapped onto it first, so those knobs move the
 board a whole course at a time and the size search sees the count it
 actually gets); for the aperiodic ones built by
@@ -37,6 +37,61 @@ substitution's own star-shaped outline is what the board reads as. The brick
 rings need neither: the rings build the whole board, so their count is
 both the size knob and the window. See
 the `AGENT NOTE` in `boards/tilings.py`.
+
+**How square, and what else decides it.** The window is *not* a whole
+number of domains. A domain is often far from square (squarerows2's is
+1 by 5.7) and a dozen or two tiles big (kisrhombille's is 24), so a
+whole number of them simply has no square board near 81 cells: easy
+boards shipped at 1.5 to 1.8 to 1 before this. So `nx` and `ny` are any
+extents, and `resize.flat_window_values` offers the ones that fall
+midway between two rows of centroids -- every distinct window, and none
+with a tile on its edge, which is the rounding hazard
+`archimedean_board`'s `slack` describes. The **centre** is a choice too:
+which sizes are square depends on what the window is centred on (a
+three-brick basket weave centred where four blocks meet is square at
+48 and 108 bricks, centred on a block at 75), so `resize.flat_centres`
+finds every half-turn centre of the tiling and the search tries each,
+the chosen one landing in the preset as `archimedean_board`'s optional
+`centre` only when it is not the builder's own. Among the windows that
+pass, one rule set ranks every flat row at every difficulty:
+
+1. **Size** inside ±15% of 81/256/480, as below.
+2. **Symmetry, as a bar**: the exact half turn, and a mirror on a
+   reflective tiling (`test_flat_board_is_symmetric`).
+3. **Squareness**: `FLAT_ASPECT_WEIGHT * log(aspect)`, weighted so that
+   a 4% longer side costs what 17% of the target cell count does -- plus
+   `FILL_WEIGHT * log(box / area)`, because aspect is read off the bounding
+   box and a window cut through a ring of tiles can be square there with a
+   third of its rim teeth (`resize.fill`). And, as a bar, no tile hung on
+   by a corner alone (`resize.loose_tiles`): a cut between centroid rows
+   can keep a kisrhombille triangle whose every edge-neighbour it dropped.
+4. **Symmetry, as a preference**: `SYMMETRY_WEIGHT * log(8 / order)`,
+   where the order counts which of the square's eight motions the board
+   keeps (`resize.window_symmetries`) -- a square window on a four-fold
+   centre beats a rectangle that only keeps the half turn.
+5. **Mine density**: a window can be square and still carry far fewer
+   mines, its edge lined with tiles that touch almost nothing (the
+   elongated triangular easy board was 5.9% against its own medium's
+   11.9%). The best few windows within `DENSITY_SLACK` of the leader are
+   calibrated briefly and pay `DENSITY_WEIGHT * log(best / own)` -- so
+   density settles between boards that are all about as square, and
+   never buys a lopsided one. Its extreme is a window no mine count can
+   bring to target at all (`fair: false`): the truncated hexagonal easy
+   board is fair at 1.24 to 1 and not at 1.01, its rim of triangles each
+   touching one dodecagon. An unfair window pays `UNFAIR_PENALTY` (what a
+   28% longer side costs), and when the whole shortlist is unfair the
+   search reads on down the ranking for a fair one. `resize --no-density`
+   skips all of this for a quick look at the geometry.
+
+A tiling with a **grain** takes only centres a whole number of grain
+periods from its template's own: the grain is measured from the window
+centre, and about any other point the lines no tile crosses are not where
+`_snap_to_grain` puts the edge.
+
+`square` hard is held to the same rules, so it is 22x22 rather than the
+classic expert board's 30x16 -- but the classic boards remain the
+yardstick every row is calibrated against (`calibrate.CLASSIC`), so the
+targets in `targets.json` did not move.
 
 The four substitution boards trim to that `keep` from a **variable** centre —
 one preset is a family of boards, one per window onto the grown patch (see

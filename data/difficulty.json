@@ -65,6 +65,26 @@
         "reason": "the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (4, 6%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win"
       }
     },
+    "dodecarhombitrihex": {
+      "easy": {
+        "level": "warn",
+        "winRate": 0.88,
+        "target": 0.965,
+        "indistinguishable": 0,
+        "cells": 75,
+        "reason": "the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (6, 8%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win"
+      }
+    },
+    "fannedhex": {
+      "easy": {
+        "level": "warn",
+        "winRate": 0.8686,
+        "target": 0.965,
+        "indistinguishable": 0,
+        "cells": 88,
+        "reason": "the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (6, 7%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win"
+      }
+    },
     "kleinrhombille": {
       "medium": {
         "level": "warn",
@@ -164,12 +184,20 @@
       }
     },
     "rhombille": {
+      "medium": {
+        "level": "warn",
+        "winRate": 0.7629,
+        "target": 0.871,
+        "indistinguishable": 0,
+        "cells": 274,
+        "reason": "the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (10, 4%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win"
+      },
       "easy": {
         "level": "warn",
-        "winRate": 0.7571,
+        "winRate": 0.8029,
         "target": 0.965,
         "indistinguishable": 0,
-        "cells": 80,
+        "cells": 82,
         "reason": "the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (5, 6%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win"
       }
     },
@@ -222,25 +250,45 @@
         "level": "blocked",
         "winRate": 0.0,
         "target": 0.509,
-        "indistinguishable": 472,
-        "cells": 490,
+        "indistinguishable": 512,
+        "cells": 530,
         "reason": "most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density"
       },
       "medium": {
         "level": "blocked",
         "winRate": 0.0,
         "target": 0.871,
-        "indistinguishable": 236,
-        "cells": 248,
+        "indistinguishable": 222,
+        "cells": 222,
         "reason": "most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density"
       },
       "easy": {
         "level": "blocked",
-        "winRate": 0.0185,
+        "winRate": 0.0,
         "target": 0.965,
-        "indistinguishable": 68,
-        "cells": 76,
+        "indistinguishable": 82,
+        "cells": 90,
         "reason": "most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density"
+      }
+    },
+    "tritrunctrihex": {
+      "easy": {
+        "level": "warn",
+        "winRate": 0.8829,
+        "target": 0.965,
+        "indistinguishable": 0,
+        "cells": 87,
+        "reason": "the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (5, 6%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win"
+      }
+    },
+    "trunchex": {
+      "easy": {
+        "level": "warn",
+        "winRate": 0.8371,
+        "target": 0.965,
+        "indistinguishable": 0,
+        "cells": 77,
+        "reason": "the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (4, 5%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win"
       }
     }
   }

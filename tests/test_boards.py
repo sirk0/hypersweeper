@@ -2872,6 +2872,39 @@ class TestArchimedean:
             tb = self._symmetry(board, lambda cx, cy, x, y: (x, 2 * cy - y))
             assert max(lr, tb) == 1.0
 
+    # How far from square a shipped flat window may be. The window is cut at
+    # any extent about any half-turn centre (see "How square" in
+    # docs/agents/difficulty.md), so nearly every row is within a few per cent;
+    # this is the bar a hand-edited preset cannot slip past, set just above the
+    # worst ordinary row the search ships (kisrhombille, rhombitrihex and
+    # studded triangular easy, 1.155: a fan of twelve triangles is a hexagon,
+    # and 81 cells is about one and a half of them).
+    MAX_FLAT_ASPECT = 1.16
+    # ...and the two rows that cannot meet it, with what they measure:
+    SQUARE_EXEMPT = {
+        # Its grain is 3 by 2 -- the window ends on a line no tromino crosses,
+        # or its edge is a row of half-kept trominoes -- and the only clean
+        # window in the easy band is 72 cells, 1.5 to 1. (Centred off the
+        # grain it reaches 1.29, with teeth down both sides.)
+        ("tromino", "easy"),
+        # p3: no half turn, so no window of it is centrally symmetric and it
+        # keeps the whole-domain search about its three-fold centre: 1.24.
+        ("threescaletri", "easy"),
+    }
+
+    @pytest.mark.parametrize("mode", sorted(_ARCH_CONFIGS))
+    @pytest.mark.parametrize("difficulty", DIFFICULTIES)
+    def test_flat_board_is_square(self, mode, difficulty):
+        """A flat board reads as a square: no tile hangs on by a corner, and
+        the board is close to as tall as it is wide."""
+        from scripts.difficulty.metrics import aspect
+        from scripts.difficulty.resize import loose_tiles
+
+        board = build_board(mode, difficulty)
+        assert loose_tiles(board) == 0
+        if (mode, difficulty) not in self.SQUARE_EXEMPT:
+            assert aspect(board) <= self.MAX_FLAT_ASPECT
+
 
 def _corners(polygon, tol=1e-3):
     """The polygon's real corners: the vertices where it actually turns.

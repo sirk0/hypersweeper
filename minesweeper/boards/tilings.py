@@ -20,11 +20,15 @@ from minesweeper.boards.core import (
 # must read as a roughly *square* rectangle, never a round disc, and if
 # the tiling is symmetric the board should be too (matching edges, no lone
 # tiles poking out on one side). How to get there depends on the tiling:
-#   * Periodic tilings -- take a rectangular window of whole periods
-#     centred on a rotation centre of the tiling, so the window maps onto
-#     itself under the tiling's point group (mirror for the reflective
-#     tilings, pinwheel rotation for the chiral ones). archimedean_board
-#     does this from the _ArchTemplate domains; square/hex/triangle boards
+#   * Periodic tilings -- take a rectangular window centred on a half-turn
+#     centre of the tiling, so the window maps onto itself under the
+#     tiling's point group (mirror for the reflective tilings, pinwheel
+#     rotation for the chiral ones). archimedean_board does this from the
+#     _ArchTemplate domains; its extents need not be whole domains, and the
+#     size search cuts them midway between rows of centroids and picks the
+#     centre too, which is what lets a big, lopsided domain still give a
+#     square 81-cell board (see "How square" in docs/agents/difficulty.md);
+#     square/hex/triangle boards
 #     are naturally rectangular, and the named shaped boards
 #     (triangle, hexhex, hextri, hextriangle, squarediamond) are polygons of
 #     their own tiling's symmetry, exactly filled. Where the tiling has a
@@ -2255,7 +2259,8 @@ def _snap_to_grain(half: float, period: float) -> float:
 
 
 def archimedean_board(
-    tiling: str, nx: int, ny: int, mine_count: int, scale: float = 40
+    tiling: str, nx: float, ny: float, mine_count: int, scale: float = 40,
+    centre: tuple[float, float] | None = None,
 ) -> Board:
     """A flat, roughly ``nx`` by ``ny`` domain rectangle of an
     Archimedean tiling, built from the tiling's periodic domain (the same
@@ -2269,7 +2274,19 @@ def archimedean_board(
     point group: a plain left-right / top-bottom mirror for the reflective
     tilings (that same centre lies on their mirror axes), and the natural
     pinwheel rotation for the chiral snub tilings. That is what keeps the
-    edges clean and balanced instead of leaving stray tiles on one side."""
+    edges clean and balanced instead of leaving stray tiles on one side.
+
+    ``nx`` and ``ny`` need not be whole: the window is any rectangle about that
+    centre, and the size search (``scripts/difficulty/resize.py``) picks
+    extents that fall midway between two rows of centroids, so no tile sits on
+    the edge. A domain is often far from square and a dozen or two tiles big,
+    and a whole number of them has no square window near 81 cells at all.
+
+    ``centre`` overrides the template's own centre with another half-turn
+    centre of the tiling, in domain coordinates -- a three-brick basket
+    weave's block centre rather than the corner where four blocks meet, say,
+    which is what an odd number of blocks across has to be centred on. Any
+    copy of it nearest the middle is used, as for the template's own."""
     template = _arch_template(tiling)
     width_units, height_units = template.width, template.height
 
@@ -2279,11 +2296,14 @@ def archimedean_board(
         return (m * width_units + vx, n * height_units + vy)
 
     # grow two extra domains all round so the centred window is fully
-    # populated, including the outer tiles' shared neighbours
+    # populated, including the outer tiles' shared neighbours -- as many
+    # copies as `m < nx + 2` counts, so a fractional extent grows the same
+    # patch here as in the TypeScript builder
+    span_x, span_y = math.ceil(nx + 2), math.ceil(ny + 2)
     grown = {
         (m, n, name): [(m + dm, n + dn, tag) for tag, dm, dn in refs]
-        for m in range(nx + 2)
-        for n in range(ny + 2)
+        for m in range(span_x)
+        for n in range(span_y)
         for name, refs in template.cells
     }
     centroid = {
@@ -2293,13 +2313,15 @@ def archimedean_board(
         for cell, keys in grown.items()
     }
     mid_x, mid_y = (nx + 2) * width_units / 2, (ny + 2) * height_units / 2
-    if template.centre is not None:
+    if centre is None:
+        centre = template.centre
+    if centre is not None:
         # centre on the copy of the template's declared rotation centre
         # nearest the middle (Laves tilings whose centre is a vertex)
-        ccx, ccy = template.centre
+        ccx, ccy = centre
         cx, cy = min(
             ((ccx + m * width_units, ccy + n * height_units)
-             for m in range(nx + 2) for n in range(ny + 2)),
+             for m in range(span_x) for n in range(span_y)),
             key=lambda c: (c[0] - mid_x) ** 2 + (c[1] - mid_y) ** 2,
         )
     else:

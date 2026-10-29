@@ -48,8 +48,10 @@ const SOLID_MARGIN = 1.03;
 // nearly edge-on, and bounds how much the framing can change as it turns.
 const MAX_SOLID_ZOOM = 2;
 /** Width/height beyond which a flat board is turned a quarter-turn on a
- * portrait viewport (the classic 30×16 hard board, aspect 1.875, would
- * otherwise shrink to a sliver). Mirrors GameScreen.ROTATE_ASPECT. */
+ * portrait viewport (a landscape board -- the classic 30×16 expert grid,
+ * aspect 1.875 -- would otherwise shrink to a sliver). The shipped flat boards
+ * are all built square now, so none crosses it; the rule stays for any board
+ * that does. Mirrors GameScreen.ROTATE_ASPECT. */
 const ROTATE_ASPECT = 1.2;
 /** The hex-shaped/hex-tiling flat boards, always turned on a portrait
  * viewport regardless of aspect. hextri (triangular tiling, hexagonal

@@ -137,8 +137,15 @@ MAX_DENSITY = 0.45
 UNCALIBRATABLE_SHARE = 0.5
 FALLBACK_DENSITY = {"easy": 0.13, "medium": 0.16, "hard": 0.20}
 
-# The classic board is the yardstick, so it keeps the classic mine counts.
-PINNED_MINES = {"square": {"easy": 10, "medium": 40, "hard": 99}}
+# The classic boards are the yardstick: Windows Minesweeper's beginner,
+# intermediate and expert, as (rows, cols, mines). Built here rather than read
+# off the `square` presets, because the shipped hard board is no longer the
+# classic one -- flat boards are square, so `square` hard is 22x22 and is
+# calibrated against the 30x16 expert board like every other row.
+CLASSIC = {"easy": (9, 9, 10), "medium": (16, 16, 40), "hard": (16, 30, 99)}
+
+# ...and the two shipped boards that *are* the classic ones keep its counts.
+PINNED_MINES = {"square": {"easy": 10, "medium": 40}}
 
 
 def _seed(mode: str, difficulty: str) -> int:
@@ -153,7 +160,7 @@ def targets(jobs: int = 1) -> dict[str, float]:
     """Measure the classic board -- the yardstick everything else matches."""
     out = {}
     for difficulty in DIFFICULTIES:
-        board = P.build_board("square", difficulty)
+        board = P._JSON_BUILDERS["square_board"](*CLASSIC[difficulty])
         rate, abandoned, _played = win_rate(
             to_neighbor_lists(board.adjacency),
             board.mine_count,
@@ -211,7 +218,7 @@ def calibrate_row(args: tuple) -> dict:
         "target": round(target, 4),
     }
 
-    if mode in PINNED_MINES:
+    if difficulty in PINNED_MINES.get(mode, {}):
         # The classic board defines the target; calibrating it against itself
         # would only let sampling noise walk it off 10/40/99.
         mines = PINNED_MINES[mode][difficulty]

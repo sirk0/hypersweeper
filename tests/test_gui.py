@@ -236,15 +236,29 @@ class TestFlagMode:
         assert screen.game.cell_state(cell) is CellState.FLAGGED
 
 
+@pytest.fixture
+def landscape(monkeypatch):
+    """The classic 30x16 expert board, in place of the `square` hard preset.
+
+    No shipped flat board is landscape any more -- they are all built square,
+    `square` hard included (22x22) -- but a board of any shape can still reach
+    the screen, and the wide-board layout is what these tests are about.
+    """
+    from minesweeper.boards import square_board
+
+    monkeypatch.setattr(gui_mod, "build_board",
+                        lambda *_args: square_board(16, 30, 99))
+
+
 class TestPhoneLayout:
     """Web header growth on wide boards and the portrait quarter-turn."""
 
-    def test_desktop_header_clamps_at_full_size_on_wide_boards(self):
+    def test_desktop_header_clamps_at_full_size_on_wide_boards(self, landscape):
         screen = GameScreen("square", "hard")  # 30x16, wider than HEADER_REF_W
         assert screen._header_scale == 1.0
         assert screen._header_height == gui_mod.HEADER
 
-    def test_web_header_grows_with_wide_boards(self, monkeypatch):
+    def test_web_header_grows_with_wide_boards(self, monkeypatch, landscape):
         monkeypatch.setattr(gui_mod, "IS_WEB", True)
         screen = GameScreen("square", "hard")
         # header canvas size grows by width / HEADER_REF_W, cancelling the
@@ -268,7 +282,7 @@ class TestPhoneLayout:
         assert screen._header_scale < 1.0
         assert screen._header_height == gui_mod.HEADER
 
-    def test_portrait_turns_landscape_board_sideways(self):
+    def test_portrait_turns_landscape_board_sideways(self, landscape):
         screen = GameScreen("square", "hard")
         w, h = screen.natural_size
         assert w > h

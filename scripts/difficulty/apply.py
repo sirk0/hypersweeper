@@ -29,7 +29,7 @@ ROOT = HERE.parent.parent
 PRESETS_PY = ROOT / "minesweeper" / "boards" / "presets.py"
 PRESETS_JSON = ROOT / "data" / "presets.json"
 
-# ARCH_PRESETS rows are (after the tiling key) flat: (nx, ny, mines, scale);
+# ARCH_PRESETS rows are (after the tiling key) flat: (nx, ny, mines, scale[, centre]);
 # torus: (nx, ny, mines, tube_radius); cylinder: (ring, rows, mines[, cut]);
 # mobius/klein: (ring, rows, mines[, tube_scale]).
 SURFACES = ("flat", "torus", "cylinder", "mobius", "klein")
@@ -81,6 +81,9 @@ def _format(value, original: str) -> str:
     original = original.strip()
     if isinstance(value, bool) or value is None:
         return repr(value)
+    if isinstance(value, (list, tuple)):
+        # a flat window's centre, a point in domain coordinates
+        return "(" + ", ".join(repr(round(float(v), 6)) for v in value) + ")"
     was = _value_of(original)
     if was is not None and isinstance(value, (int, float)):
         if abs(float(was) - float(value)) < 1e-6:

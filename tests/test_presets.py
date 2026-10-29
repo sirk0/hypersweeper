@@ -298,13 +298,24 @@ class TestBoardSizes:
         assert {m for m, _ in EXEMPT_ROWS} <= modes, "unknown row exempted"
 
     def test_the_classic_board_is_the_classic_board(self):
-        """Everything else is calibrated against it, so it does not drift."""
+        """Everything else is calibrated against it, so it does not drift.
+
+        Easy and medium ship as the classic boards themselves. Hard does not:
+        flat boards are square, so `square` hard is 22x22 -- but the yardstick
+        it and every other hard row is calibrated against is still the classic
+        30x16 with 99 mines, built by `calibrate.CLASSIC` rather than read off
+        the preset.
+        """
+        from scripts.difficulty.calibrate import CLASSIC
+
         square = _conformance()["square"]
         assert (square["easy"]["cellCount"], square["easy"]["mineCount"]) == (81, 10)
         assert (square["medium"]["cellCount"], square["medium"]["mineCount"]) == (
             256, 40,
         )
-        assert (square["hard"]["cellCount"], square["hard"]["mineCount"]) == (480, 99)
+        assert square["hard"]["cellCount"] == 22 * 22
+        assert CLASSIC == {"easy": (9, 9, 10), "medium": (16, 16, 40),
+                           "hard": (16, 30, 99)}
 
     @pytest.mark.parametrize("difficulty", DIFFICULTIES)
     def test_difficulty_is_not_decided_by_a_single_density(self, difficulty):
