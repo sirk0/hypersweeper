@@ -204,7 +204,7 @@ export class CellAnimations {
    * middle is quick.
    *
    * This is *progress*, not a scale: how big the flag starts is a question
-   * about the board (a 30x16 grid of small cells and a four-cell tetrahedron
+   * about the board (a 22x22 grid of small cells and a four-cell tetrahedron
    * want very different multiples of a cell), so the mesh owns that end of the
    * interpolation and this class owns only the clock. */
   dropProgress(now: number): number | null {
@@ -258,7 +258,7 @@ export class CellAnimations {
  * dimension, and the bounds that keep it sane at either extreme of cell size:
  * at least this many times the settled glyph, or a four-cell tetrahedron —
  * where a third of the board is barely more than one glyph — would read as no
- * drop at all; at most this many, or a 30x16 grid of small cells would drop a
+ * drop at all; at most this many, or a 22x22 grid of small cells would drop a
  * flag taller than the screen. */
 const DROP_START_FRAC = 0.32;
 const DROP_MIN_SCALE = 4;

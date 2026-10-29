@@ -11,6 +11,7 @@ import {
   type SymmetryId,
 } from "../../src/boards/core";
 import { buildBoard, MODES } from "../../src/boards/presets";
+import { squareBoard } from "../../src/boards/tilings";
 import { screens } from "../../src/config/screens";
 import { symmetryMoves } from "../../src/session";
 import { boardConditions, ICONS, slotKept, slotVisible } from "../../src/ui/hud";
@@ -277,7 +278,7 @@ describe("board symmetries", () => {
       ["truncicosidodecasplit", "easy", 120],
       ["snubdodecsplit", "easy", 60], // I: chiral
       ["square", "easy", 8], // D4 — the classic 9x9 grid
-      ["square", "hard", 4], // 30x16 is a rectangle: a half turn and a mirror
+      ["square", "hard", 8], // 22x22: flat boards are square, hard as well
       ["hexhex", "easy", 12], // D6
       ["squarediamond", "easy", 8], // D4 — the turned grid on a square window
       ["gosper", "easy", 6], // C6: the flowsnake is chiral
@@ -412,9 +413,11 @@ describe("board symmetries", () => {
     }
   });
 
-  it("the classic square board turns a quarter and the wide one only a half", () => {
+  it("a square board turns a quarter and a wide one only a half", () => {
     // The board the player knows: 9x9 and 16x16 are square, so a quarter turn
-    // lands on the board itself; 30x16 is not, and only the half turn does.
+    // lands on the board itself; the classic expert 30x16 is not, and only the
+    // half turn does. No shipped board is that shape any more (hard is 22x22),
+    // so the rectangle is built directly.
     const quarter = buildBoard("square", "easy").symmetries.find((s) => s.id === "turn")!;
     expect(quarter).toBeDefined();
     expect(quarter.involution).toBe(false);
@@ -423,12 +426,13 @@ describe("board symmetries", () => {
     expect(quarter.cycle.get("0,0")).toBeDefined();
     expect(quarter.cycle.get(quarter.cycle.get("0,0")!)).not.toBe("0,0");
 
-    const half = buildBoard("square", "hard").symmetries.find((s) => s.id === "turn")!;
+    const wide = squareBoard(16, 30, 99);
+    const half = wide.symmetries.find((s) => s.id === "turn")!;
     expect(half).toBeDefined();
     expect(half.involution).toBe(true);
     // a rectangle has both mirrors, but the second is the first after the half
     // turn, so only one is offered
-    expect(buildBoard("square", "hard").symmetries.map((s) => s.id)).toEqual([
+    expect(wide.symmetries.map((s) => s.id)).toEqual([
       "turn",
       "mirror-ring",
     ]);

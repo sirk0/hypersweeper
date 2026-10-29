@@ -2407,10 +2407,12 @@ class BaseGameScreen:
 class GameScreen(BaseGameScreen):
     """Flat boards: static polygons straight from the board definition."""
 
-    # A clearly landscape board (the classic 30x16 "hard", aspect 1.875) on a
-    # portrait phone would shrink to a sliver of the screen; shown a
+    # A clearly landscape board (the classic 30x16 expert grid, aspect 1.875)
+    # on a portrait phone would shrink to a sliver of the screen; shown a
     # quarter-turn sideways it fills the width instead. Roughly square boards
-    # stay as designed -- turning them would look arbitrary for no gain.
+    # stay as designed -- turning them would look arbitrary for no gain. Every
+    # shipped flat board is built square now, `square` hard included (22x22),
+    # so none crosses the line; it stays for any board that does.
     ROTATE_ASPECT = 1.2  # width/height beyond which a portrait viewport rotates
 
     # The hexagon tiling's own flat boards (hex, hexhex, hextriangle) are

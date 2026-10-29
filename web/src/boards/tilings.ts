@@ -5,7 +5,6 @@ import {
   buildLattice,
   cid,
   finalizeFlat,
-  withoutNearTwins,
   type Board,
   type CellId,
   type Vertex,
@@ -2364,30 +2363,22 @@ export function pruneTo<P>(cells: Map<CellId, string[]>, positions: Map<string, 
   for (const k of [...positions.keys()]) if (!used.has(k)) positions.delete(k);
 }
 
-/** Round a window's half-extent to a whole number of grain lines.
- *
- * A window that ends between two of them ends inside a course of tiles, and the
- * centroid rule then keeps some of that course and drops the rest — the row of
- * half-kept tiles that leaves a board's edge looking chewed. Rounding to the
- * nearest line costs at most half a course of cells (the size search measures
- * what it actually gets) and buys a straight edge. Never rounds down to
- * nothing: one course is the smallest board there is. Must match
- * `_snap_to_grain` in `minesweeper/boards/tilings.py` exactly. */
-function snapToGrain(half: number, period: number): number {
-  if (!period) return half;
-  return Math.max(1, Math.floor(half / period + 0.5)) * period;
-}
-
 export function archimedeanBoard(
   tiling: string,
   nx: number,
   ny: number,
   mineCount: number,
   scale = 40,
+  centre: Vertex | null = null,
 ): Board {
   const t = archTemplate(tiling);
   const W = t.width;
   const H = t.height;
+  // `nx`/`ny` need not be whole (the size search cuts the window midway between
+  // two rows of centroids), and `centre` may name another half-turn centre of
+  // the tiling than the template's own -- see `archimedean_board` in
+  // `minesweeper/boards/tilings.py`.
+  const pivot = centre ?? t.centre;
   const position = (m: number, n: number, tag: string): Vertex => {
     const v = t.verts.get(tag)!;
     return [m * W + v[0], n * H + v[1]];
@@ -2433,8 +2424,8 @@ export function archimedeanBoard(
   let cx0 = 0;
   let cy0 = 0;
   let best = Infinity;
-  if (t.centre) {
-    const [ccx, ccy] = t.centre;
+  if (pivot) {
+    const [ccx, ccy] = pivot;
     for (let m = 0; m < nx + 2; m++) {
       for (let n = 0; n < ny + 2; n++) {
         const x = ccx + m * W;
@@ -2461,26 +2452,25 @@ export function archimedeanBoard(
     }
   }
 
-  const halfW = snapToGrain((nx * W) / 2, t.grain[0]);
-  const halfH = snapToGrain((ny * H) / 2, t.grain[1]);
-  // The window is closed at both ends, so a row of centroids landing exactly
-  // on it is kept on *both* sides and the patch stays symmetric about the
-  // centre. That makes the tolerance load-bearing rather than cosmetic: a
-  // template's `centre` is stored rounded to six decimals, so the window edge
-  // can miss a centroid by ~5e-7 -- far more than a 1e-9 slack -- and dropping
-  // the row at one edge while keeping the row at the other is exactly the
-  // half-column offset that leaves stray tiles down one side. Must match
-  // `archimedean_board` in `minesweeper/boards/tilings.py` exactly, or
-  // `conformance.test.ts` will see a different cell count.
+  // A tile is on the board when it *fits* in the window -- every corner
+  // inside -- not when its centre does, so each edge keeps every tile that
+  // lies inside it and none that overhang (and a grained tiling's edge lands
+  // on a grain line by itself). The box is closed and the slack absorbs a
+  // template `centre` stored to six decimals. Must match `archimedean_board`
+  // in `minesweeper/boards/tilings.py` exactly, or `conformance.test.ts` will
+  // see a different cell count.
+  const halfW = (nx * W) / 2;
+  const halfH = (ny * H) / 2;
   const slack = 1e-6 * Math.max(1, W, H);
   const cells = new Map<CellId, string[]>();
   const positions = new Map<string, Vertex>();
   const kept: [CellId, Grown][] = [];
   for (const [cell, g] of grown) {
-    if (
-      Math.abs(g.centroid[0] - cx0) <= halfW + slack &&
-      Math.abs(g.centroid[1] - cy0) <= halfH + slack
-    ) {
+    const fits = g.verts.every((v) => {
+      const [x, y] = position(v.m, v.n, v.tag);
+      return Math.abs(x - cx0) <= halfW + slack && Math.abs(y - cy0) <= halfH + slack;
+    });
+    if (fits) {
       const keys = g.verts.map((v) => {
         const ks = `${v.m},${v.n},${v.tag}`;
         if (!positions.has(ks)) positions.set(ks, position(v.m, v.n, v.tag));
@@ -2490,14 +2480,10 @@ export function archimedeanBoard(
       kept.push([cell, g]);
     }
   }
-  // a window's edge can leave a tile whose neighbours are all a neighbour's
-  // too, bar one: it is cut away rather than left to end games on a coin flip
-  const trimmed = withoutNearTwins(cells);
-  if (trimmed.size < cells.size) {
-    pruneTo(trimmed, positions);
-    kept.splice(0, kept.length, ...kept.filter(([cell]) => trimmed.has(cell)));
-  }
-  const board = finalizeFlat(tiling, trimmed, positions, mineCount, scale);
+  // Every tile that fits stays, a near-twin on the rim included: the flat
+  // board is a whole box of the tiling, calibrated as drawn. (The strips
+  // still peel theirs -- see `archimedean_board`.)
+  const board = finalizeFlat(tiling, cells, positions, mineCount, scale);
   if (!t.anchors) return board;
   // Match finalizeFlat's own shift-then-scale exactly, off the same
   // `positions` it read — an anchor is not one of the cell's vertices, so it

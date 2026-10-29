@@ -490,7 +490,7 @@ test.describe("the desktop menu breakpoint", () => {
   test("a board's card shows its level, and follows the difficulty", async ({ page }) => {
     // The card is the board it opens — every cell of the dealt level, one
     // path each — drawn in the background, and redrawn when the pills move:
-    // Squares is 9x9 on Easy and 16x30 on Hard (data/presets.json).
+    // Squares is 9x9 on Easy and 22x22 on Hard (data/presets.json).
     await page.goto("/");
     await expect(page.locator("body[data-ready]")).toBeVisible();
     await page.locator('.menu-sidebar .menu-entry[data-group="flat"]').click();
@@ -498,7 +498,7 @@ test.describe("the desktop menu breakpoint", () => {
     await page.locator('.difficulty-btn[data-key="easy"]').click();
     await expect(cells).toHaveCount(81);
     await page.locator('.difficulty-btn[data-key="hard"]').click();
-    await expect(cells).toHaveCount(480);
+    await expect(cells).toHaveCount(484);
     // A family's card is a level too: the board its icon is drawn from, the
     // Uniform family's rhombitrihexagonal, drawn whole rather than as the
     // tiling's wallpaper.

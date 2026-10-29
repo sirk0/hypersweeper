@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildBoard } from "../../src/boards/presets";
+import { squareBoard } from "../../src/boards/tilings";
 import { planeLie, symmetryIcon, symmetryPictures } from "../../src/ui/symmetryIcon";
 
 // What a symmetry control's icon says. The drawing itself is 26 pixels of
@@ -15,7 +16,7 @@ describe("what a control's icon is drawn from", () => {
     // The thing being asked of the icon: 90 and 60 are different pictures.
     const turns: [string, string, string, number][] = [
       ["square", "easy", "turn", 4], // the classic 9x9 grid: a quarter
-      ["square", "hard", "turn", 2], // 30x16 is a rectangle: only a half
+      ["square", "hard", "turn", 4], // 22x22: hard is square too
       ["hexhex", "easy", "turn", 6], // a hexagonal board: a sixth
       ["triangle", "easy", "turn", 3], // a triangular one: a third
       ["gosper", "easy", "turn", 6], // the flowsnake keeps the hexagon's six
@@ -67,11 +68,11 @@ describe("what a control's icon is drawn from", () => {
 
   it("the mirror line turns with a board the viewport turns", () => {
     // A landscape flat board is drawn a quarter round on a portrait viewport,
-    // and what was a vertical plane is then a horizontal one on screen.
-    expect(planeLie(pictures("square", "hard").get("mirror-ring")!.normal)).toBe("vertical");
-    expect(planeLie(pictures("square", "hard", true).get("mirror-ring")!.normal)).toBe(
-      "horizontal",
-    );
+    // and what was a vertical plane is then a horizontal one on screen. No
+    // shipped flat board is landscape any more, so the classic 30x16 is built.
+    const wide = (turned: boolean) => symmetryPictures(squareBoard(16, 30, 99), "square", turned);
+    expect(planeLie(wide(false).get("mirror-ring")!.normal)).toBe("vertical");
+    expect(planeLie(wide(true).get("mirror-ring")!.normal)).toBe("horizontal");
   });
 
   it("every board's controls have a picture, and only the steps go undrawn", () => {
