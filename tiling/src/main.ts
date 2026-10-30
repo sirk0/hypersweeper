@@ -11,7 +11,6 @@ const byId = <T extends HTMLElement>(id: string): T => document.getElementById(i
 const stage = byId("stage");
 const count = byId("count");
 const won = byId("won");
-const del = byId<HTMLButtonElement>("delete");
 const next = byId<HTMLButtonElement>("next");
 
 let puzzle: Puzzle;
@@ -27,11 +26,11 @@ function listLevels(): void {
 }
 
 function changed(): void {
-  del.disabled = board.selected === null;
-  count.textContent = `${puzzle.tiles.length} / ${puzzle.needed}`;
+  count.textContent = `${Math.floor(puzzle.coverage * 100)}% covered`;
   won.hidden = !puzzle.won;
   if (!puzzle.won) return;
-  byId("won-detail").textContent = `${puzzle.needed} tiles, no gaps, no overlaps.`;
+  control.setRemoving(false);
+  byId("won-detail").textContent = `${puzzle.tiles.length} tiles, no gaps, no overlaps.`;
   next.hidden = !nextLevel();
   if (!isSolved(puzzle.level.key)) {
     markSolved(puzzle.level.key);
@@ -55,13 +54,6 @@ function restart(): void {
   open(puzzle.level);
 }
 
-function deleteSelected(): void {
-  if (board.selected === null) return;
-  puzzle.lift(board.selected);
-  board.selected = null;
-  board.draw();
-  changed();
-}
 
 byId("restart").addEventListener("click", restart);
 byId("again").addEventListener("click", restart);
@@ -69,15 +61,10 @@ next.addEventListener("click", () => {
   const level = nextLevel();
   if (level) open(level);
 });
-del.addEventListener("click", deleteSelected);
 document.addEventListener("keydown", (ev) => {
-  if (ev.key === "Delete" || ev.key === "Backspace") deleteSelected();
+  if (ev.key === "x" || ev.key === "X") control.setRemoving(!board.removing);
+  else if (ev.key === "Escape") control.setRemoving(false);
   else if (ev.key === "r" || ev.key === "R") control.turn(-1);
-  else if (ev.key === "Escape" && board.selected !== null) {
-    board.selected = null;
-    board.draw();
-    changed();
-  }
 });
 new ResizeObserver(() => board.layout()).observe(stage);
 

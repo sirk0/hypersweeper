@@ -20,7 +20,9 @@
   --stick: #7b4fd0;
   --stick-ring: #fffdf8;
   --star: #d49a1f;
-  --selected-edge: #1d1c1a;
+  --fits: #2f9e5b;
+  --remove: #c9463d;
+  --remove-edge: #7a1f19;
   --tray: rgba(0, 0, 0, 0.05);
   --button: #fffdf8;
   --button-edge: #cfc7b6;
@@ -49,7 +51,9 @@
     --stick: #b394ff;
     --stick-ring: #1d1c1a;
     --star: #f2c14e;
-    --selected-edge: #ffffff;
+    --fits: #3fb96f;
+    --remove: #d0574d;
+    --remove-edge: #ffb3ab;
     --tray: rgba(255, 255, 255, 0.06);
     --button: #2a2926;
     --button-edge: #4a4740;
@@ -327,10 +331,47 @@ button {
   pointer-events: none;
 }
 
-.tile.selected {
-  filter: brightness(1.18);
-  stroke: var(--selected-edge);
-  stroke-width: 0.08;
+.removing .tile:not(.in-tray) {
+  cursor: pointer;
+}
+
+.removing .tile:not(.in-tray):hover {
+  fill: var(--remove);
+  stroke: var(--remove-edge);
+}
+
+.fits circle {
+  fill: var(--fits);
+  stroke: var(--stick-ring);
+  stroke-width: 0.04;
+}
+
+.fits polyline {
+  fill: none;
+  stroke: #ffffff;
+  stroke-width: 0.06;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.fits {
+  pointer-events: none;
+}
+
+.knob-x {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 0.06;
+  stroke-linecap: round;
+}
+
+.removing .knob-remove circle {
+  fill: var(--remove);
+  stroke: var(--remove-edge);
+}
+
+.removing .knob-remove .knob-x {
+  stroke: #ffffff;
 }
 
 button:disabled {

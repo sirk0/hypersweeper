@@ -1,5 +1,5 @@
 // The level list down the right-hand side: each level's name, a picture of its
-// tile (or of its vertex rule), and a star once it has been finished.
+// tile (or of its vertex configuration), and a star once it has been finished.
 
 import type { Cyc } from "../geometry/cyclotomic";
 import { centroid, posed, regular, type XY } from "../geometry/shape";
@@ -8,14 +8,14 @@ import type { Level } from "../levels";
 
 const NS = "http://www.w3.org/2000/svg";
 
-/** What a level's icon shows: its tile, or for a level with a vertex rule,
- * the rule itself — the tiles round one vertex (a rosette), so 3.6.3.6 reads
+/** What a level's icon shows: its tile, or for a uniform tiling its vertex
+ * configuration — the tiles round one vertex (a rosette), so 3.6.3.6 reads
  * as two triangles and two hexagons meeting at a point. */
 function iconTiles(level: Level): Cyc[][] {
-  const { ring, rule } = level;
-  if (!rule) return [level.tiles[0]!.verts];
+  const { ring, config } = level;
+  if (!config) return [level.tiles[0]!.verts];
   let at = 0;
-  return rule.map((sides) => {
+  return config.map((sides) => {
     const tile = posed(regular(ring, sides), { rot: at, flip: false, t: ring.zero });
     at += span(ring.n, sides);
     return tile;

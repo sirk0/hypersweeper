@@ -1,19 +1,33 @@
 # Tiling Simulator (`tiling/`)
 
 The second game in this repo. The player gets a bounded flat region and a tray
-of tiles and must cover the region exactly, dragging tiles in; a dropped tile
-sticks to a corner of what is still uncovered — never part-way along a
-straight edge — and a dot marks each of its corners that would meet the edge
-(the rim or a placed tile), wherever along it. A tile lands only
-as it is held: the rotate control beside the tray (or R) turns it clockwise by
-the level's step — 60° for triangles, drawn on the control as an axis, a fixed
-ray, the ray turned one step and the arrow between — before or during a drag, and appears only
-where a turn changes the tile (not for squares or hexagons). Tap a placed
-tile to select it; Delete (the button, or the key) removes it, and a lifted
-tile dropped where it cannot land goes back where it was. The ladder it is built for
-is every flat board Hypersweeper has: squares, triangles, hexagons, the uniform
-and 2-uniform tilings, then spirals and aperiodic ones, with vertex rules
-("every point is 3.3.4.3.4") on the later levels.
+of tiles and must cover the region exactly, dragging tiles in. **Any exact
+cover wins** — the board a level was cut from is one way to finish it, not the
+only one (six triangles where a hexagon was are fine) — so a player can also
+lay tiles into a corner the board cannot be finished from, and has to take
+some back off.
+
+- A dropped tile sticks to a corner of what is still uncovered — never
+  part-way along a straight edge. While it would stick, a ✓ shows where it
+  will land and a dot marks each of its corners that meets the edge (the rim
+  or a placed tile), wherever along it.
+- A tile lands only as it is held, and there is **one** rotate control, at
+  the end of the tray (or R): it turns *every* tray tile, and the one in hand,
+  clockwise by the level's step — the largest that reaches every way any kind
+  sits: 60° for triangles, 30° on 3.4.6.4, where the squares need it, so its
+  triangles and hexagons pass through turns they fit nowhere at. Turning one
+  kind into place can turn another out of it. The control draws its step as an
+  axis, a fixed ray, the ray turned one step and the arrow between, and is left
+  out where nothing ever needs turning.
+- ✕ remove, the control beside rotate (or X), is a mode: while it is on,
+  tapping a placed tile takes it off the board; Escape, the control again, or
+  picking up a tray tile ends it. A lifted tile dropped where it cannot land
+  goes back where it was.
+
+The ladder it is built for is every flat board Hypersweeper has: squares,
+triangles, hexagons, the uniform and 2-uniform tilings, then spirals and
+aperiodic ones. A level can also hold every vertex to a configuration
+(`Level.rule`, "every point is 3.3.4.3.4") — built and tested, unused so far.
 
 **Status: five levels, local only** — Squares (4×4), Triangles (4 rows of
 6), Hexagons (5 rows of 4), and two uniform tilings, Trihexagonal 3.6.3.6 (two
@@ -62,11 +76,15 @@ finishes the board — the quick way to see the win state.
   identity taken from the template's own references and each unit edge's
   direction read off its float vector. How the uniform levels get their cells.
 - `src/geometry/vertexRule.ts` — the vertex rule: whether the corners round a
-  point can still be completed to the tiling's vertex configuration.
+  point can still be completed to a vertex configuration. Applied only where a
+  level sets `rule`.
 - `src/levels.ts` — the levels. `makeLevel` reads everything off a level's
   cells: the tray (one regular polygon per side count), each kind's rotate
-  step and starting turn (`turns`, `starts`), the tile count, the region;
-  `uniformLevel` adds the template window and the rule (`rule`, `window`). Each
+  step and starting turn (`turns`, `starts`), the region, and keeps the cells
+  themselves as one known solution; `turn` is the one rotate step for them all
+  (the gcd of the kinds' steps); `uniformLevel` adds the template window and
+  the tiling's vertex configuration (`window`, `config` — the icon's, not
+  enforced). Each
   level's cells are built on the same lattice as the Hypersweeper builder it
   mirrors (`squareBoard`, `triangleGridBoard`, `hexBoard` — Hypersweeper's
   default flat board for each tiling), and its region is their outline.
@@ -76,12 +94,13 @@ finishes the board — the quick way to see the win state.
   orientation only — `selfTurns` in `shape.ts` says which turns leave a tile
   unchanged — and, on a level with a rule, only edge to edge and where every
   vertex touched can still become the configuration: `allows`), `canTurn`,
-  `won`, `needed`, and `solve`, a backtracking fill for the tests and the dev
-  seam.
+  `won`, `coverage` (a share of the area, not a tile count — the count
+  depends on how the board is finished), and `solve`, a budgeted backtracking
+  fill, biggest tiles first, for the tests and the dev seam.
 - `src/view/svgBoard.ts` — the SVG drawing (board units, y up, one flip).
 - `src/view/levelList.ts` — the level list on the right: name, tile, ★ when
   finished.
-- `src/input/drag.ts` — pointer drag and drop, and tap to select.
+- `src/input/drag.ts` — pointer drag and drop, and the ✕ remove mode.
 
 `@boards/*` is `../web/src/boards/*` and `@data/*` is `../data/*`, set in
 `vite.config.ts` (and through it `vitest.config.ts`) and `tsconfig.json`.

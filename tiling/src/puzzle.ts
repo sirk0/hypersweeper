@@ -3,7 +3,7 @@
 
 import type { Cyc } from "./geometry/cyclotomic";
 import { Frontier } from "./geometry/frontier";
-import { posed, selfTurns, type Shape, type XY } from "./geometry/shape";
+import { posed, selfTurns, signedArea, type Shape, type XY } from "./geometry/shape";
 import { cornersOf, fitsConfig, type Corner } from "./geometry/vertexRule";
 import type { Level } from "./levels";
 
@@ -53,9 +53,14 @@ export class Puzzle {
     return this.frontier.touching(verts);
   }
 
-  /** How many tiles fill the region. */
-  get needed(): number {
-    return this.level.count;
+  /** How much of the region is covered, 0 to 1. Not a tile count: the
+   * region can be finished more than one way, with more or fewer tiles. */
+  get coverage(): number {
+    const { ring } = this.level;
+    const area = (verts: Cyc[]): number => signedArea(verts.map((v) => ring.toXY(v)));
+    const region = this.level.region.reduce((sum, loop) => sum + area(loop), 0);
+    const covered = this.tiles.reduce((sum, t) => sum + area(t.verts), 0);
+    return this.won ? 1 : Math.min(covered / region, 0.999);
   }
 
   /** A kind's shape turned by ζ^rot. */
@@ -64,13 +69,13 @@ export class Puzzle {
     return { ring: shape.ring, verts: posed(shape, { rot, flip: false, t: shape.ring.zero }) };
   }
 
-  /** Whether turning a kind ever matters on this board — not for squares among
-   * squares, nor hexagons among hexagons. */
-  canTurn(kind: number): boolean {
-    return this.level.turns[kind]! > 0;
+  /** Whether the level has a rotate control at all — not where every tile of
+   * every kind sits one way (squares among squares, hexagons among hexagons). */
+  canTurn(): boolean {
+    return this.level.turn > 0;
   }
 
-  /** Every way the rotate control can hold a kind. */
+  /** Every way the board turns a kind — the turns worth trying for it. */
   orientations(kind: number): number[] {
     const step = this.level.turns[kind]!;
     const start = this.level.starts[kind]!;
@@ -138,20 +143,27 @@ export class Puzzle {
   }
 
   /** Fill what is left — a test and dev aid: at the first open corner, try
-   * every kind at every turn the rule allows, backtracking out of dead ends.
-   * False if the board cannot be finished from here. */
-  solve(): boolean {
+   * every kind at every turn that lands, biggest tiles first, backtracking out
+   * of dead ends. False if the board cannot be finished from here, or not
+   * within `budget` placements. */
+  solve(budget = 20000): boolean {
+    const left = { budget };
+    return this.search(left);
+  }
+
+  private search(left: { budget: number }): boolean {
     if (this.won) return true;
+    if (left.budget-- <= 0) return false;
     const { ring, mirror } = this.level;
     const corner = ring.toXY(this.openCorners.values().next().value!);
-    for (let kind = 0; kind < this.level.tiles.length; kind++) {
+    for (let kind = this.level.tiles.length - 1; kind >= 0; kind--) {
       for (const rot of this.orientations(kind)) {
         const spots = this.frontier.placements(this.shapeAt(kind, rot), corner, 1e-6, mirror, this.same[kind], (v) =>
           this.allows(v),
         );
         for (const spot of spots) {
           const tile = this.place(kind, spot, rot);
-          if (this.solve()) return true;
+          if (this.search(left)) return true;
           this.lift(tile.id);
         }
       }

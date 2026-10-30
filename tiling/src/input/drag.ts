@@ -1,14 +1,20 @@
-// Drag and drop, and tap to select. Press a tray tile to take a fresh one, or
-// a placed tile to lift it; it follows the pointer, and wherever it would snap
-// a dot marks each of its corners that would meet the edge. Releasing there places the tile;
-// releasing anywhere else drops a fresh tile and puts a lifted one back where
-// it was — removing a tile is the Delete button's job, never a stray drop.
-// A placed tile pressed and released without moving is selected instead (a
-// second tap deselects it), which is what Delete acts on.
+// Drag and drop, and the remove mode. Press a tray tile to take a fresh one,
+// or a placed tile to lift it; it follows the pointer, and wherever it would
+// snap a ✓ says it fits and a dot marks each of its corners that would meet
+// the edge. Releasing there places the tile; releasing anywhere else drops a
+// fresh tile and puts a lifted one back where it was — a stray drop never
+// loses a tile.
 //
-// A tile lands only as it is held: turn it with the rotate control by the
-// tray (or R), before or while dragging — a second finger can tap the control
-// mid-drag.
+// Removing is a mode: with ✕ on (the control beside the tray, or X), pressing a placed
+// tile takes it off the board, as many as you like, until ✕ is turned off or a
+// tray tile is picked up. Any exact cover wins, so a board can be finished more
+// than one way — and laid into a corner it cannot be finished from, which is
+// what taking tiles back off is for.
+//
+// A tile lands only as it is held. The one rotate control (or R) turns every
+// tray tile at once, and the tile in hand, before or while dragging — a second
+// finger can tap it mid-drag; on a level with several kinds, turning one into
+// place can turn another out of it.
 
 import type { Cyc } from "../geometry/cyclotomic";
 import { centroid, signedArea, type XY } from "../geometry/shape";
@@ -17,8 +23,6 @@ import type { SvgBoard } from "../view/svgBoard";
 
 /** How far from the pointer a placement may snap, in tile sizes. */
 const REACH = 0.7;
-/** How far a press may wander, in CSS pixels, and still count as a tap. */
-const TAP_SLOP = 6;
 
 interface Drag {
   pointer: number;
@@ -32,15 +36,14 @@ interface Drag {
   ghost: Cyc[] | null;
   /** The placed tile this drag lifted, to put back if it lands nowhere. */
   origin: Placed | null;
-  wasSelected: boolean;
-  start: XY;
-  moved: boolean;
 }
 
 export interface DragControl {
-  /** Turn the held tile — or, with none held, the tray's — one step
-   * counter-clockwise (1) or clockwise (-1). */
+  /** Turn every tray tile, and the one in hand, one step counter-clockwise
+   * (1) or clockwise (-1). */
   turn(dir: 1 | -1): void;
+  /** Switch the remove mode on or off. */
+  setRemoving(on: boolean): void;
 }
 
 export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void): DragControl {
@@ -60,24 +63,29 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
     changed();
   };
 
+  const setRemoving = (on: boolean): void => {
+    board.removing = on;
+  };
+
   const update = (): void => {
     frame = 0;
     if (!drag) return;
     drag.ghost = puzzle.snap(drag.kind, drag.at, reachFor(drag.kind), drag.rot);
+    const ghost = drag.ghost?.map((v) => ring.toXY(v)) ?? null;
     const stick = drag.ghost ? puzzle.touching(drag.ghost).map((v) => ring.toXY(v)) : [];
-    board.drawDrag(drag.kind, drag.outline, drag.at, stick);
+    board.drawDrag(drag.kind, drag.outline, drag.at, ghost && centroid(ghost), stick);
   };
 
-  const turn = (dir: 1 | -1, kind = drag?.kind ?? 0): void => {
-    if (!puzzle.canTurn(kind)) return;
-    const step = dir * puzzle.level.turns[kind]!;
-    if (drag && drag.kind === kind) {
+  // One turn for everything: every tray tile, and the one in hand.
+  const turn = (dir: 1 | -1): void => {
+    if (!puzzle.canTurn()) return;
+    const step = dir * puzzle.level.turn;
+    board.turn = mod(board.turn + step);
+    board.draw();
+    if (drag) {
       drag.rot = mod(drag.rot + step);
-      drag.outline = board.outline(kind, drag.rot);
+      drag.outline = board.outline(drag.kind, drag.rot);
       update();
-    } else {
-      board.turns[kind] = mod(board.turns[kind]! + step);
-      board.draw();
     }
   };
 
@@ -85,9 +93,14 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
     const target = ev.target as Element;
     const knob = target.closest("[data-turn]");
     if (knob) {
-      // Before the drag check: a second finger may turn the tile mid-drag.
+      // Before the drag check: a second finger may turn the tiles mid-drag.
       ev.preventDefault();
-      turn(Number(knob.getAttribute("data-turn")) as 1 | -1, Number(knob.getAttribute("data-kind")));
+      turn(Number(knob.getAttribute("data-turn")) as 1 | -1);
+      return;
+    }
+    if (target.closest("[data-remove]")) {
+      ev.preventDefault();
+      setRemoving(!board.removing);
       return;
     }
     if (drag || ev.button > 0) return;
@@ -97,30 +110,30 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
     let outline: XY[];
     let c: XY;
     let origin: Placed | null = null;
-    let wasSelected = false;
     const tray = target.closest("[data-tray]");
     const placed = target.closest("[data-tile]");
+    if (placed && board.removing) {
+      ev.preventDefault();
+      puzzle.lift(Number(placed.getAttribute("data-tile")));
+      settle();
+      return;
+    }
     if (tray) {
+      // Picking up a new tile is the end of removing.
+      setRemoving(false);
       kind = Number(tray.getAttribute("data-tray"));
-      rot = board.turns[kind]!;
+      rot = board.held(kind);
       outline = board.outline(kind, rot);
       c = board.trayAt[kind]!;
-      board.selected = null;
     } else if (placed) {
-      const id = Number(placed.getAttribute("data-tile"));
-      origin = puzzle.lift(id) ?? null;
+      origin = puzzle.lift(Number(placed.getAttribute("data-tile"))) ?? null;
       if (!origin) return;
-      wasSelected = board.selected === id;
       kind = origin.kind;
       rot = origin.rot;
       const xy = origin.verts.map((v) => ring.toXY(v));
       c = centroid(xy);
       outline = xy.map(([x, y]): XY => [x - c[0], y - c[1]]);
     } else {
-      if (board.selected !== null) {
-        board.selected = null;
-        settle();
-      }
       return;
     }
     ev.preventDefault();
@@ -131,26 +144,13 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
     } catch {
       // carry on uncaptured
     }
-    drag = {
-      pointer: ev.pointerId,
-      kind,
-      rot,
-      outline,
-      offset: [c[0] - p[0], c[1] - p[1]],
-      at: c,
-      ghost: null,
-      origin,
-      wasSelected,
-      start: [ev.clientX, ev.clientY],
-      moved: false,
-    };
+    drag = { pointer: ev.pointerId, kind, rot, outline, offset: [c[0] - p[0], c[1] - p[1]], at: c, ghost: null, origin };
     settle();
     update();
   });
 
   svg.addEventListener("pointermove", (ev) => {
     if (!drag || ev.pointerId !== drag.pointer) return;
-    if (Math.hypot(ev.clientX - drag.start[0], ev.clientY - drag.start[1]) > TAP_SLOP) drag.moved = true;
     const p = board.toBoard(ev.clientX, ev.clientY);
     drag.at = [p[0] + drag.offset[0], p[1] + drag.offset[1]];
     if (!frame) frame = requestAnimationFrame(update);
@@ -163,13 +163,6 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
     const d = drag;
     drag = null;
     board.clearDrag();
-    if (d.origin && !d.moved) {
-      // A tap: the tile goes straight back, and its selection toggles.
-      const back = puzzle.place(d.origin.kind, d.origin.verts, d.origin.rot);
-      board.selected = d.wasSelected ? null : back.id;
-      settle();
-      return;
-    }
     let ghost: Cyc[] | null = null;
     if (drop) {
       // Judge the snap at the release point itself, not the last frame's.
@@ -178,16 +171,12 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
     }
     if (ghost) {
       puzzle.place(d.kind, ghost, d.rot);
-      board.selected = null;
-      // The tray keeps the turn just used, so the next tile comes the same way.
-      board.turns[d.kind] = d.rot;
     } else if (d.origin) {
-      const back = puzzle.place(d.origin.kind, d.origin.verts, d.origin.rot);
-      if (d.wasSelected) board.selected = back.id;
+      puzzle.place(d.origin.kind, d.origin.verts, d.origin.rot);
     }
     settle();
   };
   svg.addEventListener("pointerup", (ev) => finish(ev, true));
   svg.addEventListener("pointercancel", (ev) => finish(ev, false));
-  return { turn };
+  return { turn, setRemoving };
 }

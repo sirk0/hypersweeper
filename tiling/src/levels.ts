@@ -24,17 +24,29 @@ export interface Level {
   tiles: Shape[];
   /** Tiles may be mirrored as well as turned. */
   mirror: boolean;
-  /** Per kind, what one press of the rotate control turns it by, as a power of
-   * ζ — 60° for a triangle among triangles, 30° for the squares of 3.4.6.4 —
-   * or 0 where every tile of that kind sits the same way (squares among
-   * squares) and the control is left out. A tile lands only as it is held. */
+  /** Per kind, the step between the ways the board turns it, as a power of ζ
+   * — 60° for a triangle among triangles, 30° for the squares of 3.4.6.4 — or
+   * 0 where every tile of that kind sits the same way. */
   turns: number[];
+  /** What one press of the rotate control turns *every* tray tile by: the
+   * largest step that reaches every way any kind is turned (30° on 3.4.6.4, so
+   * its triangles and hexagons pass through turns they never fit at), or 0
+   * where nothing ever needs turning and the control is left out. A tile lands
+   * only as it is held. */
+  turn: number;
   /** Per kind, the turn the tray holds it at to begin with. */
   starts: number[];
-  /** How many tiles the board takes. */
-  count: number;
-  /** The vertex configuration every vertex must keep (3.6.3.6 as [3, 6, 3, 6]),
-   * or unset for a level with none — a lattice, where nothing else fits. */
+  /** The board the level was cut from, tile by tile: one way to finish it,
+   * not the only one — any exact cover wins (six triangles where a hexagon
+   * was are fine), so a player can wander off it, and may have to take tiles
+   * back off to finish. */
+  cells: Cyc[][];
+  /** The tiling's vertex configuration (3.6.3.6 as [3, 6, 3, 6]), for its
+   * name and its icon. Not enforced. */
+  config?: number[];
+  /** A vertex configuration every vertex *must* keep, for a level whose
+   * puzzle is that rule — a tile then lands only where every point it touches
+   * can still become it. Unset on every level so far. */
   rule?: number[];
   /** For a level on a Hypersweeper tiling window, which: the tiling and the
    * window `archimedeanBoard(tiling, nx, ny)` takes. */
@@ -46,13 +58,13 @@ function gcd(a: number, b: number): number {
 }
 
 /**
- * A level from the exact cells of its board. The tray, the turns and the count
+ * A level from the exact cells of its board. The tray, the turns and the region
  * are all read off the cells, so nothing about a level is stated twice: each
  * distinct side count is a tile kind; how a cell of that kind is turned from
  * the tray's regular polygon is measured exactly; and the rotate step is the
  * largest that still reaches every way the board turns that kind.
  */
-function makeLevel(key: string, label: string, ring: Ring, cells: Cyc[][], rule?: number[]): Level {
+function makeLevel(key: string, label: string, ring: Ring, cells: Cyc[][]): Level {
   const sides = [...new Set(cells.map((c) => c.length))].sort((a, b) => a - b);
   const tiles = sides.map((m) => regular(ring, m));
   const turns: number[] = [];
@@ -72,20 +84,19 @@ function makeLevel(key: string, label: string, ring: Ring, cells: Cyc[][], rule?
     turns.push(step === period ? 0 : step);
     starts.push(start);
   });
-  const level: Level = { key, label, ring, region: outline(ring, cells), tiles, mirror: false, turns, starts, count: cells.length };
-  if (rule) level.rule = rule;
-  return level;
+  const turn = turns.reduce((g, k) => gcd(g, k), 0);
+  return { key, label, ring, region: outline(ring, cells), tiles, mirror: false, turns, turn, starts, cells };
 }
 
 /** A level on a window of one of Hypersweeper's uniform tilings, `box` edges
  * square — the window `archimedeanBoard(tiling, box / width, box / height)`
- * keeps — with the tiling's vertex configuration as its rule. */
-function uniformLevel(key: string, label: string, tiling: string, box: number, rule: number[]): Level {
+ * keeps — named by the tiling's vertex configuration. */
+function uniformLevel(key: string, label: string, tiling: string, box: number, config: number[]): Level {
   const t = archTemplate(tiling);
   const nx = box / t.width;
   const ny = box / t.height;
   const { ring, cells } = templateWindow(tiling, nx, ny);
-  return { ...makeLevel(key, label, ring, cells, rule), window: { tiling, nx, ny } };
+  return { ...makeLevel(key, label, ring, cells), config, window: { tiling, nx, ny } };
 }
 
 const Z4 = cyclotomic(4);
