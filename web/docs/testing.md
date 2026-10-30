@@ -57,7 +57,7 @@ in step with the image when bumping Playwright: a caret range silently floats to
 a newer build than the image ships, and e2e then fails with "Executable doesn't
 exist". As a fallback for a mismatched image, point Playwright at whatever build
 is present with
-`PLAYWRIGHT_CHROMIUM_EXECUTABLE=/opt/pw-browsers/chromium-<build>/chrome-linux/chrome npm run e2e`
+`PLAYWRIGHT_CHROMIUM_EXECUTABLE=/opt/pw-browsers/chromium-<build>/chrome-linux64/chrome npm run e2e`
 (the config honours it). CI installs the pinned build itself, so it is
 self-consistent regardless of the image. `.claude/hooks/session-start.sh` warns
 at session start if the image and the pin have drifted apart, naming both.

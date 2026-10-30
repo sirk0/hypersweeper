@@ -16,7 +16,7 @@
 # Mac the native resolution is arm64, whose Chromium is a different build with a
 # different SwiftShader, and the baselines are not its. Docker Desktop runs this
 # through Rosetta.
-FROM --platform=linux/amd64 mcr.microsoft.com/playwright:v1.56.1-noble
+FROM --platform=linux/amd64 mcr.microsoft.com/playwright:v1.63.0-noble
 
 # The dependencies live in the image, at a path no bind mount reaches, because a
 # Mac developer's own node_modules is built for their Mac: @esbuild/* and
