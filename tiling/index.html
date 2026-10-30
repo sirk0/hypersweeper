@@ -11,6 +11,7 @@
       <h1>Tiling Simulator</h1>
       <span class="level" id="level"></span>
       <span class="count" id="count" aria-live="polite"></span>
+      <span class="clock" id="clock" title="Time, against the limit for the third star"></span>
       <button type="button" id="restart">Restart</button>
     </header>
     <div class="play">
@@ -22,8 +23,9 @@
     </div>
     <div class="won" id="won" hidden>
       <div class="won-card">
-        <p class="won-title">Tiled! <span class="star done">★</span></p>
-        <p id="won-detail"></p>
+        <p class="won-title">Tiled!</p>
+        <p class="won-stars" id="won-stars"></p>
+        <ul class="won-detail" id="won-detail"></ul>
         <div class="won-actions">
           <button type="button" id="again">Play again</button>
           <button type="button" id="next">Next level</button>

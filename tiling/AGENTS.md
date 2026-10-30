@@ -11,18 +11,25 @@ some back off.
   part-way along a straight edge. While it would stick, a ✓ shows where it
   will land and a dot marks each of its corners that meets the edge (the rim
   or a placed tile), wherever along it.
-- A tile lands only as it is held, and there is **one** rotate control, at
+- Every tray tile starts resting on a flat side. A tile lands only as it is
+  held, and there is **one** rotate control, at
   the end of the tray (or R): it turns *every* tray tile, and the one in hand,
-  clockwise by the level's step — the largest that reaches every way any kind
-  sits: 60° for triangles, 30° on 3.4.6.4, where the squares need it, so its
+  clockwise by the level's step — the largest that reaches, from flat, every
+  way any kind sits: 60° for triangles, 30° for the pointy-top hexagons, 30° on
+  3.4.6.4, where the squares need it too, so its
   triangles and hexagons pass through turns they fit nowhere at. Turning one
   kind into place can turn another out of it. The control draws its step as an
   axis, a fixed ray, the ray turned one step and the arrow between, and is left
   out where nothing ever needs turning.
-- ✕ remove, the control beside rotate (or X), is a mode: while it is on,
-  tapping a placed tile takes it off the board; Escape, the control again, or
-  picking up a tray tile ends it. A lifted tile dropped where it cannot land
-  goes back where it was.
+- Taking tiles off: drag a placed tile back over the tray (it turns red on
+  the way), or turn on ✕ remove, the control beside rotate (or X), and tap
+  tiles — Escape, the control again, or picking up a tray tile ends that mode.
+  A lifted tile dropped anywhere else it cannot land goes back where it was.
+- **Piles and stars.** Each pile shows how many of that tile the board was cut
+  from still to go (past zero, how many extra). Finishing at all is one star;
+  with no more tiles than that, two; and within the level's time limit
+  (`seconds`, five a tile), three. The clock starts with the first tile down.
+  The best per level is kept in `localStorage` and shown in the level list.
 
 The ladder it is built for is every flat board Hypersweeper has: squares,
 triangles, hexagons, the uniform and 2-uniform tilings, then spirals and
@@ -79,8 +86,9 @@ finishes the board — the quick way to see the win state.
   point can still be completed to a vertex configuration. Applied only where a
   level sets `rule`.
 - `src/levels.ts` — the levels. `makeLevel` reads everything off a level's
-  cells: the tray (one regular polygon per side count), each kind's rotate
-  step and starting turn (`turns`, `starts`), the region, and keeps the cells
+  cells: the tray (one regular polygon per side count, resting flat), each
+  kind's rotate step from flat (`turns`) and pile (`need`), the time limit
+  (`seconds`), the region, and keeps the cells
   themselves as one known solution; `turn` is the one rotate step for them all
   (the gcd of the kinds' steps); `uniformLevel` adds the template window and
   the tiling's vertex configuration (`window`, `config` — the icon's, not
@@ -88,14 +96,15 @@ finishes the board — the quick way to see the win state.
   level's cells are built on the same lattice as the Hypersweeper builder it
   mirrors (`squareBoard`, `triangleGridBoard`, `hexBoard` — Hypersweeper's
   default flat board for each tiling), and its region is their outline.
-- `src/progress.ts` — finished levels, in `localStorage` (guarded; the game
-  works without it).
+- `src/progress.ts` — the best stars per level, in `localStorage` (guarded;
+  the game works without it; the old finished-levels list reads as one star
+  each).
 - `src/puzzle.ts` — pure game state: `place`, `lift`, `snap` (in the held
   orientation only — `selfTurns` in `shape.ts` says which turns leave a tile
   unchanged — and, on a level with a rule, only edge to edge and where every
   vertex touched can still become the configuration: `allows`), `canTurn`,
   `won`, `coverage` (a share of the area, not a tile count — the count
-  depends on how the board is finished), and `solve`, a budgeted backtracking
+  depends on how the board is finished), `used`, `stars`, and `solve`, a budgeted backtracking
   fill, biggest tiles first, for the tests and the dev seam.
 - `src/view/svgBoard.ts` — the SVG drawing (board units, y up, one flip).
 - `src/view/levelList.ts` — the level list on the right: name, tile, ★ when

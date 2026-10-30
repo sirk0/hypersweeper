@@ -1,7 +1,7 @@
 import "./styles.css";
 import { attachDrag, type DragControl } from "./input/drag";
 import { LEVELS, levelByKey, type Level } from "./levels";
-import { isSolved, markSolved } from "./progress";
+import { recordStars, starsFor } from "./progress";
 import { Puzzle } from "./puzzle";
 import { renderLevelList } from "./view/levelList";
 import { SvgBoard } from "./view/svgBoard";
@@ -10,30 +10,77 @@ const byId = <T extends HTMLElement>(id: string): T => document.getElementById(i
 
 const stage = byId("stage");
 const count = byId("count");
+const clock = byId("clock");
 const won = byId("won");
 const next = byId<HTMLButtonElement>("next");
 
 let puzzle: Puzzle;
 let board: SvgBoard;
 let control: DragControl;
+/** When the first tile went down (performance.now), and when the board was
+ * finished — the clock runs between them. */
+let started: number | null = null;
+let finished: number | null = null;
+
+function elapsed(): number {
+  if (started === null) return 0;
+  return ((finished ?? performance.now()) - started) / 1000;
+}
+
+const clockText = (seconds: number): string =>
+  `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, "0")}`;
+
+function tick(): void {
+  const t = elapsed();
+  clock.textContent = `${clockText(t)} / ${clockText(puzzle.level.seconds)}`;
+  clock.classList.toggle("over", t > puzzle.level.seconds);
+}
 
 function nextLevel(): Level | undefined {
   return LEVELS[LEVELS.indexOf(puzzle.level) + 1];
 }
 
 function listLevels(): void {
-  renderLevelList(byId("levels"), LEVELS, puzzle.level.key, isSolved, open);
+  renderLevelList(byId("levels"), LEVELS, puzzle.level.key, starsFor, open);
 }
 
 function changed(): void {
+  if (started === null && puzzle.tiles.length > 0) started = performance.now();
   count.textContent = `${Math.floor(puzzle.coverage * 100)}% covered`;
   won.hidden = !puzzle.won;
-  if (!puzzle.won) return;
+  if (!puzzle.won) {
+    tick();
+    return;
+  }
+  if (finished === null) finished = performance.now();
+  tick();
   control.setRemoving(false);
-  byId("won-detail").textContent = `${puzzle.tiles.length} tiles, no gaps, no overlaps.`;
+  const seconds = elapsed();
+  const stars = puzzle.stars(seconds);
+  const need = puzzle.level.need.reduce((a, b) => a + b, 0);
+  const stars3 = byId("won-stars");
+  stars3.textContent = "★".repeat(stars) + "☆".repeat(3 - stars);
+  stars3.setAttribute("aria-label", `${stars} of 3 stars`);
+  const used = puzzle.tiles.length;
+  const lines = [
+    "★ Covered, no gaps, no overlaps.",
+    used <= need ? `★ ${used} tiles — no more than the ${need} needed.` : `☆ ${used} tiles — ${need} would do.`,
+    stars === 3
+      ? `★ ${clockText(seconds)} — inside ${clockText(puzzle.level.seconds)}.`
+      : used <= need
+        ? `☆ ${clockText(seconds)} — over ${clockText(puzzle.level.seconds)}.`
+        : `☆ Time counts once the tiles are no more than needed.`,
+  ];
+  byId("won-detail").replaceChildren(
+    ...lines.map((line) => {
+      const li = document.createElement("li");
+      li.textContent = line;
+      return li;
+    }),
+  );
   next.hidden = !nextLevel();
-  if (!isSolved(puzzle.level.key)) {
-    markSolved(puzzle.level.key);
+  if (stars > starsFor(puzzle.level.key)) {
+    recordStars(puzzle.level.key, stars);
     listLevels();
   }
 }
@@ -41,6 +88,8 @@ function changed(): void {
 /** Start `level` afresh: a new puzzle, a new board in the stage. */
 function open(level: Level): void {
   puzzle = new Puzzle(level);
+  started = null;
+  finished = null;
   stage.replaceChildren();
   board = new SvgBoard(stage, puzzle);
   control = attachDrag(board, puzzle, changed);
@@ -67,6 +116,9 @@ document.addEventListener("keydown", (ev) => {
   else if (ev.key === "r" || ev.key === "R") control.turn(-1);
 });
 new ResizeObserver(() => board.layout()).observe(stage);
+setInterval(() => {
+  if (started !== null && finished === null) tick();
+}, 250);
 
 open(levelByKey(new URLSearchParams(location.search).get("level") ?? "") ?? LEVELS[0]!);
 

@@ -131,7 +131,7 @@ button {
 
 .levels {
   flex: 0 0 auto;
-  width: 180px;
+  width: 220px;
   padding: 0 16px 16px 12px;
   border-left: 1px solid var(--button-edge);
   overflow-y: auto;
@@ -354,6 +354,46 @@ button {
   stroke-linejoin: round;
 }
 
+.tile.floating.discard {
+  fill: var(--remove);
+  stroke: var(--remove-edge);
+}
+
+.tray-zone {
+  fill: none;
+  stroke: none;
+}
+
+.discarding .tray-zone {
+  fill: var(--remove);
+  fill-opacity: 0.12;
+  stroke: var(--remove);
+  stroke-width: 0.04;
+  stroke-dasharray: none;
+}
+
+.pile circle {
+  fill: var(--ink);
+}
+
+.pile text {
+  fill: var(--page);
+  font-size: 0.24px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: central;
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+}
+
+.pile.done circle {
+  fill: var(--fits);
+}
+
+.pile.over circle {
+  fill: var(--star);
+}
+
 .fits {
   pointer-events: none;
 }
@@ -397,6 +437,43 @@ button:disabled {
   padding: 20px 28px;
   text-align: center;
   max-width: calc(100vw - 32px);
+}
+
+.hud .clock {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+.hud .clock.over {
+  color: var(--remove);
+}
+
+.won-stars {
+  font-size: 2rem;
+  line-height: 1;
+  margin: 4px 0 10px;
+  color: var(--star);
+  letter-spacing: 0.1em;
+}
+
+.won-detail {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 14px;
+  text-align: left;
+  font-variant-numeric: tabular-nums;
+}
+
+.won-detail li {
+  margin: 2px 0;
+}
+
+.stars {
+  display: inline-flex;
+}
+
+.stars .star {
+  font-size: 0.8rem;
 }
 
 .won-actions {

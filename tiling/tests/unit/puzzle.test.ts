@@ -108,7 +108,8 @@ describe("puzzle", () => {
     const can = (key: string): boolean => new Puzzle(levelByKey(key)!).canTurn();
     expect(can("squares")).toBe(false);
     expect(can("triangles")).toBe(true);
-    expect(can("hexagons")).toBe(false);
+    // the tray holds a hexagon flat, the board has them pointy-top
+    expect(can("hexagons")).toBe(true);
     expect(can("trihex")).toBe(true);
     expect(can("rhombitrihex")).toBe(true);
   });
@@ -120,7 +121,7 @@ describe("puzzle", () => {
     };
     expect(degrees("squares")).toBe(0);
     expect(degrees("triangles")).toBe(60);
-    expect(degrees("hexagons")).toBe(0);
+    expect(degrees("hexagons")).toBe(30);
     expect(degrees("trihex")).toBe(60);
     // the squares need 30°, so the triangles and hexagons go round in 30°
     // steps too, through turns where they fit nowhere
@@ -133,8 +134,37 @@ describe("puzzle", () => {
     expect(tri.turns.map((k) => (k * 360) / tri.ring.n)).toEqual([60, 0]);
     const rhombi = levelByKey("rhombitrihex")!;
     expect(rhombi.tiles.map((t) => t.verts.length)).toEqual([3, 4, 6]);
-    // its squares sit three ways, 30° apart; triangles two ways
-    expect(rhombi.turns.map((k) => (k * 360) / rhombi.ring.n)).toEqual([60, 30, 0]);
+    // its squares sit three ways, 30° apart; triangles two ways; hexagons
+    // one way, but pointy-top — 30° from the tray's flat one
+    expect(rhombi.turns.map((k) => (k * 360) / rhombi.ring.n)).toEqual([60, 30, 30]);
+  });
+
+  it("starts every tray tile resting on a flat side", () => {
+    for (const level of LEVELS) {
+      for (const shape of level.tiles) {
+        const [a, b] = shape.verts.map((v) => level.ring.toXY(v));
+        expect(a![1]).toBeCloseTo(b![1], 12); // first edge horizontal
+        for (const v of shape.verts) expect(level.ring.toXY(v)[1]).toBeGreaterThanOrEqual(-1e-12); // and below
+      }
+    }
+  });
+
+  it("counts each pile from the board it was cut from", () => {
+    const rhombi = levelByKey("rhombitrihex")!;
+    expect(rhombi.need).toEqual([10, 16, 5]); // triangles, squares, hexagons
+    expect(rhombi.need.reduce((a, b) => a + b)).toBe(rhombi.cells.length);
+  });
+
+  it("gives one star for finishing, two for the tiles needed, three in time", () => {
+    const p = new Puzzle(levelByKey("trihex")!);
+    const kindOf = (sides: number): number => p.level.tiles.findIndex((t) => t.verts.length === sides);
+    for (const cell of p.level.cells) p.place(kindOf(cell.length), ccw(p.level.ring, cell), 0);
+    expect(p.stars(p.level.seconds)).toBe(3);
+    expect(p.stars(p.level.seconds + 1)).toBe(2);
+    // one tile short of finished: nothing yet (the one-star case, more tiles
+    // than needed, is in the six-triangles test below)
+    p.lift(p.tiles[0]!.id);
+    expect(p.stars(0)).toBe(0);
   });
 
   /** A finished trihexagonal board with its innermost hexagon lifted out. */
@@ -165,6 +195,8 @@ describe("puzzle", () => {
     }
     expect(p.won).toBe(true);
     expect(p.tiles.length).toBe(p.level.cells.length + 5);
+    // finished, but with more tiles than needed: one star, however fast
+    expect(p.stars(0)).toBe(1);
   });
 
   it("can hold a level to a vertex rule: then no six triangles in a hexagon's place", () => {

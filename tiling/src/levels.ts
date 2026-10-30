@@ -34,8 +34,12 @@ export interface Level {
    * where nothing ever needs turning and the control is left out. A tile lands
    * only as it is held. */
   turn: number;
-  /** Per kind, the turn the tray holds it at to begin with. */
-  starts: number[];
+  /** Per kind, how many tiles of it the board it was cut from takes — the
+   * number on its pile. Using more is allowed; using no more than these, in
+   * all, is worth the second star. */
+  need: number[];
+  /** The time limit for the third star, in seconds. */
+  seconds: number;
   /** The board the level was cut from, tile by tile: one way to finish it,
    * not the only one — any exact cover wins (six triangles where a hexagon
    * was are fine), so a player can wander off it, and may have to take tiles
@@ -53,22 +57,30 @@ export interface Level {
   window?: { tiling: string; nx: number; ny: number };
 }
 
+/** The third star's time allowance per tile the board takes — room to pick
+ * each one up, turn it and lay it, not to think hard. Rounded up to ten
+ * seconds a level. */
+const SECONDS_PER_TILE = 5;
+
 function gcd(a: number, b: number): number {
   return b === 0 ? Math.abs(a) : gcd(b, a % b);
 }
 
 /**
- * A level from the exact cells of its board. The tray, the turns and the region
- * are all read off the cells, so nothing about a level is stated twice: each
- * distinct side count is a tile kind; how a cell of that kind is turned from
- * the tray's regular polygon is measured exactly; and the rotate step is the
- * largest that still reaches every way the board turns that kind.
+ * A level from the exact cells of its board. The tray, the turns, the piles
+ * and the region are all read off the cells, so nothing about a level is
+ * stated twice: each distinct side count is a tile kind, held in the tray
+ * resting on a flat side (the regular polygon as `regular` builds it, turn 0);
+ * how a cell of that kind is turned from there is measured exactly; and the
+ * rotate step is the largest that still reaches every way the board turns
+ * that kind from flat — so pointy-top hexagons need turning, though they all
+ * sit alike.
  */
 function makeLevel(key: string, label: string, ring: Ring, cells: Cyc[][]): Level {
   const sides = [...new Set(cells.map((c) => c.length))].sort((a, b) => a - b);
   const tiles = sides.map((m) => regular(ring, m));
   const turns: number[] = [];
-  const starts: number[] = [];
+  const need: number[] = [];
   tiles.forEach((shape, kind) => {
     // turning by `period` leaves the shape as it was
     const period = selfTurns(shape).find((k) => k > 0) ?? ring.n;
@@ -79,13 +91,13 @@ function makeLevel(key: string, label: string, ring: Ring, cells: Cyc[][]): Leve
         if (k === undefined) throw new Error(`${key}: a ${c.length}-sided cell is not a regular polygon`);
         return k % period;
       });
-    const start = ks[0]!;
-    const step = ks.reduce((g, k) => gcd(g, k - start), period);
+    const step = ks.reduce((g, k) => gcd(g, k), period);
     turns.push(step === period ? 0 : step);
-    starts.push(start);
+    need.push(ks.length);
   });
   const turn = turns.reduce((g, k) => gcd(g, k), 0);
-  return { key, label, ring, region: outline(ring, cells), tiles, mirror: false, turns, turn, starts, cells };
+  const seconds = Math.ceil((cells.length * SECONDS_PER_TILE) / 10) * 10;
+  return { key, label, ring, region: outline(ring, cells), tiles, mirror: false, turns, turn, need, seconds, cells };
 }
 
 /** A level on a window of one of Hypersweeper's uniform tilings, `box` edges

@@ -78,12 +78,26 @@ export class Puzzle {
   /** Every way the board turns a kind — the turns worth trying for it. */
   orientations(kind: number): number[] {
     const step = this.level.turns[kind]!;
-    const start = this.level.starts[kind]!;
-    if (step === 0) return [start];
+    if (step === 0) return [0];
     const period = this.same[kind]!.find((k) => k > 0) ?? this.level.ring.n;
     const out: number[] = [];
-    for (let k = 0; k < period; k += step) out.push(start + k);
+    for (let k = 0; k < period; k += step) out.push(k);
     return out;
+  }
+
+  /** How many tiles of a kind are down. */
+  used(kind: number): number {
+    return this.tiles.filter((t) => t.kind === kind).length;
+  }
+
+  /** The stars a finished board earns, `seconds` after the first tile went
+   * down: one for finishing at all, two for doing it with no more tiles than
+   * the board was cut from, three for that within the level's time limit. */
+  stars(seconds: number): 0 | 1 | 2 | 3 {
+    if (!this.won) return 0;
+    const need = this.level.need.reduce((a, b) => a + b, 0);
+    if (this.tiles.length > need) return 1;
+    return seconds <= this.level.seconds ? 3 : 2;
   }
 
   /**

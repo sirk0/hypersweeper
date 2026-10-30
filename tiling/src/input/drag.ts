@@ -1,9 +1,10 @@
 // Drag and drop, and the remove mode. Press a tray tile to take a fresh one,
 // or a placed tile to lift it; it follows the pointer, and wherever it would
 // snap a ✓ says it fits and a dot marks each of its corners that would meet
-// the edge. Releasing there places the tile; releasing anywhere else drops a
-// fresh tile and puts a lifted one back where it was — a stray drop never
-// loses a tile.
+// the edge. Releasing there places the tile. Releasing it back over the tray
+// takes it off the board (a lifted tile shows red on the way); releasing
+// anywhere else drops a fresh tile and puts a lifted one back where it was —
+// a stray drop on the board never loses a tile.
 //
 // Removing is a mode: with ✕ on (the control beside the tray, or X), pressing a placed
 // tile takes it off the board, as many as you like, until ✕ is turned off or a
@@ -67,13 +68,18 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
     board.removing = on;
   };
 
+  /** The pointer, in board units, of the drag's latest move. */
+  const pointer = (d: Drag): XY => [d.at[0] - d.offset[0], d.at[1] - d.offset[1]];
+
   const update = (): void => {
     frame = 0;
     if (!drag) return;
-    drag.ghost = puzzle.snap(drag.kind, drag.at, reachFor(drag.kind), drag.rot);
+    // Back over the tray, a lifted tile is on its way off the board.
+    const discard = drag.origin !== null && board.overTray(pointer(drag));
+    drag.ghost = discard ? null : puzzle.snap(drag.kind, drag.at, reachFor(drag.kind), drag.rot);
     const ghost = drag.ghost?.map((v) => ring.toXY(v)) ?? null;
     const stick = drag.ghost ? puzzle.touching(drag.ghost).map((v) => ring.toXY(v)) : [];
-    board.drawDrag(drag.kind, drag.outline, drag.at, ghost && centroid(ghost), stick);
+    board.drawDrag(drag.kind, drag.outline, drag.at, ghost && centroid(ghost), stick, discard);
   };
 
   // One turn for everything: every tray tile, and the one in hand.
@@ -122,7 +128,7 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
       // Picking up a new tile is the end of removing.
       setRemoving(false);
       kind = Number(tray.getAttribute("data-tray"));
-      rot = board.held(kind);
+      rot = board.turn;
       outline = board.outline(kind, rot);
       c = board.trayAt[kind]!;
     } else if (placed) {
@@ -164,14 +170,15 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
     drag = null;
     board.clearDrag();
     let ghost: Cyc[] | null = null;
-    if (drop) {
-      // Judge the snap at the release point itself, not the last frame's.
-      const p = board.toBoard(ev.clientX, ev.clientY);
+    // Judged at the release point itself, not the last frame's.
+    const p = board.toBoard(ev.clientX, ev.clientY);
+    const discard = drop && board.overTray(p);
+    if (drop && !discard) {
       ghost = puzzle.snap(d.kind, [p[0] + d.offset[0], p[1] + d.offset[1]], reachFor(d.kind), d.rot);
     }
     if (ghost) {
       puzzle.place(d.kind, ghost, d.rot);
-    } else if (d.origin) {
+    } else if (d.origin && !discard) {
       puzzle.place(d.origin.kind, d.origin.verts, d.origin.rot);
     }
     settle();

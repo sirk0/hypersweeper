@@ -1,5 +1,5 @@
 // The level list down the right-hand side: each level's name, a picture of its
-// tile (or of its vertex configuration), and a star once it has been finished.
+// tile (or of its vertex configuration), and the best of three stars earned.
 
 import type { Cyc } from "../geometry/cyclotomic";
 import { centroid, posed, regular, type XY } from "../geometry/shape";
@@ -47,7 +47,7 @@ export function renderLevelList(
   host: HTMLElement,
   levels: Level[],
   current: string,
-  solved: (key: string) => boolean,
+  stars: (key: string) => number,
   pick: (level: Level) => void,
 ): void {
   host.replaceChildren();
@@ -60,12 +60,17 @@ export function renderLevelList(
     const name = document.createElement("span");
     name.className = "level-name";
     name.textContent = level.label;
-    const star = document.createElement("span");
-    const done = solved(level.key);
-    star.className = done ? "star done" : "star";
-    star.textContent = done ? "★" : "☆";
-    star.setAttribute("aria-label", done ? "finished" : "not finished yet");
-    button.append(tileIcon(level), name, star);
+    const earned = stars(level.key);
+    const row = document.createElement("span");
+    row.className = "stars";
+    row.setAttribute("aria-label", earned ? `${earned} of 3 stars` : "not finished yet");
+    for (let i = 1; i <= 3; i++) {
+      const star = document.createElement("span");
+      star.className = i <= earned ? "star done" : "star";
+      star.textContent = i <= earned ? "★" : "☆";
+      row.appendChild(star);
+    }
+    button.append(tileIcon(level), name, row);
     button.addEventListener("click", () => pick(level));
     li.appendChild(button);
     host.appendChild(li);

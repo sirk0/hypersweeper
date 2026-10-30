@@ -31,6 +31,8 @@ const MARGIN = 0.6;
 const KNOB = 0.4;
 const KNOB_GAP = 0.15;
 const LABEL = 0.3;
+/** A pile's count badge radius. */
+const PILE = 0.22;
 /** The gap between one tray kind and the next. */
 const TRAY_GAP = 0.35;
 
@@ -81,9 +83,12 @@ export class SvgBoard {
   private moving: SVGGElement;
   /** Where each tray kind sits, centroid in board units. */
   trayAt: XY[] = [];
-  /** How far every tray tile is turned from where the level starts it, as a
-   * power of ζ — the one rotate control turns them all together. */
+  /** How far every tray tile is turned from resting flat, as a power of ζ —
+   * the one rotate control turns them all together. */
   turn = 0;
+  /** The tray's own box (tiles and controls), in board units: a placed tile
+   * dropped back in it is taken off the board. */
+  private trayBox: [number, number, number, number] = [0, 0, 0, 0];
   /** Where each control sits. */
   private controlsAt = new Map<Control, XY>();
   /** Per tray kind, its farthest corner from its centroid — the same at any turn. */
@@ -116,9 +121,10 @@ export class SvgBoard {
     return this.puzzle.level.tiles[kind]!.verts.length;
   }
 
-  /** How a tray kind is held now: where the level starts it, plus the turn. */
-  held(kind: number): number {
-    return this.puzzle.level.starts[kind]! + this.turn;
+  /** Whether a board point is over the tray. */
+  overTray([x, y]: XY): boolean {
+    const [x0, y0, x1, y1] = this.trayBox;
+    return x >= x0 && x <= x1 && y >= y0 && y <= y1;
   }
 
   /** A kind's outline turned by ζ^rot, about its own centroid. */
@@ -186,12 +192,20 @@ export class SvgBoard {
       }
     });
     // Everything drawn, as boxes: the region, each tray circle, each control.
-    const boxes: [number, number, number, number][] = [[x0, y0, x1, y1]];
+    const tray: [number, number, number, number][] = [];
     this.trayAt.forEach(([cx, cy], kind) => {
       const r = this.trayRadius(kind);
-      boxes.push([cx - r, cy - r, cx + r, cy + r]);
+      tray.push([cx - r, cy - r, cx + r, cy + r]);
     });
-    for (const [kx, ky] of this.controlsAt.values()) boxes.push([kx - KNOB, ky - KNOB - LABEL, kx + KNOB, ky + KNOB]);
+    for (const [kx, ky] of this.controlsAt.values()) tray.push([kx - KNOB, ky - KNOB - LABEL, kx + KNOB, ky + KNOB]);
+    const pad = MARGIN / 2;
+    this.trayBox = [
+      Math.min(...tray.map((b) => b[0])) - pad,
+      Math.min(...tray.map((b) => b[1])) - pad,
+      Math.max(...tray.map((b) => b[2])) + pad,
+      Math.max(...tray.map((b) => b[3])) + pad,
+    ];
+    const boxes: [number, number, number, number][] = [[x0, y0, x1, y1], ...tray];
     const bx0 = Math.min(...boxes.map((b) => b[0])) - MARGIN;
     const by0 = Math.min(...boxes.map((b) => b[1])) - MARGIN;
     const bx1 = Math.max(...boxes.map((b) => b[2])) + MARGIN;
@@ -223,17 +237,29 @@ export class SvgBoard {
     for (const e of this.puzzle.openEdges) {
       el("line", { x1: e.axy[0], y1: e.axy[1], x2: e.bxy[0], y2: e.bxy[1], class: "open" }, this.still);
     }
+    const [tx0, ty0, tx1, ty1] = this.trayBox;
+    el("rect", { x: tx0, y: ty0, width: tx1 - tx0, height: ty1 - ty0, rx: 0.3, class: "tray-zone" }, this.still);
     this.trayAt.forEach(([cx, cy], kind) => {
-      el("circle", { cx, cy, r: this.trayRadius(kind), class: "tray", "data-tray": kind }, this.still);
+      const r = this.trayRadius(kind);
+      el("circle", { cx, cy, r, class: "tray", "data-tray": kind }, this.still);
       el(
         "polygon",
         {
-          points: points(this.outline(kind, this.held(kind)).map(([x, y]): XY => [x + cx, y + cy])),
+          points: points(this.outline(kind, this.turn).map(([x, y]): XY => [x + cx, y + cy])),
           class: `tile sides-${this.sides(kind)} in-tray`,
           "data-tray": kind,
         },
         this.still,
       );
+      // The pile's count: how many more the board was cut with. Past zero it
+      // shows how many extra are down — allowed, but it costs a star.
+      const left = this.puzzle.level.need[kind]! - this.puzzle.used(kind);
+      const bx = cx + r * 0.72;
+      const by = cy - r * 0.72;
+      const badge = el("g", { class: `pile${left < 0 ? " over" : left === 0 ? " done" : ""}`, "data-tray": kind }, this.still);
+      el("circle", { cx: bx, cy: by, r: PILE }, badge);
+      const text = el("text", { x: bx, y: -by, transform: "scale(1,-1)" }, badge);
+      text.textContent = left < 0 ? `+${-left}` : String(left);
     });
     for (const [control, [kx, ky]] of this.controlsAt) {
       const knob = el("g", { class: `knob knob-${control}` }, this.still);
@@ -268,11 +294,13 @@ export class SvgBoard {
 
   /** The dragged tile — `outline` about its centroid, moved to `at` — and,
    * when it would snap, a ✓ where it would land (`fitsAt`, that spot's
-   * centroid) and a dot on each of its corners that would meet the edge. */
-  drawDrag(kind: number, outline: XY[], at: XY, fitsAt: XY | null, stick: XY[]): void {
+   * centroid) and a dot on each of its corners that would meet the edge.
+   * `discard`: it is over the tray, and letting go takes it off the board. */
+  drawDrag(kind: number, outline: XY[], at: XY, fitsAt: XY | null, stick: XY[], discard = false): void {
     this.moving.replaceChildren();
+    this.svg.classList.toggle("discarding", discard);
     const moved = outline.map(([x, y]): XY => [x + at[0], y + at[1]]);
-    el("polygon", { points: points(moved), class: `tile sides-${this.sides(kind)} floating` }, this.moving);
+    el("polygon", { points: points(moved), class: `tile sides-${this.sides(kind)} floating${discard ? " discard" : ""}` }, this.moving);
     for (const [cx, cy] of stick) el("circle", { cx, cy, r: 0.11, class: "stick" }, this.moving);
     if (fitsAt) {
       const [cx, cy] = fitsAt;
@@ -290,6 +318,7 @@ export class SvgBoard {
 
   clearDrag(): void {
     this.moving.replaceChildren();
+    this.svg.classList.remove("discarding");
   }
 
   /** A client (screen) point in board units. */
